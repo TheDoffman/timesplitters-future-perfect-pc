@@ -2243,6 +2243,13 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Release 0.4.0 packaging follow-up (2026-10-30):** The native game build and
+  platform/renderer/input/settings/debug checks passed. Actual installation
+  rejected nested Online dependency notice paths. The bundler now preserves
+  notice bytes using the installer's existing flat `.txt` license layout;
+  package installation is being rerun. Transport behavior and the existing
+  physical crossplay evidence/remaining Internet limits are unchanged.
+
 - **Physical crossplay follow-up (2026-10-30, PR #416):** A full Windows-host /
   Mac-guest match/rematch and Mac-host/Windows-guest match/rematch completed with
   identical eight-player results. Cross-platform identity ordering is fixed;
@@ -7925,6 +7932,12 @@ not actual Mac fatal/overflow process-memory permissions or title gameplay.
 Keep Awaiting validation; patch-upgrade repairs are being rechecked separately.
 
 ## MAC-124 - Choose save folders (discussion 401) - Awaiting validation
+
+Earlier launcher 1.5.0 candidate (now superseded by the user's 1.4.1 target,
+2026-10-30): native Apple Silicon build
+and automated launcher checks passed on macOS 27.0.1, including 32 shared UI
+groups and save-location policy fixtures. This does not complete the physical
+Cocoa/Avalonia folder-picker and removable-volume acceptance below.
 
 Shared routing/persistence and launcher resolver/copy/restore policy implemented.
 Cocoa NSOpenPanel is scheduled on the main queue, returns through an atomic guest

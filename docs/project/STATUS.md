@@ -1,3 +1,46 @@
+## Game 0.4.0 and launcher 1.4.1 release preparation - 2026-10-30
+
+The user selected game 0.4.0 and launcher 1.4.1, replacing the unpublished
+launcher 1.5.0 candidate. Both launcher assembly attributes now use 1.4.1.0.
+Earlier 1.5.0 build/package results below remain historical evidence; the old
+game packages embed that launcher and must not be published as 1.4.1 packages.
+Fresh launcher and game-package validation is required for the selected versions.
+
+Both requested features are merged into main: native Mac multiplayer (#416,
+46c675a3) and save-folder selection (#420, e2cfe5a6). The release branch starts
+from e2cfe5a6. The earlier game 0.4.0 / launcher 1.5.0 candidate prepared these
+features; the version change itself introduces no runtime behavior. Latest
+published versions at preparation are game 0.3.6 and launcher 1.4.0.
+
+On Windows 11 x64, 286 focused publisher, launcher-release, native-Mac packaging
+and CI-scope tests passed, with 10 subtests. The Windows launcher 1.5.0 build
+and full launcher checks passed in 35.57 seconds, including selected save-folder
+copy/restore, settings, update/recovery and texture-preservation contracts.
+The native Apple Silicon launcher build and checks also passed on macOS 27.0.1;
+both hosts passed 32 shared UI groups. The dedicated persistent SSH connection
+worked without another key setup. Repository context and whitespace checks pass.
+Logs: release-040-focused.log and launcher-150-local.log under the release
+checkout's ignored logs directory; launcher-150-preparation.log on the Mac.
+
+Both-host CI and production publication remain pending. These checks do not
+establish a fresh game build, gameplay acceptance, physical Mac folder-picker
+interaction or Internet multiplayer acceptance. Existing MAC-013 crossplay
+evidence and MAC-124's remaining manual checks retain their stated scope.
+The launcher workflow requires the version PR on main before publication;
+published release tags/assets must remain immutable. Optional textures and
+personal saves/settings remain preserved.
+
+Mac package follow-up: the actual installer rejected Homebrew notices copied
+under nested `Licenses/Online/<formula>/...` paths. Its existing license policy
+accepts only flat `.txt` files. The Online bundler now copies notices to
+`Licenses/Online-<formula>-<notice>.txt`, preserving the original bytes and the
+installer's protected-path rules. A multi-formula fixture checks byte equality
+and supported paths; the compiled launcher checks accepted flat names and
+continued rejection of nested/extensionless names. The focused suite now passes
+287 tests and 10 subtests; the full Windows launcher checks pass again.
+Fresh Mac game build/platform/renderer/input/settings/debug checks passed before
+this packaging-only correction. Full package installation is being rerun.
+
 ## Choose save folders (discussion #401) - 2026-10-30
 
 Local feature/401-save-folder-selection adds current/default/custom folders to

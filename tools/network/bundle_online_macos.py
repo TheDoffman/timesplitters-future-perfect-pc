@@ -79,6 +79,17 @@ def relocate(pairs, runtime):
     return records
 
 
+def copy_notices(formula, copy):
+    """Keep formula notice bytes under the installer's flat .txt license layout."""
+    for notice in sorted(formula.iterdir()):
+        if notice.is_file() and (notice.name.lower().startswith(('license', 'copying', 'copyright'))
+                                or notice.name == 'sbom.spdx.json'):
+            name = 'Online-'+formula.parent.name+'-'+notice.name
+            if not name.lower().endswith('.txt'):
+                name += '.txt'
+            copy(notice, 'Licenses/'+name)
+
+
 def bundle(root, stage, copy, generated=None):
     if sys.platform != 'darwin':
         raise RuntimeError('Bundle Online on the native Mac build host.')
@@ -166,12 +177,10 @@ def bundle(root, stage, copy, generated=None):
         if 'Cellar' in parts:
             index = parts.index('Cellar')
             formulae.add(Path(*parts[:index+3]))
-    for formula in formulae:
-        for notice in formula.iterdir():
-            if notice.is_file() and (notice.name.lower().startswith(('license', 'copying', 'copyright')) or notice.name == 'sbom.spdx.json'):
-                copy(notice, 'Licenses/Online/'+formula.parent.name+'/'+notice.name)
+    for formula in sorted(formulae):
+        copy_notices(formula, copy)
     (stage/'Licenses/Online-dependencies.txt').write_text(
-        'CPython, Tcl/Tk and native dependencies: notices and package source metadata in Licenses/Online.\n'
+        'CPython, Tcl/Tk and native dependencies: notices and package source metadata in Licenses/Online-*.txt.\n'
         'Pinned Python wheel notices: Support/Python/lib/python'+version+'/site-packages/*dist-info/licenses.\n'
         'Public CA trust store: Support/Python/certificates.pem.\n', encoding='utf-8')
     probe = stage/'Support/Online/bundle-check.py'

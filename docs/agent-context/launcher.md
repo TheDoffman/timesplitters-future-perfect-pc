@@ -1,5 +1,11 @@
 # Launcher internals
 
+Launcher 1.4.1 prepares the merged save-folder and native Mac multiplayer work
+for the next Stable release alongside game 0.4.0. Only version identities change;
+publication still requires both host checks and all ten verified launcher assets.
+Mac Online formula notices now use the existing flat `.txt` license layout;
+notice bytes and the installer's protected-file rules stay unchanged.
+
 Save-folder selection and custom-volume backup/restore now share SaveLocations.cs; see [save locations](save-locations.md). SavesPage exposes native Windows/Mac folder pickers and explicit copy without deleting original saves.
 
 README download buttons now use stable platform ZIP aliases. Launcher publication

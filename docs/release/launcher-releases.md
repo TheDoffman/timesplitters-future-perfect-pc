@@ -1,5 +1,9 @@
 # One launcher release for Windows and Mac
 
+The next Stable launcher source version is **1.4.1**, including save-folder
+selection and the native Mac multiplayer integration. The source bump does not
+publish either platform; the workflow below must pass before release.
+
 The **Launcher release (Windows + Mac)** workflow builds the Windows x64 launcher
 and native Apple Silicon Mac app from the same source revision and shared version.
 It publishes both packages in one GitHub release only after both hosts pass their

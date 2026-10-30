@@ -139,6 +139,12 @@ and extension libraries. Source development needs Python 3.12 with tkinter and
 with the shared Windows icon builder and transfer that generated asset for Mac
 packaging, as with launcher artwork. No game-data copy is required.
 
+Formula notices use flat `Licenses/Online-<formula>-<notice>.txt` paths. The
+installer accepts only top-level `.txt` license files, so names such as LICENSE
+and sbom.spdx.json gain a `.txt` suffix without changing their bytes. The
+packager's `copy_notices` fixture checks multiple formulae and notice formats;
+the shared launcher tests retain rejection of nested or extensionless notices.
+
 
 Results Options uses a short Down tap before Rematch; holding it triggers menu
 repeat and can select Leave Match. The runner captures the selected option before

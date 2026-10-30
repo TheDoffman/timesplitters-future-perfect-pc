@@ -75,6 +75,30 @@ def test_changed_cached_license_is_not_overwritten(tmp_path, monkeypatch):
     assert (cache/'notice.txt').read_bytes() == b'changed'
 
 
+def test_online_formula_notices_keep_bytes_in_flat_installer_layout(tmp_path):
+    import bundle_online_macos
+    output = tmp_path/'package'
+    expected = {}
+    for name in ('libtommath', 'python@3.12'):
+        formula = tmp_path/'Cellar'/name/'1.0'
+        formula.mkdir(parents=True)
+        for notice in ('LICENSE', 'COPYING', 'Copyright.md', 'LICENSE.txt', 'sbom.spdx.json'):
+            source = formula/notice
+            original = (name+'\n'+notice+'\n').encode()+b'\x80\r\n'
+            source.write_bytes(original)
+            expected['Licenses/Online-'+name+'-'+notice+('' if notice.endswith('.txt') else '.txt')] = original
+        (formula/'README.md').write_text('not a notice')
+        (formula/'LICENSE-directory').mkdir()
+        def copy(source, relative):
+            target = output/relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(source.read_bytes())
+        bundle_online_macos.copy_notices(formula, copy)
+    actual = {p.relative_to(output).as_posix(): p.read_bytes() for p in output.rglob('*') if p.is_file()}
+    assert actual == expected
+    assert all(len(Path(name).parts) == 2 and name.endswith('.txt') for name in actual)
+
+
 def test_minimum_os_is_highest_actual_binary_requirement(monkeypatch):
     outputs = iter(['cmd LC_BUILD_VERSION\n minos 27.0\n sdk 27.0',
                     'cmd LC_BUILD_VERSION\n minos 26.0\n sdk 26.0'])

@@ -318,6 +318,12 @@ static class LauncherTests
             });
             foreach (string name in new[] { "../outside.exe", "/absolute.exe", "C:/file.exe", "Bin/../file.exe", "Bin/x:stream", "Bin/CON.dll", "Bin/file. ", "Bin\\file.dll", "Bin//file.dll" })
             { string value = name; Test("reject path " + value, () => Reject(() => Core.Allowed(value))); }
+            Test("Mac Online notices use the flat text license layout", () => {
+                Assert(Core.Allowed("Licenses/Online-libtommath-LICENSE.txt"));
+                Assert(Core.Allowed("Licenses/Online-python@3.12-sbom.spdx.json.txt"));
+                Assert(!Core.Allowed("Licenses/Online/libtommath/LICENSE"));
+                Assert(!Core.Allowed("Licenses/Online-libtommath-LICENSE"));
+            });
             foreach (string name in new[] { "Data/default.xbe", "Saves/profile", "Settings/pc-display.ini", "Textures/a.dll", "private/file", ".launcher/update-helper.exe" })
             { string value = name; Test("protect " + value, () => Assert(!Core.Allowed(value))); }
             Test("valid archive verifies and extracts", () => {
