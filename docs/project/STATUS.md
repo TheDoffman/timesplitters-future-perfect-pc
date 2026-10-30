@@ -33202,3 +33202,39 @@ listening, full campaign, clocks/timer scheduling and remaining legacy kernel/
 runtime/header/fixture/provenance work remain unverified or unfinished. Overall
 goal stays active/incomplete and MAC-118 Awaiting validation. PR#406 remains draft;
 no main merge or publication was performed.
+
+
+### Stage0237 original counted strings checkpoint (2026-10-30 UTC)
+
+Based onf4297855 (runtime40995604700 and launcher40995604565 both passed).
+Original guest_strings.c/.h and guest_kernel_strings.inc select fourteen counted
+string/memory-prefix imports with unchanged8/12-byte cleanup. Six native init/
+charset/equality/pattern helpers and prototypes are retired; only inactive legacy
+thunks retain native names. Critical sections, status, formatting/exceptions and
+remaining guest charset/create/free/numeric services still need replacement.
+
+Shared byte serialization validates complete guest read/write spans, handles
+unaligned/overlapping bodies, rejects aliased descriptor/body output, preserves
+outputs on invalid mappings/capacity failures and honors whole code units. The
+Windows NT oracle verifies counted NUL comparison, bounded init capacities, Unicode
+termination/empty-append differences and prefix counts. Case mapping uses standard
+libc toupper/towupper; complete NT Unicode/OEM tables are not claimed. Contracts
+and malformed-record limits: kernel-strings.md. No new dependency/allocator.
+
+Windows selected suite65passed42.68s, including14 string cases. Final string rerun
+14passed11.24s after enum-guard refinement and explicit invalid-operation/host-alias
+checks; this overlaps65. Each canonical run executes14000 independent Python
+byte-model requests plus6000 actual ntdll oracles; six broken providers and five
+broken adapters compile then fail at runtime. Production caller/selection/ordinal
+audit passed. Release/built-ins/matching crash symbols passed. Archive selects31
+original I/O/storage/calendar/string providers once;24 retired native exports
+absent, all22 generated files unchanged from0236 and fingerprint current. US XBE
+verified. Ignored logs/strings-build.json records dirtyf4297855 source inputs.
+Executable SHA256:
+07fd92c5267a3816051815380d022eb1035a16363dff560244789a069ef03e8a.
+
+All26 protected files retained hashes, sizes and mtimes before new isolated Story
+run. Gameplay and25 fresh/historical/context/backlog checks are still running at
+this checkpoint. New-source CI is pending. Windows NT10.0.26300 x64/MSVC14.44;
+no native Mac title/physical input/listening/full-campaign claim. Overall goal and
+MAC-118 remain active/incomplete/Awaiting validation; no main merge/publication.

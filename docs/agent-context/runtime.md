@@ -898,3 +898,5 @@ the original camera-relative branch. See [scope guards](mounted-mouse.md).
 Stage0235: [original pool imports and native surface retirement](kernel-pool.md).
 
 Stage0236: [original absolute-time codec and guest calendar imports](kernel-time.md).
+
+Stage0237: [original counted strings and memory prefixes](kernel-strings.md).

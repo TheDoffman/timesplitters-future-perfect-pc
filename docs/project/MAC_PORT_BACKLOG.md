@@ -7763,3 +7763,15 @@ this portable codec; native Mac title acceptance remains unverified. Remaining
 kernel/runtime replacement is incomplete, so retain Awaiting validation. Exact
 counts, source/game provenance and limits are in STATUS stage0236 completed
 acceptance; contracts remain in kernel-time.md. No main merge/publication.
+
+
+MAC-118 stage0237 follow-up (PR#406): original shared guest_strings provider and
+fourteen import adapters replace counted initialization/compare/copy/append/upper
+and memory-prefix bridge code; six unused native RTL helpers/prototypes retire.
+No new host adapter is needed: byte serialization/resolution policy is common,
+with standard libc toupper/towupper case mapping. Full NT Unicode/OEM case tables
+are not claimed. Windows65 distinct selected checks and Release/archive/generation
+checks passed;25 upgrades/context/backlog checks, bounded Story and new-source CI
+pending at this checkpoint. Native Mac title acceptance and remaining legacy
+kernel/runtime replacement remain unfinished; retain Awaiting validation. Contracts
+are in kernel-strings.md and exact evidence in STATUS stage0237.

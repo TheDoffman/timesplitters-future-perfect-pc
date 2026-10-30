@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "974cb8082b58f02d2cb504fa8b9d5858937cc6b3d1aa9fd3f47b241e939f1923",
+  "loaderSha256": "bd67ee26cb083d04fd061bbc8353b7735758426036e93eccb1bbe7f2d5e510c4",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2496,6 +2496,17 @@
         "src/kernel/kernel_rtl.c",
         "src/platform/win32_compat.c",
         "src/platform/win32_compat.h"
+      ]
+    },
+    {
+      "name": "0237-original-counted-strings.patch",
+      "path": "patches/compiler/0237-original-counted-strings.patch",
+      "sha256": "82e9d8927e3cc48e83476ca573276008ea3ad71d7a5814ab9eed510adacfd427",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel.h",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/kernel_rtl.c"
       ]
     },
     {

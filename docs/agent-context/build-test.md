@@ -991,3 +991,5 @@ Stage0236: [original absolute-time codec and guest calendar imports](kernel-time
 The0236 upgrade source checker reads UTF-8 explicitly: Windows cp1252 cannot
 decode existing bridge box-drawing comments. CI4cb4697c found this fixture-only
 error; native calendar source and the accepted game binary do not change.
+
+Stage0237: [original counted strings and memory prefixes](kernel-strings.md).
