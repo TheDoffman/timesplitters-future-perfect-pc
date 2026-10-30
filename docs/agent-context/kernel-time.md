@@ -4,8 +4,8 @@ Stage0236 selects `src/runtime/guest_time.c` once in xbox_kernel and replaces th
 304/305 adapters with `guest_kernel_time.inc`. Both ordinals retain two guest
 words/eight argument bytes. The native two xbox_RtlTime functions and their
 kernel.h declarations are retired. The now-unused POSIX SystemTimeToFileTime and
-FileTimeToSystemTime definitions/declarations are also removed. kernel_rtl.c is
-still compiled for its other RTL services; this is not whole-module retirement.
+FileTimeToSystemTime definitions/declarations are also removed. At0236 kernel_rtl.c remained compiled;0238 now retires the whole native module
+through [original critical/status services](kernel-rtl.md).
 Only the excluded legacy kernel_thunks resolver retains the two native names.
 The pristine snapshot and historical patch inputs remain for reproducible unwind.
 

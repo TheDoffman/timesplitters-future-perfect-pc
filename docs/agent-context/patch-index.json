@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "c8a05777409d63c23975e4fe95f8fdb041dc818a9ffa83865cb7e6d5756c7844",
+  "loaderSha256": "edb775e4eba997bf9b2542efc18108f96440b0dafe63232dbbae19428a28f679",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2512,6 +2512,45 @@
         "src/kernel/kernel_rtl.c",
         "src/platform/win32_compat.c",
         "src/platform/win32_compat.h"
+      ]
+    },
+    {
+      "name": "0237-original-counted-strings.patch",
+      "path": "patches/compiler/0237-original-counted-strings.patch",
+      "sha256": "82e9d8927e3cc48e83476ca573276008ea3ad71d7a5814ab9eed510adacfd427",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel.h",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/kernel_rtl.c"
+      ]
+    },
+    {
+      "name": "0238-original-kernel-rtl.patch",
+      "path": "patches/compiler/0238-original-kernel-rtl.patch",
+      "sha256": "c6aab135b826c3c8cbf961f4257913de8e2ddd4083bc92e94bd21df9296a38f9",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel.h",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0239-original-guest-printf.patch",
+      "path": "patches/compiler/0239-original-guest-printf.patch",
+      "sha256": "5d0416087bc270b91af07bafc35ad88be8fe487d40fd486cd790626ca7d87dc5",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0240-original-guest-numbers.patch",
+      "path": "patches/compiler/0240-original-guest-numbers.patch",
+      "sha256": "697414cab37b60be730c0ef3fda389199e772f8ac613ca8112bd62e95585029a",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
       ]
     },
     {

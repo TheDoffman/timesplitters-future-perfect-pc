@@ -901,6 +901,14 @@ Stage0235: [original pool imports and native surface retirement](kernel-pool.md)
 
 Stage0236: [original absolute-time codec and guest calendar imports](kernel-time.md).
 
+Stage0237: [original counted strings and memory prefixes](kernel-strings.md).
+
+Stage0238: [original critical sections and whole native RTL retirement](kernel-rtl.md).
+
+Stage0239: [original checked narrow guest formatting](guest-printf.md).
+
+Stage0240: [original numeric conversions](guest-numbers.md).
+
 Crash model traversal instrumentation at US guest `0x583E0` is introduced by
 `patches/diagnostics/2140-model-tree-trace.patch`. The manual wrapper preserves
 original execution and records bounded model/node/depth history through the shared
