@@ -12,9 +12,10 @@ mapping returns a32-bit error. Other original services: [strings](kernel-strings
 All twelve old native declarations/exports retire: three critical functions,
 SetCrtLockTable, status conversion, Rip, unused Unwind/RaiseException and four
 unused printf wrappers. Only excluded kernel_rtl/kernel_thunks retain names.
-Guest formatting, exception/unwind paths, charset/create/free/numeric services
-elsewhere in kernel_bridge.c remain replacement work. Excluding native printf/
-exception wrappers does not replace those guest implementations. Snapshot and
+Stage0239 now selects [original narrow formatting](guest-printf.md). Guest
+exception/unwind paths and charset/create/free/numeric services elsewhere in
+kernel_bridge.c remain replacement work; unused native wrapper retirement alone
+did not replace those guest implementations. Snapshot and
 historical patch bytes remain for reproducible migration and notices.
 
 ## Registry and host ownership

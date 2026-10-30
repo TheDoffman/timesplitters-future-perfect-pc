@@ -33429,3 +33429,42 @@ renderer/audio/title/header/fixture/provenance replacement and final unavailable
 upstream verification remain unfinished. Native Mac title gameplay, physical input,
 listening/full campaign and controlled performance benchmarking remain unverified.
 Overall goal stays active/incomplete; MAC-118 Awaiting validation. No publication.
+
+
+### Stage0239 original narrow guest formatting (2026-10-30 UTC)
+
+PR#413 selects project-owned guest_printf.c/.h and guest_kernel_printf.inc for
+ordinals361..364; patch0239 removes the old formatter, raw cursor helpers and
+four guest bridge bodies. Checked complete fixed frames feed typed x86 slot
+reads without extra8-byte alignment, native va_list casts or numeric conversion
+of binary64 bits. Guest long remains32 bits on LP64 hosts. Typed host-standard
+snprintf atoms replace the old511-byte clipping; output and count writes publish
+only after successful validation/allocation, including mapped aliases. Existing
+clipped-count/NUL/stop-on-full and narrow s/c policies remain explicit in the
+header and guest-printf guide; wide/positional/full MSVCRT semantics are not added.
+The actual Microsoft x86 executable independently verifies packed variadic ABI.
+
+Windows selected78 checks passed39.39s before main synchronization;25 fresh/
+historical upgrade/context/backlog checks passed210.88s. Thirty-three launcher
+release tests plus10 subtests passed after the user-requested main merge.
+Main d73758d328d937873b88e39fe7cb43906be2af33 is integrated locally at9a85b14f;
+all19 unfinished files/staging and26 protected settings/save hashes/sizes/mtimes
+were preserved. Context check passed. A new post-merge Release build exited0,
+including built-in contracts and matching crash symbols. Source/archive audit
+selects36 providers once, excludes legacy kernel_rtl and36 retired native exports,
+keeps the22 generated guest files unchanged, and verifies the supported US XBE.
+Ignored logs/printf-build.json records dirty9a85b14f source/patch inputs and binary:
+
+b92c0c721d9839e863b0284745e0462fe95e42b62a03067c0c067b509fb5a20f.
+
+Post-merge selected78 checks passed37.75s (the same cases, not78 additional
+distinct checks). New-source CI is pending at this checkpoint.
+The user explicitly kept a foreign mounted-mouse game session open; do not kill
+it or bypass the concurrent-game guard. No new stage0239 gameplay acceptance is
+claimed. Stage0238 game results above apply to its earlier a586004e binary only.
+Windows NT10.0.26300 x64/MSVC14.44; native Mac title, physical input/listening,
+full campaign and performance acceptance remain separate/unverified. This stage
+still builds against the patched runtime checkout/snapshot. Remaining kernel,
+graphics/audio/title/header/fixture/provenance replacement and final unavailable-
+upstream build/generation/package audit remain incomplete. Goal active; no merge
+into main or publication authorized by this checkpoint.

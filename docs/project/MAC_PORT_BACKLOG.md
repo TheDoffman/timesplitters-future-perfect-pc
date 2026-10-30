@@ -7819,3 +7819,17 @@ files unchanged. Latest maincc531ea9 already belongs to the branch; the requeste
 sync needed no content changes. Keep Awaiting validation for remaining kernel/
 runtime and native Mac title acceptance. Exact counts, byte provenance and limits
 are in STATUS stage0238 completed acceptance; contracts in kernel-rtl.md.
+
+
+MAC-118 stage0239 follow-up (PR#413): shared original narrow printf engine and
+checked cdecl import adapters replace the remaining guest formatter and raw
+cursor helpers. Portable typed decoding fixes x86 slot alignment/binary64 and
+LP64 guest-long widths; standard libc renders private atoms only. Count/output
+writes are staged and aliases/failure preservation are covered. Windows78
+selected and25 upgrade/context checks passed; post-main Release/built-ins,
+archive/symbol/generation/US XBE audits passed. Post-merge78 rerun also passed37.75s. New CI and stage0239 gameplay
+are pending; the user retained a separate game session. Mac shares this source
+and portable fixtures, skipping only the actual Microsoft x86/WoW64 ABI probe;
+native Mac title acceptance is unverified. Keep Awaiting validation. Contract:
+guest-printf.md; exact hashes/limits in STATUS stage0239. Remaining conversion,
+exception, runtime/header/fixture and unavailable-upstream audit work continues.

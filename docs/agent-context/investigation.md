@@ -334,3 +334,7 @@ counted strings/memory prefixes select original code and retire six native helpe
 Stage0238 extends the exact late compiler tail to40 patches after0237 before2090;
 whole kernel_rtl.c exclusion selects original critical/status/diagnostic services
 and removes the separate TryEnter table. Historical checks read UTF-8 explicitly.
+
+Stage0239 extends the exact late compiler tail to41 patches after0238 before2090;
+original printf removes the legacy formatter/cursors/four cdecl wrappers. The
+x86 oracle compiles native Win32 varargs; portable contracts keep both host routes.
