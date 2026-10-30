@@ -33585,3 +33585,15 @@ The larger kernel/graphics/audio/input/title/header/fixture replacement and fina
 upstream-unavailable generation/build/package audit remain incomplete. Native
 Mac title gameplay, physical input/listening, full campaign and performance are
 not established by Windows/host contract results. MAC-118 Awaiting validation.
+
+Stage0240 pre-main local acceptance: source226777613b6992f8a727cd509166d0c6aa6bc56c
+contains identical audited be1e2509 inputs. Runner78350/controller56021 exited0;
+scene4/mission1/normalinput/ammo8, forward11.174544/back6.184892/ammo8to6,40 frozen
+pause and60 advancing resume samples,last182.886s under240s cap. Fresh start/
+fire/paused captures reviewed and copied into ignored logs/numbers-baseline-captures.
+Profile signatures/fixture preserved, no run lock/dump/partition images, source/
+archive/exe/generated/game hashes agree, protected26 unchanged. The preceding
+fixed-menu numeric replay is not a pass; the successful run used captured menu
+state. Preserve this baseline before combining latest main f6766c53; the merged
+revision requires its own build and relevant checks. New numeric-source CI is
+not yet dispatched because main conflicts are being resolved before push.

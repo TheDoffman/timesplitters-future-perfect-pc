@@ -7866,3 +7866,9 @@ Fresh new-binary Story and new-source CI pending; main f6766c53 integration is
 required before push because PR413 now conflicts. Native Mac title acceptance
 remains unverified. Keep Awaiting validation; exact scope in STATUS stage0240
 and contracts in guest-numbers.md. No publication/main merge.
+
+MAC-118 stage0240 pre-main local gameplay accepted on22677761/be1e2509: Scotland
+movement11.174544/back6.184892/ammo8to6/pause40/resume60/final182.886s, runner78350
+and controller56021 exit0; fresh captures reviewed, protected26/fixture unchanged.
+This precedes main f6766c53 integration and is not merged-source/Mac-title proof.
+Keep Awaiting validation; see STATUS for hashes and staged CI/integration status.
