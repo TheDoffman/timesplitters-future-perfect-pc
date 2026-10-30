@@ -24,6 +24,17 @@ The launcher workflow requires the version PR on main before publication;
 published release tags/assets must remain immutable. Optional textures and
 personal saves/settings remain preserved.
 
+Mac package follow-up: the actual installer rejected Homebrew notices copied
+under nested `Licenses/Online/<formula>/...` paths. Its existing license policy
+accepts only flat `.txt` files. The Online bundler now copies notices to
+`Licenses/Online-<formula>-<notice>.txt`, preserving the original bytes and the
+installer's protected-path rules. A multi-formula fixture checks byte equality
+and supported paths; the compiled launcher checks accepted flat names and
+continued rejection of nested/extensionless names. The focused suite now passes
+287 tests and 10 subtests; the full Windows launcher checks pass again.
+Fresh Mac game build/platform/renderer/input/settings/debug checks passed before
+this packaging-only correction. Full package installation is being rerun.
+
 ## Choose save folders (discussion #401) - 2026-10-30
 
 Local feature/401-save-folder-selection adds current/default/custom folders to

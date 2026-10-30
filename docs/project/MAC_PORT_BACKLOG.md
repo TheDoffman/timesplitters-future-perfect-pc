@@ -2243,6 +2243,13 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Release 0.4.0 packaging follow-up (2026-10-30):** The native game build and
+  platform/renderer/input/settings/debug checks passed. Actual installation
+  rejected nested Online dependency notice paths. The bundler now preserves
+  notice bytes using the installer's existing flat `.txt` license layout;
+  package installation is being rerun. Transport behavior and the existing
+  physical crossplay evidence/remaining Internet limits are unchanged.
+
 - **Physical crossplay follow-up (2026-10-30, PR #416):** A full Windows-host /
   Mac-guest match/rematch and Mac-host/Windows-guest match/rematch completed with
   identical eight-player results. Cross-platform identity ordering is fixed;

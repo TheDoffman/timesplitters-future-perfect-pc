@@ -4,8 +4,8 @@
 
 test_native_timing.py::test_original_minigun_spin runs the complete supported-US callback with controlled audio/model services. It reproduces the old high-FPS failure and checks readiness, release, pause and input guards at 60/120/144/180/240 FPS. Existing CI selects this suite; private-XBE absence skips it. Historical stack fixtures exclude minigun intent until the full native stack is applied. See native-minigun.md.
 
-Game 0.4.0 / launcher 1.5.0 retain runtime policy. Release tests cover README
-download targets, alias hashes, stale local files and interrupted upload recovery.
+Release 0.4.0 / launcher 1.5.0 tests cover aliases and upload recovery; Mac
+Online notices follow [installer paths](multiplayer-ui.md).
 Run `python -m unittest discover -s tests/launcher -p test_launcher_release.py -v`.
 
 Windows builds pass `config/build/windows-game.manifest` as
