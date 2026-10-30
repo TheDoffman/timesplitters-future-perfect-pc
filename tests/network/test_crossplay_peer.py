@@ -16,6 +16,58 @@ peer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(peer)
 
 
+@pytest.mark.parametrize('failure', ['prepare', 'lock', 'after-lock'])
+def test_controller_only_cleans_up_its_owned_run(tmp_path, monkeypatch, capsys, failure):
+    import io
+    import json
+    import testing_profile
+
+    monkeypatch.setattr(peer, 'ROOT', tmp_path)
+    game = tmp_path/'private/game/default.xbe'
+    game.parent.mkdir(parents=True)
+    game.write_bytes(b'fixture')
+    monkeypatch.setattr(testing_profile, 'XBE_SHA256', peer.hashlib.sha256(b'fixture').hexdigest())
+    monkeypatch.setattr(peer.signal, 'SIGALRM', 14, raising=False)
+    monkeypatch.setattr(peer.signal, 'signal', lambda *args: None)
+    monkeypatch.setattr(peer.signal, 'alarm', lambda *args: None, raising=False)
+    run = tmp_path/'private/test-saves/online-bots-lock-test/1'
+    run.mkdir(parents=True)
+    lock = run/'run.lock'
+    disk = run/'Partition0.img'
+    disk.write_bytes(b'active disk')
+    if failure == 'prepare':
+        lock.write_text('other controller')
+
+    def prepare(root, candidate):
+        assert candidate == run
+        if failure == 'prepare':
+            raise ValueError('Test directory is in use')
+        if failure == 'lock':
+            lock.write_text('other controller')
+        return {}
+
+    monkeypatch.setattr(testing_profile, 'prepare_run', prepare)
+    recycled = []
+    monkeypatch.setattr(testing_profile, 'recycle_disks', lambda root, path: recycled.append(path))
+    # A malformed command fails immediately after lock acquisition. A second
+    # start must not replace the first owned run before final cleanup.
+    requests = [dict(action='start', tag='lock-test')]
+    if failure == 'after-lock':
+        requests.append(dict(action='start', tag='second-run'))
+    monkeypatch.setattr(peer.sys, 'stdin', io.StringIO(''.join(json.dumps(r)+'\n' for r in requests)))
+    peer.serve()
+    replies = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    assert all('error' in reply for reply in replies)
+    assert disk.read_bytes() == b'active disk'
+    if failure == 'after-lock':
+        assert not lock.exists()
+        assert recycled == [run]
+        assert 'already started' in replies[1]['error']
+    else:
+        assert lock.read_text() == 'other controller'
+        assert recycled == []
+
+
 def test_native_capture_uses_complete_frame_during_rotation(tmp_path):
     from PIL import Image
     old=tmp_path/'frame000.bmp';new=tmp_path/'frame001.bmp'

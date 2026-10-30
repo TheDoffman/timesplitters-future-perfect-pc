@@ -1022,3 +1022,5 @@ trailing edits during historical branch round trips. These are tested in
 Crossplay startup/shutdown and evidence completion: [Online acceptance](multiplayer-ui.md#physical-windowsmac-online-acceptance).
 
 Native crossplay capture rotation regression: `tests/network/test_crossplay_peer.py`.
+
+Crossplay lock ownership/failure tests: `test_crossplay_peer.py`; see multiplayer-ui.md.

@@ -154,3 +154,8 @@ Native captures freeze each candidate frame into memory before decoding. If the
 newest rotating BMP is incomplete, use the previous complete frame or retry within
 two seconds; never enable truncated-image acceptance. The regression exercises
 a valid prior frame alongside a partially written new frame.
+
+The native peer records cleanup ownership only after creating its run lock
+exclusively. Failed preparation or lock acquisition leaves the existing owner's
+lock/disks alone. Later startup failures still clean up the acquired run, and a
+second start is rejected so it cannot replace that cleanup target.

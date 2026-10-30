@@ -33489,3 +33489,14 @@ binaries completed Windows-host gameplay and both result comparisons, while the
 clean Mac-host acceptance is from the preceding runtime revision; the later
 minigun integration was not repeated with Mac hosting. Test-only capture and
 lifecycle repairs are committed in PR #416. Main remains unmerged/unpublished.
+
+PR #416 review follow-up: the native crossplay controller now acquires its run
+lock exclusively and only records cleanup ownership after success. Rejected
+preparation/lock acquisition preserves another controller's lock and disks;
+failed later setup still cleans up its owned run and rejects a second start.
+All three regression cases failed before the fix and pass afterward. Windows
+focused crossplay, identity, transport, dispatch, real Tk UI and repository
+context checks: 55 passed, 1 native-Mach-only skip (including the context rerun
+after shortening its guide entry). No additional gameplay run was performed.
+The prior head's Mac CI failure was a 60-second Tk layout subprocess timeout;
+the updated head still requires both-host CI before merge.

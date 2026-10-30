@@ -169,16 +169,20 @@ def serve():
                 action = request['action']
                 reply = {}
                 if action == 'start':
-                    if child:raise ValueError('Peer already started')
+                    if run is not None:raise ValueError('Peer already started')
                     tag = request['tag']
                     if not re.fullmatch('[A-Za-z0-9-]+', tag):raise ValueError('Invalid test tag')
                     xbe = ROOT/'private/game/default.xbe'
                     if hashlib.sha256(xbe.read_bytes()).hexdigest()!=XBE_SHA256:raise ValueError('Unsupported XBE')
                     peer_index=int(request.get('peer',1))
                     if peer_index not in (0,1):raise ValueError('Invalid peer')
-                    run = ROOT/'private/test-saves'/('online-bots-'+tag)/str(peer_index)
-                    env = prepare_run(ROOT, run)
-                    (run/'run.lock').write_text(str(os.getpid()))
+                    candidate = ROOT/'private/test-saves'/('online-bots-'+tag)/str(peer_index)
+                    env = prepare_run(ROOT, candidate)
+                    with (candidate/'run.lock').open('x') as lock:
+                        lock.write(str(os.getpid()))
+                    # Only a successfully acquired lock grants cleanup ownership.
+                    # Keep it even when later setup fails, and reject another start.
+                    run = candidate
                     out = ROOT/'logs'/('online-bots-'+tag)
                     out.mkdir(parents=True, exist_ok=True)
                     commands=ROOT/'private/network-validation'/tag
