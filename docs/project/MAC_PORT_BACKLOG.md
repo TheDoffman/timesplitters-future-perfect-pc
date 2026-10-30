@@ -7906,3 +7906,11 @@ MAC-123 CI follow-up: PR418 head78384327 passed both native runtime jobs and
 Windows/Mac launcher jobs. This verifies the selected automated host contracts,
 not actual Mac fatal/overflow process-memory permissions or title gameplay.
 Keep Awaiting validation; patch-upgrade repairs are being rechecked separately.
+
+MAC-118 incoming-main integration: source d66f4333 combines numeric services with
+main f6766c53 diagnostics/allocator observer/minigun work. Merged Release/built-in
+checks and current archive/generator audits passed on1c72cbf4;149 selected tests
+passed10Macskipped89.55s, incoming minigun1passed2.60s. Full upgrades, merged-
+binary Story and new CI pending at this checkpoint. Prior numeric-only gameplay
+does not establish the integrated binary or native Mac title. Keep Awaiting
+validation; exact generated-file deltas, hashes and foreign-game hold in STATUS.

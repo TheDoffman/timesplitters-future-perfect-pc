@@ -33669,3 +33669,32 @@ edits. Historical subsets now exclude both dependent diagnostic additions;
 the trace wrapper uses stable following context. Full current-stack forced
 unwind/reapply passed locally. Historical suite and rebuilt-game checks are
 running; this checkpoint does not claim their completion.
+
+
+Stage0240 incoming-main checkpoint: f6766c534467ac0e85560be6b23b9d9f9741c177
+was safely integrated at d66f433353ecf80d5b686c1e8c9820a7083c3ea9 after preserving
+22677761/8abef1db and their accepted numeric-only game evidence. Both sides of
+context/history conflicts were kept; generated index refreshed. The final43-patch
+order includes all original replacements followed by main allocation observation
+and source layout. New crash/allocator/minigun source and tests remain present.
+
+Merged Release85360 exited0 with built-in contracts and matching crash symbols.
+149 focused selected/allocation/crash/observer/patch-tracking checks passed,
+10 Mac-only skips,89.55s; the actual minigun callback regression passed2.60s.
+Full historical upgrade/context/backlog suite is running at this checkpoint.
+The archive audit selects37 providers, excludes36 retired native exports and
+confirms current generation inputs. Incoming manual hooks regenerate exactly
+recomp_0001.c,recomp_0005.c,recomp_funcs.h;22 generated files remain recorded.
+The earlier no-generation-change result applies only to numeric-only code,
+not this main integration. logs/numbers-main-build.json records clean d66f4333
+source/patch/archive/generated hashes and executable:
+
+1c72cbf4f996ac95ebd9b40df3aed37dfd443af5127f47055a8c11e0809e49e9.
+
+Protected26 files retain hashes/sizes/mtimes. New merged-binary gameplay is
+pending: the foreign crossplay game finished, but a separate Issue358 checkout
+game started. It is not this task's process and must not be stopped or the
+concurrency guard bypassed. User instructed letting the other test finish; no
+permission to message its task was granted. Pre-main numeric and formatter
+gameplay above remain valid for their own binaries only. New source CI will
+start on push; no main merge, publication or whole-replacement claim.
