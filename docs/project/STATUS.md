@@ -5,7 +5,9 @@ three decorative section icons. All six SVGs parse as self-contained XML;
 local references pass. Live GitHub inspection caught icon-first headings adding
 a leading dash to automatic slugs; explicit anchors retain the original links.
 The assets were rendered with the bundled Sharp renderer and visually inspected,
-and the desktop GitHub layout was reviewed. Existing launcher monogram
+and the live GitHub layout was reviewed at desktop and 390-pixel mobile widths.
+The Install & play link was clicked and confirmed to reach its section after
+the explicit-anchor repair. Existing launcher monogram
 outlines and theme colors are reused; runtime and launcher source are unchanged.
 
 Documentation update based on `cc531ea9`, checked on Windows x64. All 53 local
