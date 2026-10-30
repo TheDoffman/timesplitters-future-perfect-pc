@@ -33380,7 +33380,7 @@ running; this checkpoint does not claim their completion.
 
 ### Physical crossplay acceptance follow-up (2026-10-30)
 
-PR #416 remains draft and unmerged. A real Windows-host / Apple Silicon guest
+PR #416 remains open and unmerged. A real Windows-host / Apple Silicon guest
 Online Deathmatch reached gameplay with two humans and six bots, then completed
 its five-point limit on both peers. All eight final records matched, including
 names, kills, deaths, rank, score and character. Evidence is
@@ -33421,10 +33421,62 @@ upgrades/transitions, launcher packaging and the PR gate. Local focused contract
 93 passed, 1 platform skip; context checks: 20 passed. These results apply to
 `baa235d6f2df602835c8adff7eb537350b5bbb4c`; this evidence update is documentation-only.
 
-Remaining: rebuild the physical Mac at the merged revision, repeat the complete
-mixed match/rematch without another game running, test Mac-host/Windows-guest,
-and retain movement/lifecycle evidence. A separate interactive Mac game was
-already running during the earlier test and showed competing focus events.
-The user chose to close it themselves; it remains untouched. The Mac rebuild
-is waiting for that process to exit. Internet routing and publication remain
-unverified; this entry does not mark MAC-013 fully accepted.
+The user closed the separate interactive Mac game; the merged Mac build then
+completed with all 1,227 manifest entries matching Windows. The follow-up below
+supersedes the outstanding LAN match/rematch and native-host checks. Internet
+routing and publication remain unverified; MAC-013 is not fully accepted.
+
+
+### Crossplay rematch and native-host acceptance (2026-10-30)
+
+The physical Windows-host/Mac-guest run `mac-crossplay-3` completed both five-point
+Deathmatch rounds with two humans and six bots. All eight final records matched
+on both peers in each round; rematch preserved the roster and reset clock, scores
+and result-ready state. It retained 15,208 asynchronous actor observations.
+A subsequent SSH EOF cleanup timeout failed the overall command, so this is
+explicitly gameplay acceptance rather than a clean complete harness run.
+Its final scores, checkpoints, observations and reviewed Mac score-screen image
+remain under `logs/online-bots-mac-crossplay-3`; disposable disks were recycled
+after the owned game processes exited.
+
+`8ace13ea` requests explicit remote-controller shutdown before draining SSH and
+records provenance before cleanup, with a separate cleanup-completed flag. It
+also waits up to 45 seconds for actual lobby registration instead of assuming
+native startup/content verification finishes within eight seconds. The first
+Mac-host attempt exceeded that old startup wait. No protocol workaround, content
+identity bypass or personal-save change was introduced.
+
+The corrected Mac-host/Windows-guest run `mac-crossplay-host-2` passed the complete
+match, results/scores/options navigation, fresh rematch, second results comparison
+and cleanup (exit 0, completed and cleanup_completed true). Duration 242.7 seconds,
+11,586 observations. Both peers observed movement, multiple spawn generations and
+changing health for all eight actors. The shared executable compatibility was
+`5f64fa74aa55821d3ae6ce52fb5d2003e48a09c294b3ea5471c07a143eb9db2d`.
+Evidence: `logs/online-bots-mac-crossplay-host-2`, analysis
+`logs/mac-crossplay-host-2-motion.json`, and reviewed native gameplay capture.
+
+These are same-LAN production Online directory/bridge tests with pinned TLS,
+original 60 Hz defaults and synthetic key events. They do not establish Internet
+router/port-forwarding behavior, physical controller acceptance, high-refresh
+crossplay, end-to-end latency, rendered smoothness or every map/mode. The read-only
+native probe is test-only. Personal saves/settings and unrelated processes were
+preserved; no main merge or release publication was performed.
+
+The latest main minigun fix (`f6766c53`) was integrated at `e0601599`. Both physical
+builds completed, executable/content verification passed, and all 1,229 manifest
+entries agree on `beb73a044db0c69f976bfbd4052ef9439c460cb33de5d546fb7954ef50bff3cc`.
+Runtime workflow `41015739679` passed every job on that revision, including both
+native suites, patch upgrades/transitions, launchers and PR validation. The older
+`c0347a67` Mac CI had one 60-second Tk timeout; the full physical Mac UI suite
+passed (9 passed, 1 Windows-only skip), the affected 150% layout case passed three
+additional isolated runs, and the latest CI did not reproduce it. Windows UI:
+10 passed; focused contracts: 34 passed, 1 skip; context/backlog: 21 passed.
+
+`mac-crossplay-final` completed both final-result comparisons on the new binaries
+and cleaned up successfully, but its last screenshot failed while reading a BMP
+that the game was still writing (completed false, cleanup_completed true). The
+capture helper now freezes candidate bytes, falls back to the previous complete
+frame and retries within two seconds without accepting truncated images. A real
+image regression reproduces the partially written newest frame. This is a test
+capture failure, not a gameplay/desynchronization finding. Corrected final runs
+are recorded separately below when completed.

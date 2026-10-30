@@ -16,6 +16,21 @@ peer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(peer)
 
 
+def test_native_capture_uses_complete_frame_during_rotation(tmp_path):
+    from PIL import Image
+    old=tmp_path/'frame000.bmp';new=tmp_path/'frame001.bmp'
+    Image.new('RGB',(8,8),(23,45,67)).save(old)
+    data=old.read_bytes()
+    new.write_bytes(data[:60])
+    os.utime(old,(1,1));os.utime(new,(2,2))
+    target=tmp_path/'capture.png'
+    peer.capture_frame(tmp_path,target)
+    with Image.open(target) as image:
+        assert image.size==(8,8)
+        assert image.getpixel((7,7))==(23,45,67)
+    assert new.read_bytes()==data[:60]
+
+
 def test_remote_close_requests_shutdown_before_waiting_for_ssh_eof():
     import io
     from unittest.mock import Mock

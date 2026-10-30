@@ -8,8 +8,9 @@ Native Apple Silicon development builds also include this Online window. Build
 matching Windows/Mac source revisions, start the Mac build with
 **Play-Native-Mac.command**, and use the same host/join steps below. Allow incoming
 connections for the game and its Online companion in the macOS firewall when
-hosting. Mac support has passed browser/connection lifecycle tests and a
-Windows–Mac transport check; full mixed-platform matches remain unverified.
+hosting. Complete Windows–Mac matches and rematches with six bots have passed
+on LAN with either platform hosting at the default 60 Hz. Internet routing,
+physical-controller use and wider map/mode coverage still need validation.
 It is not yet included in a published Mac game release.
 
 The redesigned Online window uses **Play online** for joining and hosting, and

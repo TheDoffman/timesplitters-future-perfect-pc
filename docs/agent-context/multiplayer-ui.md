@@ -69,7 +69,7 @@ the relocated interpreter with local Python/Tcl/Tk/CA paths and no user site or
 PYTHONPATH. `bundle_online_macos.py` checks native loading and real Tk/TLS before
 returning. The shared widget tests run on both hosts; DWM and HICON tests remain
 Windows-only. Native game host/join/cancel supervisor checks and a real two-device
-transport round trip passed; a full mixed-platform match remains a separate check.
+transport round trip passed; both-direction LAN match/rematch evidence is in STATUS.
 
 ## Native multiplayer adapter (2026-10-30)
 
@@ -86,7 +86,7 @@ the relay on disconnect/exit. `--online-self-test` exercises this actual adapter
 using isolated `TSFP_ONLINE_TEST_COMMAND` host/join/cancel commands. Python's
 `online_platform.GameProcess` detects POSIX reparenting or a Windows process
 handle exit. This supersedes the Windows-only network fallback notes above for
-Mac builds defining TSFP_NATIVE_NETWORK; complete bot gameplay remains unverified.
+Mac builds defining TSFP_NATIVE_NETWORK; measured bot gameplay scope is in STATUS.
 
 ## Physical Windows/Mac Online acceptance
 
@@ -149,3 +149,8 @@ The paired runner waits for actual directory registration (bounded 45 seconds),
 including cold-cache content verification. Remote cleanup requests explicit JSON
 shutdown before draining SSH, rather than relying on Windows pipe EOF. Provenance
 is saved before cleanup and marks cleanup completion separately.
+
+Native captures freeze each candidate frame into memory before decoding. If the
+newest rotating BMP is incomplete, use the previous complete frame or retry within
+two seconds; never enable truncated-image acceptance. The regression exercises
+a valid prior frame alongside a partially written new frame.

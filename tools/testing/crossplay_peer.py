@@ -5,6 +5,7 @@ loaded read-only test probe; neither probe nor controller ships in game packages
 """
 import base64
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -95,6 +96,30 @@ def receive(sock, count):
             raise OSError('Native observation socket closed')
         data.extend(part)
     return bytes(data)
+
+
+def capture_frame(captures, destination):
+    """Copy a complete rotating frame, never accept a partially written BMP."""
+    from PIL import Image
+    deadline=time.monotonic()+2
+    last_error=None
+    while time.monotonic()<deadline:
+        try:
+            files=sorted(captures.glob('frame*.bmp'),key=lambda p:p.stat().st_mtime,reverse=True)
+            for path in files:
+                try:
+                    # Freeze the bytes before decoding; the game keeps rotating
+                    # these two files while the observer is taking its capture.
+                    with Image.open(io.BytesIO(path.read_bytes())) as img:
+                        img.load()
+                        img.save(destination)
+                    return
+                except OSError as error:
+                    last_error=error
+        except OSError as error:
+            last_error=error
+        time.sleep(.05)
+    raise OSError('No complete native capture within two seconds') from last_error
 
 
 def serve():
@@ -240,10 +265,7 @@ def serve():
                 elif action == 'capture':
                     label=request['label']
                     if not re.fullmatch('[a-z0-9-]+',label):raise ValueError('Invalid capture name')
-                    from PIL import Image
-                    files=sorted(captures.glob('frame*.bmp'),key=lambda p:p.stat().st_mtime)
-                    if files:
-                        with Image.open(files[-1]) as img:img.save(out/(label+f'-{peer_index}.png'))
+                    capture_frame(captures,out/(label+f'-{peer_index}.png'))
                 elif action == 'poll':reply={'returncode':child.poll() if child else None}
                 elif action == 'stop':stop()
                 elif action == 'shutdown':

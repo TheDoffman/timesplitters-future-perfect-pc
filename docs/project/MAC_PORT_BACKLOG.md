@@ -2244,12 +2244,12 @@ validation. This version bump alone is not publication evidence.
 ### MAC-013 — System Link and Online multiplayer
 
 - **Physical crossplay follow-up (2026-10-30, PR #416):** A full Windows-host /
-  Mac-guest five-point Deathmatch completed with identical eight-player results.
-  Cross-platform identity ordering is fixed. The corrected rematch test passed
-  on two Windows peers. Clean mixed rematch, native-host acceptance and the latest
-  merged physical Mac build remain pending while the user closes a separate
-  interactive game. See STATUS's physical crossplay acceptance follow-up; this
-  is not Internet or complete native multiplayer acceptance.
+  Mac-guest match/rematch and Mac-host/Windows-guest match/rematch completed with
+  identical eight-player results. Cross-platform identity ordering is fixed;
+  the corrected native-host test also passed shutdown and disposable-disk cleanup.
+  See [measured scope](STATUS.md#crossplay-rematch-and-native-host-acceptance-2026-10-30).
+  LAN, two humans, six bots and default 60 Hz are verified; Internet routing,
+  physical controls, high refresh and wider mode/map acceptance remain open.
 
 - **Alpha.2 portable TLS follow-up (2026-10-22):** Windows' bundled CPython
   keeps `ssl.py` adjacent to its unchanged stdlib PEM trust resources instead
@@ -2298,8 +2298,8 @@ validation. This version bump alone is not publication evidence.
   `docs/players/multiplayer.md`; cross-internet routing/full-match validation is pending.
 - **Existing Mac support:** Shared transport, explicit Xbox/BSD address and error
   conversion, native browser launch/cleanup, shared lobby/bot hooks, and relocatable
-  Python/Tk packaging are implemented on `feature/mac-online` (uncommitted).
-- **Mac adaptation needed:** Full mixed-host gameplay and bot acceptance below;
+  Python/Tk packaging are implemented in [PR #416](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/416).
+- **Mac adaptation needed:** Broader cross-network, input and mode acceptance;
   no second protocol or gameplay implementation was introduced.
 - **Mac acceptance checks:** Build and launch on Apple Silicon; verify existing
   display/settings menus, then test isolated two-instance discovery, joining,
@@ -2307,7 +2307,8 @@ validation. This version bump alone is not publication evidence.
 - **Mac implementation and evidence:** See [native multiplayer validation](STATUS.md#native-multiplayer-2026-10-30).
   Native game builds, host/join/cancel adapter checks, relocated Python/Tk/TLS,
   real Windows/Mac transport round trip and bounded native boot passed. Complete
-  mixed-platform matches, bots and Internet routing remain unverified.
+  mixed-platform matches/rematches with six bots passed in both host directions
+  on LAN; Internet routing and the broader acceptance scope remain unverified.
 
 ### MAC-014 — Patch upgrades across Windows watermark and native overlay guards
 
