@@ -54,15 +54,12 @@ Windows and Mac use the same installation steps:
 available offline. Use **Check updates → Update release** to install a newer game
 build when available. Launcher and game versions are separate.
 
-<details>
-<summary><strong>Launcher preview</strong></summary>
+### Launcher preview
 
 ![TimeSplitters launcher v1.4.0 with Stable selected, Play Game, updates and settings](docs/assets/launcher-preview.png)
 
 Launcher v1.4.0 interface preview with illustrative installation data.
 **Stable** is selected, matching the setup instructions above.
-
-</details>
 
 <details>
 <summary><strong>System requirements, channels and keeping your saves</strong></summary>
