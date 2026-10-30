@@ -327,3 +327,8 @@ upgrades require the original pool include and exclude native kernel_pool.c.
 
 Stage0236 extends the exact late compiler tail to38 patches, after0235 before2090;
 calendar provider/imports replace native RTL time bodies and unused POSIX shims.
+
+Crash diagnostics adds the allocation-history patch after allocator dependencies;
+the repository-order fixture includes this final observer hook before source
+layout. Normalize new patches to LF before refreshing the index: local CRLF
+bytes hash differently from Git-normalized checkout bytes on CI hosts.
