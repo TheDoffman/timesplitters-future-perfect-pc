@@ -7712,3 +7712,13 @@ share `src/input/pc_tank.h`, `pc_mounted.h`, and `pc_tank_guest.inc` through the
 common manual wrapper patch (local tank-driver candidate; see STATUS). No separate host adaptation is
 required. Windows candidate validation is in STATUS; physical Mac vehicle,
 mouse and mixed-controller acceptance remains pending.
+
+
+MAC-118 stage0234 merged acceptance: implementation0413dce1 plus main8b4db323
+integrated as02698942. Windows230 selected checks, Release/built-ins/archive audit
+and isolated Story passed; existing-image byte/size/mtime preservation is native
+Windows evidence. Shared storage/geometry/state and OS adapters are selected on
+both platforms, but native Mac filesystem/title and new-source CI remain pending.
+Kernel_path is excluded from project/archive; remaining kernel.h/VFS/I/O/toolkit
+work is unfinished. Keep Awaiting validation. STATUS's merged acceptance records
+exact executable/generated hashes, source revision and validation boundaries.

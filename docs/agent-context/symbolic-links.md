@@ -5,8 +5,8 @@ patch0232 after0231 and before2090. It removes the legacy kernel_io symbolic-lin
 table/create/delete/borrowed-pointer lookup and their kernel.h declarations.
 The kernel bridge includes original guest_kernel_symlinks.inc for ordinals67/69;
 argument byte counts remain8/4. Kernel path translation requests a copied target
-from the same original process namespace. The rest of kernel_path is transitional
-legacy code; this does not claim full VFS/kernel I/O independence.
+from the same original process namespace. Stage0234 excludes the legacy path unit and uses an original host provider;
+other file/kernel I/O remains transitional, so full VFS independence is unproven.
 
 Core names/targets are opaque exact-case counted byte strings, length1..65535;
 there is no truncation, normalization, path recursion or host/guest pointer
@@ -31,11 +31,10 @@ and allocation/capacity INSUFFICIENT_RESOURCES are mapped explicitly. Empty or
 unreadable target is rejected, replacing legacy empty-link acceptance. These are
 bounded adapter contracts, not complete NT object-directory/case-table behavior.
 
-The existing path adapter copies into private4096-byte scratch, rejects embedded
+The shared path planner copies into private4096-byte scratch, rejects embedded
 NUL/overlong targets rather than truncating and appends the caller's path suffix.
-It retains the existing conservative static-rule fallback and drive-letter ASCII
-normalization. An unsupported target still leaves the original path translation
-policy in control. Namespace supports arbitrary counted bytes even when the path
+It uses bounded one-hop expansion and drive-letter ASCII normalization. An
+unsupported target leaves the original input routing in control. Namespace supports arbitrary counted bytes even when the path
 adapter cannot represent those bytes as a host C path. No symlink-chain traversal,
 path sandbox rewrite, file ownership or new drive policy is introduced here.
 

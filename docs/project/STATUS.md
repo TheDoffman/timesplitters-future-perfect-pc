@@ -32989,3 +32989,64 @@ crash symbols passed. Work checkpoint precedes latest main8b4db323 integration;
 final merged-source regression and Story acceptance are still pending. CI for
 87295396 currently has no checks/statuses (PR diagnostic confirms that head),
 so it is unverified rather than passed. MAC-118 remains Awaiting validation.
+
+
+### Stage0234 merged-source Windows acceptance (2026-10-29)
+
+Storage implementation0413dce1 and latest main8b4db323 (vehicle controls/README)
+were safely integrated as026989422f78c658181d5a5d3dce6ea850a74f2e; documentation
+conflicts preserved both changes, with the systems guide index condensed under its
+byte budget. Build used clean02698942. Exact tracked source/patch/archive/exe
+inputs are in ignored logs/storage-build.json. No merge into main/publication.
+
+Original shared guest_storage and native guest_kernel_storage replace the compiled
+legacy path module, including initialization/profile/root metadata and new-image
+creation. Root selection/state snapshots are atomic; metadata locks span no OS
+calls, initialization has a separate native mutex, and failed setup retains the
+previous roots. Existing images are never opened for write/resize/repair; only
+exclusive NEW tokens receive sparse sizing/table bytes. Cleanup touches only new
+owned files; native uncertainty retains token accounting without automatic retry.
+Compatibility image sizes/explicit little-endian PARTINFO encoding are shared,
+not a claim of full physical-disk emulation. This retires kernel_path compilation,
+not kernel.h, the rest of VFS/I/O or all upstream runtime/tooling.
+
+Direct new storage10cases passed4.93s; previous path10cases passed3.75s. Eight
+compiled bad storage variants fail at runtime. Covered root priorities/bounds,
+pre-init profiles, failed snapshots/commits, literal unaligned disk bytes, image
+EXISTS bypass and resize/write/close uncertainty, plus1000 native-thread commits/
+snapshots. The native adapter fixture uses real Windows exclusive files, asserts
+all six image sizes and sub1MiB physical allocation, then modifies existing table
+bytes/Partition1 size/data and proves byte/size/mtime preservation on reinit. It
+checks profile switching, environment priority, invalid-directory rollback and
+short metadata outputs; only known terminal fixture images are recycled. All
+roots are disposable and explicit; no personal/default root is initialized.
+
+Merged shared storage/path/namespace/object/device/event/target and mounted-mouse
+checks201passed84.84s. Original vehicle-camera cases4passed9.21s,15 deselected;
+zero and nonzero driver pitch ABI paths checked. Fresh/historical upgrade/context/
+backlog25passed283.51s while full regeneration compiled. These are230 distinct
+selected checks; direct10/10 cases above overlap the201. No warnings disabled.
+Native Mac execution/new-stage CI still pending.
+
+Merged Release/built-ins/real save-path fixtures and matching crash symbols passed.
+Archive/project both exclude kernel_path and select29 original device/I/O/event/
+namespace/path/storage providers once, including storage/path APIs and retained
+public host ABI. Legacy kernel_ob and twelve earlier retired native exports remain
+absent. Main's tank wrapper required two regenerated files: recomp_0004.c differs
+only by sub_001730E0->_gen naming; recomp_funcs.h additionally declares the manual
+wrapper. Removing that one declaration and normalizing the suffix restores exact
+pre-main hashes; the other20 generated files are unchanged. Fingerprint current.
+Supported US XBE hash verified. Final executable SHA256:
+92f5f81828e93532849406562ee1a93adf2236cf14bbcc7bb3e10b504a5c6f78.
+
+Bounded isolated Story: scene4/mission1, forward11.195015/back6.184889,
+ammo8to6,40 frozen pause and60 advancing resume samples, last98.949s within240s
+cap. Runner/controller exit0; fresh start/fire/paused captures reviewed. Profiles
+unchanged/signatures valid/canonical fixture preserved; no lock/dumps/partition
+images. Source/archive/executable/generated/game hashes agree. All26 protected
+settings/save/fixture files across both checkouts retain hash/size/mtime. Windows
+NT10.0.26300 x64, VS2022/MSVC14.44; minimized synthetic input/movie-skipped run,
+not physical input/listening/full campaign/live vehicle mission or native Mac
+title acceptance. CI for87295396 has no checks/statuses per live PR head diagnostics;
+it remains unverified. New-source CI pending. MAC-118 remains Awaiting validation;
+contracts: host-storage.md. Overall replacement goal remains active/incomplete.
