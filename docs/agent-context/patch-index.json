@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "974cb8082b58f02d2cb504fa8b9d5858937cc6b3d1aa9fd3f47b241e939f1923",
+  "loaderSha256": "677f24b497a92b94940da02e3bc8262066a17eb8ccfdb33e66377a4fe2aa0ad9",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1898,6 +1898,14 @@
       "name": "0460-native-wind-history.patch",
       "path": "patches/gameplay/timing/0460-native-wind-history.patch",
       "sha256": "9ac97150ccb5903ed2d5bcc7d3d0d0aac72109acf52000b5e75fc7c2cf3fb774",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2140-native-minigun-intent.patch",
+      "path": "patches/gameplay/timing/2140-native-minigun-intent.patch",
+      "sha256": "7a54618390fdd242fd0481c45552e12acac2398cf1bcc1637f851f4256702edd",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
       ]
