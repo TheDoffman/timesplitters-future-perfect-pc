@@ -74,6 +74,11 @@ public static class LauncherSharedUiChecks
                 string saves=Core.PathIn(folder,LauncherPlatform.Saves(folder));Directory.CreateDirectory(saves);File.WriteAllText(Path.Combine(saves,"profile"),"original");
                 var backup=SaveBackups.Create(folder,"Manual",null,System.Threading.CancellationToken.None);File.WriteAllText(Path.Combine(saves,"profile"),"current");
                 var page=new SavesPage(folder,false);
+                Need(Find<Button>(page.View,"ChooseSaveFolder")!=null && Find<Button>(page.View,"DefaultSaveFolder")!=null,"Save location controls missing");
+                Need(Find<TextBlock>(page.View,"ActiveSaveLocation").Text.Contains(saves),"Active save folder missing");
+                Click(Find<Button>(page.View,"DefaultSaveFolder"));
+                Need(Find<Button>(page.View,"UseSaveLocation")!=null && Find<Button>(page.View,"CopySaveLocation")!=null,"Folder selection must offer use or copy");
+                Click(Find<Button>(page.View,"CancelSaveLocation"));
                 Need(page.Choices.Items.Count==1 && ((SaveBackup)page.Choices.SelectedItem).Id==backup.Id && page.Restore.IsEnabled,"Backup list or restore selection missing");
                 Click(page.Restore);Need(Find<Button>(page.View,"ConfirmSaveRestore")!=null,"Restore did not ask for confirmation");
                 Click(Find<Button>(page.View,"CancelSaveRestore"));Need(File.ReadAllText(Path.Combine(saves,"profile"))=="current","Cancelled restore changed saves");

@@ -7788,3 +7788,12 @@ MAC-123 CI follow-up: PR418 head78384327 passed both native runtime jobs and
 Windows/Mac launcher jobs. This verifies the selected automated host contracts,
 not actual Mac fatal/overflow process-memory permissions or title gameplay.
 Keep Awaiting validation; patch-upgrade repairs are being rechecked separately.
+
+## MAC-124 - Choose save folders (discussion 401) - Awaiting validation
+
+Shared routing/persistence and launcher resolver/copy/restore policy implemented.
+Cocoa NSOpenPanel is scheduled on the main queue, returns through an atomic guest
+poll, releases input, and inhibits crash watchdog while open. Avalonia uses its
+native folder picker and shared SavesPage confirmation. Validate cancellation,
+Unicode paths, immediate profile creation, existing saves, removable-volume
+backup/restore and portable default on Mac. No local Mac runtime claim.

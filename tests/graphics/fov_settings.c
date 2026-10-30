@@ -98,16 +98,19 @@ void sub_00192E60(void) {
 }
 void sub_00192770(void) { WORD_AT(0x7a1564)=WORD_AT(WORD_AT(g_esp+4)+0x18c);g_esp+=4; }
 void sub_00191470(void) { CHECK(WORD_AT(WORD_AT(g_esp+8)+0x14)==0);g_esp+=4; }
-int pc_storage_drives(PcStorageDrive *d,int n){
+static int picker_result,picker_polls,folder_chosen;
+int pc_storage_picker_start(void){return 1;}
+int pc_storage_picker_poll(char *out,size_t n){picker_polls++;if(picker_result>0)snprintf(out,n,"C:/test-save-folder");int result=picker_result;picker_result=0;return result;}
+int pc_storage_folder(const char *path,char *error,size_t n){CHECK(!strcmp(path,"C:/test-save-folder"));folder_chosen++;if(!storage_choose_ok)snprintf(error,n,"Folder is not writable.");return storage_choose_ok;}
+int pc_storage_locations(PcStorageDrive *d,int n){
     CHECK(n>=3);memset(d,0,3*sizeof *d);
-    strcpy(d[0].name,"HDD (D:)");strcpy(d[1].name,"Local Disk (C:)");strcpy(d[2].name,"Steam (F:)");
-    strcpy(d[0].path,"D:/");strcpy(d[1].path,"C:/");strcpy(d[2].path,"F:/");
-    d[1].current=d[1].game=1;
+    strcpy(d[0].name,"Current save folder");strcpy(d[1].name,"Game folder / Saves");strcpy(d[2].name,"Choose folder...");
+    strcpy(d[0].target,"D:/Saves");strcpy(d[1].target,"C:/Game/Saves");d[0].current=1;
     for(int i=0;i<3;i++){d[i].available=(uint64_t)(i+1)*1024*1024*1024;d[i].total=d[i].available*2;d[i].known=1;}
     return 3;
 }
 int pc_storage_choose(const PcStorageDrive *d,char *e,size_t n){
-    CHECK(!strcmp(d->name,"HDD (D:)")||!strcmp(d->name,"Local Disk (C:)"));storage_chosen++;
+    CHECK(d->target[0]);storage_chosen++;
     if(!storage_choose_ok)snprintf(e,n,"Test session: save location is locked.");
     return storage_choose_ok;
 }
@@ -396,16 +399,6 @@ int main(int argc,char **argv)
     /* Drives use alphabetical letters/names, independent of the active drive,
        and keep host IDs away from the console device table. */
     {
-        PcStorageDrive order[3]={0};
-        strcpy(order[0].path,"F:/");strcpy(order[1].path,"D:/");strcpy(order[2].path,"C:/");
-        order[0].current=1;
-        qsort(order,3,sizeof *order,sd_drive_order);
-        CHECK(!strcmp(order[0].path,"C:/") && !strcmp(order[1].path,"D:/") && order[2].current);
-        memset(order,0,sizeof order);
-        strcpy(order[0].name,"Zebra");strcpy(order[1].name,"alpha");strcpy(order[2].name,"Beta");
-        order[0].current=1;
-        qsort(order,3,sizeof *order,sd_drive_order);
-        CHECK(!strcmp(order[0].name,"alpha") && !strcmp(order[1].name,"Beta") && order[2].current);
         int opened=returned;built_rows=built_row_count=0;
         g_esp=0x700000;WORD_AT(g_esp)=0x1944c3;
         WORD_AT(g_esp+4)=0x510000;WORD_AT(g_esp+8)=0;
@@ -415,12 +408,12 @@ int main(int argc,char **argv)
         CHECK(built_row_count==3 && built_ids[0]==0 && built_ids[1]==1 && built_ids[2]==2);
         CHECK(returned==opened && g_esp==0x700004 && g_eax==0x200000);
         CHECK(WORD_AT(0x700004)==0x510000 && WORD_AT(0x700014)==0x192e60 && WORD_AT(0x700018)==0x191470);
-        CHECK(!strcmp((char *)(g_xbox_mem_offset+SD_TEXT(0)),"\vs85Local Disk (C:)\vs100"));
-        CHECK(strstr((char *)(g_xbox_mem_offset+SD_TEXT(1)),"HDD (D:)"));
-        CHECK(strstr((char *)(g_xbox_mem_offset+SD_TEXT(2)),"Steam (F:)"));
+        CHECK(!strcmp((char *)(g_xbox_mem_offset+SD_TEXT(0)),"\vs85Current save folder\vs100"));
+        CHECK(strstr((char *)(g_xbox_mem_offset+SD_TEXT(1)),"Game folder / Saves"));
+        CHECK(strstr((char *)(g_xbox_mem_offset+SD_TEXT(2)),"Choose folder..."));
         WORD_AT(0x300038)=0;WORD_AT(0x74f9ec)=6;
         call(0x192770,1,0);CHECK(WORD_AT(0x7a1564)==0 && WORD_AT(0x30018c)==1);
-        CHECK(strstr((char *)(g_xbox_mem_offset+SD_TEXT(SD_DETAILS)),"1.0 GiB free / 2.0 GiB total"));
+        CHECK(strstr((char *)(g_xbox_mem_offset+SD_TEXT(SD_DETAILS)),"2.0 GiB free / 4.0 GiB total"));
         call(SD_SELECT,1,0);CHECK(storage_chosen==1 && !storage_continued && returned==opened);
         CHECK(strstr((char *)(g_xbox_mem_offset+SD_TEXT(SD_DETAILS)),"locked"));
         storage_choose_ok=1;call(SD_SELECT,1,0);
@@ -429,6 +422,15 @@ int main(int argc,char **argv)
         call(SD_SELECT,0,0);CHECK(storage_continued==3 && storage_chosen==3 && sd_drives[0].current && returned==opened);
         WORD_AT(0x700008)=0x200200;WORD_AT(0x200214)=2;call(SD_DRAW,2,0);
         CHECK(WORD_AT(0x200214)==2);
+        call(SD_SELECT,2,0);CHECK(sd_picker_menu==0x300000);
+        picker_result=1;int continued=storage_continued;
+        /* A second profile ticks first; its state must not consume the result. */
+        g_esp=0x700000;WORD_AT(g_esp+4)=0x320000;WORD_AT(0x320038)=1;WORD_AT(0x74f9f0)=6;
+        sd_profile_tick();CHECK(picker_result==1 && picker_polls==0 && folder_chosen==0);
+        call(0x192770,2,0);CHECK(picker_polls==1 && folder_chosen==1 && storage_continued==continued+1 && !sd_picker_menu);
+        call(SD_SELECT,2,0);picker_result=-1;call(0x192770,2,0);CHECK(folder_chosen==1 && !sd_picker_menu);
+        call(SD_SELECT,2,0);picker_result=1;storage_choose_ok=0;call(0x192770,2,0);
+        CHECK(strstr(sd_notice,"not writable") && storage_continued==continued+1);
         WORD_AT(0x74f9ec)=7;call(0x192770,3,0);CHECK(WORD_AT(0x7a1564)==3);
     }
     VirtualFree(mem,0,MEM_RELEASE);

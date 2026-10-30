@@ -1,5 +1,7 @@
 # Build, run and validation map
 
+Save-folder selection adds contracts in tests/storage/storage_menu.c and tests/launcher/launcher_saves.cs plus shared SavesPage UI checks. test_fov_settings.py also checks picker ownership, cancel and rejection; its bad variant reproduces result consumption by another menu. The Windows launcher source list and native Mac project both include SaveLocations.cs. See [save locations](save-locations.md).
+
 Launcher release tests cover direct README download targets, alias byte/hash
 parity despite stale local alias files, and interrupted alias upload recovery.
 Run `python -m unittest discover -s tests/launcher -p test_launcher_release.py -v`.

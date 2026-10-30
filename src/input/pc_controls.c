@@ -17,6 +17,10 @@
 #include "pc_window_theme.h"
 #include "pc_menu_theme.h"
 #include "pc_mouse_capture.h"
+#include <shlobj.h>
+#include "pc_storage.h"
+#pragma comment(lib,"shell32.lib")
+#pragma comment(lib,"ole32.lib")
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -55,6 +59,39 @@ static int test_cursor_x=-1,test_cursor_y=-1;
 #define PC_MENU_MOUSE_MESSAGE (WM_APP+0x186)
 #define PC_MOUSE_CAPTURE_TIMER 0x7e31
 
+
+static void capture(HWND window,int on);
+#define PC_SAVE_FOLDER_MESSAGE (WM_APP+0x187)
+static volatile LONG save_picker_state;
+static char save_picker_path[4096];
+int pc_storage_picker_start(void)
+{
+    if(!window_handle||InterlockedCompareExchange(&save_picker_state,1,0))return 0;
+    if(!PostMessage(window_handle,PC_SAVE_FOLDER_MESSAGE,0,0)){InterlockedExchange(&save_picker_state,0);return 0;}
+    return 1;
+}
+int pc_storage_picker_poll(char *out,size_t capacity)
+{
+    LONG state=InterlockedCompareExchange(&save_picker_state,0,0);
+    if(state<2)return 0;
+    if(state==2)snprintf(out,capacity,"%s",save_picker_path);
+    InterlockedExchange(&save_picker_state,0);return state==2?1:-1;
+}
+static void choose_save_folder(HWND window)
+{
+    if(InterlockedCompareExchange(&editing,1,0)){InterlockedExchange(&save_picker_state,3);return;}
+    capture(window,0);pc_crash_inhibit(1);
+    HRESULT initialized=CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);
+    BROWSEINFOW info={0};WCHAR path[MAX_PATH];
+    info.hwndOwner=window;info.lpszTitle=L"Choose an empty folder or your existing TimeSplitters saves. Existing files stay where they are.";
+    info.ulFlags=BIF_RETURNONLYFSDIRS|BIF_NEWDIALOGSTYLE;
+    PIDLIST_ABSOLUTE item=SHBrowseForFolderW(&info);int accepted=0;
+    if(item){if(SHGetPathFromIDListW(item,path))accepted=WideCharToMultiByte(CP_UTF8,0,path,-1,save_picker_path,sizeof save_picker_path,NULL,NULL)>0;CoTaskMemFree(item);}
+    if(SUCCEEDED(initialized))CoUninitialize();
+    pc_crash_inhibit(0);InterlockedExchange(&editing,0);
+    AcquireSRWLockExclusive(&lock);pc_input_focus(&input,GetForegroundWindow()==window);ReleaseSRWLockExclusive(&lock);
+    capture(window,want_capture);fprintf(stderr,"[SAVE-FOLDER] desktop picker %s\n",accepted?"selected":"cancelled");InterlockedExchange(&save_picker_state,accepted?2:3);
+}
 
 /* Deterministic integration tests use the same key/motion model as the
    window messages. No desktop keyboard or mouse events are synthesized. */
@@ -238,6 +275,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
     int captured, frontend;
     *result = 0;
     if (window != window_handle) return 0;
+    if(message==PC_SAVE_FOLDER_MESSAGE){choose_save_folder(window);return 1;}
     if (pc_menu_theme_message(window,message,wp,lp,result)) return 1;
     if (message == WM_SETTINGCHANGE || message == WM_THEMECHANGED) pc_window_theme_apply(window);
     if (message == WM_TIMER && wp == PC_DEBUG_TIMER) { pc_debug_poll(); return 1; }

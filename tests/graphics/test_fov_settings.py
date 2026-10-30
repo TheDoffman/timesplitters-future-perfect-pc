@@ -27,17 +27,33 @@ def test_native_menu_callbacks_compile(tmp_path, source):
     assert result.returncode == 0, result.stdout + result.stderr
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows settings persistence adapter')
-def test_fov_settings(tmp_path):
+@pytest.mark.parametrize("mutation", ["fixed", "drain-other-menu"])
+def test_fov_settings(tmp_path, mutation):
     compiler, environment = native_compiler(tmp_path)
     exe = tmp_path / 'fov.exe'
+    source = ROOT / 'tests/graphics/fov_settings.c'
+    if mutation == 'drain-other-menu':
+        adapter = (ROOT / 'src/storage/pc_storage_menu.inc').read_text(encoding='utf-8')
+        guard = 'if(sd_picker_menu && sd_picker_menu==menu)'
+        assert guard in adapter
+        (tmp_path / 'pc_storage_menu.inc').write_text(adapter.replace(guard, 'if(sd_picker_menu)'), encoding='utf-8')
+        menu = tmp_path / 'pc_display_menu.c'
+        menu.write_text((ROOT / 'src/interface/pc_display_menu.c').read_text(encoding='utf-8'), encoding='utf-8')
+        fixture = source.read_text(encoding='utf-8').replace('../src/interface/pc_display.c', (ROOT / 'src/interface/pc_display.c').as_posix()).replace('../src/interface/pc_display_menu.c', menu.as_posix())
+        source = tmp_path / 'fov_settings.c'
+        source.write_text(fixture, encoding='utf-8')
     result = subprocess.run([compiler, '/nologo', '/std:c11', '/O2', '/W3',
         '/I' + str(ROOT / 'src'), '/I' + str(RUNTIME / 'templates/runtime'),
         '/I' + str(RUNTIME / 'src/input'), '/I' + str(RUNTIME / 'src/config'),
-        str(ROOT / 'tests/graphics/fov_settings.c'), str(ROOT / 'src/textures/texture_mode.c'),
+        str(source), str(ROOT / 'src/textures/texture_mode.c'),
         '/Fe:' + str(exe), '/link', 'user32.lib'],
         cwd=tmp_path, env=environment, capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
     result = subprocess.run([str(exe), str(tmp_path / 'display.ini')],
         capture_output=True, text=True, timeout=15)
-    assert result.returncode == 0, result.stdout + result.stderr
-    assert 'PASS:' in result.stdout
+    if mutation == 'drain-other-menu':
+        assert result.returncode != 0
+        assert 'picker_result==1' in result.stderr
+    else:
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert 'PASS:' in result.stdout
