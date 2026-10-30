@@ -7933,7 +7933,8 @@ Keep Awaiting validation; patch-upgrade repairs are being rechecked separately.
 
 ## MAC-124 - Choose save folders (discussion 401) - Awaiting validation
 
-Release preparation for launcher 1.5.0 (2026-10-30): native Apple Silicon build
+Earlier launcher 1.5.0 candidate (now superseded by the user's 1.4.1 target,
+2026-10-30): native Apple Silicon build
 and automated launcher checks passed on macOS 27.0.1, including 32 shared UI
 groups and save-location policy fixtures. This does not complete the physical
 Cocoa/Avalonia folder-picker and removable-volume acceptance below.

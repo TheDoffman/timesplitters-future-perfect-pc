@@ -1,8 +1,14 @@
-## Game 0.4.0 and launcher 1.5.0 release preparation - 2026-10-30
+## Game 0.4.0 and launcher 1.4.1 release preparation - 2026-10-30
+
+The user selected game 0.4.0 and launcher 1.4.1, replacing the unpublished
+launcher 1.5.0 candidate. Both launcher assembly attributes now use 1.4.1.0.
+Earlier 1.5.0 build/package results below remain historical evidence; the old
+game packages embed that launcher and must not be published as 1.4.1 packages.
+Fresh launcher and game-package validation is required for the selected versions.
 
 Both requested features are merged into main: native Mac multiplayer (#416,
 46c675a3) and save-folder selection (#420, e2cfe5a6). The release branch starts
-from e2cfe5a6. Game 0.4.0 and launcher 1.5.0 use new minor versions for these
+from e2cfe5a6. The earlier game 0.4.0 / launcher 1.5.0 candidate prepared these
 features; the version change itself introduces no runtime behavior. Latest
 published versions at preparation are game 0.3.6 and launcher 1.4.0.
 

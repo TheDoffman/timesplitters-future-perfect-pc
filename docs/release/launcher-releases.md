@@ -1,6 +1,6 @@
 # One launcher release for Windows and Mac
 
-The next Stable launcher source version is **1.5.0**, including save-folder
+The next Stable launcher source version is **1.4.1**, including save-folder
 selection and the native Mac multiplayer integration. The source bump does not
 publish either platform; the workflow below must pass before release.
 
