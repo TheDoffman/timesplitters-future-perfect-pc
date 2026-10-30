@@ -33,9 +33,21 @@
   ```powershell
   powershell.exe -NoProfile -STA -File docs/assets/render-launcher-preview.ps1 -ApplicationPath '<v1.4.0 build>/Bin/TimeSplitters.App.exe' -PreviewRoot '<new isolated directory>'
   ```
-- `download-windows-launcher.svg` and `download-mac-launcher.svg`: the two
-  platform download buttons used by the README. Links and accessible labels
-  live in the README; the superseded generic button has been removed.
+- `readme-banner.svg`: a compact vector header using the launcher's navy panels,
+  silver title, pale-blue accents and interrupted-ring motif. Its TSFP monogram
+  is converted directly from the existing outlines in
+  `tools/launcher/GameMonogram.cs` (Future TimeSplitters by Chequered Ink, free
+  for all use; attribution remains in the SVG). The full title uses system serif
+  fonts. No raw game artwork or font file is included.
+- `download-windows-launcher.svg` and `download-mac-launcher.svg`: flat pale-blue
+  platform buttons with the launcher's three-pixel corners, thin border and
+  line-icon weight. Links and accessible labels live in the README.
+- `icon-play.svg`, `icon-settings.svg` and `icon-support.svg`: small section
+  markers using the launcher's line-icon style; the settings glyph follows
+  `Launcher.xaml`. Heading text remains Markdown with decorative empty image
+  alt text. All new SVGs are self-contained, with opaque backgrounds and
+  contrasting foregrounds for both light and dark GitHub pages. They contain
+  no scripts, remote resources or embedded raster artwork.
 
 The PNG documents the interface, including its embedded branding. Raw source
 artwork and original game assets remain private. Keep one launcher preview here
