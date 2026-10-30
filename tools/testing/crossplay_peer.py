@@ -283,8 +283,8 @@ def serve():
         stop()
         if reader:reader.close()
         if run and (run/'run.lock').exists():
-            (run/'run.lock').unlink()
             recycle_disks(ROOT,run)
+            (run/'run.lock').unlink()
         socket_dir.cleanup()
 
 

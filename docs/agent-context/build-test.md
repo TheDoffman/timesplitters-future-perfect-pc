@@ -1024,4 +1024,5 @@ Crossplay startup/shutdown and evidence completion: [Online acceptance](multipla
 
 Native crossplay capture rotation regression: `tests/network/test_crossplay_peer.py`.
 
-Crossplay lock ownership/failure tests: `test_crossplay_peer.py`; see multiplayer-ui.md.
+Crossplay lock/recycle guards: `test_crossplay_peer.py`; reused Online interpreter:
+`test_native_mac_tools.py`. See multiplayer-ui.md.

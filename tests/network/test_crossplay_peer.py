@@ -16,7 +16,7 @@ peer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(peer)
 
 
-@pytest.mark.parametrize('failure', ['prepare', 'lock', 'after-lock'])
+@pytest.mark.parametrize('failure', ['prepare', 'lock', 'after-lock', 'recycle'])
 def test_controller_only_cleans_up_its_owned_run(tmp_path, monkeypatch, capsys, failure):
     import io
     import json
@@ -48,14 +48,23 @@ def test_controller_only_cleans_up_its_owned_run(tmp_path, monkeypatch, capsys, 
 
     monkeypatch.setattr(testing_profile, 'prepare_run', prepare)
     recycled = []
-    monkeypatch.setattr(testing_profile, 'recycle_disks', lambda root, path: recycled.append(path))
+    def recycle(root, path):
+        assert lock.read_text() == str(os.getpid())
+        recycled.append(path)
+        if failure == 'recycle':
+            raise OSError('Recycle failed')
+    monkeypatch.setattr(testing_profile, 'recycle_disks', recycle)
     # A malformed command fails immediately after lock acquisition. A second
     # start must not replace the first owned run before final cleanup.
     requests = [dict(action='start', tag='lock-test')]
     if failure == 'after-lock':
         requests.append(dict(action='start', tag='second-run'))
     monkeypatch.setattr(peer.sys, 'stdin', io.StringIO(''.join(json.dumps(r)+'\n' for r in requests)))
-    peer.serve()
+    if failure == 'recycle':
+        with pytest.raises(OSError, match='Recycle failed'):
+            peer.serve()
+    else:
+        peer.serve()
     replies = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
     assert all('error' in reply for reply in replies)
     assert disk.read_bytes() == b'active disk'
@@ -63,6 +72,9 @@ def test_controller_only_cleans_up_its_owned_run(tmp_path, monkeypatch, capsys, 
         assert not lock.exists()
         assert recycled == [run]
         assert 'already started' in replies[1]['error']
+    elif failure == 'recycle':
+        assert lock.read_text() == str(os.getpid())
+        assert recycled == [run]
     else:
         assert lock.read_text() == 'other controller'
         assert recycled == []

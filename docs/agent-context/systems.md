@@ -958,4 +958,6 @@ and SDL adapters consume this helper. Exact mission validation remains separate.
 Tank keyboard/mouse policy shares `pc_tank.h` and the
 1730E0 guest wrapper. See [tank scope and original aim route](mounted-mouse.md).
 
-Kernel: [pool](kernel-pool.md), [calendar](kernel-time.md), [RTL](kernel-rtl.md), [numbers](guest-numbers.md), [crash evidence](crash-evidence.md).
+Kernel: [pool](kernel-pool.md), [time](kernel-time.md), [RTL](kernel-rtl.md), [numbers](guest-numbers.md), [crashes](crash-evidence.md).
+
+Online uses the build interpreter: [paths](multiplayer-ui.md).

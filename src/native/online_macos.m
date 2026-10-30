@@ -15,6 +15,7 @@
 #include "pc_online.h"
 #include "pc_network.h"
 #include "pc_network_build.h"
+#include "online-python.h"
 extern char **environ;
 static pid_t companion;
 static char ready_path[PATH_MAX],stop_path[PATH_MAX];
@@ -56,7 +57,7 @@ int pc_online_connect(void) {
             root=@TSFP_ONLINE_SOURCE_ROOT;
             support=[root stringByAppendingPathComponent:@"tools/network"];
         }
-        NSString *pythonPath=portable?[root stringByAppendingPathComponent:@"Support/Python/bin/python3"]:[root stringByAppendingPathComponent:@".venv/bin/python"];
+        NSString *pythonPath=portable?[root stringByAppendingPathComponent:@"Support/Python/bin/python3"]:@TSFP_ONLINE_PYTHON;
         NSString *folder=[root stringByAppendingPathComponent:portable?@"Logs/Online":@"private/online"];
         NSString *manifest=portable?[support stringByAppendingPathComponent:@"network-identity.json"]:
             [NSString stringWithUTF8String:TSFP_ONLINE_MANIFEST];

@@ -137,6 +137,9 @@ def main():
     # Both hosts derive compatibility from the same source, runtime and content.
     run(PYTHON, ROOT / 'tools/build/network-identity.py', '--runtime', UPSTREAM,
         '--game', runtime_root / 'private/game', '--output', BUILD / 'generated')
+    # Source builds may reuse another checkout's interpreter and build tree.
+    (BUILD / 'generated/online-python.h').write_text(
+        '#define TSFP_ONLINE_PYTHON ' + json.dumps(str(PYTHON)) + '\n', encoding='utf-8')
     command = [CMAKE, '-S', UPSTREAM / 'titles/futureperfect', '-B', BUILD, '-G', 'Ninja',
                f'-DCMAKE_MAKE_PROGRAM={NINJA}', '-DCMAKE_BUILD_TYPE=Debug',
                '-DCMAKE_OSX_ARCHITECTURES=arm64', f'-DTSFP_NATIVE_DIR={ROOT / "src/native"}']

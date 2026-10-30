@@ -159,3 +159,10 @@ The native peer records cleanup ownership only after creating its run lock
 exclusively. Failed preparation or lock acquisition leaves the existing owner's
 lock/disks alone. Later startup failures still clean up the acquired run, and a
 second start is rejected so it cannot replace that cleanup target.
+The owned lock remains present while disks are recycled and is released only
+after success; a recycling failure leaves the run blocked for inspection.
+
+Source Online builds use `generated/online-python.h`, written by the native
+builder with its actual runtime-root interpreter. The Cocoa adapter consumes
+that path while portable packages retain their bundled interpreter. The source
+checkout therefore needs no duplicate venv when `--runtime-root` is in use.

@@ -33857,6 +33857,15 @@ after shortening its guide entry). No additional gameplay run was performed.
 The prior head's Mac CI failure was a 60-second Tk layout subprocess timeout;
 the updated head still requires both-host CI before merge.
 
+Follow-up review also keeps the owned run lock through successful disk recycling
+(cleanup failure leaves it locked), and passes the actual `--runtime-root` Python
+interpreter to the Cocoa Online adapter through a generated header. The portable
+package still uses its bundled Python. The cleanup-order/failure cases and separate
+source/runtime-root builder test reproduced their bugs before repair. Focused
+Windows controller/native-builder/context checks: 53 passed, 2 host-only skips.
+Companion/package/CI-selection checks before these follow-ups: 100 passed.
+Native compilation and both-host CI remain the next validation boundary.
+
 Stage0240 incoming-main checkpoint: f6766c534467ac0e85560be6b23b9d9f9741c177
 was safely integrated at d66f433353ecf80d5b686c1e8c9820a7083c3ea9 after preserving
 22677761/8abef1db and their accepted numeric-only game evidence. Both sides of
