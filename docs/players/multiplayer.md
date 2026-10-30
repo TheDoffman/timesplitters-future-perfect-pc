@@ -4,6 +4,14 @@ Everyone needs the same game build and matching US Xbox game files. Start the
 game from the launcher or **Play.cmd**, then choose **Online / System Link → Online**.
 You do not need an account or a paid service.
 
+Native Apple Silicon development builds also include this Online window. Build
+matching Windows/Mac source revisions, start the Mac build with
+**Play-Native-Mac.command**, and use the same host/join steps below. Allow incoming
+connections for the game and its Online companion in the macOS firewall when
+hosting. Mac support has passed browser/connection lifecycle tests and a
+Windows–Mac transport check; full mixed-platform matches remain unverified.
+It is not yet included in a published Mac game release.
+
 The redesigned Online window uses **Play online** for joining and hosting, and
 **Directory settings** for advanced connection details. Screenshots below show
 the previous layout; the host/join workflow remains the same.

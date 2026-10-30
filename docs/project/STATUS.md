@@ -33286,4 +33286,21 @@ explicit runtime identity checks passed on both hosts (11 passed, 1 platform ski
 per host). Repository context/backlog checks passed (21 tests); CI scope selection
 passed (81 tests). Earlier patch/context failures identified historical fixture
 subsets and exact-order assertions that needed the new final adapter; corrected
-fixtures are undergoing the recorded recheck. Hosted runtime CI is pending.
+context and migration fixtures passed the 42-test recheck on Windows. Hosted
+Windows and Mac patch upgrades, native runtime jobs and both launcher builds
+passed at `adf9600283b205301db453c1287b5a5c3515d628`. Native suites reported
+2,188 passed / 264 skipped on Windows and 2,123 passed / 319 skipped on Mac,
+plus 18 passing subtests each. Workflow runs: runtime `41008451342`, launcher
+`41008451359`. Both complete workflows succeeded, including both patch
+transition jobs and the final PR validation gate. This acceptance update changes
+documentation only; later CI runs are separate from those verified workflows.
+
+The final source build on the physical Mac completed with its sealed build
+identity. `tools/play-native-mac.py --check` reports the native ARM64 build ready.
+The freshly built executable and matching identity also passed all three
+portable adapter checks again (`logs/mac-online-portable-final.log`): host,
+join and cancel, with no orphan lobby or process. The Mac task checkout was
+fast-forwarded through `adf96002`; subsequent test/docs edits require no game
+rebuild. Start its `Play-Native-Mac.command` for interactive testing, preserving
+personal settings/saves. This evidence does not replace the full-match checks
+listed above.
