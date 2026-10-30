@@ -58,3 +58,15 @@ Windows and Mac CI select the same source/tests (native host APIs differ). The
 previous path planner/Windows/POSIX fixture tests remain selected. Real build path
 and bounded Story checks supplement these contracts; Windows checks do not prove
 native Mac title gameplay or full storage/VFS/NT semantics.
+
+
+Mac CI follow-up in0235: source855b0a0f runtime40987772559 failed only the native
+storage fixture compilation (2066 passed/316 skipped/18 subtests). Strict POSIX
+feature selection hid O_NOFOLLOW and Darwin st_mtimespec. The native adapter and
+fixture now request _DARWIN_C_SOURCE before any headers while preserving POSIX
+selection elsewhere, no-follow creation, nanosecond preservation and fatal warnings.
+Apple's [namespace-selection header](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/cdefs.h)
+defines the Darwin extension mode independently of POSIX selection. Only interface
+facts are used; no Apple implementation is incorporated. Old-head Windows native,
+both upgrade hosts and both launchers passed. New-head native Mac verification is
+pending; this is a source repair, not a passing rerun of the failed old head.

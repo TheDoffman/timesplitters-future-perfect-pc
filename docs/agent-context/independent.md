@@ -951,3 +951,5 @@ cleanup. Five compile-first mutations must fail. The existing hook fixture
 extracts the full frame block, retaining its generated-thunk assertions; dispatch
 extraction no longer depends on the removed HLE comment. Both CI hosts run these
 checks. Native title acceptance and its limits remain in STATUS and MAC-102.
+
+Stage0235: [original pool imports and native surface retirement](kernel-pool.md).

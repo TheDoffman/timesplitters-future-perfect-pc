@@ -894,3 +894,5 @@ Stages0233/0234: [routing](guest-paths.md), [original host storage](host-storage
 `pc_tank_guest.inc`. The local keyboard/mouse scope selects signed track input
 and restores actor links after the original call; controller behavior retains
 the original camera-relative branch. See [scope guards](mounted-mouse.md).
+
+Stage0235: [original pool imports and native surface retirement](kernel-pool.md).

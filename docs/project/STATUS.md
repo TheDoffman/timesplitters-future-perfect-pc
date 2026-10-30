@@ -33050,3 +33050,42 @@ not physical input/listening/full campaign/live vehicle mission or native Mac
 title acceptance. CI for87295396 has no checks/statuses per live PR head diagnostics;
 it remains unverified. New-source CI pending. MAC-118 remains Awaiting validation;
 contracts: host-storage.md. Overall replacement goal remains active/incomplete.
+
+
+### Stage0235 pool replacement / Mac storage repair checkpoint (2026-10-30)
+
+Based on855b0a0f, PR#406. Original guest_kernel_pool.inc replaces all four pool
+bridge bodies with existing guest allocation ownership. kernel_pool and its four
+native host-heap declarations/exports are excluded. Ordinals14/15/17/23 retain
+4/8/4/4 bytes. Tags remain data, alignment/minimum/zeroing/query/exact-base lifetime
+policy remains the shared provider's compatibility contract. No new allocator.
+Caller audit covers runtime/title/generated/project C/includes: only the excluded
+pool module and excluded legacy kernel_thunks resolver retain native references.
+
+Windows pool/allocation/VM/storage/path/memory-service suite67passed35.56s,
+including7 new ABI/fault cases and selected-source audit. Six compiled bad adapters
+fail at runtime. Repaired native storage suite10passed29.81s (overlaps67; separate
+rerun after platform-header fix). Fresh/historical upgrades/context/backlog25passed
+217.68s. Final Release/built-ins/crash symbols passed; archive excludes kernel_pool,
+kernel_path and kernel_thunks, sixteen retired native exports absent,29 original
+I/O/storage providers selected once. All22 generated files unchanged relative to
+stage0234; fingerprint current. Supported US XBE hash verified. Exact source inputs
+in ignored logs/pool-build.json. Executable SHA256:
+75207d60d6286f969b2937d7c95200099604f074a700a8c9fd94c0b9c6cf9f5d.
+
+Old855b0a0f runtime40987772559 failed only Mac native storage compilation:
+2066passed316skipped18subtests before the failed case. Strict POSIX headers hid
+O_NOFOLLOW and st_mtimespec; the adapter and fixture now request Darwin interfaces
+before headers. No no-follow, nanosecond, fatal-warning or timeout check is removed.
+Old-head Windows native/both upgrade hosts/both launchers passed. This source fix
+still needs fresh Mac CI; old-head failure is not reported as passing.
+
+The gameplay runner refused to launch because a separate game (PID8896) was active
+from Desktop/TS Decompile/build/mac-alpha1-source. It was not stopped/interfered
+with. The controller then exited before submitting commands because no fresh test
+session existed. No new-binary gameplay claim: acceptance remains pending until
+that other session closes. All26 protected settings/saves/fixtures retain hashes,
+sizes and mtimes. Previous stage0234 Story evidence remains labeled to its own
+binary. User was asked whether to keep the separate session running. Overall goal
+and MAC-118 remain incomplete/Awaiting validation; contracts: kernel-pool.md and
+host-storage.md. Windows NT10.0.26300 x64/MSVC14.44; no native Mac title claim.

@@ -321,3 +321,6 @@ policy is in guest_paths.c rather than two kernel_path translate bodies.
 
 Stage0234 context tail extends to36 patches, after0233 before2090. Upgrade
 assertions require original host/storage providers and exclude kernel_path.c.
+
+Stage0235 extends the late compiler tail to37 patches, after0234 before2090;
+upgrades require the original pool include and exclude native kernel_pool.c.

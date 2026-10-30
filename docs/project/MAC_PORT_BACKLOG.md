@@ -7722,3 +7722,14 @@ both platforms, but native Mac filesystem/title and new-source CI remain pending
 Kernel_path is excluded from project/archive; remaining kernel.h/VFS/I/O/toolkit
 work is unfinished. Keep Awaiting validation. STATUS's merged acceptance records
 exact executable/generated hashes, source revision and validation boundaries.
+
+
+MAC-118 stage0235 implementation: original pool import adapters select existing
+guest allocation ownership; unused kernel_pool and its native exports are removed
+from compiled sources/declarations. Guest ABI and provider semantics remain shared
+on both hosts. Storage Mac feature visibility repair adds Darwin interfaces before
+headers; preserves O_NOFOLLOW/nanosecond/fatal-warning contracts after855b0a0f's
+single failed native storage compilation. Old-head Windows native, both upgrades
+and launchers passed. New-head Mac CI/title acceptance pending; keep Awaiting
+validation. Final local evidence will be recorded in STATUS; kernel-pool.md and
+host-storage.md describe scope. No full toolkit/kernel ownership completion claim.

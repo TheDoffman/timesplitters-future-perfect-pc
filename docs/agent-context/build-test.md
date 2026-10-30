@@ -983,3 +983,5 @@ link restoration across camera headings, forward/reverse and steering. Original
 CA040 camera coverage now includes nonzero driver pitch; its original custom
 ABI saves ESI, while the pitch branch uses other registers as scratch. Existing
 zero-pitch ABI expectations remain checked. See [tank controls](mounted-mouse.md).
+
+Stage0235: [original pool imports and native surface retirement](kernel-pool.md).
