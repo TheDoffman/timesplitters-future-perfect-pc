@@ -1,3 +1,36 @@
+## Handheld minigun high-FPS spin - 2026-10-30
+
+Handheld minigun fix on fix/handheld-minigun-native-fps, based on 61aecac5.
+Read-only sampling confirmed motor speed stalls at 2.547569 near 120 FPS, below
+the firing threshold of 4. Fractional updates lose the whole-tick spin request
+and repeatedly decelerate. Shared event-1 held-input scope and elapsed spin-down
+fix this while retaining generic firing gates.
+
+Original callback regression reproduces the old failure at 120/144/180/240 FPS;
+the fix reaches readiness around .45 seconds at 60/120/144/180/240. Release,
+pause and input guards pass. Five focused minigun/weapon timing tests pass.
+Windows Release generation/build and build-time checks pass. A bounded isolated
+startup recorded 2,100 D3D11 presents with no failed presents. Candidate SHA256:
+8b0ab4d0a5863dd9e625138887b96d26e29bbac067da1915300cfb7c62899e3b.
+Fifteen mounted input checks and repository context validation also pass.
+Fresh-checkout CI patch migration checks passed on Windows and macOS
+(run 41012758389, head be8daa2c); the complete patch application used for
+this build also passed. The user tested this candidate and
+confirmed that the minigun now works. This is user gameplay acceptance; exact
+shot/ammunition cadence and physical Mac execution remain unmeasured. See [contract](../agent-context/native-minigun.md).
+
+## Both Machine Wars tank encounters accepted (#385) - 2026-10-30
+
+After testing the corrected tank controls, the user explicitly confirmed that
+both the first and second Machine Wars tank encounters work. The vehicle mouse
+and tank driver fix was already merged through PR #412 as `8b4db323`; no further
+input-code change was required for the second encounter. This records user
+playtesting of both encounters, not an independently instrumented shot-alignment
+measurement, complete campaign acceptance, or physical Mac validation.
+
+Documentation-only follow-up: no executable rebuild is required. The earlier
+implementation, automated checks and build records remain below.
+
 ## README direct launcher downloads - 2026-10-30
 
 Based on `76e3bd6e`, validated on Windows x64 with Python 3.12.14. The Windows
@@ -33597,3 +33630,42 @@ fixed-menu numeric replay is not a pass; the successful run used captured menu
 state. Preserve this baseline before combining latest main f6766c53; the merged
 revision requires its own build and relevant checks. New numeric-source CI is
 not yet dispatched because main conflicts are being resolved before push.
+
+## Crash evidence extension - 2026-10-30 (in progress)
+
+Windows crash helper and bounded-memory tests: 9 passed. Launcher build and
+its test suite passed after extended-mode/export changes. Subsequent model-history
+and summary changes are being rechecked. Native Mac tests skipped on Windows;
+MAC-123 records the acceptance work and process-access limitation. Production game
+rebuild remains in progress. No issue resolution, commit or release claimed.
+
+2026-10-30 follow-up: full Windows game Build and built-in checks passed with
+the model traversal wrapper. Nine crash/memory tests and the full Windows
+launcher test run passed. Ten Darwin tests were skipped, not validated.
+
+2026-10-30 allocation-history follow-up, local uncommitted changes on
+`improve-crash-diagnostics` at base `8b4db323`, Windows x64, MSVC 19.44 and
+Python 3.14.5: corrected observer patch dependency order; full Windows Build
+and built-in checks passed (`logs/crash-lifetime-build.log`). Focused crash,
+guest capture and allocation observer tests passed 10; Darwin tests skipped 10.
+Allocator and patch-tracking regression tests passed 44. Full Windows launcher
+build/test suite passed (`logs/crash-lifetime-launcher.log`), including the
+seven-file allowlisted ZIP fixture with allocation history. Repository context
+and diff whitespace checks pass. The unrelated temporary pr370 test game was
+closed at the user's request before launcher tests; personal saves/settings
+were not edited. These checks establish report plumbing and allocator behavior,
+not live #410 reproduction, model-pool lifetime coverage or native Mac execution.
+
+Crash diagnostics main integration: diagnostics89e804c8 integrated with main
+61aecac5. Windows full Build/built-in checks passed; 54 focused diagnostics,
+allocator and patch-tracking tests passed in57.33s. Launcher inputs/output hashes
+matched the prior successful build/test receipt. Context check against main
+passed. No live #410 reproduction/fix or native Mac validation is claimed.
+
+PR418 upgrade CI repair: both native runtime and launcher jobs passed on
+78384327; upgrade fixtures failed because later diagnostic patches entered old
+checkpoints and the EOF trace insertion could not unwind past local trailing
+edits. Historical subsets now exclude both dependent diagnostic additions;
+the trace wrapper uses stable following context. Full current-stack forced
+unwind/reapply passed locally. Historical suite and rebuilt-game checks are
+running; this checkpoint does not claim their completion.

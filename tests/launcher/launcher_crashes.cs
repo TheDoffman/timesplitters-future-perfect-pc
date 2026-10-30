@@ -117,6 +117,9 @@ public static class LauncherCrashChecks
             File.WriteAllText(Path.Combine(folder,"report.txt"),"Readable crash summary");
             File.WriteAllText(Path.Combine(folder,"crash.dmp"),"Synthetic dump fixture");
             File.WriteAllText(Path.Combine(folder,"game-log-tail.txt"),"Synthetic log fixture");
+            File.WriteAllText(Path.Combine(folder,"guest-memory.bin"),"TSFPGST1 fixture");
+            File.WriteAllText(Path.Combine(folder,"model-tree.bin"),"Synthetic model fixture");
+            File.WriteAllText(Path.Combine(folder,"allocation-history.txt"),"Synthetic allocation fixture");
             File.WriteAllText(Path.Combine(folder,"private-save"),"Must never export");
             Require(CrashReports.Latest(root)==name,"Completed report discovered.");
             Require(CrashReports.Summary(root).Contains("0xC0000005"),"Summary includes validated exception.");
@@ -124,7 +127,7 @@ public static class LauncherCrashChecks
                 Require(CrashReports.Latest(root)==null,"In-progress reports excluded.");
             string zip=Path.Combine(root,"export.zip");CrashReports.Export(root,name,zip);
             using(var archive=ZipFile.OpenRead(zip)) {
-                Require(archive.Entries.Count==4,"Exactly the four allowlisted files exported.");
+                Require(archive.Entries.Count==7,"All seven available allowlisted diagnostic files exported.");
                 Require(!archive.Entries.Any(x=>x.FullName.Contains("private-save")),"Unknown files excluded.");
             }
             string oversized=Path.Combine(root,"oversized.zip");

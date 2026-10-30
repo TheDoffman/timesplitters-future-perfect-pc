@@ -1,5 +1,7 @@
 # Runtime and patch navigation
 
+Patch 2140-native-minigun-intent follows the native weapon wrappers in loader dependency order. It scopes held-primary intent around original US 1C74D0 event 1. Generic shots remain on whole ticks; numeric site 1C7600 normalizes release damping. See native-minigun.md.
+
 `2130-game-dpi-awareness.patch` attaches the Windows game manifest supplied by
 `tsfp.ps1` to the title executable. Its system DPI declaration prevents Windows
 bitmap scaling and virtualized windowed Auto dimensions without a path-specific
@@ -906,3 +908,13 @@ Stage0238: [original critical sections and whole native RTL retirement](kernel-r
 Stage0239: [original checked narrow guest formatting](guest-printf.md).
 
 Stage0240: [original numeric conversions](guest-numbers.md).
+
+Crash model traversal instrumentation at US guest `0x583E0` is introduced by
+`patches/diagnostics/2140-model-tree-trace.patch`. The manual wrapper preserves
+original execution and records bounded model/node/depth history through the shared
+capture adapters. It is diagnostic instrumentation, not a fix for #410. See
+[crash evidence](crash-evidence.md) for capture scope and platform limits.
+
+Allocation-history hook details: [crash evidence](crash-evidence.md). The shared
+allocator observer is diagnostic-only; backing allocation ownership and guest
+model suballocation lifetime remain distinct concepts.

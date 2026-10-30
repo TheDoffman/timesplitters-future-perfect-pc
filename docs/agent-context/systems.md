@@ -1,5 +1,7 @@
 # Subsystem entry points
 
+Minigun motor intent and release damping: [shared policy](native-minigun.md).
+
 Kernel: [objects and boot](kernel-objects.md).
 
 Memory: [retired APIs](retired-memory-compatibility.md).
@@ -911,12 +913,9 @@ CPU evidence only; rendering/pacing and physical Mac remain unverified.
 
 ## Temporal Uplink map display
 
-The shared HLE screen-copy hook saves Future Perfect's preclear map image
-and supplies its map region to the handheld texture later in the frame.
-Native GL implements the same texture-region transfer in
-`src/native/gl_screen_copy.inc`, preserving framebuffer bindings and scissor
-state. The map geometry and gameplay controls remain guest-owned; this adapter
-only transfers the image that the game already drew.
+The shared HLE hook copies the preclear map into the handheld texture. Native
+GL uses src/native/gl_screen_copy.inc and preserves framebuffer/scissor state.
+Guest geometry and controls remain unchanged.
 
 Temporary UV matrices: [render epoch and arena lifetime](render-matrix-cache.md).
 
@@ -956,7 +955,8 @@ retain their existing route. Vehicle limits and locked states differ from mode
 `0x80`; see [mounted and vehicle mouse contracts](mounted-mouse.md). Both Windows
 and SDL adapters consume this helper. Exact mission validation remains separate.
 
-Tracked tank driver keyboard/mouse policy now shares `pc_tank.h` and the
+Tank keyboard/mouse policy shares `pc_tank.h` and the
 1730E0 guest wrapper. See [tank scope and original aim route](mounted-mouse.md).
 
-RTL: [services](kernel-rtl.md), [numeric conversions](guest-numbers.md).
+[Kernel services](kernel-rtl.md), [numbers](guest-numbers.md),
+[crash evidence](crash-evidence.md).

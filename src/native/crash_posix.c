@@ -10,6 +10,9 @@
 #include <CoreGraphics/CoreGraphics.h>
 #endif
 #include <dlfcn.h>
+#include <mach/mach.h>
+#include <mach/mach_vm.h>
+#include "../diagnostics/pc_guest_capture.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -32,9 +35,10 @@
 typedef struct Capture {
     atomic_int entered,done,armed,focused,inhibited,stopping;
     atomic_ullong frames;
-    PcBreadcrumbs breadcrumbs; uint64_t started_ms;
+    PcBreadcrumbs breadcrumbs,models,allocations; uint64_t started_ms;
     int pid,signal;uint32_t guest[8];uint64_t registers[31],pc,sp,address,base;
-    unsigned frame_timeout,startup_timeout;
+    unsigned frame_timeout,startup_timeout,extended;
+    atomic_ullong guest_base;
     char root[PATH_MAX],executable[PATH_MAX],log[PATH_MAX];
 } Capture;
 static Capture *capture;
@@ -92,6 +96,31 @@ static void tool(char *const argv[],int output){
     if(child<0)return;uint64_t end=ticks()+5000;int status;
     while(waitpid(child,&status,WNOHANG)==0){if(ticks()>=end){kill(child,SIGKILL);waitpid(child,&status,0);break;}usleep(20000);}
 }
+typedef struct NativeGuestReader { mach_port_t task; uint64_t base; } NativeGuestReader;
+static int native_guest_read(void *opaque,uint32_t address,void *out,size_t bytes) {
+    NativeGuestReader *r=opaque;mach_vm_size_t copied=0;
+    if(!pc_guest_capture_span(address,bytes)||r->base>UINT64_MAX-address)return 0;
+    return mach_vm_read_overwrite(r->task,r->base+address,bytes,(mach_vm_address_t)(uintptr_t)out,&copied)==KERN_SUCCESS && copied==bytes;
+}
+static void guest_report(Capture *c,int dir,int hang) {
+    const char *status="unavailable";int saved=0;mach_port_t task=MACH_PORT_NULL;
+    /* No permission escalation: some signing configurations deny task access.
+     * Report that explicitly and retain the normal native context. */
+    uint64_t base=atomic_load(&c->guest_base);
+    if(hang)status="unavailable-for-hang";
+    else if(base && task_for_pid(mach_task_self(),c->pid,&task)==KERN_SUCCESS) {
+        FILE *f=new_file(dir,"guest-memory.bin");
+        if(f){NativeGuestReader reader={task,base};
+            uint32_t r[]={c->guest[0],c->guest[4],c->guest[1],c->guest[2],c->guest[5],c->guest[6],c->guest[3],c->guest[7]};
+            saved=pc_guest_capture_write_mode(f,native_guest_read,&reader,r,c->extended);if(fclose(f))saved=0;
+            if(!saved)unlinkat(dir,"guest-memory.bin",0);
+        }
+        status=saved?"captured-with-per-region-status":"write-failed";
+    } else if(base)status="process-memory-access-denied";
+    if(task!=MACH_PORT_NULL)mach_port_deallocate(mach_task_self(),task);
+    FILE *f=new_file(dir,"diagnostics.json");
+    if(f){fprintf(f,"{\"schema\":1,\"extended\":%s,\"guest_capture_saved\":%s,\"guest_capture_status\":\"%s\",\"memory_limit_bytes\":%u,\"root_cause\":\"undetermined\"}\n",c->extended?"true":"false",saved?"true":"false",status,PC_GUEST_CAPTURE_LIMIT);fclose(f);}
+}
 static void report(Capture *c,int hang){
     int root=safe_directory(c->root);if(root<0)return;
     struct timeval now;gettimeofday(&now,NULL);struct tm utc;gmtime_r(&now.tv_sec,&utc);
@@ -100,6 +129,7 @@ static void report(Capture *c,int hang){
     if(mkdirat(root,name,0700)){close(root);return;}
     int dir=openat(root,name,O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);close(root);if(dir<0)return;
     int locked=openat(dir,"capture.lock",O_CREAT|O_EXCL|O_RDWR|O_CLOEXEC,0600);if(locked<0){close(dir);return;}flock(locked,LOCK_EX);
+    guest_report(c,dir,hang);
     executable_hash(c->executable,hash);
     FILE *out=new_file(dir,"native-stack.txt");
     if(out){
@@ -116,6 +146,8 @@ static void report(Capture *c,int hang){
     int input=open(c->log,O_RDONLY|O_NOFOLLOW|O_CLOEXEC);if(input>=0){struct stat st;if(!fstat(input,&st)&&S_ISREG(st.st_mode)){lseek(input,st.st_size>65536?st.st_size-65536:0,SEEK_SET);out=new_file(dir,"game-log-tail.txt");if(out){char bytes[65536];ssize_t n=read(input,bytes,sizeof bytes);if(n>0)fwrite(bytes,1,(size_t)n,out);fclose(out);}}close(input);}
     out=new_file(dir,"report.txt");if(out){fprintf(out,"TimeSplitters native Mac %s\n%s\nSignal: %d\nExecutable SHA-256: %s\nNative context: native-stack.txt\nNothing was uploaded. Review the context and log excerpt before sharing.\n",hang?"suspected hang":"fatal signal",hang?"Frame progress stopped; the game was left running.":"The native game received a fatal signal.",hang?0:c->signal,hash);fclose(out);}
     out=new_file(dir,"breadcrumbs.txt");if(out){pc_crumb_report(out,&c->breadcrumbs);fclose(out);}
+    out=new_file(dir,"model-history.txt");if(out){pc_crumb_report(out,&c->models);fclose(out);}
+    out=new_file(dir,"allocation-history.txt");if(out){pc_crumb_report(out,&c->allocations);fclose(out);}
     /* Metadata written last: readers never see a partially populated report. */
     out=new_file(dir,"report.json");if(out){fprintf(out,"{\"schema\":1,\"kind\":\"%s\",\"platform\":\"macos-arm64\",\"pid\":%d,\"signal\":%d,\"exception_code\":\"0x%08x\",\"dump_saved\":false,\"native_capture_saved\":true,\"executable_sha256\":\"%s\",\"frame_sequence\":%llu}\n",hang?"suspected_hang":"unhandled_exception",c->pid,hang?0:c->signal,hang?0:c->signal,hash,atomic_load(&c->frames));fclose(out);}
     flock(locked,LOCK_UN);close(locked);close(dir);
@@ -145,6 +177,7 @@ int tsfp_native_crash_init(NativeGuestCapture guest){
     memset(c,0,sizeof *c);uint32_t length=sizeof c->executable;char exe[PATH_MAX];
     if(_NSGetExecutablePath(exe,&length)||!realpath(exe,c->executable)||strlen(root)>=sizeof c->root)goto fail;
     strcpy(c->root,root);const char *log=getenv("RECOMP_LOG_FILE");if(log&&strlen(log)<sizeof c->log)strcpy(c->log,log);
+    const char *extended=getenv("TSFP_CRASH_EXTENDED");c->extended=extended && !strcmp(extended,"1");
     c->started_ms=ticks();pc_crumb_add(&c->breadcrumbs,0,PC_CRUMB_STARTED,0);
     c->pid=getpid();c->frame_timeout=60000;c->startup_timeout=180000;atomic_store(&c->focused,1);
 #ifdef TSFP_CRASH_TEST
@@ -183,3 +216,14 @@ void pc_capture_gameplay(int32_t scene,uint32_t mode,uint32_t menu,int paused,in
     const int32_t values[PC_CRUMB_FIELDS]={scene,(int32_t)mode,(int32_t)menu,!!paused,network,!!cutscene};
     pc_crumb_game(&capture->breadcrumbs,ticks()-capture->started_ms,values);
 }
+
+void tsfp_native_crash_memory(uint64_t base){if(capture)atomic_store(&capture->guest_base,base);}
+
+void pc_capture_model(uint32_t model,uint32_t node,unsigned depth){if(capture)pc_crumb_model(&capture->models,ticks()-capture->started_ms,model,node,depth);}
+
+void pc_capture_match(unsigned humans,unsigned bots,unsigned difficulty,unsigned capacity){
+    const int32_t values[4]={(int32_t)humans,(int32_t)bots,(int32_t)difficulty,(int32_t)capacity};
+    if(capture)pc_crumb_match(&capture->breadcrumbs,ticks()-capture->started_ms,values);
+}
+
+void pc_capture_allocation(uint32_t event,uint32_t address,uint32_t bytes){if(capture)pc_crumb_allocation(&capture->allocations,ticks()-capture->started_ms,event,address,bytes);}

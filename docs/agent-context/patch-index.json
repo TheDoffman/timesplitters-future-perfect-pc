@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "785d78215d47db3d59d7b0bc4193a0c8c498293cdf5b8af5094fdc4e3c710b5b",
+  "loaderSha256": "edb775e4eba997bf9b2542efc18108f96440b0dafe63232dbbae19428a28f679",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1436,6 +1436,14 @@
       ]
     },
     {
+      "name": "2140-model-tree-trace.patch",
+      "path": "patches/diagnostics/2140-model-tree-trace.patch",
+      "sha256": "5460a3b39667113ee9cb53796d308a9182fc2b815ffcdbaa58408932780d377a",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "independent-condition-fixture.patch",
       "path": "patches/compiler/independent-condition-fixture.patch",
       "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",
@@ -1898,6 +1906,14 @@
       "name": "0460-native-wind-history.patch",
       "path": "patches/gameplay/timing/0460-native-wind-history.patch",
       "sha256": "9ac97150ccb5903ed2d5bcc7d3d0d0aac72109acf52000b5e75fc7c2cf3fb774",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2140-native-minigun-intent.patch",
+      "path": "patches/gameplay/timing/2140-native-minigun-intent.patch",
+      "sha256": "7a54618390fdd242fd0481c45552e12acac2398cf1bcc1637f851f4256702edd",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
       ]
@@ -2535,6 +2551,15 @@
       "targets": [
         "src/kernel/CMakeLists.txt",
         "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "2150-allocation-history.patch",
+      "path": "patches/diagnostics/2150-allocation-history.patch",
+      "sha256": "181b731de77a6320f090e88cecbe7b7d4e1d428de273412cced3a5a3fc0d58d3",
+      "targets": [
+        "src/kernel/xbox_memory_layout.c",
+        "titles/futureperfect/src/main.c"
       ]
     },
     {

@@ -1,5 +1,7 @@
 # Build, run and validation map
 
+test_native_timing.py::test_original_minigun_spin runs the complete supported-US callback with controlled audio/model services. It reproduces the old high-FPS failure and checks readiness, release, pause and input guards at 60/120/144/180/240 FPS. Existing CI selects this suite; private-XBE absence skips it. Historical stack fixtures exclude minigun intent until the full native stack is applied. See native-minigun.md.
+
 Launcher release tests cover direct README download targets, alias byte/hash
 parity despite stale local alias files, and interrupted alias upload recovery.
 Run `python -m unittest discover -s tests/launcher -p test_launcher_release.py -v`.
@@ -1003,3 +1005,20 @@ Stage0238: [original critical sections and whole native RTL retirement](kernel-r
 Stage0239: [original checked narrow guest formatting](guest-printf.md).
 
 Stage0240: [original numeric conversion checks](guest-numbers.md).
+
+Crash evidence CI now selects `tests/diagnostics/test_guest_capture.py` beside
+existing crash tests on both hosts. It compiles the shared bounded-memory writer
+against synthetic addresses; Windows fatal-helper tests assert model history is
+exported. Native fatal-helper tests assert the same history and diagnostics
+metadata on Darwin. Host skips are not a passing native execution result.
+
+Allocation observation is checked by `test_allocation_observer.py`; both host
+helper fixtures assert allocation/release history reaches the report. Patch
+tracking tests require the evidence hook after the independent allocator/boot
+and presentation patches, before final source-layout routing.
+
+Historical upgrade fixtures exclude the later model-trace/allocation-observer
+patches until upgrading to the full stack. Model instrumentation is inserted
+before a stable function, rather than at EOF, so reversing it preserves local
+trailing edits during historical branch round trips. These are tested in
+`tests/repository/test_patch_updates.py`.

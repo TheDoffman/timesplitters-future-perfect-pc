@@ -5,6 +5,7 @@
 #include "pc_crash.h"
 #include "pc_hang_policy.h"
 #include "pc_capture_health.h"
+#include "pc_guest_capture.h"
 #include <io.h>
 #include <fcntl.h>
 #include <dbghelp.h>
@@ -89,7 +90,7 @@ static void rotate(const WCHAR *root)
         HANDLE lock = CreateFileW(file, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, NULL);
         if (lock == INVALID_HANDLE_VALUE) continue;
         CloseHandle(lock);
-        const WCHAR *files[] = {L"crash.dmp", L"report.json", L"report.txt", L"game-log-tail.txt", L"breadcrumbs.txt", L"capture.lock"};
+        const WCHAR *files[] = {L"crash.dmp", L"report.json", L"report.txt", L"game-log-tail.txt", L"breadcrumbs.txt", L"guest-memory.bin", L"diagnostics.json", L"model-history.txt", L"allocation-history.txt", L"capture.lock"};
         for (unsigned n = 0; n < _countof(files); ++n) {
             join(file, folder, files[n]);
             DWORD attr = GetFileAttributesW(file);
@@ -173,6 +174,21 @@ finish:
     if (algorithm) BCryptCloseAlgorithmProvider(algorithm, 0);
     CloseHandle(file); return ok;
 }
+typedef struct GuestReader { HANDLE process; uint64_t base; } GuestReader;
+static int guest_read(void *opaque,uint32_t address,void *out,size_t bytes) {
+    GuestReader *reader=opaque;SIZE_T copied=0;
+    if(!pc_guest_capture_span(address,bytes)||reader->base>UINT64_MAX-address)return 0;
+    return ReadProcessMemory(reader->process,(const void *)(uintptr_t)(reader->base+address),out,bytes,&copied)&&copied==bytes;
+}
+static int guest_report(HANDLE process,const PcCrashGuest *guest,const WCHAR *folder,int extended) {
+    if(!guest->valid)return 0;
+    WCHAR path[PC_CRASH_PATH];join(path,folder,L"guest-memory.bin");
+    FILE *out=NULL;_wfopen_s(&out,path,L"wb");if(!out)return 0;
+    GuestReader reader={process,guest->memory_base};
+    uint32_t registers[]={guest->eax,guest->ebx,guest->ecx,guest->edx,guest->esi,guest->edi,guest->esp,guest->ebp};
+    int ok=pc_guest_capture_write_mode(out,guest_read,&reader,registers,extended);if(fclose(out))ok=0;
+    if(!ok)DeleteFileW(path);return ok;
+}
 static int capture(HANDLE process, PcCrashPacket *p, int hang, ULONGLONG stalled_ms, HANDLE crash_request, PcBreadcrumbs *breadcrumbs)
 {
     WCHAR folder[PC_CRASH_PATH], name[64], path[PC_CRASH_PATH];
@@ -204,10 +220,18 @@ static int capture(HANDLE process, PcCrashPacket *p, int hang, ULONGLONG stalled
         FlushFileBuffers(dump); CloseHandle(dump);
         if (!saved) DeleteFileW(path);
     }
+    int guest_saved=guest_report(process,&p->guest,folder,p->extended!=0);
+    join(path,folder,L"diagnostics.json");
+    FILE *diagnostics=NULL;_wfopen_s(&diagnostics,path,L"wb");
+    if(diagnostics){fprintf(diagnostics,"{\"schema\":1,\"extended\":%s,\"guest_capture_saved\":%s,\"guest_is_cached\":%s,\"memory_limit_bytes\":%u,\"root_cause\":\"undetermined\"}\n",p->extended?"true":"false",guest_saved?"true":"false",hang?"true":"false",PC_GUEST_CAPTURE_LIMIT);fclose(diagnostics);}
     log_tail(p->log, folder);
     join(path,folder,L"breadcrumbs.txt");
     FILE *crumbs=NULL;_wfopen_s(&crumbs,path,L"wb");
     if(crumbs){pc_crumb_report(crumbs,breadcrumbs);fclose(crumbs);}
+    join(path,folder,L"model-history.txt");FILE *models=NULL;_wfopen_s(&models,path,L"wb");
+    if(models){pc_crumb_report(models,&p->models);fclose(models);}
+    join(path,folder,L"allocation-history.txt");FILE *allocations=NULL;_wfopen_s(&allocations,path,L"wb");
+    if(allocations){pc_crumb_report(allocations,&p->allocations);fclose(allocations);}
     char sha[65] = "unavailable";
     file_hash(p->executable, sha);
     join(path, folder, L"report.json");

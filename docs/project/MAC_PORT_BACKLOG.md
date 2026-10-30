@@ -314,6 +314,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-120 | Enhanced Audio beta | Awaiting validation |
 | MAC-121 | High-FPS interaction input (#357) | Awaiting validation |
 | MAC-122 | Temporary material matrix cache epoch (#398) | Awaiting validation |
+| MAC-123 | Bounded guest-memory crash evidence and model history | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -4137,6 +4138,15 @@ Windows loopback evidence in `docs/project/STATUS.md` does not establish native 
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- Handheld minigun spin (2026-10-30, fix/handheld-minigun-native-fps): shared
+  src/gameplay/pc_native_minigun_guest.h, pc_native_numeric.h and patch 2140
+  preserve held-primary motor intent between firing ticks and scale release
+  damping. No Mac adapter is needed. Windows original-callback checks pass;
+  the user confirmed the Windows candidate works. Physical Mac and exact firing/ammo
+  cadence remain Awaiting validation.
+  See STATUS and agent-context/native-minigun.md.
+
+
 - **Procedural wind simulation (PR #367 follow-up):** Shared
   `pc_native_wind*` source and `0460-native-wind-history.patch` subdivide the
   coupled oscillator with per-owner history and exact game-clock admission.
@@ -7872,3 +7882,27 @@ movement11.174544/back6.184892/ammo8to6/pause40/resume60/final182.886s, runner78
 and controller56021 exit0; fresh captures reviewed, protected26/fixture unchanged.
 This precedes main f6766c53 integration and is not merged-source/Mac-title proof.
 Keep Awaiting validation; see STATUS for hashes and staged CI/integration status.
+
+### MAC-123 - Bounded guest-memory crash evidence and model history
+
+- **Status:** Awaiting validation
+- **Source/PR:** Diagnostics implementation `89e804c8`; main integration recorded in STATUS.
+- Shared policy: `src/diagnostics/pc_guest_capture.h`, `pc_breadcrumbs.h`,
+  `patches/diagnostics/2140-model-tree-trace.patch`; shared launcher ZIP export.
+- Windows helper captures bounded guest regions and model traversal records;
+  normal and extended modes stay below 1 MiB for guest-memory.bin.
+- Darwin adapter uses read-only Mach process access. Access denial is reported
+  explicitly; no privilege escalation or security-setting change is attempted.
+- Allocation observer and match history also use the common numeric rings; verify
+  allocation-history.txt in the native helper and launcher ZIP.
+- Remaining: run native crash tests and actual fatal/overflow capture on Mac,
+  validate signing/task access, ZIP contents and launcher's folder opening.
+  If process access is denied, a future prepublished shared snapshot adapter
+  is needed for memory parity; existing native stack reports remain supported.
+- Windows evidence: nine diagnostics tests pass; latest launcher test run in
+  logs. Windows results do not establish Darwin execution.
+
+MAC-123 CI follow-up: PR418 head78384327 passed both native runtime jobs and
+Windows/Mac launcher jobs. This verifies the selected automated host contracts,
+not actual Mac fatal/overflow process-memory permissions or title gameplay.
+Keep Awaiting validation; patch-upgrade repairs are being rechecked separately.

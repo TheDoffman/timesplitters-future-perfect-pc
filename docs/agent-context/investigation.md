@@ -341,3 +341,8 @@ x86 oracle compiles native Win32 varargs; portable contracts keep both host rout
 
 Stage0240 numeric conversions follow0239 in the late42 replacement tail; inspect
 [contract and checked frames](guest-numbers.md), not removed bridge bodies.
+
+Crash diagnostics adds the allocation-history patch after allocator dependencies;
+the repository-order fixture includes this final observer hook before source
+layout. Normalize new patches to LF before refreshing the index: local CRLF
+bytes hash differently from Git-normalized checkout bytes on CI hosts.
