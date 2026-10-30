@@ -943,6 +943,13 @@ Impact sparks: see [native spark timing](native-impact-sparks.md).
 
 [Devices](kernel-devices.md).
 
+
+Project-owned I/O contracts: [sharing](kernel-sharing.md),
+[request lifetime](request-lifetime.md), [driver calls](driver-call.md),
+[transfer/queues/events/targets](transfer-completion.md),
+[symbolic links](symbolic-links.md), [path routing](guest-paths.md) and
+[host storage](host-storage.md).
+
 Vehicle gunner mouse uses shared `src/input/pc_mounted.h` for mode `0x400`,
 resolving the occupied seat and its gun on every update. Driver/passenger seats
 retain their existing route. Vehicle limits and locked states differ from mode
@@ -951,3 +958,5 @@ and SDL adapters consume this helper. Exact mission validation remains separate.
 
 Tracked tank driver keyboard/mouse policy now shares `pc_tank.h` and the
 1730E0 guest wrapper. See [tank scope and original aim route](mounted-mouse.md).
+
+Original kernel services: [pool](kernel-pool.md), [calendar](kernel-time.md).

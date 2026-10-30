@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "eaada1e88e028b5ba8a04c4d179cbc7a679f0c670790a4081f969a9962bde945",
+  "loaderSha256": "974cb8082b58f02d2cb504fa8b9d5858937cc6b3d1aa9fd3f47b241e939f1923",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2362,6 +2362,140 @@
         "src/kernel/kernel.h",
         "src/kernel/kernel_bridge.c",
         "src/kernel/kernel_io.c"
+      ]
+    },
+    {
+      "name": "0220-independent-kernel-sharing.patch",
+      "path": "patches/compiler/0220-independent-kernel-sharing.patch",
+      "sha256": "0472ce9bb7627dd285ab88483d2041af7307dcdb6d8ead971cd88ffab82b0df9",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0221-independent-request-lifetime.patch",
+      "path": "patches/compiler/0221-independent-request-lifetime.patch",
+      "sha256": "841bf140c104df681393a732017f8e24f684271bcb1c9db16265614bf035a7ef",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0222-original-driver-call-composer.patch",
+      "path": "patches/compiler/0222-original-driver-call-composer.patch",
+      "sha256": "3d83c27fd4fc9f2074a19972bc6e98b86621df7b3dce41e87059cdf680aaf2eb",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0223-original-transfer-completion.patch",
+      "path": "patches/compiler/0223-original-transfer-completion.patch",
+      "sha256": "d829e2cf3e32b3bd2a1cd820d37cf19180a7a23ab952f1a9ad38f0715844dcd0",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0224-original-request-queue.patch",
+      "path": "patches/compiler/0224-original-request-queue.patch",
+      "sha256": "d1f57c183af6ae2218df6a6d00e0656b3abfb4fbc304d2b8a773b884527a939f",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0225-original-startio-callback.patch",
+      "path": "patches/compiler/0225-original-startio-callback.patch",
+      "sha256": "c06839485fb796498aa40170e70c4fdafd08017cb452d9045237360537dd2be3",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0226-original-device-queue-mirrors.patch",
+      "path": "patches/compiler/0226-original-device-queue-mirrors.patch",
+      "sha256": "8ba2017d1012dc1b6d3b6bb4985ae17d8e21971b22acc8cd88c27578f73b60da",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0227-original-device-queue-lifetime.patch",
+      "path": "patches/compiler/0227-original-device-queue-lifetime.patch",
+      "sha256": "348b0ac5f6ebf1cba57a003b81c06cd40dd394ad978dedd9d137adf736fb193d",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0229-original-guest-events.patch",
+      "path": "patches/compiler/0229-original-guest-events.patch",
+      "sha256": "1893aff03def74d52eadd309b8eb46c9926d20a29b3383f330bcd199fb578cb9",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0231-original-completion-targets.patch",
+      "path": "patches/compiler/0231-original-completion-targets.patch",
+      "sha256": "9761c0769fd5e60e35cb31da0a726b6d63e4aad1b4eeb0ad133fa22cf01e0b06",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0232-original-symbolic-links.patch",
+      "path": "patches/compiler/0232-original-symbolic-links.patch",
+      "sha256": "269d3d8b7a74f3b88a768a5f75983d64ea623f2dac1bc44f346ab183b77f26ff",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel.h",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/kernel_io.c",
+        "src/kernel/kernel_path.c"
+      ]
+    },
+    {
+      "name": "0233-original-path-routing.patch",
+      "path": "patches/compiler/0233-original-path-routing.patch",
+      "sha256": "7c9604354b36aa6456a369b491033e1076508bd77525cc8dea5b37e0a7c70a65",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_path.c"
+      ]
+    },
+    {
+      "name": "0234-original-host-storage.patch",
+      "path": "patches/compiler/0234-original-host-storage.patch",
+      "sha256": "28be73b9f082a481ac9eb10f4eea24d6717fe9faa82477016842b8e009b8967e",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0235-original-kernel-pool.patch",
+      "path": "patches/compiler/0235-original-kernel-pool.patch",
+      "sha256": "fe203076b3c558eb4f87a42510c474f0f699bc8d7f89083eaa0cdd3a96d10838",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel.h",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0236-original-kernel-time.patch",
+      "path": "patches/compiler/0236-original-kernel-time.patch",
+      "sha256": "b8f8f6fb147b21dba41db33d773d25904545f63c6c69851f6a7149f42968c50f",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel.h",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/kernel_rtl.c",
+        "src/platform/win32_compat.c",
+        "src/platform/win32_compat.h"
       ]
     },
     {

@@ -7341,6 +7341,152 @@ acceptance is complete. The newest pushed-head CI result remains required;
 previous3b11d5b1 workflows both concluded success. No full independence or native
 Mac title acceptance is implied.
 
+
+
+MAC-118 latest-main Windows regression and CI repair (2026-10-29):
+
+Pushed a0e36a91 includes the warning-clean isolated device fixture and main68408d4d.
+Windows Release regeneration/build/built-in checks and matching crash symbols
+passed. All ten device/name providers remain selected once, kernel_ob.c excluded,
+nine retired native symbols absent and generator inputs current. Four of the22
+recorded generated files differ from the historical pre-main baseline as expected
+for the combined main hooks. Executable SHA256:
+`a7fd543f620525bb7025fef33293adfcc3073db40ca6144b0b70371deae630d3`.
+Fresh isolated Story scene4/mission1 passed movement11.195015 forward/6.184892
+backward, firing8to6,40 frozen pause samples and60 advancing resume samples;
+last checkpoint104.532s within240s cap. Start/pause/resume captures reviewed.
+Installed source/archive/executable/generated/game hashes agree and all26
+protected files retain hash,size and mtime. Minimized synthetic-input Classic,
+movie-skipped Windows regression; no physical/audio listening/campaign/Mac title
+claim. Plan/device172checks plus29subtests and Node23 passed locally.
+
+Exact a0e36a91 runtime CI40878529221 now passes Mac native, both patch upgrades
+and both launchers; Windows native/final gates remain in progress. Mac CI proves
+its selected asset-free contracts, not native Mac game behavior. Local merged
+migration66031 is still running; prior0f1189ec migration52 passed28m03s.
+
+
+MAC-118 stage0220 sharing follow-up (feature/guest-share-access, commit cf581fc3): shared original byte-sharing
+provider/adapters and additive compiler patch replace bridges63/78/80; ordinal80
+now consumes4args/16bytes, matching nxdk and repository export map. Same C source
+selected on both hosts; native ownership/ABI/header tests selected in both CI
+jobs. Current Windows build/game acceptance and new Mac compile remain pending.
+No host-specific implementation is required, but native Mac title acceptance
+remains unverified. [Sharing contracts](../agent-context/kernel-sharing.md).
+
+
+
+Stage0220 Windows local acceptance: maintained sharing/actual-header/actual
+cleanup plus request/packet/context/backlog checks passed141 in18.40s. The first
+run passed140 but the fixed expected patch-order tail still omitted0220; updated
+that reviewed tail and owning investigation guide, then reran all141 successfully.
+Node23 passed21.54s; path/crash-symbol4 passed0.17s. Windows Release and built-in
+checks passed, with matching crash symbols. Generated kernel project selects
+original guest_io_share.c once and the archive exports all three new providers;
+previous device selection/retired-export checks still pass. All22 generated files
+are unchanged from the latest-main build and the generator fingerprint is current.
+Executable SHA256:
+`0b045f29781125378aad66c45fc014b4f607efbfaa25f6dfa473846f0ab1cc45`.
+Actual build provenance is dirty a0e36a91 with recorded source/patch hashes.
+
+Fresh isolated Story scene4/mission1 passed forward11.128969/backward6.184891,
+firing ammo8to6,40 frozen paused samples and60 advancing resume samples; final
+checkpoint120.795s within240s cap. Start/pause/resume images reviewed. Exact
+source/archive/generated/executable/game hashes agree, no run lock/partitions/
+dumps remain, and all26 protected files retain hash,size,mtime. This is minimized
+synthetic-input Classic/movie-skipped Windows coverage, not physical input,
+audio listening, full campaign or Mac title acceptance. The game does not directly
+import these three share APIs; native contracts establish their new behavior.
+Stage0220 local snapshot/migration15171 remains running; new pushed-head CI must
+also pass. Source/toolkit independence remains incomplete.
+
+
+
+Stage0220 historical-fixture repair: all three affected upgrade routes passed
+in86.07s, preserving historical setup and complete-stack provider/cleanup checks.
+Exact dfb54cf2 native CI had passed Windows1972 tests/247skips/18subtests303.25s,
+release172/3subtests4.43s; Mac1890/294skips/18subtests217.97s and release169/
+3skips/3subtests4.49s. Both patch-upgrade jobs failed only the same three now
+repaired historical models. All56 other local migration checks passed previously;
+new-head full both-host CI is still required. Source/archive/generated/executable/
+game hash audit passed and all26 protected files unchanged. This fixture/docs
+repair needs no product rebuild or replacement gameplay evidence; the recorded
+0b045f29 executable and bounded Story results remain authoritative.
+
+
+
+MAC-118 stage0220 exact-head CI acceptance (2026-10-29):
+
+Exact118d21fdf6b7b9316cb29093495e8875aef0aa1a runtime workflow40914362747 and
+launcher40914362778 completed success. Windows native1975passed248skipped/
+18subtests386.53s and release172passed3subtests6.47s. Mac native1890passed/
+295skipped18subtests220.72s and release169passed3skipped3subtests2.68s. Patch
+upgrades Windows59passed289.62s; Mac57passed2skipped84.67s. Both host launchers
+and all final PR/runtime gates passed. Historical model exclusions and Online
+wait-condition repairs passed the complete suites without removing assertions,
+extending the telemetry deadline, changing dependencies or relaxing warnings.
+
+The product source/patch/binary hashes are unchanged from recorded0b045f29
+Windows Release and bounded isolated Story acceptance. This establishes both-host
+CI for stage0220, not native Mac title gameplay or complete toolkit independence.
+Driver callback/queue/synchronous I/O and broader kernel/runtime/tooling retirement
+remain unfinished. The next callback ownership/target/rollback/prepared-frame
+candidate is still uninstalled and is not included in this CI acceptance.
+
+MAC-118 stage0221 request callback lifetime follow-up: shared implementation;
+Windows Release/isolated Story and both-host sourceCI acceptance passed;
+native Mac title validation pending. Existing MAC-118 status remains applicable.
+
+Stage0221 extends original request ownership/prepared callbacks and adds scoped
+nonlocal cleanup and request-owned device leases in shared src/runtime source.
+No host-specific feature fork or new adapter is needed; it uses the existing
+lock, mapping, guest-entry and object-scope contracts on both hosts. This is a
+prerequisite for driver replacement, not completed CallDriver/CompleteRequest,
+queues, cancellation, synchronous builders or backend support. The ignored call
+composer's Xbox device-slot assumption is unresolved and is not installed.
+
+Acceptance: strict test_io_lifetime/owner/pool/registry/callback suites, patch
+migrations, source/archive selection, Release and isolated Windows Story checks;
+both native CI hosts passed forab70f7b6; native Mac title gameplay remains pending.
+PR #406, source ab70f7b6. Windows66 focused and57 adapter/input tests pass;
+Story movement/firing/pause/resume and13-provider/archive/hash audit pass.
+Exactab70f7b6 runtime40923947215/launcher40923947191 both passed, including
+native Windows2008pass/Mac1923pass and patch Windows59pass/Mac57pass2skip.
+Complete local historical-upgrade/context/path/symbol run:128passed908.73s.
+No native Mac title or full driver replacement claim.
+See STATUS and [contracts](../agent-context/request-lifetime.md).
+
+MAC-118 stage0222 follow-up (PR#406; source commit recorded in Git history): shared original target/call
+composer selected through0222; four-byte stack prefix plus20 opaque bytes replaces
+unverified operation/device fields. Both hosts use the same source/lock/mapping/
+callback contracts; no new OS adapter or duplicate implementation. Native bridge,
+completion/queues/APCs and caller-owned packet adoption remain unfinished.
+Acceptance: maintained stack/request/target/call/forward/lifetime/pool/header
+contracts, real Windows metadata-unmapping test, patch upgrades, Release/archive
+audit and isolated Story regression. Windows125 selected native/upgrade/context/path/symbol checks passed;
+Release/archive selection and isolated Story movement/firing/pause/resume passed,
+with all26 protected files intact. New-stage CI/Mac title checks pending;
+keep MAC-118 Awaiting validation. See [contracts](../agent-context/driver-call.md).
+
+MAC-118 stage0222 CI repair: first30c0ef32 Mac suite rejected2 fault mutants
+under unchanged Clang/Werror for unused expected/put; provider baselines passed.
+Tests now keep those references while introducing real wrong-pointer/location
+behavior. Product code/binary is unchanged; new-head CI pending. The supported-US
+title audit also confirms device+20 and transfer4/8/12 fields despite the public
+header's omissions; see driver-call.md for corrected evidence and remaining scope.
+
+MAC-118 stage0223 follow-up (uncommitted, PR#406): common transfer and packet
+construction, preparation-before-publication in the request pool, and scoped
+completion/IOSB delivery coordination are shared C providers. No OS-specific
+policy fork; backends supply actual pinning, event/APC/thread delivery and cleanup.
+Native guest routing/queues/caller-owned packets/backend acceptance remain needed.
+Portable contracts and the Windows real-event/metadata-unmap pipeline are selected
+in CI; private title instruction evidence requires the local supported US XBE.
+Windows141 native/title and42 selected upgrade/context/fixture-recheck cases
+passed (17 overlap); Release/archive audit and isolated Story movement/firing/
+pause/resume passed, with26 protected files unchanged. New-stage CI and native
+Mac title acceptance pending; retain MAC-118 Awaiting validation. See [contracts](../agent-context/transfer-completion.md).
+
 ### MAC-119 - Profile-scoped Unlock Content
 
 - **Status:** Awaiting validation
@@ -7424,8 +7570,196 @@ Mac title acceptance is implied.
 - [Evidence/limits](STATUS.md#mars-prison-high-refresh-material-flicker-398---2026-10-29),
   [cache contract](../agent-context/render-matrix-cache.md).
 
+
+MAC-118 stage0224 follow-up (PR#406): shared original guest_io_queue.c/.h and
+0224 select bounded host-owned FIFO state with independently retained waiting,
+current and caller refs. No OS-specific adapter is needed for this core; the
+maintained fixture uses native Windows/pthread locks and eight producers. Actual
+StartIo/kernel routing, guest queue mirrors, keyed ordering, cancellation and
+device lifetime/backend adapters remain unfinished. Windows8 queue cases are
+included in233 passing native/title/timing cases;25 repository/upgrade checks,
+Release/built-ins/symbols and isolated Story movement/fire/pause/resume passed.
+Prior5cc89668 both-host CI passed; new-source CI and native Mac title acceptance
+pending. Keep MAC-118 Awaiting validation. Evidence/host/limits in STATUS's
+stage0224 entry; contracts in transfer-completion.md.
+
+
+MAC-118 stage0225 follow-up (source fd793423, PR#406): shared guest_io_startio.c/.h provides
+allowlisted void stdcall(Device,Request) without consuming another stack slot,
+with independent forward callback ownership and pre-entry rollback/nonlocal
+cleanup. No OS adapter is needed for this core; real kernel queue/device mirrors,
+cancel/key policy and backend routing remain unfinished. Portable17 scenarios,
+six compiled faults and a separate real Windows driver->StartIo metadata-unmap
+case are included in189 passing native/device/title tests. Windows25 upgrade/
+context checks, Release/built-ins/symbols and isolated Story movement/fire/pause/
+resume passed. Prior e467 Windows/Mac native and launcher CI both passed; new-source CI and
+Mac title execution pending. Keep MAC-118 Awaiting
+validation. STATUS stage0225 records host, exact binary hashes and limits.
+
+
+MAC-118 stage0226 follow-up (PR#406): shared guest_io_queue_wire.c/.h binds
+CurrentIrp/Busy/list mirrors to host FIFO ownership. Owner-level waiting tags
+exclude two waiting lists, while upper current/lower waiting remains legal;
+Inserted clears under owner lock before membership release. Atomic submit starts
+idle work or appends FIFO. Persistent device generation/lease/index lifecycle,
+key/cancel policy, kernel routing and full backend remain unfinished. No OS adapter
+is needed for these common components. Windows216 native/request/device/title/
+header checks include9 mirror and8 StartIo cases;25 upgrades/context checks,
+Release/built-ins/symbols and isolated Story movement/fire/pause/resume passed.
+Prior0368 Windows/Mac runtime and launcher CI passed; new-source CI and native Mac
+title acceptance pending. Keep MAC-118 Awaiting validation. STATUS stage0226
+records hashes, host and scope; transfer-completion.md describes contracts.
+
+
+MAC-118 stage0227 follow-up (PR#406): shared guest_io_scheduler.c/.h owns bounded
+persistent device queue records, real device leases and generation-checked API
+refs. Scoped cleanup handles nonlocal exits; close/global stop reject new work
+before draining waiters, retaining current/pending/callback lifetime independently.
+Final failed lease release quarantines without automatic retry. No OS adapter is
+needed for this common layer. Windows225 native/request/device/title/header tests
+include9 scheduler cases;25 upgrades/context checks, Release/built-ins/symbols and
+isolated Story movement/fire/pause/resume passed. Prior42788 Windows/Mac runtime
+and launcher CI passed; new-source CI and native Mac title execution pending.
+Kernel import routing, caller-owned adoption, keyed/cancel/backend policies still
+need integration. Keep MAC-118 Awaiting validation. STATUS stage0227 records exact
+hashes, host and scope; transfer-completion.md describes lifecycle contracts.
+
+
+MAC-118 stage0228 follow-up (PR#406): existing shared request/owner/pool providers
+now validate/adopt caller-owned packets read-only, track ranges through detached
+pending/cleanup lifetime and free only host metadata for borrowed packets. Unique
+allocator-owned handoff avoids false range conflicts; borrowed overlap still
+rejects before reads. No OS adapter is needed for these C components. Windows235
+native/request/device/title/header tests include adoption/real-event/unmap,1004
+concurrent allocations and repaired scheduler faults;25 upgrades/context checks,
+Release/built-ins/symbols and isolated Story movement/fire/pause/resume passed.
+Prior952b Mac CI failed only the missing-unlock fault timeout; thread-local prelock
+assertion now replaces blocking that probe, with warning/timeout limits retained.
+New-head Mac CI and native Mac title execution pending. Kernel routes and actual
+event/APC/storage/key/cancel backend still need integration. Keep MAC-118 Awaiting
+validation. STATUS stage0228 records exact host, hashes and scope.
+
+
+MAC-118 stage0229 follow-up (PR#406): common guest_event.c/.h supplies event bytes
+and atomic notification/synchronization semantics, reused by device event pins.
+Original guest_kernel_event_init.inc replaces the legacy initializer bridge with
+full mapping/type/range validation, BOOLEAN byte capture and correct dispatcher
+word-size/self-list fields. Existing host shadow/wait scheduling remains
+transitional; no OS adapter duplication is introduced. Windows258 native/request/
+device/event/title/header and25 upgrades/context checks, Release/built-ins/symbols
+and isolated Story movement/fire/pause/resume passed. Prior ec2 Mac CI rejected
+only a compound adoption mutant expression; parentheses now preserve fatal-warning
+checks and the existing scheduler pthread repair passed. New-head Mac CI and native
+Mac title execution pending. Completion target lifetime, thread/APC/backend/key/
+cancel policies and remaining I/O routes still need integration. Keep MAC-118
+Awaiting validation; STATUS stage0229 records exact host/hashes and limitations.
+
+
+MAC-118 stage0231 follow-up (PR#406): shared guest_io_targets.c/.h captures
+real object references and persistent delivery leases for trusted IOSB/event
+regions. Generation/kind/base/full writable span and overlap validation precede
+completion admission. Actual wake follows event publication; native unwind or
+release/wake failure retains quarantined resources without retry. The same
+provider is selected by kernel CMake on both hosts; no OS API is added to shared
+production source. test_io_targets runs portable ownership/fault/coordinator
+contracts on both CI hosts and actual VirtualAlloc/Free/native event checks on
+Windows. Native Mac title gameplay and new-source CI are pending. Existing I/O
+bridges, thread-stack pins/APC/file/locked-buffer/key/cancel/storage/no-event policy
+still need integration; this stage alone does not retire those implementations.
+Keep MAC-118 Awaiting validation; local evidence is in STATUS stage0231 and
+[contracts](../agent-context/transfer-completion.md#owned-completion-target-spans).
+
+
+MAC-118 stage0232 follow-up (PR#406): shared original guest_symlinks and kernel
+namespace providers replace the legacy symbolic-link table/create/delete/lookup.
+Guest create/delete validates complete counted strings; kernel path translation
+uses a copied snapshot, preserving the existing static-rule fallback. Both hosts
+select the same C sources and native worker/fault tests in runtime CI; no new
+platform production adapter is needed. Windows built-in path validation resolves
+an actual project namespace drive link into the isolated save root. Mac title
+validation and new-source CI remain pending. This does not replace the rest of
+kernel_path/VFS or remaining request completion/backend policy. Keep MAC-118
+Awaiting validation; evidence in STATUS stage0232 and
+[symbolic-link contracts](../agent-context/symbolic-links.md).
+
+
+MAC-118 stage0233 follow-up (PR#406): shared original guest_paths planner and
+selected guest_kernel_paths host adapter replace the old rule table, helper
+planners and separate Windows/POSIX translation bodies. Profile/TitleData/cache/
+raw-device routing now uses one counted, bounded plan; Windows retains ACP/UTF16
+and strict UTF8 profile conversion, POSIX byte paths. No additional native adapter
+is required for shared policy. Both-host CI selects planner/fault/host fixtures;
+Windows compiles a POSIX policy fixture without claiming native Mac filesystem
+acceptance. Actual Windows and native Mac path harnesses add bareDVD/partition2
+children, drive-link and short-buffer checks while retaining profile/image tests.
+Host initialization/profile locks/partition-image creation and other VFS/I/O
+completion work remain transitional. New-stage CI/native Mac title acceptance
+are pending; retain MAC-118 Awaiting validation. See STATUS stage0233 and
+[shared path contracts](../agent-context/guest-paths.md).
+
+
+MAC-118 stage0234 implementation: original shared storage and native host provider
+replace the compiled legacy kernel_path unit, with atomic root snapshots and
+exclusive new-image initialization. Windows native fixture validates sparse sizes
+and preservation of existing bytes/size/mtime. Shared state/format/failure/native
+thread tests and original path fixtures pass; Release/built-ins pass before latest
+main integration. Final merged-source checks and native Mac acceptance pending.
+Keep MAC-118 Awaiting validation; contracts in host-storage.md, final evidence to
+be recorded in STATUS. No full VFS/I/O or toolkit independence claim.
+
 MAC-001 follow-up (#385): tracked driver input and negative camera pitch now
 share `src/input/pc_tank.h`, `pc_mounted.h`, and `pc_tank_guest.inc` through the
 common manual wrapper patch (local tank-driver candidate; see STATUS). No separate host adaptation is
 required. Windows candidate validation is in STATUS; physical Mac vehicle,
 mouse and mixed-controller acceptance remains pending.
+
+
+MAC-118 stage0234 merged acceptance: implementation0413dce1 plus main8b4db323
+integrated as02698942. Windows230 selected checks, Release/built-ins/archive audit
+and isolated Story passed; existing-image byte/size/mtime preservation is native
+Windows evidence. Shared storage/geometry/state and OS adapters are selected on
+both platforms, but native Mac filesystem/title and new-source CI remain pending.
+Kernel_path is excluded from project/archive; remaining kernel.h/VFS/I/O/toolkit
+work is unfinished. Keep Awaiting validation. STATUS's merged acceptance records
+exact executable/generated hashes, source revision and validation boundaries.
+
+
+MAC-118 stage0235 implementation: original pool import adapters select existing
+guest allocation ownership; unused kernel_pool and its native exports are removed
+from compiled sources/declarations. Guest ABI and provider semantics remain shared
+on both hosts. Storage Mac feature visibility repair adds Darwin interfaces before
+headers; preserves O_NOFOLLOW/nanosecond/fatal-warning contracts after855b0a0f's
+single failed native storage compilation. Old-head Windows native, both upgrades
+and launchers passed. New-head Mac CI/title acceptance pending; keep Awaiting
+validation. Final local evidence will be recorded in STATUS; kernel-pool.md and
+host-storage.md describe scope. No full toolkit/kernel ownership completion claim.
+
+
+MAC-118 stage0235 follow-up: codeb47b9d9e runtime40989944205 and launcher40989944053
+both passed, including native Mac storage and GPU/API contracts. Darwin header
+repair is CI-verified. Windows isolated pool Story acceptance now passed after the
+separate game exited; no concurrent session guard was bypassed. Keep overall
+Awaiting validation: native Mac title gameplay and remaining kernel/I/O replacement
+are unfinished. STATUS stage0235 completed acceptance records scope and hashes.
+
+
+MAC-118 stage0236 follow-up (PR#406): original shared Gregorian codec and mapped
+calendar imports304/305 replace native RTL time bodies and unused POSIX shims.
+Both hosts use explicit guest serialization, whole-span validation and shared
+range/failure rules. The previous POSIX normalization/pre1970 discrepancy is
+removed. Windows57 selected contracts and Release/archive/generation checks passed;
+Story/upgrades and new-source CI pending at this checkpoint. Native Mac title
+acceptance remains unverified, and remaining kernel/backend/runtime replacement
+is incomplete. Keep Awaiting validation. Contracts: kernel-time.md; evidence in
+STATUS stage0236. Source commit is recorded in Git history, not yet merged.
+
+
+MAC-118 stage0236 acceptance: revision734df44c runtime40994285965 and launcher
+40994285970 passed Windows/Mac native, GPU, upgrades, final transitions and launcher
+package checks. The Windows UTF-8 checker repair is verified. Windows Story passed
+with the final runtime bytes (36cfac00 binary);100 distinct local selected checks
+passed across runs,26 protected files unchanged. No Mac adapter work is needed for
+this portable codec; native Mac title acceptance remains unverified. Remaining
+kernel/runtime replacement is incomplete, so retain Awaiting validation. Exact
+counts, source/game provenance and limits are in STATUS stage0236 completed
+acceptance; contracts remain in kernel-time.md. No main merge/publication.

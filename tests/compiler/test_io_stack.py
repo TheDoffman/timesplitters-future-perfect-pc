@@ -27,8 +27,10 @@ def run(tmp_path,mutation=None):
 
 @pytest.mark.parametrize('mutation',[None,
     ('if(!p || !out || bytes<TSFP_IO_STACK_BYTES)return 0;','if(!p || !out || bytes<20)return 0;'),
-    ('((uint64_t)get(p+16)<<32)','((uint64_t)get(p+16)<<16)'),
-    ('put(p+20,value.device)','put(p+16,value.device)'),
+    ('memcpy(value.opaque,p+4,sizeof(value.opaque));','memcpy(value.opaque,p+4,sizeof(value.opaque)-1);'),
+    ('memcpy(p+4,value.opaque,sizeof(value.opaque));','memcpy(p+4,value.opaque,sizeof(value.opaque)-1);'),
+    ('value.control=p[3];','value.control=p[2];'),
+    ('p[3]=value.control;','p[3]=value.flags;'),
 ])
 def test_explicit_guest_stack_codec(tmp_path,mutation):
     result=run(tmp_path,mutation)

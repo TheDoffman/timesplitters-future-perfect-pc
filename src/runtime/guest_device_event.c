@@ -1,5 +1,5 @@
 #include "guest_device_event.h"
-#include "recomp_types.h"
+#include "guest_event.h"
 int tsfp_device_event_pin(tsfp_device_factory *factory,uint32_t address,tsfp_device_event *out) {
     tsfp_guest_object_lease lease={0};void *mapping;uint32_t bytes;unsigned char *event;
     if(!out || out->lease.owner || out->final.factory || out->bytes || out->address || address<0x34 ||
@@ -30,19 +30,16 @@ int tsfp_device_event_release(tsfp_device_event *event) {
     event->bytes=NULL;event->address=0;
     return event->lease.owner?tsfp_guest_objects_release(&event->lease):tsfp_device_factory_release_finalization(&event->final);
 }
-static void *signal(tsfp_device_event *event) {
-    return event && (event->lease.owner || event->final.factory) && event->bytes?event->bytes+4:NULL;
+static int view(tsfp_device_event *event,tsfp_event_view *out) {
+    return event && (event->lease.owner || event->final.factory) && event->bytes &&
+        tsfp_event_bind(out,event->bytes,16,event->address);
 }
 int tsfp_device_event_try_wait(tsfp_device_event *event) {
-    void *p=signal(event);uint32_t previous;
-    if(!p)return -1;
-    previous=tsfp_atomic_cas32(p,1,0);return previous==1?1:previous==0?0:-1;
+    tsfp_event_view value;return view(event,&value)?tsfp_event_try_wait(&value):-1;
 }
 int tsfp_device_event_set(tsfp_device_event *event) {
-    void *p=signal(event);uint32_t previous;if(!p)return -1;
-    previous=tsfp_atomic_exchange32(p,1);return previous<=1?(int)previous:-1;
+    tsfp_event_view value;return view(event,&value)?tsfp_event_set(&value):-1;
 }
 int tsfp_device_event_reset(tsfp_device_event *event) {
-    void *p=signal(event);uint32_t previous;if(!p)return -1;
-    previous=tsfp_atomic_exchange32(p,0);return previous<=1?(int)previous:-1;
+    tsfp_event_view value;return view(event,&value)?tsfp_event_reset(&value):-1;
 }

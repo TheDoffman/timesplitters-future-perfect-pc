@@ -21,7 +21,7 @@ pytestmark=pytest.mark.skipif(os.name!='nt',reason='Actual Windows host lock/hea
     ('guest_kernel_device_events.inc','value=tsfp_device_event_reset(&frame.event);','value=tsfp_device_event_set(&frame.event);',3),
 ])
 def test_real_windows_device_host_binding(tmp_path,case):
-    providers=('guest_objects','guest_object_services','guest_object_scope','guest_device_factory','guest_device_body','guest_device_callback','guest_callback_call','guest_device_dispatch','guest_device_event','guest_device_event_scope','guest_device_event_batch')
+    providers=('guest_objects','guest_object_services','guest_object_scope','guest_device_factory','guest_device_body','guest_device_callback','guest_callback_call','guest_device_dispatch','guest_device_event','guest_event','guest_device_event_scope','guest_device_event_batch')
     for name in [f'{n}.{ext}' for n in providers for ext in ('c','h')]+['guest_kernel_device_host.inc','guest_kernel_devices.inc','guest_kernel_device_events.inc','guest_device_host_contract.c']:
         (tmp_path/name).write_bytes(source_file(name).read_bytes())
     for name in ('guest_object_names.c','guest_object_names.h','guest_name_service.c','guest_name_service.h','guest_kernel_names.inc'):

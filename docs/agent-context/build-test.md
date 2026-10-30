@@ -926,6 +926,52 @@ that skip does not replace native Mac compilation or title gameplay.
 
 [Unlock migrations](unlock-content.md).
 
+
+Original sharing bridges and ordinal80 cleanup: [contracts and checks](kernel-sharing.md).
+
+
+Stage0220 migration models: native-checkpoint, old-controls and old-Mac fixtures
+omit0220 together with its0219 prerequisite while constructing historical inputs.
+Each complete upgrade explicitly asserts the original sharing include/provider
+and ordinal80/16byte cleanup. Full current stacks still include0220. No loader,
+patch bytes, runtime behavior, strict warnings or final upgrade checks are weakened.
+
+
+Online loopback CI synchronization: test_online.py's three-peer handshake waits
+for the host's two authenticated latency replies as well as each guest's first
+reply, matching its existing assertions. The same four-second deadline, nonce/
+credential/replay checks and relay assertions remain. A partial host roster must
+not end that wait. This test-only fix changes no transport or runtime behavior.
+
+
+Original request lifetime/callback prerequisites: [contracts and ABI boundary](request-lifetime.md).
+
+
+Stage0222: [original driver-call composition and opaque stack payload](driver-call.md).
+
+
+Driver fault controls must compile under Clang/Werror before runtime rejection:
+target expected-pointer weakening retains the expected operand; separate wrong
+rollback location/pointer controls retain put. See test_io_target/test_io_call;
+unused-mutant compiler errors are fixture failures, never passing fault evidence.
+
+
+Stage0223: [private request construction and completion delivery](transfer-completion.md).
+
+Stage0224: [host-owned FIFO request scheduling](transfer-completion.md#host-owned-request-queue).
+
+Stage0225: [StartIo callback composition and acceptance](transfer-completion.md#startio-callback-composition); maintained maps include the new provider.
+
+Stage0226: [exclusive waiting membership and device queue mirrors](transfer-completion.md#device-queue-mirrors).
+
+Stage0227: [persistent device queue lifetime and scoped scheduler APIs](transfer-completion.md#persistent-device-queue-lifetime).
+
+Stage0228: [read-only caller-owned request adoption and range lifetime](transfer-completion.md#caller-owned-request-adoption).
+
+Stages0229/0231: [events and targets](transfer-completion.md). Stage0232: [symbolic links](symbolic-links.md).
+
+Stages0233/0234: [routing](guest-paths.md), [original host storage](host-storage.md).
+
 Vehicle mouse coverage: `tests/gameplay/test_mounted_mouse.py` exercises shared
 mode `0x400` seat ownership and both host adapter bodies. Its optional supported-XBE
 fixture (`vehicle_mouse_guest.c`) runs original seat dispatch, gun update and camera
@@ -937,3 +983,11 @@ link restoration across camera headings, forward/reverse and steering. Original
 CA040 camera coverage now includes nonzero driver pitch; its original custom
 ABI saves ESI, while the pitch branch uses other registers as scratch. Existing
 zero-pitch ABI expectations remain checked. See [tank controls](mounted-mouse.md).
+
+Stage0235: [original pool imports and native surface retirement](kernel-pool.md).
+
+Stage0236: [original absolute-time codec and guest calendar imports](kernel-time.md).
+
+The0236 upgrade source checker reads UTF-8 explicitly: Windows cp1252 cannot
+decode existing bridge box-drawing comments. CI4cb4697c found this fixture-only
+error; native calendar source and the accepted game binary do not change.

@@ -1,0 +1,64 @@
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -6597,15 +6597,7 @@
+ }
+ 
+ /* --- IoCheckShareAccess (ordinal 63, 5 args = 20 bytes) --- */
+-static void bridge_IoCheckShareAccess(void)
+-{
+-    (void)STACK_ARG(0);
+-    (void)STACK_ARG(1);
+-    (void)STACK_ARG(2);
+-    (void)STACK_ARG(3);
+-    (void)STACK_ARG(4);
+-    g_eax = 0;
+-}
++#include "guest_kernel_share.inc"
+ 
+ 
+ 
+@@ -6639,21 +6631,10 @@
+ }
+ 
+ /* --- IoRemoveShareAccess (ordinal 78, 2 args = 8 bytes) --- */
+-static void bridge_IoRemoveShareAccess(void)
+-{
+-    (void)STACK_ARG(0);
+-    (void)STACK_ARG(1);
+-}
+-
+-/* --- IoSetShareAccess (ordinal 80, 5 args = 20 bytes) --- */
+-static void bridge_IoSetShareAccess(void)
+-{
+-    (void)STACK_ARG(0);
+-    (void)STACK_ARG(1);
+-    (void)STACK_ARG(2);
+-    (void)STACK_ARG(3);
+-    (void)STACK_ARG(4);
+-}
++
++
++/* --- IoSetShareAccess (ordinal 80, 4 args = 16 bytes) --- */
++
+ 
+ /* --- IoDismountVolume (ordinal 90, 1 arg = 4 bytes) --- */
+ static void bridge_IoDismountVolume(void)
+@@ -8362,7 +8343,7 @@
+     case  76: return 20;  /* IoQueryVolumeInformation (5) */
+     case  77: return  4;  /* IoQueueThreadIrp (1) */
+     case  78: return  8;  /* IoRemoveShareAccess (2) */
+-    case  80: return 20;  /* IoSetShareAccess (5) */
++    case  80: return 16;  /* IoSetShareAccess (4) */
+ 
+     /* Kd */
+     case  88: return  0;  /* KdDebuggerEnabled (void) */
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -32,6 +32,7 @@
+ add_library(xbox_kernel STATIC ${KERNEL_SOURCES})
+ 
+ target_sources(xbox_kernel PRIVATE
++    "${TSFP_SHARED_SOURCE}/runtime/guest_io_share.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_object_names.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_name_service.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_device_factory.c"

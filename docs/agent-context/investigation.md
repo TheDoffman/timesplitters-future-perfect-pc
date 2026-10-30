@@ -44,7 +44,7 @@ Call-frame replacement follows dispatch and guest ABI in effective patch order.
 
 After remote main contains a completed task, remove its local task branch using
 safe deletion after switching away and checking for unique or uncommitted work.
-Root AGENTS.md owns this repository-wide rule; retain other chatsâ€™ unmerged work
+Root AGENTS.md owns this repository-wide rule; retain other chatsÃ¢â‚¬â„¢ unmerged work
 and ignored data. Other checkouts must pull and reread it.
 
 Build commands now live under `tools/build/`; the evidence broker allows that
@@ -283,3 +283,47 @@ resolve providers from src/runtime; ignored experiments are not shipped tests.
 Stage0219 extends the mapped compiler-patch suffix before the final repository
 layout patch. [Device contracts](kernel-devices.md) identify maintained providers,
 source/test routes, actual-header probes and the pending build/game boundary.
+
+
+The indexed patch-order contract now includes0220 after0219 and before2090;
+keep the fixed expected tail synchronized when adding reviewed independent stages.
+Sharing contracts: [kernel-sharing](kernel-sharing.md).
+
+
+Next driver stage: [request lifetime and unresolved Xbox slot evidence](request-lifetime.md).
+
+
+The0222 [driver-call map](driver-call.md) supersedes the uninstalled-composer note; kernel routing remains unfinished.
+
+
+Request prefix: [0223 contracts and Thread+50 evidence](transfer-completion.md).
+
+Stage0224: [queue ownership and native acceptance routes](transfer-completion.md#host-owned-request-queue); the maintained patch map includes the new FIFO provider.
+
+Stage0225: [StartIo callback composition and acceptance](transfer-completion.md#startio-callback-composition); maintained maps include the new provider.
+
+Stage0226: [exclusive waiting membership and device queue mirrors](transfer-completion.md#device-queue-mirrors).
+
+Stage0227: [persistent device queue lifetime and scoped scheduler APIs](transfer-completion.md#persistent-device-queue-lifetime).
+
+Stage0228: [read-only caller-owned request adoption and range lifetime](transfer-completion.md#caller-owned-request-adoption).
+
+Stage0229: [original event bytes/atomics and KeInitializeEvent bridge](transfer-completion.md#original-guest-events).
+
+Stage0231 context regression asserts the real33-patch late compiler tail, with
+0231 after0229 before2090. Main2130 DPI remains earlier by actual loader order.
+
+Stage0232 context regression extends the exact late compiler tail to34 patches,
+0232 follows0231 before2090; the main DPI patch stays earlier by loader order.
+
+Stage0233 context tail now35 patches:0233 after0232 before2090; host routing
+policy is in guest_paths.c rather than two kernel_path translate bodies.
+
+Stage0234 context tail extends to36 patches, after0233 before2090. Upgrade
+assertions require original host/storage providers and exclude kernel_path.c.
+
+Stage0235 extends the late compiler tail to37 patches, after0234 before2090;
+upgrades require the original pool include and exclude native kernel_pool.c.
+
+Stage0236 extends the exact late compiler tail to38 patches, after0235 before2090;
+calendar provider/imports replace native RTL time bodies and unused POSIX shims.

@@ -32215,3 +32215,990 @@ main interaction/audio/release-speed changes. Merged plan/repository and device
 fixture checks passed172 plus29subtests in36.96s. Node contracts passed23 in12.82s;
 local LF normalization keeps the unchanged context bounds valid. Windows Release
 regeneration/build is in progress; prior86a960df game evidence is historical.
+
+
+### Device CI repair and latest-main Windows regression (2026-10-29)
+
+Pushed a0e36a91 includes the warning-clean isolated device fixture and main68408d4d.
+Windows Release regeneration/build/built-in checks and matching crash symbols
+passed. All ten device/name providers remain selected once, kernel_ob.c excluded,
+nine retired native symbols absent and generator inputs current. Four of the22
+recorded generated files differ from the historical pre-main baseline as expected
+for the combined main hooks. Executable SHA256:
+`a7fd543f620525bb7025fef33293adfcc3073db40ca6144b0b70371deae630d3`.
+Fresh isolated Story scene4/mission1 passed movement11.195015 forward/6.184892
+backward, firing8to6,40 frozen pause samples and60 advancing resume samples;
+last checkpoint104.532s within240s cap. Start/pause/resume captures reviewed.
+Installed source/archive/executable/generated/game hashes agree and all26
+protected files retain hash,size and mtime. Minimized synthetic-input Classic,
+movie-skipped Windows regression; no physical/audio listening/campaign/Mac title
+claim. Plan/device172checks plus29subtests and Node23 passed locally.
+
+Exact a0e36a91 runtime CI40878529221 now passes Mac native, both patch upgrades
+and both launchers; Windows native/final gates remain in progress. Mac CI proves
+its selected asset-free contracts, not native Mac game behavior. Local merged
+migration66031 is still running; prior0f1189ec migration52 passed28m03s.
+
+
+Exact a0e36a91 runtime40878529221 completed success on both hosts and all final
+gates. Windows native1960passed247skipped18subtests435.07s; release172passed
+3subtests7.31s. Mac native1878passed294skipped18subtests228.97s; release169passed
+3skipped3subtests2.50s. Both launcher hosts/final passed. Local fresh merged
+snapshot/migration66031 passed59 in675.65s. This accepts stage0219 CI, not full
+native Mac title gameplay or all-runtime independence.
+
+Stage0220 original sharing replacement is now being installed. Candidate policy,
+actual-adapter/header checks passed11 in4.83s. Added an actual ordinal80 cleanup
+fault control for maintained execution. The first patch application failed
+before writing runtime files because0220 lacked a loader dependency override;
+added its explicit order after0219. Production build/game/new-head CI pending.
+
+
+Stage0220 Windows local acceptance: maintained sharing/actual-header/actual
+cleanup plus request/packet/context/backlog checks passed141 in18.40s. The first
+run passed140 but the fixed expected patch-order tail still omitted0220; updated
+that reviewed tail and owning investigation guide, then reran all141 successfully.
+Node23 passed21.54s; path/crash-symbol4 passed0.17s. Windows Release and built-in
+checks passed, with matching crash symbols. Generated kernel project selects
+original guest_io_share.c once and the archive exports all three new providers;
+previous device selection/retired-export checks still pass. All22 generated files
+are unchanged from the latest-main build and the generator fingerprint is current.
+Executable SHA256:
+`0b045f29781125378aad66c45fc014b4f607efbfaa25f6dfa473846f0ab1cc45`.
+Actual build provenance is dirty a0e36a91 with recorded source/patch hashes.
+
+Fresh isolated Story scene4/mission1 passed forward11.128969/backward6.184891,
+firing ammo8to6,40 frozen paused samples and60 advancing resume samples; final
+checkpoint120.795s within240s cap. Start/pause/resume images reviewed. Exact
+source/archive/generated/executable/game hashes agree, no run lock/partitions/
+dumps remain, and all26 protected files retain hash,size,mtime. This is minimized
+synthetic-input Classic/movie-skipped Windows coverage, not physical input,
+audio listening, full campaign or Mac title acceptance. The game does not directly
+import these three share APIs; native contracts establish their new behavior.
+Stage0220 local snapshot/migration15171 remains running; new pushed-head CI must
+also pass. Source/toolkit independence remains incomplete.
+
+
+Concurrent integration: PR394 was externally merged at66bcb20f while sharing
+work was underway. Its merged head is a0e36a91, not the later sharing commit.
+Preserved cf581fc3 on focused feature/guest-share-access and integrated66bcb20f
+without source changes. Old branch/work remains preserved. Sharing receives a
+separate review/CI; no agent merge into main was performed. Current source/
+archive/executable/game hashes remain identical after this history integration.
+
+
+Stage0220 dfb54cf2 CI: both native runtime jobs and both launchers passed;
+Windows/Mac patch-upgrade jobs failed the same three historical fixtures as local
+migration15171 (56passed/3failed559.84s). Those old subsets excluded0219 but
+accidentally retained its dependent0220. Added0220 to the same three historical
+exclusion lists, retaining the complete-stack upgrade and adding explicit final
+sharing-provider/ordinal80 assertions in each. Production source, patch bytes,
+compiled executable and existing gameplay result remain unchanged. Repaired
+fixture checks and fresh exact-head CI remain required.
+
+
+Stage0220 historical-fixture repair: all three affected upgrade routes passed
+in86.07s, preserving historical setup and complete-stack provider/cleanup checks.
+Exact dfb54cf2 native CI had passed Windows1972 tests/247skips/18subtests303.25s,
+release172/3subtests4.43s; Mac1890/294skips/18subtests217.97s and release169/
+3skips/3subtests4.49s. Both patch-upgrade jobs failed only the same three now
+repaired historical models. All56 other local migration checks passed previously;
+new-head full both-host CI is still required. Source/archive/generated/executable/
+game hash audit passed and all26 protected files unchanged. This fixture/docs
+repair needs no product rebuild or replacement gameplay evidence; the recorded
+0b045f29 executable and bounded Story results remain authoritative.
+
+
+Stage0220 f7b0c3b6 CI: both patch-upgrade jobs passed after the historical model
+repair. Windows native failed one existing Online loopback assertion: host peer
+latency count1 versus expected2;1974passed248skipped18subtests398.57s. Its old
+wait ended as soon as all sessions had one reply, before the host necessarily
+received the second. Wait now includes the exact existing host count requirement,
+retaining the same four-second deadline and all assertions. No production code,
+source/patch/executable/game hashes change. Mac native remains queued at the
+latest observation; the complete repaired-head CI result is still required.
+
+
+Online synchronization repair verified locally: all4 Online contracts passed
+in6.15s, including authenticated nonce/expiry and relay/forgery/replay assertions.
+Four simultaneous independent three-peer loopback runs also passed (5.93-6.10s
+each), keeping the original4second telemetry deadline. Installed source/archive/
+generation/executable/game hash verification and context/whitespace checks pass.
+No gameplay rebuild is required for this test-only synchronization change.
+
+
+### Stage0220 complete CI acceptance at118d21fd (2026-10-29)
+
+Exact118d21fdf6b7b9316cb29093495e8875aef0aa1a runtime workflow40914362747 and
+launcher40914362778 completed success. Windows native1975passed248skipped/
+18subtests386.53s and release172passed3subtests6.47s. Mac native1890passed/
+295skipped18subtests220.72s and release169passed3skipped3subtests2.68s. Patch
+upgrades Windows59passed289.62s; Mac57passed2skipped84.67s. Both host launchers
+and all final PR/runtime gates passed. Historical model exclusions and Online
+wait-condition repairs passed the complete suites without removing assertions,
+extending the telemetry deadline, changing dependencies or relaxing warnings.
+
+The product source/patch/binary hashes are unchanged from recorded0b045f29
+Windows Release and bounded isolated Story acceptance. This establishes both-host
+CI for stage0220, not native Mac title gameplay or complete toolkit independence.
+Driver callback/queue/synchronous I/O and broader kernel/runtime/tooling retirement
+remain unfinished. The next callback ownership/target/rollback/prepared-frame
+candidate is still uninstalled and is not included in this CI acceptance.
+
+
+## 2026-10-29 - Stage0221 request lifetime groundwork
+
+Prior exact cead9d23 runtime40917186209 and launcher40917186212 both completed
+successfully, rechecked before this change. Integrated latest main3b4e679b into
+the feature branch as3d74126b without resetting work or merging into main.
+Original split-phase owner tickets, scoped nonlocal cleanup, persistent bounded
+device leases and prepared0..4word callbacks are now maintained shared source.
+Full driver bridge replacement remains unfinished. The call composer is still
+ignored/uninstalled because public Xbox slot declarations do not establish its
+proposed DeviceObject word; no desktop layout assumption is being promoted.
+
+Full local migration acceptance passed. First maintained test promotion
+found fixture-only duplication of a source-including device helper and mutation
+anchors shared by both callback APIs; corrected fixture selection/anchors while
+preserving all executable fault controls and fatal warnings. Existing data and
+settings preservation baseline remains the original26 files.
+
+Windows0221 local acceptance so far: Release/built-in checks passed; matching
+crash symbols written. All66 lifetime/owner/pool/concurrency/callback/header and
+registry checks passed27.29s; adapter/sharing/packet/mounted-input/theme57
+passed33.91s. Path/backlog/symbol5passed0.26s. Build audit selects13 device/
+sharing/lifetime providers once, retains required new archive symbols, excludes
+kernel_ob and nine retired exports, and confirms22 generated files unchanged
+with a current fingerprint. Actual build base3d74126b had the recorded dirty
+source inputs; executable8a75a99a41d3c1638fafce0b93e5b51d8f90eb6a22c8f69fe7c7dbfd57cf9a06.
+After the separate Issue358 play session exited, fresh isolated Story acceptance
+passed on the rebuilt executable: scene4/mission1, forward11.174544/back6.184892,
+ammo8to6,40 frozen pause samples and60 advancing resume samples, last checkpoint
+95.242s within240s cap. Three fresh captures reviewed. Runner/controller exited0,
+profile signatures valid, fixture preserved, no dumps/locks/partition images left.
+Current source/archive/executable/generated/game hashes agree. All26 protected
+files retain original hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44;
+minimized synthetic-input Classic/movie-skipped regression, not physical input,
+listening, campaign completion or native Mac title verification. Both packaging
+entry points resolve with --help; no new game ZIP was assembled or published.
+Node context6checks passed. Product source commitab70f7b6 is pushed in draft
+PR#406. Exactab70f7b6 runtime40923947215 and launcher40923947191 completed
+successfully with all final gates. Windows native2008passed248skipped plus18
+subtests439.35s; release172passed plus3subtests16.21s. Mac native1923passed
+295skipped plus18subtests261.50s; release169passed3skipped plus3subtests3.45s.
+Patch upgrades: Windows59passed265.67s, Mac57passed2skipped133.68s. Both launcher
+hosts and dual-platform release gates passed. This verifies the selected shared
+contracts and hosted checks; native Mac title gameplay remains unverified.
+The uninstalled ABI-dependent composer and complete toolkit retirement remain
+unfinished. The complete local historical-upgrade/context/CI-selection/backlog/
+path/symbol run passed128checks908.73s. All local build/game/test processes exited;
+no game session remains active. Source and private-data hashes were rechecked.
+This documentation follow-up changes no product source or built executable;
+its own hosted workflow status must be distinguished from codeab70f7b6's green CI.
+
+
+## 2026-10-29 - Stage0222 original driver composition
+
+Starting6cca3879 on feature/guest-share-access; prior codeab70f7b6 had both CI
+workflows green, while its documentation-head CI is tracked separately. Initial
+tree clean; fetched main unchanged3b4e679b; protected26 files unchanged. Exact
+6cca3879 runtime40925947708 and launcher40925947683 subsequently completed
+successfully, including both native hosts/upgrade jobs and all final gates.
+Original target/call composer and read-only request peek are now maintained shared
+source, with0222 selecting the two new providers in the kernel library. This does
+not reroute inherited kernel IofCallDriver/CompleteRequest or complete the toolkit
+replacement. The stack codec now preserves20 opaque bytes instead of inventing
+length/key/offset/device fields; no guest DeviceObject tag is written. Detailed
+per-operation Xbox parameter packing remains unverified. Public declarations and
+the maintained service boundaries are documented in driver-call.md.
+
+Corrected opaque-payload candidate19cases passed12.75s, including nested pending,
+native unwind, invalidation/private rollback and real Windows metadata unmap.
+Initial maintained opaque codec/request/lifetime44cases passed17.63s. New-stage maintained85passed36.19s; four affected historical/fresh upgrade and
+context/backlog25passed153.18s; callback/packet ABI/path/symbol15passed6.93s.
+Release/built-in checks and matching crash symbols passed. Archive audit selects
+15 device/sharing/lifetime/driver providers once and contains call/target/peek
+symbols; kernel_ob/nine retired exports remain absent. All22 generated files are
+unchanged with a current fingerprint. Actual build was dirty6cca3879 with exact
+source/patch inputs recorded; executableSHA256
+181e2ded43d5e217fb15ad64224957a79ee901aae0b71cd3e89598bcd02f3ef9.
+
+Fresh isolated Story regression passed: scene4/mission1, forward11.174549 and
+back6.391054, ammo8to6,40 frozen pause/60 advancing resume samples; final checkpoint
+95.432s within240s cap. Three fresh captures reviewed; runner/controller exited0,
+profile signatures valid, fixture preserved, no dumps/locks/partition images left.
+Source/archive/executable/generated/game hashes agree; all26 protected files
+retain original hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44,
+minimized synthetic-input Classic/movie-skipped run. Not physical input,
+listening, campaign completion or native Mac title verification. New-stage CI
+pending. No old IofCallDriver/CompleteRequest bridge retirement is claimed.
+
+
+Stage0222 evidence correction, after source30c0ef32: the supported-US import
+audit confirms15 I/O imports including62/65/67/69/71/74/76/81/83/84/85/86/87/91/359.
+These driver/synchronous services cannot be classified as unimported merely
+because a bounded boot passes. Call sites62/86 are4367CC/4367E8; StartPacket83
+is46E5B1. Title46F080 reads IRP.CurrentStackLocation+5c and46F0AA writes device
+to slot+14hex. Title46EEE1 reads transfer length+4, buffer word+8, byte offset
+low/high+c/+10hex, with flags bit80 choosing direct versus UserBuffer-relative
+buffer interpretation. The public slot declaration was incomplete; calling+20
+invented was too strong. The generic opaque codec is still appropriate and the
+composer's preservation contract is explicit, but Xbox IofCallDriver assignment
+semantics and complete request routing remain unverified. No executable/source
+change accompanies this evidence correction, and no private title code is shipped.
+
+
+Stage0222 first-head CI30c0ef32: launcher40928510742 completed successfully.
+Runtime40928510622 Windows native and both patch-upgrade jobs passed; Mac native
+reported1941passed296skipped18subtests and2 failed compiled fault controls.
+The target pointer-check mutant dropped the only use of expected; the rollback
+mutant dropped the only use of static put. Clang/Werror therefore rejected those
+mutants before runtime. Provider baselines passed. Tests now retain meaningful
+uses while weakening the expected-pointer check, and split rollback into wrong
+location/wrong pointer controls, preserving compilation and runtime rejection.
+No warnings, provider code, patch bytes, installed executable or acceptance
+assertions are relaxed. Exact new-head both-host CI remains required.
+
+Local repair acceptance: all13 target/call cases passed8.30s. The first additional
+wrong-pointer control also exposed unused current under MSVC/WX; using
+current-minus-one-slot retains that parameter while still introducing the wrong
+restored pointer. Both wrong-pointer and wrong-location controls compile and
+are rejected at runtime. Product source/executable remains the tested181e2ded
+build. New-head Mac/Windows CI remains pending; no retry is counted as a pass.
+
+
+## 2026-10-29 - Stage0223 request construction and completion components
+
+Starting9e3e659b on feature/guest-share-access; initial tree clean, fetched main
+unchanged3b4e679b, protected26 files unchanged. Prior repaired runtime40930532886
+passed all native/upgrade/final gates. Standalone launcher40930532872 initially
+hit its5-minute final artifact-verification limit after both builds passed;
+retrying that job and its dependent gate succeeded without workflow/source changes.
+This is evidence for9e3e659b, not the new stage.
+
+Original transfer/build/completion providers and pool private preparation now
+live in maintained shared source through0223. Kernel imports still use existing
+bridges; no full I/O/toolkit replacement claim. Thread+50 follows the public
+five-word DriverContext layout, consistent with title queue links+54. No private
+title bytes or foreign implementation bodies are shipped.
+
+Candidates: transfer10pass, literal constructor7pass4.11s after strengthening
+its high-device-byte oracle, private construction4pass3.20s, completion10pass7.25s,
+Windows end-to-end real event/metadata unmap1pass2.47s; title field evidence12pass.
+Maintained native/title141passed53.81s. Affected historical/fresh upgrades,
+context/backlog and17 fixture rechecks passed42tests205.49s; those17 rechecks
+overlap the native run. Host-structure byte-preservation oracles copy their full
+representation with memcpy rather than depending on padding in struct assignment.
+Release/built-in checks and matching crash symbols passed. Archive audit selects
+18 device/I/O component providers once and all request pool/owner/registry/stack
+providers once, including new transfer/build/result/completion/construct symbols.
+kernel_ob and nine retired exports remain absent; no additional legacy import
+retirement is claimed. All22 generated files are unchanged/current fingerprint.
+Actual build: dirty9e3e659b with exact recorded source/patch inputs; executable
+SHA2561fbdae4d830ad7480a76185b61df7c3e2faaa506ff46417035dd9492400b7918.
+
+Fresh isolated Story regression passed: scene4/mission1, forward11.174544 and
+back6.193569, ammo8to6,40 frozen pause/60 advancing resume samples, last checkpoint
+92.257s within240s cap. Three fresh captures reviewed; runner/controller exited0,
+profile signatures valid, fixture preserved, no dumps/locks/partition images left.
+Source/archive/executable/generated/game hashes agree; all26 protected files retain
+original hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44, minimized
+synthetic-input Classic/movie-skipped test. No physical-input/listening/campaign
+or native Mac title claim. New-stage CI pending; kernel import routing, queues,
+caller-owned packets and full backend delivery remain unfinished. See
+transfer-completion.md and MAC-118 for scope.
+
+
+## 2026-10-29 - Stage0224 original host-owned request FIFO
+
+Verified prior5cc89668 CI: runtime40936467095 and launcher40936466889 both
+completed/success, including both native hosts, upgrades and final launcher gates.
+Fetched and safely merged main863c2b61 into feature/guest-share-access as611684b2;
+no resets, lost changes or main merge. PR406 remains draft/open/unmerged.
+
+Original guest_io_queue.c/.h adds bounded FIFO host ownership through0224 after
+0223. Each waiting/current entry owns a client ref; next compares current identity
+and returns a separate client ref. Stop closes admission/drains waiting refs
+outside locks, retaining current until explicit next and retaining pending/unknown
+operations independently. No guest list pointers confer authority. The library
+selects this component; existing kernel StartPacket/StartNext/StartIo routing,
+device/wire mirrors, keyed order and cancellation/backend integration remain.
+This does not retire another imported kernel implementation or finish the goal.
+
+Eight baseline/fault cases passed3.95s, including eight concurrent host producers,
+FIFO wrap, duplicate/identity guards, retain overflow, reentrant disposal and an
+independent callback pin surviving inline completion and queue advance. Initial
+fault controls exposed weak oracles masked by a full queue/READY owner and a
+zero wrapped index; new cases exercise those independently. The identity control
+keeps its parameter used; every bad variant must compile before runtime rejection.
+Affected native/title/timing suites passed233tests164.85s. Four fresh/historical
+upgrade models plus repository context/backlog passed25tests144.31s. Eight queue
+cases are included in233, not additional unique tests. Release/built-in checks
+and matching crash symbols passed. Archive selects19 device/I/O providers once,
+including four queue API symbols; kernel_ob and nine retired native exports remain
+absent. All22 generated files unchanged; generation fingerprint current.
+
+Build provenance: dirty611684b2934a39042debbd6ec5ed347cbe17cab5 plus exact recorded
+source/patch hashes in ignored logs/io-queue-build.json. Executable SHA256
+9778bc9657f6cea641c2e00ebd001cbc8f46743fb4cf8ccffcc1ec27064cba9e.
+Supported US XBE hash validated. Isolated Classic Story replay: scene4/mission1,
+forward11.176244/back6.391055, ammo8to6,40 frozen pause and60 advancing resume
+samples, final95.824s within240s cap. Fresh start/fire/pause captures reviewed;
+runner/controller exited0; profiles unchanged/signatures valid/fixture preserved,
+no dumps/runlock/partition images. Source/archive/executable/generated/game hashes
+agree. All26 protected settings/save/fixture files retain hash/size/mtime across
+both local checkouts. Windows NT10.0.26300 x64, VS2022/MSVC14.44; synthetic input,
+minimized movie-skipped test, not physical input/listening/full campaign acceptance.
+New-source CI and native Mac title gameplay remain pending; prior-head CI is not
+new-head evidence. See transfer-completion.md and MAC-118.
+
+
+## 2026-10-29 - Stage0225 original StartIo callback composer
+
+Started clean e467b0510ee66e3db3e1dda3fd00bf7f8e795b67 on
+feature/guest-share-access; fetched main unchanged863c2b61. Previous turn was
+progress (committed/pushed0224 plus local acceptance), not whole-goal completion.
+Prior e467 CI launcher40938793360 and runtime40938793349 both completed/success,
+including Windows/Mac native suites, both upgrades and final launcher artifact
+checks. The still-live Windows job was allowed to finish before the next push;
+no cancelled/retried job is counted as this pass. Original0225 source is committed
+asfd793423 (PR406); new-source CI remains a separate pending check.
+
+Original guest_io_startio.c/.h selects DriverStartIo at driver+0, validates a
+pinned device/full driver table and invokes only an allowlisted translated/manual
+entry as void stdcall(Device,Request). It consumes one caller-held client ref and
+adds an independent forward callback pin to an existing ACTIVE/PENDING operation;
+no request stack advance or packet payload write. Pre-entry rejection rolls back
+only the callback pin, including concurrent completion. Malformed/native exits
+retain ownership and unwind nested scopes. Existing kernel queue imports are
+still legacy: CurrentIrp/Busy/list/device lifetime/cancel/key/backend adapters and
+actual kernel routing remain necessary. Library components are not proof of full
+I/O or toolkit independence.
+
+Portable fixture covers17 scenarios including active/pending/READY/completed,
+null ops/device and preflight rejection, completion during admission, changed
+stack before publication, inline-complete/next, malformed return, child scopes and
+actual native longjmp. Six compiled bad variants fail at runtime. A separate
+Windows fixture composes driver -> StartIo -> inline completion, then actually
+VirtualFree's request/binding metadata before outer return; VirtualQuery proves
+both unmapped. Eight StartIo cases passed7.55s before expanded preflight checks;
+final affected native/device/title suite189passed93.03s, including all8 cases.
+Four fresh/historical upgrades and context/backlog passed25tests146.34s (distinct
+from189). Windows VS2022/MSVC14.44 retains fatal warnings; no local Clang claim.
+Release/built-in checks and matching crash symbols passed. Archive audit selects
+20 device/I/O providers once, including tsfp_io_startio; kernel_ob and nine
+previously retired exports absent. All22 generated files unchanged/fingerprint
+current. No additional legacy import is claimed retired.
+
+Actual build: dirtye467b051 with recorded exact source/patch hashes in ignored
+logs/io-startio-build.json; executable SHA256
+42ed99849f87c7487b22abedc54e78cfbdff521dd2eee16e8d80c5e9485d062f.
+Supported US XBE hash validated. Isolated Classic Story regression: scene4/mission1,
+forward11.174549/back6.184891, ammo8to6,40 frozen pause/60 advancing resume samples,
+last95.335s within240s cap. Fresh start/fire/pause captures reviewed; controller
+and runner exit0, no dumps/locks/partition images. Profiles unchanged/signatures
+valid/fixture preserved. Source/archive/executable/generated/game hashes agree;
+all26 protected files across both local checkouts retain hash/size/mtime.
+Windows NT10.0.26300 x64, minimized synthetic-input/movie-skipped run, not physical
+input/listening/full campaign or native Mac title acceptance. New-source CI remains
+pending. Contracts: transfer-completion.md; Mac handoff: MAC-118.
+
+
+## 2026-10-29 - Stage0226 original queue/device mirrors and membership
+
+Started clean0368ca59eeb8b2d7b7a3d968dff10703db50fab4 on
+feature/guest-share-access; fetched main unchanged863c2b61. Prior0368 runtime
+40940409081 and launcher40940409129 both completed/success, including both native
+hosts/upgrades and final launcher gates. Prior turn was verified source progress;
+full runtime/toolkit independence remains incomplete. PR406 stays draft/unmerged.
+
+Original queue-wire provider now binds a caller-pinned device to host-authoritative
+CurrentIrp/Busy/list mirrors. Queue admission owns an exclusive waiting tag plus a
+client under owner lock; immediate submit atomically takes current and returned
+caller refs, while pending submit appends FIFO. No request can wait in two lists.
+An upper current can wait below. Taking clears Inserted before releasing the tag;
+publishers never write detached/current entry bytes. Review caught and removed an
+earlier ordering race that could clear a lower queue's Inserted after transfer.
+Only retained waiting entries/device bytes are published under queue lock, with
+no guest traversal, guest execution or additional locks. SortKey/fifth context/
+Thread/payload/unrelated device bytes are preserved. This is library integration
+and real StartIo contract acceptance; persistent per-device lease/index lifecycle,
+key/cancel policy, kernel StartPacket/Next routing and the full backend remain.
+No additional legacy kernel implementation is claimed retired.
+
+New mirror suite9passed4.81s, including eight compiled fault controls, literal
+unaligned links, FIFO wrap, corrupt-link resistance, membership/overflow rejection,
+opaque-byte preservation and upper-current/lower-waiting transfer without old
+publisher clobbering. Portable StartIo now binds these mirrors and checks them
+before callback and after inline completion/next across17 scenarios. Final affected
+native/request/device/title/header suite216passed102.52s; all9 mirror and8 StartIo
+cases are included, not additional unique tests. Four fresh/historical upgrades
+and context/backlog checks25passed146.07s, distinct from216. Release/built-in checks
+and matching crash symbols passed. Archive selects21 device/I/O providers once,
+including wire init, atomic submit and three membership API symbols; kernel_ob
+and nine previously retired native exports absent. All22 generated files unchanged
+and fingerprint current. Windows VS2022/MSVC14.44 fatal-warning checks retained.
+
+Actual build: dirty0368ca59 with exact source/patch inputs recorded in ignored
+logs/io-queue-wire-build.json. Executable SHA256
+c0511e031b64ccac3c43209c66e073678368b59bf92557e5720982281f8bf50a.
+Supported US XBE hash validated. Isolated Classic Story replay passed scene4/
+mission1, forward11.176239/back6.184892, ammo8to6,40 frozen pause/60 advancing resume
+samples, final95.688s within240s cap. Three fresh captures reviewed; runner and
+controller exited0, profiles unchanged/signatures valid/fixture preserved, no
+runlock/dumps/partition images. Source/archive/executable/generated/game hashes
+agree. All26 protected save/settings/fixture files across both local checkouts
+retain hash/size/mtime. Windows NT10.0.26300 x64, minimized synthetic-input,
+movie-skipped test; not physical input/listening/full campaign or native Mac
+execution evidence. New-source CI pending; see transfer-completion.md and MAC-118.
+
+
+## 2026-10-29 - Stage0227 persistent device queue lifetime
+
+Started clean42788f14c376b782379b209c3ffc0a8a92dd3b77 on
+feature/guest-share-access; fetched main unchanged863c2b61. Prior42788 runtime
+40942569236 and launcher40942569242 both completed/success, including both native
+hosts/upgrades and final launcher gates. Previous turn was committed/pushed source
+progress, not full-goal completion. PR406 remains draft/open/unmerged.
+
+Original guest_io_scheduler.c/.h adds bounded persistent records/entry storage,
+real device leases and generation-checked, noncopyable API tickets. A preparation
+reservation is not exposed as a usable queue. Device pin/final release occur
+outside metadata locks. Submit pins matching request-owned device bindings before
+admission, so drained pending operations retain independent device lifetime.
+Close/global stop commit admission closure under the shared metadata lock before
+waiter drain. Current requests/API callbacks keep the record/device alive until
+explicit next and scope drain. Failed final lease release quarantines accounting
+without retry/reuse. Scoped StartIo handles actual native unwind without retaining
+C-stack contexts in persistent records. Kernel imports remain legacy; caller-owned
+adoption, keyed/cancel policy and storage/event/APC/backend routing remain required.
+No additional legacy function or full toolkit dependency is claimed retired.
+
+Candidate9 baseline/fault tests passed10.86s. They cover real device heap ownership,
+inline deletion/completion while the outer API still pins the device, actual
+native longjmp, closed waiters retaining pending request/device references,
+lookup rejection, capacity/generation exhaustion, malformed preparation and stop
+while preparing. A controlled release failure keeps the actual lease quarantined;
+only explicit fixture recovery releases that known retained test resource. A close
+fault initially survived because drain closed admission later; an unlock-boundary
+submission probe now tests close/global-stop linearization before drain. All eight
+bad variants must compile and fail at runtime, with fatal warnings retained.
+
+Final affected native/request/device/title/header suite225passed112.58s, including
+those9 scheduler cases. Four fresh/historical upgrade models and context/backlog
+checks25passed149.11s, distinct from225. Release/built-in checks and matching crash
+symbols passed. Archive selects22 device/I/O providers once, including11 scheduler/
+scope API symbols; kernel_ob and nine previously retired native exports absent.
+All22 generated files unchanged/current fingerprint. Context guide size enforcement
+caught systems.md crossing65536 bytes before writing; its0224-0227 links are now
+consolidated into the detailed owning guide rather than dropping contract content.
+
+Actual build: dirty42788f14 with exact source/patch inputs recorded in ignored
+logs/io-scheduler-build.json. Executable SHA256
+278d7cfe023bec821592e79a15c9fc8a3dcfcbc3c131c69161b794946f31fb3e.
+Supported US XBE hash validated. Isolated Classic Story regression: scene4/mission1,
+forward11.174539/back6.184892, ammo8to6,40 frozen pause/60 advancing resume samples,
+last95.802s within240s cap. Fresh start/fire/pause captures reviewed; runner and
+controller exit0, profiles unchanged/signatures valid/fixture preserved, no
+runlock/dumps/partition images. Source/archive/executable/generated/game hashes
+agree. All26 protected save/settings/fixture files across both checkouts retain
+hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic
+input/movie-skipped run; not physical input/listening/full campaign or native Mac
+title acceptance. New-source CI pending. Contracts: transfer-completion.md; MAC-118.
+
+
+## 2026-10-29 - Stage0228 caller-owned request adoption and CI fault repair
+
+Started clean952b7f3c47d804bc62095fee337e672ded2d16f3 on
+feature/guest-share-access; fetched main unchanged863c2b61. Previous turn was
+committed/pushed source progress, not full independence. Prior952b launcher
+40945392939 passed; runtime40945393065 failed Mac job123699436629 only on the
+scheduler missing-unlock fault: pthread blocked before its depth assertion and
+hit30s timeout.2009 passed,311 skipped,18 subtests passed; Windows native and both
+upgrade hosts passed. The fixture now uses thread-local depth and checks before
+acquiring either mutex. Local scheduler9cases passed10.81s. No fatal-warning or
+timeout relaxation, cancelled-job pass or old-head rerun; new Mac CI remains needed.
+
+Original request_validate/owner_adopt/pool_adopt now register initialized caller
+storage read-only with fresh READY host control. Metadata preparation precedes
+publication; disposal/rollback drops metadata/attachments without freeing caller
+storage. An all-node range ledger blocks overlap with registered, detached pending
+and failed-cleanup packets before candidate reads. Owned allocations share the
+ledger. The original four-worker Windows test caught an allocator handoff race:
+actual freed guest storage could be reused before old metadata unlink, causing
+spurious allocation failure. New allocator-owned claims may cross that owned
+cleanup window, relying on unique allocator authority; borrowed claims still wait.
+A deterministic callback handoff regression covers both sides. Known retry and
+uncertain no-retry accounting remain. Caller mappings stay stable until callbacks
+and refs drain; this API is not a guest-memory pin. Existing providers already
+compile these changes, so no new patch/CMake entry or patch-index change is needed.
+Existing IoInitialize/CallDriver/Complete kernel routes remain unchanged until
+full bridge/backend integration. No extra legacy implementation is claimed retired.
+
+Candidate adoption9cases plus native four-worker1004-allocation test passed10cases
+5.71s. Adoption covers all128 stack counts/8256 locations, unaligned packet/output/
+control preservation, invalid shapes, advanced guest state without inferred host
+operation, metadata-only cleanup, duplicate/overlap-before-read, detached pending
+ownership, private prepare/stop rollback and retained owned cleanup. Seven bad
+variants compile before runtime rejection. The real Windows pipeline adopts
+caller-built bytes, runs nested translated drivers, publishes IOSB before a real
+event, retires registry and unmaps both metadata pages while caller heap/data
+remain intact until explicit caller free.
+
+Final native/request/device/title/header suite235passed115.79s, including adoption,
+native concurrency and repaired scheduler cases. Four fresh/historical upgrade
+models and context/backlog25passed145.03s, distinct from235. Release/built-in checks
+and matching crash symbols passed. Same22 device/I/O providers selected once,
+including three new adoption/validation symbols; kernel_ob and nine previously
+retired exports absent. All22 generated files unchanged/current fingerprint.
+Actual build: dirty952b7f3c with exact source/patch inputs recorded in ignored
+logs/io-adoption-build.json. Executable SHA256
+f596fd90e95ab270df704846bc0fe7d4d5b6a0a7fc5b31bcf4a73a261b56788b.
+
+Supported US XBE hash validated. Isolated Classic Story: scene4/mission1,
+forward11.174544/back6.184892, ammo8to6,40 frozen pause/60 advancing resume samples,
+last95.641s within240s cap. Fresh start/fire/pause captures reviewed; runner and
+controller exit0, profiles unchanged/signatures valid/fixture preserved, no
+runlock/dumps/partition images. Source/archive/executable/generated/game hashes
+agree; all26 protected save/settings/fixture files across both checkouts retain
+hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic
+input/movie-skipped run; not physical input/listening/full campaign or native Mac
+title evidence. New-source CI pending. Contracts: transfer-completion.md; MAC-118.
+
+
+## 2026-10-29 - Stage0229 original guest events and initializer bridge
+
+Started cleanec2e4b25290cfcbb497642805a95607bdd6b2616 on
+feature/guest-share-access; fetched main unchanged863c2b61. Previous turn was
+committed/pushed progress, not full independence. Prior ec2 launcher40948607657
+passed; runtime40948607708 failed Mac job123710580173 only on adoption mutant3:
+Clang rejected unparenthesized && inside || under Wlogical-op-parentheses/Werror.
+2017 passed,312 skipped,18 subtests passed283.45s. Scheduler pthread fault repair
+passed that run. Parenthesizing the mutant fixes its syntax without relaxing
+warnings/timeouts or treating an old-head retry as new-source evidence.
+
+Original guest_event.c/.h now serializes16-byte events and supplies shared atomic
+state/set/reset/try-wait primitives. Notification remains signalled; synchronization
+has one consumer. Malformed state is preserved on rejection. Device embedded-event
+pins reuse these methods rather than duplicate signal operations. Original
+KeInitializeEvent bridge code validates full mapping/type/range, snapshots BOOLEAN
+byte input, constructs header before host allocation/guest mutation and replaces
+the legacy bridge body through0229. Size is4 words and links point to the empty
+head; old code used Size16/zero links. Pinned public header/event-size interface
+references are linked in transfer-completion.md; no external algorithm is copied.
+The existing shadow registry consumes the host handle and remains transitional,
+as do wait/pulse scheduling, target pinning/thread/APC delivery and I/O routes.
+This retires the initializer bridge body, not the entire event/I/O manager or a
+new native export. Full toolkit replacement remains unfinished; PR406 stays draft.
+
+Candidate event10cases passed4.17s, including six codec/atomic and two bridge faults
+that compile before runtime rejection. Literal bytes/range/unaligned validation,
+BOOLEAN width, invalid state preservation and eight native waiters cover one auto
+consumer and all notification waiters observing prior IOSB writes. Existing device/
+finalization/Windows-host/adoption67cases passed41.25s (overlap final suite). The
+adopted Windows completion pipeline now validates/signals actual guest event state
+before the real host event, preserving IOSB order and metadata-only caller storage
+cleanup. Complete native/request/device/event/title/header suite258passed132.71s;
+four fresh/historical upgrade models plus context/backlog25passed148.36s, distinct
+from258. Upgrades assert one original initializer include and no old bridge body.
+
+Release/built-ins/matching crash symbols passed. Archive selects23 device/I/O/event
+providers once, including six event API symbols; kernel_ob and nine previously
+retired exports absent. Original initializer include is selected once. All22
+generated files unchanged/current fingerprint. Actual build: dirtyec2e4b25 with
+exact source/patch inputs recorded in ignored logs/guest-event-build.json.
+Executable SHA256
+e861853ace2f4c53f2cd6daed81cb23501ba805ceb69ad6e491a04fe3dfa3a8d.
+Supported US XBE hash validated. Isolated Classic Story: scene4/mission1,
+forward11.176244/back6.184892, ammo8to6,40 frozen pause/60 advancing resume samples,
+last95.581s within240s cap. Fresh start/fire/pause captures reviewed; runner and
+controller exit0, profiles unchanged/signatures valid/fixture preserved, no
+runlock/dumps/partition images. Source/archive/executable/generated/game hashes
+agree;26 protected save/settings/fixture files across both checkouts retain
+hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic
+input/movie-skipped run; not physical input/listening/full campaign or native Mac
+title acceptance. New-source CI pending. Contracts: transfer-completion.md; MAC-118.
+
+
+### Stage0231 - owned completion target spans (2026-10-29)
+
+PR#406, feature/guest-share-access. Prior source5bfbf759 CI passed: runtime
+40952692096 and launcher40952692018. Fetched main92dcca30 and safely merged as
+f07e5feb; preserved ongoing work and the new Windows DPI manifest. Current stage
+is built from dirtyf07e5feb, with exact source/patch inputs recorded in ignored
+logs/io-targets-build.json. No merge into main or publication performed.
+
+Original guest_io_targets.c/.h captures object refs before pending delivery,
+validates generation/kind/base/exact writable IOSB/event spans and overlap, keeps
+persistent delivery leases, and publishes the event before actual wake. PRIVATE
+rollback, acknowledged DONE and failed/native-unwind quarantine are explicit.
+This is a backend prerequisite: legacy I/O completion routes, actual arbitrary
+thread-stack pins, APC/file/locked-buffer/key/cancel/storage/no-event polling
+policy and aggregate registry retirement still need integration. It does not
+establish full ts3FPrecomp replacement or arbitrary guest-address ownership.
+
+Nine target contract cases passed6.88s, including eight compiled bad variants
+rejected at runtime. Baseline uses actual object ownership and allocation disposal,
+VirtualAlloc/Free/native Windows manual and auto events, original-handle closure
+before delivery, full-span/generation/kind/base/alias rejection, private rollback,
+real completion-coordinator IOSB-before-event delivery, reentrancy and actual
+native C-stack abandonment with persistent quarantine. Controlled lease failure
+attempts both independent releases, retaining failed pins with no automatic retry.
+Fixture-only recovery is explicitly distinguished from production cleanup.
+Selected target/event/request/completion/adoption/scheduler/queue/device/title and
+merged DPI checks:254passed128.94s (includes the9 target cases). Context regression
+initially caught its stale32-patch expected tail; corrected exact33-patch loader
+assertion then20passed7.87s. Four fresh/historical upgrades passed151.14s; final
+provider-selection assertions and backlog integrity are checked separately below.
+
+Release, built-in host checks and matching crash symbols passed. Kernel archive
+selects24 device/I/O/event providers exactly once, including all6 target APIs;
+old kernel_ob and nine previously retired native exports remain absent. All22
+generated guest files unchanged; fingerprint current. Supported US XBE SHA256
+validated. Executable SHA256:
+d4d01c74f69e957729a43f532c9dbe6f5663b7e62338199cff53df98b031bd75.
+
+Isolated bounded Story run reached scene4/mission1; forward11.196721/back6.184893,
+ammo8to6,40 frozen pause and60 advancing resume samples, last checkpoint95.566s
+within240s cap. Runner/controller exit0; fresh start/fire/paused captures reviewed.
+Profiles unchanged, signatures valid, canonical fixture preserved; no runlock,
+dumps or partition images. Source/archive/executable/generated/game hashes agree.
+All26 protected save/settings/fixture files across both checkouts retain hash,
+size and modification time. Windows NT10.0.26300 x64, VS2022/MSVC14.44,
+minimized synthetic input/movie-skipped run; not physical input, listening,
+full-campaign or native Mac title acceptance. New-source CI pending. MAC-118
+remains Awaiting validation; contracts: transfer-completion.md.
+
+Stage0231 final acceptance: unique patch0231 avoids existing controls slot0230.
+Full rebuild/built-ins/crash symbols passed after rename; the relink changed the
+executable hash, so the bounded isolated gameplay run above was repeated against
+that final binary. Final numbered-stack fresh/historical upgrades, context and
+backlog25passed155.43s (includes20context and1backlog; not additional to those
+counts). Original provider source and generated guest code remain unchanged.
+
+
+### Stage0232 - original symbolic-link namespace (2026-10-29)
+
+PR#406, feature/guest-share-access, built from dirty42a806d6; exact original-source,
+patch, archive and executable inputs recorded in ignored logs/symlinks-build.json.
+Prior42a806d6 runtime40957016619 and launcher40957016595 CI both passed. Stage0232
+replaces the legacy symbolic-link table/native create/delete/borrowed lookup and
+both guest bridge implementations with original shared providers. Kernel path
+translation uses a private copied snapshot from the same32-binding namespace.
+No merge into main/publication performed; full upstream replacement is incomplete.
+
+Full16-bit counted names/targets are copied without the old63/127-byte truncation.
+Lookup bytes survive concurrent delete/rebind. Namespace publication/removal/stop
+serialize under one lock, allocator/disposal callbacks run outside it, and failed
+lookups preserve caller output/length. Guest adapters validate full8-byte headers,
+nonwrapping complete readable spans and Length<=MaximumLength. Exact-case matching
+and the old count limit remain; path translation retains conservative static-rule
+fallback and rejects NUL/overlong targets instead of truncating. Empty/unreadable
+targets now reject as invalid. No full NT directory/case-table, symlink recursion,
+VFS replacement or completion-backend functionality is claimed.
+
+New contract suite11passed5.76s, including six core and three guest-adapter bad
+variants that compile then fail at runtime. Fault controls retain variable uses
+and parentheses for fatal MSVC/Clang warnings. Contracts cover160/65535-byte
+payloads, distinct long suffixes, opaque bytes, snapshot preservation, duplicate/
+capacity/allocation failures, reentrant disposal, stop during allocation and1000
+iterations on four native workers. Actual mapped guest descriptors drive the
+original kernel namespace in adapter cases. Combined namespace/object/device/
+event/target regressions166passed75.60s (includes the11 new cases). Fresh and
+historical upgrades plus exact34-patch loader order/context/backlog25passed162.17s.
+
+Release, built-in host checks and matching crash symbols passed. Built-in save
+paths now create/remove an actual namespace drive link and resolve lowercase and
+object-prefix drive paths into an isolated save root through the real kernel
+translator. Archive selects26 device/I/O/event/namespace providers once, including
+eight namespace APIs; kernel_ob and twelve previously retired/native symbolic-link
+exports absent. All22 generated guest files unchanged; fingerprint current.
+Supported US XBE SHA256 verified. Final executable SHA256:
+42aa8f032d47c8737d96db4de7f887c318dd8e618f23cbcaf29e56b4fc81ce01.
+
+Bounded isolated Story reached scene4/mission1; forward11.195015/back6.184889,
+ammo8to6,40 frozen pause and60 advancing resume samples, last95.812s within240s
+cap. Runner/controller exit0. Fresh start/fire/paused captures reviewed; profiles
+unchanged/signatures valid/fixture preserved, no runlock/dumps/partition images.
+Source/archive/executable/generated/game hashes agree. All26 protected settings,
+saves and fixtures across both checkouts retain hash/size/mtime. Windows
+NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic input/movie-skipped run;
+not physical input, listening, full campaign or native Mac title acceptance.
+New-stage CI pending; MAC-118 remains Awaiting validation. Contract: symbolic-links.md.
+
+
+### Stage0233 - original shared console path routing (2026-10-29)
+
+PR#406, feature/guest-share-access, built from dirtyd7aa357e. Prior source
+runtime40958769361 and launcher40958769486 both passed CI. Exact source/patch/
+archive/executable inputs recorded in ignored logs/paths-build.json; no merge into
+main or publication. Goal remains incomplete, including host storage initialization,
+remaining I/O completion/backend/routing and other legacy runtime systems.
+
+Original guest_paths.c/.h and guest_kernel_paths.inc replace the legacy routing
+table, prefix/cache/link helpers, raw-device path helpers and both Windows/POSIX
+translate bodies. Both use one counted planner for game/save/profile/title/cache/
+raw images and one bounded copied-link expansion. Supported Partition0-5 geometry,
+profile-only UDATA override, title-separated cache, DVD and ordinary game paths
+remain explicit. Unsupported paths retain separator-normalized passthrough.
+Windows retains ACP guest/strict UTF8 profile conversion and adds bounded UTF16
+joins/TLS latest-success snapshots; POSIX uses bounded byte joins. Host init,
+profile validation/locks and image creation remain transitional, not newly claimed
+independent code. Dot/traversal containment and full NT link/directory semantics
+are not supplied; drive-link expansion is deliberately bounded to one hop.
+
+Ten contracts passed3.66s, including seven compiled bad planners failing at
+runtime, Windows conversion/TLS and POSIX adapter fixtures. Covered literal route
+matrix, mixed separators/component boundaries, uppercase/title0 cache ids, root
+joins, relative/empty paths, copied link overrides/malformed targets and unchanged
+outputs. Fixture copies use explicit lengths; fatal MSVC/Clang warnings stay on.
+The POSIX adapter fixture compiled on Windows is policy evidence, not native Mac
+filesystem acceptance. Selected path/namespace/object/device/event/target suite
+176passed71.48s (includes10 new cases). Four fresh/historical upgrade models plus
+context35-patch tail/backlog checks25passed120.97s. Actual Windows save_paths adds
+bareDVD/Partition2 children and short-output preservation. Native paths adds the
+same plus an actual drive-link route; existing image table/sparse size/preservation
+checks remain. Native execution/new-stage CI pending.
+
+Release, built-in checks (including real selected-profile/link path translation)
+and matching crash symbols passed. Archive selects27 original device/I/O/event/
+namespace/path providers once, including both path APIs and existing host path
+interfaces. Old routing table/translate bodies are absent from patched kernel_path;
+one original adapter include is selected. Kernel_ob/twelve prior retired exports
+remain absent. All22 generated guest files unchanged; fingerprint current.
+Supported US XBE SHA256 verified. Final executable SHA256:
+3627fc785eee9fc83cb95ebbd01947084cbfe0c181a117d6c5ffbc221bf7dabb.
+
+Isolated bounded Story reached scene4/mission1; forward11.176244/back6.184892,
+ammo8to6,40 frozen pause and60 advancing resume samples, last93.204s within240s
+cap. Runner/controller exit0; fresh start/fire/paused captures reviewed. Profiles
+unchanged/signatures valid/canonical fixture preserved, no lock/dumps/partition
+images. Source/archive/executable/generated/game hashes agree. All26 protected
+settings/save/fixture files across both checkouts retain hash/size/mtime. Windows
+NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic input/movie-skipped run;
+not physical input/listening/full campaign or native Mac title acceptance. MAC-118
+remains Awaiting validation; contracts: guest-paths.md. New-stage CI pending.
+
+
+### Stage0234 implementation checkpoint (2026-10-29)
+
+Original shared storage/native path host provider excludes legacy kernel_path.c.
+Windows direct storage10cases4.93s and path10cases3.75s passed, including actual
+sparse files and existing bytes/size/mtime preservation; first Release/built-ins/
+crash symbols passed. Work checkpoint precedes latest main8b4db323 integration;
+final merged-source regression and Story acceptance are still pending. CI for
+87295396 currently has no checks/statuses (PR diagnostic confirms that head),
+so it is unverified rather than passed. MAC-118 remains Awaiting validation.
+
+
+### Stage0234 merged-source Windows acceptance (2026-10-29)
+
+Storage implementation0413dce1 and latest main8b4db323 (vehicle controls/README)
+were safely integrated as026989422f78c658181d5a5d3dce6ea850a74f2e; documentation
+conflicts preserved both changes, with the systems guide index condensed under its
+byte budget. Build used clean02698942. Exact tracked source/patch/archive/exe
+inputs are in ignored logs/storage-build.json. No merge into main/publication.
+
+Original shared guest_storage and native guest_kernel_storage replace the compiled
+legacy path module, including initialization/profile/root metadata and new-image
+creation. Root selection/state snapshots are atomic; metadata locks span no OS
+calls, initialization has a separate native mutex, and failed setup retains the
+previous roots. Existing images are never opened for write/resize/repair; only
+exclusive NEW tokens receive sparse sizing/table bytes. Cleanup touches only new
+owned files; native uncertainty retains token accounting without automatic retry.
+Compatibility image sizes/explicit little-endian PARTINFO encoding are shared,
+not a claim of full physical-disk emulation. This retires kernel_path compilation,
+not kernel.h, the rest of VFS/I/O or all upstream runtime/tooling.
+
+Direct new storage10cases passed4.93s; previous path10cases passed3.75s. Eight
+compiled bad storage variants fail at runtime. Covered root priorities/bounds,
+pre-init profiles, failed snapshots/commits, literal unaligned disk bytes, image
+EXISTS bypass and resize/write/close uncertainty, plus1000 native-thread commits/
+snapshots. The native adapter fixture uses real Windows exclusive files, asserts
+all six image sizes and sub1MiB physical allocation, then modifies existing table
+bytes/Partition1 size/data and proves byte/size/mtime preservation on reinit. It
+checks profile switching, environment priority, invalid-directory rollback and
+short metadata outputs; only known terminal fixture images are recycled. All
+roots are disposable and explicit; no personal/default root is initialized.
+
+Merged shared storage/path/namespace/object/device/event/target and mounted-mouse
+checks201passed84.84s. Original vehicle-camera cases4passed9.21s,15 deselected;
+zero and nonzero driver pitch ABI paths checked. Fresh/historical upgrade/context/
+backlog25passed283.51s while full regeneration compiled. These are230 distinct
+selected checks; direct10/10 cases above overlap the201. No warnings disabled.
+Native Mac execution/new-stage CI still pending.
+
+Merged Release/built-ins/real save-path fixtures and matching crash symbols passed.
+Archive/project both exclude kernel_path and select29 original device/I/O/event/
+namespace/path/storage providers once, including storage/path APIs and retained
+public host ABI. Legacy kernel_ob and twelve earlier retired native exports remain
+absent. Main's tank wrapper required two regenerated files: recomp_0004.c differs
+only by sub_001730E0->_gen naming; recomp_funcs.h additionally declares the manual
+wrapper. Removing that one declaration and normalizing the suffix restores exact
+pre-main hashes; the other20 generated files are unchanged. Fingerprint current.
+Supported US XBE hash verified. Final executable SHA256:
+92f5f81828e93532849406562ee1a93adf2236cf14bbcc7bb3e10b504a5c6f78.
+
+Bounded isolated Story: scene4/mission1, forward11.195015/back6.184889,
+ammo8to6,40 frozen pause and60 advancing resume samples, last98.949s within240s
+cap. Runner/controller exit0; fresh start/fire/paused captures reviewed. Profiles
+unchanged/signatures valid/canonical fixture preserved; no lock/dumps/partition
+images. Source/archive/executable/generated/game hashes agree. All26 protected
+settings/save/fixture files across both checkouts retain hash/size/mtime. Windows
+NT10.0.26300 x64, VS2022/MSVC14.44; minimized synthetic input/movie-skipped run,
+not physical input/listening/full campaign/live vehicle mission or native Mac
+title acceptance. CI for87295396 has no checks/statuses per live PR head diagnostics;
+it remains unverified. New-source CI pending. MAC-118 remains Awaiting validation;
+contracts: host-storage.md. Overall replacement goal remains active/incomplete.
+
+
+### Stage0235 pool replacement / Mac storage repair checkpoint (2026-10-30)
+
+Based on855b0a0f, PR#406. Original guest_kernel_pool.inc replaces all four pool
+bridge bodies with existing guest allocation ownership. kernel_pool and its four
+native host-heap declarations/exports are excluded. Ordinals14/15/17/23 retain
+4/8/4/4 bytes. Tags remain data, alignment/minimum/zeroing/query/exact-base lifetime
+policy remains the shared provider's compatibility contract. No new allocator.
+Caller audit covers runtime/title/generated/project C/includes: only the excluded
+pool module and excluded legacy kernel_thunks resolver retain native references.
+
+Windows pool/allocation/VM/storage/path/memory-service suite67passed35.56s,
+including7 new ABI/fault cases and selected-source audit. Six compiled bad adapters
+fail at runtime. Repaired native storage suite10passed29.81s (overlaps67; separate
+rerun after platform-header fix). Fresh/historical upgrades/context/backlog25passed
+217.68s. Final Release/built-ins/crash symbols passed; archive excludes kernel_pool,
+kernel_path and kernel_thunks, sixteen retired native exports absent,29 original
+I/O/storage providers selected once. All22 generated files unchanged relative to
+stage0234; fingerprint current. Supported US XBE hash verified. Exact source inputs
+in ignored logs/pool-build.json. Executable SHA256:
+75207d60d6286f969b2937d7c95200099604f074a700a8c9fd94c0b9c6cf9f5d.
+
+Old855b0a0f runtime40987772559 failed only Mac native storage compilation:
+2066passed316skipped18subtests before the failed case. Strict POSIX headers hid
+O_NOFOLLOW and st_mtimespec; the adapter and fixture now request Darwin interfaces
+before headers. No no-follow, nanosecond, fatal-warning or timeout check is removed.
+Old-head Windows native/both upgrade hosts/both launchers passed. This source fix
+still needs fresh Mac CI; old-head failure is not reported as passing.
+
+The gameplay runner refused to launch because a separate game (PID8896) was active
+from Desktop/TS Decompile/build/mac-alpha1-source. It was not stopped/interfered
+with. The controller then exited before submitting commands because no fresh test
+session existed. No new-binary gameplay claim: acceptance remains pending until
+that other session closes. All26 protected settings/saves/fixtures retain hashes,
+sizes and mtimes. Previous stage0234 Story evidence remains labeled to its own
+binary. User was asked whether to keep the separate session running. Overall goal
+and MAC-118 remain incomplete/Awaiting validation; contracts: kernel-pool.md and
+host-storage.md. Windows NT10.0.26300 x64/MSVC14.44; no native Mac title claim.
+
+
+### Stage0235 completed pool acceptance (2026-10-30 UTC)
+
+Codeb47b9d9e runtime40989944205 and launcher40989944053 both passed, including
+Windows/Mac native suites, both historical-upgrade hosts, Mac native storage case
+and common RHI/GPU validation. This verifies the Darwin interface visibility repair
+that failed on855b0a0f; no no-follow, nanosecond, warning or timeout checks were
+weakened. CI uses its public/disposable fixtures, not native Mac title acceptance.
+
+The separate8896 game exited without intervention from this chat. Only after the
+process was absent did the isolated runner start the rebuilt pool binary. Fresh
+bounded Story reached scene4/mission1; forward11.174544/back6.184892,ammo8to6,
+40 frozen pause/60 advancing resume samples,last95.725s within240s cap. Runner
+and controller exited0. Start/fire/pause captures were fresh and reviewed. Profile
+signatures valid/fixture preserved, no remaining runlock/dumps/partition images.
+All26 protected settings/save/fixture files across both checkouts retain hash,
+size and mtime. The earlier owner question is resolved by the observed process
+exit; no other game was stopped and no concurrent-session guard was bypassed.
+
+The tested executable remains the exact build recorded in logs/pool-build.json
+(dirty855b0a0f inputs, now identical to committedb47b9d9e source/patch bytes):
+75207d60d6286f969b2937d7c95200099604f074a700a8c9fd94c0b9c6cf9f5d.
+Source/archive/executable/generated/game hashes agree; all22 generated files
+unchanged by pool replacement, native pool/path/thunks objects excluded, sixteen
+retired exports absent. Previous92 distinct selected local checks and Release/
+built-ins/matching crash symbols remain valid. Windows NT10.0.26300 x64/MSVC14.44,
+minimized synthetic input/movie-skipped; not physical input, listening, complete
+campaign or native Mac title gameplay. Pool phase acceptance is complete within
+that scope; remaining kernel/runtime/header/fixture/provenance replacement remains
+active and incomplete. No merge into main/publication. MAC-118 Awaiting validation.
+
+
+### Stage0236 original calendar conversion checkpoint (2026-10-30 UTC)
+
+Based onfe45b485, PR#406. That revision's runtime40991362069 and launcher40991362032
+both passed. Remote main remains8b4db323, already safely integrated. Shared original
+guest_time.c and guest_kernel_time.inc replace the304/305 calendar bridges; both
+retain eight guest argument bytes. Native RTL time bodies/prototypes and unused
+POSIX calendar shims are retired. Other kernel_rtl services remain selected.
+The two hosts now share validated Gregorian conversion from1601 rather than the
+old POSIX normalization/pre1970 restriction. See kernel-time.md for exact ranges,
+serialization, mapped-span and zero/preservation rules; clock/timer work remains.
+
+Windows selected calendar/pool/VM/Mm/storage/path suite57passed43.14s, including13
+new calendar cases. Independent Python datetime vectors cover every date in the
+400-year cycle plus3000 seeded dates, with24000 actual Windows API comparisons.
+Ten compiled broken implementations fail at runtime after compiling successfully.
+Release/built-ins/matching crash symbols passed. Native archive selects30 original
+I/O/storage/calendar providers once, eighteen retired exports absent, all22
+generated files unchanged from stage0235 and generation fingerprint current.
+Supported US XBE verified. Exact source/archive/executable inputs recorded in
+ignored logs/time-build.json (dirtyfe45b485 inputs). Executable SHA256:
+36cfac0092c26442b122eac78d9b70ead27872d4f652efe71dbea9e4efb29690.
+
+All26 protected settings/save/fixture hashes, sizes and mtimes unchanged. A separate
+game40428 exited without intervention; only after it was absent did the isolated
+bounded Story runner start. Gameplay and fresh/historical upgrade acceptance are
+still running at this checkpoint; no new gameplay or native Mac title claim yet.
+New-source CI is pending. Windows NT10.0.26300 x64/MSVC14.44. Overall replacement
+and MAC-118 remain incomplete/Awaiting validation. No main merge/publication.
+
+
+Stage0236 local Story acceptance (code4cb4697c): runner/controller both exited0.
+Fresh scene4/mission1 gameplay: forward10.720527, back6.208759, ammo8to6,
+40 frozen pause samples and60 advancing resume samples, last104.877s within240s
+cap. Start/fire/paused captures postdate provenance and were reviewed. Profile
+signatures valid, fixture preserved, no runlock/dumps/partition images. All26
+protected settings/save/fixture files retain hashes, sizes and mtimes across both
+checkouts. Source/archive/executable/generated/game hashes agree on the exact
+36cfac00 binary above; committed4cb4697c source/patch bytes match its recorded
+build inputs. Minimized synthetic input/movie-skipped Windows test; not physical
+input, listening, full campaign or native Mac title acceptance. Fresh CI runtime
+40993387115/launcher40993387207 and local upgrades still in progress at this note.
+
+
+Stage0236 CI follow-up:4cb4697c Mac native123860895230 passed2088 tests,
+316 skips/18 subtests, plus169 GPU tests,3 skips/3 subtests. Mac upgrades and both
+launcher/package builds passed. Windows upgrades123860895217 failed4 new-helper
+reads under cp1252 (55 passed); the helper omitted explicit UTF-8 for the existing
+bridge's Unicode comments. All six new checker reads now request UTF-8. No runtime
+source, build flags, warnings or game binary changed. Fresh affected-host checks
+are required; the original Windows CI failure is not described as passing.
+
+
+### Stage0236 completed calendar acceptance (2026-10-30 UTC)
+
+Code/checker revision734df44c6dc8cea508bf629a703651cf75f1c6d4 passed both workflows:
+runtime40994285965 and launcher40994285970. Both upgrade hosts, both native hosts,
+Mac/Windows GPU checks, final patch transitions, PR gate and dual-platform launcher
+packaging all succeeded. Windows native2180passed264skipped18subtests (528.83s),
+then GPU172passed3subtests (12.61s). Mac native2088passed316skipped18subtests
+(322.33s), then GPU169passed3skipped3subtests (3.61s). The old4cb Windows upgrade
+failure is repaired, not retried unchanged: all six checker reads explicitly use
+UTF-8. A local real-source cp1252 probe rejects the old helper and accepts the fix.
+
+Local original repository run:39passed/4failed due to that helper (925.19s).
+All four affected fresh/historical upgrade cases then passed194.17s; context/
+backlog21passed10.33s overlaps the original39. Together these are43 distinct
+passing repository checks across runs, plus57 selected native checks =100 distinct
+local checks. No runtime source changed for the encoding repair. Release, archive,
+generation and Windows Story evidence above therefore remain valid for the exact
+36cfac0092c26442b122eac78d9b70ead27872d4f652efe71dbea9e4efb29690 executable.
+Final protected26 and repository context checks passed; source/patch bytes match
+recorded build/game inputs. No lingering owned test processes or foreign-game
+interference. The following acceptance commit changes documentation only; any
+workflow it starts is separate from the verified734df44c workflows above.
+
+Stage0236 is accepted within this scope. Native Mac title gameplay, physical input,
+listening, full campaign, clocks/timer scheduling and remaining legacy kernel/
+runtime/header/fixture/provenance work remain unverified or unfinished. Overall
+goal stays active/incomplete and MAC-118 Awaiting validation. PR#406 remains draft;
+no main merge or publication was performed.
