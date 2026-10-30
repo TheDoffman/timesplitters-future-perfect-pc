@@ -385,6 +385,13 @@ static inline uint32_t pc_native_wind_global_load(uint32_t address,uint32_t valu
  * Do not rewrite the shared 0.5 constant or unrelated multiplications. */
 static inline float pc_native_multiply(uint32_t site, float left, float right)
 {
+    /* Minigun spin-down is authored once per game tick, not render frame. */
+    if(site==0x1C7600u && g_tsfp_native_timing_active) {
+        float delta=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        if(!(delta>0.f))return left;
+        if(isfinite(delta) && delta!=1.f)right=powf(right,delta);
+    }
+
     /* The old physics clock averages fifteen rendered-frame deltas, but only
      * runs on whole ticks. Native simulation consumes this frame's elapsed
      * time directly; the three count loads above partition that exact span. */

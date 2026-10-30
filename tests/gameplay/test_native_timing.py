@@ -1136,3 +1136,31 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                 f"timer {row['timer']} vs {reference['timer']}")
         if failures:
             raise AssertionError('\n'.join(failures)+'\n'+output)
+
+
+def test_original_minigun_spin(tmp_path):
+    import hashlib, re, struct
+    from test_recomp_float_joins import config, FunctionTranslator, compile_and_run
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported US XBE required for minigun callback')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={0x1c74d0:dict(name='sub_001C74D0',end=0x1c7a3d)}
+        code=FunctionTranslator(image,functions).translate_function(0x1c74d0,functions[0x1c74d0])
+        fixture=(ROOT/'tests/gameplay/native_minigun.c').read_text()
+        calls=set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)',code))
+        defined=set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',fixture+code))
+        stubs='\n'.join(f'void {name}(void){{assert(!"unexpected {name}");}}' for name in sorted(calls-defined))
+        addresses=set(range(0x1c7a40,0x1c7a7c,4))
+        addresses.update(int(a,16) for a in re.findall(r'0x([0-9A-Fa-f]+)',code) if 0x470000<=int(a,16)<0x490000)
+        constants='\n'.join(f'MEM32(0x{a:X})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:X};' for a in sorted(addresses))
+        source=fixture.replace('/* NUMERIC_POLICY */',f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT/"src/gameplay/pc_native_numeric.h").as_posix()}"')
+        source=source.replace('/* MINIGUN_POLICY */',f'#include "{(ROOT/"src/gameplay/pc_native_minigun_guest.h").as_posix()}"')
+        source=source.replace('/* GENERATED_ROUTINES */',code).replace('/* UNREACHED */',stubs).replace('/* CONSTANTS */',constants)
+        print(compile_and_run(tmp_path,source))
+    finally:
+        vars(config).update(previous)

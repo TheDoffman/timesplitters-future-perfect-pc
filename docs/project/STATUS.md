@@ -13,6 +13,27 @@ contracts (logs/save-folder-launcher.log). No personal saves changed. The user c
 completion callback now leaves another menu owner's pending result untouched;
 Mac UI execution remains pending MAC-124. Preparing PR and main merge at the user's request; this is not a published release.
 
+## Handheld minigun high-FPS spin - 2026-10-30
+
+Handheld minigun fix on fix/handheld-minigun-native-fps, based on 61aecac5.
+Read-only sampling confirmed motor speed stalls at 2.547569 near 120 FPS, below
+the firing threshold of 4. Fractional updates lose the whole-tick spin request
+and repeatedly decelerate. Shared event-1 held-input scope and elapsed spin-down
+fix this while retaining generic firing gates.
+
+Original callback regression reproduces the old failure at 120/144/180/240 FPS;
+the fix reaches readiness around .45 seconds at 60/120/144/180/240. Release,
+pause and input guards pass. Five focused minigun/weapon timing tests pass.
+Windows Release generation/build and build-time checks pass. A bounded isolated
+startup recorded 2,100 D3D11 presents with no failed presents. Candidate SHA256:
+8b0ab4d0a5863dd9e625138887b96d26e29bbac067da1915300cfb7c62899e3b.
+Fifteen mounted input checks and repository context validation also pass.
+Fresh-checkout CI patch migration checks passed on Windows and macOS
+(run 41012758389, head be8daa2c); the complete patch application used for
+this build also passed. The user tested this candidate and
+confirmed that the minigun now works. This is user gameplay acceptance; exact
+shot/ammunition cadence and physical Mac execution remain unmeasured. See [contract](../agent-context/native-minigun.md).
+
 ## Both Machine Wars tank encounters accepted (#385) - 2026-10-30
 
 After testing the corrected tank controls, the user explicitly confirmed that

@@ -4138,6 +4138,15 @@ Windows loopback evidence in `docs/project/STATUS.md` does not establish native 
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- Handheld minigun spin (2026-10-30, fix/handheld-minigun-native-fps): shared
+  src/gameplay/pc_native_minigun_guest.h, pc_native_numeric.h and patch 2140
+  preserve held-primary motor intent between firing ticks and scale release
+  damping. No Mac adapter is needed. Windows original-callback checks pass;
+  the user confirmed the Windows candidate works. Physical Mac and exact firing/ammo
+  cadence remain Awaiting validation.
+  See STATUS and agent-context/native-minigun.md.
+
+
 - **Procedural wind simulation (PR #367 follow-up):** Shared
   `pc_native_wind*` source and `0460-native-wind-history.patch` subdivide the
   coupled oscillator with per-owner history and exact game-clock admission.

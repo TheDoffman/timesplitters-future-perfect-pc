@@ -1,5 +1,7 @@
 # Runtime and patch navigation
 
+Patch 2140-native-minigun-intent follows the native weapon wrappers in loader dependency order. It scopes held-primary intent around original US 1C74D0 event 1. Generic shots remain on whole ticks; numeric site 1C7600 normalizes release damping. See native-minigun.md.
+
 `2130-game-dpi-awareness.patch` attaches the Windows game manifest supplied by
 `tsfp.ps1` to the title executable. Its system DPI declaration prevents Windows
 bitmap scaling and virtualized windowed Auto dimensions without a path-specific
