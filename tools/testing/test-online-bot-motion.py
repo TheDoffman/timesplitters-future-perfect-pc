@@ -170,9 +170,18 @@ def main():
     automation.mkdir(parents=True, exist_ok=True)
     address = args.lan_address if args.mac_host else '127.0.0.1'
     server = Server((address, 0), Directory(public_address=address))
+    fingerprint=''
+    if args.mac_host:
+        import ssl
+        from online_host import certificate
+        cert,private_key,fingerprint=certificate(automation/'directory')
+        tls=ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        tls.minimum_version=ssl.TLSVersion.TLSv1_2
+        tls.load_cert_chain(cert,private_key)
+        server.socket=tls.wrap_socket(server.socket,server_side=True,do_handshake_on_connect=False)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    url = 'http://'+address+':'+str(server.server_port)
+    url = ('https://' if args.mac_host else 'http://')+address+':'+str(server.server_port)
     with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as available:
         available.bind((address,0))
         host_port=available.getsockname()[1]
@@ -369,7 +378,7 @@ def main():
                 from crossplay_peer import RemotePeer
                 remote=RemotePeer(args.mac_host,args.mac_root,out/'mac-controller.err')
                 remote_provenance=remote.call('start',tag=args.tag,compatibility=identity['compatibility'],
-                    command=dict(action='join',directory=url,port=host_port,automatic_host=False,
+                    command=dict(action='join',directory=url,fingerprint=fingerprint,port=host_port,automatic_host=False,
                                  detect_public_address=False))
                 remote.pid=remote_provenance['pid']
                 children.append(remote);handles.append(None);inputs.append(None)
@@ -391,7 +400,7 @@ def main():
                 for at,key in initial for d,value in ((0,1),(180,0)))+'\n')
             command = automation/f'{peer}.json'
             command.write_text(json.dumps(dict(action='host' if peer == 0 else 'join',
-                directory=url, port=host_port, automatic_host=False, detect_public_address=False)))
+                directory=url, fingerprint=fingerprint, port=host_port, automatic_host=False, detect_public_address=False)))
             env.update(TSFP_PC_INPUT_STATE=str(input_path), TSFP_NETWORK_BOTS='1',
                 TSFP_PC_INPUT_REPLAY=str(replay),
                 TSFP_NATIVE_FPS=str((args.host_fps,args.guest_fps)[peer]),
@@ -423,7 +432,7 @@ def main():
             report('no-online-lobby')
             raise RuntimeError('Online browser did not create a lobby')
         command = automation/'1.json'
-        command.write_text(json.dumps(dict(action='join', directory=url, code=codes[0])))
+        command.write_text(json.dumps(dict(action='join', directory=url, fingerprint=fingerprint, code=codes[0])))
         if remote is not None:remote.call('command',command=json.loads(command.read_text()))
         key(1, 69)
         wait(8)

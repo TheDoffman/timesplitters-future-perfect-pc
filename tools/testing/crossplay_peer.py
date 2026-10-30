@@ -143,7 +143,9 @@ def serve():
                     (run/'run.lock').write_text(str(os.getpid()))
                     out = ROOT/'logs'/('online-bots-'+tag)
                     out.mkdir(parents=True, exist_ok=True)
-                    command = run/'online-command.json'
+                    commands=ROOT/'private/network-validation'/tag
+                    commands.mkdir(parents=True,exist_ok=True)
+                    command = commands/'mac.json'
                     command.write_text(json.dumps(request['command']))
                     (run/'test-keys.txt').write_text('')
                     probe = ROOT/'build/network-port-tests/native-read.dylib'
