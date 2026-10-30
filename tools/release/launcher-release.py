@@ -225,8 +225,12 @@ def asset_matches(record, path):
 
 
 def publication_assets(directory, plan):
-    # Publish only verified versioned ZIPs; existing updaters require these names.
-    return {path.name: path for path in release_assets(directory, plan)}
+    # Aliases use the verified versioned bytes, never stale local alias files.
+    # Keep versioned names for existing updaters without making local ZIP copies.
+    assets = {path.name: path for path in release_assets(directory, plan)}
+    for platform in PLATFORMS:
+        assets[f'TimeSplitters-Launcher-{platform}.zip'] = assets[package_names(plan['version'], platform)[0]]
+    return assets
 
 
 def launcher_release_path(path):

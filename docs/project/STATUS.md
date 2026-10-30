@@ -1,3 +1,42 @@
+## README direct launcher downloads - 2026-10-30
+
+Based on `76e3bd6e`, validated on Windows x64 with Python 3.12.14. The Windows
+and Apple Silicon Mac README buttons and installation links use GitHub's
+`releases/latest/download/TimeSplitters-Launcher-<platform>.zip` route.
+Both live URLs returned HTTP 200 with attachment filenames for their platforms.
+Launcher v1.4.0 now has two additive aliases: the uploaded bytes match the
+existing versioned archives by SHA-256 and size (Windows 5,048,501 bytes;
+Mac 44,467,839 bytes). Existing release assets, tag and update manifests were
+preserved; no launcher binaries were rebuilt or changed.
+
+The publisher maps alias names to the already verified versioned ZIP paths,
+without local duplicate ZIPs or trusting stale alias files. It requires all ten
+remote assets to match before publishing; previews still do not become Latest.
+All 33 launcher-release tests pass, including alias hash parity, interrupted
+alias upload/retry, unchanged updater filenames and README platform routing.
+Repository context/links and `git diff --check` pass. Both hosts use this shared
+publication code; no OS adapter changed. Native app/game execution was not run.
+
+## README presentation cleanup - 2026-10-30
+
+The follow-up adds a launcher-styled SVG banner, flat download buttons and
+three decorative section icons. All six SVGs parse as self-contained XML;
+local references pass. Live GitHub inspection caught icon-first headings adding
+a leading dash to automatic slugs; explicit anchors retain the original links.
+The assets were rendered with the bundled Sharp renderer and visually inspected,
+and the live GitHub layout was reviewed at desktop and 390-pixel mobile widths.
+The Install & play link was clicked and confirmed to reach its section after
+the explicit-anchor repair. Existing launcher monogram
+outlines and theme colors are reused; runtime and launcher source are unchanged.
+
+Documentation update based on `cc531ea9`, checked on Windows x64. All 53 local
+README file/section references resolve, and `git diff --check` passes. The
+v1.4.0 launcher preview was rendered with Windows PowerShell 5.1 and WPF from
+the hash-verified existing build, with Stable selected and isolated sample data.
+The 1152 x 772 output was visually inspected; provenance and the reproducible
+capture command are in `docs/assets/README.md`. No runtime code changed, and no
+game rebuild or gameplay test was needed. Existing v0.3.2 gameplay captures remain.
+
 ## Tank driver controls and steering feedback (#385) - 2026-10-29
 
 The first Machine Wars live snapshot established local driver seat 0, tracked

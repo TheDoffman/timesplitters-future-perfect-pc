@@ -13,21 +13,43 @@
   or resampling. Only these selected documentation captures are retained here.
 
 - `launcher-preview.png`: launcher v1.4.0 Windows interface preview rendered on
-  2026-10-28 from published source revision
+  2026-10-30 from published source revision
   `2a2ffe369a28ba2541d54437af63002020487ef6` (`launcher-v1.4.0`). The maintained
-  Windows builder used checksum-pinned artwork, then the local source build ran
-  `--render-preview`. It is a direct 1152 x 772 client-area render with no image
+  Windows builder used checksum-pinned artwork. `render-launcher-preview.ps1`
+  loads that same build in preview mode with a new isolated root, selects Stable
+  through the launcher's channel picker and labels the installed game as sample
+  data. It is a direct 1152 x 772 client-area render with no image
   edits or resampling. Rendered application SHA-256:
   `9eb58f9a508e83634151c96cb42b1cf2f54ca385fc3321767b3ceb8ed446fe7d`.
   PNG SHA-256:
-  `adf61e42899aeb7aac05b8aecd058d570673e20baf0e06c8d3c26c4ba71d4882`.
-  The screenshot shows the current branding, shared navigation and version label.
-  Game version/channel values are illustrative; Stable is the installation
+  `25c7d169ff9a12a85e1d7802a465b54c5d4a8af2a6a7373c22d5574c823ad486`.
+  The screenshot shows the v1.4.0 branding, shared navigation and version label.
+  Installation data is illustrative; Stable is the installation
   default and previews are optional. Rendering starts no game, performs no update
   or live network check, and includes no personal settings, paths or saves.
-- `download-windows-launcher.svg` and `download-mac-launcher.svg`: the two
-  platform download buttons used by the README. Links and accessible labels
-  live in the README; the superseded generic button has been removed.
+  Reproduce with Windows PowerShell 5.1 in STA mode (the script validates the
+  application's hash and requires a new preview directory):
+
+  ```powershell
+  powershell.exe -NoProfile -STA -File docs/assets/render-launcher-preview.ps1 -ApplicationPath '<v1.4.0 build>/Bin/TimeSplitters.App.exe' -PreviewRoot '<new isolated directory>'
+  ```
+- `readme-banner.svg`: a compact vector header using the launcher's navy panels,
+  silver title, pale-blue accents and interrupted-ring motif. Its TSFP monogram
+  is converted directly from the existing outlines in
+  `tools/launcher/GameMonogram.cs` (Future TimeSplitters by Chequered Ink, free
+  for all use; attribution remains in the SVG). The full title uses system serif
+  fonts. No raw game artwork or font file is included.
+- `download-windows-launcher.svg` and `download-mac-launcher.svg`: flat pale-blue
+  platform buttons with the launcher's three-pixel corners, thin border and
+  line-icon weight. Links and accessible labels live in the README.
+- `icon-play.svg`, `icon-settings.svg` and `icon-support.svg`: small section
+  markers using the launcher's line-icon style; the settings glyph follows
+  `Launcher.xaml`. Heading text remains Markdown with decorative empty image
+  alt text. Explicit anchors preserve the original section links because GitHub
+  adds a leading dash to automatically generated slugs for icon-first headings.
+  All new SVGs are self-contained, with opaque backgrounds and
+  contrasting foregrounds for both light and dark GitHub pages. They contain
+  no scripts, remote resources or embedded raster artwork.
 
 The PNG documents the interface, including its embedded branding. Raw source
 artwork and original game assets remain private. Keep one launcher preview here
