@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "eaada1e88e028b5ba8a04c4d179cbc7a679f0c670790a4081f969a9962bde945",
+  "loaderSha256": "e807079a59cc9e69890ca117cb4b8c74de626b953e334e6f02ac4d7c48002ffd",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1436,6 +1436,14 @@
       ]
     },
     {
+      "name": "2140-model-tree-trace.patch",
+      "path": "patches/diagnostics/2140-model-tree-trace.patch",
+      "sha256": "48a261adce354fca5e20bac3c3f8b453922c30d21e74b74ff8470256f701d935",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c\r"
+      ]
+    },
+    {
       "name": "independent-condition-fixture.patch",
       "path": "patches/compiler/independent-condition-fixture.patch",
       "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",
@@ -2362,6 +2370,15 @@
         "src/kernel/kernel.h",
         "src/kernel/kernel_bridge.c",
         "src/kernel/kernel_io.c"
+      ]
+    },
+    {
+      "name": "2150-allocation-history.patch",
+      "path": "patches/diagnostics/2150-allocation-history.patch",
+      "sha256": "181b731de77a6320f090e88cecbe7b7d4e1d428de273412cced3a5a3fc0d58d3",
+      "targets": [
+        "src/kernel/xbox_memory_layout.c",
+        "titles/futureperfect/src/main.c"
       ]
     },
     {

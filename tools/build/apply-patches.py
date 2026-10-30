@@ -117,6 +117,11 @@ def patch_records(paths):
         if replacement:
             paths.remove(replacement)
             paths.append(replacement)
+    # Allocation evidence depends on the final independent allocator and boot.
+    observer = by_name.get('2150-allocation-history.patch')
+    if observer:
+        paths.remove(observer)
+        paths.append(observer)
     # Source-layout routing is applied after every historical source extension.
     layout = by_name.get('2090-repository-source-layout.patch')
     if layout:

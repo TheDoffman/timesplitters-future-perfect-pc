@@ -937,3 +937,14 @@ link restoration across camera headings, forward/reverse and steering. Original
 CA040 camera coverage now includes nonzero driver pitch; its original custom
 ABI saves ESI, while the pitch branch uses other registers as scratch. Existing
 zero-pitch ABI expectations remain checked. See [tank controls](mounted-mouse.md).
+
+Crash evidence CI now selects `tests/diagnostics/test_guest_capture.py` beside
+existing crash tests on both hosts. It compiles the shared bounded-memory writer
+against synthetic addresses; Windows fatal-helper tests assert model history is
+exported. Native fatal-helper tests assert the same history and diagnostics
+metadata on Darwin. Host skips are not a passing native execution result.
+
+Allocation observation is checked by `test_allocation_observer.py`; both host
+helper fixtures assert allocation/release history reaches the report. Patch
+tracking tests require the evidence hook after the independent allocator/boot
+and presentation patches, before final source-layout routing.

@@ -7429,3 +7429,22 @@ share `src/input/pc_tank.h`, `pc_mounted.h`, and `pc_tank_guest.inc` through the
 common manual wrapper patch (local tank-driver candidate; see STATUS). No separate host adaptation is
 required. Windows candidate validation is in STATUS; physical Mac vehicle,
 mouse and mixed-controller acceptance remains pending.
+
+### MAC-123 - Bounded guest-memory crash evidence and model history
+
+- **Status:** Awaiting validation
+- **Source/PR:** Uncommitted on `improve-crash-diagnostics`.
+- Shared policy: `src/diagnostics/pc_guest_capture.h`, `pc_breadcrumbs.h`,
+  `patches/diagnostics/2140-model-tree-trace.patch`; shared launcher ZIP export.
+- Windows helper captures bounded guest regions and model traversal records;
+  normal and extended modes stay below 1 MiB for guest-memory.bin.
+- Darwin adapter uses read-only Mach process access. Access denial is reported
+  explicitly; no privilege escalation or security-setting change is attempted.
+- Allocation observer and match history also use the common numeric rings; verify
+  allocation-history.txt in the native helper and launcher ZIP.
+- Remaining: run native crash tests and actual fatal/overflow capture on Mac,
+  validate signing/task access, ZIP contents and launcher's folder opening.
+  If process access is denied, a future prepublished shared snapshot adapter
+  is needed for memory parity; existing native stack reports remain supported.
+- Windows evidence: nine diagnostics tests pass; latest launcher test run in
+  logs. Windows results do not establish Darwin execution.

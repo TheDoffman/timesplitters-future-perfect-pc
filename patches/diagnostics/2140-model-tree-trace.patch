@@ -1,0 +1,19 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -1633,3 +1633,16 @@
+     fflush(stderr);
+ }
+ 
++
++#include "pc_model_tree_trace_guest.inc"
++#include "pc_breadcrumbs.h"
++static RECOMP_MANUAL_TLS unsigned pc_model_tree_nesting;
++extern void sub_000583E0_gen(void);
++void sub_000583E0(void)
++{
++    if(!pc_model_tree_nesting)pc_model_tree_trace();
++    pc_capture_model(*(const uint32_t *)((uintptr_t)g_esp+4+g_xbox_mem_offset),
++        *(const uint32_t *)((uintptr_t)g_esp+8+g_xbox_mem_offset),pc_model_tree_nesting+1);
++    pc_model_tree_nesting++;sub_000583E0_gen();pc_model_tree_nesting--;
++}
++

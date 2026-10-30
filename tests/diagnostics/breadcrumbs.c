@@ -20,5 +20,17 @@ int main(void){
     assert(!strstr(text,"107 139") && !strstr(text,"999"));
     unsigned lines=0;for(char *p=text;*p;p++)if(*p=='\n')lines++;
     assert(lines==65);puts("PASS bounded breadcrumb ordering, deduplication and interrupted-producer snapshot");
+    PcBreadcrumbs models={0};pc_crumb_model(&models,50,0x811ee970u,15,123);
+    assert(pc_crumb_load(&models.next)==3);
+    assert(pc_crumb_load(&models.slots[0].value)==(int32_t)0x811ee970u);
+    assert(pc_crumb_load(&models.slots[1].value)==15);
+    assert(pc_crumb_load(&models.slots[2].value)==123);
+    pc_crumb_store(&models.writer,1);pc_crumb_model(&models,60,0,0,0);
+    assert(pc_crumb_load(&models.next)==3);
+    PcBreadcrumbs match={0};int32_t values[4]={1,10,3,16};
+    pc_crumb_match(&match,100,values);assert(pc_crumb_load(&match.next)==4);
+    pc_crumb_match(&match,200,values);assert(pc_crumb_load(&match.next)==4);
+    values[1]=9;pc_crumb_match(&match,300,values);assert(pc_crumb_load(&match.next)==5);
+    assert(pc_crumb_load(&match.slots[4].event)==31 && pc_crumb_load(&match.slots[4].value)==9);
     return 0;
 }

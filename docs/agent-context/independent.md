@@ -951,3 +951,9 @@ cleanup. Five compile-first mutations must fail. The existing hook fixture
 extracts the full frame block, retaining its generated-thunk assertions; dispatch
 extraction no longer depends on the removed HLE comment. Both CI hosts run these
 checks. Native title acceptance and its limits remain in STATUS and MAC-102.
+
+The optional allocation observer is configured at initialization and called
+under the allocator lock only after successful ownership changes. It is used
+for bounded crash evidence and must not allocate, block or reenter. Existing
+placement/zeroing/release rules are unchanged; `test_allocation_observer.py`
+covers successful release/reuse and failed-operation exclusion.

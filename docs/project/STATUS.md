@@ -32215,3 +32215,28 @@ main interaction/audio/release-speed changes. Merged plan/repository and device
 fixture checks passed172 plus29subtests in36.96s. Node contracts passed23 in12.82s;
 local LF normalization keeps the unchanged context bounds valid. Windows Release
 regeneration/build is in progress; prior86a960df game evidence is historical.
+
+## Crash evidence extension - 2026-10-30 (in progress)
+
+Windows crash helper and bounded-memory tests: 9 passed. Launcher build and
+its test suite passed after extended-mode/export changes. Subsequent model-history
+and summary changes are being rechecked. Native Mac tests skipped on Windows;
+MAC-123 records the acceptance work and process-access limitation. Production game
+rebuild remains in progress. No issue resolution, commit or release claimed.
+
+2026-10-30 follow-up: full Windows game Build and built-in checks passed with
+the model traversal wrapper. Nine crash/memory tests and the full Windows
+launcher test run passed. Ten Darwin tests were skipped, not validated.
+
+2026-10-30 allocation-history follow-up, local uncommitted changes on
+`improve-crash-diagnostics` at base `8b4db323`, Windows x64, MSVC 19.44 and
+Python 3.14.5: corrected observer patch dependency order; full Windows Build
+and built-in checks passed (`logs/crash-lifetime-build.log`). Focused crash,
+guest capture and allocation observer tests passed 10; Darwin tests skipped 10.
+Allocator and patch-tracking regression tests passed 44. Full Windows launcher
+build/test suite passed (`logs/crash-lifetime-launcher.log`), including the
+seven-file allowlisted ZIP fixture with allocation history. Repository context
+and diff whitespace checks pass. The unrelated temporary pr370 test game was
+closed at the user's request before launcher tests; personal saves/settings
+were not edited. These checks establish report plumbing and allocator behavior,
+not live #410 reproduction, model-pool lifetime coverage or native Mac execution.

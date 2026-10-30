@@ -25,6 +25,10 @@ def test_capture(client,tmp_path,mode,count):
     for path in reports:
         crumbs=(path.parent/'breadcrumbs.txt').read_text();assert 'scene-id 4' in crumbs and len(crumbs)<8192
         health=json.loads((tmp_path/'reports/capture-health.json').read_text());assert health['session_id']=='c'*32
+        allocations=(path.parent/'allocation-history.txt').read_text()
+        assert 'allocation-event 257' in allocations and 'allocation-bytes 4096' in allocations
+        models=(path.parent/'model-history.txt').read_text();assert 'node-index 15' in models and 'traversal-depth 123' in models
+        details=json.loads((path.parent/'diagnostics.json').read_text());assert details['root_cause']=='undetermined'
         data=json.loads(path.read_text());assert data['schema']==1 and len(data['executable_sha256'])==64
         assert data['native_capture_saved'];assert (path.parent/'game-log-tail.txt').read_text()=='local diagnostic tail\n'
         stack=(path.parent/'native-stack.txt').read_text();assert len(stack)<=262144

@@ -1,0 +1,31 @@
+--- a/src/kernel/xbox_memory_layout.c
++++ b/src/kernel/xbox_memory_layout.c
+@@ -1676,6 +1676,9 @@
+ 
+ /* Project allocation provider storage. Initialization precedes device workers. */
+ static tsfp_allocations g_guest_allocations;
++static tsfp_allocation_observer g_allocation_observer;
++/* Register only during startup, before allocation/device workers exist. */
++void xbox_SetAllocationObserver(tsfp_allocation_observer observer){g_allocation_observer=observer;}
+ static tsfp_allocation_record g_guest_heap_records[65536];
+ /* One additional record protects the synthetic kernel page. */
+ static tsfp_allocation_record g_guest_physical_records[4097];
+@@ -1683,6 +1686,7 @@
+ static int xbox_AllocationInit(void)
+ {
+     tsfp_allocation_config config = {0};
++    config.observer=g_allocation_observer;
+     if (g_memory_size > UINT32_MAX || g_xbox_total_ram > UINT32_MAX)
+         return 0;
+     config.ram = g_memory_base;
+--- a/titles/futureperfect/src/main.c
++++ b/titles/futureperfect/src/main.c
+@@ -536,6 +536,8 @@
+     (void)nCmdShow;
+ 
+ #ifdef TSFP_PC_CONTROLS
++    extern void xbox_SetAllocationObserver(void (*observer)(uint32_t,uint32_t,uint32_t));
++    xbox_SetAllocationObserver(pc_capture_allocation);
+     int crash_ready = pc_crash_init(capture_crash_guest);
+     if (crash_ready) atexit(pc_crash_shutdown);
+     /* Exact test commands run before game files, settings or saves are opened. */

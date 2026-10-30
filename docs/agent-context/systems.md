@@ -951,3 +951,5 @@ and SDL adapters consume this helper. Exact mission validation remains separate.
 
 Tracked tank driver keyboard/mouse policy now shares `pc_tank.h` and the
 1730E0 guest wrapper. See [tank scope and original aim route](mounted-mouse.md).
+
+Crash evidence extension: [bounded memory and model history](crash-evidence.md).
