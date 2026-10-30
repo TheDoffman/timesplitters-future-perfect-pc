@@ -7926,6 +7926,11 @@ Keep Awaiting validation; patch-upgrade repairs are being rechecked separately.
 
 ## MAC-124 - Choose save folders (discussion 401) - Awaiting validation
 
+Release preparation for launcher 1.5.0 (2026-10-30): native Apple Silicon build
+and automated launcher checks passed on macOS 27.0.1, including 32 shared UI
+groups and save-location policy fixtures. This does not complete the physical
+Cocoa/Avalonia folder-picker and removable-volume acceptance below.
+
 Shared routing/persistence and launcher resolver/copy/restore policy implemented.
 Cocoa NSOpenPanel is scheduled on the main queue, returns through an atomic guest
 poll, releases input, and inhibits crash watchdog while open. Avalonia uses its

@@ -10,8 +10,11 @@ On Windows 11 x64, 286 focused publisher, launcher-release, native-Mac packaging
 and CI-scope tests passed, with 10 subtests. The Windows launcher 1.5.0 build
 and full launcher checks passed in 35.57 seconds, including selected save-folder
 copy/restore, settings, update/recovery and texture-preservation contracts.
-Repository context and whitespace checks pass. Logs: release-040-focused.log
-and launcher-150-local.log under the release checkout's ignored logs directory.
+The native Apple Silicon launcher build and checks also passed on macOS 27.0.1;
+both hosts passed 32 shared UI groups. The dedicated persistent SSH connection
+worked without another key setup. Repository context and whitespace checks pass.
+Logs: release-040-focused.log and launcher-150-local.log under the release
+checkout's ignored logs directory; launcher-150-preparation.log on the Mac.
 
 Both-host CI and production publication remain pending. These checks do not
 establish a fresh game build, gameplay acceptance, physical Mac folder-picker
