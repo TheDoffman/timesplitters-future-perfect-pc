@@ -1,0 +1,15 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -155,3 +155,12 @@
+ #include "pc_native_weapon_guest.h"
++#include "pc_native_minigun_guest.h"
++extern void sub_001C74D0_gen(void);
++void sub_001C74D0(void)
++{
++    PcMinigunIntent intent=pc_native_minigun_prepare(g_esp,g_xbox_mem_offset);
++    sub_001C74D0_gen();
++    pc_native_minigun_restore(intent);
++}
++
+ extern void sub_00244F30_gen(void);
+ void sub_00244F30(void) { pc_native_weapon_fire_guest(sub_00244F30_gen); }
