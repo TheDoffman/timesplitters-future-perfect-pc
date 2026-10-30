@@ -1006,3 +1006,9 @@ Allocation observation is checked by `test_allocation_observer.py`; both host
 helper fixtures assert allocation/release history reaches the report. Patch
 tracking tests require the evidence hook after the independent allocator/boot
 and presentation patches, before final source-layout routing.
+
+Historical upgrade fixtures exclude the later model-trace/allocation-observer
+patches until upgrading to the full stack. Model instrumentation is inserted
+before a stable function, rather than at EOF, so reversing it preserves local
+trailing edits during historical branch round trips. These are tested in
+`tests/repository/test_patch_updates.py`.

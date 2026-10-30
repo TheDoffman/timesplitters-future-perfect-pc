@@ -1,9 +1,6 @@
 --- a/titles/futureperfect/src/recomp_manual.c
 +++ b/titles/futureperfect/src/recomp_manual.c
-@@ -1633,3 +1633,16 @@
-     fflush(stderr);
- }
- 
+@@ -1490,4 +1490,17 @@
 +
 +#include "pc_model_tree_trace_guest.inc"
 +#include "pc_breadcrumbs.h"
@@ -17,3 +14,7 @@
 +    pc_model_tree_nesting++;sub_000583E0_gen();pc_model_tree_nesting--;
 +}
 +
+ void recomp_icall_not_code_log(uint32_t va, uint32_t saved_esp)
+ {
+     /* A power of ten, because the rate limiter above only reaches this
+      * function body at 1, 10, 100 ... and the verdict has to land on one of

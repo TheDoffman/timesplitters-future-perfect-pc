@@ -33284,3 +33284,11 @@ Crash diagnostics main integration: diagnostics89e804c8 integrated with main
 allocator and patch-tracking tests passed in57.33s. Launcher inputs/output hashes
 matched the prior successful build/test receipt. Context check against main
 passed. No live #410 reproduction/fix or native Mac validation is claimed.
+
+PR418 upgrade CI repair: both native runtime and launcher jobs passed on
+78384327; upgrade fixtures failed because later diagnostic patches entered old
+checkpoints and the EOF trace insertion could not unwind past local trailing
+edits. Historical subsets now exclude both dependent diagnostic additions;
+the trace wrapper uses stable following context. Full current-stack forced
+unwind/reapply passed locally. Historical suite and rebuilt-game checks are
+running; this checkpoint does not claim their completion.

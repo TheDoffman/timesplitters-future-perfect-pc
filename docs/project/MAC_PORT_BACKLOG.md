@@ -7783,3 +7783,8 @@ acceptance; contracts remain in kernel-time.md. No main merge/publication.
   is needed for memory parity; existing native stack reports remain supported.
 - Windows evidence: nine diagnostics tests pass; latest launcher test run in
   logs. Windows results do not establish Darwin execution.
+
+MAC-123 CI follow-up: PR418 head78384327 passed both native runtime jobs and
+Windows/Mac launcher jobs. This verifies the selected automated host contracts,
+not actual Mac fatal/overflow process-memory permissions or title gameplay.
+Keep Awaiting validation; patch-upgrade repairs are being rechecked separately.
