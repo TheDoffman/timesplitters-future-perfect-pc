@@ -1,6 +1,6 @@
 ## README presentation cleanup - 2026-10-30
 
-Documentation update based on `e556c508`, checked on Windows x64. All 53 local
+Documentation update based on `cc531ea9`, checked on Windows x64. All 53 local
 README file/section references resolve, and `git diff --check` passes. The
 v1.4.0 launcher preview was rendered with Windows PowerShell 5.1 and WPF from
 the hash-verified existing build, with Stable selected and isolated sample data.
