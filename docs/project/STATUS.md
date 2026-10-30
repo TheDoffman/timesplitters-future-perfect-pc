@@ -33150,3 +33150,25 @@ bounded Story runner start. Gameplay and fresh/historical upgrade acceptance are
 still running at this checkpoint; no new gameplay or native Mac title claim yet.
 New-source CI is pending. Windows NT10.0.26300 x64/MSVC14.44. Overall replacement
 and MAC-118 remain incomplete/Awaiting validation. No main merge/publication.
+
+
+Stage0236 local Story acceptance (code4cb4697c): runner/controller both exited0.
+Fresh scene4/mission1 gameplay: forward10.720527, back6.208759, ammo8to6,
+40 frozen pause samples and60 advancing resume samples, last104.877s within240s
+cap. Start/fire/paused captures postdate provenance and were reviewed. Profile
+signatures valid, fixture preserved, no runlock/dumps/partition images. All26
+protected settings/save/fixture files retain hashes, sizes and mtimes across both
+checkouts. Source/archive/executable/generated/game hashes agree on the exact
+36cfac00 binary above; committed4cb4697c source/patch bytes match its recorded
+build inputs. Minimized synthetic input/movie-skipped Windows test; not physical
+input, listening, full campaign or native Mac title acceptance. Fresh CI runtime
+40993387115/launcher40993387207 and local upgrades still in progress at this note.
+
+
+Stage0236 CI follow-up:4cb4697c Mac native123860895230 passed2088 tests,
+316 skips/18 subtests, plus169 GPU tests,3 skips/3 subtests. Mac upgrades and both
+launcher/package builds passed. Windows upgrades123860895217 failed4 new-helper
+reads under cp1252 (55 passed); the helper omitted explicit UTF-8 for the existing
+bridge's Unicode comments. All six new checker reads now request UTF-8. No runtime
+source, build flags, warnings or game binary changed. Fresh affected-host checks
+are required; the original Windows CI failure is not described as passing.

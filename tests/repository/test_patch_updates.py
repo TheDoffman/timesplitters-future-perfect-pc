@@ -465,15 +465,15 @@ exit 0
 
 def assert_current_calendar_installed(tree):
     kernel=tree/'src/kernel'
-    assert (kernel/'CMakeLists.txt').read_text().count('${TSFP_SHARED_SOURCE}/runtime/guest_time.c')==1
-    bridge=(kernel/'kernel_bridge.c').read_text()
+    assert (kernel/'CMakeLists.txt').read_text(encoding='utf-8').count('${TSFP_SHARED_SOURCE}/runtime/guest_time.c')==1
+    bridge=(kernel/'kernel_bridge.c').read_text(encoding='utf-8')
     assert bridge.count('#include "guest_kernel_time.inc"')==1
     for name in ('xbox_RtlTimeFieldsToTime','xbox_RtlTimeToTimeFields'):
-        assert name not in (kernel/'kernel_rtl.c').read_text()
-        assert name not in (kernel/'kernel.h').read_text()
+        assert name not in (kernel/'kernel_rtl.c').read_text(encoding='utf-8')
+        assert name not in (kernel/'kernel.h').read_text(encoding='utf-8')
     for name in ('SystemTimeToFileTime','FileTimeToSystemTime'):
-        assert name not in (tree/'src/platform/win32_compat.c').read_text()
-        assert name not in (tree/'src/platform/win32_compat.h').read_text()
+        assert name not in (tree/'src/platform/win32_compat.c').read_text(encoding='utf-8')
+        assert name not in (tree/'src/platform/win32_compat.h').read_text(encoding='utf-8')
 
 
 def assert_current_sharing_installed(checkout):
