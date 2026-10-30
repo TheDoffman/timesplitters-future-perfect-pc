@@ -33290,6 +33290,69 @@ runtime/header/fixture/provenance work remain unverified or unfinished. Overall
 goal stays active/incomplete and MAC-118 Awaiting validation. PR#406 remains draft;
 no main merge or publication was performed.
 
+## Native multiplayer (2026-10-30)
+
+Draft PR [#416](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/416),
+branch `feature/mac-online`, based on main `cc531ea9` and updated through
+`d73758d3`. Implementation is pushed for review, not a published release. The Windows primary audio checkout was untouched.
+The isolated Apple Silicon worktree uses the same-host runtime/game cache.
+
+- Shared native transport and Xbox address/error/memory adapters compile on
+  Windows and macOS 27.0.1 ARM64. Windows focused networking/UI tests: 38 passed,
+  1 skipped; Mac: 36 passed, 3 platform-specific skips. Added real browser
+  host/join/cancel checks: 3 passed on each host. Additional Windows package,
+  patch-ledger and CI-scope checks: 122 passed (includes those three browser cases).
+- The actual Mac game executable's `--online-self-test` passed host, join and
+  cancel through `pc_online_connect`, returned to SDL, stopped/reaped the child,
+  and left no directory lobby. These are supervisor checks, not title gameplay.
+- A native C fixture linked to the production transport exchanged a framed
+  payload from the Windows machine to the physical Mac and back over LAN.
+  Both validated the same fixture compatibility ID. This is packet interoperability,
+  not proof of complete game-build compatibility or a played match.
+- Mac game generated from the verified supported US XBE and built natively.
+  A 45-second bounded unlocked-profile boot recorded at least 2,400 guest frames
+  and 2,400 successful Vulkan presents, no native fault, no shader compile failure
+  and no Vulkan validation errors. Saves/settings were isolated and disposable
+  disks cleaned by the normal runner. Full campaign/gameplay acceptance is separate.
+- The 65 MiB relocated Online runtime passed actual Python, Tk 9.1, TLS,
+  certificate generation, CA-store and themed-window checks. Native dependencies
+  have local loader paths and ad-hoc signature verification. It uses CPython 3.12.12,
+  pinned cryptography/cffi/pycparser wheels, and original license/source metadata.
+  Build-host Tk support was added without upgrading its existing Python interpreter.
+- Remaining acceptance: complete native/native and Windows/Mac matches, bot
+  movement/combat/respawns, reconnect/rematch behavior, Internet/router forwarding,
+  and visual Dock review. A complete distributable game release was not published.
+  Source users must build matching Windows/Mac revisions and content; installed
+  older Windows releases will intentionally reject the new compatibility identity.
+
+Local evidence: `logs/mac-online-*.log`; Mac `logs/native-boot-summary.json`,
+`logs/mac-online-adapter.log`, `logs/mac-online-lan.log`, `logs/mac-online-bundle.log`.
+
+Follow-up validation: real bundled-interpreter host/join/cancel through the Mac
+game adapter passed, with no orphan lobby or process. Parent-exit detection and
+explicit runtime identity checks passed on both hosts (11 passed, 1 platform skip
+per host). Repository context/backlog checks passed (21 tests); CI scope selection
+passed (81 tests). Earlier patch/context failures identified historical fixture
+subsets and exact-order assertions that needed the new final adapter; corrected
+context and migration fixtures passed the 42-test recheck on Windows. Hosted
+Windows and Mac patch upgrades, native runtime jobs and both launcher builds
+passed at `adf9600283b205301db453c1287b5a5c3515d628`. Native suites reported
+2,188 passed / 264 skipped on Windows and 2,123 passed / 319 skipped on Mac,
+plus 18 passing subtests each. Workflow runs: runtime `41008451342`, launcher
+`41008451359`. Both complete workflows succeeded, including both patch
+transition jobs and the final PR validation gate. This acceptance update changes
+documentation only; later CI runs are separate from those verified workflows.
+
+The final source build on the physical Mac completed with its sealed build
+identity. `tools/play-native-mac.py --check` reports the native ARM64 build ready.
+The freshly built executable and matching identity also passed all three
+portable adapter checks again (`logs/mac-online-portable-final.log`): host,
+join and cancel, with no orphan lobby or process. The Mac task checkout was
+fast-forwarded through `adf96002`; subsequent test/docs edits require no game
+rebuild. Start its `Play-Native-Mac.command` for interactive testing, preserving
+personal settings/saves. This evidence does not replace the full-match checks
+listed above.
+
 
 ### Stage0237 original counted strings checkpoint (2026-10-30 UTC)
 
@@ -33685,6 +33748,138 @@ the trace wrapper uses stable following context. Full current-stack forced
 unwind/reapply passed locally. Historical suite and rebuilt-game checks are
 running; this checkpoint does not claim their completion.
 
+
+### Physical crossplay acceptance follow-up (2026-10-30)
+
+PR #416 remains open and unmerged. A real Windows-host / Apple Silicon guest
+Online Deathmatch reached gameplay with two humans and six bots, then completed
+its five-point limit on both peers. All eight final records matched, including
+names, kills, deaths, rank, score and character. Evidence is
+`logs/online-bots-mac-crossplay-2/results.json` and
+`logs/mac-crossplay-match-2.log`; the corresponding Mac gameplay capture was
+reviewed. This is a LAN connection through the production Online directory and
+bridge with a pinned TLS certificate, not an Internet/router test. Inputs were
+synthetic test events, not physical keyboard/controller acceptance.
+
+The run exposed a real compatibility bug: all manifest file hashes were equal,
+but Windows Path case-folding and POSIX case-sensitive ordering produced different
+IDs. `ac839bb5` sorts the final portable manifest paths consistently. Its test
+executes both ordering policies and checks an independently assembled digest.
+Both physical game builds then agreed on compatibility
+`520b19ff5bfce6cbe491ac066227b17198aea61ccb3d6e180e053cba33fee584`.
+
+The first rematch attempt failed because the test held Down past Rematch and
+selected Leave Match. A Windows-only control reproduced the confirmation dialog;
+the corrected short tap selected Rematch and completed a fresh second round.
+The current merged `baa235d6` Windows control (`windows-rematch-fixed`) passed
+both final-score comparisons, roster preservation, round-clock reset and cleared
+scores. It ran for 274.2 seconds with 37,244 asynchronous observations; both peers
+observed movement, changing health and multiple spawn generations for all eight
+actors. These samples do not measure rendered smoothness or physical input.
+
+Test infrastructure repairs include a native read-only observation library,
+batched SSH observations, pinned TLS instead of remote HTTP, permitted isolated
+command paths, and native Trash recycling for the same six validated disposable
+disks. The initial cleanup failures were repaired and their disks recycled after
+test children exited. The first mixed run did not retain its full movement trace
+due to that old cleanup failure; final scores and reviewed captures remain.
+
+Main `42bb0954` crash diagnostics were merged into the task branch at `baa235d6`.
+The current Windows build and its native build tests passed, with new compatibility
+`5f64fa74aa55821d3ae6ce52fb5d2003e48a09c294b3ea5471c07a143eb9db2d`.
+All runtime workflow `41012632115` jobs passed, including both hosts, patch
+upgrades/transitions, launcher packaging and the PR gate. Local focused contracts:
+93 passed, 1 platform skip; context checks: 20 passed. These results apply to
+`baa235d6f2df602835c8adff7eb537350b5bbb4c`; this evidence update is documentation-only.
+
+The user closed the separate interactive Mac game; the merged Mac build then
+completed with all 1,227 manifest entries matching Windows. The follow-up below
+supersedes the outstanding LAN match/rematch and native-host checks. Internet
+routing and publication remain unverified; MAC-013 is not fully accepted.
+
+
+### Crossplay rematch and native-host acceptance (2026-10-30)
+
+The physical Windows-host/Mac-guest run `mac-crossplay-3` completed both five-point
+Deathmatch rounds with two humans and six bots. All eight final records matched
+on both peers in each round; rematch preserved the roster and reset clock, scores
+and result-ready state. It retained 15,208 asynchronous actor observations.
+A subsequent SSH EOF cleanup timeout failed the overall command, so this is
+explicitly gameplay acceptance rather than a clean complete harness run.
+Its final scores, checkpoints, observations and reviewed Mac score-screen image
+remain under `logs/online-bots-mac-crossplay-3`; disposable disks were recycled
+after the owned game processes exited.
+
+`8ace13ea` requests explicit remote-controller shutdown before draining SSH and
+records provenance before cleanup, with a separate cleanup-completed flag. It
+also waits up to 45 seconds for actual lobby registration instead of assuming
+native startup/content verification finishes within eight seconds. The first
+Mac-host attempt exceeded that old startup wait. No protocol workaround, content
+identity bypass or personal-save change was introduced.
+
+The corrected Mac-host/Windows-guest run `mac-crossplay-host-2` passed the complete
+match, results/scores/options navigation, fresh rematch, second results comparison
+and cleanup (exit 0, completed and cleanup_completed true). Duration 242.7 seconds,
+11,586 observations. Both peers observed movement, multiple spawn generations and
+changing health for all eight actors. The shared executable compatibility was
+`5f64fa74aa55821d3ae6ce52fb5d2003e48a09c294b3ea5471c07a143eb9db2d`.
+Evidence: `logs/online-bots-mac-crossplay-host-2`, analysis
+`logs/mac-crossplay-host-2-motion.json`, and reviewed native gameplay capture.
+
+These are same-LAN production Online directory/bridge tests with pinned TLS,
+original 60 Hz defaults and synthetic key events. They do not establish Internet
+router/port-forwarding behavior, physical controller acceptance, high-refresh
+crossplay, end-to-end latency, rendered smoothness or every map/mode. The read-only
+native probe is test-only. Personal saves/settings and unrelated processes were
+preserved; no main merge or release publication was performed.
+
+The latest main minigun fix (`f6766c53`) was integrated at `e0601599`. Both physical
+builds completed, executable/content verification passed, and all 1,229 manifest
+entries agree on `beb73a044db0c69f976bfbd4052ef9439c460cb33de5d546fb7954ef50bff3cc`.
+Runtime workflow `41015739679` passed every job on that revision, including both
+native suites, patch upgrades/transitions, launchers and PR validation. The older
+`c0347a67` Mac CI had one 60-second Tk timeout; the full physical Mac UI suite
+passed (9 passed, 1 Windows-only skip), the affected 150% layout case passed three
+additional isolated runs, and the latest CI did not reproduce it. Windows UI:
+10 passed; focused contracts: 34 passed, 1 skip; context/backlog: 21 passed.
+
+`mac-crossplay-final` completed both final-result comparisons on the new binaries
+and cleaned up successfully, but its last screenshot failed while reading a BMP
+that the game was still writing (completed false, cleanup_completed true). The
+capture helper now freezes candidate bytes, falls back to the previous complete
+frame and retries within two seconds without accepting truncated images. A real
+image regression reproduces the partially written newest frame. This is a test
+capture failure, not a gameplay/desynchronization finding. The capture regression
+passed on Windows (4 passed, 1 platform skip) and native Mac (5 passed).
+
+The user requested stopping the additional reruns. `mac-crossplay-final-2` was
+stopped during setup, its owned peers exited and cleanup_completed is true; it is
+not counted as acceptance. No additional Mac-host repeat was launched. Existing
+both-direction match/rematch evidence above is retained. The final `e0601599`
+binaries completed Windows-host gameplay and both result comparisons, while the
+clean Mac-host acceptance is from the preceding runtime revision; the later
+minigun integration was not repeated with Mac hosting. Test-only capture and
+lifecycle repairs are committed in PR #416. Main remains unmerged/unpublished.
+
+PR #416 review follow-up: the native crossplay controller now acquires its run
+lock exclusively and only records cleanup ownership after success. Rejected
+preparation/lock acquisition preserves another controller's lock and disks;
+failed later setup still cleans up its owned run and rejects a second start.
+All three regression cases failed before the fix and pass afterward. Windows
+focused crossplay, identity, transport, dispatch, real Tk UI and repository
+context checks: 55 passed, 1 native-Mach-only skip (including the context rerun
+after shortening its guide entry). No additional gameplay run was performed.
+The prior head's Mac CI failure was a 60-second Tk layout subprocess timeout;
+the updated head still requires both-host CI before merge.
+
+Follow-up review also keeps the owned run lock through successful disk recycling
+(cleanup failure leaves it locked), and passes the actual `--runtime-root` Python
+interpreter to the Cocoa Online adapter through a generated header. The portable
+package still uses its bundled Python. The cleanup-order/failure cases and separate
+source/runtime-root builder test reproduced their bugs before repair. Focused
+Windows controller/native-builder/context checks: 53 passed, 2 host-only skips.
+Companion/package/CI-selection checks before these follow-ups: 100 passed.
+Native compilation and both-host CI remain the next validation boundary.
 
 Stage0240 incoming-main checkpoint: f6766c534467ac0e85560be6b23b9d9f9741c177
 was safely integrated at d66f433353ecf80d5b686c1e8c9820a7083c3ea9 after preserving

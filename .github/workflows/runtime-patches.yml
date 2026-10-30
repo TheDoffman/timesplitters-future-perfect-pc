@@ -212,7 +212,7 @@ jobs:
           subprocess.run([sys.executable, '-m', 'pip', 'install', *pins], check=True)
           PY
       - name: Install pinned Online certificate dependencies
-        if: needs.plan.outputs.native == 'true' && runner.os == 'Windows'
+        if: needs.plan.outputs.native == 'true'
         run: python -m pip install -r requirements-release.txt
       - name: Test native runtime, rendering and input regressions
         if: needs.plan.outputs.native == 'true'
@@ -244,11 +244,12 @@ jobs:
             tests/graphics/test_renderer_host.py tests/graphics/test_render_state_cache.py tests/repository/test_vulkan_sdk.py tests/graphics/test_rhi_menu_sampling.py
             tests/gameplay/test_frame_replay.py
             tests/diagnostics/test_debug_settings_model.py
+            tests/network/test_native_network.py tests/network/test_crossplay_peer.py tests/network/test_online_companion.py tests/network/test_online_theme.py tests/network/test_online.py tests/network/test_online_host.py tests/network/test_network_identity.py
             tests/network/test_network_guest_dispatch.py tests/network/test_network_bot_results.py tests/network/test_network_movement_stats.py tests/network/test_network_motion_stats.py tests/network/test_network_pose_stats.py tests/analysis/test_procedural_surface_stats.py
             tests/gameplay/test_auto_look.py tests/input/test_terminal_mouse.py tests/gameplay/test_mounted_mouse.py tests/input/test_keyboard_menu.py tests/input/test_controller_profile.py tests/input/test_weapon_slots.py tests/input/test_menu_mouse.py tests/graphics/test_menu_text.py tests/graphics/test_quit_menu.py tests/graphics/test_ui_layout.py tests/graphics/test_camera_feed.py tests/graphics/test_crane_overlay.py tests/graphics/test_ghost_actor_overlay.py
           )
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            tests+=(tests/gameplay/test_frame_interpolation.py tests/gameplay/test_prediction_targets.py tests/repository/test_config_initialization.py tests/gameplay/test_pc_refresh.py tests/graphics/test_window_theme.py tests/network/test_online_theme.py tests/network/test_online.py tests/network/test_online_host.py tests/network/test_network_identity.py)
+            tests+=(tests/gameplay/test_frame_interpolation.py tests/gameplay/test_prediction_targets.py tests/repository/test_config_initialization.py tests/gameplay/test_pc_refresh.py tests/graphics/test_window_theme.py)
           fi
           python -m pytest "${tests[@]}" -q --tb=short -n 2 --dist=loadgroup --max-worker-restart=0 --durations=20 --suite-profile=ci-native
       - name: Validate common RHI on the native Mac GPU without game assets

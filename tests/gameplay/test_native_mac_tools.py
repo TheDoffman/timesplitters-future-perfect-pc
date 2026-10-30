@@ -21,6 +21,47 @@ builder = importlib.util.module_from_spec(build_spec)
 build_spec.loader.exec_module(builder)
 
 
+def test_reused_runtime_supplies_online_interpreter(tmp_path, monkeypatch):
+    source = tmp_path/'source checkout'
+    runtime = tmp_path/'runtime checkout'
+    source.mkdir()
+    game = runtime/'private/game/default.xbe'
+    game.parent.mkdir(parents=True)
+    game.write_bytes(b'test build input')
+    revision = 'a'*40
+    (source/'tsfp.ps1').write_text("$revision = '"+revision+"'\n$expectedHash = '"+
+        hashlib.sha256(game.read_bytes()).hexdigest().upper()+"'\n")
+    python = runtime/'.venv/bin/python'
+    python.parent.mkdir(parents=True)
+    python.write_text('test interpreter')
+    title = runtime/'external/ts3FPrecomp/titles/futureperfect'
+    generated = title/'src/recomp/gen'
+    generated.mkdir(parents=True)
+    (generated/'recomp_funcs.h').write_text('')
+    (title/'src/recomp_manual.c').write_text('')
+    output = runtime/'build/macos/generated'
+    output.mkdir(parents=True)
+    monkeypatch.setattr(builder, 'ROOT', source)
+    monkeypatch.setattr(builder.platform, 'system', lambda: 'Darwin')
+    monkeypatch.setattr(builder.platform, 'machine', lambda: 'arm64')
+    monkeypatch.setattr(sys, 'argv', ['build-native-mac.py', '--runtime-root', str(runtime),
+        '--renderer', 'gl', '--without-textures'])
+    monkeypatch.setattr(builder.subprocess, 'check_output', lambda *a, **kw: revision)
+    monkeypatch.setattr(builder.subprocess, 'run', lambda *a, **kw: type('Result', (), {'returncode': 0})())
+    class Configured(Exception):
+        pass
+    def run(*args, **kwargs):
+        assert '-m' not in args, 'Must reuse the runtime interpreter without creating a source venv'
+        if '-S' in args:
+            raise Configured
+    monkeypatch.setattr(builder, 'run', run)
+    with pytest.raises(Configured):
+        builder.main()
+    header = (output/'online-python.h').read_text()
+    assert json.loads(header.removeprefix('#define TSFP_ONLINE_PYTHON ').strip()) == str(python)
+    assert not (source/'.venv').exists()
+
+
 @pytest.mark.parametrize('game', [None, b'unsupported revision'])
 def test_native_build_accepts_focused_branches_but_validates_game(tmp_path, monkeypatch, game):
     (tmp_path / 'tsfp.ps1').write_bytes((ROOT / 'tsfp.ps1').read_bytes())

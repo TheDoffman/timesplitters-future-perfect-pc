@@ -206,7 +206,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-010 | In-game resolution preview and rollback | Awaiting validation |
 | MAC-011 | Real texture-pack gameplay coverage | Awaiting validation |
 | MAC-012 | Standalone Mac runtime distribution | Verified |
-| MAC-013 | System Link and Online multiplayer | Queued |
+| MAC-013 | System Link and Online multiplayer | Awaiting validation |
 | MAC-014 | Patch upgrades across Windows watermark and native overlay guards | Verified |
 | MAC-015 | Release test privileges and disposable cleanup | Awaiting validation |
 | MAC-016 | Shared pickup-range comparison fix (issue #6) | Awaiting validation |
@@ -2243,6 +2243,14 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Physical crossplay follow-up (2026-10-30, PR #416):** A full Windows-host /
+  Mac-guest match/rematch and Mac-host/Windows-guest match/rematch completed with
+  identical eight-player results. Cross-platform identity ordering is fixed;
+  the corrected native-host test also passed shutdown and disposable-disk cleanup.
+  See [measured scope](STATUS.md#crossplay-rematch-and-native-host-acceptance-2026-10-30).
+  LAN, two humans, six bots and default 60 Hz are verified; Internet routing,
+  physical controls, high refresh and wider mode/map acceptance remain open.
+
 - **Alpha.2 portable TLS follow-up (2026-10-22):** Windows' bundled CPython
   keeps `ssl.py` adjacent to its unchanged stdlib PEM trust resources instead
   of loading the module from inside the library ZIP. This fixes TLS context
@@ -2250,7 +2258,7 @@ validation. This version bump alone is not publication evidence.
   runs in both host release CI suites. Native Mac game packages do not bundle
   this Windows Python/Online runtime; native transport work remains queued.
 
-- **Status:** Queued
+- **Status:** Awaiting validation
 - **Temporary diagnostics experiment (`e9eed34`, 2026-10-16):** Windows
   `Play-Quiet.cmd` / `TSFP_DEBUG_QUIET=1` routes stdout/stderr to `NUL` and skips
   Debug log polling and performance-log writes, retaining FPS measurement and
@@ -2288,17 +2296,19 @@ validation. This version bump alone is not publication evidence.
   `patches/network/0640-pc-online.patch`, and `tools/online*.py`.
 - **PC validation:** Main records local two-instance lobby/match loading in
   `docs/players/multiplayer.md`; cross-internet routing/full-match validation is pending.
-- **Existing Mac support:** The shared menu/display and original guest XNet
-  paths are retained. Windows host UI/transport calls are guarded during the
-  main/mac-port conflict resolution; no native Mac multiplayer adapter is linked.
-- **Mac adaptation needed:** Native socket/identity transport, directory host/join
-  UI, launch/cleanup integration, and platform-appropriate dependencies.
+- **Existing Mac support:** Shared transport, explicit Xbox/BSD address and error
+  conversion, native browser launch/cleanup, shared lobby/bot hooks, and relocatable
+  Python/Tk packaging are implemented in [PR #416](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/416).
+- **Mac adaptation needed:** Broader cross-network, input and mode acceptance;
+  no second protocol or gameplay implementation was introduced.
 - **Mac acceptance checks:** Build and launch on Apple Silicon; verify existing
   display/settings menus, then test isolated two-instance discovery, joining,
   gameplay, shutdown and user-setting preservation before cross-network tests.
-- **Mac implementation and evidence:** Deferred. Conflict resolution preserves
-  the Mac build boundary; host-independent dispatch and Windows checks are
-  recorded in `docs/project/STATUS.md`. Native Mac execution remains unverified for this merge.
+- **Mac implementation and evidence:** See [native multiplayer validation](STATUS.md#native-multiplayer-2026-10-30).
+  Native game builds, host/join/cancel adapter checks, relocated Python/Tk/TLS,
+  real Windows/Mac transport round trip and bounded native boot passed. Complete
+  mixed-platform matches/rematches with six bots passed in both host directions
+  on LAN; Internet routing and the broader acceptance scope remain unverified.
 
 ### MAC-014 — Patch upgrades across Windows watermark and native overlay guards
 
@@ -2917,6 +2927,12 @@ validation. This version bump alone is not publication evidence.
   256px taskbar/system-sized caption icons to the Windows wrapper. This stays
   within the Windows Online adapter; Mac Online remains queued. Future Mac
   acceptance also needs crisp icons and controls at native display scaling.
+
+  Native follow-up (2026-10-30, `feature/mac-online`): the shared Tk browser
+  now runs on Mac, with a 512px PNG rendered from the same icon source and no
+  Windows caption calls. Real Mac layout/scrolling and lifecycle tests pass;
+  visual Dock/accessibility review remains pending. See MAC-013 for transport
+  implementation and its remaining full-match acceptance.
 
 - **Windows menu/dialog appearance follow-up (2026-10-18, implementation in this revision on branch
   `feature/system-theme-game-ui`, depends on local title-bar commit `7219fec`):**
@@ -3714,7 +3730,8 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 Issue #222 follow-up (`59cc489`, branch `222-bug-online-bots-are-stuttery-for-guests`): `src/network/pc_network_bot_motion.h` supplies shared
 numeric replica interpolation, integrated through the existing Windows bot hook
 and monotonic QPC adapter in `pc_network.c`. It requires no second Mac algorithm.
-The original native fallback and pending PC XNet adapter (MAC-013) remain intact.
+Native builds now enable the shared bot hooks through TSFP_NATIVE_NETWORK
+(MAC-013); unsupported builds retain the original guest fallback.
 Native and mixed-peer movement/pose/lifecycle acceptance is still required;
 Windows loopback evidence in `docs/project/STATUS.md` does not establish native execution.
 
@@ -3808,9 +3825,9 @@ Windows loopback evidence in `docs/project/STATUS.md` does not establish native 
   complete patch migration tests passed. See issue #25 in `docs/project/STATUS.md` for
   the build/menu scope and remaining host/guest checks.
 - **Existing Mac support:** The roster model is shared. Native wrappers retain
-  original calls; the host menu, configuration override and state transport are
-  Windows-only. Numeric snapshot definitions are shared without OS calls.
-  Native Mac still lacks the PC XNet transport (MAC-013).
+  original calls in unsupported builds; native Mac now enables the shared host
+  menu, configuration override and state transport. Numeric snapshot definitions are shared without OS calls.
+  The native transport is implemented under MAC-013; bot gameplay remains unverified.
   The post-match HUD rule is shared by the native adapter; no separate Mac
   implementation is needed for that rule, but Mac visual validation is pending.
 - **Mac adaptation needed:** Complete and validate PC AI replication first;

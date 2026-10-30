@@ -3,7 +3,7 @@
  * Reject non-network guest states before querying host settings: these hooks
  * also run for every offline actor's animation and collision updates. Keep
  * eligible network calls live so menu changes and bridge readiness still work. */
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 #include <stdlib.h>
 #include <stdio.h>
 #include "pc_network_bots.h"
@@ -19,7 +19,7 @@ static unsigned pc_network_bots_option(const char *name,unsigned fallback,unsign
 #include "pc_network_bots_lobby.inc"
 static void pc_network_bots_guest_config(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     /* Recheck after the stock builder clears byte 2, immediately before both
        final serialization and the host's pending-load copy. */
     uint32_t address=*(uint32_t *)((uintptr_t)(g_esp+4u)+g_xbox_mem_offset);
@@ -33,7 +33,7 @@ static void pc_network_bots_guest_config(void (*original)(void))
  * enumeration and network player serializers must retain their human checks. */
 static void pc_network_bots_guest_active(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     const uint32_t caller=*(uint32_t *)((uintptr_t)g_esp+g_xbox_mem_offset);
     switch (caller) {
     case 0x00064743u: /* team score ordering */
@@ -67,7 +67,7 @@ static void pc_network_bots_guest_active(void (*original)(void))
     original();
 }
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 /* AI entities are not controller records. Give the original combat/event
  * serializers a separate, slot-based reference rather than a guest pointer
  * or an invalid entry in the human controller table. */
@@ -101,7 +101,7 @@ static unsigned pc_network_bots_guest_slot(uint32_t entity)
    sub_0005FDC0's second argument selects advance versus frozen evaluation. */
 static void pc_network_bots_guest_pose(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     uint32_t stack=g_esp;
     uint32_t entity=*(uint32_t *)((uintptr_t)(stack+4u)+g_xbox_mem_offset);
     if(*(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==2u &&
@@ -125,7 +125,7 @@ static void pc_network_bots_guest_pose(void (*original)(void))
    victim score column. Do not emit a second stock death event for these NPCs. */
 static void pc_network_bots_guest_death_gate(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     uint32_t context=*(uint32_t *)((uintptr_t)(g_esp+4u)+g_xbox_mem_offset);
     if(context && pc_network_bots_guest_slot(*(uint32_t *)((uintptr_t)context+g_xbox_mem_offset))<16u) {
         g_eax=*(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==1u;
@@ -136,7 +136,7 @@ static void pc_network_bots_guest_death_gate(void (*original)(void))
 }
 /* A successful host firing call is an event, separate from locomotion flags.
    Keep only numeric weapon/aim data; the receiver resolves its own actors. */
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 static PcNetworkBotShot pc_network_bot_shots[16];
 static struct PcNetworkBotBounds {
     uint32_t entity,spawn;
@@ -148,7 +148,7 @@ static struct PcNetworkBotBounds {
    the original function's entity argument, not a stack parameter. */
 static void pc_network_bots_guest_bounds(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     const uint32_t entity=g_esi;
     original();
     if(entity &&
@@ -172,7 +172,7 @@ static void pc_network_bots_guest_bounds(void (*original)(void))
 }
 static void pc_network_bots_guest_shot(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     PcNetworkBotShot shot;unsigned slot=16u;
     if(*(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==1u &&
        *(uint32_t *)((uintptr_t)0x0076b1a4u+g_xbox_mem_offset)==15u &&
@@ -213,7 +213,7 @@ static void pc_network_bots_guest_shot(void (*original)(void))
  * membership and all other network/AI-authority decisions remain original. */
 static void pc_network_bots_guest_score_network(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     uint32_t caller=*(uint32_t *)((uintptr_t)g_esp+g_xbox_mem_offset);
     unsigned slot=UINT32_MAX;
     if(caller==0x0006486eu) slot=g_ebx;
@@ -236,7 +236,7 @@ static void pc_network_bots_guest_score_network(void (*original)(void))
  * slots as the codec, without inventing controller records or object IDs. */
 static void pc_network_bots_guest_serializable(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     const uint32_t entity=*(uint32_t *)((uintptr_t)(g_esp+4u)+g_xbox_mem_offset);
     unsigned index;
     if(entity) for(index=0;index<16u;index++) {
@@ -249,7 +249,7 @@ static void pc_network_bots_guest_serializable(void (*original)(void))
 }
 static void pc_network_bots_guest_encode(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     unsigned index;
     if (g_ecx) for (index=0;index<16u;index++) {
         if (pc_network_bots_guest_entity(index)==g_ecx) {
@@ -264,7 +264,7 @@ static void pc_network_bots_guest_encode(void (*original)(void))
 }
 static void pc_network_bots_guest_decode(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     uint32_t *cursor=(uint32_t *)((uintptr_t)g_ecx+g_xbox_mem_offset);
     const uint8_t *bytes=(const uint8_t *)((uintptr_t)*cursor+g_xbox_mem_offset);
     if (bytes[0]==4u) {
@@ -278,7 +278,7 @@ static void pc_network_bots_guest_decode(void (*original)(void))
 static void pc_network_bots_guest_frame(void (*original)(void))
 {
     original();
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     static uint32_t last_tick;static int sent;
     static uint32_t seen_shots[16];
     static int16_t seen_kills[16][16];
@@ -458,7 +458,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
  * Tests route this file into their disposable run directory. */
 static void pc_network_bots_guest_damage(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     static unsigned traces;
     /* Guest shot replay (including delayed projectile effects) is cosmetic.
        Only the original incoming host event may apply bot-sourced damage. */

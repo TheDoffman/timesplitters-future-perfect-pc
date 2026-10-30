@@ -343,7 +343,7 @@ is enabled. A gap over 250 ms snaps to the next received host state. Match,
 host, actor-pool and inactive-state changes clear presentation history. The
 Windows QPC adapter supplies monotonic seconds independently of guest game time.
 Human controller replication and the host's three-tick send interval are unchanged.
-Native Mac fallback remains original until its network adapter exists (MAC-052).
+Native Mac shares these hooks with TSFP_NATIVE_NETWORK; see [Online](multiplayer-ui.md).
 Only clip-block `+8` (model `DC`/`134`) is interpolated within the same clip/cycle;
 the other animation channels and crossfade controls stay atomic. US `5CEF0`
 can promote the secondary clip during zero-advance evaluation, so mixing fade
@@ -937,5 +937,6 @@ and SDL adapters consume this helper. Exact mission validation remains separate.
 Tank keyboard/mouse policy shares `pc_tank.h` and the
 1730E0 guest wrapper. See [tank scope and original aim route](mounted-mouse.md).
 
-[Kernel services](kernel-rtl.md), [numbers](guest-numbers.md),
-[crash evidence](crash-evidence.md).
+Kernel: [pool](kernel-pool.md), [time](kernel-time.md), [RTL](kernel-rtl.md), [numbers](guest-numbers.md), [crashes](crash-evidence.md).
+
+Online uses the build interpreter: [paths](multiplayer-ui.md).

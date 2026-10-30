@@ -28,6 +28,7 @@ import time
 import tkinter as tk
 from tkinter import messagebox
 
+from online_platform import GameProcess, show_error
 from online_client import Client, Session
 from online_host import fetch_public_ipv4, invitation, parse_invitation, start_match
 from online_paths import ROOT, HANDSHAKES, SETTINGS, MANIFEST, TOOLS
@@ -45,7 +46,10 @@ def main():
     private = HANDSHAKES.resolve()
     if result.parent != private or result.name != f'{args.pid}.ready':
         raise ValueError('Unexpected Online handshake path')
-    spec = importlib.util.spec_from_file_location('network_identity', TOOLS/'network-identity.py')
+    identity_path = TOOLS/'network-identity.py'
+    if not identity_path.is_file():
+        identity_path = repo_file(ROOT, 'tools', 'network-identity.py')
+    spec = importlib.util.spec_from_file_location('network_identity', identity_path)
     identity = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(identity)
     manifest = json.loads(MANIFEST.read_text())
@@ -53,13 +57,7 @@ def main():
     if manifest['compatibility'] != args.compatibility:
         raise ValueError('Online tools and executable have different build identities; rebuild first')
 
-    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-    kernel.OpenProcess.restype = ctypes.c_void_p
-    kernel.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_ulong]
-    kernel.CloseHandle.argtypes = [ctypes.c_void_p]
-    parent = kernel.OpenProcess(0x00100000, False, args.pid)
-    if not parent:
-        raise ValueError('Game process is no longer running')
+    parent = GameProcess(args.pid)
     state = Path(os.environ.get('TSFP_ONLINE_SETTINGS', SETTINGS))
     try:
         saved = json.loads(state.read_text())
@@ -209,7 +207,7 @@ def main():
         detect=lambda: work(fetch_public_ipv4, detected), cancel=window.destroy))
 
     def poll():
-        if kernel.WaitForSingleObject(parent, 0) == 0 or result.with_suffix('.stop').exists():
+        if parent.exited() or result.with_suffix('.stop').exists():
             window.destroy()
             return
         try:
@@ -255,6 +253,8 @@ def main():
             directory = client()
             window.after(300, lambda: work(lambda: directory.request(
                 'GET', '/v2/lobbies?compatibility='+args.compatibility), choose))
+        elif command['action'] == 'cancel':
+            window.after(300, window.destroy)
         else:
             raise ValueError('Unknown online test action')
     try:
@@ -273,7 +273,7 @@ def main():
             session[0].close()
         for path in (result, result.with_suffix('.stop')):
             path.unlink(missing_ok=True)
-        kernel.CloseHandle(parent)
+        parent.close()
 
 
 if __name__ == '__main__':
@@ -284,5 +284,5 @@ if __name__ == '__main__':
         logs = ROOT / 'Logs'
         logs.mkdir(parents=True, exist_ok=True)
         (logs/'online-error.log').write_text(traceback.format_exc(), encoding='utf-8')
-        ctypes.windll.user32.MessageBoxW(None, str(error), 'Online connection failed', 0x10)
+        show_error(error)
         raise

@@ -1,10 +1,8 @@
-/* PC-only System Link transport. Never passes unframed Xbox packets through.
+/* Shared desktop System Link transport. Never passes unframed Xbox packets through.
  * Compatibility is checked before discovery or gameplay payloads reach the title.
  * This deliberately does not emulate Xbox Live or communicate with consoles. */
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <windows.h>
-#include <bcrypt.h>
+#include "pc_network_platform.h"
+#include "../runtime/pc_guest_memory.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,14 +14,14 @@
 #define MAX_PEERS 32
 #define HEADER 40
 #define MAX_PACKET 65507
-typedef struct { SOCKET socket; unsigned port; ULONGLONG registered; } NetSocket;
+typedef struct { NetHostSocket socket; unsigned port; uint64_t registered; } NetSocket;
 typedef struct { uint32_t ip; unsigned char xnaddr[36], key[8]; } NetPeer;
 static NetSocket sockets[MAX_SOCKETS];
 static NetPeer peers[MAX_PEERS];
 static unsigned peer_count;
 static int initialized;
-static __declspec(thread) int last_error;
-static SRWLOCK network_lock = SRWLOCK_INIT;
+static NET_THREAD_LOCAL int last_error;
+static NetHostLock network_lock = NET_HOST_LOCK_INIT;
 static uint32_t local_ip;
 static int bind_specific;
 static unsigned char local_address[36];
@@ -43,19 +41,19 @@ static struct sockaddr_in bridge_address;
 #define BRIDGE_HEADER 68
 typedef struct {
     struct sockaddr_in address;
-    LARGE_INTEGER nonce;
-    ULONGLONG seen, sent, replied;
+    uint64_t nonce;
+    uint64_t seen, sent, replied;
     double ms;
 } LatencyPeer;
 static LatencyPeer latency_peers[MAX_PEERS];
 static double online_latency=-1;
 static unsigned online_latency_peers;
-static ULONGLONG online_latency_updated;
+static uint64_t online_latency_updated;
 
 int pc_network_latency(double *milliseconds, unsigned *count)
 {
-    unsigned i; ULONGLONG now=GetTickCount64(); int mode;
-    AcquireSRWLockShared(&network_lock);
+    unsigned i; uint64_t now=net_milliseconds(); int mode;
+    net_read_lock(&network_lock);
     mode=online?2:(initialized?1:0); *milliseconds=-1; *count=0;
     if(online && now-online_latency_updated<=5000) {
         *milliseconds=online_latency; *count=online_latency_peers;
@@ -65,13 +63,13 @@ int pc_network_latency(double *milliseconds, unsigned *count)
             (*count)++;
         }
     }
-    ReleaseSRWLockShared(&network_lock);
+    net_read_unlock(&network_lock);
     return mode;
 }
 
 /* Separate control frames never reach the title's own packet decoder. */
 static void latency_packet(NetSocket *s, const struct sockaddr_in *address,
-                           unsigned char kind, const LARGE_INTEGER *nonce)
+                           unsigned char kind, const uint64_t *nonce)
 {
     unsigned char packet[49];
     memcpy(packet,"TSFQ\1\0\0\0",8); memcpy(packet+8,compatibility,32);
@@ -81,7 +79,7 @@ static void latency_packet(NetSocket *s, const struct sockaddr_in *address,
 
 static void latency_probe(NetSocket *s, const struct sockaddr_in *address)
 {
-    unsigned i,slot=0; ULONGLONG now=GetTickCount64(); LatencyPeer *peer;
+    unsigned i,slot=0; uint64_t now=net_milliseconds(); LatencyPeer *peer;
     if(address->sin_addr.s_addr==local_ip || !address->sin_port || !address->sin_addr.s_addr ||
        ntohl(address->sin_addr.s_addr)>=0xe0000000u) return;
     for(i=0;i<MAX_PEERS;i++) {
@@ -92,8 +90,8 @@ static void latency_probe(NetSocket *s, const struct sockaddr_in *address)
     if(i==MAX_PEERS) { memset(peer,0,sizeof *peer); peer->address=*address; }
     else if(now-peer->replied>5000 && now-peer->sent>5000) peer->address=*address;
     peer->seen=now;
-    if(!peer->sent || (now-peer->sent>=1000 && (!peer->nonce.QuadPart || now-peer->sent>5000))) {
-        peer->sent=now; QueryPerformanceCounter(&peer->nonce);
+    if(!peer->sent || (now-peer->sent>=1000 && (!peer->nonce || now-peer->sent>5000))) {
+        peer->sent=now; peer->nonce=net_clock();
         latency_packet(s,address,1,&peer->nonce);
     }
 }
@@ -101,19 +99,19 @@ static void latency_probe(NetSocket *s, const struct sockaddr_in *address)
 static int latency_control(NetSocket *s, const struct sockaddr_in *address,
                             const unsigned char *packet, int length)
 {
-    LARGE_INTEGER nonce,now,frequency; unsigned i;
+    uint64_t nonce,now; unsigned i;
     if(length<8 || memcmp(packet,"TSFQ\1\0\0\0",8)) return 0;
     if(length!=49 || memcmp(packet+8,compatibility,32)) return 1;
     memcpy(&nonce,packet+41,8);
     if(packet[40]==1) latency_packet(s,address,2,&nonce);
     else if(packet[40]==2) for(i=0;i<MAX_PEERS;i++) {
         LatencyPeer *peer=&latency_peers[i];
-        if(peer->nonce.QuadPart && peer->nonce.QuadPart==nonce.QuadPart &&
+        if(peer->nonce && peer->nonce==nonce &&
            peer->address.sin_addr.s_addr==address->sin_addr.s_addr && peer->address.sin_port==address->sin_port &&
-           GetTickCount64()-peer->sent<=5000) {
-            QueryPerformanceCounter(&now); QueryPerformanceFrequency(&frequency);
-            peer->ms=1000.0*(now.QuadPart-nonce.QuadPart)/frequency.QuadPart;
-            peer->replied=GetTickCount64(); peer->nonce.QuadPart=0;
+           net_milliseconds()-peer->sent<=5000) {
+            now=net_clock();
+            peer->ms=(double)(now-nonce)/1e6;
+            peer->replied=net_milliseconds(); peer->nonce=0;
             break;
         }
     }
@@ -132,41 +130,31 @@ int pc_network_enabled(void)
 static uint32_t failure(int error) { last_error=error; return UINT32_MAX; }
 static void *pointer(uint32_t a, size_t n, ptrdiff_t offset, int write)
 {
-    MEMORY_BASIC_INFORMATION m;
-    uintptr_t p=(uintptr_t)a+offset;
-    if(!a || n>UINT32_MAX-a || !VirtualQuery((void *)p,&m,sizeof m) ||
-       m.State!=MEM_COMMIT || (m.Protect&(PAGE_NOACCESS|PAGE_GUARD)) ||
-       p+n<p || p+n>(uintptr_t)m.BaseAddress+m.RegionSize) return NULL;
-    if(write && !(m.Protect&(PAGE_READWRITE|PAGE_WRITECOPY|PAGE_EXECUTE_READWRITE|PAGE_EXECUTE_WRITECOPY))) return NULL;
-    return (void *)p;
+    uintptr_t host=(uintptr_t)a+(uintptr_t)offset;
+    if(!a || n>UINT32_MAX-a || host<(uintptr_t)offset || !pc_guest_memory(host,n,write)) return NULL;
+    return (void *)host;
 }
+
 static int initialize(void)
 {
-    WSADATA data; unsigned i; char hostname[256]; struct addrinfo hints={0},*list=NULL,*item;
+    unsigned i;
     const char *address=getenv("TSFP_NET_BIND");
     if(initialized) return 1;
-    if(WSAStartup(MAKEWORD(2,2),&data)) return 0;
+    if(!net_start()) return 0;
     for(i=0;i<MAX_SOCKETS;i++) sockets[i].socket=INVALID_SOCKET;
     local_ip=0;
     if(address && *address) {
-        if(InetPtonA(AF_INET,address,&local_ip)!=1) { WSACleanup(); return 0; }
+        if(net_inet_pton(AF_INET,address,&local_ip)!=1) { net_stop(); return 0; }
         bind_specific=1;
     } else {
         bind_specific=0;
-        hints.ai_family=AF_INET; hints.ai_socktype=SOCK_DGRAM;
-        if(!gethostname(hostname,sizeof hostname) && !getaddrinfo(hostname,NULL,&hints,&list)) {
-            for(item=list;item;item=item->ai_next) {
-                uint32_t ip=((struct sockaddr_in *)item->ai_addr)->sin_addr.s_addr;
-                if((ntohl(ip)>>24)!=127) { local_ip=ip; break; }
-            }
-            freeaddrinfo(list);
-        }
+        local_ip=net_local_ip();
     }
     if(!local_ip) local_ip=htonl(INADDR_LOOPBACK);
     memset(local_address,0,sizeof local_address);
     if(online) local_ip=online_ip;
     memcpy(local_address,&local_ip,4);
-    if(BCryptGenRandom(NULL,local_address+10,6,BCRYPT_USE_SYSTEM_PREFERRED_RNG)<0) { WSACleanup(); return 0; }
+    if(!net_random(local_address+10,6)) { net_stop(); return 0; }
     local_address[10]=(local_address[10]|2)&0xfe;
     initialized=1; last_error=0;
     fprintf(stderr,"[PC-NET] Experimental PC System Link on %u.%u.%u.%u, compatibility %s\n",
@@ -182,30 +170,30 @@ static void shutdown_locked(void)
     memset(latency_peers,0,sizeof latency_peers);
     online_latency=-1; online_latency_peers=0; online_latency_updated=0;
     if(!initialized) return;
-    for(i=0;i<MAX_SOCKETS;i++) if(sockets[i].socket!=INVALID_SOCKET) closesocket(sockets[i].socket);
-    WSACleanup(); initialized=0; peer_count=0;
+    for(i=0;i<MAX_SOCKETS;i++) if(sockets[i].socket!=INVALID_SOCKET) net_close(sockets[i].socket);
+    net_stop(); initialized=0; peer_count=0;
 }
 void pc_network_shutdown(void)
-{ AcquireSRWLockExclusive(&network_lock); shutdown_locked(); ReleaseSRWLockExclusive(&network_lock); }
+{ net_lock(&network_lock); shutdown_locked(); net_unlock(&network_lock); }
 int pc_network_set_online(const char *configuration)
 {
     unsigned port,i,value; char token[33],ip[32],extra; uint32_t address;
     if(!configuration) {
-        AcquireSRWLockExclusive(&network_lock); shutdown_locked(); online=0; ReleaseSRWLockExclusive(&network_lock);
+        net_lock(&network_lock); shutdown_locked(); online=0; net_unlock(&network_lock);
         return 1;
     }
     if(sscanf(configuration,"%u %32s %31s %c",&port,token,ip,&extra)!=3 ||
-       !port || port>65535 || strlen(token)!=32 || InetPtonA(AF_INET,ip,&address)!=1 ||
+       !port || port>65535 || strlen(token)!=32 || net_inet_pton(AF_INET,ip,&address)!=1 ||
        (ntohl(address)&0xffffff00u)!=0x0afe0000u || !(ntohl(address)&255) || (ntohl(address)&255)==255) return 0;
     for(i=0;i<32;i++) if(!strchr("0123456789abcdef",token[i])) return 0;
-    AcquireSRWLockExclusive(&network_lock);
+    net_lock(&network_lock);
     shutdown_locked();
     for(i=0;i<16;i++) { sscanf(token+i*2,"%2x",&value); online_token[i]=(unsigned char)value; }
     memset(&bridge_address,0,sizeof bridge_address);
-    bridge_address.sin_family=AF_INET; bridge_address.sin_port=htons((u_short)port);
+    bridge_address.sin_family=AF_INET; bridge_address.sin_port=htons((uint16_t)port);
     bridge_address.sin_addr.s_addr=htonl(INADDR_LOOPBACK);
     online_ip=address; online=1;
-    ReleaseSRWLockExclusive(&network_lock);
+    net_unlock(&network_lock);
     return 1;
 }
 static NetSocket *get_socket(uint32_t handle)
@@ -217,10 +205,10 @@ static int bridge_send(NetSocket *s,const char *payload,int length,int flags,con
     memcpy(packet,"TSFB\1\0\0\0",8); memcpy(packet+8,compatibility,32);
     memcpy(packet+40,online_token,16); memcpy(packet+56,&online_ip,4);
     memcpy(packet+60,&to->sin_addr.s_addr,4);
-    port=htons((u_short)s->port); memcpy(packet+64,&port,2); memcpy(packet+66,&to->sin_port,2);
+    port=htons((uint16_t)s->port); memcpy(packet+64,&port,2); memcpy(packet+66,&to->sin_port,2);
     if(length) memcpy(packet+BRIDGE_HEADER,payload,length);
     sent=sendto(s->socket,(const char *)packet,length+BRIDGE_HEADER,0,(const struct sockaddr *)&bridge_address,sizeof bridge_address);
-    return sent==SOCKET_ERROR?(int)failure(WSAGetLastError()):length;
+    return sent==SOCKET_ERROR?(int)failure(net_error()):length;
 }
 static int send_packet(NetSocket *s,const char *payload,int length,int flags,const struct sockaddr_in *to)
 {
@@ -231,8 +219,8 @@ static int send_packet(NetSocket *s,const char *payload,int length,int flags,con
     memcpy(packet+HEADER,payload,length);
     sent=sendto(s->socket,(char *)packet,length+HEADER,flags,(const struct sockaddr *)to,sizeof *to);
     if(sent_logs++<12) fprintf(stderr,"[PC-NET] Send %u -> %08x:%u, %d bytes, result %d error %d\n",
-        s->port,ntohl(to->sin_addr.s_addr),ntohs(to->sin_port),length,sent,sent<0?WSAGetLastError():0);
-    if(sent==SOCKET_ERROR) return (int)failure(WSAGetLastError());
+        s->port,ntohl(to->sin_addr.s_addr),ntohs(to->sin_port),length,sent,sent<0?net_error():0);
+    if(sent==SOCKET_ERROR) return (int)failure(net_error());
     return length;
 }
 typedef struct { unsigned role,humans,bots;uint32_t host_ip,match; } BotContext;
@@ -244,9 +232,7 @@ static uint32_t bot_targets[16];
 static unsigned bot_target_count;
 double pc_network_bots_time(void)
 {
-    LARGE_INTEGER counter,frequency;
-    QueryPerformanceCounter(&counter);QueryPerformanceFrequency(&frequency);
-    return (double)counter.QuadPart/(double)frequency.QuadPart;
+    return (double)net_clock()/1e9;
 }
 static void bot_reset(void)
 {
@@ -257,22 +243,22 @@ static void bot_reset(void)
 void pc_network_bots_context(unsigned role,uint32_t host_ip,uint32_t match,unsigned humans,unsigned bots)
 {
     BotContext next={role,humans,bots,host_ip,match};
-    AcquireSRWLockExclusive(&network_lock);
+    net_lock(&network_lock);
     if(memcmp(&next,&bot_context,sizeof next)) {
         memset(bot_fresh,0,sizeof bot_fresh);memset(bot_seen,0,sizeof bot_seen);
         bot_context=next;
         bot_target_count=0;
     }
-    ReleaseSRWLockExclusive(&network_lock);
+    net_unlock(&network_lock);
 }
 void pc_network_bots_targets(const uint32_t *addresses,unsigned count)
 {
-    AcquireSRWLockExclusive(&network_lock);
+    net_lock(&network_lock);
     bot_target_count=0;
     if(bot_context.role==1 && count<=16u) {
         memcpy(bot_targets,addresses,count*sizeof *addresses);bot_target_count=count;
     }
-    ReleaseSRWLockExclusive(&network_lock);
+    net_unlock(&network_lock);
 }
 /* Called only after the outer compatibility/bridge checks, before the title's
    receive-size check and decoder. Unknown extension frames never reach Xbox. */
@@ -296,7 +282,7 @@ static int bot_control(const struct sockaddr_in *address,const unsigned char *da
 void pc_network_bots_send(const PcNetworkBotState *state)
 {
     unsigned i,j;unsigned char data[20+sizeof *state];
-    AcquireSRWLockExclusive(&network_lock);
+    net_lock(&network_lock);
     if(!initialized || !local_session_registered || bot_context.role!=1 ||
        !pc_network_bot_state_valid(state,bot_context.humans,bot_context.bots)) goto done;
     memcpy(data,"TSFBAI1",8);memcpy(data+16,&bot_context.match,4);memcpy(data+20,state,sizeof *state);
@@ -308,36 +294,36 @@ void pc_network_bots_send(const PcNetworkBotState *state)
         if(bot_targets[i]==local_ip || !bot_targets[i]) continue;
         address.sin_family=AF_INET;address.sin_addr.s_addr=bot_targets[i];
         for(j=0;j<MAX_SOCKETS;j++) if(sockets[j].socket!=INVALID_SOCKET && sockets[j].port) {
-            address.sin_port=htons((u_short)sockets[j].port);
+            address.sin_port=htons((uint16_t)sockets[j].port);
             send_packet(&sockets[j],(const char *)data,sizeof data,0,&address);
         }
     }
 done:
-    ReleaseSRWLockExclusive(&network_lock);
+    net_unlock(&network_lock);
 }
 int pc_network_bots_receive(unsigned slot,PcNetworkBotState *state)
 {
     int fresh=0;
-    AcquireSRWLockExclusive(&network_lock);
+    net_lock(&network_lock);
     if(slot<16 && bot_context.role==2 && bot_fresh[slot]) {
         *state=bot_pending[slot];bot_fresh[slot]=0;fresh=1;
     }
-    ReleaseSRWLockExclusive(&network_lock);
+    net_unlock(&network_lock);
     return fresh;
 }
 static int receive_packet(NetSocket *s,char *payload,int capacity,int flags,struct sockaddr_in *from)
 {
-    unsigned char packet[MAX_PACKET]; struct sockaddr_in address; int n,size,attempt;
+    unsigned char packet[MAX_PACKET]; struct sockaddr_in address; int n,attempt; NetHostSocklen size;
     if(capacity<0 || flags) return (int)failure(WSAEINVAL);
-    if(online && GetTickCount64()-s->registered>=1000) {
+    if(online && net_milliseconds()-s->registered>=1000) {
         struct sockaddr_in registration={0};
-        bridge_send(s,NULL,0,0,&registration); s->registered=GetTickCount64();
+        bridge_send(s,NULL,0,0,&registration); s->registered=net_milliseconds();
     }
     /* Bound work per game tick even under incompatible traffic. */
     for(attempt=0;attempt<64;attempt++) {
         size=sizeof address;
         n=recvfrom(s->socket,(char *)packet,sizeof packet,0,(struct sockaddr *)&address,&size);
-        if(n==SOCKET_ERROR) return (int)failure(WSAGetLastError());
+        if(n==SOCKET_ERROR) return (int)failure(net_error());
         if(online) {
             uint16_t destination;
             if(address.sin_addr.s_addr!=bridge_address.sin_addr.s_addr || address.sin_port!=bridge_address.sin_port ||
@@ -350,7 +336,7 @@ static int receive_packet(NetSocket *s,char *payload,int capacity,int flags,stru
                 memcpy(&micros,packet+BRIDGE_HEADER+4,4); memcpy(&count,packet+BRIDGE_HEADER+8,2);
                 online_latency_peers=ntohs(count);
                 online_latency=ntohl(micros)==UINT32_MAX?-1:ntohl(micros)/1000.0;
-                online_latency_updated=GetTickCount64();
+                online_latency_updated=net_milliseconds();
                 continue;
             }
             if(ntohs(destination)!=s->port) continue;
@@ -397,17 +383,17 @@ static uint32_t call_locked(uint32_t va,const uint32_t *a,ptrdiff_t offset)
     if(va==0x431cc3) { shutdown_locked(); return 0; }
     if(!initialize()) return failure(WSASYSNOTREADY);
     switch(va) {
-    case 0x431bb1: return 0; /* XNetStartup: replaced by native Winsock above */
+    case 0x431bb1: return 0; /* XNetStartup: replaced by native sockets above */
     case 0x431bc8: /* Xbox's 32-bit WSADATA has 400 bytes. */
         p=pointer(a[1],400,offset,1); if(!p) return WSAEFAULT;
         memset(p,0,400); ((uint16_t *)p)[0]=((uint16_t *)p)[1]=0x202; return 0;
     case 0x431700:
         p=pointer(a[0],a[1],offset,1); if(!p || a[1]>65536) return WSAEFAULT;
-        return BCryptGenRandom(NULL,p,a[1],BCRYPT_USE_SYSTEM_PREFERRED_RNG)<0 ? WSASYSCALLFAILURE : 0;
+        return !net_random(p,a[1]) ? WSASYSCALLFAILURE : 0;
     case 0x43170b:
         p=pointer(a[0],8,offset,1); q=pointer(a[1],16,offset,1); if(!p || !q) return WSAEFAULT;
-        if(BCryptGenRandom(NULL,p,8,BCRYPT_USE_SYSTEM_PREFERRED_RNG)<0 ||
-           BCryptGenRandom(NULL,q,16,BCRYPT_USE_SYSTEM_PREFERRED_RNG)<0) return WSASYSCALLFAILURE;
+        if(!net_random(p,8) ||
+           !net_random(q,16)) return WSASYSCALLFAILURE;
         ((unsigned char *)p)[0]&=0x1f;
         memcpy(local_session_id,p,sizeof local_session_id);
         local_session_created=1;local_session_registered=0;
@@ -442,12 +428,12 @@ static uint32_t call_locked(uint32_t va,const uint32_t *a,ptrdiff_t offset)
     case 0x4317b1:
         if(a[0]!=AF_INET || a[1]!=SOCK_DGRAM || (a[2]!=0 && a[2]!=17 && a[2]!=254)) return failure(WSAEPROTONOSUPPORT);
         for(i=0;i<MAX_SOCKETS;i++) if(sockets[i].socket==INVALID_SOCKET) {
-            BOOL yes=TRUE; u_long nonblocking=1;
-            SOCKET sock=socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP);
-            if(sock==INVALID_SOCKET) return failure(WSAGetLastError());
-            setsockopt(sock,SOL_SOCKET,SO_EXCLUSIVEADDRUSE,(const char *)&yes,sizeof yes);
+            int yes=1;
+            NetHostSocket sock=socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP);
+            if(sock==INVALID_SOCKET) return failure(net_error());
+            net_exclusive(sock);
             setsockopt(sock,SOL_SOCKET,SO_BROADCAST,(const char *)&yes,sizeof yes);
-            ioctlsocket(sock,FIONBIO,&nonblocking);
+            if(net_nonblocking(sock)) { int error=net_error();net_close(sock);return failure(error); }
             sockets[i].socket=sock; sockets[i].port=0; return i+1;
         }
         return failure(WSAENOBUFS);
@@ -459,49 +445,48 @@ static uint32_t call_locked(uint32_t va,const uint32_t *a,ptrdiff_t offset)
     s=get_socket(a[0]); if(!s) return failure(WSAENOTSOCK);
     switch(va) {
     case 0x4317bc:
-        result=closesocket(s->socket); s->socket=INVALID_SOCKET; break;
+        result=net_close(s->socket); s->socket=INVALID_SOCKET; break;
     case 0x4317d2:
         p=pointer(a[2],4,offset,1); if(!p) return failure(WSAEFAULT);
-        if(a[1]!=FIONBIO && a[1]!=FIONREAD) return failure(WSAEINVAL);
-        if(a[1]==FIONBIO && !*(uint32_t *)p) return failure(WSAEOPNOTSUPP);
-        result=ioctlsocket(s->socket,a[1],p); break;
+        if(a[1]!=0x8004667eu && a[1]!=0x4004667fu) return failure(WSAEINVAL);
+        if(a[1]==0x8004667eu && !*(uint32_t *)p) return failure(WSAEOPNOTSUPP);
+        result=a[1]==0x8004667eu ? net_nonblocking(s->socket) : net_available(s->socket,p); break;
     case 0x4317dd:
         p=pointer(a[3],a[4],offset,0); if(!p) return failure(WSAEFAULT);
-        result=setsockopt(s->socket,a[1],a[2],p,a[4]); break;
+        result=net_option(s->socket,a[1],a[2],p,(int)a[4]); break;
     case 0x431802: {
         struct sockaddr_in address;
-        p=pointer(a[1],sizeof address,offset,0); if(!p || a[2]!=sizeof address) return failure(WSAEFAULT);
-        memcpy(&address,p,sizeof address);
-        if(address.sin_family!=AF_INET) return failure(WSAEAFNOSUPPORT);
+        p=pointer(a[1],sizeof(NetGuestAddress),offset,0); if(!p || a[2]!=sizeof(NetGuestAddress)) return failure(WSAEFAULT);
+        if(!net_address_read(&address,p)) return failure(WSAEAFNOSUPPORT);
         /* Receive LAN broadcasts on all interfaces normally. The explicit
            bind override isolates instances on separate loopback addresses. */
         address.sin_addr.s_addr=online?htonl(INADDR_LOOPBACK):(bind_specific?local_ip:INADDR_ANY);
         if(online) address.sin_port=0; /* No physical-port conflicts between game instances. */
         result=bind(s->socket,(struct sockaddr *)&address,sizeof address);
-        s->port=ntohs(((struct sockaddr_in *)p)->sin_port);
+        s->port=ntohs(((NetGuestAddress *)p)->port);
         s->registered=0;
         if(online && !result) {
             struct sockaddr_in registration={0};
-            bridge_send(s,NULL,0,0,&registration); s->registered=GetTickCount64();
+            bridge_send(s,NULL,0,0,&registration); s->registered=net_milliseconds();
         }
         fprintf(stderr,"[PC-NET] Bind UDP %u: %d\n",s->port,result);
         break;
     }
     case 0x43188f: {
         struct sockaddr_in address;
-        p=pointer(a[1],a[2],offset,0); q=pointer(a[4],sizeof address,offset,0);
-        if(!p || !q || a[5]!=sizeof address) return failure(WSAEFAULT);
-        memcpy(&address,q,sizeof address);
+        p=pointer(a[1],a[2],offset,0); q=pointer(a[4],sizeof(NetGuestAddress),offset,0);
+        if(!p || !q || a[5]!=sizeof(NetGuestAddress)) return failure(WSAEFAULT);
+        if(!net_address_read(&address,q)) return failure(WSAEAFNOSUPPORT);
         if(!online && address.sin_addr.s_addr==INADDR_BROADCAST) {
             /* Explicit peers also permit routed LANs and controlled WAN tests.
                Comma-separated numeric IPv4; no DNS or blocking work in a tick. */
             const char *v=getenv("TSFP_NET_PEERS"); char targets[1024],*next,*token;
             if(v && strlen(v)<sizeof targets) {
-                strcpy_s(targets,sizeof targets,v); token=strtok_s(targets,",",&next);
+                memcpy(targets,v,strlen(v)+1); token=net_token(targets,",",&next);
                 while(token) {
                     struct sockaddr_in peer=address;
-                    if(InetPtonA(AF_INET,token,&peer.sin_addr)==1) send_packet(s,p,(int)a[2],a[3],&peer);
-                    token=strtok_s(NULL,",",&next);
+                    if(net_inet_pton(AF_INET,token,&peer.sin_addr)==1) send_packet(s,p,(int)a[2],a[3],&peer);
+                    token=net_token(NULL,",",&next);
                 }
             }
         }
@@ -512,22 +497,22 @@ static uint32_t call_locked(uint32_t va,const uint32_t *a,ptrdiff_t offset)
         p=pointer(a[1],a[2],offset,1); if(!p) return failure(WSAEFAULT);
         q=NULL; r=NULL;
         if(va==0x431866 && a[4]) {
-            q=pointer(a[4],sizeof address,offset,1); r=pointer(a[5],4,offset,1);
-            if(!q || !r || *(uint32_t *)r<sizeof address) return failure(WSAEFAULT);
+            q=pointer(a[4],sizeof(NetGuestAddress),offset,1); r=pointer(a[5],4,offset,1);
+            if(!q || !r || *(uint32_t *)r<sizeof(NetGuestAddress)) return failure(WSAEFAULT);
         }
         result=receive_packet(s,p,(int)a[2],a[3],&address);
-        if(result>=0 && q) { memcpy(q,&address,sizeof address); *(uint32_t *)r=sizeof address; }
+        if(result>=0 && q) { net_address_write(q,&address); *(uint32_t *)r=sizeof(NetGuestAddress); }
         return result;
     }
     default: return failure(WSAEOPNOTSUPP);
     }
-    return result==SOCKET_ERROR ? failure(WSAGetLastError()) : result;
+    return result==SOCKET_ERROR ? failure(net_error()) : result;
 }
 uint32_t pc_network_call(uint32_t va,const uint32_t *a,ptrdiff_t offset)
 {
     static unsigned trace_counts[4096];
     uint32_t result;
-    AcquireSRWLockExclusive(&network_lock);
+    net_lock(&network_lock);
     result=call_locked(va,a,offset);
     if(getenv("TSFP_NET_TRACE") && trace_counts[va%4096]++<3) {
         unsigned n=pc_network_arguments(va),i;
@@ -535,6 +520,6 @@ uint32_t pc_network_call(uint32_t va,const uint32_t *a,ptrdiff_t offset)
         for(i=0;i<n;i++) fprintf(stderr," %08x",a[i]);
         fprintf(stderr,"\n");
     }
-    ReleaseSRWLockExclusive(&network_lock);
+    net_unlock(&network_lock);
     return result;
 }

@@ -477,6 +477,14 @@ browser and invitation popup. No new Mac launcher resource or artwork is needed;
 native Mac Online remains deferred. Icon frames, package placement and real Tk
 window assignment are checked in `tests/repository/test_game_icon.py`.
 
+## Multiplayer Dock artwork (2026-10-30)
+
+`IconBuilder.WriteMultiplayerPng` renders the same multiplayer vector artwork at
+512px for Mac; `build-online-icon.ps1` emits it beside the existing ICO. The Mac
+companion consumes that PNG through Tk iconphoto, and packaging requires it.
+No separate icon design or launcher setting is introduced. Native Online now
+uses the shared browser with a bundled runtime; see multiplayer-ui.md.
+
 ## Extended crash report export (in development)
 
 `CrashReports` exports the allowlisted `guest-memory.bin`, `model-tree.bin` and

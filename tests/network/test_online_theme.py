@@ -19,7 +19,7 @@ def run_tk_check(name, *args):
     ], capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
 
-@pytest.mark.skipif(sys.platform != 'win32', reason='Windows Online adapter')
+@pytest.mark.skipif(sys.platform not in ('win32', 'darwin'), reason='Desktop Online adapter')
 @pytest.mark.parametrize('original_theme', [None, 'clam'])
 def test_online_theme_switch_and_close(original_theme):
     run_tk_check('_check_online_theme_switch_and_close', original_theme)
@@ -46,13 +46,13 @@ def _check_online_theme_switch_and_close(original_theme):
         assert popup.cget('background')=='#0b1420'
         dark[0]=False;theme.refresh()
         assert theme.style.theme_use()==original
-        assert popup.cget('background')=='SystemButtonFace'
+        assert popup.cget('background') == ('SystemButtonFace' if sys.platform == 'win32' else theme.style.lookup('TFrame', 'background'))
     finally:
         window.destroy()
     assert theme.timer is None
 
 
-@pytest.mark.skipif(sys.platform != 'win32', reason='Windows Online adapter')
+@pytest.mark.skipif(sys.platform not in ('win32', 'darwin'), reason='Desktop Online adapter')
 @pytest.mark.parametrize('scale', [1, 1.5, 2])
 def test_control_corners_and_scrollbar_input(scale):
     run_tk_check('_check_control_corners_and_scrollbar_input', scale)
@@ -134,7 +134,7 @@ def _check_caption_after_map_reshow_and_native_reset():
         root.destroy()
 
 
-@pytest.mark.skipif(sys.platform != 'win32', reason='Windows Online adapter')
+@pytest.mark.skipif(sys.platform not in ('win32', 'darwin'), reason='Desktop Online adapter')
 @pytest.mark.parametrize('scale, branded', [(1, True), (1.5, True), (2, True), (1, False)])
 def test_browser_layout_and_commands(scale, branded):
     run_tk_check('_check_browser_layout_and_commands', scale, branded)
