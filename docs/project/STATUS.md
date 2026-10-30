@@ -33355,3 +33355,55 @@ edits. Historical subsets now exclude both dependent diagnostic additions;
 the trace wrapper uses stable following context. Full current-stack forced
 unwind/reapply passed locally. Historical suite and rebuilt-game checks are
 running; this checkpoint does not claim their completion.
+
+
+### Physical crossplay acceptance follow-up (2026-10-30)
+
+PR #416 remains draft and unmerged. A real Windows-host / Apple Silicon guest
+Online Deathmatch reached gameplay with two humans and six bots, then completed
+its five-point limit on both peers. All eight final records matched, including
+names, kills, deaths, rank, score and character. Evidence is
+`logs/online-bots-mac-crossplay-2/results.json` and
+`logs/mac-crossplay-match-2.log`; the corresponding Mac gameplay capture was
+reviewed. This is a LAN connection through the production Online directory and
+bridge with a pinned TLS certificate, not an Internet/router test. Inputs were
+synthetic test events, not physical keyboard/controller acceptance.
+
+The run exposed a real compatibility bug: all manifest file hashes were equal,
+but Windows Path case-folding and POSIX case-sensitive ordering produced different
+IDs. `ac839bb5` sorts the final portable manifest paths consistently. Its test
+executes both ordering policies and checks an independently assembled digest.
+Both physical game builds then agreed on compatibility
+`520b19ff5bfce6cbe491ac066227b17198aea61ccb3d6e180e053cba33fee584`.
+
+The first rematch attempt failed because the test held Down past Rematch and
+selected Leave Match. A Windows-only control reproduced the confirmation dialog;
+the corrected short tap selected Rematch and completed a fresh second round.
+The current merged `baa235d6` Windows control (`windows-rematch-fixed`) passed
+both final-score comparisons, roster preservation, round-clock reset and cleared
+scores. It ran for 274.2 seconds with 37,244 asynchronous observations; both peers
+observed movement, changing health and multiple spawn generations for all eight
+actors. These samples do not measure rendered smoothness or physical input.
+
+Test infrastructure repairs include a native read-only observation library,
+batched SSH observations, pinned TLS instead of remote HTTP, permitted isolated
+command paths, and native Trash recycling for the same six validated disposable
+disks. The initial cleanup failures were repaired and their disks recycled after
+test children exited. The first mixed run did not retain its full movement trace
+due to that old cleanup failure; final scores and reviewed captures remain.
+
+Main `42bb0954` crash diagnostics were merged into the task branch at `baa235d6`.
+The current Windows build and its native build tests passed, with new compatibility
+`5f64fa74aa55821d3ae6ce52fb5d2003e48a09c294b3ea5471c07a143eb9db2d`.
+All runtime workflow `41012632115` jobs passed, including both hosts, patch
+upgrades/transitions, launcher packaging and the PR gate. Local focused contracts:
+93 passed, 1 platform skip; context checks: 20 passed. These results apply to
+`baa235d6f2df602835c8adff7eb537350b5bbb4c`; this evidence update is documentation-only.
+
+Remaining: rebuild the physical Mac at the merged revision, repeat the complete
+mixed match/rematch without another game running, test Mac-host/Windows-guest,
+and retain movement/lifecycle evidence. A separate interactive Mac game was
+already running during the earlier test and showed competing focus events.
+The user chose to close it themselves; it remains untouched. The Mac rebuild
+is waiting for that process to exit. Internet routing and publication remain
+unverified; this entry does not mark MAC-013 fully accepted.

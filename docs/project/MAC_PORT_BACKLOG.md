@@ -2243,6 +2243,14 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Physical crossplay follow-up (2026-10-30, PR #416):** A full Windows-host /
+  Mac-guest five-point Deathmatch completed with identical eight-player results.
+  Cross-platform identity ordering is fixed. The corrected rematch test passed
+  on two Windows peers. Clean mixed rematch, native-host acceptance and the latest
+  merged physical Mac build remain pending while the user closes a separate
+  interactive game. See STATUS's physical crossplay acceptance follow-up; this
+  is not Internet or complete native multiplayer acceptance.
+
 - **Alpha.2 portable TLS follow-up (2026-10-22):** Windows' bundled CPython
   keeps `ssl.py` adjacent to its unchanged stdlib PEM trust resources instead
   of loading the module from inside the library ZIP. This fixes TLS context
