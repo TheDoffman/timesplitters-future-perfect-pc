@@ -820,6 +820,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-001 — Direct-camera mouse look
 
+- **#385 vehicle-gunner route (2026-10-29, local candidate):** Shared
+  `src/input/pc_mounted.h` follows mode-0x400 occupied seats and their gun table
+  for types 3/4. Windows and SDL adapter-body fixtures pass with the same logic;
+  there is no new OS adapter. Ownership, authored vehicle limits, paused/stale
+  input, inversion and native intervals are covered, including an optional
+  supported-XBE regression. Windows Release build/built-in tests pass. Physical
+  Mac build/gameplay and the exact reported missions remain **Awaiting validation**.
+  See [candidate evidence](STATUS.md#vehicle-gunner-test-build-385---2026-10-29).
+
 - **#385 mounted-gun operator (2026-10-29, commit carrying this entry):**
   Shared `src/input/pc_mounted.h` now checks the original `+D8` operator,
   independently of the AI target and authored gun name. Both Windows and SDL
@@ -7697,3 +7706,9 @@ thread tests and original path fixtures pass; Release/built-ins pass before late
 main integration. Final merged-source checks and native Mac acceptance pending.
 Keep MAC-118 Awaiting validation; contracts in host-storage.md, final evidence to
 be recorded in STATUS. No full VFS/I/O or toolkit independence claim.
+
+MAC-001 follow-up (#385): tracked driver input and negative camera pitch now
+share `src/input/pc_tank.h`, `pc_mounted.h`, and `pc_tank_guest.inc` through the
+common manual wrapper patch (local tank-driver candidate; see STATUS). No separate host adaptation is
+required. Windows candidate validation is in STATUS; physical Mac vehicle,
+mouse and mixed-controller acceptance remains pending.

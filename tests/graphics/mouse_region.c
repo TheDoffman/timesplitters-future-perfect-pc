@@ -143,6 +143,16 @@ int main(void)
     U(0x600d8)=0x40000;U(0x60004)=0;MOVE();APPLY();
     CHECK(F(0x60024)==-2 && F(0x6001c)==1 && !input.dx);
     U(0x30114)=2;APPLY();CHECK(F(0x30100)==-3 && F(0x30104)==old_pitch);
+    /* Vehicle gunner mode must take the same route through both host adapters. */
+    U(0x30114)=0x400;U(0x4002c)=77;U(0x42c08)=0x400001;
+    U(0x72f5e8)=0x70000;U(0x70314)=0x400001;U(0x70364)=0x71000;
+    U(0x71140)=1;U(0x71070)=77;U(0x710a0)=3;U(0x7109c)=0;
+    U(0x71164)=1;U(0x71144)=0x60000;U(0x42c14)=0;
+    MOVE();APPLY();CHECK(F(0x60024)==-3 && F(0x6001c)==1.5f && !input.dx);
+    CHECK(F(0x30100)==-3 && F(0x30104)==old_pitch);
+    short_gun=1;MOVE();APPLY();CHECK(F(0x60024)==-3 && !input.dx);short_gun=0;
+    writable=0;MOVE();APPLY();CHECK(F(0x60024)==-3 && !input.dx);writable=1;
+    U(0x30114)=2;
     /* The interval cache never bridges a region boundary or address overflow. */
     PcGuestRegion region={0};uintptr_t end=(uintptr_t)guest+sizeof guest;
     CHECK(pc_guest_memory_in_span(&region,end-4,4,1));

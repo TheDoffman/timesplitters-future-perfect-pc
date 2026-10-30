@@ -944,21 +944,17 @@ Impact sparks: see [native spark timing](native-impact-sparks.md).
 [Devices](kernel-devices.md).
 
 
-Original sharing bridges and ordinal80 cleanup: [contracts and checks](kernel-sharing.md).
+Project-owned I/O contracts: [sharing](kernel-sharing.md),
+[request lifetime](request-lifetime.md), [driver calls](driver-call.md),
+[transfer/queues/events/targets](transfer-completion.md),
+[symbolic links](symbolic-links.md), [path routing](guest-paths.md) and
+[host storage](host-storage.md).
 
+Vehicle gunner mouse uses shared `src/input/pc_mounted.h` for mode `0x400`,
+resolving the occupied seat and its gun on every update. Driver/passenger seats
+retain their existing route. Vehicle limits and locked states differ from mode
+`0x80`; see [mounted and vehicle mouse contracts](mounted-mouse.md). Both Windows
+and SDL adapters consume this helper. Exact mission validation remains separate.
 
-Original request lifetime/callback prerequisites: [contracts and ABI boundary](request-lifetime.md).
-
-
-Stage0222: [original driver-call composition and opaque stack payload](driver-call.md).
-
-
-Stage0223: [private request construction and completion delivery](transfer-completion.md).
-
-Stages0224-0227: [FIFO ownership, StartIo, mirrors and persistent device queues](transfer-completion.md).
-
-Stage0228: [read-only caller-owned request adoption and range lifetime](transfer-completion.md#caller-owned-request-adoption).
-
-Stages0229/0231: [events and targets](transfer-completion.md). Stage0232: [symbolic links](symbolic-links.md).
-
-Stages0233/0234: [routing](guest-paths.md), [original host storage](host-storage.md).
+Tracked tank driver keyboard/mouse policy now shares `pc_tank.h` and the
+1730E0 guest wrapper. See [tank scope and original aim route](mounted-mouse.md).

@@ -889,3 +889,8 @@ Stage0228: [read-only caller-owned request adoption and range lifetime](transfer
 Stages0229/0231: [events and targets](transfer-completion.md). Stage0232: [symbolic links](symbolic-links.md).
 
 Stages0233/0234: [routing](guest-paths.md), [original host storage](host-storage.md).
+
+`2080-tank-driver-controls.patch` wraps 1730E0 through shared
+`pc_tank_guest.inc`. The local keyboard/mouse scope selects signed track input
+and restores actor links after the original call; controller behavior retains
+the original camera-relative branch. See [scope guards](mounted-mouse.md).
