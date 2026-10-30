@@ -41,3 +41,8 @@ The existing independent randomized occupancy/lifecycle/concurrency/allocation
 consumer suites remain required. Native archive audit excludes kernel_pool and
 kernel_thunks members and verifies the retired exports are absent. Windows game
 acceptance and native Mac validation are separate from these portable contracts.
+
+Codeb47b9d9e follow-up: runtime40989944205 and launcher40989944053 both passed
+Windows/Mac host checks. Isolated Windows pool Story also passed; source/archive/
+generated/game hashes and26 protected files agree. Native Mac title gameplay
+remains unverified. See STATUS's stage0235 completed acceptance for exact scope.

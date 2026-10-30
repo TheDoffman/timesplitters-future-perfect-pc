@@ -70,3 +70,8 @@ defines the Darwin extension mode independently of POSIX selection. Only interfa
 facts are used; no Apple implementation is incorporated. Old-head Windows native,
 both upgrade hosts and both launchers passed. New-head native Mac verification is
 pending; this is a source repair, not a passing rerun of the failed old head.
+
+Codeb47b9d9e follow-up: runtime40989944205 and launcher40989944053 both passed
+Windows/Mac host checks. Isolated Windows pool Story also passed; source/archive/
+generated/game hashes and26 protected files agree. Native Mac title gameplay
+remains unverified. See STATUS's stage0235 completed acceptance for exact scope.

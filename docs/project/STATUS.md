@@ -33089,3 +33089,34 @@ sizes and mtimes. Previous stage0234 Story evidence remains labeled to its own
 binary. User was asked whether to keep the separate session running. Overall goal
 and MAC-118 remain incomplete/Awaiting validation; contracts: kernel-pool.md and
 host-storage.md. Windows NT10.0.26300 x64/MSVC14.44; no native Mac title claim.
+
+
+### Stage0235 completed pool acceptance (2026-10-30 UTC)
+
+Codeb47b9d9e runtime40989944205 and launcher40989944053 both passed, including
+Windows/Mac native suites, both historical-upgrade hosts, Mac native storage case
+and common RHI/GPU validation. This verifies the Darwin interface visibility repair
+that failed on855b0a0f; no no-follow, nanosecond, warning or timeout checks were
+weakened. CI uses its public/disposable fixtures, not native Mac title acceptance.
+
+The separate8896 game exited without intervention from this chat. Only after the
+process was absent did the isolated runner start the rebuilt pool binary. Fresh
+bounded Story reached scene4/mission1; forward11.174544/back6.184892,ammo8to6,
+40 frozen pause/60 advancing resume samples,last95.725s within240s cap. Runner
+and controller exited0. Start/fire/pause captures were fresh and reviewed. Profile
+signatures valid/fixture preserved, no remaining runlock/dumps/partition images.
+All26 protected settings/save/fixture files across both checkouts retain hash,
+size and mtime. The earlier owner question is resolved by the observed process
+exit; no other game was stopped and no concurrent-session guard was bypassed.
+
+The tested executable remains the exact build recorded in logs/pool-build.json
+(dirty855b0a0f inputs, now identical to committedb47b9d9e source/patch bytes):
+75207d60d6286f969b2937d7c95200099604f074a700a8c9fd94c0b9c6cf9f5d.
+Source/archive/executable/generated/game hashes agree; all22 generated files
+unchanged by pool replacement, native pool/path/thunks objects excluded, sixteen
+retired exports absent. Previous92 distinct selected local checks and Release/
+built-ins/matching crash symbols remain valid. Windows NT10.0.26300 x64/MSVC14.44,
+minimized synthetic input/movie-skipped; not physical input, listening, complete
+campaign or native Mac title gameplay. Pool phase acceptance is complete within
+that scope; remaining kernel/runtime/header/fixture/provenance replacement remains
+active and incomplete. No merge into main/publication. MAC-118 Awaiting validation.

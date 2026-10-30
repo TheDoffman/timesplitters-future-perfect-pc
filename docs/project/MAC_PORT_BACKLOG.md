@@ -7733,3 +7733,11 @@ single failed native storage compilation. Old-head Windows native, both upgrades
 and launchers passed. New-head Mac CI/title acceptance pending; keep Awaiting
 validation. Final local evidence will be recorded in STATUS; kernel-pool.md and
 host-storage.md describe scope. No full toolkit/kernel ownership completion claim.
+
+
+MAC-118 stage0235 follow-up: codeb47b9d9e runtime40989944205 and launcher40989944053
+both passed, including native Mac storage and GPU/API contracts. Darwin header
+repair is CI-verified. Windows isolated pool Story acceptance now passed after the
+separate game exited; no concurrent session guard was bypassed. Keep overall
+Awaiting validation: native Mac title gameplay and remaining kernel/I/O replacement
+are unfinished. STATUS stage0235 completed acceptance records scope and hashes.
