@@ -12,7 +12,7 @@ from test_translation_product import _compile
 
 def sources(tmp_path,fixture):
     providers=('guest_paths','guest_symlinks','guest_kernel_symlinks')
-    for name in [*(p+'.c' for p in providers),*(p+'.h' for p in providers),'guest_kernel_paths.inc',fixture]:
+    for name in [*(p+'.c' for p in providers),*(p+'.h' for p in providers),'guest_storage.h','guest_kernel_paths.inc',fixture]:
         p=HERE/name
         if not p.is_file():p=ROOT/'src/runtime'/name
         (tmp_path/name).write_bytes(p.read_bytes())

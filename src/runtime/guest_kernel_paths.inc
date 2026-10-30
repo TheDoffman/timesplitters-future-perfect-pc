@@ -1,7 +1,7 @@
-/* Original host path adapters. Include after the retained host initialization,
- * profile snapshot and mkdir helpers in kernel_path.c. Shared planning contains
- * the console routing policy; this layer only converts/joins host paths. */
+/* Original translation adapters, selected by guest_kernel_storage.c after its
+ * atomic root snapshot/native mkdir helpers. Console policy stays shared. */
 #include "guest_paths.h"
+#include "guest_storage.h"
 #include "guest_kernel_symlinks.h"
 static int bridge_path_link(void *context,const char *name,size_t n,char *out,size_t capacity,size_t *bytes) {
     (void)context;return tsfp_kernel_symlink_copy(name,n,out,capacity,bytes)==TSFP_SYMLINK_OK;
@@ -22,24 +22,21 @@ static int bridge_path_wide_join(const WCHAR *base,const WCHAR *relative,size_t 
 #endif
 BOOL xbox_translate_path(const char *input,xbox_host_char *output,DWORD capacity) {
     const tsfp_path_ops ops={NULL,bridge_path_link};tsfp_path_plan plan;
-    char relative[TSFP_PATH_LIMIT],profile[4096];size_t n=0;
+    char relative[TSFP_PATH_LIMIT];size_t n=0;tsfp_storage_snapshot snapshot;
 #ifdef _WIN32
-    WCHAR converted[MAX_PATH],candidate[MAX_PATH],directory[MAX_PATH],profile_wide[MAX_PATH];const WCHAR *base;
+    WCHAR converted[MAX_PATH],candidate[MAX_PATH],directory[MAX_PATH],native_base[MAX_PATH];const WCHAR *base;
 #else
     char candidate[MAX_PATH],directory[MAX_PATH];const char *base;size_t written;
 #endif
     if(!input || !output || !capacity)return FALSE;
     while(n<TSFP_PATH_LIMIT && input[n])++n;
     if(n==TSFP_PATH_LIMIT)return FALSE;
-    if(!s_initialized)xbox_path_init(NULL,NULL);
+    if(!bridge_path_snapshot(&snapshot)) {xbox_path_init(NULL,NULL);if(!bridge_path_snapshot(&snapshot))return FALSE;}
 #ifdef _WIN32
     if(!tsfp_path_prepare(input,n,recomp_config_title_id(),'\\',&ops,relative,sizeof(relative),&plan))return FALSE;
     if(!MultiByteToWideChar(CP_ACP,0,relative,-1,converted,MAX_PATH))return FALSE;
-    base=plan.root==TSFP_PATH_GAME?s_game_dir:s_save_dir;
-    if(plan.root==TSFP_PATH_PROFILE && profile_root_copy(profile,sizeof(profile))) {
-        if(!MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,profile,-1,profile_wide,MAX_PATH))return FALSE;
-        base=profile_wide;
-    }
+    {const char *root=plan.root==TSFP_PATH_GAME?snapshot.game:plan.root==TSFP_PATH_PROFILE && snapshot.profile[0]?snapshot.profile:snapshot.save;
+    if(!MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,root,-1,native_base,MAX_PATH))return FALSE;base=native_base;}
     if(plan.root==TSFP_PATH_PASSTHROUGH) {
         n=wcslen(converted);if(n>=capacity)return FALSE;memcpy(candidate,converted,(n+1)*sizeof(WCHAR));
     } else if(!bridge_path_wide_join(base,converted,wcslen(converted),candidate,sizeof(candidate)/sizeof(candidate[0])) || wcslen(candidate)>=capacity)return FALSE;
@@ -49,8 +46,7 @@ BOOL xbox_translate_path(const char *input,xbox_host_char *output,DWORD capacity
     memcpy(bridge_path_last,candidate,(wcslen(candidate)+1)*sizeof(WCHAR));
 #else
     if(!tsfp_path_prepare(input,n,recomp_config_title_id(),'/',&ops,relative,sizeof(relative),&plan))return FALSE;
-    base=plan.root==TSFP_PATH_GAME?s_game_dir:s_save_dir;
-    if(plan.root==TSFP_PATH_PROFILE && profile_root_copy(profile,sizeof(profile)))base=profile;
+    base=plan.root==TSFP_PATH_GAME?snapshot.game:plan.root==TSFP_PATH_PROFILE && snapshot.profile[0]?snapshot.profile:snapshot.save;
     if(plan.root==TSFP_PATH_PASSTHROUGH) {
         if(plan.relative_bytes>=sizeof(candidate) || plan.relative_bytes>=capacity)return FALSE;
         memcpy(candidate,relative,plan.relative_bytes+1);

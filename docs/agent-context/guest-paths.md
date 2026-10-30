@@ -48,3 +48,8 @@ profile/raw-image checks and add bareDVD, Partition2 children, drive links and
 short-buffer preservation. Image creation/table/size/preservation logic is not
 changed here. CI selects shared contracts on both hosts; Windows conversion cases
 skip Mac. Bounded Windows Story is separate from complete campaign/Mac acceptance.
+
+Stage0234 retires the remaining legacy path unit: [host storage](host-storage.md).
+The translator now consumes an atomic UTF8 root snapshot from that original
+provider rather than legacy initialization/profile helpers. Routing policy remains
+shared; historical descriptions above identify0233 adoption, not current ownership.

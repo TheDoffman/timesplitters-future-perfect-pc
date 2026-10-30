@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "e3a6a52c71b144b040a7fddb18b9174716075360f9e6f603f2f120aa0a0b558a",
+  "loaderSha256": "1cd62f642eba0a3da328dba955a290f05b506bb87178fc72993bd2cc3b975dc2",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2457,6 +2457,14 @@
       "targets": [
         "src/kernel/CMakeLists.txt",
         "src/kernel/kernel_path.c"
+      ]
+    },
+    {
+      "name": "0234-original-host-storage.patch",
+      "path": "patches/compiler/0234-original-host-storage.patch",
+      "sha256": "28be73b9f082a481ac9eb10f4eea24d6717fe9faa82477016842b8e009b8967e",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
       ]
     },
     {

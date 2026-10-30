@@ -32851,3 +32851,14 @@ settings/save/fixture files across both checkouts retain hash/size/mtime. Window
 NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic input/movie-skipped run;
 not physical input/listening/full campaign or native Mac title acceptance. MAC-118
 remains Awaiting validation; contracts: guest-paths.md. New-stage CI pending.
+
+
+### Stage0234 implementation checkpoint (2026-10-29)
+
+Original shared storage/native path host provider excludes legacy kernel_path.c.
+Windows direct storage10cases4.93s and path10cases3.75s passed, including actual
+sparse files and existing bytes/size/mtime preservation; first Release/built-ins/
+crash symbols passed. Work checkpoint precedes latest main8b4db323 integration;
+final merged-source regression and Story acceptance are still pending. CI for
+87295396 currently has no checks/statuses (PR diagnostic confirms that head),
+so it is unverified rather than passed. MAC-118 remains Awaiting validation.

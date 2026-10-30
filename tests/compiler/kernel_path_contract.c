@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
+#include "guest_storage.h"
 #ifdef PATH_POSIX_TEST
 #undef _WIN32
 #endif
@@ -32,7 +33,17 @@ static char s_game_dir[MAX_PATH]="/game",s_save_dir[MAX_PATH]="/save";
 static int s_initialized,initializations,dirs,watches;
 static char active[4096],noted[4096];
 static void xbox_path_init(const char *a,const char *b) {CHECK(!a && !b && !s_initialized);s_initialized=1;++initializations;}
-static int profile_root_copy(char *out,size_t capacity) {size_t n=strlen(active);if(!n || n>=capacity)return 0;memcpy(out,active,n+1);return 1;}
+static int bridge_path_snapshot(tsfp_storage_snapshot *out) {
+    if(!s_initialized)return 0;
+    memset(out,0,sizeof(*out));
+#ifdef _WIN32
+    CHECK(WideCharToMultiByte(CP_UTF8,0,s_game_dir,-1,out->game,sizeof(out->game),NULL,NULL));
+    CHECK(WideCharToMultiByte(CP_UTF8,0,s_save_dir,-1,out->save,sizeof(out->save),NULL,NULL));
+#else
+    memcpy(out->game,s_game_dir,strlen(s_game_dir)+1);memcpy(out->save,s_save_dir,strlen(s_save_dir)+1);
+#endif
+    memcpy(out->profile,active,strlen(active)+1);return 1;
+}
 static uint32_t recomp_config_title_id(void) {return 0x45410066;}
 static void xbox_watch_note_path(const char *p) {CHECK(strlen(p)<sizeof(noted));memcpy(noted,p,strlen(p)+1);++watches;}
 #ifdef _WIN32

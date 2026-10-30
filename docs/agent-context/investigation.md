@@ -318,3 +318,6 @@ Stage0232 context regression extends the exact late compiler tail to34 patches,
 
 Stage0233 context tail now35 patches:0233 after0232 before2090; host routing
 policy is in guest_paths.c rather than two kernel_path translate bodies.
+
+Stage0234 context tail extends to36 patches, after0233 before2090. Upgrade
+assertions require original host/storage providers and exclude kernel_path.c.

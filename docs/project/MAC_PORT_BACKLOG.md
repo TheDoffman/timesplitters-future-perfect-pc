@@ -7687,3 +7687,13 @@ Host initialization/profile locks/partition-image creation and other VFS/I/O
 completion work remain transitional. New-stage CI/native Mac title acceptance
 are pending; retain MAC-118 Awaiting validation. See STATUS stage0233 and
 [shared path contracts](../agent-context/guest-paths.md).
+
+
+MAC-118 stage0234 implementation: original shared storage and native host provider
+replace the compiled legacy kernel_path unit, with atomic root snapshots and
+exclusive new-image initialization. Windows native fixture validates sparse sizes
+and preservation of existing bytes/size/mtime. Shared state/format/failure/native
+thread tests and original path fixtures pass; Release/built-ins pass before latest
+main integration. Final merged-source checks and native Mac acceptance pending.
+Keep MAC-118 Awaiting validation; contracts in host-storage.md, final evidence to
+be recorded in STATUS. No full VFS/I/O or toolkit independence claim.
