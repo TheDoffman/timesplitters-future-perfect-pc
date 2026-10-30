@@ -16,7 +16,7 @@ locked states, pause, finite values and authored limits remain guarded. Windows
 and SDL share the helper. Ordinary vehicle occupants use mode `0x400`
 (`17CE00`/`17CF30` -> `D2CE0`), not `0x8000`; `0x8000` dispatches
 separately through `37AA70`. Mode `0x400` gunner seats are now handled by the same shared helper;
-`0x8000` remains separate.
+`0x8000` has the Battle Mech route described below.
 
 `tests/gameplay/test_mounted_mouse.py` runs asset-free ownership/cadence fixtures,
 both adapter bodies with controlled memory maps, and an optional supported-XBE
@@ -129,3 +129,25 @@ First-tank user acceptance reported improved driving/aim but reversed A/D.
 The signed-track mix now uses `(forward + steer, forward - steer)` to reverse
 steering only; forward/reverse and mouse elevation stay as tested. The original
 driver fixture checks both steering signs at four camera headings.
+
+## Battle Mech mouse (#425)
+
+Mode 0x8000 dispatches to original US 37AA70, which updates mech target
+pitch/yaw at +2C/+30 rather than ordinary player angles. It resolves scene
+733108 -> +2AC actor -> +7C extra -> +AA0 mech data. 37A730 assigns the
+local input slot at +9C and enables player control at +50; 37B720 copies the
+targets into live angles +20/+24 while that control flag is set. The shared
+pc_mounted.h route validates those spans, actor type 8, local-slot ownership,
+control enablement and writable targets on each call. No AI target or cached
+vehicle-seat link authorizes it. Paused/unfocused/stale input is consumed without
+movement; exiting restores ordinary mouse routing. Sensitivity, inversion and
+FOV scaling match shared input. Signed -80..10 pitch clamps and 0..360 yaw
+preserve the original wrapped limits without letting a large mouse packet jump
+across the forbidden pitch arc. Original walking, firing and controller code
+is unchanged.
+
+The registered test_mounted_mouse.py suite includes mech_mouse.c (60/120/180/
+240, limits, focus, pause, stale/malformed ownership and handoff), both production
+host adapters, and optional original-XBE 37AA70/3797B0 execution. The old-route
+mutation must fail. The original-code fixture proves target survival, direction
+vector updates and controller inputs; it is not a live mission or Mac-input test.

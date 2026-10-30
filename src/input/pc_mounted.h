@@ -69,7 +69,8 @@ static inline int pc_vehicle_gun(uintptr_t p,ptrdiff_t offset,PcGuestRegion *reg
 }
 
 /* -1 leaves ordinary look/terminal handling alone; 0/1 consumes gun-mode
- * motion without/with movement. Mode 0x400 uses the vehicle seat gun above.
+ * motion without/with movement. Mode 0x400 uses the vehicle seat gun above;
+ * mode 0x8000 uses the Battle Mech target angles.
  * Mode 0x80 covers directly mounted guns and
  * CCTV-controlled guns. Their player angles are not their aiming angles.
  * Follow the same C14 gun link and limits as sub_0025D520/sub_00258A20,
@@ -87,7 +88,7 @@ static inline int pc_mounted_mouse_in_region(PcInput *input,uint64_t now,float s
     float pitch,yaw,pmin,pmax,ymin,ymax,fov;
     if(!p)return -1;
     mode=*(const uint32_t*)(p+0x114);
-    if(mode!=0x80 && mode!=0x400)return -1;
+    if(mode!=0x80 && mode!=0x400 && mode!=0x8000)return -1;
     data=0;
     if(mode==0x400) {
         vehicle_binding=pc_vehicle_gun(p,offset,region,&data,&gun_address);
@@ -107,6 +108,35 @@ static inline int pc_mounted_mouse_in_region(PcInput *input,uint64_t now,float s
         float delta=*(const float*)ticks;
         if(!isfinite(delta) || delta<=0)return 0;
     } else if(!*(const uint32_t*)ticks)return 0;
+    if(mode==0x8000) {
+        /* US 37AA70 resolves the Battle Mech through C9F50 -> scene+2AC,
+         * actor+7C -> extra+AA0. 37A730 records the controlling local slot
+         * at +9C; +50 gates player control. These are not vehicle gun angles. */
+        uintptr_t scene_slot=pc_mounted_read(0x00733108,offset,4,region);
+        uintptr_t scene=scene_slot?pc_mounted_read(*(const uint32_t*)scene_slot,offset,0x2b0,region):0;
+        entity=scene?pc_mounted_read(*(const uint32_t*)(scene+0x2ac),offset,0x80,region):0;
+        if(!entity || *(const uint32_t*)(entity+0x20)!=8)return 0;
+        extra=pc_mounted_read(*(const uint32_t*)(entity+0x7c),offset,0xaa4,region);
+        data=extra?pc_mounted_read(*(const uint32_t*)(extra+0xaa0),offset,0x9d,region):0;
+        f=pc_mounted_read(fov_object,offset,0x388,region);
+        if(!data || !f || !*(const uint32_t*)(data+0x50) ||
+           *(const uint8_t*)(data+0x9c)!=*(const uint32_t*)(p+4) ||
+           !pc_guest_memory_in_span(region,data+0x2c,8,1))return 0;
+        pitch=*(const float*)(data+0x2c);yaw=*(const float*)(data+0x30);
+        fov=*(const float*)(f+0x384);
+        if(!isfinite(pitch) || !isfinite(yaw) || !isfinite(fov) || fov<1 || fov>120)return 0;
+        scale=sensitivity*(fov<55?fov/55:1);
+        if(!isfinite(dx*scale) || !isfinite(dy*scale))return 0;
+        /* Original 37AA70 wraps to 0..360 and limits elevation to 280..10
+         * across zero. Clamp in signed space so large mouse packets cannot
+         * jump across the forbidden arc. 37B720 copies these target angles
+         * to the camera/gun angles while player control is active. */
+        double next_pitch=fmax(-80,fmin(10,remainder(pitch,360.0)-dy*scale*(invert?-1:1)));
+        double next_yaw=fmod(yaw-dx*scale,360.0);
+        *(float*)(data+0x2c)=(float)(next_pitch<0?next_pitch+360:next_pitch);
+        *(float*)(data+0x30)=(float)(next_yaw<0?next_yaw+360:next_yaw);
+        return 1;
+    }
     if(mode==0x80) {
         owner=*(const uint32_t*)(p+0x14);
         entity=pc_mounted_read(owner,offset,0x80,region);
