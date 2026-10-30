@@ -900,3 +900,5 @@ Stage0235: [original pool imports and native surface retirement](kernel-pool.md)
 Stage0236: [original absolute-time codec and guest calendar imports](kernel-time.md).
 
 Stage0237: [original counted strings and memory prefixes](kernel-strings.md).
+
+Stage0238: [original critical sections and whole native RTL retirement](kernel-rtl.md).

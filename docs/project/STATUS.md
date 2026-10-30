@@ -33299,3 +33299,44 @@ formatting and remaining charset/create/free/numeric services, other legacy
 runtime/header/fixture/provenance work and native Mac title acceptance remain
 unfinished. Overall goal stays active/incomplete, MAC-118 Awaiting validation,
 PR#413 draft/unmerged. This chat performed no merge into main or publication.
+
+
+### Stage0238 original kernel RTL checkpoint (2026-10-30 UTC)
+
+Based onad43ead0, whose runtime40999506265 and launcher40999506163 passed. Original
+guest_critical/host_critical and guest_rtl_services/guest_kernel_rtl providers now
+replace eight imports. The entire legacy kernel_rtl.c is excluded; twelve remaining
+native exports/prototypes (including unused exception/printf wrappers and CRT table
+setter) retire. The real guest formatter/exception/charset/create/free/numeric paths
+elsewhere remain unfinished. No implementation source was copied; standard Windows
+and pthread APIs back the shared ownership policy.
+
+The old TryEnter table was separate from Enter/Leave, so successful try acquisition
+could protect a different lock. All six critical import paths now share a recursive
+registry keyed by mapped host identity, with checked ownership, API pins, idempotent
+initialization, no fixed4096/512 lock cap, wrong-owner protection and quiescent close/
+disposal quarantine. Guest fields remain opaque/unchanged and region APC accounting
+is not supplied. Failed void infrastructure acquisition exits before unprotected
+guest work; failed try returns false. Status preserves19 compatibility overrides
+plus Windows native fallback/Mac317; Rip text reads bounded mapped bytes. Options
+initialize once; trace scans are bounded candidates. Contracts: kernel-rtl.md.
+
+Windows selected124checks passed57.84s. Final26 RTL cases passed11.54s after the
+one-time diagnostic option refinement (overlaps124). Includes16 compiled bad
+providers/imports that fail at runtime after compiling; real OS blocked waiters,
+mixed entry methods/recursion/aliases,30000 synchronized increments,10000 locks,
+wrong-owner/exhaustion/host-failure/pin/quarantine cases, actual kernel integration,
+status/text guards, diagnostic modes and deterministic fatal subprocess. Release,
+built-ins and matching crash symbols passed. Project/archive selects35 original
+providers once, excludes the exact legacy kernel_rtl member and36 retired native
+exports, all22 generated files unchanged from0237, fingerprint current. Supported
+US XBE verified. Ignored logs/critical-build.json records dirtyad43ead0 inputs.
+Executable SHA256:
+a586004ee7eb8a419b1214e7c0f7dd14db5560198bad8c01e65e86a7826e0304.
+
+All26 protected files retain hashes/sizes/mtimes before the new isolated Story run.
+Gameplay and25 upgrade/context/backlog checks are running at this checkpoint; new
+CI pending. PR#413 remains draft/open/unmerged as freshly checked. Windows
+NT10.0.26300 x64/MSVC14.44; no native Mac title, physical input/listening or full
+campaign claim. Remaining kernel/runtime/header/fixture/provenance replacement is
+active/incomplete, MAC-118 Awaiting validation. No merge into main/publication.

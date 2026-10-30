@@ -7795,3 +7795,15 @@ files unchanged. Portable code needs no new Mac adapter, while native Mac title
 and remaining kernel/runtime replacement remain unfinished. Keep Awaiting
 validation; exact counts, host/build/game provenance and retry evidence are in
 STATUS stage0237 completed acceptance. Draft PR#413 remains unmerged.
+
+
+MAC-118 stage0238 follow-up (PR#413): original shared critical ownership/lifecycle,
+native Windows/pthread recursive adapters, status mapping and bounded diagnostics
+replace eight imports and retire the whole kernel_rtl.c plus twelve native exports.
+Try/enter/leave now share one registry; guest fields remain opaque, APC-region and
+abandoned-owner semantics are not added. Windows124 selected checks and Release/
+archive/generation passed; final26-case rerun overlaps124. Native Mac implementation
+is present but new-source CI/title validation are separate;25 upgrades/context and
+bounded Story are running. Keep Awaiting validation because remaining runtime and
+native Mac title acceptance remain unfinished. Contracts: kernel-rtl.md; measured
+scope/provenance in STATUS stage0238. No merge into main/publication by this chat.

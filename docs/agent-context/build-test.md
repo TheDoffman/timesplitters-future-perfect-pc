@@ -993,3 +993,5 @@ decode existing bridge box-drawing comments. CI4cb4697c found this fixture-only
 error; native calendar source and the accepted game binary do not change.
 
 Stage0237: [original counted strings and memory prefixes](kernel-strings.md).
+
+Stage0238: [original critical sections and whole native RTL retirement](kernel-rtl.md).

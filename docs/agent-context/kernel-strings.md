@@ -12,8 +12,8 @@ The six old native init/conversion/equality/pattern helpers and kernel.h prototy
 are retired after caller audit. Only the excluded kernel_thunks resolver retains
 the native symbols. The guest ANSI/Unicode conversion bridges still remain legacy
 work; removing their unused native host-heap counterparts does not replace those
-bridges. kernel_rtl.c still supplies critical sections, status mapping, exception
-and formatting services. Create/free/case conversion, numeric parsing/formatting,
+bridges. Stage0238 now retires the whole native kernel_rtl.c through [original critical/
+status services](kernel-rtl.md); its unused native exception/format wrappers retire. Create/free/case conversion, numeric parsing/formatting,
 remaining charset services and the old raw wcslen helper remain replacement work.
 Vendor/historical patch bytes remain for reproducible unwind and notices.
 

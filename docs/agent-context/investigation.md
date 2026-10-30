@@ -330,3 +330,7 @@ calendar provider/imports replace native RTL time bodies and unused POSIX shims.
 
 Stage0237 extends the exact late compiler tail to39 patches after0236 before2090;
 counted strings/memory prefixes select original code and retire six native helpers.
+
+Stage0238 extends the exact late compiler tail to40 patches after0237 before2090;
+whole kernel_rtl.c exclusion selects original critical/status/diagnostic services
+and removes the separate TryEnter table. Historical checks read UTF-8 explicitly.
