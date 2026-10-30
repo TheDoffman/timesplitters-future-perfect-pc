@@ -1,3 +1,22 @@
+## README direct launcher downloads - 2026-10-30
+
+Based on `76e3bd6e`, validated on Windows x64 with Python 3.12.14. The Windows
+and Apple Silicon Mac README buttons and installation links use GitHub's
+`releases/latest/download/TimeSplitters-Launcher-<platform>.zip` route.
+Both live URLs returned HTTP 200 with attachment filenames for their platforms.
+Launcher v1.4.0 now has two additive aliases: the uploaded bytes match the
+existing versioned archives by SHA-256 and size (Windows 5,048,501 bytes;
+Mac 44,467,839 bytes). Existing release assets, tag and update manifests were
+preserved; no launcher binaries were rebuilt or changed.
+
+The publisher maps alias names to the already verified versioned ZIP paths,
+without local duplicate ZIPs or trusting stale alias files. It requires all ten
+remote assets to match before publishing; previews still do not become Latest.
+All 33 launcher-release tests pass, including alias hash parity, interrupted
+alias upload/retry, unchanged updater filenames and README platform routing.
+Repository context/links and `git diff --check` pass. Both hosts use this shared
+publication code; no OS adapter changed. Native app/game execution was not run.
+
 ## README presentation cleanup - 2026-10-30
 
 The follow-up adds a launcher-styled SVG banner, flat download buttons and
