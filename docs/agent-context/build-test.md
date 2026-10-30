@@ -1000,6 +1000,14 @@ The0236 upgrade source checker reads UTF-8 explicitly: Windows cp1252 cannot
 decode existing bridge box-drawing comments. CI4cb4697c found this fixture-only
 error; native calendar source and the accepted game binary do not change.
 
+Stage0237: [original counted strings and memory prefixes](kernel-strings.md).
+
+Stage0238: [original critical sections and whole native RTL retirement](kernel-rtl.md).
+
+Stage0239: [original checked narrow guest formatting](guest-printf.md).
+
+Stage0240: [original numeric conversion checks](guest-numbers.md).
+
 Crash evidence CI now selects `tests/diagnostics/test_guest_capture.py` beside
 existing crash tests on both hosts. It compiles the shared bounded-memory writer
 against synthetic addresses; Windows fatal-helper tests assert model history is

@@ -648,7 +648,7 @@ variant filter `sub_001BAA70`, usability `sub_001BA410` and selection
 `sub_001BA130`, then refreshes the weapon HUD with `sub_00142820`. It deduplicates
 weapon groups, checks local input slot zero rather than network player ID, and
 never grants inventory. Empty slots do nothing. Settings expose exactly ten bindable
-slots, defaulting to 1â€“9/0. The separate 70-entry internal table bound covers
+slots, defaulting to 1Ã¢â‚¬â€œ9/0. The separate 70-entry internal table bound covers
 weapon IDs and variants; it does not add settings rows.
 
 ## Themed live keyboard and mouse editor
@@ -937,6 +937,5 @@ and SDL adapters consume this helper. Exact mission validation remains separate.
 Tank keyboard/mouse policy shares `pc_tank.h` and the
 1730E0 guest wrapper. See [tank scope and original aim route](mounted-mouse.md).
 
-Kernel: [pool](kernel-pool.md), [calendar](kernel-time.md).
-
-Crash capture: [evidence](crash-evidence.md).
+[Kernel services](kernel-rtl.md), [numbers](guest-numbers.md),
+[crash evidence](crash-evidence.md).

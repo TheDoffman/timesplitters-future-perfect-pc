@@ -44,7 +44,7 @@ Call-frame replacement follows dispatch and guest ABI in effective patch order.
 
 After remote main contains a completed task, remove its local task branch using
 safe deletion after switching away and checking for unique or uncommitted work.
-Root AGENTS.md owns this repository-wide rule; retain other chatsÃ¢â‚¬â„¢ unmerged work
+Root AGENTS.md owns this repository-wide rule; retain other chatsÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ unmerged work
 and ignored data. Other checkouts must pull and reread it.
 
 Build commands now live under `tools/build/`; the evidence broker allows that
@@ -327,6 +327,21 @@ upgrades require the original pool include and exclude native kernel_pool.c.
 
 Stage0236 extends the exact late compiler tail to38 patches, after0235 before2090;
 calendar provider/imports replace native RTL time bodies and unused POSIX shims.
+
+Stage0237 extends the exact late compiler tail to39 patches after0236 before2090;
+counted strings/memory prefixes select original code and retire six native helpers.
+
+Stage0238 extends the exact late compiler tail to40 patches after0237 before2090;
+whole kernel_rtl.c exclusion selects original critical/status/diagnostic services
+and removes the separate TryEnter table. Historical checks read UTF-8 explicitly.
+
+Stage0239 extends the exact late compiler tail to41 patches after0238 before2090;
+original printf removes the legacy formatter/cursors/four cdecl wrappers. The
+x86 oracle compiles native Win32 varargs; portable contracts keep both host routes.
+
+Stage0240 follows0239; main adds its observer before layout in the late43 tail.
+Inspect
+[contract and checked frames](guest-numbers.md), not removed bridge bodies.
 
 Crash diagnostics adds the allocation-history patch after allocator dependencies;
 the repository-order fixture includes this final observer hook before source

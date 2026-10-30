@@ -1,0 +1,585 @@
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -30,6 +30,7 @@
+ add_library(xbox_kernel STATIC ${KERNEL_SOURCES})
+ 
+ target_sources(xbox_kernel PRIVATE
++    "${TSFP_SHARED_SOURCE}/runtime/guest_strings.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_time.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_storage.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_kernel_storage.c"
+--- a/src/kernel/kernel.h
++++ b/src/kernel/kernel.h
+@@ -566,22 +566,6 @@
+ /* ============================================================================
+  * Runtime Library (kernel_rtl.c)
+  * ============================================================================ */
+-
+-VOID    __stdcall xbox_RtlInitAnsiString(PXBOX_ANSI_STRING DestinationString, const char* SourceString);
+-VOID    __stdcall xbox_RtlInitUnicodeString(PXBOX_UNICODE_STRING DestinationString, const WCHAR* SourceString);
+-
+-NTSTATUS __stdcall xbox_RtlAnsiStringToUnicodeString(
+-    PXBOX_UNICODE_STRING DestinationString,
+-    PXBOX_ANSI_STRING SourceString,
+-    BOOLEAN AllocateDestinationString);
+-
+-NTSTATUS __stdcall xbox_RtlUnicodeStringToAnsiString(
+-    PXBOX_ANSI_STRING DestinationString,
+-    PXBOX_UNICODE_STRING SourceString,
+-    BOOLEAN AllocateDestinationString);
+-
+-BOOLEAN __stdcall xbox_RtlEqualString(PXBOX_ANSI_STRING String1, PXBOX_ANSI_STRING String2, BOOLEAN CaseInSensitive);
+-ULONG   __stdcall xbox_RtlCompareMemoryUlong(PVOID Source, ULONG Length, ULONG Pattern);
+ 
+ /* Name contended CRT locks by index instead of by address. */
+ void xbox_SetCrtLockTable(uint32_t table_va, uint32_t count);
+--- a/src/kernel/kernel_rtl.c
++++ b/src/kernel/kernel_rtl.c
+@@ -16,146 +16,6 @@
+ #include <stdarg.h>
+ #include <string.h>
+ #include <ctype.h>
+-
+-/* ============================================================================
+- * String Initialization
+- * ============================================================================ */
+-
+-VOID __stdcall xbox_RtlInitAnsiString(PXBOX_ANSI_STRING DestinationString, const char* SourceString)
+-{
+-    if (SourceString) {
+-        USHORT len = (USHORT)strlen(SourceString);
+-        DestinationString->Length = len;
+-        DestinationString->MaximumLength = len + 1;
+-        DestinationString->Buffer = (PCHAR)SourceString;
+-    } else {
+-        DestinationString->Length = 0;
+-        DestinationString->MaximumLength = 0;
+-        DestinationString->Buffer = NULL;
+-    }
+-}
+-
+-VOID __stdcall xbox_RtlInitUnicodeString(PXBOX_UNICODE_STRING DestinationString, const WCHAR* SourceString)
+-{
+-    if (SourceString) {
+-        USHORT len = (USHORT)(xbox_wcslen(SourceString) * sizeof(WCHAR));
+-        DestinationString->Length = len;
+-        DestinationString->MaximumLength = len + sizeof(WCHAR);
+-        DestinationString->Buffer = (PWCHAR)SourceString;
+-    } else {
+-        DestinationString->Length = 0;
+-        DestinationString->MaximumLength = 0;
+-        DestinationString->Buffer = NULL;
+-    }
+-}
+-
+-/* ============================================================================
+- * String Conversion (ANSI ↔ Unicode)
+- * ============================================================================ */
+-
+-NTSTATUS __stdcall xbox_RtlAnsiStringToUnicodeString(
+-    PXBOX_UNICODE_STRING DestinationString,
+-    PXBOX_ANSI_STRING SourceString,
+-    BOOLEAN AllocateDestinationString)
+-{
+-    ULONG unicode_len;
+-
+-    if (!DestinationString || !SourceString)
+-        return STATUS_INVALID_PARAMETER;
+-
+-    unicode_len = (SourceString->Length + 1) * sizeof(WCHAR);
+-
+-    if (AllocateDestinationString) {
+-        DestinationString->Buffer = (PWCHAR)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, unicode_len);
+-        if (!DestinationString->Buffer)
+-            return STATUS_NO_MEMORY;
+-        DestinationString->MaximumLength = (USHORT)unicode_len;
+-    } else if (DestinationString->MaximumLength < unicode_len) {
+-        return STATUS_BUFFER_OVERFLOW;
+-    }
+-
+-    int result = MultiByteToWideChar(CP_ACP, 0,
+-        SourceString->Buffer, SourceString->Length,
+-        DestinationString->Buffer, DestinationString->MaximumLength / sizeof(WCHAR));
+-
+-    if (result > 0) {
+-        DestinationString->Length = (USHORT)(result * sizeof(WCHAR));
+-        DestinationString->Buffer[result] = L'\0';
+-        return STATUS_SUCCESS;
+-    }
+-
+-    return STATUS_UNSUCCESSFUL;
+-}
+-
+-NTSTATUS __stdcall xbox_RtlUnicodeStringToAnsiString(
+-    PXBOX_ANSI_STRING DestinationString,
+-    PXBOX_UNICODE_STRING SourceString,
+-    BOOLEAN AllocateDestinationString)
+-{
+-    ULONG ansi_len;
+-
+-    if (!DestinationString || !SourceString)
+-        return STATUS_INVALID_PARAMETER;
+-
+-    ansi_len = SourceString->Length / sizeof(WCHAR) + 1;
+-
+-    if (AllocateDestinationString) {
+-        DestinationString->Buffer = (PCHAR)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, ansi_len);
+-        if (!DestinationString->Buffer)
+-            return STATUS_NO_MEMORY;
+-        DestinationString->MaximumLength = (USHORT)ansi_len;
+-    } else if (DestinationString->MaximumLength < ansi_len) {
+-        return STATUS_BUFFER_OVERFLOW;
+-    }
+-
+-    int result = WideCharToMultiByte(CP_ACP, 0,
+-        SourceString->Buffer, SourceString->Length / sizeof(WCHAR),
+-        DestinationString->Buffer, DestinationString->MaximumLength,
+-        NULL, NULL);
+-
+-    if (result >= 0) {
+-        DestinationString->Length = (USHORT)result;
+-        if ((USHORT)result < DestinationString->MaximumLength)
+-            DestinationString->Buffer[result] = '\0';
+-        return STATUS_SUCCESS;
+-    }
+-
+-    return STATUS_UNSUCCESSFUL;
+-}
+-
+-/* ============================================================================
+- * String Comparison
+- * ============================================================================ */
+-
+-BOOLEAN __stdcall xbox_RtlEqualString(
+-    PXBOX_ANSI_STRING String1,
+-    PXBOX_ANSI_STRING String2,
+-    BOOLEAN CaseInSensitive)
+-{
+-    if (String1->Length != String2->Length)
+-        return FALSE;
+-
+-    if (CaseInSensitive)
+-        return _strnicmp(String1->Buffer, String2->Buffer, String1->Length) == 0;
+-    else
+-        return strncmp(String1->Buffer, String2->Buffer, String1->Length) == 0;
+-}
+-
+-/*
+- * RtlCompareMemoryUlong - Scans memory for a ULONG pattern.
+- * Returns the number of bytes that matched.
+- */
+-ULONG __stdcall xbox_RtlCompareMemoryUlong(PVOID Source, ULONG Length, ULONG Pattern)
+-{
+-    PULONG src = (PULONG)Source;
+-    ULONG count = Length / sizeof(ULONG);
+-
+-    for (ULONG i = 0; i < count; i++) {
+-        if (src[i] != Pattern)
+-            return i * sizeof(ULONG);
+-    }
+-    return count * sizeof(ULONG);
+-}
+ 
+ /* ============================================================================
+  * Critical Sections (direct 1:1 mapping)
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -594,45 +594,9 @@
+  * examines whole ULONGs, so a length that is not a multiple of four leaves the
+  * remainder uncompared; the count it returns is still in bytes.
+  */
+-static void bridge_RtlCompareMemory(void)
+-{
+-    uint32_t a_va   = STACK_ARG(0);
+-    uint32_t b_va   = STACK_ARG(1);
+-    uint32_t length = STACK_ARG(2);
+-    const uint8_t *a, *b;
+-    uint32_t i;
+-
+-    if (!a_va || !b_va || !length) {
+-        g_eax = 0;
+-        return;
+-    }
+-    a = (const uint8_t *)XBOX_TO_NATIVE(a_va);
+-    b = (const uint8_t *)XBOX_TO_NATIVE(b_va);
+-    for (i = 0; i < length; i++) {
+-        if (a[i] != b[i])
+-            break;
+-    }
+-    g_eax = i;
+-}
+-
+-static void bridge_RtlCompareMemoryUlong(void)
+-{
+-    uint32_t base_va = STACK_ARG(0);
+-    uint32_t length  = STACK_ARG(1);
+-    uint32_t pattern = STACK_ARG(2);
+-    uint32_t i;
+-
+-    if (!base_va) {
+-        g_eax = 0;
+-        return;
+-    }
+-    length &= ~3u;                      /* whole ULONGs only */
+-    for (i = 0; i < length; i += 4) {
+-        if (BRIDGE_MEM32(base_va + i) != pattern)
+-            break;
+-    }
+-    g_eax = i;
+-}
++#include "guest_kernel_strings.inc"
++
++/* Original counted-string import selected above. */
+ 
+ static void bridge_ExQueryNonVolatileSetting(void)
+ {
+@@ -2730,56 +2694,9 @@
+  * missing turned that lookup into unbounded recursion and the process died of
+  * a host stack overflow 200 kernel calls in.
+  */
+-static void bridge_RtlEqualString(void)
+-{
+-    uint32_t s1_va  = STACK_ARG(0);
+-    uint32_t s2_va  = STACK_ARG(1);
+-    uint32_t nocase = STACK_ARG(2);
+-    XBOX_ANSI_STRING a, b;
+-
+-    if (!s1_va || !s2_va) {
+-        g_eax = 0;
+-        return;
+-    }
+-    a.Length        = BRIDGE_MEM16(s1_va + 0);
+-    a.MaximumLength = BRIDGE_MEM16(s1_va + 2);
+-    a.Buffer        = (PCHAR)XBOX_TO_NATIVE(BRIDGE_MEM32(s1_va + 4));
+-    b.Length        = BRIDGE_MEM16(s2_va + 0);
+-    b.MaximumLength = BRIDGE_MEM16(s2_va + 2);
+-    b.Buffer        = (PCHAR)XBOX_TO_NATIVE(BRIDGE_MEM32(s2_va + 4));
+-
+-    if (!a.Buffer || !b.Buffer) {
+-        g_eax = 0;
+-        return;
+-    }
+-    g_eax = xbox_RtlEqualString(&a, &b, (BOOLEAN)nocase) ? 1 : 0;
+-}
+-
+-static void bridge_RtlInitAnsiString(void)
+-{
+-    uint32_t dest_va = STACK_ARG(0);
+-    uint32_t src_va  = STACK_ARG(1);
+-
+-    if (!dest_va) {
+-        g_eax = 0;
+-        return;
+-    }
+-    if (src_va) {
+-        const char *src = (const char *)XBOX_TO_NATIVE(src_va);
+-        size_t len = strlen(src);
+-        if (len > 0xFFFE) {
+-            len = 0xFFFE;
+-        }
+-        BRIDGE_MEM16(dest_va + 0) = (uint16_t)len;
+-        BRIDGE_MEM16(dest_va + 2) = (uint16_t)(len + 1);
+-        BRIDGE_MEM32(dest_va + 4) = src_va;
+-    } else {
+-        BRIDGE_MEM16(dest_va + 0) = 0;
+-        BRIDGE_MEM16(dest_va + 2) = 0;
+-        BRIDGE_MEM32(dest_va + 4) = 0;
+-    }
+-    g_eax = 0;
+-}
++/* Original counted-string import selected above. */
++
++/* Original counted-string import selected above. */
+ 
+ /* ── NtCreateFile (ordinal 190, 9 args = 36 bytes) ─────── */
+ /* Record whether a newly opened file is asynchronous, keyed by its token. */
+@@ -4348,33 +4265,7 @@
+  * must carry the guest VA of the source, so the fields are written by hand
+  * rather than letting the native xbox_* write a 64-bit host pointer into a
+  * 4-byte guest slot. Lengths are in bytes (wide chars x2). */
+-static void bridge_RtlInitUnicodeString(void)
+-{
+-    uint32_t dest_va = STACK_ARG(0);
+-    uint32_t src_va  = STACK_ARG(1);
+-
+-    if (!dest_va) {
+-        g_eax = 0;
+-        return;
+-    }
+-    if (src_va) {
+-        const uint16_t *wp = (const uint16_t *)XBOX_TO_NATIVE(src_va);
+-        size_t bytes = 0;
+-
+-        while (wp[bytes / 2])
+-            bytes += sizeof(uint16_t);
+-        if (bytes > 0xFFFE)
+-            bytes = 0xFFFE;
+-        BRIDGE_MEM16(dest_va + 0) = (uint16_t)bytes;
+-        BRIDGE_MEM16(dest_va + 2) = (uint16_t)(bytes + sizeof(uint16_t));
+-        BRIDGE_MEM32(dest_va + 4) = src_va;
+-    } else {
+-        BRIDGE_MEM16(dest_va + 0) = 0;
+-        BRIDGE_MEM16(dest_va + 2) = 0;
+-        BRIDGE_MEM32(dest_va + 4) = 0;
+-    }
+-    g_eax = 0;
+-}
++/* Original counted-string import selected above. */
+ 
+ /* ── RtlTimeFieldsToTime (ordinal 304, 2 args)
+  * Counterpart of the routed RtlTimeToTimeFields: reads a XBOX_TIME_FIELDS and
+@@ -4750,19 +4641,7 @@
+     g_eax = 0;
+ }
+ 
+-/* ── RtlAnsiStringToUnicodeString (ordinal 260, 3 args) ──────────────────
+- *
+- * NOT a call into xbox_RtlAnsiStringToUnicodeString. That one HeapAllocs on
+- * the host heap and stores the resulting 64-bit host pointer into the guest
+- * string's 4-byte Buffer field -- the memory-model mismatch. This bridge does
+- * the whole conversion by hand:
+- *
+- *  - Source fields are read from the guest struct (Buffer at offset 4);
+- *  - the destination stays wherever the title put it (non-allocating), or is
+- *    carved from the guest heap (allocating) and its guest VA stored at
+- *    offset 4;
+- *  - conversion writes only at guest addresses.
+- */
++/* Legacy guest charset conversion; original replacement remains pending. */
+ static void bridge_RtlAnsiStringToUnicodeString(void)
+ {
+     uint32_t dst_va  = STACK_ARG(0);
+@@ -4936,224 +4815,37 @@
+  * live in guest memory. Returns STATUS_SUCCESS or STATUS_BUFFER_TOO_SMALL. */
+ 
+ /* 261: NTSTATUS RtlAppendStringToString(PXBOX_ANSI_STRING, PXBOX_ANSI_STRING) */
+-static void bridge_RtlAppendStringToString(void)
+-{
+-    uint32_t dst_va = STACK_ARG(0);
+-    uint32_t src_va = STACK_ARG(1);
+-    uint16_t d_len = 0, d_max = 0, s_len = 0;
+-    uint32_t d_buf = 0, s_buf = 0;
+-
+-    if (!dst_va || !src_va) { g_eax = (uint32_t)STATUS_INVALID_PARAMETER; return; }
+-    d_len = BRIDGE_MEM16(dst_va + 0);
+-    d_max = BRIDGE_MEM16(dst_va + 2);
+-    d_buf = BRIDGE_MEM32(dst_va + 4);
+-    s_len = BRIDGE_MEM16(src_va + 0);
+-    s_buf = BRIDGE_MEM32(src_va + 4);
+-    if (!d_buf || !s_buf) { g_eax = (uint32_t)STATUS_INVALID_PARAMETER; return; }
+-    if ((uint32_t)d_len + s_len > d_max) { g_eax = (uint32_t)STATUS_BUFFER_TOO_SMALL; return; }
+-    memcpy((char *)XBOX_TO_NATIVE(d_buf) + d_len, XBOX_TO_NATIVE(s_buf), s_len);
+-    BRIDGE_MEM16(dst_va + 0) = (uint16_t)(d_len + s_len);
+-    g_eax = 0;   /* STATUS_SUCCESS */
+-}
++/* Original counted-string import selected above. */
+ 
+ /* 262: NTSTATUS RtlAppendUnicodeStringToString(PXBOX_UNICODE_STRING, PXBOX_UNICODE_STRING) */
+-static void bridge_RtlAppendUnicodeStringToString(void)
+-{
+-    uint32_t dst_va = STACK_ARG(0);
+-    uint32_t src_va = STACK_ARG(1);
+-    uint16_t d_len = 0, d_max = 0, s_len = 0;
+-    uint32_t d_buf = 0, s_buf = 0;
+-
+-    if (!dst_va || !src_va) { g_eax = (uint32_t)STATUS_INVALID_PARAMETER; return; }
+-    d_len = BRIDGE_MEM16(dst_va + 0);
+-    d_max = BRIDGE_MEM16(dst_va + 2);
+-    d_buf = BRIDGE_MEM32(dst_va + 4);
+-    s_len = BRIDGE_MEM16(src_va + 0);
+-    s_buf = BRIDGE_MEM32(src_va + 4);
+-    if (!d_buf || !s_buf) { g_eax = (uint32_t)STATUS_INVALID_PARAMETER; return; }
+-    if ((uint32_t)d_len + s_len > d_max) { g_eax = (uint32_t)STATUS_BUFFER_TOO_SMALL; return; }
+-    memcpy((char *)XBOX_TO_NATIVE(d_buf) + d_len, XBOX_TO_NATIVE(s_buf), s_len);
+-    BRIDGE_MEM16(dst_va + 0) = (uint16_t)(d_len + s_len);
+-    g_eax = 0;   /* STATUS_SUCCESS */
+-}
++/* Original counted-string import selected above. */
+ 
+ /* 263: NTSTATUS RtlAppendUnicodeToString(PXBOX_UNICODE_STRING, PCWSTR) */
+-static void bridge_RtlAppendUnicodeToString(void)
+-{
+-    uint32_t dst_va = STACK_ARG(0);
+-    uint32_t src_va = STACK_ARG(1);
+-    uint16_t d_len = 0, d_max = 0;
+-    uint32_t d_buf = 0, add_bytes;
+-
+-    if (!dst_va || !src_va) { g_eax = (uint32_t)STATUS_INVALID_PARAMETER; return; }
+-    d_len = BRIDGE_MEM16(dst_va + 0);
+-    d_max = BRIDGE_MEM16(dst_va + 2);
+-    d_buf = BRIDGE_MEM32(dst_va + 4);
+-    if (!d_buf) { g_eax = (uint32_t)STATUS_INVALID_PARAMETER; return; }
+-    add_bytes = bridge_guest_wcslen_bytes(src_va);
+-    if ((uint32_t)d_len + add_bytes > d_max) { g_eax = (uint32_t)STATUS_BUFFER_TOO_SMALL; return; }
+-    memcpy((char *)XBOX_TO_NATIVE(d_buf) + d_len, XBOX_TO_NATIVE(src_va), add_bytes);
+-    BRIDGE_MEM16(dst_va + 0) = (uint16_t)(d_len + add_bytes);
+-    g_eax = 0;   /* STATUS_SUCCESS */
+-}
++/* Original counted-string import selected above. */
+ 
+ /* ── Rtl Compare (ordinals 270, 271, 280) ───────────────────
+  * <0 / 0 / >0 against the string bodies (not just the prefix), matching the
+  * NT RtlCompare* contract: compare up to the common length, then lengths. */
+ 
+ /* 270: LONG RtlCompareString(PXBOX_ANSI_STRING, PXBOX_ANSI_STRING, BOOLEAN) */
+-static void bridge_RtlCompareString(void)
+-{
+-    uint32_t s1_va = STACK_ARG(0);
+-    uint32_t s2_va = STACK_ARG(1);
+-    uint32_t nocase = STACK_ARG(2);
+-    uint32_t l1, l2, common, i;
+-    const uint8_t *p1, *p2;
+-    int diff;
+-
+-    if (!s1_va || !s2_va) { g_eax = 0; return; }
+-    l1 = BRIDGE_MEM16(s1_va + 0);
+-    l2 = BRIDGE_MEM16(s2_va + 0);
+-    p1 = (const uint8_t *)XBOX_TO_NATIVE(BRIDGE_MEM32(s1_va + 4));
+-    p2 = (const uint8_t *)XBOX_TO_NATIVE(BRIDGE_MEM32(s2_va + 4));
+-    if (!p1 || !p2) { g_eax = 0; return; }
+-
+-    common = l1 < l2 ? l1 : l2;
+-    diff = 0;
+-    for (i = 0; i < common; i++) {
+-        int a = p1[i], b = p2[i];
+-        if (nocase) { a = tolower(a); b = tolower(b); }
+-        if (a != b) { diff = a - b; break; }
+-    }
+-    if (!diff)
+-        diff = (int)l1 - (int)l2;
+-    g_eax = (uint32_t)(int32_t)diff;
+-}
++/* Original counted-string import selected above. */
+ 
+ /* 271: LONG RtlCompareUnicodeString(PXBOX_UNICODE_STRING, PXBOX_UNICODE_STRING, BOOLEAN) */
+-static void bridge_RtlCompareUnicodeString(void)
+-{
+-    uint32_t s1_va = STACK_ARG(0);
+-    uint32_t s2_va = STACK_ARG(1);
+-    uint32_t nocase = STACK_ARG(2);
+-    uint32_t b1, b2, common, i;
+-    const uint16_t *p1, *p2;
+-    int diff;
+-
+-    if (!s1_va || !s2_va) { g_eax = 0; return; }
+-    b1 = BRIDGE_MEM16(s1_va + 0);
+-    b2 = BRIDGE_MEM16(s2_va + 0);
+-    p1 = (const uint16_t *)XBOX_TO_NATIVE(BRIDGE_MEM32(s1_va + 4));
+-    p2 = (const uint16_t *)XBOX_TO_NATIVE(BRIDGE_MEM32(s2_va + 4));
+-    if (!p1 || !p2) { g_eax = 0; return; }
+-
+-    common = b1 < b2 ? b1 : b2;
+-    diff = 0;
+-    for (i = 0; i < common / 2; i++) {
+-        int a = p1[i], b = p2[i];
+-        if (nocase) { a = towlower((wint_t)a); b = towlower((wint_t)b); }
+-        if (a != b) { diff = a - b; break; }
+-    }
+-    if (!diff)
+-        diff = (int)b1 - (int)b2;
+-    g_eax = (uint32_t)(int32_t)diff;
+-}
++/* Original counted-string import selected above. */
+ 
+ /* 280: BOOLEAN RtlEqualUnicodeString(PXBOX_UNICODE_STRING, PXBOX_UNICODE_STRING, BOOLEAN) */
+-static void bridge_RtlEqualUnicodeString(void)
+-{
+-    uint32_t s1_va = STACK_ARG(0);
+-    uint32_t s2_va = STACK_ARG(1);
+-    uint32_t nocase = STACK_ARG(2);
+-    uint32_t b1, b2, i;
+-    const uint16_t *p1, *p2;
+-
+-    if (!s1_va || !s2_va) { g_eax = 0; return; }
+-    b1 = BRIDGE_MEM16(s1_va + 0);
+-    b2 = BRIDGE_MEM16(s2_va + 0);
+-    if (b1 != b2) { g_eax = 0; return; }
+-    p1 = (const uint16_t *)XBOX_TO_NATIVE(BRIDGE_MEM32(s1_va + 4));
+-    p2 = (const uint16_t *)XBOX_TO_NATIVE(BRIDGE_MEM32(s2_va + 4));
+-    if ((!p1 || !p2) && b1) { g_eax = 0; return; }
+-
+-    for (i = 0; i < b1 / 2; i++) {
+-        int a = p1[i], b = p2[i];
+-        if (nocase) {
+-            a = towlower((wint_t)a);
+-            b = towlower((wint_t)b);
+-        }
+-        if (a != b) { g_eax = 0; return; }
+-    }
+-    g_eax = 1;
+-}
++/* Original counted-string import selected above. */
+ 
+ /* ── Rtl Copy (ordinals 272, 273, 317) ────────────────────── */
+ 
+ /* 272: VOID RtlCopyString(PXBOX_ANSI_STRING Dest, PXBOX_ANSI_STRING Src) */
+-static void bridge_RtlCopyString(void)
+-{
+-    uint32_t dst_va = STACK_ARG(0);
+-    uint32_t src_va = STACK_ARG(1);
+-    uint16_t d_max = 0, s_len = 0;
+-    uint32_t d_buf = 0, s_buf = 0, copy;
+-
+-    if (!dst_va || !src_va) { g_eax = 0; return; }
+-    d_max = BRIDGE_MEM16(dst_va + 2);
+-    d_buf = BRIDGE_MEM32(dst_va + 4);
+-    s_len = BRIDGE_MEM16(src_va + 0);
+-    s_buf = BRIDGE_MEM32(src_va + 4);
+-    copy = s_len < d_max ? s_len : d_max;
+-    if (copy && d_buf && s_buf)
+-        memcpy(XBOX_TO_NATIVE(d_buf), XBOX_TO_NATIVE(s_buf), copy);
+-    BRIDGE_MEM16(dst_va + 0) = (uint16_t)copy;
+-    g_eax = 0;
+-}
++/* Original counted-string import selected above. */
+ 
+ /* 273: VOID RtlCopyUnicodeString(PXBOX_UNICODE_STRING Dest, PXBOX_UNICODE_STRING Src) */
+-static void bridge_RtlCopyUnicodeString(void)
+-{
+-    uint32_t dst_va = STACK_ARG(0);
+-    uint32_t src_va = STACK_ARG(1);
+-    uint16_t d_max = 0, s_len = 0;
+-    uint32_t d_buf = 0, s_buf = 0, copy;
+-
+-    if (!dst_va || !src_va) { g_eax = 0; return; }
+-    d_max = BRIDGE_MEM16(dst_va + 2);
+-    d_buf = BRIDGE_MEM32(dst_va + 4);
+-    s_len = BRIDGE_MEM16(src_va + 0);
+-    s_buf = BRIDGE_MEM32(src_va + 4);
+-    copy = s_len < d_max ? s_len : d_max;
+-    if (copy && d_buf && s_buf)
+-        memcpy(XBOX_TO_NATIVE(d_buf), XBOX_TO_NATIVE(s_buf), copy);
+-    BRIDGE_MEM16(dst_va + 0) = (uint16_t)copy;
+-    g_eax = 0;
+-}
++/* Original counted-string import selected above. */
+ 
+ /* 317: VOID RtlUpperString(PXBOX_ANSI_STRING Dest, PXBOX_ANSI_STRING Src) */
+-static void bridge_RtlUpperString(void)
+-{
+-    uint32_t dst_va = STACK_ARG(0);
+-    uint32_t src_va = STACK_ARG(1);
+-    uint16_t d_max = 0, s_len = 0;
+-    uint32_t d_buf = 0, s_buf = 0, copy, i;
+-    const uint8_t *sp;
+-    uint8_t *dp;
+-
+-    if (!dst_va || !src_va) { g_eax = 0; return; }
+-    d_max = BRIDGE_MEM16(dst_va + 2);
+-    d_buf = BRIDGE_MEM32(dst_va + 4);
+-    s_len = BRIDGE_MEM16(src_va + 0);
+-    s_buf = BRIDGE_MEM32(src_va + 4);
+-    copy = s_len < d_max ? s_len : d_max;
+-    if (copy && d_buf && s_buf) {
+-        sp = (const uint8_t *)XBOX_TO_NATIVE(s_buf);
+-        dp = (uint8_t *)XBOX_TO_NATIVE(d_buf);
+-        for (i = 0; i < copy; i++)
+-            dp[i] = (uint8_t)toupper(sp[i]);
+-    }
+-    BRIDGE_MEM16(dst_va + 0) = (uint16_t)copy;
+-    g_eax = 0;
+-}
++/* Original counted-string import selected above. */
+ 
+ /* ── Rtl Create / Free string (ordinals 274, 287) ─────────── */
+ 
