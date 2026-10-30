@@ -1,5 +1,7 @@
 # Subsystem entry points
 
+Minigun motor intent and release damping: [shared policy](native-minigun.md).
+
 Kernel: [objects and boot](kernel-objects.md).
 
 Memory: [retired APIs](retired-memory-compatibility.md).
@@ -911,12 +913,9 @@ CPU evidence only; rendering/pacing and physical Mac remain unverified.
 
 ## Temporal Uplink map display
 
-The shared HLE screen-copy hook saves Future Perfect's preclear map image
-and supplies its map region to the handheld texture later in the frame.
-Native GL implements the same texture-region transfer in
-`src/native/gl_screen_copy.inc`, preserving framebuffer bindings and scissor
-state. The map geometry and gameplay controls remain guest-owned; this adapter
-only transfers the image that the game already drew.
+The shared HLE hook copies the preclear map into the handheld texture. Native
+GL uses src/native/gl_screen_copy.inc and preserves framebuffer/scissor state.
+Guest geometry and controls remain unchanged.
 
 Temporary UV matrices: [render epoch and arena lifetime](render-matrix-cache.md).
 
