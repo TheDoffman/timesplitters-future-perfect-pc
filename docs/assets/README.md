@@ -37,8 +37,14 @@
   silver title, pale-blue accents and interrupted-ring motif. Its TSFP monogram
   is converted directly from the existing outlines in
   `tools/launcher/GameMonogram.cs` (Future TimeSplitters by Chequered Ink, free
-  for all use; attribution remains in the SVG). The full title uses system serif
-  fonts. No raw game artwork or font file is included.
+  for all use; attribution remains in the SVG). The full TimeSplitters title
+  uses outlined lettering from the same series-inspired typeface, replacing
+  the former Georgia/Times New Roman text. The subtitle is also outlined, so
+  neither line depends on fonts installed on the reader's device. Source OTF
+  SHA-256: `8f09bd612fec0a1aca85b3e2dcd0031d0f726240f37735330de1944bcfce1eb7`.
+  Typeface source: [Future TimeSplitters by Chequered Ink](https://www.dafont.com/future-timesplitters.font).
+  This is fan-made lettering, not the official game logo. No raw game artwork
+  or font file is included. The launcher preview in the README is always visible.
 - `download-windows-launcher.svg` and `download-mac-launcher.svg`: flat pale-blue
   platform buttons with the launcher's three-pixel corners, thin border and
   line-icon weight. Links and accessible labels live in the README.
