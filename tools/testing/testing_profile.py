@@ -24,6 +24,7 @@ from pathlib import Path
 import shutil
 import struct
 import subprocess
+import sys
 import threading
 import tempfile
 import time

@@ -16,6 +16,19 @@ peer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(peer)
 
 
+def test_mac_recycles_only_known_disks_and_preserves_profile(tmp_path, monkeypatch):
+    import testing_profile
+    run=tmp_path/'private/test-saves/peer';saves=run/'saves';saves.mkdir(parents=True)
+    disk=saves/'Partition0.img';disk.write_bytes(b'disposable')
+    profile=saves/'profile.dat';profile.write_bytes(b'keep')
+    monkeypatch.setattr(testing_profile.sys,'platform','darwin')
+    monkeypatch.setattr(Path,'home',classmethod(lambda cls:tmp_path))
+    testing_profile.recycle_disks(tmp_path,run)
+    assert not disk.exists()
+    assert profile.read_bytes()==b'keep'
+    assert next((tmp_path/'.Trash').rglob('Partition0.img')).read_bytes()==b'disposable'
+
+
 def test_remote_reads_across_pages_and_caches_only_one_observation():
     remote = object.__new__(peer.RemotePeer)
     remote.pages = {}
