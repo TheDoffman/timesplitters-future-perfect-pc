@@ -821,6 +821,8 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-001 — Direct-camera mouse look
 
+Issue #425 adds shared Battle Mech mouse targeting through the scene-owned mech and its controlling local slot. Windows and SDL use the same guarded helper; no separate native implementation is needed. Windows Release build and 40 focused input/context checks pass, including original supported-US mech input and aim-vector routines at 60/120/180/240 FPS. These are controlled routine tests, not live mech-encounter acceptance. Physical Mac gameplay remains unverified. See [mounted mouse](../agent-context/mounted-mouse.md#battle-mech-mouse-425).
+
 - **#385 vehicle-gunner route (2026-10-29, local candidate):** Shared
   `src/input/pc_mounted.h` follows mode-0x400 occupied seats and their gun table
   for types 3/4. Windows and SDL adapter-body fixtures pass with the same logic;

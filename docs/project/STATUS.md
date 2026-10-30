@@ -1,3 +1,22 @@
+## Battle Mech mouse aiming (#425) - 2026-10-30
+
+Local branch `425-bug-battle-mech-camera-doesnt-move` starts from main
+`309293a0`. The shared mouse route now updates the Battle Mech target angles
+instead of ordinary player angles, with original elevation limits, local-slot
+ownership, focus, timing and writable-memory guards. Controller processing is
+unchanged. No commit, push or release is claimed here.
+
+Windows Release build and its built-in checks passed. The focused mounted,
+terminal and repository-context suite passed 40 tests. Original supported-US
+mech input and aim-vector routines confirm mouse targets survive controller
+processing at 60/120/180/240 FPS; the previous route fails the regression.
+An isolated Test Lab launch reached Machine Wars, but the actual Battle Mech
+encounter is not yet visually verified. Physical Mac gameplay is also pending.
+The checkout's unavailable game-data link required a test-child-only override
+to an existing complete local game-data directory; personal saves/settings
+were preserved. Release executable SHA-256:
+`D03D4382DB017525B5D9697A18CA8A62D096ADB6391BF14808D6CEAD79E9A355`.
+
 ## Game 0.4.0 and launcher 1.4.1 release preparation - 2026-10-30
 
 The user selected game 0.4.0 and launcher 1.4.1, replacing the unpublished

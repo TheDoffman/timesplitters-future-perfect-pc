@@ -2,9 +2,9 @@
 
 <a name="timesplitters-future-perfect"></a>
 
-# <img src="docs/assets/readme-banner.svg" alt="TimeSplitters: Future Perfect" width="960">
+# TimeSplitters: Future Perfect
 
-Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer (Windows)
+Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer
 
 <p>
 <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip"><img src="docs/assets/download-windows-launcher.svg" alt="Download the latest Windows launcher (x64)" width="280" height="52"></a>
@@ -54,15 +54,12 @@ Windows and Mac use the same installation steps:
 available offline. Use **Check updates → Update release** to install a newer game
 build when available. Launcher and game versions are separate.
 
-<details>
-<summary><strong>Launcher preview</strong></summary>
+### Launcher preview
 
 ![TimeSplitters launcher v1.4.0 with Stable selected, Play Game, updates and settings](docs/assets/launcher-preview.png)
 
 Launcher v1.4.0 interface preview with illustrative installation data.
 **Stable** is selected, matching the setup instructions above.
-
-</details>
 
 <details>
 <summary><strong>System requirements, channels and keeping your saves</strong></summary>
