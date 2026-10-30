@@ -33478,5 +33478,14 @@ that the game was still writing (completed false, cleanup_completed true). The
 capture helper now freezes candidate bytes, falls back to the previous complete
 frame and retries within two seconds without accepting truncated images. A real
 image regression reproduces the partially written newest frame. This is a test
-capture failure, not a gameplay/desynchronization finding. Corrected final runs
-are recorded separately below when completed.
+capture failure, not a gameplay/desynchronization finding. The capture regression
+passed on Windows (4 passed, 1 platform skip) and native Mac (5 passed).
+
+The user requested stopping the additional reruns. `mac-crossplay-final-2` was
+stopped during setup, its owned peers exited and cleanup_completed is true; it is
+not counted as acceptance. No additional Mac-host repeat was launched. Existing
+both-direction match/rematch evidence above is retained. The final `e0601599`
+binaries completed Windows-host gameplay and both result comparisons, while the
+clean Mac-host acceptance is from the preceding runtime revision; the later
+minigun integration was not repeated with Mac hosting. Test-only capture and
+lifecycle repairs are committed in PR #416. Main remains unmerged/unpublished.
