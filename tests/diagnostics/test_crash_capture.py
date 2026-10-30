@@ -67,7 +67,7 @@ def crash_client(tmp_path):
     driver = tmp_path / 'driver.c'
     driver.write_text('#include "pc_crash.h"\n'
                       'int main(int argc,char **argv) { if (!pc_crash_init(0)) return 4; '
-                      'pc_capture_gameplay(4,4,0,0,0,0); pc_capture_gameplay(4,4,0,1,2,0); '
+                      'pc_capture_allocation(1,0x10000,4096); pc_capture_allocation(257,0x10000,4096); pc_capture_model(0x811ee970,15,123); pc_capture_gameplay(4,4,0,0,0,0); pc_capture_gameplay(4,4,0,1,2,0); '
                       'if(argc>1) { pc_crash_watchdog_start(); Sleep(15000); return 0; } '
                       'return pc_crash_test_command("--tsfp-crash-test=concurrent"); }\n')
     for sources, name, libraries in [
@@ -96,6 +96,10 @@ def test_simultaneous_unhandled_exceptions_wait_for_dump(crash_client):
         crumbs=(reports[0].parent/'breadcrumbs.txt').read_text()
         assert 'scene-id 4' in crumbs and 'paused 1' in crumbs and 'network-mode 2' in crumbs
         assert len(crumbs.encode())<8192
+        models=(reports[0].parent/'model-history.txt').read_text()
+        assert 'node-index 15' in models and 'traversal-depth 123' in models
+        allocations=(reports[0].parent/'allocation-history.txt').read_text()
+        assert 'allocation-event 257' in allocations and 'allocation-bytes 4096' in allocations
         report = json.loads(reports[0].read_text())
         assert report['dump_saved'], report
         assert report['exception_code'] == '0xC0000005'

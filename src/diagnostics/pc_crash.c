@@ -65,6 +65,8 @@ int pc_crash_init(PcCrashGuestCapture capture)
     packet = MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, sizeof *packet);
     if (!packet) goto finish;
     packet->schema = PC_CRASH_SCHEMA;
+    const char *extended=getenv("TSFP_CRASH_EXTENDED");
+    packet->extended=extended && !strcmp(extended,"1");
     packet->started_ms = GetTickCount64();
     pc_crumb_add(&packet->breadcrumbs,0,PC_CRUMB_STARTED,0);
     packet->process_id = GetCurrentProcessId();
@@ -266,3 +268,14 @@ int pc_crash_test_command(const char *command)
     } else if (strcmp(command, "--tsfp-crash-test=normal")) return -1;
     return 0;
 }
+
+void pc_capture_model(uint32_t model,uint32_t node,unsigned depth){
+    if(packet)pc_crumb_model(&packet->models,GetTickCount64()-packet->started_ms,model,node,depth);
+}
+
+void pc_capture_match(unsigned humans,unsigned bots,unsigned difficulty,unsigned capacity){
+    const int32_t values[4]={(int32_t)humans,(int32_t)bots,(int32_t)difficulty,(int32_t)capacity};
+    if(packet)pc_crumb_match(&packet->breadcrumbs,GetTickCount64()-packet->started_ms,values);
+}
+
+void pc_capture_allocation(uint32_t event,uint32_t address,uint32_t bytes){if(packet)pc_crumb_allocation(&packet->allocations,GetTickCount64()-packet->started_ms,event,address,bytes);}

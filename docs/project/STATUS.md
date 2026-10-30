@@ -33273,3 +33273,42 @@ listening, full campaign, clocks/timer scheduling and remaining legacy kernel/
 runtime/header/fixture/provenance work remain unverified or unfinished. Overall
 goal stays active/incomplete and MAC-118 Awaiting validation. PR#406 remains draft;
 no main merge or publication was performed.
+
+## Crash evidence extension - 2026-10-30 (in progress)
+
+Windows crash helper and bounded-memory tests: 9 passed. Launcher build and
+its test suite passed after extended-mode/export changes. Subsequent model-history
+and summary changes are being rechecked. Native Mac tests skipped on Windows;
+MAC-123 records the acceptance work and process-access limitation. Production game
+rebuild remains in progress. No issue resolution, commit or release claimed.
+
+2026-10-30 follow-up: full Windows game Build and built-in checks passed with
+the model traversal wrapper. Nine crash/memory tests and the full Windows
+launcher test run passed. Ten Darwin tests were skipped, not validated.
+
+2026-10-30 allocation-history follow-up, local uncommitted changes on
+`improve-crash-diagnostics` at base `8b4db323`, Windows x64, MSVC 19.44 and
+Python 3.14.5: corrected observer patch dependency order; full Windows Build
+and built-in checks passed (`logs/crash-lifetime-build.log`). Focused crash,
+guest capture and allocation observer tests passed 10; Darwin tests skipped 10.
+Allocator and patch-tracking regression tests passed 44. Full Windows launcher
+build/test suite passed (`logs/crash-lifetime-launcher.log`), including the
+seven-file allowlisted ZIP fixture with allocation history. Repository context
+and diff whitespace checks pass. The unrelated temporary pr370 test game was
+closed at the user's request before launcher tests; personal saves/settings
+were not edited. These checks establish report plumbing and allocator behavior,
+not live #410 reproduction, model-pool lifetime coverage or native Mac execution.
+
+Crash diagnostics main integration: diagnostics89e804c8 integrated with main
+61aecac5. Windows full Build/built-in checks passed; 54 focused diagnostics,
+allocator and patch-tracking tests passed in57.33s. Launcher inputs/output hashes
+matched the prior successful build/test receipt. Context check against main
+passed. No live #410 reproduction/fix or native Mac validation is claimed.
+
+PR418 upgrade CI repair: both native runtime and launcher jobs passed on
+78384327; upgrade fixtures failed because later diagnostic patches entered old
+checkpoints and the EOF trace insertion could not unwind past local trailing
+edits. Historical subsets now exclude both dependent diagnostic additions;
+the trace wrapper uses stable following context. Full current-stack forced
+unwind/reapply passed locally. Historical suite and rebuilt-game checks are
+running; this checkpoint does not claim their completion.

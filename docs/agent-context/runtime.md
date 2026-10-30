@@ -900,3 +900,13 @@ the original camera-relative branch. See [scope guards](mounted-mouse.md).
 Stage0235: [original pool imports and native surface retirement](kernel-pool.md).
 
 Stage0236: [original absolute-time codec and guest calendar imports](kernel-time.md).
+
+Crash model traversal instrumentation at US guest `0x583E0` is introduced by
+`patches/diagnostics/2140-model-tree-trace.patch`. The manual wrapper preserves
+original execution and records bounded model/node/depth history through the shared
+capture adapters. It is diagnostic instrumentation, not a fix for #410. See
+[crash evidence](crash-evidence.md) for capture scope and platform limits.
+
+Allocation-history hook details: [crash evidence](crash-evidence.md). The shared
+allocator observer is diagnostic-only; backing allocation ownership and guest
+model suballocation lifetime remain distinct concepts.

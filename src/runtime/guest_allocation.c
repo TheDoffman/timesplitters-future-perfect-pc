@@ -72,6 +72,7 @@ int tsfp_allocations_init(tsfp_allocations *s, const tsfp_allocation_config *c,
         for (size_t j = i + 1; j < n; ++j)
             if (overlap(storage[i], bytes[i], storage[j], bytes[j])) return 0;
     memset(s, 0, sizeof(*s));
+    s->heap.observer = cfg.observer;s->physical.observer = cfg.observer;
     s->heap.memory = cfg.ram; s->heap.begin = cfg.heap_begin;
     s->heap.end = cfg.ram_size; s->heap.records = hr; s->heap.capacity = hn;
     s->reserve_begin = cfg.reserve_begin;
@@ -109,6 +110,7 @@ static uint32_t publish(tsfp_allocation_arena *a, size_t at,
     a->records[at] = record; ++a->count;
     if (kind != OWN_RESERVATION)
         memset(a->memory + (address - a->origin), 0, bytes);
+    if(a->observer)a->observer(kind,address,bytes);
     return address;
 }
 
@@ -179,9 +181,10 @@ uint32_t tsfp_physical_allocate_at(tsfp_allocations *s, uint32_t address, uint32
 static int release(tsfp_allocation_arena *a, uint32_t address, uint32_t kind) {
     for (size_t i = 0; i < a->count; ++i) {
         if (a->records[i].address != address || a->records[i].kind != kind) continue;
+        uint32_t released_bytes=a->records[i].bytes;
         memmove(a->records + i, a->records + i + 1,
                 (a->count - i - 1) * sizeof(*a->records));
-        --a->count; return 1;
+        --a->count;if(a->observer)a->observer(kind|256u,address,released_bytes);return 1;
     }
     return 0;
 }
