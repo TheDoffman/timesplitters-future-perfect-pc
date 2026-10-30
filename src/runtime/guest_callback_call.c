@@ -38,3 +38,41 @@ int tsfp_guest_callback_one(const tsfp_guest_callback_ops *ops,uint32_t routine,
     g_esp=address;g_seh_ebp=address;entry();
     balanced=g_esp==saved.esp;restore(&saved);return balanced;
 }
+
+int tsfp_guest_callback_prepare(const tsfp_guest_callback_ops *ops,uint32_t routine,
+    const uint32_t *arguments,unsigned count,tsfp_guest_callback_plan *out) {
+    tsfp_guest_callback_plan candidate;tsfp_guest_entry_t entry;unsigned char *frame;
+    uint32_t address,bytes;unsigned i;
+    if(!out || !ops || !ops->lookup || !ops->output || !routine || count>4 || (count && !arguments))return 0;
+    bytes=4+4*count;if(g_esp<bytes)return 0;
+    memset(&candidate,0,sizeof(candidate));candidate.esp=g_esp;
+    for(i=0;i<count;++i)candidate.words[i]=arguments[i];
+    entry=ops->lookup(ops->context,routine);if(!entry)return 0;
+    address=g_esp-bytes;frame=(unsigned char *)ops->output(ops->context,address,bytes);
+    if(!frame)return 0;
+    candidate.entry=entry;candidate.frame=frame;candidate.address=address;
+    candidate.bytes=bytes;candidate.count=count;*out=candidate;return 1;
+}
+int tsfp_guest_callback_invoke(tsfp_guest_callback_plan *prepared,int (*admit)(void *),void *context,uint32_t *result) {
+    callback_state saved;tsfp_guest_entry_t entry;unsigned char *frame;
+    uint32_t address,value,words[4];unsigned i,count;int balanced;
+    if(!prepared)return 0;
+    entry=prepared->entry;prepared->entry=NULL;
+    if(!entry || !prepared->frame || prepared->count > 4 || g_esp!=prepared->esp ||
+       prepared->bytes!=4+4*prepared->count || prepared->esp<prepared->bytes ||
+       prepared->address!=prepared->esp-prepared->bytes)return 0;
+    if(admit && !admit(context))return 0;
+    frame=prepared->frame;address=prepared->address;count=prepared->count;
+    memcpy(words,prepared->words,sizeof(words));capture(&saved);put(frame,0);
+    for(i=0;i<count;++i)put(frame+4+4*i,words[i]);
+    g_esp=address;g_seh_ebp=address;entry();
+    value=g_eax;balanced=g_esp==saved.esp;restore(&saved);
+    if(balanced && result)*result=value;
+    return balanced;
+}
+int tsfp_guest_callback_stdcall(const tsfp_guest_callback_ops *ops,uint32_t routine,
+    const uint32_t *arguments,unsigned count,uint32_t *result) {
+    tsfp_guest_callback_plan prepared;
+    return tsfp_guest_callback_prepare(ops,routine,arguments,count,&prepared) &&
+        tsfp_guest_callback_invoke(&prepared,NULL,NULL,result);
+}

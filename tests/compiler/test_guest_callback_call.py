@@ -10,7 +10,7 @@ sys.path.insert(0,str(ROOT/'tests/compiler'))
 from test_translation_product import _compile
 @pytest.mark.parametrize('mutation',[None,
     ('put(frame+4,argument);','put(frame+4,argument+1);'),
-    ('balanced=g_esp==saved.esp;','balanced=1;'),
+    ('balanced=g_esp==saved.esp;restore(&saved);return balanced;','balanced=1;restore(&saved);return balanced;'),
     ('g_xmm7=s->xmm[7];','g_xmm7=s->xmm[6];g_xmm7.q[1]^=1;'),
     ('g_fp_cc=s->cc;','g_fp_cc=s->control;'),
     ('g_seh_ebp=s->seh;','g_seh_ebp=s->ebp;'),

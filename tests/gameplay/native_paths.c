@@ -14,7 +14,8 @@ extern int xbox_set_profile_root_utf8(const char *);
 static int expect(const char *guest, const char *base, const char *relative)
 {
     char actual[MAX_PATH], wanted[MAX_PATH];
-    snprintf(wanted, sizeof wanted, "%s/%s", base, relative);
+    if(relative[0])snprintf(wanted, sizeof wanted, "%s/%s", base, relative);
+    else snprintf(wanted,sizeof wanted,"%s",base);
     if (!xbox_translate_path(guest, actual, MAX_PATH) || strcmp(actual, wanted)) {
         fprintf(stderr, "FAIL %s -> %s; wanted %s\n", guest, actual, wanted); return 1;
     }
@@ -32,6 +33,14 @@ int main(int argc, char **argv)
     CHECK(!expect("\\Device\\Harddisk0\\partition1\\TDATA", save, "TitleData"));
     CHECK(!expect("U:\\45410066\\profile", save, "UserData/45410066/profile"));
     CHECK(!expect("D:\\pak\\test.pak", game, "pak/test.pak"));
+    CHECK(!expect("\\Device\\CdRom0",game,""));
+    CHECK(!expect("\\Device\\Harddisk0\\Partition2\\dashboard.xip",game,"dashboard.xip"));
+    {
+        const char link[]="\\??\\P:",target[]="\\Device\\Harddisk0\\Partition1\\UDATA";
+        CHECK(tsfp_kernel_symlink_create(link,sizeof(link)-1,target,sizeof(target)-1)==TSFP_SYMLINK_OK);
+        CHECK(!expect("p:\\45410066\\profile",save,"UserData/45410066/profile"));
+        CHECK(tsfp_kernel_symlink_remove(link,sizeof(link)-1)==TSFP_SYMLINK_OK);
+    }
     CHECK(!expect("\\Device\\Harddisk0\\partition1\\UDATA_extra\\asset", game, "UDATA_extra/asset"));
     CHECK(!expect("\\Device\\Harddisk0\\partition0", save, "Partition0.img"));
     snprintf(path, sizeof path, "%s/Partition0.img", save);
@@ -57,6 +66,10 @@ int main(int argc, char **argv)
     CHECK(!expect("U:\\45410066\\profile",save,"UserData/45410066/profile"));
     CHECK(xbox_set_profile_root_utf8(""));
     CHECK(!expect("U:\\45410066\\profile",other,"UserData/45410066/profile"));
+    {
+        char small[6],before[6];memset(small,0x77,sizeof small);memcpy(before,small,sizeof small);
+        CHECK(!xbox_translate_path("D:\\pak\\test.pak",small,sizeof small) && !memcmp(before,small,sizeof small));
+    }
     puts("PASS: native save/asset paths, partition table, sparse sizing and preservation, save-root switching");
     return 0;
 }

@@ -1,0 +1,160 @@
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -30,6 +30,7 @@
+ add_library(xbox_kernel STATIC ${KERNEL_SOURCES})
+ 
+ target_sources(xbox_kernel PRIVATE
++    "${TSFP_SHARED_SOURCE}/runtime/guest_time.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_storage.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_kernel_storage.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_paths.c"
+--- a/src/kernel/kernel.h
++++ b/src/kernel/kernel.h
+@@ -592,8 +592,6 @@
+ 
+ ULONG   __stdcall xbox_RtlNtStatusToDosError(NTSTATUS Status);
+ 
+-BOOLEAN __stdcall xbox_RtlTimeFieldsToTime(PXBOX_TIME_FIELDS TimeFields, PLARGE_INTEGER Time);
+-VOID    __stdcall xbox_RtlTimeToTimeFields(PLARGE_INTEGER Time, PXBOX_TIME_FIELDS TimeFields);
+ 
+ VOID    __stdcall xbox_RtlUnwind(PVOID TargetFrame, PVOID TargetIp, PVOID ExceptionRecord, PVOID ReturnValue);
+ VOID    __stdcall xbox_RtlRaiseException(PVOID ExceptionRecord);
+--- a/src/kernel/kernel_rtl.c
++++ b/src/kernel/kernel_rtl.c
+@@ -591,54 +591,6 @@
+ }
+ 
+ /* ============================================================================
+- * Time Conversion
+- * ============================================================================ */
+-
+-BOOLEAN __stdcall xbox_RtlTimeFieldsToTime(PXBOX_TIME_FIELDS TimeFields, PLARGE_INTEGER Time)
+-{
+-    SYSTEMTIME st;
+-    FILETIME ft;
+-
+-    st.wYear         = (WORD)TimeFields->Year;
+-    st.wMonth        = (WORD)TimeFields->Month;
+-    st.wDayOfWeek    = (WORD)TimeFields->Weekday;
+-    st.wDay          = (WORD)TimeFields->Day;
+-    st.wHour         = (WORD)TimeFields->Hour;
+-    st.wMinute       = (WORD)TimeFields->Minute;
+-    st.wSecond       = (WORD)TimeFields->Second;
+-    st.wMilliseconds = (WORD)TimeFields->Milliseconds;
+-
+-    if (!SystemTimeToFileTime(&st, &ft))
+-        return FALSE;
+-
+-    Time->LowPart  = ft.dwLowDateTime;
+-    Time->HighPart = ft.dwHighDateTime;
+-    return TRUE;
+-}
+-
+-VOID __stdcall xbox_RtlTimeToTimeFields(PLARGE_INTEGER Time, PXBOX_TIME_FIELDS TimeFields)
+-{
+-    FILETIME ft;
+-    SYSTEMTIME st;
+-
+-    ft.dwLowDateTime  = Time->LowPart;
+-    ft.dwHighDateTime = Time->HighPart;
+-
+-    if (FileTimeToSystemTime(&ft, &st)) {
+-        TimeFields->Year         = (SHORT)st.wYear;
+-        TimeFields->Month        = (SHORT)st.wMonth;
+-        TimeFields->Day          = (SHORT)st.wDay;
+-        TimeFields->Hour         = (SHORT)st.wHour;
+-        TimeFields->Minute       = (SHORT)st.wMinute;
+-        TimeFields->Second       = (SHORT)st.wSecond;
+-        TimeFields->Milliseconds = (SHORT)st.wMilliseconds;
+-        TimeFields->Weekday      = (SHORT)st.wDayOfWeek;
+-    } else {
+-        memset(TimeFields, 0, sizeof(XBOX_TIME_FIELDS));
+-    }
+-}
+-
+-/* ============================================================================
+  * Exception Handling
+  * ============================================================================ */
+ 
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -4379,12 +4379,7 @@
+ /* ── RtlTimeFieldsToTime (ordinal 304, 2 args)
+  * Counterpart of the routed RtlTimeToTimeFields: reads a XBOX_TIME_FIELDS and
+  * writes a LARGE_INTEGER, both at caller-supplied guest addresses. */
+-static void bridge_RtlTimeFieldsToTime(void)
+-{
+-    g_eax = (uint32_t)xbox_RtlTimeFieldsToTime(
+-        (PXBOX_TIME_FIELDS)XBOX_TO_NATIVE(STACK_ARG(0)),
+-        (PLARGE_INTEGER)XBOX_TO_NATIVE(STACK_ARG(1)));
+-}
++#include "guest_kernel_time.inc"
+ 
+ /* ── PhyGetLinkState (ordinal 252, 1 arg) */
+ static void bridge_PhyGetLinkState(void)
+@@ -4400,13 +4395,7 @@
+ }
+ 
+ /* ── RtlTimeToTimeFields (ordinal 305, 2 args) */
+-static void bridge_RtlTimeToTimeFields(void)
+-{
+-    xbox_RtlTimeToTimeFields(
+-        (PLARGE_INTEGER)XBOX_TO_NATIVE(STACK_ARG(0)),
+-        (PXBOX_TIME_FIELDS)XBOX_TO_NATIVE(STACK_ARG(1)));
+-    g_eax = 0;
+-}
++/* Calendar imports are supplied by guest_kernel_time.inc above. */
+ 
+ /* ── XcSHAInit / XcSHAUpdate / XcSHAFinal (ordinals 335-337) */
+ static void bridge_XcSHAInit(void)
+--- a/src/platform/win32_compat.h
++++ b/src/platform/win32_compat.h
+@@ -513,8 +513,6 @@
+ WCHAR *xbox_wcscpy(WCHAR *dst, const WCHAR *src);
+ 
+ /* ---- Time conversion ------------------------------------------------- */
+-BOOL SystemTimeToFileTime(const SYSTEMTIME *st, LPFILETIME ft);
+-BOOL FileTimeToSystemTime(const FILETIME *ft, LPSYSTEMTIME st);
+ 
+ /* ---- Multimedia (winmm) shim: waveOut stubs that always report failure.
+  * The APU has a waveOut fallback path; on Linux it just stays inactive
+--- a/src/platform/win32_compat.c
++++ b/src/platform/win32_compat.c
+@@ -1630,37 +1630,6 @@
+ /* Time conversion                                                        */
+ /* ===================================================================== */
+ 
+-BOOL SystemTimeToFileTime(const SYSTEMTIME *st, LPFILETIME ft)
+-{
+-    struct tm tm;
+-    memset(&tm, 0, sizeof(tm));
+-    tm.tm_year = st->wYear - 1900;
+-    tm.tm_mon  = st->wMonth - 1;
+-    tm.tm_mday = st->wDay;
+-    tm.tm_hour = st->wHour;
+-    tm.tm_min  = st->wMinute;
+-    tm.tm_sec  = st->wSecond;
+-    time_t t = timegm(&tm);
+-    ULONGLONG ticks = FILETIME_EPOCH_DIFF
+-                    + (ULONGLONG)t * 10000000ULL
+-                    + (ULONGLONG)st->wMilliseconds * 10000ULL;
+-    ft->dwLowDateTime  = (DWORD)(ticks & 0xFFFFFFFFULL);
+-    ft->dwHighDateTime = (DWORD)(ticks >> 32);
+-    return TRUE;
+-}
+-
+-BOOL FileTimeToSystemTime(const FILETIME *ft, LPSYSTEMTIME st)
+-{
+-    ULONGLONG ticks = ((ULONGLONG)ft->dwHighDateTime << 32) | ft->dwLowDateTime;
+-    if (ticks < FILETIME_EPOCH_DIFF) { memset(st, 0, sizeof(*st)); return FALSE; }
+-    ULONGLONG since = ticks - FILETIME_EPOCH_DIFF;
+-    time_t t = (time_t)(since / 10000000ULL);
+-    struct tm tm;
+-    gmtime_r(&t, &tm);
+-    fill_systemtime(st, &tm, (long)((since % 10000000ULL) * 100ULL));
+-    return TRUE;
+-}
+-
+ /* ===================================================================== */
+ /* Exception handling (compile-shim -- SEH not yet emulated on Linux)     */
+ /* ===================================================================== */

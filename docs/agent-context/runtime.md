@@ -864,10 +864,40 @@ Request allocation/ownership through0218: [contracts](kernel-objects.md#original
 See [Unlock Content](unlock-content.md) for the shared menu, profile extension,
 original predicate hooks and isolated validation routes.
 
+
+Original sharing bridges and ordinal80 cleanup: [contracts and checks](kernel-sharing.md).
+
+
+Original request lifetime/callback prerequisites: [contracts and ABI boundary](request-lifetime.md).
+
+
+Stage0222: [original driver-call composition and opaque stack payload](driver-call.md).
+
+
+Stage0223: [private request construction and completion delivery](transfer-completion.md).
+
+Stage0224: [host-owned FIFO request scheduling](transfer-completion.md#host-owned-request-queue).
+
+Stage0225: [StartIo callback composition and acceptance](transfer-completion.md#startio-callback-composition); maintained maps include the new provider.
+
+Stage0226: [exclusive waiting membership and device queue mirrors](transfer-completion.md#device-queue-mirrors).
+
+Stage0227: [persistent device queue lifetime and scoped scheduler APIs](transfer-completion.md#persistent-device-queue-lifetime).
+
+Stage0228: [read-only caller-owned request adoption and range lifetime](transfer-completion.md#caller-owned-request-adoption).
+
+Stages0229/0231: [events and targets](transfer-completion.md). Stage0232: [symbolic links](symbolic-links.md).
+
+Stages0233/0234: [routing](guest-paths.md), [original host storage](host-storage.md).
+
 `2080-tank-driver-controls.patch` wraps 1730E0 through shared
 `pc_tank_guest.inc`. The local keyboard/mouse scope selects signed track input
 and restores actor links after the original call; controller behavior retains
 the original camera-relative branch. See [scope guards](mounted-mouse.md).
+
+Stage0235: [original pool imports and native surface retirement](kernel-pool.md).
+
+Stage0236: [original absolute-time codec and guest calendar imports](kernel-time.md).
 
 Crash model traversal instrumentation at US guest `0x583E0` is introduced by
 `patches/diagnostics/2140-model-tree-trace.patch`. The manual wrapper preserves
