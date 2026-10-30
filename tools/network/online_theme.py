@@ -26,6 +26,8 @@ from tkinter import ttk
 def system_dark():
     # Match the launcher regardless of light/dark app preference. Respect the
     # Windows accessibility override, which retains native system colors.
+    if _layout_sys.platform != 'win32':
+        return True
     class Contrast(ctypes.Structure):
         _fields_ = [('size', wintypes.UINT), ('flags', wintypes.DWORD), ('scheme', wintypes.LPWSTR)]
     contrast = Contrast()
@@ -179,12 +181,19 @@ class OnlineTheme:
 
     def track(self, window):
         self.windows.add(window)
+        if _layout_sys.platform == 'darwin' and window is self.root:
+            icon = _LayoutPath(__file__).with_name('multiplayer.png')
+            if not icon.is_file():
+                icon = _layout_root / 'build/online-icon/multiplayer.png'
+            if icon.is_file():
+                self.dock_icon = tk.PhotoImage(master=window, file=str(icon))
+                window.iconphoto(True, self.dock_icon)
         # The package keeps the generated icon beside this module; source builds
         # produce it with the other Windows resources. No user artwork is needed.
         icon = _LayoutPath(__file__).with_name('multiplayer.ico')
         if not icon.is_file():
             icon = _layout_root / 'build/online-icon/multiplayer.ico'
-        if icon.is_file():
+        if icon.is_file() and _layout_sys.platform == 'win32':
             self.icon_path = icon
             window.iconbitmap(str(icon))
             if window is self.root:
@@ -218,7 +227,9 @@ class OnlineTheme:
     def caption(self, window):
         if not window.winfo_exists() or not window.winfo_viewable():
             return
-        window.configure(background='#0b1420' if self.dark else 'SystemButtonFace')
+        window.configure(background='#0b1420' if self.dark else ('SystemButtonFace' if _layout_sys.platform == 'win32' else self.style.lookup('TFrame', 'background')))
+        if _layout_sys.platform != 'win32':
+            return
         get_root = ctypes.windll.user32.GetAncestor
         get_root.argtypes = [wintypes.HWND, wintypes.UINT]
         get_root.restype = wintypes.HWND
@@ -284,7 +295,7 @@ class OnlineTheme:
             self.style.configure('Eyebrow.TLabel', font=('Segoe UI',10,'bold'))
             for window in list(self.windows):
                 if window.winfo_exists():
-                    window.configure(background='#0b1420' if dark else 'SystemButtonFace')
+                    window.configure(background='#0b1420' if dark else ('SystemButtonFace' if _layout_sys.platform == 'win32' else self.style.lookup('TFrame', 'background')))
         # Tk can create/reset its native wrapper on first show or re-show even
         # when the app preference hasn't changed. Repair that wrapper as well.
         for window in list(self.windows):
@@ -296,10 +307,11 @@ class OnlineTheme:
             if self.timer:
                 self.root.after_cancel(self.timer)
                 self.timer = None
-            destroy = ctypes.windll.user32.DestroyIcon
-            destroy.argtypes = [wintypes.HICON]
-            for icon in self.icon_handles.values():
-                destroy(icon)
+            if self.icon_handles:
+                destroy = ctypes.windll.user32.DestroyIcon
+                destroy.argtypes = [wintypes.HICON]
+                for icon in self.icon_handles.values():
+                    destroy(icon)
             self.icon_handles.clear()
 
 

@@ -95,3 +95,7 @@ Historical patch-stack fixtures describe migration scenarios using stable
 basenames. Tests resolve these against the active folders (or explicitly use
 legacy versions). Keep their membership and ordering; do not turn them into
 copies of the current stack.
+
+`network/2140-native-online.patch` is a new adapter using the grouped source paths.
+It runs after the historical 2090 layout migration; earlier patch bytes and
+migration ordering remain unchanged.

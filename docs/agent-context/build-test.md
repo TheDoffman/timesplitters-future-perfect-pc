@@ -998,13 +998,10 @@ The0236 upgrade source checker reads UTF-8 explicitly: Windows cp1252 cannot
 decode existing bridge box-drawing comments. CI4cb4697c found this fixture-only
 error; native calendar source and the accepted game binary do not change.
 
-Stage0237: [original counted strings and memory prefixes](kernel-strings.md).
+[Native multiplayer and crossplay validation](multiplayer-ui.md).
 
-Stage0238: [original critical sections and whole native RTL retirement](kernel-rtl.md).
+[Strings](kernel-strings.md), [RTL](kernel-rtl.md), [formatting](guest-printf.md), [numbers](guest-numbers.md).
 
-Stage0239: [original checked narrow guest formatting](guest-printf.md).
-
-Stage0240: [original numeric conversion checks](guest-numbers.md).
 
 Crash evidence CI now selects `tests/diagnostics/test_guest_capture.py` beside
 existing crash tests on both hosts. It compiles the shared bounded-memory writer
@@ -1022,3 +1019,10 @@ patches until upgrading to the full stack. Model instrumentation is inserted
 before a stable function, rather than at EOF, so reversing it preserves local
 trailing edits during historical branch round trips. These are tested in
 `tests/repository/test_patch_updates.py`.
+
+Crossplay startup/shutdown and evidence completion: [Online acceptance](multiplayer-ui.md#physical-windowsmac-online-acceptance).
+
+Native crossplay capture rotation regression: `tests/network/test_crossplay_peer.py`.
+
+Crossplay lock/recycle guards: `test_crossplay_peer.py`; reused Online interpreter:
+`test_native_mac_tools.py`. See multiplayer-ui.md.

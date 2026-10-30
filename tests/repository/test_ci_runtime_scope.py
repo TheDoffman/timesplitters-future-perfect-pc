@@ -200,7 +200,9 @@ def test_parallel_workers_preserve_required_check_contract():
         assert "('pytest==', 'pytest-xdist==', 'execnet==')" in worker
     assert 'needs: patches' not in native
     assert 'python tools/build/apply-patches.py external/ts3FPrecomp patches' in native
-    assert "needs.plan.outputs.native == 'true' && runner.os == 'Windows'" in native
+    online = native.split('- name: Install pinned Online certificate dependencies')[1].split('- name:')[0]
+    assert "if: needs.plan.outputs.native == 'true'" in online
+    assert 'runner.os' not in online  # Online now runs on both desktop hosts.
     assert 'python -m pip install -r requirements-release.txt' in native
     assert "needs.plan.outputs.gpu == 'true' && runner.os == 'macOS'" in native
     assert 'name: Patch transitions (${{ matrix.os }})' in gate

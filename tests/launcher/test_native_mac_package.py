@@ -19,7 +19,11 @@ spec.loader.exec_module(package)
 def payload(root):
     names = [package.GAME, 'Launch.command', package.APP+'/Contents/MacOS/TimeSplitters.Launcher',
              'Settings/pc-controls.json', 'Bin/libvulkan.1.dylib', 'Bin/libMoltenVK.dylib',
-             'Bin/libdxcompiler.dylib', 'Support/Vulkan/MoltenVK_icd.json', 'Source/pc-port-source.zip']
+             'Bin/libdxcompiler.dylib', 'Support/Vulkan/MoltenVK_icd.json', 'Source/pc-port-source.zip',
+             'Support/Python/bin/python3', 'Support/Python/bin/python-real',
+             'Support/Online/online.py', 'Support/Online/online_platform.py',
+             'Support/Online/network-identity.json', 'Support/Online/network-build.json',
+             'Support/Online/multiplayer.png']
     files = {}
     for name in names:
         path = root/name

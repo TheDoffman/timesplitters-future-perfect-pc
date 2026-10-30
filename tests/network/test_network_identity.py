@@ -26,6 +26,44 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 
+def test_windows_and_posix_path_order_produce_the_same_identity(tmp_path, monkeypatch):
+    import builtins
+    import hashlib
+    import json
+    game=tmp_path/'game';game.mkdir()
+    (game/'default.xbe').write_bytes(b'xbe')
+    source=tmp_path/'src';source.mkdir()
+    (source/'Zoo.c').write_bytes(b'zoo')
+    (source/'apple.c').write_bytes(b'apple')
+    def ordered(casefold):
+        def sort(values):
+            values=list(values)
+            if values and isinstance(values[0],Path):
+                return builtins.sorted(values,key=lambda p:p.as_posix().casefold() if casefold else p.as_posix())
+            return builtins.sorted(values)
+        monkeypatch.setattr(module,'sorted',sort,raising=False)
+        return module.identity(tmp_path,game)
+    windows=ordered(True)
+    posix=ordered(False)
+    expected=[(name,hashlib.sha256(data).hexdigest()) for name,data in
+              [('game/default.xbe',b'xbe'),('src/Zoo.c',b'zoo'),('src/apple.c',b'apple')]]
+    payload=json.dumps({'protocol':module.PROTOCOL,'files':expected},separators=(',',':'),sort_keys=True)
+    assert windows==posix
+    assert windows==(hashlib.sha256(payload.encode()).digest(),expected)
+
+
+def test_explicit_same_host_runtime_is_part_of_identity(tmp_path):
+    root = tmp_path/'source'; root.mkdir()
+    game = tmp_path/'game'; game.mkdir(); (game/'default.xbe').write_bytes(b'fixture')
+    runtime = tmp_path/'cache/runtime'; (runtime/'src').mkdir(parents=True)
+    source = runtime/'src/network.c'; source.write_text('int version=1;\n')
+    before, entries = module.identity(root, game, runtime)
+    assert any(name == 'runtime/src/network.c' for name, _ in entries)
+    assert before != module.identity(root, game)[0]
+    source.write_text('int version=2;\n')
+    assert before != module.identity(root, game, runtime)[0]
+
+
 def test_online_theme_is_bundled_and_part_of_runtime_identity(tmp_path):
     bundle_spec = importlib.util.spec_from_file_location('bundle_online', Path(__file__).resolve().parents[2]/'tools/network/bundle_online.py')
     bundle = importlib.util.module_from_spec(bundle_spec)

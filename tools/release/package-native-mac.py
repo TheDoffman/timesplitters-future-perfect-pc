@@ -31,6 +31,7 @@ import zipfile
 import vulkan_sdk
 from release_channels import identity as release_identity
 from build_textures import ensure_pack, optional_identity, zip_entries, write_zip, write_source_files
+from bundle_online_macos import bundle as bundle_online
 
 ROOT = _layout_root
 GAME = 'Bin/futureperfect_recomp'
@@ -144,7 +145,11 @@ def verify_payload(stage, manifest, texture_rows=()):
     required = {GAME, 'Launch.command', APP+'/Contents/MacOS/TimeSplitters.Launcher',
                 'Settings/pc-controls.json', 'Bin/libvulkan.1.dylib',
                 'Bin/libMoltenVK.dylib', 'Bin/libdxcompiler.dylib',
-                'Support/Vulkan/MoltenVK_icd.json', 'Source/pc-port-source.zip'}
+                'Support/Vulkan/MoltenVK_icd.json', 'Source/pc-port-source.zip',
+                'Support/Python/bin/python3', 'Support/Python/bin/python-real',
+                'Support/Online/online.py', 'Support/Online/online_platform.py',
+                'Support/Online/network-identity.json', 'Support/Online/network-build.json',
+                'Support/Online/multiplayer.png'}
     if not required <= manifest['files'].keys():
         raise ValueError('Incomplete Mac runtime package')
     for name, expected in manifest['files'].items():
@@ -215,7 +220,10 @@ def main():
 
     copy(executable, GAME)
     libraries = bundle_libraries(executable, stage, sdk)
-    minimum = minimum_macos([stage/GAME, *sorted((stage/'Bin').glob('*.dylib'))])
+    online = bundle_online(ROOT, stage, copy)
+    minimum = minimum_macos([stage/GAME, *sorted((stage/'Bin').glob('*.dylib')),
+        stage/'Support/Python/bin/python-real', *sorted((stage/'Support/Python/lib/native').iterdir()),
+        *sorted((stage/'Support/Python').rglob('*.so'))])
     shutil.copytree(args.launcher/APP, stage/APP)
     copy(args.launcher/'Support/Launcher/manifest.json', 'Support/Launcher/manifest.json')
     copy(args.launcher/'BUILD-launcher.json', 'Support/Launcher/BUILD-launcher.json')
@@ -276,8 +284,9 @@ Game data, personal settings and saves are not bundled.
 
 Uses the shared experimental Xbox/Vulkan renderer with bundled MoltenVK.
 Basic first-level gameplay has been checked previously; complete rendering,
-full-campaign completion and native Mac online multiplayer remain unverified.
-Windows Online features are not implemented in this native Mac build.
+full-campaign completion and complete mixed Windows/Mac match behavior remain unverified.
+Online and System Link use the shared desktop multiplayer protocol. All players
+need matching builds and game content. Online includes its own Python/Tk runtime.
 
 Supported default.xbe SHA-256:
 3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc
@@ -291,7 +300,7 @@ Source and third-party notices: Source and Licenses.
         packaging_commit=run('git','rev-parse','HEAD'),
         packaging_changes=run('git','status','--porcelain'),
         renderer='vulkan', vulkan_driver='moltenvk', minimum_macos=minimum,
-        signing='ad-hoc; not notarized', runtime_libraries=libraries, native_build=native,
+        signing='ad-hoc; not notarized', runtime_libraries=libraries, native_build=native, online=online,
         launcher_version=json.loads((stage/'Support/Launcher/manifest.json').read_text())['version'],
         files={p.relative_to(stage).as_posix(): digest(p) for p in sorted(stage.rglob('*')) if p.is_file()})
     manifest['textures'] = textures

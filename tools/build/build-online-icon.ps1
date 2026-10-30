@@ -12,5 +12,6 @@ if (!('LauncherIconBuilder' -as [type])) {
     Add-Type -Path @((Join-Path $source 'IconBuilder.cs'), (Join-Path $source 'GameMonogram.cs')) -ReferencedAssemblies System.Drawing
 }
 [LauncherIconBuilder]::WriteMultiplayer((Join-Path $Output 'multiplayer.ico'))
+[LauncherIconBuilder]::WriteMultiplayerPng((Join-Path $Output 'multiplayer.png'))
 [LauncherIconBuilder]::PreviewMultiplayer((Join-Path $Output 'multiplayer-icon-preview.png'))
 Write-Output (Join-Path $Output 'multiplayer.ico')
