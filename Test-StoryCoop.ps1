@@ -9,5 +9,5 @@ $python = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
 if (-not (Test-Path -LiteralPath $python)) {
     throw 'Python environment not found. Run setup.ps1 first.'
 }
-& $python (Join-Path $PSScriptRoot 'tools\story_coop_local.py') --players $Players
+& $python (Join-Path $PSScriptRoot 'tools\testing\story_coop_local.py') --players $Players
 exit $LASTEXITCODE

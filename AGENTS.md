@@ -47,6 +47,13 @@ providers, perform handoffs or limit themselves to advisory work.
 
 ## Workspace and coordination
 
+- After a task branch is confirmed merged into remote `main`, remove that task's
+  local branch from the computer. First verify that all task commits are present
+  in `main` (or accounted for by a squash merge) and that no uncommitted or unique
+  work would be lost. Switch out of the branch before using safe local deletion
+  (`git branch -d`); preserve unmerged branches and other chats' work. This rule
+  does not authorize deleting remote branches, saves, settings or ignored files.
+
 - Use a focused branch for each task, such as `release-cleanup` or
   `mac-debug`. Do not route all work through a permanent platform
   branch or choose a branch merely because the work continues an earlier chat.
@@ -82,17 +89,17 @@ providers, perform handoffs or limit themselves to advisory work.
 - Implement ordinary new gameplay, input rules, rendering policy, settings and
   fixes once in shared source or the shared patch stack, for both Windows and
   native Mac. Build on the shared interfaces documented in
-  `docs/shared-platform.md`; extend their host adapters when needed. Do not copy
+  `docs/development/shared-platform.md`; extend their host adapters when needed. Do not copy
   feature logic into a second Mac implementation or guard portable behavior
   behind `_WIN32` merely because it was first developed on PC.
 - Keep OS events/windows, graphics resource access and file-system operations in
   thin platform adapters. Shared shader algorithms belong in `src/graphics`;
   shader-language adapters map syntax/intrinsics rather than duplicate policy.
   Shared debug setting fields, labels, keys and capability requirements belong
-  in `src/pc_debug_options.def`, consumed by both dialogs and JSON persistence.
+  in `src/diagnostics/pc_debug_options.def`, consumed by both dialogs and JSON persistence.
 - Genuine platform dependencies or an explicitly PC-only task may be deferred.
   Record the missing capability, why common code cannot yet supply it, and the
-  adapter/acceptance work in `MAC_PORT_BACKLOG.md` before reporting completion.
+  adapter/acceptance work in `docs/project/MAC_PORT_BACKLOG.md` before reporting completion.
   Distinguish implementation from each host's validation. Preserve unsupported
   saved options; do not silently reset them when another host edits settings.
   A deferred exception is not permission to regress existing Mac support.
@@ -102,10 +109,10 @@ providers, perform handoffs or limit themselves to advisory work.
   scoped platform exception may complete on PC while its Mac adapter is queued.
   If no Mac adaptation
   is needed, record why and distinguish verified support from pending validation.
-- When asked to port features to Mac, consult `MAC_PORT_BACKLOG.md`, implement
+- When asked to port features to Mac, consult `docs/project/MAC_PORT_BACKLOG.md`, implement
   the requested entries, and update their status and evidence. Do not mark an
   entry verified from a successful Windows test or shared-source change alone.
-  Keep measured validation in `STATUS.md` and link it from the backlog.
+  Keep measured validation in `docs/project/STATUS.md` and link it from the backlog.
 - Implement platform-independent gameplay, input rules, asset/configuration
   handling and runtime fixes once in shared source or the shared patch stack.
   Keep operating-system event handling, native settings windows and graphics
@@ -118,23 +125,33 @@ providers, perform handoffs or limit themselves to advisory work.
   existing Mac functionality.
 - Launcher changes follow the same rule in both directions: implement common
   behavior once, adapt Windows/macOS system calls, and run both host checks.
-  `docs/launcher-compatibility.md` describes the API-free build/test workflow.
+  `docs/release/launcher-compatibility.md` describes the API-free build/test workflow.
   Its passing check is evidence of its scope, not a guarantee of visual parity.
   CI does not generate OS adapters. Follow-up fixes stay in reviewed source
   changes; no AI API credentials or paid agent calls belong in this workflow.
-- Every PR description must explain the problem or root cause and how the
-  change fixes it, in plain language. Include the resulting behavior, relevant
-  validation and known limits. Keep this explanation current when updating
-  a PR; do not substitute a list of changed files for how the fix works.
-- Link resolved issues with GitHub closing references (for example, `Closes #128`)
-  and fill in `## Cause and fix` plus relevant validation/remaining limits. After
-  merging into main, the Issue resolution notes workflow copies those sections
-  to each linked issue in this repository. Do not post a duplicate manual
-  resolution comment. If the workflow fails because the explanation is missing,
-  correct the PR description and rerun the failed workflow; reruns update the
-  existing bot comment. Merging source is not evidence of a published release.
-- Use `.github/pull_request_template.md` to record PC results and link the Mac
-  backlog entries. CI runs shared contracts and selected host checks on Windows/macOS and checks
+- Every opening PR description must be a short explanation for ordinary users,
+  using only `## Change` and `## Cause and fix`. Say what users will notice,
+  what caused the problem and how the change fixes it. For an enhancement,
+  explain why it is useful and how it works; do not invent a bug or root cause.
+  Use everyday language and short paragraphs. Omit validation sections, test
+  logs/counts, file lists, implementation reports and platform checklists.
+  Mention remaining limits only when they affect what users can expect.
+  Keep the description current as the change evolves.
+- Keep fixed issues open until the version containing the fix is live/published
+  (user instruction, 2026-10-29). A merged PR or local test build is not a
+  published fix. Use non-closing issue references such as `Refs #128` in PRs;
+  do not use `Closes`, `Fixes`, `Resolves`, or automatic-closing Development
+  links before publication. This rule overrides older template instructions.
+  Explain the cause and fix and identify that publication is pending. Before
+  closing an issue, verify that the published version actually includes its fix
+  and link that release in the issue. Preserve the existing resolution-note
+  workflow's explanation requirements; if it needs support for non-closing
+  references, update and test that workflow before relying on automatic notes.
+- Use `.github/pull_request_template.md` for the user-facing explanation. Keep
+  test results and unrun checks in `docs/project/STATUS.md`, and platform work
+  and supporting links in `docs/project/MAC_PORT_BACKLOG.md` when applicable.
+  Required testing and shared-platform rules still apply. CI runs shared
+  contracts and selected host checks on Windows/macOS and checks
   backlog ID/status integrity. Register new behavioral tests in that workflow.
   These checks do not detect every missing feature or prove visual parity;
   agents must still maintain the handoff and report unavailable host checks.
@@ -151,11 +168,15 @@ providers, perform handoffs or limit themselves to advisory work.
   Validate it before generation or game validation; do not silently substitute
   another region or revision.
 - Use the upstream revision pinned in `tsfp.ps1`, dependency versions in
-  `requirements.txt`, and the verified FFmpeg download in `tools/fetch-video.ps1`.
+  `requirements.txt`, and the verified FFmpeg download in `tools/build/fetch-video.ps1`.
   Do not independently upgrade dependencies on one device. Intentional version
   changes must update the shared scripts/documentation and relevant checks.
+  The pristine runtime is tracked in `vendor/ts3FPrecomp/source`; prepare its
+  ignored working checkout with `tools/build/prepare-runtime.py`, without cloning the
+  original runtime repository. Preserve snapshot bytes and credits. Runtime
+  edits still belong in the shared patch stack; never patch the snapshot itself.
 - Native Mac builds select the common Xbox/Vulkan frontend on macOS 26+ by
-  default (`--renderer auto`), using the SDK pinned in `config/vulkan-sdk.json`.
+  default (`--renderer auto`), using the SDK pinned in `config/build/vulkan-sdk.json`.
   Older hosts select legacy GL; `--renderer gl` is the explicit fallback on
   any supported Mac. Ordinary renderer features belong in the common frontend;
   legacy GL gaps are platform exceptions in the backlog, not duplicated policy.
@@ -163,27 +184,27 @@ providers, perform handoffs or limit themselves to advisory work.
   builds verify it before source generation/patching and never silently switch
   frontends on SDK failure. Preserve its checksum, receipt, licenses and manifest
   inside ignored `external/vulkan-sdk`. Upstream/Python pins are unchanged.
-  `tools/test-rhi-mac.py` runs asset-free GPU contracts. Both launchers and the
+  `tools/testing/test-rhi-mac.py` runs asset-free GPU contracts. Both launchers and the
   bounded runner select verified SDK loading from `BUILD.json`; new Vulkan
   builds record MoltenVK, while older manifests without a driver field retain
-  KosmicKrisp. Use the shared `tools/vulkan_sdk.py` selection helper for both
+  KosmicKrisp. Use the shared `tools/build/vulkan_sdk.py` selection helper for both
   launchers and tests; temporary driver overrides must not edit saved settings.
   Prerequisite checks remain read-only. Keep GPU contracts, guest frames and reviewed scenes
   distinct. The shared recorder counts successful presentation API calls and
   separates guest/interpolated/other kinds; it does not measure GPU completion
   or monitor scanout. Skips/errors must not inflate FPS. Full visual fidelity,
   including Khallos sky rendering, remains unverified on the common renderer.
-- Apply the complete local patch stack with `tools/apply-patches.py` before
+- Apply the complete local patch stack with `tools/build/apply-patches.py` before
   generation/build. Preserve existing patches and add subsequent runtime
   changes as separate patches. Never hand-edit generated game C; keep changes
   in source or reproducible patches and regenerate when wrappers change.
 - For native Windows builds, use `setup.ps1` / `tsfp.ps1` and
   the documented MSVC x64 workflow. Keep its build output in `build/windows`
   and the normal Release executable in `build/windows/Release`.
-- For native Apple Silicon builds, use `tools/build-native-mac.py`
+- For native Apple Silicon builds, use `tools/build/build-native-mac.py`
   with the same upstream/XBE/Python pins and complete patch stack. Keep one
   native build in `build/macos`; retain `build/windows` for Windows development.
-  Use `tools/test-native-mac.py` for bounded tests in `private/test-saves/native-mac`.
+  Use `tools/testing/test-native-mac.py` for bounded tests in `private/test-saves/native-mac`.
   Both `RECOMP_DISPLAY_CONFIG`
   (upstream runtime settings) and `TSFP_DISPLAY_CONFIG` (PC display settings)
   must be isolated, along with the input/save paths. Never let runtime defaults
@@ -242,14 +263,14 @@ providers, perform handoffs or limit themselves to advisory work.
 
 - For routine Windows gameplay tests, use a disposable copy of the local
   `private/test-fixtures/unlocked` Test Lab profile with
-  `python tools/testing_profile.py --play --seconds 120`. It unlocks story,
+  `python tools/testing/testing_profile.py --play --seconds 120`. It unlocks story,
   Arcade/characters and challenges while preserving fresh collectible progress.
   The runner reuses the launcher's `RECOMP_XMV_PLAY=0` startup-video switch.
   Keep the canonical fixture unchanged. Tests of first-run, startup videos or
   unlock progression must explicitly use an appropriate fresh isolated save
-  instead. See `docs/testing-profile.md` for creation and routing details.
+  instead. See `docs/development/testing-profile.md` for creation and routing details.
   On Apple Silicon, use the same local fixture through
-  `.venv/bin/python tools/test-native-mac.py --unlocked-profile --seconds 120`.
+  `.venv/bin/python tools/testing/test-native-mac.py --unlocked-profile --seconds 120`.
   This resets only its disposable nested copy; omit `--unlocked-profile` for
   fresh-profile, startup or unlock-progression tests. Never replace the canonical
   fixture or prepare an active test directory; the native runner holds run locks
@@ -270,7 +291,7 @@ providers, perform handoffs or limit themselves to advisory work.
   cleanup rules below; the interactive launcher is not an automated test runner.
 - Record the source/build revision, host OS/architecture, relevant tool and
   graphics-backend versions, test scope, and outcome in validation summaries.
-  Record measured behavior and remaining gaps in `STATUS.md`; keep usage in
+  Record measured behavior and remaining gaps in `docs/project/STATUS.md`; keep usage in
   `README.md` consistent with the actual scripts.
 - Distinguish prerequisite checks, executable startup, rendered menus, and
   gameplay. A missing-data dialog, successful build, or Windows gameplay test
@@ -350,7 +371,7 @@ this preference on all further work, including texture remastering and testing.
 ## Active texture issue branch
 
 - The user requests original character selection/profile icons (2026-10-22).
-  Keep the keys in `config/texture-originals.json` out of generation and installed
+  Keep the keys in `config/textures/texture-originals.json` out of generation and installed
   packs unless the user changes this preference. Character model materials and
   full-size scene artwork remain separate and in scope.
 
@@ -363,7 +384,7 @@ this preference on all further work, including texture remastering and testing.
   and shared technical audits. Defer failed drafts to focused correction batches
   instead of repeatedly interrupting production. Preserve the existing 6 GiB
   cap, temporary-storage limit and near-completion playtesting threshold.
-- Refresh `tools/texture-worklist.py`, then `tools/texture-hybrid-plan.py` for
+- Refresh `tools/textures/texture-worklist.py`, then `tools/textures/texture-hybrid-plan.py` for
   the reproducible queue. This planner does not generate or install images.
 
 - Continue texture overhaul work for issue #74 on

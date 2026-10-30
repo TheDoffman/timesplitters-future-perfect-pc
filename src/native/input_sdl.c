@@ -371,6 +371,10 @@ void pc_controls_apply_mouse(uint32_t player,uint32_t fov_object,ptrdiff_t offse
     camera_input.focused=atomic_load(&focused)&&atomic_load(&mouse_enabled)&&!atomic_load(&menu_active);
     /* No guest callbacks run before this local mapping snapshot expires. */
     PcGuestRegion region=pc_camera_mouse_region(player,fov_object,offset);
+    if(player && !pc_camera_mouse_primary_in_region(player,offset,&region)) {
+        pthread_mutex_unlock(&camera_lock);
+        return;
+    }
     pc_reload_guest_context(&camera_input.reload,player,offset,SDL_GetTicks(),&region);
     int terminal=pc_terminal_mouse_in_region(&camera_input,SDL_GetTicks(),atomic_load(&mouse_sensitivity),player,offset,pc_native_rate()!=0,&region);
     pc_input_terminal_context(&camera_input,terminal>=0,atomic_load(&keys[1]));
@@ -583,7 +587,7 @@ int tsfp_native_input_test(void) {
             /* The same live-rate selection must reach mounted gun routing. */
             TU(0x10114)=0x80;TU(0x10014)=0x21000;TU(0x2107c)=0x22000;
             TU(0x22c14)=0x30000;TU(0x3007c)=0x31000;
-            TU(0x31000)=0x30000;TU(0x31004)=0x4147554e;TU(0x31010)=4;TU(0x31068)=0x21000;
+            TU(0x31000)=0x30000;TU(0x31004)=0x4147554e;TU(0x31010)=4;TU(0x310d8)=0x21000;
             TF(0x31034)=-90;TF(0x31038)=90;TF(0x3103c)=-179;TF(0x31040)=179;
             ok &= setenv("TSFP_NATIVE_FPS","144",1)==0;
             for(int step=0;step<5;++step) {
@@ -651,8 +655,9 @@ int tsfp_native_input_test(void) {
         e.type=SDL_EVENT_WINDOW_FOCUS_GAINED;tsfp_native_input_event(&e,window);
         ok &= captured && SDL_GetWindowRelativeMouseMode(window);
         tsfp_native_mouse_config(0,0.1,0);
+        tsfp_native_input_frame(window); /* Configuration is applied on the frame thread. */
         e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;e.button.button=SDL_BUTTON_LEFT;
-        tsfp_native_input_event(&e,window);ok &= !captured;
+        tsfp_native_input_event(&e,window);ok &= !captured && !SDL_GetWindowRelativeMouseMode(window);
         tsfp_native_mouse_config(1,0.1,0);tsfp_native_input_event(&e,window);ok &= captured;
         tsfp_native_mouse_config(0,0.1,0);tsfp_native_input_frame(window);
         ok &= !captured && !SDL_GetWindowRelativeMouseMode(window);

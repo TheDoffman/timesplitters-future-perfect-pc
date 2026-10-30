@@ -36,7 +36,12 @@ namespace TimeSplitters.Launcher
         public static void Resources(Control view,ResourceDictionary resources) { view.Resources.MergedDictionaries.Add(resources); }
         public static void Show(Control view,bool visible) { view.IsVisible=visible; }
         public static void Tip(Control view,object text) { ToolTip.SetTip(view,text); }
-        public static void TextChanged(TextBox view,Action action) { view.TextChanged+=(s,e)=>action(); }
+        public static void TextChanged(TextBox view,Action action)
+        {
+            // Avalonia routes TextChanged through the dispatcher; draft state must
+            // follow the value immediately, like the WPF adapter.
+            view.PropertyChanged+=(s,e)=>{if(e.Property==TextBox.TextProperty)action();};
+        }
         public static void ValueChanged(Slider view,Action action) { view.PropertyChanged+=(s,e)=> { if(e.Property==Slider.ValueProperty)action(); }; }
         public static bool From(RoutedEventArgs e,Control view) { return e.Source==view; }
         public static void ScrollHome(ScrollViewer view) { view.Offset=new Vector(0,0); }

@@ -1,0 +1,27 @@
+--- a/tools/recomp/test_icall_guarded_runtime.py
++++ b/tools/recomp/test_icall_guarded_runtime.py
+@@ -54,6 +54,15 @@
+                 out.append(lines[i])
+             return "\n".join(out)
+     raise AssertionError(f"{name} not defined in {HEADER}")
++
++
++def _admission():
++    # Admission is a function-backed macro. Include the real helper body as
++    # well as the public spelling; a macro-only copy cannot link or compile.
++    text = open(HEADER, encoding="utf-8").read()
++    start = text.index("static inline int tsfp_guest_target_is_code(")
++    end = text.index("#define RECOMP_ICALL_IS_CODE(", start)
++    return text[start:end] + _macro("RECOMP_ICALL_IS_CODE")
+ 
+ 
+ def _dispatch():
+@@ -154,7 +163,7 @@
+ def test_guarded_site_matches_generic_dispatch_for_every_target():
+     if not _cc():
+         pytest.skip("no C compiler on PATH")
+-    src = (HARNESS.replace("IS_CODE", _macro("RECOMP_ICALL_IS_CODE"))
++    src = (HARNESS.replace("IS_CODE", _admission())
+                   .replace("SAFE_AT", _dispatch())
+                   .replace("LIFTED", _lifted_site()))
+     with tempfile.TemporaryDirectory() as tmp:

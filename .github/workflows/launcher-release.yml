@@ -58,4 +58,4 @@ jobs:
       - name: Upload verified assets to draft, then publish and refresh issue-form versions
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python tools/launcher-release.py publish
+        run: python tools/release/launcher-release.py publish

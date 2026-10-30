@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Tool output (regenerated per-game)
+tools/disasm/output/
+tools/func_id/output/
+tools/recomp/output/
+tools/abi_analysis/output/
+
+
+#xbox-specific
+/games
+/xemu*
+# A title's generated code dropped at the repo root (game/recomp/gen): game
+# content, like everything else derived from an XBE.
+/game
+
+# Game files (user provides their own)
+game_files/
+*.xbe
+*.iso
+*.xiso
+
+titles/
+# IDE
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Per-machine notes for Claude Code (toolchain paths, what is installed where)
+CLAUDE.local.md
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Generated recompiled sources (regenerated per-game by tools.recomp)
+src/game/
+
+# Build
+build/
+bin/
+*.obj
+*.exe
+tools/split/output/
+
+# Runtime log written by the kernel layer next to the executable
+xbox_kernel.log
+
+# D3D8 frame captures (RECOMP_D3D8_CAPTURE, src/hle/d3d8_capture.h). A capture
+# holds the title's own textures and vertices, so it is game content: never
+# commit one. The round-trip test writes its synthetic capture as .tmp.
+*.d3dcap
+d3d8_capture_*.tmp
+
+# FFmpeg shared build for XMV movie playback (fetched, not committed; see docs/technical/video-playback.md)
+third_party/ffmpeg/
+# DXC release build, HLSL -> SPIR-V for the Vulkan backend (fetched, not committed; see docs/technical/vulkan-backend.md)
+third_party/dxc/

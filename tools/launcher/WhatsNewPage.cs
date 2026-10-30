@@ -28,6 +28,7 @@ namespace TimeSplitters.Launcher
         readonly TextBlock status,installedLabel,availableLabel,availability,channel,title,published;
         readonly StackPanel changes=new StackPanel(),publishedIssues=new StackPanel(),issues=new StackPanel();
         readonly TextBlock issuesStatus,issuesCount;
+        readonly Border releaseBadge;
         KnownIssues knownIssues;
         readonly ScrollViewer scroll;
         readonly Action<string> openLink;
@@ -46,9 +47,7 @@ namespace TimeSplitters.Launcher
             View.RowDefinitions.Add(new RowDefinition {Height=GridLength.Auto});
             View.RowDefinitions.Add(new RowDefinition {Height=new GridLength(1,GridUnitType.Star)});
             View.RowDefinitions.Add(new RowDefinition {Height=GridLength.Auto});
-            var header=new StackPanel();var eyebrow=PageTheme.Text("RELEASE CENTER",10,"#86CDFF");eyebrow.FontWeight=FontWeights.SemiBold;header.Children.Add(eyebrow);
-            var heading=PageTheme.Text("What's new",28);heading.Margin=new Thickness(0,5,0,7);header.Children.Add(heading);
-            header.Children.Add(PageTheme.Text("Published changes for your game and launcher, all in one place.",12,"#9EB4C8"));
+            var header=PageTheme.Header("RELEASE CENTER","What's new","Published changes for your game and launcher, all in one place.");
             var toolbar=new WrapPanel {Margin=new Thickness(0,20,0,6)};header.Children.Add(toolbar);
             GameTab=Button("Game releases","NewsGameTab");LauncherTab=Button("Launcher releases","NewsLauncherTab");
             toolbar.Children.Add(GameTab);toolbar.Children.Add(LauncherTab);toolbar.Children.Add(Edition);
@@ -61,6 +60,7 @@ namespace TimeSplitters.Launcher
             var versions=new Grid();versions.ColumnDefinitions.Add(new ColumnDefinition());versions.ColumnDefinitions.Add(new ColumnDefinition());summary.Children.Add(versions);
             var installed=new StackPanel();installed.Children.Add(PageTheme.Text("INSTALLED",10,"#9EB4C8"));installedLabel=PageTheme.Text("",21);installed.Children.Add(installedLabel);versions.Children.Add(installed);
             var available=new StackPanel();available.Children.Add(PageTheme.Text("AVAILABLE",10,"#9EB4C8"));availableLabel=PageTheme.Text("Not checked",21);available.Children.Add(availableLabel);Grid.SetColumn(available,1);versions.Children.Add(available);
+            releaseBadge=PageTheme.Badge("Not checked",StatusTone.Neutral);releaseBadge.Margin=new Thickness(0,14,0,0);summary.Children.Add(releaseBadge);
             availability=PageTheme.Text("Refresh to check published releases.",12,"#B4C9DA");availability.Margin=new Thickness(0,14,0,0);summary.Children.Add(availability);
             var notes=PageTheme.Section(body,"What this release changes","");
             title=PageTheme.Text("Release notes",18,"#A7D9FA");title.Margin=new Thickness(0,12,0,4);notes.Children.Add(title);
@@ -139,6 +139,17 @@ namespace TimeSplitters.Launcher
             Release latest=news==null?null:(launcher?news.Launcher:news.Game);
             availableLabel.Text=news==null?"Not checked":latest==null?"None on channel":latest.Tag;
             availability.Text=news==null?"Refresh to check published releases.":ReleaseNews.Availability(version,latest,launcher);
+            string badge="Not checked";var tone=StatusTone.Neutral;
+            if(news!=null && latest!=null) {
+                badge="Available to install";tone=StatusTone.Info;
+                if(!String.IsNullOrEmpty(version))try {
+                    int order=GameVersion.Parse(latest.Tag).CompareTo(GameVersion.Parse(version));
+                    bool sameChannel=launcher || latest.Channel==GameChannels.FromTag(version);
+                    badge=!sameChannel?"Different channel":order>0?"Update available":order==0?"Up to date":"Newer installed";
+                    tone=!sameChannel?StatusTone.Neutral:order==0?StatusTone.Success:StatusTone.Info;
+                }catch(System.IO.InvalidDataException){badge="Version unavailable";tone=StatusTone.Warning;}
+            }else if(news!=null)badge="No compatible release";
+            PageTheme.SetBadge(releaseBadge,badge,tone);
             Release selected=Edition.SelectedIndex==1?(news==null?null:(launcher?news.InstalledLauncher:news.InstalledGame)):latest;
             SelectedUrl=selected==null?null:selected.Url;OnGitHub.IsEnabled=SelectedUrl!=null;
             title.Text=selected==null?(Edition.SelectedIndex==1?"Installed release notes unavailable":"No release notes available"):

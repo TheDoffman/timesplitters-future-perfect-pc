@@ -1,0 +1,374 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -27,6 +27,7 @@
+ import translation_bitops as _project_bitops
+ import translation_exchange as _project_exchange
+ import translation_compare as _project_compare
++import translation_strings as _project_strings
+ 
+ # Function export names of the Windows libraries the host exe links
+ # (kernel32/user32/gdi32/advapi32/winmm/ws2_32/ole32/dbghelp/...). A guest
+@@ -1365,7 +1366,7 @@
+             return self._lift_jcc(insn)
+ 
+         # ── String operations ──
+-        if m.startswith("rep ") or m.startswith("repe ") or m.startswith("repne "):
++        if m.startswith(("rep ", "repe ", "repne ", "repz ", "repnz ")):
+             return self._lift_rep_string(insn, m)
+         # "movsd" is TWO instructions. The string MOVSD copies a dword from
+         # [esi] to es:[edi]; the SSE2 MOVSD moves a scalar double in or out of
+@@ -1375,7 +1376,8 @@
+         # the instruction actually names. Told apart by the only thing that
+         # differs.
+         if m in ("movsb", "movsd", "movsw", "stosb", "stosd", "stosw",
+-                 "lodsb", "lodsd", "lodsw") and not _has_xmm_operand(ops):
++                 "lodsb", "lodsd", "lodsw", "cmpsb", "cmpsw", "cmpsd",
++                 "scasb", "scasw", "scasd") and not _has_xmm_operand(ops):
+             return self._lift_string_op(insn, m)
+         if m == "wait":
+             return ["/* wait - FPU sync */"]
+@@ -1409,7 +1411,7 @@
+         if m in ("leave",):
+             return ["esp = ebp;", "POP32(esp, ebp); /* leave */"]
+         if m in ("cld", "std"):
+-            return [f"g_df = {0 if m == 'cld' else 1}; /* {m} */"]
++            return _project_strings.direction(self, insn)
+         if m == "lahf":
+             return ["/* lahf - load AH from flags (used in FPU compare idiom) */"]
+         if m == "sahf":
+@@ -2209,170 +2211,8 @@
+ 
+     # ── String operations ──
+ 
+-    def _lift_rep_string(self, insn, m):
+-        # Every one of these steps by RECOMP_DF_STEP(size) rather than a
+-        # literal, because EFLAGS.DF decides the direction and the block
+-        # forms (memcpy/memset) are only valid forwards. See g_df in
+-        # recomp_types.h for what a missing direction flag actually costs.
+-        # Forward "rep movs" is NOT memcpy. The hardware copies one element at
+-        # a time, so when the ranges overlap with the destination ahead of the
+-        # source the copy reads bytes it has already written and the pattern
+-        # propagates -- which is exactly how every LZ decompressor emits a run:
+-        # a match of distance 1 and length N repeats one byte N times. memcpy
+-        # is undefined on overlap, and a vectorised one reads ahead and writes
+-        # the pre-copy bytes, so runs come out wrong while everything else
+-        # looks fine.
+-        #
+-        # Half-Life 2's disc archives decompressed to exactly the right length
+-        # with 165,448 wrong bytes in them, spread over 352 of 26,530 blocks:
+-        # every difference a zero where a repeated byte belonged. The backward
+-        # (DF=1) path was already an explicit loop and was already correct;
+-        # only the common direction took the shortcut.
+-        #
+-        # memcpy is still used when the ranges provably do not overlap, which
+-        # is the overwhelming majority of calls.
+-        if "movsb" in m:
+-            return ["if (!g_df) { uint8_t *_d = (uint8_t*)XBOX_PTR(edi),"
+-                    " *_s = (uint8_t*)XBOX_PTR(esi); uint32_t _n = ecx;",
+-                    "  if (_d + _n <= _s || _s + _n <= _d) memcpy(_d, _s, _n);",
+-                    "  else { uint32_t _i; for (_i = 0; _i < _n; _i++) _d[_i] = _s[_i]; }",
+-                    "  esi += ecx; edi += ecx; }",
+-                    "else { uint32_t _i; for (_i = 0; _i < ecx; _i++)"
+-                    " MEM8(edi - _i) = MEM8(esi - _i); esi -= ecx; edi -= ecx; }",
+-                    "ecx = 0; /* rep movsb */"]
+-        if "movsd" in m:
+-            return ["if (!g_df) { uint8_t *_d = (uint8_t*)XBOX_PTR(edi),"
+-                    " *_s = (uint8_t*)XBOX_PTR(esi); uint32_t _n = ecx * 4;",
+-                    "  if (_d + _n <= _s || _s + _n <= _d) memcpy(_d, _s, _n);",
+-                    "  else { uint32_t _i; for (_i = 0; _i < ecx; _i++)"
+-                    " MEM32(edi + _i*4) = MEM32(esi + _i*4); }",
+-                    "  esi += ecx * 4; edi += ecx * 4; }",
+-                    "else { uint32_t _i; for (_i = 0; _i < ecx; _i++)"
+-                    " MEM32(edi - _i*4) = MEM32(esi - _i*4); esi -= ecx * 4; edi -= ecx * 4; }",
+-                    "ecx = 0; /* rep movsd */"]
+-        if "movsw" in m:
+-            return ["if (!g_df) { uint8_t *_d = (uint8_t*)XBOX_PTR(edi),"
+-                    " *_s = (uint8_t*)XBOX_PTR(esi); uint32_t _n = ecx * 2;",
+-                    "  if (_d + _n <= _s || _s + _n <= _d) memcpy(_d, _s, _n);",
+-                    "  else { uint32_t _i; for (_i = 0; _i < ecx; _i++)"
+-                    " MEM16(edi + _i*2) = MEM16(esi + _i*2); }",
+-                    "  esi += ecx * 2; edi += ecx * 2; }",
+-                    "else { uint32_t _i; for (_i = 0; _i < ecx; _i++)"
+-                    " MEM16(edi - _i*2) = MEM16(esi - _i*2); esi -= ecx * 2; edi -= ecx * 2; }",
+-                    "ecx = 0; /* rep movsw */"]
+-        if "stosb" in m:
+-            return ["if (!g_df) { memset((void*)XBOX_PTR(edi), (uint8_t)eax, ecx); edi += ecx; }",
+-                    "else { uint32_t _i; for (_i = 0; _i < ecx; _i++)"
+-                    " MEM8(edi - _i) = LO8(eax); edi -= ecx; }",
+-                    "ecx = 0; /* rep stosb */"]
+-        if "stosd" in m:
+-            return [
+-                "{ uint32_t _i; int32_t _st = RECOMP_DF_STEP(4);"
+-                " for (_i = 0; _i < ecx; _i++) MEM32(edi + _i*_st) = eax;"
+-                " edi += ecx * _st; }",
+-                "ecx = 0; /* rep stosd */"
+-            ]
+-        if "stosw" in m:
+-            return [
+-                "{ uint32_t _i; int32_t _st = RECOMP_DF_STEP(2);"
+-                " for (_i = 0; _i < ecx; _i++) MEM16(edi + _i*_st) = LO16(eax);"
+-                " edi += ecx * _st; }",
+-                "ecx = 0; /* rep stosw */"
+-            ]
+-        # CF as well as ZF. The compare is [esi] - [edi] (scas: al - [edi]),
+-        # so CF is the unsigned "less than" of the last pair, and MSVC's
+-        # std::string compare turns it into -1/+1 with `sbb eax, eax;
+-        # sbb eax, -1`. Without it CF kept whatever came before -- 0 from the
+-        # `xor eax, eax` the idiom starts with -- so every mismatch compared
+-        # as "greater". Max Payne's script loader then found every name it
+-        # looked up in its std::set of included files already there, and
+-        # threw MultipleInclusion on its first include.
+-        cf = self.needs_cf
+-        if "cmpsb" in m:
+-            continue_on_equal = "repne" not in m and "repnz" not in m
+-            stop_condition = "!_flags" if continue_on_equal else "_flags"
+-            return [
+-                "{ int32_t _st = RECOMP_DF_STEP(1);",
+-                "while (ecx != 0) {",
+-                "    _flags = (MEM8(esi) == MEM8(edi));",
+-            ] + (["    _cf = (MEM8(esi) < MEM8(edi));"] if cf else []) + [
+-                "    esi += _st; edi += _st; ecx--;",
+-                f"    if ({stop_condition}) break;",
+-                f"}} }} /* {m} */",
+-            ]
+-        if "scasb" in m:
+-            continue_on_equal = "repne" not in m and "repnz" not in m
+-            stop_condition = "!_flags" if continue_on_equal else "_flags"
+-            return [
+-                "{ int32_t _st = RECOMP_DF_STEP(1);",
+-                "while (ecx != 0) {",
+-                "    _flags = (LO8(eax) == MEM8(edi));",
+-            ] + (["    _cf = (LO8(eax) < MEM8(edi));"] if cf else []) + [
+-                "    edi += _st; ecx--;",
+-                f"    if ({stop_condition}) break;",
+-                f"}} }} /* {m} */",
+-            ]
+-        # The word and dword forms, same shape as the byte forms above. They
+-        # used to be a bare comment: nothing compared, esi/edi never advanced,
+-        # and the flags kept whatever the previous instruction left, so the jcc
+-        # reading them went wherever that pointed. D3DX compares two 1 KB
+-        # palettes with `repe cmpsd` before deciding whether a surface copy is
+-        # legal, and as a no-op that always answered "identical".
+-        if "cmpsw" in m or "cmpsd" in m:
+-            wide = "cmpsd" in m
+-            step, acc = (4, "MEM32") if wide else (2, "MEM16")
+-            continue_on_equal = "repne" not in m and "repnz" not in m
+-            stop_condition = "!_flags" if continue_on_equal else "_flags"
+-            return [
+-                f"{{ int32_t _st = RECOMP_DF_STEP({step});",
+-                "while (ecx != 0) {",
+-                f"    _flags = ({acc}(esi) == {acc}(edi));",
+-            ] + ([f"    _cf = ({acc}(esi) < {acc}(edi));"] if cf else []) + [
+-                "    esi += _st; edi += _st; ecx--;",
+-                f"    if ({stop_condition}) break;",
+-                f"}} }} /* {m} */",
+-            ]
+-        if "scasw" in m or "scasd" in m:
+-            wide = "scasd" in m
+-            step, acc = (4, "MEM32") if wide else (2, "MEM16")
+-            value = "eax" if wide else "LO16(eax)"
+-            continue_on_equal = "repne" not in m and "repnz" not in m
+-            stop_condition = "!_flags" if continue_on_equal else "_flags"
+-            return [
+-                f"{{ int32_t _st = RECOMP_DF_STEP({step});",
+-                "while (ecx != 0) {",
+-                f"    _flags = ({value} == {acc}(edi));",
+-            ] + ([f"    _cf = ({value} < {acc}(edi));"] if cf else []) + [
+-                "    edi += _st; ecx--;",
+-                f"    if ({stop_condition}) break;",
+-                f"}} }} /* {m} */",
+-            ]
+-        return [f"/* {m} */"]
+-
+-    def _lift_string_op(self, insn, m):
+-        # Unprefixed forms; direction still comes from EFLAGS.DF.
+-        if m == "movsb":
+-            return ["MEM8(edi) = MEM8(esi); esi += RECOMP_DF_STEP(1);"
+-                    " edi += RECOMP_DF_STEP(1); /* movsb */"]
+-        if m == "movsd":
+-            return ["MEM32(edi) = MEM32(esi); esi += RECOMP_DF_STEP(4);"
+-                    " edi += RECOMP_DF_STEP(4); /* movsd */"]
+-        if m == "stosb":
+-            return ["MEM8(edi) = LO8(eax); edi += RECOMP_DF_STEP(1); /* stosb */"]
+-        if m == "stosd":
+-            return ["MEM32(edi) = eax; edi += RECOMP_DF_STEP(4); /* stosd */"]
+-        if m == "lodsb":
+-            return ["SET_LO8(eax, MEM8(esi)); esi += RECOMP_DF_STEP(1); /* lodsb */"]
+-        if m == "lodsd":
+-            return ["eax = MEM32(esi); esi += RECOMP_DF_STEP(4); /* lodsd */"]
+-        if m == "movsw":
+-            return ["MEM16(edi) = MEM16(esi); esi += RECOMP_DF_STEP(2);"
+-                    " edi += RECOMP_DF_STEP(2); /* movsw */"]
+-        if m == "stosw":
+-            return ["MEM16(edi) = LO16(eax); edi += RECOMP_DF_STEP(2); /* stosw */"]
+-        if m == "lodsw":
+-            return ["SET_LO16(eax, MEM16(esi)); esi += RECOMP_DF_STEP(2); /* lodsw */"]
+-        return [f"/* {m} */"]
++    _lift_rep_string = _project_strings.emit
++    _lift_string_op = _project_strings.emit
+ 
+     # ── FPU (x87) ──
+ 
+@@ -3452,6 +3292,8 @@
+                      else curr.mnemonic)
+         if _project_bits.constant_noop(curr):
+             pass  # Retain the previous flag interpretation for a known no-op.
++        elif _project_strings.is_compare(curr) and not curr.mnemonic.startswith("rep"):
++            last_flag_setter, last_flag_ops = "cmp", list(curr.operands)
+         elif flag_mnem in FLAG_SETTERS:
+             last_flag_setter, last_flag_ops = normalise_zero_test(
+                 flag_mnem, list(curr.operands))
+--- a/tools/recomp/translator.py
++++ b/tools/recomp/translator.py
+@@ -26,6 +26,7 @@
+                      _RESULT_SNAPSHOT_SETTERS,
+                      detect_setjmp_helpers, _func_ident, _operand_width)
+ from translation_bits import constant_noop as _constant_bit_noop
++import translation_strings as _project_strings
+ 
+ 
+ def _merge_flag_states(states):
+@@ -890,8 +891,11 @@
+         from .lifter import (FLAG_SETTERS, CF_TRACKED, BT_MODIFY,
+                              _EFLAGS_SETTERS, _FLAGS_UNDEFINED)
+ 
++        from translation_strings import is_compare as string_compare
+         last_setter = None
+         for insn in instructions:
++            if not insn.mnemonic.startswith("rep") and string_compare(insn):
++                return True  # Single string comparisons publish ordinary CMP snapshots.
+             if insn.mnemonic.removeprefix("lock ") in ("xadd", "cmpxchg"):
+                 return True  # Own exchange arithmetic publishes captured carry.
+             if insn.mnemonic in ("rcl", "rcr", "mul", "imul", "bt", "bts", "btr", "btc"):
+@@ -1288,7 +1292,7 @@
+             insn.is_cond_jump or insn.mnemonic.startswith("set")
+             or insn.mnemonic.startswith("cmov")
+             for insn in instructions)
+-        if has_conditionals:
++        if has_conditionals or any(_project_strings.is_compare(i) for i in instructions):
+             lines.append(f"    int _flags = 0; /* fallback flag var */")
+ 
+         # Flag snapshot temporaries: a cmp/test records its operands here,
+@@ -1302,6 +1306,7 @@
+         # because eax may be replaced before the branch reads the result.
+         if any(insn.mnemonic in ("cmp", "test", "bsf", "bsr", "cmpxchg",
+                                  "lock cmpxchg", "xadd", "lock xadd", "inc", "dec")
++               or (_project_strings.is_compare(insn) and not insn.mnemonic.startswith("rep"))
+                or insn.mnemonic in _RESULT_SNAPSHOT_SETTERS
+                for insn in instructions):
+             lines.append("    uint32_t _fa = 0, _fb = 0;")
+--- a/tools/recomp/test_lifter_direction_flag.py
++++ b/tools/recomp/test_lifter_direction_flag.py
+@@ -40,8 +40,8 @@
+ 
+         # memcpy is still there for the common case, but guarded: it is only
+         # reached when the ranges provably do not overlap.
+-        self.assertIn("memcpy(_d, _s, _n)", generated)
+-        self.assertIn("_d + _n <= _s || _s + _n <= _d", generated)
++        self.assertIn("memcpy((void *)XBOX_PTR(edi), (const void *)XBOX_PTR(esi), (size_t)_str_bytes)", generated)
++        self.assertIn("_str_end_s <= edi || _str_end_d <= esi", generated)
+ 
+     def test_rep_movsb_propagates_an_overlapping_forward_copy(self):
+         """The LZ run case: distance 1, length N repeats one byte N times.
+@@ -55,21 +55,21 @@
+ 
+         # An explicit ascending byte loop, not memmove: memmove would give the
+         # copy-through-a-temporary answer, which is a different result.
+-        self.assertIn("for (_i = 0; _i < _n; _i++) _d[_i] = _s[_i];", generated)
++        self.assertIn("MEM8(edi) = (uint8_t)_str_value;", generated)
+         self.assertNotIn("memmove", generated)
+ 
+     def test_rep_movsb_backward_case_is_still_a_loop(self):
+         generated = _lift(Instruction(0, 2, "rep movsb", "", "f3a4"))
+ 
+-        self.assertIn("MEM8(edi - _i) = MEM8(esi - _i)", generated)
++        self.assertIn("uint32_t _str_step = (uint32_t)RECOMP_DF_STEP(1)", generated)
+ 
+     def test_rep_movsd_overlap_steps_by_dwords(self):
+         # Element granularity matters: a dword-at-a-time propagation is not
+         # the same sequence of bytes as a byte-at-a-time one.
+         generated = _lift(Instruction(0, 2, "rep movsd", "", "f3a5"))
+ 
+-        self.assertIn("MEM32(edi + _i*4) = MEM32(esi + _i*4)", generated)
+-        self.assertIn("_d + _n <= _s || _s + _n <= _d", generated)
++        self.assertIn("MEM32(edi) = (uint32_t)_str_value;", generated)
++        self.assertIn("_str_end_s <= edi || _str_end_d <= esi", generated)
+ 
+     def test_unprefixed_string_ops_step_by_the_direction_flag(self):
+         for mnemonic, size in (("movsb", 1), ("stosw", 2), ("lodsd", 4)):
+--- a/tools/recomp/test_lifter_string_compare.py
++++ b/tools/recomp/test_lifter_string_compare.py
+@@ -13,11 +13,11 @@
+         generated = "\n".join(lifted)
+ 
+         self.assertIn("while (ecx != 0)", generated)
+-        self.assertIn("_flags = (LO8(eax) == MEM8(edi));", generated)
+-        self.assertIn("edi += _st; ecx--;", generated)
++        self.assertIn("_flags = (_str_value == _str_other);", generated)
++        self.assertIn("edi += _str_step;\necx += 0xFFFFFFFFu;", generated)
+         self.assertIn("if (_flags) break;", generated)
+         self.assertLess(
+-            generated.index("edi += _st; ecx--;"),
++            generated.index("edi += _str_step;\necx += 0xFFFFFFFFu;"),
+             generated.index("if (_flags) break;"),
+         )
+ 
+@@ -39,8 +39,8 @@
+             lifter, BasicBlock(start=0, instructions=[compare, jump]))
+         generated = "\n".join(lifted)
+ 
+-        self.assertIn("_flags = (MEM8(esi) == MEM8(edi));", generated)
+-        self.assertIn("esi += _st; edi += _st; ecx--;", generated)
++        self.assertIn("_flags = (_str_value == _str_other);", generated)
++        self.assertIn("esi += _str_step;\nedi += _str_step;\necx += 0xFFFFFFFFu;", generated)
+         self.assertIn("if (!_flags) break;", generated)
+         self.assertIn("if ((_flags != 0)) goto loc_00000010;", generated)
+ 
+@@ -65,8 +65,8 @@
+         # Was a bare comment, so the jcc after it read whatever the previous
+         # instruction had left in the flags. It compares four bytes at a time
+         # and steps esi/edi by four, and the following je reads _flags.
+-        self.assertIn("_flags = (MEM32(esi) == MEM32(edi));", generated)
+-        self.assertIn("esi += _st; edi += _st; ecx--;", generated)
++        self.assertIn("_flags = (_str_value == _str_other);", generated)
++        self.assertIn("esi += _str_step;\nedi += _str_step;\necx += 0xFFFFFFFFu;", generated)
+         # The step is four bytes, in whichever direction EFLAGS.DF says.
+         self.assertIn("RECOMP_DF_STEP(4)", generated)
+         self.assertIn("if (!_flags) break;", generated)
+--- a/tools/recomp/test_lifter_rep_cmps_cf.py
++++ b/tools/recomp/test_lifter_rep_cmps_cf.py
+@@ -34,10 +34,10 @@
+ 
+ 
+ def test_the_loop_records_cf_when_a_consumer_needs_it():
+-    for m, expect in (("repe cmpsb", "_cf = (MEM8(esi) < MEM8(edi));"),
+-                      ("repne scasb", "_cf = (LO8(eax) < MEM8(edi));"),
+-                      ("repe cmpsd", "_cf = (MEM32(esi) < MEM32(edi));"),
+-                      ("repne scasw", "_cf = (LO16(eax) < MEM16(edi));")):
++    for m, expect in (("repe cmpsb", "_cf = (_str_value < _str_other);"),
++                      ("repne scasb", "_cf = (_str_value < _str_other);"),
++                      ("repe cmpsd", "_cf = (_str_value < _str_other);"),
++                      ("repne scasw", "_cf = (_str_value < _str_other);")):
+         code = _lift(m, needs_cf=True)
+         assert expect in code, (m, code)
+ 
+--- a/tools/recomp/test_lifter_rep_compare_flags.py
++++ b/tools/recomp/test_lifter_rep_compare_flags.py
+@@ -173,9 +173,9 @@
+ 
+ 
+ def test_negative_control_without_cf_the_order_is_lost():
+-    srcs = {n: re.sub(r"\n\s*_cf = \(M[^\n]*;", "", s)
++    srcs = {n: re.sub(r"\n\s*_cf = \(_str_value[^\n]*;", "", s)
+             for n, s in _generated().items()}
+-    assert all("_cf = (M" not in s for s in srcs.values())
++    assert all("_cf = (_str_value" not in s for s in srcs.values())
+     ran = _build_and_run(srcs)
+     assert ran.returncode == 1, "dropping CF should make a -1 come out +1"
+     assert "want -1" in ran.stderr, ran.stderr
+@@ -196,4 +196,4 @@
+     # compares are this, and they should cost nothing new.
+     code = _translate("guid", bytes.fromhex("F3A77501C3C3"))
+     assert "_cf" not in code, code
+-    assert "_flags = (MEM32(esi) == MEM32(edi));" in code, code
++    assert "_flags = (_str_value == _str_other);" in code, code

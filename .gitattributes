@@ -6,12 +6,18 @@ docs/agent-context/*.md text eol=lf
 *.command text eol=lf
 *.sh text eol=lf
 *.py text eol=lf
+tools/compiler/xbe_kernel_exports.def text eol=lf
+tools/compiler/translation_host_symbols.txt text eol=lf
+tools/compiler/translation_host_symbols.json text eol=lf
 *.patch text eol=lf -whitespace
 *.cmd text eol=crlf
 *.ps1 text eol=crlf
 # Preserve literal CRLF context for the upstream overlay source in this patch.
-patches/zzzz-pc-debug-latency-watermark.patch -text
+patches/diagnostics/0700-pc-debug-latency-watermark.patch -text
 
 # Compiled replacements are part of source checkouts; large bytes use Git LFS.
 assets/textures/*.dds filter=lfs diff=lfs merge=lfs -text
 assets/textures/*.json text eol=lf
+
+# Pristine runtime snapshot: preserve upstream bytes for exact Git identity.
+vendor/ts3FPrecomp/source/** -text -filter -whitespace linguist-vendored

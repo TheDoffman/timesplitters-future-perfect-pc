@@ -1,0 +1,211 @@
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -5,7 +5,6 @@
+ # Memory layout, file I/O, threading, synchronization, crypto, HAL.
+ 
+ set(KERNEL_SOURCES
+-    kernel_rtl.c
+     kernel_memory.c
+     kernel_file.c
+     kernel_thread.c
+@@ -30,6 +29,10 @@
+ add_library(xbox_kernel STATIC ${KERNEL_SOURCES})
+ 
+ target_sources(xbox_kernel PRIVATE
++    "${TSFP_SHARED_SOURCE}/runtime/guest_critical.c"
++    "${TSFP_SHARED_SOURCE}/runtime/host_critical.c"
++    "${TSFP_SHARED_SOURCE}/runtime/guest_rtl_services.c"
++    "${TSFP_SHARED_SOURCE}/runtime/guest_kernel_rtl.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_strings.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_time.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_storage.c"
+--- a/src/kernel/kernel.h
++++ b/src/kernel/kernel.h
+@@ -562,29 +562,6 @@
+ BOOL xbox_translate_path(const char* xbox_path, xbox_host_char* host_path_buf, DWORD buf_size);
+ 
+ /* Guest pool imports use the original guest allocation provider. */
+-
+-/* ============================================================================
+- * Runtime Library (kernel_rtl.c)
+- * ============================================================================ */
+-
+-/* Name contended CRT locks by index instead of by address. */
+-void xbox_SetCrtLockTable(uint32_t table_va, uint32_t count);
+-
+-VOID    __stdcall xbox_RtlEnterCriticalSection(PRTL_CRITICAL_SECTION CriticalSection);
+-VOID    __stdcall xbox_RtlLeaveCriticalSection(PRTL_CRITICAL_SECTION CriticalSection);
+-VOID    __stdcall xbox_RtlInitializeCriticalSection(PRTL_CRITICAL_SECTION CriticalSection);
+-
+-ULONG   __stdcall xbox_RtlNtStatusToDosError(NTSTATUS Status);
+-
+-
+-VOID    __stdcall xbox_RtlUnwind(PVOID TargetFrame, PVOID TargetIp, PVOID ExceptionRecord, PVOID ReturnValue);
+-VOID    __stdcall xbox_RtlRaiseException(PVOID ExceptionRecord);
+-VOID    __stdcall xbox_RtlRip(PCHAR ApiName, PCHAR Expression, PCHAR Message);
+-
+-int     __cdecl   xbox_RtlSnprintf(char* buffer, size_t count, const char* format, ...);
+-int     __cdecl   xbox_RtlSprintf(char* buffer, const char* format, ...);
+-int     __cdecl   xbox_RtlVsnprintf(char* buffer, size_t count, const char* format, va_list argptr);
+-int     __cdecl   xbox_RtlVsprintf(char* buffer, const char* format, va_list argptr);
+ 
+ /* ============================================================================
+  * Memory Management (kernel_memory.c)
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -771,26 +771,11 @@
+ }
+ 
+ /* ── RtlInitializeCriticalSection / Enter / Leave (ordinals 291, 277, 294) ─ */
+-static void bridge_RtlInitializeCriticalSection(void)
+-{
+-    uint32_t cs_va = STACK_ARG(0);
+-    xbox_RtlInitializeCriticalSection(XBOX_TO_NATIVE(cs_va));
+-    g_eax = 0;
+-}
+-
+-static void bridge_RtlEnterCriticalSection(void)
+-{
+-    uint32_t cs_va = STACK_ARG(0);
+-    xbox_RtlEnterCriticalSection(XBOX_TO_NATIVE(cs_va));
+-    g_eax = 0;
+-}
+-
+-static void bridge_RtlLeaveCriticalSection(void)
+-{
+-    uint32_t cs_va = STACK_ARG(0);
+-    xbox_RtlLeaveCriticalSection(XBOX_TO_NATIVE(cs_va));
+-    g_eax = 0;
+-}
++#include "guest_kernel_rtl.inc"
++
++/* Original RTL import selected above. */
++
++/* Original RTL import selected above. */
+ 
+ /* ── KeQueryPerformanceCounter / Frequency (ordinals 126, 127) ─ */
+ static void bridge_KeQueryPerformanceCounter(void)
+@@ -2522,20 +2507,7 @@
+  *
+  * Converts an NTSTATUS to a Win32 error code.
+  */
+-static void bridge_RtlNtStatusToDosError(void)
+-{
+-    /* The full mapping in kernel_rtl.c, which falls back to the host's own
+-     * NT table for anything it does not list.
+-     *
+-     * This bridge used to carry its own seven-entry switch and answer
+-     * ERROR_MR_MID_NOT_FOUND (317) for everything else -- including
+-     * STATUS_PENDING, which must become ERROR_IO_PENDING (997). XAPI's
+-     * ReadFile turns a pending NtReadFile into its last error through here,
+-     * and Burnout 2's sound-bank loader proceeds only on 997: on 317 it freed
+-     * the buffer and gave up. The complete table was already written; nothing
+-     * called it. */
+-    g_eax = (uint32_t)xbox_RtlNtStatusToDosError((NTSTATUS)STACK_ARG(0));
+-}
++/* Original RTL import selected above. */
+ 
+ /* ── File I/O bridge helpers ─────────────────────────────── */
+ 
+@@ -4633,13 +4605,7 @@
+ /* ── RtlRip (ordinal 352, 3 args)
+  * The CRT rip/assert path. All three pointers are guest C strings, so each is
+  * translated; nothing is written. */
+-static void bridge_RtlRip(void)
+-{
+-    xbox_RtlRip((PCHAR)XBOX_TO_NATIVE(STACK_ARG(0)),
+-        (PCHAR)XBOX_TO_NATIVE(STACK_ARG(1)),
+-        (PCHAR)XBOX_TO_NATIVE(STACK_ARG(2)));
+-    g_eax = 0;
+-}
++/* Original RTL import selected above. */
+ 
+ /* Legacy guest charset conversion; original replacement remains pending. */
+ static void bridge_RtlAnsiStringToUnicodeString(void)
+@@ -5382,85 +5348,7 @@
+     g_eax = (uint32_t)(uint16_t)(((v & 0xFFu) << 8) | ((v >> 8) & 0xFFu));
+ }
+ 
+-/* ── Rtl Critical sections (ordinals 278, 295, 306) ─────────
+- * 277/294 (plain Enter/Leave) are routed via the xbox_Rtl* wrappers already.
+- *
+- * TryEnter cannot reuse xbox_cs_shadow (it is private to kernel_rtl.c), so it
+- * keeps its own keyed host-lock table: guest critical-section address -> host
+- * CRITICAL_SECTION, created and probed under a guard.  Only the try path uses
+- * it, so entering with Try and leaving with LeaveCriticalSection are both
+- * routed at the shadow level and stay consistent on the host side. */
+-
+-#define BRIDGE_TRY_CS_SLOTS 512
+-
+-typedef struct {
+-    uint32_t key;             /* guest critical section; 0 means free */
+-    int      ready;
+-    CRITICAL_SECTION cs;
+-} BRIDGE_TRY_CS_SLOT;
+-
+-static BRIDGE_TRY_CS_SLOT g_try_cs[BRIDGE_TRY_CS_SLOTS];
+-static CRITICAL_SECTION g_try_cs_guard;
+-static int g_try_cs_guard_ready;
+-
+-static void bridge_try_cs_init_guard(void)
+-{
+-    /* First call in practice comes from the title's main thread during setup;
+-     * a second InitializeCriticalSection on the same object is benign. */
+-    if (!g_try_cs_guard_ready) {
+-        InitializeCriticalSection(&g_try_cs_guard);
+-        g_try_cs_guard_ready = 1;
+-    }
+-}
+-
+-static CRITICAL_SECTION *bridge_try_cs_shadow(uint32_t guest)
+-{
+-    size_t home, i;
+-
+-    bridge_try_cs_init_guard();
+-    EnterCriticalSection(&g_try_cs_guard);
+-    home = (size_t)((guest >> 4) % BRIDGE_TRY_CS_SLOTS);
+-    for (i = 0; i < BRIDGE_TRY_CS_SLOTS; i++) {
+-        BRIDGE_TRY_CS_SLOT *slot = &g_try_cs[(home + i) % BRIDGE_TRY_CS_SLOTS];
+-        if (slot->key == guest) {
+-            LeaveCriticalSection(&g_try_cs_guard);
+-            return &slot->cs;
+-        }
+-        if (slot->key == 0) {
+-            if (!slot->ready) {
+-                InitializeCriticalSection(&slot->cs);
+-                slot->ready = 1;
+-            }
+-            slot->key = guest;
+-            LeaveCriticalSection(&g_try_cs_guard);
+-            return &slot->cs;
+-        }
+-    }
+-    LeaveCriticalSection(&g_try_cs_guard);
+-    return NULL;
+-}
+-
+-/* 278: VOID RtlEnterCriticalSectionAndRegion(PRTL_CRITICAL_SECTION) */
+-static void bridge_RtlEnterCriticalSectionAndRegion(void)
+-{
+-    xbox_RtlEnterCriticalSection((PRTL_CRITICAL_SECTION)XBOX_TO_NATIVE(STACK_ARG(0)));
+-    g_eax = 0;
+-}
+-
+-/* 295: VOID RtlLeaveCriticalSectionAndRegion(PRTL_CRITICAL_SECTION) */
+-static void bridge_RtlLeaveCriticalSectionAndRegion(void)
+-{
+-    xbox_RtlLeaveCriticalSection((PRTL_CRITICAL_SECTION)XBOX_TO_NATIVE(STACK_ARG(0)));
+-    g_eax = 0;
+-}
+-
+-/* 306: BOOLEAN RtlTryEnterCriticalSection(PRTL_CRITICAL_SECTION) */
+-static void bridge_RtlTryEnterCriticalSection(void)
+-{
+-    CRITICAL_SECTION *cs = bridge_try_cs_shadow(STACK_ARG(0));
+-    if (!cs) { g_eax = 0; return; }
+-    g_eax = TryEnterCriticalSection(cs) ? 1 : 0;
+-}
++/* Critical-section imports use the shared original registry above. */
+ 
+ /* ── Rtl Misc stubs (ordinals 288, 297, 319, 321) ─────────── */
+ 

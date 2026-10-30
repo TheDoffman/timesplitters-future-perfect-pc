@@ -1,0 +1,52 @@
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -32,6 +32,7 @@
+ add_library(xbox_kernel STATIC ${KERNEL_SOURCES})
+ 
+ target_sources(xbox_kernel PRIVATE
++    "${TSFP_SHARED_SOURCE}/runtime/guest_event.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_io_scheduler.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_io_queue_wire.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_io_startio.c"
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -6678,38 +6678,7 @@
+  */
+ 
+ /* --- KeInitializeEvent (ordinal 108, 3 args = 12 bytes) --- */
+-static void bridge_KeInitializeEvent(void)
+-{
+-    uint32_t guest_va = STACK_ARG(0);
+-    uint32_t event_type = STACK_ARG(1); /* 0=Notification(manual-reset), 1=Synchronization(auto-reset) */
+-    uint32_t initial_state = STACK_ARG(2);
+-
+-    BOOL manual_reset = (event_type == 0) ? TRUE : FALSE;
+-    HANDLE h = CreateEventW(NULL, manual_reset, initial_state ? TRUE : FALSE, NULL);
+-    if (!h) {
+-        fprintf(stderr, "  [KERNEL] KeInitializeEvent: CreateEventW failed (error %u)\n",
+-                GetLastError());
+-        g_eax = 0;
+-        return;
+-    }
+-
+-    ke_shadow_insert(guest_va, h);
+-
+-    /* Also zero the guest KEVENT struct (16 bytes) and set SignalState.
+-     * KEVENT layout: +0x00 Type(UCHAR), +0x01 Absolute(UCHAR),
+-     *                +0x02 Size(UCHAR), +0x03 Inserted(UCHAR)
+-     *                +0x04 SignalState(LONG), +0x08 WaitListHead.Flink,
+-     *                +0x0C WaitListHead.Blink */
+-    BRIDGE_MEM8(guest_va + 0)  = (uint8_t)(event_type ? 1 : 0);
+-    BRIDGE_MEM8(guest_va + 1)  = 0;
+-    BRIDGE_MEM8(guest_va + 2)  = 16;
+-    BRIDGE_MEM8(guest_va + 3)  = 1;
+-    BRIDGE_MEM32(guest_va + 4) = initial_state ? 1 : 0; /* SignalState */
+-    BRIDGE_MEM32(guest_va + 8) = 0;  /* WaitListHead.Flink (self/empty) */
+-    BRIDGE_MEM32(guest_va + 12) = 0; /* WaitListHead.Blink (self/empty) */
+-
+-    g_eax = 0;
+-}
++#include "guest_kernel_event_init.inc"
+ 
+ /* --- KeInitializeMutant (ordinal 110, 2 args = 8 bytes) --- */
+ static void bridge_KeInitializeMutant(void)

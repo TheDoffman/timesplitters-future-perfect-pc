@@ -1,171 +1,115 @@
 # Runtime and patch navigation
 
-Splitter camouflage uses shared source and existing snapshot/pose hooks only;
-no additional runtime patch or generated-code edit. SNP5/SPP5 adds the bounded
-numeric body-fade block; original11F7E0/11D510 material writes run only during
-guest NPC presentation, with host state restored afterward. See systems-details.
+Story co-op NPC, corpse, pickup, barrel and camouflage integration keeps the
+shared source and main paths; see [details](systems-details.md).
 
-Barrel follow-up adds EFF90 and35AF40 wrappers to the shared cosmetic
-patch. Recorded218650 creates kinds47/40, not BC670's kind1. Capture recognizes
-its two call sites; guest presentation uses canonical kind1 particles. Deferred
-host radius damage scopes remote shooter ownership while retaining the original
-serializer, credit and NPC damage dispatch. See systems-details for scope.
+Patch 2140-native-minigun-intent follows the native weapon wrappers in loader dependency order. It scopes held-primary intent around original US 1C74D0 event 1. Generic shots remain on whole ticks; numeric site 1C7600 normalizes release damping. See native-minigun.md.
 
-The separate `*-story-barrel-cosmetics.patch` wraps EDD40 startup and186480
-navigation-cell mutation. First-mission guest barrel events retain original
-particles/audio/camera feedback but mark the original effect as cosmetic before
-its initial and later damage gates. Existing EFBD0 capture recognizes the bounded
-BC670 call separately from ambience; no generated C is edited. Full patch stack
-and regeneration are required. See systems-details and the original-blast fixture.
+`2130-game-dpi-awareness.patch` attaches the Windows game manifest supplied by
+`tsfp.ps1` to the title executable. Its system DPI declaration prevents Windows
+bitmap scaling and virtualized windowed Auto dimensions without a path-specific
+compatibility override. It preserves linker-generated UAC/common-controls and
+does not change native Mac targets; see the build/test guide for probe coverage.
 
-The room-boundary repair changes shared source/protocols only: SNP4/SPP4 and
-Online bot snapshots carry the host primary room used by originalA1EA0 render
-lists. No new wrapper, runtime patch or generated function is required. Existing
-A2430 cache invalidation and original portal scissoring remain; see systems-details.
+Unchanged patch stacks reuse content validation: [cache contract](release-speed.md).
 
-Corpse replay calls the existing original B3630 constructor from shared Story
-source before dead replica retirement. No new patch, manual wrapper or guest
-regeneration contract is added; model/bone handles stay local. See systems-details
-and the original corpse-constructor/event-dispatch fixture in test_quit_menu.
+`0040-dsound-positional-stereo.patch` keeps XDK distance attenuation and adds
+shared stereo projection with XAudio2/SDL output adapters; see
+[positional audio](../development/positional-audio.md) for field provenance,
+cursor contracts, the saved Audio Options beta toggle and host acceptance boundaries.
+`0050-environmental-acoustics.patch` adds opt-in world-coordinate room/portal routing; see the audio guide for limits.
 
-The separate `*-story-replica-room-clip.patch` wraps A2430. Current posed guest
-Story replicas invalidate the original room-dependent clipping cache (+2B4 bit31)
-before rendering; real room membership and portal scissoring remain intact.
-The earlier full-viewport sentinel workaround is superseded. Shared NPC position
-refresh now dirties that cache too, following originalA7360 movement. A1AB0 calls
-A17C0 to rebuild it against the actual primary room, including Online bots.
+`0045-weapon-sound-range.patch` scopes longer gunfire range to the two weapon
+dispatcher calls into `00021FB0`; its cdecl wrapper restores the range argument.
 
-The existing `*-story-drop-replay.patch` C2090 wrapper now suppresses late stock
-NPC0x16 copies for first-mission guests; numeric authoritative item states create
-the pickups instead. This handles C2090's physical Story throw return atC2A34,
-which bypasses its stock3581B0 sender. Human/other-mode original behavior stays
-on its existing route. Frame/reset/receive use existing shared Story adapters;
-no additional generated wrapper or runtime patch is needed. The new72byte1E
-pickup message is bounded below the original256byte send buffer. Source identity
-changes prevent mixing this build with older peers. See systems-details.
+Kernel: [objects, threads and boot](kernel-objects.md), [devices and names](kernel-devices.md).
 
-The six-bug follow-up reuses A0130's existing visibility adapter for replica
-eligibility before its original pass. Original15DDA0/DAAE0 establishes held-model
-cleanup, and1BE870's model omissions establish built-in shot readiness. These
-changes add no wrappers, wire fields or patch-order changes; no regeneration
-of a new guest entry point is needed. See systems-details for exact contracts.
+Unused POSIX memory APIs retired: [caller audit and strict fixture controls](retired-memory-compatibility.md).
 
-The revised corpse/room/opening-attachment fixes change existing shared Story
-adapters only. No wrappers, generated guest code, patch order or wire layout
-change. Original15BCC0,9FBE0 and1BE870 establish the lifecycle, room-query and
-hand-record contracts documented in systems-details.
+Main guest mappings: [providers, aliases and lifetime](guest-host-mappings.md).
+Native Nt host mappings: [reservation ownership and protection](native-virtual-memory.md).
 
-The preview1 follow-up adds separate `*-story-dialogue.patch` (164C40) and
-`*-story-result-controls.patch` wrappers: Continue callbacks2EAF60/2EAFC0/2EB030/
-2EC090/2EC650 and65470, restart2EB0C0/2EB290, Game Over builder2F5170, prop cleanup
-A9070, signed16 ammo pickup1BA220 and cosmetic blood decal1128C0. These compose
-through the shared adapter, retain native/non-Story original calls and require
-complete-stack application plus regeneration. Shared Online ammo applies beyond
-Story; actor/model/texture/audio handles never cross the new wire boundaries.
-SNP4 physical/pose packets and cinematic v3 remain individually below the original
-353990 sender's256-byte buffer; independent eight-serial NPC assemblies tolerate
-interleaved packet halves. Effects v2 adds numeric blood arguments and asset IDs.
-Old version sizes/magics cannot be assembled into the new snapshots.
+Guest Mm/statistics: [ownership, host snapshots and ABI](guest-memory-services.md).
 
-The separate `*-story-checkpoints.patch` wraps original25EF80 and25F010 through
-the shared display adapter. Capture remains local and host-triggered; extra
-players use25EAD0 (EBX bookmark, ECX index, EDX mask, stack context). Restore
-uses25EC70 (EBX bookmark, EAX context) after primary0 restores world state.
-No checkpoint/VM pointer crosses the network. Regenerate after adding wrappers;
-native and non-Story entry paths continue calling the original body.
+Native Mm ownership and host page operations: [contracts](native-memory.md).
 
-`*-story-human-teams.patch` wraps D7550. Every setter for a validated human actor in live Story replaces the requested
-Arcade team with1,
-matching original Story25A420. Arguments are restored after the original setter;
-NPCs and native/non-Story fallback retain original behavior. D7570 completion
-corrects the validated actor immediately, before its caller attaches the body,
-using D7550 actor team data (+84/+A58); it needs no entity/context pointer.
+Virtual-memory adapters: [ownership and ABI contracts](virtual-memory.md).
 
-`*-story-handoff-authority.patch` wraps original218910/21B540. Connected first-
-level Story guests skip their inventory side effects when rendering replicated
-NPC poses; the host runs the unchanged callbacks and publishes their awards.
-Other modes/native fallback retain the original. The existing ammo/grant adapters
-observe the pistol25 and rifle32 authored pairs; no generated body is edited.
+Thread/TIB and stack providers: [construction, lifecycle and callers](thread-memory.md).
 
-The supported353990 broadcast path copies packets into a256-byte stack buffer.
-Do not send the396-byte internal SNP4 state directly: bounded physical/pose
-messages and checksum-based assembly preserve that original sender limit.
+Heap/reservation/physical allocation now routes through the project ownership
+provider; see [allocation contracts](independent.md#guest-allocation-ownership).
+Host mappings and thread/TIB storage now have project providers; device services
+and whole-runtime worker quiescence remain transitional.
 
-Story poses reuse the existing frozen-animation and bounds wrappers through
-`pc_network_bots_guest.inc`; no additional guest wrapper is required. Those
-shared boundaries accept only a current validated Story NPC replica as well as
-ordinary bots. Primary/crossfade clip binding is shared in the display-menu
-translation unit; original model handles and frame-arena bones remain local.
-Native/disabled transport fallbacks retain original guest calls.
+Image inspection/loading now routes through the project provider before host
+mapping and during materialization; see [image contracts](independent.md#native-image-loading).
+Mapping/TIB construction use project providers; device services remain transitional.
 
-`*-story-extra-loadout.patch` wraps original1BA2B0 ammo grant and1BFCA0 inventory
-addition. The scoped adapter observes only the supported first-level authored
-handoff call sites and the host's primary actor; it preserves original arguments,
-return and stack behavior. The source owner is `src/pc_story_loadout.inc`, included
-through the shared Story load adapter. Regenerate the full stack for the wrappers.
+Guest architectural storage and bounded ABI reports now use project providers;
+see [state contracts](independent.md#guest-state-and-abi-reports). The loader
+uses project memory/TIB allocation; fibers still share their native thread's cells.
 
-`*-story-extra-starts.patch` adds wrappers for original9A420 pad lookup,
-9A4C0 tag lookup and9A510 inverse index. Only two reserved first-scene Online
-Story indices resolve to private copies of the original primary start; all
-ordinary/native paths retain the original bodies. The wire remains the original
-signed16 spawn-pad field. Regenerate the complete stack after wrapper changes.
+Native continuation storage/restoration is project-owned through additive
+`0203-independent-nonlocal-jumps.patch`; see [contracts and host limits](independent.md#native-nonlocal-jumps).
 
-`*-story-npc-creation.patch` adds original DAC30/35BE90/3580D0 boundaries and
-composes the existing15F8C0 diagnostic with the Story spawn adapter. Ordinary
-multiplayer/native fallback stays original. The original NPC pre-spawn sender
-is replaced only for connected Story host NPCs; the completed original host spawn
-then emits a versioned creation message through353A90. Never hand-edit generated
-bodies; the full stack must regenerate these new wrappers.
+Optional branch-feedback recording is project-owned; compatibility includes
+route to `src/runtime/` through `0202-independent-branch-feedback.patch`.
+See [provider, generation and test contracts](independent.md#guest-branch-feedback-recorder).
 
-`*-story-npc-lifecycle-trace.patch` wraps D73B0 model-cache construction,
-15C560 character-list bootstrap, 15F8C0 script spawn and35CF80 network spawn gate.
-The shared opt-in observer emits at most eight entry/exit pairs per boundary in
-Story gameplay. Each original runs once with its original arguments and return.
-Native/disabled paths pass through; it does not create or replicate NPCs itself.
+The canonical guest header now lives in `src/runtime/recomp_types.h`; generation
+reads it directly. The final `0199-independent-runtime-header.patch` keeps the
+transitional template identical, before layout routing. See
+[header ownership and service boundaries](independent.md#canonical-guest-header).
 
-`*-story-authored-records.patch` wraps original6B100's scene-record eligibility
-filter through `pc_story_network_asset`. For connected Story gameplay only, it
-removes bit31's ordinary-network exclusion and accepts authored two-player co-op
-records for three/four humans. Single-player-only records and the original
-difficulty/mission filters remain unchanged. Argument bytes are restored after
-the original call; native fallback and other modes call the original directly.
-This boundary is used by object/script creation and authored pad selection.
+The subsequent `0201-runtime-header-consumer-fixture.patch` repairs the inherited
+guarded-call test's function-backed macro extraction; it changes no game source.
 
-`*-story-context-spawn-trace.patch` wraps original D50E0 without altering its
-ownership checks. D50E0 and the existing D2FD0/D3C50/D2CE0 wrappers use the separate
-script trace budget only while phase15 retains script-suspension flag02000000.
-This observes context replacement after suspension; ordinary spawn calls remain
-direct pass-through. Complete-stack migration verifies the additional wrapper.
+Scalar support follows vector retirement: MOVSX/MOVZX emit their own masks and
+sign handling; old numeric helpers are removed, while regression oracles execute
+real emitted instructions. See [scalar contracts](independent.md#scalar-numeric-support).
 
-`*-story-script-trace.patch` wraps original D4B00/D4BE0 suspend/restore calls.
-The shared callback records caller, argument, peer role/phase, result flags and
-context states before/after, with a separate 32-call opt-in trace budget. Both
-original bodies execute unchanged, including native/disabled fallback. It needs
-supported regeneration and complete-stack migration validation.
+Vector helper retirement follows call frames in the loader, before layout
+routing. `XMM_SCALAR` remains the model-transform ABI with an original
+bit-preserving body; emitted SIMD operations need no legacy helper layer.
+See [vector support](independent.md#vector-runtime-support) for contracts/tests.
 
-`*-story-spawn-pad.patch` separately wraps original CF060 spawn-pad selection.
-It calls `pc_story_network_spawn_pad`, which retains successful original results
-and uses the original first-player lookup only for a missing Story start for
-online slots 2/3. The temporary lookup index is restored before body creation;
-ownership and life-state logic are unchanged. Native fallback calls the original.
-The historical Mac migration fixture excludes this dependent Story patch, then
-asserts that the complete migration installs its wrapper.
+Guest call frames, dispatch, register/memory primitives and translation tooling are in [own interfaces](independent.md).
 
-The opt-in Story load diagnostic adds original-body wrappers for67450,66FC0
-and681C0, plus context initialization/state routines D2FD0/D3C50/D2CE0, in the
-separate `*-story-failure-trace.patch`. They call shared
-`pc_story_failure_trace` to record the guest caller and state/result changes,
-bounded16 observations and gated by the Story load/trace opt-ins. They never
-modify the original failure predicate or suppress its state transition. Wrapper
-changes require supported regeneration; do not edit generated functions.
-The Mac-only upgrade fixture excludes this network-dependent diagnostic from its
-historical stack, then asserts the full migration installs the failure wrappers.
-The681C0 wrapper now enters `pc_story_network_frame`, which supplies the scoped
-opt-in pending-load spawn adapter and then the unchanged traced evaluator.
+The final `platform/2090-repository-source-layout.patch` routes the runtime CMake
+source/test paths and Python compiler bridge into the responsibility folders.
+It runs after all historical patches; prior ledgers still unwind before applying it.
+
+Active patches now live in responsibility folders under `patches/`; consult
+[the folder map](../../patches/README.md). Recursive discovery excludes legacy
+and sorts stable basenames globally before dependency overrides. Folder moves
+preserve exact ledger bytes and runtime output. Duplicate active names fail.
+
+Patch filenames use four-digit base-sort slots and descriptive names; see
+[patch maintenance](../../patches/README.md). This replaces the repeated `z`
+prefixes without changing patch bytes, effective order or context options.
+Maintenance commands use `tools/build/` and `tests/repository/`.
+The loader retains its dependency overrides, and recorded old names unwind
+using their stored contents. Keep the five legacy migration patches.
+
+
+Product lowering and its fatal divide boundary are documented in [own tooling](independent.md).
+
+
+Independent tooling: [ownership and validation](independent.md), including compiled inherited SAR sweeps.
+
+The exact pristine runtime base now lives in `vendor/ts3FPrecomp/source`.
+`tools/build/prepare-runtime.py` verifies blob SHA-256/Git identities, gitlinks, tree
+and original commit before creating the ignored runtime checkout. It retains
+`d90c929...` as shallow HEAD so existing patch ledgers, pristine `git archive`
+fixtures and packaging provenance remain valid. Do not edit snapshot files;
+runtime changes remain in the shared patch stack. The origin URL is attribution,
+not a setup dependency. `tests/repository/test_runtime_snapshot.py` exercises the importer
+with Git transports disabled and applies the entire current stack twice. Importer changes select all runtime CI suites; Mac execution still requires its host.
 
 Procedural wind: [coupled simulation, ownership, exact-clock admission and validation](native-wind.md).
 
-`zz-state-layout-slots.patch` prepares the render/texture-stage slot numbers
+`0550-state-layout-slots.patch` prepares the render/texture-stage slot numbers
 for the recognized XDK layout once per layout change. It caches only integer
 mapping results: each draw still loads current guest values in original order
 and retains conversion, comparison, effect overrides, texture-operation replay,
@@ -176,7 +120,7 @@ compares ordered host-call digests against the reverse-patched original across
 all three layouts, changing memory bases/values and host-call feedback. Layout
 invalidation and stale-value negative controls must differ from the original.
 
-`zz-sampler-cache-retry.patch` repairs common `d3d8_states.c` sampler ownership.
+`0500-sampler-cache-retry.patch` repairs common `d3d8_states.c` sampler ownership.
 Create a replacement before changing the cache count/cursor, destroying its
 victim or invalidating borrowed stage pointers. A failed allocation leaves no
 entry, so later applies retry while existing bindings remain usable. Successful
@@ -195,7 +139,7 @@ asset-free checks; they do not force a real driver/device allocation error.
 
 Shader constants: [bitwise dirty state and upload retry](vsh-constants.md).
 
-`zz-strided-vertex-increment.patch` follows the strided-copy specialization in
+`0570-strided-vertex-increment.patch` follows the strided-copy specialization in
 common HLE `hle_d3d8_vertex.c`. Each attribute copy advances a32-bit guest
 source offset and a `size_t` destination offset instead of multiplying per
 vertex. Source arithmetic retains modulo2^32 behavior, including wrapped first
@@ -208,8 +152,8 @@ does not independently exercise this optimization.
 
 Completed local aim/animation state: [optional shared trace](native-local-trace.md).
 
-`zz-vertex-expand-strides.patch` specializes packed-program vertex expansion in
-common `hle_d3d8.c`; `zz-vertex-expand-tiles.patch` bounds passes to32 vertices.
+`0600-vertex-expand-strides.patch` specializes packed-program vertex expansion in
+common `hle_d3d8.c`; `0610-vertex-expand-tiles.patch` bounds passes to32 vertices.
 Attribute/width dispatch moves outside the vertex loop within each tile;
 fresh stream-zero tails and converted prefixes still use a new zeroed allocation
 per draw. Parsed prefixes precede tails; per-vertex attribute order is preserved
@@ -222,10 +166,10 @@ introduced. `test_vertex_expand.py` compares full output/stride/failure/stream/
 allocation/FP behavior against a frozen pre-change body, including guard pages
 and independent broken-copy/order/fallback controls. Live results belong in STATUS.
 
-`zz-stable-gpr-refs.patch` and the title's four-site selector keep references
+`0540-stable-gpr-refs.patch` and the title's four-site selector keep references
 to live integer/vector cells in profiled routines; see [contract/tests](gpr-refs.md).
 
-`zz-sampler-pc-locations.patch` adds default-off `RECOMP_SAMPLE_PC_SYMBOL`
+`0520-sampler-pc-locations.patch` adds default-off `RECOMP_SAMPLE_PC_SYMBOL`
 to the existing Windows sampler. One exact executable symbol gets at most512
 native PC rows per thread/report, with executable RVA, symbol offset, source
 basename and PDB line. A coverage footer counts all matching addresses/samples
@@ -234,7 +178,7 @@ claims. Resolution happens only after sampled threads resume. No per-sample
 collection or guest behavior changes; source paths are not dumped. Mac's
 existing no-op sampler is unchanged; portable reporter fixtures run on both.
 
-`zz-render-state-cache.patch` gives common `src/d3d/d3d8_states.c` bounded
+`0490-render-state-cache.patch` gives common `src/d3d/d3d8_states.c` bounded
 32-entry descriptor caches for immutable blend, depth/stencil and rasterizer
 objects. Current bindings borrow cache objects; shutdown destroys each owner
 once. Failed creates are retried without inserting a null entry or evicting
@@ -261,7 +205,7 @@ Runtime layers: generated Xbox guest calls title hooks in
 `external/ts3FPrecomp/titles/futureperfect/src/recomp_manual.c`, HLE in
 `external/ts3FPrecomp/src/hle/`, kernel/NV2A services in `src/kernel/`, then Xbox
 graphics frontend in `src/d3d/d3d8_*.c` and RHI backends. Those short `src/...`
-paths are RUNTIME-relative, distinct from tracked root `src/pc_*.c`.
+paths are RUNTIME-relative, distinct from the tracked [source groups](../../src/README.md).
 `hle_d3d8.c` owns Swap/Present integration; `kernel_bridge.c` and
 `xbox_memory_layout.c` contain vblank/flip-gate plumbing. Start FPS investigation
 there only when timing/trace evidence implicates it. Visible menu names may
@@ -280,19 +224,19 @@ Reject dropped-chain windows as complete profiles and separate sampler pause/
 reporting overhead from clean Present measurements. See STATUS for the focused
 external diagnostic and its limitations.
 
-`tools/apply-patches.py:patch_records` defines effective order (not just filename
+`tools/build/apply-patches.py:patch_records` defines effective order (not just filename
 sort). The loader stages an unwind of the EXACT previous recorded patch bytes,
-then applies the entire current top-level stack before updating runtime files.
+then applies the entire current recursive stack before updating runtime files.
 Find its ledger with `git -C external/ts3FPrecomp rev-parse --absolute-git-dir`:
 `tsfp-patches.json` lives THERE, not in root `.git` or the build folder.
 
 The Temporal Uplink map (#53) uses two `D3DDevice_CopyRects` calls in one
-frame: a 640×480 screen snapshot before a clear, then a 128×128 map texture
+frame: a 640Ãƒâ€”480 screen snapshot before a clear, then a 128Ãƒâ€”128 map texture
 copy after that clear. The shared HLE hook in `hle_d3d8.c` retains the first
-host texture for that frame and copies guest region (176,0)–(312,181) into
+host texture for that frame and copies guest region (176,0)Ã¢â‚¬â€œ(312,181) into
 the second texture. `d3d8_screencopy.c` performs the scaled GPU texture copy
 on RHI; `src/native/gl_screen_copy.inc` supplies the native GL adapter. The
-production RHI fixture in `tests/rhi_screen_copy.h` checks that the saved
+production RHI fixture in `tests/support/rhi_screen_copy.h` checks that the saved
 image survives a clear. Reproduce visually with Scotland the Brave's Uplink
 map mode; inspect the hologram rather than a replay-only frame, since replay
 captures do not serialize host screen copies.
@@ -301,21 +245,21 @@ does not establish a bad new patch. Preserve edits and investigate the named
 hunk; never delete the ledger, reset the runtime or remove dependency patches.
 <!-- packet:end -->
 
-`zzzz-world-health-bars.patch` handles #102 after the other display patches.
-Electro Chimp's enemy bars are screen-space draws with 16-byte transformed
-vertices and depth near 1. Their positions already follow the widened camera;
-the automatic 4:3 HUD squeeze otherwise shifts them toward the screen center.
-The patch spans those draws across the output while leaving ordinary HUD
-sprites and explicitly placed overlays on their existing paths. Validate with
-Monkeying Around → Electro Chimp Discomatic at a widescreen resolution and
-compare each bar with its moving monkey.
+`0720-world-health-bars.patch` handles #102; `0730-world-shields.patch` extends
+it for #358. Electro Chimp health bars use 16-byte transformed vertices; the
+shielded enemy in Something to Crow About uses 24-byte 20-vertex strips. Both
+have depth near 1 and already follow the widened camera, so the automatic 4:3
+HUD squeeze shifts them toward screen center. Ordinary HUD sprites at depth
+near .001 and explicitly placed overlays retain their placement. Validate
+with Monkeying Around Ã¢â€ â€™ Electro Chimp Discomatic and Something to Crow
+About's shielded robot at a widescreen resolution.
 
-`zz-zero-base-indices.patch` follows the renderer/native stack. Pushed-array
+`0620-zero-base-indices.patch` follows the renderer/native stack. Pushed-array
 draws with minimum index zero pass their current index bytes directly to the
 synchronous host draw; other ranges retain allocation/rebasing. Vertex gathering,
 primitive conversion and draw order are unchanged. No retained index cache.
 
-`zz-strided-vertex-copy.patch` dispatches pushed-array attribute copies by byte
+`0560-strided-vertex-copy.patch` dispatches pushed-array attribute copies by byte
 size once per attribute, keeping common1/2/3/4/6/8/12/16-byte copies constant
 inside the vertex loop. It preserves original32-bit guest address arithmetic,
 attribute order, zero-filled holes, readability checks and allocation ownership.
@@ -323,19 +267,19 @@ Unusual sizes retain the original generic copy; no geometry is cached. The
 change is shared by Windows/native Mac. See `test_push_gather.py` for complete
 original-function comparisons and guard-page read/write limits.
 
-`zzzz-global-compare-load.patch` routes direct, unsegmented 32-bit CMP operands
+`0650-global-compare-load.patch` routes direct, unsegmented 32-bit CMP operands
 through the existing `RECOMP_LOAD_GLOBAL_U32` policy, just like MOV. Flag snapshots
 read each operand once, including fused and separated branches. Indirect, narrow,
 segmented and TEST operands retain original behavior. Regenerate guest C after
 applying it. The shared title policy opts in only audited addresses/sites.
 
-`zz-model-transform-entry.patch` adds a default-off RECOMP_FAST_ENTRY policy
+`0410-model-transform-entry.patch` adds a default-off RECOMP_FAST_ENTRY policy
 hook after entry tracing and before input loads. Explicit return tracing and
 forced-return diagnostics keep the generated body. US policy selects only151E80;
 other titles/addresses retain the original path. A zero result must leave guest
 state unchanged; success includes exact registers, memory and stack return.
 
-`dsound-output-headroom.patch` defines the shared default host gain in
+`0020-dsound-output-headroom.patch` defines the shared default host gain in
 `src/hle/audio_output.h` and uses it in XAudio initialization. The tracked
 `src/native/audio_sdl.c` uses the same default. Guest volume/timing is unchanged.
 
@@ -344,34 +288,34 @@ The additive `controller-profile-routing` patch repairs #319 in shared
 profiles enables pad defaults after platform focus checks. It follows the
 keyboard-settings/weapon-slots patches; no generated guest hook is needed.
 
-`zz-keyboard-reload-buffer.patch` runs after the full input/timing stack. It
+`0390-keyboard-reload-buffer.patch` runs after the full input/timing stack. It
 collects configured Reload/X and Fire/trigger keyboard contributions separately,
 passes them through the shared host model, then merges untouched pad magnitudes.
 No generated guest input or controller behavior is rewritten by this patch.
 
 The final `radial-stick-deadzone` patch changes shared analog axis sampling in
 `src/input/input_bindings.c` to use the root `pc_input` radial helper for both
-movement and look. `tools/apply-patches.py:patch_records` places it after
-`zz-keyboard-reload-buffer.patch` so the historical keyboard patch still
+movement and look. `tools/build/apply-patches.py:patch_records` places it after
+`0390-keyboard-reload-buffer.patch` so the historical keyboard patch still
 applies during branch transitions. Keyboard normalization and stick-button
-thresholds are unchanged; `tests/test_patch_updates.py` covers those transitions.
+thresholds are unchanged; `tests/repository/test_patch_updates.py` covers those transitions.
 
 ## Source ownership and execution
 
-`zz-texture-bind-scan.patch` runs after the renderer/native stack. Texture
+`0590-texture-bind-scan.patch` runs after the renderer/native stack. Texture
 binding resolves the first matching cache entry and any framebuffer alias in
 one fresh scan. Null bindings clear both outputs; nonzero stages request only
 an entry. No retained index, checksum/upload or framebuffer-copy policy changes.
 The full-module framebuffer fixture compares all cache sizes through512 against
 the original two searches and rejects first-only/last-entry regressions.
 
-`zz-texel-sample-lanes.patch` groups the texture survey's four independent hash
+`0580-texel-sample-lanes.patch` groups the texture survey's four independent hash
 lanes. Sample addresses/order, all checksum bits, small-input handling and tails
 match the original scalar recurrence. It changes neither sampling/full-check
 frequency nor upload/invalidation policy. Tests compare actual production code
 with the frozen scalar reference, including exact word-read footprints/bounds.
 
-`zz-shader-source-lookup.patch` adds a guest source-address hint to the existing
+`0530-shader-source-lookup.patch` adds a guest source-address hint to the existing
 HLE slot-program cache. Every hinted hit still compares the full current
 microcode with the immutable host copy and requires the same instruction count.
 Misses use the original content hash, collision check and creation path; guest
@@ -379,7 +323,7 @@ calls, selected-slot rebinding, declarations and host-program lifetime remain
 unchanged. Relocated identical code updates the hint. This avoids repeated byte
 hashing without treating guest addresses as immutable shader identities.
 
-`zz-pushbuffer-diagnostic-policy.patch` makes `nv2a_pb_scan.c` read both
+`0480-pushbuffer-diagnostic-policy.patch` makes `nv2a_pb_scan.c` read both
 RECOMP_PB_SCAN and RECOMP_PB_EXEC once, on its first scan call. These are launch
 diagnostics; presence (even empty/"0") retains the original opt-in semantics.
 Disabled or empty/reversed intervals return before obtaining guest memory.
@@ -389,7 +333,7 @@ including eager-environment and executor-disabled negative controls. This
 removes repeated environment lookup from the acknowledgement worker; it does
 not change busy-bit acknowledgement, fences, clocks, or idle/wake policy.
 
-`zz-native-trace-quiet.patch` applies after native timing. With an explicit
+`0450-native-trace-quiet.patch` applies after native timing. With an explicit
 nonpositive trace budget and no watch/dump/filter/profile environment switch,
 `recomp_trace_enter/exit` bypass disabled diagnostic dispatch. The entry guard
 follows the existing renderer-idle callback. Per-thread configuration is read
@@ -406,7 +350,7 @@ atomic support is introduced. Private alternating native probes measure tracing
 cost only; game pacing requires a separately identified executable and scene.
 
 
-`zz-native-demo-timing.patch` follows the native surface stack and wraps US
+`0420-native-demo-timing.patch` follows the native surface stack and wraps US
 `43220` with `pc_native_demo_guest.inc`. Regenerate guest C: the original is
 `sub_00043220_gen`. Timer multiplies `433E2/43473` use the wrapper's raw-time
 scope. Numeric load `433A0` can skip recording or zero-time playback; cursor
@@ -415,14 +359,14 @@ store `42535` resets both histories. The existing wrapper includes the bounded
 after original decoding. No additional wrapper/patch/generated edit is needed.
 Historical pre-native upgrade fixtures exclude the dependent demo patch.
 
-`zz-sampler-caller-depth.patch` keeps captured CPU caller chains up to the
+`0510-sampler-caller-depth.patch` keeps captured CPU caller chains up to the
 existing 32-frame walk limit instead of silently truncating at six. The opt-in
 Windows sampler keeps its 8,192-key per-thread cap, reports dropped new chains,
 and clamps the displayed requested depth. Normal execution has no new work.
 Portable insertion tests run on both hosts; Mac still lacks this Win32 thread
 suspension/unwind sampler. No guest timing or rendering code is changed.
 
-`zz-native-surface-render.patch` follows capture and connects the native-water
+`0440-native-surface-render.patch` follows capture and connects the native-water
 path, enabled with 120/144 beta on common RHI. `TSFP_SURFACE_NATIVE_TEST=0`
 is a diagnostic opt-out; Original60 and legacy GL keep original feedback. `pc_surface_native_guest.h` forces only the
 outer dispatcher on positive matching native intervals; nested event/smoothing/
@@ -436,7 +380,7 @@ Legacy GL keeps its original rendering; this candidate needs common RHI access.
 The sampled-view hunk anchors only common frontend code, so stacks without the
 optional texture-pack override can still apply and reverse the same patch.
 
-`zz-native-surface-capture.patch` runs after the existing native surface tail.
+`0430-native-surface-capture.patch` runs after the existing native surface tail.
 It wraps the original `195110` feedback call with `pc_surface_capture_guest.h`
 and includes `pc_surface_capture_hle.inc` beside the HLE texture cache. The
 optional `TSFP_SURFACE_CAPTURE` diagnostic copies resource/texture identities
@@ -455,7 +399,7 @@ render hook above supplies persistent owners and event/fractional integration.
 
 Issue #222 changes the shared include reached by the existing bot frame wrapper;
 it adds no guest wrapper, wire field, generated-code edit or patch dependency.
-`src/pc_network_bot_motion.h` owns replica presentation between host snapshots.
+`src/network/pc_network_bot_motion.h` owns replica presentation between host snapshots.
 The existing title integration includes it through `pc_network_bots_guest.inc`.
 Apply the complete patch stack and use the supported builder as usual.
 Vehicle exit uses the original logical input mask 0x40 in `D2470` (`D254F`
@@ -514,7 +458,7 @@ their original value. Their clocks use the slower raw/game authored cadence,
 including phase-shifted carried ticks. The loader places it after the numeric policy
 and before `-native-surface-live.patch`. Historical pre-native stacks exclude
 this dependent patch; current full-stack application and unwind remain required.
-See `tests/test_native_vehicle_timing.py` for synthetic byte semantics and local
+See `tests/gameplay/test_native_vehicle_timing.py` for synthetic byte semantics and local
 original vehicle/rigid-clock fixtures. The original solver/body math and a
 controlled support-contact path now run in `native_rigid_motion.c`, followed by
 the original `1719E0/165A40/9E840` entity publication/bounds path and
@@ -589,15 +533,15 @@ player collision `C4A3F` and queued `16C126` deliver it. Queue production
 post-update in `A7870`. `native_vehicle_actor_impact.c` couples original
 publication with direct/queued callback, contact construction and suspension
 impulse response; geometry/motion and final effects remain controlled.
-`trace-filter-disabled-scan.patch` moves the function-name length calculation in
+`0370-trace-filter-disabled-scan.patch` moves the function-name length calculation in
 runtime `recomp_trace.c:trace_only_match` after the empty-filter return. Lifted
 function entries therefore do not scan diagnostic labels when
 `RECOMP_TRACE_ONLY` is absent/empty. Enabled exact-name matching and per-filter
 hit limits retain the original implementation; watch/dump/profile, trace budget
 and renderer-idle behavior are unchanged. This applies to both host builds.
-`tests/test_trace_filter.py` compiles the actual patched function and requires a
+`tests/diagnostics/test_trace_filter.py` compiles the actual patched function and requires a
 restored-eager-scan mutation to fail. Removed scan counts are not an FPS result.
-`gpu-pfb-flush-ack.patch` adds a default-no-op `RECOMP_AFTER_STORE32` hook to
+`0040-gpu-pfb-flush-ack.patch` adds a default-no-op `RECOMP_AFTER_STORE32` hook to
 ordinary 32-bit MOV memory stores. It runs after the original write, excludes
 segmented/narrow/register operations, and preserves existing numeric hooks.
 The title policy (`pc_gpu_ack.h`, included by `pc_native_numeric.h`) selects only
@@ -621,7 +565,7 @@ fresh live acceptance, not just offline checks.
 
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |
-| Host policy, settings, input, shared helpers | Root `src/pc_*`, `src/graphics/`, `src/native/` | Tracked source; patched upstream CMake includes it |
+| Host policy, settings, input, shared helpers | [Source groups](../../src/README.md) under root `src/` | Tracked source; patched upstream CMake includes it |
 | Runtime integration and title hooks | `external/ts3FPrecomp/titles/futureperfect/src/recomp_manual.c`, title `CMakeLists.txt` | A separate tracked patch |
 | HLE graphics, audio, input, movies | Runtime `src/hle/hle_d3d8*.c`, `hle_dsound*.c`, `hle_input.c`, `hle_xmv*.c` | Tracked patch |
 | Xbox kernel/thread/memory/NV2A | Runtime `src/kernel/`, `src/nv2a/` | Tracked patch; distinguish Win32 and native adapter paths |
@@ -634,7 +578,7 @@ Generated functions often have address-based names. Do not infer a menu handler
 from a plausible label. Search only the evidenced address/symbol, inspect bounded
 lines and trace the actual caller. `recomp_manual.c` wraps selected functions;
 generated declarations are in `recomp_funcs.h`. Use
-`python tools/recomp-generation.py external/ts3FPrecomp` to check the fingerprint.
+`python tools/build/recomp-generation.py external/ts3FPrecomp` to check the fingerprint.
 New HLE declarations/manual wrapper names can require generation even when a
 small function-body change only needs compilation. Follow the builder's check.
 
@@ -645,17 +589,17 @@ vehicle physics before live surface support, then full-float preservation and
 flip handoff. Numeric addition dispatch retains both physics secondary-step
 rounding and Escort recovery; neither replaces the other during integration.
 
-Top-level `patches/*.patch` is the active stack. The legacy subdirectory contains
-migration inputs only. The loader moves networking ahead of native boot, build
+Active patches are discovered recursively under `patches/`, excluding every
+`legacy/` directory; those contain migration inputs only. The loader moves networking ahead of native boot, build
 identity after Discord, and the presentation integration series to the end;
-consult the generated ordered index instead of guessing from the number of z's.
+consult the generated ordered index and folder map for current names and paths.
 The `-late-frame-pacing.patch` immediately follows `-fixed-60-fps.patch`
 within the timing tail, before the later native numeric/surface patches.
 Earlier 144-FPS, presentation-timing, recovery and shared-presentation patches
 remain structural dependencies even though higher-FPS behavior is disabled.
 The loader orders the late-frame correction explicitly; do not rely on filename
-length. Its actual Arm-body contract is in `tests/test_frame_clock.py` using
-`tests/flip_gate_deadline.c`: a cheap frame waits, a late frame consumes an
+length. Its actual Arm-body contract is in `tests/gameplay/test_frame_clock.py` using
+`tests/gameplay/flip_gate_deadline.c`: a cheap frame waits, a late frame consumes an
 already signalled vblank without another tick, and no signal means no bypass.
 The bypass no longer requires the retired interpolation idle callback.
 `-native-flip-handoff.patch` follows the timing tail and moves the prior gate
@@ -671,7 +615,7 @@ The unverified #105 per-thread flip-gate experiment was excluded from the active
 stack; its recovery copy remains in ignored logs. The verified repair combines scoped
 prompt-read validation with the late-frame pacing correction, not thread-owner
 changes. Windows measured 53.8-54.3 FPS in weapon set versus the original ~20;
-see STATUS.md for scope, provenance and pending Mac validation.
+see docs/project/STATUS.md for scope, provenance and pending Mac validation.
 
 Create a new patch against the **correct preceding effective stack**, validate
 hunk counts/context with the complete loader and transition tests. A dry-run of
@@ -695,7 +639,7 @@ Start with this chain, then verify the current source and conditional branch:
 1. Guest call declarations/manual hooks connect lifted Xbox calls to HLE. Inspect
    runtime `titles/futureperfect/src/recomp_manual.c`, `src/hle/hle.h`, relevant
    `HLE_EXPORT`/`HLE_ORIGINAL` declarations and `tools/recomp/`. Root
-   `tools/recomp-generation.py` fingerprints these inputs. New wrapper names can
+   `tools/build/recomp-generation.py` fingerprints these inputs. New wrapper names can
    require regeneration; a host implementation body edit may only need a build.
 2. `src/hle/hle_d3d8.c` implements `D3DDevice_Swap` and Present integration. The
    observed desktop Swap path counts a guest swap (`xbox_FpsCountSwap`), arms the
@@ -724,8 +668,8 @@ be investigated by LOCAL without transmitting it to the hosted advisor.
 Common Xbox frontend: `d3d8_device.c`, `d3d8_resources.c`, `d3d8_states.c`,
 `d3d8_shaders.c`, `d3d8_screencopy.c`, `d3d8_display.c`; backend selection through
 `rhi.c`, `rhi_d3d11.c`, `rhi_vulkan.c`. Legacy Mac GL remains separate. Shared
-algorithms live in root `src/graphics/` and settings in `src/pc_debug_options.def`.
-See [shared-platform](../shared-platform.md) for adapter and GPU contract details.
+algorithms live in root `src/graphics/` and settings in `src/diagnostics/pc_debug_options.def`.
+See [shared-platform](../development/shared-platform.md) for adapter and GPU contract details.
 
 Original rendering defaults to 60 and the console interrupt clock remains 60 Hz.
 At `c932bee`, launcher opt-in native 120/144 beta settings require a compatible
@@ -734,11 +678,11 @@ Historical interpolation names and tests do not restore the retired engine. API 
 counts are not GPU completion or display scanout. To investigate slowdowns,
 compare stable/slow/stable timing, distinguish CPU work, GPU work, synchronization
 and intentional waits, then run one discriminating intervention. Issue #105 measured repeated text VM queries plus late-frame gate quantization;
-see STATUS.md for its scoped Windows acceptance.
+see docs/project/STATUS.md for its scoped Windows acceptance.
 
 ## Auto display and cinematic matte hook
 
-`zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-auto-display.patch` changes the
+`1330-auto-display.patch` changes the
 `sub_0001EFB0` cinematic matte hook to `pc_display_effective()`. It must consume
 resolved physical output dimensions. The renderer uses effective-mode presence
 for camera/UI adaptation, retaining guest output if no usable window exists,
@@ -759,11 +703,6 @@ The captured crane also uses an inclusive 639x479 last-pixel scissor. The
 crane patch's RHI hunk applies shared `pc_ui_vignette_clip` to a temporary
 rectangle before scaling; it never changes the guest-readable scissor state.
 Legacy GL uses the same helper. This prevents the amplified right/bottom gap.
-
-Online Story lower-details hook wraps original1986A0 through a separate patch.
-The combined198E20 roster renderer remains original. Only a scoped typed Story
-body draw at return199650 substitutes selected briefing text; other callers and
-connection modes run original details. New manual wrapper requires regeneration.
 
 ## Character effects update gate
 
@@ -837,32 +776,6 @@ including reversed 32-bit channels in CPU capture storage. The existing shared
 resource adapter already allocates/uploads this format. Half-float conversion
 remains supported. Legacy GL still declines the experiment as documented.
 
-A separate `*-story-character-roster.patch` wraps original15BCC0. Only the
-Arcade network reconciliation caller355EA4 is suppressed during connected
-Story pending loads and active rule10 scenes, including pre-play phase14. Other removal callers and native fallback remain original;
-new wrapper needs supported regeneration and complete-stack migration.
-
-The separate `*-story-intro-transition.patch` wraps original65C70. A connected
-Story guest cannot independently run the intro next-load builder. Host movie-end
-pending-copy caller65CDC normalizes the Local config to the occupied network
-header, increments the original start generation and uses356490 to serialize
-it reliably before658D0 copies it. Source contracts cover generation wrap and
-guest authority; runtime cinematic/handshake/visual acceptance remains pending.
-
-`*-story-cinematic-ready.patch` wraps357540 at the original loader boundary
-3D67D. During connected Story movies only, it runs the stock ready exchange
-with a scoped zero actor-loop count and cinematic eligibility flag cleared,
-then restores count/flags. The original peer state and ready packet execute;
-no player bodies are spawned into the intro. Ordinary/native calls are original.
-
-Story human teams are normalized in the existing681C0 frame adapter once a
-real entity/context/pool backlink is available, before NPC replica updates.
-OriginalD7570 can initialize remote teams before the scoped setter is eligible;
-wrapping initialization alone did not correct the four-peer snapshots. The
-frame path calls the original setter only when a validated human differs from
-team1, preserving its derived color and original local-body ownership. NPCs and
-other modes remain untouched. D7550 pump normalization covers loading too.
-
 ## Keyboard inventory selection
 
 The additive `*-keyboard-weapon-slots.patch` wraps US `sub_001BF140` after
@@ -873,14 +786,14 @@ frames without a simulation tick and expires old requests after 150 ms. Host-onl
 bindings are appended after Xbox controls and never emit controller buttons.
 SDL focus loss clears the request/rearm state; capture state is atomic across
 SDL and guest threads. Regenerate guest bodies through the supported build when
-adding/changing the wrapper, and run `tests/test_weapon_slots.py` on both hosts.
+adding/changing the wrapper, and run `tests/input/test_weapon_slots.py` on both hosts.
 
 ## Keyboard menu callback integration
 
 The additive `keyboard-settings-menu` patch blocks port-0 input dispatch during
 shared binding capture (before controller/focus guards), and limits parsed
 keyboard profiles to two sources per action. Controller profiles retain four.
-The themed editor lives in `src/pc_keyboard_menu.inc`, included by the existing
+The themed editor lives in `src/interface/pc_keyboard_menu.inc`, included by the existing
 display-menu hook. It uses verified unused callback bytes in the US executable;
 no generated C is edited. Menu construction, updates, row drawing and live saves
 remain shared between Windows and native Mac. Device illustration geometry
@@ -907,15 +820,9 @@ It accepts an existing absolute directory, rejects invalid paths, and accepts an
 empty string to clear the override. save_paths/native_paths cover UDATA aliases,
 unchanged other routes, rejection and override removal.
 
-
-Story/main merge (2026-10-23): retain all Story wrappers and main's keyboard/save
-storage patch stack. Story chooser callback IDs move to verified US INT3 padding
-0x1237b..0x1237e to avoid keyboard dispatcher collisions. Regenerate through
-the supported builder; no generated guest source is edited by hand.
-
 ## Replacement texture frame completion
 
-`patches/texture-upload-streaming.patch` calls `tsfp_texture_frame_complete` from common
+`patches/graphics/textures/0360-texture-upload-streaming.patch` calls `tsfp_texture_frame_complete` from common
 `present_resolve`, guarded by TSFP_TEXTURE_PACK. This covers the title
 `dev_Swap` path, the older `dev_Present` path and the public frame helper. Legacy GL calls
 the same shared queue pump from its own Present adapter. This completes
@@ -927,7 +834,7 @@ adapters; no generated guest edits or new renderer thread owns GPU resources.
 Replacement completion/cancellation increments a binding revision. The common
 renderer checks that revision alongside mode before draws, so textures left
 bound across frames see arrivals and queue-full retries without rebinding every
-draw. The streaming patch must follow texture-toggle.patch, which creates this
+draw. The streaming patch must follow 0350-texture-toggle.patch, which creates this
 binding helper. The texture runtime fixture compiles that actual patched helper.
 
 Keep this patch LF on disk before refreshing its index. A CRLF working copy
@@ -939,30 +846,87 @@ dev_Present alone does not run for that path. Keep the completion call in the
 common resolve function, after the skipped-Swap guard; tests execute both actual
 entry bodies and verify one completion per presented frame, none for a skip.
 
-Story/main integration (2026-10-26): preserved Story adapters with current main
-timing/render/input contracts; 15 menu/Story/guest fixture passes,139 Online/
-context/native timing passes, optimized Windows build/native checks completed.
-The transition runner retains both scenario families and input publication.
-Fresh four-peer acceptance and native Mac Online remain separate.
+Standalone translator consumers gate live-register header/declarations on the supported protocol; see [register contracts](gpr-refs.md).
 
-The separate story-level-restart patch wraps original653B0 with pc_story_network_restart. Original bodies/register and return behavior remain the fallback. Connected first-mission Story uses the reliable reload event; no generated C is edited. The additional patch is excluded from the historical Mac networking migration fixture.
+Original x87 emission now joins SIMD in the additive translator stack; see
+[independent emitter contracts](independent.md#original-x87-emission). Storage
+and FP environment remain upstream; game acceptance is tracked separately.
 
-The separate story-team-initialization patch wraps originalD7570 after its direct slot+1 team/color writes. It invokes the shared human-team adapter only after validating a real human pool slot. D7550 and the frame fallback retain their original responsibilities.
+The additive `independent-x87-fixture.patch` exports the inherited classification
+C fixture and includes production SET_LO16; it does not alter generated code.
 
-The subsequent `*-story-world-effects.patch` wraps216230/219CA0 decisions and
-FFDA0/EFBD0 leaf creation, retaining generated originals through `_gen`.
-Apply after the checkpoint patch and regenerate all wrappers before building.
-Cinematic camera semantics reuse existing D4B00/D4BE0 trace wrappers; no generated
-C edits or camera pointers are added to the wire. Historical Mac-only migration
-fixtures exclude both new patches with their absent Story prerequisites.
+The control-transfer emitter now follows x87 in the additive stack; call ABI,
+local dispatch and table-boundary contracts are in [independent.md](independent.md).
 
-The Story follow-up patch wraps `65940` for the authored completion stage builder
-and `35BD70`/`35DB60` for gameplay payload lifetime. The shared payload guard
-requires allocated human contexts and bodies before stock `35B5D0` serialization;
-config/ready/control messages remain live through Story movies/rewards. Native
-non-controls builds retain original wrappers. See the Story follow-up in
-[systems details](systems-details.md) for authority and wire contracts.
 
-The subsequent opening-body patch wraps original `A0130` after its per-world-entity
-view-mask construction. Its shared Story adapter clears only main human entity
-low16 view bits during the opening; normal culling restores them afterward.
+Ordinal81 repair/test: [next-packet ABI](kernel-objects.md#guest-next-packet-abi-prerequisite).
+
+
+Request allocation/ownership through0218: [contracts](kernel-objects.md#original-request-storage-and-initialization).
+
+## Profile early-access hooks
+
+See [Unlock Content](unlock-content.md) for the shared menu, profile extension,
+original predicate hooks and isolated validation routes.
+
+
+Original sharing bridges and ordinal80 cleanup: [contracts and checks](kernel-sharing.md).
+
+
+Original request lifetime/callback prerequisites: [contracts and ABI boundary](request-lifetime.md).
+
+
+Stage0222: [original driver-call composition and opaque stack payload](driver-call.md).
+
+
+Stage0223: [private request construction and completion delivery](transfer-completion.md).
+
+Stage0224: [host-owned FIFO request scheduling](transfer-completion.md#host-owned-request-queue).
+
+Stage0225: [StartIo callback composition and acceptance](transfer-completion.md#startio-callback-composition); maintained maps include the new provider.
+
+Stage0226: [exclusive waiting membership and device queue mirrors](transfer-completion.md#device-queue-mirrors).
+
+Stage0227: [persistent device queue lifetime and scoped scheduler APIs](transfer-completion.md#persistent-device-queue-lifetime).
+
+Stage0228: [read-only caller-owned request adoption and range lifetime](transfer-completion.md#caller-owned-request-adoption).
+
+Stages0229/0231: [events and targets](transfer-completion.md). Stage0232: [symbolic links](symbolic-links.md).
+
+Stages0233/0234: [routing](guest-paths.md), [original host storage](host-storage.md).
+
+`2080-tank-driver-controls.patch` wraps 1730E0 through shared
+`pc_tank_guest.inc`. The local keyboard/mouse scope selects signed track input
+and restores actor links after the original call; controller behavior retains
+the original camera-relative branch. See [scope guards](mounted-mouse.md).
+
+Stage0235: [original pool imports and native surface retirement](kernel-pool.md).
+
+Stage0236: [original absolute-time codec and guest calendar imports](kernel-time.md).
+
+## Native Online integration (2026-10-30)
+
+`network/2140-native-online.patch` follows the historical 2090 layout migration
+in `patch_records`. It links shared `pc_network.c` and the Cocoa process adapter
+into the native title, enables Objective-C in that directory, and defines
+`TSFP_NATIVE_NETWORK` for the guest dispatch, lobby and bot hooks. SDL3 and Cocoa
+remain host dependencies. Unsupported fixture builds retain original guest calls.
+The patch stack must be applied before generating the shared compatibility identity.
+
+Stage0237: [original counted strings and memory prefixes](kernel-strings.md).
+
+Stage0238: [original critical sections and whole native RTL retirement](kernel-rtl.md).
+
+Stage0239: [original checked narrow guest formatting](guest-printf.md).
+
+Stage0240: [original numeric conversions](guest-numbers.md).
+
+Crash model traversal instrumentation at US guest `0x583E0` is introduced by
+`patches/diagnostics/2140-model-tree-trace.patch`. The manual wrapper preserves
+original execution and records bounded model/node/depth history through the shared
+capture adapters. It is diagnostic instrumentation, not a fix for #410. See
+[crash evidence](crash-evidence.md) for capture scope and platform limits.
+
+Allocation-history hook details: [crash evidence](crash-evidence.md). The shared
+allocator observer is diagnostic-only; backing allocation ownership and guest
+model suballocation lifetime remain distinct concepts.

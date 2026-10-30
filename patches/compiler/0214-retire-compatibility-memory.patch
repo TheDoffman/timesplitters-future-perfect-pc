@@ -1,0 +1,486 @@
+diff --git a/src/platform/win32_compat.c b/src/platform/win32_compat.c
+--- a/src/platform/win32_compat.c
++++ b/src/platform/win32_compat.c
+@@ -10,7 +10,7 @@
+ 
+ #if !defined(_WIN32)
+ 
+-/* Enable memfd_create, MAP_FIXED_NOREPLACE, timegm. Must precede all #includes. */
++/* Enable MAP_FIXED_NOREPLACE and timegm before system headers. */
+ #define _GNU_SOURCE
+ 
+ #include "win32_compat.h"
+@@ -27,12 +27,9 @@
+ #include <sched.h>
+ #include <fenv.h>
+ #include <sys/mman.h>
++#include <sys/stat.h>
+ #if defined(__APPLE__)
+-#include <sys/sysctl.h>
+-#include <sys/stat.h>
+ #include <mach/mach.h>
+-#else
+-#include <sys/sysinfo.h>
+ #endif
+ 
+ /* ===================================================================== */
+@@ -248,7 +245,7 @@
+ /* ===================================================================== */
+ 
+ typedef enum { K_EVENT, K_SEM, K_MUTEX, K_THREAD, K_TIMER, K_HEAP,
+-               K_FILEMAP, K_FILE, K_WAITABLE_TIMER } w32_kind;
++               K_FILE, K_WAITABLE_TIMER } w32_kind;
+ 
+ #define W32_MAX_APC 16
+ 
+@@ -297,9 +294,8 @@
+     uint64_t        deadline_ns;
+     uint64_t        period_ns;
+ 
+-    /* file mapping / fd-backed file handle */
++    /* fd-backed file handle */
+     int             fd;
+-    SIZE_T          map_size;
+     char           *file_path;
+ } w32_object;
+ 
+@@ -341,8 +337,6 @@
+     if (o->kind == K_FILE) {
+         if (o->fd >= 0) close(o->fd);
+         free(o->file_path);
+-    } else if (o->kind == K_FILEMAP) {
+-        if (o->fd >= 0) close(o->fd);
+     }
+     pthread_mutex_destroy(&o->lock);
+     pthread_cond_destroy(&o->cond);
+@@ -1562,151 +1556,6 @@
+     return out;
+ }
+ 
+-/* ===================================================================== */
+-/* File mapping (memfd-backed) -- true aliased mirror views              */
+-/* ===================================================================== */
+-
+-/* Registry of active views: UnmapViewOfFile takes no length, so we must
+- * recover the mapping length here for munmap. */
+-typedef struct { void *addr; size_t len; } w32_view;
+-static w32_view        s_views[512];
+-static pthread_mutex_t s_views_lock = PTHREAD_MUTEX_INITIALIZER;
+-
+-static void view_register(void *addr, size_t len)
+-{
+-    pthread_mutex_lock(&s_views_lock);
+-    for (int i = 0; i < 512; i++)
+-        if (!s_views[i].addr) { s_views[i].addr = addr; s_views[i].len = len; break; }
+-    pthread_mutex_unlock(&s_views_lock);
+-}
+-
+-static size_t view_take(const void *addr)
+-{
+-    size_t len = 0;
+-    pthread_mutex_lock(&s_views_lock);
+-    for (int i = 0; i < 512; i++)
+-        if (s_views[i].addr == addr) { len = s_views[i].len; s_views[i].addr = NULL; break; }
+-    pthread_mutex_unlock(&s_views_lock);
+-    return len;
+-}
+-
+-/* An unnamed file descriptor that ftruncate and mmap both accept. Linux has
+- * memfd_create for this; elsewhere an immediately-unlinked temp file does. */
+-static int anon_map_fd(const char *name)
+-{
+-#if defined(__APPLE__)
+-    /* A real private backing file is required: descriptor 0 is stdin, not
+-     * an anonymous mapping. Keep an owned descriptor after fclose unlinks
+-     * the temporary file; all views then share these same backing pages. */
+-    (void)name;
+-    FILE *backing = tmpfile();
+-    if (!backing) return -1;
+-    int fd = dup(fileno(backing));
+-    int saved_errno = errno;
+-    fclose(backing);
+-    if (fd < 0) errno = saved_errno;
+-    return fd;
+-#else
+-    return memfd_create(name ? name : "xbox_map", 0);
+-#endif
+-}
+-
+-HANDLE CreateFileMappingA(HANDLE file, LPSECURITY_ATTRIBUTES sa, DWORD protect,
+-                          DWORD maxSizeHigh, DWORD maxSizeLow, LPCSTR name)
+-{
+-    (void)file; (void)sa; (void)protect;
+-    SIZE_T size = ((SIZE_T)maxSizeHigh << 32) | maxSizeLow;
+-    if (size == 0) { SetLastError(ERROR_INVALID_PARAMETER); return NULL; }
+-
+-    int fd = anon_map_fd(name);
+-    if (fd < 0) { SetLastError(ERROR_NOT_ENOUGH_MEMORY); return NULL; }
+-    if (ftruncate(fd, (off_t)size) != 0) {
+-        close(fd);
+-        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+-        return NULL;
+-    }
+-
+-    w32_object *o = obj_alloc(K_FILEMAP);
+-    o->fd       = fd;
+-    o->map_size = size;
+-    return (HANDLE)o;
+-}
+-
+-HANDLE CreateFileMappingW(HANDLE file, LPSECURITY_ATTRIBUTES sa, DWORD protect,
+-                          DWORD maxSizeHigh, DWORD maxSizeLow, LPCWSTR name)
+-{
+-    (void)name;
+-    return CreateFileMappingA(file, sa, protect, maxSizeHigh, maxSizeLow, NULL);
+-}
+-
+-LPVOID MapViewOfFileEx(HANDLE mapping, DWORD access, DWORD offHigh, DWORD offLow,
+-                       SIZE_T count, LPVOID baseAddr)
+-{
+-    w32_object *o = (w32_object *)mapping;
+-    if (!o || o->kind != K_FILEMAP) { SetLastError(ERROR_INVALID_HANDLE); return NULL; }
+-
+-    off_t  off = ((off_t)offHigh << 32) | offLow;
+-    SIZE_T len = count ? count : (o->map_size - (SIZE_T)off);
+-    int prot   = PROT_READ | ((access != FILE_MAP_READ) ? PROT_WRITE : 0);
+-    int flags  = MAP_SHARED;
+-
+-    /* A requested address must either be honoured exactly or refused.
+-     *
+-     * This used to pass bare MAP_FIXED, which does the opposite of what the
+-     * caller wants: it silently unmaps whatever already lives there and
+-     * reports success. Windows fails instead, and the runtime depends on that
+-     * failing -- xbox_memory_layout.c tries a list of preferred bases for the
+-     * 64 MB view and checks which one it got, and maps up to 28 mirror views
+-     * plus the contiguous, tiled, NV2A, MCPX and flash apertures at fixed
+-     * offsets, printing "Mirror N: FAILED" when one cannot be placed. With
+-     * MAP_FIXED those never fail; they quietly destroy a live mapping and
+-     * carry on, and the damage surfaces later as memory that changed by
+-     * itself.
+-     *
+-     * MAP_FIXED_NOREPLACE (Linux 4.17+) asks for exactly this. Without it,
+-     * pass the address as a hint only and check what came back, which never
+-     * destroys anything -- the cost is that a hint may be ignored, and the
+-     * check below turns that into the same clean failure. */
+-#if defined(MAP_FIXED_NOREPLACE)
+-    if (baseAddr) flags |= MAP_FIXED_NOREPLACE;
+-#endif
+-
+-#ifdef __APPLE__
+-    if (arena_contains(baseAddr, len)) {
+-        return arena_map(baseAddr, len, prot, MAP_SHARED, o->fd, off);
+-    }
+-#endif
+-    void *p = mmap(baseAddr, len, prot, flags, o->fd, off);
+-    if (p == MAP_FAILED) { SetLastError(ERROR_NOT_ENOUGH_MEMORY); return NULL; }
+-    if (baseAddr && p != baseAddr) {
+-        /* The range was taken. An older kernel ignores MAP_FIXED_NOREPLACE
+-         * and places it elsewhere, so this check is what makes the behaviour
+-         * the same on both. */
+-        munmap(p, len);
+-        SetLastError(ERROR_INVALID_ADDRESS);
+-        return NULL;
+-    }
+-    view_register(p, len);
+-    return p;
+-}
+-
+-LPVOID MapViewOfFile(HANDLE mapping, DWORD access, DWORD offHigh, DWORD offLow, SIZE_T count)
+-{
+-    return MapViewOfFileEx(mapping, access, offHigh, offLow, count, NULL);
+-}
+-
+-BOOL UnmapViewOfFile(LPCVOID baseAddr)
+-{
+-#ifdef __APPLE__
+-    /* The project owner retains lengths and failed cleanup. Do not consume an
+-     * inherited registry entry before knowing whether restoration succeeded. */
+-    if (arena_contains(baseAddr, 0)) return arena_unmap(baseAddr);
+-#endif
+-    size_t len = view_take(baseAddr);
+-    if (len == 0) return FALSE;
+-    return munmap((void *)baseAddr, len) == 0;
+-}
+-
+ #ifdef __APPLE__
+ /* Project MMIO forwarding. Lookup remains allocation/lock-free and immutable
+  * between quiescent setup and teardown. Both backing views have owned lengths. */
+@@ -1716,47 +1565,6 @@
+ { return tsfp_guest_mmio_alias(address,size); }
+ /* End project MMIO forwarding. */
+ #endif
+-
+-/* ===================================================================== */
+-/* VirtualQuery                                                           */
+-/* ===================================================================== */
+-
+-SIZE_T VirtualQuery(LPCVOID address, PMEMORY_BASIC_INFORMATION buffer, SIZE_T length)
+-{
+-    if (!buffer || length < sizeof(*buffer)) return 0;
+-    memset(buffer, 0, sizeof(*buffer));
+-    buffer->BaseAddress    = (PVOID)address;
+-    buffer->AllocationBase = NULL;       /* != address -> freed via _aligned_free */
+-    buffer->RegionSize     = 0x1000;
+-    buffer->State          = MEM_COMMIT;
+-    buffer->Protect        = PAGE_READWRITE;
+-    buffer->Type           = 0x20000;    /* MEM_PRIVATE */
+-    return sizeof(*buffer);
+-}
+-
+-BOOL GlobalMemoryStatusEx(LPMEMORYSTATUSEX b)
+-{
+-#if defined(__APPLE__)
+-    /* TODO: Darwin has no sysinfo(2): physical memory comes from sysctl, the free
+-     * page count from the Mach VM statistics, swap from vm.swapusage. */
+-#else
+-    struct sysinfo si;
+-    if (!b) return FALSE;
+-    if (sysinfo(&si) != 0) return FALSE;
+-
+-    ULONGLONG unit = si.mem_unit ? si.mem_unit : 1;
+-    b->ullTotalPhys     = (ULONGLONG)si.totalram  * unit;
+-    b->ullAvailPhys     = (ULONGLONG)si.freeram   * unit;
+-    b->ullTotalPageFile = b->ullTotalPhys + (ULONGLONG)si.totalswap * unit;
+-    b->ullAvailPageFile = b->ullAvailPhys + (ULONGLONG)si.freeswap  * unit;
+-#endif
+-    b->ullTotalVirtual  = b->ullTotalPhys;
+-    b->ullAvailVirtual  = b->ullAvailPhys;
+-    b->ullAvailExtendedVirtual = 0;
+-    b->dwMemoryLoad = b->ullTotalPhys
+-        ? (DWORD)(100 - (b->ullAvailPhys * 100 / b->ullTotalPhys)) : 0;
+-    return TRUE;
+-}
+ 
+ /* ===================================================================== */
+ /* Aligned allocation                                                     */
+diff --git a/src/platform/win32_compat.h b/src/platform/win32_compat.h
+--- a/src/platform/win32_compat.h
++++ b/src/platform/win32_compat.h
+@@ -471,7 +471,7 @@
+ #define EXCEPTION_FLT_INEXACT_RESULT     0xC000008Fu
+ #define EXCEPTION_FLT_DENORMAL_OPERAND   0xC000008Du
+ 
+-/* ---- Memory query ----------------------------------------------------- */
++/* Native memory record ABI used by project Nt adapters. */
+ typedef struct _MEMORY_BASIC_INFORMATION {
+     PVOID  BaseAddress;
+     PVOID  AllocationBase;
+@@ -481,37 +481,6 @@
+     DWORD  Protect;
+     DWORD  Type;
+ } MEMORY_BASIC_INFORMATION, *PMEMORY_BASIC_INFORMATION;
+-SIZE_T VirtualQuery(LPCVOID address, PMEMORY_BASIC_INFORMATION buffer, SIZE_T length);
+-
+-typedef struct _MEMORYSTATUSEX {
+-    DWORD     dwLength;
+-    DWORD     dwMemoryLoad;
+-    ULONGLONG ullTotalPhys;
+-    ULONGLONG ullAvailPhys;
+-    ULONGLONG ullTotalPageFile;
+-    ULONGLONG ullAvailPageFile;
+-    ULONGLONG ullTotalVirtual;
+-    ULONGLONG ullAvailVirtual;
+-    ULONGLONG ullAvailExtendedVirtual;
+-} MEMORYSTATUSEX, *LPMEMORYSTATUSEX;
+-BOOL GlobalMemoryStatusEx(LPMEMORYSTATUSEX buffer);
+-
+-/* ---- File mapping (memfd-backed; gives true aliased mirror views) ----- */
+-#define FILE_MAP_COPY        0x00000001u
+-#define FILE_MAP_WRITE       0x00000002u
+-#define FILE_MAP_READ        0x00000004u
+-#define FILE_MAP_ALL_ACCESS  0x000F001Fu
+-HANDLE CreateFileMappingA(HANDLE file, LPSECURITY_ATTRIBUTES sa, DWORD protect,
+-                          DWORD maxSizeHigh, DWORD maxSizeLow, LPCSTR name);
+-HANDLE CreateFileMappingW(HANDLE file, LPSECURITY_ATTRIBUTES sa, DWORD protect,
+-                          DWORD maxSizeHigh, DWORD maxSizeLow, LPCWSTR name);
+-LPVOID MapViewOfFile(HANDLE mapping, DWORD access,
+-                     DWORD offHigh, DWORD offLow, SIZE_T count);
+-LPVOID MapViewOfFileEx(HANDLE mapping, DWORD access,
+-                       DWORD offHigh, DWORD offLow, SIZE_T count, LPVOID baseAddr);
+-BOOL   UnmapViewOfFile(LPCVOID baseAddr);
+-#define CreateFileMapping CreateFileMappingA
+-
+ #ifdef __APPLE__
+ /* Own one address-space reservation; fixed maps may replace only unused pages
+  * within it. This never overwrites unrelated host allocations. */
+diff --git a/src/kernel/xbox_memory_layout.h b/src/kernel/xbox_memory_layout.h
+--- a/src/kernel/xbox_memory_layout.h
++++ b/src/kernel/xbox_memory_layout.h
+@@ -1,22 +1,11 @@
+-/**
+- * Xbox Memory Layout Compatibility
+- *
+- * The Xbox has 64MB of unified memory shared between CPU and GPU.
+- * Memory is identity-mapped (physical == virtual for most of it).
+- * Game code and data are linked to specific address ranges which vary
+- * per game. Section addresses are parsed dynamically from the XBE header
+- * at runtime, so this module works with ANY Xbox game.
+- *
+- * On Windows, we:
+- * 1. Create a 64MB file mapping (CreateFileMapping)
+- * 2. Map the base view + 28 mirror views at 64MB intervals
+- * 3. Parse the XBE section table and copy sections to their Xbox VAs
+- * 4. Set up simulated stack, heap, TIB, and kernel data area
+- *
+- * The mirror views ensure Xbox RAM wrapping works correctly: the Xbox
+- * memory controller uses a 26-bit address bus, so ALL addresses wrap
+- * modulo 64MB. File mapping views backed by the same section give us
+- * true aliases where writes at one address are visible at all mirrors.
++/* Guest memory integration for the supported title.
++ * Project providers own layout construction, image validation/loading, guest
++ * allocation and thread storage. This header retains the runtime-facing ABI.
++ * Guest addresses are offsets from g_xbox_mem_offset; RAM mirrors alias their
++ * backing, while physical storage and its tiled aliases use a separate store.
++ * Published storage survives until process exit: shutdown is not proof that
++ * every device/guest worker has stopped. See the project guest-host-mappings
++ * guide for ownership, rollback and platform validation contracts.
+  */
+ 
+ #ifndef XBOX_MEMORY_LAYOUT_H
+diff --git a/src/kernel/xbox_memory_layout.c b/src/kernel/xbox_memory_layout.c
+--- a/src/kernel/xbox_memory_layout.c
++++ b/src/kernel/xbox_memory_layout.c
+@@ -119,18 +119,6 @@
+ #define XBOX_FLASH_BASE 0xFF000000u
+ #define XBOX_FLASH_SIZE (1u * 1024u * 1024u)
+ static void *g_flash_memory = NULL;
+-/* How much of the tiled aperture can exist.
+- *
+- * Two ceilings, both below the mapped RAM size once that is large:
+- *
+- *   - it starts at 0xF0000000 in a 32-bit guest address space, so it can
+- *     never reach past 0x100000000; and
+- *   - the NV2A register aperture sits at 0xFD000000, which is where the
+- *     window really ends on hardware.
+- *
+- * Asking for the full RAM size overlapped both and MapViewOfFileEx failed
+- * with ERROR_INVALID_ADDRESS -- a warning at startup and then a fault on the
+- * title's first surface write, with nothing connecting the two. */
+ /* How much guest address space is mapped.
+  *
+  * For anything that dereferences an address it read out of guest memory --
+diff --git a/src/kernel/README.md b/src/kernel/README.md
+--- a/src/kernel/README.md
++++ b/src/kernel/README.md
+@@ -10,7 +10,7 @@
+ |------|-----|---------|
+ | `kernel.h` | 829 | Master public header — all types, constants, and function prototypes |
+ | `xbox_memory_layout.h` | 204 | Memory layout constants and API |
+-| `xbox_memory_layout.c` | 534 | Memory mapping (CreateFileMapping + 28 mirror views) |
++| `xbox_memory_layout.c` | 534 | Project guest mapping integration |
+ | `kernel_bridge.c` | 8,390 | Core dispatcher — thunk table, ICALL resolution, all 371 per-ordinal bridges, kernel data exports |
+ | `kernel_file.c` | 834 | File I/O — NtCreateFile, NtReadFile, path translation |
+ | `kernel_thread.c` | 344 | Threading — PsCreateSystemThreadEx, thread priorities |
+@@ -26,83 +26,40 @@
+ | `kernel_pool.c` | 49 | Pool memory allocator |
+ | `kernel_xbox.c` | 121 | Misc Xbox APIs (XeLoadSection, etc.) |
+ 
+-## Memory Layout
++## Memory layout integration
+ 
+-The Xbox has 64 MB of unified RAM. We reproduce the exact address layout using `CreateFileMapping` + `MapViewOfFileEx`:
++The runtime delegates construction to project `guest_map_layout`, shared backing
++ownership to `shared_views`, and native arena/MMIO placement to `owned_arena` and
++`guest_arena_service`. These providers live in the project's `src/runtime/`,
++with OS adapters in `src/native/`. Windows uses real host sections; native Mac
++uses a reserved arena and shared backing views. Generic POSIX emulation of the
++Windows file-mapping API is no longer part of this runtime.
+ 
+-```
+-Xbox VA Range          Purpose                  Size
+-─────────────────────────────────────────────────────
+-0x00010000-0x00010BCC  XBE header               ~3 KB
+-0x00011000-0x002BBFFF  .text (code)             2.73 MB
+-0x0036B7C0-0x003B2363  .rdata (constants)       283 KB
+-0x003B2360-0x0076FFFF  .data (globals + BSS)    3.8 MB
+-0x00700000-0x0073FFFF  RW data copy             256 KB
+-0x00740000-0x0077FFFF  Kernel data exports      256 KB
+-0x00760000-0x0076FFFF  TLS area                 64 KB
+-0x00780000-0x00F7FFFF  Stack (8 MB, grows down) 8 MB
+-0x00F80000-0x03FFFFFF  Heap (bump allocator)    ~49 MB
+-```
++The supported title uses 64 MiB RAM by default. Optional map-size configuration
++does not redefine reported RAM. Up to 28 RAM mirrors alias the main RAM backing;
++physical storage has a separate backing with tiled/high aliases when available.
++The tiled extent reports only the mapped portion. Image sections are validated
++from the supported XBE before loading; callers do not hard-code section layouts
++or change headers to admit another title. Broader title compatibility is not
++established by these interfaces.
+ 
+-### Why CreateFileMapping?
++Initialization publishes the layout before workers can use it. Unpublished
++failure cleanup withdraws public pointers and retains any ownership whose
++release failed. Published maps remain through process exit until whole-runtime
++worker quiescence can be established. Bounded ack-worker waits do not establish
++that broader condition. Guest allocation and thread-storage providers retain
++their separate ownership and ABI contracts.
+ 
+-The Xbox has **mirror regions** — the same physical memory appears at multiple virtual addresses (26-bit address bus wrapping). `CreateFileMapping` gives us true aliases where writes through one address are instantly visible at all mirrors. `VirtualAlloc` would give separate copies.
++Use `xbox_GetMemoryBase` / `xbox_GetMemoryOffset` for host translation,
++`xbox_GetMappedSize` for the primary map, and `xbox_TiledApertureSize` for the
++actual tiled extent. Guest heap/free, reservations, Mm/Nt calls and thread
++construction route to project services. An arbitrary host pointer or an address
++in a different alias is not an allocation ownership token.
+ 
+-We create 28 mirror views covering 1.75 GB of address space:
+-
+-```c
+-// The core mapping
+-HANDLE h = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, 64*1024*1024, NULL);
+-
+-// Primary view at Xbox base (0x10000000 on host)
+-MapViewOfFileEx(h, FILE_MAP_ALL_ACCESS, 0, 0, XBOX_TOTAL_RAM, target_base);
+-
+-// Mirror views every 64 MB
+-for (int i = 1; i < 28; i++)
+-    MapViewOfFileEx(h, FILE_MAP_ALL_ACCESS, 0, 0, XBOX_TOTAL_RAM, target_base + i * 64MB);
+-```
+-
+-### Global State
+-
+-```c
+-// Defined in xbox_memory_layout.c, used everywhere
+-extern ptrdiff_t g_xbox_mem_offset;  // Add to Xbox VA → get native pointer
+-
+-// Simulated x86 registers (the register model)
+-extern uint32_t g_eax, g_ecx, g_edx, g_esp;  // Volatile
+-extern uint32_t g_ebx, g_esi, g_edi;          // Callee-saved
+-extern uint32_t g_seh_ebp;                     // SEH frame pointer
+-```
+-
+-### API
+-
+-```c
+-// Initialize — call FIRST before anything else
+-BOOL xbox_MemoryLayoutInit(const void *xbe_data, size_t xbe_size);
+-void xbox_MemoryLayoutShutdown(void);
+-
+-// Query
+-void     *xbox_GetMemoryBase(void);    // Native pointer to Xbox VA 0
+-ptrdiff_t xbox_GetMemoryOffset(void);  // g_xbox_mem_offset value
+-BOOL      xbox_IsXboxAddress(uintptr_t address);
+-
+-// Heap (bump allocator, no free)
+-uint32_t xbox_HeapAlloc(uint32_t size, uint32_t alignment);
+-void     xbox_HeapFree(uint32_t xbox_va);  // No-op currently
+-```
+-
+-### Customizing for Your Game
+-
+-Edit `xbox_memory_layout.h` to match your XBE's section layout:
+-
+-```c
+-#define XBOX_TEXT_VA       0x00011000   // From XBE section headers
+-#define XBOX_TEXT_SIZE     2863616      // .text section size
+-#define XBOX_RDATA_VA      0x0036B7C0   // .rdata section
+-// ... etc
+-```
+-
+-The `xbe_parser` tool outputs these values for any XBE.
++The maintained project guide is `docs/agent-context/guest-host-mappings.md`.
++Measured build/game results belong in `docs/project/STATUS.md`; Windows gameplay
++does not establish native Mac title support. The original toolkit snapshot is
++still part of preparation until the broader independence work is complete.
+ 
+ ## Kernel Thunk Table
+ 

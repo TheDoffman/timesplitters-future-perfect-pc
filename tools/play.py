@@ -13,7 +13,7 @@ def main():
         # Online/LAN identities describe the data used at build time. Refuse
         # stale content instead of letting a changed map use that old identity.
         root = Path(__file__).resolve().parents[1]
-        subprocess.run([sys.executable, str(root / 'tools/network-identity.py'),
+        subprocess.run([sys.executable, str(root / 'tools/build/network-identity.py'),
                         '--verify', '--executable', str(executable),
                         '--game', os.environ['RECOMP_GAME_DIR']], check=True)
     log_directory = Path(sys.argv[2]).resolve()

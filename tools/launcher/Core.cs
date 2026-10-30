@@ -255,7 +255,7 @@ namespace TimeSplitters.Launcher
             }
         }
         public static bool Recover(string root)
-        { return RecoverScope(root, false) | RecoverScope(root, false, true); }
+        { return SaveBackups.Recover(root) | RecoverScope(root, false) | RecoverScope(root, false, true); }
         public static bool RecoverLauncher(string root)
         { return RecoverScope(root, true); }
         static bool RecoverScope(string root, bool launcher, bool repair = false)
@@ -294,6 +294,7 @@ namespace TimeSplitters.Launcher
         {
             Require(!GameRunning(), "Close the game before updating or restoring a release.");
             RecoverScope(root, launcher, repair);
+            if(!launcher)SaveBackups.BeforeGameChange(root);
             string relative = launcher ? ".launcher/self-transaction" : repair ? ".launcher/repair-transaction" : ".launcher/transaction";
             string rollback = launcher ? ".launcher/self-rollback" : repair ? ".launcher/repair-rollback" : ".launcher/rollback";
             string transaction = PathIn(root, relative);

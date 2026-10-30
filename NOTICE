@@ -20,12 +20,19 @@ Its GPL-3.0 license, original xboxrecomp MIT notice, third-party attribution,
 LGPL-2.1 text and contributor credits are preserved in LICENSES/ts3FPrecomp.
 Those components retain their original notices and licenses; this project does
 not replace them or claim their authorship. See LICENSES/README.md for details.
+The complete pristine runtime source at that revision is also preserved under
+vendor/ts3FPrecomp/source and reconstructed locally by tools/prepare-runtime.py.
 
 Launcher/game icon lettering attribution remains in
 tools/launcher/GameMonogram.NOTICE.txt. External dependencies, including SDL,
 FFmpeg, Python/Tcl/Tk and bundled Online dependencies, retain their own terms.
 Keep the applicable license and attribution files with redistributed code and
 builds. Public game packages include them in Licenses and Support.
+
+The project-owned XBE reader uses the CC0-1.0 kernel export declarations from
+XboxDev/nxdk, Copyright 2017 Stefan Schmidt, commit
+03acd1415f7ccc3127bcfb629224aacdd95d783c. The unchanged SPDX-credited data is
+in tools/xbe_kernel_exports.def; provenance is in docs/independent-runtime.md.
 
 Original game material
 ----------------------

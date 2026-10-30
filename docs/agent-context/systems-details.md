@@ -1,3 +1,12 @@
+# Main integration - 2026-10-30
+
+The Story series now lives in src/network with numbered patches. Main's native
+network guards and the existing Story Windows scope are retained. Story menu
+callbacks use verified US INT3 bytes 123C9..123CC; Unlock Content retains
+1237B..1237E. The original-entry byte contract and settings fixture cover the
+collision repair. Original camouflage fixtures seed SIMD constants emitted by
+main's translator; their host/guest opacity and material assertions are unchanged.
+
 # Subsystem contracts and diagnostics
 
 Splitter camouflage (2026-10-28): repeat capture has host kind78 slot7/8
@@ -253,7 +262,7 @@ Original-US and source contracts bind the intended caller and shared-team value;
 The latest Windows four-peer probe confirms all four human teams are1 on every peer.
 
 NPC pose replication uses the shared numeric `PcCharacterPose` model in
-`src/pc_character_pose.h`. Bot snapshots retain their existing binary layout;
+`src/network/pc_character_pose.h`. Bot snapshots retain their existing binary layout;
 the shared collector/validator and `pc_character_pose_present` handle primary
 clips, crossfades, overlays and blend channels for both bot and Story replicas.
 The internal Story SNP2 snapshot is372 bytes, including optional pose and hit
@@ -494,7 +503,7 @@ runtime activation, ownership and full-view behavior still require validation.
 These host hooks require the Windows Online adapter; shared source provides
 inert native fallback until MAC-013 supplies native XNet transport/session mode.
 
-Story host controls live in `src/pc_story_lobby.inc`, dispatched by
+Story host controls live in `src/network/pc_story_lobby.inc`, dispatched by
 `pc_display_menu_lookup`. Only connected Story host role 1/lobby phase 11
 overrides the original host tick (descriptor `0x004E99C4`). Y opens the original
 Story level builder with scoped frontend-mode changes. Selection

@@ -1,0 +1,1123 @@
+--- a/tools/recomp/translator.py
++++ b/tools/recomp/translator.py
+@@ -1,1104 +1,6 @@
+-"""
+-Function-level x86 → C translator.
+-
+-For each function:
+-1. Read raw bytes from XBE
+-2. Disassemble with Capstone
+-3. Build basic blocks
+-4. Lift each block to C statements
+-5. Generate a complete C function
+-
+-Produces compilable C code using recomp_types.h macros.
+-"""
+-
+-import bisect
+-import json
+-import glob
+-import os
+-import struct
+-
+-# Import the functions, not the VA constants: configure_from_xbe() rebinds those
+-# at startup, so a by-value import would freeze the fallback layout.
+-from .config import va_to_file_offset, is_code_address
+-from . import config as _config
+-from .disasm import Disassembler
+-from .lifter import (Lifter, lift_basic_block, detect_seh_helpers,
+-                     _RESULT_SNAPSHOT_SETTERS,
+-                     detect_setjmp_helpers, _func_ident, _operand_width)
+-from translation_bits import constant_noop as _constant_bit_noop
+-import translation_strings as _project_strings
+-import translation_batch as _project_batch
+-import translation_discovery as _project_discovery
+-
+-
+-def _merge_flag_states(states):
+-    """Merge comparable snapshots without requiring identical source operands.
+-
+-    CMP/TEST save their operands into function-local _fa/_fb/_fas/_fbs at
+-    runtime. A shared consumer can use whichever predecessor executed. Keep
+-    operation and width equal because sign/parity handling depends on them;
+-    arithmetic states still reconstruct operands and cannot use this merge.
+-    """
+-    if not states or any(not state or not state[0] for state in states):
+-        return None
+-    first = states[0]
+-    if all(state == first for state in states[1:]):
+-        return first
+-    if first[0] in ("cmp", "test") and len(first[1]) == 2:
+-        width = _operand_width(first[1][0]) or _operand_width(first[1][1])
+-        for kind, ops in states[1:]:
+-            if kind != first[0] or len(ops) != 2:
+-                return None
+-            if (_operand_width(ops[0]) or _operand_width(ops[1])) != width:
+-                return None
+-        return first
+-    # SSE compares already save their runtime operands in _fca/_fcb. Just
+-    # as for CMP/TEST above, different source registers at a join do not
+-    # make that snapshot ambiguous. All four forms set the same CF/ZF/PF
+-    # conditions; float values are exactly representable in the double
+-    # snapshots. Reject mixed integer/x87/unknown states as before.
+-    # Future Perfect's pickup tick joins COMISS xmm3,xmm0 and xmm0,xmm1
+-    # at 0x000C17D9. Losing this state made its radius rejection constant 0.
+-    sse_compares = {"comiss", "ucomiss", "comisd", "ucomisd"}
+-    if all(kind in sse_compares and len(ops) == 2 for kind, ops in states):
+-        return first
+-    return _merge_zero_flag(states)
+-
+-
+-def _merge_zero_flag(states):
+-    """Predecessors that disagree on the operation but not on the zero flag.
+-
+-    `sub eax, ecx` reaching a loop head by fall-through and `dec eax` reaching
+-    it by the back edge are different setters, so the state cannot be
+-    inherited as itself -- yet both leave ZF as (eax == 0), which is the whole
+-    of what a je or jne there is asking.
+-
+-    Unlike the CMP/TEST merge above, these reconstruct their operands rather
+-    than reading a snapshot, so the merge only survives when every predecessor
+-    names the same destination register. The name carries the width, so
+-    `dec al` and `sub eax, ecx` do not merge.
+-
+-    The marker is deliberately narrow: only ZF is answerable from it, and
+-    _make_condition refuses everything else.
+-    """
+-    from .lifter import ZF_FROM_DEST
+-    dests = set()
+-    for setter, ops in states:
+-        if setter not in ZF_FROM_DEST or not ops:
+-            return None
+-        op = ops[0]
+-        # disasm.Operand, not a capstone operand: .type is the string "reg".
+-        if getattr(op, "type", None) != "reg" or not op.reg:
+-            return None
+-        dests.add(op.reg)
+-    if len(dests) != 1:
+-        return None
+-    return ("__zf_from_dest", [states[0][1][0]])
+-
+-
+-def _before_terminator(stmts):
+-    """Index of the first trailing statement that leaves the block.
+-
+-    A basic block transfers control only at its end, so anything that has to
+-    happen on the way out goes before that run of statements -- the `goto`,
+-    the conditional `goto`, the `return`, or a conditional that returns.
+-    """
+-    k = len(stmts)
+-    while k > 0:
+-        s = stmts[k - 1].lstrip()
+-        leaves = (s.startswith("goto ") or s.startswith("return")
+-                  or "return;" in s
+-                  or (s.startswith("if (") and "goto" in s))
+-        if not leaves:
+-            break
+-        k -= 1
+-    return k
+-
+-
+-def _incoming_flag_state(sources, known, is_entry):
+-    """The flag state a block inherits, or None when it cannot be known.
+-
+-    A predecessor with no computed state yet makes the result unknown rather
+-    than guessed: that costs a fallback condition and never a wrong one.
+-    """
+-    if is_entry or not sources:
+-        return None
+-    if not all(p in known for p in sources):
+-        return None
+-    states = [known[p] for p in sources]
+-    merged = _merge_flag_states(states)
+-    if merged is not None:
+-        return merged
+-    # A CMP/TEST or width mismatch cannot share all flags, but every edge
+-    # can still provide ZF. Mark that fact explicitly so JNE negates ZF;
+-    # the untyped fallback treats every condition as the same boolean.
+-    from .lifter import zf_expression
+-    if all(zf_expression(state) is not None for state in states):
+-        return ("__zf_snapshot", [])
+-    return None
+-
+-
+ from tools.xbe_parser.xbe_parser import XBEParser as _ProjectXBEParser
+-from generation_output import write_if_changed
+-
+-
+-def _fixup_icall_esp_save(lines):
+-    """
+-    Post-process generated C lines to insert _icall_esp save points.
+-
+-    When RECOMP_ICALL_SAFE is used, we need to save g_esp BEFORE any
+-    args are pushed so the macro can restore it on lookup failure.
+-
+-    Scans backwards from each RECOMP_ICALL_SAFE line to find consecutive
+-    PUSH32 lines (the arg pushes), then inserts a save before the first.
+-
+-    A push of a callee-saved register can be either the function saving it or
+-    an argument that happens to live in it, and the two need telling apart:
+-    absorbing a save makes the failure path rewind g_esp over the function's
+-    own frame, and the epilogue then pops its registers from too high -- silent
+-    caller corruption. Leaving an argument behind is the mirror image, and
+-    shifts the epilogue the other way.
+-
+-    A register the function never pops is never restored, so every push of it
+-    is an argument. For one it does pop, position decides: **the first push of
+-    that register is the save, and any later push of it is an argument.** A
+-    prologue saves before it does anything else, so the earliest push is the
+-    one the epilogue answers; a second push of the same register is the
+-    function passing its value along.
+-
+-    Two shapes from real titles pin this down, and each defeats one of the
+-    simpler rules tried before:
+-
+-      sub_00135265  edi saved in the prologue, pushed again as an argument to
+-                    a virtual call, popped once. "A register the function pops
+-                    anywhere ends the run" stops at the *argument* push and
+-                    leaves it outside the rewind window, which shifts the
+-                    epilogue and returns esi and edi swapped.
+-
+-      sub_000EC240  esi saved once, passed as an argument twice more, popped in
+-                    each of two epilogues: three pushes against two pops.
+-                    Comparing push and pop *counts* reads that as "more pushes
+-                    than pops, therefore an argument", swallows the save into
+-                    the argument run, and a failed lookup rewinds g_esp past
+-                    the saved esi so the epilogue pops the wrong slot. The
+-                    caller gets back a corrupt `this` and faults several frames
+-                    later -- the silent corruption this exists to prevent.
+-
+-    First-push-is-the-save satisfies both, because in both the save is simply
+-    the earliest one.
+-
+-    Where it is still ambiguous, erring toward "save" is the safe direction:
+-    stopping early under-rewinds, which surfaces as the detectable "epilogue
+-    never ran" leak, where stopping late corrupts a caller silently.
+-    """
+-    import re
+-    # For each callee-saved register the function actually pops, the index of
+-    # its earliest push -- that push, and only that push, is the frame save.
+-    save_push_idx = {}
+-    for reg in ("ebx", "esi", "edi", "ebp"):
+-        if not any("POP32(esp, %s)" % reg in line for line in lines):
+-            continue                      # never restored: all pushes are args
+-        token = "PUSH32(esp, %s)" % reg
+-        for i, line in enumerate(lines):
+-            if line.strip().startswith(token):
+-                save_push_idx[i] = reg
+-                break
+-    result = []
+-    # Find indices of all ICALL_SAFE lines
+-    icall_indices = []
+-    for i, line in enumerate(lines):
+-        if 'RECOMP_ICALL_SAFE(' in line or 'RECOMP_ICALL_SAFE_AT(' in line:
+-            icall_indices.append(i)
+-
+-    if not icall_indices:
+-        return lines  # nothing to do
+-
+-    # For each ICALL, determine where to insert the save
+-    insert_before = set()  # map: line_index → True (insert save before this line)
+-    for icall_idx in icall_indices:
+-        # The ICALL line itself is "PUSH32(esp, <retva>); RECOMP_ICALL_SAFE(...)"
+-        # Look backwards for consecutive lines containing PUSH32(esp,
+-        first_push_idx = icall_idx
+-        j = icall_idx - 1
+-        while j >= 0:
+-            stripped = lines[j].strip()
+-            # Skip blank lines
+-            if not stripped:
+-                j -= 1
+-                continue
+-            # A completed direct call ends the argument run, and must be tested
+-            # before the generic PUSH32 check below: a direct call is emitted as
+-            # "PUSH32(esp, <retva>); name();" on one line, so it also looks like
+-            # an argument push. Treating it as one put the _icall_esp save
+-            # *before* the direct call, and an ICALL that then failed rewound
+-            # g_esp over a call that had already returned.
+-            if '/* call 0x' in stripped:
+-                break
+-            # The frame save of a callee-saved register belongs to this
+-            # function, not to the call's arguments, so the run ends there.
+-            # A *later* push of the same register is an argument and is
+-            # absorbed like any other.
+-            if j in save_push_idx:
+-                break
+-            # Check if this is a PUSH32 line (arg push)
+-            if stripped.startswith('PUSH32(esp,'):
+-                first_push_idx = j
+-                j -= 1
+-                continue
+-            # Check if this is a non-push instruction that could be part of
+-            # arg evaluation (e.g., "eax = MEM32(...);") - these are interleaved
+-            # with pushes in the x86 code. We need to look past them.
+-            # Stop at labels, gotos, other control flow, or other ICALL lines.
+-            if (re.match(r'^loc_[0-9A-Fa-f]+:', stripped) or
+-                'goto ' in stripped or
+-                'RECOMP_ICALL' in stripped or
+-                'return;' in stripped or
+-                stripped.startswith('if (') or
+-                stripped.startswith('POP32(')):
+-                break
+-            # It's an interleaved computation - skip past it
+-            j -= 1
+-            continue
+-
+-        # Which convention is this call site? A caller that cleans the
+-        # arguments itself is cdecl, and the generated code says so plainly:
+-        # an "esp = esp + N" follows the call, usually just past the return
+-        # label.
+-        #
+-        # It decides where the capture belongs, because RECOMP_ICALL_SAFE
+-        # rewinds g_esp to it when the lookup fails:
+-        #
+-        #   stdcall  the callee would have cleaned the arguments, so the
+-        #            failure path must clean them -- capture above the pushes.
+-        #   cdecl    the caller cleans them a few lines later regardless, so
+-        #            capturing above the pushes cleans them twice. Capture
+-        #            below them instead and the failure path pops only the
+-        #            return address, leaving the caller's own add to do its
+-        #            job.
+-        #
+-        # Burnout 2's sub_000E8C30 makes three cdecl indirect calls with four
+-        # arguments each. Two of them failed, and 16 bytes cleaned twice per
+-        # call put esp 32 bytes high, which its caller's epilogue then popped
+-        # esi from -- handing the caller a corrupt `this` several frames from
+-        # anything that looked wrong.
+-        caller_cleans = False
+-        k = icall_idx + 1
+-        while k < len(lines) and k <= icall_idx + 6:
+-            probe = lines[k].strip()
+-            if not probe or re.match(r'^loc_[0-9A-Fa-f]+:', probe):
+-                k += 1
+-                continue
+-            if re.match(r'^esp = esp \+ (0x[0-9A-Fa-f]+|\d+);$', probe):
+-                caller_cleans = True
+-            break
+-
+-        insert_before.add(icall_idx if caller_cleans else first_push_idx)
+-
+-    # Build result with saves inserted
+-    for i, line in enumerate(lines):
+-        if i in insert_before:
+-            # Determine indentation from the current line
+-            indent = line[:len(line) - len(line.lstrip())]
+-            result.append(f"{indent}{{ uint32_t _icall_esp = g_esp;")
+-        result.append(line)
+-        if 'RECOMP_ICALL_SAFE(' in line or 'RECOMP_ICALL_SAFE_AT(' in line:
+-            indent = line[:len(line) - len(line.lstrip())]
+-            result.append(f"{indent}}}")
+-
+-    return result
+-
+-
+-# The x87 stack accessors the lifter's output is written against. Module-level
+-# so tools/conformance emits byte-identical macros: a harness with its own copy
+-# would still pass after these changed, which is the dangerous direction.
+-FP_STACK_MACROS = [
+-    "    #define fp_push(v) do { double _fp_value = (v); \\",
+-    "        g_fp_top = (g_fp_top + 7u) & 7u; \\",
+-    "        g_fp_stack[g_fp_top] = _fp_value; } while (0)",
+-    "    #define fp_pop() (g_fp_top = (g_fp_top + 1u) & 7u)",
+-    "    #define fp_top() g_fp_stack[g_fp_top]",
+-    "    #define fp_st(i) g_fp_stack[(g_fp_top + (i)) & 7u]",
+-    "    #define fp_st1() fp_st(1)",
+-]
+-
+-FP_STACK_UNDEFS = [
+-    "    #undef fp_push",
+-    "    #undef fp_pop",
+-    "    #undef fp_top",
+-    "    #undef fp_st",
+-    "    #undef fp_st1",
+-]
+-
+-
+-
+-xbe_title = _project_batch.xbe_title
+-
+-
+-# Instructions that read or define EFLAGS, for checking what a recovered
+-# entry expects from its caller. Anything unlisted is treated as neither.
+-
+-
+-class FunctionTranslator:
+-    _instructions = _project_discovery.FunctionDiscovery._instructions
+-    _word = _project_discovery.FunctionDiscovery._word
+-
+-    """Translates individual x86 functions to C source code."""
+-
+-    __init__ = _project_discovery.FunctionDiscovery.__init__
+-
+-    discover_static_indirect_targets = _project_discovery.FunctionDiscovery.discover_static_indirect_targets
+-
+-    _find_static_indirect_ranges = staticmethod(_project_discovery.FunctionDiscovery._find_static_indirect_ranges)
+-
+-    _read_static_callback_table = _project_discovery.FunctionDiscovery._read_static_callback_table
+-
+-    _is_strong_entry = staticmethod(_project_discovery.FunctionDiscovery._is_strong_entry)
+-
+-    discover_cfg_ownership = _project_discovery.FunctionDiscovery.discover_cfg_ownership
+-
+-    discover_jump_table_entries = _project_discovery.FunctionDiscovery.discover_jump_table_entries
+-
+-    _arm_is_whole = _project_discovery.FunctionDiscovery._arm_is_whole
+-
+-    _read_bounded_jump_table = _project_discovery.FunctionDiscovery._read_bounded_jump_table
+-
+-    _recover_cfg = _project_discovery.FunctionDiscovery._recover_cfg
+-
+-    _stub_ret_bytes = _project_discovery.FunctionDiscovery._stub_ret_bytes
+-
+-    _read_local_jump_table = _project_discovery.FunctionDiscovery._read_local_jump_table
+-
+-    _read_func_bytes = _project_discovery.FunctionDiscovery._read_func_bytes
+-
+-    _determine_calling_convention = _project_discovery.FunctionDiscovery._determine_calling_convention
+-
+-    _CARRY_CC = frozenset({
+-        "b", "nae", "c", "ae", "nb", "nc", "be", "na", "a", "nbe",
+-    })
+-
+-    @staticmethod
+-    def _function_needs_cf(instructions):
+-        """True when something in the function reads CF."""
+-        from .lifter import (FLAG_SETTERS, CF_TRACKED, BT_MODIFY,
+-                             _EFLAGS_SETTERS, _FLAGS_UNDEFINED)
+-
+-        from translation_strings import is_compare as string_compare
+-        last_setter = None
+-        for insn in instructions:
+-            if insn.mnemonic == "lahf":
+-                return True  # LAHF consumes captured arithmetic carry.
+-            if not insn.mnemonic.startswith("rep") and string_compare(insn):
+-                return True  # Single string comparisons publish ordinary CMP snapshots.
+-            if insn.mnemonic.removeprefix("lock ") in ("xadd", "cmpxchg"):
+-                return True  # Own exchange arithmetic publishes captured carry.
+-            if insn.mnemonic in ("rcl", "rcr", "mul", "imul", "bt", "bts", "btr", "btc"):
+-                return True  # Own carry producers publish their captured value.
+-            if _constant_bit_noop(insn):
+-                continue
+-            m = insn.mnemonic
+-            if m in ("adc", "sbb", "stc", "clc", "cmc", "rcl", "rcr"):
+-                return True
+-            cc = None
+-            if m.startswith("j") and len(m) > 1:
+-                cc = m[1:]
+-            elif m.startswith("set"):
+-                cc = m[3:]
+-            elif m.startswith("cmov") and len(m) > 4:
+-                cc = m[4:]
+-            if (cc in FunctionTranslator._CARRY_CC
+-                    and (last_setter in CF_TRACKED
+-                         or last_setter in ("inc", "dec", "rep-cmps", "rol", "ror")
+-                         or last_setter in BT_MODIFY)):
+-                return True
+-            if m.startswith("rep") and ("cmps" in m or "scas" in m):
+-                # repe cmpsb and friends set CF from the last pair compared
+-                # (lifter._lift_rep_string); a jb/ja after one reads it.
+-                last_setter = "rep-cmps"
+-            elif m in FLAG_SETTERS or m in _EFLAGS_SETTERS:
+-                last_setter = m
+-            elif m in _FLAGS_UNDEFINED:
+-                last_setter = None
+-        return False
+-
+-    _func_has_prologue = _project_discovery.FunctionDiscovery._func_has_prologue
+-
+-    _func_owns_a_frame = _project_discovery.FunctionDiscovery._func_owns_a_frame
+-
+-    def translate_function(self, func_addr, func_info):
+-        """
+-        Translate a single function to C code.
+-        Returns a string of C source code, or None on failure.
+-        """
+-        start = func_addr
+-        recovered = self._recovered_cfg.get(start)
+-        end = recovered["end"] if recovered else func_info.get("end")
+-        if not end:
+-            end = start + func_info.get("size", 0)
+-        if end <= start:
+-            return None
+-
+-        name = _func_ident(start, func_info.get("name", f"sub_{start:08X}"))
+-        size = end - start
+-
+-        # Read bytes from XBE
+-        raw_bytes = self._read_func_bytes(start, end)
+-        if not raw_bytes:
+-            return None
+-
+-        # Set function bounds for the lifter
+-        self.lifter.func_start = start
+-        self.lifter.func_end = end
+-        self.lifter.jump_table_targets = (
+-            recovered["jump_tables"] if recovered else {})
+-        self.lifter.icall_site_targets = self.icall_sites
+-
+-        # Disassemble
+-        instructions = (recovered["instructions"] if recovered else
+-                        self.disasm.disassemble_function(raw_bytes, start, end))
+-        if not instructions:
+-            return None
+-
+-        # Addresses this function loads as immediates into a register and
+-        # then jumps to. `mov ebx, 0x3A0DC; ... ; jmp ebx` is a continuation
+-        # chain inside one function, and its targets need labels for the
+-        # goto the lifter emits -- see _lift_jmp. Restricted to functions
+-        # that actually contain a register-operand indirect jmp, so a plain
+-        # `mov reg, <address of a function>` for a callback does not start
+-        # splitting blocks everywhere.
+-        imm_refs = set()
+-        if any(insn.mnemonic == "jmp" and not insn.jump_target and insn.operands
+-               and insn.operands[0].type == "reg" for insn in instructions):
+-            for insn in instructions:
+-                if insn.mnemonic != "mov" or len(insn.operands) < 2:
+-                    continue
+-                if insn.operands[0].type != "reg":
+-                    continue
+-                if insn.operands[1].type != "imm":
+-                    continue
+-                value = insn.operands[1].imm
+-                if start <= value < end:
+-                    imm_refs.add(value)
+-        self.lifter.imm_code_refs = imm_refs
+-
+-        # Collect switch table targets as extra block leaders
+-        def collect_switch_leaders(insns):
+-            leaders = set(imm_refs)
+-            for insn in insns:
+-                if insn.mnemonic == "jmp" and not insn.jump_target and insn.operands:
+-                    targets = self.lifter._analyze_switch_table(insn.operands)
+-                    for t in targets:
+-                        if start <= t < end:
+-                            leaders.add(t)
+-            return leaders
+-
+-        switch_leaders = collect_switch_leaders(instructions)
+-
+-        # A switch target the decode never produced an instruction for cannot
+-        # become a block leader, so it gets no label and its `goto` is dropped
+-        # as dead code -- the case then falls through to an unresolved indirect
+-        # branch. That happens whenever the jump table sits in .text ahead of
+-        # the code it points at: decoding the table as instructions leaves the
+-        # stream misaligned across the first case. Re-decode, telling the
+-        # disassembler where the real instruction boundaries are.
+-        #
+-        # Iterated, because the re-decode can reveal more dispatches. The
+-        # linear sweep stops dead at the first table it walks into (capstone
+-        # gives up on the first undecodable byte), so a function with several
+-        # tables -- TimeSplitters 2's memcpy (sub_001D3340) has five -- only
+-        # ever showed its first one here; re-syncing from that table's arms
+-        # decoded the rest of the function, including the later dispatches,
+-        # but their arms were never made leaders, and the two just past the
+-        # fourth table stayed inside the out-of-phase junk. Every call through
+-        # them failed to resolve at run time.
+-        if recovered is None:
+-            resync = set()
+-            for _round in range(8):
+-                missing = switch_leaders - {insn.address for insn in instructions}
+-                if not missing:
+-                    break
+-                resync |= missing
+-                instructions = self.disasm.disassemble_function(
+-                    raw_bytes, start, end, resync=resync)
+-                switch_leaders = collect_switch_leaders(instructions)
+-        # RECOMP_DEBUG_FUNC=<hex start>: say how this function's switch arms
+-        # were found, for the one that lifts with a dead arm.
+-        if os.environ.get("RECOMP_DEBUG_FUNC", "").upper() == f"{start:08X}":
+-            have = {insn.address for insn in instructions}
+-            print(f"[debug] sub_{start:08X}: end 0x{end:08X} recovered={recovered is not None} "
+-                  f"insns={len(instructions)} switch_leaders={sorted(hex(t) for t in switch_leaders)} "
+-                  f"undecoded={sorted(hex(t) for t in switch_leaders - have)}")
+-
+-        # Build basic blocks
+-        blocks = self.disasm.build_basic_blocks(
+-            instructions, start, end,
+-            extra_leaders=switch_leaders if switch_leaders else None)
+-        if not blocks:
+-            return None
+-
+-        # Get classification and ABI info
+-        cls_info = self.classification_db.get(start, {})
+-        category = cls_info.get("category", "unknown")
+-        module = cls_info.get("module", "")
+-        source_file = cls_info.get("source_file", "")
+-        abi_info = self.abi_db.get(start, {})
+-
+-        # ABI-derived info (kept for comments)
+-        cc = abi_info.get("calling_convention", "cdecl")
+-        num_params = abi_info.get("estimated_params", 0)
+-        return_hint = abi_info.get("return_hint", "int_or_void")
+-        frame_type = abi_info.get("frame_type", "fpo_leaf")
+-        stack_frame_size = abi_info.get("stack_frame_size", 0)
+-
+-        # Determine which registers are used
+-        used_regs = self._find_used_registers(instructions)
+-        if any(insn.mnemonic in ("div", "idiv") for insn in instructions):
+-            used_regs.add("ebp")  # Publish the local frame only on a divide fault.
+-        used_xmm = self._find_used_xmm(instructions)
+-        has_prologue = self._func_has_prologue(instructions)
+-        has_fpu = any(insn.mnemonic.startswith("f") for insn in instructions)
+-
+-        # Volatile registers (eax, ecx, edx, esp) are globals - don't declare
+-        # them as locals. The RECOMP_GENERATED_CODE #define maps register names
+-        # to the global variables via preprocessor macros.
+-        volatile_regs = {"eax", "ecx", "edx", "esp"}
+-
+-        # Ensure ebp tracked if function uses 'leave' (implicit ebp)
+-        if any(insn.mnemonic == "leave" for insn in instructions):
+-            used_regs.add("ebp")
+-
+-        # Guest control leaves the bottom of this function when its last
+-        # instruction neither returns, jumps, nor traps. A function the lifter
+-        # split into consecutive pieces continues into the next piece exactly
+-        # as an unconditional tail jump would, so bridge to it the same way.
+-        # Only an address that is itself a translated function start is a
+-        # usable target; anything else is an analysis boundary gap with no
+-        # callable symbol.
+-        last_insn = instructions[-1]
+-        continues_past_end = not (
+-            last_insn.is_terminator
+-            or last_insn.mnemonic in ("int3", "ud2", "hlt"))
+-        fallthrough_target = None
+-        if (continues_past_end and end in self.func_db
+-                and end not in self.owned_function_starts):
+-            fallthrough_target = end
+-
+-        # Ensure ebp tracked if function has tail jumps (lifter emits
+-        # g_seh_ebp = ebp before external jmp, external jcc, and indirect jmp,
+-        # and translate_function emits it before a fallthrough tail call).
+-        has_tail_jump = any(
+-            (insn.mnemonic == "jmp" and (
+-                (insn.jump_target and not (start <= insn.jump_target < end))
+-                or not insn.jump_target  # indirect jmp
+-            ))
+-            or (insn.is_cond_jump and insn.jump_target
+-                and not (start <= insn.jump_target < end))
+-            for insn in instructions
+-        )
+-        if has_tail_jump or fallthrough_target is not None:
+-            used_regs.add("ebp")
+-
+-
+-        # Ensure ebp is declared if the function talks to the SEH helpers: the
+-        # lifter emits a publish before and a read-back after those calls, both
+-        # of which name ebp even in a function that otherwise never touches it.
+-        #
+-        # These addresses are per-title and detected at startup. They used to be
+-        # hardcoded to one game's CRT here, so for every other title the forcing
+-        # silently never fired and the generated C failed to compile with
+-        # "'ebp': undeclared identifier".
+-        seh_funcs = (getattr(self.lifter, "SEH_PROLOGS", frozenset())
+-                     | getattr(self.lifter, "SEH_EPILOGS", frozenset()))
+-        if seh_funcs and any(insn.call_target in seh_funcs
+-                             for insn in instructions):
+-            used_regs.add("ebp")
+-
+-        # Build call targets list
+-        call_targets = set()
+-        for insn in instructions:
+-            if insn.call_target and is_code_address(insn.call_target):
+-                call_targets.add(insn.call_target)
+-
+-        # All translated functions are void(void).
+-        # Arguments pass via the global simulated stack (push instructions).
+-        # Return values pass via g_eax (the global eax register).
+-        ret_type = "void"
+-        param_str = "void"
+-
+-        # Generate C code
+-        lines = []
+-
+-        # Header comment
+-        lines.append(f"/**")
+-        lines.append(f" * {name}")
+-        lines.append(f" * Original: 0x{start:08X} - 0x{end:08X} ({size} bytes, {len(instructions)} insns)")
+-        if category != "unknown":
+-            lines.append(f" * Category: {category}")
+-        if source_file:
+-            lines.append(f" * Source: {source_file}")
+-        lines.append(f" * CC: {cc}, {num_params} params, returns {return_hint}")
+-        if frame_type == "ebp_frame":
+-            lines.append(f" * Frame: EBP-based ({stack_frame_size} bytes locals)")
+-        else:
+-            lines.append(f" * Frame: {frame_type}")
+-        lines.append(f" */")
+-
+-        # Select vector aliases before C optimization; the type header's site
+-        # section is intentionally reincludable. Legacy sources keep globals.
+-        lines.append('#ifdef RECOMP_GPR_REFS_SUPPORTED')
+-        lines.append(f"#define RECOMP_REGISTER_SITE 0x{start:08X}u")
+-        lines.append('#include "recomp_types.h"')
+-        lines.append('#endif')
+-
+-        # Function signature
+-        lines.append(f"{ret_type} {name}({param_str})")
+-        lines.append(f"{{")
+-
+-        # Optional entry trace. Bring-up is mostly "which of these ten init
+-        # calls does it not come back from", and answering that by overriding
+-        # a function loses the body you were trying to observe.
+-        if start in self.trace_functions or self.trace_all_entries:
+-            lines.append(
+-                f'    RECOMP_TRACE_ENTER("{name}", 0x{start:08X});')
+-
+-        # Run title fast paths only after entry callbacks. Explicit diagnostic
+-        # return tracing/overrides retain the complete generated body.
+-        if start not in self.trace_functions and start not in self.force_returns:
+-            lines.append(f"    if (RECOMP_FAST_ENTRY(0x{start:08X}u)) return;")
+-
+-        # References remain live across every nested guest/host call. Capture
+-        # their addresses after entry callbacks and optional fast returns.
+-        lines.append('#ifdef RECOMP_GPR_REFS_SUPPORTED')
+-        lines.append(f"    RECOMP_DECLARE_GPRS(0x{start:08X}u);")
+-        lines.append('#endif')
+-
+-        # _CxxThrowException. This runtime cannot unwind, so the call inside
+-        # does nothing and control falls through the int3 the compiler put
+-        # after it: the throw returns, on a stack nobody cleaned up. Report it
+-        # here, at the throw, where the arguments are still on the stack and
+-        # the type that was thrown can be named -- rather than leaving the
+-        # consequences to surface somewhere unrelated later.
+-        # At entry esp points at the return address, so the two __stdcall
+-        # arguments are just above it.
+-        if start is not None and start == getattr(self.lifter, "CXX_THROW", None):
+-            lines.append("    recomp_cxx_throw(MEM32(esp + 4), "
+-                         "MEM32(esp + 8));")
+-        # Entry tracing shows what went in; it cannot show what came back, and
+-        # "this function returns with esi wrong" is exactly the question that
+-        # kept coming up. The lifter emits the matching exit trace at each ret.
+-        self.lifter.trace_exit_name = name if start in self.trace_functions else None
+-
+-        # --force-return: hand this function's callers a constant.
+-        #
+-        # Bring-up keeps arriving at the same shape. A title waits on a
+-        # service the runtime does not implement yet; the function that
+-        # reports "is it finished" answers no for ever; everything past it is
+-        # unreachable and therefore untestable. Shin Megami Tensei: Nine does
+-        # exactly this -- its title screen asks whether the intro movie has
+-        # ended, and its XMV decoder never reaches end of stream.
+-        #
+-        # What people resort to instead is editing the generated C by hand,
+-        # which buries the shortcut in hundreds of megabytes of output where
+-        # nothing names it and nobody else can reproduce the run. As a
+-        # generation option it is on the command line, it lands in the
+-        # title's build script, and the emitted code is inert unless
+-        # RECOMP_FORCE_RETURN is set at run time.
+-        #
+-        # It is a probe, not a fix: the body still runs and its side effects
+-        # still happen, only the answer changes.
+-        self.lifter.force_return_value = self.force_returns.get(start)
+-
+-        # ebp is the only callee-saved register declared as a local.
+-        # ebx, esi, edi are global via #define macros (g_ebx, g_esi, g_edi)
+-        # and must NOT be declared locally, otherwise the local shadows
+-        # the global and cross-function register passing breaks.
+-        # Volatile registers (eax, ecx, edx, esp) are also global via macros.
+-        reg_decls = []
+-        if "ebp" in used_regs:
+-            reg_decls.append("ebp")
+-        if reg_decls:
+-            # Initialised, not just declared. A function with a real
+-            # "push ebp; mov ebp, esp" prologue pushes ebp before it ever
+-            # assigns one, so its first statement reads this local while the
+-            # value is still indeterminate. At -O0 that is whatever the host
+-            # stack happened to hold; from -O1 up it is poison the compiler is
+-            # free to propagate, and the pushed word is a frame pointer the
+-            # epilogue pops back and callers may walk.
+-            decls = ", ".join(f"{r} = 0" for r in reg_decls)
+-            lines.append(f"    uint32_t {decls};")
+-
+-        # A function with no `push ebp; mov ebp, esp` prologue that still reads
+-        # ebp is addressing its *caller's* frame. MSVC emits these for shared
+-        # tails and helpers; Halo's CRT float formatting (sub_001DEC07) opens
+-        # with `cmp byte ptr [edx+0xe], 5` and goes straight to [ebp-0xa4].
+-        #
+-        # ebp is a per-function local, so without this it starts as garbage and
+-        # every [ebp-N] store lands wherever that points. In Halo that was the
+-        # fake TIB at Xbox VA 0: `mov [ebp-0xa2], bx` destroyed fs:[4], and the
+-        # next TLS lookup faulted, thousands of calls away from the cause.
+-        #
+-        # Inherit it instead. Frame-establishing functions publish g_ebp when
+-        # they execute `mov ebp, esp` (see the lifter), so the value is the
+-        # nearest enclosing frame -- which is exactly what the hardware ebp
+-        # would still hold. Deliberately not the same as making ebp global:
+-        # that also changes save/restore, and a callee that fails to restore
+-        # then corrupts its caller (tried; esp underflowed inside XapiStartup).
+-        if "ebp" in used_regs and self._func_has_prologue(instructions):
+-            # The prologue's first PUSH saves the incoming register before
+-            # MOV establishes this function's frame. It must not push an
+-            # uninitialized C local into the guest's saved-frame chain.
+-            lines.append("    ebp = g_ebp;  /* prologue saves caller's frame */")
+-        elif "ebp" in used_regs:
+-            lines.append("    ebp = g_ebp;  /* frameless: caller's frame */")
+-
+-        # Add _flags variable if function has conditional instructions
+-        has_conditionals = any(
+-            insn.is_cond_jump or insn.mnemonic.startswith("set")
+-            or insn.mnemonic.startswith("cmov")
+-            for insn in instructions)
+-        if has_conditionals or any(_project_strings.is_compare(i) for i in instructions):
+-            lines.append(f"    int _flags = 0; /* fallback flag var */")
+-
+-        # Flag snapshot temporaries: a cmp/test records its operands here,
+-        # zero- and sign-extended to the compare's own width, so the branch
+-        # tests what the compare actually saw. Declared whenever a cmp/test
+-        # exists - the consuming jcc can be in a later basic block, or absent.
+-        # bsf/bsr publish ZF through the same pair (the source, against 0), so
+-        # a function whose only flag-setter is a bit scan still needs them --
+-        # sub_000EEA10 in Wreckless is exactly `bsf eax, ecx; ret`.
+-        # cmpxchg belongs here too: it snapshots the compare it performed,
+-        # because eax may be replaced before the branch reads the result.
+-        if any(insn.mnemonic in ("cmp", "test", "bsf", "bsr", "cmpxchg",
+-                                 "lock cmpxchg", "xadd", "lock xadd", "inc", "dec")
+-               or (_project_strings.is_compare(insn) and not insn.mnemonic.startswith("rep"))
+-               or insn.mnemonic in _RESULT_SNAPSHOT_SETTERS
+-               for insn in instructions):
+-            lines.append("    uint32_t _fa = 0, _fb = 0;")
+-            lines.append("    int32_t _fas = 0, _fbs = 0;")
+-            lines.append("    (void)_fa; (void)_fb; (void)_fas; (void)_fbs;")
+-            # Flag snapshot: a cmp/test that is not fused with its jcc records
+-            # its operands here, zero- and sign-extended to the compare's own
+-            # width, so the branch tests what the compare saw.
+-
+-
+-        # Float compare snapshot, same reasoning as the integer one above and
+-        # for a sharper reason: an SSE compare is routinely followed by a `lea`
+-        # that overwrites the very register the address was built from. MSVC
+-        # emits exactly that in Half-Life 2's displacement collision builder --
+-        #
+-        #   comiss xmm5, [esi + eax*4]     ; compare with the old eax
+-        #   lea    eax, [esi + eax*4]      ; then eax becomes the pointer
+-        #
+-        # -- so reconstructing the comparison at the jcc read `esi + eax*4`
+-        # with eax already holding a pointer. The address wrapped to guest
+-        # 0x651BCD20 and the level load died in CDispCollTree.
+-        if any(insn.mnemonic in ("comiss", "comisd", "ucomiss", "ucomisd")
+-               for insn in instructions):
+-            lines.append("    double _fca = 0.0, _fcb = 0.0;")
+-            lines.append("    (void)_fca; (void)_fcb;")
+-
+-        # Add _cf for carry-dependent instructions.
+-        #
+-        # adc/sbb read CF directly, and so does a jb/jae whose flags came from
+-        # arithmetic rather than a cmp -- the bit-stream decoders in the Xbox
+-        # XCompress code are nothing but "add reg,reg" followed by jae, and a
+-        # cmovb/cmovae after an add reads the same carry. Which setter a branch
+-        # reads is the lifter's tracking rule, mirrored here so only the
+-        # functions that consume CF declare it: computing it beside every add
+-        # in the image would be a line per add in 48,000 functions.
+-        has_carry = self._function_needs_cf(instructions)
+-        if has_carry:
+-            lines.append(f"    int _cf = 0; /* carry flag */")
+-        # Only functions that consume CF pay for producing it: an adc/sbb
+-        # reading a never-written _cf silently drops every carry, which
+-        # corrupts multi-word arithmetic (add/adc pairs) and the shr/adc
+-        # idiom MSVC emits for odd trailing elements.
+-        self.lifter.needs_cf = has_carry
+-        self.lifter.publishes_ebp = self._func_owns_a_frame(instructions)
+-
+-        # SSE and MMX are architectural state, declared globally by the
+-        # runtime exactly like the GPRs and the x87 stack. Declaring either
+-        # here would shadow the global with a fresh zeroed local, so a value
+-        # produced in one block and read in the next -- a return value in
+-        # xmm0, an mm register carried across a branch -- would be lost.
+-        #
+-        # MMX used to get `uint64_t mm0, mm1, ...` here, from before the
+-        # instructions were implemented and the registers were only ever
+-        # written. With mm0..mm7 now real globals, that declaration expands
+-        # through the `#define mm0 g_mm0` alias into a local named g_mm0 that
+-        # shadows the register it is meant to be.
+-
+-        # The x87 stack is architectural state and survives guest calls. Some
+-        # detector boundaries also split one original CRT helper into several
+-        # generated C functions, so function-local storage loses live ST values.
+-        if has_fpu:
+-            lines.extend(FP_STACK_MACROS)
+-
+-        # For fpo_leaf functions that use ebp: initialize from g_seh_ebp.
+-        # In x86, these functions inherit EBP from their caller (typically
+-        # via a tail jump that shares the caller's frame). In our C translation,
+-        # ebp is a local variable that would start uninitialized, causing
+-        # crashes when the function reads MEM32(ebp + offset). The g_seh_ebp
+-        # global bridges ebp across function boundaries.
+-        if frame_type == "fpo_leaf" and "ebp" in used_regs and not has_prologue:
+-            lines.append(f"    ebp = g_seh_ebp; /* fpo_leaf: inherit caller's frame */")
+-
+-        lines.append(f"")
+-
+-        # Generate code for each basic block
+-        # Create a set of addresses that need labels
+-        label_addrs = set()
+-        for bb in blocks:
+-            for succ in bb.successors:
+-                label_addrs.add(succ)
+-        # Also add any jump targets within the function
+-        for insn in instructions:
+-            if insn.jump_target and start <= insn.jump_target < end:
+-                label_addrs.add(insn.jump_target)
+-        label_addrs |= imm_refs
+-        # Add switch table targets (indirect jmp with intra-function table)
+-        for insn in instructions:
+-            if insn.mnemonic == "jmp" and not insn.jump_target and insn.operands:
+-                switch_targets = self.lifter._analyze_switch_table(insn.operands)
+-                for t in switch_targets:
+-                    label_addrs.add(t)
+-
+-        # Which blocks can reach each block. Flag state has to follow control
+-        # flow, not address order: an optimising compiler routinely lets a jcc
+-        # consume a `cmp` from a block that is not its immediate predecessor in
+-        # memory. Threading the state linearly then hands that jcc the flags of
+-        # whatever instruction happens to sit above it -- silently, and with a
+-        # perfectly plausible-looking condition.
+-        preds = {bb.start: set() for bb in blocks}
+-        for i, bb in enumerate(blocks):
+-            last = bb.instructions[-1] if bb.instructions else None
+-            if last is None:
+-                continue
+-            if last.jump_target in preds:
+-                preds[last.jump_target].add(bb.start)
+-            # A conditional jump also falls through; ret and an unconditional
+-            # jmp do not.
+-            leaves = last.is_ret or last.mnemonic in ("jmp", "int3", "ud2", "hlt")
+-            if not leaves and i + 1 < len(blocks):
+-                preds[blocks[i + 1].start].add(bb.start)
+-
+-        # Settle the flag state before emitting anything.
+-        #
+-        # Blocks are walked in address order, so the predecessor on a back
+-        # edge sits *after* the block it reaches and has no out-state on a
+-        # first pass. The join then sees an unknown predecessor and gives up,
+-        # which is safe but costly: the jcc at the top of a counted loop is
+-        # exactly that shape, and it lifts to the `_flags` fallback -- a
+-        # variable nothing assigns, so the branch compiles as never taken and
+-        # the loop has no exit.
+-        #
+-        # Iterating to a fixed point fixes it. A block's out-state depends on
+-        # its own instructions unless it has no flag setter at all, in which
+-        # case it passes its incoming state through, so the pass converges;
+-        # three rounds is more than any real loop nest needs. The lines are
+-        # discarded here, only the out-states are kept.
+-        #
+-        # lift_basic_block accumulates two things on the Lifter across calls.
+-        # referenced_calls is a dict keyed by address, so re-lifting a block
+-        # rewrites the same entries. unimplemented appends, and its counts are
+-        # a report about the title rather than about how many times the lifter
+-        # ran, so they are saved and restored around the probe.
+-        # Without a back edge, address order already visits every predecessor
+-        # before the block it reaches, so the emit pass settles the state as
+-        # it goes and the probe would only repeat its work. Aliasing
+-        # settled_state onto the dict that pass fills is what makes the two
+-        # cases one loop: it then reads exactly the states it has computed
+-        # itself, which is what this function did before the probe existed.
+-        out_state = {}
+-        settled_state = out_state
+-        # The pre-pass runs whenever any block has more than one predecessor,
+-        # not only when there is a back edge. Without a back edge address
+-        # order settles the state as it goes, which is enough to *consume* a
+-        # state -- but not to know, while emitting a block, whether a later
+-        # join will fail to merge and need this block to leave a zero flag
+-        # behind. That question is answered below, and it needs every state
+-        # up front.
+-        if (any(p >= bb.start for bb in blocks for p in preds[bb.start])
+-                or any(len(preds[bb.start]) > 1 for bb in blocks)):
+-            saved_unimplemented = {
+-                k: list(v) for k, v in self.lifter.unimplemented.items()
+-            }
+-            for _ in range(3):
+-                changed = False
+-                for bb in blocks:
+-                    incoming = _incoming_flag_state(
+-                        preds[bb.start], out_state, bb.start == start)
+-                    _, new_out = lift_basic_block(
+-                        self.lifter, bb, flag_state=incoming)
+-                    if out_state.get(bb.start) != new_out:
+-                        out_state[bb.start] = new_out
+-                        changed = True
+-                if not changed:
+-                    break
+-            self.lifter.unimplemented.clear()
+-            self.lifter.unimplemented.update(saved_unimplemented)
+-            settled_state = out_state
+-            out_state = {}
+-
+-        # Joins whose predecessors cannot agree on a flag state. The consumer
+-        # there falls back to `_flags`, so every predecessor that can work out
+-        # its own zero flag writes one, and the fallback reads a real value
+-        # instead of an uninitialised local. See lifter.zf_expression.
+-        needs_zf = set()
+-        for bb in blocks:
+-            incoming = _incoming_flag_state(preds[bb.start], settled_state,
+-                                            bb.start == start)
+-            if has_conditionals and incoming == ("__zf_snapshot", []):
+-                needs_zf.update(preds[bb.start])
+-        zf_probe = [bb for bb in blocks
+-                    if len(preds[bb.start]) > 1 and bb.start != start
+-                    and not _incoming_flag_state(preds[bb.start],
+-                                                 settled_state, False)]
+-        if zf_probe:
+-            # Only where the join really reads the fallback. Marking every
+-            # predecessor of every failed merge emitted 69,416 assignments
+-            # into Max Payne, almost none of them read: a join that starts by
+-            # setting the flags itself needs nothing from its predecessors.
+-            # Lifting the block once with no incoming state says which it is.
+-            saved = {k: list(v) for k, v in self.lifter.unimplemented.items()}
+-            for bb in zf_probe:
+-                probe, _ = lift_basic_block(self.lifter, bb, flag_state=None)
+-                if any("_flags /*" in stmt for stmt in probe):
+-                    needs_zf.update(preds[bb.start])
+-            self.lifter.unimplemented.clear()
+-            self.lifter.unimplemented.update(saved)
+-
+-        for bb in blocks:
+-            # Emit label if this block is a branch target
+-            if bb.start in label_addrs or bb.start == start:
+-                # The trailing ';' is load-bearing: C requires a statement after
+-                # a label, and a block whose instructions all emit comments only
+-                # (a lone `cmp`, which just sets flags for the next jcc) would
+-                # otherwise produce `loc_X:` immediately before `}` and fail to
+-                # compile. The null statement costs nothing and is always valid.
+-                lines.append(f"loc_{bb.start:08X}: ;")
+-
+-            # Inherit agreed state, including compatible CMP/TEST snapshots
+-            # whose source operands differ between predecessor paths. The
+-            # states come from the pre-pass above, so a back edge's
+-            # predecessor is known here even though it sits later in address
+-            # order.
+-            incoming = _incoming_flag_state(preds[bb.start], settled_state,
+-                                            bb.start == start)
+-
+-            stmts, out_state[bb.start] = lift_basic_block(
+-                self.lifter, bb, flag_state=incoming)
+-            if bb.start in needs_zf:
+-                from .lifter import zf_expression
+-                zf = zf_expression(out_state[bb.start])
+-                if zf and zf != "_flags":
+-                    # Before the block leaves, not after. Appending put it
+-                    # below the `goto`, where it never ran -- so the join read
+-                    # a value the *other* predecessor had left, which is worse
+-                    # than the uninitialised read it replaced: it is wrong and
+-                    # it looks deliberate.
+-                    stmts.insert(_before_terminator(stmts),
+-                                 f"_flags = {zf}; /* zero flag for a join "
+-                                 f"that cannot inherit a state */")
+-            for stmt in stmts:
+-                lines.append(f"    {stmt}")
+-
+-            lines.append(f"")
+-
+-        # Continue into the next function when control runs off the bottom.
+-        if fallthrough_target is not None:
+-            ft_name = self.lifter._call_target_name(fallthrough_target)
+-            lines.append(f"    g_seh_ebp = ebp; {ft_name}(); return;"
+-                         f" /* fallthrough 0x{fallthrough_target:08X} */")
+-            lines.append(f"")
+-
+-        # Insert _icall_esp save points before RECOMP_ICALL_SAFE arg pushes.
+-        # The pattern is: optional PUSH32 args, then
+-        # PUSH32(esp, <retva>); RECOMP_ICALL_SAFE(...).
+-        # We insert "uint32_t _icall_esp = g_esp;" before the first arg push.
+-        lines = _fixup_icall_esp_save(lines)
+-
+-        # Validate: comment out goto targets that reference missing labels
+-        # (dead code after unconditional jumps may reference non-existent labels)
+-        import re
+-        defined_labels = set()
+-        goto_lines = []
+-        for idx, line in enumerate(lines):
+-            lbl_match = re.match(r'^(loc_[0-9A-Fa-f]+):', line)
+-            if lbl_match:
+-                defined_labels.add(lbl_match.group(1))
+-            goto_match = re.search(r'goto (loc_[0-9A-Fa-f]+);', line)
+-            if goto_match:
+-                goto_lines.append((idx, goto_match.group(1)))
+-        for idx, target in goto_lines:
+-            if target not in defined_labels:
+-                lines[idx] = lines[idx].replace(
+-                    f"goto {target};",
+-                    f"(void)0; /* goto {target} - dead code, label not in function */")
+-
+-        # Ensure labels at end of function have a statement after them.
+-        # In C, a label must be followed by a statement; a comment alone is not
+-        # enough.  Walk backwards from the end and if the last real content is a
+-        # label (with only blank lines / comments after it), insert "(void)0;".
+-        _last_label_idx = None
+-        _has_stmt_after = False
+-        for _ri in range(len(lines) - 1, -1, -1):
+-            _s = lines[_ri].strip()
+-            if not _s:
+-                continue
+-            if _s.startswith("/*") and _s.endswith("*/"):
+-                continue
+-            if re.match(r'^loc_[0-9A-Fa-f]+:', _s):
+-                _last_label_idx = _ri
+-                break
+-            _has_stmt_after = True
+-            break
+-        if _last_label_idx is not None and not _has_stmt_after:
+-            lines.insert(_last_label_idx + 1, "    (void)0;")
+-
+-        # Undefine FPU macros
+-        if has_fpu:
+-            lines.extend(FP_STACK_UNDEFS)
+-
+-        lines.append(f"}}")
+-        lines.append(f"")
+-
+-        return "\n".join(lines)
+-
+-    def _find_used_registers(self, instructions):
+-        """Find which 32-bit registers are referenced by any instruction."""
+-        regs = set()
+-        reg_map = {
+-            "eax": "eax", "ax": "eax", "al": "eax", "ah": "eax",
+-            "ebx": "ebx", "bx": "ebx", "bl": "ebx", "bh": "ebx",
+-            "ecx": "ecx", "cx": "ecx", "cl": "ecx", "ch": "ecx",
+-            "edx": "edx", "dx": "edx", "dl": "edx", "dh": "edx",
+-            "esi": "esi", "si": "esi",
+-            "edi": "edi", "di": "edi",
+-            "ebp": "ebp", "bp": "ebp",
+-            "esp": "esp", "sp": "esp",
+-        }
+-        for insn in instructions:
+-            for op in insn.operands:
+-                if op.type == "reg" and op.reg in reg_map:
+-                    regs.add(reg_map[op.reg])
+-                elif op.type == "mem":
+-                    if op.mem_base and op.mem_base in reg_map:
+-                        regs.add(reg_map[op.mem_base])
+-                    if op.mem_index and op.mem_index in reg_map:
+-                        regs.add(reg_map[op.mem_index])
+-        return regs
+-
+-    def _find_used_xmm(self, instructions):
+-        """Find which XMM and MMX registers are used."""
+-        regs = set()
+-        for insn in instructions:
+-            for op in insn.operands:
+-                if op.type == "reg" and op.reg:
+-                    if op.reg.startswith("xmm") or op.reg.startswith("mm"):
+-                        regs.add(op.reg)
+-        return regs
+-
+-
+-class BatchTranslator(_project_batch.BatchTranslator):
+-    function_translator_type = FunctionTranslator
+-    runtime_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
++from pathlib import Path as _Path
++import sys as _sys
++import translation_function as _project
++_project.BatchTranslator.runtime_root = str(_Path(__file__).resolve().parents[2])
++_sys.modules[__name__] = _project
+--- a/tools/recomp/test_switch_after_switch.py
++++ b/tools/recomp/test_switch_after_switch.py
+@@ -89,7 +89,7 @@
+     arm = BASE + 0x1F
+     assert f"goto loc_{arm:08X};" in c, c
+     assert f"loc_{arm:08X}:" in c, c
+-    assert "dead code, label not in function" not in c, c
++    assert "unavailable local label" not in c, c
+     print("ok  second_table_arms_are_live")
+ 
+ 

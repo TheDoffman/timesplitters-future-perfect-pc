@@ -36,7 +36,7 @@ try {
     # Prevent concurrent test launchers from sharing saves or recycling live disks.
     $testLock = [IO.File]::Open((Join-Path $testRoot 'session.lock'),
         [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
-    & $python (Join-Path $projectRoot 'tools\network-identity.py') --verify --executable $exe
+    & $python (Join-Path $projectRoot 'tools\build\network-identity.py') --verify --executable $exe
     if ($LASTEXITCODE -ne 0) { throw 'Multiplayer build verification failed. Run tsfp.ps1 Build first.' }
 
     # Clear inherited test replays, save routing, and network overrides. Restore
@@ -85,7 +85,7 @@ finally {
         # Also wait for a successfully launched host if the second launch fails.
         foreach ($gameProcess in $processes) { $gameProcess.WaitForExit() }
         if ($testLock -and @($processes | Where-Object { !$_.HasExited }).Count -eq 0) {
-            & (Join-Path $projectRoot 'tools\cleanup-network-tests.ps1')
+            & (Join-Path $projectRoot 'tools\network\cleanup-network-tests.ps1')
             Write-Output 'System Link test finished; test profiles and logs retained.'
         }
     }

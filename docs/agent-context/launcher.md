@@ -1,5 +1,36 @@
 # Launcher internals
 
+Launcher 1.4.1 prepares the merged save-folder and native Mac multiplayer work
+for the next Stable release alongside game 0.4.0. Only version identities change;
+publication still requires both host checks and all ten verified launcher assets.
+Mac Online formula notices now use the existing flat `.txt` license layout;
+notice bytes and the installer's protected-file rules stay unchanged.
+
+Save-folder selection and custom-volume backup/restore now share SaveLocations.cs; see [save locations](save-locations.md). SavesPage exposes native Windows/Mac folder pickers and explicit copy without deleting original saves.
+
+README download buttons now use stable platform ZIP aliases. Launcher publication
+uploads each alias from its verified versioned ZIP, retaining updater names and
+requiring all ten assets before publication. No local alias copies are created.
+
+Windows build/test receipts: [release validation reuse](release-speed.md).
+Launcher CI retains the cache regression in its startup/package test step;
+the step indentation is corrected with the suite scheduling maintenance.
+
+Build/release/CI helpers now live under their matching `tools/` folders.
+Launcher implementation stays under `tools/launcher/`; installed package paths
+remain separate from repository source locations.
+NativeHost's inline Vulkan Python imports from `tools/build`; the native-launcher
+suite executes that embedded code against an isolated grouped helper fixture.
+
+The launcher compatibility selector follows the game-icon patch into
+`patches/platform/`. Its scope and tests are unchanged; nested runtime patches
+continue to select runtime CI jobs through the existing `patches/**` rule.
+
+Compatibility scope matching now uses the numbered patch filenames documented
+in [patch maintenance](../../patches/README.md); selection behavior is unchanged.
+The obsolete generic README download SVG was removed; the Windows and Mac
+buttons and launcher implementation remain unchanged.
+
 <!-- packet:start -->
 The desktop launcher is C# under `tools/launcher/`, NOT the guest recompilation
 runtime. Windows uses WPF; native Mac uses Avalonia plus thin platform adapters.
@@ -19,7 +50,7 @@ settings; `TexturePack.cs`/`TextureDownload.cs`: optional textures.
 build and does not revive interpolation or change the console interrupt clock.
 Legacy144 sidecars load as120 without writes; explicit save uses the new preset.
 Launcher version and game version are separate. A source commit is not a
-published release. Use `tools/launcher-compatibility.py --local` for API-free
+published release. Use `tools/ci/launcher-compatibility.py --local` for API-free
 shared checks, plus affected host lifecycle/build checks. Never start publishing
 or change credentials just to validate a launcher edit.
 <!-- packet:end -->
@@ -28,6 +59,39 @@ PR checks: `runtime-patches.yml` now calls the existing `launcher-build.yml`
 when `launcher-compatibility.py scope` selects launcher inputs, then includes
 that result in the candidate `PR validation` gate. The separate launcher
 compatibility required check stays active until the branch ruleset migrates.
+
+## Enhanced Audio beta preference
+
+`GameSettings.EnhancedAudio` and the shared `SettingsPage` Audio tab expose
+**Enhanced Audio (Beta)** on Windows/WPF and Mac/Avalonia. The sixth entry in
+`LauncherPlatform.Settings` is `pc-audio.ini` in the same directory as display
+settings (`config/` for a development checkout, `Settings/` when installed).
+It uses the game's `TSFP_AUDIO_V1 0|1` sidecar, defaults OFF, and participates
+in normal dirty-state comparison, concurrent-edit protection and six-file save
+rollback. There is no duplicate launcher JSON or environment-only preference.
+The launcher follows its normal save-before-launch policy; the in-game toggle
+still updates playback live. Earlier games may ignore this optional sidecar.
+Shared C# UI tests cover opt-in, game-menu round trips, draft state, invalid/
+concurrent inputs and rollback after an audio-file write failure. Windows build
+and tests passed locally; native Mac UI/build execution remains pending MAC-120.
+
+## Saved settings button
+
+`SettingsPage` snapshots its deferred draft after a successful save and disables
+Save using the existing theme. Shared input events and binding refreshes compare
+against that snapshot: edits re-enable Save, reverting edits disables it, and
+failed saves leave it available. Tab/filter navigation and immediate texture
+update checks do not dirty the deferred draft. The first save remains available
+for defaults/migration. Behavioral coverage runs in `tests/launcher/launcher_shared_ui.cs` on
+both hosts; no new platform adapter or persistence format is introduced.
+
+After the PR #382 layout migration, validate this work with
+`tools/build/build-launcher.ps1 -Test`; its fixtures now live in `tests/launcher/`.
+The publisher is `tools/release/launcher-release.py`, automation selection is
+`tools/ci/launcher-compatibility.py`, and artwork pins are under `config/build/`.
+Use `tools/project_paths.py` for dynamic helper lookup and the maintained folder
+maps for literal command paths. Old copied compiler/publication scripts in
+ignored build staging are historical artifacts, not supported entry points.
 
 ## Capture health diagnostics
 
@@ -47,7 +111,96 @@ The ordinary Diagnostics report and Windows live-hang view include this summary.
 Only fixed status text enters copied diagnostics; raw heartbeat fields stay local.
 `breadcrumbs.txt` joins the bounded report export/retention allowlist (8 KiB).
 
+## Launcher v1.4.0 preparation
+
+The shared `LauncherVersion.Value` and numeric assembly/file attributes advance
+together to 1.4.0 / 1.4.0.0. This release includes save management, texture health,
+Save-button state and the shared visual/density changes. The existing tag-triggered
+`launcher-release.yml` builds both hosts from the merged main commit and owns
+publication; platform manifests and versioned ZIP naming stay unchanged.
+A version commit alone is not a published release.
+
+`Ui.TextChanged` uses Avalonia's synchronous `TextProperty` notification; the
+routed TextChanged event is deferred and left Save's draft snapshot stale until
+the dispatcher ran. WPF retains its immediate event. The existing shared Save
+state regression exercises immediate edit/revert for every text field on both
+hosts; do not weaken it with sleeps or omit the Mac path.
+
+The native `JsonAdapter.Deserialize` normalizes malformed System.Text.Json input
+to InvalidDataException, the shared corruption/recovery contract. This lets
+backup version labels fall back to Unknown for damaged BUILD records while
+preserving those records, and lets texture status retain malformed receipts.
+It never accepts damaged archives. Native parser and shared backup/receipt
+regressions cover these cases; packaged repair exercises the same path.
+
+README's single `docs/assets/launcher-preview.png` now depicts v1.4.0, rendered
+with `--render-preview` from a local build of the published `launcher-v1.4.0`
+source (2a2ffe36) and pinned artwork. `docs/assets/README.md` records source,
+application/PNG hashes, dimensions and synthetic-channel provenance. Keep the
+caption's Stable-default/sample-data distinction; this render is UI evidence,
+not a real installation or gameplay test.
+
+## Shared page presentation
+
+`PageTheme.Header` owns the category, 28px title, description and silver-blue
+separator used by Settings, Saves, Maintenance, What's New and Game versions.
+`PageTheme.Badge`/`SetBadge` share neutral/info/success/warning treatments; every
+state includes a text label, so color alone is never the status indicator.
+Repair badges use verification results; texture health uses completed checks or
+installs and reports an incomplete check on errors. Release badges distinguish
+updates from different channels and newer installed builds. Preview/Beta labels
+remain separate from installation state.
+
+`SettingsPage.Field` reserves the same caption height across paired columns and
+retains labeled-by accessibility. Graphics lists display, camera, frame rate and
+quality before texture management, with the existing fixed Save/Cancel footer.
+Both hosts consume these page helpers; no duplicate native layout is required.
+`PageTheme.Details` supplies initially collapsed, keyboard-operable explanations.
+Resolution/FOV/high-refresh/performance help, texture help/update preferences,
+Discord setup and backup-storage notes use it. Texture actions, installed/available
+versions, saved mode, Beta/compatibility warnings and restore protection stay
+visible. Settings captions reserve 20px, with shorter labels; paired inputs retain
+labeled-by accessibility. Layout changes do not alter defaults or persistence.
+Visual-only validation uses the existing Windows `--render-settings-graphics`,
+`--render-settings-preview`, `--render-repair-preview`, `--render-news-preview`
+and `--render-versions-preview` modes plus shared UI checks. Native Mac layout,
+DPI and keyboard acceptance still require a native host.
+
 ## Flow and ownership
+
+### Save manager and archive safety
+
+`SavesPage.cs` is shared WPF/Avalonia UI under `SavesHost`; both navigation adapters
+route Saves there and lock other operations while its cancellable work runs.
+`SavesPage` receives the native Mac window’s lifetime installation-lock ownership;
+its busy state serializes save work without reacquiring `mac.lock`. Standalone
+backup/restore callers still acquire the installation lock, as do Windows calls.
+`SaveBackups.cs` archives only `LauncherPlatform.Saves(root)` into `Backups/Saves`.
+It records UTC/date, game version and reason, hashes metadata and nonzero 64 KiB
+blocks, omits empty regions and verifies the completed archive before publishing
+its GUID-named `.tsfpsave` file. Limits are 1,024 files, 64 GiB logical, 512 MiB
+nonempty data, 8,192 blocks and 4 MiB manifest. List shows the latest 200 valid
+archives; invalid files are retained. No import/export or automatic pruning.
+
+`Core.ApplyScope` calls `BeforeGameChange` only for game updates/repairs/rollback;
+backup failure blocks installation. Launcher self-update is excluded. Restore
+stages and checks all files, creates a pre-restore backup, then swaps save folders.
+The bounded owner journal under `.launcher/save-restore` supports interruption
+recovery. Cleanup failure after commit must never roll back partially deleted
+old files. Recovery keeps the installed save folder and validates its undo
+archive before discarding the old one. The Windows adapter marks staged files
+sparse with FSCTL_SET_SPARSE; native SetLength leaves unwritten holes on Mac.
+See [Microsoft's sparse-file contract](https://learn.microsoft.com/en-us/windows/win32/api/winioctl/ni-winioctl-fsctl_set_sparse).
+Tests live in `tests/launcher/launcher_saves.cs` and run through shared UI checks
+on both hosts. They use synthetic data only; Mac execution remains host-specific.
+
+### Texture status and verification
+
+`TextureDownload.InstalledVersion` reads the bounded local receipt;
+`Verify` compares the schema-3 file index and computes required part bytes without
+changing textures. `SettingsPage` shows installed/available versions and saved
+Classic/Enhanced mode, labels drafts, and offers Verify plus confirmed repair.
+Unknown custom files are outside verification and remain untouched.
 
 The launcher publication job requires a full-history checkout (`fetch-depth: 0`)
 for `launcher_pr_notes` to inspect the previous launcher tag and merged commit
@@ -55,8 +208,8 @@ range. Build-job history does not carry into the separate publication job.
 `test_launcher_release.py` checks this prerequisite; tags and published assets
 remain immutable during interrupted-publication recovery.
 
-Read [launcher usage](../launcher.md), [Windows launcher](../windows-launcher.md),
-[Mac launcher](../mac-launcher.md) and [release process](../launcher-releases.md)
+Read [launcher usage](../players/launcher.md), [Windows launcher](../players/windows-launcher.md),
+[Mac launcher](../players/mac-launcher.md) and [release process](../release/launcher-releases.md)
 only as needed. `Bootstrap.cs` handles startup; `Core.cs` contains shared
 installation/path/transaction primitives. `LauncherPlatform.cs` chooses host
 executable names, locks, restart/open behavior and file operations.
@@ -70,27 +223,33 @@ file to change one option. `ReleaseNews.cs`, release-note classes and
 or sending diagnostic data.
 
 Root `Play.cmd` variants and `Play-Native-Mac.command` launch development builds;
-they are not the packaged launcher's installer. `tools/build-launcher.ps1` and
-`tools/build-mac-launcher.py` build the desktop UI. `tools/launcher/macos/` holds
+they are not the packaged launcher's installer. `tools/build/build-launcher.ps1` and
+`tools/build/build-mac-launcher.py` build the desktop UI. `tools/launcher/macos/` holds
 native project/adapters; shared behavior stays above it. Do not run the
 interactive launcher as an automated gameplay test.
 
 ## Checks
 
-`tests/test_launcher_compatibility.py` checks local selection and the API-free
+`tests/launcher/test_launcher_compatibility.py` checks local selection and the API-free
 workflow; C# behavioral fixtures under `tests/launcher_*.cs` cover updates,
 settings, sessions, startup, downloads and lifecycle. Python harnesses choose
 appropriate compilation/host checks. See `.github/workflows/launcher-build.yml`,
-`launcher-compatibility.yml` and [compatibility docs](../launcher-compatibility.md).
+`launcher-compatibility.yml` and [compatibility docs](../release/launcher-compatibility.md).
 Use the harness's explicit result; a skipped compiler/native UI test is not a
 pass on that host. A Windows build does not prove Mac UI or process behavior.
 
 ## GitHub issue automation
 
 Issue forms: `.github/ISSUE_TEMPLATE/`; normalization/labels/version options:
-`tools/issue-forms.py` and issue workflows under
-`.github/workflows/`. PR resolution notes: `tools/issue-resolution.py`,
+`tools/ci/issue-forms.py` and issue workflows under
+`.github/workflows/`. PR resolution notes: `tools/ci/issue-resolution.py`,
 `.github/pull_request_template.md` and `issue-resolution-comments.yml`.
+New PR descriptions contain only Change and Cause and fix in plain language;
+release-reference PRs follow the same format. Resolution notes already accept
+Cause and fix without Validation; older PRs with Validation remain supported.
+The compatibility worker requests a short explanation for its repair PR, with
+validation in STATUS.md and platform follow-up in MAC_PORT_BACKLOG.md. Existing
+check selection and merge gates are unchanged.
 Use live GitHub issue/release metadata for a request that requires current data.
 Local Git history and stale advisory files do not replace a live issue body.
 Publishing a fix, merging, releasing and creating issues are different actions;
@@ -101,10 +260,10 @@ preserve the user's actual authorization.
 The bug form's `BEGIN AUTO LAUNCHER VERSIONS` block now includes published
 launcher `v1.2.23`, retaining the earlier release references. This is reference data in
 `.github/ISSUE_TEMPLATE/01-bug-report.yml`, generated by the existing
-`tools/issue-forms.py` release-list refresh. Required version/platform inputs
+`tools/ci/issue-forms.py` release-list refresh. Required version/platform inputs
 remain empty for the reporter to fill in.
 No launcher executable, installer, update policy or game behavior changes.
-`tests/test_issue_forms.py` covers bounded/sorted release references and empty
+`tests/repository/test_issue_forms.py` covers bounded/sorted release references and empty
 required inputs. The repository-context
 check requires this owning guide for structural issue-form changes; validated
 AUTO version-list-only refreshes are exempt.
@@ -143,15 +302,15 @@ newer game is needed before saving. Opening settings never rewrites that file.
 
 ## Retired bundled character icons (#74)
 
-`Core.InstallPending` reads `BUILD.json` → `textures.retired`, emitted by the
-shared pack auditor from `config/texture-originals.json`. Each key records the
+`Core.InstallPending` reads `BUILD.json` â†’ `textures.retired`, emitted by the
+shared pack auditor from `config/textures/texture-originals.json`. Each key records the
 previous bundled DDS and public JSON hashes. `AddRetiredTextures` preserves
 the entire pair if either existing member differs; absent members need no action.
 Matching removals carry a hash precondition through `ApplyScope` and its normal
 backup/recovery journal. Rollback restores removed originals. Backup cleanup
 accepts only flat keyed files whose recorded retirement hashes still match;
 unknown texture backups stay protected. This policy is shared by both hosts.
-`tests/launcher_textures.cs` runs upgrade, custom-pair, partial-pair, rollback,
+`tests/launcher/launcher_textures.cs` runs upgrade, custom-pair, partial-pair, rollback,
 failure and late-change checks in both launcher builds. Already published
 launchers require an update carrying this migration before upgrading the game.
 Launcher 1.2.24 packages this migration for both hosts. Its shared version and
@@ -163,6 +322,8 @@ declares retired replacements; older bundled packs retain their 1.2.22 minimum.
 
 `SettingsPage` owns both hosts' optional check/download/confirmation/cancel UI.
 `TextureBusyChanged` locks the WPF/Avalonia host navigation and update actions.
+Released launchers embed the `config/texture-download.json` URL; keep this public
+endpoint and the publisher's default path stable during repository moves.
 `TextureDownload` reads schema-3 `config/texture-download.json` (bounded to 8 MiB),
 verifies per-part/per-file hashes and adopts matching files from existing packs
 without receipts. Schema-1 receipts remain supported. Downloads merge keyed pairs
@@ -172,7 +333,7 @@ rechecked on retry. Opt-in lives in `.launcher/texture-opt-in.json`; opening Set
 checks for updates, but downloads always require confirmation. Opt-out deletes only
 that preference. Classic/Enhanced persistence is separate and defaults to Classic.
 
-The catalog in `config/texture-pack.json` declares optional delivery; normal
+The catalog in `config/textures/texture-pack.json` declares optional delivery; normal
 Windows/Mac game packages omit the assets. The download index must contain a
 published schema-3 manifest, produced by `texture-release.py` after auditing and
 uploading the committed pack. Committing DDS files alone does not make them
@@ -186,7 +347,7 @@ keeping the Settings download progress and Cancel control accessible until compl
 
 ## Release-reference refresh safety
 
-`tools/issue-forms.py` refuses an empty game or launcher result when that category
+`tools/ci/issue-forms.py` refuses an empty game or launcher result when that category
 already lists versions, before writing either block. This covers empty, filtered
 or category-incomplete responses; intentional removal of the last release needs
 a reviewed manual reference edit. Initially empty categories remain supported.
@@ -236,12 +397,12 @@ preview testing; no save-format migration or profile copy is introduced.
 
 Publisher and both game packagers record channel identity; publication requires
 a published stable launcher 1.3.0+ with Windows/Mac assets. VERSION 0.3.2 is the
-next Stable game source version, not a published release. The docs/releasing.md
+next Stable game source version, not a published release. The docs/release/releasing.md
 process covers explicit feature/hotfix branches, version choice and rollout.
 Shared UI fixtures execute channel isolation, preference preservation/migration,
 metadata checks and return-to-Stable eligibility on both hosts; Windows versions
 fixtures cover paginated discovery. Native Mac host acceptance remains pending
-in MAC-062 and STATUS.md.
+in MAC-062 and docs/project/STATUS.md.
 
 
 Installation-copy follow-up: README's primary Windows installation row and
@@ -266,7 +427,7 @@ explicit synthetic Story Co-op sample; normal launchers list published tracks on
 
 Local artwork correction: the Windows builder now prefers hash-verified cached
 resources in build/launcher-art (recovered by fetch-launcher-art.ps1 from the
-config/launcher-artwork.json pin), then falls back to legacy private source art.
+config/build/launcher-artwork.json pin), then falls back to legacy private source art.
 Explicit build arguments remain supported. Older private artwork is preserved;
 the incorrect local banner came from 1.2.12 and lacked the pinned backdrop.
 Top-right badge wording is restored to Stable Channel/Preview Channel on both
@@ -284,12 +445,12 @@ Old general-track note metadata remains readable without relabeling legacy build
 Shared UI fixtures check Beta-only candidates, hidden legacy tracks/history,
 preference migration and existing grouped selectors on both hosts.
 
-Launcher changelog correction: tools/launcher-release.py launcher_notes pages the
+Launcher changelog correction: tools/release/launcher-release.py launcher_notes pages the
 published release history and explicitly supplies the highest earlier stable
 launcher tag to GitHub's generated notes API. This prevents a game alpha from
 becoming the implicit comparison baseline; drafts, launcher previews and later
 versions are excluded. Initial launcher notes avoid implicit generation, and
-incomplete pagination fails closed. tests/test_launcher_release.py covers mixed
+incomplete pagination fails closed. tests/launcher/test_launcher_release.py covers mixed
 paginated history, initial releases and the history cap in the existing dual-host
 publication test route. No launcher binaries or OS adapters change.
 
@@ -302,13 +463,13 @@ game history. Offline release fixtures cover filtering, range and complete files
 Mixed PRs touching game runtime/patch/texture source use a neutral launcher label
 so their game feature titles do not become advertised launcher features.
 
-Game changelog bootstrap: tools/publish-release.py preflight uses the most
+Game changelog bootstrap: tools/release/publish-release.py preflight uses the most
 recently published earlier ancestor game prerelease (including legacy alpha)
 only when publishing the first Stable game and no Stable game exists. Later
 Stable notes select the highest earlier Stable ancestor across minor versions;
 preview series policy is unchanged. Maintenance branches still need a Stable
 ancestor. Launcher tags, drafts, future versions and nonancestor previews are
-excluded. tests/test_publish_release.py verifies baseline selection and generated
+excluded. tests/launcher/test_publish_release.py verifies baseline selection and generated
 notes payload/range through the existing release test route. No host adapters change.
 
 Story branch preview preparation: `0.4.0-story-coop.1` uses channel ID
@@ -331,3 +492,34 @@ synthetic1175 recovery, bounded permanent failure and immediate1176 rejection.
 Existing download/session/settings suites exercise the shared callers.
 Generated preview notes now direct users to Preview, then the named Testing
 track, matching the shared launcher UI. `test_publish_release.py` checks this.
+## Online companion icon
+
+`IconBuilder.WriteMultiplayer` reuses the launcher/game aperture and supplies a
+compact two-player mark in seven transparent icon sizes. Existing launcher/game
+render paths are unchanged. `tools/build/build-online-icon.ps1` writes ignored
+`build/online-icon` resources; the game icon build invokes it and Online packaging
+regenerates/copies `Support/Online/multiplayer.ico`. OnlineTheme applies it to the
+browser and invitation popup. No new Mac launcher resource or artwork is needed;
+native Mac Online remains deferred. Icon frames, package placement and real Tk
+window assignment are checked in `tests/repository/test_game_icon.py`.
+
+## Multiplayer Dock artwork (2026-10-30)
+
+`IconBuilder.WriteMultiplayerPng` renders the same multiplayer vector artwork at
+512px for Mac; `build-online-icon.ps1` emits it beside the existing ICO. The Mac
+companion consumes that PNG through Tk iconphoto, and packaging requires it.
+No separate icon design or launcher setting is introduced. Native Online now
+uses the shared browser with a bundled runtime; see multiplayer-ui.md.
+
+## Extended crash report export (in development)
+
+`CrashReports` exports the allowlisted `guest-memory.bin`, `model-tree.bin` and
+`diagnostics.json` alongside existing files, with separate bounded size limits.
+The Diagnostics page labels the action Export report ZIP and opens the destination
+folder after export on both hosts. Evidence availability is separate from root
+cause determination. The shared page offers an extended-diagnostics checkbox;
+its session-only preference is passed by `GameSettings.StartInfo` through
+`TSFP_CRASH_EXTENDED` and resets when the launcher closes. Compatible Windows
+capture is implemented; native Mac collection is implemented but requires host
+validation and may report process-memory-access-denied under macOS policy. Tests cover
+new file inclusion while retaining unknown-file exclusion and bounded exports.

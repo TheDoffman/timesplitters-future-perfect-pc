@@ -1,0 +1,591 @@
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -27,6 +27,7 @@
+ 
+ #include "kernel.h"
+ #include "guest_virtual_memory.h"
++#include "guest_memory_services.h"
+ #include "xbox_memory_layout.h"
+ #include "recomp_icall_feedback.h"
+ #ifdef _WIN32
+@@ -652,21 +653,9 @@
+  */
+ static void bridge_MmAllocateContiguousMemory(void)
+ {
+-    uint32_t size = STACK_ARG(0);
+-
+-    /* From the contiguous window, not the general heap: the caller is
+-     * entitled to assume (VA & 0x0FFFFFFF) | 0x80000000 == VA, because that
+-     * is how a driver converts between the address it holds and the one it
+-     * hands the hardware. See xbox_ContiguousAlloc. */
+-    uint32_t xbox_va = xbox_ContiguousAlloc(size, 4096);
+-
+-    if (KERNEL_LOG_ON_HALF()) {
+-        fprintf(stderr, "  [KERNEL] MmAllocateContiguousMemory: size=%u → Xbox VA 0x%08X\n",
+-                size, xbox_va);
+-        fflush(stderr);
+-    }
+-
+-    g_eax = xbox_va;
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    g_eax = tsfp_guest_mm_allocate(&memory,TSFP_MM_CONTIGUOUS,STACK_ARG(0));
+ }
+ 
+ /* ── MmAllocateSystemMemory (ordinal 167) ─────────────────
+@@ -688,22 +677,9 @@
+  */
+ static void bridge_MmAllocateSystemMemory(void)
+ {
+-    uint32_t size = STACK_ARG(0);
+-    uint32_t prot = STACK_ARG(1);
+-    uint32_t xbox_va;
+-
+-    (void)prot;
+-    if (!size) {
+-        g_eax = 0;
+-        return;
+-    }
+-    xbox_va = xbox_HeapAlloc(size, 4096);
+-    if (xbox_va)
+-        memset((void *)((uintptr_t)xbox_va + g_xbox_mem_offset), 0, size);
+-    else
+-        fprintf(stderr, "  [KERNEL] MmAllocateSystemMemory: %u bytes REFUSED\n",
+-                size);
+-    g_eax = xbox_va;
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    g_eax = tsfp_guest_mm_allocate(&memory,TSFP_MM_SYSTEM,STACK_ARG(0));
+ }
+ 
+ /* ── MmAllocateContiguousMemoryEx (ordinal 166) ───────────
+@@ -718,26 +694,9 @@
+ 
+ static void bridge_MmAllocateContiguousMemoryEx(void)
+ {
+-    uint32_t size = STACK_ARG(0), low = STACK_ARG(1), high = STACK_ARG(2);
+-    uint32_t alignment = STACK_ARG(3), result = 0;
+-    uint64_t width = high >= low ? (uint64_t)high - low + 1u : 0;
+-    /* Preserve the narrow-range fixed-address convention, with bounds and
+-     * ownership checked before any memory write. The protection word does
+-     * not change the host mapping's existing writable policy. */
+-    if (!width || low >= XBOX_CONTIG_SIZE) {
+-        result = 0;
+-    } else if (low && width <= (uint64_t)size + 4096u) {
+-        if (low < XBOX_CONTIG_SIZE && size <= width)
+-            result = xbox_ContiguousAllocAt(XBOX_CONTIG_BASE + low, size);
+-    } else {
+-        uint32_t ceiling = high < XBOX_CONTIG_SIZE ? high : XBOX_CONTIG_SIZE - 1u;
+-        result = xbox_ContiguousAllocRange(size, alignment,
+-            XBOX_CONTIG_BASE + low, XBOX_CONTIG_BASE + ceiling);
+-    }
+-    g_eax = result;
+-    if (KERNEL_LOG_ON_HALF())
+-        fprintf(stderr, "  [KERNEL] physical allocation size=%u low=0x%08X high=0x%08X align=%u -> 0x%08X\n",
+-                size, low, high, alignment, result);
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    g_eax = tsfp_guest_mm_contiguous_ex(&memory,STACK_ARG(0),STACK_ARG(1),STACK_ARG(2),STACK_ARG(3));
+ }
+ 
+ /* ── MmFreeContiguousMemory (ordinal 171) ─────────────────
+@@ -745,12 +704,9 @@
+  */
+ static void bridge_MmFreeContiguousMemory(void)
+ {
+-    uint32_t addr = STACK_ARG(0);
+-    /* The contiguous arena's own free. Handing these to xbox_HeapFree freed
+-     * nothing: the heap does not own the window, so every block stayed in use
+-     * (see xbox_ContiguousAlloc). */
+-    if (!xbox_ContiguousFree(addr))
+-        xbox_HeapFree(addr);
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    tsfp_guest_mm_release(&memory,TSFP_MM_CONTIGUOUS,STACK_ARG(0));
+     g_eax = 0;
+ }
+ 
+@@ -1132,8 +1088,9 @@
+ /* ── MmQueryStatistics (ordinal 181) ─────────────────────── */
+ static void bridge_MmQueryStatistics(void)
+ {
+-    uint32_t stats_ptr = STACK_ARG(0);
+-    g_eax = (uint32_t)xbox_MmQueryStatistics(XBOX_TO_NATIVE(stats_ptr));
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    g_eax = tsfp_guest_mm_statistics(&memory,STACK_ARG(0));
+ }
+ 
+ /* ── NtCreateEvent (ordinal 189) ─────────────────────────── */
+@@ -1783,10 +1740,9 @@
+  */
+ static void bridge_MmQueryAddressProtect(void)
+ {
+-    uint32_t address = STACK_ARG(0);
+-
+-    g_eax = address ? (uint32_t)xbox_MmQueryAddressProtect(XBOX_TO_NATIVE(address))
+-                    : 0;
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    g_eax = tsfp_guest_mm_query_access(&memory,STACK_ARG(0));
+ }
+ 
+ /* ── NtUserIoApcDispatcher (ordinal 232) ─────────────────── */
+@@ -1884,42 +1840,17 @@
+ /* ── MmGetPhysicalAddress (ordinal 173) ──────────────────── */
+ static void bridge_MmGetPhysicalAddress(void)
+ {
+-    uint32_t addr = STACK_ARG(0);
+-
+-    /* Identity below 64 MB, minus the window base inside it.
+-     *
+-     * The old comment here was half right: the lower 64 MB is identity
+-     * mapped, so returning the VA is correct there. It is wrong for the
+-     * contiguous window, which is precisely where anything that asks this
+-     * question lives -- a caller wants a physical address because it is
+-     * about to hand a buffer to the GPU, and a GPU buffer comes from
+-     * MmAllocateContiguousMemory.
+-     *
+-     * Physical page P is visible at XBOX_CONTIG_BASE + P, so the physical
+-     * address of a window VA is the VA minus that base.
+-     *
+-     * Measured against the real title in xemu, at the same point in its
+-     * boot: Burnout 2 stores VA - PA at 0x005A8860 during audio pool setup.
+-     * Hardware has 0x83FDE000 - 0x03FDE000 = 0x80000000 there. Returning the
+-     * VA unchanged made that delta 0, so every buffer address the title
+-     * converted for the GPU stayed virtual. The title submitted two draw
+-     * calls and then stopped advancing DMA_PUT at all.
+-     */
+-    if (addr >= XBOX_CONTIG_BASE
+-        && (uint64_t)addr < (uint64_t)XBOX_CONTIG_BASE + XBOX_CONTIG_SIZE)
+-        g_eax = addr - XBOX_CONTIG_BASE;
+-    else
+-        g_eax = addr;
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    g_eax = tsfp_guest_mm_physical(&memory,STACK_ARG(0));
+ }
+ 
+ /* ── MmSetAddressProtect (ordinal 182) ───────────────────── */
+ static void bridge_MmSetAddressProtect(void)
+ {
+-    uint32_t addr = STACK_ARG(0);
+-    uint32_t size = STACK_ARG(1);
+-    uint32_t prot = STACK_ARG(2);
+-
+-    xbox_MmSetAddressProtect(XBOX_TO_NATIVE(addr), size, prot);
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    (void)tsfp_guest_mm_set_access(&memory,STACK_ARG(0),STACK_ARG(1),STACK_ARG(2));
+     g_eax = 0;
+ }
+ 
+@@ -2594,16 +2525,9 @@
+  */
+ static void bridge_MmClaimGpuInstanceMemory(void)
+ {
+-    uint32_t bytes      = STACK_ARG(0);
+-    uint32_t padding_va = STACK_ARG(1);
+-
+-    if (bytes == 0xFFFFFFFFu) {
+-        bytes = XBOX_GPU_INSTANCE_DEFAULT;
+-    }
+-    if (padding_va) {
+-        BRIDGE_MEM32(padding_va) = 0;
+-    }
+-    g_eax = XBOX_CONTIG_BASE + XBOX_CONTIG_SIZE - bytes;
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    g_eax = tsfp_guest_mm_gpu(&memory,STACK_ARG(0),STACK_ARG(1));
+ }
+ 
+ /* VOID HalRegisterShutdownNotification(PHAL_SHUTDOWN_REGISTRATION, BOOLEAN)
+@@ -4518,16 +4442,9 @@
+  */
+ static void bridge_MmMapIoSpace(void)
+ {
+-    uint32_t phys_addr = STACK_ARG(0);
+-    uint32_t num_bytes = STACK_ARG(1);
+-    uint32_t protect = STACK_ARG(2);
+-    uint32_t xbox_va = xbox_HeapAlloc(num_bytes, 4096);
+-
+-    fprintf(stderr, "  [KERNEL] MmMapIoSpace: phys=0x%08X size=%u → Xbox VA 0x%08X\n",
+-            phys_addr, num_bytes, xbox_va);
+-    fflush(stderr);
+-
+-    g_eax = xbox_va;
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    g_eax = tsfp_guest_mm_allocate(&memory,TSFP_MM_IO,STACK_ARG(1));
+ }
+ 
+ /* ── MmPersistContiguousMemory (ordinal 178) ─────────────
+@@ -4538,8 +4455,7 @@
+  */
+ static void bridge_MmPersistContiguousMemory(void)
+ {
+-    /* No-op stub */
+-    g_eax = 0;
++    g_eax = tsfp_guest_mm_advisory(TSFP_MM_NOOP,0);
+ }
+ 
+ /* ── Generic fallback for simple value-only functions ────── */
+@@ -4697,9 +4613,7 @@
+ /* ── MmLockUnlockBufferPages (ordinal 175, 3 args) */
+ static void bridge_MmLockUnlockBufferPages(void)
+ {
+-    xbox_MmLockUnlockBufferPages(XBOX_TO_NATIVE(STACK_ARG(0)),
+-                                 STACK_ARG(1), (BOOLEAN)STACK_ARG(2));
+-    g_eax = 0;
++    g_eax = tsfp_guest_mm_advisory(TSFP_MM_NOOP,0);
+ }
+ 
+ /* ── MmQueryAllocationSize (ordinal 180, 1 arg)
+@@ -4713,7 +4627,9 @@
+  */
+ static void bridge_MmQueryAllocationSize(void)
+ {
+-    g_eax = xbox_HeapBlockSize(STACK_ARG(0));
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    g_eax = tsfp_guest_mm_size(&memory,STACK_ARG(0));
+ }
+ 
+ /* ── NtCreateMutant (ordinal 192, 3 args) */
+@@ -4888,7 +4804,9 @@
+  * matches against the block table and takes the raw 32-bit guest VA. */
+ static void bridge_MmUnmapIoSpace(void)
+ {
+-    xbox_HeapFree(STACK_ARG(0));
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    tsfp_guest_mm_release(&memory,TSFP_MM_IO,STACK_ARG(0));
+     g_eax = 0;
+ }
+ 
+@@ -5416,8 +5334,7 @@
+  * never dereferenced. */
+ static void bridge_MmLockUnlockPhysicalPage(void)
+ {
+-    xbox_MmLockUnlockPhysicalPage(STACK_ARG(0), (BOOLEAN)STACK_ARG(1));
+-    g_eax = 0;
++    g_eax = tsfp_guest_mm_advisory(TSFP_MM_NOOP,0);
+ }
+ 
+ /* ── MmFreeSystemMemory (ordinal 172, 2 args)
+@@ -5425,7 +5342,9 @@
+  * seen this address. */
+ static void bridge_MmFreeSystemMemory(void)
+ {
+-    xbox_HeapFree(STACK_ARG(0));
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    tsfp_guest_mm_release(&memory,TSFP_MM_SYSTEM,STACK_ARG(0));
+     g_eax = 0;
+ }
+ 
+@@ -5437,15 +5356,16 @@
+  * guest heap here: create returns base+size, delete frees the base (arg 1). */
+ static void bridge_MmCreateKernelStack(void)
+ {
+-    uint32_t size = STACK_ARG(0);
+-    uint32_t base_va = xbox_HeapAlloc(size, 16);
+-
+-    g_eax = base_va ? base_va + size : 0;
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    g_eax = tsfp_guest_mm_allocate(&memory,TSFP_MM_STACK,STACK_ARG(0));
+ }
+ 
+ static void bridge_MmDeleteKernelStack(void)
+ {
+-    xbox_HeapFree(STACK_ARG(1));
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    tsfp_guest_mm_release(&memory,TSFP_MM_STACK,STACK_ARG(1));
+     g_eax = 0;
+ }
+ 
+@@ -6792,11 +6712,9 @@
+ /* --- MmGlobalData (ordinal 102, 0 args) --- */
+ static void bridge_MmGlobalData(void)
+ {
+-    /* Titles rarely dereference this; give it a stable, mapped address that
+-     * reads back the address itself (self-referential placeholder). */
+-    BRIDGE_MEM32(XBOX_KERNEL_DATA_BASE + KDATA_MMGLOBAL) =
+-        XBOX_KERNEL_DATA_BASE + KDATA_MMGLOBAL;
+-    g_eax = XBOX_KERNEL_DATA_BASE + KDATA_MMGLOBAL;
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    g_eax = tsfp_guest_mm_global(&memory,XBOX_KERNEL_DATA_BASE+KDATA_MMGLOBAL);
+ }
+ 
+ /* --- KeInterruptTime (ordinal 120, 0 args) --- */
+@@ -7884,8 +7802,7 @@
+ /* --- MmIsAddressValid (ordinal 174, 1 arg = 4 bytes) --- */
+ static void bridge_MmIsAddressValid(void)
+ {
+-    (void)STACK_ARG(0);
+-    g_eax = 1;  /* assume every guest address is valid */
++    g_eax = tsfp_guest_mm_advisory(TSFP_MM_VALID_ADDRESS,STACK_ARG(0));
+ }
+ 
+ /* --- MmDbgAllocateMemory (ordinal 374, 2 args = 8 bytes)
+@@ -7893,50 +7810,38 @@
+  * Allocates zeroed guest memory. */
+ static void bridge_MmDbgAllocateMemory(void)
+ {
+-    uint32_t size = STACK_ARG(0);
+-    uint32_t tag = STACK_ARG(1);
+-    uint32_t va;
+-
+-    (void)tag;
+-    if (!size) {
+-        g_eax = 0;
+-        return;
+-    }
+-    va = xbox_HeapAlloc(size, 16);
+-    if (va)
+-        memset((void *)((uintptr_t)va + g_xbox_mem_offset), 0, size);
+-    g_eax = va;
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    g_eax = tsfp_guest_mm_allocate(&memory,TSFP_MM_DEBUG,STACK_ARG(0));
+ }
+ 
+ /* --- MmDbgFreeMemory (ordinal 375, 2 args = 8 bytes)
+  * VOID MmDbgFreeMemory(PVOID BaseAddress, ULONG Size); */
+ static void bridge_MmDbgFreeMemory(void)
+ {
+-    (void)STACK_ARG(1);
+-    xbox_HeapFree(STACK_ARG(0));
++    tsfp_guest_mm memory;
++    xbox_GetGuestMemoryServices(&memory);
++    tsfp_guest_mm_release(&memory,TSFP_MM_DEBUG,STACK_ARG(0));
+     g_eax = 0;
+ }
+ 
+ /* --- MmDbgQueryAvailablePages (ordinal 376, 0 args = 0 bytes) --- */
+ static void bridge_MmDbgQueryAvailablePages(void)
+ {
+-    g_eax = 0x10000;  /* large made-up free-page count */
++    g_eax = tsfp_guest_mm_advisory(TSFP_MM_AVAILABLE_PAGES,0);
+ }
+ 
+ /* --- MmDbgReleaseAddress (ordinal 377, 2 args = 8 bytes) --- */
+ static void bridge_MmDbgReleaseAddress(void)
+ {
+-    (void)STACK_ARG(0);
+-    (void)STACK_ARG(1);
+-    g_eax = 0;
++    g_eax = tsfp_guest_mm_advisory(TSFP_MM_NOOP,0);
+ }
+ 
+ /* --- MmDbgWriteCheck (ordinal 378, 2 args = 8 bytes)
+  * Passthrough: returns the first argument (the guest VA). */
+ static void bridge_MmDbgWriteCheck(void)
+ {
+-    (void)STACK_ARG(1);
+-    g_eax = STACK_ARG(0);
++    g_eax = tsfp_guest_mm_advisory(TSFP_MM_WRITE_CHECK,STACK_ARG(0));
+ }
+ 
+ /* ═══════════════════════════════════════════════════════════════════════════
+--- a/src/kernel/kernel_memory.c
++++ b/src/kernel/kernel_memory.c
+@@ -1,20 +1,10 @@
+-/*
+- * kernel_memory.c - Xbox Memory Management
+- *
+- * Implements Mm* and NtAllocateVirtualMemory/NtFreeVirtualMemory/NtQueryVirtualMemory
+- * using Win32 VirtualAlloc/VirtualFree/VirtualQuery.
+- *
+- * Xbox contiguous memory (MmAllocateContiguousMemory) is used for GPU-accessible
+- * buffers. On Windows, actual GPU resources are handled by our D3D11 layer;
+- * these allocations just need to return valid CPU-accessible memory.
+- */
++/* Project native Mm adapters and pointer-width Nt VM boundary.
++ * Allocation/page services and memory statistics are separate from guest ABI. */
+ 
+ #include "kernel.h"
+ #include "host_virtual_memory.h"
+-#if defined(_WIN32)
+-/* _aligned_malloc/_aligned_free; POSIX gets them from win32_compat.h */
+-#include <malloc.h>
+-#endif
++#include "memory_statistics.h"
++#include "host_memory_stats.h"
+ 
+ /* ============================================================================
+  * Helper: Xbox protect flags → Win32 protect flags
+@@ -130,28 +120,22 @@
+  * Memory Query & Protection
+  * ============================================================================ */
+ 
+-NTSTATUS __stdcall xbox_MmQueryStatistics(PXBOX_MM_STATISTICS MemoryStatistics)
+-{
+-    MEMORYSTATUSEX ms;
+-    ms.dwLength = sizeof(ms);
+-
+-    if (!MemoryStatistics)
+-        return STATUS_INVALID_PARAMETER;
+-
+-    if (!GlobalMemoryStatusEx(&ms))
+-        return STATUS_UNSUCCESSFUL;
+-
+-    memset(MemoryStatistics, 0, sizeof(XBOX_MM_STATISTICS));
+-    MemoryStatistics->Length = sizeof(XBOX_MM_STATISTICS);
+-
+-    /* Xbox has 64MB RAM. Report plausible values. */
+-    ULONG page_size = 4096;
+-    MemoryStatistics->TotalPhysicalPages = 64 * 1024 * 1024 / page_size; /* 16384 pages */
+-    MemoryStatistics->AvailablePages = (ULONG)(ms.ullAvailPhys / page_size);
+-    if (MemoryStatistics->AvailablePages > MemoryStatistics->TotalPhysicalPages)
+-        MemoryStatistics->AvailablePages = MemoryStatistics->TotalPhysicalPages / 2;
+-
+-    return STATUS_SUCCESS;
++/* Project native memory statistics and advisory hints. */
++_Static_assert(sizeof(XBOX_MM_STATISTICS)==TSFP_MEMORY_STATISTICS_BYTES,
++    "native statistics record must contain nine 32-bit words");
++static int native_memory_available(void *host,uint64_t *bytes)
++{
++    (void)host;return tsfp_host_available_memory(bytes);
++}
++/* End project native memory statistics adapter. */
++
++NTSTATUS __stdcall xbox_MmQueryStatistics(PXBOX_MM_STATISTICS output)
++{
++    uint32_t words[TSFP_MEMORY_STATISTICS_WORDS],status;
++    if(!output)return (NTSTATUS)UINT32_C(0xc000000d);
++    status=tsfp_memory_statistics(native_memory_available,NULL,words);
++    if(!status)memcpy(output,words,sizeof(words));
++    return (NTSTATUS)status;
+ }
+ 
+ PVOID __stdcall xbox_MmMapIoSpace(ULONG_PTR physical,ULONG bytes,ULONG protection)
+@@ -167,16 +151,17 @@
+     (void)bytes;native_mm_release(address,NATIVE_MM_IO);
+ }
+ 
+-ULONG_PTR __stdcall xbox_MmGetPhysicalAddress(PVOID BaseAddress)
+-{
+-    /* No physical address translation on Windows - return the VA as a placeholder */
+-    return (ULONG_PTR)BaseAddress;
+-}
+-
+-VOID __stdcall xbox_MmPersistContiguousMemory(PVOID BaseAddress, ULONG NumberOfBytes, BOOLEAN Persist)
+-{
+-    /* Xbox: mark memory to survive soft-reboot. No-op on Windows. */
+-    XBOX_TRACE(XBOX_LOG_MEM, "MmPersistContiguousMemory(%p, %u, %d) - stub", BaseAddress, NumberOfBytes, Persist);
++ULONG_PTR __stdcall xbox_MmGetPhysicalAddress(PVOID address)
++{
++    /* Native pointers retain their full width; guest physical translation is
++     * provided by the separate guest Mm service. */
++    return (ULONG_PTR)address;
++}
++
++VOID __stdcall xbox_MmPersistContiguousMemory(PVOID address,ULONG bytes,BOOLEAN persist)
++{
++    /* This process has no persistent Xbox soft-reboot memory lifetime. */
++    (void)address;(void)bytes;(void)persist;
+ }
+ 
+ ULONG __stdcall xbox_MmQueryAddressProtect(PVOID address)
+@@ -204,15 +189,15 @@
+     return native_mm_allocate(bytes,0,4,NATIVE_MM_CONTIGUOUS);
+ }
+ 
+-VOID __stdcall xbox_MmLockUnlockBufferPages(PVOID BaseAddress, ULONG NumberOfBytes, BOOLEAN UnlockPages)
+-{
+-    /* Page locking is not meaningful in user mode. No-op. */
+-    XBOX_TRACE(XBOX_LOG_MEM, "MmLockUnlockBufferPages(%p, %u, %d) - stub", BaseAddress, NumberOfBytes, UnlockPages);
+-}
+-
+-VOID __stdcall xbox_MmLockUnlockPhysicalPage(ULONG_PTR PhysicalAddress, BOOLEAN UnlockPage)
+-{
+-    XBOX_TRACE(XBOX_LOG_MEM, "MmLockUnlockPhysicalPage(0x%08X, %d) - stub", (ULONG)PhysicalAddress, UnlockPage);
++VOID __stdcall xbox_MmLockUnlockBufferPages(PVOID address,ULONG bytes,BOOLEAN unlock)
++{
++    /* Native pages retain normal host paging; this hint does not pin them. */
++    (void)address;(void)bytes;(void)unlock;
++}
++
++VOID __stdcall xbox_MmLockUnlockPhysicalPage(ULONG_PTR address,BOOLEAN unlock)
++{
++    (void)address;(void)unlock;
+ }
+ 
+ /* ============================================================================
+--- a/src/kernel/xbox_memory_layout.c
++++ b/src/kernel/xbox_memory_layout.c
+@@ -17,6 +17,10 @@
+ #include "guest_allocation.h"
+ #include "guest_thread_memory.h"
+ #include "guest_virtual_memory.h"
++#include "guest_memory_services.h"
++#include "host_pages.h"
++#include "host_memory_stats.h"
++#include "host_virtual_memory.h"
+ #include "pc_guest_memory.h"
+ #include "kernel.h"
+ #include "recomp_config.h"
+@@ -2591,6 +2595,35 @@
+ }
+ /* End project guest VM adapter. */
+ 
++/* Project guest Mm boundary: common policy, registered spans, host operations. */
++static uint32_t guest_mm_query_access(void *host,const void *address)
++{
++    tsfp_host_page_region region;
++    (void)host;
++    return tsfp_host_pages_query(address,&region)?region.protection:1;
++}
++static int guest_mm_set_access(void *host,void *address,uint32_t bytes,uint32_t protection)
++{
++    (void)host;
++    return tsfp_host_pages_protect(address,bytes,tsfp_host_vm_protection(protection));
++}
++static int guest_mm_available(void *host,uint64_t *bytes)
++{
++    (void)host;return tsfp_host_available_memory(bytes);
++}
++void xbox_GetGuestMemoryServices(tsfp_guest_mm *memory)
++{
++    xbox_GetGuestVirtualMemory(&memory->vm);
++    memory->physical_base=XBOX_CONTIG_BASE;
++    memory->physical_size=XBOX_CONTIG_SIZE;
++    memory->gpu_default=XBOX_GPU_INSTANCE_DEFAULT;
++    memory->query_access=guest_mm_query_access;
++    memory->set_access=guest_mm_set_access;
++    memory->available=guest_mm_available;
++}
++/* End project guest Mm boundary. */
++
++
+ BOOL xbox_IsXboxAddress(uintptr_t address)
+ {
+     return (address >= XBOX_BASE_ADDRESS &&
+--- a/src/kernel/xbox_memory_layout.h
++++ b/src/kernel/xbox_memory_layout.h
+@@ -30,6 +30,9 @@
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
++
++struct tsfp_guest_mm;
++void xbox_GetGuestMemoryServices(struct tsfp_guest_mm *context);
+ 
+ /* ================================================================
+  * Xbox memory map constants
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -91,3 +91,9 @@
+ target_sources(xbox_kernel PRIVATE
+     "${TSFP_SHARED_SOURCE}/runtime/host_blocks.c"
+     "${TSFP_SHARED_SOURCE}/native/host_pages.c")
++
++# Original guest Mm policy and host memory snapshots.
++target_sources(xbox_kernel PRIVATE
++    "${TSFP_SHARED_SOURCE}/runtime/guest_memory_services.c"
++    "${TSFP_SHARED_SOURCE}/runtime/memory_statistics.c"
++    "${TSFP_SHARED_SOURCE}/native/host_memory_stats.c")

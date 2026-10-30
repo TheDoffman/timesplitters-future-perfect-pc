@@ -11,14 +11,15 @@ Enhanced textures are optional and omitted from official game packages.
 .\Publish-Release.ps1
 #>
 [CmdletBinding()]
-param([switch]$PrepareOnly, [switch]$Draft, [string]$Branch = 'main', [string]$ChannelName, [string]$NotesFile)
+param([switch]$PrepareOnly, [switch]$Draft, [string]$Branch = 'main', [string]$ChannelName, [string]$NotesFile, [ValidateRange(1,64)][int]$TestWorkers)
 $ErrorActionPreference = 'Stop'
 $python = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
 if (!(Test-Path -LiteralPath $python)) { throw 'Run setup.ps1 first.' }
-$releaseArguments = @((Join-Path $PSScriptRoot 'tools\publish-release.py'))
+$releaseArguments = @((Join-Path $PSScriptRoot 'tools\release\publish-release.py'))
 $releaseArguments += @('--branch', $Branch)
 if ($ChannelName) { $releaseArguments += @('--channel-name', $ChannelName) }
 if ($NotesFile) { $releaseArguments += @('--notes-file', $NotesFile) }
+if ($PSBoundParameters.ContainsKey('TestWorkers')) { $releaseArguments += @('--test-workers', $TestWorkers) }
 if ($PrepareOnly) { $releaseArguments += '--prepare-only' }
 if ($Draft) { $releaseArguments += '--draft' }
 $previousPreference = $ErrorActionPreference

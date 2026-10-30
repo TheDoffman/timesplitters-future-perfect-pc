@@ -1,10 +1,10 @@
 # Live guest register references
 
-`zz-stable-gpr-refs.patch` extends the common generator/template protocol.
+`0540-stable-gpr-refs.patch` extends the common generator/template protocol.
 New generated files define `RECOMP_GPR_REFS_SUPPORTED`; each translated body
 declares `RECOMP_DECLARE_GPRS(site)` after entry callbacks and optional fast
 returns. Legacy/manual files retain their old aliases. Unresolved stubs use
-the globals directly. The patch applies after `zz-model-transform-entry.patch`;
+the globals directly. The patch applies after `0410-model-transform-entry.patch`;
 historical fixture stacks without that entry hook omit the dependent patch.
 Regenerate guest C with the supported build scripts; never edit generated C.
 
@@ -15,7 +15,7 @@ for the rest, then undefines the site. This avoids growing conditional vector
 expressions in unselected large bodies. The fixture checks global/selected/
 global/selected transitions in preprocessed output, as well as runtime behavior.
 
-The title policy in `src/pc_native_numeric.h` enables references only for
+The title policy in `src/gameplay/pc_native_numeric.h` enables references only for
 the profiled model-node renderer18EA90, state setter21450, state flush214C0
 and state preparation22BE0.
 Other sites select their existing global aliases. The template default is off
@@ -75,3 +75,5 @@ vectors, FPU/FP flags and callback/dispatch observations across four rounding
 modes and six scenarios. Native timings are component evidence with mocked
 services. Slices omit unwind metadata and must never enter the game build.
 Normal-build, live-game and physical-host acceptance remain separate in STATUS.
+
+Standalone translate_function callers may supply their own register globals and C prelude without the complete runtime header. The stable-register patch gates the reincluded header and live-reference declaration on RECOMP_GPR_REFS_SUPPORTED. Normal generated translation units still define that protocol and retain reference selection; standalone consumers retain direct globals. The inherited compiled INC/DEC, REP compare, sign-width and SAR tests exercise this compatibility, while test_gpr_refs.py checks the enabled protocol.

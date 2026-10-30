@@ -1,0 +1,392 @@
+--- a/src/kernel/xbox_memory_layout.c
++++ b/src/kernel/xbox_memory_layout.c
+@@ -13,6 +13,7 @@
+  */
+ 
+ #include "xbox_memory_layout.h"
++#include "guest_image.h"
+ #include "kernel.h"
+ #include "recomp_config.h"
+ #include "xbox_watchpoint.h"
+@@ -36,73 +37,12 @@
+ #include <unistd.h>   /* _exit */
+ #endif
+ 
+-/* XBE header field offsets (per xboxdevwiki.net/Xbe) */
+-#define XBE_MAGIC_OFFSET        0x0000
+-#define XBE_BASE_ADDR_OFFSET    0x0104
+-#define XBE_HEADER_SIZE_OFFSET  0x0108
+-#define XBE_SECTION_COUNT_OFFSET 0x011C
+-#define XBE_SECTION_HEADERS_OFFSET 0x0120
+-#define XBE_TLS_ADDR_OFFSET     0x012C
+-
+-/* XBE certificate field offsets (per xboxdevwiki.net/Xbe). The certificate
+- * address itself is at header+0x0118 and is read inline below. */
+-#define CERT_TITLE_NAME         0x000C   /* UTF-16, fixed width, see below */
+-#define CERT_TITLE_NAME_CHARS   40
+-
+-/* XBE section header layout (56 bytes each) */
+-#define SECTHDR_FLAGS       0x00
+-#define SECTHDR_VA          0x04
+-#define SECTHDR_VSIZE       0x08
+-#define SECTHDR_RAW_OFFSET  0x0C
+-#define SECTHDR_RAW_SIZE    0x10
+-#define SECTHDR_NAME_ADDR   0x14
+-#define SECTHDR_SIZE        56
+-
+-/* The running title's own name, out of its XBE certificate, so the window
+- * says what is being played rather than what is playing it. UTF-8, empty
+- * until the headers below are parsed and empty for a certificate that does
+- * not fit in the file -- callers fall back to a generic caption. */
++/* Certificate display metadata is decoded by the project image provider. */
+ static char g_xbe_title_name[128];
+ 
+ const char *xbox_XbeTitleName(void)
+ {
+     return g_xbe_title_name[0] ? g_xbe_title_name : NULL;
+-}
+-
+-/* wszTitleName is a fixed 40 UTF-16 code units, padded rather than
+- * terminated on some discs, so the decode stops at a NUL or at the field's
+- * end and then trims. BMP only: a surrogate pair would encode as CESU-8
+- * here, which is not UTF-8, and no title name needs one. */
+-static void xbe_title_name_store(const unsigned char *field)
+-{
+-    char *out = g_xbe_title_name;
+-    char *end = g_xbe_title_name + sizeof g_xbe_title_name - 1;   /* room for NUL */
+-    int i;
+-
+-    for (i = 0; i < CERT_TITLE_NAME_CHARS; i++) {
+-        unsigned c = (unsigned)field[i * 2] | ((unsigned)field[i * 2 + 1] << 8);
+-
+-        if (c == 0)
+-            break;
+-        if (c >= 0xD800 && c <= 0xDFFF)
+-            continue;
+-        if (c < 0x80) {
+-            if (end - out < 1) break;
+-            *out++ = (char)c;
+-        } else if (c < 0x800) {
+-            if (end - out < 2) break;
+-            *out++ = (char)(0xC0 | (c >> 6));
+-            *out++ = (char)(0x80 | (c & 0x3F));
+-        } else {
+-            if (end - out < 3) break;
+-            *out++ = (char)(0xE0 | (c >> 12));
+-            *out++ = (char)(0x80 | ((c >> 6) & 0x3F));
+-            *out++ = (char)(0x80 | (c & 0x3F));
+-        }
+-    }
+-    while (out > g_xbe_title_name && (out[-1] == ' ' || out[-1] == '\t'))
+-        out--;
+-    *out = '\0';
+ }
+ 
+ static void *g_memory_base = NULL;
+@@ -1783,14 +1723,28 @@
+ 
+ BOOL xbox_MemoryLayoutInit(const void *xbe_data, size_t xbe_size)
+ {
+-    g_force_return = getenv("RECOMP_FORCE_RETURN") != NULL;
+     DWORD old_protect;
+-    const uint8_t *xbe = (const uint8_t *)xbe_data;
++    tsfp_image_info image;
++    tsfp_image_result image_status;
++    uint32_t image_low_shift = 0, image_tls_total = 0;
++    size_t image_limit = g_xbox_map_size ? g_xbox_map_size : g_xbox_total_ram;
+ 
+     if (g_memory_base) {
+         fprintf(stderr, "xbox_MemoryLayoutInit: already initialized\n");
+         return FALSE;
+     }
++    /* Reject malformed input and insufficient bootstrap space before mapping
++     * or changing runtime state. The caller owns immutable XBE bytes. */
++    image_status = tsfp_image_inspect(xbe_data, xbe_size, image_limit, &image);
++    if (image_status == TSFP_IMAGE_OK)
++        image_status = tsfp_image_bootstrap(&image, image_limit,
++                                           &image_low_shift, &image_tls_total);
++    if (image_status != TSFP_IMAGE_OK) {
++        fprintf(stderr, "xbox_MemoryLayoutInit: XBE rejected (%s)\n",
++                tsfp_image_result_name(image_status));
++        return FALSE;
++    }
++    g_force_return = getenv("RECOMP_FORCE_RETURN") != NULL;
+ 
+     /*
+      * Calculate the full range we need to map.
+@@ -1930,218 +1884,29 @@
+      */
+     #define XBOX_VA(va) ((void *)((uintptr_t)(va) + g_memory_offset))
+ 
+-    /*
+-     * Copy XBE header to base address.
+-     * The Xbox kernel maps the XBE image header at 0x00010000.
+-     * Game code reads kernel thunk table, certificate data, and
+-     * section info from this region.
+-     */
+-    {
+-        /* XBE header size is at file offset 0x0108 (SizeOfImageHeader) */
+-        DWORD header_size = 0;
+-        if (xbe_size >= 0x10C) {
+-            header_size = *(const DWORD *)(xbe + 0x0108);
+-        }
+-        if (header_size == 0 || header_size > 0x10000)
+-            header_size = 0x1000;  /* fallback: 4KB */
+-        if (header_size > xbe_size)
+-            header_size = (DWORD)xbe_size;
+-        memcpy(XBOX_VA(XBOX_BASE_ADDRESS), xbe, header_size);
+-        fprintf(stderr, "  XBE header: %u bytes at %p (Xbox VA 0x%08X)\n",
+-                header_size, XBOX_VA(XBOX_BASE_ADDRESS), XBOX_BASE_ADDRESS);
+-    }
+-
+-    /*
+-     * Move the runtime's low memory clear of the image (see XBOX_LOW_VA).
+-     *
+-     * SizeOfImage (header offset 0x010C) covers every section including BSS,
+-     * which the section table's raw sizes do not. Rounded to 64 KB so the
+-     * stack and heap keep the alignment they had at their old addresses.
+-     */
+-    if (xbe_size >= 0x0110) {
+-        DWORD base_addr  = *(const DWORD *)(xbe + XBE_BASE_ADDR_OFFSET);
+-        DWORD image_size = *(const DWORD *)(xbe + 0x010C);
+-        uint32_t image_end = (uint32_t)base_addr + (uint32_t)image_size;
+-
+-        if (image_end > XBOX_LOW_REGION_START) {
+-            g_xbox_low_shift = (image_end - XBOX_LOW_REGION_START + 0xFFFFu)
+-                               & ~0xFFFFu;
+-            fprintf(stderr, "  Image ends at 0x%08X, past 0x%08X: runtime low "
+-                    "memory moved up 0x%08X (stack 0x%08X, heap 0x%08X)\n",
+-                    image_end, XBOX_LOW_REGION_START, g_xbox_low_shift,
+-                    XBOX_STACK_BASE, XBOX_HEAP_BASE);
+-        }
+-    }
+-
+-    /*
+-     * Dynamically load ALL XBE sections by parsing the section headers.
+-     *
+-     * This replaces the old approach of hardcoding section addresses for
+-     * a specific game (Burnout 3). By reading the section table from the
+-     * XBE header, any game's sections are loaded automatically.
+-     *
+-     * Every section is copied to its original Xbox VA:
+-     * - .text: needed because memory walkers may scan code pages
+-     * - .rdata: constants, vtables, kernel thunk table
+-     * - .data: global variables (initialized portion from XBE, BSS zeroed)
+-     * - XDK library sections (D3D, DSOUND, WMADEC, XPP, etc.)
+-     * - DOLBY, BINK, XTIMAGE, etc.
+-     */
+-    {
+-        DWORD base_addr = *(const DWORD *)(xbe + XBE_BASE_ADDR_OFFSET);
+-        DWORD num_sections = *(const DWORD *)(xbe + XBE_SECTION_COUNT_OFFSET);
+-        DWORD sect_headers_va = *(const DWORD *)(xbe + XBE_SECTION_HEADERS_OFFSET);
+-        DWORD sect_headers_off = sect_headers_va - base_addr;
+-        int sections_loaded = 0;
+-        size_t total_bytes = 0;
+-
+-        if (num_sections > 64) num_sections = 64;  /* sanity cap */
+-
+-        fprintf(stderr, "  XBE sections: %u (headers at file offset 0x%08X)\n",
+-                num_sections, sect_headers_off);
+-
+-        for (DWORD si = 0; si < num_sections; si++) {
+-            if (sect_headers_off + (si + 1) * SECTHDR_SIZE > xbe_size) break;
+-
+-            const uint8_t *sh = xbe + sect_headers_off + si * SECTHDR_SIZE;
+-            DWORD sec_va       = *(const DWORD *)(sh + SECTHDR_VA);
+-            DWORD sec_vsize    = *(const DWORD *)(sh + SECTHDR_VSIZE);
+-            DWORD sec_raw_off  = *(const DWORD *)(sh + SECTHDR_RAW_OFFSET);
+-            DWORD sec_raw_size = *(const DWORD *)(sh + SECTHDR_RAW_SIZE);
+-            DWORD sec_name_va  = *(const DWORD *)(sh + SECTHDR_NAME_ADDR);
+-
+-            /* Read section name from XBE header */
+-            const char *sec_name = "?";
+-            DWORD name_off = sec_name_va - base_addr;
+-            if (name_off < xbe_size && name_off + 8 <= xbe_size)
+-                sec_name = (const char *)(xbe + name_off);
+-
+-            /* Validate: section must fit within our 64MB mapped region */
+-            if (sec_va < XBOX_BASE_ADDRESS || sec_va + sec_vsize > XBOX_TOTAL_RAM)
+-                continue;
+-
+-            /* Determine copy size (raw_size may exceed vsize due to alignment) */
+-            DWORD copy_size = (sec_raw_size < sec_vsize) ? sec_raw_size : sec_vsize;
+-
+-            /* Zero the full virtual size first (handles BSS) */
+-            memset(XBOX_VA(sec_va), 0, sec_vsize);
+-
+-            /* Copy initialized data from XBE */
+-            if (copy_size > 0 && sec_raw_off + copy_size <= xbe_size) {
+-                memcpy(XBOX_VA(sec_va), xbe + sec_raw_off, copy_size);
+-            }
+-
+-            /* Every loaded section, executable or not. Anything that writes
+-             * guest memory from outside the title -- the pushbuffer executor
+-             * clearing a surface, say -- needs to know where the title itself
+-             * lives, because scribbling on it is not a rendering artefact, it
+-             * is the title's code and globals gone. */
+-            if (!g_xbox_image_lo || sec_va < g_xbox_image_lo)
+-                g_xbox_image_lo = sec_va;
+-            if (sec_va + sec_vsize > g_xbox_image_hi)
+-                g_xbox_image_hi = sec_va + sec_vsize;
+-
+-            /* Executable sections define the range indirect calls may target.
+-             * XBE section flag 0x04 is EXECUTABLE. */
+-            if (*(const DWORD *)(sh + SECTHDR_FLAGS) & 0x00000004u) {
+-                if (!g_xbox_code_lo || sec_va < g_xbox_code_lo)
+-                    g_xbox_code_lo = sec_va;
+-                if (sec_va + sec_vsize > g_xbox_code_hi)
+-                    g_xbox_code_hi = sec_va + sec_vsize;
+-            }
+-
+-            sections_loaded++;
+-            total_bytes += copy_size;
+-
+-            fprintf(stderr, "  [%2u] %-12s VA=0x%08X vsize=%-8u raw=0x%08X rsize=%-8u%s\n",
+-                    si, sec_name, sec_va, sec_vsize, sec_raw_off, sec_raw_size,
+-                    (sec_raw_size < sec_vsize) ? " (BSS)" : "");
+-        }
+-
+-        fprintf(stderr, "  Loaded %d/%u sections (%zu bytes total)\n",
+-                sections_loaded, num_sections, total_bytes);
+-    }
+-
+-    /*
+-     * Parse the kernel thunk table address from the XBE header.
+-     * The XBE stores KernelImageThunkAddress at offset 0x0158, XOR-encrypted.
+-     * The key differs between retail and debug XBEs, and there is no flag
+-     * saying which was used -- decode with both and keep whichever lands in
+-     * the mapped address range (this is what tools/xbe_parser does).
+-     *
+-     * Debug XBEs are not an edge case here: they are the builds most worth
+-     * recompiling, since they still carry assert strings and symbols. Halo's
+-     * cachebeta.xbe is one, and assuming the retail key decoded its thunk
+-     * table to 0xB4F98174 instead of 0x00253090, which silently fell back to
+-     * the compile-time default and resolved 0 of 378 kernel imports.
+-     */
+-    if (xbe_size >= 0x015C) {
+-        uint32_t thunk_raw = *(const uint32_t *)(xbe + 0x0158);
+-        uint32_t thunk_retail = thunk_raw ^ 0x5B6D40B6;  /* retail XOR key */
+-        uint32_t thunk_debug  = thunk_raw ^ 0xEFB1F152;  /* debug XOR key  */
+-        uint32_t thunk_va;
+-
+-        if (thunk_retail >= XBOX_BASE_ADDRESS && thunk_retail < XBOX_TOTAL_RAM) {
+-            thunk_va = thunk_retail;
+-        } else {
+-            thunk_va = thunk_debug;
+-        }
+-
+-        /* Validate: thunk VA should be within our mapped region */
+-        if (thunk_va >= XBOX_BASE_ADDRESS && thunk_va < XBOX_TOTAL_RAM) {
+-            /* Count thunk entries by scanning until we hit 0 */
+-            uint32_t thunk_count = 0;
+-            /* XBOX_KERNEL_THUNK_TABLE_SIZE, not 366: the kernel exports 378
+-             * slots, and kernel.h notes 366 is short by 12. A title importing
+-             * a high ordinal would have had its table truncated here. */
+-            for (uint32_t t = 0; t < XBOX_KERNEL_THUNK_TABLE_SIZE; t++) {
+-                uint32_t entry = *(volatile uint32_t *)((uintptr_t)(thunk_va + t * 4) + g_memory_offset);
+-                if (entry == 0) break;
+-                thunk_count++;
+-            }
+-            xbox_kernel_set_thunk_address(thunk_va, thunk_count);
+-            fprintf(stderr, "  Kernel thunks: %u entries at Xbox VA 0x%08X\n",
+-                    thunk_count, thunk_va);
+-        } else {
+-            fprintf(stderr, "  WARNING: kernel thunk VA 0x%08X out of range (raw=0x%08X)\n",
+-                    thunk_va, thunk_raw);
+-        }
+-    }
+-
+-    /* The certificate, for the region a title is allowed to run in.
+-     *
+-     * dwCertificateAddr sits at header+0x0118 and is a plain VA -- unlike the
+-     * thunk pointer above it is not XOR-obfuscated. dwGameRegion is at
+-     * certificate+0xA0. A title reads XC_FACTORY_GAME_REGION and ANDs it
+-     * against this, so reporting a console region the disc does not allow is
+-     * indistinguishable to the title from a region-locked-out console.
+-     */
+-    if (xbe_size >= 0x011C) {
+-        uint32_t cert_va = *(const uint32_t *)(xbe + 0x0118);
+-        uint32_t base_va = *(const uint32_t *)(xbe + 0x0104);
+-
+-        /* The headers map 1:1 from file offset 0, so VA minus base is the
+-         * file offset -- true for the certificate, which always lives in
+-         * them. */
+-        uint32_t cert_off = cert_va - base_va;
+-
+-        if (cert_va >= base_va && (uint64_t)cert_off + 0xA4 <= (uint64_t)xbe_size) {
+-            uint32_t region = *(const uint32_t *)(xbe + cert_off + 0xA0);
+-            xbox_kernel_set_xbe_game_region(region);
+-            fprintf(stderr, "  XBE certificate: game region 0x%08X\n", region);
+-
+-            /* The bound above reaches past the region word, so the title
+-             * name at +0x0C is already known to be inside the file. */
+-            /* The settings file is named for the title, so the id goes
+-             * over as soon as it is known -- before anything reads a
+-             * setting, since nothing has drawn yet. */
+-            recomp_config_set_title(*(const uint32_t *)(xbe + cert_off + 0x08));
+-
+-            xbe_title_name_store((const unsigned char *)xbe + cert_off + CERT_TITLE_NAME);
+-            if (g_xbe_title_name[0])
+-                fprintf(stderr, "  XBE certificate: title \"%s\"\n", g_xbe_title_name);
+-        }
+-    }
++    /* Materialize the independently validated image. Host mappings and their
++     * shutdown remain owned by this transitional memory service. */
++    image_status = tsfp_image_load(xbe_data, xbe_size, g_memory_base, g_memory_size, &image);
++    if (image_status != TSFP_IMAGE_OK) {
++        fprintf(stderr, "xbox_MemoryLayoutInit: image load failed (%s)\n",
++                tsfp_image_result_name(image_status));
++        xbox_MemoryLayoutShutdown();
++        return FALSE;
++    }
++    g_xbox_low_shift = image_low_shift;
++    g_xbox_image_lo = image.image_lo; g_xbox_image_hi = image.image_hi;
++    g_xbox_code_lo = image.code_lo; g_xbox_code_hi = image.code_hi;
++    g_tls_template_va = 0; g_tls_total = 0;
++    xbox_kernel_set_thunk_address(image.thunk, image.thunk_count);
++    xbox_kernel_set_xbe_game_region(image.region);
++    recomp_config_set_title(image.title_id);
++    memcpy(g_xbe_title_name, image.title, sizeof image.title);
++    fprintf(stderr, "  Project XBE: %u sections, image 0x%08X..0x%08X, code 0x%08X..0x%08X\n",
++            image.section_count, image.image_lo, image.image_hi, image.code_lo, image.code_hi);
++    fprintf(stderr, "  Kernel thunks: %u entries at Xbox VA 0x%08X; low shift 0x%08X\n",
++            image.thunk_count, image.thunk, image_low_shift);
++    fprintf(stderr, "  XBE certificate: title \"%s\", region 0x%08X\n",
++            g_xbe_title_name, image.region);
+ 
+     /*
+      * NOTE: .rdata is NOT set read-only.
+@@ -2259,16 +2024,10 @@
+         #define FAKE_TLS_BLOCK_VA  XBOX_LOW_VA(0x00770000)  /* image TLS data          */
+         #define FAKE_TLS_THREAD_VA XBOX_LOW_VA(0x00770200)  /* what slot 0 points at   */
+         {
+-            DWORD tls_dir_va = *(const DWORD *)(xbe + XBE_TLS_ADDR_OFFSET);
+-
+-            if (tls_dir_va) {
+-                const uint32_t *tls = (const uint32_t *)XBOX_VA(tls_dir_va);
+-                uint32_t data_start = tls[0];
+-                uint32_t data_end   = tls[1];
+-                uint32_t zero_fill  = tls[4];
+-                uint32_t init_size  = (data_end > data_start)
+-                                    ? data_end - data_start : 0;
+-                uint32_t total      = ((init_size + zero_fill + 0xF) & ~0xFu) + 4;
++            if (image.tls_directory) {
++                uint32_t data_start = image.tls_start;
++                uint32_t init_size = image.tls_bytes;
++                uint32_t total = image_tls_total;
+ 
+                 memset(XBOX_VA(FAKE_TLS_BLOCK_VA), 0, total);
+                 memset(XBOX_VA(FAKE_TLS_THREAD_VA), 0, 64);
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -44,6 +44,10 @@
+     "${TSFP_SHARED_SOURCE}/runtime/guest_state.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_abi_diagnostics.c")
+ 
++# Independent image inspection and materialization, shared by both hosts.
++target_sources(xbox_kernel PRIVATE "${TSFP_SHARED_SOURCE}/runtime/guest_image.c")
++target_include_directories(xbox_kernel PRIVATE "${TSFP_SHARED_SOURCE}/runtime")
++
+ # See src/platform/CMakeLists.txt: resolve src/ relative to this file, not via
+ # CMAKE_SOURCE_DIR, which is the consuming project's root under add_subdirectory().
+ get_filename_component(XBOXRECOMP_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)

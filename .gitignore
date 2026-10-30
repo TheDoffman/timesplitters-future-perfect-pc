@@ -22,8 +22,10 @@ xbox_kernel.log
 /config/pc-online.json
 /config/pc-discord.ini
 /config/pc-discord.ini.bak
-/config/pc-frame-rate.ini
 /config/pc-frame-rate.ini.bak
+
+# Fixture backups are test outputs; canonical inputs remain tracked.
+/tests/fixtures/*.bak
 
 # Packaged builds and local credentials are never source uploads.
 *.zip
@@ -38,3 +40,14 @@ xbox_kernel.log
 
 # Native launcher state in a development checkout.
 /.launcher/
+
+# Save archives contain personal progress and stay local.
+/Backups/
+*.tsfpsave
+*.tsfpsave.partial
+
+# Per-player beta audio preference
+/config/pc-audio.ini
+/config/pc-audio.ini.tmp
+
+/config/pc-audio.ini.bak

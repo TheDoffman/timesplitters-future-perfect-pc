@@ -50,7 +50,7 @@ function Assert-Game {
 }
 
 function Apply-LocalPatches {
-    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\apply-patches.py'),
+    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build\apply-patches.py'),
         $toolRoot, (Join-Path $projectRoot 'patches'))
 }
 
@@ -59,6 +59,8 @@ $controlsPath = Join-Path $projectRoot 'config\pc-controls.json'
 if (!(Test-Path -LiteralPath $controlsPath)) {
     Copy-Item -LiteralPath (Join-Path $projectRoot 'config\pc-controls.default.json') -Destination $controlsPath
 }
+$previousProjectRoot = $env:TSFP_PROJECT_ROOT
+$env:TSFP_PROJECT_ROOT = $projectRoot
 Push-Location $projectRoot
 try {
     if ($Action -eq 'Setup') {
@@ -67,10 +69,7 @@ try {
             Invoke-Checked $Python @('-m', 'venv', (Join-Path $projectRoot '.venv'))
         }
         Invoke-Checked $envPython @('-m', 'pip', 'install', '-r', (Join-Path $projectRoot 'requirements.txt'))
-        if (!(Test-Path -LiteralPath $toolRoot)) {
-            Invoke-Checked 'git' @('clone', 'https://github.com/nemonicicon/ts3FPrecomp.git', $toolRoot)
-            Invoke-Checked 'git' @('-C', $toolRoot, 'checkout', '--detach', $revision)
-        }
+        Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build\prepare-runtime.py'), '--destination', $toolRoot)
         $actualRevision = & git -C $toolRoot rev-parse HEAD
         if ($LASTEXITCODE -ne 0 -or $actualRevision -ne $revision) { throw 'Tool checkout differs from the pinned revision.' }
         Apply-LocalPatches
@@ -80,7 +79,7 @@ try {
         Invoke-Checked $cmake @('-S', $db, '-B', "$db\build", '-G', 'Visual Studio 17 2022', '-A', 'x64',
             '-DXBSDB_BUILD_UNITTEST=OFF')
         Invoke-Checked $cmake @('--build', "$db\build", '--config', 'Release', '--target', 'XbSymbolDatabaseCLI', '--parallel', '4')
-        & (Join-Path $projectRoot 'tools\fetch-video.ps1')
+        & (Join-Path $projectRoot 'tools\build\fetch-video.ps1')
     }
     elseif ($Action -eq 'Status') {
         Write-Output "Tool checkout: $toolRoot"
@@ -92,47 +91,52 @@ try {
             Write-Output 'Executable hash matches the US Xbox build (45410066).'
         }
     }
+    elseif ($Action -eq 'Extract') {
+        if (!$Iso) { throw 'Supply -Iso with the full path to your Xbox ISO.' }
+        $isoPath = (Resolve-Path -LiteralPath $Iso).Path
+        $importPython = if ($Python) { $Python } else { $envPython }
+        if (!(Test-Path -LiteralPath $importPython -PathType Leaf)) {
+            throw 'Supply -Python with Python 3.12 or newer, or run Setup first.'
+        }
+        Invoke-Checked $importPython @((Join-Path $projectRoot 'tools\build\import-game.py'),
+            '--iso', $isoPath, '--output', $gameRoot)
+        Assert-Game
+        @{ iso = $isoPath; xbe_sha256 = $expectedHash } | ConvertTo-Json |
+            Set-Content -LiteralPath (Join-Path $privateRoot 'disc.json') -Encoding UTF8
+    }
     else {
         if (!(Test-Path -LiteralPath $envPython)) { throw 'Run Setup first.' }
         Push-Location $toolRoot
         try {
             switch ($Action) {
-                'Extract' {
-                    if (!$Iso) { throw 'Supply -Iso with the full path to your Xbox ISO.' }
-                    $isoPath = (Resolve-Path -LiteralPath $Iso).Path
-                    Invoke-Checked $envPython @('-m', 'tools.xiso', 'unpack', $isoPath, '-o', $gameRoot)
-                    Assert-Game
-                    @{ iso = $isoPath; xbe_sha256 = $expectedHash } | ConvertTo-Json |
-                        Set-Content -LiteralPath (Join-Path $privateRoot 'disc.json') -Encoding UTF8
-                }
                 'Test' {
                     Apply-LocalPatches
                     Invoke-Checked $envPython @('-m', 'pytest',
-                        (Join-Path $projectRoot 'tests\test_patch_updates.py'),
-                        (Join-Path $projectRoot 'tests\test_patch_tracking.py'),
-                        (Join-Path $projectRoot 'tests\test_audio_timing.py'),
-                        (Join-Path $projectRoot 'tests\test_frame_clock.py'),
-                        (Join-Path $projectRoot 'tests\test_native_timing.py'),
-                        (Join-Path $projectRoot 'tests\test_native_wind.py'),
-                        (Join-Path $projectRoot 'tests\test_frame_interpolation.py'),
-                        (Join-Path $projectRoot 'tests\test_prediction_targets.py'),
+                        (Join-Path $projectRoot 'tests\repository\test_patch_updates.py'),
+                        (Join-Path $projectRoot 'tests\repository\test_patch_tracking.py'),
+                        (Join-Path $projectRoot 'tests\media\test_audio_timing.py'),
+                        (Join-Path $projectRoot 'tests\gameplay\test_frame_clock.py'),
+                        (Join-Path $projectRoot 'tests\gameplay\test_native_timing.py'),
+                        (Join-Path $projectRoot 'tests\gameplay\test_native_wind.py'),
+                        (Join-Path $projectRoot 'tests\gameplay\test_frame_interpolation.py'),
+                        (Join-Path $projectRoot 'tests\gameplay\test_prediction_targets.py'),
                         (Join-Path $projectRoot 'tests\test_motion_settings.py'),
-                        (Join-Path $projectRoot 'tests\test_config_initialization.py'),
-                        (Join-Path $projectRoot 'tests\test_pc_refresh.py'),
-                        (Join-Path $projectRoot 'tests\test_framebuffer_sampling.py'),
-                        (Join-Path $projectRoot 'tests\test_terminal_depth.py'),
-                        (Join-Path $projectRoot 'tests\test_ghost_rendering.py'),
-                        (Join-Path $projectRoot 'tests\test_auto_look.py'),
-                        (Join-Path $projectRoot 'tests\test_discord_presence.py'),
-                        (Join-Path $projectRoot 'tests\test_menu_mouse.py'),
-                        (Join-Path $projectRoot 'tests\test_quit_menu.py'),
-                        (Join-Path $projectRoot 'tests\test_xmv_stop.py'),
-                        (Join-Path $projectRoot 'tests\test_cutscene_letterbox.py'),
-                        (Join-Path $projectRoot 'tests\test_decal_projection.py'),
-                        (Join-Path $projectRoot 'tests\test_channel_clears.py'),
-                        (Join-Path $projectRoot 'tests\test_recomp_generation.py'),
-                        (Join-Path $projectRoot 'tests\test_recomp_float_joins.py'),
-                        (Join-Path $projectRoot 'tests\test_recomp_vehicle_joins.py'), '-q', '--tb=short')
+                        (Join-Path $projectRoot 'tests\repository\test_config_initialization.py'),
+                        (Join-Path $projectRoot 'tests\gameplay\test_pc_refresh.py'),
+                        (Join-Path $projectRoot 'tests\graphics\test_framebuffer_sampling.py'),
+                        (Join-Path $projectRoot 'tests\graphics\test_terminal_depth.py'),
+                        (Join-Path $projectRoot 'tests\graphics\test_ghost_rendering.py'),
+                        (Join-Path $projectRoot 'tests\gameplay\test_auto_look.py'),
+                        (Join-Path $projectRoot 'tests\network\test_discord_presence.py'),
+                        (Join-Path $projectRoot 'tests\input\test_menu_mouse.py'),
+                        (Join-Path $projectRoot 'tests\graphics\test_quit_menu.py'),
+                        (Join-Path $projectRoot 'tests\media\test_xmv_stop.py'),
+                        (Join-Path $projectRoot 'tests\graphics\test_cutscene_letterbox.py'),
+                        (Join-Path $projectRoot 'tests\graphics\test_decal_projection.py'),
+                        (Join-Path $projectRoot 'tests\graphics\test_channel_clears.py'),
+                        (Join-Path $projectRoot 'tests\compiler\test_recomp_generation.py'),
+                        (Join-Path $projectRoot 'tests\compiler\test_recomp_float_joins.py'),
+                        (Join-Path $projectRoot 'tests\compiler\test_recomp_vehicle_joins.py'), '-q', '--tb=short')
                     Invoke-Checked $envPython @('-m', 'pytest', 'tools', '-q', '--tb=short')
                     Invoke-Checked $envPython @('-m', 'tools.conformance')
                 }
@@ -144,12 +148,12 @@ try {
                     Invoke-Checked $envPython @('scripts/recompile.py', $xbe,
                         '--work-dir', (Join-Path $privateRoot 'pipeline'), '--project', 'titles/futureperfect',
                         '--game-name', 'TimeSplitters: Future Perfect', '--trace-all-entries')
-                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\recomp-generation.py'), $toolRoot, '--record')
+                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build\recomp-generation.py'), $toolRoot, '--record')
                 }
                 'Build' {
                     Assert-Game
-                    if (!$SkipTextures -and ((Get-Content (Join-Path $projectRoot 'config\texture-pack.json') -Raw | ConvertFrom-Json).delivery -eq 'bundled')) {
-                        Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build_textures.py'))
+                    if (!$SkipTextures -and ((Get-Content (Join-Path $projectRoot 'config\textures\texture-pack.json') -Raw | ConvertFrom-Json).delivery -eq 'bundled')) {
+                        Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\textures\build_textures.py'))
                     }
                     Apply-LocalPatches
                     if (!(Test-Path -LiteralPath 'titles/futureperfect/src/recomp/gen/recomp_funcs.h')) {
@@ -162,7 +166,7 @@ try {
                     $generated = Get-Content -LiteralPath 'titles/futureperfect/src/recomp/gen/recomp_funcs.h' -Raw
                     $missingWrappers = @([regex]::Matches($manual, 'extern void (sub_[0-9A-Fa-f]+_gen)\(void\)') |
                         Where-Object { $generated -notmatch ('\b' + $_.Groups[1].Value + '\b') })
-                    & $envPython (Join-Path $projectRoot 'tools\recomp-generation.py') $toolRoot
+                    & $envPython (Join-Path $projectRoot 'tools\build\recomp-generation.py') $toolRoot
                     $generatorChanged = $LASTEXITCODE -ne 0
                     if ($missingWrappers.Count -or $generatorChanged) {
                         Write-Output 'Runtime hooks or generator changed; refreshing generated game code before building.'
@@ -170,19 +174,20 @@ try {
                         Invoke-Checked $envPython @('-m', 'tools.xdk_symbols', (Join-Path $gameRoot 'default.xbe'))
                         Invoke-Checked $envPython @('scripts/recompile.py', (Join-Path $gameRoot 'default.xbe'),
                             '--work-dir', (Join-Path $privateRoot 'pipeline'), '--project', 'titles/futureperfect',
-                            '--game-name', 'TimeSplitters: Future Perfect', '--trace-all-entries', '--only', 'lift')
-                        Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\recomp-generation.py'), $toolRoot, '--record')
+                            '--game-name', 'TimeSplitters: Future Perfect', '--trace-all-entries')
+                        Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build\recomp-generation.py'), $toolRoot, '--record')
                     }
-                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\network-identity.py'))
-                    $gameIconResource = & (Join-Path $projectRoot 'tools\build-game-icon.ps1')
+                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build\network-identity.py'))
+                    $gameIconResource = & (Join-Path $projectRoot 'tools\build\build-game-icon.ps1')
                     Invoke-Checked $cmake @('-S', 'titles/futureperfect', '-B', $buildRoot,
                         '-G', 'Visual Studio 17 2022', '-A', 'x64',
-                        "-DTSFP_LOCAL_PATH_TEST_SOURCE=$projectRoot/tests/save_paths.c",
+                        "-DTSFP_LOCAL_PATH_TEST_SOURCE=$projectRoot/tests/storage/save_paths.c",
                         "-DTSFP_PC_CONTROLS_DIR=$projectRoot/src",
-                        "-DTSFP_GAME_ICON_RESOURCE=$gameIconResource")
+                        "-DTSFP_GAME_ICON_RESOURCE=$gameIconResource",
+                        "-DTSFP_GAME_MANIFEST=$projectRoot/config/build/windows-game.manifest")
                     Invoke-Checked $cmake @('--build', $buildRoot, '--config', $Configuration,
                         '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_texture_toggle_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', 'tsfp_pc_discord_test', 'tsfp_hang_policy_test', 'tsfp_pc_clear_test', 'd3d8_replay', '--parallel', '4')
-                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tests/ghost_targets.py'),
+                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tests/graphics/ghost_targets.py'),
                         (Join-Path $buildRoot "xboxrecomp/src/replay/$Configuration/d3d8_replay.exe"))
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_network_test.exe") @()
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_discord_test.exe") @()
@@ -224,8 +229,8 @@ try {
                     [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory(
                         $cleanupPath, 'OnlyErrorDialogs', 'SendToRecycleBin', 'ThrowException')
                     Write-Output 'Build tests passed; temporary build/path-tests data recycled.'
-                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\network-identity.py'), '--seal-executable', $exe)
-                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\crash-symbols.py'), '--build-dir', (Join-Path $buildRoot $Configuration))
+                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build\network-identity.py'), '--seal-executable', $exe)
+                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\release\crash-symbols.py'), '--build-dir', (Join-Path $buildRoot $Configuration))
                 }
                 { $_ -in 'Run', 'SmokeTest' } {
                     Assert-Game
@@ -320,4 +325,7 @@ try {
         finally { Pop-Location }
     }
 }
-finally { Pop-Location }
+finally {
+    Pop-Location
+    $env:TSFP_PROJECT_ROOT = $previousProjectRoot
+}

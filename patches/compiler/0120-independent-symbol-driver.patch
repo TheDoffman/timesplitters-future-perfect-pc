@@ -1,0 +1,542 @@
+--- a/tools/xdk_symbols/__main__.py
++++ b/tools/xdk_symbols/__main__.py
+@@ -1,209 +1,10 @@
+-"""
+-Name the XDK library functions statically linked into an XBE.
++"""Compatibility entry for the project symbol-database adapter."""
++from pathlib import Path
++import sys
++from ..disasm.loader import BinaryImage
++import xdk_catalog as _implementation
+ 
+-Every Xbox title links D3D8, DirectSound, XAPI and the rest into its own image,
+-at addresses that move with each XDK build and each link. Replacing those
+-libraries by name -- the route that took the DOAXBV port to gameplay -- needs
+-the addresses first, and hard-coding them makes the replacement one game's.
+-
+-XbSymbolDatabase (Cxbx-Reloaded, MIT licence) finds them by signature for XDK
+-builds 3911 to 5849, LTCG builds included. This wraps its command-line tool
+-and writes JSON the rest of the pipeline can read:
+-
+-    py -3 -m tools.xdk_symbols game/default.xbe [--cli PATH] [--out FILE]
+-
+-The tool is found from --cli, then the XBSDB_CLI environment variable, then a
+-build under third_party/XbSymbolDatabase. Build it with:
+-
+-    cmake -S third_party/XbSymbolDatabase -B third_party/XbSymbolDatabase/build
+-    cmake --build third_party/XbSymbolDatabase/build --config Release
+-
+-Checked against a proven port: on DOAXBV (XDK 4928) it reproduces all five D3D8
+-addresses that port hard-codes -- Direct3D_CreateDevice, D3DDevice_Clear,
+-D3DDevice_DrawIndexedVertices, D3DDevice_Reset and D3DDevice_Swap.
+-
+-The output names addresses inside the user's own XBE. It is derived from game
+-files, so it stays beside the XBE and out of Git, like the analysis JSON.
+-"""
+-
+-import argparse
+-import pathlib
+-import struct
+-import collections
+-import glob
+-import json
+-import os
+-import re
+-import subprocess
+-import sys
+-
+-REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+-
+-# `LIB__FUN__call__Name(type arg, ...) = 0xADDR`, `LIB__VAR__Name = 0xADDR`,
+-# `LIB__UNK__Name = 0xADDR`, and the plain `LIB__Name = 0xADDR` the tool
+-# prints without -e. The library is at most eight characters: the tool
+-# prints it with %.8s.
+-_LINE = re.compile(
+-    r"^(?P<lib>[A-Za-z0-9]{1,8}?)__(?:(?P<kind>FUN|VAR|UNK)__)?"
+-    r"(?P<rest>.+?) = 0x(?P<addr>[0-9a-fA-F]{1,8})$")
+-_FUN = re.compile(r"^(?P<call>[a-z]+)__(?P<name>[A-Za-z_][\w@?$]*)\((?P<params>.*)\)$")
+-
+-# Bytes of stack each parameter type occupies. Register-passed parameters
+-# (a fastcall's ecx and edx, a thiscall's this) occupy none.
+-_STACK_BYTES = {"psh": 4, "psh2": 8}
+-
+-_KINDS = {"FUN": "function", "VAR": "variable", "UNK": "unknown", None: "unknown"}
+-
+-
+-def parse_params(text):
+-    """`psh Count, ecx this, psh2 rtTime` -> [{type, name}, ...]."""
+-    params = []
+-    for piece in text.split(","):
+-        piece = piece.strip()
+-        if not piece:
+-            continue
+-        kind, _, name = piece.partition(" ")
+-        params.append({"type": kind, "name": name.strip()})
+-    return params
+-
+-
+-def parse_line(line):
+-    """One line of CLI output -> a symbol dict, or None if it is not one."""
+-    m = _LINE.match(line.strip())
+-    if not m:
+-        return None
+-    kind = m.group("kind")
+-    rest = m.group("rest")
+-    sym = {
+-        "library": m.group("lib"),
+-        "kind": _KINDS[kind],
+-        "address": int(m.group("addr"), 16),
+-    }
+-    if kind == "FUN":
+-        f = _FUN.match(rest)
+-        if not f:
+-            return None
+-        params = parse_params(f.group("params"))
+-        sym.update(name=f.group("name"), call=f.group("call"), params=params,
+-                   stack_bytes=sum(_STACK_BYTES.get(p["type"], 0) for p in params))
+-    else:
+-        sym["name"] = rest
+-    return sym
+-
+-
+-def parse_output(text):
+-    return [s for s in (parse_line(l) for l in text.splitlines()) if s]
+-
+-
+-def find_cli(explicit=None):
+-    if explicit:
+-        return explicit
+-    if os.environ.get("XBSDB_CLI"):
+-        return os.environ["XBSDB_CLI"]
+-    # The exact executable name, not a prefix. A Visual Studio build tree has
+-    # five other files starting XbSymbolDatabaseCLI (.slnx, .vcxproj,
+-    # .vcxproj.filters, .exe.recipe, a .dir folder), and the prefix match
+-    # picked the .slnx: WinError 193, "not a valid Win32 application".
+-    exe = "XbSymbolDatabaseCLI" + (".exe" if os.name == "nt" else "")
+-    pattern = os.path.join(REPO, "third_party", "XbSymbolDatabase", "build",
+-                           "**", exe)
+-    hits = [p for p in glob.glob(pattern, recursive=True) if os.path.isfile(p)]
+-    # A multi-config generator can leave Debug and Release side by side.
+-    hits.sort(key=lambda p: "release" not in p.lower())
+-    return hits[0] if hits else None
+-
+-
+-def title_id(xbe_path):
+-    """The XBE certificate's title id, or None.
+-
+-    Read straight out of the header rather than through tools.xbe_parser: this
+-    runs before the pipeline and should not need it. The base address is at
+-    +0x104, the certificate pointer at +0x118, and the id 8 bytes into the
+-    certificate.
+-    """
+-    try:
+-        data = pathlib.Path(xbe_path).read_bytes()
+-        base = struct.unpack_from("<I", data, 0x104)[0]
+-        cert = struct.unpack_from("<I", data, 0x118)[0]
+-        return struct.unpack_from("<I", data, cert - base + 0x08)[0]
+-    except Exception:
+-        return None
+-
+-
+-def load_extra(xbe_path, explicit):
+-    """Symbols the database cannot provide, supplied by hand.
+-
+-    XbSymbolDatabase covers Direct3D, DirectSound and the application library.
+-    It does not cover the video library, the networking library, or several
+-    others, so a title that needs one of those replaced has addresses and no
+-    names. This is where those names live: a JSON file in the same shape as
+-    the generated one, keyed by title id under config/extra_symbols, holding
+-    entries that `scripts/section_calls.py` found and a person then named.
+-
+-    Per title rather than per XDK version deliberately. A statically linked
+-    library lands wherever the linker put it, so its addresses differ between
+-    two titles built against the same SDK; only the behaviour is shared.
+-    """
+-    paths = []
+-    if explicit:
+-        paths.append(explicit)
+-    tid = title_id(xbe_path)
+-    if tid is not None:
+-        root = pathlib.Path(__file__).resolve().parents[2]
+-        paths.append(root / "config" / "extra_symbols" / ("%08X.json" % tid))
+-    for path in paths:
+-        path = pathlib.Path(path)
+-        if not path.is_file():
+-            continue
+-        data = json.loads(path.read_text(encoding="utf-8"))
+-        extra = data.get("symbols", [])
+-        print("%d hand-supplied symbol(s) from %s" % (len(extra), path),
+-              file=sys.stderr)
+-        return extra
+-    return []
+-
+-
+-def main(argv=None):
+-    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+-    ap.add_argument("xbe", help="the title's default.xbe")
+-    ap.add_argument("--cli", help="path to XbSymbolDatabaseCLI")
+-    ap.add_argument("--out", help="output JSON (default: <xbe stem>_xdk_symbols.json "
+-                                  "beside the XBE)")
+-    ap.add_argument("--extra", help="JSON of hand-supplied symbols to merge, for "
+-                                    "libraries the database does not cover "
+-                                    "(default: config/extra_symbols/<title id>.json)")
+-    args = ap.parse_args(argv)
+-
+-    cli = find_cli(args.cli)
+-    if not cli:
+-        sys.exit("XbSymbolDatabaseCLI not found. Pass --cli, set XBSDB_CLI, or "
+-                 "build it under third_party/XbSymbolDatabase (see --help).")
+-
+-    run = subprocess.run([cli, args.xbe, "-e"], capture_output=True, text=True)
+-    if run.returncode != 0:
+-        sys.exit(f"{cli} exited {run.returncode}: {run.stderr.strip()[:400]}")
+-
+-    symbols = parse_output(run.stdout)
+-    known = {s["address"] for s in symbols}
+-    for sym in load_extra(args.xbe, args.extra):
+-        if sym.get("address") not in known:
+-            symbols.append(sym)
+-    symbols.sort(key=lambda s: s["address"])
+-    if not symbols:
+-        sys.exit("no symbols recognised -- is this an XBE the database covers?")
+-
+-    out = args.out or os.path.join(
+-        os.path.dirname(os.path.abspath(args.xbe)),
+-        os.path.splitext(os.path.basename(args.xbe))[0] + "_xdk_symbols.json")
+-    with open(out, "w", encoding="utf-8") as f:
+-        json.dump({"xbe": os.path.abspath(args.xbe), "symbols": symbols}, f, indent=1)
+-
+-    per_lib = collections.Counter((s["library"], s["kind"]) for s in symbols)
+-    print(f"{len(symbols)} symbols -> {out}", file=sys.stderr)
+-    for (lib, kind), n in sorted(per_lib.items()):
+-        print(f"  {lib:9s} {kind:9s} {n}", file=sys.stderr)
+-    return 0
+-
+-
+-if __name__ == "__main__":
+-    sys.exit(main())
++_implementation.REPO = Path(__file__).resolve().parents[2]
++if __name__ == '__main__':
++    raise SystemExit(_implementation.main())
++sys.modules[__name__] = _implementation
+--- a/tools/xdk_symbols/__init__.py
++++ b/tools/xdk_symbols/__init__.py
+@@ -0,0 +1 @@
++"""Compatibility namespace for the project symbol adapter."""
+--- a/scripts/recompile.py
++++ b/scripts/recompile.py
+@@ -1,302 +1,13 @@
+-#!/usr/bin/env python3
+-"""
+-Run the whole recompilation pipeline for one title.
++"""Compatibility entry for the project generation driver."""
++from pathlib import Path
++import sys
++_runtime = Path(__file__).resolve().parents[1]
++sys.path.insert(0, str(_runtime))
++from tools.disasm.loader import BinaryImage
++import compile_pipeline as _implementation
++from compile_pipeline import main, xbe_title_id, build_commands, run, STAGES
+ 
+-The four stages have to run in order and each reads the previous one's output,
+-so running them by hand mostly means retyping the same XBE path four times and
+-remembering that stage 2 needs the JSON from stage 1.
+-
+-    python3 scripts/recompile.py game_files/default.xbe
+-
+-Defaults to --game-only. Lifting CRT and XDK code you intend to HLE away costs
+-compile time and debugging attention for code you will not run; switch to --all
+-only when you have a reason.
+-
+-Stages:
+-    1. parse    tools.xbe_parser   header, sections, imports -> analysis JSON
+-    2. disasm   tools.disasm       .text -> instructions, functions, xrefs
+-    3. identify tools.func_id      classify CRT / RenderWare / game functions
+-    4. lift     tools.recomp       x86 -> C
+-
+-Re-run a later stage on its own after changing something:
+-
+-    python3 scripts/recompile.py game.xbe --from identify
+-    python3 scripts/recompile.py game.xbe --only lift --all
+-
+-Working on more than one title: give each its own stage outputs and its own
+-project, or the second title silently lifts from the first one's disassembly
+-(every retail XBE is called default.xbe, and that name is all the guard checks):
+-
+-    python3 scripts/recompile.py games/ts2/default.xbe \
+-        --work-dir games/_pipeline/ts2 --project titles/timesplitters2
+-"""
+-
+-import argparse
+-import subprocess
+-import sys
+-import time
+-from pathlib import Path
+-
+-REPO = Path(__file__).resolve().parent.parent
+-
+-def xbe_title_id(xbe):
+-    """The title ID from an XBE certificate, as eight uppercase hex digits.
+-
+-    Read here rather than imported so the driver keeps working when the XBE is
+-    missing (--dry-run) and so stage one is not a prerequisite for choosing
+-    seeds. The certificate address is at header+0x0118 and is a plain VA, the
+-    image base at +0x0104, and the ID at certificate+0x08.
+-    """
+-    try:
+-        data = Path(xbe).read_bytes()
+-    except OSError:
+-        return None
+-    if len(data) < 0x011C or data[:4] != b"XBEH":
+-        return None
+-    base = int.from_bytes(data[0x0104:0x0108], "little")
+-    cert = int.from_bytes(data[0x0118:0x011C], "little")
+-    off = cert - base
+-    if off < 0 or off + 12 > len(data):
+-        return None
+-    return "%08X" % int.from_bytes(data[off + 8:off + 12], "little")
+-
+-
+-
+-STAGES = ["parse", "disasm", "identify", "lift"]
+-
+-
+-def build_commands(args, xbe: Path, analysis_json: Path):
+-    """Return [(stage, argv)] for the stages that were selected."""
+-    parse = [sys.executable, "-m", "tools.xbe_parser", str(xbe),
+-             "--json", str(analysis_json)]
+-
+-    # Deliberately not --text-only. An XBE statically links its libraries into
+-    # their own executable sections -- D3D, DSOUND, XACTENG, XONLINE and the
+-    # rest -- and --text-only leaves those unswept. Their functions are still
+-    # detected, but their *ends* cannot be measured, because the end-finder
+-    # stops at the first address it has no instruction for. Burnout 2's
+-    # sub_00218CD0 came out 79 bytes instead of 321: truncated at its own tail
+-    # jump, with the pops and the ret stranded past the cut. Every call leaked
+-    # the 24-byte frame, and esp eventually walked out of the guest stack.
+-    #
+-    # The extra sections are a few hundred KB against a 2 MB .text, so the
+-    # scan costs little; --text-only trades correctness for a few seconds.
+-    disasm = [sys.executable, "-m", "tools.disasm", str(xbe)]
+-    if args.text_only:
+-        disasm.append("--text-only")
+-    # Every stage defaults to one shared tools/*/output directory, and the
+-    # recompiler's guard against mixing titles compares file names only --
+-    # every retail disc is default.xbe, so two titles worked on side by side
+-    # silently lift one game's code from the other's disassembly. --work-dir
+-    # gives a title its own set of stage outputs.
+-    work = Path(args.work_dir).resolve() if args.work_dir else None
+-    if work:
+-        disasm += ["-o", str(work / "disasm")]
+-    # Seeds are entry points nothing in the image references -- vtable slots
+-    # and indirect-call targets recovered from a run. Discovery cannot find
+-    # them by construction, so omitting the file here silently undoes every
+-    # seeding pass: the addresses stay undetected, the calls to them stay
+-    # unresolved, and the next run reports the very same targets as missing.
+-    # Picked up by default so running the pipeline never quietly discards them.
+-    for seed_file in args.seeds:
+-        disasm += ["--seed-functions", str(seed_file)]
+-    if args.verbose:
+-        disasm.append("-v")
+-
+-    identify = [sys.executable, "-m", "tools.func_id", str(xbe)]
+-    if work:
+-        identify += ["--functions", str(work / "disasm" / "functions.json"),
+-                     "--strings", str(work / "disasm" / "strings.json"),
+-                     "--xrefs", str(work / "disasm" / "xrefs.json"),
+-                     "-o", str(work / "func_id")]
+-    if args.verbose:
+-        identify.append("-v")
+-
+-    lift = [sys.executable, "-m", "tools.recomp", str(xbe)]
+-    lift.append("--all" if args.all else "--game-only")
+-    if args.split:
+-        lift += ["--split", str(args.split)]
+-    if work:
+-        lift += ["--disasm-dir", str(work / "disasm"),
+-                 "--func-id-dir", str(work / "func_id"),
+-                 "-o", str(work / "recomp"),
+-                 # Per-site indirect-call targets (tools.recomp.icall_feedback
+-                 # merge --sites-db): this title's, not the shared default.
+-                 "--icall-sites", str(work / "recomp" / "icall_sites.json")]
+-    # A title project copied from templates/new-game: the generated sources
+-    # go where its CMakeLists globs them, and the functions its
+-    # recomp_manual.c defines by hand are left out of the generated set so
+-    # the two never define the same symbol. --gen-dir still wins if both
+-    # are given.
+-    project = Path(args.project).resolve() if args.project else None
+-    gen_dir = args.gen_dir or (str(project / "src" / "recomp" / "gen")
+-                               if project else None)
+-    if gen_dir:
+-        lift += ["--gen-dir", gen_dir]
+-    if project and (project / "src" / "recomp_manual.c").is_file():
+-        lift += ["--exclude-manual", str(project / "src" / "recomp_manual.c")]
+-    if args.game_name:
+-        lift += ["--game-name", args.game_name]
+-    if args.trace_all_entries:
+-        lift.append("--trace-all-entries")
+-    # XDK functions with a name-keyed replacement (tools/recomp/hle.py), used
+-    # whenever tools.xdk_symbols has been run for this XBE.
+-    hle_symbols = xbe.with_name(xbe.stem + "_xdk_symbols.json")
+-    if hle_symbols.exists():
+-        lift += ["--hle-symbols", str(hle_symbols)]
+-    if args.verbose:
+-        lift.append("-v")
+-
+-    commands = dict(zip(STAGES, [parse, disasm, identify, lift]))
+-
+-    if args.only:
+-        selected = [args.only]
+-    else:
+-        selected = STAGES[STAGES.index(args.start):]
+-
+-    return [(name, commands[name]) for name in selected]
+-
+-
+-def run(name: str, argv, dry_run: bool) -> bool:
+-    print(f"\n{'=' * 70}")
+-    print(f"  {STAGES.index(name) + 1}/4  {name}")
+-    print(f"{'=' * 70}")
+-    print("  $ " + " ".join(argv))
+-
+-    if dry_run:
+-        return True
+-
+-    start = time.time()
+-    result = subprocess.run(argv, cwd=REPO)
+-    elapsed = time.time() - start
+-
+-    if result.returncode != 0:
+-        print(f"\n  FAILED: stage '{name}' exited {result.returncode} "
+-              f"after {elapsed:.1f}s", file=sys.stderr)
+-        return False
+-
+-    print(f"\n  done in {elapsed:.1f}s")
+-    return True
+-
+-
+-def main() -> int:
+-    ap = argparse.ArgumentParser(
+-        description=__doc__,
+-        formatter_class=argparse.RawDescriptionHelpFormatter)
+-    ap.add_argument("xbe", help="Path to the title's default.xbe")
+-    ap.add_argument("--seeds", action="append", default=None, metavar="FILE",
+-                    help="Seed file of extra entry points. Repeatable. "
+-                         "Defaults to config/seeds/<TITLEID>.json for "
+-                         "the XBE given -- the file tools.seed_from_log "
+-                         "writes -- when one exists; --no-seeds "
+-                         "disables it.")
+-    ap.add_argument("--no-seeds", action="store_true",
+-                    help="Ignore this title's seed file")
+-    ap.add_argument("--trace-all-entries", action="store_true",
+-                    help="Hook every function's entry so a profiled run can "
+-                         "report how many distinct functions it reached. That "
+-                         "is the frontier measure worth comparing between "
+-                         "iterations; run the build with RECOMP_TRACE_PROFILE "
+-                         "set, or use run_and_report.py --profile.")
+-    ap.add_argument("--text-only", action="store_true",
+-                    help="Disassemble only .text, skipping the statically "
+-                         "linked library sections. Faster, and wrong for any "
+-                         "title that calls into them: their functions end up "
+-                         "truncated at the first byte the sweep never decoded.")
+-    ap.add_argument("--all", action="store_true",
+-                    help="Lift everything, including CRT and XDK code "
+-                         "(default: --game-only)")
+-    ap.add_argument("--split", type=int, default=1000, metavar="N",
+-                    help="Functions per generated .c file (default: 1000)")
+-    ap.add_argument("--gen-dir", metavar="DIR",
+-                    help="Output directory for generated sources")
+-    ap.add_argument("--work-dir", metavar="DIR",
+-                    help="Per-title directory for the stage outputs "
+-                         "(disasm/, func_id/, recomp/). Without it every "
+-                         "stage writes to the shared tools/*/output, and two "
+-                         "titles both called default.xbe overwrite each other.")
+-    ap.add_argument("--project", metavar="DIR",
+-                    help="A title project made from templates/new-game. "
+-                         "Generated sources go to DIR/src/recomp/gen and the "
+-                         "functions DIR/src/recomp_manual.c defines by hand "
+-                         "are not generated.")
+-    ap.add_argument("--game-name", metavar="NAME",
+-                    help="Name stamped into the generated-code banners")
+-    ap.add_argument("--json", metavar="FILE",
+-                    help="Where to write the stage-1 analysis JSON "
+-                         "(default: <xbe stem>_analysis.json beside the XBE)")
+-    ap.add_argument("--from", dest="start", choices=STAGES, default="parse",
+-                    metavar="STAGE",
+-                    help=f"Start from this stage: {', '.join(STAGES)}")
+-    ap.add_argument("--only", choices=STAGES, metavar="STAGE",
+-                    help="Run only this stage")
+-    ap.add_argument("--dry-run", action="store_true",
+-                    help="Print the commands without running them")
+-    ap.add_argument("--verbose", "-v", action="store_true")
+-    args = ap.parse_args()
+-
+-    xbe = Path(args.xbe).resolve()
+-
+-    # Seeds belong to a title, not to the toolkit.
+-    #
+-    # This used to load config/seed_functions.json for every XBE. A seed is an
+-    # unconditional claim that a function starts at an address, and tools.disasm
+-    # only refuses one that lands mid-instruction -- so Burnout 2's 214
+-    # addresses were applied to any other title, and each one that happened to
+-    # fall on an instruction boundary became a fake function start, splitting
+-    # the real function around it. Silently, and on a "make this work for any
+-    # game" branch.
+-    if args.no_seeds:
+-        args.seeds = []
+-    elif args.seeds is None:
+-        args.seeds = []
+-        title = xbe_title_id(xbe)
+-        if title:
+-            per_title = REPO / "config" / "seeds" / (title + ".json")
+-            if per_title.is_file():
+-                args.seeds = [per_title]
+-                if args.verbose:
+-                    print(f"seeds: {per_title.name} (title {title})")
+-            elif args.verbose:
+-                print(f"seeds: none for title {title}")
+-        legacy = REPO / "config" / "seed_functions.json"
+-        if legacy.is_file():
+-            print(f"warning: {legacy} is ignored; seeds are per-title now, "
+-                  f"in config/seeds/<TITLEID>.json", file=sys.stderr)
+-
+-    if not args.dry_run and not xbe.is_file():
+-        print(f"error: XBE not found: {xbe}", file=sys.stderr)
+-        return 1
+-
+-    # Written next to the XBE, named after it, because tools.disasm looks
+-    # there first and several titles may share one directory.
+-    analysis_json = (Path(args.json).resolve() if args.json
+-                     else xbe.parent / f"{xbe.stem}_analysis.json")
+-
+-    commands = build_commands(args, xbe, analysis_json)
+-
+-    print(f"Title    {xbe}")
+-    print(f"Analysis {analysis_json}")
+-    print(f"Scope    {'all functions' if args.all else 'game functions only'}")
+-
+-    started = time.time()
+-    for name, argv in commands:
+-        if not run(name, argv, args.dry_run):
+-            print("\nPipeline stopped. Fix the error above and re-run with "
+-                  f"--from {name}", file=sys.stderr)
+-            return 1
+-
+-    if args.dry_run:
+-        print("\n(dry run: nothing was executed)")
+-        return 0
+-
+-    print(f"\n{'=' * 70}")
+-    print(f"  Pipeline complete in {time.time() - started:.1f}s")
+-    print(f"{'=' * 70}")
+-    print("\nNext: build the generated sources against the runtime libraries.")
+-    print("See INSTRUCTIONS.md for the build and first-run loop.")
+-    return 0
+-
+-
+-if __name__ == "__main__":
+-    sys.exit(main())
++_implementation.REPO = _runtime
++if __name__ == '__main__':
++    raise SystemExit(_implementation.main())
++sys.modules[__name__] = _implementation

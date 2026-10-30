@@ -22,7 +22,7 @@ public static class LauncherIconBuilder
 
     static Bitmap Render(int size) { return Render(size, false, null); }
 
-    static Bitmap Render(int size, bool game, Image logo)
+    static Bitmap Render(int size, bool game, Image logo, bool multiplayer = false)
     {
         var bitmap = new Bitmap(size, size, PixelFormat.Format32bppArgb);
         using (var g = Graphics.FromImage(bitmap))
@@ -55,7 +55,8 @@ public static class LauncherIconBuilder
                 }
             }
 
-            if (game && logo != null && size >= 128)
+            if (multiplayer) DrawMultiplayer(g, size);
+            else if (game && logo != null && size >= 128)
             {
                 g.InterpolationMode=InterpolationMode.HighQualityBicubic;
                 if (logo.Width==500 && logo.Height==187)
@@ -95,6 +96,48 @@ public static class LauncherIconBuilder
         }
         return bitmap;
     }
+
+    static void DrawMultiplayer(Graphics graphics, int size)
+    {
+        // Two distinct players, inside the same aperture used by the launcher
+        // and game. Broad silhouettes remain recognizable in the title bar.
+        using (var chrome = new LinearGradientBrush(new Point(0, 73), new Point(0, 181),
+            Color.FromArgb(247, 252, 255), Color.FromArgb(133, 177, 211)))
+        using (var dark = new Pen(Color.FromArgb(7, 19, 33), size <= 24 ? 7 : 5))
+        {
+            foreach (float center in new[] { 91f, 165f })
+            {
+                using (var player = new GraphicsPath())
+                {
+                    player.AddEllipse(center - 19, 75, 38, 38);
+                    player.StartFigure();
+                    player.AddBezier(center - 33, 176, center - 34, 141, center - 25, 124, center, 124);
+                    player.AddBezier(center, 124, center + 25, 124, center + 34, 141, center + 33, 176);
+                    player.CloseFigure();
+                    graphics.DrawPath(dark, player);
+                    graphics.FillPath(chrome, player);
+                }
+            }
+        }
+        if (size >= 32)
+        {
+            using (var connection = new Pen(Color.FromArgb(104, 205, 255), 6))
+            {
+                connection.StartCap = LineCap.Round;
+                connection.EndCap = LineCap.Round;
+                graphics.DrawLine(connection, 109, 192, 147, 192);
+            }
+        }
+    }
+
+    public static void WriteMultiplayer(string output)
+    { Write(output, size => Render(size, false, null, true)); }
+
+    public static void WriteMultiplayerPng(string output)
+    { using (var bitmap = Render(512, false, null, true)) bitmap.Save(output, ImageFormat.Png); }
+
+    public static void PreviewMultiplayer(string output)
+    { Preview(output, size => Render(size, false, null, true)); }
 
     static void DrawGameMonogram(Graphics graphics,int size)
     {

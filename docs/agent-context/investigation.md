@@ -1,5 +1,76 @@
 # Investigation memory and handoffs
 
+Root AGENTS.md and the PR template require a short user-facing Change and Cause
+and fix description. Keep technical evidence in the existing project records;
+the simpler opening description does not remove testing or platform obligations.
+
+Keep fixed issues open until a published version includes the fix. Use non-closing
+PR references (`Refs #123`), mark publication pending, and verify/link the release
+before closing. The 2026-10-29 root AGENTS rule overrides older template closing
+instructions; merge-time resolution comments do not establish publication.
+
+Kernel stages: [object ownership, boot and validation](kernel-objects.md).
+Generate the patch index from LF patch bytes matching Git; CRLF working copies
+can produce different hashes and target names despite local checks passing.
+
+Retired memory APIs: [caller audit and retained ABI](retired-memory-compatibility.md).
+
+Guest mappings: [owners, host adapters and checks](guest-host-mappings.md).
+Native Nt host mappings: [reservation ownership and protection](native-virtual-memory.md).
+
+Guest Mm/statistics: [ownership, host snapshots and ABI](guest-memory-services.md).
+
+Native Mm: [ownership, page adapters and remaining work](native-memory.md).
+
+Virtual memory: [guest/native paths and remaining host adapters](virtual-memory.md).
+
+Thread storage investigations: [memory ownership and caller limits](thread-memory.md).
+
+Allocation ownership and bridge entry points now use the project provider;
+see [contracts and consumer constraints](independent.md#guest-allocation-ownership).
+Trace old addresses only as historical evidence: lowest-fit placement may differ.
+
+The final replacement order includes call frames, vector support, scalar support
+canonical runtime header, its consumer-fixture repair, branch feedback, nonlocal
+jumps, guest state/reports, image loading, allocation/thread/virtual-memory and
+guest host mappings and unused memory API retirement, then source layout. Historical fixtures omit replacements
+from old inputs; the order test checks the eighteen-patch tail. Audit `.inc` files and scan ignored
+generated C explicitly with `--no-ignore`. Exact-name searches missed the live
+SX/ZX calls assembled dynamically by the move emitter; its direct replacements
+now have exhaustive compiled register/memory/alias checks.
+
+Call-frame replacement follows dispatch and guest ABI in effective patch order.
+`test_repo_context.py` checks this dependency; see [own interfaces](independent.md).
+
+After remote main contains a completed task, remove its local task branch using
+safe deletion after switching away and checking for unique or uncommitted work.
+Root AGENTS.md owns this repository-wide rule; retain other chatsÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ unmerged work
+and ignored data. Other checkouts must pull and reread it.
+
+Build commands now live under `tools/build/`; the evidence broker allows that
+tracked source directory while keeping generated build outputs excluded.
+Root status/backlog reports moved to `docs/project/`.
+
+The patch index keeps stable basename identities and a separate repository
+`path` for nested responsibility folders. Both `repo-context.py find` and the
+evidence broker use those paths and effective order; legacy patches are excluded
+from active search. The broker still accepts older flat-layout indexes.
+
+[Repository layout](../development/repository-layout.md) distinguishes tracked source,
+the pristine vendor snapshot, the patched external runtime and local outputs.
+Patch lookup/index entries now use readable numbered filenames; use the same
+finder and effective-order checks. Git rename history retains old spellings.
+
+The context ownership map now assigns `vendor/**` to the runtime guide.
+The root AGENTS rule identifies the bundled pristine base and offline importer;
+the ignored patched runtime remains the place to inspect effective behavior.
+Snapshot content is provenance, not a second place to implement fixes.
+
+The CLI replacement follows function emission. Historical
+checkpoint fixtures defer it until the complete title stack; fresh installs and
+upgrades still exercise it. Check recorded patch hashes against Git LF bytes
+when local context passes but a clean CI checkout reports a stale index.
+
 <!-- packet:start -->
 Before a broad search, read the repository map and relevant subsystem guide,
 then use the bounded patch finder. Keep exact path/symbol findings in ignored
@@ -25,10 +96,12 @@ context is installed. Candidate
 math must preserve callback order and exceptional-input behavior, not only
 ordinary output coordinates. Local-register prototypes alone are not integration.
 
-`tests/test_repo_context.py` checks effective patch order rather than only
-filename sorting. The radial stick deadzone patch is now the final record,
-after zero-base-indices and the keyboard reload patch; update that ordering
-assertion when intentionally adding another final patch.
+`tests/repository/test_repo_context.py` checks effective patch order rather than only
+filename sorting. Independent translation-moves, translation-integer, translation-bits and
+translation-product are final, after radial stick deadzone and title instrumentation
+that their removed handlers contain. Historical fixtures omit replacements until
+the complete-stack upgrade. Update the ordering assertion when intentionally
+adding another final patch.
 
 ## Working note (not committed)
 
@@ -58,7 +131,7 @@ Local context and Sol should agree about paths, ownership, current timing policy
 and verification limits. The repository manifest is versioned; the machine's
 router installation is separate and must implement this integration.
 The optional reader's portable source is `tools/router/repository-context.mjs`;
-its contract tests are `tests/repository-context.test.mjs`. The installed router
+its contract tests are `tests/repository/repository-context.test.mjs`. The installed router
 copies that reader beside its supervisor and uses only its fixed guide allowlist.
 
 Automatic Sol packets remain within the existing 20-KB redacted disclosure
@@ -123,7 +196,7 @@ to each affected guide. It can check presence/freshness, not whether an explanat
 is intellectually correct. Reviewers must still compare it with source.
 
 The #105 pacing correction extends the effective patch tail: fixed-60 must be
-followed by late-frame-pacing. `tests/test_repo_context.py` checks that pair as
+followed by late-frame-pacing. `tests/repository/test_repo_context.py` checks that pair as
 well as excluding untracked experiments. Refreshing the index alone does not
 update explicit ordering contracts; keep those assertions aligned with the
 loader when deliberately extending its dependency order.
@@ -139,7 +212,7 @@ The demo-timer wrapper extends that tail after native surface rendering.
 The index-order regression now checks this final dependency explicitly.
 
 The 2026-10-22 root texture policy retains original character selection/profile
-icons via `config/texture-originals.json`. Consult the systems/build-test guides
+icons via `config/textures/texture-originals.json`. Consult the systems/build-test guides
 for the planner exclusion and checks; character model materials remain in scope.
 Historical artwork acceptance does not override the current user preference.
 
@@ -175,3 +248,107 @@ is not proof of the remote PR's merge state. Required checks remain in force.
 The repository-context order test includes the post-handoff surface capture/render
 tail, with render last. Preserve dependency assertions when extending the loader;
 a stale last-patch assertion is not evidence of a loader failure.
+
+Comparison-stage fixtures retain strict Clang warnings. Compare source snapshots
+with decoded consumers separately from full branch/flag ownership. Treat fused
+comparison rereads as a remaining orchestration boundary, not snapshot coverage.
+
+String replacement checks distinguish repeated element ordering from bulk copy,
+zero-count flag preservation from new comparisons, and native instruction
+oracles from the full decoded translator. Single compares need snapshot locals
+even when there is no conditional consumer; repeated compares need ZF storage.
+
+The control-emission patch follows x87 before later orchestration replacements.
+Historical reconstruction defers it together with prior independent emitters;
+keep staged patch order/index and original golden/behavioral fixtures aligned.
+
+
+The independent guest ABI stage appends `independent-guest-abi.patch` after the
+translation CLI bridge. The index-order assertion checks this dependency.
+Historical fixtures omit this new patch only while reconstructing their old
+pre-instrumentation starting state; upgrades still apply the full current stack,
+including the ABI replacement, and retain idempotence/preservation checks.
+
+
+Ordinal81 prerequisite extends late patch order through0217; migration fixtures
+and the maintained context suffix now include it before final layout routing.
+See kernel-objects.md for caller evidence and compiled ABI fault controls.
+
+
+Request0218 extends late provider order; maintained loader, migration models and
+context suffix22 keep it before layout2090. tests/compiler request contracts
+resolve providers from src/runtime; ignored experiments are not shipped tests.
+
+
+Stage0219 extends the mapped compiler-patch suffix before the final repository
+layout patch. [Device contracts](kernel-devices.md) identify maintained providers,
+source/test routes, actual-header probes and the pending build/game boundary.
+
+
+The indexed patch-order contract now includes0220 after0219 and before2090;
+keep the fixed expected tail synchronized when adding reviewed independent stages.
+Sharing contracts: [kernel-sharing](kernel-sharing.md).
+
+
+Next driver stage: [request lifetime and unresolved Xbox slot evidence](request-lifetime.md).
+
+
+The0222 [driver-call map](driver-call.md) supersedes the uninstalled-composer note; kernel routing remains unfinished.
+
+
+Request prefix: [0223 contracts and Thread+50 evidence](transfer-completion.md).
+
+Stage0224: [queue ownership and native acceptance routes](transfer-completion.md#host-owned-request-queue); the maintained patch map includes the new FIFO provider.
+
+Stage0225: [StartIo callback composition and acceptance](transfer-completion.md#startio-callback-composition); maintained maps include the new provider.
+
+Stage0226: [exclusive waiting membership and device queue mirrors](transfer-completion.md#device-queue-mirrors).
+
+Stage0227: [persistent device queue lifetime and scoped scheduler APIs](transfer-completion.md#persistent-device-queue-lifetime).
+
+Stage0228: [read-only caller-owned request adoption and range lifetime](transfer-completion.md#caller-owned-request-adoption).
+
+Stage0229: [original event bytes/atomics and KeInitializeEvent bridge](transfer-completion.md#original-guest-events).
+
+Stage0231 context regression asserts the real33-patch late compiler tail, with
+0231 after0229 before2090. Main2130 DPI remains earlier by actual loader order.
+
+Stage0232 context regression extends the exact late compiler tail to34 patches,
+0232 follows0231 before2090; the main DPI patch stays earlier by loader order.
+
+Stage0233 context tail now35 patches:0233 after0232 before2090; host routing
+policy is in guest_paths.c rather than two kernel_path translate bodies.
+
+Stage0234 context tail extends to36 patches, after0233 before2090. Upgrade
+assertions require original host/storage providers and exclude kernel_path.c.
+
+Stage0235 extends the late compiler tail to37 patches, after0234 before2090;
+upgrades require the original pool include and exclude native kernel_pool.c.
+
+Stage0236 extends the exact late compiler tail to38 patches, after0235 before2090;
+calendar provider/imports replace native RTL time bodies and unused POSIX shims.
+
+Native Online adds 2140 after the 2090 layout migration. The exact late patch
+tail now has 44 entries after main integration; historical subsets omit both layout and its dependent
+adapter before upgrading to the complete stack. Runtime ordering is unchanged
+for earlier patches; see runtime.md and multiplayer-ui.md for the new boundary.
+
+Stage0237 extends the exact late compiler tail to39 patches after0236 before2090;
+counted strings/memory prefixes select original code and retire six native helpers.
+
+Stage0238 extends the exact late compiler tail to40 patches after0237 before2090;
+whole kernel_rtl.c exclusion selects original critical/status/diagnostic services
+and removes the separate TryEnter table. Historical checks read UTF-8 explicitly.
+
+Stage0239 extends the exact late compiler tail to41 patches after0238 before2090;
+original printf removes the legacy formatter/cursors/four cdecl wrappers. The
+x86 oracle compiles native Win32 varargs; portable contracts keep both host routes.
+
+Stage0240 follows0239; main adds its observer before layout in the late43 tail.
+Inspect
+[contract and checked frames](guest-numbers.md), not removed bridge bodies.
+
+Crash diagnostics adds the allocation-history patch after allocator dependencies;
+the repository-order fixture includes this final observer hook before source
+layout. Normalize new patches to LF before refreshing the index: local CRLF
+bytes hash differently from Git-normalized checkout bytes on CI hosts.

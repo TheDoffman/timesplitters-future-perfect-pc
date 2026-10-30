@@ -1,0 +1,976 @@
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -402,99 +402,6 @@
+  * path is the rare one. */
+ static RECOMP_TLS uint32_t g_thread_stack_top = 0;
+ 
+-struct bridge_thread_start {
+-    recomp_func_t fn;
+-    uint32_t ctx1, ctx2, stack_top;
+-};
+-
+-/* Object kinds, for ObReferenceObjectByHandle. Declared here because the
+- * creation sites that record them come earlier in this file than the
+- * handle table itself. */
+-#define BRIDGE_OBJ_UNKNOWN  0
+-#define BRIDGE_OBJ_THREAD   1
+-#define BRIDGE_OBJ_EVENT_M  2   /* notification / manual-reset */
+-#define BRIDGE_OBJ_EVENT_A  3   /* synchronisation / auto-reset */
+-static void bridge_set_handle_kind(HANDLE h, int kind);
+-
+-static void bridge_write_handle(uint32_t handle_va, HANDLE h);
+-
+-static void bridge_run_thread_inline(recomp_func_t fn, uint32_t ctx1,
+-                                     uint32_t ctx2)
+-{
+-    g_esp -= 4; BRIDGE_MEM32(g_esp) = ctx2;
+-    g_esp -= 4; BRIDGE_MEM32(g_esp) = ctx1;
+-    g_esp -= 4; BRIDGE_MEM32(g_esp) = 0;
+-    g_seh_ebp = g_esp;
+-    fn();
+-    g_esp += 12;
+-}
+-
+-static DWORD WINAPI bridge_thread_main(LPVOID param)
+-{
+-    struct bridge_thread_start *s = (struct bridge_thread_start *)param;
+-    recomp_func_t fn = s->fn;
+-    uint32_t ctx1 = s->ctx1, ctx2 = s->ctx2;
+-
+-    /* Own register set (RECOMP_TLS), own simulated stack -- and own TIB.
+-     *
+-     * The TIB carries the SEH chain head and, through fs:[4], the CRT's
+-     * per-thread data. Sharing one made "which thread am I" a single answer
+-     * for every thread, which is how two of them ended up inside _lock() each
+-     * holding the lock the other wanted. */
+-    g_is_spawned_thread = 1;
+-    /* A spawned worker runs lifted code, so it queues behind the lock like
+-     * any other guest thread. It is dropped again at its first kernel call. */
+-    xbox_GuestLockEnter();
+-    xbox_GuestLiftedEnter();
+-    xbox_NameCurrentThread(L"guest worker");
+-    g_esp = s->stack_top;
+-    g_thread_stack_top = s->stack_top;
+-    {
+-        uint32_t tib = xbox_AllocThreadTib();
+-        if (tib)
+-            g_fs_base = tib;
+-        else
+-            fprintf(stderr, "  [KERNEL] worker thread has no TIB of its own;"
+-                            " it shares the main thread's\n");
+-    }
+-    free(s);
+-
+-    bridge_run_thread_inline(fn, ctx1, ctx2);
+-    xbox_GuestLiftedExit();   /* no longer running lifted code */
+-
+-    fprintf(stderr, "  [KERNEL] worker thread returned (eax=0x%08X)\n", g_eax);
+-    fflush(stderr);
+-    /* The routine returned instead of calling PsTerminateSystemThread; the
+-     * stack is still ours to give back. */
+-    xbox_FreeThreadStack(g_thread_stack_top);
+-    g_thread_stack_top = 0;
+-    return 0;
+-}
+-
+-static HANDLE bridge_spawn_thread(recomp_func_t fn, uint32_t ctx1,
+-                                  uint32_t ctx2, uint32_t stack_top)
+-{
+-    struct bridge_thread_start *s = malloc(sizeof(*s));
+-    HANDLE th;
+-
+-    if (!s) {
+-        xbox_FreeThreadStack(stack_top);
+-        return NULL;
+-    }
+-    s->fn = fn; s->ctx1 = ctx1; s->ctx2 = ctx2; s->stack_top = stack_top;
+-
+-    th = CreateThread(NULL, 0, bridge_thread_main, s, 0, NULL);
+-    if (!th) {
+-        free(s);
+-        xbox_FreeThreadStack(stack_top);
+-    }
+-    /* Record the game thread so a host-tick-driven title's watchdog can sample
+-     * it via xbox_thread_debug_handle. Harmless for default-model titles: they
+-     * spawn workers too, but never read it back. See kernel_thread.c. */
+-    else xbox_set_game_thread(th);
+-    return th;
+-}
+-
+ /* Two ways a title expects its first PsCreateSystemThreadEx to behave.
+  *
+  * INLINE (default): the first call IS the game starting -- run the routine
+@@ -510,114 +417,13 @@
+ static int g_thread_mode = XBOX_THREAD_MODE_INLINE;
+ void xbox_SetThreadMode(int mode) { g_thread_mode = mode; }
+ 
++#include "guest_kernel_objects.inc"
++#include "guest_kernel_threads.inc"
++
+ static void bridge_PsCreateSystemThreadEx(void)
+ {
+-    uint32_t xbox_handle_ptr = STACK_ARG(0);
+-    uint32_t start_context1  = STACK_ARG(5);
+-    uint32_t start_context2  = STACK_ARG(6);
+-    uint32_t start_routine   = STACK_ARG(9);
+-    /* In SPAWN mode there is no privileged "first call": every thread is real,
+-     * so the entry can return. In INLINE mode the first call runs the game. */
+-    int is_first_call = (g_thread_mode == XBOX_THREAD_MODE_INLINE)
+-                        && (g_thread_call_count == 0);
+-    g_thread_call_count++;
+-
+-    fprintf(stderr, "  [KERNEL] PsCreateSystemThreadEx #%d: routine=0x%08X ctx1=0x%08X ctx2=0x%08X\n",
+-            g_thread_call_count, start_routine, start_context1, start_context2);
+-    fflush(stderr);
+-
+-    /* Write a fake handle to the output pointer */
+-    if (xbox_handle_ptr) {
+-        BRIDGE_MEM32(xbox_handle_ptr) = 0xBEEF0001;  /* fake handle */
+-    }
+-
+-    /* Call the start routine synchronously through the recomp dispatch.
+-     * Xbox thread start routines receive two parameters:
+-     *   void ThreadRoutine(PVOID StartContext1, PVOID StartContext2)
+-     * We push both onto the simulated stack (right-to-left).
+-     *
+-     * First call: the game's main thread entry point. Must run synchronously
+-     * and inherit the current register state (this IS the game starting).
+-     *
+-     * Subsequent calls: worker threads. Must save/restore ALL global registers
+-     * because on real Xbox each thread has its own register set. Without this,
+-     * the worker clobbers the caller's g_esi, g_ebx, etc. */
+-    if (start_routine) {
+-        recomp_func_t fn = recomp_lookup(start_routine);
+-        if (!fn) fn = recomp_lookup_manual(start_routine);
+-        if (fn) {
+-            if (is_first_call) {
+-                /* Main game thread: run directly, inheriting register state */
+-                g_esp -= 4; BRIDGE_MEM32(g_esp) = start_context2;
+-                g_esp -= 4; BRIDGE_MEM32(g_esp) = start_context1;
+-                g_esp -= 4; BRIDGE_MEM32(g_esp) = 0;
+-                fn();
+-                g_esp += 12;
+-                fprintf(stderr, "  [KERNEL] PsCreateSystemThreadEx: main thread returned (g_eax=0x%08X)\n", g_eax);
+-                fflush(stderr);
+-            } else {
+-                /* Worker thread: a real one.
+-                 *
+-                 * This used to run the routine synchronously and restore the
+-                 * caller's registers afterwards, which is fine only for a
+-                 * worker that finishes. Halo's cache/file worker does not -- it
+-                 * blocks on an event waiting for requests, so CreateThread
+-                 * never returned and startup deadlocked before the main loop.
+-                 *
+-                 * Now that the register set is thread-local (RECOMP_TLS), a
+-                 * spawned thread gets its own, and the caller's is untouched by
+-                 * construction rather than by save/restore. */
+-                /* RECOMP_WORKERS=inline runs a title's worker routines on
+-                 * the calling thread instead of spawning one.
+-                 *
+-                 * Not a mode to ship a title in -- a worker that blocks
+-                 * waiting for requests never returns, and the caller never
+-                 * gets control back. It is a bisecting tool: when something
+-                 * only goes wrong with two guest threads running, this says so
+-                 * in one run, and the answer separates a concurrency bug from
+-                 * everything else it might have been. */
+-                const char *inline_workers = getenv("RECOMP_WORKERS");
+-                uint32_t stack_top;
+-
+-                if (inline_workers && !strcmp(inline_workers, "inline")) {
+-                    fprintf(stderr, "  [KERNEL] RECOMP_WORKERS=inline: running "
+-                            "worker 0x%08X on this thread\n", start_routine);
+-                    fflush(stderr);
+-                    bridge_run_thread_inline(fn, start_context1, start_context2);
+-                    return;
+-                }
+-
+-                stack_top = xbox_AllocThreadStack();
+-
+-                if (!stack_top) {
+-                    fprintf(stderr, "  [KERNEL] PsCreateSystemThreadEx: out of "
+-                            "thread stacks, running worker 0x%08X inline\n",
+-                            start_routine);
+-                    fflush(stderr);
+-                    bridge_run_thread_inline(fn, start_context1, start_context2);
+-                } else {
+-                    HANDLE th = bridge_spawn_thread(fn, start_context1,
+-                                                    start_context2, stack_top);
+-                    /* A thread handle is signalled when the thread exits, and
+-                     * a zero-timeout wait on one is a read rather than a
+-                     * take -- so ObReferenceObjectByHandle may ask it. */
+-                    if (th) bridge_set_handle_kind(th, BRIDGE_OBJ_THREAD);
+-                    fprintf(stderr, "  [KERNEL] PsCreateSystemThreadEx: spawned "
+-                            "worker 0x%08X (ctx=0x%08X, stack top 0x%08X)\n",
+-                            start_routine, start_context1, stack_top);
+-                    fflush(stderr);
+-                    if (xbox_handle_ptr && th) {
+-                        bridge_write_handle(xbox_handle_ptr, th);
+-                    }
+-                }
+-            }
+-        } else {
+-            fprintf(stderr, "  [KERNEL] PsCreateSystemThreadEx: start routine 0x%08X not found in dispatch!\n",
+-                    start_routine);
+-        }
+-    }
+-
+-    g_eax = 0; /* STATUS_SUCCESS */
++    g_eax=bridge_create_thread(STACK_ARG(0),STACK_ARG(4),STACK_ARG(9),
++        STACK_ARG(5),STACK_ARG(6),STACK_ARG(7)!=0);
+ }
+ 
+ /* ── NtClose (ordinal 187) ───────────────────────────────
+@@ -627,25 +433,10 @@
+ /* Handle-table helpers; defined further below. Xbox memory slots are 32-bit
+  * but native HANDLEs are 64-bit pointers, so handles are kept in a table and
+  * referenced by tagged 32-bit tokens. */
+-static void   bridge_write_handle(uint32_t handle_va, HANDLE h);
+-static HANDLE bridge_take_handle(uint32_t token);
+ 
+ static void bridge_NtClose(void)
+ {
+-    uint32_t raw_handle = STACK_ARG(0);
+-
+-    if (KERNEL_LOG_ON()) {
+-        fprintf(stderr, "  [KERNEL] NtClose: handle=0x%08X\n", raw_handle);
+-        fflush(stderr);
+-    }
+-
+-    /* Close real handles but skip fake/synthetic ones */
+-    if (raw_handle && raw_handle != 0xDEAD0001u && raw_handle != 0xBEEF0010u) {
+-        HANDLE h = bridge_take_handle(raw_handle);
+-        if (h && h != INVALID_HANDLE_VALUE)
+-            CloseHandle(h);
+-    }
+-    g_eax = 0; /* STATUS_SUCCESS */
++    g_eax=tsfp_guest_object_close(&bridge_object_services,STACK_ARG(0));
+ }
+ 
+ /* ── MmAllocateContiguousMemory (ordinal 165) ─────────────
+@@ -1096,36 +887,13 @@
+ /* ── NtCreateEvent (ordinal 189) ─────────────────────────── */
+ static void bridge_NtCreateEvent(void)
+ {
+-    uint32_t handle_ptr = STACK_ARG(0);
+-    uint32_t obj_attr_ptr = STACK_ARG(1);
+-    uint32_t event_type = STACK_ARG(2);
+-    uint32_t initial_state = STACK_ARG(3);
+-
+-    /* Use local HANDLE to avoid 8-byte write to 4-byte Xbox memory slot.
+-     * On x64, HANDLE is 8 bytes but Xbox expects 4-byte handles. */
+-    HANDLE local_handle = NULL;
+-    NTSTATUS status = xbox_NtCreateEvent(
+-        &local_handle,
+-        XBOX_TO_NATIVE(obj_attr_ptr),
+-        event_type, initial_state);
+-
+-    if (local_handle) {
+-        /* XboxNotificationEvent (0) is manual-reset and safe to poll;
+-         * XboxSynchronizationEvent (1) is auto-reset and is consumed by a
+-         * zero-timeout wait, so it is recorded as the kind not to ask. */
+-        bridge_set_handle_kind(local_handle,
+-                               event_type == 0 ? BRIDGE_OBJ_EVENT_M
+-                                               : BRIDGE_OBJ_EVENT_A);
+-    }
+-    if (handle_ptr) {
+-        bridge_write_handle(handle_ptr, local_handle);
+-    }
+-
+-    fprintf(stderr, "  [BRIDGE] NtCreateEvent: handle_ptr=0x%08X type=%u init=%u → status=0x%08X handle=0x%08X\n",
+-            handle_ptr, event_type, initial_state, (uint32_t)status,
+-            (uint32_t)(uintptr_t)local_handle);
+-
+-    g_eax = (uint32_t)status;
++    bridge_object_creation creation;HANDLE host=NULL;uint32_t status,type=STACK_ARG(2);
++    if(type>1) { g_eax=TSFP_OBJECT_BAD_PARAMETER;return; }
++    status=bridge_object_prepare(&creation,STACK_ARG(0),
++        type?TSFP_KIND_EVENT_AUTO:TSFP_KIND_EVENT_MANUAL,0);
++    if(status) { g_eax=status;return; }
++    status=(uint32_t)xbox_NtCreateEvent(&host,XBOX_TO_NATIVE(STACK_ARG(1)),type,(BOOLEAN)STACK_ARG(3));
++    g_eax=bridge_object_finish(&creation,host,status);
+ }
+ 
+ static HANDLE ke_shadow_lookup(uint32_t guest_va);
+@@ -1157,6 +925,7 @@
+ static volatile LONG *bridge_guest_event(uint32_t va, int *sync)
+ {
+     uint8_t type;
++    if(bridge_object_borrow(va)) return NULL;
+ 
+     if (va < 0x00010000u || va >= GUEST_RAM_END - 8u)
+         return NULL;
+@@ -1941,6 +1710,7 @@
+          * to do it. */
+         xbox_FreeThreadStack(g_thread_stack_top);
+         g_thread_stack_top = 0;
++        bridge_object_thread_exit();
+         ExitThread(exit_status);
+     }
+ }
+@@ -2894,129 +2664,6 @@
+     }
+ }
+ 
+-/*
+- * Handle table.
+- *
+- * Xbox memory only has 32-bit handle slots, but native HANDLEs are 64-bit
+- * pointers (win32_compat objects, or real Win32 handles on Windows). Map
+- * 32-bit tokens <-> native HANDLEs so a handle survives a round-trip through
+- * Xbox memory. Tokens carry a tag in the high byte so they never collide
+- * with the synthetic handles (0xDEAD0001 / 0xBEEF0010) used elsewhere.
+- */
+-#define BRIDGE_HANDLE_TAG  0x48000000u
+-#define BRIDGE_HANDLE_MASK 0x00FFFFFFu
+-#define BRIDGE_HANDLE_MAX  16384
+-static HANDLE s_handle_table[BRIDGE_HANDLE_MAX];
+-/* Whether each token's file was opened for asynchronous I/O: CreateOptions
+- * without FILE_SYNCHRONOUS_IO_ALERT or _NONALERT. See bridge_NtReadFile. */
+-static unsigned char s_handle_async[BRIDGE_HANDLE_MAX];
+-
+-/* What kind of object each token refers to.
+- *
+- * Needed because ObReferenceObjectByHandle has to report whether the object
+- * is signalled, and the only way to ask a host object that is
+- * WaitForSingleObject with a zero timeout -- which is a read for a thread or
+- * a manual-reset event, and a *taking* for an auto-reset event, a mutex or a
+- * semaphore. Asking the wrong kind consumes the very signal the guest is
+- * waiting for, so the kind is recorded where the object is created rather
+- * than guessed at the point of use. Unknown means do not ask. */
+-static unsigned char s_handle_kind[BRIDGE_HANDLE_MAX];
+-
+-/* The guest-side dispatcher object synthesised for each token, or 0. */
+-static uint32_t s_handle_dispatcher[BRIDGE_HANDLE_MAX];
+-
+-
+-static uint32_t bridge_handle_token(HANDLE h)
+-{
+-    int i;
+-    if (!h || h == INVALID_HANDLE_VALUE) return 0;
+-    for (i = 1; i < BRIDGE_HANDLE_MAX; i++)
+-        if (s_handle_table[i] == h) return BRIDGE_HANDLE_TAG | (uint32_t)i;
+-    for (i = 1; i < BRIDGE_HANDLE_MAX; i++)
+-        if (s_handle_table[i] == NULL) {
+-            s_handle_table[i] = h;
+-            return BRIDGE_HANDLE_TAG | (uint32_t)i;
+-        }
+-    fprintf(stderr, "  [BRIDGE] handle table full\n");
+-    return 0;
+-}
+-
+-/* Record what kind of object a native HANDLE is, for the token that holds it.
+- * Allocates the token if it does not have one yet, so callers can do this at
+- * creation time without caring whether the handle has been published. */
+-static void bridge_set_handle_kind(HANDLE h, int kind)
+-{
+-    uint32_t token = bridge_handle_token(h);
+-    uint32_t i = token & BRIDGE_HANDLE_MASK;
+-    if ((token & 0xFF000000u) == BRIDGE_HANDLE_TAG && i < BRIDGE_HANDLE_MAX)
+-        s_handle_kind[i] = (unsigned char)kind;
+-}
+-
+-/* Store a native HANDLE into a 32-bit Xbox memory slot (as a token). */
+-static void bridge_write_handle(uint32_t handle_va, HANDLE h)
+-{
+-    if (handle_va)
+-        BRIDGE_MEM32(handle_va) = bridge_handle_token(h);
+-}
+-
+-/* Resolve a 32-bit Xbox handle slot back to a native HANDLE. */
+-static HANDLE bridge_read_handle(uint32_t va)
+-{
+-    uint32_t token = BRIDGE_MEM32(va);
+-    if ((token & 0xFF000000u) == BRIDGE_HANDLE_TAG) {
+-        uint32_t i = token & BRIDGE_HANDLE_MASK;
+-        return (i > 0 && i < BRIDGE_HANDLE_MAX) ? s_handle_table[i] : NULL;
+-    }
+-    /* Untagged value: synthetic/dummy handle -- pass through unchanged. */
+-    return (HANDLE)(uintptr_t)token;
+-}
+-
+-/* Resolve a token to a HANDLE and release its table slot (for NtClose). */
+-/* Resolve a handle token passed BY VALUE, without consuming it.
+- *
+- * Three accessors, easily confused, and confusing two of them broke all file
+- * I/O: bridge_read_handle(va) reads a token *from memory* and suits a PHANDLE
+- * out-parameter; bridge_take_handle(token) resolves and CLEARS the table slot,
+- * which is NtClose semantics; this one resolves and leaves the slot alone,
+- * which is what every by-value HANDLE argument needs.
+- *
+- * NtSetInformationFile and friends take the handle by value, but were calling
+- * bridge_read_handle on it -- dereferencing the token as if it were an address.
+- * Halo created its save file successfully and then failed the very next call,
+- * which surfaced as "couldn't open or create saved game file". */
+-static HANDLE bridge_resolve_handle(uint32_t token)
+-{
+-    if ((token & 0xFF000000u) == BRIDGE_HANDLE_TAG) {
+-        uint32_t i = token & BRIDGE_HANDLE_MASK;
+-        return (i > 0 && i < BRIDGE_HANDLE_MAX) ? s_handle_table[i] : NULL;
+-    }
+-    /* Untagged: synthetic/dummy handle -- pass through unchanged. */
+-    return (HANDLE)(uintptr_t)token;
+-}
+-
+-static HANDLE bridge_take_handle(uint32_t token)
+-{
+-    if ((token & 0xFF000000u) == BRIDGE_HANDLE_TAG) {
+-        uint32_t i = token & BRIDGE_HANDLE_MASK;
+-        if (i > 0 && i < BRIDGE_HANDLE_MAX) {
+-            HANDLE h = s_handle_table[i];
+-            s_handle_table[i] = NULL;
+-            s_handle_async[i] = 0;
+-            return h;
+-        }
+-    }
+-    return NULL;   /* untagged -> not a table handle, do not close */
+-}
+-
+-/* The host handle behind a guest handle token, for runtime code outside this
+- * file that is handed a guest HANDLE: a DirectSound stream packet's completion
+- * event (src/hle/hle_dsound_stream.c). Same rule as the bridges: a tagged token
+- * goes through the table, anything else passes through unchanged. */
+-void *xbox_bridge_resolve_handle(uint32_t token)
+-{
+-    return (void *)bridge_resolve_handle(token);
+-}
+-
+ /* Build a native OBJECT_ATTRIBUTES wrapping the translated Xbox path. */
+ static void bridge_build_oa(uint32_t obj_attrs_va,
+                             XBOX_OBJECT_ATTRIBUTES* oa, XBOX_ANSI_STRING* name)
+@@ -3076,37 +2723,27 @@
+ 
+ /* Open a file by delegating to the ported xbox_NtCreateFile kernel HLE. */
+ static NTSTATUS bridge_create_file_impl(
+-    uint32_t handle_va, ACCESS_MASK access, uint32_t obj_attrs_va,
+-    uint32_t iostatus_va, ULONG file_attrs, ULONG share,
+-    ULONG disposition, ULONG options)
+-{
+-    XBOX_OBJECT_ATTRIBUTES oa;
+-    XBOX_ANSI_STRING       name;
+-    XBOX_IO_STATUS_BLOCK   ios;
+-    HANDLE   h  = NULL;
+-    NTSTATUS st;
+-
+-    bridge_build_oa(obj_attrs_va, &oa, &name);
+-    if (recomp_skip_video(name.Buffer)) {
+-        bridge_write_iostatus(iostatus_va, STATUS_OBJECT_NAME_NOT_FOUND, 0);
+-        return STATUS_OBJECT_NAME_NOT_FOUND;
+-    }
+-    if (!name.Buffer) {
+-        bridge_write_iostatus(iostatus_va, STATUS_OBJECT_PATH_NOT_FOUND, 0);
+-        return STATUS_OBJECT_PATH_NOT_FOUND;
+-    }
+-    memset(&ios, 0, sizeof(ios));
+-
+-    st = xbox_NtCreateFile(&h, access, &oa, &ios, NULL,
+-                           file_attrs, share, disposition, options);
+-
+-    if (NT_SUCCESS(st)) {
+-        bridge_write_handle(handle_va, h);
+-        bridge_write_iostatus(iostatus_va, ios.Status, (uint32_t)ios.Information);
+-    } else {
+-        bridge_write_iostatus(iostatus_va, st, 0);
+-    }
+-    return st;
++    uint32_t handle_va,ACCESS_MASK access,uint32_t obj_attrs_va,
++    uint32_t iostatus_va,ULONG file_attrs,ULONG share,ULONG disposition,ULONG options)
++{
++    XBOX_OBJECT_ATTRIBUTES oa;XBOX_ANSI_STRING name;XBOX_IO_STATUS_BLOCK ios;
++    bridge_object_creation creation;HANDLE host=NULL;uint32_t status;
++    if(iostatus_va && !bridge_object_output(NULL,iostatus_va,8)) return (NTSTATUS)TSFP_OBJECT_BAD_ADDRESS;
++    bridge_build_oa(obj_attrs_va,&oa,&name);
++    if(recomp_skip_video(name.Buffer)) {
++        bridge_write_iostatus(iostatus_va,STATUS_OBJECT_NAME_NOT_FOUND,0);return STATUS_OBJECT_NAME_NOT_FOUND;
++    }
++    if(!name.Buffer) {
++        bridge_write_iostatus(iostatus_va,STATUS_OBJECT_PATH_NOT_FOUND,0);return STATUS_OBJECT_PATH_NOT_FOUND;
++    }
++    status=bridge_object_prepare(&creation,handle_va,TSFP_KIND_FILE,
++        (options&(XBOX_FILE_SYNCHRONOUS_IO_ALERT|XBOX_FILE_SYNCHRONOUS_IO_NONALERT))?0:TSFP_KERNEL_ASYNC_FILE);
++    if(status) { bridge_write_iostatus(iostatus_va,(NTSTATUS)status,0);return (NTSTATUS)status; }
++    memset(&ios,0,sizeof(ios));
++    status=(uint32_t)xbox_NtCreateFile(&host,access,&oa,&ios,NULL,file_attrs,share,disposition,options);
++    status=bridge_object_finish(&creation,host,status);
++    bridge_write_iostatus(iostatus_va,(NTSTATUS)status,(int32_t)status<0?0:(uint32_t)ios.Information);
++    return (NTSTATUS)status;
+ }
+ 
+ /* ── RtlInitAnsiString (ordinal 289) ──────────────────────
+@@ -3186,30 +2823,9 @@
+ 
+ /* ── NtCreateFile (ordinal 190, 9 args = 36 bytes) ─────── */
+ /* Record whether a newly opened file is asynchronous, keyed by its token. */
+-static void bridge_mark_async(uint32_t handle_va, uint32_t options)
+-{
+-    uint32_t token, i;
+-
+-    if (!handle_va)
+-        return;
+-    token = BRIDGE_MEM32(handle_va);
+-    if ((token & 0xFF000000u) != BRIDGE_HANDLE_TAG)
+-        return;
+-    i = token & BRIDGE_HANDLE_MASK;
+-    if (i > 0 && i < BRIDGE_HANDLE_MAX)
+-        s_handle_async[i] = (options & (XBOX_FILE_SYNCHRONOUS_IO_ALERT |
+-                                        XBOX_FILE_SYNCHRONOUS_IO_NONALERT)) == 0;
+-}
+-
+-static int bridge_handle_is_async(uint32_t token)
+-{
+-    uint32_t i;
+-
+-    if ((token & 0xFF000000u) != BRIDGE_HANDLE_TAG)
+-        return 0;
+-    i = token & BRIDGE_HANDLE_MASK;
+-    return i > 0 && i < BRIDGE_HANDLE_MAX && s_handle_async[i];
+-}
++
++
++
+ 
+ static void bridge_NtCreateFile(void)
+ {
+@@ -3230,8 +2846,7 @@
+     g_eax = (uint32_t)bridge_create_file_impl(
+         handle_va, access, obj_attrs, iostatus,
+         file_attrs, share, disposition, options);
+-    if (g_eax == 0)
+-        bridge_mark_async(handle_va, options);
++
+ 
+     /* An FMV the host can decode itself.
+      *
+@@ -3316,8 +2931,7 @@
+     g_eax = (uint32_t)bridge_create_file_impl(
+         handle_va, access, obj_attrs, iostatus,
+         0, share, 1 /* FILE_OPEN */, options);
+-    if (g_eax == 0)
+-        bridge_mark_async(handle_va, options);
++
+ }
+ 
+ /*
+@@ -4028,8 +3642,7 @@
+     g_eax = (uint32_t)bridge_create_file_impl(
+         handle_va, access, obj_attrs, iostatus,
+         file_attrs, share, disposition, options);
+-    if (g_eax == 0)
+-        bridge_mark_async(handle_va, options);
++
+ }
+ 
+ /* -- NtDeviceIoControlFile (ordinal 196, 10 args = 40 bytes) ----
+@@ -4297,104 +3910,7 @@
+  */
+ static void bridge_ObReferenceObjectByHandle(void)
+ {
+-    uint32_t handle     = STACK_ARG(0);
+-    uint32_t obj_type   = STACK_ARG(1);
+-    uint32_t object_ptr = STACK_ARG(2);
+-    uint32_t slot       = handle & BRIDGE_HANDLE_MASK;
+-    HANDLE   host       = bridge_resolve_handle(handle);
+-    uint32_t disp       = 0;
+-    int      kind       = BRIDGE_OBJ_UNKNOWN;
+-    uint32_t *slot_disp = NULL;
+-
+-    /* Handles that are not in the table still get an object.
+-     *
+-     * NtCurrentThread is (HANDLE)-2 and NtCurrentProcess (HANDLE)-1, and
+-     * ObReferenceObjectByHandle(NtCurrentThread, ...) is an ordinary thing
+-     * for a title to do -- TimeSplitters: Future Perfect does it during
+-     * start-up. Those are pseudo-handles, so they are never in the handle
+-     * table, and answering STATUS_INVALID_HANDLE for them is a regression
+-     * this function introduced: before it returned success with a NULL
+-     * object, which was wrong in a different way but which a title asking
+-     * about itself could survive.
+-     *
+-     * So: synthesise a header for any handle, tagged or not, and keep the
+-     * signal state honest by simply not claiming to know it for the ones
+-     * whose kind was never recorded. A small side table, because pseudo-
+-     * handles have no slot to hang it off. */
+-    {
+-        enum { PSEUDO_MAX = 16 };
+-        static uint32_t pseudo_handle[PSEUDO_MAX];
+-        static uint32_t pseudo_disp[PSEUDO_MAX];
+-        static int pseudo_count;
+-        int i;
+-        if ((handle & 0xFF000000u) != BRIDGE_HANDLE_TAG && handle) {
+-            for (i = 0; i < pseudo_count; i++)
+-                if (pseudo_handle[i] == handle)
+-                    break;
+-            if (i == pseudo_count && pseudo_count < PSEUDO_MAX) {
+-                pseudo_handle[pseudo_count] = handle;
+-                pseudo_disp[pseudo_count] = 0;
+-                pseudo_count++;
+-            }
+-            if (i < PSEUDO_MAX && pseudo_handle[i] == handle) {
+-                slot_disp = &pseudo_disp[i];
+-                disp = *slot_disp;
+-            }
+-        }
+-    }
+-
+-    if ((handle & 0xFF000000u) == BRIDGE_HANDLE_TAG && slot < BRIDGE_HANDLE_MAX) {
+-        kind = s_handle_kind[slot];
+-        disp = s_handle_dispatcher[slot];
+-        slot_disp = &s_handle_dispatcher[slot];
+-    }
+-    {
+-        if (!disp && slot_disp) {
+-            /* DISPATCHER_HEADER is 16 bytes: Type, Absolute, Size, Inserted,
+-             * LONG SignalState, LIST_ENTRY WaitListHead. Allocate a little
+-             * more so a caller reading a KEVENT or a KTHREAD prologue past
+-             * the header finds mapped zeroes rather than a fault. */
+-            disp = xbox_HeapAlloc(64, 16);
+-            if (disp) {
+-                memset((uint8_t *)g_xbox_mem_offset + disp, 0, 64);
+-                /* WaitListHead is a circular list and empty means it points
+-                 * at itself; a guest walking it otherwise runs off into
+-                 * whatever zero happens to address. */
+-                BRIDGE_MEM32(disp + 8) = disp + 8;
+-                BRIDGE_MEM32(disp + 12) = disp + 8;
+-                *slot_disp = disp;
+-            }
+-        }
+-    }
+-
+-    if (disp && host &&
+-        (kind == BRIDGE_OBJ_THREAD || kind == BRIDGE_OBJ_EVENT_M)) {
+-        DWORD r = WaitForSingleObject(host, 0);
+-        BRIDGE_MEM32(disp + 4) = (r == WAIT_OBJECT_0) ? 1u : 0u;
+-    }
+-
+-    {
+-        static uint64_t calls = 0;
+-        static uint64_t say_at = 1;
+-        if (++calls >= say_at) {
+-            say_at *= 10;
+-            fprintf(stderr, "  [KERNEL] ObReferenceObjectByHandle: "
+-                    "handle=0x%08X type=0x%08X -> object 0x%08X, "
+-                    "kind=%s, signalled=%u (call %llu)\n",
+-                    handle, obj_type, disp,
+-                    kind == BRIDGE_OBJ_THREAD  ? "thread"
+-                  : kind == BRIDGE_OBJ_EVENT_M ? "event/manual"
+-                  : kind == BRIDGE_OBJ_EVENT_A ? "event/auto (not polled)"
+-                                               : "unknown (not polled)",
+-                    disp ? BRIDGE_MEM32(disp + 4) : 0u,
+-                    (unsigned long long)calls);
+-            fflush(stderr);
+-        }
+-    }
+-
+-    if (object_ptr) BRIDGE_MEM32(object_ptr) = disp;
+-    /* Only a handle we can make nothing of at all is invalid. */
+-    g_eax = disp ? 0 : (uint32_t)0xC0000008u;   /* STATUS_INVALID_HANDLE */
++    g_eax=tsfp_guest_object_reference(&bridge_object_services,STACK_ARG(0),STACK_ARG(1),STACK_ARG(2));
+ }
+ 
+ /* ── RtlRaiseException (ordinal 302) ─────────────────────
+@@ -4635,17 +4151,12 @@
+ /* ── NtCreateMutant (ordinal 192, 3 args) */
+ static void bridge_NtCreateMutant(void)
+ {
+-    uint32_t handle_va = STACK_ARG(0);
+-    XBOX_OBJECT_ATTRIBUTES oa;
+-    XBOX_ANSI_STRING name;
+-    HANDLE h = NULL;
+-    NTSTATUS st;
+-
+-    bridge_build_oa(STACK_ARG(1), &oa, &name);
+-    st = xbox_NtCreateMutant(&h, STACK_ARG(1) ? &oa : NULL,
+-                             (BOOLEAN)STACK_ARG(2));
+-    if (st >= 0 && handle_va) bridge_write_handle(handle_va, h);
+-    g_eax = (uint32_t)st;
++    bridge_object_creation creation;XBOX_OBJECT_ATTRIBUTES oa;XBOX_ANSI_STRING name;
++    HANDLE host=NULL;uint32_t status=bridge_object_prepare(&creation,STACK_ARG(0),TSFP_KIND_MUTANT,0);
++    if(status) { g_eax=status;return; }
++    bridge_build_oa(STACK_ARG(1),&oa,&name);
++    status=(uint32_t)xbox_NtCreateMutant(&host,STACK_ARG(1)?&oa:NULL,(BOOLEAN)STACK_ARG(2));
++    g_eax=bridge_object_finish(&creation,host,status);
+ }
+ 
+ /* ── NtReleaseMutant (ordinal 221, 2 args)
+@@ -4708,8 +4219,7 @@
+  * dereference whatever the caller happened to leave there. */
+ static void bridge_ObfDereferenceObject(void)
+ {
+-    xbox_ObfDereferenceObject(XBOX_TO_NATIVE(g_ecx));
+-    g_eax = 0;
++    g_eax=tsfp_guest_object_dereference_body(&bridge_object_services,g_ecx)?0:TSFP_OBJECT_BAD_HANDLE;
+ }
+ 
+ /* ══════════════════════════════════════════════════════════════════════════
+@@ -4726,8 +4236,7 @@
+  * dereference whatever the caller happened to leave there. */
+ static void bridge_ObfReferenceObject(void)
+ {
+-    xbox_ObfReferenceObject(XBOX_TO_NATIVE(g_ecx));
+-    g_eax = 0;
++    g_eax=tsfp_guest_object_reference_body(&bridge_object_services,g_ecx)?0:TSFP_OBJECT_BAD_HANDLE;
+ }
+ 
+ /* ── HalReadSMBusValue / HalWriteSMBusValue (ordinals 45 / 50, 4 args)
+@@ -4858,16 +4367,11 @@
+  * result lands via bridge_write_handle. */
+ static void bridge_NtCreateSemaphore(void)
+ {
+-    uint32_t handle_va = STACK_ARG(0);
+-    HANDLE h = NULL;
+-    NTSTATUS st;
+-
+-    st = xbox_NtCreateSemaphore(
+-        &h, XBOX_TO_NATIVE(STACK_ARG(1)),
+-        (LONG)STACK_ARG(2), (LONG)STACK_ARG(3));
+-    if (st >= 0 && handle_va)
+-        bridge_write_handle(handle_va, h);
+-    g_eax = (uint32_t)st;
++    bridge_object_creation creation;HANDLE host=NULL;
++    uint32_t status=bridge_object_prepare(&creation,STACK_ARG(0),TSFP_KIND_SEMAPHORE,0);
++    if(status) { g_eax=status;return; }
++    status=(uint32_t)xbox_NtCreateSemaphore(&host,XBOX_TO_NATIVE(STACK_ARG(1)),(LONG)STACK_ARG(2),(LONG)STACK_ARG(3));
++    g_eax=bridge_object_finish(&creation,host,status);
+ }
+ 
+ /* ── NtReleaseSemaphore (ordinal 222, 3 args)
+@@ -4933,7 +4437,7 @@
+         wait_log_note("waits(m)", o, g_kernel_caller);
+         shadows[i] = NULL;
+         states[i] = bridge_guest_event(o, &syncs[i]);
+-        if (!states[i] && o >= 0x00010000u && o < GUEST_RAM_END - 8u) {
++        if (!states[i] && !bridge_object_borrow(o) && o >= 0x00010000u && o < GUEST_RAM_END - 8u) {
+             /* A KTIMER: KeInitializeTimerEx built its header in guest memory,
+              * and the timer thread sets SignalState when it fires. */
+             uint8_t type = BRIDGE_MEM8(o);
+@@ -5593,25 +5097,7 @@
+  * NOT consumed here (the OS handle it wraps is gone after this call). */
+ static void bridge_NtDuplicateObject(void)
+ {
+-    uint32_t target_va = STACK_ARG(1);
+-    HANDLE src = bridge_resolve_handle(STACK_ARG(0));
+-    HANDLE dup = NULL;
+-    DWORD opts = 0;
+-
+-    if (!target_va) {
+-        g_eax = 0xC000000Du;   /* STATUS_INVALID_PARAMETER */
+-        return;
+-    }
+-    if (STACK_ARG(2) & 0x1) opts |= DUPLICATE_CLOSE_SOURCE;
+-    if (STACK_ARG(2) & 0x2) opts |= DUPLICATE_SAME_ACCESS;
+-
+-    if (!DuplicateHandle(GetCurrentProcess(), src, GetCurrentProcess(),
+-                         &dup, 0, FALSE, opts)) {
+-        g_eax = 0xC0000001u;   /* STATUS_UNSUCCESSFUL */
+-        return;
+-    }
+-    bridge_write_handle(target_va, dup);
+-    g_eax = 0;
++    g_eax=tsfp_guest_object_duplicate(&bridge_object_services,STACK_ARG(0),STACK_ARG(2),STACK_ARG(1));
+ }
+ 
+ /* ── Dispatch table: ordinal → bridge function + stack arg bytes ── */
+@@ -6637,6 +6123,8 @@
+ /* Look up the host HANDLE for a guest object VA. Returns NULL if not found. */
+ static HANDLE ke_shadow_lookup(uint32_t guest_va)
+ {
++    const tsfp_guest_object_lease *owned=bridge_object_borrow(guest_va);
++    if(owned) return (HANDLE)owned->host;
+     uint32_t i;
+     HANDLE h = NULL;
+ 
+@@ -7882,21 +7370,12 @@
+  * handle table, matching the NtCreateEvent/NtCreateMutant pattern. */
+ static void bridge_NtCreateTimer(void)
+ {
+-    HANDLE h;
+-
+-    (void)STACK_ARG(1);
+-    (void)STACK_ARG(2);
+-
+-    h = CreateWaitableTimerW(NULL, TRUE, NULL);
+-    if (!h) {
+-        fprintf(stderr, "  [KERNEL] NtCreateTimer: CreateWaitableTimerW failed (error %u)\n",
+-                GetLastError());
+-        g_eax = 0xC000009Au;  /* STATUS_INSUFFICIENT_RESOURCES */
+-        return;
+-    }
+-    if (STACK_ARG(0))
+-        bridge_write_handle(STACK_ARG(0), h);
+-    g_eax = 0;  /* STATUS_SUCCESS */
++    bridge_object_creation creation;HANDLE host;uint32_t status;
++    if(STACK_ARG(2)>1) { g_eax=TSFP_OBJECT_BAD_PARAMETER;return; }
++    status=bridge_object_prepare(&creation,STACK_ARG(0),TSFP_KIND_TIMER,0);
++    if(status) { g_eax=status;return; }
++    host=CreateWaitableTimerW(NULL,STACK_ARG(2)==0,NULL);
++    g_eax=bridge_object_finish(&creation,host,host?0:TSFP_OBJECT_NO_MEMORY);
+ }
+ 
+ /* --- NtOpenDirectoryObject (ordinal 201, 3 args = 12 bytes) --- */
+@@ -8155,59 +7634,8 @@
+  * Section A of kernel_bridge.c. */
+ static void bridge_PsCreateSystemThread(void)
+ {
+-    uint32_t xbox_handle_ptr = STACK_ARG(0);
+-    uint32_t start_context1  = STACK_ARG(4);
+-    uint32_t start_context2  = STACK_ARG(5);
+-    uint32_t start_routine   = STACK_ARG(6);
+-    int is_first_call = (g_thread_mode == XBOX_THREAD_MODE_INLINE)
+-                        && (g_thread_call_count == 0);
+-
+-    g_thread_call_count++;
+-
+-    /* Fake handle until the worker path can write a real one. */
+-    if (xbox_handle_ptr)
+-        BRIDGE_MEM32(xbox_handle_ptr) = 0xBEEF0002;
+-
+-    if (start_routine) {
+-        recomp_func_t fn = recomp_lookup(start_routine);
+-        if (!fn)
+-            fn = recomp_lookup_manual(start_routine);
+-        if (fn) {
+-            if (is_first_call) {
+-                g_esp -= 4; BRIDGE_MEM32(g_esp) = start_context2;
+-                g_esp -= 4; BRIDGE_MEM32(g_esp) = start_context1;
+-                g_esp -= 4; BRIDGE_MEM32(g_esp) = 0;
+-                fn();
+-                g_esp += 12;
+-            } else {
+-                const char *inline_workers = getenv("RECOMP_WORKERS");
+-                uint32_t stack_top;
+-
+-                if (inline_workers && !strcmp(inline_workers, "inline")) {
+-                    bridge_run_thread_inline(fn, start_context1, start_context2);
+-                    g_eax = 0;
+-                    return;
+-                }
+-                stack_top = xbox_AllocThreadStack();
+-                if (!stack_top) {
+-                    bridge_run_thread_inline(fn, start_context1, start_context2);
+-                } else {
+-                    HANDLE th = bridge_spawn_thread(fn, start_context1,
+-                                                    start_context2, stack_top);
+-                    /* A thread handle is signalled when the thread exits, and
+-                     * a zero-timeout wait on one is a read rather than a
+-                     * take -- so ObReferenceObjectByHandle may ask it. */
+-                    if (th) bridge_set_handle_kind(th, BRIDGE_OBJ_THREAD);
+-                    if (xbox_handle_ptr && th)
+-                        bridge_write_handle(xbox_handle_ptr, th);
+-                }
+-            }
+-        } else {
+-            fprintf(stderr, "  [KERNEL] PsCreateSystemThread: start routine 0x%08X not found in dispatch!\n",
+-                    start_routine);
+-        }
+-    }
+-    g_eax = 0;  /* STATUS_SUCCESS */
++    g_eax=bridge_create_thread(STACK_ARG(0),STACK_ARG(3),STACK_ARG(6),
++        STACK_ARG(4),STACK_ARG(5),0);
+ }
+ 
+ /* --- PsQueryStatistics (ordinal 256, 1 arg = 4 bytes)
+@@ -9910,6 +9338,8 @@
+          * to enumerate which ordinals block. It also costs one uncontended
+          * acquire per kernel call, which is the price of not having to be
+          * right about that list. */
++        tsfp_guest_object_scope _object_scope;
++        if(!tsfp_guest_scope_enter(&bridge_object_scopes,&_object_scope,&bridge_objects)) abort();
+         int _guest_held = xbox_GuestLockDrop();
+         xbox_GuestLiftedLeave();
+         if (xbox_FpsWaitProfileOn()) {
+@@ -9928,6 +9358,7 @@
+          * the lock on -- which is meant to make overlap impossible -- took
+          * the reported overlaps from 1,625 to 8,265,550. The meter has to
+          * read zero under the lock or it is not measuring what it claims. */
++        if(!tsfp_guest_scope_leave(&bridge_object_scopes,&_object_scope)) abort();
+         xbox_GuestLockRestore(_guest_held);
+         xbox_GuestLiftedEnter();
+         if (g_esp != _esp_before) {
+@@ -10102,6 +9533,7 @@
+ 
+     /* Initialize kernel data export values first */
+     kernel_data_init();
++    bridge_object_init();
+ 
+     for (i = 0; i < g_thunk_table_count; i++) {
+         uint32_t va = g_thunk_table_base + i * 4;
+--- a/src/kernel/kernel_thread.c
++++ b/src/kernel/kernel_thread.c
+@@ -409,12 +409,4 @@
+  * xbox_memory_layout.h.
+  */
+ 
+-/* The game's own thread, kept so a wedged boot can be inspected from the host
+- * watchdog. Set when a title's game thread is spawned; NULL under the default
+- * inline model, where there is no separate thread to sample. */
+-static HANDLE g_game_thread = NULL;
+-
+-void  xbox_set_game_thread(void *h) { g_game_thread = (HANDLE)h; }
+-void *xbox_thread_debug_handle(void) { return (void *)g_game_thread; }
+-
+ /* Worker stack ownership lives in project guest_thread_memory.c. */
+--- a/src/kernel/xbox_memory_layout.h
++++ b/src/kernel/xbox_memory_layout.h
+@@ -579,8 +579,8 @@
+ /* Shared fixed slices used by timer, USB and host-driven callbacks. */
+ int xbox_worker_stack_alloc(void);
+ void xbox_worker_stack_free(int slot);
+-void   xbox_set_game_thread(void *h);  /* HANDLE, recorded for the host watchdog */
+-void  *xbox_thread_debug_handle(void); /* the game thread, or NULL under inline model */
++/* Release operation scopes/current-object ownership before a guest-capable host worker exits. */
++void xbox_bridge_thread_objects_exit(void);
+ 
+ /* PsCreateSystemThreadEx behaviour. Default INLINE runs the first call as the
+  * game (Halo, Crimson Skies). SPAWN makes every call a real thread so a
+--- a/src/hle/hle_dsound_stream.c
++++ b/src/hle/hle_dsound_stream.c
+@@ -58,7 +58,7 @@
+ recomp_func_t recomp_lookup(uint32_t xbox_va);
+ recomp_func_t recomp_lookup_manual(uint32_t xbox_va);
+ long __stdcall xbox_NtSetEvent(void *EventHandle, long *PreviousState);   /* NTSTATUS */
+-void *xbox_bridge_resolve_handle(uint32_t token);                          /* kernel_bridge.c */
++int xbox_bridge_signal_event(uint32_t token);                          /* kernel_bridge.c */
+ 
+ enum {
+     MAX_STREAMS = 16,
+@@ -380,9 +380,7 @@
+          * every SetEvent failed (ERROR_INVALID_HANDLE, one kernel-log line per
+          * packet in Hunter: The Reckoning) and the title only saw packets
+          * complete when its own wait timed out. */
+-        void *event = xbox_bridge_resolve_handle(p->context);
+-        if (event)
+-            xbox_NtSetEvent(event, NULL);
++        xbox_bridge_signal_event(p->context);
+     }
+ }
+ 
+--- a/src/usb/ohci.c
++++ b/src/usb/ohci.c
+@@ -44,6 +44,7 @@
+ extern OHCI_TLS uint32_t g_ebx, g_esi, g_edi;
+ extern OHCI_TLS uint32_t g_fs_base;
+ extern uint32_t xbox_AllocThreadTib(void);
++extern void xbox_bridge_thread_objects_exit(void);
+ 
+ /* The vector XPP takes for USB0. HalGetInterruptVector(1) returns 1 here, and
+  * the bus interrupt level is what the XDK passes. */
+@@ -708,6 +709,7 @@
+         }
+         ohci_raise(hc, status);
+     }
++    xbox_bridge_thread_objects_exit();
+     return 0;
+ }
+ 
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -32,6 +32,11 @@
+ )
+ 
+ add_library(xbox_kernel STATIC ${KERNEL_SOURCES})
++
++target_sources(xbox_kernel PRIVATE
++    "${TSFP_SHARED_SOURCE}/runtime/guest_objects.c"
++    "${TSFP_SHARED_SOURCE}/runtime/guest_object_scope.c"
++    "${TSFP_SHARED_SOURCE}/runtime/guest_object_services.c")
+ 
+ # The complete project stack supplies this root before add_subdirectory.
+ if(NOT TSFP_SHARED_SOURCE OR NOT EXISTS "${TSFP_SHARED_SOURCE}/runtime/guest_nonlocal_jump.c")

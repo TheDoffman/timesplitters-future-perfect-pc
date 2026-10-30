@@ -1,3 +1,15 @@
+# Main integration - 2026-10-30
+
+Story fixtures and the pair runner moved to tests/network; the manual launcher
+is tools/testing/story_coop_local.py and Test-StoryCoop.ps1 uses that path.
+Direct invocation initializes the shared grouped helper paths. Native enabled,
+native fallback and Windows dispatch fixtures all remain in the network matrix.
+Numbered Story patch dependencies retain payload lifetime before world-body
+visibility and main's layout/native adapter ordering. The patch index is rebuilt
+from the merged Git index. Native boot conflict preservation mutates main's
+current TSFP_NATIVE_DIR main/mmio source list and still asserts no file writes. Main's pinned pytest-xdist/execnet are required for
+release session-fixture tests.
+
 # Validation fixtures and Story probes
 
 test_story_original_splitter_camo translates original11F780/11F7E0/11D510/
@@ -113,7 +125,7 @@ network guest fixture tests the exact five-byte prop codec and missing resolutio
 Run `pytest tests/test_quit_menu.py tests/test_network_guest_dispatch.py` and the
 complete `tests/test_patch_updates.py` migration suite. Original-call spies prove
 adapter contracts; they do not establish WAN audio/visual fidelity or completion.
-Bounded live acceptance uses `tests/story_pair_game.py --load-probe --players 4
+Bounded live acceptance uses `tests/network/story_pair_game.py --load-probe --players 4
 --fire-probe --combat-probe --skip-intro`; checkpoint/restart probes use isolated
 Test Lab copies and never require completing the first mission. See STATUS for
 the exact build and measured scope; Mac Online acceptance remains pending MAC-013.
@@ -234,7 +246,7 @@ fixture also verifies installation of both original script-control wrappers.
 script-suspended; it retains the initial startup evidence and assertions rather
 than substituting the later state as a passing start.
 
-`tests/story_pair_game.py --load-probe --lobby-controls --players 4 --fire-probe`
+`tests/network/story_pair_game.py --load-probe --lobby-controls --players 4 --fire-probe`
 extends the isolated route to four actual game processes and primary-fire input.
 Weapon IDs, aim and muzzle telemetry use the existing bot-shot field contracts;
 they are not ammo or hit counters. Fire-input completion is recorded separately
@@ -244,11 +256,11 @@ valid-result passthrough and inactive/non-Story guards. The migration check
 asserts the separate CF060 wrapper is installed. Revised notes require the
 header's name, year, difficulty/trophy, thumbnail and population.
 
-`tests/test_quit_menu.py` also compiles `tests/story_lobby.c` against the
+`tests/test_quit_menu.py` also compiles `tests/network/story_lobby.c` against the
 production Story lobby adapter with isolated guest RAM. It checks host/guest/mode
 guards, host Options and each peer Progress routing, preserved network inputs and frontend mode,
 and difficulty confirmation without a local-game launch.
-`tests/story_pair_game.py --load-probe --lobby-controls` adds host Scotland/Hard,
+`tests/network/story_pair_game.py --load-probe --lobby-controls` adds host Scotland/Hard,
 guest reliable settings receipt and Progress/Back before GO and movement.
 The controls route sends an ignored guest Confirm rather than Ready; host GO must
 work using automatic original readiness. Review its guest-confirm-ignored capture

@@ -1,0 +1,249 @@
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -32,6 +32,8 @@
+ add_library(xbox_kernel STATIC ${KERNEL_SOURCES})
+ 
+ target_sources(xbox_kernel PRIVATE
++    "${TSFP_SHARED_SOURCE}/runtime/guest_symlinks.c"
++    "${TSFP_SHARED_SOURCE}/runtime/guest_kernel_symlinks.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_io_targets.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_event.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_io_scheduler.c"
+--- a/src/kernel/kernel_io.c
++++ b/src/kernel/kernel_io.c
+@@ -241,121 +241,4 @@
+     return STATUS_INVALID_DEVICE_REQUEST;
+ }
+ 
+-/* ============================================================================
+- * Symbolic Links
+- *
+- * Games create links like \??\D: -> \Device\Cdrom0. Actual path translation is
+- * table-driven in kernel_path.c, which already knows the standard Xbox drive
+- * letters, so these only need to record the mapping and stay consistent:
+- * creating a duplicate must collide, and deleting an unknown link must fail.
+- * ============================================================================ */
+-
+-#define XBOX_MAX_SYMLINKS 32
+-
+-typedef struct _XBOX_SYMLINK {
+-    char link[64];
+-    char target[128];
+-    BOOL used;
+-} XBOX_SYMLINK;
+-
+-static XBOX_SYMLINK g_symlinks[XBOX_MAX_SYMLINKS];
+-
+-/* Copy a counted, non-NUL-terminated ANSI_STRING into a C buffer. */
+-static void xbox_copy_ansi(char* dst, size_t dst_size, PXBOX_ANSI_STRING src)
+-{
+-    size_t n;
+-
+-    if (!dst || dst_size == 0)
+-        return;
+-    dst[0] = '\0';
+-    if (!src || !src->Buffer)
+-        return;
+-
+-    n = (size_t)src->Length;
+-    if (n >= dst_size)
+-        n = dst_size - 1;
+-    memcpy(dst, src->Buffer, n);
+-    dst[n] = '\0';
+-}
+-
+-static XBOX_SYMLINK* xbox_find_symlink(const char* name)
+-{
+-    int i;
+-    for (i = 0; i < XBOX_MAX_SYMLINKS; i++) {
+-        if (g_symlinks[i].used && strcmp(g_symlinks[i].link, name) == 0)
+-            return &g_symlinks[i];
+-    }
+-    return NULL;
+-}
+-
+-const char* xbox_LookupSymbolicLink(const char* link)
+-{
+-    XBOX_SYMLINK* entry;
+-
+-    if (!link)
+-        return NULL;
+-    entry = xbox_find_symlink(link);
+-    return entry ? entry->target : NULL;
+-}
+-
+-NTSTATUS __stdcall xbox_IoCreateSymbolicLink(
+-    PXBOX_ANSI_STRING SymbolicLinkName,
+-    PXBOX_ANSI_STRING DeviceName)
+-{
+-    char link[64], target[128];
+-    int i;
+-
+-    if (!SymbolicLinkName)
+-        return STATUS_INVALID_PARAMETER;
+-
+-    xbox_copy_ansi(link, sizeof(link), SymbolicLinkName);
+-    xbox_copy_ansi(target, sizeof(target), DeviceName);
+-
+-    if (link[0] == '\0')
+-        return STATUS_INVALID_PARAMETER;
+-
+-    if (xbox_find_symlink(link)) {
+-        xbox_log(XBOX_LOG_WARN, XBOX_LOG_IO,
+-            "IoCreateSymbolicLink: '%s' already exists", link);
+-        return STATUS_OBJECT_NAME_COLLISION;
+-    }
+-
+-    for (i = 0; i < XBOX_MAX_SYMLINKS; i++) {
+-        if (!g_symlinks[i].used) {
+-            g_symlinks[i].used = TRUE;
+-            strcpy(g_symlinks[i].link, link);
+-            strcpy(g_symlinks[i].target, target);
+-            xbox_log(XBOX_LOG_DEBUG, XBOX_LOG_IO,
+-                "IoCreateSymbolicLink: '%s' -> '%s'", link, target);
+-            return STATUS_SUCCESS;
+-        }
+-    }
+-
+-    xbox_log(XBOX_LOG_ERROR, XBOX_LOG_IO,
+-        "IoCreateSymbolicLink: table full (%d), dropping '%s'",
+-        XBOX_MAX_SYMLINKS, link);
+-    return STATUS_INSUFFICIENT_RESOURCES;
+-}
+-
+-NTSTATUS __stdcall xbox_IoDeleteSymbolicLink(PXBOX_ANSI_STRING SymbolicLinkName)
+-{
+-    char link[64];
+-    XBOX_SYMLINK* entry;
+-
+-    if (!SymbolicLinkName)
+-        return STATUS_INVALID_PARAMETER;
+-
+-    xbox_copy_ansi(link, sizeof(link), SymbolicLinkName);
+-    entry = xbox_find_symlink(link);
+-    if (!entry) {
+-        xbox_log(XBOX_LOG_WARN, XBOX_LOG_IO,
+-            "IoDeleteSymbolicLink: '%s' not found", link);
+-        return STATUS_OBJECT_NAME_NOT_FOUND;
+-    }
+-
+-    xbox_log(XBOX_LOG_DEBUG, XBOX_LOG_IO, "IoDeleteSymbolicLink: '%s'", link);
+-    entry->used = FALSE;
+-    entry->link[0] = '\0';
+-    entry->target[0] = '\0';
+-    return STATUS_SUCCESS;
+-}
++/* Symbolic links are owned by the project guest namespace. */
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -3841,46 +3841,7 @@
+     g_eax = 0;  /* STATUS_SUCCESS */
+ }
+ 
+-/* IoCreateSymbolicLink (ordinal 67, 2 args)
+- *
+- * Was a bare "return STATUS_SUCCESS": the title was told its link existed and
+- * nothing recorded it. Titles mount their own drive letters this way --
+- * Wreckless links \??\Z: to \Device\Harddisk0\Partition1\ and then loads
+- * every asset through z:\ -- so dropping the link left xbox_translate_path
+- * applying the generic "Z: is the cache partition" rule, and every asset open
+- * failed with ERROR_FILE_NOT_FOUND a whole boot later.
+- *
+- * Both arguments are guest ANSI_STRINGs whose Buffer field holds a guest VA,
+- * so passing the structs straight through would have xbox_copy_ansi read a
+- * 32-bit guest address as a 64-bit host pointer. Rebuild them by hand, the way
+- * bridge_RtlEqualString does.
+- */
+-static void bridge_IoCreateSymbolicLink(void)
+-{
+-    uint32_t link_va   = STACK_ARG(0);
+-    uint32_t target_va = STACK_ARG(1);
+-    XBOX_ANSI_STRING link, target;
+-
+-    if (!link_va) {
+-        g_eax = 0xC000000Du;  /* STATUS_INVALID_PARAMETER */
+-        return;
+-    }
+-    link.Length        = BRIDGE_MEM16(link_va + 0);
+-    link.MaximumLength = BRIDGE_MEM16(link_va + 2);
+-    link.Buffer        = (PCHAR)XBOX_TO_NATIVE(BRIDGE_MEM32(link_va + 4));
+-
+-    if (target_va) {
+-        target.Length        = BRIDGE_MEM16(target_va + 0);
+-        target.MaximumLength = BRIDGE_MEM16(target_va + 2);
+-        target.Buffer        = (PCHAR)XBOX_TO_NATIVE(BRIDGE_MEM32(target_va + 4));
+-    } else {
+-        target.Length = target.MaximumLength = 0;
+-        target.Buffer = NULL;
+-    }
+-
+-    g_eax = (uint32_t)xbox_IoCreateSymbolicLink(&link,
+-                                                target_va ? &target : NULL);
+-}
++#include "guest_kernel_symlinks.inc"
+ 
+ /* ── ObReferenceObjectByHandle (ordinal 246) ──────────────
+  * NTSTATUS ObReferenceObjectByHandle(HANDLE Handle, PVOID ObjectType,
+@@ -4655,21 +4616,6 @@
+         (PXBOX_IO_STATUS_BLOCK)XBOX_TO_NATIVE(STACK_ARG(6)));
+ }
+ 
+-static void bridge_IoDeleteSymbolicLink(void)
+-{
+-    uint32_t name_va = STACK_ARG(0);
+-    XBOX_ANSI_STRING name;
+-
+-    if (!name_va) {
+-        g_eax = 0xC000000Du;   /* STATUS_INVALID_PARAMETER */
+-        return;
+-    }
+-    name.Length        = BRIDGE_MEM16(name_va + 0);
+-    name.MaximumLength = BRIDGE_MEM16(name_va + 2);
+-    name.Buffer        = (PCHAR)XBOX_TO_NATIVE(BRIDGE_MEM32(name_va + 4));
+-
+-    g_eax = (uint32_t)xbox_IoDeleteSymbolicLink(&name);
+-}
+ 
+ #include "guest_kernel_requests.inc"
+ 
+--- a/src/kernel/kernel.h
++++ b/src/kernel/kernel.h
+@@ -868,11 +868,7 @@
+ NTSTATUS __fastcall xbox_IofCallDriver(PVOID DeviceObject, PVOID Irp);
+ VOID     __fastcall xbox_IofCompleteRequest(PVOID Irp, CCHAR PriorityBoost);
+ 
+-NTSTATUS __stdcall xbox_IoCreateSymbolicLink(PXBOX_ANSI_STRING SymbolicLinkName, PXBOX_ANSI_STRING DeviceName);
+-/* Target of a link registered by xbox_IoCreateSymbolicLink, or NULL.
+- * Looked up by exact link name, e.g. "\\??\\Z:". */
+-const char* xbox_LookupSymbolicLink(const char* link);
+-NTSTATUS __stdcall xbox_IoDeleteSymbolicLink(PXBOX_ANSI_STRING SymbolicLinkName);
++#include "guest_kernel_symlinks.h"
+ 
+ /* ============================================================================
+  * Crypto (kernel_crypto.c)
+--- a/src/kernel/kernel_path.c
++++ b/src/kernel/kernel_path.c
+@@ -161,7 +161,8 @@
+ {
+     char        link[8];
+     const char* rest;
+-    const char* target;
++    char        target[4096];
++    size_t      target_bytes;
+     size_t      tlen, rlen;
+     int         i;
+ 
+@@ -182,9 +183,11 @@
+     link[5] = ':';
+     link[6] = '\0';
+ 
+-    target = xbox_LookupSymbolicLink(link);
+-    if (!target || !target[0])
++    if (tsfp_kernel_symlink_copy(link, strlen(link), target, sizeof(target)-1,
++                                 &target_bytes) != TSFP_SYMLINK_OK ||
++        !target_bytes || memchr(target, 0, target_bytes))
+         return 0;
++    target[target_bytes] = 0;
+ 
+     while (*rest == '\\' || *rest == '/')
+         rest++;
