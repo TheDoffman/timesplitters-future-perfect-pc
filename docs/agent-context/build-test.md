@@ -1,5 +1,9 @@
 # Build, run and validation map
 
+Launcher release tests cover direct README download targets, alias byte/hash
+parity despite stale local alias files, and interrupted alias upload recovery.
+Run `python -m unittest discover -s tests/launcher -p test_launcher_release.py -v`.
+
 Windows builds pass `config/build/windows-game.manifest` as
 `TSFP_GAME_MANIFEST`; patch 2130 attaches it only to the game target. CMake
 merges system DPI awareness with UAC/common-controls before network identity
