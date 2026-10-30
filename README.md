@@ -4,7 +4,7 @@
 
 # TimeSplitters: Future Perfect
 
-Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer (Windows)
+Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer
 
 <p>
 <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip"><img src="docs/assets/download-windows-launcher.svg" alt="Download the latest Windows launcher (x64)" width="280" height="52"></a>
