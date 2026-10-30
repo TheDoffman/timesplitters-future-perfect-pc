@@ -1,5 +1,7 @@
 # Subsystem entry points
 
+Battle Mech mouse: [shared routing and guards](mounted-mouse.md#battle-mech-mouse-425).
+
 Minigun motor intent and release damping: [shared policy](native-minigun.md).
 
 Kernel: [objects and boot](kernel-objects.md).

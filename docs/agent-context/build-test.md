@@ -1022,9 +1022,11 @@ before a stable function, rather than at EOF, so reversing it preserves local
 trailing edits during historical branch round trips. These are tested in
 `tests/repository/test_patch_updates.py`.
 
-Crossplay startup/shutdown and evidence completion: [Online acceptance](multiplayer-ui.md#physical-windowsmac-online-acceptance).
+Crossplay: [acceptance](multiplayer-ui.md#physical-windowsmac-online-acceptance).
 
-Native crossplay capture rotation regression: `tests/network/test_crossplay_peer.py`.
+Crossplay rotation: `tests/network/test_crossplay_peer.py`.
 
 Crossplay lock/recycle guards: `test_crossplay_peer.py`; reused Online interpreter:
 `test_native_mac_tools.py`. See multiplayer-ui.md.
+
+Mech input: test_mounted_mouse.py; [scope](mounted-mouse.md#battle-mech-mouse-425).
