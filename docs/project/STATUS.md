@@ -13,8 +13,9 @@ Windows Release generation/build and build-time checks pass. A bounded isolated
 startup recorded 2,100 D3D11 presents with no failed presents. Candidate SHA256:
 8b0ab4d0a5863dd9e625138887b96d26e29bbac067da1915300cfb7c62899e3b.
 Fifteen mounted input checks and repository context validation also pass.
-The full patch migration suite is still running; the actual complete patch
-application used for this build passed. The user tested this candidate and
+Fresh-checkout CI patch migration checks passed on Windows and macOS
+(run 41012758389, head be8daa2c); the complete patch application used for
+this build also passed. The user tested this candidate and
 confirmed that the minigun now works. This is user gameplay acceptance; exact
 shot/ammunition cadence and physical Mac execution remain unmeasured. See [contract](../agent-context/native-minigun.md).
 
