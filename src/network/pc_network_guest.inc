@@ -1,5 +1,5 @@
 /* Each explicit wrapper lives in recomp_manual.c so the lifter can find it. */
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 #include "pc_network.h"
 #include "pc_debug.h"
 static void pc_network_guest(uint32_t address, void (*original)(void))
@@ -14,7 +14,7 @@ static void pc_network_guest(uint32_t address, void (*original)(void))
     g_esp+=4+n*4;
 }
 #else
-/* Native Mac has no PC XNet transport yet; keep the original guest path. */
+/* Builds without a desktop transport retain the original guest path. */
 static void pc_network_guest(uint32_t address, void (*original)(void))
 {
     (void)address;
@@ -29,11 +29,11 @@ static void pc_network_guest(uint32_t address, void (*original)(void))
  * The sampler's argument is the original peer: up to four local Xbox players. */
 static void pc_network_guest_sample(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     uint32_t peer = *(uint32_t *)((uintptr_t)(g_esp + 4u) + g_xbox_mem_offset);
 #endif
     original();
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     if (pc_network_enabled() &&
         *(uint32_t *)((uintptr_t)0x0076B1A4u + g_xbox_mem_offset) == 15u) {
         uint32_t frame = *(uint32_t *)((uintptr_t)0x007DE318u + g_xbox_mem_offset);
@@ -59,7 +59,7 @@ static void pc_network_guest_sample(void (*original)(void))
  * Keep the original epoch, game clock, heartbeat and timeout calculations. */
 static void pc_network_guest_tick(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     static uint32_t last_frame;
     static int have_frame;
     if (pc_network_enabled()) {

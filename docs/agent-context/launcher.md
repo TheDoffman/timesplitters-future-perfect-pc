@@ -1,5 +1,7 @@
 # Launcher internals
 
+Save-folder selection and custom-volume backup/restore now share SaveLocations.cs; see [save locations](save-locations.md). SavesPage exposes native Windows/Mac folder pickers and explicit copy without deleting original saves.
+
 README download buttons now use stable platform ZIP aliases. Launcher publication
 uploads each alias from its verified versioned ZIP, retaining updater names and
 requiring all ten assets before publication. No local alias copies are created.
@@ -474,6 +476,14 @@ regenerates/copies `Support/Online/multiplayer.ico`. OnlineTheme applies it to t
 browser and invitation popup. No new Mac launcher resource or artwork is needed;
 native Mac Online remains deferred. Icon frames, package placement and real Tk
 window assignment are checked in `tests/repository/test_game_icon.py`.
+
+## Multiplayer Dock artwork (2026-10-30)
+
+`IconBuilder.WriteMultiplayerPng` renders the same multiplayer vector artwork at
+512px for Mac; `build-online-icon.ps1` emits it beside the existing ICO. The Mac
+companion consumes that PNG through Tk iconphoto, and packaging requires it.
+No separate icon design or launcher setting is introduced. Native Online now
+uses the shared browser with a bundled runtime; see multiplayer-ui.md.
 
 ## Extended crash report export (in development)
 

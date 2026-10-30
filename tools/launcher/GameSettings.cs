@@ -346,6 +346,7 @@ namespace TimeSplitters.Launcher
         public static ProcessStartInfo StartInfo(string root)
         {
             var model = Load(root, null); model.Validate();
+            SaveLocations.Resolve(root); // Fail visibly before launching if the chosen drive is missing.
             var Files = model.Files;
             var info = new ProcessStartInfo(Core.PathIn(root, LauncherPlatform.GamePath(root))) { WorkingDirectory = Core.PathIn(root, "Bin"), UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
             foreach (string key in info.EnvironmentVariables.Keys.Cast<string>().ToArray())

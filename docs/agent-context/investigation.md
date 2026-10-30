@@ -328,6 +328,11 @@ upgrades require the original pool include and exclude native kernel_pool.c.
 Stage0236 extends the exact late compiler tail to38 patches, after0235 before2090;
 calendar provider/imports replace native RTL time bodies and unused POSIX shims.
 
+Native Online adds 2140 after the 2090 layout migration. The exact late patch
+tail now has 44 entries after main integration; historical subsets omit both layout and its dependent
+adapter before upgrading to the complete stack. Runtime ordering is unchanged
+for earlier patches; see runtime.md and multiplayer-ui.md for the new boundary.
+
 Stage0237 extends the exact late compiler tail to39 patches after0236 before2090;
 counted strings/memory prefixes select original code and retire six native helpers.
 

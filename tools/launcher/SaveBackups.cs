@@ -32,6 +32,49 @@ namespace TimeSplitters.Launcher
             public List<SavedFile> Files=new List<SavedFile>();
         }
         public sealed class RestoreJournal { public string Owner, Backup; public bool HadSaves; }
+        const string LocationJournal=".launcher/save-restore-location.txt";
+        static string TransactionSaves(string root) {
+            string pointer=Core.PathIn(root,LocationJournal);
+            if(!File.Exists(pointer))return SaveLocations.Default(root);
+            Core.Require(new FileInfo(pointer).Length<4096,"Invalid save recovery location; files retained.");
+            return SaveLocations.Validate(File.ReadAllText(pointer).TrimEnd('\r','\n'));
+        }
+        static string WorkRelative(string root) {
+            if(!File.Exists(Core.PathIn(root,LocationJournal)))return Work;
+            return ".launcher/save-restore-"+Hash(System.Text.Encoding.UTF8.GetBytes(Path.GetFullPath(root)),System.Text.Encoding.UTF8.GetByteCount(Path.GetFullPath(root))).Substring(0,16);
+        }
+        static string WorkRoot(string root) {return File.Exists(Core.PathIn(root,LocationJournal))?Path.GetDirectoryName(TransactionSaves(root)):root;}
+        static string TransactionPath(string root,string suffix) {return Core.PathIn(WorkRoot(root),WorkRelative(root)+suffix);}
+        static void BeginWork(string root) {
+            string saves=SaveLocations.Resolve(root);
+            if(!String.Equals(saves,SaveLocations.Default(root),SaveLocations.Comparison)) {
+                Core.Require(!Directory.Exists(Core.PathIn(Path.GetDirectoryName(saves),".launcher/save-restore-"+Hash(System.Text.Encoding.UTF8.GetBytes(Path.GetFullPath(root)),System.Text.Encoding.UTF8.GetByteCount(Path.GetFullPath(root))).Substring(0,16))),"A save recovery folder already exists; files were kept.");
+                Core.Write(Core.PathIn(root,LocationJournal),saves);
+            }
+        }
+        static void CleanupWork(string root) {Core.RemoveOwned(WorkRoot(root),WorkRelative(root));File.Delete(Core.PathIn(root,LocationJournal));}
+        internal static void CopyLocation(string source,string target,CancellationToken token) {
+            var names=Tree(source,source).Take(MaxFiles+1).ToArray();Core.Require(names.Length<=MaxFiles,"Too many save files to copy.");
+            long logical=0,stored=0;var buffer=new byte[BlockSize];
+            foreach(string name in names) {
+                token.ThrowIfCancellationRequested();string destination=Core.PathIn(target,name);Directory.CreateDirectory(Path.GetDirectoryName(destination));
+                using(var input=File.OpenRead(Core.PathIn(source,name))) {
+                    logical+=input.Length;Core.Require(logical<=LogicalLimit,"Save copy exceeds size limit; originals were kept.");
+                    using(var output=new FileStream(destination,FileMode.CreateNew,FileAccess.Write,FileShare.None)) {
+                        LauncherPlatform.PrepareSparse(output);output.SetLength(input.Length);int count;
+                        while((count=input.Read(buffer,0,buffer.Length))>0) {
+                            token.ThrowIfCancellationRequested();bool nonzero=false;for(int i=0;i<count;i++)if(buffer[i]!=0){nonzero=true;break;}
+                            if(nonzero){stored+=count;Core.Require(stored<=DataLimit,"Save copy exceeds size limit; originals were kept.");output.Write(buffer,0,count);}else output.Position+=count;
+                        }
+                        output.Flush(true);
+                    }
+                    token.ThrowIfCancellationRequested();input.Position=0;
+                    using(var sha=SHA256.Create())using(var copied=File.OpenRead(destination)) {
+                        Core.Require(input.Length==copied.Length && Convert.ToBase64String(sha.ComputeHash(input))==Convert.ToBase64String(sha.ComputeHash(copied)),"Save copy verification failed. Originals and the previous location were kept.");
+                    }
+                }
+            }
+        }
         static bool ValidId(string id) { return Regex.IsMatch(id??"",@"\A[0-9a-f]{32}\z"); }
         static string ArchivePath(string root,string id) { Core.Require(ValidId(id),"Invalid save backup selection.");return Core.PathIn(root,Folder+"/"+id+".tsfpsave"); }
         static string Hash(byte[] bytes,int count) { using(var sha=SHA256.Create())return BitConverter.ToString(sha.ComputeHash(bytes,0,count)).Replace("-","").ToLowerInvariant(); }
@@ -111,7 +154,7 @@ namespace TimeSplitters.Launcher
         {
             Core.Require(!Core.GameRunning(),"Close the game before backing up saves.");
             Core.Require(new[]{"Manual","Before game update","Before restore"}.Contains(reason),"Invalid backup reason.");
-            string saves=Core.PathIn(root,LauncherPlatform.Saves(root));
+            string saves=SaveLocations.Resolve(root);
             if(!Directory.Exists(saves))return null;
             var names=Tree(saves,saves).Take(MaxFiles+1).ToArray();if(names.Length==0)return null;
             Core.Require(names.Length<=MaxFiles,"Too many files in the save folder; no backup was created.");
@@ -164,13 +207,14 @@ namespace TimeSplitters.Launcher
             Directory.CreateDirectory(Core.PathIn(root,".launcher"));
             using(LauncherPlatform.AcquireSaveLock(root,installationLockHeld)) {
                 Core.Require(!Core.GameRunning(),"Close the game before restoring saves.");Recover(root);
-                string archive=ArchivePath(root,id),work=Core.PathIn(root,Work),next=Core.PathIn(root,Work+"/new"),previous=Core.PathIn(root,Work+"/previous");
-                string saves=Core.PathIn(root,LauncherPlatform.Saves(root));Directory.CreateDirectory(work);
-                Core.Write(Core.PathIn(root,Work+"/owner"),"tsfp-save-restore-v1");Directory.CreateDirectory(next);
+                BeginWork(root);
+                string archive=ArchivePath(root,id),work=TransactionPath(root,""),next=TransactionPath(root,"/new"),previous=TransactionPath(root,"/previous");
+                string saves=SaveLocations.Resolve(root);Directory.CreateDirectory(work);
+                Core.Write(TransactionPath(root,"/owner"),"tsfp-save-restore-v1");Directory.CreateDirectory(next);
                 bool committed=false;
                 try {
                     using(var zip=ZipFile.OpenRead(archive)) {
-                        var m=Read(zip,id);var buffer=new byte[BlockSize];long stored=m.Files.Sum(f=>f.Blocks.Sum(b=>(long)b.Size));Core.CheckSpace(root,stored+16*1024*1024);
+                        var m=Read(zip,id);var buffer=new byte[BlockSize];long stored=m.Files.Sum(f=>f.Blocks.Sum(b=>(long)b.Size));Core.CheckSpace(Path.GetDirectoryName(saves),stored+16*1024*1024);
                         foreach(var file in m.Files) {
                             token.ThrowIfCancellationRequested();if(progress!=null)progress.Report("Verifying and preparing "+file.Name);
                             string target=Core.PathIn(next,file.Name);Directory.CreateDirectory(Path.GetDirectoryName(target));
@@ -186,14 +230,14 @@ namespace TimeSplitters.Launcher
                     var backup=CreateLocked(root,"Before restore",progress,token);token.ThrowIfCancellationRequested();
                     Core.Require(!Core.GameRunning(),"Close the game before restoring saves.");
                     var journal=new RestoreJournal {Owner="tsfp-save-restore",HadSaves=Directory.Exists(saves),Backup=backup==null?null:backup.Id};
-                    Core.Write(Core.PathIn(root,Work+"/journal.json"),Json.Encode(journal));
+                    Core.Write(TransactionPath(root,"/journal.json"),Json.Encode(journal));
                     if(journal.HadSaves)Directory.Move(saves,previous);
                     if(checkpoint!=null)checkpoint(0);
                     Directory.CreateDirectory(Path.GetDirectoryName(saves));Directory.Move(next,saves);
                     if(checkpoint!=null)checkpoint(1);
-                    Core.Write(Core.PathIn(root,Work+"/committed"),"complete");committed=true;
+                    Core.Write(TransactionPath(root,"/committed"),"complete");committed=true;
                     if(checkpoint!=null)checkpoint(2);
-                    Core.RemoveOwned(root,Work);
+                    CleanupWork(root);
                 } catch(Exception ex) {
                     if(committed){try{LauncherLog.Write(root,"Saves restored; temporary cleanup deferred: "+ex.GetType().Name);}catch{}return;}
                     // Roll back only the saves installed by this transaction. The
@@ -202,26 +246,26 @@ namespace TimeSplitters.Launcher
                         if(Directory.Exists(saves) && !Directory.Exists(next))Directory.Move(saves,next);
                         if(!Directory.Exists(saves))Directory.Move(previous,saves);
                     }
-                    Core.RemoveOwned(root,Work);throw;
+                    CleanupWork(root);throw;
                 }
             }
         }
         public static bool Recover(string root)
         {
-            string work=Core.PathIn(root,Work);if(!Directory.Exists(work))return false;
+            string work=TransactionPath(root,"");if(!Directory.Exists(work)){if(File.Exists(Core.PathIn(root,LocationJournal)))File.Delete(Core.PathIn(root,LocationJournal));return false;}
             Core.Require(!Core.GameRunning(),"Close the game before recovering a save restore.");
             var allowed=new[]{"owner","new","previous","journal.json","journal.json.new","committed","committed.new"};
             Core.Require(Directory.GetFileSystemEntries(work).All(p=>allowed.Contains(Path.GetFileName(p))),"Unknown files in save recovery folder; everything was retained.");
-            string journalPath=Core.PathIn(root,Work+"/journal.json");
+            string journalPath=TransactionPath(root,"/journal.json");
             if(!File.Exists(journalPath)) {
-                string owner=Core.PathIn(root,Work+"/owner");
-                Core.Require(File.Exists(owner) && new FileInfo(owner).Length<=64 && File.ReadAllText(owner)=="tsfp-save-restore-v1" && !Directory.Exists(Core.PathIn(root,Work+"/previous")),"Save recovery record is missing; files were retained.");
-                Core.RemoveOwned(root,Work);return true;
+                string owner=TransactionPath(root,"/owner");
+                Core.Require(File.Exists(owner) && new FileInfo(owner).Length<=64 && File.ReadAllText(owner)=="tsfp-save-restore-v1" && !Directory.Exists(TransactionPath(root,"/previous")),"Save recovery record is missing; files were retained.");
+                CleanupWork(root);return true;
             }
             Core.Require(new FileInfo(journalPath).Length<4096,"Invalid save restore recovery record; files were retained.");
             var j=Json.Serializer().Deserialize<RestoreJournal>(File.ReadAllText(journalPath));
             Core.Require(j!=null && j.Owner=="tsfp-save-restore" && (j.Backup==null || ValidId(j.Backup)),"Invalid save restore recovery record; files were retained.");
-            string saves=Core.PathIn(root,LauncherPlatform.Saves(root)),old=Core.PathIn(root,Work+"/previous"),next=Core.PathIn(root,Work+"/new");
+            string saves=TransactionSaves(root),old=TransactionPath(root,"/previous"),next=TransactionPath(root,"/new");
             if(Directory.Exists(old)) {
                 Core.Require(j.HadSaves,"Inconsistent save restore record; files were retained.");
                 if(!Directory.Exists(saves)){Directory.CreateDirectory(Path.GetDirectoryName(saves));Directory.Move(old,saves);}
@@ -230,7 +274,7 @@ namespace TimeSplitters.Launcher
                     if(j.Backup!=null)ValidateArchive(ArchivePath(root,j.Backup),j.Backup,CancellationToken.None);
                 }
             }
-            Core.RemoveOwned(root,Work);return true;
+            CleanupWork(root);return true;
         }
     }
 }

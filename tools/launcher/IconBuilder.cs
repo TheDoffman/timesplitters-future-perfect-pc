@@ -133,6 +133,9 @@ public static class LauncherIconBuilder
     public static void WriteMultiplayer(string output)
     { Write(output, size => Render(size, false, null, true)); }
 
+    public static void WriteMultiplayerPng(string output)
+    { using (var bitmap = Render(512, false, null, true)) bitmap.Save(output, ImageFormat.Png); }
+
     public static void PreviewMultiplayer(string output)
     { Preview(output, size => Render(size, false, null, true)); }
 
