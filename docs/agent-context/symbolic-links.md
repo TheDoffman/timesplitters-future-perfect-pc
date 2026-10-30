@@ -50,3 +50,7 @@ Shared runtime CI selects this on Windows/Mac. tests/storage/save_paths.c also
 creates/removes a project namespace link and resolves lower-case and object-prefix
 drive paths to the isolated save root through the actual kernel path translator.
 Windows title gameplay and native Mac acceptance remain separate evidence.
+
+Stage0233 supersedes the old static path-rule adapter: [shared routing](guest-paths.md)
+uses one bounded, nonrecursive expansion and original Windows/POSIX translators.
+The original symbolic-link namespace and counted guest adapters are unchanged.

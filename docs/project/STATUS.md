@@ -32798,3 +32798,56 @@ saves and fixtures across both checkouts retain hash/size/mtime. Windows
 NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic input/movie-skipped run;
 not physical input, listening, full campaign or native Mac title acceptance.
 New-stage CI pending; MAC-118 remains Awaiting validation. Contract: symbolic-links.md.
+
+
+### Stage0233 - original shared console path routing (2026-10-29)
+
+PR#406, feature/guest-share-access, built from dirtyd7aa357e. Prior source
+runtime40958769361 and launcher40958769486 both passed CI. Exact source/patch/
+archive/executable inputs recorded in ignored logs/paths-build.json; no merge into
+main or publication. Goal remains incomplete, including host storage initialization,
+remaining I/O completion/backend/routing and other legacy runtime systems.
+
+Original guest_paths.c/.h and guest_kernel_paths.inc replace the legacy routing
+table, prefix/cache/link helpers, raw-device path helpers and both Windows/POSIX
+translate bodies. Both use one counted planner for game/save/profile/title/cache/
+raw images and one bounded copied-link expansion. Supported Partition0-5 geometry,
+profile-only UDATA override, title-separated cache, DVD and ordinary game paths
+remain explicit. Unsupported paths retain separator-normalized passthrough.
+Windows retains ACP guest/strict UTF8 profile conversion and adds bounded UTF16
+joins/TLS latest-success snapshots; POSIX uses bounded byte joins. Host init,
+profile validation/locks and image creation remain transitional, not newly claimed
+independent code. Dot/traversal containment and full NT link/directory semantics
+are not supplied; drive-link expansion is deliberately bounded to one hop.
+
+Ten contracts passed3.66s, including seven compiled bad planners failing at
+runtime, Windows conversion/TLS and POSIX adapter fixtures. Covered literal route
+matrix, mixed separators/component boundaries, uppercase/title0 cache ids, root
+joins, relative/empty paths, copied link overrides/malformed targets and unchanged
+outputs. Fixture copies use explicit lengths; fatal MSVC/Clang warnings stay on.
+The POSIX adapter fixture compiled on Windows is policy evidence, not native Mac
+filesystem acceptance. Selected path/namespace/object/device/event/target suite
+176passed71.48s (includes10 new cases). Four fresh/historical upgrade models plus
+context35-patch tail/backlog checks25passed120.97s. Actual Windows save_paths adds
+bareDVD/Partition2 children and short-output preservation. Native paths adds the
+same plus an actual drive-link route; existing image table/sparse size/preservation
+checks remain. Native execution/new-stage CI pending.
+
+Release, built-in checks (including real selected-profile/link path translation)
+and matching crash symbols passed. Archive selects27 original device/I/O/event/
+namespace/path providers once, including both path APIs and existing host path
+interfaces. Old routing table/translate bodies are absent from patched kernel_path;
+one original adapter include is selected. Kernel_ob/twelve prior retired exports
+remain absent. All22 generated guest files unchanged; fingerprint current.
+Supported US XBE SHA256 verified. Final executable SHA256:
+3627fc785eee9fc83cb95ebbd01947084cbfe0c181a117d6c5ffbc221bf7dabb.
+
+Isolated bounded Story reached scene4/mission1; forward11.176244/back6.184892,
+ammo8to6,40 frozen pause and60 advancing resume samples, last93.204s within240s
+cap. Runner/controller exit0; fresh start/fire/paused captures reviewed. Profiles
+unchanged/signatures valid/canonical fixture preserved, no lock/dumps/partition
+images. Source/archive/executable/generated/game hashes agree. All26 protected
+settings/save/fixture files across both checkouts retain hash/size/mtime. Windows
+NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic input/movie-skipped run;
+not physical input/listening/full campaign or native Mac title acceptance. MAC-118
+remains Awaiting validation; contracts: guest-paths.md. New-stage CI pending.

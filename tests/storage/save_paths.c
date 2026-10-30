@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <wchar.h>
+#include <string.h>
 
 /* The linked runtime has guest dispatch references; this test runs no guest. */
 void *recomp_lookup(ULONG address) { (void)address; abort(); }
@@ -12,7 +13,8 @@ static int expect(const char *guest, const char *base, const char *relative)
 {
     WCHAR actual[MAX_PATH], wanted[MAX_PATH];
     char joined[MAX_PATH];
-    snprintf(joined, sizeof joined, "%s\\%s", base, relative);
+    if(relative[0])snprintf(joined, sizeof joined, "%s\\%s", base, relative);
+    else snprintf(joined,sizeof joined,"%s",base);
     MultiByteToWideChar(CP_UTF8, 0, joined, -1, wanted, MAX_PATH);
     if (!xbox_translate_path(guest, actual, MAX_PATH) || _wcsicmp(actual, wanted)) {
         fprintf(stderr, "FAIL %s\n  got: %ls\n  wanted: %ls\n", guest, actual, wanted);
@@ -45,6 +47,8 @@ int main(int argc, char **argv)
     failures += expect("U:\\45410066\\profile", saveA, "UserData\\45410066\\profile");
     failures += expect("T:\\45410066\\cache", saveA, "TitleData\\45410066\\cache");
     failures += expect("D:\\pak\\test.pak", game, "pak\\test.pak");
+    failures += expect("\\Device\\CdRom0", game, "");
+    failures += expect("\\Device\\Harddisk0\\Partition2\\dashboard.xip",game,"dashboard.xip");
     failures += expect("\\Device\\Harddisk0\\partition1\\default.xbe", game, "default.xbe");
     failures += expect("\\Device\\Harddisk0\\partition1\\UDATA_extra\\asset", game, "UDATA_extra\\asset");
     xbox_path_init(game, saveB);
@@ -59,6 +63,12 @@ int main(int argc, char **argv)
     failures += expect("U:\\45410066\\profile",saveA,"UserData\\45410066\\profile");
     if(!xbox_set_profile_root_utf8(""))return 1;
     failures += expect("U:\\45410066\\profile",saveB,"UserData\\45410066\\profile");
+    {
+        WCHAR small[6],before[6];
+        for(unsigned i=0;i<6;++i)small[i]=(WCHAR)0x7777;
+        memcpy(before,small,sizeof small);
+        if(xbox_translate_path("D:\\pak\\test.pak",small,6) || memcmp(before,small,sizeof small))return 1;
+    }
     if (failures) return 1;
     puts("PASS: save/asset routes, copied symbolic-link drive remapping, component boundaries, case folding, and save-directory switching");
     return 0;

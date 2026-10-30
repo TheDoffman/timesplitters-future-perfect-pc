@@ -315,3 +315,6 @@ Stage0231 context regression asserts the real33-patch late compiler tail, with
 
 Stage0232 context regression extends the exact late compiler tail to34 patches,
 0232 follows0231 before2090; the main DPI patch stays earlier by loader order.
+
+Stage0233 context tail now35 patches:0233 after0232 before2090; host routing
+policy is in guest_paths.c rather than two kernel_path translate bodies.

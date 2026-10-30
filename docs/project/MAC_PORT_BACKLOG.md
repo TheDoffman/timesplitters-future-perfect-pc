@@ -7672,3 +7672,18 @@ validation and new-source CI remain pending. This does not replace the rest of
 kernel_path/VFS or remaining request completion/backend policy. Keep MAC-118
 Awaiting validation; evidence in STATUS stage0232 and
 [symbolic-link contracts](../agent-context/symbolic-links.md).
+
+
+MAC-118 stage0233 follow-up (PR#406): shared original guest_paths planner and
+selected guest_kernel_paths host adapter replace the old rule table, helper
+planners and separate Windows/POSIX translation bodies. Profile/TitleData/cache/
+raw-device routing now uses one counted, bounded plan; Windows retains ACP/UTF16
+and strict UTF8 profile conversion, POSIX byte paths. No additional native adapter
+is required for shared policy. Both-host CI selects planner/fault/host fixtures;
+Windows compiles a POSIX policy fixture without claiming native Mac filesystem
+acceptance. Actual Windows and native Mac path harnesses add bareDVD/partition2
+children, drive-link and short-buffer checks while retaining profile/image tests.
+Host initialization/profile locks/partition-image creation and other VFS/I/O
+completion work remain transitional. New-stage CI/native Mac title acceptance
+are pending; retain MAC-118 Awaiting validation. See STATUS stage0233 and
+[shared path contracts](../agent-context/guest-paths.md).

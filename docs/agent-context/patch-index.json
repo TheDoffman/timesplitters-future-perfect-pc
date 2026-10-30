@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "6d7ce004144e606d23af421ad2dd62ccad3857ac7143be5f9244d300ba3173d6",
+  "loaderSha256": "e3a6a52c71b144b040a7fddb18b9174716075360f9e6f603f2f120aa0a0b558a",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2447,6 +2447,15 @@
         "src/kernel/kernel.h",
         "src/kernel/kernel_bridge.c",
         "src/kernel/kernel_io.c",
+        "src/kernel/kernel_path.c"
+      ]
+    },
+    {
+      "name": "0233-original-path-routing.patch",
+      "path": "patches/compiler/0233-original-path-routing.patch",
+      "sha256": "7c9604354b36aa6456a369b491033e1076508bd77525cc8dea5b37e0a7c70a65",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
         "src/kernel/kernel_path.c"
       ]
     },
