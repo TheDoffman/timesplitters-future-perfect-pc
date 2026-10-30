@@ -2,8 +2,6 @@
 
 <a name="timesplitters-future-perfect"></a>
 
-# <img src="docs/assets/readme-banner.svg" alt="TimeSplitters: Future Perfect" width="960">
-
 Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer (Windows)
 
 <p>
