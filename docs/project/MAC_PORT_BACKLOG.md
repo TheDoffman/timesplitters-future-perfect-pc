@@ -7807,3 +7807,15 @@ is present but new-source CI/title validation are separate;25 upgrades/context a
 bounded Story are running. Keep Awaiting validation because remaining runtime and
 native Mac title acceptance remain unfinished. Contracts: kernel-rtl.md; measured
 scope/provenance in STATUS stage0238. No merge into main/publication by this chat.
+
+
+MAC-118 stage0238 acceptance:46bc2046 runtime41002852446 and launcher41002852486
+passed both native/upgrade/GPU/transition hosts, PR gate and launcher packaging.
+Original native pthread critical integration, aliases/ownership/blocked waiters,
+fatal/status/diagnostic fixtures and compiled controls are CI-verified; this does
+not establish Mac title gameplay. Windows149 distinct selected local checks,
+Release/archive/generation and bounded Story passed with a586004e,26 protected
+files unchanged. Latest maincc531ea9 already belongs to the branch; the requested
+sync needed no content changes. Keep Awaiting validation for remaining kernel/
+runtime and native Mac title acceptance. Exact counts, byte provenance and limits
+are in STATUS stage0238 completed acceptance; contracts in kernel-rtl.md.

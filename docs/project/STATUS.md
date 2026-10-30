@@ -33340,3 +33340,53 @@ CI pending. PR#413 remains draft/open/unmerged as freshly checked. Windows
 NT10.0.26300 x64/MSVC14.44; no native Mac title, physical input/listening or full
 campaign claim. Remaining kernel/runtime/header/fixture/provenance replacement is
 active/incomplete, MAC-118 Awaiting validation. No merge into main/publication.
+
+
+Stage0238 local acceptance:25 upgrade/context/backlog checks passed158.05s,
+combined with124 selected runtime checks =149 distinct checks; final26 RTL cases
+overlap124. Runner70566/controller45591 both exited0. Fresh bounded Story reached
+scene4/mission1, forward11.195015/back6.184889,ammo8to6,40 frozen pause/60 advancing
+resume samples,last125.542s within240s cap. Fresh start/fire/paused captures were
+reviewed. Profile signatures valid/fixture preserved, no locks/dumps/partition
+images. Source/archive/executable/generated/game hashes agree on the a586004e
+binary above. All26 protected files retain hashes, sizes and mtimes.
+
+The user requested a main update during validation. Fresh fetch and ff-only merge
+confirmed Already up to date: origin/maincc531ea9 is an ancestor of46bc2046, with
+five feature commits ahead and zero behind. No reset, merge commit or source
+change was needed; ongoing work and personal data were preserved. Runtime CI
+41002852446 and launcher41002852486 are pending for the exact full source revision
+46bc204639b5e6784a6f2e6d23339502f607c3e4. Windows synthetic/minimized/movie-skipped run is separate from physical input,
+listening, full campaign, performance benchmarking and native Mac title acceptance.
+
+
+### Stage0238 completed native RTL acceptance (2026-10-30 UTC)
+
+Exact source46bc204639b5e6784a6f2e6d23339502f607c3e4 passed runtime41002852446 and
+launcher41002852486, including both upgrade/native/GPU/transition hosts, PR gate
+and both launcher/package validations. Windows native2220passed264skipped18subtests
+in415.95s, then GPU172passed3subtests in5.49s. Mac native2128passed316skipped
+18subtests in303.64s, then GPU169passed3skipped3subtests in3.82s. All26 new RTL cases
+passed on each host; strict warnings and failure controls remain intact.
+
+149 distinct local selected checks, Release/built-ins/matching symbols, selected
+source/archive/generation audits and bounded Windows Story passed as recorded
+above. All36 retired native exports and the exact legacy kernel_rtl object are
+absent,35 original providers selected once,22 generated files unchanged. The
+accepted executable remains:
+a586004ee7eb8a419b1214e7c0f7dd14db5560198bad8c01e65e86a7826e0304.
+Source/patch bytes match the recorded dirtyad43ead0 build inputs now committed in
+46bc2046. Protected26 files remain unchanged. No owned test sessions remain live.
+
+User-requested main synchronization was rechecked with a fresh fetch: latest main
+is stillcc531ea9 and already belongs to this feature branch's history. No source
+integration/reset/merge into main was needed. Draft PR#413 remains open/unmerged.
+This acceptance follow-up changes documentation only; any workflows it starts
+are separate from the verified46bc2046 results above.
+
+The whole native RTL module is retired within this scope, not the remaining guest
+formatter/exception/charset/create/free/numeric paths in the bridge. Other kernel,
+renderer/audio/title/header/fixture/provenance replacement and final unavailable-
+upstream verification remain unfinished. Native Mac title gameplay, physical input,
+listening/full campaign and controlled performance benchmarking remain unverified.
+Overall goal stays active/incomplete; MAC-118 Awaiting validation. No publication.

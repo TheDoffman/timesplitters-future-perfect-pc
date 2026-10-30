@@ -109,3 +109,12 @@ upgrades must exclude the whole legacy module and install original providers.
 Windows archive audit must exclude the exact kernel_rtl object (not the distinct
 guest_kernel_rtl object) and retire its twelve exports. Build/generation/package,
 isolated Story and native Mac title acceptance remain separate; see STATUS.
+
+
+Acceptance:46bc2046 passed runtime41002852446 and launcher41002852486 across both
+native/GPU/upgrade/transition hosts and launcher packaging. Windows149 distinct
+selected local checks and Release/built-ins/symbols/archive/generation passed;
+Story movement/fire/pause/resume and fresh captures agree with a586004e runtime
+bytes.26 protected files unchanged; exact counts/limits are in STATUS stage0238.
+Latest maincc531ea9 is already included. Native Mac title gameplay and the overall
+replacement remain unfinished; PR#413 remains draft/unmerged.
