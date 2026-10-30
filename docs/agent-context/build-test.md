@@ -995,3 +995,20 @@ Stage0236: [original absolute-time codec and guest calendar imports](kernel-time
 The0236 upgrade source checker reads UTF-8 explicitly: Windows cp1252 cannot
 decode existing bridge box-drawing comments. CI4cb4697c found this fixture-only
 error; native calendar source and the accepted game binary do not change.
+
+Crash evidence CI now selects `tests/diagnostics/test_guest_capture.py` beside
+existing crash tests on both hosts. It compiles the shared bounded-memory writer
+against synthetic addresses; Windows fatal-helper tests assert model history is
+exported. Native fatal-helper tests assert the same history and diagnostics
+metadata on Darwin. Host skips are not a passing native execution result.
+
+Allocation observation is checked by `test_allocation_observer.py`; both host
+helper fixtures assert allocation/release history reaches the report. Patch
+tracking tests require the evidence hook after the independent allocator/boot
+and presentation patches, before final source-layout routing.
+
+Historical upgrade fixtures exclude the later model-trace/allocation-observer
+patches until upgrading to the full stack. Model instrumentation is inserted
+before a stable function, rather than at EOF, so reversing it preserves local
+trailing edits during historical branch round trips. These are tested in
+`tests/repository/test_patch_updates.py`.

@@ -236,7 +236,7 @@ jobs:
             tests/compiler/test_recomp_float_joins.py tests/compiler/test_recomp_vehicle_joins.py
             tests/compiler/test_recomp_generation.py tests/graphics/test_framebuffer_sampling.py tests/gameplay/test_model_transform.py tests/compiler/test_gpr_refs.py tests/graphics/test_zero_base_indices.py tests/graphics/test_push_gather.py tests/graphics/test_vertex_expand.py tests/graphics/test_terminal_depth.py tests/graphics/test_ghost_rendering.py tests/graphics/test_ghost_targets.py
             tests/media/test_xmv_stop.py tests/media/test_native_movie_file.py tests/network/test_discord_presence.py tests/network/test_discord_macos.py tests/gameplay/test_native_crash.py
-            tests/diagnostics/test_crash_capture.py
+            tests/diagnostics/test_crash_capture.py tests/diagnostics/test_guest_capture.py tests/diagnostics/test_allocation_observer.py
             tests/graphics/test_cutscene_letterbox.py tests/graphics/test_pc_display_modes.py tests/graphics/test_decal_projection.py
             tests/graphics/test_channel_clears.py tests/graphics/test_objectives_health.py
             tests/graphics/test_fov_settings.py tests/storage/test_storage_menu.py tests/input/test_text_read_scope.py tests/diagnostics/test_trace_filter.py tests/diagnostics/test_sample_chains.py tests/diagnostics/test_sample_pc_locations.py tests/graphics/test_gpu_flush_ack.py

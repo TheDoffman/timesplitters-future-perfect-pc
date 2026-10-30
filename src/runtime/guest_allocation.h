@@ -4,12 +4,17 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/* Optional observer runs under the arena lock: no allocation, blocking or reentry.
+ * Event is kind (1 heap,2 reservation,3 physical), with bit 8 set for release. */
+typedef void (*tsfp_allocation_observer)(uint32_t event,uint32_t address,uint32_t bytes);
+
 typedef struct tsfp_allocation_record {
     uint32_t begin, end, address, bytes, kind;
 } tsfp_allocation_record;
 
 typedef struct tsfp_allocation_arena {
     unsigned char *memory;
+    tsfp_allocation_observer observer;
     uint32_t origin, begin, end;
     tsfp_allocation_record *records;
     size_t count, capacity;
@@ -34,6 +39,7 @@ typedef struct tsfp_allocation_config {
     uint32_t physical_base, physical_size, physical_begin, physical_end;
     /* Optional permanent exclusion, e.g. the runtime's synthetic kernel page. */
     uint32_t protected_begin, protected_end;
+    tsfp_allocation_observer observer;
 } tsfp_allocation_config;
 
 /* Context must initially be zeroed. Init/reinit requires quiescent callers;

@@ -474,3 +474,16 @@ regenerates/copies `Support/Online/multiplayer.ico`. OnlineTheme applies it to t
 browser and invitation popup. No new Mac launcher resource or artwork is needed;
 native Mac Online remains deferred. Icon frames, package placement and real Tk
 window assignment are checked in `tests/repository/test_game_icon.py`.
+
+## Extended crash report export (in development)
+
+`CrashReports` exports the allowlisted `guest-memory.bin`, `model-tree.bin` and
+`diagnostics.json` alongside existing files, with separate bounded size limits.
+The Diagnostics page labels the action Export report ZIP and opens the destination
+folder after export on both hosts. Evidence availability is separate from root
+cause determination. The shared page offers an extended-diagnostics checkbox;
+its session-only preference is passed by `GameSettings.StartInfo` through
+`TSFP_CRASH_EXTENDED` and resets when the launcher closes. Compatible Windows
+capture is implemented; native Mac collection is implemented but requires host
+validation and may report process-memory-access-denied under macOS policy. Tests cover
+new file inclusion while retaining unknown-file exclusion and bounded exports.

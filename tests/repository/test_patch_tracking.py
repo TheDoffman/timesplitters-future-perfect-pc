@@ -303,3 +303,17 @@ def test_edit_during_validation_is_preserved(fixture, monkeypatch, concurrent_ed
         installer.apply_patches(runtime, patches)
     assert edited.read_bytes() == expected
     assert 'alpha=2' not in source.read_text()
+
+
+def test_allocation_evidence_follows_allocator_and_boot(tmp_path):
+    names = ['2150-allocation-history.patch', '0206-independent-guest-allocations.patch',
+             '0219-independent-kernel-devices.patch', '1800-fixed-60-fps.patch',
+             '2090-repository-source-layout.patch']
+    paths = []
+    for name in names:
+        patch(tmp_path, name, BASE, BASE.replace('alpha=0', 'alpha=1'))
+        paths.append(tmp_path / name)
+    ordered = [record['name'] for record in installer.patch_records(paths)]
+    observer = ordered.index('2150-allocation-history.patch')
+    assert all(ordered.index(name) < observer for name in names[1:4])
+    assert observer < ordered.index('2090-repository-source-layout.patch')
