@@ -87,3 +87,15 @@ using isolated `TSFP_ONLINE_TEST_COMMAND` host/join/cancel commands. Python's
 `online_platform.GameProcess` detects POSIX reparenting or a Windows process
 handle exit. This supersedes the Windows-only network fallback notes above for
 Mac builds defining TSFP_NATIVE_NETWORK; complete bot gameplay remains unverified.
+
+## Physical Windows/Mac Online acceptance
+
+`test-online-bot-motion.py --mac-host <SSH-alias> --mac-root <checkout>
+--lan-address <Windows-IPv4>` uses the existing bounded menu/gameplay/results
+scenario with a native guest on the physical Mac. `crossplay_peer.py` supervises
+that isolated child over SSH; SDL file events supply its inputs. The separately
+loaded `native_read_probe.c` exposes read-only guest observations through a private
+Unix socket, never an external listener or game memory writes. It is a test
+artifact, not linked or packaged into a release. Both peers must have matching
+sealed identities. Observations remain asynchronous; captures and results are
+recorded separately. Full-match evidence is recorded in STATUS after execution.

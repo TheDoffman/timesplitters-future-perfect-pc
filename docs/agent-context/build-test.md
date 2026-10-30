@@ -1019,3 +1019,5 @@ and extension libraries. Source development needs Python 3.12 with tkinter and
 `pip install -r requirements-release.txt`. Generate `build/online-icon/multiplayer.png`
 with the shared Windows icon builder and transfer that generated asset for Mac
 packaging, as with launcher artwork. No game-data copy is required.
+
+Physical crossplay acceptance: [multiplayer runner](multiplayer-ui.md#physical-windowsmac-online-acceptance).

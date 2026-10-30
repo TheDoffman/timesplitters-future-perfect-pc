@@ -103,6 +103,9 @@ def atomic(path, text):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--tag', required=True)
+    parser.add_argument('--mac-host', help='SSH alias for a native Mac guest')
+    parser.add_argument('--mac-root', help='Absolute checkout path on that Mac')
+    parser.add_argument('--lan-address', help='Reachable Windows IPv4 for the Mac peer')
     parser.add_argument('--seconds', type=int, default=60)
     parser.add_argument('--host-fps', type=int, choices=(0,120,180,240), default=0,
                         help='0 uses Original60; other values select native beta timing')
@@ -123,6 +126,10 @@ def main():
     parser.add_argument('--short-match', action='store_true',
                         help='Select five-point Deathmatch through the stock setup menu')
     args = parser.parse_args()
+    if args.mac_host and not (args.mac_root and args.lan_address):
+        parser.error('--mac-host needs --mac-root and --lan-address')
+    if args.mac_host and args.guest_fps:
+        parser.error('Crossplay acceptance uses original 60 FPS on Mac')
     if args.inspect_setup and args.require_results:
         parser.error('--inspect-setup cannot satisfy --require-results')
     if not 0<=args.post_results_seconds<=30 or (args.post_results_seconds and not args.require_results):
@@ -161,22 +168,27 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     automation = ROOT/'private/network-validation'/args.tag
     automation.mkdir(parents=True, exist_ok=True)
-    server = Server(('127.0.0.1', 0), Directory(public_address='127.0.0.1'))
+    address = args.lan_address if args.mac_host else '127.0.0.1'
+    server = Server((address, 0), Directory(public_address=address))
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    url = 'http://127.0.0.1:'+str(server.server_port)
+    url = 'http://'+address+':'+str(server.server_port)
     with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as available:
-        available.bind(('127.0.0.1',0))
+        available.bind((address,0))
         host_port=available.getsockname()[1]
     children, handles, runs, inputs = [], [], [], []
     drains=[]
     offsets={}
+    remote=None
+    remote_provenance=None
     samples = []
     checkpoints = []
     menu_inputs = []
     completed=False
     started = time.monotonic()
     def read(peer, address, size):
+        if peer==1 and remote is not None:
+            return remote.read(address,size)
         data = C.create_string_buffer(size)
         if peer not in offsets:
             output=(out/f'{peer}.out').read_text(errors='replace')
@@ -211,6 +223,7 @@ def main():
             rows.append(row);node=word(peer,node+4)
         return dict(address=menu,selected=word(peer,menu+0x18c),rows=rows)
     def observe():
+        if remote is not None:remote.pages.clear()
         for peer in range(len(handles)):
             try:
                 network = word(peer, 0x76b1a4)
@@ -241,11 +254,14 @@ def main():
                 raise RuntimeError('A game exited early')
             observe()
             time.sleep(.008)
+    def set_input(peer,text):
+        if peer==1 and remote is not None:remote.call('input',text=text)
+        else:atomic(inputs[peer],text)
     def key(peer, *keys, hold=.18):
         for value in keys:
-            atomic(inputs[peer], f'{value} 1\n')
+            set_input(peer, f'{value} 1\n')
             wait(hold)
-            atomic(inputs[peer], '0 0\n')
+            set_input(peer, '0 0\n')
             wait(.6)
     def wait_alive(slot):
         # Combat can kill the client before its scheduled input. A corpse's
@@ -304,6 +320,9 @@ def main():
                                               'scores-tab','options-tab','rematch','rematch-results','finished',
                                               'options-root','options-mode','options-settings','options-settings-initial','short-match-settings'):
             for peer, child in enumerate(children):
+                if peer==1 and remote is not None:
+                    remote.call('capture',label=label)
+                    continue
                 worker=threading.Thread(target=capture,args=(child.pid,out/f'{label}-{peer}.png'),daemon=True)
                 worker.start();worker.join(timeout=2)
     def await_results(label):
@@ -346,6 +365,15 @@ def main():
 
     try:
         for peer in range(2):
+            if peer==1 and args.mac_host:
+                from crossplay_peer import RemotePeer
+                remote=RemotePeer(args.mac_host,args.mac_root,out/'mac-controller.err')
+                remote_provenance=remote.call('start',tag=args.tag,compatibility=identity['compatibility'],
+                    command=dict(action='join',directory=url,port=host_port,automatic_host=False,
+                                 detect_public_address=False))
+                remote.pid=remote_provenance['pid']
+                children.append(remote);handles.append(None);inputs.append(None)
+                continue
             run = ROOT/'private/test-saves'/('online-bots-'+args.tag)/str(peer)
             env = prepare_run(ROOT, run)
             runs.append(run)
@@ -396,6 +424,7 @@ def main():
             raise RuntimeError('Online browser did not create a lobby')
         command = automation/'1.json'
         command.write_text(json.dumps(dict(action='join', directory=url, code=codes[0])))
+        if remote is not None:remote.call('command',command=json.loads(command.read_text()))
         key(1, 69)
         wait(8)
         report('online-browsers')
@@ -462,9 +491,9 @@ def main():
         for peer in range(2):
             wait_alive(peer)
             report(f'move-{peer}-start')
-            atomic(inputs[peer], '87 1\n')
+            set_input(peer, '87 1\n')
             wait(2)
-            atomic(inputs[peer], '0 0\n')
+            set_input(peer, '0 0\n')
             report(f'move-{peer}-released')
             wait(2)
             report(f'move-{peer}-settled')
@@ -520,7 +549,8 @@ def main():
             except subprocess.TimeoutExpired:
                 p.kill(); p.wait()
         for h in handles:
-            K.CloseHandle(h)
+            if h:K.CloseHandle(h)
+        if remote is not None:remote.close()
         for worker in drains:
             worker.join(timeout=5)
         for run in runs:
@@ -541,7 +571,8 @@ def main():
             require_rematch_results=args.require_rematch_results,
             inspect_setup=args.inspect_setup,
             short_match=args.short_match,
-            compatibility=identity['compatibility'], observation='asynchronous ReadProcessMemory',
+            compatibility=identity['compatibility'], remote=remote_provenance,
+            observation='asynchronous ReadProcessMemory / native read-only probe' if remote else 'asynchronous ReadProcessMemory',
             pids=[child.pid for child in children], guest_memory_offsets=offsets,
             completed=completed, exit_codes_before_cleanup=exit_codes,
             seconds=time.monotonic()-started, samples=len(samples)), indent=2))

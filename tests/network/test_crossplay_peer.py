@@ -1,0 +1,73 @@
+"""The native match observer must expose readable bytes, never memory writes."""
+import importlib.util
+import os
+from pathlib import Path
+import platform
+import socket
+import struct
+import subprocess
+import time
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[2]
+spec = importlib.util.spec_from_file_location('crossplay_peer', ROOT/'tools/testing/crossplay_peer.py')
+peer = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(peer)
+
+
+def test_remote_reads_across_pages_and_caches_only_one_observation():
+    remote = object.__new__(peer.RemotePeer)
+    remote.pages = {}
+    calls = []
+    def call(action, address, size):
+        import base64
+        calls.append((action,address,size))
+        return {'data':base64.b64encode(bytes([address//4096])*size).decode()}
+    remote.call = call
+    assert remote.read(4094,4)==b'\0\0\1\1'
+    assert len(calls)==2
+    assert remote.read(4096,2)==b'\1\1'
+    assert len(calls)==2
+    remote.pages.clear()
+    remote.read(4096,2)
+    assert len(calls)==3
+
+
+@pytest.mark.skipif(platform.system()!='Darwin',reason='Native Mach observer')
+def test_native_observer_is_bounded_private_and_read_only(tmp_path):
+    import tempfile
+    # Darwin sockaddr_un is short; pytest's checkout path may exceed its limit.
+    with tempfile.TemporaryDirectory(prefix='tsfp-probe-') as name:
+        folder=Path(name); path=folder/'read.sock'
+        library=folder/'probe.dylib'; executable=folder/'fixture'
+        source=folder/'fixture.c'
+        source.write_text('''#include <stdint.h>
+#include <unistd.h>
+intptr_t g_xbox_mem_offset;
+static uint32_t value=0x12345678;
+int main(void){g_xbox_mem_offset=(intptr_t)&value-0x10000; sleep(20);return 0;}
+''')
+        subprocess.run(['clang','-dynamiclib','-Wall','-Wextra','-Werror',
+            str(ROOT/'tools/testing/native_read_probe.c'),'-o',str(library)],check=True)
+        subprocess.run(['clang',str(source),'-Wl,-export_dynamic','-o',str(executable)],check=True)
+        env=dict(os.environ,DYLD_INSERT_LIBRARIES=str(library),TSFP_CROSSPLAY_READ_SOCKET=str(path))
+        process=subprocess.Popen([str(executable)],env=env)
+        try:
+            deadline=time.monotonic()+5
+            while not path.exists() and time.monotonic()<deadline:time.sleep(.02)
+            assert path.exists(), 'Observer failed to initialize'
+            assert path.stat().st_mode & 0o077 == 0
+            with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as channel:
+                channel.settimeout(3);channel.connect(str(path))
+                def request(address,size):
+                    channel.sendall(struct.pack('<II',address,size))
+                    status=struct.unpack('<I',peer.receive(channel,4))[0]
+                    return status,peer.receive(channel,size) if status==0 else None
+                assert request(0x10000,4)==(0,b'\x78\x56\x34\x12')
+                assert request(0x10000,65537)[0]!=0
+                assert request(0x10000,0)[0]!=0
+                assert request(0xffffffff,4)[0]!=0
+                assert request(0x10000,4)==(0,b'\x78\x56\x34\x12')
+        finally:
+            process.terminate();process.wait(timeout=3)
