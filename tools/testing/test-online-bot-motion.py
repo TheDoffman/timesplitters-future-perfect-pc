@@ -331,7 +331,7 @@ def main():
         # Online browser. Capture only running frontend/gameplay boundaries.
         if not args.no_captures and label in ('frontend','no-online-lobby','match','results','post-results',
                                               'scores-tab','options-tab','rematch','rematch-results','finished',
-                                              'options-root','options-mode','options-settings','options-settings-initial','short-match-settings','rematch-timeout'):
+                                              'options-root','options-mode','options-settings','options-settings-initial','short-match-settings','rematch-timeout','rematch-selection'):
             for peer, child in enumerate(children):
                 if peer==mac_peer and remote is not None:
                     remote.call('capture',label=label)
@@ -525,8 +525,9 @@ def main():
                 # Reviewed Options: guest defaults to Rematch; host has Change
                 # Game Type above it. Let the guest request before the host.
                 key(1,69)
-                key(0,40,hold=.35)
-                key(0,69,hold=.35)
+                key(0,40,hold=.06)
+                report('rematch-selection')
+                key(0,69,hold=.18)
                 deadline=time.monotonic()+30
                 while time.monotonic()<deadline:
                     if all(word(peer,0x76b1a4)==15 and word(peer,0x7de30c)==7 and

@@ -953,3 +953,9 @@ extraction no longer depends on the removed HLE comment. Both CI hosts run these
 checks. Native title acceptance and its limits remain in STATUS and MAC-102.
 
 Stage0235: [original pool imports and native surface retirement](kernel-pool.md).
+
+The optional allocation observer is configured at initialization and called
+under the allocator lock only after successful ownership changes. It is used
+for bounded crash evidence and must not allocate, block or reenter. Existing
+placement/zeroing/release rules are unchanged; `test_allocation_observer.py`
+covers successful release/reuse and failed-operation exclusion.

@@ -907,3 +907,13 @@ into the native title, enables Objective-C in that directory, and defines
 `TSFP_NATIVE_NETWORK` for the guest dispatch, lobby and bot hooks. SDL3 and Cocoa
 remain host dependencies. Unsupported fixture builds retain original guest calls.
 The patch stack must be applied before generating the shared compatibility identity.
+
+Crash model traversal instrumentation at US guest `0x583E0` is introduced by
+`patches/diagnostics/2140-model-tree-trace.patch`. The manual wrapper preserves
+original execution and records bounded model/node/depth history through the shared
+capture adapters. It is diagnostic instrumentation, not a fix for #410. See
+[crash evidence](crash-evidence.md) for capture scope and platform limits.
+
+Allocation-history hook details: [crash evidence](crash-evidence.md). The shared
+allocator observer is diagnostic-only; backing allocation ownership and guest
+model suballocation lifetime remain distinct concepts.

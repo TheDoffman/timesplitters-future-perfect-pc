@@ -57,6 +57,7 @@ namespace TimeSplitters.Launcher
     {
         public readonly Grid View = new Grid();
         public readonly Button VerifyGame, VerifyLauncher, RepairGame, RepairLauncher, Cancel, Refresh, Copy, ReportBug, RequestEnhancement, OpenFiles, Retry, ViewLogs, OpenCrash, ExportCrash;
+        public readonly CheckBox ExtendedDiagnostics;
         public Func<System.Threading.Tasks.Task> RetryOperation;
         readonly WrapPanel recoveryActions;
         public readonly TextBox Report;
@@ -90,9 +91,14 @@ namespace TimeSplitters.Launcher
                 Ui.Tip(RequestEnhancement,"Copies this report and opens the GitHub enhancement form. You review and submit it there.");
                 buttons.Children.Add(Refresh);buttons.Children.Add(Copy);buttons.Children.Add(ReportBug);buttons.Children.Add(RequestEnhancement);
                 var crashes=new WrapPanel { Margin=new Thickness(0,0,0,16) };DockPanel.SetDock(crashes,Dock.Top);body.Children.Add(crashes);
-                OpenCrash=Button("Open latest game report","OpenCrashReport");ExportCrash=Button("Export game report...","ExportCrashReport");
-                Ui.Tip(ExportCrash,"Saves a local ZIP with the dump and recent log excerpt. Review it before sharing; nothing is uploaded.");
+                OpenCrash=Button("Open latest game report","OpenCrashReport");ExportCrash=Button("Export report ZIP...","ExportCrashReport");
+                Ui.Tip(ExportCrash,"Saves one ZIP containing all available crash diagnostics. Memory and logs may contain private data. Review it before sharing; nothing is uploaded.");
                 crashes.Children.Add(OpenCrash);crashes.Children.Add(ExportCrash);
+                ExtendedDiagnostics=new CheckBox { Content="Extended diagnostics (this launcher session)", IsChecked=CrashReports.ExtendedForNextLaunch, Margin=new Thickness(0,0,0,12) };
+                Ui.Tip(ExtendedDiagnostics,"Includes more guest memory in crash reports. Reports may contain private data. Nothing uploads automatically. Resets when the launcher closes.");
+                ExtendedDiagnostics.Checked+=(s,e)=>CrashReports.ExtendedForNextLaunch=true;
+                ExtendedDiagnostics.Unchecked+=(s,e)=>CrashReports.ExtendedForNextLaunch=false;
+                DockPanel.SetDock(ExtendedDiagnostics,Dock.Top);body.Children.Add(ExtendedDiagnostics);
                 var report=PageTheme.Card(Report);report.Padding=new Thickness(8);body.Children.Add(report);
             } else {
                 var body=new StackPanel();var scroll=new ScrollViewer { Content=body,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled };

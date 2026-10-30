@@ -329,6 +329,11 @@ Stage0236 extends the exact late compiler tail to38 patches, after0235 before209
 calendar provider/imports replace native RTL time bodies and unused POSIX shims.
 
 Native Online adds 2140 after the 2090 layout migration. The exact late patch
-tail now has 39 entries; historical subsets omit both layout and its dependent
+tail now has 40 entries; historical subsets omit both layout and its dependent
 adapter before upgrading to the complete stack. Runtime ordering is unchanged
 for earlier patches; see runtime.md and multiplayer-ui.md for the new boundary.
+
+Crash diagnostics adds the allocation-history patch after allocator dependencies;
+the repository-order fixture includes this final observer hook before source
+layout. Normalize new patches to LF before refreshing the index: local CRLF
+bytes hash differently from Git-normalized checkout bytes on CI hosts.

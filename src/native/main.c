@@ -3,6 +3,7 @@
 #include "xbox_watchpoint.h"
 #include "recomp_config.h"
 #include "crash_posix.h"
+#include "../diagnostics/pc_breadcrumbs.h"
 #include "../network/pc_discord.h"
 #include "../network/pc_online.h"
 #include "../gameplay/pc_native_rate.h"
@@ -54,6 +55,8 @@ int main(int argc, char **argv)
     (void)argc; (void)argv;
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
+    extern void xbox_SetAllocationObserver(void (*observer)(uint32_t,uint32_t,uint32_t));
+    xbox_SetAllocationObserver(pc_capture_allocation);
     tsfp_native_crash_init(capture_guest);
     struct sigaction sa = {0};
     sa.sa_sigaction = fault;
@@ -95,6 +98,7 @@ int main(int argc, char **argv)
         free(data); return 1;
     }
     g_xbox_mem_offset = xbox_GetMemoryOffset();
+    tsfp_native_crash_memory((uint64_t)g_xbox_mem_offset);
     printf("[NATIVE-BOOT] Xbox memory offset: %p\n", (void *)g_xbox_mem_offset);
     xbox_kernel_init();
     xbox_path_init(game, saves);

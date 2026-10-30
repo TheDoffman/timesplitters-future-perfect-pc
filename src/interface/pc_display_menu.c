@@ -161,6 +161,7 @@ void pc_display_camera(void (*original)(void))
 #endif
         pc_discord_sample(&sample,discord_guest_read,NULL,&discord_cache,network);
         pc_capture_gameplay(sample.scene,sample.mode,sample.menu_mode,sample.paused,sample.network,(sample.flags&0x20000000u)!=0);
+        pc_capture_match(sample.humans,sample.bots,sample.difficulty,sample.capacity);
         pc_discord_submit(&sample);discord_sampled=now;
     }
 #endif
