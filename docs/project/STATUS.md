@@ -33238,3 +33238,29 @@ run. Gameplay and25 fresh/historical/context/backlog checks are still running at
 this checkpoint. New-source CI is pending. Windows NT10.0.26300 x64/MSVC14.44;
 no native Mac title/physical input/listening/full-campaign claim. Overall goal and
 MAC-118 remain active/incomplete/Awaiting validation; no main merge/publication.
+
+
+Stage0237 Windows acceptance and branch transition:25 fresh/historical/context/
+backlog checks passed193.15s. Combined with65 distinct selected runtime checks,
+90 distinct local checks passed (the final14-case source rerun overlaps65).
+Runner10760 and controller73003 both exited0. Fresh scene4/mission1 Story:
+forward11.176239, back6.184892, ammo8to6,40 frozen pause/60 advancing resume samples,
+last108.969s within240s cap. Start/fire/paused captures postdate provenance and
+were reviewed. Profile signatures valid, fixture preserved, no runlock/dumps/
+partition images. All26 protected files retain hashes, sizes and mtimes. Source,
+archive, executable, generated and gameplay hashes agree on the07fd92c5 binary
+above. No foreign game was running and none was stopped by this chat.
+
+PR#406 was externally merged at2026-10-30T03:22:28Z into maincc531ea9 while this
+stage was underway. Its merged tree exactly equalsf4297855, and all prior task
+commits are in main. The newa2c132a6 string commit was preserved on the focused
+feature/guest-counted-strings branch; main was safely merged without source/tree
+changes (0ea03555). Only after confirming the new branch retains the unique
+commit was the old local feature/guest-share-access branch safely deleted.
+No remote branch deletion or main merge was performed by this chat. Stage0237 is
+now draft PR#413; the earlier checkpoint's PR#406 reference is historical.
+
+Native runtime bytes are unchanged by branch integration and match the accepted
+build. New PR CI is pending. These results cover minimized synthetic input with
+movies skipped, not physical input/listening/full campaign or native Mac title.
+Overall kernel/runtime/header/fixture/provenance replacement remains incomplete.

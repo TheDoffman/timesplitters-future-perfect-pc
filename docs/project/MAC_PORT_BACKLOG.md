@@ -7775,3 +7775,12 @@ checks passed;25 upgrades/context/backlog checks, bounded Story and new-source C
 pending at this checkpoint. Native Mac title acceptance and remaining legacy
 kernel/runtime replacement remain unfinished; retain Awaiting validation. Contracts
 are in kernel-strings.md and exact evidence in STATUS stage0237.
+
+
+MAC-118 stage0237 Windows follow-up:90 distinct selected local checks and bounded
+Story passed with the07fd92c5 binary; sources/archive/generation/game hashes agree,
+26 protected files unchanged. PR#406 was externally merged into maincc531ea9;
+new string work moved intact to feature/guest-counted-strings, safely integrated
+that byte-identical main tree and opened draft PR#413. CI for the successor PR is
+pending. Native Mac title and remaining runtime replacement remain unfinished;
+retain Awaiting validation. Exact scope/branch provenance are in STATUS stage0237.
