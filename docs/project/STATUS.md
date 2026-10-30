@@ -33120,3 +33120,33 @@ minimized synthetic input/movie-skipped; not physical input, listening, complete
 campaign or native Mac title gameplay. Pool phase acceptance is complete within
 that scope; remaining kernel/runtime/header/fixture/provenance replacement remains
 active and incomplete. No merge into main/publication. MAC-118 Awaiting validation.
+
+
+### Stage0236 original calendar conversion checkpoint (2026-10-30 UTC)
+
+Based onfe45b485, PR#406. That revision's runtime40991362069 and launcher40991362032
+both passed. Remote main remains8b4db323, already safely integrated. Shared original
+guest_time.c and guest_kernel_time.inc replace the304/305 calendar bridges; both
+retain eight guest argument bytes. Native RTL time bodies/prototypes and unused
+POSIX calendar shims are retired. Other kernel_rtl services remain selected.
+The two hosts now share validated Gregorian conversion from1601 rather than the
+old POSIX normalization/pre1970 restriction. See kernel-time.md for exact ranges,
+serialization, mapped-span and zero/preservation rules; clock/timer work remains.
+
+Windows selected calendar/pool/VM/Mm/storage/path suite57passed43.14s, including13
+new calendar cases. Independent Python datetime vectors cover every date in the
+400-year cycle plus3000 seeded dates, with24000 actual Windows API comparisons.
+Ten compiled broken implementations fail at runtime after compiling successfully.
+Release/built-ins/matching crash symbols passed. Native archive selects30 original
+I/O/storage/calendar providers once, eighteen retired exports absent, all22
+generated files unchanged from stage0235 and generation fingerprint current.
+Supported US XBE verified. Exact source/archive/executable inputs recorded in
+ignored logs/time-build.json (dirtyfe45b485 inputs). Executable SHA256:
+36cfac0092c26442b122eac78d9b70ead27872d4f652efe71dbea9e4efb29690.
+
+All26 protected settings/save/fixture hashes, sizes and mtimes unchanged. A separate
+game40428 exited without intervention; only after it was absent did the isolated
+bounded Story runner start. Gameplay and fresh/historical upgrade acceptance are
+still running at this checkpoint; no new gameplay or native Mac title claim yet.
+New-source CI is pending. Windows NT10.0.26300 x64/MSVC14.44. Overall replacement
+and MAC-118 remain incomplete/Awaiting validation. No main merge/publication.

@@ -985,3 +985,5 @@ ABI saves ESI, while the pitch branch uses other registers as scratch. Existing
 zero-pitch ABI expectations remain checked. See [tank controls](mounted-mouse.md).
 
 Stage0235: [original pool imports and native surface retirement](kernel-pool.md).
+
+Stage0236: [original absolute-time codec and guest calendar imports](kernel-time.md).

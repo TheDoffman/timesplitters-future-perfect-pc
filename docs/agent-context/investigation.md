@@ -324,3 +324,6 @@ assertions require original host/storage providers and exclude kernel_path.c.
 
 Stage0235 extends the late compiler tail to37 patches, after0234 before2090;
 upgrades require the original pool include and exclude native kernel_pool.c.
+
+Stage0236 extends the exact late compiler tail to38 patches, after0235 before2090;
+calendar provider/imports replace native RTL time bodies and unused POSIX shims.

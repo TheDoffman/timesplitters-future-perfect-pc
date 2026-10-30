@@ -7741,3 +7741,14 @@ repair is CI-verified. Windows isolated pool Story acceptance now passed after t
 separate game exited; no concurrent session guard was bypassed. Keep overall
 Awaiting validation: native Mac title gameplay and remaining kernel/I/O replacement
 are unfinished. STATUS stage0235 completed acceptance records scope and hashes.
+
+
+MAC-118 stage0236 follow-up (PR#406): original shared Gregorian codec and mapped
+calendar imports304/305 replace native RTL time bodies and unused POSIX shims.
+Both hosts use explicit guest serialization, whole-span validation and shared
+range/failure rules. The previous POSIX normalization/pre1970 discrepancy is
+removed. Windows57 selected contracts and Release/archive/generation checks passed;
+Story/upgrades and new-source CI pending at this checkpoint. Native Mac title
+acceptance remains unverified, and remaining kernel/backend/runtime replacement
+is incomplete. Keep Awaiting validation. Contracts: kernel-time.md; evidence in
+STATUS stage0236. Source commit is recorded in Git history, not yet merged.

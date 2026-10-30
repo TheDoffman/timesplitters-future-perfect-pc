@@ -959,4 +959,4 @@ and SDL adapters consume this helper. Exact mission validation remains separate.
 Tracked tank driver keyboard/mouse policy now shares `pc_tank.h` and the
 1730E0 guest wrapper. See [tank scope and original aim route](mounted-mouse.md).
 
-Stage0235: [original pool imports and native surface retirement](kernel-pool.md).
+Original kernel services: [pool](kernel-pool.md), [calendar](kernel-time.md).
