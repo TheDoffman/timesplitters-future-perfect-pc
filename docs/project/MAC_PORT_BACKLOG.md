@@ -7940,3 +7940,22 @@ passed10Macskipped89.55s, incoming minigun1passed2.60s. Full upgrades, merged-
 binary Story and new CI pending at this checkpoint. Prior numeric-only gameplay
 does not establish the integrated binary or native Mac title. Keep Awaiting
 validation; exact generated-file deltas, hashes and foreign-game hold in STATUS.
+
+MAC-118 merged local acceptance: f809f542/d66f4333 production bytes build1c72cbf4
+passed Windows Scotland movement/fire/pause/resume with fresh reviewed captures
+and matching source/archive/exe/generated/game hashes. Full43 upgrades/context
+passed1080.30s plus149focused/1minigun =193distinct,10Mac-only skipped. Protected26
+and fixture unchanged. Runtime41018884887/new separate launcher41018884908 retry
+are running; prior-source CI is not new-source proof. Native Mac title/physical
+input/listening/full campaign remain unverified. Keep Awaiting validation.
+
+MAC-118 stage0240 exact-source acceptance:f809f542 runtime41018884887 and
+launcher41018884908 passed both native/GPU/upgrade/transition hosts and packages/
+PR gate. Windows2256passed265skip18subtests534.20s+GPU172pass3subtests7.01s;
+Mac2162pass319skip18subtests291.71s+GPU169pass3skip3subtests2.72s. Unchanged
+launcher startup-timeout retry passed without weakened checks. Local193 runtime/
+repository cases plus3startup, Release/audits and integrated Scotland game passed
+on1c72cbf4 with protected26/fixture intact. PR413 externally merged into main
+5e65ebfd; exact source/tree ancestry verified, this chat did not merge it.
+Keep Awaiting validation for remaining runtime replacement and native Mac title
+acceptance; exact scope/counts/hashes/limits in STATUS stage0240 completed record.

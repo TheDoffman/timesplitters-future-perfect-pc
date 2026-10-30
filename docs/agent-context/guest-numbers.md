@@ -86,3 +86,9 @@ upgrades must install the same provider. CI selects the suite on both hosts.
 Production Release/archive/generation, isolated Windows Story, packaging and
 native Mac title checks remain separate. See STATUS for exact measured revision,
 hashes and limits; the larger replacement objective is incomplete.
+
+Acceptance:f809f542 passed both-host runtime41018884887/launcher41018884908,
+Windows Release/current generation/archive and bounded Scotland movement/fire/
+pause/resume on1c72cbf4. An unchanged launcher startup-timeout retry passed.
+PR413 externally merged to main5e65ebfd; see STATUS for exact evidence. Native
+Mac title acceptance and whole-runtime replacement remain unfinished.
