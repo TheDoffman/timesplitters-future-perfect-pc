@@ -2,6 +2,8 @@
 
 <a name="timesplitters-future-perfect"></a>
 
+# TimeSplitters: Future Perfect
+
 Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer (Windows)
 
 <p>
