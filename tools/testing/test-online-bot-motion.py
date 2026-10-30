@@ -104,6 +104,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--tag', required=True)
     parser.add_argument('--mac-host', help='SSH alias for a native Mac guest')
+    parser.add_argument('--mac-role', choices=('host','guest'), default='guest')
     parser.add_argument('--mac-root', help='Absolute checkout path on that Mac')
     parser.add_argument('--lan-address', help='Reachable Windows IPv4 for the Mac peer')
     parser.add_argument('--seconds', type=int, default=60)
@@ -168,8 +169,9 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     automation = ROOT/'private/network-validation'/args.tag
     automation.mkdir(parents=True, exist_ok=True)
+    mac_peer=0 if args.mac_role=='host' else 1
     address = args.lan_address if args.mac_host else '127.0.0.1'
-    server = Server((address, 0), Directory(public_address=address))
+    server = Server((address, 0), Directory(public_address=None if args.mac_host else address))
     fingerprint=''
     if args.mac_host:
         import ssl
@@ -196,7 +198,7 @@ def main():
     completed=False
     started = time.monotonic()
     def read(peer, address, size):
-        if peer==1 and remote is not None:
+        if peer==mac_peer and remote is not None:
             return remote.read(address,size)
         data = C.create_string_buffer(size)
         if peer not in offsets:
@@ -232,7 +234,9 @@ def main():
             rows.append(row);node=word(peer,node+4)
         return dict(address=menu,selected=word(peer,menu+0x18c),rows=rows)
     def observe():
-        if remote is not None:remote.pages.clear()
+        if remote is not None:
+            try:remote.refresh()
+            except OSError:remote.pages.clear()
         for peer in range(len(handles)):
             try:
                 network = word(peer, 0x76b1a4)
@@ -264,7 +268,7 @@ def main():
             observe()
             time.sleep(.008)
     def set_input(peer,text):
-        if peer==1 and remote is not None:remote.call('input',text=text)
+        if peer==mac_peer and remote is not None:remote.call('input',text=text)
         else:atomic(inputs[peer],text)
     def key(peer, *keys, hold=.18):
         for value in keys:
@@ -310,7 +314,7 @@ def main():
                     score_limit=word(peer,0x7de464),
                     active_config=config.hex(),pending_config=read(peer,0x78ad58,0xa0).hex(),
                     actor_counts=[word(peer,0x790950),word(peer,0x7a2958)],actors=actors))
-                if label in ('options-settings-initial','short-match-settings','options-settings'):
+                if label in ('options-settings-initial','short-match-settings','options-settings','options-tab','rematch-timeout'):
                     try:
                         states[-1]['menu']=menu_state(peer)
                     except OSError as error:
@@ -327,9 +331,9 @@ def main():
         # Online browser. Capture only running frontend/gameplay boundaries.
         if not args.no_captures and label in ('frontend','no-online-lobby','match','results','post-results',
                                               'scores-tab','options-tab','rematch','rematch-results','finished',
-                                              'options-root','options-mode','options-settings','options-settings-initial','short-match-settings'):
+                                              'options-root','options-mode','options-settings','options-settings-initial','short-match-settings','rematch-timeout'):
             for peer, child in enumerate(children):
-                if peer==1 and remote is not None:
+                if peer==mac_peer and remote is not None:
                     remote.call('capture',label=label)
                     continue
                 worker=threading.Thread(target=capture,args=(child.pid,out/f'{label}-{peer}.png'),daemon=True)
@@ -374,11 +378,11 @@ def main():
 
     try:
         for peer in range(2):
-            if peer==1 and args.mac_host:
+            if peer==mac_peer and args.mac_host:
                 from crossplay_peer import RemotePeer
                 remote=RemotePeer(args.mac_host,args.mac_root,out/'mac-controller.err')
-                remote_provenance=remote.call('start',tag=args.tag,compatibility=identity['compatibility'],
-                    command=dict(action='join',directory=url,fingerprint=fingerprint,port=host_port,automatic_host=False,
+                remote_provenance=remote.call('start',tag=args.tag,peer=peer,compatibility=identity['compatibility'],
+                    command=dict(action='host' if peer==0 else 'join',directory=url,fingerprint=fingerprint,port=host_port,automatic_host=False,
                                  detect_public_address=False))
                 remote.pid=remote_provenance['pid']
                 children.append(remote);handles.append(None);inputs.append(None)
@@ -433,7 +437,7 @@ def main():
             raise RuntimeError('Online browser did not create a lobby')
         command = automation/'1.json'
         command.write_text(json.dumps(dict(action='join', directory=url, fingerprint=fingerprint, code=codes[0])))
-        if remote is not None:remote.call('command',command=json.loads(command.read_text()))
+        if remote is not None and mac_peer==1:remote.call('command',command=json.loads(command.read_text()))
         key(1, 69)
         wait(8)
         report('online-browsers')
@@ -521,7 +525,8 @@ def main():
                 # Reviewed Options: guest defaults to Rematch; host has Change
                 # Game Type above it. Let the guest request before the host.
                 key(1,69)
-                key(0,40,69)
+                key(0,40,hold=.35)
+                key(0,69,hold=.35)
                 deadline=time.monotonic()+30
                 while time.monotonic()<deadline:
                     if all(word(peer,0x76b1a4)==15 and word(peer,0x7de30c)==7 and
@@ -548,6 +553,9 @@ def main():
                    for peer in (0,1)), 'No paired bot gameplay'
         completed=True
     finally:
+        (out/'observations.json').write_text(json.dumps(samples))
+        (out/'checkpoints.json').write_text(json.dumps(checkpoints, indent=2))
+        (out/'menu-inputs.json').write_text(json.dumps(menu_inputs, indent=2))
         exit_codes=[child.poll() for child in children]
         for p in children:
             if p.poll() is None:
@@ -566,9 +574,6 @@ def main():
             (run/'run.lock').unlink(missing_ok=True)
             recycle_disks(ROOT, run)
         server.shutdown(); server.server_close(); thread.join()
-        (out/'observations.json').write_text(json.dumps(samples))
-        (out/'checkpoints.json').write_text(json.dumps(checkpoints, indent=2))
-        (out/'menu-inputs.json').write_text(json.dumps(menu_inputs, indent=2))
         (out/'provenance.json').write_text(json.dumps(dict(
             executable_sha256=hashlib.sha256(exe.read_bytes()).hexdigest(),
             runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),

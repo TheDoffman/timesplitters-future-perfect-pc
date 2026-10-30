@@ -109,3 +109,8 @@ The physical-peer runner uses a temporary pinned TLS certificate for its LAN
 directory and places both automation commands under network-validation. The
 shared testing-profile disk recycler uses native Trash on Mac, retaining the
 same resolved six-partition boundary as Windows. No personal save is recycled.
+
+`--mac-role host` reverses the host/guest assignment without changing the shared
+scenario. Native observations are batched locally into read-only pages to avoid
+per-field SSH delays. Menu snapshots/captures distinguish input failures from
+protocol failures, and match evidence is saved before disposable-disk cleanup.

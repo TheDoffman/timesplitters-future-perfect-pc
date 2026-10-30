@@ -56,6 +56,10 @@ class RemotePeer:
             size -= chunk
         return bytes(result)
 
+    def refresh(self):
+        reply=self.call('snapshot')
+        self.pages={int(address):base64.b64decode(data) for address,data in reply['pages'].items()}
+
     def poll(self):
         if self.transport.poll() is not None:
             return self.transport.returncode or 1
@@ -100,6 +104,7 @@ def serve():
     workers = []
     socket_dir = tempfile.TemporaryDirectory(prefix='tsfp-read-')
     started = 0
+    peer_index=1
     def stop():
         nonlocal child
         if child and child.poll() is None:
@@ -138,7 +143,9 @@ def serve():
                     if not re.fullmatch('[A-Za-z0-9-]+', tag):raise ValueError('Invalid test tag')
                     xbe = ROOT/'private/game/default.xbe'
                     if hashlib.sha256(xbe.read_bytes()).hexdigest()!=XBE_SHA256:raise ValueError('Unsupported XBE')
-                    run = ROOT/'private/test-saves'/('online-bots-'+tag)/'1'
+                    peer_index=int(request.get('peer',1))
+                    if peer_index not in (0,1):raise ValueError('Invalid peer')
+                    run = ROOT/'private/test-saves'/('online-bots-'+tag)/str(peer_index)
                     env = prepare_run(ROOT, run)
                     (run/'run.lock').write_text(str(os.getpid()))
                     out = ROOT/'logs'/('online-bots-'+tag)
@@ -165,7 +172,7 @@ def serve():
                         RECOMP_WINDOW_BACKGROUND='1',RECOMP_VK_VALIDATION='1',
                         RECOMP_TRACE_BUDGET='0',RECOMP_HLE_D3D8_DUMP=str(captures/'frame'),
                         RECOMP_HLE_D3D8_DUMP_EVERY='60',RECOMP_HLE_D3D8_DUMP_KEEP_LAST='2',
-                        RECOMP_LOG_FILE=str(out/'1.err'))
+                        RECOMP_LOG_FILE=str(out/(str(peer_index)+'.err')))
                     exe = ROOT/'build/macos/futureperfect_recomp'
                     identity=json.loads((ROOT/'build/macos/generated/network-identity.json').read_text())
                     if identity['compatibility']!=request['compatibility']:raise ValueError('Windows/Mac build identities differ')
@@ -177,7 +184,7 @@ def serve():
                             while chunk:=pipe.read1(65536):
                                 stream.write(chunk[:remaining]);stream.flush();remaining=max(0,remaining-len(chunk))
                     for pipe,suffix in ((child.stdout,'out'),(child.stderr,'err')):
-                        worker=threading.Thread(target=drain,args=(pipe,out/('1.'+suffix)),daemon=True)
+                        worker=threading.Thread(target=drain,args=(pipe,out/(str(peer_index)+'.'+suffix)),daemon=True)
                         worker.start();workers.append(worker)
                     def startup():
                         for at,key in ((5,69),(10,69),(14,40),(18,69)):
@@ -188,18 +195,40 @@ def serve():
                         executable_sha256=hashlib.sha256(exe.read_bytes()).hexdigest(),
                         probe_sha256=hashlib.sha256(probe.read_bytes()).hexdigest(),
                         source_revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip())
-                elif action == 'read':
+                elif action in ('read','snapshot'):
                     if reader is None:
                         reader=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM);reader.settimeout(5)
                         try:reader.connect(read_path)
                         except OSError:
                             reader.close();reader=None;raise
-                    address,size=int(request['address']),int(request['size'])
-                    if not 0<size<=65536 or not 0<=address<=0xffffffff:raise ValueError('Invalid observation range')
-                    reader.sendall(struct.pack('<II',address,size))
-                    status=struct.unpack('<I',receive(reader,4))[0]
-                    if status:raise OSError(f'Unreadable guest memory {address:x}: {status}')
-                    reply={'data':base64.b64encode(receive(reader,size)).decode('ascii')}
+                    def read(address,size):
+                        if not 0<size<=65536 or not 0<=address<=0xffffffff:raise ValueError('Invalid observation range')
+                        reader.sendall(struct.pack('<II',address,size))
+                        status=struct.unpack('<I',receive(reader,4))[0]
+                        if status:raise OSError(f'Unreadable guest memory {address:x}: {status}')
+                        return receive(reader,size)
+                    if action=='read':
+                        reply={'data':base64.b64encode(read(int(request['address']),int(request['size']))).decode('ascii')}
+                    else:
+                        pages={}
+                        def page(address):
+                            base=address&~4095
+                            if base not in pages:pages[base]=read(base,4096)
+                            return pages[base],address-base
+                        def word(address):
+                            data,at=page(address)
+                            return struct.unpack_from('<I',data,at)[0]
+                        for address in (0x76b1a4,0x7de400,0x7356d8,0x6f1188,0x6f0b08,
+                                        0x77728c,0x78ad58,0x790950,0x7a2958):page(address)
+                        count=word(0x7de400)
+                        humans=count&255;bots=(count>>16)&255
+                        pool=word(0x7356d8)
+                        if pool and 0<humans+bots<=16 and word(0x7de30c)==7:
+                            for index in range(humans+bots):
+                                actor=pool+index*0xea0
+                                entity=word(actor)
+                                if entity:page(entity+0x64);page(entity+0x258)
+                        reply={'pages':{str(address):base64.b64encode(data).decode('ascii') for address,data in pages.items()}}
                 elif action == 'input':keys(request['text'])
                 elif action == 'command':command.write_text(json.dumps(request['command']))
                 elif action == 'capture':
@@ -208,7 +237,7 @@ def serve():
                     from PIL import Image
                     files=sorted(captures.glob('frame*.bmp'),key=lambda p:p.stat().st_mtime)
                     if files:
-                        with Image.open(files[-1]) as img:img.save(out/(label+'-1.png'))
+                        with Image.open(files[-1]) as img:img.save(out/(label+f'-{peer_index}.png'))
                 elif action == 'poll':reply={'returncode':child.poll() if child else None}
                 elif action == 'stop':stop()
                 else:raise ValueError('Unknown peer action')
