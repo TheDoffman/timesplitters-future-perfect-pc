@@ -1,5 +1,21 @@
 # Independent runtime replacement
 
+Current kernel work has original providers for [pool allocation](../agent-context/kernel-pool.md),
+[counted strings](../agent-context/kernel-strings.md),
+[critical sections, status and diagnostics](../agent-context/kernel-rtl.md), and
+[narrow guest formatting](../agent-context/guest-printf.md) through patch0239.
+The complete old native RTL module is excluded from the build. Guest exceptions,
+charset conversion, string allocation/freeing and numeric conversions remain,
+along with other kernel, graphics, audio, input, title and fixture work.
+
+Stage0239 has passed the Windows Release build and selected local checks; its
+new binary's isolated gameplay test is pending while another game session is
+running. Exact source, CI, build and gameplay evidence is recorded by stage in
+[STATUS](../project/STATUS.md). Earlier acceptance paragraphs below describe
+those stages, not current whole-project or cross-platform gameplay acceptance.
+The runtime checkout and bundled snapshot are still production dependencies;
+final builds/generation/packaging with both unavailable have not passed yet.
+
 Unused POSIX file-map/query/statistics APIs and their registry are retired in
 patch 0214 after production callers moved to project providers. Native alias
 fixtures retain their assertions through those providers; real Windows APIs

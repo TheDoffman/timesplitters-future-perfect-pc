@@ -33468,3 +33468,46 @@ still builds against the patched runtime checkout/snapshot. Remaining kernel,
 graphics/audio/title/header/fixture/provenance replacement and final unavailable-
 upstream build/generation/package audit remain incomplete. Goal active; no merge
 into main or publication authorized by this checkpoint.
+
+
+### Stage0239 exact-source CI acceptance; gameplay pending
+
+Source ec5958631a51facb448e4d55458bf86f444a65e0 passed runtime41007379485 and
+launcher41007379520, including both historical-upgrade/transition hosts, native
+runtime/GPU hosts, launcher/package validations and PR gate. The first Windows
+native attempt had one15-second sample-pc-live diagnostic timeout with2236passed,
+264skipped and18subtests386.68s; the dependent gates correctly rejected it.
+All six unchanged diagnostic checks passed locally5.81s. An unchanged failed-job
+retry passed Windows2237tests,264skipped,18subtests523.20s, then GPU172passed,
+3subtests6.85s. No code, timeout or assertion was weakened. Mac2144passed,
+317skipped,18subtests273.19s; GPU169passed,3skipped,3subtests2.57s. The new
+formatter contracts and compiled failure controls passed on both native CI hosts;
+only the actual Microsoft x86/WoW64 layout probe is Windows-specific.
+
+Post-main local selected78 passed37.75s and upgrade/context/backlog25 passed
+185.24s:103 distinct cases, with earlier reruns overlapping. Separate launcher33
+plus10subtests and the six diagnostic checks passed. Release/built-in contracts,
+matching symbols, source/archive/generation audit and supported-US XBE passed.
+The source/patch input hashes remain identical to logs/printf-build.json and the
+b92c0c72 executable recorded above;26 protected files retain hash/size/mtime.
+No new game test has run: the user retained the foreign mounted-mouse session,
+which remains running at this checkpoint. It must not be terminated or the
+concurrent-game guard bypassed. Stage0238 gameplay is not stage0239 evidence.
+
+The independence overview now points to current original kernel providers and
+states remaining production snapshot dependencies. Its configured Windows
+ClCompile inventory is an ignored investigative aid, not ownership or link proof:
+30 runtime and6 smoke-test inputs match snapshot bytes,44 runtime inputs differ,
+84 inputs come from project src,19 are generated guest units,263 are separately
+permitted SDL inputs and17 are other build/library inputs. This includes utility
+targets and excludes headers, data and tooling; changed bytes do not establish
+independent implementation, and these counts are not a completion percentage.
+
+No next production replacement stage is integrated before the pending isolated
+gameplay acceptance. Numeric API research observations are private investigation
+only and establish Windows ntdll behavior, not Xbox contracts. Remaining kernel,
+graphics/audio/input/title/header/fixture/provenance work and final builds,
+generation and packages with toolkit checkout/snapshot unavailable remain open.
+Overall goal active/incomplete; native Mac title gameplay remains unverified.
+This documentation follow-up does not change the verified production inputs;
+any new documentation-head workflows are separate from ec595863 acceptance.

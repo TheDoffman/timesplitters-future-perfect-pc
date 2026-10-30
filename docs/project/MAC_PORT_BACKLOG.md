@@ -7833,3 +7833,18 @@ and portable fixtures, skipping only the actual Microsoft x86/WoW64 ABI probe;
 native Mac title acceptance is unverified. Keep Awaiting validation. Contract:
 guest-printf.md; exact hashes/limits in STATUS stage0239. Remaining conversion,
 exception, runtime/header/fixture and unavailable-upstream audit work continues.
+
+
+MAC-118 stage0239 CI acceptance: exact-source ec595863 passed runtime41007379485
+and launcher41007379520, including both native/GPU/upgrade/transition hosts and
+packages/PR gate. Windows2237passed264skipped18subtests523.20s plusGPU172passed
+3subtests6.85s; Mac2144passed317skipped18subtests273.19s plusGPU169passed3skipped
+3subtests2.57s. One Windows live-symbol diagnostic timeout passed on unchanged
+failed-job retry; local unchanged diagnostic6 passed5.81s, no limits/assertions
+weakened. Portable formatter/oracle/compiled failure controls passed both hosts;
+real x86 variadic ABI probe runs on Windows only. Windows103 distinct selected
+local checks, Release/archive/generation passed on b92c0c72. The user retained a
+foreign game session, so new-binary isolated Story acceptance is still pending;
+prior-stage gameplay and hosted native fixtures do not prove this Mac title.
+Keep Awaiting validation; remaining replacements and unavailable-toolkit audit
+continue. Exact evidence/limitations in STATUS stage0239; contract guest-printf.md.

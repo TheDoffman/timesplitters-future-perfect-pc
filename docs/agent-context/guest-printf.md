@@ -40,9 +40,10 @@ the old fixed511-byte clipping. Embedded NUL from %c contributes a stored byte.
 Strings and characters remain narrow even with l, matching the prior runtime
 policy. S/C/Z and other unknown conversions remain literal '%<specifier>' without
 consuming a value (star arguments still consume slots). Unterminated trailing
-percent/length stops at the valid prefix. Pointer formatting remains eight-digit
-lowercase guest hex, optional# prefix; pointer width/precision modifiers consume
-their arguments but do not change that compatibility representation. This is not
+percent/length stops at the valid prefix. Pointer formatting renders the32-bit
+guest value with %08x or %#08x: lowercase hex and minimum field width8, including
+any optional prefix. Pointer width/precision modifiers consume their arguments
+but do not change that compatibility representation. This is not
 a complete MSVCRT wide-string, counted-Z, positional or locale implementation.
 Those absent facilities are not inferred from a passing narrow-format test.
 
