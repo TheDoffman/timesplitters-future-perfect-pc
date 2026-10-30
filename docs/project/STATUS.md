@@ -33172,3 +33172,33 @@ reads under cp1252 (55 passed); the helper omitted explicit UTF-8 for the existi
 bridge's Unicode comments. All six new checker reads now request UTF-8. No runtime
 source, build flags, warnings or game binary changed. Fresh affected-host checks
 are required; the original Windows CI failure is not described as passing.
+
+
+### Stage0236 completed calendar acceptance (2026-10-30 UTC)
+
+Code/checker revision734df44c6dc8cea508bf629a703651cf75f1c6d4 passed both workflows:
+runtime40994285965 and launcher40994285970. Both upgrade hosts, both native hosts,
+Mac/Windows GPU checks, final patch transitions, PR gate and dual-platform launcher
+packaging all succeeded. Windows native2180passed264skipped18subtests (528.83s),
+then GPU172passed3subtests (12.61s). Mac native2088passed316skipped18subtests
+(322.33s), then GPU169passed3skipped3subtests (3.61s). The old4cb Windows upgrade
+failure is repaired, not retried unchanged: all six checker reads explicitly use
+UTF-8. A local real-source cp1252 probe rejects the old helper and accepts the fix.
+
+Local original repository run:39passed/4failed due to that helper (925.19s).
+All four affected fresh/historical upgrade cases then passed194.17s; context/
+backlog21passed10.33s overlaps the original39. Together these are43 distinct
+passing repository checks across runs, plus57 selected native checks =100 distinct
+local checks. No runtime source changed for the encoding repair. Release, archive,
+generation and Windows Story evidence above therefore remain valid for the exact
+36cfac0092c26442b122eac78d9b70ead27872d4f652efe71dbea9e4efb29690 executable.
+Final protected26 and repository context checks passed; source/patch bytes match
+recorded build/game inputs. No lingering owned test processes or foreign-game
+interference. The following acceptance commit changes documentation only; any
+workflow it starts is separate from the verified734df44c workflows above.
+
+Stage0236 is accepted within this scope. Native Mac title gameplay, physical input,
+listening, full campaign, clocks/timer scheduling and remaining legacy kernel/
+runtime/header/fixture/provenance work remain unverified or unfinished. Overall
+goal stays active/incomplete and MAC-118 Awaiting validation. PR#406 remains draft;
+no main merge or publication was performed.

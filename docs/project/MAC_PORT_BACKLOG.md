@@ -7752,3 +7752,14 @@ Story/upgrades and new-source CI pending at this checkpoint. Native Mac title
 acceptance remains unverified, and remaining kernel/backend/runtime replacement
 is incomplete. Keep Awaiting validation. Contracts: kernel-time.md; evidence in
 STATUS stage0236. Source commit is recorded in Git history, not yet merged.
+
+
+MAC-118 stage0236 acceptance: revision734df44c runtime40994285965 and launcher
+40994285970 passed Windows/Mac native, GPU, upgrades, final transitions and launcher
+package checks. The Windows UTF-8 checker repair is verified. Windows Story passed
+with the final runtime bytes (36cfac00 binary);100 distinct local selected checks
+passed across runs,26 protected files unchanged. No Mac adapter work is needed for
+this portable codec; native Mac title acceptance remains unverified. Remaining
+kernel/runtime replacement is incomplete, so retain Awaiting validation. Exact
+counts, source/game provenance and limits are in STATUS stage0236 completed
+acceptance; contracts remain in kernel-time.md. No main merge/publication.

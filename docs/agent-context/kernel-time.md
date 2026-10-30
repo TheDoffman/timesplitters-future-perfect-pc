@@ -54,3 +54,12 @@ Run the maintained test through the repository Python environment, then Release
 and isolated Story validation. Windows archive/export checks and generation
 fingerprint/capture review remain separate acceptance. Native Mac title gameplay
 is not established by portable contracts or public CI. See STATUS for evidence.
+
+
+Acceptance: code/checker734df44c passed runtime40994285965 and launcher40994285970,
+including both native/upgrade/transition hosts, GPU and package checks. Windows
+Story with final runtime bytes passed movement/fire/pause/resume and fresh capture
+review;100 distinct local checks passed across runs. The Windows source-checker
+UTF-8 repair changes tests only. Source/archive/generated/game hashes and26
+protected files agree; exact metrics/limits are in STATUS stage0236 completed
+acceptance. Native Mac title and broader replacement remain unfinished.
