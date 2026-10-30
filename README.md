@@ -1,5 +1,7 @@
 <div align="center">
 
+<a name="timesplitters-future-perfect"></a>
+
 # <img src="docs/assets/readme-banner.svg" alt="TimeSplitters: Future Perfect" width="960">
 
 Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer (Windows)
@@ -33,6 +35,8 @@ Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer (Win
 > [!IMPORTANT]
 > You need your own supported **US Xbox ISO or extracted game data**. Import it through the launcher.
 > Original game files are not included. Neither version needs an emulator.
+
+<a name="start-playing"></a>
 
 ## <img src="docs/assets/icon-play.svg" alt="" width="24" height="24"> Start playing
 
@@ -90,6 +94,8 @@ and audio fidelity remain unverified. See [measured progress](docs/project/STATU
 | **Windows 10/11 x64** | Keyboard and mouse, graphics settings and experimental Online/LAN multiplayer. See the [Windows launcher guide](docs/players/launcher.md), including [startup security prompts](docs/players/launcher.md#windows-security-prompts-at-startup). |
 | **Mac (Apple Silicon)** | Native launcher and game; Intel Macs are unsupported. Save/load remains unverified; movie playback and multiplayer remain unfinished. The app is not notarized, so startup may require the [Mac installation and recovery guidance](docs/players/mac-launcher.md#shared-behavior-and-distribution). See [Mac controls and source builds](docs/players/macos.md) and [remaining Mac work](docs/project/MAC_PORT_BACKLOG.md). |
 
+<a name="pc-features"></a>
+
 ## <img src="docs/assets/icon-settings.svg" alt="" width="24" height="24"> PC features
 
 | Feature | Details |
@@ -125,6 +131,8 @@ When the optional pack is available, use **Game settings → Graphics & resoluti
 → Check texture downloads**, then **Download / update textures**. Enable and save
 **Use enhanced textures (Beta)** to use it on future launches. See the
 [texture guide](docs/textures/textures.md) for availability, coverage and known issues.
+
+<a name="guides--support"></a>
 
 ## <img src="docs/assets/icon-support.svg" alt="" width="24" height="24"> Guides & support
 

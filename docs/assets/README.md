@@ -45,7 +45,9 @@
 - `icon-play.svg`, `icon-settings.svg` and `icon-support.svg`: small section
   markers using the launcher's line-icon style; the settings glyph follows
   `Launcher.xaml`. Heading text remains Markdown with decorative empty image
-  alt text. All new SVGs are self-contained, with opaque backgrounds and
+  alt text. Explicit anchors preserve the original section links because GitHub
+  adds a leading dash to automatically generated slugs for icon-first headings.
+  All new SVGs are self-contained, with opaque backgrounds and
   contrasting foregrounds for both light and dark GitHub pages. They contain
   no scripts, remote resources or embedded raster artwork.
 
