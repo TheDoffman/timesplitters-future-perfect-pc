@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <dirent.h>
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #endif
@@ -58,7 +59,8 @@ static int storage_directory(const char *path,int create)
 
 static int storage_absolute(const char *path)
 {
-    if(!path[0]||strchr(path,'\n')||strchr(path,'\r'))return 0;
+    if(!path[0])return 0;
+    for(const unsigned char *p=(const unsigned char *)path;*p;p++)if(*p<32||*p==127)return 0;
 #ifdef _WIN32
     return (strlen(path)>2&&path[1]==':'&&(path[2]=='/'||path[2]=='\\'))||
            (path[0]=='\\'&&path[1]=='\\');
@@ -256,11 +258,60 @@ int pc_storage_choose(const PcStorageDrive *drive,char *error,size_t capacity)
     if(!storage_profile_router||!storage_profile_router(drive->target)) {
         failure="Could not activate that save folder.";goto failed;
     }
-    if(!storage_write_preference(preference,drive->target)) {
+    int persisted;
+    if(!strcmp(drive->target,storage_default)) {
+#ifdef _WIN32
+        WCHAR pref[4096];persisted=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,preference,-1,pref,4096) && (DeleteFileW(pref)||GetLastError()==ERROR_FILE_NOT_FOUND);
+#else
+        persisted=!unlink(preference)||errno==ENOENT;
+#endif
+    } else persisted=storage_write_preference(preference,drive->target);
+    if(!persisted) {
         storage_profile_router(previous);goto failed;
     }
     pc_storage_set_path(drive->target);
     if(capacity)error[0]=0;return 1;
 failed:
     if(capacity)snprintf(error,capacity,"%s",failure);return 0;
+}
+
+/* Folder choices replace raw volume rows. Existing absolute preferences remain valid. */
+int pc_storage_locations(PcStorageDrive *out,int capacity)
+{
+    if(!out||capacity<3)return 0;
+    storage_drive(&out[0],storage_path,"Current save folder","");
+    snprintf(out[0].target,sizeof out[0].target,"%s",storage_path);out[0].current=1;
+    storage_drive(&out[1],storage_default,"Game folder / Saves","");
+    snprintf(out[1].target,sizeof out[1].target,"%s",storage_default);out[1].current=!strcmp(storage_path,storage_default);
+    memset(&out[2],0,sizeof out[2]);snprintf(out[2].name,sizeof out[2].name,"Choose folder...");
+    return 3;
+}
+static int storage_save_folder(const char *path)
+{
+    char marker[4096];
+    if(snprintf(marker,sizeof marker,"%s/UserData",path)>=(int)sizeof marker)return 0;
+    if(storage_directory(marker,0))return 1;
+#ifdef _WIN32
+    WCHAR pattern[4096];WIN32_FIND_DATAW item;
+    if(snprintf(marker,sizeof marker,"%s/*",path)>=(int)sizeof marker || !MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,marker,-1,pattern,4096))return 0;
+    HANDLE search=FindFirstFileW(pattern,&item);if(search==INVALID_HANDLE_VALUE)return GetLastError()==ERROR_FILE_NOT_FOUND;
+    int empty=1;do{if(wcscmp(item.cFileName,L".")&&wcscmp(item.cFileName,L"..")){empty=0;break;}}while(FindNextFileW(search,&item));FindClose(search);return empty;
+#else
+    DIR *dir=opendir(path);if(!dir)return 0;struct dirent *item;int empty=1;
+    while((item=readdir(dir)))if(strcmp(item->d_name,".")&&strcmp(item->d_name,"..")){empty=0;break;}
+    closedir(dir);return empty;
+#endif
+}
+int pc_storage_folder(const char *path,char *error,size_t capacity)
+{
+    PcStorageDrive folder={0};
+    if(!path||strlen(path)>=sizeof folder.target||!storage_absolute(path)||!storage_directory(path,0)) {
+        snprintf(error,capacity,"Choose an available save folder.");return 0;
+    }
+    /* Picker returns an existing directory; never fabricate a drive-root location. */
+    size_t n=strlen(path);
+    if(n<=1 || (n==3&&path[1]==':')) {snprintf(error,capacity,"Choose a folder, not a drive root.");return 0;}
+    if(!storage_save_folder(path)){snprintf(error,capacity,"Choose an empty folder or existing game saves.");return 0;}
+    snprintf(folder.path,sizeof folder.path,"%s",path);snprintf(folder.target,sizeof folder.target,"%s",path);
+    return pc_storage_choose(&folder,error,capacity);
 }

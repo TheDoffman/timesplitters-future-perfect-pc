@@ -12,7 +12,7 @@
     <Compile Include="../../../tests/launcher/launcher_shared_ui.cs" />
     <Compile Include="../../../tests/launcher/launcher_restart.cs" />
     <Compile Include="../TexturePack.cs;../TextureDownload.cs;../../../tests/launcher/launcher_textures.cs" />
-    <Compile Include="../SaveBackups.cs" />
+    <Compile Include="../SaveBackups.cs;../SaveLocations.cs" />
     <Compile Include="../../../tests/launcher/launcher_saves.cs" />
     <Compile Include="../Ui.cs;../PageTheme.cs;../*Page.cs;../Core.cs;../LauncherPlatform.cs;../ReleaseClient.cs;../ReleaseNews.cs;../ReleaseNotesDocument.cs;../DownloadTransfer.cs;../SelfUpdate.cs;../UpdateRestart.cs;../GameSettings.cs;../DisplayModes.cs;../LauncherVersion.cs;../GameSessions.cs;../CrashReports.cs;../InstallationMaintenance.cs;../DiagnosticIssueDraft.cs;../../release/ImportGame.cs" />
     <EmbeddedResource Include="../../../config/pc-controls.default.json" LogicalName="launcher-controls-default.json" />

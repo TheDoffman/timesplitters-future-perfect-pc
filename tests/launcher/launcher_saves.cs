@@ -25,6 +25,28 @@ public static class SaveBackupChecks
     }
     public static void Run(string parent,Action<string,Action> test)
     {
+        test("custom save locations copy without deleting originals and drive backup/restore",()=>{
+            string root=Path.Combine(parent,"save-locations"),custom=Path.Combine(parent,"custom-saves");Directory.CreateDirectory(root);
+            string original=Saves(root);Put(original,"UserData/45410066/profile","progress");
+            SaveLocations.Choose(root,custom,true,CancellationToken.None);
+            Need(SaveLocations.Resolve(root)==custom,"Selection did not persist");
+            Need(File.ReadAllText(Core.PathIn(original,"UserData/45410066/profile"))=="progress","Copy changed original");
+            var backup=SaveBackups.Create(root,"Manual",null,CancellationToken.None);
+            Put(custom,"UserData/45410066/profile","changed");SaveBackups.Restore(root,backup.Id,null,CancellationToken.None);
+            Need(File.ReadAllText(Core.PathIn(custom,"UserData/45410066/profile"))=="progress","Restore used wrong location");
+            Put(custom,"UserData/45410066/profile","new progress");
+            Reject(()=>SaveBackups.Restore(root,backup.Id,null,CancellationToken.None,i=>{if(i==0)throw new IOException("simulated interrupted custom swap");}));
+            Need(File.ReadAllText(Core.PathIn(custom,"UserData/45410066/profile"))=="new progress","Custom rollback lost progress");
+            SaveBackups.Restore(root,backup.Id,null,CancellationToken.None,i=>{if(i==2)throw new IOException("deferred custom cleanup");});
+            Need(SaveBackups.Recover(root) && File.ReadAllText(Core.PathIn(custom,"UserData/45410066/profile"))=="progress","Custom recovery failed");
+            SaveLocations.Choose(root,original,false,CancellationToken.None);Need(!File.Exists(SaveLocations.Preference(root)),"Default is not portable");
+            Reject(()=>SaveLocations.Choose(root,root,false,CancellationToken.None));
+            Reject(()=>SaveLocations.Choose(root,custom,true,CancellationToken.None));
+            Need(SaveLocations.Resolve(root)==original,"Rejected copy changed preference");
+            Core.Write(SaveLocations.Preference(root),Path.Combine(parent,"missing-save-drive"));
+            Reject(()=>SaveLocations.Resolve(root));
+            SaveLocations.Choose(root,original,false,CancellationToken.None);
+        });
         test("save backups round-trip sparse disks, preserve other data and make restores undoable",()=>{
             string root=Path.Combine(parent,"save-roundtrip");Directory.CreateDirectory(root);Put(root,"BUILD.json","{\"version\":\"v1.0.0\"}");
             Directory.CreateDirectory(Core.PathIn(root,".launcher"));

@@ -1,5 +1,7 @@
 # Build, run and validation map
 
+[Save-folder checks](save-locations.md): storage, picker callback ownership/mutation, and shared launcher copy/restore/UI tests; both launcher builds include SaveLocations.cs.
+
 test_native_timing.py::test_original_minigun_spin runs the complete supported-US callback with controlled audio/model services. It reproduces the old high-FPS failure and checks readiness, release, pause and input guards at 60/120/144/180/240 FPS. Existing CI selects this suite; private-XBE absence skips it. Historical stack fixtures exclude minigun intent until the full native stack is applied. See native-minigun.md.
 
 Launcher release tests cover direct README download targets, alias byte/hash

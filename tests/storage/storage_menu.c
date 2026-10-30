@@ -78,6 +78,16 @@ int main(void)
     assert(!strcmp(storage_path,fixture.target)&&!strcmp(routed,fixture.target));
     assert(pc_storage_resolve_root(path,selected,sizeof selected)==1&&!strcmp(selected,fixture.target));
     route_ok=1;
+    PcStorageDrive locations[3];
+    assert(pc_storage_locations(locations,3)==3);
+    assert(locations[0].current&&!strcmp(locations[0].target,fixture.target));
+    assert(!strcmp(locations[1].target,path)&&!locations[2].target[0]);
+    assert(!pc_storage_folder(path,error,sizeof error)); /* unrelated nonempty folder */
+    assert(!pc_storage_folder("C:/",error,sizeof error));
+    char picked[4096];snprintf(picked,sizeof picked,"%s/picked",path);
+    assert(storage_directory(picked,1));assert(pc_storage_folder(picked,error,sizeof error));
+    assert(!strcmp(routed,picked));
+    assert(pc_storage_choose(&fixture,error,sizeof error));
     /* Preference failure rolls routing back, leaving existing data intact. */
     assert(storage_preference(config,sizeof config));
     HANDLE held=CreateFileA(config,GENERIC_READ,0,NULL,OPEN_EXISTING,0,NULL);
@@ -93,6 +103,10 @@ int main(void)
     assert(pc_storage_resolve_root(path,selected,sizeof selected)==-1);
     assert(storage_write_preference(config,"relative/path"));
     assert(pc_storage_resolve_root(path,selected,sizeof selected)==-1);
+    assert(pc_storage_locations(locations,3)==3);
+    assert(pc_storage_choose(&locations[1],error,sizeof error));
+    assert(pc_storage_resolve_root(path,selected,sizeof selected)==0);
+    assert(!strcmp(storage_path,path));
     pc_storage_set_path("Z:\\nonexistent-storage-test\\missing");
     assert(pc_storage_rewrite("0 Free 0 Total",out,sizeof out));
     assert(!strcmp(out,"Space unavailable"));

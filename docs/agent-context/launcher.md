@@ -1,5 +1,7 @@
 # Launcher internals
 
+Save-folder selection and custom-volume backup/restore now share SaveLocations.cs; see [save locations](save-locations.md). SavesPage exposes native Windows/Mac folder pickers and explicit copy without deleting original saves.
+
 README download buttons now use stable platform ZIP aliases. Launcher publication
 uploads each alias from its verified versioned ZIP, retaining updater names and
 requiring all ten assets before publication. No local alias copies are created.

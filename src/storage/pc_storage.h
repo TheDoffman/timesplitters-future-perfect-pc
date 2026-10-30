@@ -21,12 +21,17 @@ typedef struct PcStorageDrive {
     uint64_t available,total;
     int current,game,known;
 } PcStorageDrive;
+/* Nonblocking host picker: 0 pending, 1 selected, -1 cancelled/failed. */
+int pc_storage_picker_start(void);
+int pc_storage_picker_poll(char *out,size_t capacity);
+int pc_storage_locations(PcStorageDrive *out,int capacity);
+int pc_storage_folder(const char *path,char *error,size_t capacity);
 int pc_storage_drives(PcStorageDrive *out,int capacity);
 int pc_storage_choose(const PcStorageDrive *drive,char *error,size_t capacity);
 /* -1: configured drive is unavailable; 0: default route; 1: explicit route. */
 int pc_storage_resolve_root(const char *fallback,char *out,size_t capacity);
 
-static int pc_storage_blocks(const char **cursor)
+static inline int pc_storage_blocks(const char **cursor)
 {
     const char *p=*cursor;
     if(*p<'0'||*p>'9')return 0;
@@ -36,7 +41,7 @@ static int pc_storage_blocks(const char **cursor)
     return 1;
 }
 
-static int pc_storage_capacity_line(const char *text)
+static inline int pc_storage_capacity_line(const char *text)
 {
     const char *p=text;
     if(!pc_storage_blocks(&p)||strncmp(p," Free ",6))return 0;
@@ -44,7 +49,7 @@ static int pc_storage_capacity_line(const char *text)
     return pc_storage_blocks(&p)&&!strcmp(p," Total");
 }
 
-static void pc_storage_size(uint64_t bytes, char *out, size_t size)
+static inline void pc_storage_size(uint64_t bytes, char *out, size_t size)
 {
     static const char *units[]={"B","KiB","MiB","GiB","TiB","PiB"};
     double value=(double)bytes;
@@ -53,7 +58,7 @@ static void pc_storage_size(uint64_t bytes, char *out, size_t size)
     snprintf(out,size,unit?"%.1f %s":"%.0f %s",value,units[unit]);
 }
 
-static int pc_storage_format(const char *source, const PcStorageInfo *info,
+static inline int pc_storage_format(const char *source, const PcStorageInfo *info,
                              char *out, size_t capacity)
 {
     char result[160],available[32],total[32];

@@ -693,32 +693,11 @@ per-frame callbacks and requires a selectable capture instruction row.
 
 ## Host storage choices in Create Profile
 
-`pc_storage_menu.inc` injects mounted host drive rows at native storage-button
-site 001944C3, directly in Select Storage Device. Rows sort by drive letter on Windows and case-insensitive volume name on Mac;
-Rows show only volume names and drive letters, with no game/save role suffix.
-Native menu sizing is widened before its
-title at 0019440B. Labels are ASCII-safe for the guest font. Windows lists mounted
-drive letters; Mac lists the startup volume and /Volumes mounts. Neither lists
-unmounted partitions. The native 00192770 update and 00191470 icon adapter keep
-host indices away from the console device table. Selection delegates to original
-00192E60 with console index zero, preserving the save/overwrite state machine.
-After a drive change, synchronous 00024EC0/00190F70 enumeration rebuilds the native
-profile list (74F9FC) before duplicate-name validation against the new location.
-
-`pc_storage.inc` supplies actual volume metadata, cached five seconds for original
-storage-text replacements. `pc_storage_routes.inc` validates a writable save
-folder, prepares UserData/45410066 for the native free-space query, and atomically
-saves save-location.txt beside RECOMP_INPUT_CONFIG. Changes immediately redirect
-future UDATA opens through the registered kernel adapter; failed persistence
-rolls that route back. Existing handles, caches and partition devices stay put.
-Startup also honors the preference; profiles are neither moved nor deleted.
-An unavailable configured location fails explicitly instead of silently
-creating a new profile elsewhere. TSFP_SAVE_LOCATION_LOCK protects isolated test
-sessions from changing real drive preferences. Windows resolves junctions and
-volume identities; drive metadata retains executable-volume identity internally.
-The Mac metadata adapter includes unistd.h before calling getattrlist; sys/attr.h
-provides attribute structures but not that function declaration. The production
-pc_prompts.c compile contract checks this include order in Mac CI.
+See [save-folder selection](save-locations.md): shared routing and persistence,
+original guest profile state machine, owner-scoped picker completion, Windows/Mac folder pickers,
+launcher copy/backup/restore and validation. `pc_storage.inc` supplies cached
+volume metadata for original storage-text replacements. Mac includes unistd.h
+before getattrlist; production pc_prompts.c compilation checks this contract.
 
 ## Experimental coupled water operator
 

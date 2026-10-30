@@ -1,3 +1,18 @@
+## Choose save folders (discussion #401) - 2026-10-30
+
+Local feature/401-save-folder-selection adds current/default/custom folders to
+Create Profile and native folder selection in the Windows and Mac launchers.
+Existing preferences remain valid. Optional launcher copy preserves originals;
+backup/restore and Open Saves follow the selected folder. Returning to default
+removes the absolute preference so portable installations can move.
+
+Windows game build and its built-in checks passed; storage/menu regressions
+passed (6), with storage/profile acceptance checks also passing (2). Full Windows
+launcher suite passed, including custom-location copy/restore and shared UI
+contracts (logs/save-folder-launcher.log). No personal saves changed. The user confirmed the corrected picker looks good after live testing. The
+completion callback now leaves another menu owner's pending result untouched;
+Mac UI execution remains pending MAC-124. Preparing PR and main merge at the user's request; this is not a published release.
+
 ## Handheld minigun high-FPS spin - 2026-10-30
 
 Handheld minigun fix on fix/handheld-minigun-native-fps, based on 61aecac5.
