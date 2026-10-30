@@ -910,6 +910,14 @@ into the native title, enables Objective-C in that directory, and defines
 remain host dependencies. Unsupported fixture builds retain original guest calls.
 The patch stack must be applied before generating the shared compatibility identity.
 
+Stage0237: [original counted strings and memory prefixes](kernel-strings.md).
+
+Stage0238: [original critical sections and whole native RTL retirement](kernel-rtl.md).
+
+Stage0239: [original checked narrow guest formatting](guest-printf.md).
+
+Stage0240: [original numeric conversions](guest-numbers.md).
+
 Crash model traversal instrumentation at US guest `0x583E0` is introduced by
 `patches/diagnostics/2140-model-tree-trace.patch`. The manual wrapper preserves
 original execution and records bounded model/node/depth history through the shared

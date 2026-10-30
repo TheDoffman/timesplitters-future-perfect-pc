@@ -998,9 +998,10 @@ The0236 upgrade source checker reads UTF-8 explicitly: Windows cp1252 cannot
 decode existing bridge box-drawing comments. CI4cb4697c found this fixture-only
 error; native calendar source and the accepted game binary do not change.
 
-Native multiplayer builds and portable validation: [guide](multiplayer-ui.md#native-multiplayer-build-and-validation-2026-10-30).
+[Native multiplayer and crossplay validation](multiplayer-ui.md).
 
-Physical crossplay acceptance: [multiplayer runner](multiplayer-ui.md#physical-windowsmac-online-acceptance).
+[Strings](kernel-strings.md), [RTL](kernel-rtl.md), [formatting](guest-printf.md), [numbers](guest-numbers.md).
+
 
 Crash evidence CI now selects `tests/diagnostics/test_guest_capture.py` beside
 existing crash tests on both hosts. It compiles the shared bounded-memory writer

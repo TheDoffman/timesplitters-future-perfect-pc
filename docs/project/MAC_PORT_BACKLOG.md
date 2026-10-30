@@ -7791,6 +7791,115 @@ kernel/runtime replacement is incomplete, so retain Awaiting validation. Exact
 counts, source/game provenance and limits are in STATUS stage0236 completed
 acceptance; contracts remain in kernel-time.md. No main merge/publication.
 
+
+MAC-118 stage0237 follow-up (PR#406): original shared guest_strings provider and
+fourteen import adapters replace counted initialization/compare/copy/append/upper
+and memory-prefix bridge code; six unused native RTL helpers/prototypes retire.
+No new host adapter is needed: byte serialization/resolution policy is common,
+with standard libc toupper/towupper case mapping. Full NT Unicode/OEM case tables
+are not claimed. Windows65 distinct selected checks and Release/archive/generation
+checks passed;25 upgrades/context/backlog checks, bounded Story and new-source CI
+pending at this checkpoint. Native Mac title acceptance and remaining legacy
+kernel/runtime replacement remain unfinished; retain Awaiting validation. Contracts
+are in kernel-strings.md and exact evidence in STATUS stage0237.
+
+
+MAC-118 stage0237 Windows follow-up:90 distinct selected local checks and bounded
+Story passed with the07fd92c5 binary; sources/archive/generation/game hashes agree,
+26 protected files unchanged. PR#406 was externally merged into maincc531ea9;
+new string work moved intact to feature/guest-counted-strings, safely integrated
+that byte-identical main tree and opened draft PR#413. CI for the successor PR is
+pending. Native Mac title and remaining runtime replacement remain unfinished;
+retain Awaiting validation. Exact scope/branch provenance are in STATUS stage0237.
+
+
+MAC-118 stage0237 acceptance:8a846e75 runtime40997984438 and launcher40997984495
+completed success across both native/GPU/upgrade/transition hosts and launcher
+packaging. The separate launcher attempt's CMake-icon timeout passed on unchanged
+failed-job retry; no timeout/assertion weakening. Windows bounded Story, source/
+archive/generation checks and90 distinct selected local checks passed;26 protected
+files unchanged. Portable code needs no new Mac adapter, while native Mac title
+and remaining kernel/runtime replacement remain unfinished. Keep Awaiting
+validation; exact counts, host/build/game provenance and retry evidence are in
+STATUS stage0237 completed acceptance. Draft PR#413 remains unmerged.
+
+
+MAC-118 stage0238 follow-up (PR#413): original shared critical ownership/lifecycle,
+native Windows/pthread recursive adapters, status mapping and bounded diagnostics
+replace eight imports and retire the whole kernel_rtl.c plus twelve native exports.
+Try/enter/leave now share one registry; guest fields remain opaque, APC-region and
+abandoned-owner semantics are not added. Windows124 selected checks and Release/
+archive/generation passed; final26-case rerun overlaps124. Native Mac implementation
+is present but new-source CI/title validation are separate;25 upgrades/context and
+bounded Story are running. Keep Awaiting validation because remaining runtime and
+native Mac title acceptance remain unfinished. Contracts: kernel-rtl.md; measured
+scope/provenance in STATUS stage0238. No merge into main/publication by this chat.
+
+
+MAC-118 stage0238 acceptance:46bc2046 runtime41002852446 and launcher41002852486
+passed both native/upgrade/GPU/transition hosts, PR gate and launcher packaging.
+Original native pthread critical integration, aliases/ownership/blocked waiters,
+fatal/status/diagnostic fixtures and compiled controls are CI-verified; this does
+not establish Mac title gameplay. Windows149 distinct selected local checks,
+Release/archive/generation and bounded Story passed with a586004e,26 protected
+files unchanged. Latest maincc531ea9 already belongs to the branch; the requested
+sync needed no content changes. Keep Awaiting validation for remaining kernel/
+runtime and native Mac title acceptance. Exact counts, byte provenance and limits
+are in STATUS stage0238 completed acceptance; contracts in kernel-rtl.md.
+
+
+MAC-118 stage0239 follow-up (PR#413): shared original narrow printf engine and
+checked cdecl import adapters replace the remaining guest formatter and raw
+cursor helpers. Portable typed decoding fixes x86 slot alignment/binary64 and
+LP64 guest-long widths; standard libc renders private atoms only. Count/output
+writes are staged and aliases/failure preservation are covered. Windows78
+selected and25 upgrade/context checks passed; post-main Release/built-ins,
+archive/symbol/generation/US XBE audits passed. Post-merge78 rerun also passed37.75s. New CI and stage0239 gameplay
+are pending; the user retained a separate game session. Mac shares this source
+and portable fixtures, skipping only the actual Microsoft x86/WoW64 ABI probe;
+native Mac title acceptance is unverified. Keep Awaiting validation. Contract:
+guest-printf.md; exact hashes/limits in STATUS stage0239. Remaining conversion,
+exception, runtime/header/fixture and unavailable-upstream audit work continues.
+
+
+MAC-118 stage0239 CI acceptance: exact-source ec595863 passed runtime41007379485
+and launcher41007379520, including both native/GPU/upgrade/transition hosts and
+packages/PR gate. Windows2237passed264skipped18subtests523.20s plusGPU172passed
+3subtests6.85s; Mac2144passed317skipped18subtests273.19s plusGPU169passed3skipped
+3subtests2.57s. One Windows live-symbol diagnostic timeout passed on unchanged
+failed-job retry; local unchanged diagnostic6 passed5.81s, no limits/assertions
+weakened. Portable formatter/oracle/compiled failure controls passed both hosts;
+real x86 variadic ABI probe runs on Windows only. Windows103 distinct selected
+local checks, Release/archive/generation passed on b92c0c72. The user retained a
+foreign game session, so new-binary isolated Story acceptance is still pending;
+prior-stage gameplay and hosted native fixtures do not prove this Mac title.
+Keep Awaiting validation; remaining replacements and unavailable-toolkit audit
+continue. Exact evidence/limitations in STATUS stage0239; contract guest-printf.md.
+
+MAC-118 stage0239 Windows Story acceptance:922f9916 latest runtime/launcher CI
+passed (unchanged retry for separate launcher UI timeout). Verified b92c0c72
+source/archive/generated/game bytes, reviewed Scotland start/fire/pause captures,
+movement11.174544/back6.287973/ammo8to6/pause40/resume60/final150.445s under240s.
+Runner26977/controller62673 exit0; fixture/protected26 unchanged. Earlier menu/
+loading attempts were stopped and are not passes. Exact evidence/limits in STATUS.
+Keep Awaiting validation for remaining replacements and native Mac title gameplay.
+
+MAC-118 stage0240 checkpoint: original shared32-bit ANSI/Unicode number parser/
+formatter and checked fixed-frame adapters replace four legacy bodies. No new
+host adapter or native NTDLL dependency; Windows-only6000-request ntdll oracle
+complements portable14000-vector whole-RAM/alias/failure fixtures. Windows95
+selected+25 upgrades passed, Release/archive/generation passed on be1e2509.
+Fresh new-binary Story and new-source CI pending; main f6766c53 integration is
+required before push because PR413 now conflicts. Native Mac title acceptance
+remains unverified. Keep Awaiting validation; exact scope in STATUS stage0240
+and contracts in guest-numbers.md. No publication/main merge.
+
+MAC-118 stage0240 pre-main local gameplay accepted on22677761/be1e2509: Scotland
+movement11.174544/back6.184892/ammo8to6/pause40/resume60/final182.886s, runner78350
+and controller56021 exit0; fresh captures reviewed, protected26/fixture unchanged.
+This precedes main f6766c53 integration and is not merged-source/Mac-title proof.
+Keep Awaiting validation; see STATUS for hashes and staged CI/integration status.
+
 ### MAC-123 - Bounded guest-memory crash evidence and model history
 
 - **Status:** Awaiting validation
@@ -7814,3 +7923,11 @@ MAC-123 CI follow-up: PR418 head78384327 passed both native runtime jobs and
 Windows/Mac launcher jobs. This verifies the selected automated host contracts,
 not actual Mac fatal/overflow process-memory permissions or title gameplay.
 Keep Awaiting validation; patch-upgrade repairs are being rechecked separately.
+
+MAC-118 incoming-main integration: source d66f4333 combines numeric services with
+main f6766c53 diagnostics/allocator observer/minigun work. Merged Release/built-in
+checks and current archive/generator audits passed on1c72cbf4;149 selected tests
+passed10Macskipped89.55s, incoming minigun1passed2.60s. Full upgrades, merged-
+binary Story and new CI pending at this checkpoint. Prior numeric-only gameplay
+does not establish the integrated binary or native Mac title. Keep Awaiting
+validation; exact generated-file deltas, hashes and foreign-game hold in STATUS.
