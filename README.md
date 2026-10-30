@@ -7,11 +7,11 @@
 Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer (Windows)
 
 <p>
-<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest"><img src="docs/assets/download-windows-launcher.svg" alt="Download the latest Windows launcher (x64)" width="280" height="52"></a>
-<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest"><img src="docs/assets/download-mac-launcher.svg" alt="Download the latest Mac launcher (Apple Silicon)" width="280" height="52"></a>
+<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip"><img src="docs/assets/download-windows-launcher.svg" alt="Download the latest Windows launcher (x64)" width="280" height="52"></a>
+<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip"><img src="docs/assets/download-mac-launcher.svg" alt="Download the latest Mac launcher (Apple Silicon)" width="280" height="52"></a>
 </p>
 
-<sub>Both buttons open the latest stable launcher release · Choose your platform's ZIP · Release notes & checksums included</sub>
+<sub>Direct ZIP downloads of the latest stable launcher &middot; <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest">Release notes &amp; checksums</a></sub>
 
 **[Install & play](#start-playing)** · [Launcher guides](#guides--support) · [Multiplayer](docs/players/multiplayer.md) · [Build from source](docs/development/building.md)
 
@@ -44,7 +44,7 @@ Windows and Mac use the same installation steps:
 
 | Step | Installation |
 | :---: | --- |
-| **01** | **[Download the launcher](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest).** On the release page, choose **Download Windows x64** or **Download Mac (Apple Silicon)** for your computer. |
+| **01** | **Download the launcher:** [Windows x64](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip) or [Mac (Apple Silicon)](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip). The download starts directly; you can also use the buttons above. |
 | **02** | **Extract and open.** Extract the whole ZIP to a writable folder. On Windows, open **TimeSplitters Launcher.exe**, keeping `Bin` and `Support` with it. On Mac, open **TimeSplitters Launcher.app**, keeping its `Support` folder beside it. |
 | **03** | **Install the game runtime.** Keep **Update channel → Stable**, then choose **Install release**. The launcher downloads and verifies the latest available game build for your platform. Choose a preview only when opting into testing. |
 | **04** | **Import your game once.** Choose **Locate ISO**, or **Use extracted files** for a folder containing `default.xbe`, `pak` and `xmv`. |

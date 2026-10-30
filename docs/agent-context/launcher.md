@@ -1,5 +1,9 @@
 # Launcher internals
 
+README download buttons now use stable platform ZIP aliases. Launcher publication
+uploads each alias from its verified versioned ZIP, retaining updater names and
+requiring all ten assets before publication. No local alias copies are created.
+
 Windows build/test receipts: [release validation reuse](release-speed.md).
 Launcher CI retains the cache regression in its startup/package test step;
 the step indentation is corrected with the suite scheduling maintenance.
