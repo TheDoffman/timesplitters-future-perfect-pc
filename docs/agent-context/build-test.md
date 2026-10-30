@@ -1028,3 +1028,5 @@ Native crossplay capture rotation regression: `tests/network/test_crossplay_peer
 
 Crossplay lock/recycle guards: `test_crossplay_peer.py`; reused Online interpreter:
 `test_native_mac_tools.py`. See multiplayer-ui.md.
+
+Marker edge/size/anchor tests: test_ui_layout.py.

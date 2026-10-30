@@ -927,3 +927,9 @@ capture adapters. It is diagnostic instrumentation, not a fix for #410. See
 Allocation-history hook details: [crash evidence](crash-evidence.md). The shared
 allocator observer is diagnostic-only; backing allocation ownership and guest
 model suballocation lifetime remain distinct concepts.
+
+Patches2290/2291 scope Assault marker US142D10 and fit its proportional UI around
+the first outline draw's projected midpoint. Shared PcUiWorldAnchor retains that
+anchor for labels and resets at placement boundaries; viewport/scissor share it.
+Both common backends and legacy GL consume the helper. Original world projection,
+visibility and objective logic remain guest-owned (Refs #338).

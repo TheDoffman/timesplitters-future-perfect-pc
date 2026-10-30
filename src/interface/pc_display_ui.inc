@@ -86,6 +86,10 @@ void pc_display_ui(void (*original)(void),uint32_t tag)
     case 0x001334D0u: /* Ammo: fifth argument identifies the right-hand gun. */
         placement=WORD_AT(g_esp+20)==1?4:3;break;
     case 0x00133AB0u: radar_group=1;break;
+    case 0x00142D10u:
+        /* Fit the complete marker around its projected target, not the
+           screen centre. The renderer retains the outline's anchor for text. */
+        placement=2;break;
     case 0x001358A0u: placement=5;break; /* Zoom controls; centre graphic stays centred. */
     case 0x0012E3F0u: /* Arcade RANK and SCORE share one horizontal layout. */
         /* The original compositor moves RANK into SCORE's vacated space.
