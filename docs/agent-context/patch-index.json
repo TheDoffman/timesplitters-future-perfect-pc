@@ -1446,9 +1446,9 @@
     {
       "name": "2290-assault-marker-placement.patch",
       "path": "patches/graphics/interface/2290-assault-marker-placement.patch",
-      "sha256": "e98ee806fd6d6943a4c055fd34f9980dc64a19648e5e11cf798c9d35efcf09bb",
+      "sha256": "eab04046e57c52a87382b7cb3c698819eda716ffa792e81d710c18f35405dbc6",
       "targets": [
-        "titles/futureperfect/src/recomp_manual.c\r"
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     },
     {
