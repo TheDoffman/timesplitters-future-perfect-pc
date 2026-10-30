@@ -1,13 +1,17 @@
 <div align="center">
 
-# TimeSplitters: Future Perfect
+<a name="timesplitters-future-perfect"></a>
 
-Keyboard & Mouse · 4K & ultrawide · Custom controls · Online multiplayer
+# <img src="docs/assets/readme-banner.svg" alt="TimeSplitters: Future Perfect" width="960">
 
+Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer (Windows)
+
+<p>
 <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest"><img src="docs/assets/download-windows-launcher.svg" alt="Download the latest Windows launcher (x64)" width="280" height="52"></a>
 <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest"><img src="docs/assets/download-mac-launcher.svg" alt="Download the latest Mac launcher (Apple Silicon)" width="280" height="52"></a>
+</p>
 
-<sub>Direct ZIP downloads · Automatically follow the latest stable launcher release · <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest">Release notes & checksums</a></sub>
+<sub>Both buttons open the latest stable launcher release · Choose your platform's ZIP · Release notes & checksums included</sub>
 
 **[Install & play](#start-playing)** · [Launcher guides](#guides--support) · [Multiplayer](docs/players/multiplayer.md) · [Build from source](docs/development/building.md)
 
@@ -17,31 +21,26 @@ Keyboard & Mouse · 4K & ultrawide · Custom controls · Online multiplayer
 
 <table>
   <tr>
-    <td width="50%"><a href="docs/assets/gameplay-story1.jpg"><img src="docs/assets/gameplay-story1.jpg" alt="Story gameplay screenshot 1" width="100%"></a></td>
-    <td width="50%"><a href="docs/assets/gameplay-story2.jpg"><img src="docs/assets/gameplay-story2.jpg" alt="Story gameplay screenshot 2" width="100%"></a></td>
+    <td width="50%"><a href="docs/assets/gameplay-story1.jpg"><img src="docs/assets/gameplay-story1.jpg" alt="Dual-wielding weapons on an orange battlefield beneath an exploding aircraft" width="100%"></a></td>
+    <td width="50%"><a href="docs/assets/gameplay-story2.jpg"><img src="docs/assets/gameplay-story2.jpg" alt="Fighting a burning helicopter from a moving train in story mode" width="100%"></a></td>
   </tr>
   <tr>
-    <td width="50%"><a href="docs/assets/gameplay-arcade2.jpg"><img src="docs/assets/gameplay-arcade2.jpg" alt="Arcade gameplay screenshot 2" width="100%"></a></td>
-    <td width="50%"><a href="docs/assets/gameplay-arcade1.jpg"><img src="docs/assets/gameplay-arcade1.jpg" alt="Arcade gameplay screenshot 1" width="100%"></a></td>
+    <td width="50%"><a href="docs/assets/gameplay-arcade2.jpg"><img src="docs/assets/gameplay-arcade2.jpg" alt="Defending a cyan-lit compound alongside robots in an Arcade match" width="100%"></a></td>
+    <td width="50%"><a href="docs/assets/gameplay-arcade1.jpg"><img src="docs/assets/gameplay-arcade1.jpg" alt="Exchanging laser fire across a neon nightclub in an Arcade match" width="100%"></a></td>
   </tr>
 </table>
 
 <p align="center"><sub>In-game screenshots as of v0.3.2</sub></p>
 
-![TimeSplitters launcher v1.4.0 with the blue and silver interface, game updates, settings, Repair / Verify and Saves](docs/assets/launcher-preview.png)
-
-<p align="center"><sub>Launcher v1.4.0 interface preview from the published release source. Game versions and channels shown are sample data; Stable is the default, and previews are opt-in.</sub></p>
-
 > [!IMPORTANT]
 > You need your own supported **US Xbox ISO or extracted game data**. Import it through the launcher.
 > Original game files are not included. Neither version needs an emulator.
 
-## Start playing
+<a name="start-playing"></a>
 
-Use the Windows or Mac download button above to get the latest stable launcher
-ZIP for your computer. Windows and Mac use the same installation steps below. See the
-[latest launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest)
-for release notes and checksums.
+## <img src="docs/assets/icon-play.svg" alt="" width="24" height="24"> Start playing
+
+Windows and Mac use the same installation steps:
 
 | Step | Installation |
 | :---: | --- |
@@ -54,6 +53,16 @@ for release notes and checksums.
 **Next time:** open the launcher and choose **Play Game**. Installed play remains
 available offline. Use **Check updates → Update release** to install a newer game
 build when available. Launcher and game versions are separate.
+
+<details>
+<summary><strong>Launcher preview</strong></summary>
+
+![TimeSplitters launcher v1.4.0 with Stable selected, Play Game, updates and settings](docs/assets/launcher-preview.png)
+
+Launcher v1.4.0 interface preview with illustrative installation data.
+**Stable** is selected, matching the setup instructions above.
+
+</details>
 
 <details>
 <summary><strong>System requirements, channels and keeping your saves</strong></summary>
@@ -75,40 +84,19 @@ includes .NET and does not need CrossOver or the .NET SDK.
 
 </details>
 
-### Windows
+### Platform status
 
-If Windows interrupts launcher startup, use **Retry**, **Open launcher folder**
-or **View logs**. See the
-[Windows security prompt guidance](docs/players/launcher.md#windows-security-prompts-at-startup)
-and [Windows launcher guide](docs/players/launcher.md).
+This is an experimental port. Full campaign completion and complete rendering
+and audio fidelity remain unverified. See [measured progress](docs/project/STATUS.md).
 
-### Mac (Apple Silicon)
+| Platform | Support and known limits |
+| --- | --- |
+| **Windows 10/11 x64** | Keyboard and mouse, graphics settings and experimental Online/LAN multiplayer. See the [Windows launcher guide](docs/players/launcher.md), including [startup security prompts](docs/players/launcher.md#windows-security-prompts-at-startup). |
+| **Mac (Apple Silicon)** | Native launcher and game; Intel Macs are unsupported. Save/load remains unverified; movie playback and multiplayer remain unfinished. The app is not notarized, so startup may require the [Mac installation and recovery guidance](docs/players/mac-launcher.md#shared-behavior-and-distribution). See [Mac controls and source builds](docs/players/macos.md) and [remaining Mac work](docs/project/MAC_PORT_BACKLOG.md). |
 
-The native Mac launcher downloads and installs Mac game builds using the shared
-steps above. Intel Macs are not supported. For development checkouts, follow the
-[Mac source-build guide](docs/players/macos.md); release installation and self-updates
-are disabled there to preserve source and local builds.
+<a name="pc-features"></a>
 
-If the release launcher reports a read-only `AppTranslocation` path, follow the
-[Mac launcher folder recovery instructions](docs/players/mac-launcher.md#shared-behavior-and-distribution).
-Keep the `.app` and `Support` folder together.
-The app currently uses ad-hoc signing; Developer ID
-signing, notarization and clean-machine installation remain pending.
-Mac launcher v1.2.19 has a reported damaged-app rejection and an unsealed app
-bundle; see [the signing correction and one-time migration](docs/release/launcher-releases.md#mac-application-signing-and-the-v1219-migration)
-for the fix status and remaining Gatekeeper limitations.
-
-**Controls:** click inside gameplay to capture the mouse, use **WASD** to move,
-and **Escape** to pause and release it. **F2** opens keyboard, mouse and graphics
-settings; **F11** toggles fullscreen. Use **Fn** with function keys if macOS
-reserves them. See the [full Mac controls](docs/players/macos.md) and
-[native launcher guide](docs/players/mac-launcher.md).
-
-**Current Mac status:** Full campaign completion, save/load and complete rendering/audio fidelity remain
-unverified. Movie playback and native multiplayer remain unfinished.
-[Track remaining Mac work →](docs/project/MAC_PORT_BACKLOG.md)
-
-## PC features
+## <img src="docs/assets/icon-settings.svg" alt="" width="24" height="24"> PC features
 
 | Feature | Details |
 | --- | --- |
@@ -116,16 +104,12 @@ unverified. Movie playback and native multiplayer remain unfinished.
 | **Widescreen** | 1080p, 1440p, 4K and ultrawide support, with adjustable field of view. |
 | **High frame rate** | Original 60 FPS by default; compatible game builds offer opt-in [120/180/240 FPS beta settings](docs/analysis/native-high-refresh.md). |
 | **Launcher** | Game installation, updates, repair, rollback and settings. |
-| **Online Multiplayer** | Player-hosted Online and LAN matches with Bot support. (Windows only) |
+| **Online multiplayer** | Player-hosted Online and LAN matches with bot support. Windows only. |
 | **Extras** | Optional [Discord Rich Presence](docs/players/discord-presence.md), FPS overlays and local crash diagnostics. |
 
 Availability depends on your platform and installed game version. Check the
-launcher's **Release notes**, [Mac status](#mac-apple-silicon) and
+launcher's **Release notes**, [platform status](#platform-status) and
 [measured progress](docs/project/STATUS.md) for support and known limits.
-
-Development source also enables continuous water updates with the high-refresh
-beta presets on the common renderer. **60 FPS (Original)** remains the recovery
-option; full-game and native Mac high-refresh validation remain incomplete.
 
 ## Multiplayer
 
@@ -148,11 +132,9 @@ When the optional pack is available, use **Game settings → Graphics & resoluti
 **Use enhanced textures (Beta)** to use it on future launches. See the
 [texture guide](docs/textures/textures.md) for availability, coverage and known issues.
 
-This is an experimental port. Full campaign completion and complete rendering
-and audio fidelity remain unverified. See [measured progress](docs/project/STATUS.md) and the
-[Mac backlog](docs/project/MAC_PORT_BACKLOG.md) for validation and remaining work.
+<a name="guides--support"></a>
 
-## Guides & support
+## <img src="docs/assets/icon-support.svg" alt="" width="24" height="24"> Guides & support
 
 [All documentation](docs/README.md) · [Repository layout and naming](docs/development/repository-layout.md)
 

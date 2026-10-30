@@ -1,3 +1,23 @@
+## README presentation cleanup - 2026-10-30
+
+The follow-up adds a launcher-styled SVG banner, flat download buttons and
+three decorative section icons. All six SVGs parse as self-contained XML;
+local references pass. Live GitHub inspection caught icon-first headings adding
+a leading dash to automatic slugs; explicit anchors retain the original links.
+The assets were rendered with the bundled Sharp renderer and visually inspected,
+and the live GitHub layout was reviewed at desktop and 390-pixel mobile widths.
+The Install & play link was clicked and confirmed to reach its section after
+the explicit-anchor repair. Existing launcher monogram
+outlines and theme colors are reused; runtime and launcher source are unchanged.
+
+Documentation update based on `cc531ea9`, checked on Windows x64. All 53 local
+README file/section references resolve, and `git diff --check` passes. The
+v1.4.0 launcher preview was rendered with Windows PowerShell 5.1 and WPF from
+the hash-verified existing build, with Stable selected and isolated sample data.
+The 1152 x 772 output was visually inspected; provenance and the reproducible
+capture command are in `docs/assets/README.md`. No runtime code changed, and no
+game rebuild or gameplay test was needed. Existing v0.3.2 gameplay captures remain.
+
 ## Tank driver controls and steering feedback (#385) - 2026-10-29
 
 The first Machine Wars live snapshot established local driver seat 0, tracked
