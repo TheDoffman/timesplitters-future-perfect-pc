@@ -33698,3 +33698,70 @@ concurrency guard bypassed. User instructed letting the other test finish; no
 permission to message its task was granted. Pre-main numeric and formatter
 gameplay above remain valid for their own binaries only. New source CI will
 start on push; no main merge, publication or whole-replacement claim.
+
+
+Stage0240 integrated local acceptance: source f809f54280df9d85785ed789510440e2471f3dc0
+contains the same production bytes as clean merged d66f4333 in the recorded
+1c72cbf4 build. Full43 historical upgrade/context/backlog checks passed1080.30s;
+149 focused runtime/allocator/crash/patch-tracking passed89.55s (10Mac-only skips),
+plus incoming minigun1passed2.60s =193 distinct local runtime/repository cases.
+Three separate startup-preference checks passed1.27s. Earlier95/25/17 runs overlap
+these checks; do not add them to this distinct count.
+
+Runner97865/controller15733 both exited0 on the integrated binary. Reviewed
+main-menu capture before publishing the Scotland route; initialized scene4/
+mission1/ammo8/no-suppression then forward11.174537/back6.184892/ammo8to6,40
+frozen pause/60 advancing resume samples,last126.671s within240s cap. Three fresh
+start/fire/pause captures were reviewed and retained in logs/numbers-main-captures.
+Profile signatures/fixture valid, no lock/dump/partition images, all26 protected
+file hashes/sizes/mtimes unchanged. Source/archive/executable/generated/game
+hashes agree. This is minimized synthetic Original60/movie-skipped Windows
+coverage, not physical input/listening/full-campaign/Mac-title/performance proof.
+
+Pushed f809f542 to PR413; it is open/ready/unmerged and mergeable with mainf6766c53
+as freshly checked. New runtime41018884887 is running; embedded both launchers/
+packages passed. Separate launcher41018884908 first attempt had a20-second
+PowerShell startup-preference timeout, with12 other tests/2subtests passed. All
+three unchanged startup checks passed locally; failed jobs were retried unchanged,
+without increasing limits or removing assertions. Its retry is still running at
+this checkpoint. These new-source CI results remain separate from the previously
+accepted922f9916 workflows. Overall replacement remains incomplete.
+
+
+### Stage0240 completed source and local acceptance
+
+Exact source f809f54280df9d85785ed789510440e2471f3dc0 passed runtime41018884887
+and launcher41018884908, including both upgrade/transition/native/GPU hosts,
+launcher packages and PR gate. Windows2256passed265skipped18subtests534.20s;
+GPU172passed3subtests7.01s. Mac2162passed319skipped18subtests291.71s;
+GPU169passed3skipped3subtests2.72s. The17 Windows/16 portable-Mac numeric cases
+passed, with only the Windows ntdll oracle skipped on Mac. The separate launcher
+startup timeout passed on unchanged failed-job retry; no code, limits or assertions
+were weakened. Embedded launcher jobs/packages passed on their original attempt.
+
+Local193 distinct runtime/repository checks, three startup-preference checks,
+Release/built-ins/matching symbols, selection/archive/generation audits and bounded
+integrated Scotland gameplay passed as detailed above. The accepted executable
+remains1c72cbf4f996ac95ebd9b40df3aed37dfd443af5127f47055a8c11e0809e49e9.
+Source/patch/archive/generated/game hashes agree;26 protected files and canonical
+fixture remain unchanged. All owned test handles are terminal. No new runtime
+changes or game rerun are needed for this documentation-only acceptance record.
+
+PR#413 was externally merged2026-10-30T07:25:51Z into main at
+5e65ebfd11af8816e78a978204539a02db0c5067. This chat did not merge it. Fresh fetch
+proved f809f542 is its ancestor and both tracked trees are identical. Acceptance
+notes were preserved byte-for-byte on docs/numeric-stage-acceptance, based on
+that main; the fully merged local feature branch was then safely deleted with
+branch-d. Remote branches, saves, settings and other checkouts were retained.
+
+The four integer/string conversion imports now have original code. Remaining
+arithmetic helpers, exceptions/context, charset/string ownership and other kernel,
+GPU/rendering, audio/movie, input/device, platform/title/build interfaces and
+inherited smoke fixtures still require replacement or ownership audit. Thirty
+runtime and six smoke-test compilation inputs remain byte-identical to the
+snapshot; modified files are not automatically original. This is a lower bound,
+not a percentage or exhaustive component inventory. Standard SDL/FFmpeg/Capstone
+remain permitted. Final generation/build/package with toolkit checkout/snapshot
+unavailable and full provenance/removal/notices acceptance have not passed.
+Overall goal incomplete; native Mac title, physical input/listening, full campaign
+and performance coverage remain unverified. No publication or issue closure.

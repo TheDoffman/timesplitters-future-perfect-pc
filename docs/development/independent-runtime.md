@@ -3,17 +3,37 @@
 Current kernel work has original providers for [pool allocation](../agent-context/kernel-pool.md),
 [counted strings](../agent-context/kernel-strings.md),
 [critical sections, status and diagnostics](../agent-context/kernel-rtl.md), and
-[narrow guest formatting](../agent-context/guest-printf.md) through patch0239.
+[narrow guest formatting](../agent-context/guest-printf.md), and
+[integer/string conversions](../agent-context/guest-numbers.md) through patch0240.
 The complete old native RTL module is excluded from the build. Guest exceptions,
-charset conversion, string allocation/freeing and numeric conversions remain,
+charset conversion, string allocation/freeing and arithmetic helpers remain,
 along with other kernel, graphics, audio, input, title and fixture work.
 
-Stage0239 passed the Windows Release build, selected local checks, both-host CI
-and bounded isolated Scotland movement/fire/pause/resume checks. Exact source, CI, build and gameplay evidence is recorded by stage in
+Stages0239/0240 passed Windows Release builds, local contracts, both-host CI and
+bounded isolated Scotland movement/fire/pause/resume checks. PR413 was externally
+merged into main5e65ebfd. Exact source, CI, build and gameplay evidence is recorded in
 [STATUS](../project/STATUS.md). Earlier acceptance paragraphs below describe
 those stages, not current whole-project or cross-platform gameplay acceptance.
 The runtime checkout and bundled snapshot are still production dependencies;
 final builds/generation/packaging with both unavailable have not passed yet.
+
+## Remaining work
+
+| Area | Remaining replacement or proof |
+| --- | --- |
+| Kernel/runtime | Exceptions/context/unwind, character conversion/string ownership, arithmetic helpers, and inherited parts of file/thread/synchronization/interrupt/crypto services and diagnostics |
+| Graphics | NV2A command/vertex/shader processing, remaining D3D8/HLE/backend and framebuffer/presentation code |
+| Audio/movies | APU/DSP/voices, DirectSound/XAudio2 glue, Xbox ADPCM and remaining XMV demux/decode/player/pump code |
+| Input/devices | Remaining HLE/input models, controller bindings, USB/OHCI and XInput adapters |
+| Integration | Remaining title/platform/runtime interfaces, headers, inherited smoke fixtures, and build/package routing away from the snapshot; audit any inherited network glue |
+| Final independence | Remove inherited code and snapshot/toolkit dependencies, retain permitted libraries, reconcile provenance/notices and prove generation/build/package plus bounded gameplay with old sources unavailable |
+
+The current configured Windows targets still compile30 runtime files and6 smoke
+fixtures byte-identical to the snapshot. They also compile44 modified runtime
+files with snapshot counterparts; modification alone does not establish original
+ownership. These counts include utility targets and exclude headers/data/tooling,
+so they are neither a complete rewrite count nor a completion percentage. SDL,
+FFmpeg, Capstone and permitted host SDKs do not need project-owned replacements.
 
 Unused POSIX file-map/query/statistics APIs and their registry are retired in
 patch 0214 after production callers moved to project providers. Native alias
