@@ -99,3 +99,8 @@ Unix socket, never an external listener or game memory writes. It is a test
 artifact, not linked or packaged into a release. Both peers must have matching
 sealed identities. Observations remain asynchronous; captures and results are
 recorded separately. Full-match evidence is recorded in STATUS after execution.
+
+Compatibility hashing sorts final manifest entries by portable path strings.
+Windows Path ordering folds case while POSIX preserves it; identical file hashes
+previously produced different build IDs. The ordering regression executes both
+path policies and checks an independently assembled canonical digest.

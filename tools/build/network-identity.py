@@ -105,6 +105,9 @@ def identity(root, game, runtime=None):
                 data = path.read_bytes().replace(b'\r\n', b'\n')
                 entries.append(('runtime/' + path.relative_to(runtime).as_posix(), hashlib.sha256(data).hexdigest()))
     entries.extend(game_entries(game))
+    # pathlib sorts Windows paths case-insensitively and POSIX paths by case.
+    # Hash one canonical sequence of portable strings on every host.
+    entries.sort(key=lambda entry: entry[0])
     payload = json.dumps({'protocol': PROTOCOL, 'files': entries}, separators=(',', ':'), sort_keys=True)
     return hashlib.sha256(payload.encode()).digest(), entries
 
