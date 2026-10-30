@@ -33511,3 +33511,77 @@ generation and packages with toolkit checkout/snapshot unavailable remain open.
 Overall goal active/incomplete; native Mac title gameplay remains unverified.
 This documentation follow-up does not change the verified production inputs;
 any new documentation-head workflows are separate from ec595863 acceptance.
+
+
+### Stage0239 isolated Windows Story acceptance (2026-10-30)
+
+Latest documentation source922f9916 passed runtime41009325638 and launcher
+41009325630. The separate launcher first timed out in its shared UI budget;
+113 ordinary launcher regressions passed, while shared UI exceeded its bound.
+Its unchanged failed-job retry passed Windows, native Mac and complete package
+gates; no timeout/assertion/code was weakened. PR#413 remains draft/unmerged.
+
+Formatter binaryb92c0c72 (full hash above), with identical recorded production
+source/patch inputs, passed bounded Windows Scotland gameplay. Runner26977 and
+controller62673 exited0. Reviewed menu/briefing captures confirm Scotland; fresh
+start/fire/pause captures show rendered gameplay, ammo8to6 and pause options.
+Forward11.174544/back6.287973,40 frozen pause samples and60 advancing resume
+samples; final checkpoint150.445s within240s cap. Profile signatures valid and
+fixture preserved; no locks/dumps/partition images remain. Source/archive/exe/
+generated/game hashes agree, and26 protected files retain hashes/sizes/mtimes.
+Windows minimized synthetic replay/movie-skipped checks do not establish physical
+input, listening, full campaign, performance benchmarking or Mac title gameplay.
+
+Earlier stopped attempts are not counted as passes: one checked scene4 before
+loading finished (suppression65535/player uninitialized), one replay entered
+profile creation, and a longer test-key hold selected mission3. The successful
+run used reviewed per-menu checkpoints, short menu-key presses and the original
+scene4/mission1/no-suppression/ammo8 readiness requirements before gameplay.
+A foreign bounded multiplayer test began during those attempts; user instructed
+letting it finish. No foreign process was stopped and no concurrency guard was
+bypassed. Only the successful final run supplies this acceptance.
+
+Next production stage may now replace numeric conversion bridges. The overall
+replacement objective remains incomplete; toolkit checkout/snapshot still needed,
+remaining modules and final unavailable-toolkit build/generation/package audit
+remain open. No merge into main/publication.
+
+
+### Stage0240 original numeric conversion checkpoint
+
+Four original checked numeric conversion providers and fixed-frame adapters now
+replace ordinals267/292/293/309, with unchanged12/16-byte stdcall cleanup.
+Public API contracts and actual ntdll oracles guide unsigned32-bit parsing/
+formatting, modulo overflow, base0 decimal/prefix behavior, terminator footprints
+and semantic error outputs. All pointer records/code units stay guest-width;
+structural/mapping failures preserve output and aliases are checked. No native
+NTDLL is a production dependency. Contracts/limits in guest-numbers.md.
+
+Windows95 selected checks passed51.58s;25 fresh/historical upgrade/context/backlog
+checks passed284.39s. Final17 numeric contracts passed11.53s, overlapping95,
+including14000 full-RAM model vectors,6000 actual ntdll requests, eight compiled
+bad providers/four bad adapters and literal bounds/alias cases. An initial test
+control that read beyond counted Length was not detected by random trailing
+units; an explicit numeric unit immediately beyond Length now rejects it. The
+first binary test fixture needed Windows binary stream mode; neither issue was
+masked or counted as acceptance before its repair.
+
+Release83210 exited0, built-in contracts and matching symbols passed. The archive
+audit selects37 providers once, retains36 retired native-export exclusions and
+keeps22 generated files unchanged from stage0239; supported US XBE verified.
+Ignored logs/numbers-build.json records dirty922f9916 inputs and executable:
+
+be1e25097cb53f3203f609f64131e462935474b5196e3a48b22043bb32e356ad.
+
+The first new-binary replay stopped at profile creation because its fixed route
+expected the main menu. A capture-guided isolated run is in progress at this
+checkpoint; do not infer acceptance from runner shutdown alone. All26 protected
+files retained hashes/sizes/mtimes before it. Latest main advanced to f6766c53
+while this stage was developed; PR#413 is now open/ready, unmerged and conflicting.
+Preserve this stage locally, finish its game evidence, then integrate main
+safely and validate the combined source before pushing. No merge into main.
+
+The larger kernel/graphics/audio/input/title/header/fixture replacement and final
+upstream-unavailable generation/build/package audit remain incomplete. Native
+Mac title gameplay, physical input/listening, full campaign and performance are
+not established by Windows/host contract results. MAC-118 Awaiting validation.

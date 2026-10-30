@@ -8,9 +8,8 @@ The complete old native RTL module is excluded from the build. Guest exceptions,
 charset conversion, string allocation/freeing and numeric conversions remain,
 along with other kernel, graphics, audio, input, title and fixture work.
 
-Stage0239 has passed the Windows Release build and selected local checks; its
-new binary's isolated gameplay test is pending while another game session is
-running. Exact source, CI, build and gameplay evidence is recorded by stage in
+Stage0239 passed the Windows Release build, selected local checks, both-host CI
+and bounded isolated Scotland movement/fire/pause/resume checks. Exact source, CI, build and gameplay evidence is recorded by stage in
 [STATUS](../project/STATUS.md). Earlier acceptance paragraphs below describe
 those stages, not current whole-project or cross-platform gameplay acceptance.
 The runtime checkout and bundled snapshot are still production dependencies;

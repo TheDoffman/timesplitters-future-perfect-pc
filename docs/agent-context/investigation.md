@@ -338,3 +338,6 @@ and removes the separate TryEnter table. Historical checks read UTF-8 explicitly
 Stage0239 extends the exact late compiler tail to41 patches after0238 before2090;
 original printf removes the legacy formatter/cursors/four cdecl wrappers. The
 x86 oracle compiles native Win32 varargs; portable contracts keep both host routes.
+
+Stage0240 numeric conversions follow0239 in the late42 replacement tail; inspect
+[contract and checked frames](guest-numbers.md), not removed bridge bodies.

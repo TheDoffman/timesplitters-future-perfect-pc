@@ -7848,3 +7848,21 @@ foreign game session, so new-binary isolated Story acceptance is still pending;
 prior-stage gameplay and hosted native fixtures do not prove this Mac title.
 Keep Awaiting validation; remaining replacements and unavailable-toolkit audit
 continue. Exact evidence/limitations in STATUS stage0239; contract guest-printf.md.
+
+MAC-118 stage0239 Windows Story acceptance:922f9916 latest runtime/launcher CI
+passed (unchanged retry for separate launcher UI timeout). Verified b92c0c72
+source/archive/generated/game bytes, reviewed Scotland start/fire/pause captures,
+movement11.174544/back6.287973/ammo8to6/pause40/resume60/final150.445s under240s.
+Runner26977/controller62673 exit0; fixture/protected26 unchanged. Earlier menu/
+loading attempts were stopped and are not passes. Exact evidence/limits in STATUS.
+Keep Awaiting validation for remaining replacements and native Mac title gameplay.
+
+MAC-118 stage0240 checkpoint: original shared32-bit ANSI/Unicode number parser/
+formatter and checked fixed-frame adapters replace four legacy bodies. No new
+host adapter or native NTDLL dependency; Windows-only6000-request ntdll oracle
+complements portable14000-vector whole-RAM/alias/failure fixtures. Windows95
+selected+25 upgrades passed, Release/archive/generation passed on be1e2509.
+Fresh new-binary Story and new-source CI pending; main f6766c53 integration is
+required before push because PR413 now conflicts. Native Mac title acceptance
+remains unverified. Keep Awaiting validation; exact scope in STATUS stage0240
+and contracts in guest-numbers.md. No publication/main merge.
