@@ -1,3 +1,26 @@
+## Game 0.4.0 and launcher 1.5.0 release preparation - 2026-10-30
+
+Both requested features are merged into main: native Mac multiplayer (#416,
+46c675a3) and save-folder selection (#420, e2cfe5a6). The release branch starts
+from e2cfe5a6. Game 0.4.0 and launcher 1.5.0 use new minor versions for these
+features; the version change itself introduces no runtime behavior. Latest
+published versions at preparation are game 0.3.6 and launcher 1.4.0.
+
+On Windows 11 x64, 286 focused publisher, launcher-release, native-Mac packaging
+and CI-scope tests passed, with 10 subtests. The Windows launcher 1.5.0 build
+and full launcher checks passed in 35.57 seconds, including selected save-folder
+copy/restore, settings, update/recovery and texture-preservation contracts.
+Repository context and whitespace checks pass. Logs: release-040-focused.log
+and launcher-150-local.log under the release checkout's ignored logs directory.
+
+Both-host CI and production publication remain pending. These checks do not
+establish a fresh game build, gameplay acceptance, physical Mac folder-picker
+interaction or Internet multiplayer acceptance. Existing MAC-013 crossplay
+evidence and MAC-124's remaining manual checks retain their stated scope.
+The launcher workflow requires the version PR on main before publication;
+published release tags/assets must remain immutable. Optional textures and
+personal saves/settings remain preserved.
+
 ## Choose save folders (discussion #401) - 2026-10-30
 
 Local feature/401-save-folder-selection adds current/default/custom folders to
