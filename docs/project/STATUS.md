@@ -1,3 +1,15 @@
+## Both Machine Wars tank encounters accepted (#385) - 2026-10-30
+
+After testing the corrected tank controls, the user explicitly confirmed that
+both the first and second Machine Wars tank encounters work. The vehicle mouse
+and tank driver fix was already merged through PR #412 as `8b4db323`; no further
+input-code change was required for the second encounter. This records user
+playtesting of both encounters, not an independently instrumented shot-alignment
+measurement, complete campaign acceptance, or physical Mac validation.
+
+Documentation-only follow-up: no executable rebuild is required. The earlier
+implementation, automated checks and build records remain below.
+
 ## README direct launcher downloads - 2026-10-30
 
 Based on `76e3bd6e`, validated on Windows x64 with Python 3.12.14. The Windows
