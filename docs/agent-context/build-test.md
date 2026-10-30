@@ -991,3 +991,27 @@ Stage0236: [original absolute-time codec and guest calendar imports](kernel-time
 The0236 upgrade source checker reads UTF-8 explicitly: Windows cp1252 cannot
 decode existing bridge box-drawing comments. CI4cb4697c found this fixture-only
 error; native calendar source and the accepted game binary do not change.
+
+## Native multiplayer build and validation (2026-10-30)
+
+The native builder passes its actual same-host runtime to `network-identity.py
+--runtime` and seals the finished executable. This prevents `--runtime-root`
+builds from omitting the runtime/generated source from compatibility identity.
+`test_native_network.py` compiles the production transport on Windows and Mac;
+its portable fixture checks real UDP, Xbox sockaddr/error translation, invalid
+packets, high host-memory pointers and bridge registration. The extended Windows
+fixture still checks latency, bot/session ownership and lifecycle.
+`test_online_companion.py` opens real Tk windows with isolated content/settings,
+hosts/joins/cancels, and verifies relay shutdown and lobby removal. Shared UI,
+Online, identity and pinned certificate tests now run in both host native suites;
+Windows DWM/HICON checks remain platform-specific.
+
+`bundle_online_macos.py` packages the build host's CPython/Tk, pinned ARM wheels,
+CA trust and native dependency closure, rewrites loader paths, includes notices,
+and signs/checks each binary. It copies the actual framework interpreter rather
+than its respawning launcher, preserving direct-parent supervision. A real Tk/TLS
+probe must pass before packaging succeeds. The package minimum OS includes Python
+and extension libraries. Source development needs Python 3.12 with tkinter and
+`pip install -r requirements-release.txt`. Generate `build/online-icon/multiplayer.png`
+with the shared Windows icon builder and transfer that generated asset for Mac
+packaging, as with launcher artwork. No game-data copy is required.

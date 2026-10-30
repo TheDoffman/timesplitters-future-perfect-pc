@@ -12,7 +12,7 @@ from native_compiler import native_compiler
 ROOT=Path(__file__).resolve().parents[2]
 
 @pytest.mark.parametrize('source_name,native_fallback',[
-    ('network_guest_dispatch.c',False),('network_guest_dispatch.c',True),
+    ('network_guest_dispatch.c',False),('network_guest_dispatch.c',True),('network_guest_dispatch.c','enabled'),
     ('network_bots.c',False),('network_bot_motion.c',False)])
 def test_guest_dispatch_and_fallback(tmp_path,source_name,native_fallback):
     compiler, environment=native_compiler(tmp_path)
@@ -21,11 +21,11 @@ def test_guest_dispatch_and_fallback(tmp_path,source_name,native_fallback):
     source=repo_file(ROOT, 'tests', source_name)
     if msvc:
         command=[compiler,'/nologo','/W4','/Fe:'+str(executable),'/Fo:'+str(tmp_path/'guest.obj')]
-        if native_fallback:command.append('/DTSFP_TEST_NATIVE_FALLBACK')
+        if native_fallback:command.append('/DTSFP_TEST_NATIVE_NETWORK' if native_fallback == 'enabled' else '/DTSFP_TEST_NATIVE_FALLBACK')
         command.append(str(source))
     else:
         command=[compiler,'-std=c11','-Wall','-Wextra']
-        if native_fallback:command.append('-DTSFP_TEST_NATIVE_FALLBACK')
+        if native_fallback:command.append('-DTSFP_TEST_NATIVE_NETWORK' if native_fallback == 'enabled' else '-DTSFP_TEST_NATIVE_FALLBACK')
         command.extend([str(source),'-lm','-o',str(executable)])
     subprocess.run(command,cwd=tmp_path,env=environment,check=True,capture_output=True,text=True)
     result=subprocess.run([str(executable)],env=environment,check=True,capture_output=True,text=True)

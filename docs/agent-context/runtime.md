@@ -898,3 +898,12 @@ the original camera-relative branch. See [scope guards](mounted-mouse.md).
 Stage0235: [original pool imports and native surface retirement](kernel-pool.md).
 
 Stage0236: [original absolute-time codec and guest calendar imports](kernel-time.md).
+
+## Native Online integration (2026-10-30)
+
+`network/2140-native-online.patch` follows the historical 2090 layout migration
+in `patch_records`. It links shared `pc_network.c` and the Cocoa process adapter
+into the native title, enables Objective-C in that directory, and defines
+`TSFP_NATIVE_NETWORK` for the guest dispatch, lobby and bot hooks. SDL3 and Cocoa
+remain host dependencies. Unsupported fixture builds retain original guest calls.
+The patch stack must be applied before generating the shared compatibility identity.

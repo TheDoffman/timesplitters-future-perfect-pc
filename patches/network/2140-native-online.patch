@@ -1,0 +1,19 @@
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -309,3 +309,16 @@
+     set_property(SOURCE "${TSFP_NATIVE_DIR}/../interface/pc_display_menu.c" APPEND PROPERTY
+         COMPILE_DEFINITIONS TSFP_PC_DISCORD)
+ endif()
++
++# Shared multiplayer protocol with native Darwin host adapters.
++if(APPLE AND TSFP_NATIVE_DIR)
++    enable_language(OBJC)
++    target_sources(${PROJECT_NAME} PRIVATE
++        "${TSFP_NATIVE_DIR}/../network/pc_network.c"
++        "${TSFP_NATIVE_DIR}/online_macos.m")
++    target_compile_definitions(${PROJECT_NAME} PRIVATE TSFP_NATIVE_NETWORK
++        TSFP_ONLINE_SOURCE_ROOT="${TSFP_NATIVE_DIR}/../.."
++        TSFP_ONLINE_MANIFEST="${CMAKE_BINARY_DIR}/generated/network-identity.json")
++    target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_BINARY_DIR}/generated")
++    target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3 "-framework Cocoa")
++endif()

@@ -134,9 +134,9 @@ def main():
                if name not in generated.read_text()]
     if missing:
         raise SystemExit('Generated wrappers are stale; regenerate with --generate.')
-    # Shared debug code uses the same content/source identity on both hosts.
-    # This supplies build provenance, not a native multiplayer implementation.
-    run(PYTHON, ROOT / 'tools/build/network-identity.py', '--game', runtime_root / 'private/game', '--output', BUILD / 'generated')
+    # Both hosts derive compatibility from the same source, runtime and content.
+    run(PYTHON, ROOT / 'tools/build/network-identity.py', '--runtime', UPSTREAM,
+        '--game', runtime_root / 'private/game', '--output', BUILD / 'generated')
     command = [CMAKE, '-S', UPSTREAM / 'titles/futureperfect', '-B', BUILD, '-G', 'Ninja',
                f'-DCMAKE_MAKE_PROGRAM={NINJA}', '-DCMAKE_BUILD_TYPE=Debug',
                '-DCMAKE_OSX_ARCHITECTURES=arm64', f'-DTSFP_NATIVE_DIR={ROOT / "src/native"}']
@@ -149,6 +149,8 @@ def main():
     run(*command)
     run(CMAKE, '--build', BUILD, '--target', 'futureperfect_recomp', '--parallel', '4')
     run('file', BUILD / 'futureperfect_recomp')
+    run(PYTHON, ROOT / 'tools/build/network-identity.py', '--output', BUILD / 'generated',
+        '--seal-executable', BUILD / 'futureperfect_recomp')
     run('dsymutil', BUILD / 'futureperfect_recomp', '-o', BUILD / 'futureperfect_recomp.dSYM')
     # Include shared PC source hashes as well as the native adapters.
     sources = sorted(p for p in (ROOT / 'patches').rglob('*.patch')

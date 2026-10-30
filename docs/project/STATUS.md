@@ -33202,3 +33202,40 @@ listening, full campaign, clocks/timer scheduling and remaining legacy kernel/
 runtime/header/fixture/provenance work remain unverified or unfinished. Overall
 goal stays active/incomplete and MAC-118 Awaiting validation. PR#406 remains draft;
 no main merge or publication was performed.
+
+## Native multiplayer (2026-10-30)
+
+Branch `feature/mac-online`, based on main `cc531ea9`; implementation is local,
+not a published release. The Windows primary audio checkout was untouched.
+The isolated Apple Silicon worktree uses the same-host runtime/game cache.
+
+- Shared native transport and Xbox address/error/memory adapters compile on
+  Windows and macOS 27.0.1 ARM64. Windows focused networking/UI tests: 38 passed,
+  1 skipped; Mac: 36 passed, 3 platform-specific skips. Added real browser
+  host/join/cancel checks: 3 passed on each host. Additional Windows package,
+  patch-ledger and CI-scope checks: 122 passed (includes those three browser cases).
+- The actual Mac game executable's `--online-self-test` passed host, join and
+  cancel through `pc_online_connect`, returned to SDL, stopped/reaped the child,
+  and left no directory lobby. These are supervisor checks, not title gameplay.
+- A native C fixture linked to the production transport exchanged a framed
+  payload from the Windows machine to the physical Mac and back over LAN.
+  Both validated the same fixture compatibility ID. This is packet interoperability,
+  not proof of complete game-build compatibility or a played match.
+- Mac game generated from the verified supported US XBE and built natively.
+  A 45-second bounded unlocked-profile boot recorded at least 2,400 guest frames
+  and 2,400 successful Vulkan presents, no native fault, no shader compile failure
+  and no Vulkan validation errors. Saves/settings were isolated and disposable
+  disks cleaned by the normal runner. Full campaign/gameplay acceptance is separate.
+- The 65 MiB relocated Online runtime passed actual Python, Tk 9.1, TLS,
+  certificate generation, CA-store and themed-window checks. Native dependencies
+  have local loader paths and ad-hoc signature verification. It uses CPython 3.12.12,
+  pinned cryptography/cffi/pycparser wheels, and original license/source metadata.
+  Build-host Tk support was added without upgrading its existing Python interpreter.
+- Remaining acceptance: complete native/native and Windows/Mac matches, bot
+  movement/combat/respawns, reconnect/rematch behavior, Internet/router forwarding,
+  and visual Dock review. A complete distributable game release was not published.
+  Source users must build matching Windows/Mac revisions and content; installed
+  older Windows releases will intentionally reject the new compatibility identity.
+
+Local evidence: `logs/mac-online-*.log`; Mac `logs/native-boot-summary.json`,
+`logs/mac-online-adapter.log`, `logs/mac-online-lan.log`, `logs/mac-online-bundle.log`.

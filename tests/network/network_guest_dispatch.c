@@ -9,6 +9,9 @@
 /* Select only the guest adapter after including the host's standard headers. */
 #ifdef TSFP_TEST_NATIVE_FALLBACK
 #undef _WIN32
+#elif defined(TSFP_TEST_NATIVE_NETWORK)
+#undef _WIN32
+#define TSFP_NATIVE_NETWORK 1
 #elif !defined(_WIN32)
 #define _WIN32 1
 #endif
@@ -20,7 +23,7 @@ int g_tsfp_native_timing_active;
 static int originals,enabled;
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x); return 1; } } while(0)
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 static unsigned network_checks;
 int pc_network_enabled(void) { network_checks++; return enabled; }
 int pc_network_latency(double *milliseconds,unsigned *count)
@@ -39,7 +42,7 @@ uint32_t pc_network_call(uint32_t address,const uint32_t *args,ptrdiff_t offset)
    importing native settings-window headers; telemetry is stubbed above. */
 #define TSFP_PC_DEBUG_H
 #include "../src/network/pc_network_guest.inc"
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 static int bot_test_enabled;
 static double bot_time=1.;
 double pc_network_bots_time(void) {return bot_time;}
@@ -47,7 +50,7 @@ static const char *bot_test_getenv(const char *name)
 { return bot_test_enabled && !strcmp(name,"TSFP_NETWORK_BOTS")?"1":NULL; }
 #define getenv bot_test_getenv
 #endif
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 #include "../src/network/pc_network_bots_state.h"
 uint32_t pc_network_bots_revive(unsigned slot);
 void pc_network_bots_entity_refresh(uint32_t entity);
@@ -58,11 +61,11 @@ void pc_network_bots_request_hit(uint32_t context);
 int pc_network_bots_kill_notice(unsigned victim,unsigned killer);
 #endif
 #include "../src/network/pc_network_bots_guest.inc"
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 #undef getenv
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 static unsigned bot_sends,bot_refreshes,bot_shots;
 static unsigned bot_hit_requests,bot_notices;
 static unsigned bot_notice_victim,bot_notice_killer,bot_weapon_poses;
@@ -109,7 +112,7 @@ static int composed_firing(unsigned whole,float delta)
     g_tsfp_native_timing_active=0;
     return 0;
 }
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 static uint8_t broadcast_config[PC_NETWORK_MATCH_BYTES];
 static void original_broadcast(void)
 {
@@ -167,7 +170,7 @@ int main(void)
         }
     }
 #endif
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     {
         /* Offline animation/combat calls must retain the original ABI without
            reading host network settings for every actor or bone update. */
@@ -273,7 +276,7 @@ int main(void)
         bot_test_enabled=0;
     }
 #endif
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     {
         uint8_t *live=(uint8_t *)memory+0x7de400;
         live[0]=2;live[2]=6;memory[0x7356d8/4]=0x1000;
@@ -332,7 +335,7 @@ int main(void)
     g_esp=16;pc_network_bots_guest_active(original);
     CHECK(g_eax==0x11223344u && g_esp==20);
 #endif
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     {
         uint8_t *live=(uint8_t *)memory+0x7de400;
         live[0]=2;live[2]=6;memory[0x7356d8/4]=0x1000;
@@ -361,7 +364,7 @@ int main(void)
     g_esp=16;pc_network_bots_guest_encode(original);CHECK(g_eax==0x11223344u && g_esp==20);
     g_esp=16;pc_network_bots_guest_decode(original);CHECK(g_eax==0x11223344u && g_esp==20);
 #endif
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     {
         uint8_t *live=(uint8_t *)memory+0x7de400;
         uint8_t *actor=(uint8_t *)memory+0x1000+2*0xea0;

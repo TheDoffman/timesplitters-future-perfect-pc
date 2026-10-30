@@ -15,14 +15,16 @@ else:
     def repo_file(root, area, name):
         return _LayoutPath(root) / area / name
 
+import os
+import sys
 from pathlib import Path
 
 TOOLS = Path(__file__).resolve().parent
 PORTABLE = TOOLS.name == 'Online' and TOOLS.parent.name == 'Support'
 ROOT = TOOLS.parents[1] if PORTABLE else _layout_root
-HANDSHAKES = ROOT / ('Logs/Online' if PORTABLE else 'private/online')
+HANDSHAKES = Path(os.environ.get('TSFP_ONLINE_HANDSHAKES', ROOT / ('Logs/Online' if PORTABLE else 'private/online')))
 SETTINGS = ROOT / ('Settings/pc-online.json' if PORTABLE else 'config/pc-online.json')
-MANIFEST = TOOLS / 'network-identity.json' if PORTABLE else ROOT / 'build/windows/generated/network-identity.json'
+MANIFEST = Path(os.environ.get('TSFP_ONLINE_MANIFEST', TOOLS / 'network-identity.json' if PORTABLE else ROOT / ('build/macos/generated/network-identity.json' if sys.platform == 'darwin' else 'build/windows/generated/network-identity.json')))
 
 
 def directory_folder(root):

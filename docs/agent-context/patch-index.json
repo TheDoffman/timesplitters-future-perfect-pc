@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "974cb8082b58f02d2cb504fa8b9d5858937cc6b3d1aa9fd3f47b241e939f1923",
+  "loaderSha256": "e661dc31c0c44d4e317693677e91e2513e444692df66b7d0351bce8a5f8a40bd",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2509,6 +2509,14 @@
         "src/replay/CMakeLists.txt",
         "titles/futureperfect/CMakeLists.txt",
         "tools/xbe_parser/xbe_parser.py"
+      ]
+    },
+    {
+      "name": "2140-native-online.patch",
+      "path": "patches/network/2140-native-online.patch",
+      "sha256": "4b5969a17815e4b753508dd7f76c38b2f4ac86930256daa9f9709c91e4a23640",
+      "targets": [
+        "titles/futureperfect/CMakeLists.txt"
       ]
     }
   ]

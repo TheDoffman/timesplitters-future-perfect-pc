@@ -7,16 +7,14 @@ validation, invitation parsing and persistence remain in that controller. The
 Play online tab separates joining/browsing and hosting; Directory settings holds
 the shared directory URL and fingerprint. The navy/blue interior is independent
 of Windows app light/dark preference, with native colors in high contrast.
-Small viewports scroll and focus traversal reveals offscreen controls. No new
-companion module, package dependency or protocol is introduced. Online remains
-a Windows adapter; native Mac Online support is still deferred.
+Small viewports scroll and focus traversal reveals offscreen controls. The shared protocol is unchanged; Windows and Mac use the same controller.
 
 ## Validation
 
 `tests/network/test_online_theme.py` now exercises the real browser/invitation
 widgets at 100/150/200% Tk scaling, native accessibility theme fallback, action
 callbacks, tab switching, minimum bounds and keyboard focus visibility in a
-short scrolled viewport. It remains in the existing Windows runtime CI suite.
+short scrolled viewport. These checks run in both desktop runtime CI suites.
 Use `python tools/network/online_theme.py` (optionally `--invitation`) for an
 offline preview without game data, saved settings or network operations.
 The companion is already included in bundling and compatibility hashes; source
@@ -56,3 +54,36 @@ invitation popup, including focus-driven scrolling. The real-widget checks cap
 the reported screen size to that runner geometry even on large developer
 monitors and verify that the certificate field and popup Return action can be
 brought into view. The original assertions remain in place.
+
+## Mac hosting and packaging (2026-10-30)
+
+The same browser now runs on Mac. Windows caption/HICON/accessibility calls stay
+behind the platform adapter; Mac uses native window framing and the shared navy
+controls. Tk iconphoto receives the 512px multiplayer PNG generated from the same
+IconBuilder artwork. `online_platform.py` owns process monitoring and native error
+presentation. `online_paths.py` accepts the game's explicit handshake/manifest
+paths, including builds whose runtime lives outside the source checkout.
+
+Mac packages contain Support/Online and Support/Python; their shell entry execs
+the relocated interpreter with local Python/Tcl/Tk/CA paths and no user site or
+PYTHONPATH. `bundle_online_macos.py` checks native loading and real Tk/TLS before
+returning. The shared widget tests run on both hosts; DWM and HICON tests remain
+Windows-only. Native game host/join/cancel supervisor checks and a real two-device
+transport round trip passed; a full mixed-platform match remains a separate check.
+
+## Native multiplayer adapter (2026-10-30)
+
+`src/network/pc_network_platform.h` owns Winsock/BSD sockets, monotonic time,
+locks, entropy, local IPv4 selection and error mapping. `pc_network.c` retains
+one packet/session/bot implementation. The Xbox 16-byte sockaddr has a 16-bit
+family; Darwin's sin_len/family layout is converted explicitly at the boundary.
+Guest error numbers and ioctl/setsockopt constants stay Xbox values. Guest memory
+validation uses the shared Mach/VirtualQuery adapter, including high Mac addresses.
+
+`src/native/online_macos.m` spawns the shared browser directly, monitors its
+handshake, pumps Cocoa while waiting, restores SDL3 mouse state, and stops/reaps
+the relay on disconnect/exit. `--online-self-test` exercises this actual adapter
+using isolated `TSFP_ONLINE_TEST_COMMAND` host/join/cancel commands. Python's
+`online_platform.GameProcess` detects POSIX reparenting or a Windows process
+handle exit. This supersedes the Windows-only network fallback notes above for
+Mac builds defining TSFP_NATIVE_NETWORK; complete bot gameplay remains unverified.

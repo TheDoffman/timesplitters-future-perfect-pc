@@ -122,6 +122,11 @@ def patch_records(paths):
     if layout:
         paths.remove(layout)
         paths.append(layout)
+    # New adapters use the grouped paths and follow the historical layout migration.
+    online = by_name.get('2140-native-online.patch')
+    if online:
+        paths.remove(online)
+        paths.append(online)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate
