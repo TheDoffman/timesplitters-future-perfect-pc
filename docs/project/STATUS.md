@@ -33257,10 +33257,45 @@ commits are in main. The newa2c132a6 string commit was preserved on the focused
 feature/guest-counted-strings branch; main was safely merged without source/tree
 changes (0ea03555). Only after confirming the new branch retains the unique
 commit was the old local feature/guest-share-access branch safely deleted.
-No remote branch deletion or main merge was performed by this chat. Stage0237 is
+No remote branch deletion or merge into main was performed by this chat. Stage0237 is
 now draft PR#413; the earlier checkpoint's PR#406 reference is historical.
 
 Native runtime bytes are unchanged by branch integration and match the accepted
 build. New PR CI is pending. These results cover minimized synthetic input with
 movies skipped, not physical input/listening/full campaign or native Mac title.
 Overall kernel/runtime/header/fixture/provenance replacement remains incomplete.
+
+
+### Stage0237 completed string acceptance (2026-10-30 UTC)
+
+Revision8a846e75641f0bf9cdb93a397f267d7d38218539, draft PR#413, passed runtime
+40997984438 and launcher40997984495. Runtime includes both upgrade/native/GPU
+hosts, final transitions, PR gate and dual-platform launcher packaging. Windows
+native2194passed264skipped18subtests in387.80s, then GPU172passed3subtests in4.30s.
+Mac native2102passed316skipped18subtests in236.75s, then GPU169passed3skipped
+3subtests in2.48s. All14 new string cases passed on each host, including compiled
+fault controls. Portable contracts are separate from native Mac title gameplay.
+
+The separate launcher workflow's first attempt failed only its Windows CMake icon
+fixture configure60s timeout:12passed/1failed/2subtests. The same fixture passed
+inside runtime CI and locally6.12s. Failed jobs were rerun unchanged; Windows retry
+123878628921 passed13tests/2subtests in25.14s, then dependent Mac/package/gate jobs
+passed and the workflow completed success. No source, timeout, warnings or test
+assertions were weakened. The initial failure remains recorded rather than
+relabeled as a first-attempt success.
+
+Local65 selected runtime plus25 upgrade/context/backlog checks =90 distinct
+checks, with the14-case final source rerun overlapping65. The separate icon
+recheck is additional. Release/built-ins/matching symbols, selected source/archive/
+generation audits and fresh Windows Story acceptance remain valid for the exact
+07fd92c5267a3816051815380d022eb1035a16363dff560244789a069ef03e8a binary and
+recorded dirtyf4297855 build inputs (now committed unchanged in the focused PR).
+All26 protected files retain hash/size/mtime; no owned game/test sessions remain.
+The acceptance follow-up changes documentation only; any workflows it starts are
+separate from the verified8a846e75 results above.
+
+Stage0237 is accepted within this scope. Critical sections, status/exception/
+formatting and remaining charset/create/free/numeric services, other legacy
+runtime/header/fixture/provenance work and native Mac title acceptance remain
+unfinished. Overall goal stays active/incomplete, MAC-118 Awaiting validation,
+PR#413 draft/unmerged. This chat performed no merge into main or publication.

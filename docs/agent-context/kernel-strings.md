@@ -79,3 +79,13 @@ Fresh/historical upgrades assert the new provider and native helper retirement.
 Windows Release/archive/generation and isolated Story acceptance are separate
 from these asset-free contracts. Native Mac title gameplay remains unverified.
 See STATUS for measured results; the overall replacement goal is incomplete.
+
+
+Acceptance:8a846e75 runtime40997984438 and launcher40997984495 passed both host
+native/GPU/upgrade/transition and package checks. A separate Windows icon-fixture
+configure timeout passed on unchanged retry; no limits/assertions were weakened.
+Windows Story passed movement/fire/pause/resume with reviewed fresh captures and
+matching07fd92c5 build/game bytes.90 distinct selected local checks passed,26
+protected files unchanged. See STATUS stage0237 completed acceptance for exact
+scope/counts/provenance. PR#413 follows the externally merged#406. Native Mac
+title gameplay and the broader replacement goal remain unfinished.

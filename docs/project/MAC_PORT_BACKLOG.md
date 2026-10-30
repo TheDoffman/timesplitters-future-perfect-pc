@@ -7784,3 +7784,14 @@ new string work moved intact to feature/guest-counted-strings, safely integrated
 that byte-identical main tree and opened draft PR#413. CI for the successor PR is
 pending. Native Mac title and remaining runtime replacement remain unfinished;
 retain Awaiting validation. Exact scope/branch provenance are in STATUS stage0237.
+
+
+MAC-118 stage0237 acceptance:8a846e75 runtime40997984438 and launcher40997984495
+completed success across both native/GPU/upgrade/transition hosts and launcher
+packaging. The separate launcher attempt's CMake-icon timeout passed on unchanged
+failed-job retry; no timeout/assertion weakening. Windows bounded Story, source/
+archive/generation checks and90 distinct selected local checks passed;26 protected
+files unchanged. Portable code needs no new Mac adapter, while native Mac title
+and remaining kernel/runtime replacement remain unfinished. Keep Awaiting
+validation; exact counts, host/build/game provenance and retry evidence are in
+STATUS stage0237 completed acceptance. Draft PR#413 remains unmerged.
