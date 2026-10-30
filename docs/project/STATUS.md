@@ -33244,8 +33244,9 @@ no main merge or publication was performed.
 
 ## Native multiplayer (2026-10-30)
 
-Branch `feature/mac-online`, based on main `cc531ea9`; implementation is local,
-not a published release. The Windows primary audio checkout was untouched.
+Draft PR [#416](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/416),
+branch `feature/mac-online`, based on main `cc531ea9` and updated through
+`d73758d3`. Implementation is pushed for review, not a published release. The Windows primary audio checkout was untouched.
 The isolated Apple Silicon worktree uses the same-host runtime/game cache.
 
 - Shared native transport and Xbox address/error/memory adapters compile on
@@ -33278,3 +33279,11 @@ The isolated Apple Silicon worktree uses the same-host runtime/game cache.
 
 Local evidence: `logs/mac-online-*.log`; Mac `logs/native-boot-summary.json`,
 `logs/mac-online-adapter.log`, `logs/mac-online-lan.log`, `logs/mac-online-bundle.log`.
+
+Follow-up validation: real bundled-interpreter host/join/cancel through the Mac
+game adapter passed, with no orphan lobby or process. Parent-exit detection and
+explicit runtime identity checks passed on both hosts (11 passed, 1 platform skip
+per host). Repository context/backlog checks passed (21 tests); CI scope selection
+passed (81 tests). Earlier patch/context failures identified historical fixture
+subsets and exact-order assertions that needed the new final adapter; corrected
+fixtures are undergoing the recorded recheck. Hosted runtime CI is pending.
