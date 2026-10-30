@@ -16,6 +16,22 @@ peer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(peer)
 
 
+def test_remote_close_requests_shutdown_before_waiting_for_ssh_eof():
+    import io
+    from unittest.mock import Mock
+    remote=object.__new__(peer.RemotePeer)
+    remote.transport=Mock()
+    remote.transport.poll.return_value=None
+    remote.transport.returncode=0
+    remote.log=io.StringIO()
+    events=[]
+    remote.call=lambda action:events.append(action)
+    remote.transport.communicate.side_effect=lambda timeout:events.append(('drain',timeout))
+    remote.close()
+    assert events==['shutdown',('drain',30)]
+    assert remote.log.closed
+
+
 def test_mac_recycles_only_known_disks_and_preserves_profile(tmp_path, monkeypatch):
     import testing_profile
     run=tmp_path/'private/test-saves/peer';saves=run/'saves';saves.mkdir(parents=True)

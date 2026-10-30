@@ -1016,3 +1016,5 @@ patches until upgrading to the full stack. Model instrumentation is inserted
 before a stable function, rather than at EOF, so reversing it preserves local
 trailing edits during historical branch round trips. These are tested in
 `tests/repository/test_patch_updates.py`.
+
+Crossplay startup/shutdown and evidence completion: [Online acceptance](multiplayer-ui.md#physical-windowsmac-online-acceptance).

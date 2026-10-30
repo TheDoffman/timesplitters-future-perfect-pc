@@ -144,3 +144,8 @@ Results Options uses a short Down tap before Rematch; holding it triggers menu
 repeat and can select Leave Match. The runner captures the selected option before
 confirmation. A Windows-only control reproduced that input failure independently
 of Mac networking; it is not evidence of a failed network reset.
+
+The paired runner waits for actual directory registration (bounded 45 seconds),
+including cold-cache content verification. Remote cleanup requests explicit JSON
+shutdown before draining SSH, rather than relying on Windows pipe EOF. Provenance
+is saved before cleanup and marks cleanup completion separately.

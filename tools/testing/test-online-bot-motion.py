@@ -429,9 +429,15 @@ def main():
             key(peer, 40, 40, 40, 69)
         wait(3)
         key(0, 69)  # Online is above System Link.
-        wait(8)
-        with server.directory.lock:
-            codes = list(server.directory.online)
+        # Native startup includes hashing game content before opening Tk.
+        # Wait for the real registered lobby, including on a cold disk cache.
+        deadline=time.monotonic()+45
+        codes=[]
+        while time.monotonic()<deadline:
+            with server.directory.lock:
+                codes = list(server.directory.online)
+            if codes:break
+            wait(.1)
         if not codes:
             report('no-online-lobby')
             raise RuntimeError('Online browser did not create a lobby')
@@ -558,6 +564,23 @@ def main():
         (out/'checkpoints.json').write_text(json.dumps(checkpoints, indent=2))
         (out/'menu-inputs.json').write_text(json.dumps(menu_inputs, indent=2))
         exit_codes=[child.poll() for child in children]
+        provenance=dict(
+            executable_sha256=hashlib.sha256(exe.read_bytes()).hexdigest(),
+            runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            native_fps=[args.host_fps,args.guest_fps], captures=not args.no_captures,
+            require_results=args.require_results,
+            post_results_seconds=args.post_results_seconds,
+            inspect_results_tabs=args.inspect_results_tabs,
+            rematch=args.rematch,
+            require_rematch_results=args.require_rematch_results,
+            inspect_setup=args.inspect_setup,
+            short_match=args.short_match,
+            compatibility=identity['compatibility'], remote=remote_provenance,
+            observation='asynchronous ReadProcessMemory / native read-only probe' if remote else 'asynchronous ReadProcessMemory',
+            pids=[child.pid for child in children], guest_memory_offsets=offsets,
+            completed=completed, exit_codes_before_cleanup=exit_codes,
+            seconds=time.monotonic()-started, samples=len(samples), cleanup_completed=False)
+        (out/'provenance.json').write_text(json.dumps(provenance,indent=2))
         for p in children:
             if p.poll() is None:
                 p.terminate()
@@ -575,22 +598,9 @@ def main():
             (run/'run.lock').unlink(missing_ok=True)
             recycle_disks(ROOT, run)
         server.shutdown(); server.server_close(); thread.join()
-        (out/'provenance.json').write_text(json.dumps(dict(
-            executable_sha256=hashlib.sha256(exe.read_bytes()).hexdigest(),
-            runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-            native_fps=[args.host_fps,args.guest_fps], captures=not args.no_captures,
-            require_results=args.require_results,
-            post_results_seconds=args.post_results_seconds,
-            inspect_results_tabs=args.inspect_results_tabs,
-            rematch=args.rematch,
-            require_rematch_results=args.require_rematch_results,
-            inspect_setup=args.inspect_setup,
-            short_match=args.short_match,
-            compatibility=identity['compatibility'], remote=remote_provenance,
-            observation='asynchronous ReadProcessMemory / native read-only probe' if remote else 'asynchronous ReadProcessMemory',
-            pids=[child.pid for child in children], guest_memory_offsets=offsets,
-            completed=completed, exit_codes_before_cleanup=exit_codes,
-            seconds=time.monotonic()-started, samples=len(samples)), indent=2))
+        provenance['cleanup_completed']=True
+        provenance['seconds']=time.monotonic()-started
+        (out/'provenance.json').write_text(json.dumps(provenance,indent=2))
 
 
 if __name__ == '__main__':

@@ -75,10 +75,16 @@ class RemotePeer:
         return self.call('poll')['returncode']
 
     def close(self):
-        if self.transport.poll() is None:
-            self.transport.stdin.close()
-            self.transport.wait(timeout=15)
-        self.log.close()
+        try:
+            if self.transport.poll() is None:
+                # Do not depend on SSH forwarding a Windows pipe EOF while its
+                # remote command is still waiting for the next JSON request.
+                self.call('shutdown')
+                self.transport.communicate(timeout=30)
+            if self.transport.returncode:
+                raise RuntimeError('Mac peer cleanup failed; inspect its log')
+        finally:
+            self.log.close()
 
 
 def receive(sock, count):
@@ -240,6 +246,9 @@ def serve():
                         with Image.open(files[-1]) as img:img.save(out/(label+f'-{peer_index}.png'))
                 elif action == 'poll':reply={'returncode':child.poll() if child else None}
                 elif action == 'stop':stop()
+                elif action == 'shutdown':
+                    print(json.dumps(reply),flush=True)
+                    break
                 else:raise ValueError('Unknown peer action')
                 print(json.dumps(reply),flush=True)
             except Exception as error:
