@@ -1438,9 +1438,9 @@
     {
       "name": "2140-model-tree-trace.patch",
       "path": "patches/diagnostics/2140-model-tree-trace.patch",
-      "sha256": "48a261adce354fca5e20bac3c3f8b453922c30d21e74b74ff8470256f701d935",
+      "sha256": "68660fa0baa63578011a400f994ed801acb00a0ef5472790b21d2346c3c6a550",
       "targets": [
-        "titles/futureperfect/src/recomp_manual.c\r"
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     },
     {
