@@ -314,6 +314,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-120 | Enhanced Audio beta | Awaiting validation |
 | MAC-121 | High-FPS interaction input (#357) | Awaiting validation |
 | MAC-122 | Temporary material matrix cache epoch (#398) | Awaiting validation |
+| MAC-123 | Bounded guest-memory crash evidence and model history | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
