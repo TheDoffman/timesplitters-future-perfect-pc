@@ -1,3 +1,13 @@
+## README presentation cleanup - 2026-10-30
+
+Documentation update based on `e556c508`, checked on Windows x64. All 53 local
+README file/section references resolve, and `git diff --check` passes. The
+v1.4.0 launcher preview was rendered with Windows PowerShell 5.1 and WPF from
+the hash-verified existing build, with Stable selected and isolated sample data.
+The 1152 x 772 output was visually inspected; provenance and the reproducible
+capture command are in `docs/assets/README.md`. No runtime code changed, and no
+game rebuild or gameplay test was needed. Existing v0.3.2 gameplay captures remain.
+
 ## Tank driver controls and steering feedback (#385) - 2026-10-29
 
 The first Machine Wars live snapshot established local driver seat 0, tracked
