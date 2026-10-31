@@ -8027,3 +8027,13 @@ on1c72cbf4 with protected26/fixture intact. PR413 externally merged into main
 5e65ebfd; exact source/tree ancestry verified, this chat did not merge it.
 Keep Awaiting validation for remaining runtime replacement and native Mac title
 acceptance; exact scope/counts/hashes/limits in STATUS stage0240 completed record.
+
+## MAC-125 - Assault objective widescreen placement (#338) - Awaiting validation
+
+Patches2290/2291 and shared PcUiWorldAnchor fit a complete marker around its
+projected target. Common D3D11/Vulkan and legacy GL use the same anchor helper;
+box and text retain proportional scaling. Windows captured-frame replay at
+3440x1349 confirms alignment and original proportions. Twelve layout/backlog
+checks pass. Local uncommitted source based on c511bd52. Native Mac acceptance:
+Assault Mars Prison Red, movement/turning, repeated/multiple markers, off-screen
+arrows,4:3/16:9/ultrawide and split-screen. Mac build/gameplay unverified here.

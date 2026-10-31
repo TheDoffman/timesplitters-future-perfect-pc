@@ -34258,3 +34258,37 @@ remain permitted. Final generation/build/package with toolkit checkout/snapshot
 unavailable and full provenance/removal/notices acceptance have not passed.
 Overall goal incomplete; native Mac title, physical input/listening, full campaign
 and performance coverage remain unverified. No publication or issue closure.
+
+### Issue338 Assault objective marker placement - 2026-10-30
+
+Windows x64 local source c511bd52 plus uncommitted marker scope correction.
+User captured Mars Prison Red objective at3440x1349 using the older local
+v0.3.6/217bed12 build. D3D11 replay with explicit display dimensions reproduced
+the purple marker offset; bypassing the HUD squeeze for marker draws264..272
+aligned the outline with the target. Supported-US142D10 projects the marker
+through camera+0x20c; caller144348 supplies the matching purple color. Patch2290
+scopes that complete widget, including label/edge indicator, to the full canvas.
+No texture/depth heuristic or map-specific offset is used.
+
+Full patch application,11 UI layout/hook/viewport checks and repository-context
+check passed. US142D10 regenerated as _gen with shared manual hook. Windows
+Release rebuild and built-in tests passed; new-binary live gameplay and native
+Mac are not yet verified. Evidence remains private; issue stays open pending publication.
+
+Issue338 proportional follow-up: user correctly rejected the stretched marker.
+Replaced STRETCH with a uniform fit around the complete outline's projected
+horizontal midpoint, retained across separate text draws. Captured-frame replay
+with rebuilt D3D11 renderer shows original marker proportions over the target;
+private marker-proportional-wide000.bmp.12 layout/backlog checks pass, covering
+uniform pixel scale and unchanged target centre at left/middle/right across
+seven display shapes, label anchor retention and actual placement reset.
+Updated common renderer and legacy GL share the helper. Windows Release rebuild
+and built-in tests passed; live marker gameplay and native Mac acceptance remain
+unverified.
+
+Issue338 encounter audit: Vietnam Assault reached its entry and radio objectives,
+with only the off-screen indicator visible; on-target alignment there remains
+unverified. Expanded viewport checks cover seven ratios, eleven positions, three
+marker widths and consecutive targets. All 12 UI/backlog tests and repository
+context checks pass. Mars Prison captured replay remains the visual proof.
+Native Mac and exhaustive encounter coverage remain unverified; publication pending.

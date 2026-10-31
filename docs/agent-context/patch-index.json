@@ -1480,6 +1480,22 @@
       ]
     },
     {
+      "name": "2290-assault-marker-placement.patch",
+      "path": "patches/graphics/interface/2290-assault-marker-placement.patch",
+      "sha256": "eab04046e57c52a87382b7cb3c698819eda716ffa792e81d710c18f35405dbc6",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2291-world-marker-anchor.patch",
+      "path": "patches/graphics/interface/2291-world-marker-anchor.patch",
+      "sha256": "691aa5f41b3120382ad05a6219d247e601e4ad1b3e63a659d714c92966c7ed46",
+      "targets": [
+        "src/d3d/d3d8_device.c"
+      ]
+    },
+    {
       "name": "independent-condition-fixture.patch",
       "path": "patches/compiler/independent-condition-fixture.patch",
       "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",

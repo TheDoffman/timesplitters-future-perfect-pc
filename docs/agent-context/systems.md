@@ -946,3 +946,12 @@ Tank keyboard/mouse policy shares `pc_tank.h` and the
 Kernel: [pool](kernel-pool.md), [time](kernel-time.md), [RTL](kernel-rtl.md), [numbers](guest-numbers.md), [crashes](crash-evidence.md).
 
 Online uses the build interpreter: [paths](multiplayer-ui.md).
+
+Assault objective brackets (US142D10) use a tagged proportional placement.
+`PcUiWorldAnchor` takes the complete first outline draw's horizontal midpoint;
+all following labels retain that anchor until the next placement boundary.
+The common renderer and legacy GL fit uniformly around this projected target,
+not screen centre. This preserves both alignment and glyph/box proportions.
+Guest flush boundaries isolate markers and restore the parent HUD. The existing
+wide/single-player guards preserve 4:3 and split-screen. `test_ui_layout.py`
+checks actual viewport scaling, target position, reset and seven display shapes.
