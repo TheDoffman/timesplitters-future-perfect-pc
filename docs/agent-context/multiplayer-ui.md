@@ -172,3 +172,16 @@ Source Online builds use `generated/online-python.h`, written by the native
 builder with its actual runtime-root interpreter. The Cocoa adapter consumes
 that path while portable packages retain their bundled interpreter. The source
 checkout therefore needs no duplicate venv when `--runtime-root` is in use.
+
+## Layout convergence
+
+`scrollable_panel` remembers the applied content size, background and scrollbar
+visibility. Repeated Configure notifications at that same state no longer
+submit another canvas-window geometry request. Real resize, content-height and
+theme changes still update the layout. The deterministic notification-queue
+fixture fails against the old callback and settles after each real resize with
+the guard. Existing real-widget layout/focus/action tests stay intact.
+Child UI probes now emit delayed Python stack traces if they stall, retaining
+the same 60-second timeout. This repair was prompted by repeated hosted Mac
+layout timeouts during PR432; physical Mac Tk9.1 and Windows checks pass, while
+the original hosted timeout must still be validated by CI.

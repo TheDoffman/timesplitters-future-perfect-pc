@@ -3,6 +3,8 @@
 Audio Options exposes **Enhanced Audio (Beta)** in the shared frontend/pause
 builder. It defaults OFF; one switch controls stereo projection, the gunfire
 range wrapper, environmental routing and the background ambience mix.
+General buffer, lifecycle, format and device-recovery fixes are always active,
+including when this toggle is OFF; see [audio recovery](../agent-context/audio-buffers.md).
 Changes apply live and save immediately, independently of the original
 volume-slider Accept/Cancel draft.
 

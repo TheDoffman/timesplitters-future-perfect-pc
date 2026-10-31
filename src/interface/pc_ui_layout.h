@@ -5,6 +5,27 @@
 #include <stdint.h>
 #include <math.h>
 #include <string.h>
+/* One projected marker consists of an outline followed by separate labels.
+ * Its first draw contains the complete outline. Fit every subsequent draw
+ * around that same world-screen centre, never each label's own centre. */
+typedef struct PcUiWorldAnchor { int active,ready; float x; } PcUiWorldAnchor;
+static void pc_ui_world_begin(PcUiWorldAnchor *a,int placement,uint32_t tag)
+{
+    a->active=placement==2 && tag==0x00142D10u;a->ready=0;a->x=.5f;
+}
+static int pc_ui_world_draw(PcUiWorldAnchor *a,const void *vertices,unsigned stride,
+                           unsigned count,unsigned offset,float width)
+{
+    if(!a->active || a->ready || !vertices || !count || stride<4 ||
+       offset>stride-4 || !(width>0))return 0;
+    float lo=INFINITY,hi=-INFINITY;
+    for(unsigned i=0;i<count;i++) {
+        float x;memcpy(&x,(const unsigned char *)vertices+(size_t)i*stride+offset,4);
+        if(!isfinite(x))return 0;
+        if(x<lo)lo=x;if(x>hi)hi=x;
+    }
+    a->x=(lo*.5f+hi*.5f)/width;a->ready=1;return 1;
+}
 /* The crane vignette's full-canvas Xbox clip uses inclusive last pixels.
  * Convert only this tagged effect to host-exclusive bounds, before scaling.
  * Keep partial clips, other widgets and the stored guest scissor unchanged. */

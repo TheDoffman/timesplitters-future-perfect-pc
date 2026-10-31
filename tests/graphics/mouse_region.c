@@ -17,7 +17,7 @@ static PcGuestRegion pc_guest_query_region(uintptr_t address)
     uintptr_t base=(uintptr_t)guest;
     /* A readable angle prefix must not make an inaccessible operator readable. */
     if(short_gun && address>=base+0x60000 && address<base+0x61000) {
-        r.base=base+0x60000;r.size=0xd8;r.writable=1;return r;
+        r.base=base+0x60000;r.size=short_gun==2?0x9c:0xd8;r.writable=1;return r;
     }
     if(blocked_low && address>=base && address-base<0x20000)return r;
     if(readable && address>=base && address-base<sizeof guest) {
@@ -152,6 +152,15 @@ int main(void)
     CHECK(F(0x30100)==-3 && F(0x30104)==old_pitch);
     short_gun=1;MOVE();APPLY();CHECK(F(0x60024)==-3 && !input.dx);short_gun=0;
     writable=0;MOVE();APPLY();CHECK(F(0x60024)==-3 && !input.dx);writable=1;
+    /* Battle Mech mode uses its own aim targets in both host adapters. */
+    U(0x30114)=0x8000;U(0x733108)=0x71000;U(0x712ac)=0x50000;
+    U(0x50020)=8;U(0x5007c)=0x42000;U(0x42aa0)=0x60000;
+    U(0x60050)=1;U(0x6009c)=0;F(0x6002c)=F(0x60030)=0;
+    MOVE();APPLY();CHECK(F(0x60030)==359 && F(0x6002c)==359.5f && !input.dx);
+    CHECK(F(0x30100)==-3 && F(0x30104)==old_pitch);
+    short_gun=2;MOVE();APPLY();CHECK(F(0x60030)==359 && !input.dx);short_gun=0;
+    writable=0;MOVE();APPLY();CHECK(F(0x60030)==359 && !input.dx);writable=1;
+    U(0x6009c)=1;MOVE();APPLY();CHECK(F(0x60030)==359 && !input.dx);
     U(0x30114)=2;
     /* The interval cache never bridges a region boundary or address overflow. */
     PcGuestRegion region={0};uintptr_t end=(uintptr_t)guest+sizeof guest;

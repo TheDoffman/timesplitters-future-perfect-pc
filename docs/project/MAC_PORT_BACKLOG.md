@@ -830,6 +830,8 @@ for this Windows contention policy; existing entry acceptance remains separate.
 
 ### MAC-001 — Direct-camera mouse look
 
+Issue #425 adds shared Battle Mech mouse targeting through the scene-owned mech and its controlling local slot. Windows and SDL use the same guarded helper; no separate native implementation is needed. Windows Release build and 40 focused input/context checks pass, including original supported-US mech input and aim-vector routines at 60/120/180/240 FPS. These are controlled routine tests, not live mech-encounter acceptance. Physical Mac gameplay remains unverified. See [mounted mouse](../agent-context/mounted-mouse.md#battle-mech-mouse-425).
+
 - **#385 vehicle-gunner route (2026-10-29, local candidate):** Shared
   `src/input/pc_mounted.h` follows mode-0x400 occupied seats and their gun table
   for types 3/4. Windows and SDL adapter-body fixtures pass with the same logic;
@@ -2531,6 +2533,14 @@ fireball visibility and authoritative enemy blast damage without duplicates.
   actual native menu navigation and two-instance Story play remain unverified.
   Remaining acceptance includes the native transport adapter, shared Story lobby
   and coordinated loading/gameplay; a Windows build cannot establish this.
+
+- **Layout convergence (PR432, 2026-10-30):** The shared browser ignores repeated
+  geometry notifications once content dimensions, background and scrollbar
+  visibility are unchanged. Windows real-widget tests pass11; physical Mac
+  Python3.12/Tk9.1 passes10 with1Windows-only skip. A notification-queue regression
+  fails before the guard. Hosted Mac timeout acceptance remains pending CI;
+  transport/session behavior and this entry's overall status are unchanged.
+
 - **Release 0.4.0 packaging follow-up (2026-10-30):** The native game build and
   platform/renderer/input/settings/debug checks passed. Actual installation
   rejected nested Online dependency notice paths. The bundler now preserves
@@ -2736,6 +2746,52 @@ fireball visibility and authoritative enemy blast damage without duplicates.
   compilation/gameplay and cross-device synchronization remain unverified.
 
 ### MAC-018 — Story audio timing, queue retry and ADPCM resume (issue #8)
+
+- **Main/beta integration (2026-10-30):** The prior local fixes, preserved in
+  `c61f77e4`, now apply after beta audio as patches 0055-0058. Recovery is always
+  enabled. XAudio and SDL adapter doubles pass enhanced-on/off recovery and
+  filter-history preservation; Windows Build and real XAudio reopening pass.
+  Native Mac compilation/listening still awaits validation; see STATUS. No
+  additional Mac adapter is identified. MAC-120 retains beta listening limits.
+
+- **Device recovery (2026-10-28, local uncommitted):** shared patch
+  `media/0058-audio-device-recovery.patch` signals lost voices to music/movie
+  clocks so they skip elapsed pending PCM and establish a fresh device origin.
+  XAudio retries critical engine faults and isolates voice errors. The native
+  `src/native/audio_sdl.c` adapter retries failed startup opens/streams with the
+  shared one-second interval; SDL retains automatic default-device migration.
+  Complete adapter doubles and stream/movie fixtures run in both host CI jobs.
+  Local Windows checks include reopening a real device after an injected error;
+  physical Mac unplug/replug, Bluetooth switching and listening remain pending.
+  No further Mac code adaptation is identified; status Awaiting validation.
+
+- **Format/tail follow-up (2026-10-28, local uncommitted):**
+  `media/0057-dsound-format-and-tail-recovery.patch` fixes buffer rate/alignment
+  identity, partial trailing frame/block retirement and stream rate-only
+  SetFormat replay in the shared HLE. No Mac adapter is needed. Nine added
+  compiled regression cases use the existing Windows/macOS audio timing CI
+  route. Windows results are recorded in STATUS; physical Mac listening and
+  device behavior remain unverified. Status remains Awaiting validation.
+
+- **Invalid buffer slots (2026-10-28, local uncommitted):** Shared patch
+  `media/0056-dsound-invalid-buffer-retirement.patch` releases a known slot and
+  its host voice when its settings become unusable. This covers stopped and
+  playing buffers during DoWork; valid paused/stopped buffers remain reusable.
+  No Mac adapter is required. Ten lifecycle cases join the existing both-host
+  audio CI route; Windows audio checks and native Build pass. Physical Mac
+  validation and long-session Arcade/Online listening remain pending. This
+  does not intercept guest Release when its old memory still looks valid.
+  See STATUS for exact results; MAC-018 remains Awaiting validation.
+
+- **Busy-match effects (2026-10-28, local uncommitted):** Shared patch
+  `media/0055-dsound-busy-buffer-recovery.patch` adapts default effects lead
+  from 40 up to 90 ms and refills immediately after discarding stale past data
+  following a hitch. Explicit lead overrides remain fixed. No Mac adapter is
+  required: both hosts use this pump. Windows deterministic load, tail/retry,
+  stream and host-gain checks pass (33 cases); native Mac build/listening and
+  audible busy Arcade/Online acceptance remain pending. Validate crowded
+  Original60 matches plus pause/resume on both hosts; see STATUS for build
+  and live-check evidence. Existing MAC-018 status remains Awaiting validation.
 
 - **Output calibration (2026-10-24, PR #327):** Shared
   `RECOMP_AUDIO_DEFAULT_GAIN=0.5` lowers default output approximately 6 dB,
@@ -8392,3 +8448,13 @@ confirmed restored effects in Windows gameplay. Ordinary Online keeps original
 profiles. No new OS adapter or duplicate native policy is needed; this existing
 Story Online transport path remains Awaiting validation on Mac. Native fallback
 compiles in the shared fixture; that does not establish native Online playback.
+
+## MAC-125 - Assault objective widescreen placement (#338) - Awaiting validation
+
+Patches2290/2291 and shared PcUiWorldAnchor fit a complete marker around its
+projected target. Common D3D11/Vulkan and legacy GL use the same anchor helper;
+box and text retain proportional scaling. Windows captured-frame replay at
+3440x1349 confirms alignment and original proportions. Twelve layout/backlog
+checks pass. Local uncommitted source based on c511bd52. Native Mac acceptance:
+Assault Mars Prison Red, movement/turning, repeated/multiple markers, off-screen
+arrows,4:3/16:9/ultrawide and split-screen. Mac build/gameplay unverified here.

@@ -17,7 +17,8 @@ static uint8_t memory[1024 * 1024];
 ptrdiff_t g_xbox_mem_offset;
 size_t g_xbox_total_ram = sizeof memory;
 static struct { int available; uint64_t played; uint32_t queued; } host;
-static uint8_t captured[1024];
+static uint8_t captured[160000];
+static int refuse_output;
 static uint32_t captured_bytes;
 static uint32_t release_result;
 static void original_release(void) { g_eax = release_result; }
@@ -37,6 +38,9 @@ int xbox_bridge_signal_event(uint32_t token)
 }
 int xbox_EnvSwitch(const char *name, int default_on) { return default_on; }
 int32_t hle_dsound_stream_adjust(uint32_t object, int *is3d) { return 0; }
+static int host_discontinuity;
+int recomp_audio_output_take_discontinuity(uint32_t slot) { int v=host_discontinuity; host_discontinuity=0; return v; }
+
 void recomp_audio_output_set_ambience(uint32_t slot,int enabled) {}
 void recomp_audio_output_set_acoustics(uint32_t slot,float obstruction,float room) {}
 void recomp_audio_output_set_spatial(uint32_t slot,float pan,int enabled) { }
@@ -51,6 +55,7 @@ int recomp_audio_output_position(uint32_t slot, uint64_t *played, uint32_t *queu
 int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes,
     uint32_t rate, uint32_t channels, uint32_t bits, int32_t level)
 {
+    if (refuse_output) return 0;
     host.available = 1;
     host.queued++;
     if (capture && captured_bytes + bytes <= sizeof captured) {
@@ -332,6 +337,90 @@ static int flush_ex(int async)
     return 0;
 }
 
+/* A format-rate change must preserve the exact unheard PCM/ADPCM suffix. */
+static int format_rate(int adpcm, int paused, int frequency)
+{
+    Stream *s = setup();
+    uint32_t p = 0x12000, wfx = 0x14000;
+    int16_t expected_samples[512];
+    uint8_t *expected = (uint8_t *)expected_samples;
+    uint32_t total = 1024, heard = 256;
+    if (adpcm) {
+        s->tag = TAG_ADPCM; s->bits = 4; s->align = 36;
+        total = 384; heard = 2;
+        for (int i = 0; i < 3; i++) {
+            uint8_t *block = memory + 0x20000 + i * 36;
+            memset(block, 0x11, 36);
+            block[0] = (uint8_t)(i * 64);
+            block[1] = block[2] = block[3] = 0;
+            CHECK(xbox_adpcm_decode_block(block, 36, 1, expected_samples + i * 64, 64));
+        }
+    } else {
+        memset(memory + 0x20000, 0x11, heard);
+        memset(memory + 0x20000 + heard, 0x77, total - heard);
+        memcpy(expected, memory + 0x20000, total);
+    }
+    HLE_MEM32(g_esp + 4) = s->object; HLE_MEM32(g_esp + 8) = p;
+    HLE_MEM32(p) = 0x20000; HLE_MEM32(p + 4) = adpcm ? 108 : total;
+    HLE_MEM32(p + 8) = 0x13004; HLE_MEM32(p + 12) = 0x13000;
+    hle_CDirectSoundStream_Process();
+    host.played = heard; test_now = 1003;
+    if (paused) {
+        HLE_MEM32(g_esp + 8) = DSSTREAMPAUSE_PAUSE;
+        hle_CDirectSoundStream_Pause();
+    }
+    HLE_MEM32(wfx) = s->tag | (s->channels << 16);
+    HLE_MEM32(wfx + 4) = 24000;
+    HLE_MEM32(wfx + 12) = s->align | (s->bits << 16);
+    capture = 1; captured_bytes = 0;
+    HLE_MEM32(g_esp + 8) = frequency ? 24000 : wfx;
+    if (frequency) hle_CDirectSoundStream_SetFrequency();
+    else hle_CDirectSoundStream_SetFormat();
+    CHECK(g_eax == 0 && s->queued == total);
+    CHECK(HLE_MEM32(0x13000) == XMP_STATUS_PENDING);
+    if (paused) {
+        CHECK(captured_bytes == 0);
+        HLE_MEM32(g_esp + 8) = DSSTREAMPAUSE_RESUME;
+        hle_CDirectSoundStream_Pause();
+    }
+    CHECK(captured_bytes == total - heard);
+    CHECK(!memcmp(captured, expected + heard, total - heard));
+    host.played = total - heard; host.queued = 0;
+    tick(s, 1100);
+    CHECK(s->count == 0 && HLE_MEM32(0x13000) == XMP_STATUS_SUCCESS);
+    CHECK(HLE_MEM32(0x13004) == (adpcm ? 108 : total));
+    return 0;
+}
+
+static int device_recovery(int early)
+{
+    Stream *s = setup();
+    memset(memory + 0x20000, 0x11, 48000);
+    memset(memory + 0x20000 + 48000, 0x77, 48000);
+    packet(s, 0x12000, 0x13000);
+    if (!early) {
+        host.played = 9600;
+        tick(s, 1100);
+        CHECK(s->consumed_base == 9600);
+    }
+    host.available = 0; host_discontinuity = 1; refuse_output = 1;
+    tick(s, 1200);
+    CHECK(s->output_lost && s->sent == 19200);
+    CHECK(HLE_MEM32(0x13000) == XMP_STATUS_PENDING);
+    capture = 1; captured_bytes = 0; refuse_output = 0;
+    tick(s, 1500);
+    CHECK(!s->output_lost && s->play_origin == 48000);
+    CHECK(captured_bytes == 38400 && captured[0] == 0x77);
+    CHECK(s->sent == 86400);
+    host.played = 9600;
+    tick(s, 1600);
+    CHECK(consumed(s, 1600) == 57600);
+    host.played = 48000; host.queued = 0;
+    tick(s, 2000);
+    CHECK(s->count == 0 && HLE_MEM32(0x13000) == XMP_STATUS_SUCCESS);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     int result;
@@ -350,6 +439,12 @@ int main(int argc, char **argv)
     else if (!strcmp(argv[1], "release-reuse")) result = release_reuse();
     else if (!strcmp(argv[1], "flush-ex")) result = flush_ex(0);
     else if (!strcmp(argv[1], "flush-ex-async")) result = flush_ex(1);
+    else if (!strcmp(argv[1], "format-pcm")) result = format_rate(0, 0, 0);
+    else if (!strcmp(argv[1], "format-adpcm")) result = format_rate(1, 0, 0);
+    else if (!strcmp(argv[1], "format-paused")) result = format_rate(0, 1, 0);
+    else if (!strcmp(argv[1], "frequency")) result = format_rate(0, 0, 1);
+    else if (!strcmp(argv[1], "recover-device")) result = device_recovery(0);
+    else if (!strcmp(argv[1], "recover-early")) result = device_recovery(1);
     else return 2;
     if (!result) printf("PASS: %s\n", argv[1]);
     return result;

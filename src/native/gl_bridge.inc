@@ -176,6 +176,8 @@ static void native_place_draw(const void *vertices,UINT stride,UINT count) {
             ((GLTexture*)g.textures[stage])->screen_copy)copied=1;
         if(copied || native_placement==XBOX_D3D8_2D_STRETCH ||
            (native_placement==XBOX_D3D8_2D_AUTO && left<=1 && right>=g.backbuf_w-1)){k=1;ky=1;}
+        pc_ui_world_draw(&native_world_anchor,vertices,stride,count,offset,(float)g.backbuf_w);
+        if(native_world_anchor.active && native_world_anchor.ready)anchor=native_world_anchor.x;
         if(native_placement==XBOX_D3D8_2D_LEFT)anchor=0;
         if(native_placement==XBOX_D3D8_2D_RIGHT)anchor=1;
         if(native_placement==XBOX_D3D8_2D_SIDE)anchor=pc_ui_side_anchor(left,right,(float)g.backbuf_w);

@@ -234,6 +234,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
         if patch.name.endswith(('-discord-presence.patch', '-shared-renderer-host.patch', '-shared-vulkan-mac.patch', '-shared-native-renderer.patch', '-shared-interpolation-depth.patch', '-shared-present-metrics.patch', '-native-launcher-services.patch', '-shared-screen-copy-clipping.patch', '-vulkan-portability-swizzle.patch', '-shared-interpolation-capture.patch')):
             continue  # These changes depend on later native/display or feedback blocks.
         if patch.name in ('2070-profile-unlock-content.patch',
+                         '2290-assault-marker-placement.patch',
+                         '2291-world-marker-anchor.patch',
                          '1430-white-flash-overlay.patch',
                          '1420-title-screen-matte.patch',
                           '1400-menu-character-mouse.patch',
@@ -282,6 +284,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     assert_current_calendar_installed(checkout)
     assert_current_sharing_installed(checkout)
     assert b'pc_display_aim_panel(sub_00137010_gen,0x00137010u);' in manual.read_bytes()
+    assert b'pc_display_ui(sub_00142D10_gen,0x00142D10u);' in manual.read_bytes()
     for hook in ('pc_unlock_requirement', 'pc_unlock_event', 'pc_unlock_movie', 'pc_unlock_profile_init'):
         assert hook.encode() + b'(' in manual.read_bytes()
     bindings=(checkout / 'src/input/input_bindings.c').read_text()
@@ -293,6 +296,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     assert 'use_pad_defaults = have_pad && (auto_pad >= 0 || c->pad_fallback)' in bindings
     assert b'pc_display_weapon_slots();' in manual.read_bytes()
     device = (checkout / 'src/d3d/d3d8_device.c').read_bytes()
+    assert b'pc_ui_world_draw(&g_2d_world_anchor,vertices,stride,count,0,640.f)' in device
     assert b'tsfp_texture_frame_complete();' in device
     assert b'tsfp_texture_binding_revision();' in device
     assert b'pc_ui_vignette_clip(g_2d_tag,g_2d_placement,clip);' in device

@@ -417,5 +417,16 @@ int main(void)
         CHECK(menu_filter_frontend==(scene>100));
         CHECK(projection_sets==count && !memcmp(projection,&original_projection,4));
     }
+    /* Projected Assault brackets use the full world canvas at every wide
+       ratio, flushing queued HUD draws and restoring the parent scope. */
+    for(unsigned r=0;r<7;r++)for(int split=1;split<=2;split++) {
+        hud_scale=4*sizes[r][1]/(3*sizes[r][0]);wide=hud_scale!=1.f;
+        players=split;ui_place(2,123);g_esp=0;pending=1;n=draw_count;
+        pc_display_ui(draw,0x142d10);sub_00022FF0();
+        CHECK(drawn[n]==2 && placement==2 && tag==123 && g_esp==4);
+        if(wide && hud_scale<1.f && split==1)CHECK(drawn[n+1]==2);
+        else CHECK(draw_count==n+1);
+        draw();sub_00022FF0();CHECK(drawn[draw_count-1]==2);
+    }
     puts("PASS: queued widget boundaries, radar world-marker separation, anchors, defaults and split-screen guard");
 }

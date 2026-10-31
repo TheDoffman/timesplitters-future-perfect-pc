@@ -4,7 +4,7 @@ Co-op: [menu tests](build-test-details.md).
 
 [Save-folder checks](save-locations.md): storage, picker callback ownership/mutation, and shared launcher copy/restore/UI tests; both launcher builds include SaveLocations.cs.
 
-test_native_timing.py::test_original_minigun_spin runs the complete supported-US callback with controlled audio/model services. It reproduces the old high-FPS failure and checks readiness, release, pause and input guards at 60/120/144/180/240 FPS. Existing CI selects this suite; private-XBE absence skips it. Historical stack fixtures exclude minigun intent until the full native stack is applied. See native-minigun.md.
+test_native_timing.py::test_original_minigun_spin runs the complete supported-US callback with controlled services. It reproduces the old high-FPS failure and checks readiness, release, pause and input guards at 60/120/144/180/240 FPS. Existing CI selects this suite; private-XBE absence skips it. Historical fixtures exclude minigun intent until the native stack is applied. See native-minigun.md.
 
 Release 0.4.0 / launcher 1.4.1 tests cover aliases and upload recovery; Mac
 Online notices follow [installer paths](multiplayer-ui.md).
@@ -186,8 +186,8 @@ presence semantics, decoding/reporting, and repeated-lookup/executor mutations.
 
 `test_window_theme.py`: menu drawing, mnemonics, inserted/reordered rows (#333).
 
-`test_audio_output_gain.py` / `test_audio_timing.py`: XAudio/SDL, fake devices,
-gain overrides, mute, live volume and voice parity.
+[Audio tests](audio-buffers.md): timing, gain, buffer/device recovery and beta
+ON/OFF compatibility with XAudio/SDL doubles.
 
 `test_controller_profile.py`: devices/maps/disconnect and SDL virtual input;
 physical pads/Mac gameplay remain unverified.
@@ -201,7 +201,7 @@ exact decoded pictures/timestamps/PCM and duration. Controlled
 and Windows clocks; private-data skips, mocked GPU/audio output. Surface-trace
 fixtures use240/180/Original60/120, matching the strict live-cycle validator.
 
-[Online UI/icon/scrollbar checks](multiplayer-ui.md). `test_framebuffer_sampling.py`
+[Online UI/layout convergence checks](multiplayer-ui.md). `test_framebuffer_sampling.py`
 checks refresh/stale copies and first-entry/any-framebuffer alias lookup against
 the original searches, including wrong-first/last mutations (Mac GL/RHI, Windows RHI).
 `test_trace_filter.py` compiles real trace dispatch: quiet calls, explicit
@@ -1024,9 +1024,11 @@ before a stable function, rather than at EOF, so reversing it preserves local
 trailing edits during historical branch round trips. These are tested in
 `tests/repository/test_patch_updates.py`.
 
-Crossplay startup/shutdown and evidence completion: [Online acceptance](multiplayer-ui.md#physical-windowsmac-online-acceptance).
+Crossplay: [acceptance](multiplayer-ui.md#physical-windowsmac-online-acceptance).
 
-Native crossplay capture rotation regression: `tests/network/test_crossplay_peer.py`.
-
-Crossplay lock/recycle guards: `test_crossplay_peer.py`; reused Online interpreter:
+Crossplay rotation/lock/recycle: `test_crossplay_peer.py`; Online interpreter:
 `test_native_mac_tools.py`. See multiplayer-ui.md.
+
+Markers: test_ui_layout.py; test_patch_updates.py checks 2290/2291 after migration.
+
+Mech input: test_mounted_mouse.py; [scope](mounted-mouse.md#battle-mech-mouse-425).

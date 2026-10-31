@@ -1432,6 +1432,7 @@ void xbox_D3D8SetWideFrames(BOOL wide) { (void)wide; }
 void xbox_D3D8SetTwoDPlacement(int placement, uint32_t tag)
 {
     native_placement=placement;native_placement_tag=tag;
+    pc_ui_world_begin(&native_world_anchor,placement,tag);
 }
 
 int xbox_D3D8GetTwoDPlacement(uint32_t *tag)

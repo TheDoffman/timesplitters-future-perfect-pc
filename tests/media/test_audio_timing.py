@@ -16,7 +16,8 @@ def compile_audio(kind, tmp_path_factory):
     directory = tmp_path_factory.mktemp('audio-' + kind)
     compiler, environment = native_compiler(directory)
     exe = directory / (kind + ('.exe' if os.name == 'nt' else ''))
-    source = ROOT / f'tests/media/audio_{kind}_timing.c'
+    source = ROOT / (f'tests/media/audio_buffer_{kind}.c' if kind in ('load', 'lifecycle', 'format')
+                     else f'tests/media/audio_{kind}_timing.c')
     if Path(compiler).stem.lower() == 'cl':
         command = [compiler, '/nologo', '/std:c11', '/O2', '/I' + str(RUNTIME / 'src'), '/I' + str(ROOT / 'src'),
                    str(source), '/Fe:' + str(exe), '/Fo:' + str(directory / 'audio.obj')]
@@ -43,7 +44,8 @@ def buffer_test(tmp_path_factory):
 
 @pytest.mark.parametrize('scenario', ['underrun', 'process', 'flush', 'fallback',
                                      'snapshot', 'pause', 'completion', 'lost-device', 'bad-data',
-                                     'diagnostics', 'adpcm', 'release-reuse', 'flush-ex', 'flush-ex-async'])
+                                     'diagnostics', 'adpcm', 'release-reuse', 'flush-ex', 'flush-ex-async', 'format-pcm', 'format-adpcm',
+                                     'format-paused', 'frequency', 'recover-device', 'recover-early'])
 def test_stream_timing(stream_test, scenario):
     result = subprocess.run([str(stream_test), scenario], capture_output=True, text=True, timeout=10)
     assert result.returncode == 0, result.stdout + result.stderr
@@ -63,6 +65,50 @@ def test_stream_headroom(buffer_test):
     assert result.returncode == 0, result.stdout + result.stderr
     assert 'PASS:' in result.stdout
 
+
+@pytest.fixture(scope='module')
+def load_test(tmp_path_factory):
+    return compile_audio('load', tmp_path_factory)
+
+
+@pytest.mark.parametrize('scenario', ['steady', 'busy', 'stall', 'stall-refused',
+                                     'tail', 'expired', 'fixed', 'legacy'])
+def test_effects_under_load(load_test, scenario):
+    env = dict(os.environ)
+    if scenario in ('fixed', 'legacy'):
+        env['RECOMP_DSOUND_LEAD_MS'] = '0' if scenario == 'legacy' else '40'
+    result = subprocess.run([str(load_test), scenario], env=env,
+                            capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert f'PASS: {scenario}' in result.stdout
+
+
+@pytest.fixture(scope='module')
+def lifecycle_test(tmp_path_factory):
+    return compile_audio('lifecycle', tmp_path_factory)
+
+
+@pytest.mark.parametrize('scenario', ['null-buffer', 'null-voice', 'bad-pointer',
+                                     'bad-rate', 'high-rate', 'bad-align', 'empty-size',
+                                     'reuse', 'retain-valid', 'active-invalid'])
+def test_buffer_slot_lifecycle(lifecycle_test, scenario):
+    result = subprocess.run([str(lifecycle_test), scenario], capture_output=True,
+                            text=True, timeout=10)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert f'PASS: {scenario}' in result.stdout
+
+
+@pytest.fixture(scope='module')
+def format_test(tmp_path_factory):
+    return compile_audio('format', tmp_path_factory)
+
+
+@pytest.mark.parametrize('scenario', ['rate', 'align', 'frequency', 'tail-pcm', 'tail-adpcm'])
+def test_buffer_format(format_test, scenario):
+    result = subprocess.run([str(format_test), scenario], capture_output=True,
+                            text=True, timeout=10)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert f'PASS: {scenario}' in result.stdout
 
 def test_acoustic_guest_state(buffer_test):
     result=subprocess.run([str(buffer_test),'acoustics'],capture_output=True,text=True,timeout=10)

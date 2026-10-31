@@ -3,6 +3,8 @@
 Story chooser centering/reentry/lobby host loss, Game Over Quit, guest camera/weapon lifetime, in-progress rejoin, guest departure and in-match abort routing, authored barrel effects, Online Back navigation/browser level details, co-op movie score-packet lifetime, guest reward parity/pages/empty entry, NPC, corpse, pickup, barrel and camouflage integration keeps the
 shared source and main paths; see [details](systems-details.md).
 
+Battle Mech mouse: [shared routing and guards](mounted-mouse.md#battle-mech-mouse-425).
+
 Minigun motor intent and release damping: [shared policy](native-minigun.md).
 
 Kernel: [objects and boot](kernel-objects.md).
@@ -52,6 +54,10 @@ Private art stays local. Networking: `src/network/`, HLE/kernel patches and
 `tools/network/online.py`; [Online UI](multiplayer-ui.md). Crash capture:
 `src/diagnostics/`, runtime crash hooks and launcher diagnostics.
 Audio: `src/hle/hle_dsound*`, `hle_xmv*`. [Beta audio](../development/positional-audio.md).
+General buffering, lifecycle, format and device recovery are unconditional;
+Enhanced Audio controls only the optional mix. Effects adapt their default
+lead from 40 to 90 ms and refill immediately after skipping stale hitch data.
+Explicit lead overrides stay fixed. See [recovery contracts/tests](audio-buffers.md).
 `audio_output.h` owns `RECOMP_AUDIO_DEFAULT_GAIN` (0.5, about -6 dB).
 XAudio applies it once to the master; SDL applies it once per stream. This
 quiets the output at 100% without changing saved Music/Sound sliders, their
@@ -943,3 +949,12 @@ Tank keyboard/mouse policy shares `pc_tank.h` and the
 Kernel: [pool](kernel-pool.md), [time](kernel-time.md), [RTL](kernel-rtl.md), [numbers](guest-numbers.md), [crashes](crash-evidence.md).
 
 Online uses the build interpreter: [paths](multiplayer-ui.md).
+
+Assault objective brackets (US142D10) use a tagged proportional placement.
+`PcUiWorldAnchor` takes the complete first outline draw's horizontal midpoint;
+all following labels retain that anchor until the next placement boundary.
+The common renderer and legacy GL fit uniformly around this projected target,
+not screen centre. This preserves both alignment and glyph/box proportions.
+Guest flush boundaries isolate markers and restore the parent HUD. The existing
+wide/single-player guards preserve 4:3 and split-screen. `test_ui_layout.py`
+checks actual viewport scaling, target position, reset and seven display shapes.

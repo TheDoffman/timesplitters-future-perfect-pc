@@ -3,8 +3,8 @@
 from project_paths import source_file as repo_file
 
 import os
-from pathlib import Path
 import re
+from pathlib import Path
 import shutil
 import subprocess
 
@@ -20,16 +20,8 @@ def output_exe(request,tmp_path_factory):
     compiler,env=native_compiler(folder)
     source=repo_file(ROOT, 'tests', 'audio_output_gain.cpp' if request.param=='xaudio' else 'audio_sdl_gain.c')
     if request.param=='xaudio':
-        code=(RUNTIME/'hle/audio_output_xaudio2.cpp').read_text()
-        functions=[]
-        for signature in ('extern "C" void recomp_audio_output_initialize(void)',
-                          'static float gainOf(int32_t volume_hundredth_db)',
-                          'void routeVoice(uint32_t slot)',
-                          'extern "C" void recomp_audio_output_set_spatial(uint32_t slot,float pan,int enabled)'):
-            match=re.search(re.escape(signature)+r'\n\{.*?\n\}',code,re.S)
-            assert match,signature
-            functions.append(match.group())
-        (folder/'xaudio_gain.inc').write_text('\n'.join(functions))
+        for header in ('windows.h', 'objbase.h', 'xaudio2.h'):
+            (folder/header).write_text('/* Mocked by audio_xaudio_fake.h. */\n')
         if os.name!='nt':
             compiler=shutil.which(env.get('CXX','c++'))
             assert compiler,'C++ compiler required for actual XAudio initialization fixture'
@@ -41,8 +33,10 @@ def output_exe(request,tmp_path_factory):
     includes=[folder,RUNTIME,RUNTIME/'hle',ROOT/'src']
     args=([compiler,'/nologo','/D_CRT_SECURE_NO_WARNINGS',
            '/std:c++17' if request.param=='xaudio' else '/std:c11',
+           *(['/EHsc'] if request.param=='xaudio' else []),
            *['/I'+str(p) for p in includes],str(source),'/Fe:'+str(exe)] if os.name=='nt' else
           [compiler,'-std=c++17' if request.param=='xaudio' else '-std=c11',
+           *(['-pthread'] if request.param=='xaudio' else []),
            *['-I'+str(p) for p in includes],str(source),'-o',str(exe),'-lm'])
     result=subprocess.run(args,cwd=folder,env=env,capture_output=True,text=True,timeout=60)
     assert result.returncode==0,result.stdout+result.stderr
