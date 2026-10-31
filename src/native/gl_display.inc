@@ -7,6 +7,7 @@ static int native_scene_active=1;
 static float native_hud_k=1,native_hud_ky=1,native_hud_anchor=.5f;
 static int native_placement;
 static uint32_t native_placement_tag;
+static PcUiWorldAnchor native_world_anchor;
 static void native_place_draw(const void *,UINT,UINT);
 static void native_viewport(void) {
     double sx=native_scene_active?(double)native_scene_w/g.backbuf_w:1;

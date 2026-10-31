@@ -25,7 +25,7 @@ def test_ui_layout(tmp_path,fixture):
 
 def test_guest_placement_hooks():
     manual=(ROOT/'external/ts3FPrecomp/titles/futureperfect/src/recomp_manual.c').read_text()
-    for address in (0x1334d0,0x133ab0,0x1358a0,0x12e3f0,0x12f670,0x14b930,0x1409c0,0x13fc50):
+    for address in (0x1334d0,0x133ab0,0x1358a0,0x12e3f0,0x12f670,0x14b930,0x1409c0,0x13fc50,0x142d10):
         # The shared panel's callback reuses text mappings inside the same
         # placement boundary. Its execution/lifetime is tested by the scope suite.
         callback='pc_panel_text_original' if address==0x12e3f0 else f'sub_{address:08X}_gen'
@@ -67,7 +67,8 @@ def test_production_viewport_and_scissor(tmp_path, fixture_name):
         'static BOOL two_d_squeeze(float *k_out, float *cx_out)',
         'static float two_d_vertical_scale(void)',
         'BOOL d3d8_GetScissor(RhiRect *out)',
-        'static void apply_host_viewport(void)')
+        'static void apply_host_viewport(void)',
+        'void xbox_D3D8SetTwoDPlacement(int placement, uint32_t tag)')
     if fixture_name=='ui_screen_effects':
         signatures=(
             'static BOOL draw_extent(const void *vertices, UINT stride, UINT count,\n                        float *lo_out, float *hi_out)',
