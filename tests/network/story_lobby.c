@@ -103,6 +103,7 @@ void sub_001CC360(void){marker=75;g_esp+=4;}
 static unsigned leave_disconnects,lobby_return_dispatches,lobby_return_resets;
 void pc_online_disconnect(void){++leave_disconnects;online_mode=PC_ONLINE_NONE;}
 
+void sub_002EAF60_gen(void){marker=84;g_esp+=4;}
 void sub_002EAFC0_gen(void){pc_story_network_result_action(sub_00065470_gen,0u);}
 void sub_002EB030_gen(void){pc_story_network_result_action(sub_00065470_gen,0u);}
 void sub_002EC090_gen(void){pc_story_network_result_action(sub_00065470_gen,0u);}
@@ -2012,6 +2013,38 @@ int main(void)
         pc_story_network_departure_death(frame_original);
         CHECK(failure_original_calls==old_calls+4);
         online_mode=PC_ONLINE_STORY;
+    }
+    /* Game Over Quit uses the abort destination before its stock campaign
+       scheduler, for either role and independently of the current menu port. */
+    {
+        online_mode=PC_ONLINE_STORY;story_lobby_mission=0;story_pending_stage=1;
+        WORD_AT(0x7de458)=0x80008;WORD_AT(0x7de400)=0x102;
+        WORD_AT(0x76b108)=1;WORD_AT(0x76b1a4)=15;WORD_AT(0x79094c)=2;
+        WORD_AT(0x761bbc)=0x4000;WORD_AT(0x761c48)=0x4500;
+        WORD_AT(0x7ba9e0)=3;WORD_AT(0x7de45c)=0;
+        for(unsigned role=1;role<=2;role++) {
+            WORD_AT(0x76b140)=role;WORD_AT(0x774178)=1;
+            story_context_start_pending=1;story_rewards_tracking=1;
+            g_esp=0x1800;marker=0;
+            pc_story_network_result_action(sub_002EAF60_gen,0u);
+            CHECK(g_esp==0x1804 && !g_eax && marker==(role==1?62:74));
+            CHECK(story_leave_destination==(role==1?1u:2u));
+            CHECK(story_lobby_return_pending==(role==1));
+            CHECK(WORD_AT(0x78ad20)==(role==1?13u:2u));
+            CHECK(!story_context_start_pending && !story_rewards_tracking && !story_leave_exit_depth);
+            CHECK(WORD_AT(0x774178)==(role==1?0u:1u));
+            story_leave_destination=0;story_lobby_return_pending=0;
+        }
+        /* Successful result Continue, other modes and later stages stay stock. */
+        WORD_AT(0x76b140)=1;WORD_AT(0x7de45c)=0x8000;
+        g_esp=0x1800;marker=0;pc_story_network_result_action(sub_002EAF60_gen,0u);
+        CHECK(marker==84 && g_esp==0x1804 && !story_leave_destination);
+        WORD_AT(0x7de45c)=0;online_mode=PC_ONLINE_ARCADE;
+        g_esp=0x1800;marker=0;pc_story_network_result_action(sub_002EAF60_gen,0u);
+        CHECK(marker==84 && g_esp==0x1804 && !story_leave_destination);
+        online_mode=PC_ONLINE_STORY;story_pending_stage=2;
+        g_esp=0x1800;marker=0;pc_story_network_result_action(sub_002EAF60_gen,0u);
+        CHECK(marker==84 && g_esp==0x1804 && !story_leave_destination);
     }
     /* Abort never invokes the original confirmed callback (which records
        completion). Host keeps transport, guest retires only its own session. */

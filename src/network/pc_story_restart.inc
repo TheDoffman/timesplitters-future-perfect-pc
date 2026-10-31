@@ -3,7 +3,7 @@
 #ifdef _WIN32
 extern void sub_000653B0(void);
 extern void sub_00065470_gen(void),sub_00065C70(void);
-extern void sub_002EAFC0_gen(void),sub_002EB030_gen(void),sub_002EC090_gen(void),sub_002EC650_gen(void);
+extern void sub_002EAF60_gen(void),sub_002EAFC0_gen(void),sub_002EB030_gen(void),sub_002EC090_gen(void),sub_002EC650_gen(void);
 static unsigned story_rewards_exit_depth;
 /* Abort paths have no campaign result. Stock65470 retains the match and sends
    the host's reliable return-to-lobby packet;65420 disconnects only this peer. */
@@ -479,6 +479,15 @@ void pc_story_network_profile_save(void (*original)(void))
 void pc_story_network_result_action(void (*original)(void),unsigned action)
 {
 #ifdef _WIN32
+    /* Game Over's Quit row uses EAF60, not the pause Leave confirmation.
+       Its stock tail schedules the campaign frontend again. Reuse the owned
+       abort path before that tail, retaining the host's party or leaving only
+       this guest. Successful result Continue keeps its original behavior. */
+    if(!action && original==sub_002EAF60_gen && story_restart_session() &&
+       !(WORD_AT(0x7de45cu)&0x8000u)) {
+        story_leave_begin(WORD_AT(0x76b140u)==1u?1u:2u,1);
+        g_eax=0;g_esp+=4u;return;
+    }
     if(!action && original==sub_00065470_gen && story_leave_exit_depth && story_leave_destination==2u) {
         sub_00065420();return;
     }

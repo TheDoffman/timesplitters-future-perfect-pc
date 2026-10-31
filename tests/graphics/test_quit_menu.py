@@ -78,6 +78,12 @@ def test_story_original_us_entry_contract():
     assert read(0x3564ca,6)==bytes.fromhex('890d78417700')
     assert read(0x2ebe85,1)==b'\xe9' and 0x2ebe8a+struct.unpack('<i',read(0x2ebe86,4))[0]==0x2ebdb0
     assert read(0x2ebed2,5)==b'\x68'+struct.pack('<I',0x2ebe60)
+    # Failed Story result Quit installs EAF60, whose stock tail uses the
+    # generic scheduler rather than the Online Leave confirmation callback.
+    assert read(0x2f54e3,5)==b'\x68'+struct.pack('<I',0x2eaf60)
+    assert read(0x2f54ee,5)==b'\x68'+struct.pack('<I',0x17ab)
+    tail=read(0x2eafb5,5)
+    assert tail[0]==0xe9 and 0x2eafba+struct.unpack_from('<i',tail,1)[0]==0x65470
     assert struct.unpack('<I',read(0x524598,4))[0]==0x2d0be0
     assert struct.unpack('<I',read(0x4e99c4,4))[0]==0x1a8da0
     assert struct.unpack('<I',read(0x4e99d4,4))[0]==0x1a8fa0

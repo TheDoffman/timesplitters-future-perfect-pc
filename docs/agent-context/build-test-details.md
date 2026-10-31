@@ -1,3 +1,13 @@
+# Story Game Over Quit regression - 2026-10-31
+
+The registered Story lobby fixture covers both roles' EAF60 Quit routing,
+local-port0 teardown despite another current port, host advertisement retirement,
+guest-only disconnect and unchanged successful result/Arcade/later-stage paths.
+Supported-US contracts pin the failed Quit caption/callback and its generic
+exit tail. Existing abort fixtures cover the shared lobby/main factories and
+retained-party dispatcher. Distinguish synthetic failure setup from real combat
+death and full mission completion in live validation.
+
 # Rejoin view and weapon-model regression - 2026-10-31
 
 The registered Story fixture covers an inactive first cinematic snapshot, an

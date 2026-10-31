@@ -2252,6 +2252,13 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+Story Game Over Quit (2026-10-31, uncommitted): shared result-action handling
+routes failed first-mission Quit through the existing leave flow, retaining the
+host party or disconnecting only the guest. Existing2390 wrapper covers the
+native callback; no additional platform policy is needed. Native live Online
+acceptance still requires host/guest Game Over Quit and a retained-lobby relaunch.
+Windows validation is recorded in STATUS.
+
 Story rejoin camera/weapon lifetime (2026-10-31, uncommitted): shared cinematic
 and world adapters reconcile a missed camera-end transition and exclude native
 first-person viewport models from persistent prop identities. Original camera

@@ -1,3 +1,44 @@
+## Story Game Over Quit routing - 2026-10-31
+
+Local/uncommitted on online-story-coop, base a29c090e. Failed Story Quit uses
+native EAF60, whose generic65470 tail bypassed the working Online Leave flow
+and returned to campaign selection. The existing result-action adapter now uses
+the same retained host lobby / guest-only main-menu exit as Leave, before that
+tail. Successful result Continue and unrelated modes/stages retain their paths.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11: supported US XBE hash verified;
+398.09GiB free before incremental build. Official build/patch/native checks pass;
+foreground-dependent virtual-pad routing skips when activation is refused.
+45 focused checks pass,2 Mac-only skips (23.78s), including actual-US Quit
+caption/callback/tail, host/guest routing and successful result/Arcade fallback.
+A first fixture run exposed identical optimized original spies aliasing each
+other; a distinct spy fixes the test model. The restricted build stalled before
+compilation; its owned process tree was stopped and the supported build rerun
+with access to the Windows compiler services.
+
+Build compatibility317f97882a4659ba925563e0fc4baa0411940c18b9400268a6d2c8b091b29c08;
+exe SHA2564c5facc3e02868a30c471eb8a9856bf18ccb4d223295887421ebedb14f41d4e8.
+All1304 sealed input hashes and the executable hash match. Isolated host Quit
+acceptance passes: native Game Over menus appear on both peers (actual child
+builder2F5170/descriptor524730); normal Up/Select invokes Quit. Both return to
+Story lobby101/host11/guest12 with two roster slots, and host GO relaunches the
+intro on both. Reviewed before/after captures confirm Game Over and the retained
+lobby. Evidence: logs/story-gameover-quit-live/host/result.json. The first live
+probe hit old disposable screenshot limits; those captures were recycled. Its
+replacement observer checked the root menu instead of the active child, so a
+corrected read-only child observer continued the same instances and verified
+Quit/relaunch; the superseded supervisor stops after runner exit0. Both isolated
+runners release their locks. No game crash is inferred from those harness stops.
+Guest Quit acceptance also passes: the guest returns to main101 with networking
+disabled, while the host remains in mission2/phase15/Game Over with one retained
+roster slot. Reviewed captures show the host Game Over and guest main menu.
+Evidence: logs/story-gameover-quit-live/guest/result.json. Both runners exit0,
+release their locks and preserve the canonical fixture/settings. Failure setup
+writes state8/result10000 only in the owned isolated host; subsequent menu/input/
+transport paths are native.
+This does not establish real combat death behavior. Native Mac Online remains
+MAC-013; no WAN, physical-controller or full mission completion claimed.
+
 ## Story rejoin camera / guest first-person weapon lifetime - 2026-10-31
 
 Local/uncommitted on online-story-coop, base92032b75. The rejoin bootstrap now

@@ -1,3 +1,16 @@
+# Story Game Over Quit - 2026-10-31
+
+Original result builder2F5170 installs EAF60 for failed Story Quit (caption17AB).
+That callback closes result menus and tail-calls generic65470; it never enters
+the Online pause Leave confirmation2EBE60. The existing2390 wrapper now routes
+EAF60 through story_leave_begin only in the first-mission joined gameplay scope
+with no successful result bit8000. Host Quit retains the party and returns all
+peers to the lobby through the existing reliable classB flow; guest Quit uses
+the existing full disconnect/main destination. Reuse the local-port0/all-port
+menu teardown, frontend factory, profile-save remap and lobby reinitialization.
+Successful result Continue, rewards, other modes and later stages stay original.
+No new wrapper or transport message is introduced; native acceptance is MAC-013.
+
 # Rejoin camera and first-person model lifetime - 2026-10-31
 
 A rejoining guest may receive an inactive cinematic snapshot without seeing the
