@@ -1,6 +1,6 @@
 # Runtime and patch navigation
 
-Effects buffering: `media/0035-dsound-busy-buffer-recovery.patch` extends the
+Effects buffering: `media/0055-dsound-busy-buffer-recovery.patch` extends the
 shared `hle_dsound.c` pump. Its default 40 ms lead grows per buffer to the
 observed active service interval plus 10 ms, capped at 90 ms. Explicit
 `RECOMP_DSOUND_LEAD_MS` values stay fixed, including legacy zero. Play still
@@ -11,24 +11,97 @@ the output cursor unchanged; expired one-shots stay expired. Guest clocks,
 stream/music policy and host audio adapters are unchanged. The existing audio
 timing CI suite now exercises 64 voices under delayed service and recovery.
 
-`media/0036-dsound-invalid-buffer-retirement.patch` makes every unusable-buffer
+`media/0056-dsound-invalid-buffer-retirement.patch` makes every unusable-buffer
 exit in `model_for_known` retire an existing slot/host voice, including null
 settings holders and invalid rate/alignment. DirectSoundDoWork therefore reclaims
 invalid stopped buffers as well as playing ones. Valid stopped/paused buffers
 are retained; no live voice is evicted to admit another sound. See
 [audio lifecycle tests](audio-buffers.md). Guest Release remains unchanged.
 
-`media/0037-dsound-format-and-tail-recovery.patch` includes rate/alignment in
+`media/0057-dsound-format-and-tail-recovery.patch` includes rate/alignment in
 buffer identity, retains raw source size while clocking complete frames, and
 preserves stream packet boundaries for rate-only SetFormat. Exact unheard PCM
 and ADPCM suffixes survive voice resets/pause; encoding layout changes keep the
 previous policy. See [format regression coverage](audio-buffers.md).
 
-`media/0038-audio-device-recovery.patch` adds one-second XAudio engine/voice
+`media/0058-audio-device-recovery.patch` adds one-second XAudio engine/voice
 retries and a shared per-slot discontinuity signal for streams and movies.
 Their wall-clock fallback skips elapsed audio and establishes a fresh playback
 origin after reconnecting. Explicit reset clears the signal; mute/shutdown
 remain terminal. See [device recovery and tests](audio-buffers.md).
+
+Patch 2140-native-minigun-intent follows the native weapon wrappers in loader dependency order. It scopes held-primary intent around original US 1C74D0 event 1. Generic shots remain on whole ticks; numeric site 1C7600 normalizes release damping. See native-minigun.md.
+
+`2130-game-dpi-awareness.patch` attaches the Windows game manifest supplied by
+`tsfp.ps1` to the title executable. Its system DPI declaration prevents Windows
+bitmap scaling and virtualized windowed Auto dimensions without a path-specific
+compatibility override. It preserves linker-generated UAC/common-controls and
+does not change native Mac targets; see the build/test guide for probe coverage.
+
+Unchanged patch stacks reuse content validation: [cache contract](release-speed.md).
+
+`0040-dsound-positional-stereo.patch` keeps XDK distance attenuation and adds
+shared stereo projection with XAudio2/SDL output adapters; see
+[positional audio](../development/positional-audio.md) for field provenance,
+cursor contracts, the saved Audio Options beta toggle and host acceptance boundaries.
+`0050-environmental-acoustics.patch` adds opt-in world-coordinate room/portal routing; see the audio guide for limits.
+
+`0045-weapon-sound-range.patch` scopes longer gunfire range to the two weapon
+dispatcher calls into `00021FB0`; its cdecl wrapper restores the range argument.
+
+Kernel: [objects, threads and boot](kernel-objects.md), [devices and names](kernel-devices.md).
+
+Unused POSIX memory APIs retired: [caller audit and strict fixture controls](retired-memory-compatibility.md).
+
+Main guest mappings: [providers, aliases and lifetime](guest-host-mappings.md).
+Native Nt host mappings: [reservation ownership and protection](native-virtual-memory.md).
+
+Guest Mm/statistics: [ownership, host snapshots and ABI](guest-memory-services.md).
+
+Native Mm ownership and host page operations: [contracts](native-memory.md).
+
+Virtual-memory adapters: [ownership and ABI contracts](virtual-memory.md).
+
+Thread/TIB and stack providers: [construction, lifecycle and callers](thread-memory.md).
+
+Heap/reservation/physical allocation now routes through the project ownership
+provider; see [allocation contracts](independent.md#guest-allocation-ownership).
+Host mappings and thread/TIB storage now have project providers; device services
+and whole-runtime worker quiescence remain transitional.
+
+Image inspection/loading now routes through the project provider before host
+mapping and during materialization; see [image contracts](independent.md#native-image-loading).
+Mapping/TIB construction use project providers; device services remain transitional.
+
+Guest architectural storage and bounded ABI reports now use project providers;
+see [state contracts](independent.md#guest-state-and-abi-reports). The loader
+uses project memory/TIB allocation; fibers still share their native thread's cells.
+
+Native continuation storage/restoration is project-owned through additive
+`0203-independent-nonlocal-jumps.patch`; see [contracts and host limits](independent.md#native-nonlocal-jumps).
+
+Optional branch-feedback recording is project-owned; compatibility includes
+route to `src/runtime/` through `0202-independent-branch-feedback.patch`.
+See [provider, generation and test contracts](independent.md#guest-branch-feedback-recorder).
+
+The canonical guest header now lives in `src/runtime/recomp_types.h`; generation
+reads it directly. The final `0199-independent-runtime-header.patch` keeps the
+transitional template identical, before layout routing. See
+[header ownership and service boundaries](independent.md#canonical-guest-header).
+
+The subsequent `0201-runtime-header-consumer-fixture.patch` repairs the inherited
+guarded-call test's function-backed macro extraction; it changes no game source.
+
+Scalar support follows vector retirement: MOVSX/MOVZX emit their own masks and
+sign handling; old numeric helpers are removed, while regression oracles execute
+real emitted instructions. See [scalar contracts](independent.md#scalar-numeric-support).
+
+Vector helper retirement follows call frames in the loader, before layout
+routing. `XMM_SCALAR` remains the model-transform ABI with an original
+bit-preserving body; emitted SIMD operations need no legacy helper layer.
+See [vector support](independent.md#vector-runtime-support) for contracts/tests.
+
+Guest call frames, dispatch, register/memory primitives and translation tooling are in [own interfaces](independent.md).
 
 The final `platform/2090-repository-source-layout.patch` routes the runtime CMake
 source/test paths and Python compiler bridge into the responsibility folders.
@@ -42,10 +115,10 @@ preserve exact ledger bytes and runtime output. Duplicate active names fail.
 Patch filenames use four-digit base-sort slots and descriptive names; see
 [patch maintenance](../../patches/README.md). This replaces the repeated `z`
 prefixes without changing patch bytes, effective order or context options.
+Maintenance commands use `tools/build/` and `tests/repository/`.
 The loader retains its dependency overrides, and recorded old names unwind
 using their stored contents. Keep the five legacy migration patches.
 
-Bit-operation ownership, captured flags and native validation are in [own tooling](independent.md).
 
 Product lowering and its fatal divide boundary are documented in [own tooling](independent.md).
 
@@ -159,7 +232,7 @@ Runtime layers: generated Xbox guest calls title hooks in
 `external/ts3FPrecomp/titles/futureperfect/src/recomp_manual.c`, HLE in
 `external/ts3FPrecomp/src/hle/`, kernel/NV2A services in `src/kernel/`, then Xbox
 graphics frontend in `src/d3d/d3d8_*.c` and RHI backends. Those short `src/...`
-paths are RUNTIME-relative, distinct from tracked root `src/pc_*.c`.
+paths are RUNTIME-relative, distinct from the tracked [source groups](../../src/README.md).
 `hle_d3d8.c` owns Swap/Present integration; `kernel_bridge.c` and
 `xbox_memory_layout.c` contain vblank/flip-gate plumbing. Start FPS investigation
 there only when timing/trace evidence implicates it. Visible menu names may
@@ -180,14 +253,14 @@ external diagnostic and its limitations.
 
 `tools/build/apply-patches.py:patch_records` defines effective order (not just filename
 sort). The loader stages an unwind of the EXACT previous recorded patch bytes,
-then applies the entire current top-level stack before updating runtime files.
+then applies the entire current recursive stack before updating runtime files.
 Find its ledger with `git -C external/ts3FPrecomp rev-parse --absolute-git-dir`:
 `tsfp-patches.json` lives THERE, not in root `.git` or the build folder.
 
 The Temporal Uplink map (#53) uses two `D3DDevice_CopyRects` calls in one
-frame: a 640Ã—480 screen snapshot before a clear, then a 128Ã—128 map texture
+frame: a 640Ãƒâ€”480 screen snapshot before a clear, then a 128Ãƒâ€”128 map texture
 copy after that clear. The shared HLE hook in `hle_d3d8.c` retains the first
-host texture for that frame and copies guest region (176,0)â€“(312,181) into
+host texture for that frame and copies guest region (176,0)Ã¢â‚¬â€œ(312,181) into
 the second texture. `d3d8_screencopy.c` performs the scaled GPU texture copy
 on RHI; `src/native/gl_screen_copy.inc` supplies the native GL adapter. The
 production RHI fixture in `tests/support/rhi_screen_copy.h` checks that the saved
@@ -205,7 +278,7 @@ shielded enemy in Something to Crow About uses 24-byte 20-vertex strips. Both
 have depth near 1 and already follow the widened camera, so the automatic 4:3
 HUD squeeze shifts them toward screen center. Ordinary HUD sprites at depth
 near .001 and explicitly placed overlays retain their placement. Validate
-with Monkeying Around â†’ Electro Chimp Discomatic and Something to Crow
+with Monkeying Around Ã¢â€ â€™ Electro Chimp Discomatic and Something to Crow
 About's shielded robot at a widescreen resolution.
 
 `0620-zero-base-indices.patch` follows the renderer/native stack. Pushed-array
@@ -519,7 +592,7 @@ fresh live acceptance, not just offline checks.
 
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |
-| Host policy, settings, input, shared helpers | Root `src/pc_*`, `src/graphics/`, `src/native/` | Tracked source; patched upstream CMake includes it |
+| Host policy, settings, input, shared helpers | [Source groups](../../src/README.md) under root `src/` | Tracked source; patched upstream CMake includes it |
 | Runtime integration and title hooks | `external/ts3FPrecomp/titles/futureperfect/src/recomp_manual.c`, title `CMakeLists.txt` | A separate tracked patch |
 | HLE graphics, audio, input, movies | Runtime `src/hle/hle_d3d8*.c`, `hle_dsound*.c`, `hle_input.c`, `hle_xmv*.c` | Tracked patch |
 | Xbox kernel/thread/memory/NV2A | Runtime `src/kernel/`, `src/nv2a/` | Tracked patch; distinguish Win32 and native adapter paths |
@@ -543,10 +616,10 @@ vehicle physics before live surface support, then full-float preservation and
 flip handoff. Numeric addition dispatch retains both physics secondary-step
 rounding and Escort recovery; neither replaces the other during integration.
 
-Top-level `patches/*.patch` is the active stack. The legacy subdirectory contains
-migration inputs only. The loader moves networking ahead of native boot, build
+Active patches are discovered recursively under `patches/`, excluding every
+`legacy/` directory; those contain migration inputs only. The loader moves networking ahead of native boot, build
 identity after Discord, and the presentation integration series to the end;
-consult the generated ordered index instead of guessing from the number of z's.
+consult the generated ordered index and folder map for current names and paths.
 The `-late-frame-pacing.patch` immediately follows `-fixed-60-fps.patch`
 within the timing tail, before the later native numeric/surface patches.
 Earlier 144-FPS, presentation-timing, recovery and shared-presentation patches
@@ -801,3 +874,86 @@ common resolve function, after the skipped-Swap guard; tests execute both actual
 entry bodies and verify one completion per presented frame, none for a skip.
 
 Standalone translator consumers gate live-register header/declarations on the supported protocol; see [register contracts](gpr-refs.md).
+
+Original x87 emission now joins SIMD in the additive translator stack; see
+[independent emitter contracts](independent.md#original-x87-emission). Storage
+and FP environment remain upstream; game acceptance is tracked separately.
+
+The additive `independent-x87-fixture.patch` exports the inherited classification
+C fixture and includes production SET_LO16; it does not alter generated code.
+
+The control-transfer emitter now follows x87 in the additive stack; call ABI,
+local dispatch and table-boundary contracts are in [independent.md](independent.md).
+
+
+Ordinal81 repair/test: [next-packet ABI](kernel-objects.md#guest-next-packet-abi-prerequisite).
+
+
+Request allocation/ownership through0218: [contracts](kernel-objects.md#original-request-storage-and-initialization).
+
+## Profile early-access hooks
+
+See [Unlock Content](unlock-content.md) for the shared menu, profile extension,
+original predicate hooks and isolated validation routes.
+
+
+Original sharing bridges and ordinal80 cleanup: [contracts and checks](kernel-sharing.md).
+
+
+Original request lifetime/callback prerequisites: [contracts and ABI boundary](request-lifetime.md).
+
+
+Stage0222: [original driver-call composition and opaque stack payload](driver-call.md).
+
+
+Stage0223: [private request construction and completion delivery](transfer-completion.md).
+
+Stage0224: [host-owned FIFO request scheduling](transfer-completion.md#host-owned-request-queue).
+
+Stage0225: [StartIo callback composition and acceptance](transfer-completion.md#startio-callback-composition); maintained maps include the new provider.
+
+Stage0226: [exclusive waiting membership and device queue mirrors](transfer-completion.md#device-queue-mirrors).
+
+Stage0227: [persistent device queue lifetime and scoped scheduler APIs](transfer-completion.md#persistent-device-queue-lifetime).
+
+Stage0228: [read-only caller-owned request adoption and range lifetime](transfer-completion.md#caller-owned-request-adoption).
+
+Stages0229/0231: [events and targets](transfer-completion.md). Stage0232: [symbolic links](symbolic-links.md).
+
+Stages0233/0234: [routing](guest-paths.md), [original host storage](host-storage.md).
+
+`2080-tank-driver-controls.patch` wraps 1730E0 through shared
+`pc_tank_guest.inc`. The local keyboard/mouse scope selects signed track input
+and restores actor links after the original call; controller behavior retains
+the original camera-relative branch. See [scope guards](mounted-mouse.md).
+
+Stage0235: [original pool imports and native surface retirement](kernel-pool.md).
+
+Stage0236: [original absolute-time codec and guest calendar imports](kernel-time.md).
+
+## Native Online integration (2026-10-30)
+
+`network/2140-native-online.patch` follows the historical 2090 layout migration
+in `patch_records`. It links shared `pc_network.c` and the Cocoa process adapter
+into the native title, enables Objective-C in that directory, and defines
+`TSFP_NATIVE_NETWORK` for the guest dispatch, lobby and bot hooks. SDL3 and Cocoa
+remain host dependencies. Unsupported fixture builds retain original guest calls.
+The patch stack must be applied before generating the shared compatibility identity.
+
+Stage0237: [original counted strings and memory prefixes](kernel-strings.md).
+
+Stage0238: [original critical sections and whole native RTL retirement](kernel-rtl.md).
+
+Stage0239: [original checked narrow guest formatting](guest-printf.md).
+
+Stage0240: [original numeric conversions](guest-numbers.md).
+
+Crash model traversal instrumentation at US guest `0x583E0` is introduced by
+`patches/diagnostics/2140-model-tree-trace.patch`. The manual wrapper preserves
+original execution and records bounded model/node/depth history through the shared
+capture adapters. It is diagnostic instrumentation, not a fix for #410. See
+[crash evidence](crash-evidence.md) for capture scope and platform limits.
+
+Allocation-history hook details: [crash evidence](crash-evidence.md). The shared
+allocator observer is diagnostic-only; backing allocation ownership and guest
+model suballocation lifetime remain distinct concepts.

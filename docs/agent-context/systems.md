@@ -1,7 +1,16 @@
 # Subsystem entry points
 
-Product division faults: [shared adapter and limits](independent.md).
+Battle Mech mouse: [shared routing and guards](mounted-mouse.md#battle-mech-mouse-425).
 
+Minigun motor intent and release damping: [shared policy](native-minigun.md).
+
+Kernel: [objects and boot](kernel-objects.md).
+
+Memory: [retired APIs](retired-memory-compatibility.md).
+
+Guest storage: [allocation](independent.md#guest-allocation-ownership), [threads](thread-memory.md), [virtual memory](virtual-memory.md).
+
+Image/state/ABI: [image](independent.md#native-image-loading), [execution](independent.md#guest-state-and-abi-reports).
 
 Procedural wind: [ownership/time scopes](native-wind.md).
 
@@ -24,7 +33,7 @@ For movement regressions, compare player-position displacement in game as well
 as sampled stick values: the title attenuates diagonals after the binding
 sampler. Windows mouse confinement is owned by `pc_controls.c`; native SDL
 relative mode is owned by `src/native/input_sdl.c` and should recover from
-focus changes only when gameplay capture was requested.
+focus for pending capture; frame-applied mouse disable releases it (SDL self-test).
 Windows gameplay confinement now uses the tiny center rectangle from
 `pc_mouse_capture.h`, rather than the entire client. Relative WM_INPUT counts
 still drive aim; absolute pointer drift cannot reach the border. Initial capture,
@@ -38,17 +47,18 @@ authoritative place to implement portable behavior.
 Textures: `src/textures/`, runtime `src/d3d/` and HLE
 texture hooks; offline tooling `tools/textures/`. Sanitized replacements now live
 in `assets/textures` (DDS via Git LFS), audited by `tools/textures/build_textures.py` for optional delivery;
-private source art and original assets stay local. Networking: `src/network/`, runtime HLE/kernel patches and `tools/network/online.py`. Crash capture:
+Private art stays local. Networking: `src/network/`, HLE/kernel patches and
+`tools/network/online.py`; [Online UI](multiplayer-ui.md). Crash capture:
 `src/diagnostics/`, runtime crash hooks and launcher diagnostics.
-Audio/movie timing is runtime `src/hle/hle_dsound*`, `hle_xmv*`, not launcher code.
-Effects now adapt their default buffer lead from 40 up to 90 ms under delayed
-service and refill immediately after skipping stale data from a long hitch.
-Explicit lead overrides remain fixed; see the runtime guide for that contract.
+Audio: `src/hle/hle_dsound*`, `hle_xmv*`. [Beta audio](../development/positional-audio.md).
+General buffering, lifecycle, format and device recovery are unconditional;
+Enhanced Audio controls only the optional mix. Effects adapt their default
+lead from 40 to 90 ms and refill immediately after skipping stale hitch data.
+Explicit lead overrides stay fixed. See [recovery contracts/tests](audio-buffers.md).
 `audio_output.h` owns `RECOMP_AUDIO_DEFAULT_GAIN` (0.5, about -6 dB).
 XAudio applies it once to the master; SDL applies it once per stream. This
 quiets the output at 100% without changing saved Music/Sound sliders, their
 curves or relative mix. An explicit `RECOMP_AUDIO_GAIN` still overrides it.
-Device recovery: [shared clocks, XAudio/SDL adapters and tests](audio-buffers.md).
 Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 
 Consult `docs/development/shared-platform.md` for shared versus adapter responsibilities.
@@ -101,12 +111,8 @@ placement changes and restores its enclosing placement. Other panel callers,
 4:3 and split-screen retain their prior path. Shared Windows/native Mac code;
 the UI fixture tests both callers and guards, while Mac scenes remain unverified.
 
-Reload input (#337): `pc_native_numeric.h` admits the original `1C2E80` reload/
-weapon-mode dispatcher at compare site `1C2F09` whenever native game time advances.
-Input edges follow raw ticks; pause can offset those from game ticks,
-so the old gate dropped a valid press. Eligibility, binding lookup, animation and
-ammo checks remain original; zero-time pause and Original60 remain unchanged.
-The generic CMP hook is documented in runtime.md. No host-specific adapter.
+Reload #337 and interaction #357 use advancing-time admission at their exact
+US compare sites; see [input consumers and validation](interaction-input.md).
 Keyboard reload buffering additionally uses `pc_reload_input.h`, owned by
 `PcInput`, and US state snapshots in `pc_reload_guest.h`. Win32 and SDL publish
 press/release events under input locks, including collapsed down/up events.
@@ -343,7 +349,7 @@ is enabled. A gap over 250 ms snaps to the next received host state. Match,
 host, actor-pool and inactive-state changes clear presentation history. The
 Windows QPC adapter supplies monotonic seconds independently of guest game time.
 Human controller replication and the host's three-tick send interval are unchanged.
-Native Mac fallback remains original until its network adapter exists (MAC-052).
+Native Mac shares these hooks with TSFP_NATIVE_NETWORK; see [Online](multiplayer-ui.md).
 Only clip-block `+8` (model `DC`/`134`) is interpolated within the same clip/cycle;
 the other animation channels and crossfade controls stay atomic. US `5CEF0`
 can promote the secondary clip during zero-advance evaluation, so mixing fade
@@ -492,13 +498,13 @@ STRETCH tag `0x00137010`. Shared RHI `d3d8_GetScissor` and legacy GL
 clips, other tags and partial rectangles remain unchanged. The title helper
 scope supplies the tag only for complete single-player non-4:3 views.
 
-## Mounted and CCTV gun mouse aim (#182)
+## Mounted and CCTV gun mouse aim (#182, #385)
 
 `src/input/pc_mounted.h` handles guest player mode `0x80` before ordinary player
 camera updates in both `pc_controls.c` and `native/input_sdl.c`. The US guest
-`sub_0025D520`/`sub_00258A20` aim an AGUN through player entity data `+0xC14`;
-ordinary player yaw/pitch do not turn it. The shared helper validates its AGUN
-tag and reverse owner link, uses local input port zero (not guest player ID),
+`sub_0025D520`/`sub_00258A20` aim a mounted gun through player entity data `+0xC14`;
+ordinary player yaw/pitch do not turn it. The shared helper validates its entity
+backpointer and reverse operator link at gun data `+0xD8`, uses local input port zero (not guest player ID),
 and updates gun pitch/yaw with authored limits, sensitivity, inversion, FOV and
 optional gun speed. Mouse displacement is consumed once without frame-time
 multiplication. Invalid ownership, pause, focus loss and stale motion consume
@@ -512,7 +518,10 @@ Native mode accepts finite positive game-float time at `4E794C`; Original60
 retains its whole-time gate at `4E7944`. Both consume/rebase mouse batches with
 `pc_input_consume_motion`, preventing fresh packets from expiring against a
 previous batch timestamp. Paused/invalid native time consumes without aiming.
-The helper still handles only AGUN mode `0x80`, not vehicle-seat mode `0x8000`.
+The helper still handles only mounted-gun mode `0x80`, not vehicle-seat mode `0x8000`.
+For #385 field provenance, bounded access and original-code regression coverage,
+see [mounted-gun ownership](mounted-mouse.md). The AI target and instance name
+must not authorize or exclude player mouse aim.
 Host input self-tests route synthetic motion through `pc_controls_apply_mouse`
 in Windows and SDL, with zero-whole positive time, paused stale whole time,
 live return to Original60 and return to on-foot controls. Windows execution
@@ -547,22 +556,8 @@ hook at default/90-degree FOV and three aspect ratios. The separate
 
 ## Unified Video Options and native presets (PR #285)
 
-`pc_display_menu.c` stages resolution (including Auto), aspect, vertical FOV,
-texture style, FPS and subtitles behind one dirty-state Apply. Auto uses the
-`1,1` saved sentinel and is labeled Auto, never displayed as a pixel size.
-Controls follows Video Options; conditional frontend Cheats is last. Audio
-retains its frontend/pause-specific alignment and common highlights are rounded.
-`pc_frame_rate_settings.h` persists the beta presets; live requests enter
-`pc_frame_rate_live.inc` and commit at the guest clock boundary.
-
-The merge retains main's nested text-read scope and fresh scratch-write checks
-rather than the older per-hook stack-query optimization. The real-protection
-fixture in `tests/input/pc_prompts.c` retains boundary/ABI checks; query reduction is
-measured inside the cache by `tests/input/text_read_scope.c`, because reads now execute
-in a separately compiled translation unit. Mounted mouse aim remains ahead of
-ordinary camera input in both adapters; fractional terminal handling is retained.
-Native high-refresh validation is MAC-060, distinct from crane MAC-058 and
-text input MAC-059.
+See [Video Options contracts](video-options.md) for shared staging, persistence,
+platform adapters and accepted/default frame-rate behavior.
 
 ## Issue #74 menu texture additions
 
@@ -611,15 +606,15 @@ boundaries separately from the walking drain's active-game-update budget.
 ## Experimental water coefficient precision
 
 `pc_surface_coefficients` in `pc_surface_bias.h` preserves the current guest
-uploader's clamped/truncated byte anchors, then scales acceleration/displacement
+uploader's clamped/rounded byte anchors, then scales acceleration/displacement
 and exponentiates damping without repacking fractional values. The existing
 bias+float+fractional opt-in gates enable it. `pc_native_surface_guest.h` copies
 original parameters into the HLE state before temporary guest scaling; whole
 steps retain original uploads. The HLE path copies bank 0 stages 3/5/7 and bank
 1 stage 6 into ordered commands only for shader 0x4BBF10, caching duplicates and
 clearing on scope exit. Defaults and original/catch-up behavior stay unchanged.
-The constant-uploader fixture documents the current lifter's truncation; this
-change does not claim original Xbox MXCSR rounding fidelity or full wave parity.
+Shared rounded conversion and finite-input guards:
+[coefficient contracts](surface-coefficients.md). Xbox MXCSR/wave parity is unverified.
 
 The opt-in precision policy now selects full-float format 0x4B for registered
 feedback intermediates. Final byte textures, guest headers, rate gating and
@@ -659,7 +654,7 @@ variant filter `sub_001BAA70`, usability `sub_001BA410` and selection
 `sub_001BA130`, then refreshes the weapon HUD with `sub_00142820`. It deduplicates
 weapon groups, checks local input slot zero rather than network player ID, and
 never grants inventory. Empty slots do nothing. Settings expose exactly ten bindable
-slots, defaulting to 1–9/0. The separate 70-entry internal table bound covers
+slots, defaulting to 1Ã¢â‚¬â€œ9/0. The separate 70-entry internal table bound covers
 weapon IDs and variants; it does not add settings rows.
 
 ## Themed live keyboard and mouse editor
@@ -704,32 +699,11 @@ per-frame callbacks and requires a selectable capture instruction row.
 
 ## Host storage choices in Create Profile
 
-`pc_storage_menu.inc` injects mounted host drive rows at native storage-button
-site 001944C3, directly in Select Storage Device. Rows sort by drive letter on Windows and case-insensitive volume name on Mac;
-Rows show only volume names and drive letters, with no game/save role suffix.
-Native menu sizing is widened before its
-title at 0019440B. Labels are ASCII-safe for the guest font. Windows lists mounted
-drive letters; Mac lists the startup volume and /Volumes mounts. Neither lists
-unmounted partitions. The native 00192770 update and 00191470 icon adapter keep
-host indices away from the console device table. Selection delegates to original
-00192E60 with console index zero, preserving the save/overwrite state machine.
-After a drive change, synchronous 00024EC0/00190F70 enumeration rebuilds the native
-profile list (74F9FC) before duplicate-name validation against the new location.
-
-`pc_storage.inc` supplies actual volume metadata, cached five seconds for original
-storage-text replacements. `pc_storage_routes.inc` validates a writable save
-folder, prepares UserData/45410066 for the native free-space query, and atomically
-saves save-location.txt beside RECOMP_INPUT_CONFIG. Changes immediately redirect
-future UDATA opens through the registered kernel adapter; failed persistence
-rolls that route back. Existing handles, caches and partition devices stay put.
-Startup also honors the preference; profiles are neither moved nor deleted.
-An unavailable configured location fails explicitly instead of silently
-creating a new profile elsewhere. TSFP_SAVE_LOCATION_LOCK protects isolated test
-sessions from changing real drive preferences. Windows resolves junctions and
-volume identities; drive metadata retains executable-volume identity internally.
-The Mac metadata adapter includes unistd.h before calling getattrlist; sys/attr.h
-provides attribute structures but not that function declaration. The production
-pc_prompts.c compile contract checks this include order in Mac CI.
+See [save-folder selection](save-locations.md): shared routing and persistence,
+original guest profile state machine, owner-scoped picker completion, Windows/Mac folder pickers,
+launcher copy/backup/restore and validation. `pc_storage.inc` supplies cached
+volume metadata for original storage-text replacements. Mac includes unistd.h
+before getattrlist; production pc_prompts.c compilation checks this contract.
 
 ## Experimental coupled water operator
 
@@ -924,12 +898,11 @@ CPU evidence only; rendering/pacing and physical Mac remain unverified.
 
 ## Temporal Uplink map display
 
-The shared HLE screen-copy hook saves Future Perfect's preclear map image
-and supplies its map region to the handheld texture later in the frame.
-Native GL implements the same texture-region transfer in
-`src/native/gl_screen_copy.inc`, preserving framebuffer bindings and scissor
-state. The map geometry and gameplay controls remain guest-owned; this adapter
-only transfers the image that the game already drew.
+The shared HLE hook copies the preclear map into the handheld texture. Native
+GL uses src/native/gl_screen_copy.inc and preserves framebuffer/scissor state.
+Guest geometry and controls remain unchanged.
+
+Temporary UV matrices: [render epoch and arena lifetime](render-matrix-cache.md).
 
 ## Forced and damped material scrolling
 
@@ -950,3 +923,26 @@ for the map, hook composition, rejected candidates and live/Mac acceptance limit
 Statistics: D2CB7 scopes D1FD0 to carried ticks. Time totals keep Original
 cadence; distance stays per-frame. D2079 blocks paused stale ticks.
 Impact sparks: see [native spark timing](native-impact-sparks.md).
+
+
+[Devices](kernel-devices.md).
+
+
+Project-owned I/O contracts: [sharing](kernel-sharing.md),
+[request lifetime](request-lifetime.md), [driver calls](driver-call.md),
+[transfer/queues/events/targets](transfer-completion.md),
+[symbolic links](symbolic-links.md), [path routing](guest-paths.md) and
+[host storage](host-storage.md).
+
+Vehicle gunner mouse uses shared `src/input/pc_mounted.h` for mode `0x400`,
+resolving the occupied seat and its gun on every update. Driver/passenger seats
+retain their existing route. Vehicle limits and locked states differ from mode
+`0x80`; see [mounted and vehicle mouse contracts](mounted-mouse.md). Both Windows
+and SDL adapters consume this helper. Exact mission validation remains separate.
+
+Tank keyboard/mouse policy shares `pc_tank.h` and the
+1730E0 guest wrapper. See [tank scope and original aim route](mounted-mouse.md).
+
+Kernel: [pool](kernel-pool.md), [time](kernel-time.md), [RTL](kernel-rtl.md), [numbers](guest-numbers.md), [crashes](crash-evidence.md).
+
+Online uses the build interpreter: [paths](multiplayer-ui.md).

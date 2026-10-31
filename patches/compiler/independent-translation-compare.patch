@@ -1,0 +1,169 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -26,6 +26,7 @@
+ import translation_product as _project_product
+ import translation_bitops as _project_bitops
+ import translation_exchange as _project_exchange
++import translation_compare as _project_compare
+ 
+ # Function export names of the Windows libraries the host exe links
+ # (kernel32/user32/gdi32/advapi32/winmm/ws2_32/ole32/dbghelp/...). A guest
+@@ -1184,29 +1185,7 @@
+     return found.get("setjmp"), found.get("longjmp")
+ 
+ 
+-def normalise_zero_test(mnemonic, ops):
+-    """`test X, X` is `cmp X, 0`, and saying so keeps a branch alive.
+-
+-    The two leave every flag identical: both compute X, so ZF, SF and PF come
+-    out the same, and both clear CF and OF. What differs is only how the
+-    snapshot reconstructs them -- a cmp answers `je` with `_fa == _fb`, a test
+-    with `(_fa & _fb) == 0` -- and that difference is enough to stop two
+-    predecessors merging at a join. `_merge_flag_states` requires one
+-    operation across all of them, so a block reached by `cmp [x], 0` on one
+-    edge and `test eax, eax` on the other inherits no state at all, and its
+-    jcc compiles as the `_flags` fallback, which nothing ever assigns: the
+-    branch is never taken.
+-
+-    Normalising here is what makes that merge legal rather than forcing one
+-    through. After it the two predecessors really are the same operation on
+-    the same width, which is what the merge was asking for.
+-    """
+-    if (mnemonic == "test" and len(ops) == 2
+-            and ops[0].type == "reg" and ops[1].type == "reg"
+-            and ops[0].reg and ops[0].reg == ops[1].reg):
+-        return "cmp", [ops[0], Operand(type="imm", imm=0,
+-                                       mem_size=ops[0].mem_size)]
+-    return mnemonic, ops
++normalise_zero_test = _project_compare.normalise_zero_test
+ 
+ 
+ class Lifter:
+@@ -1402,12 +1381,8 @@
+             return ["/* wait - FPU sync */"]
+ 
+         # ── Misc ──
+-        if m == "cdq":
+-            return ["edx = ((int32_t)eax < 0) ? 0xFFFFFFFF : 0; /* cdq */"]
+-        if m == "cwde":
+-            return ["eax = SX16(eax); /* cwde */"]
+-        if m == "cbw":
+-            return ["SET_LO16(eax, SX8(eax)); /* cbw */"]
++        if m in ("cbw", "cwd", "cwde", "cdq"):
++            return _project_compare.extend(self, insn, ops)
+         if m == "bswap":
+             return self._lift_swap(insn, ops)
+         if m in ("bt", "bts", "btr", "btc"):
+@@ -1651,87 +1626,9 @@
+     _SNAP_MASK = {1: "0xFFu", 2: "0xFFFFu", 4: "0xFFFFFFFFu"}
+     _SNAP_SX = {1: "(int8_t)", 2: "(int16_t)", 4: "(int32_t)"}
+ 
+-    def _snapshot_flags(self, insn, ops, kind):
+-        """Capture a cmp/test's operands where the comparison happens.
+-
+-        The flags are consumed later by a jcc, which used to re-read the
+-        operands at that point. Two things go wrong with that. Anything
+-        between the two can change them - "cmp [esi+ecx*2], -1 / lea esi,
+-        [esi+ecx*2] / jne" re-read through the already-advanced esi and
+-        tested the wrong slot. And the comparison lost its width, so a
+-        16-bit "cmp word ptr [..], -1" became a compare against
+-        0xFFFFFFFF, which a 16-bit -1 (0xFFFF) never equals - the branch
+-        then went the same way every time.
+-
+-        Snapshotting fixes both: operands are read once, at the right
+-        width, in both a zero- and a sign-extended form so the jcc can
+-        pick whichever its condition needs.
+-        """
+-        size = _operand_width(ops[0])
+-        if size is None:
+-            size = _operand_width(ops[1])          # e.g. cmp imm, reg
+-        if size not in self._SNAP_MASK:
+-            size = 4
+-        mask = self._SNAP_MASK[size]
+-        sx = self._SNAP_SX[size]
+-        lhs = _fmt_operand_read(ops[0])
+-        rhs = _fmt_operand_read(ops[1])
+-        # Direct 32-bit global comparisons use the same read policy as MOV.
+-        # Capture once before flags are derived; indirect/segmented/narrow
+-        # accesses retain their original semantics. Title policy owns sites.
+-        if kind == "cmp":
+-            reads = [lhs, rhs]
+-            for index, operand in enumerate(ops[:2]):
+-                if (operand.type == "mem" and operand.mem_size == 4
+-                        and not operand.mem_base and not operand.mem_index
+-                        and not operand.mem_seg):
+-                    reads[index] = (f"RECOMP_LOAD_GLOBAL_U32(0x{insn.address:X}, "
+-                                    f"{_fmt_mem(operand)}, {reads[index]})")
+-            lhs, rhs = reads
+-        out = [
+-            f"_fa = (uint32_t)({lhs}) & {mask}; _fb = (uint32_t)({rhs}) & {mask};",
+-            f"_fas = (int32_t){sx}(_fa); _fbs = (int32_t){sx}(_fb);"
+-            f" /* {kind} {lhs}, {rhs} ({size*8}-bit) */",
+-        ]
+-        # A cmp sets the carry flag too, and sbb/adc/setc/rcl read it directly
+-        # rather than through _fa/_fb. Leaving CF alone here let those pick up
+-        # whatever an earlier instruction had left in it.
+-        #
+-        # MSVC's branchless tolower, in the _stricmp every Source string
+-        # compare goes through, is exactly that shape:
+-        #
+-        #     sub al, 0x41      ; CF = al < 'A'
+-        #     cmp al, 0x1A      ; CF = "is a letter"  <- the one sbb wants
+-        #     sbb cl, cl
+-        #     and cl, 0x20
+-        #     add al, cl        ; fold to lowercase
+-        #
+-        # With CF still coming from the sub, no uppercase letter was ever
+-        # folded and _stricmp quietly became strcmp.
+-        #
+-        # _fa and _fb are already masked to the operand width, so their
+-        # unsigned comparison is CF at that width.
+-        if self.needs_cf:
+-            zero_rhs = (ops[1].type == "imm" and not ops[1].imm)
+-            if kind == "cmp" and not zero_rhs:
+-                out.append("_cf = (int)(_fa < _fb);")
+-            else:
+-                # An unsigned value is never below zero, so a compare against
+-                # it cannot borrow -- which is also why `test X, X` normalises
+-                # onto this form without disturbing CF.
+-                out.append("_cf = 0; /* nothing borrows from zero */")
+-        return out
+-
+-    def _lift_cmp(self, insn, ops):
+-        if len(ops) < 2:
+-            return ["/* cmp: bad operands */"]
+-        return self._snapshot_flags(insn, ops, "cmp")
+-
+-    def _lift_test(self, insn, ops):
+-        if len(ops) < 2:
+-            return ["/* test: bad operands */"]
+-        kind, ops = normalise_zero_test("test", ops)
+-        return self._snapshot_flags(insn, ops, kind)
++    _snapshot_flags = _project_compare.snapshot
++    _lift_cmp = _project_compare.cmp
++    _lift_test = _project_compare.test
+ 
+     # ── Control flow ──
+ 
+--- a/tools/recomp/test_lifter_zero_test_merge.py
++++ b/tools/recomp/test_lifter_zero_test_merge.py
+@@ -51,7 +51,7 @@
+     def test_the_emitted_snapshot_compares_against_zero(self):
+         out = _emit("test", [_reg("eax"), _reg("eax")])
+         self.assertIn("_fb = (uint32_t)(0)", out)
+-        self.assertIn("cmp eax, 0", out)
++        self.assertIn("own cmp snapshot", out)
+ 
+     def test_carry_is_still_cleared(self):
+         """test clears CF, and nothing borrows from zero -- same answer."""
+--- a/tools/recomp/test_lifter_carry.py
++++ b/tools/recomp/test_lifter_carry.py
+@@ -57,7 +57,7 @@
+ 
+         self.assertIn("_cf = (int)(_fa < _fb);", generated)
+         # and it must land between the cmp and the sbb, not before the cmp
+-        cmp_at = generated.index("/* cmp ")
++        cmp_at = generated.index("/* own cmp snapshot */")
+         cf_at = generated.index("_cf = (int)(_fa < _fb);")
+         sbb_at = generated.index("uint32_t _alu_carry = (_cf != 0);")
+         self.assertLess(cmp_at, cf_at)

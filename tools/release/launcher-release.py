@@ -225,14 +225,19 @@ def asset_matches(record, path):
 
 
 def publication_assets(directory, plan):
-    # Publish only verified versioned ZIPs; existing updaters require these names.
-    return {path.name: path for path in release_assets(directory, plan)}
+    # Aliases use the verified versioned bytes, never stale local alias files.
+    # Keep versioned names for existing updaters without making local ZIP copies.
+    assets = {path.name: path for path in release_assets(directory, plan)}
+    for platform in PLATFORMS:
+        assets[f'TimeSplitters-Launcher-{platform}.zip'] = assets[package_names(plan['version'], platform)[0]]
+    return assets
 
 
 def launcher_release_path(path):
     """Launcher payload/build inputs, excluding game runtime and housekeeping."""
     return path.startswith('tools/launcher/') or path in {
         'tools/build/build-launcher.ps1', 'tools/build/build-mac-launcher.py',
+        'tools/build/launcher-cache.ps1',
         'tools/build/fetch-launcher-art.ps1', 'config/build/launcher-artwork.json',
         'config/build/mac-launcher-sdk.json', 'config/pc-controls.default.json'}
 

@@ -371,6 +371,8 @@ namespace TimeSplitters.Launcher
             if(savesPage==null) {
                 savesPage=new SavesPage(root,previewMode);
                 savesPage.OpenFolder+=relative=>OpenFolder(relative);
+                savesPage.OpenSaveLocation+=path=>{Directory.CreateDirectory(path);Process.Start(new ProcessStartInfo(path){UseShellExecute=true});};
+                savesPage.PickSaveFolder=()=>{using(var picker=new System.Windows.Forms.FolderBrowserDialog {Description="Choose an empty folder or an existing TimeSplitters save folder."})return Task.FromResult(picker.ShowDialog()==System.Windows.Forms.DialogResult.OK?picker.SelectedPath:null);};
                 savesPage.BusyChanged+=value=>{busy=value;Refresh();};
                 Find<ContentControl>("SavesHost").Content=savesPage.View;
             }
@@ -472,7 +474,7 @@ namespace TimeSplitters.Launcher
                     try {
                         string name=CrashReports.Latest(root);if(name==null){page.Status("No completed crash report found.");return;}
                         var dialog=new Microsoft.Win32.SaveFileDialog {Filter="ZIP archive (*.zip)|*.zip",FileName=name+".zip",Title="Save crash report - may contain personal information"};
-                        if(dialog.ShowDialog(Window)==true){CrashReports.Export(root,name,dialog.FileName);page.Status("Crash report exported locally. Review the dump and log before sharing. Nothing was uploaded.");}
+                        if(dialog.ShowDialog(Window)==true){CrashReports.Export(root,name,dialog.FileName);Process.Start(new ProcessStartInfo(Path.GetDirectoryName(dialog.FileName)){UseShellExecute=true});page.Status("Crash report exported locally. Review the dump and log before sharing. Nothing was uploaded.");}
                     } catch(Exception ex){page.Status("Could not export the crash report ("+ex.GetType().Name+"). Choose a new filename and try again.");}
                 };
                 page.Refresh.Click+=async(s,e)=>await RefreshDiagnostics();

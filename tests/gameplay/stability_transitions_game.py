@@ -34,6 +34,7 @@ import sys
 import threading
 import time
 from PIL import Image
+sys.path.insert(0, str(_layout_root / 'tests/input'))
 import pc_settings_game as ui
 ROOT=_layout_root
 sys.path.insert(0,str(ROOT/'tools'))

@@ -49,12 +49,17 @@ def test_parser_sources_and_bridge_invalidate_generation(tmp_path, monkeypatch):
         path = runtime / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text('original')
-    for name in ('xbe_image.py', 'xbe_kernel_exports.def', 'recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'x86_recovery.py', 'x86_functions.py', 'recomp_symbols.py', 'analysis_cache.py', 'analysis_config.py', 'analysis_output.py', 'analysis_runner.py', 'xdk_catalog.py', 'compile_pipeline.py', 'function_evidence.py', 'function_categories.py', 'function_catalog.py', 'c_source_scan.py', 'generation_output.py', 'translation_decode.py', 'translation_layout.py', 'translation_hooks.py', 'branch_feedback.py', 'unresolved_report.py', 'translation_operands.py', 'translation_moves.py', 'translation_integer.py', 'translation_bits.py', 'translation_product.py', 'translation_bitops.py'):
+    for name in ('xbe_image.py', 'xbe_kernel_exports.def', 'recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'x86_recovery.py', 'x86_functions.py', 'recomp_symbols.py', 'analysis_cache.py', 'analysis_config.py', 'analysis_output.py', 'analysis_runner.py', 'xdk_catalog.py', 'compile_pipeline.py', 'function_evidence.py', 'function_categories.py', 'function_catalog.py', 'c_source_scan.py', 'generation_output.py', 'translation_decode.py', 'translation_layout.py', 'translation_hooks.py', 'branch_feedback.py', 'unresolved_report.py', 'translation_operands.py', 'translation_moves.py', 'translation_integer.py', 'translation_bits.py', 'translation_product.py', 'translation_bitops.py', 'translation_exchange.py', 'translation_compare.py', 'translation_strings.py', 'translation_conditions.py', 'translation_sse.py', 'translation_mmx.py', 'translation_x87.py', 'translation_control.py', 'translation_lifting.py', 'translation_context.py', 'translation_helpers.py', 'translation_names.py', 'translation_host_symbols.txt', 'translation_host_symbols.json', 'translation_batch.py', 'translation_discovery.py', 'translation_function.py', 'translation_cli.py'):
         path = project / 'tools/compiler' / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text('original')
+    header = project / 'src/runtime/recomp_types.h'
+    header.parent.mkdir(parents=True)
+    header.write_text('original')
+    support = header.with_name('tsfp_branch_feedback.h')
+    support.write_text('original')
     monkeypatch.setattr(generation, '__file__', str(project / 'tools/build/recomp-generation.py'))
-    for path in (project / 'tools/compiler/xbe_image.py', project / 'tools/compiler/xbe_kernel_exports.def',
+    for path in (header, support, project / 'tools/compiler/xbe_image.py', project / 'tools/compiler/xbe_kernel_exports.def',
                  project / 'tools/compiler/recomp_image.py', project / 'tools/compiler/x86_decode.py', project / 'tools/compiler/x86_flow.py', project / 'tools/compiler/x86_recovery.py', project / 'tools/compiler/x86_functions.py', project / 'tools/compiler/recomp_symbols.py',
                  project / 'tools/compiler/analysis_cache.py', project / 'tools/compiler/analysis_config.py', project / 'tools/compiler/analysis_output.py', project / 'tools/compiler/analysis_runner.py',
                  project / 'tools/compiler/xdk_catalog.py', project / 'tools/compiler/compile_pipeline.py',

@@ -1,5 +1,8 @@
 #import <Cocoa/Cocoa.h>
 #include "settings_macos.h"
+#include "pc_storage.h"
+#include "crash_posix.h"
+#include <stdatomic.h>
 #include "pc_settings.h"
 #include "pc_display.h"
 #include "pc_debug.h"
@@ -10,6 +13,26 @@
 #include <math.h>
 #include "binding_capture.inc"
 static SDL_Window *game_window;
+static atomic_int save_picker_state;
+static char save_picker_path[4096];
+int pc_storage_picker_start(void) {
+    int expected=0;if(!atomic_compare_exchange_strong(&save_picker_state,&expected,1))return 0;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        tsfp_native_settings_release_input(game_window);tsfp_native_crash_inhibit(1);
+        NSOpenPanel *picker=[NSOpenPanel openPanel];picker.canChooseDirectories=YES;picker.canChooseFiles=NO;picker.canCreateDirectories=YES;picker.allowsMultipleSelection=NO;
+        picker.message=@"Choose an empty folder or your existing TimeSplitters saves. Existing files stay where they are.";
+        [picker beginWithCompletionHandler:^(NSModalResponse response){
+            int accepted=0;const char *path=picker.URL.path.UTF8String;
+            if(response==NSModalResponseOK && path && strlen(path)<sizeof save_picker_path){snprintf(save_picker_path,sizeof save_picker_path,"%s",path);accepted=1;}
+            tsfp_native_settings_release_input(game_window);tsfp_native_crash_inhibit(0);atomic_store(&save_picker_state,accepted?2:3);
+        }];
+    });return 1;
+}
+int pc_storage_picker_poll(char *out,size_t capacity) {
+    int state=atomic_load(&save_picker_state);if(state<2)return 0;
+    if(state==2)snprintf(out,capacity,"%s",save_picker_path);
+    atomic_store(&save_picker_state,0);return state==2?1:-1;
+}
 static char *settings_test_error;
 static void alert_text(const char *text) {
     if(settings_test_error){snprintf(settings_test_error,512,"%s",text);return;}

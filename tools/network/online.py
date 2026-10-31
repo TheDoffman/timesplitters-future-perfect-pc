@@ -26,12 +26,13 @@ import queue
 import threading
 import time
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import messagebox
 
+from online_platform import GameProcess, show_error
 from online_client import Client, Session
 from online_host import fetch_public_ipv4, invitation, parse_invitation, start_match
 from online_paths import ROOT, HANDSHAKES, SETTINGS, MANIFEST, TOOLS
-from online_theme import OnlineTheme
+from online_theme import OnlineTheme, build_browser, build_invitation
 
 
 
@@ -45,7 +46,10 @@ def main():
     private = HANDSHAKES.resolve()
     if result.parent != private or result.name != f'{args.pid}.ready':
         raise ValueError('Unexpected Online handshake path')
-    spec = importlib.util.spec_from_file_location('network_identity', TOOLS/'network-identity.py')
+    identity_path = TOOLS/'network-identity.py'
+    if not identity_path.is_file():
+        identity_path = repo_file(ROOT, 'tools', 'network-identity.py')
+    spec = importlib.util.spec_from_file_location('network_identity', identity_path)
     identity = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(identity)
     manifest = json.loads(MANIFEST.read_text())
@@ -53,13 +57,7 @@ def main():
     if manifest['compatibility'] != args.compatibility:
         raise ValueError('Online tools and executable have different build identities; rebuild first')
 
-    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-    kernel.OpenProcess.restype = ctypes.c_void_p
-    kernel.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_ulong]
-    kernel.CloseHandle.argtypes = [ctypes.c_void_p]
-    parent = kernel.OpenProcess(0x00100000, False, args.pid)
-    if not parent:
-        raise ValueError('Game process is no longer running')
+    parent = GameProcess(args.pid)
     state = Path(os.environ.get('TSFP_ONLINE_SETTINGS', SETTINGS))
     try:
         saved = json.loads(state.read_text())
@@ -67,8 +65,6 @@ def main():
         saved = {}
     window = tk.Tk()
     window.title('Online - TimeSplitters Future Perfect')
-    window.geometry('820x750')
-    window.minsize(760, 720)
     theme = OnlineTheme(window)
     address = tk.StringVar(value=saved.get('directory', 'https://127.0.0.1:30820'))
     pin = tk.StringVar(value=saved.get('fingerprint', ''))
@@ -86,31 +82,13 @@ def main():
     except ValueError:
         pass
     public_ip = tk.StringVar(value=saved.get('public_address', inferred_public))
-    status = tk.StringVar(value='Start New Match sets up hosting automatically. Friends can paste an invitation below.')
+    status = tk.StringVar(value='Ready when you are. Paste an invitation or start a new match.')
     session = [None]
     automation = os.environ.get('TSFP_ONLINE_TEST_COMMAND')
     busy = [False]
     stopping = threading.Event()
     replies = queue.Queue()
     reply_lock = threading.Lock()
-    frame = ttk.Frame(window, padding=14)
-    frame.pack(fill='both', expand=True)
-    frame.columnconfigure(1, weight=1)
-
-    def row(label, variable, number):
-        ttk.Label(frame, text=label).grid(row=number, column=0, sticky='w', pady=4)
-        ttk.Entry(frame, textvariable=variable).grid(row=number, column=1, columnspan=3, sticky='ew', pady=4)
-    row('Directory address', address, 0)
-    row('Certificate SHA-256', pin, 1)
-    ttk.Label(frame, text='Paste the fingerprint shared by the directory owner for a self-signed certificate.').grid(
-        row=2, column=0, columnspan=4, sticky='w')
-    browser = ttk.Treeview(frame, columns=('name', 'players', 'code'), show='headings', height=8)
-    for column, title, width in [('name', 'Compatible lobby', 340), ('players', 'PCs', 70), ('code', 'Join code', 160)]:
-        browser.heading(column, text=title)
-        browser.column(column, width=width)
-    browser.grid(row=3, column=0, columnspan=4, sticky='nsew', pady=10)
-    frame.rowconfigure(3, weight=1)
-
     def client():
         return Client(address.get().strip(), pin.get().strip())
 
@@ -215,52 +193,21 @@ def main():
         share = tk.Toplevel(window)
         theme.track(share)
         share.title('Online match hosted')
-        share.geometry('700x330')
-        share.minsize(700,330)
-        content = ttk.Frame(share, padding=14)
-        content.pack(fill='both', expand=True)
         value = getattr(active, 'invitation', invitation(address.get().strip(), pin.get().strip(), active.lobby['code']))
-        ttk.Label(content, text='Send this invitation to friends. In Online, paste it into Invitation / lobby code.').pack(anchor='w')
-        entry = ttk.Entry(content)
-        entry.insert(0, value)
-        entry.configure(state='readonly')
-        entry.pack(fill='x', pady=12)
-        def copy():
-            window.clipboard_clear()
-            window.clipboard_append(value)
-        ttk.Button(content, text='Copy invitation', command=copy).pack(anchor='w')
-        ttk.Label(content, text=f"Join code: {active.lobby['code']}\n"
-                  f'Router forwarding: TCP 30820 and UDP {active.lobby["port"]} to this PC.\n'
-                  'Return to the game and select Start New Match to choose your match settings.').pack(anchor='w', pady=12)
-        ttk.Button(content, text='Return to game', command=share.destroy).pack(anchor='e')
+        build_invitation(share, value, active.lobby['code'], active.lobby['port'])
 
-    ttk.Button(frame, text='Refresh', command=refresh).grid(row=4, column=0, sticky='w')
-    ttk.Button(frame, text='Join selected', command=join_selected).grid(row=4, column=1, sticky='w')
-    row('Invitation / lobby code', code, 5)
-    ttk.Button(frame, text='Join by code', command=lambda: join(code.get().strip())).grid(row=6, column=1, sticky='w')
-    row('Host lobby name', name, 7)
-    ttk.Label(frame, text='Host UDP port').grid(row=8, column=0, sticky='w')
-    ttk.Entry(frame, textvariable=port, width=9).grid(row=8, column=1, sticky='w')
-    ttk.Checkbutton(frame, text='List publicly', variable=listed).grid(row=8, column=2)
-    ttk.Button(frame, text='Start New Match', command=host).grid(row=8, column=3)
-    ttk.Checkbutton(frame, text='Start directory automatically on this PC', variable=automatic).grid(
-        row=9, column=0, columnspan=4, sticky='w', pady=4)
-    ttk.Label(frame, text='Your public IPv4').grid(row=10, column=0, sticky='w', pady=4)
-    ttk.Entry(frame, textvariable=public_ip).grid(row=10, column=1, columnspan=2, sticky='ew', pady=4)
     def detected(value):
         public_ip.set(value)
         status.set('Public IPv4 detected. Forward TCP 30820 and your selected UDP port to this PC.')
-    ttk.Button(frame, text='Detect', command=lambda: work(fetch_public_ipv4, detected)).grid(row=10, column=3)
-    ttk.Checkbutton(frame, text='Detect public IPv4 automatically when starting a match (ipify)', variable=detect_ip).grid(
-        row=11, column=0, columnspan=4, sticky='w', pady=4)
-    ttk.Label(frame, textvariable=status, wraplength=720).grid(row=12, column=0, columnspan=4, sticky='w', pady=10)
-    ttk.Label(frame, text='First time hosting: forward TCP 30820 + your UDP port to this PC.\n'
-              'Local address and certificate are set automatically. Guests need no port forwarding.').grid(
-        row=13, column=0, columnspan=4, sticky='w')
-    ttk.Button(frame, text='Cancel', command=window.destroy).grid(row=14, column=3, sticky='e', pady=8)
+
+    browser = build_browser(window, dict(address=address, pin=pin, name=name, port=port,
+        code=code, listed=listed, automatic=automatic, detect_ip=detect_ip,
+        public_ip=public_ip, status=status), dict(refresh=refresh, join_selected=join_selected,
+        join_code=lambda: join(code.get().strip()), host=host,
+        detect=lambda: work(fetch_public_ipv4, detected), cancel=window.destroy))
 
     def poll():
-        if kernel.WaitForSingleObject(parent, 0) == 0 or result.with_suffix('.stop').exists():
+        if parent.exited() or result.with_suffix('.stop').exists():
             window.destroy()
             return
         try:
@@ -306,6 +253,8 @@ def main():
             directory = client()
             window.after(300, lambda: work(lambda: directory.request(
                 'GET', '/v2/lobbies?compatibility='+args.compatibility), choose))
+        elif command['action'] == 'cancel':
+            window.after(300, window.destroy)
         else:
             raise ValueError('Unknown online test action')
     try:
@@ -324,7 +273,7 @@ def main():
             session[0].close()
         for path in (result, result.with_suffix('.stop')):
             path.unlink(missing_ok=True)
-        kernel.CloseHandle(parent)
+        parent.close()
 
 
 if __name__ == '__main__':
@@ -335,5 +284,5 @@ if __name__ == '__main__':
         logs = ROOT / 'Logs'
         logs.mkdir(parents=True, exist_ok=True)
         (logs/'online-error.log').write_text(traceback.format_exc(), encoding='utf-8')
-        ctypes.windll.user32.MessageBoxW(None, str(error), 'Online connection failed', 0x10)
+        show_error(error)
         raise

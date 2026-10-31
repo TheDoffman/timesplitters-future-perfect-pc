@@ -86,9 +86,12 @@ def test_original_actor_voice_clock(tmp_path):
         code = '\n'.join(f'void {f["name"]}(void);' for f in functions.values())+'\n'+'\n'.join(pieces.values())
         # Mutations disable only the original generation checks, never production.
         for target in ('00164EC6','00164F52'):
-            needle = f'if (CMP_NE(_fa, _fb)) goto loc_{target};'
-            assert code.count(needle)==1
-            code = code.replace(needle,f'if (!ignore_generation && CMP_NE(_fa, _fb)) goto loc_{target};')
+            branches = list(re.finditer(r'if \(([^\n]+)\) goto loc_'+target+r'; /\* jne:', code))
+            assert len(branches)==1
+            condition = branches[0][1]
+            assert '_fa' in condition and '_fb' in condition and '_flags' not in condition
+            needle = f'if ({condition}) goto loc_{target};'
+            code = code.replace(needle,f'if (!ignore_generation && ({condition})) goto loc_{target};')
         source = (ROOT/'tests/gameplay/native_actor_voice_clock.c').read_text()
         defined = set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',source+code))
         parent = pieces[0x1ce2e0]
@@ -177,10 +180,11 @@ def test_original_scripted_yaw_callback(tmp_path):
     (name, None) for name in (
         'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',
         'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c', 'native_material_motion.c', 'native_character_trace.c', 'native_walk_trace.c', 'native_walk_policy.c', 'native_surface_interval.c', 'native_surface_mode.c', 'native_surface_native.c', 'native_surface_render_guest.c', 'native_surface_runtime.c', 'native_surface_gpu_owner.c', 'native_surface_gpu_cache.c',
-        'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_contact_trace.c', 'native_surface_trace.c', 'native_surface_capture.c', 'native_surface_precision.c', 'native_surface_coupled.c', 'native_surface_basis.c')
+        'native_render_cache.c', 'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_contact_trace.c', 'native_surface_trace.c', 'native_surface_capture.c', 'native_surface_precision.c', 'native_surface_coupled.c', 'native_surface_basis.c')
 ] + [('native_network_cadence.c', 'render-pump'),
      ('native_network_cadence.c', 'render-refresh'),
-     ('native_surface_interval.c', 'reset-phase')])
+     ('native_surface_interval.c', 'reset-phase'),
+     ('native_render_cache.c', 'console-cache-epoch')])
 def test_native_timing(source, mutation, tmp_path):
     compiler, environment = native_compiler(tmp_path)
     runtime = ROOT / 'external/ts3FPrecomp/src'
@@ -195,6 +199,20 @@ def test_native_timing(source, mutation, tmp_path):
         (tmp_path / 'graphics/surface_interval.h').write_text(adapter.replace(needle, needle+' phase=0;'))
         source_path = tmp_path / source
         source_path.write_text((repo_file(ROOT, 'tests', source)).read_text())
+    elif mutation == 'console-cache-epoch':
+        adapter = (ROOT/'src/gameplay/pc_native_timing_guest.inc').read_text()
+        line = 'NT_WORD(0x7497ACu)=NT_WORD(0x7497B8u);'
+        assert adapter.count(line) == 2
+        adapter_path = tmp_path/'render_clock.inc'
+        adapter_path.write_text(adapter.replace(line, '(void)0;'))
+        baseline = (ROOT/'tests/gameplay/native_timing_guest.c').read_text()
+        baseline = baseline.replace('"../src/gameplay/pc_native_timing_guest.inc"',
+                                    '"'+adapter_path.as_posix()+'"')
+        baseline_path = tmp_path/'clock_fixture.c'
+        baseline_path.write_text(baseline)
+        source_path = tmp_path/source
+        source_path.write_text((ROOT/'tests/gameplay'/source).read_text().replace(
+            '"native_timing_guest.c"', '"'+baseline_path.as_posix()+'"'))
     elif mutation:
         # Reject changing network clock units to rendered-frame counts. Keep
         # production files intact; mutate only this disposable translation unit.
@@ -288,7 +306,8 @@ def test_native_timing(source, mutation, tmp_path):
                             capture_output=bool(mutation), text=bool(mutation), timeout=10)
     if mutation:
         assert result.returncode != 0
-        expected = ('p->begins_tick' if mutation == 'reset-phase' else
+        expected = ('c->matrix' if mutation == 'console-cache-epoch' else
+                    'p->begins_tick' if mutation == 'reset-phase' else
                     'sends==120' if mutation == 'render-pump' else 'refreshes[port]==40')
         assert expected in result.stderr, result.stdout + result.stderr
 
@@ -305,8 +324,17 @@ def test_generated_numeric_conversion(encoding, helper):
     raw = bytes.fromhex(encoding)
     instructions = Disassembler().disassemble_function(raw, 0x1000, 0x1000 + len(raw))
     code = '\n'.join(Lifter().lift_instruction(instructions[0]))
-    assert helper + ('(0x1000, 0x4E7944,' if helper.endswith('_AT') else '(0x4E7944,') in code
-    assert 'MEM32(0x4E7944)' in code
+    if encoding.startswith(('f3', 'f2')):
+        assert 'uint32_t _simd_address = (uint32_t)(0x4E7944);' in code
+        assert code.count('MEM32(_simd_address)') == 1
+        assert 'uint32_t _simd_integer = (uint32_t)(MEM32(_simd_address));' in code
+        assert helper + ('(0x1000, _simd_address, _simd_integer)' if helper.endswith('_AT')
+                         else '(_simd_address, _simd_integer)') in code
+    else:
+        assert 'uint32_t _x87_value_address = (uint32_t)(0x4E7944);' in code
+        assert code.count('MEM32(_x87_value_address)') == 1
+        assert helper + '(_x87_value_address, (uint32_t)_x87_value_bits)' in code
+        assert code.index(helper) < code.index('fp_push(_x87_value)')
 
 
 @pytest.mark.parametrize('encoding,observed', [
@@ -520,6 +548,8 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
 
 @pytest.mark.parametrize('harness_name,ranges', [
     ('native_analog_input.c', [(0x18ff70,0x190334),(0x426e0,0x4270d)]),
+    ('native_interaction_input.c', [(0xa0d90,0xa144b),(0x18ff70,0x190334),
+                                    (0x426e0,0x4270d),(0x42760,0x427ac),(0x427b0,0x427e8)]),
     ('native_locomotion.c', [(0x258f50,0x2597ff)]),
     ('native_walk_contact.c', [(0xc54a0,0xc5a4a)]),
     ('native_network_correction.c', [(0x356e20,0x3570c7)]),
@@ -528,6 +558,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                                   (0x153600,0x153650),(0x153650,0x1536a0),(0x153270,0x1533e0)]),
     ('native_character_effects.c', [(0x1260c0,0x126236),(0x11fec0,0x120102),
                                     (0x151650,0x15178f),(0x151e80,0x151f1c)]),
+    ('native_render_matrix_original.c', [(0x948b0,0x949a3),(0x3e930,0x3e962),(0x3e970,0x3e992)]),
     ('native_surface_cache.c', [(0x127400,0x127494),(0x127500,0x12782c),
                                (0x194b00,0x194bb0),(0x1956a0,0x19576d)]),
     ('native_visual_time_guest.c', [(0x43595,0x4359c),(0x670e8,0x670ef),
@@ -637,11 +668,15 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
-        if harness_name in ('native_analog_input.c','native_reload_input.c'):
+        if harness_name in ('native_analog_input.c','native_reload_input.c','native_interaction_input.c'):
             import struct
             addresses=[0x475d24,0x4783a8,*range(0x47df00,0x47df80,4)]
             constants='\n'.join(f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
                                 for address in addresses)
+        if harness_name=='native_interaction_input.c':
+            import struct
+            constants+='\n'+'\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};'
+                                      for a in (0x475d0c,0x475c78,0x475d5c,0x4785e4,0x47d010))
         if harness_name=='native_network_correction.c':
             import struct
             constants='\n'.join(f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
@@ -668,12 +703,13 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                 a,b=config.va_to_file_offset(start),config.va_to_file_offset(end-1)
                 assert image[a:b].hex()==expected[start]
                 image=image[:b]+b'\xc3'+image[b+1:]
-        if harness_name in ('native_walk_contact.c','native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_surface_cache.c','native_strip_distortion.c','native_screen_distortion.c','native_character_effects.c','native_character_scale.c','native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_impact_sparks.c','native_npc_aim.c'):
+        if harness_name in ('native_render_matrix_original.c','native_walk_contact.c','native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_surface_cache.c','native_strip_distortion.c','native_screen_distortion.c','native_character_effects.c','native_character_scale.c','native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_impact_sparks.c','native_npc_aim.c'):
             import re, struct
             # Original scalar constants referenced by the complete routines.
             # Include switch-table data; production generation reads this XBE too.
             from capstone import Cs, CS_ARCH_X86, CS_MODE_32
-            addresses=set(range(0x1163f8,0x116408,4) if harness_name=='native_light_preview.c'
+            addresses=set(range(0x949a4,0x949b4,4) if harness_name=='native_render_matrix_original.c'
+                          else range(0x1163f8,0x116408,4) if harness_name=='native_light_preview.c'
                           else range(0x218630,0x218648,4) if harness_name=='native_mothership.c'
                           else range(0x507d88,0x507db8,4) if harness_name=='native_ship_debris.c'
                           else range(0xf51b0,0xf51e8,4) if harness_name=='native_projectile_motion.c'
@@ -877,7 +913,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     finally:
         vars(config).update(previous)
     harness=(repo_file(ROOT, 'tests', harness_name)).read_text()
-    if harness_name in ('native_analog_input.c','native_reload_input.c'):
+    if harness_name in ('native_analog_input.c','native_reload_input.c','native_interaction_input.c'):
         wrapper=(ROOT/'src/gameplay/pc_native_timing_guest.inc').read_text(encoding='utf-8')
         start=wrapper.index('static void pc_native_input_guest(')
         end=wrapper.index('static float pc_native_save_animation_delta(',start)
@@ -925,7 +961,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
         for needle,replacement in (
             ('MEM32(esi + 0x28) = eax;\n    RECOMP_AFTER_STORE32(0xA74F4,',
              '(void)eax;\n    RECOMP_AFTER_STORE32(0xA74F4,'),
-            ('RECOMP_F32_MUL_AT(0xA15C6, xmm1.f[0], xmm0.f[0])','0.f'),
+            ('RECOMP_F32_MUL_AT(0xA15C6, _simd_a.f[0], _simd_b.f[0])','0.f'),
             ('RECOMP_DIRECT_CALLEE_AT(0xA1645, sub_001531D0)','missing_matrix_copy'),
             ('sub_00151E80();','g_esp+=4;'),
         ):
@@ -947,8 +983,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             ('RECOMP_F32_ADD_AT(0x1D8B46,','RECOMP_F32_ADD_AT(0xFFFFFFFF,'),
             ('RECOMP_F32_ADD_AT(0x1D8B7A,','RECOMP_F32_ADD_AT(0xFFFFFFFF,'),
             ('RECOMP_AFTER_STORE32(0x1D8BFD,','RECOMP_AFTER_STORE32(0xFFFFFFFF,'),
-            ('RECOMP_I32_TO_F32_AT(0x1D8AF5, 0x4E7944, MEM32(0x4E7944))','(float)(int32_t)MEM32(0x4E7944)'),
-            ('RECOMP_I32_TO_F32_AT(0x1D8B6A, 0x4E7944, MEM32(0x4E7944))','(float)(int32_t)MEM32(0x4E7944)'),
+            ('RECOMP_I32_TO_F32_AT(0x1D8AF5, _simd_address, _simd_integer)','(float)(int32_t)_simd_integer'),
+            ('RECOMP_I32_TO_F32_AT(0x1D8B6A, _simd_address, _simd_integer)','(float)(int32_t)_simd_integer'),
         ):
             assert source.count(needle)==1
             with pytest.raises(AssertionError,match='trap fractional'):
@@ -982,6 +1018,12 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                 mutated=mutated.replace(needle,'RECOMP_F32_MUL_AT(0xFFFFFFFF,')
             with pytest.raises(AssertionError,match='forced_surface'):
                 compile_and_run(tmp_path,mutated)
+    if harness_name=='native_interaction_input.c':
+        needle='RECOMP_LOAD_GLOBAL_U32(0xA0DE8, 0x4E7944, MEM32(0x4E7944))'
+        assert source.count(needle)==1
+        with pytest.raises(AssertionError,match='interaction edge lost'):
+            compile_and_run(tmp_path,source.replace(needle,'MEM32(0x4E7944)'))
+        print(output)
     if harness_name=='native_reload_input.c':
         assert 'reload_sweep trials=864 presses=1728' in output,output
         needle='RECOMP_LOAD_GLOBAL_U32(0x1C2F09, 0x4E7944, MEM32(0x4E7944))'
@@ -1094,3 +1136,31 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                 f"timer {row['timer']} vs {reference['timer']}")
         if failures:
             raise AssertionError('\n'.join(failures)+'\n'+output)
+
+
+def test_original_minigun_spin(tmp_path):
+    import hashlib, re, struct
+    from test_recomp_float_joins import config, FunctionTranslator, compile_and_run
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported US XBE required for minigun callback')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={0x1c74d0:dict(name='sub_001C74D0',end=0x1c7a3d)}
+        code=FunctionTranslator(image,functions).translate_function(0x1c74d0,functions[0x1c74d0])
+        fixture=(ROOT/'tests/gameplay/native_minigun.c').read_text()
+        calls=set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)',code))
+        defined=set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',fixture+code))
+        stubs='\n'.join(f'void {name}(void){{assert(!"unexpected {name}");}}' for name in sorted(calls-defined))
+        addresses=set(range(0x1c7a40,0x1c7a7c,4))
+        addresses.update(int(a,16) for a in re.findall(r'0x([0-9A-Fa-f]+)',code) if 0x470000<=int(a,16)<0x490000)
+        constants='\n'.join(f'MEM32(0x{a:X})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:X};' for a in sorted(addresses))
+        source=fixture.replace('/* NUMERIC_POLICY */',f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT/"src/gameplay/pc_native_numeric.h").as_posix()}"')
+        source=source.replace('/* MINIGUN_POLICY */',f'#include "{(ROOT/"src/gameplay/pc_native_minigun_guest.h").as_posix()}"')
+        source=source.replace('/* GENERATED_ROUTINES */',code).replace('/* UNREACHED */',stubs).replace('/* CONSTANTS */',constants)
+        print(compile_and_run(tmp_path,source))
+    finally:
+        vars(config).update(previous)

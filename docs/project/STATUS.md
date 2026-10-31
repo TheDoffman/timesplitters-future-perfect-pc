@@ -1,8 +1,42 @@
+## General audio recovery integrated with Enhanced Audio (2026-10-30)
+
+Integration base: main `45527221`; prior local repairs are preserved in commit
+`c61f77e4` on `fix/busy-match-audio`. The four recovery patches are now named
+0055-0058 and apply after the unchanged beta patches 0040/0045/0050. General
+buffering, invalid-slot cleanup, format/tail repair and device recovery run
+with Enhanced Audio either OFF or ON. The beta preference still controls
+spatial routing, weapon range and environmental/ambience processing only.
+
+The combined XAudio adapter serializes beta setters with recovery and preserves
+their targets across unexpected loss. Both output adapters restore filter
+history after refused submission; explicit reset clears targets/history.
+
+Validation on Windows x64, MSBuild 17.14.40:
+- Supported `tsfp.ps1 -Action Build` and all built-in checks passed using the
+  supported US executable and current complete patch stack.
+- 92 audio/movie regressions passed; one default opt-in device test skipped.
+  This includes explicit enhanced-on/off recovery with both complete host
+  adapters, plus buffer load/lifecycle/format, streams, beta settings/routing,
+  acoustics and movie clocks. Other native timing cases were deselected.
+- The real default XAudio device check separately passed reopening and playing
+  silent PCM after an injected critical callback.
+- 52 distinct patch-tracking, selected patch-installation, context and Mac-backlog
+  checks passed. An initial guide-size failure was corrected and all 20 context
+  tests rerun successfully. Fresh/repeated application and the actual migration
+  from the previous local patch ledger passed; not every historical-upgrade
+  permutation was rerun for this integration.
+
+Logs: `logs/audio-main-{build,tests,recovery-tests,contracts,context-tests,
+live-device,patches}.log`. No audible live-game, physical unplug/Bluetooth,
+or native Mac execution is claimed for this integration. MAC-018 and MAC-120
+retain their hardware acceptance gaps. This records source integration/build
+validation, not publication of a downloadable release.
+
 ## Audio device recovery (2026-10-28)
 
 Local uncommitted continuation on `fix/busy-match-audio`, HEAD `759f7a0e`,
-retaining patches 0035-0037. New shared patch
-`media/0038-audio-device-recovery.patch` replaces terminal XAudio failure with
+retaining patches 0055-0037. New shared patch
+`media/0058-audio-device-recovery.patch` replaces terminal XAudio failure with
 one-second retries. Critical/device-invalidated errors destroy the old engine
 and owned voices; other source-voice failures retire only that slot. Normal
 queue saturation remains backpressure. Output calls are serialized and COM
@@ -52,7 +86,7 @@ unreleased; no main merge or publication was performed.
 
 Local uncommitted continuation on `fix/busy-match-audio`, HEAD `759f7a0e`,
 retaining the preceding busy-buffer and invalid-slot fixes. Shared patch
-`media/0037-dsound-format-and-tail-recovery.patch` corrects three reproduced
+`media/0057-dsound-format-and-tail-recovery.patch` corrects three reproduced
 adapter defects: buffer SetFormat ignored rate/alignment-only changes;
 stream rate-only SetFormat replayed an already-heard packet prefix; and
 an incomplete final PCM frame/ADPCM block caused an entire buffer to retire.
@@ -94,7 +128,7 @@ buffer slots when settings holders were cleared or rate/alignment became
 invalid. The normal DoWork walk rejected those buffers without retiring them;
 after 256 invalidated objects, a new sound could not obtain a model.
 
-Patch `media/0036-dsound-invalid-buffer-retirement.patch` retires the existing
+Patch `media/0056-dsound-invalid-buffer-retirement.patch` retires the existing
 slot and host voice on unusable-settings exits. It clears all old slot state,
 including for stopped buffers. Valid playing, paused and stopped buffers are
 retained; a genuinely full valid pool is not evicted. The guest Release path
@@ -130,7 +164,7 @@ Original60 while music continues. The shared buffer pump used a fixed 40 ms
 lead; output-model intervals over 100 ms discarded both stale past data and
 the future lead, leaving an empty queue until another update.
 
-Patch `media/0035-dsound-busy-buffer-recovery.patch` learns active pump spacing
+Patch `media/0055-dsound-busy-buffer-recovery.patch` learns active pump spacing
 and grows each buffer's default lead to that interval plus 10 ms, capped at
 90 ms. Play still submits immediately. Explicit lead overrides remain fixed.
 Long hitches skip stale past data and refill the future in the same call;
@@ -163,6 +197,1545 @@ other-device synchronization remain unverified; MAC-018 tracks acceptance.
 The local executable SHA-256 is
 `f3f8cefb6218b21a1ce7f76a54dc2c116c87d82d779ad75f30050e2255f4ae5d`.
 No release or main merge is performed.
+
+## Battle Mech mouse aiming (#425) - 2026-10-30
+
+Local branch `425-bug-battle-mech-camera-doesnt-move` starts from main
+`309293a0`. The shared mouse route now updates the Battle Mech target angles
+instead of ordinary player angles, with original elevation limits, local-slot
+ownership, focus, timing and writable-memory guards. Controller processing is
+unchanged. No commit, push or release is claimed here.
+
+Windows Release build and its built-in checks passed. The focused mounted,
+terminal and repository-context suite passed 40 tests. Original supported-US
+mech input and aim-vector routines confirm mouse targets survive controller
+processing at 60/120/180/240 FPS; the previous route fails the regression.
+An isolated Test Lab launch reached Machine Wars, but the actual Battle Mech
+encounter is not yet visually verified. Physical Mac gameplay is also pending.
+The checkout's unavailable game-data link required a test-child-only override
+to an existing complete local game-data directory; personal saves/settings
+were preserved. Release executable SHA-256:
+`D03D4382DB017525B5D9697A18CA8A62D096ADB6391BF14808D6CEAD79E9A355`.
+
+## Game 0.4.0 and launcher 1.4.1 release preparation - 2026-10-30
+
+The user selected game 0.4.0 and launcher 1.4.1, replacing the unpublished
+launcher 1.5.0 candidate. Both launcher assembly attributes now use 1.4.1.0.
+Earlier 1.5.0 build/package results below remain historical evidence; the old
+game packages embed that launcher and must not be published as 1.4.1 packages.
+Fresh launcher and game-package validation is required for the selected versions.
+
+Both requested features are merged into main: native Mac multiplayer (#416,
+46c675a3) and save-folder selection (#420, e2cfe5a6). The release branch starts
+from e2cfe5a6. The earlier game 0.4.0 / launcher 1.5.0 candidate prepared these
+features; the version change itself introduces no runtime behavior. Latest
+published versions at preparation are game 0.3.6 and launcher 1.4.0.
+
+On Windows 11 x64, 286 focused publisher, launcher-release, native-Mac packaging
+and CI-scope tests passed, with 10 subtests. The Windows launcher 1.5.0 build
+and full launcher checks passed in 35.57 seconds, including selected save-folder
+copy/restore, settings, update/recovery and texture-preservation contracts.
+The native Apple Silicon launcher build and checks also passed on macOS 27.0.1;
+both hosts passed 32 shared UI groups. The dedicated persistent SSH connection
+worked without another key setup. Repository context and whitespace checks pass.
+Logs: release-040-focused.log and launcher-150-local.log under the release
+checkout's ignored logs directory; launcher-150-preparation.log on the Mac.
+
+Both-host CI and production publication remain pending. These checks do not
+establish a fresh game build, gameplay acceptance, physical Mac folder-picker
+interaction or Internet multiplayer acceptance. Existing MAC-013 crossplay
+evidence and MAC-124's remaining manual checks retain their stated scope.
+The launcher workflow requires the version PR on main before publication;
+published release tags/assets must remain immutable. Optional textures and
+personal saves/settings remain preserved.
+
+Mac package follow-up: the actual installer rejected Homebrew notices copied
+under nested `Licenses/Online/<formula>/...` paths. Its existing license policy
+accepts only flat `.txt` files. The Online bundler now copies notices to
+`Licenses/Online-<formula>-<notice>.txt`, preserving the original bytes and the
+installer's protected-path rules. A multi-formula fixture checks byte equality
+and supported paths; the compiled launcher checks accepted flat names and
+continued rejection of nested/extensionless names. The focused suite now passes
+287 tests and 10 subtests; the full Windows launcher checks pass again.
+Fresh Mac game build/platform/renderer/input/settings/debug checks passed before
+this packaging-only correction. Full package installation is being rerun.
+
+## Choose save folders (discussion #401) - 2026-10-30
+
+Local feature/401-save-folder-selection adds current/default/custom folders to
+Create Profile and native folder selection in the Windows and Mac launchers.
+Existing preferences remain valid. Optional launcher copy preserves originals;
+backup/restore and Open Saves follow the selected folder. Returning to default
+removes the absolute preference so portable installations can move.
+
+Windows game build and its built-in checks passed; storage/menu regressions
+passed (6), with storage/profile acceptance checks also passing (2). Full Windows
+launcher suite passed, including custom-location copy/restore and shared UI
+contracts (logs/save-folder-launcher.log). No personal saves changed. The user confirmed the corrected picker looks good after live testing. The
+completion callback now leaves another menu owner's pending result untouched;
+Mac UI execution remains pending MAC-124. Preparing PR and main merge at the user's request; this is not a published release.
+
+## Handheld minigun high-FPS spin - 2026-10-30
+
+Handheld minigun fix on fix/handheld-minigun-native-fps, based on 61aecac5.
+Read-only sampling confirmed motor speed stalls at 2.547569 near 120 FPS, below
+the firing threshold of 4. Fractional updates lose the whole-tick spin request
+and repeatedly decelerate. Shared event-1 held-input scope and elapsed spin-down
+fix this while retaining generic firing gates.
+
+Original callback regression reproduces the old failure at 120/144/180/240 FPS;
+the fix reaches readiness around .45 seconds at 60/120/144/180/240. Release,
+pause and input guards pass. Five focused minigun/weapon timing tests pass.
+Windows Release generation/build and build-time checks pass. A bounded isolated
+startup recorded 2,100 D3D11 presents with no failed presents. Candidate SHA256:
+8b0ab4d0a5863dd9e625138887b96d26e29bbac067da1915300cfb7c62899e3b.
+Fifteen mounted input checks and repository context validation also pass.
+Fresh-checkout CI patch migration checks passed on Windows and macOS
+(run 41012758389, head be8daa2c); the complete patch application used for
+this build also passed. The user tested this candidate and
+confirmed that the minigun now works. This is user gameplay acceptance; exact
+shot/ammunition cadence and physical Mac execution remain unmeasured. See [contract](../agent-context/native-minigun.md).
+
+## Both Machine Wars tank encounters accepted (#385) - 2026-10-30
+
+After testing the corrected tank controls, the user explicitly confirmed that
+both the first and second Machine Wars tank encounters work. The vehicle mouse
+and tank driver fix was already merged through PR #412 as `8b4db323`; no further
+input-code change was required for the second encounter. This records user
+playtesting of both encounters, not an independently instrumented shot-alignment
+measurement, complete campaign acceptance, or physical Mac validation.
+
+Documentation-only follow-up: no executable rebuild is required. The earlier
+implementation, automated checks and build records remain below.
+
+## README direct launcher downloads - 2026-10-30
+
+Based on `76e3bd6e`, validated on Windows x64 with Python 3.12.14. The Windows
+and Apple Silicon Mac README buttons and installation links use GitHub's
+`releases/latest/download/TimeSplitters-Launcher-<platform>.zip` route.
+Both live URLs returned HTTP 200 with attachment filenames for their platforms.
+Launcher v1.4.0 now has two additive aliases: the uploaded bytes match the
+existing versioned archives by SHA-256 and size (Windows 5,048,501 bytes;
+Mac 44,467,839 bytes). Existing release assets, tag and update manifests were
+preserved; no launcher binaries were rebuilt or changed.
+
+The publisher maps alias names to the already verified versioned ZIP paths,
+without local duplicate ZIPs or trusting stale alias files. It requires all ten
+remote assets to match before publishing; previews still do not become Latest.
+All 33 launcher-release tests pass, including alias hash parity, interrupted
+alias upload/retry, unchanged updater filenames and README platform routing.
+Repository context/links and `git diff --check` pass. Both hosts use this shared
+publication code; no OS adapter changed. Native app/game execution was not run.
+
+## README presentation cleanup - 2026-10-30
+
+The follow-up adds a launcher-styled SVG banner, flat download buttons and
+three decorative section icons. All six SVGs parse as self-contained XML;
+local references pass. Live GitHub inspection caught icon-first headings adding
+a leading dash to automatic slugs; explicit anchors retain the original links.
+The assets were rendered with the bundled Sharp renderer and visually inspected,
+and the live GitHub layout was reviewed at desktop and 390-pixel mobile widths.
+The Install & play link was clicked and confirmed to reach its section after
+the explicit-anchor repair. Existing launcher monogram
+outlines and theme colors are reused; runtime and launcher source are unchanged.
+
+Documentation update based on `cc531ea9`, checked on Windows x64. All 53 local
+README file/section references resolve, and `git diff --check` passes. The
+v1.4.0 launcher preview was rendered with Windows PowerShell 5.1 and WPF from
+the hash-verified existing build, with Stable selected and isolated sample data.
+The 1152 x 772 output was visually inspected; provenance and the reproducible
+capture command are in `docs/assets/README.md`. No runtime code changed, and no
+game rebuild or gameplay test was needed. Existing v0.3.2 gameplay captures remain.
+
+## Tank driver controls and steering feedback (#385) - 2026-10-29
+
+The first Machine Wars live snapshot established local driver seat 0, tracked
+flags 0x1F, primary gun 0, and companion gunner seat 3. Shared driver controls
+now feed signed tracks for hull-relative WASD and use the original driver
+camera-ray weapon aiming path. Mouse pitch uses negative camera elevation,
+with immediate target/smoothed elevation updates and the original -28..-4 limits.
+The user tested the driver candidate and reported it was much better but A/D
+were reversed. The follow-up swaps the steering contribution between the two
+tracks; W/S and mouse behavior are retained. The user then confirmed the
+updated tank controls work properly and authorized merging to main. This is
+first-tank user acceptance; full mission completion and independently measured
+crosshair/shot alignment remain separate checks.
+
+17 focused mounted/terminal tests pass, including original tracked driver
+1730E0, four camera headings, forward/reverse, both steering signs, link
+restoration, driver inversion, gunner behavior and compiled old-route/old-driver
+failures. Original CA040 tests confirm negative elevation direction, and all
+11 UI layout tests pass. An earlier combined run of vehicle/input/UI coverage
+passed 46 tests; the subsequent added driver mutation passes separately.
+The original camera probe holds collision services controlled and distinguishes
+its custom pitch-branch ABI from the zero-pitch branch's untouched registers.
+
+Full generation and the Windows Release build/native checks passed for the
+driver candidate. A bounded in-game run rendered Machine Wars opening gameplay
+at 60 FPS but did not establish tank shot alignment. Computer Use was stopped
+by the user's Escape key. The isolated user's manual test profile is preserved;
+no normal saves/settings were used. The steering follow-up also passes the Release build and native checks
+through the same supported MSVC x64 / D3D11 workflow; its final local executable
+hash is recorded in private/test-saves/vehicle-review/build-info.json.
+Physical Mac and final tank crosshair/shot acceptance remain unverified.
+No release has been published; issue #385 remains open.
+
+## Vehicle-gunner test build (#385) - 2026-10-29
+
+Local candidate on `fix/385-vehicle-mouse`, based on `863c2b61`, with the shared
+mode-0x400 gunner routing change. The user confirmed Past Cortez was operating
+the gun only, not driving. The precise mission mode/seat and reported inversion
+remain unobserved; do not claim driver controls explain that report.
+
+The shared Windows/SDL helper resolves the occupied vehicle seat and its gun,
+validates reverse links, and applies mouse displacement directly to gun angles
+for seat types 3/4. Driver/passenger types keep the previous route. Vehicle
+locked states and limit semantics follow original `17A440`. The earlier
+mode-0x80 repair remains in place. No global pitch reversal was introduced.
+
+All 16 focused mounted/terminal tests pass, including actual Windows/SDL adapter
+bodies, malformed bindings, seat changes, normal/inverted pitch, authored limits
+and 60/120/180/240 interval checks. The optional supported-XBE test executes
+D2470/17A0A0/17A440: the old-route mutation fails, corrected mouse aim survives
+the vehicle update, and controller aiming remains active. Original gun-camera
+math 151650/152090 confirms mouse-down produces a downward direction for this
+route. Render/transform setup, services and polling remain controlled boundaries.
+
+Windows 11 build 26300 x64 / MSVC 19.44.35224 / SDK 10.0.26100 / Python 3.12.14 /
+D3D11: full patch application and generation pass; Release Build and its native
+checks pass. Executable SHA-256:
+`73659d48f7bfcb26531806c5cceb223d6fe70de38de37d3d8af9683d8e4914f6`.
+A bounded 120-second launch rendered the main menu at Original60. This is startup
+acceptance, not a new mission/turret gameplay acceptance result.
+
+The local manual launcher under `private/test-saves/vehicle-review` uses the
+unlocked Test Lab fixture with isolated, persistent test saves and settings;
+physical keyboard/mouse input, capped logs, and disposal of scratch partitions
+on exit. It shares existing game assets and the single worktree Release build.
+Past/Future Machine Wars and Scotland truck aiming, both pitch directions,
+firing and dismount still need in-game confirmation. No release was published;
+#385 remains open. Physical Mac acceptance remains pending (MAC-001).
+
+## Vehicle-gunner mouse investigation (#385) - 2026-10-29
+
+Source baseline `863c2b61` plus the earlier bounded live-validation notes,
+branch `fix/385-vehicle-mouse`. No new input behavior change or live game run.
+The prior Scotland result used the stationary road gun, not the reported
+truck-mounted gun. Neither Machine Wars tank section has live acceptance.
+
+Supported US XBE checksum verified. Original boarding routines `17CE00` and
+`17CF30` select player mode `0x400`; the mouse helper handles only `0x80`.
+Original `D2470`/`17A0A0`/`17A440` were translated into an ignored local C
+investigation fixture and executed on Windows/MSVC. For seat types 3 and 4,
+production mouse fallback first changed player yaw/pitch to -10/-2 degrees.
+The original vehicle update then reset both to zero and left gun yaw/pitch
+unchanged. Controller-axis input in the same setup changed both gun angles.
+This reproduces a concrete missing vehicle-gunner mouse route, independently
+of mission names and the earlier mode-0x80 ownership repair.
+
+Rendering, transforms, input polling, FOV lookup, math-library conversion,
+handle lookup and vehicle dispatch boundaries were controlled. Original
+seat-type lookup, controller packet construction, player-angle overwrites,
+turret-angle updates and limits executed from the supported XBE. This is a
+code-path reproduction, not an in-game or physical-device test. Local scripts
+and output are under ignored `logs/vehicle-repro*` and `logs/run-vehicle-repro.py`.
+
+The mode-0x400 seat type for each reported encounter still needs observation.
+Past Cortez's vertical inversion is not yet reproduced or attributed to a
+specific sign conversion. Do not infer that both tank sections share a seat,
+apply a global pitch reversal, or claim #385 resolved. Windows/SDL currently
+share this missing route; no new Mac gameplay validation was performed.
+## Windows game DPI awareness - 2026-10-29
+
+Branch `fix/game-dpi-awareness`, based on main `863c2b61`.
+The Windows game now embeds `config/build/windows-game.manifest` via title
+patch 2130 and the supported `tsfp.ps1` build. System DPI awareness matches
+the existing working local compatibility override, avoiding Windows bitmap
+scaling and virtualized windowed Auto dimensions. Linker-generated asInvoker
+and common-controls v6 declarations remain present. No registry changes,
+installed-release replacement, personal settings or save edits were made.
+
+Windows 11 x64 (10.0.26300), MSVC 19.42.34435, Python 3.14.5:
+supported US XBE SHA-256 verified; complete patch application and Release
+Build/built-in checks pass. The actual game executable's embedded resource
+contains both `dpiAware=true` and `dpiAwareness=System`, alongside UAC and
+common-controls. All **5** window-theme tests pass, including newly compiled
+CMake probes that report DPI-unaware without the manifest and system-aware
+with it, using unique paths and no inherited compatibility-layer override.
+The probes use Release for both target compilation and CMake compiler checks;
+sandboxed Debug compiler checks hit the host PDB-manager mismatch before the
+probe compiled. Repository-context validation passes.
+
+Game rendering/dialog visual acceptance at 150%, mixed-DPI monitor movement
+and native Mac execution were not rerun. The Windows-only manifest target
+does not alter native Mac DPI/pixel sizing; no Mac adapter is needed. The
+published v0.3.6 installation still contains the previous executable.
+
+PR #409's first CI run failed only the two Windows manifest cases because the
+native job omitted the pinned `pefile` dependency; 1,965 other native tests
+passed. Both patch-upgrade jobs passed. The transition and PR gates then
+correctly rejected the failed native result. The follow-up adds the existing
+shared `pefile==2024.8.26` pin to the native job's dependency selection; it
+does not change the game or loosen any gate.
+Windows follow-up validation: all **99** window-theme, CI-scope and PR-gate
+tests pass; the native dependency selection resolves the shared pefile pin,
+and repository-context/diff checks pass. Hosted rerun results remain pending.
+
+## Mars Prison high-refresh material flicker (#398) - 2026-10-29
+
+Based on main `3b4e679b` plus rule commit `1bed1e71`, with the shared cache fix
+uncommitted during validation. The temporary material matrix cache now uses
+render serial `7497B8`, in both timing paths, instead of a 60 Hz ISR stamp.
+No console/gameplay clock is accelerated; see [contract](../agent-context/render-matrix-cache.md).
+
+Windows x64 / MSVC19.44 / Python3.14.5 / common D3D11: patch validation and
+Release Build/built-in checks pass. All **113 native timing tests** pass; the
+refined new regressions separately pass **3 tests**. Restoring the console stamp
+compiles and fails on stale matrix bytes. The checksum-verified US XBE fixture
+executes original cache948B0 and alternating allocator3E930/3E970: old stamps
+fail at144/180/240, per-render stamps pass at60/120/144/180/240. Matrix production
+and arena overwrites are controlled boundaries. The real-clock fixture covers
+pause, live rate/mode switches, same-render sharing and serial wrap.
+
+Autonomous isolated Test Lab runs reached bot-free Mars Prison at1280x720.
+The pre-fix240 capture has herringbone cloud corruption; its next frame is
+normal. Texture bytes, geometry and bindings match. Replacing only vertex
+constants160..163 removes the defect offline. The production build produced
+**24 clean GPU samples each** at Original60/native120/native180/native240;
+clouds animate and nearby terrain/buildings remain stable. Capture cadence61
+avoids aliasing with native frame phases. Native120/180 traces measured about
+118.8/177.2 guest updates/s over seconds70..105, not monitor scanout.
+
+Tested executable SHA-256:
+`4183f0c8260600d629b7f2d2e501a7b6c16654eb529912850903a7feffc0dd2f`.
+A source-header comment was clarified afterward without changing behavior.
+Diagnostic instrumentation was removed before fixed-build scene runs. Saves,
+controls and displays are isolated; the canonical fixture and personal data
+are preserved. An unrelated game in another checkout was left untouched.
+Selected local evidence stays ignored in `private/captures/issue398`.
+
+This verifies the reported scene/cache contract, not every map/material or a
+campaign. Physical Mac scene acceptance remains pending (MAC-122). Issue #398
+must remain open until a published release containing the fix is linked.
+
+## Mounted-gun live validation (#385) — 2026-10-29
+
+Built merged source `3b4e679b107bbe9000a592cde917d751871a17a4` in an isolated
+checkout on Windows 11 build 26300 x64, MSVC 19.44.35224, SDK 10.0.26100,
+Python 3.12.14 and D3D11. Complete generation, patch validation, Release Build
+and its native regression checks passed. Executable SHA-256:
+`a23cb7a1e1e8de8aa5292c11445dbd0205c3acf9920327f8c9570961f04a01b1`.
+The supported US XBE hash was verified before generation and both game runs.
+
+Scotland the Brave, Easy, Original60: reached the road gun above the coastal
+ruins, mounted it, aimed horizontally and vertically, fired visibly and
+dismounted. Application replay input of -300/+100 mouse counts changed player
+yaw by +30 degrees and pitch by -10 degrees, with corresponding gun yaw +30
+and pitch +10; the rendered mounted view changed accordingly. Dismount restored
+mode `0x2` and cleared the player's gun link. This particular gun uses mode
+`0x40`, authored name `0xffffffff`, operator `+0xD8` matching the player and
+AI target `+0x68` zero. It exercises the existing ordinary-angle path, so this
+pass does **not** establish acceptance of the repaired mode-`0x80` path.
+
+Machine Wars loaded and ordinary movement/aim/firing worked in the opening
+ruins, but the 600-second session ended before either tank was reached. The
+reported second tank remains **unverified**. No physical mouse-device delivery
+or Mac acceptance is claimed: inputs used the game's existing replay interface,
+while window captures and read-only guest fields established the live result.
+Both runs used separate disposable Test Lab copies, capped logs and bounded
+captures; their virtual disks were recycled. Personal saves/settings and the
+concurrent audio checkout were preserved. Local evidence is under ignored
+`private/test-saves/mounted-live` and `private/test-saves/machine-live`.
+
+## Mounted-gun operator and instance names (#385) — 2026-10-29
+
+Branch `fix/385-mounted-mouse`, based on main `68408d4d`. The shared helper
+previously mistook gun data `+0x68` (AI target) for the controlling player and
+required the authored name `AGUN`. The original US `B76B0`/`B7830` routines and
+CCTV entries `373E10`/`3756E0` instead use `+0xD8` for the operator; constructor
+`245990` copies the per-instance name to `+4`. Mouse aim now checks the real
+operator and entity backpointer, independent of those two unrelated fields.
+The read guard covers the operator through `0xDC`; original angle limits,
+pause/capture/local-slot rules and input consumption remain intact.
+
+Windows x64 / MSVC x64, Python 3.12.14: the corrected ownership fixture failed
+against the old helper on its first mouse update. After repair, all **20**
+mounted/terminal/Auto Lookahead/backlog checks pass, including original guest
+mount/dismount execution from the SHA-256-verified supported US XBE. Four
+instance names, repeated mounting, independent AI targets, native/Original60
+time and both host adapter bodies are covered. Inaccessible operator tails,
+wrong operators and broken backpointers reject movement without replay.
+All 20 repository-context tests and the base-aware context check also pass.
+
+The complete patch stack validated/applied to an isolated runtime (158 files).
+The real Windows input adapter and all input/config source dependencies were
+rebuilt in the isolated worktree and its `tsfp_pc_controls_test` passed, using a
+disposable controls copy. This focused build reused the pinned local SDL static
+library and generated diagnostic header; it is not a new game executable.
+No personal saves/settings or concurrent audio work were changed. No graphics
+backend was exercised. Machine Wars' second tank, Scotland's turret and physical
+Mac gameplay remain unverified; no release or main merge is claimed. Both hosts
+already consume the shared helper; see MAC-001 for native acceptance.
+
+## Suite performance regression monitor (2026-10-28)
+
+Local implementation commit `c43b3139` on `perf/suite-regression-monitor`, based
+on the unmerged speed/shader work through `d71137ac`, adds advisory timing history
+to release runs and separate Windows/Mac CI profiles. Three successful comparable
+runs establish a fixed median; three consecutive eligible runs over 125% warn.
+Missing tests and newly skipped/non-passing outcomes warn immediately. Failed,
+filtered and incomplete runs cannot train the baseline; all acceptance gates,
+four-worker release scheduling and successful compiler-setup reuse remain.
+
+Three unchanged full Windows runs each passed **2,447 cases and 109 subtests**,
+with **36 unchanged skips**, in **9m19s, 8m14s and 7m54s**. The monitor learned
+**494.439 s (8m14s)**, with a sustained-warning threshold above **618.049 s
+(10m18s)** for this machine/environment. Every previous 2,460 case ID/outcome is
+retained, 23 monitoring/selection cases pass, and all 246 input hashes match.
+An initial full attempt hit an existing vehicle mutation's 15-second timeout;
+the monitor retained its failure and correctly excluded it from calibration.
+That case passed in isolation and in all three complete reruns without changing
+its timeout or assertions. The cause of the one-off timeout is unproven.
+
+Focused monitoring/grouping/publisher/CI-scope validation passed 248 cases in
+5.75 s, including real serial/two-worker pytest runs and a simulated sustained
+slowdown warning that preserves exit status. Workflow YAML, context/ownership,
+backlog and whitespace checks pass. Shared code is registered on both CI hosts;
+physical Mac execution and actual hosted cache/artifact persistence remain
+unverified. These are local commits, not a pushed change or published game.
+See [policy and measured evidence](../development/release-performance.md#monitor-calibration-2026-10-28).
+
+## Shader coefficient release blockers resolved (2026-10-28)
+
+Local commit `08ccb2ed` on `fix/shader-coefficient-regressions`, based on `d1226d25`, fixes all
+24 shader failures exposed by the optimized suite. The supported US uploader uses
+rounded `CVTSS2SI`, while three shared coefficient paths still used truncating C
+casts. One shared conversion now follows the current translator's host rounding
+mode. Original shader thresholds, negative controls and release gates remain.
+
+The final full four-worker Windows run passed **2,424 cases and 109 subtests**,
+with **36 unchanged prerequisite skips**, in **468.403 s (7 min 48 s)**. Every
+previous 2,457-case test ID was retained; all 24 failures now pass, along with
+three new rounding-oracle/mutation cases. All 246 input hashes match the baseline.
+An initial full attempt had one unrelated Windows access-denied error during a
+temporary runtime-directory rename; the isolated check and complete unchanged
+rerun passed. No skip, retry plugin or weaker assertion was added to bypass it.
+Explicit full patch revalidation also passed. See
+[the measured evidence and limits](../development/release-performance.md#shader-correctness-follow-up-2026-10-28)
+and [the shared conversion contract](../agent-context/surface-coefficients.md).
+
+This validates the local suite, not a published release or complete game visual
+parity. Native Mac execution and a fresh game release build remain unverified.
+
+## Full regression suite performance (2026-10-28)
+
+Local commit `e3a50ed7` on `perf/release-speed` continues the build/release work
+from `9a32375f`.
+Measured validation time fell from 42 min 20 s to 9 min 44 s
+(77.0% reduction), with every original case retained and 34 added cases.
+The full release suite uses up to four workers, preserves shared fixtures, and
+reuses successful Windows compiler setup within each worker. Both-host CI uses
+two workers. No existing test case or acceptance gate is removed. The run also
+exposed stale original-image fixtures and pre-existing shader coefficient failures;
+the former were repaired without changing their assertions, while the shader
+failures required the separate correctness fix recorded above. See the exact Windows coverage,
+timings and limitations in [release performance](../development/release-performance.md).
+No game was compiled for release, packaged, uploaded or published. Native Mac
+execution and end-to-end release duration remain unverified.
+
+## Build and release validation reuse (2026-10-28)
+
+Local branch `perf/release-speed`, based on `2e678ac1`, removes duplicate release
+patch validation, caches successfully validated patch/launcher inputs by content,
+and avoids repeated ZIP decompression while retaining checksum and stage checks.
+Windows regressions and measured stage timings are recorded in
+[release performance](../development/release-performance.md). No gameplay source,
+personal saves/settings, release versions or published assets changed. Native
+Mac execution and a full end-to-end game release are unverified; shared patch
+validation retains both-host CI coverage.
+
+## Profile-scoped Unlock Content (2026-10-28)
+
+Implementation commit `86eccfca` on `feature/unlock-content`, based on `2e678ac1`. Extras now
+provides nine independent early-unlock categories stored in the active profile.
+Turning a category Off restores earned access without rolling back progress.
+Cheats moved from Settings to Extras and retains its original controls.
+
+The full patch stack installs; Windows Release build, built-in checks and crash
+symbol generation pass. Seven focused storage/menu tests pass, including actual
+US predicates across 150 character records and 48 events, independent profiles,
+progress preservation and save routing. Backlog/patch tracking checks pass (17), as do context checks (20).
+The executable SHA-256 is
+`6758f50b7a1c40b16c2a43d2a9664fbb975c705154ef032c52f776d329c8905b`.
+The final isolated Windows menu/save/reload route passes in 183.618 seconds.
+Reviewed captures show all nine readable toggles, original Cheats without an
+unlock switch, all Movies while enabled, and Cheats hidden/Movies locked after
+reset. Cheats-only (128), all (511) and reset (0) flags save with valid signatures;
+On and Off survive separate process restarts. All original profile bytes remain
+unchanged (excluding the existing save nonce); no earned progress is rewritten.
+The canonical fixture is preserved, all three game processes exit cleanly, and
+owned run locks/BMPs are removed. Evidence is retained locally under
+`private/test-saves/unlock-content` (`verification.json`, reports and PNGs).
+The run uses synthetic keyboard input; physical controller/mouse operation and
+native Mac execution remain unverified. Shared implementation awaits native
+validation under MAC-119.
+See [contracts](../agent-context/unlock-content.md).
+
+Layout follow-up: widened Unlock Content from 45% to 65% of the native menu
+width to separate category labels from their selectors. Windows Release rebuild
+and its built-in checks pass, as do the three unlock tests. Reviewed Off and On
+captures at 640x480 (4:3) and 1280x720 (16:9): all nine labels, selectors, Back
+and help text fit without overlap. Both isolated runs exit cleanly with fixture
+and signed profile bytes unchanged. Evidence: `private/test-saves/unlock-layout-640`
+and `unlock-layout-1280`. Updated executable SHA-256:
+`b3c33e977ce28235080e980a4cb3ee6e2ba0e54d7851a33bc7bec982a697106c`.
+Native Mac visual validation remains pending.
+
+The category-only follow-up removes the Back row and explanatory help text at
+the user's request. The standard Back input retains the signed-save/return
+callback. The existing menu fixture now expects exactly nine category rows;
+all three unlock tests pass. Windows Release rebuild, built-in checks and crash
+symbols pass; the interactive build was relaunched on user approval. Executable
+SHA-256: `008e7842548dbb6e0af55e5c165e5b0717b0d3c260195b93069ca0000ea767e8`.
+No new automated visual/gameplay claim is added for this row removal.
+
+PR #395 CI follow-up: the historical pre-display upgrade fixture attempted
+patch 2070 before its frontend wrapper context existed. It now defers that
+patch until full migration, then explicitly requires all four unlock hooks.
+The targeted Windows migration test passes in 45.46 seconds. Production source
+and the interactive executable are unchanged. At `c2acc615`, Mac CI passed
+1,710 runtime checks (274 skips, 18 subtests), GPU checks, 148 release checks,
+and 50 patch-upgrade checks (2 skips); Windows patch upgrades passed all 52.
+The Windows runtime job found four missing unlock dependencies in the separate
+FOV harness. Fail-if-called stubs now retain that harness's display-only scope;
+seven affected display/unlock/input checks pass locally (two Mac-only skips).
+Main's PR-description changes were merged with both STATUS entries preserved;
+85 documentation/tooling checks passed (3 skips, 47 subtests). Updated combined
+CI remains pending; these fixture/documentation fixes do not change the game.
+
+## Plain-language PR descriptions (2026-10-28)
+
+Branch `docs/plain-language-pr`, based on `2e678ac1`, updates the opening PR
+template, contributor rules and automatic version-reference/repair descriptions.
+Descriptions use Change and Cause and fix; technical evidence stays in project
+records. No runtime behavior, platform adapters or merge gates change.
+Windows offline unittest runs: issue forms 24 passed, issue resolution 16 passed,
+compatibility worker 25 passed and 3 platform-specific tests skipped. Context
+check against the base and `git diff --check` passed. No game rebuild was needed;
+native Mac execution and remote CI were not run locally.
+
+## Independent kernel object lifetime (2026-10-28)
+
+Stage0215 (`1692ed4f`, PR #393) adds original handle/object ownership, operation scopes,
+guest reference/type/duplicate services and kernel/audio/thread/USB adapters.
+All 51 candidate contracts passed, including Windows real-thread binding with
+project allocation and thread-memory providers. The full patch stack installed
+six runtime files. Windows Release build, native build checks and matching crash
+symbols passed on the working tree based on `597d5937`. All 22 generated files
+are unchanged and the generation fingerprint and repository context are current.
+All 1,049 compiler tests passed in 813.82s. All 52 snapshot/patch tracking/
+migration tests passed in 1420.89s; exact-head CI remains pending.
+Documentation/context/backlog checks passed (21 tests), as did path/package/
+crash-symbol tests (19). No package or native Mac gameplay claim. See
+[contracts and limits](../agent-context/kernel-objects.md) and MAC-118.
+
+At `787f78cf`, Mac CI passed 1,683 tests (272 skips, 18 subtests), but its 14
+stream-audio scenarios could not link the fixture: it still supplied the retired
+raw-handle resolver instead of `xbox_bridge_signal_event`. The fixture now checks
+the exact completion token, status/size publication before signaling, and no
+premature or repeated signal. All 17 Windows audio tests passed in 3.24s after
+repair. Production sources and the tested executable are unchanged; repaired CI
+and native Mac title gameplay remain pending.
+
+Fresh isolated Original 60 Story reached scene 4 / mission 1 with input enabled.
+Forward/backward distances were 11.174549 / 6.184892; ammunition fell from eight
+to six. All 40 pause samples froze level ticks; all 60 resume samples were
+unpaused with advancing ticks. Final checkpoint: 102.626s within the 240s cap.
+Runner/controller exited zero; start, pause and resumed captures were reviewed.
+All 26 protected files retain hashes, sizes and mtimes. Owned partitions, run
+locks, BMPs and crash dumps are absent. The test used injected input, minimized
+windows, Classic textures and skipped startup movies; it does not establish
+physical input, audio listening, full campaign or Mac gameplay acceptance.
+
+Executable SHA-256:
+`f56e26ad5ab7cc515539ceb72edc506884f2085dea527eb90db7d095d658b7e4`.
+The executable matches runner/game provenance, and 23 project-source plus six
+installed-runtime hashes match the recorded build inputs.
+
+## Enhanced Audio beta candidate (2026-10-28)
+
+Local `positional-stereo-audio`, based on main `2e678ac`, adds shared stereo
+projection and original-world-coordinate room/portal acoustics for positional
+buffers and streams. First-person sounds stay centered and gunfire retains
+its tested longer range. Metadata-driven stereo ambience receives a quieter,
+softer background mix across maps, with extra filtering for outdoor beds
+beneath cover. User listening confirms gunfire range/centering and the Vietnam
+helicopter roof/entrance correction. Broader ambience listening remains pending.
+
+Audio Options now has a native **Enhanced Audio (Beta)** OFF/ON selector in its
+shared frontend/pause builder. Default OFF restores ordinary routing; the
+atomic `pc-audio.ini` preference applies live and survives restart. User confirmed
+that the corrected row is visible and retains its choice; the isolated save
+contains `TSFP_AUDIO_V1 1`. The first layout had a zero-height row; the corrected
+version inherits Audio's explicit height and uses a smaller caption.
+
+Windows Release target builds and 30 selected media/menu tests pass; two native
+Mac compile checks are skipped on this host. Shared SDL processing, source byte
+clocks, refusal/history/reset and settings failure handling are covered by
+fixtures. Full tunnel reverberation, split-screen acoustics and native Mac
+hardware/UI/listening are unverified (MAC-120). See the
+[audio contracts](../development/positional-audio.md).
+The shared launcher now exposes the same beta preference under Settings ->
+Audio, using the game sidecar with default OFF and conflict/rollback handling.
+Windows launcher build/tests passed, including all three new UI cases; portable
+launcher/Mac-adapter checks passed 31 tests and 26 subtests. Native Mac launcher
+execution remains pending.
+Audio is committed on `positional-stereo-audio` (`32a5774`), PR #397.
+CI caught a CRLF working-copy hash in the generated audio patch index;
+normalizing the patch to LF and refreshing the index corrects clean-checkout validation.
+
+## Retired compatibility memory APIs (2026-10-28)
+
+Working tree based on `f0633f99`, after all 17 prerequisite CI checks passed.
+Patch 0214 removes unused POSIX file-mapping, query and statistics routines after
+their production callers moved to project providers. Native alias/collision/
+remap fixtures now use those providers; their ownership assertions remain.
+The native Nt query record ABI and real Windows OS calls remain intact. See
+[caller audit and validation boundaries](../agent-context/retired-memory-compatibility.md)
+and MAC-117. The broader independence goal is unfinished.
+
+Windows candidate: six adapter tests passed in 8.18s, including five compiled
+negative controls. The revised native fixture's normal mapping prefix compiled
+and ran against real Windows providers. That check excludes the Mac arena and
+event branches; it is not native Mac execution. The additive patch passed a
+read-only applicability check using the maintained installer's CRLF handling.
+All 998 compiler checks passed in 707.98s, all 73 migration/repository checks
+in 1121.24s, and all 21 final documentation/context/backlog checks in 5.19s.
+Context/index and whitespace checks passed. CI at `b5482235` passed 1656 Mac
+shared tests (261 skips, 18 subtests), but one ownership-bypass negative control
+failed to compile: Clang diagnosed its now-unused `arena_unmap` helper under
+fatal warnings. The mutation now references the helper without calling it, so
+runtime assertions still detect the ownership bypass. All six Windows adapter
+checks passed after repair in 8.62s; 21 repair documentation/context/backlog
+checks passed in 4.15s. Production sources and the tested executable
+are unchanged. All 17 checks passed at repair commit `dcb2ea69`; PR #375 was
+subsequently merged. Native Mac title gameplay remains pending. Consumer
+checks passed: 43 passed, one native-Mac-only skip in 29.29s. No game package has
+been produced for this stage.
+
+The full patch stack installed five runtime files matching the proposal.
+Windows Release build, native checks and matching crash symbols passed with
+normal `/DWIN32 /D_WINDOWS` flags. All 22 generated C/header files remained
+byte-identical and the generation fingerprint stayed current.
+
+Fresh isolated Original 60 Story reached scene 4 / mission 1 with input enabled.
+The player moved 11.176244 forward and 6.184892 backward, and fired from eight
+to six rounds. All 40 pause samples froze level ticks; all 60 resume samples
+were unpaused with ticks advancing. Final checkpoint: 103.913s within the
+240-second cap. Runner/controller exited zero; start/paused/resumed captures
+were reviewed. All 26 protected settings/save/fixture files retained hashes,
+sizes and mtimes; no owned test locks, disposable partitions, BMP or crash dumps
+remain.
+
+Tested executable SHA-256:
+`cc677d68c26d0de23ac1b7ac66ea97c77f3c2689850c04df9262dd59509a372f`.
+Build provenance is the retirement working tree based on `f0633f99`, Windows
+x64/MSVC; 13 project-source and five runtime hashes match the build, and runner
+executable provenance matches. The replay used injected input, minimized windows,
+Classic textures and skipped startup movies. Physical input, audio listening,
+full campaign and native Mac title gameplay remain unverified.
+
+## Project guest host mappings (2026-10-28)
+
+Implementation based on `8ef1e7cf`, after all 17 prerequisite CI checks
+passed. Patch 0213 replaces main guest mapping construction and Mac arena/MMIO
+helpers with original shared ownership providers and thin OS adapters. It fixes
+tiled extent reporting to match the actual backing and retains failed cleanup
+ownership. Published mappings survive until process exit; whole-runtime worker
+quiescence remains unproven. See [contracts](../agent-context/guest-host-mappings.md)
+and MAC-116. The broader independence goal remains unfinished.
+
+Windows x64/MSVC candidate evidence: 47 tests passed in 66.67s, including 37
+compiled negative controls; three affected existing fixtures passed in 2.77s.
+The proposed platform library and actual runtime binding linked, and all three
+CTest scenarios passed (unpublished cleanup, worker timeout, notifier timeout).
+Real Windows host calls and controlled POSIX models were exercised. This is not
+native Mac execution. The two existing standalone event/audio consumers now link
+the project arena service dependencies on POSIX; their assertions are unchanged.
+Consumer checks passed on Windows: 36 passed, one native-Mac-only check skipped
+in 20.50s. All 998 installed compiler checks passed in 703.35s. Final 21
+documentation/context/backlog checks passed in 5.58s; context/index validation
+passed. All 73 migration/tracking/snapshot/context/backlog checks passed in
+1098.73s. CI at `8a870b42` exposed a missing source-root variable in standalone
+renderer test builds. Mac shared tests passed (1657 passed, 261 skipped and 18
+subtests), then RHI CMake configuration failed because `TSFP_SHARED_SOURCE` was
+unset. The Windows standalone replay reproduced the same configure failure.
+Both entry points now supply the project source root explicitly; this changes
+test builds only, not production providers or the previously tested executable.
+All seven Windows replay checks passed in 4.48s after the repair, including the
+real renderer/replay configure/build and usage launch. The same suite failed
+at configuration before the fix. All 17 CI checks at `f0633f99` passed, including
+native Mac RHI and one-frame production replay. Native Mac title gameplay
+remains unverified. No new game package was produced.
+
+The complete patch stack installed five runtime files matching the proposal.
+Windows Release build, native checks and matching crash symbols passed with
+normal `/DWIN32 /D_WINDOWS` flags. All seven provider C files compiled without
+new warnings. All 22 generated C/header files remained byte-identical and their
+generation fingerprint stayed current.
+
+The rebuilt game confirmed 28 RAM mirrors and the physical/tiled alias, then
+reached isolated Original 60 Story scene 4 / mission 1 with input enabled. It
+moved 11.174544 forward and 6.184892 backward, and fired from eight to six rounds.
+All 40 pause samples froze level ticks; all 60 resume samples were unpaused with
+ticks advancing. Final checkpoint: 102.878s within the 240-second cap. Runner and
+controller exited zero; start/paused/resumed captures were reviewed. The final
+exit trace records the runner's window-close request and ExitProcess(0), not a
+crash. All 26 protected settings/save/fixture files retained hashes, sizes and
+mtimes; owned test locks, disposable partitions and crash dumps are absent.
+
+Tested executable SHA-256:
+`64ff986d3630dc2153fc15de1917a85401f66d55a9487e2a6565cca7aca80a92`.
+Build provenance: guest-host-maps working tree based on `8ef1e7cf`, Windows
+x64/MSVC; runner provenance matches all 12 providers and five runtime files.
+The replay used injected input, minimized windows, Classic textures and skipped
+startup movies. Physical input, audio listening, full campaign and native Mac
+title gameplay remain unverified.
+
+## Project native virtual-memory host operations (2026-10-28)
+
+Working tree based on b0581495 after all 17 prerequisite CI checks passed.
+Patch 0212 replaces native Nt host callbacks and routes native Mm protection
+through the same boundary. Windows retains real OS virtual-memory operations;
+Darwin now owns reservation lengths/page states, releases exact mappings, clears
+discarded contents on recommit and reports actual regions instead of fabricated
+pages. Native record widths/PartitionId are preserved and padding is explicitly
+zeroed. See [contracts and failure limits](../agent-context/native-virtual-memory.md)
+and MAC-115. Main guest mappings and full independence remain unfinished.
+
+Windows x64/MSVC candidate: 25 checks passed in 52.75s, including 15 compiled
+negative controls, real host allocation/query/recommit/release, 4/16 KiB ownership
+models, concurrent calls, controlled POSIX reclamation/rollback failures and
+actual native Nt/Mm adapters. Existing VM/Mm assertions were retained. Controlled
+Darwin/POSIX behavior is not native Mac execution. All 951 installed compiler
+checks passed in 606.55s. Final 21 documentation/context/backlog checks passed in
+5.58s; context/index and whitespace checks passed. All 73 historical patch
+migration/tracking/snapshot/context/backlog checks passed in 1095.34s.
+All 17 CI checks at committed `8ef1e7cf` passed, including native Windows/Mac
+runtime checks. Native Mac title gameplay remains separate acceptance.
+
+The complete patch stack installed two runtime files matching the proposal.
+Windows Release build, native checks and matching crash symbols passed with
+normal `/DWIN32 /D_WINDOWS` flags. All 22 generated C/header files remained
+byte-identical and the fingerprint stayed current. No new provider warnings
+appeared in the build log.
+
+The rebuilt executable reached isolated Original 60 Story scene 4 / mission 1
+with input enabled, moved 11.174544 forward and 6.184892 backward, and fired from
+eight to six rounds. All 40 pause samples froze level ticks; all 60 resume samples
+were unpaused with ticks advancing. Final checkpoint: 104.946s within the
+240-second cap. Runner/controller exited zero; start/paused/resumed captures
+were reviewed. All 26 protected settings/save/fixture files retained hashes,
+sizes and mtimes. No owned locks, disposable partitions, BMP or crash dumps remain.
+
+Tested executable SHA-256:
+`4febc1f682025d9d52c514e1ec5d67a82720454047fb0ebf40398ab8b0cdda40`.
+Build provenance: native-VM-host working tree based on b0581495, Windows x64/MSVC;
+runner provenance matches. The replay used injected input, minimized windows,
+Classic textures and skipped startup movies. Physical input, audio listening,
+full campaign and native Mac title gameplay remain unverified. No new game
+package has been produced.
+
+## Project guest memory services (2026-10-28)
+
+Working tree based on e90b9f7e after all 17 prerequisite CI checks passed.
+Patch 0211 replaces all 25 Mm guest bridge bodies and five remaining native
+statistics/physical/hint function bodies. Project services reuse guest ownership,
+validate output spans, preserve native versus guest pointer widths, and replace
+uninitialized Darwin statistics with a real host snapshot. See
+[contracts and compatibility limits](../agent-context/guest-memory-services.md)
+and MAC-114. Main mappings, other kernel/devices and full independence remain.
+
+Windows x64/MSVC candidate: 25 checks passed across statistics policy, host
+snapshots, guest services and actual adapters, including 16 compiled negative
+controls. Real Windows availability and controlled Windows/Darwin APIs passed;
+controlled Darwin behavior is not a native Mac execution result. All 931 installed
+compiler checks passed in 540.82s. Final 21 documentation/context/backlog checks
+passed; the context/index and whitespace checks passed. All 73 historical patch
+migration/tracking/snapshot/context/backlog checks passed in 1017.34s.
+
+The complete patch stack installed five runtime files matching the proposal
+after normal line-ending normalization. Windows Release build,
+native checks and matching crash symbols passed with normal `/DWIN32 /D_WINDOWS`
+flags. All 22 generated C/header files remained byte-identical and the generation
+fingerprint stayed current. The rebuilt executable reached isolated Original 60
+Story scene 4 / mission 1 with input enabled, moved 11.174537 forward and 6.184889
+backward, and fired from eight to six rounds. All 40 pause samples froze level
+ticks; all 60 resume samples were unpaused with ticks advancing. Final checkpoint:
+101.323s within the 240-second cap. Runner/controller exited zero and the
+start/paused/resumed captures were reviewed. All 26 protected settings/save/fixture
+files retained hashes, sizes and mtimes; no owned locks, disposable partitions,
+BMP or crash dumps remain.
+
+Tested executable SHA-256:
+`4888d04e689a8b5b616c020960cea172f49726f5288837f51789f39e8f7f6344`.
+Build provenance: guest-memory-services working tree based on e90b9f7e,
+Windows x64/MSVC; runner provenance matches. The test used injected input,
+minimized windows, Classic textures and skipped startup movies. Physical input,
+audio listening, full campaign and native Mac title execution remain unverified.
+All 17 CI checks at committed b0581495 passed; no new game package was produced.
+
+## Project native memory ownership (2026-10-28)
+
+Working tree based on 47d687ef after all 17 prerequisite CI checks passed.
+Patch 0209 replaces thirteen native Mm bodies with original allocation ownership
+and host page services. It removes allocator guessing, preserves native pointer
+widths, rejects foreign/interior/wrong-kind releases, and provides real Mach
+queries and host-page-rounded protection. See
+[contracts and deliberate compatibility fixes](../agent-context/native-memory.md)
+and MAC-113. Guest Mm policy and the broader independence goal remain unfinished.
+
+Windows x64/MSVC candidate checks passed: eight ownership checks, six page checks
+and one real native Mm adapter check, including eight compiled negative controls.
+The page suite executes controlled POSIX/Mach paths on this Windows computer;
+that is not native Mac validation. All 906 installed compiler checks passed in
+465.42s, and all 73 historical patch migration/tracking/snapshot/context/backlog
+checks passed in 990.63s. Initial installed checks exposed an older fixture's
+function-emission order; the fixture now emits the protection helper before its
+callers, matching production, with its original assertions preserved. The final
+full compiler suite includes that correction.
+
+The complete patch stack installed two runtime files matching the final proposal
+after normal line-ending normalization. Release build, native checks and matching
+crash symbols passed with normal `/DWIN32 /D_WINDOWS` flags. All 22 generated
+C/header files remained byte-identical and the fingerprint stayed current.
+The new providers emitted no warnings; existing inherited no-op Mm parameter
+warnings remain outside this stage.
+
+The rebuilt executable booted into isolated Original 60 Story scene 4 / mission 1
+with input enabled, moved 11.176244 forward and 6.184892 backward, and fired from
+eight to six rounds. All 40 pause samples froze level ticks; all 60 resume samples
+were unpaused with ticks advancing. Final checkpoint: 102.382s within the
+240-second cap. Runner/controller exited zero; start/paused/resumed captures
+were reviewed. All 26 protected settings/save/fixture files retained hashes,
+sizes and mtimes; no owned locks, disposable partitions, BMP or crash dumps remain.
+
+Tested executable SHA-256:
+`865c3afc47c8407c73e57061b9270a3b7496eb07c83aec22a6cc1765f93ec8fc`.
+Build provenance: native-memory working tree based on 47d687ef, Windows x64/MSVC;
+runner provenance matches. The test used injected input, minimized windows,
+Classic textures and skipped startup movies. Physical input, audio listening,
+full campaign and native Mac title execution remain unverified. All 17 CI
+checks at committed e90b9f7e passed. No new game package has been produced.
+
+## Project virtual-memory services (2026-10-28)
+
+Working tree based on 7fef998e after all 17 prerequisite CI checks passed at that
+revision. Additive patch 0208 replaces four guest Nt VM implementations and
+native allocate/free/query policy with original project providers. Complete
+output-span validation precedes ownership changes; exact reservation RELEASE
+uses the existing allocation table. Native pointer widths and the guest's
+28-byte query record remain separate. See [contracts](../agent-context/virtual-memory.md)
+and MAC-112 for supported behavior and remaining host/mapping limitations.
+
+Windows x64/MSVC: all 889 installed compiler checks passed in 434.67s and all
+73 historical patch migration/tracking/snapshot/context/backlog checks passed
+in 976.02s. These broad runs preceded the final adapter correction from Win32
+GetSystemInfo to POSIX sysconf on Mac. After that correction, all 21 installed
+VM checks passed in 31.84s, including nine compiled negative controls, both
+adapter host branches, physical-owner rejection and real Windows protection,
+native query, decommit and release probes. All 125 final repository checks
+passed in 12.93s. The complete patch stack installed the correction, and all
+five resulting runtime files matched the final candidate. All 17 CI checks
+at committed 47d687ef passed, including Windows/Mac contracts and migrations.
+
+The final Windows Release build, native checks and matching crash symbols
+passed with normal `/DWIN32 /D_WINDOWS` flags. All 22 generated C/header files
+remained byte-identical and the generation fingerprint stayed current. An
+initial PowerShell 7 invocation failed in the icon helper before compilation;
+the documented Windows PowerShell command built successfully.
+
+The final executable booted into isolated Original 60 Story gameplay, scene 4 /
+mission 1 with input enabled. It moved 11.195015 forward and 6.391049 backward,
+and fired from eight to six rounds. All 40 pause samples froze level ticks;
+all 60 resume samples stayed unpaused with ticks advancing. Final checkpoint:
+100.445s within the 240-second cap. Runner/controller exited zero; start,
+paused and resumed screenshots were reviewed. All 26 protected settings/save/
+fixture files retained hashes, sizes and mtimes. No owned run locks, disposable
+partition images, BMP dumps or crash dumps remained.
+
+Tested executable SHA-256:
+`752c88cbff2f87a4c80c208be51dba0cc360f99116932530a45d3c5f0c45aebc`.
+Build provenance: virtual-memory working tree based on 7fef998e, Windows x64/MSVC.
+The replay used injected input, minimized windows, Classic textures and skipped
+startup movies. Physical input, audio listening, full campaign and native Mac
+title execution remain unverified. No new game package was produced.
+
+## Project guest thread storage (2026-10-28)
+
+Working tree based on 3b722823 after all 17 prerequisite checks passed at that
+revision, including Windows/macOS native contracts and patch upgrades.
+Additive patch 0207 replaces main/private TIB/TLS/object construction and
+heap/fixed stack ownership with project providers. Failed host creation returns
+its stack; timer TIB failure returns its fixed slot. Published identity records
+retain the guest-memory lifetime. Scheduling, host-worker stop/join, identity
+reference counting and broader kernel services remain separate replacement work.
+See [contracts](../agent-context/thread-memory.md) and MAC-111.
+
+Windows x64/MSVC candidate: 12 tests passed in 16.21s with CI=true, including
+five compiled negative controls, 400 concurrent identity/stack cycles, complete
+synthetic bootstrap-memory comparisons, failure/ownership/boundary cases and
+actual proposed adapters and host-create/timer cleanup. The supported-US private
+test verified the required hash and a 20-byte TLS bootstrap against an independent
+byte-layout oracle in 40 MiB fixture RAM. This is not production gameplay.
+The five-file integration patch passed its dry run with the maintained CRLF policy.
+
+All 870 installed compiler tests passed in 393.82s. The complete patch stack
+updated five runtime files; normal Windows Release/native checks and matching
+crash symbols passed with unchanged `/DWIN32 /D_WINDOWS` C flags. All 22 generated
+C/header files remained byte-identical with a current fingerprint. All 73
+historical patch migration/tracking/snapshot/context/backlog checks passed in
+946.62s.
+
+Production startup reported main TIB 0x1000, TLS 20 bytes and ESP 0x0111fff0.
+The isolated Original 60 Story replay reached scene 4 / mission 1 with input
+enabled, moved 11.174544 forward and 6.184892 backward, and fired from eight to
+six rounds. All 40 pause samples froze level ticks; all 60 resume samples stayed
+unpaused with ticks advancing over the window. Final checkpoint: 101.719s within
+the 240-second cap; runner/controller exited zero. Start/pause/resume captures
+were reviewed. All 26 protected settings/save/fixture files retained hashes,
+sizes and mtimes; no owned locks, disposable partitions or crash dumps remained.
+
+Tested executable SHA-256:
+`0103fa532b2fab14895c177b205e90f28d5a286c892fa439babc473eabda9404`.
+Build provenance: thread-memory working tree based on 3b722823, Windows x64/MSVC.
+The replay used injected input, minimized windows, Classic textures and skipped
+startup movies. Physical input, audio listening and full campaign remain
+unverified. No new package or native Mac title execution was verified for this
+stage. All 17 checks at committed 7fef998e passed. The Mac GPU job first
+failed downloading the SDK; its completed retry passed without a source change.
+
+## Project guest allocation ownership (2026-10-28)
+
+Working tree based on 1976a07d on feature/independent-exchange, after all 17
+image-loader CI checks passed at that revision. Additive patch 0206 replaces inherited
+heap/reservation/physical allocation bodies with original project ownership.
+The kernel bridge validates pins before zeroing and respects bounded physical
+requests. Host maps, TIB/thread construction, MMIO and other services remain
+transitional. See [contracts](../agent-context/independent.md#guest-allocation-ownership)
+and MAC-110 for scope and deliberate placement/failure-policy differences.
+
+Windows x64/MSVC candidate acceptance with CI=true: 20 checks passed in 15.67s, including 2,100
+randomized byte-occupancy comparisons, exact memory snapshots, guarded boundary
+and invalid-configuration probes, 8,000 concurrent allocation cycles, five compiled
+negative controls, actual proposed init/adapters/kernel bridge and existing APU/
+GPU consumers. The latter use temporary extracted consumer bodies; the APU
+fixture relocates its physical window within one native array, while separate
+bridge/high-address checks cover actual guest address ranges. The candidate
+patch passed a dry run with the maintained CRLF context policy. These results
+precede installation and do not prove production gameplay or native Mac behavior.
+
+The complete stack installed successfully, updating five runtime files. All 22
+generated C/header files remain byte-identical and the generation fingerprint
+is current. All 858 installed compiler checks passed in 370.38s. Normal Windows
+Release build, bundled native checks and matching crash symbols passed with
+unchanged `/DWIN32 /D_WINDOWS` C flags. The allocator compiled without warnings;
+unrelated existing runtime warnings remain. All 73 historical patch migration,
+tracking, snapshot, context and backlog checks passed in 933.49s.
+
+The isolated Original 60 Story replay reached scene 4 / mission 1 with input enabled,
+moved 11.174537 forward and 6.193569 backward, and fired from eight to six rounds. All 40
+pause samples froze level ticks; all 60 resume samples stayed unpaused with ticks
+advancing over the window. Final checkpoint: 101.633s within the 240-second cap;
+runner/controller exited zero. Start/pause/resume captures were reviewed.
+All 26 protected settings/save/fixture files retained hashes, sizes and mtimes;
+no owned run locks, disposable partitions or crash dumps remained.
+
+Tested executable SHA-256:
+`8bfdbe644eb188c2a990317114c499c28bc013221fe13bcf0d78e9c14c1ba392`.
+Build provenance: uncommitted allocation stage based on 1976a07d, Windows x64/MSVC.
+The replay uses injected input, minimized windows, Classic textures and skipped
+startup movies; physical input, audio listening and full campaign are unverified.
+Build/test/package entry points resolve at their reorganized paths. No new package
+or native Mac title verification. All 17 checks at 3b722823 passed, including
+Windows/macOS native contracts and patch upgrades.
+
+## Native image CI diagnostic repair (2026-10-28)
+
+Both native jobs for f3fd8a08 reached the workflow's 30-minute timeout. The
+Windows log stopped after 569 completed tests, at the image loader's first
+compiled mutation. A local run with `CI=true` reproduced the stall; an
+eight-second Python stack dump located it in pytest's sequence-difference
+formatter, called by the expected memory mismatch. The reproduction was
+deliberately stopped after capturing that evidence.
+
+The test now compares the same complete buffers and raises a bounded
+first-mismatch/length message instead of asking pytest to format their entire
+contents. With `CI=true`, all **64 image checks passed in 6.33s**, including
+all three compile-first negative controls. No compiler flags, test selection,
+timeouts, runtime code or acceptance criteria changed. All 17 checks at 1976a07d
+passed, including Windows/macOS native and patch upgrades; the earlier f3fd8a08
+run did not pass. Existing production build
+and gameplay evidence below is unchanged, not a new game test for this repair.
+
+## Project native image loading (2026-10-28)
+
+Based on c42f3b1e on feature/independent-exchange, after all 17 exact-head CI
+checks passed on the main-integrated guest-services stage. Additive patch
+0205-independent-image-loader.patch replaces inherited XBE header/section/
+thunk/certificate parsing and copying plus title decoding with the original
+src/runtime/guest_image.c and guest_image.h provider. Existing host mapping,
+MMIO, TIB construction, kernel services and scheduling remain transitional.
+
+The provider validates image/table/payload bounds, disjoint section extents,
+retail/debug entry decoding, bounded terminated imports, certificate and TLS
+data before materializing guest memory. Failed inspection/load preserves the
+destination and output metadata. BSS is zeroed, raw padding clipped, holes
+preserved and title text converted within its fixed-width UTF-16 field.
+Preflight also checks low-service/stack space and the existing 0x200-byte TLS
+template reservation before host mapping. Invalid/oversized images now fail
+instead of taking partial-copy/fallback paths. This is not signature validation
+or implementation of arbitrary TLS sizes, callbacks or host-memory lifecycle.
+
+Windows x64/MSVC acceptance:
+
+- **64 installed image checks** passed, including synthetic retail/debug images,
+  unaligned file input, complete byte/metadata comparison with the independent
+  Python reader, 65 sections, import capacity/termination, UTF-16 edge cases,
+  malformed/overlapping/overflowing extents, unchanged-on-error checks, bootstrap
+  limits and three compiled negative controls. Provider probes now use MSVC
+  /W4 /WX and Clang -Wall -Wextra -Werror.
+- Before installation, the candidate matched the inherited loader across all
+  64 MiB of the supported-US guest-memory buffer, bounds/import/title/region
+  metadata and bootstrap placement. Extracted baseline bodies existed only in
+  temporary ignored storage and were removed. The final provider retains the
+  independent private-US byte/metadata oracle in its regression suite.
+- **838 compiler tests passed** in 349.95s (0:05:49). All **73** migration,
+  tracking, snapshot, context and backlog checks passed in 917.22s (0:15:17).
+  Complete patch installation updated two runtime files; final warning cleanup
+  updated one. Earlier patches and the pristine vendor snapshot are unchanged.
+- Normal Release build, bundled native checks and matching crash symbols passed.
+  Initial production /W4 diagnostics prompted an explicit 64-bit import stride
+  and initialized bootstrap outputs. The initial compiler/migration runs were
+  deliberately stopped to apply that repair, then restarted and completed above.
+  The final new source/integration emitted none of those warnings; existing
+  unrelated memory-layout warnings remain. Normal C flags were preserved.
+- All 22 generated C/header files remain byte-identical and the generation
+  fingerprint is current; no fresh production generation was required.
+- Supported-US XBE SHA-256 verified. The production log confirms 23 sections,
+  151 kernel imports at 0x00475780, low shift 0x001A0000, title TimeSplitters FP,
+  region 1 and a 20-byte TLS block at 0x00910000.
+- Isolated Story replay independent-native-image reached scene 4 / mission 1
+  with input enabled, moved 11.174539 forward / 6.184892 backward,
+  and fired from eight to six rounds. All 40 pause samples froze level ticks;
+  60 resume samples stayed unpaused with ticks advancing over the window.
+  Final checkpoint 100.676s within a 240-second cap; runner and
+  controller exited zero. Start, pause and resume captures were reviewed.
+- All 26 protected settings/save/fixture files retained hashes, sizes and mtimes;
+  no owned run lock, disposable partitions or crash dumps remained.
+
+Tested executable SHA-256: `995be71adca4a20e029bad8deb33812c841b0ee058e2cff4992c0b87b73cab4a`,
+built from the stage working tree based on c42f3b1e. C flags stayed
+`/DWIN32 /D_WINDOWS`; CL_MPCount=2 was process-local. The documentation promotion
+encountered a Windows default-text-encoding mismatch; original UTF-8 content was
+restored and remaining edits completed explicitly as UTF-8 before validation.
+
+Both CI hosts select the new image contracts, but native Mac acceptance of this
+stage is pending its own checks. Replay used injected input, a minimized window,
+Original60 timing, Classic textures and skipped startup movies. Physical input,
+audio listening, full campaign and native Mac title gameplay remain unverified.
+No new package was produced. See MAC-109 and the image contracts for remaining
+memory/kernel/device/title/delivery and final toolkit/snapshot-unavailable audit work.
+
+## Guest service branch integration (2026-10-28)
+
+After d032560d, PR #375 had no Actions runs and GitHub reported it unmergeable.
+Fetched main 759f7a0e and resolved its two context-guide conflicts by retaining
+the independent-runtime contracts and incoming launcher/branch-cleanup guidance.
+The incoming changes affect launcher/docs; runtime sources, patches and generated
+guest code are unchanged from the guest-services gameplay acceptance below.
+
+On this Windows computer, 57 context/shared-launcher/native-launcher/package
+checks and one backlog check passed. The Windows launcher built in isolated
+`build/guest-services-launcher-check` and its bundled `-Test` checks passed.
+Context/index and whitespace checks passed. All 26 protected files retained
+hashes, sizes and modification times. No new game replay or native Mac execution
+is claimed for this integration. Exact merged-head CI must pass before the next
+runtime replacement is installed; PR #375 remains unmerged.
+
+## Project guest state and ABI diagnostics (2026-10-28)
+
+Based on f85490ad on feature/independent-exchange, after all 17 exact-head CI
+checks passed. The preceding Windows migration timeout was resolved by the
+30-minute job allowance; both native and patch-upgrade hosts passed that head.
+The current stage replaces inherited architectural storage and ABI report
+bodies with src/runtime/guest_state.c and guest_abi_diagnostics.c, linked by
+0204-independent-guest-state.patch. Mapping, loading, guest thread objects and
+TIB allocation remain in the transitional kernel; this is not their replacement.
+
+Register/vector/x87/direction/SEH/refusal cells retain native-thread ownership
+and bootstrap values. Fibers on a native thread share its cells. The force-return
+flag and volatile call history retain process scope. Optional ABI reports keep
+separate first-32/64 target limits, now serialize registration/output, and use
+defined modular signed stack deltas. Reporting does not mutate guest state;
+it is not signal-safe, reentrant, or a coherent snapshot of the volatile ring.
+
+Windows x64 / MSVC acceptance:
+
+- Isolated probes established inherited defaults, cross-unit/thread ownership,
+  reporting limits/deduplication and real call-macro routing. Baseline bodies
+  remained in ignored temporary files and are not shipped as project source.
+- Fourteen candidate checks passed, including seven compiled negative controls,
+  direct call macros enabled/disabled, concurrent reports and the real
+  continuation service linked to the new register provider. The duplicate-report
+  oracle was strengthened to repeat keys before saturation, after an initial
+  deliberately broken provider escaped a weaker after-saturation check.
+- The installed-routing contract and full compiler suite passed: **774 tests**
+  in 364.12s (0:06:04). All **73** migration/tracking/snapshot/context/backlog
+  checks passed in 1063.11s (0:17:43). Both CI hosts select the new contracts;
+  native Mac acceptance of this stage remains pending until its own checks run.
+- The complete patch stack updated two runtime files. Normal Release build,
+  bundled native checks and matching crash symbols passed; both project providers
+  compiled into the kernel. C flags remain /DWIN32 /D_WINDOWS; CL_MPCount=2 was
+  process-local. All 22 generated C/header files are byte-identical and the
+  generation fingerprint is current; no fresh production generation was needed.
+- Supported-US XBE hash verified. Isolated Story run independent-guest-services
+  reached scene 4 / mission 1 with input enabled, moved 11.195015
+  forward and 6.073125 backward, and fired from eight to six rounds.
+  All 40 pause samples froze level ticks. The 60
+  resume samples stayed unpaused, with level ticks advancing over the window.
+  Final checkpoint 95.414s within a 240-second cap; runner
+  and controller exited zero. Start, pause and resume captures were reviewed.
+- All 26 protected settings/save/fixture files retained hashes, sizes and mtimes;
+  no owned locks, disposable partitions or crash dumps remained. Packaging
+  entry-point --help checks resolve under tools/release; no package was produced.
+
+Executable SHA-256 from the tested working tree based on f85490ad:
+`b43c0deb7739fd7ff24d61a88dc9de5cf2afeb0a86ceaef351c159e38e5dfec3`.
+The game exercises the new storage; optional ABI logging is disabled in the
+normal build and verified separately by direct-provider and production-macro
+contracts. Replay uses injected input, a minimized window, Original60 timing,
+Classic textures and skipped startup movies. Physical input, audio listening,
+full campaign and native Mac title gameplay are not established. See MAC-108.
+Remaining work includes memory/loader/kernel/device services, title/delivery
+integration and the final toolkit/snapshot-unavailable production and source audit.
+
+## Main integration and CI migration allowance (2026-10-27)
+
+Continuation stage 1cb58612 was committed and pushed to PR #375. Main through
+8aec3c8f (split-screen mouse routing) merged cleanly at b057d8c3. This computer
+rebuilt that combined source with normal flags: Release, native build checks
+and crash symbols passed. All 22 generated C/header files remain byte-identical
+with a current fingerprint. The documentation-only aeb83716 repair condensed
+duplicated systems-guide summaries after the merge exceeded its 64 KiB cap;
+the limit remains enforced. Fifty focused service/mouse/repository tests passed;
+the two initial context failures then passed in a 21-test context/backlog run.
+
+Fresh isolated Windows Story replay `independent-nonlocal-merge` verified the
+supported US XBE, reached playable scene 4 / mission 1, moved 11.152513 forward
+and 6.184891 backward, and fired from eight to six rounds. All 40 pause samples
+froze level ticks; the 60 resume samples stayed unpaused with level ticks
+advancing over the window. Final checkpoint 95.993 seconds, runner exit zero;
+start/pause/resume captures reviewed. All 26 protected files retained hashes,
+sizes and mtimes; no owned locks, partitions or crash dumps remained. Executable
+SHA-256: `6ac427e8b921d3fd3cebaafecfa5321a9c2a763a0ee2224652e1e9f4af35af5b`.
+Replay conditions and acceptance limits are the same as the continuation entry.
+This is not live split-screen mouse validation or Mac gameplay evidence.
+
+At aeb83716, the Windows patch-upgrade job reported all 52 tests passed in
+876.29 seconds, then exceeded its 15-minute job limit with setup/cleanup
+(GitHub annotation confirms the timeout). Patch-upgrade jobs now receive
+30 minutes, matching native jobs; all test selection and required failure
+gates remain unchanged. Mac native and patch-upgrade CI passed at aeb83716;
+Windows native CI was still running when this repair was prepared. The next
+runtime stage remains uninstalled pending successful exact-head CI.
+
+## Project native continuation service (2026-10-27)
+
+Based on `0a991a8e` on `feature/independent-exchange`, after all 17 prerequisite
+CI checks passed. This also confirms the previous Clang mutation-fixture repair.
+`src/runtime/guest_nonlocal_jump.c` replaces the inherited continuation service
+through additive patch `0203-independent-nonlocal-jumps.patch`. The patch removes
+the old implementation from memory layout and links the project source into the
+kernel target using the final layout patch's shared source root.
+
+The provider owns 32 stable native buffers per thread, guest-key lookup/rearming,
+newest-slot overflow and retirement of newer slots when resuming an older frame.
+Unknown keys return to the guest fallback before memory access. Project guest
+accessors restore the five saved register cells and pop the guest return address;
+zero jump results become one and other 32-bit results retain their bits. Native
+setjmp executes in the generated caller. Windows verifies stack membership and
+routes foreign jumps through the registered adapter; a missing or returning
+adapter now aborts with a diagnostic before attempting an invalid native unwind.
+Register the process-wide callback at startup or with guest threads quiescent.
+POSIX retains the existing same-stack assumption, without a Mac fiber adapter.
+
+Windows x64 / MSVC 19.44.35224.0 evidence:
+
+- Ten isolated probes established the prior service's behavior, including real
+  Windows fiber handoff, high-bit results, unaligned guest fields, ESP wrap,
+  nested retirement, rearming, capacity and four threads sharing a guest key.
+  The old stack-marker helper needed a baseline-only C4172 suppression; the
+  new implementation captures its marker in the binding frame and needs none.
+- The project tests run the real provider and canonical header, including
+  generated calls for zero, positive and high-bit results, native frame unwind,
+  local EBP restoration and guest fallback. Six deliberately broken providers
+  compile under warnings-as-errors before the behavioral checks reject them.
+  Missing/returning foreign adapters are tested in bounded subprocesses with
+  crash dialogs disabled only for those test processes.
+- All 29 installed-provider/translation-control checks passed (19.01s), then all
+  759 compiler checks passed (309.32s). All 73 migration, snapshot, tracking,
+  context and backlog checks passed (873.07s). Initial fixture-only errors
+  (an ambiguous mutation string and omitted generated-code header flag) were
+  corrected before these passes. New contracts are selected on both CI hosts.
+- The full stack applied with two runtime files changed. All 22 generated C/
+  header files remain byte-identical and the generation fingerprint is current.
+  The canonical header, previous patch payloads and vendor snapshot are unchanged.
+  Release build, bundled native checks and matching crash symbols passed with
+  normal C flags and process-local `CL_MPCount=2`.
+
+The supported-US executable was verified by the bounded runner. The isolated
+`independent-nonlocal` Story replay confirmed scene 4 / mission 1 with input
+enabled before testing. Movement measured 11.174544 forward /
+5.970043 backward; ammunition fell eight to six. All 40
+pause samples froze level ticks. The 60 resume samples remained
+unpaused and level ticks advanced over that window. Final checkpoint:
+107.913s within a 240-second cap; runner exit zero. Start, pause and
+resumed captures were reviewed. All 26 protected settings/save/fixture files
+retain hashes, sizes and mtimes; no owned locks, partitions or crash dumps remained.
+The working-tree executable based on `0a991a8e` has SHA-256
+`64edc144fd84ccbf047697b0de78312784238f4e6142d5a6d90f91c1e2876014`.
+
+The current title translation detects neither CRT setjmp nor longjmp helper.
+The replay therefore checks game regressions; the direct/provider/generated-call
+tests establish continuation behavior. It used injected input, a minimized
+window, Original60 timing, Classic textures and skipped startup movies. Native
+Mac title/fiber behavior, physical input, audio listening and full campaign are
+not established (MAC-107). Memory/loader/kernel/device services, title integration
+and the final toolkit-unavailable production generation/build/package audit
+remain incomplete.
+
+## Project branch-feedback provider (2026-10-27)
+
+CI follow-up to `3965c6df`: the Mac native job passed 1,406 checks but failed the
+double-address negative control at compilation. Its deliberately duplicated
+expression discarded a value without an explicit cast, which Clang rejects
+under `-Werror`. The fixture now casts only that first value to void, preserving
+the second evaluation and the expected behavioral rejection. Warnings remain
+errors. All 39 recorder/context checks passed locally on Windows (28.67s).
+Production sources, patches, generation and the tested normal executable hash
+are unchanged; no new build or gameplay run is claimed for this fixture repair.
+Mac acceptance of the repair remains a separate CI check.
+
+Based on `676545eb` on `feature/independent-exchange`, with all 17 prerequisite
+CI checks passed. The additive `0202-independent-branch-feedback.patch` replaces
+the inherited recorder C/header with compatibility bridges to original project
+source in `src/runtime/guest_branch_feedback.c` and `tsfp_branch_feedback.h`.
+Target flags and guard counters use atomics; bounded synchronized site sets
+retain six targets and report saturation/dropped observations. Thread-local
+duplicate suppression replaces a shared racy cache. Disabled macros discard
+arguments; enabled address arguments evaluate once. Explicit initialization is
+idempotent, and the v1 target/site dumps retain the project parser contract.
+
+Default generation and hook refresh publish both project headers and validate
+inputs before publication. Their fingerprints include both headers; output
+names reject case-insensitive collisions. Explicit custom types headers retain
+their caller-owned contract. Both bounded host runners validate target and site
+dump paths inside their disposable directories. Earlier patch payloads and the
+pristine vendor snapshot remain unchanged; layout routing stays last.
+
+Windows x64 / MSVC 19.44.35224.0 validation:
+
+- All 739 compiler tests passed (293.91s), including recorder concurrency,
+  saturation/capacity, evaluation, disabled hooks, exit registration, write and
+  allocation failures/recovery, and compiled negative controls. An initial
+  isolated dispatch fixture used the old feedback header; its prelude was
+  corrected, with all 13 dispatch checks then passing before the full suite.
+- All 73 migration, snapshot, tracking, context and backlog checks passed
+  (904.60s). The subsequent case-insensitive output-name fix passed all 34
+  batch/CLI/header checks (27.03s). Runner isolation passed 38 checks with one
+  Windows-inapplicable Mac allocation skip; both linked-output rejection checks
+  also passed.
+- Synthetic project-only generation compiled and executed with feedback both
+  enabled and disabled and no toolkit tree. This is not toolkit-free production
+  acceptance. The supported-US XBE hash was verified; production generation
+  translated 15,838 functions with zero failures. All 20 previous outputs other
+  than the types header are byte-identical; the feedback header is added.
+- Enabled and normal Release builds, bundled native checks and matching crash
+  symbols passed. The original C flags were restored exactly after the enabled
+  build. Generation remains current.
+
+Both isolated Story replays confirmed scene 4 / mission 1, unpaused state and
+eight rounds before input. Enabled: final checkpoint 100.366s,
+movement 11.174544 forward / 6.184891 backward.
+Normal: final checkpoint 99.382s, movement
+11.176244 forward / 6.192486 backward. Each fired from eight to
+six rounds, froze all 40 pause samples and advanced all 60 resume samples.
+Both runners exited successfully within their 240-second limits; start, paused
+and resumed captures were reviewed. All 26 protected settings/save/fixture files
+retain hashes, sizes and mtimes. No owned run locks, disposable partition images
+or crash dumps remained.
+
+Executable SHA-256 values from the working tree based on `676545eb`:
+
+- Feedback enabled: `b2c3ca86408b9bcf836887c7c9cce05ef11a4ba0fb46f2a636b772e1c0859f5a`.
+- Normal: `825f24e1591e6e583507f27553c52643e9233d1e78c3b8b3f5ad216a81f29c07`.
+
+These checks used injected input, minimized windows, Original60 timing, Classic
+textures and skipped startup movies. Physical input, audio listening, full
+campaign and native Mac title acceptance remain unverified (MAC-106).
+Explicit recorder initialization/dumping is exercised by native fixtures;
+forced game shutdown does not prove an exit dump. Output is best effort, not
+transactional, signal-safe or a globally consistent concurrent snapshot.
+Memory/loader/kernel/device services, title integration and the final production
+build/package with both toolkit and snapshot unavailable remain incomplete.
+
+## Canonical-header consumer fixture repair (2026-10-27)
+
+CI for `519b9d34` exposed a missing dependency in the inherited guarded-call
+test: it extracted `RECOMP_ICALL_IS_CODE` without the new
+`tsfp_guest_target_is_code` body. Both native CI hosts failed the seven parent
+suites that invoke this same consumer. The local MSVC-only environment had
+silently skipped the inherited fixture's Clang/GCC route. This was a test
+extraction defect, not evidence of a title runtime failure.
+
+The additive `0201-runtime-header-consumer-fixture.patch` extracts the actual
+helper with its public macro. The original guarded-call assertions still check
+recorded/unseen/unresolved/invalid targets and guest-stack restoration. A new
+project regression executes that oracle through the native compiler adapter,
+including MSVC, and confirms that macro-only extraction still fails to build.
+It reproduced the missing-helper linker failure before the repair. All 11
+focused checks passed afterward (12.16s), followed by all 718 compiler checks
+(255.19s) on Windows x64. All 73 historical migration, snapshot, tracking,
+context and backlog checks passed (826.62s); final context/index checks passed.
+
+Applying the complete stack changed only the inherited Python test. Production
+C, the generation fingerprint and the previously tested executable remain
+unchanged; no new game build or gameplay run is claimed for this fixture repair.
+All 26 protected settings/save/fixture files retain hashes, sizes and mtimes.
+Mac CI acceptance of the repair remains pending; MAC-105 title acceptance is
+still Awaiting validation. The isolated feedback replacement draft is not installed.
+
+## Canonical project guest execution header (2026-10-27)
+
+Based on `60c47380` on `feature/independent-exchange`. All 17 prerequisite CI
+checks passed before installing this stage. `src/runtime/recomp_types.h` now
+owns the 676-line header, retaining nine previously replaced primitive blocks
+unchanged. Original service declarations, diagnostic aliases and executable
+target admission replace the remaining inherited header support. Admission
+evaluates its guest-width argument once and preserves zero-bound and synthetic
+kernel acceptance. Declared service implementations remain separate work.
+Optional feedback still imports the transitional `recomp_icall_feedback.h`
+observation provider; its macros and backing service are not replaced here.
+
+Batch/CLI generation reads the project header by default and fingerprints that
+source. An explicit custom header remains supported. The additive
+`0199-independent-runtime-header.patch` installs the same compatibility template
+after scalar support and before layout routing. Existing patch payloads and
+vendor bytes are unchanged. Earlier guide sections now reflect current header
+ownership, and the moved development guide's relative context link is corrected.
+
+Windows x64 validation (MSVC 19.44.35224.0): all 66 focused checks passed (68.07s), followed by all
+716 compiler checks (286.77s). New fixtures cover 201,733 executable-address
+cases, service argument evaluation and trace routing, feedback interface on/off
+with a test provider, and counter wrap. Five corrupted implementations compile
+before failing their
+behavioral checks. A subprocess copies only project compiler modules and the
+canonical header, generates synthetic functions with no toolkit tree, compiles
+and executes their direct/flat dispatch, and verifies that a missing canonical
+header leaves earlier output intact. This is not toolkit-free production-title
+acceptance; title data and runtime service implementations are still required.
+
+The supported-US XBE hash was rechecked. Production regeneration translated
+15,838 functions with zero failures; all 20 other generated C/header files are
+byte-identical to the previous stage. The generated types header and patched
+compatibility template equal the canonical source after newline normalization.
+Release, bundled native checks and matching crash symbols passed with
+process-local `CL_MPCount=2`. The executable built from this working tree based
+on `60c47380` has SHA-256
+`39ecafb304c39c8c919a007b19f35e35bfcfcf5bd9d14789bb18dbc033f699dc`.
+
+The isolated `independent-header-final` Story replay confirmed scene 4 / mission 1,
+unpaused input-enabled state and eight loaded rounds before exercising input.
+Movement measured 11.174549 forward / 6.184892 backward; ammunition fell 8 to 6.
+All 40 pause samples froze ticks and all 60 resume samples advanced. The last
+checkpoint was 95.602 seconds, within a 240-second cap; runner exit 0. Start,
+pause and resumed captures were reviewed. All 26 protected files retained their
+hashes, sizes and modification times; no owned locks, disposable partitions or
+dumps remained. This used injected input, a minimized window, Original60 timing,
+Classic textures and skipped startup movies. Physical input, audio listening,
+full-campaign behavior and native Mac title acceptance remain unverified
+(MAC-105). All 73 historical-upgrade, tracking, context, backlog and snapshot
+checks passed (896.28s). A final EOF/help-text cleanup was followed by 22 focused
+checks (18.78s), fresh generation/build and the final replay reported above.
+The patch stack was reapplied and verified unchanged on the subsequent build.
+Final context/index and whitespace checks passed. Labeled PNG captures and
+reports were retained; neither header-stage run left raw BMP dumps.
+
+## Independent scalar numeric support (2026-10-27)
+
+Based on `e56623d1` on `feature/independent-exchange`. All 17 CI checks on that
+prerequisite revision passed before installing this stage. The complete stack
+adds `0198-independent-scalar-support.patch` and direct MOVSX/MOVZX emission in
+`translation_moves.py`. The runtime header shrinks from 1,169 to 951 lines;
+all previous patch payloads remain byte-identical.
+
+MOVSX/MOVZX previously built SX/ZX helper names dynamically. An explicit scan
+of ignored generated C found 7,894 live calls: 2,032 SX16, 869 SX8, 2,103 ZX16
+and 2,890 ZX8. The new expressions mask the source once and perform signed
+extension with unsigned sign-bit flipping/subtraction. Partial destinations
+preserve their remaining bits. Direction displacement samples DF before one
+argument evaluation and uses defined unsigned wrapping. Unused scalar/x87,
+condition, carry, rotation, parity and byte-swap helpers are removed.
+
+The inherited rounding assertions now execute actual emitted FRNDINT/FIST;
+classification stops extracting unused helpers. The old numeric assertions and
+compiled extension regression sweeps remain enabled. New checks cover 8,718,336
+extension cases across complete byte/word values, source/destination registers,
+partial aliases, memory read counts and FS addressing; 262,172 direction cases;
+production/isolated headers; and seven compiling negative controls. All 24
+focused checks passed (27.08s), followed by all 707 compiler checks (242.52s).
+
+Production regeneration translated 15,838 functions with zero failures and
+unchanged 50 unresolved stubs / 738 unimplemented sites. All 16 C chunks match
+the independently predicted replacement of those 7,894 expressions byte-for-byte;
+the four other generated files are unchanged. The initial raw header prediction
+comparison failed only because the Windows patch tool wrote CRLF: all 951 lines
+match the candidate after newline normalization, and the generated header is
+byte-identical to the patched template. No production change was needed for that
+verification adjustment. The supported-US XBE hash was rechecked.
+
+Windows x64 Release, bundled native checks and matching crash symbols passed
+with process-local `CL_MPCount=2`. The executable built from the working tree
+based on `e56623d1` has SHA-256
+`19393d537de1715f144340dde1a3c549fa65dfa4f431723458139b5030e415d7`.
+The isolated Original60 Story replay confirmed playable state before input.
+Movement measured 11.174544 forward / 6.184892 backward, ammunition fell 8 to 6,
+all 40 pause samples froze ticks, and all 60 resume samples advanced. The last
+checkpoint was 135.201 seconds; runner exit 0. Start/pause/resume captures were
+reviewed. All 26 protected files retained hashes, sizes and modification times;
+no owned locks, disposable partitions or dumps remained. This used injected
+input, a minimized window, Classic textures and skipped startup movies; it does
+not establish physical input, audio listening or full-campaign behavior.
+All 73 historical-upgrade, patch-tracking, context, backlog and snapshot checks
+passed (875.08s). Final context/index and whitespace checks passed.
+
+Evidence is under ignored `logs/scalar-*`, `logs/independent-scalar-game-check.json`
+and `private/test-saves/independent-scalar`. Native Mac title
+acceptance remains pending MAC-104. Header service interfaces, FP environment,
+runtime services, title integration, inherited fixtures and final removal remain
+unfinished; passing emitted-instruction tests does not establish full independence.
+
+## Independent vector support (2026-10-27)
+
+Based on `46e68827` on `feature/independent-exchange`, including main `31599ff4`
+and PR382's responsibility-folder migration. All 17 CI checks on the prerequisite
+pushed head `20d4bd38` passed. The preceding repository refresh passed 204 tests
+plus two subtests and ten supported command-entry checks; it preserved all 26
+protected files and corrected five maintenance command paths.
+
+`0197-independent-vector-support.patch` removes the obsolete inherited SSE/MMX
+operation helpers. The project emitters already produce those operations
+directly. An audit including `.inc` files found the model-transform constructor
+as the only live helper consumer; its original replacement copies raw float bits
+to the low lane and clears the upper lanes. The effective header shrinks from
+1,511 to 1,169 lines. All previous patch payloads remain byte-identical.
+
+The new fixture exercises 131,084 raw representations per configuration,
+including signed zeros, subnormals, infinities and NaN payloads, with ordinary,
+generated-code and isolated headers. Both corrupted implementations compile
+before the oracle rejects them. All 32 focused tests passed (132.81s), including
+existing native SSE/MMX oracles, guest ABI and model-transform comparisons;
+all 695 compiler tests passed (243.66s).
+
+Supported-US regeneration translated 15,838 functions with zero failures.
+The existing 50 unresolved stubs and 738 unimplemented sites are unchanged.
+Only `recomp_types.h` changed among 21 generated C/header files. The Windows
+x64 Release build, bundled native checks and matching crash-symbol package
+passed with process-local `CL_MPCount=2`. The executable built from this
+working tree based on `46e68827` has SHA-256
+`3f9da6ca5160542de5c27017cd65a64ef4d08f948fd4a4faaa3b0da38e01c954`.
+
+The isolated Original60 Story replay confirmed playable state before inputs.
+Movement measured 11.215618 forward and 6.184893 backward; ammunition fell
+8 to 6; all 40 pause samples froze ticks and all 60 resume samples advanced.
+Last checkpoint was 129.682 seconds; runner exit 0. Start/pause/resume captures
+were reviewed. All 26 protected files retained hashes, sizes and modification
+times; no owned lock, disposable partitions or dumps remained. This used
+injected input, a minimized window, Classic textures and skipped startup movies;
+it does not establish physical-input behavior, audio listening or full-campaign
+acceptance. All 73 historical-upgrade, patch-tracking, context, backlog and
+snapshot checks passed (944.42s). Final context and whitespace checks passed.
+
+Evidence is under ignored `logs/vector-*`, `logs/independent-vector-game-check.json`
+and `private/test-saves/independent-vector`. Native Mac title acceptance is
+pending MAC-103; the remaining header/services/title/fixture replacement and
+final dependency-removal audit are not complete.
+
+## Independence branch with current mouse hotfix (2026-10-27)
+
+Main advanced to `c41c92fc` while the reconciliation was being validated. The
+feature branch incorporates that mouse-capture hotfix and v0.3.5 version data;
+conflicts were documentation-only. Replacement patches and all 21 generated
+C/header files are unchanged. The 24 affected Windows cursor/context/backlog
+checks passed (6.49s), followed by Release, bundled native checks and matching
+crash symbols. No patch/loader change invalidates the 73 historical checks below.
+
+The rebuilt executable SHA-256 is
+`de056ad227209e64e03ab4290b2e49de53972535c53b07d4cc87329fca8b0cc3`,
+from the working tree based on `a55ee122` plus main `c41c92fc`. The final isolated
+Original60 replay ran menus around 58 FPS and confirmed playable state before
+input. Movement measured 11.217 forward and 6.185 backward; ammunition fell
+8 to 6; all 40 pause samples froze ticks and all 60 resume samples advanced.
+Last checkpoint 112.330 seconds, runner exit 0. Start/pause/resume captures were
+reviewed. All 26 protected files were unchanged and no owned lock, partitions
+or dumps remained. Evidence: ignored `logs/hotfix-*`,
+`logs/independent-hotfix-game-check.json`, `private/test-saves/independent-hotfix`.
+The earlier injected-input/minimized/Classic/startup-movie limits still apply;
+this is not physical mouse playtesting or native Mac title acceptance.
+
+## Independence branch folder reconciliation (2026-10-27)
+
+After accepting the call-frame stage (`5856d781`), PR #375 conflicted with
+main's responsibility-folder migration (`1392ae8f`). The feature branch now
+incorporates that layout and retains every replacement stage. Branch-only tools,
+tests and patches follow the compiler group. All 231 existing patch payloads
+remain byte-identical; only main's six expected runtime build/import files
+changed when applying the combined stack. Main's layout routing remains last.
+
+The full compiler/context/scope/backlog suite passed 785 checks (196.98s).
+Additional native-consumer tests initially passed 104 and failed 13 because
+an automatically combined fixture both appended and separately linked the
+same divide-error function. Restoring main's single inclusion path fixes the
+linker failure; all 13 failed cases passed on rerun (33.57s), alongside 20
+focused compiler/callback checks. Assertions and production behavior were not
+weakened. The moved standalone replay also needed its grouped input-helper
+path; a direct isolated `--help` regression now covers it. All 17 profile/path
+checks passed. All 73 snapshot, tracking, historical upgrade, context and
+backlog checks passed in 787.44 seconds. Final context/backlog checks passed
+all 21 cases (5.14s); repository context/index validation is current.
+
+Generation passed with 15,838 translations, zero failures and unchanged
+50 unresolved/738 unimplemented sites (83.36s lift). All 21 generated C/header
+files are byte-identical to the accepted call-frame build. Windows x64 Release,
+bundled native checks and matching crash symbols passed with MSVC 14.44 and
+CL_MPCount=3. The executable SHA-256 is
+`5412633fdf591ef2d81fe4d42910b9052eb44104c93a23b91a06e25c0dc7e6f5`,
+built from the reconciled working tree based on `5856d781` plus `1392ae8f`.
+
+The isolated Original60 replay reached menus around 57-58 FPS and the opening
+sequence. It verified playable scene 4/mission 1 and cleared input suppression
+before gameplay commands: 11.175 units forward, 6.185 backward, ammunition 8 to
+6, 40 frozen pause samples and 60 advancing resume samples. Last checkpoint:
+114.186 seconds; runner exit 0. Intro/start/pause/resume captures were reviewed.
+All 26 protected files retained hashes, sizes and modification times; no owned
+lock, disposable partitions or dumps remained. Evidence: ignored
+`logs/layout-*`, `logs/independent-layout-game-check.json` and
+`private/test-saves/independent-layout`. Minimized injected-input replay,
+Classic textures and skipped startup movies retain the limitations below.
+Native Mac title gameplay remains unverified (MAC-102); full independence and
+full-campaign behavior are not claimed. The PR has not been merged into main.
+
 
 ## Portable release probe isolation (2026-10-27, v0.3.5 preparation)
 
@@ -300,6 +1873,1043 @@ routing check skipped when Windows refused foreground activation. Evidence:
 ignored `logs/patch-folders-*` and
 `private/test-saves/high-refresh/60-main-7dbd127b-*`.
 
+
+## Independent call checks and HLE frames (2026-10-27)
+
+The dispatch stage was accepted before this replacement: all 17 CI checks on
+`00405685` passed, and a clean isolated Original60 replay passed movement,
+firing and pause/resume after confirming playable state. The next additive
+`0196-independent-call-frames.patch` replaces callee-state checks and HLE
+scratch argument frames. Diagnostic logger implementations and other runtime
+services remain dependencies; full runtime independence is not claimed.
+
+The original call-boundary oracle passed against the previous implementation
+with diagnostics enabled and disabled. The replacement candidate passed four
+production/isolated configurations plus five compiled negative controls, with
+448 call-state/expression cases and 24 HLE frame cases per positive fixture.
+The final affected suite passed 184 checks in 58.19 seconds. Snapshot, patch
+tracking, historical upgrades, context and backlog checks passed all 70 tests in
+723.30 seconds. No production patch changes followed those runs.
+
+Supported-US generation passed: 15,838 translated, zero failures, unchanged
+50 unresolved stubs and 738 unimplemented sites (81.42s lift). Of 21 generated
+C/header files, 20 remain byte-identical; only the intended header changed.
+Windows x64 Release, bundled native checks and matching crash symbols passed
+with MSVC 14.44 and CL_MPCount=3. Executable SHA-256:
+`34ce06d1da45790270297dd5ef464d1502d3e3dda5ab7203ef1a49cc3f9308a4`,
+built from the implementation working tree based on `00405685`.
+
+The bounded isolated Original60 replay passed after checking scene 4/mission 1,
+unpaused state and cleared input suppression before gameplay input. Menus ran
+around 58 FPS. Movement measured 11.175 units forward and 6.391 backward;
+firing reduced ammunition from 8 to 6. All 40 pause samples froze game ticks,
+and all 60 resume samples were unpaused with advancing level ticks. The last
+checkpoint was 132.039 seconds; the runner completed successfully. Reviewed
+start/pause/resume captures show the weapon, pause UI and six remaining rounds.
+All 26 protected files retained hashes, sizes and modification times. No owned
+lock, disposable partitions or crash dumps remained. Evidence is in ignored
+`private/test-saves/independent-call-frames` and `logs/call-frames-*`.
+This minimized replay used injected inputs, skipped startup movies and Classic
+textures. Physical input, audio listening, full-campaign behavior and native
+Mac title gameplay remain unverified (MAC-102).
+
+## Independent indirect guest-call dispatch (2026-10-27)
+
+PR #375 continues from `b19e8634`, whose 17 CI checks all passed. Its local
+reconciliation/historical suite passed all 70 tests in 888.42 seconds. The
+next additive patch replaces ICALL/SAFE/SAFE_AT/ITAIL with project-owned
+target resolution, invocation and failure-recovery code. Manual/generated/
+kernel precedence, trace admission, observer/diagnostic order, lazy argument
+evaluation and existing stack outcomes remain intact. ABI-check machinery,
+HLE argument frames and other runtime helpers are still separate replacement
+work; this is not a claim that the whole header/runtime is independent.
+
+Original compiled dispatch contracts passed against the pre-change header
+(four ABI/feedback configurations) and the replacement candidate (eight full/
+isolated configurations plus four compile-first rejected mutations). Every
+positive configuration exercises 4,096 state/event cases. The final focused
+suite passed all 175 checks in 86.27 seconds, including the actual generated
+dispatch table, inherited translator consumers, guest ABI, hooks and GPR paths.
+
+The first Release build exposed the generated dispatch-table include order:
+`RECOMP_DISPATCH_H` suppresses the public pointer type until after the header,
+so eager inline helpers could not use it. A new real batch/table consumer test
+failed before the fix. Compatible private pointer/lookup declarations repair
+that boundary; all 13 candidate dispatch checks then passed. Behavioral
+assertions and build requirements were retained.
+
+Supported-US generation passed: 15,838 translated, zero failures, the same
+50 unresolved stubs and 738 unimplemented instruction sites (164.75s lift).
+Of 21 generated C/header files, 20 remain byte-identical to the pre-stage
+baseline; only the intended header changed. The corrected Windows x64 Release
+build, bundled native checks and matching crash-symbol packaging passed using
+MSVC 14.44 with CL_MPCount=3. The executable SHA-256 is
+`971d8bf883228abcff10bb8a0e2ec65da25bd1982b4e7cd9a6d30539d213d0c7`,
+built from this implementation working tree based on `b19e8634`.
+
+**Initial gameplay attempts were inconclusive.** Two bounded, isolated Original60
+sessions booted with XAudio2 initialized and rendered menus; the first also
+rendered Scotland the Brave's opening sequence. Both runners exited cleanly,
+but the scenario assertions did not pass: the first attempted movement while
+cutscene input was suppressed, and the second's fixed menu sequence reached
+the new-profile editor. Reviewed captures confirm those states. The runs were
+about 12-16 FPS versus about 56 FPS in the prior guest-ABI acceptance run.
+A separate game process was consuming substantial CPU; contention is
+a possible cause, not a proven explanation or evidence of performance parity.
+The user requested leaving that game open and finishing other checks, so a
+clean replay was deferred until it closed.
+All 26 protected files retained hash, size and modification time; no owned game
+lock or disposable partitions remained. No personal saves/settings were used.
+Native Mac title gameplay and a full campaign remain unverified (MAC-101).
+
+The subsequent clean replay of the same executable passed before the next
+replacement began. Menus ran around 57-58 FPS. After visually checking the
+opening sequence, the runner skipped it and verified scene 4/mission 1,
+unpaused state, cleared input suppression and eight loaded rounds before
+moving. It measured 11.175 units forward and 5.970 backward, ammunition 8 to 6,
+40 frozen pause samples and 60 advancing resume samples; final checkpoint
+141.026 seconds, runner exit 0. Start/pause/resume captures were reviewed.
+All 26 protected files retained hash, size and modification time, and disposable
+partitions/lock were cleaned. Evidence is in ignored
+`private/test-saves/independent-dispatch-clean` and `logs/dispatch-clean-*`.
+
+The first historical run was stopped after the include-order defect made its
+patch obsolete; it is not counted as passing. The corrected historical run
+passed all 70 snapshot, tracking, upgrade, context and backlog checks in
+1276.42 seconds. No production patch changes followed that passing run.
+
+## Independence branch CI reconciliation (2026-10-27)
+
+Commit `96caf309` received no workflow runs because PR #375 conflicted with
+new main changes. The feature branch incorporates main `7dbd127b`, preserving
+its mouse Fire fix, numbered patch filenames/documentation and support link.
+All branch-only replacement stages and their final application order remain.
+No patch folders were reorganized and the PR was not merged into main.
+
+The renamed ledger applied successfully with **zero runtime source changes**;
+all **149 patched runtime files** match their pre-reconciliation SHA-256 values.
+**41 focused tests and 26 subtests passed in 22.24s**, covering context/backlog,
+reload/Fire input, launcher selection and the independent guest ABI. Full
+historical migration checks and new-head CI are tracked separately. This is a
+CI prerequisite, not completion of the next runtime replacement stage.
+
+## Project guest register and memory interface (Windows acceptance, 2026-10-27)
+
+`independent-guest-abi.patch` supplies project implementations of the register
+interface, XMM/MMX lane layouts, scalar RAM lvalues, partial-register writes and
+32-bit stack primitives. Register names/TLS cells retain the generated-code and
+callback ABI. RAM addresses wrap before host relocation; GCC/Clang aliases and
+MSVC unaligned qualifiers make scalar unaligned access explicit. Partial writes
+evaluate the supplied cell/value once. PUSH samples its source before changing
+the stack; POP updates ESP before applying its destination. Remaining arithmetic
+helpers, dispatch, kernel storage, mapping and device services are not replaced.
+
+The isolated checkout depends on the unmerged CLI stage `eb7b0ba1`. Another task
+owns the primary checkout, so source/runtime/build outputs are separate. SDL and
+symbol-library sources were copied without build caches; the symbol scanner was
+rebuilt. Same-host Python and FFmpeg are reused; game assets link to the single
+existing extract, with separate generated metadata/cache and a disposable profile. No texture-pack hydration was needed for Classic testing.
+
+All **17 CI checks passed on `eb7b0ba1`**. This new stage's CI is separate.
+Local **125 final focused tests passed in 45.96s**, including six new compiled
+standalone/production/mutation variants, cross-file TLS callbacks, operand/x87/
+move/GPR consumers, generation, CI selection and the unchanged trap-transform
+recheck. The initial broader run recorded **504 passes and three failures in
+536.24s**: two macro-extraction fixtures omitted the new helper, and one expected-
+failure trap-transform mutation timed out at its existing 15-second deadline.
+The fixtures now include the actual production dependencies, retaining assertions.
+The timing test passed unchanged in the **27-test recheck (33.65s)** and again in
+the final focused run. Its initial timeout's cause remains unproven. No timeout
+was extended; the initial broader run is not relabeled green.
+
+The initial historical run had **67 passes and three failures (854.70s)**:
+two old-stack simulations incorrectly applied the new dependent patch as part of
+their historical starting state, and one index assertion named the former final
+patch. The simulations now add this patch during the full current-stack upgrade;
+idempotence and preservation assertions remain. The rerun passed **69 tests in
+658.46s**, with only the backlog check failing because the new MAC-100 detail
+entry lacked its queue row. After adding it, all **21 final context/backlog
+checks passed in 4.32s**. No runtime or patch changes followed the passing
+historical runtime checks.
+
+Supported-US generation: **15,838 translated, zero failed**, unchanged **50
+unresolved stubs / 738 unimplemented sites**, lift **105.61s**. Of 21 generated
+C/header files, **20 match the accepted baseline byte-for-byte**; only the intended
+runtime header differs. Its generated/template hashes remain identical after the
+fixture-only repairs and the generation fingerprint is current. The fresh CMake
+Release build and bundled native checks passed with **CL_MPCount=2**, Python
+3.12.14, Capstone 5.0.9, MSVC 2022 (14.44), and matching crash symbols.
+
+Isolated Original60 `independent-guest-abi` reached Scotland the Brave and passed
+movement (**11.175 units forward / 6.209 backward**), firing (**8 to 6 rounds**),
+pause (**39 samples with frozen level ticks**) and resume (**60 advancing samples**).
+Last checkpoint **94.750s**, runner exit **0**; start/pause/resume captures reviewed.
+All **26 protected files** retained SHA-256, size and modification time. The owned
+game exited and left no lock, disposable partitions, BMPs or dump. A separate
+primary-checkout game was subsequently observed and left untouched. Executable:
+`f41e26a5095eaaed10793e8fc59677307c508b531c6d9586259b81876b5b48cb`.
+
+Evidence is in `logs/guest-abi-*.log`, `logs/guest-abi-generation-comparison.json`,
+`logs/independent-guest-abi-game-check.json`, `logs/guest-abi-protected-check.json`
+and `private/test-saves/independent-guest-abi`. Input was injected, rendering
+minimized/background and startup movies skipped. No physical-input, audio-
+listening, foreground-pacing, full-campaign or native Mac title claim (MAC-100).
+The double-backed x87/separate-MMX model, MMIO/protection/fault delivery, remaining
+headers/runtime/title/build/fixtures and final upstream-removal audit remain work.
+
+## Independent translation command line (Windows acceptance, 2026-10-27)
+
+Original `translation_cli.py` replaces the remaining recompiler CLI. All four
+production pipeline stages now invoke project tools directly. The compatibility
+module contains only bootstrap/alias code. Runtime data, title hook sources and
+the current shared C types remain explicit dependencies; no toolkit Python is
+loaded by the project CLI. Category/mode routing, manual symbol pinning/wrapping,
+HLE replacement/variables/retained bodies, trace/forced-return/SEH options and
+per-output indirect-call feedback are implemented in project code.
+
+Hook refresh defers newly available hooks whose ordinary bodies already exist,
+recognizes manually provided wrappers, and refuses missing dispatch definitions
+or missing type input before publication. Definition observations exclude
+comments, strings, literal-disabled branches and continued preprocessor lines.
+Output writes are individually atomic and preserve unchanged timestamps, not
+a multi-file transaction. Invalid analysis-summary JSON now fails explicitly;
+its legacy basename check is not full image identity. The normal analysis cache
+separately verifies content hashes. Conflicting modes and negative limits fail.
+
+**142 focused CLI/pipeline/batch/hooks/generation/CI-selection/legacy-force-return
+checks passed in 13.54s**, including **11 original CLI tests**. Real synthetic
+executables generate split C that is compiled and executed through dispatch,
+manual wrappers and hooks invoking retained original bodies. Other cases cover
+category/limit/header/single modes, address zero/bounds, failure preservation,
+refresh deferral/missing definitions, diagnostics and per-run option isolation.
+A subprocess copies only project modules and emits split output with the toolkit
+absent. The production compatibility entry is separately checked.
+
+The broader translator/pipeline/generation/private-join/timing run recorded
+**412 passes and one timeout in 389.16s**. The timeout was in the expected-failure
+walk-contact mutation, waiting for its child output within the existing 15-second
+limit. The unchanged test, including its positive and negative cases, then
+**passed in isolation in 8.91s**. No assertions or timeout were weakened; the
+initial timeout's cause is unproven and the initial run is not relabeled green.
+All **56 historical patch/context/backlog/snapshot checks passed in 667.22s**.
+All **17 CI checks passed on preceding commit `46eccfb3`** and on the
+published CLI revision `eb7b0ba1`.
+
+Supported-US generation completed with **15,838 translated, zero failed**, the
+same **50 unresolved stubs / 738 unimplemented sites**; lifting took **87.81s**.
+All **21 generated C/header files match the accepted function-stage baseline by
+SHA-256 and size**. A production hook-only refresh then reported **70 active,
+zero deferred** hooks and preserved all 21 files' hashes, sizes and modification
+times. The standard Release build/native tests passed with current fingerprints
+and matching crash symbols. Windows x64, Python 3.12.14, Capstone 5.0.9, MSVC 2022
+(14.44), process-local `CL_MPCount=2`; existing MSB8028 warnings remain. Build
+source was the implementation working tree based on `46eccfb3`.
+
+An initial gameplay attempt correctly refused while another checkout's game
+was running. Its PID was subsequently observed absent; it was not interrupted.
+The retry used isolated `independent-cli` Original60 Scotland the Brave and
+passed inside its 150-second bound: **11.175 units forward / 6.288 backward**,
+ammunition **8 to 6**, **40 frozen pause / 60 advancing resume samples**, final
+checkpoint **94.975s**, exit **0**. Start/pause/resume captures were reviewed.
+All **19 protected files** retained SHA-256, size and modification time; no game,
+run lock, disposable partitions, BMPs or crash dump remained. Executable SHA-256:
+`25537070a3e1b44254d944d7e8e11b118c2668a836ebaffc574f0e6fd956d5e0`.
+
+Evidence: `logs/cli-focused.log`, `logs/cli-regressions.log`,
+`logs/cli-walk-recheck.log`, `logs/cli-historical.log`, `logs/cli-build.log`,
+`logs/independent-cli-comparison.json`, `logs/cli-refresh-check.json`,
+`logs/independent-cli-game-check.json`, `logs/cli-game-protected-check.json`,
+`logs/cli-game-concurrency-refusal.log` and `private/test-saves/independent-cli`.
+Input was injected, rendering minimized/background and startup movies skipped.
+Physical input, audio listening, foreground pacing, full campaign and native Mac
+title validation remain unverified (MAC-099). Runtime/header/title/build helpers,
+shipped fixtures and historical source/patch removal remain work. Next: the
+shared runtime types/register/memory interface, followed by execution services.
+The full-independence goal remains active.
+
+## Independent complete function emission (Windows acceptance passed, 2026-10-27)
+
+Original `translation_function.py` replaces the remaining FunctionTranslator
+implementation: function assembly, storage/carry selection, flag joins, block
+prepasses, failed indirect-call stack captures and x87 accessor definitions.
+The installed translator is a six-line bootstrap/module alias, preserving
+consumer identity and private negative-control monkeypatches. Batch output
+injects the runtime root. Trace/fast-entry/register hooks, forced-return behavior,
+local/shared EBP and complete indirect-call statements retain their current ABI.
+Unknown flags remain unknown; three-pass flag propagation, eight-pass decoding
+resynchronization and textual stack-recovery heuristics retain existing bounds.
+
+All **17 CI checks passed on preceding commit `234e984b`**, including both native
+runtime hosts and patch transitions. All **17 checks also passed on this
+function stage's published revision `46eccfb3`**.
+Local **389 translator/generation/private-join/timing regressions passed in
+336.94s**. Focused function/control checks: **18 passed in 9.81s**, including
+nine original function tests. Compiled tests execute entry-hook/forced-return
+ordering, successful/failed indirect stack cleanup and circular x87 accessors.
+Synthetic cases check typed joins, register/carry discovery, diagnostic counts,
+escaped metadata and toolkit-free function generation. The existing control
+negative case still removes exactly one snapshot and must fail when executed.
+Inherited/current consumers: **438 passed, 56 skipped, 101 subtests passed in
+20.99s**; original compiled contracts use the project MSVC harness. CI selection:
+**73 passed in 0.25s**. Historical patch/context/backlog/snapshot acceptance: **56 passed in 723.94s**.
+
+Supported-US generation: **15,838 translated, zero failed**, unchanged **50
+unresolved stubs / 738 unimplemented sites**; lifting took **84.48s**. All
+15,838 function bodies match after narrowly accounting for comments and the
+reviewed equivalent x87 accessor definitions (1,966 definitions). Five C/header
+files are byte-identical; all sixteen chunks differ only as described. No
+redundant final null statements occurred in this title; no unexpected code
+differences were accepted. The new push snapshots its input once before changing
+the circular index. Dispatch, prototypes, HLE, unresolved stubs and runtime types
+are unchanged. The types remain a dependency to replace, not new original code.
+
+Standard Release build and native checks passed with current generation
+fingerprints and matching crash symbols. Host: Windows x64, Python 3.12.14,
+Capstone 5.0.9, MSVC 2022 (14.44), process-local `CL_MPCount=2`. Existing MSB8028
+intermediate-directory warnings remain. Built from the implementation working
+tree based on `234e984b`.
+
+The isolated `independent-function` Original60 Scotland the Brave run passed
+within its 150-second bound: **11.175 units forward / 6.185 backward**,
+ammunition **8 to 6**, **40 frozen pause / 60 advancing resume samples**, final
+checkpoint **92.785s**, exit **0**. Start/pause/resume captures were
+reviewed. D3D11 and XAudio2 initialized. All **19 protected files** retained
+SHA-256, size and modification time. No game, run lock, disposable partition,
+BMP or crash dump remained. Executable SHA-256:
+`772f7d6f18418c817dae585799132c372850340f00e87e518a057d7fc663988d`.
+
+Evidence: `logs/function-regressions.log`, `logs/function-focused.log`,
+`logs/function-consumers-final.log`, `logs/function-ci-scope.log`,
+`logs/function-historical.log`, `logs/function-build.log`,
+`logs/independent-function-comparison.json`,
+`logs/independent-function-game-check.json`,
+`logs/function-game-protected-check.json` and
+`private/test-saves/independent-function`. Input was injected, rendering
+minimized/background and startup movies skipped. Physical input, audio listening,
+foreground pacing, full campaign and native Mac title behavior remain unverified
+(MAC-098). The old CLI still has eight top-level functions plus a nested helper;
+its replacement is next. Runtime/header/title implementations, build helpers,
+shipped fixtures and the final removal/provenance audit remain. No whole-project
+independence or full architectural emulation is claimed; the goal remains active.
+
+## Independent translator context and entry discovery (Windows acceptance passed, 2026-10-27)
+
+Original `translation_discovery.py` replaces sixteen FunctionTranslator methods:
+context setup, bounded function/table reads, static callbacks, split CFG ownership,
+switch-arm recovery, frame/convention metadata and unresolved return cleanup.
+The effective translator binds these methods plus two project read/decode helpers.
+Whole physical spans are checked, explicit destination/subregister writes invalidate
+callback-bound constants, and volatile registers are invalidated across calls.
+Metadata/table recognition remains heuristic. Closed-path and entry-prefix checks
+for recovered arms do not establish whole-graph EFLAGS liveness. The C function
+emitter, flag joins and indirect-call stack recovery remain inherited work.
+
+Local **379 translator/generation/private-join/timing regressions passed in
+319.17s** before the final return-read-window correction. Review found that
+remaining file bytes must subtract the mapped offset; that is now fixed and
+covered by a truncated-image test. Final **100 discovery/batch/CI-selection checks
+passed in 7.84s**, including **17 original discovery tests** and 10 batch tests.
+Synthetic cases exercise holes, alias clobbers, sentinels/biased table slots,
+reachable and unreachable weak seeds, incomplete/flag-dependent arms, frame
+metadata and bounded cleanup. An installed-consumer fixture compiles and executes
+both recovered switch arms and a direct branch. Standalone imports/initialization
+exclude the toolkit. Earlier focused checks passed 26 tests (7.40s).
+All **56 historical patch/context/backlog/snapshot checks passed in 584.35s**.
+
+CI for preceding commit **dbdb1b29 failed** in Windows
+`test_helper_heartbeat_and_death`: reading an atomically replaced heartbeat JSON
+raised PermissionError. Its other **1,323 runtime tests passed**, with 242 skips
+and 18 subtests; three downstream gates propagated that failure. The fixture now
+polls through missing-file/sharing errors within its unchanged absolute eight-
+second deadline. JSON corruption, other I/O failures and persistent denial still
+fail. Two deterministic portable cases cover those boundaries; all **eight real/
+portable crash-capture tests passed locally in 16.09s**. Helper/launcher/game
+behavior and native report/death assertions are unchanged. All **17 CI checks
+passed for the repaired revision `234e984b`**, including both native runtime
+hosts and patch transitions. The preceding failed revision remains failed.
+
+Final supported-US regeneration completed in **84.12s**: **15,838 translated,
+zero failed**, unchanged **50 unresolved stubs / 738 unimplemented sites**.
+All **21 generated C/header files match the accepted batch baseline by SHA-256
+and size**. The standard final Release build/native checks passed, with current
+fingerprints and matching crash symbols. Host: Windows x64, Python 3.12.14,
+Capstone 5.0.9, MSVC 2022 (14.44), process-local `CL_MPCount=2`; existing MSB8028
+warnings remain. Built from the implementation working tree based on `dbdb1b29`.
+Executable SHA-256:
+`9dca1fa7fe548540c785b3d4db15bb70c90b1ec1c1e2f7b0e763bdee4dba404b`.
+
+The isolated `independent-discovery` Original60 Scotland the Brave run passed
+within its 150-second bound: **11.197 units forward / 6.185 backward**, ammunition
+**8 to 6**, **40 frozen pause / 60 advancing resume samples**, final checkpoint
+**91.940s**, exit **0**. Start/pause/resume captures were reviewed. D3D11
+flip-model/tearing-allowed and XAudio2 initialized. All **19 protected files**
+retained SHA-256, size and modification time; no game, lock, disposable partition,
+BMP or crash dump remained.
+
+Evidence: `logs/discovery-regressions.log`, `logs/discovery-final-focused.log`,
+`logs/discovery-crash-capture.log`, `logs/discovery-historical.log`,
+`logs/discovery-build.log`, `logs/independent-discovery-comparison.json`,
+`logs/independent-discovery-game-check.json`, `logs/discovery-game-protected-check.json`
+and `private/test-saves/independent-discovery`. Input was injected, rendering
+minimized/background and startup movies skipped. Physical input, audio listening,
+foreground pacing, full campaign and native Mac title behavior remain unverified
+(MAC-097). Runtime/header/title implementations and shipped fixtures still need
+replacement. The full-independence goal remains active.
+
+## Independent batch translation and dispatch (Windows acceptance passed, 2026-10-27)
+
+The complete old BatchTranslator and certificate-title helper are replaced by
+original `tools/compiler/translation_batch.py`; the installed class is a thin adapter
+injecting the remaining FunctionTranslator and runtime header location. The
+module owns database/category/manual selection, declarations/chunks/unresolved
+stubs and generated address dispatch. Binary lookup survives optional flat-table
+allocation failure, and empty/full-range tables have explicit compiled coverage.
+Category exports no longer overwrite each other when given an output prefix.
+Per-file atomic publication retains timestamps for unchanged contents and
+removes only stale chunks/stubs owned by the selected prefix. This is not a
+transaction across all outputs. Historical patches and notices remain required.
+
+**All 17 CI checks passed for preceding commit `d85a00fc`.** New-stage CI is
+pending this commit. Local **363 translator/generation/private-join/timing
+regressions passed in 347.36s**, including **10 original batch tests**. The
+focused batch/dispatch/manual suite passed **23 checks in 6.01s**; a separate
+CI-selection/inherited dispatch/manual run passed **86 checks in 0.41s**.
+The historical/context/backlog/snapshot run passed 55 checks and found a missing
+MAC-096 summary-table row (656.98s). After correcting the documentation, all
+21 final context/backlog checks passed (2.97s); patch and snapshot tests had
+already passed and their source was unchanged.
+The original tests compile the emitted outputs through MSVC, including wrapper
+and manual selection, kept bodies, unresolved stack cleanup, search misses,
+allocation failure and extreme/empty address sets, as well as standalone imports,
+metadata filtering, unchanged-file preservation and stale-file cleanup.
+
+Supported-US generation finished in **82.25s**: **15,838 translated, zero
+failed**, unchanged **50 unresolved stubs / 738 unimplemented sites**.
+All **15,838 guest function bodies** and **15,863 dispatch address/name bindings**
+match the accepted context baseline. Of 21 C/header files, two match byte-for-byte
+and 18 differ only in comments/whitespace; the remaining file is the original
+replacement dispatch implementation. Its compiled behavior and production game
+run are checked separately. No generated game source was hand-edited.
+
+The standard Release build and native checks passed, with current generation
+fingerprints and matching crash symbols. Host: Windows x64, Python 3.12.14,
+Capstone 5.0.9, MSVC 2022 (14.44), process-local `CL_MPCount=2`; existing MSB8028
+warnings remain. Built from the implementation working tree based on `d85a00fc`.
+Executable SHA-256:
+`4fb52182bf16d5a3dc78c94be56eaa8efb128f422d78f010e5f481ace9b28058`.
+
+The isolated `independent-batch` Original60 Scotland the Brave run passed within
+its 150-second bound: **11.175 units forward / 6.288 backward**, ammunition
+**8 to 6**, **40 frozen pause / 60 advancing resume samples**, final checkpoint
+**92.700s**, exit **0**. Start/pause/resume captures were reviewed. D3D11
+flip-model/tearing-allowed and XAudio2 initialized. All **19 protected files**
+retained SHA-256, size and modification time; no running game, run lock,
+disposable partitions, BMPs or crash dump remained.
+
+Evidence: `logs/batch-focused.log`, `logs/batch-regressions.log`,
+`logs/batch-consumers.log`, `logs/batch-historical.log`, `logs/batch-build.log`,
+`logs/independent-batch-comparison.json`, `logs/independent-batch-game-check.json`,
+`logs/batch-game-protected-check.json` and `private/test-saves/independent-batch`.
+Game input was injected, rendering minimized/background and startup movies
+skipped. Physical input, audio listening, foreground pacing, full campaign and
+native Mac title behavior remain unverified (MAC-096). Function translation,
+joins, headers/runtime/title implementations and shipped fixtures still require
+replacement. The full-independence goal remains active.
+
+## Independent lifter context, helpers and naming (Windows acceptance passed, 2026-10-27)
+
+The effective old lifter module is now a six-line compatibility import with no
+function or class definitions. Original `translation_context.py` owns context
+setup, per-instance state, handler bindings and policy exports;
+`translation_helpers.py` owns bounded SEH/EH, throw-record and nonlocal-jump
+recognition; `translation_names.py` owns identifier/call-name selection. The
+remaining eight old lifter functions and their implementation scaffolding are
+replaced. Function-level translation, batch output, runtime storage, title code
+and shipped upstream fixtures still require replacement.
+
+The original SDK inventory generator produced **23,947 factual host API names**
+from **453 Windows SDK 10.0.26100.0 import libraries**, recording each input's
+SHA-256 and the output digest. This replaces the lifter's dependency on bundled
+name data. Both hosts use the same checked-in inventory; its regeneration is a
+Windows maintenance task. LF attributes preserve its exact hash across hosts.
+Helper recognition is heuristic, not guest exception unwinding. Explicit helper
+overrides, mapped physical spans and function/wrapper/label precedence are tested.
+
+**All 16 CI checks passed for preceding commit `bc36e294`.** New-stage CI is
+pending this commit. Local **352 translator/generation/private-join/timing tests
+passed in 296.26s** before the final contiguous-span repair. Review caught that
+mapped endpoints alone could hide an unmapped middle; the corrected traversal
+rejects holes/discontiguous backing and accepts adjacent continuous sections.
+The final **eight original context tests plus nine inherited SEH tests passed
+(17 tests, 2.51s)** after that repair. They also cover standalone imports,
+installed module identity, bounds/metadata/overrides, state isolation, SDK
+provenance and compiled reserved-name declarations with an unmangled-name
+negative control. **115 consumer/CI-selection/gate tests passed**, with four
+inherited compiler-discovery skips; the original naming fixture compiled with
+MSVC. All **56 historical patch/context/backlog/snapshot checks passed in
+555.50s**.
+
+Final supported-US generation completed in **80.81s**: **15,838 translated,
+zero failed**, unchanged **50 unresolved stubs / 738 unimplemented sites**.
+All **21 C/header files match the accepted lifting baseline by SHA-256 and size**,
+including every translated function. Detected SEH prologs remain 0x003CA460 and
+0x003CAAB4, epilog 0x003CA49B; no setjmp/longjmp helper was found in this image.
+The standard final Release build/native checks passed with current generation
+fingerprints and matching crash symbols. Host: Windows x64, Python 3.12.14,
+Capstone 5.0.9, MSVC 2022 (14.44), process-local `CL_MPCount=2`; existing MSB8028
+warnings remain. Built from the implementation working tree based on `bc36e294`.
+Executable SHA-256:
+`96931a1c4238a818659f01ba894fabdae33661bcbcfce0cd0a7aa2408f44e7a9`.
+
+The isolated `independent-context` Original60 Scotland the Brave run passed with
+a 150-second bound: **11.175 units forward / 6.185 backward**, ammunition
+**8 to 6**, **40 frozen pause / 60 advancing resume samples**, final checkpoint
+**94.616s**, exit **0**. Start/pause/resume captures were reviewed; D3D11
+flip-model/tearing-allowed and XAudio2 initialized. All **19 protected files
+retained hashes, sizes and modification times**. No active game/run lock,
+disposable disk images, redundant BMPs or crash dump remained.
+
+Input was injected, rendering minimized/background and startup movies skipped.
+Physical input, listening/audio quality, foreground pacing, a full campaign and
+native Mac title generation/build/gameplay remain unverified (MAC-095). The
+shared source and CI fixtures do not establish Mac gameplay. Full independence
+and complete architectural flag/exception support are not claimed.
+
+Evidence: `logs/context-host-symbols.log`, `logs/context-regressions.log`,
+`logs/context-consumers.log`, `logs/context-focused-final.log`,
+`logs/context-patch-checks.log`, `logs/context-generate-final.log`,
+`logs/independent-context-comparison.json`, `logs/context-build-final.log`,
+`logs/independent-context-game-check.json`, `logs/context-game-protected-check.json`.
+
+## Independent instruction and block lifting (Windows acceptance passed, 2026-10-27)
+
+Original `tools/compiler/translation_lifting.py` now replaces nine upstream functions:
+instruction dispatch, basic-block lifting, adjacent comparison/branch fusion,
+result snapshots, unsupported diagnostics, XMM/repeated-compare predicates and
+conditional-write fallbacks. The registry routes decoded instructions to the
+existing project-owned emitters; block state propagates captured comparisons.
+Unrelated function ASTs are unchanged. Two unsupported SIMD forms retain their
+previous flag-preservation policy; LOOPZ/LOOPNZ use their proper ZF sense.
+Diagnostic strings/comments are safely escaped. This is another incremental
+stage: function orchestration, helper detection/naming, runtime interfaces and
+other upstream subsystems still require replacement.
+
+**All 16 CI checks passed on commit `bc36e294`**, as they did on preceding
+commit `43ee2929`. Local **345 translator/generation/private-join/timing
+checks passed in 301.16s**. After the final preservation-table adjustment,
+**41 original lifting fixtures plus 86 CI selection/gate checks passed in
+3.69s**. These cover installed bindings, toolkit-free imports, decoded routing,
+flag boundaries, compiled comparisons that survive register overwrites, fused
+branch reuse, carry propagation, conditional moves, LAHF and zero-count REP.
+Removing the incoming zero-flag preload makes the executable negative control
+fail. All **56 historical patch/context/backlog/snapshot checks passed in
+549.39s**; final context/backlog documentation checks passed (21 tests).
+
+Final supported-US generation completed in **83.25s**: **15,838 translated,
+zero failed**, the same **50 unresolved stubs and 738 unimplemented sites**.
+All **21 generated C/header files are byte-identical** to the accepted control
+baseline, including all 15,838 function bodies. This comparison bounds the
+supported-title changes; it does not prove universal x86 equivalence.
+
+The standard Windows x64 Release build and native/build checks passed with
+Python 3.12.14, Capstone 5.0.9 and MSVC 2022 (14.44), process-local
+`CL_MPCount=2`, current generation fingerprints and matching crash symbols.
+Existing MSB8028 intermediate-directory warnings remain. Built from the
+implementation working tree based on `43ee2929`, executable SHA-256:
+`f84f21d969020b16c3b1cd22b11248760c0fe325c79d8146ea3f1fddb3f67cd1`.
+
+Isolated `independent-lifting` Original60 Scotland the Brave passed with a
+150-second bound: **11.217 units forward / 6.185 backward**, ammunition
+**8 to 6**, **40 frozen pause samples / 60 advancing resume samples**, final
+checkpoint **93.699s**, exit **0**. Start/pause/resume captures were reviewed;
+D3D11 flip-model/tearing-allowed and XAudio2 initialized. All **19 protected
+files retained hashes, sizes and modification times**. No active game/run lock,
+disposable disk images, redundant BMPs or crash dumps remained.
+
+Input was injected, rendering minimized/background and startup movies skipped.
+Physical input, listening/audio quality, foreground pacing, a full campaign and
+native Mac title generation/build/gameplay remain unverified (MAC-094). Shared
+fixtures run on both CI hosts. Existing partial EFLAGS, SAHF and runtime ABI
+policies remain; no complete architectural-flag or full-independence claim.
+
+Evidence: `logs/lifting-ast-audit.json`, `logs/lifting-focused.log`,
+`logs/lifting-regressions.log`, `logs/lifting-fixture-ci-final.log`,
+`logs/lifting-patch-checks.log`, `logs/lifting-final-doc-checks.log`,
+`logs/lifting-generate-final.log`, `logs/independent-lifting-comparison.json`,
+`logs/lifting-build.log`, `logs/independent-lifting-game-check.json`,
+`logs/lifting-game-protected-check.json`, `logs/lifting-previous-ci.json`.
+
+## Independent control-transfer emission (Windows acceptance passed, 2026-10-27)
+
+Original `translation_control.py` now replaces ten upstream Lifter methods and
+its conditional-target helper through an additive patch. It owns call/return/
+tail emission, counter-width handling, bounded jump tables and callee cleanup
+lookup. Indirect targets are captured before the return-address push; manual
+and guarded calls retain their dispatch/stack contracts. Forced return values
+also apply to conditional/traced tail exits. Existing native nonlocal-jump and
+runtime ABI helpers remain; full translation orchestration is still upstream.
+
+All **304 translator/generation/private-join/timing checks passed in 359.29s**
+on the final source. **Nine focused control fixtures passed**, including copied
+module imports, compiled calls/returns/frames/guards, stack recovery on failed
+lookups, CX/ECX loops, native nonlocal jumps, bounded tables and decoded programs.
+All **56 historical patch/context/backlog/snapshot checks passed in 533.24s**;
+**86 CI selection/gate checks passed**. A Windows Update restart interrupted
+an earlier local run; the completed reruns replace that interrupted evidence.
+
+Generation comparison caught a missing predecessor zero-flag snapshot in nine
+functions before build acceptance: the old join probe recognizes `_flags /*`.
+The new fallback branch retains that marker. A decoded mixed-predecessor fixture
+executes the known path, and a negative control fails if its snapshot is removed.
+Final supported US regeneration translated **15,838 functions, zero failures**,
+with the existing **50 unresolved stubs / 738 unimplemented sites** unchanged.
+**15,209 function bodies are byte-identical; all 629 changed bodies differ only
+in comments/whitespace.** Names/order and surrounding file text are unchanged;
+five other generated C/header files are identical. This verifies the generated
+change scope for this title, not universal x86 equivalence.
+
+Windows x64 Release built with Python 3.12.14, Capstone 5.0.9, MSVC 2022 and
+process-local `CL_MPCount=2`, using the working tree based on `d0de4605`.
+Native/build checks passed; generator fingerprints and crash symbols match.
+Existing MSBuild shared-intermediate-directory warnings remain. Executable SHA:
+`ec2aa681fa73cda4be9bdd74c45464de29419c40dd897838a9b36e2d4705b305`.
+
+Isolated Original60/D3D11 Scotland the Brave passed: **11.176 units forward**,
+**6.185 backward**, ammunition **8 to 6**, **40 frozen pause / 60 advancing
+resume samples**, last checkpoint **96.470s**, exit 0. Start/pause/resume captures
+were reviewed. All **19 protected files retained their hashes, sizes and
+modification times**. No run lock, disposable partition images, redundant BMPs
+or crash dump remained. Input was injected, rendering minimized/background and
+startup movies skipped. Physical input, listening/audio quality, foreground
+pacing, the full campaign and native Mac title behavior remain unverified.
+
+CI on preceding `d0de4605` finished **12 successful / 4 failed checks**: Windows
+runtime had one 90-second string-fixture execution timeout, causing three gate
+failures; Mac runtime/GPU and both patch-upgrade jobs passed. The string fixture
+now caches six immutable input patterns, still resets/compares both full buffers
+for every case, and retains all cases, assertions and the 90-second limit.
+Local timing fell **3.30s to 1.20s**, and all five string tests passed. The CI
+runner's slowdown is not established by that local measurement. All 16 CI
+checks passed for control commit `43ee2929`, including Windows runtime and
+both patch-upgrade jobs. The earlier x87 missing-macro failure is repaired.
+
+Evidence: `logs/control-focused.log`, `logs/control-regressions-final.log`,
+`logs/control-patch-checks.log`, `logs/control-ci-selection.log`,
+`logs/control-generation.log`, `logs/independent-control-comparison.json`,
+`logs/control-installed-ast-audit.json`, `logs/control-build.log`,
+`logs/control-game.log`, `logs/independent-control-game-check.json`,
+`logs/string-fixture-before.log`, `logs/string-fixture-after.log`.
+MAC-093 tracks native Mac acceptance. The full replacement goal remains active;
+remaining orchestration, runtime/header/storage/device/title code and final
+provenance/dependency removal are not complete.
+
+## x87 CI fixture repair (2026-10-27)
+
+Mac native CI on `3ad34bc7` failed because the inherited FXAM/FNSTSW
+classification fixture omitted `SET_LO16`, which the new status emitter uses.
+The additive fixture patch includes the production macro and exports its C
+source. The original x87 suite now compiles and executes that exact fixture
+with the selected host compiler, including MSVC; all expected status patterns,
+TOP/sign cases and preservation checks remain. No emitter/runtime code changed.
+
+All **47 focused checks passed in 44.76 seconds**, including fresh/repeated patch
+application, context, generation contracts, all seven original x87 checks and
+decoder consumers. The applied generator fingerprint remains current. The
+accepted x87 game executable and its recorded gameplay evidence below are
+unchanged; no new game build or Mac gameplay claim is made for this test repair.
+Evidence: `logs/x87-ci-fixture-checks.log`, `logs/x87-ci-fixture-apply.log`.
+Replacement control-flow preparation remains separate and is not integrated.
+Repair `d0de4605` passed Mac runtime/GPU CI and both patch-upgrade jobs.
+Windows runtime CI later timed out in the string fixture; see the control-stage
+entry above for its setup optimization. Native Mac title validation remains
+pending under MAC-092.
+
+## Independent x87 emission (Windows acceptance passed, 2026-10-27)
+
+All **16 CI checks passed** on preceding MMX revision `3756e175` in PR #375.
+The new x87 stage replaces four upstream emitter/helper methods with original
+`translation_x87.py`. Captured stack values avoid TOP/macro aliasing; guest RC
+controls rounding and integer stores validate bounds before casting. FILD32
+retains the title numeric conversion hook. External 80-bit memory formats use
+the existing binary64 stack, and scale operands are bounded before integer casts.
+
+Six original fixtures cover copied-module imports, stack wrap/aliasing,
+mathematical arithmetic/conversion/status references, memory boundaries, native
+x86 rounding/integer/scaling oracles and decoded production consumers. The
+supplemental native 80-bit-store comparison passed in **2.40 seconds**.
+The combined regression run passed **293 checks in 404.87 seconds**, with one
+stale FILD address-spelling assertion failing. It now checks the captured address,
+single read and hook-before-push ordering; **all three related conversion checks
+passed on rerun in 0.38 seconds**. Other private title-routine and timing checks
+passed in the combined run. All **56 historical patch/context/backlog/snapshot
+checks passed in 893.57 seconds**. All **86 CI selection/gate checks passed**.
+
+Supported US regeneration translated **15,838 functions with zero failures**,
+with **50 unresolved stubs**. **13,875 functions stayed identical** and all
+**1,963 changed bodies** match explicit decoded x87 substitutions, ignoring
+comments/whitespace. Five other C/header files and function names/order/surrounding
+text are unchanged. Nine formerly silent unsupported x87 sites now produce the
+standard diagnostic, bringing reported unimplemented sites from **729 to 738**.
+Their addresses/opcodes were independently decoded and replacements checked;
+no new support is claimed for those instructions. FNCLEX at `0x003C8486` was
+reached during boot and now reports its existing no-op behavior; guest FP
+exception state remains unimplemented. No unexplained changes remain.
+This bounds generation changes; it is not a full semantic-equivalence proof.
+
+The standard Windows x64 Release build and native checks passed with Python
+3.12.14, Capstone 5.0.9, MSVC 2022 and process-local `CL_MPCount=2`. The build used
+the implementation working tree based on `3756e175`; generation fingerprints
+and crash symbols match. Existing MSBuild intermediate-directory warnings remain.
+Executable SHA-256:
+`8e550f95ebf550fe915ee383a6a090403d6d126c3bbb18af5f0131b1f54dbc91`.
+
+Isolated Original60 Scotland the Brave passed: **11.176 units forward**,
+**6.185 backward**, ammo **8 to 6**, **40 frozen pause / 60 advancing resume
+samples**, final checkpoint **95.715 seconds**, exit 0. Start/pause/resume captures
+were reviewed. All **19 protected files unchanged**, including sizes/timestamps;
+no run lock, disposable partition images, redundant BMPs or crash dump remained.
+Input was injected, rendering minimized/background and movies skipped. Physical
+input, audio, foreground pacing and a full campaign remain unverified.
+
+Evidence: `logs/x87-focused.log`, `logs/x87-numeric-consumers.log`,
+`logs/x87-native-extended.log`, `logs/x87-generation.log`,
+`logs/independent-x87-comparison.json`, `logs/x87-build.log`,
+`logs/x87-game.log`, `logs/independent-x87-game-check.json`,
+`logs/x87-patch-checks.log`. Native Mac title acceptance remains pending MAC-092.
+Internal extended precision/control, stack tags, FP exceptions, remainder status,
+remaining translation orchestration and runtime foundation still need work.
+The full independence goal remains active.
+
+## Independent MMX emission (Windows acceptance passed, 2026-10-27)
+
+Original MMX emission, portable mathematical/boundary fixtures and Windows
+native x86 oracles are in place. **22 MMX/decoder checks passed in 10.05 seconds**.
+The mathematical/native oracles cover packed integer operations, saturation,
+packing, multiply-add overflow, comparisons, full 64-bit shift counts, lane
+selectors, conversions and rounding. Low-unpack memory reads are bounded to
+four bytes, with an overread-rejecting boundary fixture. Runtime diagnostic
+markers remain preserved for unsupported operations/destinations.
+
+Supported US regeneration translated **15,838 functions with zero failures**,
+retaining **50 unresolved stubs** and **729 unimplemented instruction sites**.
+**15,794 functions stayed byte-identical**; all **44 changed bodies** match
+decoded old/new MMX substitutions, ignoring comments and whitespace. Eighteen
+of 21 generated C/header files are identical, including all five non-chunk files.
+Function names/order/surrounding text are unchanged; no unexplained differences.
+This is structural scope evidence, not a full semantic-equivalence proof.
+
+The full combined run passed **288 translator/generation/private join/timing
+checks in 344.37 seconds**. **56 historical patch/context/backlog/snapshot checks
+passed in 799.32 seconds**.
+
+The standard Windows x64 Release build and native checks passed with
+Python 3.12.14, Capstone 5.0.9, MSVC 2022 and process-local `CL_MPCount=2`.
+Build used the implementation working tree based on `3b6dda3a`, with current
+generation sources and matching crash symbols. Existing MSBuild intermediate
+directory warnings remain. Executable SHA-256:
+`a0ed708403ad4cd757aa4dd7dd0600f18dd6e509a62fca530540b5ab9c7e047d`.
+
+Isolated Original60 Scotland the Brave passed: forward **11.175 units**,
+backward **6.185 units**, ammo **8 to 6**, **40 frozen pause samples** and
+**60 advancing resume samples**, final checkpoint **93.999 seconds**, exit 0.
+Reviewed start/pause/resume captures. All **19 protected files unchanged**;
+no run lock, disposable partition images, redundant BMPs or crash dump remained.
+Inputs were injected, rendering minimized/background and movies skipped;
+physical input, audio, foreground pacing and a full campaign remain unverified.
+
+Evidence: `logs/mmx-focused.log`, `logs/mmx-generation.log`,
+`logs/independent-mmx-comparison.json`, `logs/mmx-build.log`,
+`logs/mmx-game.log`, `logs/independent-mmx-game-check.json` and
+`logs/mmx-patch-checks.log`. SSE-stage Mac native CI test/cleanup steps passed, but job finalization
+exceeded the 30-minute limit and its dependent gates failed. MMX commit
+All 16 CI checks passed on MMX commit `3756e175` (PR #375). Native Mac title acceptance is pending MAC-091.
+The full independence goal remains active.
+
+## Independent SSE emission (Windows acceptance passed, 2026-10-27)
+
+PR #375 replaces upstream SSE/SSE2 emission with `translation_sse.py`.
+Moves preserve payload bits and scalar lanes; double operations use double
+lanes, packed roots/reciprocals evaluate every lane, and float-to-integer
+conversions guard bounds before casting. Shared numeric-policy hooks and
+integer-flag provenance remain. XMM storage, guest memory, MMX/x87 and remaining
+header helpers still have upstream implementations. Guest MXCSR, FP exception
+status, alignment faults and native reciprocal approximation bits remain work.
+
+All **16 CI checks passed** on the preceding repair revision `d2fd8ecf`.
+**174 translator/generation/private join checks passed** in the combined run.
+Four timing assertions/mutations needed the new operand-capture spelling; their
+address/read-count checks and original fault-injection controls are preserved.
+The complete rerun passed **109 native timing checks in 311.41 seconds**.
+**56 historical patch/context/backlog/snapshot checks passed in 896.64 seconds**.
+Original tests cover standalone imports, memory widths and payloads,
+all shuffle controls, scalar/packed math, NaNs, conversion bounds/rounding,
+Windows hardware intrinsics and decoded production consumers.
+
+Supported US XBE regeneration translated **15,838 functions with zero failures**,
+retaining **50 unresolved stubs** and **729 unimplemented instruction sites**.
+**11,515 functions stayed byte-identical**; all **4,323 changed bodies** match
+explicit old/new SSE substitutions from decoded instructions, ignoring comments
+and whitespace. Five other generated C/header files and function names/order/
+surrounding text are unchanged. No unexplained differences remain. This bounds
+the scope of generated changes; it is not a full semantic-equivalence proof.
+
+The standard Windows x64 Release build and native checks passed with
+Python 3.12.14, Capstone 5.0.9, MSVC 2022 and process-local `CL_MPCount=2`.
+Build used the implementation working tree based on `d2fd8ecf`, with current
+generation sources and matching crash symbols. Existing MSBuild intermediate
+directory warnings remain. Executable SHA-256:
+`4381757c0132bc8a12958c05382a8be3138bf12dbbe7ff134fe91122c5ffbb78`.
+
+Isolated Original60 Scotland the Brave passed: forward **11.132 units**,
+backward **6.185 units**, ammo **8 to 6**, **40 frozen pause samples** and
+**60 advancing resume samples**, final checkpoint **94.307 seconds**, exit 0.
+Reviewed start/pause/resume captures. All **19 protected files unchanged**;
+no run lock, disposable partition images, redundant BMPs or crash dump remained.
+Inputs were injected, rendering minimized/background and movies skipped;
+physical input, audio, foreground pacing and a full campaign remain unverified.
+
+Evidence: `logs/sse-focused.log`, `logs/sse-native-timing-final.log`,
+`logs/sse-generation.log`, `logs/independent-sse-comparison.json`,
+`logs/sse-build.log`, `logs/sse-game.log`, `logs/sse-patch-checks.log`,
+`logs/independent-sse-game-check.json`. Native Mac title acceptance is pending
+MAC-090. Full independence remains incomplete.
+
+## Condition-stage CI fixture repair (2026-10-27)
+
+Mac native CI on `46424293` found a stale inherited expression-text assertion
+for logical conditions; its entire class had been skipped locally when Clang
+was absent from PATH. The repair changes the expected spelling, keeps the
+behavioral sweeps/negative controls, and limits the compiler skip to those
+sweeps. The project harness also executes them with the selected host compiler.
+Production code and the accepted game executable are unchanged; the generation
+fingerprint remains current. **44 targeted checks passed in 14.79 seconds**,
+including the original 15 logical-condition sweeps and nine rejecting negative
+controls compiled with MSVC. Fresh install/repeated patch application passed
+in **28.35 seconds**. All **16 CI checks passed** on repair revision
+`d2fd8ecf`; this is not native Mac gameplay acceptance.
+
+## Independent condition-code generation (Windows acceptance passed, 2026-10-27)
+
+PR #375 replaces the condition map, Jcc/SETcc/CMOVcc expressions, LAHF and
+zero-flag expression generation with original project code. Signed arithmetic
+conditions include overflow; ADC/SBB retain inputs after live registers change.
+LAHF includes defined auxiliary carry and requests carry storage. Parity and
+overflow SETcc/CMOVcc now route through the complete alias map. Partial flag
+states still refuse unknown conditions; complete EFLAGS remains separate work.
+
+All **16 CI checks passed** on the prior string-stage revision `851c6206`.
+This stage passed **131 focused checks in 69.93 seconds**, including exhaustive
+byte-pair conditions and LAHF against mathematical and native x86 references,
+wide edges/seeded inputs, float NaNs, decoded branches/SETcc/CMOVcc with operand
+overwrites, and the inherited translator suite. **37 join/private game-routine
+checks passed in 48.55 seconds**. Existing spelling assertions and timing-test
+mutations follow the new expressions; behavioral references and negative
+controls remain enabled. **109 native timing checks passed in 242.29 seconds**;
+**56 historical patch/context/backlog/snapshot checks passed in 878.05 seconds**.
+
+Supported US XBE regeneration translated **15,838 functions with zero failures**,
+retaining **50 unresolved stubs** and **729 unimplemented instruction sites**.
+**4,120 functions stayed byte-identical**. The **11,718 changed bodies** are
+bounded to flag capture and condition lines, equivalent register-zero spelling,
+and seven newly resolved JNO predicates after logical AND. Five other generated
+C/header files and function names/order/surrounding text are unchanged. This
+structural check does not prove full semantic equivalence; native oracles and
+private game fixtures provide separate behavioral evidence.
+
+The standard Windows x64 Release build and native checks passed with
+Python 3.12.14, Capstone 5.0.9, MSVC 2022 and process-local `CL_MPCount=2`.
+Build used the implementation working tree based on `851c6206`, with current
+generation sources and matching crash symbols. Existing MSBuild intermediate
+directory warnings remain. Executable SHA-256:
+`090fa72bdbc9faed43129c311a7121ccd1e160ebf532be72c5b87db1baa77e0d`.
+
+Isolated Original60 Scotland the Brave passed: forward **11.175 units**,
+backward **6.185 units**, ammo **8 to 6**, **40 frozen pause samples** and
+**60 advancing resume samples**, final checkpoint **87.378 seconds**, exit 0.
+Reviewed start/pause/resume captures. All **19 protected files unchanged**;
+no run lock, disposable partition images or crash dump remained. Inputs were
+injected, rendering minimized/background and movies skipped; physical input,
+audio, foreground pacing and a full campaign remain unverified.
+
+Evidence: `logs/conditions-focused.log`, `logs/conditions-joins.log`,
+`logs/conditions-generation.log`, `logs/independent-conditions-comparison.json`,
+`logs/conditions-build.log`, `logs/conditions-game.log`,
+`logs/conditions-native-timing.log`, `logs/conditions-patch-checks.log`,
+`logs/independent-conditions-game-check.json`. Native Mac title validation
+is pending (MAC-089); the full independence goal remains active.
+
+## Independent string-instruction lowering (Windows acceptance passed, 2026-10-27)
+
+PR #375 implementation `c4a56fbe` replaces MOVS/STOS/LODS/CMPS/SCAS emission at byte/word/dword
+widths and CLD/STD. It preserves repeated element ordering for overlapping
+copies, uses guarded bulk copies for disjoint flat spans, samples compare
+operands once, and supports 16-bit count/index wrap and FS source offsets.
+Single CMPS/SCAS now publish ordinary comparison snapshots; repeated compares
+retain the existing ZF/CF and incoming zero-count contract. Full EFLAGS, MMIO
+and guest fault recovery remain separate work.
+
+All **16 CI checks passed** on comparison-stage revision `2b8c3f48`.
+The next string stage passed **126 focused checks in 68.31 seconds**, including
+original compiled contracts, Windows x86 oracles, decoded consumers and
+inherited comparison negative controls executed with MSVC. Decoded single
+compares exposed missing snapshot declarations in translator orchestration;
+the patch now declares both snapshot and comparison storage as needed.
+Generation translated **15,838 functions with zero failures**, retaining
+**50 unresolved stubs**. **14,517 functions stayed byte-identical**; **1,320**
+changed bodies match exact old/new string emission substitutions (ignoring
+comments/whitespace). One additional body now implements a previously omitted
+single CMPSD at `0x007F2B90`, whose opcode was verified in the supported XBE.
+All five other generated C/header files, function names/order and surrounding
+text are unchanged. No unexplained changes remain. This is bounded structural
+evidence, not a full equivalence proof. Unimplemented instruction sites fell
+from 730 to 729.
+
+The normal Windows Release build and native checks passed with process-local
+`CL_MPCount=2`, a current generation fingerprint and matching crash symbols.
+Executable SHA-256:
+`7770ffc0bfd1688ad7531e397d6c11346318cee8a14d226f87b2e3fb36c921e5`.
+
+Isolated Original60 Scotland the Brave passed: forward **11.175 units**,
+backward **6.185 units**, ammo **8 to 6**, **40 frozen pause samples** and
+**60 advancing resume samples**, final checkpoint **89.597 seconds**, exit 0.
+Reviewed start/pause/resume captures. All **19 protected files unchanged**;
+no remaining run lock, disposable partitions or crash dump. This used injected
+inputs, minimized/background rendering and skipped movies; physical input,
+audio, foreground pacing and full campaign coverage remain unverified.
+
+**56 historical patch/context/backlog/snapshot checks passed in 892.45 seconds.**
+Evidence: `logs/strings-focused.log`, `logs/strings-generation.log`,
+`logs/independent-strings-comparison.json`, `logs/strings-build.log`,
+`logs/strings-game.log`, `logs/independent-strings-game-check.json`,
+`logs/strings-patch-checks.log`.
+Native Mac title validation is pending (MAC-088); no full-independence claim.
+
+## Independent comparison snapshots and sign extension (2026-10-27)
+
+After repairing PR #375's Clang condition warning, all **16 CI checks passed**
+on `32ff9af6`. The next module in PR #375 replaces CMP/TEST snapshots and
+self-test normalization, plus CBW/CWDE/CDQ emission, and supplies previously
+unhandled 16-bit CWD. Production aliases route ordinary and fused comparison
+snapshots to the same implementation. Existing direct-global load hooks and
+branch-consumer ABI are retained. General condition lowering, full EFLAGS/AF,
+fused-branch rereads and guest fault delivery remain separate work.
+
+- **156 focused tests passed in 74.30 seconds**, including the full inherited
+  translator consumer suite, original snapshot/hook/carry checks and decoded
+  operand-overwrite, SBB, join and size-prefix cases.
+- Portable compiled fixtures cover all byte comparison pairs, exhaustive word
+  extension and seeded wider operands. Windows x86 instruction oracles cover
+  every word input with positive/negative upper patterns and arithmetic-flag
+  preservation. The independent module-copy fixture passes without the toolkit.
+- Two inherited text fixtures now locate original snapshot comments; their
+  normalization and carry-order assertions remain active.
+- Generation translated **15,838 functions with zero failures**, retaining
+  **50 unresolved stubs**. Against repaired exchange generation, **4,616
+  functions are byte-identical**. Of **11,222 changed bodies**, **10,812** are identical
+  after ignoring comments, whitespace and redundant snapshot parentheses;
+  **410** additionally use the explicitly checked sign-extension replacements.
+  All five other generated C/header files, names/order and text outside bodies
+  remain identical. No unexpected changes were found. This bounded comparison
+  is not a complete semantic or architectural equivalence proof.
+- The first normal Windows build exhausted the compiler heap (C1002) with
+  unrestricted /MP file workers. A retry uses process-local `CL_MPCount=2`,
+  retaining normal Release optimization and the complete standard build tests.
+  The retry **passed**, including native checks, current generation fingerprint
+  and matching crash symbols. Existing MSBuild intermediate-directory warnings
+  remain. Executable SHA-256:
+  `aeedf7b21c3cda5ae6a009f0b43ff4741b64ddc8e9235e530ce3f33ffa650f28`.
+- **Isolated gameplay passed:** Original60 Scotland the Brave, injected
+  background/minimized inputs with startup movies skipped. Forward **11.014
+  units**, backward **5.815 units**, ammo **8 to 6**, **40 frozen pause samples**
+  and **60 advancing resume samples**; last checkpoint **88.506 seconds**,
+  runner exit 0. Reviewed start/pause/resume captures. All **19 protected files
+  unchanged**, with no remaining run lock, disposable partitions or crash dump.
+  Physical input, audio, movies, foreground pacing and full campaign remain
+  outside this bounded check.
+- **56 historical patch/context/backlog/snapshot checks passed in 1,459.29
+  seconds**. This overlapped generation and the memory-limited rebuild.
+- Main reserved MAC-085 for impact sparks (#376); the unmerged exchange and
+  comparison records are now MAC-086 and MAC-087 to preserve distinct IDs.
+- Implementation `f941d1d4` passed the checks above. Main `9f40dc21` was
+  integrated in `4a034de0`; the combined normal Release build and native checks
+  passed with `CL_MPCount=2`. Executable SHA-256:
+  `ec947669ac8a1298f52de7e2d56f42c2291a1d6975f94b121ba56b292812cedf`.
+- Expanded private-guest integration initially found 13 fixture link failures:
+  generated DIV/IDIV callees require the shared integer-fault adapter. The
+  fixture compiler now links `src/runtime/guest_integer_fault.c` on both hosts and
+  writes separate MSVC objects. No production change was needed. The complete
+  rerun, including native timing and float-join fixtures, **passed all 152 tests
+  in 219.12 seconds**.
+- Combined-source isolated gameplay also passed: forward **11.216 units**,
+  backward **6.288 units**, ammo **8 to 6**, **40 frozen pause samples**, **60
+  advancing resume samples**, final checkpoint **88.756 seconds**, runner exit
+  0. Reviewed start/pause/resume captures; all **19 protected files unchanged**,
+  no remaining run lock, disposable partitions or crash dump. The same bounded
+  Original60, injected-input and skipped-movie limitations apply.
+
+Evidence: `logs/compare-focused.log`, `logs/compare-generation.log`,
+`logs/independent-compare-comparison.json`, `logs/compare-build-limited.log`,
+`logs/independent-compare-game-check.json`, `logs/compare-game.log`,
+`logs/compare-main-integration-final.log`, `logs/compare-main-build.log`,
+`logs/independent-compare-main-game-check.json`, `logs/compare-main-game.log`.
+Native Mac generation/build/gameplay
+remain unverified (MAC-087). Standard libraries and remaining upstream runtime
+source/notices are retained; this stage does not establish full independence.
+
+## Independent exchange lowering (2026-10-27)
+
+PR #375 implementation `de66eb9a`, based on merged main `fd317882`: original
+code replaces XCHG/XADD/CMPXCHG lowering at byte, word and dword widths,
+including locked memory spellings. Effective addresses and inputs are sampled
+before writes; captured arithmetic results feed branches, SET, CMOV and zero
+joins. Original sequentially consistent helpers replace the previous atomic
+helper bodies, with MSVC and Clang/GCC adapters. Other runtime code remains
+upstream and its notices remain required.
+
+Windows validation:
+
+- CI at `703f9fa7` found one Mac Clang warning-as-error in decoded CMOV:
+  redundant parentheses around equality. Zero predicates now use logical
+  negation; the compiled consumer test stays enabled with -Werror. All **16 CI
+  checks passed on `32ff9af6`**, including both host runtime and patch jobs.
+  The correction also passed 35 local checks; repaired generation completed
+  with 15,838 translated functions, zero failures and 50 existing stubs.
+- **152 final checks passed in 74.32 seconds**, covering compiled arithmetic,
+  x86 instruction oracles, aliases, decoded consumers, four-thread contention,
+  legacy numeric-address macros, fresh/repeated patches, generation and context.
+- **56 historical patch/context/backlog/snapshot checks passed in 980.20 seconds**.
+  These preceded the final two compatibility-macro pointer casts; the final
+  152 checks include fresh/repeated installation and execution of those casts.
+- Supported US XBE SHA-256 verified. Final generation translated **15,838
+  functions with zero failures**, retaining **50 existing unresolved stubs**.
+  **37 function bodies changed; 15,801 stayed identical**. Function order/names
+  and text outside C function bodies stayed identical. Ten complete generated
+  C/header files stayed identical; the types header changed only in the atomic
+  helper section. This is structural evidence, not full semantic equivalence.
+- Normal Windows Release build and native checks passed; generation fingerprint
+  is current and matching crash symbols were produced. The corrected build has
+  no C4022 pointer warnings; existing MSBuild intermediate-directory warnings
+  remain. An earlier, superseded build exposed the integer-to-pointer boundary;
+  both emission and compatibility aliases now cast the actual XBOX_PTR address
+  type, and the native fixtures exercise that interface.
+- **Isolated gameplay acceptance passed:** Original60 Scotland the Brave,
+  injected background/minimized input with startup movies skipped. Forward
+  **11.175 units**, backward **6.185 units**, ammo **8 to 6**, **40 frozen pause
+  samples** and **60 advancing resume samples**; final checkpoint **88.124
+  seconds**, runner exit 0. Reviewed start, pause and resume captures. All
+  **19 protected settings/save/fixture files remained unchanged**; no run lock,
+  disposable partitions or crash dump remained. This bounded test does not
+  certify physical input, audio, movies, foreground pacing or a full campaign.
+
+Executable SHA-256:
+`88e6cf84258d04261c1ba75a896e60288ef6a38fda1f81491af401d7df730b49`.
+Evidence: `logs/exchange-final-checks.log`, `logs/exchange-patch-checks.log`,
+`logs/exchange-final-generation.log`, `logs/independent-exchange-comparison.json`,
+`logs/exchange-final-build.log`, `logs/independent-exchange-game-check.json`,
+`logs/exchange-game.log`.
+Native Mac generation/build/gameplay remain pending (MAC-086). Host atomic
+contracts cover aligned mapped RAM; MMIO, guest alignment/page-crossing faults,
+exception delivery, other LOCK families and complete flags remain separate work.
 ## Repository organization (2026-10-27)
 
 From main `9f40dc21`, `cleanup/repository-layout` replaces repeated alphabetical
@@ -377,7 +2987,8 @@ Windows validation:
 - CI's scope job found a stale patch index: the local product patch still had
   CRLF bytes although Git stored LF. Normalized that local file to its existing
   Git bytes and refreshed the index (no production change). The same scope
-  suite now passes locally: **116 tests and 26 subtests**. CI rerun pending.
+  suite passed locally: **116 tests and 26 subtests**. All 16 CI checks passed
+  on `5b931e4b`; PR #374 was subsequently merged.
 
 
 Executable SHA-256:
@@ -29630,3 +32241,1999 @@ Windows build of the exact release source and pinned artwork. The direct
 game/channel values. Updated alt text, caption and assets provenance make that
 scope explicit. Reviewed the complete render; no personal files or gameplay were
 used. This documentation refresh changes no launcher code or published assets.
+
+
+### Kernel boot replacement integration in progress
+
+Original lifecycle/logging source and0216 patch are now in maintained paths.
+Maintained-path Windows12contract checks and21context/backlog checks passed.
+Migration checks passed52 tests in1755.05s; production build/game passed as recorded below. Installed
+runtime has the0216 patch applied; Release rebuild and built-in checks passed.
+The kernel archive has no native resolver/table, and the original boot source is
+selected. All22 generated C/header files are unchanged. The isolated Story run
+passed with measured acceptance recorded below.
+The new source removes obsolete native resolver from the build when applied;
+actual guest dispatch stays in the bridge. Mac execution is unverified.
+See MAC-118 and docs/agent-context/kernel-objects.md.
+
+
+Windows boot replacement gameplay acceptance: the fresh isolated Story run
+reached scene4/mission1, moved11.046 forward and5.884 backward, fired ammo8to6,
+froze ticks through40 pause samples and advanced through60 resume samples.
+The final checkpoint was102.869s within a240s cap. Gameplay, pause menu and
+resumed captures were reviewed. The rebuilt executable SHA-256 is
+`da6ad5f39521a8b2040630354e3e7bd3e95ec8795d951541db83036dabdcd33a`.
+All26 protected files retained hash, size and modification time. This was a
+minimized synthetic-input Classic run with movies skipped; physical input,
+audio listening, full campaign and native Mac gameplay remain unverified.
+Local snapshot/tracking/migration checks passed52 tests in1755.05s.
+Boot source is part of PR #393; CI for the new boot revision remains pending.
+
+
+Boot CI fixture repair: native Mac revision ffd6cb23 had1697 passing tests and
+12 fixture compilation failures. Eleven applied the boot fixture warning policy
+to the inherited shim's unfinished SecureZeroMemory parameters; one probe hit a
+nested comment in the inherited kernel header. The shim now compiles separately
+with host diagnostics, and the probe marks inherited headers as dependencies.
+Strict warnings and undefined-behavior instrumentation remain on original code.
+Windows boot/context/backlog33 checks passed; new Mac CI remains pending.
+No production source, built executable or prior gameplay evidence changed.
+
+
+Next-packet ABI prerequisite (feature/guest-io-manager): ordinal81 now
+consumes one guest pointer/four cleanup bytes, consistent with six independently
+validated supported-title callers and the public Xbox declaration. The bridge
+supplies false for the inherited host stub's extra argument. New compiled actual
+bridge/cleanup contracts and strict fault controls are registered on both CI
+hosts. Windows Release/built-in checks and isolated Story acceptance passed as below;
+new-head CI acceptance remains pending.
+This does not replace device queues or install the ignored request/disc prototype.
+Boot predecessor fd63094f has all16CI checks successful, including native Mac
+contracts; this is not Mac title gameplay evidence.
+
+
+Next-packet Windows acceptance: new executable SHA-256
+`21c2ba6bbfbc05eb78594d3b79d75099dcd7bf05025c0dc7d1d2099b8b5f55da`.
+Story scene4/mission1, movement11.175 forward/6.185 backward, ammo8to6,
+pause40/resume60 samples and reviewed captures passed at99.207s within240s.
+All26 protected files unchanged; all22 generated files unchanged. Minimized,
+synthetic-input Classic/movie-skipped run; not an ordinal81 hit-frequency,
+physical-input, audio-listening or native Mac title claim. Compiled ABI/context/
+backlog24 and patch tracking16 checks passed; full snapshot/migration and CI pending.
+PR #393 was found merged into2e678ac1; new branch feature/guest-io-manager was
+fast-forwarded to that main revision without source-tree changes or lost work.
+
+
+Request allocation stage0218 (feature/guest-io-manager, PR #394): original stack/request
+codecs, owner/registry/pool and kernel allocation/free/initialization adapters
+are in maintained source/tests; native initializer removed. IoAllocateIrp59
+cleanup is4bytes and verified IoStartPacket83 cleanup12bytes. Actual guest
+heap/Windows ownership fixtures and header probes passed as ignored candidates;
+maintained-path36 request/ABI tests and fresh Windows build/game passed below;
+new-head CI and full migration remain pending. Full device
+queues, driver callbacks, nonlocal request scopes, builders and disc binding
+remain unfinished. No prior executable/game evidence is relabeled for this stage.
+Predecessor37f9042d all16CI checks passed; local migration36 plus tracking16 passed.
+
+
+Stage0218 Windows result:36 request/packet ABI tests passed64.56s;21 context/
+backlog checks passed7.14s; package/path/crash-symbol checks7passed with2subtests.
+Release build/built-in checks and archive selection audit passed; native
+xbox_IoInitializeIrp absent, five original providers selected,22 generated files
+unchanged. Executable SHA-256
+`d260852719f82abe650bc26a4f8df7e53af7790a46e6364163548776417bf0a9`.
+Fresh isolated Story: movement11.175 forward/6.185 backward, ammo8to6,
+pause40/resume60 samples, scene4/mission1, captures reviewed at100.457s within
+240s cap.26 protected files unchanged. Minimized synthetic-input Classic with
+movies skipped; not physical input, audio listening, campaign or Mac title proof.
+Kernel allocation59/free72/initialize73 are not direct supported imports; native
+contracts cover their behavior separately. Full migration and new-head CI pending.
+
+
+Request-stage CI capacity repair: exactfb4aeb2a Windows native job123069441536
+was cancelled at the30-minute job boundary while the native suite continued to
+advance near its end, with no assertion failure reported. GitHub annotated
+maximum execution time30m0s; dependent final gates failed because the selected
+host job was cancelled. Mac native and both patch-upgrade jobs succeeded.
+The native matrix now grants Windows45 minutes while Mac retains30. Every test,
+per-test timeout, assertion, dependency pin and final gate remains selected.
+No runtime source/build/game input changed; the tested d2608527 executable and
+its existing Windows gameplay evidence remain the current product evidence.
+New-head complete Windows CI remains required; this is not a passing result.
+
+
+CI385a5305: lightweight plan failed before native jobs because its merged tree
+with main6780f3bd made build-test.md65569 bytes. Head alone was65520 bytes;
+the unchanged guide limit is65536. Main was integrated safely into the feature
+branch; the intact CI/host-validation section moved to runtime-ci.md, preserving
+commands and old overview anchor with a link. New merged-tree CI remains pending.
+The previous source/executable/game hashes remain unchanged.
+
+
+Merged-main CI repair verification (Windows): the exact lightweight Python plan
+passed 121 tests and 26 subtests in 5.48s. The build/test guide is below the
+unchanged 65536-byte cap with its detailed CI contracts linked separately.
+Runtime source, generated files and executable remain unchanged; fresh remote
+CI is required. This documentation repair does not establish Mac gameplay.
+
+Node repository contracts also passed all 23 tests in 13.61s. Context/link/index
+check passed against origin/main. Installed source/archive/executable/generated/
+game hash verification passed, and all 26 protected files retained hash, size
+and mtime. No game rebuild was required for this documentation-only change.
+
+
+## Device/name replacement preparation (stage0219, uncommitted)
+
+Working from3b11d5b1: predecessor request-stage CI is now green on Windows and
+Mac, including final gates, after retrying hosted Mac runner-capacity cancellations.
+The exact Windows native job passed1804 tests,244 skips,18subtests in1715.21s;
+release checks passed151 tests and3subtests. These results accept the predecessor,
+not the new device source. Launcher checks also succeeded on both hosts.
+
+Original device/name/operation-scope providers and synthetic fixtures are now in
+maintained paths with a shared selection patch. Prototype host wrappers passed13
+checks in42.21s, including real locks/heap/header binding and native multi-wait
+unwind. Earlier combined58 and additional actual-cleanup4 results describe the
+prototype inputs at their recorded revisions; maintained acceptance is pending.
+Build, archive selection, current-stage full migration, fresh isolated gameplay
+and new-head CI have not yet been verified. No main merge was performed.
+See docs/agent-context/kernel-devices.md for contracts and remaining work.
+
+
+## Device/name Windows build and gameplay acceptance (stage0219, uncommitted)
+
+Windows PowerShell5 Release rebuild, built-in host/graphics/settings checks and
+matching crash-symbol generation passed. Patched actual-header/adapter checks
+passed29 in53.44s. Repository/CI routing checks passed112 in5.21s; package/path/
+crash-symbol checks passed19 in0.31s. First maintained native run passed155 with
+three pre-compilation mutation-anchor failures; narrowed those controls to their
+intended paths and both affected families passed12 in19.23s. A clean full native
+rerun against the selected patched runtime is in progress, not yet acceptance.
+
+Generated kernel project selects all ten new providers once and excludes
+kernel_ob.c; rebuilt archive has all expected original provider symbols and none
+of the nine retired native object/device exports. All22 generated guest files
+remain unchanged. Executable SHA256:
+`d78d740af8433c204ba1863236462b07adda2f6bcadf2e1f0b7e41ae0f67c8a3`.
+The build is the dirty3b11d5b1 source base, not a clean committed revision.
+
+Fresh isolated Story passed scene4/mission1, forward11.174544 and backward6.184892,
+firing ammo8to6,40 paused samples with frozen ticks and60 resumed samples with
+advancing ticks. Last checkpoint98.534s within240s cap. Start/pause/resume PNGs
+were reviewed. Exact executable provenance agrees; run lock/partitions/dumps are
+absent. All26 protected files retained hash,size and mtime. This minimized,
+synthetic-input Classic/movie-skipped run is bounded Windows regression evidence,
+not physical input/audio listening/full campaign or native Mac title acceptance.
+Initial automation used the wrong manual-start flag and a retry read a stale
+report. Corrected the local runner invocation/report freshness, kept gameplay
+assertions unchanged, and completed the fresh run against the same binary.
+
+Full current-stage snapshot/tracking/patch migration remains running, and no
+new-stage commit/push/CI result is claimed. Shared portable implementation and
+both-host CI selection are present; MAC-118 remains Awaiting validation for the
+new source and native Mac title behavior. Driver queues/synchronous builders,
+verified CdRom binding and complete runtime/tooling replacement remain unfinished.
+
+Clean maintained native acceptance against the applied runtime:158 passed in
+232.22s, terminal exit0. Repository Node contracts also passed23 in12.79s.
+The full snapshot/tracking/patch migration is the only remaining local job.
+Source/build/game hashes remain matched; new source is still uncommitted.
+
+Full current-stage snapshot/tracking/patch migration completed:52 passed in
+1037.38s (17m17s), terminal exit0. All local stage0219 acceptance is complete;
+new committed-head remote CI remains required. Build record keeps its actual
+dirty3b11d5b1 provenance and matching runtime/source/executable/game hashes.
+
+
+### Device-stage integration with latest main (2026-10-28)
+
+Device/name source is committed in f17859d7; main6e657518 (Unlock Content)
+was integrated into the feature branch in2406e457, with context-size repair
+96eb84a1. No merge into main or independent-toolkit completion is claimed.
+Windows Release regeneration/build and built-in checks passed at96eb84a1.
+The generator fingerprint is current; three of the22 generated files changed
+for the merged Unlock hooks. All ten original providers are selected once,
+kernel_ob.c is excluded and the nine retired native exports are absent.
+Executable SHA256:
+`86a960df397bdf7cd0d2b177b98a74848e9908918cbfa843c6f44fcb34c6e0a4`.
+
+Fresh isolated Story passed at this executable: scene4/mission1, forward11.174544,
+backward6.287973, firing ammo8to6,40 frozen pause samples and60 advancing resume
+samples. Last checkpoint98.396s within240s cap. Start/pause/resume captures were
+reviewed. Installed source/archive/generation/game hashes agree; all26 protected
+files retained hash,size and mtime. This is minimized synthetic-input Windows
+Classic/movie-skipped coverage, not physical input/audio/full campaign or Mac
+title acceptance. Main-integration storage/repository/context checks passed115
+in8.21s. The fresh merged snapshot/migration suite is still running; new-head CI
+has not started. Prior3b11d5b1 CI passed both hosts after runner-capacity retry.
+
+Merged-tree repository Node contracts passed23 in12.31s; context/link/index
+and whitespace checks passed. Fresh merged migration remains running.
+
+
+Merged device-stage migration completed on Windows:52 passed in1683.86s
+(28m03s), terminal exit0. This rerun includes main Unlock patch2070 and current
+snapshot/tracking/patch-upgrade models. Combined local build/game/migration
+acceptance is complete. The newest pushed-head CI result remains required;
+previous3b11d5b1 workflows both concluded success. No full independence or native
+Mac title acceptance is implied.
+
+
+### Device-stage Mac CI fixture repair (2026-10-29)
+
+Exact0f1189ec runtime40789860110 failed on Mac before32 isolated device cases
+could run: Clang -Werror rejected unreferenced static scenario helpers. Other
+Mac tests passed1802 with293 skips/18subtests; Windows native and both patch
+upgrade jobs passed, and launcher40789860207 passed. References in the fixture
+main retain those compiled helpers without executing unselected scenarios.
+No warning flags, mutation assertions, runtime source or binaries are changed.
+Fresh repaired-head Mac CI is required; this is not yet full CI acceptance.
+
+Repaired fixture Windows checks:45 passed in84.20s. Current exact Mac compiler
+result remains pending; no local Clang is installed.
+
+## Multiplayer launcher theme — 2026-10-28
+
+Implementation on `ui/multiplayer-launcher-theme`, initially based on
+`6e657518` (Windows x64, workspace CPython 3.12/Tk 8.6). The separate Online
+browser/invitation windows use the launcher's navy, silver and blue palette,
+clear Join/Host panels, advanced Directory settings and native high-contrast
+fallback. Existing session and persistence callbacks are unchanged. Real-widget
+checks cover scaling, layout bounds, callbacks, caption recreation, theme changes
+and short-window focus scrolling. The focused theme, Online client, hosting and
+identity suites passed: 26 passed, 1 skipped (optional live test). The Windows preview was captured after using a distinct local interpreter
+filename to avoid a computer-use Python app identity mismatch. Resize review
+found wrap-width feedback after maximize/restore; the bounded canvas width and
+label minimum-width fix passed all seven theme/layout checks. No
+in-game or real-internet match validation, new package or release is claimed.
+Native Mac Online remains deferred; see the existing Windows appearance entry
+in MAC_PORT_BACKLOG.md.
+
+
+### Multiplayer icon and header follow-up
+
+The same local branch now gives Online a two-player icon using the shared
+launcher/game portal rim and silver/blue palette. Seven transparent sizes
+(16–256 px) are generated from tracked vector code; the normal Windows resource
+build and release packager generate/copy the ICO. Windows preview review confirms
+the new title-bar icon and removal of “It's time to split” from the header.
+The game-icon/resource, Online layout/identity and launcher-scope suites passed
+27 tests plus 27 subtests, with one optional live test skipped; the new packaged
+icon/Tk HWND check passed after replacing an unsupported Windows ICO getter
+assertion with real window icon handles (28 passing tests in total). Existing
+game icon resource linking passed; no Mac host or real network match was tested.
+
+
+PR #399 validation found directory-field clipping at 150/200% text scaling on
+the hosted Windows runner's smaller display (1775 other runtime checks passed).
+The shared scrolling panel now covers Directory settings and the invitation
+popup as well as Play online; wrapped-text changes refresh the scroll extent
+after geometry settles. All seven real-widget checks pass with a simulated
+1280x768 screen, including focus visibility for the certificate and popup Return
+controls. The fix retains the original bounds assertions and adds coverage for
+the actual CI screen constraint. A fresh required CI run validates the repair.
+
+
+## Scotland the Brave interaction input (#357, 2026-10-29)
+
+Issue branch `61fa18b6` (PR #404), based on main `b2a7ffe8`, changes only US A0DE8
+in the shared native numeric policy. Original interaction A0D90 otherwise
+rejects a pressed raw-tick edge on zero-whole game frames after pause offsets.
+The selected comparison now admits positive game time without altering clocks,
+input polling, bindings, target tests or the authored repeat path.
+
+Windows original-code selector/decoder/getter fixture passes 72 schedules and
+483 activations at Original60 and native60/120/144/180/240. Restoring only the
+original comparison compiles and fails with an interaction-edge loss. Geometry,
+activation and audio services are controlled boundaries; actual portcullis level
+scripting and physical keyboard/controller play are not yet verified.
+Nine selected interaction/reload/analogue/gate cases pass, including the
+asset-free pause/Original/unrelated-address scope checks; 21 repository
+context/backlog checks pass. The complete original-code fixture requires the
+verified US XBE. Mac execution remains unrun here (MAC-121).
+
+Windows Release rebuilt successfully through `tsfp.ps1 -Action Build`,
+including the normal isolated build tests; patch verification passed first.
+Log: ignored `logs/issue357-build.log`. This is the PR #404 candidate,
+not a published release or live portcullis verification.
+
+## Multiplayer control and taskbar icon cleanup — 2026-10-29
+
+Local implementation on `fix/multiplayer-control-artifacts`, based on
+`68408d4d`, Windows x64 with CPython 3.12.14 / Tk 8.6. Rounded image corners
+previously contained a dark matte; transparent corners and parent-matched
+control backgrounds now remove the visible wedges. Vertical and horizontal
+scrollbars use flat, centered image elements with scale-sized arrow targets.
+Tk iconbitmap was measured supplying 32x32 HICONs for both window roles despite
+the ICO containing seven sizes. The wrapper now receives the 256px taskbar icon
+and a separate system-sized caption icon, restored on re-show and freed on exit.
+
+The theme and Windows icon/resource suites pass **16 tests**. Coverage includes
+100/150/200% Tk scaling, actual arrow click callbacks in both orientations,
+control backgrounds in idle/hover/pressed/disabled/focus states, real native
+icon bitmap dimensions, popup/re-show behavior, high-contrast fallback and
+small-screen layout. Desktop preview review confirms clean control corners and
+aligned arrows. Physical high-DPI monitor/taskbar rendering and native Mac
+Online are not verified; the latter remains queued in the existing backlog.
+No network, personal settings, saves or running game were used. This is source
+and an offline preview; it requires a matching game package for player use.
+
+
+Device CI repair integrated main68408d4d in cb975f48, preserving both device and
+main interaction/audio/release-speed changes. Merged plan/repository and device
+fixture checks passed172 plus29subtests in36.96s. Node contracts passed23 in12.82s;
+local LF normalization keeps the unchanged context bounds valid. Windows Release
+regeneration/build is in progress; prior86a960df game evidence is historical.
+
+
+### Device CI repair and latest-main Windows regression (2026-10-29)
+
+Pushed a0e36a91 includes the warning-clean isolated device fixture and main68408d4d.
+Windows Release regeneration/build/built-in checks and matching crash symbols
+passed. All ten device/name providers remain selected once, kernel_ob.c excluded,
+nine retired native symbols absent and generator inputs current. Four of the22
+recorded generated files differ from the historical pre-main baseline as expected
+for the combined main hooks. Executable SHA256:
+`a7fd543f620525bb7025fef33293adfcc3073db40ca6144b0b70371deae630d3`.
+Fresh isolated Story scene4/mission1 passed movement11.195015 forward/6.184892
+backward, firing8to6,40 frozen pause samples and60 advancing resume samples;
+last checkpoint104.532s within240s cap. Start/pause/resume captures reviewed.
+Installed source/archive/executable/generated/game hashes agree and all26
+protected files retain hash,size and mtime. Minimized synthetic-input Classic,
+movie-skipped Windows regression; no physical/audio listening/campaign/Mac title
+claim. Plan/device172checks plus29subtests and Node23 passed locally.
+
+Exact a0e36a91 runtime CI40878529221 now passes Mac native, both patch upgrades
+and both launchers; Windows native/final gates remain in progress. Mac CI proves
+its selected asset-free contracts, not native Mac game behavior. Local merged
+migration66031 is still running; prior0f1189ec migration52 passed28m03s.
+
+
+Exact a0e36a91 runtime40878529221 completed success on both hosts and all final
+gates. Windows native1960passed247skipped18subtests435.07s; release172passed
+3subtests7.31s. Mac native1878passed294skipped18subtests228.97s; release169passed
+3skipped3subtests2.50s. Both launcher hosts/final passed. Local fresh merged
+snapshot/migration66031 passed59 in675.65s. This accepts stage0219 CI, not full
+native Mac title gameplay or all-runtime independence.
+
+Stage0220 original sharing replacement is now being installed. Candidate policy,
+actual-adapter/header checks passed11 in4.83s. Added an actual ordinal80 cleanup
+fault control for maintained execution. The first patch application failed
+before writing runtime files because0220 lacked a loader dependency override;
+added its explicit order after0219. Production build/game/new-head CI pending.
+
+
+Stage0220 Windows local acceptance: maintained sharing/actual-header/actual
+cleanup plus request/packet/context/backlog checks passed141 in18.40s. The first
+run passed140 but the fixed expected patch-order tail still omitted0220; updated
+that reviewed tail and owning investigation guide, then reran all141 successfully.
+Node23 passed21.54s; path/crash-symbol4 passed0.17s. Windows Release and built-in
+checks passed, with matching crash symbols. Generated kernel project selects
+original guest_io_share.c once and the archive exports all three new providers;
+previous device selection/retired-export checks still pass. All22 generated files
+are unchanged from the latest-main build and the generator fingerprint is current.
+Executable SHA256:
+`0b045f29781125378aad66c45fc014b4f607efbfaa25f6dfa473846f0ab1cc45`.
+Actual build provenance is dirty a0e36a91 with recorded source/patch hashes.
+
+Fresh isolated Story scene4/mission1 passed forward11.128969/backward6.184891,
+firing ammo8to6,40 frozen paused samples and60 advancing resume samples; final
+checkpoint120.795s within240s cap. Start/pause/resume images reviewed. Exact
+source/archive/generated/executable/game hashes agree, no run lock/partitions/
+dumps remain, and all26 protected files retain hash,size,mtime. This is minimized
+synthetic-input Classic/movie-skipped Windows coverage, not physical input,
+audio listening, full campaign or Mac title acceptance. The game does not directly
+import these three share APIs; native contracts establish their new behavior.
+Stage0220 local snapshot/migration15171 remains running; new pushed-head CI must
+also pass. Source/toolkit independence remains incomplete.
+
+
+Concurrent integration: PR394 was externally merged at66bcb20f while sharing
+work was underway. Its merged head is a0e36a91, not the later sharing commit.
+Preserved cf581fc3 on focused feature/guest-share-access and integrated66bcb20f
+without source changes. Old branch/work remains preserved. Sharing receives a
+separate review/CI; no agent merge into main was performed. Current source/
+archive/executable/game hashes remain identical after this history integration.
+
+
+Stage0220 dfb54cf2 CI: both native runtime jobs and both launchers passed;
+Windows/Mac patch-upgrade jobs failed the same three historical fixtures as local
+migration15171 (56passed/3failed559.84s). Those old subsets excluded0219 but
+accidentally retained its dependent0220. Added0220 to the same three historical
+exclusion lists, retaining the complete-stack upgrade and adding explicit final
+sharing-provider/ordinal80 assertions in each. Production source, patch bytes,
+compiled executable and existing gameplay result remain unchanged. Repaired
+fixture checks and fresh exact-head CI remain required.
+
+
+Stage0220 historical-fixture repair: all three affected upgrade routes passed
+in86.07s, preserving historical setup and complete-stack provider/cleanup checks.
+Exact dfb54cf2 native CI had passed Windows1972 tests/247skips/18subtests303.25s,
+release172/3subtests4.43s; Mac1890/294skips/18subtests217.97s and release169/
+3skips/3subtests4.49s. Both patch-upgrade jobs failed only the same three now
+repaired historical models. All56 other local migration checks passed previously;
+new-head full both-host CI is still required. Source/archive/generated/executable/
+game hash audit passed and all26 protected files unchanged. This fixture/docs
+repair needs no product rebuild or replacement gameplay evidence; the recorded
+0b045f29 executable and bounded Story results remain authoritative.
+
+
+Stage0220 f7b0c3b6 CI: both patch-upgrade jobs passed after the historical model
+repair. Windows native failed one existing Online loopback assertion: host peer
+latency count1 versus expected2;1974passed248skipped18subtests398.57s. Its old
+wait ended as soon as all sessions had one reply, before the host necessarily
+received the second. Wait now includes the exact existing host count requirement,
+retaining the same four-second deadline and all assertions. No production code,
+source/patch/executable/game hashes change. Mac native remains queued at the
+latest observation; the complete repaired-head CI result is still required.
+
+
+Online synchronization repair verified locally: all4 Online contracts passed
+in6.15s, including authenticated nonce/expiry and relay/forgery/replay assertions.
+Four simultaneous independent three-peer loopback runs also passed (5.93-6.10s
+each), keeping the original4second telemetry deadline. Installed source/archive/
+generation/executable/game hash verification and context/whitespace checks pass.
+No gameplay rebuild is required for this test-only synchronization change.
+
+
+### Stage0220 complete CI acceptance at118d21fd (2026-10-29)
+
+Exact118d21fdf6b7b9316cb29093495e8875aef0aa1a runtime workflow40914362747 and
+launcher40914362778 completed success. Windows native1975passed248skipped/
+18subtests386.53s and release172passed3subtests6.47s. Mac native1890passed/
+295skipped18subtests220.72s and release169passed3skipped3subtests2.68s. Patch
+upgrades Windows59passed289.62s; Mac57passed2skipped84.67s. Both host launchers
+and all final PR/runtime gates passed. Historical model exclusions and Online
+wait-condition repairs passed the complete suites without removing assertions,
+extending the telemetry deadline, changing dependencies or relaxing warnings.
+
+The product source/patch/binary hashes are unchanged from recorded0b045f29
+Windows Release and bounded isolated Story acceptance. This establishes both-host
+CI for stage0220, not native Mac title gameplay or complete toolkit independence.
+Driver callback/queue/synchronous I/O and broader kernel/runtime/tooling retirement
+remain unfinished. The next callback ownership/target/rollback/prepared-frame
+candidate is still uninstalled and is not included in this CI acceptance.
+
+
+## 2026-10-29 - Stage0221 request lifetime groundwork
+
+Prior exact cead9d23 runtime40917186209 and launcher40917186212 both completed
+successfully, rechecked before this change. Integrated latest main3b4e679b into
+the feature branch as3d74126b without resetting work or merging into main.
+Original split-phase owner tickets, scoped nonlocal cleanup, persistent bounded
+device leases and prepared0..4word callbacks are now maintained shared source.
+Full driver bridge replacement remains unfinished. The call composer is still
+ignored/uninstalled because public Xbox slot declarations do not establish its
+proposed DeviceObject word; no desktop layout assumption is being promoted.
+
+Full local migration acceptance passed. First maintained test promotion
+found fixture-only duplication of a source-including device helper and mutation
+anchors shared by both callback APIs; corrected fixture selection/anchors while
+preserving all executable fault controls and fatal warnings. Existing data and
+settings preservation baseline remains the original26 files.
+
+Windows0221 local acceptance so far: Release/built-in checks passed; matching
+crash symbols written. All66 lifetime/owner/pool/concurrency/callback/header and
+registry checks passed27.29s; adapter/sharing/packet/mounted-input/theme57
+passed33.91s. Path/backlog/symbol5passed0.26s. Build audit selects13 device/
+sharing/lifetime providers once, retains required new archive symbols, excludes
+kernel_ob and nine retired exports, and confirms22 generated files unchanged
+with a current fingerprint. Actual build base3d74126b had the recorded dirty
+source inputs; executable8a75a99a41d3c1638fafce0b93e5b51d8f90eb6a22c8f69fe7c7dbfd57cf9a06.
+After the separate Issue358 play session exited, fresh isolated Story acceptance
+passed on the rebuilt executable: scene4/mission1, forward11.174544/back6.184892,
+ammo8to6,40 frozen pause samples and60 advancing resume samples, last checkpoint
+95.242s within240s cap. Three fresh captures reviewed. Runner/controller exited0,
+profile signatures valid, fixture preserved, no dumps/locks/partition images left.
+Current source/archive/executable/generated/game hashes agree. All26 protected
+files retain original hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44;
+minimized synthetic-input Classic/movie-skipped regression, not physical input,
+listening, campaign completion or native Mac title verification. Both packaging
+entry points resolve with --help; no new game ZIP was assembled or published.
+Node context6checks passed. Product source commitab70f7b6 is pushed in draft
+PR#406. Exactab70f7b6 runtime40923947215 and launcher40923947191 completed
+successfully with all final gates. Windows native2008passed248skipped plus18
+subtests439.35s; release172passed plus3subtests16.21s. Mac native1923passed
+295skipped plus18subtests261.50s; release169passed3skipped plus3subtests3.45s.
+Patch upgrades: Windows59passed265.67s, Mac57passed2skipped133.68s. Both launcher
+hosts and dual-platform release gates passed. This verifies the selected shared
+contracts and hosted checks; native Mac title gameplay remains unverified.
+The uninstalled ABI-dependent composer and complete toolkit retirement remain
+unfinished. The complete local historical-upgrade/context/CI-selection/backlog/
+path/symbol run passed128checks908.73s. All local build/game/test processes exited;
+no game session remains active. Source and private-data hashes were rechecked.
+This documentation follow-up changes no product source or built executable;
+its own hosted workflow status must be distinguished from codeab70f7b6's green CI.
+
+
+## 2026-10-29 - Stage0222 original driver composition
+
+Starting6cca3879 on feature/guest-share-access; prior codeab70f7b6 had both CI
+workflows green, while its documentation-head CI is tracked separately. Initial
+tree clean; fetched main unchanged3b4e679b; protected26 files unchanged. Exact
+6cca3879 runtime40925947708 and launcher40925947683 subsequently completed
+successfully, including both native hosts/upgrade jobs and all final gates.
+Original target/call composer and read-only request peek are now maintained shared
+source, with0222 selecting the two new providers in the kernel library. This does
+not reroute inherited kernel IofCallDriver/CompleteRequest or complete the toolkit
+replacement. The stack codec now preserves20 opaque bytes instead of inventing
+length/key/offset/device fields; no guest DeviceObject tag is written. Detailed
+per-operation Xbox parameter packing remains unverified. Public declarations and
+the maintained service boundaries are documented in driver-call.md.
+
+Corrected opaque-payload candidate19cases passed12.75s, including nested pending,
+native unwind, invalidation/private rollback and real Windows metadata unmap.
+Initial maintained opaque codec/request/lifetime44cases passed17.63s. New-stage maintained85passed36.19s; four affected historical/fresh upgrade and
+context/backlog25passed153.18s; callback/packet ABI/path/symbol15passed6.93s.
+Release/built-in checks and matching crash symbols passed. Archive audit selects
+15 device/sharing/lifetime/driver providers once and contains call/target/peek
+symbols; kernel_ob/nine retired exports remain absent. All22 generated files are
+unchanged with a current fingerprint. Actual build was dirty6cca3879 with exact
+source/patch inputs recorded; executableSHA256
+181e2ded43d5e217fb15ad64224957a79ee901aae0b71cd3e89598bcd02f3ef9.
+
+Fresh isolated Story regression passed: scene4/mission1, forward11.174549 and
+back6.391054, ammo8to6,40 frozen pause/60 advancing resume samples; final checkpoint
+95.432s within240s cap. Three fresh captures reviewed; runner/controller exited0,
+profile signatures valid, fixture preserved, no dumps/locks/partition images left.
+Source/archive/executable/generated/game hashes agree; all26 protected files
+retain original hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44,
+minimized synthetic-input Classic/movie-skipped run. Not physical input,
+listening, campaign completion or native Mac title verification. New-stage CI
+pending. No old IofCallDriver/CompleteRequest bridge retirement is claimed.
+
+
+Stage0222 evidence correction, after source30c0ef32: the supported-US import
+audit confirms15 I/O imports including62/65/67/69/71/74/76/81/83/84/85/86/87/91/359.
+These driver/synchronous services cannot be classified as unimported merely
+because a bounded boot passes. Call sites62/86 are4367CC/4367E8; StartPacket83
+is46E5B1. Title46F080 reads IRP.CurrentStackLocation+5c and46F0AA writes device
+to slot+14hex. Title46EEE1 reads transfer length+4, buffer word+8, byte offset
+low/high+c/+10hex, with flags bit80 choosing direct versus UserBuffer-relative
+buffer interpretation. The public slot declaration was incomplete; calling+20
+invented was too strong. The generic opaque codec is still appropriate and the
+composer's preservation contract is explicit, but Xbox IofCallDriver assignment
+semantics and complete request routing remain unverified. No executable/source
+change accompanies this evidence correction, and no private title code is shipped.
+
+
+Stage0222 first-head CI30c0ef32: launcher40928510742 completed successfully.
+Runtime40928510622 Windows native and both patch-upgrade jobs passed; Mac native
+reported1941passed296skipped18subtests and2 failed compiled fault controls.
+The target pointer-check mutant dropped the only use of expected; the rollback
+mutant dropped the only use of static put. Clang/Werror therefore rejected those
+mutants before runtime. Provider baselines passed. Tests now retain meaningful
+uses while weakening the expected-pointer check, and split rollback into wrong
+location/wrong pointer controls, preserving compilation and runtime rejection.
+No warnings, provider code, patch bytes, installed executable or acceptance
+assertions are relaxed. Exact new-head both-host CI remains required.
+
+Local repair acceptance: all13 target/call cases passed8.30s. The first additional
+wrong-pointer control also exposed unused current under MSVC/WX; using
+current-minus-one-slot retains that parameter while still introducing the wrong
+restored pointer. Both wrong-pointer and wrong-location controls compile and
+are rejected at runtime. Product source/executable remains the tested181e2ded
+build. New-head Mac/Windows CI remains pending; no retry is counted as a pass.
+
+
+## 2026-10-29 - Stage0223 request construction and completion components
+
+Starting9e3e659b on feature/guest-share-access; initial tree clean, fetched main
+unchanged3b4e679b, protected26 files unchanged. Prior repaired runtime40930532886
+passed all native/upgrade/final gates. Standalone launcher40930532872 initially
+hit its5-minute final artifact-verification limit after both builds passed;
+retrying that job and its dependent gate succeeded without workflow/source changes.
+This is evidence for9e3e659b, not the new stage.
+
+Original transfer/build/completion providers and pool private preparation now
+live in maintained shared source through0223. Kernel imports still use existing
+bridges; no full I/O/toolkit replacement claim. Thread+50 follows the public
+five-word DriverContext layout, consistent with title queue links+54. No private
+title bytes or foreign implementation bodies are shipped.
+
+Candidates: transfer10pass, literal constructor7pass4.11s after strengthening
+its high-device-byte oracle, private construction4pass3.20s, completion10pass7.25s,
+Windows end-to-end real event/metadata unmap1pass2.47s; title field evidence12pass.
+Maintained native/title141passed53.81s. Affected historical/fresh upgrades,
+context/backlog and17 fixture rechecks passed42tests205.49s; those17 rechecks
+overlap the native run. Host-structure byte-preservation oracles copy their full
+representation with memcpy rather than depending on padding in struct assignment.
+Release/built-in checks and matching crash symbols passed. Archive audit selects
+18 device/I/O component providers once and all request pool/owner/registry/stack
+providers once, including new transfer/build/result/completion/construct symbols.
+kernel_ob and nine retired exports remain absent; no additional legacy import
+retirement is claimed. All22 generated files are unchanged/current fingerprint.
+Actual build: dirty9e3e659b with exact recorded source/patch inputs; executable
+SHA2561fbdae4d830ad7480a76185b61df7c3e2faaa506ff46417035dd9492400b7918.
+
+Fresh isolated Story regression passed: scene4/mission1, forward11.174544 and
+back6.193569, ammo8to6,40 frozen pause/60 advancing resume samples, last checkpoint
+92.257s within240s cap. Three fresh captures reviewed; runner/controller exited0,
+profile signatures valid, fixture preserved, no dumps/locks/partition images left.
+Source/archive/executable/generated/game hashes agree; all26 protected files retain
+original hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44, minimized
+synthetic-input Classic/movie-skipped test. No physical-input/listening/campaign
+or native Mac title claim. New-stage CI pending; kernel import routing, queues,
+caller-owned packets and full backend delivery remain unfinished. See
+transfer-completion.md and MAC-118 for scope.
+
+
+## 2026-10-29 - Stage0224 original host-owned request FIFO
+
+Verified prior5cc89668 CI: runtime40936467095 and launcher40936466889 both
+completed/success, including both native hosts, upgrades and final launcher gates.
+Fetched and safely merged main863c2b61 into feature/guest-share-access as611684b2;
+no resets, lost changes or main merge. PR406 remains draft/open/unmerged.
+
+Original guest_io_queue.c/.h adds bounded FIFO host ownership through0224 after
+0223. Each waiting/current entry owns a client ref; next compares current identity
+and returns a separate client ref. Stop closes admission/drains waiting refs
+outside locks, retaining current until explicit next and retaining pending/unknown
+operations independently. No guest list pointers confer authority. The library
+selects this component; existing kernel StartPacket/StartNext/StartIo routing,
+device/wire mirrors, keyed order and cancellation/backend integration remain.
+This does not retire another imported kernel implementation or finish the goal.
+
+Eight baseline/fault cases passed3.95s, including eight concurrent host producers,
+FIFO wrap, duplicate/identity guards, retain overflow, reentrant disposal and an
+independent callback pin surviving inline completion and queue advance. Initial
+fault controls exposed weak oracles masked by a full queue/READY owner and a
+zero wrapped index; new cases exercise those independently. The identity control
+keeps its parameter used; every bad variant must compile before runtime rejection.
+Affected native/title/timing suites passed233tests164.85s. Four fresh/historical
+upgrade models plus repository context/backlog passed25tests144.31s. Eight queue
+cases are included in233, not additional unique tests. Release/built-in checks
+and matching crash symbols passed. Archive selects19 device/I/O providers once,
+including four queue API symbols; kernel_ob and nine retired native exports remain
+absent. All22 generated files unchanged; generation fingerprint current.
+
+Build provenance: dirty611684b2934a39042debbd6ec5ed347cbe17cab5 plus exact recorded
+source/patch hashes in ignored logs/io-queue-build.json. Executable SHA256
+9778bc9657f6cea641c2e00ebd001cbc8f46743fb4cf8ccffcc1ec27064cba9e.
+Supported US XBE hash validated. Isolated Classic Story replay: scene4/mission1,
+forward11.176244/back6.391055, ammo8to6,40 frozen pause and60 advancing resume
+samples, final95.824s within240s cap. Fresh start/fire/pause captures reviewed;
+runner/controller exited0; profiles unchanged/signatures valid/fixture preserved,
+no dumps/runlock/partition images. Source/archive/executable/generated/game hashes
+agree. All26 protected settings/save/fixture files retain hash/size/mtime across
+both local checkouts. Windows NT10.0.26300 x64, VS2022/MSVC14.44; synthetic input,
+minimized movie-skipped test, not physical input/listening/full campaign acceptance.
+New-source CI and native Mac title gameplay remain pending; prior-head CI is not
+new-head evidence. See transfer-completion.md and MAC-118.
+
+
+## 2026-10-29 - Stage0225 original StartIo callback composer
+
+Started clean e467b0510ee66e3db3e1dda3fd00bf7f8e795b67 on
+feature/guest-share-access; fetched main unchanged863c2b61. Previous turn was
+progress (committed/pushed0224 plus local acceptance), not whole-goal completion.
+Prior e467 CI launcher40938793360 and runtime40938793349 both completed/success,
+including Windows/Mac native suites, both upgrades and final launcher artifact
+checks. The still-live Windows job was allowed to finish before the next push;
+no cancelled/retried job is counted as this pass. Original0225 source is committed
+asfd793423 (PR406); new-source CI remains a separate pending check.
+
+Original guest_io_startio.c/.h selects DriverStartIo at driver+0, validates a
+pinned device/full driver table and invokes only an allowlisted translated/manual
+entry as void stdcall(Device,Request). It consumes one caller-held client ref and
+adds an independent forward callback pin to an existing ACTIVE/PENDING operation;
+no request stack advance or packet payload write. Pre-entry rejection rolls back
+only the callback pin, including concurrent completion. Malformed/native exits
+retain ownership and unwind nested scopes. Existing kernel queue imports are
+still legacy: CurrentIrp/Busy/list/device lifetime/cancel/key/backend adapters and
+actual kernel routing remain necessary. Library components are not proof of full
+I/O or toolkit independence.
+
+Portable fixture covers17 scenarios including active/pending/READY/completed,
+null ops/device and preflight rejection, completion during admission, changed
+stack before publication, inline-complete/next, malformed return, child scopes and
+actual native longjmp. Six compiled bad variants fail at runtime. A separate
+Windows fixture composes driver -> StartIo -> inline completion, then actually
+VirtualFree's request/binding metadata before outer return; VirtualQuery proves
+both unmapped. Eight StartIo cases passed7.55s before expanded preflight checks;
+final affected native/device/title suite189passed93.03s, including all8 cases.
+Four fresh/historical upgrades and context/backlog passed25tests146.34s (distinct
+from189). Windows VS2022/MSVC14.44 retains fatal warnings; no local Clang claim.
+Release/built-in checks and matching crash symbols passed. Archive audit selects
+20 device/I/O providers once, including tsfp_io_startio; kernel_ob and nine
+previously retired exports absent. All22 generated files unchanged/fingerprint
+current. No additional legacy import is claimed retired.
+
+Actual build: dirtye467b051 with recorded exact source/patch hashes in ignored
+logs/io-startio-build.json; executable SHA256
+42ed99849f87c7487b22abedc54e78cfbdff521dd2eee16e8d80c5e9485d062f.
+Supported US XBE hash validated. Isolated Classic Story regression: scene4/mission1,
+forward11.174549/back6.184891, ammo8to6,40 frozen pause/60 advancing resume samples,
+last95.335s within240s cap. Fresh start/fire/pause captures reviewed; controller
+and runner exit0, no dumps/locks/partition images. Profiles unchanged/signatures
+valid/fixture preserved. Source/archive/executable/generated/game hashes agree;
+all26 protected files across both local checkouts retain hash/size/mtime.
+Windows NT10.0.26300 x64, minimized synthetic-input/movie-skipped run, not physical
+input/listening/full campaign or native Mac title acceptance. New-source CI remains
+pending. Contracts: transfer-completion.md; Mac handoff: MAC-118.
+
+
+## 2026-10-29 - Stage0226 original queue/device mirrors and membership
+
+Started clean0368ca59eeb8b2d7b7a3d968dff10703db50fab4 on
+feature/guest-share-access; fetched main unchanged863c2b61. Prior0368 runtime
+40940409081 and launcher40940409129 both completed/success, including both native
+hosts/upgrades and final launcher gates. Prior turn was verified source progress;
+full runtime/toolkit independence remains incomplete. PR406 stays draft/unmerged.
+
+Original queue-wire provider now binds a caller-pinned device to host-authoritative
+CurrentIrp/Busy/list mirrors. Queue admission owns an exclusive waiting tag plus a
+client under owner lock; immediate submit atomically takes current and returned
+caller refs, while pending submit appends FIFO. No request can wait in two lists.
+An upper current can wait below. Taking clears Inserted before releasing the tag;
+publishers never write detached/current entry bytes. Review caught and removed an
+earlier ordering race that could clear a lower queue's Inserted after transfer.
+Only retained waiting entries/device bytes are published under queue lock, with
+no guest traversal, guest execution or additional locks. SortKey/fifth context/
+Thread/payload/unrelated device bytes are preserved. This is library integration
+and real StartIo contract acceptance; persistent per-device lease/index lifecycle,
+key/cancel policy, kernel StartPacket/Next routing and the full backend remain.
+No additional legacy kernel implementation is claimed retired.
+
+New mirror suite9passed4.81s, including eight compiled fault controls, literal
+unaligned links, FIFO wrap, corrupt-link resistance, membership/overflow rejection,
+opaque-byte preservation and upper-current/lower-waiting transfer without old
+publisher clobbering. Portable StartIo now binds these mirrors and checks them
+before callback and after inline completion/next across17 scenarios. Final affected
+native/request/device/title/header suite216passed102.52s; all9 mirror and8 StartIo
+cases are included, not additional unique tests. Four fresh/historical upgrades
+and context/backlog checks25passed146.07s, distinct from216. Release/built-in checks
+and matching crash symbols passed. Archive selects21 device/I/O providers once,
+including wire init, atomic submit and three membership API symbols; kernel_ob
+and nine previously retired native exports absent. All22 generated files unchanged
+and fingerprint current. Windows VS2022/MSVC14.44 fatal-warning checks retained.
+
+Actual build: dirty0368ca59 with exact source/patch inputs recorded in ignored
+logs/io-queue-wire-build.json. Executable SHA256
+c0511e031b64ccac3c43209c66e073678368b59bf92557e5720982281f8bf50a.
+Supported US XBE hash validated. Isolated Classic Story replay passed scene4/
+mission1, forward11.176239/back6.184892, ammo8to6,40 frozen pause/60 advancing resume
+samples, final95.688s within240s cap. Three fresh captures reviewed; runner and
+controller exited0, profiles unchanged/signatures valid/fixture preserved, no
+runlock/dumps/partition images. Source/archive/executable/generated/game hashes
+agree. All26 protected save/settings/fixture files across both local checkouts
+retain hash/size/mtime. Windows NT10.0.26300 x64, minimized synthetic-input,
+movie-skipped test; not physical input/listening/full campaign or native Mac
+execution evidence. New-source CI pending; see transfer-completion.md and MAC-118.
+
+
+## 2026-10-29 - Stage0227 persistent device queue lifetime
+
+Started clean42788f14c376b782379b209c3ffc0a8a92dd3b77 on
+feature/guest-share-access; fetched main unchanged863c2b61. Prior42788 runtime
+40942569236 and launcher40942569242 both completed/success, including both native
+hosts/upgrades and final launcher gates. Previous turn was committed/pushed source
+progress, not full-goal completion. PR406 remains draft/open/unmerged.
+
+Original guest_io_scheduler.c/.h adds bounded persistent records/entry storage,
+real device leases and generation-checked, noncopyable API tickets. A preparation
+reservation is not exposed as a usable queue. Device pin/final release occur
+outside metadata locks. Submit pins matching request-owned device bindings before
+admission, so drained pending operations retain independent device lifetime.
+Close/global stop commit admission closure under the shared metadata lock before
+waiter drain. Current requests/API callbacks keep the record/device alive until
+explicit next and scope drain. Failed final lease release quarantines accounting
+without retry/reuse. Scoped StartIo handles actual native unwind without retaining
+C-stack contexts in persistent records. Kernel imports remain legacy; caller-owned
+adoption, keyed/cancel policy and storage/event/APC/backend routing remain required.
+No additional legacy function or full toolkit dependency is claimed retired.
+
+Candidate9 baseline/fault tests passed10.86s. They cover real device heap ownership,
+inline deletion/completion while the outer API still pins the device, actual
+native longjmp, closed waiters retaining pending request/device references,
+lookup rejection, capacity/generation exhaustion, malformed preparation and stop
+while preparing. A controlled release failure keeps the actual lease quarantined;
+only explicit fixture recovery releases that known retained test resource. A close
+fault initially survived because drain closed admission later; an unlock-boundary
+submission probe now tests close/global-stop linearization before drain. All eight
+bad variants must compile and fail at runtime, with fatal warnings retained.
+
+Final affected native/request/device/title/header suite225passed112.58s, including
+those9 scheduler cases. Four fresh/historical upgrade models and context/backlog
+checks25passed149.11s, distinct from225. Release/built-in checks and matching crash
+symbols passed. Archive selects22 device/I/O providers once, including11 scheduler/
+scope API symbols; kernel_ob and nine previously retired native exports absent.
+All22 generated files unchanged/current fingerprint. Context guide size enforcement
+caught systems.md crossing65536 bytes before writing; its0224-0227 links are now
+consolidated into the detailed owning guide rather than dropping contract content.
+
+Actual build: dirty42788f14 with exact source/patch inputs recorded in ignored
+logs/io-scheduler-build.json. Executable SHA256
+278d7cfe023bec821592e79a15c9fc8a3dcfcbc3c131c69161b794946f31fb3e.
+Supported US XBE hash validated. Isolated Classic Story regression: scene4/mission1,
+forward11.174539/back6.184892, ammo8to6,40 frozen pause/60 advancing resume samples,
+last95.802s within240s cap. Fresh start/fire/pause captures reviewed; runner and
+controller exit0, profiles unchanged/signatures valid/fixture preserved, no
+runlock/dumps/partition images. Source/archive/executable/generated/game hashes
+agree. All26 protected save/settings/fixture files across both checkouts retain
+hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic
+input/movie-skipped run; not physical input/listening/full campaign or native Mac
+title acceptance. New-source CI pending. Contracts: transfer-completion.md; MAC-118.
+
+
+## 2026-10-29 - Stage0228 caller-owned request adoption and CI fault repair
+
+Started clean952b7f3c47d804bc62095fee337e672ded2d16f3 on
+feature/guest-share-access; fetched main unchanged863c2b61. Previous turn was
+committed/pushed source progress, not full independence. Prior952b launcher
+40945392939 passed; runtime40945393065 failed Mac job123699436629 only on the
+scheduler missing-unlock fault: pthread blocked before its depth assertion and
+hit30s timeout.2009 passed,311 skipped,18 subtests passed; Windows native and both
+upgrade hosts passed. The fixture now uses thread-local depth and checks before
+acquiring either mutex. Local scheduler9cases passed10.81s. No fatal-warning or
+timeout relaxation, cancelled-job pass or old-head rerun; new Mac CI remains needed.
+
+Original request_validate/owner_adopt/pool_adopt now register initialized caller
+storage read-only with fresh READY host control. Metadata preparation precedes
+publication; disposal/rollback drops metadata/attachments without freeing caller
+storage. An all-node range ledger blocks overlap with registered, detached pending
+and failed-cleanup packets before candidate reads. Owned allocations share the
+ledger. The original four-worker Windows test caught an allocator handoff race:
+actual freed guest storage could be reused before old metadata unlink, causing
+spurious allocation failure. New allocator-owned claims may cross that owned
+cleanup window, relying on unique allocator authority; borrowed claims still wait.
+A deterministic callback handoff regression covers both sides. Known retry and
+uncertain no-retry accounting remain. Caller mappings stay stable until callbacks
+and refs drain; this API is not a guest-memory pin. Existing providers already
+compile these changes, so no new patch/CMake entry or patch-index change is needed.
+Existing IoInitialize/CallDriver/Complete kernel routes remain unchanged until
+full bridge/backend integration. No extra legacy implementation is claimed retired.
+
+Candidate adoption9cases plus native four-worker1004-allocation test passed10cases
+5.71s. Adoption covers all128 stack counts/8256 locations, unaligned packet/output/
+control preservation, invalid shapes, advanced guest state without inferred host
+operation, metadata-only cleanup, duplicate/overlap-before-read, detached pending
+ownership, private prepare/stop rollback and retained owned cleanup. Seven bad
+variants compile before runtime rejection. The real Windows pipeline adopts
+caller-built bytes, runs nested translated drivers, publishes IOSB before a real
+event, retires registry and unmaps both metadata pages while caller heap/data
+remain intact until explicit caller free.
+
+Final native/request/device/title/header suite235passed115.79s, including adoption,
+native concurrency and repaired scheduler cases. Four fresh/historical upgrade
+models and context/backlog25passed145.03s, distinct from235. Release/built-in checks
+and matching crash symbols passed. Same22 device/I/O providers selected once,
+including three new adoption/validation symbols; kernel_ob and nine previously
+retired exports absent. All22 generated files unchanged/current fingerprint.
+Actual build: dirty952b7f3c with exact source/patch inputs recorded in ignored
+logs/io-adoption-build.json. Executable SHA256
+f596fd90e95ab270df704846bc0fe7d4d5b6a0a7fc5b31bcf4a73a261b56788b.
+
+Supported US XBE hash validated. Isolated Classic Story: scene4/mission1,
+forward11.174544/back6.184892, ammo8to6,40 frozen pause/60 advancing resume samples,
+last95.641s within240s cap. Fresh start/fire/pause captures reviewed; runner and
+controller exit0, profiles unchanged/signatures valid/fixture preserved, no
+runlock/dumps/partition images. Source/archive/executable/generated/game hashes
+agree; all26 protected save/settings/fixture files across both checkouts retain
+hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic
+input/movie-skipped run; not physical input/listening/full campaign or native Mac
+title evidence. New-source CI pending. Contracts: transfer-completion.md; MAC-118.
+
+
+## 2026-10-29 - Stage0229 original guest events and initializer bridge
+
+Started cleanec2e4b25290cfcbb497642805a95607bdd6b2616 on
+feature/guest-share-access; fetched main unchanged863c2b61. Previous turn was
+committed/pushed progress, not full independence. Prior ec2 launcher40948607657
+passed; runtime40948607708 failed Mac job123710580173 only on adoption mutant3:
+Clang rejected unparenthesized && inside || under Wlogical-op-parentheses/Werror.
+2017 passed,312 skipped,18 subtests passed283.45s. Scheduler pthread fault repair
+passed that run. Parenthesizing the mutant fixes its syntax without relaxing
+warnings/timeouts or treating an old-head retry as new-source evidence.
+
+Original guest_event.c/.h now serializes16-byte events and supplies shared atomic
+state/set/reset/try-wait primitives. Notification remains signalled; synchronization
+has one consumer. Malformed state is preserved on rejection. Device embedded-event
+pins reuse these methods rather than duplicate signal operations. Original
+KeInitializeEvent bridge code validates full mapping/type/range, snapshots BOOLEAN
+byte input, constructs header before host allocation/guest mutation and replaces
+the legacy bridge body through0229. Size is4 words and links point to the empty
+head; old code used Size16/zero links. Pinned public header/event-size interface
+references are linked in transfer-completion.md; no external algorithm is copied.
+The existing shadow registry consumes the host handle and remains transitional,
+as do wait/pulse scheduling, target pinning/thread/APC delivery and I/O routes.
+This retires the initializer bridge body, not the entire event/I/O manager or a
+new native export. Full toolkit replacement remains unfinished; PR406 stays draft.
+
+Candidate event10cases passed4.17s, including six codec/atomic and two bridge faults
+that compile before runtime rejection. Literal bytes/range/unaligned validation,
+BOOLEAN width, invalid state preservation and eight native waiters cover one auto
+consumer and all notification waiters observing prior IOSB writes. Existing device/
+finalization/Windows-host/adoption67cases passed41.25s (overlap final suite). The
+adopted Windows completion pipeline now validates/signals actual guest event state
+before the real host event, preserving IOSB order and metadata-only caller storage
+cleanup. Complete native/request/device/event/title/header suite258passed132.71s;
+four fresh/historical upgrade models plus context/backlog25passed148.36s, distinct
+from258. Upgrades assert one original initializer include and no old bridge body.
+
+Release/built-ins/matching crash symbols passed. Archive selects23 device/I/O/event
+providers once, including six event API symbols; kernel_ob and nine previously
+retired exports absent. Original initializer include is selected once. All22
+generated files unchanged/current fingerprint. Actual build: dirtyec2e4b25 with
+exact source/patch inputs recorded in ignored logs/guest-event-build.json.
+Executable SHA256
+e861853ace2f4c53f2cd6daed81cb23501ba805ceb69ad6e491a04fe3dfa3a8d.
+Supported US XBE hash validated. Isolated Classic Story: scene4/mission1,
+forward11.176244/back6.184892, ammo8to6,40 frozen pause/60 advancing resume samples,
+last95.581s within240s cap. Fresh start/fire/pause captures reviewed; runner and
+controller exit0, profiles unchanged/signatures valid/fixture preserved, no
+runlock/dumps/partition images. Source/archive/executable/generated/game hashes
+agree;26 protected save/settings/fixture files across both checkouts retain
+hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic
+input/movie-skipped run; not physical input/listening/full campaign or native Mac
+title acceptance. New-source CI pending. Contracts: transfer-completion.md; MAC-118.
+
+
+### Stage0231 - owned completion target spans (2026-10-29)
+
+PR#406, feature/guest-share-access. Prior source5bfbf759 CI passed: runtime
+40952692096 and launcher40952692018. Fetched main92dcca30 and safely merged as
+f07e5feb; preserved ongoing work and the new Windows DPI manifest. Current stage
+is built from dirtyf07e5feb, with exact source/patch inputs recorded in ignored
+logs/io-targets-build.json. No merge into main or publication performed.
+
+Original guest_io_targets.c/.h captures object refs before pending delivery,
+validates generation/kind/base/exact writable IOSB/event spans and overlap, keeps
+persistent delivery leases, and publishes the event before actual wake. PRIVATE
+rollback, acknowledged DONE and failed/native-unwind quarantine are explicit.
+This is a backend prerequisite: legacy I/O completion routes, actual arbitrary
+thread-stack pins, APC/file/locked-buffer/key/cancel/storage/no-event polling
+policy and aggregate registry retirement still need integration. It does not
+establish full ts3FPrecomp replacement or arbitrary guest-address ownership.
+
+Nine target contract cases passed6.88s, including eight compiled bad variants
+rejected at runtime. Baseline uses actual object ownership and allocation disposal,
+VirtualAlloc/Free/native Windows manual and auto events, original-handle closure
+before delivery, full-span/generation/kind/base/alias rejection, private rollback,
+real completion-coordinator IOSB-before-event delivery, reentrancy and actual
+native C-stack abandonment with persistent quarantine. Controlled lease failure
+attempts both independent releases, retaining failed pins with no automatic retry.
+Fixture-only recovery is explicitly distinguished from production cleanup.
+Selected target/event/request/completion/adoption/scheduler/queue/device/title and
+merged DPI checks:254passed128.94s (includes the9 target cases). Context regression
+initially caught its stale32-patch expected tail; corrected exact33-patch loader
+assertion then20passed7.87s. Four fresh/historical upgrades passed151.14s; final
+provider-selection assertions and backlog integrity are checked separately below.
+
+Release, built-in host checks and matching crash symbols passed. Kernel archive
+selects24 device/I/O/event providers exactly once, including all6 target APIs;
+old kernel_ob and nine previously retired native exports remain absent. All22
+generated guest files unchanged; fingerprint current. Supported US XBE SHA256
+validated. Executable SHA256:
+d4d01c74f69e957729a43f532c9dbe6f5663b7e62338199cff53df98b031bd75.
+
+Isolated bounded Story run reached scene4/mission1; forward11.196721/back6.184893,
+ammo8to6,40 frozen pause and60 advancing resume samples, last checkpoint95.566s
+within240s cap. Runner/controller exit0; fresh start/fire/paused captures reviewed.
+Profiles unchanged, signatures valid, canonical fixture preserved; no runlock,
+dumps or partition images. Source/archive/executable/generated/game hashes agree.
+All26 protected save/settings/fixture files across both checkouts retain hash,
+size and modification time. Windows NT10.0.26300 x64, VS2022/MSVC14.44,
+minimized synthetic input/movie-skipped run; not physical input, listening,
+full-campaign or native Mac title acceptance. New-source CI pending. MAC-118
+remains Awaiting validation; contracts: transfer-completion.md.
+
+Stage0231 final acceptance: unique patch0231 avoids existing controls slot0230.
+Full rebuild/built-ins/crash symbols passed after rename; the relink changed the
+executable hash, so the bounded isolated gameplay run above was repeated against
+that final binary. Final numbered-stack fresh/historical upgrades, context and
+backlog25passed155.43s (includes20context and1backlog; not additional to those
+counts). Original provider source and generated guest code remain unchanged.
+
+
+### Stage0232 - original symbolic-link namespace (2026-10-29)
+
+PR#406, feature/guest-share-access, built from dirty42a806d6; exact original-source,
+patch, archive and executable inputs recorded in ignored logs/symlinks-build.json.
+Prior42a806d6 runtime40957016619 and launcher40957016595 CI both passed. Stage0232
+replaces the legacy symbolic-link table/native create/delete/borrowed lookup and
+both guest bridge implementations with original shared providers. Kernel path
+translation uses a private copied snapshot from the same32-binding namespace.
+No merge into main/publication performed; full upstream replacement is incomplete.
+
+Full16-bit counted names/targets are copied without the old63/127-byte truncation.
+Lookup bytes survive concurrent delete/rebind. Namespace publication/removal/stop
+serialize under one lock, allocator/disposal callbacks run outside it, and failed
+lookups preserve caller output/length. Guest adapters validate full8-byte headers,
+nonwrapping complete readable spans and Length<=MaximumLength. Exact-case matching
+and the old count limit remain; path translation retains conservative static-rule
+fallback and rejects NUL/overlong targets instead of truncating. Empty/unreadable
+targets now reject as invalid. No full NT directory/case-table, symlink recursion,
+VFS replacement or completion-backend functionality is claimed.
+
+New contract suite11passed5.76s, including six core and three guest-adapter bad
+variants that compile then fail at runtime. Fault controls retain variable uses
+and parentheses for fatal MSVC/Clang warnings. Contracts cover160/65535-byte
+payloads, distinct long suffixes, opaque bytes, snapshot preservation, duplicate/
+capacity/allocation failures, reentrant disposal, stop during allocation and1000
+iterations on four native workers. Actual mapped guest descriptors drive the
+original kernel namespace in adapter cases. Combined namespace/object/device/
+event/target regressions166passed75.60s (includes the11 new cases). Fresh and
+historical upgrades plus exact34-patch loader order/context/backlog25passed162.17s.
+
+Release, built-in host checks and matching crash symbols passed. Built-in save
+paths now create/remove an actual namespace drive link and resolve lowercase and
+object-prefix drive paths into an isolated save root through the real kernel
+translator. Archive selects26 device/I/O/event/namespace providers once, including
+eight namespace APIs; kernel_ob and twelve previously retired/native symbolic-link
+exports absent. All22 generated guest files unchanged; fingerprint current.
+Supported US XBE SHA256 verified. Final executable SHA256:
+42aa8f032d47c8737d96db4de7f887c318dd8e618f23cbcaf29e56b4fc81ce01.
+
+Bounded isolated Story reached scene4/mission1; forward11.195015/back6.184889,
+ammo8to6,40 frozen pause and60 advancing resume samples, last95.812s within240s
+cap. Runner/controller exit0. Fresh start/fire/paused captures reviewed; profiles
+unchanged/signatures valid/fixture preserved, no runlock/dumps/partition images.
+Source/archive/executable/generated/game hashes agree. All26 protected settings,
+saves and fixtures across both checkouts retain hash/size/mtime. Windows
+NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic input/movie-skipped run;
+not physical input, listening, full campaign or native Mac title acceptance.
+New-stage CI pending; MAC-118 remains Awaiting validation. Contract: symbolic-links.md.
+
+
+### Stage0233 - original shared console path routing (2026-10-29)
+
+PR#406, feature/guest-share-access, built from dirtyd7aa357e. Prior source
+runtime40958769361 and launcher40958769486 both passed CI. Exact source/patch/
+archive/executable inputs recorded in ignored logs/paths-build.json; no merge into
+main or publication. Goal remains incomplete, including host storage initialization,
+remaining I/O completion/backend/routing and other legacy runtime systems.
+
+Original guest_paths.c/.h and guest_kernel_paths.inc replace the legacy routing
+table, prefix/cache/link helpers, raw-device path helpers and both Windows/POSIX
+translate bodies. Both use one counted planner for game/save/profile/title/cache/
+raw images and one bounded copied-link expansion. Supported Partition0-5 geometry,
+profile-only UDATA override, title-separated cache, DVD and ordinary game paths
+remain explicit. Unsupported paths retain separator-normalized passthrough.
+Windows retains ACP guest/strict UTF8 profile conversion and adds bounded UTF16
+joins/TLS latest-success snapshots; POSIX uses bounded byte joins. Host init,
+profile validation/locks and image creation remain transitional, not newly claimed
+independent code. Dot/traversal containment and full NT link/directory semantics
+are not supplied; drive-link expansion is deliberately bounded to one hop.
+
+Ten contracts passed3.66s, including seven compiled bad planners failing at
+runtime, Windows conversion/TLS and POSIX adapter fixtures. Covered literal route
+matrix, mixed separators/component boundaries, uppercase/title0 cache ids, root
+joins, relative/empty paths, copied link overrides/malformed targets and unchanged
+outputs. Fixture copies use explicit lengths; fatal MSVC/Clang warnings stay on.
+The POSIX adapter fixture compiled on Windows is policy evidence, not native Mac
+filesystem acceptance. Selected path/namespace/object/device/event/target suite
+176passed71.48s (includes10 new cases). Four fresh/historical upgrade models plus
+context35-patch tail/backlog checks25passed120.97s. Actual Windows save_paths adds
+bareDVD/Partition2 children and short-output preservation. Native paths adds the
+same plus an actual drive-link route; existing image table/sparse size/preservation
+checks remain. Native execution/new-stage CI pending.
+
+Release, built-in checks (including real selected-profile/link path translation)
+and matching crash symbols passed. Archive selects27 original device/I/O/event/
+namespace/path providers once, including both path APIs and existing host path
+interfaces. Old routing table/translate bodies are absent from patched kernel_path;
+one original adapter include is selected. Kernel_ob/twelve prior retired exports
+remain absent. All22 generated guest files unchanged; fingerprint current.
+Supported US XBE SHA256 verified. Final executable SHA256:
+3627fc785eee9fc83cb95ebbd01947084cbfe0c181a117d6c5ffbc221bf7dabb.
+
+Isolated bounded Story reached scene4/mission1; forward11.176244/back6.184892,
+ammo8to6,40 frozen pause and60 advancing resume samples, last93.204s within240s
+cap. Runner/controller exit0; fresh start/fire/paused captures reviewed. Profiles
+unchanged/signatures valid/canonical fixture preserved, no lock/dumps/partition
+images. Source/archive/executable/generated/game hashes agree. All26 protected
+settings/save/fixture files across both checkouts retain hash/size/mtime. Windows
+NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic input/movie-skipped run;
+not physical input/listening/full campaign or native Mac title acceptance. MAC-118
+remains Awaiting validation; contracts: guest-paths.md. New-stage CI pending.
+
+
+### Stage0234 implementation checkpoint (2026-10-29)
+
+Original shared storage/native path host provider excludes legacy kernel_path.c.
+Windows direct storage10cases4.93s and path10cases3.75s passed, including actual
+sparse files and existing bytes/size/mtime preservation; first Release/built-ins/
+crash symbols passed. Work checkpoint precedes latest main8b4db323 integration;
+final merged-source regression and Story acceptance are still pending. CI for
+87295396 currently has no checks/statuses (PR diagnostic confirms that head),
+so it is unverified rather than passed. MAC-118 remains Awaiting validation.
+
+
+### Stage0234 merged-source Windows acceptance (2026-10-29)
+
+Storage implementation0413dce1 and latest main8b4db323 (vehicle controls/README)
+were safely integrated as026989422f78c658181d5a5d3dce6ea850a74f2e; documentation
+conflicts preserved both changes, with the systems guide index condensed under its
+byte budget. Build used clean02698942. Exact tracked source/patch/archive/exe
+inputs are in ignored logs/storage-build.json. No merge into main/publication.
+
+Original shared guest_storage and native guest_kernel_storage replace the compiled
+legacy path module, including initialization/profile/root metadata and new-image
+creation. Root selection/state snapshots are atomic; metadata locks span no OS
+calls, initialization has a separate native mutex, and failed setup retains the
+previous roots. Existing images are never opened for write/resize/repair; only
+exclusive NEW tokens receive sparse sizing/table bytes. Cleanup touches only new
+owned files; native uncertainty retains token accounting without automatic retry.
+Compatibility image sizes/explicit little-endian PARTINFO encoding are shared,
+not a claim of full physical-disk emulation. This retires kernel_path compilation,
+not kernel.h, the rest of VFS/I/O or all upstream runtime/tooling.
+
+Direct new storage10cases passed4.93s; previous path10cases passed3.75s. Eight
+compiled bad storage variants fail at runtime. Covered root priorities/bounds,
+pre-init profiles, failed snapshots/commits, literal unaligned disk bytes, image
+EXISTS bypass and resize/write/close uncertainty, plus1000 native-thread commits/
+snapshots. The native adapter fixture uses real Windows exclusive files, asserts
+all six image sizes and sub1MiB physical allocation, then modifies existing table
+bytes/Partition1 size/data and proves byte/size/mtime preservation on reinit. It
+checks profile switching, environment priority, invalid-directory rollback and
+short metadata outputs; only known terminal fixture images are recycled. All
+roots are disposable and explicit; no personal/default root is initialized.
+
+Merged shared storage/path/namespace/object/device/event/target and mounted-mouse
+checks201passed84.84s. Original vehicle-camera cases4passed9.21s,15 deselected;
+zero and nonzero driver pitch ABI paths checked. Fresh/historical upgrade/context/
+backlog25passed283.51s while full regeneration compiled. These are230 distinct
+selected checks; direct10/10 cases above overlap the201. No warnings disabled.
+Native Mac execution/new-stage CI still pending.
+
+Merged Release/built-ins/real save-path fixtures and matching crash symbols passed.
+Archive/project both exclude kernel_path and select29 original device/I/O/event/
+namespace/path/storage providers once, including storage/path APIs and retained
+public host ABI. Legacy kernel_ob and twelve earlier retired native exports remain
+absent. Main's tank wrapper required two regenerated files: recomp_0004.c differs
+only by sub_001730E0->_gen naming; recomp_funcs.h additionally declares the manual
+wrapper. Removing that one declaration and normalizing the suffix restores exact
+pre-main hashes; the other20 generated files are unchanged. Fingerprint current.
+Supported US XBE hash verified. Final executable SHA256:
+92f5f81828e93532849406562ee1a93adf2236cf14bbcc7bb3e10b504a5c6f78.
+
+Bounded isolated Story: scene4/mission1, forward11.195015/back6.184889,
+ammo8to6,40 frozen pause and60 advancing resume samples, last98.949s within240s
+cap. Runner/controller exit0; fresh start/fire/paused captures reviewed. Profiles
+unchanged/signatures valid/canonical fixture preserved; no lock/dumps/partition
+images. Source/archive/executable/generated/game hashes agree. All26 protected
+settings/save/fixture files across both checkouts retain hash/size/mtime. Windows
+NT10.0.26300 x64, VS2022/MSVC14.44; minimized synthetic input/movie-skipped run,
+not physical input/listening/full campaign/live vehicle mission or native Mac
+title acceptance. CI for87295396 has no checks/statuses per live PR head diagnostics;
+it remains unverified. New-source CI pending. MAC-118 remains Awaiting validation;
+contracts: host-storage.md. Overall replacement goal remains active/incomplete.
+
+
+### Stage0235 pool replacement / Mac storage repair checkpoint (2026-10-30)
+
+Based on855b0a0f, PR#406. Original guest_kernel_pool.inc replaces all four pool
+bridge bodies with existing guest allocation ownership. kernel_pool and its four
+native host-heap declarations/exports are excluded. Ordinals14/15/17/23 retain
+4/8/4/4 bytes. Tags remain data, alignment/minimum/zeroing/query/exact-base lifetime
+policy remains the shared provider's compatibility contract. No new allocator.
+Caller audit covers runtime/title/generated/project C/includes: only the excluded
+pool module and excluded legacy kernel_thunks resolver retain native references.
+
+Windows pool/allocation/VM/storage/path/memory-service suite67passed35.56s,
+including7 new ABI/fault cases and selected-source audit. Six compiled bad adapters
+fail at runtime. Repaired native storage suite10passed29.81s (overlaps67; separate
+rerun after platform-header fix). Fresh/historical upgrades/context/backlog25passed
+217.68s. Final Release/built-ins/crash symbols passed; archive excludes kernel_pool,
+kernel_path and kernel_thunks, sixteen retired native exports absent,29 original
+I/O/storage providers selected once. All22 generated files unchanged relative to
+stage0234; fingerprint current. Supported US XBE hash verified. Exact source inputs
+in ignored logs/pool-build.json. Executable SHA256:
+75207d60d6286f969b2937d7c95200099604f074a700a8c9fd94c0b9c6cf9f5d.
+
+Old855b0a0f runtime40987772559 failed only Mac native storage compilation:
+2066passed316skipped18subtests before the failed case. Strict POSIX headers hid
+O_NOFOLLOW and st_mtimespec; the adapter and fixture now request Darwin interfaces
+before headers. No no-follow, nanosecond, fatal-warning or timeout check is removed.
+Old-head Windows native/both upgrade hosts/both launchers passed. This source fix
+still needs fresh Mac CI; old-head failure is not reported as passing.
+
+The gameplay runner refused to launch because a separate game (PID8896) was active
+from Desktop/TS Decompile/build/mac-alpha1-source. It was not stopped/interfered
+with. The controller then exited before submitting commands because no fresh test
+session existed. No new-binary gameplay claim: acceptance remains pending until
+that other session closes. All26 protected settings/saves/fixtures retain hashes,
+sizes and mtimes. Previous stage0234 Story evidence remains labeled to its own
+binary. User was asked whether to keep the separate session running. Overall goal
+and MAC-118 remain incomplete/Awaiting validation; contracts: kernel-pool.md and
+host-storage.md. Windows NT10.0.26300 x64/MSVC14.44; no native Mac title claim.
+
+
+### Stage0235 completed pool acceptance (2026-10-30 UTC)
+
+Codeb47b9d9e runtime40989944205 and launcher40989944053 both passed, including
+Windows/Mac native suites, both historical-upgrade hosts, Mac native storage case
+and common RHI/GPU validation. This verifies the Darwin interface visibility repair
+that failed on855b0a0f; no no-follow, nanosecond, warning or timeout checks were
+weakened. CI uses its public/disposable fixtures, not native Mac title acceptance.
+
+The separate8896 game exited without intervention from this chat. Only after the
+process was absent did the isolated runner start the rebuilt pool binary. Fresh
+bounded Story reached scene4/mission1; forward11.174544/back6.184892,ammo8to6,
+40 frozen pause/60 advancing resume samples,last95.725s within240s cap. Runner
+and controller exited0. Start/fire/pause captures were fresh and reviewed. Profile
+signatures valid/fixture preserved, no remaining runlock/dumps/partition images.
+All26 protected settings/save/fixture files across both checkouts retain hash,
+size and mtime. The earlier owner question is resolved by the observed process
+exit; no other game was stopped and no concurrent-session guard was bypassed.
+
+The tested executable remains the exact build recorded in logs/pool-build.json
+(dirty855b0a0f inputs, now identical to committedb47b9d9e source/patch bytes):
+75207d60d6286f969b2937d7c95200099604f074a700a8c9fd94c0b9c6cf9f5d.
+Source/archive/executable/generated/game hashes agree; all22 generated files
+unchanged by pool replacement, native pool/path/thunks objects excluded, sixteen
+retired exports absent. Previous92 distinct selected local checks and Release/
+built-ins/matching crash symbols remain valid. Windows NT10.0.26300 x64/MSVC14.44,
+minimized synthetic input/movie-skipped; not physical input, listening, complete
+campaign or native Mac title gameplay. Pool phase acceptance is complete within
+that scope; remaining kernel/runtime/header/fixture/provenance replacement remains
+active and incomplete. No merge into main/publication. MAC-118 Awaiting validation.
+
+
+### Stage0236 original calendar conversion checkpoint (2026-10-30 UTC)
+
+Based onfe45b485, PR#406. That revision's runtime40991362069 and launcher40991362032
+both passed. Remote main remains8b4db323, already safely integrated. Shared original
+guest_time.c and guest_kernel_time.inc replace the304/305 calendar bridges; both
+retain eight guest argument bytes. Native RTL time bodies/prototypes and unused
+POSIX calendar shims are retired. Other kernel_rtl services remain selected.
+The two hosts now share validated Gregorian conversion from1601 rather than the
+old POSIX normalization/pre1970 restriction. See kernel-time.md for exact ranges,
+serialization, mapped-span and zero/preservation rules; clock/timer work remains.
+
+Windows selected calendar/pool/VM/Mm/storage/path suite57passed43.14s, including13
+new calendar cases. Independent Python datetime vectors cover every date in the
+400-year cycle plus3000 seeded dates, with24000 actual Windows API comparisons.
+Ten compiled broken implementations fail at runtime after compiling successfully.
+Release/built-ins/matching crash symbols passed. Native archive selects30 original
+I/O/storage/calendar providers once, eighteen retired exports absent, all22
+generated files unchanged from stage0235 and generation fingerprint current.
+Supported US XBE verified. Exact source/archive/executable inputs recorded in
+ignored logs/time-build.json (dirtyfe45b485 inputs). Executable SHA256:
+36cfac0092c26442b122eac78d9b70ead27872d4f652efe71dbea9e4efb29690.
+
+All26 protected settings/save/fixture hashes, sizes and mtimes unchanged. A separate
+game40428 exited without intervention; only after it was absent did the isolated
+bounded Story runner start. Gameplay and fresh/historical upgrade acceptance are
+still running at this checkpoint; no new gameplay or native Mac title claim yet.
+New-source CI is pending. Windows NT10.0.26300 x64/MSVC14.44. Overall replacement
+and MAC-118 remain incomplete/Awaiting validation. No main merge/publication.
+
+
+Stage0236 local Story acceptance (code4cb4697c): runner/controller both exited0.
+Fresh scene4/mission1 gameplay: forward10.720527, back6.208759, ammo8to6,
+40 frozen pause samples and60 advancing resume samples, last104.877s within240s
+cap. Start/fire/paused captures postdate provenance and were reviewed. Profile
+signatures valid, fixture preserved, no runlock/dumps/partition images. All26
+protected settings/save/fixture files retain hashes, sizes and mtimes across both
+checkouts. Source/archive/executable/generated/game hashes agree on the exact
+36cfac00 binary above; committed4cb4697c source/patch bytes match its recorded
+build inputs. Minimized synthetic input/movie-skipped Windows test; not physical
+input, listening, full campaign or native Mac title acceptance. Fresh CI runtime
+40993387115/launcher40993387207 and local upgrades still in progress at this note.
+
+
+Stage0236 CI follow-up:4cb4697c Mac native123860895230 passed2088 tests,
+316 skips/18 subtests, plus169 GPU tests,3 skips/3 subtests. Mac upgrades and both
+launcher/package builds passed. Windows upgrades123860895217 failed4 new-helper
+reads under cp1252 (55 passed); the helper omitted explicit UTF-8 for the existing
+bridge's Unicode comments. All six new checker reads now request UTF-8. No runtime
+source, build flags, warnings or game binary changed. Fresh affected-host checks
+are required; the original Windows CI failure is not described as passing.
+
+
+### Stage0236 completed calendar acceptance (2026-10-30 UTC)
+
+Code/checker revision734df44c6dc8cea508bf629a703651cf75f1c6d4 passed both workflows:
+runtime40994285965 and launcher40994285970. Both upgrade hosts, both native hosts,
+Mac/Windows GPU checks, final patch transitions, PR gate and dual-platform launcher
+packaging all succeeded. Windows native2180passed264skipped18subtests (528.83s),
+then GPU172passed3subtests (12.61s). Mac native2088passed316skipped18subtests
+(322.33s), then GPU169passed3skipped3subtests (3.61s). The old4cb Windows upgrade
+failure is repaired, not retried unchanged: all six checker reads explicitly use
+UTF-8. A local real-source cp1252 probe rejects the old helper and accepts the fix.
+
+Local original repository run:39passed/4failed due to that helper (925.19s).
+All four affected fresh/historical upgrade cases then passed194.17s; context/
+backlog21passed10.33s overlaps the original39. Together these are43 distinct
+passing repository checks across runs, plus57 selected native checks =100 distinct
+local checks. No runtime source changed for the encoding repair. Release, archive,
+generation and Windows Story evidence above therefore remain valid for the exact
+36cfac0092c26442b122eac78d9b70ead27872d4f652efe71dbea9e4efb29690 executable.
+Final protected26 and repository context checks passed; source/patch bytes match
+recorded build/game inputs. No lingering owned test processes or foreign-game
+interference. The following acceptance commit changes documentation only; any
+workflow it starts is separate from the verified734df44c workflows above.
+
+Stage0236 is accepted within this scope. Native Mac title gameplay, physical input,
+listening, full campaign, clocks/timer scheduling and remaining legacy kernel/
+runtime/header/fixture/provenance work remain unverified or unfinished. Overall
+goal stays active/incomplete and MAC-118 Awaiting validation. PR#406 remains draft;
+no main merge or publication was performed.
+
+## Native multiplayer (2026-10-30)
+
+Draft PR [#416](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/416),
+branch `feature/mac-online`, based on main `cc531ea9` and updated through
+`d73758d3`. Implementation is pushed for review, not a published release. The Windows primary audio checkout was untouched.
+The isolated Apple Silicon worktree uses the same-host runtime/game cache.
+
+- Shared native transport and Xbox address/error/memory adapters compile on
+  Windows and macOS 27.0.1 ARM64. Windows focused networking/UI tests: 38 passed,
+  1 skipped; Mac: 36 passed, 3 platform-specific skips. Added real browser
+  host/join/cancel checks: 3 passed on each host. Additional Windows package,
+  patch-ledger and CI-scope checks: 122 passed (includes those three browser cases).
+- The actual Mac game executable's `--online-self-test` passed host, join and
+  cancel through `pc_online_connect`, returned to SDL, stopped/reaped the child,
+  and left no directory lobby. These are supervisor checks, not title gameplay.
+- A native C fixture linked to the production transport exchanged a framed
+  payload from the Windows machine to the physical Mac and back over LAN.
+  Both validated the same fixture compatibility ID. This is packet interoperability,
+  not proof of complete game-build compatibility or a played match.
+- Mac game generated from the verified supported US XBE and built natively.
+  A 45-second bounded unlocked-profile boot recorded at least 2,400 guest frames
+  and 2,400 successful Vulkan presents, no native fault, no shader compile failure
+  and no Vulkan validation errors. Saves/settings were isolated and disposable
+  disks cleaned by the normal runner. Full campaign/gameplay acceptance is separate.
+- The 65 MiB relocated Online runtime passed actual Python, Tk 9.1, TLS,
+  certificate generation, CA-store and themed-window checks. Native dependencies
+  have local loader paths and ad-hoc signature verification. It uses CPython 3.12.12,
+  pinned cryptography/cffi/pycparser wheels, and original license/source metadata.
+  Build-host Tk support was added without upgrading its existing Python interpreter.
+- Remaining acceptance: complete native/native and Windows/Mac matches, bot
+  movement/combat/respawns, reconnect/rematch behavior, Internet/router forwarding,
+  and visual Dock review. A complete distributable game release was not published.
+  Source users must build matching Windows/Mac revisions and content; installed
+  older Windows releases will intentionally reject the new compatibility identity.
+
+Local evidence: `logs/mac-online-*.log`; Mac `logs/native-boot-summary.json`,
+`logs/mac-online-adapter.log`, `logs/mac-online-lan.log`, `logs/mac-online-bundle.log`.
+
+Follow-up validation: real bundled-interpreter host/join/cancel through the Mac
+game adapter passed, with no orphan lobby or process. Parent-exit detection and
+explicit runtime identity checks passed on both hosts (11 passed, 1 platform skip
+per host). Repository context/backlog checks passed (21 tests); CI scope selection
+passed (81 tests). Earlier patch/context failures identified historical fixture
+subsets and exact-order assertions that needed the new final adapter; corrected
+context and migration fixtures passed the 42-test recheck on Windows. Hosted
+Windows and Mac patch upgrades, native runtime jobs and both launcher builds
+passed at `adf9600283b205301db453c1287b5a5c3515d628`. Native suites reported
+2,188 passed / 264 skipped on Windows and 2,123 passed / 319 skipped on Mac,
+plus 18 passing subtests each. Workflow runs: runtime `41008451342`, launcher
+`41008451359`. Both complete workflows succeeded, including both patch
+transition jobs and the final PR validation gate. This acceptance update changes
+documentation only; later CI runs are separate from those verified workflows.
+
+The final source build on the physical Mac completed with its sealed build
+identity. `tools/play-native-mac.py --check` reports the native ARM64 build ready.
+The freshly built executable and matching identity also passed all three
+portable adapter checks again (`logs/mac-online-portable-final.log`): host,
+join and cancel, with no orphan lobby or process. The Mac task checkout was
+fast-forwarded through `adf96002`; subsequent test/docs edits require no game
+rebuild. Start its `Play-Native-Mac.command` for interactive testing, preserving
+personal settings/saves. This evidence does not replace the full-match checks
+listed above.
+
+
+### Stage0237 original counted strings checkpoint (2026-10-30 UTC)
+
+Based onf4297855 (runtime40995604700 and launcher40995604565 both passed).
+Original guest_strings.c/.h and guest_kernel_strings.inc select fourteen counted
+string/memory-prefix imports with unchanged8/12-byte cleanup. Six native init/
+charset/equality/pattern helpers and prototypes are retired; only inactive legacy
+thunks retain native names. Critical sections, status, formatting/exceptions and
+remaining guest charset/create/free/numeric services still need replacement.
+
+Shared byte serialization validates complete guest read/write spans, handles
+unaligned/overlapping bodies, rejects aliased descriptor/body output, preserves
+outputs on invalid mappings/capacity failures and honors whole code units. The
+Windows NT oracle verifies counted NUL comparison, bounded init capacities, Unicode
+termination/empty-append differences and prefix counts. Case mapping uses standard
+libc toupper/towupper; complete NT Unicode/OEM tables are not claimed. Contracts
+and malformed-record limits: kernel-strings.md. No new dependency/allocator.
+
+Windows selected suite65passed42.68s, including14 string cases. Final string rerun
+14passed11.24s after enum-guard refinement and explicit invalid-operation/host-alias
+checks; this overlaps65. Each canonical run executes14000 independent Python
+byte-model requests plus6000 actual ntdll oracles; six broken providers and five
+broken adapters compile then fail at runtime. Production caller/selection/ordinal
+audit passed. Release/built-ins/matching crash symbols passed. Archive selects31
+original I/O/storage/calendar/string providers once;24 retired native exports
+absent, all22 generated files unchanged from0236 and fingerprint current. US XBE
+verified. Ignored logs/strings-build.json records dirtyf4297855 source inputs.
+Executable SHA256:
+07fd92c5267a3816051815380d022eb1035a16363dff560244789a069ef03e8a.
+
+All26 protected files retained hashes, sizes and mtimes before new isolated Story
+run. Gameplay and25 fresh/historical/context/backlog checks are still running at
+this checkpoint. New-source CI is pending. Windows NT10.0.26300 x64/MSVC14.44;
+no native Mac title/physical input/listening/full-campaign claim. Overall goal and
+MAC-118 remain active/incomplete/Awaiting validation; no main merge/publication.
+
+
+Stage0237 Windows acceptance and branch transition:25 fresh/historical/context/
+backlog checks passed193.15s. Combined with65 distinct selected runtime checks,
+90 distinct local checks passed (the final14-case source rerun overlaps65).
+Runner10760 and controller73003 both exited0. Fresh scene4/mission1 Story:
+forward11.176239, back6.184892, ammo8to6,40 frozen pause/60 advancing resume samples,
+last108.969s within240s cap. Start/fire/paused captures postdate provenance and
+were reviewed. Profile signatures valid, fixture preserved, no runlock/dumps/
+partition images. All26 protected files retain hashes, sizes and mtimes. Source,
+archive, executable, generated and gameplay hashes agree on the07fd92c5 binary
+above. No foreign game was running and none was stopped by this chat.
+
+PR#406 was externally merged at2026-10-30T03:22:28Z into maincc531ea9 while this
+stage was underway. Its merged tree exactly equalsf4297855, and all prior task
+commits are in main. The newa2c132a6 string commit was preserved on the focused
+feature/guest-counted-strings branch; main was safely merged without source/tree
+changes (0ea03555). Only after confirming the new branch retains the unique
+commit was the old local feature/guest-share-access branch safely deleted.
+No remote branch deletion or merge into main was performed by this chat. Stage0237 is
+now draft PR#413; the earlier checkpoint's PR#406 reference is historical.
+
+Native runtime bytes are unchanged by branch integration and match the accepted
+build. New PR CI is pending. These results cover minimized synthetic input with
+movies skipped, not physical input/listening/full campaign or native Mac title.
+Overall kernel/runtime/header/fixture/provenance replacement remains incomplete.
+
+
+### Stage0237 completed string acceptance (2026-10-30 UTC)
+
+Revision8a846e75641f0bf9cdb93a397f267d7d38218539, draft PR#413, passed runtime
+40997984438 and launcher40997984495. Runtime includes both upgrade/native/GPU
+hosts, final transitions, PR gate and dual-platform launcher packaging. Windows
+native2194passed264skipped18subtests in387.80s, then GPU172passed3subtests in4.30s.
+Mac native2102passed316skipped18subtests in236.75s, then GPU169passed3skipped
+3subtests in2.48s. All14 new string cases passed on each host, including compiled
+fault controls. Portable contracts are separate from native Mac title gameplay.
+
+The separate launcher workflow's first attempt failed only its Windows CMake icon
+fixture configure60s timeout:12passed/1failed/2subtests. The same fixture passed
+inside runtime CI and locally6.12s. Failed jobs were rerun unchanged; Windows retry
+123878628921 passed13tests/2subtests in25.14s, then dependent Mac/package/gate jobs
+passed and the workflow completed success. No source, timeout, warnings or test
+assertions were weakened. The initial failure remains recorded rather than
+relabeled as a first-attempt success.
+
+Local65 selected runtime plus25 upgrade/context/backlog checks =90 distinct
+checks, with the14-case final source rerun overlapping65. The separate icon
+recheck is additional. Release/built-ins/matching symbols, selected source/archive/
+generation audits and fresh Windows Story acceptance remain valid for the exact
+07fd92c5267a3816051815380d022eb1035a16363dff560244789a069ef03e8a binary and
+recorded dirtyf4297855 build inputs (now committed unchanged in the focused PR).
+All26 protected files retain hash/size/mtime; no owned game/test sessions remain.
+The acceptance follow-up changes documentation only; any workflows it starts are
+separate from the verified8a846e75 results above.
+
+Stage0237 is accepted within this scope. Critical sections, status/exception/
+formatting and remaining charset/create/free/numeric services, other legacy
+runtime/header/fixture/provenance work and native Mac title acceptance remain
+unfinished. Overall goal stays active/incomplete, MAC-118 Awaiting validation,
+PR#413 draft/unmerged. This chat performed no merge into main or publication.
+
+
+### Stage0238 original kernel RTL checkpoint (2026-10-30 UTC)
+
+Based onad43ead0, whose runtime40999506265 and launcher40999506163 passed. Original
+guest_critical/host_critical and guest_rtl_services/guest_kernel_rtl providers now
+replace eight imports. The entire legacy kernel_rtl.c is excluded; twelve remaining
+native exports/prototypes (including unused exception/printf wrappers and CRT table
+setter) retire. The real guest formatter/exception/charset/create/free/numeric paths
+elsewhere remain unfinished. No implementation source was copied; standard Windows
+and pthread APIs back the shared ownership policy.
+
+The old TryEnter table was separate from Enter/Leave, so successful try acquisition
+could protect a different lock. All six critical import paths now share a recursive
+registry keyed by mapped host identity, with checked ownership, API pins, idempotent
+initialization, no fixed4096/512 lock cap, wrong-owner protection and quiescent close/
+disposal quarantine. Guest fields remain opaque/unchanged and region APC accounting
+is not supplied. Failed void infrastructure acquisition exits before unprotected
+guest work; failed try returns false. Status preserves19 compatibility overrides
+plus Windows native fallback/Mac317; Rip text reads bounded mapped bytes. Options
+initialize once; trace scans are bounded candidates. Contracts: kernel-rtl.md.
+
+Windows selected124checks passed57.84s. Final26 RTL cases passed11.54s after the
+one-time diagnostic option refinement (overlaps124). Includes16 compiled bad
+providers/imports that fail at runtime after compiling; real OS blocked waiters,
+mixed entry methods/recursion/aliases,30000 synchronized increments,10000 locks,
+wrong-owner/exhaustion/host-failure/pin/quarantine cases, actual kernel integration,
+status/text guards, diagnostic modes and deterministic fatal subprocess. Release,
+built-ins and matching crash symbols passed. Project/archive selects35 original
+providers once, excludes the exact legacy kernel_rtl member and36 retired native
+exports, all22 generated files unchanged from0237, fingerprint current. Supported
+US XBE verified. Ignored logs/critical-build.json records dirtyad43ead0 inputs.
+Executable SHA256:
+a586004ee7eb8a419b1214e7c0f7dd14db5560198bad8c01e65e86a7826e0304.
+
+All26 protected files retain hashes/sizes/mtimes before the new isolated Story run.
+Gameplay and25 upgrade/context/backlog checks are running at this checkpoint; new
+CI pending. PR#413 remains draft/open/unmerged as freshly checked. Windows
+NT10.0.26300 x64/MSVC14.44; no native Mac title, physical input/listening or full
+campaign claim. Remaining kernel/runtime/header/fixture/provenance replacement is
+active/incomplete, MAC-118 Awaiting validation. No merge into main/publication.
+
+
+Stage0238 local acceptance:25 upgrade/context/backlog checks passed158.05s,
+combined with124 selected runtime checks =149 distinct checks; final26 RTL cases
+overlap124. Runner70566/controller45591 both exited0. Fresh bounded Story reached
+scene4/mission1, forward11.195015/back6.184889,ammo8to6,40 frozen pause/60 advancing
+resume samples,last125.542s within240s cap. Fresh start/fire/paused captures were
+reviewed. Profile signatures valid/fixture preserved, no locks/dumps/partition
+images. Source/archive/executable/generated/game hashes agree on the a586004e
+binary above. All26 protected files retain hashes, sizes and mtimes.
+
+The user requested a main update during validation. Fresh fetch and ff-only merge
+confirmed Already up to date: origin/maincc531ea9 is an ancestor of46bc2046, with
+five feature commits ahead and zero behind. No reset, merge commit or source
+change was needed; ongoing work and personal data were preserved. Runtime CI
+41002852446 and launcher41002852486 are pending for the exact full source revision
+46bc204639b5e6784a6f2e6d23339502f607c3e4. Windows synthetic/minimized/movie-skipped run is separate from physical input,
+listening, full campaign, performance benchmarking and native Mac title acceptance.
+
+
+### Stage0238 completed native RTL acceptance (2026-10-30 UTC)
+
+Exact source46bc204639b5e6784a6f2e6d23339502f607c3e4 passed runtime41002852446 and
+launcher41002852486, including both upgrade/native/GPU/transition hosts, PR gate
+and both launcher/package validations. Windows native2220passed264skipped18subtests
+in415.95s, then GPU172passed3subtests in5.49s. Mac native2128passed316skipped
+18subtests in303.64s, then GPU169passed3skipped3subtests in3.82s. All26 new RTL cases
+passed on each host; strict warnings and failure controls remain intact.
+
+149 distinct local selected checks, Release/built-ins/matching symbols, selected
+source/archive/generation audits and bounded Windows Story passed as recorded
+above. All36 retired native exports and the exact legacy kernel_rtl object are
+absent,35 original providers selected once,22 generated files unchanged. The
+accepted executable remains:
+a586004ee7eb8a419b1214e7c0f7dd14db5560198bad8c01e65e86a7826e0304.
+Source/patch bytes match the recorded dirtyad43ead0 build inputs now committed in
+46bc2046. Protected26 files remain unchanged. No owned test sessions remain live.
+
+User-requested main synchronization was rechecked with a fresh fetch: latest main
+is stillcc531ea9 and already belongs to this feature branch's history. No source
+integration/reset/merge into main was needed. Draft PR#413 remains open/unmerged.
+This acceptance follow-up changes documentation only; any workflows it starts
+are separate from the verified46bc2046 results above.
+
+The whole native RTL module is retired within this scope, not the remaining guest
+formatter/exception/charset/create/free/numeric paths in the bridge. Other kernel,
+renderer/audio/title/header/fixture/provenance replacement and final unavailable-
+upstream verification remain unfinished. Native Mac title gameplay, physical input,
+listening/full campaign and controlled performance benchmarking remain unverified.
+Overall goal stays active/incomplete; MAC-118 Awaiting validation. No publication.
+
+
+### Stage0239 original narrow guest formatting (2026-10-30 UTC)
+
+PR#413 selects project-owned guest_printf.c/.h and guest_kernel_printf.inc for
+ordinals361..364; patch0239 removes the old formatter, raw cursor helpers and
+four guest bridge bodies. Checked complete fixed frames feed typed x86 slot
+reads without extra8-byte alignment, native va_list casts or numeric conversion
+of binary64 bits. Guest long remains32 bits on LP64 hosts. Typed host-standard
+snprintf atoms replace the old511-byte clipping; output and count writes publish
+only after successful validation/allocation, including mapped aliases. Existing
+clipped-count/NUL/stop-on-full and narrow s/c policies remain explicit in the
+header and guest-printf guide; wide/positional/full MSVCRT semantics are not added.
+The actual Microsoft x86 executable independently verifies packed variadic ABI.
+
+Windows selected78 checks passed39.39s before main synchronization;25 fresh/
+historical upgrade/context/backlog checks passed210.88s. Thirty-three launcher
+release tests plus10 subtests passed after the user-requested main merge.
+Main d73758d328d937873b88e39fe7cb43906be2af33 is integrated locally at9a85b14f;
+all19 unfinished files/staging and26 protected settings/save hashes/sizes/mtimes
+were preserved. Context check passed. A new post-merge Release build exited0,
+including built-in contracts and matching crash symbols. Source/archive audit
+selects36 providers once, excludes legacy kernel_rtl and36 retired native exports,
+keeps the22 generated guest files unchanged, and verifies the supported US XBE.
+Ignored logs/printf-build.json records dirty9a85b14f source/patch inputs and binary:
+
+b92c0c721d9839e863b0284745e0462fe95e42b62a03067c0c067b509fb5a20f.
+
+Post-merge selected78 checks passed37.75s (the same cases, not78 additional
+distinct checks). New-source CI is pending at this checkpoint.
+The user explicitly kept a foreign mounted-mouse game session open; do not kill
+it or bypass the concurrent-game guard. No new stage0239 gameplay acceptance is
+claimed. Stage0238 game results above apply to its earlier a586004e binary only.
+Windows NT10.0.26300 x64/MSVC14.44; native Mac title, physical input/listening,
+full campaign and performance acceptance remain separate/unverified. This stage
+still builds against the patched runtime checkout/snapshot. Remaining kernel,
+graphics/audio/title/header/fixture/provenance replacement and final unavailable-
+upstream build/generation/package audit remain incomplete. Goal active; no merge
+into main or publication authorized by this checkpoint.
+
+
+### Stage0239 exact-source CI acceptance; gameplay pending
+
+Source ec5958631a51facb448e4d55458bf86f444a65e0 passed runtime41007379485 and
+launcher41007379520, including both historical-upgrade/transition hosts, native
+runtime/GPU hosts, launcher/package validations and PR gate. The first Windows
+native attempt had one15-second sample-pc-live diagnostic timeout with2236passed,
+264skipped and18subtests386.68s; the dependent gates correctly rejected it.
+All six unchanged diagnostic checks passed locally5.81s. An unchanged failed-job
+retry passed Windows2237tests,264skipped,18subtests523.20s, then GPU172passed,
+3subtests6.85s. No code, timeout or assertion was weakened. Mac2144passed,
+317skipped,18subtests273.19s; GPU169passed,3skipped,3subtests2.57s. The new
+formatter contracts and compiled failure controls passed on both native CI hosts;
+only the actual Microsoft x86/WoW64 layout probe is Windows-specific.
+
+Post-main local selected78 passed37.75s and upgrade/context/backlog25 passed
+185.24s:103 distinct cases, with earlier reruns overlapping. Separate launcher33
+plus10subtests and the six diagnostic checks passed. Release/built-in contracts,
+matching symbols, source/archive/generation audit and supported-US XBE passed.
+The source/patch input hashes remain identical to logs/printf-build.json and the
+b92c0c72 executable recorded above;26 protected files retain hash/size/mtime.
+No new game test has run: the user retained the foreign mounted-mouse session,
+which remains running at this checkpoint. It must not be terminated or the
+concurrent-game guard bypassed. Stage0238 gameplay is not stage0239 evidence.
+
+The independence overview now points to current original kernel providers and
+states remaining production snapshot dependencies. Its configured Windows
+ClCompile inventory is an ignored investigative aid, not ownership or link proof:
+30 runtime and6 smoke-test inputs match snapshot bytes,44 runtime inputs differ,
+84 inputs come from project src,19 are generated guest units,263 are separately
+permitted SDL inputs and17 are other build/library inputs. This includes utility
+targets and excludes headers, data and tooling; changed bytes do not establish
+independent implementation, and these counts are not a completion percentage.
+
+No next production replacement stage is integrated before the pending isolated
+gameplay acceptance. Numeric API research observations are private investigation
+only and establish Windows ntdll behavior, not Xbox contracts. Remaining kernel,
+graphics/audio/input/title/header/fixture/provenance work and final builds,
+generation and packages with toolkit checkout/snapshot unavailable remain open.
+Overall goal active/incomplete; native Mac title gameplay remains unverified.
+This documentation follow-up does not change the verified production inputs;
+any new documentation-head workflows are separate from ec595863 acceptance.
+
+
+### Stage0239 isolated Windows Story acceptance (2026-10-30)
+
+Latest documentation source922f9916 passed runtime41009325638 and launcher
+41009325630. The separate launcher first timed out in its shared UI budget;
+113 ordinary launcher regressions passed, while shared UI exceeded its bound.
+Its unchanged failed-job retry passed Windows, native Mac and complete package
+gates; no timeout/assertion/code was weakened. PR#413 remains draft/unmerged.
+
+Formatter binaryb92c0c72 (full hash above), with identical recorded production
+source/patch inputs, passed bounded Windows Scotland gameplay. Runner26977 and
+controller62673 exited0. Reviewed menu/briefing captures confirm Scotland; fresh
+start/fire/pause captures show rendered gameplay, ammo8to6 and pause options.
+Forward11.174544/back6.287973,40 frozen pause samples and60 advancing resume
+samples; final checkpoint150.445s within240s cap. Profile signatures valid and
+fixture preserved; no locks/dumps/partition images remain. Source/archive/exe/
+generated/game hashes agree, and26 protected files retain hashes/sizes/mtimes.
+Windows minimized synthetic replay/movie-skipped checks do not establish physical
+input, listening, full campaign, performance benchmarking or Mac title gameplay.
+
+Earlier stopped attempts are not counted as passes: one checked scene4 before
+loading finished (suppression65535/player uninitialized), one replay entered
+profile creation, and a longer test-key hold selected mission3. The successful
+run used reviewed per-menu checkpoints, short menu-key presses and the original
+scene4/mission1/no-suppression/ammo8 readiness requirements before gameplay.
+A foreign bounded multiplayer test began during those attempts; user instructed
+letting it finish. No foreign process was stopped and no concurrency guard was
+bypassed. Only the successful final run supplies this acceptance.
+
+Next production stage may now replace numeric conversion bridges. The overall
+replacement objective remains incomplete; toolkit checkout/snapshot still needed,
+remaining modules and final unavailable-toolkit build/generation/package audit
+remain open. No merge into main/publication.
+
+
+### Stage0240 original numeric conversion checkpoint
+
+Four original checked numeric conversion providers and fixed-frame adapters now
+replace ordinals267/292/293/309, with unchanged12/16-byte stdcall cleanup.
+Public API contracts and actual ntdll oracles guide unsigned32-bit parsing/
+formatting, modulo overflow, base0 decimal/prefix behavior, terminator footprints
+and semantic error outputs. All pointer records/code units stay guest-width;
+structural/mapping failures preserve output and aliases are checked. No native
+NTDLL is a production dependency. Contracts/limits in guest-numbers.md.
+
+Windows95 selected checks passed51.58s;25 fresh/historical upgrade/context/backlog
+checks passed284.39s. Final17 numeric contracts passed11.53s, overlapping95,
+including14000 full-RAM model vectors,6000 actual ntdll requests, eight compiled
+bad providers/four bad adapters and literal bounds/alias cases. An initial test
+control that read beyond counted Length was not detected by random trailing
+units; an explicit numeric unit immediately beyond Length now rejects it. The
+first binary test fixture needed Windows binary stream mode; neither issue was
+masked or counted as acceptance before its repair.
+
+Release83210 exited0, built-in contracts and matching symbols passed. The archive
+audit selects37 providers once, retains36 retired native-export exclusions and
+keeps22 generated files unchanged from stage0239; supported US XBE verified.
+Ignored logs/numbers-build.json records dirty922f9916 inputs and executable:
+
+be1e25097cb53f3203f609f64131e462935474b5196e3a48b22043bb32e356ad.
+
+The first new-binary replay stopped at profile creation because its fixed route
+expected the main menu. A capture-guided isolated run is in progress at this
+checkpoint; do not infer acceptance from runner shutdown alone. All26 protected
+files retained hashes/sizes/mtimes before it. Latest main advanced to f6766c53
+while this stage was developed; PR#413 is now open/ready, unmerged and conflicting.
+Preserve this stage locally, finish its game evidence, then integrate main
+safely and validate the combined source before pushing. No merge into main.
+
+The larger kernel/graphics/audio/input/title/header/fixture replacement and final
+upstream-unavailable generation/build/package audit remain incomplete. Native
+Mac title gameplay, physical input/listening, full campaign and performance are
+not established by Windows/host contract results. MAC-118 Awaiting validation.
+
+Stage0240 pre-main local acceptance: source226777613b6992f8a727cd509166d0c6aa6bc56c
+contains identical audited be1e2509 inputs. Runner78350/controller56021 exited0;
+scene4/mission1/normalinput/ammo8, forward11.174544/back6.184892/ammo8to6,40 frozen
+pause and60 advancing resume samples,last182.886s under240s cap. Fresh start/
+fire/paused captures reviewed and copied into ignored logs/numbers-baseline-captures.
+Profile signatures/fixture preserved, no run lock/dump/partition images, source/
+archive/exe/generated/game hashes agree, protected26 unchanged. The preceding
+fixed-menu numeric replay is not a pass; the successful run used captured menu
+state. Preserve this baseline before combining latest main f6766c53; the merged
+revision requires its own build and relevant checks. New numeric-source CI is
+not yet dispatched because main conflicts are being resolved before push.
+
+## Crash evidence extension - 2026-10-30 (in progress)
+
+Windows crash helper and bounded-memory tests: 9 passed. Launcher build and
+its test suite passed after extended-mode/export changes. Subsequent model-history
+and summary changes are being rechecked. Native Mac tests skipped on Windows;
+MAC-123 records the acceptance work and process-access limitation. Production game
+rebuild remains in progress. No issue resolution, commit or release claimed.
+
+2026-10-30 follow-up: full Windows game Build and built-in checks passed with
+the model traversal wrapper. Nine crash/memory tests and the full Windows
+launcher test run passed. Ten Darwin tests were skipped, not validated.
+
+2026-10-30 allocation-history follow-up, local uncommitted changes on
+`improve-crash-diagnostics` at base `8b4db323`, Windows x64, MSVC 19.44 and
+Python 3.14.5: corrected observer patch dependency order; full Windows Build
+and built-in checks passed (`logs/crash-lifetime-build.log`). Focused crash,
+guest capture and allocation observer tests passed 10; Darwin tests skipped 10.
+Allocator and patch-tracking regression tests passed 44. Full Windows launcher
+build/test suite passed (`logs/crash-lifetime-launcher.log`), including the
+seven-file allowlisted ZIP fixture with allocation history. Repository context
+and diff whitespace checks pass. The unrelated temporary pr370 test game was
+closed at the user's request before launcher tests; personal saves/settings
+were not edited. These checks establish report plumbing and allocator behavior,
+not live #410 reproduction, model-pool lifetime coverage or native Mac execution.
+
+Crash diagnostics main integration: diagnostics89e804c8 integrated with main
+61aecac5. Windows full Build/built-in checks passed; 54 focused diagnostics,
+allocator and patch-tracking tests passed in57.33s. Launcher inputs/output hashes
+matched the prior successful build/test receipt. Context check against main
+passed. No live #410 reproduction/fix or native Mac validation is claimed.
+
+PR418 upgrade CI repair: both native runtime and launcher jobs passed on
+78384327; upgrade fixtures failed because later diagnostic patches entered old
+checkpoints and the EOF trace insertion could not unwind past local trailing
+edits. Historical subsets now exclude both dependent diagnostic additions;
+the trace wrapper uses stable following context. Full current-stack forced
+unwind/reapply passed locally. Historical suite and rebuilt-game checks are
+running; this checkpoint does not claim their completion.
+
+
+### Physical crossplay acceptance follow-up (2026-10-30)
+
+PR #416 remains open and unmerged. A real Windows-host / Apple Silicon guest
+Online Deathmatch reached gameplay with two humans and six bots, then completed
+its five-point limit on both peers. All eight final records matched, including
+names, kills, deaths, rank, score and character. Evidence is
+`logs/online-bots-mac-crossplay-2/results.json` and
+`logs/mac-crossplay-match-2.log`; the corresponding Mac gameplay capture was
+reviewed. This is a LAN connection through the production Online directory and
+bridge with a pinned TLS certificate, not an Internet/router test. Inputs were
+synthetic test events, not physical keyboard/controller acceptance.
+
+The run exposed a real compatibility bug: all manifest file hashes were equal,
+but Windows Path case-folding and POSIX case-sensitive ordering produced different
+IDs. `ac839bb5` sorts the final portable manifest paths consistently. Its test
+executes both ordering policies and checks an independently assembled digest.
+Both physical game builds then agreed on compatibility
+`520b19ff5bfce6cbe491ac066227b17198aea61ccb3d6e180e053cba33fee584`.
+
+The first rematch attempt failed because the test held Down past Rematch and
+selected Leave Match. A Windows-only control reproduced the confirmation dialog;
+the corrected short tap selected Rematch and completed a fresh second round.
+The current merged `baa235d6` Windows control (`windows-rematch-fixed`) passed
+both final-score comparisons, roster preservation, round-clock reset and cleared
+scores. It ran for 274.2 seconds with 37,244 asynchronous observations; both peers
+observed movement, changing health and multiple spawn generations for all eight
+actors. These samples do not measure rendered smoothness or physical input.
+
+Test infrastructure repairs include a native read-only observation library,
+batched SSH observations, pinned TLS instead of remote HTTP, permitted isolated
+command paths, and native Trash recycling for the same six validated disposable
+disks. The initial cleanup failures were repaired and their disks recycled after
+test children exited. The first mixed run did not retain its full movement trace
+due to that old cleanup failure; final scores and reviewed captures remain.
+
+Main `42bb0954` crash diagnostics were merged into the task branch at `baa235d6`.
+The current Windows build and its native build tests passed, with new compatibility
+`5f64fa74aa55821d3ae6ce52fb5d2003e48a09c294b3ea5471c07a143eb9db2d`.
+All runtime workflow `41012632115` jobs passed, including both hosts, patch
+upgrades/transitions, launcher packaging and the PR gate. Local focused contracts:
+93 passed, 1 platform skip; context checks: 20 passed. These results apply to
+`baa235d6f2df602835c8adff7eb537350b5bbb4c`; this evidence update is documentation-only.
+
+The user closed the separate interactive Mac game; the merged Mac build then
+completed with all 1,227 manifest entries matching Windows. The follow-up below
+supersedes the outstanding LAN match/rematch and native-host checks. Internet
+routing and publication remain unverified; MAC-013 is not fully accepted.
+
+
+### Crossplay rematch and native-host acceptance (2026-10-30)
+
+The physical Windows-host/Mac-guest run `mac-crossplay-3` completed both five-point
+Deathmatch rounds with two humans and six bots. All eight final records matched
+on both peers in each round; rematch preserved the roster and reset clock, scores
+and result-ready state. It retained 15,208 asynchronous actor observations.
+A subsequent SSH EOF cleanup timeout failed the overall command, so this is
+explicitly gameplay acceptance rather than a clean complete harness run.
+Its final scores, checkpoints, observations and reviewed Mac score-screen image
+remain under `logs/online-bots-mac-crossplay-3`; disposable disks were recycled
+after the owned game processes exited.
+
+`8ace13ea` requests explicit remote-controller shutdown before draining SSH and
+records provenance before cleanup, with a separate cleanup-completed flag. It
+also waits up to 45 seconds for actual lobby registration instead of assuming
+native startup/content verification finishes within eight seconds. The first
+Mac-host attempt exceeded that old startup wait. No protocol workaround, content
+identity bypass or personal-save change was introduced.
+
+The corrected Mac-host/Windows-guest run `mac-crossplay-host-2` passed the complete
+match, results/scores/options navigation, fresh rematch, second results comparison
+and cleanup (exit 0, completed and cleanup_completed true). Duration 242.7 seconds,
+11,586 observations. Both peers observed movement, multiple spawn generations and
+changing health for all eight actors. The shared executable compatibility was
+`5f64fa74aa55821d3ae6ce52fb5d2003e48a09c294b3ea5471c07a143eb9db2d`.
+Evidence: `logs/online-bots-mac-crossplay-host-2`, analysis
+`logs/mac-crossplay-host-2-motion.json`, and reviewed native gameplay capture.
+
+These are same-LAN production Online directory/bridge tests with pinned TLS,
+original 60 Hz defaults and synthetic key events. They do not establish Internet
+router/port-forwarding behavior, physical controller acceptance, high-refresh
+crossplay, end-to-end latency, rendered smoothness or every map/mode. The read-only
+native probe is test-only. Personal saves/settings and unrelated processes were
+preserved; no main merge or release publication was performed.
+
+The latest main minigun fix (`f6766c53`) was integrated at `e0601599`. Both physical
+builds completed, executable/content verification passed, and all 1,229 manifest
+entries agree on `beb73a044db0c69f976bfbd4052ef9439c460cb33de5d546fb7954ef50bff3cc`.
+Runtime workflow `41015739679` passed every job on that revision, including both
+native suites, patch upgrades/transitions, launchers and PR validation. The older
+`c0347a67` Mac CI had one 60-second Tk timeout; the full physical Mac UI suite
+passed (9 passed, 1 Windows-only skip), the affected 150% layout case passed three
+additional isolated runs, and the latest CI did not reproduce it. Windows UI:
+10 passed; focused contracts: 34 passed, 1 skip; context/backlog: 21 passed.
+
+`mac-crossplay-final` completed both final-result comparisons on the new binaries
+and cleaned up successfully, but its last screenshot failed while reading a BMP
+that the game was still writing (completed false, cleanup_completed true). The
+capture helper now freezes candidate bytes, falls back to the previous complete
+frame and retries within two seconds without accepting truncated images. A real
+image regression reproduces the partially written newest frame. This is a test
+capture failure, not a gameplay/desynchronization finding. The capture regression
+passed on Windows (4 passed, 1 platform skip) and native Mac (5 passed).
+
+The user requested stopping the additional reruns. `mac-crossplay-final-2` was
+stopped during setup, its owned peers exited and cleanup_completed is true; it is
+not counted as acceptance. No additional Mac-host repeat was launched. Existing
+both-direction match/rematch evidence above is retained. The final `e0601599`
+binaries completed Windows-host gameplay and both result comparisons, while the
+clean Mac-host acceptance is from the preceding runtime revision; the later
+minigun integration was not repeated with Mac hosting. Test-only capture and
+lifecycle repairs are committed in PR #416. Main remains unmerged/unpublished.
+
+PR #416 review follow-up: the native crossplay controller now acquires its run
+lock exclusively and only records cleanup ownership after success. Rejected
+preparation/lock acquisition preserves another controller's lock and disks;
+failed later setup still cleans up its owned run and rejects a second start.
+All three regression cases failed before the fix and pass afterward. Windows
+focused crossplay, identity, transport, dispatch, real Tk UI and repository
+context checks: 55 passed, 1 native-Mach-only skip (including the context rerun
+after shortening its guide entry). No additional gameplay run was performed.
+The prior head's Mac CI failure was a 60-second Tk layout subprocess timeout;
+the updated head still requires both-host CI before merge.
+
+Follow-up review also keeps the owned run lock through successful disk recycling
+(cleanup failure leaves it locked), and passes the actual `--runtime-root` Python
+interpreter to the Cocoa Online adapter through a generated header. The portable
+package still uses its bundled Python. The cleanup-order/failure cases and separate
+source/runtime-root builder test reproduced their bugs before repair. Focused
+Windows controller/native-builder/context checks: 53 passed, 2 host-only skips.
+Companion/package/CI-selection checks before these follow-ups: 100 passed.
+Native compilation and both-host CI remain the next validation boundary.
+
+Stage0240 incoming-main checkpoint: f6766c534467ac0e85560be6b23b9d9f9741c177
+was safely integrated at d66f433353ecf80d5b686c1e8c9820a7083c3ea9 after preserving
+22677761/8abef1db and their accepted numeric-only game evidence. Both sides of
+context/history conflicts were kept; generated index refreshed. The final43-patch
+order includes all original replacements followed by main allocation observation
+and source layout. New crash/allocator/minigun source and tests remain present.
+
+Merged Release85360 exited0 with built-in contracts and matching crash symbols.
+149 focused selected/allocation/crash/observer/patch-tracking checks passed,
+10 Mac-only skips,89.55s; the actual minigun callback regression passed2.60s.
+Full historical upgrade/context/backlog suite is running at this checkpoint.
+The archive audit selects37 providers, excludes36 retired native exports and
+confirms current generation inputs. Incoming manual hooks regenerate exactly
+recomp_0001.c,recomp_0005.c,recomp_funcs.h;22 generated files remain recorded.
+The earlier no-generation-change result applies only to numeric-only code,
+not this main integration. logs/numbers-main-build.json records clean d66f4333
+source/patch/archive/generated hashes and executable:
+
+1c72cbf4f996ac95ebd9b40df3aed37dfd443af5127f47055a8c11e0809e49e9.
+
+Protected26 files retain hashes/sizes/mtimes. New merged-binary gameplay is
+pending: the foreign crossplay game finished, but a separate Issue358 checkout
+game started. It is not this task's process and must not be stopped or the
+concurrency guard bypassed. User instructed letting the other test finish; no
+permission to message its task was granted. Pre-main numeric and formatter
+gameplay above remain valid for their own binaries only. New source CI will
+start on push; no main merge, publication or whole-replacement claim.
+
+
+Stage0240 integrated local acceptance: source f809f54280df9d85785ed789510440e2471f3dc0
+contains the same production bytes as clean merged d66f4333 in the recorded
+1c72cbf4 build. Full43 historical upgrade/context/backlog checks passed1080.30s;
+149 focused runtime/allocator/crash/patch-tracking passed89.55s (10Mac-only skips),
+plus incoming minigun1passed2.60s =193 distinct local runtime/repository cases.
+Three separate startup-preference checks passed1.27s. Earlier95/25/17 runs overlap
+these checks; do not add them to this distinct count.
+
+Runner97865/controller15733 both exited0 on the integrated binary. Reviewed
+main-menu capture before publishing the Scotland route; initialized scene4/
+mission1/ammo8/no-suppression then forward11.174537/back6.184892/ammo8to6,40
+frozen pause/60 advancing resume samples,last126.671s within240s cap. Three fresh
+start/fire/pause captures were reviewed and retained in logs/numbers-main-captures.
+Profile signatures/fixture valid, no lock/dump/partition images, all26 protected
+file hashes/sizes/mtimes unchanged. Source/archive/executable/generated/game
+hashes agree. This is minimized synthetic Original60/movie-skipped Windows
+coverage, not physical input/listening/full-campaign/Mac-title/performance proof.
+
+Pushed f809f542 to PR413; it is open/ready/unmerged and mergeable with mainf6766c53
+as freshly checked. New runtime41018884887 is running; embedded both launchers/
+packages passed. Separate launcher41018884908 first attempt had a20-second
+PowerShell startup-preference timeout, with12 other tests/2subtests passed. All
+three unchanged startup checks passed locally; failed jobs were retried unchanged,
+without increasing limits or removing assertions. Its retry is still running at
+this checkpoint. These new-source CI results remain separate from the previously
+accepted922f9916 workflows. Overall replacement remains incomplete.
+
+
+### Stage0240 completed source and local acceptance
+
+Exact source f809f54280df9d85785ed789510440e2471f3dc0 passed runtime41018884887
+and launcher41018884908, including both upgrade/transition/native/GPU hosts,
+launcher packages and PR gate. Windows2256passed265skipped18subtests534.20s;
+GPU172passed3subtests7.01s. Mac2162passed319skipped18subtests291.71s;
+GPU169passed3skipped3subtests2.72s. The17 Windows/16 portable-Mac numeric cases
+passed, with only the Windows ntdll oracle skipped on Mac. The separate launcher
+startup timeout passed on unchanged failed-job retry; no code, limits or assertions
+were weakened. Embedded launcher jobs/packages passed on their original attempt.
+
+Local193 distinct runtime/repository checks, three startup-preference checks,
+Release/built-ins/matching symbols, selection/archive/generation audits and bounded
+integrated Scotland gameplay passed as detailed above. The accepted executable
+remains1c72cbf4f996ac95ebd9b40df3aed37dfd443af5127f47055a8c11e0809e49e9.
+Source/patch/archive/generated/game hashes agree;26 protected files and canonical
+fixture remain unchanged. All owned test handles are terminal. No new runtime
+changes or game rerun are needed for this documentation-only acceptance record.
+
+PR#413 was externally merged2026-10-30T07:25:51Z into main at
+5e65ebfd11af8816e78a978204539a02db0c5067. This chat did not merge it. Fresh fetch
+proved f809f542 is its ancestor and both tracked trees are identical. Acceptance
+notes were preserved byte-for-byte on docs/numeric-stage-acceptance, based on
+that main; the fully merged local feature branch was then safely deleted with
+branch-d. Remote branches, saves, settings and other checkouts were retained.
+
+The four integer/string conversion imports now have original code. Remaining
+arithmetic helpers, exceptions/context, charset/string ownership and other kernel,
+GPU/rendering, audio/movie, input/device, platform/title/build interfaces and
+inherited smoke fixtures still require replacement or ownership audit. Thirty
+runtime and six smoke-test compilation inputs remain byte-identical to the
+snapshot; modified files are not automatically original. This is a lower bound,
+not a percentage or exhaustive component inventory. Standard SDL/FFmpeg/Capstone
+remain permitted. Final generation/build/package with toolkit checkout/snapshot
+unavailable and full provenance/removal/notices acceptance have not passed.
+Overall goal incomplete; native Mac title, physical input/listening, full campaign
+and performance coverage remain unverified. No publication or issue closure.

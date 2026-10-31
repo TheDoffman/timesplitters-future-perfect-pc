@@ -129,19 +129,29 @@ providers, perform handoffs or limit themselves to advisory work.
   Its passing check is evidence of its scope, not a guarantee of visual parity.
   CI does not generate OS adapters. Follow-up fixes stay in reviewed source
   changes; no AI API credentials or paid agent calls belong in this workflow.
-- Every PR description must explain the problem or root cause and how the
-  change fixes it, in plain language. Include the resulting behavior, relevant
-  validation and known limits. Keep this explanation current when updating
-  a PR; do not substitute a list of changed files for how the fix works.
-- Link resolved issues with GitHub closing references (for example, `Closes #128`)
-  and fill in `## Cause and fix` plus relevant validation/remaining limits. After
-  merging into main, the Issue resolution notes workflow copies those sections
-  to each linked issue in this repository. Do not post a duplicate manual
-  resolution comment. If the workflow fails because the explanation is missing,
-  correct the PR description and rerun the failed workflow; reruns update the
-  existing bot comment. Merging source is not evidence of a published release.
-- Use `.github/pull_request_template.md` to record PC results and link the Mac
-  backlog entries. CI runs shared contracts and selected host checks on Windows/macOS and checks
+- Every opening PR description must be a short explanation for ordinary users,
+  using only `## Change` and `## Cause and fix`. Say what users will notice,
+  what caused the problem and how the change fixes it. For an enhancement,
+  explain why it is useful and how it works; do not invent a bug or root cause.
+  Use everyday language and short paragraphs. Omit validation sections, test
+  logs/counts, file lists, implementation reports and platform checklists.
+  Mention remaining limits only when they affect what users can expect.
+  Keep the description current as the change evolves.
+- Keep fixed issues open until the version containing the fix is live/published
+  (user instruction, 2026-10-29). A merged PR or local test build is not a
+  published fix. Use non-closing issue references such as `Refs #128` in PRs;
+  do not use `Closes`, `Fixes`, `Resolves`, or automatic-closing Development
+  links before publication. This rule overrides older template instructions.
+  Explain the cause and fix and identify that publication is pending. Before
+  closing an issue, verify that the published version actually includes its fix
+  and link that release in the issue. Preserve the existing resolution-note
+  workflow's explanation requirements; if it needs support for non-closing
+  references, update and test that workflow before relying on automatic notes.
+- Use `.github/pull_request_template.md` for the user-facing explanation. Keep
+  test results and unrun checks in `docs/project/STATUS.md`, and platform work
+  and supporting links in `docs/project/MAC_PORT_BACKLOG.md` when applicable.
+  Required testing and shared-platform rules still apply. CI runs shared
+  contracts and selected host checks on Windows/macOS and checks
   backlog ID/status integrity. Register new behavioral tests in that workflow.
   These checks do not detect every missing feature or prove visual parity;
   agents must still maintain the handoff and report unavailable host checks.

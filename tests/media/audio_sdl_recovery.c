@@ -7,7 +7,22 @@ static int submit(unsigned slot) {
 }
 int main(int argc, char **argv) {
     assert(argc==2);
-    if(!strcmp(argv[1],"startup") || !strcmp(argv[1],"subsystem")) {
+    if(!strcmp(argv[1],"enhanced-on") || !strcmp(argv[1],"enhanced-off")) {
+        const int enabled=!strcmp(argv[1],"enhanced-on");
+        recomp_audio_output_set_spatial(0,-1,enabled);
+        recomp_audio_output_set_acoustics(0,(float)enabled,0);
+        recomp_audio_output_set_ambience(0,enabled);
+        pcm[0]=0x51;assert(submit(0));
+        if(!enabled)assert(!memcmp(heard_pcm,pcm,sizeof pcm));
+        const PcAcousticDsp before=acoustics[0];
+        fail_put=1;assert(!submit(0));
+        assert(!memcmp(&before,&acoustics[0],sizeof before));
+        fail_put=0;sdl_now=1000;assert(submit(0));
+        assert(spatial[0].enabled==enabled && acoustics[0].bed==enabled);
+        assert(enabled?acoustics[0].amount>0:!memcmp(heard_pcm,pcm,sizeof pcm));
+        recomp_audio_output_reset_voice(0);
+        assert(!spatial[0].enabled && !acoustics[0].bed);
+    } else if(!strcmp(argv[1],"startup") || !strcmp(argv[1],"subsystem")) {
         fail_open=!strcmp(argv[1],"startup"); fail_init=!fail_open;
         assert(!submit(0)); assert(recomp_audio_output_take_discontinuity(0));
         unsigned tries=inits, opens=opened;

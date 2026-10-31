@@ -21,6 +21,47 @@ builder = importlib.util.module_from_spec(build_spec)
 build_spec.loader.exec_module(builder)
 
 
+def test_reused_runtime_supplies_online_interpreter(tmp_path, monkeypatch):
+    source = tmp_path/'source checkout'
+    runtime = tmp_path/'runtime checkout'
+    source.mkdir()
+    game = runtime/'private/game/default.xbe'
+    game.parent.mkdir(parents=True)
+    game.write_bytes(b'test build input')
+    revision = 'a'*40
+    (source/'tsfp.ps1').write_text("$revision = '"+revision+"'\n$expectedHash = '"+
+        hashlib.sha256(game.read_bytes()).hexdigest().upper()+"'\n")
+    python = runtime/'.venv/bin/python'
+    python.parent.mkdir(parents=True)
+    python.write_text('test interpreter')
+    title = runtime/'external/ts3FPrecomp/titles/futureperfect'
+    generated = title/'src/recomp/gen'
+    generated.mkdir(parents=True)
+    (generated/'recomp_funcs.h').write_text('')
+    (title/'src/recomp_manual.c').write_text('')
+    output = runtime/'build/macos/generated'
+    output.mkdir(parents=True)
+    monkeypatch.setattr(builder, 'ROOT', source)
+    monkeypatch.setattr(builder.platform, 'system', lambda: 'Darwin')
+    monkeypatch.setattr(builder.platform, 'machine', lambda: 'arm64')
+    monkeypatch.setattr(sys, 'argv', ['build-native-mac.py', '--runtime-root', str(runtime),
+        '--renderer', 'gl', '--without-textures'])
+    monkeypatch.setattr(builder.subprocess, 'check_output', lambda *a, **kw: revision)
+    monkeypatch.setattr(builder.subprocess, 'run', lambda *a, **kw: type('Result', (), {'returncode': 0})())
+    class Configured(Exception):
+        pass
+    def run(*args, **kwargs):
+        assert '-m' not in args, 'Must reuse the runtime interpreter without creating a source venv'
+        if '-S' in args:
+            raise Configured
+    monkeypatch.setattr(builder, 'run', run)
+    with pytest.raises(Configured):
+        builder.main()
+    header = (output/'online-python.h').read_text()
+    assert json.loads(header.removeprefix('#define TSFP_ONLINE_PYTHON ').strip()) == str(python)
+    assert not (source/'.venv').exists()
+
+
 @pytest.mark.parametrize('game', [None, b'unsupported revision'])
 def test_native_build_accepts_focused_branches_but_validates_game(tmp_path, monkeypatch, game):
     (tmp_path / 'tsfp.ps1').write_bytes((ROOT / 'tsfp.ps1').read_bytes())
@@ -97,10 +138,12 @@ def test_native_builder_rejects_unverified_sdk_before_build_mutations(tmp_path, 
 def test_all_runtime_settings_are_isolated(tmp_path, monkeypatch):
     monkeypatch.setenv('RECOMP_LOG_FILE', '/personal/log')
     monkeypatch.setenv('RECOMP_DISPLAY_CONFIG', '/personal/display.conf')
+    monkeypatch.setenv('RECOMP_ICALL_FEEDBACK_PATH', '/personal/feedback.dump')
     monkeypatch.setenv('RECOMP_INPUT_SEQ', 'stale automation')
     monkeypatch.setenv('TSFP_PC_INPUT_REPLAY', '/personal/replay')
     test = tmp_path / 'private/test-saves/native-mac'
     env = probe.isolated_environment(tmp_path, test)
+    assert env['RECOMP_ICALL_FEEDBACK_PATH']==str(test/'icall_targets.dump')
     for key in ('RECOMP_SAVE_DIR', 'RECOMP_INPUT_CONFIG', 'RECOMP_DISPLAY_CONFIG',
                 'TSFP_DISPLAY_CONFIG', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME'):
         assert Path(env[key]).is_relative_to(test)
@@ -204,6 +247,7 @@ def test_native_unlocked_copy_isolated_reset_and_locked(tmp_path, monkeypatch, u
     for iteration in range(2):
         with probe.test_session(tmp_path, test, unlocked=True) as env:
             run = test / 'unlocked'
+            assert env['RECOMP_ICALL_FEEDBACK_PATH']==str(run/'icall_targets.dump')
             for key in ('RECOMP_SAVE_DIR', 'RECOMP_INPUT_CONFIG', 'RECOMP_DISPLAY_CONFIG',
                         'TSFP_DISPLAY_CONFIG', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME'):
                 assert Path(env[key]).is_relative_to(run)

@@ -220,7 +220,11 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
     /* Shared impact sparks (108780) integrate their segment positions with
      * 73BBA8, the live fractional effect interval. Skipping zero-whole-tick
      * frames leaves newly spawned geometry stale while it is still rendered. */
-    if ((site == 0x108793u || site == 0x164E00u || site == 0x224170u || site == 0x222B60u || site == 0x21AF90u || site == 0x1D88B0u || site == 0x1260C0u || site == 0x1C2F09u || site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
+    /* Interaction A0D90 tests this direct CMP only as a pause gate. Its
+     * pressed input comes from raw ticks, which pause can offset from game
+     * ticks. Admit advancing fractional frames without changing any clocks,
+     * proximity, obstruction, target eligibility or repeat-cooldown rules. */
+    if ((site == 0xA0DE8u || site == 0x108793u || site == 0x164E00u || site == 0x224170u || site == 0x222B60u || site == 0x21AF90u || site == 0x1D88B0u || site == 0x1260C0u || site == 0x1C2F09u || site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
          site == 0xCA040u ||
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||
@@ -381,6 +385,13 @@ static inline uint32_t pc_native_wind_global_load(uint32_t address,uint32_t valu
  * Do not rewrite the shared 0.5 constant or unrelated multiplications. */
 static inline float pc_native_multiply(uint32_t site, float left, float right)
 {
+    /* Minigun spin-down is authored once per game tick, not render frame. */
+    if(site==0x1C7600u && g_tsfp_native_timing_active) {
+        float delta=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        if(!(delta>0.f))return left;
+        if(isfinite(delta) && delta!=1.f)right=powf(right,delta);
+    }
+
     /* The old physics clock averages fifteen rendered-frame deltas, but only
      * runs on whole ticks. Native simulation consumes this frame's elapsed
      * time directly; the three count loads above partition that exact span. */

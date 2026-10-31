@@ -1,5 +1,21 @@
 # Launcher internals
 
+Launcher 1.4.1 prepares the merged save-folder and native Mac multiplayer work
+for the next Stable release alongside game 0.4.0. Only version identities change;
+publication still requires both host checks and all ten verified launcher assets.
+Mac Online formula notices now use the existing flat `.txt` license layout;
+notice bytes and the installer's protected-file rules stay unchanged.
+
+Save-folder selection and custom-volume backup/restore now share SaveLocations.cs; see [save locations](save-locations.md). SavesPage exposes native Windows/Mac folder pickers and explicit copy without deleting original saves.
+
+README download buttons now use stable platform ZIP aliases. Launcher publication
+uploads each alias from its verified versioned ZIP, retaining updater names and
+requiring all ten assets before publication. No local alias copies are created.
+
+Windows build/test receipts: [release validation reuse](release-speed.md).
+Launcher CI retains the cache regression in its startup/package test step;
+the step indentation is corrected with the suite scheduling maintenance.
+
 Build/release/CI helpers now live under their matching `tools/` folders.
 Launcher implementation stays under `tools/launcher/`; installed package paths
 remain separate from repository source locations.
@@ -43,6 +59,21 @@ PR checks: `runtime-patches.yml` now calls the existing `launcher-build.yml`
 when `launcher-compatibility.py scope` selects launcher inputs, then includes
 that result in the candidate `PR validation` gate. The separate launcher
 compatibility required check stays active until the branch ruleset migrates.
+
+## Enhanced Audio beta preference
+
+`GameSettings.EnhancedAudio` and the shared `SettingsPage` Audio tab expose
+**Enhanced Audio (Beta)** on Windows/WPF and Mac/Avalonia. The sixth entry in
+`LauncherPlatform.Settings` is `pc-audio.ini` in the same directory as display
+settings (`config/` for a development checkout, `Settings/` when installed).
+It uses the game's `TSFP_AUDIO_V1 0|1` sidecar, defaults OFF, and participates
+in normal dirty-state comparison, concurrent-edit protection and six-file save
+rollback. There is no duplicate launcher JSON or environment-only preference.
+The launcher follows its normal save-before-launch policy; the in-game toggle
+still updates playback live. Earlier games may ignore this optional sidecar.
+Shared C# UI tests cover opt-in, game-menu round trips, draft state, invalid/
+concurrent inputs and rollback after an audio-file write failure. Windows build
+and tests passed locally; native Mac UI/build execution remains pending MAC-120.
 
 ## Saved settings button
 
@@ -213,6 +244,12 @@ Issue forms: `.github/ISSUE_TEMPLATE/`; normalization/labels/version options:
 `tools/ci/issue-forms.py` and issue workflows under
 `.github/workflows/`. PR resolution notes: `tools/ci/issue-resolution.py`,
 `.github/pull_request_template.md` and `issue-resolution-comments.yml`.
+New PR descriptions contain only Change and Cause and fix in plain language;
+release-reference PRs follow the same format. Resolution notes already accept
+Cause and fix without Validation; older PRs with Validation remain supported.
+The compatibility worker requests a short explanation for its repair PR, with
+validation in STATUS.md and platform follow-up in MAC_PORT_BACKLOG.md. Existing
+check selection and merge gates are unchanged.
 Use live GitHub issue/release metadata for a request that requires current data.
 Local Git history and stale advisory files do not replace a live issue body.
 Publishing a fix, merging, releasing and creating issues are different actions;
@@ -434,3 +471,35 @@ preview series policy is unchanged. Maintenance branches still need a Stable
 ancestor. Launcher tags, drafts, future versions and nonancestor previews are
 excluded. tests/launcher/test_publish_release.py verifies baseline selection and generated
 notes payload/range through the existing release test route. No host adapters change.
+
+## Online companion icon
+
+`IconBuilder.WriteMultiplayer` reuses the launcher/game aperture and supplies a
+compact two-player mark in seven transparent icon sizes. Existing launcher/game
+render paths are unchanged. `tools/build/build-online-icon.ps1` writes ignored
+`build/online-icon` resources; the game icon build invokes it and Online packaging
+regenerates/copies `Support/Online/multiplayer.ico`. OnlineTheme applies it to the
+browser and invitation popup. No new Mac launcher resource or artwork is needed;
+native Mac Online remains deferred. Icon frames, package placement and real Tk
+window assignment are checked in `tests/repository/test_game_icon.py`.
+
+## Multiplayer Dock artwork (2026-10-30)
+
+`IconBuilder.WriteMultiplayerPng` renders the same multiplayer vector artwork at
+512px for Mac; `build-online-icon.ps1` emits it beside the existing ICO. The Mac
+companion consumes that PNG through Tk iconphoto, and packaging requires it.
+No separate icon design or launcher setting is introduced. Native Online now
+uses the shared browser with a bundled runtime; see multiplayer-ui.md.
+
+## Extended crash report export (in development)
+
+`CrashReports` exports the allowlisted `guest-memory.bin`, `model-tree.bin` and
+`diagnostics.json` alongside existing files, with separate bounded size limits.
+The Diagnostics page labels the action Export report ZIP and opens the destination
+folder after export on both hosts. Evidence availability is separate from root
+cause determination. The shared page offers an extended-diagnostics checkbox;
+its session-only preference is passed by `GameSettings.StartInfo` through
+`TSFP_CRASH_EXTENDED` and resets when the launcher closes. Compatible Windows
+capture is implemented; native Mac collection is implemented but requires host
+validation and may report process-memory-access-denied under macOS policy. Tests cover
+new file inclusion while retaining unknown-file exclusion and bounded exports.

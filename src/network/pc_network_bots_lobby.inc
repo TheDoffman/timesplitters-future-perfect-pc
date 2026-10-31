@@ -1,6 +1,6 @@
 /* Supported US lobby capacity/summary hooks. Keep the original human session
  * transport: its reliable settings packet already carries the admitted roster. */
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 #define BOT_LOBBY_WORD(a) (*(uint32_t *)((uintptr_t)(a)+g_xbox_mem_offset))
 static unsigned pc_network_bots_lobby_drawing;
 
@@ -40,7 +40,7 @@ static PcNetworkBotPopulation pc_network_bots_lobby_prepare(int configure)
 
 static void pc_network_bots_guest_lobby_send(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     if(pc_network_bots_lobby_network() && BOT_LOBBY_WORD(0x0076B1A4u)==11u)
         pc_network_bots_lobby_prepare(1);
 #endif
@@ -50,7 +50,7 @@ static void pc_network_bots_guest_lobby_send(void (*original)(void))
 static void pc_network_bots_guest_capacity(void (*original)(void))
 {
     original();
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     if(pc_network_bots_lobby_network()) {
         unsigned limit=pc_network_bots_lobby_limit();
         if(limit<g_eax) g_eax=limit;
@@ -60,7 +60,7 @@ static void pc_network_bots_guest_capacity(void (*original)(void))
 
 static void pc_network_bots_guest_start(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     if(pc_network_bots_lobby_network() && BOT_LOBBY_WORD(0x0076B140u)==1u) {
         PcNetworkBotPopulation p=pc_network_bots_lobby_prepare(0);
         /* A mode change must not launch a roster larger than that mode can
@@ -73,7 +73,7 @@ static void pc_network_bots_guest_start(void (*original)(void))
 
 static void pc_network_bots_guest_lobby_draw(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     unsigned previous=pc_network_bots_lobby_drawing;
     pc_network_bots_lobby_drawing=pc_network_bots_lobby_network();
     original();
@@ -85,11 +85,11 @@ static void pc_network_bots_guest_lobby_draw(void (*original)(void))
 
 static void pc_network_bots_guest_lobby_text(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     uint32_t caller=BOT_LOBBY_WORD(g_esp),destination=BOT_LOBBY_WORD(g_esp+4u);
 #endif
     original();
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     /* Only the current lobby's population line, before the stock renderer
        measures/centres it. The server browser and all other strings are intact.
        This local buffer in sub_001972C0 has 112 bytes below the saved

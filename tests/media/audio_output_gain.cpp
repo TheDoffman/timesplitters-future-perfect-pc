@@ -21,6 +21,18 @@ int main(int argc,char **argv)
         assert(std::fabs(gainOf(-2000)-0.1f)<0.00001f);
         assert(gainOf(-10000)==0.f);
         recomp_audio_output_initialize();assert(opened==1);
+        const uint8_t pcm[4]={};
+        assert(recomp_audio_output_submit(0,pcm,sizeof pcm,48000,1,16,0));
+        auto &source=*voices[0].source;
+        recomp_audio_output_set_spatial(0,-1,1);
+        assert(source.matrix[0]==1 && source.matrix[1]==0);
+        recomp_audio_output_set_spatial(0,1,1);
+        assert(source.matrix[0]==0 && source.matrix[1]==1);
+        recomp_audio_output_set_spatial(0,0,1);
+        assert(std::fabs(source.matrix[0]-0.70710678f)<0.00001f);
+        recomp_audio_output_set_spatial(0,0,0);
+        assert(source.matrix[0]==1 && source.matrix[1]==1);
+        recomp_audio_output_set_spatial(99,1,1); /* reject invalid slots */
     }
     puts("PASS: actual XAudio master initialization and voice attenuation");
 }

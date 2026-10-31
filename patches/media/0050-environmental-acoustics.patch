@@ -1,0 +1,200 @@
+--- a/src/hle/audio_output.h
++++ b/src/hle/audio_output.h
+@@ -29,6 +29,9 @@
+ /* Only 3D voices enable this. It changes routing, never source PCM/cursor units.
+  * pan is -1 left, +1 right; disabled restores ordinary mono/stereo output. */
+ void recomp_audio_output_set_spatial(uint32_t slot, float pan, int enabled);
++/* Environmental obstruction (0..1) and bounded early-reflection send. */
++void recomp_audio_output_set_acoustics(uint32_t slot,float obstruction,float room);
++void recomp_audio_output_set_ambience(uint32_t slot,int enabled);
+ 
+ /* Copies PCM before returning; never retains a guest-memory pointer.
+    Slots: 0..255 for buffers, 256..271 for streams, 272
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -51,6 +51,9 @@
+ #include "xbox_adpcm.h"
+ #include "audio_output.h"
+ #include "gameplay/pc_spatial_audio.h"
++#define PC_AUDIO_SETTINGS_IMPLEMENTATION
++#include "interface/pc_audio_settings.h"
++#undef PC_AUDIO_SETTINGS_IMPLEMENTATION
+ 
+ void hle_dsound_stream_tick(uint64_t now);   /* hle_dsound_stream.c */
+ 
+@@ -93,6 +96,7 @@
+     int32_t  level;              /* the volume last sent, hundredths of a dB */
+     float pan;
+     int spatial;
++    float obstruction,room;
+ } Buffer;
+ 
+ static Buffer g_buffers[SLOTS];
+@@ -489,6 +493,7 @@
+         g_stat.underruns++;
+     b->level = buffer_level(b, &is3d);
+     recomp_audio_output_set_spatial(slot_of(b),b->pan,b->spatial);
++    recomp_audio_output_set_acoustics(slot_of(b),b->obstruction,b->room);
+     if (!recomp_audio_output_submit(slot_of(b), pcm, bytes, out->sample_rate,
+                                     channels, bits, b->level))
+         return;
+@@ -1288,6 +1293,7 @@
+ /* void DirectSoundDoWork(void) -- the title's regular audio tick. The game's
+  * own version services the emulated chip's deferred commands, which the
+  * replaced buffers no longer need; here it feeds the host output. */
++static void pc_acoustic_ambient_tick(uint64_t now);
+ HLE_EXPORT(DirectSoundDoWork)
+ {
+     g_ds_calls[DS_CALL_DIRECTSOUNDDOWORK]++;
+@@ -1332,6 +1338,7 @@
+     unlock();
+     /* Streams: feed the host, complete packets -- on their own clock (the
+      * tick count every other stream entry point reads), not this file's. */
++    pc_acoustic_ambient_tick(now);
+     hle_dsound_stream_tick(GetTickCount64());
+     HLE_RETURN(0);
+ }
+@@ -1429,6 +1436,8 @@
+             voice_adjust(settings, NULL));
+     fflush(stderr);
+ }
++
++#include "gameplay/pc_acoustic_guest.inc"
+ 
+ HLE_ORIGINAL(CMcpxVoiceClient_Commit3dSettings_0);
+ HLE_EXPORT(CMcpxVoiceClient_Commit3dSettings_0)
+@@ -1475,28 +1484,36 @@
+        helper only writes X/Z of its cached relative vector at params+5C.
+        Distance/cone attenuation still comes from the original calculator. */
+     {
+-        float relative[3],front[3],up[3];
++        float relative[3],front[3],up[3],obstruction=0,room=0;
+         unsigned mode=HLE_MEM32(params+0x40u);
++        int enhanced=pc_audio_enhanced_enabled();
+         memcpy(relative,HLE_PTR(params+8u),sizeof relative);
+         if(mode!=1) {
+             float listener[3];memcpy(listener,HLE_PTR(ds+0x38u),sizeof listener);
+-            for(unsigned axis=0;axis<3;axis++)relative[axis]-=listener[axis];
++            if(mode==0 && enhanced) {
++                PcAcousticResult acoustic=pc_acoustic_guest(settings,listener,relative);
++                obstruction=acoustic.obstruction;room=acoustic.room;
++                memcpy(relative,acoustic.direction,sizeof relative);
++            } else for(unsigned axis=0;axis<3;axis++)relative[axis]-=listener[axis];
+         }
+         memcpy(front,HLE_PTR(ds+0x50u),sizeof front);
+         memcpy(up,HLE_PTR(ds+0x5Cu),sizeof up);
+-        float pan=recomp_spatial_pan(relative,front,up,mode);
++        float pan=enhanced?recomp_spatial_pan(relative,front,up,mode):0;
+         lock();
+         for(unsigned i=0;i<SLOTS;i++) {
+             Buffer *b=&g_buffers[i];
+             if(b->iface && guest_readable(b->iface-0xCu,4u) &&
+                HLE_MEM32(b->iface-0xCu)==settings) {
+-                b->pan=pan;b->spatial=mode<2;
++                b->pan=pan;b->spatial=mode<2 && enhanced;b->obstruction=obstruction;b->room=room;
+                 recomp_audio_output_set_spatial(i,pan,b->spatial);
++                recomp_audio_output_set_acoustics(i,obstruction,room);
+             }
+         }
+         unlock();
+         extern void hle_dsound_stream_spatial(uint32_t,float,int);
+-        hle_dsound_stream_spatial(settings,pan,mode<2);
++        hle_dsound_stream_spatial(settings,pan,mode<2 && enhanced);
++        extern void hle_dsound_stream_acoustics(uint32_t,float,float,int);
++        hle_dsound_stream_acoustics(settings,obstruction,room,0);
+     }
+     commit_note(client, settings, params, vdata);
+     g_stat.commits_3d++;
+--- a/src/hle/hle_dsound_stream.c
++++ b/src/hle/hle_dsound_stream.c
+@@ -107,6 +107,8 @@
+     int32_t  volume;
+     float pan;
+     int spatial;
++    float obstruction,room;
++    int ambience;
+     int      paused;
+     Packet   packets[MAX_PACKETS];
+     int      head, count;
+@@ -498,6 +500,8 @@
+           * and leave everything after it late by its length. */
+         s->level = stream_level(s);
+         recomp_audio_output_set_spatial(slot_of(s),s->pan,s->spatial);
++        recomp_audio_output_set_acoustics(slot_of(s),s->obstruction,s->room);
++        recomp_audio_output_set_ambience(slot_of(s),s->ambience);
+         if (!recomp_audio_output_submit(slot_of(s), pcm, bytes, play_rate(s), s->channels,
+                                         out_bits(s), s->level))
+             break;
+@@ -541,6 +545,20 @@
+         if(s->object && guest_readable(s->object+0x14u,4u) && HLE_MEM32(s->object+0x14u)==settings) {
+             s->pan=pan;s->spatial=enabled;
+             recomp_audio_output_set_spatial(slot_of(s),pan,enabled);
++        }
++    }
++    unlock();
++}
++
++void hle_dsound_stream_acoustics(uint32_t settings,float obstruction,float room,int ambience)
++{
++    lock();
++    for(unsigned i=0;i<MAX_STREAMS;i++) {
++        Stream *s=&g_streams[i];
++        if(s->object && guest_readable(s->object+0x14u,4u) && HLE_MEM32(s->object+0x14u)==settings) {
++            s->obstruction=obstruction;s->room=room;s->ambience=ambience;
++            recomp_audio_output_set_acoustics(slot_of(s),obstruction,room);
++            recomp_audio_output_set_ambience(slot_of(s),ambience);
+         }
+     }
+     unlock();
+--- a/src/hle/audio_output_xaudio2.cpp
++++ b/src/hle/audio_output_xaudio2.cpp
+@@ -7,6 +7,7 @@
+  */
+ #include "audio_output.h"
+ #include "gameplay/pc_spatial_audio.h"
++#include "gameplay/pc_acoustic_dsp.h"
+ 
+ #define WIN32_LEAN_AND_MEAN
+ #include <windows.h>
+@@ -60,6 +61,7 @@
+ IXAudio2 *engine;
+ IXAudio2MasteringVoice *master;
+ OutputVoice voices[kVoiceCount];
++PcAcousticDsp acoustics[kVoiceCount];
+ struct Spatial { float pan; int enabled; } spatial[kVoiceCount];
+ void routeVoice(uint32_t slot)
+ {
+@@ -228,7 +230,7 @@
+ extern "C" void recomp_audio_output_reset_voice(uint32_t slot)
+ {
+     checkCriticalError();
+-    if (slot < kVoiceCount) { destroyVoice(voices[slot]);spatial[slot]={}; }
++    if (slot < kVoiceCount) { destroyVoice(voices[slot]);spatial[slot]={};acoustics[slot]={}; }
+ }
+ 
+ extern "C" void recomp_audio_output_set_spatial(uint32_t slot,float pan,int enabled)
+@@ -237,6 +239,16 @@
+     pan=std::isfinite(pan)?std::fmax(-1.f,std::fmin(1.f,pan)):0.f;
+     if(spatial[slot].pan==pan && spatial[slot].enabled==!!enabled)return;
+     spatial[slot]={pan,!!enabled};routeVoice(slot);
++}
++
++extern "C" void recomp_audio_output_set_acoustics(uint32_t slot,float obstruction,float room)
++{
++    if(slot<kVoiceCount)pc_acoustic_target(&acoustics[slot],obstruction,room);
++}
++
++extern "C" void recomp_audio_output_set_ambience(uint32_t slot,int enabled)
++{
++    if(slot<kVoiceCount)pc_acoustic_ambience_target(&acoustics[slot],enabled);
+ }
+ 
+ extern "C" int recomp_audio_output_position(uint32_t slot, uint64_t *played_bytes,
+@@ -385,6 +397,7 @@
+         owned.capacity = bytes;
+     }
+     std::memcpy(owned.data, pcm, bytes);
++    pc_acoustic_pcm(&acoustics[slot],owned.data,bytes,sample_rate,channels,bits_per_sample);
+     XAUDIO2_BUFFER buffer{};
+     buffer.AudioBytes = bytes;
+     buffer.pAudioData = owned.data;

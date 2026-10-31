@@ -1,0 +1,347 @@
+--- a/templates/runtime/recomp_types.h
++++ b/templates/runtime/recomp_types.h
+@@ -271,10 +271,10 @@
+ 
+ /* Disabled feedback must not expand or evaluate the supplied tokens. */
+ #ifdef RECOMP_ICALL_FEEDBACK
+-#include "recomp_icall_feedback.h"
++#include "tsfp_branch_feedback.h"
+ extern volatile uint64_t g_icall_guard_hits, g_icall_guard_misses;
+-static inline void tsfp_guest_guard_hit(void) { ++g_icall_guard_hits; }
+-static inline void tsfp_guest_guard_miss(void) { ++g_icall_guard_misses; }
++static inline void tsfp_guest_guard_hit(void) { tsfp_feedback_guard(1); }
++static inline void tsfp_guest_guard_miss(void) { tsfp_feedback_guard(0); }
+ #define RECOMP_ICALL_GUARD_HIT() tsfp_guest_guard_hit()
+ #define RECOMP_ICALL_GUARD_MISS() tsfp_guest_guard_miss()
+ #else
+--- a/src/kernel/recomp_icall_feedback.h
++++ b/src/kernel/recomp_icall_feedback.h
+@@ -1,104 +1,2 @@
+-/*
+- * Indirect-branch target feedback - shared constants.
+- *
+- * Included by both src/kernel/icall_feedback.c (which defines the array) and
+- * templates/runtime/recomp_types.h (which emits the store into the ICALL
+- * macros). Kept separate from recomp_types.h so the generated-code header stays
+- * a template and this stays a runtime detail.
+- *
+- * See src/kernel/icall_feedback.c for the rationale and
+- * docs/technical/ms-fusion-codegen-teardown.md for where the idea comes from.
+- */
+-
+-#ifndef RECOMP_ICALL_FEEDBACK_H
+-#define RECOMP_ICALL_FEEDBACK_H
+-
+-#include <stdint.h>
+-
+-/* Window covered by the observation array.
+- *
+- * CUSTOMIZE: must span every executable section of your XBE. The default covers
+- * the whole image for a 7.7 MiB XBE (tools/disasm/config.py XBE_BASE_ADDRESS /
+- * XBE_IMAGE_SIZE). Targets outside the window are ignored rather than clamped --
+- * a wrong bucket is worse than a missing one, because it would seed function
+- * detection at an address the title never actually branched to. */
+-#define RECOMP_ICALL_FB_BASE 0x00010000u
+-#define RECOMP_ICALL_FB_SIZE 0x00800000u  /* 8 MiB */
+-
+-/* Flags OR'd into g_icall_seen[va - base]. */
+-#define RECOMP_ICALL_SEEN_RESOLVED   1u  /* dispatch found a translation */
+-#define RECOMP_ICALL_SEEN_UNRESOLVED 2u  /* dispatch failed: a real gap */
+-
+-#ifdef RECOMP_ICALL_FEEDBACK
+-
+-extern volatile unsigned char g_icall_seen[RECOMP_ICALL_FB_SIZE];
+-
+-/**
+- * Record an observed indirect-branch target.
+- *
+- * Inlined into the ICALL macros rather than being a function call, because it
+- * sits on the hottest path in the generated code: one subtract, one compare,
+- * one OR.
+- */
+-#define RECOMP_ICALL_OBSERVE(va, flags) do { \
+-    uint32_t _obs_off = (uint32_t)(va) - RECOMP_ICALL_FB_BASE; \
+-    if (_obs_off < RECOMP_ICALL_FB_SIZE) \
+-        g_icall_seen[_obs_off] |= (unsigned char)(flags); \
+-} while (0)
+-
+-/* Per-site record: which targets each `call` site has reached. The inline
+- * part is a 64K-entry (site, last target) cache keyed by a multiplicative
+- * hash of the site, so a site that keeps calling the same target costs two
+- * loads and a compare; the out-of-line insert runs only when the pair
+- * changes. Collisions between sites only cost extra inserts, never wrong
+- * records -- the table behind the call keys on the exact site. Races between
+- * threads can lose or duplicate an insert; this is an instrument, and the
+- * merge tool unions the results. */
+-extern uint32_t g_icall_site_hs[65536];
+-extern uint32_t g_icall_site_hl[65536];
+-void recomp_icall_observe_site(uint32_t site, uint32_t va);
+-#define RECOMP_ICALL_OBSERVE_SITE(site, va) do { \
+-    uint32_t _os = (uint32_t)(site), _ot = (uint32_t)(va); \
+-    uint32_t _oh = (_os * 2654435761u) >> 16; \
+-    if (g_icall_site_hs[_oh] != _os || g_icall_site_hl[_oh] != _ot) { \
+-        g_icall_site_hs[_oh] = _os; g_icall_site_hl[_oh] = _ot; \
+-        recomp_icall_observe_site(_os, _ot); \
+-    } \
+-} while (0)
+-
+-/**
+- * Write the observed target set to a text file.
+- * Merge it into the persisted database with tools/recomp/icall_feedback.py.
+- * Safe to call more than once; call it from atexit() and from your crash
+- * handler, since a title that dies mid-boot is exactly the one whose targets
+- * you want.
+- */
+-void recomp_icall_feedback_dump(const char *path);
+-
+-/** Register an atexit() dump to RECOMP_ICALL_FEEDBACK_PATH. */
+-void recomp_icall_feedback_init(void);
+-
+-/* Default dump location, relative to the working directory. CUSTOMIZE if your
+- * launcher runs from somewhere you would rather not write to. */
+-#ifndef RECOMP_ICALL_FEEDBACK_PATH
+-#define RECOMP_ICALL_FEEDBACK_PATH "icall_targets.dump"
+-#endif
+-
+-/* Call these from the host program. They are macros so a host can call them
+- * unconditionally without #ifdef -- both compile away when the feature is off,
+- * which is the point: instrumentation the host has to bracket in #ifdef is
+- * instrumentation that rots. */
+-#define RECOMP_ICALL_FEEDBACK_INIT() recomp_icall_feedback_init()
+-#define RECOMP_ICALL_FEEDBACK_DUMP() \
+-    recomp_icall_feedback_dump(RECOMP_ICALL_FEEDBACK_PATH)
+-
+-#else  /* !RECOMP_ICALL_FEEDBACK */
+-
+-#define RECOMP_ICALL_OBSERVE(va, flags) ((void)0)
+-#define RECOMP_ICALL_OBSERVE_SITE(site, va) ((void)0)
+-#define RECOMP_ICALL_FEEDBACK_INIT()   ((void)0)
+-#define RECOMP_ICALL_FEEDBACK_DUMP()   ((void)0)
+-
+-#endif
+-
+-#endif /* RECOMP_ICALL_FEEDBACK_H */
++/* Compatibility include for project-owned branch observations. */
++#include "tsfp_branch_feedback.h"
+--- a/src/kernel/icall_feedback.c
++++ b/src/kernel/icall_feedback.c
+@@ -1,184 +1,2 @@
+-/*
+- * Indirect-branch target feedback.
+- *
+- * Records which guest addresses the title actually reaches through indirect
+- * branches, so the next codegen run can seed function detection with them
+- * instead of guessing. This is the local equivalent of the two inputs
+- * Microsoft's own recompiler takes -- VirtualDispatchTraceFiles (recorded
+- * indirect-branch target sets) and UpdateEnlightenments (a persisted analysis
+- * database the compiler rewrites every build). See
+- * docs/technical/ms-fusion-codegen-teardown.md.
+- *
+- * Static analysis cannot see where a vtable call goes. Running the title can.
+- * tools/recomp/analyze_unresolved.py currently classifies unresolved targets by
+- * where they land relative to known functions, which is inference; this is
+- * measurement.
+- *
+- * Opt-in: define RECOMP_ICALL_FEEDBACK. Without it this file compiles to
+- * nothing and the RECOMP_ICALL_OBSERVE hook in recomp_types.h expands to
+- * (void)0, so release builds pay neither the store nor the 8 MiB.
+- *
+- * Cost when enabled: one byte OR per indirect branch, into a flat array indexed
+- * by guest VA. A byte array rather than a bitmap because a byte store needs no
+- * read-modify-write, so concurrent recompiled threads cannot lose each other's
+- * writes -- and 8 MiB is not worth a CAS loop. Dedup is free: the same target
+- * hit a million times is still one byte.
+- */
+-
+-#include <stdint.h>
+-
+-#ifdef RECOMP_ICALL_FEEDBACK
+-
+-#include <stdio.h>
+-#include <string.h>
+-#include <stdlib.h>
+-
+-#include "recomp_icall_feedback.h"
+-
+-/* One byte per guest VA in the image window. Zero-initialised in BSS; the OS
+- * only commits the pages actually touched, so a title that reaches 4k distinct
+- * targets does not resident 8 MiB. */
+-volatile unsigned char g_icall_seen[RECOMP_ICALL_FB_SIZE];
+-
+-/* Guarded indirect-call arms taken and missed (RECOMP_ICALL_GUARD_HIT/MISS in
+- * recomp_types.h), reported beside the per-site dump. */
+-volatile uint64_t g_icall_guard_hits = 0;
+-volatile uint64_t g_icall_guard_misses = 0;
+-
+-/* Per-site targets. Open addressing over 32K slots (a large title has a few
+- * thousand indirect call sites); each slot holds up to SITE_MAX distinct
+- * targets and a saturation mark beyond that, which the lifter reads as "do
+- * not guard this one". */
+-uint32_t g_icall_site_hs[65536];
+-uint32_t g_icall_site_hl[65536];
+-#define SITE_SLOTS 32768u
+-#define SITE_MAX 6
+-typedef struct {
+-    uint32_t site;
+-    uint8_t n;
+-    uint8_t saturated;
+-    uint32_t t[SITE_MAX];
+-} icall_site_rec;
+-static icall_site_rec s_sites[SITE_SLOTS];
+-static unsigned long s_site_records, s_site_saturated;
+-
+-void recomp_icall_observe_site(uint32_t site, uint32_t va)
+-{
+-    if (!site)
+-        return;
+-    uint32_t h = (site * 2654435761u) >> 17;
+-    for (unsigned probe = 0; probe < SITE_SLOTS; probe++) {
+-        icall_site_rec *r = &s_sites[(h + probe) & (SITE_SLOTS - 1u)];
+-        if (r->site == 0) {
+-            r->site = site; r->t[0] = va; r->n = 1;
+-            s_site_records++;
+-            return;
+-        }
+-        if (r->site != site)
+-            continue;
+-        for (unsigned i = 0; i < r->n; i++)
+-            if (r->t[i] == va)
+-                return;
+-        if (r->n < SITE_MAX) {
+-            r->t[r->n++] = va;
+-        } else if (!r->saturated) {
+-            r->saturated = 1;
+-            s_site_saturated++;
+-        }
+-        return;
+-    }
+-}
+-
+-/* icall_sites.dump beside the targets dump: `site t1 t2 ... [+]`, where `+`
+- * says the site reached more targets than the record holds. */
+-static void dump_sites(const char *targets_path)
+-{
+-    char path[1024];
+-    size_t n = strlen(targets_path);
+-    const char *suffix = "targets.dump";
+-    size_t sl = strlen(suffix);
+-    if (n >= sl && strcmp(targets_path + n - sl, suffix) == 0
+-            && n - sl + 12 < sizeof path) {
+-        memcpy(path, targets_path, n - sl);
+-        memcpy(path + n - sl, "sites.dump", 11);
+-    } else if (n + 7 < sizeof path) {
+-        memcpy(path, targets_path, n);
+-        memcpy(path + n, ".sites", 7);
+-    } else {
+-        return;
+-    }
+-    FILE *f = fopen(path, "w");
+-    if (!f)
+-        return;
+-    fprintf(f, "# icall-sites v1\n");
+-    fprintf(f, "# site target...   (+ = more targets than recorded)\n");
+-    for (unsigned i = 0; i < SITE_SLOTS; i++) {
+-        const icall_site_rec *r = &s_sites[i];
+-        if (!r->site)
+-            continue;
+-        fprintf(f, "%08X", (unsigned)r->site);
+-        for (unsigned k = 0; k < r->n; k++)
+-            fprintf(f, " %08X", (unsigned)r->t[k]);
+-        if (r->saturated)
+-            fprintf(f, " +");
+-        fputc('\n', f);
+-    }
+-    fclose(f);
+-    fprintf(stderr, "[icall-feedback] %s: %lu sites, %lu saturated;"
+-            " guarded arms hit=%llu missed=%llu\n",
+-            path, s_site_records, s_site_saturated,
+-            (unsigned long long)g_icall_guard_hits,
+-            (unsigned long long)g_icall_guard_misses);
+-}
+-
+-void recomp_icall_feedback_dump(const char *path)
+-{
+-    FILE *f = fopen(path, "w");
+-    if (!f) {
+-        fprintf(stderr, "[icall-feedback] cannot write %s\n", path);
+-        return;
+-    }
+-
+-    /* Plain text, one record per line: VA and the flags observed for it.
+-     * Deliberately not JSON -- this is written from a possibly-crashing
+-     * process, so a truncated file must still be parseable line by line.
+-     * tools/recomp/icall_feedback.py merges it. */
+-    unsigned long resolved = 0, unresolved = 0;
+-    fprintf(f, "# icall-feedback v1\n");
+-    fprintf(f, "# va flags   (1=resolved, 2=unresolved, 3=both)\n");
+-    for (uint32_t off = 0; off < RECOMP_ICALL_FB_SIZE; off++) {
+-        unsigned char v = g_icall_seen[off];
+-        if (!v)
+-            continue;
+-        fprintf(f, "%08X %u\n", (unsigned)(RECOMP_ICALL_FB_BASE + off), v);
+-        if (v & RECOMP_ICALL_SEEN_RESOLVED)   resolved++;
+-        if (v & RECOMP_ICALL_SEEN_UNRESOLVED) unresolved++;
+-    }
+-    fclose(f);
+-
+-    fprintf(stderr, "[icall-feedback] %s: %lu resolved, %lu unresolved targets\n",
+-            path, resolved, unresolved);
+-    dump_sites(path);
+-}
+-
+-static void dump_at_exit(void)
+-{
+-    recomp_icall_feedback_dump(RECOMP_ICALL_FEEDBACK_PATH);
+-}
+-
+-void recomp_icall_feedback_init(void)
+-{
+-    /* atexit only fires on a clean exit. A title killed by a watchdog timeout
+-     * (run.sh uses `timeout`, which is exit 124) never reaches it, which is why
+-     * the crash handler dumps too -- and why, if a title neither exits nor
+-     * crashes, you must call the dump yourself from wherever you decide the run
+-     * is over. There is deliberately no timer thread doing it behind your back. */
+-    atexit(dump_at_exit);
+-}
+-
+-#else  /* !RECOMP_ICALL_FEEDBACK */
+-
+-/* ISO C forbids an empty translation unit. */
+-typedef int recomp_icall_feedback_disabled;
+-
+-#endif
++/* Build bridge; implementation and ownership live in the project runtime. */
++#include "guest_branch_feedback.c"
+--- a/tools/recomp/test_icall_guarded_runtime.py
++++ b/tools/recomp/test_icall_guarded_runtime.py
+@@ -20,6 +20,7 @@
+ import subprocess
+ import sys
+ import tempfile
++from pathlib import Path
+ 
+ import pytest
+ 
+@@ -29,11 +30,13 @@
+ from tools.recomp.icall_feedback import parse_sites_dump  # noqa: E402
+ from tools.recomp.lifter import Lifter  # noqa: E402
+ from tools.recomp.translator import _fixup_icall_esp_save  # noqa: E402
++import translation_batch
+ 
+ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+ HEADER = os.path.join(ROOT, "templates", "runtime", "recomp_types.h")
+ FEEDBACK_C = os.path.join(ROOT, "src", "kernel", "icall_feedback.c")
+ FEEDBACK_H_DIR = os.path.join(ROOT, "src", "kernel")
++PROJECT_RUNTIME = str(Path(translation_batch.__file__).resolve().parents[2] / "src/runtime")
+ 
+ A, B, C = 0x00011000, 0x00011100, 0x00011200
+ SITE = 0x00010040
+@@ -200,7 +203,7 @@
+         with open(p, "w") as f:
+             f.write(RECORDER)
+         r = _run(tmp, [p, FEEDBACK_C],
+-                 ["-DRECOMP_ICALL_FEEDBACK", "-I", FEEDBACK_H_DIR])
++                 ["-DRECOMP_ICALL_FEEDBACK", "-I", FEEDBACK_H_DIR, "-I", PROJECT_RUNTIME])
+         assert r.returncode == 0, r.stdout + r.stderr
+         sites = parse_sites_dump(os.path.join(tmp, "icall_sites.dump"))
+         assert sites[0x00010040] == ({0x00011000}, False)

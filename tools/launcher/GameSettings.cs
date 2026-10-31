@@ -32,6 +32,7 @@ namespace TimeSplitters.Launcher
         public double Sensitivity = .10;
         public bool DiscordEnabled;
         public bool EnhancedTextures;
+        public bool EnhancedAudio;
         public string DiscordApplicationId = "1561627743353962566";
         public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes;
         public const int FovDefault = 55, FovMin = 40, FovMax = 100;
@@ -132,6 +133,12 @@ namespace TimeSplitters.Launcher
                 Core.Require(match.Success, "Frame-rate settings are invalid. No settings were changed.");
                 model.NativeFps = Int32.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
                 if(model.NativeFps==144)model.NativeFps=120; // Previous preset; load without rewriting.
+            }
+            string audio = Text(model.originals[Files[5]]);
+            if(audio.Length>0) {
+                var match=Regex.Match(audio,@"\ATSFP_AUDIO_V1\s+([01])\s*\z");
+                Core.Require(match.Success,"Enhanced Audio settings are invalid. No settings were changed.");
+                model.EnhancedAudio=match.Groups[1].Value=="1";
             }
             model.runtime = Text(model.originals[Files[2]]);
             if (model.originals[Files[2]] == null && !String.IsNullOrEmpty(inheritedRuntime)) model.runtime = Text(Read(inheritedRuntime));
@@ -324,7 +331,8 @@ namespace TimeSplitters.Launcher
             graphics["refresh_rate"] = RefreshRate.ToString();
             var payload = new[] { Json.Encode(document) + "\n", (VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),
                 "TSFP_DISCORD_V1 " + (DiscordEnabled ? "1" : "0") + " " + (DiscordApplicationId.Length == 0 ? "0" : DiscordApplicationId) + "\n",
-                "TSFP_FRAME_RATE_V1 " + NativeFps.ToString(CultureInfo.InvariantCulture) + "\n" };
+                "TSFP_FRAME_RATE_V1 " + NativeFps.ToString(CultureInfo.InvariantCulture) + "\n",
+                "TSFP_AUDIO_V1 " + (EnhancedAudio ? "1" : "0") + "\n" };
             int committed = 0;
             try { for (int i = 0; i < Files.Length; i++) { Replace(Core.PathIn(root, Files[i]), Encoding.UTF8.GetBytes(payload[i]), true); committed++; } }
             catch
@@ -338,12 +346,14 @@ namespace TimeSplitters.Launcher
         public static ProcessStartInfo StartInfo(string root)
         {
             var model = Load(root, null); model.Validate();
+            SaveLocations.Resolve(root); // Fail visibly before launching if the chosen drive is missing.
             var Files = model.Files;
             var info = new ProcessStartInfo(Core.PathIn(root, LauncherPlatform.GamePath(root))) { WorkingDirectory = Core.PathIn(root, "Bin"), UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
             foreach (string key in info.EnvironmentVariables.Keys.Cast<string>().ToArray())
                 if (key.StartsWith("RECOMP_", StringComparison.OrdinalIgnoreCase) || key.StartsWith("TSFP_", StringComparison.OrdinalIgnoreCase)) info.EnvironmentVariables.Remove(key);
             foreach (var pair in new Dictionary<string, string> {
                 {"TSFP_CRASH_DIR","Logs/Crashes"}, {"RECOMP_GAME_DIR",LauncherPlatform.Data(root)}, {"RECOMP_SAVE_DIR",LauncherPlatform.Saves(root)}, {"RECOMP_INPUT_CONFIG",Files[0]}, {"RECOMP_FFMPEG_DIR","Bin"}, {"RECOMP_DISPLAY_CONFIG",Files[2]}, {"TSFP_DISPLAY_CONFIG",Files[1]}, {"TSFP_TEXTURE_PACK_DIR",LauncherPlatform.Textures(root)}, {"TSFP_ONLINE_SETTINGS","Settings/pc-online.json"} }) info.EnvironmentVariables[pair.Key] = Core.PathIn(root, pair.Value);
+            info.EnvironmentVariables["TSFP_CRASH_EXTENDED"] = CrashReports.ExtendedForNextLaunch ? "1" : "0";
             // Explicit zero also overrides an old native_fps runtime preference.
             info.EnvironmentVariables["TSFP_NATIVE_FPS"] = model.NativeFps.ToString(CultureInfo.InvariantCulture);
             info.EnvironmentVariables["RECOMP_FRAME_INTERP"] = "1";

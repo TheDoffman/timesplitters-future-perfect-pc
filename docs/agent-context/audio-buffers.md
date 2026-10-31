@@ -1,6 +1,6 @@
 # Effects buffering under load
 
-`patches/media/0035-dsound-busy-buffer-recovery.patch` extends shared runtime
+`patches/media/0055-dsound-busy-buffer-recovery.patch` extends shared runtime
 `src/hle/hle_dsound.c`; see [runtime](runtime.md) for the buffering contract.
 It is independent of native-high-refresh timing and of the music stream path.
 
@@ -20,7 +20,7 @@ No new audio thread, guest clock, stream policy or host API is introduced.
 
 ## Invalid buffer retirement
 
-`media/0036-dsound-invalid-buffer-retirement.patch` retires known buffers before
+`media/0056-dsound-invalid-buffer-retirement.patch` retires known buffers before
 unusable-settings exits in `model_for_known`. Previously cleared settings
 holders, invalid rate or zero alignment could return NULL while retaining a
 slot indefinitely. The normal DoWork walk now releases the host voice and
@@ -40,7 +40,7 @@ Windows fixture results do not establish Mac or busy online listening behavior.
 
 ## Format changes and partial source tails
 
-`media/0037-dsound-format-and-tail-recovery.patch` includes guest sample rate
+`media/0057-dsound-format-and-tail-recovery.patch` includes guest sample rate
 and source alignment in buffer identity, independent of SetFrequency's playback
 rate. A changed format rebuilds both clocks and drops the old host voice,
 following the existing format-change lifecycle. Raw source size remains the
@@ -62,7 +62,7 @@ they do not establish the title's frequency of use or audible hardware behavior.
 
 ## Device and voice recovery
 
-`media/0038-audio-device-recovery.patch` implements bounded XAudio recovery and
+`media/0058-audio-device-recovery.patch` implements bounded XAudio recovery and
 shared stream/movie discontinuity handling. `audio_output.h` owns the one-second
 retry interval and `recomp_audio_output_take_discontinuity(slot)` notification.
 Unsuccessful initial output also marks a discontinuity, so restoration skips
@@ -98,3 +98,21 @@ It is distinct from physical unplug/replug, Bluetooth switching and listening.
 Primary API references: [XAudio critical-error recovery](https://learn.microsoft.com/en-us/windows/win32/api/xaudio2/nf-xaudio2-ixaudio2enginecallback-oncriticalerror),
 [XAudio 2.9 endpoint migration](https://learn.microsoft.com/en-us/windows/win32/xaudio2/xaudio2-redistributable),
 and [SDL default-device migration](https://wiki.libsdl.org/SDL3/SDL_OpenAudioDevice).
+
+## Integration with Enhanced Audio
+
+General recovery patches 0055-0058 apply after the existing 0040/0045/0050
+beta patches. The earlier local 0035-0038 names were reordered for integration;
+the recorded patch ledger still migrates that local stack. No recovery path
+checks `pc_audio_enhanced_enabled`: buffering, invalid-slot retirement, format
+repair and device recovery apply in either mode. The toggle continues to own
+only spatial routing, gunfire range and environmental/ambience processing.
+
+XAudio serializes the beta setters with recovery and preserves routing/filter
+targets across unexpected voice/engine loss; explicit reset clears them.
+Both adapters restore filter history after rejected PCM submission. The XAudio
+backup is shared under the output lock and copied only for active filtering.
+`test_audio_device_recovery.py` adds enhanced-on/off cases for both adapters,
+checking recovery, ordinary PCM preservation and explicit-reset cleanup.
+These deterministic adapter checks do not establish audible whole-game or
+physical Mac acceptance.

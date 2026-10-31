@@ -1,0 +1,9 @@
+# Handheld minigun native spin
+
+Supported US callback 1C74D0 (weapon 7, descriptor 4F01B8) handles event 1 motor updates and event 10 readiness. HAND+DC is motor speed; +E0 barrel angle; linked STATE+108 heat. Event 10 sets HAND+64 and requires speed >=4 and heat <=.9. Acceleration is .15 per elapsed tick, capped at 10. Site 1C7600 applies .97 deceleration when neither secondary mode nor spin intent is active.
+
+Player routine 1C3100 updates the motor at 1C3A71 and clears +64 at 1C3B1A each native update. Whole-tick fire checks cannot refresh intent on intervening fractional updates. Read-only Windows sampling observed speed plateau 2.547569 near 120 FPS, below the firing threshold, with the handheld minigun visibly equipped.
+
+The shared helper supplies held primary intent only around event 1 for the current local ready minigun hand and hand/state link. Original 42760 controller routing, inhibition and configured primary mask are respected. The wrapper restores the previous flag. Other events, weapons and Original mode bypass this scope. Numeric policy normalizes motor release damping to elapsed ticks and preserves speed while paused. Generic shot, ammunition and cooldown gates are unchanged.
+
+The original-callback regression reproduces failure at 120/144/180/240 FPS and reaches readiness at about .45 seconds with the fix at all five rates including 60. It checks two-second release decay, pause and input/identity guards; audio/model services are controlled stubs. Original 60 reaches readiness at .4667 seconds because its intent arrives a tick later. This fixture does not prove projectile hits, ammunition use or rendered barrel behavior. The Windows candidate built and started successfully; the user confirmed the minigun now works. Exact shot/ammunition cadence and physical Mac validation remain unmeasured. No OS-specific gameplay policy is introduced.

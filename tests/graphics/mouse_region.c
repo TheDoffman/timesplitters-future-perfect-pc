@@ -9,15 +9,21 @@
 typedef struct PcGuestRegion {uintptr_t base;size_t size;int writable;} PcGuestRegion;
 static unsigned char guest[0x800000];
 static unsigned queries;
-static int readable=1,writable=1,split,forward,blocked_low;
+static int readable=1,writable=1,split,forward,blocked_low,short_gun;
 static uint32_t player_address=0x10000,fov_address=0x30000;
 static PcGuestRegion pc_guest_query_region(uintptr_t address)
 {
     PcGuestRegion r={0};++queries;
     uintptr_t base=(uintptr_t)guest;
+    /* A readable angle prefix must not make an inaccessible operator readable. */
+    if(short_gun && address>=base+0x60000 && address<base+0x61000) {
+        r.base=base+0x60000;r.size=short_gun==2?0x9c:0xd8;r.writable=1;return r;
+    }
     if(blocked_low && address>=base && address-base<0x20000)return r;
     if(readable && address>=base && address-base<sizeof guest) {
         r.base=base;r.size=sizeof guest;r.writable=writable;
+        if(short_gun && address<base+0x60000)r.size=0x60000;
+        if(short_gun && address>=base+0x61000) {r.base=base+0x61000;r.size=sizeof guest-0x61000;}
         if(split) {
             r.size=0x20000;
             r.writable=split==2?0:writable;
@@ -120,6 +126,42 @@ int main(void)
     CHECK(F(0x40100)==0 && F(0x30100)==-2 && input.dx==10 && input.dy==5);
     U(0x30000)=7;U(0x30004)=0;player_address=0x30000;APPLY();
     CHECK(fabs(F(0x30100)+3)<.001 && F(0x40100)==0 && !input.dx);
+    /* Both real adapter bodies must route differently named mounted guns,
+     * validate the operator past the angle fields, and recheck after exit. */
+    forward=0;U(0x30114)=0x80;U(0x30014)=0x40000;U(0x4007c)=0x42000;
+    U(0x42c14)=0x50000;U(0x5007c)=0x60000;U(0x60000)=0x50000;
+    U(0x60004)=0x54414e4b;U(0x60010)=4;U(0x600d8)=0x40000;
+    F(0x60034)=-90;F(0x60038)=90;F(0x6003c)=-180;F(0x60040)=180;
+    F(0x4e794c)=.4166667f;
+    float old_pitch=F(0x30104);
+    MOVE();APPLY();CHECK(F(0x60024)==-1 && F(0x6001c)==.5f);
+    CHECK(F(0x30100)==-3 && F(0x30104)==old_pitch && !input.dx);
+    short_gun=1;MOVE();APPLY();
+    CHECK(F(0x60024)==-1 && !input.dx);short_gun=0;
+    U(0x600d8)=0;U(0x60068)=0x40000;MOVE();APPLY();
+    CHECK(F(0x60024)==-1 && !input.dx); /* AI target cannot authorize the mouse. */
+    U(0x600d8)=0x40000;U(0x60004)=0;MOVE();APPLY();
+    CHECK(F(0x60024)==-2 && F(0x6001c)==1 && !input.dx);
+    U(0x30114)=2;APPLY();CHECK(F(0x30100)==-3 && F(0x30104)==old_pitch);
+    /* Vehicle gunner mode must take the same route through both host adapters. */
+    U(0x30114)=0x400;U(0x4002c)=77;U(0x42c08)=0x400001;
+    U(0x72f5e8)=0x70000;U(0x70314)=0x400001;U(0x70364)=0x71000;
+    U(0x71140)=1;U(0x71070)=77;U(0x710a0)=3;U(0x7109c)=0;
+    U(0x71164)=1;U(0x71144)=0x60000;U(0x42c14)=0;
+    MOVE();APPLY();CHECK(F(0x60024)==-3 && F(0x6001c)==1.5f && !input.dx);
+    CHECK(F(0x30100)==-3 && F(0x30104)==old_pitch);
+    short_gun=1;MOVE();APPLY();CHECK(F(0x60024)==-3 && !input.dx);short_gun=0;
+    writable=0;MOVE();APPLY();CHECK(F(0x60024)==-3 && !input.dx);writable=1;
+    /* Battle Mech mode uses its own aim targets in both host adapters. */
+    U(0x30114)=0x8000;U(0x733108)=0x71000;U(0x712ac)=0x50000;
+    U(0x50020)=8;U(0x5007c)=0x42000;U(0x42aa0)=0x60000;
+    U(0x60050)=1;U(0x6009c)=0;F(0x6002c)=F(0x60030)=0;
+    MOVE();APPLY();CHECK(F(0x60030)==359 && F(0x6002c)==359.5f && !input.dx);
+    CHECK(F(0x30100)==-3 && F(0x30104)==old_pitch);
+    short_gun=2;MOVE();APPLY();CHECK(F(0x60030)==359 && !input.dx);short_gun=0;
+    writable=0;MOVE();APPLY();CHECK(F(0x60030)==359 && !input.dx);writable=1;
+    U(0x6009c)=1;MOVE();APPLY();CHECK(F(0x60030)==359 && !input.dx);
+    U(0x30114)=2;
     /* The interval cache never bridges a region boundary or address overflow. */
     PcGuestRegion region={0};uintptr_t end=(uintptr_t)guest+sizeof guest;
     CHECK(pc_guest_memory_in_span(&region,end-4,4,1));

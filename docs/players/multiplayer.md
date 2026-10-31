@@ -4,11 +4,24 @@ Everyone needs the same game build and matching US Xbox game files. Start the
 game from the launcher or **Play.cmd**, then choose **Online / System Link → Online**.
 You do not need an account or a paid service.
 
+Native Apple Silicon development builds also include this Online window. Build
+matching Windows/Mac source revisions, start the Mac build with
+**Play-Native-Mac.command**, and use the same host/join steps below. Allow incoming
+connections for the game and its Online companion in the macOS firewall when
+hosting. Complete Windows–Mac matches and rematches with six bots have passed
+on LAN with either platform hosting at the default 60 Hz. Internet routing,
+physical-controller use and wider map/mode coverage still need validation.
+It is not yet included in a published Mac game release.
+
+The redesigned Online window uses **Play online** for joining and hosting, and
+**Directory settings** for advanced connection details. Screenshots below show
+the previous layout; the host/join workflow remains the same.
+
 ## Host a match
 
 1. **Set up your router once:** forward **TCP 30820** and **UDP 30821** to your
    PC, and allow both through Windows Firewall. Only the host needs to do this.
-2. In the Online window, leave **Start directory automatically on this PC** and
+2. In the Online window, leave **Start directory automatically** and
    automatic public IPv4 detection enabled. Enter a lobby name, then click
    **Start New Match**. Leave the UDP port at **30821** unless you need another.
 3. Click **Copy invitation** and send the full invitation to your friends.
@@ -41,6 +54,7 @@ This screenshot uses an example invitation; ask your host for a real one.*
 Guests do not need to forward ports. To browse public lobbies instead, use the
 same directory as the host, click **Refresh**, select a lobby, then **Join selected**.
 A short join code works only when that directory is already configured.
+Set its address and fingerprint on the **Directory settings** tab.
 
 ![Separate Online window with an example invitation pasted above Join by code.](../assets/online-join.png)
 
@@ -71,7 +85,7 @@ host exits, chooses System Link or reopens Online. Public IP detection uses
 information, credentials or game data and does not open router ports.
 
 Use a standalone directory only if several hosts need to share one persistent
-lobby list. Disable **Start directory automatically on this PC** when using it.
+lobby list. Disable **Start directory automatically** when using it.
 Automatic hosting reports an occupied directory port rather than replacing an
 existing service.
 
@@ -100,8 +114,8 @@ environment. Keep this window open. It makes no certificate store changes.
 - Guests need no forwarding. A host behind carrier-grade NAT needs a reachable
   player to host instead. IPv6-only hosting is not implemented.
 
-Choose **Online / System Link > Online** in the game and enter the directory
-address and certificate fingerprint. These non-secret preferences are saved in
+Choose **Online / System Link > Online** in the game, open **Directory settings**,
+and enter the directory address and certificate fingerprint. These non-secret preferences are saved in
 ignored `config/pc-online.json`.
 
 To host, enter a name and UDP port, select **List publicly** or leave it private,

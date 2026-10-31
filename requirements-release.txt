@@ -1,4 +1,4 @@
-# Certificate generation in the portable Online companion (Windows x64 wheels).
+# Certificate generation in the portable Online companion (native wheels per host).
 cryptography==50.0.2
 cffi==2.1.1
 pycparser==3.11

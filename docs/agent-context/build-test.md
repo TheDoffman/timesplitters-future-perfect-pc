@@ -1,23 +1,45 @@
 # Build, run and validation map
 
-[Audio buffering, lifecycle and device recovery tests](audio-buffers.md).
+[Save-folder checks](save-locations.md): storage, picker callback ownership/mutation, and shared launcher copy/restore/UI tests; both launcher builds include SaveLocations.cs.
 
-Launcher UI/JSON recovery use shared UI, native parser and package checks.
+test_native_timing.py::test_original_minigun_spin runs the complete supported-US callback with controlled audio/model services. It reproduces the old high-FPS failure and checks readiness, release, pause and input guards at 60/120/144/180/240 FPS. Existing CI selects this suite; private-XBE absence skips it. Historical stack fixtures exclude minigun intent until the full native stack is applied. See native-minigun.md.
 
-Source/tool/test paths now use responsibility folders; see
-[layout](../development/repository-layout.md). Commands share
-`tools/project_paths.py` and `tests/conftest.py`. Portable probes avoid both.
+Release 0.4.0 / launcher 1.4.1 tests cover aliases and upload recovery; Mac
+Online notices follow [installer paths](multiplayer-ui.md).
+Run `python -m unittest discover -s tests/launcher -p test_launcher_release.py -v`.
 
-Nested patch discovery, Mac manifest hashes and migration tests: [folder rules](../../patches/README.md).
+Windows builds pass `config/build/windows-game.manifest` as
+`TSFP_GAME_MANIFEST`; patch 2130 attaches it only to the game target. CMake
+merges system DPI awareness with UAC/common-controls before network identity
+sealing. `test_window_theme.py` builds isolated manifest/no-manifest probes,
+checks embedded XML and asks Windows for the actual process awareness. These
+tests already run in both-host runtime CI (Windows-only cases skip on Mac).
+The native CI dependency selection includes the shared `pefile` pin because
+these probes inspect the executable's PE resources before checking process DPI.
 
-CI inline Python uses project_paths; standalone RHI and Mac crash/IPC fixtures
-supply grouped includes.
+[Build/test speed and timing alerts](release-speed.md).
 
-[Own translation and flag tests](independent.md).
+Kernel boot dependency/fixture policy: [contracts](kernel-objects.md).
+
+Memory: [retired APIs](retired-memory-compatibility.md).
+
+Grouped paths: [layout](../development/repository-layout.md).
+Imports: `tools/project_paths.py`, `tests/conftest.py`. [Interaction tests](interaction-input.md).
+
+Patch discovery/migration: [folder rules](../../patches/README.md).
+
+Standalone RHI/replay set `TSFP_SHARED_SOURCE`; see [maps](guest-host-mappings.md).
+
+[Guest services, headers, compiler and execution contracts](independent.md).
+Allocation/image/state/ABI tests use fatal warnings and bounded mismatch reports.
+Storage probes: [threads](thread-memory.md), [virtual-memory ABI/access](virtual-memory.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 
 Sampler, trace/thread/idle and state-slot tests: [runtime](runtime.md).
+
+Material-cache/arena checks run in the existing native timing suite; see
+[render matrix lifetime](render-matrix-cache.md).
 
 Shader upload tests: [RHI fixture](vsh-constants.md).
 
@@ -70,14 +92,15 @@ center bounds too. `test_mounted_mouse.py` covers split-screen mouse
 adapters; live gameplay remains unverified.
 <!-- packet:end -->
 
-SDL tests accept Confirm E/Space and reject the third fixture slot Return
-(shared two-slot cap). Run `tools/build/build-native-mac.py --test` on Mac; this
-synthetic check neither changes bindings nor certifies physical keyboard input.
+SDL tests (`tools/build/build-native-mac.py --test`) cover the two-slot E/Space
+cap, requested capture, release and frame-applied mouse disable. They preserve
+bindings; physical input remains unverified.
 
-`runtime-patches.yml` selects runtime/launcher work for one head; `ci-pr-gate.py`
-checks both hosts. Native jobs allow 30 minutes. Existing required names remain
-until ruleset migration. `test_ci_pr_gate.py` covers missing/failed/skipped
-results; `test_ci_runtime_scope.py` checks wiring. Issue jobs select their sources.
+CI: `runtime-patches.yml` selects work; `ci-pr-gate.py` requires both hosts.
+Native jobs allow 45 minutes on Windows and 30 on Mac; patch upgrades allow 30.
+Required check names remain.
+`test_ci_pr_gate.py` rejects missing/failed/skipped results;
+`test_ci_runtime_scope.py` checks wiring. Issue jobs select their sources.
 
 `test_push_gather.py`: full original-reference gathering, fresh bytes, failures,
 guard pages, large buffers and32-bit wrapping. Both native CI hosts run it.
@@ -88,7 +111,7 @@ dispatch and copy/rebase/leak mutations. Both hosts; mocked draws.
 
 Reload/Fire #337: `test_native_timing.py` covers the US decoder;
 `reload_phase_sweep.h` covers 864 schedules/1,728 presses. `test_reload_keys.py`
-covers 1,360 Reload and 680 Fire schedules at 60ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ240, priority, remaps and
+covers 1,360 Reload and 680 Fire schedules at 60ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ240, priority, remaps and
 lifecycle. `native_reload_input.c` adds 425 original-decoder Fire schedules
 (X surrogate). Windows `pc_controls.c` checks the event bridge.
 `native_refresh_game.py --native --fps 180 --short-fire --seconds 116` checks
@@ -103,9 +126,8 @@ with fast entry disabled). Rejected inputs leave all bits/FP flags unchanged.
 Public fixtures/mutations run on both hosts; US-body tests need the private XBE.
 Camera/mothership/spawn/rigid fixtures include the shared helper.
 
-Crash breadcrumb/health tests: `test_crash_capture.py` checks Windows capture,
-helper death and the portable ring; `test_native_crash.py` checks Darwin output.
-Both hosts run these and shared UI identity/failure/ZIP tests.
+Crash capture/heartbeat and bounded Windows sharing retries: `test_crash_capture.py`.
+Darwin: `test_native_crash.py`. Both hosts run shared UI identity/failure/ZIP tests.
 
 
 `stability_transitions_game.py --scenario rocket-impact --native-fps 240
@@ -162,8 +184,8 @@ presence semantics, decoding/reporting, and repeated-lookup/executor mutations.
 
 `test_window_theme.py`: menu drawing, mnemonics, inserted/reordered rows (#333).
 
-`test_audio_output_gain.py` / `test_audio_timing.py`: XAudio/SDL, fake devices,
-gain overrides, mute, live volume and voice parity.
+[Audio tests](audio-buffers.md): timing, gain, buffer/device recovery and beta
+ON/OFF compatibility with XAudio/SDL doubles.
 
 `test_controller_profile.py`: devices/maps/disconnect and SDL virtual input;
 physical pads/Mac gameplay remain unverified.
@@ -177,7 +199,7 @@ exact decoded pictures/timestamps/PCM and duration. Controlled
 and Windows clocks; private-data skips, mocked GPU/audio output. Surface-trace
 fixtures use240/180/Original60/120, matching the strict live-cycle validator.
 
-`test_online_theme.py` isolates Tk lifecycles. `test_framebuffer_sampling.py`
+[Online UI/icon/scrollbar checks](multiplayer-ui.md). `test_framebuffer_sampling.py`
 checks refresh/stale copies and first-entry/any-framebuffer alias lookup against
 the original searches, including wrong-first/last mutations (Mac GL/RHI, Windows RHI).
 `test_trace_filter.py` compiles real trace dispatch: quiet calls, explicit
@@ -438,9 +460,9 @@ when a covered system changes without its documentation update.
 | Agent context/index | `python tools/repo-context.py check`; `python -m pytest tests/repository/test_repo_context.py -q` | Changed-path maintenance check against base |
 | Patch loader/order | `tests/repository/test_patch_tracking.py`, `tests/repository/test_patch_updates.py` | Full stack transition fixtures; supported build |
 | Guest generation/wrappers | `tests/compiler/test_recomp_generation.py`, float/vehicle join tests | Regenerate using verified local XBE, build |
-| Settings/input/menu | Affected `tests/test_*` and native C fixtures | Relevant native target, bounded isolated acceptance |
+| Settings/input/menu | Affected `tests/input/` suites and native C fixtures | Relevant native target, bounded isolated acceptance |
 | Renderer/shader/resources | Shared source contracts, `tests/graphics/test_renderer_host.py`, `tests/graphics/test_rhi_menu_sampling.py` | Windows WARP / Mac `tools/testing/test-rhi-mac.py`; scoped scene evidence |
-| Launcher | `python tools/ci/launcher-compatibility.py --local` | Host build/lifecycle and affected `tests/launcher_*` fixtures |
+| Launcher | `python tools/ci/launcher-compatibility.py --local` | Host build/lifecycle and affected `tests/launcher/` fixtures |
 | Issue automation | `tests/repository/test_issue_forms.py`, `tests/repository/test_issue_resolution.py` | Read-only fixtures, workflow checks; no posting for tests |
 
 Enhancement routing uses the Ideas contact link in the issue chooser. The existing
@@ -481,89 +503,8 @@ rebuilds or repeating unchanged failures; re-run when the inputs change.
 
 ## CI and cross-host limits
 
-Standalone HLE fixtures need both the patched runtime and repository `src/`
-include roots. Framebuffer/ghost mocks cover the current feedback-preservation
-and float-combiner host interfaces; unexpected calls fail rather than silently
-succeed. Camera fixtures extract through the perspective function's closing
-brace, excluding adjacent menu allocation code. Keep the stale-copy, state-leak
-and camera mutation cases enabled when updating those harness dependencies.
-
-`.github/workflows/runtime-patches.yml` calls `tools/ci/ci-runtime-scope.py` to
-select transition/native/GPU/release checks. Launcher builds have separate
-owners. New tests must be registered in the correct workflow; adding a test
-file alone does not run it in CI. The lightweight plan also checks context
-freshness and changed-system guide updates. Preserve required check names.
-The Windows/macOS native step includes `tests/graphics/test_ghost_actor_overlay.py` for
-the living-actor Ghost Gun composite. Its C fixtures test seven resolutions,
-placement restoration, deferred draw flushing, unchanged primitive arguments
-and mutations that remove the fix or break flushing/restoration. Wrapper checks
-read the pinned runtime after the complete patch stack has been applied and
-compile both Windows/native-Mac configurations. The original-US-routine case
-requires the local checksum-verified `private/game/default.xbe` and skips in CI
-without it. These contracts do not establish Mac scene fidelity or replace the
-recorded Windows in-game confirmation; no personal saves are used.
-The optional router context-reader contracts use Node's built-in test runner
-(`node --test tests/repository/repository-context.test.mjs`); game building still uses the
-existing Python/native dependencies. Patch-index loader fingerprints normalize
-text line endings so an older Windows CRLF worktree agrees with fresh LF clones.
-`tests/repository/repository-evidence.test.mjs` adds disposable Git/junction, source
-provenance, redaction, budget and cancellation contracts for the optional broker;
-the same lightweight plan runs both Node test files. No game build or GPU is
-needed for these helpers. Native controller regressions and signed-in model
-acceptance are machine-local checks, separate from repository CI.
-
-The 2026-10-22 optional texture policy supersedes default bundling from `c932bee`.
-Windows and native Mac builders no longer require asset hydration when repository
-`config/textures/texture-pack.json` declares optional delivery. Both game packagers omit
-textures by default; explicit `--with-textures` / `--texture-pack` still audit and
-stream an offline bundle. `write_source_files` omits compiled DDS/JSON from the
-nested source ZIP. Test these defaults without downloading real artwork.
-
-`testing_profile.prepare_run` explicitly supplies `TSFP_TEXTURE_PACK_DIR` from
-the checkout's `assets/textures` and `TSFP_TEXTURE_MODE=classic` after filtering
-inherited diagnostics. Without that pack path F10 toggled modes but loaded no
-replacements. Both Windows Test Lab and the native Mac unlocked runner consume
-this shared environment; no runtime adapter change is needed. Asset-free
-coverage lives in `tests/repository/test_testing_profile.py` and
-`tests/gameplay/test_native_mac_tools.py` (both already selected by native CI). Windows
-runtime loading must be checked separately; native Mac visual validation remains
-pending. Missing packs retain the loader's Classic fallback for source-only tests.
-
-Official game publishing reads the repository delivery policy. Optional delivery
-requires no `Textures/` members and does not hydrate LFS. `textures` is null
-or carries only `delivery: optional` and the exact-hash retired-icon policy.
-`optional_identity` reads that small policy without touching DDS files. Packages
-with retirements retain the published launcher 1.2.24+ requirement. Legacy bundled-policy fixtures still enforce complete asset identity
-and launcher compatibility. `tools/textures/texture-release.py` separately audits and
-publishes immutable schema-3 parts plus per-file hashes; the public index is
-`config/texture-download.json`, distinct from the repository catalog. The initial
-unpublished placeholder is replaced only after successful publication. Asset CI
-hydrates LFS for pack/auditor changes, not game or launcher version bumps.
-
-Regression routes: `test_texture_release.py`, `test_build_textures.py`,
-`test_publish_release.py`, `package_launcher.py`, `test_native_mac_package.py` and
-both launcher hosts' `--textures` / shared UI checks. Indexed-update tests cover
-adopting bundled files without receipts, changed/missing parts, cancellation,
-checksum/index rejection and custom data preservation. Existing installer tests
-cover rollback, invalid paths and corruption. Real Mac execution remains a host
-check; a Windows compile or portable packaging test is not Mac acceptance.
-
-`tools/network/bundle_online.py:bundle_standard_library` keeps `ssl.py` and top-level
-stdlib PEM trust resources together as real files in the Windows portable
-runtime. A CPython distribution may load adjacent policy during SSLContext
-construction; placing the module in a ZIP while dropping its PEM files broke
-alpha.2 packaging. Trust-policy bytes are preserved unchanged. The relocated
-SSLContext regression runs in `test_publish_release.py`; the normal real-package
-probe still checks Tk, TLS and certificate generation with the bundled Python.
-
-`docs/project/STATUS.md` holds measured results; `docs/project/MAC_PORT_BACKLOG.md` records missing adapter
-or validation work. Neither is an architectural index or a guarantee that all
-listed historical tests still describe current policy. Current rules retain
-original 60 FPS/60 Hz defaults, compatible native high-FPS opt-ins (separate
-from retired interpolation), and distinguish API presents, GPU completion and scanout.
-Use [testing-profile](../development/testing-profile.md), [building](../development/building.md) and
-[macos](../players/macos.md) for full commands. Never auto-test through personal saves,
-interactive launchers or persistent user settings.
+See [runtime CI contracts](runtime-ci.md) for suite selection, native fixtures,
+packaging boundaries, host acceptance and job budgets.
 
 ## Bounded Arcade weapon-set route
 
@@ -582,6 +523,8 @@ negative controls on both CI hosts; neither proves rendered parity. Sample-load
 instrumentation preserves libc copy macros; a redefinition mutation must fail.
 
 ## Compatibility repair controller
+
+[PR text](launcher.md#github-issue-automation).
 
 `tools/ci/compatibility-worker.py` runs on the designated Mac outside CI. Install
 with `--auto-merge` only for authorized repair follow-through. It publishes a
@@ -661,30 +604,10 @@ not omit the patch from fresh/current-stack or renderer regression tests.
 ## Mounted gun input regression
 
 `python -m pytest tests/gameplay/test_mounted_mouse.py tests/input/test_terminal_mouse.py -q`
-compiles guarded host-memory C fixtures on Windows/macOS. Mounted tests cover
-AGUN ownership/local port, single-consumption relative motion, gun-specific
-pitch sign, FOV/inversion/speed, authored clamps/fixed axes/full-circle wrap,
-paused/stale/focus rejection and returning to ordinary look. Runtime CI includes
-both tests. Physical turret aiming/firing and native host delivery remain
-separate gameplay checks; see #182 in STATUS and MAC-001.
-`native_mounted_mouse.c` checks 60/120/144 with 125/1000/8000 Hz packets,
-jitter, quarter speed, fresh/integrated displacement, pause/invalid clocks,
-handoff and untouched player angles. Old-clock/batch mutations must fail.
-These controlled-field tests do not certify live turret rendering/input.
-Consult STATUS for current build hashes, not historical candidate paths.
-`mouse_region.c` checks actual Windows/SDL mouse bodies with controlled maps:
-one query for either address order, forward page spans, split/read-only/inaccessible
-FOV maps, expiry, terminal routing and bounds. Persistent/uncached/unordered
-mutations must fail. `camera_region_host.c` validates real OS protection changes
-on Windows/macOS. Mocked locks/events are not physical input. `auto_look_region.c`
-checks the pre-guest auto-look scope: one same-map query, split/read-only maps,
-expiry and bit restoration. Its mutations run in registered `test_auto_look.py`.
-`tests/input/pc_controls.c` and the SDL `--input-self-test` now exercise mounted
-mode through the actual adapters, changing the native rate without recreating
-input capture. The focused Windows `tsfp_pc_controls_test` target passes with
-the isolated fixture config and scratch directory. SDL physical-host execution
-is still pending. The portable packet fixture explicitly includes `<stddef.h>`
-for `ptrdiff_t`; Mac Clang does not supply it through `<stdlib.h>` as MSVC did.
+runs the existing CI-selected suite. See [mounted ownership and validation](mounted-mouse.md)
+for original guest mount/dismount execution, host-memory/adapter tests, timing
+mutations, and physical Windows/Mac acceptance limits. #385 adds instance-name,
+operator-versus-AI-target and inaccessible-operator regression cases.
 
 ## Launcher stalled-network regression
 
@@ -794,13 +717,13 @@ power of the original packed one-tick damping must retain the 60-step result.
 This needs the local supported XBE; hosted skips are not GPU acceptance. It
 proves a scalar arithmetic contract, not full spatial water/byte-storage parity.
 
-The damping case first executes all of `sub_003D9520` through the current lifter
-and passes its packed bytes to the GPU fixture. Do not substitute hand-rounded
-constants: the current recompiled conversion truncates. `surface_coefficient_upload.c`
-checks the stack/callee-saved-register boundary and supplies sufficient command
-space; no generated game code is checked in. `test_ordered_combiner_constants`
-also covers the production coefficient setter/clear/cache path. The GPU scalar
-case now uses the shared coefficient helper for its corrected values.
+The damping case executes `sub_003D9520` through the current lifter and passes
+its packed bytes to the GPU fixture. Keep actual uploads as the reference;
+[water conversion checks](surface-coefficients.md) cover rounded CVTSS2SI.
+`surface_coefficient_upload.c` checks stack/callee-saved registers and command
+space; generated game code stays local. `test_ordered_combiner_constants` covers
+production coefficient setter/clear/cache behavior. GPU scalar checks use the
+same shared coefficient helper.
 
 The coefficient integration was exercised with the existing bounded Scotland
 route at 60/120/144 and `--trace-surface-images`. Use the image validator for
@@ -999,3 +922,111 @@ See [water tests](water-tests.md) for CPU/GPU validation and live limits; see
 
 CI discovers unittest in each owning test folder. Changes to project_paths.py
 or conftest.py select all runtime and launcher suites.
+
+
+[Request CI](kernel-objects.md).
+
+
+Stage0219 device/name source and contracts use maintained src/runtime and tests/compiler
+paths; see [device ownership](kernel-devices.md). Shared CI selects every new portable
+contract and actual-header probe. The Windows real-host binding fixture skips on Mac;
+that skip does not replace native Mac compilation or title gameplay.
+
+[Unlock migrations](unlock-content.md).
+
+
+Original sharing bridges and ordinal80 cleanup: [contracts and checks](kernel-sharing.md).
+
+
+Stage0220 migration models: native-checkpoint, old-controls and old-Mac fixtures
+omit0220 together with its0219 prerequisite while constructing historical inputs.
+Each complete upgrade explicitly asserts the original sharing include/provider
+and ordinal80/16byte cleanup. Full current stacks still include0220. No loader,
+patch bytes, runtime behavior, strict warnings or final upgrade checks are weakened.
+
+
+Online loopback CI synchronization: test_online.py's three-peer handshake waits
+for the host's two authenticated latency replies as well as each guest's first
+reply, matching its existing assertions. The same four-second deadline, nonce/
+credential/replay checks and relay assertions remain. A partial host roster must
+not end that wait. This test-only fix changes no transport or runtime behavior.
+
+
+Original request lifetime/callback prerequisites: [contracts and ABI boundary](request-lifetime.md).
+
+
+Stage0222: [original driver-call composition and opaque stack payload](driver-call.md).
+
+
+Driver fault controls must compile under Clang/Werror before runtime rejection:
+target expected-pointer weakening retains the expected operand; separate wrong
+rollback location/pointer controls retain put. See test_io_target/test_io_call;
+unused-mutant compiler errors are fixture failures, never passing fault evidence.
+
+
+Stage0223: [private request construction and completion delivery](transfer-completion.md).
+
+Stage0224: [host-owned FIFO request scheduling](transfer-completion.md#host-owned-request-queue).
+
+Stage0225: [StartIo callback composition and acceptance](transfer-completion.md#startio-callback-composition); maintained maps include the new provider.
+
+Stage0226: [exclusive waiting membership and device queue mirrors](transfer-completion.md#device-queue-mirrors).
+
+Stage0227: [persistent device queue lifetime and scoped scheduler APIs](transfer-completion.md#persistent-device-queue-lifetime).
+
+Stage0228: [read-only caller-owned request adoption and range lifetime](transfer-completion.md#caller-owned-request-adoption).
+
+Stages0229/0231: [events and targets](transfer-completion.md). Stage0232: [symbolic links](symbolic-links.md).
+
+Stages0233/0234: [routing](guest-paths.md), [original host storage](host-storage.md).
+
+Vehicle mouse coverage: `tests/gameplay/test_mounted_mouse.py` exercises shared
+mode `0x400` seat ownership and both host adapter bodies. Its optional supported-XBE
+fixture (`vehicle_mouse_guest.c`) runs original seat dispatch, gun update and camera
+math, and rejects the old mouse route. This is separate from live mission acceptance;
+see [mounted and vehicle mouse contracts](mounted-mouse.md).
+
+The mounted original-vehicle fixture additionally runs 1730E0 track output and
+link restoration across camera headings, forward/reverse and steering. Original
+CA040 camera coverage now includes nonzero driver pitch; its original custom
+ABI saves ESI, while the pitch branch uses other registers as scratch. Existing
+zero-pitch ABI expectations remain checked. See [tank controls](mounted-mouse.md).
+
+Stage0235: [original pool imports and native surface retirement](kernel-pool.md).
+
+Stage0236: [original absolute-time codec and guest calendar imports](kernel-time.md).
+
+The0236 upgrade source checker reads UTF-8 explicitly: Windows cp1252 cannot
+decode existing bridge box-drawing comments. CI4cb4697c found this fixture-only
+error; native calendar source and the accepted game binary do not change.
+
+[Native multiplayer and crossplay validation](multiplayer-ui.md).
+
+[Strings](kernel-strings.md), [RTL](kernel-rtl.md), [formatting](guest-printf.md), [numbers](guest-numbers.md).
+
+
+Crash evidence CI now selects `tests/diagnostics/test_guest_capture.py` beside
+existing crash tests on both hosts. It compiles the shared bounded-memory writer
+against synthetic addresses; Windows fatal-helper tests assert model history is
+exported. Native fatal-helper tests assert the same history and diagnostics
+metadata on Darwin. Host skips are not a passing native execution result.
+
+Allocation observation is checked by `test_allocation_observer.py`; both host
+helper fixtures assert allocation/release history reaches the report. Patch
+tracking tests require the evidence hook after the independent allocator/boot
+and presentation patches, before final source-layout routing.
+
+Historical upgrade fixtures exclude the later model-trace/allocation-observer
+patches until upgrading to the full stack. Model instrumentation is inserted
+before a stable function, rather than at EOF, so reversing it preserves local
+trailing edits during historical branch round trips. These are tested in
+`tests/repository/test_patch_updates.py`.
+
+Crossplay: [acceptance](multiplayer-ui.md#physical-windowsmac-online-acceptance).
+
+Crossplay rotation: `tests/network/test_crossplay_peer.py`.
+
+Crossplay lock/recycle guards: `test_crossplay_peer.py`; reused Online interpreter:
+`test_native_mac_tools.py`. See multiplayer-ui.md.
+
+Mech input: test_mounted_mouse.py; [scope](mounted-mouse.md#battle-mech-mouse-425).

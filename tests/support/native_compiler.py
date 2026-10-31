@@ -21,6 +21,9 @@ import shutil
 import subprocess
 
 
+_WINDOWS_ENVIRONMENTS = {}
+
+
 def native_compiler(directory):
     if os.name != 'nt':
         environment = dict(os.environ)
@@ -32,6 +35,19 @@ def native_compiler(directory):
     compiler = shutil.which('cl', path=environment.get('PATH'))
     if compiler and environment.get('VSCMD_ARG_TGT_ARCH') == 'x64' and environment.get('INCLUDE') and environment.get('LIB'):
         return compiler, _headers(environment)
+    # Cache only environment discovery, never compilation or test outcomes.
+    # pytest changes this diagnostic label per case; refresh it on every return.
+    current_test = environment.pop('PYTEST_CURRENT_TEST', None)
+    key = (str(Path.cwd()), tuple(sorted(environment.items())))
+    saved = _WINDOWS_ENVIRONMENTS.get(key)
+    if saved is not None:
+        compiler = shutil.which('cl', path=saved.get('PATH'))
+        if compiler:
+            restored = dict(saved)
+            if current_test is not None:
+                restored['PYTEST_CURRENT_TEST'] = current_test
+            return compiler, _headers(restored)
+        del _WINDOWS_ENVIRONMENTS[key]
     locator = Path(environment.get('PROGRAMFILES(X86)', r'C:\Program Files (x86)')) / 'Microsoft Visual Studio/Installer/vswhere.exe'
     assert locator.is_file(), 'Install Visual Studio or Build Tools with the MSVC x64 C++ toolchain'
     installation = subprocess.check_output([
@@ -50,6 +66,11 @@ def native_compiler(directory):
                         if '=' in line and not line.startswith('=')))
     compiler = shutil.which('cl', path=environment.get('PATH'))
     assert compiler and environment.get('VSCMD_ARG_TGT_ARCH') == 'x64', 'Could not initialize the MSVC x64 environment'
+    if len(_WINDOWS_ENVIRONMENTS) >= 8:
+        _WINDOWS_ENVIRONMENTS.pop(next(iter(_WINDOWS_ENVIRONMENTS)))
+    _WINDOWS_ENVIRONMENTS[key] = dict(environment)
+    if current_test is not None:
+        environment['PYTEST_CURRENT_TEST'] = current_test
     return compiler, _headers(environment)
 
 

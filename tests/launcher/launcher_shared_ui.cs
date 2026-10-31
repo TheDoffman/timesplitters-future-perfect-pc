@@ -74,6 +74,11 @@ public static class LauncherSharedUiChecks
                 string saves=Core.PathIn(folder,LauncherPlatform.Saves(folder));Directory.CreateDirectory(saves);File.WriteAllText(Path.Combine(saves,"profile"),"original");
                 var backup=SaveBackups.Create(folder,"Manual",null,System.Threading.CancellationToken.None);File.WriteAllText(Path.Combine(saves,"profile"),"current");
                 var page=new SavesPage(folder,false);
+                Need(Find<Button>(page.View,"ChooseSaveFolder")!=null && Find<Button>(page.View,"DefaultSaveFolder")!=null,"Save location controls missing");
+                Need(Find<TextBlock>(page.View,"ActiveSaveLocation").Text.Contains(saves),"Active save folder missing");
+                Click(Find<Button>(page.View,"DefaultSaveFolder"));
+                Need(Find<Button>(page.View,"UseSaveLocation")!=null && Find<Button>(page.View,"CopySaveLocation")!=null,"Folder selection must offer use or copy");
+                Click(Find<Button>(page.View,"CancelSaveLocation"));
                 Need(page.Choices.Items.Count==1 && ((SaveBackup)page.Choices.SelectedItem).Id==backup.Id && page.Restore.IsEnabled,"Backup list or restore selection missing");
                 Click(page.Restore);Need(Find<Button>(page.View,"ConfirmSaveRestore")!=null,"Restore did not ask for confirmation");
                 Click(Find<Button>(page.View,"CancelSaveRestore"));Need(File.ReadAllText(Path.Combine(saves,"profile"))=="current","Cancelled restore changed saves");
@@ -273,6 +278,47 @@ public static class LauncherSharedUiChecks
                 Find<Slider>(page.View,"VerticalFovSlider").Value=70;
                 Click(Find<Button>(page.View,"SettingsSaveButton"));var saved=GameSettings.Load(shared,null);
                 Need(saved.VerticalFov==70 && saved.PresentationFps==0 && saved.RefreshRate==0 && saved.Interpolation==1 && saved.FrameCap=="60","Retired timing settings survived migration");
+            });
+            Test("beta audio opt-in, draft state and game-menu synchronization",()=>{
+                string folder=Path.Combine(root,"enhanced-audio");Directory.CreateDirectory(folder);
+                string sidecar=Path.Combine(folder,"Settings/pc-audio.ini");
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(3);
+                var toggle=Find<CheckBox>(page.View,"EnhancedAudio");
+                Need(toggle.IsChecked==false,"Enhanced Audio must default OFF");
+                Need(Convert.ToString(toggle.Content).Contains("Beta"),"Audio toggle lacks beta label");
+                Need(Find<TextBlock>(page.View,"EnhancedAudioBetaNote").Text.Contains("game build"),"Compatibility hint missing");
+                toggle.IsChecked=true;Click(Find<Button>(page.View,"SettingsSaveButton"));
+                Need(File.ReadAllText(sidecar)=="TSFP_AUDIO_V1 1\n" && GameSettings.Load(folder,null).EnhancedAudio,"Launcher/game formats differ");
+                var save=Find<Button>(page.View,"SettingsSaveButton");Need(!save.IsEnabled,"Saved audio draft remains dirty");
+                toggle.IsChecked=false;Need(save.IsEnabled,"Audio edit did not enable Save");Click(save);
+                Need(File.ReadAllText(sidecar)=="TSFP_AUDIO_V1 0\n","Audio OFF did not save");
+                File.WriteAllText(sidecar,"TSFP_AUDIO_V1 1\n"); // Simulate the in-game menu.
+                var reopened=new SettingsPage(new ResourceDictionary(),folder,true);reopened.SelectTab(3);
+                Need(Find<CheckBox>(reopened.View,"EnhancedAudio").IsChecked==true,"In-game audio choice not reflected");
+                var model=GameSettings.Load(folder,null);model.Sensitivity=.2;model.Save();
+                Need(GameSettings.Load(folder,null).EnhancedAudio,"Unrelated save reset the audio choice");
+            });
+            Test("beta audio invalid and concurrent preferences are preserved",()=>{
+                string folder=Path.Combine(root,"enhanced-audio-conflict");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);model.Save();
+                string sidecar=Path.Combine(folder,"Settings/pc-audio.ini");
+                File.WriteAllText(sidecar,"TSFP_AUDIO_V1 1\n");
+                bool rejected=false;try{model.Save();}catch{rejected=true;}
+                Need(rejected && File.ReadAllText(sidecar)=="TSFP_AUDIO_V1 1\n","Concurrent in-game change was overwritten");
+                foreach(string invalid in new[]{"TSFP_AUDIO_V1 2","TSFP_AUDIO_V2 1","TSFP_AUDIO_V1 1 extra"}) {
+                    File.WriteAllText(sidecar,invalid);rejected=false;try{GameSettings.Load(folder,null);}catch{rejected=true;}
+                    Need(rejected && File.ReadAllText(sidecar)==invalid,"Invalid audio preference was accepted or rewritten");
+                }
+            });
+            Test("beta audio failure rolls back the settings transaction",()=>{
+                string folder=Path.Combine(root,"enhanced-audio-rollback");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);model.Save();
+                var files=LauncherPlatform.Settings(folder).Select(p=>Core.PathIn(folder,p)).ToArray();
+                var before=files.Select(File.ReadAllBytes).ToArray();
+                Directory.CreateDirectory(files[5]+".bak");model.EnhancedAudio=true;model.VerticalFov=75;
+                bool rejected=false;try{model.Save();}catch{rejected=true;}
+                Need(rejected,"Blocked audio backup should reject Save");
+                for(int i=0;i<files.Length;i++)Need(File.ReadAllBytes(files[i]).SequenceEqual(before[i]),"Partial settings commit survived audio failure");
             });
             Test("native frame-rate defaults, beta selection and game-menu synchronization",()=>{
                 string folder=Path.Combine(root,"native-fps");Directory.CreateDirectory(Path.Combine(folder,"Settings"));

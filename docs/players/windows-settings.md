@@ -1,6 +1,31 @@
 # Windows controls and display settings
 
+## Unlock Content
+
+Open **Extras > Unlock Content** to toggle Story levels, Characters, Arcade maps,
+Arcade game modes, Weapons, Arcade League, Challenges, Cheats and Movies. Each
+choice applies only to the currently selected profile and saves when you go back.
+Turning a category Off restores its earned unlocks without erasing progress.
+
+Cheats now appears in **Extras** when cheats are available. Turning Cheats On in
+Unlock Content makes every supported cheat available in that original menu.
+The Cheats menu retains its normal controls and has no separate unlock toggle.
+
+
 [Back to the README](../../README.md)
+
+## Enhanced Audio (Beta)
+
+Open **Audio Options** from main-menu Settings or Pause Options, then change
+**Enhanced Audio (Beta)** to ON. It enables directional world effects, wall and
+opening filtering, and a softer background ambience mix across maps. Your own
+weapon sounds stay centered. This beta defaults OFF; the choice applies live
+and is saved immediately for later sessions. Turn it OFF to return to ordinary
+playback. Audio already queued may take a short time to finish changing.
+The beta preference saves separately from the original volume-slider draft.
+You can also choose **Launcher Settings -> Audio -> Enhanced Audio (Beta)**
+and save before launching. Both menus share the same saved preference; reopen
+launcher Settings after changing it in-game.
 
 ## Launcher settings
 

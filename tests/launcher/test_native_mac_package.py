@@ -19,7 +19,11 @@ spec.loader.exec_module(package)
 def payload(root):
     names = [package.GAME, 'Launch.command', package.APP+'/Contents/MacOS/TimeSplitters.Launcher',
              'Settings/pc-controls.json', 'Bin/libvulkan.1.dylib', 'Bin/libMoltenVK.dylib',
-             'Bin/libdxcompiler.dylib', 'Support/Vulkan/MoltenVK_icd.json', 'Source/pc-port-source.zip']
+             'Bin/libdxcompiler.dylib', 'Support/Vulkan/MoltenVK_icd.json', 'Source/pc-port-source.zip',
+             'Support/Python/bin/python3', 'Support/Python/bin/python-real',
+             'Support/Online/online.py', 'Support/Online/online_platform.py',
+             'Support/Online/network-identity.json', 'Support/Online/network-build.json',
+             'Support/Online/multiplayer.png']
     files = {}
     for name in names:
         path = root/name
@@ -69,6 +73,30 @@ def test_changed_cached_license_is_not_overwritten(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match='differs'):
         package.prepare_licenses(cache)
     assert (cache/'notice.txt').read_bytes() == b'changed'
+
+
+def test_online_formula_notices_keep_bytes_in_flat_installer_layout(tmp_path):
+    import bundle_online_macos
+    output = tmp_path/'package'
+    expected = {}
+    for name in ('libtommath', 'python@3.12'):
+        formula = tmp_path/'Cellar'/name/'1.0'
+        formula.mkdir(parents=True)
+        for notice in ('LICENSE', 'COPYING', 'Copyright.md', 'LICENSE.txt', 'sbom.spdx.json'):
+            source = formula/notice
+            original = (name+'\n'+notice+'\n').encode()+b'\x80\r\n'
+            source.write_bytes(original)
+            expected['Licenses/Online-'+name+'-'+notice+('' if notice.endswith('.txt') else '.txt')] = original
+        (formula/'README.md').write_text('not a notice')
+        (formula/'LICENSE-directory').mkdir()
+        def copy(source, relative):
+            target = output/relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(source.read_bytes())
+        bundle_online_macos.copy_notices(formula, copy)
+    actual = {p.relative_to(output).as_posix(): p.read_bytes() for p in output.rglob('*') if p.is_file()}
+    assert actual == expected
+    assert all(len(Path(name).parts) == 2 and name.endswith('.txt') for name in actual)
 
 
 def test_minimum_os_is_highest_actual_binary_requirement(monkeypatch):

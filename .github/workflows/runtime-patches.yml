@@ -91,47 +91,7 @@ jobs:
     needs: plan
     if: needs.plan.outputs.transitions == 'true'
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, macos-latest]
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        with:
-          python-version: '3.12'
-      - name: Read shared runtime and test dependency pins
-        id: pins
-        run: |
-          python - <<'PY'
-          import os
-          from pathlib import Path
-          import re
-          import subprocess
-          import sys
-          revision = re.search(r"\$revision = '([0-9a-f]{40})'", Path('tsfp.ps1').read_text()).group(1)
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write(f'revision={revision}\n')
-          dependency = next(line for line in Path('requirements.txt').read_text().splitlines()
-                            if line.startswith('pytest=='))
-          subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
-          PY
-      - name: Prepare bundled runtime without a network clone
-        run: python tools/build/prepare-runtime.py
-      - name: Test patch tracking, branch switches and historical upgrades
-        run: python -m pytest tests/repository/test_runtime_snapshot.py tests/repository/test_patch_tracking.py tests/repository/test_patch_updates.py -q --tb=short
-
-  native:
-    name: Native runtime (${{ matrix.os }})
-    needs: plan
-    if: needs.plan.outputs.native == 'true' || needs.plan.outputs.release == 'true'
-    runs-on: ${{ matrix.os }}
+    # Windows migrations alone take about 15 minutes; allow setup and cleanup.
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -147,6 +107,13 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
+      - name: Restore suite timing history
+        continue-on-error: true
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: build/test-performance
+          key: suite-timing-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: suite-timing-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-
       - name: Read shared runtime and test dependency pins
         id: pins
         run: |
@@ -159,9 +126,74 @@ jobs:
           revision = re.search(r"\$revision = '([0-9a-f]{40})'", Path('tsfp.ps1').read_text()).group(1)
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write(f'revision={revision}\n')
-          dependency = next(line for line in Path('requirements.txt').read_text().splitlines()
-                            if line.startswith('pytest=='))
-          subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
+          dependencies = [line for line in Path('requirements.txt').read_text().splitlines()
+                          if line.startswith(('pytest==', 'pytest-xdist==', 'execnet=='))]
+          subprocess.run([sys.executable, '-m', 'pip', 'install', *dependencies], check=True)
+          PY
+      - name: Prepare bundled runtime without a network clone
+        run: python tools/build/prepare-runtime.py
+      - name: Test patch tracking, branch switches and historical upgrades
+        run: python -m pytest tests/repository/test_runtime_snapshot.py tests/repository/test_patch_tracking.py tests/repository/test_patch_updates.py -q --tb=short -n 2 --dist=loadgroup --max-worker-restart=0 --durations=20 --suite-profile=ci-patches
+
+      - name: Save suite timing history
+        if: always() && hashFiles('build/test-performance/**/state.json') != ''
+        continue-on-error: true
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: build/test-performance
+          key: suite-timing-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Upload suite timing reports
+        if: always() && hashFiles('build/test-performance/**/last-run.json') != ''
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: suite-timing-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}
+          path: build/test-performance
+          retention-days: 30
+
+  native:
+    name: Native runtime (${{ matrix.os }})
+    needs: plan
+    if: needs.plan.outputs.native == 'true' || needs.plan.outputs.release == 'true'
+    runs-on: ${{ matrix.os }}
+    # Windows native fixtures exceeded30m while still making test progress.
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 45 || 30 }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Restore suite timing history
+        continue-on-error: true
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: build/test-performance
+          key: suite-timing-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: suite-timing-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-
+      - name: Read shared runtime and test dependency pins
+        id: pins
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+          import sys
+          revision = re.search(r"\$revision = '([0-9a-f]{40})'", Path('tsfp.ps1').read_text()).group(1)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'revision={revision}\n')
+          dependencies = [line for line in Path('requirements.txt').read_text().splitlines()
+                          if line.startswith(('pytest==', 'pytest-xdist==', 'execnet=='))]
+          subprocess.run([sys.executable, '-m', 'pip', 'install', *dependencies], check=True)
           PY
       - name: Prepare bundled runtime without a network clone
         if: needs.plan.outputs.native == 'true'
@@ -176,11 +208,11 @@ jobs:
           from pathlib import Path
           import subprocess, sys
           pins = [line for line in Path('requirements.txt').read_text().splitlines()
-                  if line.startswith(('capstone==', 'Pillow==', 'numpy==', 'cmake==', 'ninja=='))]
+                  if line.startswith(('capstone==', 'Pillow==', 'numpy==', 'cmake==', 'ninja==', 'pefile=='))]
           subprocess.run([sys.executable, '-m', 'pip', 'install', *pins], check=True)
           PY
       - name: Install pinned Online certificate dependencies
-        if: needs.plan.outputs.native == 'true' && runner.os == 'Windows'
+        if: needs.plan.outputs.native == 'true'
         run: python -m pip install -r requirements-release.txt
       - name: Test native runtime, rendering and input regressions
         if: needs.plan.outputs.native == 'true'
@@ -190,21 +222,21 @@ jobs:
             tests/textures/texture_archive_signatures.py tests/textures/texture_embedded_scan.py
             tests/textures/texture_nonpak.py tests/textures/texture_variants.py
             tests/gameplay/test_native_mac_tools.py tests/launcher/test_native_mac_launcher.py tests/repository/test_testing_profile.py tests/compiler/test_disc_image.py tests/compiler/test_xbe_image.py tests/compiler/test_recomp_input.py tests/compiler/test_x86_flow.py tests/compiler/test_x86_recovery.py tests/compiler/test_x86_functions.py tests/compiler/test_recomp_symbols.py tests/compiler/test_analysis_cache.py tests/compiler/test_analysis_runner.py tests/compiler/test_xdk_catalog.py tests/compiler/test_compile_pipeline.py
-            tests/compiler/test_branch_feedback.py tests/compiler/test_unresolved_report.py
-            tests/compiler/test_translation_decode.py tests/compiler/test_translation_operands.py tests/compiler/test_translation_moves.py tests/compiler/test_translation_integer.py tests/compiler/test_translation_bits.py tests/compiler/test_translation_product.py tests/compiler/test_translation_bitops.py
+            tests/compiler/test_branch_feedback.py tests/compiler/test_branch_feedback_runtime.py tests/compiler/test_nonlocal_jump_runtime.py tests/compiler/test_guest_services.py tests/compiler/test_guest_image.py tests/compiler/test_guest_allocation.py tests/compiler/test_guest_thread_memory.py tests/compiler/test_guest_objects.py tests/compiler/test_kernel_boot.py tests/compiler/test_io_packet_abi.py tests/compiler/test_io_stack.py tests/compiler/test_io_request.py tests/compiler/test_io_owner.py tests/compiler/test_io_registry.py tests/compiler/test_io_pool.py tests/compiler/test_io_pool_windows.py tests/compiler/test_io_adopt.py tests/compiler/test_guest_event.py tests/compiler/test_io_targets.py tests/compiler/test_guest_symlinks.py tests/compiler/test_guest_paths.py tests/compiler/test_guest_storage.py tests/compiler/test_kernel_pool.py tests/compiler/test_guest_time.py tests/compiler/test_guest_strings.py tests/compiler/test_guest_critical.py tests/compiler/test_guest_printf.py tests/compiler/test_guest_numbers.py tests/compiler/test_kernel_requests.py tests/compiler/test_guest_object_names.py tests/compiler/test_guest_body_only.py tests/compiler/test_guest_device_names.py tests/compiler/test_guest_device_body.py tests/compiler/test_guest_device_factory.py tests/compiler/test_guest_callback_call.py tests/compiler/test_kernel_device_host.py tests/compiler/test_kernel_device_headers.py tests/compiler/test_kernel_device_abi.py tests/compiler/test_io_share.py tests/compiler/test_io_lifetime.py tests/compiler/test_io_target.py tests/compiler/test_io_call.py tests/compiler/test_io_forward.py tests/compiler/test_io_transfer.py tests/compiler/test_io_build.py tests/compiler/test_io_construct.py tests/compiler/test_io_complete.py tests/compiler/test_io_pipeline_windows.py tests/compiler/test_io_title_layout.py tests/compiler/test_io_queue.py tests/compiler/test_io_queue_wire.py tests/compiler/test_io_scheduler.py tests/compiler/test_io_startio.py tests/compiler/test_guest_virtual_memory.py tests/compiler/test_host_virtual_memory.py tests/compiler/test_virtual_memory_adapters.py tests/compiler/test_host_blocks.py tests/compiler/test_host_pages.py tests/compiler/test_native_mm_adapters.py tests/compiler/test_native_reservations.py tests/compiler/test_native_vm_host.py tests/compiler/test_native_vm_adapters.py tests/compiler/test_shared_views.py tests/compiler/test_guest_arena_adapters.py tests/compiler/test_guest_map_layout.py tests/compiler/test_guest_layout_binding.py tests/compiler/test_guest_memory_services.py tests/compiler/test_memory_statistics.py tests/compiler/test_host_memory_stats.py tests/compiler/test_guest_mm_adapters.py tests/compiler/test_unresolved_report.py
+            tests/compiler/test_translation_decode.py tests/compiler/test_translation_operands.py tests/compiler/test_translation_moves.py tests/compiler/test_translation_integer.py tests/compiler/test_translation_bits.py tests/compiler/test_translation_product.py tests/compiler/test_translation_bitops.py tests/compiler/test_translation_exchange.py tests/compiler/test_translation_compare.py tests/compiler/test_translation_strings.py tests/compiler/test_translation_conditions.py tests/compiler/test_translation_sse.py tests/compiler/test_translation_mmx.py tests/compiler/test_translation_x87.py tests/compiler/test_translation_control.py tests/compiler/test_translation_lifting.py tests/compiler/test_translation_context.py tests/compiler/test_translation_batch.py tests/compiler/test_translation_discovery.py tests/compiler/test_translation_function.py tests/compiler/test_translation_cli.py tests/compiler/test_guest_abi.py tests/compiler/test_guest_dispatch.py tests/compiler/test_guest_call_frames.py tests/compiler/test_vector_support.py tests/compiler/test_scalar_support.py tests/compiler/test_runtime_header.py
             tests/compiler/test_translation_layout.py tests/compiler/test_translation_hooks.py
             tests/compiler/test_c_source_scan.py tests/compiler/test_generation_output.py
             tests/compiler/test_function_evidence.py tests/compiler/test_function_categories.py tests/compiler/test_function_catalog.py
-            tests/support/test_native_compiler.py tests/media/test_audio_timing.py tests/media/test_audio_output_gain.py tests/media/test_audio_device_recovery.py
-            tests/gameplay/test_frame_clock.py tests/gameplay/test_native_frame_stats.py tests/gameplay/test_native_timing.py tests/gameplay/test_native_wind.py tests/gameplay/test_native_vehicle_timing.py tests/gameplay/test_native_entity_trace.py tests/storage/test_profile_accept.py
+            tests/support/test_native_compiler.py tests/support/test_guest_constants.py tests/support/test_parallel_groups.py tests/support/test_suite_timing.py tests/media/test_audio_timing.py tests/media/test_audio_output_gain.py tests/media/test_audio_device_recovery.py
+            tests/gameplay/test_frame_clock.py tests/gameplay/test_native_frame_stats.py tests/gameplay/test_native_timing.py tests/gameplay/test_native_wind.py tests/gameplay/test_native_vehicle_timing.py tests/gameplay/test_native_entity_trace.py tests/storage/test_profile_accept.py tests/storage/test_unlock_content.py
             tests/gameplay/test_native_demo_timing.py tests/gameplay/test_reload_keys.py
             tests/gameplay/test_native_local_trace.py tests/graphics/test_state_layout_slots.py
             tests/graphics/test_vsh_constant_dirty.py
-            tests/gameplay/test_native_effect_trace.py tests/analysis/test_rocket_impact_stats.py tests/graphics/test_surface_shader_feedback.py tests/graphics/test_combiner_constants.py tests/graphics/test_surface_preservation.py
+            tests/gameplay/test_native_effect_trace.py tests/analysis/test_rocket_impact_stats.py tests/graphics/test_surface_shader_feedback.py tests/graphics/test_combiner_constants.py tests/graphics/test_surface_coefficients.py tests/graphics/test_surface_preservation.py
             tests/compiler/test_recomp_float_joins.py tests/compiler/test_recomp_vehicle_joins.py
             tests/compiler/test_recomp_generation.py tests/graphics/test_framebuffer_sampling.py tests/gameplay/test_model_transform.py tests/compiler/test_gpr_refs.py tests/graphics/test_zero_base_indices.py tests/graphics/test_push_gather.py tests/graphics/test_vertex_expand.py tests/graphics/test_terminal_depth.py tests/graphics/test_ghost_rendering.py tests/graphics/test_ghost_targets.py
             tests/media/test_xmv_stop.py tests/media/test_native_movie_file.py tests/network/test_discord_presence.py tests/network/test_discord_macos.py tests/gameplay/test_native_crash.py
-            tests/diagnostics/test_crash_capture.py
+            tests/diagnostics/test_crash_capture.py tests/diagnostics/test_guest_capture.py tests/diagnostics/test_allocation_observer.py
             tests/graphics/test_cutscene_letterbox.py tests/graphics/test_pc_display_modes.py tests/graphics/test_decal_projection.py
             tests/graphics/test_channel_clears.py tests/graphics/test_objectives_health.py
             tests/graphics/test_fov_settings.py tests/storage/test_storage_menu.py tests/input/test_text_read_scope.py tests/diagnostics/test_trace_filter.py tests/diagnostics/test_sample_chains.py tests/diagnostics/test_sample_pc_locations.py tests/graphics/test_gpu_flush_ack.py
@@ -212,13 +244,14 @@ jobs:
             tests/graphics/test_renderer_host.py tests/graphics/test_render_state_cache.py tests/repository/test_vulkan_sdk.py tests/graphics/test_rhi_menu_sampling.py
             tests/gameplay/test_frame_replay.py
             tests/diagnostics/test_debug_settings_model.py
+            tests/network/test_native_network.py tests/network/test_crossplay_peer.py tests/network/test_online_companion.py tests/network/test_online_theme.py tests/network/test_online.py tests/network/test_online_host.py tests/network/test_network_identity.py
             tests/network/test_network_guest_dispatch.py tests/network/test_network_bot_results.py tests/network/test_network_movement_stats.py tests/network/test_network_motion_stats.py tests/network/test_network_pose_stats.py tests/analysis/test_procedural_surface_stats.py
             tests/gameplay/test_auto_look.py tests/input/test_terminal_mouse.py tests/gameplay/test_mounted_mouse.py tests/input/test_keyboard_menu.py tests/input/test_controller_profile.py tests/input/test_weapon_slots.py tests/input/test_menu_mouse.py tests/graphics/test_menu_text.py tests/graphics/test_quit_menu.py tests/graphics/test_ui_layout.py tests/graphics/test_camera_feed.py tests/graphics/test_crane_overlay.py tests/graphics/test_ghost_actor_overlay.py
           )
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            tests+=(tests/gameplay/test_frame_interpolation.py tests/gameplay/test_prediction_targets.py tests/repository/test_config_initialization.py tests/gameplay/test_pc_refresh.py tests/graphics/test_window_theme.py tests/network/test_online_theme.py tests/network/test_online.py tests/network/test_online_host.py tests/network/test_network_identity.py)
+            tests+=(tests/gameplay/test_frame_interpolation.py tests/gameplay/test_prediction_targets.py tests/repository/test_config_initialization.py tests/gameplay/test_pc_refresh.py tests/graphics/test_window_theme.py)
           fi
-          python -m pytest "${tests[@]}" -q --tb=short
+          python -m pytest "${tests[@]}" -q --tb=short -n 2 --dist=loadgroup --max-worker-restart=0 --durations=20 --suite-profile=ci-native
       - name: Validate common RHI on the native Mac GPU without game assets
         if: needs.plan.outputs.gpu == 'true' && runner.os == 'macOS'
         run: |
@@ -232,7 +265,23 @@ jobs:
           python tools/testing/test-rhi-mac.py --setup-sdk --driver moltenvk
       - name: Test release validation and disposable fixture cleanup
         if: needs.plan.outputs.release == 'true'
-        run: python -m pytest tests/launcher/test_publish_release.py tests/diagnostics/test_crash_symbols.py tests/launcher/test_native_mac_package.py tests/textures/test_build_textures.py tests/textures/test_texture_release.py -q --tb=short
+        run: python -m pytest tests/launcher/test_publish_release.py tests/diagnostics/test_crash_symbols.py tests/launcher/test_native_mac_package.py tests/textures/test_build_textures.py tests/textures/test_texture_release.py -q --tb=short --durations=20 --suite-profile=ci-release
+
+      - name: Save suite timing history
+        if: always() && hashFiles('build/test-performance/**/state.json') != ''
+        continue-on-error: true
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: build/test-performance
+          key: suite-timing-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Upload suite timing reports
+        if: always() && hashFiles('build/test-performance/**/last-run.json') != ''
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: suite-timing-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}
+          path: build/test-performance
+          retention-days: 30
 
   launcher:
     needs: plan

@@ -3,7 +3,7 @@
 [Back to the README](../../README.md) | [Launcher releases](launcher-releases.md)
 
 Game and launcher versions are independent. The next Stable game source version
-is **0.3.5**, including the mouse-confinement hotfix since `0.3.4`. This source change does not
+is **0.4.0**, adding native Mac multiplayer and save-folder selection after `0.3.6`. This source change does not
 publish a release or establish full campaign/platform validation. Historical
 alpha and `-preview.N` releases remain available in Game versions; do not
 relabel their assets or offer them as Beta updates.
@@ -88,6 +88,11 @@ This appears as **Preview -> Beta**. Repeat the same branch argument without
 name is fixed; `-ChannelName` customizes named feature tracks only.
 
 ## Build, inspect and publish
+
+The complete regression suite uses up to four workers and reuses successful
+compiler environment setup. No cases are omitted. Use `-TestWorkers 1` for a
+serial diagnostic run, or `-TestWorkers N` to set the worker count. Any test or
+worker failure still stops packaging. See [measured timings and safeguards](../development/release-performance.md).
 
 Use the existing checkout, pinned upstream/dependencies and supported US Xbox
 data. Validate its executable before generation/game validation. Keep personal

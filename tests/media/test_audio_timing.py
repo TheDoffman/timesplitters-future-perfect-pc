@@ -19,11 +19,14 @@ def compile_audio(kind, tmp_path_factory):
     source = ROOT / (f'tests/media/audio_buffer_{kind}.c' if kind in ('load', 'lifecycle', 'format')
                      else f'tests/media/audio_{kind}_timing.c')
     if Path(compiler).stem.lower() == 'cl':
-        command = [compiler, '/nologo', '/std:c11', '/O2', '/I' + str(RUNTIME / 'src'),
+        command = [compiler, '/nologo', '/std:c11', '/O2', '/I' + str(RUNTIME / 'src'), '/I' + str(ROOT / 'src'),
                    str(source), '/Fe:' + str(exe), '/Fo:' + str(directory / 'audio.obj')]
     else:
-        command = [compiler, '-std=c11', '-O2', '-I', str(RUNTIME / 'src'), str(source),
-                   str(RUNTIME / 'src/platform/win32_compat.c'), '-lm', '-lpthread', '-o', str(exe)]
+        command = [compiler, '-std=c11', '-O2', '-I', str(RUNTIME / 'src'), '-I', str(ROOT / 'src'), str(source),
+                   '-I', str(ROOT / 'src/runtime'), str(RUNTIME / 'src/platform/win32_compat.c'),
+                   *[str(ROOT / 'src/runtime' / name) for name in
+                     ('shared_views.c', 'owned_arena.c', 'mmio_views.c', 'guest_arena_service.c')],
+                   str(ROOT / 'src/native/shared_host.c'), '-lm', '-lpthread', '-o', str(exe)]
     built = subprocess.run(command, cwd=directory, env=environment, capture_output=True, text=True)
     assert built.returncode == 0, built.stdout + built.stderr
     return exe
@@ -106,3 +109,8 @@ def test_buffer_format(format_test, scenario):
                             text=True, timeout=10)
     assert result.returncode == 0, result.stdout + result.stderr
     assert f'PASS: {scenario}' in result.stdout
+
+def test_acoustic_guest_state(buffer_test):
+    result=subprocess.run([str(buffer_test),'acoustics'],capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stdout+result.stderr
+    assert 'PASS:' in result.stdout

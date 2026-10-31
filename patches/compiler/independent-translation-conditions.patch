@@ -1,0 +1,877 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -28,6 +28,7 @@
+ import translation_exchange as _project_exchange
+ import translation_compare as _project_compare
+ import translation_strings as _project_strings
++import translation_conditions as _project_conditions
+ 
+ # Function export names of the Windows libraries the host exe links
+ # (kernel32/user32/gdi32/advapi32/winmm/ws2_32/ole32/dbghelp/...). A guest
+@@ -134,33 +135,8 @@
+ 
+ # ── Condition code mapping ───────────────────────────────────
+ 
+-# Maps jcc mnemonic → (cmp_macro, test_macro, description)
+-# cmp_macro takes (lhs, rhs), test_macro takes (lhs, rhs)
+-COND_MAP = {
+-    "je":   ("CMP_EQ",  "TEST_Z",  "equal / zero"),
+-    "jz":   ("CMP_EQ",  "TEST_Z",  "zero"),
+-    "jne":  ("CMP_NE",  "TEST_NZ", "not equal / not zero"),
+-    "jnz":  ("CMP_NE",  "TEST_NZ", "not zero"),
+-    "jb":   ("CMP_B",   None,      "below (unsigned <)"),
+-    "jnae": ("CMP_B",   None,      "below"),
+-    "jae":  ("CMP_AE",  None,      "above or equal (unsigned >=)"),
+-    "jnb":  ("CMP_AE",  None,      "above or equal"),
+-    "jbe":  ("CMP_BE",  None,      "below or equal (unsigned <=)"),
+-    "jna":  ("CMP_BE",  None,      "below or equal"),
+-    "ja":   ("CMP_A",   None,      "above (unsigned >)"),
+-    "jl":   ("CMP_L",   "TEST_S",  "less (signed <)"),
+-    "jge":  ("CMP_GE",  None,      "greater or equal (signed >=)"),
+-    "jle":  ("CMP_LE",  None,      "less or equal (signed <=)"),
+-    "jg":   ("CMP_G",   None,      "greater (signed >)"),
+-    "js":   (None,       "TEST_S",  "sign (negative)"),
+-    "jns":  (None,       None,      "not sign (positive)"),
+-    "jo":   (None,       None,      "overflow"),
+-    "jno":  (None,       None,      "not overflow"),
+-    "jp":   (None,       None,      "parity"),
+-    "jnp":  (None,       None,      "not parity"),
+-    "jecxz": (None,      None,      "ecx is zero"),
+-    "jcxz":  (None,      None,      "cx is zero"),
+-}
++# Condition descriptions and evaluation are project-owned.
++COND_MAP = _project_conditions.COND_MAP
+ 
+ # Instructions that set arithmetic flags (primary set, fully handled)
+ FLAG_SETTERS = frozenset({
+@@ -327,587 +303,12 @@
+                for op in (ops or ()))
+ 
+ 
+-def zf_expression(flag_state):
+-    """A C expression for the zero flag this state leaves, or None.
+-
+-    For a join whose predecessors set the flags with *different*
+-    instructions, no single expression serves the consumer: `cmp a, b`
+-    leaves ZF as (a == b) and `test a, b` as ((a & b) == 0), and
+-    _merge_flag_states rightly refuses to call them the same state. The
+-    consumer then falls back to `_flags` -- which nothing ever assigned, so
+-    the branch read an uninitialised local and went whichever way the stack
+-    happened to be.
+-
+-    This is the other half of that fallback. Each predecessor can compute its
+-    own zero flag, in its own block where its snapshot is still valid, and
+-    write it to `_flags`; the consumer's existing fallback then reads a real
+-    value. Max Payne has 49 je/jne branches in this position.
+-
+-    Only ZF, and only for setters whose zero flag is recoverable. Everything
+-    else returns None and keeps the fallback exactly as it was -- a wrong
+-    branch is much worse than an unmodelled one, because it looks like it
+-    worked.
+-    """
+-    if not flag_state:
+-        return None
+-    setter, ops = flag_state
+-    if setter == "__zf_snapshot":
+-        return "_flags"
+-    if setter == "__zf_from_dest" and ops:
+-        return f"({_fmt_operand_read(ops[0])} == 0)"
+-    if setter in ("xadd", "cmpxchg"):
+-        return "!_fa"
+-    if setter == "cmp" and len(ops) >= 2:
+-        return "(_fa == _fb)"
+-    if setter == "test" and len(ops) >= 2:
+-        return "((_fa & _fb) == 0)"
+-    if setter in _RESULT_SNAPSHOT_SETTERS:
+-        # These snapshot the result itself into _fa (see _make_condition).
+-        return "(_fa == 0)"
+-    if setter in ("inc", "dec") and ops:
+-        return f"({_fmt_operand_read(ops[0])} == 0)"
+-    return None
+-
+-
+-def _make_condition(jcc, flag_setter, flag_ops):
+-    """
+-    Generate a C condition expression for a jcc based on what set the flags.
+-    Returns (cond_expr, description) or None.
+-    """
+-    cond_info = COND_MAP.get(jcc)
+-    if not cond_info:
+-        return None
+-    cmp_macro, test_macro, desc = cond_info
+-
+-    if flag_setter in ("xadd", "cmpxchg"):
+-        expression = _project_exchange.condition(jcc, flag_setter, flag_ops)
+-        return (expression, desc) if expression is not None else None
+-
+-    if flag_setter in ("bt", "bts", "btr", "btc", "bsf", "bsr"):
+-        expression = _project_bitops.condition(jcc, flag_setter)
+-        return (expression, desc) if expression is not None else None
+-
+-    # Own multiplication records its only defined flags: CF and OF agree.
+-    if flag_setter in ("mul", "imul"):
+-        if jcc in ("jb", "jnae", "jc", "jo"):
+-            return "_cf", desc
+-        if jcc in ("jae", "jnb", "jnc", "jno"):
+-            return "!_cf", desc
+-        return None  # Do not synthesize undefined ZF/SF/PF conditions.
+-
+-    # Only the zero flag is proven at a mixed-operation/width join. SETcc,
+-    # CMOVcc and LOOPcc also use this decoder, preserving their polarity.
+-    if flag_setter == "__zf_snapshot":
+-        if jcc in ("je", "jz"):
+-            return "_flags", desc
+-        if jcc in ("jne", "jnz"):
+-            return "!_flags", desc
+-        return None
+-
+-    # A join whose predecessors disagree on which instruction set the flags,
+-    # but agree that the zero flag came from the same destination register.
+-    #
+-    # "sub eax, ecx" on one edge and "dec eax" on the other are different
+-    # setters, so the state cannot be inherited as itself -- yet both leave
+-    # ZF as (eax == 0), which is all a je or jne needs. The translator
+-    # recognises that case and passes this marker.
+-    #
+-    # Only ZF is answerable from it. dec does not write CF, so a jb after the
+-    # same join would be reading a flag one predecessor never set; returning
+-    # None there leaves the existing fallback in place.
+-    if flag_setter == "__zf_from_dest" and flag_ops:
+-        dest = _fmt_operand_read(flag_ops[0])
+-        if jcc in ("je", "jz"):
+-            return f"({dest} == 0)", desc
+-        if jcc in ("jne", "jnz"):
+-            return f"({dest} != 0)", desc
+-        return None
+-
+-    # A cmp/test that is not fused with its jcc snapshots its operands into
+-    # _fa/_fb (zero-extended) and _fas/_fbs (sign-extended) at the point the
+-    # comparison happens. Use those rather than re-reading registers that may
+-    # since have changed.
+-    SIGNED = {"CMP_L", "CMP_LE", "CMP_G", "CMP_GE", "TEST_S"}
+-    if flag_setter in ("cmp", "test", "bsf", "bsr") and len(flag_ops) >= 2:
+-        signed = (cmp_macro in SIGNED) or (test_macro in SIGNED)
+-        lhs, rhs = ("_fas", "_fbs") if signed else ("_fa", "_fb")
+-    elif flag_setter in _RESULT_SNAPSHOT_SETTERS and flag_ops:
+-        # Same reason as the cmp/test snapshot above, for the family that
+-        # WRITES its destination rather than only reading it.
+-        lhs = "_fa"
+-        if flag_setter in _RESULT_SRC_SETTERS and len(flag_ops) >= 2:
+-            rhs = "_fb"
+-        elif len(flag_ops) >= 2:
+-            rhs = _fmt_operand_read(flag_ops[1])
+-        else:
+-            rhs = None
+-    elif len(flag_ops) >= 2:
+-        lhs = _fmt_operand_read(flag_ops[0])
+-        rhs = _fmt_operand_read(flag_ops[1])
+-    elif len(flag_ops) == 1:
+-        lhs = _fmt_operand_read(flag_ops[0])
+-        rhs = None
+-    else:
+-        lhs = None
+-        rhs = None
+-    # _fa is zero-extended, so (int32_t)_fa is never negative for an 8- or
+-    # 16-bit result. Sign tests read _fas, the same snapshot sign-extended.
+-    slhs = "_fas" if lhs == "_fa" else f"(int32_t){lhs}"
+-
+-    # ── FPU compare-to-EFLAGS and sahf: no standard operands ──
+-    #
+-    # An unordered compare (a NaN on either side) sets ZF, PF and CF all at
+-    # once, so it reads as "below", "below or equal", "equal" and "parity"
+-    # -- and not as "above", "above or equal" or "not equal". g_fp_cmp is
+-    # RECOMP_FCMP's -1/0/1 for less/equal/greater and 2 for unordered, and
+-    # comparing it with 0 treated 2 as "greater": `jbe` fell through and
+-    # `jne` was taken on a NaN where the hardware does the opposite.
+-    if flag_setter in ("fcompi", "fcomip", "fucomi", "fucompi",
+-                        "fucomip", "fcomi", "sahf"):
+-        fpu_cmp_map = {
+-            "ja": "g_fp_cmp == 1", "jnbe": "g_fp_cmp == 1",
+-            "jae": "g_fp_cmp == 0 || g_fp_cmp == 1",
+-            "jnb": "g_fp_cmp == 0 || g_fp_cmp == 1",
+-            "jnc": "g_fp_cmp == 0 || g_fp_cmp == 1",
+-            "jb": "g_fp_cmp == -1 || g_fp_cmp == 2",
+-            "jnae": "g_fp_cmp == -1 || g_fp_cmp == 2",
+-            "jc": "g_fp_cmp == -1 || g_fp_cmp == 2",
+-            "jbe": "g_fp_cmp != 1", "jna": "g_fp_cmp != 1",
+-            "je": "g_fp_cmp == 0 || g_fp_cmp == 2",
+-            "jz": "g_fp_cmp == 0 || g_fp_cmp == 2",
+-            "jne": "g_fp_cmp == -1 || g_fp_cmp == 1",
+-            "jnz": "g_fp_cmp == -1 || g_fp_cmp == 1",
+-            "jp": "g_fp_cmp == 2", "jpe": "g_fp_cmp == 2",
+-            "jnp": "g_fp_cmp != 2", "jpo": "g_fp_cmp != 2",
+-        }
+-        cond = fpu_cmp_map.get(jcc)
+-        if cond:
+-            return f"({cond}) /* {flag_setter} */", desc
+-        return None
+-
+-    # If no operands available for other flag-setters, can't generate condition
+-    if lhs is None:
+-        return None
+-
+-    # ── comiss/ucomiss: float comparison, sets CF/ZF/PF ──
+-    if flag_setter in ("comiss", "comisd", "ucomiss", "ucomisd"):
+-        def _sse_op(op):
+-            if op.type == "reg" and op.reg and op.reg.startswith("xmm"):
+-                return f"{op.reg}.f[0]"
+-            elif op.type == "reg":
+-                return op.reg
+-            elif op.type == "mem":
+-                if op.mem_size == 8:
+-                    return f"MEMD({_fmt_mem(op)})"
+-                return f"MEMF({_fmt_mem(op)})"
+-            return _fmt_operand_read(op)
+-        # Read the snapshot the compare left rather than the operands, which
+-        # may since have been overwritten. _sse_op stays in use for the
+-        # description only.
+-        (void_a, void_b) = (
+-            _sse_op(flag_ops[0]) if len(flag_ops) >= 1 else "0.0f",
+-            _sse_op(flag_ops[1]) if len(flag_ops) >= 2 else "0.0f",
+-        )
+-        desc = f"{desc} ({void_a} vs {void_b})" if desc else desc
+-        a, b = "_fca", "_fcb"
+-        # comiss uses unsigned condition codes (CF, ZF), and PF for
+-        # unordered. A NaN on either side sets ZF, PF and CF together (see
+-        # _make_lahf_value), so the conditions that include CF or ZF are
+-        # true for it and the others false. C's own comparisons are all
+-        # false for a NaN except !=, so below, below-or-equal and equal are
+-        # spelled as the negation of their ordered opposites, and not-equal
+-        # as "less or greater". These were the plain operators, which
+-        # agreed with the hardware only while no NaN came by: Future
+-        # Perfect's hang in play-test 3 had a NaN ray in its collision code.
+-        if jcc in ("ja", "jnbe"):
+-            return f"({a} > {b})", desc
+-        if jcc in ("jae", "jnb", "jnc"):
+-            return f"({a} >= {b})", desc
+-        if jcc in ("jb", "jnae", "jc"):
+-            return f"(!({a} >= {b}))", desc
+-        if jcc in ("jbe", "jna"):
+-            return f"(!({a} > {b}))", desc
+-        if jcc in ("je", "jz"):
+-            return f"(!({a} < {b} || {a} > {b}))", desc
+-        if jcc in ("jne", "jnz"):
+-            return f"({a} < {b} || {a} > {b})", desc
+-        if jcc in ("jp", "jpe"):
+-            return f"({a} != {a} || {b} != {b}) /* {jcc}: unordered/NaN */", desc
+-        if jcc in ("jnp", "jpo"):
+-            return f"({a} == {a} && {b} == {b}) /* {jcc}: ordered */", desc
+-        return None
+-
+-    # SF is the sign bit of the result at the OPERAND's width, not at 32 bits.
+-    # `test dl, dl; jns` asks about bit 7; evaluating the zero-extended byte as
+-    # an int32 makes 0x80..0xFF look positive and the branch always goes the
+-    # same way. Same defect the signed compares had before the width-aware
+-    # CMP_L/CMP_G landed -- js/jns were simply missed at the time.
+-    _sf_width = _operand_width(flag_ops[0]) if flag_ops else None
+-    if _sf_width is None and len(flag_ops) > 1:
+-        _sf_width = _operand_width(flag_ops[1])
+-    _sf_cast = {1: "(int8_t)", 2: "(int16_t)"}.get(_sf_width, "(int32_t)")
+-    # SF AFTER A COMPARE IS THE SIGN BIT OF THE WRAPPED DIFFERENCE, AND THE
+-    # SUBTRACTION MUST BE DONE UNSIGNED TO GET IT.
+-    #
+-    # `cmp` snapshots its operands sign-extended into _fas/_fbs, so the obvious
+-    # spelling is `(int32_t)(_fas - _fbs) < 0`. Signed overflow is undefined
+-    # behaviour, and this subtraction overflows for exactly the inputs the
+-    # question is about: cmp 0x80000000, 1 leaves 0x7FFFFFFF on the hardware,
+-    # so SF is 0, while the C expression is INT_MIN - 1. From -O1 the compiler
+-    # is entitled to fold `a - b < 0` to `a < b`, which answers 1. It does:
+-    # gcc and clang both give 0 at -O0 and 1 at -O1 and above, so the emitted
+-    # program's meaning changes with the optimisation level.
+-    #
+-    # Unsigned subtraction is defined to wrap, so doing it in the unsigned type
+-    # of the operand's own width and taking the top bit is exactly the
+-    # hardware's SF, at every width, with no undefined case.
+-    _sf_utype = {1: "uint8_t", 2: "uint16_t"}.get(_sf_width, "uint32_t")
+-    _sf_top = {1: 7, 2: 15}.get(_sf_width, 31)
+-
+-    def _sf_of_difference(a, b):
+-        return (f"(({_sf_utype})(({_sf_utype})({a}) - ({_sf_utype})({b}))"
+-                f" >> {_sf_top})")
+-
+-    # ── bsf/bsr: ZF is the only flag they define ──
+-    #
+-    # ZF is set when the SOURCE was zero, not from any subtraction, and the
+-    # lifter snapshots that source into _fa with _fb = 0. Everything else --
+-    # CF, SF, OF, PF -- is architecturally undefined here, so refuse rather
+-    # than invent a condition for it.
+-    if flag_setter in ("bsf", "bsr"):
+-        if jcc in ("je", "jz", "sete", "setz"):
+-            return f"({lhs} == 0)", desc
+-        if jcc in ("jne", "jnz", "setne", "setnz"):
+-            return f"({lhs} != 0)", desc
+-        return None
+-
+-    # ── cmp: flags from (a - b), operands unchanged ──
+-    if flag_setter == "cmp":
+-        if cmp_macro:
+-            return f"{cmp_macro}({lhs}, {rhs})", desc
+-        if jcc == "js":
+-            return f"({_sf_of_difference(lhs, rhs)} != 0)", desc
+-        if jcc == "jns":
+-            return f"({_sf_of_difference(lhs, rhs)} == 0)", desc
+-        if jcc == "jp":
+-            return f"RECOMP_PARITY8(({lhs}) - ({rhs}))", desc
+-        if jcc == "jnp":
+-            return f"(!RECOMP_PARITY8(({lhs}) - ({rhs})))", desc
+-        return None
+-
+-    # ── test: flags from (a & b), operands unchanged ──
+-    if flag_setter == "test":
+-        if test_macro:
+-            return f"{test_macro}({lhs}, {rhs})", desc
+-        if cmp_macro:
+-            return f"{cmp_macro}({lhs} & {rhs}, 0)", desc
+-        if jcc == "js":
+-            return f"({_sf_cast}(({lhs}) & ({rhs})) < 0)", desc
+-        if jcc == "jns":
+-            return f"({_sf_cast}(({lhs}) & ({rhs})) >= 0)", desc
+-        if jcc == "jo":
+-            return "0", desc  # OF=0 after test
+-        if jcc == "jno":
+-            return "1", desc
+-        if jcc == "jp":
+-            # PF from (a & b) low byte. This is the x87 float branch idiom
+-            # `fnstsw ax; test ah, mask; jp/jnp` (fnstsw put the compare bits
+-            # into ah). jp jumps on even parity (PF=1).
+-            return f"RECOMP_PARITY8(({lhs}) & ({rhs}))", desc
+-        if jcc == "jnp":
+-            return f"(!RECOMP_PARITY8(({lhs}) & ({rhs})))", desc
+-        return None
+-
+-    # ── carry conditions, from the _cf the arithmetic already produced ──
+-    #
+-    # Ahead of the per-mnemonic rules below, which reconstruct CF from the
+-    # operands after the write: that reconstruction is wrong whenever the
+-    # destination is also the source, because both sides then read the result.
+-    # "add edx, edx" -- the way MSVC shifts a bit into the carry -- turned into
+-    # "edx < edx", always false. _cf is computed before the write, so it holds
+-    # for every operand shape, and the translator declares it exactly when a
+-    # branch like this one is going to read it.
+-    if flag_setter in CF_TRACKED:
+-        if jcc in ("jb", "jnae", "jc"):
+-            return "_cf", desc
+-        if jcc in ("jae", "jnb", "jnc"):
+-            return "!_cf", desc
+-        # ZF as well: after these the destination holds the result.
+-        if jcc in ("jbe", "jna"):
+-            return f"(_cf || {lhs} == 0)", desc
+-        if jcc in ("ja", "jnbe"):
+-            return f"(!_cf && {lhs} != 0)", desc
+-
+-    # ── sub: a = a - b, flags from (a_orig - b) ──
+-    if flag_setter == "sub":
+-        if jcc in ("je", "jz"):
+-            return f"({lhs} == 0)", desc
+-        if jcc in ("jne", "jnz"):
+-            return f"({lhs} != 0)", desc
+-        if jcc == "js":
+-            return f"({slhs} < 0)", desc
+-        if jcc == "jns":
+-            return f"({slhs} >= 0)", desc
+-        # Ordered: reconstruct original a = result + b
+-        if cmp_macro and rhs:
+-            return f"{cmp_macro}((uint32_t){lhs} + (uint32_t){rhs}, (uint32_t){rhs})", desc
+-        if jcc in ("jb", "jnae"):
+-            return f"((uint32_t){lhs} + (uint32_t){rhs} < (uint32_t){rhs})", desc
+-        if jcc in ("jae", "jnb"):
+-            return f"((uint32_t){lhs} + (uint32_t){rhs} >= (uint32_t){rhs})", desc
+-        if jcc in ("jl", "jnge"):
+-            return f"({slhs} < 0)", desc
+-        if jcc in ("jge", "jnl"):
+-            return f"({slhs} >= 0)", desc
+-        if jcc in ("jle", "jng"):
+-            return f"({slhs} <= 0)", desc
+-        if jcc in ("jg", "jnle"):
+-            return f"({slhs} > 0)", desc
+-        return None
+-
+-    # ── add: a = a + b, flags from result ──
+-    if flag_setter == "add":
+-        if jcc in ("je", "jz"):
+-            return f"({lhs} == 0)", desc
+-        if jcc in ("jne", "jnz"):
+-            return f"({lhs} != 0)", desc
+-        if jcc == "js":
+-            return f"({slhs} < 0)", desc
+-        if jcc == "jns":
+-            return f"({slhs} >= 0)", desc
+-        if jcc in ("jb", "jnae", "jc"):
+-            return f"({lhs} < (uint32_t){rhs})", desc
+-        if jcc in ("jae", "jnb", "jnc"):
+-            return f"({lhs} >= (uint32_t){rhs})", desc
+-        if jcc in ("jl", "jnge"):
+-            return f"({slhs} < 0)", desc
+-        if jcc in ("jge", "jnl"):
+-            return f"({slhs} >= 0)", desc
+-        if jcc in ("jle", "jng"):
+-            return f"({slhs} <= 0)", desc
+-        if jcc in ("jg", "jnle"):
+-            return f"({slhs} > 0)", desc
+-        return None
+-
+-    # ── adc/sbb: result-based (like add/sub but with carry) ──
+-    if flag_setter in ("adc", "sbb"):
+-        if jcc in ("je", "jz"):
+-            return f"({lhs} == 0)", desc
+-        if jcc in ("jne", "jnz"):
+-            return f"({lhs} != 0)", desc
+-        if jcc == "js":
+-            return f"({slhs} < 0)", desc
+-        if jcc == "jns":
+-            return f"({slhs} >= 0)", desc
+-        return None
+-
+-    # ── and/or/xor: result-based, CF=0, OF=0 ──
+-    if flag_setter in ("and", "or", "xor"):
+-        if jcc in ("je", "jz"):
+-            return f"({lhs} == 0)", desc
+-        if jcc in ("jne", "jnz"):
+-            return f"({lhs} != 0)", desc
+-        if jcc in ("js", "jl"):
+-            return f"({slhs} < 0)", desc
+-        if jcc in ("jns", "jge"):
+-            return f"({slhs} >= 0)", desc
+-        if jcc == "jle":
+-            return f"({slhs} <= 0)", desc
+-        if jcc == "jg":
+-            return f"({slhs} > 0)", desc
+-        if jcc in ("jb", "jnae"):
+-            return "0", desc  # CF=0 after and/or/xor
+-        if jcc in ("jae", "jnb"):
+-            return "1", desc
+-        # jbe and ja are not carry-only: jbe is CF|ZF, ja is !CF && !ZF. CF is
+-        # 0 here, but ZF is whatever the result was, so these reduce to ZF and
+-        # !ZF -- not to constants. Folding them to 0 and 1 meant
+-        # "and eax, eax; jbe" never branched and "; ja" always did. The
+-        # CF_TRACKED path above already spells the same two conditions out in
+-        # full, as does the CMP_BE/CMP_A that `test` goes through.
+-        if jcc in ("jbe", "jna"):
+-            return f"({lhs} == 0)", desc
+-        if jcc in ("ja", "jnbe"):
+-            return f"({lhs} != 0)", desc
+-        return None
+-
+-    # ── dec/inc: result-based, CF unchanged ──
+-    if flag_setter in ("dec", "inc"):
+-        lhs = "_fa"  # Result at the flag-setting instruction, before later MOVs.
+-        if jcc in ("jb", "jnae", "jc"):
+-            return "_cf", desc
+-        if jcc in ("jae", "jnb", "jnc"):
+-            return "!_cf", desc
+-        if jcc in ("ja", "jnbe"):
+-            return f"(!_cf && {lhs} != 0)", desc
+-        if jcc in ("jbe", "jna"):
+-            return f"(_cf || {lhs} == 0)", desc
+-        if jcc in ("je", "jz"):
+-            return f"({lhs} == 0)", desc
+-        if jcc in ("jne", "jnz"):
+-            return f"({lhs} != 0)", desc
+-        if jcc == "js":
+-            return "(_fas < 0)", desc
+-        if jcc == "jns":
+-            return "(_fas >= 0)", desc
+-        if jcc in ("jl", "jle", "jg", "jge"):
+-            less = "((_fas < 0) != (_fb != 0))"
+-            return {"jl": less, "jle": f"({less} || _fa == 0)",
+-                    "jg": f"(!{less} && _fa != 0)", "jge": f"!{less}"}[jcc], desc
+-        if jcc in ("jo", "jno"):
+-            return ("(_fb != 0)" if jcc == "jo" else "(_fb == 0)"), desc
+-        if jcc in ("jp", "jpe", "jnp", "jpo"):
+-            return ("RECOMP_PARITY8(_fa)" if jcc in ("jp", "jpe") else "!RECOMP_PARITY8(_fa)"), desc
+-        return None
+-
+-    # ── neg: flags from (0 - a_orig), result is -a ──
+-    if flag_setter == "neg":
+-        if jcc in ("je", "jz"):
+-            return f"({lhs} == 0)", desc
+-        if jcc in ("jne", "jnz"):
+-            return f"({lhs} != 0)", desc
+-        if jcc in ("jb", "jnae", "jc"):
+-            # CF=1 unless original was 0
+-            return f"({lhs} != 0)", desc
+-        if jcc in ("jae", "jnb", "jnc"):
+-            return f"({lhs} == 0)", desc
+-        if jcc == "js":
+-            return f"({slhs} < 0)", desc
+-        if jcc == "jns":
+-            return f"({slhs} >= 0)", desc
+-        if jcc in ("jg", "jnle"):
+-            return f"({slhs} > 0)", desc
+-        if jcc in ("jge", "jnl"):
+-            return f"({slhs} >= 0)", desc
+-        if jcc in ("jl", "jnge"):
+-            return f"({slhs} < 0)", desc
+-        if jcc in ("jle", "jng"):
+-            return f"({slhs} <= 0)", desc
+-        return None
+-
+-    # ── shift: result-based ──
+-    if flag_setter in ("shl", "shr", "sar"):
+-        if jcc in ("je", "jz"):
+-            return f"({lhs} == 0)", desc
+-        if jcc in ("jne", "jnz"):
+-            return f"({lhs} != 0)", desc
+-        if jcc == "js":
+-            return f"({slhs} < 0)", desc
+-        if jcc == "jns":
+-            return f"({slhs} >= 0)", desc
+-        # SAR LEAVES OF CLEAR, SO THE SIGNED CONDITIONS ARE THE RESULT'S SIGN
+-        # AND ZERO.
+-        #
+-        # MSVC's memcpy counts its 32-byte blocks with `sar edx, 5; jle tail`.
+-        # These four had no rule, fell back to `_flags` -- always 0 -- and the
+-        # block loop ran once for every copy under 32 bytes. Max Payne copied
+-        # 12 bytes of indices as 32, overran into the next heap block's header
+-        # and links, and the heap's free-list walk then spun forever six
+-        # seconds in. OF is defined as 0 for a 1-bit sar and undefined for a
+-        # longer one, which the compiler treats as 0 all the same: the branch
+-        # it emits means "result <= 0". _fas is the result sign-extended at
+-        # the operand's width. shl and shr keep no rule: their OF is not 0.
+-        if flag_setter == "sar":
+-            if jcc in ("jl", "jnge"):
+-                return "(_fas < 0)", desc
+-            if jcc in ("jge", "jnl"):
+-                return "(_fas >= 0)", desc
+-            if jcc in ("jle", "jng"):
+-                return "(_fas <= 0)", desc
+-            if jcc in ("jg", "jnle"):
+-                return "(_fas > 0)", desc
+-        return None
+-
+-    # ── shld/shrd: double-precision shift, result-based ──
+-    if flag_setter in ("shld", "shrd"):
+-        if jcc in ("je", "jz"):
+-            return f"({lhs} == 0)", desc
+-        if jcc in ("jne", "jnz"):
+-            return f"({lhs} != 0)", desc
+-        if jcc == "js":
+-            return f"({slhs} < 0)", desc
+-        if jcc == "jns":
+-            return f"({slhs} >= 0)", desc
+-        return None
+-
+-    # ── rol/ror/rcl/rcr: rotation, only CF/OF affected ──
+-    if flag_setter in ("rol", "ror", "rcl", "rcr"):
+-        # Own rotate lowering publishes carry when a consumer requires it.
+-        if jcc in ("jb", "jnae", "jc"):
+-            return "_cf", desc
+-        if jcc in ("jae", "jnb", "jnc"):
+-            return "!_cf", desc
+-        # ZF/SF not modified by rotations - can't resolve most conditions
+-        return None
+-
+-    # ── repe cmpsb / repne scasb: string comparison ──
+-    if "cmps" in flag_setter or "scas" in flag_setter:
+-        if jcc in ("je", "jz"):
+-            return "(_flags != 0)", desc
+-        if jcc in ("jne", "jnz"):
+-            return "(_flags == 0)", desc
+-        # CF from the last pair compared; see _lift_rep_string.
+-        if jcc in ("jb", "jnae", "jc"):
+-            return "_cf", desc
+-        if jcc in ("jae", "jnb", "jnc"):
+-            return "!_cf", desc
+-        if jcc in ("jbe", "jna"):
+-            return "(_cf || _flags != 0)", desc
+-        if jcc in ("ja", "jnbe"):
+-            return "(!_cf && _flags == 0)", desc
+-        return None
+-
+-    return None
+-
+-
+-def _make_setcc_value(setcc_mnemonic, flag_setter, flag_ops):
+-    """Generate the condition expression for a SETcc instruction."""
+-    cc = setcc_mnemonic[3:]
+-    jcc = "j" + cc
+-    result = _make_condition(jcc, flag_setter, flag_ops)
+-    if result:
+-        return result[0]
+-    return None
+-
+-
+-def _make_lahf_value(flag_setter, flag_ops):
+-    """The AH that lahf loads, as a C expression, or None if unknown.
+-
+-    The float compares are spelled out rather than taken from
+-    _make_condition, which treats them as always ordered: after ucomiss an
+-    unordered result sets ZF, PF and CF together, and `test ah, 44h; jnp`
+-    exists precisely to tell NaN apart from equal.
+-    """
+-    if flag_setter in ("comiss", "comisd", "ucomiss", "ucomisd"):
+-        un = "(_fca != _fca || _fcb != _fcb)"
+-        return (f"(uint8_t)(0x02"
+-                f" | (((_fca == _fcb) || {un}) ? 0x40 : 0)"
+-                f" | ({un} ? 0x04 : 0)"
+-                f" | (((_fca < _fcb) || {un}) ? 0x01 : 0))")
+-    parts = []
+-    for jcc, bit in (("js", 0x80), ("je", 0x40), ("jp", 0x04), ("jb", 0x01)):
+-        r = _make_condition(jcc, flag_setter, flag_ops)
+-        if r is None:
+-            # fcomi and sahf clear SF; nothing else is safe to assume.
+-            if jcc == "js" and flag_setter in ("fcompi", "fcomip", "fucomi",
+-                                               "fucompi", "fucomip", "fcomi"):
+-                continue
+-            return None
+-        parts.append(f"(({r[0]}) ? 0x{bit:02X} : 0)")
+-    return "(uint8_t)(0x02 | " + " | ".join(parts) + ")"
+-
+-
+-def _make_cmovcc_cond(cmov_mnemonic, flag_setter, flag_ops):
+-    """Generate the condition expression for a CMOVcc instruction."""
+-    cc = cmov_mnemonic[4:]
+-    jcc = "j" + cc
+-    result = _make_condition(jcc, flag_setter, flag_ops)
+-    if result:
+-        return result[0]
+-    return None
+-
+-
+-# ── Pattern matching for flag-setter + jcc ────────────────────
++zf_expression = _project_conditions.zf_expression
++_make_condition = _project_conditions.make_condition
++_make_setcc_value = _project_conditions.setcc
++_make_lahf_value = _project_conditions.lahf
++_make_cmovcc_cond = _project_conditions.cmovcc
++
+ 
+ def _emit_cond_goto(cond_expr, jcc, desc, target, lifter):
+     """Emit a conditional goto or call for a jump target."""
+@@ -1435,11 +836,9 @@
+             else:
+                 address = "ebx + LO8(eax)"
+             return [f"SET_LO8(eax, MEM8({address})); /* xlatb */"]
+-        if m in ("sete", "setne", "setb", "setae", "setbe", "seta",
+-                 "setl", "setge", "setle", "setg", "sets", "setns"):
++        if m.startswith("set") and "j" + m[3:] in COND_MAP:
+             return self._lift_setcc(insn, ops, m)
+-        if m in ("cmove", "cmovne", "cmovb", "cmovae", "cmovbe", "cmova",
+-                 "cmovl", "cmovge", "cmovle", "cmovg", "cmovs", "cmovns"):
++        if m.startswith("cmov") and "j" + m[4:] in COND_MAP:
+             return self._lift_cmovcc(insn, ops, m)
+ 
+         # ── SSE (scalar float) ──
+@@ -3202,9 +2601,7 @@
+                 i += 1
+                 continue
+ 
+-        if (curr.mnemonic in ("sete", "setne", "setb", "setae", "setbe",
+-                              "seta", "setl", "setge", "setle", "setg",
+-                              "sets", "setns", "seto", "setno")
++        if (curr.mnemonic.startswith("set") and "j" + curr.mnemonic[3:] in COND_MAP
+                 and last_flag_setter and len(curr.operands) >= 1):
+             cond = _make_setcc_value(
+                 curr.mnemonic, last_flag_setter, last_flag_ops)
+@@ -3228,9 +2625,7 @@
+                 i += 1
+                 continue
+ 
+-        if (curr.mnemonic in ("cmove", "cmovne", "cmovb", "cmovae",
+-                              "cmovbe", "cmova", "cmovl", "cmovge",
+-                              "cmovle", "cmovg", "cmovs", "cmovns", "cmovo", "cmovno")
++        if (curr.mnemonic.startswith("cmov") and "j" + curr.mnemonic[4:] in COND_MAP
+                 and last_flag_setter and len(curr.operands) >= 2):
+             cond = _make_cmovcc_cond(
+                 curr.mnemonic, last_flag_setter, last_flag_ops)
+--- a/tools/recomp/test_flag_join.py
++++ b/tools/recomp/test_flag_join.py
+@@ -18,12 +18,12 @@
+ 
+ def test_different_cmp_operands_join_for_setne():
+     code = translate_join()
+-    assert 'CMP_NE(_fa, _fb)' in code, code
++    assert '!(!(((uint32_t)(_fa - _fb))))' in code, code
+     assert '_flags /* setne */' not in code
+ 
+ def test_different_cmp_operands_join_for_cmovne():
+     code = translate_join(bytes.fromhex('0f45c7c3'))
+-    assert 'if (CMP_NE(_fa, _fb)) eax = edi;' in code, code
++    assert 'if (!(!(((uint32_t)(_fa - _fb))))) eax = edi;' in code, code
+ 
+ def test_unknown_path_is_not_guessed():
+     assert _merge_flag_states([None, ('cmp', [])]) is None
+--- a/tools/recomp/test_flag_join_backedge.py
++++ b/tools/recomp/test_flag_join_backedge.py
+@@ -82,8 +82,8 @@
+              b"\xC3")             # ret
+     code = _translate(image)
+     assert "_flags /*" not in code, code
+-    assert "_flags = (_fa == 0)" in code, code
+-    assert "_flags = (edx == 0)" in code, code
++    assert "_flags = !_fa" in code, code
++    assert "_flags = !_fa" in code, code
+     assert "if (_flags)" in code, code
+ 
+ 
+--- a/tools/recomp/test_lifter_lock_flags.py
++++ b/tools/recomp/test_lifter_lock_flags.py
+@@ -109,7 +109,7 @@
+         """xadd sets ZF from the sum, which is what its destination now holds."""
+         out = _lift(_release_sequence("lock xadd"))
+         self.assertIn("_fa = _exchange_result;", out, out)
+-        self.assertIn("if (!!_fa)", out, out)
++        self.assertIn("if (!(!(_fa)))", out, out)
+         self.assertNotIn("MEM32(eax)", out, out)
+ 
+     def test_lock_cmpxchg_does_not_inherit_stale_flags(self):
+--- a/tools/recomp/test_lifter_loop.py
++++ b/tools/recomp/test_lifter_loop.py
+@@ -51,17 +51,17 @@
+ 
+ def test_loope_and_loopne_combine_the_counter_with_the_zero_flag():
+     loope = _translate(_fixture(b"\xE1"))
+-    assert "if ((ecx != 0) && (CMP_EQ(_fa, _fb)))" in loope, loope
++    assert "if ((ecx != 0) && (!(((uint32_t)(_fa - _fb)))))" in loope, loope
+ 
+     loopne = _translate(_fixture(b"\xE0"))
+-    assert "if ((ecx != 0) && (CMP_NE(_fa, _fb)))" in loopne, loopne
++    assert "if ((ecx != 0) && (!(!(((uint32_t)(_fa - _fb))))))" in loopne, loopne
+ 
+ 
+ def test_loop_preserves_the_comparison_for_a_later_branch():
+     # The jge at +5 inherits its flags from the cmp at +0 across the loop.
+     for opcode in (b"\xE2", b"\xE1", b"\xE0"):
+         code = _translate(_fixture(opcode))
+-        assert "if (CMP_GE(_fas, _fbs)) goto loc_00010009;" in code, code
++        assert "if (!(!!((!!((((uint32_t)(_fa - _fb))) & 0x80000000u)) != (!!(((_fa) ^ (_fb)) & ((_fa) ^ (((uint32_t)(_fa - _fb)))) & 0x80000000u))))) goto loc_00010009;" in code, code
+ 
+ 
+ def test_loope_without_a_tracked_setter_keeps_the_fallback():
+--- a/tools/recomp/test_lifter_popfd_flags.py
++++ b/tools/recomp/test_lifter_popfd_flags.py
+@@ -68,20 +68,20 @@
+         self.assertIn("pushfd", _EFLAGS_PRESERVE)
+ 
+     def test_a_branch_after_popfd_does_not_use_the_old_compare(self):
+-        self.assertNotIn("CMP_EQ", _lift(["popfd"]))
++        self.assertNotIn("!(((uint32_t)(_fa - _fb)))", _lift(["popfd"]))
+ 
+     def test_the_same_branch_without_popfd_still_resolves(self):
+         # The positive control. Without it, a lifter that resolved NOTHING
+         # would pass the test above.
+-        self.assertIn("CMP_EQ", _lift([]))
++        self.assertIn("!(((uint32_t)(_fa - _fb)))", _lift([]))
+ 
+     def test_a_genuinely_preserving_instruction_still_preserves(self):
+         # nop is in _EFLAGS_PRESERVE and must stay there: this pins that the
+         # change was to popfd and not to the mechanism.
+-        self.assertIn("CMP_EQ", _lift(["nop"]))
++        self.assertIn("!(((uint32_t)(_fa - _fb)))", _lift(["nop"]))
+ 
+     def test_popfd_anywhere_in_the_run_breaks_the_chain(self):
+-        self.assertNotIn("CMP_EQ", _lift(["nop", "popfd", "nop"]))
++        self.assertNotIn("!(((uint32_t)(_fa - _fb)))", _lift(["nop", "popfd", "nop"]))
+ 
+ 
+ if __name__ == "__main__":
+--- a/tools/recomp/test_lifter_rep_cmps_cf.py
++++ b/tools/recomp/test_lifter_rep_cmps_cf.py
+@@ -57,8 +57,8 @@
+                            mem_disp=0, mem_segment="es", imm=0)]
+     assert _make_condition("jb", "repe cmpsb", ops)[0] == "_cf"
+     assert _make_condition("jae", "repe cmpsb", ops)[0] == "!_cf"
+-    assert _make_condition("ja", "repe cmpsb", ops)[0] == "(!_cf && _flags == 0)"
+-    assert _make_condition("jbe", "repe cmpsb", ops)[0] == "(_cf || _flags != 0)"
++    assert _make_condition("ja", "repe cmpsb", ops)[0] == "((!_cf) && (!_flags))"
++    assert _make_condition("jbe", "repe cmpsb", ops)[0] == "((_cf) || (_flags))"
+ 
+ 
+ def test_the_translator_counts_a_rep_compare_as_a_cf_producer():
+--- a/tools/recomp/test_lifter_sar_cond.py
++++ b/tools/recomp/test_lifter_sar_cond.py
+@@ -10,6 +10,7 @@
+ then spun forever.
+ """
+ 
++import re
+ import os
+ import sys
+ 
+@@ -36,6 +37,14 @@
+     return {"jl": sf, "jge": not sf, "jle": zf or sf, "jg": not zf and not sf}[jcc]
+ 
+ 
++def _evaluate(expr, result):
++    # Translate the C boolean spelling; retain the independent SAR reference.
++    expr = re.sub(r"(?<=\w)u\b", "", expr)
++    expr = expr.replace("||", " or ").replace("&&", " and ")
++    expr = re.sub(r"!(?!=)", " not ", expr)
++    return eval(expr.strip(), {"_fa": result & 0xffffffff, "_fas": result})
++
++
+ def test_sar_signed_conditions_have_a_rule():
+     for jcc in ("jl", "jge", "jle", "jg"):
+         got = _make_condition(jcc, "sar", OPS)
+@@ -48,15 +57,14 @@
+         result = size >> 5              # Python >> on int is arithmetic, as sar
+         for jcc in ("jl", "jge", "jle", "jg"):
+             expr = _make_condition(jcc, "sar", OPS)[0]
+-            got = eval(expr.replace("||", " or ").replace("&&", " and "),
+-                       {"_fas": result})
++            got = _evaluate(expr, result)
+             assert bool(got) == _x86(jcc, result), (size, jcc, expr)
+ 
+ 
+ def test_the_memcpy_tail_branch_is_taken_under_32_bytes():
+     expr = _make_condition("jle", "sar", OPS)[0]
+-    assert eval(expr, {"_fas": 12 >> 5}), expr       # 12 bytes: skip the loop
+-    assert not eval(expr, {"_fas": 64 >> 5}), expr   # 64 bytes: run it
++    assert _evaluate(expr, 12 >> 5), expr       # 12 bytes: skip the loop
++    assert not _evaluate(expr, 64 >> 5), expr   # 64 bytes: run it
+ 
+ 
+ def test_shl_and_shr_get_no_invented_rule():
+--- a/tools/recomp/test_lifter_sf_overflow.py
++++ b/tools/recomp/test_lifter_sf_overflow.py
+@@ -75,9 +75,9 @@
+                     self.assertIn("uint", expr)
+ 
+     def test_width_follows_the_operand(self):
+-        self.assertIn(">> 31", _cond("js", "eax"))
+-        self.assertIn(">> 15", _cond("js", "ax"))
+-        self.assertIn(">> 7", _cond("js", "al"))
++        self.assertIn("& 0x80000000u", _cond("js", "eax"))
++        self.assertIn("& 0x8000u", _cond("js", "ax"))
++        self.assertIn("& 0x80u", _cond("js", "al"))
+ 
+     def test_the_emitted_expression_is_right_at_O2(self):
+         """Compile the real emitted text at -O2 and check it against x86.
+--- a/tools/recomp/test_lifter_string_compare.py
++++ b/tools/recomp/test_lifter_string_compare.py
+@@ -42,7 +42,7 @@
+         self.assertIn("_flags = (_str_value == _str_other);", generated)
+         self.assertIn("esi += _str_step;\nedi += _str_step;\necx += 0xFFFFFFFFu;", generated)
+         self.assertIn("if (!_flags) break;", generated)
+-        self.assertIn("if ((_flags != 0)) goto loc_00000010;", generated)
++        self.assertIn("if (_flags) goto loc_00000010;", generated)
+ 
+     def test_dword_compare_sets_the_flags_its_jcc_reads(self):
+         compare = Instruction(
+--- a/tools/recomp/test_lifter_zf_join.py
++++ b/tools/recomp/test_lifter_zf_join.py
+@@ -26,10 +26,10 @@
+ 
+ def test_zf_expression_per_setter():
+     assert zf_expression(("cmp", [object(), object()])) == "(_fa == _fb)"
+-    assert zf_expression(("test", [object(), object()])) == "((_fa & _fb) == 0)"
++    assert zf_expression(("test", [object(), object()])) == "!(_fa & _fb)"
+     # The result-snapshot family stores the result itself in _fa.
+-    assert zf_expression(("and", [object()])) == "(_fa == 0)"
+-    assert zf_expression(("xor", [object()])) == "(_fa == 0)"
++    assert zf_expression(("and", [object()])) == "!_fa"
++    assert zf_expression(("xor", [object()])) == "!_fa"
+ 
+ 
+ def test_zf_expression_refuses_what_it_cannot_answer():
+--- a/tools/recomp/translator.py
++++ b/tools/recomp/translator.py
+@@ -894,6 +894,8 @@
+         from translation_strings import is_compare as string_compare
+         last_setter = None
+         for insn in instructions:
++            if insn.mnemonic == "lahf":
++                return True  # LAHF consumes captured arithmetic carry.
+             if not insn.mnemonic.startswith("rep") and string_compare(insn):
+                 return True  # Single string comparisons publish ordinary CMP snapshots.
+             if insn.mnemonic.removeprefix("lock ") in ("xadd", "cmpxchg"):

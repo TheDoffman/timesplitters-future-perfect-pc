@@ -3,6 +3,7 @@
 from project_paths import source_file as repo_file
 
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -29,7 +30,7 @@ def output_exe(request,tmp_path_factory):
         (folder/'SDL3/SDL.h').write_text('/* Device APIs are mocked by the fixture. */\n')
         (folder/'pthread.h').write_text('/* Single-thread fixture mutex stubs. */\n')
     exe=folder/('gain.exe' if os.name=='nt' else 'gain')
-    includes=[folder,RUNTIME,RUNTIME/'hle']
+    includes=[folder,RUNTIME,RUNTIME/'hle',ROOT/'src']
     args=([compiler,'/nologo','/D_CRT_SECURE_NO_WARNINGS',
            '/std:c++17' if request.param=='xaudio' else '/std:c11',
            *(['/EHsc'] if request.param=='xaudio' else []),
@@ -47,3 +48,57 @@ def test_output_gain(output_exe,setting,expected):
     if setting is not None:env['RECOMP_AUDIO_GAIN']=setting
     result=subprocess.run([str(output_exe),str(expected)],env=env,capture_output=True,text=True,timeout=10)
     assert result.returncode==0,result.stdout+result.stderr
+
+
+def test_weapon_sound_range(tmp_path):
+    code=(RUNTIME.parent/'titles/futureperfect/src/recomp_manual.c').read_text()
+    match=re.search(r'void sub_00021FB0\(void\)\n\{.*?\n\}',code,re.S)
+    assert match
+    (tmp_path/'weapon_range.inc').write_text(match.group())
+    compiler,env=native_compiler(tmp_path)
+    source=ROOT/'tests/media/weapon_sound_range.c'
+    exe=tmp_path/('range.exe' if os.name=='nt' else 'range')
+    includes=[tmp_path,ROOT/'src']
+    args=([compiler,'/nologo','/std:c11',*['/I'+str(p) for p in includes],
+           str(source),'/Fe:'+str(exe)] if os.name=='nt' else
+          [compiler,'-std=c11',*['-I'+str(p) for p in includes],str(source),'-lm','-o',str(exe)])
+    result=subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
+    assert result.returncode==0,result.stdout+result.stderr
+    result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stdout+result.stderr
+
+
+def test_environmental_acoustics(tmp_path):
+    compiler,env=native_compiler(tmp_path)
+    source=ROOT/'tests/media/acoustic_scene.c'
+    exe=tmp_path/('acoustics.exe' if os.name=='nt' else 'acoustics')
+    args=([compiler,'/nologo','/std:c11','/I'+str(ROOT/'src'),str(source),'/Fe:'+str(exe)] if os.name=='nt' else
+          [compiler,'-std=c11','-I'+str(ROOT/'src'),str(source),'-lm','-o',str(exe)])
+    result=subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
+    assert result.returncode==0,result.stdout+result.stderr
+    result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stdout+result.stderr
+
+
+def test_beta_audio_preference(tmp_path):
+    compiler,env=native_compiler(tmp_path)
+    exe=tmp_path/('settings.exe' if os.name=='nt' else 'settings')
+    source=ROOT/'tests/media/audio_settings.c'
+    args=([compiler,'/nologo','/std:c11','/I'+str(ROOT/'src'),str(source),'/Fe:'+str(exe)] if os.name=='nt' else
+          [compiler,'-std=c11','-I'+str(ROOT/'src'),str(source),'-o',str(exe)])
+    built=subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
+    assert built.returncode==0,built.stdout+built.stderr
+    env={k:v for k,v in env.items() if not k.startswith(('RECOMP_','TSFP_'))}
+    env['TSFP_DISPLAY_CONFIG']=str(tmp_path/'display.ini')
+    def run(initial,change=None,ok=1):
+        args=[str(exe),str(initial),'check']
+        if change is not None:args += [str(change),str(ok)]
+        result=subprocess.run(args,env=env,capture_output=True,text=True,timeout=10)
+        assert result.returncode==0,result.stdout+result.stderr
+    run(0,1)  # beta is opt-in; a successful save applies in this process
+    run(1)  # restart reads the saved choice
+    env['RECOMP_ENHANCED_AUDIO']='1'
+    run(1,0)
+    run(0)  # saved OFF overrides the diagnostic launch override
+    env['TSFP_DISPLAY_CONFIG']=str(tmp_path/'missing'/'display.ini')
+    run(1,0,0)  # failed save leaves the current live setting unchanged

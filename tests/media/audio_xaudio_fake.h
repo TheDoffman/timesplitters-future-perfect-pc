@@ -36,7 +36,11 @@ struct IXAudio2EngineCallback {
     virtual void OnCriticalError(HRESULT) = 0;
 };
 static IXAudio2EngineCallback *registered;
+struct IXAudio2MasteringVoice;
 struct IXAudio2SourceVoice {
+    float matrix[4]={1,0,0,1};
+    void GetOutputMatrix(IXAudio2MasteringVoice *,unsigned src,unsigned dst,float *m) { assert(dst==2); if(src==1){m[0]=1;m[1]=1;}else memcpy(m,matrix,4*sizeof(float)); }
+    HRESULT SetOutputMatrix(IXAudio2MasteringVoice *,unsigned src,unsigned dst,const float *m) { assert(dst==2);memcpy(matrix,m,src*dst*sizeof(float));return S_OK; }
     uint32_t queued = 0;
     uint64_t played = 0;
     const uint8_t *last_pcm = nullptr;
@@ -60,8 +64,8 @@ struct IXAudio2 {
     }
     void UnregisterForCallbacks(IXAudio2EngineCallback *) { registered=nullptr; }
     void Release() { ++released; delete this; }
-    HRESULT CreateMasteringVoice(IXAudio2MasteringVoice **out) {
-        if (FAILED(result("master"))) return result("master"); *out=new IXAudio2MasteringVoice; return S_OK;
+    HRESULT CreateMasteringVoice(IXAudio2MasteringVoice **out,unsigned channels) {
+        assert(channels==2); if (FAILED(result("master"))) return result("master"); *out=new IXAudio2MasteringVoice; return S_OK;
     }
     HRESULT CreateSourceVoice(IXAudio2SourceVoice **out, const WAVEFORMATEX *, unsigned, float) {
         if (FAILED(result("create"))) return result("create"); *out=new IXAudio2SourceVoice; ++source_created; return S_OK;

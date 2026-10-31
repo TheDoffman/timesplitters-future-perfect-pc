@@ -1,0 +1,305 @@
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -29,6 +29,7 @@
+ add_library(xbox_kernel STATIC ${KERNEL_SOURCES})
+ 
+ target_sources(xbox_kernel PRIVATE
++    "${TSFP_SHARED_SOURCE}/runtime/guest_printf.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_critical.c"
+     "${TSFP_SHARED_SOURCE}/runtime/host_critical.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_rtl_services.c"
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -7082,290 +7082,8 @@
+     g_eax = 0;
+ }
+ 
+-/* --- Rtl* printf family (ordinals 361-364) ---
+- *
+- * int RtlSnprintf(char*, size_t count, const char* fmt, ...)
+- * int RtlSprintf(char*, const char* fmt, ...)
+- * int RtlVsnprintf(char*, size_t count, const char* fmt, va_list)
+- * int RtlVsprintf(char*, const char* fmt, va_list)
+- *
+- * All four are __cdecl on the console, so the stdcall table pops nothing
+- * ("caller cleans", like DbgPrint) and the varargs stay readable on the guest
+- * stack while the bridge runs. The V* variants take an x86 va_list, which is
+- * just a guest pointer to where the argument slots begin.
+- *
+- * The x64 CRT's vsnprintf cannot consume an x86 va_list, so these bridges used
+- * to copy the format string verbatim ("%d" came out as the literal text) and
+- * read the wrong fixed arguments for the two non-counted variants: RtlSprintf's
+- * "count" was the format pointer, and the vararg list started one slot early.
+- * This walks the format itself and formats each conversion with the host CRT,
+- * reading 32-bit argument slots from guest memory (64-bit args 8-aligned, as
+- * on x86).
+- */
+-
+-/* Guest cursor over the variadic argument slots. */
+-static uint32_t bridge_va_next32(uint32_t *pos)
+-{
+-    uint32_t v = BRIDGE_MEM32(*pos);
+-    *pos += 4;
+-    return v;
+-}
+-
+-static uint64_t bridge_va_next64(uint32_t *pos)
+-{
+-    uint32_t p = (*pos + 7) & ~7u;
+-    uint32_t lo = BRIDGE_MEM32(p);
+-    uint32_t hi = BRIDGE_MEM32(p + 4);
+-    *pos = p + 8;
+-    return (uint64_t)lo | ((uint64_t)hi << 32);
+-}
+-
+-/* Format fmt, pulling varargs from guest memory at `pos`, into out (at most
+- * cap-1 chars, NUL-terminated). Returns the number of characters written. */
+-static int bridge_format_printf(char *out, size_t cap, const char *fmt,
+-                                uint32_t pos)
+-{
+-    size_t used = 0;
+-    size_t i = 0;
+-
+-    if (!out || cap == 0)
+-        return 0;
+-
+-    while (fmt[i] && used + 1 < cap) {
+-        if (fmt[i] != '%') {
+-            out[used++] = fmt[i++];
+-            continue;
+-        }
+-        i++;
+-        if (fmt[i] == '%') {
+-            out[used++] = '%';
+-            i++;
+-            continue;
+-        }
+-
+-        {
+-            char flags[8];
+-            int  nflags = 0;
+-            char conv[32];
+-            char *cp = conv;
+-            int  width = 0, have_width = 0, width_star = 0;
+-            int  prec  = 0, have_prec  = 0, prec_star  = 0;
+-            char len = 0;          /* 0 none, 1 h, 2 hh, 3 l, 4 ll */
+-            char spec;
+-            char tmp[512];
+-            size_t tlen;
+-
+-            while (fmt[i] && strchr("-+ 0#", fmt[i]) && nflags < 7)
+-                flags[nflags++] = fmt[i++];
+-            flags[nflags] = 0;
+-
+-            if (fmt[i] == '*') { width_star = 1; have_width = 1; i++; }
+-            else if (fmt[i] >= '0' && fmt[i] <= '9') {
+-                have_width = 1;
+-                while (fmt[i] >= '0' && fmt[i] <= '9') {
+-                    width = width * 10 + (fmt[i] - '0');
+-                    i++;
+-                }
+-            }
+-
+-            if (fmt[i] == '.') {
+-                i++;
+-                have_prec = 1;
+-                if (fmt[i] == '*') { prec_star = 1; i++; }
+-                else while (fmt[i] >= '0' && fmt[i] <= '9') {
+-                    prec = prec * 10 + (fmt[i] - '0');
+-                    i++;
+-                }
+-            }
+-
+-            if (fmt[i] == 'h') { len = 1; i++; if (fmt[i] == 'h') { len = 2; i++; } }
+-            else if (fmt[i] == 'l') { len = 3; i++; if (fmt[i] == 'l') { len = 4; i++; } }
+-            else if (fmt[i] == 'q') { len = 4; i++; }
+-            else if (fmt[i] == 'I' && fmt[i+1] == '6' && fmt[i+2] == '4') {
+-                len = 4; i += 3;
+-            }
+-
+-            spec = fmt[i];
+-            if (!spec)
+-                break;
+-            i++;
+-
+-            *cp++ = '%';
+-            if (nflags) { memcpy(cp, flags, (size_t)nflags); cp += nflags; }
+-
+-            if (width_star) {
+-                int w = (int32_t)bridge_va_next32(&pos);
+-                if (w < 0) { *cp++ = '-'; w = -w; }
+-                cp += sprintf(cp, "%d", w);
+-            } else if (have_width) {
+-                cp += sprintf(cp, "%d", width);
+-            }
+-            if (have_prec) {
+-                *cp++ = '.';
+-                if (prec_star) {
+-                    int p = (int32_t)bridge_va_next32(&pos);
+-                    if (p < 0) p = 0;
+-                    cp += sprintf(cp, "%d", p);
+-                } else {
+-                    cp += sprintf(cp, "%d", prec);
+-                }
+-            }
+-            /* Single 'l' is a 32-bit long on the console; the host long is 32
+-             * bits too, so 'l' is passed through for the d/i/u/o/x/X paths. */
+-            if (len == 2) { *cp++ = 'h'; *cp++ = 'h'; }
+-            else if (len == 1) { *cp++ = 'h'; }
+-            else if (len == 4) { *cp++ = 'l'; *cp++ = 'l'; }
+-
+-            switch (spec) {
+-            case 'd': case 'i': {
+-                if (len == 4) {
+-                    long long v = (long long)bridge_va_next64(&pos);
+-                    *cp++ = 'd'; *cp = 0;
+-                    snprintf(tmp, sizeof tmp, conv, v);
+-                } else {
+-                    int v = (int)(int32_t)bridge_va_next32(&pos);
+-                    *cp++ = 'd'; *cp = 0;
+-                    snprintf(tmp, sizeof tmp, conv, v);
+-                }
+-                break;
+-            }
+-            case 'u': {
+-                if (len == 4) {
+-                    unsigned long long v = bridge_va_next64(&pos);
+-                    *cp++ = 'u'; *cp = 0;
+-                    snprintf(tmp, sizeof tmp, conv, v);
+-                } else {
+-                    unsigned int v = bridge_va_next32(&pos);
+-                    *cp++ = 'u'; *cp = 0;
+-                    snprintf(tmp, sizeof tmp, conv, v);
+-                }
+-                break;
+-            }
+-            case 'o': case 'x': case 'X': {
+-                if (len == 4) {
+-                    unsigned long long v = bridge_va_next64(&pos);
+-                    *cp++ = spec; *cp = 0;
+-                    snprintf(tmp, sizeof tmp, conv, v);
+-                } else {
+-                    unsigned int v = bridge_va_next32(&pos);
+-                    *cp++ = spec; *cp = 0;
+-                    snprintf(tmp, sizeof tmp, conv, v);
+-                }
+-                break;
+-            }
+-            case 'c': {
+-                int v = (int)bridge_va_next32(&pos);
+-                *cp++ = 'c'; *cp = 0;
+-                snprintf(tmp, sizeof tmp, conv, v);
+-                break;
+-            }
+-            case 's': {
+-                uint32_t sva = bridge_va_next32(&pos);
+-                const char *gs = sva ? (const char *)XBOX_TO_NATIVE(sva)
+-                                     : "(null)";
+-                *cp++ = 's'; *cp = 0;
+-                snprintf(tmp, sizeof tmp, conv, gs);
+-                break;
+-            }
+-            case 'p': {
+-                /* 32-bit pointer as padded lower-case hex, like the x86 CRT */
+-                unsigned int v = bridge_va_next32(&pos);
+-                const char *pfx = strchr(flags, '#') ? "%#08x" : "%08x";
+-                snprintf(tmp, sizeof tmp, pfx, v);
+-                break;
+-            }
+-            case 'n': {
+-                uint32_t tva = bridge_va_next32(&pos);
+-                if (tva)
+-                    BRIDGE_MEM32(tva) = (uint32_t)used;   /* int written */
+-                tlen = 0;
+-                break;
+-            }
+-            case 'f': case 'e': case 'g': case 'E': case 'G': {
+-                double v = (double)bridge_va_next64(&pos);
+-                *cp++ = spec; *cp = 0;
+-                snprintf(tmp, sizeof tmp, conv, v);
+-                break;
+-            }
+-            default:
+-                /* Unsupported conversion: keep '%' and the specifier */
+-                out[used++] = '%';
+-                out[used++] = spec;
+-                continue;
+-            }
+-
+-            tlen = (spec == 'n') ? 0 : strlen(tmp);
+-            {
+-                size_t k;
+-                for (k = 0; k < tlen && used + 1 < cap; k++)
+-                    out[used++] = tmp[k];
+-            }
+-        }
+-    }
+-
+-    if (used + 1 >= cap)
+-        used = cap - 1;
+-    out[used] = 0;
+-    return (int)used;
+-}
+-
+-/* --- RtlSnprintf (ordinal 361, __cdecl, caller cleans) --- */
+-static void bridge_RtlSnprintf(void)
+-{
+-    char     *dst  = (char *)XBOX_TO_NATIVE(STACK_ARG(0));
+-    uint32_t  count = STACK_ARG(1);
+-    const char *fmt = (const char *)XBOX_TO_NATIVE(STACK_ARG(2));
+-
+-    if (!dst || !fmt) {
+-        g_eax = 0;
+-        return;
+-    }
+-    /* Varargs start after buffer/count/format on the guest stack. */
+-    g_eax = bridge_format_printf(dst, count, fmt, g_esp + 12);
+-}
+-
+-/* --- RtlSprintf (ordinal 362, __cdecl, caller cleans) --- */
+-static void bridge_RtlSprintf(void)
+-{
+-    char     *dst  = (char *)XBOX_TO_NATIVE(STACK_ARG(0));
+-    const char *fmt = (const char *)XBOX_TO_NATIVE(STACK_ARG(1));
+-
+-    if (!dst || !fmt) {
+-        g_eax = 0;
+-        return;
+-    }
+-    /* Unbounded like the CRT's vsprintf; a wide cap prevents a wild write. */
+-    g_eax = bridge_format_printf(dst, 65536, fmt, g_esp + 8);
+-}
+-
+-/* --- RtlVsnprintf (ordinal 363, __cdecl, caller cleans) --- */
+-static void bridge_RtlVsnprintf(void)
+-{
+-    char     *dst  = (char *)XBOX_TO_NATIVE(STACK_ARG(0));
+-    uint32_t  count = STACK_ARG(1);
+-    const char *fmt = (const char *)XBOX_TO_NATIVE(STACK_ARG(2));
+-    uint32_t  list = STACK_ARG(3);   /* x86 va_list = guest pointer to args */
+-
+-    if (!dst || !fmt || !list) {
+-        g_eax = 0;
+-        return;
+-    }
+-    g_eax = bridge_format_printf(dst, count, fmt, list);
+-}
+-
+-/* --- RtlVsprintf (ordinal 364, __cdecl, caller cleans) --- */
+-static void bridge_RtlVsprintf(void)
+-{
+-    char     *dst  = (char *)XBOX_TO_NATIVE(STACK_ARG(0));
+-    const char *fmt = (const char *)XBOX_TO_NATIVE(STACK_ARG(1));
+-    uint32_t  list = STACK_ARG(2);   /* x86 va_list = guest pointer to args */
+-
+-    if (!dst || !fmt || !list) {
+-        g_eax = 0;
+-        return;
+-    }
+-    g_eax = bridge_format_printf(dst, 65536, fmt, list);
+-}
++/* Original narrow printf imports; x86 frames and arguments are checked. */
++#include "guest_kernel_printf.inc"
+ 
+ /* ═══════════════════════════════════════════════════════════════════════════
+  * Port I/O (329, 330, 331, 332)

@@ -11,13 +11,14 @@ static uint32_t kb_caption(void);
 #include "pc_discord_guest.h"
 #include "pc_breadcrumbs.h"
 #include "pc_guest_memory.h"
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 #include "pc_network.h"
 #endif
 #endif
 #include "pc_display.h"
 #include "pc_native_rate.h"
 #include "pc_frame_rate_settings.h"
+#include "pc_audio_settings.h"
 #include "texture_mode.h"
 #include "pc_cutscene.h"
 #ifndef _WIN32
@@ -26,7 +27,7 @@ static uint32_t kb_caption(void);
 #define PAGE_GUARD 0x100
 #define PAGE_EXECUTE_WRITECOPY 0x80
 #endif
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 #include "pc_online.h"
 #endif
 #include <stdarg.h>
@@ -154,12 +155,13 @@ void pc_display_camera(void (*original)(void))
     if(now-discord_sampled>=1000) {
         PcDiscordSnapshot sample;
         int network=0;
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
         double latency;unsigned peers;
         network=pc_network_latency(&latency,&peers);
 #endif
         pc_discord_sample(&sample,discord_guest_read,NULL,&discord_cache,network);
         pc_capture_gameplay(sample.scene,sample.mode,sample.menu_mode,sample.paused,sample.network,(sample.flags&0x20000000u)!=0);
+        pc_capture_match(sample.humans,sample.bots,sample.difficulty,sample.capacity);
         pc_discord_submit(&sample);discord_sampled=now;
     }
 #endif
@@ -244,6 +246,7 @@ static uint32_t audio_options_caption(void)
 static void sd_width(void);
 static void sd_buttons(void (*original)(void));
 static void sd_capacity(void (*original)(void));
+static void audio_beta_add(void (*original)(void));
 void pc_display_menu_button(void (*original)(void))
 {
     static uint32_t caption;
@@ -269,12 +272,15 @@ void pc_display_menu_button(void (*original)(void))
         return;
     }
     if(callsite==0x002C4042u) {
+        /* Both frontend and Pause use this builder. Keep the original hidden
+           subtitle record for native save logic, and insert our own selector. */
+        audio_beta_add(original);
         /* Keep the native update/save record, but remove its visual row and
          * navigation target; Video Options now owns subtitle changes. */
         uint32_t frame=g_esp,flags=WORD_AT(frame+12);
         WORD_AT(frame+12)=flags|0x21u;original();WORD_AT(frame+12)=flags;return;
     }
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     if(callsite==0x001CC0A3u && callback==0x001CC050u) {
         static uint32_t online_caption;
         const uint32_t frame=g_esp, previous_caption=WORD_AT(frame+4);
@@ -374,6 +380,41 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     restore_registers(&r);
     return result;
 }
+#define AUDIO_BETA_CHANGE 0x00012027u
+static uint32_t audio_beta_row,audio_beta_labels;
+static void audio_beta_add(void (*original)(void))
+{
+    extern void sub_00071CF0(void);
+    if(!audio_beta_labels) {
+        static const char labels[]="\vs75" PC_AUDIO_BETA_LABEL "\vs100\0Off\0On";
+        audio_beta_labels=xbox_HeapAlloc(sizeof labels,4);
+        if(audio_beta_labels)memcpy((void *)((uintptr_t)audio_beta_labels+g_xbox_mem_offset),labels,sizeof labels);
+    }
+    if(!audio_beta_labels)return;
+    /* Audio supplies an explicit row extent; a zero extent is invisible here.
+       Retain both frontend and pause geometry, with a smaller long label. */
+    uint32_t flags=WORD_AT(g_esp+12)&~0x21u,height=WORD_AT(g_esp+16);
+    audio_beta_row=guest_call(original,6,audio_beta_labels,15u,flags,height,0u,0u);
+    if(!audio_beta_row)return;
+    if(guest_writable(audio_beta_row,0x2c))WORD_AT(audio_beta_row+0x28)&=~0x2000u;
+    guest_call(sub_0007D480,2,0xA000u,0u);
+    guest_call(sub_000717D0,1,audio_beta_labels+(uint32_t)sizeof("\vs75" PC_AUDIO_BETA_LABEL "\vs100"));
+    guest_call(sub_000717D0,1,audio_beta_labels+(uint32_t)sizeof("\vs75" PC_AUDIO_BETA_LABEL "\vs100")+4u);
+    guest_call(sub_00071CF0,2,audio_beta_row,AUDIO_BETA_CHANGE);
+    guest_call(sub_00075430,2,audio_beta_row,(uint32_t)pc_audio_enhanced_enabled());
+}
+static void audio_beta_change(void)
+{
+    GuestRegisters r;save_registers(&r);
+    if(audio_beta_row && guest_writable(audio_beta_row,0xcc)) {
+        unsigned selected=WORD_AT(audio_beta_row+0xc8);
+        if(selected<2 && !pc_audio_set_enhanced((int)selected)) {
+            WORD_AT(audio_beta_row+0xc8)=(uint32_t)pc_audio_enhanced_enabled();
+            fprintf(stderr,"[AUDIO] Unable to save Enhanced Audio preference\n");
+        }
+    }
+    restore_registers(&r);g_esp+=4;
+}
 #include "pc_profile_accept.inc"
 #include "pc_weapon_slots_guest.inc"
 
@@ -382,7 +423,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
  * never run guest AI decisions or add a duplicate entry to 0x7A3580. */
 uint32_t pc_network_bots_revive(unsigned slot)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     extern void sub_000DAC30(void),sub_000D7570(void);
     const uint32_t pool=WORD_AT(0x007356d8u);
     const unsigned humans=*(uint8_t *)((uintptr_t)0x007de400u+g_xbox_mem_offset);
@@ -406,7 +447,7 @@ uint32_t pc_network_bots_revive(unsigned slot)
 }
 void pc_network_bots_entity_refresh(uint32_t entity)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     extern void sub_0009FBE0(void);
     if(guest_writable(entity,0x2e8u)) {
         /* +32 is the transform MODE, not a dirty flag. +28 bit 0x1000
@@ -420,7 +461,7 @@ void pc_network_bots_entity_refresh(uint32_t entity)
 }
 void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     extern void sub_000966E0(void);
     uint32_t model,speed,actor;unsigned hand;
     const int32_t clip=state->clip;
@@ -462,7 +503,7 @@ void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state)
 }
 void pc_network_bots_pose_weapons(uint32_t entity)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     extern void sub_001BE870(void);
     float health;
     if(!guest_writable(entity,0x2e8u)) return;
@@ -480,7 +521,7 @@ void pc_network_bots_pose_weapons(uint32_t entity)
    The normal serializer still checks local ownership of the damage source. */
 void pc_network_bots_request_hit(uint32_t context)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     extern void sub_0035C870(void);
     if(guest_writable(context,0x58u)) guest_call(sub_0035C870,1,context);
 #else
@@ -491,7 +532,7 @@ void pc_network_bots_request_hit(uint32_t context)
    Do not replay the damage/death routine: it mutates health, scores and models. */
 int pc_network_bots_kill_notice(unsigned victim,unsigned killer)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     extern void sub_000CF440(void);
     uint32_t pool=WORD_AT(0x007356d8u),players=WORD_AT(0x007b0c48u),player,source;
     unsigned humans=*(uint8_t *)((uintptr_t)0x007de400u+g_xbox_mem_offset);
@@ -513,7 +554,7 @@ int pc_network_bots_kill_notice(unsigned victim,unsigned killer)
 }
 void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     extern void sub_001BB5C0(void);
     uint32_t actor,target,pool,previous_target,weapon,result;
     if(!guest_writable(entity,0x25cu) || shot->hand>1u || shot->mode>1u || shot->flags>1u ||
@@ -552,7 +593,7 @@ void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot)
 }
 void pc_network_bots_menu(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     const uint32_t mode=WORD_AT(0x0078AD2Cu);
     const int host=WORD_AT(0x0076B108u) && WORD_AT(0x0076B140u)==1u &&
         mode>=11u && mode<=13u;
@@ -562,7 +603,11 @@ void pc_network_bots_menu(void (*original)(void))
        Restore the real mode before returning to the lobby or processing input. */
     if(host) {
         WORD_AT(0x0078AD2Cu)=9u;
+#ifdef _WIN32
         _putenv_s("TSFP_NETWORK_BOTS","1");
+#else
+        setenv("TSFP_NETWORK_BOTS","1",1);
+#endif
     }
     original();
     if(host) WORD_AT(0x0078AD2Cu)=mode;
@@ -621,8 +666,8 @@ static void audio_options_build(void)
     uint32_t caption=audio_options_caption();
     if(caption && guest_writable(menu,0x208))WORD_AT(menu+0x204)=caption;
 }
-/* Reuse the title's Settings actions and profile selector, with a single
- * left-aligned list and Cheats last. The native back/save flow is unchanged. */
+/* Reuse the title's Settings actions and profile selector. Cheats lives in
+ * Extras alongside Unlock Content. The native back/save flow is unchanged. */
 static void settings_build(void)
 {
     extern void sub_0003D7B0(void),sub_001CD120(void),sub_00069720(void);
@@ -651,8 +696,6 @@ static void settings_build(void)
         guest_call(sub_00075430,2,selector,WORD_AT(0x0078AD34u));
     }
     guest_call(sub_00079D60_gen,6,0x0047602Cu,1u,0u,0u,0x002CBEC0u,0u);
-    if(guest_call(sub_001CD120,0))
-        guest_call(sub_00079D60_gen,6,guest_call(sub_0003D7B0,1,0x1A0Fu),UINT32_MAX,0u,0u,0x002CBE30u,0u);
     guest_call(sub_000771D0,1,menu);
     restore_registers(&r);g_esp+=4;
 }
@@ -939,7 +982,7 @@ static void activate(void)
     }
     restore_registers(&r); g_esp+=4;
 }
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 extern void sub_001A0A60(void);
 /* Indirect editor callbacks run after the constructor has returned. Give
    those callbacks the same Arcade Custom rules (including custom bot sets),
@@ -955,7 +998,11 @@ static void system_link_activate(void)
 {
     GuestRegisters r; save_registers(&r);
     pc_online_disconnect();
+#ifdef _WIN32
     _putenv_s("TSFP_ONLINE_CONFIG",""); _putenv_s("TSFP_NETWORK","1");
+#else
+    unsetenv("TSFP_ONLINE_CONFIG"); setenv("TSFP_NETWORK","1",1);
+#endif
     guest_call(sub_001A0A60,0);
     restore_registers(&r); g_esp+=4;
 }
@@ -968,6 +1015,7 @@ static void online_activate(void)
 #endif
 #include "pc_keyboard_menu.inc"
 #include "pc_storage_menu.inc"
+#include "pc_unlock_menu.inc"
 
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
@@ -975,6 +1023,12 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     if(address==0x002C3E20u)return audio_options_build;
     if(address==0x002CBFC0u)return settings_build;
     switch(address) {
+    case AUDIO_BETA_CHANGE:return audio_beta_change;
+    case 0x002D08C0u:return uc_extras_build;
+    case UC_OPEN:return uc_open;
+    case UC_BUILD:return uc_build;
+    case UC_TICK:return uc_tick;
+    case UC_BACK:return uc_back;
     case 0x00192770u:return sd_profile_tick;
     case SD_SELECT:return sd_select;
     case SD_DRAW:return sd_draw;
@@ -996,7 +1050,7 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case QUIT_SELECT_CB: return quit_select;
     case QUIT_BACK_CB: return quit_back;
 #endif
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     case 0x1200du: return online_activate;
     case 0x002C2C20u: return network_bots_build;
     case 0x002C0490u: return network_bots_tick;

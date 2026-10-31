@@ -14,7 +14,7 @@ def recovery_exe(tmp_path_factory):
     for header in ('windows.h', 'objbase.h', 'xaudio2.h'):
         (folder/header).write_text('/* Host APIs supplied by fixture. */\n')
     source = ROOT/'tests/media/audio_device_recovery.cpp'
-    includes = [folder, ROOT/'external/ts3FPrecomp/src']
+    includes = [folder, ROOT/'external/ts3FPrecomp/src', ROOT/'src']
     exe = folder/('recovery.exe' if os.name == 'nt' else 'recovery')
     if os.name == 'nt':
         cmd = [compiler, '/nologo', '/std:c++17', '/EHsc', '/D_CRT_SECURE_NO_WARNINGS',
@@ -30,7 +30,7 @@ def recovery_exe(tmp_path_factory):
 
 @pytest.mark.parametrize('scenario', ['startup', 'critical', 'create', 'start', 'volume',
                                      'submit', 'queue', 'shutdown', 'muted', 'invalid-gain', 'concurrent',
-                                     'com-retry', 'device-submit', 'live-volume', 'register', 'master-volume'])
+                                     'com-retry', 'device-submit', 'live-volume', 'register', 'master-volume', 'enhanced-on', 'enhanced-off'])
 def test_device_recovery(recovery_exe, scenario):
     env = {k:v for k,v in os.environ.items() if k not in ('RECOMP_AUDIO_GAIN', 'RECOMP_MUTE')}
     if scenario in ('muted', 'invalid-gain'):
@@ -48,7 +48,7 @@ def sdl_recovery_exe(tmp_path_factory):
     (folder/'SDL3/SDL.h').write_text('/* Mocked SDL API. */\n')
     (folder/'pthread.h').write_text('/* Single-threaded mutex fixture. */\n')
     source = ROOT/'tests/media/audio_sdl_recovery.c'
-    includes = [folder, ROOT/'external/ts3FPrecomp/src/hle']
+    includes = [folder, ROOT/'external/ts3FPrecomp/src/hle', ROOT/'src']
     exe = folder/('sdl.exe' if os.name == 'nt' else 'sdl')
     if os.name == 'nt':
         cmd = [compiler, '/nologo', '/std:c11', '/D_CRT_SECURE_NO_WARNINGS',
@@ -59,7 +59,7 @@ def sdl_recovery_exe(tmp_path_factory):
     assert built.returncode == 0, built.stdout+built.stderr
     return exe
 
-@pytest.mark.parametrize('scenario', ['startup', 'subsystem', 'shutdown', 'queue', 'bind', 'put', 'volume'])
+@pytest.mark.parametrize('scenario', ['startup', 'subsystem', 'shutdown', 'queue', 'bind', 'put', 'volume', 'enhanced-on', 'enhanced-off'])
 def test_sdl_recovery(sdl_recovery_exe, scenario):
     env = {k:v for k,v in os.environ.items() if k not in ('RECOMP_AUDIO_GAIN', 'RECOMP_MUTE')}
     result = subprocess.run([str(sdl_recovery_exe), scenario], env=env, capture_output=True,
@@ -73,7 +73,7 @@ def test_real_xaudio_reopen(tmp_path):
     compiler, env = native_compiler(tmp_path)
     exe = tmp_path/'live.exe'
     cmd = [compiler, '/nologo', '/std:c++17', '/EHsc', '/D_CRT_SECURE_NO_WARNINGS',
-           '/I'+str(ROOT/'external/ts3FPrecomp/src'), str(ROOT/'tests/media/audio_device_live.cpp'),
+           '/I'+str(ROOT/'external/ts3FPrecomp/src'), '/I'+str(ROOT/'src'), str(ROOT/'tests/media/audio_device_live.cpp'),
            '/Fe:'+str(exe), '/link', 'xaudio2.lib', 'ole32.lib']
     built = subprocess.run(cmd, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=60)
     assert built.returncode == 0, built.stdout+built.stderr

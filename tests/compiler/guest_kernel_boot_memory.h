@@ -1,0 +1,1 @@
+/* Contract declarations are provided by the synthetic kernel.h. */

@@ -12,7 +12,29 @@ int main(int argc, char **argv) {
         for(fake_ms=0;fake_ms<5000;fake_ms+=1000) assert(!submit());
         assert(opened==0); return 0;
     }
-    if (!strcmp(mode,"com-retry")) {
+    if (!strcmp(mode,"enhanced-on") || !strcmp(mode,"enhanced-off")) {
+        const int enabled=!strcmp(mode,"enhanced-on");
+        recomp_audio_output_set_spatial(0,-1,enabled);
+        recomp_audio_output_set_acoustics(0,(float)enabled,0);
+        recomp_audio_output_set_ambience(0,enabled);
+        assert(submit());
+        assert(voices[0].source->matrix[1]==0);
+        assert(voices[0].source->matrix[3]==(enabled?0:1));
+        if(!enabled) assert(!memcmp(voices[0].source->last_pcm,pcm,sizeof pcm));
+        const PcAcousticDsp before=acoustics[0];
+        fail_operation="submit"; assert(!submit());
+        assert(!memcmp(&before,&acoustics[0],sizeof before));
+        fail_operation=nullptr;fake_ms=1000;assert(submit());
+        assert(spatial[0].enabled==enabled && acoustics[0].bed==enabled);
+        assert(voices[0].source->matrix[3]==(enabled?0:1));
+        registered->OnCriticalError(XAUDIO2_E_DEVICE_INVALIDATED);
+        assert(!submit());fake_ms=2000;assert(submit());
+        assert(spatial[0].enabled==enabled && acoustics[0].bed==enabled);
+        assert(voices[0].source->matrix[3]==(enabled?0:1));
+        if(!enabled)assert(!memcmp(voices[0].source->last_pcm,pcm,sizeof pcm));
+        recomp_audio_output_reset_voice(0);
+        assert(!spatial[0].enabled && !acoustics[0].bed);
+    } else if (!strcmp(mode,"com-retry")) {
         fail_operation="com"; assert(!submit()); assert(com_started==1 && !opened);
         fail_operation=nullptr; fake_ms=1000; assert(submit()); assert(com_started==2);
     } else if (!strcmp(mode,"device-submit")) {

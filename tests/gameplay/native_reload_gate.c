@@ -43,6 +43,9 @@ int main(void)
         unsigned accepted=g_eax,expected=native ? deltas[i]>0 : whole>0;
         assert(accepted==expected);
         assert(g_esp==0x1004 && MEM32(0x4e7944)==whole);
+        assert(pc_native_global_load(0xa0de8,0x4e7944,whole)==(native ? deltas[i]>0 : whole));
+        assert(pc_native_global_load(0xa0de7,0x4e7944,whole)==whole);
+        assert(pc_native_global_load(0xa0de8,0x4e7940,whole)==whole);
         /* Neither unrelated instructions nor a different address opt in. */
         assert(pc_native_global_load(0x1c2f08,0x4e7944,whole)==whole);
         assert(pc_native_global_load(0x1c2f09,0x4e7940,whole)==whole);

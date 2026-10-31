@@ -94,7 +94,7 @@ def patch_records(paths):
                    '-native-numeric-policy.patch', '-native-animation-scope.patch',
                    '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch',
                    '-native-camera-timing.patch', '-native-weapon-event-scope.patch',
-                   '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch', '-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-trace-quiet.patch', '-native-demo-timing.patch', '-texture-bind-scan.patch', '-keyboard-reload-buffer.patch', '-model-transform-entry.patch', '-zero-base-indices.patch', '-stable-gpr-refs.patch', '-native-wind-history.patch'):
+                   '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch', '-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-trace-quiet.patch', '-native-demo-timing.patch', '-texture-bind-scan.patch', '-keyboard-reload-buffer.patch', '-model-transform-entry.patch', '-zero-base-indices.patch', '-stable-gpr-refs.patch', '-native-wind-history.patch', '-native-minigun-intent.patch'):
         patch = next((p for p in paths if p.name.endswith(suffix)), None)
         if patch:
             paths.remove(patch)
@@ -112,16 +112,26 @@ def patch_records(paths):
     # Own instruction bodies replace the final title-instrumented handlers.
     # Replay all historical instrumentation first so older stacks still unwind.
     for name in ('0180-independent-translation-moves.patch', '0170-independent-translation-integer.patch',
-                 '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch'):
+                 '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch', 'independent-translation-exchange.patch', 'independent-translation-compare.patch', 'independent-translation-strings.patch', 'independent-translation-conditions.patch', 'independent-translation-sse.patch', 'independent-translation-mmx.patch', 'independent-translation-x87.patch', 'independent-translation-control.patch', 'independent-translation-lifting.patch', 'independent-translation-context.patch', 'independent-translation-batch.patch', 'independent-translation-discovery.patch', 'independent-translation-function.patch', 'independent-translation-cli.patch', 'independent-guest-abi.patch', '0195-independent-guest-dispatch.patch', '0196-independent-call-frames.patch', '0197-independent-vector-support.patch', '0198-independent-scalar-support.patch', '0199-independent-runtime-header.patch', '0201-runtime-header-consumer-fixture.patch', '0202-independent-branch-feedback.patch', '0203-independent-nonlocal-jumps.patch', '0204-independent-guest-state.patch', '0205-independent-image-loader.patch', '0206-independent-guest-allocations.patch', '0207-independent-thread-memory.patch', '0208-independent-virtual-memory.patch', '0209-independent-native-memory.patch', '0211-independent-guest-memory-services.patch', '0212-independent-native-vm-host.patch', '0213-independent-guest-host-maps.patch', '0214-retire-compatibility-memory.patch', '0215-independent-kernel-objects.patch', '0216-independent-kernel-boot.patch', '0217-guest-next-packet-abi.patch', '0218-independent-kernel-requests.patch', '0219-independent-kernel-devices.patch', '0220-independent-kernel-sharing.patch', '0221-independent-request-lifetime.patch', '0222-original-driver-call-composer.patch', '0223-original-transfer-completion.patch', '0224-original-request-queue.patch', '0225-original-startio-callback.patch', '0226-original-device-queue-mirrors.patch', '0227-original-device-queue-lifetime.patch', '0229-original-guest-events.patch', '0231-original-completion-targets.patch', '0232-original-symbolic-links.patch', '0233-original-path-routing.patch', '0234-original-host-storage.patch', '0235-original-kernel-pool.patch', '0236-original-kernel-time.patch', '0237-original-counted-strings.patch', '0238-original-kernel-rtl.patch', '0239-original-guest-printf.patch', '0240-original-guest-numbers.patch'):
         replacement = by_name.get(name)
         if replacement:
             paths.remove(replacement)
             paths.append(replacement)
+    # Allocation evidence depends on the final independent allocator and boot.
+    observer = by_name.get('2150-allocation-history.patch')
+    if observer:
+        paths.remove(observer)
+        paths.append(observer)
     # Source-layout routing is applied after every historical source extension.
     layout = by_name.get('2090-repository-source-layout.patch')
     if layout:
         paths.remove(layout)
         paths.append(layout)
+    # New adapters use the grouped paths and follow the historical layout migration.
+    online = by_name.get('2140-native-online.patch')
+    if online:
+        paths.remove(online)
+        paths.append(online)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate
@@ -163,7 +173,32 @@ def read_state(path):
     return raw, state['patches']
 
 
-def apply_patches(runtime, patch_dir):
+def validation_key(record, patches, originals, git_version):
+    """Exact content receipt; never trust file size/mtime or only a Git revision."""
+    value = dict(schema=1, validator=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                 git=git_version, record=hashlib.sha256(record or b'').hexdigest(),
+                 patches=patches,
+                 files={name: hashlib.sha256(data).hexdigest() for name, data in originals.items()})
+    return hashlib.sha256(json.dumps(value, sort_keys=True).encode('utf-8')).hexdigest()
+
+
+def save_validation(path, key):
+    # Optional optimization metadata cannot turn a valid build into a failure.
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=path.parent, prefix='tsfp-validation-',
+                                         suffix='.tmp', delete=False) as stream:
+            temporary = Path(stream.name)
+            stream.write(key.encode('ascii'))
+        os.replace(temporary, path)
+    except OSError:
+        pass
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+def apply_patches(runtime, patch_dir, *, force=False):
     runtime, patch_dir = Path(runtime).resolve(), Path(patch_dir).resolve()
     record_path = state_path(runtime)
     record_before, previous = read_state(record_path)
@@ -189,6 +224,21 @@ def apply_patches(runtime, patch_dir):
                     raise RuntimeError(f'{patch["name"]}: invalid or missing target {name}')
                 names.add(name)
     originals = {name: (runtime / name).read_bytes() for name in names}
+    receipt = record_path.with_name('tsfp-patches-validated.sha256')
+    version = git(runtime, '--version')
+    if version.returncode:
+        raise RuntimeError(f'Cannot identify Git for patch validation: {version.stderr}')
+    key = validation_key(record_before, patches, originals, version.stdout.strip())
+    try:
+        reusable = not force and previous == patches and receipt.read_text(encoding='ascii') == key
+    except (OSError, UnicodeError):
+        reusable = False
+    if reusable:
+        if (record_path.read_bytes() != record_before or
+                any((runtime/name).read_bytes() != data for name, data in originals.items())):
+            raise RuntimeError('Runtime changed during cached patch validation; retry.')
+        return []
+    receipt.unlink(missing_ok=True)
     with tempfile.TemporaryDirectory(prefix='tsfp-patches-') as directory:
         stage = Path(directory) / 'runtime'
         stage.mkdir()
@@ -229,6 +279,9 @@ def apply_patches(runtime, patch_dir):
             raise RuntimeError('Runtime patch record changed during validation; retry.')
         record_after = (json.dumps(dict(version=1, patches=patches), indent=2) + '\n').encode('utf-8')
         if not changed and record_after == record_before:
+            # Only a completed full no-op validation earns this receipt. A
+            # failed migration cannot bless a partially written runtime tree.
+            save_validation(receipt, key)
             return []
         # Prepare metadata before source writes and publish it last. On a write
         # failure restore sources while keeping the previous record intact.
@@ -252,6 +305,12 @@ def apply_patches(runtime, patch_dir):
         finally:
             if temporary is not None:
                 temporary.unlink(missing_ok=True)
+        # Seal only the bytes validated in the temporary tree, never a fresh
+        # read that could bless an unrelated edit made after validation.
+        active_names = {line[6:] for patch in patches for line in patch['content'].splitlines()
+                        if line.startswith('+++ b/')}
+        validated = {name: (stage/name).read_bytes() for name in active_names}
+        save_validation(receipt, validation_key(record_after, patches, validated, version.stdout.strip()))
     return changed
 
 
@@ -259,9 +318,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('runtime', type=Path)
     parser.add_argument('patches', type=Path)
+    parser.add_argument('--revalidate', action='store_true', help='Force full unwind/apply even when validated content matches')
     args = parser.parse_args()
     try:
-        changed = apply_patches(args.runtime, args.patches)
+        changed = apply_patches(args.runtime, args.patches, force=args.revalidate)
     except RuntimeError as error:
         parser.exit(1, f'{error}\n')
     print(f'Local patches verified; {len(changed)} runtime file(s) updated.')

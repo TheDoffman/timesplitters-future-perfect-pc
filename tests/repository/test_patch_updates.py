@@ -69,6 +69,7 @@ def test_fresh_checkout_and_repeated_build(checkout):
     # Both common RHI and legacy GL link the same live mode policy.
     assert (checkout / 'src/d3d/CMakeLists.txt').read_text().count(
         '"${TSFP_NATIVE_DIR}/../textures/texture_mode.c"') == 2
+    assert_current_calendar_installed(checkout)
     complete = snapshot(checkout)
     assert installer.apply_patches(checkout, PATCHES) == []
     assert snapshot(checkout) == complete
@@ -100,15 +101,17 @@ def test_upgrade_native_checkpoint_preserves_fixed_default(checkout, tmp_path):
     prior=tmp_path/'native-prior-patches'
     prior.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if patch.name == '2090-repository-source-layout.patch':
+        if patch.name in ('2090-repository-source-layout.patch', '2140-native-online.patch'):
             continue  # Historical subsets predate responsibility-folder routing.
-        if patch.name in ('0180-independent-translation-moves.patch', '0170-independent-translation-integer.patch', '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch'):
+        if patch.name in ('0180-independent-translation-moves.patch', '0170-independent-translation-integer.patch', '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch', 'independent-translation-exchange.patch', 'independent-translation-compare.patch', 'independent-translation-strings.patch', 'independent-translation-conditions.patch', 'independent-translation-sse.patch', 'independent-translation-mmx.patch', 'independent-translation-x87.patch', 'independent-translation-control.patch', 'independent-translation-lifting.patch', 'independent-translation-context.patch', 'independent-translation-batch.patch', 'independent-translation-discovery.patch', 'independent-translation-function.patch', 'independent-translation-cli.patch', 'independent-guest-abi.patch', '0195-independent-guest-dispatch.patch', '0196-independent-call-frames.patch', '0197-independent-vector-support.patch', '0198-independent-scalar-support.patch', '0199-independent-runtime-header.patch', '0201-runtime-header-consumer-fixture.patch', '0202-independent-branch-feedback.patch', '0203-independent-nonlocal-jumps.patch', '0204-independent-guest-state.patch', '0205-independent-image-loader.patch', '0206-independent-guest-allocations.patch', '0207-independent-thread-memory.patch', '0208-independent-virtual-memory.patch', '0209-independent-native-memory.patch', '0211-independent-guest-memory-services.patch', '0212-independent-native-vm-host.patch', '0213-independent-guest-host-maps.patch', '0214-retire-compatibility-memory.patch', '0215-independent-kernel-objects.patch', '0216-independent-kernel-boot.patch', '0217-guest-next-packet-abi.patch', '0218-independent-kernel-requests.patch', '0219-independent-kernel-devices.patch', '0220-independent-kernel-sharing.patch', '0221-independent-request-lifetime.patch', '0222-original-driver-call-composer.patch', '0223-original-transfer-completion.patch', '0224-original-request-queue.patch', '0225-original-startio-callback.patch', '0226-original-device-queue-mirrors.patch', '0227-original-device-queue-lifetime.patch', '0229-original-guest-events.patch', '0231-original-completion-targets.patch', '0232-original-symbolic-links.patch', '0233-original-path-routing.patch', '0234-original-host-storage.patch', '0235-original-kernel-pool.patch', '0236-original-kernel-time.patch', '0237-original-counted-strings.patch', '0238-original-kernel-rtl.patch', '0239-original-guest-printf.patch', '0240-original-guest-numbers.patch', '2140-model-tree-trace.patch', '2150-allocation-history.patch'):
             continue  # Requires title instrumentation absent from this checkpoint.
-        if not patch.name.endswith(('-fixed-60-fps.patch','-native-interp-retirement.patch','-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-demo-timing.patch', '-native-wind-history.patch', '-native-trace-quiet.patch')):
+        if not patch.name.endswith(('-fixed-60-fps.patch','-native-interp-retirement.patch','-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-demo-timing.patch', '-native-wind-history.patch', '-native-minigun-intent.patch', '-native-trace-quiet.patch')):
             shutil.copyfile(patch,prior/patch.name)
     assert installer.apply_patches(checkout,prior)
     assert 'pc_native_rate()' in (checkout/'src/hle/hle_d3d8_interp.c').read_text()
     assert installer.apply_patches(checkout,PATCHES)
+    assert_current_calendar_installed(checkout)
+    assert_current_sharing_installed(checkout)
     interp=(checkout/'src/hle/hle_d3d8_interp.c').read_text()
     assert 'gate_idle' not in interp and 'pc_native_rate' not in interp
     assert 'return 0;' in interp
@@ -165,9 +168,9 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in installer.active_patch_paths(PATCHES):
-        if patch.name == '2090-repository-source-layout.patch':
+        if patch.name in ('2090-repository-source-layout.patch', '2140-native-online.patch'):
             continue  # Historical subsets predate responsibility-folder routing.
-        if patch.name in ('0180-independent-translation-moves.patch', '0170-independent-translation-integer.patch', '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch'):
+        if patch.name in ('0180-independent-translation-moves.patch', '0170-independent-translation-integer.patch', '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch', 'independent-translation-exchange.patch', 'independent-translation-compare.patch', 'independent-translation-strings.patch', 'independent-translation-conditions.patch', 'independent-translation-sse.patch', 'independent-translation-mmx.patch', 'independent-translation-x87.patch', 'independent-translation-control.patch', 'independent-translation-lifting.patch', 'independent-translation-context.patch', 'independent-translation-batch.patch', 'independent-translation-discovery.patch', 'independent-translation-function.patch', 'independent-translation-cli.patch', 'independent-guest-abi.patch', '0195-independent-guest-dispatch.patch', '0196-independent-call-frames.patch', '0197-independent-vector-support.patch', '0198-independent-scalar-support.patch', '0199-independent-runtime-header.patch', '0201-runtime-header-consumer-fixture.patch', '0202-independent-branch-feedback.patch', '0203-independent-nonlocal-jumps.patch', '0204-independent-guest-state.patch', '0205-independent-image-loader.patch', '0206-independent-guest-allocations.patch', '0207-independent-thread-memory.patch', '0208-independent-virtual-memory.patch', '0209-independent-native-memory.patch', '0211-independent-guest-memory-services.patch', '0212-independent-native-vm-host.patch', '0213-independent-guest-host-maps.patch', '0214-retire-compatibility-memory.patch', '0215-independent-kernel-objects.patch', '0216-independent-kernel-boot.patch', '0217-guest-next-packet-abi.patch', '0218-independent-kernel-requests.patch', '0219-independent-kernel-devices.patch', '0220-independent-kernel-sharing.patch', '0221-independent-request-lifetime.patch', '0222-original-driver-call-composer.patch', '0223-original-transfer-completion.patch', '0224-original-request-queue.patch', '0225-original-startio-callback.patch', '0226-original-device-queue-mirrors.patch', '0227-original-device-queue-lifetime.patch', '0229-original-guest-events.patch', '0231-original-completion-targets.patch', '0232-original-symbolic-links.patch', '0233-original-path-routing.patch', '0234-original-host-storage.patch', '0235-original-kernel-pool.patch', '0236-original-kernel-time.patch', '0237-original-counted-strings.patch', '0238-original-kernel-rtl.patch', '0239-original-guest-printf.patch', '0240-original-guest-numbers.patch', '2140-model-tree-trace.patch', '2150-allocation-history.patch'):
             continue  # Replaces handlers only after the complete instrumentation stack.
         if patch.name.endswith(('-texture-bind-scan.patch', '-model-transform-entry.patch', '-stable-gpr-refs.patch', '-zero-base-indices.patch', '-temporal-uplink-map.patch')):
             continue  # Requires the later cross-platform renderer context.
@@ -181,7 +184,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
             continue  # Depends on the common native renderer added by migration.
         if patch.name.endswith(('-discord-presence.patch', '-shared-renderer-host.patch', '-shared-vulkan-mac.patch', '-shared-native-renderer.patch', '-shared-interpolation-depth.patch', '-shared-present-metrics.patch', '-native-launcher-services.patch', '-shared-screen-copy-clipping.patch', '-vulkan-portability-swizzle.patch', '-shared-interpolation-capture.patch')):
             continue  # These changes depend on later native/display or feedback blocks.
-        if patch.name in ('1430-white-flash-overlay.patch',
+        if patch.name in ('2070-profile-unlock-content.patch',
+                         '1430-white-flash-overlay.patch',
                          '1420-title-screen-matte.patch',
                           '1400-menu-character-mouse.patch',
                           '1380-menu-team-mouse.patch',
@@ -219,14 +223,18 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
             continue  # Requires the display wrapper, absent in this historical state.
         if patch.name.endswith(('-keyboard-settings-menu.patch', '-keyboard-weapon-slots.patch', '-controller-profile-routing.patch', '-keyboard-reload-buffer.patch', '-radial-stick-deadzone.patch')):
             continue  # Needs shared-input locks/display wrappers absent in the old snapshot.
-        if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-shared-presentation-integration.patch', '-fixed-60-fps.patch', '-late-frame-pacing.patch', '-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch', '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-demo-timing.patch', '-native-wind-history.patch', '-native-trace-quiet.patch')):
+        if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-shared-presentation-integration.patch', '-fixed-60-fps.patch', '-late-frame-pacing.patch', '-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch', '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-demo-timing.patch', '-native-wind-history.patch', '-native-minigun-intent.patch', '-native-trace-quiet.patch')):
             continue  # Depends on native/shared renderer context added by the full migration below.
         if patch.name not in ('0250-pc-display.patch', '0340-texture-pack.patch', '0350-texture-toggle.patch', '0400-mac-native-boot.patch', '0630-mac-renderer.patch', '0660-mac-input.patch', '0740-mac-high-refresh.patch', '0750-interpolation-layouts.patch', '0760-framebuffer-sampling-passes.patch', '0780-shared-input-model.patch', '0790-mac-feature-adapters.patch', '0800-shared-screen-space.patch', '0820-native-settings-init.patch', '0840-shared-linear-formats.patch', '0850-native-prompts.patch', '0860-native-camera.patch', '0870-native-debug.patch', '0880-cutscene-letterbox.patch', '0940-terminal-mouse-select.patch', '0930-story-objectives-health.patch'):
             apply(checkout, patch.name)
     manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
     manual.write_bytes(manual.read_bytes() + b'\r\n/* unrelated local edit */\r\n')
     assert installer.apply_patches(checkout, PATCHES)
+    assert_current_calendar_installed(checkout)
+    assert_current_sharing_installed(checkout)
     assert b'pc_display_aim_panel(sub_00137010_gen,0x00137010u);' in manual.read_bytes()
+    for hook in ('pc_unlock_requirement', 'pc_unlock_event', 'pc_unlock_movie', 'pc_unlock_profile_init'):
+        assert hook.encode() + b'(' in manual.read_bytes()
     bindings=(checkout / 'src/input/input_bindings.c').read_text()
     assert 'pc_settings_capture_pump()' in bindings
     assert 'tmp.bind[i].count > 2' in bindings
@@ -262,12 +270,12 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches = tmp_path / 'mac-only-patches'
     old_patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if patch.name == '2090-repository-source-layout.patch':
+        if patch.name in ('2090-repository-source-layout.patch', '2140-native-online.patch'):
             continue  # Historical subsets predate responsibility-folder routing.
-        if patch.name in ('0180-independent-translation-moves.patch', '0170-independent-translation-integer.patch', '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch'):
+        if patch.name in ('0180-independent-translation-moves.patch', '0170-independent-translation-integer.patch', '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch', 'independent-translation-exchange.patch', 'independent-translation-compare.patch', 'independent-translation-strings.patch', 'independent-translation-conditions.patch', 'independent-translation-sse.patch', 'independent-translation-mmx.patch', 'independent-translation-x87.patch', 'independent-translation-control.patch', 'independent-translation-lifting.patch', 'independent-translation-context.patch', 'independent-translation-batch.patch', 'independent-translation-discovery.patch', 'independent-translation-function.patch', 'independent-translation-cli.patch', 'independent-guest-abi.patch', '0195-independent-guest-dispatch.patch', '0196-independent-call-frames.patch', '0197-independent-vector-support.patch', '0198-independent-scalar-support.patch', '0199-independent-runtime-header.patch', '0201-runtime-header-consumer-fixture.patch', '0202-independent-branch-feedback.patch', '0203-independent-nonlocal-jumps.patch', '0204-independent-guest-state.patch', '0205-independent-image-loader.patch', '0206-independent-guest-allocations.patch', '0207-independent-thread-memory.patch', '0208-independent-virtual-memory.patch', '0209-independent-native-memory.patch', '0211-independent-guest-memory-services.patch', '0212-independent-native-vm-host.patch', '0213-independent-guest-host-maps.patch', '0214-retire-compatibility-memory.patch', '0215-independent-kernel-objects.patch', '0216-independent-kernel-boot.patch', '0217-guest-next-packet-abi.patch', '0218-independent-kernel-requests.patch', '0219-independent-kernel-devices.patch', '0220-independent-kernel-sharing.patch', '0221-independent-request-lifetime.patch', '0222-original-driver-call-composer.patch', '0223-original-transfer-completion.patch', '0224-original-request-queue.patch', '0225-original-startio-callback.patch', '0226-original-device-queue-mirrors.patch', '0227-original-device-queue-lifetime.patch', '0229-original-guest-events.patch', '0231-original-completion-targets.patch', '0232-original-symbolic-links.patch', '0233-original-path-routing.patch', '0234-original-host-storage.patch', '0235-original-kernel-pool.patch', '0236-original-kernel-time.patch', '0237-original-counted-strings.patch', '0238-original-kernel-rtl.patch', '0239-original-guest-printf.patch', '0240-original-guest-numbers.patch', '2140-model-tree-trace.patch', '2150-allocation-history.patch'):
             continue  # Added after the native timing hooks excluded below.
         if patch.name.endswith(('-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch',
-                                '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-demo-timing.patch', '-native-wind-history.patch', '-native-trace-quiet.patch', '-model-transform-entry.patch', '-stable-gpr-refs.patch', '-zero-base-indices.patch')):
+                                '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-demo-timing.patch', '-native-wind-history.patch', '-native-minigun-intent.patch', '-native-trace-quiet.patch', '-model-transform-entry.patch', '-stable-gpr-refs.patch', '-zero-base-indices.patch')):
             continue  # This historical Mac stack predates native timing and network wrappers.
         if patch.name not in ('0470-pc-network.patch', '0640-pc-online.patch',
                               '0890-pc-network-movement.patch',
@@ -283,6 +291,8 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
             shutil.copyfile(patch, old_patches / patch.name)
     assert installer.apply_patches(checkout, old_patches)
     assert installer.apply_patches(checkout, PATCHES)
+    assert_current_calendar_installed(checkout)
+    assert_current_sharing_installed(checkout)
     cmake = (checkout / 'titles/futureperfect/CMakeLists.txt').read_text()
     assert 'TSFP_NATIVE_DIR' in cmake and 'pc_network.c' in cmake
     assert installer.apply_patches(checkout, PATCHES) == []
@@ -292,7 +302,7 @@ def texture_branch_patches(tmp_path):
     patches = tmp_path / 'texture-patches'
     patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if patch.name == '2090-repository-source-layout.patch':
+        if patch.name in ('2090-repository-source-layout.patch', '2140-native-online.patch'):
             continue  # Historical subsets predate responsibility-folder routing.
         shutil.copyfile(patch, patches / patch.name)
     shutil.copyfile(PATCHES / 'legacy/0350-texture-toggle.patch', patches / '0350-texture-toggle.patch')
@@ -304,7 +314,7 @@ def main_branch_patches(tmp_path):
     patches = tmp_path / 'main-patches'
     patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if patch.name == '2090-repository-source-layout.patch':
+        if patch.name in ('2090-repository-source-layout.patch', '2140-native-online.patch'):
             continue  # Historical subsets predate responsibility-folder routing.
         if patch.name not in ('0350-texture-toggle.patch', '0360-texture-upload-streaming.patch'):
             shutil.copyfile(patch, patches / patch.name)
@@ -451,3 +461,76 @@ exit 0
     result = subprocess.run(['powershell.exe', '-NoProfile', '-Command', script],
                             capture_output=True, text=True)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def assert_current_original_printf_installed(tree):
+    assert_current_original_numbers_installed(tree)
+    kernel=tree/'src/kernel'
+    assert (kernel/'CMakeLists.txt').read_text(encoding='utf-8').count('${TSFP_SHARED_SOURCE}/runtime/guest_printf.c')==1
+    bridge=(kernel/'kernel_bridge.c').read_text(encoding='utf-8')
+    assert bridge.count('#include "guest_kernel_printf.inc"')==1
+    for name in ('bridge_format_printf','bridge_va_next32','bridge_va_next64'):
+        assert name not in bridge
+
+
+def assert_current_original_rtl_installed(tree):
+    assert_current_original_printf_installed(tree)
+    kernel=tree/'src/kernel'
+    cmake=(kernel/'CMakeLists.txt').read_text(encoding='utf-8')
+    assert '    kernel_rtl.c\n' not in cmake
+    for name in ('guest_critical','host_critical','guest_rtl_services','guest_kernel_rtl'):
+        assert cmake.count('${TSFP_SHARED_SOURCE}/runtime/'+name+'.c')==1
+    bridge=(kernel/'kernel_bridge.c').read_text(encoding='utf-8')
+    assert bridge.count('#include "guest_kernel_rtl.inc"')==1
+    assert 'bridge_try_cs_shadow' not in bridge
+    assert 'xbox_RtlEnterCriticalSection' not in (kernel/'kernel.h').read_text(encoding='utf-8')
+
+
+def assert_current_counted_strings_installed(tree):
+    assert_current_original_rtl_installed(tree)
+    kernel=tree/'src/kernel'
+    assert (kernel/'CMakeLists.txt').read_text(encoding='utf-8').count('${TSFP_SHARED_SOURCE}/runtime/guest_strings.c')==1
+    assert (kernel/'kernel_bridge.c').read_text(encoding='utf-8').count('#include "guest_kernel_strings.inc"')==1
+    for name in ('InitAnsiString','InitUnicodeString','AnsiStringToUnicodeString','UnicodeStringToAnsiString','EqualString','CompareMemoryUlong'):
+        assert 'xbox_Rtl'+name not in (kernel/'kernel_rtl.c').read_text(encoding='utf-8')
+        assert 'xbox_Rtl'+name not in (kernel/'kernel.h').read_text(encoding='utf-8')
+
+
+def assert_current_calendar_installed(tree):
+    assert_current_counted_strings_installed(tree)
+    kernel=tree/'src/kernel'
+    assert (kernel/'CMakeLists.txt').read_text(encoding='utf-8').count('${TSFP_SHARED_SOURCE}/runtime/guest_time.c')==1
+    bridge=(kernel/'kernel_bridge.c').read_text(encoding='utf-8')
+    assert bridge.count('#include "guest_kernel_time.inc"')==1
+    for name in ('xbox_RtlTimeFieldsToTime','xbox_RtlTimeToTimeFields'):
+        assert name not in (kernel/'kernel_rtl.c').read_text(encoding='utf-8')
+        assert name not in (kernel/'kernel.h').read_text(encoding='utf-8')
+    for name in ('SystemTimeToFileTime','FileTimeToSystemTime'):
+        assert name not in (tree/'src/platform/win32_compat.c').read_text(encoding='utf-8')
+        assert name not in (tree/'src/platform/win32_compat.h').read_text(encoding='utf-8')
+
+
+def assert_current_sharing_installed(checkout):
+    """Historical inputs omit0220; the complete upgrade must still install it."""
+    bridge=(checkout/'src/kernel/kernel_bridge.c').read_text(encoding='utf-8')
+    cmake=(checkout/'src/kernel/CMakeLists.txt').read_text(encoding='utf-8')
+    assert '    kernel_path.c\n' not in cmake
+    assert '    kernel_pool.c\n' not in cmake
+    assert bridge.count('#include "guest_kernel_pool.inc"')==1
+    assert bridge.count('#include "guest_kernel_share.inc"')==1
+    assert 'case  80: return 16;' in bridge
+    assert 'static void bridge_IoSetShareAccess(void)' not in bridge
+    assert bridge.count('#include "guest_kernel_event_init.inc"')==1
+    assert 'static void bridge_KeInitializeEvent(void)' not in bridge
+    assert cmake.count('"${TSFP_SHARED_SOURCE}/runtime/guest_io_share.c"')==1
+    for name in ('guest_io_scope.c','guest_io_devices.c','guest_io_target.c','guest_io_call.c','guest_io_transfer.c','guest_io_build.c','guest_io_complete.c','guest_io_queue.c','guest_io_startio.c','guest_io_queue_wire.c','guest_io_scheduler.c','guest_event.c','guest_io_targets.c','guest_symlinks.c','guest_kernel_symlinks.c','guest_paths.c','guest_storage.c','guest_kernel_storage.c'):
+        assert cmake.count('"${TSFP_SHARED_SOURCE}/runtime/'+name+'"')==1
+
+
+def assert_current_original_numbers_installed(tree):
+    kernel=tree/'src/kernel'
+    assert (kernel/'CMakeLists.txt').read_text(encoding='utf-8').count('${TSFP_SHARED_SOURCE}/runtime/guest_numbers.c')==1
+    bridge=(kernel/'kernel_bridge.c').read_text(encoding='utf-8')
+    assert bridge.count('#include "guest_kernel_numbers.inc"')==1
+    for name in ('RtlIntegerToChar','RtlIntegerToUnicodeString','RtlCharToInteger','RtlUnicodeStringToInteger'):
+        assert 'static void bridge_'+name+'(void)' not in bridge

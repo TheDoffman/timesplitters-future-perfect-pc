@@ -1,5 +1,9 @@
 # One launcher release for Windows and Mac
 
+The next Stable launcher source version is **1.4.1**, including save-folder
+selection and the native Mac multiplayer integration. The source bump does not
+publish either platform; the workflow below must pass before release.
+
 The **Launcher release (Windows + Mac)** workflow builds the Windows x64 launcher
 and native Apple Silicon Mac app from the same source revision and shared version.
 It publishes both packages in one GitHub release only after both hosts pass their
@@ -34,8 +38,8 @@ requires updating those shared pins after the new assets are available.
 
 ## Published assets and failure handling
 
-New releases contain exactly one versioned ZIP per platform, two SHA-256
-sidecars, two build receipts and two update manifests (eight assets):
+New releases contain one versioned ZIP and one direct-download alias per platform,
+two SHA-256 sidecars, two build receipts and two update manifests (ten assets):
 
 - Windows: `launcher-update.json`, selecting `windows-x64`.
 - Mac: `launcher-update-macos-arm64.json`, selecting `macos-arm64`.
@@ -45,12 +49,16 @@ receipts and uploaded GitHub digests before publishing. Failed builds leave no
 release; failed uploads leave a draft that can be resumed. Published assets and
 tags are immutable: fixes require a new version.
 
-Stable launcher releases become **Latest**. README download buttons open the
-latest release page, which provides direct links to the Windows and Mac ZIPs.
+Stable launcher releases become **Latest**. README buttons download the matching
+`TimeSplitters-Launcher-windows-x64.zip` or `TimeSplitters-Launcher-macos-arm64.zip`
+through GitHub's `/releases/latest/download/` route. A separate link opens release
+notes and checksums. Previews do not replace Latest.
 Versioned ZIP names and update manifests retain their existing format, so
 installed launchers can still discover, verify and repair their matching package.
-Versionless ZIP aliases are not published. Stale aliases in local build folders
-are ignored; older public assets remain untouched.
+Aliases are uploaded from the verified versioned ZIP paths without creating
+local copies. Stale aliases in build folders are ignored. Both public ZIP names
+have identical bytes and SHA-256 digests; the versioned checksum sidecars also
+verify the aliases. All ten assets must verify before a draft becomes public.
 
 Publication explicitly refreshes the issue-form version workflow because releases
 created using `GITHUB_TOKEN` do not trigger its release event.

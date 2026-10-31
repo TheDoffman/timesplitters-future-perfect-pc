@@ -1,10 +1,138 @@
 # Independent runtime replacement
 
+Current kernel work has original providers for [pool allocation](../agent-context/kernel-pool.md),
+[counted strings](../agent-context/kernel-strings.md),
+[critical sections, status and diagnostics](../agent-context/kernel-rtl.md), and
+[narrow guest formatting](../agent-context/guest-printf.md), and
+[integer/string conversions](../agent-context/guest-numbers.md) through patch0240.
+The complete old native RTL module is excluded from the build. Guest exceptions,
+charset conversion, string allocation/freeing and arithmetic helpers remain,
+along with other kernel, graphics, audio, input, title and fixture work.
+
+Stages0239/0240 passed Windows Release builds, local contracts, both-host CI and
+bounded isolated Scotland movement/fire/pause/resume checks. PR413 was externally
+merged into main5e65ebfd. Exact source, CI, build and gameplay evidence is recorded in
+[STATUS](../project/STATUS.md). Earlier acceptance paragraphs below describe
+those stages, not current whole-project or cross-platform gameplay acceptance.
+The runtime checkout and bundled snapshot are still production dependencies;
+final builds/generation/packaging with both unavailable have not passed yet.
+
+## Remaining work
+
+| Area | Remaining replacement or proof |
+| --- | --- |
+| Kernel/runtime | Exceptions/context/unwind, character conversion/string ownership, arithmetic helpers, and inherited parts of file/thread/synchronization/interrupt/crypto services and diagnostics |
+| Graphics | NV2A command/vertex/shader processing, remaining D3D8/HLE/backend and framebuffer/presentation code |
+| Audio/movies | APU/DSP/voices, DirectSound/XAudio2 glue, Xbox ADPCM and remaining XMV demux/decode/player/pump code |
+| Input/devices | Remaining HLE/input models, controller bindings, USB/OHCI and XInput adapters |
+| Integration | Remaining title/platform/runtime interfaces, headers, inherited smoke fixtures, and build/package routing away from the snapshot; audit any inherited network glue |
+| Final independence | Remove inherited code and snapshot/toolkit dependencies, retain permitted libraries, reconcile provenance/notices and prove generation/build/package plus bounded gameplay with old sources unavailable |
+
+The current configured Windows targets still compile30 runtime files and6 smoke
+fixtures byte-identical to the snapshot. They also compile44 modified runtime
+files with snapshot counterparts; modification alone does not establish original
+ownership. These counts include utility targets and exclude headers/data/tooling,
+so they are neither a complete rewrite count nor a completion percentage. SDL,
+FFmpeg, Capstone and permitted host SDKs do not need project-owned replacements.
+
+Unused POSIX file-map/query/statistics APIs and their registry are retired in
+patch 0214 after production callers moved to project providers. Native alias
+fixtures retain their assertions through those providers; real Windows APIs
+remain in host adapters. See [audit and limits](../agent-context/retired-memory-compatibility.md)
+and MAC-117. Windows build, isolated Story and all 998 compiler checks passed;
+all 73 migration/repository and 21 final documentation checks passed.
+Exact-commit CI remains pending.
+
+Main guest maps, physical aliases and Mac arena/MMIO ownership now have original
+providers through patch 0213. Failed setup retains cleanup ownership, and
+published mappings live through process exit until whole-runtime worker
+quiescence can be proved. See [contracts and validation scope](../agent-context/guest-host-mappings.md)
+and MAC-116. Windows build, 998 compiler tests and isolated Story checks passed;
+73 migration/repository checks also passed. All 17 CI checks at `f0633f99` passed.
+
+Native Nt host callbacks and native Mm protection now use patch 0212. Original
+Darwin reservations replace leaking size-zero release and fabricated queries;
+Windows retains real OS calls. See [ownership, commitment and failure limits](../agent-context/native-virtual-memory.md).
+
+All 25 guest Mm bridges and five remaining native statistics/physical/hint
+functions now use project policy through patch 0211. Complete guest output
+validation and initialized host snapshots replace unsafe statistics access.
+See [contracts and retained advisory limits](../agent-context/guest-memory-services.md).
+
+Native Mm allocation/release, stacks, protection and region queries now use
+project ownership and OS page adapters through patch 0209. Guest Mm/statistics
+continue in 0211, main host mappings in 0213; other services remain work. See
+[contracts](../agent-context/native-memory.md); full independence is not complete.
+
+Guest Nt virtual-memory calls and native pointer-width allocate/free/query now
+use project services through additive patch 0208. Existing flat guest VM policy
+is explicit, complete output spans are validated before side effects, and exact
+reservations can be released. Native host operations continue in 0212; main
+guest mappings continue in 0213 and other kernel services still require
+replacement. See [contracts](../agent-context/virtual-memory.md)
+and MAC-112; this is not whole-runtime independence.
+
+Main/private thread records and guest stack ownership now use
+`src/runtime/guest_thread_memory.c` through additive patch 0207. Published
+identity storage retains the guest-memory lifetime; host scheduling and object
+reference counting remain separate work. See [thread contracts](../agent-context/thread-memory.md)
+and MAC-111 for validation scope.
+
+Guest heap/reservation/physical allocation now has project ownership in
+`src/runtime/guest_allocation.c`, installed by additive patch0206. The bridge
+validates fixed/ranged requests before zeroing. Host mappings and TIB/thread
+construction now have project providers; other kernel services remain inherited. See
+[allocation contracts](../agent-context/independent.md#guest-allocation-ownership)
+and MAC-110 for measured acceptance and limits.
+
+The native XBE loader now has project inspection/materialization and bootstrap
+validation in `src/runtime/guest_image.c`, installed by additive patch 0205.
+It removes inherited image parsing/copying and title decoding while keeping
+host mappings and TIB construction on the subsequent project providers;
+kernel/device services remain transitional. See
+[image contracts](../agent-context/independent.md#native-image-loading) and MAC-109.
+
+Guest architectural storage and optional ABI diagnostics now have project
+providers in `src/runtime/guest_state.c` and `guest_abi_diagnostics.c`, installed
+by `0204-independent-guest-state.patch`. Memory mapping, loading and thread/TIB
+storage now have subsequent project providers; host scheduling remains transitional. See
+[state and reporting contracts](../agent-context/independent.md#guest-state-and-abi-reports)
+and MAC-108 for behavior, tests and acceptance boundaries.
+
+Native nonlocal jumps now have a project continuation provider, installed by
+`0203-independent-nonlocal-jumps.patch`. Direct native and emitted-call contracts
+are separate from title regression checks because the supported-US translation
+currently detects neither CRT helper. See [service boundaries](../agent-context/independent.md#native-nonlocal-jumps)
+and MAC-107 for acceptance, including the Windows foreign-stack adapter and
+pending native Mac validation.
+
+The project now owns `src/runtime/recomp_types.h`, used directly by default
+generation. Previously replaced execution primitives remain; the remaining
+header service interfaces and target-admission support have original code and
+contract checks. An additive patch supplies the same compatibility header to the
+transitional runtime. Declared service bodies, title integration and final
+toolkit-unavailable production acceptance are still incomplete (MAC-105).
+The optional feedback header, recording service and guard-counter updates now
+use project-owned implementations in `src/runtime/tsfp_branch_feedback.h` and
+`guest_branch_feedback.c`, through additive patch `0202-independent-branch-feedback.patch`.
+Generation publishes the supplemental header too. See [recorder contracts and
+validation boundaries](../agent-context/independent.md#guest-branch-feedback-recorder)
+and MAC-106; the larger runtime-service replacement remains incomplete.
+
 The objective is to replace the code taken from `ts3FPrecomp` with this
 project's implementations. Standard dependencies such as SDL, FFmpeg,
 Capstone, the compiler and host graphics SDKs remain allowed. Copying upstream
 files into this repository does not meet that objective. The bundled snapshot from PR #369 supplies interim offline availability;
 it does not count as original replacement code.
+
+The vector-support stage (`0197-independent-vector-support.patch`) removes the
+obsolete inherited MMX/SSE helper bodies now superseded by the project emitters.
+The live model-transform constructor has an original bit-preserving body.
+The scalar-support stage (`0198-independent-scalar-support.patch`) also retires
+obsolete numeric helpers and emits MOVSX/MOVZX directly from project code.
+Existing rounding/classification assertions test real instruction emission;
+direction and extension contracts have independent compiled oracles. FP environment, diagnostics, storage, kernel/device services
+and title integration remain. Acceptance is tracked in MAC-103 and MAC-104.
 
 **The replacement is not complete.** The current game still executes using the
 pinned runtime and its patches. Disc import and executable analysis now have
@@ -16,7 +144,12 @@ scanner, generation output support, translator instruction/block decoding,
 executable layout configuration, HLE symbol planning/thunk emission,
 indirect-branch feedback, unresolved-address diagnostics, C operand emission,
 basic data-transfer/stack lowering, scalar integer arithmetic/logic, shifts/rotates,
-multiply/divide lowering, and non-LOCK bit tests/scans/byte swapping.
+multiply/divide lowering, non-LOCK bit tests/scans/byte swapping, and
+exchange/compare-exchange lowering, comparison snapshots and implicit sign
+extension, string-instruction lowering, condition expressions, SSE/MMX/x87
+emission, control transfers, instruction/block lifting and lifter context,
+helper recognition, naming, batch/output orchestration, translator entry discovery
+and complete C function assembly and command-line orchestration.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -71,7 +204,19 @@ completion of the whole goal. The table below and docs/project/STATUS.md record 
 | Shifts and rotates | Project-owned `translation_bits.py` supplies SHL/SHR/SAR/SHLD/SHRD/ROL/ROR/RCL/RCR | Native bit-step and Windows x64 hardware value/carry comparisons, no-op/carry routing, consumers and generation/build/game; complete flag provenance remains separate |
 | Multiply and divide | Project-owned `translation_product.py` supplies MUL/IMUL/DIV/IDIV; shared `guest_integer_fault.c` stops invalid division before result writes | Width/alias/overflow and native x86 comparisons, decoded flag consumers, host fault adapter, generation/build/game; guest SEH and native Mac acceptance remain separate |
 | Bit tests, scans and byte swaps | Project-owned `translation_bitops.py` supplies non-LOCK BT/BTS/BTR/BTC, BSF/BSR and BSWAP | Native width/offset/alias and x86 references, captured flag consumers, generation/build/game; atomic forms and full flag provenance remain separate |
-| x86-to-C translation | Core lowering and orchestration still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
+| Exchange and compare-exchange | Project-owned `translation_exchange.py` and original template atomics supply XCHG/XADD/CMPXCHG | Compiled values/flags, x86 oracles, aliases, decoded consumers and contention; generation/build/game acceptance in STATUS.md, native Mac pending |
+| Comparison snapshots and implicit sign extension | Project-owned `translation_compare.py` supplies CMP/TEST, self-test normalization and CBW/CWD/CWDE/CDQ | Compiled width/carry/memory-hook/state fixtures and decoded consumers; measured host acceptance in STATUS.md and MAC-087 |
+| String instructions | Project-owned `translation_strings.py` replaces string and direction emission | Original native/decoded contracts and Windows generation/build/game acceptance passed; native Mac pending (MAC-088) |
+| Condition expressions | Project-owned `translation_conditions.py` for captured flags and Jcc/SETcc/CMOVcc/LAHF | Native and mathematical oracles, decoded consumers; Windows acceptance below, native Mac pending (MAC-089) |
+| SSE/SSE2 emission | Project-owned `translation_sse.py` emits lane operations and bit-preserving moves; existing XMM ABI remains | Portable/native oracles, decoded consumers, generation/build/game acceptance; native Mac title pending (MAC-090) |
+| MMX emission | Project-owned `translation_mmx.py` emits packed integer operations without inherited MMX helpers | Mathematical/native/boundary/decoded checks, full generation/build/game; native Mac pending MAC-091 |
+| x87 emission | Project-owned stack/operation emitter; existing binary64 stack ABI remains | Rounding/bounds/native fixtures and Windows title acceptance; native Mac pending MAC-092 |
+| Control transfers and block lifting | Project-owned call/branch/table handling, dispatch and block condition propagation | Compiled/decoded/negative-control checks and Windows title acceptance; native Mac pending MAC-093/094 |
+| Lifter context, helpers and naming | Project-owned class/registry, bounded helper recognition and SDK-derived name data | Standalone/bounds/compiler checks and deterministic generation; native Mac pending MAC-095 |
+| Batch translation and dispatch output | Project-owned database loading, declarations, split publication, stubs and dispatch | Compiled search/allocation/override tests and production output comparison; native Mac pending MAC-096 |
+| Translator context and entry discovery | Project-owned context, callback tables, split CFG ownership and switch-arm recovery | Bounded graph fixtures, compiled recovered function and generation comparison; native Mac pending MAC-097 |
+| x86-to-C function orchestration | Project-owned function assembly, typed joins, stack captures and x87 accessors | Compiled hooks/stack/FP tests, private negative controls and production output comparison; native Mac pending MAC-098 |
+| Translation command line | Project-owned selection, manual/HLE planning, generation and hook refresh; pipeline invokes it directly | Toolkit-free subprocess, compiled emitted output and failure-preservation tests; native Mac pending MAC-099 |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
 | Audio and movies | Still upstream, with project integration | Own Xbox-facing buffer/voice/clock services and movie adapter around permitted libraries; decode, mixing, resampling, looping, synchronization and pause/resume |
@@ -128,9 +273,10 @@ project-owned code. The adapter was authored against its CLI emitter protocol
 in `src/cli/main.c`, not by retaining the old wrapper implementation.
 
 `compile_pipeline.py` owns stage selection, per-title seed lookup, output paths,
-manual-source exclusion, diagnostics and subprocess execution. Parsing and
-analysis call project scripts directly; classification/lifting still require the
-selected runtime tree. A custom `--json` path is passed to disassembly rather
+manual-source exclusion, diagnostics and subprocess execution. Parsing, analysis,
+classification and lifting all call project scripts directly. The selected runtime
+tree still supplies title data and hook sources; the shared C types header is
+owned in `src/runtime/recomp_types.h`. A custom `--json` path is passed to disassembly rather
 than relying on a sibling file. Missing requested seed files and invalid images
 fail before execution; dry runs can describe a missing image without writing.
 The driver stops on a failed stage and reports where to resume.
@@ -665,3 +811,272 @@ instruction dispatch. LOCK-prefixed operations remain in the existing atomic
 handler for a separate replacement stage. Complete flag provenance, preserved
 flags across different setters, guest memory faults and other instruction/runtime
 families remain separate work; this stage does not establish full independence.
+
+
+## Exchange and compare-exchange
+
+`translation_exchange.py` owns XCHG, XADD and CMPXCHG, including LOCK spellings
+on memory. Original byte/word/dword atomic helpers in the runtime template use
+MSVC intrinsics or Clang/GCC sequentially consistent operations. Existing
+RECOMP_ATOMIC_ADD32/CAS32 names now alias these implementations. This removes
+the previous helper bodies without replacing the rest of the upstream header.
+Memory XCHG is implicitly atomic. Unlocked memory XADD/CMPXCHG preserve the
+existing stronger host-atomic policy rather than modelling every guest race.
+
+Operands and effective addresses are sampled before writes. XADD writes its
+source before its destination, including overlapping subregisters; CMPXCHG
+compares the original accumulator and only replaces it on failure. Captured
+result, signed inputs and carry drive conditional branches, SET and CMOV;
+zero-flag joins use the result snapshot. Other instruction flag provenance and
+a complete architectural flags register remain separate work.
+
+Original fixtures compare all byte input pairs and seeded word/dword values
+with portable references and Windows x86 instructions, then exercise aliasing,
+mapped-address sampling, decoded consumers and four-thread contention. ADD
+return-value sums, CAS increments and exchange-protected counters check the
+actual helper bodies. Host atomics follow their aligned-RAM contracts; guest
+MMIO, alignment/page-crossing faults, exception delivery and other LOCK families
+remain separate foundation work. The source basis is Intel SDM instruction
+semantics and standard compiler atomics, not copied lowering implementation:
+https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
+and https://learn.microsoft.com/en-us/cpp/intrinsics/interlockedexchangeadd-intrinsic-functions.
+See STATUS.md and MAC-086 for measured Windows and pending native Mac acceptance.
+
+
+## Comparison snapshots and implicit sign extension
+
+`translation_compare.py` replaces CMP/TEST operand capture, self-test
+normalization and CBW/CWDE/CDQ emission, and adds CWD. Operands are sampled
+at their actual width, with signed/unsigned snapshots and carry exposed through
+the existing consumer ABI. Direct dword-global CMP retains the title load hook;
+other widths, indirect and segmented accesses retain normal memory reads.
+Register self-tests normalize to compare against zero for existing flag joins.
+Unsigned masks implement implicit sign extension without signed shifts. The
+previously unhandled CWD form preserves upper EDX; all four forms preserve flags.
+
+Original compiled tests cover all byte comparison pairs, every word input for
+extension, seeded wider values, memory-read counts, hook scope and preserved
+state. Full decoded consumers test operand overwrite, carry into SBB, normalized
+joins and operand-size prefixes; Windows x86 oracles also compare extension
+values and preserved flags. Inherited translator fixtures stay enabled.
+The semantics basis is Intel SDM volumes 2A/2B:
+https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html.
+This stage replaced snapshot/emission bodies. Fused CMP/TEST branches already
+consume captured operands without rereads. Condition expressions are replaced
+in the later stage below; complete EFLAGS and guest faults remain work. See STATUS.md and MAC-087 for validation.
+
+
+## MMX emission
+
+MMX emission is owned by `translation_mmx.py` through the final
+`independent-translation-mmx.patch`. It captures register bits and addresses,
+uses unsigned masks and widened signed arithmetic for packed operations, and
+guards full 64-bit shift counts. Saturation, packing, multiply-add wrap, masks,
+all shuffle selectors and float conversions have independent compiled references
+and Windows native MMX oracles. Low-unpack memory sources read only four bytes;
+other packed sources read eight. Integer flags survive owned MMX instructions.
+The emitter calls no inherited MMX operation helpers. Register declarations and
+execution primitives are now in the project header; guest FP environment and
+x87 alias/tag service ownership remain separate work. EMMS retains the explicit separate-storage behavior.
+Standalone, boundary, decoded and hardware fixtures cover the new module.
+Native Mac title acceptance is pending MAC-091.
+
+The architectural reference is Intel SDM volume 2B, MMX packed operations,
+including the m32 low-unpack operand forms. Tests retain their independent
+mathematical and hardware expectations; the old helper is not the oracle.
+
+## SSE emission
+
+SSE emission is owned by `translation_sse.py` through the final
+`independent-translation-sse.patch`. It samples vector registers and memory
+addresses before writes, uses integer lanes for bit-preserving moves, and
+preserves unaffected scalar lanes. Double operations use 64-bit lanes; packed
+roots/reciprocals update every lane. Float-to-integer conversion checks bounds
+before casting and distinguishes rounded from truncating instructions. Shared
+numeric-policy hooks are retained. SSE compares publish captured floating
+inputs; other SSE operations preserve integer flag provenance. Memory width,
+all shuffle controls, conversions/rounding, NaN predicates, masks and decoded
+consumers are covered by compiled references and Windows native SSE oracles.
+Register declarations and memory-access primitives now use the project header;
+guest address-space mapping and FP services remain transitional. Guest MXCSR,
+floating exception status, alignment faults and
+processor-specific reciprocal estimates are not claimed; exact division keeps
+the existing reciprocal policy. Native Mac title acceptance is pending MAC-090.
+
+## Condition-code generation
+
+Condition evaluation is owned by `translation_conditions.py` through the final
+`independent-translation-conditions.patch`. Jcc, SETcc, CMOVcc aliases and LAHF
+consume captured comparison/result values. Arithmetic signed conditions use
+SF xor OF; LAHF now includes defined auxiliary carry. ADC/SBB retain the source
+and original left operand in the snapshot ABI. LAHF requests carry storage;
+parity/overflow SETcc and CMOVcc dispatch use the shared alias map. Integer
+native x86 and independent mathematical oracles cover all byte pairs and wide
+edges, with operand overwrites; decoded consumers and NaN/float tests compile.
+Unknown flags still return no expression. Complete EFLAGS, mixed setters,
+zero-count shifts, caller flags and guest fault delivery remain work.
+The architectural reference is Intel SDM volume 1, EFLAGS and condition codes,
+and volume 2 instruction definitions (linked above). See STATUS.md and MAC-089
+for acceptance evidence and host limits.
+
+## String-instruction lowering
+
+String lowering is owned by `translation_strings.py` through the final
+`independent-translation-strings.patch`. MOVS/STOS/LODS and CMPS/SCAS use
+byte/word/dword elements, direction-aware indices, address-size-specific count
+and index updates, and FS source offsets. Bulk copy uses widened guest-span
+bounds and disjointness; overlaps use ordered element reads/writes. Compare
+operands are read once. Repeated compares retain the ZF/CF consumer ABI and
+incoming zero-count preservation; single compares publish ordinary CMP
+snapshots. The translator declares their required storage even without a
+conditional consumer. SIMD MOVSD/CMPSD stay on their existing route.
+Native compiled fixtures cover overlap, counts, directions, widths, FS and
+16-bit wrap; Windows x86 oracles validate memory/register/ZF/CF results. Decoded
+consumers and inherited carry/zero-preload negative controls run with both host
+compilers. Complete repeat EFLAGS, memory protection/MMIO and resumable faults
+remain execution-foundation work. See STATUS.md and MAC-088 for acceptance.
+
+Source basis: Intel SDM, MOVS/STOS/LODS, CMPS/SCAS and REP instruction
+semantics: https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html.
+
+
+## x87 emission
+
+`translation_x87.py` supplies original emission through the additive
+`independent-translation-x87.patch`. Stack loads capture values before changing
+TOP; stores and pop forms preserve operand order. Guest control-word RC selects
+rounding, and integer stores check representable bounds before casting. Only
+FILD32 retains the existing title conversion hook. External 80-bit memory forms
+convert to/from the binary64 stack; FSCALE bounds finite exponents before the
+host integer cast and defines infinite-scale cases. Compiled independent and
+native x86 checks cover rounding, integer indefinite results, stack aliases,
+status/compare bits, memory bounds and decoded production consumers.
+The runtime stack storage, tags, exception state/delivery, precision control and
+80-bit intermediates remain foundation work. Libm transcendental results and
+result-only remainder handling preserve the current approximation, with no
+hardware bit-exact claim. Unknown forms retain the standard diagnostic marker.
+Source reference: [Intel SDM volume 2A, x87 instruction definitions](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-2a-manual.pdf).
+See STATUS.md and MAC-092 for acceptance and host limits.
+
+
+## Instruction and block lifting
+
+The original `tools/compiler/translation_lifting.py` replaces instruction dispatch,
+basic-block condition propagation, comparison/branch fusion, result snapshots,
+unsupported diagnostics and conditional-write fallbacks. The additive lifting
+patch delegates nine functions without changing unrelated function bodies.
+This module imports no upstream toolkit. Function-level orchestration, helper
+recognition, runtime flag storage and the remaining C runtime are still separate
+replacement work. Existing partial EFLAGS policies remain; this stage does not
+claim full architectural flag emulation. See the owning context guide, STATUS.md
+and MAC-094 for test contracts and host acceptance.
+
+
+## Lifter context and host identifiers
+
+The original `translation_context.py`, `translation_helpers.py` and
+`translation_names.py` replace the remaining lifter class/setup, helper
+recognition, naming and policy exports. The old module is now an import bridge.
+The lifter's Windows API inventory is regenerated directly from SDK import
+libraries by `generate_host_symbols.py`; it no longer reads bundled name data.
+The checked-in identifier list and manifest record all 453 source-library
+hashes, SDK version and output digest. Only factual identifiers are included.
+Helper detection remains bounded heuristic matching; it does not supply guest
+exception unwinding. Function translation/orchestration and runtime/title code
+remain separate replacement work. See STATUS.md and MAC-095 for acceptance.
+
+
+## Batch translation and output publication
+
+The original `tools/compiler/translation_batch.py` replaces the complete old batch class
+and certificate-title helper. It assembles metadata, selects categories/manual
+implementations, publishes declarations/chunks/stubs and generates original
+binary/optional-flat address dispatch. The later function and canonical-header
+stages replace its injected translator and default header. Tests compile
+the emitted C for wrapper/manual selection, stack cleanup, lookup misses/edges,
+allocation failure and an empty table. Publication is atomic per file and
+removes only obsolete outputs owned by the selected prefix. See the owning
+[guide](../agent-context/independent.md), STATUS.md and MAC-096 for contracts and
+host evidence. Historical patches and shipped fixtures remain audit work.
+
+
+## Translator context and late entry discovery
+
+The original `tools/compiler/translation_discovery.py` replaces sixteen FunctionTranslator
+methods for context setup, bounded byte/table reads, callback recovery, split
+CFG ownership, switch-arm entries, frame metadata and unresolved return cleanup.
+The installed class binds these original methods while retaining its remaining
+C emission/flag-join implementation. Synthetic graphs and a compiled recovered
+function verify behavior, including rejection of mapped holes and incomplete
+arms. Bounds and entry-flag heuristics do not establish complete symbolic
+execution or architectural EFLAGS semantics. See STATUS.md and MAC-097 for
+production generation/build/game evidence and native Mac validation limits.
+
+## Complete function assembly
+
+`tools/compiler/translation_function.py` replaces the remaining translator implementation.
+It assembles decoded/lifted blocks, carries known flag descriptions across
+compatible predecessors, emits required condition snapshots and local storage,
+and preserves entry/exit/frame hooks. The old path is a module alias, preserving
+production callers and diagnostic substitution without inherited implementation.
+Original circular x87 accessor output evaluates push inputs before updating the
+index. Failed indirect calls capture stack state above callee-cleaned arguments
+or below caller-cleaned arguments while preserving frame saves.
+
+Bounded three-pass flag propagation and eight-pass decoding resynchronization
+retain the existing coverage; neither proves complete CPU/ABI behavior. The
+remaining runtime services, title integration, historical patches and inherited
+fixtures remain separate work. A standalone test copies only project modules
+and emits a function with the toolkit absent; whole-game independence still
+requires the remaining runtime and final provenance/removal gates.
+
+## Original translation command line
+
+`translation_cli.py` owns option parsing, input resolution, category selection,
+single/header/batch modes, manual pin/wrapper planning, HLE integration and hook
+refresh. `compile_pipeline.py` invokes it directly with an explicit runtime data
+root. The compatibility `tools.recomp` entry only bootstraps and aliases the own
+module; no implementation remains there. Runtime headers, title data and hook
+sources are still dependencies. The historical snapshot and patch text remain
+until final provenance/removal work; standalone tooling is not whole-game independence.
+
+The default category set includes every observed game category plus unknown,
+CRT and data initializers. Trace/force-return/SEH options and indirect-call
+feedback retain per-run routing. Split output keeps manual names, wrapper entry
+versus generated-body names, hook variables and actually emitted original bodies.
+Hook cleanup reads a complete mapped function span. Refresh defers hooks whose
+ordinary bodies already exist, recognizes manually provided wrappers, and refuses
+missing dispatch definitions or a missing types header before writing either
+output. It masks comments/strings, literal-disabled blocks and continued
+preprocessor directives when reading generated definitions. Each output uses
+atomic content-aware publication; the pair is not a filesystem transaction.
+
+The legacy analysis-summary check compares basenames, not executable content;
+the normal analysis cache separately checks content hashes. Invalid supplied
+summary JSON now fails instead of silently bypassing that check. Conflicting
+selection/output modes and negative limits are rejected; explicit mode flags
+are otherwise retained. `--types-header` and `--hle-impl` support independently
+supplied inputs. Original synthetic and compiled fixtures cover selection,
+manual/hook dispatch, kept bodies, safe refresh, per-output feedback and a full
+split-generation subprocess with only copied project modules. See STATUS.md
+and MAC-099 for measured production acceptance and host limits.
+
+
+## Guest register and scalar-memory primitives
+
+The additive `independent-guest-abi.patch` replaces the register interface,
+scalar RAM lvalues, partial-register writes and stack primitives with project
+implementations. Existing symbol names retain binary/source compatibility with
+runtime callbacks. This does not replace kernel storage, memory mapping, MMIO,
+indirect dispatch or all remaining header arithmetic helpers. The existing
+double-backed x87 stack and separate MMX storage remain explicit limitations.
+
+Address conversion wraps guest arithmetic before applying host relocation.
+Typed volatile lvalues explicitly support unaligned scalar aliasing on the
+supported little-endian GCC/Clang/MSVC hosts. Partial writes sample each supplied
+expression once; PUSH reads its source before adjusting the stack and POP updates
+the stack before applying its destination. Standalone and production compiled
+fixtures test these contracts, with independently broken variants and cross-file
+thread-local callbacks. See `docs/agent-context/independent.md`, STATUS.md and
+MAC-100 for ownership and measured Windows acceptance; native Mac title
+validation and complete upstream removal remain pending.
