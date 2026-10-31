@@ -1,5 +1,35 @@
 # Runtime and patch navigation
 
+Effects buffering: `media/0055-dsound-busy-buffer-recovery.patch` extends the
+shared `hle_dsound.c` pump. Its default 40 ms lead grows per buffer to the
+observed active service interval plus 10 ms, capped at 90 ms. Explicit
+`RECOMP_DSOUND_LEAD_MS` values stay fixed, including legacy zero. Play still
+submits immediately; pause/stop resets prevent learning inactive intervals.
+After a >100 ms output-model interval, stale data is skipped only up to now,
+then the future lead is submitted in the same call. Refused submissions keep
+the output cursor unchanged; expired one-shots stay expired. Guest clocks,
+stream/music policy and host audio adapters are unchanged. The existing audio
+timing CI suite now exercises 64 voices under delayed service and recovery.
+
+`media/0056-dsound-invalid-buffer-retirement.patch` makes every unusable-buffer
+exit in `model_for_known` retire an existing slot/host voice, including null
+settings holders and invalid rate/alignment. DirectSoundDoWork therefore reclaims
+invalid stopped buffers as well as playing ones. Valid stopped/paused buffers
+are retained; no live voice is evicted to admit another sound. See
+[audio lifecycle tests](audio-buffers.md). Guest Release remains unchanged.
+
+`media/0057-dsound-format-and-tail-recovery.patch` includes rate/alignment in
+buffer identity, retains raw source size while clocking complete frames, and
+preserves stream packet boundaries for rate-only SetFormat. Exact unheard PCM
+and ADPCM suffixes survive voice resets/pause; encoding layout changes keep the
+previous policy. See [format regression coverage](audio-buffers.md).
+
+`media/0058-audio-device-recovery.patch` adds one-second XAudio engine/voice
+retries and a shared per-slot discontinuity signal for streams and movies.
+Their wall-clock fallback skips elapsed audio and establishes a fresh playback
+origin after reconnecting. Explicit reset clears the signal; mute/shutdown
+remain terminal. See [device recovery and tests](audio-buffers.md).
+
 Patch 2140-native-minigun-intent follows the native weapon wrappers in loader dependency order. It scopes held-primary intent around original US 1C74D0 event 1. Generic shots remain on whole ticks; numeric site 1C7600 normalizes release damping. See native-minigun.md.
 
 `2130-game-dpi-awareness.patch` attaches the Windows game manifest supplied by

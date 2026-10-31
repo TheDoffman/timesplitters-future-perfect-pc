@@ -1,0 +1,71 @@
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -93,6 +93,8 @@
+      * it was last reset (a dry voice after that is an underrun). */
+     uint64_t play_us;
+     int      fed;
++    uint64_t service_ms;         /* previous active pump, for busy-frame headroom */
++    uint32_t adaptive_lead_ms;   /* grows within 40..90 ms, reset with the slot */
+     int32_t  level;              /* the volume last sent, hundredths of a dB */
+     float pan;
+     int spatial;
+@@ -136,6 +138,7 @@
+  * before. RECOMP_DSOUND_LEAD_MS sets the lead (default 40); 0 restores the
+  * old behaviour exactly (tick clock, no lead), for comparison. */
+ static uint32_t g_lead_ms = 0xFFFFFFFFu;
++static int g_adaptive_lead = 1; /* an explicit lead override stays fixed */
+ 
+ static uint32_t lead_ms(void)
+ {
+@@ -143,6 +146,7 @@
+         const char *v = getenv("RECOMP_DSOUND_LEAD_MS");
+         g_lead_ms = 40u;
+         if (v && *v) {
++            g_adaptive_lead = 0;
+             long ms = strtol(v, NULL, 10);
+             g_lead_ms = ms < 0 ? 0u : ms > 90 ? 90u : (uint32_t)ms;
+         }
+@@ -430,12 +434,28 @@
+     RecompDsoundBufferModel *out = &b->output_model;
+     RecompDsoundBufferModel next = *out;
+     uint32_t channels, bits, offset = 0u, bytes, queued = 0u;
+-    uint64_t until = now + lead_ms();
++    uint32_t lead = lead_ms();
++    uint64_t until;
+     int adpcm, is3d;
+     static uint8_t pcm[80000];
+ 
+-    if (!b->output || !out->playing || until <= out->last_ms ||
+-        until - out->last_ms < 10u)
++    if (!b->output || !out->playing)
++        return;
++    /* A busy frame must not leave a permanently undersized queue. Learning
++     * the active service interval adds headroom, not a delay before Play:
++     * samples still start immediately. Never bridge a stopped/paused interval
++     * or override an explicitly selected fixed lead (including legacy zero). */
++    if (g_adaptive_lead && lead) {
++        if (b->fed && now > b->service_ms) {
++            uint64_t gap = now - b->service_ms;
++            uint32_t want = gap >= 80u ? 90u : (uint32_t)gap + 10u;
++            if (want > b->adaptive_lead_ms) b->adaptive_lead_ms = want;
++        }
++        if (b->adaptive_lead_ms > lead) lead = b->adaptive_lead_ms;
++    }
++    b->service_ms = now;
++    until = now + lead;
++    if (until <= out->last_ms || until - out->last_ms < 10u)
+         return;
+     if (b->data != setting(b->iface, SET_DATA) ||
+         b->size != setting(b->iface, SET_SIZE) ||
+@@ -446,6 +466,11 @@
+     channels = (b->format >> 16) & 0xFFu;
+     bits = b->format >> 24;
+     adpcm = (b->format & 0xFFFFu) == TAG_ADPCM;
++    /* Keep the stale-ring-data policy after a long hitch, but discard only
++     * the past. Skipping through now+lead left the device empty until another
++     * update. Refill the future immediately, committing only accepted PCM. */
++    if (lead && until - next.last_ms > 100u)
++        recomp_dsound_buffer_cursor(&next, now);
+     bytes = recomp_dsound_buffer_consume(&next, until, &offset);
+     if (bytes == 0u) {
+         *out = next; /* retain the existing stale-ring-data policy */

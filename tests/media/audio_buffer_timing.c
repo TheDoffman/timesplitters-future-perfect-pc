@@ -29,13 +29,21 @@ static void acoustic_ray_mock(void) {
 recomp_func_t recomp_lookup(uint32_t address) { return acoustic_mock && address==0x88950 ? acoustic_ray_mock : NULL; }
 int xbox_EnvSwitch(const char *name, int value) { return value; }
 void hle_dsound_stream_tick(uint64_t now) { }
+static unsigned reset_count[256];
+void recomp_audio_output_reset_voice(uint32_t slot) { reset_count[slot]++; }
+static int fake_device;
+static uint64_t fake_now, fake_until[256];
+int recomp_audio_output_position(uint32_t slot, uint64_t *played, uint32_t *queued)
+{
+    if (!fake_device) return 0;
+    if (queued) *queued = fake_until[slot] > fake_now;
+    return 1;
+}
 void hle_dsound_stream_acoustics(uint32_t settings,float obstruction,float room,int ambience) {}
 void hle_dsound_stream_spatial(uint32_t settings,float pan,int enabled) { }
 void recomp_audio_output_set_ambience(uint32_t slot,int enabled) {}
 void recomp_audio_output_set_acoustics(uint32_t slot,float obstruction,float room) {}
 void recomp_audio_output_set_spatial(uint32_t slot,float pan,int enabled) { }
-void recomp_audio_output_reset_voice(uint32_t slot) { }
-int recomp_audio_output_position(uint32_t slot, uint64_t *played, uint32_t *queued) { return 0; }
 int recomp_audio_output_engine_stats(RecompAudioEngineStats *stats) { memset(stats, 0, sizeof *stats); return 0; }
 static int accept;
 static uint32_t accepted_bytes;
@@ -44,6 +52,10 @@ int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes
     uint32_t rate, uint32_t channels, uint32_t bits, int32_t level)
 {
     if (!accept) return 0;
+    if (fake_device) {
+        if (fake_until[slot] < fake_now) fake_until[slot] = fake_now;
+        fake_until[slot] += (uint64_t)bytes * 1000 / (rate * channels * (bits / 8));
+    }
     accepted_bytes += bytes;
     first_byte = pcm[0];
     return 1;

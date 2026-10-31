@@ -349,15 +349,26 @@ def scrollable_panel(window, parent, padding, min_width):
     canvas.configure(yscrollcommand=vertical.set, xscrollcommand=horizontal.set)
     content = ttk.Frame(canvas, padding=padding)
     content_id = canvas.create_window(0, 0, window=content, anchor='nw')
+    last_layout = None
     def layout_viewport(event=None):
+        nonlocal last_layout
         # Wrapped label requests retain the previous viewport width. Do not
         # feed those requests back into the canvas after maximize/restore.
         scale = max(1.0, float(window.tk.call('tk', 'scaling')) / (96 / 72))
         width = max(canvas.winfo_width(), round(min_width * scale))
         height = max(canvas.winfo_height(), content.winfo_reqheight())
+        background = ttk.Style(window).lookup('TFrame', 'background')
+        layout = (width, height, background, height > canvas.winfo_height(),
+                  width > canvas.winfo_width())
+        # Cocoa/Tk can send Configure again after an unchanged canvas-window
+        # size is assigned. Stop at the fixed point instead of feeding that
+        # notification back into another geometry request forever.
+        if layout == last_layout:
+            return
+        last_layout = layout
         canvas.itemconfigure(content_id, width=width, height=height)
         canvas.configure(scrollregion=(0, 0, width, height),
-                         background=ttk.Style(window).lookup('TFrame', 'background'))
+                         background=background)
         if height > canvas.winfo_height():
             vertical.grid(row=0, column=1, sticky='ns')
         else:

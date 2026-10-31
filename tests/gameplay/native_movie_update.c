@@ -60,6 +60,10 @@ static int recomp_audio_output_submit(int slot,const uint8_t *bytes,uint32_t n,
     if(submits++%3==0) { rejected++;return 0; }
     submitted+=n;for(unsigned i=0;i<n;i++)audio_sum+=bytes[i];return 1;
 }
+static int host_discontinuity;
+static int recomp_audio_output_take_discontinuity(int slot) {
+    assert(slot==1); int lost=host_discontinuity; host_discontinuity=0; return lost;
+}
 static void recomp_audio_output_reset_voice(int slot) { assert(slot==1);resets++; }
 static int recomp_audio_output_position(int slot,uint64_t *played,uint32_t *queued)
 { assert(slot==1);*played=submitted;*queued=0;return 1; }
@@ -76,7 +80,19 @@ static void d3d8_movie_clear(void) {}
 static void xmv_decoder_destroy(xmv_video_decoder *d) {}
 static void xmv_close(xmv_demux *d) {}
 /* MOVIE_FUNCTIONS */
+static void test_audio_recovery(void) {
+    movie m={0}; uint8_t pcm[6400]; m.rate=8000; m.channels=2;
+    m.pcm=pcm; m.pcm_len=sizeof pcm; m.pcm_submitted=3200;
+    memset(pcm,0x11,1600); memset(pcm+1600,0x77,4800);
+    g_qpf.QuadPart=host_frequency; host_counter=host_frequency*3/20;
+    host_discontinuity=1; submits=1;
+    feed_audio(&m);
+    assert(m.pcm_off==6400 && m.pcm_submitted==9600 && !m.audio_recovering);
+    assert(submitted==4800 && audio_sum==4800*0x77);
+    submits=submitted=audio_sum=0; host_counter=0;
+}
 int main(void) {
+    test_audio_recovery();
     setting="144";host_frequency=10000000;g_qpf.QuadPart=host_frequency;
     unsigned counts[2];
     for(unpaced=1;unpaced>=0;unpaced--) {

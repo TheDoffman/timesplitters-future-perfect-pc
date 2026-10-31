@@ -184,8 +184,8 @@ presence semantics, decoding/reporting, and repeated-lookup/executor mutations.
 
 `test_window_theme.py`: menu drawing, mnemonics, inserted/reordered rows (#333).
 
-`test_audio_output_gain.py` / `test_audio_timing.py`: XAudio/SDL, fake devices,
-gain overrides, mute, live volume and voice parity.
+[Audio tests](audio-buffers.md): timing, gain, buffer/device recovery and beta
+ON/OFF compatibility with XAudio/SDL doubles.
 
 `test_controller_profile.py`: devices/maps/disconnect and SDL virtual input;
 physical pads/Mac gameplay remain unverified.
@@ -199,7 +199,7 @@ exact decoded pictures/timestamps/PCM and duration. Controlled
 and Windows clocks; private-data skips, mocked GPU/audio output. Surface-trace
 fixtures use240/180/Original60/120, matching the strict live-cycle validator.
 
-[Online UI/icon/scrollbar checks](multiplayer-ui.md). `test_framebuffer_sampling.py`
+[Online UI/layout convergence checks](multiplayer-ui.md). `test_framebuffer_sampling.py`
 checks refresh/stale copies and first-entry/any-framebuffer alias lookup against
 the original searches, including wrong-first/last mutations (Mac GL/RHI, Windows RHI).
 `test_trace_filter.py` compiles real trace dispatch: quiet calls, explicit

@@ -1,3 +1,224 @@
+## Audio PR validation: Online layout convergence (2026-10-30)
+
+PR432's first two native Mac CI attempts passed 2,264 tests but timed out in
+unchanged browser layout cases at different display scales. The callback
+rewrote canvas-window geometry on every Configure notification, including an
+unchanged size. It now returns at the same layout state, while preserving real
+resize, content-height, background and scrollbar changes. A deterministic
+notification-queue regression fails against the previous callback and passes
+with the guard. Existing UI probes now emit delayed stack traces on a stall;
+assertions and their 60-second timeout are unchanged.
+
+Windows: all 11 Online theme tests pass. A disposable source-only copy on the
+physical Apple Silicon Mac (Python3.12/Tk9.1) passes ten tests with the one
+Windows-only DWM check skipped; the four original layout cases also passed
+before this repair there. No remote checkout, game build, personal settings or
+save files were changed. These physical checks establish convergence/UI scope,
+not reproduction or resolution of the hosted CI timeout. Hosted acceptance is
+pending the next PR run. Audio source is unchanged from the validated build.
+The supported Windows Build and built-in checks pass again with the updated
+network identity; 30 context/backlog/network-identity checks also pass.
+
+## General audio recovery integrated with Enhanced Audio (2026-10-30)
+
+Integration base: main `45527221`; prior local repairs are preserved in commit
+`c61f77e4` on `fix/busy-match-audio`. The four recovery patches are now named
+0055-0058 and apply after the unchanged beta patches 0040/0045/0050. General
+buffering, invalid-slot cleanup, format/tail repair and device recovery run
+with Enhanced Audio either OFF or ON. The beta preference still controls
+spatial routing, weapon range and environmental/ambience processing only.
+
+The combined XAudio adapter serializes beta setters with recovery and preserves
+their targets across unexpected loss. Both output adapters restore filter
+history after refused submission; explicit reset clears targets/history.
+
+Validation on Windows x64, MSBuild 17.14.40:
+- Supported `tsfp.ps1 -Action Build` and all built-in checks passed using the
+  supported US executable and current complete patch stack.
+- 92 audio/movie regressions passed; one default opt-in device test skipped.
+  This includes explicit enhanced-on/off recovery with both complete host
+  adapters, plus buffer load/lifecycle/format, streams, beta settings/routing,
+  acoustics and movie clocks. Other native timing cases were deselected.
+- The real default XAudio device check separately passed reopening and playing
+  silent PCM after an injected critical callback.
+- 52 distinct patch-tracking, selected patch-installation, context and Mac-backlog
+  checks passed. An initial guide-size failure was corrected and all 20 context
+  tests rerun successfully. Fresh/repeated application and the actual migration
+  from the previous local patch ledger passed; not every historical-upgrade
+  permutation was rerun for this integration.
+
+Logs: `logs/audio-main-{build,tests,recovery-tests,contracts,context-tests,
+live-device,patches}.log`. No audible live-game, physical unplug/Bluetooth,
+or native Mac execution is claimed for this integration. MAC-018 and MAC-120
+retain their hardware acceptance gaps. This records source integration/build
+validation, not publication of a downloadable release.
+
+## Audio device recovery (2026-10-28)
+
+Local uncommitted continuation on `fix/busy-match-audio`, HEAD `759f7a0e`,
+retaining patches 0055-0037. New shared patch
+`media/0058-audio-device-recovery.patch` replaces terminal XAudio failure with
+one-second retries. Critical/device-invalidated errors destroy the old engine
+and owned voices; other source-voice failures retire only that slot. Normal
+queue saturation remains backpressure. Output calls are serialized and COM
+apartments are owned/cleaned up by their calling threads. Mute and shutdown
+remain disabled, and existing volume configuration is retained on reconnect.
+
+The shared `recomp_audio_output_take_discontinuity` API informs stream/movie
+clocks when a host voice disappears, including unsuccessful initial output.
+Music reanchors each retry to its current fallback clock, and movies discard
+elapsed pending PCM against the video clock. New device counters therefore
+cannot rewind the old timeline or replay a disconnected backlog. Effects keep
+the earlier stale-data recovery. Missed sound during an outage is not restored.
+The Mac SDL adapter implements the same initial-open/failed-stream retry and
+notification contract; SDL retains normal default-device migration. Physical
+Mac acceptance is pending (MAC-018); no OS device/settings changes were made.
+
+Six pre-fix complete-XAudio adapter cases fail (startup/critical recovery and
+create/start/volume/submit isolation), recorded in `logs/audio-device-before.log`.
+The final combined suite passes 120 cases with one opt-in live-device test
+skipped: full audio adapters/timing/gain, real-file movie cadence, XMV skip,
+patch tracking/context/backlog (`logs/audio-device-regressions.log`, 84.00 s).
+Three full-stack fresh/repeated, conflict-rollback and Windows-line-ending
+checks pass (`logs/audio-device-integration.log`, 81.94 s). The synthetic native
+movie-update fixture passes separately, including exact suffix recovery and
+its existing pacing controls (`logs/audio-device-movie-tests.log`). Total:
+124 unique regression checks. Historical patch migrations were verified at
+the prior slot checkpoint and were not all rerun for this follow-up.
+
+An additional opt-in Windows check uses the complete real XAudio adapter and
+default audio device. Silent PCM is submitted, the test injects the engine's
+critical-error callback, observes loss, waits for the retry interval, and
+verifies fresh silent PCM is fully consumed after reopening. It passes after
+the final runtime changes (`logs/audio-device-live.log`, 3.62 s). This is a real
+API/device reopen test with an injected fault, not physical unplug/replug,
+Bluetooth switching, listening or live-match acceptance. No external device
+was disabled. The test is opt-in via `TSFP_TEST_AUDIO_DEVICE=1` in the new CI-
+registered `tests/media/test_audio_device_recovery.py` suite.
+
+The supported Windows x64 Build (MSBuild 17.14.40) validates the pinned US XBE
+and patch stack, compiles the affected runtime and passes all built-in checks
+(`logs/audio-device-build.log`). Local executable SHA-256:
+`583ee9dd688a19b24fd7e7d0fc2fa14ecc2eba39d1f3647592c523bfc96c7be1`.
+Context/index and whitespace checks pass. Changes are local, uncommitted and
+unreleased; no main merge or publication was performed.
+
+## Audio format and partial-tail recovery (2026-10-28)
+
+Local uncommitted continuation on `fix/busy-match-audio`, HEAD `759f7a0e`,
+retaining the preceding busy-buffer and invalid-slot fixes. Shared patch
+`media/0057-dsound-format-and-tail-recovery.patch` corrects three reproduced
+adapter defects: buffer SetFormat ignored rate/alignment-only changes;
+stream rate-only SetFormat replayed an already-heard packet prefix; and
+an incomplete final PCM frame/ADPCM block caused an entire buffer to retire.
+
+Buffers now identify the full guest format separately from SetFrequency and
+keep raw source length while clocking only complete frames/blocks. Format
+changes follow the existing rebuild/stop lifecycle. Stream changes that keep
+the byte layout preserve packet boundaries and resume at the exact unheard
+sample after the host voice reset, including paused and mid-ADPCM-block cases.
+Encoding/channel/bit/alignment layout changes retain their previous policy.
+Automatic audio-device recovery was still a one-shot backend limitation at
+this checkpoint; see the subsequent device recovery entry above.
+
+Seven of nine added regression cases fail before the patch; the two frequency
+preservation controls already pass. All 52 audio checks pass, including earlier
+busy-match/lifecycle cases, PCM sample comparisons and packet completion sizes.
+37 patch-tracking/context/backlog checks and three full-stack fresh/repeated,
+conflict-rollback and Windows-line-ending checks pass: 92 distinct tests total.
+The focused format fixture rerun after aligning its ADPCM expected-sample
+storage passes all eight selected cases. Logs: `logs/audio-format-before.log`,
+`logs/audio-format-tests.log`, `logs/audio-format-contracts.log`,
+`logs/audio-format-integration.log`, `logs/audio-format-final-fixture.log`.
+Historical migration combinations passed at the preceding slot checkpoint;
+they were not rerun in full for this patch.
+
+Windows x64 Build using MSBuild 17.14.40 validates the supported US XBE and
+complete patch stack, compiles both shared audio modules and passes all built-in
+checks (`logs/audio-format-build.log`). Executable SHA-256:
+`fbee9221720a4dfacb46afcfc0d34184b96af03574e8747c5d752c9bbcd4dd29`.
+The rebuilt local game includes all three audio patches. No new listening or
+online session is claimed; exact busy-match and physical Mac acceptance remain
+pending (MAC-018). No publication, commit or main merge is performed.
+
+## Invalidated sound-buffer slot recovery (2026-10-28)
+
+Local uncommitted continuation on `fix/busy-match-audio`, HEAD `759f7a0e`,
+retaining the earlier buffering fix. The reproduced leak retained known
+buffer slots when settings holders were cleared or rate/alignment became
+invalid. The normal DoWork walk rejected those buffers without retiring them;
+after 256 invalidated objects, a new sound could not obtain a model.
+
+Patch `media/0056-dsound-invalid-buffer-retirement.patch` retires the existing
+slot and host voice on unusable-settings exits. It clears all old slot state,
+including for stopped buffers. Valid playing, paused and stopped buffers are
+retained; a genuinely full valid pool is not evicted. The guest Release path
+is unchanged, so freed memory that still looks like a valid object remains
+outside this correction. The other three findings were open at this checkpoint;
+see the subsequent format/tail recovery entry above.
+
+Ten deterministic lifecycle cases exercise the real lookup/DoWork/pump:
+four 256-slot allocation/invalidation rounds, successful PCM from the next
+recovered slot, counted resets, idempotent cleanup, active invalidation,
+null/unreadable pointers, bad rates/alignment/size, and valid-pool retention.
+Five original cases failed before the correction; three existing-behavior
+controls passed. Final audio, patch-tracking, context and backlog checks pass
+all 80 cases (`logs/audio-slots-contract-tests.log`), including 43 audio cases.
+The full patch-upgrade suite also passes: six historical-stack cases in
+433.82 seconds and 16 remaining transition/rollback cases in 591.45 seconds
+(`logs/audio-slots-history-tests.log`, `logs/audio-slots-transition-tests.log`).
+That is 102 passing regression checks in total. Context/index, whitespace and
+the updated Mac backlog integrity checks pass. The rebuilt executable SHA-256
+is `b5438acff84f3ef3356b31a84eeff8963e0cd09a88ee9640513d787058b75487`.
+The supported Windows x64 Build on MSBuild 17.14.40 verifies the US XBE/full
+patch stack, recompiles the shared audio code, and passes all built-in checks
+(`logs/audio-slots-build.log`). No new live-game/listening session is claimed;
+physical Mac and the user's exact busy online scenario remain unverified.
+The earlier Hotel smoke run applies to the earlier build. No publication or
+main merge is performed. MAC-018 records the shared implementation and limits.
+
+## Busy-match effects recovery (2026-10-28)
+
+Local uncommitted work on `fix/busy-match-audio`, based on main `2a2ffe36`.
+The user reports effects cutting out in crowded Arcade/Online matches at
+Original60 while music continues. The shared buffer pump used a fixed 40 ms
+lead; output-model intervals over 100 ms discarded both stale past data and
+the future lead, leaving an empty queue until another update.
+
+Patch `media/0055-dsound-busy-buffer-recovery.patch` learns active pump spacing
+and grows each buffer's default lead to that interval plus 10 ms, capped at
+90 ms. Play still submits immediately. Explicit lead overrides remain fixed.
+Long hitches skip stale past data and refill the future in the same call;
+failed submissions retain the output cursor. Music streams, guest clocks and
+host audio APIs are unchanged. This cannot hide stalls longer than the cap.
+
+Windows x64 / MSBuild 17.14.40: the supported `tsfp.ps1 -Action Build` verifies
+the US XBE and full patch stack, compiles `hle_dsound.c`, and passes its built-in
+checks. The audio suites pass all 33 cases, including actual-pump 64-voice
+steady/busy cadence, long hitch, refused recovery, finite tails/expired sounds,
+fixed lead and legacy zero. The pre-change pump fails busy, hitch and refused
+recovery while its existing cases and steady cadence pass. Private evidence:
+`logs/busy-audio-before.log`, `logs/busy-audio-build.log`.
+The combined patch tracking, historical upgrades, repository-context and audio
+regression suite passes all 91 checks in 927.44 seconds
+(`logs/busy-audio-regressions.log`). The Mac backlog integrity check passes
+separately; repository context/index validation and `git diff --check` pass.
+
+A bounded 240-second Test Lab session uses isolated saves/settings in
+`private/test-saves/busy-audio`, Original60 and Classic textures. UI inspection
+reaches Hotel Deathmatch with recommended bots, shows active gameplay and
+death/respawn. During the observed gameplay the cumulative buffer-underrun
+count stays at 23 while effect Plays rise from 104 to 670; device glitches stay
+zero and no backend submission failures are logged. The session's 23 earlier
+underruns are retained in that count. The runner exits cleanly and recycles its
+disposable partition images.
+This is a smoke check, not a controlled before/after listening comparison or
+reproduction of the user's exact online match. Mac compilation/listening and
+other-device synchronization remain unverified; MAC-018 tracks acceptance.
+The local executable SHA-256 is
+`f3f8cefb6218b21a1ce7f76a54dc2c116c87d82d779ad75f30050e2255f4ae5d`.
+No release or main merge is performed.
+
 ## Battle Mech mouse aiming (#425) - 2026-10-30
 
 Local branch `425-bug-battle-mech-camera-doesnt-move` starts from main

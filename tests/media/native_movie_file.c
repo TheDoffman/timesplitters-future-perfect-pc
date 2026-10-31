@@ -52,12 +52,34 @@ void hle_d3d8_movie_surface(uint32_t data,uint32_t format) { assert(!data && !fo
 void d3d8_movie_clear(void) {}
 void d3d8_movie_set_frame(const uint8_t *pixels,uint32_t w,uint32_t h,int fill,unsigned l,unsigned r)
 { assert(w && h);image_hash=hash_bytes(image_hash,pixels,(size_t)w*h*4);image_count++; }
+static int host_discontinuity, refuse_audio;
+static uint8_t first_pcm;
+int recomp_audio_output_take_discontinuity(uint32_t slot) { int v=host_discontinuity; host_discontinuity=0; return v; }
 void recomp_audio_output_reset_voice(uint32_t slot) { assert(slot==RECOMP_AUDIO_SLOT_MOVIE); }
 int recomp_audio_output_submit(uint32_t slot,const uint8_t *pcm,uint32_t n,uint32_t rate,uint32_t channels,uint32_t bits,int32_t volume)
-{ assert(slot==RECOMP_AUDIO_SLOT_MOVIE && rate && channels && bits==16);audio_hash=hash_bytes(audio_hash,pcm,n);audio_bytes+=n;return 1; }
+{ assert(slot==RECOMP_AUDIO_SLOT_MOVIE && rate && channels && bits==16); if(refuse_audio)return 0; first_pcm=pcm[0]; audio_hash=hash_bytes(audio_hash,pcm,n);audio_bytes+=n;return 1; }
 int recomp_audio_output_position(uint32_t slot,uint64_t *played,uint32_t *queued)
 { assert(slot==RECOMP_AUDIO_SLOT_MOVIE);*played=audio_bytes;*queued=0;return 1; }
+#ifndef LIVE_HOST_CLOCK
+static void test_audio_recovery(void) {
+    movie m = {0}; uint8_t pcm[9600];
+    m.rate=48000; m.channels=1; m.pcm=pcm; m.pcm_len=sizeof pcm;
+    m.pcm_submitted=9600; g_qpf.QuadPart=host_frequency;
+    memset(pcm,0x11,4800); memset(pcm+4800,0x77,4800);
+    host_counter=host_frequency/8; /* 125 ms: discard 25 ms of pending sound */
+    host_discontinuity=1; refuse_audio=1;
+    feed_audio(&m); assert(m.pcm_off==2400 && m.pcm_submitted==12000);
+    host_counter=host_frequency*3/20; /* 150 ms: recovery uses the current offset */
+    refuse_audio=0; feed_audio(&m);
+    assert(m.pcm_off==9600 && m.pcm_submitted==19200 && first_pcm==0x77);
+    assert(!m.audio_recovering && audio_bytes==4800);
+    audio_bytes=0; audio_hash=1469598103934665603ull; host_counter=0;
+}
+#endif
 int main(int argc,char **argv) {
+#ifndef LIVE_HOST_CLOCK
+    test_audio_recovery();
+#endif
     assert(argc==3 && strlen(argv[1])<sizeof host_path);strcpy(host_path,argv[1]);
     setting=strcmp(argv[2],"original")?argv[2]:NULL;
     g_xbox_mem_offset=(ptrdiff_t)guest;strcpy((char *)guest+0x1000,"d:\\xmv\\eag_e.xmv");

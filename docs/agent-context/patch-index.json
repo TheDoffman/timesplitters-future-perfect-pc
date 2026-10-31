@@ -81,6 +81,42 @@
       ]
     },
     {
+      "name": "0055-dsound-busy-buffer-recovery.patch",
+      "path": "patches/media/0055-dsound-busy-buffer-recovery.patch",
+      "sha256": "41de8e567c9c918b94248999bbece85c2c0e2a32b291a3bf1ec72b8d294d311b",
+      "targets": [
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
+      "name": "0056-dsound-invalid-buffer-retirement.patch",
+      "path": "patches/media/0056-dsound-invalid-buffer-retirement.patch",
+      "sha256": "19aa5725385302663d0fe57fbb719c06f1da5856cfda05a16cc9b453089f0d9c",
+      "targets": [
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
+      "name": "0057-dsound-format-and-tail-recovery.patch",
+      "path": "patches/media/0057-dsound-format-and-tail-recovery.patch",
+      "sha256": "f6470d56efac00b105c75291ee091c61666d792fd8d09e3bc2eb4c85c91f0fa7",
+      "targets": [
+        "src/hle/hle_dsound.c",
+        "src/hle/hle_dsound_stream.c"
+      ]
+    },
+    {
+      "name": "0058-audio-device-recovery.patch",
+      "path": "patches/media/0058-audio-device-recovery.patch",
+      "sha256": "709679364642b1582b830195a97d9696e05e80e7cd0154244d800e672f67d1d8",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_dsound_stream.c",
+        "src/hle/hle_xmv_play.c"
+      ]
+    },
+    {
       "name": "0060-independent-classification.patch",
       "path": "patches/compiler/0060-independent-classification.patch",
       "sha256": "f8db701d03791b2b6eb3794f6d4634d14deb018400b9c171acab4af5ab0bd1b6",
