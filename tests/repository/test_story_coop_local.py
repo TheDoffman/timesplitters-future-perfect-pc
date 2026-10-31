@@ -1,5 +1,6 @@
 """Manual Story launcher ownership, local routing and partial-launch cleanup."""
 import io
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -9,6 +10,27 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools'))
 import story_coop_local as launcher
+
+
+@pytest.mark.parametrize('tool', ['lobby_server.py', 'online_theme.py'])
+def test_build_verifier_resolves_portable_tool_names_and_rejects_edits(tmp_path, monkeypatch, tool):
+    exe = tmp_path / 'build/windows/Release/futureperfect_recomp.exe'
+    exe.parent.mkdir(parents=True)
+    exe.write_bytes(b'fixture executable')
+    source = tmp_path / 'tools/network' / tool
+    source.parent.mkdir(parents=True)
+    source.write_bytes(b'original\r\n')
+    generated = tmp_path / 'build/windows/generated'
+    generated.mkdir()
+    (generated / 'network-identity.json').write_text(json.dumps({'files': [
+        ['tools/' + tool, hashlib.sha256(b'original\n').hexdigest()]]}))
+    calls = []
+    monkeypatch.setattr(launcher.subprocess, 'run', lambda command, **kwargs: calls.append(command))
+    assert launcher.verify_build(tmp_path) == exe
+    assert '--verify' in calls[0] and '--executable' in calls[0]
+    source.write_bytes(b'changed\n')
+    with pytest.raises(ValueError, match='Rebuild required: tools/' + tool):
+        launcher.verify_build(tmp_path)
 
 
 def test_configuration_is_local_and_has_no_synthetic_input(tmp_path, monkeypatch):

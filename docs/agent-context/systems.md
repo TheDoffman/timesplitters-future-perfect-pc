@@ -1,6 +1,6 @@
 # Subsystem entry points
 
-Story co-op NPC, corpse, pickup, barrel and camouflage integration keeps the
+Story browser level details, co-op movie score-packet lifetime, guest reward parity/pages/empty entry, NPC, corpse, pickup, barrel and camouflage integration keeps the
 shared source and main paths; see [details](systems-details.md).
 
 Minigun motor intent and release damping: [shared policy](native-minigun.md).

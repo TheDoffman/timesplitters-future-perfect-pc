@@ -25,7 +25,7 @@ static PcOnlineMode online_mode=PC_ONLINE_STORY;
 PcOnlineMode pc_online_mode(void){return online_mode;}
 static int allocation_ok=1;
 static uint32_t xbox_HeapAlloc(uint32_t n,uint32_t align)
-{CHECK((n==32 || n==64 || n==96 || n==144) && align==4);return allocation_ok?(n==32?0x140000:n<=96?0x8000:0x8100):0;}
+{CHECK((n==32 || n==64 || n==96 || n==128 || n==144) && align==4);return allocation_ok?(n==32?0x140000:n<=96?0x8000:n==128?0x8200:0x8100):0;}
 static uint32_t next_parent,next_menu,ticks,selectors;
 static uint32_t header_mission,header_fallback;
 void sub_00197890(void){++header_fallback;g_esp+=4;}
@@ -37,6 +37,8 @@ void sub_002CAD80(void)
 {CHECK(WORD_AT(0x78ad48)==12 && WORD_AT(0x5236c4)==2);++difficulty_draws;g_esp+=4;}
 static unsigned story_factories,story_broadcasts,story_generation;
 static int factory_intro;
+static int factory_reward_go,reward_wait_build;
+static unsigned reward_wait_rows,reward_wait_panels,reward_count,reward_refreshes,reward_records;
 static unsigned context_spawns,ready_calls;
 static unsigned pad_fallbacks;
 void sub_000CF060_gen(void){marker=16;}
@@ -87,7 +89,26 @@ void sub_0003F8D0(void){marker=14;} void sub_0003FCF0(void){marker=15;}
 void sub_00154FE0(void){marker=13;} void sub_00198E20(void){g_esp+=4;}
 static unsigned briefing_draws,status_draws;
 void sub_00065940(void){marker=7;}
+void sub_002EB0A0(void){marker=61;g_esp+=4;}
+void pc_story_network_result_action(void (*original)(void),unsigned action);
+void sub_00065470_gen(void){marker=62;g_esp+=4;}
+void sub_002EAFC0_gen(void){pc_story_network_result_action(sub_00065470_gen,0u);}
+void sub_002EB030_gen(void){pc_story_network_result_action(sub_00065470_gen,0u);}
+void sub_002EC090_gen(void){pc_story_network_result_action(sub_00065470_gen,0u);}
+void sub_002EC650_gen(void){pc_story_network_result_action(sub_00065470_gen,0u);}
+void sub_00065C70(void){marker=63;g_esp+=4;}
 void sub_002EB030(void){marker=45;}
+void sub_002CBBA0(void){marker=64;g_esp+=4;}
+void pc_story_network_rewards_page(void (*original)(void));
+static void reward_page_original(void){marker=65;g_esp+=4;}
+void sub_002CBAF0(void){pc_story_network_rewards_page(reward_page_original);}
+void sub_002CB550(void){CHECK(0);}
+void sub_00078980(void){++reward_refreshes;g_esp+=4;}
+void sub_000668F0(void){CHECK(0);}
+void sub_00069A60(void){CHECK(0);}
+void sub_002CB210(void){CHECK(0);}
+void sub_00356870(void){CHECK(0);}
+void sub_002CBB60(void){marker=66;g_esp+=4;}
 void sub_00352640(void){marker=17;}void sub_00352650(void){marker=18;}void sub_00356490(void){marker=19;}
 void sub_000D50E0(void){marker=8;}
 void sub_00075B70(void){marker=1;} void sub_00071B10(void){marker=2;}
@@ -133,6 +154,11 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     uint32_t args[10];va_list ap;va_start(ap,count);CHECK(count<=10);
     for(unsigned i=0;i<count;i++)args[i]=va_arg(ap,uint32_t);
     va_end(ap);
+    if(fn==sub_00069A60) {CHECK(count==1 && args[0]==1);return 0;}
+    if(fn==sub_002CB210) {CHECK(!count);return 0;}
+    if(fn==sub_002CB550) {CHECK(!count);return reward_count;}
+    if(fn==sub_00356870) {CHECK(count==1 && !args[0]);return 1;}
+    if(fn==sub_000668F0) {CHECK(!count && (WORD_AT(0x7de45c)&0x8000));++reward_records;return 0;}
     if(fn==sub_00080F20) {CHECK(count==1 && args[0]==957);return 777;}
     if(fn==sub_001128C0) {
         CHECK(count==9 && args[0]==777 && args[1]==1 && args[2]==0x7f1e1e32 && args[3]==4 &&
@@ -270,6 +296,14 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     }
     else if(fn==sub_00079B70){CHECK(count==2);next_parent=args[0];next_menu=args[1];}
     else if(fn==sub_00065940){
+        if(factory_reward_go) {
+            CHECK(count==1 && args[0]==0x78ad58 && WORD_AT(0x78ad48)==0 && WORD_AT(0x78ad50)==3 && WORD_AT(0x78ad54)==1);
+            memset((uint8_t *)memory+0x78ad58,0,0xa0);
+            ((uint8_t *)memory)[0x78ad58]=1;((uint8_t *)memory)[0x78ad59]=1;
+            ((uint8_t *)memory)[0x78adac]=3;((uint8_t *)memory)[0x78adad]=10;((uint8_t *)memory)[0x78adae]=2;
+            WORD_AT(0x78adb0)=0x80008;WORD_AT(0x78ad48)=1;WORD_AT(0x78ad50)=1;
+            ++story_factories;return 0;
+        }
         CHECK(count==1 && args[0]==0x78ad58 && WORD_AT(0x78ad2c)==4 && WORD_AT(0x78ad48)==1 &&
             (WORD_AT(0x78ad54)&255)==2 && WORD_AT(0x78ad50)==0);
         /* Cover original no-intro fallthrough as well as an intro config. */
@@ -292,8 +326,11 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
         CHECK((WORD_AT(args[0]+0x114)==16 || WORD_AT(args[0]+0x114)==4) && WORD_AT(args[0]+0x1504)==0x7fffffff);
         WORD_AT(args[0]+0x114)=2;++context_spawns;
     }
-    else if(fn==sub_00075B70){CHECK(count==5 && args[4]==0x1237e);difficulty_rows=0;}
+    else if(fn==sub_00075B70){
+        if(reward_wait_build){CHECK(count==5 && !args[3] && !args[4]);CHECK(!strcmp((char *)(g_xbox_mem_offset+args[1]),"Mission complete"));++reward_wait_panels;return 0;}
+        CHECK(count==5 && args[4]==0x1237e);difficulty_rows=0;}
     else if(fn==sub_00079D60_gen){
+        if(reward_wait_build){CHECK(count==6 && args[2]==1 && !args[4] && !args[5]);CHECK(!strcmp((char *)(g_xbox_mem_offset+args[0]),"Waiting for host to start the next mission."));++reward_wait_rows;return 0;}
         if(count==6 && args[4]==0x2ebc30){++restart_rows;return 0;}
         if(count==6 && args[4]==0x2ebd50){CHECK(args[2]<=1u);return 0;}
         static const char *names[]={"Easy","Normal","Hard"};
@@ -337,6 +374,9 @@ static const char *load_getenv(const char *name)
 #endif
 #include "pc_story_load.inc"
 #ifdef _WIN32
+static unsigned reward_rows;
+static void reward_row_original(void)
+{CHECK(WORD_AT(g_esp+12)==0x21 && WORD_AT(g_esp+20)==0x2eb0a0);++reward_rows;g_esp+=4;}
 static void frame_original(void);
 static StoryNpcSpawn npc_captured_spawn(void)
 {
@@ -1582,9 +1622,9 @@ int main(void)
         CHECK(g_esp==0x1804 && restart_calls==restarts+1 && failure_original_calls==calls);
         WORD_AT(0x76b140)=2;g_esp=0x1800;pc_story_network_result_action(frame_original,1u);
         CHECK(g_esp==0x1804 && restart_calls==restarts+1 && failure_original_calls==calls);
-        g_esp=0x1800;WORD_AT(g_esp+20)=0x2eb0c0;CHECK(story_result_button() && g_esp==0x1804);
-        g_esp=0x1800;WORD_AT(g_esp+20)=0x2eb290;CHECK(story_result_button());
-        g_esp=0x1800;WORD_AT(g_esp+20)=0x2eaf60;CHECK(!story_result_button() && g_esp==0x1800);
+        g_esp=0x1800;WORD_AT(g_esp+20)=0x2eb0c0;CHECK(story_result_button(frame_original) && g_esp==0x1804);
+        g_esp=0x1800;WORD_AT(g_esp+20)=0x2eb290;CHECK(story_result_button(frame_original));
+        g_esp=0x1800;WORD_AT(g_esp+20)=0x2eaf60;CHECK(!story_result_button(frame_original) && g_esp==0x1800);
         /* Blood uses local texture resolution and the original decal API,
            including mode4 ground pools; no health routine is replayed. */
         story_effect_reset();WORD_AT(0x7de30c)=7;WORD_AT(0x774040)=0;WORD_AT(0x31000)=0;
@@ -1678,6 +1718,96 @@ int main(void)
         CHECK(failure_original_calls==calls+1);
         WORD_AT(0x50000)=0x74000;online_mode=PC_ONLINE_STORY;story_pending_stage=2;
         g_esp=0x1800;pc_network_player_payload(frame_original);CHECK(failure_original_calls==calls+1);
+    }
+#endif
+#ifdef _WIN32
+    {
+        /* Rewards must not rebuild party ownership from the frontend's16 slots. */
+        uint8_t *config=(uint8_t *)memory+0x9000;
+        memset(config,0,0xa0);config[0]=2;config[1]=1;config[4]=0x5a;
+        config[0x54]=2;config[0x55]=10;config[0x56]=2;config[0x57]=1;
+        WORD_AT(0x9058)=0x80008;
+        *(int16_t *)((uint8_t *)memory+0x4d1ac6)=2;
+        online_mode=PC_ONLINE_STORY;WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;WORD_AT(0x76b1a4)=10;
+        g_esp=0x1800;WORD_AT(g_esp)=0;CHECK(pc_story_network_prepare(0x9000));
+        ((uint8_t *)memory)[0x7de400]=16;((uint8_t *)memory)[0x7de401]=1;
+        config[0]=16;config[4]=0;const unsigned prior_broadcasts=story_broadcasts;
+        g_esp=0x1800;WORD_AT(g_esp)=0x65cdc;CHECK(pc_story_network_prepare(0x9000));
+        CHECK(config[0]==2 && config[1]==1 && config[4]==0x5a && story_broadcasts==prior_broadcasts+1);
+        story_load_header[0]=5;g_esp=0x1800;CHECK(!pc_story_network_prepare(0x9000));
+        CHECK(story_broadcasts==prior_broadcasts+1);
+        /* Captured unlock-page GO rebuilt16 Arcade humans and old scene24.
+           The production serializer boundary must build the next Story config
+           without recursively broadcasting or incrementing GO's generation. */
+        story_load_header[0]=2;story_load_header[1]=1;
+        story_lobby_mission=0;story_lobby_difficulty=1;story_pending_stage=3;
+        WORD_AT(0x79094c)=106;WORD_AT(0x76b1a4)=15;WORD_AT(0x78ad2c)=13;
+        uint8_t *go=(uint8_t *)memory+0x78ad58;memset(go,0,0xa0);
+        go[0]=16;go[1]=1;go[0x54]=24;go[0x55]=10;go[0x56]=2;WORD_AT(0x78adb0)=0x20000000;
+        *(int16_t *)((uint8_t *)memory+0x4d1b0a)=3;
+        const unsigned factories_before=story_factories,broadcasts_before=story_broadcasts,generation_before=story_generation;
+        factory_reward_go=1;g_esp=0x1800;WORD_AT(g_esp)=0x2d3980;
+        CHECK(pc_story_network_prepare(0x78ad58));factory_reward_go=0;
+        CHECK(go[0]==2 && go[1]==1 && go[0x54]==3 && go[0x57]==1);
+        CHECK(story_lobby_mission==1 && story_pending_stage==1 && story_factories==factories_before+1);
+        CHECK(story_broadcasts==broadcasts_before && story_generation==generation_before);
+        WORD_AT(0x76b1a4)=10;g_esp=0x1800;WORD_AT(g_esp)=0x2d398d;
+        CHECK(pc_story_network_prepare(0x78ad58) && story_factories==factories_before+1);
+        WORD_AT(0x76b140)=2;WORD_AT(0x76b1a4)=15;story_lobby_mission=0;story_pending_stage=3;
+        CHECK(pc_story_network_prepare(0x78ad58) && story_lobby_mission==1 && story_pending_stage==1);
+        /* Only a validated first-mission gameplay->ending handoff records
+           this peer's local profile; retries/rewards/failure/host do not. */
+        WORD_AT(0x76b140)=2;story_lobby_mission=0;story_pending_stage=1;
+        WORD_AT(0x79094c)=2;WORD_AT(0x7de458)=0x80008;WORD_AT(0x7de45c)=0x2000000;
+        WORD_AT(0x790950)=2;WORD_AT(0x7b0c48)=0x6000;WORD_AT(0x7356d8)=0x50000;
+        WORD_AT(0x7bedc0+0x1f54)=1;const unsigned old_records=reward_records;
+        g_esp=0x1800;story_rewards_record(0,2);
+        CHECK(reward_records==old_records+1 && g_esp==0x1800 && WORD_AT(0x7de45c)==0x2000000);
+        story_pending_stage=2;story_rewards_record(0,2);CHECK(reward_records==old_records+1);
+        story_pending_stage=1;story_rewards_record(0,3);story_rewards_record(1,2);
+        WORD_AT(0x76b140)=1;story_rewards_record(0,2);CHECK(reward_records==old_records+1);
+        /* The previously unwrapped initial rewards Continue must not open the
+           guest's empty unlock dialog. Host and offline actions still run. */
+        story_pending_stage=3;story_lobby_mission=0;WORD_AT(0x79094c)=106;WORD_AT(0x76b140)=2;
+        /* Show original local rewards first; final confirmation rebuilds the
+           same descriptor as waiting and never calls frontend GO. */
+        reward_count=7;WORD_AT(0x75fd88)=0;marker=0;g_esp=0x1800;
+        story_rewards_build();CHECK(marker==64 && !story_rewards_waiting && g_esp==0x1804);
+        marker=0;g_esp=0x1800;story_rewards_tick();CHECK(marker==66 && g_esp==0x1804);
+        marker=0;g_esp=0x1800;story_rewards_page();CHECK(marker==65 && g_esp==0x1804);
+        WORD_AT(0x75fd88)=6;marker=0;const unsigned old_refreshes=reward_refreshes;
+        g_esp=0x1800;story_rewards_page();CHECK(!marker && g_esp==0x1804);
+        CHECK(WORD_AT(0x75fd88)==9 && reward_refreshes==old_refreshes+1);
+        reward_wait_build=1;g_esp=0x1800;WORD_AT(g_esp+4)=0x4000;
+        story_rewards_build();reward_wait_build=0;
+        CHECK(g_esp==0x1804 && reward_wait_rows==1 && reward_wait_panels==1 && WORD_AT(0x4218)==1);
+        marker=0;g_esp=0x1800;story_rewards_page();CHECK(!marker && g_esp==0x1804);
+        g_esp=0x1800;story_rewards_tick();CHECK(!marker && g_esp==0x1804);
+        CHECK(reward_refreshes==old_refreshes+1);
+        reward_count=0;
+        WORD_AT(0x76b140)=1;marker=0;g_esp=0x1800;story_rewards_build();CHECK(marker==64 && g_esp==0x1804);
+        g_esp=0x1800;story_rewards_page();CHECK(marker==65 && g_esp==0x1804);
+        g_esp=0x1800;story_rewards_tick();CHECK(marker==66 && g_esp==0x1804);
+        WORD_AT(0x76b140)=2;
+        marker=0;g_esp=0x1800;story_rewards_continue();CHECK(!marker && g_esp==0x1804);
+        g_esp=0x1800;WORD_AT(g_esp+12)=0x20;WORD_AT(g_esp+20)=0x2eb0a0;
+        CHECK(story_result_button(reward_row_original) && reward_rows==1 && g_esp==0x1804);
+        CHECK(WORD_AT(0x180c)==0x20);
+        WORD_AT(0x76b140)=1;g_esp=0x1800;story_rewards_continue();CHECK(marker==61 && g_esp==0x1804);
+        marker=0;story_load_header[0]=2;story_load_header[1]=1;g_esp=0x1800;
+        pc_story_network_result_action(sub_002EC650_gen,0u);CHECK(marker==63 && g_esp==0x1804);
+        marker=0;WORD_AT(0x76b140)=2;g_esp=0x1800;
+        pc_story_network_result_action(sub_002EC650_gen,0u);CHECK(!marker && g_esp==0x1804);
+        WORD_AT(0x76b140)=1;story_load_header[0]=16;g_esp=0x1800;
+        pc_story_network_result_action(sub_002EC650_gen,0u);CHECK(!marker && g_esp==0x1804);
+        story_load_header[0]=2;marker=0;g_esp=0x1800;
+        pc_story_network_result_action(sub_00065470_gen,0u);CHECK(marker==62 && g_esp==0x1804);
+        CHECK(!story_rewards_exit_depth);
+        marker=0;online_mode=PC_ONLINE_ARCADE;WORD_AT(0x76b140)=2;
+        g_esp=0x1800;story_rewards_continue();CHECK(marker==61 && g_esp==0x1804);
+        g_esp=0x1800;story_rewards_build();CHECK(marker==64 && g_esp==0x1804);
+        g_esp=0x1800;story_rewards_page();CHECK(marker==65 && g_esp==0x1804);
+        g_esp=0x1800;story_rewards_tick();CHECK(marker==66 && g_esp==0x1804);
     }
 #endif
     puts("PASS: Story host controls, network-mode preservation and difficulty return");

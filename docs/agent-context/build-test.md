@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-Story co-op: [details](build-test-details.md).
+Story: [tests](build-test-details.md).
 
 [Save-folder checks](save-locations.md): storage, picker callback ownership/mutation, and shared launcher copy/restore/UI tests; both launcher builds include SaveLocations.cs.
 

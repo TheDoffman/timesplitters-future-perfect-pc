@@ -1,3 +1,6 @@
+#ifdef _WIN32
+static void story_rewards_profiles_capture(void);
+#endif
 /* Shared Story entry, inserted at the US main menu's original row, before
  * the guest copies its callback. Local opens the original descriptor from
  * sub_002D0A60's choice-zero branch. No generated code or XBE is modified. */
@@ -92,6 +95,9 @@ static void story_select(void)
         } else if(selected==1u) {
 #ifdef _WIN32
             if(pc_online_connect_mode(PC_ONLINE_STORY)) {
+                /* Joining already reorders active profile slots. Retain their
+                   persistent identities before opening the network browser. */
+                story_rewards_profiles_capture();
                 /* Shared System Link browser/lobby is the current transport
                    entry. Story lobby presentation/loading require their own
                    mode-aware hooks; this is not gameplay validation. */

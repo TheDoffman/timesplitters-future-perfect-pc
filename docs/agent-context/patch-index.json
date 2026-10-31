@@ -1652,6 +1652,54 @@
       ]
     },
     {
+      "name": "2410-story-movie-stream-lifetime.patch",
+      "path": "patches/network/2410-story-movie-stream-lifetime.patch",
+      "sha256": "a1960dcb84e2cdd04c6c5b5cb290441dfc649f2dd865b6b6e148ee4e48089d6d",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2415-network-score-payload-lifetime.patch",
+      "path": "patches/network/2415-network-score-payload-lifetime.patch",
+      "sha256": "2a1c31f45746b55655b238fa7076538f1783feb5a2475386aa541b209e13e7e3",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2420-story-guest-reward-pages.patch",
+      "path": "patches/network/2420-story-guest-reward-pages.patch",
+      "sha256": "f7ad0f082a38e3f5418d2490bbfc862c97e8ff1bafe0f900aed2732d5929aa0e",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2425-story-guest-profile-save.patch",
+      "path": "patches/network/2425-story-guest-profile-save.patch",
+      "sha256": "309a0500b7e20afcaead2ad1d9e10beae091b9b73feb26e3e6c7f6b3a6a98627",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2430-story-empty-guest-rewards.patch",
+      "path": "patches/network/2430-story-empty-guest-rewards.patch",
+      "sha256": "dd1df9ad3ab65b370a963eea4ac5feaaf9626c7fcaa7bbaffd940089424f7166",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2435-story-browser-level-details.patch",
+      "path": "patches/network/2435-story-browser-level-details.patch",
+      "sha256": "f971101ce7c05cb9d734624de62dc774c56fb0cef25c23f7c317e4d1c71c6e28",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "independent-condition-fixture.patch",
       "path": "patches/compiler/independent-condition-fixture.patch",
       "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",

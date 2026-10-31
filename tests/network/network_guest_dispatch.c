@@ -639,6 +639,7 @@ int main(void)
     /* Same epoch, different guest frames: movement must be sampled immediately
        rather than waiting seven ticks. Duplicate pump calls must not resend. */
     memory[0x76B1A4/4]=15;memory[0x76B0F0/4]=20;memory[0x76B0EC/4]=20;
+    memory[0x79094C/4]=2;memory[0x7DE458/4]=0x80008;
     for(unsigned frame=140;frame<147;frame++) {
         memory[0x7497A8/4]=frame;g_esp=16;
         pc_network_guest_tick(original_pump);
@@ -650,6 +651,30 @@ int main(void)
     CHECK(movement_sends==0);
 #else
     CHECK(movement_sends==7);
+#endif
+    /* Keep transport pumping through movies/frontend, but never open the
+       branch that copies retired context inventory into gameplay packets. */
+#ifndef TSFP_TEST_NATIVE_FALLBACK
+    const unsigned sends_before_movie=movement_sends,pumps_before_movie=originals;
+    for(unsigned movie=0;movie<2;movie++) {
+        memory[0x79094C/4]=movie?106:30;memory[0x7DE458/4]=movie?0:0x20000000;
+        for(unsigned i=0;i<3;i++) {
+            memory[0x76B0F0/4]++;memory[0x7497A8/4]++;
+            g_esp=16;pc_network_guest_tick(original_pump);
+            CHECK(g_esp==20 && movement_sends==sends_before_movie);
+            CHECK(memory[0x76B0EC/4]==memory[0x76B0F0/4]);
+        }
+    }
+    CHECK(originals==pumps_before_movie+6); /* heartbeat/control pump retained */
+    memory[0x79094C/4]=2;memory[0x7DE458/4]=0x80008;
+    g_esp=16;pc_network_guest_tick(original_pump);
+    CHECK(movement_sends==sends_before_movie+1); /* immediate gameplay recovery */
+    /* Original64CE0 permits custom-map scene100 and other non-frontend IDs. */
+    memory[0x79094C/4]=100;memory[0x7497A8/4]++;
+    g_esp=16;pc_network_guest_tick(original_pump);
+    CHECK(movement_sends==sends_before_movie+2);
+    memory[0x79094C/4]=2;
+    memory[0x76B0F0/4]=20;memory[0x76B0EC/4]=20;
 #endif
     /* No override for offline play or any lobby/loading/disconnect state. */
     for(unsigned state=0;state<18;state++) {
@@ -697,6 +722,28 @@ int main(void)
      CHECK(g_esp==0x1004 && g_eax==0 && originals==calls && story_trace_calls==traces);
      story_damage_handled=0;}
 #endif
+    /* Late stock score snapshots belong to the retired gameplay actors.
+       Hold their decoder in movies/frontend, retaining native fallback and
+       every ordinary gameplay/custom-map/offline route. */
+    for(unsigned active=0;active<2;active++) for(unsigned transport=0;transport<2;transport++) {
+        enabled=transport;memory[0x76B108/4]=active;
+        const uint32_t scenes[]={2,24,44,100,101,106,107,108};
+        for(unsigned i=0;i<sizeof scenes/sizeof scenes[0];i++) {
+            memory[0x79094C/4]=scenes[i];
+            memory[0x7DE458/4]=scenes[i]==24 || scenes[i]==44?0x20000000:0;
+            memory[0x7DE530/4]=0x825D2240;memory[0x7A2958/4]=30;
+            unsigned before=originals;g_esp=16;
+            pc_network_guest_scores(original);
+            int held=active && transport && (scenes[i]==24 || scenes[i]==44 ||
+                       (scenes[i]>=101 && scenes[i]<=107));
+#ifdef TSFP_TEST_NATIVE_FALLBACK
+            held=0;
+#endif
+            CHECK(g_esp==20 && originals==before+!held);
+            CHECK(g_eax==(held?0:0x11223344u));
+            CHECK(memory[0x7DE530/4]==0x825D2240 && memory[0x7A2958/4]==30);
+        }
+    }
     puts("PASS: movement gate, duplicate calls, offline/native fallback and unchanged guest clocks");
     return 0;
 }

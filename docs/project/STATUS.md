@@ -1,3 +1,319 @@
+## Story browser level name and thumbnail - 2026-10-30
+
+The first bug in the reordered notes is visible at51.77s in the shared user
+recording: Matches Available shows Test Lab/Story with no level name and a
+placeholder picture. Joined lobby details work. Live function profiling identifies
+System Link row renderer1CBDA0, installed by1CC0B0; the similar1972C0 path
+is not called by this browser. The row renderer looks up the advertised scene in the Arcade table; Story scenes use another
+table. Additive2435 and the shared browser adapter resolve the selected match's
+advertised scene against original Story metadata, substitute its thumbnail in
+the existing picture slot and draw its localized name under Story. Other match
+information and transport behavior remain original. Live records use Story rule2,
+not launch-config rule10; the scene itself is already advertised correctly.
+
+Windows x64/MSVC14.42.34433, SDK10.0.22621.0, D3D11:55 affected checks pass;
+2 Mac-only checks skip. Two fresh/historical patch-stack checks pass, as do the
+updated advertised-rule policy/fallback cases. The supported US XBE hash was
+verified;403.36GiB free before the initial build. Complete-stack official Build
+and native checks exit0. Separate launcher source/content verification passes.
+Local/uncommitted base8b0bd851, compatibilityfab66dff39e192f365e509bbb936d8f8ae7409f4d0a99b4fc0aa889c9cfc83d0,
+exeSHA256cbd7ad2d5c45e52813c3eef232ffeaf8a122d538213c55a1daaa916b8fc16a3f.
+
+Two disposable Test Lab copies and a loopback directory verify the real menu:
+the guest browser shows Time to Split and its thumbnail, then updates to
+Scotland the Brave and the castle thumbnail after the host changes selection
+and the guest refreshes. Selected before/after images and a build receipt are
+retained in ignored logs/story-browser-validation. No GO or gameplay was run.
+Both runners exit0, profile hashes/signatures and the canonical fixture remain
+unchanged, and disposable partition images/run locks are recycled.
+Native fallback engine checks pass; Mac live Online Story remains pending
+MAC-013. Only the first reordered bug is addressed by this change.
+
+## Guest and host Online reward baseline parity - 2026-10-30
+
+User retesting off657e101 still showed only host rewards. The previous empty-
+menu repair handled a symptom; it did not explain why matching unlocked profiles
+produced different reward lists. Original2D2C70 skips2CB210 for the host as well
+as the guest: Online's3533F0 predicate branches past it at2D2CB4. The added
+guest-only snapshot marked eligible rewards as seen only on that peer. Remove
+that call while retaining own-profile selection, authoritative completion,
+original menu pages/timers, signed saves and final waiting. No host save/reward
+list is copied and unrelated modes keep their original behavior.
+
+The engine fixture now begins with an already-set co-op mission bit. It fails
+before this correction and passes afterward using the original reward builder.
+The new XBE checks verify the actual host Online skip branch. Old live21 samples
+also confirm equal all-ones completion masks but zero host baseline versus a
+populated guest baseline, independently verifying the mismatch.
+
+Windows x64/MSVC14.42.34433, SDK10.0.22621.0, D3D11:53 affected checks pass and
+2 Mac-only checks skip. The supported US XBE hash was verified;403.58GiB free
+before rebuilding. Official complete-stack Build exits0; native checks, seal,
+and separate launcher source/content verification pass. Local/uncommitted base
+is8b0bd851. Executable SHA-256:
+ed96dd4847e69fa69bd615d20c7d7d97962d6fdd54ad0cc5d52f0f2145183443;
+compatibilityf73e83867cf3e84357fed6205fb8f199d23a7059e9ae3ca375497fc37e63e849.
+Live23 uses identical unmodified disposable Test Lab profiles for both peers,
+without clearing completion bits to manufacture a guest-only unlock. Both
+initial reward captures show Vietnam, Hotel and Venice. Guest cursor samples
+advance0,3,6,9 through four pages, then12 with the reviewed Waiting for host
+panel. Both gameplay reward baselines remain zero, eliminating the prior
+host/guest mismatch. Both peers reach intro30/mission1/phase15 without sampled
+save errors; the guest's signed profile records one completion, and completion
+masks remain unchanged. Host save is unchanged, signatures/canonical fixture
+are preserved, and no disposable images or run locks remain. Retained evidence:
+ignored logs/story-transition-synthetic-23/validation.json and selected captures.
+This checks a synthetic completion boundary after gameplay; natural mission
+completion remains user acceptance. Native Mac live Story remains queued MAC-013.
+No source changes or further relinks followed this verified executable.
+
+## Guest empty rewards loading follow-up - 2026-10-30
+
+User retesting of09706983 still showed guest LOADING while host displayed Bunker.
+The prior live17 verified a seeded positive unlock, and its fixture called the
+empty constructor directly; neither covered actual zero-unlock scene entry.
+Manual logs closed normally and both profiles persisted one completion. Original
+2D6E10 selects loading5236DC instead of reward523900 when the guest count is zero,
+bypassing the previous waiting adapter. Movie skip order was tested separately:
+host-first live18 still showed the seeded guest reward.
+
+Patch2430 routes that zero-count first-mission guest menu factory request to the
+reward descriptor, allowing its existing constructor to show Waiting for host.
+It preserves the true unlock count, own-profile rewards, saves and network flow.
+Windows x64/MSVC14.42.34433, SDK10.0.22621.0, D3D11:53 affected checks
+pass and2 Mac-only checks skip; both fresh/historical patch-stack checks pass.
+The supported US XBE hash was verified and403.78GiB was free before rebuilding.
+The official full-stack Release compilation, native build checks, executable
+seal and launcher source/content verification pass. Local uncommitted source
+is based on8b0bd851; live-tested executable SHA-256:
+5b33968fa18d6826f0ce350bbbc4aa1892c64f58b2d853094a6e2202ee01a265;
+compatibilityf657e1014ec48ca55b5f4c9d414cd660ef13d3e5c6cbf8db250c39b80896eba7.
+
+Old-build probe20 reproduced LOADING on guest106/phase15 while host reward pages
+advanced, with unmodified disposable unlocked profiles. On the rebuilt executable,
+probe21 shows the disabled Waiting for host panel both immediately and18 seconds
+later. Both peers reach intro30/mission1/phase15, no sampled save errors occur,
+and the guest's signed profile records exactly one completion. Signatures and the
+canonical fixture are preserved, and disposable partition images/run locks are
+recycled. Selected captures and validation.json are retained in ignored
+logs/story-transition-synthetic-20/ and logs/story-transition-synthetic-21/.
+Probe22 on the same rebuilt executable separately verifies a new guest unlock:
+reviewed captures show NEW CHARACTER AVAILABLE! The General before Waiting for
+host. The pre-launch signed disposable profile has all six first-mission bits
+cleared; after Easy co-op completion only that co-op bit is set, with completion
+count1 and valid signature. Host save is unchanged and the canonical fixture is
+preserved. Both peers reach intro30/mission1/phase15 without sampled save errors,
+and disposable disks/locks are recycled. Evidence is retained in ignored
+logs/story-transition-synthetic-22/validation.json and selected captures.
+The final incremental build reapplied zero runtime files, performed no source
+regeneration and passed its native checks, executable seal and launcher verifier.
+Its final executable SHA-256 is
+ce1d516cb9d572d8c3b8713544eb93f3e02bb8d7ec2c55a3f4cf81ecf256aea5,
+with the samef657e101 source/content compatibility. The live captures above belong
+to the preceding5b33968f executable from that same source, not a new playthrough
+of the final relink. Redirected outer Windows PowerShell reported status1 and
+NativeCommandError for successful native tools' stderr; the completed native
+checks, seal and separate verification were inspected rather than treating that
+wrapper status as evidence of a game failure.
+These runs use synthetic completion boundaries after gameplay, not full natural
+mission completion. Native Mac live Story acceptance remains queued MAC-013.
+
+## Guest completion rewards before waiting - 2026-10-30
+
+The revised first bug hides guest rewards: the guest frontend skips its unlock
+baseline/completion recorder, and the previous menu override replaced every
+unlock page with Waiting for host. The Story adapter now snapshots the guest's
+own loaded profile at gameplay start, then invokes original668F0 only for the
+validated host first-mission ending transition. Original profile selection,
+co-op completion bits, statistics, dirty flags and unlock eligibility remain.
+Guest rewards use original pages/timers; only the exhausted page rebuilds as
+waiting. Patch2420 covers the timer's direct callback as well as confirmation.
+No host profile is copied and guests cannot start the next mission.
+
+Windows x64/MSVC14.42 validation:53 affected menu/network/storage/context/backlog checks
+pass,2 Mac-only checks skip; both fresh-stack and historical-Mac migration checks
+pass. The new engine fixture executes the original recorder, profile selection,
+unlock baseline, count, constructor, page and timer against isolated RAM. It
+checks guest slot1 ownership, preserved remote profile data, completion/dirty
+state, multi-page rewards, timer tail calls, already-earned rewards and original
+host/offline exits. Initial missing UI fixture linkage was corrected and the
+complete affected suite rerun. Supported US XBE hash verified;404.28GiB free
+before the official full-stack Release rebuild. Native Story acceptance remains
+queued under MAC-013.
+
+The first live candidate recorded completion but exposed original save error7:
+network slot0 contained a scratch profile with cached CRC0, while the guest's
+real Test Lab metadata/body and correct disk CRC were in slot1. The failure also
+reproduced without test seeding. Patch2425 now scopes original1922D0 to persistent
+profile order captured at Online selection before joining the lobby, preserving
+chosen-profile identities independently of metadata pool order. It restores the
+network table/aggregate afterward and retains original metadata/checksum updates.
+The original save accessors in the engine fixture verify this mapping and remote
+profile preservation. Checksum/signature validation and error/retry UI remain
+original. The final-page refresh also forwards the original callback menu argument;
+a zero-argument refresh exposed during live testing would otherwise crash.
+
+The final official Release build and native build checks pass on Windows x64,
+MSVC14.42.34433/SDK10.0.22621.0, D3D11. Executable/content seals and launcher
+verification pass. Executable SHA-256:
+8781684e620fe4e423ea6f28d7df81afb78ce8ced1a70a9105239c2933177bc5;
+compatibility09706983d753d6d2def56a72dc85cc1ff77bc421d875f5823b813587743423c7.
+Source is local/uncommitted on online-story-coop at base8b0bd851.
+
+Final bounded two-player probe17 used separate disposable signed profiles and
+a synthetic host completion transition after first-mission gameplay. Reviewed
+captures show the guest's NEW CHARACTER AVAILABLE! The General notification,
+then Waiting for host. Both peers reached authored next intro30/mission1/phase15
+without crashes or sampled save errors. The guest's signed disk profile records
+exactly one completion and sets only the first-mission co-op Easy bit; all six
+first-mission completion bits were cleared before launch, and the single-player
+bits remain clear. Host profile is unchanged; both signatures and the canonical
+fixture are preserved. Both runners completed and recycled their disposable
+partition images/run locks. Evidence is retained in ignored
+logs/story-transition-synthetic-17/validation.json and selected captures there.
+This verifies rewards, persistence and intro handoff; natural mission completion
+and subsequent mission gameplay remain user acceptance, and native Mac live
+Story validation remains pending.
+
+## Guest ending movie score corruption - 2026-10-30
+
+The revised first bug was reproduced independently of the earlier reward GO
+repair. User build8dbdad1b faults in original60740 while reading ending frame93;
+its preceding stream read targets0003FFFF. Original64810 initializes rankings
+for all Story NPCs, overrunning the16-entry table into movie buffer7DE530.
+A translated original3578A0/64810/646B0 regression reproducesFFFFFFFF with two
+humans,30 NPCs and an empty gameplay score packet. In the old running build,
+a bounded synthetic completion plus30 seeded guest NPCs produced563 corrupt
+samples and froze the ending at frame27. The generic pair runner completion
+message does not certify this failed scene. Early completion with only5 NPCs
+had not exposed this overflow; full natural mission completion remains a
+separate user acceptance route.
+
+Shared patch2415 and pc_network_guest_scores hold incoming gameplay scores
+before actor/ranking/clock writes during network movies or frontend101..107.
+Other control traffic, ordinary gameplay, custom-map100 and disabled/native
+fallback behavior remain original. Windows and native-enabled/fallback fixture
+checks pass. No new Mac adapter is required; Mac live acceptance remains pending.
+
+Windows x64/MSVC14.42 checks:28 networking/Story tests pass,2 fresh/historical
+patch migration tests pass,26 repository/native timing checks pass. The updated
+original-engine fixture with the two-human party also passes. Supported US XBE
+hash was verified;404.31GiB disk free before generation/build. Isolated runner
+profiles were used throughout; personal saves/settings and the canonical fixture
+were preserved. The official complete-stack Release build and all native build
+checks pass; executable/content seals and the launcher verifier pass. Build is
+local/uncommitted on online-story-coop at base8b0bd851, using Windows SDK
+10.0.22621.0 and the D3D11 frontend. Executable SHA-256:
+0acf9eb24cad7f89d37a0b3fd14b85e4f9b57d213f7e7811e5cbecc56e9dbb30;
+compatibility a078d495d295cfaf8f022b135b2df8f4ae88fc666b8b145cd262cade0a4b8272.
+
+The fixed bounded pair retained30 guest NPC slots for201 ending samples over
+17.63 seconds, reached movie frame1059 with no corrupt stream addresses, and
+both peers followed the host through rewards to mission1's authored intro30.
+The guest15-second capture shows the cinematic; the old controlled build's
+capture shows the original disc-error screen. This tests the failing memory
+condition through the actual decoder and live movie stream; it does not replace
+the user's natural mission-completion retest or certify second-mission gameplay.
+
+## Rewards frontend GO correction - 2026-10-30
+
+The user retest rejected the earlier candidate. A bounded synthetic state11
+scheduler experiment (disposable profiles, no full mission completion) reproduced
+both peers crashing in63390 with ff61ff5b. Traces show that unlock pages use
+2CBBA0/2CBAF0/2CBB60 and eventually frontend GO2D3980; the previously guarded
+2EB... callbacks were not reached. GO rebuilt16 Arcade humans and old scene24.
+
+The actual GO serializer boundary now invokes original65940 for completed
+mission0/stage3, preserves the validated joined-party header and difficulty, and
+lets GO perform its single generation/send. The guest unlock page is replaced
+with Mission complete / Waiting for host and its page/timer actions held until
+the normal host config arrives. An independent original60310 lifetime fix retains
+a guest's movie buffers only while local advance is blocked and the movie is
+still rendered; actual load teardown remains original.
+
+The corrected GO reached authored mission1 intro scene30/movie2 on both peers,
+then exposed a distinct358EB0 inventory-copy crash (2f8d10d3 build). The common
+network cadence adapter now holds the gameplay-send branch during movies and
+frontend while retaining the original transport/heartbeat pump and original
+clock. It resumes movement immediately when gameplay returns.The final focused network/native-cadence selection passes13 checks (109
+deselected,4.34s), including preservation of original custom-map scene100.
+
+The bounded synthetic pair passes with b5562eae/8e687676. Both peers reach
+mission1 intro scene30/movie2 with two humans, one local player and phase15,
+and remain there for35.97s (438 samples per peer). Host/guest next-intro captures
+and the guest Waiting for host panel were reviewed. Guest Confirm does not
+advance that waiting page. Both runner exit codes are0, profile signatures are
+preserved, run locks are absent and disposable partition images are recycled.
+Evidence: logs/story-transition-synthetic-7/validation.json and the bounded pair
+logs/story-network-movie-pair.log. This deliberately triggers the original
+post-results scheduler; it does not complete the first mission or certify
+second-mission gameplay/full cinematic completion. Real native Mac acceptance
+is still pending.
+
+Final build8dbdad1bc52d45ec25d90c00764cea2cdea6e64f4c95563b5d3929e93ae2b5b3,
+compatibility42f238a887a6afca87cd210f05b7bcd6658e4c2bdd87448ed174b6ef5921aa69,
+adds the tested scene100 preservation refinement after the paired Story run;
+the Story scene30/106 behavior is unchanged. Official Windows Build/native checks
+and executable sealing complete in logs/story-coop-transition-final-build2.log.
+A premature prior final-build attempt met the still-running test game's executable
+lock; rebuilding after owned-game shutdown completed normally. Source/runtime/
+generated/game identity and executable seal are checked separately from gameplay.
+
+Windows11 AMD64/MSVC x64: final58 targeted tests pass,2 Mac-only checks skip in
+25.36s (logs/story-coop-transition-final-tests.log), including actual GO/pending
+copy/guest-follow, waiting-page and original movie cleanup cases. The46 patch
+migration/tracking checks had45 passes and one historical Mac-stack failure from
+the new Story patch's missing historical exclusion. After adding that exclusion,
+the affected check passes in19.75s (logs/story-stream-mac-stack-recheck.log).
+Repository context/index and whitespace checks pass. Full human mission completion
+and native Mac Story acceptance remain pending. Changes are local/uncommitted.
+
+## Earlier rewards candidate (superseded) - 2026-10-30
+
+User capture logs/story-reward-observation-20261030-1 records both peers moving
+2->44->106 and remaining in phase10 with no reward-scene bodies. Host then
+loads the wrong scene24 with a sixteen-slot pending config and crashes in
+original63390 filename trimming; the guest remains at an empty unlock dialog.
+The captured executable/PDB match bcdf55ad/79db31ce. Original64CE0/357540 reject
+readiness in frontend106, and final reward callbacks tail-call generic65470,
+which schedules an Online exit without building the next campaign config.
+
+Shared Story adapters now complete rewards readiness without a body loop, retain
+the last validated party header, and scope the host's final Continue through
+original65C70/65940 and the existing reliable next-generation start. Original
+unlock/profile callbacks still execute; Quit/unrelated exits remain unchanged.
+Guest Continue2EB0A0 is guarded and its row disabled until the host advances.
+Original-engine fixtures execute the failing readiness/exit behavior and the
+corrected readiness, authored next mission and pending-load stack contracts.
+Production fixtures cover invalid headers, party retention, guest wait, host
+scope and preserved offline/unrelated paths. No generic asset-loader sentinel
+suppression, new runtime patch, clock change or second-level NPC work is added.
+
+Windows11 AMD64/MSVC x64: 58 targeted checks pass,2 Mac-only checks skip in24.76s
+(logs/story-rewards-final-validation.log). Official final Build/native checks
+pass (logs/story-rewards-final-build.log); supported US XBE hash verified and
+401.1 GiB free before build. Compatibility
+8e9ec5d89d36b3ae012aacf87480831c20f7d070f751d7fdaf0c803f5972bc03,
+executable SHA256 2a75d827f0a9f8020f9de9584433f5f46ccbe17230b6a68899197c8caea20c5a.
+Exact-build bounded two-player load/movement/fire smoke passes with intro skip
+(logs/story-rewards-fix-live.log; private/network-validation/story-load-pair/
+pair-evidence.json). Guest firing capture reviewed; both owned runners exit0.
+No active run locks or disposable partition images remain in those test runs.
+Current source/applied runtime/generated-code identity and executable seal verify.
+Native Mac Story transport/gameplay remains unverified (MAC-013). Full rewards
+and next-level user acceptance remains pending; no automated level completion.
+
+## Manual Story launcher path verification repair - 2026-10-30
+
+On online-story-coop base8b0bd851 (Windows11 AMD64), the local Story launcher
+failed before starting games because its source verifier treated stable logical
+tools/lobby_server.py entries as current disk paths. It now resolves grouped
+tool paths and retains the existing executable/content/source hash checks.
+Sixteen launcher/identity checks pass in0.87s, including detection of edits to
+relocated tools. Verification against the installed Release executable passes.
+No new gameplay capture was run and no game rebuild is required for this helper
+change. Native Mac launchers and personal saves/settings are unchanged.
+
 ## Story co-op / main integration - 2026-10-30
 
 Merged origin/main c511bd52 into online-story-coop at 86cc6c83, preserving Story

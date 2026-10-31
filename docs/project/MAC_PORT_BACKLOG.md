@@ -2252,6 +2252,33 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+Cinematic send-gate follow-up (uncommitted): pc_network_guest_tick is shared by
+Windows and TSFP_NATIVE_NETWORK. It retains control/heartbeat pumping while
+holding gameplay inventory/ammo sends during movies/frontend. Host-independent
+native cadence fixtures pass; real native Online cinematic/next-load acceptance
+is still required. No new OS adapter or separate Mac policy is needed.
+
+Unlock-page follow-up (uncommitted): shared preparation handles actual frontend
+GO2D3980 once, and shared menu adapters render a guest waiting page instead
+of empty unlock pages. Native Story must validate the same GO/generation and
+waiting-page contracts, then the next authored load; Windows fixtures alone do
+not verify native/mixed-host gameplay.
+
+Movie lifetime follow-up (uncommitted): shared patch2410 retains a guest movie
+stream during the host wait at99BBC; actual load cleanup remains original.
+The original-engine fixture is Windows evidence only. Native Story must also
+validate guest skip/end, retained presentation and cleanup on the next load.
+
+First-mission rewards follow-up (2026-10-30, uncommitted): shared Story stage,
+ready and result adapters in src/network preserve the party and host-only next
+level action; shared menu lookup in src/interface routes the guest Continue.
+Existing Story Windows transport guards remain, and native Local/Arcade guards
+are preserved. Original-engine and native-enabled/fallback fixtures are Windows
+validation only. Native Story acceptance must cover ending/rewards, guest wait,
+host progression to the next mission and retained party ownership; no new OS
+adapter is introduced here and no native Mac gameplay result is claimed.
+
+
 Main integration (2026-10-30, uncommitted): native System Link/Online adapter
 support from main is retained alongside the first-mission Story Windows guards.
 Story sources and shared pose/effect records now use src/network; main's native
@@ -8243,3 +8270,50 @@ on1c72cbf4 with protected26/fixture intact. PR413 externally merged into main
 5e65ebfd; exact source/tree ancestry verified, this chat did not merge it.
 Keep Awaiting validation for remaining runtime replacement and native Mac title
 acceptance; exact scope/counts/hashes/limits in STATUS stage0240 completed record.
+
+MAC-013 movie score snapshots (2026-10-30, uncommitted): shared network2415 and
+pc_network_guest_scores reject gameplay-only3578A0 snapshots during movie or
+frontend scenes, preventing Story NPC ranking overflow into the movie stream.
+Windows and native-network/fallback fixtures cover this shared boundary; no new
+Mac adapter is needed. Mac live Story/Online transitions remain Awaiting
+validation; Windows reproduction/build checks do not establish Mac acceptance.
+
+MAC-013 guest Story rewards (2026-10-30, uncommitted): existing shared Story
+source records a validated host completion in the guest's own loaded profile
+and retains original unlock pages before waiting. Patch2420 catches both A and
+the original timer's page callback. Windows Story scope is unchanged; native
+Local/Arcade uses the original callback. Shared engine/fallback fixtures cover
+the routing; native Online Story adapter/scene acceptance remains Awaiting
+validation. No separate profile model or copied host save is introduced.
+
+MAC-013 guest reward save view (2026-10-30, uncommitted): patch2425 temporarily
+maps the guest's network profile bodies to persistent profile-ID order during
+original1922D0. It retains checksum/signature validation and restores network
+ownership afterward. The engine fixture checks original accessors/metadata and
+aggregate restoration. Existing Windows Story guard is retained; native original
+save behavior is unchanged and Online Story acceptance remains queued.
+
+MAC-013 empty guest reward entry (2026-10-30, uncommitted): shared patch2430
+wraps original79860 so the existing Windows first-mission Story adapter routes
+zero-unlock rewards106 away from the stock loading descriptor to its wait panel.
+The actual unlock count/save/transport paths remain original. Native fallback
+keeps the original factory; native Online Story acceptance remains Awaiting
+validation under MAC-013. Windows engine checks cover positive/empty and original
+host/offline routes; no new OS adapter or duplicate profile policy is introduced.
+
+MAC-013 Online reward baseline parity (2026-10-30, uncommitted): remove the
+Windows Story guest-only2CB210 snapshot; the original Online host also skips
+it. Keep own-profile selection/completion and shared original reward pages,
+save view and final wait. Engine tests cover already-completed local profiles
+without copying the host. No new OS adapter; native original fallback remains
+unchanged and native Online Story acceptance remains Awaiting validation.
+
+MAC-013 Story browser level details (2026-10-30, uncommitted): shared patch2435
+and [pc_story_browser.inc](../../src/network/pc_story_browser.inc) wrap
+1CBDA0/2BECE0 to use advertised Story scene metadata for the original
+thumbnail and localized level name in Matches Available. The existing Windows
+Story adapter guard remains; native fallback retains its original draws. No
+duplicate native metadata/UI model is introduced. Native Online Story acceptance
+remains Awaiting validation. Engine policy/fallback checks cover the ABI and
+restoration. Windows browser-only live captures verify Time to Split and a
+changed Scotland selection; native live validation remains pending.

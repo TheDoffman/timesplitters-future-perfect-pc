@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.mark.parametrize("native", [False, True])
-@pytest.mark.parametrize("fixture", ['quit_menu', 'story_menu', 'story_lobby', 'story_drop_state'])
+@pytest.mark.parametrize("fixture", ['quit_menu', 'story_menu', 'story_lobby', 'story_drop_state', 'story_browser'])
 def test_quit_menu(tmp_path, native, fixture):
     compiler, env = native_compiler(tmp_path)
     source = repo_file(ROOT, 'tests', fixture+'.c')
@@ -51,6 +51,11 @@ def test_story_original_us_entry_contract():
                 return image[offset+address-start:offset+address-start+size]
         raise AssertionError('Unmapped bounded US contract read')
     assert read(0x123c9, 4) == b'\xcc'*4
+    # Browser selected-match arguments and the stock picture draw are separate
+    # from the joined-lobby header. These exact returns scope the Story adapter.
+    for address,target in ((0x1cbf9c,0x64e20),(0x1cbfbf,0x2bece0)):
+        call=read(address,5)
+        assert call[0]==0xe8 and address+5+struct.unpack_from('<i',call,1)[0]==target
     call = read(0x2d0c89, 5)
     assert call[0] == 0xe8
     assert 0x2d0c8e+struct.unpack_from('<i', call, 1)[0] == 0x79d60
@@ -380,9 +385,13 @@ def test_story_original_config_stages(tmp_path):
         config.configure_from_xbe(str(xbe))
         functions={start:dict(name=f'sub_{start:08X}',end=end) for start,end in (
             (0x65940,0x65c69),(0x64ce0,0x64d04),(0x3533f0,0x3533f6),(0x357540,0x35768e),
-            (0x6b100,0x6b281),(0x3568c0,0x356913),(0x358560,0x358590))}
+            (0x6b100,0x6b281),(0x3568c0,0x356913),(0x358560,0x358590),
+            (0x65c70,0x65d11),(0x65470,0x654da),(0x60310,0x6038a),
+            (0x60390,0x6040e),(0x60410,0x604cf),(0x606e0,0x60737),(0x60740,0x60796),
+            (0x64810,0x64c56),(0x646b0,0x6480c),(0x3578a0,0x357aff))}
         translator=FunctionTranslator(image,functions)
         code='\n'.join(translator.translate_function(start,info) for start,info in functions.items())
+        code=code.replace('void sub_00065940(void)\n{','void sub_00065940_gen(void)\n{')
         row=image[config.va_to_file_offset(0x4d1ac0):config.va_to_file_offset(0x4d1ac0)+0x44]
         movie=struct.unpack_from('<I',row,0x20)[0]
         scene=image[config.va_to_file_offset(0x51fc30+movie*36)]
@@ -391,12 +400,82 @@ def test_story_original_config_stages(tmp_path):
         constants='\n'.join(f'MEM8(0x{0x4d1ac0+i:x})={value};' for i,value in enumerate(row))
         constants+=f'\nMEM8(0x{0x51fc30+movie*36:x})={scene};'
         constants+=f'\nMEM8(0x{0x51fc30+outro*36:x})={outro_scene};'
+        next_row=image[config.va_to_file_offset(0x4d1b04):config.va_to_file_offset(0x4d1b04)+0x44]
+        next_movie=struct.unpack_from('<I',next_row,0x20)[0]
+        next_scene=image[config.va_to_file_offset(0x51fc30+next_movie*36)]
+        constants+='\n'+'\n'.join(f'MEM8(0x{0x4d1b04+i:x})={value};' for i,value in enumerate(next_row))
+        constants+=f'\nMEM8(0x{0x51fc30+next_movie*36:x})={next_scene};'
         table=image[config.va_to_file_offset(0x6b284):config.va_to_file_offset(0x6b284)+40]
         constants+='\n'+'\n'.join(f'MEM8(0x{0x6b284+i:x})={value};' for i,value in enumerate(table))
     finally:
         vars(config).update(previous)
     source=(ROOT/'tests/network/story_config_guest.c').read_text()
+    production=(ROOT/'src/network/pc_story_load.inc').read_text()
+    adapters=production[production.index('void pc_story_network_stage_builder('):production.index('/* Gameplay payloads')]
+    adapters+=production[production.index('void pc_story_network_ready('):production.index('void pc_story_network_advance(')]
+    adapters+=production[production.index('void pc_story_network_movie_release('):production.index('void pc_story_failure_trace(',production.index('void pc_story_network_movie_release('))]
+    scores=(ROOT/'src/network/pc_network_guest.inc').read_text(encoding='utf-8')
+    adapters+=scores[scores.index('static void pc_network_guest_scores('):]
+    source=source.replace('/* PRODUCTION_TRANSITION_ADAPTERS */',adapters)
     output=compile_and_run(tmp_path,source.replace('/* ORIGINAL_STAGE_BUILDER */',code)
         .replace('/* ORIGINAL_MISSION_DATA */',constants)
+        .replace('NEXT_INTRO_SCENE',str(next_scene))
         .replace('INTRO_SCENE',str(scene)).replace('OUTRO_SCENE',str(outro_scene)))
     assert 'PASS:' in output
+
+
+
+def test_story_original_guest_rewards(tmp_path):
+    """Run stock completion/profile writes and reward UI with the real adapters."""
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={start:dict(name=f'sub_{start:08X}',end=end) for start,end in (
+            (0x668f0,0x66e8f),(0x69900,0x6992d),(0x69a60,0x69d40),
+            (0x696f0,0x69716),(0x69790,0x697c1),(0x697d0,0x69811),
+            (0x356870,0x3568be),(0x3568c0,0x356913),(0x64d60,0x64d88),
+            (0x2d2bc0,0x2d2bd3),(0x2cb210,0x2cb300),(0x2cb490,0x2cb4e4),
+            (0x2cb550,0x2cb587),(0x2cbba0,0x2cbcd9),(0x2cbaf0,0x2cbb57),
+            (0x2cbb60,0x2cbb9b))}
+        translator=FunctionTranslator(image,functions)
+        # The real scene-entry zero-count branch selects the loading menu,
+        # bypassing the unlock constructor. Keep this contract tied to the XBE.
+        empty_entry=config.va_to_file_offset(0x2d71c3)
+        assert image[empty_entry:empty_entry+5]==bytes.fromhex('be dc 36 52 00')
+        # Online skips the snapshot on the host too, after its guest-only early
+        # return. Do not invent a guest-only baseline for already-unlocked data.
+        assert image[config.va_to_file_offset(0x2d2cb4):config.va_to_file_offset(0x2d2cb4)+2]==bytes.fromhex('75 13')
+        assert image[config.va_to_file_offset(0x2d2cbf)]==0xe8
+        assert 0x2d2cc4+struct.unpack_from('<i',image,config.va_to_file_offset(0x2d2cc0))[0]==0x2cb210
+        unlock_descriptor=config.va_to_file_offset(0x523900)
+        assert struct.unpack_from('<4I',image,unlock_descriptor)==(0x2cbba0,0x2cbb60,0,0)
+        code='\n'.join(translator.translate_function(start,info) for start,info in functions.items())
+        code=code.replace('void sub_002CBAF0(void)\n{','void sub_002CBAF0_gen(void)\n{')
+        constants=''
+        for address in (0x475c78,0x4760cc):
+            value=int.from_bytes(image[config.va_to_file_offset(address):config.va_to_file_offset(address)+4],'little')
+            constants+=f'MEM32(0x{address:x})={value}u;\n'
+    finally:
+        vars(config).update(previous)
+    source=(ROOT/'tests/network/story_rewards_guest.c').read_text(encoding='utf-8')
+    production=(ROOT/'src/network/pc_story_restart.inc').read_text(encoding='utf-8')
+    adapters=production[production.index('extern void sub_002EB0A0('):production.index('static void story_rewards_continue(')]
+    adapters+=production[production.index('void pc_story_network_rewards_page('):production.index('void pc_story_network_result_action(void (*original)(void),unsigned action)\n{')]
+    import re
+    defined=set(re.findall(r'(?:void|uint32_t)\s+(sub_[0-9A-F]+(?:_gen)?)\s*\([^;]*?\)\s*\{',source+code))
+    referenced=set(re.findall(r'\bsub_[0-9A-F]+(?:_gen)?\b',source+code+adapters))
+    missing=referenced-defined
+    spies='\n'.join(f'void {name}(void){{assert(!"unexpected {name}");}}' for name in sorted(missing))
+    prototypes='\n'.join(f'void {name}(void);' for name in sorted(referenced))
+    source=source.replace('/* ORIGINAL_PROTOTYPES */',prototypes+'\n'+spies)
+    source=source.replace('/* ORIGINAL_REWARD_FUNCTIONS */',code).replace('/* PRODUCTION_REWARD_ADAPTERS */',adapters)
+    source=source.replace('/* ORIGINAL_REWARD_CONSTANTS */',constants)
+    assert 'PASS:' in compile_and_run(tmp_path,source)

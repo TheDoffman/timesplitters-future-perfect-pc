@@ -1,3 +1,33 @@
+Story browser level details: additive2435 wraps1CBDA0/2BECE0. Only validated
+Story advertisements in the System Link list scope a Story metadata lookup;
+its1CBFC4 picture draw uses the thumbnail and adds the localized level name.
+Arcade, joined lobbies and native fallback retain original callbacks. See
+[contracts](systems-details.md).
+
+Empty guest rewards: additive2430 wraps menu factory79860. Only joined first-
+mission guest rewards106 with an actual zero unlock count redirects descriptor
+5236DC (loading) to523900 (reward pages/waiting), preserving save and transport.
+See [contracts](systems-details.md).
+
+Guest profile saves: additive2425 wraps original1922D0 through a scoped
+persistent-profile view for joined first-mission reward saves; network slots
+are restored afterward. Original validation, checksums, signed writes and
+error/retry UI remain. See [contracts](systems-details.md).
+
+Guest reward pages: additive2420 wraps2CBAF0 so original automatic timer tail
+calls reach the same final-page waiting policy as confirmation. Guest completion
+recording and own-profile selection use existing shared Story source; native fallback
+keeps the original page callback. See [contracts](systems-details.md).
+
+Network score lifetime: additive2415 wraps stock3578A0 after the shared
+network adapter include. Movie/frontend scenes hold late gameplay score
+snapshots before their actor/ranking writes. See [contracts](systems-details.md).
+
+Story movie lifetime: additive network2410 wraps original60310 through the
+shared Story adapter so a guest's blocked movie advance does not release its
+still-rendered stream at99BB7. Real load teardown and other modes retain the
+original close. See [contracts](systems-details.md) and [fixture](build-test-details.md).
+
 # Runtime and patch navigation
 
 Story co-op NPC, corpse, pickup, barrel and camouflage integration keeps the

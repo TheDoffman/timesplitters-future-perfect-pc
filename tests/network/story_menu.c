@@ -19,6 +19,11 @@ static void save_registers(GuestRegisters *r){r->sp=g_esp;}
 static void restore_registers(const GuestRegisters *r){g_esp=r->sp;}
 static int guest_writable(uint32_t p,size_t n){return p>=0x1000 && p<sizeof memory && n<=sizeof memory-p;}
 static int allocation_ok=1,connection_ok,connects,disconnects,launches,rebuilt;
+#ifdef _WIN32
+static unsigned profile_captures;
+static void story_rewards_profiles_capture(void){CHECK(!launches);++profile_captures;}
+#endif
+
 static unsigned rows,finalized;
 static uint32_t next_parent,next_menu,default_row,row_ids[2],row_callbacks[2];
 static uint32_t xbox_HeapAlloc(uint32_t bytes,uint32_t align)
@@ -72,7 +77,7 @@ int main(void)
     next_menu=0;WORD_AT(0x218c)=1;callback(story_select);CHECK(!next_menu && !launches);
 #ifdef _WIN32
     CHECK(connects==1 && disconnects==1);
-    connection_ok=1;callback(story_select);CHECK(connects==2 && launches==1);
+    connection_ok=1;callback(story_select);CHECK(connects==2 && launches==1 && profile_captures==1);
 #else
     CHECK(!connects && !disconnects && rebuilt==1 && story_online_unavailable);
 #endif

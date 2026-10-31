@@ -1,3 +1,111 @@
+# Story browser advertised level regression - 2026-10-30
+
+Existing test_quit_menu gains story_browser.c on Windows policy and native
+fallback routes. It tests changing advertised scenes independently of this
+peer's lobby selection, original picture/name IDs, opacity/layout fitting,
+frame/bitmap/font-scale restoration, advertised rule2 versus launch rule10, Arcade and invalid-index/scene
+fallbacks, and absent sprites. Supported-US call-byte checks tie1CBF9C->64E20
+and1CBFBF->2BECE0 to the actual renderer ABI. Historical Mac stack simulation
+excludes2435 until the full current stack is applied. This existing suite is
+already registered in runtime CI. Live browser captures remain separate evidence.
+
+# Matching Online reward baselines - 2026-10-30
+
+The original guest reward engine fixture starts with the guest first-mission
+co-op bit already set, matching the user's unlocked test profile. It failed on
+the guest-only2CB210 snapshot before removal, then passed with the unchanged
+Online baseline and original reward count1. Own completion statistics and signed
+save-view tests remain. XBE assertions tie2D2CB4's Online branch and2D2CBF's
+snapshot call to the supported US bytes. This covers the missed matching-profile
+case; resetting guest progression to force a new unlock does not certify it.
+Live23 verifies matching unmodified profiles: both first pages show Vietnam,
+Hotel and Venice, guest cursors0/3/6/9 precede waiting at12, and both peers reach
+the next intro. Guest signed completion persists with original masks intact;
+canonical fixture/signatures are preserved and disposable disks/locks recycled.
+Evidence is linked from STATUS. This is synthetic completion, not a playthrough.
+
+# Empty guest reward entry regression - 2026-10-30
+
+The guest rewards engine fixture now enters through the production menu factory
+scope with the real zero-count descriptor5236DC, rather than calling build()
+directly. It checks actual count remains zero, the resulting disabled wait panel,
+held timer, frame/descriptor restoration and host/offline/other-scene/other-menu
+fallbacks. The test also verifies original2D71C3's immediate loading descriptor
+and523900's stock callbacks from the supported US XBE. Patch2430 remains excluded
+from historical-Mac stack simulation until the full current stack is applied.
+Live20 reproduces the stock loading screen with an unmodified unlocked fixture;
+rebuilt live21 verifies waiting for that same zero-unlock case. Rebuilt live22
+uses a separately signed pre-launch first-mission reset to verify a new unlock,
+then waiting. Both final pairs reach the next intro, preserve signed local
+progress and the canonical fixture, and recycle their disposable disks/locks.
+This is a bounded synthetic completion route, not natural mission acceptance.
+
+# Guest completion and reward pages - 2026-10-30
+
+Existing CI suite test_quit_menu now includes test_story_original_guest_rewards
+with story_rewards_guest.c. It translates original668F0/69900/69A60/356870,
+3568C0/64D60/2D2BC0 and2CB210/2CB490/2CB550/2CBBA0/2CBAF0/2CBB60.
+Production profile-selection/record/page adapters run against isolated8MiB RAM. The peer's
+local profile is network slot1, remote slot0 is unloaded with sentinel data.
+Checks cover original co-op completion/statistics/dirty flags, own unlock delta,
+original multi-page rows, original automatic timer tail call, waiting exhaustion,
+already-earned rewards and preserved host/offline exits. The refresh spy asserts
+the original menu argument survives both confirmation and timer tail calls.
+Uncontrolled services
+fail fast; unlock queries are controlled, not a full authored reward catalog test.
+The same fixture also executes original696F0/69790/697D0 save accessors.
+A slot0 scratch checksum and real slot1 metadata reproduce the wrong save view;
+the production1922D0 scope maps captured profile identity/data/checksum/aggregate, retains metadata
+updates and restores the remote/network rows afterward. Host save remains
+original. Historical Mac stack excludes2420/2425 until the full stack is applied.
+
+# Movie score-packet regression - 2026-10-30
+
+The original Story configuration fixture also translates3578A0/64810/646B0.
+An empty late gameplay score snapshot and30 NPC slots reproduceFFFFFFFF in
+movie buffer7DE530 through the stock16-entry ranking overflow. The production
+score decoder guard preserves the buffer, NPC count and movie clock. Shared
+network dispatch tests check movie/frontend guards, ordinary/custom-map100
+recovery, disabled/offline transport and native-network/fallback builds. These
+remain in the existing CI-owned suites; no new behavioral test entry is needed.
+Historical Mac migration excludes2415 until applying the complete shared stack.
+
+The phase15 movie/frontend send-gate regression in test_network_guest_dispatch
+keeps original pump calls and network epochs intact while preventing gameplay
+context copies, then checks immediate gameplay send recovery. The native timing
+suite's network cadence/mutation cases verify the shared adapter at native rates
+without changing60Hz clock units. These are existing CI-owned suites.
+
+# Rewards transition and movie fixtures - 2026-10-30
+
+The verified-US engine fixture executes65940/64CE0/357540 and65470/65C70,
+plus60310/60390/60410/606E0/60740. It covers authored next-mission selection,
+reward readiness with no bodies, register/scene restoration, cached movie-frame
+preservation during a guest wait and real load/host/other-caller file cleanup.
+Uncontrolled NPC/body services remain fail-fast spies.
+
+story_lobby reproduces the actual unlock-page frontend GO: caller2D3980,
+scene106/stage3,16 humans/old scene24. Production preparation builds the next
+Story config once, retains two joined humans and difficulty, does not increment
+or broadcast a second generation, reuses the pending copy and accepts the guest
+handoff. Guest unlock constructor/page/timer tests check a visible waiting panel,
+disabled row, absent navigation callbacks, held page/timer and preserved original
+host/offline behavior. Existing result and malformed-header coverage remains.
+The existing CI suites own these tests. Historical Mac patch subsets exclude2410
+with the other Story patches before migration to the complete current stack.
+Synthetic scheduler probes are explicitly not full mission or second-level
+playability acceptance; retain their outcome separately from these fixtures.
+
+# Manual Story verifier layout repair - 2026-10-30
+
+Compatibility entries such as tools/lobby_server.py are stable logical names.
+The manual Story verifier resolves bare tools entries through project_paths
+before checking their source hash, including grouped tools/network files. It
+retains completed-executable/game verification, normalized hashes and rejection
+of changed source; it does not rewrite compatibility manifests or require a game
+rebuild. test_story_coop_local covers unchanged grouped files and edited-source
+rejection. The local launcher remains Windows-only; native launchers are unchanged.
+
 # Main integration - 2026-10-30
 
 Story fixtures and the pair runner moved to tests/network; the manual launcher

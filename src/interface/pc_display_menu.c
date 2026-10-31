@@ -43,7 +43,7 @@ extern uint32_t xbox_HeapAlloc(uint32_t bytes, uint32_t alignment);
 static int pc_story_menu_button(void (*original)(void));
 #ifdef _WIN32
 static int pc_story_lobby_button(void (*original)(void));
-static int story_result_button(void);
+static int story_result_button(void (*original)(void));
 #endif
 
 typedef struct GuestRegisters {
@@ -291,7 +291,7 @@ void pc_display_menu_button(void (*original)(void))
         WORD_AT(frame+12)=flags|0x21u;original();WORD_AT(frame+12)=flags;return;
     }
 #ifdef _WIN32
-    if(story_result_button()) return;
+    if(story_result_button(original)) return;
     if(pc_story_lobby_button(original)) return;
 #endif
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
@@ -1112,6 +1112,7 @@ static void online_activate(void)
 #endif
 #include "pc_story_menu.inc"
 #include "pc_story_lobby.inc"
+#include "pc_story_browser.inc"
 #include "pc_story_load.inc"
 
 #include "pc_keyboard_menu.inc"
@@ -1121,6 +1122,19 @@ static void online_activate(void)
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
 #ifdef _WIN32
+    if(story_network_session() && WORD_AT(0x79094cu)==106u && address>=0x2b0000u && address<0x300000u && getenv("TSFP_STORY_TRACE")) {
+        static uint32_t observed[64];static unsigned count;
+        unsigned i;for(i=0;i<count && observed[i]!=address;i++) {}
+        if(i==count && count<64u) {
+            observed[count++]=address;
+            fprintf(stderr,"[PC-STORY-REWARD-CALL] address=%08X caller=%08X role=%u pending=%u\n",
+                address,guest_writable(g_esp,4u)?WORD_AT(g_esp):0u,WORD_AT(0x76b140u),story_pending_stage);
+        }
+    }
+    if(address==0x002EB0A0u) return story_rewards_continue;
+    if(address==0x002CBBA0u) return story_rewards_build;
+    if(address==0x002CBAF0u) return story_rewards_page;
+    if(address==0x002CBB60u) return story_rewards_tick;
     void (*story_callback)(void)=story_lobby_lookup(address);
     if(story_callback) return story_callback;
 #endif

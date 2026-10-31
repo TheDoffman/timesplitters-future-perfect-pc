@@ -43,6 +43,12 @@ STORY_PATCHES = (
     'story-replica-room-clip',
     'story-result-controls',
     'story-barrel-cosmetics',
+    'story-movie-stream-lifetime',
+    'network-score-payload-lifetime',
+    'story-guest-reward-pages',
+    'story-guest-profile-save',
+    'story-empty-guest-rewards',
+    'story-browser-level-details',
 )
 
 ROOT = Path(__file__).resolve().parents[2]

@@ -1,3 +1,169 @@
+# Story browser selected level details - 2026-10-30
+
+The user recording's51.77s frame shows Matches Available with Test Lab/Story,
+no level name and a placeholder thumbnail. Joined Story lobby assets render.
+Live bounded function profiling identifies1CBDA0 as the System Link browser row
+renderer, installed by1CC0B0 at1CC117. The similar1972C0 renderer is a separate
+route and is not called by this screen; do not use it to repair this browser.
+
+pc_story_browser_match wraps1CBDA0's (menu,item,rectangle) ABI. In frontend101,
+Online Story, it validates item+14's advertised index below20, then reads its
+CC-byte record at790960: scene+14 and rule+18. Live Story advertisements use
+rule2, unlike launch-config rule10. The advertised scene resolves against
+one of13 original Story rows at4D1AC0, stride44 (scene+6, name+2, sprite+14).
+The1CBFC4 picture callback temporarily replaces2BECE0's bitmap argument with
+that Story sprite. Stock rectangle/cropping/fade remain. It draws the localized
+name below Story, fitting left of the picture. Registers, argument, font/scale
+and any nested draw scope are restored. No local selection or advertisement is
+changed. Unknown scenes, missing sprites, other modes and native fallback stay
+original. The original browser's64E20 lookup targets Arcade metadata instead.
+
+# Empty guest reward scene entry - 2026-10-30
+
+The user's09706983 screenshot shows host unlocks while the guest renders LOADING.
+Both manual profiles persisted completion. Original2D6E10/2D71C3 selects loading
+5236DC when this peer's original2CB550 count is zero; it never calls2CBBA0.
+The earlier engine empty-page test called the constructor directly, and live17
+seeded a new unlock, so neither covered this scene-entry branch. Host-first live18
+still displayed the guest's seeded unlock, rejecting movie skip order as the
+explanation of this particular path.
+
+Additive2430 wraps79860's descriptor argument, changing5236DC to523900 only for
+joined first-mission guest rewards106/stage3 with zero actual unlocks. The normal
+reward constructor then builds the existing disabled Waiting for host panel.
+The argument is restored after original factory execution. No unlock is invented,
+no host award is copied, and save/transport scheduling remains original. Host,
+offline, non-reward scenes, other descriptors and native fallback stay original.
+Old-build live20 reproduces LOADING; rebuilt live21 shows waiting and follows
+the host into the next intro with signed completion saved. Both use disposable
+unmodified unlocked fixtures and synthetic completion, not a mission playthrough.
+
+# Guest rewards before the host wait - 2026-10-30
+
+Original2D2C70 returns early for network guests, but its host path also skips
+2CB210: the network predicate at2D2CA3 branches past that snapshot at2D2CB4.
+Guest-only snapshotting was a regression: matching unlocked profiles then showed
+host rewards but an empty guest list. pc_story_network_frame invokes
+story_rewards_begin once real first-mission guest contexts/profile exist;
+original69A60(1) selects that peer's port0 profile while preserving the original
+Online baseline. It must not call2CB210 just for guests. Guest completion66FC0
+remains intentionally suppressed. Gameplay activation/restart reset tracking.
+No host profile or reward list crosses the wire.
+
+After validating the reliable host's gameplay-to-ending config, prepare calls
+story_rewards_record before replacing the pending stage or retiring contexts.
+Only mission0/stage1/scene2 to authored ending stage2 qualifies. Original668F0
+records co-op completion and marks local profiles dirty under a temporary success
+bit, then original69A60 evaluates this peer's own profile. Registers/result bits
+are restored; no result menus, transport teardown or guest scheduler run. Later
+copies see stage2 and do not record twice; unrelated configs/roles stay original.
+
+Guest unlock constructor2CBBA0 now runs unchanged while cursor75FD88 is below
+original2CB550's reward count. Patch2420 wraps2CBAF0, covering both menu lookup
+and original2CBB60's direct timer tail call. Non-final pages remain original;
+the final guest page increments the cursor and rebuilds the same descriptor as
+Waiting for host instead of exiting through5236DC. The refresh forwards the
+original callback stack/menu argument into78980, including the timer tail call;
+a fresh zero-argument guest_call would corrupt this ABI. Waiting holds confirmation
+and timer. No rewards go directly to waiting; host/offline pages stay original.
+Live validation exposed a separate save-view mismatch: network construction
+moves the guest's Test Lab metadata/body to slot1, leaving a scratch profile
+with cached CRC0 in slot0. Original1922D0 enumerates persistent profile0 and
+reports error7 even without test seeding; the real metadata retains the correct
+disk CRC in slot1. Patch2425 scopes that synchronous original save to persistent
+profile-ID order. The Online selection captures persistent metadata identities
+before opening the browser: joining already moves their bodies, before Ready;
+metadata pool order must not be assumed to identify the selected profile. The
+save scope finds those unique captured records among the16 active rows,
+snapshots the network table, maps loaded bodies and their aggregate view,
+then restores the table with saved updates copied back to their network slots.
+Original file/checksum validation, signed writes, dirty state and retry/error
+menus remain intact. Missing/ambiguous mappings, invalid counts or allocation
+failure retain the original route. Host/offline/native fallback is unchanged.
+The original-engine fixture verifies guest profile slot1, untouched remote data,
+dirty/completion counters, old/new unlock comparison, multi-page display, timer
+and final wait. Native Local/Arcade fallbacks remain original; native Story
+acceptance remains queued under MAC-013.
+
+# Late gameplay scores during Story movies - 2026-10-30
+
+Natural-ending retest on8dbdad1b failed in60740 at movie frame93, preceded by
+an asynchronous stream read into0003FFFF instead of its live buffer. Original
+64810 initializes7DE4C0 rankings for790950+7A2958 actors although its table has
+only16 entries. At slot28 it overwrites7DE530 withFFFFFFFF. Story NPC counts
+persist into movies: bounded early-completion sampling retained5; a normal
+playthrough can have many more. A controlled before-fix live test with30 NPCs
+reproduced the buffer overwrite and froze ending frame27. The translated
+original3578A0/64810/646B0 fixture reproduces the exact overflow with30 NPCs and an empty score snapshot.
+
+Additive patch2415 wraps incoming stock3578A0 with pc_network_guest_scores in
+pc_network_guest.inc. Active desktop-network movie flags or frontend101..107
+hold only this gameplay decoder, before its actor writes, clock update and
+ranking rebuild. Reliable configuration, ready and control traffic remains in
+the original network pump. Ordinary gameplay, custom-map100, offline/disabled
+transport and builds without desktop networking retain the original decoder.
+The guard is shared with native networking; no OS adapter or clock change.
+NPC counts and cinematic buffers are preserved rather than clamped or repaired
+following corruption. Fixed live playback with30 seeded guest NPC slots reached
+frame1059 without buffer corruption, then both peers reached the next intro.
+The user confirmed the natural ending crash fixed after this bounded test.
+Native Mac live acceptance remains pending.
+
+# First-mission rewards and movie ownership - 2026-10-30
+
+The original user capture records2->44->106, then a wrong first intro with a
+sixteen-player header and63390 filename-trim failure. The initial candidate's
+2EB... result scopes did not cover the observed unlock-page route. A bounded
+synthetic scheduler reproduction confirmed the same fault on both peers with
+ff61ff5b. The decisive trace is rewards stage3, scene106, original frontend GO
+serializer caller2D3980/address78AD58/phase15, with16 humans and old scene24.
+Original unlock builder2CBBA0 uses page callback2CBAF0 and timer2CBB60; its
+pages return through the frontend, rather than the in-game result callbacks.
+
+pc_story_network_prepare recognizes that exact host first-mission rewards GO
+boundary. It gives original65940 completed mission0/stage3/difficulty, retains
+the last validated Story party header, then infers the new authored mission.
+The existing GO sender owns the generation increment and broadcast: this scope
+must not send or increment again. Original2D398D pending copy and the guest's
+normal received-config path remain unchanged. The original-engine stage fixture
+covers authored next-mission selection; production tests reproduce16/scene24
+at the actual GO boundary and check one rebuild, retained party/difficulty,
+no duplicate generation/send, pending-copy reuse and guest follow.
+
+For a joined first-mission guest on rewards106/stage3, original unlock pages
+precede the Mission complete/Waiting for host panel described above. The waiting
+panel has a disabled row and no confirm/back callback. Only exhausted guest pages
+are held; host, offline and unrelated menu callbacks retain the original route.
+Ready357540 uses zero bodies and a temporary eligible scene for rewards only,
+then restores actual scene/flags/count;64CE0 otherwise rejects frontend106.
+
+Original99BB2 invokes65C70 and then60310 even when Story guest advance is
+suppressed.60310 closes the stream and clears6D782C/6D7830/7DE530 while C95E0
+can still render that scene. Shared patch2410 retains the stream only at99BBC
+for a joined guest, phase10/14/15, state7 and movie flags20000000. Real pending
+load state12, host, offline and other callers keep original cleanup. The engine
+fixture checks cached-frame coordinates and subsequent file close. This proven
+lifetime gap is separate from the captured wrong-config63390 failure.
+
+The corrected next intro exposed a separate stock358EB0 fault on both peers:
+its3544B0 caller copies context+1500 inventory data in movies after those player
+records have been retired. The existing pc_network_guest_tick cadence adapter
+had been opening that entire gameplay-send gate, which also contains358F40.
+For phase15 frontend scenes101..107 or movie flags20000000 it now pins the last
+send epoch76B0EC to the unchanged network epoch76B0F0, rather than epoch-1.
+Original3544B0 still executes its transport, heartbeat and timeout work. Once
+gameplay returns the adapter immediately reopens the movement gate; duplicate
+pumps and the original60Hz clock keep their existing semantics. This shared
+Windows/native-network policy also protects ordinary Online transitions; it
+neither edits the roster nor suppresses the whole network pump. The dispatch
+fixture verifies held gameplay sends, retained original/control calls and
+immediate recovery; native cadence/mutation fixtures retain clock-unit checks.
+
+Opt-in Story traces record bounded reward callback addresses and stage/advance/
+result/config boundaries. No asset-loader sentinel suppression, clock change or
+second-mission NPC adaptation is introduced. Native Mac Story acceptance remains
+unverified; existing Windows entry guards and native Local/Arcade paths remain.
+
 # Main integration - 2026-10-30
 
 The Story series now lives in src/network with numbered patches. Main's native
