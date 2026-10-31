@@ -186,8 +186,17 @@ int main(void){
     assert(MEM32(0x6f1e0c)==OWN_PROFILE);
     assert(MEM32(0x7bedc0+0x1f54)==0x7bcc40 && MEM32(OWN_PROFILE+0x918)==7);
     assert(MEM32(0x7bedc0+0x1290+0x918)==remote_stat && MEM32(0x7bcc40+0x28)==0xabcdef);
+    /* Abort saves occur in frontend101 before its final lobby/main factory,
+       outside the reward-scene predicate, with the same moved local profile. */
+    story_pending_stage=1;MEM32(0x79094c)=101;story_leave_destination=1;
+    MEM32(OWN_PROFILE+0x918)=1;
+    MEM32(0x7bcc40+0x28)=0x12345678;
+    g_esp=0x20000;pc_story_network_profile_save(original_save);
+    assert(g_esp==0x20004 && save_calls==2 && MEM32(0x7bedc0)==0x7bcac0);
+    assert(MEM32(0x7bcc40+0x28)==0xabcdef && MEM32(0x6f1e0c)==OWN_PROFILE);
+    story_leave_destination=0;
     save_owned=0;MEM32(0x76b140)=1;g_esp=0x20000;
-    pc_story_network_profile_save(original_save);assert(save_calls==2 && g_esp==0x20004);
+    pc_story_network_profile_save(original_save);assert(save_calls==3 && g_esp==0x20004);
     puts("PASS: original guest-owned co-op awards, profile isolation, reward pages, timer tail call and waiting handoff");
     free(memory);return 0;
 }

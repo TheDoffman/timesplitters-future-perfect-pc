@@ -1,3 +1,36 @@
+## Story in-match leave routing - 2026-10-31
+
+Local/uncommitted on online-story-coop, base d34828b9. Retained user recording
+237s/250s demonstrates Leave confirmation followed by forced level selection.
+Online Yes2EBE60->2EBDB0 and the reliable host-return receiver both originally
+record campaign progress. The adapter skips that recording, chooses retained
+Story lobby for host Leave, and main for guest Leave/full disconnect. It retires
+the old host start advertisement, preserves local profile identity during exit
+saving, and finishes the original lobby handshake/reset without dropping peers.
+A bounded trace also found the outgoing guest lobby spinning in the Arcade
+text formatter at phase10. Story drawing now remains active through that
+loading transition; controls retain their normal lobby-phase restrictions.
+
+Windows x64, MSVC14.42.34433/SDK10.0.22621.0, D3D11: official Build/native checks
+pass; supported US XBE hash verified,402.31GiB free before generation/build.
+45 focused checks pass,2 Mac-only skips (24.08s), including original-US exit,
+retained-session reset, profile save, normal rewards and transition rendering.
+Live host Leave returns both peers to the same Story lobby (visually reviewed)
+and a second GO loads scene24/phase15 on both. No mission completion test.
+Guest Leave reaches the actual main menu (visually reviewed), without rewards
+or forced level selection. The host still enters Game Over, reproducing the
+separate remaining-player issue; no claim of continued host gameplay.
+Terminating the owned host game also returns the guest to main after the
+original connection grace period (the40-second observation was too short;
+extended bounded capture reaches frontend101/phase0, with the main menu
+visually reviewed). Both isolated runners finished and released their locks.
+No timeout policy change.
+Build compatibility fc60c4c8f40bcefc3b1c716c0a91b170f2b0c24217128dcd26f89453338db231;
+exe SHA256 f65048874209f59acb6dcf76475212537d67b37839636eddca5a928e708637ac.
+All1303 sealed input hashes match. Native Online acceptance remains MAC-013.
+The separate guest-departure Game Over/remaining actor bug is not claimed fixed.
+The user confirmed the leave-routing fix in local testing on2026-10-31.
+
 ## Authored Story barrel effects - 2026-10-30
 
 Local/uncommitted on online-story-coop, base27a083ea. Retained user recording

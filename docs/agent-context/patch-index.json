@@ -1700,6 +1700,14 @@
       ]
     },
     {
+      "name": "2440-story-leave-destinations.patch",
+      "path": "patches/network/2440-story-leave-destinations.patch",
+      "sha256": "9a1cd9a031de3eb682963ab2e50f747ebdf13d6f086dfd8c7b038fcab1703ba9",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "independent-condition-fixture.patch",
       "path": "patches/compiler/independent-condition-fixture.patch",
       "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",

@@ -2252,6 +2252,15 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+Story abort follow-up (2026-10-30, uncommitted): shared menu lookup and
+src/network/pc_story_restart.inc plus patch2440 route host Leave to the retained
+lobby and guest Leave/host loss to main, skipping campaign rewards. Existing
+Story platform guards remain; no second OS implementation is added. Windows
+fixtures do not establish native Online behavior. Native acceptance must cover
+host abort/relaunch, guest departure with remaining game active, host transport
+loss, local rewards unchanged and companion cleanup.
+
+
 Cinematic send-gate follow-up (uncommitted): pc_network_guest_tick is shared by
 Windows and TSFP_NATIVE_NETWORK. It retains control/heartbeat pumping while
 holding gameplay inventory/ammo sends during movies/frontend. Host-independent

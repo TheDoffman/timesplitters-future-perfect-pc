@@ -56,6 +56,21 @@ def test_story_original_us_entry_contract():
     for address,target in ((0x1a4385,0x4e9974),(0x1a8d15,0x4e9404),(0x1a8f15,0x4e93f4)):
         assert read(address,5)==b'\x68'+struct.pack('<I',target)
 
+    # In-match Leave confirmation and reliable lobby-return receiver both
+    # originally record campaign progress; the new wrappers intercept first.
+    for address,target in ((0x2ec0f0,0x2ec090),):
+        assert struct.pack('<I',target) in read(address,176)
+    for address,target in ((0x35930c,0x668f0),(0x35931e,0x2ec650),
+                           (0x35495f,0x3592c0)):
+        call=read(address,5)
+        assert call[0]==0xe8 and address+5+struct.unpack_from('<i',call,1)[0]==target
+    assert read(0x3564ca,6)==bytes.fromhex('890d78417700')
+    assert read(0x2ebe85,1)==b'\xe9' and 0x2ebe8a+struct.unpack('<i',read(0x2ebe86,4))[0]==0x2ebdb0
+    assert read(0x2ebed2,5)==b'\x68'+struct.pack('<I',0x2ebe60)
+    assert struct.unpack('<I',read(0x524598,4))[0]==0x2d0be0
+    assert struct.unpack('<I',read(0x4e99c4,4))[0]==0x1a8da0
+    assert struct.unpack('<I',read(0x4e99d4,4))[0]==0x1a8fa0
+
     # Browser selected-match arguments and the stock picture draw are separate
     # from the joined-lobby header. These exact returns scope the Story adapter.
     for address,target in ((0x1cbf9c,0x64e20),(0x1cbfbf,0x2bece0)):
@@ -393,7 +408,10 @@ def test_story_original_config_stages(tmp_path):
         functions={start:dict(name=f'sub_{start:08X}',end=end) for start,end in (
             (0x65940,0x65c69),(0x64ce0,0x64d04),(0x3533f0,0x3533f6),(0x357540,0x35768e),
             (0x6b100,0x6b281),(0x3568c0,0x356913),(0x358560,0x358590),
-            (0x65c70,0x65d11),(0x65470,0x654da),(0x60310,0x6038a),
+            (0x65c70,0x65d11),(0x65470,0x654da),(0x65420,0x6546a),
+            (0x356920,0x356935),(0x3592c0,0x3592e4),
+            (0x35a3c0,0x35a473),(0x352680,0x3526ca),(0x3535c0,0x3535cf),
+            (0x2ec650,0x2ec68a),(0x60310,0x6038a),
             (0x60390,0x6040e),(0x60410,0x604cf),(0x606e0,0x60737),(0x60740,0x60796),
             (0x64810,0x64c56),(0x646b0,0x6480c),(0x3578a0,0x357aff))}
         translator=FunctionTranslator(image,functions)
@@ -474,7 +492,7 @@ def test_story_original_guest_rewards(tmp_path):
         vars(config).update(previous)
     source=(ROOT/'tests/network/story_rewards_guest.c').read_text(encoding='utf-8')
     production=(ROOT/'src/network/pc_story_restart.inc').read_text(encoding='utf-8')
-    adapters=production[production.index('extern void sub_002EB0A0('):production.index('static void story_rewards_continue(')]
+    adapters='static unsigned story_leave_destination;\nstatic int story_lobby_return_build;\nvoid pc_online_disconnect(void){assert(0);}\n'+production[production.index('extern void sub_002EB0A0('):production.index('static void story_rewards_continue(')]
     adapters+=production[production.index('void pc_story_network_rewards_page('):production.index('void pc_story_network_result_action(void (*original)(void),unsigned action)\n{')]
     import re
     defined=set(re.findall(r'(?:void|uint32_t)\s+(sub_[0-9A-F]+(?:_gen)?)\s*\([^;]*?\)\s*\{',source+code))

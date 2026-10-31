@@ -1133,6 +1133,7 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
                 address,guest_writable(g_esp,4u)?WORD_AT(g_esp):0u,WORD_AT(0x76b140u),story_pending_stage);
         }
     }
+    if(address==0x002EBE60u && story_restart_session()) return story_leave_confirm;
     if(address==0x002EB0A0u) return story_rewards_continue;
     if(address==0x002CBBA0u) return story_rewards_build;
     if(address==0x002CBAF0u) return story_rewards_page;

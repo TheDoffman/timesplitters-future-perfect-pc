@@ -1,3 +1,58 @@
+# Story in-match abort routing - 2026-10-30
+
+Retained user video237s shows the guest Leave confirmation, then SELECT LEVEL
+at250s. Online pause2F5520 installs2EC060, opening524A80; its2EBE60 action
+selects2EBDB0 for row40h (Yes). That action records668F0 before65420. Local
+Story's separate2EC090 also records668F0 before65470. Shared lookup scopes
+2EBE60 to the first-mission joined gameplay session; Yes closes only local
+port0 menus and skips campaign recording. Cancel remains original. Host abort
+selects frontend mode13 and original65470: unload65F40 calls356920, phases16/17
+send reliable classB via3592C0 and restore host11/guest12. Additive2440 wraps
+3592F0 before its own668F0 call, so guest lobby returns also skip awards.
+Guest abort selects frontend mode2 and original65420, the full disconnect exit.
+The2440 scheduler wrapper selects main for unplanned host loss too. Original
+peer cleanup and unload remain responsible for transport/gameplay retirement.
+At frontend101's final root child factory, the pending destination is consumed;
+root construction/unrelated descriptors are excluded. Main returns run1CC360
+while sockets exist and then close this peer's companion. Lobby returns retain
+transport and role. Host abort clears original356490's advertised in-game marker
+774178 before lobby advertisements resume:352D6D..352D8C otherwise auto-starts
+the stale intro config as the guest's active frontend generation differs. Real
+GO sets it again. A synchronous story_lobby_return_build scope lets lobby
+adapters install their Story callbacks before the16/17 handshake finishes.
+Never temporarily overwrite the transport phase here: nested original pumps
+can progress it, and restoring an older phase strands the guest. The scope
+extends only the Story host/member predicates during this owned factory.
+A separate pending-return flag also admits the actual lobby ticks in frontend101
+at phases16/17. Before readiness, that tick runs original3544B0 at most twice
+to finish the stock16->17->11/12 dispatcher, then clears the flag. Ordinary
+frontend pumping otherwise leaves a returning guest stranded17. No arbitrary
+phase assignment or new transport messages are used.
+At the completed lobby phase, run original3535C0->352680->35A3C0 once before
+Ready. This resets the old match clock, pause/preparation bits and network
+object caches while preserving connected peers, phase and player records.
+The original-US execution fixture verifies that preservation.356BB0 is the
+full disconnect and must not be used for a retained lobby.
+Abort dispatch uses original2EC650's all-port menu-state teardown, avoiding
+campaign recording. Confirmed local Leave closes its pause dialog first; a
+remote host-return packet does not close the unpaused guest's menu tree.
+Only the scoped guest-exit65470 tail changes to original65420 for a full
+local disconnect. Unscoped result scheduling remains original.
+
+Story lobby presentation remains active in frontend101/phase10 for host and
+joined guest while the outgoing lobby fades during a new load. Controls and
+config ownership remain restricted to lobby phases11/12. A bounded live trace
+caught the original Arcade1986A0 formatter looping in its font wrapping path
+when Story drawing lookup rejected phase10. Keep the Story header/body adapters
+through that transition and skip the Arcade detail callback when transition
+bounds collapse; never feed Story data to the legacy Arcade formatter.
+The original profile-save identity remap also covers pending abort destinations,
+including frontend101: the guest's persistent profile may still occupy network
+slot1 before the final destination factory. Original notification10000 otherwise
+saves the scratch slot0 checksum view and displays a damaged-profile dialog.
+The same identity/aggregate mapping and original save path are reused; no file
+checksum is fabricated. Native fallback remains original; live Story is MAC-013.
+
 # Story Online Back destination - 2026-10-30
 
 The retained recording at64.98s shows Story Back at the multiplayer network-type

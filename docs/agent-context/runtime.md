@@ -1,3 +1,9 @@
+Story abort routing: additive2440 wraps3592F0 (reliable lobby-return receiver)
+and65420 (full-disconnect scheduler). Original unloading and reliable classB
+transport remain; Story adapters select lobby/main and avoid campaign recording
+on abort. Online confirmation2EBE60 uses existing menu lookup. See
+[contracts](systems-details.md).
+
 Story browser level details: additive2435 wraps1CBDA0/2BECE0. Only validated
 Story advertisements in the System Link list scope a Story metadata lookup;
 its1CBFC4 picture draw uses the thumbnail and adds the localized level name.

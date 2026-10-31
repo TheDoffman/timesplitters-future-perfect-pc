@@ -22,7 +22,7 @@ void sub_00064D10(void){g_eax=MEM8(0x7de455)==10 && MEM32(0x79094c)!=100 && MEM3
 void sub_000389B0(void){assert(!"unexpected movie completion path");}
 void sub_001CD590(void){assert(MEM32(g_esp+4)==MEM32(0x4d1ae0) || MEM32(g_esp+4)==MEM32(0x4d1ae4) || MEM32(g_esp+4)==MEM32(0x4d1ae0+0x44));++prepared;g_esp+=4;}
 void sub_00064DD0(void){g_eax=12;g_esp+=4;}
-static unsigned ready_packets;
+static unsigned ready_packets,lobby_returns;
 static unsigned pending_loads;
 static unsigned movie_closes;
 void sub_00029400(void){++movie_closes;g_esp+=4;}
@@ -34,6 +34,7 @@ void sub_0006F4B0(void){assert(!MEM32(g_esp+4) && !MEM32(g_esp+8));g_esp+=4;}
 void sub_000459E0(void){g_esp+=4;}
 void sub_00069E60(void){g_eax=0;g_esp+=4;}
 void sub_0005A120(void){g_esp+=4;}
+void sub_001CDAE0(void){g_eax=2;g_esp+=4;}
 void sub_000658D0(void){memcpy(pending_config,(void *)((uintptr_t)MEM32(g_esp+4)+g_xbox_mem_offset),sizeof pending_config);++pending_loads;g_esp+=4;}
 void sub_0022D780(void){assert(!"unexpected custom-map asset filter");}
 void sub_00230CC0(void){assert(!"unexpected custom-map asset filter");}
@@ -42,6 +43,10 @@ void sub_000D50E0(void){assert(!"cinematic must not spawn gameplay players");}
 void sub_000D5480(void){assert(!"cinematic must not copy gameplay bodies");}
 void sub_000B91F0(void){assert(!"cinematic must not build gameplay actor packet");}
 void sub_00353A90(void){
+    if(MEM32(g_esp+8)==11) {
+        assert(MEM32(g_esp+4)==0x30000 && MEM32(g_esp+16)==4 && MEM32(g_esp+20)==1);
+        ++lobby_returns;g_esp+=4;return;
+    }
     assert(MEM32(g_esp+4)==0x30000 && MEM32(g_esp+8)==10);
     assert(MEM32(g_esp+16)==5 && MEM32(g_esp+20)==1);
     assert(MEM8(MEM32(g_esp+12)+4)==3 && MEM32(0x790950)==0);
@@ -55,6 +60,7 @@ void sub_00067450(void){assert(!"unexpected result transition");}
 static int pc_network_enabled(void){return 1;}
 void sub_000646B0(void);
 void sub_00064810(void);
+void sub_0035A3C0(void);void sub_00352680(void);void sub_003535C0(void);
 /* ORIGINAL_STAGE_BUILDER */
 #define WORD_AT(a) MEM32(a)
 static unsigned story_lobby_mission,story_lobby_difficulty,story_pending_stage;
@@ -151,10 +157,32 @@ int main(void){
     MEM32(0x7de30c)=7;MEM32(0x7de398)=0;MEM32(0x78ad48)=0;MEM32(0x78ad50)=2;
     g_esp=0x20000;sub_00065470();
     assert(g_esp==0x20004 && MEM32(0x7de30c)==9 && !pending_loads && MEM32(0x78ad48)==0);
+    assert(MEM32(0x6f11b4)==1); /* Retain network, return lobby. */
+    g_esp=0x20000;sub_00356920();
+    assert(g_esp==0x20004 && MEM32(0x76b1a4)==16 && !MEM32(0x76b1a8));
+    g_esp=0x20000;sub_003592C0();assert(lobby_returns==1 && g_esp==0x20004);
+    MEM32(0x7de30c)=7;g_esp=0x20000;sub_00065420();
+    assert(g_esp==0x20004 && MEM32(0x7de30c)==9 && MEM32(0x6f11b4)==2);
     MEM32(0x7de30c)=7;
     g_esp=0x20000;sub_00065C70();
     assert(g_esp==0x20004 && pending_loads==1 && pending_config[0x54]==NEXT_INTRO_SCENE);
     assert(MEM32(0x78ad48)==1 && MEM32(0x7de30c)==12);
+    /* Original retained-session reset clears the prior match's clock and
+       preparation flags, preserving connected peers and the lobby roster. */
+    MEM32(0x76b1a4)=12;MEM32(0x76b0a0)=8;MEM32(0x76b0f8)=9;
+    MEM32(0x76b0f4)=5;MEM32(0x76b128)=1;MEM8(0x7741b4)=31;
+    MEM32(0x774180)=9;MEM32(0x77728c)=1;
+    g_esp=0x20000;sub_003535C0();
+    assert(g_esp==0x20004 && !MEM32(0x76b0a0) && !MEM32(0x76b0f8) && !MEM32(0x76b0f4) && !MEM32(0x76b128));
+    assert(MEM8(0x7741b4)==3 && MEM32(0x774180)==9 && MEM32(0x77728c)==1);
+    assert(MEM32(0x76b1a4)==12 && MEM32(0x76b108)==1 && MEM32(0x774028)==0x30000);
+    /* The native remote-return action touches every local menu state, and
+       does not close a menu tree or invoke campaign reward recording. */
+    MEM32(0x761c48)=0x70000;MEM32(0x761c4c)=0x71000;
+    MEM32(0x70000)=1;MEM32(0x71000)=1;MEM32(0x7000c)=99;
+    MEM32(0x7de30c)=7;g_esp=0x20000;sub_002EC650();
+    assert(g_esp==0x20004 && MEM32(0x70000)==0x49 && MEM32(0x71000)==0x41 && !MEM32(0x7000c));
+    assert(MEM32(0x7de30c)==9 && MEM32(0x6f11b4)==1);
     /* Original99BB2 calls advance then60310 even when a guest's advance is
        blocked. Reproduce the exact cached-frame invalidation: the subsequent
        original606E0/60410 lookup falls back to frame zero after the stream

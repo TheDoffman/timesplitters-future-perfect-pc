@@ -83,6 +83,8 @@ static void checkpoint_restore_original(void)
 static void restart_original(void){++restart_calls;g_eax=73;g_esp+=4;}
 void sub_000653B0(void){restart_original();}
 void sub_00359EB0(void){CHECK(0);}
+void sub_003544B0(void){marker=77;g_esp+=4;}
+void sub_003535C0(void){marker=80;g_esp+=4;}
 void sub_0003D7B0(void){marker=9;} void sub_00040F00(void){marker=10;}
 void sub_00041DC0(void){marker=11;} void sub_0003FA10(void){marker=12;}
 void sub_0003F8D0(void){marker=14;} void sub_0003FCF0(void){marker=15;}
@@ -92,6 +94,12 @@ void sub_00065940(void){marker=7;}
 void sub_002EB0A0(void){marker=61;g_esp+=4;}
 void pc_story_network_result_action(void (*original)(void),unsigned action);
 void sub_00065470_gen(void){marker=62;g_esp+=4;}
+void sub_002EBE60(void){marker=76;g_esp+=4;}
+void sub_00065420(void){marker=74;g_esp+=4;}
+void sub_001CC360(void){marker=75;g_esp+=4;}
+static unsigned leave_disconnects,lobby_return_dispatches,lobby_return_resets;
+void pc_online_disconnect(void){++leave_disconnects;online_mode=PC_ONLINE_NONE;}
+
 void sub_002EAFC0_gen(void){pc_story_network_result_action(sub_00065470_gen,0u);}
 void sub_002EB030_gen(void){pc_story_network_result_action(sub_00065470_gen,0u);}
 void sub_002EC090_gen(void){pc_story_network_result_action(sub_00065470_gen,0u);}
@@ -101,6 +109,13 @@ void sub_002EB030(void){marker=45;}
 void sub_002CBBA0(void){marker=64;g_esp+=4;}
 void pc_story_network_rewards_page(void (*original)(void));
 static void reward_page_original(void){marker=65;g_esp+=4;}
+static uint32_t exit_factory_target;
+static void exit_factory_original(void){
+    exit_factory_target=WORD_AT(g_esp+8);
+    if(exit_factory_target==0x4e99d4) {CHECK(story_lobby_member());WORD_AT(0x76b1a4)=12;}
+    g_esp+=4;
+}
+
 void sub_002CBAF0(void){pc_story_network_rewards_page(reward_page_original);}
 void sub_002CB550(void){CHECK(0);}
 void sub_00078980(void){++reward_refreshes;g_esp+=4;}
@@ -154,6 +169,12 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     uint32_t args[10];va_list ap;va_start(ap,count);CHECK(count<=10);
     for(unsigned i=0;i<count;i++)args[i]=va_arg(ap,uint32_t);
     va_end(ap);
+    if(fn==sub_002EC650_gen) {CHECK(!count);uint32_t sp=g_esp;sub_002EC650_gen();g_esp=sp;return 0;}
+    if(fn==sub_003535C0) {CHECK(!count);++lobby_return_resets;return 0;}
+    if(fn==sub_003544B0) {CHECK(!count);++lobby_return_dispatches;WORD_AT(0x76b1a4)=WORD_AT(0x76b140)==1?11:12;return 0;}
+    if(fn==sub_00065470_gen || fn==sub_00065420 || fn==sub_001CC360) {
+        CHECK(!count);marker=fn==sub_00065470_gen?62:fn==sub_00065420?74:75;return 0;
+    }
     if(fn==sub_00069A60) {CHECK(count==1 && args[0]==1);return 0;}
     if(fn==sub_002CB210) {CHECK(!count);return 0;}
     if(fn==sub_002CB550) {CHECK(!count);return reward_count;}
@@ -745,6 +766,29 @@ int main(void)
         CHECK(status_draws==1 && g_esp==0x1804);
         g_esp=0x1800;WORD_AT(g_esp)=0x199700;pc_story_lobby_details(frame_original);
         CHECK(briefing_draws==1 && failure_original_calls==old_calls+1);
+        /* Outgoing phase10 still renders Story, but owns no lobby controls.
+           A collapsed transition rectangle must never call Arcade layout. */
+        story_lobby_difficulty=2;story_lobby_mission=1;
+        WORD_AT(0x79094c)=101;WORD_AT(0x76b1a4)=10;
+        for(unsigned role=1;role<=2;role++) {
+            WORD_AT(0x76b140)=role;
+            CHECK(story_lobby_rendering() && !story_lobby_member());
+            g_esp=0x1800;WORD_AT(g_esp+4)=0x4000;
+            WORD_AT(0x4004)=role==1?0x4e99c4:0x4e99d4;
+            CHECK(story_lobby_lookup(STORY_BUILD_CB)==story_lobby_header);
+            CHECK(story_lobby_lookup(STORY_BODY_CB)==story_lobby_body);
+            CHECK(!story_lobby_lookup(0x1a8d30) && !story_lobby_lookup(0x1a8f30));
+            WORD_AT(g_esp)=0x199650;pc_story_lobby_details(frame_original);
+            CHECK(g_esp==0x1804 && failure_original_calls==old_calls+1);
+        }
+        const float collapsed[4]={100,100,110,110};
+        memcpy((uint8_t *)memory+0x7000,collapsed,sizeof collapsed);
+        g_esp=0x1800;WORD_AT(g_esp)=0x199650;
+        pc_story_lobby_details(frame_original);
+        CHECK(g_esp==0x1804 && failure_original_calls==old_calls+1);
+        online_mode=PC_ONLINE_ARCADE;g_esp=0x1800;pc_story_lobby_details(frame_original);
+        CHECK(failure_original_calls==old_calls+2);
+        online_mode=PC_ONLINE_STORY;WORD_AT(0x76b1a4)=12;
     }
     {
         /* Intro is serialized as an original cinematic config; each guest waits
@@ -1820,6 +1864,65 @@ int main(void)
         g_esp=0x1800;story_rewards_build();CHECK(marker==64 && g_esp==0x1804);
         g_esp=0x1800;story_rewards_page();CHECK(marker==65 && g_esp==0x1804);
         g_esp=0x1800;story_rewards_tick();CHECK(marker==66 && g_esp==0x1804);
+    }
+    /* Abort never invokes the original confirmed callback (which records
+       completion). Host keeps transport, guest retires only its own session. */
+    {
+        online_mode=PC_ONLINE_STORY;story_lobby_mission=0;story_pending_stage=1;
+        WORD_AT(0x7de458)=0x80008;WORD_AT(0x7de400)=0x102;story_load_header[0]=2;
+        WORD_AT(0x76b108)=1;WORD_AT(0x76b1a4)=15;WORD_AT(0x79094c)=2;
+        WORD_AT(0x76b140)=1;story_context_start_pending=1;
+        WORD_AT(0x761bbc)=0x4000;WORD_AT(0x761c48)=0x4500;WORD_AT(0x774178)=1;
+        g_esp=0x1800;marker=0;
+        WORD_AT(g_esp+4)=0x4000;WORD_AT(0x418c)=0x41;story_leave_confirm();
+        CHECK(marker==76 && g_esp==0x1804 && !story_leave_destination);
+        g_esp=0x1800;
+        WORD_AT(g_esp+4)=0x4000;WORD_AT(0x418c)=0x40;story_leave_confirm();
+        CHECK(g_esp==0x1804 && marker==62 && story_leave_destination==1);
+        CHECK(WORD_AT(0x78ad20)==13 && !story_context_start_pending && !WORD_AT(0x774178));
+        CHECK(!next_menu && !story_leave_exit_depth);
+        WORD_AT(0x76b140)=2;g_esp=0x1800;marker=0;
+        pc_story_network_return_lobby(sub_002CBBA0);
+        CHECK(marker==62 && g_esp==0x1804 && story_leave_destination==1);
+        /* Stock frontend constructor must finish creating its root first. */
+        WORD_AT(0x79094c)=101;WORD_AT(0x7613e4)=0x8000;
+        g_esp=0x1800;WORD_AT(g_esp+4)=0;WORD_AT(g_esp+8)=0x789e80;
+        pc_story_network_rewards_menu(reward_page_original);
+        CHECK(story_leave_destination==1 && marker==65);
+        g_esp=0x1800;WORD_AT(g_esp+4)=0x8000;WORD_AT(g_esp+8)=0x4e99d4;
+        pc_story_network_rewards_menu(exit_factory_original);
+        CHECK(exit_factory_target==0x4e99d4 && WORD_AT(0x76b1a4)==12 && !story_lobby_return_build);
+        CHECK(!story_leave_destination && !story_pending_stage && online_mode==PC_ONLINE_STORY);
+        CHECK(WORD_AT(0x1808)==0x4e99d4 && !leave_disconnects);
+        story_pending_stage=1;WORD_AT(0x79094c)=2;WORD_AT(0x76b140)=2;WORD_AT(0x76b1a4)=15;
+        g_esp=0x1800;WORD_AT(g_esp+4)=0x4000;WORD_AT(0x418c)=0x40;story_leave_confirm();
+        CHECK(marker==74 && g_esp==0x1804 && story_leave_destination==2 && WORD_AT(0x78ad20)==2);
+        WORD_AT(0x79094c)=101;g_esp=0x1800;
+        WORD_AT(g_esp+4)=0x8000;WORD_AT(g_esp+8)=0x5238f0;
+        pc_story_network_rewards_menu(exit_factory_original);
+        CHECK(exit_factory_target==0x524598);
+        CHECK(!story_leave_destination && !story_pending_stage && leave_disconnects==1);
+        CHECK(online_mode==PC_ONLINE_NONE && g_esp==0x1804 && WORD_AT(0x1808)==0x5238f0);
+        /* Unplanned host loss uses the stock full disconnect scheduler. */
+        online_mode=PC_ONLINE_STORY;story_pending_stage=1;WORD_AT(0x79094c)=2;
+        g_esp=0x1800;pc_story_network_disconnect_exit(reward_page_original);
+        CHECK(story_leave_destination==2 && WORD_AT(0x78ad20)==2 && marker==65 && g_esp==0x1804);
+        story_leave_destination=0;online_mode=PC_ONLINE_ARCADE;WORD_AT(0x78ad20)=9;
+        g_esp=0x1800;pc_story_network_disconnect_exit(reward_page_original);
+        CHECK(!story_leave_destination && WORD_AT(0x78ad20)==9 && g_esp==0x1804);
+        g_esp=0x1800;pc_story_network_return_lobby(reward_page_original);
+        CHECK(marker==65 && g_esp==0x1804);
+        /* The real original17 dispatcher must complete before guest Ready.
+           Normal frontend17 outside this owned return stays unmodified. */
+        online_mode=PC_ONLINE_STORY;WORD_AT(0x79094c)=101;WORD_AT(0x76b140)=2;
+        WORD_AT(0x76b1a4)=17;story_lobby_return_pending=0;CHECK(!story_lobby_member());
+        story_lobby_return_pending=1;CHECK(story_lobby_member());
+        WORD_AT(0x4004)=0x4e99d4;WORD_AT(0x402c)=0x8000;
+        WORD_AT(0x774028)=0x30000;((uint8_t *)memory)[0x302fa]=1;
+        WORD_AT(0x6b94d8)=0;g_esp=0x1800;WORD_AT(g_esp+4)=0x4000;
+        story_lobby_run_tick(reward_page_original,0x4e99d4);
+        CHECK(lobby_return_dispatches==1 && lobby_return_resets==1 && WORD_AT(0x76b1a4)==12);
+        CHECK(!story_lobby_return_pending && g_esp==0x1804);
     }
 #endif
     puts("PASS: Story host controls, network-mode preservation and difficulty return");

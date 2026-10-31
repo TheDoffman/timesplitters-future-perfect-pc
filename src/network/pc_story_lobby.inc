@@ -17,17 +17,32 @@ static unsigned story_lobby_options;
 /* Keep Story lobby selections in host-owned state while the original network
  * lobby stays active. Apply guest Story fields only on a coordinated launch. */
 static uint32_t story_lobby_mission,story_lobby_difficulty;
+static int story_lobby_return_build,story_lobby_return_pending;
+extern void sub_003544B0(void),sub_003535C0(void);
 
 static int story_lobby_host(void)
 {
     return pc_online_mode()==PC_ONLINE_STORY && WORD_AT(0x0076B140u)==1u &&
-        WORD_AT(0x0076B1A4u)==11u;
+        (WORD_AT(0x0076B1A4u)==11u || story_lobby_return_build ||
+         (story_lobby_return_pending && WORD_AT(0x79094cu)==101u &&
+          (WORD_AT(0x76b1a4u)==16u || WORD_AT(0x76b1a4u)==17u)));
 }
 
 static int story_lobby_member(void)
 {
     return story_lobby_host() || (pc_online_mode()==PC_ONLINE_STORY &&
-        WORD_AT(0x0076B140u)==2u && WORD_AT(0x0076B1A4u)==12u);
+        WORD_AT(0x0076B140u)==2u && (WORD_AT(0x0076B1A4u)==12u || story_lobby_return_build ||
+        (story_lobby_return_pending && WORD_AT(0x79094cu)==101u &&
+         (WORD_AT(0x76b1a4u)==16u || WORD_AT(0x76b1a4u)==17u))));
+}
+/* The outgoing lobby still draws during phase10 loading. Keep presentation
+   scoped to Story while leaving input/config ownership at phases11/12. */
+static int story_lobby_rendering(void)
+{
+    const unsigned role=WORD_AT(0x76b140u);
+    return story_lobby_member() ||
+        (pc_online_mode()==PC_ONLINE_STORY && WORD_AT(0x79094cu)==101u &&
+         WORD_AT(0x76b1a4u)==10u && (role==1u || role==2u));
 }
 unsigned pc_story_network_player_limit(void)
 { return pc_online_mode()==PC_ONLINE_STORY?4u:0u; }
@@ -213,7 +228,7 @@ void pc_story_lobby_details(void (*original)(void))
 {
 #ifdef _WIN32
     const uint32_t frame=g_esp;
-    if(story_lobby_member() && WORD_AT(frame)==0x00199650u &&
+    if(story_lobby_rendering() && WORD_AT(frame)==0x00199650u &&
        guest_writable(story_body_menu,0xf8u) && guest_writable(story_body_rect,16u) &&
        story_lobby_mission<13u) {
         float bounds[4];memcpy(bounds,(const void *)((uintptr_t)story_body_rect+g_xbox_mem_offset),16u);
@@ -244,6 +259,8 @@ void pc_story_lobby_details(void (*original)(void))
             restore_registers(&r);g_esp+=4u;return;
         }
     }
+    /* Collapsing bounds must not reach the Arcade formatter with Story data. */
+    if(story_lobby_rendering() && WORD_AT(frame)==0x00199650u) {g_esp+=4u;return;}
 #endif
     original();
 }
@@ -277,6 +294,22 @@ static void story_lobby_run_tick(void (*original)(void),uint32_t descriptor)
     const uint32_t menu=WORD_AT(g_esp+4u);
     if(!story_lobby_member() || !guest_writable(menu,0x1c4u) ||
        WORD_AT(menu+4u)!=descriptor) { original();return; }
+    if(story_lobby_return_pending && WORD_AT(0x79094cu)==101u) {
+        /* Unload enters16 and its last network tick enters17. The frontend's
+           lobby tick must finish that original dispatcher before readiness;
+           its ordinary frontend pump otherwise leaves a guest stranded17. */
+        GuestRegisters saved;save_registers(&saved);
+        for(unsigned i=0;i<2u && (WORD_AT(0x76b1a4u)==16u || WORD_AT(0x76b1a4u)==17u);i++)
+            guest_call(sub_003544B0,0);
+        restore_registers(&saved);
+        if(WORD_AT(0x76b1a4u)==11u || WORD_AT(0x76b1a4u)==12u) {
+            /* The retained lobby must not inherit match clock/preparation
+               flags and object caches. This original reset preserves peers
+               and player records, unlike the full356BB0 disconnect. */
+            save_registers(&saved);guest_call(sub_003535C0,0);restore_registers(&saved);
+            story_lobby_return_pending=0;
+        }
+    }
     story_lobby_parent=WORD_AT(menu+0x2cu);
     story_lobby_descriptor=WORD_AT(menu+4u);
     story_lobby_received_selection();
@@ -405,18 +438,19 @@ static void story_lobby_difficulty_select(void)
 }
 static void (*story_lobby_lookup(uint32_t address))(void)
 {
-    if(!story_lobby_member()) return NULL;
+    if(!story_lobby_rendering()) return NULL;
     if(address==STORY_BODY_CB) {
         const uint32_t menu=WORD_AT(g_esp+4u);
         if(story_lobby_options==2u && story_difficulty_descriptor && guest_writable(menu,8u) &&
            WORD_AT(menu+4u)==story_difficulty_descriptor) return story_lobby_difficulty_draw;
         return story_lobby_body;
     }
-    if(address==0x001A8F30u && !story_lobby_host()) return story_lobby_guest_tick;
     if(address==STORY_BUILD_CB && guest_writable(WORD_AT(g_esp+4u),8u)) {
         const uint32_t descriptor=WORD_AT(WORD_AT(g_esp+4u)+4u);
         if(descriptor==0x004E99C4u || descriptor==0x004E99D4u) return story_lobby_header;
     }
+    if(!story_lobby_member()) return NULL;
+    if(address==0x001A8F30u && !story_lobby_host()) return story_lobby_guest_tick;
     if(!story_lobby_host()) return NULL;
     switch(address) {
     case STORY_BACK_CB:

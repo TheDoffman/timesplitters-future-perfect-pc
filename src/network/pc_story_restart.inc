@@ -5,6 +5,51 @@ extern void sub_000653B0(void);
 extern void sub_00065470_gen(void),sub_00065C70(void);
 extern void sub_002EAFC0_gen(void),sub_002EB030_gen(void),sub_002EC090_gen(void),sub_002EC650_gen(void);
 static unsigned story_rewards_exit_depth;
+/* Abort paths have no campaign result. Stock65470 retains the match and sends
+   the host's reliable return-to-lobby packet;65420 disconnects only this peer. */
+extern void sub_00065420(void);
+static int story_restart_session(void);
+extern void sub_002EBE60(void);
+static unsigned story_leave_destination; /* 1: retained lobby, 2: main menu */
+static unsigned story_leave_exit_depth;
+static void story_leave_begin(unsigned destination,int close_menu)
+{
+    story_leave_destination=destination;
+    story_lobby_return_pending=destination==1u;
+    story_context_start_pending=0;
+    story_rewards_tracking=0;
+    WORD_AT(0x0078ad20u)=destination==1u?13u:2u;
+    WORD_AT(0x78ad24u)|=0x10000u; /* Stock exit/frontend notification, no awards. */
+    if(destination==1u && WORD_AT(0x76b140u)==1u) {
+        /* Original356490 marks the advertised host as in-game at774178.
+           Retire that start intent before lobby advertisements resume, or a
+           guest treats the cached intro config as a fresh automatic GO. */
+        WORD_AT(0x774178u)=0;
+    }
+    GuestRegisters saved;save_registers(&saved);
+    const uint32_t menu=WORD_AT(0x00761bbcu);
+    if(close_menu && guest_writable(menu,8u)) guest_call(sub_00079B70,2,menu,0u);
+    /* Keep the original all-port menu-state teardown. A remote host return
+       does not close a menu tree: the guest may have no pause dialog open. */
+    ++story_leave_exit_depth;
+    guest_call(sub_002EC650_gen,0);
+    --story_leave_exit_depth;
+    restore_registers(&saved);
+    fprintf(stderr,"[PC-STORY-LEAVE] destination=%u role=%u phase=%u\n",
+        destination,WORD_AT(0x76b140u),WORD_AT(0x76b1a4u));
+}
+
+static void story_leave_confirm(void)
+{
+    const uint32_t menu=WORD_AT(g_esp+4u);
+    if(story_restart_session() && guest_writable(menu,0x190u) && WORD_AT(menu+0x18cu)==0x40u) {
+        story_leave_begin(WORD_AT(0x76b140u)==1u?1u:2u,1);
+        WORD_AT(0x789640u)=0;
+        g_eax=0;g_esp+=4u;return;
+    }
+    sub_002EBE60();
+}
+
 typedef struct StoryRestart {uint32_t magic,match,epoch,checkpoint;} StoryRestart;
 #define STORY_RESTART_MAGIC 0x31525353u
 static int story_restart_replay;
@@ -277,6 +322,36 @@ void pc_story_network_rewards_menu(void (*original)(void))
 {
 #ifdef _WIN32
     if(story_online_return_menu(original)) return;
+    if(story_leave_destination && WORD_AT(0x79094cu)==101u && guest_writable(g_esp,16u) &&
+       WORD_AT(g_esp+4u)==WORD_AT(0x7613e4u) && WORD_AT(0x7613e4u) &&
+       (WORD_AT(g_esp+8u)==0x524598u || WORD_AT(g_esp+8u)==0x4e99c4u ||
+        WORD_AT(g_esp+8u)==0x4e99d4u || WORD_AT(g_esp+8u)==0x5238e0u ||
+        WORD_AT(g_esp+8u)==0x5238f0u)) {
+        const uint32_t frame=g_esp,destination=WORD_AT(frame+8u);
+        const unsigned leaving=story_leave_destination;
+        story_leave_destination=0;
+        story_pending_stage=0;
+        if(leaving==2u) {
+            /* Normal unload has retired gameplay. Clean guest handles while
+               sockets still exist, before stopping this peer's companion. */
+            GuestRegisters saved;save_registers(&saved);
+            guest_call(sub_001CC360,0);
+            restore_registers(&saved);
+            pc_online_disconnect();
+        }
+        WORD_AT(frame+8u)=leaving==2u?0x524598u:
+            (WORD_AT(0x76b140u)==1u?0x4e99c4u:0x4e99d4u);
+        /* Install Story lobby callbacks before the stock16/17 handshake
+           finishes, without changing its transport phase or undoing progress
+           made by the original constructor's nested network pump. */
+        const int previous_build=story_lobby_return_build;
+        if(leaving==1u) story_lobby_return_build=1;
+        original();
+        story_lobby_return_build=previous_build;
+        WORD_AT(frame+8u)=destination;
+        return;
+    }
+
     const uint32_t frame=g_esp;
     if(story_rewards_guest() && guest_writable(frame,16u) &&
        WORD_AT(frame+8u)==0x005236dcu && !story_rewards_count()) {
@@ -302,7 +377,7 @@ void pc_story_network_profile_save(void (*original)(void))
         WORD_AT(0x76b140u),WORD_AT(0x79094cu),story_pending_stage,WORD_AT(0x76b108u),
         story_network_session(),WORD_AT(0x74e934u),story_rewards_profile_count,
         guest_writable(g_esp,4u)?WORD_AT(g_esp):0u);
-    if(story_rewards_guest()) {
+    if(story_rewards_guest() || (story_network_session() && story_leave_destination)) {
         enum { PROFILE_BYTES=0x1f54u,PROFILE_SLOTS=16u };
         const uint32_t table=0x7bedc0u;
         const unsigned count=WORD_AT(0x74e934u);
@@ -345,6 +420,13 @@ void pc_story_network_profile_save(void (*original)(void))
 void pc_story_network_result_action(void (*original)(void),unsigned action)
 {
 #ifdef _WIN32
+    if(!action && original==sub_00065470_gen && story_leave_exit_depth && story_leave_destination==2u) {
+        sub_00065420();return;
+    }
+    if(!action && original==sub_002EC090_gen && story_restart_session()) {
+        story_leave_begin(WORD_AT(0x76b140u)==1u?1u:2u,1);
+        g_eax=0;g_esp+=4u;return;
+    }
     if(story_network_session() && getenv("TSFP_STORY_TRACE")) fprintf(stderr,
         "[PC-STORY-RESULT] caller=%08X role=%u phase=%u scene=%u pending=%u action=%u rewards_depth=%u exit=%u\n",
         guest_writable(g_esp,4u)?WORD_AT(g_esp):0u,WORD_AT(0x76b140u),WORD_AT(0x76b1a4u),
@@ -436,4 +518,29 @@ void pc_story_network_pause_layout(uint32_t menu)
 #else
     (void)menu;
 #endif
+}
+
+/* Original reliable classB receiver records completion before its exit callback.
+   Intercept before that recording, rather than redirecting the rewards later. */
+void pc_story_network_return_lobby(void (*original)(void))
+{
+#ifdef _WIN32
+    if(story_restart_session() && WORD_AT(0x76b140u)==2u) {
+        story_leave_begin(1u,0);g_eax=0;g_esp+=4u;return;
+    }
+#endif
+    original();
+}
+void pc_story_network_disconnect_exit(void (*original)(void))
+{
+#ifdef _WIN32
+    if(story_network_session() && story_pending_stage && WORD_AT(0x79094cu)!=101u) {
+        /* The stock peer-loss path calls65420 for the lost host. Keep its
+           transport teardown, but choose main instead of campaign rewards. */
+        story_leave_destination=2u;
+        story_context_start_pending=0;story_rewards_tracking=0;
+        WORD_AT(0x78ad20u)=2u;
+    }
+#endif
+    original();
 }

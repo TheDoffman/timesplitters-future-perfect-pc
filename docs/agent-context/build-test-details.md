@@ -1,3 +1,19 @@
+# Story abort regression - 2026-10-30
+
+Existing registered Story lobby fixtures exercise confirmed host/guest abort,
+host lobby-return reception, deferred final frontend factory, root-construction
+exclusion, guest companion teardown, lost-host scheduler and Arcade fallback.
+Normal reward fixtures remain. The original profile-save fixture also exercises
+abort in frontend101 with the real local body/metadata in network slot1. US contracts pin Online2EBE60's Yes branch2EBDB0,
+the local confirmation,3592F0 recording/exit calls and main/lobby descriptors.
+Original config fixtures execute65420 versus65470 flags,356920 phase16 and
+3592C0's reliable classB send. FOV stubs include the new original delegates.
+The shared network dispatch suite also compiles on Windows and native enabled/
+fallback paths. Story fixtures check phase10 header/body presentation, strict
+control ownership, collapsed detail bounds and Arcade fallback. Original-US
+fixtures execute the retained-party clock/preparation reset and verify peers,
+phase and roster survive. Native live transport remains separate acceptance.
+
 # Story Online Back regression - 2026-10-30
 
 Existing story_menu.c fixture executes browser, host and guest Back wrappers,
