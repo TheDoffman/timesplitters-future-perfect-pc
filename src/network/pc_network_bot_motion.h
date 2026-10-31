@@ -16,10 +16,11 @@ typedef struct PcNetworkBotMotion {
 
 static float pc_network_bot_motion_angle(float a,float b,float t)
 {
-    const float pi=3.14159265358979323846f;
-    float delta=fmodf(b-a,2.f*pi);
-    if(delta>pi) delta-=2.f*pi;
-    if(delta< -pi) delta+=2.f*pi;
+    /* US body C0/C4/C8 and heading70 are degrees; the animator converts
+       with pi/180 only when constructing matrices. */
+    float delta=fmodf(b-a,360.f);
+    if(delta>180.f) delta-=360.f;
+    if(delta< -180.f) delta+=360.f;
     return a+t*delta;
 }
 

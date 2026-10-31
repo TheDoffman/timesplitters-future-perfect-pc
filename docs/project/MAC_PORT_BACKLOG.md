@@ -2254,6 +2254,12 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **NPC facing (2026-10-31, uncommitted):** Shared
+  `pc_network_bot_motion.h` interpolates body rotations/heading in degrees.
+  Windows/native-network dispatch fixtures cover the same helper, and no OS
+  adapter is needed. Physical Mac/mixed-host visual acceptance remains pending:
+  compare NPC facing during turns and0/360 crossings, with animation/corpse checks.
+
 - **Online bot animation cadence (2026-10-31, uncommitted):** Shared
   `pc_network_bots_guest.inc` publishes complete poses each simulation tick,
   including crossfades/death, without advancing guest AI or changing human

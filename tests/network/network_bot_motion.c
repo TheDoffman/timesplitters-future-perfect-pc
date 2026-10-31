@@ -11,7 +11,7 @@ int main(void)
     float previous=0;
     CHECK(!pc_network_bot_motion_sample(&motion,0,&out));
     state.slot=2;state.spawn=7;state.body_present=1;state.health=100;
-    state.entity_flags=0x71;state.heading=3.1f;
+    state.entity_flags=0x71;state.heading=350.f;
     pc_network_bot_motion_push(&motion,&state,0);
     CHECK(pc_network_bot_motion_sample(&motion,0,&out) && near(out.position[0],0));
     /* 20 Hz authoritative motion must produce all 60 Hz presentation steps.
@@ -31,15 +31,20 @@ int main(void)
     }
     CHECK(changes>=55);
     CHECK(near(out.position[0],.95f));
+    /* Guest body rotations and heading use degrees, not radians. A 90-degree
+       turn must interpolate to45, and a north crossing follows350 ->370. */
+    CHECK(near(pc_network_bot_motion_angle(0,90,.5f),45));
+    CHECK(near(pc_network_bot_motion_angle(350,10,.5f),360));
+    CHECK(near(pc_network_bot_motion_angle(10,350,.5f),0));
     /* Packet loss stops at the last host value rather than running guest AI. */
     CHECK(pc_network_bot_motion_sample(&motion,4,&out) && near(out.position[0],1));
     state.position[0]=20;pc_network_bot_motion_push(&motion,&state,4);
     CHECK(pc_network_bot_motion_sample(&motion,4,&out) && near(out.position[0],20));
     /* Uneven arrival: retarget from the in-flight pose, without a position jump. */
-    state.position[0]=21;state.heading=-3.1f;
+    state.position[0]=21;state.heading=10.f;
     pc_network_bot_motion_push(&motion,&state,4.05);
     pc_network_bot_motion_sample(&motion,4.07,&out);previous=out.position[0];
-    CHECK(out.heading>3.1f && out.heading<3.2f);
+    CHECK(out.heading>350.f && out.heading<370.f);
     state.position[0]=22;state.health=45;state.shot.serial=8;
     pc_network_bot_motion_push(&motion,&state,4.07);
     pc_network_bot_motion_sample(&motion,4.07,&out);

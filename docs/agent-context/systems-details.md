@@ -1154,3 +1154,14 @@ adapter now calls the common corpse bridge before original destruction on both
 network hosts. The bridge owns entity/spawn deduplication scoped by actor pool,
 match and host, so removal hooks and snapshot fallbacks cannot double-copy.
 Human, Story NPC and cosmetic-ring objects fail the bot ownership guard.
+
+## NPC facing
+
+US body C0/C4/C8 and heading70 use degrees (360 at475C88, pi/180 at475D0C).
+`pc_network_bot_motion_angle` now wraps at360, preserving the shortest turn at
+0/360. A radians wrap on these values caused large heading errors while each
+per-tick snapshot retargeted a50ms interpolation. Position interpolation,
+atomic animation/lifecycle handling and the existing pose protocol remain.
+The isolated paired probe compares heading/body yaw within matching live
+slot/spawn generations; these asynchronous samples measure state agreement,
+not reviewed render output. Head/torso overlay cache ownership remains local.

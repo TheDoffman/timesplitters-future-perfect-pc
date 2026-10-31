@@ -881,3 +881,8 @@ and atomic blend elapsed on consecutive host ticks and requires each pose to be
 sent, with repeated same-tick callbacks silent. The previous three-tick cadence
 fails this regression on both Windows/native-network fixture variants. Existing
 motion tests retain jitter/loss and atomic crossfade guards; guest AI stays frozen.
+
+NPC facing regression: `network_bot_motion.c` checks degree-domain90-degree
+turns and350/10 crossings. The former radians wrap fails these checks. Existing
+interpolation mutation, jitter/loss and atomic crossfade guards stay selected
+through `test_network_guest_dispatch.py`; Story/corpse fixtures remain unchanged.

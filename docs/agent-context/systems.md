@@ -342,6 +342,8 @@ local-slot and menu rules are unchanged. `test_auto_look.py` checks host behavio
 plus real multi-page records, split/read-only maps, expiry and uncached/persistent
 mutations. Controller and menu paths retain their original preference behavior.
 
+NPC facing: [degree angles and aim controls](systems-details.md#npc-facing).
+
 Online bot presentation uses `pc_network_bot_motion.h` from the shared
 `pc_network_bots_guest_frame` hook. Bots publish each simulation tick, suppressing
 duplicate callbacks in that tick. Frozen guest skeletons need the full pose at

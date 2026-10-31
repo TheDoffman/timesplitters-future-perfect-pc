@@ -1,3 +1,32 @@
+## Online NPC facing angle units - 2026-10-31
+
+Local/uncommitted online-story-coop, base23beb840. The US animator stores body
+Euler rotations and heading in degrees, confirmed by360 wrap and pi/180 matrix
+constants. Guest motion wrapped these values as radians, so per-tick retargeting
+could take the wrong path and accumulate large facing differences. Shared motion
+now wraps at360/180 degrees. Pose protocol, overlay caches, clocks, AI and the
+existing50ms interpolation stay unchanged. Windows/native-network use the same
+math helper. An additional overlay-controller replication experiment was rejected
+after a guest AV; the final change retains original pose/cache handling.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0/D3D11/SDL3.4.16, Original60:
+supported US XBE SHA-256 verified;399.8GiB free before build. Final official Build
+and built-in checks pass (logs/online-facing-build.log), with foreground virtual-
+pad skips. Focused tests45 pass,2 skip23.84s, including degree turns/0-360 crossings,
+existing interpolation mutations, Story packets, corpse and native fallbacks.
+The degree regression fails the prior radians helper. Final isolated Online
+probe exits0 with cleanup complete; seven guest bot corpse copies logged.
+Same-tick live actor/spawn comparisons: heading median51.003 ->0.199degrees;
+body yaw median50.792 ->0.265. Final heading/yaw95th percentile87degrees includes
+abrupt-turn transitions under the existing interpolation; baseline146.4degrees.
+Peer sample clock median1ms,p9511ms. These are asynchronous state comparisons,
+not reviewed rendering. The user confirmed the facing fix after visual Online
+testing. Physical Mac/mixed-host acceptance remains pending. Evidence logs/online-bots-facing-probe/baseline-summary,
+fixed-summary,observations,provenance JSON and1.err. Failed overlay experiment
+summary/provenance retained separately. Context/index and diff checks pass.
+Compatibility2b66c6d13c64f5fd414677ccce56caf05ff9e335647a20e06d8229ae746ff982;
+executable SHA-256 1ac4d003ef264b9b6f2b0d734aa071f232ab4087cacf18115768a22be211d87b.
+
 ## Online guest NPC animation cadence - 2026-10-31
 
 Local/uncommitted online-story-coop, base3f04d640. Online bots previously sent
