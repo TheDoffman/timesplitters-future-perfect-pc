@@ -12,13 +12,31 @@ def run_tk_check(name, *args):
     # Each Online application owns one Tcl interpreter. Repeated Tk teardown
     # in pytest's long-lived process can break later Tcl initialization;
     # keep real widgets/assertions, but give each lifecycle its own process.
-    result = subprocess.run([
-        sys.executable, '-c',
-        'import faulthandler,json,runpy,sys; faulthandler.dump_traceback_later(20,repeat=True); '
-        'runpy.run_path(sys.argv[1])[sys.argv[2]](*json.loads(sys.argv[3]))',
-        str(Path(__file__).resolve()), name, json.dumps(args),
-    ], capture_output=True, text=True, timeout=60)
+    try:
+        result = subprocess.run([
+            sys.executable, '-c',
+            'import faulthandler,json,runpy,sys; faulthandler.dump_traceback_later(20,repeat=True); '
+            'runpy.run_path(sys.argv[1])[sys.argv[2]](*json.loads(sys.argv[3]))',
+            str(Path(__file__).resolve()), name, json.dumps(args),
+        ], capture_output=True, text=True, timeout=60)
+    except subprocess.TimeoutExpired as error:
+        # TimeoutExpired keeps captured bytes even with text=True. Surface the
+        # child's delayed stacks; the default short traceback hides them.
+        def decoded(value):
+            return value.decode('utf-8', errors='replace') if isinstance(value, bytes) else (value or '')
+        pytest.fail(f'{name}{args} timed out after 60 seconds\n'
+                    + decoded(error.stdout) + decoded(error.stderr), pytrace=False)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_tk_timeout_preserves_child_stack(monkeypatch):
+    def timeout(*args, **kwargs):
+        raise subprocess.TimeoutExpired(args[0], 60, output=b'child progress\n',
+                                        stderr=b'Timeout (0:00:20)!\n  File "tkinter", line 7 in update\n')
+    monkeypatch.setattr(subprocess, 'run', timeout)
+    with pytest.raises(pytest.fail.Exception, match='(?s)child progress.*line 7 in update'):
+        run_tk_check('fixture')
+
 
 
 def test_viewport_converges_after_repeated_geometry_notifications(monkeypatch):
@@ -213,8 +231,29 @@ def _check_browser_layout_and_commands(scale, branded):
         for child in widget.winfo_children():
             yield child
             yield from children(child)
+    def settle():
+        # Cocoa Tk may continuously redraw image-backed controls in update().
+        # Run the application's main loop until widget geometry is stable.
+        import time
+        deadline = time.monotonic() + 3
+        previous, stable = None, 0
+        def sample():
+            nonlocal previous, stable
+            geometry = tuple((str(w), w.winfo_ismapped(), w.winfo_x(), w.winfo_y(),
+                              w.winfo_width(), w.winfo_height(),
+                              w.winfo_reqwidth(), w.winfo_reqheight())
+                             for w in children(root))
+            stable = stable + 1 if geometry == previous else 0
+            previous = geometry
+            if stable >= 3 or time.monotonic() >= deadline:
+                root.quit()
+            else:
+                root.after(25, sample)
+        root.after(25, sample)
+        root.mainloop()
+        assert stable >= 3, 'Online widget geometry did not settle within 3 seconds'
     def check_bounds():
-        root.update()
+        settle()
         for child in children(root):
             if not child.winfo_ismapped():
                 continue
@@ -244,7 +283,7 @@ def _check_browser_layout_and_commands(scale, branded):
         tabs.select(0)
         # Growing and shrinking must not retain the labels' old wrap width.
         root.geometry('2400x1100')
-        root.update()
+        settle()
         root.geometry('1080x860')
         check_bounds()
         # Minimum supported size must keep controls reachable.
@@ -258,7 +297,7 @@ def _check_browser_layout_and_commands(scale, branded):
         host_button = next(w for w in children(root) if isinstance(w, ttk.Button)
                            and w.cget('text') == 'Start New Match')
         host_button.focus_force()
-        root.update()
+        settle()
         canvas = next(w for w in children(root) if isinstance(w, tk.Canvas))
         assert canvas.winfo_rooty() <= host_button.winfo_rooty()
         assert host_button.winfo_rooty() + host_button.winfo_height() <= canvas.winfo_rooty() + canvas.winfo_height()
@@ -267,7 +306,7 @@ def _check_browser_layout_and_commands(scale, branded):
         directory_view = root.nametowidget(tabs.tabs()[1])
         certificate = [w for w in children(directory_view) if isinstance(w, ttk.Entry)][-1]
         certificate.focus_force()
-        root.update()
+        settle()
         directory_canvas = next(w for w in children(directory_view) if isinstance(w, tk.Canvas))
         assert directory_canvas.winfo_rooty() <= certificate.winfo_rooty()
         assert certificate.winfo_rooty() + certificate.winfo_height() <= directory_canvas.winfo_rooty() + directory_canvas.winfo_height()
@@ -276,7 +315,7 @@ def _check_browser_layout_and_commands(scale, branded):
         popup.winfo_screenheight = lambda: 768
         theme.track(popup)
         build_invitation(popup, 'Example invitation', 'EXAMPLE', 30821)
-        root.update()
+        settle()
         # Popup descendants are checked separately because Toplevel positions
         # are screen-relative, not relative to their logical owner.
         for child in children(popup):
@@ -287,7 +326,7 @@ def _check_browser_layout_and_commands(scale, branded):
                 assert child.winfo_y() + child.winfo_height() <= child.master.winfo_height() + 2
         return_button = next(w for w in children(popup) if isinstance(w, ttk.Button) and w.cget('text') == 'Return to game')
         return_button.focus_force()
-        root.update()
+        settle()
         popup_canvas = next(w for w in children(popup) if isinstance(w, tk.Canvas))
         assert popup_canvas.winfo_rooty() <= return_button.winfo_rooty()
         assert return_button.winfo_rooty() + return_button.winfo_height() <= popup_canvas.winfo_rooty() + popup_canvas.winfo_height()

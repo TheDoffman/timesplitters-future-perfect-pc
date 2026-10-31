@@ -1,0 +1,20 @@
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -720,8 +720,8 @@
+     xbox_HalReturnToFirmware(routine);
+ }
+ 
+-/* The host asking to quit -- the user closed the window. The same flushes as
+- * a title's own exit above, then ExitProcess, which runs no atexit handler.
++/* The host asking to quit -- the user closed the window. Preserve the guest
++ * diagnostics, then run CRT cleanup (including final audio health reports).
+  * Called from whichever thread owns the window. */
+ void xbox_HostExit(const char *why)
+ {
+@@ -732,5 +732,5 @@
+         extern void recomp_profile_dump(void);
+         recomp_profile_dump();
+     }
+-    ExitProcess(0);
++    exit(0);
+ }

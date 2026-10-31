@@ -15,6 +15,12 @@ const uint32_t hle_var_CDirectSoundVoice_SetVolume = 0;
 const uint32_t hle_var_CDirectSoundStream_SetVolume = 0;
 const uint32_t hle_var_CDirectSound3DCalculator_Calculate3D = 0;
 const uint32_t hle_var_CDirectSound3DCalculator_GetVoiceData = 0;
+static void (*release_callback)(void);
+static void release_original(void) {
+    if (release_callback) release_callback();
+    else g_eax = 0x80004005u;
+}
+void (*const hle_original_CDirectSoundBuffer_Release)(void) = release_original;
 void (*const hle_original_IDirectSoundBuffer_SetFormat)(void) = NULL;
 void (*const hle_original_IDirectSoundBuffer_SetBufferData)(void) = NULL;
 void (*const hle_original_CMcpxVoiceClient_Commit3dSettings_0)(void) = NULL;
@@ -29,6 +35,9 @@ static void acoustic_ray_mock(void) {
 recomp_func_t recomp_lookup(uint32_t address) { return acoustic_mock && address==0x88950 ? acoustic_ray_mock : NULL; }
 int xbox_EnvSwitch(const char *name, int value) { return value; }
 void hle_dsound_stream_tick(uint64_t now) { }
+void hle_dsound_stream_acoustics(uint32_t settings,float obstruction,float room,int ambience) {}
+void hle_dsound_stream_spatial(uint32_t settings,float pan,int enabled) { }
+#ifndef TSFP_INTEGRATED_AUDIO
 static unsigned reset_count[256];
 void recomp_audio_output_reset_voice(uint32_t slot) { reset_count[slot]++; }
 static int fake_device;
@@ -39,8 +48,6 @@ int recomp_audio_output_position(uint32_t slot, uint64_t *played, uint32_t *queu
     if (queued) *queued = fake_until[slot] > fake_now;
     return 1;
 }
-void hle_dsound_stream_acoustics(uint32_t settings,float obstruction,float room,int ambience) {}
-void hle_dsound_stream_spatial(uint32_t settings,float pan,int enabled) { }
 void recomp_audio_output_set_ambience(uint32_t slot,int enabled) {}
 void recomp_audio_output_set_acoustics(uint32_t slot,float obstruction,float room) {}
 void recomp_audio_output_set_spatial(uint32_t slot,float pan,int enabled) { }
@@ -60,12 +67,14 @@ int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes
     first_byte = pcm[0];
     return 1;
 }
+#endif
 int xbox_adpcm_decode_block(const uint8_t *block, size_t bytes, unsigned channels,
                             int16_t *pcm, size_t samples)
 { memset(pcm, 0, samples * sizeof *pcm); return 1; }
 #define CHECK(condition) do { if (!(condition)) { \
     fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #condition); return 1; } } while (0)
 
+#ifndef TSFP_INTEGRATED_AUDIO
 int main(int argc, char **argv)
 {
     if(argc==2 && !strcmp(argv[1],"acoustics")) {
@@ -153,3 +162,5 @@ int main(int argc, char **argv)
     puts("PASS: refused buffer PCM is retried, including a non-looping tail");
     return 0;
 }
+
+#endif

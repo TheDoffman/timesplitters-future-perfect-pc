@@ -8,6 +8,37 @@ static int submit(unsigned slot=0) {
 }
 int main(int argc, char **argv) {
     assert(argc==2); const char *mode=argv[1]; pcm[0]=0x51;
+    if (!strcmp(mode,"exit-failure")) {
+        fail_operation="engine"; assert(!submit()); return 0;
+    }
+    if (!strcmp(mode,"exit-muted")) { assert(!submit()); return 0; }
+    if (!strcmp(mode,"diagnostics")) {
+        RecompAudioEngineStats stats{};
+        fail_operation="engine"; assert(!submit());
+        assert(!recomp_audio_output_engine_stats(&stats));
+        assert(stats.open_attempts==1 && stats.device_failed==1 && stats.unavailable==1 && !stats.opens);
+        fail_operation=nullptr; fake_ms=1000; assert(submit());
+        for(unsigned i=1;i<12;i++) assert(submit());
+        assert(!submit());
+        assert(!recomp_audio_output_submit(0,pcm,3,48000,2,16,0));
+        voices[0].source->queued=0;
+        fail_operation="submit"; assert(!submit());
+        fail_operation=nullptr; assert(!submit());
+        assert(recomp_audio_output_engine_stats(&stats));
+        assert(stats.queue_full==1 && stats.invalid_pcm==1 && stats.voice_failed==1 && stats.retry_wait==1);
+        fake_ms=2000; assert(submit());
+        registered->OnCriticalError(XAUDIO2_E_DEVICE_INVALIDATED);
+        assert(!submit()); fake_ms=3000; assert(submit());
+        assert(recomp_audio_output_engine_stats(&stats));
+        assert(stats.open_attempts==3 && stats.opens==2 && stats.device_failed==2);
+        assert(stats.queue_full==1 && stats.invalid_pcm==1 && stats.unavailable==2);
+        recomp_audio_output_reset_voice(0);
+        recomp_audio_output_shutdown();
+        recomp_audio_output_shutdown();
+        assert(!recomp_audio_output_engine_stats(&stats));
+        assert(stats.queue_full==1 && stats.voice_failed==1 && stats.opens==2);
+        return 0;
+    }
     if (!strcmp(mode,"muted") || !strcmp(mode,"invalid-gain")) {
         for(fake_ms=0;fake_ms<5000;fake_ms+=1000) assert(!submit());
         assert(opened==0); return 0;
