@@ -29,6 +29,42 @@
       ]
     },
     {
+      "name": "0035-dsound-busy-buffer-recovery.patch",
+      "path": "patches/media/0035-dsound-busy-buffer-recovery.patch",
+      "sha256": "095a8361d09fbb85d72da999693dae58a590cb7ca7bfc6f034578b6d8415ed39",
+      "targets": [
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
+      "name": "0036-dsound-invalid-buffer-retirement.patch",
+      "path": "patches/media/0036-dsound-invalid-buffer-retirement.patch",
+      "sha256": "ddf6bf8d49d9872b687a7582413073c6fa50ec0eb66097a0fed69bace367fa54",
+      "targets": [
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
+      "name": "0037-dsound-format-and-tail-recovery.patch",
+      "path": "patches/media/0037-dsound-format-and-tail-recovery.patch",
+      "sha256": "f90088034adb35c0115b3a44be117eb4c221d461dae135bbc0a20fa9df0d9ae8",
+      "targets": [
+        "src/hle/hle_dsound.c",
+        "src/hle/hle_dsound_stream.c"
+      ]
+    },
+    {
+      "name": "0038-audio-device-recovery.patch",
+      "path": "patches/media/0038-audio-device-recovery.patch",
+      "sha256": "a01980bda064c90237e6675ffcc9ac9436f2f72524eba0ae09a6419d7089288f",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_dsound_stream.c",
+        "src/hle/hle_xmv_play.c"
+      ]
+    },
+    {
       "name": "0040-gpu-pfb-flush-ack.patch",
       "path": "patches/graphics/rendering/0040-gpu-pfb-flush-ack.patch",
       "sha256": "57e2b78f8c7735ecc0d08f25e8c0f6c8b5bd4172243bdab4d5dac3970a79d7df",

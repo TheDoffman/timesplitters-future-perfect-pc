@@ -1,0 +1,99 @@
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -76,7 +76,7 @@
+ 
+ typedef struct Buffer {
+     uint32_t iface;              /* the IDirectSoundBuffer the game holds */
+-    uint32_t data, size, format;
++    uint32_t data, size, format, rate, align;
+     int      output;             /* samples we can send to the host */
+     /* IDirectSoundBuffer_Pause: the model is stopped with its cursor kept,
+      * and paused_flags holds the play flags to resume with. */
+@@ -599,7 +599,7 @@
+ {
+     Buffer *b = known ? known : find(iface);
+     uint32_t size, data, format, tag, channels, bits, align, rate, loop_start;
+-    uint32_t decoded_size, decoded_loop, block_align;
++    uint32_t decoded_size, decoded_loop, block_align, raw_size;
+     int output;
+     uint32_t i;
+ 
+@@ -621,7 +621,8 @@
+     channels   = (format >> 16) & 0xFFu;
+     bits       = format >> 24;
+ 
+-    if (b && (b->data != data || b->size != size || b->format != format)) {
++    if (b && (b->data != data || b->size != size || b->format != format ||
++              b->rate != rate || b->align != align)) {
+         retire(b);
+         b = NULL;
+     }
+@@ -635,18 +636,14 @@
+      * with no model and no sound. The tail is less than one block. b->size
+      * below keeps the raw size, so a real change is still noticed. */
+     {
+-        uint32_t raw_size = size;
++        raw_size = size;
+         size -= size % align;
+         if (size == 0u) {
+             if (b) retire(b);
+             return NULL;
+         }
+-        if (b) {
+-            b->size = raw_size;
+-        }
+         if (loop_start >= size)
+             loop_start = 0u;
+-        (void)raw_size;
+     }
+     if (loop_start >= size || loop_start % align != 0u)
+         loop_start = 0u;
+@@ -691,8 +688,10 @@
+                 return NULL;
+             b->iface = iface;
+             b->data = data;
+-            b->size = size;
++            b->size = raw_size;
+             b->format = format;
++            b->rate = rate;
++            b->align = align;
+             b->output = output;
+             b->model.loop_start_bytes = decoded_loop;
+             b->output_model = b->model;
+--- a/src/hle/hle_dsound_stream.c
++++ b/src/hle/hle_dsound_stream.c
+@@ -595,7 +595,9 @@
+ static void relayout(Stream *s, uint64_t now, uint32_t new_freq, uint32_t wfx)
+ {
+     uint64_t c, pos;
+-    int i;
++    uint32_t old_tag = s->tag, old_channels = s->channels;
++    uint32_t old_bits = s->bits, old_align = s->align;
++    int i, layout_changed;
+ 
+     sync_to_host(s, now);
+     complete_passed(s, now);
+@@ -604,16 +606,21 @@
+     if (wfx)
+         read_format(s, wfx);
+     s->freq = new_freq;
++    /* Rate/frequency changes do not change the packet's byte layout. Keep
++     * its original start so pump resumes at the exact unheard sample,
++     * including a position inside an ADPCM block or a paused packet. */
++    layout_changed = wfx && (s->tag != old_tag || s->channels != old_channels ||
++                            s->bits != old_bits || s->align != old_align);
+     pos = c;
+     for (i = 0; i < s->count; i++) {
+         Packet *p = &s->packets[(s->head + i) % MAX_PACKETS];
+-        if (wfx) {
++        if (layout_changed) {
+             p->start = pos;
+             p->end   = pos + decoded_size(s, p->size);
+         }
+         pos = p->end;
+     }
+-    if (wfx || pos > s->queued)
++    if (layout_changed || pos > s->queued)
+         s->queued = pos;
+     s->consumed_base = c;
+     s->sent          = c;

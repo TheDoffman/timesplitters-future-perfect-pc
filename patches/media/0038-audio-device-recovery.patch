@@ -1,0 +1,369 @@
+--- a/src/hle/audio_output_xaudio2.cpp
++++ b/src/hle/audio_output_xaudio2.cpp
+@@ -17,6 +17,7 @@
+ #include <cstdio>
+ #include <cstdlib>
+ #include <cstring>
++#include <mutex>
+ 
+ namespace {
+ 
+@@ -41,6 +42,7 @@
+     PcmBuffer buffers[kQueueSize];
+     uint32_t sample_rate, channels, bits_per_sample;
+     uint32_t front, queued;
++    double retry_ms;
+ };
+ 
+ std::atomic<HRESULT> critical_error{S_OK};
+@@ -59,7 +61,20 @@
+ IXAudio2MasteringVoice *master;
+ OutputVoice voices[kVoiceCount];
+ bool reported_nonzero[kVoiceCount];
+-bool attempted, com_initialized, callback_registered, summary_printed;
++bool attempted, callback_registered, summary_printed;
++bool discontinuity[kVoiceCount];
++double retry_ms;
++std::recursive_mutex output_lock;
++/* COM apartments belong to threads, not the recoverable engine. */
++struct ComApartment {
++    HRESULT result = E_FAIL;
++    HRESULT initialize() {
++        if (FAILED(result) && result != RPC_E_CHANGED_MODE)
++            result = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
++        return result;
++    }
++    ~ComApartment() { if (SUCCEEDED(result)) CoUninitialize(); }
++};
+ unsigned long long submitted_buffers, submitted_bytes, nonzero_buffers;
+ unsigned long long dropped_buffers;
+ /* What creating and destroying source voices costs the calling thread. */
+@@ -102,22 +117,36 @@
+     }
+     engine = nullptr;
+     callback_registered = false;
+-    if (com_initialized) CoUninitialize();
+-    com_initialized = false;
+ }
+ 
+ void disableOutput(const char *operation, HRESULT error)
+ {
+     std::fprintf(stderr,
+-        "[audio-output] disabled operation=%s error=0x%08lx\n",
++        "[audio-output] retrying operation=%s error=0x%08lx\n",
+         operation, static_cast<unsigned long>(error));
++    for (uint32_t i = 0; i < kVoiceCount; ++i)
++        if (voices[i].source) discontinuity[i] = true;
+     releaseOutput();
++    critical_error.store(S_OK, std::memory_order_relaxed);
++    attempted = false;
++    retry_ms = nowMs() + RECOMP_AUDIO_RETRY_MS;
+ }
+ 
+ void checkCriticalError()
+ {
+     const HRESULT error = critical_error.load(std::memory_order_relaxed);
+     if (engine && FAILED(error)) disableOutput("device", error);
++}
++
++void failVoice(uint32_t slot, const char *operation, HRESULT error)
++{
++    if (error == XAUDIO2_E_DEVICE_INVALIDATED) {
++        disableOutput(operation, error);
++        return;
++    }
++    discontinuity[slot] = true;
++    destroyVoice(voices[slot]);
++    voices[slot].retry_ms = nowMs() + RECOMP_AUDIO_RETRY_MS;
+ }
+ 
+ void dropBuffer(uint32_t slot, const char *reason)
+@@ -135,8 +164,10 @@
+ 
+ extern "C" void recomp_audio_output_initialize(void)
+ {
+-    checkCriticalError();
+-    if (attempted) return;
++    std::lock_guard<std::recursive_mutex> guard(output_lock);
++    if (summary_printed) return;
++    checkCriticalError();
++    if (attempted || nowMs() < retry_ms) return;
+     attempted = true;
+     double gain = RECOMP_AUDIO_DEFAULT_GAIN;
+     const char *setting = std::getenv("RECOMP_AUDIO_GAIN");
+@@ -154,12 +185,12 @@
+         std::fprintf(stderr, "[audio-output] muted RECOMP_AUDIO_GAIN=0\n");
+         return;
+     }
+-    HRESULT error = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+-    if (FAILED(error)) {
++    static thread_local ComApartment apartment;
++    HRESULT error = apartment.initialize();
++    if (FAILED(error) && error != RPC_E_CHANGED_MODE) {
+         disableOutput("CoInitializeEx", error);
+         return;
+     }
+-    com_initialized = true;
+     error = XAudio2Create(&engine, 0, XAUDIO2_DEFAULT_PROCESSOR);
+     if (FAILED(error)) {
+         disableOutput("XAudio2Create", error);
+@@ -198,6 +229,7 @@
+ 
+ extern "C" void recomp_audio_output_shutdown(void)
+ {
++    std::lock_guard<std::recursive_mutex> guard(output_lock);
+     if (summary_printed) return;
+     checkCriticalError();
+     releaseOutput();
+@@ -211,13 +243,19 @@
+ 
+ extern "C" void recomp_audio_output_reset_voice(uint32_t slot)
+ {
+-    checkCriticalError();
+-    if (slot < kVoiceCount) destroyVoice(voices[slot]);
++    std::lock_guard<std::recursive_mutex> guard(output_lock);
++    checkCriticalError();
++    if (slot < kVoiceCount) {
++        destroyVoice(voices[slot]);
++        discontinuity[slot] = false;
++    }
+ }
+ 
+ extern "C" int recomp_audio_output_position(uint32_t slot, uint64_t *played_bytes,
+                                             uint32_t *queued_buffers)
+ {
++    std::lock_guard<std::recursive_mutex> guard(output_lock);
++    checkCriticalError();
+     if (!engine || slot >= kVoiceCount) return 0;
+     OutputVoice &voice = voices[slot];
+     if (!voice.source) return 0;
+@@ -241,15 +279,20 @@
+ 
+ extern "C" int recomp_audio_output_set_volume(uint32_t slot, int32_t volume_hundredth_db)
+ {
++    std::lock_guard<std::recursive_mutex> guard(output_lock);
++    checkCriticalError();
+     if (!engine || slot >= kVoiceCount) return 0;
+     OutputVoice &voice = voices[slot];
+     if (!voice.source) return 0;
+-    if (FAILED(voice.source->SetVolume(gainOf(volume_hundredth_db)))) return 0;
++    HRESULT error = voice.source->SetVolume(gainOf(volume_hundredth_db));
++    if (FAILED(error)) { failVoice(slot, "SetVolume", error); return 0; }
+     return 1;
+ }
+ 
+ extern "C" int recomp_audio_output_engine_stats(RecompAudioEngineStats *stats)
+ {
++    std::lock_guard<std::recursive_mutex> guard(output_lock);
++    checkCriticalError();
+     if (!stats) return 0;
+     *stats = {};
+     stats->voices_created = voices_created;
+@@ -276,8 +319,12 @@
+     uint32_t sample_rate, uint32_t channels, uint32_t bits_per_sample,
+     int32_t volume_hundredth_db)
+ {
++    std::lock_guard<std::recursive_mutex> guard(output_lock);
+     recomp_audio_output_initialize();
+-    if (!engine || bytes == 0) return 0;
++    if (!engine || bytes == 0) {
++        if (slot < kVoiceCount && bytes) discontinuity[slot] = true;
++        return 0;
++    }
+     if (slot >= kVoiceCount || !pcm || bytes > kMaxBufferBytes ||
+         sample_rate < XAUDIO2_MIN_SAMPLE_RATE ||
+         sample_rate > XAUDIO2_MAX_SAMPLE_RATE ||
+@@ -298,6 +345,7 @@
+         destroyVoice(voice);
+     }
+     if (!voice.source) {
++        if (nowMs() < voice.retry_ms) return 0;
+         WAVEFORMATEX format{};
+         format.wFormatTag = WAVE_FORMAT_PCM;
+         format.nChannels = static_cast<WORD>(channels);
+@@ -316,7 +364,7 @@
+         }
+         if (FAILED(error)) {
+             dropBuffer(slot, "create-voice");
+-            disableOutput("CreateSourceVoice", error);
++            failVoice(slot, "CreateSourceVoice", error);
+             return 0;
+         }
+         voice.sample_rate = sample_rate;
+@@ -325,7 +373,7 @@
+         error = voice.source->Start();
+         if (FAILED(error)) {
+             dropBuffer(slot, "start-voice");
+-            disableOutput("Start", error);
++            failVoice(slot, "Start", error);
+             return 0;
+         }
+     }
+@@ -334,7 +382,7 @@
+     HRESULT error = voice.source->SetVolume(gain);
+     if (FAILED(error)) {
+         dropBuffer(slot, "volume");
+-        disableOutput("SetVolume", error);
++        failVoice(slot, "SetVolume", error);
+         return 0;
+     }
+     XAUDIO2_VOICE_STATE state{};
+@@ -365,7 +413,7 @@
+     error = voice.source->SubmitSourceBuffer(&buffer);
+     if (FAILED(error)) {
+         dropBuffer(slot, "submit");
+-        disableOutput("SubmitSourceBuffer", error);
++        failVoice(slot, "SubmitSourceBuffer", error);
+         return 0;
+     }
+     ++voice.queued;
+@@ -386,3 +434,13 @@
+     if (nonzero) reported_nonzero[slot] = true;
+     return 1;
+ }
++
++extern "C" int recomp_audio_output_take_discontinuity(uint32_t slot)
++{
++    std::lock_guard<std::recursive_mutex> guard(output_lock);
++    checkCriticalError();
++    if (slot >= kVoiceCount) return 0;
++    bool lost = discontinuity[slot];
++    discontinuity[slot] = false;
++    return lost ? 1 : 0;
++}
+--- a/src/hle/audio_output.h
++++ b/src/hle/audio_output.h
+@@ -15,17 +15,22 @@
+ extern "C" {
+ #endif
+ 
+-/* Initialization is attempted once per process; an unavailable device or
+-   shutdown leaves guest audio timing unchanged. RECOMP_AUDIO_GAIN is the host
++/* Transient device failures retry at bounded intervals; explicit mute and
++   shutdown stay disabled. RECOMP_AUDIO_GAIN is the host
+    master gain (0..1); absent uses the shared default below. Zero opens no device. */
+ /* -6.02 dB at the output: preserve the game's Music/Sound slider curves and
+  * balance, with a quieter 100% level. Explicit host gain overrides stay exact. */
+ #define RECOMP_AUDIO_DEFAULT_GAIN 0.5f
++#define RECOMP_AUDIO_RETRY_MS 1000u
+ #define RECOMP_AUDIO_SLOT_MOVIE 272u
+ 
+ void recomp_audio_output_initialize(void);
+ void recomp_audio_output_shutdown(void);
+ void recomp_audio_output_reset_voice(uint32_t slot);
++/* Consume a notification that the host discarded a voice unexpectedly.
++   Explicit reset clears it. Call before reading/submitting a continuous
++   timeline, then reanchor to its current clock before feeding a new voice. */
++int recomp_audio_output_take_discontinuity(uint32_t slot);
+ 
+ /* Copies PCM before returning; never retains a guest-memory pointer.
+    Slots: 0..255 for buffers, 256..271 for streams, 272
+--- a/src/hle/hle_dsound_stream.c
++++ b/src/hle/hle_dsound_stream.c
+@@ -118,6 +118,7 @@
+      * the voice and moves this. */
+     uint64_t play_origin;
+     int      play_anchored;          /* the host clock has been read at least once */
++    int      output_lost;           /* reanchor retries until a new voice accepts PCM */
+     int      host_clock;             /* consumed_base is a device snapshot */
+     /* This stream's own drift (see g_drift_ms) and how often its host voice
+      * ran dry while it still had sound to play: each dry spell is a gap the
+@@ -265,6 +266,12 @@
+ 
+     if (!s->output || s->paused || !s->resumed_ms)
+         return;
++    if (recomp_audio_output_take_discontinuity(slot_of(s))) {
++        s->host_clock = 0;
++        s->play_anchored = 0;
++        s->output_lost = 1;
++    }
++    if (s->output_lost) return; /* the old device cursor no longer exists */
+     if (!recomp_audio_output_position(slot_of(s), &played, &queued)) {
+         s->host_clock = 0;
+         return;
+@@ -422,6 +429,12 @@
+ 
+     if (!s->output || s->paused || s->flush_pending || !s->resumed_ms)
+         return;
++    if (s->output_lost) {
++        /* Discard elapsed audio while disconnected. Refused retries do not
++         * pin a stale source offset or reuse the vanished device's origin. */
++        s->sent = consumed(s, now);
++        s->play_origin = s->sent;
++    }
+     target = consumed(s, now) + ms_to_bytes(s, LEAD_MS);
+     if (target > s->queued)
+         target = s->queued;
+@@ -500,6 +513,7 @@
+         if (!recomp_audio_output_submit(slot_of(s), pcm, bytes, play_rate(s), s->channels,
+                                         out_bits(s), s->level))
+             break;
++        s->output_lost = 0;
+         s->sent += bytes;
+     }
+ }
+@@ -511,6 +525,7 @@
+     s->sent = consumed(s, now);
+     s->play_origin = s->sent;
+     s->play_anchored = 0;
++    s->output_lost = 0;
+     s->host_clock = 0;
+     pump(s, now);
+ }
+@@ -626,6 +641,7 @@
+     s->sent          = c;
+     s->play_origin   = c;
+     s->play_anchored = 0;
++    s->output_lost = 0;
+     s->host_clock = 0;
+     s->resumed_ms    = (!s->paused && s->count > 0) ? now : 0u;
+     pump(s, now);
+@@ -808,6 +824,7 @@
+     s->sent = s->queued;
+     s->play_origin = s->queued;
+     s->play_anchored = 0;
++    s->output_lost = 0;
+     s->host_clock = 0;
+     s->dry = 0;
+     s->flush_pending = 0;
+--- a/src/hle/hle_xmv_play.c
++++ b/src/hle/hle_xmv_play.c
+@@ -76,6 +76,7 @@
+     uint8_t  adpcm_rest[72];
+     uint32_t adpcm_rest_len;
+     uint64_t pcm_submitted;
++    int      audio_recovering;
+     int      logged_surface;
+     uint32_t polls;
+ } movie;
+@@ -173,10 +174,22 @@
+     }
+ }
+ 
++static uint32_t movie_clock(movie *m);
++
+ static void feed_audio(movie *m)
+ {
+     uint32_t frame = m->channels * 2u;
+ 
++    if (recomp_audio_output_take_discontinuity(RECOMP_AUDIO_SLOT_MOVIE))
++        m->audio_recovering = 1;
++    if (m->audio_recovering) {
++        uint64_t due = (uint64_t)movie_clock(m) * m->rate / 1000u * frame;
++        uint64_t skip = due > m->pcm_submitted ? due - m->pcm_submitted : 0;
++        if (skip > m->pcm_len - m->pcm_off) skip = m->pcm_len - m->pcm_off;
++        skip -= skip % frame;
++        m->pcm_off += (uint32_t)skip;
++        m->pcm_submitted += skip;
++    }
+     while (m->pcm_off < m->pcm_len) {
+         uint32_t n = m->pcm_len - m->pcm_off;
+         if (n > AUDIO_CHUNK)
+@@ -185,6 +198,7 @@
+         if (!n || !recomp_audio_output_submit(RECOMP_AUDIO_SLOT_MOVIE, m->pcm + m->pcm_off, n,
+                                               m->rate, m->channels, 16, 0))
+             return;                      /* offered again next poll */
++        m->audio_recovering = 0;
+         m->pcm_off += n;
+         m->pcm_submitted += n;
+     }

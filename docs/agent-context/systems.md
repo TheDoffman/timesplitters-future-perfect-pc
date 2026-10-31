@@ -41,10 +41,14 @@ in `assets/textures` (DDS via Git LFS), audited by `tools/textures/build_texture
 private source art and original assets stay local. Networking: `src/network/`, runtime HLE/kernel patches and `tools/network/online.py`. Crash capture:
 `src/diagnostics/`, runtime crash hooks and launcher diagnostics.
 Audio/movie timing is runtime `src/hle/hle_dsound*`, `hle_xmv*`, not launcher code.
+Effects now adapt their default buffer lead from 40 up to 90 ms under delayed
+service and refill immediately after skipping stale data from a long hitch.
+Explicit lead overrides remain fixed; see the runtime guide for that contract.
 `audio_output.h` owns `RECOMP_AUDIO_DEFAULT_GAIN` (0.5, about -6 dB).
 XAudio applies it once to the master; SDL applies it once per stream. This
 quiets the output at 100% without changing saved Music/Sound sliders, their
 curves or relative mix. An explicit `RECOMP_AUDIO_GAIN` still overrides it.
+Device recovery: [shared clocks, XAudio/SDL adapters and tests](audio-buffers.md).
 Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 
 Consult `docs/development/shared-platform.md` for shared versus adapter responsibilities.

@@ -1,5 +1,7 @@
 # Build, run and validation map
 
+[Audio buffering, lifecycle and device recovery tests](audio-buffers.md).
+
 Launcher UI/JSON recovery use shared UI, native parser and package checks.
 
 Source/tool/test paths now use responsibility folders; see

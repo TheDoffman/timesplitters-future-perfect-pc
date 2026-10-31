@@ -215,12 +215,12 @@ def test_native_timing(source, mutation, tmp_path):
         player=(runtime/'hle/hle_xmv_play.c').read_text(encoding='utf-8')
         start=player.index('typedef struct {')
         structure=player[start:player.index('} movie;',start)+len('} movie;')]
-        names=('static movie *get(', 'static void feed_audio(', 'static uint32_t movie_clock(',
+        names=('static movie *get(', 'static uint32_t movie_clock(', 'static void feed_audio(',
                'void xmv_play_start(', 'uint32_t xmv_play_update(', 'uint32_t xmv_play_time(',
                'void xmv_play_close(')
         functions=[]
         for name in names:
-            start=player.index(name)
+            start=player.index('static uint32_t movie_clock(movie *m)\n{' if name == 'static uint32_t movie_clock(' else name)
             functions.append(player[start:player.index('\n}',start)+2])
         text=source_path.read_text(encoding='utf-8')
         text=text.replace('/* MOVIE_STRUCT */',structure).replace('/* MOVIE_FUNCTIONS */','\n'.join(functions))

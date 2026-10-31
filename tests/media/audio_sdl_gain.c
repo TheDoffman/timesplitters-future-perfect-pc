@@ -12,19 +12,23 @@ typedef unsigned SDL_AudioDeviceID;
 typedef struct {int format,channels,freq;} SDL_AudioSpec;
 typedef struct {float gain;} SDL_AudioStream;
 enum {SDL_INIT_AUDIO=1,SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,SDL_AUDIO_U8,SDL_AUDIO_S16LE};
+static uint64_t sdl_now;
+static uint64_t SDL_GetTicks(void) { return sdl_now; }
+static int fail_init, fail_open, fail_bind, fail_put, fail_gain, queued_bytes;
+static unsigned destroyed, closed, inits;
 static int opened,created;
-static SDL_AudioStream streams[4];
-static int SDL_InitSubSystem(unsigned flags) {(void)flags;return 1;}
-static SDL_AudioDeviceID SDL_OpenAudioDevice(unsigned id,void *spec) {(void)id;(void)spec;++opened;return 1;}
-static void SDL_CloseAudioDevice(SDL_AudioDeviceID id) {(void)id;}
-static void SDL_DestroyAudioStream(SDL_AudioStream *s) {(void)s;}
+static SDL_AudioStream streams[32];
+static int SDL_InitSubSystem(unsigned flags) {(void)flags;++inits;return !fail_init;}
+static SDL_AudioDeviceID SDL_OpenAudioDevice(unsigned id,void *spec) {(void)id;(void)spec;++opened;return !fail_open;}
+static void SDL_CloseAudioDevice(SDL_AudioDeviceID id) {(void)id;++closed;}
+static void SDL_DestroyAudioStream(SDL_AudioStream *s) {if(s)++destroyed;}
 static SDL_AudioStream *SDL_CreateAudioStream(const SDL_AudioSpec *spec,void *out)
-{(void)spec;(void)out;assert(created<4);return &streams[created++];}
-static int SDL_BindAudioStream(SDL_AudioDeviceID id,SDL_AudioStream *s) {(void)id;(void)s;return 1;}
-static int SDL_GetAudioStreamQueued(SDL_AudioStream *s) {(void)s;return 0;}
-static int SDL_SetAudioStreamGain(SDL_AudioStream *s,float gain) {s->gain=gain;return 1;}
+{(void)spec;(void)out;assert(created<32);return &streams[created++];}
+static int SDL_BindAudioStream(SDL_AudioDeviceID id,SDL_AudioStream *s) {(void)id;(void)s;return !fail_bind;}
+static int SDL_GetAudioStreamQueued(SDL_AudioStream *s) {(void)s;return queued_bytes;}
+static int SDL_SetAudioStreamGain(SDL_AudioStream *s,float gain) {s->gain=gain;return !fail_gain;}
 static int SDL_PutAudioStreamData(SDL_AudioStream *s,const void *data,int bytes)
-{(void)s;(void)data;(void)bytes;return 1;}
+{(void)s;(void)data;(void)bytes;return !fail_put;}
 #include "../src/native/audio_sdl.c"
 int main(int argc,char **argv)
 {

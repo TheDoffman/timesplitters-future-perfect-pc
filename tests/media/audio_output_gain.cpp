@@ -6,24 +6,8 @@
 #include <cstring>
 #include <cstdint>
 #include "hle/audio_output.h"
-using HRESULT=long;
-#define FAILED(value) ((value)<0)
-enum { COINIT_MULTITHREADED, XAUDIO2_DEFAULT_PROCESSOR };
-static bool attempted,com_initialized,callback_registered;
-static int callback,opened;
-static float heard_gain=-1;
-struct Master { HRESULT SetVolume(float gain) {heard_gain=gain;return 0;} } device;
-static Master *master;
-struct Engine {
-    HRESULT RegisterForCallbacks(int *) {return 0;}
-    HRESULT CreateMasteringVoice(Master **out) {++opened;*out=&device;return 0;}
-} instance;
-static Engine *engine;
-static void checkCriticalError() {}
-static void disableOutput(const char *,HRESULT) {assert(false);}
-static HRESULT CoInitializeEx(void *,int) {return 0;}
-static HRESULT XAudio2Create(Engine **out,int,int) {*out=&instance;return 0;}
-#include "xaudio_gain.inc"
+#include "audio_xaudio_fake.h"
+#include "hle/audio_output_xaudio2.cpp"
 int main(int argc,char **argv)
 {
     assert(argc==2);
