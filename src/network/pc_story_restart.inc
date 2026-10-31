@@ -16,7 +16,7 @@ static void story_leave_begin(unsigned destination,int close_menu)
 {
     story_leave_destination=destination;
     story_lobby_return_pending=destination==1u;
-    story_context_start_pending=0;
+    story_context_start_pending=0;story_rejoin_pending=0;
     story_rewards_tracking=0;
     WORD_AT(0x0078ad20u)=destination==1u?13u:2u;
     WORD_AT(0x78ad24u)|=0x10000u; /* Stock exit/frontend notification, no awards. */
@@ -58,9 +58,67 @@ static int story_restart_session(void)
     return story_npc_session() && WORD_AT(0x0079094Cu)==2u &&
         WORD_AT(0x0076B1A4u)==15u && story_pending_stage==1u;
 }
+/* A late join loads the same native config but has not observed earlier
+ * Story reload epochs. Bind its bootstrap to this connection, config and
+ * request nonce; ordinary reloads keep their strict next-epoch validation. */
+typedef struct StoryRejoin {
+    uint32_t magic,base,nonce,peer,epoch;float position[3],heading;
+} StoryRejoin;
+#define STORY_REJOIN_MAGIC 0x314a5253u
+static void story_rejoin_send(const StoryRejoin *message)
+{
+    const uint32_t frame=g_esp,node=WORD_AT(0x774028u),buffer=frame-256u;
+    if(frame<2048u || !guest_writable(frame-2048u,2048u) || !guest_writable(node,0x35u)) return;
+    WORD_AT(buffer)=0;memcpy((void *)((uintptr_t)(buffer+4u)+g_xbox_mem_offset),message,sizeof *message);
+    GuestRegisters saved;save_registers(&saved);g_esp=frame-1024u;
+    guest_call(sub_00353A90,5,node,0x1eu,buffer,(uint32_t)sizeof *message+4u,1u);
+    restore_registers(&saved);
+}
+static void story_rejoin_frame(void)
+{
+    if(!story_rejoin_pending || !story_restart_session() || WORD_AT(0x76b140u)!=2u) return;
+    const uint32_t tick=WORD_AT(0x7de318u),node=WORD_AT(0x774028u);
+    if(!guest_writable(node,0x35u) || (story_rejoin_sent && (uint32_t)(tick-story_rejoin_tick)<60u)) return;
+    const StoryRejoin request={STORY_REJOIN_MAGIC,story_npc_base_match(),story_rejoin_nonce,WORD_AT(node),UINT32_MAX,{0,0,0},0};
+    story_rejoin_send(&request);story_rejoin_tick=tick;story_rejoin_sent=1;
+}
+static int story_rejoin_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length)
+{
+    if(type!=0x1eu || (length!=sizeof(StoryRejoin) && length!=sizeof(StoryRejoin)+4u) ||
+       !guest_writable(payload,sizeof(StoryRejoin)) || WORD_AT(payload)!=STORY_REJOIN_MAGIC) return 0;
+    StoryRejoin message;memcpy(&message,(const void *)((uintptr_t)payload+g_xbox_mem_offset),sizeof message);
+    const unsigned role=WORD_AT(0x76b140u);const uint32_t node=WORD_AT(0x774028u);
+    if(!story_restart_session() || !guest_writable(peer,0x35u) || !guest_writable(node,0x35u) ||
+       !message.nonce || message.base!=story_npc_base_match()) return 1;
+    if(role==1u && message.epoch==UINT32_MAX && message.peer==WORD_AT(peer) && peer!=node) {
+        int joined=0;
+        for(unsigned slot=0;slot<story_npc_humans();slot++)
+            if((WORD_AT(0x77728cu+slot*0x124u)&1u) && WORD_AT(0x777244u+slot*0x124u)==peer) joined=1;
+        const uint32_t contexts=WORD_AT(0x7b0c48u);
+        if(joined && guest_writable(contexts,0x1584u)) {
+            message.epoch=story_reload_epoch;
+            memcpy(message.position,(const void *)((uintptr_t)(contexts+0xb4u)+g_xbox_mem_offset),12u);
+            memcpy(&message.heading,(const void *)((uintptr_t)(contexts+0x100u)+g_xbox_mem_offset),4u);
+            story_rejoin_send(&message);
+            if(getenv("TSFP_STORY_TRACE")) fprintf(stderr,"[PC-STORY-REJOIN] host epoch=%u peer=%u nonce=%u\n",message.epoch,message.peer,message.nonce);
+        }
+    } else if(role==2u && story_rejoin_pending && WORD_AT(peer)==WORD_AT(0x774040u) &&
+              message.peer==WORD_AT(node) && message.nonce==story_rejoin_nonce && message.epoch<=65535u) {
+        for(unsigned i=0;i<3u;i++)
+            if(!isfinite(message.position[i]) || fabsf(message.position[i])>1000000.f) return 1;
+        if(!isfinite(message.heading) || fabsf(message.heading)>100000.f) return 1;
+        memcpy(story_rejoin_position,message.position,sizeof story_rejoin_position);
+        story_rejoin_heading=message.heading;story_rejoin_pose_valid=1;
+        story_reload_epoch=message.epoch;story_rejoin_pending=0;story_context_start_pending=1;
+        story_rejoin_view_pending=1;
+        fprintf(stderr,"[PC-STORY-REJOIN] adopted host epoch=%u\n",story_reload_epoch);
+    }
+    return 1;
+}
+
 static void story_restart_reset(unsigned epoch)
 {
-    story_reload_epoch=epoch;story_rewards_tracking=0;
+    story_reload_epoch=epoch;story_rewards_tracking=0;story_rejoin_pose_valid=0;
     story_npc_reset();story_loadout_reset();
     story_objectives_reset();
     story_effect_reset();
@@ -75,6 +133,7 @@ static void story_restart_reset(unsigned epoch)
 }
 static int story_restart_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length)
 {
+    if(story_rejoin_receive(peer,payload,type,length)) return 1;
     if(type!=0x1eu || (length<sizeof(StoryRestart) || length>sizeof(StoryRestart)+4u) ||
        !guest_writable(payload,sizeof(StoryRestart)) || WORD_AT(payload)!=STORY_RESTART_MAGIC) return 0;
     StoryRestart message;

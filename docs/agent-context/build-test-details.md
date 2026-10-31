@@ -1,3 +1,35 @@
+# Rejoin view and weapon-model regression - 2026-10-31
+
+The registered Story fixture covers an inactive first cinematic snapshot, an
+active host cinematic followed by its end, one-shot reconciliation and restored
+camera globals. World identity tests use colliding prop/model data: native FP
+viewport rooms CA..CE with flag40000000 never publish or resolve prop removals,
+even after caching a prior key. Ordinary prop removal/ambiguity checks remain.
+Live acceptance must capture the immediate rejoin view and repeated host weapon
+changes, then inspect the guest's actual model asset/deletion flags and selected
+weapon. Inventory/ammo checks alone do not establish that the model still draws.
+
+# Story rejoin regression - 2026-10-31
+
+The registered Story lobby fixture covers phase12 pending-copy preparation,
+request retry bounds, active roster ownership, host epoch/pose reply, incorrect
+nonce/host rejection, completed-bootstrap replay rejection, temporary pad
+coordinates/heading and a checkpoint restart after adopting the host epoch.
+Live acceptance uses two disposable unlocked profiles: host reload before guest
+Leave/rejoin, verify weapons and actual movement, then another host reload and
+movement. Captures alone do not establish input or checkpoint restoration.
+
+# Story departure regression - 2026-10-31
+
+Existing Story fixtures verify the exact departure bypass, inactive context,
+unchanged real/local/NPC death paths, disconnected-slot respawn rejection,
+directly restored body retirement and repeated-frame idempotence.
+Supported-US contracts pin the peer-removal BABA0/15BCC0 calls and D5480's two
+co-op death calls. Original-US execution verifies D2CE0's inactive transition
+and15BCC0 unlink retaining unrelated NPC entries. Live acceptance must show a
+departing guest reaching main while the host continues, then a host restart
+without the departed body. Full mission completion remains user testing.
+
 # Story abort regression - 2026-10-30
 
 Existing registered Story lobby fixtures exercise confirmed host/guest abort,

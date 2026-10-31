@@ -51,6 +51,12 @@ def test_story_original_us_entry_contract():
                 return image[offset+address-start:offset+address-start+size]
         raise AssertionError('Unmapped bounded US contract read')
     assert read(0x123c9, 4) == b'\xcc'*4
+    # Native first-person models use synthetic viewport rooms and a local-model
+    # flag; these must never enter persistent Story world-prop identity.
+    assert read(0x1be1a9,11)==bytes.fromhex('8b4e5405ca000000894134')
+    assert read(0x1be1b6,10)==bytes.fromhex('8b5654c74234ce000000')
+    assert read(0x1be1c9,6)==bytes.fromhex('81cf00000040')
+
     # Browser, host and guest Back callbacks keep stock cleanup; replace only
     # these verified multiplayer destinations in the scoped Story factory.
     for address,target in ((0x1a4385,0x4e9974),(0x1a8d15,0x4e9404),(0x1a8f15,0x4e93f4)):
@@ -62,6 +68,11 @@ def test_story_original_us_entry_contract():
         assert struct.pack('<I',target) in read(address,176)
     for address,target in ((0x35930c,0x668f0),(0x35931e,0x2ec650),
                            (0x35495f,0x3592c0)):
+        call=read(address,5)
+        assert call[0]==0xe8 and address+5+struct.unpack_from('<i',call,1)[0]==target
+    # Network peer removal kills the body through Story's coupled-death path.
+    for address,target in ((0x35c194,0xbaba0),(0x35c25e,0x15bcc0),
+                           (0xd5586,0xd3c50),(0xd55c4,0xd3c50)):
         call=read(address,5)
         assert call[0]==0xe8 and address+5+struct.unpack_from('<i',call,1)[0]==target
     assert read(0x3564ca,6)==bytes.fromhex('890d78417700')
@@ -411,7 +422,7 @@ def test_story_original_config_stages(tmp_path):
             (0x65c70,0x65d11),(0x65470,0x654da),(0x65420,0x6546a),
             (0x356920,0x356935),(0x3592c0,0x3592e4),
             (0x35a3c0,0x35a473),(0x352680,0x3526ca),(0x3535c0,0x3535cf),
-            (0x2ec650,0x2ec68a),(0x60310,0x6038a),
+            (0x2ec650,0x2ec68a),(0xd2ce0,0xd2d16),(0x15bcc0,0x15bcfd),(0x60310,0x6038a),
             (0x60390,0x6040e),(0x60410,0x604cf),(0x606e0,0x60737),(0x60740,0x60796),
             (0x64810,0x64c56),(0x646b0,0x6480c),(0x3578a0,0x357aff))}
         translator=FunctionTranslator(image,functions)

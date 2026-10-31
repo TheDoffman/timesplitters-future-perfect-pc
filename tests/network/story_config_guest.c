@@ -183,6 +183,15 @@ int main(void){
     MEM32(0x7de30c)=7;g_esp=0x20000;sub_002EC650();
     assert(g_esp==0x20004 && MEM32(0x70000)==0x49 && MEM32(0x71000)==0x41 && !MEM32(0x7000c));
     assert(MEM32(0x7de30c)==9 && MEM32(0x6f11b4)==1);
+    /* Native inactive transition never invokes death or touches another port;
+       original character unlink removes just the departing human, retaining NPCs. */
+    MEM32(0x71000+0x114)=2;MEM32(0x71000+0x118)=99;MEM32(0x7100c)=0x20400;
+    g_esp=0x20000;MEM32(g_esp+4)=0x71000;MEM32(g_esp+8)=16;sub_000D2CE0();
+    assert(g_esp==0x20004 && MEM32(0x71110)==2 && MEM32(0x71114)==16 && !MEM32(0x71118) && !MEM32(0x7100c));
+    MEM32(0x7207c)=0x73000;MEM32(0x74c37c)=3;
+    MEM32(0x7a3580)=0x74000;MEM32(0x7a3584)=0x73000;MEM32(0x7a3588)=0x75000;
+    g_esp=0x20000;MEM32(g_esp+4)=0x72000;sub_0015BCC0();
+    assert(g_esp==0x20004 && MEM32(0x74c37c)==2 && MEM32(0x7a3580)==0x74000 && MEM32(0x7a3584)==0x75000);
     /* Original99BB2 calls advance then60310 even when a guest's advance is
        blocked. Reproduce the exact cached-frame invalidation: the subsequent
        original606E0/60410 lookup falls back to frame zero after the stream

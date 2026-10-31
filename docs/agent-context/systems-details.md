@@ -1,3 +1,62 @@
+# Rejoin camera and first-person model lifetime - 2026-10-31
+
+A rejoining guest may receive an inactive cinematic snapshot without seeing the
+host's earlier active-to-inactive edge. The accepted bootstrap marks its local
+view pending reconciliation. Once the host is out of the cinematic and the owned
+context is active, use existing scoped D4BE0 to restore the normal local camera.
+Clear the pending/observed-active state together, so an observed cinematic ending
+does not invoke the original end twice. Active host cinematics remain intact.
+
+World-prop identities must exclude first-person models. Original1BE1A9 assigns
+synthetic viewport rooms CA..CD (CE for the nonlocal fallback), and1BE1C9 marks
+these local models with entity flag40000000. The world-key helper rejects this
+combination before consulting its cached key. Otherwise an unnamed host weapon
+model and the guest's own model can share a prop identity: host A9070 cleanup on
+weapon switch publishes a removal, and the guest destroys its local weapon.
+The central exclusion covers both host removal publication and guest key lookup,
+including models whose pool slot previously cached a prop key. Ordinary prop
+identity, ambiguity rejection, native weapon cleanup and player inventory remain.
+
+# Story in-progress rejoin - 2026-10-31
+
+Native received config2D398D at78AD58 also runs in guest phase12/frontend101.
+Accept this exact pending-copy boundary with the existing Story config checks;
+the prior phase10/11/15 gates skipped it, leaving stage2 and inactive startup.
+For first-mission gameplay joins, defer D50E0 startup until a reliable class1e
+StoryRejoin reply supplies the host reload epoch and current spawn pose. Bind
+the request/reply to the native active roster peer, config base and nonzero
+per-activation nonce; reject other peers, stale replies and invalid coordinates.
+Retry requests at most once per60 guest ticks. The temporary synthetic pad uses
+the host context0 eye/pad XYZ and heading plus the existing per-slot offset;
+original D4F50/2B05A0 still performs floor/collision placement. Clear this override
+after startup and on reload. No entity pointers or checkpoint memory cross peers.
+Ordinary NPC/loadout/checkpoint identity still includes the reload epoch; normal
+restart messages retain strict current-match/next-epoch validation. Checkpoint
+captures continue through the existing periodic authored-index replication.
+This uses the shared Story adapters; native live acceptance remains MAC-013.
+
+# Story guest departure - 2026-10-31
+
+The retained recording and isolated guest-exit run show the remaining host in
+Game Over, followed by a disconnected body after restart. Original35BEF0 removes
+a peer's body by BABA0 at return35C199, before its normal15BCC0 character unlink
+and3561D0 roster cleanup. BABA0 calls D5480 for a player body; Story's D5480 then
+calls D3C50 for both co-op partners. This is a departure, not combat death.
+Additive2450 wraps BABA0. Only that exact first-mission remote-human departure,
+validated against its context pool/slot/entity backlinks and remote local port,
+uses original D2CE0(context,16) to become inactive without death. Original peer,
+actor-list, inventory bookkeeping and roster cleanup continue. Real damage,
+local bodies, other callers and other modes retain original BABA0.
+Restart keeps stable slot IDs and the original slot limit. D50E0 entry rejects
+an exact remote context whose roster active bit is clear, before optional tracing.
+Some level/checkpoint constructors restore the context without that final spawn
+entry. Before Story evaluation, reconcile those contexts to native state16,
+unlink only their body with original15BCC0 and clear the same61h entity bits
+as native35C274/35C283. Repeated frames leave the retired body untouched.
+Payload readiness ignores those departed contexts instead of suppressing the
+remaining players' inventory updates. NPCs and active remote players remain
+subject to the original guards; no slot compaction or synthetic death is used.
+
 # Story in-match abort routing - 2026-10-30
 
 Retained user video237s shows the guest Leave confirmation, then SELECT LEVEL

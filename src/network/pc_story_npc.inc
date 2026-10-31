@@ -73,11 +73,14 @@ static void story_npc_reset(void)
     }
 }
 
-static uint32_t story_npc_match(void)
+static uint32_t story_npc_base_match(void)
 {
     const uint8_t *c=(const uint8_t *)((uintptr_t)0x007DE400u+g_xbox_mem_offset);
-    return (c[0x99]|((uint32_t)c[0x54]<<8)|((uint32_t)c[0x55]<<16)|((uint32_t)c[0x56]<<24)) ^
-        (story_reload_epoch&255u) ^ ((story_reload_epoch&0xff00u)<<16);
+    return c[0x99]|((uint32_t)c[0x54]<<8)|((uint32_t)c[0x55]<<16)|((uint32_t)c[0x56]<<24);
+}
+static uint32_t story_npc_match(void)
+{
+    return story_npc_base_match() ^ (story_reload_epoch&255u) ^ ((story_reload_epoch&0xff00u)<<16);
 }
 static unsigned story_npc_humans(void)
 { return *(const uint8_t *)((uintptr_t)0x007DE400u+g_xbox_mem_offset); }

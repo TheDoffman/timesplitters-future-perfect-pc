@@ -1708,6 +1708,14 @@
       ]
     },
     {
+      "name": "2450-story-guest-departure.patch",
+      "path": "patches/network/2450-story-guest-departure.patch",
+      "sha256": "9b5bb20d1d9cc1e5ca60ce95c66f205717655cb2f20eed2acf532fc73b471af8",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "independent-condition-fixture.patch",
       "path": "patches/compiler/independent-condition-fixture.patch",
       "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",

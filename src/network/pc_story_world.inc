@@ -24,6 +24,13 @@ static uint32_t story_world_key_in_pool(uint32_t entity,uint32_t pool,uint32_t c
 {
     if(entity<pool || (entity-pool)%0x2e8u || (entity-pool)/0x2e8u>=count) return 0;
     const uint32_t type=WORD_AT(entity+0x20u);
+    /* 1BE1A9 assigns CA..CD to local first-person model viewports (CE for
+       the nonlocal fallback), and 1BE1C9 sets their first-person flag. These
+       local models can have the same unnamed/type/position key on every peer.
+       A host weapon change must never publish them as persistent prop removal. */
+    const uint32_t flags=WORD_AT(entity+0x28u),room=WORD_AT(entity+0x34u);
+    if((flags&0x40000000u) && room>=0xcau && room<=0xceu) return 0;
+
     if((type!=1u && type!=2u && type!=4u && type!=16u) || (WORD_AT(entity+0x28u)&0x80000000u)) return 0;
     if(pool!=story_world_pool || story_world_match!=story_npc_match()) {
         memset(story_world_ids,0,sizeof story_world_ids);story_world_pool=pool;story_world_match=story_npc_match();
@@ -110,6 +117,16 @@ void pc_story_network_world_remove(void (*original)(void))
 {
 #ifdef _WIN32
     const uint32_t frame=g_esp;
+    if(story_world_session() && getenv("TSFP_STORY_TRACE") && guest_writable(frame,8u)) {
+        const uint32_t entity=WORD_AT(frame+4u);
+        if(guest_writable(entity,0x154u) && (WORD_AT(entity+0x28u)&0x40000000u) &&
+           WORD_AT(entity+0x34u)>=0xcau && WORD_AT(entity+0x34u)<=0xceu) {
+            static unsigned observations;
+            if(observations++<16u) fprintf(stderr,"[PC-STORY-WORLD] local first-person cleanup role=%u entity=%08X replay=%d caller=%08X\n",
+                WORD_AT(0x76b140u),entity,story_world_replay,WORD_AT(frame));
+        }
+    }
+
     const uint32_t key=!story_world_replay && WORD_AT(0x0076b140u)==1u && WORD_AT(0x007de30cu)==7u &&
         guest_writable(frame,8u)?story_world_key(WORD_AT(frame+4u)):0u;
 #endif

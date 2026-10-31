@@ -122,6 +122,7 @@ void pc_story_browser_match(void (*original)(void));
 void pc_story_browser_thumbnail(void (*original)(void));
 int pc_story_lobby_title(void (*original)(void));
 void pc_story_network_character_remove(void (*original)(void));
+void pc_story_network_departure_death(void (*original)(void));
 void (*pc_display_menu_lookup(uint32_t address))(void);
 void pc_story_network_return_lobby(void (*original)(void));
 void pc_story_network_disconnect_exit(void (*original)(void));

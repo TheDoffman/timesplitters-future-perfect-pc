@@ -1,3 +1,119 @@
+## Story rejoin camera / guest first-person weapon lifetime - 2026-10-31
+
+Local/uncommitted on online-story-coop, base92032b75. The rejoin bootstrap now
+marks the local view for one reconciliation against the host's cinematic state.
+An already-inactive host snapshot restores the ordinary camera through native
+D4BE0 even when the guest missed the prior cinematic-end transition. An active
+host cinematic is retained; pending and observed-active state clear together to
+avoid a duplicate end call.
+
+Live diagnosis reproduced the guest retaining pistol14/ammo and its model pointer
+while a host switch marked that model deleted and cleared its asset pointer.
+First-person models were admitted into persistent world-prop identity: native
+synthetic viewport rooms CA..CE and flag40000000 distinguish them. Their unnamed
+creation keys can collide across peers, letting host model cleanup destroy the
+guest's local weapon. The central key helper now rejects these models before
+cache lookup, covering both host publication and guest removal resolution. Native
+local cleanup and ordinary world props retain their existing paths.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11: supported US XBE verified;
+398.17GiB free before the final incremental build. Official build, patch and
+native checks pass; foreground-dependent virtual-pad checks skip when activation
+is refused. Final45 focused checks pass,2 Mac-only skips (24.37s), including
+original-US model-marker contracts, cold/active camera transitions, colliding
+FP/prop data, cached-key reuse, no FP removal publication/resolution, and existing
+normal prop removal. Camera and inventory checks alone do not prove model draw.
+
+Build compatibility8136667f508b8a7290ae24f265a338115abd10f65920f98d0795ebf3d1fc9798;
+exe SHA2562d29bb09a8c6470345d8dc65bba081cbfc6090a5ab8b83b73de92a27b9524c6e.
+All1304 sealed input hashes match. Final isolated two-player acceptance passes:
+reviewed immediate rejoin capture shows ordinary gameplay with the weapon. Guest
+movement after rejoin measures18.57 world units. Three real host weapon cycles
+(pistol/unarmed) retain the guest pistol14, the same valid model/asset, no deleted
+flag, and a visibly rendered gun in all three captures. Native host model cleanup
+still executes with no replay to the guest. After host Restart Level, both
+contexts return to2/2 and guest movement measures5.37 units with a valid gun.
+Both runners exit0 and release their isolated-profile locks; fixture preserved.
+Evidence: logs/story-fp-world-identity-live/guest/result.json and selected captures.
+Physical controllers, native Mac Online (MAC-013), WAN and live checkpoint
+restoration remain unverified here; no full mission completion is attempted.
+
+## Story in-progress guest rejoin - 2026-10-31
+
+Local/uncommitted on online-story-coop, base92032b75; retains the guest-departure
+fix below. Baseline two-player rejoin evidence shows native2D398D pending-copy
+in guest phase12/frontend101, rejected by the previous preparation gates. The
+guest loaded scene2 with stage2 and context states2/16. Preparation now accepts
+that exact received-config boundary with the existing Story validation. A
+reliable peer/config/nonce-bound bootstrap adopts the host's reload epoch before
+player startup, keeping NPC/loadout/checkpoint messages and later strict restart
+validation on the same generation. A temporary native pad places the guest near
+the host; original floor/collision placement remains. Reloads clear the override.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11: official incremental build,
+patch validation and native checks pass (foreground-dependent virtual-pad check
+skipped when activation was refused). 398.58GiB free before build. The supported
+US XBE hash matches. Final45 focused checks pass,2 Mac-only skips (24.46s),
+including host epoch/pose replies, native pad coordinates, nonce/host validation,
+retry/replay bounds and a checkpoint restart after epoch adoption. Synthetic
+input does not establish physical-controller behavior. Native live acceptance
+remains pending MAC-013; full mission completion remains user testing.
+
+Build compatibilityf58f91fbf445b6ff740233fb4248803faa147279c4a4bcb7b3dcea621162a646;
+exe SHA2567c9252d3654d253a68725e06c42c98411a52cbc213cb13084e6377ef3427d4bb.
+All1304 sealed input hashes match. Isolated two-player live rejoin verifies a
+host reload to epoch1 before guest Leave/rejoin. The guest adopts epoch1, has
+context states2/2 and weapon14 with ammo, and spawns2 world units beside the
+host's current position after the host moved away from the authored start.
+Held W then moves the rejoined guest about18.57 world units; the host observes
+that exact final body position and weapon. Both peers accept the next host
+level restart to epoch2. After the restarted opening, the guest retains its
+weapon/ammo and held D moves it5.38 world units. Reviewed captures show the
+weapon and visible gameplay. Both runners exit0 and release profile locks;
+fixture signatures/settings remain preserved.
+No mission completion, live checkpoint restore or native/WAN test is claimed.
+Evidence: ignored logs/story-rejoin-live/guest/result.json, retained selected
+captures and logs/story-rejoin-fixed-live-2.log. A prior probe aborted because
+its test wait exceeded the runner's30s per-command limit, before any rejoin;
+the corrected probe splits the bounded opening wait into two commands.
+
+## Story guest departure - 2026-10-31
+
+Local/uncommitted on online-story-coop, base92032b75. The retained user video
+and prior isolated guest-exit evidence show host Game Over and a stale player
+on restart. Original peer cleanup kills the departing body through BABA0; its
+Story D5480 path kills both co-op partners. Patch2450 bypasses only that exact
+validated remote departure, using the native inactive-state transition while
+preserving ordinary peer/actor/roster cleanup and real combat death behavior.
+Disconnected remote slots retain stable IDs but cannot initialize on restart.
+Level/checkpoint constructors that restore the body directly are reconciled to
+inactive state, original character unlink and native entity retirement bits.
+Payload readiness no longer waits for their absent inventories.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11: supported US XBE verified;
+399.07GiB free before regeneration/build. Official build and native checks pass;
+its foreground-dependent virtual-pad routing check skipped when activation was
+refused. Synthetic live keys do not replace physical-controller validation.
+45 focused checks pass,2 Mac-only skips (24.30s), including original-US coupled
+death call boundaries, inactive state, character unlink retaining NPCs, restart
+rejection, restored-body retirement/idempotence and payload readiness.
+
+Two-player live acceptance passes in the isolated unlocked Test Lab profiles:
+guest Leave reaches main while the host remains gameplay state7/result0, with
+context states2/16. Host Restart Level still has states2/16 and the departed
+body has its native active/render bits clear. After the restarted opening
+sequence, held W/D moves the host about18 world units (squared displacement
+324.82), with reviewed captures showing gameplay and no ghost body.
+The initial short movement probe occurred during the opening and showed no
+movement before departure either; the extended check verifies actual movement.
+Both runners exited and released their locks; saves/settings remain isolated.
+Evidence: ignored logs/story-departure-live/guest/result.json and selected PNGs.
+Build compatibility71b74992c2aa690369c45cc1bc48a1014b3a646d42668a6380e91205433dbb74;
+exe SHA2563a27083d225bfaff838b2c9b0a87d3b3e4ecf486bb9f63563e4df9aed56adcc3.
+All1304 sealed source hashes match. Full mission completion is user testing;
+native Online acceptance remains MAC-013. Game Over Quit routing is a separate
+remaining notes item and is unchanged by this fix.
+
 ## Story in-match leave routing - 2026-10-31
 
 Local/uncommitted on online-story-coop, base d34828b9. Retained user recording

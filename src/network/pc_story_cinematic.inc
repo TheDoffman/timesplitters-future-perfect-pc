@@ -33,7 +33,7 @@ static void story_cine_reset(void)
     story_cine_serial=story_cine_seen=story_cine_parts=0;
     story_cine_cue_serial=story_cine_cue_active=story_cine_cue_tag=story_cine_cue_flags=story_cine_cue_mode=0;
     story_cine_cue_applied=0;story_cine_published=story_cine_replay=story_cine_was_active=0;
-    story_cine_feed_applied=0;
+    story_cine_feed_applied=0;story_rejoin_view_pending=0;
 }
 static uint32_t story_cine_checksum(const StoryCinematic *s)
 {
@@ -235,6 +235,21 @@ static void story_cine_frame(void)
     if(role!=2u || !story_cine_state.serial || story_cine_state.match!=story_npc_match()) return;
     const uint32_t context=story_cine_local_context();if(!context) return;
     const StoryCinematic *s=&story_cine_state;
+    /* A late join has not observed the host's earlier camera-end transition.
+       Rebind its locally created opening/shared Story camera to the owned body
+       even when the first received snapshot is already ordinary gameplay. */
+    if(story_rejoin_view_pending && !s->active) {
+        const uint32_t camera=WORD_AT(context+8u),body=WORD_AT(context+0x14u);
+        if(!guest_writable(body,0x154u) || WORD_AT(body+0x150u)!=context ||
+           WORD_AT(context+0x114u)!=2u) return;
+        const uint32_t target=guest_writable(camera,0x2b0u)?WORD_AT(camera+0x2a8u):0u;
+        if(!story_cine_camera(context,0,0u,0u,0u)) return;
+        story_rejoin_view_pending=0;story_cine_was_active=0;
+        if(getenv("TSFP_STORY_TRACE")) fprintf(stderr,
+            "[PC-STORY-REJOIN-VIEW] context=%08X old_target=%08X owned_body=%08X new_target=%08X\n",
+            context,target,body,WORD_AT(camera+0x2a8u));
+    }
+
     if(s->feed_serial && s->feed_serial!=story_cine_feed_applied &&
        guest_writable(WORD_AT(0x00733108u),0x1000u)) {
         GuestRegisters saved;save_registers(&saved);

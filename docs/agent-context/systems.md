@@ -1,6 +1,6 @@
 # Subsystem entry points
 
-Story in-match abort routing, authored barrel effects, Online Back navigation/browser level details, co-op movie score-packet lifetime, guest reward parity/pages/empty entry, NPC, corpse, pickup, barrel and camouflage integration keeps the
+Story guest camera/weapon lifetime, in-progress rejoin, guest departure and in-match abort routing, authored barrel effects, Online Back navigation/browser level details, co-op movie score-packet lifetime, guest reward parity/pages/empty entry, NPC, corpse, pickup, barrel and camouflage integration keeps the
 shared source and main paths; see [details](systems-details.md).
 
 Minigun motor intent and release damping: [shared policy](native-minigun.md).

@@ -1,3 +1,19 @@
+Rejoin view/weapon lifetime uses existing D4BE0 camera and A9070 world-remove
+wrappers. The accepted rejoin restores a missed camera-end transition once;
+world identity excludes native first-person viewport models before cached-key
+lookup. No new wrapper or generated-code change is needed. See
+[contracts](systems-details.md).
+
+Story in-progress rejoin uses existing2D398D pending-copy,9A420 synthetic-pad
+and class1e adapters; no new wrapper or generated-code edit is required. The
+original spawn resolves the temporary host-relative pad through D4F50/2B05A0.
+See [rejoin contract](systems-details.md).
+
+Story peer departure: additive2450 wraps BABA0. Its adapter replaces only the
+first-mission remote departure caller35C199 with native context inactivity,
+leaving the original peer cleanup and actual combat deaths intact. See
+[departure contract](systems-details.md).
+
 Story abort routing: additive2440 wraps3592F0 (reliable lobby-return receiver)
 and65420 (full-disconnect scheduler). Original unloading and reliable classB
 transport remain; Story adapters select lobby/main and avoid campaign recording

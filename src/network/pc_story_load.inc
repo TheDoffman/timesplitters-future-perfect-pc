@@ -10,6 +10,10 @@ extern void sub_000CF060_gen(void),sub_0009A420_gen(void);
 static uint32_t story_extra_pad_storage;
 extern void sub_0025EE60(void);
 static int story_context_start_pending;
+static int story_departed_context(uint32_t context);
+static void story_departed_frame(void);
+extern void sub_0015BCC0_gen(void);
+extern void sub_000D2CE0(void);
 static unsigned story_pending_stage;
 static int story_rewards_tracking;
 static void story_rewards_begin(void);
@@ -19,6 +23,10 @@ static void story_rewards_record(unsigned mission,unsigned stage);
  * header (the captured failure changed two joined humans to sixteen). */
 static uint8_t story_load_header[0x14];
 static unsigned story_reload_epoch;
+static unsigned story_rejoin_nonce,story_rejoin_tick;
+static int story_rejoin_pending,story_rejoin_sent,story_rejoin_pose_valid,story_rejoin_view_pending;
+static float story_rejoin_position[3],story_rejoin_heading;
+static void story_rejoin_frame(void);
 static int story_restart_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
 static void story_npc_reset(void);
 static void story_shots_reset(void);
@@ -84,8 +92,10 @@ int pc_story_network_prepare(uint32_t address)
        boundary, not another local GO or a serializer call. */
     const int received_intro_end=role==2u && phase==15u && address==0x0078AD58u &&
         caller==0x002D398Du;
+    const int received_join=role==2u && phase==12u && address==0x78ad58u &&
+        caller==0x2d398du && WORD_AT(0x79094cu)==101u;
     if(!story_network_session() || !WORD_AT(0x0076B108u) ||
-       (role!=1u && role!=2u) || (phase!=10u && phase!=11u && !advance && !reward_go && !received_intro_end) ||
+       (role!=1u && role!=2u) || (phase!=10u && phase!=11u && !advance && !reward_go && !received_intro_end && !received_join) ||
        !guest_writable(address,0xa0u)) return 0;
     uint8_t *config=(uint8_t *)((uintptr_t)address+g_xbox_mem_offset);
     if(reward_go) {
@@ -154,6 +164,7 @@ int pc_story_network_prepare(uint32_t address)
     story_rewards_record(selected,stage);
     story_lobby_mission=selected;story_lobby_difficulty=config[0x57u];
     story_pending_stage=stage;
+    if(role==2u) story_rejoin_pending=received_join && selected==0u && stage==1u;
     memcpy(story_load_header,config,sizeof story_load_header);
     if(advance) {
         GuestRegisters saved;save_registers(&saved);
@@ -180,6 +191,8 @@ void pc_story_network_activate(void)
 #ifdef _WIN32
     if(!story_network_session()) return;
     story_reload_epoch=0;
+    story_rejoin_sent=0;story_rejoin_pose_valid=0;
+    if(story_rejoin_pending && !++story_rejoin_nonce) ++story_rejoin_nonce;
     if(story_pending_stage==1u) story_rewards_tracking=0;
     story_npc_reset();
     story_shots_reset();
@@ -256,6 +269,7 @@ void pc_network_player_payload(void (*original)(void))
         if(story_network_session() && (story_pending_stage!=1u || (WORD_AT(0x007de458u)&0x20000000u))) ready=0;
         for(unsigned i=0;ready && i<count;i++) {
             const uint32_t context=contexts+i*0x1584u,entity=WORD_AT(context+0x14u);
+            if(story_departed_context(context)) continue;
             const uint32_t actor=guest_writable(entity,0x25cu)?WORD_AT(entity+0x7cu):0u;
             ready=WORD_AT(context)==i && guest_writable(entity,0x25cu) && !(WORD_AT(entity+0x28u)&0x80000000u) &&
                 WORD_AT(entity+0x150u)==context && guest_writable(actor,0xea0u) && WORD_AT(actor)==entity;
@@ -491,6 +505,10 @@ void pc_story_network_start_record(void (*original)(void))
         if(story_extra_pad_storage && guest_writable(source,32u) && guest_writable(target,32u)) {
             memcpy((void *)((uintptr_t)target+g_xbox_mem_offset),
                 (const void *)((uintptr_t)source+g_xbox_mem_offset),32u);
+            if(story_rejoin_pose_valid) {
+                memcpy((void *)((uintptr_t)(target+12u)+g_xbox_mem_offset),story_rejoin_position,12u);
+                memcpy((void *)((uintptr_t)(target+24u)+g_xbox_mem_offset),&story_rejoin_heading,4u);
+            }
             float x;memcpy(&x,(const void *)((uintptr_t)(target+12u)+g_xbox_mem_offset),4u);
             x+=pad==0x7f02u?-2.f:pad==0x7f01u?2.f:4.f;
             memcpy((void *)((uintptr_t)(target+12u)+g_xbox_mem_offset),&x,4u);
@@ -603,7 +621,8 @@ void pc_story_network_spawn_pad(void (*original)(void))
 void pc_story_network_frame(void (*original)(void))
 {
 #ifdef _WIN32
-    if(story_context_start_pending && story_pending_stage==1u && story_network_session() &&
+    story_rejoin_frame();
+    if(story_context_start_pending && !story_rejoin_pending && story_pending_stage==1u && story_network_session() &&
        WORD_AT(0x0076B108u) && WORD_AT(0x0076B1A4u)==15u &&
        WORD_AT(0x007DE30Cu)==7u && !WORD_AT(0x007DE45Cu)) {
         const uint32_t count=WORD_AT(0x00790950u),pool=WORD_AT(0x007B0C48u);
@@ -630,6 +649,7 @@ void pc_story_network_frame(void (*original)(void))
                     ++attempted;
                 }
             restore_registers(&saved);
+            story_rejoin_pose_valid=0;
             if(getenv("TSFP_STORY_TRACE")) {
                 fprintf(stderr,"[PC-STORY-START] original spawn attempted %u/%u contexts; states",attempted,count);
                 for(unsigned i=0;i<count;i++) fprintf(stderr," %u",WORD_AT(pool+i*0x1584u+0x114u));
@@ -639,6 +659,7 @@ void pc_story_network_frame(void (*original)(void))
     }
 #endif
 #ifdef _WIN32
+    story_departed_frame();
     story_rewards_begin();
     story_human_teams_frame();
     story_world_frame();
@@ -662,6 +683,11 @@ void pc_story_network_frame(void (*original)(void))
 void pc_story_failure_trace(void (*original)(void),uint32_t address)
 {
 #ifdef _WIN32
+    /* Restarts keep stable slot IDs. A disconnected remote slot must not
+       be recreated just because it remains below the original slot limit. */
+    if(address==0x000D50E0u && guest_writable(g_esp,8u) && story_departed_context(WORD_AT(g_esp+4u))) {
+        g_eax=0;g_esp+=4u;return;
+    }
     if(address==0x00066fc0u && story_network_session() && WORD_AT(0x0076b108u) &&
        story_lobby_mission==0u && story_pending_stage==1u && WORD_AT(0x0079094cu)==2u &&
        (WORD_AT(0x007de45cu)&0x8000u)) {
@@ -685,7 +711,9 @@ void pc_story_failure_trace(void (*original)(void),uint32_t address)
         pc_story_network_script_trace(original,address);
         return;
     }
-    if(address==0x000D50E0u) { original();return; }
+    if(address==0x000D50E0u) {
+        original();return;
+    }
     /* Four-player preparation consumes the generic initialization trace budget.
        Preserve a separate bounded observation of the later state-256 transition;
        the original setter and all of its side effects still execute unchanged. */
@@ -819,6 +847,74 @@ void pc_story_network_team(void (*original)(void))
 #ifdef _WIN32
     if(scope) WORD_AT(frame+8u)=saved;
 #endif
+}
+
+#ifdef _WIN32
+static int story_departed_context(uint32_t context)
+{
+    const unsigned role=WORD_AT(0x76b140u),phase=WORD_AT(0x76b1a4u);
+    if(!story_network_session() || story_lobby_mission!=0u || story_pending_stage!=1u ||
+       !WORD_AT(0x76b108u) || (role!=1u && role!=2u) || (phase!=14u && phase!=15u) ||
+       WORD_AT(0x79094cu)!=2u || WORD_AT(0x7de458u)!=0x80008u ||
+       !guest_writable(context,0x1584u)) return 0;
+    const uint32_t pool=WORD_AT(0x7b0c48u);
+    const unsigned slot=WORD_AT(context),count=*(const uint8_t *)((uintptr_t)0x7de400u+g_xbox_mem_offset);
+    return pool && count && count<=4u && slot<count && context==pool+slot*0x1584u &&
+        WORD_AT(context+4u)==UINT32_MAX && !(WORD_AT(0x77728cu+slot*0x124u)&1u);
+}
+
+static void story_departed_frame(void)
+{
+    const uint32_t pool=WORD_AT(0x7b0c48u);
+    const unsigned count=WORD_AT(0x790950u);
+    if(!pool || !count || count>4u) return;
+    GuestRegisters saved;save_registers(&saved);
+    for(unsigned slot=0;slot<count;slot++) {
+        const uint32_t context=pool+slot*0x1584u;
+        if(!story_departed_context(context)) continue;
+        /* The original checkpoint/level constructors can restore a context
+           without passing D50E0's final spawn entry. Reconcile those too. */
+        const uint32_t entity=WORD_AT(context+0x14u);
+        if(WORD_AT(context+0x114u)!=16u) guest_call(sub_000D2CE0,2,context,16u);
+        if(guest_writable(entity,0x154u) && WORD_AT(entity+0x150u)==context &&
+           (WORD_AT(entity+0x28u)&0x61u)) {
+            guest_call(sub_0015BCC0_gen,1,entity);
+            /* Same active/render bits retired by native35C274/35C283. */
+            WORD_AT(entity+0x28u)&=~0x61u;
+        }
+    }
+    restore_registers(&saved);
+}
+#endif
+
+/* Original35BEF0 kills a departing peer's body through BABA0 before its
+ * normal roster/character cleanup. Story interprets that as a campaign death.
+ * Suppress only this exact remote-human departure; real damage stays original. */
+void pc_story_network_departure_death(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t frame=g_esp;
+    if(story_network_session() && story_lobby_mission==0u && story_pending_stage==1u &&
+       WORD_AT(0x76b108u) && WORD_AT(0x76b1a4u)==15u && WORD_AT(0x79094cu)==2u &&
+       WORD_AT(0x7de458u)==0x80008u && guest_writable(frame,8u) &&
+       WORD_AT(frame)==0x35c199u) {
+        const uint32_t hit=WORD_AT(frame+4u);
+        const uint32_t entity=guest_writable(hit,4u)?WORD_AT(hit):0u;
+        const uint32_t context=guest_writable(entity,0x154u)?WORD_AT(entity+0x150u):0u;
+        const uint32_t pool=WORD_AT(0x7b0c48u);
+        const unsigned slot=guest_writable(context,0x1584u)?WORD_AT(context):16u;
+        const unsigned count=*(const uint8_t *)((uintptr_t)0x7de400u+g_xbox_mem_offset);
+        if(pool && count && count<=4u && slot<count && context==pool+slot*0x1584u &&
+           WORD_AT(context+4u)==UINT32_MAX && WORD_AT(context+0x14u)==entity) {
+            GuestRegisters saved;save_registers(&saved);
+            guest_call(sub_000D2CE0,2,context,16u); /* Native inactive state, no death. */
+            restore_registers(&saved);
+            fprintf(stderr,"[PC-STORY-DEPARTURE] retire slot=%u role=%u\n",slot,WORD_AT(0x76b140u));
+            g_eax=0;g_esp+=4u;return;
+        }
+    }
+#endif
+    original();
 }
 
 void pc_story_network_character_remove(void (*original)(void))

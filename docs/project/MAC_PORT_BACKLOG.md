@@ -2252,6 +2252,28 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+Story rejoin camera/weapon lifetime (2026-10-31, uncommitted): shared cinematic
+and world adapters reconcile a missed camera-end transition and exclude native
+first-person viewport models from persistent prop identities. Original camera
+and cleanup routines remain; no separate platform policy is introduced. Native
+Online transport and immediate rejoin/host weapon-switch model visibility remain
+acceptance checks under this entry. Windows evidence is in STATUS.
+
+Story in-progress rejoin follow-up (2026-10-31, uncommitted): shared Story
+load/NPC/restart adapters accept the native phase12 received-config boundary,
+adopt the host reload epoch via a peer/config/nonce-bound reliable reply and
+spawn near its current position through original safe pad placement. Subsequent
+reloads clear the temporary pad. No second platform policy is needed; native
+transport integration and live leave/rejoin, movement, checkpoint/level reload
+acceptance remain pending. Windows validation is recorded in STATUS.
+
+Story guest-departure follow-up (2026-10-31, uncommitted): patch2450 and the shared
+Story load adapter distinguish remote departure from coupled Story death, retire
+the departed context, reconcile directly restored checkpoint/level bodies and
+exclude inactive remote slots from restart/payload readiness. Existing Story platform scope remains. Windows checks do not prove
+native live transport: accept guest departure while remaining players continue,
+restart without ghost bodies and unchanged real combat deaths on Mac.
+
 Story abort follow-up (2026-10-30, uncommitted): shared menu lookup and
 src/network/pc_story_restart.inc plus patch2440 route host Leave to the retained
 lobby and guest Leave/host loss to main, skipping campaign rewards. Existing

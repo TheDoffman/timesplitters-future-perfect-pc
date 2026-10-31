@@ -40,6 +40,9 @@ static int factory_intro;
 static int factory_reward_go,reward_wait_build;
 static unsigned reward_wait_rows,reward_wait_panels,reward_count,reward_refreshes,reward_records;
 static unsigned context_spawns,ready_calls;
+void sub_000D2CE0(void){marker=82;}
+void sub_0015BCC0_gen(void){marker=83;}
+static unsigned retired_bodies;
 static unsigned pad_fallbacks;
 void sub_000CF060_gen(void){marker=16;}
 void sub_0009A420_gen(void){marker=27;}
@@ -169,6 +172,8 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     uint32_t args[10];va_list ap;va_start(ap,count);CHECK(count<=10);
     for(unsigned i=0;i<count;i++)args[i]=va_arg(ap,uint32_t);
     va_end(ap);
+    if(fn==sub_0015BCC0_gen) {CHECK(count==1 && args[0]==0x90000);++retired_bodies;return 0;}
+    if(fn==sub_000D2CE0) {CHECK(count==2 && args[1]==16);WORD_AT(args[0]+0x114)=16;return 0;}
     if(fn==sub_002EC650_gen) {CHECK(!count);uint32_t sp=g_esp;sub_002EC650_gen();g_esp=sp;return 0;}
     if(fn==sub_003535C0) {CHECK(!count);++lobby_return_resets;return 0;}
     if(fn==sub_003544B0) {CHECK(!count);++lobby_return_dispatches;WORD_AT(0x76b1a4)=WORD_AT(0x76b140)==1?11:12;return 0;}
@@ -907,6 +912,12 @@ int main(void)
             CHECK(g_eax==target && g_esp==0x1804 && p[0]==(slot==2?8.f:slot==1?12.f:14.f) &&
                   p[1]==20.f && p[2]==30.f && WORD_AT(target+4)==0x5a5a5a5a);
         }
+        story_rejoin_pose_valid=1;story_rejoin_position[0]=100.f;
+        story_rejoin_position[1]=200.f;story_rejoin_position[2]=300.f;story_rejoin_heading=1.5f;
+        g_esp=0x1800;WORD_AT(g_esp+4)=0x7f01;pc_story_network_start_record(frame_original);
+        float joined_pad[4];memcpy(joined_pad,(uint8_t *)memory+0xa00c,sizeof joined_pad);
+        CHECK(joined_pad[0]==102.f && joined_pad[1]==200.f && joined_pad[2]==300.f && joined_pad[3]==1.5f);
+        story_rejoin_pose_valid=0;
         float original_x;memcpy(&original_x,(uint8_t *)memory+0x7800c,4);CHECK(original_x==10.f);
         g_esp=0x1800;WORD_AT(g_esp+4)=0x7f03;
         pc_story_network_start_tag(start_tag_original);
@@ -1620,6 +1631,19 @@ int main(void)
         story_cine_state.feed_serial=2;story_cine_state.feed_active=0;
         story_cine_frame();CHECK(feed_stops==1);
         story_cine_reset();
+        /* A late join's first host snapshot can already be inactive. It has
+           never observed an active->inactive edge but still owns an intro view. */
+        memset(&story_cine_state,0,sizeof story_cine_state);
+        story_cine_state.serial=1;story_cine_state.match=story_npc_match();
+        story_cine_state.view_visible=1;story_rejoin_view_pending=1;
+        WORD_AT(own+0x114)=2;const unsigned ends_before_join=cine_ends;
+        story_cine_state.active=1;g_esp=0x1800;story_cine_frame();
+        CHECK(cine_ends==ends_before_join && story_rejoin_view_pending); /* Host still in a cinematic. */
+        story_cine_state.active=0;g_esp=0x1800;story_cine_frame();
+        CHECK(cine_ends==ends_before_join+1 && !story_rejoin_view_pending && g_esp==0x1800);
+        CHECK(WORD_AT(0x7b0c48)==0x6000 && WORD_AT(0x790950)==2 && WORD_AT(0x7b0c7c)==0x6000);
+        story_cine_frame();CHECK(cine_ends==ends_before_join+1);
+        story_cine_reset();
     }
     {
         online_mode=PC_ONLINE_STORY;WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;
@@ -1722,6 +1746,25 @@ int main(void)
         memset((uint8_t *)memory+a,0,2*0x2e8);WORD_AT(a+0x20)=1;WORD_AT(a+0x2c)=11;
         WORD_AT(a+0x60)=0x42415252;WORD_AT(a+0x94)=20;WORD_AT(a+0x230)=101;
         const uint32_t key=pc_story_network_world_key(a);CHECK(key && pc_story_network_world_entity(key)==a);
+        /* Local first-person models are not persistent world props. A fresh
+           unnamed model can otherwise hash identically on host and guest. */
+        memcpy((uint8_t *)memory+b,(uint8_t *)memory+a,0x2e8);
+        WORD_AT(b+0x2c)=22;WORD_AT(b+0x28)=0x40000000;WORD_AT(b+0x34)=0xca;
+        CHECK(!pc_story_network_world_key(b) && pc_story_network_world_entity(key)==a);
+        for(unsigned room=0xcau;room<=0xceu;room++) {
+            WORD_AT(b+0x34)=room;CHECK(!pc_story_network_world_key(b));
+        }
+        /* Even a previously cached prop key cannot admit a recycled FP model. */
+        WORD_AT(b+0x28)=0;WORD_AT(b+0x34)=0;CHECK(pc_story_network_world_key(b)==key);
+        WORD_AT(b+0x28)=0x40000000;WORD_AT(b+0x34)=0xca;
+        CHECK(!pc_story_network_world_key(b));
+        WORD_AT(a+0x28)=0x80000000;CHECK(!pc_story_network_world_entity(key));
+        WORD_AT(a+0x28)=0;
+        const unsigned before_fp_sends=npc_send_calls;
+        g_esp=0x1800;WORD_AT(g_esp+4)=b;pc_story_network_world_remove(world_remove_original);
+        CHECK(npc_send_calls==before_fp_sends && (WORD_AT(b+0x28)&0x80000000u));
+        memset((uint8_t *)memory+b,0,0x2e8);
+
         g_esp=0x1800;WORD_AT(g_esp+4)=a;pc_story_network_world_remove(world_remove_original);
         StoryWorldRemove removal;memcpy(&removal,npc_sent+4,sizeof removal);
         CHECK(g_eax==37 && g_esp==0x1804 && removal.key==key && removal.magic==STORY_WORLD_REMOVE_MAGIC);
@@ -1864,6 +1907,111 @@ int main(void)
         g_esp=0x1800;story_rewards_build();CHECK(marker==64 && g_esp==0x1804);
         g_esp=0x1800;story_rewards_page();CHECK(marker==65 && g_esp==0x1804);
         g_esp=0x1800;story_rewards_tick();CHECK(marker==66 && g_esp==0x1804);
+    }
+    /* In-progress joins arrive at the native phase12 pending-copy boundary.
+       They must enter Story startup and adopt the host's prior reload epoch. */
+    {
+        online_mode=PC_ONLINE_STORY;WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=2;
+        WORD_AT(0x76b1a4)=12;WORD_AT(0x79094c)=101;WORD_AT(0x4d1ac6)=2;
+        uint8_t *config=(uint8_t *)memory+0x78ad58;
+        config[0]=2;config[1]=1;config[2]=0;config[0x54]=2;
+        config[0x55]=10;config[0x56]=2;config[0x57]=0;WORD_AT(0x78adb0)=0x80008;
+        g_esp=0x1800;WORD_AT(g_esp)=0x2d398d;
+        CHECK(pc_story_network_prepare(0x78ad58) && story_pending_stage==1 && story_rejoin_pending);
+        pc_story_network_activate();CHECK(story_rejoin_nonce && !story_reload_epoch);
+        memcpy((uint8_t *)memory+0x7de400,config,0xa0);
+        WORD_AT(0x79094c)=2;WORD_AT(0x76b1a4)=15;WORD_AT(0x774028)=0x30000;
+        WORD_AT(0x30000)=1;story_rejoin_sent=0;g_esp=0x1800;
+        const unsigned sent=npc_send_calls;
+        story_rejoin_frame();CHECK(npc_send_calls==sent+1);
+        StoryRejoin join;memcpy(&join,npc_sent+4,sizeof join);
+        CHECK(join.magic==STORY_REJOIN_MAGIC && join.epoch==UINT32_MAX && join.peer==1);
+        story_rejoin_frame();CHECK(npc_send_calls==sent+1); /* Bounded retry. */
+        WORD_AT(0x76b140)=1;WORD_AT(0x30000)=0;WORD_AT(0x31000)=1;
+        WORD_AT(0x77728c+0x124)=1;WORD_AT(0x777244+0x124)=0x31000;
+        WORD_AT(0x7b0c48)=0x6000;
+        const float anchor[3]={10.f,20.f,30.f},heading=1.25f;
+        memcpy((uint8_t *)memory+0x60b4,anchor,sizeof anchor);memcpy((uint8_t *)memory+0x6100,&heading,4);
+        story_reload_epoch=7;memcpy((uint8_t *)memory+0x190000,&join,sizeof join);
+        CHECK(story_rejoin_receive(0x31000,0x190000,0x1e,sizeof join));
+        memcpy(&join,npc_sent+4,sizeof join);CHECK(join.epoch==7 && join.position[0]==10.f && join.heading==heading);
+        WORD_AT(0x76b140)=2;WORD_AT(0x30000)=1;WORD_AT(0x31000)=0;WORD_AT(0x774040)=0;
+        story_reload_epoch=0;story_rejoin_pending=1;
+        const unsigned nonce=join.nonce;join.nonce=nonce+1;
+        memcpy((uint8_t *)memory+0x190000,&join,sizeof join);
+        CHECK(story_rejoin_receive(0x31000,0x190000,0x1e,sizeof join));
+        CHECK(story_rejoin_pending && !story_reload_epoch);
+        join.nonce=nonce;memcpy((uint8_t *)memory+0x190000,&join,sizeof join);
+        WORD_AT(0x31000)=2;story_rejoin_receive(0x31000,0x190000,0x1e,sizeof join);
+        CHECK(story_rejoin_pending && !story_reload_epoch);
+        WORD_AT(0x31000)=0;story_rejoin_receive(0x31000,0x190000,0x1e,sizeof join);
+        CHECK(!story_rejoin_pending && story_reload_epoch==7 && story_context_start_pending);
+        CHECK(story_rejoin_pose_valid && story_rejoin_position[2]==30.f);
+        join.epoch=8;memcpy((uint8_t *)memory+0x190000,&join,sizeof join);
+        story_rejoin_receive(0x31000,0x190000,0x1e,sizeof join);
+        CHECK(story_reload_epoch==7); /* A completed bootstrap cannot be replayed. */
+        /* After bootstrap, normal host reloads still require exactly epoch+1.
+           Checkpoint metadata uses the adopted identity too. */
+        const StoryCheckpoint checkpoint={STORY_CHECKPOINT_MAGIC,story_npc_match(),1,3};
+        story_checkpoint_reset();memcpy((uint8_t *)memory+0x190000,&checkpoint,sizeof checkpoint);
+        CHECK(story_checkpoint_receive(0x31000,0x190000,0x1e,sizeof checkpoint));
+        CHECK(story_checkpoint_pending.serial==1);
+        StoryRestart reload={STORY_RESTART_MAGIC,story_npc_match(),8,8};
+        story_checkpoint_serial=1;WORD_AT(0x75f5d0)=0x130000;WORD_AT(0x130004)=8;
+        memcpy((uint8_t *)memory+0x190000,&reload,sizeof reload);
+        const unsigned prior_reloads=restart_calls;g_esp=0x1800;
+        CHECK(story_restart_receive(0x31000,0x190000,0x1e,sizeof reload));
+        CHECK(story_reload_epoch==8 && restart_calls==prior_reloads+1 && !story_rejoin_pose_valid);
+        story_checkpoint_reset();
+        story_reload_epoch=0;story_rejoin_pending=0;story_rejoin_pose_valid=0;
+    }
+    /* The exact network departure is not a Story death. Other death callers,
+       local bodies and malformed/non-human contexts still execute the title. */
+    {
+        online_mode=PC_ONLINE_STORY;story_lobby_mission=0;story_pending_stage=1;
+        WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;WORD_AT(0x76b1a4)=15;
+        WORD_AT(0x79094c)=2;WORD_AT(0x7de458)=0x80008;
+        ((uint8_t *)memory)[0x7de400]=2;WORD_AT(0x7b0c48)=0x6000;
+        const uint32_t remote=0x6000+0x1584;
+        WORD_AT(remote)=1;WORD_AT(remote+4)=UINT32_MAX;WORD_AT(remote+0x14)=0x90000;
+        WORD_AT(0x90150)=remote;WORD_AT(0x5000)=0x90000;
+        g_esp=0x1800;WORD_AT(g_esp)=0x35c199;WORD_AT(g_esp+4)=0x5000;
+        unsigned old_calls=failure_original_calls;
+        pc_story_network_departure_death(frame_original);
+        CHECK(g_esp==0x1804 && failure_original_calls==old_calls && WORD_AT(remote+0x114)==16);
+        WORD_AT(0x77728c+0x124)=0;CHECK(story_departed_context(remote));
+        g_esp=0x1800;WORD_AT(g_esp+4)=remote;
+        pc_story_failure_trace(frame_original,0xd50e0);
+        CHECK(g_esp==0x1804 && failure_original_calls==old_calls);
+        /* Checkpoint/level constructors may restore state/body directly. */
+        WORD_AT(0x790950)=2;WORD_AT(remote+0x114)=2;WORD_AT(0x90028)=0x161;
+        story_departed_frame();
+        CHECK(WORD_AT(remote+0x114)==16 && WORD_AT(0x90028)==0x100 && retired_bodies==1);
+        story_departed_frame();CHECK(retired_bodies==1); /* Stable retired body. */
+        /* Missing departed inventory must not block the remaining peer. */
+        WORD_AT(0x790950)=2;WORD_AT(0x6000)=0;WORD_AT(0x6004)=0;
+        WORD_AT(0x6014)=0x91000;WORD_AT(0x91150)=0x6000;
+        WORD_AT(0x9107c)=0x92000;WORD_AT(0x92000)=0x91000;WORD_AT(0x91028)=0;
+        WORD_AT(remote+0x14)=0;
+        g_esp=0x1800;pc_network_player_payload(frame_original);
+        CHECK(failure_original_calls==old_calls+1);++old_calls;
+        WORD_AT(0x77728c+0x124)=1;CHECK(!story_departed_context(remote));
+        g_esp=0x1800;pc_network_player_payload(frame_original);
+        CHECK(failure_original_calls==old_calls); /* Active missing body still blocks. */
+        WORD_AT(remote+0x14)=0x90000;
+        g_esp=0x1800;WORD_AT(g_esp+4)=0x5000;WORD_AT(g_esp)=0xbac05;
+        pc_story_network_departure_death(frame_original);
+        CHECK(failure_original_calls==old_calls+1);
+        g_esp=0x1800;WORD_AT(g_esp)=0x35c199;WORD_AT(remote+4)=0;
+        pc_story_network_departure_death(frame_original);
+        CHECK(failure_original_calls==old_calls+2);
+        g_esp=0x1800;WORD_AT(remote+4)=UINT32_MAX;WORD_AT(0x90150)=0;
+        pc_story_network_departure_death(frame_original);
+        CHECK(failure_original_calls==old_calls+3);
+        g_esp=0x1800;WORD_AT(0x90150)=remote;online_mode=PC_ONLINE_ARCADE;
+        pc_story_network_departure_death(frame_original);
+        CHECK(failure_original_calls==old_calls+4);
+        online_mode=PC_ONLINE_STORY;
     }
     /* Abort never invokes the original confirmed callback (which records
        completion). Host keeps transport, guest retires only its own session. */

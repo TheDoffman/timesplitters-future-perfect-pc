@@ -483,3 +483,6 @@ int main(int argc,char **argv)
 STUB(sub_001A4350) STUB(sub_001A8CE0) STUB(sub_001A8EE0)
 
 STUB(sub_001CC360)
+
+void sub_000D2CE0(void){}
+void sub_0015BCC0_gen(void){}
