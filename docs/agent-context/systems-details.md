@@ -435,7 +435,7 @@ then matching actor retirement on host and guest. `story_npc_apply` previously
 removed the guest's type8 body directly when the host cleared its actor link.
 The original dead-state path27F160 also uses B3630 to copy a posed character
 into the independent type1000 cosmetic corpse ring. Guests skip that AI path.
-`pc_story_corpses.inc` now copies a dead, current-generation replica before
+`pc_character_corpses.inc` now copies a dead, current-generation replica before
 retirement, after removing owned held models. It leaves the original ring's
 capacity, recycling and scene cleanup intact; it retains no live NPC/AI actor.
 Living replacements, stale matches/generations, removed bodies and invalid poses
@@ -1130,3 +1130,27 @@ weapon model/definition to be ready, with a bounded120-tick expiry.
 
 The custom difficulty builder calls original `71BE0(1,9.0,0)` before creating
 rows, reserving the original trophy gutter to keep icons clear of label text.
+
+## Online bot corpses
+
+Online guests use the same original B3630 cosmetic corpse copy as Story NPCs.
+The common `pc_character_corpses.inc` owns pose/health/ownership validation,
+local descriptor fallback and callback suppression; the Story call site retains
+its match/generation guards. `pc_network_bots_preserve_corpse` additionally
+restricts Online calls to the current guest bot actor and matching spawn.
+The shared guest frame copies a dead replica before an absent/new-spawn snapshot
+replaces it, or after applying a final dead pose whose drawing bit is cleared.
+Per-slot copy markers reset with match/pool/host and body generation, preventing
+cached snapshots or repeated tombstones from making duplicate corpses. Living
+replacements are excluded. The original bounded corpse ring owns recycling and
+scene cleanup; health, scores, AI and human player death remain host/stock-owned.
+Both Windows and TSFP_NATIVE_NETWORK compile the same policy. Physical Mac and
+Online scene acceptance remain separate from deterministic fixtures.
+
+Online corpse follow-up: the isolated paired probe reproduced bot retirement
+before the snapshot hook, and respawn reused the same entity/spawn counter.
+The snapshot-only copy was therefore too late. The existing A9070 world-removal
+adapter now calls the common corpse bridge before original destruction on both
+network hosts. The bridge owns entity/spawn deduplication scoped by actor pool,
+match and host, so removal hooks and snapshot fallbacks cannot double-copy.
+Human, Story NPC and cosmetic-ring objects fail the bot ownership guard.

@@ -1,3 +1,47 @@
+## Online corpse retirement ordering follow-up - 2026-10-31
+
+Local/uncommitted online-story-coop, base9d6e6131. User rejected the prior
+snapshot-only fix. Paired isolated Online probe reproduced guest actors becoming
+absent before the snapshot hook; Arcade reused the body/spawn on respawn. The
+common A9070 adapter now preserves a dead bot before original destruction,
+with bridge-owned pool/match/host/entity/spawn deduplication shared by snapshot
+fallbacks. Story, human and cosmetic-ring ownership exclusions remain.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0/D3D11/SDL3.4.16: supported US
+XBE hash verified;399.9GiB free before build. Official Build/built-in checks pass,
+with foreground virtual-pad skips (logs/online-guest-corpses-retire-build.log).
+Focused tests33 pass,2 skip, including production pre-destruction adapter plus
+original B3630 constructor, replay deduplication and Story/native fallback.
+Live paired probe exits0 and completes isolated save/config cleanup. The former
+build logged zero bot corpse copies. The new build logged14 copies across bot
+slots2,3,5,6,7; sampled corpse-ring retention reaches8.99seconds, including after
+the source bot respawns. Evidence: logs/online-bots-corpse-probe/{baseline-summary,
+fixed-summary,observations,provenance}.json and1.err. These are asynchronous
+memory/lifecycle checks, not reviewed rendered frames. The user confirmed the Online corpse fix after visual testing. Map-change
+cleanup and physical Mac/mixed-host validation remain unverified. Context/index and diff checks pass.
+Compatibility33614e0883c642c745b59699895a704368e0b796f352fb9dacc510795ec07728;
+executable SHA-256 7bcd4b41879c0f0ddaaf6ff199b123c22ba4b23301067f9279b11f61fc4f8269.
+
+## Online guest bot corpse preservation - 2026-10-31
+
+Local/uncommitted online-guest-corpses, base9d6e6131; depends on the existing
+unmerged Story co-op fix. The shared B3630 cosmetic copy now serves Story NPC
+retirement and Online bot death/absence/respawn transitions. Per-generation copy
+markers prevent duplicates; bridge guards reject humans, host roles, living,
+stale-generation, removed and invalid-pose bodies. Original bounded recycling,
+scene cleanup and human-player death processing remain intact.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0/D3D11/SDL3.4.16:
+US XBE SHA-256 verified;397.7GiB free before build. Official Build and built-in
+checks pass (logs/online-guest-corpses-build.log); foreground virtual-pad checks
+skip when activation is refused. Focused guest dispatch, original corpse
+constructor, Story lobby/menu and FOV checks pass33,skip2. Native-network fixtures
+share the Windows policy; physical Mac/mixed-host and live Online corpse
+appearance/recycling remain untested. User testing is the next acceptance step.
+Context/index and diff checks pass. No generated code or new runtime patch.
+Compatibility0c6f525b805d6692dce0a96528ecf4fdd955074d289b98cb54ea6395d57c60c6;
+executable SHA-256 c0656c5d487ee179766078cdeb5caddcaaa42ed406476718d5e02d3b140005a7.
+
 ## Story co-op main sync - 2026-10-31
 
 Merged main08821c6b into online-story-coop base5451185e, retaining the Story

@@ -861,3 +861,17 @@ operations are forbidden.
 The optional `--npc-observe-seconds 0..30` paired-probe flag passively holds
 the scene after opening inputs for a simultaneous read-only sampler, then
 captures both worlds. It never certifies a death or invents a combat trigger.
+
+Online corpse regression: the existing `test_network_guest_dispatch.py` fixture
+checks dead-body absence, missed absence followed by respawn, draw retirement,
+repeated snapshots and living replacement on Windows/native-network adapters.
+`test_quit_menu.py::test_story_original_corpse_copy` executes the supported-US
+B3630 constructor with the shared helper, verifying bounded recycling, pose copy,
+descriptor fallback and script callback suppression. Story lobby fixtures retain
+the accepted original retirement behavior after sharing that implementation.
+
+The original corpse fixture also executes the production world-removal adapter
+with native networking enabled: the original destructor asserts the cosmetic
+copy already exists, then unlinks/marks the source removed. A later replay must
+not allocate a second corpse. This covers the real ordering missed by the
+initial snapshot-only regression.

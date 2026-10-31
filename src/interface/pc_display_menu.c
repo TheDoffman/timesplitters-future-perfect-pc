@@ -432,6 +432,40 @@ static void audio_beta_change(void)
 #include "pc_profile_accept.inc"
 #include "pc_weapon_slots_guest.inc"
 
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+#include "pc_character_corpses.inc"
+#endif
+/* Only the current host-owned bot replica may produce a local cosmetic copy.
+   The caller owns per-generation deduplication; never copy a respawned body. */
+int pc_network_bots_preserve_corpse(uint32_t entity,uint32_t spawn)
+{
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    static uint32_t copied_entity[16],copied_spawn[16],copied_pool,copied_match,copied_host;
+    const uint32_t pool=WORD_AT(0x007356d8u);
+    const uint8_t *config=(const uint8_t *)((uintptr_t)0x007de400u+g_xbox_mem_offset);
+    const unsigned humans=config[0],bots=config[2];
+    if(!pool || !humans || !bots || bots>10u || humans+bots>16u ||
+       WORD_AT(0x0076b140u)!=2u || WORD_AT(0x0076b1a4u)!=15u ||
+       !guest_writable(entity,0x25cu) || WORD_AT(entity+0x258u)!=spawn) return 0;
+    const uint32_t match=config[0x99]|((uint32_t)config[0x54]<<8)|
+        ((uint32_t)config[0x55]<<16)|((uint32_t)config[0x56]<<24);
+    const uint32_t host=WORD_AT(0x00774040u);
+    if(pool!=copied_pool || match!=copied_match || host!=copied_host) {
+        memset(copied_entity,0,sizeof copied_entity);memset(copied_spawn,0,sizeof copied_spawn);
+        copied_pool=pool;copied_match=match;copied_host=host;
+    }
+    const uint32_t actor=WORD_AT(entity+0x7cu);
+    for(unsigned slot=humans;slot<humans+bots;slot++) if(actor==pool+slot*0xea0u) {
+        if(copied_entity[slot]==entity && copied_spawn[slot]==spawn) return 1;
+        if(!pc_character_preserve_corpse(actor,entity)) return 0;
+        copied_entity[slot]=entity;copied_spawn[slot]=spawn;return 1;
+    }
+#else
+    (void)entity;(void)spawn;
+#endif
+    return 0;
+}
+
 /* Recreate only a missing guest body using the same constructor as the
  * original Arcade initializer. Keep the existing actor-list entry and scores;
  * never run guest AI decisions or add a duplicate entry to 0x7A3580. */

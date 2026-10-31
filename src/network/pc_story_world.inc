@@ -115,8 +115,18 @@ static void story_world_frame(void)
 #endif
 void pc_story_network_world_remove(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     const uint32_t frame=g_esp;
+    /* Online's normal actor update can destroy a dead bot before the next
+       snapshot pass. Copy while its entity/actor/model links are still valid.
+       The bridge excludes Story actors, humans and recycled cosmetic bodies. */
+    if(guest_writable(frame,8u)) {
+        const uint32_t body=WORD_AT(frame+4u);
+        if(guest_writable(body,0x25cu))
+            pc_network_bots_preserve_corpse(body,WORD_AT(body+0x258u));
+    }
+#endif
+#ifdef _WIN32
     if(story_world_session() && getenv("TSFP_STORY_TRACE") && guest_writable(frame,8u)) {
         const uint32_t entity=WORD_AT(frame+4u);
         if(guest_writable(entity,0x154u) && (WORD_AT(entity+0x28u)&0x40000000u) &&

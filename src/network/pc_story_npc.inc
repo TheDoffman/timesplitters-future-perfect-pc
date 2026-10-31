@@ -278,7 +278,6 @@ static void story_npc_remove_attachments(uint32_t actor,uint32_t entity)
         }
     }
 }
-#include "pc_story_corpses.inc"
 static void story_npc_remove_replica(uint32_t actor,uint32_t entity)
 {
     if(story_npc_listed(actor)) guest_call(sub_0015BCC0,1,entity);
@@ -311,7 +310,7 @@ static int story_npc_apply(const StoryNpcSpawn *s)
         if(previous->entity==entity && previous->match==s->match &&
            previous->spawn==WORD_AT(entity+0x258u) && previous->pose_present) {
             story_npc_remove_attachments(actor,entity);
-            story_npc_preserve_corpse(actor,entity);
+            pc_character_preserve_corpse(actor,entity);
         }
         story_npc_remove_replica(actor,entity);entity=0;
     }

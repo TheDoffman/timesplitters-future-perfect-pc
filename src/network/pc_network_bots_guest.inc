@@ -343,6 +343,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
     static uint32_t seen_shots[16];
     static int16_t seen_kills[16][16];
     static PcNetworkBotMotion motion[16];
+    static unsigned char corpse_copied[16];
     static uint32_t motion_match,motion_pool,motion_host;
     const uint8_t *config=(const uint8_t *)((uintptr_t)0x007DE400u+g_xbox_mem_offset);
     unsigned role=*(uint32_t *)((uintptr_t)0x0076B140u+g_xbox_mem_offset);
@@ -354,7 +355,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
         pc_network_bots_context(0,0,0,0,0);sent=0;
         memset(pc_network_bot_shots,0,sizeof pc_network_bot_shots);memset(seen_shots,0,sizeof seen_shots);
         memset(pc_network_bot_bounds,0,sizeof pc_network_bot_bounds);
-        memset(motion,0,sizeof motion);
+        memset(motion,0,sizeof motion);memset(corpse_copied,0,sizeof corpse_copied);
         memset(seen_kills,0,sizeof seen_kills);return;
     }
     pool=*(uint32_t *)((uintptr_t)0x007356D8u+g_xbox_mem_offset);
@@ -368,7 +369,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
     }
     match=config[0x99]|((uint32_t)config[0x54]<<8)|((uint32_t)config[0x55]<<16)|((uint32_t)config[0x56]<<24);
     if(role!=2u || motion_match!=match || motion_pool!=pool || motion_host!=host_ip) {
-        memset(motion,0,sizeof motion);
+        memset(motion,0,sizeof motion);memset(corpse_copied,0,sizeof corpse_copied);
         motion_match=match;motion_pool=pool;motion_host=host_ip;
     }
     tick=*(uint32_t *)((uintptr_t)0x007DE318u+g_xbox_mem_offset);
@@ -390,8 +391,18 @@ static void pc_network_bots_guest_frame(void (*original)(void))
             PcNetworkBotState received;
             double now=pc_network_bots_time();
             if(pc_network_bots_receive(index,&received) &&
-               pc_network_bot_state_valid(&received,humans,bots))
+               pc_network_bot_state_valid(&received,humans,bots)) {
+                const PcNetworkBotState *previous=&motion[index].target;
+                /* Copy the last posed dead body before absence or a new spawn
+                   overwrites it. Host packet pointers never cross this boundary. */
+                if(motion[index].ready && previous->body_present && previous->health<=0.f &&
+                   (!received.body_present || received.spawn!=previous->spawn) &&
+                   !corpse_copied[index] && entity)
+                    corpse_copied[index]=(unsigned char)pc_network_bots_preserve_corpse(entity,previous->spawn);
+                if(received.body_present && (!motion[index].ready || !previous->body_present ||
+                   received.spawn!=previous->spawn)) corpse_copied[index]=0;
                 pc_network_bot_motion_push(&motion[index],&received,now);
+            }
             if(!pc_network_bot_motion_sample(&motion[index],now,&state)) continue;
             unsigned killer;
             /* Scores outlive bodies. Apply the confirmed NPC victim column
@@ -498,6 +509,11 @@ static void pc_network_bots_guest_frame(void (*original)(void))
             pc_network_bots_present(entity,&state);
             pc_network_bots_entity_refresh(entity);
             pc_network_bots_entity_room(entity,state.primary_room);
+            /* The host can retire drawing before releasing its actor link.
+               Preserve this final death pose once, before the hidden replica
+               is reused. Cached snapshots and reliable replays cannot duplicate it. */
+            if(state.health<=0.f && !(state.entity_flags&1u) && !corpse_copied[index])
+                corpse_copied[index]=(unsigned char)pc_network_bots_preserve_corpse(entity,state.spawn);
             if(state.shot.serial!=seen_shots[index]) {
                 seen_shots[index]=state.shot.serial;
                 if(state.shot.serial && state.shot.spawn==state.spawn && state.tick-state.shot.tick<=30u &&

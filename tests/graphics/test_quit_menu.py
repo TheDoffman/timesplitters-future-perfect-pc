@@ -295,7 +295,15 @@ def test_story_original_corpse_copy(tmp_path):
     missing=set(re.findall(r'\b(sub_[0-9A-F]+(?:_gen)?)\b',code))-defined
     source=source.replace('/* UNREACHED */','\n'.join('void '+name+'(void){assert(!"unexpected '+name+'");}' for name in sorted(missing)))
     source=source.replace('/* CHARACTER_POSE_HEADER */',(ROOT/'src/network/pc_character_pose.h').read_text())
-    source=source.replace('/* PRODUCTION_CORPSE_COPY */',(ROOT/'src/network/pc_story_corpses.inc').read_text())
+    source=source.replace('/* PRODUCTION_CORPSE_COPY */',(ROOT/'src/network/pc_character_corpses.inc').read_text())
+    production=(ROOT/'src/interface/pc_display_menu.c').read_text()
+    start=production.index('int pc_network_bots_preserve_corpse(')
+    end=production.index('/* Recreate only a missing guest body',start)
+    source=source.replace('/* PRODUCTION_BOT_CORPSE_BRIDGE */',production[start:end])
+    removal=(ROOT/'src/network/pc_story_world.inc').read_text()
+    removal=removal[removal.index('void pc_story_network_world_remove('):]
+    source=source.replace('/* PRODUCTION_BOT_REMOVAL */','#undef _WIN32\n'+removal)
+    source='#define TSFP_NATIVE_NETWORK 1\n'+source
     assert 'PASS:' in compile_and_run(tmp_path,source)
 
 

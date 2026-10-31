@@ -2254,6 +2254,15 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Online bot corpse follow-up (2026-10-31, uncommitted):** Shared
+  `pc_network_bots_guest.inc`, `pc_character_corpses.inc` and menu bridge reuse
+  Story corpse copying for guest death/absence/respawn. Windows and native-network
+  fixtures cover deduplication; no additional Mac adapter is needed because
+  TSFP_NATIVE_NETWORK uses the same bridge and pre-destruction A9070 adapter.
+  Physical Mac/mixed-host acceptance
+  remains pending: kill a bot, retain its cosmetic body through respawn, repeat
+  deaths to exercise bounded recycling, then change map and check cleanup.
+
 Story guest lobby host loss (2026-10-31, uncommitted): shared patch2460/menu
 adapter returns the guest directly to main when its host closes the lobby and
 reuses the chooser Back's main-layout rebuild. Reopening Story also rebuilds

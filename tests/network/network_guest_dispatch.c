@@ -85,6 +85,7 @@ uint32_t pc_network_bots_revive(unsigned slot);
 void pc_network_bots_entity_refresh(uint32_t entity);
 void pc_network_bots_entity_room(uint32_t entity,uint32_t room);
 void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state);
+int pc_network_bots_preserve_corpse(uint32_t entity,uint32_t spawn);
 void pc_network_bots_pose_weapons(uint32_t entity);
 void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot);
 void pc_network_bots_request_hit(uint32_t context);
@@ -119,6 +120,14 @@ void pc_network_bots_entity_refresh(uint32_t entity)
 {memset((uint8_t *)memory+entity+0x1a8,0,36);bot_refreshes++;}
 void pc_network_bots_entity_room(uint32_t entity,uint32_t room)
 {memory[(entity+0x34)/4]=room;}
+static unsigned bot_corpses;
+static uint32_t bot_corpse_spawn;
+int pc_network_bots_preserve_corpse(uint32_t entity,uint32_t spawn)
+{
+    float health;memcpy(&health,(uint8_t *)memory+entity+0x1cc,4);
+    assert(entity==0x7000 && health<=0.f && memory[(entity+0x258)/4]==spawn);
+    bot_corpse_spawn=spawn;++bot_corpses;return 1;
+}
 void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state)
 {(void)entity;(void)state;}
 void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot)
@@ -604,6 +613,35 @@ int main(void)
         bot_notice_blocked=0;bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
         CHECK(bot_notices==3 && bot_notice_victim==2 && bot_notice_killer==1);
         bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);CHECK(bot_notices==3);
+
+        /* Preserve a final visible dead replica on host absence, once. */
+        last_bot.body_present=1;last_bot.health=100;last_bot.entity_flags=0x71;
+        last_bot.spawn=80;bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        last_bot.health=0;last_bot.entity_flags=1;bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        CHECK(bot_corpses==0);
+        last_bot.body_present=0;bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        CHECK(bot_corpses==1 && bot_corpse_spawn==80);
+        bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);CHECK(bot_corpses==1);
+        g_esp=16;pc_network_bots_guest_frame(original);CHECK(bot_corpses==1);
+        /* A skipped absence packet can go straight from death to respawn. */
+        last_bot.body_present=1;last_bot.spawn=81;last_bot.entity_flags=1;
+        bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        last_bot.spawn=82;last_bot.health=100;last_bot.entity_flags=0x71;
+        bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        CHECK(bot_corpses==2 && bot_corpse_spawn==81);
+        /* A body can lose drawing before its actor link is released. Copy
+           the death pose after applying it, never its old living pose. */
+        last_bot.health=0;last_bot.entity_flags=0;last_bot.clip=74;
+        bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        CHECK(bot_corpses==3 && bot_corpse_spawn==82);
+        bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);CHECK(bot_corpses==3);
+        last_bot.body_present=0;bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        CHECK(bot_corpses==3);
+        /* A living replacement must never produce a corpse. */
+        last_bot.body_present=1;last_bot.spawn=83;last_bot.health=100;last_bot.entity_flags=0x71;
+        bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        last_bot.body_present=0;bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        CHECK(bot_corpses==3);
 
         /* Exercise the actual guest hook between fresh packets, including its
            body/actor write and collision-bound refresh, not only the helper. */

@@ -45,6 +45,13 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     uint32_t frame=g_esp;g_esp-=8;MEM32(g_esp)=0;MEM32(g_esp+4)=entity;fn();assert(g_esp==frame-4);g_esp=frame;return g_eax;
 }
 /* PRODUCTION_CORPSE_COPY */
+/* PRODUCTION_BOT_CORPSE_BRIDGE */
+/* PRODUCTION_BOT_REMOVAL */
+static void retire_body(void)
+{
+    assert(copies==4); /* must be copied before original retirement */
+    MEM32(0x20028)|=0x80000000;MEM32(0x30000)=0;g_esp+=4;
+}
 int main(void)
 {
     void *ram=calloc(1,0x800000);assert(ram);g_xbox_mem_offset=(ptrdiff_t)ram;
@@ -53,18 +60,32 @@ int main(void)
     MEM32(0x20020)=8;MEM32(0x2007c)=0x30000;MEM32(0x30000)=0x20000;MEM32(0x20004)=0x40000;
     MEM32(0x30008)=9;MEM16(0x3004a)=91;MEM32(0x30010)=1;MEM32(0x30074)=0x12345;
     MEM32(0x400d4)=74;MEM32(0x400dc)=0x3fe66666; /* recorded death clip74 at1.8seconds */
-    story_npc_preserve_corpse(0x30000,0x20000);
+    pc_character_preserve_corpse(0x30000,0x20000);
     assert(copies==1 && events==1 && MEM32(0x22020)==0x1000);
     assert(MEM32(0x732a1c)==8 && MEM32(0x732a20)==91 && MEM32(0x7b2e20)==0x22000);
     assert(MEM32(0x420d4)==74 && MEM32(0x420dc)==0x3fe66666);
     assert(g_esp==0x10000 && MEM32(0x30bf0)==0 && MEM32(0x30074)==0x12345 && MEM32(0x30010)==1);
     assert(MEM32(0x30000)==0x20000); /* independent cosmetic body; actor retirement can follow */
     MEM32(0x732a10)=1;MEM32(0x732d18)=0;MEM32(0x30bf0)=0x50000;MEM8(0x50058)=8;
-    story_npc_preserve_corpse(0x30000,0x20000);
+    pc_character_preserve_corpse(0x30000,0x20000);
     assert(copies==2 && events==2 && recycled==1 && MEM32(0x732d18)==0);
     assert(MEM32(0x30bf0)==0x50000 && MEM32(0x732a18)==1);
-    MEM32(0x201cc)=0x3f800000;story_npc_preserve_corpse(0x30000,0x20000);assert(copies==2);
-    MEM32(0x201cc)=0;MEM32(0x20028)=0x80000000;story_npc_preserve_corpse(0x30000,0x20000);assert(copies==2);
-    MEM32(0x20028)=0;MEM32(0x732a10)=0;story_npc_preserve_corpse(0x30000,0x20000);assert(copies==2);
+    MEM32(0x201cc)=0x3f800000;pc_character_preserve_corpse(0x30000,0x20000);assert(copies==2);
+    MEM32(0x201cc)=0;MEM32(0x20028)=0x80000000;pc_character_preserve_corpse(0x30000,0x20000);assert(copies==2);
+    MEM32(0x20028)=0;MEM32(0x732a10)=0;pc_character_preserve_corpse(0x30000,0x20000);assert(copies==2);
+    MEM32(0x732a10)=8;MEM32(0x732d18)=0;
+    MEM32(0x76b140)=2;MEM32(0x76b1a4)=15;
+    MEM8(0x7de400)=2;MEM8(0x7de402)=8;
+    MEM32(0x7356d8)=0x30000-9*0xea0;MEM32(0x20258)=123;
+    assert(pc_network_bots_preserve_corpse(0x20000,123) && copies==3);
+    assert(!pc_network_bots_preserve_corpse(0x20000,124) && copies==3);
+    MEM32(0x76b140)=1;assert(!pc_network_bots_preserve_corpse(0x20000,123));
+    MEM32(0x76b140)=2;MEM32(0x7356d8)=0x30000; /* human slot */
+    assert(!pc_network_bots_preserve_corpse(0x20000,123) && copies==3);
+    MEM32(0x7356d8)=0x30000-9*0xea0;MEM32(0x20258)=124;
+    MEM32(g_esp+4)=0x20000;pc_story_network_world_remove(retire_body);
+    assert(copies==4 && MEM32(0x30000)==0 && (MEM32(0x20028)&0x80000000));
+    g_esp-=4;MEM32(0x20028)=0;MEM32(0x30000)=0x20000;
+    assert(pc_network_bots_preserve_corpse(0x20000,124) && copies==4); /* same generation replay */
     free(ram);puts("PASS: original bounded corpse copy retains death pose independently of retired actor; restores guest descriptor and script state");return 0;
 }

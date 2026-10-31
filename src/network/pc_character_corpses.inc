@@ -2,19 +2,19 @@
    cosmetic corpse ring before retiring its actor. Guests do not run that AI
    path. Mirror only the local corpse copy when a dead replica is retired. */
 extern void sub_000B3630(void);
-static void story_npc_preserve_corpse(uint32_t actor,uint32_t entity)
+static int pc_character_preserve_corpse(uint32_t actor,uint32_t entity)
 {
     const uint32_t frame=g_esp,capacity=WORD_AT(0x00732a10u);
     if(!capacity || capacity>8u || WORD_AT(0x00732d18u)>=capacity || frame<1024u ||
        !guest_writable(frame-1024u,1024u) || !guest_writable(entity,0x2e8u) ||
        !guest_writable(actor,0xea0u) || WORD_AT(entity+0x20u)!=8u ||
        WORD_AT(entity+0x7cu)!=actor || WORD_AT(actor)!=entity ||
-       (WORD_AT(entity+0x28u)&0x80000000u)) return;
+       (WORD_AT(entity+0x28u)&0x80000000u)) return 0;
     float health;memcpy(&health,(const void *)((uintptr_t)(entity+0x1ccu)+g_xbox_mem_offset),4u);
     const uint32_t model=WORD_AT(entity+4u);
-    if(!isfinite(health) || health>0.f || !guest_writable(model,0x200u)) return;
+    if(!isfinite(health) || health>0.f || !guest_writable(model,0x200u)) return 0;
     PcCharacterPose pose;pc_character_pose_read(&pose,(const void *)((uintptr_t)model+g_xbox_mem_offset));
-    if(!pc_character_pose_valid(&pose)) return;
+    if(!pc_character_pose_valid(&pose)) return 0;
 
     /* B3630 reads the local authored descriptor's corpse flag at+58. A
        network-created actor can lack that descriptor. Supply a zeroed local
@@ -38,4 +38,5 @@ static void story_npc_preserve_corpse(uint32_t actor,uint32_t entity)
         if(observations++<32u) fprintf(stderr,"[PC-STORY-CORPSE] slot=%u body=%08x corpse=%08x\n",
             WORD_AT(actor+8u),entity,corpse);
     }
+    return corpse!=0u;
 }
