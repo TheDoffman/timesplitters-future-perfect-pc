@@ -1,3 +1,22 @@
+## Centered Story chooser labels - 2026-10-31
+
+Local/uncommitted on online-story-coop, base46a21dc2. Local/Online use the
+original centered32200 row style from main2D0C43 instead of the left-aligned
+26200 style. Existing selection, callbacks, sizing and reentry rebuild remain.
+The chooser builder is shared with native; no platform adapter change is needed.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11: supported US XBE hash verified;
+397.81GiB free before incremental build. Official build/patch/native checks pass,
+with foreground-dependent virtual-pad skips when activation is refused. Both
+existing Story menu adapter fixtures pass (2,1.37s). Isolated story-entry run
+passes Local selection, Back/reopen and Online cancellation; initial and reopened
+chooser captures visually confirm both labels centered. Runner exits0, releases
+its lock and preserves fixture signatures/settings. Evidence:
+logs/story-chooser-center-live/comparison.jpg and selected full-size captures.
+Build compatibility8319c96f98d4795a52e4e7aabecf82f1366e3691ec8efe49979113d338b6ade0;
+exe SHA25687f7e82fe7696307f3ed203ef36b28ccf393b08497c3a7c4884bd53afc9edb23.
+Native Mac live visual check remains unrun; no gameplay or mission completion.
+
 ## Story chooser reentry layout - 2026-10-31
 
 Local/uncommitted on online-story-coop, base4e820a61, retaining the lobby-loss

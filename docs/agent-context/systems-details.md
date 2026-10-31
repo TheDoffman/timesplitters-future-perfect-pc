@@ -1,5 +1,8 @@
 # Story guest lobby host loss - 2026-10-31
 
+Story chooser rows use the original main menu's centered32200 builder style
+for both Local and Online. Selection IDs, callbacks and sizing stay the same.
+
 Chooser reentry also rebuilds the matching active child in its own layout
 context after79B70. Opening the captured main alone does not invalidate the
 cached Local/Online record. Both Story open and main return use the same bounded

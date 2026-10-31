@@ -77,7 +77,7 @@ static void story_build(void)
     guest_call(sub_00075B70,5,0xa000u,story_online_unavailable?STORY_UNAVAILABLE:STORY_TITLE,
                0x425c0000u,0u,STORY_BACK_CB);
     guest_call(sub_00071B10,4,1u,0x40000000u,1u,1u);
-    guest_call(sub_00071C50,1,0x26200u);
+    guest_call(sub_00071C50,1,0x32200u); /* Original centered menu-row style. */
     guest_call(sub_00079D60_gen,6,STORY_LOCAL,0u,0u,0u,STORY_SELECT_CB,0u);
     guest_call(sub_00079D60_gen,6,STORY_ONLINE,1u,0u,0u,STORY_SELECT_CB,0u);
     guest_call(sub_000771D0,1,menu);
