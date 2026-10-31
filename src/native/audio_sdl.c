@@ -16,6 +16,7 @@ static SDL_AudioDeviceID device;
 static int initialized, stopped, audio_initialized;
 static uint64_t retry_ms;
 static int discontinuity[SLOT_COUNT];
+static RecompAudioEngineStats health; /* protected by lock; lifetime counters */
 static float master_gain = RECOMP_AUDIO_DEFAULT_GAIN;
 static struct { SDL_AudioStream *stream; SDL_AudioSpec spec; uint64_t retry_ms; } voices[SLOT_COUNT];
 static struct {float pan;int enabled;} spatial[SLOT_COUNT];
@@ -60,9 +61,11 @@ void recomp_audio_output_initialize(void)
         if (gain) { float v = strtof(gain, NULL); if (isfinite(v)) master_gain = fmaxf(0, fminf(1, v)); }
     }
     if (!stopped && !device && master_gain > 0 && SDL_GetTicks() >= retry_ms) {
+        health.open_attempts++;
         if (!audio_initialized) audio_initialized = SDL_InitSubSystem(SDL_INIT_AUDIO);
         if (audio_initialized)
             device = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, NULL);
+        if (device) health.opens++; else health.device_failed++;
         retry_ms = SDL_GetTicks() + RECOMP_AUDIO_RETRY_MS;
         fprintf(stderr, "[NATIVE-AUDIO] %s\n", device ? "SDL output opened" : "output unavailable; retry pending");
     }
@@ -72,6 +75,7 @@ void recomp_audio_output_initialize(void)
 /* Called with lock held; a stream failure does not tear down other voices. */
 static void fail_voice(uint32_t slot)
 {
+    health.voice_failed++;
     SDL_DestroyAudioStream(voices[slot].stream);
     voices[slot].stream = NULL;
     voices[slot].retry_ms = SDL_GetTicks() + RECOMP_AUDIO_RETRY_MS;
@@ -107,11 +111,14 @@ int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes
     uint32_t rate, uint32_t channels, uint32_t bits, int32_t volume)
 {
     if (slot >= SLOT_COUNT || !pcm || !bytes || bytes > 160000 || rate < 1000 || rate > 200000 ||
-        (channels != 1 && channels != 2) || (bits != 8 && bits != 16) || bytes % (channels * bits / 8)) return 0;
+        (channels != 1 && channels != 2) || (bits != 8 && bits != 16) || bytes % (channels * bits / 8)) {
+        pthread_mutex_lock(&lock); health.invalid_pcm++; pthread_mutex_unlock(&lock);
+        return 0;
+    }
     recomp_audio_output_initialize();
     pthread_mutex_lock(&lock);
     int ok = 0;
-    if (!device) { discontinuity[slot] = 1; goto done; }
+    if (!device) { health.unavailable++; discontinuity[slot] = 1; goto done; }
     uint32_t input_channels=channels;
     if(channels==1 || spatial[slot].enabled) {
         float gains[2]={1,1};
@@ -135,9 +142,10 @@ int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes
         SDL_DestroyAudioStream(voices[slot].stream); voices[slot].stream = NULL;
     }
     if (!voices[slot].stream) {
-        if (SDL_GetTicks() < voices[slot].retry_ms) goto done;
+        if (SDL_GetTicks() < voices[slot].retry_ms) { health.retry_wait++; goto done; }
         SDL_AudioStream *s = SDL_CreateAudioStream(&spec, NULL);
         if (!s || !SDL_BindAudioStream(device, s)) {
+            health.voice_failed++;
             SDL_DestroyAudioStream(s);
             voices[slot].retry_ms = SDL_GetTicks() + RECOMP_AUDIO_RETRY_MS;
             discontinuity[slot] = 1;
@@ -149,7 +157,7 @@ int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes
     int queued = SDL_GetAudioStreamQueued(s);
     /* Bound each voice to at most half a second plus one accepted packet. */
     if (queued < 0) { fail_voice(slot); goto done; }
-    if ((uint32_t)queued > rate * channels * (bits / 8) / 2) goto done;
+    if ((uint32_t)queued > rate * channels * (bits / 8) / 2) { health.queue_full++; goto done; }
     int filtered=acoustics[slot].target || acoustics[slot].amount || acoustics[slot].wet ||
                  acoustics[slot].bed || acoustics[slot].bed_amount;
     if(filtered) {
@@ -180,7 +188,14 @@ int recomp_audio_output_set_volume(uint32_t slot, int32_t volume)
 int recomp_audio_output_position(uint32_t slot, uint64_t *played, uint32_t *queued)
 { (void)slot; (void)played; (void)queued; return 0; }
 int recomp_audio_output_engine_stats(RecompAudioEngineStats *stats)
-{ if (stats) memset(stats, 0, sizeof *stats); return 0; }
+{
+    if (!stats) return 0;
+    pthread_mutex_lock(&lock);
+    *stats = health;
+    pthread_mutex_unlock(&lock);
+    /* SDL has no equivalent hardware latency/glitch snapshot here. */
+    return 0;
+}
 
 int recomp_audio_output_take_discontinuity(uint32_t slot)
 {

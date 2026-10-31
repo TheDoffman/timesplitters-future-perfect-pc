@@ -1496,6 +1496,17 @@
       ]
     },
     {
+      "name": "2300-dsound-release-diagnostics.patch",
+      "path": "patches/media/2300-dsound-release-diagnostics.patch",
+      "sha256": "e7b97c3cbc4936391117b7b3bda5db8abd2a57bfe8ff625fe081cc16044497b4",
+      "targets": [
+        "config/extra_symbols/45410066.json",
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
       "name": "independent-condition-fixture.patch",
       "path": "patches/compiler/independent-condition-fixture.patch",
       "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",

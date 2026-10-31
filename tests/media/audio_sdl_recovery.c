@@ -7,6 +7,24 @@ static int submit(unsigned slot) {
 }
 int main(int argc, char **argv) {
     assert(argc==2);
+    if(!strcmp(argv[1],"diagnostics")) {
+        RecompAudioEngineStats stats;
+        fail_open=1; assert(!submit(0));
+        assert(!recomp_audio_output_engine_stats(&stats));
+        assert(stats.open_attempts==1 && stats.device_failed==1 && stats.unavailable==1 && !stats.opens);
+        fail_open=0; sdl_now=1000; assert(submit(0));
+        queued_bytes=96001; assert(!submit(0)); queued_bytes=0;
+        assert(!recomp_audio_output_submit(0,pcm,3,48000,2,16,0));
+        fail_put=1; assert(!submit(0)); fail_put=0; assert(!submit(0));
+        recomp_audio_output_engine_stats(&stats);
+        assert(stats.queue_full==1 && stats.invalid_pcm==1 && stats.voice_failed==1 && stats.retry_wait==1);
+        sdl_now=2000; assert(submit(0));
+        recomp_audio_output_reset_voice(0); recomp_audio_output_shutdown();
+        assert(!recomp_audio_output_engine_stats(&stats));
+        assert(stats.open_attempts==2 && stats.opens==1 && stats.device_failed==1);
+        assert(stats.queue_full==1 && stats.invalid_pcm==1 && stats.voice_failed==1);
+        return 0;
+    }
     if(!strcmp(argv[1],"enhanced-on") || !strcmp(argv[1],"enhanced-off")) {
         const int enabled=!strcmp(argv[1],"enhanced-on");
         recomp_audio_output_set_spatial(0,-1,enabled);

@@ -2458,6 +2458,16 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-018 — Story audio timing, queue retry and ADPCM resume (issue #8)
 
+- **Final buffer Release/diagnostics follow-up (2026-10-31, fix/audio-release-diagnostics):**
+  Shared patch 2300 preserves original guest refcounts/destruction and retires
+  host effects slots on final release, with reentrant reuse protection.
+  Shared health reports distinguish pool exhaustion, starvation episodes and
+  refused attempts; XAudio/SDL supply lifetime failure/recovery counters.
+  Windows deterministic audio tests pass (92 tests, one opt-in device skip).
+  Existing dual-host CI suites include the new cases. Native Mac execution and
+  long-session/headset listening remain pending; no second policy adapter is
+  required. See audio-buffers.md and STATUS.md for scope/evidence.
+
 - **Main/beta integration (2026-10-30):** The prior local fixes, preserved in
   `c61f77e4`, now apply after beta audio as patches 0055-0058. Recovery is always
   enabled. XAudio and SDL adapter doubles pass enhanced-on/off recovery and

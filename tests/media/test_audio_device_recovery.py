@@ -30,7 +30,7 @@ def recovery_exe(tmp_path_factory):
 
 @pytest.mark.parametrize('scenario', ['startup', 'critical', 'create', 'start', 'volume',
                                      'submit', 'queue', 'shutdown', 'muted', 'invalid-gain', 'concurrent',
-                                     'com-retry', 'device-submit', 'live-volume', 'register', 'master-volume', 'enhanced-on', 'enhanced-off'])
+                                     'com-retry', 'device-submit', 'live-volume', 'register', 'master-volume', 'enhanced-on', 'enhanced-off', 'diagnostics'])
 def test_device_recovery(recovery_exe, scenario):
     env = {k:v for k,v in os.environ.items() if k not in ('RECOMP_AUDIO_GAIN', 'RECOMP_MUTE')}
     if scenario in ('muted', 'invalid-gain'):
@@ -59,7 +59,7 @@ def sdl_recovery_exe(tmp_path_factory):
     assert built.returncode == 0, built.stdout+built.stderr
     return exe
 
-@pytest.mark.parametrize('scenario', ['startup', 'subsystem', 'shutdown', 'queue', 'bind', 'put', 'volume', 'enhanced-on', 'enhanced-off'])
+@pytest.mark.parametrize('scenario', ['startup', 'subsystem', 'shutdown', 'queue', 'bind', 'put', 'volume', 'enhanced-on', 'enhanced-off', 'diagnostics'])
 def test_sdl_recovery(sdl_recovery_exe, scenario):
     env = {k:v for k,v in os.environ.items() if k not in ('RECOMP_AUDIO_GAIN', 'RECOMP_MUTE')}
     result = subprocess.run([str(sdl_recovery_exe), scenario], env=env, capture_output=True,

@@ -16,7 +16,11 @@ exit in `model_for_known` retire an existing slot/host voice, including null
 settings holders and invalid rate/alignment. DirectSoundDoWork therefore reclaims
 invalid stopped buffers as well as playing ones. Valid stopped/paused buffers
 are retained; no live voice is evicted to admit another sound. See
-[audio lifecycle tests](audio-buffers.md). Guest Release remains unchanged.
+[audio lifecycle tests](audio-buffers.md). Patch 2300 now wraps the original
+buffer Release method and retires the matching slot on its final reference;
+reentrant reuse is protected by generation identity. Its extra symbol is
+backed by the supported US constructor/vtable/refcount call chain. The same
+patch adds bounded dropout diagnostics; see the linked guide for counters.
 
 `media/0057-dsound-format-and-tail-recovery.patch` includes rate/alignment in
 buffer identity, retains raw source size while clocking complete frames, and

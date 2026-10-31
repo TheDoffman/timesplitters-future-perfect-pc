@@ -15,6 +15,12 @@ const uint32_t hle_var_CDirectSoundVoice_SetVolume = 0;
 const uint32_t hle_var_CDirectSoundStream_SetVolume = 0;
 const uint32_t hle_var_CDirectSound3DCalculator_Calculate3D = 0;
 const uint32_t hle_var_CDirectSound3DCalculator_GetVoiceData = 0;
+static void (*release_callback)(void);
+static void release_original(void) {
+    if (release_callback) release_callback();
+    else g_eax = 0x80004005u;
+}
+void (*const hle_original_CDirectSoundBuffer_Release)(void) = release_original;
 void (*const hle_original_IDirectSoundBuffer_SetFormat)(void) = NULL;
 void (*const hle_original_IDirectSoundBuffer_SetBufferData)(void) = NULL;
 void (*const hle_original_CMcpxVoiceClient_Commit3dSettings_0)(void) = NULL;

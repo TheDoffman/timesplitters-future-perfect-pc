@@ -1,0 +1,295 @@
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -80,6 +80,7 @@
+ 
+ typedef struct Buffer {
+     uint32_t iface;              /* the IDirectSoundBuffer the game holds */
++    uint64_t generation;         /* distinguish reentrant slot/address reuse */
+     uint32_t data, size, format, rate, align;
+     int      output;             /* samples we can send to the host */
+     /* IDirectSoundBuffer_Pause: the model is stopped with its cursor kept,
+@@ -92,7 +93,7 @@
+      * 0 = nothing awaited), and whether the host voice has been fed since
+      * it was last reset (a dry voice after that is an underrun). */
+     uint64_t play_us;
+-    int      fed;
++    int      fed, dry;
+     uint64_t service_ms;         /* previous active pump, for busy-frame headroom */
+     uint32_t adaptive_lead_ms;   /* grows within 40..90 ms, reset with the slot */
+     int32_t  level;              /* the volume last sent, hundredths of a dB */
+@@ -102,6 +103,7 @@
+ } Buffer;
+ 
+ static Buffer g_buffers[SLOTS];
++static uint64_t g_buffer_generation;
+ static CRITICAL_SECTION g_lock;
+ static INIT_ONCE g_lock_once = INIT_ONCE_STATIC_INIT;
+ 
+@@ -177,6 +179,7 @@
+ static struct {
+     uint64_t plays, first_sent, first_us_sum, first_us_max;
+     uint64_t submits, underruns, resets;
++    uint64_t releases, released, pool_full, refused;
+     uint64_t freq_calls, freq_same, freq_changed, freq_changed_playing;
+     uint64_t commits_3d, commits_original;
+ } g_stat;
+@@ -198,12 +201,9 @@
+     return va >= 0x80000000u && (uint64_t)va + bytes <= 0x80000000ull + 0x04000000ull;
+ }
+ 
+-/* 0 when either pointer on the way is not guest memory. Buffer Release is not
+- * replaced, so a buffer the title freed keeps its slot here until a change is
+- * noticed, and its settings pointers then hold whatever reused that memory.
+- * Burnout 2 crashed reading one (guest 0xFFFFD9AC) from StopEx while loading a
+- * race. A 0 reads as "the buffer changed", and pump() and model_for() retire
+- * the slot. */
++/* Validate settings independently of Release: invalidation and format changes
++ * can also retire slots. Final Release is intercepted at the buffer object's
++ * method, before its caller can reuse the guest allocation. */
+ static uint32_t setting(uint32_t iface, uint32_t offset)
+ {
+     uint32_t holder = voice_field(offset) ? iface - 0x0Cu : iface;
+@@ -223,7 +223,7 @@
+ static void reset_output(Buffer *b)
+ {
+     recomp_audio_output_reset_voice(slot_of(b));
+-    b->fed = 0;
++    b->fed = b->dry = 0;
+     g_stat.resets++;
+ }
+ 
+@@ -514,14 +514,19 @@
+     }
+     /* A voice that was fed and now holds nothing ran dry: an underrun, a gap
+      * that makes the rest of the sound late. */
+-    if (b->fed && recomp_audio_output_position(slot_of(b), NULL, &queued) && queued == 0u)
+-        g_stat.underruns++;
++    if (b->fed && recomp_audio_output_position(slot_of(b), NULL, &queued) && queued == 0u) {
++        if (!b->dry) g_stat.underruns++;
++        b->dry = 1;
++    }
+     b->level = buffer_level(b, &is3d);
+     recomp_audio_output_set_spatial(slot_of(b),b->pan,b->spatial);
+     recomp_audio_output_set_acoustics(slot_of(b),b->obstruction,b->room);
+     if (!recomp_audio_output_submit(slot_of(b), pcm, bytes, out->sample_rate,
+-                                    channels, bits, b->level))
++                                    channels, bits, b->level)) {
++        g_stat.refused++;
+         return;
++    }
++    b->dry = 0;
+     /* Commit only accepted PCM. A full queue must not discard these samples,
+      * including the final chunk of a non-looping sound. */
+     *out = next;
+@@ -696,6 +701,7 @@
+                                                block_align, now) != 0u)
+                 return NULL;
+             b->iface = iface;
++            b->generation = ++g_buffer_generation;
+             b->data = data;
+             b->size = raw_size;
+             b->format = format;
+@@ -708,10 +714,10 @@
+         }
+     }
+     {
+-        static int said;
+-        if (!said++) {
+-            fprintf(stderr, "[DSOUND] more than %u buffers in play; "
+-                            "the rest are not modelled\n", SLOTS);
++        g_stat.pool_full++;
++        if (g_stat.pool_full == 1 || (g_stat.pool_full & (g_stat.pool_full - 1)) == 0) {
++            fprintf(stderr, "[DSOUND] buffer slots exhausted: occupied=%u allocation_refused=%llu\n",
++                    SLOTS, (unsigned long long)g_stat.pool_full);
+             fflush(stderr);
+         }
+     }
+@@ -721,6 +727,33 @@
+ static Buffer *model_for(uint32_t iface, uint64_t now)
+ {
+     return model_for_known(NULL, iface, now);
++}
++
++/* The supported XDK buffer method receives the object, while model keys
++ * are its public interface at object+1C. Keep guest refcounts/destruction.
++ * Never dereference freed guest memory after the original returns. */
++HLE_ORIGINAL(CDirectSoundBuffer_Release);
++HLE_EXPORT(CDirectSoundBuffer_Release)
++{
++    uint32_t object = HLE_ARG(0), result;
++    Buffer *b;
++    uint64_t generation;
++    if (!hle_original_CDirectSoundBuffer_Release)
++        HLE_RETURN(0x80004005u);
++    lock();
++    b = object && object <= UINT32_MAX - 0x1Cu ? find(object + 0x1Cu) : NULL;
++    generation = b ? b->generation : 0;
++    g_stat.releases++;
++    unlock(); /* Guest destruction can take its own locks or reenter HLE. */
++    HLE_CALL_ORIGINAL(CDirectSoundBuffer_Release);
++    result = g_eax;
++    lock();
++    if (!result && b && b->iface == object + 0x1Cu && b->generation == generation) {
++        retire(b);
++        g_stat.released++;
++    }
++    unlock();
++    HLE_RETURN(result);
+ }
+ 
+ /* After a control change, restart the output from the model unless this is a
+@@ -1265,14 +1298,14 @@
+ {
+     static uint64_t last;
+     RecompAudioEngineStats es;
+-    uint32_t i, playing = 0, shown = 0;
++    uint32_t i, playing = 0, occupied = 0, shown = 0;
+     char voices3d[512];
+     size_t used = 0;
+ 
+     if (now - last < 5000u)
+         return;
+     last = now;
+-    if (!g_stat.plays && !g_stat.submits)
++    if (!g_stat.plays && !g_stat.submits && !g_stat.pool_full && !g_stat.releases)
+         return;
+     voices3d[0] = '\0';
+     for (i = 0; i < SLOTS; i++) {
+@@ -1282,6 +1315,7 @@
+         uint32_t settings, params;
+         float dist = 0.0f;
+ 
++        if (b->iface) occupied++;
+         if (!b->iface || !b->model.playing)
+             continue;
+         playing++;
+@@ -1311,6 +1345,19 @@
+             (unsigned long long)g_stat.freq_changed_playing,
+             (unsigned long long)g_stat.resets, (unsigned long long)g_stat.commits_3d,
+             (unsigned long long)g_stat.commits_original, playing);
++    fprintf(stderr, "[DSOUND] health: occupied=%u/%u pool_full=%llu release_calls=%llu "
++            "released_slots=%llu submit_refused=%llu starvation_episodes=%llu\n",
++            occupied, SLOTS, (unsigned long long)g_stat.pool_full,
++            (unsigned long long)g_stat.releases, (unsigned long long)g_stat.released,
++            (unsigned long long)g_stat.refused, (unsigned long long)g_stat.underruns);
++    fprintf(stderr, "[DSOUND] output health: queue_full=%llu invalid_pcm=%llu "
++            "unavailable=%llu retry_wait=%llu allocation_failed=%llu voice_failed=%llu "
++            "device_failed=%llu open_attempts=%llu opens=%llu\n",
++            (unsigned long long)es.queue_full, (unsigned long long)es.invalid_pcm,
++            (unsigned long long)es.unavailable, (unsigned long long)es.retry_wait,
++            (unsigned long long)es.allocation_failed, (unsigned long long)es.voice_failed,
++            (unsigned long long)es.device_failed, (unsigned long long)es.open_attempts,
++            (unsigned long long)es.opens);
+     fprintf(stderr, "[DSOUND] host: latency %.1f ms, %u glitches, %u of %u voices active; "
+             "voices created %llu (%.2f ms each, worst %.2f), destroyed %llu (%.2f ms each, "
+             "worst %.2f)\n",
+--- a/src/hle/audio_output.h
++++ b/src/hle/audio_output.h
+@@ -80,6 +80,11 @@
+     uint32_t latency_samples, sample_rate, glitches;
+     uint32_t active_voices, total_voices;
+     uint64_t voices_created, voices_destroyed;
++    /* Lifetime counters, even when no device is available. Refused submissions
++       are retryable, not necessarily lost sound. Device/voice failures count
++       operations; unavailable/retry_wait count refused submission attempts. */
++    uint64_t queue_full, invalid_pcm, unavailable, retry_wait, allocation_failed;
++    uint64_t voice_failed, device_failed, open_attempts, opens;
+     double   create_ms_total, create_ms_max, destroy_ms_total, destroy_ms_max;
+ } RecompAudioEngineStats;
+ int recomp_audio_output_engine_stats(RecompAudioEngineStats *stats);
+--- a/src/hle/audio_output_xaudio2.cpp
++++ b/src/hle/audio_output_xaudio2.cpp
+@@ -96,6 +96,7 @@
+ };
+ unsigned long long submitted_buffers, submitted_bytes, nonzero_buffers;
+ unsigned long long dropped_buffers;
++RecompAudioEngineStats health; /* protected by output_lock; survives recovery */
+ /* What creating and destroying source voices costs the calling thread. */
+ unsigned long long voices_created, voices_destroyed;
+ double create_ms_total, create_ms_max, destroy_ms_total, destroy_ms_max;
+@@ -140,6 +141,7 @@
+ 
+ void disableOutput(const char *operation, HRESULT error)
+ {
++    ++health.device_failed;
+     std::fprintf(stderr,
+         "[audio-output] retrying operation=%s error=0x%08lx\n",
+         operation, static_cast<unsigned long>(error));
+@@ -163,6 +165,7 @@
+         disableOutput(operation, error);
+         return;
+     }
++    ++health.voice_failed;
+     discontinuity[slot] = true;
+     destroyVoice(voices[slot]);
+     voices[slot].retry_ms = nowMs() + RECOMP_AUDIO_RETRY_MS;
+@@ -171,6 +174,9 @@
+ void dropBuffer(uint32_t slot, const char *reason)
+ {
+     ++dropped_buffers;
++    if (!std::strcmp(reason, "queue-full")) ++health.queue_full;
++    else if (!std::strcmp(reason, "invalid-pcm") || !std::strcmp(reason, "partial-frame")) ++health.invalid_pcm;
++    else if (!std::strcmp(reason, "allocation")) ++health.allocation_failed;
+     if (dropped_buffers <= 4 ||
+         (dropped_buffers & (dropped_buffers - 1)) == 0) {
+         std::fprintf(stderr,
+@@ -204,6 +210,7 @@
+         std::fprintf(stderr, "[audio-output] muted RECOMP_AUDIO_GAIN=0\n");
+         return;
+     }
++    ++health.open_attempts;
+     static thread_local ComApartment apartment;
+     HRESULT error = apartment.initialize();
+     if (FAILED(error) && error != RPC_E_CHANGED_MODE) {
+@@ -242,6 +249,7 @@
+         disableOutput("MasterSetVolume", error);
+         return;
+     }
++    ++health.opens;
+     std::fprintf(stderr,
+         "[audio-output] initialized backend=xaudio2_9 master_gain=%.6f\n", gain);
+ }
+@@ -331,7 +339,7 @@
+     std::lock_guard<std::recursive_mutex> guard(output_lock);
+     checkCriticalError();
+     if (!stats) return 0;
+-    *stats = {};
++    *stats = health;
+     stats->voices_created = voices_created;
+     stats->voices_destroyed = voices_destroyed;
+     stats->create_ms_total = create_ms_total;
+@@ -359,6 +367,7 @@
+     std::lock_guard<std::recursive_mutex> guard(output_lock);
+     recomp_audio_output_initialize();
+     if (!engine || bytes == 0) {
++        if (bytes) ++health.unavailable;
+         if (slot < kVoiceCount && bytes) discontinuity[slot] = true;
+         return 0;
+     }
+@@ -382,7 +391,7 @@
+         destroyVoice(voice);
+     }
+     if (!voice.source) {
+-        if (nowMs() < voice.retry_ms) return 0;
++        if (nowMs() < voice.retry_ms) { ++health.retry_wait; return 0; }
+         WAVEFORMATEX format{};
+         format.wFormatTag = WAVE_FORMAT_PCM;
+         format.nChannels = static_cast<WORD>(channels);
+--- a/config/extra_symbols/45410066.json
++++ b/config/extra_symbols/45410066.json
+@@ -103,6 +103,15 @@
+       "call": "stdcall",
+       "stack_bytes": 16,
+       "_note": "0x0044525D. Four arguments, matching Black's."
++    },
++    {
++      "library": "DSOUND",
++      "kind": "function",
++      "address": 4222960,
++      "name": "CDirectSoundBuffer_Release",
++      "call": "stdcall",
++      "stack_bytes": 4,
++      "_note": "Supported US XBE: constructor 00408028 installs vtable 004A1CE0; slot +8 is 00406FF0. IDirectSoundBuffer_Release 00406AA0 subtracts 1C and calls that slot. Method calls 0040688A, which decrements object+4, invokes destructor on zero, and returns the remaining count; ret 4. Descriptive method name recovered from this call chain."
+     }
+   ]
+ }

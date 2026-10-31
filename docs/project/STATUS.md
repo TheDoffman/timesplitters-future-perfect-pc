@@ -1,3 +1,29 @@
+## Final buffer Release and dropout diagnostics (2026-10-31)
+
+Base main `08821c6b`; branch `fix/audio-release-diagnostics`.
+Patch 2300 adds the verified US buffer Release method to the extra symbols,
+preserves its original refcount/destructor, and retires the matching host model
+only on final release. Generation identity protects reentrant replacement.
+Diagnostic reports distinguish occupied/exhausted slots, refused submissions,
+starvation episodes, and output failure/recovery categories on XAudio and SDL.
+These general fixes are independent of Enhanced Audio.
+
+Windows x64 deterministic media validation: 92 passed, one opt-in real-device
+check skipped (`audio-release-tests.log`). Cases include 1,024 allocations and
+final releases with still-valid settings, retained references, error returns,
+paused/active sounds, unmodelled objects, reentrant reuse, continued PCM and
+failure counters across output recovery/shutdown. The supported US XBE hash
+was verified before inspecting the constructor/vtable/release chain.
+The final supported Windows x64 Build and built-in checks pass with MSBuild
+17.14.40 (`audio-release-final-build.log`); generated HLE binds 00406FF0 with
+an eight-byte return/argument pop and a non-null original body. The final media
+suite again passes 92 tests/one skip. All 20 context checks pass after index
+refresh; backlog and lifecycle checks pass. Two disposable negative-control
+builds demonstrate failure when final cleanup or starvation episode latching
+is removed (`audio-release-negative.log`). Physical Mac execution, long
+Arcade/online sessions, story listening and physical headset switching remain
+unverified.
+
 ## Audio PR validation: Online layout convergence (2026-10-30)
 
 PR432's first two native Mac CI attempts passed 2,264 tests but timed out in
