@@ -1,3 +1,24 @@
+## Audio PR validation: Online layout convergence (2026-10-30)
+
+PR432's first two native Mac CI attempts passed 2,264 tests but timed out in
+unchanged browser layout cases at different display scales. The callback
+rewrote canvas-window geometry on every Configure notification, including an
+unchanged size. It now returns at the same layout state, while preserving real
+resize, content-height, background and scrollbar changes. A deterministic
+notification-queue regression fails against the previous callback and passes
+with the guard. Existing UI probes now emit delayed stack traces on a stall;
+assertions and their 60-second timeout are unchanged.
+
+Windows: all 11 Online theme tests pass. A disposable source-only copy on the
+physical Apple Silicon Mac (Python3.12/Tk9.1) passes ten tests with the one
+Windows-only DWM check skipped; the four original layout cases also passed
+before this repair there. No remote checkout, game build, personal settings or
+save files were changed. These physical checks establish convergence/UI scope,
+not reproduction or resolution of the hosted CI timeout. Hosted acceptance is
+pending the next PR run. Audio source is unchanged from the validated build.
+The supported Windows Build and built-in checks pass again with the updated
+network identity; 30 context/backlog/network-identity checks also pass.
+
 ## General audio recovery integrated with Enhanced Audio (2026-10-30)
 
 Integration base: main `45527221`; prior local repairs are preserved in commit

@@ -2245,6 +2245,13 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Layout convergence (PR432, 2026-10-30):** The shared browser ignores repeated
+  geometry notifications once content dimensions, background and scrollbar
+  visibility are unchanged. Windows real-widget tests pass11; physical Mac
+  Python3.12/Tk9.1 passes10 with1Windows-only skip. A notification-queue regression
+  fails before the guard. Hosted Mac timeout acceptance remains pending CI;
+  transport/session behavior and this entry's overall status are unchanged.
+
 - **Release 0.4.0 packaging follow-up (2026-10-30):** The native game build and
   platform/renderer/input/settings/debug checks passed. Actual installation
   rejected nested Online dependency notice paths. The bundler now preserves

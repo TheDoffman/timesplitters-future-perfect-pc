@@ -14,10 +14,60 @@ def run_tk_check(name, *args):
     # keep real widgets/assertions, but give each lifecycle its own process.
     result = subprocess.run([
         sys.executable, '-c',
-        'import json,runpy,sys; runpy.run_path(sys.argv[1])[sys.argv[2]](*json.loads(sys.argv[3]))',
+        'import faulthandler,json,runpy,sys; faulthandler.dump_traceback_later(20,repeat=True); '
+        'runpy.run_path(sys.argv[1])[sys.argv[2]](*json.loads(sys.argv[3]))',
         str(Path(__file__).resolve()), name, json.dumps(args),
     ], capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_viewport_converges_after_repeated_geometry_notifications(monkeypatch):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools/network'))
+    import online_theme
+    from types import SimpleNamespace
+    pending, canvases = [], []
+
+    class Widget:
+        def __init__(self, *args, **kwargs):
+            self.bindings = {}
+        def columnconfigure(self, *args, **kwargs): pass
+        def rowconfigure(self, *args, **kwargs): pass
+        def grid(self, *args, **kwargs): pass
+        def grid_remove(self): pass
+        def bind(self, event, callback, **kwargs): self.bindings[event] = callback
+        def winfo_reqheight(self): return 400
+
+    class Canvas(Widget):
+        def __init__(self, *args, **kwargs):
+            super().__init__(); self.width = 800; self.requests = 0
+            canvases.append(self)
+        def winfo_width(self): return self.width
+        def winfo_height(self): return 300
+        def configure(self, **kwargs): pass
+        def create_window(self, *args, window, **kwargs):
+            self.content = window; return 1
+        def itemconfigure(self, *args, **kwargs):
+            self.requests += 1
+            pending.append(self.content.bindings['<Configure>'])
+        def yview(self, *args): pass
+        def xview(self, *args): pass
+
+    monkeypatch.setattr(online_theme.tk, 'Canvas', Canvas)
+    monkeypatch.setattr(online_theme.ttk, 'Frame', Widget)
+    monkeypatch.setattr(online_theme.ttk, 'Scrollbar', lambda *a, **k: SimpleNamespace(
+        set=lambda *a: None, grid=lambda **k: None, grid_remove=lambda: None))
+    monkeypatch.setattr(online_theme.ttk, 'Style', lambda *a: SimpleNamespace(lookup=lambda *a: '#111111'))
+    window = Widget(); window.tk = SimpleNamespace(call=lambda *a: 96 / 72)
+    online_theme.scrollable_panel(window, Widget(), 0, 950)
+    canvas = canvases[0]
+    for width in (800, 1200, 800):
+        canvas.width = width
+        pending.append(canvas.bindings['<Configure>'])
+        for _ in range(10):
+            if not pending: break
+            pending.pop(0)()
+        assert not pending, 'Unchanged geometry must settle even if Tk sends Configure again'
+    assert canvas.requests == 3  # Real viewport changes still reach the canvas.
 
 @pytest.mark.skipif(sys.platform not in ('win32', 'darwin'), reason='Desktop Online adapter')
 @pytest.mark.parametrize('original_theme', [None, 'clam'])
