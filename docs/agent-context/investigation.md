@@ -34,7 +34,10 @@ The final replacement order includes call frames, vector support, scalar support
 canonical runtime header, its consumer-fixture repair, branch feedback, nonlocal
 jumps, guest state/reports, image loading, allocation/thread/virtual-memory and
 guest host mappings and unused memory API retirement, then source layout. Historical fixtures omit replacements
-from old inputs; the order test checks the eighteen-patch tail. Audit `.inc` files and scan ignored
+from old inputs; the order test checks the current 45-patch tail, including
+2303-audio-window-exit after independent kernel replacements and before
+allocation-history/source layout. Its HostExit hunk borders the replaced pool
+handler, so applying it earlier breaks historical patch context. Audit `.inc` files and scan ignored
 generated C explicitly with `--no-ignore`. Exact-name searches missed the live
 SX/ZX calls assembled dynamically by the move emitter; its direct replacements
 now have exhaustive compiled register/memory/alias checks.

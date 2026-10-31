@@ -39,6 +39,11 @@ The UI probe now runs mainloop until all widget geometry is stable (three
 Windows UI: 12 passed; physical Mac Python3.12/Tk9.1: 11 passed, one Windows-only
 skip. Tk8.5 is diagnostic evidence, not a supported-host acceptance pass.
 Focused final audio/renderer checks: 54 passed, two platform/device skips.
+All 60 local snapshot/patch tracking/upgrade tests passed (479.54 seconds).
+A second isolated Windows close with XAudio active at gain0.01 submitted3576
+buffers/7079808bytes, opened the device once, and wrote both final summaries
+once before exit0; no listening or physical reconnection claim. Hosted78221430
+stopped on a missing investigation-guide update; that record is now included.
 Current hosted CI acceptance remains pending; no merge or publication.
 
 ## Final buffer Release and dropout diagnostics (2026-10-31)
