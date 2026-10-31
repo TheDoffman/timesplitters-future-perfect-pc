@@ -1,3 +1,16 @@
+# Story Online Back regression - 2026-10-30
+
+Existing story_menu.c fixture executes browser, host and guest Back wrappers,
+checks original callback/cleanup execution, destination argument restoration,
+Story chooser selection, original guest reset before companion disconnect,
+and original main-menu rebuild after Back (validated parent/active child and
+matching captured descriptor). Arcade, offline, gameplay,
+invalid storage and out-of-scope destinations retain original routing. The
+supported-US contract pins the three original pushed destinations. Full-menu
+FOV/settings tests protect unrelated Back callbacks. Native chooser fallback
+continues through the same registered test_quit_menu matrix. Live captures and
+original recording evidence remain separate from fixture results.
+
 # Story browser advertised level regression - 2026-10-30
 
 Existing test_quit_menu gains story_browser.c on Windows policy and native

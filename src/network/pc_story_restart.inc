@@ -276,6 +276,7 @@ void pc_story_network_rewards_page(void (*original)(void))
 void pc_story_network_rewards_menu(void (*original)(void))
 {
 #ifdef _WIN32
+    if(story_online_return_menu(original)) return;
     const uint32_t frame=g_esp;
     if(story_rewards_guest() && guest_writable(frame,16u) &&
        WORD_AT(frame+8u)==0x005236dcu && !story_rewards_count()) {

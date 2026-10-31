@@ -1122,6 +1122,8 @@ static void online_activate(void)
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
 #ifdef _WIN32
+    void (*story_back_handler)(void)=story_online_back_lookup(address);
+    if(story_back_handler) return story_back_handler;
     if(story_network_session() && WORD_AT(0x79094cu)==106u && address>=0x2b0000u && address<0x300000u && getenv("TSFP_STORY_TRACE")) {
         static uint32_t observed[64];static unsigned count;
         unsigned i;for(i=0;i<count && observed[i]!=address;i++) {}

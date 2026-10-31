@@ -51,6 +51,11 @@ def test_story_original_us_entry_contract():
                 return image[offset+address-start:offset+address-start+size]
         raise AssertionError('Unmapped bounded US contract read')
     assert read(0x123c9, 4) == b'\xcc'*4
+    # Browser, host and guest Back callbacks keep stock cleanup; replace only
+    # these verified multiplayer destinations in the scoped Story factory.
+    for address,target in ((0x1a4385,0x4e9974),(0x1a8d15,0x4e9404),(0x1a8f15,0x4e93f4)):
+        assert read(address,5)==b'\x68'+struct.pack('<I',target)
+
     # Browser selected-match arguments and the stock picture draw are separate
     # from the joined-lobby header. These exact returns scope the Story adapter.
     for address,target in ((0x1cbf9c,0x64e20),(0x1cbfbf,0x2bece0)):

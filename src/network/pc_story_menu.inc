@@ -77,6 +77,13 @@ static void story_back(void)
 {
     GuestRegisters r;save_registers(&r);
     guest_call(sub_00079B70,2,story_parent,story_previous);
+    /* The stock factory can reuse the original main record after the Online
+       chooser has been rebuilt. Rebuild its rows in its own layout context. */
+    if(guest_writable(story_parent,0x174u)) {
+        const uint32_t main=WORD_AT(story_parent+0x170u);
+        if(guest_writable(main,0x44u) && WORD_AT(main+4u)==story_previous)
+            guest_call(sub_00078980,1,main);
+    }
     restore_registers(&r);g_esp+=4u;
 }
 
@@ -114,3 +121,55 @@ static void story_select(void)
     }
     restore_registers(&r);g_esp+=4u;
 }
+
+#ifdef _WIN32
+extern void sub_001A4350(void),sub_001A8CE0(void),sub_001A8EE0(void),sub_001CC360(void);
+static uint32_t story_return_destination;
+/* Run stock Back cleanup, replacing only its final multiplayer destination.
+ * The menu factory is already wrapped for Story rewards. Scope this redirect
+ * across the original callback, then close this peer's Online companion. */
+static int story_online_return_menu(void (*original)(void))
+{
+    const uint32_t frame=g_esp;
+    if(!story_return_destination || pc_online_mode()!=PC_ONLINE_STORY ||
+       WORD_AT(0x79094cu)!=101u || !guest_writable(frame,16u) ||
+       WORD_AT(frame+8u)!=story_return_destination ||
+       !guest_writable(story_storage,144u) || WORD_AT(story_storage)!=STORY_BUILD_CB)
+        return 0;
+    const uint32_t destination=WORD_AT(frame+8u);
+    /* The skipped network-type builder normally invokes this full guest reset.
+       Retire its sockets/peers while the companion still exists, then close
+       the native transport after Back. Closing native sockets alone leaves
+       stale guest handles which cannot advertise a recreated match. */
+    GuestRegisters saved;save_registers(&saved);
+    guest_call(sub_001CC360,0);
+    restore_registers(&saved);
+    WORD_AT(frame+8u)=story_storage;
+    original();
+    WORD_AT(frame+8u)=destination;
+    return 1;
+}
+static void story_online_return(void (*original)(void),uint32_t destination)
+{
+    const uint32_t previous=story_return_destination;
+    story_return_destination=destination;
+    original();
+    story_return_destination=previous;
+    pc_online_disconnect();
+}
+static void story_browser_back(void){story_online_return(sub_001A4350,0x4e9974u);}
+static void story_host_lobby_back(void){story_online_return(sub_001A8CE0,0x4e9404u);}
+static void story_guest_lobby_back(void){story_online_return(sub_001A8EE0,0x4e93f4u);}
+static void (*story_online_back_lookup(uint32_t address))(void)
+{
+    if(pc_online_mode()!=PC_ONLINE_STORY || WORD_AT(0x79094cu)!=101u ||
+       !guest_writable(story_storage,144u) || WORD_AT(story_storage)!=STORY_BUILD_CB)
+        return NULL;
+    switch(address) {
+    case 0x1a4350u:return story_browser_back;
+    case 0x1a8ce0u:return story_host_lobby_back;
+    case 0x1a8ee0u:return story_guest_lobby_back;
+    }
+    return NULL;
+}
+#endif

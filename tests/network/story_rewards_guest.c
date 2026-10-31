@@ -77,6 +77,7 @@ void sub_00078980(void){
 void sub_00079B70(void){assert(MEM32(g_esp+8)==0x5236dc);++exits;g_esp+=4;}
 /* ORIGINAL_PROTOTYPES */
 /* ORIGINAL_REWARD_FUNCTIONS */
+static int story_online_return_menu(void (*original)(void)){(void)original;return 0;}
 /* PRODUCTION_REWARD_ADAPTERS */
 void sub_002CBAF0(void){pc_story_network_rewards_page(sub_002CBAF0_gen);}
 static unsigned save_calls,save_owned;

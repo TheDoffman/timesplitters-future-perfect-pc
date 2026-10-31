@@ -8317,3 +8317,21 @@ duplicate native metadata/UI model is introduced. Native Online Story acceptance
 remains Awaiting validation. Engine policy/fallback checks cover the ABI and
 restoration. Windows browser-only live captures verify Time to Split and a
 changed Scotland selection; native live validation remains pending.
+
+MAC-013 Story Online frontend Back (2026-10-30, uncommitted):
+[src/network/pc_story_menu.inc](../../src/network/pc_story_menu.inc) scopes original
+browser/host/guest Back callbacks and the existing factory wrapper in
+[pc_story_restart.inc](../../src/network/pc_story_restart.inc) returns them to the
+Story chooser while preserving original callback cleanup and closing the peer's
+companion. Shared guest-menu logic stays in one adapter; native Local remains
+unchanged. Native Online Story is still Awaiting validation under MAC-013; its
+remaining transport entry is a prerequisite for these live Back acceptance checks.
+Windows and native-fallback fixture results do not establish native live support.
+
+MAC-013 Story Back lifecycle follow-up (2026-10-30, uncommitted): the shared
+Story adapter rebuilds the returned main record with original78980 in its own
+layout context after Back, validating parent/child and captured descriptor.
+The existing Windows Online adapter also runs the original1CC360 guest-network
+reset before closing its companion, required for recreated match discovery.
+No new OS adapter is introduced. Native shared Local menu rebuild is covered
+by the fallback fixture; native Online recreation remains Awaiting validation.

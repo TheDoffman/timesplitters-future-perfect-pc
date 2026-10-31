@@ -479,3 +479,7 @@ int main(int argc,char **argv)
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
     return 0;
 }
+
+STUB(sub_001A4350) STUB(sub_001A8CE0) STUB(sub_001A8EE0)
+
+STUB(sub_001CC360)

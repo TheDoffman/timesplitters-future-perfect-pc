@@ -1,3 +1,62 @@
+## Story Back lifecycle follow-up - 2026-10-30
+
+User retesting of 5d3c1b72 found a blank space above Story after returning to main,
+and no discoverable match after the host left and recreated its lobby. The prior
+probe verified guest reconnect to the original host, not host recreation.
+The scoped Story factory now runs the skipped network-type builder's original
+1CC360/356BB0 guest-network reset before constructing the chooser and closing
+its companion. Closing native sockets alone leaves stale guest peer/handle state.
+Initial and returned main flags matched; bounded construction diagnostics found
+an outgoing Story layout owner and an extra title-height contribution. After
+opening main, Story Back now validates the parent's active child and captured
+descriptor, then uses original78980 to rebuild that record in its own context.
+Failed flag-restoration attempts and temporary diagnostics were removed.
+
+Windows x64/MSVC14.42.34433, SDK10.0.22621.0, D3D11: official Build/native
+checks pass;37 affected checks pass,2 Mac-only checks skip. Supported US XBE
+verified;402.72GiB free before rebuilding. Local/uncommitted base d1c2d1b5;
+compatibility 1756b351edb76e5f4da493daedb92c280eef32a7beec67626df9a2056ebd5c84,
+exe SHA256 c29e7c588bea14a232a57631a1737242c9b4b4b907e967322f63108d504ae26d.
+Final two-instance acceptance on that same build verifies browser Back, guest
+join/Back, both peers returning to main with original card/first-row spacing,
+empty directory after host Back, host Story/Online/new-match recreation, guest
+reconnection/Refresh showing that match, and guest rejoin (role2/phase12,2/4).
+Selected captures/receipt/runner logs are retained in ignored
+logs/story-back-lifecycle-validation. Both runners exit0; profile hashes and
+signatures/canonical fixture are preserved and disposable disks/run locks are
+recycled. No GO or gameplay was run. All710 sealed source/input hashes match
+the rebuilt executable; repository context/base check and diff whitespace pass.
+Native Local rebuild has a shared fallback fixture; Mac live remains unverified,
+and native Online Story recreation remains pending MAC-013.
+User retesting confirmed both regressions fixed before committing.
+
+## Story Online frontend Back route - 2026-10-30
+
+Next revised-notes bug after the browser thumbnail/name fix: at64.98s the
+recording shows Back at the multiplayer Online/System Link selector. Original
+browser and lobby Back callbacks use multiplayer descriptors. Scoped Story
+callback/factory adaptation retains their original cleanup but returns this
+peer to the existing Story Local/Online chooser, then closes its companion.
+Arcade/System Link and in-match leave/disconnect paths remain original.
+Windows x64/MSVC14.42.34433, SDK10.0.22621.0, D3D11:55 affected checks pass;
+2 Mac-only checks skip. Two guarded lobby policy/native-fallback fixtures pass.
+The supported US XBE hash is verified;402.79GiB free before rebuilding. Official
+Build/native checks exit0, and separate launcher source/content verification
+passes. Local/uncommitted base d1c2d1b5, compatibility
+5d3c1b722d18001567971f9bd741e2fecc33e0a0fd14b31f57ba408525a985dc,
+exe SHA256 dad85e5808887d947a06cf70f9e054953f120e9b032b8a687634298b315b93b7.
+
+Two disposable Test Lab copies and a loopback directory verify browser Back,
+Online reopen/rejoin, joined guest Back, host Back and Story Back to main menu.
+All three Online Back paths visibly return to Local/Online; the directory is
+empty after host Back. Selected original/after images and a receipt are retained
+in ignored logs/story-back-validation. No GO or gameplay was run. The first
+probe hit the runner's48-image limit after capturing the guest result; three
+obsolete disposable host captures were recycled before the successful repeat.
+Both runners exit0, profile hashes/signatures and the canonical fixture are
+unchanged, and test disks/run locks are recycled. Native Local fallback is
+covered; native Online live remains pending MAC-013.
+
 ## Story browser level name and thumbnail - 2026-10-30
 
 The first bug in the reordered notes is visible at51.77s in the shared user

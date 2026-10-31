@@ -11,7 +11,7 @@
 #define _WIN32 1
 #endif
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"FAIL line %d: %s\n",__LINE__,#x);exit(1);}}while(0)
-static uint32_t memory[0x10000/4],g_esp;
+static uint32_t memory[0x800000/4],g_esp;
 static uintptr_t g_xbox_mem_offset;
 #define WORD_AT(a) (*(uint32_t *)((uintptr_t)(a)+g_xbox_mem_offset))
 typedef struct GuestRegisters {uint32_t sp;} GuestRegisters;
@@ -20,7 +20,8 @@ static void restore_registers(const GuestRegisters *r){g_esp=r->sp;}
 static int guest_writable(uint32_t p,size_t n){return p>=0x1000 && p<sizeof memory && n<=sizeof memory-p;}
 static int allocation_ok=1,connection_ok,connects,disconnects,launches,rebuilt;
 #ifdef _WIN32
-static unsigned profile_captures;
+static unsigned profile_captures,network_resets;
+void sub_001CC360(void){network_resets++;}
 static void story_rewards_profiles_capture(void){CHECK(!launches);++profile_captures;}
 #endif
 
@@ -28,8 +29,10 @@ static unsigned rows,finalized;
 static uint32_t next_parent,next_menu,default_row,row_ids[2],row_callbacks[2];
 static uint32_t xbox_HeapAlloc(uint32_t bytes,uint32_t align)
 {CHECK(bytes==144 && align==4);return allocation_ok?0x8000:0;}
-int pc_online_connect_mode(PcOnlineMode mode){CHECK(mode==PC_ONLINE_STORY);++connects;return connection_ok;}
-void pc_online_disconnect(void){++disconnects;}
+static PcOnlineMode online_mode;
+PcOnlineMode pc_online_mode(void){return online_mode;}
+int pc_online_connect_mode(PcOnlineMode mode){CHECK(mode==PC_ONLINE_STORY);++connects;if(connection_ok)online_mode=mode;return connection_ok;}
+void pc_online_disconnect(void){++disconnects;online_mode=PC_ONLINE_NONE;}
 static volatile unsigned route;
 void sub_00079B70(void){route=1;}
 void sub_00075B70(void){route=2;}
@@ -55,10 +58,28 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     else if(fn==sub_000771D0){++finalized;}
     else if(fn==sub_001A0A60){++launches;}
     else if(fn==sub_00078980){++rebuilt;}
+#ifdef _WIN32
+    else if(fn==sub_001CC360){CHECK(!count && online_mode==PC_ONLINE_STORY);++network_resets;}
+#endif
     else CHECK(fn==sub_00071B10 || fn==sub_00071C50);
     return 0;
 }
 #include "pc_story_menu.inc"
+#ifdef _WIN32
+static unsigned cleanups,factories;
+static void menu_factory(void){++factories;next_menu=WORD_AT(g_esp+8);g_esp+=4;}
+static void original_back(uint32_t destination){
+    ++cleanups;const uint32_t frame=g_esp;g_esp=0x1800;
+    WORD_AT(g_esp+8)=destination;
+    if(!story_online_return_menu(menu_factory))menu_factory();
+    CHECK(g_esp==0x1804 && WORD_AT(0x1808)==destination);
+    g_esp=frame+4;
+}
+void sub_001A4350(void){original_back(0x4e9974);}
+void sub_001A8CE0(void){original_back(0x4e9404);}
+void sub_001A8EE0(void){original_back(0x4e93f4);}
+#endif
+
 static void callback(void (*fn)(void))
 {g_esp=0x1000;WORD_AT(g_esp+4)=0x2000;fn();CHECK(g_esp==0x1004);}
 static uint32_t received_callback;
@@ -66,20 +87,24 @@ static void row_original(void){received_callback=WORD_AT(g_esp+20);g_esp+=4;}
 int main(void)
 {
     g_xbox_mem_offset=(uintptr_t)memory;
-    WORD_AT(0x202c)=0x3000;WORD_AT(0x2004)=0x4000;
+    WORD_AT(0x202c)=0x3000;WORD_AT(0x2004)=0x4000;WORD_AT(0x2040)=0x30000;
     allocation_ok=0;callback(story_open);CHECK(!next_menu);
     allocation_ok=1;callback(story_open);
     CHECK(next_parent==0x3000 && next_menu==story_storage && WORD_AT(story_storage)==STORY_BUILD_CB);
     callback(story_build);CHECK(rows==2 && finalized==1 && default_row==0);
     CHECK(row_ids[0]==0 && row_ids[1]==1 && row_callbacks[0]==STORY_SELECT_CB && row_callbacks[1]==STORY_SELECT_CB);
-    callback(story_back);CHECK(next_parent==0x3000 && next_menu==0x4000);
+    WORD_AT(0x2004)=story_storage;WORD_AT(0x2040)=0x3a000;
+    WORD_AT(0x3170)=0x5000;WORD_AT(0x5004)=0x4000;
+    callback(story_back);CHECK(next_parent==0x3000 && next_menu==0x4000 && WORD_AT(0x2040)==0x3a000 && rebuilt==1);
+    WORD_AT(0x5004)=0x4001;callback(story_back);CHECK(rebuilt==1);
+    WORD_AT(0x3170)=0;callback(story_back);CHECK(rebuilt==1);
     WORD_AT(0x218c)=0;callback(story_select);CHECK(next_parent==0x3000 && next_menu==0x5238e0);
     next_menu=0;WORD_AT(0x218c)=1;callback(story_select);CHECK(!next_menu && !launches);
 #ifdef _WIN32
     CHECK(connects==1 && disconnects==1);
     connection_ok=1;callback(story_select);CHECK(connects==2 && launches==1 && profile_captures==1);
 #else
-    CHECK(!connects && !disconnects && rebuilt==1 && story_online_unavailable);
+    CHECK(!connects && !disconnects && rebuilt==2 && story_online_unavailable);
 #endif
     WORD_AT(0x218c)=2;callback(story_select);CHECK(next_menu==0);
     g_esp=0x1000;WORD_AT(g_esp)=0x2d0c8e;WORD_AT(g_esp+8)=0;WORD_AT(g_esp+20)=0;
@@ -87,6 +112,25 @@ int main(void)
     g_esp=0x1000;WORD_AT(g_esp+8)=1;CHECK(!pc_story_menu_button(row_original) && g_esp==0x1000);
     WORD_AT(g_esp+8)=0;WORD_AT(g_esp)=0x2d0c8f;CHECK(!pc_story_menu_button(row_original));
     WORD_AT(g_esp)=0x2d0c8e;WORD_AT(g_esp+20)=123;CHECK(!pc_story_menu_button(row_original));
+#ifdef _WIN32
+    WORD_AT(0x79094c)=101;
+    const uint32_t backs[]={0x1a4350,0x1a8ce0,0x1a8ee0};
+    const unsigned old_disconnects=disconnects;
+    for(unsigned i=0;i<3;i++) {
+        online_mode=PC_ONLINE_STORY;
+        void (*back)(void)=story_online_back_lookup(backs[i]);CHECK(back);
+        callback(back);
+        CHECK(next_menu==story_storage && cleanups==i+1 && factories==i+1 && network_resets==i+1);
+        CHECK(disconnects==old_disconnects+i+1 && online_mode==PC_ONLINE_NONE && !story_return_destination);
+    }
+    online_mode=PC_ONLINE_ARCADE;CHECK(!story_online_back_lookup(0x1a4350));
+    online_mode=PC_ONLINE_NONE;CHECK(!story_online_back_lookup(0x1a4350));
+    online_mode=PC_ONLINE_STORY;WORD_AT(0x79094c)=2;CHECK(!story_online_back_lookup(0x1a8ee0));
+    WORD_AT(0x79094c)=101;CHECK(!story_online_back_lookup(0x2eb0a0));
+    WORD_AT(story_storage)=0;CHECK(!story_online_back_lookup(0x1a4350));WORD_AT(story_storage)=STORY_BUILD_CB;
+    g_esp=0x1800;WORD_AT(g_esp+8)=0x4e9974;CHECK(!story_online_return_menu(menu_factory));
+    story_return_destination=0x4e9404;CHECK(!story_online_return_menu(menu_factory));story_return_destination=0;
+#endif
     puts("PASS: Story chooser ABI, Local route, typed Online, cancellation and native fallback");
     return 0;
 }

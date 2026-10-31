@@ -372,6 +372,9 @@ static const char *load_getenv(const char *name)
 #ifdef _WIN32
 #define getenv load_getenv
 #endif
+#ifdef _WIN32
+static int story_online_return_menu(void (*original)(void)){(void)original;return 0;}
+#endif
 #include "pc_story_load.inc"
 #ifdef _WIN32
 static unsigned reward_rows;

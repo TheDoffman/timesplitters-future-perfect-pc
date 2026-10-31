@@ -1,3 +1,29 @@
+# Story Online Back destination - 2026-10-30
+
+The retained recording at64.98s shows Story Back at the multiplayer network-type
+selector. The shared menu lookup now scopes original browser1A4350, host-lobby
+1A8CE0 and guest-lobby1A8EE0 Back callbacks to Online Story, frontend101, and
+an owned initialized Story chooser. Original cleanup still runs. A synchronous
+scope identifies only that callback's final destination (4E9974,4E9404,4E93F4).
+The existing79860 menu-factory wrapper redirects that exact descriptor to
+story_storage and restores its stack argument afterward. Before constructing
+Story, it calls original1CC360 (the skipped network-type builder's356BB0 reset)
+while native sockets still exist. Then the callback closes its companion. Native
+socket shutdown alone leaves stale guest handles and breaks recreated discovery.
+After Story Back reopens the captured main descriptor, it validates the active
+child at story_parent+170h and rebuilds that matching record with original78980.
+Bounded diagnostics found matching initial/returned main flags but the layout
+context still owned by the outgoing Story chooser and an extra title-height
+contribution. Rebuilding in the main record's own context restores the original
+layout. Changing flags on the outgoing or completed main record did not fix it;
+those attempts and diagnostics are removed. No generated-code or patch changes
+are needed.
+
+Unrelated factories, Arcade/System Link, Local, gameplay, invalid chooser storage
+and callbacks outside this scope keep their original route. This change covers
+frontend Back only; in-match leave/disconnect behavior is a separate notes bug.
+Native keeps its existing Local route; native Online Story remains MAC-013.
+
 # Story browser selected level details - 2026-10-30
 
 The user recording's51.77s frame shows Matches Available with Test Lab/Story,
