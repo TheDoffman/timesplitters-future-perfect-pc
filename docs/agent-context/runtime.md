@@ -21,8 +21,9 @@ buffer Release method and retires the matching slot on its final reference;
 reentrant reuse is protected by generation identity. Its extra symbol is
 backed by the supported US constructor/vtable/refcount call chain. The same
 patch adds bounded dropout diagnostics; see the linked guide for counters.
-Patches 2301/2302 add host-only final summaries and run normal Windows window
-closure through CRT cleanup. Combined HLE/adapter stress coverage is documented
+Patches 2301-2303 add host-only final summaries and route both Windows RHI
+WM_QUIT and HLE shadow-window xbox_HostExit through CRT cleanup. Patch 2303
+follows the independent kernel patches whose context borders that function. Combined HLE/adapter stress coverage is documented
 in the same guide; forced process termination still bypasses normal cleanup.
 
 `media/0057-dsound-format-and-tail-recovery.patch` includes rate/alignment in

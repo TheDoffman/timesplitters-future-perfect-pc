@@ -106,8 +106,10 @@ def lifecycle_exe(request, tmp_path_factory):
     fake = folder / 'host'
     fake.mkdir()
     (fake / 'SDL3').mkdir()
-    for header in ('windows.h', 'objbase.h', 'xaudio2.h', 'pthread.h', 'SDL3/SDL.h'):
+    for header in ('windows.h', 'objbase.h', 'xaudio2.h', 'SDL3/SDL.h'):
         (fake / header).write_text('/* Host APIs supplied by fixture. */\n')
+    if request.param == 'sdl':
+        (fake / 'pthread.h').write_text('/* SDL fixture supplies mutex APIs. */\n')
     runtime = ROOT / 'external/ts3FPrecomp/src'
     includes = [runtime, runtime/'hle', ROOT/'src', ROOT/'src/runtime']
     sources = [ROOT/'tests/media/audio_lifecycle_stress.c']

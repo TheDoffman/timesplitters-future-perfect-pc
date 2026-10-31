@@ -185,7 +185,7 @@ presence semantics, decoding/reporting, and repeated-lookup/executor mutations.
 `test_window_theme.py`: menu drawing, mnemonics, inserted/reordered rows (#333).
 
 [Audio tests](audio-buffers.md): timing/gain, Release/recovery stress, exit reports,
-beta ON/OFF. RHI host tests exercise Windows WM_QUIT cleanup.
+beta ON/OFF. RHI tests cover WM_QUIT/HostExit cleanup.
 
 `test_controller_profile.py`: devices/maps/disconnect and SDL virtual input;
 physical pads/Mac gameplay remain unverified.

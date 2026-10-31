@@ -126,3 +126,42 @@ def test_interpolation_present_outcomes(tmp_path,name):
     assert result.returncode==0,result.stdout+result.stderr
     result=subprocess.run([str(exe)],cwd=tmp_path,capture_output=True,text=True,timeout=10)
     assert result.returncode==0,result.stdout+result.stderr
+
+
+def test_window_close_runs_cleanup(tmp_path):
+    """Exercise the real HLE window's exit target, including its diagnostic flushes."""
+    bridge = (RUNTIME / 'kernel/kernel_bridge.c').read_text(encoding='utf-8')
+    start = bridge.index('void xbox_HostExit(')
+    end = bridge.index('\n}', start) + 2
+    source = tmp_path / 'close.c'
+    source.write_text(r'''#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#define ExitProcess(code) _Exit(code)
+#endif
+static int feedback, profile;
+#define RECOMP_ICALL_FEEDBACK_DUMP() (++feedback)
+void recomp_profile_dump(void) { ++profile; }
+''' + bridge[start:end] + r'''
+static void final_health(void) {
+    assert(feedback == 1 && profile == 1);
+    puts("PASS: HLE window close runs diagnostics and exit handlers");
+}
+int main(void) {
+    assert(!atexit(final_health));
+    xbox_HostExit("test window close");
+    abort();
+}
+''', encoding='utf-8')
+    compiler, env = native_compiler(tmp_path)
+    exe = tmp_path / ('close.exe' if os.name == 'nt' else 'close')
+    args = ([compiler, '/nologo', str(source), '/Fe:' + str(exe)] if os.name == 'nt'
+            else [compiler, '-std=c11', str(source), '-o', str(exe)])
+    built = subprocess.run(args, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=60)
+    assert built.returncode == 0, built.stdout + built.stderr
+    result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert 'PASS: HLE window close runs diagnostics and exit handlers' in result.stdout

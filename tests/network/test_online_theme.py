@@ -231,8 +231,29 @@ def _check_browser_layout_and_commands(scale, branded):
         for child in widget.winfo_children():
             yield child
             yield from children(child)
+    def settle():
+        # Cocoa Tk may continuously redraw image-backed controls in update().
+        # Run the application's main loop until widget geometry is stable.
+        import time
+        deadline = time.monotonic() + 3
+        previous, stable = None, 0
+        def sample():
+            nonlocal previous, stable
+            geometry = tuple((str(w), w.winfo_ismapped(), w.winfo_x(), w.winfo_y(),
+                              w.winfo_width(), w.winfo_height(),
+                              w.winfo_reqwidth(), w.winfo_reqheight())
+                             for w in children(root))
+            stable = stable + 1 if geometry == previous else 0
+            previous = geometry
+            if stable >= 3 or time.monotonic() >= deadline:
+                root.quit()
+            else:
+                root.after(25, sample)
+        root.after(25, sample)
+        root.mainloop()
+        assert stable >= 3, 'Online widget geometry did not settle within 3 seconds'
     def check_bounds():
-        root.update()
+        settle()
         for child in children(root):
             if not child.winfo_ismapped():
                 continue
@@ -262,7 +283,7 @@ def _check_browser_layout_and_commands(scale, branded):
         tabs.select(0)
         # Growing and shrinking must not retain the labels' old wrap width.
         root.geometry('2400x1100')
-        root.update()
+        settle()
         root.geometry('1080x860')
         check_bounds()
         # Minimum supported size must keep controls reachable.
@@ -276,7 +297,7 @@ def _check_browser_layout_and_commands(scale, branded):
         host_button = next(w for w in children(root) if isinstance(w, ttk.Button)
                            and w.cget('text') == 'Start New Match')
         host_button.focus_force()
-        root.update()
+        settle()
         canvas = next(w for w in children(root) if isinstance(w, tk.Canvas))
         assert canvas.winfo_rooty() <= host_button.winfo_rooty()
         assert host_button.winfo_rooty() + host_button.winfo_height() <= canvas.winfo_rooty() + canvas.winfo_height()
@@ -285,7 +306,7 @@ def _check_browser_layout_and_commands(scale, branded):
         directory_view = root.nametowidget(tabs.tabs()[1])
         certificate = [w for w in children(directory_view) if isinstance(w, ttk.Entry)][-1]
         certificate.focus_force()
-        root.update()
+        settle()
         directory_canvas = next(w for w in children(directory_view) if isinstance(w, tk.Canvas))
         assert directory_canvas.winfo_rooty() <= certificate.winfo_rooty()
         assert certificate.winfo_rooty() + certificate.winfo_height() <= directory_canvas.winfo_rooty() + directory_canvas.winfo_height()
@@ -294,7 +315,7 @@ def _check_browser_layout_and_commands(scale, branded):
         popup.winfo_screenheight = lambda: 768
         theme.track(popup)
         build_invitation(popup, 'Example invitation', 'EXAMPLE', 30821)
-        root.update()
+        settle()
         # Popup descendants are checked separately because Toplevel positions
         # are screen-relative, not relative to their logical owner.
         for child in children(popup):
@@ -305,7 +326,7 @@ def _check_browser_layout_and_commands(scale, branded):
                 assert child.winfo_y() + child.winfo_height() <= child.master.winfo_height() + 2
         return_button = next(w for w in children(popup) if isinstance(w, ttk.Button) and w.cget('text') == 'Return to game')
         return_button.focus_force()
-        root.update()
+        settle()
         popup_canvas = next(w for w in children(popup) if isinstance(w, tk.Canvas))
         assert popup_canvas.winfo_rooty() <= return_button.winfo_rooty()
         assert return_button.winfo_rooty() + return_button.winfo_height() <= popup_canvas.winfo_rooty() + popup_canvas.winfo_height()

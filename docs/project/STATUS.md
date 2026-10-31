@@ -4,7 +4,8 @@ Follow-up to `5af57da9` on `fix/audio-release-diagnostics`, follow-up revision.
 Normal-exit summaries retain HLE slot/refusal/starvation counters and output
 failure/recovery counters on both hosts, including short sessions, failed
 startup and mute. Repeated explicit shutdown plus exit emits one output summary.
-Windows WM_QUIT now uses normal CRT cleanup, matching the native SDL close path.
+Windows WM_QUIT and the actual HLE shadow-window xbox_HostExit now use normal
+CRT cleanup, matching the native SDL close path.
 Forced termination and crashes are outside this exit-report guarantee.
 
 The new controlled stress fixture links actual shared HLE to each complete
@@ -13,7 +14,11 @@ release during recovery, resume, teardown and address reuse. It checks no old
 voice/state survives. This models scene teardown without running real maps.
 Windows final combined media, UI, renderer and repository contracts: 149 passed,
 two skips (opt-in real audio device and Mac CoreText). A real WM_QUIT probe
-confirms exit handlers run.
+confirms exit handlers run. Follow-up compiled HostExit/renderer and historical
+upgrade tests: 18 passed, one Mac-only skip. A 15-second isolated supported-US
+Windows game session closed via WM_CLOSE with exit code zero and exactly one
+HLE plus one output summary (muted; no listening claim). Executable SHA-256:
+7ced087c47ad16cf75d4bd0018d82cb51f296dc41a1f64cce333781b1c9bba19.
 The supported Windows x64 build and built-in checks pass with MSBuild17.14.40. No gameplay listening or physical device switching was performed.
 
 PR433's initial Mac CI failed only the existing browser-layout timeout
@@ -23,6 +28,18 @@ compatibility passed. A targeted Mac rerun failed the same test at a different s
 now surfaces captured child stack traces on timeout without extending 60 seconds
 or changing widget assertions/layout. This is diagnostic improvement, not proof
 of the timeout's cause or a product fix.
+
+Follow-up to bac005f0: Mac CI exposed an XAudio test-only pthread header shadow
+and historical fixture ordering. The fake pthread header is now SDL-only;
+exit patches follow their RHI/independent-kernel prerequisites. Hosted UI stacks
+locate the timeout in the first root.update(). A disposable physical Mac Tk8.5
+native sample found continuous image redraws, not Python geometry callbacks.
+The UI probe now runs mainloop until all widget geometry is stable (three
+25 ms samples, three-second deadline), preserving every existing assertion.
+Windows UI: 12 passed; physical Mac Python3.12/Tk9.1: 11 passed, one Windows-only
+skip. Tk8.5 is diagnostic evidence, not a supported-host acceptance pass.
+Focused final audio/renderer checks: 54 passed, two platform/device skips.
+Current hosted CI acceptance remains pending; no merge or publication.
 
 ## Final buffer Release and dropout diagnostics (2026-10-31)
 

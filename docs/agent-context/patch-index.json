@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "f56c496aaf495469d4061243e3ce4ca26cf6f843879e438aa9a337726fc13a5d",
+  "loaderSha256": "bb38aead1f708fa705b1531c394ae24baa40001d2c1724b24b8b2a8665f3e572",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2631,6 +2631,14 @@
       "sha256": "697414cab37b60be730c0ef3fda389199e772f8ac613ca8112bd62e95585029a",
       "targets": [
         "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "2303-audio-window-exit.patch",
+      "path": "patches/media/2303-audio-window-exit.patch",
+      "sha256": "72cca9dddaace1b9035f3e07bdf2b7d569f5aaf9de6cb03e7e6a3e82ac917818",
+      "targets": [
         "src/kernel/kernel_bridge.c"
       ]
     },

@@ -2460,7 +2460,8 @@ validation. This version bump alone is not publication evidence.
 
 - **PR433 exit/stress follow-up (2026-10-31):** Shared HLE and both adapters
   emit normal-exit health counters; shutdown is idempotent. Native SDL already
-  exits through CRT cleanup; Windows WM_QUIT now does too. The combined fixture
+  exits through CRT cleanup; Windows WM_QUIT and shadow-window HostExit now do
+  too (real isolated Windows close verified). The combined fixture
   links real HLE with each real adapter and runs 32 pause/loss/release/recovery
   teardown rounds per beta mode. Windows fixture execution passes. Native Mac
   CI and hardware listening remain separate acceptance evidence; see STATUS.

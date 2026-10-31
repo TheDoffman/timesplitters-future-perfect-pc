@@ -192,3 +192,12 @@ pytest failures (decoding captured bytes when necessary). This preserves the
 the command and 60-second timeout appeared. A synthetic timeout regression
 checks trace retention. The timeout, widget assertions and product layout are
 unchanged; improved diagnostics alone do not establish a timeout root cause.
+
+The browser layout probe now uses Tk mainloop with 25 ms geometry samples,
+requiring three unchanged samples within three seconds before each existing
+assertion. Hosted traces stalled in the first update(); a disposable Mac Tk8.5
+probe sampled repeated native image redraws, without a Python Configure loop.
+The event-loop probe avoids waiting for an empty native redraw queue. Geometry,
+focus, button and timeout assertions remain enforced. Windows (12 tests) and
+physical Mac Tk9.1 (11 plus one Windows-only skip) pass; hosted Tk acceptance
+is recorded separately in STATUS. Product layout is unchanged.

@@ -161,11 +161,13 @@ failure/recovery fields, even after failed initialization or deliberate mute.
 Explicit shutdown followed by process exit prints once. This complements the
 five-second report for short sessions; abrupt termination/crashes cannot be
 promised an exit summary. Patch 2302 makes the Windows RHI WM_QUIT path use
-standard exit rather than ExitProcess, so normal window closure runs these
-handlers, as the native SDL path already does.
+standard exit rather than ExitProcess. Patch 2303 also changes xbox_HostExit,
+the actual shadow_wndproc WM_CLOSE target, to run these handlers while retaining
+its feedback/profile flushes. The native SDL path already uses standard exit.
 
 `audio_lifecycle_stress.c` links the actual shared buffer HLE/model to each
-complete XAudio/SDL adapter. Only host APIs and guest services are doubled.
+complete XAudio/SDL adapter. Only host APIs and guest services are doubled. The fake pthread header is
+scoped to the SDL driver; the XAudio C++ driver needs native libc++ pthreads.
 Each Enhanced Audio on/off case performs 32 eight-buffer scene teardowns,
 combining actual Play/Pause/Resume/Release calls, output loss/refusal, release
 while recovery is pending, surviving-voice recovery and same-address reuse.
@@ -173,5 +175,6 @@ It checks all host voices retire, no released sound resurrects, paused state
 and DSP/routing/discontinuity state clear, and final summaries appear without
 calling the periodic reporter. Existing recovery cases additionally cover
 failed-start/muted exit and repeated explicit shutdown. The real RHI host
-fixture posts WM_QUIT and requires its registered exit handler to run. These
+fixture posts WM_QUIT; a separate test compiles the real xbox_HostExit body
+and checks diagnostics and exit handlers. These
 are controlled lifecycle checks, not a real level transition or listening test.
