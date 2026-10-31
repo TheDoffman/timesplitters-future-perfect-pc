@@ -184,8 +184,8 @@ presence semantics, decoding/reporting, and repeated-lookup/executor mutations.
 
 `test_window_theme.py`: menu drawing, mnemonics, inserted/reordered rows (#333).
 
-[Audio tests](audio-buffers.md): timing, gain, final Release, dropout diagnostics,
-buffer/device recovery and beta ON/OFF with XAudio/SDL doubles.
+[Audio tests](audio-buffers.md): timing/gain, Release/recovery stress, exit reports,
+beta ON/OFF. RHI host tests exercise Windows WM_QUIT cleanup.
 
 `test_controller_profile.py`: devices/maps/disconnect and SDL virtual input;
 physical pads/Mac gameplay remain unverified.

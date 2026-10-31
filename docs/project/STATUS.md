@@ -1,3 +1,29 @@
+## PR433 exit summaries and lifecycle stress (2026-10-31)
+
+Follow-up to `5af57da9` on `fix/audio-release-diagnostics`, follow-up revision.
+Normal-exit summaries retain HLE slot/refusal/starvation counters and output
+failure/recovery counters on both hosts, including short sessions, failed
+startup and mute. Repeated explicit shutdown plus exit emits one output summary.
+Windows WM_QUIT now uses normal CRT cleanup, matching the native SDL close path.
+Forced termination and crashes are outside this exit-report guarantee.
+
+The new controlled stress fixture links actual shared HLE to each complete
+adapter; each beta mode runs 32 eight-buffer rounds of pause, failure, final
+release during recovery, resume, teardown and address reuse. It checks no old
+voice/state survives. This models scene teardown without running real maps.
+Windows final combined media, UI, renderer and repository contracts: 149 passed,
+two skips (opt-in real audio device and Mac CoreText). A real WM_QUIT probe
+confirms exit handlers run.
+The supported Windows x64 build and built-in checks pass with MSBuild17.14.40. No gameplay listening or physical device switching was performed.
+
+PR433's initial Mac CI failed only the existing browser-layout timeout
+(2272 passed, 326 skipped); Windows native, both patch-upgrade suites and launcher
+compatibility passed. A targeted Mac rerun failed the same test at a different scale (2 rather than
+1.5), with all other native tests passing. The UI test wrapper
+now surfaces captured child stack traces on timeout without extending 60 seconds
+or changing widget assertions/layout. This is diagnostic improvement, not proof
+of the timeout's cause or a product fix.
+
 ## Final buffer Release and dropout diagnostics (2026-10-31)
 
 Base main `08821c6b`; branch `fix/audio-release-diagnostics`.

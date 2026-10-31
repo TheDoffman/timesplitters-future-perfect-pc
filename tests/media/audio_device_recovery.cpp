@@ -8,6 +8,10 @@ static int submit(unsigned slot=0) {
 }
 int main(int argc, char **argv) {
     assert(argc==2); const char *mode=argv[1]; pcm[0]=0x51;
+    if (!strcmp(mode,"exit-failure")) {
+        fail_operation="engine"; assert(!submit()); return 0;
+    }
+    if (!strcmp(mode,"exit-muted")) { assert(!submit()); return 0; }
     if (!strcmp(mode,"diagnostics")) {
         RecompAudioEngineStats stats{};
         fail_operation="engine"; assert(!submit());
@@ -29,6 +33,7 @@ int main(int argc, char **argv) {
         assert(stats.open_attempts==3 && stats.opens==2 && stats.device_failed==2);
         assert(stats.queue_full==1 && stats.invalid_pcm==1 && stats.unavailable==2);
         recomp_audio_output_reset_voice(0);
+        recomp_audio_output_shutdown();
         recomp_audio_output_shutdown();
         assert(!recomp_audio_output_engine_stats(&stats));
         assert(stats.queue_full==1 && stats.voice_failed==1 && stats.opens==2);

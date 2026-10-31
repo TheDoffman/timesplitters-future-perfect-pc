@@ -185,3 +185,10 @@ Child UI probes now emit delayed Python stack traces if they stall, retaining
 the same 60-second timeout. This repair was prompted by repeated hosted Mac
 layout timeouts during PR432; physical Mac Tk9.1 and Windows checks pass, while
 the original hosted timeout must still be validated by CI.
+
+The child-test wrapper now includes TimeoutExpired's captured stdout/stderr in
+pytest failures (decoding captured bytes when necessary). This preserves the
+20-second faulthandler stacks under CI's short traceback mode; previously only
+the command and 60-second timeout appeared. A synthetic timeout regression
+checks trace retention. The timeout, widget assertions and product layout are
+unchanged; improved diagnostics alone do not establish a timeout root cause.

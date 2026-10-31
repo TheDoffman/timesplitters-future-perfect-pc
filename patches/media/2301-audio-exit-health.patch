@@ -1,0 +1,99 @@
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -107,10 +107,14 @@
+ static CRITICAL_SECTION g_lock;
+ static INIT_ONCE g_lock_once = INIT_ONCE_STATIC_INIT;
+ 
++static void report_final(void);
++
+ static BOOL CALLBACK init_lock(PINIT_ONCE once, PVOID param, PVOID *ctx)
+ {
+     (void)once; (void)param; (void)ctx;
+     InitializeCriticalSection(&g_lock);
++    if (atexit(report_final))
++        fprintf(stderr, "[DSOUND] unable to register final health summary\n");
+     return TRUE;
+ }
+ 
+@@ -183,6 +187,21 @@
+     uint64_t freq_calls, freq_same, freq_changed, freq_changed_playing;
+     uint64_t commits_3d, commits_original;
+ } g_stat;
++
++/* Normal process exit only: take no guest-memory reads or output calls here.
++ * Output teardown has its own idempotent final report, in either exit order. */
++static void report_final(void)
++{
++    uint32_t occupied = 0;
++    lock();
++    for (uint32_t i = 0; i < SLOTS; ++i) occupied += g_buffers[i].iface != 0;
++    fprintf(stderr, "[DSOUND] final health: occupied=%u/%u pool_full=%llu "
++            "release_calls=%llu released_slots=%llu submit_refused=%llu starvation_episodes=%llu\n",
++            occupied, SLOTS, (unsigned long long)g_stat.pool_full,
++            (unsigned long long)g_stat.releases, (unsigned long long)g_stat.released,
++            (unsigned long long)g_stat.refused, (unsigned long long)g_stat.underruns);
++    unlock();
++}
+ 
+ /* Buffer settings: [iface] = [object + 0x1C]. Voice settings: [object + 0x10],
+  * i.e. [iface - 0x0C]. */
+--- a/src/hle/audio_output.h
++++ b/src/hle/audio_output.h
+@@ -10,6 +10,7 @@
+ #define XBOXRECOMP_AUDIO_OUTPUT_H
+ 
+ #include <stdint.h>
++#include <stdio.h>
+ 
+ #ifdef __cplusplus
+ extern "C" {
+@@ -87,6 +88,18 @@
+     uint64_t voice_failed, device_failed, open_attempts, opens;
+     double   create_ms_total, create_ms_max, destroy_ms_total, destroy_ms_max;
+ } RecompAudioEngineStats;
++/* Shared final format for both adapters; lifetime counters survive teardown. */
++static inline void recomp_audio_output_log_final_health(const RecompAudioEngineStats *s)
++{
++    fprintf(stderr, "[audio-output] final health: queue_full=%llu invalid_pcm=%llu "
++            "unavailable=%llu retry_wait=%llu allocation_failed=%llu voice_failed=%llu "
++            "device_failed=%llu open_attempts=%llu opens=%llu\n",
++            (unsigned long long)s->queue_full, (unsigned long long)s->invalid_pcm,
++            (unsigned long long)s->unavailable, (unsigned long long)s->retry_wait,
++            (unsigned long long)s->allocation_failed, (unsigned long long)s->voice_failed,
++            (unsigned long long)s->device_failed, (unsigned long long)s->open_attempts,
++            (unsigned long long)s->opens);
++}
+ int recomp_audio_output_engine_stats(RecompAudioEngineStats *stats);
+ 
+ #ifdef __cplusplus
+--- a/src/hle/audio_output_xaudio2.cpp
++++ b/src/hle/audio_output_xaudio2.cpp
+@@ -80,7 +80,7 @@
+     voice.source->SetOutputMatrix(master,voice.channels,2,matrix);
+ }
+ bool reported_nonzero[kVoiceCount];
+-bool attempted, callback_registered, summary_printed;
++bool attempted, callback_registered, summary_printed, exit_registered;
+ bool discontinuity[kVoiceCount];
+ double retry_ms;
+ std::recursive_mutex output_lock;
+@@ -191,6 +191,11 @@
+ {
+     std::lock_guard<std::recursive_mutex> guard(output_lock);
+     if (summary_printed) return;
++    if (!exit_registered) {
++        exit_registered = true;
++        if (std::atexit(recomp_audio_output_shutdown))
++            std::fprintf(stderr, "[audio-output] unable to register final health summary\n");
++    }
+     checkCriticalError();
+     if (attempted || nowMs() < retry_ms) return;
+     attempted = true;
+@@ -266,6 +271,7 @@
+         "[audio-output] summary submitted_buffers=%llu submitted_bytes=%llu "
+         "nonzero_buffers=%llu dropped_buffers=%llu\n",
+         submitted_buffers, submitted_bytes, nonzero_buffers, dropped_buffers);
++    recomp_audio_output_log_final_health(&health);
+ }
+ 
+ extern "C" void recomp_audio_output_reset_voice(uint32_t slot)

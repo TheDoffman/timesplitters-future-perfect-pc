@@ -150,3 +150,28 @@ freed settings, four complete 256-slot reuse rounds, reentrant replacement,
 unmodelled objects, continued PCM output, starvation episode counting and
 failure-category snapshots on both adapters. These fixtures do not prove
 long-session gameplay or physical headset switching/listening.
+
+## Exit reporting and combined lifecycle stress
+
+Patch 2301 registers normal-exit reports when HLE/output first initializes.
+The HLE report snapshots only host-owned counters and occupancy under its lock;
+it does not read guest settings, which may already have been freed. Both
+adapters register their idempotent shutdown and emit the same final lifetime
+failure/recovery fields, even after failed initialization or deliberate mute.
+Explicit shutdown followed by process exit prints once. This complements the
+five-second report for short sessions; abrupt termination/crashes cannot be
+promised an exit summary. Patch 2302 makes the Windows RHI WM_QUIT path use
+standard exit rather than ExitProcess, so normal window closure runs these
+handlers, as the native SDL path already does.
+
+`audio_lifecycle_stress.c` links the actual shared buffer HLE/model to each
+complete XAudio/SDL adapter. Only host APIs and guest services are doubled.
+Each Enhanced Audio on/off case performs 32 eight-buffer scene teardowns,
+combining actual Play/Pause/Resume/Release calls, output loss/refusal, release
+while recovery is pending, surviving-voice recovery and same-address reuse.
+It checks all host voices retire, no released sound resurrects, paused state
+and DSP/routing/discontinuity state clear, and final summaries appear without
+calling the periodic reporter. Existing recovery cases additionally cover
+failed-start/muted exit and repeated explicit shutdown. The real RHI host
+fixture posts WM_QUIT and requires its registered exit handler to run. These
+are controlled lifecycle checks, not a real level transition or listening test.

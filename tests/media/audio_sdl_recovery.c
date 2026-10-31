@@ -7,6 +7,10 @@ static int submit(unsigned slot) {
 }
 int main(int argc, char **argv) {
     assert(argc==2);
+    if(!strcmp(argv[1],"exit-failure")) {
+        fail_open=1; assert(!submit(0)); return 0;
+    }
+    if(!strcmp(argv[1],"exit-muted")) { assert(!submit(0)); return 0; }
     if(!strcmp(argv[1],"diagnostics")) {
         RecompAudioEngineStats stats;
         fail_open=1; assert(!submit(0));
@@ -20,6 +24,7 @@ int main(int argc, char **argv) {
         assert(stats.queue_full==1 && stats.invalid_pcm==1 && stats.voice_failed==1 && stats.retry_wait==1);
         sdl_now=2000; assert(submit(0));
         recomp_audio_output_reset_voice(0); recomp_audio_output_shutdown();
+        recomp_audio_output_shutdown();
         assert(!recomp_audio_output_engine_stats(&stats));
         assert(stats.open_attempts==2 && stats.opens==1 && stats.device_failed==1);
         assert(stats.queue_full==1 && stats.invalid_pcm==1 && stats.voice_failed==1);

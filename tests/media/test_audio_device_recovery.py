@@ -30,14 +30,20 @@ def recovery_exe(tmp_path_factory):
 
 @pytest.mark.parametrize('scenario', ['startup', 'critical', 'create', 'start', 'volume',
                                      'submit', 'queue', 'shutdown', 'muted', 'invalid-gain', 'concurrent',
-                                     'com-retry', 'device-submit', 'live-volume', 'register', 'master-volume', 'enhanced-on', 'enhanced-off', 'diagnostics'])
+                                     'com-retry', 'device-submit', 'live-volume', 'register', 'master-volume', 'enhanced-on', 'enhanced-off', 'diagnostics', 'exit-failure', 'exit-muted'])
 def test_device_recovery(recovery_exe, scenario):
     env = {k:v for k,v in os.environ.items() if k not in ('RECOMP_AUDIO_GAIN', 'RECOMP_MUTE')}
-    if scenario in ('muted', 'invalid-gain'):
-        env['RECOMP_AUDIO_GAIN'] = '0' if scenario == 'muted' else 'bad'
+    if scenario in ('muted', 'invalid-gain', 'exit-muted'):
+        env['RECOMP_AUDIO_GAIN'] = 'bad' if scenario == 'invalid-gain' else '0'
     result = subprocess.run([str(recovery_exe), scenario], env=env, capture_output=True,
                             text=True, timeout=15)
     assert result.returncode == 0, result.stdout+result.stderr
+    if scenario in ('diagnostics', 'exit-failure', 'exit-muted'):
+        assert result.stderr.count('[audio-output] final health:') == 1
+    if scenario == 'exit-failure':
+        assert 'device_failed=1 open_attempts=1 opens=0' in result.stderr
+    if scenario == 'exit-muted':
+        assert 'device_failed=0 open_attempts=0 opens=0' in result.stderr
 
 
 @pytest.fixture(scope='module')
@@ -59,12 +65,19 @@ def sdl_recovery_exe(tmp_path_factory):
     assert built.returncode == 0, built.stdout+built.stderr
     return exe
 
-@pytest.mark.parametrize('scenario', ['startup', 'subsystem', 'shutdown', 'queue', 'bind', 'put', 'volume', 'enhanced-on', 'enhanced-off', 'diagnostics'])
+@pytest.mark.parametrize('scenario', ['startup', 'subsystem', 'shutdown', 'queue', 'bind', 'put', 'volume', 'enhanced-on', 'enhanced-off', 'diagnostics', 'exit-failure', 'exit-muted'])
 def test_sdl_recovery(sdl_recovery_exe, scenario):
     env = {k:v for k,v in os.environ.items() if k not in ('RECOMP_AUDIO_GAIN', 'RECOMP_MUTE')}
+    if scenario == 'exit-muted': env['RECOMP_AUDIO_GAIN'] = '0'
     result = subprocess.run([str(sdl_recovery_exe), scenario], env=env, capture_output=True,
                             text=True, timeout=15)
     assert result.returncode == 0, result.stdout+result.stderr
+    if scenario in ('diagnostics', 'exit-failure', 'exit-muted'):
+        assert result.stderr.count('[audio-output] final health:') == 1
+    if scenario == 'exit-failure':
+        assert 'device_failed=1 open_attempts=1 opens=0' in result.stderr
+    if scenario == 'exit-muted':
+        assert 'device_failed=0 open_attempts=0 opens=0' in result.stderr
 
 
 @pytest.mark.skipif(os.name != 'nt' or os.environ.get('TSFP_TEST_AUDIO_DEVICE') != '1',
@@ -83,3 +96,60 @@ def test_real_xaudio_reopen(tmp_path):
         pytest.skip('No default audio device available')
     assert result.returncode == 0, result.stdout+result.stderr
     print(result.stdout+result.stderr)
+
+
+@pytest.fixture(scope='module', params=['xaudio', 'sdl'])
+def lifecycle_exe(request, tmp_path_factory):
+    """Link shared C buffer HLE to each actual adapter, with only host APIs faked."""
+    folder = tmp_path_factory.mktemp('audio-lifecycle-' + request.param)
+    compiler, env = native_compiler(folder)
+    fake = folder / 'host'
+    fake.mkdir()
+    (fake / 'SDL3').mkdir()
+    for header in ('windows.h', 'objbase.h', 'xaudio2.h', 'pthread.h', 'SDL3/SDL.h'):
+        (fake / header).write_text('/* Host APIs supplied by fixture. */\n')
+    runtime = ROOT / 'external/ts3FPrecomp/src'
+    includes = [runtime, runtime/'hle', ROOT/'src', ROOT/'src/runtime']
+    sources = [ROOT/'tests/media/audio_lifecycle_stress.c']
+    if os.name != 'nt':
+        sources += [runtime/'platform/win32_compat.c', ROOT/'src/native/shared_host.c']
+        sources += [ROOT/'src/runtime'/name for name in
+                    ('shared_views.c', 'owned_arena.c', 'mmio_views.c', 'guest_arena_service.c')]
+    objects = []
+    for source in sources:
+        obj = folder / (source.stem + ('.obj' if os.name == 'nt' else '.o'))
+        if os.name == 'nt':
+            cmd = [compiler, '/nologo', '/std:c11', '/O2', '/c',
+                   *['/I'+str(p) for p in includes], str(source), '/Fo:'+str(obj)]
+        else:
+            cmd = [compiler, '-std=c11', '-O2', '-c', *['-I'+str(p) for p in includes],
+                   str(source), '-o', str(obj)]
+        built = subprocess.run(cmd, cwd=folder, env=env, capture_output=True, text=True, timeout=60)
+        assert built.returncode == 0, built.stdout + built.stderr
+        objects.append(str(obj))
+    cpp = request.param == 'xaudio'
+    driver = ROOT/f'tests/media/audio_lifecycle_{request.param}.{ "cpp" if cpp else "c" }'
+    exe = folder / ('lifecycle.exe' if os.name == 'nt' else 'lifecycle')
+    if os.name == 'nt':
+        cmd = [compiler, '/nologo', '/std:c++17' if cpp else '/std:c11', '/EHsc',
+               *['/I'+str(p) for p in [fake, *includes]], str(driver), *objects, '/Fe:'+str(exe)]
+    else:
+        linker = shutil.which(env.get('CXX', 'c++')) if cpp else compiler
+        cmd = [linker, '-std=c++17' if cpp else '-std=c11',
+               *['-I'+str(p) for p in [fake, *includes]], str(driver), *objects,
+               '-lm', '-pthread', '-o', str(exe)]
+    built = subprocess.run(cmd, cwd=folder, env=env, capture_output=True, text=True, timeout=60)
+    assert built.returncode == 0, built.stdout + built.stderr
+    return exe
+
+
+@pytest.mark.parametrize('enhanced', [0, 1])
+def test_release_during_recovery_and_scene_teardown(lifecycle_exe, enhanced):
+    env = {k:v for k,v in os.environ.items() if not k.startswith(('RECOMP_', 'TSFP_'))}
+    result = subprocess.run([str(lifecycle_exe), str(enhanced)], env=env,
+                            capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert 'PASS: 32 scene teardowns' in result.stdout
+    assert result.stderr.count('[DSOUND] final health:') == 1
+    assert 'occupied=0/256 pool_full=0 release_calls=256 released_slots=256' in result.stderr
+    assert result.stderr.count('[audio-output] final health:') == 1

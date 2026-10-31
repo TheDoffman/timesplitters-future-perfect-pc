@@ -12,13 +12,31 @@ def run_tk_check(name, *args):
     # Each Online application owns one Tcl interpreter. Repeated Tk teardown
     # in pytest's long-lived process can break later Tcl initialization;
     # keep real widgets/assertions, but give each lifecycle its own process.
-    result = subprocess.run([
-        sys.executable, '-c',
-        'import faulthandler,json,runpy,sys; faulthandler.dump_traceback_later(20,repeat=True); '
-        'runpy.run_path(sys.argv[1])[sys.argv[2]](*json.loads(sys.argv[3]))',
-        str(Path(__file__).resolve()), name, json.dumps(args),
-    ], capture_output=True, text=True, timeout=60)
+    try:
+        result = subprocess.run([
+            sys.executable, '-c',
+            'import faulthandler,json,runpy,sys; faulthandler.dump_traceback_later(20,repeat=True); '
+            'runpy.run_path(sys.argv[1])[sys.argv[2]](*json.loads(sys.argv[3]))',
+            str(Path(__file__).resolve()), name, json.dumps(args),
+        ], capture_output=True, text=True, timeout=60)
+    except subprocess.TimeoutExpired as error:
+        # TimeoutExpired keeps captured bytes even with text=True. Surface the
+        # child's delayed stacks; the default short traceback hides them.
+        def decoded(value):
+            return value.decode('utf-8', errors='replace') if isinstance(value, bytes) else (value or '')
+        pytest.fail(f'{name}{args} timed out after 60 seconds\n'
+                    + decoded(error.stdout) + decoded(error.stderr), pytrace=False)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_tk_timeout_preserves_child_stack(monkeypatch):
+    def timeout(*args, **kwargs):
+        raise subprocess.TimeoutExpired(args[0], 60, output=b'child progress\n',
+                                        stderr=b'Timeout (0:00:20)!\n  File "tkinter", line 7 in update\n')
+    monkeypatch.setattr(subprocess, 'run', timeout)
+    with pytest.raises(pytest.fail.Exception, match='(?s)child progress.*line 7 in update'):
+        run_tk_check('fixture')
+
 
 
 def test_viewport_converges_after_repeated_geometry_notifications(monkeypatch):

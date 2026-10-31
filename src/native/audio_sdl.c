@@ -57,6 +57,8 @@ void recomp_audio_output_initialize(void)
     pthread_mutex_lock(&lock);
     if (!initialized) {
         initialized = 1;
+        if (atexit(recomp_audio_output_shutdown))
+            fprintf(stderr, "[NATIVE-AUDIO] unable to register final health summary\n");
         const char *gain = getenv("RECOMP_AUDIO_GAIN");
         if (gain) { float v = strtof(gain, NULL); if (isfinite(v)) master_gain = fmaxf(0, fminf(1, v)); }
     }
@@ -98,12 +100,14 @@ void recomp_audio_output_reset_voice(uint32_t slot)
 void recomp_audio_output_shutdown(void)
 {
     pthread_mutex_lock(&lock);
+    if (stopped) { pthread_mutex_unlock(&lock); return; }
     for (unsigned i = 0; i < SLOT_COUNT; i++) {
         SDL_DestroyAudioStream(voices[i].stream); voices[i].stream = NULL;
     }
     if (device) SDL_CloseAudioDevice(device);
     device = 0;
     stopped = 1;
+    recomp_audio_output_log_final_health(&health);
     pthread_mutex_unlock(&lock);
 }
 

@@ -28,6 +28,12 @@ def test_host_contract(tmp_path):
     run_env=dict(env or os.environ, TSFP_FRAME_PROFILE=str(tmp_path/'host-presents.csv'))
     result = subprocess.run([str(exe)], env=run_env, capture_output=True, text=True, timeout=10)
     assert result.returncode == 0, result.stdout + result.stderr
+    if os.name == 'nt':
+        result = subprocess.run([str(exe), 'quit'], env=run_env,
+                                capture_output=True, text=True, timeout=10)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert 'PASS: normal window close runs exit handlers' in result.stdout
+
 
 
 @pytest.mark.parametrize('source', [
