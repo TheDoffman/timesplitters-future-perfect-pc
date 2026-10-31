@@ -117,6 +117,11 @@ def patch_records(paths):
         if replacement:
             paths.remove(replacement)
             paths.append(replacement)
+    # Host exit borders the pool wrapper replaced by the independent kernel.
+    close = by_name.get('2303-audio-window-exit.patch')
+    if close:
+        paths.remove(close)
+        paths.append(close)
     # Allocation evidence depends on the final independent allocator and boot.
     observer = by_name.get('2150-allocation-history.patch')
     if observer:

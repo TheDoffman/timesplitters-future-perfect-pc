@@ -90,12 +90,16 @@ def lifecycle_test(tmp_path_factory):
 
 @pytest.mark.parametrize('scenario', ['null-buffer', 'null-voice', 'bad-pointer',
                                      'bad-rate', 'high-rate', 'bad-align', 'empty-size',
-                                     'reuse', 'retain-valid', 'active-invalid'])
+                                     'reuse', 'retain-valid', 'active-invalid', 'release-stopped', 'release-active',
+                                     'release-paused', 'release-reentrant', 'starvation-diagnostics'])
 def test_buffer_slot_lifecycle(lifecycle_test, scenario):
     result = subprocess.run([str(lifecycle_test), scenario], capture_output=True,
                             text=True, timeout=10)
     assert result.returncode == 0, result.stdout + result.stderr
     assert f'PASS: {scenario}' in result.stdout
+    if scenario == 'starvation-diagnostics':
+        assert 'submit_refused=5 starvation_episodes=2' in result.stderr
+        assert 'occupied=1/256 pool_full=0' in result.stderr
 
 
 @pytest.fixture(scope='module')

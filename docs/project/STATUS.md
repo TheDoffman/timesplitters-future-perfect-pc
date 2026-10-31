@@ -1,3 +1,77 @@
+## PR433 exit summaries and lifecycle stress (2026-10-31)
+
+Follow-up to `5af57da9` on `fix/audio-release-diagnostics`, follow-up revision.
+Normal-exit summaries retain HLE slot/refusal/starvation counters and output
+failure/recovery counters on both hosts, including short sessions, failed
+startup and mute. Repeated explicit shutdown plus exit emits one output summary.
+Windows WM_QUIT and the actual HLE shadow-window xbox_HostExit now use normal
+CRT cleanup, matching the native SDL close path.
+Forced termination and crashes are outside this exit-report guarantee.
+
+The new controlled stress fixture links actual shared HLE to each complete
+adapter; each beta mode runs 32 eight-buffer rounds of pause, failure, final
+release during recovery, resume, teardown and address reuse. It checks no old
+voice/state survives. This models scene teardown without running real maps.
+Windows final combined media, UI, renderer and repository contracts: 149 passed,
+two skips (opt-in real audio device and Mac CoreText). A real WM_QUIT probe
+confirms exit handlers run. Follow-up compiled HostExit/renderer and historical
+upgrade tests: 18 passed, one Mac-only skip. A 15-second isolated supported-US
+Windows game session closed via WM_CLOSE with exit code zero and exactly one
+HLE plus one output summary (muted; no listening claim). Executable SHA-256:
+7ced087c47ad16cf75d4bd0018d82cb51f296dc41a1f64cce333781b1c9bba19.
+The supported Windows x64 build and built-in checks pass with MSBuild17.14.40. No gameplay listening or physical device switching was performed.
+
+PR433's initial Mac CI failed only the existing browser-layout timeout
+(2272 passed, 326 skipped); Windows native, both patch-upgrade suites and launcher
+compatibility passed. A targeted Mac rerun failed the same test at a different scale (2 rather than
+1.5), with all other native tests passing. The UI test wrapper
+now surfaces captured child stack traces on timeout without extending 60 seconds
+or changing widget assertions/layout. This is diagnostic improvement, not proof
+of the timeout's cause or a product fix.
+
+Follow-up to bac005f0: Mac CI exposed an XAudio test-only pthread header shadow
+and historical fixture ordering. The fake pthread header is now SDL-only;
+exit patches follow their RHI/independent-kernel prerequisites. Hosted UI stacks
+locate the timeout in the first root.update(). A disposable physical Mac Tk8.5
+native sample found continuous image redraws, not Python geometry callbacks.
+The UI probe now runs mainloop until all widget geometry is stable (three
+25 ms samples, three-second deadline), preserving every existing assertion.
+Windows UI: 12 passed; physical Mac Python3.12/Tk9.1: 11 passed, one Windows-only
+skip. Tk8.5 is diagnostic evidence, not a supported-host acceptance pass.
+Focused final audio/renderer checks: 54 passed, two platform/device skips.
+All 60 local snapshot/patch tracking/upgrade tests passed (479.54 seconds).
+A second isolated Windows close with XAudio active at gain0.01 submitted3576
+buffers/7079808bytes, opened the device once, and wrote both final summaries
+once before exit0; no listening or physical reconnection claim. Hosted78221430
+stopped on a missing investigation-guide update; that record is now included.
+Current hosted CI acceptance remains pending; no merge or publication.
+
+## Final buffer Release and dropout diagnostics (2026-10-31)
+
+Base main `08821c6b`; branch `fix/audio-release-diagnostics`.
+Patch 2300 adds the verified US buffer Release method to the extra symbols,
+preserves its original refcount/destructor, and retires the matching host model
+only on final release. Generation identity protects reentrant replacement.
+Diagnostic reports distinguish occupied/exhausted slots, refused submissions,
+starvation episodes, and output failure/recovery categories on XAudio and SDL.
+These general fixes are independent of Enhanced Audio.
+
+Windows x64 deterministic media validation: 92 passed, one opt-in real-device
+check skipped (`audio-release-tests.log`). Cases include 1,024 allocations and
+final releases with still-valid settings, retained references, error returns,
+paused/active sounds, unmodelled objects, reentrant reuse, continued PCM and
+failure counters across output recovery/shutdown. The supported US XBE hash
+was verified before inspecting the constructor/vtable/release chain.
+The final supported Windows x64 Build and built-in checks pass with MSBuild
+17.14.40 (`audio-release-final-build.log`); generated HLE binds 00406FF0 with
+an eight-byte return/argument pop and a non-null original body. The final media
+suite again passes 92 tests/one skip. All 20 context checks pass after index
+refresh; backlog and lifecycle checks pass. Two disposable negative-control
+builds demonstrate failure when final cleanup or starvation episode latching
+is removed (`audio-release-negative.log`). Physical Mac execution, long
+Arcade/online sessions, story listening and physical headset switching remain
+unverified.
+
 ## Audio PR validation: Online layout convergence (2026-10-30)
 
 PR432's first two native Mac CI attempts passed 2,264 tests but timed out in
