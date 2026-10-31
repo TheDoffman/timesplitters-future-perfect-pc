@@ -1,3 +1,22 @@
+# Story guest lobby host loss - 2026-10-31
+
+Chooser reentry also rebuilds the matching active child in its own layout
+context after79B70. Opening the captured main alone does not invalidate the
+cached Local/Online record. Both Story open and main return use the same bounded
+parent/child-descriptor helper; mismatched or absent children remain untouched.
+
+The asynchronous lobby tick1A8F30 calls1CC440, whose host-loss8D notification
+uses1AF950 and directly opens network selector4E9974. It bypasses the guest's
+Back callback and the chooser Back layout repair. Additive2460 wraps1AF950.
+Only frontend101 Online Story notifications8D/port0 from1CC4D9 or1CC552 on
+the owned guest lobby4E99D4 (validated parent/child backlink and chooser) use
+the main return. Reset guest transport with original1CC360 before closing the
+companion, then open the captured main descriptor and rebuild its actual child
+with78980 in its own layout context. The chooser Back uses the same helper.
+This also covers a cached main record; it does not depend on79860 constructing
+a new record. Other notifications/callers, browser, modes and gameplay remain
+original. Native live Online acceptance remains MAC-013.
+
 # Story Game Over Quit - 2026-10-31
 
 Original result builder2F5170 installs EAF60 for failed Story Quit (caption17AB).

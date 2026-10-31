@@ -1,3 +1,20 @@
+# Story guest lobby host-loss regression - 2026-10-31
+
+The Story menu fixture also checks chooser reentry with a cached matching
+child, plus mismatched/absent-child rejection on both adapter builds. Live
+acceptance compares the initial Local/Online chooser with its reopened state
+after host-loss return, then repeats Back/reentry before Online reconnect.
+
+The registered Story menu fixture covers both native loss callers, reset before
+companion shutdown, captured main destination and reused main-record rebuild.
+Other notification/caller/browser/mode/gameplay cases and native fallback stay
+original. Supported-US contracts pin1CC440's1AF950 calls,8D notification and
+the network selector destination in1AF950. Live acceptance uses two isolated
+lobby peers: host Back to main, passive guest return, matching main layout,
+and reconnect/discovery after the loss. No mission completion is required.
+Historical controls/Mac subsets exclude the leave, departure and lobby-loss
+wrappers; the complete-stack migration installs them with their dependencies.
+
 # Story Game Over Quit regression - 2026-10-31
 
 The registered Story lobby fixture covers both roles' EAF60 Quit routing,

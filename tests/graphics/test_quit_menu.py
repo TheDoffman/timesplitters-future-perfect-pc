@@ -78,6 +78,12 @@ def test_story_original_us_entry_contract():
     assert read(0x3564ca,6)==bytes.fromhex('890d78417700')
     assert read(0x2ebe85,1)==b'\xe9' and 0x2ebe8a+struct.unpack('<i',read(0x2ebe86,4))[0]==0x2ebdb0
     assert read(0x2ebed2,5)==b'\x68'+struct.pack('<I',0x2ebe60)
+    # Guest-lobby host loss bypasses Back through the original8D error path.
+    for address in (0x1cc4d4,0x1cc54d):
+        call=read(address,5)
+        assert call[0]==0xe8 and address+5+struct.unpack_from('<i',call,1)[0]==0x1af950
+    assert read(0x1cc546,5)==b'\x68'+struct.pack('<I',0x8d)
+    assert read(0x1b0c39,8)==bytes.fromhex('c744240874994e00')
     # Failed Story result Quit installs EAF60, whose stock tail uses the
     # generic scheduler rather than the Online Leave confirmation callback.
     assert read(0x2f54e3,5)==b'\x68'+struct.pack('<I',0x2eaf60)

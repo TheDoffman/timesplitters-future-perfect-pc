@@ -2252,6 +2252,14 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+Story guest lobby host loss (2026-10-31, uncommitted): shared patch2460/menu
+adapter returns the guest directly to main when its host closes the lobby and
+reuses the chooser Back's main-layout rebuild. Reopening Story also rebuilds
+its own cached Local/Online child using the same shared helper. Existing native Online Story
+transport integration remains the missing capability; no separate menu policy
+is needed. Accept host lobby Back, automatic guest main layout and subsequent
+reconnect/discovery on native Mac. Windows evidence is recorded in STATUS.
+
 Story Game Over Quit (2026-10-31, uncommitted): shared result-action handling
 routes failed first-mission Quit through the existing leave flow, retaining the
 host party or disconnecting only the guest. Existing2390 wrapper covers the

@@ -27,6 +27,7 @@ static void story_rewards_profiles_capture(void){CHECK(!launches);++profile_capt
 
 static unsigned rows,finalized;
 static uint32_t next_parent,next_menu,default_row,row_ids[2],row_callbacks[2];
+static int rebind_main;
 static uint32_t xbox_HeapAlloc(uint32_t bytes,uint32_t align)
 {CHECK(bytes==144 && align==4);return allocation_ok?0x8000:0;}
 static PcOnlineMode online_mode;
@@ -52,7 +53,10 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
         CHECK(count==6 && rows<2);
         CHECK(!strcmp((char *)((uintptr_t)args[0]+g_xbox_mem_offset),rows?"Online":"Local"));
         row_ids[rows]=args[1];row_callbacks[rows++]=args[4];
-    }else if(fn==sub_00079B70){next_parent=args[0];next_menu=args[1];}
+    }else if(fn==sub_00079B70){
+        next_parent=args[0];next_menu=args[1];
+        if(rebind_main && args[1]==0x4000) {WORD_AT(0x3170)=0x5000;WORD_AT(0x5004)=0x4000;}
+    }
     else if(fn==sub_00075B70){float width;memcpy(&width,&args[2],4);CHECK(width>0 && width<=100);}
     else if(fn==sub_000770E0){default_row=args[1];}
     else if(fn==sub_000771D0){++finalized;}
@@ -83,6 +87,8 @@ void sub_001A8EE0(void){original_back(0x4e93f4);}
 static void callback(void (*fn)(void))
 {g_esp=0x1000;WORD_AT(g_esp+4)=0x2000;fn();CHECK(g_esp==0x1004);}
 static uint32_t received_callback;
+static unsigned loss_fallbacks;
+static void loss_original(void){++loss_fallbacks;g_esp+=4;}
 static void row_original(void){received_callback=WORD_AT(g_esp+20);g_esp+=4;}
 int main(void)
 {
@@ -130,7 +136,42 @@ int main(void)
     WORD_AT(story_storage)=0;CHECK(!story_online_back_lookup(0x1a4350));WORD_AT(story_storage)=STORY_BUILD_CB;
     g_esp=0x1800;WORD_AT(g_esp+8)=0x4e9974;CHECK(!story_online_return_menu(menu_factory));
     story_return_destination=0x4e9404;CHECK(!story_online_return_menu(menu_factory));story_return_destination=0;
+    /* Asynchronous host loss bypasses the Back lookup. Retire transport before
+       opening main and rebuild its own record, including a reused main menu. */
+    WORD_AT(0x3170)=0x5000;WORD_AT(0x5004)=0x4e99d4;WORD_AT(0x502c)=story_parent;
+    WORD_AT(0x79094c)=101;online_mode=PC_ONLINE_STORY;rebind_main=1;
+    const unsigned resets=network_resets,closes=disconnects,rebuilds=rebuilt;
+    g_esp=0x1800;WORD_AT(g_esp)=0x1cc552;WORD_AT(g_esp+4)=0;WORD_AT(g_esp+8)=0x8d;
+    pc_story_network_lobby_lost(loss_original);
+    CHECK(g_esp==0x1804 && !loss_fallbacks && next_parent==story_parent && next_menu==story_previous);
+    CHECK(network_resets==resets+1 && disconnects==closes+1 && rebuilt==rebuilds+1 && online_mode==PC_ONLINE_NONE);
+    WORD_AT(0x5004)=0x4e99d4;online_mode=PC_ONLINE_STORY;
+    g_esp=0x1800;WORD_AT(g_esp)=0x1cc4d9;pc_story_network_lobby_lost(loss_original);
+    CHECK(network_resets==resets+2 && rebuilt==rebuilds+2 && !loss_fallbacks);
+    /* Other notifications/callers, browser, Arcade and gameplay stay stock. */
+    for(unsigned i=0;i<5;i++) {
+        online_mode=i==3?PC_ONLINE_ARCADE:PC_ONLINE_STORY;
+        WORD_AT(0x79094c)=i==4?2:101;WORD_AT(0x5004)=i==2?0x4e9954:0x4e99d4;
+        g_esp=0x1800;WORD_AT(g_esp)=i==1?0x123456:0x1cc552;
+        WORD_AT(g_esp+8)=i==0?0x90:0x8d;
+        pc_story_network_lobby_lost(loss_original);
+        CHECK(loss_fallbacks==i+1 && g_esp==0x1804 && network_resets==resets+2);
+    }
+#else
+    g_esp=0x1800;pc_story_network_lobby_lost(loss_original);
+    CHECK(loss_fallbacks==1 && g_esp==0x1804);
 #endif
+    /* Reentering Story after a returned main can reuse the chooser record.
+       Rebuild only that matching active child in its own layout context. */
+    const unsigned before_chooser_rebuild=rebuilt;
+    WORD_AT(0x2004)=0x4000;WORD_AT(0x202c)=0x3000;
+    WORD_AT(0x3170)=0x5000;WORD_AT(0x5004)=story_storage;
+    callback(story_open);
+    CHECK(next_menu==story_storage && rebuilt==before_chooser_rebuild+1);
+    WORD_AT(0x5004)=0x4001;callback(story_open);
+    CHECK(rebuilt==before_chooser_rebuild+1);
+    WORD_AT(0x3170)=0;callback(story_open);
+    CHECK(rebuilt==before_chooser_rebuild+1);
     puts("PASS: Story chooser ABI, Local route, typed Online, cancellation and native fallback");
     return 0;
 }

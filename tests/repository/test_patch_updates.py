@@ -49,6 +49,9 @@ STORY_PATCHES = (
     'story-guest-profile-save',
     'story-empty-guest-rewards',
     'story-browser-level-details',
+    'story-leave-destinations',
+    'story-guest-departure',
+    'story-lobby-host-loss',
 )
 
 ROOT = Path(__file__).resolve().parents[2]

@@ -1,3 +1,66 @@
+## Story chooser reentry layout - 2026-10-31
+
+Local/uncommitted on online-story-coop, base4e820a61, retaining the lobby-loss
+fix below. The prior live check reviewed main and reconnect but missed the
+intermediate Local/Online chooser. Opening Story can reuse that chooser with
+stale layout state. Story open now rebuilds its matching active child through
+the same bounded helper as main return. Unrelated/missing children stay intact.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11: supported US XBE hash verified;
+397.83GiB free before incremental build. Official build/patch/native checks pass;
+foreground-dependent virtual-pad checks skip when activation is refused.
+45 focused checks pass,2 Mac-only skips (24.12s), including cached chooser
+reentry and mismatched/absent children on both adapter fixture builds. The patch
+stack is unchanged from the three passing migration checks recorded below.
+
+Build compatibilitydd63433e395dc7fafe16b151b8c9578dcd3e3993ee343b7c00685eb1f197b815;
+exe SHA256b2ad94fd3bbeea431a0ccc01731472bef91d06ef03cbfdfed69dccfa1f2ed9ff.
+All1305 sealed input hashes and executable hash match. Isolated host-loss and
+chooser acceptance passes: reviewed initial Local/Online, first reentry after
+automatic main return and a second Back/reentry capture show identical box/row
+spacing with no extra top gap. Host recreates the lobby and the guest reconnects,
+refreshes and joins with two roster slots/phase12. Both runners exit0 and release
+their locks, preserving the canonical fixture/settings. Evidence:
+logs/story-chooser-reentry-live/result.json and the three selected chooser PNGs.
+Native Mac live acceptance remains MAC-013; no gameplay, WAN, physical-controller
+or full mission completion claimed.
+
+## Story guest lobby host-loss return - 2026-10-31
+
+Local/uncommitted on online-story-coop, base4e820a61. The reported guest return
+used native1A8F30/1CC440's8D notification through1AF950, bypassing the scoped
+Story Back callbacks. Patch2460 intercepts only that notification on the owned
+frontend101 Story guest lobby. It resets guest transport before closing the
+companion, opens the captured main menu and rebuilds its child in its own layout
+context. Chooser Back shares that helper, including cached main records. Other
+notifications/callers, modes, browser and gameplay use the original handler.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11: supported US XBE hash verified;
+397.90GiB free before regeneration. Official full regeneration/build and native
+checks pass; foreground-dependent virtual-pad checks skip when activation is
+refused.45 focused checks pass,2 Mac-only skips (24.09s). Fresh/repeated patch,
+historical Mac-stack migration and previous-controls migration pass (3,56.62s).
+The historical subset initially admitted newer Story wrappers without their
+network dependencies; its Story exclusion list now includes leave, departure
+and lobby-loss wrappers, installed by the full-stack migration. These fixtures
+are source/patch checks, not native Mac live Online acceptance.
+
+Build compatibility378ac695d3223473bc089a3f0350b3cd488a9e1e4e9feb1ddff5eead030847cd;
+exe SHA25649911861a7b1c5f12e8646fb63ba31baad0d517527fd524fb7141a7cea14f0aa.
+All1305 sealed input hashes and executable hash match. Isolated two-instance
+lobby acceptance passes: host Back to Story then main causes an automatic guest
+return to main with networking disabled. The scoped lobby-loss trace confirms
+the new handler ran. Reviewed guest initial/returned main captures have matching
+box and Story-row layout with no extra top space. Host recreates its lobby;
+guest reconnects to the new code, refreshes discovery and joins with two roster
+slots/phase12. The joined-lobby capture is reviewed. Both runners exit0, release
+locks and preserve the canonical unlocked fixture and personal settings.
+Evidence: logs/story-lobby-host-loss-live/result.json and selected PNGs. The first
+probe used an old prequeued stop route and ended before join; the corrected
+controlled queue performs no GO/gameplay. No mission completion or gameplay is
+needed for this menu check. Native Mac live transport remains
+MAC-013; no WAN or physical-controller validation claimed.
+
 ## Story Game Over Quit routing - 2026-10-31
 
 Local/uncommitted on online-story-coop, base a29c090e. Failed Story Quit uses

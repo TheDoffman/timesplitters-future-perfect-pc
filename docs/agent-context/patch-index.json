@@ -1716,6 +1716,14 @@
       ]
     },
     {
+      "name": "2460-story-lobby-host-loss.patch",
+      "path": "patches/network/2460-story-lobby-host-loss.patch",
+      "sha256": "76a950feb089400a426e0c2b859a88addbd846f96b1f407bcb662d0a0b99c720",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "independent-condition-fixture.patch",
       "path": "patches/compiler/independent-condition-fixture.patch",
       "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",

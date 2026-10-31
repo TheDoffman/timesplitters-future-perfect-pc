@@ -45,6 +45,17 @@ static int story_prepare(void)
     return 1;
 }
 
+/* Reused menu records need their own builder/layout context after a different
+ * screen has occupied the same root. This applies to both main and chooser. */
+static void story_rebuild_child(uint32_t parent,uint32_t descriptor)
+{
+    if(guest_writable(parent,0x174u)) {
+        const uint32_t menu=WORD_AT(parent+0x170u);
+        if(guest_writable(menu,0x44u) && WORD_AT(menu+4u)==descriptor)
+            guest_call(sub_00078980,1,menu);
+    }
+}
+
 static void story_open(void)
 {
     GuestRegisters r;const uint32_t source=WORD_AT(g_esp+4u);
@@ -53,6 +64,7 @@ static void story_open(void)
         story_parent=WORD_AT(source+0x2cu);story_previous=WORD_AT(source+4u);
         story_online_unavailable=0;
         guest_call(sub_00079B70,2,story_parent,story_storage);
+        story_rebuild_child(story_parent,story_storage);
         fprintf(stderr,"[PC-STORY] Local/Online chooser opened\n");
     }
     restore_registers(&r);g_esp+=4u;
@@ -73,17 +85,17 @@ static void story_build(void)
     restore_registers(&r);g_esp+=4u;
 }
 
-static void story_back(void)
+static void story_main_open(void)
 {
-    GuestRegisters r;save_registers(&r);
     guest_call(sub_00079B70,2,story_parent,story_previous);
     /* The stock factory can reuse the original main record after the Online
        chooser has been rebuilt. Rebuild its rows in its own layout context. */
-    if(guest_writable(story_parent,0x174u)) {
-        const uint32_t main=WORD_AT(story_parent+0x170u);
-        if(guest_writable(main,0x44u) && WORD_AT(main+4u)==story_previous)
-            guest_call(sub_00078980,1,main);
-    }
+    story_rebuild_child(story_parent,story_previous);
+}
+static void story_back(void)
+{
+    GuestRegisters r;save_registers(&r);
+    story_main_open();
     restore_registers(&r);g_esp+=4u;
 }
 
@@ -173,3 +185,35 @@ static void (*story_online_back_lookup(uint32_t address))(void)
     return NULL;
 }
 #endif
+
+/* Native lobby loss reports8D through1AF950 and opens the multiplayer network
+ * selector directly, without running the guest's Back callback. Keep this
+ * redirect limited to that failure on an owned Story guest lobby. */
+void pc_story_network_lobby_lost(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t frame=g_esp;
+    if(pc_online_mode()==PC_ONLINE_STORY && WORD_AT(0x79094cu)==101u &&
+       guest_writable(frame,12u) &&
+       (WORD_AT(frame)==0x1cc4d9u || WORD_AT(frame)==0x1cc552u) &&
+       !WORD_AT(frame+4u) && WORD_AT(frame+8u)==0x8du &&
+       guest_writable(story_storage,144u) && WORD_AT(story_storage)==STORY_BUILD_CB &&
+       story_previous && guest_writable(story_parent,0x174u)) {
+        const uint32_t lobby=WORD_AT(story_parent+0x170u);
+        if(guest_writable(lobby,0x30u) && WORD_AT(lobby+4u)==0x4e99d4u &&
+           WORD_AT(lobby+0x2cu)==story_parent) {
+            GuestRegisters saved;save_registers(&saved);
+            /* Preserve the reset normally owned by the network selector, while
+               sockets/companion are still available. Then open and rebuild main
+               in its own layout context, just like the chooser's Back route. */
+            guest_call(sub_001CC360,0);
+            pc_online_disconnect();
+            story_main_open();
+            restore_registers(&saved);g_esp+=4u;
+            fprintf(stderr,"[PC-STORY-LOBBY-LOST] guest returned to main\n");
+            return;
+        }
+    }
+#endif
+    original();
+}
