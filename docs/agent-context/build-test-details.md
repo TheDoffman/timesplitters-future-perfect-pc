@@ -159,12 +159,17 @@ fireball event. This is bounded engine/dispatch evidence, not a rendered scene.
 
 `test_story_original_barrel_blast` translates originalEFBD0/EDD40/EDBE0/EFF90
 from the verified US executable and compiles the production cosmetic guards.
-Controlled allocation, particle/audio services retain both original barrel
-particle indices3/8 and one sound in baseline/replay. Baseline executes three
-later BB850 damage passes and one186480 cell pass; guarded replay executes none.
-Original Story-event/owner fields and exact center are checked. The production
-Story fixture covers unscoped BC70C capture with both source pointers, kind4
-receive/replay, no owner transfer, duplicate rejection and invalid type/delay.
+Controlled allocation and particle/audio services now cover both profile1 and
+original40/47 dispatch. Seed the EFBD0 eight-entry and EDD40 43-entry jump tables
+from the verified XBE, as well as effect constants. Otherwise authored branches
+jump to unseeded RAM and the fixture cannot exercise them. Tests assert the
+four exact authored emitter descriptors and scale setters, two sounds, profile
+and center retention, plus feedback eight units away (outside profile1's5-unit
+range but inside the authored25-unit range). Baseline executes three later BB850
+damage passes and one186480 cell pass; replay executes none for all profiles.
+Story events remain absent. The packet fixture preserves47 and40, optional
+finite direction, null peer-local owners, duplicate rejection and the original
+standard barrel path. Invalid profiles/direction-presence tags are rejected.
 This Python suite already runs in runtime CI. Constructor/dispatch evidence is
 separate from a rendered barrel retest and native Online acceptance.
 

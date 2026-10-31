@@ -16,7 +16,7 @@ recomp_func_t recomp_lookup_manual(uint32_t a){(void)a;assert(0);return NULL;}
 recomp_func_t recomp_lookup_kernel(uint32_t a){(void)a;assert(0);return NULL;}
 void recomp_icall_fail_log(uint32_t a){(void)a;assert(0);}
 enum { EFFECT=0x60000,BLAST_POINT=0x20000,STACK=0x10000 };
-static unsigned particles,sounds,damage,cells,story_events;
+static unsigned particles,sounds,damage,cells,story_events,camera,authored_particles,authored_scales,authored_sizes;
 static unsigned story_effect_barrel_replay,story_effect_cosmetic_depth;
 static uint32_t story_effect_host_blast_source;
 static int session=1;
@@ -40,18 +40,37 @@ void sub_00045820(void){assert(MEM32(MEM32(g_esp+4))==0xc33);++sounds;g_esp+=4;}
 void sub_000C3C50(void){g_eax=5;g_esp+=4;}
 void sub_000B91F0(void){memset((void *)((uintptr_t)MEM32(g_esp+4)+g_xbox_mem_offset),0,0x58);g_esp+=4;}
 void sub_000BB850(void){++damage;g_esp+=4;}
+void sub_00021A40(void){
+    const uint32_t sound=MEM32(g_esp+4);
+    assert(sound==0x1a6 || sound==0x1a7 || sound==0xc33 || sound==0x1e6);
+    ++sounds;g_esp+=4;
+}
+void sub_000D1EC0(void){++camera;g_esp+=4;}
+void sub_00111AE0(void){
+    const uint32_t descriptor=MEM32(g_esp+8);
+    const uint32_t expected[4]={0x7b0120,0x736828,0x7b06c0,0x7b0800};
+    assert(authored_particles<4 && descriptor==expected[authored_particles]);
+    assert(!MEM32(g_esp+4) && MEM32(g_esp+16)==EFFECT+0x1c && MEM32(g_esp+20)==EFFECT+0x180);
+    ++authored_particles;g_eax=0x40000;g_esp+=4;
+}
+void sub_0010EAE0(void){assert(MEM32(g_esp+4)==0x3f800000 && MEM32(g_esp+8)==0x3f800000);++authored_scales;g_esp+=4;}
+void sub_0010EB30(void){assert(MEM32(g_esp+4)==0x40000000);++authored_sizes;g_esp+=4;}
+
 void sub_0015BFB0(void){++story_events;g_esp+=4;}
 /* UNREACHED */
 /* ORIGINAL_BLAST */
-static void run(int replay)
+static void run(int replay,unsigned kind)
 {
     const int cosmetic=replay && session && MEM32(0x76b140)==2;
-    particles=sounds=damage=cells=story_events=0;
+    particles=sounds=damage=cells=story_events=camera=authored_particles=authored_scales=authored_sizes=0;
     story_effect_barrel_replay=(unsigned)replay;g_esp=STACK;
-    MEM32(STACK+4)=1;MEM32(STACK+8)=0xffffffff;MEM32(STACK+12)=BLAST_POINT;
+    MEM32(STACK+4)=kind;MEM32(STACK+8)=0xffffffff;MEM32(STACK+12)=BLAST_POINT;
     MEM32(STACK+16)=MEM32(STACK+20)=MEM32(STACK+24)=MEM32(STACK+28)=0;MEM32(STACK+32)=1;
     sub_000EFBD0();assert(g_esp==STACK+4 && g_eax==EFFECT);
-    assert(particles==2 && sounds==1 && !story_events && !story_effect_cosmetic_depth);
+    assert(particles==(kind==1?2u:0u) && sounds==(kind==1?1u:2u) && !story_events && !story_effect_cosmetic_depth);
+    assert(MEM32(EFFECT+4)==kind && authored_particles==(kind==1?0u:4u));
+    assert(authored_scales==(kind==1?0u:2u) && authored_sizes==(kind==1?0u:2u));
+    if(MEM32(0x790950)==1) assert(camera==(kind==1?0u:1u));
     assert(MEMF(EFFECT+0x1c)==MEMF(BLAST_POINT) && MEMF(EFFECT+0x20)==MEMF(BLAST_POINT+4));
     assert((MEM32(EFFECT+0xc)&0x20001)==(cosmetic?0x20001u:0u));
     story_effect_barrel_replay=0;
@@ -65,10 +84,15 @@ int main(void)
     MEM32(0x76b140)=2;MEM8(0x7de455)=10;MEM32(0x7de458)=0x80008;
     MEMF(BLAST_POINT)=-56.13f;MEMF(BLAST_POINT+4)=-11.21f;MEMF(BLAST_POINT+8)=-90.5f;
     MEM32(0x4e0fa0+3*28)=MEM32(0x4e0fa0+8*28)=1;
-    run(0);run(1); /* Same original particles/audio, no second damage/world pass. */
-    MEM32(0x76b140)=1;run(1); /* host retains all original behavior */
-    MEM32(0x76b140)=2;session=0;run(1);session=1;
-    run(1);
+    run(0,1);run(1,1); /* Same original particles/audio, no second damage/world pass. */
+    MEM32(0x76b140)=1;run(1,1); /* host retains all original behavior */
+    MEM32(0x76b140)=2;session=0;run(1,1);session=1;
+    run(1,1);run(0,40);run(1,40);run(0,47);run(1,47);
+    /* At eight units, substituting kind1 loses feedback. The authored40/47
+       profiles reach25 units; their replay keeps feedback without damage. */
+    MEM32(0x790950)=1;MEM32(0x7b0c48)=0x70000;
+    MEMF(0x700b4)=MEMF(BLAST_POINT)+8.f;MEMF(0x700b8)=MEMF(BLAST_POINT+4);MEMF(0x700bc)=MEMF(BLAST_POINT+8);
+    run(1,1);run(1,40);run(1,47);
     g_esp=STACK;pc_story_network_blast_cells(sub_00186480_gen);assert(cells==1);
     free(ram);puts("PASS: original barrel particles/audio retained; initial Story event, navigation mutation and later radius damage excluded from replay");return 0;
 }

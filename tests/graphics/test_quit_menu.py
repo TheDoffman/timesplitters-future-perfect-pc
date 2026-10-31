@@ -154,6 +154,8 @@ def test_story_original_barrel_blast(tmp_path):
         constants={int(a,16) for a in re.findall(r'MEMF\(0x([0-9A-Fa-f]+)\)',code)}
         constants={a for a in constants if 0x470000<=a<0x500000}
         constants.update(range(0x4db490,0x4db490+49*24,4))
+        constants.update(range(0xefb18,0xefb18+43*4,4))
+        constants.update(range(0xeff3c,0xeff3c+8*4,4))
         seeds='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x}u;' for a in sorted(constants))
     finally:
         vars(config).update(previous)

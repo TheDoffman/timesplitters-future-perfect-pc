@@ -233,30 +233,31 @@ same body generation; unrelated inactive actors are untouched. No new runtime
 patch/wrapper is required. The user confirmed first-mission camouflage fixed;
 native Online validation remains separate.
 
-The barrel retest rejected the BC670-only attempt. Recorded mesh1341/script50435833
-has damage callback218650 at entity+19C. That callback removes the prop and calls
-EFBD0 at2186FD/218722 with radius-only kinds47/40, retaining the guest weapon and
-attacker. These table rows have no particle assets. Kind4 capture now recognizes
-these exact sites and presents the standard kind1 barrel fireball on the guest;
-the host retains the original kind47/40 damage/radius and shooter credit.
-Stock35AF40 rejects remote human sources even on the host, so deferred EFF90
-radius hits fail35C870 after the incoming-shot scope has ended. The EFF90 wrapper
-scopes the effect's original10C source;35AF40 accepts that same human only during
-this first-mission host barrel update. The original hit serializer/broadcast and
-NPC health routines still execute. Scope restores after every update, including
-nested updates; other shots, guest simulation and other scenes retain ownership.
-No additional guest damage/world/script pass is enabled.
+First-mission barrel callback218650 (recorded mesh1341/script50435833) calls
+EFBD0 at2186FD/218722 with profiles47/40 and the shooter's weapon/source.
+The missing-effects follow-up corrected the earlier interpretation of their
+empty ordinary particle-table rows: EDD40's original jump table sends both
+profiles to EF444, creating four dedicated emitters (7B0120,736828,7B06C0,7B0800)
+with their authored scaling. Replacing those profiles with1 loses that branch,
+layered sound and the original25-unit camera-feedback range (profile1 uses5).
 
-Shared StoryEffect kind4 also retains BC670's standard EFBD0 kind1/weapon23
-path. Original constructor ABI is owners5/6, delay7 and sound-enable8. Guest
-playback uses originalEFBD0 kind1 with null direction, no peer-local owners and
-weaponUINT_MAX. Scoped EDD40 marks effect+C bits20001 before initialization:
-EDBE0's Story event and EFF90's later damage are suppressed;186480 navigation
-mutation is skipped. Original kind1 particles/audio/camera remain. Reliable host/
-match validation, bounded replay window and duplicate rejection prevent repeats.
-This is first-mission Story only. Ordinary Online retains its original paths;
-no speculative global explosion policy. Native Online remains MAC-013, with
-the user confirming the first-mission barrel issue fixed.
+StoryEffect kind4 now preserves a=1/40/47 and the finite direction vector;
+decal_flags carries optional direction presence (0/1) for this kind only.
+The wire still carries b=23 as a tag, not a guest weapon/owner handle. Guest
+playback calls originalEFBD0 with that profile, locally copied position/direction,
+weaponUINT_MAX and null source/attacker. No substitute fireball is added.
+EDD40 sets effect+C bits20001 before startup for all three approved profiles;
+EDBE0 Story events, EFF90 damage and186480 navigation mutation stay suppressed.
+Original particle/audio/camera dispatch remains. Reliable host/match validation,
+bounded replay and duplicate rejection apply to both authored profile events.
+
+The prior host ownership repair remains: EFF90 scopes the effect's original10C
+source;35AF40 accepts that same remote human only during this first-mission host
+barrel update. Original serializer/broadcast/NPC health execute, and nested scope
+restores afterward. Other shots, ordinary Online, guest damage and other scenes
+retain existing ownership. No new runtime wrapper or OS adapter is required.
+This follow-up uses the retained20261030 recording, and the user confirmed the restored effects in gameplay. Native Online Story
+remains MAC-013.
 
 The 2026-10-28 visibility-boundary capture showed living posed kind75 actors
 with host primary room5 but guest primary27, despite local overlap list[5,27].

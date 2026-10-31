@@ -8335,3 +8335,14 @@ The existing Windows Online adapter also runs the original1CC360 guest-network
 reset before closing its companion, required for recreated match discovery.
 No new OS adapter is introduced. Native shared Local menu rebuild is covered
 by the fallback fixture; native Online recreation remains Awaiting validation.
+
+
+MAC-013 authored barrel-effects follow-up (2026-10-30, uncommitted):
+[src/network/pc_story_effects.inc](../../src/network/pc_story_effects.inc) preserves
+first-mission barrel profiles40/47 and direction, allowing the original EDD40
+four-emitter/scaling/audio/camera branch on guests while retaining cosmetic
+no-damage guards. Windows build and original-US routine tests pass; the user
+confirmed restored effects in Windows gameplay. Ordinary Online keeps original
+profiles. No new OS adapter or duplicate native policy is needed; this existing
+Story Online transport path remains Awaiting validation on Mac. Native fallback
+compiles in the shared fixture; that does not establish native Online playback.

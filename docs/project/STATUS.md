@@ -1,3 +1,28 @@
+## Authored Story barrel effects - 2026-10-30
+
+Local/uncommitted on online-story-coop, base27a083ea. Retained user recording
+logs/story-remaining-evidence-20261030-session shows the guest barrel test near
+153s; selected frames/contact sheets are in ignored logs/story-barrel-effects-evidence.
+Recorded mesh1341 uses218650. The prior replacement of original47/40 profiles
+with1 loses EDD40's EF444 branch: four authored emitters and their scale settings,
+layered sound and25-unit camera feedback. Empty ordinary particle-table rows
+had incorrectly been treated as no visuals. Guest replay now keeps those
+profiles and direction, resolves original local effect assets and retains the
+existing no-damage/no-Story-event/no-navigation-mutation guards. Host damage
+and attribution repair remain. No substitute fireball or new runtime patch.
+
+Windows x64/MSVC14.42.34433, SDK10.0.22621.0, D3D11 build: official Build and
+native checks pass. Supported US XBE SHA256 verified;402.37GiB free before build.
+37 focused checks pass;2 Mac-only checks skip (21.97s). Original-US constructor/startup/
+update tests cover profiles1/40/47, exact emitter descriptors and scales, audio,
+eight-unit camera feedback, and exclusion of replay damage/world/script effects.
+Packet fixtures cover profile/direction retention, duplicate rejection, mode
+fallback and unchanged standard barrels. No live gameplay was run for this
+follow-up; the user subsequently confirmed the barrel effects fixed in gameplay.
+Native Mac Online acceptance remains pending MAC-013.
+Build compatibility 1668181432a75648fdfecb3366157abb4ff0365113e03c4e450f2f53d79338b6,
+exe SHA256 02659c5b5eb55406dac04116eb54c2b9d275dc2358899f511c2e997d9f757532.
+
 ## Story Back lifecycle follow-up - 2026-10-30
 
 User retesting of 5d3c1b72 found a blank space above Story after returning to main,

@@ -191,8 +191,10 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     }
     if(fn==sub_000FFE40) {CHECK(count==2 && args[0]==0x150000);WORD_AT(0x150098)=args[1];return 0;}
     if(fn==sub_000EFBD0) {
-        if(args[0]==1) {
-            CHECK(count==8 && args[1]==UINT32_MAX && !args[3] && !args[4] && !args[5] && !args[6] && args[7]==1);
+        if(args[0]==1 || args[0]==40 || args[0]==47) {
+            CHECK(count==8 && args[1]==UINT32_MAX && !args[4] && !args[5] && !args[6] && args[7]==1);
+            if(args[0]==1) CHECK(!args[3]);
+            else CHECK(args[3] && WORD_AT(args[3])==0x3f800000u);
             CHECK(story_barrel_scope());++effect_barrels;return 0;
         }
         CHECK(count==8 && args[0]==39 && args[1]==UINT32_MAX && !args[4] && !args[5] && !args[6] && args[7]==1);
@@ -1504,7 +1506,7 @@ int main(void)
         CHECK(effect_barrels==1 && !story_effect_barrel_replay && !story_effect_cosmetic_depth);
         CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s));story_effect_frame();CHECK(effect_barrels==1);
         s.serial++;s.a=2;CHECK(!story_effect_valid(&s));s.a=1;s.value=1;CHECK(!story_effect_valid(&s));
-        /* Actual recorded mesh1341 callback218650 produces radius-only47,
+        /* Actual recorded mesh1341 callback218650 produces authored47,
            using the guest weapon class and a non-null hit direction. */
         story_effect_reset();WORD_AT(0x76b140)=1;g_esp=0x1800;
         WORD_AT(g_esp)=0x218702;WORD_AT(g_esp+4)=47;WORD_AT(g_esp+8)=35;
@@ -1512,9 +1514,16 @@ int main(void)
         WORD_AT(g_esp+20)=0x72000;WORD_AT(g_esp+24)=0;
         WORD_AT(g_esp+28)=0;WORD_AT(g_esp+32)=1;
         pc_story_network_effect_create(effect_factory_original,1);
-        memcpy(&s,npc_sent+4,sizeof s);CHECK(s.kind==4 && s.a==1 && s.b==23);
+        memcpy(&s,npc_sent+4,sizeof s);CHECK(s.kind==4 && s.a==47 && s.b==23 && s.decal_flags==1 && s.direction[0]==1.f);
         WORD_AT(0x76b140)=2;memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
         CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s));story_effect_frame();CHECK(effect_barrels==2);
+        s.serial++;s.a=40;memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s));story_effect_frame();
+        CHECK(effect_barrels==3); /* preserve the paired authored profile */
+        s.decal_flags=2;CHECK(!story_effect_valid(&s));s.decal_flags=1;
+        s.a=41;CHECK(!story_effect_valid(&s));s.a=40;
+        s.direction[0]=NAN;CHECK(!story_effect_valid(&s));
+
         story_effect_reset();
     }
     {

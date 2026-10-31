@@ -55,7 +55,8 @@ static int story_effect_valid(const StoryEffect *s)
     if(s->kind==0u) return s->a<=32u && s->b<=32u && s->options<=65535u;
     if(s->kind==1u) return s->a==39u && s->b==UINT32_MAX && s->value==0.f && s->options==1u;
     if(s->kind==2u) return s->a<=3u && !s->b && !s->options;
-    if(s->kind==4u) return s->a==1u && s->b==23u && s->value==0.f && s->options==1u;
+    if(s->kind==4u) return (s->a==1u || s->a==40u || s->a==47u) &&
+        s->b==23u && s->value==0.f && s->options==1u && s->decal_flags<=1u;
     return s->a>=957u && s->a<=963u && s->b<=2u && s->options<=4u &&
         s->value>0.f && s->value<=1000.f && s->decal_flags<=1u &&
         (s->room==UINT32_MAX || s->room<=65535u);
@@ -120,12 +121,13 @@ static void story_effect_frame(void)
             if(emitter && guest_writable(emitter,0x9cu)) guest_call(sub_000FFE40,2,emitter,s.color);
         } else if(s.kind==1u) guest_call(sub_000EFBD0,8,s.a,s.b,position,direction,0u,0u,value,s.options);
         else if(s.kind==4u) {
-            /* BC670's barrel blast uses a null direction and local attacker/
-               source entities. Keep its exact center; transfer no owner handles
-               or weapon23 Story event. EDD40 marks this effect cosmetic before
-               its first damage pass, and EFF90 retains that flag for its life. */
+            /*40/47 dispatch through EDD40's EF444 branch: four authored
+               emitters plus their original scale and camera feedback. Their
+               empty ordinary particle-table rows do not mean no visuals.
+               Keep that profile and direction; never replay host owners. */
             ++story_effect_barrel_replay;
-            guest_call(sub_000EFBD0,8,s.a,UINT32_MAX,position,0u,0u,0u,0u,s.options);
+            guest_call(sub_000EFBD0,8,s.a,UINT32_MAX,position,
+                       s.decal_flags?direction:0u,0u,0u,0u,s.options);
             --story_effect_barrel_replay;
         }
         else if(s.kind==3u) {
@@ -241,7 +243,7 @@ void pc_story_network_effect_create(void (*original)(void),unsigned kind)
 #ifdef _WIN32
     StoryEffect s;memset(&s,0,sizeof s);s.kind=kind;
     const uint32_t frame=g_esp;
-    /* The recorded mesh1341 uses218650, which creates radius-only47/40.
+    /* The recorded mesh1341 uses218650, which creates authored47/40.
        BC670 is the separate standard prop blast. All bypass ambience scope. */
     const int authored_barrel=kind==1u && guest_writable(frame,36u) &&
         ((WORD_AT(frame)==0x00218702u && WORD_AT(frame+4u)==47u) ||
@@ -252,17 +254,19 @@ void pc_story_network_effect_create(void (*original)(void),unsigned kind)
         ((story_effect_depth&(1u<<kind)) || barrel) && guest_writable(frame,kind?36u:28u);
     if(capture) {
         const uint32_t position=WORD_AT(frame+12u),direction=WORD_AT(frame+16u);
-        capture=guest_writable(position,12u) && (barrel || guest_writable(direction,12u));
+        capture=guest_writable(position,12u) &&
+            (direction?guest_writable(direction,12u):barrel);
         if(capture) {
             s.a=WORD_AT(frame+4u);s.b=WORD_AT(frame+8u);
             memcpy(s.position,(const void *)((uintptr_t)position+g_xbox_mem_offset),12u);
-            if(!barrel) memcpy(s.direction,(const void *)((uintptr_t)direction+g_xbox_mem_offset),12u);
+            if(!barrel || (direction && guest_writable(direction,12u))) memcpy(s.direction,(const void *)((uintptr_t)direction+g_xbox_mem_offset),12u);
             memcpy(&s.value,(const void *)((uintptr_t)(frame+(kind?28u:20u))+g_xbox_mem_offset),4u);
             s.options=WORD_AT(frame+(kind?32u:24u));
             if(barrel) {
-                /*218650 uses radius-only kinds40/47 (no particle assets).
-                  Present the standard barrel fireball without replaying damage. */
-                s.kind=4u;s.a=1u;s.b=23u;
+                /* Preserve the authored profile and optional direction. Never
+                   transfer the host's local attacker/source entity handles. */
+                s.kind=4u;s.b=23u;
+                s.decal_flags=direction && guest_writable(direction,12u);
             }
             else if(kind && (WORD_AT(frame+20u) || WORD_AT(frame+24u))) capture=0;
         }
@@ -290,7 +294,8 @@ void pc_story_network_blast_start(void (*original)(void))
     const uint32_t effect=guest_writable(g_esp,8u)?WORD_AT(g_esp+4u):0u;
     const int cosmetic=story_effect_barrel_replay && story_effect_session() &&
         WORD_AT(0x0076b140u)==2u && guest_writable(effect,0x1c4u) &&
-        WORD_AT(effect)==23u && WORD_AT(effect+4u)==1u;
+        WORD_AT(effect)==23u && (WORD_AT(effect+4u)==1u ||
+        WORD_AT(effect+4u)==40u || WORD_AT(effect+4u)==47u);
     if(cosmetic) {WORD_AT(effect+0xcu)|=0x20001u;++story_effect_cosmetic_depth;}
 #endif
     original();
