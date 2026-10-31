@@ -26,6 +26,7 @@ void pc_story_network_advance(void (*original)(void));
 void pc_story_network_movie_release(void (*original)(void));
 void pc_story_network_rewards_page(void (*original)(void));
 void pc_story_network_rewards_menu(void (*original)(void));
+void pc_story_network_rewards_context_slot(void (*original)(void));
 void pc_story_network_profile_save(void (*original)(void));
 void pc_story_network_ready(void (*original)(void));
 void pc_story_network_asset(void (*original)(void));

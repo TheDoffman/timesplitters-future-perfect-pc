@@ -2254,6 +2254,12 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Four-player Story rewards (2026-10-31, uncommitted):** Shared menu adapter
+  and patch2465 map the single rewards frontend context independently of network
+  profile slots. Windows engine fixture covers all guests; native fallback
+  retains original behavior. Native Story integration and physical Mac/mixed-host
+  visual reward acceptance remain pending under this entry.
+
 - **NPC facing (2026-10-31, uncommitted):** Shared
   `pc_network_bot_motion.h` interpolates body rotations/heading in degrees.
   Windows/native-network dispatch fixtures cover the same helper, and no OS

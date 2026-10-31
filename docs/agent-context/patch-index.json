@@ -1776,6 +1776,14 @@
       ]
     },
     {
+      "name": "2465-story-reward-context-slot.patch",
+      "path": "patches/network/2465-story-reward-context-slot.patch",
+      "sha256": "acf493d32404e687c9ca216eec126a6c06d2f5361be80f2cb2a34dc46c965004",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "independent-condition-fixture.patch",
       "path": "patches/compiler/independent-condition-fixture.patch",
       "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",

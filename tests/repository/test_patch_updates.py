@@ -52,6 +52,7 @@ STORY_PATCHES = (
     'story-leave-destinations',
     'story-guest-departure',
     'story-lobby-host-loss',
+    'story-reward-context-slot',
 )
 
 ROOT = Path(__file__).resolve().parents[2]

@@ -1,3 +1,37 @@
+## Four-player Story rewards rendering - 2026-10-31
+
+Local/uncommitted online-story-coop, based on d4b75896. A four-instance isolated
+reproduction matches the user's screenshot: host and network slot1 render unlocks,
+while slots2/3 are black despite building and advancing their actual reward pages.
+Scene106 creates one frontend player context. Original D2FD0 calls356800 to assign
+its port and camera, which still maps to the guest's gameplay slot, outside that
+allocation. Slot1 happens to render through the following unused memory; slots2/3
+reference unrelated data. Shared adapter/patch2465 maps port0 to frontend context0
+only for first-mission guest rewards with one context and zero scene flags.
+Original356870 retains profile ownership in the guest's own network slot.
+The user confirmed the fix in a subsequent gameplay test.
+
+Windows x64, MSVC14.42.34433, SDK10.0.22621.0, D3D11, SDL3.4.16, Original60.
+Supported US XBE SHA-256 verified;399.5GiB free before the build. Focused suite:
+46 passed,2 platform skips in25.77s. Original-engine reward fixture covers all
+three guest slots and rejects disabling the mapping; gameplay, other ports,
+movies, multiple contexts and offline guards remain covered. Baseline four-peer
+run and observer exited0, all disposable run locks released; original profiles
+and settings preserved. This uses a synthetic success boundary without a mission
+playthrough. Baseline evidence: logs/story-rewards-four-before/summary.json,
+samples.jsonl and comparison.jpg. Full patch/regeneration/build and built-in checks pass; direct subprocess Build
+recheck exits0. Patch migration3 pass in196.76s. Final four-peer controller and observer exit0; all run locks are released.
+Reviewed captures show all four reward pages followed by all three guest waiting
+panels. All peers follow the next intro. Each guest records completion0->1 in its
+own profile, and all three reward cameras use the allocated frontend context0.
+Evidence: logs/story-rewards-four-final/summary.json, samples.jsonl, comparison.jpg
+and waiting.jpg. The earlier visual run also passed, but its controller missed
+the brief initial gameplay state because synthetic completion ran too soon; the
+final probe uses a gameplay-ready handshake. No game crash occurred. Physical Mac/mixed-host Story reward acceptance remains pending MAC-013.
+
+Compatibility 971b28a4bfc4e709101fc2353489c7dda03e234a37368029e73fd13aac72395f;
+executable SHA-256 5f3e149c2d87d8cdd8e1fc771c886b4c2710525ac21d2d07bed043ef937d3136.
+
 ## Online NPC facing angle units - 2026-10-31
 
 Local/uncommitted online-story-coop, base23beb840. The US animator stores body

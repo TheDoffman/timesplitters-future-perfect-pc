@@ -353,6 +353,21 @@ static int story_result_button(void (*original)(void))
     g_eax=0;g_esp+=4u;return 1;
 }
 #endif
+/* Scene106 has one frontend context, independently of the joined party size.
+ * 356800 maps controller ports to gameplay contexts; retaining a guest's
+ * network slot here writes its camera past that single context allocation.
+ * 356870 remains unchanged: profile ownership still uses the network slot. */
+void pc_story_network_rewards_context_slot(void (*original)(void))
+{
+#ifdef _WIN32
+    if(story_rewards_guest() && WORD_AT(0x790950u)==1u &&
+       WORD_AT(0x7de458u)==0u && guest_writable(g_esp,8u) && !WORD_AT(g_esp+4u)) {
+        g_eax=0;g_esp+=4u;return;
+    }
+#endif
+    original();
+}
+
 /* Keep original reward pages and their timer. Replace only the exhausted
  * guest page's transition to5236DC, which otherwise reaches frontend GO. */
 void pc_story_network_rewards_page(void (*original)(void))

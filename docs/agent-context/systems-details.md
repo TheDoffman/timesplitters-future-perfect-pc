@@ -1165,3 +1165,16 @@ atomic animation/lifecycle handling and the existing pose protocol remain.
 The isolated paired probe compares heading/body yaw within matching live
 slot/spawn generations; these asynchronous samples measure state agreement,
 not reviewed render output. Head/torso overlay cache ownership remains local.
+
+## Four-player rewards context
+
+Scene106 creates one frontend context even with four joined peers. Original
+D2FD0 assigns the port/camera via356800; its retained network slot writes past
+that context on guests. Additive2465 routes356800 through the shared
+pc_story_network_rewards_context_slot adapter. Only joined first-mission guest
+rewards, one allocated context, zero scene flags and port0 map to context0.
+Profile mapper356870 remains original, so awards/save ownership retain each
+peer's own network slot. Gameplay, movies, other ports and native fallback
+retain original mapping. The original-engine reward fixture checks slots1..3
+and rejects a disabled-context-mapping mutation; live four-peer validation is
+recorded in STATUS.md. No packet, profile or scheduler change is involved.

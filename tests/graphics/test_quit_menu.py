@@ -481,7 +481,8 @@ def test_story_original_config_stages(tmp_path):
 
 
 
-def test_story_original_guest_rewards(tmp_path):
+@pytest.mark.parametrize('context_mapping',[True,False])
+def test_story_original_guest_rewards(tmp_path,context_mapping):
     """Run stock completion/profile writes and reward UI with the real adapters."""
     from test_recomp_float_joins import compile_and_run
     from tools.recomp import config
@@ -497,7 +498,7 @@ def test_story_original_guest_rewards(tmp_path):
         functions={start:dict(name=f'sub_{start:08X}',end=end) for start,end in (
             (0x668f0,0x66e8f),(0x69900,0x6992d),(0x69a60,0x69d40),
             (0x696f0,0x69716),(0x69790,0x697c1),(0x697d0,0x69811),
-            (0x356870,0x3568be),(0x3568c0,0x356913),(0x64d60,0x64d88),
+            (0x356800,0x356861),(0x356870,0x3568be),(0x3568c0,0x356913),(0x64d60,0x64d88),
             (0x2d2bc0,0x2d2bd3),(0x2cb210,0x2cb300),(0x2cb490,0x2cb4e4),
             (0x2cb550,0x2cb587),(0x2cbba0,0x2cbcd9),(0x2cbaf0,0x2cbb57),
             (0x2cbb60,0x2cbb9b))}
@@ -515,6 +516,7 @@ def test_story_original_guest_rewards(tmp_path):
         assert struct.unpack_from('<4I',image,unlock_descriptor)==(0x2cbba0,0x2cbb60,0,0)
         code='\n'.join(translator.translate_function(start,info) for start,info in functions.items())
         code=code.replace('void sub_002CBAF0(void)\n{','void sub_002CBAF0_gen(void)\n{')
+        code=code.replace('void sub_00356800(void)\n{','void sub_00356800_gen(void)\n{')
         constants=''
         for address in (0x475c78,0x4760cc):
             value=int.from_bytes(image[config.va_to_file_offset(address):config.va_to_file_offset(address)+4],'little')
@@ -524,7 +526,7 @@ def test_story_original_guest_rewards(tmp_path):
     source=(ROOT/'tests/network/story_rewards_guest.c').read_text(encoding='utf-8')
     production=(ROOT/'src/network/pc_story_restart.inc').read_text(encoding='utf-8')
     adapters='static unsigned story_leave_destination;\nstatic int story_lobby_return_build;\nvoid pc_online_disconnect(void){assert(0);}\n'+production[production.index('extern void sub_002EB0A0('):production.index('static void story_rewards_continue(')]
-    adapters+=production[production.index('void pc_story_network_rewards_page('):production.index('void pc_story_network_result_action(void (*original)(void),unsigned action)\n{')]
+    adapters+=production[production.index('void pc_story_network_rewards_context_slot('):production.index('void pc_story_network_result_action(void (*original)(void),unsigned action)\n{')]
     import re
     defined=set(re.findall(r'(?:void|uint32_t)\s+(sub_[0-9A-F]+(?:_gen)?)\s*\([^;]*?\)\s*\{',source+code))
     referenced=set(re.findall(r'\bsub_[0-9A-F]+(?:_gen)?\b',source+code+adapters))
@@ -534,4 +536,8 @@ def test_story_original_guest_rewards(tmp_path):
     source=source.replace('/* ORIGINAL_PROTOTYPES */',prototypes+'\n'+spies)
     source=source.replace('/* ORIGINAL_REWARD_FUNCTIONS */',code).replace('/* PRODUCTION_REWARD_ADAPTERS */',adapters)
     source=source.replace('/* ORIGINAL_REWARD_CONSTANTS */',constants)
-    assert 'PASS:' in compile_and_run(tmp_path,source)
+    if not context_mapping:
+        source=source.replace('if(story_rewards_guest() && WORD_AT(0x790950u)==1u &&',
+                              'if(0 && story_rewards_guest() && WORD_AT(0x790950u)==1u &&')
+    output=compile_and_run(tmp_path,source,expect_success=context_mapping)
+    if context_mapping: assert 'PASS:' in output

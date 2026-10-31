@@ -886,3 +886,9 @@ NPC facing regression: `network_bot_motion.c` checks degree-domain90-degree
 turns and350/10 crossings. The former radians wrap fails these checks. Existing
 interpolation mutation, jitter/loss and atomic crossfade guards stay selected
 through `test_network_guest_dispatch.py`; Story/corpse fixtures remain unchanged.
+
+Four-player rewards: test_story_original_guest_rewards translates original
+356800 alongside profile mapper356870. All guest slots1..3 map the single
+scene106 frontend camera to context0, retain profile slots and preserve other
+port/scene/count/movie/offline routes. Its disabled-mapping mutation must fail.
+The patch-update migration registry includes2465; existing CI selects both.

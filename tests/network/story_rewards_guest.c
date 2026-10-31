@@ -80,6 +80,7 @@ void sub_00079B70(void){assert(MEM32(g_esp+8)==0x5236dc);++exits;g_esp+=4;}
 static int story_online_return_menu(void (*original)(void)){(void)original;return 0;}
 /* PRODUCTION_REWARD_ADAPTERS */
 void sub_002CBAF0(void){pc_story_network_rewards_page(sub_002CBAF0_gen);}
+void sub_00356800(void){pc_story_network_rewards_context_slot(sub_00356800_gen);}
 static unsigned save_calls,save_owned;
 static void original_save(void){
     ++save_calls;
@@ -150,6 +151,34 @@ int main(void){
     build();timer();assert(MEM32(0x75fd88)==6 && !exits);
     build();timer();assert(MEM32(0x75fd88)==9 && !exits);
     build();assert(story_rewards_waiting && !confirm);timer();assert(!exits);
+    /* Frontend106 allocates one context. Original D2FD0 uses356800 for
+       port/camera placement, whereas69A60 uses356870 for profile selection.
+       Every network guest must render through context0 while retaining its
+       own profile slot, including slots2/3 beyond the frontend allocation. */
+    MEM32(0x790950)=1;MEM32(0x30020)=1;
+    for(unsigned slot=1;slot<4;slot++) {
+        MEM32(0x3103c)=slot;
+        if(guest_call(sub_00356800,1,0u)!=0) {
+            fprintf(stderr,"FAIL: sensitivity: rewards context uses network slot%u\n",slot);
+            return 1;
+        }
+        assert(guest_call(sub_00356870,1,0u)==slot);
+        /* Other ports and gameplay/movie/multi-context/offline routes stay stock. */
+        assert(guest_call(sub_00356800,1,1u)==1);
+        MEM32(0x790950)=4;assert(guest_call(sub_00356800,1,0u)==slot);
+        MEM32(0x790950)=1;MEM32(0x79094c)=2;MEM32(0x30020)=4;
+        assert(guest_call(sub_00356800,1,0u)==0); /* stock count guard */
+        MEM32(0x79094c)=106;MEM32(0x7de458)=0x20000000;
+        MEM32(0x30020)=1;assert(guest_call(sub_00356800,1,0u)==slot);
+        MEM32(0x7de458)=0;story_mode=0;
+        assert(guest_call(sub_00356800,1,0u)==slot);story_mode=1;
+        MEM32(0x30020)=1;
+    }
+    MEM32(0x3103c)=1;MEM32(0x76b140)=1;
+    assert(guest_call(sub_00356800,1,0u)==1);
+    MEM32(0x76b140)=2;story_pending_stage=2;
+    assert(guest_call(sub_00356800,1,0u)==1);
+    story_pending_stage=3;MEM32(0x790950)=2;
     /* Already-earned rewards don't become new again; original host/offline
        exhausted-page transitions remain available. */
     page_awards=0;g_esp=0x20000;sub_002CB210();assert(MEM32(0x75fcc0)==1);

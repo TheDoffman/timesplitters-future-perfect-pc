@@ -1,3 +1,6 @@
+Story rewards: additive2465 wraps356800 for the single frontend context;
+profile mapper356870 stays original. See [contract](systems-details.md#four-player-rewards-context).
+
 Story lobby host loss: additive2460 wraps1AF950. The shared menu adapter scopes
 the native guest-lobby8D notification to main return, preserving transport reset
 and rebuilding main in its own layout context. See [contracts](systems-details.md).
