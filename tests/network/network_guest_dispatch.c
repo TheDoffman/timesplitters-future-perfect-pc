@@ -480,6 +480,20 @@ int main(void)
         memory[(0x7000+0x28)/4]=0;g_esp=16;pc_network_bots_guest_frame(original);
         CHECK(g_eax==0x11223344u && g_esp==20 && bot_sends==1 && bot_refreshes==1);
         CHECK((memory[(0x7000+0x28)/4]&0x61u)==0x61u && last_bot.slot==2 && last_bot.primary_room==5 && last_bot.camo.flags==0x01000010 && last_bot.camo.fade_phase==1);
+        /* Frozen guests need every host pose, including atomic crossfade
+           controls and dead-state animation; a position lerp cannot supply it. */
+        memory[0x7004/4]=0x14000;
+        for(unsigned frame=1;frame<=6;frame++) {
+            float phase=(float)frame/60.f,fade=(float)frame/120.f;
+            memory[0x7de318/4]++;
+            if(frame==5) {float dead=0;memcpy((uint8_t *)memory+0x71cc,&dead,4);}
+            memcpy((uint8_t *)memory+0x140dc,&phase,4);
+            memcpy((uint8_t *)memory+0x1419c,&fade,4);
+            g_esp=16;pc_network_bots_guest_frame(original);
+            CHECK(bot_sends==1+frame && last_bot.clip_channels[0]==phase && last_bot.blend_channels[1]==fade);
+            g_esp=16;pc_network_bots_guest_frame(original);CHECK(bot_sends==1+frame);
+        }
+        memcpy((uint8_t *)memory+0x71cc,&health,4);
         memory[(0x7000+0x28)/4]=0;life=2;memcpy(actor+0x18,&life,4);
         memory[0x7de318/4]+=3;g_esp=16;pc_network_bots_guest_frame(original);
         CHECK(!(memory[(0x7000+0x28)/4]&1));

@@ -2254,6 +2254,15 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Online bot animation cadence (2026-10-31, uncommitted):** Shared
+  `pc_network_bots_guest.inc` publishes complete poses each simulation tick,
+  including crossfades/death, without advancing guest AI or changing human
+  replication. Windows/native-network dispatch fixtures cover cadence and
+  duplicate suppression; no new Mac adapter is required. Physical Mac/mixed-host
+  visual acceptance remains pending: compare guest running, aiming, crossfades
+  and death animations, including loss/jitter and corpse retention.
+
+
 - **Online bot corpse follow-up (2026-10-31, uncommitted):** Shared
   `pc_network_bots_guest.inc`, `pc_character_corpses.inc` and menu bridge reuse
   Story corpse copying for guest death/absence/respawn. Windows and native-network

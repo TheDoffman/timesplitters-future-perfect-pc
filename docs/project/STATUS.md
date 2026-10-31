@@ -1,3 +1,31 @@
+## Online guest NPC animation cadence - 2026-10-31
+
+Local/uncommitted online-story-coop, base3f04d640. Online bots previously sent
+poses once per three simulation ticks. Guest frozen skeletons interpolate only
+same-clip time; atomic crossfade/overlay and dead-state channels therefore held
+at20Hz with Original60. The shared host hook now publishes each simulation tick,
+while suppressing duplicate same-tick callbacks. Human replication, guest AI,
+original clocks, atomic crossfade safety and corpse preservation stay intact.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0/D3D11/SDL3.4.16, Original60:
+supported US XBE SHA-256 verified;399.9GiB free before build. Official Build and
+built-in checks pass (logs/online-animation-build.log), with foreground virtual-
+pad skips. Focused tests33 pass,2 skip. New consecutive-tick pose/fade regression
+fails the previous sender on Windows/native-network variants, and covers live,
+dead and repeated same-tick calls. Existing Story/corpse/motion checks pass.
+Paired isolated Online probe exits0 and completes cleanup on both runs. Comparing
+latest asynchronous sample per tick within stable clip/body generations:
+guest active crossfade changes28.7% ->100%; death phase changes33.1% ->99.2%;
+living phase changes84.8% ->94.0%. Fixed host rates100%,99.2%,96.3%, respectively.
+These measure animation-state cadence, not rendered FPS or reviewed smoothness.
+Nine guest bot corpse copies were logged in the fixed run. Evidence under
+logs/online-bots-animation-probe: baseline-summary.json, fixed-summary.json,
+observations.json, provenance.json and1.err. The user confirmed the animation
+fix after visual Online testing. Physical Mac/mixed-host/jitter acceptance remains pending. Native uses the same
+shared policy; no new adapter or runtime patch. Context/index and diff checks pass.
+Compatibility5f579711a6cfc3e76286941728de77f260d7d73c1cad71a034309e854fcc0baa;
+executable SHA-256 73175be155bc5c2c5b0e5e8f5b0e07fb15e8dffebed4ba4d9f59c62bc21dc0f1.
+
 ## Online corpse retirement ordering follow-up - 2026-10-31
 
 Local/uncommitted online-story-coop, base9d6e6131. User rejected the prior

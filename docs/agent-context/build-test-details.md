@@ -875,3 +875,9 @@ with native networking enabled: the original destructor asserts the cosmetic
 copy already exists, then unlinks/marks the source removed. A later replay must
 not allocate a second corpse. This covers the real ordering missed by the
 initial snapshot-only regression.
+
+Online animation cadence: `network_guest_dispatch.c` changes primary frame time
+and atomic blend elapsed on consecutive host ticks and requires each pose to be
+sent, with repeated same-tick callbacks silent. The previous three-tick cadence
+fails this regression on both Windows/native-network fixture variants. Existing
+motion tests retain jitter/loss and atomic crossfade guards; guest AI stays frozen.

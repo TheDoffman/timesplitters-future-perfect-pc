@@ -437,7 +437,10 @@ static void pc_network_bots_guest_frame(void (*original)(void))
         } else if(role==2u) continue;
         if(role==1u) {
             uint32_t flags,life,dead;float health;unsigned killer;
-            if(sent && tick-last_tick<3u) continue;
+            /* Frozen replica animation cannot reconstruct atomic blend, overlay
+               and death channels between packets. Publish each simulated pose,
+               while duplicate callbacks in the same tick remain silent. */
+            if(sent && tick==last_tick) continue;
             memset(&state,0,sizeof state);state.slot=index;state.tick=tick;
             memcpy(state.scores,actor+0xa10,sizeof state.scores);
             for(killer=0;killer<humans+bots;killer++)
@@ -526,7 +529,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
             memcpy(body+0x1c0,state.bounds_radius,12);
         }
     }
-    if(role==1u && (!sent || tick-last_tick>=3u)) {last_tick=tick;sent=1;}
+    if(role==1u && (!sent || tick!=last_tick)) {last_tick=tick;sent=1;}
 #endif
 }
 

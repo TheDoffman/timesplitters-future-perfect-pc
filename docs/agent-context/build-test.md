@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[Co-op/corpse tests](build-test-details.md).
+[NPC/co-op tests](build-test-details.md).
 
 [Save-folder checks](save-locations.md): storage, picker callback ownership/mutation, and shared launcher copy/restore/UI tests; both launcher builds include SaveLocations.cs.
 

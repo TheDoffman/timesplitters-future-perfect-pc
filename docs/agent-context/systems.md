@@ -342,21 +342,20 @@ local-slot and menu rules are unchanged. `test_auto_look.py` checks host behavio
 plus real multi-page records, split/read-only maps, expiry and uncached/persistent
 mutations. Controller and menu paths retain their original preference behavior.
 
-Online bot presentation (#222) uses `pc_network_bot_motion.h` from the
-`pc_network_bots_guest_frame` hook. The transport still consumes each validated
-host snapshot once. The guest caches it and updates the displayed body, spatial
-bounds and matching animation frame times every frame over a 50 ms span, retargeting
-from the current display pose when arrivals vary. Discrete vitals, scores, shots,
-absence and spawn transitions retain host values; no guest AI or extrapolation
-is enabled. A gap over 250 ms snaps to the next received host state. Match,
-host, actor-pool and inactive-state changes clear presentation history. The
-Windows QPC adapter supplies monotonic seconds independently of guest game time.
-Human controller replication and the host's three-tick send interval are unchanged.
-Native Mac shares these hooks with TSFP_NATIVE_NETWORK; see [Online](multiplayer-ui.md).
-Only clip-block `+8` (model `DC`/`134`) is interpolated within the same clip/cycle;
-the other animation channels and crossfade controls stay atomic. US `5CEF0`
-can promote the secondary clip during zero-advance evaluation, so mixing fade
-duration/elapsed with another snapshot's clip identity can select an invalid clip.
+Online bot presentation uses `pc_network_bot_motion.h` from the shared
+`pc_network_bots_guest_frame` hook. Bots publish each simulation tick, suppressing
+duplicate callbacks in that tick. Frozen guest skeletons need the full pose at
+that cadence: atomic crossfade, overlay and death channels cannot be rebuilt
+from the former three-tick (20 Hz at Original60) stream. Human replication stays
+original. Guests consume validated snapshots once and refresh displayed bodies,
+bounds and matching clip times every frame over50ms, retargeting from the current
+display pose. Vitals, scores, shots, absence and spawn transitions stay atomic;
+there is no guest AI or extrapolation. Gaps over250ms snap; match/host/pool/inactive
+changes clear history. Windows QPC supplies monotonic time. Native networking
+shares the policy through TSFP_NATIVE_NETWORK; see [Online](multiplayer-ui.md).
+Only clip-block+8 (model DC/134) is interpolated within one clip/cycle. Other
+animation channels stay atomic: US5CEF0 can promote the secondary clip during
+zero-advance evaluation, so mixing crossfade state can select an invalid clip.
 
 The bot score-network adapter admits configured AI at US return site67868,
 using EDI's actor slot in the original round score-limit scan. The stock
