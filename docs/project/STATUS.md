@@ -79,6 +79,23 @@ executable SHA-2569629ce4ebd986e15912f55bdce42445d7f48dde72146b4602b8560d37bfb45
 Native Mac execution remains unrun on this Windows host; upstream platform
 acceptance records remain.
 
+## Story co-op beta launcher compatibility - 2026-11-01
+
+The shared Windows/Mac launcher groups the beta-suffix release under the
+existing Story Co-op track after validating its original tag/metadata channel.
+Saved beta selections migrate on read without writes; explicit saves preserve
+unrelated keys and launcher-preview enrollment. The publisher/package channel
+remains story-coop-beta for compatibility with already-published launchers.
+Only this named alias is grouped; unrelated beta channels remain separate.
+
+Windows x64 .NET Framework launcher build and all isolated launcher tests pass,
+including two new shared UI groups for real mixed catalogs, metadata rejection,
+installed identity and preference migration. This is fixture/build validation;
+native Mac shared UI CI and physical selector acceptance are separate checks.
+No personal save/settings paths were used. The user assigned launcher version
+selection and publication to another user; this change publishes no launcher.
+See the [publishing handoff](../release/story-coop-beta-handoff.md).
+
 ## Prerelease Discord announcement routing (2026-11-01)
 
 Both game release types and their manual tests now post only to announcements,

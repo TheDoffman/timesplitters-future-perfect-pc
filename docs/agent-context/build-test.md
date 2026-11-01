@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[NPC/cinematics](build-test-details.md); [Saves](save-locations.md); [Discord UI](launcher.md), MAC-126; [release alerts/tests](../release/discord-announcements.md).
+[NPC/cinematics](build-test-details.md); [Saves](save-locations.md); [Discord alerts](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
 
 
 test_native_timing.py::test_original_minigun_spin runs the complete supported-US callback with fake services. It reproduces the old high-FPS failure and checks readiness, release, pause and input guards at 60/120/144/180/240 FPS. Existing CI selects this suite; private-XBE absence skips it. Historical fixtures exclude minigun intent until the native stack is applied. See native-minigun.md.
@@ -1012,7 +1012,7 @@ Crossplay: [acceptance](multiplayer-ui.md#physical-windowsmac-online-acceptance)
 
 Crossplay tests: see multiplayer-ui.md.
 
-Markers: test_ui_layout.py; test_patch_updates.py checks 2290/2291 after migration.
+Markers: test_ui_layout.py; test_patch_updates.py covers 2290/2291.
 
 Mech input: test_mounted_mouse.py; [scope](mounted-mouse.md#battle-mech-mouse-425).
 
