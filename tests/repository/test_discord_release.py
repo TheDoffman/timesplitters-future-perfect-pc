@@ -33,17 +33,39 @@ class DiscordReleaseTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             MODULE.test_announcement({'inputs': {'channel': 'other'}})
 
-    def test_manual_dispatch_uses_only_the_selected_channel_secret(self):
+    def test_manual_dispatch_follows_release_destinations(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'event.json'
             for selected in ('stable', 'preview'):
                 path.write_text(json.dumps({'inputs': {'channel': selected}}), encoding='utf-8')
                 env = {'GITHUB_EVENT_PATH': str(path), 'GITHUB_EVENT_NAME': 'workflow_dispatch',
-                       'DISCORD_STABLE_RELEASE_WEBHOOK': 'stable-secret',
-                       'DISCORD_PREVIEW_RELEASE_WEBHOOK': 'preview-secret'}
+                       'DISCORD_STABLE_RELEASE_WEBHOOK': 'https://discord.com/api/webhooks/123/stable',
+                       'DISCORD_PREVIEW_RELEASE_WEBHOOK': 'https://discord.com/api/webhooks/456/preview'}
                 with patch.dict(os.environ, env, clear=True), patch.object(MODULE, 'send') as send:
                     MODULE.main()
-                    self.assertEqual(send.call_args.args[0], selected + '-secret')
+                    expected = ['stable']
+                    self.assertEqual([call.args[0].rsplit('/', 1)[1] for call in send.call_args_list], expected)
+
+    def test_published_release_delivery_reaches_the_correct_channels(self):
+        secrets = {'DISCORD_STABLE_RELEASE_WEBHOOK': 'https://discord.com/api/webhooks/123/stable',
+                   'DISCORD_PREVIEW_RELEASE_WEBHOOK': 'https://discord.com/api/webhooks/456/preview'}
+        for tag, preview, expected in [('v0.4.1', False, ['stable']),
+                                       ('v0.5.0-beta.1', True, ['stable']),
+                                       ('v0.5.0-story-coop.2', True, ['stable'])]:
+            with patch.object(MODULE, 'send') as send:
+                route, payload = MODULE.announcement(event(tag, preview))
+                MODULE.deliver(route, payload, secrets)
+                self.assertEqual([call.args[0].rsplit('/', 1)[1] for call in send.call_args_list], expected)
+                self.assertTrue(all(call.args[1] == payload for call in send.call_args_list))
+
+    def test_preview_secret_is_not_needed_for_either_release_type(self):
+        secrets = {'DISCORD_STABLE_RELEASE_WEBHOOK': 'https://discord.com/api/webhooks/123/stable'}
+        with patch.object(MODULE, 'send') as send:
+            MODULE.deliver('preview', {}, secrets)
+            send.assert_called_once_with(secrets['DISCORD_STABLE_RELEASE_WEBHOOK'], {})
+            send.reset_mock()
+            MODULE.deliver('stable', {}, secrets)
+            send.assert_called_once()
 
     def test_stable_goes_to_announcements_with_exact_game_link(self):
         route, payload = MODULE.announcement(event())
@@ -53,7 +75,7 @@ class DiscordReleaseTests(unittest.TestCase):
         self.assertNotIn('/latest', embed['description'])
         self.assertIn('**Stable**', embed['description'])
 
-    def test_beta_and_feature_previews_go_to_playtesting(self):
+    def test_beta_and_feature_previews_keep_preview_labels(self):
         for tag, track in [('v0.5.0-beta.1', 'Beta'), ('v0.5.0-story-coop.2', 'Story Coop Preview')]:
             with self.subTest(tag=tag):
                 route, payload = MODULE.announcement(event(tag, True))
