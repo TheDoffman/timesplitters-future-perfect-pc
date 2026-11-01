@@ -588,6 +588,7 @@ int main(void)
 {
 #ifdef _WIN32
     (void)pc_network_bot_state_valid; /* This fixture exercises Story state instead. */
+    (void)story_rewards_profiles_capture; /* The menu owns this included entry point. */
     g_xbox_mem_offset=(uintptr_t)memory;
     WORD_AT(0x76b140)=1;WORD_AT(0x76b1a4)=11;
     WORD_AT(0x2004)=0x4e99c4;WORD_AT(0x202c)=0x3000;

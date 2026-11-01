@@ -1018,6 +1018,6 @@ Mech input: test_mounted_mouse.py; [scope](mounted-mouse.md#battle-mech-mouse-42
 
 Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
-[Story flag/Clang](build-test-details.md#story-release-flag-regression).
+[Story flag and Clang fixtures](build-test-details.md#story-release-flag-regression).
 
 [Languages](launcher.md#complete-game-language-packs-discussion-263).

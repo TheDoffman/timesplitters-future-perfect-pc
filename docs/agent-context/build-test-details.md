@@ -15,6 +15,8 @@ like their spies, declare before use, separate hex addition tokens and include
 Windows fixture dependencies only in their exercised branch. The authored
 loadout initializer now explicitly supplies its already-zero equipped field.
 Retain Clang warnings as errors and every original assertion.
+The lobby fixture also references the included menu-owned reward capture entry
+point explicitly; its lack of a lobby call does not imply a runtime defect.
 
 # Story guest lobby host-loss regression - 2026-10-31
 
