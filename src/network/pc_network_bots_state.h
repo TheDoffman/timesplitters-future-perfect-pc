@@ -2,12 +2,19 @@
 #define TSFP_PC_NETWORK_BOTS_STATE_H
 #include <stdint.h>
 #include <math.h>
+#include "pc_character_pose.h"
+#include "pc_character_effects.h"
+#include "pc_physical_state.h"
 /* Wire values only: no guest pointers, controller records or animation handles. */
 typedef struct PcNetworkBotShot {
     uint32_t serial,tick,spawn,hand,mode,flags,target_slot;
     int32_t weapon;
     float transform[12],aim[3],muzzle[3];
 } PcNetworkBotShot;
+/* Original1BE870 deliberately omits held models for these built-in weapon
+   definitions. Their firing/effects still use the character's hand transform. */
+static inline int pc_network_bot_shot_needs_model(int32_t weapon)
+{ return weapon!=41 && weapon!=56 && weapon!=61; }
 static int pc_network_bot_shot_valid(const PcNetworkBotShot *shot,unsigned actors)
 {
     unsigned i;
@@ -34,32 +41,36 @@ typedef struct PcNetworkBotState {
     float next_channels[18];
     uint32_t next_cycle,next_flags,overlay_phase;
     float overlay_channels[8],blend_channels[3];
+    uint32_t limb_mask,limb_clips_flags;
+    float limb_elapsed,aim_frame;
     PcNetworkBotShot shot;
     int16_t scores[42];
     /* One authoritative victim column, including human kills of this bot.
        Human-vs-human score columns remain owned by the stock protocol. */
     int16_t killed_by[16];
+    uint32_t primary_room; /* numeric scene room, not a peer-local portal handle */
+    PcCharacterCamo camo;
+    PcRagdollState ragdoll;
 } PcNetworkBotState;
+typedef char PcBotDatagramBound[(sizeof(PcNetworkBotState)+88u<=1472u)?1:-1];
 static int pc_network_bot_state_valid(const PcNetworkBotState *state,unsigned humans,unsigned bots)
 {
     unsigned i;
     if(!humans || !bots || bots>10 || humans+bots>16 ||
        state->slot<humans || state->slot>=humans+bots) return 0;
     if(state->animation>=70u) return 0; /* equipped weapon enum */
-    if(state->body_present>1u) return 0;
+    if(!pc_ragdoll_valid(&state->ragdoll) || !pc_character_camo_valid(&state->camo)) return 0;
+    if(state->body_present>1u || state->primary_room>213u) return 0;
     for(i=0;i<3;i++) if(!isfinite(state->position[i]) || fabsf(state->position[i])>1000000.f) return 0;
     for(i=0;i<3;i++) if(!isfinite(state->bounds_center[i]) || fabsf(state->bounds_center[i])>10000.f ||
         !isfinite(state->bounds_radius[i]) || state->bounds_radius[i]<0.f || state->bounds_radius[i]>10000.f) return 0;
     for(i=0;i<2;i++) if(!isfinite(state->health_scale[i]) || fabsf(state->health_scale[i])>1000.f) return 0;
-    if(state->clip<0 || state->clip>4095 || state->next_clip<0 || state->next_clip>4095 || state->overlay_phase>2u) return 0;
+    PcCharacterPose pose;memcpy(&pose,&state->clip,sizeof pose);
+    if(!pc_character_pose_valid(&pose)) return 0;
     for(i=0;i<3;i++) if(!isfinite(state->angles[i]) || fabsf(state->angles[i])>100000.f) return 0;
     if(!isfinite(state->heading) || fabsf(state->heading)>100000.f) return 0;
     for(i=0;i<3;i++) if(!isfinite(state->aim[i]) || fabsf(state->aim[i])>1000000.f ||
         !isfinite(state->muzzle[i]) || fabsf(state->muzzle[i])>1000000.f) return 0;
-    for(i=0;i<18;i++) if(!isfinite(state->clip_channels[i]) || fabsf(state->clip_channels[i])>1000000.f ||
-        !isfinite(state->next_channels[i]) || fabsf(state->next_channels[i])>1000000.f) return 0;
-    for(i=0;i<8;i++) if(!isfinite(state->overlay_channels[i]) || fabsf(state->overlay_channels[i])>1000000.f) return 0;
-    for(i=0;i<3;i++) if(!isfinite(state->blend_channels[i]) || fabsf(state->blend_channels[i])>1000000.f) return 0;
     if(!pc_network_bot_shot_valid(&state->shot,humans+bots)) return 0;
     return isfinite(state->health) && state->health>=-1000.f && state->health<=1000.f &&
            isfinite(state->armor) && state->armor>=0.f && state->armor<=1000.f &&

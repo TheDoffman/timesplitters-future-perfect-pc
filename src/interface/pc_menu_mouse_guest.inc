@@ -275,6 +275,22 @@ static int menu_mouse_profile_text(void (*original)(void))
 void pc_display_menu_mouse_footer(void (*original)(void))
 {
     uint32_t menu=WORD_AT(g_esp+4),previous=menu_mouse_footer_drawing;
+#if defined(_WIN32) && !defined(TSFP_MENU_MOUSE_TEST)
+    if(getenv("TSFP_STORY_TRACE") && pc_online_mode()==PC_ONLINE_STORY &&
+       WORD_AT(0x0076B1A4u)==11u && guest_writable(menu,0x23c)) {
+        static uint32_t reported_descriptor;
+        uint32_t descriptor=WORD_AT(menu+4u);
+        if(descriptor!=reported_descriptor && guest_writable(descriptor,16)) {
+            reported_descriptor=descriptor;
+            fprintf(stderr,"[PC-STORY-UI] descriptor=%08X build=%08X tick=%08X draw=%08X destroy=%08X\n",
+                descriptor,WORD_AT(descriptor),WORD_AT(descriptor+4u),WORD_AT(descriptor+8u),WORD_AT(descriptor+12u));
+            for(unsigned i=0;i<4u;i++)
+                fprintf(stderr,"[PC-STORY-UI] footer%u=%08X,%08X,%08X,%08X\n",i,
+                    WORD_AT(menu+0x128u+i*16u),WORD_AT(menu+0x12cu+i*16u),
+                    WORD_AT(menu+0x130u+i*16u),WORD_AT(menu+0x134u+i*16u));
+        }
+    }
+#endif
     if(guest_writable(menu,0x23c) && WORD_AT(menu+0x38)==0) {
         memset(menu_mouse_footer,0,sizeof menu_mouse_footer);
         menu_mouse_footer_drawing=menu;

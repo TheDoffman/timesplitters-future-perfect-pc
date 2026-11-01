@@ -1,0 +1,953 @@
+/* Story load adapter for typed Online Story sessions. The original network start
+ * handshake still transports the match config; this does not synchronize Story
+ * NPCs/scripts or certify that Story player creation accepts network ownership. */
+#ifdef _WIN32
+extern void sub_00065940(void);
+extern void sub_002EB030(void);
+extern void sub_00352640(void),sub_00352650(void),sub_00356490(void);
+extern void sub_000D50E0(void);
+extern void sub_000CF060_gen(void),sub_0009A420_gen(void);
+static uint32_t story_extra_pad_storage;
+extern void sub_0025EE60(void);
+static int story_context_start_pending;
+static int story_departed_context(uint32_t context);
+static void story_departed_frame(void);
+extern void sub_0015BCC0_gen(void);
+extern void sub_000D2CE0(void);
+static unsigned story_pending_stage;
+static int story_rewards_tracking;
+static void story_rewards_begin(void);
+static void story_rewards_record(unsigned mission,unsigned stage);
+/* The frontend rebuilds its Arcade header while rewards are open. Retain the
+ * last validated Story ownership header across movies/rewards, not that scratch
+ * header (the captured failure changed two joined humans to sixteen). */
+static uint8_t story_load_header[0x14];
+static unsigned story_reload_epoch;
+static unsigned story_rejoin_nonce,story_rejoin_tick;
+static int story_rejoin_pending,story_rejoin_sent,story_rejoin_pose_valid,story_rejoin_view_pending;
+static float story_rejoin_position[3],story_rejoin_heading;
+static void story_rejoin_frame(void);
+static int story_restart_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
+static void story_npc_reset(void);
+static void story_shots_reset(void);
+static void story_shots_frame(void);
+static int story_shots_damage(void);
+static int story_shots_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
+static void story_npc_pending_frame(void);
+static void story_loadout_reset(void);
+static void story_loadout_frame(void);
+static void story_human_teams_frame(void);
+static void story_objectives_reset(void);
+static void story_objectives_frame(void);
+static int story_objectives_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
+static void story_checkpoint_reset(void);
+static void story_checkpoint_frame(void);
+static int story_checkpoint_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
+static void story_effect_reset(void);
+static void story_effect_frame(void);
+static int story_effect_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
+static void story_cine_reset(void);
+static void story_cine_frame(void);
+static int story_cine_script(void (*original)(void),uint32_t address);
+static int story_cine_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
+static int story_loadout_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
+static void story_dialogue_reset(void);
+static void story_dialogue_frame(void);
+static int story_dialogue_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
+static void story_drop_reset(void);
+static void story_drop_frame(void);
+static int story_drop_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
+static void story_world_reset(void);
+static void story_world_frame(void);
+static int story_world_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
+uint32_t pc_story_network_world_key(uint32_t entity);
+uint32_t pc_story_network_world_entity(uint32_t key);
+static int story_network_session(void)
+{
+    return pc_online_mode()==PC_ONLINE_STORY;
+}
+#endif
+
+int pc_story_network_prepare(uint32_t address)
+{
+#ifdef _WIN32
+    const unsigned role=WORD_AT(0x0076B140u),phase=WORD_AT(0x0076B1A4u);
+    const uint32_t caller=guest_writable(g_esp,4u)?WORD_AT(g_esp):0u;
+    if(story_network_session() && getenv("TSFP_STORY_TRACE") && guest_writable(address,0xa0u)) {
+        const uint8_t *c=(const uint8_t *)((uintptr_t)address+g_xbox_mem_offset);
+        fprintf(stderr,"[PC-STORY-CONFIG-CALL] caller=%08X role=%u phase=%u address=%08X players=%u scene=%u rule=%u movie=%u pending=%u\n",
+            caller,role,phase,address,c[0],c[0x54],c[0x55],c[0x9b],story_pending_stage);
+    }
+    /* Unlock pages return through the frontend GO callback, not the in-game
+       results callbacks. Its stock Online factory has just rebuilt16 Arcade
+       slots and the old intro. Rebuild the next campaign config before that
+       existing GO sender serializes it; GO already owns the generation bump. */
+    const int reward_go=role==1u && story_lobby_mission==0u && story_pending_stage==3u &&
+        WORD_AT(0x79094cu)==106u && address==0x78ad58u && caller==0x2d3980u &&
+        (phase==10u || phase==14u || phase==15u);
+    const int advance=role==1u && (phase==10u || phase==14u || phase==15u) &&
+        (caller==0x00065CDCu || caller==0x00069522u);
+    /* A changed-generation class3B packet invokes the original GO callback
+       before its receiver changes phase15 to10. This is the guest pending-copy
+       boundary, not another local GO or a serializer call. */
+    const int received_intro_end=role==2u && phase==15u && address==0x0078AD58u &&
+        caller==0x002D398Du;
+    const int received_join=role==2u && phase==12u && address==0x78ad58u &&
+        caller==0x2d398du && WORD_AT(0x79094cu)==101u;
+    if(!story_network_session() || !WORD_AT(0x0076B108u) ||
+       (role!=1u && role!=2u) || (phase!=10u && phase!=11u && !advance && !reward_go && !received_intro_end && !received_join) ||
+       !guest_writable(address,0xa0u)) return 0;
+    uint8_t *config=(uint8_t *)((uintptr_t)address+g_xbox_mem_offset);
+    if(reward_go) {
+        if(!story_load_header[0] || story_load_header[0]>4u || story_load_header[1]!=1u) return 0;
+        GuestRegisters saved;save_registers(&saved);
+        WORD_AT(0x78ad48u)=story_lobby_mission;WORD_AT(0x78ad50u)=3u;
+        WORD_AT(0x78ad54u)=story_lobby_difficulty;
+        guest_call(sub_00065940,1,address);
+        restore_registers(&saved);
+    }
+    if(role==1u && phase==11u && address==0x0078AD58u) {
+        unsigned humans=0;uint8_t header[0x14];
+        memcpy(header,config,sizeof header);
+        for(unsigned i=0;i<16u;i++) if(WORD_AT(0x0077728Cu+i*0x124u)&1u) humans=i+1u;
+        if(!humans || humans>4u || !config[1] || config[1]>humans ||
+           story_lobby_mission>=13u || story_lobby_difficulty>=3u) return 0;
+        GuestRegisters saved;save_registers(&saved);
+        const uint32_t mode=WORD_AT(0x0078AD2Cu),mission=WORD_AT(0x0078AD48u),difficulty=WORD_AT(0x0078AD54u);
+        WORD_AT(0x0078AD2Cu)=4u;WORD_AT(0x0078AD48u)=story_lobby_mission;
+        WORD_AT(0x0078AD54u)=story_lobby_difficulty;WORD_AT(0x0078AD50u)=0u;
+        /* Original stage0 prepares the selected intro and its playback state.
+           Missions without an intro fall through to original stage1. */
+        guest_call(sub_00065940,1,address);
+        WORD_AT(0x0078AD2Cu)=mode;WORD_AT(0x0078AD48u)=mission;WORD_AT(0x0078AD54u)=difficulty;
+        restore_registers(&saved);
+        memcpy(config,header,sizeof header);config[0]=(uint8_t)humans;config[2]=0;
+        /* Keep the selected gameplay difficulty through the transient intro. */
+        config[0x57]=(uint8_t)story_lobby_difficulty;
+        for(unsigned i=0;i<humans;i++) {config[0x14u+i]=12u;config[0x24u+i]=0u;}
+    }
+    if(advance || reward_go) {
+        const uint8_t *active=story_load_header;
+        if(!active[0] || active[0]>4u || active[1]!=1u) return 0;
+        /* The original movie-end builder creates a Local config. Retain the
+           joined network ownership header before its reliable start handshake. */
+        memcpy(config,active,0x14u);config[2]=0;
+        config[0x57]=(uint8_t)story_lobby_difficulty;
+        for(unsigned i=0;i<config[0];i++) {config[0x14u+i]=12u;config[0x24u+i]=0u;}
+    }
+    uint32_t flags;memcpy(&flags,config+0x58u,4u);
+    const int rewards=config[0x54]==106u && config[0x55]==9u && config[0x56]==3u && !flags;
+    if(!config[0] || config[0]>4u || !config[1] || config[1]>config[0] || config[2] ||
+       (!rewards && (config[0x55]!=10u || config[0x56]!=2u)) || config[0x57]>=3u ||
+       (!rewards && flags!=0x00080008u && flags!=0x20000000u)) return 0;
+    unsigned selected=rewards?story_lobby_mission:13u,stage=rewards?3u:1u;
+    for(unsigned i=0;i<13u;i++) {
+        if(rewards) break;
+        const uint32_t row=0x004D1AC0u+i*0x44u;
+        if(flags==0x20000000u) {
+            for(unsigned offset=0x20u;offset<=0x24u;offset+=4u) {
+                const uint32_t movie=WORD_AT(row+offset),movie_scene=0x0051FC30u+movie*36u;
+                if(movie<256u && movie==config[0x9bu] && guest_writable(movie_scene,1u) &&
+                   *(const uint8_t *)((uintptr_t)movie_scene+g_xbox_mem_offset)==config[0x54u]) {
+                    selected=i;stage=offset==0x20u?0u:2u;break;
+                }
+            }
+            if(selected<13u) break;
+        } else {
+            int16_t scene;memcpy(&scene,(const void *)((uintptr_t)(row+6u)+g_xbox_mem_offset),2u);
+            if(scene==(int16_t)config[0x54u]) {selected=i;break;}
+        }
+    }
+    if(selected>=13u) return 0;
+    /* Record the received host success while the completed gameplay contexts
+       and this peer's local profile are still alive, before movie teardown. */
+    story_rewards_record(selected,stage);
+    story_lobby_mission=selected;story_lobby_difficulty=config[0x57u];
+    story_pending_stage=stage;
+    if(role==2u) story_rejoin_pending=received_join && selected==0u && stage==1u;
+    memcpy(story_load_header,config,sizeof story_load_header);
+    if(advance) {
+        GuestRegisters saved;save_registers(&saved);
+        /* Same generation increment and reliable config sender as original GO.
+           The nested serializer is not this movie-end callsite, so cannot
+           recursively initiate another transition. */
+        unsigned generation=(guest_call(sub_00352640,0)+1u)&255u;
+        if(!generation) generation=1u;
+        guest_call(sub_00352650,1,generation);
+        guest_call(sub_00356490,1,address);
+        restore_registers(&saved);
+    }
+    if(getenv("TSFP_STORY_TRACE")) fprintf(stderr,
+        "[PC-STORY-LOAD] config role=%u scene=%u mission=%u difficulty=%u players=%u local=%u stage=%u advance=%u\n",
+        role,config[0x54],selected,config[0x57],config[0],config[1],story_pending_stage,advance);
+    return 1;
+#else
+    (void)address;return 0;
+#endif
+}
+
+void pc_story_network_activate(void)
+{
+#ifdef _WIN32
+    if(!story_network_session()) return;
+    story_reload_epoch=0;
+    story_rejoin_sent=0;story_rejoin_pose_valid=0;
+    if(story_rejoin_pending && !++story_rejoin_nonce) ++story_rejoin_nonce;
+    if(story_pending_stage==1u) story_rewards_tracking=0;
+    story_npc_reset();
+    story_shots_reset();
+    story_loadout_reset();
+    story_objectives_reset();
+    story_checkpoint_reset();
+    story_effect_reset();
+    story_cine_reset();
+    story_dialogue_reset();
+    story_world_reset();
+    story_drop_reset();
+    /* Stock spawn/state decoders copy teams directly from the peer cache,
+       bypassing D7550. Normalize it before any Story bodies are constructed. */
+    const unsigned humans=*(const uint8_t *)((uintptr_t)0x007de400u+g_xbox_mem_offset);
+    if(humans && humans<=4u) for(unsigned slot=0;slot<humans;slot++) {
+        WORD_AT(0x00777288u+slot*0x124u)=1u;
+        ((uint8_t *)((uintptr_t)0x007de424u+g_xbox_mem_offset))[slot]=1u;
+    }
+    /* One full local view per network instance; keep the frontend network mode. */
+    WORD_AT(0x0078AD20u)=4u;story_context_start_pending=1;
+    WORD_AT(0x0078AD48u)=story_lobby_mission;WORD_AT(0x0078AD50u)=story_pending_stage==3u?2u:story_pending_stage;
+    *((uint8_t *)((uintptr_t)0x0078AD54u+g_xbox_mem_offset))=(uint8_t)story_lobby_difficulty;
+#endif
+}
+
+/* Preserve the original movie/reward builders while ordering first-mission
+   completion as ending movie, rewards, then the host's next-mission action. */
+void pc_story_network_stage_builder(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t caller=guest_writable(g_esp,4u)?WORD_AT(g_esp):0u;
+    if(story_network_session() && getenv("TSFP_STORY_TRACE")) fprintf(stderr,
+        "[PC-STORY-STAGE] caller=%08X role=%u phase=%u scene=%u mission=%u stage=%u pending=%u\n",
+        caller,WORD_AT(0x76b140u),WORD_AT(0x76b1a4u),WORD_AT(0x79094cu),
+        WORD_AT(0x78ad48u),WORD_AT(0x78ad50u),story_pending_stage);
+    /* Rewards own frontend globals, not the campaign selection. At the actual
+       host next-load boundary let original65940 advance the completed mission
+       once, instead of rebuilding mission0's intro from a reset stage. */
+    if(story_network_session() && WORD_AT(0x0076b108u) &&
+       WORD_AT(0x0076b140u)==1u && story_lobby_mission==0u &&
+       story_pending_stage==3u && WORD_AT(0x0079094cu)==106u && caller==0x00065ccfu) {
+        WORD_AT(0x0078ad48u)=story_lobby_mission;
+        WORD_AT(0x0078ad50u)=3u;
+        WORD_AT(0x0078ad54u)=story_lobby_difficulty;
+    }
+    const int scope=story_network_session() && WORD_AT(0x0076b108u) &&
+        WORD_AT(0x0076b140u)==1u && story_lobby_mission==0u &&
+        ((caller==0x00069518u && story_pending_stage==1u && (WORD_AT(0x007de45cu)&0x8000u)) ||
+         (caller==0x00065ccfu && story_pending_stage==2u));
+    const uint32_t scene=WORD_AT(0x0079094cu),flags=WORD_AT(0x007de458u),result=WORD_AT(0x007de45cu);
+    if(scope) {
+        WORD_AT(0x0079094cu)=story_pending_stage==1u?106u:2u;
+        WORD_AT(0x007de458u)=0x00080008u;WORD_AT(0x007de45cu)=result|0x8000u;
+        WORD_AT(0x0078ad48u)=story_lobby_mission;WORD_AT(0x0078ad50u)=2u;
+    }
+#endif
+    original();
+#ifdef _WIN32
+    if(scope) {WORD_AT(0x0079094cu)=scene;WORD_AT(0x007de458u)=flags;WORD_AT(0x007de45cu)=result;}
+#endif
+}
+
+/* Gameplay payloads dereference every joined human body. During movies and
+   frontend transitions the roster remains joined but those bodies do not.
+   Keep control/config transport alive, skipping only these two payload pumps. */
+void pc_network_player_payload(void (*original)(void))
+{
+#ifdef _WIN32
+    if(WORD_AT(0x0076b108u)) {
+        const unsigned count=WORD_AT(0x00790950u);
+        const uint32_t contexts=WORD_AT(0x007b0c48u);
+        int ready=count && count<=16u && WORD_AT(0x0079094cu)<100u &&
+            contexts && guest_writable(contexts,count*0x1584u);
+        if(story_network_session() && (story_pending_stage!=1u || (WORD_AT(0x007de458u)&0x20000000u))) ready=0;
+        for(unsigned i=0;ready && i<count;i++) {
+            const uint32_t context=contexts+i*0x1584u,entity=WORD_AT(context+0x14u);
+            if(story_departed_context(context)) continue;
+            const uint32_t actor=guest_writable(entity,0x25cu)?WORD_AT(entity+0x7cu):0u;
+            ready=WORD_AT(context)==i && guest_writable(entity,0x25cu) && !(WORD_AT(entity+0x28u)&0x80000000u) &&
+                WORD_AT(entity+0x150u)==context && guest_writable(actor,0xea0u) && WORD_AT(actor)==entity;
+        }
+        if(!ready) {g_eax=0;g_esp+=4u;return;}
+    }
+#endif
+    original();
+}
+
+/* Original6B100 filters authored scene records before objects/scripts/starts
+ * are instantiated. Its two-player-only mask has no four-player variant, and
+ * bit31 excludes records from ordinary network matches. A Story session uses
+ * the authored co-op records while retaining the original difficulty filter. */
+void pc_story_network_asset(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t frame=g_esp;
+    const int valid=guest_writable(frame,8u);
+    const uint32_t flags=valid?WORD_AT(frame+4u):0u,players=WORD_AT(0x00790950u);
+    const uint32_t caller=valid?WORD_AT(frame):0u;
+    uint32_t authored=flags;
+    const int adapt=story_network_session() && WORD_AT(0x0076B108u) &&
+       WORD_AT(0x0079094Cu)<100u && WORD_AT(0x007DE458u)==0x00080008u &&
+       ((const uint8_t *)((uintptr_t)0x007DE455u+g_xbox_mem_offset))[0]==10u &&
+       valid && players && players<=4u;
+    if(adapt) {
+        authored=flags&~0x80000000u;
+        if(players>2u && (authored&0x00400000u)) authored&=~0x00600000u;
+        WORD_AT(frame+4u)=authored;
+    }
+#endif
+    original();
+#ifdef _WIN32
+    if(adapt) WORD_AT(frame+4u)=flags;
+    if(story_network_session() && story_pending_stage==1u && valid &&
+       (flags&0x80600000u) && getenv("TSFP_STORY_TRACE")) {
+        static unsigned observations;
+        if(observations++<24u) fprintf(stderr,
+            "[PC-STORY-ASSET] role=%u caller=%08X scene=%u phase=%u count=%u active=%08X input=%08X authored=%08X adapt=%u result=%u\n",
+            WORD_AT(0x0076B140u),caller,WORD_AT(0x0079094Cu),WORD_AT(0x0076B1A4u),
+            players,WORD_AT(0x007DE458u),flags,authored,(unsigned)adapt,g_eax);
+    }
+#endif
+}
+
+/* Observe the authored model cache, character-list bootstrap and original
+ * script/network spawn request independently. Never bypass the original gate. */
+void pc_story_network_npc_trace(void (*original)(void),uint32_t address)
+{
+#ifdef _WIN32
+    static unsigned observations[4];
+    const unsigned slot=address==0x000D73B0u?0u:address==0x0015C560u?1u:
+        address==0x0015F8C0u?2u:3u;
+    const int local_trace=getenv("TSFP_STORY_TRACE_LOCAL") && !WORD_AT(0x0076B108u) &&
+        WORD_AT(0x0078AD20u)==4u &&
+        ((const uint8_t *)((uintptr_t)0x007DE455u+g_xbox_mem_offset))[0]==10u;
+    if((story_network_session() || local_trace) && getenv("TSFP_STORY_TRACE") &&
+       WORD_AT(0x0079094Cu)<100u && WORD_AT(0x007DE458u)==0x00080008u &&
+       guest_writable(g_esp,8u) && observations[slot]<8u) {
+        ++observations[slot];
+        const uint32_t caller=WORD_AT(g_esp),argument=WORD_AT(g_esp+4u);
+        fprintf(stderr,"[PC-STORY-NPC] enter function=%08X caller=%08X argument=%08X role=%u phase=%u tick=%u replay=%u characters=%u allocation=%u\n",
+            address,caller,argument,WORD_AT(0x0076B140u),WORD_AT(0x0076B1A4u),
+            WORD_AT(0x007DE318u),WORD_AT(0x0076B168u),WORD_AT(0x0074C37Cu),WORD_AT(0x007A3500u));
+        if(address==0x0015F8C0u && guest_writable(g_esp,128u)) {
+            fprintf(stderr,"[PC-STORY-NPC] return-candidates");
+            for(unsigned offset=0;offset<128u;offset+=4u) {
+                const uint32_t value=WORD_AT(g_esp+offset);
+                if(value>=0x00012000u && value<0x003E0000u) fprintf(stderr," %u:%08X",offset,value);
+            }
+            fputc('\n',stderr);
+        }
+        original();
+        fprintf(stderr,"[PC-STORY-NPC] leave function=%08X result=%08X characters=%u allocation=%u\n",
+            address,g_eax,WORD_AT(0x0074C37Cu),WORD_AT(0x007A3500u));
+        return;
+    }
+#else
+    (void)address;
+#endif
+    original();
+}
+
+/* D8E30 updates Story script actors before the first NPC spawn. Its ordinary
+ * network activity predicate only accepts controller slots, so those scripts
+ * never run. Accept an existing non-player Story actor at that caller only.
+ * D8E30's later358560 host-ownership gate remains responsible for simulation. */
+int pc_story_network_actor_active(uint32_t caller,unsigned index,uint32_t entity)
+{
+#ifdef _WIN32
+    if(caller!=0x000D8E5Du || !story_network_session() || !WORD_AT(0x0076B108u) ||
+       WORD_AT(0x0076B1A4u)!=15u || WORD_AT(0x0079094Cu)>=100u ||
+       WORD_AT(0x007DE458u)!=0x00080008u) return 0;
+    const uint8_t *config=(const uint8_t *)((uintptr_t)0x007DE400u+g_xbox_mem_offset);
+    const unsigned role=WORD_AT(0x0076B140u),humans=config[0];
+    if((role!=1u && role!=2u) || !humans || humans>4u ||
+       config[0x55]!=10u || index<humans || index>=32u) return 0;
+    const uint32_t pool=WORD_AT(0x007356D8u),actor=pool+index*0xea0u;
+    if(!pool || actor<pool || !guest_writable(actor,0xea0u)) return 0;
+    /* D8E30 keeps its actual entity in EBX. A dormant Story script actor can
+       have no active body yet; its script must run to create that body. */
+    const uint32_t body=WORD_AT(actor);
+    return entity && guest_writable(entity,0x154u) && WORD_AT(actor+8u)==index &&
+        (!body || body==entity) && WORD_AT(entity+0x7cu)==actor && !WORD_AT(entity+0x150u);
+#else
+    (void)caller;(void)index;(void)entity;return 0;
+#endif
+}
+
+/* Complete the original network-ready exchange without its Arcade staging-pad
+ * body loop. Story uses authored starts through its original scripts and the
+ * pending-context adapter; that loop overwrites them with random team pads.
+ * Original357540 also rejects cinematic flags, scoped off for this call only. */
+void pc_story_network_ready(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t flags=WORD_AT(0x007DE458u),players=WORD_AT(0x00790950u);
+    const uint32_t scene=WORD_AT(0x0079094cu);
+    const int rewards=story_lobby_mission==0u && story_pending_stage==3u && scene==106u;
+    const unsigned role=WORD_AT(0x0076B140u);
+    if(story_network_session() && WORD_AT(0x0076B108u) && (role==1u || role==2u) &&
+       guest_writable(WORD_AT(0x00774028u),0x35u) &&
+       ((flags&0x20000000u) || story_pending_stage==3u || (flags==0x00080008u && story_context_start_pending && story_pending_stage==1u)) &&
+       (players || rewards) && players<=4u &&
+       (scene<100u || rewards)) {
+        WORD_AT(0x007DE458u)=flags&~0x20000000u;
+        WORD_AT(0x00790950u)=0;
+        /* Original64CE0 rejects frontend scene106 even after movie flags are
+           cleared. Rewards have zero bodies, but must finish the same ready
+           exchange before a changed-generation host start can reach guests. */
+        if(rewards) WORD_AT(0x0079094cu)=2u;
+        original(); /* stock ready packet/peer state, with no actor-loop work */
+        WORD_AT(0x0079094cu)=scene;
+        WORD_AT(0x00790950u)=players;WORD_AT(0x007DE458u)=flags;
+        return;
+    }
+#endif
+    original();
+}
+
+void pc_story_network_advance(void (*original)(void))
+{
+#ifdef _WIN32
+    if(story_network_session() && getenv("TSFP_STORY_TRACE")) fprintf(stderr,
+        "[PC-STORY-ADVANCE] caller=%08X role=%u phase=%u scene=%u pending=%u\n",
+        guest_writable(g_esp,4u)?WORD_AT(g_esp):0u,WORD_AT(0x76b140u),
+        WORD_AT(0x76b1a4u),WORD_AT(0x79094cu),story_pending_stage);
+    if(story_network_session() && WORD_AT(0x0076B108u) && (WORD_AT(0x0076B1A4u)==10u || WORD_AT(0x0076B1A4u)==14u || WORD_AT(0x0076B1A4u)==15u) &&
+       WORD_AT(0x0076B140u)==2u && ((WORD_AT(0x007DE458u)&0x20000000u) || story_pending_stage>=2u)) {
+        /* Only the host may advance the original intro's next-load builder.
+           Guests retain the final movie state until its reliable start arrives. */
+        g_esp+=4u;return;
+    }
+#endif
+    original();
+}
+
+/* Original movie completion calls65C70 then60310. A guest waiting for the
+ * host still renders this scene: closing the stream here clears both cached
+ * frame pointers under C95E0. Real scene teardown uses other callers and must
+ * retain the original close/reset, even while the network is loading. */
+void pc_story_network_movie_release(void (*original)(void))
+{
+#ifdef _WIN32
+    const unsigned phase=WORD_AT(0x0076b1a4u);
+    if(story_network_session() && WORD_AT(0x0076b108u) &&
+       WORD_AT(0x0076b140u)==2u && (phase==10u || phase==14u || phase==15u) &&
+       WORD_AT(0x007de30cu)==7u && (WORD_AT(0x007de458u)&0x20000000u) &&
+       guest_writable(g_esp,4u) && WORD_AT(g_esp)==0x00099bbcu) {
+        g_esp+=4u;return;
+    }
+#endif
+    original();
+}
+
+void pc_story_failure_trace(void (*original)(void),uint32_t address);
+void pc_story_network_script_trace(void (*original)(void),uint32_t address)
+{
+#ifdef _WIN32
+    if(story_cine_script(original,address)) return;
+    static unsigned observations;
+    if(story_network_session() && getenv("TSFP_STORY_TRACE") && observations<32u &&
+       WORD_AT(0x0079094Cu)<100u && guest_writable(g_esp,8u)) {
+        ++observations;
+        const uint32_t caller=WORD_AT(g_esp),argument=WORD_AT(g_esp+4u);
+        const uint32_t count=WORD_AT(0x00790950u),pool=WORD_AT(0x007B0C48u);
+        fprintf(stderr,"[PC-STORY-SCRIPT] enter function=%08X caller=%08X argument=%08X role=%u phase=%u scene=%u tick=%u result=%08X current=%08X contexts=",
+            address,caller,argument,WORD_AT(0x0076B140u),WORD_AT(0x0076B1A4u),
+            WORD_AT(0x0079094Cu),WORD_AT(0x007DE318u),WORD_AT(0x007DE45Cu),WORD_AT(0x007B0C7Cu));
+        for(unsigned i=0;i<count && i<4u;i++)
+            fprintf(stderr,"%s%u",i?"/":"",pool && guest_writable(pool+i*0x1584u,0x118u)?WORD_AT(pool+i*0x1584u+0x114u):UINT32_MAX);
+        fputc('\n',stderr);
+        original();
+        fprintf(stderr,"[PC-STORY-SCRIPT] leave function=%08X tick=%u result=%08X contexts=",
+            address,WORD_AT(0x007DE318u),WORD_AT(0x007DE45Cu));
+        for(unsigned i=0;i<count && i<4u;i++)
+            fprintf(stderr,"%s%u",i?"/":"",pool && guest_writable(pool+i*0x1584u,0x118u)?WORD_AT(pool+i*0x1584u+0x114u):UINT32_MAX);
+        fputc('\n',stderr);
+        return;
+    }
+#else
+    (void)address;
+#endif
+    original();
+}
+
+#ifdef _WIN32
+static int story_opening_starts(void)
+{
+    const unsigned role=WORD_AT(0x0076B140u),count=WORD_AT(0x00790950u);
+    return story_network_session() && WORD_AT(0x0076B108u) &&
+        WORD_AT(0x0076B1A4u)==15u && (role==1u || role==2u) &&
+        WORD_AT(0x0079094Cu)==2u && WORD_AT(0x007DE458u)==0x00080008u &&
+        ((const uint8_t *)((uintptr_t)0x007DE455u+g_xbox_mem_offset))[0]==10u &&
+        count>=1u && count<=4u;
+}
+#endif
+
+/* The stock spawn packet carries a signed16 pad index. These three positive
+   indices are reserved only in the first Online Story scene; no level records
+   or ordinary pad tables are modified. Every peer resolves them locally. */
+void pc_story_network_start_record(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t frame=g_esp;
+    const unsigned pad=guest_writable(frame,8u)?WORD_AT(frame+4u):0u;
+    if(story_opening_starts() && pad>=0x7f01u && pad<=0x7f03u) {
+        GuestRegisters saved;save_registers(&saved);
+        const uint32_t source=guest_call(sub_0009A420_gen,1,0x1f40u);
+        if(!story_extra_pad_storage) story_extra_pad_storage=xbox_HeapAlloc(96u,4u);
+        const uint32_t target=story_extra_pad_storage+(pad-0x7f01u)*32u;
+        if(story_extra_pad_storage && guest_writable(source,32u) && guest_writable(target,32u)) {
+            memcpy((void *)((uintptr_t)target+g_xbox_mem_offset),
+                (const void *)((uintptr_t)source+g_xbox_mem_offset),32u);
+            if(story_rejoin_pose_valid) {
+                memcpy((void *)((uintptr_t)(target+12u)+g_xbox_mem_offset),story_rejoin_position,12u);
+                memcpy((void *)((uintptr_t)(target+24u)+g_xbox_mem_offset),&story_rejoin_heading,4u);
+            }
+            float x;memcpy(&x,(const void *)((uintptr_t)(target+12u)+g_xbox_mem_offset),4u);
+            x+=pad==0x7f02u?-2.f:pad==0x7f01u?2.f:4.f;
+            memcpy((void *)((uintptr_t)(target+12u)+g_xbox_mem_offset),&x,4u);
+            restore_registers(&saved);g_eax=target;g_esp=frame+4u;return;
+        }
+        /* A missing template must never index the stock table with7f01/2/3. */
+        restore_registers(&saved);g_eax=source;g_esp=frame+4u;return;
+    }
+#endif
+    original();
+}
+
+/* Keep the original pad tag/index helpers consistent with the private records.
+   They otherwise index the level table directly, bypassing9A420. */
+void pc_story_network_start_tag(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t frame=g_esp;
+    const unsigned pad=guest_writable(frame,8u)?WORD_AT(frame+4u):0u;
+    if(story_opening_starts() && pad>=0x7f01u && pad<=0x7f03u) {
+        WORD_AT(frame+4u)=0x1f40u;original();WORD_AT(frame+4u)=pad;return;
+    }
+#endif
+    original();
+}
+void pc_story_network_start_index(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t frame=g_esp;
+    const uint32_t record=guest_writable(frame,8u)?WORD_AT(frame+4u):0u;
+    if(story_opening_starts() && story_extra_pad_storage &&
+       (record==story_extra_pad_storage || record==story_extra_pad_storage+32u ||
+        record==story_extra_pad_storage+64u)) {
+        g_eax=0x7f01u+(record-story_extra_pad_storage)/32u;g_esp=frame+4u;return;
+    }
+#endif
+    original();
+}
+
+void pc_story_network_spawn_pad(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t frame=g_esp;
+    const uint32_t context=guest_writable(frame,8u)?WORD_AT(frame+4u):0u;
+    const int trace_pad=story_network_session() && getenv("TSFP_STORY_TRACE") &&
+        WORD_AT(0x0076B1A4u)==15u && context && guest_writable(context,0x1508u);
+    const uint32_t cached_pad=trace_pad?WORD_AT(context+0x1504u):0u;
+#endif
+    original();
+#ifdef _WIN32
+    if(trace_pad) {
+        static unsigned pad_observations;
+        if(pad_observations<24u) {
+            ++pad_observations;
+            fprintf(stderr,"[PC-STORY-PAD-SOURCE] role=%u tick=%u slot=%u caller=%08X cached=%08X random=%u selected=%08X\n",
+                WORD_AT(0x0076B140u),WORD_AT(0x007DE318u),WORD_AT(context),
+                WORD_AT(frame),cached_pad,WORD_AT(0x006B988Cu),g_eax);
+        }
+    }
+    if(story_opening_starts() && context && guest_writable(context,0x1508u)) {
+        const uint32_t slot=WORD_AT(context),pool=WORD_AT(0x007B0C48u);
+        if(slot<WORD_AT(0x00790950u) && pool && context==pool+slot*0x1584u) {
+            const uint32_t checkpoint=guest_call(sub_0025EE60,1,0u),selected=g_eax;
+            if(getenv("TSFP_STORY_TRACE")) {
+                static unsigned observations;
+                if(observations++<24u) fprintf(stderr,
+                    "[PC-STORY-OPENING-PAD] role=%u slot=%u checkpoint=%u original=%08X\n",
+                    WORD_AT(0x0076B140u),slot,checkpoint,selected);
+            }
+            if(!checkpoint) {
+                /* The original checkpoint predicate is a read-only getter. Before
+                   the first checkpoint, every peer must resolve the same authored
+                   opening pads even when network setup selects a remote pad later.
+                   Clearing a slot token on its first active body was too early. */
+                if(!slot) {g_eax=0x1f40u;return;}
+                /* The authored local co-op second pad is ahead of the hanging
+                   primary body. Online shares its camera, so every remote body
+                   must start alongside that primary pad instead. */
+                if(!story_extra_pad_storage) story_extra_pad_storage=xbox_HeapAlloc(96u,4u);
+                if(story_extra_pad_storage && guest_writable(story_extra_pad_storage,96u)) {
+                    g_eax=0x7f00u+slot;return;
+                }
+            }
+        }
+    }
+    /* Rule10 selects the Nth valid authored Story start. Maps authored for
+       local co-op can exhaust that list for online slots2/3 and return -1.
+       Reuse the original first-player lookup only after that explicit failure;
+       do not change ownership, body construction or any valid network pad. */
+    if(g_eax!=UINT32_MAX || !story_network_session() ||
+       !WORD_AT(0x0076B108u) || WORD_AT(0x0076B1A4u)!=15u ||
+       ((uint8_t *)((uintptr_t)0x007DE455u+g_xbox_mem_offset))[0]!=10u ||
+       !context || !guest_writable(context,0x1508u)) return;
+    const uint32_t count=WORD_AT(0x00790950u),pool=WORD_AT(0x007B0C48u);
+    const uint32_t slot=WORD_AT(context);
+    if(count<3u || count>4u || slot<2u || slot>=count || !pool ||
+       context!=pool+slot*0x1584u) return;
+    WORD_AT(context)=0u;
+    const uint32_t pad=guest_call(sub_000CF060_gen,1,context);
+    WORD_AT(context)=slot;
+    g_eax=pad;
+    if(getenv("TSFP_STORY_TRACE")) {
+        static unsigned observations;
+        if(observations++<8u)
+            fprintf(stderr,"[PC-STORY-SPAWN-PAD] slot=%u missing authored start; original first-player lookup=%08X\n",slot,pad);
+    }
+#endif
+}
+
+void pc_story_network_frame(void (*original)(void))
+{
+#ifdef _WIN32
+    story_rejoin_frame();
+    if(story_context_start_pending && !story_rejoin_pending && story_pending_stage==1u && story_network_session() &&
+       WORD_AT(0x0076B108u) && WORD_AT(0x0076B1A4u)==15u &&
+       WORD_AT(0x007DE30Cu)==7u && !WORD_AT(0x007DE45Cu)) {
+        const uint32_t count=WORD_AT(0x00790950u),pool=WORD_AT(0x007B0C48u);
+        const uint8_t *config=(const uint8_t *)((uintptr_t)0x007DE400u+g_xbox_mem_offset);
+        if(count && count<=4u && count==config[0] && config[1]==1u &&
+           config[0x55]==10u && config[0x56]==2u && pool &&
+           guest_writable(pool,(count-1u)*0x1584u+0x1508u)) {
+            /* A remote spawn packet can activate one context before this
+               peer reaches its first evaluator. Initialize each still-inactive
+               context independently, retaining D50E0's original ownership
+               predicate. One attempt per pending load; never revive later deaths
+               or restart an already active remote context. */
+            story_context_start_pending=0;
+            unsigned attempted=0;
+            GuestRegisters saved;save_registers(&saved);
+            for(unsigned i=0;i<count;i++)
+                if(WORD_AT(pool+i*0x1584u+0x114u)==16u || WORD_AT(pool+i*0x1584u+0x114u)==4u) {
+                    /* Network staging cached Arcade map pads before the Story
+                       start. Let the original Story selector choose authored
+                       starts for this first owned spawn, not a random map pad.
+                       Active remote contexts and later spawns remain untouched. */
+                    WORD_AT(pool+i*0x1584u+0x1504u)=0x7fffffffu;
+                    guest_call(sub_000D50E0,2,pool+i*0x1584u,1u);
+                    ++attempted;
+                }
+            restore_registers(&saved);
+            story_rejoin_pose_valid=0;
+            if(getenv("TSFP_STORY_TRACE")) {
+                fprintf(stderr,"[PC-STORY-START] original spawn attempted %u/%u contexts; states",attempted,count);
+                for(unsigned i=0;i<count;i++) fprintf(stderr," %u",WORD_AT(pool+i*0x1584u+0x114u));
+                fputc('\n',stderr);
+            }
+        }
+    }
+#endif
+#ifdef _WIN32
+    story_departed_frame();
+    story_rewards_begin();
+    story_human_teams_frame();
+    story_world_frame();
+    story_drop_frame();
+    story_npc_pending_frame();
+    story_shots_frame();
+    story_loadout_frame();
+    story_objectives_frame();
+    story_checkpoint_frame();
+    story_effect_frame();
+    story_dialogue_frame();
+#endif
+    pc_story_failure_trace(original,0x000681C0u);
+#ifdef _WIN32
+    story_cine_frame();
+#endif
+}
+
+/* Trace the original failure boundary without altering its predicate, result,
+   ABI or flags. Normal/native-fallback runs call the original body directly. */
+void pc_story_failure_trace(void (*original)(void),uint32_t address)
+{
+#ifdef _WIN32
+    /* Restarts keep stable slot IDs. A disconnected remote slot must not
+       be recreated just because it remains below the original slot limit. */
+    if(address==0x000D50E0u && guest_writable(g_esp,8u) && story_departed_context(WORD_AT(g_esp+4u))) {
+        g_eax=0;g_esp+=4u;return;
+    }
+    if(address==0x00066fc0u && story_network_session() && WORD_AT(0x0076b108u) &&
+       story_lobby_mission==0u && story_pending_stage==1u && WORD_AT(0x0079094cu)==2u &&
+       (WORD_AT(0x007de45cu)&0x8000u)) {
+        if(WORD_AT(0x0076b140u)==1u) {
+            original(); /* Original score/reward recording runs exactly once. */
+            GuestRegisters saved;save_registers(&saved);
+            guest_call(sub_002EB030,0); /* Original Continue closes the interim menu. */
+            restore_registers(&saved);
+        } else {g_esp+=4u;}
+        return;
+    }
+    static unsigned observations;
+    static unsigned context_wait_observations;
+    /* Startup can replace contexts after a Story script has suspended one.
+       Observe those original calls with the independent script trace budget,
+       rather than losing them to the earlier initialization messages. */
+    if((address==0x000D2FD0u || address==0x000D3C50u ||
+        address==0x000D2CE0u || address==0x000D50E0u) &&
+       story_network_session() && getenv("TSFP_STORY_TRACE") &&
+       WORD_AT(0x0076B1A4u)==15u && (WORD_AT(0x007DE45Cu)&0x02000000u)) {
+        pc_story_network_script_trace(original,address);
+        return;
+    }
+    if(address==0x000D50E0u) {
+        original();return;
+    }
+    /* Four-player preparation consumes the generic initialization trace budget.
+       Preserve a separate bounded observation of the later state-256 transition;
+       the original setter and all of its side effects still execute unchanged. */
+    if(address==0x000D2CE0u && context_wait_observations<8u &&
+       story_network_session() && getenv("TSFP_STORY_TRACE") &&
+       WORD_AT(0x0076B1A4u)==15u && guest_writable(g_esp,12u) &&
+       WORD_AT(g_esp+8u)==256u) {
+        const uint32_t context=WORD_AT(g_esp+4u),caller=WORD_AT(g_esp);
+        if(context && guest_writable(context,0x11cu)) {
+            ++context_wait_observations;
+            const uint32_t before=WORD_AT(context+0x114u);
+            fprintf(stderr,"[PC-STORY-CONTEXT-WAIT] caller=%08X context=%08X tick=%u state=%u requested=256 result=%08X\n",
+                caller,context,WORD_AT(0x007DE318u),before,WORD_AT(0x007DE45Cu));
+            original();
+            fprintf(stderr,"[PC-STORY-CONTEXT-WAIT] applied state=%u result=%08X\n",
+                WORD_AT(context+0x114u),WORD_AT(0x007DE45Cu));
+            return;
+        }
+    }
+    if(story_network_session() && getenv("TSFP_STORY_TRACE") && observations<16u &&
+       WORD_AT(0x0079094Cu)<100u) {
+        const uint32_t caller=guest_writable(g_esp,4u)?WORD_AT(g_esp):0u;
+        const uint32_t state=WORD_AT(0x007DE30Cu),result=WORD_AT(0x007DE45Cu);
+        const uint32_t players=WORD_AT(0x00790950u),pool=WORD_AT(0x007B0C48u);
+        uint32_t states[4]={UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX};
+        for(unsigned i=0;i<players && i<4u;i++) {
+            const uint32_t field=pool+i*0x1584u+0x114u;
+            if(pool && field>=pool && guest_writable(field,4u)) states[i]=WORD_AT(field);
+        }
+        const int direct=address!=0x000681C0u;
+        if(direct) {
+            ++observations;
+            fprintf(stderr,"[PC-STORY-FAILURE] enter function=%08X caller=%08X tick=%u state=%u result=%08X reason=%u players=%u pool=%08X contexts=%08X/%08X/%08X/%08X\n",
+                address,caller,WORD_AT(0x007DE318u),state,result,WORD_AT(0x006F11A4u),
+                players,pool,states[0],states[1],states[2],states[3]);
+        }
+        original();
+        if(WORD_AT(0x007DE30Cu)!=state || WORD_AT(0x007DE45Cu)!=result) {
+            if(!direct) ++observations;
+            fprintf(stderr,"[PC-STORY-FAILURE] leave function=%08X caller=%08X tick=%u state=%u->%u result=%08X->%08X reason=%u\n",
+                address,caller,WORD_AT(0x007DE318u),state,WORD_AT(0x007DE30Cu),
+                result,WORD_AT(0x007DE45Cu),WORD_AT(0x006F11A4u));
+        }
+        return;
+    }
+#else
+    (void)address;
+#endif
+    original();
+}
+
+/* Arcade's network tick removes every character outside its player actor pool
+ * from the active character list. Story NPCs belong to that list too. Keep the
+ * scene's authored membership; deaths and script-driven removals still use the
+ * original routine from their own callers. This does not replicate NPC state. */
+/* Both initial D7570 and the later network pump can assign Arcade teams.
+   Story uses team1 for every human, including remote bodies during loading. */
+#ifdef _WIN32
+extern void sub_000D7550(void);
+static int story_human_team_scope(uint32_t actor)
+{
+    const uint32_t pool=WORD_AT(0x007356D8u),phase=WORD_AT(0x0076B1A4u);
+    const unsigned humans=*(const uint8_t *)((uintptr_t)0x007DE400u+g_xbox_mem_offset);
+    const unsigned role=WORD_AT(0x0076B140u);
+    return story_network_session() && WORD_AT(0x0076B108u) &&
+        (phase==10u || phase==14u || phase==15u) && (role==1u || role==2u) &&
+        WORD_AT(0x0079094Cu)<100u && WORD_AT(0x007DE458u)==0x00080008u &&
+        *(const uint8_t *)((uintptr_t)0x007DE455u+g_xbox_mem_offset)==10u &&
+        humans && humans<=4u && pool && guest_writable(actor,0xea0u) &&
+        WORD_AT(actor+8u)<humans && actor==pool+WORD_AT(actor+8u)*0xea0u;
+}
+#endif
+
+#ifdef _WIN32
+static void story_human_teams_frame(void)
+{
+    const uint32_t contexts=WORD_AT(0x007B0C48u),actors=WORD_AT(0x007356D8u);
+    const unsigned count=WORD_AT(0x00790950u);
+    if(!count || count>4u || !contexts || !actors ||
+       count!=*(const uint8_t *)((uintptr_t)0x007DE400u+g_xbox_mem_offset)) return;
+    GuestRegisters saved;save_registers(&saved);
+    for(unsigned slot=0;slot<count;slot++) {
+        const uint32_t context=contexts+slot*0x1584u,actor=actors+slot*0xea0u;
+        if(!guest_writable(context,0x118u) || !story_human_team_scope(actor)) continue;
+        const uint32_t entity=WORD_AT(actor);
+        if(!entity || !guest_writable(entity,0x154u) || WORD_AT(context)!=slot ||
+           WORD_AT(context+0x14u)!=entity || WORD_AT(entity+0x7cu)!=actor ||
+           WORD_AT(entity+0x150u)!=context) continue;
+        WORD_AT(0x00777288u+slot*0x124u)=1u;
+        ((uint8_t *)((uintptr_t)0x007de424u+g_xbox_mem_offset))[slot]=1u;
+        /* Remote construction can precede eligible Story initialization. Once
+           its real body/context exists, apply the original shared-human team
+           before NPC simulation; leave already-correct teams untouched. */
+        if(WORD_AT(actor+0x84u)!=1u) guest_call(sub_000D7550,2,actor,1u);
+    }
+    restore_registers(&saved);
+}
+#endif
+
+/* D7570 can also run after the frame adapter, writing slot+1 directly.
+ * Correct its completed human bodies immediately, preserving original results. */
+void pc_story_network_team_init(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t frame=g_esp;
+    const uint32_t actor=guest_writable(frame,8u)?WORD_AT(frame+4u):0u;
+#endif
+    original();
+#ifdef _WIN32
+    if(story_human_team_scope(actor)) {
+        /* D7570 can finish before the caller attaches the body/context.
+           Its actor slot is already valid; D7550 writes only actor team data. Waiting
+           for complete backlinks leaves a visible Arcade team until next tick. */
+        GuestRegisters saved;save_registers(&saved);
+        guest_call(sub_000D7550,2,actor,1u);restore_registers(&saved);
+    }
+#endif
+}
+
+void pc_story_network_team(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t frame=g_esp;
+    const int valid=guest_writable(frame,12u);
+    const uint32_t actor=valid?WORD_AT(frame+4u):0u;
+    const int scope=valid && story_human_team_scope(actor);
+    const uint32_t saved=scope?WORD_AT(frame+8u):0u;
+    if(scope) WORD_AT(frame+8u)=1u;
+#endif
+    original();
+#ifdef _WIN32
+    if(scope) WORD_AT(frame+8u)=saved;
+#endif
+}
+
+#ifdef _WIN32
+static int story_departed_context(uint32_t context)
+{
+    const unsigned role=WORD_AT(0x76b140u),phase=WORD_AT(0x76b1a4u);
+    if(!story_network_session() || story_lobby_mission!=0u || story_pending_stage!=1u ||
+       !WORD_AT(0x76b108u) || (role!=1u && role!=2u) || (phase!=14u && phase!=15u) ||
+       WORD_AT(0x79094cu)!=2u || WORD_AT(0x7de458u)!=0x80008u ||
+       !guest_writable(context,0x1584u)) return 0;
+    const uint32_t pool=WORD_AT(0x7b0c48u);
+    const unsigned slot=WORD_AT(context),count=*(const uint8_t *)((uintptr_t)0x7de400u+g_xbox_mem_offset);
+    return pool && count && count<=4u && slot<count && context==pool+slot*0x1584u &&
+        WORD_AT(context+4u)==UINT32_MAX && !(WORD_AT(0x77728cu+slot*0x124u)&1u);
+}
+
+static void story_departed_frame(void)
+{
+    const uint32_t pool=WORD_AT(0x7b0c48u);
+    const unsigned count=WORD_AT(0x790950u);
+    if(!pool || !count || count>4u) return;
+    GuestRegisters saved;save_registers(&saved);
+    for(unsigned slot=0;slot<count;slot++) {
+        const uint32_t context=pool+slot*0x1584u;
+        if(!story_departed_context(context)) continue;
+        /* The original checkpoint/level constructors can restore a context
+           without passing D50E0's final spawn entry. Reconcile those too. */
+        const uint32_t entity=WORD_AT(context+0x14u);
+        if(WORD_AT(context+0x114u)!=16u) guest_call(sub_000D2CE0,2,context,16u);
+        if(guest_writable(entity,0x154u) && WORD_AT(entity+0x150u)==context &&
+           (WORD_AT(entity+0x28u)&0x61u)) {
+            guest_call(sub_0015BCC0_gen,1,entity);
+            /* Same active/render bits retired by native35C274/35C283. */
+            WORD_AT(entity+0x28u)&=~0x61u;
+        }
+    }
+    restore_registers(&saved);
+}
+#endif
+
+/* Original35BEF0 kills a departing peer's body through BABA0 before its
+ * normal roster/character cleanup. Story interprets that as a campaign death.
+ * Suppress only this exact remote-human departure; real damage stays original. */
+void pc_story_network_departure_death(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t frame=g_esp;
+    if(story_network_session() && story_lobby_mission==0u && story_pending_stage==1u &&
+       WORD_AT(0x76b108u) && WORD_AT(0x76b1a4u)==15u && WORD_AT(0x79094cu)==2u &&
+       WORD_AT(0x7de458u)==0x80008u && guest_writable(frame,8u) &&
+       WORD_AT(frame)==0x35c199u) {
+        const uint32_t hit=WORD_AT(frame+4u);
+        const uint32_t entity=guest_writable(hit,4u)?WORD_AT(hit):0u;
+        const uint32_t context=guest_writable(entity,0x154u)?WORD_AT(entity+0x150u):0u;
+        const uint32_t pool=WORD_AT(0x7b0c48u);
+        const unsigned slot=guest_writable(context,0x1584u)?WORD_AT(context):16u;
+        const unsigned count=*(const uint8_t *)((uintptr_t)0x7de400u+g_xbox_mem_offset);
+        if(pool && count && count<=4u && slot<count && context==pool+slot*0x1584u &&
+           WORD_AT(context+4u)==UINT32_MAX && WORD_AT(context+0x14u)==entity) {
+            GuestRegisters saved;save_registers(&saved);
+            guest_call(sub_000D2CE0,2,context,16u); /* Native inactive state, no death. */
+            restore_registers(&saved);
+            fprintf(stderr,"[PC-STORY-DEPARTURE] retire slot=%u role=%u\n",slot,WORD_AT(0x76b140u));
+            g_eax=0;g_esp+=4u;return;
+        }
+    }
+#endif
+    original();
+}
+
+void pc_story_network_character_remove(void (*original)(void))
+{
+#ifdef _WIN32
+    if(story_network_session() && WORD_AT(0x0076B108u) &&
+       (story_context_start_pending || (WORD_AT(0x0079094Cu)<100u &&
+        ((const uint8_t *)((uintptr_t)0x007DE455u+g_xbox_mem_offset))[0]==10u)) &&
+       guest_writable(g_esp,4u) && WORD_AT(g_esp)==0x00355EA4u) {
+        /* The network pump also runs during loading. Waiting for phase15
+           already allowed newly created Story characters to be pruned. */
+        if(getenv("TSFP_STORY_TRACE")) {
+            static unsigned observations;
+            if(observations++<8u) fprintf(stderr,
+                "[PC-STORY-ROSTER] retained character phase=%u scene=%u pending=%u count=%u\n",
+                WORD_AT(0x0076B1A4u),WORD_AT(0x0079094Cu),story_context_start_pending,
+                WORD_AT(0x0074C37Cu));
+        }
+        g_esp+=4u;return;
+    }
+#endif
+    original();
+}
+#include "pc_story_npc.inc"
+#include "pc_story_drops.inc"
+#include "pc_story_loadout.inc"
+#include "pc_story_shots.inc"
+
+#include "pc_story_checkpoint.inc"
+#include "pc_story_restart.inc"
+#include "pc_story_objectives.inc"
+#include "pc_story_effects.inc"
+#include "pc_story_cinematic.inc"
+#include "pc_story_dialogue.inc"
+#include "pc_story_world.inc"
+#include "pc_network_ammo.inc"
