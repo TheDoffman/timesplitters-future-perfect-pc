@@ -8075,7 +8075,9 @@ checks pass. Local uncommitted source based on c511bd52. Native Mac acceptance:
 Assault Mars Prison Red, movement/turning, repeated/multiple markers, off-screen
 arrows,4:3/16:9/ultrawide and split-screen. Mac build/gameplay unverified here.
 
-## MAC-127 - Complete launcher language packs (#263) - Awaiting validation
+### MAC-127 - Complete launcher language packs
+
+- **Status:** Awaiting validation
 
 Source: [PR #436](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/436),
 implementation commit 1d262bb0; GitHub host validation pending.
