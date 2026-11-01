@@ -1,6 +1,7 @@
 """Execute the real language/EEPROM paths, including section checksum consistency."""
 from pathlib import Path
 import os
+import re
 import subprocess
 import sys
 import pytest
@@ -34,9 +35,14 @@ def executable(tmp_path_factory):
         "NTSTATUS __stdcall xbox_ExQueryNonVolatileSetting(")]
     inherited = (ROOT / "vendor/ts3FPrecomp/source/tests/kernel_audio_setting/test_main.c").read_text(encoding="utf-8")
     inherited = inherited.replace("int main(void)", "int inherited_checks(void)")
+    # Keep the inherited assertions/checksum oracle, with diagnostics matching
+    # the fixed-width Xbox types on LP64 hosts as well as Windows.
+    inherited = inherited.replace('%08lx', '%08" PRIx32 "').replace('%lx', '%" PRIx32 "').replace('%lu', '%" PRIu32 "')
+    inherited = re.sub(r'\bstatus(?=\s*,)', '(uint32_t)status', inherited)
     c = folder / "language.c"
     c.write_text('''#include "kernel.h"
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 #define xbox_log(...) ((void)0)
@@ -54,7 +60,9 @@ int main(int argc,char **argv) {
 }
 ''', encoding='utf-8')
     extra = (["/I"+str(runtime/"src/kernel"), "/I"+str(runtime/"src"), "/D_CRT_SECURE_NO_WARNINGS"] if os.name=="nt"
-             else ["-I"+str(runtime/"src/kernel"), "-I"+str(runtime/"src")])
+             # Vendor headers retain their production diagnostics; the extracted
+             # implementation and oracle still compile with -Werror.
+             else ["-isystem", str(runtime/"src/kernel"), "-isystem", str(runtime/"src")])
     return _compile(folder, c, extra=extra)
 
 

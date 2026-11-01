@@ -25,3 +25,9 @@ both original and native frame rates. Tests execute both region values and the
 alternate original boot routine 0003C2D0; native_timing_guest.c verifies actual
 production macro wiring and unchanged unrelated accesses. See STATUS for live
 verification; EEPROM consistency alone never proves title asset selection.
+
+The portable EEPROM fixture adapts inherited printf diagnostics to inttypes.h
+32-bit formats, casting NTSTATUS for hexadecimal output. Non-Windows compilers
+treat vendor include directories as system headers (the pinned kernel header
+contains a nested-comment warning); extracted implementation/oracle code keeps
+-Werror and all inherited assertions/checksum checks. Vendor bytes are unchanged.

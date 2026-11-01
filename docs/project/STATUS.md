@@ -1,3 +1,13 @@
+## PR436 LP64 fixture diagnostic repair (2026-11-01)
+
+Mac native CI on51ca1f5a completed2283 cases/327 skips/18 subtests, but the11
+parameterized EEPROM cases could not compile. The new fixture inherited Windows
+%long diagnostics for32-bit Xbox types and a vendor kernel-header nested-comment
+warning. Its diagnostics now use inttypes.h32-bit formats with an explicit
+NTSTATUS cast. Vendor headers are system includes on non-Windows, while the
+extracted production implementation/oracle retains-Werror and every assertion.
+Pinned vendor source is unchanged. New native host CI is required before merging.
+
 ## PR436 Mac package capability repair (2026-11-01)
 
 Review of source1d262bb0 identified that package-native-mac.py rebuilt the release
