@@ -1,3 +1,5 @@
+<a href="https://discord.gg/hFkfcCUm56"><img align="right" src="docs/assets/discord-community.svg" alt="Join the TimeSplitters: Future Perfect Recomp Discord community" title="Join our Discord community" width="32" height="32"></a>
+
 <div align="center">
 
 <a name="timesplitters-future-perfect"></a>
@@ -143,10 +145,6 @@ When the optional pack is available, use **Game settings → Graphics & resoluti
 | [Multiplayer](docs/players/multiplayer.md) | [Release publishing](docs/release/releasing.md) |
 | [Textures](docs/textures/textures.md) | [Isolated gameplay testing](docs/development/testing-profile.md) |
 | [Crash reports](docs/players/windows-crash-logger.md) | [Repository map for agents](docs/agent-context/README.md) |
-
-<p><a href="https://discord.gg/hFkfcCUm56"><img src="docs/assets/discord-community.svg" alt="Join the TimeSplitters: Future Perfect Recomp Discord community" width="180" height="44"></a></p>
-
-Find players, get help, and share feedback with the community.
 
 **[Report a bug](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)**
 with your installed versions, platform and steps to reproduce. The launcher's
