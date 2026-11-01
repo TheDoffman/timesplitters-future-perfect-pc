@@ -86,3 +86,13 @@ filter, then restores verified pointer-only working files. Every index pointer
 must match the source SHA-256/size and source payloads are rehashed afterward.
 The release publisher preserves prior immutable versions and streams one bounded
 ZIP at a time; launchers need the new download manifest merged into main.
+
+`texture-release.find_release` falls back to authenticated paginated release
+listings when a draft's tag endpoint is absent. This preserves resumable drafts
+instead of attempting duplicate creation; remote verification shares the lookup.
+The release regression suite covers a draft found beyond the first listing page.
+Default release copy now says Enhanced textures and refers to actual dimensions
+in metadata, avoiding incorrect blanket 4K/redesign claims for 2x upscale packs.
+Final publication explicitly supplies the intended tag as well as `draft=false`,
+preventing an untagged release when GitHub finalizes a draft without an existing
+tag. The publication transaction regression checks the resulting exact tag.

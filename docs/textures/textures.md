@@ -10,7 +10,7 @@ archives and Classic fallback are preserved. See [STATUS](../project/STATUS.md).
 The older authored/publication inventory below is historical; it is preserved
 for recovery and is superseded by this complete original-based 2x pack.
 
-This branch contains **2,261 replacements**, about **1.91 GiB installed**, covering
+The earlier authored pack contained **2,261 replacements**, about **1.91 GiB installed**, covering
 approximately 33% of the 6,812 known supported keys. The menu progress and
 remaining gaps are recorded in [Menu texture overhaul](main-menu-textures.md).
 These additions enter optional texture downloads through a published pack and
@@ -30,9 +30,12 @@ remains incomplete. Publication does not establish in-game fidelity.
 
 ## Install through the launcher
 
-Pack [0.1.0-beta.1](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/textures-v0.1.0-beta.1)
-publishes the 2,261 replacements from main `0ccf654f`. Its verified download index
-must be present on main before the launcher can discover it.
+Pack [0.2.0-beta.1](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/textures-v0.2.0-beta.1)
+replaces the old artwork with all 6,812 original-based 2x replacements, including
+the approved character icons. Its 105 verified download parts total about
+700 MiB; installed size is about 1.47 GiB. The verified download index must be
+merged into main before launchers discover it. The prior 0.1.0-beta.1 release
+remains available for recovery.
 
 The shared Windows/Mac launcher offers **Game settings → Graphics &
 resolution → Check texture downloads → Download / update textures**. Normal game

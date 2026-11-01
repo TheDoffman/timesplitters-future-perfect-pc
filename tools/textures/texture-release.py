@@ -202,9 +202,25 @@ def credentials():
     return fields['password']
 
 
+def find_release(api, base, tag):
+    release = api.call('GET', base+'/releases/tags/'+tag)
+    if release:
+        return release
+    # GitHub can omit a draft from the tag endpoint before its tag exists.
+    # Authenticated release listings still expose it, allowing safe resumption.
+    for page in range(1, 101):
+        releases = api.call('GET', base+f'/releases?per_page=100&page={page}') or []
+        for candidate in releases:
+            if candidate['tag_name'] == tag:
+                return candidate
+        if len(releases) < 100:
+            return None
+    raise ValueError('Release lookup exceeded its pagination bound')
+
+
 def verify_remote(manifest, api):
     validate_manifest(manifest)
-    release = api.call('GET', f'/repos/{REPO}/releases/tags/textures-v{manifest["version"]}')
+    release = find_release(api, f'/repos/{REPO}', 'textures-v'+manifest['version'])
     if not release or release['draft']:
         raise ValueError('The configured texture release is not published')
     assets = {a['name']: a for a in release['assets']}
@@ -225,21 +241,20 @@ def publish(pack, version, output, work, api):
         raise ValueError('At least 160 MiB of working space is required')
     base = f'/repos/{REPO}'
     tag = 'textures-v'+version
-    release = api.call('GET', base+'/releases/tags/'+tag)
+    release = find_release(api, base, tag)
     if not release:
         revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
         release = api.call('POST', base+'/releases', {
             'tag_name': tag, 'target_commitish': revision,
-            'name': 'Optional 4K textures v'+version, 'draft': True,
+            'name': 'Enhanced textures v'+version, 'draft': True,
             'prerelease': '-' in version, 'make_latest': 'false',
-            'body': ('Optional texture alpha for TimeSplitters: Future Perfect. '
+            'body': ('Optional Enhanced texture pack for TimeSplitters: Future Perfect. '
                      'Use the launcher’s Game settings → Graphics & resolution → '
                      'Download / update textures. The launcher downloads and installs '
                      'these parts automatically; do not concatenate the ZIPs.\n\n'
-                     f'{len(records):,} replacements, up to 4K for selected surfaces. '
-                     'This is an incomplete modern reinterpretation, not a full-game remaster. '
-                     'Generated source artwork is resampled where recorded in the sanitized metadata. '
-                     'Scene fidelity is not fully validated. Original textures remain the fallback.\n\n'
+                     f'{len(records):,} replacements. Dimensions and resampling are recorded '
+                     'in the sanitized metadata. Coverage and scene fidelity are not fully '
+                     'validated. Original textures remain available in Classic mode.\n\n'
                      'No ISO, game executable, original game archives, personal settings or saves are included.')
         })
     assets = {a['name']: a for a in release['assets']}
@@ -275,7 +290,8 @@ def publish(pack, version, output, work, api):
             raise ValueError('Published release is missing its manifest; use a new version')
         api.call('POST', base+f'/releases/{release["id"]}/assets?name=texture-pack.json', upload=metadata)
     if release['draft']:
-        api.call('PATCH', base+f'/releases/{release["id"]}', {'draft': False, 'make_latest': 'false'})
+        api.call('PATCH', base+f'/releases/{release["id"]}',
+                 {'tag_name': tag, 'draft': False, 'make_latest': 'false'})
     url = verify_remote(manifest, api)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(manifest, indent=2)+'\n', encoding='utf-8')

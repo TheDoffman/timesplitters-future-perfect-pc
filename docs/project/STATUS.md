@@ -4292,11 +4292,22 @@ payloads were rehashed afterward. Original archives, private production records,
 old artwork and recovery packs remain local; the prior release stays immutable.
 
 The source branch was rebased onto main 0b0fcb8b, preserving both sides of four
-documentation conflicts. 164 targeted packaging/upscale/planner/CI-scope tests
+documentation conflicts. 165 targeted packaging/upscale/planner/CI-scope tests
 and 21 subtests pass. A broader texture-test attempt could not run prepared
 runtime-dependent fixtures in this source-only worktree; no renderer change is
-included. Version 0.2.0-beta.1 publication and download-manifest integration are
-the next steps; export alone does not make this discoverable in launchers.
+included. Optional release textures-v0.2.0-beta.1 is now published from bcb8c1ae, with
+105 immutable parts totaling 733,537,298 download bytes. All remote part sizes,
+SHA-256 digests and the uploaded manifest digest match. The tag points to the
+correct source commit. Both previous artwork and release remain preserved.
+The generated schema-3 download index now advertises 6,812 pairs / 1,574,002,482
+installed bytes; launcher discovery still requires this index to merge into main.
+
+Publication exposed draft lookup and final tag handling gaps. The publisher now
+finds pre-tag drafts through authenticated paginated listings and explicitly
+supplies the intended tag when publishing. Default copy says Enhanced textures
+and refers to actual dimensions instead of blanket 4K/redesign claims. Tests
+cover paginated draft lookup and preservation of the exact publication tag.
+Only compiled DDS/sanitized metadata are public; private records remain local.
 
 ### Approved character icons activated (2026-11-01)
 
