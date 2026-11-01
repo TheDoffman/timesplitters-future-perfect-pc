@@ -1,3 +1,40 @@
+## Story beta.1 corrected in place - 2026-11-01
+
+At the user's explicit request, republished the existing mutable preview
+[v0.5.0-story-coop-beta.1](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/v0.5.0-story-coop-beta.1)
+at07:42:30UTC, retaining release ID430413073 and its URL. Its source tag and
+BUILD.json now identify265a4405be39ed969445414a8129ef274bb23aa7, replacing the
+original7262f76d build. All three public asset digests, tag/source identity, and
+public checksum/BUILD.json downloads were verified. Corrected ZIP SHA-256:
+81677afe0e22b9469df426ddffe5c8f6c980b8fda09d03c9bccf14145b8f6680.
+Corrected EXE SHA-256:fdca6efe2bfa4785021f2da6546df4224a68bcd52df96000bd410bd69261f7a5.
+
+The real linked preview build reports0.5.0-story-coop-beta.1/Story chooser enabled;
+the stable linked build reported0.4.0/disabled. The corrected packaged EXE has
+one preview version string and no development fallback string. This verifies
+compiled flag behavior, not physical menu interaction or a full mission.
+Windows11 x64/Python3.14.2/MSBuild17.12.6: official build and full patch checks,
+3120 release tests/112 subtests with55 expected skips in448.40s, actual1283-file
+fresh install and upgrade/preservation, and portable Online three-peer checks
+passed. Total preparation601.81s;400.17GiB free beforehand. Shared Windows/Mac
+CI for PR451 passed runtime/launcher checks; physical Mac Story acceptance and
+native Story transport remain pending.
+
+GitHub renamed the release to untagged-* on redrafting. The guarded upload
+stopped before replacing assets. After inspecting the same draft ID/source and
+original asset hashes, recovery explicitly restored tag_name by release ID,
+uploaded/verified the three corrected assets and republished. The publisher and
+its simulated GitHub regression now include that redraft behavior;141 targeted
+publisher tests pass with9 prerequisite skips. Original source/hash/metadata
+records are retained locally for audit; normal publishing still refuses existing
+releases and Stable repair. The explicit exception never changes unrelated tags.
+
+Same-version installations require a fresh download/reinstall; no newer-version
+notification is promised. Release notes explain preservation of Data, Settings,
+Saves and Textures. Latest remains the other user's launcher-v1.4.2; this task did
+not publish a launcher. The previously deferred sniper freeze and other-mission
+validation limits remain unchanged.
+
 ## Story preview build-version repair - 2026-11-01
 
 The initial beta.1 archive had the correct preview watermark but hid Story's

@@ -1035,8 +1035,10 @@ def setup_preview_repair(publisher, monkeypatch):
             state['mutations'].append(('edit',args))
             assert '--latest=false' in args
             state['release']['draft']='--draft=true' in args
+            if state['release']['draft']:state['release']['tag_name']='untagged-redrafted-preview'
             return ''
         if args[:2]==('release','upload'):
+            assert state['release']['tag_name']==publisher.tag, 'Tag lookup fails until the redrafted release association is restored'
             state['mutations'].append(('upload',args))
             assert '--clobber' in args
             state['release']['assets']=[dict(name=p.name,size=p.stat().st_size+(1 if publisher.bad_upload else 0),state='uploaded',digest='sha256:'+module.digest(p)) for p in (publisher.archive,publisher.checksum,publisher.metadata)]
