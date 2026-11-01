@@ -1,0 +1,45 @@
+--- a/src/kernel/kernel_xbox.c
++++ b/src/kernel/kernel_xbox.c
+@@ -15,6 +15,20 @@
+ #include <string.h>
+ /* getenv: without <stdlib.h> its pointer is truncated to int. */
+ #include <stdlib.h>
++
++/* Select a complete language through the console setting. The title owns
++ * pack, subtitle, menu and localized cutscene selection. Never rename data. */
++static ULONG tsfp_game_language(void)
++{
++    const char *language = getenv("TSFP_GAME_LANGUAGE");
++    if (!language || !strcmp(language, "en")) return 1;
++    /* Xbox language IDs: 2 is Japanese, which this disc does not supply. */
++    if (!strcmp(language, "de")) return 3;
++    if (!strcmp(language, "fr")) return 4;
++    if (!strcmp(language, "es")) return 5;
++    if (!strcmp(language, "it")) return 6;
++    return 1;
++}
+ 
+ /* ============================================================================
+  * Exported Data Objects
+@@ -262,7 +276,7 @@
+     eeprom_put32(img, 0x58, console_av_region());     /* AV region */
+     eeprom_put32(img, 0x30, eeprom_checksum(img + 0x34, 0x2C));
+     /* user section: time zone 0x64-0x8F left zero (see above) */
+-    eeprom_put32(img, 0x90, 1);                        /* language: English */
++    eeprom_put32(img, 0x90, tsfp_game_language());      /* selected language */
+     if (recomp_config_bool("RECOMP_WIDESCREEN", "widescreen", 0))
+         video |= XC_VIDEO_FLAGS_WIDESCREEN;
+     eeprom_put32(img, 0x94, XC_VIDEO_RAW(video));      /* video flags */
+@@ -306,9 +320,9 @@
+ 
+     switch (ValueIndex) {
+     case XC_LANGUAGE:
+-        /* English = 1 */
+-        if (ValueLength >= sizeof(ULONG)) {
+-            *(PULONG)Value = 1;
++        /* Same value as the full/user EEPROM images. */
++        if (ValueLength >= sizeof(ULONG)) {
++            *(PULONG)Value = tsfp_game_language();
+             if (Type) *Type = 4; /* REG_DWORD */
+             if (ResultLength) *ResultLength = sizeof(ULONG);
+         }

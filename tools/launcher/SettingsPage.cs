@@ -50,7 +50,7 @@ namespace TimeSplitters.Launcher
         readonly Slider fov;
         readonly TextBox sensitivity, width, height, discordId;
         readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled, enhancedTextures;
-        readonly ComboBox device, resolution, aspect, scale, filtering, frameRate;
+        readonly ComboBox device, resolution, aspect, scale, filtering, frameRate, languagePack;
         readonly TextBlock performanceAdvice;
         readonly Button[,] bindingButtons = new Button[GameSettings.Actions.Length,GameSettings.BindingSlots];
         static readonly string[] Devices = { "keyboard", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "none" };
@@ -268,10 +268,16 @@ namespace TimeSplitters.Launcher
             var audioHint=Text("Beta: directional world effects, wall filtering and a softer background ambience mix. Requires a game build with Enhanced Audio support.",12);
             audioHint.Name="EnhancedAudioBetaNote";audioHint.Foreground=Muted;audio.Children.Add(audioHint);
             audio.Children.Add(Text("Defaults OFF. Shares the in-game Audio Options preference. Save before launch; you can also switch it live from the game's audio menu.",12));
-            tabs.Items.Add(new TabItem {Header="Audio",Content=Scroll(audioPanel)});
+            var language=PageTheme.Section(audioPanel,"Game language","Select one complete language pack for your next launch.");
+            languagePack=Choices(GameSettings.LanguagePackLabels,GameSettings.LanguagePackLabels[Array.IndexOf(GameSettings.LanguagePacks,model.LanguagePack)]);
+            languagePack.Name="LanguagePack";Field(language,"Language pack",languagePack);
+            var languageHint=Text("Uses the language packs included in your imported game data. The game applies the selected language to voices and text together. Save and restart to apply.",12);
+            languageHint.Name="LanguagePackNote";language.Children.Add(languageHint);
+            if(!model.CanSelectLanguagePack)language.Children.Add(Text("Update the game to enable language-pack selection. Your saved choice is kept.",12));
+            tabs.Items.Add(new TabItem {Header="Audio & language",Content=Scroll(audioPanel)});
             foreach(var entry in new[]{sensitivity,width,height,discordId})Ui.TextChanged(entry,RefreshSaveState);
             foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,discordEnabled,enhancedTextures,enhancedAudio})Ui.CheckedChanged(check,RefreshSaveState);
-            foreach(var choice in new[]{device,scale,filtering,frameRate})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
+            foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
             Ui.ValueChanged(fov,RefreshSaveState);
         }
         string Draft()
@@ -279,7 +285,7 @@ namespace TimeSplitters.Launcher
             return Json.Encode(new object[]{sensitivity.Text,width.Text,height.Text,discordId.Text,
                 enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,
                 skipSplashes.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
-                device.SelectedIndex,scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,
+                device.SelectedIndex,scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,
                 (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
         void RefreshSaveState()
@@ -425,6 +431,7 @@ namespace TimeSplitters.Launcher
                 model.NativeFps=GameSettings.NativeFrameRates[frameRate.SelectedIndex];
                 model.EnhancedTextures=enhancedTextures.IsChecked==true;
                 model.EnhancedAudio=enhancedAudio.IsChecked==true;
+                model.LanguagePack=GameSettings.LanguagePacks[languagePack.SelectedIndex];
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
                 model.DiscordEnabled=discordEnabled.IsChecked==true;model.DiscordApplicationId=discordId.Text.Trim();
                 model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem);

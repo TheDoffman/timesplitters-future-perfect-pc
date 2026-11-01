@@ -503,3 +503,30 @@ its session-only preference is passed by `GameSettings.StartInfo` through
 capture is implemented; native Mac collection is implemented but requires host
 validation and may report process-memory-access-denied under macOS policy. Tests cover
 new file inclusion while retaining unknown-file exclusion and bounded exports.
+
+## Complete game language packs (discussion #263)
+
+`GameSettings.LanguagePack` stores en/fr/de/it/es under the existing controls
+JSON's `launcher.language_pack` key. The shared `SettingsPage` Audio & language
+tab provides one complete-language selector, English by default. Normal draft,
+Save/Cancel, concurrent-edit detection and rollback cover this key on both hosts.
+`StartInfo` exports `TSFP_GAME_LANGUAGE` after removing inherited overrides and
+checks the selected non-English `sounds_{f,g,i,s}.pak` signature before launch.
+Imported files are never renamed, copied or rewritten. Both launchers use this
+same model/page; NativeHost preserves the language environment setting.
+
+Game manifests advertise `language_packs: true`. Missing/false flags retain saved
+preferences but block non-English Save/launch with an update message; English
+continues to work with older games. Source builds without BUILD.json are treated
+as development builds. Windows package and native Mac build metadata emit the
+capability for builds containing platform patch 2310. There are no independent
+voice/text selectors. Shared UI contracts exercise every language, return to
+English, Cancel/dirty state, unchanged archive bytes, missing/invalid packs,
+older releases and conflicting/malformed preferences. Native Mac execution is
+pending MAC-126; see STATUS for measured host evidence.
+
+The US-gate repair also requires the shared guest hooks in
+src/interface/pc_game_language_guest.h, composed in pc_native_numeric.h.
+Correct launcher environment/EEPROM output alone was insufficient on the US
+title. The local combined test runtime must be refreshed after this rebuild;
+its separate Settings/Saves and linked Data remain intact.

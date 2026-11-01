@@ -8055,3 +8055,33 @@ box and text retain proportional scaling. Windows captured-frame replay at
 checks pass. Local uncommitted source based on c511bd52. Native Mac acceptance:
 Assault Mars Prison Red, movement/turning, repeated/multiple markers, off-screen
 arrows,4:3/16:9/ultrawide and split-screen. Mac build/gameplay unverified here.
+
+## MAC-126 - Complete launcher language packs (#263) - Awaiting validation
+
+Local uncommitted source on `feature/launcher-language-packs`, based on
+4c49f143. Shared GameSettings/SettingsPage save one en/fr/de/it/es language,
+pass TSFP_GAME_LANGUAGE and validate the selected imported pack. Shared platform
+patch 2310 answers individual and section EEPROM reads consistently so the
+original title selects complete language assets. Both build/package manifests
+advertise support; older games keep saved choices and reject unsupported launch.
+No separate audio/text controls or original-data changes. NativeHost already
+preserves the shared launch environment; no duplicate adapter is needed.
+
+Windows launcher build/full regressions, game Build action, production EEPROM
+contracts and translated supported-US pack selection pass; evidence is in
+[STATUS](STATUS.md#launcher-language-packs-2026-10-31). Native Mac build and shared
+UI execution remain unverified on this Windows host. Acceptance on native Mac:
+build/test/prerequisite checks, installed/development paths, all five language
+round trips and return to English, missing-pack/old-game errors, then a bounded
+isolated menu/cutscene/voice check. Listening and complete localized gameplay
+also remain unverified on Windows.
+
+MAC-126 follow-up (2026-11-01, local uncommitted): US-region startup skipped
+the language query in the initial implementation. Shared
+src/interface/pc_game_language_guest.h now scopes initialization/text-reset
+hooks through pc_native_numeric.h at both original/native rates. Five-routine
+original-XBE coverage exercises both region states; 12 language and14 production
+hook/scope cases pass. Windows full Build and bounded French/German menu sessions
+pass with unchanged US region. The repaired paired test runtime is language-test.2;
+user settings/profile hashes were preserved. Native Mac build/menu/voice and
+localized gameplay acceptance remains pending. See STATUS's US startup repair.

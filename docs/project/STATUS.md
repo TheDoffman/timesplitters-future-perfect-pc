@@ -1,3 +1,81 @@
+## Launcher language US startup repair (2026-11-01)
+
+User testing exposed English despite saved de. A bounded isolated fr launch of
+the first binary confirmed guest language 004C0454=0 and US flag 0074CF60=1.
+The prior four-routine fixture defaulted that flag to zero and therefore did
+not cover the real US startup gate. Extending it to both values reproduced the
+failure before repair (11 passed, one failed).
+
+Shared pc_game_language_guest.h now adapts the single US initialization read
+at 00070360 when the explicit launcher language is valid, plus the alternate
+English-reset store at 0003C308. The US region field and unrelated consumers
+remain unchanged. pc_native_numeric.h composes these guest hooks for original
+and native frame rates; no additional generated-game edit or platform copy.
+The supported-XBE fixture now executes five original routines for all five
+languages in both region states, including text-reload ordering. Its 12 tests
+pass; 14 production-macro/load/store-scope cases pass. Full Windows game Build
+and its built-in regressions pass (logs/language-us-gate-build.log).
+
+Two bounded isolated live sessions verified French guest index1 and German
+index2 while the US flag remained1. Reviewed game windows showed French
+"1 JOUEUR" / "Sélectionner" and German "1 SPIELER" / "Wählen". These runs
+used language-startup under private/test-saves, isolated input/both display
+configs, locked save routing, bounded logs and recycled disposable disks.
+They confirm localized menus, not voice listening or localized campaign play.
+Native Mac build/game checks remain pending MAC-126.
+
+Updated the same private/test-saves/language-launcher installation to
+v0.4.1-language-test.2. Runtime SHA-256:
+8e40f58cd4197d341d553fc49282a190bcc2410a0bcea20bce54696d8d6b068b.
+Atomic replacement retained the prior test executable in its .launcher folder.
+All17 small Settings/UserData files matched their pre-repair hashes, including
+the user's saved de. Data links and personal paths were untouched. The same
+Test language selection shortcut opens this repaired runtime/launcher pair.
+No source commit or release publication yet.
+
+## Launcher language packs (2026-10-31)
+
+Local uncommitted work on `feature/launcher-language-packs`, base 4c49f143;
+Windows x64, .NET Framework 4.8/WPF and MSVC 14.44, Python 3.12.14. Implements
+[discussion #263](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/263)
+as one saved complete-language choice: English/French/German/Italian/Spanish.
+Both launchers share the model/page and TSFP_GAME_LANGUAGE environment contract;
+platform patch 2310 connects it to individual/section Xbox language settings.
+No imported packs, personal saves or personal settings were modified by tests.
+
+Validation: Windows `tools/build/build-launcher.ps1 -Test` passed all suites,
+including the three new shared UI contracts; `tsfp.ps1 -Action Build` passed
+including its native checks and matching-symbol output. The 12 game-language
+contracts passed, including actual original supported-US XGetLanguage -> language
+startup -> archive lookup for all five packs, plus invalid-code fallback and
+EEPROM section checksums. The supported XBE hash was validated by that fixture
+and the build. Shared layout/release/compatibility Python checks passed (45 tests,
+39 subtests). Rendered and inspected the Audio & language page at 1152x772;
+controls, explanatory text and fixed Save/Cancel footer fit. Evidence stays in
+ignored logs/launcher-language-build.log, logs/language-game-build.log and
+logs/launcher-language-preview.png. All 46 patch tracking and historical-upgrade
+checks passed (1137.24 seconds); log: logs/language-patch-tests.log. Repository
+context tests also passed (20 tests), context freshness/ownership checks passed,
+and the staged diff has no whitespace errors.
+
+Native Mac build/UI/prerequisite execution is unavailable here (MAC-126).
+No real localized voice listening, full menu/cutscene traversal or localized
+campaign claim. Changes are local and unpublished; older released game builds
+need an update before non-English selection can launch.
+
+Local combined test setup (2026-11-01): prepared and opened
+`private/test-saves/language-launcher` as v0.4.1-language-test.1, using the
+updated game SHA-256 1f88e1db4080f2abd53a9c9157ca1f21fd94bf7e1bb6de125c337934e5c54ebb
+and the tested launcher. The `Test language selection.lnk` shortcut skips launcher
+self-update for this private build. Its 410 Data files are hard links to the
+existing supported import (zero additional data payload); binaries/dependencies
+are copied, and Test Lab saves plus Settings are separate from personal files.
+The real launch model resolves all data/save/input/display paths inside this
+test folder and exports fr. UI inspection confirmed Verified US Xbox data,
+Ready to play and enabled Play Game. This setup verification does not establish
+localized listening/gameplay. LOCAL-TEST.txt and local-test-receipt.json in the
+ignored test folder record operation/provenance. No release was published.
+
 ## PR433 exit summaries and lifecycle stress (2026-10-31)
 
 Follow-up to `5af57da9` on `fix/audio-release-diagnostics`, follow-up revision.

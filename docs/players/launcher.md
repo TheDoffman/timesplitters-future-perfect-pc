@@ -54,6 +54,18 @@ See the [Windows settings guide](windows-settings.md) for the full controls.
 After a successful **Save settings**, the button greys out. Changing a setting
 or key binding enables it again; reverting to the saved values greys it out.
 If saving fails, correct the error and retry with the same button.
+## Game language
+
+In **Game settings → Audio & language**, choose **Language pack**, then
+**Save settings** and launch the game. English, French, German, Italian and
+Spanish use the packs already included in the supported US Xbox data import.
+This selects one complete game language. The original imported packs stay intact;
+select English and save to switch back.
+
+This feature requires a game build with language-pack support. Older releases
+show an update message when selecting another language. If a selected pack is
+missing, import the complete game data again or choose English.
+
 ## Saves & backups (launcher v1.4.0)
 
 The **Saves** sidebar entry opens the save manager in the main window. Close the

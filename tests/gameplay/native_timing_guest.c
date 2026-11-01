@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "platform/xbox_winnt.h"
 #include <assert.h>
 #include <stddef.h>
@@ -339,6 +340,27 @@ static void tree_phase_clock(void)
 }
 int main(void)
 {
+    /* Exercise the actual production macro composition at both timing modes. */
+#ifdef _WIN32
+    _putenv_s("TSFP_GAME_LANGUAGE","fr");
+#else
+    setenv("TSFP_GAME_LANGUAGE","fr",1);
+#endif
+    for(unsigned native=0;native<2;native++) {
+        g_tsfp_native_timing_active=native;WORD(0x74cf60)=1;
+        assert(RECOMP_LOAD_GLOBAL_U32(0x70360,0x74cf60,WORD(0x74cf60))==0);
+        assert(WORD(0x74cf60)==1);
+        assert(RECOMP_LOAD_GLOBAL_U32(0x37000,0x74cf60,1)==1);
+        assert(RECOMP_STORE_GLOBAL_U32(0x3c308,0x4c0454,0)==1);
+        assert(RECOMP_STORE_GLOBAL_U32(0x704e0,0x4c0454,0)==0);
+    }
+#ifdef _WIN32
+    _putenv_s("TSFP_GAME_LANGUAGE","");
+#else
+    unsetenv("TSFP_GAME_LANGUAGE");
+#endif
+    assert(RECOMP_LOAD_GLOBAL_U32(0x70360,0x74cf60,1)==1);
+    g_tsfp_native_timing_active=0;
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* Asset-free scope/pause contract for the fractional level callback gates. */
     const uint32_t callback_sites[]={0x222b60,0x21af90,0x224170,0x164e00};
