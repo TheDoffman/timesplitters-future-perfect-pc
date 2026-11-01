@@ -27,6 +27,75 @@ static void invalidate(uint32_t iface, const char *mode)
     else if (!strcmp(mode, "empty-size")) HLE_MEM32(HLE_MEM32(iface) + SET_SIZE) = 0;
 }
 
+static int release_error, reentrant_reuse, original_calls;
+static void guest_release(void)
+{
+    uint32_t object = HLE_ARG(0), iface = object + 0x1C;
+    original_calls++;
+    if (release_error) g_eax = 0x80004005u;
+    else {
+        g_eax = --HLE_MEM32(object + 4);
+        if (!g_eax && reentrant_reuse) {
+            /* The destructor reenters and replaces the same slot/address. */
+            retire(find(iface));
+            make_buffer(0);
+            if (!model_for(iface, 1000)) abort();
+            g_eax = 0;
+        }
+    }
+    g_esp += 8; /* original ret 4; HLE must restore the entry stack */
+}
+static int release_case(const char *scenario)
+{
+    release_callback = guest_release;
+    uint32_t iface = make_buffer(0), object = iface - 0x1C;
+    Buffer *b = model_for(iface, 1000);
+    CHECK(b);
+    HLE_MEM32(object + 4) = 2;
+    if (!strcmp(scenario, "release-active")) {
+        recomp_dsound_buffer_play(&b->model, RECOMP_DSOUND_PLAY_LOOPING, 1000);
+        b->output_model = b->model; pump(b, 1000); CHECK(b->fed);
+    } else if (!strcmp(scenario, "release-paused")) b->paused = 1;
+    HLE_ARG(0) = object;
+    uint32_t esp = g_esp;
+    hle_CDirectSoundBuffer_Release();
+    CHECK(g_eax == 1 && g_esp == esp && b->iface == iface && !reset_count[0]);
+    release_error = 1; hle_CDirectSoundBuffer_Release();
+    CHECK(g_eax == 0x80004005u && b->iface == iface && !reset_count[0]);
+    release_error = 0;
+    reentrant_reuse = !strcmp(scenario, "release-reentrant");
+    uint64_t generation = b->generation;
+    hle_CDirectSoundBuffer_Release();
+    CHECK(g_eax == 0 && g_esp == esp && reset_count[0] == 1 && original_calls == 3);
+    CHECK(g_stat.releases == 3 && g_stat.released == (reentrant_reuse ? 0 : 1));
+    if (reentrant_reuse) {
+        CHECK(b->iface == iface && b->generation != generation);
+    } else {
+        CHECK(!b->iface && !b->fed && !b->paused && !b->spatial);
+        /* Guest settings still look valid: polling alone cannot reclaim this. */
+        CHECK(HLE_MEM32(iface) && HLE_MEM32(iface - 0xC));
+        for (unsigned cycle = 0; cycle < 4; cycle++) {
+            for (unsigned i = 0; i < SLOTS; i++) CHECK(model_for(make_buffer(i), 1000));
+            CHECK(!model_for(make_buffer(SLOTS), 1000));
+            CHECK(g_stat.pool_full == cycle + 1);
+            for (unsigned i = 0; i < SLOTS; i++) {
+                uint32_t current = make_buffer(i) - 0x1C;
+                HLE_MEM32(current + 4) = 1; HLE_ARG(0) = current;
+                hle_CDirectSoundBuffer_Release(); CHECK(g_eax == 0);
+            }
+            for (unsigned i = 0; i < SLOTS; i++) CHECK(!g_buffers[i].iface);
+        }
+        /* Unmodelled objects still run the original Release. */
+        HLE_ARG(0) = object; HLE_MEM32(object + 4) = 1;
+        uint64_t retired = g_stat.released;
+        hle_CDirectSoundBuffer_Release(); CHECK(g_eax == 0 && g_stat.released == retired);
+        b = model_for(make_buffer(0), 1000); CHECK(b);
+        recomp_dsound_buffer_play(&b->model, 0, 1000); b->output_model = b->model;
+        unsigned before = accepted_bytes; pump(b, 1000); CHECK(accepted_bytes > before);
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     CHECK(argc == 2);
@@ -34,7 +103,20 @@ int main(int argc, char **argv)
     g_esp = 0x48000;
     g_lead_ms = 40;
     accept = 1;
-    if (!strcmp(argv[1], "reuse")) {
+    if (!strncmp(argv[1], "release-", 8)) {
+        CHECK(!release_case(argv[1]));
+    } else if (!strcmp(argv[1], "starvation-diagnostics")) {
+        Buffer *b = model_for(make_buffer(0), 1000); CHECK(b);
+        fake_device = 1; fake_now = 1000;
+        recomp_dsound_buffer_play(&b->model, RECOMP_DSOUND_PLAY_LOOPING, 1000);
+        b->output_model = b->model; pump(b, fake_now);
+        accept = 0;
+        for (fake_now = 1150; fake_now < 1200; fake_now += 10) pump(b, fake_now);
+        CHECK(g_stat.underruns == 1 && g_stat.refused == 5);
+        accept = 1; pump(b, fake_now); CHECK(g_stat.underruns == 1 && !b->dry);
+        fake_now += 150; pump(b, fake_now); CHECK(g_stat.underruns == 2);
+        report(10000);
+    } else if (!strcmp(argv[1], "reuse")) {
         /* More distinct guest objects than the fixed host slot capacity. */
         for (unsigned cycle = 0; cycle < 4; ++cycle) {
             for (unsigned i = 0; i < SLOTS; ++i) {

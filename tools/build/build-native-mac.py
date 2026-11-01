@@ -159,7 +159,7 @@ def main():
     sources = sorted(p for p in (ROOT / 'patches').rglob('*.patch')
                      if 'legacy' not in p.relative_to(ROOT / 'patches').parts)
     sources += sorted((ROOT / 'src').rglob('*'))
-    manifest = dict(auto_display_resolution=True, source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+    manifest = dict(auto_display_resolution=True, language_packs=True, source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                     textures=textures,
                     working_tree_changes=subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True),
                     runtime_revision=revision, host=platform.platform(), xbe_sha256=expected,

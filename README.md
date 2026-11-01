@@ -1,8 +1,10 @@
+<a href="https://discord.gg/hFkfcCUm56"><img align="right" src="docs/assets/discord-community.svg" alt="Join the TimeSplitters: Future Perfect Recomp Discord community" title="Join our Discord community" width="32" height="32"></a>
+
 <div align="center">
 
 <a name="timesplitters-future-perfect"></a>
 
-# TimeSplitters: Future Perfect
+# TimeSplitters: Future Perfect Recomp
 
 Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer
 

@@ -62,6 +62,8 @@ original close. See [contracts](systems-details.md) and [fixture](build-test-det
 Story co-op integration: [contracts](systems-details.md).
 
 Audio recovery patches0055-0058: [buffering, lifecycle, format and device contracts](audio-buffers.md).
+Audio release/normal-exit patches2300-2303: [contracts and diagnostics](audio-buffers.md).
+
 
 Patch 2140-native-minigun-intent follows the native weapon wrappers in loader dependency order. It scopes held-primary intent around original US 1C74D0 event 1. Generic shots remain on whole ticks; numeric site 1C7600 normalizes release damping. See native-minigun.md.
 
@@ -996,3 +998,7 @@ the first outline draw's projected midpoint. Shared PcUiWorldAnchor retains that
 anchor for labels and resets at placement boundaries; viewport/scissor share it.
 Both common backends and legacy GL consume the helper. Original world projection,
 visibility and objective logic remain guest-owned (Refs #338).
+
+## Console language and included packs
+
+[Language policy, US startup gate, original-routine tests and host validation](language-packs.md).

@@ -69,6 +69,55 @@ public static class LauncherSharedUiChecks
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
             SaveBackupChecks.Run(root,Test);
+            Test("complete language packs save, cancel, launch and restore English",()=>{
+                string folder=Path.Combine(root,"languages");Directory.CreateDirectory(folder);
+                File.WriteAllText(Path.Combine(folder,"BUILD.json"),"{\"language_packs\":true}");
+                string pak=Core.PathIn(folder,"Data/pak");Directory.CreateDirectory(pak);
+                foreach(string suffix in new[]{"e","f","g","i","s"})File.WriteAllText(Path.Combine(pak,"sounds_"+suffix+".pak"),"P5CK fixture "+suffix);
+                var before=Directory.GetFiles(pak).ToDictionary(f=>f,File.ReadAllBytes);
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(3);
+                var picker=Find<ComboBox>(page.View,"LanguagePack");var save=Find<Button>(page.View,"SettingsSaveButton");
+                Need(picker.Items.Count==5 && picker.SelectedIndex==0,"Language default or choices differ");
+                picker.SelectedIndex=1;Click(Find<Button>(page.View,"SettingsCancelButton"));
+                Need(!File.Exists(Core.PathIn(folder,LauncherPlatform.Settings(folder)[0])),"Cancelled language was saved");
+                foreach(int i in new[]{1,2,3,4,0}) {
+                    picker.SelectedIndex=i;Click(save);
+                    Need(!save.IsEnabled,"Language draft remains dirty");
+                    Need(GameSettings.Load(folder,null).LanguagePack==GameSettings.LanguagePacks[i],"Language did not round trip");
+                    var info=GameSettings.StartInfo(folder);
+                    Need(info.EnvironmentVariables["TSFP_GAME_LANGUAGE"]==GameSettings.LanguagePacks[i],"Launch lost selected language");
+                    picker.SelectedIndex=(i+1)%5;Need(save.IsEnabled,"Language edit did not enable Save");
+                    picker.SelectedIndex=i;Need(!save.IsEnabled,"Reverted language remains dirty");
+                }
+                var reopened=new SettingsPage(new ResourceDictionary(),folder,true);
+                Need(Find<ComboBox>(reopened.View,"LanguagePack").SelectedIndex==0,"Return to English was not retained");
+                foreach(var entry in before)Need(File.ReadAllBytes(entry.Key).SequenceEqual(entry.Value),"Language selection changed original pack bytes");
+            });
+            Test("language launch rejects missing packs and unsupported game versions",()=>{
+                string folder=Path.Combine(root,"language-errors");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);model.LanguagePack="fr";model.Save();
+                bool rejected=false;try{GameSettings.StartInfo(folder);}catch(Exception e){rejected=e.Message.Contains("missing");}
+                Need(rejected,"Missing French archive was silently ignored");
+                string pak=Core.PathIn(folder,"Data/pak/sounds_f.pak");Directory.CreateDirectory(Path.GetDirectoryName(pak));File.WriteAllText(pak,"invalid");
+                rejected=false;try{GameSettings.StartInfo(folder);}catch(Exception e){rejected=e.Message.Contains("invalid");}
+                Need(rejected && File.ReadAllText(pak)=="invalid","Invalid pack was accepted or modified");
+                File.WriteAllText(pak,"P5CK fixture");File.WriteAllText(Core.PathIn(folder,"BUILD.json"),"{\"version\":\"v0.4.0\",\"auto_display_resolution\":true}");
+                Need(GameSettings.Load(folder,null).LanguagePack=="fr","Older release erased saved choice");
+                rejected=false;try{GameSettings.StartInfo(folder);}catch(Exception e){rejected=e.Message.Contains("Update the game");}
+                Need(rejected,"Old game silently ignored language choice");
+                model=GameSettings.Load(folder,null);model.LanguagePack="en";model.Save();
+                Need(GameSettings.StartInfo(folder).EnvironmentVariables["TSFP_GAME_LANGUAGE"]=="en","English failed on an older game");
+            });
+            Test("language preferences retain concurrent edits and reject unknown codes",()=>{
+                string folder=Path.Combine(root,"language-conflict");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);model.Save();var concurrent=GameSettings.Load(folder,null);concurrent.LanguagePack="de";concurrent.Save();
+                model.LanguagePack="es";bool rejected=false;try{model.Save();}catch{rejected=true;}
+                Need(rejected && GameSettings.Load(folder,null).LanguagePack=="de","Concurrent language was overwritten");
+                string file=Core.PathIn(folder,LauncherPlatform.Settings(folder)[0]);
+                string bad=File.ReadAllText(file).Replace("\"de\"","\"../fr\"");File.WriteAllText(file,bad);
+                rejected=false;try{GameSettings.Load(folder,null);}catch{rejected=true;}
+                Need(rejected && File.ReadAllText(file)==bad,"Invalid language was accepted or rewritten");
+            });
             Test("save manager lists dated restore points and requires restore confirmation",()=>{
                 string folder=Path.Combine(root,"saves-page");Directory.CreateDirectory(folder);
                 string saves=Core.PathIn(folder,LauncherPlatform.Saves(folder));Directory.CreateDirectory(saves);File.WriteAllText(Path.Combine(saves,"profile"),"original");

@@ -1358,3 +1358,8 @@ Latest human retest accepts the early marine stop but still finds a brief extra
 guest freeze after the cutscene. It clears after a few seconds and gameplay can
 continue. The user deferred that residual issue; preserve this evidence and do
 not describe the post-camera freeze as resolved.
+
+## Story and Online integration map
+
+Story chooser centering/reentry/lobby host loss, Game Over Quit, camera/weapon lifetime, in-progress rejoin, guest departure and in-match abort routing, cinematic staging/effects, Online Back navigation/browser level details, co-op movie score-packet lifetime, guest reward pages/context, NPC arms, corpse, pickup motion, barrel and camouflage integration keeps the
+shared source and main paths; see [details](systems-details.md).

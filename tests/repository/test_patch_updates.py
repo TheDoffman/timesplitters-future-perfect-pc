@@ -224,6 +224,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
             continue  # Replaces handlers only after the complete instrumentation stack.
         if patch.name.endswith(('-texture-bind-scan.patch', '-model-transform-entry.patch', '-stable-gpr-refs.patch', '-zero-base-indices.patch', '-temporal-uplink-map.patch')):
             continue  # Requires the later cross-platform renderer context.
+        if patch.name in ('2302-audio-normal-exit.patch', '2303-audio-window-exit.patch'):
+            continue  # Exit cleanup follows the RHI/independent-kernel migration below.
         if patch.name.endswith('-text-panel-scope.patch'):
             continue  # Depends on the later shared panel/display wrapper.
         if patch.name == '0360-texture-upload-streaming.patch':

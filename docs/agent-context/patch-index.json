@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "f56c496aaf495469d4061243e3ce4ca26cf6f843879e438aa9a337726fc13a5d",
+  "loaderSha256": "bb38aead1f708fa705b1531c394ae24baa40001d2c1724b24b8b2a8665f3e572",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1608,11 +1608,48 @@
       ]
     },
     {
+      "name": "2300-dsound-release-diagnostics.patch",
+      "path": "patches/media/2300-dsound-release-diagnostics.patch",
+      "sha256": "e7b97c3cbc4936391117b7b3bda5db8abd2a57bfe8ff625fe081cc16044497b4",
+      "targets": [
+        "config/extra_symbols/45410066.json",
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
       "name": "2300-story-human-teams.patch",
       "path": "patches/network/2300-story-human-teams.patch",
       "sha256": "6a164396d16ab675aefb2da541cb69f75169c26952109a3d8dd054fdd2156d9f",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2301-audio-exit-health.patch",
+      "path": "patches/media/2301-audio-exit-health.patch",
+      "sha256": "177ee9f6e2967403fd9ea0dbf2eb466c2c5613dc4a5d2d7b8753ee32f8ab7830",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
+      "name": "2302-audio-normal-exit.patch",
+      "path": "patches/media/2302-audio-normal-exit.patch",
+      "sha256": "6ca874d9eb73e9e4ac0d1f806737e5f82455838cd23253d88c16d776dc7e3d52",
+      "targets": [
+        "src/d3d/rhi.c"
+      ]
+    },
+    {
+      "name": "2310-game-language.patch",
+      "path": "patches/platform/2310-game-language.patch",
+      "sha256": "6bb7a0a5e632b509b1e2a4c93163af160107701cddf523367716bad98a960f98",
+      "targets": [
+        "src/kernel/kernel_xbox.c"
       ]
     },
     {
@@ -2890,6 +2927,14 @@
       "sha256": "697414cab37b60be730c0ef3fda389199e772f8ac613ca8112bd62e95585029a",
       "targets": [
         "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "2303-audio-window-exit.patch",
+      "path": "patches/media/2303-audio-window-exit.patch",
+      "sha256": "72cca9dddaace1b9035f3e07bdf2b7d569f5aaf9de6cb03e7e6a3e82ac917818",
+      "targets": [
         "src/kernel/kernel_bridge.c"
       ]
     },

@@ -1,3 +1,244 @@
+## Story co-op merge from main - 2026-11-01
+
+Merged origin/main8b83f295 into online-story-coop after sniper commit40600874.
+Main contributes launcher language support and audio release/normal-exit work.
+Conflicts were limited to documentation and the generated patch index. Preserve
+both Story/NPC validation records and the new language/audio records; keep the
+bounded guide packets below64KiB by moving their detailed prose to linked guides.
+The patch index was regenerated from the merged staged stack. No gameplay source
+conflict resolution or save/settings changes were required. The brief extra
+post-sniper guest freeze remains explicitly deferred, not marked fixed.
+
+Windows validation: launcher/context/backlog/package76passed with10subtests;
+audio lifecycle/language101passed1host-only skipped; Story/complete patch-stack
+upgrade/guest dispatch65passed in730.46s. Total242passed,1skipped,10subtests.
+Official Windows Build regenerated hooks, applied the merged full patch stack
+and passed its built-in tests with400.06GiB free before building. Content and
+executable identity verification and both-parent context/whitespace checks pass.
+The compiled content was the merged working tree before its merge commit; the
+prior HEAD was40600874. No game inputs or personal saves/settings were used.
+Compatibility5067fa877408ce70b1e223ce341a1f6bee9baf8f7d6b69be64549b9f174bfebe;
+executable SHA-2569629ce4ebd986e15912f55bdce42445d7f48dde72146b4602b8560d37bfb45d8.
+Native Mac execution remains unrun on this Windows host; upstream platform
+acceptance records remain.
+
+## PR436 LP64 fixture diagnostic repair (2026-11-01)
+
+Mac native CI on51ca1f5a completed2283 cases/327 skips/18 subtests, but the11
+parameterized EEPROM cases could not compile. The new fixture inherited Windows
+%long diagnostics for32-bit Xbox types and a vendor kernel-header nested-comment
+warning. Its diagnostics now use inttypes.h32-bit formats with an explicit
+NTSTATUS cast. Vendor headers are system includes on non-Windows, while the
+extracted production implementation/oracle retains-Werror and every assertion.
+Pinned vendor source is unchanged. New native host CI is required before merging.
+
+## PR436 Mac package capability repair (2026-11-01)
+
+Review of source1d262bb0 identified that package-native-mac.py rebuilt the release
+manifest without copying language_packs, so installed Mac games could not enable
+non-English selection despite a capable runtime. The packager now forwards that
+flag to the top-level installed manifest; old native builds default false.
+Three regression cases run the real package/manifest/archive writer with tiny
+payloads and host tools mocked, covering true, false and absent build flags.
+They reproduced the missing-key failure before repair. This is a portable package
+contract, not native Mach-O/loading or game validation. Updated GitHub checks are
+required before the authorized merge. No published release/issue closure.
+
+## Language selection PR preparation (2026-11-01)
+
+[PR #436](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/436)
+contains source commit 1d262bb0 on feature/launcher-language-packs, targeting main.
+Before push, the 57 selected language/shared-layout/release/compatibility tests
+passed with39 subtests, and context freshness/ownership plus whitespace checks
+passed. Earlier Windows full launcher/game builds,46 patch tracking/upgrades,
+14 guest-hook/scope cases and live French/German menu evidence are recorded below.
+GitHub Windows/Mac validation is pending at this source checkpoint. The user has
+authorized merging after required checks pass. Source integration does not publish
+a game/launcher release or establish native Mac localized gameplay/listening.
+
+## Launcher language US startup repair (2026-11-01)
+
+User testing exposed English despite saved de. A bounded isolated fr launch of
+the first binary confirmed guest language 004C0454=0 and US flag 0074CF60=1.
+The prior four-routine fixture defaulted that flag to zero and therefore did
+not cover the real US startup gate. Extending it to both values reproduced the
+failure before repair (11 passed, one failed).
+
+Shared pc_game_language_guest.h now adapts the single US initialization read
+at 00070360 when the explicit launcher language is valid, plus the alternate
+English-reset store at 0003C308. The US region field and unrelated consumers
+remain unchanged. pc_native_numeric.h composes these guest hooks for original
+and native frame rates; no additional generated-game edit or platform copy.
+The supported-XBE fixture now executes five original routines for all five
+languages in both region states, including text-reload ordering. Its 12 tests
+pass; 14 production-macro/load/store-scope cases pass. Full Windows game Build
+and its built-in regressions pass (logs/language-us-gate-build.log).
+
+Two bounded isolated live sessions verified French guest index1 and German
+index2 while the US flag remained1. Reviewed game windows showed French
+"1 JOUEUR" / "Sélectionner" and German "1 SPIELER" / "Wählen". These runs
+used language-startup under private/test-saves, isolated input/both display
+configs, locked save routing, bounded logs and recycled disposable disks.
+They confirm localized menus, not voice listening or localized campaign play.
+Native Mac build/game checks remain pending MAC-127.
+
+Updated the same private/test-saves/language-launcher installation to
+v0.4.1-language-test.2. Runtime SHA-256:
+8e40f58cd4197d341d553fc49282a190bcc2410a0bcea20bce54696d8d6b068b.
+Atomic replacement retained the prior test executable in its .launcher folder.
+All17 small Settings/UserData files matched their pre-repair hashes, including
+the user's saved de. Data links and personal paths were untouched. The same
+Test language selection shortcut opens this repaired runtime/launcher pair.
+No source commit or release publication yet.
+
+## Launcher language packs (2026-10-31)
+
+Local uncommitted work on `feature/launcher-language-packs`, base 4c49f143;
+Windows x64, .NET Framework 4.8/WPF and MSVC 14.44, Python 3.12.14. Implements
+[discussion #263](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/263)
+as one saved complete-language choice: English/French/German/Italian/Spanish.
+Both launchers share the model/page and TSFP_GAME_LANGUAGE environment contract;
+platform patch 2310 connects it to individual/section Xbox language settings.
+No imported packs, personal saves or personal settings were modified by tests.
+
+Validation: Windows `tools/build/build-launcher.ps1 -Test` passed all suites,
+including the three new shared UI contracts; `tsfp.ps1 -Action Build` passed
+including its native checks and matching-symbol output. The 12 game-language
+contracts passed, including actual original supported-US XGetLanguage -> language
+startup -> archive lookup for all five packs, plus invalid-code fallback and
+EEPROM section checksums. The supported XBE hash was validated by that fixture
+and the build. Shared layout/release/compatibility Python checks passed (45 tests,
+39 subtests). Rendered and inspected the Audio & language page at 1152x772;
+controls, explanatory text and fixed Save/Cancel footer fit. Evidence stays in
+ignored logs/launcher-language-build.log, logs/language-game-build.log and
+logs/launcher-language-preview.png. All 46 patch tracking and historical-upgrade
+checks passed (1137.24 seconds); log: logs/language-patch-tests.log. Repository
+context tests also passed (20 tests), context freshness/ownership checks passed,
+and the staged diff has no whitespace errors.
+
+Native Mac build/UI/prerequisite execution is unavailable here (MAC-127).
+No real localized voice listening, full menu/cutscene traversal or localized
+campaign claim. Changes are local and unpublished; older released game builds
+need an update before non-English selection can launch.
+
+Local combined test setup (2026-11-01): prepared and opened
+`private/test-saves/language-launcher` as v0.4.1-language-test.1, using the
+updated game SHA-256 1f88e1db4080f2abd53a9c9157ca1f21fd94bf7e1bb6de125c337934e5c54ebb
+and the tested launcher. The `Test language selection.lnk` shortcut skips launcher
+self-update for this private build. Its 410 Data files are hard links to the
+existing supported import (zero additional data payload); binaries/dependencies
+are copied, and Test Lab saves plus Settings are separate from personal files.
+The real launch model resolves all data/save/input/display paths inside this
+test folder and exports fr. UI inspection confirmed Verified US Xbox data,
+Ready to play and enabled Play Game. This setup verification does not establish
+localized listening/gameplay. LOCAL-TEST.txt and local-test-receipt.json in the
+ignored test folder record operation/provenance. No release was published.
+
+## Discord community entry points (2026-11-01)
+
+PR #435 Home follow-up, based on `38fc77c9`: the sidebar shortcut stays in
+place, with a separate community card below the Home game controls. The shared
+card uses the Discord mark, short benefits text and a purple Join Discord action;
+both Windows and Mac route it to `ReleaseClient.DiscordInvite` using the existing
+browser adapters. No saved state or automatic server join was added.
+The Windows build/test suite passed again (37.90 seconds). Three shared-layout
+checks and 20 native-Mac policy/backlog checks passed, along with context and
+whitespace checks. Reviewed isolated ready-state renders at 1152x772 and
+1000x720 show the complete card and button within the initial Home viewport.
+Native Mac visual/keyboard/browser acceptance remains pending MAC-126. No
+installed launcher was replaced and no release was published.
+
+Branch `feature/discord-community-link`, based on `4c49f143`, adds the same
+public Discord invite to the README's local logo button and the launcher's
+shared sidebar. Windows uses its existing shell browser opener; native Mac
+uses the existing `/usr/bin/open` adapter. No server join or telemetry is
+automatic. Discord's public invite response verified server ID
+`1566295768489263136`, channel `welcome-and-rules`, and no expiry; creation
+settings used unlimited uses without granting a role.
+
+Windows `tools/build/build-launcher.ps1 -Test` passed (155.99 seconds), including
+114 updater regressions and 32 shared UI groups. The 1152x772 `--render-preview`
+was reviewed with the Discord mark/label visible beneath Support, without
+clipping. Three shared-layout translation tests, nine compatibility-selection
+tests, and 20 native-Mac launcher policy/backlog contracts passed. Repository
+context checks and whitespace validation passed. Native Mac UI/browser execution
+is pending MAC-126; the Python contracts do not establish it. No installed
+launcher was replaced and no release was published.
+
+## PR433 exit summaries and lifecycle stress (2026-10-31)
+
+Follow-up to `5af57da9` on `fix/audio-release-diagnostics`, follow-up revision.
+Normal-exit summaries retain HLE slot/refusal/starvation counters and output
+failure/recovery counters on both hosts, including short sessions, failed
+startup and mute. Repeated explicit shutdown plus exit emits one output summary.
+Windows WM_QUIT and the actual HLE shadow-window xbox_HostExit now use normal
+CRT cleanup, matching the native SDL close path.
+Forced termination and crashes are outside this exit-report guarantee.
+
+The new controlled stress fixture links actual shared HLE to each complete
+adapter; each beta mode runs 32 eight-buffer rounds of pause, failure, final
+release during recovery, resume, teardown and address reuse. It checks no old
+voice/state survives. This models scene teardown without running real maps.
+Windows final combined media, UI, renderer and repository contracts: 149 passed,
+two skips (opt-in real audio device and Mac CoreText). A real WM_QUIT probe
+confirms exit handlers run. Follow-up compiled HostExit/renderer and historical
+upgrade tests: 18 passed, one Mac-only skip. A 15-second isolated supported-US
+Windows game session closed via WM_CLOSE with exit code zero and exactly one
+HLE plus one output summary (muted; no listening claim). Executable SHA-256:
+7ced087c47ad16cf75d4bd0018d82cb51f296dc41a1f64cce333781b1c9bba19.
+The supported Windows x64 build and built-in checks pass with MSBuild17.14.40. No gameplay listening or physical device switching was performed.
+
+PR433's initial Mac CI failed only the existing browser-layout timeout
+(2272 passed, 326 skipped); Windows native, both patch-upgrade suites and launcher
+compatibility passed. A targeted Mac rerun failed the same test at a different scale (2 rather than
+1.5), with all other native tests passing. The UI test wrapper
+now surfaces captured child stack traces on timeout without extending 60 seconds
+or changing widget assertions/layout. This is diagnostic improvement, not proof
+of the timeout's cause or a product fix.
+
+Follow-up to bac005f0: Mac CI exposed an XAudio test-only pthread header shadow
+and historical fixture ordering. The fake pthread header is now SDL-only;
+exit patches follow their RHI/independent-kernel prerequisites. Hosted UI stacks
+locate the timeout in the first root.update(). A disposable physical Mac Tk8.5
+native sample found continuous image redraws, not Python geometry callbacks.
+The UI probe now runs mainloop until all widget geometry is stable (three
+25 ms samples, three-second deadline), preserving every existing assertion.
+Windows UI: 12 passed; physical Mac Python3.12/Tk9.1: 11 passed, one Windows-only
+skip. Tk8.5 is diagnostic evidence, not a supported-host acceptance pass.
+Focused final audio/renderer checks: 54 passed, two platform/device skips.
+All 60 local snapshot/patch tracking/upgrade tests passed (479.54 seconds).
+A second isolated Windows close with XAudio active at gain0.01 submitted3576
+buffers/7079808bytes, opened the device once, and wrote both final summaries
+once before exit0; no listening or physical reconnection claim. Hosted78221430
+stopped on a missing investigation-guide update; that record is now included.
+Current hosted CI acceptance remains pending; no merge or publication.
+
+## Final buffer Release and dropout diagnostics (2026-10-31)
+
+Base main `08821c6b`; branch `fix/audio-release-diagnostics`.
+Patch 2300 adds the verified US buffer Release method to the extra symbols,
+preserves its original refcount/destructor, and retires the matching host model
+only on final release. Generation identity protects reentrant replacement.
+Diagnostic reports distinguish occupied/exhausted slots, refused submissions,
+starvation episodes, and output failure/recovery categories on XAudio and SDL.
+These general fixes are independent of Enhanced Audio.
+
+Windows x64 deterministic media validation: 92 passed, one opt-in real-device
+check skipped (`audio-release-tests.log`). Cases include 1,024 allocations and
+final releases with still-valid settings, retained references, error returns,
+paused/active sounds, unmodelled objects, reentrant reuse, continued PCM and
+failure counters across output recovery/shutdown. The supported US XBE hash
+was verified before inspecting the constructor/vtable/release chain.
+The final supported Windows x64 Build and built-in checks pass with MSBuild
+17.14.40 (`audio-release-final-build.log`); generated HLE binds 00406FF0 with
+an eight-byte return/argument pop and a non-null original body. The final media
+suite again passes 92 tests/one skip. All 20 context checks pass after index
+refresh; backlog and lifecycle checks pass. Two disposable negative-control
+builds demonstrate failure when final cleanup or starvation episode latching
+is removed (`audio-release-negative.log`). Physical Mac execution, long
+Arcade/online sessions, story listening and physical headset switching remain
+unverified.
+
 ## Sniper lead-in and stale staging anchor - 2026-11-01
 
 Local `online-story-coop` changes based on e3cf543e. The user

@@ -27,8 +27,7 @@ slot indefinitely. The normal DoWork walk now releases the host voice and
 clears all slot state, including for buffers that are not playing.
 Valid playing, stopped and paused buffers retain their slots. A full pool of
 valid buffers still refuses another allocation; this is not voice stealing.
-Guest Release is not newly intercepted, so a freed object whose settings stay
-indistinguishable from a valid buffer remains outside this correction.
+Patch 2300 additionally intercepts final guest Release, as described below.
 
 The existing `test_audio_timing.py` CI route compiles `audio_buffer_lifecycle.c`.
 It checks four complete 256-slot allocation/invalidation rounds and successful
@@ -148,3 +147,66 @@ retries and a shared per-slot discontinuity signal for streams and movies.
 Their wall-clock fallback skips elapsed audio and establishes a fresh playback
 origin after reconnecting. Explicit reset clears the signal; mute/shutdown
 remain terminal. See [device recovery and tests](audio-buffers.md).
+
+## Final buffer Release and dropout diagnostics
+
+`media/2300-dsound-release-diagnostics.patch` preserves the original
+`CDirectSoundBuffer_Release` and retires the matching host slot only when its
+returned reference count is zero. The object argument maps to interface +1C.
+The supported US constructor 00408028 installs vtable 004A1CE0, whose +8 method
+is 00406FF0. Public IDirectSoundBuffer_Release 00406AA0 subtracts 1C and calls
+that method. Its 0040688A helper decrements object+4 and invokes destruction
+only on zero; these inspected bytes justify the added extra symbol. Generation
+preserves the original body and derives the thunk's four argument bytes from
+its ret instruction. No guest destructor, refcount, callback or memory is
+replaced. Failed/nonfinal releases retain the model; unmodelled objects still
+call the original. A generation identity prevents reentrant slot/address reuse
+from being retired by the outer Release. The shared HLE covers both hosts and
+never consults Enhanced Audio.
+
+The five-second DSOUND health report now shows occupied slots, failed pool
+allocations, release calls/retirements, refused PCM submissions and starvation
+episodes. A dry queue remains one episode across repeated refused retries;
+accepted PCM permits counting the next episode. Invalid-slot retirement remains
+a separate fallback. Refusal counts describe attempts, not sounds proven lost.
+`RecompAudioEngineStats` retains lifetime counts for queue-full, invalid PCM,
+output unavailable, voice retry waits, allocation failures, voice/device
+failures, output-open attempts and successes. XAudio/SDL snapshots retain them
+across reset, recovery and shutdown, including when hardware statistics are
+unavailable. SDL still has no hardware playback-position/glitch measurement;
+its adapter-owned failures exclude migrations handled internally by SDL.
+
+Existing CI routes `test_audio_timing.py` and `test_audio_device_recovery.py`
+cover nonfinal/error/final Release, playing/paused/stopped slots, still-valid
+freed settings, four complete 256-slot reuse rounds, reentrant replacement,
+unmodelled objects, continued PCM output, starvation episode counting and
+failure-category snapshots on both adapters. These fixtures do not prove
+long-session gameplay or physical headset switching/listening.
+
+## Exit reporting and combined lifecycle stress
+
+Patch 2301 registers normal-exit reports when HLE/output first initializes.
+The HLE report snapshots only host-owned counters and occupancy under its lock;
+it does not read guest settings, which may already have been freed. Both
+adapters register their idempotent shutdown and emit the same final lifetime
+failure/recovery fields, even after failed initialization or deliberate mute.
+Explicit shutdown followed by process exit prints once. This complements the
+five-second report for short sessions; abrupt termination/crashes cannot be
+promised an exit summary. Patch 2302 makes the Windows RHI WM_QUIT path use
+standard exit rather than ExitProcess. Patch 2303 also changes xbox_HostExit,
+the actual shadow_wndproc WM_CLOSE target, to run these handlers while retaining
+its feedback/profile flushes. The native SDL path already uses standard exit.
+
+`audio_lifecycle_stress.c` links the actual shared buffer HLE/model to each
+complete XAudio/SDL adapter. Only host APIs and guest services are doubled. The fake pthread header is
+scoped to the SDL driver; the XAudio C++ driver needs native libc++ pthreads.
+Each Enhanced Audio on/off case performs 32 eight-buffer scene teardowns,
+combining actual Play/Pause/Resume/Release calls, output loss/refusal, release
+while recovery is pending, surviving-voice recovery and same-address reuse.
+It checks all host voices retire, no released sound resurrects, paused state
+and DSP/routing/discontinuity state clear, and final summaries appear without
+calling the periodic reporter. Existing recovery cases additionally cover
+failed-start/muted exit and repeated explicit shutdown. The real RHI host
+fixture posts WM_QUIT; a separate test compiles the real xbox_HostExit body
+and checks diagnostics and exit handlers. These
+are controlled lifecycle checks, not a real level transition or listening test.

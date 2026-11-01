@@ -295,7 +295,8 @@ Source and issues: https://github.com/TheDoffman/timesplitters-future-perfect-pc
 Exact native build and packaging provenance: BUILD.json and Support/Launcher.
 Source and third-party notices: Source and Licenses.
 ''', encoding='utf-8')
-    manifest = dict(auto_display_resolution=native.get("auto_display_resolution", False), version=args.version, platform='macos-arm64', source_commit=release_source,
+    manifest = dict(auto_display_resolution=native.get("auto_display_resolution", False),
+        language_packs=native.get("language_packs", False), version=args.version, platform='macos-arm64', source_commit=release_source,
         release_channel=release_identity(args.version),
         packaging_commit=run('git','rev-parse','HEAD'),
         packaging_changes=run('git','status','--porcelain'),

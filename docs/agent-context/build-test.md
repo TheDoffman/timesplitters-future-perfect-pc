@@ -1,8 +1,7 @@
 # Build, run and validation map
 
-[NPC/cinematic tests](build-test-details.md).
+[NPC/cinematic tests](build-test-details.md); [Save checks](save-locations.md); [Discord checks](launcher.md#discord-community-link) (MAC-126).
 
-[Save-folder checks](save-locations.md): storage, picker callback ownership/mutation, and shared launcher copy/restore/UI tests; both launcher builds include SaveLocations.cs.
 
 test_native_timing.py::test_original_minigun_spin runs the complete supported-US callback with fake services. It reproduces the old high-FPS failure and checks readiness, release, pause and input guards at 60/120/144/180/240 FPS. Existing CI selects this suite; private-XBE absence skips it. Historical fixtures exclude minigun intent until the native stack is applied. See native-minigun.md.
 
@@ -186,8 +185,8 @@ presence semantics, decoding/reporting, and repeated-lookup/executor mutations.
 
 `test_window_theme.py`: menu drawing, mnemonics, inserted/reordered rows (#333).
 
-[Audio tests](audio-buffers.md): timing, gain, buffer/device recovery and beta
-ON/OFF compatibility with XAudio/SDL doubles.
+[Audio tests](audio-buffers.md): timing/gain, Release/recovery stress, exit reports,
+beta ON/OFF. RHI tests cover WM_QUIT/HostExit cleanup.
 
 `test_controller_profile.py`: devices/maps/disconnect and SDL virtual input;
 physical pads/Mac gameplay remain unverified.
@@ -1033,3 +1032,5 @@ Markers: test_ui_layout.py; test_patch_updates.py checks 2290/2291 after migrati
 Mech input: test_mounted_mouse.py; [scope](mounted-mouse.md#battle-mech-mouse-425).
 
 Physics: [checks](build-test-details.md#guest-physical-state-regression).
+
+[Languages](launcher.md#complete-game-language-packs-discussion-263).

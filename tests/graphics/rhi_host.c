@@ -1,6 +1,12 @@
 #include "rhi_backend.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 #ifdef _WIN32
 /* Host contract does not create a graphics device. */
 const RhiBackend rhi_d3d11_backend = {0};
@@ -26,8 +32,20 @@ static int present_calls;
 static int32_t present(uint32_t interval) {
     assert(interval==0);present_calls++;return present_result;
 }
-int main(void)
+#ifdef _WIN32
+static void final_health(void) { puts("PASS: normal window close runs exit handlers"); }
+#endif
+int main(int argc, char **argv)
 {
+    (void)argc; (void)argv;
+#ifdef _WIN32
+    if (argc == 2 && !strcmp(argv[1], "quit")) {
+        assert(!atexit(final_health));
+        PostQuitMessage(0);
+        rhi_pump_events();
+        abort();
+    }
+#endif
     uint32_t width = 3, height = 7;
     RhiHost host = {.context=&pumps,.pump_events=pump,.drawable_size=size,.text_bitmap=bitmap};
     rhi_set_host(&host);

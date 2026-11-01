@@ -315,6 +315,25 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-121 | High-FPS interaction input (#357) | Awaiting validation |
 | MAC-122 | Temporary material matrix cache epoch (#398) | Awaiting validation |
 | MAC-123 | Bounded guest-memory crash evidence and model history | Awaiting validation |
+| MAC-126 | Launcher Discord community button | Awaiting validation |
+| MAC-127 | Complete launcher language packs | Awaiting validation |
+
+### MAC-126 - Launcher Discord community button
+
+- **Status:** Awaiting validation
+- **Behavior:** The labeled Discord logo in the launcher sidebar and the Home
+  community card's Join Discord button open the
+  project's public invite in the browser on Windows and native Mac. GitHub
+  Support remains a separate action. No automatic join, Rich Presence change,
+  diagnostic upload or saved preference is involved.
+- **Shared source:** `tools/launcher/Launcher.xaml` owns the accessible button
+  and mark; `ReleaseClient.DiscordInvite` owns the target. Windows `Launcher.cs`
+  and Mac `macos/NativeWindow.cs` call their existing browser adapters.
+  PR #435, branch `feature/discord-community-link`; Home card follow-up initially
+  uncommitted.
+- **Remaining:** On native Mac, build/test the launcher and check the translated
+  mark, sidebar/Home card fit, keyboard activation and browser destination. Windows
+  checks do not establish native Mac execution or physical keyboard behavior.
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -2808,6 +2827,24 @@ fireball visibility and authoritative enemy blast damage without duplicates.
   compilation/gameplay and cross-device synchronization remain unverified.
 
 ### MAC-018 — Story audio timing, queue retry and ADPCM resume (issue #8)
+
+- **PR433 exit/stress follow-up (2026-10-31):** Shared HLE and both adapters
+  emit normal-exit health counters; shutdown is idempotent. Native SDL already
+  exits through CRT cleanup; Windows WM_QUIT and shadow-window HostExit now do
+  too (real isolated Windows close verified). The combined fixture
+  links real HLE with each real adapter and runs 32 pause/loss/release/recovery
+  teardown rounds per beta mode. Windows fixture execution passes. Native Mac
+  CI and hardware listening remain separate acceptance evidence; see STATUS.
+
+- **Final buffer Release/diagnostics follow-up (2026-10-31, fix/audio-release-diagnostics):**
+  Shared patch 2300 preserves original guest refcounts/destruction and retires
+  host effects slots on final release, with reentrant reuse protection.
+  Shared health reports distinguish pool exhaustion, starvation episodes and
+  refused attempts; XAudio/SDL supply lifetime failure/recovery counters.
+  Windows deterministic audio tests pass (92 tests, one opt-in device skip).
+  Existing dual-host CI suites include the new cases. Native Mac execution and
+  long-session/headset listening remain pending; no second policy adapter is
+  required. See audio-buffers.md and STATUS.md for scope/evidence.
 
 - **Main/beta integration (2026-10-30):** The prior local fixes, preserved in
   `c61f77e4`, now apply after beta audio as patches 0055-0058. Recovery is always
@@ -8554,3 +8591,42 @@ no OS adapter or separate Mac policy is needed. Windows/native-network fixtures
 and original-engine activity-list/corpse-clip checks pass. Physical Mac remains
 Awaiting validation: Splitter floor contact, settled corpses, packet gaps, repeated
 deaths/NPC clip reuse and the unchanged dropped-weapon physics/pickup path.
+
+### MAC-127 - Complete launcher language packs
+
+- **Status:** Awaiting validation
+
+Source: [PR #436](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/436),
+implementation commit 1d262bb0; GitHub host validation pending.
+
+Local uncommitted source on `feature/launcher-language-packs`, based on
+4c49f143. Shared GameSettings/SettingsPage save one en/fr/de/it/es language,
+pass TSFP_GAME_LANGUAGE and validate the selected imported pack. Shared platform
+patch 2310 answers individual and section EEPROM reads consistently so the
+original title selects complete language assets. Both build/package manifests
+advertise support; older games keep saved choices and reject unsupported launch.
+No separate audio/text controls or original-data changes. NativeHost already
+preserves the shared launch environment; no duplicate adapter is needed.
+
+Windows launcher build/full regressions, game Build action, production EEPROM
+contracts and translated supported-US pack selection pass; evidence is in
+[STATUS](STATUS.md#launcher-language-packs-2026-10-31). Native Mac build and shared
+UI execution remain unverified on this Windows host. Acceptance on native Mac:
+build/test/prerequisite checks, installed/development paths, all five language
+round trips and return to English, missing-pack/old-game errors, then a bounded
+isolated menu/cutscene/voice check. Listening and complete localized gameplay
+also remain unverified on Windows.
+
+MAC-127 follow-up (2026-11-01, local uncommitted): US-region startup skipped
+the language query in the initial implementation. Shared
+src/interface/pc_game_language_guest.h now scopes initialization/text-reset
+hooks through pc_native_numeric.h at both original/native rates. Five-routine
+original-XBE coverage exercises both region states; 12 language and14 production
+hook/scope cases pass. Windows full Build and bounded French/German menu sessions
+pass with unchanged US region. The repaired paired test runtime is language-test.2;
+user settings/profile hashes were preserved. Native Mac build/menu/voice and
+localized gameplay acceptance remains pending. See STATUS's US startup repair.
+
+MAC-127 PR436 review repair: native package manifests now forward language_packs
+from the native build to the installed top level. Three portable real-writer
+regressions cover enabled/disabled/absent flags; native host CI remains the gate.

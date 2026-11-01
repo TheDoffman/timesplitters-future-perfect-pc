@@ -1,7 +1,6 @@
 # Subsystem entry points
 
-Story chooser centering/reentry/lobby host loss, Game Over Quit, camera/weapon lifetime, in-progress rejoin, guest departure and in-match abort routing, cinematic staging/effects, Online Back navigation/browser level details, co-op movie score-packet lifetime, guest reward pages/context, NPC arms, corpse, pickup motion, barrel and camouflage integration keeps the
-shared source and main paths; see [details](systems-details.md).
+Story/Online integration: [contracts](systems-details.md).
 
 Battle Mech mouse: [shared routing and guards](mounted-mouse.md#battle-mech-mouse-425).
 
@@ -57,7 +56,10 @@ Audio: `src/hle/hle_dsound*`, `hle_xmv*`. [Beta audio](../development/positional
 General buffering, lifecycle, format and device recovery are unconditional;
 Enhanced Audio controls only the optional mix. Effects adapt their default
 lead from 40 to 90 ms and refill immediately after skipping stale hitch data.
-Explicit lead overrides stay fixed. See [recovery contracts/tests](audio-buffers.md).
+Explicit lead overrides stay fixed. Final buffer Release also reclaims host
+slots; XAudio/SDL expose lifetime failure-category counters in the periodic
+DSOUND health report and an idempotent normal-exit summary. Windows WM_QUIT
+runs registered cleanup, matching the SDL close path. See [contracts](audio-buffers.md).
 `audio_output.h` owns `RECOMP_AUDIO_DEFAULT_GAIN` (0.5, about -6 dB).
 XAudio applies it once to the master; SDL applies it once per stream. This
 quiets the output at 100% without changing saved Music/Sound sliders, their
@@ -963,3 +965,5 @@ checks actual viewport scaling, target position, reset and seven display shapes.
 Bot corpses: [contracts](systems-details.md#online-bot-corpses).
 
 Physics: [poses](systems-details.md#guest-ragdolls-and-physical-npc-drops).
+
+Launcher language startup: [shared guest hooks, US gate and tests](language-packs.md).
