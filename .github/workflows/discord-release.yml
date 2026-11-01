@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       channel:
-        description: Send a clearly labeled test notification (no release is created)
+        description: Release type for the TEST card (posts to announcements; no release is created)
         type: choice
         options: [stable, preview]
         default: stable
@@ -62,5 +62,4 @@ jobs:
       - name: Announce the published game release
         env:
           DISCORD_STABLE_RELEASE_WEBHOOK: ${{ secrets.DISCORD_STABLE_RELEASE_WEBHOOK }}
-          DISCORD_PREVIEW_RELEASE_WEBHOOK: ${{ secrets.DISCORD_PREVIEW_RELEASE_WEBHOOK }}
         run: python tools/ci/discord-release.py
