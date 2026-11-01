@@ -9,7 +9,8 @@ static ULONGLONG ticks(void) { return clock_ms; }
 #define GetTickCount64 ticks
 #include "../src/interface/pc_display.c"
 #include "../src/interface/pc_display_menu.c"
-const char *pc_build_version(void) { return "development"; }
+static const char *build_version="development";
+const char *pc_build_version(void) { return build_version; }
 ptrdiff_t g_xbox_mem_offset;
 RECOMP_TLS uint32_t g_eax,g_ecx,g_edx,g_esp,g_ebx,g_esi,g_edi,g_ebp,g_seh_ebp;
 RECOMP_TLS RecompXmm g_xmm0,g_xmm1,g_xmm2,g_xmm3,g_xmm4,g_xmm5,g_xmm6,g_xmm7;
@@ -35,7 +36,8 @@ HWND xbox_D3D8Window(void) { return NULL; }
 int xbox_D3D8ChangeResolution(unsigned w,unsigned h) { (void)w;(void)h;return available; }
 int pc_online_connect(void) { return 0; }
 int pc_online_connect_mode(PcOnlineMode mode) { (void)mode;return 0; }
-PcOnlineMode pc_online_mode(void) { return PC_ONLINE_NONE; }
+static PcOnlineMode online_mode;
+PcOnlineMode pc_online_mode(void) { return online_mode; }
 void pc_online_disconnect(void) {}
 uint32_t xbox_HeapAlloc(uint32_t size,uint32_t alignment) { (void)size;(void)alignment;return 0x100000; }
 #define STUB(name) void name(void) { g_esp+=4; }
@@ -86,6 +88,15 @@ BOT_STUB(sub_002EAF60_gen) BOT_STUB(sub_002EAFC0_gen) BOT_STUB(sub_002EB030_gen)
 BOT_STUB(sub_002CBBA0) BOT_STUB(sub_002CBAF0) BOT_STUB(sub_002CBB60) BOT_STUB(sub_002CB550)
 BOT_STUB(sub_002C2C20) BOT_STUB(sub_002C0490) BOT_STUB(sub_002C19F0)
 BOT_STUB(sub_002C1570) BOT_STUB(sub_002C1490)
+/* Online mode is now exercised through the public callback dispatcher.
+   Its unrelated gameplay services remain forbidden in this menu fixture. */
+BOT_STUB(sub_000D50E0) BOT_STUB(sub_000CF060_gen) BOT_STUB(sub_0009A420_gen)
+BOT_STUB(sub_0025EF80) BOT_STUB(sub_000668F0) BOT_STUB(sub_00069A60)
+BOT_STUB(sub_00227430) BOT_STUB(sub_000FFDA0) BOT_STUB(sub_000FFE40)
+BOT_STUB(sub_000EFBD0) BOT_STUB(sub_00101660) BOT_STUB(sub_000FF420)
+BOT_STUB(sub_000FF490) BOT_STUB(sub_000FF200) BOT_STUB(sub_001128C0)
+BOT_STUB(sub_000CC170) BOT_STUB(sub_000C9C90) BOT_STUB(sub_00164C40)
+BOT_STUB(sub_001CB260)
 #undef BOT_STUB
 static unsigned pose_clip_bindings;
 void sub_000966E0(void)
@@ -243,6 +254,32 @@ int main(int argc,char **argv)
     {FILE *f=fopen(runtime_path,"wb");CHECK(f);fputs("# preserve\nframe_interp = 3\nframe_cap = 30\nfuture_key = keep\n",f);fclose(f);}
     void *mem=VirtualAlloc(NULL,0x800000,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE);CHECK(mem);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)mem;
+    { /* Exercise the public dispatcher, including overlapping Story IDs.
+         Testing the chooser and lobby lookup helpers separately misses this. */
+        build_version="0.5.0-story-coop-beta.1";
+        g_esp=0x700000;WORD_AT(g_esp+4)=0x300000;
+        CHECK(pc_display_menu_lookup(STORY_BUILD_CB)==story_build);
+        CHECK(pc_display_menu_lookup(STORY_SELECT_CB)==story_select);
+        CHECK(pc_display_menu_lookup(STORY_BACK_CB)==story_back);
+        online_mode=PC_ONLINE_STORY;
+        WORD_AT(0x79094c)=101;WORD_AT(0x76b140)=1;WORD_AT(0x76b1a4)=11;
+        WORD_AT(0x300004)=0x4e99c4;
+        CHECK(pc_display_menu_lookup(STORY_BUILD_CB)==story_lobby_header);
+        story_lobby_options=1;WORD_AT(0x300004)=0x5238e0;
+        CHECK(pc_display_menu_lookup(STORY_SELECT_CB)==story_lobby_level_select);
+        story_difficulty_descriptor=0x310000;story_lobby_options=2;
+        WORD_AT(0x300004)=story_difficulty_descriptor;
+        CHECK(pc_display_menu_lookup(STORY_BUILD_CB)==story_lobby_difficulties);
+        CHECK(pc_display_menu_lookup(STORY_SELECT_CB)==story_lobby_difficulty_select);
+        CHECK(pc_display_menu_lookup(STORY_BACK_CB)==story_lobby_difficulty_back);
+        WORD_AT(0x76b140)=2;WORD_AT(0x76b1a4)=12;WORD_AT(0x300004)=0x4e99d4;
+        CHECK(pc_display_menu_lookup(STORY_BUILD_CB)==story_lobby_header);
+        online_mode=PC_ONLINE_NONE;story_lobby_options=0;story_difficulty_descriptor=0;
+        WORD_AT(0x79094c)=0;WORD_AT(0x76b140)=0;WORD_AT(0x76b1a4)=0;
+        CHECK(pc_display_menu_lookup(STORY_BACK_CB)==story_back);
+        build_version="development";
+        CHECK(!pc_display_menu_lookup(STORY_BUILD_CB));
+    }
     { /* Descriptor +12 is a per-frame callback, not a destructor. */
         CHECK(kb_caption());kb_page=KB_CAPTURE;
         call(KB_BUILD,0,0);

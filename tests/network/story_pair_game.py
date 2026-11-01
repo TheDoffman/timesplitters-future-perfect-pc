@@ -48,6 +48,7 @@ def main():
     parser.add_argument('--mission',type=int,choices=range(13),default=0,help='Story mission index; 0 is Time to Split')
     parser.add_argument('--difficulty',type=int,choices=range(3),default=1,help='0 Easy, 1 Normal, 2 Hard')
     parser.add_argument('--lobby-only',action='store_true',help='Stop after changed lobby controls; no GO/load/movement')
+    parser.add_argument('--menu-navigation-probe',action='store_true',help='With --lobby-only, capture difficulty Back, lobby exit, host-loss main return and Story reentry for visual review')
     parser.add_argument('--players',type=int,choices=[2,4],default=2,help='Actual instances/players admitted to the isolated lobby')
     parser.add_argument('--fire-probe',action='store_true',help='Check first-level firearm and ammunition consumption; save captures for interaction review')
     parser.add_argument('--combat-probe',action='store_true',help='After firearm checks, walk an added guest forward and test host acceptance of a hit on a live enemy')
@@ -61,6 +62,7 @@ def main():
     args=parser.parse_args()
     assert not args.lobby_controls or args.load_probe
     assert not args.lobby_only or args.lobby_controls
+    assert not args.menu_navigation_probe or args.lobby_only
     assert not args.fire_probe or (args.load_probe and not args.lobby_only)
     assert not args.checkpoint_probe or (args.fire_probe and args.mission==0 and not args.restart_probe)
     assert not args.restart_probe or (args.fire_probe and args.mission==0 and not args.lobby_only)
@@ -203,6 +205,23 @@ def main():
                 append('guest',keys=[69],label='guest-ready',wait=3)
                 wait_for(lambda:captured('guest','guest-ready'),'Guest ready input not completed')
             if args.lobby_only:
+                if args.menu_navigation_probe:
+                    def menu_step(role,label,keys=(),wait=3):
+                        append(role,keys=list(keys),label=label,wait=wait)
+                        return wait_for(lambda:captured(role,label),'Missing navigation capture: '+label)
+                    navigation={}
+                    navigation['levels']=menu_step('host','nav-levels',[89])
+                    navigation['difficulty']=menu_step('host','nav-difficulty',[69])
+                    navigation['difficulty_back']=menu_step('host','nav-difficulty-back',[70])
+                    navigation['levels_back']=menu_step('host','nav-levels-back',[70])
+                    navigation['lobby_back']=menu_step('host','nav-lobby-back',[70])
+                    navigation['guest_host_loss']=menu_step('guest','nav-host-loss',wait=20)
+                    navigation['main']=menu_step('host','nav-main',[70])
+                    navigation['reenter_story']=menu_step('host','nav-story-reentry',[69])
+                    navigation['guest_reenter_story']=menu_step('guest','nav-story-reentry',[69])
+                    navigation['local_levels']=menu_step('host','nav-local-levels',[69])
+                    result['menu_navigation']=navigation
+                    result['menu_navigation_review']='Review all nav-*.png; captures alone do not assert menu content.'
                 result['status']='lobby-controls-passed'
             else:
                 append('host',keys=[69],label='story-go',wait=8)

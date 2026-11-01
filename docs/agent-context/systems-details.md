@@ -7,6 +7,16 @@ Windows and native Mac builds. `pc_story_menu_button` leaves the original main
 Story callback untouched when disabled; `story_menu_lookup` also rejects its
 four private chooser callbacks. General Online fixes remain active.
 
+Story versions retain the pre-flag callback precedence: resolve scoped lobby
+handlers before the generic chooser fallback. `STORY_BUILD_CB` also draws
+lobby headings and builds difficulty; `STORY_SELECT_CB` confirms mission or
+difficulty; `STORY_BACK_CB` returns from difficulty. Moving the generic lookup
+ahead of `story_lobby_lookup` hijacked those callbacks, producing missing
+headings, a Local/Online chooser inside difficulty, and incorrect main-menu
+rebuilds. The flag must never override these contextual handlers. Only check
+the release policy on the matching main Story row or four generic fallback
+IDs, rather than on every menu row and every indirect guest call.
+
 The version provider is implemented by `src/diagnostics/pc_build_version.inc`
 inside `pc_debug.c`, the diagnostics target that actually owns the private
 `TSFP_PC_VERSION` build definition. Both the menu flag and watermark call it.

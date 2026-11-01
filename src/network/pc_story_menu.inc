@@ -20,12 +20,12 @@ static int story_online_unavailable;
 
 static int pc_story_menu_button(void (*original)(void))
 {
-    if(!pc_story_coop_enabled()) return 0;
     const uint32_t frame=g_esp;
     /* Original main builder sub_002D0BE0, first row: ID zero, inherited
        main-menu callback. All other builders and rows retain their callbacks. */
     if(WORD_AT(frame)!=0x002D0C8Eu || WORD_AT(frame+8u)!=0u || WORD_AT(frame+20u)!=0u)
         return 0;
+    if(!pc_story_coop_enabled()) return 0;
     WORD_AT(frame+20u)=STORY_OPEN_CB;
     original();
     WORD_AT(frame+20u)=0u;
@@ -136,17 +136,19 @@ static void story_select(void)
     restore_registers(&r);g_esp+=4u;
 }
 
-/* Keep private chooser callbacks unreachable in non-preview builds too. */
+/* Generic fallback only: contextual lobby handlers must run first. The flag
+   only controls chooser entry, never dispatch or navigation inside a lobby. */
 static void (*story_menu_lookup(uint32_t address))(void)
 {
-    if(!pc_story_coop_enabled()) return NULL;
+    void (*handler)(void);
     switch(address) {
-    case STORY_OPEN_CB:return story_open;
-    case STORY_BUILD_CB:return story_build;
-    case STORY_SELECT_CB:return story_select;
-    case STORY_BACK_CB:return story_back;
+    case STORY_OPEN_CB:handler=story_open;break;
+    case STORY_BUILD_CB:handler=story_build;break;
+    case STORY_SELECT_CB:handler=story_select;break;
+    case STORY_BACK_CB:handler=story_back;break;
     default:return NULL;
     }
+    return pc_story_coop_enabled()?handler:NULL;
 }
 
 #ifdef _WIN32

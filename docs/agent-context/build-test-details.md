@@ -1,5 +1,20 @@
 # Story release flag regression
 
+`test_fov_settings.py` also executes the public production
+`pc_display_menu_lookup` with the actual chooser/lobby adapters together.
+Assert chooser fallback, host/guest headings, mission/difficulty selection and
+difficulty Back for their overlapping callback IDs. The `story-before-lobby`
+mutation must compile, then fail at the host heading assertion. Separate helper
+tests cannot establish precedence and previously missed the published bug.
+
+Run `tests/network/story_pair_game.py --load-probe --lobby-controls --lobby-only
+--menu-navigation-probe` on Windows for isolated actual host/guest mission and
+difficulty controls, difficulty/level Back, lobby exit, host-loss main return,
+Story reentry and local level selection. Review fresh `nav-*.png` alongside
+the pair receipt; the navigation option records screens, not assertions about
+their contents. It does not start or complete a mission. Omit `--lobby-only`
+and the navigation option for the existing first-mission opening/load probe.
+
 `tests/graphics/test_quit_menu.py::test_story_version_feature_flag` compiles the
 production menu fixture for both display adapters with stable, ordinary beta,
 development, empty, previous Story preview and Story beta version strings.

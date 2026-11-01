@@ -1,6 +1,6 @@
 # Subsystem entry points
 
-Story/Online integration: [contracts](systems-details.md).
+Story/Online integration and callback precedence: [contracts](systems-details.md).
 
 Battle Mech mouse: [shared routing and guards](mounted-mouse.md#battle-mech-mouse-425).
 

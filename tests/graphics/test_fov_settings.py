@@ -27,18 +27,27 @@ def test_native_menu_callbacks_compile(tmp_path, source):
     assert result.returncode == 0, result.stdout + result.stderr
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows settings persistence adapter')
-@pytest.mark.parametrize("mutation", ["fixed", "drain-other-menu"])
+@pytest.mark.parametrize("mutation", ["fixed", "drain-other-menu", "story-before-lobby"])
 def test_fov_settings(tmp_path, mutation):
     compiler, environment = native_compiler(tmp_path)
     exe = tmp_path / 'fov.exe'
     source = ROOT / 'tests/graphics/fov_settings.c'
-    if mutation == 'drain-other-menu':
-        adapter = (ROOT / 'src/storage/pc_storage_menu.inc').read_text(encoding='utf-8')
-        guard = 'if(sd_picker_menu && sd_picker_menu==menu)'
-        assert guard in adapter
-        (tmp_path / 'pc_storage_menu.inc').write_text(adapter.replace(guard, 'if(sd_picker_menu)'), encoding='utf-8')
+    if mutation != 'fixed':
+        if mutation == 'drain-other-menu':
+            adapter = (ROOT / 'src/storage/pc_storage_menu.inc').read_text(encoding='utf-8')
+            guard = 'if(sd_picker_menu && sd_picker_menu==menu)'
+            assert guard in adapter
+            (tmp_path / 'pc_storage_menu.inc').write_text(adapter.replace(guard, 'if(sd_picker_menu)'), encoding='utf-8')
         menu = tmp_path / 'pc_display_menu.c'
-        menu.write_text((ROOT / 'src/interface/pc_display_menu.c').read_text(encoding='utf-8'), encoding='utf-8')
+        production = (ROOT / 'src/interface/pc_display_menu.c').read_text(encoding='utf-8')
+        if mutation == 'story-before-lobby':
+            fallback = '    void (*story_entry_handler)(void)=story_menu_lookup(address);\n    if(story_entry_handler) return story_entry_handler;\n'
+            assert production.count(fallback)==1
+            production = production.replace(fallback, '')
+            entry = 'void (*pc_display_menu_lookup(uint32_t address))(void)\n{\n'
+            assert entry in production
+            production = production.replace(entry, entry+fallback)
+        menu.write_text(production, encoding='utf-8')
         fixture = source.read_text(encoding='utf-8').replace('../src/interface/pc_display.c', (ROOT / 'src/interface/pc_display.c').as_posix()).replace('../src/interface/pc_display_menu.c', menu.as_posix())
         source = tmp_path / 'fov_settings.c'
         source.write_text(fixture, encoding='utf-8')
@@ -54,6 +63,9 @@ def test_fov_settings(tmp_path, mutation):
     if mutation == 'drain-other-menu':
         assert result.returncode != 0
         assert 'picker_result==1' in result.stderr
+    elif mutation == 'story-before-lobby':
+        assert result.returncode != 0
+        assert 'pc_display_menu_lookup(STORY_BUILD_CB)==story_lobby_header' in result.stderr
     else:
         assert result.returncode == 0, result.stdout + result.stderr
         assert 'PASS:' in result.stdout

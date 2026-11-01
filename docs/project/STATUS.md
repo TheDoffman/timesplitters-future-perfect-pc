@@ -1,3 +1,44 @@
+## Story beta menu callback repair - 2026-11-01
+
+Local, uncommitted changes on online-story-coop at ee64d501 restore the
+pre-flag dispatch order: contextual lobby handlers resolve before generic
+Story chooser callbacks. The version policy now runs only for the matching
+Story entry row or generic chooser callback IDs. Main and the published
+v0.5.0-story-coop-beta.1 release are unchanged; no publication was performed.
+
+Reproduced the published a07a7288 build's missing lobby heading/thumbnail and
+failed difficulty selection with the actual isolated host/guest runner.
+After repair, reviewed fresh Windows captures showing the lobby heading and
+thumbnail, populated mission and difficulty lists, difficulty Back to mission
+selection, mission Back to the joined lobby, lobby Back to Story, the full
+nine-row main menu, guest host-loss return to main, centered Story reentry on
+both peers and populated Local mission selection. The two-player test also
+confirmed replicated Normal difficulty and guest Progress/Back without losing
+the roster. Evidence is local under private/network-validation/story-menu-flag-after;
+the runner's receipt alone does not establish the visual review.
+
+The subsequent bounded two-player first-mission probe passed lobby controls,
+synchronized intro/load, the original firearm handoff, independent owned-player
+movement, matching replicated positions and firing/ammo consumption on both
+peers. Reviewed both fresh load-after captures: normal first-person views,
+visible weapons and HUD. Both runners exited0. This uses isolated synthetic
+input and loopback transport, not physical-controller or Internet acceptance;
+the mission was not completed. Its receipt/captures remain under
+private/network-validation/story-load-pair and the paired disposable saves.
+
+Windows11 x64/Python3.14.2/MSBuild17.12.6: official Build, complete patch checks
+and built-in tests passed; 57 affected menu/version/launcher checks passed with
+2 Mac-only skips, plus 20 repository-context checks. The public-dispatch
+regression includes both real adapters; deliberately restoring the incorrect
+lookup order compiles and fails at the lobby-header assertion. The canonical
+unlocked fixture verifies unchanged. The locally rebuilt EXE is
+827ede5eba001fe1cd9a0ec26ea6b9662b4296a65628301a2c364ea4ee84ea63,
+compatibility d5e98c9ee37678ce2d121bd9ff519074efcf685a22c4ce2c52a33a7a668fb8ae;
+content verification passed, with399.88GiB free before building. The Windows
+default renderer was used (XBOXRECOMP_VULKAN=OFF); driver version was not recorded.
+Native Mac
+physical menu/Story transport acceptance remains pending under MAC-013.
+
 ## Story beta.1 corrected in place - 2026-11-01
 
 At the user's explicit request, republished the existing mutable preview

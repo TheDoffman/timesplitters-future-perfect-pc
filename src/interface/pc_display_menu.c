@@ -1271,8 +1271,6 @@ static void online_activate(void)
 
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
-    void (*story_entry_handler)(void)=story_menu_lookup(address);
-    if(story_entry_handler) return story_entry_handler;
 #ifdef _WIN32
     void (*story_back_handler)(void)=story_online_back_lookup(address);
     if(story_back_handler) return story_back_handler;
@@ -1293,6 +1291,12 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     void (*story_callback)(void)=story_lobby_lookup(address);
     if(story_callback) return story_callback;
 #endif
+
+    /* Lobby headers, difficulty and Back reuse the chooser's callback IDs.
+       Resolve their contextual handlers before the generic Story fallback,
+       preserving the dispatch order from before the release flag. */
+    void (*story_entry_handler)(void)=story_menu_lookup(address);
+    if(story_entry_handler) return story_entry_handler;
 
     if(address==0x002D9390u)return display_highlight_draw;
     if(address==0x002C3E20u)return audio_options_build;
