@@ -1,3 +1,5 @@
+Kill feed: timing scopes, attribution, viewport colors and rematch reset are
+documented in [the feed guide](../development/arcade-kill-feed.md).
 Story rewards: additive2465 wraps356800 for the single frontend context;
 profile mapper356870 stays original. See [contract](systems-details.md#four-player-rewards-context).
 

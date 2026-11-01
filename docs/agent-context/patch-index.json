@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "8a8bcd4d1501a726cf61fcfffd7d6505723956f9b9b7a67dbc8a2f0d73a9f77f",
+  "loaderSha256": "e5fc54fd8b15ceaf6ee297047ba9e45c4c125d16e2a9dc36b73cbb50c6bb715d",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1544,6 +1544,14 @@
       ]
     },
     {
+      "name": "2240-arcade-kill-feed.patch",
+      "path": "patches/graphics/interface/2240-arcade-kill-feed.patch",
+      "sha256": "8d8f340c472e4aaa1dcb93044e07548483bb7a350b67caca20ef93e100af0e37",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "2240-story-authored-records.patch",
       "path": "patches/network/2240-story-authored-records.patch",
       "sha256": "eb046cdcfda71281360c521a7aa3a4f2d5efde5439469ea2dc33145b00806ec2",
@@ -1816,6 +1824,14 @@
       "name": "2465-story-reward-context-slot.patch",
       "path": "patches/network/2465-story-reward-context-slot.patch",
       "sha256": "acf493d32404e687c9ca216eec126a6c06d2f5361be80f2cb2a34dc46c965004",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2480-kill-feed-attribution.patch",
+      "path": "patches/graphics/interface/2480-kill-feed-attribution.patch",
+      "sha256": "c6d3c4bfd11676b9a4c0f425a21e9c4a5f94efa7c9255b92d3247ccaaa1c530c",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
       ]
@@ -2299,6 +2315,14 @@
       "name": "2180-native-player-trigger-event.patch",
       "path": "patches/gameplay/timing/2180-native-player-trigger-event.patch",
       "sha256": "e271bb46f9716f1485a06b8a111f9185b77d3ce0438f934c4938bc5be3374a7c",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2480-kill-feed-firing-scope.patch",
+      "path": "patches/gameplay/timing/2480-kill-feed-firing-scope.patch",
+      "sha256": "aaaf4c88721c2cf9b71eb7abc26ba7eb332809bd8f99e050f359d05a664c4717",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
       ]

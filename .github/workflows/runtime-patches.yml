@@ -246,7 +246,7 @@ jobs:
             tests/diagnostics/test_debug_settings_model.py
             tests/network/test_native_network.py tests/network/test_crossplay_peer.py tests/network/test_online_companion.py tests/network/test_online_theme.py tests/network/test_online.py tests/network/test_online_host.py tests/network/test_network_identity.py
             tests/network/test_network_guest_dispatch.py tests/network/test_network_bot_results.py tests/network/test_network_movement_stats.py tests/network/test_network_motion_stats.py tests/network/test_network_pose_stats.py tests/analysis/test_procedural_surface_stats.py
-            tests/gameplay/test_auto_look.py tests/input/test_terminal_mouse.py tests/gameplay/test_mounted_mouse.py tests/input/test_keyboard_menu.py tests/input/test_controller_profile.py tests/input/test_weapon_slots.py tests/input/test_menu_mouse.py tests/graphics/test_menu_text.py tests/graphics/test_quit_menu.py tests/graphics/test_ui_layout.py tests/graphics/test_camera_feed.py tests/graphics/test_crane_overlay.py tests/graphics/test_ghost_actor_overlay.py
+            tests/gameplay/test_auto_look.py tests/input/test_terminal_mouse.py tests/gameplay/test_mounted_mouse.py tests/input/test_keyboard_menu.py tests/input/test_controller_profile.py tests/input/test_weapon_slots.py tests/input/test_menu_mouse.py tests/graphics/test_menu_text.py tests/graphics/test_quit_menu.py tests/graphics/test_ui_layout.py tests/graphics/test_kill_feed.py tests/graphics/test_camera_feed.py tests/graphics/test_crane_overlay.py tests/graphics/test_ghost_actor_overlay.py
             tests/repository/test_story_coop_local.py tests/network/test_story_evidence.py
           )
           if [[ "$RUNNER_OS" == "Windows" ]]; then

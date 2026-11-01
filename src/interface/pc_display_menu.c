@@ -363,7 +363,7 @@ static int mode_count, selected_mode, page, staged_fov, previous_fov;
 static int staged_rate, applied_rate;
 static unsigned applied_texture;
 static uint32_t apply_row;
-static uint32_t rate_row,subtitle_row;
+static uint32_t rate_row,subtitle_row,feed_row;
 static unsigned staged_subtitles,applied_subtitles;
 static uint32_t resolution_row, aspect_row;
 static uint32_t texture_row;
@@ -865,9 +865,10 @@ void pc_network_bots_menu(void (*original)(void))
 #include "pc_quit_menu.inc"
 #include "pc_menu_mouse_guest.inc"
 #include "pc_display_ui.inc"
+static uint32_t bits(float f) { uint32_t u; memcpy(&u,&f,4); return u; }
+#include "pc_kill_feed_guest.inc"
 #include "pc_tutorial_ui.inc"
 
-static uint32_t bits(float f) { uint32_t u; memcpy(&u,&f,4); return u; }
 /* The title's focus painter takes (menu, row, float bounds[4]). Replace
  * every shared focus bar, retaining native background, tint and fade. */
 extern void sub_002D9390(void);
@@ -1013,7 +1014,7 @@ static void update_apply(void)
 }
 static void labels(void)
 {
-    resolution_row=aspect_row=texture_row=rate_row=subtitle_row=apply_row=0;
+    resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=apply_row=0;
     if(page==DISPLAY_HOME) {
         aspect_row=guest_call(sub_00079D60_gen,6,text_at(7,"Aspect ratio"),0u,0u,0u,0u,0u);
         guest_call(sub_0007D480,2,0x8400u,0u);
@@ -1043,6 +1044,11 @@ static void labels(void)
         guest_call(sub_000717D0,1,text_at(13,"Off"));
         guest_call(sub_000717D0,1,text_at(14,"On"));
         guest_call(sub_00075430,2,subtitle_row,staged_subtitles);
+        feed_row=guest_call(sub_00079D60_gen,6,text_at(15,"Kill Feed"),10u,0u,0u,0u,0u);
+        guest_call(sub_0007D480,2,0x8400u,0u);
+        guest_call(sub_000717D0,1,text_at(16,"Off"));
+        guest_call(sub_000717D0,1,text_at(17,"On"));
+        guest_call(sub_00075430,2,feed_row,(uint32_t)pc_feed_enabled());
         if(*status)small_note(21,status);
         apply_row=guest_call(sub_00079D60_gen,6,text_at(4,"Apply"),3u,0u,0u,SELECT_CB,0u);
         update_apply();
@@ -1058,6 +1064,12 @@ static void read_choices(void)
     if(texture_row && WORD_AT(texture_row+0xc8)<=1u)
         texture_choice=WORD_AT(texture_row+0xc8);
     if(subtitle_row && WORD_AT(subtitle_row+0xc8)<=1u)staged_subtitles=WORD_AT(subtitle_row+0xc8);
+    if(feed_row && WORD_AT(feed_row+0xc8)<=1u && (int)WORD_AT(feed_row+0xc8)!=pc_feed_enabled()) {
+        if(!pc_feed_set_enabled((int)WORD_AT(feed_row+0xc8))) {
+            guest_call(sub_00075430,2,feed_row,(uint32_t)pc_feed_enabled());
+            snprintf(status,sizeof status,"Could not save Kill Feed preference.");
+        } else pc_feed_clear(&kill_feed);
+    }
     if(rate_row && WORD_AT(rate_row+0xc8)<PC_FRAME_RATE_COUNT)
         staged_rate=(int)WORD_AT(rate_row+0xc8);
 }
@@ -1074,7 +1086,7 @@ static void build_menu(void)
 }
 static void refresh(int next,int selected)
 {
-    page=next;resolution_row=aspect_row=texture_row=rate_row=subtitle_row=apply_row=0;
+    page=next;resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=apply_row=0;
     guest_call(sub_00078980,1,current_menu);
     /* Guest rebuild restores old choices by row ID. Reapply every staged value,
      * including the newly filtered resolution list, without committing it. */
@@ -1271,6 +1283,11 @@ static void online_activate(void)
 
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
+    /* HUD callbacks stop on results/loading screens. Reset before a rematch
+       reuses the same actor pool and level; pause keeps active phase seven. */
+    if(kill_feed.ready && WORD_AT(0x007DE30Cu)!=7u) {
+        pc_feed_clear(&kill_feed);memset(&feed_attribution,0,sizeof feed_attribution);
+    }
     void (*story_entry_handler)(void)=story_menu_lookup(address);
     if(story_entry_handler) return story_entry_handler;
 #ifdef _WIN32

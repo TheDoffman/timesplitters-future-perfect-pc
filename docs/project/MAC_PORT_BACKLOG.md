@@ -6,6 +6,11 @@ Mac has no equivalent in-window bar and retains its system menu and F1 pointer
 capture. Shared JSON accessors preserve unknown settings on either host; no
 new platform adapter or Mac feature is introduced. Windows checks are in STATUS.
 
+Optional Arcade kill feed (2026-11-01, uncommitted): shared HUD hook, core and
+preference storage serve both hosts. No new native adapter required; native
+Mac menu/rendering and online acceptance pending. See
+[contract](../development/arcade-kill-feed.md) and STATUS.
+
 This tracks platform exceptions and native validation for shared PC/Mac features.
 Ordinary feature logic now belongs in shared source by default; follow
 [the shared implementation contract](../development/shared-platform.md). Add/update an

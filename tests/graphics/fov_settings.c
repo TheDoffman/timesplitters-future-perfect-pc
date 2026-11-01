@@ -48,6 +48,10 @@ void pc_prompts_layout_end(void) {}
 #define TUTORIAL_STUB(name) void name(void) { CHECK(0); }
 TUTORIAL_STUB(sub_00147080) TUTORIAL_STUB(sub_00042D10)
 TUTORIAL_STUB(sub_0003FA10) TUTORIAL_STUB(sub_0003FCF0) TUTORIAL_STUB(sub_0003F8D0)
+/* Kill-feed drawing is linked through the same menu unit, but must not
+ * execute in this settings-only fixture. */
+TUTORIAL_STUB(sub_00041E30) TUTORIAL_STUB(sub_00021450)
+TUTORIAL_STUB(sub_0001ED50) TUTORIAL_STUB(sub_0001F090)
 #undef TUTORIAL_STUB
 /* Mouse-menu behavior is exercised by menu_mouse.c. Keep its dependencies
  * linked here, but fail if this settings-only fixture enters those paths. */
@@ -272,7 +276,7 @@ int main(int argc,char **argv)
     reload("TSFP_DISPLAY_V1 1280 720\n");
     tsfp_texture_set_4k(0);
     call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
-    CHECK(page==DISPLAY_HOME && built_row_count==7 && separators==0);
+    CHECK(page==DISPLAY_HOME && built_row_count==8 && separators==0 && (built_rows & (1u<<10)));
     { /* Shared focus bars stay rounded regardless of the menu descriptor. */
         float bounds[4]={20,20,220,47};
         WORD_AT(current_menu+4)=storage;WORD_AT(current_menu+0x20)=0x310000;

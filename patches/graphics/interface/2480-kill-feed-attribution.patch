@@ -1,0 +1,55 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -380,7 +380,7 @@
+ }
+ 
+ extern void sub_000BABA0_gen(void);
+-void sub_000BABA0(void)
++static void pc_feed_stock_death(void)
+ {
+ #ifdef TSFP_PC_CONTROLS
+     pc_story_network_departure_death(sub_000BABA0_gen);
+@@ -406,6 +406,43 @@
+     pc_story_network_lobby_lost(sub_001AF950_gen);
+ #else
+     sub_001AF950_gen();
++#endif
++}
++
++void sub_000BABA0(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_kill_feed_death(pc_feed_stock_death);
++#else
++    pc_feed_stock_death();
++#endif
++}
++extern void sub_000EAAF0_gen(void);
++extern void sub_000B9220_gen(void);
++void sub_000EAAF0(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_kill_feed_projectile(sub_000EAAF0_gen);
++#else
++    sub_000EAAF0_gen();
++#endif
++}
++void sub_000B9220(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_kill_feed_hit_record(sub_000B9220_gen);
++#else
++    sub_000B9220_gen();
++#endif
++}
++
++extern void sub_000DC4A0_gen(void);
++void sub_000DC4A0(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_kill_feed_allocate(sub_000DC4A0_gen);
++#else
++    sub_000DC4A0_gen();
+ #endif
+ }
+ 

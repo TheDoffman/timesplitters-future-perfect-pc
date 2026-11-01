@@ -1,3 +1,36 @@
+## Optional Arcade kill feed (2026-11-01)
+
+Feature/arcade-kill-feed, based on main 0b0fcb8b. Windows x64
+MSVC/D3D11 full Build passed; latest content marker 5571c5b9 includes the
+rematch reset, stable patch anchor and larger centered right-facing weapon icons.
+Temporary tracing is removed. The final icon layout was observed in a live
+Hotel rematch; the Video Options toggle screenshot was saved and reopened
+to verify its contents (kill-feed-menu-verified.jpg).
+
+Live isolated Hotel matches verified named bot/player eliminations, multiple
+rows, expiry and compact 40% native font. Team Deathmatch on bf04f4e4 verified
+ally-blue/enemy-red names relative to Test Lab and original weapon silhouettes
+between names. Hitscan firing scopes preserve existing timing/network callbacks;
+delayed shots retain original weapon attribution. Unknown attribution uses a
+separator, never the attacker's current weapon.
+
+Frontend Video Options defaults OFF; enabling persisted across process restarts
+in isolated pc-hud.ini. Pause entry is implemented but its interactive toggle,
+live online, split-screen, ultrawide and native Mac remain unverified. The
+ac6e9e62 rematch showed the colored feed and weapon icon after a completed
+Hotel Team Deathmatch. Remote weapon-icon metadata is not transmitted yet; replicated score
+counters provide names with separators when weapon identity is unavailable.
+
+All 59 selected checks passed: 37 core/settings/layout/patch-tracking checks,
+three historical upgrades, seven integrations and twelve other transitions. The HUD patch
+uses a stable interior anchor so appended unrelated edits survive unwind.
+Historical subset tests exclude feature-only dependent wrappers.
+
+Tests use private/test-saves/kill-feed and RECOMP_GAME_DIR pointing to the
+complete Desktop TS Decompile/private/game assets. Existing broken pak/xmv
+junctions, personal saves and settings were preserved. A second game briefly interrupted testing; it was left untouched and the
+rematch/menu checks resumed later in the isolated build.
+
 ## Dedicated Discord release feed (2026-11-01)
 
 Created release-updates (1566483143748231228) by duplicating the read-only
