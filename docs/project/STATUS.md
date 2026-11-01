@@ -1,3 +1,68 @@
+## Dropped NPC weapon motion cadence - 2026-10-31
+
+Local/uncommitted online-story-coop, base50425c12 with the preceding arm-pose
+changes retained. User retest identifies dropped weapons still moving slowly
+on guests. The independent first-mission Story drop publisher imposed a six-tick
+cap (10Hz at Original60); guests deliberately disable local throw physics and
+apply only host transforms. Arm/held-model repairs cannot remove that hold.
+Changed throw/landing transforms now publish each simulation tick, with repeated
+callbacks in the same tick suppressed. Creation, pickup IDs, quantities, removal,
+one-second reliable recovery and stationary packet suppression remain unchanged.
+Ordinary Online stock drop physics does not use this first-mission publisher.
+
+Windows x64/MSVC14.42/D3D11, supported US XBE verified and398.21GiB free before
+build. Complete patch verification and supported Build/built-in checks passed;
+focused suite42passed2Mac-host-only skipped (26.69s), then the added cadence
+mutation plus drop-state cases3passed (1.43s). The regression checks60 movement/
+rotation updates in60 ticks and fails with the former cap restored. Existing
+creation/retry/removal/foreign/stale/reused-storage checks pass. The user confirmed
+the dropped-weapon motion fix in Windows gameplay. No new automated mission
+playthrough or physical Mac runtime check was performed. Saves/settings preserved.
+
+Compatibility 0da23ff58a101c4147fd86f89501cbe49c9fa639712f354bccaf5042f56b634e;
+EXE81b04dc8a7e9257b0fe606212fdddc4c996dcee4d992eaa0de2fdba997de30fb.
+Build evidence: logs/story-dropped-weapons-cadence-build.log. No commit/push.
+
+## NPC held-weapon arm poses - 2026-10-31
+
+Local/uncommitted online-story-coop, base50425c12; Windows x64, MSVC14.42,
+SDK10.0.22621, D3D11, Original60. The fresh user demonstration contains2148
+video frames and1212 read-only peer samples. Host ally arm mask8184/clip108
+contrasts with guest mask0/clip0. Original5AFB0 confirms A0/A4 are authored clip
+IDs resolved locally, and actor+B08 supplies its aim-frame value. Prior incomplete
+overlay-control experiments omitted those IDs; no host cache pointers are copied.
+Shared pose232 now carries the complete numeric arm controller, validates local
+resources before enabling it, and refreshes validated held attachments after body
+bones. Online bots share this repair. Story pose plus stock cursor is256 bytes;
+physical prefix236 is unchanged. Story/cinematic message tags identify the new
+layout; both peers need this build.
+
+Supported US XBE SHA2563cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc
+verified;399.27GiB free before build. Complete patch verification and supported
+Windows Build/built-in checks passed. Focused Story/Online/FOV suite42passed,
+2Mac-host-only skipped (27.60s), including original5AFB0/A2B50 fixtures in Windows
+and native-network modes and a mutation rejecting omitted arm state. Sampling,
+lerp and weapon-matrix construction are stubbed in that fixture; it verifies
+bindings/arguments/refresh ordering, not final rendered geometry.
+
+Isolated two-peer Story load/movement passed; controller, observer and both
+runners exited0, run locks released and disposable partition images recycled.
+That opening route did not activate the arm layer, so it establishes startup,
+movement and lifetime only. A separate six-bot Online combat run passed151.72s
+including40s after movement. Host28368 and guest28225 alive samples had active
+arm layers, with matching clip families106/107/108/110/113. The former guest
+state omission is absent; these asynchronous samples do not measure rendered
+FPS. Both Online peers remained live until controlled cleanup, which completed;
+cosmetic corpse copies still occurred. No full mission was completed.
+
+Build compatibility d170d00b2202ee9a92d93e8c96b746d9e55a6f2af70a7963bf5a1c5b17116620;
+EXE6afdcf1e3fe20808661fa1add8823dd8df67826bb7331aa1d54e0b7abcd48bc0.
+Evidence: logs/story-floating-weapons-demo-20261031-193835,
+logs/story-weapons-limb-fixed, logs/online-bots-weapon-limb-fixed and
+logs/story-npc-weapons-build.log. Close combat floating/color visual acceptance
+remains for the user's test; physical Mac Story/Online remains unverified.
+No commit, push or publication by this task.
+
 ## Four-player Story rewards rendering - 2026-10-31
 
 Local/uncommitted online-story-coop, based on d4b75896. A four-instance isolated

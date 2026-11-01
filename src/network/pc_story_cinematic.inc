@@ -11,8 +11,8 @@ typedef struct StoryCinematic {
     float feed_remaining;
     PcCharacterPose pose;
 } StoryCinematic;
-#define STORY_CINE_MAGIC 0x33594353u
-#define STORY_CINE_POSE_MAGIC 0x33505953u
+#define STORY_CINE_MAGIC 0x34594353u
+#define STORY_CINE_POSE_MAGIC 0x34505953u
 #define STORY_CINE_BASE_BYTES offsetof(StoryCinematic,pose)
 typedef struct StoryCinematicBase {uint8_t state[STORY_CINE_BASE_BYTES];uint32_t checksum;} StoryCinematicBase;
 typedef struct StoryCinematicPose {uint32_t magic,match,serial,checksum;PcCharacterPose pose;} StoryCinematicPose;
@@ -191,7 +191,7 @@ static void story_cine_frame(void)
             s.fade_present=1;memcpy(s.fade,(const void *)((uintptr_t)(fade+8u)+g_xbox_mem_offset),sizeof s.fade);
         }
         if(s.active && model && guest_writable(model,0x200u)) {
-            pc_character_pose_read(&s.pose,(const void *)((uintptr_t)model+g_xbox_mem_offset));
+            pc_character_pose_read(&s.pose,(const void *)((uintptr_t)model+g_xbox_mem_offset),(const void *)((uintptr_t)WORD_AT(entity+0x7cu)+g_xbox_mem_offset));
             s.pose_present=(uint32_t)pc_character_pose_valid(&s.pose);
         }
         if(!s.pose_present) memset(&s.pose,0,sizeof s.pose);

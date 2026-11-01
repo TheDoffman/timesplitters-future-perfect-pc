@@ -541,3 +541,58 @@ def test_story_original_guest_rewards(tmp_path,context_mapping):
                               'if(0 && story_rewards_guest() && WORD_AT(0x790950u)==1u &&')
     output=compile_and_run(tmp_path,source,expect_success=context_mapping)
     if context_mapping: assert 'PASS:' in output
+
+
+@pytest.mark.parametrize("native", [False, True])
+@pytest.mark.parametrize("omit_limb", [False, True], ids=["fixed", "omitted-arm-state"])
+def test_original_character_limb_pose(tmp_path, native, omit_limb):
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    import re
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={a:dict(name=f'sub_{a:08X}',end=b) for a,b in ((0x5afb0,0x5b71c),(0xa2b50,0xa2c00))}
+        translator=FunctionTranslator(image,functions)
+        code='\n'.join(translator.translate_function(a,info) for a,info in functions.items())
+        constants={int(a,16)+offset for a in re.findall(r'0x([0-9A-Fa-f]+)',code) for offset in (0,4,8,12)}
+        constants={a for a in constants if 0x470000<=a<0x500000}
+        seeds='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x}u;' for a in sorted(constants))
+    finally:
+        vars(config).update(previous)
+    production=(ROOT/'src/interface/pc_display_menu.c').read_text()
+    weapons=production[production.index('void pc_network_bots_pose_weapons('):production.index('/* Send the original reliable hit request')]
+    production=production[production.index('void pc_character_pose_present('):production.index('void pc_network_bots_present(')]
+    source=(ROOT/'tests/network/character_limb_pose.c').read_text()
+    source=source.replace('/* POSE_HEADER */',(ROOT/'src/network/pc_character_pose.h').read_text())
+    source=source.replace('/* ORIGINAL_LIMB */',code).replace('/* PRODUCTION_POSE */',production).replace('/* PRODUCTION_WEAPONS */',weapons)
+    source=source.replace('/* ORIGINAL_CONSTANTS */',seeds)
+    if native: source='#define TEST_NATIVE 1\n'+source
+    if omit_limb:
+        start=source.index('    /* US5AFB0 resolves')
+        end=source.index('    WORD_AT(model+0xa8u)=',start)
+        source=source[:start]+source[end:]
+        source=source.replace('assert(MEM32(MODEL+0x9c)==8184 && MEM32(MODEL+0xa0)==108 && MEM32(MODEL+0xd0)==18);',
+            'if(MEM32(MODEL+0x9c)!=8184 || MEM32(MODEL+0xa0)!=108 || MEM32(MODEL+0xd0)!=18){fputs("FAIL: sensitivity omitted arm animation\\n",stderr);return 1;}')
+    compile_and_run(tmp_path,source,expect_success=not omit_limb)
+
+
+def test_story_drop_cadence_rejects_legacy(tmp_path):
+    from test_recomp_float_joins import compile_and_run
+    production=(ROOT/'src/network/pc_story_drops.inc').read_text(encoding='utf-8')
+    guard='story_drop_ticked && tick==story_drop_tick'
+    assert guard in production
+    production=production.replace(guard,'story_drop_ticked && (uint32_t)(tick-story_drop_tick)<6u')
+    source=(ROOT/'tests/network/story_drop_state.c').read_text(encoding='utf-8')
+    source=source.replace('#include "pc_story_drops.inc"',production)
+    check='story_drop_frame();assert(sends==tick-999 && sent[sends-1].position[0]==pos[0]);'
+    assert check in source
+    source=source.replace(check,'story_drop_frame();if(sends!=tick-999){fputs("FAIL: sensitivity dropped-weapon10Hz hold\\n",stderr);return 1;}')
+    source='#ifdef _MSC_VER\n#define _Static_assert(c,m) typedef char story_drop_message_bound[(c)?1:-1]\n#endif\n'+source
+    compile_and_run(tmp_path,source,expect_success=False)

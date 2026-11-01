@@ -479,7 +479,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
                 uint32_t model;memcpy(&model,body+4,4);
                 if(model) {
                     PcCharacterPose pose;
-                    pc_character_pose_read(&pose,(const void *)((uintptr_t)model+g_xbox_mem_offset));
+                    pc_character_pose_read(&pose,(const void *)((uintptr_t)model+g_xbox_mem_offset),(const void *)actor);
                     memcpy(&state.clip,&pose,sizeof pose);
                 }
             }

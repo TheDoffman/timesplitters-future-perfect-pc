@@ -537,7 +537,7 @@ void pc_network_bots_entity_room(uint32_t entity,uint32_t room)
 #endif
 }
 /* Share the contiguous animation slice across both NPC protocols. */
-_Static_assert(sizeof(PcCharacterPose)==216,"Character pose wire layout");
+_Static_assert(sizeof(PcCharacterPose)==232,"Character pose wire layout");
 _Static_assert(offsetof(PcNetworkBotState,shot)-offsetof(PcNetworkBotState,clip)==sizeof(PcCharacterPose),"Bot pose slice");
 void pc_character_pose_present(uint32_t entity,const PcCharacterPose *pose)
 {
@@ -561,6 +561,28 @@ void pc_character_pose_present(uint32_t entity,const PcCharacterPose *pose)
     WORD_AT(model+0x12cu)=(uint32_t)pose->next_clip;WORD_AT(model+0x130u)=(uint32_t)(int32_t)next_index;
     memcpy((void *)((uintptr_t)(model+0x134u)+g_xbox_mem_offset),pose->next_channels,72);
     WORD_AT(model+0x17cu)=pose->next_cycle;WORD_AT(model+0x180u)=pose->next_flags&~0xc00u;
+    /* US5AFB0 resolves A0/A4 through the local clip table. A mask/enable bit
+       alone invokes that sampler with clip0, which may not even be loaded. */
+    const uint32_t limb_first=pose->limb_clips_flags&4095u;
+    const uint32_t limb_second=(pose->limb_clips_flags>>12)&4095u;
+    uint32_t limb_flags=(pose->limb_clips_flags>>24)&31u;
+    const uint32_t assets=WORD_AT(0x007e3954u);
+    int16_t limb_index[2];
+    memcpy(limb_index,(const void *)((uintptr_t)(0x007e03c0u+limb_first*2u)+g_xbox_mem_offset),2);
+    memcpy(limb_index+1,(const void *)((uintptr_t)(0x007e03c0u+limb_second*2u)+g_xbox_mem_offset),2);
+    for(unsigned i=0;pose->limb_mask && !(limb_flags&1u) &&
+        i<(pose->overlay_phase?2u:1u);i++) {
+        const uint32_t cell=assets+(uint32_t)(uint16_t)limb_index[i]*4u;
+        if(limb_index[i]<0 || !assets || !guest_writable(cell,4u) ||
+           !guest_writable(WORD_AT(cell),0x20u)) limb_flags=1u;
+    }
+    WORD_AT(model+0x9cu)=pose->limb_mask;
+    WORD_AT(model+0xa0u)=limb_first;WORD_AT(model+0xa4u)=limb_second;
+    WORD_AT(model+0xd0u)=limb_flags;
+    memcpy((void *)((uintptr_t)(model+0xccu)+g_xbox_mem_offset),&pose->limb_elapsed,4);
+    const uint32_t actor=WORD_AT(entity+0x7cu);
+    if(guest_writable(actor,0xea0u) && WORD_AT(actor)==entity)
+        memcpy((void *)((uintptr_t)(actor+0xb08u)+g_xbox_mem_offset),&pose->aim_frame,4);
     WORD_AT(model+0xa8u)=pose->overlay_phase;
     memcpy((void *)((uintptr_t)(model+0xacu)+g_xbox_mem_offset),pose->overlay_channels,32);
     memcpy((void *)((uintptr_t)(model+0x198u)+g_xbox_mem_offset),pose->blend_channels,12);
@@ -634,7 +656,7 @@ void pc_character_camo_present(uint32_t entity)
 void pc_network_bots_pose_weapons(uint32_t entity)
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
-    extern void sub_001BE870(void);
+    extern void sub_001BE870(void),sub_000A0860(void),sub_000A2B50(void);
     float health;
     if(!guest_writable(entity,0x2e8u)) return;
     memcpy(&health,(void *)((uintptr_t)(entity+0x1ccu)+g_xbox_mem_offset),4);
@@ -642,6 +664,22 @@ void pc_network_bots_pose_weapons(uint32_t entity)
         /* Only after the engine has allocated/evaluated this frame's bones. */
         guest_call(sub_001BE870,2,entity,0u);
         guest_call(sub_001BE870,2,entity,1u);
+        const uint32_t actor=WORD_AT(entity+0x7cu),model=WORD_AT(entity+4u);
+        if(!guest_writable(actor,0xea0u) || WORD_AT(actor)!=entity ||
+           !guest_writable(model,0x200u) || !guest_writable(WORD_AT(model+0x10u),64u) ||
+           !(WORD_AT(entity+0x28u)&0x200000u)) return;
+        for(unsigned hand=0;hand<2u;hand++) {
+            const uint32_t record=actor+0xa4u+hand*0x130u,weapon=WORD_AT(record+0xe8u);
+            if(!guest_writable(weapon,0x2e8u) || WORD_AT(weapon+0x20u)!=0x20u ||
+               WORD_AT(weapon+0x7cu)!=record || WORD_AT(record+0xecu)!=actor ||
+               WORD_AT(weapon+0x78u)!=model || (WORD_AT(weapon+0x28u)&0x80000000u)) continue;
+            const uint32_t wm=WORD_AT(weapon+4u);
+            if(!guest_writable(wm,0x200u) || !guest_writable(WORD_AT(wm+0x10u),64u)) continue;
+            /* Rebuild from this frame's corrected arm bones, then update the
+               world/lighting origin. Do not wait for a later entity-list pass. */
+            guest_call(sub_000A0860,1,weapon);
+            guest_call(sub_000A2B50,1,weapon);
+        }
     }
 #else
     (void)entity;

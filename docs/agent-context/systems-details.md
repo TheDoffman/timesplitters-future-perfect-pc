@@ -480,7 +480,9 @@ prior inventory replay workaround alone did not solve these captured drops.
 pickup pool at7B0D20, limited to dropped weapon items whose source is an NPC.
 The first mission sends bounded numeric states (magic31504453,72bytes) on the
 existing1E channel. Creation/removal, ID/quantity changes and one-second recovery
-are reliable; changed throw/landing transforms publish at most every6ticks.
+are reliable; changed throw/landing transforms publish each simulation tick,
+with duplicate callbacks in the same tick suppressed. Guests disable independent
+throw physics, so the former six-tick cap caused10Hz falling/spinning weapons.
 The guest uses original C1950 with the Story placement descriptor4DB9A8, exact
 host quantities and scoped541EA4 host runtime ID. It follows host transforms
 without replaying local throw physics, and uses that ID for original pickup
@@ -1164,7 +1166,7 @@ per-tick snapshot retargeted a50ms interpolation. Position interpolation,
 atomic animation/lifecycle handling and the existing pose protocol remain.
 The isolated paired probe compares heading/body yaw within matching live
 slot/spawn generations; these asynchronous samples measure state agreement,
-not reviewed render output. Head/torso overlay cache ownership remains local.
+not reviewed render output. Head/torso resources remain local; arm controller replication is described below.
 
 ## Four-player rewards context
 
@@ -1178,3 +1180,26 @@ peer's own network slot. Gameplay, movies, other ports and native fallback
 retain original mapping. The original-engine reward fixture checks slots1..3
 and rejects a disabled-context-mapping mutation; live four-peer validation is
 recorded in STATUS.md. No packet, profile or scheduler change is involved.
+
+## Replica NPC arm and held-weapon poses
+
+`PcCharacterPose` is232 bytes. Its final16 bytes carry the arm bone mask,
+two12-bit authored clip IDs plus five controller bits, blend elapsed time and
+actor+B08 aim frame. Model+A0/A4 are clip IDs used by original5AFB0 through the
+local7E03C0/7E3954 resource tables; they are not model pointers. Capture all of
+this state with the existing numeric clip/crossfade channels. Sending only the
+mask/enable controls can sample unloaded clip0. Presentation validates local
+resource spans before enabling the arm layer; missing resources defer that layer
+until a later snapshot. Invalid numeric/packed state is rejected. Primary body
+movement, guest AI suppression and atomic crossfade policy remain unchanged.
+
+Story SNP6/SPP6 and SCY4/SPY4 identify the expanded layouts. The NPC physical
+prefix remains236 bytes; pose plus stock cursor is exactly256 bytes. Online bot
+snapshots use the same contiguous pose slice. Both peers need the new build.
+No host animation pointers, bones or resource handles cross the network.
+After frozen body evaluation and held-model selection, validated live attachments
+run originalA0860 thenA2B50 against the current arm bones. Parent, owner/backlink,
+retirement and matrix-span guards exclude foreign objects. This also refreshes
+the weapon's world/room origin; it does not run guest AI, damage or inventory.
+The shared Windows/native-network path needs no separate Mac feature policy;
+physical Mac acceptance remains pending. See STATUS for measured Windows scope.

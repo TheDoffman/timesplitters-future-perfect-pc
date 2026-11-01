@@ -75,6 +75,7 @@ MOUSE_STUB(sub_000746D0) MOUSE_STUB(sub_0007CCA0) MOUSE_STUB(sub_00071940)
 #define BOT_STUB(name) void name(void) { CHECK(0); }
 BOT_STUB(sub_000DAC30) BOT_STUB(sub_000D7570) BOT_STUB(sub_0009FBE0)
 BOT_STUB(sub_001BE870) BOT_STUB(sub_0035C870)
+BOT_STUB(sub_000A0860) BOT_STUB(sub_000A2B50)
 BOT_STUB(sub_0011F7E0) BOT_STUB(sub_0011D510)
 BOT_STUB(sub_000B3630) BOT_STUB(sub_000C1950) BOT_STUB(sub_001B67E0)
 BOT_STUB(sub_000CF440) BOT_STUB(sub_001BB5C0)
@@ -422,7 +423,7 @@ int main(int argc,char **argv)
     WORD_AT(model+0xd8)=0xcafe;WORD_AT(model+0x18c)=0xbabe;
     WORD_AT(model+0x128)=0xc03;WORD_AT(model+0x180)=0xc05;
     *(int16_t *)((uintptr_t)(0x7e03c0+43*2)+g_xbox_mem_offset)=17;
-    PcCharacterPose pose;pc_character_pose_read(&pose,(void *)((uintptr_t)model+g_xbox_mem_offset));
+    PcCharacterPose pose;pc_character_pose_read(&pose,(void *)((uintptr_t)model+g_xbox_mem_offset),NULL);
     CHECK(pc_character_pose_valid(&pose));pose.clip=43;pose.clip_channels[0]=.5f;
     pose.blend_channels[2]=.75f;g_esp=0x700000;
     pc_character_pose_present(entity,&pose);

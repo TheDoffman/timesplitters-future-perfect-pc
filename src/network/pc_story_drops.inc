@@ -145,7 +145,10 @@ static void story_drop_frame(void)
     }
     if(WORD_AT(0x0076b140u)!=1u) {restore_registers(&saved);return;}
     const uint32_t tick=WORD_AT(0x007de318u),frame=g_esp,node=WORD_AT(0x00774028u);
-    if((story_drop_ticked && (uint32_t)(tick-story_drop_tick)<6u) || frame<1024u ||
+    /* Guests do not simulate these throws. Publish each simulation tick so
+       falling/spinning weapons do not hold a10Hz pose between snapshots.
+       Repeated callbacks in one tick still send nothing. */
+    if((story_drop_ticked && tick==story_drop_tick) || frame<1024u ||
        !guest_writable(frame-1024u,1024u) || !guest_writable(node,0x35u)) {restore_registers(&saved);return;}
     story_drop_tick=tick;story_drop_ticked=1;
     for(unsigned i=0;i<STORY_DROP_COUNT;i++) {

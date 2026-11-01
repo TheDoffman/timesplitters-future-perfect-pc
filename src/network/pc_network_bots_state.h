@@ -40,6 +40,8 @@ typedef struct PcNetworkBotState {
     float next_channels[18];
     uint32_t next_cycle,next_flags,overlay_phase;
     float overlay_channels[8],blend_channels[3];
+    uint32_t limb_mask,limb_clips_flags;
+    float limb_elapsed,aim_frame;
     PcNetworkBotShot shot;
     int16_t scores[42];
     /* One authoritative victim column, including human kills of this bot.

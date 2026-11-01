@@ -25,9 +25,9 @@ typedef struct StoryNpcSpawn {
     uint32_t cloak_flags,cloak_phase;float cloak_values[3];
     uint32_t primary_room,pose_present;PcCharacterCamo camo;PcCharacterPose pose;
 } StoryNpcSpawn;
-_Static_assert(sizeof(StoryNpcSpawn)==452,"Story spawn wire layout");
-#define STORY_NPC_MAGIC 0x35504E53u
-#define STORY_NPC_POSE_MAGIC 0x35505053u
+_Static_assert(sizeof(StoryNpcSpawn)==468,"Story spawn wire layout");
+#define STORY_NPC_MAGIC 0x36504E53u
+#define STORY_NPC_POSE_MAGIC 0x36505053u
 #define STORY_NPC_BASE_BYTES 236u
 /* Original353990 copies into a256-byte guest stack buffer. Never enlarge it. */
 typedef struct StoryNpcBaseMessage {uint8_t state[STORY_NPC_BASE_BYTES];uint32_t checksum;} StoryNpcBaseMessage;
@@ -207,7 +207,7 @@ static void story_npc_publish(uint32_t actor,uint32_t frame)
         memcpy(s.bounds_radius,(const void *)((uintptr_t)(entity+0x1c0u)+g_xbox_mem_offset),12u);
         const uint32_t model=WORD_AT(entity+4u);
         if(guest_writable(model,0x200u)) {
-            pc_character_pose_read(&s.pose,(const void *)((uintptr_t)model+g_xbox_mem_offset));
+            pc_character_pose_read(&s.pose,(const void *)((uintptr_t)model+g_xbox_mem_offset),(const void *)((uintptr_t)actor+g_xbox_mem_offset));
             s.pose_present=(uint32_t)pc_character_pose_valid(&s.pose);
         }
     }

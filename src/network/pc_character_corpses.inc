@@ -13,7 +13,7 @@ static int pc_character_preserve_corpse(uint32_t actor,uint32_t entity)
     float health;memcpy(&health,(const void *)((uintptr_t)(entity+0x1ccu)+g_xbox_mem_offset),4u);
     const uint32_t model=WORD_AT(entity+4u);
     if(!isfinite(health) || health>0.f || !guest_writable(model,0x200u)) return 0;
-    PcCharacterPose pose;pc_character_pose_read(&pose,(const void *)((uintptr_t)model+g_xbox_mem_offset));
+    PcCharacterPose pose;pc_character_pose_read(&pose,(const void *)((uintptr_t)model+g_xbox_mem_offset),(const void *)((uintptr_t)actor+g_xbox_mem_offset));
     if(!pc_character_pose_valid(&pose)) return 0;
 
     /* B3630 reads the local authored descriptor's corpse flag at+58. A

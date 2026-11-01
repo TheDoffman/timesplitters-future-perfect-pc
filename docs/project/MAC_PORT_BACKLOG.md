@@ -8488,3 +8488,19 @@ box and text retain proportional scaling. Windows captured-frame replay at
 checks pass. Local uncommitted source based on c511bd52. Native Mac acceptance:
 Assault Mars Prison Red, movement/turning, repeated/multiple markers, off-screen
 arrows,4:3/16:9/ultrawide and split-screen. Mac build/gameplay unverified here.
+
+
+MAC-013 replica arm/held-weapon pose follow-up (2026-10-31, uncommitted):
+shared PcCharacterPose now includes numeric arm clip IDs, mask, blend and aim
+frame; original local asset lookup and attachment updates are shared by Windows
+and TSFP_NATIVE_NETWORK. No additional OS adapter or copied native gameplay policy
+is required. Windows-hosted native-network engine fixtures cover the branch;
+physical Mac Story/Online and rendered weapon acceptance remain Awaiting validation.
+
+MAC-013 dropped-weapon cadence (2026-10-31, uncommitted): existing shared
+first-mission Story drop snapshots now publish changed transforms per simulation
+tick instead of every six ticks. Native Online Story transport remains the
+existing prerequisite; no OS-specific timing policy or second implementation
+was added. Native fallback compiles; physical Mac drop motion remains Awaiting
+validation. Windows build and cadence/lifecycle regressions pass; the user confirmed motion
+in Windows gameplay.

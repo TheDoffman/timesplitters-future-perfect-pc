@@ -892,3 +892,25 @@ Four-player rewards: test_story_original_guest_rewards translates original
 scene106 frontend camera to context0, retain profile slots and preserve other
 port/scene/count/movie/offline routes. Its disabled-mapping mutation must fail.
 The patch-update migration registry includes2465; existing CI selects both.
+
+## NPC arm/weapon pose regression
+
+`test_quit_menu.py::test_original_character_limb_pose` is already selected by
+runtime-patches CI. It compiles the production pose/weapon helpers with supported
+US5AFB0 andA2B50. The recorded arm mask8184/clip108 and a diagnostic aim frame use
+a differently indexed local resource; unloaded clip0 is deliberate. It verifies
+arm controller capture/apply, sampler asset/frame arguments, unloaded-resource
+fallback, numeric rejection, attachment refresh order and room/origin propagation.
+The missing-arm-state mutation must fail in Windows and native-network modes.
+59320/150960 and weapon selection/matrix construction are stubs; this fixture does
+not establish rendered color, final bone geometry or live Mac behavior. The normal
+Story/Online fixtures also check expanded-message bounds and assembly. Use the
+isolated paired runner for live lifetime/startup regressions, and user gameplay
+for the close combat visual acceptance captured in the demonstration.
+
+Dropped-weapon cadence: `story_drop_state.c` publishes60 distinct movement and
+rotation samples across60 consecutive simulation ticks, rejects duplicate hooks,
+and retains reliable one-second recovery with no idle movement packets. Existing
+spawn/pickup-ID/quantity/removal/stale/foreign/reuse checks remain. The companion
+`test_story_drop_cadence_rejects_legacy` restores the former six-tick gate and
+requires failure at the first held transform. Both are in existing runtime CI.

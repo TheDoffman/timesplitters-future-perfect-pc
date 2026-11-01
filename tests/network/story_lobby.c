@@ -260,10 +260,10 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     if(fn==sub_001BA130) {CHECK(count==2 && (args[1]==25 || args[1]==32));++loadout_selections;return 0;}
     if(fn==sub_00353A90) {
         CHECK(count==5 && args[0]==0x30000 && args[1]==0x1e && args[3]<=256u);
-        CHECK(args[4]==1 || WORD_AT(args[2]+4)==0x35504e53u || WORD_AT(args[2]+4)==0x35505053u);
+        CHECK(args[4]==1 || WORD_AT(args[2]+4)==0x36504e53u || WORD_AT(args[2]+4)==0x36505053u);
         ++npc_send_calls;npc_sent_size=args[3];memcpy(npc_sent,(uint8_t *)memory+args[2],args[3]);
-        if(WORD_AT(args[2]+4)==0x35504e53u){npc_base_size=args[3];memcpy(npc_sent_base,npc_sent,args[3]);}
-        if(WORD_AT(args[2]+4)==0x35505053u){npc_pose_size=args[3];memcpy(npc_sent_pose,npc_sent,args[3]);}
+        if(WORD_AT(args[2]+4)==0x36504e53u){npc_base_size=args[3];memcpy(npc_sent_base,npc_sent,args[3]);}
+        if(WORD_AT(args[2]+4)==0x36505053u){npc_pose_size=args[3];memcpy(npc_sent_pose,npc_sent,args[3]);}
         return 0;
     }
     if(fn==sub_000B3630) {

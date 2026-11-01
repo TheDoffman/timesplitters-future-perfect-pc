@@ -76,5 +76,18 @@ int main(void)
  story_drop_reset();receive(&spawn);story_drop_frame();assert(creates==2);
  WORD_AT(0x7202c)++;receive(&gone);story_drop_frame();assert(removes==1); /* reused storage is never destroyed */
  story_drop_reset();active=0;receive(&spawn);story_drop_frame();assert(creates==2);
- puts("PASS: captured NPC pickup creation, landing, reliable recovery/removal, duplicate/stale/foreign rejection, retry and pointer reuse safety");return 0;
+ /* Smooth throws need a fresh transform every simulation tick, even though
+    guest-local physics is disabled. Verify a full second and duplicate hooks. */
+ story_drop_reset();active=1;WORD_AT(0x76b140)=1;WORD_AT(entity+0x28)=0;sends=0;
+ for(unsigned tick=1000;tick<1060;tick++) {
+  WORD_AT(0x7de318)=tick;pos[0]=(float)(tick-1000)*.05f;pos[1]=5.f-(float)(tick-1000)*.04f;
+  memcpy((void *)(g_xbox_mem_offset+entity+0x64),pos,sizeof pos);
+  float heading=(float)(tick-1000)*7.f;memcpy((void *)(g_xbox_mem_offset+entity+0x70),&heading,4);
+  story_drop_frame();assert(sends==tick-999 && sent[sends-1].position[0]==pos[0]);
+  assert(sent[sends-1].angles[1]==heading && sent_reliable[sends-1]==(tick==1000));
+  story_drop_frame();assert(sends==tick-999); /* same-tick duplicate */
+ }
+ WORD_AT(0x7de318)=1060;story_drop_frame();assert(sends==61 && sent_reliable[60]);
+ WORD_AT(0x7de318)=1061;story_drop_frame();assert(sends==61); /* stationary: no redundant packet */
+ puts("PASS: per-tick dropped-weapon movement/rotation, same-tick dedup and idle recovery; captured NPC pickup creation, landing, reliable recovery/removal, duplicate/stale/foreign rejection, retry and pointer reuse safety");return 0;
 }
