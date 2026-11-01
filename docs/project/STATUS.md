@@ -1,5 +1,11 @@
 ## Story integration Clang fixture repair - 2026-11-01
 
+Follow-up at32a832c8: Mac CI now passes2349 cases/18 subtests with349 skips,
+including the entire flag matrix; only the menu-owned reward-capture entry
+included by the lobby fixture is reported unused. The fixture explicitly
+references that entry point, retaining strict warnings and all assertions.
+The next CI revision must pass before the authorized main merge.
+
 PR441 at c5c16a43 passed Windows runtime, both patch-upgrade jobs and both
 launcher builds/compatibility. Mac runtime reported 16 compile failures in
 Story menu/lobby fixtures (2334 passed, 349 skips, 18 subtests). Repairs retain
