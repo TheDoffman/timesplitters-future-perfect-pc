@@ -1,4 +1,4 @@
-Kill-feed scope follows native timing patches; callbacks stay intact.
+FOV fixture stubs HUD draws and checks the Kill Feed row.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build, run and validation map
 
