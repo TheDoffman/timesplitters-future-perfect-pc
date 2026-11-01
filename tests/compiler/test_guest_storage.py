@@ -57,3 +57,28 @@ def test_actual_native_storage_initialization_preserves_existing_images(tmp_path
                 p=root/folder/f'Partition{part}.img'
                 assert not p.is_symlink() and p.resolve().is_relative_to(root.resolve())
                 p.unlink(missing_ok=True)
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Windows sparse-filesystem adapter')
+@pytest.mark.parametrize('error', [1, 50, 5, 112, 999, 998])
+def test_windows_nonsparse_storage_and_failures(tmp_path, error):
+    providers = ('guest_storage', 'guest_paths', 'guest_symlinks', 'guest_kernel_symlinks')
+    for name in [*(p+'.c' for p in providers), *(p+'.h' for p in providers),
+                 'guest_kernel_storage.c', 'guest_kernel_paths.inc', 'storage_fallback_windows.c']:
+        source = HERE / name
+        if not source.is_file(): source = ROOT / 'src/runtime' / name
+        (tmp_path/name).write_bytes(source.read_bytes())
+    (tmp_path/'kernel.h').write_bytes((HERE/'storage_kernel_facade.h').read_bytes())
+    (tmp_path/'xbox_watchpoint.h').write_text('void xbox_watch_note_path(const char *);\n')
+    (tmp_path/'recomp_config.h').write_text('#include <stdint.h>\nuint32_t recomp_config_title_id(void);\n')
+    exe = _compile(tmp_path, tmp_path/'storage_fallback_windows.c',
+                   extra=[*[tmp_path/(p+'.c') for p in providers], '/W4', 'shell32.lib'])
+    root = tmp_path/'isolated'; root.mkdir(); (root/'game').mkdir(); (root/'save').mkdir()
+    run = subprocess.run([str(exe), str(root), str(error)], capture_output=True, text=True, timeout=30)
+    assert run.returncode == 0, run.stdout + run.stderr
+    if error in (1, 50):
+        assert 'Sparse files unavailable; creating regular storage image' in run.stderr
+        assert 'Storage initialization failed' not in run.stderr
+    else:
+        assert 'Storage initialization failed' in run.stderr
+        assert 'Windows error' in run.stderr

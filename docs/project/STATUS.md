@@ -1,3 +1,17 @@
+## exFAT virtual disk initialization (2026-11-01)
+
+Based on main 9e1b1d39. Discord reporter confirmed exFAT USB SSD failure and
+successful launch after moving to the main drive. Windows adapter now falls
+back from unsupported sparse marking to regular allocation, with per-image
+free-space checks. Other failures retain failure handling and log the operation,
+path and Windows code. Existing images remain untouched; no automatic migration.
+All 26 storage/path cases passed on this Windows computer, including native NTFS and
+injected unsupported capability/access/space/query/sizing cases. Injected tests
+cap disposable file sizes; physical exFAT/game acceptance is not yet verified.
+Full Windows Build and its integration tests passed with the final adapter compiled.
+Context, whitespace and Mac backlog integrity checks passed. Native Mac adapter
+unchanged, not tested here. Physical exFAT acceptance remains pending.
+
 ## Remember PC Settings bar visibility (2026-11-01)
 
 Implementation commit 15133f97, based on bbab9c3d. Main 507c5d45 was

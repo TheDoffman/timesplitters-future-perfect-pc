@@ -300,6 +300,15 @@ providers, perform handoffs or limit themselves to advisory work.
 
 ## Project storage and texture work
 
+- Save/storage changes must support both NTFS and exFAT and relocation between
+  internal and external drives. Treat sparse files as an optional capability;
+  check available space for regular allocation and preserve existing save bytes.
+  Moving an installation must not silently reset, recreate or overwrite saves.
+  Account for configured absolute save paths after relocation: retain separately
+  stored saves, and let users explicitly select a moved save folder. Test existing
+  images and nonsparse fallback/failure paths with isolated data; distinguish
+  injected coverage from physical-filesystem and native Mac verification.
+
 - Preserve enhanced texture loading, Classic/Enhanced controls and installed packs
   across game and launcher updates. The user's 2026-10-22 instruction replaces
   the earlier default-bundling policy: enhanced textures are an optional download
