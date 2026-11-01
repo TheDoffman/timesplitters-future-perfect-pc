@@ -1,6 +1,7 @@
 /* The original dead-state path copies a posed NPC into B3630's bounded
    cosmetic corpse ring before retiring its actor. Guests do not run that AI
    path. Mirror only the local corpse copy when a dead replica is retired. */
+#include "pc_physical_state.h"
 extern void sub_000B3630(void);
 static int pc_character_preserve_corpse(uint32_t actor,uint32_t entity)
 {
@@ -30,6 +31,7 @@ static int pc_character_preserve_corpse(uint32_t actor,uint32_t entity)
     WORD_AT(actor+0x74u)=0;WORD_AT(actor+0x10u)=0;WORD_AT(actor+0x14u)=0;
     g_esp=frame-512u;
     const uint32_t corpse=guest_call(sub_000B3630,1,entity);
+    if(corpse) pc_character_ragdoll_preserve(entity,corpse);
     g_esp=frame;
     WORD_AT(actor+0xbf0u)=descriptor;WORD_AT(actor+0x74u)=callback;
     WORD_AT(actor+0x10u)=life0;WORD_AT(actor+0x14u)=life1;

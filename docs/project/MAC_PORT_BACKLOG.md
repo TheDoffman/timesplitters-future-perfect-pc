@@ -8504,3 +8504,21 @@ existing prerequisite; no OS-specific timing policy or second implementation
 was added. Native fallback compiles; physical Mac drop motion remains Awaiting
 validation. Windows build and cadence/lifecycle regressions pass; the user confirmed motion
 in Windows gameplay.
+
+
+MAC-013 guest physical state (2026-10-31, uncommitted on online-story-coop):
+common numeric rigid/ragdoll helpers now construct local rag groups and generated
+clips for Online bots; first-mission Story uses them in its existing Windows
+snapshot adapter. No new OS API or duplicated Mac gameplay logic is needed.
+Windows-hosted native-network fixtures pass; native Story transport remains its
+existing prerequisite. Physical Mac acceptance remains Awaiting validation:
+Splitter death/tumbling/contact poses, dropped weapon spin/bounce/pickup,
+respawn/checkpoint/rejoin and repeated deaths without leaked groups or crashes.
+
+MAC-013 ragdoll grounding follow-up (2026-10-31, uncommitted): shared guest
+ragdolls now pause local integration between host poses and bake their final
+corpse pose into a separate ring clip. Story/Online use the same corpse helper;
+no OS adapter or separate Mac policy is needed. Windows/native-network fixtures
+and original-engine activity-list/corpse-clip checks pass. Physical Mac remains
+Awaiting validation: Splitter floor contact, settled corpses, packet gaps, repeated
+deaths/NPC clip reuse and the unchanged dropped-weapon physics/pickup path.

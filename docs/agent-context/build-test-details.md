@@ -914,3 +914,37 @@ and retains reliable one-second recovery with no idle movement packets. Existing
 spawn/pickup-ID/quantity/removal/stale/foreign/reuse checks remain. The companion
 `test_story_drop_cadence_rejects_legacy` restores the former six-tick gate and
 requires failure at the first held transform. Both are in existing runtime CI.
+
+
+## Guest physical-state regression
+
+Existing CI-selected `test_quit_menu.py::test_character_physical_replication`
+compiles the production rigid/ragdoll helpers for Windows and native-network
+branches. Independent local handles/clip slots exercise rotation, velocities,
+allocation retry, release, owner/generation rejection and storage reuse. The
+recorded weapon25 inertia diagonal11.1906/13.8861/29.2676 is deliberately seeded
+separately from orientation, and must be preserved. The Online bot presenter
+also runs in the native-network branch. Engine
+allocation/matrix setters are controlled collaborators, not a real solver or
+rendered ragdoll acceptance. Story lobby tests assemble reversed rag fragments
+and require every matching fragment before applying; dropped-item tests verify
+physical initialization once and subsequent motion, plus invalid-state rejection.
+`test_native_network.py` exercises full rag tails and compact ordinary snapshots
+through actual host UDP sockets, including malformed rotations and existing
+host/key/match rejection. Existing isolated paired-game runners provide startup,
+combat and lifetime regression; user Splitter/drop tests establish visual scope.
+
+`test_original_rigid_rotation` additionally executes supported-US165D80 and
+152540 on the recorded non-unit inertia and a90-degree rotation. It checks the
+actual quaternion/world-inertia writes and preserved local inertia. Matrix
+copy/transpose/multiply are scalar fixture collaborators; no solver is simulated.
+
+Grounding follow-up: production physics fixtures simulate a60-tick interval
+without incoming host poses and require no guest ragdoll gravity, while fresh
+host snapshots still apply. They exercise final-pose bake/release and corpse
+clip independence across actor reuse, in Windows and native-network branches.
+The original rotation fixture also executes1677E0 to verify active-list removal,
+idempotent pause and preserved pose/motion data. `test_original_ragdoll_corpse_bake`
+executes US B2E50/351570/3515A0: temporary clip returned, corpse-ring clip bound,
+no independent physical group. Pose generation/binding are checked collaborators;
+visual Splitter grounding remains a human acceptance check.

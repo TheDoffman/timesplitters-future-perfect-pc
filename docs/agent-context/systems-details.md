@@ -1193,7 +1193,7 @@ resource spans before enabling the arm layer; missing resources defer that layer
 until a later snapshot. Invalid numeric/packed state is rejected. Primary body
 movement, guest AI suppression and atomic crossfade policy remain unchanged.
 
-Story SNP6/SPP6 and SCY4/SPY4 identify the expanded layouts. The NPC physical
+Story SNP7/SPP7 and SCY4/SPY4 identify the expanded layouts. The NPC physical
 prefix remains236 bytes; pose plus stock cursor is exactly256 bytes. Online bot
 snapshots use the same contiguous pose slice. Both peers need the new build.
 No host animation pointers, bones or resource handles cross the network.
@@ -1203,3 +1203,60 @@ retirement and matrix-span guards exclude foreign objects. This also refreshes
 the weapon's world/room origin; it does not run guest AI, damage or inventory.
 The shared Windows/native-network path needs no separate Mac feature policy;
 physical Mac acceptance remains pending. See STATUS for measured Windows scope.
+
+
+## Guest ragdolls and physical NPC drops
+
+`pc_physical_state.h` carries a76-byte numeric rigid state: rotation basis,
+position, linear velocity and angular state. `pc_display_menu.c` resolves the
+local512-byte physics record through74C458/74C46C, checking its generation token
+at1E4 and entity owner. It applies poses with original165D80/167CA0/167CE0/167BC0;
+the rotation setter rebuilds the quaternion/world inertia and165A40 refreshes
+bounds/origin. Record+0 is orientation; +80 is local inertia, not rotation. No collision handles,
+shape pointers, contacts or host model buffers cross the network. Degenerate,
+non-finite, skewed and reflected rotation bases are rejected.
+
+Full ragdolls use actor+4C groups and three peer-local generated clips229..231.
+Their animation is written by351F30/3513C0 from rigid-part poses, rather than
+ordinary authored animation advancement. Frozen guest AI never ran that producer.
+`pc_character_ragdoll.inc` captures the host's descriptor kind and up to8 numeric
+part states, creates a local group via351580/352200 and regenerates its local
+clip before frozen evaluation. After every received part pose,1677E0 removes it
+from the guest active-physics list;3513C0 builds animation directly because
+351F30 intentionally skips sleeping roots. The host owns gravity/contact
+resolution, including settled and packet-loss intervals. Both primary and crossfade dynamic IDs map to
+that local slot. Pool exhaustion defers binding instead of using the host's
+unrelated generated resource. Release only owned groups; generation changes,
+original destruction and repeated absence must not free reused objects. The
+host still owns death, root motion, lifetime, damage and pickup decisions.
+
+Story SNP7/SPP7 retain the236-byte physical prefix and232-byte pose; flag2 of
+pose_present requests three SRG7 fragments (208 payload bytes each). All five
+parts share serial/checksum, with the existing eight-tick bounded assembly
+window. Missing/mixed parts cannot present a partial ragdoll. Alive snapshots
+still send only the two original-sized fragments. Online TSFBAI2 adds an optional
+616-byte ragdoll tail; ordinary snapshots retain their preceding wire length.
+Both full LAN and bridge packets fit a1472-byte UDP payload. Compatibility is
+strict; all peers require a rebuilt matching executable.
+
+First-mission Story SDP2 drops append the same rigid state (148 bytes total,
+152 including the stock cursor). Original C1950 creates a placed pickup;
+34FF30 installs its local physical body and update callbacks before applying
+host rotation/velocity. Dropped pickups retain their normal local integration;
+the ragdoll-only pause does not apply to them. When the host releases that body, original170ED0
+removes the local physical instance before applying the final host transform.
+This supplies tumbling/contact physics between changed
+per-tick snapshots, while preserving host IDs, ammo and removal. Ordinary Online
+stock throws already create physics and retain that original path. The ragdoll
+helper is shared with Online bots and native-network builds; first-mission
+Story's existing Windows adapter prerequisite is unchanged. Physical Mac and
+human visual acceptance remain separately recorded in STATUS.md.
+
+
+Ragdoll corpse finalization mirrors original3521C0: after B3630 creates the
+cosmetic copy, B2E50(corpse,group,0) returns the temporary NPC clip and bakes into
+corpse clip232+ring index. Third argument0 avoids transferring a live physical
+group. Then351F60 releases local rigid parts and the replica cache clears. Check
+the corpse type, bounded/aligned ring context and ring-table identity before
+calling this indexed engine API. A reused NPC clip cannot animate the preserved
+corpse. This path is shared by Story and Online corpse preservation.

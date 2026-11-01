@@ -330,7 +330,7 @@ def test_network_original_room_cache(tmp_path):
     stubs='\n'.join('void '+name+'(void){assert(!"unexpected '+name+'");}' for name in sorted(missing))
     production=(ROOT/'src/interface/pc_display_menu.c').read_text()
     start=production.index('void pc_network_bots_entity_refresh(')
-    refresh=production[start:production.index('/* Share the contiguous animation slice',start)]
+    refresh=production[start:production.index('#include "pc_physical_state.h"',start)]
     source=(ROOT/'tests/network/network_room_cache.c').read_text().replace('/* ORIGINAL_ROOM_CACHE */',code)
     source=source.replace('/* UNREACHED */',stubs).replace('/* PRODUCTION_REFRESH */',refresh)
     assert 'PASS:' in compile_and_run(tmp_path,source)
@@ -358,7 +358,7 @@ def test_network_original_primary_room(tmp_path,without_fix):
         vars(config).update(previous)
     production=(ROOT/'src/interface/pc_display_menu.c').read_text()
     start=production.index('void pc_network_bots_entity_room(')
-    helper=production[start:production.index('/* Share the contiguous animation slice',start)]
+    helper=production[start:production.index('#include "pc_physical_state.h"',start)]
     if without_fix:
         helper='void pc_network_bots_entity_room(uint32_t entity,uint32_t room){(void)entity;(void)room;}'
     source=(ROOT/'tests/network/network_primary_room.c').read_text().replace('/* ORIGINAL_RENDER_ROOMS */',code)
@@ -596,3 +596,60 @@ def test_story_drop_cadence_rejects_legacy(tmp_path):
     source=source.replace(check,'story_drop_frame();if(sends!=tick-999){fputs("FAIL: sensitivity dropped-weapon10Hz hold\\n",stderr);return 1;}')
     source='#ifdef _MSC_VER\n#define _Static_assert(c,m) typedef char story_drop_message_bound[(c)?1:-1]\n#endif\n'+source
     compile_and_run(tmp_path,source,expect_success=False)
+
+
+@pytest.mark.parametrize("native", [False, True])
+def test_character_physical_replication(tmp_path,native):
+    from test_recomp_float_joins import compile_and_run
+    production=(ROOT/'src/interface/pc_display_menu.c').read_text(encoding='utf-8')
+    start=production.index('#include "pc_physical_state.h"')
+    production=production[start:production.index('/* Share the contiguous animation slice',start)]
+    production=production.replace('#include "pc_character_ragdoll.inc"',(ROOT/'src/network/pc_character_ragdoll.inc').read_text(encoding='utf-8'))
+    menu=(ROOT/'src/interface/pc_display_menu.c').read_text(encoding='utf-8')
+    production+=menu[menu.index('void pc_network_bots_present('):menu.index('/* Replica body effects need')]
+    source=(ROOT/'tests/network/character_physics.c').read_text(encoding='utf-8').replace('/* PRODUCTION_PHYSICS */',production)
+    if native: source='#define TEST_NATIVE 1\n'+source
+    assert 'PASS:' in compile_and_run(tmp_path,source)
+
+
+def test_original_rigid_rotation(tmp_path):
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    import re
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file(): pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={a:dict(name=f'sub_{a:08X}',end=b) for a,b in ((0x165d80,0x165fdd),(0x152540,0x1526bc),(0x1677e0,0x167877))}
+        translator=FunctionTranslator(image,functions)
+        code='\n'.join(translator.translate_function(a,info) for a,info in functions.items())
+        constants={int(a,16)+offset for a in re.findall(r'0x([0-9A-Fa-f]+)',code) for offset in (0,4,8,12)}
+        constants={a for a in constants if 0x470000<=a<0x500000}
+        seeds='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x}u;' for a in sorted(constants))
+    finally: vars(config).update(previous)
+    source=(ROOT/'tests/network/physical_rotation.c').read_text(encoding='utf-8')
+    source=source.replace('/* ORIGINAL_PHYSICAL_ROTATION */',code).replace('/* ORIGINAL_CONSTANTS */',seeds)
+    assert 'PASS:' in compile_and_run(tmp_path,source)
+
+
+def test_original_ragdoll_corpse_bake(tmp_path):
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file(): pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={a:dict(name=f'sub_{a:08X}',end=b) for a,b in ((0xb2e50,0xb2efe),(0x351570,0x351580),(0x3515a0,0x3515cc))}
+        translator=FunctionTranslator(image,functions)
+        code='\n'.join(translator.translate_function(a,info) for a,info in functions.items())
+    finally: vars(config).update(previous)
+    source=(ROOT/'tests/network/ragdoll_corpse.c').read_text(encoding='utf-8').replace('/* ORIGINAL_RAGDOLL_CORPSE */',code)
+    assert 'PASS:' in compile_and_run(tmp_path,source)

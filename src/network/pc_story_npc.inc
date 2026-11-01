@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stddef.h>
 #include "pc_character_pose.h"
+#include "pc_physical_state.h"
 #include "pc_character_effects.h"
 void pc_character_pose_present(uint32_t entity,const PcCharacterPose *pose);
 extern void sub_000DAC30(void),sub_000D7550(void),sub_000A9070(void);
@@ -23,15 +24,19 @@ typedef struct StoryNpcSpawn {
     float position[3],angles[3],heading,health,armor,max_health;
     float bounds_center[3],bounds_radius[3];
     uint32_t cloak_flags,cloak_phase;float cloak_values[3];
-    uint32_t primary_room,pose_present;PcCharacterCamo camo;PcCharacterPose pose;
+    uint32_t primary_room,pose_present;PcCharacterCamo camo;PcCharacterPose pose;PcRagdollState ragdoll;
 } StoryNpcSpawn;
-_Static_assert(sizeof(StoryNpcSpawn)==468,"Story spawn wire layout");
-#define STORY_NPC_MAGIC 0x36504E53u
-#define STORY_NPC_POSE_MAGIC 0x36505053u
+_Static_assert(sizeof(StoryNpcSpawn)==1084,"Story spawn wire layout");
+#define STORY_NPC_MAGIC 0x37504E53u
+#define STORY_NPC_POSE_MAGIC 0x37505053u
+#define STORY_NPC_RAG_MAGIC 0x37475253u
 #define STORY_NPC_BASE_BYTES 236u
 /* Original353990 copies into a256-byte guest stack buffer. Never enlarge it. */
 typedef struct StoryNpcBaseMessage {uint8_t state[STORY_NPC_BASE_BYTES];uint32_t checksum;} StoryNpcBaseMessage;
 typedef struct StoryNpcPoseMessage {uint32_t magic,match,slot,serial,checksum;PcCharacterPose pose;} StoryNpcPoseMessage;
+typedef struct StoryNpcRagMessage {uint32_t magic,match,slot,serial,checksum,index;uint8_t bytes[208];} StoryNpcRagMessage;
+_Static_assert(sizeof(StoryNpcRagMessage)+4u<=256u,"Stock ragdoll message limit");
+_Static_assert(sizeof(PcRagdollState)<=624u,"Three bounded ragdoll fragments");
 _Static_assert(offsetof(StoryNpcSpawn,pose)==STORY_NPC_BASE_BYTES,"Physical snapshot prefix");
 _Static_assert(sizeof(StoryNpcBaseMessage)+4u<=256u,"Stock physical message limit");
 _Static_assert(sizeof(StoryNpcPoseMessage)+4u<=256u,"Stock pose message limit");
@@ -57,7 +62,7 @@ typedef struct StoryNpcReplica {
 static StoryNpcReplica story_npc_replicas[32];
 static uint32_t story_npc_publish_tick;
 static int story_npc_published;
-static uint32_t story_npc_lifecycle[32][5],story_npc_recovery[32];
+static uint32_t story_npc_lifecycle[32][6],story_npc_recovery[32];
 static void story_npc_reset(void)
 {
     story_npc_published=0;
@@ -96,12 +101,13 @@ static int story_npc_valid(const StoryNpcSpawn *s)
     if(s->magic!=STORY_NPC_MAGIC || !s->serial || ((s->match>>16)&255u)!=10u ||
        ((s->match>>8)&255u)>=100u || !s->slot || s->slot>=32u ||
        s->first<0 || s->first>=256 || s->second<0 || s->second>=256 ||
-       s->variant< -1 || s->variant>=256 || s->primary_room>213u || s->pose_present>1u || s->present>1u || s->in_roster>1u || s->team>=32u ||
+       s->variant< -1 || s->variant>=256 || s->primary_room>213u || s->pose_present>3u || s->present>1u || s->in_roster>1u || s->team>=32u ||
        (s->weapon>=70u && s->weapon!=UINT32_MAX)) return 0;
     for(unsigned i=0;i<3u;i++)
         if(!isfinite(s->position[i]) || fabsf(s->position[i])>1000000.f ||
            !isfinite(s->angles[i]) || fabsf(s->angles[i])>100000.f) return 0;
-    if(s->pose_present && !pc_character_pose_valid(&s->pose)) return 0;
+    if(!pc_ragdoll_valid(&s->ragdoll) || ((s->pose_present&2u)!=0u)!=(s->ragdoll.count!=0u) || s->pose_present==2u) return 0;
+    if((s->pose_present&1u) && !pc_character_pose_valid(&s->pose)) return 0;
     for(unsigned i=0;i<3u;i++)
         if(!isfinite(s->bounds_center[i]) || fabsf(s->bounds_center[i])>10000.f ||
            !isfinite(s->bounds_radius[i]) || s->bounds_radius[i]<0.f || s->bounds_radius[i]>10000.f) return 0;
@@ -211,7 +217,9 @@ static void story_npc_publish(uint32_t actor,uint32_t frame)
             s.pose_present=(uint32_t)pc_character_pose_valid(&s.pose);
         }
     }
-    if(!s.pose_present) memset(&s.pose,0,sizeof s.pose);
+    pc_character_ragdoll_capture(&s.ragdoll,entity);
+    if(s.ragdoll.count && s.pose_present) s.pose_present|=2u;
+    if(!s.pose_present) {memset(&s.pose,0,sizeof s.pose);memset(&s.ragdoll,0,sizeof s.ragdoll);}
     if(!story_npc_valid(&s)) {
         if(getenv("TSFP_STORY_TRACE")) fprintf(stderr,
             "[PC-STORY-NPC-WIRE] invalid snapshot slot=%u kind=%d variant=%d team=%u weapon=%u health=%g max=%g\n",
@@ -220,7 +228,7 @@ static void story_npc_publish(uint32_t actor,uint32_t frame)
     }
     const uint32_t node=WORD_AT(0x00774028u),buffer=frame-768u;
     if(!guest_writable(node,0x35u)) return;
-    const uint32_t lifecycle[5]={s.match,s.present,s.spawn,s.in_roster,s.health<=0.f};
+    const uint32_t lifecycle[6]={s.match,s.present,s.spawn,s.in_roster,s.health<=0.f,s.ragdoll.count|(s.ragdoll.kind<<8)};
     const uint32_t tick=WORD_AT(0x007de318u);
     const uint32_t reliable=memcmp(story_npc_lifecycle[slot],lifecycle,sizeof lifecycle)!=0 ||
         !story_npc_recovery[slot] || (uint32_t)(tick-story_npc_recovery[slot])>=60u;
@@ -236,6 +244,13 @@ static void story_npc_publish(uint32_t actor,uint32_t frame)
         memset((void *)((uintptr_t)buffer+g_xbox_mem_offset),0,sizeof pose+4u);
         memcpy((void *)((uintptr_t)(buffer+4u)+g_xbox_mem_offset),&pose,sizeof pose);
         guest_call(sub_00353A90,5,node,0x1eu,buffer,(uint32_t)sizeof pose+4u,reliable);
+    }
+    if(s.pose_present&2u) for(unsigned i=0;i<3u;i++) {
+        StoryNpcRagMessage rag={STORY_NPC_RAG_MAGIC,s.match,s.slot,s.serial,checksum,i,{0}};
+        const size_t offset=i*208u,bytes=sizeof s.ragdoll-offset<208u?sizeof s.ragdoll-offset:208u;
+        memcpy(rag.bytes,(const uint8_t *)&s.ragdoll+offset,bytes);
+        WORD_AT(buffer)=0;memcpy((void *)((uintptr_t)(buffer+4u)+g_xbox_mem_offset),&rag,sizeof rag);
+        guest_call(sub_00353A90,5,node,0x1eu,buffer,(uint32_t)sizeof rag+4u,reliable);
     }
     restore_registers(&saved);
     if(getenv("TSFP_STORY_TRACE")) {
@@ -364,6 +379,7 @@ static int story_npc_apply(const StoryNpcSpawn *s)
         const int listed=story_npc_listed(actor);
         if(s->in_roster && !listed && WORD_AT(0x0074C37Cu)<32u) guest_call(sub_0015BCA0,1,entity);
         if(!s->in_roster && listed) guest_call(sub_0015BCC0,1,entity);
+        pc_character_ragdoll_present(entity,&s->ragdoll);
         if(s->pose_present) pc_character_pose_present(entity,&s->pose);
         memcpy((void *)((uintptr_t)(entity+0x1a8u)+g_xbox_mem_offset),s->bounds_center,12u);
         memcpy((void *)((uintptr_t)(entity+0x1c0u)+g_xbox_mem_offset),s->bounds_radius,12u);
@@ -439,6 +455,7 @@ static void story_npc_receive_part(uint32_t payload,uint32_t length)
     if(!guest_writable(payload,4u)) return;
     StoryNpcSpawn physical;memset(&physical,0,sizeof physical);
     StoryNpcPoseMessage pose;memset(&pose,0,sizeof pose);
+    StoryNpcRagMessage rag;memset(&rag,0,sizeof rag);
     uint32_t match,slot,serial,checksum,part;
     if(WORD_AT(payload)==STORY_NPC_MAGIC && length>=sizeof(StoryNpcBaseMessage) &&
        length<=sizeof(StoryNpcBaseMessage)+4u && guest_writable(payload,sizeof(StoryNpcBaseMessage))) {
@@ -446,7 +463,7 @@ static void story_npc_receive_part(uint32_t payload,uint32_t length)
         memcpy(&message,(const void *)((uintptr_t)payload+g_xbox_mem_offset),sizeof message);
         memcpy(&physical,message.state,STORY_NPC_BASE_BYTES);
         const uint32_t posed=physical.pose_present;physical.pose_present=0;
-        if(posed>1u || !story_npc_valid(&physical)) return;
+        if(posed>3u || !story_npc_valid(&physical)) return;
         physical.pose_present=posed;match=physical.match;slot=physical.slot;
         serial=physical.serial;checksum=message.checksum;part=1u;
     } else if(WORD_AT(payload)==STORY_NPC_POSE_MAGIC && length>=sizeof pose &&
@@ -455,6 +472,12 @@ static void story_npc_receive_part(uint32_t payload,uint32_t length)
         if(!pose.serial || !pose.slot || pose.slot>=32u || ((pose.match>>16)&255u)!=10u ||
            ((pose.match>>8)&255u)>=100u || !pc_character_pose_valid(&pose.pose)) return;
         match=pose.match;slot=pose.slot;serial=pose.serial;checksum=pose.checksum;part=2u;
+    } else if(WORD_AT(payload)==STORY_NPC_RAG_MAGIC && length>=sizeof rag &&
+        length<=sizeof rag+4u && guest_writable(payload,sizeof rag)) {
+        memcpy(&rag,(const void *)((uintptr_t)payload+g_xbox_mem_offset),sizeof rag);
+        if(!rag.serial || !rag.slot || rag.slot>=32u || rag.index>=3u ||
+           ((rag.match>>16)&255u)!=10u || ((rag.match>>8)&255u)>=100u) return;
+        match=rag.match;slot=rag.slot;serial=rag.serial;checksum=rag.checksum;part=4u<<rag.index;
     } else return;
     if(story_npc_seen_match[slot]==match && (int32_t)(serial-story_npc_seen_serial[slot])<=0) return;
     StoryNpcAssembly *assembly=&story_npc_assembly[slot][serial%8u];
@@ -465,9 +488,14 @@ static void story_npc_receive_part(uint32_t payload,uint32_t length)
         assembly->parts=0;assembly->checksum=checksum;
     }
     if(part==1u) memcpy(s,&physical,STORY_NPC_BASE_BYTES);
-    else s->pose=pose.pose;
+    else if(part==2u) s->pose=pose.pose;
+    else {
+        const size_t offset=rag.index*208u,bytes=sizeof s->ragdoll-offset<208u?sizeof s->ragdoll-offset:208u;
+        memcpy((uint8_t *)&s->ragdoll+offset,rag.bytes,bytes);
+    }
     assembly->parts|=part;
-    if((assembly->parts&1u) && (!s->pose_present || (assembly->parts&2u)) &&
+    if((assembly->parts&1u) && (!(s->pose_present&1u) || (assembly->parts&2u)) &&
+       (!(s->pose_present&2u) || (assembly->parts&28u)==28u) &&
        story_npc_checksum(s)==checksum && story_npc_valid(s)) {
         if(story_npc_fresh[slot] && story_npc_pending[slot].match==match &&
            (int32_t)(serial-story_npc_pending[slot].serial)<=0) return;

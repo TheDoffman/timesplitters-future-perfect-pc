@@ -91,6 +91,11 @@ void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot);
 void pc_network_bots_request_hit(uint32_t context);
 int pc_network_bots_kill_notice(unsigned victim,unsigned killer);
 #endif
+
+#include "pc_physical_state.h"
+void pc_character_ragdoll_release(uint32_t e){(void)e;}
+void pc_character_ragdoll_evaluate(uint32_t e){(void)e;}
+void pc_character_ragdoll_capture(PcRagdollState *s,uint32_t e){(void)e;memset(s,0,sizeof *s);}
 void pc_character_camo_present(uint32_t entity){(void)entity;}
 #include "../src/network/pc_network_bots_guest.inc"
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)

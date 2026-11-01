@@ -24,6 +24,14 @@ static unsigned story_npc_humans(void){return 2;}
 static uint32_t story_npc_match(void){return match;}
 static volatile unsigned marker;
 void sub_000C1950(void){marker=1;} void sub_000A9070(void){marker=2;} void sub_00353A90(void){marker=3;}
+#include "pc_physical_state.h"
+static PcRigidBodyState host_physical,guest_physical;static unsigned physics_inits,physical_applies;
+void pc_rigid_body_capture(PcRigidBodyState *s,uint32_t e){(void)e;*s=host_physical;}
+void pc_rigid_body_remove(uint32_t e){(void)e;}
+int pc_rigid_body_present(uint32_t e,const PcRigidBodyState *s){assert(e==0x72000 && WORD_AT(e+0x80)==0x90001);guest_physical=*s;physical_applies++;return 1;}
+void pc_character_ragdoll_capture(PcRagdollState *s,uint32_t e){(void)e;memset(s,0,sizeof *s);}
+void pc_character_ragdoll_present(uint32_t e,const PcRagdollState *s){(void)e;(void)s;}
+void sub_0034FF30(void){}
 static uint32_t guest_call(void (*fn)(void),unsigned count,...);
 static unsigned refreshes;
 void pc_network_bots_entity_refresh(uint32_t entity){assert(entity==0x72000);++refreshes;}
@@ -39,6 +47,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
   assert(WORD_AT(0x541ea4)==91 && WORD_AT(0x541e9c)==1);assert(a[4]>g_esp);
   ++creates;WORD_AT(0x72020)=0x40;WORD_AT(0x72028)=0x40000000;WORD_AT(0x7202c)=100+creates;
   WORD_AT(0x7207c)=0x73000;WORD_AT(0x72230)=WORD_AT(0x541ea4);WORD_AT(0x73000)=0x72000;WORD_AT(0x7300c)=2;return 0x72000;}
+ if(fn==sub_0034FF30){assert(count==1 && a[0]==0x72000);physics_inits++;WORD_AT(0x72080)=0x90001;return 0;}
  if(fn==sub_000A9070){assert(count==1 && a[0]==0x72000);++removes;WORD_AT(0x72028)|=0x80000000;return 0;}
  assert(0);return 0;
 }
@@ -89,5 +98,12 @@ int main(void)
  }
  WORD_AT(0x7de318)=1060;story_drop_frame();assert(sends==61 && sent_reliable[60]);
  WORD_AT(0x7de318)=1061;story_drop_frame();assert(sends==61); /* stationary: no redundant packet */
+ host_physical.present=1;host_physical.rotation[0]=host_physical.rotation[4]=host_physical.rotation[8]=1;
+ host_physical.velocity[1]=3.5f;host_physical.angular[2]=1.25f;
+ WORD_AT(0x7de318)=1062;story_drop_frame();assert(sends==62 && sent[61].physical.angular[2]==1.25f);
+ StoryDropState tumbling=sent[61];WORD_AT(0x76b140)=2;story_drop_reset();receive(&tumbling);story_drop_frame();
+ assert(physics_inits==1 && physical_applies==1 && guest_physical.velocity[1]==3.5f);
+ tumbling.serial++;receive(&tumbling);story_drop_frame();assert(physics_inits==1 && physical_applies==2);
+ tumbling.serial++;tumbling.physical.rotation[0]=NAN;receive(&tumbling);story_drop_frame();assert(physical_applies==2);
  puts("PASS: per-tick dropped-weapon movement/rotation, same-tick dedup and idle recovery; captured NPC pickup creation, landing, reliable recovery/removal, duplicate/stale/foreign rejection, retry and pointer reuse safety");return 0;
 }

@@ -139,6 +139,7 @@ static void pc_network_bots_guest_pose(void (*original)(void))
        (pc_network_bots_guest_slot(entity)<16u || pc_story_network_replica(entity))) {
         uint32_t *advance=(uint32_t *)((uintptr_t)(stack+8u)+g_xbox_mem_offset);
         uint32_t saved=*advance;
+        pc_character_ragdoll_evaluate(entity);
         *advance=0;
         original();
         *advance=saved;
@@ -401,6 +402,8 @@ static void pc_network_bots_guest_frame(void (*original)(void))
                     corpse_copied[index]=(unsigned char)pc_network_bots_preserve_corpse(entity,previous->spawn);
                 if(received.body_present && (!motion[index].ready || !previous->body_present ||
                    received.spawn!=previous->spawn)) corpse_copied[index]=0;
+                if(motion[index].ready && received.spawn!=previous->spawn && entity)
+                    pc_character_ragdoll_release(entity);
                 pc_network_bot_motion_push(&motion[index],&received,now);
             }
             if(!pc_network_bot_motion_sample(&motion[index],now,&state)) continue;
@@ -422,6 +425,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
             }
             if(!state.body_present) {
                 if(entity) {
+                    pc_character_ragdoll_release(entity);
                     uint32_t flags;float zero=0.f;
                     memcpy(&flags,body+0x28,4);flags&=~0x71u;memcpy(body+0x28,&flags,4);
                     memcpy(body+0x1cc,&zero,4);
@@ -484,6 +488,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
                 }
             }
             memcpy(state.scores,actor+0xa10,sizeof state.scores);
+            pc_character_ragdoll_capture(&state.ragdoll,entity);
             state.shot=pc_network_bot_shots[index];
             pc_network_bots_send(&state);
         } else {

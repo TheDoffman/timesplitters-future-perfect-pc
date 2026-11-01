@@ -44,6 +44,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     assert(fn==sub_000B3630 && count==1);va_list args;va_start(args,count);uint32_t entity=va_arg(args,uint32_t);va_end(args);
     uint32_t frame=g_esp;g_esp-=8;MEM32(g_esp)=0;MEM32(g_esp+4)=entity;fn();assert(g_esp==frame-4);g_esp=frame;return g_eax;
 }
+void pc_character_ragdoll_preserve(uint32_t e,uint32_t c){(void)e;(void)c;}
 /* PRODUCTION_CORPSE_COPY */
 /* PRODUCTION_BOT_CORPSE_BRIDGE */
 /* PRODUCTION_BOT_REMOVAL */

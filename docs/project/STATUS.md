@@ -1,3 +1,84 @@
+## Guest Splitter corpse grounding follow-up - 2026-10-31
+
+User retest confirms Splitter ragdolls render but their corpses fall through the
+world on guests. Continuing local/uncommitted online-story-coop changes based
+on23b57ce1. Guest rag parts were awakened by every host correction and ran
+additional gravity/contact simulation. They now pause with original1677E0 after
+receiving each physical pose; direct3513C0 regenerates animation from those poses
+even while paused. Host collision and settling remain authoritative, including
+packet gaps. Dropped pickup integration remains unchanged.
+
+The guest's cosmetic corpse copy also lacked original3521C0's final-pose bake.
+After B3630, owned ragdolls now run B2E50(corpse,group,0): use the separate
+corpse-ring clip, then release the temporary NPC clip/physical parts with351F60.
+Validate ring bounds, alignment and object identity; no live rag group transfers
+to the cosmetic corpse or survives NPC slot reuse.
+
+Windows x64/MSVC14.42/D3D11, supported US XBE verified,398.07GiB free before
+build. Official Build/full patch verification and built-in checks passed.
+Affected suite55passed2Mac-only skipped (29.44s), including production adapters
+in both Windows/native-network modes, no-gravity packet-gap behavior, re-pose,
+owned cleanup and final-clip reuse. Original US1677E0 verifies active-list removal
+and retained pose; original B2E50/351570/3515A0 verifies temporary-slot return,
+corpse-owned clip and no live group transfer. Matrix/pose-generation collaborators
+are bounded fixtures; they do not establish a rendered Splitter death.
+
+No new automated mission playthrough was performed. The user confirmed the
+correction in Windows gameplay. Physical Mac acceptance remains pending.
+Existing user settings/saves are intact.
+Compatibility6c8de005cd2c85f139aaf0aa3cb1e458259faf097d37f933d26777df03a2e8a6;
+EXE575ad3a00ddf08ff711668c28aacc566897c7679b9a9ef6a659584e078fe4a2e.
+Build evidence logs/story-corpse-ground-build.log. User requested commit after
+Windows acceptance; push/publication remain pending.
+
+## Guest ragdolls and dropped-weapon physics - 2026-10-31
+
+Local/uncommitted online-story-coop, base23b57ce1. Guests now receive numeric
+rigid-body orientation, position, linear velocity and angular state. Story NPC
+ragdolls and Online bots construct independent local physical groups/generated
+clips instead of binding the host's unrelated dynamic clip229..231. Shared
+presentation runs on Windows and native-network paths. First-mission NPC drops
+create ordinary local pickup physics, follow host physical poses and remove
+that body when the host settles/releases it. Host damage, pickup IDs/quantities
+and lifetime remain authoritative. All peers require the rebuilt matching game.
+
+Windows x64/MSVC14.42/D3D11/Original60, supported US executable verified and
+398.12GiB free before build. Complete patch application/verification, official
+Build and built-in checks passed. Affected regression suite52passed2Mac-only
+skipped (28.49s), plus original US165D80/152540 rotation regression1passed
+(1.29s). Checks cover independent handles/clip slots, generation/owner and
+numeric rejection, allocation retry, cleanup, fragmented rag snapshots and
+actual UDP compact/full bot states. One parallel build/test pass conflicted on
+UDP31000; the sequential complete rerun passed.
+
+An initial live candidate exposed a rejected mapping: record+80 is inertia,
+not orientation. Captured weapon25 inertia11.1906/13.8861/29.2676 is now a
+regression sentinel. Final capture reads orientation at record+0 and applies
+original165D80, refreshing quaternion/world inertia without replacing mass or
+local inertia. Original170ED0 handles physical release before final transforms.
+The original-engine regression verifies these orientation/quaternion/inertia
+contracts; scalar matrix helpers are fixture collaborators, not a real solver.
+
+Final two-peer Story startup/intro handoff, movement and bounded first-canyon
+observation passed; both children exited0, locks cleared and disposable partition
+images recycled. Weapon ID86/source NPC2 had8 valid changing physical poses on
+each peer, nonzero motion and preserved inertia; both ended with no physical
+handle. The failed candidate had0 physical guest samples. These are asynchronous
+read-only samples, not rendered-frame or scanout counts. Evidence:
+logs/story-physics-live-fixed/summary.json and samples.jsonl.gz,
+private/network-validation/story-load-pair/pair-evidence.json.
+
+Earlier candidate Online six-bot combat40s (149.81s total) completed without a
+crash and retained guest corpse copying. No full ragdoll occurred on that route;
+Splitter ragdoll appearance and complete weapon/contact visual acceptance need
+user retesting. Physical Mac acceptance and full mission completion remain
+unverified. No personal saves/settings were used, no publication/issue closure.
+
+Final compatibility4ff918e20ff8c61b916fd865d53a160ad865be87a492e34dd33e4add14cee88e;
+EXEaaeae11c5274c3930a3b6eef6ad6ed7670c3cf5ccabb46436443ed001bfb93bd.
+Build log logs/story-physics-build.log; executable/content identity verification
+passed. Changes are local; no commit/push requested.
+
 ## Dropped NPC weapon motion cadence - 2026-10-31
 
 Local/uncommitted online-story-coop, base50425c12 with the preceding arm-pose

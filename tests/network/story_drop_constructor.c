@@ -43,6 +43,13 @@ static int story_npc_session(void){return 1;}
 static unsigned story_npc_humans(void){return 2;}
 static uint32_t story_npc_match(void){return 42;}
 void pc_network_bots_entity_refresh(uint32_t e){assert(e==0x72000);}
+#include "pc_physical_state.h"
+void pc_rigid_body_capture(PcRigidBodyState *s,uint32_t e){(void)e;memset(s,0,sizeof *s);}
+void pc_rigid_body_remove(uint32_t e){(void)e;}
+int pc_rigid_body_present(uint32_t e,const PcRigidBodyState *s){(void)e;(void)s;return 1;}
+void pc_character_ragdoll_capture(PcRagdollState *s,uint32_t e){(void)e;memset(s,0,sizeof *s);}
+void pc_character_ragdoll_present(uint32_t e,const PcRagdollState *s){(void)e;(void)s;}
+void sub_0034FF30(void){}
 static uint32_t guest_call(void (*fn)(void),unsigned count,...)
 {
  assert(fn==sub_000C1950 && count==10);uint32_t frame=g_esp;g_esp-=44;MEM32(g_esp)=0;

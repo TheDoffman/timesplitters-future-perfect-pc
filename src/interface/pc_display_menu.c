@@ -536,6 +536,78 @@ void pc_network_bots_entity_room(uint32_t entity,uint32_t room)
     (void)entity;(void)room;
 #endif
 }
+#include "pc_physical_state.h"
+/* Original165690/1679D0 access a512-byte local physics record by handle slot.
+   Its full generation token and world owner must match before reading it. */
+static uint32_t pc_rigid_body_record(uint32_t entity)
+{
+    if(!guest_writable(entity,0x2e8u)) return 0;
+    const uint32_t handle=WORD_AT(entity+0x80u),pool=WORD_AT(0x0074c458u),owners=WORD_AT(0x0074c46cu);
+    const uint32_t index=handle&65535u,record=pool+index*512u,owner=owners+index*4u;
+    if(!handle || !pool || !owners || !guest_writable(record,512u) ||
+       !guest_writable(owner,4u) || WORD_AT(record+0x1e4u)!=handle || WORD_AT(owner)!=entity) return 0;
+    return record;
+}
+void pc_rigid_body_capture(PcRigidBodyState *state,uint32_t entity)
+{
+    memset(state,0,sizeof *state);
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    const uint32_t record=pc_rigid_body_record(entity);
+    if(!record) return;
+    state->present=1;
+    for(unsigned r=0;r<3u;r++) memcpy(state->rotation+r*3u,(const void *)((uintptr_t)(record+r*16u)+g_xbox_mem_offset),12);
+    memcpy(state->position,(const void *)((uintptr_t)(record+0x140u)+g_xbox_mem_offset),12);
+    memcpy(state->velocity,(const void *)((uintptr_t)(record+0x14cu)+g_xbox_mem_offset),12);
+    memcpy(state->angular,(const void *)((uintptr_t)(record+0x128u)+g_xbox_mem_offset),12);
+    if(!pc_rigid_body_valid(state)) memset(state,0,sizeof *state);
+#else
+    (void)entity;
+#endif
+}
+void pc_rigid_body_pause(uint32_t entity)
+{
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    extern void sub_001677E0(void);
+    if(pc_rigid_body_record(entity)) guest_call(sub_001677E0,1,WORD_AT(entity+0x80u));
+#else
+    (void)entity;
+#endif
+}
+void pc_rigid_body_remove(uint32_t entity)
+{
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    extern void sub_00170ED0(void);
+    if(pc_rigid_body_record(entity)) guest_call(sub_00170ED0,1,entity);
+#else
+    (void)entity;
+#endif
+}
+int pc_rigid_body_present(uint32_t entity,const PcRigidBodyState *state)
+{
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    extern void sub_00165D80(void),sub_00165A40(void),sub_00167CA0(void),sub_00167CE0(void),sub_00167BC0(void);
+    const uint32_t frame=g_esp,record=pc_rigid_body_record(entity);
+    if(!state->present || !pc_rigid_body_valid(state) || !record || frame<512u ||
+       !guest_writable(frame-512u,512u)) return 0;
+    const uint32_t scratch=frame-128u,handle=WORD_AT(entity+0x80u);
+    float rotation[16]={0};rotation[15]=1.f;
+    for(unsigned r=0;r<3u;r++) memcpy(rotation+r*4u,state->rotation+r*3u,12);
+    memcpy((void *)((uintptr_t)scratch+g_xbox_mem_offset),rotation,64);
+    memcpy((void *)((uintptr_t)(scratch+64u)+g_xbox_mem_offset),state->position,12);
+    memcpy((void *)((uintptr_t)(scratch+76u)+g_xbox_mem_offset),state->velocity,12);
+    memcpy((void *)((uintptr_t)(scratch+88u)+g_xbox_mem_offset),state->angular,12);
+    g_esp=frame-256u;
+    guest_call(sub_00165D80,3,handle,scratch,0u);
+    guest_call(sub_00167CA0,2,handle,scratch+64u);
+    guest_call(sub_00167CE0,2,handle,scratch+76u);
+    guest_call(sub_00167BC0,2,handle,scratch+88u);
+    guest_call(sub_00165A40,1,handle);
+    g_esp=frame;return 1;
+#else
+    (void)entity;(void)state;return 0;
+#endif
+}
+#include "pc_character_ragdoll.inc"
 /* Share the contiguous animation slice across both NPC protocols. */
 _Static_assert(sizeof(PcCharacterPose)==232,"Character pose wire layout");
 _Static_assert(offsetof(PcNetworkBotState,shot)-offsetof(PcNetworkBotState,clip)==sizeof(PcCharacterPose),"Bot pose slice");
@@ -544,6 +616,11 @@ void pc_character_pose_present(uint32_t entity,const PcCharacterPose *pose)
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     extern void sub_000966E0(void);
     uint32_t model,speed;
+    PcCharacterPose local_pose=*pose;
+    local_pose.clip=pc_character_ragdoll_clip(entity,pose->clip);
+    local_pose.next_clip=pc_character_ragdoll_clip(entity,pose->next_clip);
+    if(local_pose.clip<0 || local_pose.next_clip<0) return;
+    pose=&local_pose;
     const int32_t clip=pose->clip;
     int16_t next_index;
     if(!guest_writable(entity,0x238u) || !pc_character_pose_valid(pose)) return;
@@ -596,7 +673,7 @@ void pc_character_pose_present(uint32_t entity,const PcCharacterPose *pose)
 }
 void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     uint32_t actor;unsigned hand;
     if(!guest_writable(entity,0x238u)) return;
     actor=WORD_AT(entity+0x7cu);
@@ -608,6 +685,7 @@ void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state)
         }
     }
     if(state->body_present) {
+        pc_character_ragdoll_present(entity,&state->ragdoll);
         PcCharacterPose pose;memcpy(&pose,&state->clip,sizeof pose);
         pc_character_pose_present(entity,&pose);
     }

@@ -56,6 +56,7 @@ void sub_00150960(void){
     MEMF(output+12)=1;g_esp+=4;
 }
 /* ORIGINAL_LIMB */
+int32_t pc_character_ragdoll_clip(uint32_t e,int32_t c){(void)e;return c;}
 /* PRODUCTION_POSE */
 /* PRODUCTION_WEAPONS */
 int main(void){

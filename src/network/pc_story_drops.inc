@@ -33,11 +33,13 @@ void pc_story_network_drop_replay(void (*original)(void))
 #ifdef _WIN32
 /* Completed item state, not an actor's potentially different drop budget.
    Thirty original pickup records at7B0D20 have a D8-byte stride. */
-#define STORY_DROP_MAGIC 0x31504453u
+#include "pc_physical_state.h"
+#define STORY_DROP_MAGIC 0x32504453u
 #define STORY_DROP_COUNT 30u
 typedef struct StoryDropState {
     uint32_t magic,match,slot,serial,present,id,source,weapon;
     uint32_t ammo[2],quantity[2];float position[3],angles[3];
+    PcRigidBodyState physical;
 } StoryDropState;
 _Static_assert(sizeof(StoryDropState)+4u<=256u,"Story pickup message bound");
 typedef struct StoryDropReplica {uint32_t entity,local_id,id;} StoryDropReplica;
@@ -71,7 +73,7 @@ static int story_drop_valid(const StoryDropState *s)
     for(unsigned i=0;i<2u;i++) if(s->ammo[i]>=44u || s->quantity[i]>32767u || (!s->ammo[i] && s->quantity[i])) return 0;
     for(unsigned i=0;i<3u;i++) if(!isfinite(s->position[i]) || fabsf(s->position[i])>1000000.f ||
         !isfinite(s->angles[i]) || fabsf(s->angles[i])>1000000.f) return 0;
-    return 1;
+    return pc_rigid_body_valid(&s->physical);
 }
 static int story_drop_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length)
 {
@@ -115,14 +117,21 @@ static int story_drop_apply(const StoryDropState *s)
     }
     const uint32_t entity=r->entity,owner=WORD_AT(entity+0x7cu);
     if(!guest_writable(owner,0xd8u) || WORD_AT(owner)!=entity || WORD_AT(owner+0xcu)!=2u) return 0;
+    if(!s->physical.present) pc_rigid_body_remove(entity);
     WORD_AT(entity+0x230u)=s->id;
     WORD_AT(entity+0x28u)=(WORD_AT(entity+0x28u)&~0x40000000u)|0x63u;
     memcpy((void *)((uintptr_t)(entity+0x64u)+g_xbox_mem_offset),s->position,12u);
     memcpy((void *)((uintptr_t)(entity+0xc0u)+g_xbox_mem_offset),s->angles,4u);
     memcpy((void *)((uintptr_t)(entity+0x70u)+g_xbox_mem_offset),s->angles+1,4u);
     memcpy((void *)((uintptr_t)(entity+0xc8u)+g_xbox_mem_offset),s->angles+2,4u);
-    memset((void *)((uintptr_t)(entity+0xb4u)+g_xbox_mem_offset),0,12u);
-    /* Host snapshots own the throw/landing. Local item state stays idle, while
+    if(s->physical.present) {
+        /* The original drop constructor makes a placed pickup, not a thrown
+           physical object. Install its ordinary local rigid-body callbacks. */
+        extern void sub_0034FF30(void);
+        if(!WORD_AT(entity+0x80u)) guest_call(sub_0034FF30,1,entity);
+        if(!pc_rigid_body_present(entity,&s->physical)) return 0;
+    } else memset((void *)((uintptr_t)(entity+0xb4u)+g_xbox_mem_offset),0,12u);
+    /* Host snapshots correct local throw physics. Item logic stays idle, while
        original pickup requests use the preserved host runtime ID. */
     WORD_AT(owner+0xa0u)=1;WORD_AT(owner+0xc0u)=3;WORD_AT(owner+0xa4u)=s->source;
     for(unsigned i=0;i<2u;i++) {WORD_AT(owner+0x40u+i*8u)=s->ammo[i];WORD_AT(owner+0x44u+i*8u)=s->quantity[i];}
@@ -145,8 +154,8 @@ static void story_drop_frame(void)
     }
     if(WORD_AT(0x0076b140u)!=1u) {restore_registers(&saved);return;}
     const uint32_t tick=WORD_AT(0x007de318u),frame=g_esp,node=WORD_AT(0x00774028u);
-    /* Guests do not simulate these throws. Publish each simulation tick so
-       falling/spinning weapons do not hold a10Hz pose between snapshots.
+    /* Publish each simulation tick so local throw physics follows the host
+       instead of drifting or holding a10Hz pose between corrections.
        Repeated callbacks in one tick still send nothing. */
     if((story_drop_ticked && tick==story_drop_tick) || frame<1024u ||
        !guest_writable(frame-1024u,1024u) || !guest_writable(node,0x35u)) {restore_registers(&saved);return;}
@@ -159,6 +168,7 @@ static void story_drop_frame(void)
            !(WORD_AT(entity+0x28u)&0x80000000u) && WORD_AT(entity+0x7cu)==owner &&
            WORD_AT(owner+0xcu)==2u && (WORD_AT(owner+0x10u)&1u) &&
            source>=story_npc_humans() && source<32u && id && id!=UINT32_MAX) {
+            pc_rigid_body_capture(&s.physical,entity);
             s.present=1;s.id=id;s.source=source;s.weapon=WORD_AT(owner+0x14u);
             for(unsigned j=0;j<2u;j++) {s.ammo[j]=WORD_AT(owner+0x40u+j*8u);s.quantity[j]=WORD_AT(owner+0x44u+j*8u);}
             memcpy(s.position,(const void *)((uintptr_t)(entity+0x64u)+g_xbox_mem_offset),12u);
@@ -176,6 +186,7 @@ static void story_drop_frame(void)
         if(++s.serial==0u) ++s.serial;
         if(!story_drop_valid(&s)) continue;
         const int reliable=recovery || s.id!=old->id || s.present!=old->present ||
+            s.physical.present!=old->physical.present ||
             memcmp(s.ammo,old->ammo,sizeof s.ammo+sizeof s.quantity)!=0;
         const uint32_t buffer=frame-256u;WORD_AT(buffer)=0;
         memcpy((void *)((uintptr_t)(buffer+4u)+g_xbox_mem_offset),&s,sizeof s);g_esp=frame-768u;

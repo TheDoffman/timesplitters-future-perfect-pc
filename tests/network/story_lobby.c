@@ -168,6 +168,14 @@ void pc_network_bots_entity_refresh(uint32_t entity)
     memcpy(&npc_refresh_center,&WORD_AT(entity+0x1a8),4);
     memcpy(&npc_refresh_radius,&WORD_AT(entity+0x1c0),4);
 }
+#include "pc_physical_state.h"
+void pc_rigid_body_capture(PcRigidBodyState *s,uint32_t e){(void)e;memset(s,0,sizeof *s);}
+void pc_rigid_body_remove(uint32_t e){(void)e;}
+int pc_rigid_body_present(uint32_t e,const PcRigidBodyState *s){(void)e;(void)s;return 1;}
+void pc_character_ragdoll_capture(PcRagdollState *s,uint32_t e){(void)e;memset(s,0,sizeof *s);}
+static unsigned npc_rag_applies;
+void pc_character_ragdoll_present(uint32_t e,const PcRagdollState *s){(void)e;if(s->count)npc_rag_applies++;}
+void sub_0034FF30(void){}
 static uint32_t guest_call(void (*fn)(void),unsigned count,...)
 {
     uint32_t args[10];va_list ap;va_start(ap,count);CHECK(count<=10);
@@ -260,10 +268,10 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     if(fn==sub_001BA130) {CHECK(count==2 && (args[1]==25 || args[1]==32));++loadout_selections;return 0;}
     if(fn==sub_00353A90) {
         CHECK(count==5 && args[0]==0x30000 && args[1]==0x1e && args[3]<=256u);
-        CHECK(args[4]==1 || WORD_AT(args[2]+4)==0x36504e53u || WORD_AT(args[2]+4)==0x36505053u);
+        CHECK(args[4]==1 || WORD_AT(args[2]+4)==0x37504e53u || WORD_AT(args[2]+4)==0x37505053u);
         ++npc_send_calls;npc_sent_size=args[3];memcpy(npc_sent,(uint8_t *)memory+args[2],args[3]);
-        if(WORD_AT(args[2]+4)==0x36504e53u){npc_base_size=args[3];memcpy(npc_sent_base,npc_sent,args[3]);}
-        if(WORD_AT(args[2]+4)==0x36505053u){npc_pose_size=args[3];memcpy(npc_sent_pose,npc_sent,args[3]);}
+        if(WORD_AT(args[2]+4)==0x37504e53u){npc_base_size=args[3];memcpy(npc_sent_base,npc_sent,args[3]);}
+        if(WORD_AT(args[2]+4)==0x37505053u){npc_pose_size=args[3];memcpy(npc_sent_pose,npc_sent,args[3]);}
         return 0;
     }
     if(fn==sub_000B3630) {
@@ -408,6 +416,7 @@ int pc_network_bots_preserve_corpse(uint32_t body,uint32_t spawn){(void)body;(vo
 static int story_online_return_menu(void (*original)(void)){(void)original;return 0;}
 #endif
 #ifdef _WIN32
+void pc_character_ragdoll_preserve(uint32_t e,uint32_t c){(void)e;(void)c;}
 #include "pc_character_corpses.inc"
 #endif
 #include "pc_story_load.inc"
@@ -1093,18 +1102,34 @@ int main(void)
         CHECK(WORD_AT(actor+0xca8)==1 && WORD_AT(actor+0xcac)==0x40800000);
         newer.serial=13;newer.cloak_flags=0;memset(&newer.camo,0,sizeof newer.camo);
         npc_deliver(&newer,3);CHECK(WORD_AT(actor+0xc6c)==0x100);
+        StoryNpcSpawn ragged=newer;ragged.serial=14;ragged.pose_present=3;ragged.pose.clip=229;
+        ragged.health=0;ragged.ragdoll.kind=4;ragged.ragdoll.count=3;
+        for(unsigned i=0;i<3;i++) {PcRigidBodyState *r=ragged.ragdoll.parts+i;
+            r->present=1;r->rotation[0]=r->rotation[4]=r->rotation[8]=1;r->position[1]=(float)i;}
+        npc_deliver(&ragged,3);CHECK(story_npc_seen_serial[2]==13 && !npc_rag_applies);
+        for(unsigned pass=0;pass<3;pass++) {
+            unsigned i=2-pass;
+            StoryNpcRagMessage r={STORY_NPC_RAG_MAGIC,ragged.match,ragged.slot,ragged.serial,story_npc_checksum(&ragged),i,{0}};
+            const size_t offset=i*208u,bytes=sizeof ragged.ragdoll-offset<208u?sizeof ragged.ragdoll-offset:208u;
+            memcpy(r.bytes,(uint8_t *)&ragged.ragdoll+offset,bytes);
+            memcpy((uint8_t *)memory+0x90000,&r,sizeof r);
+            story_npc_receive_part(0x90000,sizeof r);
+            if(pass<2)CHECK(!npc_rag_applies && story_npc_seen_serial[2]==13);
+        }
+        CHECK(npc_rag_applies==1 && story_npc_seen_serial[2]==14 && npc_last_pose.clip==229);
+
         /* A mesh loaded by this scene needs no earlier guest NPC instance.
            An unknown/unloaded kind remains queued; a retired recorded body is
            rebuilt without calling a destructor on reused local storage. */
-        newer.serial=14;story_npc_kinds[12]=0;WORD_AT(actor)=0;
+        newer.serial=15;story_npc_kinds[12]=0;WORD_AT(actor)=0;
         WORD_AT(0x53a3d0+12*48)=7;*(int16_t *)((uint8_t *)memory+0x78b860+7*2)=-1;
-        npc_deliver(&newer,3);CHECK(story_npc_seen_serial[2]==13 && story_npc_fresh[2]);
+        npc_deliver(&newer,3);CHECK(story_npc_seen_serial[2]==14 && story_npc_fresh[2]);
         *(int16_t *)((uint8_t *)memory+0x78b860+7*2)=0;WORD_AT(0x791d4c)=0x200000;
-        story_npc_pending_frame();CHECK(story_npc_seen_serial[2]==14);
+        story_npc_pending_frame();CHECK(story_npc_seen_serial[2]==15);
         const unsigned constructors=npc_ctor_calls,removed=npc_removed;
         WORD_AT(actor+0x18c)=0x73000;WORD_AT(actor+0x190)=actor;
         WORD_AT(0x7307c)=actor+0xa4;WORD_AT(0x73028)=1;
-        WORD_AT(0x72028)|=0x80000000;newer.serial=15;
+        WORD_AT(0x72028)|=0x80000000;newer.serial=16;
         npc_deliver(&newer,3);CHECK(npc_ctor_calls==constructors+1 && npc_removed==removed);
         CHECK(npc_weapons_removed==3 && !WORD_AT(actor+0x18c));
         story_npc_kinds[12]=1;
