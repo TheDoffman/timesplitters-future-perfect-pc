@@ -13,8 +13,8 @@ The README's local SVG button links to the same invite. Validate with the
 Windows launcher build/tests and shared-layout translation checks; native Mac
 browser dispatch and visual acceptance still need a Mac host.
 
-Launcher 1.4.1 prepares the merged save-folder and native Mac multiplayer work
-for the next Stable release alongside game 0.4.0. Only version identities change;
+Launcher 1.4.2 prepares the merged launcher updates since 1.4.1 for the next
+Stable release. The version bump changes only version identities;
 publication still requires both host checks and all ten verified launcher assets.
 Mac Online formula notices now use the existing flat `.txt` license layout;
 notice bytes and the installer's protected-file rules stay unchanged.

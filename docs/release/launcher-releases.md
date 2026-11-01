@@ -1,7 +1,7 @@
 # One launcher release for Windows and Mac
 
-The next Stable launcher source version is **1.4.1**, including save-folder
-selection and the native Mac multiplayer integration. The source bump does not
+The next Stable launcher source version is **1.4.2**, including the merged
+community links, language selection and Story Co-op track updates. The source bump does not
 publish either platform; the workflow below must pass before release.
 
 The **Launcher release (Windows + Mac)** workflow builds the Windows x64 launcher
