@@ -1,10 +1,36 @@
+## Story beta menu repair published in place - 2026-11-01
+
+At the user's explicit request, republished the existing mutable
+[v0.5.0-story-coop-beta.1](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/v0.5.0-story-coop-beta.1)
+at09:29:29UTC from5d23fcd91be8153e030921710396f5aa32d227a5 on online-story-coop.
+Release ID430413073 and the public URL are unchanged. No changes were merged
+into main and no launcher was published; Latest remains launcher-v1.4.2.
+The three public asset hashes, source tag and downloaded public BUILD/checksum
+were verified. ZIP SHA-256:
+95f0ff2ef2ab72e3d9d80a8276cf9b7689b7a13bf575dddd1b26dfc1d6140f14.
+EXE SHA-256:
+5ffa4297cef444e1b7e05d58904d0b75acd1ca85cf07f1be87c82c407fefd599.
+
+Full preparation passed:3121 Python tests,55 skips and112 subtests in451.76s;
+official Windows Build/native checks; exact1283-file fresh install and upgrade
+preservation; portable Python/Tk/TLS, directory/invitations and three-peer relay.
+Preparation took538.56s with399.80GiB initially free. The gameplay-content
+identity remains d5e98c9e, matching the live paired menu/opening checks below.
+The prior published assets and receipt are retained locally for recovery.
+Same-version installations must redownload/reinstall while preserving
+Data/Settings/Saves/Textures; the notes explain that this is not a newer-version
+automatic update. All peers need the corrected build. The Story track remains
+story-coop-beta metadata, grouped into Story Co-op Preview by launcher1.4.2.
+The preview still has v0.4.0 as its Stable baseline, rather than v0.4.1;
+the release metadata and notes disclose that distinction.
+
 ## Story beta menu callback repair - 2026-11-01
 
-Local, uncommitted changes on online-story-coop at ee64d501 restore the
+Changes developed on online-story-coop from ee64d501, committed as5d23fcd9, restore the
 pre-flag dispatch order: contextual lobby handlers resolve before generic
 Story chooser callbacks. The version policy now runs only for the matching
-Story entry row or generic chooser callback IDs. Main and the published
-v0.5.0-story-coop-beta.1 release are unchanged; no publication was performed.
+Story entry row or generic chooser callback IDs. The following evidence was
+collected before publication; the publication record appears above.
 
 Reproduced the published a07a7288 build's missing lobby heading/thumbnail and
 failed difficulty selection with the actual isolated host/guest runner.

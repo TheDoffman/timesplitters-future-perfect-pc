@@ -1,8 +1,15 @@
 # Story co-op beta launcher handoff
 
 The [Windows game beta is published](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/v0.5.0-story-coop-beta.1)
-The original package used commit7262f76d; the user-requested in-place correction
-uses265a4405 and restores the Story chooser. Existing beta.1 installations must
+The original package used commit7262f76d; the first in-place correction used
+265a4405 to restore the Story chooser. The current user-requested repack uses
+5d23fcd9 and restores lobby headings, mission/difficulty selection, Back and
+main-menu return by preserving contextual callback precedence. Paired Windows
+menu navigation and first-mission intro, firearm handoff, movement and firing
+passed before publication; full release validation is recorded in STATUS.
+The same release ID/URL was republished2026-11-01 at09:29:29UTC.
+These menu repairs remain on online-story-coop, with no new main merge.
+Existing beta.1 installations must
 redownload/reinstall the corrected package; its version number is unchanged.
 The compatibility source merged into main through
 [PR444](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/444),

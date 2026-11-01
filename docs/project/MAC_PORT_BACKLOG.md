@@ -2273,14 +2273,15 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
-- **Story callback precedence repair (2026-11-01, uncommitted on online-story-coop):**
+- **Story callback precedence repair (2026-11-01, 5d23fcd9 on online-story-coop):**
   The shared menu dispatcher again gives contextual Story lobby callbacks
   priority over the version-gated chooser fallback. No new Mac adapter is
   needed: the generic chooser path retains its behavior and the existing
   Windows-only Story transport scope remains intact. Both display variants
   pass the six-version chooser matrix; the Windows public-dispatch fixture
   and actual paired menus verify overlapping heading/difficulty/Back handlers.
-  Physical Mac menu acceptance and native Story transport remain pending.
+  Published in the repaired Windows v0.5.0-story-coop-beta.1 preview; physical
+  Mac menu acceptance and native Story transport remain pending.
 
 - **Story flag version ownership repair (2026-11-01, PR #451 / 7ebf2082):** Shared
   menu code now calls the diagnostics-owned `pc_build_version()` used by the
