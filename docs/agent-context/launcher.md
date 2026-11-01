@@ -389,7 +389,7 @@ launcher Save retains its existing close-game requirement.
 
 ## Stable and named preview releases (2026-10-22)
 
-Story beta alias: [publication handoff and compatibility contract](../release/story-coop-beta-handoff.md).
+Story beta alias: [publication handoff and compatibility contract](../release/story-coop-beta-handoff.md). Exact legacy selection stays unchanged.
 
 Launcher 1.3.0 source separates game channels from launcher self-updates.
 `GameChannels` in ReleaseClient.cs owns canonical tag-derived IDs, optional

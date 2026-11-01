@@ -183,6 +183,7 @@ public static class LauncherSharedUiChecks
                 Need(releases.Any(r=>r.Tag=="v0.6.0-preview.99"&&r.Channel=="legacy"),"Historical preview was relabeled Beta");
                 Need(!GameChannels.Choices(releases,"beta").Any(c=>c.Id=="legacy"),"Legacy versions must stay in history, outside testing tracks");
                 Need(GameChannels.Select(releases,"withdrawn")==null,"Missing experiment must not substitute Stable");
+                Need(GameChannels.Select(releases,"legacy").Channel=="legacy","Exact legacy selection was redirected to Beta");
                 Need(GameChannels.Choices(releases,"withdrawn").Any(c=>c.Id=="withdrawn"),"Unavailable selected channel was lost");
             });
             Test("Story co-op beta joins its existing track while retaining exact tag metadata",()=>{
