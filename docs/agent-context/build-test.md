@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[Save checks](save-locations.md); [Discord button/shared-host validation](launcher.md#discord-community-link), MAC-126. Both builds include SaveLocations.cs.
+[Save checks](save-locations.md); [Discord sidebar/Home card checks](launcher.md#discord-community-link), MAC-126. Both builds include SaveLocations.cs.
 
 test_native_timing.py::test_original_minigun_spin runs the complete supported-US callback with controlled audio/model services. It reproduces the old high-FPS failure and checks readiness, release, pause and input guards at 60/120/144/180/240 FPS. Existing CI selects this suite; private-XBE absence skips it. Historical stack fixtures exclude minigun intent until the full native stack is applied. See native-minigun.md.
 

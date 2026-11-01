@@ -32,6 +32,7 @@ namespace TimeSplitters.Launcher
             Click("HomeNav",()=>Page("CommandCenter"));Click("SettingsNav",ShowSettings);Click("NewsNav",()=>Run(News));
             Click("RepairNav",()=>Maintenance());Click("SupportNav",()=>NativeHost.Open("https://github.com/"+ReleaseClient.Repository+"/issues"));
             Click("DiscordNav",()=>NativeHost.Open(ReleaseClient.DiscordInvite));
+            Click("JoinDiscordButton",()=>NativeHost.Open(ReleaseClient.DiscordInvite));
             Click("SavesNav",ShowSaves);Click("LogsButton",()=>OpenFolder("logs"));
             Click("OpenDataButton",()=>OpenFolder(LauncherPlatform.Data(root)));
             Click("CheckButton",()=>Run(Check));Click("UpdateButton",()=>Run(()=>Install(latest)));Click("PlayButton",()=>Run(Play));

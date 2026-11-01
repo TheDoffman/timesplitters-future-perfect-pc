@@ -320,16 +320,18 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-126 - Launcher Discord community button
 
 - **Status:** Awaiting validation
-- **Behavior:** The labeled Discord logo in the launcher sidebar opens the
+- **Behavior:** The labeled Discord logo in the launcher sidebar and the Home
+  community card's Join Discord button open the
   project's public invite in the browser on Windows and native Mac. GitHub
   Support remains a separate action. No automatic join, Rich Presence change,
   diagnostic upload or saved preference is involved.
 - **Shared source:** `tools/launcher/Launcher.xaml` owns the accessible button
   and mark; `ReleaseClient.DiscordInvite` owns the target. Windows `Launcher.cs`
   and Mac `macos/NativeWindow.cs` call their existing browser adapters.
-  Branch `feature/discord-community-link`, initially uncommitted.
+  PR #435, branch `feature/discord-community-link`; Home card follow-up initially
+  uncommitted.
 - **Remaining:** On native Mac, build/test the launcher and check the translated
-  mark, sidebar fit, keyboard activation and browser destination. Windows
+  mark, sidebar/Home card fit, keyboard activation and browser destination. Windows
   checks do not establish native Mac execution or physical keyboard behavior.
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)

@@ -1,5 +1,17 @@
 ## Discord community entry points (2026-11-01)
 
+PR #435 Home follow-up, based on `38fc77c9`: the sidebar shortcut stays in
+place, with a separate community card below the Home game controls. The shared
+card uses the Discord mark, short benefits text and a purple Join Discord action;
+both Windows and Mac route it to `ReleaseClient.DiscordInvite` using the existing
+browser adapters. No saved state or automatic server join was added.
+The Windows build/test suite passed again (37.90 seconds). Three shared-layout
+checks and 20 native-Mac policy/backlog checks passed, along with context and
+whitespace checks. Reviewed isolated ready-state renders at 1152x772 and
+1000x720 show the complete card and button within the initial Home viewport.
+Native Mac visual/keyboard/browser acceptance remains pending MAC-126. No
+installed launcher was replaced and no release was published.
+
 Branch `feature/discord-community-link`, based on `4c49f143`, adds the same
 public Discord invite to the README's local logo button and the launcher's
 shared sidebar. Windows uses its existing shell browser opener; native Mac

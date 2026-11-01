@@ -3,7 +3,9 @@
 ## Discord community link
 
 `ReleaseClient.DiscordInvite` owns the public, non-expiring community invite.
-The shared `Launcher.xaml` has a labeled Discord-logo navigation button; WPF
+The shared `Launcher.xaml` has a labeled Discord-logo navigation button and a
+Home community card beneath the game controls. The card explains the benefits
+and offers `JoinDiscordButton`; the sidebar shortcut stays in place. WPF
 routes it through `Open`, while Avalonia uses `NativeHost.Open`. Both open the
 same browser destination only on click. This is separate from Rich Presence
 settings and does not join a server or transmit diagnostics automatically.
