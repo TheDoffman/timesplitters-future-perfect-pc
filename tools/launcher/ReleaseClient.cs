@@ -131,7 +131,7 @@ namespace TimeSplitters.Launcher
             catch(InvalidDataException){return true;}
         }
         public static Release Select(IEnumerable<Release> releases,string id)
-        {return releases.Where(r=>r.Channel==Preference(id)).OrderByDescending(r=>GameVersion.Parse(r.Tag)).FirstOrDefault();}
+        {return releases.Where(r=>r.Channel==Canonical(id)).OrderByDescending(r=>GameVersion.Parse(r.Tag)).FirstOrDefault();}
         internal static void Metadata(Release release,string body)
         {
             string tagChannel=release.IsPreview && GameVersion.Parse(release.Tag).Pre.Length==0?"legacy":TagChannel(release.Tag);
