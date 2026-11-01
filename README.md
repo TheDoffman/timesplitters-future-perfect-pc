@@ -2,7 +2,7 @@
 
 <a name="timesplitters-future-perfect"></a>
 
-# TimeSplitters: Future Perfect
+# TimeSplitters: Future Perfect Recomp
 
 Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer
 
