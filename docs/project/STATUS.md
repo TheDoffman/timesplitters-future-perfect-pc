@@ -1,3 +1,10 @@
+## Discord manual connection test (2026-11-01)
+
+The release notification workflow now offers a manual Stable/Preview connection
+test without creating a release. Thirteen offline regressions pass on Windows,
+including selected-secret routing and clear TEST labels. Live delivery is pending
+merge and a manual Stable run; the Preview webhook is not yet configured.
+
 ## Discord release notification preparation (2026-11-01)
 
 Published game releases route through the shared channel identity: Stable to

@@ -65,6 +65,26 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise ValueError('Discord webhook redirects are not permitted.')
 
 
+def test_announcement(event):
+    """A manual connection test uses the same delivery path without a release."""
+    route = event.get('inputs', {}).get('channel', 'stable')
+    if route not in ('stable', 'preview'):
+        raise ValueError('Test channel must be stable or preview.')
+    label = 'Stable' if route == 'stable' else 'Preview'
+    return route, {
+        'username': 'TimeSplitters Releases',
+        'allowed_mentions': {'parse': []},
+        'embeds': [{
+            'title': f'TEST · {label} game release notifications',
+            'description': ('This is a connection test for TimeSplitters: Future Perfect Recomp.\n\n'
+                            'If you can see this card, GitHub Actions can post to this channel.\n'
+                            '**No game release was created or published.**'),
+            'color': 0xE5A543 if route == 'preview' else 0x5865F2,
+            'footer': {'text': 'Manual connection test · Not a release announcement'},
+        }],
+    }
+
+
 def send(webhook, payload):
     if not WEBHOOK.fullmatch(webhook):
         raise ValueError('Missing or invalid Discord webhook secret for the selected release channel.')
@@ -86,14 +106,16 @@ def send(webhook, payload):
 
 def main():
     event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text(encoding='utf-8'))
-    result = announcement(event)
+    testing = os.environ.get('GITHUB_EVENT_NAME') == 'workflow_dispatch'
+    result = test_announcement(event) if testing else announcement(event)
     if result is None:
         print('No published game release to announce.')
         return
     route, payload = result
     secret = f'DISCORD_{route.upper()}_RELEASE_WEBHOOK'
     send(os.environ.get(secret, ''), payload)
-    print(f'Published game release announcement to the {route} channel.')
+    kind = 'connection test' if testing else 'game release announcement'
+    print(f'Published {kind} to the {route} channel.')
 
 
 if __name__ == '__main__':

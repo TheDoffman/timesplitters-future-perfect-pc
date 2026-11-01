@@ -3,6 +3,9 @@
 import importlib.util
 from pathlib import Path
 import unittest
+import json
+import os
+import tempfile
 from unittest.mock import Mock, patch
 import urllib.error
 
@@ -19,6 +22,29 @@ def event(tag='v0.4.1', preview=False, **changes):
 
 
 class DiscordReleaseTests(unittest.TestCase):
+    def test_manual_cards_are_labeled_and_do_not_impersonate_a_release(self):
+        for selected in ('stable', 'preview'):
+            route, payload = MODULE.test_announcement({'inputs': {'channel': selected}})
+            self.assertEqual(route, selected)
+            self.assertTrue(payload['embeds'][0]['title'].startswith('TEST'))
+            self.assertIn('No game release', payload['embeds'][0]['description'])
+            self.assertEqual(payload['allowed_mentions'], {'parse': []})
+            self.assertNotIn('url', payload['embeds'][0])
+        with self.assertRaises(ValueError):
+            MODULE.test_announcement({'inputs': {'channel': 'other'}})
+
+    def test_manual_dispatch_uses_only_the_selected_channel_secret(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'event.json'
+            for selected in ('stable', 'preview'):
+                path.write_text(json.dumps({'inputs': {'channel': selected}}), encoding='utf-8')
+                env = {'GITHUB_EVENT_PATH': str(path), 'GITHUB_EVENT_NAME': 'workflow_dispatch',
+                       'DISCORD_STABLE_RELEASE_WEBHOOK': 'stable-secret',
+                       'DISCORD_PREVIEW_RELEASE_WEBHOOK': 'preview-secret'}
+                with patch.dict(os.environ, env, clear=True), patch.object(MODULE, 'send') as send:
+                    MODULE.main()
+                    self.assertEqual(send.call_args.args[0], selected + '-secret')
+
     def test_stable_goes_to_announcements_with_exact_game_link(self):
         route, payload = MODULE.announcement(event())
         self.assertEqual(route, 'stable')
