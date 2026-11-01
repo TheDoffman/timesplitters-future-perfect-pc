@@ -2,13 +2,16 @@
 
 PC Settings bar: [persistence checks](interaction-input.md#pc-settings-bar-visibility).
 
-Game 0.4.1 uses the official Windows publisher and matching native Mac packager
-from one clean pushed revision. Full release, actual installer/preservation and
-portable Online checks remain required; a version bump alone is not validation.
+Native Online link/mode checks: `tests/graphics/test_quit_menu.py` and native
+`--test`/`--online-self-test`. Clang Story fixtures select the Windows guest
+adapter but use the real host trap; hexadecimal additions need token boundaries.
+
+Game 0.4.1: use one clean pushed revision for both publishers; installer,
+preservation and portable Online checks remain required.
 
 Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh-weapon-clicks-434).
 
-[NPC/cinematics](build-test-details.md); [Saves](save-locations.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
+[Build details](build-test-details.md); [Saves](save-locations.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
 
 Minigun: [readiness/release/pause/input tests](native-minigun.md). CI selects test_native_timing.py; original-code tests require the private XBE. Historical stacks exclude minigun/player-trigger patches until full native timing applies.
 

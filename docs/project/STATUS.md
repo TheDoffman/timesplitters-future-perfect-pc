@@ -17,6 +17,84 @@ Mac backlog integrity, context and whitespace checks pass. The prompt test
 uses a disposable input JSON so its F1 changes cannot mutate shared fixtures.
 Native Mac has no in-window F1 bar; its system menu/pointer behavior is unchanged.
 
+## Game 0.4.1 native link repair (2026-11-01)
+
+The actual Apple Silicon release build found three missing Online/Story symbols
+after main's Story integration. Native Online now reports accepted Arcade mode
+and clears it on disconnect, rejecting unsupported Story transport. Shared native
+Story lobby exports remain inactive under the existing MAC-013 limitation.
+The native fallback fixture calls both exports; the real Online self-test checks
+mode transitions and rejection. Windows focused Quit/Story suite passed all
+47 tests in 31.93 seconds; full build/package validation is pending.
+The interrupted Windows candidate is not a completed release validation run.
+The extra Mac private-XBE suite exposed four pre-existing fixture portability
+failures: synthetic Windows selection leaked into the appended host trap, a
+hexadecimal addition token was ambiguous to Clang, and a Story fixture did not
+select its intended Windows adapter. These fixtures are corrected without
+changing game behavior or removing assertions. The integrated release candidate
+46e6c616 passed all47 native Mac guest tests in9.97s, native build/checks,
+37 shared launcher UI groups, actual1400-file fresh/upgrade preservation and
+relocated Online checks. Real native host/cancel supervisor checks passed.
+Windows full release validation remains in progress on that frozen candidate;
+the review branch separately incorporates later preview-publisher repairs.
+
+## Story beta.1 corrected in place - 2026-11-01
+
+At the user's explicit request, republished the existing mutable preview
+[v0.5.0-story-coop-beta.1](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/v0.5.0-story-coop-beta.1)
+at07:42:30UTC, retaining release ID430413073 and its URL. Its source tag and
+BUILD.json now identify265a4405be39ed969445414a8129ef274bb23aa7, replacing the
+original7262f76d build. All three public asset digests, tag/source identity, and
+public checksum/BUILD.json downloads were verified. Corrected ZIP SHA-256:
+81677afe0e22b9469df426ddffe5c8f6c980b8fda09d03c9bccf14145b8f6680.
+Corrected EXE SHA-256:fdca6efe2bfa4785021f2da6546df4224a68bcd52df96000bd410bd69261f7a5.
+
+The real linked preview build reports0.5.0-story-coop-beta.1/Story chooser enabled;
+the stable linked build reported0.4.0/disabled. The corrected packaged EXE has
+one preview version string and no development fallback string. This verifies
+compiled flag behavior, not physical menu interaction or a full mission.
+Windows11 x64/Python3.14.2/MSBuild17.12.6: official build and full patch checks,
+3120 release tests/112 subtests with55 expected skips in448.40s, actual1283-file
+fresh install and upgrade/preservation, and portable Online three-peer checks
+passed. Total preparation601.81s;400.17GiB free beforehand. Shared Windows/Mac
+CI for PR451 passed runtime/launcher checks; physical Mac Story acceptance and
+native Story transport remain pending.
+
+GitHub renamed the release to untagged-* on redrafting. The guarded upload
+stopped before replacing assets. After inspecting the same draft ID/source and
+original asset hashes, recovery explicitly restored tag_name by release ID,
+uploaded/verified the three corrected assets and republished. The publisher and
+its simulated GitHub regression now include that redraft behavior;141 targeted
+publisher tests pass with9 prerequisite skips. Original source/hash/metadata
+records are retained locally for audit; normal publishing still refuses existing
+releases and Stable repair. The explicit exception never changes unrelated tags.
+
+Same-version installations require a fresh download/reinstall; no newer-version
+notification is promised. Release notes explain preservation of Data, Settings,
+Saves and Textures. Latest remains the other user's launcher-v1.4.2; this task did
+not publish a launcher. The previously deferred sniper freeze and other-mission
+validation limits remain unchanged.
+
+## Story preview build-version repair - 2026-11-01
+
+The initial beta.1 archive had the correct preview watermark but hid Story's
+chooser: TSFP_PC_VERSION was private to xbox_input, while the menu belongs to
+the title target and silently used development. The flag now calls a shared
+version provider in the diagnostics compilation unit; the watermark uses the
+same provider. Separate-unit tests deliberately give the menu a conflicting
+macro. The real linked Windows debug test asserts flag/watermark agreement.
+
+Windows x64 targeted menu/camera checks49passed2Mac-only skips; publisher
+checks141passed9prerequisite skips, including explicit repair ordering,
+concurrent edits/tag changes, invalid/immutable/Stable/draft refusal, asset
+preservation and bad-upload draft retention. Official MSVC stable Release
+Build passes full patch/built-in checks and reports version0.4.0/chooser disabled.
+Preview linked-build acceptance, full release preparation and native CI remain
+pending. The user explicitly requested replacing the existing mutable beta.1
+release; normal publication remains immutable. See the documented repair mode.
+No personal saves/settings were changed; the standalone launcher is not published
+by this task. Native Story transport and physical Mac gameplay remain separate.
+
 ## Fresh weapon clicks / #434 (2026-11-01)
 
 Implementation commit 33363bfc. Integrated main bbab9c3d; focused trigger,

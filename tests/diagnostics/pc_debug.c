@@ -4,6 +4,7 @@
 #include "pc_debug.h"
 #include "pc_settings.h"
 #include "pc_controls.h"
+#include "interface/pc_feature_flags.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,6 +93,9 @@ int main(int argc, char **argv)
     CHECK(!options.show_fps && !options.show_frame_time && !options.show_issues && !options.log_performance);
     CHECK(!pc_debug_overlay(overlay,sizeof overlay,"auto"));
     CHECK(strstr(pc_debug_watermark(),"TSFP PC v") && strlen(pc_debug_watermark())<96);
+    CHECK(strstr(pc_debug_watermark(),pc_build_version()));
+    CHECK(pc_story_coop_enabled()==(strstr(pc_debug_watermark(),"story-coop")!=NULL));
+    printf("PASS: linked build version %s; Story chooser %s\n",pc_build_version(),pc_story_coop_enabled()?"enabled":"disabled");
     pc_debug_snapshot(&snapshot);
     CHECK(snapshot.log_available && snapshot.errors==1 && snapshot.warnings==1);
     pc_debug_poll(); pc_debug_snapshot(&snapshot); CHECK(snapshot.errors==1 && snapshot.warnings==1);
