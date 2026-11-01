@@ -42,8 +42,13 @@ and retained by the backend without automatic retry; roots are not committed.
 Windows discard uses the new file handle, POSIX checks device/inode before unlink
 under caller-serialized initialization. Native close uncertainty retains its token
 metadata/path independently of initialization-stack context; no blind retry.
-Large new Windows images require sparse marking before sizing; POSIX ftruncate
-creates sparse zero extents. Existing images are not repaired/truncated/reformatted.
+Windows prefers sparse images. ERROR_INVALID_FUNCTION/ERROR_NOT_SUPPORTED from
+sparse marking instead use regular files after a caller-available free-space
+check before each allocation; other errors fail. exFAT therefore needs about
+4.9 GiB for all images. Sizing errors still discard only the newly owned image.
+Storage errors report operation, image path and Windows code to stderr; failed
+initialization also reports directly, independent of kernel log filtering.
+POSIX ftruncate is unchanged. Existing images are never repaired or truncated.
 The backend's static quarantine remains process-lifetime diagnostic ownership.
 
 Maintained test_guest_storage covers root priority/invalid-output preservation,
@@ -75,3 +80,16 @@ Codeb47b9d9e follow-up: runtime40989944205 and launcher40989944053 both passed
 Windows/Mac host checks. Isolated Windows pool Story also passed; source/archive/
 generated/game hashes and26 protected files agree. Native Mac title gameplay
 remains unverified. See STATUS's stage0235 completed acceptance for exact scope.
+
+Windows nonsparse regression coverage in test_guest_storage.py uses native file
+ownership with injected sparse API responses, free-space/query/sizing failures,
+exact requested geometry and existing-file byte preservation. Disposable sizing
+is capped at 4 KiB; this is not a physical exFAT volume or full game test. The
+normal native fixture still verifies real NTFS sparse sizes/allocation. These
+cases run in the existing Windows CI storage suite; Windows adapters skip Mac.
+
+Save relocation policy is maintained in root AGENTS.md. Regular images remain
+valid when copied from exFAT to NTFS; no sparse conversion is required. Absolute
+save-folder settings are not automatically rewritten by moving the installation;
+users select a relocated folder explicitly. Future storage changes must preserve
+this compatibility and existing bytes, including independently stored saves.

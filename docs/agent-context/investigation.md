@@ -9,6 +9,10 @@ PR references (`Refs #123`), mark publication pending, and verify/link the relea
 before closing. The 2026-10-29 root AGENTS rule overrides older template closing
 instructions; merge-time resolution comments do not establish publication.
 
+Save/storage changes must consider NTFS/exFAT portability, existing-file
+preservation and moved save paths per AGENTS.md; see [host storage](host-storage.md).
+Keep simulated capability tests distinct from physical-drive acceptance.
+
 Kernel stages: [object ownership, boot and validation](kernel-objects.md).
 Generate the patch index from LF patch bytes matching Git; CRLF working copies
 can produce different hashes and target names despite local checks passing.

@@ -1,3 +1,4 @@
+[exFAT](host-storage.md)
 # Subsystem entry points
 
 PC bar: [persistence](interaction-input.md#pc-settings-bar-visibility).

@@ -72,6 +72,12 @@ typedef struct image_token {
 /* Owned native resources/failed new-file cleanup retained on uncertainty. No
  * automatic close/delete retry, and no borrowed initialization-stack context. */
 static image_token *quarantined;
+#ifdef _WIN32
+static int image_error(const image_token *token,const char *operation,DWORD error) {
+    fprintf(stderr,"[PATH] Storage %s failed: %s (Windows error %lu)\n",
+            operation,token->path,(unsigned long)error);fflush(stderr);return 0;
+}
+#endif
 static int image_create(void *context,unsigned part,void **out) {
     const char *root=context;image_token *token;char leaf[32];size_t bytes;
     token=calloc(1,sizeof(*token));if(!token)return 0;
@@ -81,7 +87,11 @@ static int image_create(void *context,unsigned part,void **out) {
     {WCHAR name[MAX_PATH];DWORD error;
     if(!wide(token->path,name)) {free(token);return 0;}
     token->file=CreateFileW(name,GENERIC_READ|GENERIC_WRITE|DELETE,0,NULL,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,NULL);
-    if(token->file==INVALID_HANDLE_VALUE) {error=GetLastError();free(token);return error==ERROR_FILE_EXISTS || error==ERROR_ALREADY_EXISTS?TSFP_STORAGE_EXISTS:0;}}
+    if(token->file==INVALID_HANDLE_VALUE) {
+        error=GetLastError();
+        if(error!=ERROR_FILE_EXISTS && error!=ERROR_ALREADY_EXISTS)image_error(token,"image creation",error);
+        free(token);return error==ERROR_FILE_EXISTS || error==ERROR_ALREADY_EXISTS?TSFP_STORAGE_EXISTS:0;
+    }}
 #else
     token->file=open(token->path,O_CREAT|O_EXCL|O_RDWR|O_NOFOLLOW,0600);
     if(token->file<0) {int error=errno;free(token);return error==EEXIST?TSFP_STORAGE_EXISTS:0;}
@@ -89,12 +99,27 @@ static int image_create(void *context,unsigned part,void **out) {
     *out=token;return TSFP_STORAGE_NEW;
 }
 static int image_resize(void *context,void *data,uint64_t bytes) {
-    image_token *token=data;(void)context;
+    image_token *token=data;
 #ifdef _WIN32
     LARGE_INTEGER end;DWORD returned;
-    if(bytes>UINT64_C(1048576) && !DeviceIoControl(token->file,FSCTL_SET_SPARSE,NULL,0,NULL,0,&returned,NULL))return 0;
-    end.QuadPart=(LONGLONG)bytes;return SetFilePointerEx(token->file,end,NULL,FILE_BEGIN) && SetEndOfFile(token->file);
+    if(bytes>UINT64_C(1048576) && !DeviceIoControl(token->file,FSCTL_SET_SPARSE,NULL,0,NULL,0,&returned,NULL)) {
+        DWORD error=GetLastError();WCHAR root[MAX_PATH];ULARGE_INTEGER available;
+        /* exFAT and FAT do not implement sparse files. Do not mistake access,
+         * device or other I/O failures for an unsupported optional capability. */
+        if(error!=ERROR_INVALID_FUNCTION && error!=ERROR_NOT_SUPPORTED)
+            return image_error(token,"sparse marking",error);
+        if(!wide((const char *)context,root))return image_error(token,"save path conversion",GetLastError());
+        if(!GetDiskFreeSpaceExW(root,&available,NULL,NULL))return image_error(token,"free-space query",GetLastError());
+        if(available.QuadPart<bytes)return image_error(token,"regular image allocation (insufficient space)",ERROR_DISK_FULL);
+        fprintf(stderr,"[PATH] Sparse files unavailable; creating regular storage image: %s (%llu bytes)\n",
+                token->path,(unsigned long long)bytes);fflush(stderr);
+    }
+    end.QuadPart=(LONGLONG)bytes;
+    if(!SetFilePointerEx(token->file,end,NULL,FILE_BEGIN))return image_error(token,"image seek",GetLastError());
+    if(!SetEndOfFile(token->file))return image_error(token,"image sizing",GetLastError());
+    return 1;
 #else
+    (void)context;
     return ftruncate(token->file,(off_t)bytes)==0;
 #endif
 }
@@ -171,7 +196,10 @@ void xbox_path_init(const char *game,const char *save) {
     }
     if(ok)ok=tsfp_storage_commit(&storage,&paths);
     if(ok) {fprintf(stderr,"[PATH] saves in %s (%s)\n",paths.save,source==TSFP_STORAGE_CALLER?"caller":source==TSFP_STORAGE_ENVIRONMENT?"RECOMP_SAVE_DIR":"default");fflush(stderr);}
-    else xbox_log(XBOX_LOG_ERROR,XBOX_LOG_PATH,"Storage initialization failed; previous roots preserved");
+    else {
+        fprintf(stderr,"[PATH] Storage initialization failed; previous roots preserved. Check save-folder permissions and available disk space.\n");fflush(stderr);
+        xbox_log(XBOX_LOG_ERROR,XBOX_LOG_PATH,"Storage initialization failed; previous roots preserved");
+    }
     init_leave();
 }
 int xbox_set_profile_root_utf8(const char *root) {

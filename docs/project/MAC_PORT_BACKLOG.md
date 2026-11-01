@@ -8688,3 +8688,10 @@ On a Mac, build the full patch stack and test sci-fi handgun short clicks at
 Original60 and supported native120/180/240, before/after pause, reload and live
 rate changes. Verify one shot per eligible click and unchanged held-fire rate.
 Physical Mac build/gameplay is unverified on this Windows computer.
+
+
+Windows exFAT sparse fallback (2026-11-01): `guest_kernel_storage.c` now accepts
+unsupported Windows sparse marking with checked regular allocation. This is a
+Windows API adapter repair; shared geometry/ownership and native POSIX ftruncate
+are unchanged. No Mac port change is required. Physical exFAT gameplay on either
+host remains unverified; see STATUS and host-storage.md for injected Windows tests.
