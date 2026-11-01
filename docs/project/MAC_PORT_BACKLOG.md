@@ -1,5 +1,11 @@
 # PC features awaiting Mac adaptation
 
+PC Settings menu-bar visibility (2026-11-01): **Not applicable** to native Mac.
+The Windows F1 bar now persists `pc_menu_visible` in the active input profile;
+Mac has no equivalent in-window bar and retains its system menu and F1 pointer
+capture. Shared JSON accessors preserve unknown settings on either host; no
+new platform adapter or Mac feature is introduced. Windows checks are in STATUS.
+
 This tracks platform exceptions and native validation for shared PC/Mac features.
 Ordinary feature logic now belongs in shared source by default; follow
 [the shared implementation contract](../development/shared-platform.md). Add/update an

@@ -122,7 +122,11 @@ int main(int argc,char **argv)
         CHECK(pc_settings_read(&current,error,sizeof error));
         CHECK(current.keys[14][0]=='J' && current.keys[9][0]==VK_F23 && !current.keys[13][1]);
         CHECK(!current.keys[19][0] && current.keys[19][1]=='K');
-        puts("PASS: bindings reload in a fresh process"); return 0;
+        CHECK(pc_settings_menu_visible());
+        owner=CreateWindowExA(0,"STATIC","Restored menu",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
+        CHECK(owner); pc_settings_attach(owner); CHECK(GetMenu(owner));
+        pc_settings_detach(owner); DestroyWindow(owner);
+        puts("PASS: bindings and menu visibility reload in a fresh process"); return 0;
     }
     CHECK(argc==3);
     snprintf(path,sizeof path,"%s\\settings-test.json",argv[2]);
@@ -180,7 +184,21 @@ int main(int argc,char **argv)
 
     owner=CreateWindowExA(0,"STATIC","PC settings integration test",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
     CHECK(owner);
-    pc_settings_attach(owner); CHECK(GetMenu(owner) && GetMenuItemCount(GetMenu(owner))==1);
+    CHECK(!pc_settings_menu_visible());
+    pc_settings_attach(owner); CHECK(!GetMenu(owner));
+    pc_settings_toggle_menu(owner);
+    CHECK(GetMenu(owner) && GetMenuItemCount(GetMenu(owner))==1);
+    CHECK(pc_settings_menu_visible());
+    pc_settings_toggle_menu(owner); CHECK(!GetMenu(owner));
+    CHECK(!pc_settings_menu_visible());
+    pc_settings_detach(owner); DestroyWindow(owner);
+    owner=CreateWindowExA(0,"STATIC","PC settings restart test",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
+    CHECK(owner); pc_settings_attach(owner); CHECK(!GetMenu(owner));
+    pc_settings_toggle_menu(owner); CHECK(GetMenu(owner));
+    CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
+    CHECK(!pc_settings_save_menu_visible(0));
+    CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
+    CHECK(pc_settings_menu_visible());
     deadline=GetTickCount()+10000; timer=SetTimer(NULL,0,70,drive); CHECK(timer);
     pc_settings_show(owner); KillTimer(NULL,timer);
     CHECK(!failed && phase==1);

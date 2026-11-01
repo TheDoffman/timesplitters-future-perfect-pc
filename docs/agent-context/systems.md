@@ -1,5 +1,7 @@
 # Subsystem entry points
 
+PC Settings bar: [visibility persistence](interaction-input.md#pc-settings-bar-visibility).
+
 Battle Mech mouse: [shared routing and guards](mounted-mouse.md#battle-mech-mouse-425).
 
 Minigun motor intent and release damping: [shared policy](native-minigun.md).

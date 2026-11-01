@@ -37,6 +37,9 @@ int pc_settings_conflict(const PcSettings *settings, int action, int key);
 int pc_settings_key_allowed(int key);
 /* 1 applied, 0 invalid, -1 conflict requiring explicit confirmation. */
 int pc_settings_assign(PcSettings *settings, int action, int slot, int key, int move);
+/* Per-input-profile Windows menu-bar preference; absent means hidden. */
+int pc_settings_menu_visible(void);
+int pc_settings_save_menu_visible(int visible);
 void pc_settings_attach(HWND game);
 void pc_settings_toggle_menu(HWND game);
 void pc_settings_detach(HWND game);

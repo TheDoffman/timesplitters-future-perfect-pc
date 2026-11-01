@@ -295,7 +295,12 @@ void pc_settings_toggle_menu(HWND game)
 {
     HMENU bar=(HMENU)GetPropA(game,menu_property);
     if(!bar || !SetMenu(game,GetMenu(game) ? NULL : bar)) return;
-    if(GetMenu(game)) pc_menu_theme_refresh(game,pc_window_theme_dark());
+    if(!pc_settings_save_menu_visible(GetMenu(game)!=NULL))
+        fprintf(stderr,"[settings] Could not save PC Settings bar visibility.\n");
+    if(GetMenu(game)) {
+        pc_menu_theme_attach(game);
+        pc_menu_theme_refresh(game,pc_window_theme_dark());
+    }
     /* Keep the outer window bounds, including borderless fullscreen. The
        renderer follows the new client size and WM_SIZE updates mouse clipping. */
     SetWindowPos(game,NULL,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE|SWP_FRAMECHANGED);
@@ -326,10 +331,10 @@ void pc_settings_attach(HWND game)
     AppendMenuA(settings,MF_STRING,PC_MENU_BAR_COMMAND,"&Hide Menu Bar\tF1");
     AppendMenuA(bar,MF_POPUP,(UINT_PTR)settings,"&PC Settings");
     if(!SetPropA(game,menu_property,(HANDLE)bar)) { DestroyMenu(bar); return; }
-    SetMenu(game,bar);
+    if(pc_settings_menu_visible()) SetMenu(game,bar);
     pc_menu_theme_attach(game);
     rect=client;
-    AdjustWindowRectEx(&rect,(DWORD)GetWindowLongPtr(game,GWL_STYLE),TRUE,(DWORD)GetWindowLongPtr(game,GWL_EXSTYLE));
+    AdjustWindowRectEx(&rect,(DWORD)GetWindowLongPtr(game,GWL_STYLE),GetMenu(game)!=NULL,(DWORD)GetWindowLongPtr(game,GWL_EXSTYLE));
     SetWindowPos(game,NULL,0,0,rect.right-rect.left,rect.bottom-rect.top,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
     DrawMenuBar(game);
 }

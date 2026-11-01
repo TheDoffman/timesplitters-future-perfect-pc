@@ -70,7 +70,7 @@ def wait_window(pid, prefix, timeout=12):
 
 def main():
     exe = ROOT / "build/windows/Release/futureperfect_recomp.exe"
-    config = ROOT / "config/pc-controls.json"
+    config = ROOT / "config/pc-controls.default.json"
     original = config.read_bytes()
     controls = json.loads(original)
     env = dict(os.environ)
@@ -79,6 +79,8 @@ def main():
             env.pop(key)
     captures = ROOT / "private/captures/pc-settings-integration" / str(time.time_ns())
     captures.mkdir(parents=True, exist_ok=True)
+    config = captures / "controls.json"
+    config.write_bytes(original)
     env.update(
         RECOMP_GAME_DIR=str(ROOT / "private/game"),
         RECOMP_SAVE_DIR=str(ROOT / "private/test-saves/pc-settings-integration"),
@@ -98,7 +100,11 @@ def main():
         process = subprocess.Popen([str(exe)], cwd=exe.parent, env=env, stdout=out, stderr=err)
         try:
             game = wait_window(process.pid, "TimeSplitters FP")
+            if not user.GetMenu(game):
+                user.SendMessageW(game, 0x100, 0x70, 0)  # F1 restores saved-hidden bar
+                user.SendMessageW(game, 0x101, 0x70, 0)
             assert user.GetMenuItemCount(user.GetMenu(game)) == 1
+            original = config.read_bytes()  # F1 itself persists the visibility choice.
             for route in ("F2", "PC Settings menu", "F2 in fullscreen"):
                 if route == "F2 in fullscreen":
                     user.PostMessageW(game, 0x104, 0x0d, 1 << 29)  # Alt+Enter

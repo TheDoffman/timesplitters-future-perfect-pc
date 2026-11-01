@@ -1,3 +1,20 @@
+## Remember PC Settings bar visibility (2026-11-01)
+
+Local uncommitted work on `fix/pc-settings-start-hidden`, based on bbab9c3d.
+F1 and Hide Menu Bar immediately save top-level `pc_menu_visible` in the active
+input JSON using the existing atomic/backup writer. Attach restores the last
+state; missing preferences start hidden. Client sizing and deferred menu theme
+attachment follow actual visibility. No personal settings or saves changed.
+The existing settings integration test covers absent, hidden, shown, window
+reattachment, fresh-process restoration, read-only rejection and binding-save
+preservation. Other menu fixtures explicitly reveal a hidden bar; writable
+fixture copies keep visibility writes out of tracked or personal controls.
+Full Windows Build and its settings/prompt/debug integration checks passed,
+including fresh-process restoration and read-only failure. Python syntax,
+Mac backlog integrity, context and whitespace checks pass. The prompt test
+uses a disposable input JSON so its F1 changes cannot mutate shared fixtures.
+Native Mac has no in-window F1 bar; its system menu/pointer behavior is unchanged.
+
 ## Prerelease Discord announcement routing (2026-11-01)
 
 Both game release types and their manual tests now post only to announcements,

@@ -266,6 +266,30 @@ static int pc_debug_bool(const char *object, const char *name)
     return value && end-value>=4 && !strncmp(value,"true",4) && ws(value+4)==end;
 }
 
+int pc_settings_menu_visible(void)
+{
+    char *text;
+    int visible;
+    recomp_bindings_init();
+    text=g_have_path?read_file(g_path):NULL;
+    visible=text && pc_debug_bool(text,"pc_menu_visible");
+    free(text);
+    return visible;
+}
+
+int pc_settings_save_menu_visible(int visible)
+{
+    char *text;
+    int ok;
+    recomp_bindings_init();
+    text=g_have_path?read_file(g_path):NULL;
+    if(!text) return 0;
+    ok=*ws(text)=='{' && pc_replace_member(&text,ws(text),"pc_menu_visible",
+                                          visible?"true":"false") && pc_write_config(text);
+    free(text);
+    return ok;
+}
+
 void pc_debug_config_read(PcDebugOptions *s)
 {
     char *text;
