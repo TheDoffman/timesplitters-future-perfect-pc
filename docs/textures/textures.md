@@ -2,13 +2,22 @@
 
 [Back to the README](../../README.md)
 
-This branch contains **2,261 replacements**, about **1.91 GiB installed**, covering
+The replacement original-based 2x pack contains all 6,812 known supported
+keys, including the 164 user-approved character selection/profile icons. Its
+compiled DDS and sanitized metadata now replace the old repository artwork.
+It is installed locally; full-game visual and Mac validation remain pending. Original
+archives and Classic fallback are preserved. See [STATUS](../project/STATUS.md).
+The older authored/publication inventory below is historical; it is preserved
+for recovery and is superseded by this complete original-based 2x pack.
+
+The earlier authored pack contained **2,261 replacements**, about **1.91 GiB installed**, covering
 approximately 33% of the 6,812 known supported keys. The menu progress and
 remaining gaps are recorded in [Menu texture overhaul](main-menu-textures.md).
 These additions enter optional texture downloads through a published pack and
 its download index on main. Major surfaces use up to 4K; smaller
 assets use appropriate sizes. Metadata records resampling. Original game files,
-source artwork and private prompts are excluded. This is a partial overhaul. Character selection/profile icons retain their original artwork; character model materials remain in scope.
+source artwork and private prompts are excluded. This was a partial overhaul;
+its original-icon policy was superseded by the approved original-based 2x pack.
 
 The October 24 material batches add 215 metal, masonry, rock, plaster, carved,
 timber and painted-wood replacements after offline layout, mip, alpha and format
@@ -21,9 +30,12 @@ remains incomplete. Publication does not establish in-game fidelity.
 
 ## Install through the launcher
 
-Pack [0.1.0-beta.1](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/textures-v0.1.0-beta.1)
-publishes the 2,261 replacements from main `0ccf654f`. Its verified download index
-must be present on main before the launcher can discover it.
+Pack [0.2.0-beta.1](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/textures-v0.2.0-beta.1)
+replaces the old artwork with all 6,812 original-based 2x replacements, including
+the approved character icons. Its 105 verified download parts total about
+700 MiB; installed size is about 1.47 GiB. The verified download index must be
+merged into main before launchers discover it. The prior 0.1.0-beta.1 release
+remains available for recovery.
 
 The shared Windows/Mac launcher offers **Game settings → Graphics &
 resolution → Check texture downloads → Download / update textures**. Normal game
@@ -80,7 +92,9 @@ Older traces from `2230901` omit hashing and cached calls and lack hash columns.
 
 ## Publishing optional pack updates
 
-1. Audit and hydrate the committed `assets/textures` pack. Keep private source art
+1. Audit and hydrate the committed `assets/textures` pack. For an approved private
+   pack, export with `texture-repository.py --source PATH --pointers-only` to keep
+   only pointers in the checkout, verifying every LFS hash/size. Keep private source art
    out of publication. Choose a new texture version; published versions are immutable.
 2. Run `python tools/textures/texture-release.py publish --version X.Y.Z`. This streams at
    most one bounded part at a time, verifies uploaded hashes and writes the public
@@ -98,8 +112,8 @@ Keep the verified generated index on main after publication. Stable key-prefix
 buckets reduce part churn as new textures are added.
 Each archive is capped at 64 MiB compressed and generated from at most 48 MiB raw;
 installer validation bounds expanded content too. Optional updates do not prune
-unknown keys. Game packages retain the earlier exact-hash retirement policy for
-original character icons; custom-modified icon pairs are preserved.
+unknown keys. Older packages carried exact-hash retirement for redesigned icons;
+current policy clears that retirement after approval of faithful 2x replacements.
 
 ## Preview an installed local pack
 
@@ -283,3 +297,55 @@ DDS, metadata file and declared size/count. Unrelated CI jobs keep pointer-only
 checkouts. Merge approved assets into main, then follow Publishing optional pack
 updates above to make them available in the launcher. Ordinary game releases do
 not carry the pack. Issue #74 stays open until the overhaul is complete.
+
+## Local 2x upscale from original game textures
+
+The original-based pipeline is separate from authored redesign production. It
+reads the verified game extraction and leaves source art private. Install a
+local [Real-ESRGAN ncnn Vulkan](https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan)
+executable with `realesrgan-x4plus` model files, then run:
+
+```powershell
+python tools/textures/texture-upscale-originals.py --root private/texture-remaster --game private/game --output private/texture-remaster/authored/original-upscale-2x/pack --exe external/realesrgan/realesrgan-ncnn-vulkan.exe --models external/realesrgan/models
+```
+
+Add `--plan-only` for a size/routing inventory, `--keys KEY ...` for a sample,
+and `--compare KEY ...` for selected original/candidate sheets. Repeating a run
+verifies and reuses completed pairs. It refuses incompatible model/catalog
+receipts, damaged pairs, existing-key overwrites and budget overruns.
+
+Color inference runs at 4x then reduces to 2x; this is an upscale of original
+art, not newly authored 4K detail. Known character, weapon, prop and environment
+color categories use the model. Text, effects, reflections, uncertain textures
+and channel data use conventional resizing. The 164 approved character-icon
+keys explicitly use the neural model; other UI stays conservative. Alpha always
+comes from original samples. The result needs scene
+review, especially atlases, tiling, text, material channels and transparency.
+
+The tool produces candidates without changing the active pack or saved texture
+mode. After auditing, an explicitly requested activation can move the prior
+active pack to an archival folder under `authored/` and move the candidate pack
+to the single active `pack/` folder, preserving recovery and source artwork.
+Restart the game to load changed files. This local workflow does not publish
+game assets to Git or texture downloads without explicit user approval. The user
+has approved publication of the reviewed original-based 2x replacement pack;
+source archives, private provenance, settings and saves remain local.
+
+For an explicitly requested local activation after full production and review:
+
+```powershell
+python tools/textures/texture-activate-originals.py --root private/texture-remaster --candidate private/texture-remaster/authored/original-upscale-2x/pack --installation "PATH_TO_LAUNCHER_FOLDER"
+```
+
+The optional installation must be on the same volume for hard links. Close its
+game first. The previous private pack stays in `previous-enhanced-pack` beside
+the candidate plan; prior installed textures and controls are preserved for
+recovery. Other controls, display settings and saves remain untouched.
+
+Tiny UI, thin patterns and lookup/mask channels use lossless texel-preserving
+2x resizing. Larger specialist images use conventional resizing. This avoids
+inventing geometry or changing shader data. Reviewed exceptions can be supplied
+with `--review-overrides PATH.json`, mapping known keys to a conservative route
+and a reason. Preserve rejected DDS pairs separately before rerunning changed
+routes; the tool never overwrites them. Neural output guards reject blank or
+severely changed images, and final original/compiled comparisons remain needed.

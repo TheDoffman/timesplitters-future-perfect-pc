@@ -84,8 +84,7 @@ ID and is not a local slot. The shared `tests/graphics/mouse_region.c` fixture,
 run by `tests/gameplay/test_mounted_mouse.py`, checks both adapters and verifies
 the deferred packet reaches player one. Mac gameplay remains unverified.
 
-The #74 material continuation and validation limits are recorded in
-[material validation](../textures/material-validation.md).
+[#74 material validation](../textures/material-validation.md).
 
 Hybrid production separates fixed macro layout from repainted microtexture.
 Failed drafts stay held for specific UV, hardware, motif, tone or pattern defects.
@@ -975,3 +974,5 @@ Bot corpses: [contracts](systems-details.md#online-bot-corpses).
 Physics: [poses](systems-details.md#guest-ragdolls-and-physical-npc-drops).
 
 [Language startup](language-packs.md).
+
+[2x texture workflow](original-upscale.md).

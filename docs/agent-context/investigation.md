@@ -359,3 +359,9 @@ Crash diagnostics adds the allocation-history patch after allocator dependencies
 the repository-order fixture includes this final observer hook before source
 layout. Normalize new patches to LF before refreshing the index: local CRLF
 bytes hash differently from Git-normalized checkout bytes on CI hosts.
+
+The root texture rules record the user's 2026-11-01 original-based upscale
+request and active-pack choice. For that task, preserve prior hybrid artwork
+and recovery packs, use verified originals as inputs, and follow the
+[original upscale workflow](original-upscale.md). Historical hybrid batch
+instructions do not override this task's newer user direction.

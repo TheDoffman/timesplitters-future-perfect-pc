@@ -1,1 +1,1 @@
-{"bytes":174920,"channels":"color","format":"DXT1","key":"67bcde2c6d274f07","mips":11,"output_size":[1024,256],"resampled":false,"sha256":"3dd542c59b1e5b668feafe0805593f62344ba86f5966d95f1fb302d27d0241f4","source_size":[1024,256]}
+{"bytes":43848,"channels":"color","format":"DXT1","key":"67bcde2c6d274f07","mips":10,"output_size":[512,128],"resampled":true,"sha256":"5a5803702d1f383b6863e53268a4d38e9e3b31c2a5a378cbffba0950277a5dbc","source_size":[256,64]}

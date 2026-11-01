@@ -16,6 +16,18 @@ spec.loader.exec_module(release)
 
 
 class TextureReleaseTests(unittest.TestCase):
+    def test_draft_lookup_before_tag_exists_is_paginated(self):
+        wanted = dict(tag_name='textures-v0.2.0-beta.1', draft=True, id=7)
+        class Api:
+            def call(self, method, path):
+                assert method == 'GET'
+                if '/releases/tags/' in path:
+                    return None
+                if 'page=2' in path:
+                    return [wanted]
+                return [dict(tag_name='other') for _ in range(100)]
+        self.assertEqual(release.find_release(Api(), '/repos/test/repo', wanted['tag_name']), wanted)
+
     def test_released_launchers_keep_the_original_manifest_endpoint(self):
         # This URL is already compiled into installed Windows/Mac launchers.
         manifest = ROOT/'config/texture-download.json'
@@ -159,7 +171,9 @@ class TextureReleaseTests(unittest.TestCase):
                     return self.result
                 if method == 'PATCH':
                     self.assert_ready()
-                    self.result.update(data)
+                    # An unpublished draft can lose its intended tag unless the
+                    # final publication explicitly supplies it.
+                    self.result.update(data, tag_name=data.get('tag_name', 'untagged-fixture'))
                     return self.result
                 if upload:
                     self.uploads += 1
@@ -181,6 +195,9 @@ class TextureReleaseTests(unittest.TestCase):
             output = root/'config.json'
             with patch.object(release.subprocess, 'check_output', return_value='a'*40):
                 release.publish(pack, '0.1.0-alpha.1', output, root/'work', api)
+                self.assertEqual(api.result['name'], 'Enhanced textures v0.1.0-alpha.1')
+                self.assertNotIn('4K', api.result['body'])
+                self.assertEqual(api.result['tag_name'], 'textures-v0.1.0-alpha.1')
                 self.assertEqual(api.result['make_latest'], 'false')
                 self.assertFalse(api.result['draft'])
                 self.assertEqual(api.uploads, 2)

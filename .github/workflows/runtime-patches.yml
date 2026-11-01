@@ -218,7 +218,7 @@ jobs:
         if: needs.plan.outputs.native == 'true'
         run: |
           tests=(
-            tests/textures/test_texture_runtime.py tests/textures/texture_pack_tools.py tests/textures/test_texture_hybrid_plan.py
+            tests/textures/test_texture_runtime.py tests/textures/texture_pack_tools.py tests/textures/test_texture_hybrid_plan.py tests/textures/test_texture_upscale_originals.py
             tests/textures/texture_archive_signatures.py tests/textures/texture_embedded_scan.py
             tests/textures/texture_nonpak.py tests/textures/texture_variants.py
             tests/gameplay/test_native_mac_tools.py tests/launcher/test_native_mac_launcher.py tests/repository/test_testing_profile.py tests/compiler/test_disc_image.py tests/compiler/test_xbe_image.py tests/compiler/test_recomp_input.py tests/compiler/test_x86_flow.py tests/compiler/test_x86_recovery.py tests/compiler/test_x86_functions.py tests/compiler/test_recomp_symbols.py tests/compiler/test_analysis_cache.py tests/compiler/test_analysis_runner.py tests/compiler/test_xdk_catalog.py tests/compiler/test_compile_pipeline.py
