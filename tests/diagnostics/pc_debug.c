@@ -182,6 +182,7 @@ int main(int argc, char **argv)
     pc_debug_poll(); pc_debug_snapshot(&snapshot); CHECK(snapshot.errors==2);
     owner=CreateWindowExA(0,"STATIC","PC debug test",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
     CHECK(owner); pc_settings_attach(owner);
+    if(!GetMenu(owner)) pc_settings_toggle_menu(owner);
     CHECK(GetMenuItemID(GetSubMenu(GetMenu(owner),0),1)==PC_DEBUG_COMMAND);
     CHECK(GetMenuState(GetSubMenu(GetMenu(owner),0),PC_FULLSCREEN_COMMAND,MF_BYCOMMAND)!=(UINT)-1);
     before=load(config); CHECK(before);

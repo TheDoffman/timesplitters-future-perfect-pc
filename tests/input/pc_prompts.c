@@ -54,6 +54,7 @@ static int virtual_pad_test(void)
     CHECK(RegisterClassA(&wc));
     window=CreateWindowA(wc.lpszClassName,"Input prompt test",WS_OVERLAPPEDWINDOW,0,0,320,200,NULL,NULL,wc.hInstance,NULL);
     CHECK(window); pc_controls_attach(window);
+    if(!GetMenu(window)) pc_settings_toggle_menu(window);
     {
         HMENU menu=GetSubMenu(GetMenu(window),0);
         int before=tsfp_texture_is_4k();
@@ -187,15 +188,21 @@ int main(int argc,char **argv)
     RecompPadState pad={0};
     PcSettings settings;
     int keys[PC_ACTION_COUNT];
-    char text[512];
+    char text[512],temp_dir[MAX_PATH],config[MAX_PATH],backup[MAX_PATH+5];
     CHECK(argc==2 || argc==3);
-    _putenv_s("RECOMP_INPUT_CONFIG",argv[1]);
+    CHECK(GetTempPathA(sizeof temp_dir,temp_dir));
+    CHECK(GetTempFileNameA(temp_dir,"tsp",0,config));
+    CHECK(CopyFileA(argv[1],config,FALSE));
+    snprintf(backup,sizeof backup,"%s.bak",config);
+    _putenv_s("RECOMP_INPUT_CONFIG",config);
     _putenv_s("RECOMP_PAD_API","sdl");
     _putenv_s("TSFP_PC_INPUT_REPLAY","");
     if(argc==3) {
         CHECK(!strcmp(argv[2],"controller-profile"));
         pc_prompts_reset();
-        return virtual_pad_test();
+        int result=virtual_pad_test();
+        DeleteFileA(config); DeleteFileA(backup);
+        return result;
     }
     pc_settings_defaults(&settings);
     for(int i=0;i<PC_ACTION_COUNT;i++) keys[i]=settings.keys[i][0];
@@ -386,6 +393,7 @@ int main(int argc,char **argv)
         VirtualFree(memory,0,MEM_RELEASE);
     }
     CHECK(!virtual_pad_test());
+    DeleteFileA(config); DeleteFileA(backup);
     puts("PASS: input switching, drift/held-button suppression, disconnect, assigned labels, mouse/sticks, trigger labels, unbound keys, formatting, and bounds");
     return 0;
 }

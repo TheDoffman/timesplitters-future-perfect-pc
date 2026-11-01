@@ -55,6 +55,12 @@ or physical controller delivery in a live mission. Test Scotland the Brave at
 the first interior upper-floor levers, including pause/resume and Original60.
 Native Mac gameplay remains pending under MAC-121.
 
+## PC Settings bar visibility
+
+PC Settings bar: `pc_settings_attach/toggle_menu` in `src/interface/pc_settings.c` restore/save top-level `pc_menu_visible` in the active input JSON via `pc_bindings.inc`. Missing preference starts hidden; F1 and Hide Menu Bar persist immediately through the existing atomic writer, preserving bindings and other JSON. Window sizing uses actual menu visibility. Native Mac uses its system menu and F1 pointer capture, so this Windows bar preference does not alter that host.
+
+PC Settings bar persistence is covered by the existing Windows `tsfp_pc_settings_test`: absent/hidden/shown, reattachment, fresh-process restoration, read-only failure and preservation through binding saves. The standard Build action runs it on isolated test JSON.
+
 ## Fresh weapon clicks (#434)
 
 US `1C2C00` checks fresh and held eligibility separately through `1B7ED0`.

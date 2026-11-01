@@ -1,3 +1,22 @@
+## Remember PC Settings bar visibility (2026-11-01)
+
+Implementation commit 15133f97, based on bbab9c3d. Main 507c5d45 was
+integrated afterward with documentation-only conflict resolution. The build
+evidence below predates that integration; context/backlog checks were repeated.
+F1 and Hide Menu Bar immediately save top-level `pc_menu_visible` in the active
+input JSON using the existing atomic/backup writer. Attach restores the last
+state; missing preferences start hidden. Client sizing and deferred menu theme
+attachment follow actual visibility. No personal settings or saves changed.
+The existing settings integration test covers absent, hidden, shown, window
+reattachment, fresh-process restoration, read-only rejection and binding-save
+preservation. Other menu fixtures explicitly reveal a hidden bar; writable
+fixture copies keep visibility writes out of tracked or personal controls.
+Full Windows Build and its settings/prompt/debug integration checks passed,
+including fresh-process restoration and read-only failure. Python syntax,
+Mac backlog integrity, context and whitespace checks pass. The prompt test
+uses a disposable input JSON so its F1 changes cannot mutate shared fixtures.
+Native Mac has no in-window F1 bar; its system menu/pointer behavior is unchanged.
+
 ## Discord feedback forum and opt-in alerts (2026-11-01)
 
 Created feedback-and-ideas with guidelines and five topic tags. Created Stable
