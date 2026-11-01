@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "8a8bcd4d1501a726cf61fcfffd7d6505723956f9b9b7a67dbc8a2f0d73a9f77f",
+  "loaderSha256": "e5fc54fd8b15ceaf6ee297047ba9e45c4c125d16e2a9dc36b73cbb50c6bb715d",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1544,6 +1544,14 @@
       ]
     },
     {
+      "name": "2240-arcade-kill-feed.patch",
+      "path": "patches/graphics/interface/2240-arcade-kill-feed.patch",
+      "sha256": "ef034d9f85840ac8b37fbe28aaa956319303bdb9055833d1110183162e2f34ec",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c\r"
+      ]
+    },
+    {
       "name": "2240-story-authored-records.patch",
       "path": "patches/network/2240-story-authored-records.patch",
       "sha256": "eb046cdcfda71281360c521a7aa3a4f2d5efde5439469ea2dc33145b00806ec2",
@@ -1818,6 +1826,14 @@
       "sha256": "acf493d32404e687c9ca216eec126a6c06d2f5361be80f2cb2a34dc46c965004",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2480-kill-feed-attribution.patch",
+      "path": "patches/graphics/interface/2480-kill-feed-attribution.patch",
+      "sha256": "0fe1cba9df2c0e3bba96f3ebbac6f28129f2c50f15200f708f78250a773d4555",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c\r"
       ]
     },
     {
@@ -2301,6 +2317,14 @@
       "sha256": "e271bb46f9716f1485a06b8a111f9185b77d3ce0438f934c4938bc5be3374a7c",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2480-kill-feed-firing-scope.patch",
+      "path": "patches/gameplay/timing/2480-kill-feed-firing-scope.patch",
+      "sha256": "10b40330da8007af31f7c1e3adf346f0e87b6d6545d42afe7b81639a0849f586",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c\r"
       ]
     },
     {

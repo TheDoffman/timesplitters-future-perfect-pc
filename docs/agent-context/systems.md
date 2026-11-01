@@ -1,15 +1,16 @@
+[HUD](../development/arcade-kill-feed.md)
 [exFAT](host-storage.md)
 # Subsystem entry points
 
-PC bar: [persistence](interaction-input.md#pc-settings-bar-visibility).
+PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
-Fresh clicks: [contract](interaction-input.md#fresh-weapon-clicks-434).
+[Clicks](interaction-input.md#fresh-weapon-clicks-434).
 
-Story/Online and native link: [contracts](systems-details.md).
+Story/Online: [contracts](systems-details.md).
 
 Mech: [mouse routing](mounted-mouse.md#battle-mech-mouse-425).
 
-Minigun: [motor/release policy](native-minigun.md).
+Minigun: [policy](native-minigun.md).
 
 Kernel: [objects and boot](kernel-objects.md).
 

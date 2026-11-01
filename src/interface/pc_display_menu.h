@@ -129,4 +129,10 @@ void pc_story_network_lobby_lost(void (*original)(void));
 void (*pc_display_menu_lookup(uint32_t address))(void);
 void pc_story_network_return_lobby(void (*original)(void));
 void pc_story_network_disconnect_exit(void (*original)(void));
+void pc_kill_feed_hud(void (*original)(void));
+void pc_kill_feed_projectile(void (*original)(void));
+void pc_kill_feed_hit_record(void (*original)(void));
+void pc_kill_feed_death(void (*original)(void));
+void pc_kill_feed_fire(void (*original)(void),int npc);
+void pc_kill_feed_allocate(void (*original)(void));
 #endif

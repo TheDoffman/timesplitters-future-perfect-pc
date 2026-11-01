@@ -1,0 +1,35 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -166,7 +166,14 @@
+ }
+ 
+ extern void sub_00244F30_gen(void);
+-void sub_00244F30(void) { pc_native_weapon_fire_guest(sub_00244F30_gen); }
++static void pc_feed_player_fire(void) { pc_native_weapon_fire_guest(sub_00244F30_gen); }
++void sub_00244F30(void) {
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_kill_feed_fire(pc_feed_player_fire,0);
++#else
++    pc_feed_player_fire();
++#endif
++}
+ #include "pc_native_surface_trace.h"
+ extern void sub_001956A0_gen(void);
+ extern void sub_00195280_gen(void);
+@@ -1000,8 +1007,15 @@
+ { g_eax=UINT32_MAX; g_esp+=4; }
+ static void pc_native_npc_weapon_event(void)
+ { pc_native_npc_weapon_fire_guest(sub_001BB5C0_gen, *(const uint32_t *)((uintptr_t)g_esp+g_xbox_mem_offset)); }
++static void pc_feed_npc_fire(void) {
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_kill_feed_fire(pc_native_npc_weapon_event,1);
++#else
++    pc_native_npc_weapon_event();
++#endif
++}
+ void sub_001BB5C0(void)
+-{ pc_network_bots_guest_shot(pc_native_npc_weapon_event); }
++{ pc_network_bots_guest_shot(pc_feed_npc_fire); }
+ extern void sub_0009EAB0_gen(void);
+ void sub_0009EAB0(void)
+ { pc_network_bots_guest_bounds(sub_0009EAB0_gen); }

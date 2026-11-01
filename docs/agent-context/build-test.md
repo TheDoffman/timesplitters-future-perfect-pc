@@ -1,3 +1,5 @@
+Kill-feed scope follows native timing patches; callbacks stay intact.
+[Kill feed](../development/arcade-kill-feed.md)
 # Build, run and validation map
 
 Discord release webhooks target #release-updates; #announcements holds team posts.
