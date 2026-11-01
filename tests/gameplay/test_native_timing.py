@@ -178,7 +178,7 @@ def test_original_scripted_yaw_callback(tmp_path):
 
 @pytest.mark.parametrize('source,mutation', [
     (name, None) for name in (
-        'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',
+        'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c', 'native_player_trigger_scope.c',
         'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c', 'native_material_motion.c', 'native_character_trace.c', 'native_walk_trace.c', 'native_walk_policy.c', 'native_surface_interval.c', 'native_surface_mode.c', 'native_surface_native.c', 'native_surface_render_guest.c', 'native_surface_runtime.c', 'native_surface_gpu_owner.c', 'native_surface_gpu_cache.c',
         'native_render_cache.c', 'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_contact_trace.c', 'native_surface_trace.c', 'native_surface_capture.c', 'native_surface_precision.c', 'native_surface_coupled.c', 'native_surface_basis.c')
 ] + [('native_network_cadence.c', 'render-pump'),
@@ -1162,5 +1162,40 @@ def test_original_minigun_spin(tmp_path):
         source=source.replace('/* MINIGUN_POLICY */',f'#include "{(ROOT/"src/gameplay/pc_native_minigun_guest.h").as_posix()}"')
         source=source.replace('/* GENERATED_ROUTINES */',code).replace('/* UNREACHED */',stubs).replace('/* CONSTANTS */',constants)
         print(compile_and_run(tmp_path,source))
+    finally:
+        vars(config).update(previous)
+
+
+def test_original_player_trigger(tmp_path):
+    import hashlib, struct
+    from test_recomp_float_joins import config, FunctionTranslator, compile_and_run
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported US XBE required for original player trigger')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        ranges=[(0x1c2c00,0x1c2e7b),(0x1b7ed0,0x1b8160),
+                (0x1c2af0,0x1c2bfd),(0x18ff70,0x190334),(0x426e0,0x4270d)]
+        functions={a:dict(name=f'sub_{a:08X}',end=b) for a,b in ranges}
+        translator=FunctionTranslator(image,functions)
+        code='\n'.join('void '+f['name']+'(void);' for f in functions.values())
+        code+='\n'+'\n'.join(translator.translate_function(a,f) for a,f in functions.items())
+        code=code.replace('void sub_001C2AF0(void)','void sub_001C2AF0_gen(void)')
+        addresses=[0x475d24,0x4783a8,*range(0x47df00,0x47df80,4)]
+        constants='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:x};' for a in addresses)
+        wrapper=(ROOT/'src/gameplay/pc_native_timing_guest.inc').read_text()
+        wrapper=wrapper[wrapper.index('static void pc_native_input_guest'):wrapper.index('static float pc_native_save_animation_delta')]
+        source=(ROOT/'tests/gameplay/native_player_trigger.c').read_text()
+        source=source.replace('/* CODE */',code+'\n#define NT_WORD(a) MEM32(a)\n'+wrapper)
+        source=source.replace('/* CONSTANTS */',constants)
+        print(compile_and_run(tmp_path,source))
+        executable=tmp_path/('float_join.exe' if os.name=='nt' else 'float_join')
+        for mode,message in [('legacy','fresh trigger phase lost'),
+                             ('legacy-host','buffered eligible clicks lost')]:
+            broken=subprocess.run([str(executable),mode],capture_output=True,text=True,timeout=15)
+            assert broken.returncode != 0 and message in broken.stderr
     finally:
         vars(config).update(previous)

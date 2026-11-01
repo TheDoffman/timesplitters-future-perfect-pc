@@ -8073,3 +8073,17 @@ box and text retain proportional scaling. Windows captured-frame replay at
 checks pass. Local uncommitted source based on c511bd52. Native Mac acceptance:
 Assault Mars Prison Red, movement/turning, repeated/multiple markers, off-screen
 arrows,4:3/16:9/ultrawide and split-screen. Mac build/gameplay unverified here.
+
+### MAC-128 - Fresh weapon trigger timing (#434)
+
+- **Status:** Awaiting validation
+
+Shared patch2180 and pc_native_player_trigger_guest preserve already-eligible
+fresh requests when raw input and game ticks have different phases. Cooldowns,
+held fire and continuation calls remain original. Windows original-code tests
+cover680 short-click schedules through240FPS, including pause offsets; the
+asset-free64-case scope test is selected by the same runtime CI suite on Mac.
+On a Mac, build the full patch stack and test sci-fi handgun short clicks at
+Original60 and supported native120/180/240, before/after pause, reload and live
+rate changes. Verify one shot per eligible click and unchanged held-fire rate.
+Physical Mac build/gameplay is unverified on this Windows computer.

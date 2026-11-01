@@ -1,5 +1,7 @@
 # Subsystem entry points
 
+Fresh weapon clicks: [original eligibility, native request scope and tests](interaction-input.md#fresh-weapon-clicks-434).
+
 Battle Mech mouse: [shared routing and guards](mounted-mouse.md#battle-mech-mouse-425).
 
 Minigun motor intent and release damping: [shared policy](native-minigun.md).

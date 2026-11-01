@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "bb38aead1f708fa705b1531c394ae24baa40001d2c1724b24b8b2a8665f3e572",
+  "loaderSha256": "8a8bcd4d1501a726cf61fcfffd7d6505723956f9b9b7a67dbc8a2f0d73a9f77f",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1995,6 +1995,14 @@
       "name": "2140-native-minigun-intent.patch",
       "path": "patches/gameplay/timing/2140-native-minigun-intent.patch",
       "sha256": "7a54618390fdd242fd0481c45552e12acac2398cf1bcc1637f851f4256702edd",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2180-native-player-trigger-event.patch",
+      "path": "patches/gameplay/timing/2180-native-player-trigger-event.patch",
+      "sha256": "e271bb46f9716f1485a06b8a111f9185b77d3ce0438f934c4938bc5be3374a7c",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
       ]

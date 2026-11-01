@@ -1,5 +1,9 @@
 # Runtime and patch navigation
 
+Patch2180 wraps US1C2AF0 for an already-eligible fresh player trigger only;
+the patch loader orders it after native minigun/timing wrappers. It preserves
+held-fire and continuation calls. See [input contract](interaction-input.md#fresh-weapon-clicks-434).
+
 Effects buffering: `media/0055-dsound-busy-buffer-recovery.patch` extends the
 shared `hle_dsound.c` pump. Its default 40 ms lead grows per buffer to the
 observed active service interval plus 10 ms, capped at 90 ms. Explicit
