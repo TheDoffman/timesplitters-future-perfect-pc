@@ -60,7 +60,9 @@ namespace TimeSplitters.Launcher
     }
     public static class GameChannels
     {
-        public static string FromTag(string tag)
+        static string Canonical(string id)
+        {return id=="story-coop-beta"?"story-coop":id;}
+        static string TagChannel(string tag)
         {
             string pre=GameVersion.Parse(tag).Pre;
             if(pre.Length==0)return "stable";
@@ -69,6 +71,8 @@ namespace TimeSplitters.Launcher
             string id=match.Groups[1].Value;
             return id=="alpha"||id=="preview"||id=="rc"||id=="stable"||id=="legacy"?"legacy":id;
         }
+        public static string FromTag(string tag)
+        {return Canonical(TagChannel(tag));}
         public static GameChannelChoice[] Choices(IEnumerable<Release> releases,string selected)
         {
             selected=Preference(selected);
@@ -82,7 +86,7 @@ namespace TimeSplitters.Launcher
         public static string Name(string id)
         {return id=="stable"?"Stable":id=="beta"?"Beta":id=="legacy"?"Legacy Preview":CultureInfo.InvariantCulture.TextInfo.ToTitleCase(id.Replace('-',' '))+" Preview";}
         public static string Preference(string id)
-        {return id=="preview"||id=="alpha"||id=="rc"||id=="legacy"?"beta":id;}
+        {return id=="preview"||id=="alpha"||id=="rc"||id=="legacy"?"beta":Canonical(id);}
         public static string Read(string root)
         {
             try {
@@ -127,10 +131,11 @@ namespace TimeSplitters.Launcher
             catch(InvalidDataException){return true;}
         }
         public static Release Select(IEnumerable<Release> releases,string id)
-        {return releases.Where(r=>r.Channel==id).OrderByDescending(r=>GameVersion.Parse(r.Tag)).FirstOrDefault();}
+        {return releases.Where(r=>r.Channel==Preference(id)).OrderByDescending(r=>GameVersion.Parse(r.Tag)).FirstOrDefault();}
         internal static void Metadata(Release release,string body)
         {
-            release.Channel=release.IsPreview && GameVersion.Parse(release.Tag).Pre.Length==0?"legacy":FromTag(release.Tag);
+            string tagChannel=release.IsPreview && GameVersion.Parse(release.Tag).Pre.Length==0?"legacy":TagChannel(release.Tag);
+            release.Channel=Canonical(tagChannel);
             release.ChannelName=Name(release.Channel);
             var match=Regex.Match(body??"",@"<!-- tsfp-release (.*?) -->");
             if(!match.Success)return; // Published legacy releases remain installable.
@@ -138,12 +143,12 @@ namespace TimeSplitters.Launcher
             try{data=Json.Object(match.Groups[1].Value);}catch(Exception error){throw new InvalidDataException("Invalid release channel metadata.",error);}
             Core.Require(data!=null && Regex.Matches(body,@"<!-- tsfp-release ").Count==1,"Invalid release channel metadata.");
             string metadataChannel=Json.String(data,"channel");
-            bool oldGeneral=metadataChannel=="preview" && (release.Channel=="legacy" || release.Channel=="beta");
-            Core.Require(Json.String(data,"schema")=="1" && (metadataChannel==release.Channel || oldGeneral) &&
+            bool oldGeneral=metadataChannel=="preview" && (tagChannel=="legacy" || tagChannel=="beta");
+            Core.Require(Json.String(data,"schema")=="1" && (metadataChannel==tagChannel || oldGeneral) &&
                 Regex.IsMatch(Json.String(data,"source_commit"),"^[0-9a-f]{40}$"),"Release channel metadata does not match its version.");
             string name=Json.String(data,"name");
             Core.Require(name.Length>0 && name.Length<=80 && !name.Any(Char.IsControl),"Invalid channel display name.");
-            release.ChannelName=release.Channel=="legacy"?"Legacy Preview":release.Channel=="beta"?"Beta":name;release.MinimumLauncher=Json.String(data,"minimum_launcher");
+            release.ChannelName=release.Channel=="legacy"?"Legacy Preview":release.Channel=="beta"?"Beta":tagChannel=="story-coop-beta"?"Story Co-op Preview":name;release.MinimumLauncher=Json.String(data,"minimum_launcher");
             GameVersion.Parse(release.MinimumLauncher);
         }
         public static string VisibleNotes(string body)
