@@ -59,6 +59,10 @@ original close. See [contracts](systems-details.md) and [fixture](build-test-det
 
 # Runtime and patch navigation
 
+Patch2180 wraps US1C2AF0 for an already-eligible fresh player trigger only;
+the patch loader orders it after native minigun/timing wrappers. It preserves
+held-fire and continuation calls. See [input contract](interaction-input.md#fresh-weapon-clicks-434).
+
 Story co-op integration: [contracts](systems-details.md).
 
 Audio recovery patches0055-0058: [buffering, lifecycle, format and device contracts](audio-buffers.md).
