@@ -224,6 +224,37 @@ static class LauncherTests
         Directory.CreateDirectory(temp);
         try
         {
+            Test("atomic replacement retries only intact Windows contention", () => {
+                string root=NewRoot("atomic replacement errors"),path=Path.Combine(root,"record.json"),part=path+".new";
+                File.WriteAllText(path,"old");File.WriteAllText(part,"new");
+                bool windows=Environment.OSVersion.Platform==PlatformID.Win32NT;
+                int calls=0,waits=0;
+                Action<string,string> replace=(source,target)=> {
+                    if(++calls<=2)throw new IOException("temporary delete contention",unchecked((int)0x80070497));
+                    File.Replace(source,target,null);
+                };
+                Action<int> wait=delay=> {Assert(delay==50 && File.ReadAllText(path)=="old" && File.ReadAllText(part)=="new");waits++;};
+                if(windows) {Core.AtomicReplace(part,path,replace,wait);Assert(calls==3 && waits==2 && File.ReadAllText(path)=="new" && !File.Exists(part));}
+                else {Reject(()=>Core.AtomicReplace(part,path,replace,wait));Assert(calls==1 && waits==0 && File.ReadAllText(path)=="old");}
+                File.WriteAllText(path,"old");File.WriteAllText(part,"new");calls=0;waits=0;
+                Reject(()=>Core.AtomicReplace(part,path,(source,target)=>{calls++;throw new IOException("persistent",unchecked((int)0x80070497));},wait));
+                Assert(calls==(windows?21:1) && waits==(windows?20:0) && File.ReadAllText(path)=="old" && File.ReadAllText(part)=="new");
+                calls=0;waits=0;
+                Reject(()=>Core.AtomicReplace(part,path,(source,target)=>{calls++;throw new IOException("possibly changed names",unchecked((int)0x80070498));},wait));
+                Assert(calls==1 && waits==0 && File.ReadAllText(path)=="old" && File.ReadAllText(part)=="new");
+            });
+            if(Environment.OSVersion.Platform==PlatformID.Win32NT)
+            Test("atomic replacement survives a real file lock and retains its backup", () => {
+                string root=NewRoot("atomic replacement real lock"),path=Path.Combine(root,"record.json"),part=path+".new",backup=path+".bak";
+                File.WriteAllText(path,"old");File.WriteAllText(part,"new");
+                using(var locked=File.Open(path,FileMode.Open,FileAccess.Read,FileShare.Read)) {
+                    Reject(()=>File.Replace(part,path,null));
+                    Assert(File.ReadAllText(path)=="old" && File.ReadAllText(part)=="new");
+                    var release=Task.Run(()=>{Thread.Sleep(150);locked.Dispose();});
+                    try {Core.AtomicReplace(part,path,backup);} finally {release.Wait();}
+                }
+                Assert(File.ReadAllText(path)=="new" && File.ReadAllText(backup)=="old" && !File.Exists(part));
+            });
             Test("bundled texture manifests can exceed one MiB", () => {
                 string archive = Zip("large-manifest", null, null, false, new string('x', 1100*1024));
                 string stage = Path.Combine(temp, "large-manifest-stage");

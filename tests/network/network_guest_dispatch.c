@@ -44,6 +44,35 @@ uint32_t pc_network_call(uint32_t address,const uint32_t *args,ptrdiff_t offset)
 #include "../src/network/pc_network_guest.inc"
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 static int bot_test_enabled;
+static unsigned story_prepares,story_activates;
+static int story_prepare_ok;
+int pc_story_network_prepare(uint32_t address)
+{ (void)address;++story_prepares;return story_prepare_ok; }
+void pc_story_network_activate(void) {++story_activates;}
+static int story_damage_handled;
+static unsigned story_trace_calls;
+int pc_story_network_damage(void){return story_damage_handled;}
+int pc_story_network_shot(void (*original)(void)){(void)original;return 0;}
+static uint32_t story_wire_entity;
+static uint32_t story_world_wire;
+uint32_t pc_story_network_world_key(uint32_t entity){return story_world_wire && entity==story_world_wire?0x78563412u:0;}
+uint32_t pc_story_network_world_entity(uint32_t key){return key==0x78563412u?story_world_wire:0;}
+uint32_t pc_story_network_wire_entity(unsigned slot){return slot==23u?story_wire_entity:0u;}
+int pc_story_network_hit_trace(void (*original)(void)){(void)original;++story_trace_calls;return 0;}
+static uint32_t cinematic_replica;
+int pc_story_network_cinematic_pose(uint32_t entity){return entity && entity==cinematic_replica;}
+static uint32_t story_replica;
+int pc_story_network_replica(uint32_t entity){return entity && entity==story_replica;}
+int pc_story_network_replica_bounds(uint32_t entity)
+{if(entity!=story_replica || !entity)return 0;memory[(entity+0x1a8)/4]=99;return 1;}
+static int story_actor_active;
+int pc_story_network_actor_active(uint32_t caller,unsigned index,uint32_t entity)
+{return story_actor_active && caller==0xd8e5d && index==4 && entity==0x7000;}
+static unsigned story_lobby_publishes,story_player_limit;
+void pc_story_network_lobby_config(void) {++story_lobby_publishes;}
+unsigned pc_story_network_player_limit(void) {return story_player_limit;}
+void sub_000658D0_gen(void) {++originals;g_esp+=4;}
+
 static double bot_time=1.;
 double pc_network_bots_time(void) {return bot_time;}
 static const char *bot_test_getenv(const char *name)
@@ -54,12 +83,20 @@ static const char *bot_test_getenv(const char *name)
 #include "../src/network/pc_network_bots_state.h"
 uint32_t pc_network_bots_revive(unsigned slot);
 void pc_network_bots_entity_refresh(uint32_t entity);
+void pc_network_bots_entity_room(uint32_t entity,uint32_t room);
 void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state);
+int pc_network_bots_preserve_corpse(uint32_t entity,uint32_t spawn);
 void pc_network_bots_pose_weapons(uint32_t entity);
 void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot);
 void pc_network_bots_request_hit(uint32_t context);
 int pc_network_bots_kill_notice(unsigned victim,unsigned killer);
 #endif
+
+#include "pc_physical_state.h"
+void pc_character_ragdoll_release(uint32_t e){(void)e;}
+void pc_character_ragdoll_evaluate(uint32_t e){(void)e;}
+void pc_character_ragdoll_capture(PcRagdollState *s,uint32_t e){(void)e;memset(s,0,sizeof *s);}
+void pc_character_camo_present(uint32_t entity){(void)entity;}
 #include "../src/network/pc_network_bots_guest.inc"
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 #undef getenv
@@ -86,6 +123,16 @@ int pc_network_bots_receive(unsigned slot,PcNetworkBotState *state)
 uint32_t pc_network_bots_revive(unsigned slot) {memory[(0x1000+slot*0xea0)/4]=0x7000;return 0x7000;}
 void pc_network_bots_entity_refresh(uint32_t entity)
 {memset((uint8_t *)memory+entity+0x1a8,0,36);bot_refreshes++;}
+void pc_network_bots_entity_room(uint32_t entity,uint32_t room)
+{memory[(entity+0x34)/4]=room;}
+static unsigned bot_corpses;
+static uint32_t bot_corpse_spawn;
+int pc_network_bots_preserve_corpse(uint32_t entity,uint32_t spawn)
+{
+    float health;memcpy(&health,(uint8_t *)memory+entity+0x1cc,4);
+    assert(entity==0x7000 && health<=0.f && memory[(entity+0x258)/4]==spawn);
+    bot_corpse_spawn=spawn;++bot_corpses;return 1;
+}
 void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state)
 {(void)entity;(void)state;}
 void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot)
@@ -157,6 +204,18 @@ int main(void)
         g_esp=16;pc_network_bots_guest_config(original);
         CHECK(originals==before+1 && g_eax==0x11223344u && g_esp==20);
     }
+#ifdef _WIN32
+    {
+        story_prepare_ok=1;
+        g_esp=16;pc_network_bots_guest_config(original);
+        CHECK(!story_activates); /* serializer must not change simulation */
+        g_esp=16;pc_network_bots_guest_config(sub_000658D0_gen);
+        CHECK(story_activates==1 && g_esp==20 && story_prepares>=3);
+        story_prepare_ok=0;
+        g_esp=16;pc_network_bots_guest_config(sub_000658D0_gen);
+        CHECK(story_activates==1 && g_esp==20);
+    }
+#endif
 #ifdef TSFP_TEST_NATIVE_FALLBACK
     {
         void (*hooks[])(void (*)(void))={pc_network_bots_guest_lobby_send,
@@ -212,10 +271,18 @@ int main(void)
         memory[(0x4d239c+(2*15+2)*4)/4]=12;
         memory[(0x4d239c+2*15*4)/4]=14;
         CHECK(pc_network_bots_lobby_limit()==8);
+        story_player_limit=4;CHECK(pc_network_bots_lobby_limit()==4);
+        g_esp=16;pc_network_bots_guest_capacity(original);CHECK(g_eax==4);
+        for(i=2;i<5;i++) memory[(0x77728c+i*0x124)/4]=1;
+        i=originals;g_esp=16;pc_network_bots_guest_start(original);
+        CHECK(originals==i && g_esp==20); /* five human slots cannot start Story */
+        for(i=2;i<5;i++) memory[(0x77728c+i*0x124)/4]=0;
+        story_player_limit=0;
         memory[0x78ad2c/4]=11;CHECK(pc_network_bots_lobby_limit()==12);
         memory[0x78ad2c/4]=12;CHECK(pc_network_bots_lobby_limit()==14);
         memory[0x78ad2c/4]=13;
         g_esp=16;pc_network_bots_guest_lobby_send(original);
+        CHECK(story_lobby_publishes>0);
         CHECK(config[0]==2 && config[2]==6 && g_esp==20);
         CHECK(pc_network_bots_lobby_prepare(0).waiting==4);
         g_esp=16;pc_network_bots_guest_capacity(original);
@@ -330,6 +397,12 @@ int main(void)
         pc_network_bots_guest_active(original);CHECK(g_eax==0x11223344u && g_esp==20);
         enabled=1;memory[0x7356d8/4]=0;g_esp=16;
         pc_network_bots_guest_active(original);CHECK(g_eax==0x11223344u && g_esp==20);
+        story_actor_active=1;g_ebx=0x7000;live[2]=0;g_esp=16;memory[4]=0xd8e5d;memory[5]=4;
+        int before=originals;pc_network_bots_guest_active(original);
+        CHECK(originals==before && g_eax==1 && g_esp==20);
+        g_esp=16;memory[4]=0x15c5a3;pc_network_bots_guest_active(original);
+        CHECK(originals==before+1 && g_eax==0x11223344u && g_esp==20);
+        story_actor_active=0;
     }
 #else
     g_esp=16;pc_network_bots_guest_active(original);
@@ -358,6 +431,26 @@ int main(void)
         pc_network_bots_guest_decode(original);CHECK(g_eax==0 && g_esp==20);
         ((uint8_t *)memory)[0x300]=1;memory[0x200/4]=0x300;g_esp=16;
         pc_network_bots_guest_decode(original);CHECK(g_eax==0x11223344u && g_esp==20);
+        story_wire_entity=0x7600;
+        g_esp=16;memory[5]=0x7600;pc_network_bots_guest_serializable(original);CHECK(g_eax==1 && g_esp==20);
+        g_esp=16;g_eax=0x200;g_ecx=0x7600;memory[0x200/4]=0x300;
+        pc_network_bots_guest_encode(original);CHECK(((uint8_t *)memory)[0x301]==23 && memory[0x200/4]==0x302);
+        g_esp=16;g_ecx=0x200;memory[0x200/4]=0x300;pc_network_bots_guest_decode(original);
+        CHECK(g_eax==0x7600 && g_esp==20);
+        memory[5]=0x400;memory[0x400/4]=0x7600;memory[0x76b140/4]=1;g_esp=16;
+        pc_network_bots_guest_death_gate(original);CHECK(g_eax==1 && g_esp==20);
+        memory[0x76b140/4]=2;g_esp=16;pc_network_bots_guest_death_gate(original);CHECK(g_eax==0 && g_esp==20);
+        story_wire_entity=0;
+        story_world_wire=0x7800;g_esp=16;memory[5]=story_world_wire;
+        pc_network_bots_guest_serializable(original);CHECK(g_eax==1 && g_esp==20);
+        g_esp=16;g_eax=0x200;g_ecx=story_world_wire;memory[0x200/4]=0x300;
+        pc_network_bots_guest_encode(original);
+        const uint8_t expected[5]={5,0x12,0x34,0x56,0x78};
+        CHECK(!memcmp((uint8_t *)memory+0x300,expected,5) && memory[0x200/4]==0x305 && g_esp==20);
+        g_esp=16;g_ecx=0x200;memory[0x200/4]=0x300;pc_network_bots_guest_decode(original);
+        CHECK(g_eax==story_world_wire && memory[0x200/4]==0x305 && g_esp==20);
+        story_world_wire=0;g_esp=16;memory[0x200/4]=0x300;pc_network_bots_guest_decode(original);
+        CHECK(!g_eax && memory[0x200/4]==0x305 && g_esp==20);
     }
 #else
     g_esp=16;pc_network_bots_guest_serializable(original);CHECK(g_eax==0x11223344u && g_esp==20);
@@ -386,9 +479,26 @@ int main(void)
         CHECK(!composed_firing(1,0) && g_eax==0);
         CHECK(pc_network_bot_shots[2].serial==2);
         memcpy((uint8_t *)memory+0x71cc,&health,4);memcpy(actor+0x18,&life,4);
+        memory[(0x7000+0x34)/4]=5;
+        memory[(0x1000+2*0xea0+0xc6c)/4]=0x01000010;
+        memory[(0x1000+2*0xea0+0xc88)/4]=1;
         memory[(0x7000+0x28)/4]=0;g_esp=16;pc_network_bots_guest_frame(original);
         CHECK(g_eax==0x11223344u && g_esp==20 && bot_sends==1 && bot_refreshes==1);
-        CHECK((memory[(0x7000+0x28)/4]&0x61u)==0x61u && last_bot.slot==2);
+        CHECK((memory[(0x7000+0x28)/4]&0x61u)==0x61u && last_bot.slot==2 && last_bot.primary_room==5 && last_bot.camo.flags==0x01000010 && last_bot.camo.fade_phase==1);
+        /* Frozen guests need every host pose, including atomic crossfade
+           controls and dead-state animation; a position lerp cannot supply it. */
+        memory[0x7004/4]=0x14000;
+        for(unsigned frame=1;frame<=6;frame++) {
+            float phase=(float)frame/60.f,fade=(float)frame/120.f;
+            memory[0x7de318/4]++;
+            if(frame==5) {float dead=0;memcpy((uint8_t *)memory+0x71cc,&dead,4);}
+            memcpy((uint8_t *)memory+0x140dc,&phase,4);
+            memcpy((uint8_t *)memory+0x1419c,&fade,4);
+            g_esp=16;pc_network_bots_guest_frame(original);
+            CHECK(bot_sends==1+frame && last_bot.clip_channels[0]==phase && last_bot.blend_channels[1]==fade);
+            g_esp=16;pc_network_bots_guest_frame(original);CHECK(bot_sends==1+frame);
+        }
+        memcpy((uint8_t *)memory+0x71cc,&health,4);
         memory[(0x7000+0x28)/4]=0;life=2;memcpy(actor+0x18,&life,4);
         memory[0x7de318/4]+=3;g_esp=16;pc_network_bots_guest_frame(original);
         CHECK(!(memory[(0x7000+0x28)/4]&1));
@@ -402,8 +512,9 @@ int main(void)
         memory[(0x66648c+3*16)/4]=0x0200007fu;
         memory[(0x774184+3*0x30c)/4]=99; /* connection handle is not an IP */
         g_esp=16;pc_network_bots_guest_frame(original);
-        CHECK(bot_host_ip==0x0200007fu);
+        CHECK(bot_host_ip==0x0200007fu && memory[(0x7000+0x34)/4]==last_bot.primary_room);
         CHECK(memory[(0x1000+2*0xea0+0x2c)/4]==(last_bot.flags[2]|0x10));
+        CHECK(memory[(0x1000+2*0xea0+0xc6c)/4]==last_bot.camo.flags && memory[(0x1000+2*0xea0+0xc88)/4]==1);
         /* Received poses evaluate at the normal frame boundary, without
            advancing the host's clock; humans and host retain their path. */
         memory[5]=0x7000;memory[6]=1;g_esp=16;
@@ -415,6 +526,15 @@ int main(void)
         memory[5]=0x7000;memory[0x76b140/4]=1;g_esp=16;
         pc_network_bots_guest_pose(original_pose);
         CHECK(pose_advance==1 && bot_weapon_poses==1);memory[0x76b140/4]=2;
+        story_replica=0x7300;memory[5]=story_replica;memory[6]=1;g_esp=16;
+        pc_network_bots_guest_pose(original_pose);
+        CHECK(pose_advance==0 && memory[6]==1 && bot_weapon_poses==2);
+        story_replica=0;cinematic_replica=0x7200;memory[5]=cinematic_replica;g_esp=16;
+        pc_network_bots_guest_pose(original_pose);
+        CHECK(pose_advance==0 && memory[6]==1 && bot_weapon_poses==2 && g_esp==20 && g_eax==0x11223344u);
+        memory[0x76b140/4]=1;g_esp=16;pc_network_bots_guest_pose(original_pose);
+        CHECK(pose_advance==0 && memory[6]==1 && bot_weapon_poses==2);
+        cinematic_replica=0;memory[0x76b140/4]=2;bot_weapon_poses=1;
         CHECK(memory[(0x7000+0x258)/4]==7);
         CHECK(!memcmp((uint8_t *)memory+0x7070,&last_bot.heading,4));
         CHECK(!memcmp(actor+0xbb4,last_bot.muzzle,12));
@@ -513,6 +633,35 @@ int main(void)
         CHECK(bot_notices==3 && bot_notice_victim==2 && bot_notice_killer==1);
         bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);CHECK(bot_notices==3);
 
+        /* Preserve a final visible dead replica on host absence, once. */
+        last_bot.body_present=1;last_bot.health=100;last_bot.entity_flags=0x71;
+        last_bot.spawn=80;bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        last_bot.health=0;last_bot.entity_flags=1;bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        CHECK(bot_corpses==0);
+        last_bot.body_present=0;bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        CHECK(bot_corpses==1 && bot_corpse_spawn==80);
+        bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);CHECK(bot_corpses==1);
+        g_esp=16;pc_network_bots_guest_frame(original);CHECK(bot_corpses==1);
+        /* A skipped absence packet can go straight from death to respawn. */
+        last_bot.body_present=1;last_bot.spawn=81;last_bot.entity_flags=1;
+        bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        last_bot.spawn=82;last_bot.health=100;last_bot.entity_flags=0x71;
+        bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        CHECK(bot_corpses==2 && bot_corpse_spawn==81);
+        /* A body can lose drawing before its actor link is released. Copy
+           the death pose after applying it, never its old living pose. */
+        last_bot.health=0;last_bot.entity_flags=0;last_bot.clip=74;
+        bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        CHECK(bot_corpses==3 && bot_corpse_spawn==82);
+        bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);CHECK(bot_corpses==3);
+        last_bot.body_present=0;bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        CHECK(bot_corpses==3);
+        /* A living replacement must never produce a corpse. */
+        last_bot.body_present=1;last_bot.spawn=83;last_bot.health=100;last_bot.entity_flags=0x71;
+        bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        last_bot.body_present=0;bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        CHECK(bot_corpses==3);
+
         /* Exercise the actual guest hook between fresh packets, including its
            body/actor write and collision-bound refresh, not only the helper. */
         last_bot.body_present=1;last_bot.health=100;last_bot.entity_flags=0x71;
@@ -528,6 +677,13 @@ int main(void)
           memcpy(&center,(uint8_t *)memory+0x71a8,4);
           CHECK(fabsf(x-1.5f)<.001f && x==actor_x && fabsf(center-11.5f)<.001f);
           CHECK(!bot_incoming && bot_notices==3); }
+        /* The shared wire explicitly permits fire without an actor target. */
+        const unsigned shots_before=bot_shots;
+        last_bot.shot.serial=1000;last_bot.shot.spawn=last_bot.spawn;
+        last_bot.shot.target_slot=UINT32_MAX;last_bot.health=1.f;last_bot.body_present=1;
+        last_bot.tick+=3;bot_time=1.2;bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        bot_time=1.3;g_esp=16;pc_network_bots_guest_frame(original);
+        CHECK(bot_shots==shots_before+1);
 
     }
 #else
@@ -540,6 +696,7 @@ int main(void)
     /* Same epoch, different guest frames: movement must be sampled immediately
        rather than waiting seven ticks. Duplicate pump calls must not resend. */
     memory[0x76B1A4/4]=15;memory[0x76B0F0/4]=20;memory[0x76B0EC/4]=20;
+    memory[0x79094C/4]=2;memory[0x7DE458/4]=0x80008;
     for(unsigned frame=140;frame<147;frame++) {
         memory[0x7497A8/4]=frame;g_esp=16;
         pc_network_guest_tick(original_pump);
@@ -551,6 +708,30 @@ int main(void)
     CHECK(movement_sends==0);
 #else
     CHECK(movement_sends==7);
+#endif
+    /* Keep transport pumping through movies/frontend, but never open the
+       branch that copies retired context inventory into gameplay packets. */
+#ifndef TSFP_TEST_NATIVE_FALLBACK
+    const unsigned sends_before_movie=movement_sends,pumps_before_movie=originals;
+    for(unsigned movie=0;movie<2;movie++) {
+        memory[0x79094C/4]=movie?106:30;memory[0x7DE458/4]=movie?0:0x20000000;
+        for(unsigned i=0;i<3;i++) {
+            memory[0x76B0F0/4]++;memory[0x7497A8/4]++;
+            g_esp=16;pc_network_guest_tick(original_pump);
+            CHECK(g_esp==20 && movement_sends==sends_before_movie);
+            CHECK(memory[0x76B0EC/4]==memory[0x76B0F0/4]);
+        }
+    }
+    CHECK(originals==pumps_before_movie+6); /* heartbeat/control pump retained */
+    memory[0x79094C/4]=2;memory[0x7DE458/4]=0x80008;
+    g_esp=16;pc_network_guest_tick(original_pump);
+    CHECK(movement_sends==sends_before_movie+1); /* immediate gameplay recovery */
+    /* Original64CE0 permits custom-map scene100 and other non-frontend IDs. */
+    memory[0x79094C/4]=100;memory[0x7497A8/4]++;
+    g_esp=16;pc_network_guest_tick(original_pump);
+    CHECK(movement_sends==sends_before_movie+2);
+    memory[0x79094C/4]=2;
+    memory[0x76B0F0/4]=20;memory[0x76B0EC/4]=20;
 #endif
     /* No override for offline play or any lobby/loading/disconnect state. */
     for(unsigned state=0;state<18;state++) {
@@ -592,6 +773,34 @@ int main(void)
 #ifndef TSFP_TEST_NATIVE_FALLBACK
     CHECK(memory[0x2100/4]==1);
 #endif
+#ifdef _WIN32
+    {unsigned calls=originals,traces=story_trace_calls;g_esp=0x1000;story_damage_handled=1;
+     pc_network_bots_guest_damage(original);
+     CHECK(g_esp==0x1004 && g_eax==0 && originals==calls && story_trace_calls==traces);
+     story_damage_handled=0;}
+#endif
+    /* Late stock score snapshots belong to the retired gameplay actors.
+       Hold their decoder in movies/frontend, retaining native fallback and
+       every ordinary gameplay/custom-map/offline route. */
+    for(unsigned active=0;active<2;active++) for(unsigned transport=0;transport<2;transport++) {
+        enabled=transport;memory[0x76B108/4]=active;
+        const uint32_t scenes[]={2,24,44,100,101,106,107,108};
+        for(unsigned i=0;i<sizeof scenes/sizeof scenes[0];i++) {
+            memory[0x79094C/4]=scenes[i];
+            memory[0x7DE458/4]=scenes[i]==24 || scenes[i]==44?0x20000000:0;
+            memory[0x7DE530/4]=0x825D2240;memory[0x7A2958/4]=30;
+            unsigned before=originals;g_esp=16;
+            pc_network_guest_scores(original);
+            int held=active && transport && (scenes[i]==24 || scenes[i]==44 ||
+                       (scenes[i]>=101 && scenes[i]<=107));
+#ifdef TSFP_TEST_NATIVE_FALLBACK
+            held=0;
+#endif
+            CHECK(g_esp==20 && originals==before+!held);
+            CHECK(g_eax==(held?0:0x11223344u));
+            CHECK(memory[0x7DE530/4]==0x825D2240 && memory[0x7A2958/4]==30);
+        }
+    }
     puts("PASS: movement gate, duplicate calls, offline/native fallback and unchanged guest clocks");
     return 0;
 }

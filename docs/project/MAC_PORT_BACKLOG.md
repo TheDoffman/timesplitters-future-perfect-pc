@@ -412,6 +412,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-046 - Update transaction rename contention
 
+Preview publication follow-up (uncommitted, `online-story-coop`): shared
+`Core.AtomicReplace` now covers metadata, session and settings replacement.
+Only Windows errors32/33/1175 receive bounded retry; Mac retains its original
+first operation/error behavior. Existing backup and WriteThrough contracts stay
+intact. Windows real-lock/error-injection and complete launcher checks pass;
+native Mac execution remains unverified. No additional Mac adapter is needed
+for this Windows contention policy; existing entry acceptance remains separate.
+
+
 - **Status:** Queued
 - **PC behavior:** Retry Windows access/sharing/lock failures when promoting a
   completed game, repair or launcher transaction to rollback storage. Retries
@@ -2263,6 +2272,357 @@ validation. This version bump alone is not publication evidence.
   [native adapter validation](STATUS.md#native-mac-settings-and-graphics-adapters-2026-10-15).
 
 ### MAC-013 — System Link and Online multiplayer
+
+- **Story release flag (2026-11-01, uncommitted):** The chooser now uses the
+  shared compiled version policy in `src/interface/pc_feature_flags.h`,
+  `src/network/pc_story_menu.inc` and `src/interface/pc_display_menu.c`.
+  Only versions containing `story-coop` expose Local/Online; stable versions
+  retain original Story entry. No additional Mac adapter is needed for this
+  policy: both CMake paths already inject `TSFP_PC_VERSION`. Windows and native
+  display fixture variants pass the six-version matrix. Physical native menu
+  acceptance and the existing native Story transport gap remain unverified.
+
+- **Story cinematic staging and timing (2026-11-01, this change):**
+  `src/network/pc_story_cinematic.inc` extends first-mission cinematic snapshots
+  with numeric destinations for all guests, active anchor refresh, preparation
+  movement lock with explicit camera-end authority, all-human host cue capture
+  and active-only placement through original D2DE0
+  and shared spatial refresh. Windows fixtures cover slots1/2/3, camera cue
+  deduplication, release/no reteleport, checksum/mask/finite and rejoin guards.
+  Windows build and57 affected checks pass. Human testing accepts all-player
+  transport and the early marine stop; a brief extra guest freeze afterward
+  persists and was explicitly deferred by the user.
+  The existing Windows Story gate remains: native Story transport integration,
+  physical Mac/mixed-host positioning, ground clearance and scene acceptance
+  remain pending. Reuse the shared guest-memory policy and guest APIs.
+
+- **Story barricade presentation (2026-10-31, uncommitted):**
+  `src/network/pc_story_effects.inc` replays the original pair of profile18
+  cosmetic explosions, and `pc_story_world.inc` restores the recorded local
+  static1345/tag47525442 replacement for1344/tag47525452 cleanup. Windows original-callback
+  and protocol fixtures cover emitters, deduplication and no guest damage/script
+  pass. These remain in the existing Windows Story adapter; native transport
+  integration and physical Mac/mixed-host barricade/debris acceptance are pending.
+  Reuse the same guest APIs and numeric transform policy when wiring native Story.
+
+- **Story falling-bomb feedback (2026-10-31, uncommitted):**
+  `src/network/pc_story_effects.inc` now replays the original distance-sensitive
+  camera shake and impact feedback after host profile39 explosions. The current
+  Story adapter remains Windows-gated; native Story transport/context integration
+  is still required. Reuse this guest-memory policy and original guest routines,
+  without a second host-specific implementation. Windows original-routine and
+  network-event tests cover the fix; physical Mac/mixed-host visual acceptance
+  must verify nearby/distant bombs and all guest slots once native Story is wired.
+
+- **Four-player Story rewards (2026-10-31, uncommitted):** Shared menu adapter
+  and patch2465 map the single rewards frontend context independently of network
+  profile slots. Windows engine fixture covers all guests; native fallback
+  retains original behavior. Native Story integration and physical Mac/mixed-host
+  visual reward acceptance remain pending under this entry.
+
+- **NPC facing (2026-10-31, uncommitted):** Shared
+  `pc_network_bot_motion.h` interpolates body rotations/heading in degrees.
+  Windows/native-network dispatch fixtures cover the same helper, and no OS
+  adapter is needed. Physical Mac/mixed-host visual acceptance remains pending:
+  compare NPC facing during turns and0/360 crossings, with animation/corpse checks.
+
+- **Online bot animation cadence (2026-10-31, uncommitted):** Shared
+  `pc_network_bots_guest.inc` publishes complete poses each simulation tick,
+  including crossfades/death, without advancing guest AI or changing human
+  replication. Windows/native-network dispatch fixtures cover cadence and
+  duplicate suppression; no new Mac adapter is required. Physical Mac/mixed-host
+  visual acceptance remains pending: compare guest running, aiming, crossfades
+  and death animations, including loss/jitter and corpse retention.
+
+
+- **Online bot corpse follow-up (2026-10-31, uncommitted):** Shared
+  `pc_network_bots_guest.inc`, `pc_character_corpses.inc` and menu bridge reuse
+  Story corpse copying for guest death/absence/respawn. Windows and native-network
+  fixtures cover deduplication; no additional Mac adapter is needed because
+  TSFP_NATIVE_NETWORK uses the same bridge and pre-destruction A9070 adapter.
+  Physical Mac/mixed-host acceptance
+  remains pending: kill a bot, retain its cosmetic body through respawn, repeat
+  deaths to exercise bounded recycling, then change map and check cleanup.
+
+Story guest lobby host loss (2026-10-31, uncommitted): shared patch2460/menu
+adapter returns the guest directly to main when its host closes the lobby and
+reuses the chooser Back's main-layout rebuild. Reopening Story also rebuilds
+its own cached Local/Online child using the same shared helper. Existing native Online Story
+transport integration remains the missing capability; no separate menu policy
+is needed. Accept host lobby Back, automatic guest main layout and subsequent
+reconnect/discovery on native Mac. Windows evidence is recorded in STATUS.
+
+Story Game Over Quit (2026-10-31, uncommitted): shared result-action handling
+routes failed first-mission Quit through the existing leave flow, retaining the
+host party or disconnecting only the guest. Existing2390 wrapper covers the
+native callback; no additional platform policy is needed. Native live Online
+acceptance still requires host/guest Game Over Quit and a retained-lobby relaunch.
+Windows validation is recorded in STATUS.
+
+Story rejoin camera/weapon lifetime (2026-10-31, uncommitted): shared cinematic
+and world adapters reconcile a missed camera-end transition and exclude native
+first-person viewport models from persistent prop identities. Original camera
+and cleanup routines remain; no separate platform policy is introduced. Native
+Online transport and immediate rejoin/host weapon-switch model visibility remain
+acceptance checks under this entry. Windows evidence is in STATUS.
+
+Story in-progress rejoin follow-up (2026-10-31, uncommitted): shared Story
+load/NPC/restart adapters accept the native phase12 received-config boundary,
+adopt the host reload epoch via a peer/config/nonce-bound reliable reply and
+spawn near its current position through original safe pad placement. Subsequent
+reloads clear the temporary pad. No second platform policy is needed; native
+transport integration and live leave/rejoin, movement, checkpoint/level reload
+acceptance remain pending. Windows validation is recorded in STATUS.
+
+Story guest-departure follow-up (2026-10-31, uncommitted): patch2450 and the shared
+Story load adapter distinguish remote departure from coupled Story death, retire
+the departed context, reconcile directly restored checkpoint/level bodies and
+exclude inactive remote slots from restart/payload readiness. Existing Story platform scope remains. Windows checks do not prove
+native live transport: accept guest departure while remaining players continue,
+restart without ghost bodies and unchanged real combat deaths on Mac.
+
+Story abort follow-up (2026-10-30, uncommitted): shared menu lookup and
+src/network/pc_story_restart.inc plus patch2440 route host Leave to the retained
+lobby and guest Leave/host loss to main, skipping campaign rewards. Existing
+Story platform guards remain; no second OS implementation is added. Windows
+fixtures do not establish native Online behavior. Native acceptance must cover
+host abort/relaunch, guest departure with remaining game active, host transport
+loss, local rewards unchanged and companion cleanup.
+
+
+Cinematic send-gate follow-up (uncommitted): pc_network_guest_tick is shared by
+Windows and TSFP_NATIVE_NETWORK. It retains control/heartbeat pumping while
+holding gameplay inventory/ammo sends during movies/frontend. Host-independent
+native cadence fixtures pass; real native Online cinematic/next-load acceptance
+is still required. No new OS adapter or separate Mac policy is needed.
+
+Unlock-page follow-up (uncommitted): shared preparation handles actual frontend
+GO2D3980 once, and shared menu adapters render a guest waiting page instead
+of empty unlock pages. Native Story must validate the same GO/generation and
+waiting-page contracts, then the next authored load; Windows fixtures alone do
+not verify native/mixed-host gameplay.
+
+Movie lifetime follow-up (uncommitted): shared patch2410 retains a guest movie
+stream during the host wait at99BBC; actual load cleanup remains original.
+The original-engine fixture is Windows evidence only. Native Story must also
+validate guest skip/end, retained presentation and cleanup on the next load.
+
+First-mission rewards follow-up (2026-10-30, uncommitted): shared Story stage,
+ready and result adapters in src/network preserve the party and host-only next
+level action; shared menu lookup in src/interface routes the guest Continue.
+Existing Story Windows transport guards remain, and native Local/Arcade guards
+are preserved. Original-engine and native-enabled/fallback fixtures are Windows
+validation only. Native Story acceptance must cover ending/rewards, guest wait,
+host progression to the next mission and retained party ownership; no new OS
+adapter is introduced here and no native Mac gameplay result is claimed.
+
+
+Main integration (2026-10-30, uncommitted): native System Link/Online adapter
+support from main is retained alongside the first-mission Story Windows guards.
+Story sources and shared pose/effect records now use src/network; main's native
+enabled/fallback dispatch tests remain. The Story/Unlock Content callback clash
+is resolved with separate verified padding IDs. Native Mac gameplay and Story
+transport acceptance remain unverified; Windows checks do not establish them.
+
+
+Splitter camouflage (included in this change): shared numeric body-fade state and original
+material presentation are reused for Story NPCs and Online bots. Source:
+src/pc_character_effects.h, pc_story_npc.inc, pc_network_bots_guest.inc,
+pc_network_bots_state.h, pc_network_bot_motion.h and pc_display_menu.c. No new
+OS adapter is needed within the existing transport; native Online remains queued.
+Mac acceptance must show host/guest Splitter fade/shimmer and uncloaking, retained
+weapon/room/corpse behavior and Online bot fade transitions without guest AI.
+Windows fixture/build evidence is separate from native Mac gameplay validation.
+
+
+Barrel follow-up (included in this change): shared Story source now recognizes the recorded
+218650 blast and scopes host ownership for its remote credited source, preserving
+original hit broadcasts and NPC health dispatch. New EFF90/35AF40 wrappers join
+the cosmetic guards in the common patch stack; no OS-specific policy is added.
+Native Online remains queued; Mac acceptance must include guest-shot barrel
+fireball visibility and authoritative enemy blast damage without duplicates.
+
+
+- **Barrel explosion cosmetics (2026-10-28, uncommitted):** Shared
+  `src/pc_story_effects.inc` and `*-story-barrel-cosmetics.patch` replay the
+  original first-mission barrel particles/audio/camera feedback while suppressing
+  duplicate damage/Story events/navigation mutation. Original-engine and
+  native-fallback fixtures cover the adapter boundary; native Online still
+  requires this entry's transport adapter. Acceptance: native/mixed-peer host
+  and guest shots, one visible/audible blast, host-only damage/removal and no
+  repeated chain reactions. Windows evidence does not establish native play.
+
+
+- First-mission NPC/objective/pause repairs (uncommitted, 2026-10-26): shared
+  `pc_story_npc.inc` constructs replicas in their host room coordinates, uses
+  resolved variants, rebuilds reused generations and publishes every simulation
+  tick. `pc_story_objectives.inc` supplies host objective Status/HUD data without
+  copying VM callbacks. `pc_story_restart.inc` scopes compact pause metrics to
+  Story Options. Windows source/build and bounded startup evidence is recorded
+  in STATUS; opening visibility, guest Status and pause bounds are reviewed.
+  Checkpoint/sniper and intermittent NPC scene acceptance remain unverified.
+  The additional checkpoint, cinematic and effects adapters use shared source
+  (`pc_story_checkpoint.inc`, `pc_story_cinematic.inc`, `pc_story_effects.inc`)
+  and separate runtime patches. Native adapters need the same typed packets,
+  owned-view camera replay and local bookmark capture; no pointer transfer.
+  Native fallbacks retain original behavior. The remaining native XNet/session
+  adapter is still required before native/mixed-peer acceptance of NPC visibility,
+  animation, objectives and pause layout; Windows results do not establish it.
+
+- First-mission Story level restart (uncommitted, 2026-10-26): shared
+  pc_story_restart.inc and the separate restart patch coordinate the original
+  level reload and isolate NPC/loadout epochs. Source tests pass on Windows;
+  Windows four-peer reload/fresh-handoff validation passed (see STATUS).
+  Native fallback remains unchanged; Online still
+  needs this entry's XNet transport/session adapter. Validate host confirmation,
+  every peer reloading, fresh handoff and late old-packet rejection on native
+  and mixed hosts. Checkpoint acceptance is tracked with the newer repairs above.
+- Story guest damage authority (uncommitted, 2026-10-26): shared damage
+  dispatch suppresses replica health/death simulation before tracing and sends
+  owned-human hits through the original reliable sender. Source checks and
+  changed Windows runtime acceptance are tracked in STATUS. Native fallback
+  stays original; validate via the MAC-013 transport adapter on native/mixed
+  peers, including death and late snapshot handling.
+- Story initialization team correction (uncommitted, 2026-10-26): the shared
+  D7570 return adapter immediately normalizes completed human bodies, preserving
+  NPC/native/Arcade fallback. A new four-peer startup exposed teams2/4 after the
+  older frame-only correction. Source fixtures and changed Windows four-peer
+  startup/reload team checks pass; native/mixed-host acceptance remains pending
+  under MAC-013.
+- Shared Story human teams (uncommitted): `pc_story_load.inc` and the separate
+  human-teams patch plus existing frame adapter preserve original Story team1
+  when the ordinary network pump or remote-body initializer reapplies Arcade teams. The scoped original setter still runs; NPC/lobby/native
+  fallback is unchanged. Windows source checks and four-peer team acceptance
+  pass; native acceptance is pending. Reuse the shared policy after native transport and verify human
+  allegiance/AI targeting and original Arcade/Local behavior on Mac.
+
+- Story handoff authority (uncommitted): shared `pc_story_loadout.inc` and the
+  separate handoff-authority patch keep first-level NPC inventory callbacks on
+  the host. Remote players receive deduplicated pistol/rifle awards through the
+  shared reliable channel, including original co-op slot1. Windows source tests
+  pass; changed runtime ammo parity is pending. Native original fallback remains
+  until transport exists; reuse this policy and verify replicated poses cannot
+  duplicate inventory or affect another player's profile after native support.
+
+- Story NPC poses (uncommitted): `src/pc_character_pose.h` and the common pose
+  renderer in `src/pc_display_menu.c` serve both bot and Story numeric snapshots.
+  SNP2 carries animation channels/bounds; existing shared guest hooks evaluate
+  replicas without a second simulation and retain local handles. Windows source
+  tests pass; live pose/hit validation is pending. Native original fallback is
+  retained until this entry's transport exists; reuse the shared implementation
+  and verify NPC animation, collision bounds and hits on Mac after that adapter.
+
+- Extra Story loadouts (uncommitted): `src/pc_story_loadout.inc` and the
+  `*-story-extra-loadout.patch` observe the authored first-level weapon handoff,
+  delivering its original inventory API calls to locally owned extra players
+  through the shared reliable Story protocol. Windows source checks and the
+  four-peer load/movement/ammo-consumption probe pass. Native original fallback is retained
+  until this entry's transport is implemented; reuse the policy and test four
+  peer ownership, replay/refill prevention and usable firearms on Mac afterward.
+
+- Story extra starts (uncommitted): `src/pc_story_load.inc` and the separate
+  `*-story-extra-starts.patch` add first-level slots2/3 through the common
+  pad lookup/tag/index adapters and original spawn wire. The Windows build,
+  source fixtures and historical Mac patch migration pass. The Windows four-peer
+  probe confirms distinct starts and bounded movement; extra loadouts remain
+  incomplete. Native adapters retain original behavior until this entry's
+  transport exists. Reuse the shared start policy after transport support,
+  then verify distinct collision-free starts and checkpoint preservation on Mac.
+
+- Story NPC creation (uncommitted): shared source and a separate patch extend
+  the original reliable NPC spawn channel with pointer-free constructor and
+  initial actor state. Guests validate host/generation and prepare replicas
+  through original game constructors; loading arrivals queue. Native fallback
+  remains original until this transport entry exists. Adapter tests run on
+  Windows; live NPC replication and Mac acceptance remain unverified.
+
+- Story NPC activity (uncommitted): shared source accepts existing non-player
+  actors only at the original actor-update activity caller, preserving the later
+  host-authority check. Native fallback remains original; reuse this shared
+  policy after transport support, then validate first-level scripts/NPCs and
+  peer interactions on Mac. Windows runtime acceptance is pending.
+
+- Authored Story eligibility (uncommitted): the shared6B100 adapter selects
+  authored co-op records for three/four humans and removes their ordinary network
+  exclusion while preserving difficulty filters. Native fallback stays inert;
+  reuse this policy after native transport exists. Original-US/source tests run
+  on Windows; native four-peer NPC/script/start acceptance remains pending.
+
+- Story continuation (uncommitted): guest intro handoff accepts the original
+  changed-generation pending-copy boundary at phase15; pending Story gameplay
+  skips Arcade staging-pad placement during ready. Both are shared adapter logic
+  in `src/pc_story_load.inc`, with unchanged inert native fallback. Windows source
+  checks pass; native runtime acceptance still requires this entry's transport
+  adapter and four-peer intro/authored-start tests on Mac.
+
+- **Story cinematic transport readiness (uncommitted, 2026-10-22):**
+  The shared load adapter and cinematic-ready patch invoke the stock network
+  ready exchange without its gameplay body loop, restoring cinematic flags and
+  character count after the call. Original-US and adapter fixtures verify that
+  boundary. Native Online remains queued under this entry; reuse the same policy
+  after transport support. Four-peer movie stability, duplicate-free views and
+  reliable gameplay handoff remain runtime acceptance requirements on each host.
+
+- **Story intro handshake (uncommitted, 2026-10-22):** Shared
+  `src/pc_story_load.inc` and the separate intro-transition patch retain original
+  stage0 movie construction and host-only advance through reliable start packets.
+  Native transport/session-mode support is still absent under MAC-013; reuse
+  these guest policies after that adapter exists. Source tests cover authority/
+  stage metadata; fresh Windows and native/mixed-host movie, full-view and
+  coordinated next-load acceptance remain pending.
+
+- **Story startup/character roster (uncommitted, 2026-10-22):**
+  `src/pc_story_load.inc` selects the original gameplay factory stage for direct
+  loads and preserves Story NPC membership at Arcade's network-only prune
+  callsite through a separate reproducible patch. It retains original death/
+  script removals. Native Online remains blocked on this entry's transport/
+  session adapter; inert fallback uses the original code. Windows runtime and
+  native/mixed-host NPC, startup and world-authority acceptance remain pending.
+
+- **Revised Story header (uncommitted, 2026-10-22):** Shared
+  `src/pc_story_lobby.inc` adds localized year, selected difficulty and actual
+  population to the existing Story header callback. Native Online still needs
+  the MAC-013 XNet/session-mode adapter before this callback is reachable; no
+  separate Mac menu model is required. Asset-free checks cover scoped font and
+  stack restoration. Native and mixed-host visual/runtime acceptance is pending.
+
+
+- **Story load experiment (uncommitted, 2026-10-22):** Shared
+  `src/pc_story_load.inc` and existing guest config wrappers add an opt-in Windows
+  Story pending-load experiment, with native fallback inert. Both simulation
+  integration and the paired load/movement probe still await Windows runtime
+  validation; this does not establish Story world/script synchronization. Native
+  Online lacks XNet transport and typed session mode, so this cannot be activated
+  by common guest logic alone. Adapt those host capabilities, reuse the same
+  config model, then validate native and mixed-host Story load, independent views,
+  movement/interactions, lobby authority and next-level coordination with isolated
+  profiles. Asset-free Windows/native-fallback tests do not verify native gameplay.
+
+- **Online Story host controls (uncommitted, 2026-10-22):**
+  `src/pc_story_lobby.inc` adds host Options and own Player Progress routing,
+  plus difficulty confirmation without local-game launch, through the shared
+  guest menu dispatcher. This currently requires the Windows-only online mode
+  adapter. Native transport remains queued; remove that adapter boundary when
+  MAC-013 supplies session mode, then run native host/guest navigation and
+  two-instance Story acceptance. Windows callback tests pass; no live validation
+  of this new host-control slice has been performed on either platform.
+
+- **Story/main merge (2026-10-23, uncommitted on online-story-coop):**
+  Shared Story callbacks move to verified unused 0x1237b..0x1237e so main's
+  keyboard callbacks and drive selection coexist. No new host API is needed;
+  native Online transport and live acceptance remain queued under this entry.
+  Windows/native-fallback fixtures cover source behavior; Mac execution remains
+  unverified. Reuse the existing native Story/menu and mixed-peer acceptance above.
+
+- **Online Story entry (uncommitted, 2026-10-21):** Shared
+  `src/pc_story_menu.inc` supplies Local/Online after Story; Local retains the
+  original guest descriptor. Windows `pc_online.c` supplies the typed Story
+  companion connection. The native chooser reports Online unavailable because
+  the XNet/companion transport adapter remains queued here; no duplicate Story
+  policy is intended. Shared/native-fallback callback tests cover this boundary;
+  actual native menu navigation and two-instance Story play remain unverified.
+  Remaining acceptance includes the native transport adapter, shared Story lobby
+  and coordinated loading/gameplay; a Windows build cannot establish this.
 
 - **Layout convergence (PR432, 2026-10-30):** The shared browser ignores repeated
   geometry notifications once content dimensions, background and scrollbar
@@ -6675,6 +7035,62 @@ Copy this template for each new entry and add its queue row. Replace all placeho
 - **Mac implementation and evidence:** Commit/files, host checks and a link to
   the relevant `STATUS.md` validation record; pending until performed.
 
+MAC-013 follow-up (uncommitted): Story shot events, deferred checkpoint inventory,
+NPC retirement/hit encoding/death authority and completion staging are implemented
+in the shared Windows guest adapter. Targetless bot shots and gameplay payload
+lifetime also improve the existing Online modes. Mac Online transport/adapter
+work and native runtime validation remain required under MAC-013; portable fixture
+fallback checks do not establish native Mac multiplayer support.
+
+MAC-013 revised HANDLE FIRST continuation (after8ed77577, uncommitted): present
+corpses remain after roster removal, current bounds precede room queries, and
+opening weapons validate their original hand-record ownership. Windows/native
+fallback fixtures pass. No new host API or separate Mac logic is needed; Online
+runtime acceptance still depends on MAC-013 transport and native scene testing.
+The subsequent six-bug pass adds pre-A0130 replica visibility eligibility,
+owned held-model cleanup. The mode3 lifetime extension was superseded: it
+persisted into play and is now released when the opening pistol is equipped.
+Built-in model-free shot replay is shared with Arcade; it needs no separate Mac
+policy. Source/fallback fixtures are distinct from native Online/scene acceptance.
+The user-guided follow-up adds the shared A2430 replica portal-scissor adapter,
+dormant guest body collision suppression, aligned remote opening pads and
+non-draining ammo pickups (uncommitted). No additional OS adapter policy; native
+Online still needs transport and these scene acceptance checks under MAC-013.
+
+MAC-013 preview1 HANDLE FIRST follow-up (8ed77577): shared guest adapters now
+cover NPC interleaved packet assembly/loaded-mesh reconstruction, numeric cloak
+state, dialogue/lip clocks, attached opening visibility, inset camera cues,
+stable prop hit/removal identity and local blood-decal creation. Host result
+reloads preserve transport; guests cannot independently continue/restart. The
+signed16 pickup clamp also applies to existing PC Online modes. Native fallback
+retains original calls and fixtures; no second gameplay implementation is needed.
+Mac still requires the transport adapter and isolated native multiplayer validation
+of these behaviors, including WAN speech and completion/restarts. Windows evidence
+and remaining limits are recorded in STATUS.md; native support is not verified.
+
+MAC-013 revised four-bug continuation (after8ed77577, uncommitted): shared NPC
+refresh follows original movement cache invalidation, benefiting Online bots.
+The Story clip adapter preserves real room/portal state; the full-viewport
+workaround is superseded. Incoming Story weapon drops use their wire inventory
+through the scoped C2090 adapter, with native/non-Story fallbacks preserved.
+Opening mode3 no longer extends pose suppression after pistol handoff. Windows
+original-engine fixtures cover these contracts; native transport and gameplay
+acceptance remain queued under MAC-013. No duplicated Mac policy is introduced.
+
+MAC-013 corpse-only fix (after8ed77577, uncommitted): the shared Story replica
+retirement path now copies a final dead pose into the stock cosmetic corpse ring
+before freeing the NPC actor. It retains local model/bone ownership and original
+ring limits, and suppresses duplicate Story callbacks. No new OS adapter or wire
+contract is added. Windows native/original-engine lifecycle fixtures pass; native
+Mac Online transport and rendered corpse acceptance remain queued under MAC-013.
+
+MAC-013 NPC weapon-drop continuation (after8ed77577, uncommitted): shared Story
+source snapshots original completed NPC pickups and replicates numeric creation,
+throw/landing positions, exact ammo and removal in the first mission. Guests use
+the original item constructor and host runtime ID for pickup requests. No new OS
+adapter is introduced; current native transport remains queued. Windows state/
+original-constructor/corpse fixtures pass; Mac transport and real pickup scene
+acceptance remain unverified. Stock non-Story/human drop routes are preserved.
 
 ### MAC-092 - Independent x87 emission
 
@@ -8065,6 +8481,82 @@ on1c72cbf4 with protected26/fixture intact. PR413 externally merged into main
 Keep Awaiting validation for remaining runtime replacement and native Mac title
 acceptance; exact scope/counts/hashes/limits in STATUS stage0240 completed record.
 
+MAC-013 movie score snapshots (2026-10-30, uncommitted): shared network2415 and
+pc_network_guest_scores reject gameplay-only3578A0 snapshots during movie or
+frontend scenes, preventing Story NPC ranking overflow into the movie stream.
+Windows and native-network/fallback fixtures cover this shared boundary; no new
+Mac adapter is needed. Mac live Story/Online transitions remain Awaiting
+validation; Windows reproduction/build checks do not establish Mac acceptance.
+
+MAC-013 guest Story rewards (2026-10-30, uncommitted): existing shared Story
+source records a validated host completion in the guest's own loaded profile
+and retains original unlock pages before waiting. Patch2420 catches both A and
+the original timer's page callback. Windows Story scope is unchanged; native
+Local/Arcade uses the original callback. Shared engine/fallback fixtures cover
+the routing; native Online Story adapter/scene acceptance remains Awaiting
+validation. No separate profile model or copied host save is introduced.
+
+MAC-013 guest reward save view (2026-10-30, uncommitted): patch2425 temporarily
+maps the guest's network profile bodies to persistent profile-ID order during
+original1922D0. It retains checksum/signature validation and restores network
+ownership afterward. The engine fixture checks original accessors/metadata and
+aggregate restoration. Existing Windows Story guard is retained; native original
+save behavior is unchanged and Online Story acceptance remains queued.
+
+MAC-013 empty guest reward entry (2026-10-30, uncommitted): shared patch2430
+wraps original79860 so the existing Windows first-mission Story adapter routes
+zero-unlock rewards106 away from the stock loading descriptor to its wait panel.
+The actual unlock count/save/transport paths remain original. Native fallback
+keeps the original factory; native Online Story acceptance remains Awaiting
+validation under MAC-013. Windows engine checks cover positive/empty and original
+host/offline routes; no new OS adapter or duplicate profile policy is introduced.
+
+MAC-013 Online reward baseline parity (2026-10-30, uncommitted): remove the
+Windows Story guest-only2CB210 snapshot; the original Online host also skips
+it. Keep own-profile selection/completion and shared original reward pages,
+save view and final wait. Engine tests cover already-completed local profiles
+without copying the host. No new OS adapter; native original fallback remains
+unchanged and native Online Story acceptance remains Awaiting validation.
+
+MAC-013 Story browser level details (2026-10-30, uncommitted): shared patch2435
+and [pc_story_browser.inc](../../src/network/pc_story_browser.inc) wrap
+1CBDA0/2BECE0 to use advertised Story scene metadata for the original
+thumbnail and localized level name in Matches Available. The existing Windows
+Story adapter guard remains; native fallback retains its original draws. No
+duplicate native metadata/UI model is introduced. Native Online Story acceptance
+remains Awaiting validation. Engine policy/fallback checks cover the ABI and
+restoration. Windows browser-only live captures verify Time to Split and a
+changed Scotland selection; native live validation remains pending.
+
+MAC-013 Story Online frontend Back (2026-10-30, uncommitted):
+[src/network/pc_story_menu.inc](../../src/network/pc_story_menu.inc) scopes original
+browser/host/guest Back callbacks and the existing factory wrapper in
+[pc_story_restart.inc](../../src/network/pc_story_restart.inc) returns them to the
+Story chooser while preserving original callback cleanup and closing the peer's
+companion. Shared guest-menu logic stays in one adapter; native Local remains
+unchanged. Native Online Story is still Awaiting validation under MAC-013; its
+remaining transport entry is a prerequisite for these live Back acceptance checks.
+Windows and native-fallback fixture results do not establish native live support.
+
+MAC-013 Story Back lifecycle follow-up (2026-10-30, uncommitted): the shared
+Story adapter rebuilds the returned main record with original78980 in its own
+layout context after Back, validating parent/child and captured descriptor.
+The existing Windows Online adapter also runs the original1CC360 guest-network
+reset before closing its companion, required for recreated match discovery.
+No new OS adapter is introduced. Native shared Local menu rebuild is covered
+by the fallback fixture; native Online recreation remains Awaiting validation.
+
+
+MAC-013 authored barrel-effects follow-up (2026-10-30, uncommitted):
+[src/network/pc_story_effects.inc](../../src/network/pc_story_effects.inc) preserves
+first-mission barrel profiles40/47 and direction, allowing the original EDD40
+four-emitter/scaling/audio/camera branch on guests while retaining cosmetic
+no-damage guards. Windows build and original-US routine tests pass; the user
+confirmed restored effects in Windows gameplay. Ordinary Online keeps original
+profiles. No new OS adapter or duplicate native policy is needed; this existing
+Story Online transport path remains Awaiting validation on Mac. Native fallback
+compiles in the shared fixture; that does not establish native Online playback.
+
 ## MAC-125 - Assault objective widescreen placement (#338) - Awaiting validation
 
 Patches2290/2291 and shared PcUiWorldAnchor fit a complete marker around its
@@ -8074,6 +8566,40 @@ box and text retain proportional scaling. Windows captured-frame replay at
 checks pass. Local uncommitted source based on c511bd52. Native Mac acceptance:
 Assault Mars Prison Red, movement/turning, repeated/multiple markers, off-screen
 arrows,4:3/16:9/ultrawide and split-screen. Mac build/gameplay unverified here.
+
+
+MAC-013 replica arm/held-weapon pose follow-up (2026-10-31, uncommitted):
+shared PcCharacterPose now includes numeric arm clip IDs, mask, blend and aim
+frame; original local asset lookup and attachment updates are shared by Windows
+and TSFP_NATIVE_NETWORK. No additional OS adapter or copied native gameplay policy
+is required. Windows-hosted native-network engine fixtures cover the branch;
+physical Mac Story/Online and rendered weapon acceptance remain Awaiting validation.
+
+MAC-013 dropped-weapon cadence (2026-10-31, uncommitted): existing shared
+first-mission Story drop snapshots now publish changed transforms per simulation
+tick instead of every six ticks. Native Online Story transport remains the
+existing prerequisite; no OS-specific timing policy or second implementation
+was added. Native fallback compiles; physical Mac drop motion remains Awaiting
+validation. Windows build and cadence/lifecycle regressions pass; the user confirmed motion
+in Windows gameplay.
+
+
+MAC-013 guest physical state (2026-10-31, uncommitted on online-story-coop):
+common numeric rigid/ragdoll helpers now construct local rag groups and generated
+clips for Online bots; first-mission Story uses them in its existing Windows
+snapshot adapter. No new OS API or duplicated Mac gameplay logic is needed.
+Windows-hosted native-network fixtures pass; native Story transport remains its
+existing prerequisite. Physical Mac acceptance remains Awaiting validation:
+Splitter death/tumbling/contact poses, dropped weapon spin/bounce/pickup,
+respawn/checkpoint/rejoin and repeated deaths without leaked groups or crashes.
+
+MAC-013 ragdoll grounding follow-up (2026-10-31, uncommitted): shared guest
+ragdolls now pause local integration between host poses and bake their final
+corpse pose into a separate ring clip. Story/Online use the same corpse helper;
+no OS adapter or separate Mac policy is needed. Windows/native-network fixtures
+and original-engine activity-list/corpse-clip checks pass. Physical Mac remains
+Awaiting validation: Splitter floor contact, settled corpses, packet gaps, repeated
+deaths/NPC clip reuse and the unchanged dropped-weapon physics/pickup path.
 
 ### MAC-127 - Complete launcher language packs
 

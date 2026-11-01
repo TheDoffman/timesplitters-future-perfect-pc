@@ -98,6 +98,7 @@ void pc_display_tutorial_wrap(void (*original)(void))
 }
 void pc_display_tutorial_text(void (*original)(void))
 {
+    if(pc_story_lobby_title(original)) return;
     if(menu_mouse_profile_text(original)) return;
     uint32_t frame=g_esp,saved=WORD_AT(frame+4),color=WORD_AT(frame+16);
     /* The loading-picture label uses this shared font entry, independently of

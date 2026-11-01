@@ -37,6 +37,7 @@ from urllib.parse import parse_qs, urlsplit
 VERSION = re.compile(r'[0-9a-f]{64}\Z')
 TTL = 90
 MAX_LOBBIES = 256
+ONLINE_CAPACITY = {'arcade': 16, 'story': 4}
 
 
 class LobbyError(Exception):
@@ -61,16 +62,28 @@ class Directory:
 
     @staticmethod
     def online_public(lobby):
-        return {**{key: lobby[key] for key in ('code', 'room', 'compatibility', 'name', 'address', 'port')},
-                'players': 1 + len(lobby['peers']), 'capacity': 16}
+        return {**{key: lobby[key] for key in ('code', 'room', 'compatibility', 'name', 'address', 'port', 'mode')},
+                'players': 1 + len(lobby['peers']), 'capacity': ONLINE_CAPACITY[lobby['mode']]}
+
+    @staticmethod
+    def online_mode(value):
+        if not isinstance(value, str) or value not in ONLINE_CAPACITY:
+            raise LobbyError(400, 'Unknown Online mode')
+        return value
+
+    def check_online_mode(self, lobby, body):
+        if self.online_mode(body.get('mode', 'arcade')) != lobby['mode']:
+            raise LobbyError(409, 'Incompatible Online mode')
 
     def online_request(self, method, path, query, body, remote, owner):
         if path == '/v2/lobbies' and method == 'GET':
             version = self.version(query.get('compatibility', [''])[0])
+            mode = self.online_mode(query.get('mode', ['arcade'])[0])
             return 200, {'lobbies': [self.online_public(lobby) for lobby in self.online.values()
-                                    if lobby['listed'] and lobby['compatibility'] == version]}
+                                    if lobby['listed'] and lobby['compatibility'] == version and lobby['mode'] == mode]}
         if path == '/v2/lobbies' and method == 'POST':
             version = self.version(body.get('compatibility'))
+            mode = self.online_mode(body.get('mode', 'arcade'))
             name, port, listed = body.get('name'), body.get('port'), body.get('public', False)
             if (not isinstance(name, str) or not 1 <= len(name) <= 48 or
                 any(ord(c) < 32 or ord(c) > 126 for c in name) or type(port) is not int or
@@ -83,7 +96,7 @@ class Directory:
                 code = secrets.token_hex(8).upper()
             token = secrets.token_urlsafe(32)
             advertised = self.public_address if self.public_address and ipaddress.ip_address(remote).is_private else remote
-            lobby = dict(code=code, room=secrets.token_hex(16), compatibility=version, name=name,
+            lobby = dict(code=code, room=secrets.token_hex(16), compatibility=version, name=name, mode=mode,
                          port=port, address=advertised, origin=remote, listed=listed, expires=self.clock()+TTL,
                          owner=hashlib.sha256(token.encode()).digest(), peers={}, next_peer=2)
             self.online[code] = lobby
@@ -97,7 +110,8 @@ class Directory:
         if match[2] == '/join' and method == 'POST':
             if self.version(body.get('compatibility')) != lobby['compatibility']:
                 raise LobbyError(409, 'Incompatible game version or content')
-            if len(lobby['peers']) >= 15:
+            self.check_online_mode(lobby, body)
+            if 1 + len(lobby['peers']) >= ONLINE_CAPACITY[lobby['mode']]:
                 raise LobbyError(409, 'Lobby full')
             # Never reuse an ID in a room: stale packets cannot become another
             # player's identity after a disconnect. The address range holds 253.
@@ -120,6 +134,7 @@ class Directory:
                 raise LobbyError(405, 'Method not allowed')
             if self.version(body.get('compatibility')) != lobby['compatibility']:
                 raise LobbyError(409, 'Incompatible game version or content')
+            self.check_online_mode(lobby, body)
             peer['expires'] = self.clock()+TTL
             return 200, self.online_public(lobby)
         if not owner or not hmac.compare_digest(lobby['owner'], hashlib.sha256(owner.encode()).digest()):
@@ -131,6 +146,7 @@ class Directory:
             raise LobbyError(405, 'Method not allowed')
         if self.version(body.get('compatibility')) != lobby['compatibility']:
             raise LobbyError(409, 'Cannot change compatibility during a session')
+        self.check_online_mode(lobby, body)
         lobby['expires'] = self.clock()+TTL
         return 200, {**self.online_public(lobby),
                      'peers': {str(i): p['key'] for i, p in lobby['peers'].items()}}

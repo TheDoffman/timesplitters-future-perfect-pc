@@ -1,0 +1,14 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -121,1 +121,11 @@
++extern void sub_002CBAF0_gen(void);
++void sub_002CBAF0(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_rewards_page(sub_002CBAF0_gen);
++#else
++    sub_002CBAF0_gen();
++#endif
++}
++
+ extern void sub_00060310_gen(void);
