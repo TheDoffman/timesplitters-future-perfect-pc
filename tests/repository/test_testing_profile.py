@@ -13,6 +13,16 @@ profile=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(profile)
 
 
+def test_paired_probe_allows_only_controller_descendants():
+    parents={10:1,11:10,12:11,20:10,21:20,30:1,31:30}
+    assert profile.unrelated_game_pids(['21'],10,parents=parents,current=12)==[]
+    assert profile.unrelated_game_pids(['21','31'],10,parents=parents,current=12)==['31']
+    assert profile.unrelated_game_pids(['21'],30,parents=parents,current=12)==['21']
+    assert profile.unrelated_game_pids(['21'],parents=parents,current=12)==['21']
+    assert not profile.process_descends_from(1,10,{1:2,2:1})
+    assert not profile.process_descends_from(999,10,parents)
+
+
 def fresh():
     body=bytearray((i*17+3)%256 for i in range(profile.BODY_SIZE))
     struct.pack_into('<I',body,0x1EE0,2)

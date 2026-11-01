@@ -1,46 +1,73 @@
+Story rewards: additive2465 wraps356800 for the single frontend context;
+profile mapper356870 stays original. See [contract](systems-details.md#four-player-rewards-context).
+
+Story lobby host loss: additive2460 wraps1AF950. The shared menu adapter scopes
+the native guest-lobby8D notification to main return, preserving transport reset
+and rebuilding main in its own layout context. See [contracts](systems-details.md).
+
+Rejoin view/weapon lifetime uses existing D4BE0 camera and A9070 world-remove
+wrappers. The accepted rejoin restores a missed camera-end transition once;
+world identity excludes native first-person viewport models before cached-key
+lookup. No new wrapper or generated-code change is needed. See
+[contracts](systems-details.md).
+
+Story in-progress rejoin uses existing2D398D pending-copy,9A420 synthetic-pad
+and class1e adapters; no new wrapper or generated-code edit is required. The
+original spawn resolves the temporary host-relative pad through D4F50/2B05A0.
+See [rejoin contract](systems-details.md).
+
+Story peer departure: additive2450 wraps BABA0. Its adapter replaces only the
+first-mission remote departure caller35C199 with native context inactivity,
+leaving the original peer cleanup and actual combat deaths intact. See
+[departure contract](systems-details.md).
+
+Story abort routing: additive2440 wraps3592F0 (reliable lobby-return receiver)
+and65420 (full-disconnect scheduler). Original unloading and reliable classB
+transport remain; Story adapters select lobby/main and avoid campaign recording
+on abort. Online confirmation2EBE60 uses existing menu lookup. See
+[contracts](systems-details.md).
+
+Story browser level details: additive2435 wraps1CBDA0/2BECE0. Only validated
+Story advertisements in the System Link list scope a Story metadata lookup;
+its1CBFC4 picture draw uses the thumbnail and adds the localized level name.
+Arcade, joined lobbies and native fallback retain original callbacks. See
+[contracts](systems-details.md).
+
+Empty guest rewards: additive2430 wraps menu factory79860. Only joined first-
+mission guest rewards106 with an actual zero unlock count redirects descriptor
+5236DC (loading) to523900 (reward pages/waiting), preserving save and transport.
+See [contracts](systems-details.md).
+
+Guest profile saves: additive2425 wraps original1922D0 through a scoped
+persistent-profile view for joined first-mission reward saves; network slots
+are restored afterward. Original validation, checksums, signed writes and
+error/retry UI remain. See [contracts](systems-details.md).
+
+Guest reward pages: additive2420 wraps2CBAF0 so original automatic timer tail
+calls reach the same final-page waiting policy as confirmation. Guest completion
+recording and own-profile selection use existing shared Story source; native fallback
+keeps the original page callback. See [contracts](systems-details.md).
+
+Network score lifetime: additive2415 wraps stock3578A0 after the shared
+network adapter include. Movie/frontend scenes hold late gameplay score
+snapshots before their actor/ranking writes. See [contracts](systems-details.md).
+
+Story movie lifetime: additive network2410 wraps original60310 through the
+shared Story adapter so a guest's blocked movie advance does not release its
+still-rendered stream at99BB7. Real load teardown and other modes retain the
+original close. See [contracts](systems-details.md) and [fixture](build-test-details.md).
+
 # Runtime and patch navigation
 
 Patch2180 wraps US1C2AF0 for an already-eligible fresh player trigger only;
 the patch loader orders it after native minigun/timing wrappers. It preserves
 held-fire and continuation calls. See [input contract](interaction-input.md#fresh-weapon-clicks-434).
 
-Effects buffering: `media/0055-dsound-busy-buffer-recovery.patch` extends the
-shared `hle_dsound.c` pump. Its default 40 ms lead grows per buffer to the
-observed active service interval plus 10 ms, capped at 90 ms. Explicit
-`RECOMP_DSOUND_LEAD_MS` values stay fixed, including legacy zero. Play still
-submits immediately; pause/stop resets prevent learning inactive intervals.
-After a >100 ms output-model interval, stale data is skipped only up to now,
-then the future lead is submitted in the same call. Refused submissions keep
-the output cursor unchanged; expired one-shots stay expired. Guest clocks,
-stream/music policy and host audio adapters are unchanged. The existing audio
-timing CI suite now exercises 64 voices under delayed service and recovery.
+Story co-op integration: [contracts](systems-details.md).
 
-`media/0056-dsound-invalid-buffer-retirement.patch` makes every unusable-buffer
-exit in `model_for_known` retire an existing slot/host voice, including null
-settings holders and invalid rate/alignment. DirectSoundDoWork therefore reclaims
-invalid stopped buffers as well as playing ones. Valid stopped/paused buffers
-are retained; no live voice is evicted to admit another sound. See
-[audio lifecycle tests](audio-buffers.md). Patch 2300 now wraps the original
-buffer Release method and retires the matching slot on its final reference;
-reentrant reuse is protected by generation identity. Its extra symbol is
-backed by the supported US constructor/vtable/refcount call chain. The same
-patch adds bounded dropout diagnostics; see the linked guide for counters.
-Patches 2301-2303 add host-only final summaries and route both Windows RHI
-WM_QUIT and HLE shadow-window xbox_HostExit through CRT cleanup. Patch 2303
-follows the independent kernel patches whose context borders that function. Combined HLE/adapter stress coverage is documented
-in the same guide; forced process termination still bypasses normal cleanup.
+Audio recovery patches0055-0058: [buffering, lifecycle, format and device contracts](audio-buffers.md).
+Audio release/normal-exit patches2300-2303: [contracts and diagnostics](audio-buffers.md).
 
-`media/0057-dsound-format-and-tail-recovery.patch` includes rate/alignment in
-buffer identity, retains raw source size while clocking complete frames, and
-preserves stream packet boundaries for rate-only SetFormat. Exact unheard PCM
-and ADPCM suffixes survive voice resets/pause; encoding layout changes keep the
-previous policy. See [format regression coverage](audio-buffers.md).
-
-`media/0058-audio-device-recovery.patch` adds one-second XAudio engine/voice
-retries and a shared per-slot discontinuity signal for streams and movies.
-Their wall-clock fallback skips elapsed audio and establishes a fresh playback
-origin after reconnecting. Explicit reset clears the signal; mute/shutdown
-remain terminal. See [device recovery and tests](audio-buffers.md).
 
 Patch 2140-native-minigun-intent follows the native weapon wrappers in loader dependency order. It scopes held-primary intent around original US 1C74D0 event 1. Generic shots remain on whole ticks; numeric site 1C7600 normalizes release damping. See native-minigun.md.
 

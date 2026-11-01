@@ -16,10 +16,11 @@ typedef struct PcNetworkBotMotion {
 
 static float pc_network_bot_motion_angle(float a,float b,float t)
 {
-    const float pi=3.14159265358979323846f;
-    float delta=fmodf(b-a,2.f*pi);
-    if(delta>pi) delta-=2.f*pi;
-    if(delta< -pi) delta+=2.f*pi;
+    /* US body C0/C4/C8 and heading70 are degrees; the animator converts
+       with pi/180 only when constructing matrices. */
+    float delta=fmodf(b-a,360.f);
+    if(delta>180.f) delta-=360.f;
+    if(delta< -180.f) delta+=360.f;
     return a+t*delta;
 }
 
@@ -51,6 +52,13 @@ static int pc_network_bot_motion_sample(const PcNetworkBotMotion *motion,
     if(motion->from.next_clip==motion->target.next_clip && motion->from.next_cycle==motion->target.next_cycle) {
         out->next_channels[0]=motion->from.next_channels[0]+t*(motion->target.next_channels[0]-motion->from.next_channels[0]);
     }
+    /* Smooth only elapsed fade time within one host phase. Never blend an
+       on/off transition, a restarted timer or the random shimmer state. */
+    const PcCharacterCamo *from=&motion->from.camo,*to=&motion->target.camo;
+    if((from->flags&0x10u) && (to->flags&0x10u) && from->fade_phase==to->fade_phase &&
+       to->fade_phase!=1u && from->cycle_phase==to->cycle_phase &&
+       from->fade_values[2]==to->fade_values[2] && to->fade_values[0]>=from->fade_values[0])
+        out->camo.fade_values[0]=from->fade_values[0]+t*(to->fade_values[0]-from->fade_values[0]);
 #undef BOT_MOTION_VECTOR
     return 1;
 }

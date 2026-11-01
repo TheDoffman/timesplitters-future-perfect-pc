@@ -1480,9 +1480,121 @@
       ]
     },
     {
+      "name": "2160-story-failure-trace.patch",
+      "path": "patches/network/2160-story-failure-trace.patch",
+      "sha256": "488d840ed8315e32ad1fc481df8c563ebcf41cd0de4581589bbae33776e2a8d3",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2170-story-lobby-details.patch",
+      "path": "patches/network/2170-story-lobby-details.patch",
+      "sha256": "f78aeb575c118da40144ad0877511fc1bd97f72bfb37ea6c32af116b09cb765f",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2180-story-spawn-pad.patch",
+      "path": "patches/network/2180-story-spawn-pad.patch",
+      "sha256": "c0996b89e2f8f05f0f22f84a44310f6a6087e97c60e7547e2a0d9125c0985840",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2190-story-script-trace.patch",
+      "path": "patches/network/2190-story-script-trace.patch",
+      "sha256": "1f0652383586efda2bf47393e92854f9579d27e6eb4acda328ab1dbad9081ae7",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2200-story-context-spawn-trace.patch",
+      "path": "patches/network/2200-story-context-spawn-trace.patch",
+      "sha256": "81712c61e9b4d3c70b674b6908405a072a085fec3d2e8db07410c5a7f18aa253",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2210-story-character-roster.patch",
+      "path": "patches/network/2210-story-character-roster.patch",
+      "sha256": "77cc5cbbe4cd6c2ff0762bd74cde5c626d3b53cfa77dcba754b0ab312ca9433b",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2220-story-intro-transition.patch",
+      "path": "patches/network/2220-story-intro-transition.patch",
+      "sha256": "fae4815d406faf29a6a8d6ad90792e9058172086e43982609bf66f01806c6a87",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2230-story-cinematic-ready.patch",
+      "path": "patches/network/2230-story-cinematic-ready.patch",
+      "sha256": "dae0a6145bb30b64b6b133f754378de22b3314dc7a0a72636eb5dd3c5d2751f1",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2240-story-authored-records.patch",
+      "path": "patches/network/2240-story-authored-records.patch",
+      "sha256": "eb046cdcfda71281360c521a7aa3a4f2d5efde5439469ea2dc33145b00806ec2",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2250-story-npc-lifecycle-trace.patch",
+      "path": "patches/network/2250-story-npc-lifecycle-trace.patch",
+      "sha256": "75f9ee2ef57d75bc187d9805fd1518bf2dda9f9f8bb0ebc7f15618685b6f7edf",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2260-story-npc-creation.patch",
+      "path": "patches/network/2260-story-npc-creation.patch",
+      "sha256": "ca15c91462283b2ee599b1cbaacca32a1fed7b74672535ba40b564a24af4e7d0",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2270-story-extra-starts.patch",
+      "path": "patches/network/2270-story-extra-starts.patch",
+      "sha256": "d63496f657730f3e854eb3723808912f882efe7706aaa41c706f5b66ae267bfe",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2280-story-extra-loadout.patch",
+      "path": "patches/network/2280-story-extra-loadout.patch",
+      "sha256": "6614bd73a2a8ca5b3e530a73ba9082714827134c0342fa10068b029e33a515a4",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "2290-assault-marker-placement.patch",
       "path": "patches/graphics/interface/2290-assault-marker-placement.patch",
       "sha256": "eab04046e57c52a87382b7cb3c698819eda716ffa792e81d710c18f35405dbc6",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2290-story-handoff-authority.patch",
+      "path": "patches/network/2290-story-handoff-authority.patch",
+      "sha256": "7fcfdd1a5c6c0080d4463765bc8c5489a64c4b5df55dfcb7bf0aa17ae3924016",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
       ]
@@ -1504,6 +1616,14 @@
         "src/hle/audio_output.h",
         "src/hle/audio_output_xaudio2.cpp",
         "src/hle/hle_dsound.c"
+      ]
+    },
+    {
+      "name": "2300-story-human-teams.patch",
+      "path": "patches/network/2300-story-human-teams.patch",
+      "sha256": "6a164396d16ab675aefb2da541cb69f75169c26952109a3d8dd054fdd2156d9f",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     },
     {
@@ -1530,6 +1650,174 @@
       "sha256": "6bb7a0a5e632b509b1e2a4c93163af160107701cddf523367716bad98a960f98",
       "targets": [
         "src/kernel/kernel_xbox.c"
+      ]
+    },
+    {
+      "name": "2310-story-level-restart.patch",
+      "path": "patches/network/2310-story-level-restart.patch",
+      "sha256": "30f83a04f4cc09cb725068818b982f19ada085452e7af55b0ac6f7fedd4ad32a",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2320-story-team-initialization.patch",
+      "path": "patches/network/2320-story-team-initialization.patch",
+      "sha256": "a6a3b2d9c0ef0c5d0c06d288a12a19ecbaa2775a38579c3a02e88e1ef2b5bf68",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2330-story-checkpoints.patch",
+      "path": "patches/network/2330-story-checkpoints.patch",
+      "sha256": "659de804c7552b3774c7d5b98fe1ebdb988aadb35cdc9fb3765e4eb9b8937140",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2340-story-world-effects.patch",
+      "path": "patches/network/2340-story-world-effects.patch",
+      "sha256": "9585b7dab28aa9b3196b29df030212aef3688f616314c25085530a047811de0e",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2345-network-player-payload-lifetime.patch",
+      "path": "patches/network/2345-network-player-payload-lifetime.patch",
+      "sha256": "0fb0fc611b2916778af9e37e6eacd182180c95234ddb644e18475bb2b8aecb9f",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2350-story-opening-world-body.patch",
+      "path": "patches/network/2350-story-opening-world-body.patch",
+      "sha256": "4acfb3bc25d41fb14fff1dc443fa3c9211d964d370a2fce605ecfb7f343a2f80",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2360-story-dialogue.patch",
+      "path": "patches/network/2360-story-dialogue.patch",
+      "sha256": "949260d9f4cff40e174e24a6b2196b81ce412d1d45f6984992193e50320475a3",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2370-story-drop-replay.patch",
+      "path": "patches/network/2370-story-drop-replay.patch",
+      "sha256": "bf752a73a64e0586677e5146f5d2865982b386a1dc4cb0c837e8aa70161640e9",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2380-story-replica-room-clip.patch",
+      "path": "patches/network/2380-story-replica-room-clip.patch",
+      "sha256": "4a94cdb0784dc485c79e8acede134841fbc9f9691676861a1d7fd29e2fc02e3a",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2390-story-result-controls.patch",
+      "path": "patches/network/2390-story-result-controls.patch",
+      "sha256": "736053bb93ae2a56a41de3c9628b8f9ce3a9d01e70f779833c4e693cfbdae882",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2400-story-barrel-cosmetics.patch",
+      "path": "patches/network/2400-story-barrel-cosmetics.patch",
+      "sha256": "2d02c085a2785d7fd6d3fcc0cf1824fe24756bdccf27f6b3f2fd91301c5cf6e5",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2410-story-movie-stream-lifetime.patch",
+      "path": "patches/network/2410-story-movie-stream-lifetime.patch",
+      "sha256": "a1960dcb84e2cdd04c6c5b5cb290441dfc649f2dd865b6b6e148ee4e48089d6d",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2415-network-score-payload-lifetime.patch",
+      "path": "patches/network/2415-network-score-payload-lifetime.patch",
+      "sha256": "2a1c31f45746b55655b238fa7076538f1783feb5a2475386aa541b209e13e7e3",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2420-story-guest-reward-pages.patch",
+      "path": "patches/network/2420-story-guest-reward-pages.patch",
+      "sha256": "f7ad0f082a38e3f5418d2490bbfc862c97e8ff1bafe0f900aed2732d5929aa0e",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2425-story-guest-profile-save.patch",
+      "path": "patches/network/2425-story-guest-profile-save.patch",
+      "sha256": "309a0500b7e20afcaead2ad1d9e10beae091b9b73feb26e3e6c7f6b3a6a98627",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2430-story-empty-guest-rewards.patch",
+      "path": "patches/network/2430-story-empty-guest-rewards.patch",
+      "sha256": "dd1df9ad3ab65b370a963eea4ac5feaaf9626c7fcaa7bbaffd940089424f7166",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2435-story-browser-level-details.patch",
+      "path": "patches/network/2435-story-browser-level-details.patch",
+      "sha256": "f971101ce7c05cb9d734624de62dc774c56fb0cef25c23f7c317e4d1c71c6e28",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2440-story-leave-destinations.patch",
+      "path": "patches/network/2440-story-leave-destinations.patch",
+      "sha256": "9a1cd9a031de3eb682963ab2e50f747ebdf13d6f086dfd8c7b038fcab1703ba9",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2450-story-guest-departure.patch",
+      "path": "patches/network/2450-story-guest-departure.patch",
+      "sha256": "9b5bb20d1d9cc1e5ca60ce95c66f205717655cb2f20eed2acf532fc73b471af8",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2460-story-lobby-host-loss.patch",
+      "path": "patches/network/2460-story-lobby-host-loss.patch",
+      "sha256": "76a950feb089400a426e0c2b859a88addbd846f96b1f407bcb662d0a0b99c720",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2465-story-reward-context-slot.patch",
+      "path": "patches/network/2465-story-reward-context-slot.patch",
+      "sha256": "acf493d32404e687c9ca216eec126a6c06d2f5361be80f2cb2a34dc46c965004",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     },
     {

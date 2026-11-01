@@ -16,6 +16,45 @@ import tarfile
 
 import pytest
 
+STORY_PATCHES = (
+    'network-player-payload-lifetime',
+    'story-failure-trace',
+    'story-lobby-details',
+    'story-spawn-pad',
+    'story-script-trace',
+    'story-context-spawn-trace',
+    'story-character-roster',
+    'story-intro-transition',
+    'story-cinematic-ready',
+    'story-authored-records',
+    'story-npc-lifecycle-trace',
+    'story-npc-creation',
+    'story-extra-starts',
+    'story-extra-loadout',
+    'story-handoff-authority',
+    'story-human-teams',
+    'story-level-restart',
+    'story-team-initialization',
+    'story-checkpoints',
+    'story-world-effects',
+    'story-opening-world-body',
+    'story-dialogue',
+    'story-drop-replay',
+    'story-replica-room-clip',
+    'story-result-controls',
+    'story-barrel-cosmetics',
+    'story-movie-stream-lifetime',
+    'network-score-payload-lifetime',
+    'story-guest-reward-pages',
+    'story-guest-profile-save',
+    'story-empty-guest-rewards',
+    'story-browser-level-details',
+    'story-leave-destinations',
+    'story-guest-departure',
+    'story-lobby-host-loss',
+    'story-reward-context-slot',
+)
+
 ROOT = Path(__file__).resolve().parents[2]
 PATCHES = ROOT / 'patches'
 RUNTIME = ROOT / 'external/ts3FPrecomp'
@@ -64,6 +103,17 @@ def test_fresh_checkout_and_repeated_build(checkout):
     # Multiple features may wrap the same guest routine. They must compose
     # under one C definition; generation alone does not reject duplicates.
     manual = (checkout / 'titles/futureperfect/src/recomp_manual.c').read_text()
+    assert 'pc_story_network_dialogue(sub_00164C40_gen)' in manual
+    assert 'pc_story_network_result_action(sub_002EB0C0_gen,1u)' in manual
+    assert 'pc_story_network_world_remove(sub_000A9070_gen)' in manual
+    assert 'pc_network_ammo_pickup(sub_001BA220_gen)' in manual
+    assert 'pc_story_network_replica_clip(sub_000A2430_gen)' in manual
+    assert 'pc_story_network_drop_replay(sub_000C2090_gen)' in manual
+    assert 'pc_story_network_blast_start(sub_000EDD40_gen)' in manual
+    assert 'pc_story_network_blast_cells(sub_00186480_gen)' in manual
+    assert 'pc_story_network_blast_update(sub_000EFF90_gen)' in manual
+    assert 'pc_story_network_blast_source(sub_0035AF40_gen)' in manual
+    assert 'pc_story_network_blood_decal(sub_001128C0_gen)' in manual
     wrappers = Counter(re.findall(r'\bvoid\s+(sub_[0-9A-Fa-f]+)\s*\([^)]*\)\s*\{', manual))
     assert all(count == 1 for count in wrappers.values()), wrappers
     # Both common RHI and legacy GL link the same live mode policy.
@@ -293,14 +343,34 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
                                   '1060-pc-network-bot-bounds.patch',
                                   '1070-pc-network-bot-authority.patch',
                                   '1080-pc-network-bot-presentation.patch',
-                                  '1110-pc-network-bot-capacity.patch'):
+                                  '1110-pc-network-bot-capacity.patch') and not patch.name.endswith(tuple('-'+name+'.patch' for name in STORY_PATCHES)):
             shutil.copyfile(patch, old_patches / patch.name)
+    # The trace depends on network wrapper context; like the network patches,
+    # it belongs to the full migration, not the historical Mac-only fixture.
     assert installer.apply_patches(checkout, old_patches)
     assert installer.apply_patches(checkout, PATCHES)
     assert_current_calendar_installed(checkout)
     assert_current_sharing_installed(checkout)
     cmake = (checkout / 'titles/futureperfect/CMakeLists.txt').read_text()
     assert 'TSFP_NATIVE_DIR' in cmake and 'pc_network.c' in cmake
+    manual = (checkout / 'titles/futureperfect/src/recomp_manual.c').read_text()
+    assert 'pc_story_failure_trace(sub_00067450_gen,0x00067450u)' in manual
+    assert 'pc_story_network_frame(sub_000681C0_gen)' in manual
+    assert 'pc_story_lobby_details(sub_001986A0_gen)' in manual
+    assert 'pc_story_network_spawn_pad(sub_000CF060_gen)' in manual
+    assert 'pc_story_network_script_trace(sub_000D4B00_gen,0x000D4B00u)' in manual
+    assert 'pc_story_network_script_trace(sub_000D4BE0_gen,0x000D4BE0u)' in manual
+    assert 'pc_story_network_character_remove(sub_0015BCC0_gen)' in manual
+    assert 'pc_story_network_advance(sub_00065C70_gen)' in manual
+    assert 'pc_story_network_ready(sub_00357540_gen)' in manual
+    assert 'pc_story_network_asset(sub_0006B100_gen)' in manual
+    assert 'pc_story_network_npc_spawn(sub_0015F8C0_gen)' in manual
+    assert 'pc_story_network_npc_receive(sub_003580D0_gen)' in manual
+    assert 'pc_story_network_start_record(sub_0009A420_gen)' in manual
+    assert 'pc_story_network_loadout_grant(sub_001BFCA0_gen)' in manual
+    assert 'pc_story_network_handoff(sub_00218910_gen)' in manual
+    assert 'pc_story_network_team(sub_000D7550_gen)' in manual
+    assert 'pc_story_failure_trace(sub_000D50E0_gen,0x000D50E0u)' in manual
     assert installer.apply_patches(checkout, PATCHES) == []
 
 
@@ -373,9 +443,10 @@ def test_native_boot_source_conflict_preserves_all_files(checkout):
     installer.apply_patches(checkout, PATCHES)
     cmake = checkout / 'titles/futureperfect/CMakeLists.txt'
     content = cmake.read_bytes()
-    assert b'list(APPEND GAME_SOURCES src/main.c)' in content
-    cmake.write_bytes(content.replace(b'list(APPEND GAME_SOURCES src/main.c)',
-                                     b'list(APPEND GAME_SOURCES custom_main.c)'))
+    native_sources = b'list(APPEND GAME_SOURCES "${TSFP_NATIVE_DIR}/main.c" "${TSFP_NATIVE_DIR}/mmio.c")'
+    assert native_sources in content
+    cmake.write_bytes(content.replace(native_sources,
+                                     native_sources.replace(b'${TSFP_NATIVE_DIR}/main.c', b'custom_main.c')))
     before = snapshot(checkout)
     with pytest.raises(RuntimeError, match='conflicts with the runtime checkout'):
         installer.apply_patches(checkout, PATCHES)

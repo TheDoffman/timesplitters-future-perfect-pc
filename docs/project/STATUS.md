@@ -36,6 +36,72 @@ latest focused test also passed both disabled-fix failure controls. Context
 and whitespace checks passed. Prepared for PR review; publication is pending. Physical Mac acceptance is pending MAC-128. The user deferred the
 sniper-cutscene portion of #434; keep the issue open and do not claim it fixed.
 
+## Story integration Clang fixture repair - 2026-11-01
+
+Follow-up at32a832c8: Mac CI now passes2349 cases/18 subtests with349 skips,
+including the entire flag matrix; only the menu-owned reward-capture entry
+included by the lobby fixture is reported unused. The fixture explicitly
+references that entry point, retaining strict warnings and all assertions.
+The next CI revision must pass before the authorized main merge.
+
+PR441 at c5c16a43 passed Windows runtime, both patch-upgrade jobs and both
+launcher builds/compatibility. Mac runtime reported 16 compile failures in
+Story menu/lobby fixtures (2334 passed, 349 skips, 18 subtests). Repairs retain
+strict warnings and original assertions: signed counter snapshots, declaration
+ordering, separated hexadecimal addition tokens and scoped unused-header
+references. The loadout's omitted equipped field is explicitly zero, preserving
+behavior. The affected Windows matrix/lobby fixtures pass all16 cases; fresh
+Mac CI is required before merge. Official Windows Release Build also passes
+full patch validation and built-in checks. No gameplay behavior or personal data changed.
+
+Windows preview preparation at526912a9 passed the full release suite:
+3106 tests/112 subtests,55 skips,443.38s, plus MSVC Release build, exact package
+integrity, isolated fresh install and upgrade/preservation, and three-peer
+portable Online relay checks. The locally prepared beta-suffix package is not
+published: existing launchers interpret it as a separate track. Publication is
+paused for the user's existing Story Coop track/version choice. A changed source
+revision must go through the publisher again; this record does not validate it.
+
+## Story chooser release flag - 2026-11-01
+
+On Windows x64, the shared menu policy now exposes Story Local/Online only
+when the compiled game version contains `story-coop`. Stable, ordinary beta,
+development and empty versions keep the original Story callback and reject
+the private chooser callbacks. General Online multiplayer fixes remain enabled.
+Main integration must retain its stable version independently of preview bumps.
+
+68 affected menu, camera and network checks passed; two Mac-host checks skipped.
+The six-version matrix exercises both display adapter fixture variants against
+production menu code with independent expected outcomes. Official MSVC Release
+Build passed complete patch validation and built-in tests; 399.90 GiB was free
+before building. This is source/build validation, not live visual or full-level
+acceptance. No personal saves/settings were used. Physical native Mac validation
+and the existing native Story transport gap remain pending under MAC-013.
+
+## Story co-op merge from main - 2026-11-01
+
+Merged origin/main8b83f295 into online-story-coop after sniper commit40600874.
+Main contributes launcher language support and audio release/normal-exit work.
+Conflicts were limited to documentation and the generated patch index. Preserve
+both Story/NPC validation records and the new language/audio records; keep the
+bounded guide packets below64KiB by moving their detailed prose to linked guides.
+The patch index was regenerated from the merged staged stack. No gameplay source
+conflict resolution or save/settings changes were required. The brief extra
+post-sniper guest freeze remains explicitly deferred, not marked fixed.
+
+Windows validation: launcher/context/backlog/package76passed with10subtests;
+audio lifecycle/language101passed1host-only skipped; Story/complete patch-stack
+upgrade/guest dispatch65passed in730.46s. Total242passed,1skipped,10subtests.
+Official Windows Build regenerated hooks, applied the merged full patch stack
+and passed its built-in tests with400.06GiB free before building. Content and
+executable identity verification and both-parent context/whitespace checks pass.
+The compiled content was the merged working tree before its merge commit; the
+prior HEAD was40600874. No game inputs or personal saves/settings were used.
+Compatibility5067fa877408ce70b1e223ce341a1f6bee9baf8f7d6b69be64549b9f174bfebe;
+executable SHA-2569629ce4ebd986e15912f55bdce42445d7f48dde72146b4602b8560d37bfb45d8.
+Native Mac execution remains unrun on this Windows host; upstream platform
+acceptance records remain.
+
 ## Prerelease Discord announcement routing (2026-11-01)
 
 Both game release types and their manual tests now post only to announcements,
@@ -278,6 +344,1991 @@ builds demonstrate failure when final cleanup or starvation episode latching
 is removed (`audio-release-negative.log`). Physical Mac execution, long
 Arcade/online sessions, story listening and physical headset switching remain
 unverified.
+
+## Sniper lead-in and stale staging anchor - 2026-11-01
+
+Local `online-story-coop` changes based on e3cf543e. The user
+rejected the SCY6 timing candidate and provided a second demonstration in
+`logs/story-sniper-timing-demo-20261101-005534`: finalized156s/1974frames,
+1612 valid state rows from four games, with camera tags/callbacks/root links.
+The final attempt is visible in the foreground guest PID4440 near114-125s.
+Host PID23528 sets its script preparation marker (context+C bit8000) at114.53s,
+while the guest remains in state2 and crosses the marine at115.2s. The SCAM
+camera starts around117s. The host is then at(-81.33,-12.37,-127.84), but the
+guest freezes at(-87.88,-12.42,-112.51), derived from the host's older checkpoint
+position. It finally moves to(-81.33,-12.35,-126.59) at125.01s when the scene
+ends. The same early script marker precedes the camera by about2.4s in all
+three attempts. The recorded C04 links are zero; no claim that a live C04 link
+caused this reproduction is supported.
+
+The prior rally captured the anchor only on the active-state edge, before the
+original same-update staging warp had finished, and retained that old location
+until exit. SCY7/SPY7 now refreshes the numeric anchor throughout active scenes;
+only a phase/mask/destination change increments the rally serial. Stable samples
+remain deduplicated. The user accepted the early stop but reported the second
+post-cutscene freeze/teleport persists in the prior candidate. The follow-up
+removes exit placement entirely: inactive snapshots cannot apply any rally,
+including a serial never applied during the scene. Explicit camera end wins
+over residual context256/global02000000 when deriving active state. SCAM end
+latches completion so later preparation-marker pulses cannot arm another hold.
+An owned guest's late local256 is released to2 once the host camera is explicitly
+ended and there is no new active scene or preparation lock. The host script marker
+is a phase cue, not a copied set of context flags: transmit a bounded control-lock
+boolean for the preparation lead-in. Guests use original D2CE0 to hold movement
+without a camera replay or teleport until actual staging. A host-side scene-seen
+latch excludes the script marker's short post-camera tail so camera end releases
+control immediately. Opening and reset/rejoin/dead-context guards remain.
+First-mission shared policy remains behind its existing Windows Story adapter;
+no artificial wall or marine collision-flag changes are included.
+
+Windows x64/MSVC14.42/D3D11, supported-US XBE SHA-256 verified. Affected suite
+57passed2Mac-only skipped in30.34s, covering pre-camera lock without placement,
+release/no late lock, updated/stable active anchor, cue/fragment/slot/rejoin guards,
+and original D2DE0 body/eye/history/room/velocity writes with controlled services.
+Follow-up affected suite57passed2Mac-only skipped in30.59s adds explicit-end vs
+residual state, no post-SCAM guard rearming, late local256 reconciliation and
+inactive unseen-rally placement rejection. Official Build/full patch validation
+and built-in tests passed with400.11GiB free before build. Content/executable
+identity verification and context/diff checks passed. Compatibility:
+72e8e55e739c92882b37f969cce0721b325f2dc3b1a31aeb5da5336d681c11ac.
+Executable SHA-256:
+d4f166f66724fbddfebbebbb2bd503f47bbc222f644d620db17252aa8cbaea72.
+Latest human retest confirms the early stop at the marine works, but the extra
+guest freeze still occurs after the cutscene. The guest recovers after a few
+seconds and can continue the level. The user explicitly deferred this remaining,
+nonblocking issue; do not mark it fixed from the passing regression fixtures.
+All-player transport was accepted earlier. No automated full-mission gameplay
+or physical Mac acceptance is claimed; native integration remains MAC-013 work.
+Personal saves/settings and the canonical fixture remain untouched. Changes are
+saved locally with this change; no push requested.
+
+## Story barricade guest explosion and broken mesh - 2026-10-31
+
+Local/uncommitted `online-story-coop` follow-up based ond7821fa6. Recovered
+user demonstration `logs/story-barricade-demo-20261031-215656` contains the
+host explosion near98s. Numeric evidence shows host mesh1344/tag47525452
+removed at98.074s and replaced by1345/tag47525442; the guest removed the source
+at98.381s but never created the replacement. The host's two original2160D0
+profile18 blasts also bypassed the old ambience/barrel capture filter.
+
+The existing reliable effect replay now captures exactly those two original
+calls and creates their original local particle emitters with cosmetic flags.
+World removal also creates the exact preloaded static broken mesh with local
+finite position/angles. Require type1/no script initializer, avoid an existing
+replacement, and retain event deduplication. No host handles/script state are
+transferred; host damage, navigation and story progression remain authoritative.
+Other props, levels, random bombs and barrel authority retain their behavior.
+
+Windows x64/MSVC14.42/D3D11, supported US XBE SHA-256 verified;401.96GiB free
+before build. Official Build/full patch verification and built-in checks passed.
+Affected suite56passed2Mac-host-only skipped in30.16s. Original US2160D0 plus
+EFBD0/EDD40 verifies two blasts/six authored emitters and original positions,
+with no replay damage/navigation/script pass. Fixtures check both call sites,
+serial deduplication, static replacement and resource/type/initializer/tag guards.
+Raycast/particle allocation and constructor dispatch have controlled collaborators;
+these tests do not establish rendered debris or full-mission completion.
+
+Bounded isolated two-peer Story startup/intro/movement and read-only resource
+observation both exited0; both game runners exited0. Each peer preloaded1344 at
+resource slot965 and1345 at966, type1/initializer0. Disposable profiles/settings
+and existing run locks/cleanup routing were used; user data and fixture remained
+untouched. This is startup/resource validation, not a replay of the late barricade.
+Source logic unchanged after that run; only comments corrected the tag labels.
+Final official rebuild and content/executable verification passed. Both test
+profiles released run locks and recycled all disposable partition images.
+Compatibility 32bf1e05866e3c1c4d6b06c3fc5b8715502d3d4fcc2b2232032e14d8aca475fc;
+executable SHA-256 b41e254c47cfbf249350bf331e1622b1609d4249f58f1603a57f70860e810120.
+
+The user confirmed the explosion/debris fix in Windows gameplay and requested
+this commit. Native Story transport
+integration and physical Mac/mixed-host barricade acceptance remain pending
+under MAC-013. Commit requested after acceptance; push/publication pending.
+
+## Story falling-bomb guest feedback - 2026-10-31
+
+Local/uncommitted `online-story-coop` change based on75c87dfc. The first revised
+bug is missing guest screen shake from the falling ambient bombs. Original
+219CA0 creates profile39 with EFBD0, then separately calls D1EC0 and writes the
+impact-feedback fields. Network replay previously performed only EFBD0.
+It now applies the same squared-distance falloff to the guest's owned camera,
+including slots1..3, and calls the original shake routine. Existing reliable
+serial deduplication covers the added feedback; packet format/traffic, host
+random decisions, explosion damage and barrel feedback remain unchanged.
+
+Windows x64/MSVC14.42/D3D11, supported US XBE SHA-256 verified. Official
+`tsfp.ps1 Build`, complete patch verification and built-in checks passed
+(`logs/story-bomb-feedback-build.log`);402.11GiB free after build. Affected
+suite56passed2Mac-host-only skipped in29.43s. Original US219CA0/D1EC0/C7880
+fixture matches exact shake and feedback writes against the guest helper,
+checks each guest slot and rejects distant/nonfinite camera positions. Network
+fixture checks owned-camera routing and no duplicate shake. An initial broader
+suite found a missing external-function stub in the isolated FOV test; adding
+that stub restored the full pass. Source/build unchanged after the build.
+
+Compatibility106128130b4f46bd7632b0b86ee9ec17b1f24ede342e7bd547d7914ac6c19770;
+executable SHA-25629dc37cc1a47099c969aea1d0c7d675907f30500e3b79fa17bf3010781211c8e.
+Content/executable verification and context/diff checks passed. No new automated
+playthrough is claimed. The user confirmed the fix in Windows gameplay and
+requested this commit. Native Story transport/context integration and physical
+Mac/mixed-host acceptance remain pending under MAC-013. Personal saves/settings
+were untouched.
+Commit requested after user acceptance; push/publication pending.
+
+## Guest Splitter corpse grounding follow-up - 2026-10-31
+
+User retest confirms Splitter ragdolls render but their corpses fall through the
+world on guests. Continuing local/uncommitted online-story-coop changes based
+on23b57ce1. Guest rag parts were awakened by every host correction and ran
+additional gravity/contact simulation. They now pause with original1677E0 after
+receiving each physical pose; direct3513C0 regenerates animation from those poses
+even while paused. Host collision and settling remain authoritative, including
+packet gaps. Dropped pickup integration remains unchanged.
+
+The guest's cosmetic corpse copy also lacked original3521C0's final-pose bake.
+After B3630, owned ragdolls now run B2E50(corpse,group,0): use the separate
+corpse-ring clip, then release the temporary NPC clip/physical parts with351F60.
+Validate ring bounds, alignment and object identity; no live rag group transfers
+to the cosmetic corpse or survives NPC slot reuse.
+
+Windows x64/MSVC14.42/D3D11, supported US XBE verified,398.07GiB free before
+build. Official Build/full patch verification and built-in checks passed.
+Affected suite55passed2Mac-only skipped (29.44s), including production adapters
+in both Windows/native-network modes, no-gravity packet-gap behavior, re-pose,
+owned cleanup and final-clip reuse. Original US1677E0 verifies active-list removal
+and retained pose; original B2E50/351570/3515A0 verifies temporary-slot return,
+corpse-owned clip and no live group transfer. Matrix/pose-generation collaborators
+are bounded fixtures; they do not establish a rendered Splitter death.
+
+No new automated mission playthrough was performed. The user confirmed the
+correction in Windows gameplay. Physical Mac acceptance remains pending.
+Existing user settings/saves are intact.
+Compatibility6c8de005cd2c85f139aaf0aa3cb1e458259faf097d37f933d26777df03a2e8a6;
+EXE575ad3a00ddf08ff711668c28aacc566897c7679b9a9ef6a659584e078fe4a2e.
+Build evidence logs/story-corpse-ground-build.log. User requested commit after
+Windows acceptance; push/publication remain pending.
+
+## Guest ragdolls and dropped-weapon physics - 2026-10-31
+
+Local/uncommitted online-story-coop, base23b57ce1. Guests now receive numeric
+rigid-body orientation, position, linear velocity and angular state. Story NPC
+ragdolls and Online bots construct independent local physical groups/generated
+clips instead of binding the host's unrelated dynamic clip229..231. Shared
+presentation runs on Windows and native-network paths. First-mission NPC drops
+create ordinary local pickup physics, follow host physical poses and remove
+that body when the host settles/releases it. Host damage, pickup IDs/quantities
+and lifetime remain authoritative. All peers require the rebuilt matching game.
+
+Windows x64/MSVC14.42/D3D11/Original60, supported US executable verified and
+398.12GiB free before build. Complete patch application/verification, official
+Build and built-in checks passed. Affected regression suite52passed2Mac-only
+skipped (28.49s), plus original US165D80/152540 rotation regression1passed
+(1.29s). Checks cover independent handles/clip slots, generation/owner and
+numeric rejection, allocation retry, cleanup, fragmented rag snapshots and
+actual UDP compact/full bot states. One parallel build/test pass conflicted on
+UDP31000; the sequential complete rerun passed.
+
+An initial live candidate exposed a rejected mapping: record+80 is inertia,
+not orientation. Captured weapon25 inertia11.1906/13.8861/29.2676 is now a
+regression sentinel. Final capture reads orientation at record+0 and applies
+original165D80, refreshing quaternion/world inertia without replacing mass or
+local inertia. Original170ED0 handles physical release before final transforms.
+The original-engine regression verifies these orientation/quaternion/inertia
+contracts; scalar matrix helpers are fixture collaborators, not a real solver.
+
+Final two-peer Story startup/intro handoff, movement and bounded first-canyon
+observation passed; both children exited0, locks cleared and disposable partition
+images recycled. Weapon ID86/source NPC2 had8 valid changing physical poses on
+each peer, nonzero motion and preserved inertia; both ended with no physical
+handle. The failed candidate had0 physical guest samples. These are asynchronous
+read-only samples, not rendered-frame or scanout counts. Evidence:
+logs/story-physics-live-fixed/summary.json and samples.jsonl.gz,
+private/network-validation/story-load-pair/pair-evidence.json.
+
+Earlier candidate Online six-bot combat40s (149.81s total) completed without a
+crash and retained guest corpse copying. No full ragdoll occurred on that route;
+Splitter ragdoll appearance and complete weapon/contact visual acceptance need
+user retesting. Physical Mac acceptance and full mission completion remain
+unverified. No personal saves/settings were used, no publication/issue closure.
+
+Final compatibility4ff918e20ff8c61b916fd865d53a160ad865be87a492e34dd33e4add14cee88e;
+EXEaaeae11c5274c3930a3b6eef6ad6ed7670c3cf5ccabb46436443ed001bfb93bd.
+Build log logs/story-physics-build.log; executable/content identity verification
+passed. Changes are local; no commit/push requested.
+
+## Dropped NPC weapon motion cadence - 2026-10-31
+
+Local/uncommitted online-story-coop, base50425c12 with the preceding arm-pose
+changes retained. User retest identifies dropped weapons still moving slowly
+on guests. The independent first-mission Story drop publisher imposed a six-tick
+cap (10Hz at Original60); guests deliberately disable local throw physics and
+apply only host transforms. Arm/held-model repairs cannot remove that hold.
+Changed throw/landing transforms now publish each simulation tick, with repeated
+callbacks in the same tick suppressed. Creation, pickup IDs, quantities, removal,
+one-second reliable recovery and stationary packet suppression remain unchanged.
+Ordinary Online stock drop physics does not use this first-mission publisher.
+
+Windows x64/MSVC14.42/D3D11, supported US XBE verified and398.21GiB free before
+build. Complete patch verification and supported Build/built-in checks passed;
+focused suite42passed2Mac-host-only skipped (26.69s), then the added cadence
+mutation plus drop-state cases3passed (1.43s). The regression checks60 movement/
+rotation updates in60 ticks and fails with the former cap restored. Existing
+creation/retry/removal/foreign/stale/reused-storage checks pass. The user confirmed
+the dropped-weapon motion fix in Windows gameplay. No new automated mission
+playthrough or physical Mac runtime check was performed. Saves/settings preserved.
+
+Compatibility 0da23ff58a101c4147fd86f89501cbe49c9fa639712f354bccaf5042f56b634e;
+EXE81b04dc8a7e9257b0fe606212fdddc4c996dcee4d992eaa0de2fdba997de30fb.
+Build evidence: logs/story-dropped-weapons-cadence-build.log. No commit/push.
+
+## NPC held-weapon arm poses - 2026-10-31
+
+Local/uncommitted online-story-coop, base50425c12; Windows x64, MSVC14.42,
+SDK10.0.22621, D3D11, Original60. The fresh user demonstration contains2148
+video frames and1212 read-only peer samples. Host ally arm mask8184/clip108
+contrasts with guest mask0/clip0. Original5AFB0 confirms A0/A4 are authored clip
+IDs resolved locally, and actor+B08 supplies its aim-frame value. Prior incomplete
+overlay-control experiments omitted those IDs; no host cache pointers are copied.
+Shared pose232 now carries the complete numeric arm controller, validates local
+resources before enabling it, and refreshes validated held attachments after body
+bones. Online bots share this repair. Story pose plus stock cursor is256 bytes;
+physical prefix236 is unchanged. Story/cinematic message tags identify the new
+layout; both peers need this build.
+
+Supported US XBE SHA2563cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc
+verified;399.27GiB free before build. Complete patch verification and supported
+Windows Build/built-in checks passed. Focused Story/Online/FOV suite42passed,
+2Mac-host-only skipped (27.60s), including original5AFB0/A2B50 fixtures in Windows
+and native-network modes and a mutation rejecting omitted arm state. Sampling,
+lerp and weapon-matrix construction are stubbed in that fixture; it verifies
+bindings/arguments/refresh ordering, not final rendered geometry.
+
+Isolated two-peer Story load/movement passed; controller, observer and both
+runners exited0, run locks released and disposable partition images recycled.
+That opening route did not activate the arm layer, so it establishes startup,
+movement and lifetime only. A separate six-bot Online combat run passed151.72s
+including40s after movement. Host28368 and guest28225 alive samples had active
+arm layers, with matching clip families106/107/108/110/113. The former guest
+state omission is absent; these asynchronous samples do not measure rendered
+FPS. Both Online peers remained live until controlled cleanup, which completed;
+cosmetic corpse copies still occurred. No full mission was completed.
+
+Build compatibility d170d00b2202ee9a92d93e8c96b746d9e55a6f2af70a7963bf5a1c5b17116620;
+EXE6afdcf1e3fe20808661fa1add8823dd8df67826bb7331aa1d54e0b7abcd48bc0.
+Evidence: logs/story-floating-weapons-demo-20261031-193835,
+logs/story-weapons-limb-fixed, logs/online-bots-weapon-limb-fixed and
+logs/story-npc-weapons-build.log. Close combat floating/color visual acceptance
+remains for the user's test; physical Mac Story/Online remains unverified.
+No commit, push or publication by this task.
+
+## Four-player Story rewards rendering - 2026-10-31
+
+Local/uncommitted online-story-coop, based on d4b75896. A four-instance isolated
+reproduction matches the user's screenshot: host and network slot1 render unlocks,
+while slots2/3 are black despite building and advancing their actual reward pages.
+Scene106 creates one frontend player context. Original D2FD0 calls356800 to assign
+its port and camera, which still maps to the guest's gameplay slot, outside that
+allocation. Slot1 happens to render through the following unused memory; slots2/3
+reference unrelated data. Shared adapter/patch2465 maps port0 to frontend context0
+only for first-mission guest rewards with one context and zero scene flags.
+Original356870 retains profile ownership in the guest's own network slot.
+The user confirmed the fix in a subsequent gameplay test.
+
+Windows x64, MSVC14.42.34433, SDK10.0.22621.0, D3D11, SDL3.4.16, Original60.
+Supported US XBE SHA-256 verified;399.5GiB free before the build. Focused suite:
+46 passed,2 platform skips in25.77s. Original-engine reward fixture covers all
+three guest slots and rejects disabling the mapping; gameplay, other ports,
+movies, multiple contexts and offline guards remain covered. Baseline four-peer
+run and observer exited0, all disposable run locks released; original profiles
+and settings preserved. This uses a synthetic success boundary without a mission
+playthrough. Baseline evidence: logs/story-rewards-four-before/summary.json,
+samples.jsonl and comparison.jpg. Full patch/regeneration/build and built-in checks pass; direct subprocess Build
+recheck exits0. Patch migration3 pass in196.76s. Final four-peer controller and observer exit0; all run locks are released.
+Reviewed captures show all four reward pages followed by all three guest waiting
+panels. All peers follow the next intro. Each guest records completion0->1 in its
+own profile, and all three reward cameras use the allocated frontend context0.
+Evidence: logs/story-rewards-four-final/summary.json, samples.jsonl, comparison.jpg
+and waiting.jpg. The earlier visual run also passed, but its controller missed
+the brief initial gameplay state because synthetic completion ran too soon; the
+final probe uses a gameplay-ready handshake. No game crash occurred. Physical Mac/mixed-host Story reward acceptance remains pending MAC-013.
+
+Compatibility 971b28a4bfc4e709101fc2353489c7dda03e234a37368029e73fd13aac72395f;
+executable SHA-256 5f3e149c2d87d8cdd8e1fc771c886b4c2710525ac21d2d07bed043ef937d3136.
+
+## Online NPC facing angle units - 2026-10-31
+
+Local/uncommitted online-story-coop, base23beb840. The US animator stores body
+Euler rotations and heading in degrees, confirmed by360 wrap and pi/180 matrix
+constants. Guest motion wrapped these values as radians, so per-tick retargeting
+could take the wrong path and accumulate large facing differences. Shared motion
+now wraps at360/180 degrees. Pose protocol, overlay caches, clocks, AI and the
+existing50ms interpolation stay unchanged. Windows/native-network use the same
+math helper. An additional overlay-controller replication experiment was rejected
+after a guest AV; the final change retains original pose/cache handling.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0/D3D11/SDL3.4.16, Original60:
+supported US XBE SHA-256 verified;399.8GiB free before build. Final official Build
+and built-in checks pass (logs/online-facing-build.log), with foreground virtual-
+pad skips. Focused tests45 pass,2 skip23.84s, including degree turns/0-360 crossings,
+existing interpolation mutations, Story packets, corpse and native fallbacks.
+The degree regression fails the prior radians helper. Final isolated Online
+probe exits0 with cleanup complete; seven guest bot corpse copies logged.
+Same-tick live actor/spawn comparisons: heading median51.003 ->0.199degrees;
+body yaw median50.792 ->0.265. Final heading/yaw95th percentile87degrees includes
+abrupt-turn transitions under the existing interpolation; baseline146.4degrees.
+Peer sample clock median1ms,p9511ms. These are asynchronous state comparisons,
+not reviewed rendering. The user confirmed the facing fix after visual Online
+testing. Physical Mac/mixed-host acceptance remains pending. Evidence logs/online-bots-facing-probe/baseline-summary,
+fixed-summary,observations,provenance JSON and1.err. Failed overlay experiment
+summary/provenance retained separately. Context/index and diff checks pass.
+Compatibility2b66c6d13c64f5fd414677ccce56caf05ff9e335647a20e06d8229ae746ff982;
+executable SHA-256 1ac4d003ef264b9b6f2b0d734aa071f232ab4087cacf18115768a22be211d87b.
+
+## Online guest NPC animation cadence - 2026-10-31
+
+Local/uncommitted online-story-coop, base3f04d640. Online bots previously sent
+poses once per three simulation ticks. Guest frozen skeletons interpolate only
+same-clip time; atomic crossfade/overlay and dead-state channels therefore held
+at20Hz with Original60. The shared host hook now publishes each simulation tick,
+while suppressing duplicate same-tick callbacks. Human replication, guest AI,
+original clocks, atomic crossfade safety and corpse preservation stay intact.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0/D3D11/SDL3.4.16, Original60:
+supported US XBE SHA-256 verified;399.9GiB free before build. Official Build and
+built-in checks pass (logs/online-animation-build.log), with foreground virtual-
+pad skips. Focused tests33 pass,2 skip. New consecutive-tick pose/fade regression
+fails the previous sender on Windows/native-network variants, and covers live,
+dead and repeated same-tick calls. Existing Story/corpse/motion checks pass.
+Paired isolated Online probe exits0 and completes cleanup on both runs. Comparing
+latest asynchronous sample per tick within stable clip/body generations:
+guest active crossfade changes28.7% ->100%; death phase changes33.1% ->99.2%;
+living phase changes84.8% ->94.0%. Fixed host rates100%,99.2%,96.3%, respectively.
+These measure animation-state cadence, not rendered FPS or reviewed smoothness.
+Nine guest bot corpse copies were logged in the fixed run. Evidence under
+logs/online-bots-animation-probe: baseline-summary.json, fixed-summary.json,
+observations.json, provenance.json and1.err. The user confirmed the animation
+fix after visual Online testing. Physical Mac/mixed-host/jitter acceptance remains pending. Native uses the same
+shared policy; no new adapter or runtime patch. Context/index and diff checks pass.
+Compatibility5f579711a6cfc3e76286941728de77f260d7d73c1cad71a034309e854fcc0baa;
+executable SHA-256 73175be155bc5c2c5b0e5e8f5b0e07fb15e8dffebed4ba4d9f59c62bc21dc0f1.
+
+## Online corpse retirement ordering follow-up - 2026-10-31
+
+Local/uncommitted online-story-coop, base9d6e6131. User rejected the prior
+snapshot-only fix. Paired isolated Online probe reproduced guest actors becoming
+absent before the snapshot hook; Arcade reused the body/spawn on respawn. The
+common A9070 adapter now preserves a dead bot before original destruction,
+with bridge-owned pool/match/host/entity/spawn deduplication shared by snapshot
+fallbacks. Story, human and cosmetic-ring ownership exclusions remain.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0/D3D11/SDL3.4.16: supported US
+XBE hash verified;399.9GiB free before build. Official Build/built-in checks pass,
+with foreground virtual-pad skips (logs/online-guest-corpses-retire-build.log).
+Focused tests33 pass,2 skip, including production pre-destruction adapter plus
+original B3630 constructor, replay deduplication and Story/native fallback.
+Live paired probe exits0 and completes isolated save/config cleanup. The former
+build logged zero bot corpse copies. The new build logged14 copies across bot
+slots2,3,5,6,7; sampled corpse-ring retention reaches8.99seconds, including after
+the source bot respawns. Evidence: logs/online-bots-corpse-probe/{baseline-summary,
+fixed-summary,observations,provenance}.json and1.err. These are asynchronous
+memory/lifecycle checks, not reviewed rendered frames. The user confirmed the Online corpse fix after visual testing. Map-change
+cleanup and physical Mac/mixed-host validation remain unverified. Context/index and diff checks pass.
+Compatibility33614e0883c642c745b59699895a704368e0b796f352fb9dacc510795ec07728;
+executable SHA-256 7bcd4b41879c0f0ddaaf6ff199b123c22ba4b23301067f9279b11f61fc4f8269.
+
+## Online guest bot corpse preservation - 2026-10-31
+
+Local/uncommitted online-guest-corpses, base9d6e6131; depends on the existing
+unmerged Story co-op fix. The shared B3630 cosmetic copy now serves Story NPC
+retirement and Online bot death/absence/respawn transitions. Per-generation copy
+markers prevent duplicates; bridge guards reject humans, host roles, living,
+stale-generation, removed and invalid-pose bodies. Original bounded recycling,
+scene cleanup and human-player death processing remain intact.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0/D3D11/SDL3.4.16:
+US XBE SHA-256 verified;397.7GiB free before build. Official Build and built-in
+checks pass (logs/online-guest-corpses-build.log); foreground virtual-pad checks
+skip when activation is refused. Focused guest dispatch, original corpse
+constructor, Story lobby/menu and FOV checks pass33,skip2. Native-network fixtures
+share the Windows policy; physical Mac/mixed-host and live Online corpse
+appearance/recycling remain untested. User testing is the next acceptance step.
+Context/index and diff checks pass. No generated code or new runtime patch.
+Compatibility0c6f525b805d6692dce0a96528ecf4fdd955074d289b98cb54ea6395d57c60c6;
+executable SHA-256 c0656c5d487ee179766078cdeb5caddcaaa42ed406476718d5e02d3b140005a7.
+
+## Story co-op main sync - 2026-10-31
+
+Merged main08821c6b into online-story-coop base5451185e, retaining the Story
+fixes and incoming audio recovery, Assault markers and Battle Mech input fixes.
+Five documentation/index conflicts preserve both branches' notes; the generated
+patch index is refreshed. Detailed runtime audio contracts moved to
+agent-context/audio-buffers.md to keep the context guide below its size bound.
+
+Windows x64, MSVC14.42.34433, SDK10.0.22621.0, D3D11, SDL3.4.16:
+supported US XBE SHA-256 verified; 397.8GiB free before build. Official Build
+passes complete patch validation, regeneration, compilation and built-in checks.
+Foreground-dependent virtual-pad checks skip when Windows refuses activation.
+Focused Story/menu/input/UI/audio/Online-theme tests:170 passed,3 skipped;
+patch migration tests (fresh, historical Mac, older controls):3 passed;
+native timing/movie suite:114 passed. Context/index checks and diff checks pass.
+No gameplay playthrough, audible device switching or physical Mac validation
+was performed. Existing Mac acceptance limitations remain in the backlog.
+Build compatibility712ea141805e4ae9c1f43b4d8463b1fe7d050608754c1fe59832b18b0c1f04c3;
+executable SHA-256 2c5df4b97cd391a83865c2c196c7922259c16b7aab5fa6ad1d32fcb70fe16bf5.
+
+## Centered Story chooser labels - 2026-10-31
+
+Local/uncommitted on online-story-coop, base46a21dc2. Local/Online use the
+original centered32200 row style from main2D0C43 instead of the left-aligned
+26200 style. Existing selection, callbacks, sizing and reentry rebuild remain.
+The chooser builder is shared with native; no platform adapter change is needed.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11: supported US XBE hash verified;
+397.81GiB free before incremental build. Official build/patch/native checks pass,
+with foreground-dependent virtual-pad skips when activation is refused. Both
+existing Story menu adapter fixtures pass (2,1.37s). Isolated story-entry run
+passes Local selection, Back/reopen and Online cancellation; initial and reopened
+chooser captures visually confirm both labels centered. Runner exits0, releases
+its lock and preserves fixture signatures/settings. Evidence:
+logs/story-chooser-center-live/comparison.jpg and selected full-size captures.
+Build compatibility8319c96f98d4795a52e4e7aabecf82f1366e3691ec8efe49979113d338b6ade0;
+exe SHA25687f7e82fe7696307f3ed203ef36b28ccf393b08497c3a7c4884bd53afc9edb23.
+Native Mac live visual check remains unrun; no gameplay or mission completion.
+
+## Story chooser reentry layout - 2026-10-31
+
+Local/uncommitted on online-story-coop, base4e820a61, retaining the lobby-loss
+fix below. The prior live check reviewed main and reconnect but missed the
+intermediate Local/Online chooser. Opening Story can reuse that chooser with
+stale layout state. Story open now rebuilds its matching active child through
+the same bounded helper as main return. Unrelated/missing children stay intact.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11: supported US XBE hash verified;
+397.83GiB free before incremental build. Official build/patch/native checks pass;
+foreground-dependent virtual-pad checks skip when activation is refused.
+45 focused checks pass,2 Mac-only skips (24.12s), including cached chooser
+reentry and mismatched/absent children on both adapter fixture builds. The patch
+stack is unchanged from the three passing migration checks recorded below.
+
+Build compatibilitydd63433e395dc7fafe16b151b8c9578dcd3e3993ee343b7c00685eb1f197b815;
+exe SHA256b2ad94fd3bbeea431a0ccc01731472bef91d06ef03cbfdfed69dccfa1f2ed9ff.
+All1305 sealed input hashes and executable hash match. Isolated host-loss and
+chooser acceptance passes: reviewed initial Local/Online, first reentry after
+automatic main return and a second Back/reentry capture show identical box/row
+spacing with no extra top gap. Host recreates the lobby and the guest reconnects,
+refreshes and joins with two roster slots/phase12. Both runners exit0 and release
+their locks, preserving the canonical fixture/settings. Evidence:
+logs/story-chooser-reentry-live/result.json and the three selected chooser PNGs.
+Native Mac live acceptance remains MAC-013; no gameplay, WAN, physical-controller
+or full mission completion claimed.
+
+## Story guest lobby host-loss return - 2026-10-31
+
+Local/uncommitted on online-story-coop, base4e820a61. The reported guest return
+used native1A8F30/1CC440's8D notification through1AF950, bypassing the scoped
+Story Back callbacks. Patch2460 intercepts only that notification on the owned
+frontend101 Story guest lobby. It resets guest transport before closing the
+companion, opens the captured main menu and rebuilds its child in its own layout
+context. Chooser Back shares that helper, including cached main records. Other
+notifications/callers, modes, browser and gameplay use the original handler.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11: supported US XBE hash verified;
+397.90GiB free before regeneration. Official full regeneration/build and native
+checks pass; foreground-dependent virtual-pad checks skip when activation is
+refused.45 focused checks pass,2 Mac-only skips (24.09s). Fresh/repeated patch,
+historical Mac-stack migration and previous-controls migration pass (3,56.62s).
+The historical subset initially admitted newer Story wrappers without their
+network dependencies; its Story exclusion list now includes leave, departure
+and lobby-loss wrappers, installed by the full-stack migration. These fixtures
+are source/patch checks, not native Mac live Online acceptance.
+
+Build compatibility378ac695d3223473bc089a3f0350b3cd488a9e1e4e9feb1ddff5eead030847cd;
+exe SHA25649911861a7b1c5f12e8646fb63ba31baad0d517527fd524fb7141a7cea14f0aa.
+All1305 sealed input hashes and executable hash match. Isolated two-instance
+lobby acceptance passes: host Back to Story then main causes an automatic guest
+return to main with networking disabled. The scoped lobby-loss trace confirms
+the new handler ran. Reviewed guest initial/returned main captures have matching
+box and Story-row layout with no extra top space. Host recreates its lobby;
+guest reconnects to the new code, refreshes discovery and joins with two roster
+slots/phase12. The joined-lobby capture is reviewed. Both runners exit0, release
+locks and preserve the canonical unlocked fixture and personal settings.
+Evidence: logs/story-lobby-host-loss-live/result.json and selected PNGs. The first
+probe used an old prequeued stop route and ended before join; the corrected
+controlled queue performs no GO/gameplay. No mission completion or gameplay is
+needed for this menu check. Native Mac live transport remains
+MAC-013; no WAN or physical-controller validation claimed.
+
+## Story Game Over Quit routing - 2026-10-31
+
+Local/uncommitted on online-story-coop, base a29c090e. Failed Story Quit uses
+native EAF60, whose generic65470 tail bypassed the working Online Leave flow
+and returned to campaign selection. The existing result-action adapter now uses
+the same retained host lobby / guest-only main-menu exit as Leave, before that
+tail. Successful result Continue and unrelated modes/stages retain their paths.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11: supported US XBE hash verified;
+398.09GiB free before incremental build. Official build/patch/native checks pass;
+foreground-dependent virtual-pad routing skips when activation is refused.
+45 focused checks pass,2 Mac-only skips (23.78s), including actual-US Quit
+caption/callback/tail, host/guest routing and successful result/Arcade fallback.
+A first fixture run exposed identical optimized original spies aliasing each
+other; a distinct spy fixes the test model. The restricted build stalled before
+compilation; its owned process tree was stopped and the supported build rerun
+with access to the Windows compiler services.
+
+Build compatibility317f97882a4659ba925563e0fc4baa0411940c18b9400268a6d2c8b091b29c08;
+exe SHA2564c5facc3e02868a30c471eb8a9856bf18ccb4d223295887421ebedb14f41d4e8.
+All1304 sealed input hashes and the executable hash match. Isolated host Quit
+acceptance passes: native Game Over menus appear on both peers (actual child
+builder2F5170/descriptor524730); normal Up/Select invokes Quit. Both return to
+Story lobby101/host11/guest12 with two roster slots, and host GO relaunches the
+intro on both. Reviewed before/after captures confirm Game Over and the retained
+lobby. Evidence: logs/story-gameover-quit-live/host/result.json. The first live
+probe hit old disposable screenshot limits; those captures were recycled. Its
+replacement observer checked the root menu instead of the active child, so a
+corrected read-only child observer continued the same instances and verified
+Quit/relaunch; the superseded supervisor stops after runner exit0. Both isolated
+runners release their locks. No game crash is inferred from those harness stops.
+Guest Quit acceptance also passes: the guest returns to main101 with networking
+disabled, while the host remains in mission2/phase15/Game Over with one retained
+roster slot. Reviewed captures show the host Game Over and guest main menu.
+Evidence: logs/story-gameover-quit-live/guest/result.json. Both runners exit0,
+release their locks and preserve the canonical fixture/settings. Failure setup
+writes state8/result10000 only in the owned isolated host; subsequent menu/input/
+transport paths are native.
+This does not establish real combat death behavior. Native Mac Online remains
+MAC-013; no WAN, physical-controller or full mission completion claimed.
+
+## Story rejoin camera / guest first-person weapon lifetime - 2026-10-31
+
+Local/uncommitted on online-story-coop, base92032b75. The rejoin bootstrap now
+marks the local view for one reconciliation against the host's cinematic state.
+An already-inactive host snapshot restores the ordinary camera through native
+D4BE0 even when the guest missed the prior cinematic-end transition. An active
+host cinematic is retained; pending and observed-active state clear together to
+avoid a duplicate end call.
+
+Live diagnosis reproduced the guest retaining pistol14/ammo and its model pointer
+while a host switch marked that model deleted and cleared its asset pointer.
+First-person models were admitted into persistent world-prop identity: native
+synthetic viewport rooms CA..CE and flag40000000 distinguish them. Their unnamed
+creation keys can collide across peers, letting host model cleanup destroy the
+guest's local weapon. The central key helper now rejects these models before
+cache lookup, covering both host publication and guest removal resolution. Native
+local cleanup and ordinary world props retain their existing paths.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11: supported US XBE verified;
+398.17GiB free before the final incremental build. Official build, patch and
+native checks pass; foreground-dependent virtual-pad checks skip when activation
+is refused. Final45 focused checks pass,2 Mac-only skips (24.37s), including
+original-US model-marker contracts, cold/active camera transitions, colliding
+FP/prop data, cached-key reuse, no FP removal publication/resolution, and existing
+normal prop removal. Camera and inventory checks alone do not prove model draw.
+
+Build compatibility8136667f508b8a7290ae24f265a338115abd10f65920f98d0795ebf3d1fc9798;
+exe SHA2562d29bb09a8c6470345d8dc65bba081cbfc6090a5ab8b83b73de92a27b9524c6e.
+All1304 sealed input hashes match. Final isolated two-player acceptance passes:
+reviewed immediate rejoin capture shows ordinary gameplay with the weapon. Guest
+movement after rejoin measures18.57 world units. Three real host weapon cycles
+(pistol/unarmed) retain the guest pistol14, the same valid model/asset, no deleted
+flag, and a visibly rendered gun in all three captures. Native host model cleanup
+still executes with no replay to the guest. After host Restart Level, both
+contexts return to2/2 and guest movement measures5.37 units with a valid gun.
+Both runners exit0 and release their isolated-profile locks; fixture preserved.
+Evidence: logs/story-fp-world-identity-live/guest/result.json and selected captures.
+Physical controllers, native Mac Online (MAC-013), WAN and live checkpoint
+restoration remain unverified here; no full mission completion is attempted.
+
+## Story in-progress guest rejoin - 2026-10-31
+
+Local/uncommitted on online-story-coop, base92032b75; retains the guest-departure
+fix below. Baseline two-player rejoin evidence shows native2D398D pending-copy
+in guest phase12/frontend101, rejected by the previous preparation gates. The
+guest loaded scene2 with stage2 and context states2/16. Preparation now accepts
+that exact received-config boundary with the existing Story validation. A
+reliable peer/config/nonce-bound bootstrap adopts the host's reload epoch before
+player startup, keeping NPC/loadout/checkpoint messages and later strict restart
+validation on the same generation. A temporary native pad places the guest near
+the host; original floor/collision placement remains. Reloads clear the override.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11: official incremental build,
+patch validation and native checks pass (foreground-dependent virtual-pad check
+skipped when activation was refused). 398.58GiB free before build. The supported
+US XBE hash matches. Final45 focused checks pass,2 Mac-only skips (24.46s),
+including host epoch/pose replies, native pad coordinates, nonce/host validation,
+retry/replay bounds and a checkpoint restart after epoch adoption. Synthetic
+input does not establish physical-controller behavior. Native live acceptance
+remains pending MAC-013; full mission completion remains user testing.
+
+Build compatibilityf58f91fbf445b6ff740233fb4248803faa147279c4a4bcb7b3dcea621162a646;
+exe SHA2567c9252d3654d253a68725e06c42c98411a52cbc213cb13084e6377ef3427d4bb.
+All1304 sealed input hashes match. Isolated two-player live rejoin verifies a
+host reload to epoch1 before guest Leave/rejoin. The guest adopts epoch1, has
+context states2/2 and weapon14 with ammo, and spawns2 world units beside the
+host's current position after the host moved away from the authored start.
+Held W then moves the rejoined guest about18.57 world units; the host observes
+that exact final body position and weapon. Both peers accept the next host
+level restart to epoch2. After the restarted opening, the guest retains its
+weapon/ammo and held D moves it5.38 world units. Reviewed captures show the
+weapon and visible gameplay. Both runners exit0 and release profile locks;
+fixture signatures/settings remain preserved.
+No mission completion, live checkpoint restore or native/WAN test is claimed.
+Evidence: ignored logs/story-rejoin-live/guest/result.json, retained selected
+captures and logs/story-rejoin-fixed-live-2.log. A prior probe aborted because
+its test wait exceeded the runner's30s per-command limit, before any rejoin;
+the corrected probe splits the bounded opening wait into two commands.
+
+## Story guest departure - 2026-10-31
+
+Local/uncommitted on online-story-coop, base92032b75. The retained user video
+and prior isolated guest-exit evidence show host Game Over and a stale player
+on restart. Original peer cleanup kills the departing body through BABA0; its
+Story D5480 path kills both co-op partners. Patch2450 bypasses only that exact
+validated remote departure, using the native inactive-state transition while
+preserving ordinary peer/actor/roster cleanup and real combat death behavior.
+Disconnected remote slots retain stable IDs but cannot initialize on restart.
+Level/checkpoint constructors that restore the body directly are reconciled to
+inactive state, original character unlink and native entity retirement bits.
+Payload readiness no longer waits for their absent inventories.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11: supported US XBE verified;
+399.07GiB free before regeneration/build. Official build and native checks pass;
+its foreground-dependent virtual-pad routing check skipped when activation was
+refused. Synthetic live keys do not replace physical-controller validation.
+45 focused checks pass,2 Mac-only skips (24.30s), including original-US coupled
+death call boundaries, inactive state, character unlink retaining NPCs, restart
+rejection, restored-body retirement/idempotence and payload readiness.
+
+Two-player live acceptance passes in the isolated unlocked Test Lab profiles:
+guest Leave reaches main while the host remains gameplay state7/result0, with
+context states2/16. Host Restart Level still has states2/16 and the departed
+body has its native active/render bits clear. After the restarted opening
+sequence, held W/D moves the host about18 world units (squared displacement
+324.82), with reviewed captures showing gameplay and no ghost body.
+The initial short movement probe occurred during the opening and showed no
+movement before departure either; the extended check verifies actual movement.
+Both runners exited and released their locks; saves/settings remain isolated.
+Evidence: ignored logs/story-departure-live/guest/result.json and selected PNGs.
+Build compatibility71b74992c2aa690369c45cc1bc48a1014b3a646d42668a6380e91205433dbb74;
+exe SHA2563a27083d225bfaff838b2c9b0a87d3b3e4ecf486bb9f63563e4df9aed56adcc3.
+All1304 sealed source hashes match. Full mission completion is user testing;
+native Online acceptance remains MAC-013. Game Over Quit routing is a separate
+remaining notes item and is unchanged by this fix.
+
+## Story in-match leave routing - 2026-10-31
+
+Local/uncommitted on online-story-coop, base d34828b9. Retained user recording
+237s/250s demonstrates Leave confirmation followed by forced level selection.
+Online Yes2EBE60->2EBDB0 and the reliable host-return receiver both originally
+record campaign progress. The adapter skips that recording, chooses retained
+Story lobby for host Leave, and main for guest Leave/full disconnect. It retires
+the old host start advertisement, preserves local profile identity during exit
+saving, and finishes the original lobby handshake/reset without dropping peers.
+A bounded trace also found the outgoing guest lobby spinning in the Arcade
+text formatter at phase10. Story drawing now remains active through that
+loading transition; controls retain their normal lobby-phase restrictions.
+
+Windows x64, MSVC14.42.34433/SDK10.0.22621.0, D3D11: official Build/native checks
+pass; supported US XBE hash verified,402.31GiB free before generation/build.
+45 focused checks pass,2 Mac-only skips (24.08s), including original-US exit,
+retained-session reset, profile save, normal rewards and transition rendering.
+Live host Leave returns both peers to the same Story lobby (visually reviewed)
+and a second GO loads scene24/phase15 on both. No mission completion test.
+Guest Leave reaches the actual main menu (visually reviewed), without rewards
+or forced level selection. The host still enters Game Over, reproducing the
+separate remaining-player issue; no claim of continued host gameplay.
+Terminating the owned host game also returns the guest to main after the
+original connection grace period (the40-second observation was too short;
+extended bounded capture reaches frontend101/phase0, with the main menu
+visually reviewed). Both isolated runners finished and released their locks.
+No timeout policy change.
+Build compatibility fc60c4c8f40bcefc3b1c716c0a91b170f2b0c24217128dcd26f89453338db231;
+exe SHA256 f65048874209f59acb6dcf76475212537d67b37839636eddca5a928e708637ac.
+All1303 sealed input hashes match. Native Online acceptance remains MAC-013.
+The separate guest-departure Game Over/remaining actor bug is not claimed fixed.
+The user confirmed the leave-routing fix in local testing on2026-10-31.
+
+## Authored Story barrel effects - 2026-10-30
+
+Local/uncommitted on online-story-coop, base27a083ea. Retained user recording
+logs/story-remaining-evidence-20261030-session shows the guest barrel test near
+153s; selected frames/contact sheets are in ignored logs/story-barrel-effects-evidence.
+Recorded mesh1341 uses218650. The prior replacement of original47/40 profiles
+with1 loses EDD40's EF444 branch: four authored emitters and their scale settings,
+layered sound and25-unit camera feedback. Empty ordinary particle-table rows
+had incorrectly been treated as no visuals. Guest replay now keeps those
+profiles and direction, resolves original local effect assets and retains the
+existing no-damage/no-Story-event/no-navigation-mutation guards. Host damage
+and attribution repair remain. No substitute fireball or new runtime patch.
+
+Windows x64/MSVC14.42.34433, SDK10.0.22621.0, D3D11 build: official Build and
+native checks pass. Supported US XBE SHA256 verified;402.37GiB free before build.
+37 focused checks pass;2 Mac-only checks skip (21.97s). Original-US constructor/startup/
+update tests cover profiles1/40/47, exact emitter descriptors and scales, audio,
+eight-unit camera feedback, and exclusion of replay damage/world/script effects.
+Packet fixtures cover profile/direction retention, duplicate rejection, mode
+fallback and unchanged standard barrels. No live gameplay was run for this
+follow-up; the user subsequently confirmed the barrel effects fixed in gameplay.
+Native Mac Online acceptance remains pending MAC-013.
+Build compatibility 1668181432a75648fdfecb3366157abb4ff0365113e03c4e450f2f53d79338b6,
+exe SHA256 02659c5b5eb55406dac04116eb54c2b9d275dc2358899f511c2e997d9f757532.
+
+## Story Back lifecycle follow-up - 2026-10-30
+
+User retesting of 5d3c1b72 found a blank space above Story after returning to main,
+and no discoverable match after the host left and recreated its lobby. The prior
+probe verified guest reconnect to the original host, not host recreation.
+The scoped Story factory now runs the skipped network-type builder's original
+1CC360/356BB0 guest-network reset before constructing the chooser and closing
+its companion. Closing native sockets alone leaves stale guest peer/handle state.
+Initial and returned main flags matched; bounded construction diagnostics found
+an outgoing Story layout owner and an extra title-height contribution. After
+opening main, Story Back now validates the parent's active child and captured
+descriptor, then uses original78980 to rebuild that record in its own context.
+Failed flag-restoration attempts and temporary diagnostics were removed.
+
+Windows x64/MSVC14.42.34433, SDK10.0.22621.0, D3D11: official Build/native
+checks pass;37 affected checks pass,2 Mac-only checks skip. Supported US XBE
+verified;402.72GiB free before rebuilding. Local/uncommitted base d1c2d1b5;
+compatibility 1756b351edb76e5f4da493daedb92c280eef32a7beec67626df9a2056ebd5c84,
+exe SHA256 c29e7c588bea14a232a57631a1737242c9b4b4b907e967322f63108d504ae26d.
+Final two-instance acceptance on that same build verifies browser Back, guest
+join/Back, both peers returning to main with original card/first-row spacing,
+empty directory after host Back, host Story/Online/new-match recreation, guest
+reconnection/Refresh showing that match, and guest rejoin (role2/phase12,2/4).
+Selected captures/receipt/runner logs are retained in ignored
+logs/story-back-lifecycle-validation. Both runners exit0; profile hashes and
+signatures/canonical fixture are preserved and disposable disks/run locks are
+recycled. No GO or gameplay was run. All710 sealed source/input hashes match
+the rebuilt executable; repository context/base check and diff whitespace pass.
+Native Local rebuild has a shared fallback fixture; Mac live remains unverified,
+and native Online Story recreation remains pending MAC-013.
+User retesting confirmed both regressions fixed before committing.
+
+## Story Online frontend Back route - 2026-10-30
+
+Next revised-notes bug after the browser thumbnail/name fix: at64.98s the
+recording shows Back at the multiplayer Online/System Link selector. Original
+browser and lobby Back callbacks use multiplayer descriptors. Scoped Story
+callback/factory adaptation retains their original cleanup but returns this
+peer to the existing Story Local/Online chooser, then closes its companion.
+Arcade/System Link and in-match leave/disconnect paths remain original.
+Windows x64/MSVC14.42.34433, SDK10.0.22621.0, D3D11:55 affected checks pass;
+2 Mac-only checks skip. Two guarded lobby policy/native-fallback fixtures pass.
+The supported US XBE hash is verified;402.79GiB free before rebuilding. Official
+Build/native checks exit0, and separate launcher source/content verification
+passes. Local/uncommitted base d1c2d1b5, compatibility
+5d3c1b722d18001567971f9bd741e2fecc33e0a0fd14b31f57ba408525a985dc,
+exe SHA256 dad85e5808887d947a06cf70f9e054953f120e9b032b8a687634298b315b93b7.
+
+Two disposable Test Lab copies and a loopback directory verify browser Back,
+Online reopen/rejoin, joined guest Back, host Back and Story Back to main menu.
+All three Online Back paths visibly return to Local/Online; the directory is
+empty after host Back. Selected original/after images and a receipt are retained
+in ignored logs/story-back-validation. No GO or gameplay was run. The first
+probe hit the runner's48-image limit after capturing the guest result; three
+obsolete disposable host captures were recycled before the successful repeat.
+Both runners exit0, profile hashes/signatures and the canonical fixture are
+unchanged, and test disks/run locks are recycled. Native Local fallback is
+covered; native Online live remains pending MAC-013.
+
+## Story browser level name and thumbnail - 2026-10-30
+
+The first bug in the reordered notes is visible at51.77s in the shared user
+recording: Matches Available shows Test Lab/Story with no level name and a
+placeholder picture. Joined lobby details work. Live function profiling identifies
+System Link row renderer1CBDA0, installed by1CC0B0; the similar1972C0 path
+is not called by this browser. The row renderer looks up the advertised scene in the Arcade table; Story scenes use another
+table. Additive2435 and the shared browser adapter resolve the selected match's
+advertised scene against original Story metadata, substitute its thumbnail in
+the existing picture slot and draw its localized name under Story. Other match
+information and transport behavior remain original. Live records use Story rule2,
+not launch-config rule10; the scene itself is already advertised correctly.
+
+Windows x64/MSVC14.42.34433, SDK10.0.22621.0, D3D11:55 affected checks pass;
+2 Mac-only checks skip. Two fresh/historical patch-stack checks pass, as do the
+updated advertised-rule policy/fallback cases. The supported US XBE hash was
+verified;403.36GiB free before the initial build. Complete-stack official Build
+and native checks exit0. Separate launcher source/content verification passes.
+Local/uncommitted base8b0bd851, compatibilityfab66dff39e192f365e509bbb936d8f8ae7409f4d0a99b4fc0aa889c9cfc83d0,
+exeSHA256cbd7ad2d5c45e52813c3eef232ffeaf8a122d538213c55a1daaa916b8fc16a3f.
+
+Two disposable Test Lab copies and a loopback directory verify the real menu:
+the guest browser shows Time to Split and its thumbnail, then updates to
+Scotland the Brave and the castle thumbnail after the host changes selection
+and the guest refreshes. Selected before/after images and a build receipt are
+retained in ignored logs/story-browser-validation. No GO or gameplay was run.
+Both runners exit0, profile hashes/signatures and the canonical fixture remain
+unchanged, and disposable partition images/run locks are recycled.
+Native fallback engine checks pass; Mac live Online Story remains pending
+MAC-013. Only the first reordered bug is addressed by this change.
+
+## Guest and host Online reward baseline parity - 2026-10-30
+
+User retesting off657e101 still showed only host rewards. The previous empty-
+menu repair handled a symptom; it did not explain why matching unlocked profiles
+produced different reward lists. Original2D2C70 skips2CB210 for the host as well
+as the guest: Online's3533F0 predicate branches past it at2D2CB4. The added
+guest-only snapshot marked eligible rewards as seen only on that peer. Remove
+that call while retaining own-profile selection, authoritative completion,
+original menu pages/timers, signed saves and final waiting. No host save/reward
+list is copied and unrelated modes keep their original behavior.
+
+The engine fixture now begins with an already-set co-op mission bit. It fails
+before this correction and passes afterward using the original reward builder.
+The new XBE checks verify the actual host Online skip branch. Old live21 samples
+also confirm equal all-ones completion masks but zero host baseline versus a
+populated guest baseline, independently verifying the mismatch.
+
+Windows x64/MSVC14.42.34433, SDK10.0.22621.0, D3D11:53 affected checks pass and
+2 Mac-only checks skip. The supported US XBE hash was verified;403.58GiB free
+before rebuilding. Official complete-stack Build exits0; native checks, seal,
+and separate launcher source/content verification pass. Local/uncommitted base
+is8b0bd851. Executable SHA-256:
+ed96dd4847e69fa69bd615d20c7d7d97962d6fdd54ad0cc5d52f0f2145183443;
+compatibilityf73e83867cf3e84357fed6205fb8f199d23a7059e9ae3ca375497fc37e63e849.
+Live23 uses identical unmodified disposable Test Lab profiles for both peers,
+without clearing completion bits to manufacture a guest-only unlock. Both
+initial reward captures show Vietnam, Hotel and Venice. Guest cursor samples
+advance0,3,6,9 through four pages, then12 with the reviewed Waiting for host
+panel. Both gameplay reward baselines remain zero, eliminating the prior
+host/guest mismatch. Both peers reach intro30/mission1/phase15 without sampled
+save errors; the guest's signed profile records one completion, and completion
+masks remain unchanged. Host save is unchanged, signatures/canonical fixture
+are preserved, and no disposable images or run locks remain. Retained evidence:
+ignored logs/story-transition-synthetic-23/validation.json and selected captures.
+This checks a synthetic completion boundary after gameplay; natural mission
+completion remains user acceptance. Native Mac live Story remains queued MAC-013.
+No source changes or further relinks followed this verified executable.
+
+## Guest empty rewards loading follow-up - 2026-10-30
+
+User retesting of09706983 still showed guest LOADING while host displayed Bunker.
+The prior live17 verified a seeded positive unlock, and its fixture called the
+empty constructor directly; neither covered actual zero-unlock scene entry.
+Manual logs closed normally and both profiles persisted one completion. Original
+2D6E10 selects loading5236DC instead of reward523900 when the guest count is zero,
+bypassing the previous waiting adapter. Movie skip order was tested separately:
+host-first live18 still showed the seeded guest reward.
+
+Patch2430 routes that zero-count first-mission guest menu factory request to the
+reward descriptor, allowing its existing constructor to show Waiting for host.
+It preserves the true unlock count, own-profile rewards, saves and network flow.
+Windows x64/MSVC14.42.34433, SDK10.0.22621.0, D3D11:53 affected checks
+pass and2 Mac-only checks skip; both fresh/historical patch-stack checks pass.
+The supported US XBE hash was verified and403.78GiB was free before rebuilding.
+The official full-stack Release compilation, native build checks, executable
+seal and launcher source/content verification pass. Local uncommitted source
+is based on8b0bd851; live-tested executable SHA-256:
+5b33968fa18d6826f0ce350bbbc4aa1892c64f58b2d853094a6e2202ee01a265;
+compatibilityf657e1014ec48ca55b5f4c9d414cd660ef13d3e5c6cbf8db250c39b80896eba7.
+
+Old-build probe20 reproduced LOADING on guest106/phase15 while host reward pages
+advanced, with unmodified disposable unlocked profiles. On the rebuilt executable,
+probe21 shows the disabled Waiting for host panel both immediately and18 seconds
+later. Both peers reach intro30/mission1/phase15, no sampled save errors occur,
+and the guest's signed profile records exactly one completion. Signatures and the
+canonical fixture are preserved, and disposable partition images/run locks are
+recycled. Selected captures and validation.json are retained in ignored
+logs/story-transition-synthetic-20/ and logs/story-transition-synthetic-21/.
+Probe22 on the same rebuilt executable separately verifies a new guest unlock:
+reviewed captures show NEW CHARACTER AVAILABLE! The General before Waiting for
+host. The pre-launch signed disposable profile has all six first-mission bits
+cleared; after Easy co-op completion only that co-op bit is set, with completion
+count1 and valid signature. Host save is unchanged and the canonical fixture is
+preserved. Both peers reach intro30/mission1/phase15 without sampled save errors,
+and disposable disks/locks are recycled. Evidence is retained in ignored
+logs/story-transition-synthetic-22/validation.json and selected captures.
+The final incremental build reapplied zero runtime files, performed no source
+regeneration and passed its native checks, executable seal and launcher verifier.
+Its final executable SHA-256 is
+ce1d516cb9d572d8c3b8713544eb93f3e02bb8d7ec2c55a3f4cf81ecf256aea5,
+with the samef657e101 source/content compatibility. The live captures above belong
+to the preceding5b33968f executable from that same source, not a new playthrough
+of the final relink. Redirected outer Windows PowerShell reported status1 and
+NativeCommandError for successful native tools' stderr; the completed native
+checks, seal and separate verification were inspected rather than treating that
+wrapper status as evidence of a game failure.
+These runs use synthetic completion boundaries after gameplay, not full natural
+mission completion. Native Mac live Story acceptance remains queued MAC-013.
+
+## Guest completion rewards before waiting - 2026-10-30
+
+The revised first bug hides guest rewards: the guest frontend skips its unlock
+baseline/completion recorder, and the previous menu override replaced every
+unlock page with Waiting for host. The Story adapter now snapshots the guest's
+own loaded profile at gameplay start, then invokes original668F0 only for the
+validated host first-mission ending transition. Original profile selection,
+co-op completion bits, statistics, dirty flags and unlock eligibility remain.
+Guest rewards use original pages/timers; only the exhausted page rebuilds as
+waiting. Patch2420 covers the timer's direct callback as well as confirmation.
+No host profile is copied and guests cannot start the next mission.
+
+Windows x64/MSVC14.42 validation:53 affected menu/network/storage/context/backlog checks
+pass,2 Mac-only checks skip; both fresh-stack and historical-Mac migration checks
+pass. The new engine fixture executes the original recorder, profile selection,
+unlock baseline, count, constructor, page and timer against isolated RAM. It
+checks guest slot1 ownership, preserved remote profile data, completion/dirty
+state, multi-page rewards, timer tail calls, already-earned rewards and original
+host/offline exits. Initial missing UI fixture linkage was corrected and the
+complete affected suite rerun. Supported US XBE hash verified;404.28GiB free
+before the official full-stack Release rebuild. Native Story acceptance remains
+queued under MAC-013.
+
+The first live candidate recorded completion but exposed original save error7:
+network slot0 contained a scratch profile with cached CRC0, while the guest's
+real Test Lab metadata/body and correct disk CRC were in slot1. The failure also
+reproduced without test seeding. Patch2425 now scopes original1922D0 to persistent
+profile order captured at Online selection before joining the lobby, preserving
+chosen-profile identities independently of metadata pool order. It restores the
+network table/aggregate afterward and retains original metadata/checksum updates.
+The original save accessors in the engine fixture verify this mapping and remote
+profile preservation. Checksum/signature validation and error/retry UI remain
+original. The final-page refresh also forwards the original callback menu argument;
+a zero-argument refresh exposed during live testing would otherwise crash.
+
+The final official Release build and native build checks pass on Windows x64,
+MSVC14.42.34433/SDK10.0.22621.0, D3D11. Executable/content seals and launcher
+verification pass. Executable SHA-256:
+8781684e620fe4e423ea6f28d7df81afb78ce8ced1a70a9105239c2933177bc5;
+compatibility09706983d753d6d2def56a72dc85cc1ff77bc421d875f5823b813587743423c7.
+Source is local/uncommitted on online-story-coop at base8b0bd851.
+
+Final bounded two-player probe17 used separate disposable signed profiles and
+a synthetic host completion transition after first-mission gameplay. Reviewed
+captures show the guest's NEW CHARACTER AVAILABLE! The General notification,
+then Waiting for host. Both peers reached authored next intro30/mission1/phase15
+without crashes or sampled save errors. The guest's signed disk profile records
+exactly one completion and sets only the first-mission co-op Easy bit; all six
+first-mission completion bits were cleared before launch, and the single-player
+bits remain clear. Host profile is unchanged; both signatures and the canonical
+fixture are preserved. Both runners completed and recycled their disposable
+partition images/run locks. Evidence is retained in ignored
+logs/story-transition-synthetic-17/validation.json and selected captures there.
+This verifies rewards, persistence and intro handoff; natural mission completion
+and subsequent mission gameplay remain user acceptance, and native Mac live
+Story validation remains pending.
+
+## Guest ending movie score corruption - 2026-10-30
+
+The revised first bug was reproduced independently of the earlier reward GO
+repair. User build8dbdad1b faults in original60740 while reading ending frame93;
+its preceding stream read targets0003FFFF. Original64810 initializes rankings
+for all Story NPCs, overrunning the16-entry table into movie buffer7DE530.
+A translated original3578A0/64810/646B0 regression reproducesFFFFFFFF with two
+humans,30 NPCs and an empty gameplay score packet. In the old running build,
+a bounded synthetic completion plus30 seeded guest NPCs produced563 corrupt
+samples and froze the ending at frame27. The generic pair runner completion
+message does not certify this failed scene. Early completion with only5 NPCs
+had not exposed this overflow; full natural mission completion remains a
+separate user acceptance route.
+
+Shared patch2415 and pc_network_guest_scores hold incoming gameplay scores
+before actor/ranking/clock writes during network movies or frontend101..107.
+Other control traffic, ordinary gameplay, custom-map100 and disabled/native
+fallback behavior remain original. Windows and native-enabled/fallback fixture
+checks pass. No new Mac adapter is required; Mac live acceptance remains pending.
+
+Windows x64/MSVC14.42 checks:28 networking/Story tests pass,2 fresh/historical
+patch migration tests pass,26 repository/native timing checks pass. The updated
+original-engine fixture with the two-human party also passes. Supported US XBE
+hash was verified;404.31GiB disk free before generation/build. Isolated runner
+profiles were used throughout; personal saves/settings and the canonical fixture
+were preserved. The official complete-stack Release build and all native build
+checks pass; executable/content seals and the launcher verifier pass. Build is
+local/uncommitted on online-story-coop at base8b0bd851, using Windows SDK
+10.0.22621.0 and the D3D11 frontend. Executable SHA-256:
+0acf9eb24cad7f89d37a0b3fd14b85e4f9b57d213f7e7811e5cbecc56e9dbb30;
+compatibility a078d495d295cfaf8f022b135b2df8f4ae88fc666b8b145cd262cade0a4b8272.
+
+The fixed bounded pair retained30 guest NPC slots for201 ending samples over
+17.63 seconds, reached movie frame1059 with no corrupt stream addresses, and
+both peers followed the host through rewards to mission1's authored intro30.
+The guest15-second capture shows the cinematic; the old controlled build's
+capture shows the original disc-error screen. This tests the failing memory
+condition through the actual decoder and live movie stream; it does not replace
+the user's natural mission-completion retest or certify second-mission gameplay.
+
+## Rewards frontend GO correction - 2026-10-30
+
+The user retest rejected the earlier candidate. A bounded synthetic state11
+scheduler experiment (disposable profiles, no full mission completion) reproduced
+both peers crashing in63390 with ff61ff5b. Traces show that unlock pages use
+2CBBA0/2CBAF0/2CBB60 and eventually frontend GO2D3980; the previously guarded
+2EB... callbacks were not reached. GO rebuilt16 Arcade humans and old scene24.
+
+The actual GO serializer boundary now invokes original65940 for completed
+mission0/stage3, preserves the validated joined-party header and difficulty, and
+lets GO perform its single generation/send. The guest unlock page is replaced
+with Mission complete / Waiting for host and its page/timer actions held until
+the normal host config arrives. An independent original60310 lifetime fix retains
+a guest's movie buffers only while local advance is blocked and the movie is
+still rendered; actual load teardown remains original.
+
+The corrected GO reached authored mission1 intro scene30/movie2 on both peers,
+then exposed a distinct358EB0 inventory-copy crash (2f8d10d3 build). The common
+network cadence adapter now holds the gameplay-send branch during movies and
+frontend while retaining the original transport/heartbeat pump and original
+clock. It resumes movement immediately when gameplay returns.The final focused network/native-cadence selection passes13 checks (109
+deselected,4.34s), including preservation of original custom-map scene100.
+
+The bounded synthetic pair passes with b5562eae/8e687676. Both peers reach
+mission1 intro scene30/movie2 with two humans, one local player and phase15,
+and remain there for35.97s (438 samples per peer). Host/guest next-intro captures
+and the guest Waiting for host panel were reviewed. Guest Confirm does not
+advance that waiting page. Both runner exit codes are0, profile signatures are
+preserved, run locks are absent and disposable partition images are recycled.
+Evidence: logs/story-transition-synthetic-7/validation.json and the bounded pair
+logs/story-network-movie-pair.log. This deliberately triggers the original
+post-results scheduler; it does not complete the first mission or certify
+second-mission gameplay/full cinematic completion. Real native Mac acceptance
+is still pending.
+
+Final build8dbdad1bc52d45ec25d90c00764cea2cdea6e64f4c95563b5d3929e93ae2b5b3,
+compatibility42f238a887a6afca87cd210f05b7bcd6658e4c2bdd87448ed174b6ef5921aa69,
+adds the tested scene100 preservation refinement after the paired Story run;
+the Story scene30/106 behavior is unchanged. Official Windows Build/native checks
+and executable sealing complete in logs/story-coop-transition-final-build2.log.
+A premature prior final-build attempt met the still-running test game's executable
+lock; rebuilding after owned-game shutdown completed normally. Source/runtime/
+generated/game identity and executable seal are checked separately from gameplay.
+
+Windows11 AMD64/MSVC x64: final58 targeted tests pass,2 Mac-only checks skip in
+25.36s (logs/story-coop-transition-final-tests.log), including actual GO/pending
+copy/guest-follow, waiting-page and original movie cleanup cases. The46 patch
+migration/tracking checks had45 passes and one historical Mac-stack failure from
+the new Story patch's missing historical exclusion. After adding that exclusion,
+the affected check passes in19.75s (logs/story-stream-mac-stack-recheck.log).
+Repository context/index and whitespace checks pass. Full human mission completion
+and native Mac Story acceptance remain pending. Changes are local/uncommitted.
+
+## Earlier rewards candidate (superseded) - 2026-10-30
+
+User capture logs/story-reward-observation-20261030-1 records both peers moving
+2->44->106 and remaining in phase10 with no reward-scene bodies. Host then
+loads the wrong scene24 with a sixteen-slot pending config and crashes in
+original63390 filename trimming; the guest remains at an empty unlock dialog.
+The captured executable/PDB match bcdf55ad/79db31ce. Original64CE0/357540 reject
+readiness in frontend106, and final reward callbacks tail-call generic65470,
+which schedules an Online exit without building the next campaign config.
+
+Shared Story adapters now complete rewards readiness without a body loop, retain
+the last validated party header, and scope the host's final Continue through
+original65C70/65940 and the existing reliable next-generation start. Original
+unlock/profile callbacks still execute; Quit/unrelated exits remain unchanged.
+Guest Continue2EB0A0 is guarded and its row disabled until the host advances.
+Original-engine fixtures execute the failing readiness/exit behavior and the
+corrected readiness, authored next mission and pending-load stack contracts.
+Production fixtures cover invalid headers, party retention, guest wait, host
+scope and preserved offline/unrelated paths. No generic asset-loader sentinel
+suppression, new runtime patch, clock change or second-level NPC work is added.
+
+Windows11 AMD64/MSVC x64: 58 targeted checks pass,2 Mac-only checks skip in24.76s
+(logs/story-rewards-final-validation.log). Official final Build/native checks
+pass (logs/story-rewards-final-build.log); supported US XBE hash verified and
+401.1 GiB free before build. Compatibility
+8e9ec5d89d36b3ae012aacf87480831c20f7d070f751d7fdaf0c803f5972bc03,
+executable SHA256 2a75d827f0a9f8020f9de9584433f5f46ccbe17230b6a68899197c8caea20c5a.
+Exact-build bounded two-player load/movement/fire smoke passes with intro skip
+(logs/story-rewards-fix-live.log; private/network-validation/story-load-pair/
+pair-evidence.json). Guest firing capture reviewed; both owned runners exit0.
+No active run locks or disposable partition images remain in those test runs.
+Current source/applied runtime/generated-code identity and executable seal verify.
+Native Mac Story transport/gameplay remains unverified (MAC-013). Full rewards
+and next-level user acceptance remains pending; no automated level completion.
+
+## Manual Story launcher path verification repair - 2026-10-30
+
+On online-story-coop base8b0bd851 (Windows11 AMD64), the local Story launcher
+failed before starting games because its source verifier treated stable logical
+tools/lobby_server.py entries as current disk paths. It now resolves grouped
+tool paths and retains the existing executable/content/source hash checks.
+Sixteen launcher/identity checks pass in0.87s, including detection of edits to
+relocated tools. Verification against the installed Release executable passes.
+No new gameplay capture was run and no game rebuild is required for this helper
+change. Native Mac launchers and personal saves/settings are unchanged.
+
+## Story co-op / main integration - 2026-10-30
+
+Merged origin/main c511bd52 into online-story-coop at 86cc6c83, preserving Story
+preview VERSION 0.4.0-story-coop.1 and the accepted corpse/drop/room/barrel/camo
+repairs. Main's grouped source/test/tool/patch layout, independent compiler and
+native networking remain. Story callbacks moved to verified US INT3 bytes
+123C9..123CC because main's Unlock Content owns the old 1237B..1237E IDs.
+Numbered Story patch ordering retains player payload lifetime before visibility.
+
+Windows11 AMD64/MSVC x64: full patched build and final follow-up build/native
+checks pass (logs/story-main-merge-build.log and story-main-merge-final-build.log).
+Current source, applied runtime, generated-code fingerprint and completed
+executable identity verify. Compatibility 79db31cea35006e721d1b727f60abc8a805b157b36df7ee173ef757c7e2c522d;
+executable SHA256 bcdf55ada03442c6389f6d8cf8ca77949fcba2c0367af7285b71652ab46151bd.
+Initial broad regressions: 217 pass/11 skip, followed by repairs to translator
+constant seeding and isolated fixture dependencies. Final Story/menu/guest/manual
+checks pass (52 pass/3 skip); host UDP/crossplay checks pass (10 pass/1 skip).
+The release parallel-session fixture passes after installing main's pinned
+pytest-xdist/execnet. Sandbox-only network/temp failures were rerun on the host.
+Additional profile/Online companion/bot checks pass (23 pass/2 skip); Windows
+launcher build and isolated maintenance checks pass (42.34 seconds). Full patch
+migration run passes 45 checks; its remaining stale native-source assertion was
+updated to main's TSFP_NATIVE_DIR list and rerun separately. Mac-only checks
+remain unavailable on this Windows host. This integration does
+not establish reward-screen crash resolution or new first-mission playtesting.
+
+## Splitter camouflage repair - 2026-10-28
+
+User confirms the barrel issue fixed. Repeat read-only camouflage evidence:
+logs/story-camo-observation-20261028-repeat-1 (71 samples per peer/21.25 seconds,
+host screenshots); earlier recording has guest screenshots. Kind78 slot7/8 has
+host effect flags01000010 with phase1 and fade/cycle fields; the guest has zero.
+The old replicated cloak200000 effect was not this Splitter appearance.
+Shared numeric replication now carries the actual56-byte body effect for Story
+and Online bots. Story physical packets remain244 bytes within stock256; SNP5/
+SPP5 assembles452-byte snapshots. Guest frozen-pose preparation calls original
+material presentation, disabling a second random cloak cycle and retaining host
+numbers, local model/sound ownership and registers. Camouflage clear restores
+full opacity. Online bot fade time smooths within a phase; phase changes stay atomic.
+Original-US opacity/material fixture passes: recorded guest opacity1 becomes
+host opacity0, original shimmer material commands execute and clear restores127.
+Windows11 AMD64/D3D11, supported US executable SHA256 verified and403.3 GiB
+free before build. All62 affected fixture/context/backlog/tracking checks pass
+in41.26 seconds: logs/story-camo-verified-checks.log. Official Windows build/native
+checks pass with exit0: logs/story-camo-fix-build.log. Full source/build verification
+passes, including the new header. Compatibility:
+`3acf03e7bed170f779e022e73a9467e4533d6fb1dcd07e0ab66501d717cdc9e5`.
+Executable SHA256:
+`6d88e691e0d818318245478736c92ff253609e28794053f1937d026c7f5184f0`.
+The existing barrel patch stack is unchanged since its21 upgrade/application checks
+passed; no additional runtime wrapper is introduced by this camouflage repair.
+Bounded exact-build two-player intro-skip loading/movement/firing passes:
+logs/story-camo-fix-live.log, both child runners exit0. Both owned pistols have
+112 reserve/13 loaded after firing; guest capture reviewed. No active pair locks
+or disposable partition images remain. These fixes and their validation are included in this commit.
+User confirms Splitter camouflage is fixed. No mission completion or reward-menu
+changes are included. Native Mac Online remains queued MAC-013.
+
+User acceptance (2026-10-28): barrel explosion issue confirmed fixed after the
+latest build. Splitter camouflage was also confirmed fixed after its repair.
+
+## Story barrel retest follow-up - 2026-10-28
+
+The user rejected the previous barrel attempt: guest effects and enemy damage
+still failed. The previous constructor/opening checks did not exercise the recorded
+prop's actual callback. Decoded capture+19C identifies218650, which removes the
+prop and creates radius-only47/40 explosions, rather than the previously handled
+BC670 kind1. Guest capture now sends canonical kind1 fireball presentation from
+those exact sites while preserving original47/40 host damage and guest credit.
+Stock remote-source ownership also rejects deferred host blast hits; a scoped
+EFF90/35AF40 adapter permits only this authoritative barrel source through the
+original reliable serializer and NPC health routines. Guest replay stays cosmetic.
+The regression executes actual218650/35C870/35AF40/BB6C0/BB490/BA230: baseline
+remote-credit hit leaves NPC HP30; fixed host hit broadcasts and reduces it to20;
+ordinary unscoped shots, guest role and non-Story sessions remain unchanged.
+Windows 11 AMD64/D3D11: 61 affected checks pass (188.40 s), including prior
+corpse/drop/room fixtures; expanded original35BE90 host routing passes (38.89 s).
+Final supported Windows build/native checks pass with exit0:
+logs/story-barrel-authority-sealed-build.log. Source/build verification passes.
+Compatibility: `ef019ff4d6085f355d12d67e0039cb057a1e59e5ffb30628f20671d1b9ff5f11`.
+Executable SHA256: `342a2a8cb125c3a33dfe1824d2e403e446287b672c6aed4473809fe911b40b9a`.
+403.8 GiB free before building. Normal-intro two-player loading,
+movement and firing pass: logs/story-barrel-authority-live.log. Both child
+runners exit0, owned pistols have112 reserve/13 loaded after firing, and the
+guest firing image was reviewed. That pair used2d582fdc/b0f215b8; subsequent
+header-only declaration grouping is sealed above, with unchanged gameplay code.
+The sealed-build shorter intro-skip pair also passes loading/movement/firing:
+logs/story-barrel-authority-sealed-live.log, both runners exit0 and both pistols
+112 reserve/13 loaded. Final guest firing capture reviewed. Neither test run
+left active locks or disposable partition images.
+Read-only first-mission particle table check confirms both peers have matching
+entries (kind3 disabled, kind8 enabled); this is not rendered barrel evidence.
+All21 full patch application/upgrade checks pass in677.89 s:
+logs/story-barrel-authority-patch-checks.log. The user confirmed the rendered
+barrel effect and gameplay issue fixed. No mission completion is attempted. Native Mac Online is
+queued under MAC-013. These fixes are included in this commit.
+
+## Story barrel explosion replay - initial attempt, superseded after retest - 2026-10-28
+
+Local/uncommitted after946b8d94 on `online-story-coop`. User-guided read-only
+capture records guest shooting prop1341/script50435833 at(-56.13,-11.21,-90.5),
+host health2->0.5 and removal on both peers at frame16. Capture evidence lives
+in logs/story-barrel-observation-20261028 (414 snapshots per peer,134seconds).
+Removal/hit delivery already works for that capture; sparse images alone do not
+establish that every brief effect was absent.
+
+OriginalBC670 invokes barrel EFBD0(1,23,center,NULL,attacker,source,0,1) outside
+the existing ambience-only capture. The old validator also accepted only type39
+ambience, required a direction and treated source arg6 as time (actual time7).
+A bounded reliable kind4 event now republishes that original barrel call. Guests
+retain its original particles/audio/camera feedback at the exact center, with
+no peer-local owner pointers or second source-object Story notification. New EDD40
+and186480 wrappers mark replay cosmetic before its initial Story-event gate,
+skip its later BB850 damage and omit navigation-cell mutation. Host simulation,
+ordinary Online and other levels retain their original paths.
+
+Windows11 AMD64/D3D11; supported US executable SHA256 verified;403.8GiB free
+before build.60 fixture/context/backlog/patch-tracking checks pass in41.11seconds:
+logs/story-barrel-fix-checks.log. Original EFBD0/EDD40/EDBE0/EFF90 regression
+retains two barrel particle emissions and one audio emission in baseline/replay;
+baseline executes three later damage passes and one cell pass, replay none.
+Production Story tests cover unscoped capture, numeric message, owner stripping,
+duplicate rejection and invalid type/delay. Expanded original-engine host/non-Story
+scope check also passes (logs/story-barrel-scope-checks.log). The supported
+Windows build and native checks pass: logs/story-barrel-fix-build.log, exit0.
+Source/build seal verification passes. Executable SHA256:
+`d5e945342fdf98d2044fd19aeb55f4e3f63cb2503a1fa36b80cfd8fbd8fa6ccb`.
+Compatibility:
+`4904dfa56328781f5d4cd024dc1d24077453add9e263f6b3cd9b74aedf9ee000`.
+Exact-build normal-intro two-player loading, movement and firing pass:
+logs/story-barrel-fix-live.log, both child runners0, both pistols14 have112 reserve/
+13 loaded after firing. Guest firing capture reviewed; no pair locks or disposable
+partition images remain. All21 complete patch-stack application/upgrade checks
+pass in761.26seconds: logs/story-barrel-patch-checks.log.
+Rendered barrel acceptance remains a user retest; native Online
+transport/gameplay remains queued under MAC-013. Other revised HANDLE FIRST bugs
+and HANDLE LATER work are outside this barrel-only change. No commit/push/release.
+
+## Story visibility-boundary repair - 2026-10-28
+
+Local/uncommitted after8ed77577 on `online-story-coop`. The user confirms the
+corpse and weapon-drop/pickup fixes. The latest user-guided boundary recording
+contains126 snapshots per peer over45.9seconds, with reviewed guest images of
+soldiers absent at frame38 and present at40. Living kind75 replicas retain valid
+poses, but guest primary room27 differs from host5 while local bounds overlap
+both rooms[5,27]. Evidence: logs/story-boundary-observation-20261028-current.
+
+Original9FBE0 preserves the previous primary while bounds still overlap it.
+OriginalA1EA0 builds render candidates from that primary only, so the soldier is
+omitted before A2430 runs when room5 is rendered. Shared room adoption now keeps
+the host's numeric primary after local bounds/room refresh, only if the room is
+loaded and in the local bounded overlap list. Original portal/scissor/depth
+occlusion remains. Story SNP4/SPP4 and Online bot snapshots share this correction;
+no new runtime patch, model handle or camera visibility transfer is involved.
+
+Windows11 AMD64/D3D11, supported US executable SHA256 verified,404.1GiB free
+before the build. Supported Windows build and native checks reach all PASS:
+logs/story-boundary-fix-build.log (outer PowerShell returned1 although all
+checked build/test stages and final symbol/seal steps succeeded). Source/build seal and
+compatibility verification pass.65 fixture/context/backlog/identity/patch-tracking
+checks pass in38.80seconds: logs/story-boundary-final-checks.log. The original
+A1EA0/9E430/A79B0 fixture reproduces missing room5 selection despite forced masks/
+full scissor, then restores16 selections; disabling the production helper fails.
+Existing corpse, drop constructor/state and both NPC dispatch fixtures pass.
+
+Executable SHA256:
+`f6c52c8892f229fdf0b8e49b6f4243fe1f96d78b20f001c17680669f5acade33`.
+Compatibility:
+`872d8225a2c0863e198a4bcb1fb148fb20b1a0c0c828ed35b10ba969a9d23e2f`.
+Exact-build normal-intro two-player loading, movement and firing pass:
+logs/story-boundary-fix-live.log, both child runners0. Both owned pistols14 have
+112 reserve/13 loaded after firing; the guest firing capture was reviewed.
+No active pair run locks or disposable partition images remain. The user then
+confirmed the visibility-boundary issue fixed in the first mission on Windows.
+Together with prior corpse and weapon-drop/pickup acceptance, this records all
+three user-guided scene fixes; it does not establish complete mission acceptance.
+Native Mac Online transport/scenes remain queued under MAC-013. No first-mission
+completion, HANDLE LATER changes, commit, push or release is included.
+
+## Story NPC weapon-drop fix - 2026-10-28
+
+Local/uncommitted after8ed77577 on `online-story-coop`. The user-guided recording
+captured seven new host pickups and zero new guest pickups across matching deaths.
+Original C2090's physical Story throw returns before its ordinary stock send.
+The former decoder-only workaround could not replicate those completed items.
+
+The first mission now publishes bounded numeric states from the original30-slot
+pickup pool. Guests use original C1950 to create the actual host weapon/ammo
+quantities and preserve its runtime ID for pickup requests. Positions follow
+host throws/landings, and host collection/removal retires the guest item. Reliable
+creation/removal/quantity updates and periodic recovery accompany bounded movement
+updates. Serial/match/host checks reject stale, duplicate or foreign states;
+identity checks protect reused local storage. Late stock NPC drops are suppressed
+to prevent duplicates; other modes/human drops retain their existing behavior.
+The user-confirmed corpse fix remains covered by the regression suite.
+
+Windows11 AMD64/D3D11, supported US executable SHA256 verified,404.4GiB free before
+build, Python3.14.2/MSBuild17.12.6. Windows build and native checks pass:
+logs/story-weapon-drop-fix-build.log.57 affected fixture/context/backlog/patch-
+tracking checks pass (34.86seconds): logs/story-weapon-drop-fix-checks.log.
+The expanded production1E-dispatch route passes all8 display/Story fixtures:
+logs/story-drop-dispatch-check.log. Original C1950/358160/355EC0 tests create a
+pickup with the captured weapon25/ammo18qty126, original placement defaults,
+correct host ID and restored temporary ID scope. No new runtime patch was added.
+
+Executable SHA256:
+`f9e65d82f7a88acf40ee4dfccd800410daa91862996af0c3d9cdded033a51e6c`.
+Compatibility:
+`6b53fb71ccdc2930c56514f3cacebac7646f5cdf175897bdc11e8cda819dab9a`.
+Exact-build normal-intro two-player loading, movement and firing pass:
+logs/story-weapon-drop-fix-live.log. Both runners exit0; each pistol has112 reserve/
+13 loaded after firing. Guest capture reviewed; no active pair locks or disposable
+partition images remain. Source/build identity, context and whitespace checks pass.
+
+The user confirmed dropped-weapon visibility and collection on2026-10-28.
+Native Mac Online
+transport and real pickup scenes remain unverified (MAC-013). Visibility-boundary
+and HANDLE LATER work are outside this fix.
+
+## Story user acceptance and weapon-drop recording - 2026-10-28
+
+The user confirms the corpse disappearance issue is fixed on the local build.
+This is Windows first-mission user acceptance; native Mac remains unverified.
+The next requested recording targets missing guest weapon drops only. Read-only
+host/guest evidence is saved under logs/story-weapon-drop-observation-20261028.
+Host pickups appear after matching NPC deaths; no new guest pickup objects appear
+in the same interval. This narrows the failure beyond portal/mask-only rendering.
+The recording stopped cleanly and the user was told both games can close.
+No runtime changes were made during this observation; drop construction/dispatch
+remains to be traced using the captured item/weapon/source-slot data.
+
+## Story corpse-only fix - 2026-10-28
+
+Local/uncommitted after8ed77577 on `online-story-coop`. The user demonstration
+recorded four deaths on both peers: clips73/74 stayed valid and actor links cleared
+at corresponding frames59/73/84/124. The old guest retirement path directly
+removed its NPC body, bypassing the original dead-state cosmetic corpse copy.
+It now calls original B3630 before releasing a known dead replica, after held
+weapon cleanup. The original bounded corpse ring owns the resulting type1000
+body; no live NPC actor is retained. Duplicate absence packets do not duplicate
+corpses, and local descriptors/script state are restored after the copy.
+
+Windows11 AMD64/D3D11, supported US executable verified,404.5GiB free before build,
+Python3.14.2/MSBuild17.12.6. Windows build/native checks pass:
+logs/story-corpse-fix-build.log.54 affected fixtures and patch-tracking/context/
+backlog checks pass (29.95seconds): logs/story-corpse-fix-checks.log. The expanded
+original-constructor and actual Story-callback regression also passes:
+logs/story-corpse-callback-check.log. It includes ring recycling and authored/
+missing descriptor cases. No runtime patch changes require another migration run.
+
+Executable SHA256:
+`b967d2605cf03df54d33f97fc589c1cb5260e461c640b7e5addc321682d6ba36`.
+Compatibility:
+`c6e95b61ee6978d259140071adade4b97ee4de8d847d1c6ae2bf6f9a98aeba1b`.
+Rendered corpse persistence on this exact build remains a user scene retest;
+constructor/lifecycle fixtures do not certify rendered parity. No level completion
+was attempted. Native Mac transport/scene validation remains unavailable (MAC-013).
+This pass addresses corpse disappearance only; other revised bugs remain separate.
+
+## Story revised four-bug continuation - 2026-10-28
+
+Local/uncommitted after8ed77577 on `online-story-coop`. Revised HANDLE FIRST
+scope: human sliding after the intro, guest corpse lifetime, missing guest death
+weapon drops, and the guest NPC visibility boundary. HANDLE LATER is untouched.
+
+The previous mode3 opening-pose extension caused the human sliding regression:
+mode3 persists into normal play. Opening replay/suppression now ends with pistol
+equip. Actual two-peer sampling shows matching human clip changes37/39/43 and
+advancing animation times. Original movementA7360 also dirties entity+2B4 bit31;
+network refresh previously omitted that while updating room membership. Shared
+NPC refresh now invalidates the room-plane cache, benefiting Online bots too.
+The A2430 adapter keeps actual rooms and portal rectangles, replacing the failed
+full-viewport workaround. OriginalA17C0/A1AB0 regression failed before this fix
+and passes afterward; the reported later-room boundary still needs visual retest.
+
+Original incoming35B190 weapon drops reconstruct an inventory-only temporary
+actor with no BF0 Story resource. Original C2090 otherwise selects an empty
+Story NPC difficulty budget and produces no weapon. A separate wrapper scopes
+the original inventory branch to the incoming guest replay, then restores the
+rule. The actual decoder/budget test reaches C1950 with weapon25/ammo18qty112;
+host, authored-actor, wrong-phase and unrelated-caller paths remain original.
+Real ground-pickup creation/visibility still needs the death scene retest.
+
+Supported US executable SHA256 verified before generation;405GiB free before
+build. Windows11 AMD64, D3D11, Python3.14.2, MSBuild17.12.6. Supported Windows
+build and native checks pass: logs/story-room-drop-build.log. Executable SHA256:
+`b2c43dfd3178f830906e72ada56e45fcb4de2df92ea4f6073af65642067a0fa8`.
+Compatibility:
+`394829fde9b33368f3f0df6079758410728caeccd7560b8facac6d90e5f748d8`.
+The affected run had37 passing checks and two documentation-budget failures;
+normalizing line endings corrected both, with the drop/context rerun21 passing.
+Logs: story-room-drop-fixtures.log and story-drop-context-recheck.log.
+All21 patch migration checks pass (744.52seconds), plus14 patch-tracking
+checks: logs/story-drop-patch-checks.log and story-drop-patch-tracking.log.
+
+Exact-build normal-intro two-player opening/movement/fire plus30seconds passive
+observation passes: logs/story-room-drop-live.log. Both child runners exit0;
+both owned pistols14 have112 reserve/13 loaded after fire. Guest capture reviewed.
+No active pair locks or disposable partitions remain. Read-only80frame per-peer
+sampling is in logs/story-room-drop-observation. The observed enemy stayed at
+4.5HP throughout: no death transition was exercised, so corpse disappearance
+remains unresolved. No new corpse lifetime or ragdoll behavior is claimed.
+Native Mac Online transport and runtime acceptance remain unavailable (MAC-013).
+
+The following records describe earlier builds; the mode3 lifetime and room0
+full-viewport workarounds are superseded by the corrections above.
+
+## Story user-guided visibility follow-up - 2026-10-28
+
+Local/uncommitted after8ed77577 on `online-story-coop`. The user demonstrated
+invisible blockers and the ally visibility boundary using the previous2e41/5fe2
+build. Read-only host/guest samples found inactive, unlisted health1/flags78
+bodies on the guest without matching host active bodies; they retained collision
+bits. Guests now disable those bits only for unactivated, unowned placeholders,
+keeping scene objects/resources and restoring host flags on activation. The
+original73380 collision40 gate was verified against the supported executable.
+
+The boundary recording also retained live NPC masks while model regions were
+omitted. The new separate A2430 wrapper uses862C0's original full-viewport branch
+for current posed guest Story replicas, restoring spatial room/count afterward.
+It retains the original camera/frustum/depth checks. The original862C0 fixture
+reproduces a missing portal rectangle and verifies the adapter/restoration;
+the rebuilt later-room scene still requires visual acceptance. Recording:
+logs/story-boundary-observation; prior ghost samples: logs/story-observation.
+
+Player2 now uses a private start beside the primary hanging body instead of the
+forward local-co-op pad. All three remote pad records retain distinct offsets
+and matching tag/index conversion; checkpoints keep original selection. Shared
+Online ammo pickups preserve existing reserves when clips exceed the total cap,
+preventing a positive pickup from draining ammo. Other negative-ammo writers
+remain unproven; the observed play session did not reproduce that pickup.
+
+Supported US XBE verified;406.0GiB free before the build. Windows11 AMD64,
+D3D11, Python3.14.2, MSBuild17.12.6. Windows build/native checks pass:
+logs/story-demonstration-build.log.37 affected fixture/context/backlog checks
+pass, including the original room scissor and pinned collision gate. Final SHA256:
+`fd44cd4c5601abfd415c3b6a4e422807cbb6879b4f33812f2b407dc767ced0d5`.
+Compatibility:
+`796cc3ea79a5319ecf6ffae78a8530beb5d52d6dda7fd90ae64f7e8f97e13ef5`.
+
+All21 complete-stack patch migration checks pass (666.59seconds). The rebuilt
+skip-intro two-player probe confirmed aligned starts on both peers: host
+(0.81,-2.39,-3.35), player2(2.81,-2.34,-3.35). It then failed the60second handoff
+check: host had the pistol while the guest remained unarmed. Both runners exit0;
+receipt logs/story-demonstration-skip-handoff-failure.json. The exact-build
+normal-intro comparison passes loading, movement and owned pistol firing/ammo
+for both peers (112reserve/13loaded after firing). Both runners exit0; no active
+run locks or disposable partitions remain. Receipt:
+private/network-validation/story-load-pair/pair-evidence.json; log:
+logs/story-demonstration-live-natural.log. The guest firing capture was reviewed.
+The skip-intro handoff failure remains unresolved, separate from that success.
+Corpse parity and later Splitter cloak rendering remain visually unverified;
+the room correction may affect those paths but is not proof of their acceptance.
+No mission completion or HANDLE LATER work. Native Mac transport/scene checks
+remain MAC-013; no additional OS policy is introduced by these shared fixes.
+
+## Story six-bug follow-up - 2026-10-28
+
+Local/uncommitted on `online-story-coop`, base `8ed77577`. The revised external
+notes contain six visual/lifetime bugs; HANDLE LATER and the removed ending/menu
+items are outside this pass. The latest manual session used the previous
+dfc719f/d884d534 build, confirming the reports concern the preceding fixes.
+
+Guest NPCs now retain local presentation eligibility before the original world
+visibility pass allocates bones and held models. This covers current posed
+replicas across room boundaries while retaining original depth/frustum clipping.
+Replica removal/reconstruction retires owned held models, including when a body
+was already locally retired; the original body destructor alone skipped that
+inventory cleanup. Hanging-intro suppression continues through animation mode3
+after pistol equip and clears the full temporary culling words. Shared Story
+and Arcade shot replay accepts built-in weapon definitions41/56/61 without a
+held model, matching the original constructor; ordinary weapons retain their
+model/readiness checks. Corpse host-presence and bounds-order fixes below remain.
+
+Supported US XBE verified before generation;404.9GiB free before the build.
+Windows11 AMD64, D3D11, Python3.14.2, MSBuild17.12.6. Final Windows build/native
+checks pass (`logs/story-npc-current-build.log`);36 affected production-fixture,
+pinned-XBE, repository-context and Mac-backlog checks pass. Executable SHA256:
+`2e41ed0ac7b2d467a4fc36a5e234ff6acf65122b8165cc4f42cdd43645247073`.
+Compatibility:
+`5fe2a487fbd3daf22c55569cbce6e573e6e69fbd98d60dbf0f29326d97cea2d0`.
+
+Final-build bounded two-player loading/movement/firing check passes, both runners
+exit0, and no active run locks or disposable partitions remain. Receipt:
+`private/network-validation/story-load-pair/pair-evidence.json`; log:
+`logs/story-npc-current-live.log`. Earlier candidate four-player room-route samples
+retained nonzero NPC presentation masks with matching host/guest body counts and
+no orphaned held models (`logs/story-npc-visibility-candidate.json`). These are
+numeric observations, not visual acceptance of the six reported bugs. Two later
+combat routes stopped against canyon geometry without finding a living enemy;
+combat acceptance failed, not passed (`logs/story-npc-final-live.log`). The
+opening captures do not conclusively identify the reported standing Cortez.
+Later corpses, room-boundary scenes, cloak and electric rendering remain visually
+unverified. No mission was completed. Native Mac Online requires MAC-013 scene
+and transport validation; the shared change adds no new native adapter policy.
+
+## Revised Story HANDLE FIRST continuation - 2026-10-28
+
+Local/uncommitted after `8ed77577` on `online-story-coop`. Corrected three
+contracts: host-present corpses survive active-roster removal until explicit
+host absence/replacement; snapshot bounds precede the original room query;
+opening held weapons validate their hand-record backlink before hiding.
+Original15BCC0,9FBE0 and1BE870 establish these contracts. No wire format or
+patch stack changes. Ordinary Online bots already install bounds before their
+room refresh; this change brings Story into the same order.
+
+Supported US XBE hash verified;405.4GiB free before building. Windows11 AMD64,
+D3D11, Python3.14.2, MSBuild17.12.6. Supported Windows build/native checks pass
+(`logs/story-revised-build.log`);14 adapter fixtures and21 repository/backlog
+checks pass. Executable SHA256:
+`dfc719f87d436384f4797d1722cafedca7c2e1d4e33d0bb59a551d17f50567e0`.
+Compatibility:
+`d884d5344dfc60d8e0e59c68ee7880646f6b7a53e554e10819b397d21f8e9e33`.
+
+Exact-build four-player natural-intro opening/movement/firing probe passes,
+all runners exit0, no remaining locks or disposable partition images. Reviewed
+guest3 opening-auto-300 and fire-own-player captures; the first-person weapon
+appears after handoff. Receipt: private/network-validation/story-four/pair-evidence.json;
+log: logs/story-revised-live-natural.log. A preceding skip-intro probe stalled
+after the host pistol grant without completing handoff; this is an unresolved
+intermittent opening failure, not a crash or a passed run. Its receipt remains
+logs/story-revised-opening-failure.json. No mission was completed. Corpse and
+later-room scene acceptance remains pending; fixture results are separate.
+
+Fresh manual-test reports from 2026-10-28 use the previous453427eceb4 build.
+Host breadcrumbs reach ending scene44; guest reaches rewards106. Captured
+fault bytes match the current binary exactly at RVA2BE5AA (60740+CA, called by
+camera helper C95E0) and2CEABA (63390+EAA, queued asset loader). Both reports
+have guest EAX=FFFFFFFF. These are new crash leads, not resolved failures;
+existing ending/reward guards did not prevent them in the manual test.
+Native stack candidates are scans, not a verified unwind. Remaining NPC
+visibility/invulnerability, cloak, reward navigation, Game Over and ending
+acceptance remain open. HANDLE LATER behavior is unchanged. Mac Online still
+requires MAC-013 transport/scene validation; native fallback fixtures pass.
+
+## Story preview1 HANDLE FIRST fixes - 2026-10-27
+
+Local/uncommitted on `online-story-coop`, base `bf2bbe18`. Host: Windows11
+26300 AMD64, D3D11, Python3.14.2, MSBuild17.12.6. The supported US XBE hash was
+verified before generation;401 GiB free disk space was available. Final Windows
+build and built-in native checks pass. Executable SHA-256:
+`453427eceb4daef0c4940721b04189e417a21448b593e83ed0d6297e77738cce`.
+Compatibility:
+`d8104b62fb9e83357eb5ea787bdb953d4307f563b02652f13f24ba7053489591`.
+Evidence: `logs/story-handle-first-build-current.log`, matching
+`build/windows/crash-symbols.zip`, and
+`private/network-validation/story-four/pair-evidence.json`.
+The published preview1 tag remains unchanged.
+
+NPC snapshots keep independent interleaved UDP assemblies and numeric cloak
+phase/fades. Guests construct scene-loaded kinds without a prior local instance,
+repair recorded retired bodies and process absence without requiring assets.
+Reliable speech creates local audio/lip tracks and advances the cosmetic mouth
+clock. Opening visibility removes human bodies/world weapons from the draw list
+already built by9FBA0, preserving local models and unrelated entries. Inset camera
+cues use authored local descriptors. Prop hits use stable authored keys and host
+removals remove guest collision. Blood impacts/pools use local textures and the
+original cosmetic decal routine; immediate guest feedback remains, with bounded
+nearby host-duplicate suppression.
+
+Game Over selects the host primary menu context, hides guest restart rows and
+preserves transport during reload. Guests cannot independently close/advance
+reward menus. Live testing exposed team3 humans because stock decoders bypass
+D7550 and copy a peer cache. Story now initializes that cache/config before body
+construction, maintains it even when actors already have team1, and corrects
+all scoped setters/initializers. Player payloads require current, unremoved bodies
+and stop at ending transitions. Ammo clamps before narrowing signed16 reserves.
+Ammo and body-lifetime fixes also cover existing PC Online modes. HANDLE LATER
+disconnect/leave behavior remains outside this change.
+
+Final production adapter/codec fixtures14 pass. Broader source/profile/context
+runs60/49/19 passed during development; all21 complete patch migration fixtures
+pass, including historical Mac upgrade and repeated application. Context/index
+and whitespace checks pass. The initial sandbox migration attempt could not
+create staging directories; all migration checks ran and passed on the normal-access rerun.
+
+The exact final build passed a four-player isolated opening probe: coordinated
+load, original first-person hanging sequence/handoff, all humans on team1,
+independent movement, firing and ammo consumption. The long intro movie was
+observed then skipped by normal host input for this final bounded run; the
+first-person opening ran automatically. Reviewed final guest hanging and firing
+captures. All four runners exited0; locks and disposable partitions were recycled,
+with fixture signatures and personal saves/settings preserved. A preceding
+candidate's24 read-only samples also found all four humans outside the opening
+world draw queue and team/cache entries on1. Its queue count matched its53 nodes.
+
+An attempted NPC combat probe reached its route after allied AI killed the
+hostile target; host-accepted guest NPC damage remains unverified, not a passed
+combat test (`logs/story-combat-no-target-receipt.json`). Earlier harness failures
+came from rejecting the probe's own host and obsolete captures filling its48-image
+cap. Controller ancestry now permits only owned sibling games; obsolete images
+were recycled only after shutdown. Runtime crashes were not observed in these
+opening probes. Mission completion, the rare ending crash, WAN speech, Splitter
+cloak appearance, bunker barrels and the later barricade still need user scene
+acceptance. Native Mac Online/gameplay remains unverified under MAC-013; portable
+fallback fixture compilation is separate evidence. No first mission was completed.
+
+## Story preview packaging contention repair - 2026-10-27
+
+Preparing `v0.4.0-story-coop.1` passed the complete Python suite twice:1343 tests,
+44 skips and107 subtests. Packaging then exposed Windows error1175 in two
+independent single-attempt atomic writes: download metadata and game sessions.
+No release/tag/assets were published. An isolated28-check download rerun passed,
+but the second packaging failure confirmed the shared contention gap.
+`Core.AtomicReplace` now retries only safe Windows contention errors32/33/1175
+for up to one second with both original names present. Metadata, session and
+settings callers share it; atomic replacement, backups and session flushing
+remain intact. Other errors and non-Windows failures keep their original behavior.
+The Windows complete launcher build/tests pass, including real file-lock recovery,
+backup retention, deterministic1175 recovery/permanent failure, and1176 rejection.
+Evidence: `logs/story-coop-preview-1-atomic-launcher-checks.log`.
+Mac runtime acceptance remains unverified; see MAC-046. Preview notes also use
+the actual Preview / Testing track navigation. Publication remains pending.
+
+## Story branch synchronized with main - 2026-10-26
+
+Merged main `23fe3b1` into Story parent `257f50f`, preserving the Story fixes,
+local test launcher and main's renderer/timing changes. Conflicts were confined
+to validation/context notes and the generated patch index. Both sets of notes
+were retained; the index was regenerated from the complete staged patch stack.
+Windows x64 supported build and built-in native checks pass. The US XBE hash
+was verified before generation;408.6 GiB free space was available. Compiler
+children used build-local `_CL_=/MP2`. Build/symbol evidence:
+`logs/story-main-sync-build.log` and `build/windows/crash-symbols.zip`.
+Executable SHA-256: `76dfccf5566f9c29840e4bfe79672d891a493155d77d1c9cb271e736d9685596`.
+Compatibility: `183dfba5f5e277302df0c4e16e31246e4502448d7a7e091bc5200f4e1c65e5ef`.
+Merged regression suite:141 passed,2 native-host-only skips, including Story
+contracts, complete patch migrations and the incoming renderer/timing fixtures
+(`logs/story-main-sync-tests.log`). Repository context and staged whitespace
+checks pass. No gameplay was launched for this merge; earlier Story gameplay evidence remains scoped to its recorded
+builds. Barrel destruction, Splitter camouflage, full completion and native Mac
+Online acceptance remain unresolved/unverified as documented below.
+
+## Story HANDLE FIRST follow-up - 2026-10-26
+
+Uncommitted on `online-story-coop`, base `0252b4e`, Windows x64/D3D11.
+The supported build and its native checks pass with matching crash symbols.
+Current executable SHA-256:
+`09eb81f253119b7dcc23b4b45eeca78f4a584e3da986546d48767ea5ef6e36d9`.
+Compatibility: `646f2905254e2db3e3c861240aa0310261906fdf3be61f52ea9165dac404a3df`.
+The supported US XBE was verified. Build-local `_CL_=/MP2` bounded compiler
+children after an earlier D8040 process-communication failure.
+
+The bounded two-player run passed lobby controls, coordinated intro/gameplay,
+movement, firearm/ammunition checks, actual first-checkpoint capture, host-only
+checkpoint selection and coordinated restore. Both peers retained weapon14 and
+restored inventory. The reviewed guest checkpoint capture shows the weapon.
+Both runners exited0 and recycled test partitions. Receipt:
+`logs/story-followup-checkpoint-receipt.json`, build `5fd8c66c...`, before the final
+menu-spacing-only correction. No health injection, teleport or full mission was
+used. Guest traces record84 successful NPC shot replays; this establishes actual
+presentation-path delivery, not every weapon/effect or Internet/WAN behavior.
+
+Opening captures show the guest world without an early standing human. SLD2
+separates awards from actual host equip. Reviewed lobby title/status text is
+centered with thumbnail space. Difficulty trophies use the original row drawer;
+the final lobby-only run verifies bronze/silver/gold trophies with the original
+nine-unit icon gutter and clear label spacing.
+
+Continuous NPC poses use the unreliable channel; lifecycle/death and periodic
+recovery stay reliable. Host roster retirement removes dead guest collision
+bodies through the original destructor. Story hit encoding covers32 slots;
+the host owns NPC death even when the lethal hit comes from a guest.
+Production-source fixtures pass; later sniper encounters, death timing and
+intermittent visibility still need encounter playtesting.
+
+The original completion dump resolves to `35B5D0+0x155` after scene101.
+Gameplay payload pumps now require valid human bodies/contexts across frontend
+transitions, benefiting other Online modes. Original stage-building fixtures
+cover first-mission outro, then rewards, host-only Continue and coordinated
+next-stage launch. Full completion and next-level runtime behavior remain for
+user playtesting; later mission gameplay has not been implemented or accepted.
+Shared bot replay also accepts targetless shots already allowed by the codec,
+with an ordinary Online guest regression. Final source suite:46 passed,2 skips.
+Fresh/repeated patch application and historical Mac migration pass. The latter excludes the
+new dependent Story wrappers from its old Mac-only starting stack.
+
+HANDLE FIRST remains incomplete: explosive-container destruction and Splitter
+camouflage are still under investigation. Matching prop IDs were observed on
+both peers; no guessed pointer/ID codec or rendering flags were introduced.
+Four-player checkpoint restore, native Mac Online (MAC-013), Internet/WAN and
+physical controllers remain unverified. HANDLE LATER is unchanged. Personal
+saves/settings and the canonical fixture are preserved. No commit/push, release
+or merge into main was performed in this follow-up.
+
+## Story co-op checkpoint before pause - 2026-10-22
+
+Current Windows x64 implementation remains incomplete. The latest four-instance
+probe (`logs/story-team-frame-probe.log`, retained receipt and exact symbols in
+`private/network-validation/story-four`) verifies first-level loading, four
+independent full-view owners, distinct starts, shared human team1 on every peer,
+equal opening ammunition (16 loaded/112 reserve), movement and ammunition
+consumption when firing. All runners exited cleanly. The combat gate failed:
+no eligible living enemy was found on the bounded walking route; host acceptance
+of a guest hit and combat/world synchronization remain unverified.
+
+The supported Windows build and built-in checks pass. Targeted source tests:
+12 passed, 1 native-host-only skip; fresh/repeated and historical Mac patch
+migration checks pass. The earlier fragmented NPC pose run compared 27 guest
+poses with no primary/crossfade clip mismatches (maximum sampled time delta
+0.03333s). This does not establish combat, interaction or full world replication.
+The final team correction uses the existing Story frame hook after validating
+human body/context backlinks; earlier setter-only/initialization-only attempts
+did not correct remote teams. The ineffective additional initialization wrapper
+was removed. Native Online transport remains queued under MAC-013.
+
+Remaining goal work includes real player/NPC hit and use interactions, combat
+and world effects, host-only checkpoint/level restart controls and synchronized
+restarts, next-level handoff, selected difficulty trophy icons, and stronger
+own-profile Progress/fifth-player rejection acceptance. The user will test full
+level completion and subsequent levels after initial implementation is complete.
+Personal saves/settings and the canonical test fixture were preserved.
+
+## Four-player Story implementation continuation - 2026-10-22
+
+The initial-state4 spawn correction reaches the original Story NPC scripts and
+broadcasts their spawn events, but the stock slot-only event crashed guests on
+an absent NPC body. The shared creation adapter now sends explicit scalar
+constructor identity and completed initial state through that reliable channel;
+guests validate and prepare replicas, with loading queues and replay protection.
+Source/adapter/full-menu checks pass (12 passed,1 Mac-only skip), fresh/upgrade
+patch checks pass (2), and the supported Windows build passes its built-in checks.
+Changed four-peer NPC creation validation is in progress. Ongoing NPC pose,
+combat, armed players, distinct starts and the remaining feature checklist are
+not yet accepted; this remains uncommitted work on the active goal.
+
+NPC lifecycle probe: the model-cache constructor runs for all five authored
+character kinds and the bootstrap completes, but no scripted NPC spawn or
+network spawn request is observed on the host before the60s opening timeout.
+This narrows investigation to Story script initialization/activation rather
+than demonstrating a rejected network spawn. Current build/source checks pass;
+the four-player opening remains unarmed and fails acceptance. No gameplay-ready
+or full co-op completion claim is made.
+
+The authored-record four-peer probe also failed the opening firearm check after
+60s: all contexts stayed active and synchronized, but only human characters were
+present. That change is not a verified NPC/startup fix. Bounded record-filter
+tracing and active-config-tail telemetry now target the remaining load gate.
+
+The changed guest handoff/start-ready build kept all four players in scene2,
+stage1 and active state2 for60s, but they stayed unarmed and the character list
+contained only four humans. Fresh `opening-watch` captures/receipt are retained.
+Original6B100 scene eligibility rejects two-player-only co-op records for count4,
+and bit31 rejects records in all network sessions. A new reproducible
+`story-authored-records.patch` adapts those inputs only in connected Story
+gameplay, preserving solo-only rejection and difficulty/mission selection.
+Eight source/original-US tests and two complete-stack migration tests pass;
+the supported Windows build and built-in checks pass. Four-peer runtime
+validation of the authored-record correction is in progress. Native Mac runtime
+validation remains unavailable under MAC-013.
+
+Natural intro check (Windows x64/D3D11, cinematic-ready build): all four peers
+remained connected through the original approximately120-second movie and loaded
+scene2 on the host's next generation. Reviewed late-intro captures show matching
+shots. Gameplay acceptance failed immediately: guests retained Story stage0.
+The changed-generation receiver invokes GO while still phase15; the adapter now
+accepts its scoped pending-copy boundary and updates guest stage1. Pending Story
+gameplay also bypasses the ready routine's Arcade team-pad placement, retaining
+the original Story start path. Eight targeted source/original-US tests pass;
+changed runtime validation is pending. A prior false disconnect caused by a
+partially read state JSON is fixed with atomic publication and parent retries.
+
+Work continues on `online-story-coop` from `45a96e3`; changes below remain local
+and uncommitted. Revised notes require intro playback, correct distinct starts,
+selected difficulty/year/trophy/count, synchronized Story interactions and host
+restart controls. Full first-level completion testing is left to the user.
+
+Windows x64, Python 3.14.2, MSVC x64 and common D3D11 frontend: the revised
+header is visually reviewed as 2401 / Normal / 4/4 Players with title, thumbnail,
+briefing and roster retained. Trophy rendering is unfinished. Source menu,
+original-US stage builder, guest-dispatch and backlog checks pass: 13 passed,
+1 Mac-only compile check skipped. Fresh/upgrade patch validation passes (2).
+Supported Windows builds and built-in checks pass; current intro build evidence
+is `logs/story-intro-build.log`. Real Mac transport/runtime remains MAC-013.
+
+Earlier first-level four-peer probes passed narrow movement checks intermittently,
+but subsequent authored-start validation failed. Neither result proves armed
+cooperative Story. The original Local reference equips weapon14, has six active
+characters at the opening, and moves backward away from the initial wreck.
+The four-peer route now checks ownership, real displacement and ammunition use.
+Original stage0 intro construction and host-driven reliable gameplay handoff are
+implemented in source and currently under changed four-peer runtime validation.
+Correct start separation, NPC/world authority, host restarts, next-level flow,
+combat/use and complete visual acceptance remain unfinished or unverified.
+
+## Story branch merge-conflict resolution - 2026-10-22
+
+Resolved the nine conflicts when merging main `7545d4b` into
+`online-story-coop` at `d738883`. Story menu/lobby callbacks and diagnostics
+are retained alongside main's settings callbacks and timing/network probes.
+Windows x64 targeted menu, guest-dispatch and backlog checks: 12 passed,
+1 skipped (Mac-only compile contract). Transition-runner CLI parsing and the
+repository-context check pass. No game rebuild, gameplay run or Mac validation
+was performed for this conflict-resolution step. The merge remains local and
+uncommitted pending the user's next steps.
+
+## Online Story load experiment - 2026-10-22
+
+Early half-second samples show both mode14 bodies have health60 before and after
+Game Over; life/enable fields remain unchanged. Host failure appears near tick244,
+guest near306. This is not a zero-health-spawn explanation. The current unbuilt
+comparison switches only the per-instance simulation to original one-view Story
+mode4, keeping network role/phase/roster and local count1. No failure/death flags
+are cleared. Tests:11 passed,1 skipped; native mode4 behavior remains unverified.
+
+Latest factory build `08dcf161946c53da` loads both instances into scene2/mode14/
+network phase15 with distinct actors and one local view configured. Both runners
+exited0 with profiles/fixture preserved, but both before/after captures show
+GAME OVER; the probe failed movement. This is a failed Story start, not verified
+gameplay. `crash-diagnosis.json` has probe_exit1/resolved[]; no crash-fix success
+is inferred. The movement probe also mistakenly sampled collision bounds instead
+of world position. Python-only changes now use position+0x64, capture early health/
+life/pause state during waits, and reject failure menus before movement without
+pressing Retry. No gameplay code or rebuilt binary change in this diagnostic slice.
+
+The saved native loading crashes were resolved offline, without another game
+run: both match `sub_0008DC70+0xC5` with exact PDB GUID/age verification. The
+diagnostic freshness assertion incorrectly compared a venv launcher PID with
+the redirected interpreter PID; future invocations use a caller nonce, while
+offline resolution checks actual joined game PIDs and build/archive hashes.
+The run did reach both Story pending-load switches; the earlier claim of a new
+pre-load failure is superseded by its traces and matching saved dumps.
+
+Current unbuilt hypothesis: construct the full host config using the original
+Story factory once before serialization, retain the network header/ownership
+bytes and normalized counts, and reuse the same result on both pending copies.
+Tests verify the factory ABI/scoping, header preservation and no second build at
+pending phase10:11 passed,1 skipped. No runtime fix or co-op completion claim.
+
+New paired trace confirms the count correction and existing start packet carry
+Story scene2/difficulty0/players2 to both peers; both execute the pending-load
+mode14 switch. Both then crash during loading with0xC0000005 at the same native
+address. This is not Story gameplay evidence. Crashed exe `bd62a5e637154e0f`
+differs from current `8c56fef2d954aad1`; the strict resolver rejected the current
+symbols for that dump. The paired harness now retains matching symbols before
+launch. One bounded diagnostic run, with no rebuild, is prepared to identify the
+faulting function without guessing from mismatched symbols. The full notes
+checklist and exact native diagnostic command are current in the investigation log.
+
+Latest supported build exited0 (exe `b69e2b0e74791aa1`, compatibility
+`b96769c4ee78f03c`). The native paired load probe failed the intended Story check:
+both peers reached network phase15 but loaded Arcade scene59/mode13. Both reviewed
+captures show an Arcade arena, both runners exited0 and released their locks.
+The recorded config byte0 remained16 with a two-player roster, which the original
+adapter rejected. New unbuilt source derives the host count from occupied player
+records and adds bounded entry tracing; hook reachability and Story simulation
+remain unverified. Tests with the recorded capacity16:11 passed,1 skipped.
+This supersedes the earlier unbuilt/runtime-not-run statement for the FIRST
+adapter only; the new count correction still needs build and paired verification.
+
+Uncommitted source adds an opt-in `TSFP_STORY_LOAD_PROBE=1` adapter through the
+existing config serialization and pending-load wrappers. Host Story scene and
+difficulty use the original reliable start config; pending copy selects mode14
+while keeping network role/phase/frontend mode and human/local counts. This
+combination is a runtime hypothesis, not verified co-op or production Story GO.
+The separate `tests/story_pair_game.py --load-probe` checks same-scene mode14/
+phase15, two actors, one local view per instance and cross-observed displacement;
+both captures still require review and world/script authority remains unimplemented.
+
+Asset-free checks: 11 passed,1 skipped; probe syntax, context and whitespace
+checks passed. No build/runtime run yet. User closed the unrelated interactive
+game40476; orchestrator verified no remaining game, clearing that prerequisite.
+The prior pair lobby and Local Story baseline receipts remain valid
+within their limited scope; neither certifies the new adapter. All remaining
+notes requirements are listed at the top of logs/agent-investigation.md.
+
+## Online Story host controls implementation - 2026-10-22
+
+Custom difficulty VERIFIED: native probe13442/game33904 with sealed exe
+`ad10ba1ea2334852` / compatibility `419888263857d0c3` completed the host-controls
+route, exit0. Reviewed capture shows Select Difficulty with Easy/Normal/Hard;
+Scotland the Brave was selected, confirming returned to lobby with mission1.
+Player Progress showed the local Test Lab profile, and Back returned to lobby.
+No GO/gameplay sent; profiles unchanged, canonical fixture preserved. The result
+isolates the prior failure to reuse of the local difficulty builder in this flow;
+the exact internal redirect mechanism was not established.
+New unbuilt source adds selected Story year/name/thumbnail rendering in the host
+header through the original Story row renderer, and keeps Story mission/difficulty
+in host-owned lobby state instead of persisting them in guest frontend fields.
+Callback tests:8 passed,1 skipped. Header geometry/content still needs a rebuilt
+live capture; briefing/roster/guest controls and synchronized Story play remain
+unfinished. A changed Arcade header in the prior capture is not proof of memory
+field overlap; no such overlap is claimed.
+
+Latest checkpoint: build session89332 passed the supported native checks, producing
+exe `10693b12379497a6` / compatibility `a1f11e89152cc104`. Native probe90073/game25204
+proved mission 1 and scoped difficulty-builder entry, but still returned to the
+stock lobby. Synthetic row dispatch was reached in the preceding probe88747 too;
+callback bypass alone therefore does not explain the remaining failure.
+Both failed menu probes stopped before GO, exited cleanly and preserved profiles.
+Source now builds its own Easy/Normal/Hard/Back dialog under the network parent,
+bypassing the original local difficulty builder. Callback tests passed (8 passed,
+1 skipped), including Back/re-entry and mode preservation. This latest custom
+dialog is not yet built/live-verified; the selected-level lobby header and briefing
+still need implementation. The full Online Story goal remains incomplete.
+
+Checkpoint: native probe session24013/game36836 against sealed build
+`0197c7c328e2914e` (compatibility `7ddc493b9fb51fe5`) reproduced level selection
+returning to the stock lobby. The probe's pipe drain was fixed to flush live
+menu traces; Options passed, difficulty failed at descriptor `0x004E99C4`.
+The script stopped before GO, game exit was clean, profiles/fixture unchanged.
+This disproves the previous direct-transition fix as integrated behavior.
+Source now rewrites only Story option row callbacks to the existing synthetic
+Story callback to avoid the runtime generator's guarded direct-call path.
+New tests cover the exact builder callsites and descriptor-scoped dispatch:
+8 passed, 1 skipped. The callback rewrite still needs a build/live rerun;
+selected-level lobby presentation and synchronized Story play are not implemented.
+
+Follow-up native-access validation used sealed executable `a359100e93b0463e`,
+compatibility `626f460a265ec96a`. Host probe reached phase 11 and the reviewed
+capture showed Back/Player Progress captions. The extended probe opened Select
+Level, but selection returned to the stock lobby; the subsequent scripted confirm
+started Arcade scene 59. That is a failed Story controls check, not Story play.
+Both processes exited cleanly and profile/fixture checks passed. Restricted
+early crashes were absent with native access. Source now stores the chosen
+mission and explicitly opens difficulty using the captured network parent,
+instead of calling the original local selector. New descriptor assertions stop
+the route before a confirm on an unexpected menu. Targeted tests passed again
+(8 passed, 1 skipped); this follow-up fix still needs a rebuild and live rerun.
+
+Uncommitted `pc_story_lobby.inc` adds host Story Options -> level -> difficulty
+-> lobby callbacks and replaces the host Character action with own Player
+Progress. Only Story host sessions are intercepted; confirmation avoids the
+original local-game launch. Targeted chooser/lobby/FOV tests: 8 passed, 1 skipped.
+This source slice has not been built or exercised in-game. Earlier executable
+hash 95817e93 does not contain it. Guest controls, return navigation, Story
+header/briefing, settings replication, four-player game admission and coordinated
+Story play remain unfinished/unverified. Later host-probe failures included
+invalid-handle exceptions at frames 4/5; they are not successful menu checks.
+
+## Online Story host lobby evidence - 2026-10-22
+
+The isolated `story-host` probe successfully connected through a disposable
+loopback directory, visited Start New Match and entered host role 1/lobby phase
+11. Reviewed captures showed the existing Deathmatch lobby: `/16`, Arcade rule
+summary and Select Character. This identifies unfinished Story lobby work; it
+does not establish Story co-op. Numeric tracing measured host descriptor
+`0x004E99C4`, builder `0x001A8DA0` and tick `0x001A8D30`.
+
+The supported trace build passed (worker session 77691), executable SHA-256
+`95817e93e73b6e7581863540b3da48b208cd403aa5f048aed4e44cb9eaf96543`.
+Its build seal and current affected source hashes were rechecked. The subsequent
+trace probe passed (session 28267), last capture at 52.18 seconds, profiles
+unchanged and canonical fixture preserved. Later LOCAL runs, including PID 23076,
+failed with `No renderer capture`; those are failed checks with no established
+cause. They do not erase earlier measurements or demonstrate Story gameplay.
+The current report directory may contain older named PNGs alongside a newer
+failed report; check run provenance before interpreting any capture.
+
+## Online Story entry development - 2026-10-21
+
+Local, uncommitted work on `online-story-coop` at base `4329529` adds the Story
+Local/Online chooser and a typed Story directory entry. Reviewed Windows renderer
+captures show both rows, Local reaching the original Select Level menu, Local
+Back returning to the chooser, chooser Back returning to Main Menu, and re-entry.
+The supported Windows build and native checks passed; chooser/FOV fixtures passed
+6 tests with one Mac-only skip. The verified executable SHA-256 is
+`4c9848d47f2050a64e55c606f929b7c3553dd3e7046e502e8fd6558d9bc82669`;
+current changed product sources match its generated compatibility manifest.
+
+The isolated `story-entry` navigation check now **passes** against that same
+executable. After correcting the scripted Back sequence, its ownership detector
+also needed to follow the bounded game-to-venv-launcher-to-interpreter chain:
+the launcher PID does not own Tk's window. The final run detected its owned
+`Online Story - TimeSplitters Future Perfect` companion, cancelled it, and returned
+to the chooser with Online highlighted. The last capture was recorded at 62.14
+seconds; the game exited with code 0, without unresolved callbacks or a crash.
+The Test Lab run reported unchanged profiles, valid signatures and an unchanged
+canonical fixture. Captures/reports remain under the isolated
+`private/test-saves/online-story-entry` root. This checks opening/cancelling the
+directory, not successful hosting/joining or gameplay. Native Mac menu navigation
+is untested; its Online adapter remains queued in MAC-013.
+
+Story-specific lobby presentation/options, four-player gameplay admission,
+coordinated loading and synchronized Story play remain unfinished. No two-instance
+Story lobby, shared level load or gameplay acceptance is claimed. See
+`logs/agent-investigation.md` for exact remaining checks. The unrelated broad-suite
+failures reported by LOCAL are not classified as baseline failures without evidence.
+
+
+
+## Fractional clear-slide repair (2026-10-25, current branch)
 
 ## Audio PR validation: Online layout convergence (2026-10-30)
 
@@ -29609,6 +31660,165 @@ The failure reproduced locally before the correction; all 34 patch-tracking
 and upgrade tests pass afterward (352.49 seconds). Context and whitespace
 checks pass. Both original native-runtime jobs and both launcher jobs passed;
 new-head hosted validation will run after the correction is pushed.
+## Online Story continuation checkpoint — 2026-10-22
+
+This checkpoint supersedes older pending header/pair instructions below.
+The paired-lobby probe exited0: host11888/role1/phase11 and guest26928/role2/phase12
+both observed two players; both runner exit codes0, profiles unchanged and fixture
+preserved. Evidence: `private/network-validation/story-pair/pair-evidence.json`
+and both `private/test-saves/online-story-pair-*/pair-wait.png` captures. Sealed
+Windows executable SHA256 `3616a43c97c323ab28c03c43ddab261b41a6d4c028eee3b82a8b9240ed42842d`.
+Host name/thumbnail are visible; guest retains multiplayer header/character action
+and both retain Arcade details. Header probe99335 also exited0 with reviewed
+selected-name/thumbnail captures; year/contrast remain unfinished.
+
+Two-instance Story load/play is **not implemented or verified**. Settings
+replication, Story GO, actual four-player admission, guest UI, briefing, Cortez
+icons, independent gameplay views and next-level coordination remain open.
+The later Local Story diagnostic passed with isolated profiles. It measured
+original rule10/variant2 in both cinematic and actual Story configurations.
+The experimental adapter now supplies that pair before the original factory,
+which otherwise retains the prior selection. This correction passed11 affected
+tests (1 skipped) and the supported build, but the paired start still FAILED:
+both reached scene2/phase15 and GAME OVER, HP60. Exe62b3359da6e6160773a5cee1ec23e6ef2796a3bca887f393af2a00d5037271e2;
+compat749147f249fcf361f6ab2e3b9d0f2dcd5469e1be6b9fb9f8dbb2f8b7500facc4.
+Host entered state8/result10000 at tick3 while network end status remained1;
+failure timer36000 remained positive. Network status2 followed. This identifies
+local host failure before propagation, not its final root cause. Both runners
+exited0/profiles unchanged; diagnostic exit0 is separate from paired exit1.
+Current evidence remains `private/network-validation/story-load-pair/` and both
+disposable `load-before.png` captures. Original failure caller228984 inside228870
+tests both context states16 and sets result10000. Context trace showed original
+initialization sets state2, then network setup resets both to16 at tick0. Rule10
+skips original network state6 activation. Sol added an opt-in pending-load adapter
+calling original D50E0(context,1) once before the first Story evaluator, followed
+by the unchanged failure check. Asset-free tests passed; this startup adapter is
+NOT yet built or runtime verified. No health/death/pause bypass was added.
+
+
+Online Story validation (2026-10-22, uncommitted): supported Windows build and
+`tests/story_pair_game.py --load-probe --lobby-controls` exited0. Normal typed
+Story (no hidden gate) replicated host Scotland/Hard in lobby and loaded scene4
+on both. Both player movements matched across instances; separate views and
+visible other Cortez in guest view reviewed. Guest Progress/Back worked but its
+visible footer labels remain wrong and Ready remains exposed. Year/contrast,
+briefing, four-player runtime admission, shared interactions/world authority and
+next-level coordination remain incomplete. EXE
+6f82b956974e1d4b9bbb6008ea60a141e062df19d245ea83198832fa55c60eea;
+compat cfbcbae6fc9ec51b3a1faedf168028b15dc6542ef636e10444a010cad3119683.
+Both isolated runners0, profiles/fixture preserved, no game/locks/images remain.
+Mac transport gap MAC-013 and Mac runtime validation remain open.
+
+
+Online Story follow-up: guest footer now reviewed as Back/Player Progress only;
+Confirm inert, automatic original readiness lets host GO load both. Changed pair
+FAILED before movement: context1 remains16 on both, HP15, no Game Over. Both
+runners0/profiles preserved; full goal incomplete. EXE
+944c33c7240d6afa163b3c3336581da4f2736d13a89a4e497e8a3455af8b8b23.
+Original spawn's ownership predicate35AFB0/35AF40 is the next unresolved boundary;
+no authority/health/death flags were forced. Prior moving-pair proof is retained.
+
+
+Online Story mixed-context startup correction: a remote spawn can reach the guest
+before its first evaluator. Requiring every context inactive skipped the guest's
+own spawn; now each still-inactive context gets one original ownership-checked
+D50E0 attempt, with no later resurrection. Source11passed1skipped, supported
+Build0 and changed auto-ready paired controls/load/movement test0. Both context
+states2/2, matching movement, weapons/HUD/independent views and visible remote
+Cortez reviewed. Both runners0/profiles preserved/cleanup verified. EXE
+5dde317830c297db09ad156e688e53945fe14093896858e8c6d2876f50148d35;
+compat4f14b62c161916009c1bcf96eee15734cdbaf49eacf9bda2cca5373617ce0d5e.
+Briefing/year/contrast, four-player runtime admission, firing/use/world authority
+and next-level coordination remain incomplete. This is not full acceptance.
+
+
+Online Story briefing layout experiment was rejected visually: replacing198E20
+showed localized briefing but removed the roster (callback owns both). Header
+flags/style did not fix year/contrast. Reverted that experiment, preserving prior
+startup/UI implementation. Source11passed1skipped and supported restorationBuild0;
+source compatibility restored4f14b62c161916009c1bcf96eee15734cdbaf49eacf9bda2cca5373617ce0d5e.
+Current rebuilt EXEb1bc3e67b5467fdc977eecbee9cca600252defc13486580aed3a920428cfdcdf.
+No unchanged runtime rerun. Experiment pair0 only certifies its narrow load/
+movement checks, not UI acceptance. Both fresh views showed same new objective,
+which does not prove script/world authority. Briefing/year/contrast still pending;
+next narrow lower-detail boundary1986A0 retains original roster renderer.
+
+
+Online Story lower-details wrapper now retains original roster198E20 and replaces
+only1986A0's lower Arcade information. Source11/1, migration1pass, nativeBuild0;
+lobby-only pair0, both returned captures reviewed with roster and selectedbriefing.
+Text clipped atbottom, so UIacceptance remains incomplete. Fitting correction
+using original wordwrap/height metrics is source-tested11/1 but UNBUILT/unverified.
+Current reviewed EXEcbc3c7cac2303eb8d3654bb70eab5dcbd72ff2e16a8e0675a349a3317127a04e;
+compat5f6e04ffc70fa543f4734fa381206b207400bb5f69f6920af9a41449d4594d77.
+No newgameplay run; bothlobbyrunners0, profilespreserved, cleanupconfirmed. All
+remaining fullgoal gaps continue in investigation checklist.
+
+
+Online Story: measured briefing fit visually passed for both peers. Heading now
+uses original briefing opacity branch during draw, restoring menu descriptor;
+readable name/thumb reviewed. Four actual game instances admitted to same Story
+lobby, all4 original rosters confirm4 humans; Scotland/Hard replicatedtoallguests.
+Source11passed1skipped, supportedBuild0, four-client lobby-onlycheck0. Fourrunners
+exit0/profilespreserved/cleanupconfirmed. EXEa17103d1d45ec4f577d0e79c4231d32cd919773a6584233738fca4ebcedbd553;
+compat14437721e4e4e02f71e0435fe2d936b7b689e54778c9def906e2f78775c97eec.
+Year is optional per actual-user clarification, not required by notes. Required
+shared firing/use/world authority and next-level coordination still incomplete;
+four-player admission is separate from four-player gameplay/fifth rejection.
+# Online Story continuation evidence (uncommitted, 2026-10-22)
+
+Four actual instances loaded Scotland/Hard. The first gameplay probe failed
+because slot 3 stayed stationary and its owner entered context state 256. A
+diagnostic-only build then passed four-player movement with matching peer
+positions; the intermittent startup failure remains unresolved. Firing inputs
+completed, but reviewed captures showed unarmed views without shot/hit evidence.
+Shared interactions, Story world authority and next-level coordination remain
+incomplete. All eight runners across the two bounded probes exited 0, disposable
+profiles were preserved, and cleanup left no active game. Source checks passed
+11 tests with 1 skip; the supported native build passed. Exact receipts and
+provenance are in `private/network-validation/story-four` and the ignored
+`logs/agent-investigation.md`. No Mac runtime validation was performed.
+
+Online Story authored-spawn continuation (uncommitted, 2026-10-22): original
+rule10 exhausted authored starts for extra online players. A scoped fallback
+now retries the original first-player pad lookup only after an explicit missing
+pad for slots 2/3, preserving valid network pads and ownership. Source checks
+passed 11 tests/1 skip; targeted Mac-stack migration and supported Windows build
+passed. Runtime observed missing pads resolving to authored D9 and all four
+players placed in the start area. The four-player probe still FAILED before
+movement on guest3 script flag 02000000. Original D4B00 sets this flag and context
+state 256 directly; D4BE0 restores state 2. Script/world coordination, firing and
+next-level behavior remain incomplete. All four runners exited 0 with profiles
+preserved and no active game. Evidence: story-four/authored-pad-script-suspend-*
+under private/network-validation. Native Mac runtime remains unverified.
+
+Story script tracing (uncommitted, 2026-10-22): source checks passed 11/1,
+original-wrapper migration passed, supported build passed. Changed four-peer
+probe FAILED; each peer entered original suspension D4B00 from caller1E4B9B,
+with no D4BE0 restore over a further 20-second passive observation. The host's
+local context reverted to 2 during remote initialization without the restore;
+guest local contexts remained 256. That reset path and Story authority remain
+unresolved. All four runners exited 0, profiles preserved, cleanup complete.
+Exact provenance and script-caller-stall evidence are in the ignored checkpoint
+and private/network-validation/story-four. No gameplay or world-sync fix claimed.
+
+## Paused Online Story checkpoint (2026-10-22)
+
+Work was paused at the user's request. This commit preserves an incomplete
+implementation and diagnostics, not a completed cooperative Story feature.
+Source checks, patch migration and the supported Windows build passed during
+this investigation. The latest four-instance pad-source diagnostic FAILED:
+a guest remained in player context state 256 with suspension flag 0x02000000.
+All four isolated runners exited 0; no game process remained at pause. A prior
+run passed narrow movement checks without exercising the suspension path; it
+is not evidence that the intermittent failure is fixed. Firing/hits, shared
+Story world/script authority and coordinated next-level progression remain
+unverified or incomplete. Native Mac runtime validation remains outstanding.
+The latest private receipt is private/network-validation/story-four/pair-evidence.json;
+ignored logs/agent-investigation.md and logs/coop-workflow-stage/run-8 retain
+investigation/session evidence. Resume by reconciling the latest pad-source
+trace with that checkpoint; do not repeat an unchanged passing movement run
+as a substitute for resolving the failure. No full-level playthrough is required.
 
 ## Launcher v1.2.24 release preparation
 
@@ -29616,6 +31826,81 @@ Advances the shared launcher and assembly versions for the original character
 icon migration from PR #289. Both platform packages are published only after
 the release workflow passes; the game update follows launcher publication.
 The game remains v0.3.1-alpha.2. No gameplay validation is claimed by this bump.
+
+Story co-op NPC creation probe (Windows x64, uncommitted): all four peers stayed
+connected in scene2 and all guests constructed host NPCs; no null-body spawn
+crash. Opening firearm acceptance failed after60 seconds, so gameplay remains
+incomplete. Host first spawn had roster0 and was absent from guest receive logs;
+later host roster changes were not transmitted. Added six-tick host NPC state
+republication with bounded logs; eight focused source/original-US tests pass.
+Changed runtime acceptance pending; no Mac runtime validation.
+
+Story NPC reconciliation validation (Windows x64, uncommitted build SHA-256
+90dde36bc305d88d22a8ccb72bc20a0e5e1297c314a2a3f2502b60dca8acd07e,
+original60 FPS): supported build and built-in checks passed; four-peer probe
+completed with all runners exit0. All peers had18 characters, then17 after the
+same NPC removal, with identical remaining NPC IDs82..94. Two timed world
+samples showed matching movement and at most0.0117 game units positional
+disagreement. This establishes sampled physical state/lifecycle replication,
+not full animation or combat. Overall opening acceptance still fails: only
+slot1 receives firearm14; extra humans select nonopening padsE1/E3 instead of
+the authored first two starts1F40/1F62. Distinct correct extra starts and the
+remaining Story requirements are incomplete. No native Mac validation.
+
+First-level four-player starts (Windows x64, uncommitted, original60 FPS):
+source/original-US fixtures8passed, fresh/repeated and historical Mac migration
+2passed, supported Build and built-in checks passed. Runtime probe build SHA-256
+fd3a506b13bd944cd8c998b717ddb5aa764d981a05b4da3f48bab3005b66b091
+placed extra slots2/3 at[-1.185,-2.42,-3.346] and[2.815,-2.34,-3.346] on every
+peer. Bounded backward movement changed their local positions by4.089/3.354
+units with health35 retained; final remote positions agreed. Reviewed the extra
+player's canyon view with another Cortez body and own unarmed hands. No crash;
+all four owned runners exit0. Host and original co-op slot1 eventually received
+firearm14, while extras2/3 remained unarmed, so overall opening acceptance still
+fails. Remaining implementation includes the extra-player loadout handoff and
+the other Story requirements; this is not complete gameplay acceptance. Mac
+transport/runtime validation remains queued under MAC-013.
+
+Four-player Story opening/loadout validation (uncommitted base45a96e38507dfb761b94c4e8b7fad41efbabef0e,
+Windows x64, MSVC x64 workflow, D3D11 RHI at1280x720, original60 FPS):
+source/original-US/FOV checks9passed1native-host-onlyskip; patch migration2passed;
+supported Windows Build and built-in checks passed. Probe50947 completed with
+statusload-probe-passed, all four runners exit0. Executable SHA-256
+ff670c67d470bb8b932e42a5d6c5dfe43dbeb6143d4e201168e785990435eaf8.
+The host's actual authored grant was observed once; only each extra player's
+owning peer applied its original ammo/grant/select calls. All four players
+received weapon14, 16loaded/112reserve rounds. Bounded owned movement measured
+3.587/3.210/3.130/6.366 world units; peer-position checks passed. Firing reduced
+each loaded clip from16to13 without changing112reserve. Health remained35.
+All four fresh load-after captures were reviewed: independent first-person
+views, own equipped weapons and other Cortez bodies where within the view.
+Inputs are synthetic isolated test-file input, not physical controller tests.
+This verifies the opening, human movement and firearm/ammo consumption. It does
+not establish damage/hits, complete NPC animation/combat/world synchronization,
+checkpoint/level restart or next-level handoff; the full goal remains active.
+Source/build receipts and snapshots remain in the ignored story-four evidence
+and disposable test roots. Native Mac transport/runtime acceptance is unverified.
+
+Story combat/pose follow-up (uncommitted Windows11 AMD64, D3D11 RHI, 60FPS):
+the first hit-trace probe65449 stopped before combat because a late slot1 spawn
+selected distant ordinary padE3. That contradicts reliable opening acceptance
+from a single earlier pass. The corrected adapter retains authored opening
+pads1F40/1F62 and private extra pads until the original read-only25EE60 checkpoint
+predicate becomes active. Repeated probe14973 on executable SHA-256
+4b0692fa780b2a0cbdf3f2161e86ab7c68dc6f8741c895e67f6e0316e19363d0
+passed the opening, all four movement checks and ammo-consumption firing checks.
+All four runners exited0. Its overall combat extension failed: selected enemy85
+was across a canyon wall; the reviewed combat-shot-0.png shows firing into that
+wall, and no human-to-NPC hit was delivered. This does not establish a hit-routing
+failure. The harness now filters targets by local visibility and40-unit range.
+Read-only entity-pool checks matched NPC IDs to the intended actors on all peers.
+New pose metadata proves guest NPC animations differ from the host (many remain
+clip37 while host clips are42/55/56/1547/2522). Pose/animation replication needs
+implementation; physical state agreement alone was insufficient. The diagnostic
+preserves original damage policy and calls the original once. Source checks
+12passed1native-onlyskip; final checkpoint fallback regression8passed. A small
+post-probe correction also preserves the existing missing-extra-pad fallback
+when a checkpoint is active; its runtime checkpoint acceptance remains pending.
 
 ## Issue #222 — Online guest bot movement (2026-10-22)
 
@@ -29796,6 +32081,31 @@ passed. Log: ignored `logs/bot-pr-main-build.log`. No new gameplay or Mac-host
 validation was performed for this synchronization; original loopback evidence
 and MAC-052 limitations above still apply. No game release was published.
 
+
+## Story co-op synchronization with Stable main (2026-10-23)
+
+Merged main `691523aff5e2c81ec20d9b0978f701402e032151` (including the #222
+bot-motion fix and release tooling) into online-story-coop from `29f34a8`.
+Preserved Story hooks, pose/load/roster behavior and main's keyboard/save-drive
+menus. Both branches allocated callbacks at 0x1201c..0x1201f; Story now uses
+0x1237b..0x1237e, verified as unused INT3 bytes in the checksum-supported US XBE.
+The dispatcher compiles with both callback sets; fixture stubs and bot-motion
+mutation dependencies retain the shared character pose model.
+
+Windows x64 / MSVC 14.42.34433: 21 affected menu/FOV/network/keyboard/storage/
+weapon tests passed (2 prerequisite skips); 99 additional Online/identity/CI/
+backlog checks passed. Supported tsfp.ps1 Build -SkipTextures applied the complete
+combined patch stack, regenerated guest sources, built optimized Release
+(/O2 /Ob2 /DNDEBUG, CL_MPCount=2), passed native checks and matched crash symbols.
+Context/index check against starting Story revision and working-diff whitespace
+checks passed. Repeated context paragraphs were condensed to retain the guide's
+size bound. Logs: ignored logs/story-main-tests-fixed.log,
+logs/story-main-integration.log and logs/story-main-build.log.
+
+No fresh four-peer gameplay, native Mac execution, checkpoint or campaign
+acceptance was performed. Existing Story validation gaps and MAC-013 remain;
+source integration does not complete Story co-op. Personal settings/saves were
+preserved. No release or merge of Story into main was performed.
 
 ## 2026-10-24 — #74 hybrid-256 metal material batch
 
@@ -32292,6 +34602,176 @@ exits cleanly, with signed profile/canonical fixture and partition/lock cleanup.
 No runtime regression or live TRAP success is inferred from this attempt.
 All applicable checks on5cfb1542 pass. No production code changes in this audit.
 
+
+## Story co-op main integration (2026-10-26)
+
+Integrated fetched main e9d9fae into online-story-coop from7bc3c63. Preserved
+Story adapters and main timing/render/input changes. The bounded transition
+runner retains both scenario families, the input publisher, Story world reads
+and main actor/effect/window/native-clock diagnostics. Detailed context moved
+to linked systems-details/build-test-details pages to retain the64KiB limit.
+
+Windows11 AMD64: optimized supported build completed compilation, native test
+checks, executable sealing and matching crash-symbol creation. Its redirected
+PowerShell process returned1 despite the successful final build/test messages;
+no compiler/linker/test failure appeared. Source menu/Story/guest fixtures:
+15passed2platformskips. Online/context/native-timing regressions139passed.
+Context check against7bc3c63 and CRLF-aware whitespace check pass. Logs:
+logs/story-resume-build.log, story-resume-source-tests.log and
+story-resume-integration.log (ignored). Fresh four-peer acceptance is separate
+and in progress; this integration does not establish completed Story co-op.
+Mac Online remains blocked on MAC-013, with no native-host validation here.
+
+
+## First-mission Story co-op continuation (2026-10-26)
+
+Continued on online-story-coop after local main merge a00de1c (main e9d9fae).
+Implemented host-only Restart Level for Time to Split: the existing pause
+confirmation broadcasts a pointer-free reliable reload event. Every peer uses
+the original reload function. A private reload epoch rejects old-run NPC and
+loadout messages; fresh opening grants and initial contexts reset together.
+Checkpoint restore and Game Over menu handling remain incomplete; other missions
+retain their prior paths. This is still experimental co-op, not full acceptance.
+
+A four-peer run reproduced Arcade teams2/4 on remote humans after the older
+frame correction. The new D7570 return adapter immediately reapplies the existing
+validated shared-team rule, preserving NPC/Local/Arcade/native behavior.
+A later close-range run crashed a guest in original DC550+124 following a wild
+NPC damage callback. Exact executable/PDB matching was verified; the dump and
+matching-symbols.zip remain together in the guest's ignored crash directory.
+The damage adapter had executed Story guest NPC health/death before its ordinary
+bot authority guard, including when tracing was enabled. Story replica damage
+now bypasses local simulation before tracing, forwarding owned-human hits with
+the original reliable35C870 sender. Only the host applies NPC damage/death;
+guests consume its snapshots. Host and unrelated-mode handling remain original.
+
+Measured Windows x64/MSBuild17.12.6, optimized MSVC Release (/O2 /Ob2), D3D11 RHI,
+original60FPS/60Hz: supported final build/native checks/seal/matching symbols
+completed with actual process exit0. The supported US XBE hash was checked before
+build and all game runs. Source menu/Story/guest checks15passed2platformskips;
+patch/context checks22passed, then21passed after initializer extension. The
+Online/context/native timing merge suite passed139 tests. CI scope and dead-NPC
+evidence checks passed81 tests; the new12-case retirement policy is registered
+in runtime-patches.yml. Missing live NPC health still fails; an already retired
+corpse may agree with a dead host body.
+
+The natural-intro four-peer run passed movie-to-game handoff, distinct starts,
+independent movement, firearms/ammo and observed matching NPC animation. Its
+combat route initially hit canyon geometry. Corrected ordinary-input waypoints
+follow the opening soldiers and require a target within10 units, rather than
+treating a frustum-visible enemy behind a wreck as a hit test.
+
+The final changed four-peer run passed first-mission loading, shared team1 on
+every peer before/after reload, cross-observed movement, ammo consumption,
+host-only pause/confirmation and all-peer level restart with fresh handoff.
+Reviewed host/guest menu captures confirm only the host has Restart Level.
+The guest's real NPC hit reached the host through the original reliable handler;
+NPC health/death agreement passed. All four runners exited0 and recycled their
+virtual disks; canonical fixture and personal saves/settings were preserved.
+No full-level completion or subsequent mission was attempted. No Internet/WAN,
+physical-controller or native Mac validation is claimed; MAC-013 remains open.
+
+Final executable SHA-256: a21c4df5d04a506a3c46e33b4805257222d1de845bad0944b26798fdba32b8da
+Compatibility: e850f26b75d974d9927a7a2595cd378fc078c735254ae628a328254f0ece243f
+Receipt: private/network-validation/story-four/pair-evidence.json (ignored),
+with final host-accepted hits and reload states. Logs: story-authority-four.log,
+story-damage-build.log and story-damage-tests.log in ignored logs/. Earlier
+failed receipts and the matched crash recovery remain preserved separately.
+No release, push, or merge of Story into main was performed.
+
+## Manual local Story co-op launcher (2026-10-26)
+
+Test-StoryCoop.ps1 opens two isolated Windows Online Story games (optional
+-Players 4) with a private loopback lobby directory. Saves, controls, display
+settings and Online settings stay in disposable Test Lab copies; users host/join
+through the normal menus. Sessions wait for all windows to close, cap logs and
+recycle only known test disks. Personal data and the canonical fixture are preserved.
+
+Windows x64, source base 0252b4e plus this uncommitted launcher change; existing
+sealed Release executable a21c4df5d04a506a3c46e33b4805257222d1de845bad0944b26798fdba32b8da,
+D3D11 RHI, Original 60 FPS. Eighteen launcher/profile tests passed. A bounded
+eight-second two-game startup/cleanup smoke passed outside the restricted sandbox;
+sandboxed graphics startup raised invalid-handle exceptions in both games. The
+smoke verifies startup/lifecycle, not menu navigation or mission completion. Prior
+four-peer first-mission gameplay evidence remains separate. Native Mac Online is
+still unavailable (MAC-013); no Mac gameplay validation claimed.
+
+
+## First-mission HANDLE FIRST bug repairs (2026-10-26, uncommitted)
+
+Windows x64, source base0252b4e plus local changes, supported US executable,
+D3D11 RHI, Original60 FPS. Scope is the first Online Story mission; the notes'
+HANDLE LATER disconnect/exit/Game Over flows and other missions are unchanged.
+
+The opening black screen was reproduced with a natural two-player intro.
+Read-only observations showed matching camera matrices but the guest's
+camera+21C world-render bit0 disabled by original CB110's Local Story single-view
+policy. The shared cinematic adapter now applies the host's world-render enable
+to each guest's owned camera, retaining local camera handles and unrelated flags.
+Typed camera cues resolve local authored assets and run no host callbacks on
+guests. Numeric fades/poses use bounded matching fragments. Context+14F8 is a
+first-person weapon animation selector, not a cinematic detector.
+The changed two-player early60/900-tick captures visibly render the tilted
+opening on Player2, where the prior build was black. The later sniper cutscene
+still needs direct scene validation; it uses the same world-render/cue adapter.
+
+NPC replicas receive actual constructor transforms and resolved model variants,
+rebuild on spawn-generation reuse, and publish every actual first-mission
+simulation tick instead of every sixth tick. Source checks cover constructor
+inputs, stale generations, animation cadence and the original evaluator ABI.
+Intermittent invisible bodies and animation smoothness still require human scene
+review; construction/cadence fixes alone do not establish complete NPC fidelity.
+
+Host objective kind0/1 records now reach guest Status/HUD through SOJ1, with
+host/epoch/identity guards and deferred local HUD notifications; executable
+kind2 scripts are never replayed. Runtime objective states first3 agree on both
+peers. First-mission ground/bomb decisions are host-owned; guests replay actual
+numeric creation arguments and retain local trail handles. All first192 recorded
+ground-effect serials/positions/colors match exactly between host and guest in
+logs/story-bugs-effects-parity.json. Network transit still adds delivery latency.
+
+The host has Restart from Checkpoint, disabled until a valid capture. Original
+local bookmark APIs capture each peer's own engine pointers; only checkpoint
+index and serial travel over the wire. Extra humans use the original bookmark
+capture/restore ABI. Pause rows use compact original font metrics and an11-unit
+host Options origin adjustment. The reviewed bounds-check-pause.png fits all9
+rows between the header/footer. Guest reload rows remain absent. The earlier
+changed two-peer run passed host-only coordinated level restart and fresh handoff.
+Checkpoint route attempts stopped at canyon/wreck geometry, so a real checkpoint
+reload has not yet been certified; source protocol/bookmark tests pass.
+
+Supported Windows builds completed with native tests, matching symbols and
+network seals. Production-source fixtures, manual launcher/profile checks,
+Story evidence and repository context checks passed51 tests; historical Mac-only
+patch migration also passed. Native fallback compilation is distinct from Mac
+Online acceptance, which remains blocked on MAC-013. No Internet/WAN, physical
+controller, full-level completion or later-mission validation is claimed.
+
+Current build:12ce6e4bd196cded1a8f95619c05901782629ad375d6d4cc73fcd42460f51b73
+Compatibility:6dbfefbb33594ed1047d2164157778c35de1ae971024480cc59a382b38ed196b
+Final four-peer scope: lobby admission, first-mission loading, all active
+contexts, shared teams, independent movement, firearm handoffs and ammo checks
+passed before the optional checkpoint walk. The guest Status tab visibly showed
+Reach the rebel base / INCOMPLETE. All192 recorded ground-effect events match
+the host on all three guests (logs/story-bugs-four-effects-parity.json).
+The overall checkpoint-probe receipt is failed, because the bounded walk never
+captured a checkpoint; do not label the complete scenario passed. A capture-limit
+failure in the preceding attempt was a runner assertion, not a game crash.
+Redundant old route frames were recycled before repeating.
+
+The final natural two-player intro also reached matching first-mission ticks;
+reviewed early60/900 frames confirm Player2's opening world is visible. Movement,
+weapon/ammo checks and actual host NPC damage passed, but canyon geometry and
+the bounded route limit prevented checkpoint capture. Receipt:
+logs/story-bugs-natural-final-receipt.json. Checkpoint restoration, the later
+sniper sequence and intermittent NPC visibility/smoothness remain explicit
+human-playtest gaps. No complete mission was attempted.
+
+Personal saves/settings and the canonical Test Lab fixture remain preserved;
+all runners shut down and recycled their disposable partition images. Temporary
+compiler/patch-test fixtures and redundant walk screenshots were recycled.
+The incomplete Story lobby bullet has no actionable bug description; clarification
+was requested. No push, release or merge into main was performed.
 ## Issue #371: weapon impact streaks at high refresh (2026-10-27)
 
 The supplied 180 FPS frame shows black rays extending from a sci-fi handgun
