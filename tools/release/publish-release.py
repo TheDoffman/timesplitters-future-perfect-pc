@@ -1,6 +1,7 @@
 """Publish a tested, pushed commit with matching version, notes, tag and assets.
 
-No checkout switching, version edits, force pushes or published-release updates.
+Normal publication never moves tags or replaces releases. An explicit
+--replace-existing repairs only a mutable published preview after full validation.
 GitHub CLI authentication is used; tokens never enter command arguments or files.
 """
 
@@ -198,7 +199,10 @@ def release_lock(path):
 
 
 class Publisher:
-    def __init__(self, root=ROOT, *, branch="main", channel_name=None, notes_file=None, test_workers=None):
+    def __init__(self, root=ROOT, *, branch="main", channel_name=None, notes_file=None, test_workers=None, replace_existing=False):
+        self.replace_existing = replace_existing
+        self.replacement = None
+        self.replacement_tag_updated = False
         self.test_workers = min(4, os.cpu_count() or 1) if test_workers is None else test_workers
         if not isinstance(self.test_workers, int) or not 1 <= self.test_workers <= 64:
             raise ValueError('Test workers must be between 1 and 64')
@@ -295,7 +299,19 @@ class Publisher:
         self.plan = self.output/(self.name+'.release.json')
         pages = json.loads(self.gh('api', '--paginate', '--slurp', f'repos/{self.repo}/releases?per_page=100'))
         releases, _ = last_published(pages)
-        if any(release['tag_name'] == self.tag for release in releases):
+        existing = [release for release in releases if release['tag_name'] == self.tag]
+        if self.replace_existing:
+            if len(existing)!=1 or not self.prerelease or not existing[0].get('prerelease') or existing[0].get('draft') or existing[0].get('immutable') or not existing[0].get('published_at'):
+                raise ValueError('Replacement requires one published, mutable preview release; Stable and drafts cannot be replaced.')
+            release = existing[0]
+            old_commit = self.git('rev-parse', '--verify', 'refs/tags/'+self.tag+'^{commit}')
+            if old_commit==self.commit:
+                raise ValueError('Replacement requires a new source commit.')
+            if release.get('target_commitish')!=old_commit or not re.fullmatch('[0-9a-f]{40}', old_commit):
+                raise ValueError('Existing preview source/tag must identify the same exact commit.')
+            self.replacement = self.replacement_identity(release, old_commit)
+            releases = [release for release in releases if release['tag_name'] != self.tag]
+        elif existing:
             raise ValueError(f'{self.tag} already has a release or draft. Inspect it on GitHub; it will not be overwritten.')
         published = [r for r in releases if not r.get('draft') and r.get('published_at')]
         same_series, stable, previews = [], [], []
@@ -393,8 +409,16 @@ class Publisher:
         if refs.get('refs/heads/'+self.source_branch) != self.commit:
             raise ValueError('The remote source branch changed. Update it and prepare the release again.')
         tagged = refs.get('refs/tags/'+self.tag+'^{}', refs.get('refs/tags/'+self.tag))
-        if tagged and tagged != self.commit:
+        allowed_old = self.replacement and not self.replacement_tag_updated and tagged==self.replacement['tag_commit']
+        if tagged and tagged != self.commit and not allowed_old:
             raise ValueError('The release tag already points at a different commit; it will not be moved')
+
+    @staticmethod
+    def replacement_identity(release, commit):
+        # Download counts may change during validation; source/notes/assets may not.
+        return dict(id=release['id'], tag_commit=commit,
+                    release={key:release.get(key) for key in ('tag_name','target_commitish','draft','prerelease','immutable','body','updated_at')},
+                    assets=sorted(({key:a.get(key) for key in ('id','name','size','state','digest')} for a in release.get('assets',[])),key=lambda a:a['name']))
 
     def game_pr_notes(self, generated):
         commits = set(self.git('rev-list', f'{self.baseline}..{self.commit}'
@@ -600,6 +624,8 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
             if (prepared['commit'] != self.commit or prepared['tag'] != self.tag or prepared['repo'] != self.repo
                     or prepared.get('channel') != self.channel):
                 raise ValueError('Prepared output belongs to another commit/version/repository')
+            if prepared.get('replacement') != self.replacement:
+                raise ValueError('Existing release changed since replacement preparation; inspect it before retrying.')
             if set(prepared['assets']) != {path.name for path in (self.archive, self.checksum, self.metadata)}:
                 raise ValueError('Prepared release has an incomplete asset list')
             for name, expected in prepared['assets'].items():
@@ -614,7 +640,8 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
         assets = {path.name: digest(path) for path in (self.archive, self.checksum, self.metadata)}
         temporary = self.plan.with_suffix('.json.tmp')
         temporary.write_text(json.dumps(dict(commit=self.commit, tag=self.tag, repo=self.repo,
-                              previous=self.previous['tag_name'] if self.previous else None, channel=self.channel, assets=assets), indent=2)+'\n')
+                              previous=self.previous['tag_name'] if self.previous else None, channel=self.channel, assets=assets,
+                              replacement=self.replacement), indent=2)+'\n')
         temporary.replace(self.plan)
         self.validate_remote()
         self.write_notes()  # Refresh the baseline; a network failure can resume without rebuilding.
@@ -650,6 +677,9 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
                 raise ValueError('Prepared assets changed before upload')
         self.verify_package()
         self.require_launcher()
+        if self.replacement:
+            self.publish_replacement(draft)
+            return
         # Pin the tag before creating the draft. GitHub rejects a concurrent
         # attempt to create the same ref, so an existing tag is never moved.
         existing = self.git('ls-remote', 'origin', 'refs/tags/'+self.tag)
@@ -678,6 +708,34 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
             self.gh('release', 'edit', self.tag, '--repo', self.repo, '--draft=false', '--latest=false')
         print(('Draft created: ' if draft else 'Published: ')+uploaded['url'], flush=True)
 
+    def publish_replacement(self, draft):
+        """Explicit user-requested preview repair; normal publication stays immutable."""
+        endpoint=f'repos/{self.repo}/releases/{self.replacement["id"]}'
+        current=json.loads(self.gh('api',endpoint))
+        if self.replacement_identity(current,self.replacement['tag_commit'])!=self.replacement:
+            raise ValueError('Existing release changed during validation; no replacement was started.')
+        expected={p.name:dict(size=p.stat().st_size,digest='sha256:'+digest(p)) for p in (self.archive,self.checksum,self.metadata)}
+        if {a['name'] for a in current.get('assets',[])}!=set(expected):
+            raise ValueError('Existing release has unexpected assets; preserve them and inspect manually.')
+        # Hide the release while replacing its assets; never expose a mixed set.
+        self.gh('release','edit',self.tag,'--repo',self.repo,'--draft=true','--latest=false')
+        moved=json.loads(self.gh('api','--method','PATCH',f'repos/{self.repo}/git/refs/tags/{self.tag}',
+                               '--input','-',payload=dict(sha=self.commit,force=True)))
+        if moved.get('object',{}).get('sha')!=self.commit:
+            raise ValueError('Replacement tag was not updated; inspect the draft before recovery.')
+        self.replacement_tag_updated=True
+        self.gh('api','--method','PATCH',endpoint,'--input','-',payload=dict(
+            target_commitish=self.commit,body=self.notes.read_text(encoding='utf-8'),draft=True,prerelease=True))
+        self.gh('release','upload',self.tag,'--repo',self.repo,'--clobber',self.archive,self.checksum,self.metadata)
+        uploaded=json.loads(self.gh('api',endpoint))
+        actual={a['name']:dict(size=a['size'],digest=a.get('digest')) for a in uploaded.get('assets',[]) if a.get('state')=='uploaded'}
+        if not uploaded.get('draft') or uploaded.get('target_commitish')!=self.commit or actual!=expected or len(uploaded.get('assets',[]))!=len(expected):
+            raise ValueError('Replacement asset/source verification failed; the release remains a draft.')
+        self.validate_remote()
+        if not draft:
+            self.gh('release','edit',self.tag,'--repo',self.repo,'--draft=false','--latest=false')
+        print(('Replacement draft: ' if draft else 'Replaced preview: ')+uploaded['html_url'],flush=True)
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -689,8 +747,9 @@ def main():
     parser.add_argument('--notes-file', type=Path, help='Reviewed Markdown with feature notes, known issues and test instructions')
     parser.add_argument('--test-workers', type=int, choices=range(1, 65), metavar='1..64',
                         help='Regression workers (default: up to four CPUs); 1 runs serially')
+    parser.add_argument('--replace-existing', action='store_true', help='Explicitly requested repair of a mutable published preview, including its source tag; never Stable')
     args = parser.parse_args()
-    publisher = Publisher(branch=args.branch, channel_name=args.channel_name, notes_file=args.notes_file, test_workers=args.test_workers)
+    publisher = Publisher(branch=args.branch, channel_name=args.channel_name, notes_file=args.notes_file, test_workers=args.test_workers, replace_existing=args.replace_existing)
     check_directory(publisher.root, publisher.output)
     publisher.output.mkdir(parents=True, exist_ok=True)
     with release_lock(publisher.output/'.publish.lock'):

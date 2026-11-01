@@ -1002,3 +1002,121 @@ def test_compiled(compiled, case):
     module.clean_pytest_current_links(tmp_path, tests)
     module.check_directory(tmp_path, tests)
     assert len(list(tests.glob('popen-gw*/compiler0/keep.txt'))) == 2
+
+
+def setup_preview_repair(publisher, monkeypatch):
+    import copy
+    name='TimeSplitters-Future-Perfect-PC-v0.2.0-beta.3-windows-x64'
+    old=dict(id=77,tag_name='v0.2.0-beta.3',target_commitish=PREVIOUS,
+             draft=False,prerelease=True,immutable=False,published_at='2026-10-20',
+             updated_at='2026-10-20',body='Original preview notes',
+             html_url='https://github.com/owner/repo/releases/tag/v0.2.0-beta.3',
+             assets=[dict(id=i,name=name+suffix,size=1,state='uploaded',digest='sha256:'+'c'*64)
+                     for i,suffix in enumerate(('.zip','.zip.sha256','.BUILD.json'))])
+    publisher.releases.append(old);publisher.replace_existing=True
+    state=dict(release=old,tag=PREVIOUS,mutations=[])
+    original_gh,original_git=publisher.gh,publisher.git
+    def git(*args):
+        if args[0]=='ls-remote':
+            row=state['tag']+'\trefs/tags/v0.2.0-beta.3'
+            return row if len(args)==3 else HEAD+'\trefs/heads/main\n'+row
+        return original_git(*args)
+    def gh(*args,payload=None):
+        endpoint='repos/owner/repo/releases/77'
+        if args==('api',endpoint):return json.dumps(state['release'])
+        if args[:3]==('api','--method','PATCH'):
+            state['mutations'].append(('patch',args[3]))
+            if '/git/refs/' in args[3]:
+                assert payload==dict(sha=HEAD,force=True)
+                state['tag']=HEAD;return json.dumps(dict(object=dict(sha=HEAD)))
+            assert args[3]==endpoint
+            state['release'].update(payload);return json.dumps(state['release'])
+        if args[:2]==('release','edit'):
+            state['mutations'].append(('edit',args))
+            assert '--latest=false' in args
+            state['release']['draft']='--draft=true' in args
+            return ''
+        if args[:2]==('release','upload'):
+            state['mutations'].append(('upload',args))
+            assert '--clobber' in args
+            state['release']['assets']=[dict(name=p.name,size=p.stat().st_size+(1 if publisher.bad_upload else 0),state='uploaded',digest='sha256:'+module.digest(p)) for p in (publisher.archive,publisher.checksum,publisher.metadata)]
+            return ''
+        return original_gh(*args,payload=payload)
+    monkeypatch.setattr(publisher,'git',git);monkeypatch.setattr(publisher,'gh',gh)
+    return state
+
+
+def test_explicit_preview_repair_retags_and_verifies_assets_before_republication(publisher,monkeypatch):
+    state=setup_preview_repair(publisher,monkeypatch)
+    publisher.preflight();publisher.prepare();publisher.publish()
+    assert state['tag']==HEAD and state['release']['target_commitish']==HEAD
+    assert not state['release']['draft'] and state['release']['id']==77
+    assert [kind for kind,_ in state['mutations']]==['edit','patch','patch','upload','edit']
+    assert '--draft=true' in state['mutations'][0][1]
+    assert '--draft=false' in state['mutations'][-1][1]
+    assert not any(call[0]=='gh' and call[1][:2]==('release','create') for call in publisher.calls)
+
+
+@pytest.mark.parametrize('blocked',['immutable','draft','stable','missing'])
+def test_preview_repair_refuses_other_release_states_without_mutation(publisher,monkeypatch,blocked):
+    state=setup_preview_repair(publisher,monkeypatch)
+    if blocked=='missing':publisher.releases.pop()
+    elif blocked=='stable':
+        (publisher.root/'VERSION').write_text('0.2.0')
+        state['release'].update(tag_name='v0.2.0',prerelease=False)
+    else:state['release'][blocked]=True
+    with pytest.raises(ValueError,match='Replacement requires'):publisher.preflight()
+    assert not state['mutations'] and not publisher.builds
+
+
+def test_preview_repair_detects_concurrent_edit_before_mutation(publisher,monkeypatch):
+    state=setup_preview_repair(publisher,monkeypatch)
+    publisher.preflight();publisher.prepare()
+    state['release']['body']='Edited elsewhere'
+    with pytest.raises(ValueError,match='changed during validation'):publisher.publish()
+    assert not state['mutations'] and state['tag']==PREVIOUS
+
+
+def test_preview_repair_keeps_bad_upload_hidden(publisher,monkeypatch):
+    state=setup_preview_repair(publisher,monkeypatch)
+    publisher.preflight();publisher.prepare();publisher.bad_upload=True
+    with pytest.raises(ValueError,match='remains a draft'):publisher.publish()
+    assert state['release']['draft']
+    assert not any(kind=='edit' and '--draft=false' in args for kind,args in state['mutations'])
+
+
+def test_prepared_repair_refuses_changed_release_on_resume(publisher,monkeypatch):
+    state=setup_preview_repair(publisher,monkeypatch)
+    publisher.preflight();publisher.prepare()
+    state['release']['body']='Edited before resume'
+    publisher.preflight()
+    with pytest.raises(ValueError,match='changed since replacement preparation'):publisher.prepare()
+    assert not state['mutations']
+
+
+def test_preview_repair_refuses_ambiguous_source(publisher,monkeypatch):
+    state=setup_preview_repair(publisher,monkeypatch)
+    state['release']['target_commitish']='main'
+    with pytest.raises(ValueError,match='source/tag'):publisher.preflight()
+    assert not state['mutations']
+
+
+def test_preview_repair_preserves_unexpected_assets(publisher,monkeypatch):
+    state=setup_preview_repair(publisher,monkeypatch)
+    state['release']['assets'].append(dict(id=99,name='keep-user-asset.txt',size=1,state='uploaded',digest='sha256:'+'d'*64))
+    publisher.preflight();publisher.prepare()
+    with pytest.raises(ValueError,match='unexpected assets'):publisher.publish()
+    assert not state['mutations'] and state['tag']==PREVIOUS
+
+
+def test_preview_repair_does_not_publish_if_tag_changes_during_upload(publisher,monkeypatch):
+    state=setup_preview_repair(publisher,monkeypatch)
+    gh=publisher.gh
+    def changed(*args,payload=None):
+        result=gh(*args,payload=payload)
+        if args[:2]==('release','upload'):state['tag']=PREVIOUS
+        return result
+    monkeypatch.setattr(publisher,'gh',changed)
+    publisher.preflight();publisher.prepare()
+    with pytest.raises(ValueError,match='different commit'):publisher.publish()
+    assert state['release']['draft']

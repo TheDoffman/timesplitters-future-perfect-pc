@@ -1,11 +1,19 @@
 # Story co-op release flag
 
-`src/interface/pc_feature_flags.h` derives `pc_story_coop_enabled()` from the
-existing compiled `TSFP_PC_VERSION`: only the literal substring `story-coop`
+`src/interface/pc_feature_flags.h` derives `pc_story_coop_enabled()` from
+`pc_build_version()`: only the literal substring `story-coop`
 enables the unfinished Story chooser. This shared policy is compiled by both
 Windows and native Mac builds. `pc_story_menu_button` leaves the original main
 Story callback untouched when disabled; `story_menu_lookup` also rejects its
 four private chooser callbacks. General Online fixes remain active.
+
+The version provider is implemented by `src/diagnostics/pc_build_version.inc`
+inside `pc_debug.c`, the diagnostics target that actually owns the private
+`TSFP_PC_VERSION` build definition. Both the menu flag and watermark call it.
+The menu is a different compilation target: do not read that private macro there.
+The original beta.1 package had a correct watermark but defaulted its menu flag
+to development because this target boundary was missed. No game CMake or
+generated guest source needs a second copy of the version policy.
 
 Main integration must retain main's stable `VERSION`, rather than inheriting
 the preview branch's version. Preview version bumps stay separate from the
