@@ -1,3 +1,13 @@
+## Discord release notification preparation (2026-11-01)
+
+Published game releases route through the shared channel identity: Stable to
+announcements, Beta/named previews to playtesting; launcher/texture tags and
+drafts are ignored. Eleven offline unittest regressions pass on Windows using
+Python standard-library mocks. No real Discord notification has been sent.
+Activation requires both Actions webhook secrets and the reviewed workflow on
+the release branches; end-to-end delivery remains unverified. See
+[connection and validation](../release/discord-announcements.md).
+
 ## PR436 LP64 fixture diagnostic repair (2026-11-01)
 
 Mac native CI on51ca1f5a completed2283 cases/327 skips/18 subtests, but the11
