@@ -1,5 +1,7 @@
 # Game releases: Stable and named previews
 
+[Discord release notifications](discord-announcements.md): Stable and previews post to announcements.
+
 [Back to the README](../../README.md) | [Launcher releases](launcher-releases.md)
 
 Game and launcher versions are independent. The next Stable game source version

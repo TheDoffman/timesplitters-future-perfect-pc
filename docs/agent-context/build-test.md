@@ -2,7 +2,7 @@
 
 Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh-weapon-clicks-434).
 
-[Save checks](save-locations.md); [Discord sidebar/Home card checks](launcher.md#discord-community-link), MAC-126. Both builds include SaveLocations.cs.
+[Saves](save-locations.md); [Discord UI](launcher.md), MAC-126; [routing](../release/discord-announcements.md).
 
 Minigun readiness/release, pause and input checks: [original-code coverage](native-minigun.md). Existing CI selects test_native_timing.py; private-XBE absence skips original-code tests. Historical stack fixtures exclude minigun intent and player-trigger event patches until the full native stack is applied.
 
@@ -1032,3 +1032,5 @@ Crossplay rotation/lock/recycle: `test_crossplay_peer.py`; Online interpreter:
 Markers: test_ui_layout.py; test_patch_updates.py checks 2290/2291 after migration.
 
 Mech input: test_mounted_mouse.py; [scope](mounted-mouse.md#battle-mech-mouse-425).
+
+[Languages](launcher.md#complete-game-language-packs-discussion-263).

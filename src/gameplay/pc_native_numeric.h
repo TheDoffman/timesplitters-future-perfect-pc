@@ -6,6 +6,7 @@
 #include <float.h>
 #include <string.h>
 #include "pc_gpu_ack.h"
+#include "../interface/pc_game_language_guest.h"
 /* Keep references to live integer/vector TLS cells in these profiled routines.
  * New generator files support this protocol; legacy/manual sources retain
  * their original aliases. No register values are copied or deferred. */
@@ -78,7 +79,8 @@ extern uint32_t pc_native_demo_dispatch_mode(uint32_t value);
  * values. Smooth only the audited mesh/strip distortion absolute-time reads.
  * Discrete counters and every other absolute-time consumer remain original. */
 #define RECOMP_STORE_GLOBAL_U32(site,address,value) \
-    ((site)==0x42535u && (address)==0x6B94C0u ? pc_native_demo_cursor_reset((uint32_t)(value)) : \
+    ((site)==0x3C308u && (address)==0x4C0454u ? pc_game_language_store((site),(address),(uint32_t)(value)) : \
+     (site)==0x42535u && (address)==0x6B94C0u ? pc_native_demo_cursor_reset((uint32_t)(value)) : \
      (address)==0x7DE318u ? pc_native_visual_store((site),(uint32_t)(value)) : (uint32_t)(value))
 /* Select TRAP's coupled fractional kicks/travel and contact clock together.
  * Original and whole/catch-up calls retain their authored conversion. */
@@ -144,6 +146,7 @@ extern uint32_t pc_native_demo_dispatch_mode(uint32_t value);
 static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
                                            uint32_t value)
 {
+    if(site==0x70360u && address==0x74CF60u)return pc_game_language_gate(site,address,value);
     /* The rigid-body clock divides its elapsed interval across this many
      * solver steps. A carried whole count can be zero while time advances.
      * Split long intervals as well, so each native substep is <= one tick.

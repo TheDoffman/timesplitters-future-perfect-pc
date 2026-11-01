@@ -1,0 +1,65 @@
+name: Discord game release announcements
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Release type for the TEST card (posts to announcements; no release is created)
+        type: choice
+        options: [stable, preview]
+        default: stable
+        required: true
+  release:
+    types: [published]
+  pull_request:
+    paths:
+      - .github/workflows/discord-release.yml
+      - tools/ci/discord-release.py
+      - tools/release/release_channels.py
+      - tests/repository/test_discord_release.py
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/discord-release.yml
+      - tools/ci/discord-release.py
+      - tools/release/release_channels.py
+      - tests/repository/test_discord_release.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: discord-release-${{ github.event.release.id || github.event.pull_request.number || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s tests/repository -p test_discord_release.py -v
+
+  announce:
+    needs: validate
+    if: (github.event_name == 'release' || github.event_name == 'workflow_dispatch') && github.repository == 'TheDoffman/timesplitters-future-perfect-pc'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Execute trusted default-branch code, never code from a preview release tag.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Announce the published game release
+        env:
+          DISCORD_STABLE_RELEASE_WEBHOOK: ${{ secrets.DISCORD_STABLE_RELEASE_WEBHOOK }}
+        run: python tools/ci/discord-release.py

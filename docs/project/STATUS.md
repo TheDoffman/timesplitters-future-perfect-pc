@@ -1,5 +1,9 @@
 ## Fresh weapon clicks / #434 (2026-11-01)
 
+Implementation commit 33363bfc. Integrated main bbab9c3d; focused trigger,
+Mac backlog integrity, context and whitespace checks repeated after integration.
+The full build/live evidence below predates this integration.
+
 Local work on `fix/434-high-fps-fire-and-cutscenes`, based on edbee7df.
 The original fresh-press eligibility check can succeed on a zero-whole game
 tick, but request1C2AF0 discards it. The remaining buffered input then takes
@@ -31,6 +35,144 @@ native-timing and patch-transition suite passed all 138 tests (22m39s); the
 latest focused test also passed both disabled-fix failure controls. Context
 and whitespace checks passed. Prepared for PR review; publication is pending. Physical Mac acceptance is pending MAC-128. The user deferred the
 sniper-cutscene portion of #434; keep the issue open and do not claim it fixed.
+
+## Prerelease Discord announcement routing (2026-11-01)
+
+Both game release types and their manual tests now post only to announcements,
+using DISCORD_STABLE_RELEASE_WEBHOOK. Preview cards retain their test-build label
+and opt-in guidance. The playtesting webhook is no longer consumed. Fifteen mocked
+regressions pass on Windows, including both release types reaching announcements
+with no Preview secret. Live preview-to-announcements delivery is pending merge;
+the announcements webhook was verified with an Actions test before this change.
+
+## Discord manual connection test (2026-11-01)
+
+The release notification workflow now offers a manual Stable/Preview connection
+test without creating a release. Thirteen offline regressions pass on Windows,
+including selected-secret routing and clear TEST labels. Live delivery is pending
+merge and a manual Stable run; the Preview webhook is not yet configured.
+
+## Discord release notification preparation (2026-11-01)
+
+Published game releases route through the shared channel identity: Stable to
+announcements, Beta/named previews to playtesting; launcher/texture tags and
+drafts are ignored. Eleven offline unittest regressions pass on Windows using
+Python standard-library mocks. No real Discord notification has been sent.
+Activation requires both Actions webhook secrets and the reviewed workflow on
+the release branches; end-to-end delivery remains unverified. See
+[connection and validation](../release/discord-announcements.md).
+
+## PR436 LP64 fixture diagnostic repair (2026-11-01)
+
+Mac native CI on51ca1f5a completed2283 cases/327 skips/18 subtests, but the11
+parameterized EEPROM cases could not compile. The new fixture inherited Windows
+%long diagnostics for32-bit Xbox types and a vendor kernel-header nested-comment
+warning. Its diagnostics now use inttypes.h32-bit formats with an explicit
+NTSTATUS cast. Vendor headers are system includes on non-Windows, while the
+extracted production implementation/oracle retains-Werror and every assertion.
+Pinned vendor source is unchanged. New native host CI is required before merging.
+
+## PR436 Mac package capability repair (2026-11-01)
+
+Review of source1d262bb0 identified that package-native-mac.py rebuilt the release
+manifest without copying language_packs, so installed Mac games could not enable
+non-English selection despite a capable runtime. The packager now forwards that
+flag to the top-level installed manifest; old native builds default false.
+Three regression cases run the real package/manifest/archive writer with tiny
+payloads and host tools mocked, covering true, false and absent build flags.
+They reproduced the missing-key failure before repair. This is a portable package
+contract, not native Mach-O/loading or game validation. Updated GitHub checks are
+required before the authorized merge. No published release/issue closure.
+
+## Language selection PR preparation (2026-11-01)
+
+[PR #436](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/436)
+contains source commit 1d262bb0 on feature/launcher-language-packs, targeting main.
+Before push, the 57 selected language/shared-layout/release/compatibility tests
+passed with39 subtests, and context freshness/ownership plus whitespace checks
+passed. Earlier Windows full launcher/game builds,46 patch tracking/upgrades,
+14 guest-hook/scope cases and live French/German menu evidence are recorded below.
+GitHub Windows/Mac validation is pending at this source checkpoint. The user has
+authorized merging after required checks pass. Source integration does not publish
+a game/launcher release or establish native Mac localized gameplay/listening.
+
+## Launcher language US startup repair (2026-11-01)
+
+User testing exposed English despite saved de. A bounded isolated fr launch of
+the first binary confirmed guest language 004C0454=0 and US flag 0074CF60=1.
+The prior four-routine fixture defaulted that flag to zero and therefore did
+not cover the real US startup gate. Extending it to both values reproduced the
+failure before repair (11 passed, one failed).
+
+Shared pc_game_language_guest.h now adapts the single US initialization read
+at 00070360 when the explicit launcher language is valid, plus the alternate
+English-reset store at 0003C308. The US region field and unrelated consumers
+remain unchanged. pc_native_numeric.h composes these guest hooks for original
+and native frame rates; no additional generated-game edit or platform copy.
+The supported-XBE fixture now executes five original routines for all five
+languages in both region states, including text-reload ordering. Its 12 tests
+pass; 14 production-macro/load/store-scope cases pass. Full Windows game Build
+and its built-in regressions pass (logs/language-us-gate-build.log).
+
+Two bounded isolated live sessions verified French guest index1 and German
+index2 while the US flag remained1. Reviewed game windows showed French
+"1 JOUEUR" / "Sélectionner" and German "1 SPIELER" / "Wählen". These runs
+used language-startup under private/test-saves, isolated input/both display
+configs, locked save routing, bounded logs and recycled disposable disks.
+They confirm localized menus, not voice listening or localized campaign play.
+Native Mac build/game checks remain pending MAC-127.
+
+Updated the same private/test-saves/language-launcher installation to
+v0.4.1-language-test.2. Runtime SHA-256:
+8e40f58cd4197d341d553fc49282a190bcc2410a0bcea20bce54696d8d6b068b.
+Atomic replacement retained the prior test executable in its .launcher folder.
+All17 small Settings/UserData files matched their pre-repair hashes, including
+the user's saved de. Data links and personal paths were untouched. The same
+Test language selection shortcut opens this repaired runtime/launcher pair.
+No source commit or release publication yet.
+
+## Launcher language packs (2026-10-31)
+
+Local uncommitted work on `feature/launcher-language-packs`, base 4c49f143;
+Windows x64, .NET Framework 4.8/WPF and MSVC 14.44, Python 3.12.14. Implements
+[discussion #263](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/263)
+as one saved complete-language choice: English/French/German/Italian/Spanish.
+Both launchers share the model/page and TSFP_GAME_LANGUAGE environment contract;
+platform patch 2310 connects it to individual/section Xbox language settings.
+No imported packs, personal saves or personal settings were modified by tests.
+
+Validation: Windows `tools/build/build-launcher.ps1 -Test` passed all suites,
+including the three new shared UI contracts; `tsfp.ps1 -Action Build` passed
+including its native checks and matching-symbol output. The 12 game-language
+contracts passed, including actual original supported-US XGetLanguage -> language
+startup -> archive lookup for all five packs, plus invalid-code fallback and
+EEPROM section checksums. The supported XBE hash was validated by that fixture
+and the build. Shared layout/release/compatibility Python checks passed (45 tests,
+39 subtests). Rendered and inspected the Audio & language page at 1152x772;
+controls, explanatory text and fixed Save/Cancel footer fit. Evidence stays in
+ignored logs/launcher-language-build.log, logs/language-game-build.log and
+logs/launcher-language-preview.png. All 46 patch tracking and historical-upgrade
+checks passed (1137.24 seconds); log: logs/language-patch-tests.log. Repository
+context tests also passed (20 tests), context freshness/ownership checks passed,
+and the staged diff has no whitespace errors.
+
+Native Mac build/UI/prerequisite execution is unavailable here (MAC-127).
+No real localized voice listening, full menu/cutscene traversal or localized
+campaign claim. Changes are local and unpublished; older released game builds
+need an update before non-English selection can launch.
+
+Local combined test setup (2026-11-01): prepared and opened
+`private/test-saves/language-launcher` as v0.4.1-language-test.1, using the
+updated game SHA-256 1f88e1db4080f2abd53a9c9157ca1f21fd94bf7e1bb6de125c337934e5c54ebb
+and the tested launcher. The `Test language selection.lnk` shortcut skips launcher
+self-update for this private build. Its 410 Data files are hard links to the
+existing supported import (zero additional data payload); binaries/dependencies
+are copied, and Test Lab saves plus Settings are separate from personal files.
+The real launch model resolves all data/save/input/display paths inside this
+test folder and exports fr. UI inspection confirmed Verified US Xbox data,
+Ready to play and enabled Play Game. This setup verification does not establish
+localized listening/gameplay. LOCAL-TEST.txt and local-test-receipt.json in the
+ignored test folder record operation/provenance. No release was published.
 
 ## Discord community entry points (2026-11-01)
 
