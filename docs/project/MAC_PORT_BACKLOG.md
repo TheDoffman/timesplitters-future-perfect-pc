@@ -8058,6 +8058,9 @@ arrows,4:3/16:9/ultrawide and split-screen. Mac build/gameplay unverified here.
 
 ## MAC-126 - Complete launcher language packs (#263) - Awaiting validation
 
+Source: [PR #436](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/436),
+implementation commit 1d262bb0; GitHub host validation pending.
+
 Local uncommitted source on `feature/launcher-language-packs`, based on
 4c49f143. Shared GameSettings/SettingsPage save one en/fr/de/it/es language,
 pass TSFP_GAME_LANGUAGE and validate the selected imported pack. Shared platform

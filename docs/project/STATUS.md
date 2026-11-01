@@ -1,3 +1,15 @@
+## Language selection PR preparation (2026-11-01)
+
+[PR #436](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/436)
+contains source commit 1d262bb0 on feature/launcher-language-packs, targeting main.
+Before push, the 57 selected language/shared-layout/release/compatibility tests
+passed with39 subtests, and context freshness/ownership plus whitespace checks
+passed. Earlier Windows full launcher/game builds,46 patch tracking/upgrades,
+14 guest-hook/scope cases and live French/German menu evidence are recorded below.
+GitHub Windows/Mac validation is pending at this source checkpoint. The user has
+authorized merging after required checks pass. Source integration does not publish
+a game/launcher release or establish native Mac localized gameplay/listening.
+
 ## Launcher language US startup repair (2026-11-01)
 
 User testing exposed English despite saved de. A bounded isolated fr launch of
