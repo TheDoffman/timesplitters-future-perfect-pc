@@ -1260,3 +1260,19 @@ group. Then351F60 releases local rigid parts and the replica cache clears. Check
 the corpse type, bounded/aligned ring context and ring-table identity before
 calling this indexed engine API. A reused NPC clip cannot animate the preserved
 corpse. This path is shared by Story and Online corpse preservation.
+
+## Falling-bomb guest feedback (2026-10-31)
+
+`pc_story_effects.inc::story_effect_bomb_feedback` completes kind1/profile39
+replay with the camera feedback that original219CA0 performs after EFBD0.
+For the owned context (mode0), use its local camera+27C position and the
+original squared falloff `(1200-distanceSquared)/1200`, then original D1EC0
+with half-strength, strength and one-fifth strength. Context FBC/FC0 retain the
+original2.75/min(strength,0.9) feedback. Other peers' camera pointers and host
+attenuation never travel over the network. No packet or cadence change:
+existing host/match/finite guards, reliable event identity and deduplication
+also govern shake. Barrels retain their own EDD40 feedback.
+
+This remains inside the existing Windows Story adapter; native Story transport
+and camera integration are still pending under MAC-013. The policy uses guest
+memory and common guest-call APIs and needs no OS-specific shake algorithm.

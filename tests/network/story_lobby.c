@@ -14,6 +14,7 @@
 #endif
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"FAIL line %d: %s\n",__LINE__,#x);exit(1);}}while(0)
 #ifdef _WIN32
+static unsigned bomb_shakes;
 static uint32_t memory[0x800000/4],g_esp,g_eax,g_ebx,g_ecx,g_edx,g_esi;
 static uintptr_t g_xbox_mem_offset;
 #define WORD_AT(a) (*(uint32_t *)((uintptr_t)(a)+g_xbox_mem_offset))
@@ -64,6 +65,7 @@ static void checkpoint_capture_original(void)
 void sub_0025EF80(void){pc_story_network_checkpoint_capture(checkpoint_capture_original);}
 void sub_0025EAD0(void){marker=33;}void sub_0025EC70(void){marker=34;}
 void sub_000FFDA0(void){marker=35;}void sub_000FFE40(void){marker=36;}
+void sub_000D1EC0(void){marker=137;}
 void sub_000EFBD0(void){marker=37;}void sub_00101660(void){marker=38;}
 void sub_000FF420(void){marker=39;}void sub_000FF490(void){marker=40;}
 void sub_000FF200(void){marker=41;}
@@ -225,6 +227,12 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
         ++effect_emitters;return 0x150000;
     }
     if(fn==sub_000FFE40) {CHECK(count==2 && args[0]==0x150000);WORD_AT(0x150098)=args[1];return 0;}
+    if(fn==sub_000D1EC0) {
+        CHECK(count==4 && args[0]==0x6000+0x1584 && args[2]==0x3f6aaaabu);
+        float amplitude,decay;memcpy(&amplitude,&args[1],4);memcpy(&decay,&args[3],4);
+        CHECK(fabsf(amplitude-.45833334f)<.00001f && fabsf(decay-.18333334f)<.00001f);
+        ++bomb_shakes;return 0;
+    }
     if(fn==sub_000EFBD0) {
         if(args[0]==1 || args[0]==40 || args[0]==47) {
             CHECK(count==8 && args[1]==UINT32_MAX && !args[4] && !args[5] && !args[6] && args[7]==1);
@@ -1577,6 +1585,23 @@ int main(void)
         memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
         CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s));story_effect_frame();CHECK(effect_blasts==2);
         CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s));story_effect_frame();CHECK(effect_blasts==2);
+        /* A near guest feels the same bomb even when slot0 is far away.
+           Serial rejection also prevents repeated feedback on retransmission. */
+        {
+            const uint32_t pool=0x6000,local=pool+0x1584,camera=0x190000;
+            WORD_AT(0x7b0c48)=pool;WORD_AT(pool)=0;WORD_AT(pool+4)=2;WORD_AT(pool+8)=0;
+            WORD_AT(local)=1;WORD_AT(local+4)=0;WORD_AT(local+8)=camera;
+            float eye[3]={22.f,0.f,0.f};memcpy((uint8_t *)memory+camera+0x27c,eye,sizeof eye);
+            memset(s.position,0,sizeof s.position);s.position[0]=12.f;
+            s.serial=20;
+            memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+            CHECK(story_effect_valid(&s));story_effect_receive(0x31000,0x32000,0x1e,sizeof s);story_effect_frame();
+            CHECK(bomb_shakes==1 && WORD_AT(local+0xfbc)==0x40300000u && WORD_AT(local+0xfc0)==0x3f666666u);
+            story_effect_receive(0x31000,0x32000,0x1e,sizeof s);story_effect_frame();CHECK(bomb_shakes==1);
+            eye[0]=100.f;memcpy((uint8_t *)memory+camera+0x27c,eye,sizeof eye);
+            s.serial++;memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+            story_effect_receive(0x31000,0x32000,0x1e,sizeof s);story_effect_frame();CHECK(bomb_shakes==1);
+        }
         /* Captured physical barrel path, outside the ambience decision scope.
            Both owner arguments are nonzero local entities; time is arg7. */
         story_effect_reset();WORD_AT(0x76b140)=1;g_esp=0x1800;

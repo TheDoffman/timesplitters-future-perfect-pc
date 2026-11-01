@@ -3,7 +3,7 @@
 #ifdef _WIN32
 extern void sub_000FFDA0(void),sub_000FFE40(void),sub_000EFBD0(void);
 extern void sub_00101660(void),sub_000FF420(void),sub_000FF490(void),sub_000FF200(void);
-extern void sub_001128C0(void),sub_00080F20(void);
+extern void sub_001128C0(void),sub_00080F20(void),sub_000D1EC0(void);
 typedef struct StoryEffect {
     uint32_t magic,match,serial,kind,a,b;
     float position[3],direction[3],value;
@@ -102,6 +102,35 @@ static int story_effect_receive(uint32_t peer,uint32_t payload,uint32_t type,uin
     if((int32_t)(s.serial-story_effect_seen)>0) story_effect_seen=s.serial;
     return 1;
 }
+/*219F9F..21A015 applies feedback separately from EFBD0. Use the owned
+  camera, rather than the host/slot0 view, and the original squared falloff. */
+static void story_effect_bomb_feedback(const StoryEffect *s)
+{
+    const unsigned count=story_npc_humans();
+    const uint32_t pool=WORD_AT(0x007b0c48u);
+    if(!count || count>4u || !guest_writable(pool,count*0x1584u)) return;
+    for(unsigned slot=0;slot<count;slot++) {
+        const uint32_t context=pool+slot*0x1584u,camera=WORD_AT(context+8u);
+        if(WORD_AT(context)!=slot || WORD_AT(context+4u)!=0u || !guest_writable(camera,0x3a4u)) continue;
+        float distance=0.f;
+        for(unsigned axis=0;axis<3u;axis++) {
+            float coordinate;memcpy(&coordinate,(const void *)((uintptr_t)(camera+0x27cu+axis*4u)+g_xbox_mem_offset),4u);
+            if(!isfinite(coordinate)) return;
+            const float delta=s->position[axis]-coordinate;distance+=delta*delta;
+        }
+        const float strength=(1200.f-distance)*0.0008333333535119891f;
+        if(strength>0.f) {
+            const float amplitude=strength*.5f,decay=strength*.2f;
+            uint32_t amplitude_bits,strength_bits,decay_bits;
+            memcpy(&amplitude_bits,&amplitude,4u);memcpy(&strength_bits,&strength,4u);memcpy(&decay_bits,&decay,4u);
+            guest_call(sub_000D1EC0,4,context,amplitude_bits,strength_bits,decay_bits);
+            const float response=2.75f,amount=fminf(strength,.9f);
+            memcpy((void *)((uintptr_t)(context+0xfbcu)+g_xbox_mem_offset),&response,4u);
+            memcpy((void *)((uintptr_t)(context+0xfc0u)+g_xbox_mem_offset),&amount,4u);
+        }
+        return;
+    }
+}
 static void story_effect_frame(void)
 {
     if(!story_effect_session() || WORD_AT(0x0076b140u)!=2u || WORD_AT(0x007de30cu)!=7u) return;
@@ -119,7 +148,10 @@ static void story_effect_frame(void)
         if(s.kind==0u) {
             const uint32_t emitter=guest_call(sub_000FFDA0,6,s.a,s.b,position,direction,value,s.options);
             if(emitter && guest_writable(emitter,0x9cu)) guest_call(sub_000FFE40,2,emitter,s.color);
-        } else if(s.kind==1u) guest_call(sub_000EFBD0,8,s.a,s.b,position,direction,0u,0u,value,s.options);
+        } else if(s.kind==1u) {
+            guest_call(sub_000EFBD0,8,s.a,s.b,position,direction,0u,0u,value,s.options);
+            story_effect_bomb_feedback(&s);
+        }
         else if(s.kind==4u) {
             /*40/47 dispatch through EDD40's EF444 branch: four authored
                emitters plus their original scale and camera feedback. Their

@@ -948,3 +948,14 @@ idempotent pause and preserved pose/motion data. `test_original_ragdoll_corpse_b
 executes US B2E50/351570/3515A0: temporary clip returned, corpse-ring clip bound,
 no independent physical group. Pose generation/binding are checked collaborators;
 visual Splitter grounding remains a human acceptance check.
+
+## Falling-bomb camera feedback regression (2026-10-31)
+
+Existing CI-selected `test_quit_menu.py::test_story_original_bomb_feedback`
+executes supported-US219CA0, D1EC0 and C7880 with controlled room lookup,
+raycast and effect allocation collaborators. The guest helper must match actual
+camera398/39C/3A0 and contextFBC/FC0 writes for the same impact/view distance,
+including each guest slot1..3; far/nonfinite camera positions produce no shake.
+Story lobby fixture replays the actual network event, verifies owned-camera
+selection and distance attenuation, and rejects duplicate serial feedback.
+This is original-callback/state evidence, not rendered explosion acceptance.

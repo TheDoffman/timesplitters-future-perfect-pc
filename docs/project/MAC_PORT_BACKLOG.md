@@ -2254,6 +2254,15 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Story falling-bomb feedback (2026-10-31, uncommitted):**
+  `src/network/pc_story_effects.inc` now replays the original distance-sensitive
+  camera shake and impact feedback after host profile39 explosions. The current
+  Story adapter remains Windows-gated; native Story transport/context integration
+  is still required. Reuse this guest-memory policy and original guest routines,
+  without a second host-specific implementation. Windows original-routine and
+  network-event tests cover the fix; physical Mac/mixed-host visual acceptance
+  must verify nearby/distant bombs and all guest slots once native Story is wired.
+
 - **Four-player Story rewards (2026-10-31, uncommitted):** Shared menu adapter
   and patch2465 map the single rewards frontend context independently of network
   profile slots. Windows engine fixture covers all guests; native fallback

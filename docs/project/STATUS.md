@@ -1,3 +1,33 @@
+## Story falling-bomb guest feedback - 2026-10-31
+
+Local/uncommitted `online-story-coop` change based on75c87dfc. The first revised
+bug is missing guest screen shake from the falling ambient bombs. Original
+219CA0 creates profile39 with EFBD0, then separately calls D1EC0 and writes the
+impact-feedback fields. Network replay previously performed only EFBD0.
+It now applies the same squared-distance falloff to the guest's owned camera,
+including slots1..3, and calls the original shake routine. Existing reliable
+serial deduplication covers the added feedback; packet format/traffic, host
+random decisions, explosion damage and barrel feedback remain unchanged.
+
+Windows x64/MSVC14.42/D3D11, supported US XBE SHA-256 verified. Official
+`tsfp.ps1 Build`, complete patch verification and built-in checks passed
+(`logs/story-bomb-feedback-build.log`);402.11GiB free after build. Affected
+suite56passed2Mac-host-only skipped in29.43s. Original US219CA0/D1EC0/C7880
+fixture matches exact shake and feedback writes against the guest helper,
+checks each guest slot and rejects distant/nonfinite camera positions. Network
+fixture checks owned-camera routing and no duplicate shake. An initial broader
+suite found a missing external-function stub in the isolated FOV test; adding
+that stub restored the full pass. Source/build unchanged after the build.
+
+Compatibility106128130b4f46bd7632b0b86ee9ec17b1f24ede342e7bd547d7914ac6c19770;
+executable SHA-25629dc37cc1a47099c969aea1d0c7d675907f30500e3b79fa17bf3010781211c8e.
+Content/executable verification and context/diff checks passed. No new automated
+playthrough is claimed. The user confirmed the fix in Windows gameplay and
+requested this commit. Native Story transport/context integration and physical
+Mac/mixed-host acceptance remain pending under MAC-013. Personal saves/settings
+were untouched.
+Commit requested after user acceptance; push/publication pending.
+
 ## Guest Splitter corpse grounding follow-up - 2026-10-31
 
 User retest confirms Splitter ragdolls render but their corpses fall through the

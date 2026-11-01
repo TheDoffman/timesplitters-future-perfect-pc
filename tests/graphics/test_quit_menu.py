@@ -653,3 +653,38 @@ def test_original_ragdoll_corpse_bake(tmp_path):
     finally: vars(config).update(previous)
     source=(ROOT/'tests/network/ragdoll_corpse.c').read_text(encoding='utf-8').replace('/* ORIGINAL_RAGDOLL_CORPSE */',code)
     assert 'PASS:' in compile_and_run(tmp_path,source)
+
+
+def test_story_original_bomb_feedback(tmp_path):
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    import re
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={a:dict(name=f'sub_{a:08X}',end=b) for a,b in (
+            (0x219ca0,0x21a109),(0xd1ec0,0xd1eea),(0xc7880,0xc78b3))}
+        translator=FunctionTranslator(image,functions)
+        code='\n'.join(translator.translate_function(a,info) for a,info in functions.items())
+        constants={int(a,16)+offset for a in re.findall(r'0x([0-9A-Fa-f]+)',code) for offset in (0,4,8,12)}
+        constants={a for a in constants if 0x470000<=a<0x500000}
+        constants.update(range(0x21a10c,0x21a11c,4))
+        seeds='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x}u;' for a in sorted(constants))
+    finally:
+        vars(config).update(previous)
+    source=(ROOT/'tests/network/story_bomb_feedback.c').read_text()
+    production=(ROOT/'src/network/pc_story_effects.inc').read_text()
+    shape=production[production.index('typedef struct StoryEffect'):production.index('#define STORY_EFFECT_MAGIC')]
+    helper=production[production.index('/*219F9F'):production.index('static void story_effect_frame(void)')]
+    source=source.replace('/* PRODUCTION_FEEDBACK */',shape+helper).replace('/* ORIGINAL_BOMB */',code)
+    defined=set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',source))
+    missing=set(re.findall(r'\b(sub_[0-9A-F]+)\b',code))-defined
+    source=source.replace('/* UNREACHED */','\n'.join('void '+name+'(void){assert(!"unexpected '+name+'");}' for name in sorted(missing)))
+    source=source.replace('/* ORIGINAL_CONSTANTS */',seeds)
+    assert 'PASS:' in compile_and_run(tmp_path,source)
