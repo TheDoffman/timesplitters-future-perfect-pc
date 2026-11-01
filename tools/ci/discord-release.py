@@ -111,6 +111,17 @@ def deliver(route, payload, secrets):
     print(f'Discord {route} delivery confirmed for announcements.')
 
 
+def notification_role(route, payload, settings):
+    """Allow exactly the selected opt-in role, never mentions from release notes."""
+    role = settings.get(f'DISCORD_{route.upper()}_RELEASE_ROLE_ID', '')
+    if not role:
+        return payload
+    if not re.fullmatch(r'[0-9]{17,20}', role):
+        raise ValueError('Invalid Discord notification role ID; no announcement sent.')
+    return {**payload, 'content': f'<@&{role}>',
+            'allowed_mentions': {'parse': [], 'roles': [role]}}
+
+
 def main():
     event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text(encoding='utf-8'))
     testing = os.environ.get('GITHUB_EVENT_NAME') == 'workflow_dispatch'
@@ -119,6 +130,8 @@ def main():
         print('No published game release to announce.')
         return
     route, payload = result
+    if not testing:
+        payload = notification_role(route, payload, os.environ)
     deliver(route, payload, os.environ)
     kind = 'connection test' if testing else 'game release announcement'
     print(f'Published {route} {kind}.')
