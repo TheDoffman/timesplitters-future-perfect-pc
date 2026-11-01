@@ -724,12 +724,14 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
         if moved.get('object',{}).get('sha')!=self.commit:
             raise ValueError('Replacement tag was not updated; inspect the draft before recovery.')
         self.replacement_tag_updated=True
+        # GitHub may rename a redrafted release to untagged-*; restore its
+        # association by release ID before looking it up by the public tag.
         self.gh('api','--method','PATCH',endpoint,'--input','-',payload=dict(
-            target_commitish=self.commit,body=self.notes.read_text(encoding='utf-8'),draft=True,prerelease=True))
+            tag_name=self.tag,target_commitish=self.commit,body=self.notes.read_text(encoding='utf-8'),draft=True,prerelease=True))
         self.gh('release','upload',self.tag,'--repo',self.repo,'--clobber',self.archive,self.checksum,self.metadata)
         uploaded=json.loads(self.gh('api',endpoint))
         actual={a['name']:dict(size=a['size'],digest=a.get('digest')) for a in uploaded.get('assets',[]) if a.get('state')=='uploaded'}
-        if not uploaded.get('draft') or uploaded.get('target_commitish')!=self.commit or actual!=expected or len(uploaded.get('assets',[]))!=len(expected):
+        if not uploaded.get('draft') or uploaded.get('tag_name')!=self.tag or uploaded.get('target_commitish')!=self.commit or actual!=expected or len(uploaded.get('assets',[]))!=len(expected):
             raise ValueError('Replacement asset/source verification failed; the release remains a draft.')
         self.validate_remote()
         if not draft:
