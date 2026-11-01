@@ -81,7 +81,7 @@ void pc_story_network_loadout_grant(void (*original)(void))
         const unsigned item=weapon==25u?0u:1u;
         if(!story_loadout_host[item].serial) {
             story_loadout_host[item]=(StoryLoadout){STORY_LOADOUT_MAGIC,story_npc_match(),item+1u,
-                ((1u<<story_npc_humans())-1u)&~1u,weapon,story_loadout_magazines};
+                ((1u<<story_npc_humans())-1u)&~1u,weapon,story_loadout_magazines,0u};
             story_loadout_sent=0;
             if(getenv("TSFP_STORY_TRACE")) fprintf(stderr,
                 "[PC-STORY-LOADOUT] authored host grant weapon=%u magazines=%u recipients=%X\n",

@@ -8,6 +8,14 @@ untouched when disabled, all four private callbacks are absent, and the complete
 existing chooser/reentry/host-loss checks still pass when enabled. Neither this
 native fixture nor Windows validation establishes physical Mac gameplay.
 
+The first Mac CI run exposed signed counter snapshots in the menu fixture,
+a missing lobby-spy forward declaration, a maximal-munch hex expression, and
+an unused bot validator in the native fallback. Keep counter snapshots typed
+like their spies, declare before use, separate hex addition tokens and include
+Windows fixture dependencies only in their exercised branch. The authored
+loadout initializer now explicitly supplies its already-zero equipped field.
+Retain Clang warnings as errors and every original assertion.
+
 # Story guest lobby host-loss regression - 2026-10-31
 
 The Story menu fixture also checks chooser reentry with a cached matching

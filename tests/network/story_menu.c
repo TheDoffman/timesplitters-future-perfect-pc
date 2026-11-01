@@ -139,13 +139,13 @@ int main(void)
 #ifdef _WIN32
     WORD_AT(0x79094c)=101;
     const uint32_t backs[]={0x1a4350,0x1a8ce0,0x1a8ee0};
-    const unsigned old_disconnects=disconnects;
+    const int old_disconnects=disconnects;
     for(unsigned i=0;i<3;i++) {
         online_mode=PC_ONLINE_STORY;
         void (*back)(void)=story_online_back_lookup(backs[i]);CHECK(back);
         callback(back);
         CHECK(next_menu==story_storage && cleanups==i+1 && factories==i+1 && network_resets==i+1);
-        CHECK(disconnects==old_disconnects+i+1 && online_mode==PC_ONLINE_NONE && !story_return_destination);
+        CHECK(disconnects==old_disconnects+(int)i+1 && online_mode==PC_ONLINE_NONE && !story_return_destination);
     }
     online_mode=PC_ONLINE_ARCADE;CHECK(!story_online_back_lookup(0x1a4350));
     online_mode=PC_ONLINE_NONE;CHECK(!story_online_back_lookup(0x1a4350));
@@ -158,7 +158,8 @@ int main(void)
        opening main and rebuild its own record, including a reused main menu. */
     WORD_AT(0x3170)=0x5000;WORD_AT(0x5004)=0x4e99d4;WORD_AT(0x502c)=story_parent;
     WORD_AT(0x79094c)=101;online_mode=PC_ONLINE_STORY;rebind_main=1;
-    const unsigned resets=network_resets,closes=disconnects,rebuilds=rebuilt;
+    const unsigned resets=network_resets;
+    const int closes=disconnects,rebuilds=rebuilt;
     g_esp=0x1800;WORD_AT(g_esp)=0x1cc552;WORD_AT(g_esp+4)=0;WORD_AT(g_esp+8)=0x8d;
     pc_story_network_lobby_lost(loss_original);
     CHECK(g_esp==0x1804 && !loss_fallbacks && next_parent==story_parent && next_menu==story_previous);
@@ -181,7 +182,7 @@ int main(void)
 #endif
     /* Reentering Story after a returned main can reuse the chooser record.
        Rebuild only that matching active child in its own layout context. */
-    const unsigned before_chooser_rebuild=rebuilt;
+    const int before_chooser_rebuild=rebuilt;
     WORD_AT(0x2004)=0x4000;WORD_AT(0x202c)=0x3000;
     WORD_AT(0x3170)=0x5000;WORD_AT(0x5004)=story_storage;
     callback(story_open);

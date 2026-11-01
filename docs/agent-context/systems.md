@@ -964,7 +964,7 @@ checks actual viewport scaling, target position, reset and seven display shapes.
 
 Bot corpses: [contracts](systems-details.md#online-bot-corpses).
 
-[Story flag](systems-details.md#story-co-op-release-flag).
+[Story release flag](systems-details.md#story-co-op-release-flag).
 
 Physics: [poses](systems-details.md#guest-ragdolls-and-physical-npc-drops).
 

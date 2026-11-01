@@ -6,7 +6,6 @@
 #include <stdarg.h>
 #include "pc_online.h"
 #include "pc_character_pose.h"
-#include "pc_network_bots_state.h"
 #ifdef TSFP_NATIVE_DISPLAY
 #undef _WIN32
 #elif !defined(_WIN32)
@@ -14,6 +13,7 @@
 #endif
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"FAIL line %d: %s\n",__LINE__,#x);exit(1);}}while(0)
 #ifdef _WIN32
+#include "pc_network_bots_state.h"
 static unsigned bomb_shakes,barricade_meshes,rally_moves;
 void sub_000D2DE0(void);
 void sub_000A6F90(void);
@@ -120,6 +120,7 @@ void sub_002CBBA0(void){marker=64;g_esp+=4;}
 void pc_story_network_rewards_page(void (*original)(void));
 static void reward_page_original(void){marker=65;g_esp+=4;}
 static uint32_t exit_factory_target;
+static int story_lobby_member(void);
 static void exit_factory_original(void){
     exit_factory_target=WORD_AT(g_esp+8);
     if(exit_factory_target==0x4e99d4) {CHECK(story_lobby_member());WORD_AT(0x76b1a4)=12;}
@@ -586,6 +587,7 @@ static void effect_decision_original(void)
 int main(void)
 {
 #ifdef _WIN32
+    (void)pc_network_bot_state_valid; /* This fixture exercises Story state instead. */
     g_xbox_mem_offset=(uintptr_t)memory;
     WORD_AT(0x76b140)=1;WORD_AT(0x76b1a4)=11;
     WORD_AT(0x2004)=0x4e99c4;WORD_AT(0x202c)=0x3000;
@@ -1995,7 +1997,7 @@ int main(void)
         online_mode=PC_ONLINE_ARCADE;CHECK(!pc_story_network_world_key(a));
         /* The shared Online pickup must clamp in32bits before writing signed16,
            including overfull dual clips and recovery from negative reserves. */
-        const uint32_t reserve=0x50000+0x61e+3*2,entry=0x4ea3f8+3*0xe0;
+        const uint32_t reserve=0x50000+0x61e + 3*2,entry=0x4ea3f8+3*0xe0;
         WORD_AT(entry)=32767;WORD_AT(entry+8)=0;ammo_loaded=0;
         *(int16_t *)((uint8_t *)memory+reserve)=32760;
         g_esp=0x1800;WORD_AT(g_esp+4)=0x50000;WORD_AT(g_esp+8)=3;WORD_AT(g_esp+12)=100;
@@ -2237,7 +2239,7 @@ int main(void)
             story_context_start_pending=1;story_rewards_tracking=1;
             g_esp=0x1800;marker=0;
             pc_story_network_result_action(sub_002EAF60_gen,0u);
-            CHECK(g_esp==0x1804 && !g_eax && marker==(role==1?62:74));
+            CHECK(g_esp==0x1804 && !g_eax && marker==(role==1?62u:74u));
             CHECK(story_leave_destination==(role==1?1u:2u));
             CHECK(story_lobby_return_pending==(role==1));
             CHECK(WORD_AT(0x78ad20)==(role==1?13u:2u));
