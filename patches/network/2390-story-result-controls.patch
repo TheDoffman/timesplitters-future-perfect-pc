@@ -1,0 +1,124 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -121,1 +121,121 @@
++extern void sub_002EAF60_gen(void);
++void sub_002EAF60(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_result_action(sub_002EAF60_gen,0u);
++#else
++    sub_002EAF60_gen();
++#endif
++}
++
++extern void sub_002EAFC0_gen(void);
++void sub_002EAFC0(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_result_action(sub_002EAFC0_gen,0u);
++#else
++    sub_002EAFC0_gen();
++#endif
++}
++
++extern void sub_002EB030_gen(void);
++void sub_002EB030(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_result_action(sub_002EB030_gen,0u);
++#else
++    sub_002EB030_gen();
++#endif
++}
++
++extern void sub_002EC090_gen(void);
++void sub_002EC090(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_result_action(sub_002EC090_gen,0u);
++#else
++    sub_002EC090_gen();
++#endif
++}
++
++extern void sub_002EC650_gen(void);
++void sub_002EC650(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_result_action(sub_002EC650_gen,0u);
++#else
++    sub_002EC650_gen();
++#endif
++}
++
++extern void sub_00065470_gen(void);
++void sub_00065470(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_result_action(sub_00065470_gen,0u);
++#else
++    sub_00065470_gen();
++#endif
++}
++
++extern void sub_002EB0C0_gen(void);
++void sub_002EB0C0(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_result_action(sub_002EB0C0_gen,1u);
++#else
++    sub_002EB0C0_gen();
++#endif
++}
++
++extern void sub_002EB290_gen(void);
++void sub_002EB290(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_result_action(sub_002EB290_gen,2u);
++#else
++    sub_002EB290_gen();
++#endif
++}
++
++extern void sub_002F5170_gen(void);
++void sub_002F5170(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_result_menu(sub_002F5170_gen);
++#else
++    sub_002F5170_gen();
++#endif
++}
++
++extern void sub_000A9070_gen(void);
++void sub_000A9070(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_world_remove(sub_000A9070_gen);
++#else
++    sub_000A9070_gen();
++#endif
++}
++
++extern void sub_001BA220_gen(void);
++void sub_001BA220(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_network_ammo_pickup(sub_001BA220_gen);
++#else
++    sub_001BA220_gen();
++#endif
++}
++
++extern void sub_001128C0_gen(void);
++void sub_001128C0(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_blood_decal(sub_001128C0_gen);
++#else
++    sub_001128C0_gen();
++#endif
++}
++
+ extern void sub_00164C40_gen(void);

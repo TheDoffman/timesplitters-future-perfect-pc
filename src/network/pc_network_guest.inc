@@ -66,7 +66,17 @@ static void pc_network_guest_tick(void (*original)(void))
         uint32_t *state = (uint32_t *)((uintptr_t)0x0076B1A4u + g_xbox_mem_offset);
         uint32_t frame = *(uint32_t *)((uintptr_t)0x007497A8u + g_xbox_mem_offset);
         if (*state == 15) {
-            if (!have_frame || frame != last_frame) {
+            const uint32_t scene=*(uint32_t *)((uintptr_t)0x0079094Cu+g_xbox_mem_offset);
+            const uint32_t flags=*(uint32_t *)((uintptr_t)0x007DE458u+g_xbox_mem_offset);
+            if((scene>=101u && scene<=107u) || (flags&0x20000000u)) {
+                /* Original3544B0 groups movement and358EB0/358F40 context
+                   copies behind this gate. Movie/frontend contexts have no
+                   live inventory at+1500. Keep the original pump/heartbeat,
+                   but hold its entire gameplay-send branch until gameplay. */
+                *(uint32_t *)((uintptr_t)0x0076B0ECu+g_xbox_mem_offset)=
+                    *(uint32_t *)((uintptr_t)0x0076B0F0u+g_xbox_mem_offset);
+                have_frame=0;
+            } else if (!have_frame || frame != last_frame) {
                 uint32_t epoch = *(uint32_t *)((uintptr_t)0x0076B0F0u + g_xbox_mem_offset);
                 *(uint32_t *)((uintptr_t)0x0076B0ECu + g_xbox_mem_offset) = epoch - 1u;
                 last_frame = frame;
@@ -74,6 +84,26 @@ static void pc_network_guest_tick(void (*original)(void))
             }
         } else have_frame = 0;
     } else have_frame = 0;
+#endif
+    original();
+}
+
+/* Stock3578A0 consumes gameplay score snapshots, writes actor rows, then
+ * calls64810. Story movie actor counts can exceed the sixteen-entry ranking
+ * table; its initialization then overwrites the adjacent movie ring buffer.
+ * A queued gameplay snapshot must not operate on the next scene's actors.
+ * Control/config/ready traffic continues through the original network pump. */
+static void pc_network_guest_scores(void (*original)(void))
+{
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    if(pc_network_enabled() &&
+       *(uint32_t *)((uintptr_t)0x0076B108u+g_xbox_mem_offset)) {
+        const uint32_t scene=*(uint32_t *)((uintptr_t)0x0079094Cu+g_xbox_mem_offset);
+        const uint32_t flags=*(uint32_t *)((uintptr_t)0x007DE458u+g_xbox_mem_offset);
+        if((flags&0x20000000u) || (scene>=101u && scene<=107u)) {
+            g_eax=0;g_esp+=4u;return;
+        }
+    }
 #endif
     original();
 }

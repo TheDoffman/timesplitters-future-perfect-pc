@@ -1,0 +1,48 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -185,6 +185,36 @@
+ extern RECOMP_MANUAL_TLS uint32_t g_ebx, g_edi;
+ extern RECOMP_MANUAL_TLS uint32_t g_esi;
+ #include "pc_network_bots_guest.inc"
++extern void sub_000DAC30_gen(void);
++void sub_000DAC30(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_npc_constructor(sub_000DAC30_gen);
++#else
++    sub_000DAC30_gen();
++#endif
++}
++
++extern void sub_0035BE90_gen(void);
++void sub_0035BE90(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_npc_send(sub_0035BE90_gen);
++#else
++    sub_0035BE90_gen();
++#endif
++}
++
++extern void sub_003580D0_gen(void);
++void sub_003580D0(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_npc_receive(sub_003580D0_gen);
++#else
++    sub_003580D0_gen();
++#endif
++}
++
+ extern void sub_000D73B0_gen(void);
+ void sub_000D73B0(void)
+ {
+@@ -209,7 +239,7 @@
+ void sub_0015F8C0(void)
+ {
+ #ifdef TSFP_PC_CONTROLS
+-    pc_story_network_npc_trace(sub_0015F8C0_gen,0x0015F8C0u);
++    pc_story_network_npc_spawn(sub_0015F8C0_gen);
+ #else
+     sub_0015F8C0_gen();
+ #endif

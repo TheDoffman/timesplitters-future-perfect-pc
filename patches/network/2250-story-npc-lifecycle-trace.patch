@@ -1,0 +1,44 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -121,1 +121,41 @@
++extern void sub_000D73B0_gen(void);
++void sub_000D73B0(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_npc_trace(sub_000D73B0_gen,0x000D73B0u);
++#else
++    sub_000D73B0_gen();
++#endif
++}
++
++extern void sub_0015C560_gen(void);
++void sub_0015C560(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_npc_trace(sub_0015C560_gen,0x0015C560u);
++#else
++    sub_0015C560_gen();
++#endif
++}
++
++extern void sub_0015F8C0_gen(void);
++void sub_0015F8C0(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_npc_trace(sub_0015F8C0_gen,0x0015F8C0u);
++#else
++    sub_0015F8C0_gen();
++#endif
++}
++
++extern void sub_0035CF80_gen(void);
++void sub_0035CF80(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_npc_trace(sub_0035CF80_gen,0x0035CF80u);
++#else
++    sub_0035CF80_gen();
++#endif
++}
++
+ extern void sub_0006B100_gen(void);

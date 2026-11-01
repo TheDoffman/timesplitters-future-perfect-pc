@@ -26,10 +26,12 @@ import ctypes as c
 import csv
 import hashlib
 import json
+import math
 import os
 import re
 from pathlib import Path
 import subprocess
+import struct
 import sys
 import threading
 import time
@@ -39,6 +41,7 @@ import pc_settings_game as ui
 ROOT=_layout_root
 sys.path.insert(0,str(ROOT/'tools'))
 from testing_profile import prepare_run,recycle_disks,check_fixture,XBE_SHA256,signature,BODY_SIZE,publish_input_state
+from testing_profile import unrelated_game_pids
 from native_effect_trace import snapshot_effects
 
 def weapon_set_metrics(run):
@@ -65,6 +68,12 @@ def weapon_set_metrics(run):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-name',default='stability-transitions')
+    parser.add_argument('--pair-role',choices=['host','guest'])
+    parser.add_argument('--pair-owner-pid',type=int,help='Controller ancestor allowed to own other games in this paired probe')
+    parser.add_argument('--directory')
+    parser.add_argument('--lobby-code')
+    parser.add_argument('--pair-load-probe',action='store_true')
+    parser.add_argument('--story-presentation-probe',action='store_true')
     parser.add_argument('--native-fps',type=int,choices=(0,60,120,144,180,240),
         help='0 selects Original60; positive rates select the native fractional clock')
     parser.add_argument('--manual-start',action='store_true')
@@ -103,7 +112,7 @@ def main():
     parser.add_argument('--trace-vehicle-contact',action='store_true',help='Trace up to 64 entries each for actor/vehicle contact, impulse selection and suspension response')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
-    parser.add_argument('--scenario',choices=['rocket-impact','weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch','surface-native-long','crowd-venice','crowd-hotel','crowd-disco','crowd-temple'])
+    parser.add_argument('--scenario',choices=['story-entry','story-host','story-host-controls','story-pair','story-local-load','rocket-impact','weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch','surface-native-long','crowd-venice','crowd-hotel','crowd-disco','crowd-temple'])
     args=parser.parse_args()
     if args.scenario=='rocket-impact' and not (args.watch_actors and args.watch_effects):
         parser.error('rocket-impact requires --watch-actors and --watch-effects for acceptance')
@@ -120,6 +129,15 @@ def main():
         parser.error('--native-surfaces cannot combine with older surface experiments')
     if args.watch_input and args.trace_vehicle_contact:
         parser.error('--watch-input and --trace-vehicle-contact select different bounded function traces; run them separately')
+    assert not args.pair_load_probe or args.scenario=='story-pair'
+    if args.scenario=='story-pair':
+        from urllib.parse import urlsplit
+        endpoint=urlsplit(args.directory or '')
+        assert args.pair_role and endpoint.scheme=='http' and endpoint.hostname=='127.0.0.1'
+        assert endpoint.port and not endpoint.username and not endpoint.password
+        assert endpoint.path in ('','/') and not endpoint.query and not endpoint.fragment
+        if args.pair_role=='guest':
+            assert args.lobby_code and len(args.lobby_code)==16 and all(c in '0123456789abcdefABCDEF' for c in args.lobby_code)
     if args.trace_surface_switches and not args.trace_surface_images:
         parser.error("--trace-surface-switches requires --trace-surface-images")
     if args.live_surfaces and not (args.bias_surfaces and args.float_surfaces and args.fractional_surfaces):
@@ -137,7 +155,10 @@ def main():
                               '/FO','CSV','/NH'],capture_output=True,text=True,check=True,timeout=10)
     existing=[row[1] for row in csv.reader(inventory.stdout.splitlines())
               if len(row)>1 and row[0].lower()=='futureperfect_recomp.exe']
-    assert not existing, f'Another game is running (PIDs {", ".join(existing)}); wait for its owner before testing'
+    if args.pair_owner_pid and (args.scenario!='story-pair' or not args.pair_role):
+        parser.error('--pair-owner-pid requires the Story paired probe')
+    unrelated=unrelated_game_pids(existing,args.pair_owner_pid)
+    assert not unrelated, f'Another game is running (PIDs {", ".join(unrelated)}); wait for its owner before testing'
     if args.profile_pc_symbol and (not args.profile_cpu or len(args.profile_pc_symbol)>=96 or any(c in args.profile_pc_symbol for c in '\t\r\n')):
         parser.error('--profile-pc-symbol requires --profile-cpu and a symbol shorter than 96 characters without tabs/newlines')
     assert hashlib.sha256((ROOT/'private/game/default.xbe').read_bytes()).hexdigest()==XBE_SHA256
@@ -145,6 +166,9 @@ def main():
         subprocess.run([sys.executable,str(ROOT/'tools/build/network-identity.py'),'--verify',
                         '--executable',str(ROOT/'build/windows/Release/futureperfect_recomp.exe')],check=True)
     run=ROOT/'private/test-saves'/args.run_name;env=prepare_run(ROOT,run)
+    stop_request=run/'stop-request'
+    assert not stop_request.is_symlink()
+    stop_request.unlink(missing_ok=True)
     env['TSFP_FRAME_PROFILE_DELAY_MS']=str(args.profile_delay_seconds*1000)
     env['TSFP_TEXTURE_MODE']='4k' if args.texture_mode=='enhanced' else 'classic'
     if args.lan_role:
@@ -167,6 +191,69 @@ def main():
             dict(keys=[69],label='weapons',wait=20),
             dict(keys=[40,40,40],label='weapons-selection',wait=10),
             dict(keys=[70],label='after-weapons',wait=15),dict(stop=True)]
+        commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
+    elif args.scenario=='story-entry':
+        route=[dict(label='main-menu',wait=24),
+            dict(keys=[69],label='story-chooser',wait=5),
+            dict(keys=[69],label='local-story',wait=5),
+            dict(keys=[70],label='local-back',wait=5),
+            dict(keys=[70],label='chooser-back',wait=5),
+            dict(keys=[69],label='story-chooser-again',wait=5),
+            dict(keys=[40,69],cancel_online=True,label='online-cancelled',wait=5),
+            dict(stop=True)]
+        commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
+    elif args.scenario=='story-local-load':
+        route=[dict(label='main-menu',wait=24),dict(keys=[69],label='story-chooser',wait=4),
+            dict(keys=[69],label='local-levels',wait=4),
+            dict(keys=[69],label='local-difficulty',wait=4),
+            dict(keys=[69],label='local-briefing',wait=4),
+            dict(keys=[69],label='local-loading',wait=25),
+            dict(keys=[69],label='local-skip',wait=5),
+            dict(keys=[69],label='local-game',wait=5),
+            dict(label='local-settled',wait=15,world_probe=True),
+            dict(keys=[87],hold_seconds=1,sample_hold=True,label='local-move',wait=2,world_probe=True),
+            dict(keys=[83],hold_seconds=1,sample_hold=True,label='local-back',wait=2,world_probe=True),
+            dict(keys=[1],hold_seconds=1,label='local-fire',wait=2,world_probe=True),dict(stop=True)]
+        commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
+    env['TSFP_ONLINE_SETTINGS']=str(run/'online-settings.json')
+    # Typed Story now supplies normal start behavior. Instrumentation must not
+    # enable a hidden feature switch that an ordinary player does not receive.
+    env.pop('TSFP_STORY_LOAD_PROBE',None)
+    directory_server=None;directory_thread=None
+    if args.scenario=='story-local-load':
+        env['TSFP_STORY_TRACE']='1';env['TSFP_STORY_TRACE_LOCAL']='1'
+    if args.scenario in ('story-host','story-host-controls','story-pair'):
+        env['TSFP_STORY_TRACE']='1'
+        env['TSFP_BOT_TRACE']=str(run/'story-hit-trace.log')
+        import socket
+        from lobby_server import Server
+        if args.scenario!='story-pair':
+            directory_server=Server(('127.0.0.1',0))
+            directory_thread=threading.Thread(target=directory_server.serve_forever,daemon=True)
+            directory_thread.start()
+        directory_address=args.directory if args.scenario=='story-pair' else f'http://127.0.0.1:{directory_server.server_port}'
+        with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as probe:
+            probe.bind(('127.0.0.1',0));host_port=probe.getsockname()[1]
+        command_root=ROOT/'private/network-validation'/args.run_name
+        command_root.mkdir(parents=True,exist_ok=True)
+        online_command=command_root/'online-command.json'
+        online_command.write_text(json.dumps(dict(directory=directory_address,
+            action='join' if args.pair_role=='guest' else 'host',code=args.lobby_code,
+            port=host_port,automatic_host=False)))
+        env['TSFP_ONLINE_TEST_COMMAND']=str(online_command)
+        route=[dict(label='main-menu',wait=24),dict(keys=[69],label='story-chooser',wait=4),
+            dict(keys=[40,69],label='network-browser',wait=10),
+            dict(keys=[69],label='host-lobby',wait=10),dict(stop=True)]
+        if args.scenario=='story-pair':
+            if args.pair_role=='guest':
+                route[3]=dict(keys=[40,69],label='guest-lobby',wait=10)
+            route[-1:]=[] if args.pair_load_probe else [dict(label='pair-wait',wait=10) for _ in range(9)]+[dict(stop=True)]
+        if args.scenario=='story-host-controls':
+            route[-1:]=[dict(keys=[89],label='story-options',wait=4,expect_menu=0x5238e0),
+                dict(keys=[40,69],label='story-difficulty',wait=4,expect_story_difficulty=True),
+                dict(keys=[69],label='story-settings-return',wait=4,expect_menu=0x4e99c4),
+                dict(keys=[82],label='story-progress',wait=4),
+                dict(keys=[70],label='story-progress-return',wait=4),dict(stop=True)]
         commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
     if args.scenario in ('crowd-venice','crowd-hotel','crowd-disco','crowd-temple'):
         route=json.loads((ROOT/'tests/fixtures/crowd-venice-commands.json').read_text())
@@ -263,6 +350,9 @@ def main():
         value=c.c_uint32()
         if not kernel.ReadProcessMemory(handle,address+0x10000,c.byref(value),4,None):return None
         return value.value
+    def real(address):
+        bits=word(address)
+        return c.c_float.from_buffer_copy(c.c_uint32(bits)).value if bits is not None else None
     def floats(address,count):
         values=(c.c_float*count)()
         if not kernel.ReadProcessMemory(handle,address+0x10000,values,count*4,None):return None
@@ -276,12 +366,16 @@ def main():
         buffer=c.create_string_buffer(size)
         if not kernel.ReadProcessMemory(handle,address+0x10000,buffer,size,None):return None
         return buffer.raw
-    def player_snapshot():
-        player=word(0x7b0c7c)
+    def player_snapshot(player=None):
+        if player is None:player=word(0x7b0c7c)
         if player is None or not 0x80000000<=player<0x84000000:return None
         entity=word(player+0x14)
         actor=word(entity+0x7c) if entity else None
         result=dict(player=player,position=floats(player+0xb4,3),look=floats(player+0x100,2),
+                    story_view=dict(state=word(player+0x114),saved_state=word(player+0x110),
+                        port=word(player+4),view=word(player+8),firstperson_animation_mode=word(player+0x14f8),
+                        camera_script=word(word(player+8)+0x26c) if word(player+8) else None,
+                        camera_flags=word(word(player+8)+0x21c) if word(player+8) else None),
                     hit_response=floats(player+0xf4,3),
                     equipped=[word(player+0x1b4),word(player+0x58c)],ammo=[])
         # Original actor damage updates entity+0x1cc (native_sniper_damage.c).
@@ -355,20 +449,215 @@ def main():
         return dict(visible=bool(user.IsWindowVisible(window)),minimized=bool(user.IsIconic(window)),
             foreground=user.GetForegroundWindow()==window,
             client_size=[rect.right-rect.left,rect.bottom-rect.top] if readable else None)
-    def snapshot():
+    def world_snapshot():
+        count=word(0x74C37C);characters=[]
+        if count is None or not 0<=count<=256:return dict(count=count,characters=[])
+        # The original active-character list stores character-data pointers.
+        # Their first word is the entity (the existing handoff_actor observer
+        # uses this layout); +230 is the original type2 network object ID.
+        for index in range(min(count,64)):
+            actor=word(0x7A3580+index*4)
+            if actor is None or not 0x10000<=actor<0x84000000:continue
+            entity=word(actor)
+            if entity is None or not 0x10000<=entity<0x84000000:continue
+            characters.append(dict(index=index,network_id=word(entity+0x230),
+                loadout=word(actor+0x94),character_flags=word(actor+0x24),
+                entity=entity,context=word(entity+0x150),flags=word(entity+0x28),
+                position=floats(entity+0x64,3),health=real(entity+0x1cc)))
+        # Original359390 resolves type2 references by the FIRST matching ID in
+        # the entity pool. Pointer-free replica creation must retain that identity.
+        entity_pool=word(0x72F5E8);entity_count=word(0x7B4FAC)
+        identities={};objects=[];bodies=[];attachments=[];entity_types={}
+        actor_pool=word(0x7356d8)
+        if entity_pool and 0x10000<=entity_pool<0x84000000 and entity_count is not None and 0<=entity_count<=8192:
+            raw=(c.c_ubyte*(entity_count*0x2e8))()
+            if kernel.ReadProcessMemory(handle,entity_pool+0x10000,raw,len(raw),None):
+                for index in range(entity_count):
+                    key=struct.unpack_from('<I',raw,index*0x2e8+0x230)[0]
+                    if key:identities.setdefault(key,[]).append(entity_pool+index*0x2e8)
+                    offset=index*0x2e8
+                    kind,flags=struct.unpack_from('<I4xI',raw,offset+0x20)
+                    if not flags&0x80000000:
+                        entity_types[str(kind)]=entity_types.get(str(kind),0)+1
+                    if kind==32 and not flags&0x80000000 and len(attachments)<128:
+                        owner=struct.unpack_from('<I',raw,offset+0x7c)[0]
+                        relative=owner-actor_pool if actor_pool else -1
+                        hand_owned=0<=relative<32*0xea0 and relative%0xea0 in (0xa4,0x1d4)
+                        attachments.append(dict(entity=entity_pool+offset,owner=owner,
+                            actor_slot=relative//0xea0 if hand_owned else None,
+                            still_owned=word(owner+0xe8)==entity_pool+offset if hand_owned else None,
+                            flags=flags,model=struct.unpack_from('<I',raw,offset+4)[0],
+                            masks=list(struct.unpack_from('<2I',raw,offset+0xc))))
+                    if kind==8 and not flags&0x80000000 and len(bodies)<128:
+                        address=entity_pool+offset
+                        actor=struct.unpack_from('<I',raw,offset+0x7c)[0]
+                        model=struct.unpack_from('<I',raw,offset+4)[0]
+                        bodies.append(dict(entity=address,actor=actor,owner=word(actor) if actor else None,
+                            slot=word(actor+8) if actor else None,model=model,
+                            position=list(struct.unpack_from('<3f',raw,offset+0x64)),
+                            health=struct.unpack_from('<f',raw,offset+0x1cc)[0],flags=flags,
+                            masks=list(struct.unpack_from('<2I',raw,offset+0xc)),
+                            room_count=raw[offset+0x30],rooms=list(struct.unpack_from('<11I',raw,offset+0x34)),
+                            model_flags=word(model+0x128) if model else None,
+                            bones=word(model+0x10) if model else None,
+                            effect_flags=word(actor+0xc6c) if actor else None,
+                            effect_phase=word(actor+0xde4) if actor else None,
+                            weapons=[word(actor+0x18c),word(actor+0x2bc)] if actor else []))
+                    health=struct.unpack_from('<f',raw,offset+0x1cc)[0]
+                    maximum=struct.unpack_from('<f',raw,offset+0x1d8)[0]
+                    if kind!=8 and flags&0x10 and math.isfinite(health) and math.isfinite(maximum) and 0<maximum<100000 and len(objects)<128:
+                        objects.append(dict(index=index,type=kind,flags=flags,
+                            model_kind=struct.unpack_from('<H',raw,offset+0x94)[0],
+                            script=struct.unpack_from('<I',raw,offset+0x60)[0],network_id=key,
+                            position=list(struct.unpack_from('<3f',raw,offset+0x64)),health=health,max_health=maximum))
+        for entry in characters:
+            entity=entry['entity'];actor=word(entity+0x7c);model=word(entity+4)
+            entry.update(slot=word(actor+8),visibility_flags=word(actor+0x2c),kind=[short(actor+0x48),short(actor+0x4a)],
+                team=word(actor+0x84),last_damage_tick=word(entity+0x1d4),
+                clip=word(model+0xd4) if model else None,
+                next_clip=word(model+0x12c) if model else None,
+                weapon_defs=[word(actor+0xd4),word(actor+0x204)],
+                weapon_models=[word(actor+0x18c),word(actor+0x2bc)],
+                clip_time=real(model+0xdc) if model else None,
+                model_header=[word(model+i*4) for i in range(32)] if model else [],
+                bounds_center=floats(entity+0x1a8,3),bounds_radius=floats(entity+0x1c0,3),
+                lookup_entities=identities.get(entry['network_id'],[]))
+        return dict(count=count,sample_limit=64,characters=characters,entity_pool_count=entity_count,
+                    objects=objects,bodies=bodies,attachments=attachments,entity_types=entity_types)
+    def checkpoint_pad(index,table):
+        record=table+index*32;pad=word(record+12)
+        # Setup rows hold a pad reference at +12, not XYZ. Resolve the
+        # original9A420 local table route without executing guest code.
+        pool=word(0x715f2c);slot=pad
+        if pad is not None and 8000<=pad<8350:pool=word(0x715f34);slot=pad-8000
+        elif pad is not None and 8350<=pad<8370:pool=word(0x715f38);slot=pad-8350
+        valid=pool and slot is not None and 0<=slot<8192
+        return dict(index=index,flags=word(record),pad=pad,
+            position=[real(pool+slot*32+12+j*4) for j in range(3)] if valid else [])
+    def story_scene_snapshot(world=False):
+        setup=word(0x74C36C)
+        budget=word(setup+8) if setup else None
+        return dict(setup=setup,budget_index=budget,
+            budget_count=word(0x53D2D0+budget*0xA4) if budget is not None and budget<256 else None,
+            record_counts={hex(offset):word(setup+offset) for offset in (0x10,0x28,0x30,0x88,0xB0,0xE0)} if setup else {},
+            checkpoint_pads=[checkpoint_pad(i,word(setup+0x24))
+                for i in range(min(word(setup+0x28) or 0,256))]
+                if world and setup and word(setup+0x24) else [],
+            allocation_counters={'0x7a3500':word(0x7A3500),'0x74c388':word(0x74C388)})
+    def snapshot(world=False):
         pointer=word(0x761C48)
+        menu=word(0x7613E4);descriptor=word(menu+4) if menu else None
+        def config(address):
+            return dict(players=(word(address) or 0)&255,
+                local_players=(word(address+1) or 0)&255,bots=(word(address+2) or 0)&255,
+                scene=(word(address+0x54) or 0)&255,rule=(word(address+0x55) or 0)&255,
+                variant=(word(address+0x56) or 0)&255,difficulty=(word(address+0x57) or 0)&255,
+                flags=word(address+0x58),
+                characters=[(word(address+0x14+i) or 0)&255 for i in range(4)])
+        actors=[];pool=word(0x7356D8)
+        if pool and (args.pair_load_probe or args.scenario=='story-local-load'):
+            for slot in range(min(word(0x790950) or 0,4)):
+                actor=pool+slot*0xea0;entity=word(actor)
+                # Existing bot replication uses +64 for world position;
+                # +1a8 is collision-bounds centre, not movement telemetry.
+                position=[real(entity+0x64+i*4) for i in range(3)] if entity else []
+                context=(word(0x7B0C48) or 0)+slot*0x1584
+                actors.append(dict(slot=slot,entity=entity,position=position,
+                    context=context,local_port=word(context+4),context_flags=word(context+0xc),
+                    story_view=dict(firstperson_animation_mode=word(context+0x14f8),camera=word(context+8),
+                        matrix_buffer=word(word(context+8)+0x208) if word(context+8) else None,
+                        script=word(word(context+8)+0x26c) if word(context+8) else None,
+                        flags=word(word(context+8)+0x21c) if word(context+8) else None),
+                    action_masks=[word(context+0x20+i*4) for i in range(6)],
+                    context_position=[real(context+0xb4+i*4) for i in range(3)],
+                    # Field contracts used by pc_network_bots_guest_shot and
+                    # its snapshot sender; weapon IDs are not ammo counters.
+                    weapons=[word(actor+0xd4+hand*0x130) for hand in range(2)],
+                    aim=[real(actor+0xb88+i*4) for i in range(3)],
+                    muzzle=[real(actor+0xbb4+i*4) for i in range(3)],
+                    health=real(entity+0x1cc) if entity else None,
+                    entity_flags=word(entity+0x28) if entity else None,
+                    life=[word(actor+0x10+i*4) for i in range(4)],
+                    actor_flags=[word(actor+0x24+i*4) for i in range(3)]))
+        contexts=word(0x7B0C48);local_player=None
+        if contexts:
+            owned=[contexts+i*0x1584 for i in range(min(word(0x790950) or 0,4))
+                   if word(contexts+i*0x1584+4)==0]
+            if len(owned)==1:local_player=player_snapshot(owned[0])
         return dict(pid=process.pid,scene=word(0x79094C),flags=word(0x7DE458),
+            local_player=local_player,
             paused=word(pointer)&1 if pointer else 0,mission=word(0x78AD48),
+            menu_mode=word(0x78AD2C),network_phase=word(0x76B1A4),role=word(0x76B140),
+            menu_descriptor=descriptor,menu_builder=word(descriptor) if descriptor else None,
+            player_slots=sum(bool((word(0x77728c+i*0x124) or 0)&1) for i in range(16)),
+            active_mode=word(0x78AD20),network_enabled=word(0x76B108),actor_pool=word(0x7356D8),
+            game_tick=word(0x7DE318),pause_flags=word(pointer) if pointer else 0,
+            # Original main-update dispatch uses state-1 at 6887b; state8
+            # selects the failure path. Network status2 propagates that state
+            # at35d968. Observe both without modifying either state machine.
+            game_state=word(0x7DE30C),state_seconds=real(0x7DE300),
+            network_end_state=word(0x76B1A0),
+            result_flags=word(0x7DE45C),failure_timer=word(0x7DE460),
+            context_count=word(0x790950),context_pool=word(0x7B0C48),
+            context_states=[word((word(0x7B0C48) or 0)+i*0x1584+0x114)
+                for i in range(min(word(0x790950) or 0,4))] if word(0x7B0C48) else [],
+            frontend_config=config(0x78AD58),active_config=config(0x7DE400),actors=actor_snapshot() if args.watch_actors else actors,
+            input_block=word(0x6B9888),network_input=word(0x76B0FC),
+            active_characters=word(0x74C37C),story_stage=word(0x78AD50),
+            story_objectives=[dict(index=i,identity=short((word(0x78cecc) or 0)+i*0x4c),
+                kind=word((word(0x78cecc) or 0)+i*0x4c+8),
+                changed=word((word(0x78cecc) or 0)+i*0x4c+0x34))
+                for i in range(min(word(0x78cec8) or 0,128))] if word(0x78cecc) else [],
+            story_checkpoints=[word((word(0x75f5d0) or 0)+i*0x238+4)
+                for i in range(min(word(0x790950) or 0,4))] if word(0x75f5d0) else [],
+            local_axes=[word(0x6B93E8+i*4) for i in range(4)],
+            network_pads=[dict(held=word(0x6B94D4+slot*0x3c),
+                blocked=word(0x6B9500+slot*0x3c),
+                axes=[word(0x6B94E0+slot*0x3c+i*4) for i in range(4)])
+                for slot in range(min(word(0x790950) or 0,4))],
             held=word(0x6B93DC),pressed=word(0x6B93E0),suppression=word(0x6B9408),
             raw_ticks=word(0x4E7940),game_ticks=word(0x4E7944),level_ticks=word(0x7DE318),
             match_state=word(0x7DE30C),countdown=word(0x4D2878),countdown_ticks=word(0x4D287C),
+            story_config_tail=[word(address) for address in range(0x7DE460,0x7DE4A0,4)]
+                if args.pair_load_probe or args.scenario=='story-local-load' else None,
+            story_scene=story_scene_snapshot(world) if args.pair_load_probe or args.scenario=='story-local-load' else None,
+            **(dict(world=world_snapshot()) if world else {}),
             roster=word(0x7de400),window=window_snapshot(),
-            **(dict(actors=actor_snapshot()) if args.watch_actors else {}),
             **(dict(effects=snapshot_effects(read_bytes)) if args.watch_effects else {}),
             player=player_snapshot(),**(dict(hud=hud_snapshot()) if args.watch_hud else {}),
             **(dict(network=network_snapshot()) if args.lan_role else {}),
             **(dict(surfaces=surface_snapshot()) if args.watch_surfaces else {}),
             **(dict(native_clock=native_clock_snapshot()) if args.watch_native_clock else {}))
+    presentation_frames=set()
+    def sample():
+        nonlocal next_sample
+        elapsed=time.perf_counter()-start
+        if elapsed>=next_sample:
+            assert len(samples)<2400,'Bounded state-sample limit reached'
+            item=dict(seconds=round(elapsed,2),**snapshot());samples.append(item)
+            current_pending=run/'current.pending.json'
+            current_pending.write_text(json.dumps(item))
+            try:current_pending.replace(run/'current.json')
+            except PermissionError:pass # A Windows reader may briefly hold it; retain the last complete sample.
+            early_story=(item.get('active_mode') in (4,14) and
+                item.get('scene') is not None and item['scene']<100 and not item.get('paused') and
+                not (item.get('flags',0)&0x20000000))
+            if args.story_presentation_probe and early_story and item.get('scene')==2:
+                tick=item.get('game_tick',0)
+                for target in (60,300,600,900,1200):
+                    if target<=tick<target+120 and target not in presentation_frames:
+                        capture('opening-auto-'+str(target));presentation_frames.add(target)
+            next_sample=elapsed+(.1 if args.pair_load_probe and early_story else
+                .5 if args.pair_load_probe else 1)
+    def wait_observed(seconds):
+        if not args.pair_load_probe:
+            time.sleep(seconds);return
+        # Capture the first load/spawn/health transition during long command
+        # waits, rather than sampling only after Game Over is already visible.
+        until=time.monotonic()+seconds
+        while time.monotonic()<until:
+            if process.poll() is not None:return
+            sample();time.sleep(min(.1,max(0,until-time.monotonic())))
     def native_clock_snapshot():
         # 7497B8 increments once in the native timing routine before returning
         # to gameplay. This is separate from the RHI's accepted-Present count.
@@ -380,7 +669,10 @@ def main():
     def drain(pipe,path):
         with path.open('wb') as out:
             left=4*1024*1024
-            while chunk:=pipe.read(4096):out.write(chunk[:left]);left=max(0,left-len(chunk))
+            # Menu assertions read this log while the game is still running.
+            # Neither pipe reads nor file writes may wait for a full 4 KiB.
+            while chunk:=pipe.read1(4096):
+                out.write(chunk[:left]);out.flush();left=max(0,left-len(chunk))
     def sample_motion(path):
         # Independent of command waits. Timestamp the whole observation because
         # RPM reads are not an atomic game-frame snapshot. Each XYZ is one read.
@@ -464,6 +756,44 @@ def main():
                 except OSError:pass
             time.sleep(.1)
         raise AssertionError('No renderer capture')
+    def cancel_online():
+        # Discover only this game's own companion chain: its direct pythonw.exe
+        # child and the interpreter a venv launcher redirects to. Do not close
+        # another game's browser or inspect command lines or personal
+        # configuration.
+        class Entry(c.Structure):
+            _fields_=[('size',c.c_uint32),('usage',c.c_uint32),('pid',c.c_uint32),
+                ('heap',c.c_size_t),('module',c.c_uint32),('threads',c.c_uint32),
+                ('parent',c.c_uint32),('priority',c.c_int32),('flags',c.c_uint32),
+                ('exe',c.c_wchar*260)]
+        kernel.CreateToolhelp32Snapshot.argtypes=[c.c_uint32,c.c_uint32]
+        kernel.CreateToolhelp32Snapshot.restype=c.c_void_p
+        kernel.Process32FirstW.argtypes=[c.c_void_p,c.POINTER(Entry)]
+        kernel.Process32NextW.argtypes=[c.c_void_p,c.POINTER(Entry)]
+        until=time.monotonic()+15
+        while time.monotonic()<until:
+            snap=kernel.CreateToolhelp32Snapshot(2,0)
+            assert snap and snap!=c.c_void_p(-1).value
+            try:
+                records=[]
+                entry=Entry();entry.size=c.sizeof(entry)
+                more=kernel.Process32FirstW(snap,c.byref(entry))
+                while more:
+                    records.append((entry.pid,entry.parent,(entry.exe or '').casefold()))
+                    more=kernel.Process32NextW(snap,c.byref(entry))
+                launchers={pid for pid,parent,exe in records
+                    if parent==process.pid and exe.endswith('pythonw.exe')}
+                owned=launchers|{pid for pid,parent,exe in records
+                    if parent in launchers and exe.endswith('pythonw.exe')}
+                for pid in owned:
+                    for hwnd,title in ui.windows(pid):
+                        if title=='Online Story - TimeSplitters Future Perfect':
+                            report.append(dict(online_child=pid,title=title))
+                            user.PostMessageW(hwnd,0x10,0,0)
+                            return
+            finally:kernel.CloseHandle(snap)
+            time.sleep(.1)
+        raise AssertionError('Story Online companion window was not opened')
     window=None;index=0;seen=0;start=time.perf_counter();next_sample=0
     lock=run/'run.lock'
     (run/'provenance.json').write_text(json.dumps(dict(
@@ -481,16 +811,15 @@ def main():
     try:
         launch(index)
         while time.perf_counter()-start<args.seconds:
+            if stop_request.exists():break
             assert process.poll() is None,'Unexpected game exit'
             elapsed=time.perf_counter()-start
-            if elapsed>=next_sample:
-                item=dict(seconds=round(elapsed,2),**snapshot());samples.append(item)
-                (run/'current.json').write_text(json.dumps(item));next_sample=elapsed+1
+            sample()
             lines=commands.read_text().splitlines();assert commands.stat().st_size<65536
             if seen<len(lines):
                 command=json.loads(lines[seen]);seen+=1
                 assert len(command.get('keys',[]))<=16 and 0.1<=command.get('gap',.7)<=4
-                hold=command.get('hold',.18)
+                hold=command.get('hold_seconds',command.get('hold',.18))
                 assert .05<=hold<=3
                 assert 0<=command.get('wait',2.5)<=30
                 motion=command.get('mouse')
@@ -519,16 +848,17 @@ def main():
                                 held_seconds=round(time.perf_counter()-held_at,6),key=key,
                                 **snapshot()))
                             time.sleep(min(.05,max(0,hold-(time.perf_counter()-held_at))))
-                    else:time.sleep(hold)
+                    else:wait_observed(hold)
                     publish_input_state(ROOT,state,'0 0\n')
                     key_events.append(dict(key=key,down_ns=down_ns,up_ns=time.perf_counter_ns()))
-                    time.sleep(command.get('gap',.7))
+                    wait_observed(command.get('gap',.7))
                 if command.get('window')=='toggle':user.PostMessageW(window,0x104,13,1<<29)
                 if command.get('window')=='focus':
                     user.ShowWindow(window,6);time.sleep(1)
                     lost=user.GetForegroundWindow()!=window
                     user.ShowWindow(window,9);user.SetForegroundWindow(window);time.sleep(1)
                     report.append(dict(focus_lost=lost,focus_restored=user.GetForegroundWindow()==window))
+                if command.get('cancel_online'):cancel_online()
                 wait_samples=[];wait_started=time.perf_counter();wait_seconds=command.get('wait',2.5)
                 if command.get('sample_wait'):
                     while time.perf_counter()-wait_started<wait_seconds:
@@ -536,9 +866,9 @@ def main():
                         observation=snapshot()
                         wait_samples.append(dict(seconds=began-start,end_seconds=time.perf_counter()-start,**observation))
                         time.sleep(min(.05,max(0,wait_seconds-(time.perf_counter()-wait_started))))
-                else:time.sleep(wait_seconds)
+                else:wait_observed(wait_seconds)
                 item=dict(seconds=round(time.perf_counter()-start,3),observed_ns=time.perf_counter_ns(),
-                    command=command,key_events=key_events,**snapshot(),fullscreen=not bool(user.GetWindowLongW(window,-16)&0x00C00000))
+                    command=command,key_events=key_events,**snapshot(world=command.get('world_probe',False)),fullscreen=not bool(user.GetWindowLongW(window,-16)&0x00C00000))
                 if hold_samples:item['hold_samples']=hold_samples
                 if wait_samples:item['wait_samples']=wait_samples
                 if 'label' in command:capture(command['label'])
@@ -552,9 +882,23 @@ def main():
                         (run/(command['label']+'-cpu.txt')).write_bytes(diagnostic)
                 report.append(item);(run/'report.json').write_text(json.dumps(report,indent=2))
                 print(json.dumps(item),flush=True)
+                if 'expect_menu' in command or command.get('expect_story_difficulty'):
+                    trace=(run/f'run{index}.err').read_text(errors='replace')
+                    observed=re.findall(r'\[PC-STORY-UI\] descriptor=([0-9A-Fa-f]{8})',
+                        trace)
+                    expected=command.get('expect_menu')
+                    if command.get('expect_story_difficulty'):
+                        difficulty=re.findall(r'\[PC-STORY-SELECT\] mission=1 difficulty descriptor=([0-9A-Fa-f]{8})',trace)
+                        assert difficulty and 'custom difficulty built' in trace, 'Story difficulty builder was not reached'
+                        expected=int(difficulty[-1],16)
+                        assert 'custom difficulty built mission=1' in trace, 'Story mission choice was not retained'
+                    assert observed and int(observed[-1],16)==expected, (
+                        'Unexpected Story menu; stopped before sending another action',command,observed[-1:])
             time.sleep(.1)
     finally:
         close();lock.unlink()
+        if directory_server:
+            directory_server.shutdown();directory_thread.join(timeout=3);directory_server.server_close()
         (run/'states.json').write_text(json.dumps(samples))
         (run/'report.json').write_text(json.dumps(report,indent=2))
         recycle_disks(ROOT,run);check_fixture(ROOT)
@@ -577,6 +921,17 @@ def main():
         (run/'rocket-impact-results.json').write_text(json.dumps(result,indent=2)+'\n')
         print('PASS: single-rocket lethality, explosion lifetime/cleanup and respawn/walk; not general damage parity',flush=True)
     if args.scenario=='weapon-set':print('Weapon-set settled FPS:',weapon_set_metrics(run),flush=True)
+    if args.scenario=='story-entry':
+        text=(run/'run0.err').read_text(errors='replace')
+        assert text.count('[PC-STORY] Local/Online chooser opened')>=2
+        assert '[PC-STORY] Original local Story route selected' in text
+        assert any('online_child' in item for item in report)
+    if args.scenario=='story-local-load':
+        played=[item for item in report if item.get('active_mode') in (4,14) and
+            item.get('scene',101)<100 and item.get('actor_pool') and
+            not (item.get('flags',0)&0x20000000)]
+        assert played,'Local Story gameplay not established; inspect local-*.png and report.json'
+        (run/'story-load-baseline.json').write_text(json.dumps(played[-1],indent=2)+'\n')
     if args.scenario in ('crowd-venice','crowd-hotel','crowd-disco','crowd-temple'):
         scene={'crowd-hotel':39,'crowd-venice':46,'crowd-temple':49,'crowd-disco':56}[args.scenario]
         checkpoints=[i for i in report if i.get('command',{}).get('label') in ('spawn','combat-one','combat-four','combat-six')]

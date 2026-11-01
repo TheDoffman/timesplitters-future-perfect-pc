@@ -451,6 +451,8 @@ class Publisher:
         stable_note = self.stable_base or 'No published Stable release is an ancestor of this build.'
         missing_note = ('This build does not include the latest Stable release, '+self.channel['latest_stable']+'.'
                         if self.prerelease and self.channel['latest_stable'] and not self.channel['includes_latest_stable'] else '')
+        channel_selection = ('**Preview**, then choose **'+self.channel['name']+'** under **Testing track**'
+                             if self.prerelease else '**Stable**')
         body = f'''TimeSplitters: Future Perfect PC **{self.tag}** for Windows 10/11 x64.
 
 This is an experimental PC port. Original US Xbox game files are required and are not included.
@@ -475,7 +477,7 @@ This is an experimental PC port. Original US Xbox game files are required and ar
 
 1. [Download the Windows launcher](https://github.com/{self.repo}/releases/latest) and extract its ZIP.
 2. Open **TimeSplitters Launcher.exe**.
-3. Set **Update channel** to **{self.channel['name']}**, then select **Install release**.
+3. Set **Update channel** to {channel_selection}, then select **Install release**.
 4. Import your US Xbox game using **Locate ISO** or **Use extracted files**. You only need to do this once.
 5. Select **Play Game**.
 

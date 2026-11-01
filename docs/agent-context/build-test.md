@@ -1,8 +1,9 @@
 # Build, run and validation map
 
-[Saves](save-locations.md); [Discord](../release/discord-announcements.md); [Story beta](../release/story-coop-beta-handoff.md).
+[NPC/cinematics](build-test-details.md); [Saves](save-locations.md); [Discord](../release/discord-announcements.md); [Story beta](../release/story-coop-beta-handoff.md).
 
-test_native_timing.py::test_original_minigun_spin runs the complete supported-US callback with controlled audio/model services. It reproduces the old high-FPS failure and checks readiness, release, pause and input guards at 60/120/144/180/240 FPS. Existing CI selects this suite; private-XBE absence skips it. Historical stack fixtures exclude minigun intent until the full native stack is applied. See native-minigun.md.
+
+test_native_timing.py::test_original_minigun_spin runs the complete supported-US callback with fake services. It reproduces the old high-FPS failure and checks readiness, release, pause and input guards at 60/120/144/180/240 FPS. Existing CI selects this suite; private-XBE absence skips it. Historical fixtures exclude minigun intent until the native stack is applied. See native-minigun.md.
 
 Release 0.4.0 / launcher 1.4.1 tests cover aliases and upload recovery; Mac
 Online notices follow [installer paths](multiplayer-ui.md).
@@ -1005,30 +1006,18 @@ error; native calendar source and the accepted game binary do not change.
 [Strings](kernel-strings.md), [RTL](kernel-rtl.md), [formatting](guest-printf.md), [numbers](guest-numbers.md).
 
 
-Crash evidence CI now selects `tests/diagnostics/test_guest_capture.py` beside
-existing crash tests on both hosts. It compiles the shared bounded-memory writer
-against synthetic addresses; Windows fatal-helper tests assert model history is
-exported. Native fatal-helper tests assert the same history and diagnostics
-metadata on Darwin. Host skips are not a passing native execution result.
-
-Allocation observation is checked by `test_allocation_observer.py`; both host
-helper fixtures assert allocation/release history reaches the report. Patch
-tracking tests require the evidence hook after the independent allocator/boot
-and presentation patches, before final source-layout routing.
-
-Historical upgrade fixtures exclude the later model-trace/allocation-observer
-patches until upgrading to the full stack. Model instrumentation is inserted
-before a stable function, rather than at EOF, so reversing it preserves local
-trailing edits during historical branch round trips. These are tested in
-`tests/repository/test_patch_updates.py`.
+[Crash evidence and historical upgrades](build-test-details.md#crash-evidence-and-historical-upgrades).
 
 Crossplay: [acceptance](multiplayer-ui.md#physical-windowsmac-online-acceptance).
 
-Crossplay rotation/lock/recycle: `test_crossplay_peer.py`; Online interpreter:
-`test_native_mac_tools.py`. See multiplayer-ui.md.
+Crossplay tests: see multiplayer-ui.md.
 
 Markers: test_ui_layout.py; test_patch_updates.py covers 2290/2291.
 
 Mech input: test_mounted_mouse.py; [scope](mounted-mouse.md#battle-mech-mouse-425).
+
+Physics: [checks](build-test-details.md#guest-physical-state-regression).
+
+[Story flag and Clang fixtures](build-test-details.md#story-release-flag-regression).
 
 [Languages](launcher.md#complete-game-language-packs-discussion-263).
