@@ -54,3 +54,29 @@ These CPU checks do not prove the authored portcullis script, collision geometry
 or physical controller delivery in a live mission. Test Scotland the Brave at
 the first interior upper-floor levers, including pause/resume and Original60.
 Native Mac gameplay remains pending under MAC-121.
+
+## Fresh weapon clicks (#434)
+
+US `1C2C00` checks fresh and held eligibility separately through `1B7ED0`.
+Its call to `1C2AF0` returns to `1C2E6D`; argument four distinguishes a fresh
+press from held fire. The request's whole-game-tick gate can discard an already
+eligible fresh edge after a pause offsets raw/game phases. The remaining host
+pulse then uses the slower held-fire cooldown; increasing its duration is not
+a substitute for delivering the fresh request.
+
+`pc_native_player_trigger_guest` admits exactly this fresh request on positive
+fractional native time, temporarily providing one whole tick for the request
+and restoring it on return. The float interval is unchanged. Held requests,
+`1C3100` continuations, Original mode and zero-time calls are not promoted.
+No cooldown, ammo, binding, animation-readiness or host pulse is bypassed.
+Patch2180 wraps the original request after the late native timing patches.
+
+`native_player_trigger.c` executes the original eligibility/request routines,
+original Xbox decoder, shared timing model and host Fire pulse buffer. It
+checks680 schedules at60/120/180/240,1/20ms clicks,84/100ms spacing,17 input
+phases and pause offsets. Device magnitudes and the final weapon-state
+transition are controlled boundaries: this counts admitted firing requests,
+not projectiles or damage. The old request gate loses eligible clicks; direct
+phase tests detect it. `native_player_trigger_scope.c` checks64 asset-free
+scope/restoration cases on both CI hosts. Both use `test_native_timing.py`.
+Live ammunition evidence and throughput limitations belong in STATUS.

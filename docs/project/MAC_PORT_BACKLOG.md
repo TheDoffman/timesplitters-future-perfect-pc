@@ -317,6 +317,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-123 | Bounded guest-memory crash evidence and model history | Awaiting validation |
 | MAC-126 | Launcher Discord community button | Awaiting validation |
 | MAC-127 | Complete launcher language packs | Awaiting validation |
+| MAC-128 | Fresh weapon trigger timing (#434) | Awaiting validation |
 
 ### MAC-126 - Launcher Discord community button
 
@@ -8658,3 +8659,17 @@ localized gameplay acceptance remains pending. See STATUS's US startup repair.
 MAC-127 PR436 review repair: native package manifests now forward language_packs
 from the native build to the installed top level. Three portable real-writer
 regressions cover enabled/disabled/absent flags; native host CI remains the gate.
+
+### MAC-128 - Fresh weapon trigger timing (#434)
+
+- **Status:** Awaiting validation
+
+Shared patch2180 and pc_native_player_trigger_guest preserve already-eligible
+fresh requests when raw input and game ticks have different phases. Cooldowns,
+held fire and continuation calls remain original. Windows original-code tests
+cover680 short-click schedules through240FPS, including pause offsets; the
+asset-free64-case scope test is selected by the same runtime CI suite on Mac.
+On a Mac, build the full patch stack and test sci-fi handgun short clicks at
+Original60 and supported native120/180/240, before/after pause, reload and live
+rate changes. Verify one shot per eligible click and unchanged held-fire rate.
+Physical Mac build/gameplay is unverified on this Windows computer.
