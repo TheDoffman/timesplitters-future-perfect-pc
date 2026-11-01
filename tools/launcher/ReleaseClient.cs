@@ -181,6 +181,7 @@ namespace TimeSplitters.Launcher
     {
         public const string Repository = "TheDoffman/timesplitters-future-perfect-pc";
         public const string ReleasesPage = "https://github.com/" + Repository + "/releases";
+        public const string DiscordInvite = "https://discord.gg/hFkfcCUm56";
         readonly HttpClient http;
         public ReleaseClient() : this(null) { }
         internal ReleaseClient(HttpMessageHandler handler)

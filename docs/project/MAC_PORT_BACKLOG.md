@@ -315,6 +315,25 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-121 | High-FPS interaction input (#357) | Awaiting validation |
 | MAC-122 | Temporary material matrix cache epoch (#398) | Awaiting validation |
 | MAC-123 | Bounded guest-memory crash evidence and model history | Awaiting validation |
+| MAC-126 | Launcher Discord community button | Awaiting validation |
+| MAC-127 | Complete launcher language packs | Awaiting validation |
+
+### MAC-126 - Launcher Discord community button
+
+- **Status:** Awaiting validation
+- **Behavior:** The labeled Discord logo in the launcher sidebar and the Home
+  community card's Join Discord button open the
+  project's public invite in the browser on Windows and native Mac. GitHub
+  Support remains a separate action. No automatic join, Rich Presence change,
+  diagnostic upload or saved preference is involved.
+- **Shared source:** `tools/launcher/Launcher.xaml` owns the accessible button
+  and mark; `ReleaseClient.DiscordInvite` owns the target. Windows `Launcher.cs`
+  and Mac `macos/NativeWindow.cs` call their existing browser adapters.
+  PR #435, branch `feature/discord-community-link`; Home card follow-up initially
+  uncommitted.
+- **Remaining:** On native Mac, build/test the launcher and check the translated
+  mark, sidebar/Home card fit, keyboard activation and browser destination. Windows
+  checks do not establish native Mac execution or physical keyboard behavior.
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -8056,7 +8075,7 @@ checks pass. Local uncommitted source based on c511bd52. Native Mac acceptance:
 Assault Mars Prison Red, movement/turning, repeated/multiple markers, off-screen
 arrows,4:3/16:9/ultrawide and split-screen. Mac build/gameplay unverified here.
 
-## MAC-126 - Complete launcher language packs (#263) - Awaiting validation
+## MAC-127 - Complete launcher language packs (#263) - Awaiting validation
 
 Source: [PR #436](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/436),
 implementation commit 1d262bb0; GitHub host validation pending.
@@ -8079,7 +8098,7 @@ round trips and return to English, missing-pack/old-game errors, then a bounded
 isolated menu/cutscene/voice check. Listening and complete localized gameplay
 also remain unverified on Windows.
 
-MAC-126 follow-up (2026-11-01, local uncommitted): US-region startup skipped
+MAC-127 follow-up (2026-11-01, local uncommitted): US-region startup skipped
 the language query in the initial implementation. Shared
 src/interface/pc_game_language_guest.h now scopes initialization/text-reset
 hooks through pc_native_numeric.h at both original/native rates. Five-routine
@@ -8089,6 +8108,6 @@ pass with unchanged US region. The repaired paired test runtime is language-test
 user settings/profile hashes were preserved. Native Mac build/menu/voice and
 localized gameplay acceptance remains pending. See STATUS's US startup repair.
 
-MAC-126 PR436 review repair: native package manifests now forward language_packs
+MAC-127 PR436 review repair: native package manifests now forward language_packs
 from the native build to the installed top level. Three portable real-writer
 regressions cover enabled/disabled/absent flags; native host CI remains the gate.

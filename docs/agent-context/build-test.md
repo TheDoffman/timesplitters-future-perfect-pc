@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[Save-folder storage, picker and shared copy/restore/UI checks](save-locations.md).
+[Save checks](save-locations.md); [Discord checks](launcher.md#discord-community-link) (MAC-126).
 
 test_native_timing.py::test_original_minigun_spin runs the complete supported-US callback with controlled audio/model services. It reproduces the old high-FPS failure and checks readiness, release, pause and input guards at 60/120/144/180/240 FPS. Existing CI selects this suite; private-XBE absence skips it. Historical stack fixtures exclude minigun intent until the full native stack is applied. See native-minigun.md.
 
@@ -1031,4 +1031,4 @@ Markers: test_ui_layout.py; test_patch_updates.py checks 2290/2291 after migrati
 
 Mech input: test_mounted_mouse.py; [scope](mounted-mouse.md#battle-mech-mouse-425).
 
-Languages: [tests/contract](launcher.md#complete-game-language-packs-discussion-263).
+[Languages](launcher.md#complete-game-language-packs-discussion-263).

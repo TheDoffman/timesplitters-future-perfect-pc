@@ -56,7 +56,7 @@ index2 while the US flag remained1. Reviewed game windows showed French
 used language-startup under private/test-saves, isolated input/both display
 configs, locked save routing, bounded logs and recycled disposable disks.
 They confirm localized menus, not voice listening or localized campaign play.
-Native Mac build/game checks remain pending MAC-126.
+Native Mac build/game checks remain pending MAC-127.
 
 Updated the same private/test-saves/language-launcher installation to
 v0.4.1-language-test.2. Runtime SHA-256:
@@ -92,7 +92,7 @@ checks passed (1137.24 seconds); log: logs/language-patch-tests.log. Repository
 context tests also passed (20 tests), context freshness/ownership checks passed,
 and the staged diff has no whitespace errors.
 
-Native Mac build/UI/prerequisite execution is unavailable here (MAC-126).
+Native Mac build/UI/prerequisite execution is unavailable here (MAC-127).
 No real localized voice listening, full menu/cutscene traversal or localized
 campaign claim. Changes are local and unpublished; older released game builds
 need an update before non-English selection can launch.
@@ -109,6 +109,37 @@ test folder and exports fr. UI inspection confirmed Verified US Xbox data,
 Ready to play and enabled Play Game. This setup verification does not establish
 localized listening/gameplay. LOCAL-TEST.txt and local-test-receipt.json in the
 ignored test folder record operation/provenance. No release was published.
+
+## Discord community entry points (2026-11-01)
+
+PR #435 Home follow-up, based on `38fc77c9`: the sidebar shortcut stays in
+place, with a separate community card below the Home game controls. The shared
+card uses the Discord mark, short benefits text and a purple Join Discord action;
+both Windows and Mac route it to `ReleaseClient.DiscordInvite` using the existing
+browser adapters. No saved state or automatic server join was added.
+The Windows build/test suite passed again (37.90 seconds). Three shared-layout
+checks and 20 native-Mac policy/backlog checks passed, along with context and
+whitespace checks. Reviewed isolated ready-state renders at 1152x772 and
+1000x720 show the complete card and button within the initial Home viewport.
+Native Mac visual/keyboard/browser acceptance remains pending MAC-126. No
+installed launcher was replaced and no release was published.
+
+Branch `feature/discord-community-link`, based on `4c49f143`, adds the same
+public Discord invite to the README's local logo button and the launcher's
+shared sidebar. Windows uses its existing shell browser opener; native Mac
+uses the existing `/usr/bin/open` adapter. No server join or telemetry is
+automatic. Discord's public invite response verified server ID
+`1566295768489263136`, channel `welcome-and-rules`, and no expiry; creation
+settings used unlimited uses without granting a role.
+
+Windows `tools/build/build-launcher.ps1 -Test` passed (155.99 seconds), including
+114 updater regressions and 32 shared UI groups. The 1152x772 `--render-preview`
+was reviewed with the Discord mark/label visible beneath Support, without
+clipping. Three shared-layout translation tests, nine compatibility-selection
+tests, and 20 native-Mac launcher policy/backlog contracts passed. Repository
+context checks and whitespace validation passed. Native Mac UI/browser execution
+is pending MAC-126; the Python contracts do not establish it. No installed
+launcher was replaced and no release was published.
 
 ## PR433 exit summaries and lifecycle stress (2026-10-31)
 
