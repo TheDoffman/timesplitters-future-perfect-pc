@@ -1,3 +1,19 @@
+## Story chooser release flag - 2026-11-01
+
+On Windows x64, the shared menu policy now exposes Story Local/Online only
+when the compiled game version contains `story-coop`. Stable, ordinary beta,
+development and empty versions keep the original Story callback and reject
+the private chooser callbacks. General Online multiplayer fixes remain enabled.
+Main integration must retain its stable version independently of preview bumps.
+
+68 affected menu, camera and network checks passed; two Mac-host checks skipped.
+The six-version matrix exercises both display adapter fixture variants against
+production menu code with independent expected outcomes. Official MSVC Release
+Build passed complete patch validation and built-in tests; 399.90 GiB was free
+before building. This is source/build validation, not live visual or full-level
+acceptance. No personal saves/settings were used. Physical native Mac validation
+and the existing native Story transport gap remain pending under MAC-013.
+
 ## Story co-op merge from main - 2026-11-01
 
 Merged origin/main8b83f295 into online-story-coop after sniper commit40600874.

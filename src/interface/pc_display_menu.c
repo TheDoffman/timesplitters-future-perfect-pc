@@ -1271,6 +1271,8 @@ static void online_activate(void)
 
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
+    void (*story_entry_handler)(void)=story_menu_lookup(address);
+    if(story_entry_handler) return story_entry_handler;
 #ifdef _WIN32
     void (*story_back_handler)(void)=story_online_back_lookup(address);
     if(story_back_handler) return story_back_handler;
@@ -1317,10 +1319,6 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case SELECT_CB: return select_callback;
     case BACK_CB: return back_callback;
     case FOV_DRAW_CB: return fov_draw;
-    case STORY_OPEN_CB: return story_open;
-    case STORY_BUILD_CB: return story_build;
-    case STORY_SELECT_CB: return story_select;
-    case STORY_BACK_CB: return story_back;
 #if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY)
     case QUIT_OPEN_CB: return quit_open;
     case QUIT_BUILD_CB: return quit_build;

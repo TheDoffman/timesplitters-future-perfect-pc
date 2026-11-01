@@ -713,3 +713,26 @@ def test_original_story_position_reset(tmp_path):
     source=(ROOT/'tests/network/story_position_reset.c').read_text(encoding='utf-8')
     source=source.replace('/* ORIGINAL_POSITION_RESET */',code).replace('/* ORIGINAL_CONSTANTS */',seeds)
     assert 'PASS:' in compile_and_run(tmp_path,source)
+
+
+@pytest.mark.parametrize("version,enabled", [("0.4.0", 0), ("0.5.0-beta.1", 0), ("development", 0), ("", 0),
+                                              ("0.4.0-story-coop.1", 1), ("0.5.0-story-coop-beta.1", 1)])
+@pytest.mark.parametrize("native", [False, True])
+def test_story_version_feature_flag(tmp_path, version, enabled, native):
+    # Compile the production chooser and callback lookup, not a second policy.
+    source = (ROOT/'tests/network/story_menu.c').read_text(encoding='utf-8')
+    fixture = tmp_path/'story_version.c'
+    fixture.write_text('#define TSFP_PC_VERSION "'+version+'"\n#define EXPECT_STORY_COOP '+str(enabled)+'\n'+source, encoding='utf-8')
+    compiler, env = native_compiler(tmp_path)
+    exe = tmp_path/('story_version.exe' if os.name=='nt' else 'story_version')
+    if os.name=='nt':
+        args = [compiler, '/nologo', '/std:c11', '/O2', '/W4', '/I'+str(ROOT/'src'), str(fixture), '/Fe:'+str(exe)]
+    else:
+        args = [compiler, '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', '-I'+str(ROOT/'src'), str(fixture), '-lm', '-o', str(exe)]
+    if native:
+        args.insert(1, '/DTSFP_NATIVE_DISPLAY' if os.name=='nt' else '-DTSFP_NATIVE_DISPLAY')
+    built = subprocess.run(args, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=60)
+    assert built.returncode==0, built.stdout+built.stderr
+    ran = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
+    assert ran.returncode==0, ran.stdout+ran.stderr
+    assert 'PASS:' in ran.stdout

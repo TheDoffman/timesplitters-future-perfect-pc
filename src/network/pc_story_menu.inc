@@ -1,3 +1,4 @@
+#include "pc_feature_flags.h"
 #ifdef _WIN32
 static void story_rewards_profiles_capture(void);
 #endif
@@ -19,6 +20,7 @@ static int story_online_unavailable;
 
 static int pc_story_menu_button(void (*original)(void))
 {
+    if(!pc_story_coop_enabled()) return 0;
     const uint32_t frame=g_esp;
     /* Original main builder sub_002D0BE0, first row: ID zero, inherited
        main-menu callback. All other builders and rows retain their callbacks. */
@@ -132,6 +134,19 @@ static void story_select(void)
         }
     }
     restore_registers(&r);g_esp+=4u;
+}
+
+/* Keep private chooser callbacks unreachable in non-preview builds too. */
+static void (*story_menu_lookup(uint32_t address))(void)
+{
+    if(!pc_story_coop_enabled()) return NULL;
+    switch(address) {
+    case STORY_OPEN_CB:return story_open;
+    case STORY_BUILD_CB:return story_build;
+    case STORY_SELECT_CB:return story_select;
+    case STORY_BACK_CB:return story_back;
+    default:return NULL;
+    }
 }
 
 #ifdef _WIN32

@@ -1,3 +1,13 @@
+# Story release flag regression
+
+`tests/graphics/test_quit_menu.py::test_story_version_feature_flag` compiles the
+production menu fixture for both display adapters with stable, ordinary beta,
+development, empty, previous Story preview and Story beta version strings.
+Independent expected values assert the original callback and stack remain
+untouched when disabled, all four private callbacks are absent, and the complete
+existing chooser/reentry/host-loss checks still pass when enabled. Neither this
+native fixture nor Windows validation establishes physical Mac gameplay.
+
 # Story guest lobby host-loss regression - 2026-10-31
 
 The Story menu fixture also checks chooser reentry with a cached matching
@@ -1005,3 +1015,23 @@ suppress later marker clear/set rearming. A late owned guest256 after explicit
 host end returns to2 without another camera end. An inactive never-applied rally
 serial100 cannot move the guest after release; active anchor updates and accepted
 prelude hold remain covered.
+
+# Crash evidence and historical upgrades
+
+Crash evidence CI now selects `tests/diagnostics/test_guest_capture.py` beside
+existing crash tests on both hosts. It compiles the shared bounded-memory writer
+against synthetic addresses; Windows fatal-helper tests assert model history is
+exported. Native fatal-helper tests assert the same history and diagnostics
+metadata on Darwin. Host skips are not a passing native execution result.
+
+Allocation observation is checked by `test_allocation_observer.py`; both host
+helper fixtures assert allocation/release history reaches the report. Patch
+tracking tests require the evidence hook after the independent allocator/boot
+and presentation patches, before final source-layout routing.
+
+Historical upgrade fixtures exclude the later model-trace/allocation-observer
+patches until upgrading to the full stack. Model instrumentation is inserted
+before a stable function, rather than at EOF, so reversing it preserves local
+trailing edits during historical branch round trips. These are tested in
+`tests/repository/test_patch_updates.py`.
+

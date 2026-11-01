@@ -2273,6 +2273,15 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Story release flag (2026-11-01, uncommitted):** The chooser now uses the
+  shared compiled version policy in `src/interface/pc_feature_flags.h`,
+  `src/network/pc_story_menu.inc` and `src/interface/pc_display_menu.c`.
+  Only versions containing `story-coop` expose Local/Online; stable versions
+  retain original Story entry. No additional Mac adapter is needed for this
+  policy: both CMake paths already inject `TSFP_PC_VERSION`. Windows and native
+  display fixture variants pass the six-version matrix. Physical native menu
+  acceptance and the existing native Story transport gap remain unverified.
+
 - **Story cinematic staging and timing (2026-11-01, this change):**
   `src/network/pc_story_cinematic.inc` extends first-mission cinematic snapshots
   with numeric destinations for all guests, active anchor refresh, preparation

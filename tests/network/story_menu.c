@@ -5,6 +5,12 @@
 #include <string.h>
 #include <stdarg.h>
 #include "pc_online.h"
+#ifndef TSFP_PC_VERSION
+#define TSFP_PC_VERSION "0.5.0-story-coop-beta.1"
+#endif
+#ifndef EXPECT_STORY_COOP
+#define EXPECT_STORY_COOP 1
+#endif
 #ifdef TSFP_NATIVE_DISPLAY
 #undef _WIN32
 #elif !defined(_WIN32)
@@ -93,6 +99,18 @@ static void row_original(void){received_callback=WORD_AT(g_esp+20);g_esp+=4;}
 int main(void)
 {
     g_xbox_mem_offset=(uintptr_t)memory;
+    CHECK(pc_story_coop_enabled()==EXPECT_STORY_COOP);
+    if(!pc_story_coop_enabled()) {
+        g_esp=0x1000;WORD_AT(g_esp)=0x2d0c8e;WORD_AT(g_esp+8)=0;WORD_AT(g_esp+20)=0;
+        CHECK(!pc_story_menu_button(row_original) && g_esp==0x1000 && WORD_AT(g_esp+20)==0);
+        CHECK(!story_storage && !next_menu && !connects && !rows);
+        CHECK(!story_menu_lookup(STORY_OPEN_CB) && !story_menu_lookup(STORY_BUILD_CB));
+        CHECK(!story_menu_lookup(STORY_SELECT_CB) && !story_menu_lookup(STORY_BACK_CB));
+        puts("PASS: non-Story-coop version preserves original Story route and disables chooser callbacks");
+        return 0;
+    }
+    CHECK(story_menu_lookup(STORY_OPEN_CB)==story_open && story_menu_lookup(STORY_BUILD_CB)==story_build);
+    CHECK(story_menu_lookup(STORY_SELECT_CB)==story_select && story_menu_lookup(STORY_BACK_CB)==story_back);
     WORD_AT(0x202c)=0x3000;WORD_AT(0x2004)=0x4000;WORD_AT(0x2040)=0x30000;
     allocation_ok=0;callback(story_open);CHECK(!next_menu);
     allocation_ok=1;callback(story_open);

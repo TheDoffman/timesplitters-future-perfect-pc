@@ -1,3 +1,17 @@
+# Story co-op release flag
+
+`src/interface/pc_feature_flags.h` derives `pc_story_coop_enabled()` from the
+existing compiled `TSFP_PC_VERSION`: only the literal substring `story-coop`
+enables the unfinished Story chooser. This shared policy is compiled by both
+Windows and native Mac builds. `pc_story_menu_button` leaves the original main
+Story callback untouched when disabled; `story_menu_lookup` also rejects its
+four private chooser callbacks. General Online fixes remain active.
+
+Main integration must retain main's stable `VERSION`, rather than inheriting
+the preview branch's version. Preview version bumps stay separate from the
+integration commit. Native Story transport remains a separate MAC-013 gap;
+enabling the chooser does not supply that adapter.
+
 # Story guest lobby host loss - 2026-10-31
 
 Story chooser rows use the original main menu's centered32200 builder style
