@@ -8,6 +8,11 @@ The native fallback fixture calls both exports; the real Online self-test checks
 mode transitions and rejection. Windows focused Quit/Story suite passed all
 47 tests in 31.93 seconds; full build/package validation is pending.
 The interrupted Windows candidate is not a completed release validation run.
+The extra Mac private-XBE suite exposed four pre-existing fixture portability
+failures: synthetic Windows selection leaked into the appended host trap, a
+hexadecimal addition token was ambiguous to Clang, and a Story fixture did not
+select its intended Windows adapter. These fixtures are corrected without
+changing game behavior or removing assertions; both-host reruns are pending.
 
 ## Fresh weapon clicks / #434 (2026-11-01)
 

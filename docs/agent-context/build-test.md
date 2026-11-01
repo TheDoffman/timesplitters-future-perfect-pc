@@ -4,6 +4,9 @@ Native Online release-link regression: the existing Story lobby fixture now call
 the inactive native exports, and the real Mac Online self-test checks initial,
 accepted/cancelled and disconnected mode state plus unsupported-mode rejection.
 Run `tests/graphics/test_quit_menu.py` and the official native `--test` build.
+Private-XBE Story fixtures select their Windows adapter explicitly on Clang;
+the appended divide-error trap restores the real host instead of including
+Windows headers. Hexadecimal additions retain a token boundary on Clang.
 
 Game 0.4.1 uses the official Windows publisher and matching native Mac packager
 from one clean pushed revision. Full release, actual installer/preservation and

@@ -68,6 +68,11 @@ static int story_context_start_pending;
 static int story_mode=1;
 static int story_network_session(void){return story_mode;}
 static int guest_writable(uint32_t a,size_t n){return a>=0x1000 && a<0x800000 && n<=0x800000-a;}
+/* Exercise the existing Windows Story adapter on every fixture compiler.
+ * Native Story transport is a separate capability, not this fixture's scope. */
+#ifndef _WIN32
+#define _WIN32 1
+#endif
 /* PRODUCTION_TRANSITION_ADAPTERS */
 void sub_00065940(void){pc_story_network_stage_builder(sub_00065940_gen);}
 static void stage(unsigned value){
