@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ## Game 0.4.1 native link repair (2026-11-01)
 
 The actual Apple Silicon release build found three missing Online/Story symbols
@@ -14,7 +13,7 @@ failures: synthetic Windows selection leaked into the appended host trap, a
 hexadecimal addition token was ambiguous to Clang, and a Story fixture did not
 select its intended Windows adapter. These fixtures are corrected without
 changing game behavior or removing assertions; both-host reruns are pending.
-=======
+
 ## Story preview build-version repair - 2026-11-01
 
 The initial beta.1 archive had the correct preview watermark but hid Story's
@@ -34,7 +33,6 @@ pending. The user explicitly requested replacing the existing mutable beta.1
 release; normal publication remains immutable. See the documented repair mode.
 No personal saves/settings were changed; the standalone launcher is not published
 by this task. Native Story transport and physical Mac gameplay remain separate.
->>>>>>> origin/main
 
 ## Fresh weapon clicks / #434 (2026-11-01)
 
