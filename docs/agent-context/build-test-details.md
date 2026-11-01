@@ -19,6 +19,9 @@ Explicit preview repair tests in `test_publish_release.py` retain normal release
 immutability while checking replacement draft/tag/upload ordering, immutable or
 Stable/draft refusal, concurrent edit and saved-receipt detection, and bad-upload
 draft retention. See the replacement procedure in `docs/release/releasing.md`.
+The repair fixture models GitHub changing a redrafted release to `untagged-*`.
+The publisher restores `tag_name` by release ID before uploading by public tag,
+and checks the final association alongside source and asset hashes.
 
 The first Mac CI run exposed signed counter snapshots in the menu fixture,
 a missing lobby-spy forward declaration, a maximal-munch hex expression, and
