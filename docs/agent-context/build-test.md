@@ -1,5 +1,9 @@
 # Build, run and validation map
 
+One-off branch chore/archive-discord-releases uses a manual-only Discord workflow
+to copy four historical cards to release-updates without mentions. It checks the
+webhook channel before posting. Do not merge this migration workflow into main.
+
 PC Settings bar: [persistence checks](interaction-input.md#pc-settings-bar-visibility).
 
 Native Online link/mode checks: `tests/graphics/test_quit_menu.py` and native
