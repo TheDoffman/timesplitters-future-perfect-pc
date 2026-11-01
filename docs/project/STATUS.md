@@ -1,3 +1,41 @@
+## Fresh weapon clicks / #434 (2026-11-01)
+
+Implementation commit 33363bfc. Integrated main bbab9c3d; focused trigger,
+Mac backlog integrity, context and whitespace checks repeated after integration.
+The full build/live evidence below predates this integration.
+
+Local work on `fix/434-high-fps-fire-and-cutscenes`, based on edbee7df.
+The original fresh-press eligibility check can succeed on a zero-whole game
+tick, but request1C2AF0 discards it. The remaining buffered input then takes
+the slower held-fire path. Original-code reproduction drops20 eligible clicks
+to5 for affected180/240 raw/game phases after a pause. Patch2180 admits only
+that already-eligible fresh call, restores the whole tick on return and leaves
+the float delta, cooldowns, held input and continuation callers unchanged.
+
+The new original-code test passes680 schedules through240 with1/20ms presses,
+84/100ms spacing,17 input phases and pause offsets. Disabling the scope fails
+both direct-phase and host-buffer/original-decoder controls.64 asset-free
+cases check scope exclusions, pause, Original mode and clock restoration.
+The final weapon-state transition is a controlled spy; this is request
+acceptance, not proof of rendered shots, damage or physical hardware delivery.
+
+Before the fix, isolated live bursts at Original60 and actual120FPS registered
+all10 clicks for each width/spacing pair.180/240 target runs also did, but ran
+near144FPS and are not full-rate acceptance. Earlier equal-duration holds and
+taps consumed19 and29 rounds respectively at all tested targets. The original
+sci-fi handgun data intentionally distinguishes fresh/held intervals (.083/.4s);
+these alone are not a guaranteed maximum shot rate because other original
+readiness checks apply. The full Windows build and its build checks passed.
+Post-fix fullscreen Story runs at actual 60/120/180 and approximately 238-240 FPS
+each fired all 40 short clicks after a recorded pause/resume: four ten-click
+bursts covering 1/20ms widths and 84/100ms intervals. Ammunition fell by exactly
+ten rounds per burst. These use injected input and isolated saves/settings,
+not physical mouse acceptance. All 160 clicks consumed 160 rounds. The full
+native-timing and patch-transition suite passed all 138 tests (22m39s); the
+latest focused test also passed both disabled-fix failure controls. Context
+and whitespace checks passed. Prepared for PR review; publication is pending. Physical Mac acceptance is pending MAC-128. The user deferred the
+sniper-cutscene portion of #434; keep the issue open and do not claim it fixed.
+
 ## Story co-op beta published - 2026-11-01
 
 Published [v0.5.0-story-coop-beta.1](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/v0.5.0-story-coop-beta.1)
@@ -22578,7 +22616,7 @@ Final executable SHA-256:
 `25073e803a83ec72b17709e31bc4cb85cc474f87276a9a4b6d6a4375e948306e`.
 Personal settings/saves were untouched; disposable test disks and frame BMPs
 were recycled. MAC-030 retains native adapter work; hosted CI and physical
-controller validation remain pending. Changes remain local and uncommitted.
+controller validation remain pending. Prepared for PR review; publication is pending.
 
 Quit to Desktop follow-up (2026-10-17): added a final row after Extras in the
 main Story/Arcade menu and after the existing Quit in Pause. New shared patch
@@ -22646,7 +22684,7 @@ Evidence in `build/issue-86-menu-mouse`: `wheel-hover-tests.log`,
 The user confirmed both fixes in the reopened build: scrolling while moving the
 mouse stays stable, and pause-menu hover aligns with the row under the cursor.
 This physical test confirmation does not replace the foreground-sensitive prompt
-check noted above. Changes remain local and uncommitted. Disposable captures
+check noted above. Prepared for PR review; publication is pending. Disposable captures
 and test disks were recycled.
 
 Footer/pause follow-up: visible, enabled bottom prompts now accept left-click.

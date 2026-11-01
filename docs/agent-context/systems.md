@@ -1,10 +1,12 @@
 # Subsystem entry points
 
+Fresh clicks: [contract](interaction-input.md#fresh-weapon-clicks-434).
+
 Story/Online integration: [contracts](systems-details.md).
 
 Battle Mech mouse: [shared routing and guards](mounted-mouse.md#battle-mech-mouse-425).
 
-Minigun motor intent and release damping: [shared policy](native-minigun.md).
+Minigun: [motor/release policy](native-minigun.md).
 
 Kernel: [objects and boot](kernel-objects.md).
 
@@ -16,7 +18,7 @@ Image/state/ABI: [image](independent.md#native-image-loading), [execution](indep
 
 Procedural wind: [ownership/time scopes](native-wind.md).
 
-Local completed aim/animation diagnostics: [scope and limits](native-local-trace.md).
+Aim/animation: [diagnostic limits](native-local-trace.md).
 
 GPU state-cache acceptance: shared Vulkan/WARP pixel fixture and frontend
 header configuration are in [runtime](runtime.md).
