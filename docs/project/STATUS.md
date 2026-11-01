@@ -4278,6 +4278,184 @@ Native Mac title gameplay remains unverified (MAC-102); full independence and
 full-campaign behavior are not claimed. The PR has not been merged into main.
 
 
+## Original-based 2x texture production (2026-11-01, issue #74)
+
+### Replacement Enhanced pack export (2026-11-01)
+
+The user authorized pushing the complete original-based 2x pack and explicitly
+requested that it replace the old texture work. The repository now contains
+6,812 audited keyed DDS LFS pointers and sanitized metadata pairs, replacing
+the prior 2,261-key artwork inventory. Public installed size is 1,574,002,482
+bytes (private provenance sidecars are larger and are not published). Every
+index pointer matches its active-pack SHA-256 and byte size, and all source DDS
+payloads were rehashed afterward. Original archives, private production records,
+old artwork and recovery packs remain local; the prior release stays immutable.
+
+The source branch was rebased onto main 0b0fcb8b, preserving both sides of four
+documentation conflicts. 165 targeted packaging/upscale/planner/CI-scope tests
+and 21 subtests pass. A broader texture-test attempt could not run prepared
+runtime-dependent fixtures in this source-only worktree; no renderer change is
+included. Optional release textures-v0.2.0-beta.1 is now published from bcb8c1ae, with
+105 immutable parts totaling 733,537,298 download bytes. All remote part sizes,
+SHA-256 digests and the uploaded manifest digest match. The tag points to the
+correct source commit. Both previous artwork and release remain preserved.
+The generated schema-3 download index now advertises 6,812 pairs / 1,574,002,482
+installed bytes; launcher discovery still requires this index to merge into main.
+
+Publication exposed draft lookup and final tag handling gaps. The publisher now
+finds pre-tag drafts through authenticated paginated listings and explicitly
+supplies the intended tag when publishing. Default copy says Enhanced textures
+and refers to actual dimensions instead of blanket 4K/redesign claims. Tests
+cover paginated draft lookup and preservation of the exact publication tag.
+Only compiled DDS/sanitized metadata are public; private records remain local.
+
+### Approved character icons activated (2026-11-01)
+
+User approved the complete faithful 2x icon set for the enhancement pack. All
+164 reviewed 128x128 DDS/JSON pairs are now in the canonical and installed packs,
+bringing each to 6,812 pairs / 1,579,102,370 logical bytes. Every installed pair
+shares the canonical file ID; the previous 6,648 pairs retain identical hashes.
+Settings are byte-identical and Enhanced remains enabled. Original game archives,
+Classic fallback, prior artwork and comparison sources remain preserved.
+
+The policy's retained/retired lists are now empty; approved icon keys explicitly
+select neural processing during future builds. Unknown, overlapping, duplicate,
+malformed or channel-data approvals fail. Generic UI remains conservative.
+31 targeted upscale/pack tests pass. Fresh source-payload/model/hash/native DDS
+checks pass for all additions, and the entire final pack passes asset checks.
+Private `active-pack.json` points to the current complete plan and additive
+receipt; the initial 6,648-key activation records remain historical evidence.
+No assets were published. These are local uncommitted source/policy changes on
+issue #74. Restart the game to load the additions. In-game icon UI and Mac
+acceptance remain unverified; this step does not establish full-game fidelity.
+
+### All 164 character-icon comparison previews (2026-11-01)
+
+User explicitly chose the pack's faithful Real-ESRGAN upscaler for all retained
+icons, rather than the earlier image-generation illustrations. All 164 verified
+64x64 original icons now have separate 128x128 candidates. The pinned x4plus
+model runs at 4x and reduces to 2x; alpha uses original bilinear samples. Every
+candidate passes the native DDS parser, complete mips/aspect/hash checks and
+exact alpha comparison. Maximum unweighted RGB error at original scale is
+9.8036. All four comparison sheets were visually inspected; smoothing and some
+inferred feature changes remain visible, so technical checks are not approval
+for replacing identity-sensitive art. These were preview-only at this stage;
+the subsequent explicit user approval and activation are recorded above.
+
+Private `authored/character-icon-preview/` contains `build-all.py`, model/source
+receipts, originals, DDS candidates, decoded PNG results, full 164-pair sheet,
+four readable 41-pair pages and `index.html` with zoom controls. Its 328 gallery
+image references and PNG hashes pass. Candidate DDS total is 14,351,312 bytes;
+all preview deliverables occupy 29,553,450 logical bytes. Temporary texture
+storage remains 245,390,421 bytes, below 256 MiB. No game launch was needed;
+in-game icon acceptance and Mac execution remain unverified (MAC-011).
+
+### Selective Hotel 4x preview (2026-11-01)
+
+User approved a selective trial before expanding the pack. Sixteen previously
+loaded Hotel wall, stone, timber and trim textures were regenerated from verified
+originals using the same pinned local Real-ESRGAN model, retaining its 4x output.
+All pass the native DDS parser, mip/aspect/hash checks and exact original-alpha
+resampling checks. Unchanged preview entries use hard links; the canonical and
+installed Enhanced packs remain 2x. Selected DDS growth is 8,781,824 bytes.
+
+An isolated v0.4.1 Windows Hotel launch logged all sixteen at their expected
+4x dimensions. The new 1920x1080 screenshot is compared with the previous 2x
+stationary-spawn capture using matching crops/resizing/labels only. Fire, lamps,
+HUD, cursor and idle animation vary. Visual gain is subtle at this resolution;
+this does not justify a full-pack 4x rollout. No controlled FPS/memory comparison
+was run: the new run enabled replacements from menus, unlike the prior test.
+Its 96,579,200-byte tracked residency peak is not total VRAM or a comparable delta.
+The bounded process ended and disposable virtual disks were recycled. Private
+`authored/hotel-4x-preview/` retains selection, validation, model/source provenance
+and runtime evidence; `review/in-game-comparison/` holds full/detail comparisons.
+Mac and broader scene/performance acceptance remain pending (MAC-011).
+
+### Hotel in-game on/off capture (2026-11-01)
+
+At the user's request, captured Classic/Enhanced from the same stationary
+camera in a bot-free Hotel deathmatch using the installed v0.4.1 executable.
+Both original screenshots are1920x1080. The test used a disposable Test Lab
+profile and isolated settings/saves; its virtual disk images were recycled
+on completion. The existing separate game was not stopped or configured.
+
+Runtime log confirms Classic ->4K ->Classic and85 loaded replacement keys
+from the new original-based pack, peak tracked texture residency28,282,252bytes.
+The evidence applies only to this scene/view, not total VRAM or full-game
+visual/performance acceptance. Fire, hanging lights, radar and weapon idle
+animation differ between frames; camera position and framing stay fixed.
+
+Private `review/in-game-comparison/` retains both raw JPEG screenshots, a second
+Classic reference, full-view and matching-detail comparisons, and a hash/mode
+receipt. Presentation only crops/resizes/labels the actual captures; no exposure,
+color or sharpening adjustment. Selected gameplay view inspected with both
+modes; broad scene/material/UV validation remains pending.
+
+
+User requested original-game texture upscaling and explicitly selected the
+result as the active Enhanced pack. Implementation stays local/uncommitted on
+the existing issue #74 worktree, based on f74247df; private data remains in the
+primary checkout. No original-derived assets were added to Git or published.
+
+Shared `tools/textures/texture-upscale-originals.py` reads verified original
+payloads and the pinned US XBE format mapping. Local Real-ESRGAN x4plus runs
+4x color inference reduced to 2x. `texture-activate-originals.py` audits complete
+scope, preserves prior packs and activates the result without changing saves.
+Current installed inventory: 6,648 texture pairs, including 2,609 neural color
+upscales and 4,039 conservative resamples. All 164 retained character icons stay
+original. This covers the 6,812 currently supported keys, not undiscovered or
+procedural assets and not a promise of complete game/scene fidelity.
+
+Official Windows ncnn package v0.2.5.0 / 20220424 archive SHA-256:
+`abc02804e17982a3be33675e4d471e91ea374e65b70167abc09e31acb412802d`.
+Private receipts record model/executable hashes; GPU is RTX 4070 SUPER.
+Bounded OpenMP/passive wait and ncnn 1:2:2 queues address a stalled initial batch.
+Exclusive locks, per-key no-overwrite checks and resumption preserve outputs.
+
+The independent first-pass appearance audit caught two black neural outputs,
+two corrupted narrow strips and pixel-sensitive data that should not be
+smoothed. Nine reviewed neural results use faithful conventional fallback;
+small/thin inputs avoid the model, and tiny UI/masks/lookup data retain exact
+original RGBA texels with NEAREST/RGBA8. Other color textures retain independently
+resized original alpha using BILINEAR. Rebuilt 1,117 affected pairs in 72 seconds.
+Neural blank/severe color-error guards and conservative review overrides are
+now covered by regressions. All prior audit hashes and 22 selected first-pass
+failure/review examples remain; 242,793,650 bytes of redundant derivatives were
+retired after verifying their hashes and validated replacements. Source game
+assets and existing authored artwork were preserved.
+
+Final validation: all 6,648 DDS files pass the actual MSVC-compiled C parser,
+which exactly matches the installed v0.4.1 release's parser. Original payload
+hashes and current DDS hashes were checked again. First-pass alpha proofs were
+reused only for 5,531 byte-identical pairs with unchanged source payloads and
+sampling policy; 1,117 corrected pairs received fresh original-alpha comparisons.
+All alpha checks pass; no blank outputs or original-scale RGB-MAE>20 flags
+remain. Actual DDS comparisons cover representative wood/metal repeats,
+character/weapon atlases, foliage, the corrected cliff/facade/strips and pixel UI,
+plus the largest remaining numerical appearance differences. Numerical checks
+and selected sheets do not establish real-scene/material/UV fidelity.
+
+Installed locally in `Desktop/TSFP Launcher/Textures` and activated in the
+primary private `pack/`. All 6,648 installed DDS/JSON pairs have matching NTFS
+file identities with the canonical pack; installation adds no second payload
+copy. Only `launcher.enhanced_textures=true` changed in controls; the entire
+remaining document matches its preserved prior copy. Prior 2,261-texture pack
+remains under `authored/original-upscale-2x/previous-enhanced-pack`. Installed
+US XBE matches the pinned SHA-256. No game process was stopped or launched.
+
+Pack: 1,558,106,364 DDS bytes; 1,564,561,475 bytes including metadata. Logical and
+allocated-byte audits both report 1,564,561,475; below 6 GiB. Final temporary
+outputs: 242,039,823 bytes, below 256 MiB. Texture workspace logical/allocated
+bytes: 11,957,482,817. Delivery hard links were verified separately rather than
+counted as another physical payload. Private plan/audit/quality/activation/
+installation receipts retain exact hashes, routing and recovery paths.
+
+131 targeted pytest cases pass, including 20 new pipeline/activation cases and
+existing DDS-tool/CI-scope checks. Context and whitespace checks pass. No runtime
+code changed or game rebuild was needed. A fresh launcher game session uses the
+pack; full in-game visual validation and Mac execution remain pending. See
+MAC-011 and `docs/agent-context/original-upscale.md`.
+
 ## Portable release probe isolation (2026-10-27, v0.3.5 preparation)
 
 The packaged Online check loaded the repository-layout bootstrap before its

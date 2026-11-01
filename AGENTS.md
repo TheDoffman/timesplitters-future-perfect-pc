@@ -379,10 +379,24 @@ this preference on all further work, including texture remastering and testing.
 
 ## Active texture issue branch
 
-- The user requests original character selection/profile icons (2026-10-22).
-  Keep the keys in `config/textures/texture-originals.json` out of generation and installed
-  packs unless the user changes this preference. Character model materials and
-  full-size scene artwork remain separate and in scope.
+- Current original-based upscale task (user request, 2026-11-01): use original
+  game textures as inputs and make the resulting pack the active Enhanced pack.
+  Preserve the previous authored artwork and pack for recovery. The hybrid
+  redesign instructions below describe prior production; do not substitute
+  redesigned artwork for originals in this upscale task. Storage caps and
+  validation requirements continue to apply.
+  The user subsequently authorized pushing this complete approved pack and
+  publishing it as the next optional Enhanced texture version. Publish only
+  compiled keyed DDS and sanitized metadata through the existing bounded release
+  workflow; keep original game archives, private provenance, settings and saves
+  out of Git/downloads. Preserve the prior immutable release.
+
+- The user's 2026-11-01 approval supersedes the earlier original-icon preference:
+  all 164 reviewed faithful Real-ESRGAN 2x character icons are now part of the
+  active/installed original-based 2x Enhanced pack. Preserve original archives
+  and Classic fallback. `config/textures/texture-originals.json` records these
+  approved keys separately from its now-empty retained/retired lists. Do not
+  substitute the illustrative image-generation previews for the approved files.
 
 - The user approved hybrid production: individually redesign prominent assets;
   enhance simpler materials in bounded batches grouped by material family.
