@@ -243,3 +243,30 @@ The release CI suite includes publisher/version/channel checks; both launcher
 hosts run shared channel-selection/preferences/metadata fixtures. Run native Mac
 launcher/package/lifecycle checks on macOS. A source version change requires no
 gameplay test by itself; publishing still runs the actual build/package gates.
+
+## Explicit repair of an existing preview
+
+Normal publication refuses existing releases and never moves a published tag.
+Only when a user explicitly requests replacing an existing preview, use the
+Python publisher's `--replace-existing` mode with the same `--branch`,
+`--channel-name` and reviewed `--notes-file` arguments. First run it with
+`--prepare-only`, review its new assets/notes, then repeat without that switch.
+This mode rejects Stable, drafts and immutable GitHub releases. It requires a
+new, clean, pushed source commit and runs the full normal validation pipeline.
+
+Retain the old release's three published assets and receipt locally for recovery
+before recycling the ordinary output names. The prepared replacement receipt
+pins the old release identity, notes and asset hashes; concurrent edits stop the
+repair. Publication temporarily drafts the release, updates its tag to the
+verified source commit, replaces the three exact assets, verifies uploaded
+sizes/digests/source, and republishes the same release ID/URL without becoming
+Latest. Unexpected assets are preserved by refusing the operation. A failure
+after drafting leaves the release hidden for manual inspection/recovery; never
+blindly repeat or overwrite an uncertain result.
+
+Explain the correction and repack date in the release notes. Already-installed
+copies with the same version will not be selected as a newer update; users must
+reinstall the corrected package (preserving Data/Settings/Saves/Textures) or use
+a launcher repair route verified to fetch the current assets. Do not claim
+same-version clients update automatically. This exception does not authorize
+replacing other releases, moving unrelated tags or publishing a launcher.

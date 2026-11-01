@@ -20,9 +20,7 @@
 #include <ctype.h>
 #include <math.h>
 #include "pc_network_build.h"
-#ifndef TSFP_PC_VERSION
-#define TSFP_PC_VERSION "development"
-#endif
+#include "pc_build_version.inc"
 
 static SRWLOCK debug_lock = SRWLOCK_INIT;
 static PcDebugOptions options;
@@ -48,7 +46,7 @@ const char *pc_debug_watermark(void)
     static const char identity[] = TSFP_NETWORK_COMPATIBILITY_HEX;
     static char text[96];
     /* Called on the presentation thread; fixed after the first frame. */
-    if(!text[0]) snprintf(text,sizeof text,"TSFP PC v%s  %.8s",TSFP_PC_VERSION,identity);
+    if(!text[0]) snprintf(text,sizeof text,"TSFP PC v%s  %.8s",pc_build_version(),identity);
     return text;
 }
 
