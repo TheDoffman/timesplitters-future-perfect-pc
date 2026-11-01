@@ -1,3 +1,17 @@
+## Dedicated Discord release feed (2026-11-01)
+
+Created release-updates (1566483143748231228) by duplicating the read-only
+announcements channel, preserving its member permissions. Added it to the ten
+default onboarding channels. Moved both release webhooks to release-updates;
+announcements now serves team posts. Existing webhook secrets and opt-in roles
+remain usable.
+
+The silent Preview workflow test reached release-updates, message
+1566484369495953649, through the existing Actions secret. Run 41324839186 records
+the delivery check. No release was created and test cards did not ping roles.
+Seventeen offline notification regressions pass on Windows from this branch;
+only reporting text and documentation change in source.
+
 ## exFAT virtual disk initialization (2026-11-01)
 
 Based on main 9e1b1d39. Discord reporter confirmed exFAT USB SSD failure and

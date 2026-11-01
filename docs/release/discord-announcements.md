@@ -5,8 +5,8 @@
 
 | Published game release | Discord destination | Actions repository secret |
 | --- | --- | --- |
-| Stable, e.g. `v0.4.1` | `#announcements` | `DISCORD_STABLE_RELEASE_WEBHOOK` |
-| Beta or named preview, e.g. `v0.5.0-beta.1` | `#announcements` | `DISCORD_STABLE_RELEASE_WEBHOOK` |
+| Stable, e.g. `v0.4.1` | `#release-updates` | `DISCORD_STABLE_RELEASE_WEBHOOK` |
+| Beta or named preview, e.g. `v0.5.0-beta.1` | `#release-updates` | `DISCORD_STABLE_RELEASE_WEBHOOK` |
 
 Launcher and texture tags, drafts, and release edits do not send announcements.
 The GitHub prerelease flag must agree with the game tag; a mismatch fails without
@@ -20,12 +20,18 @@ The current roles are **Stable Release Alerts** (`1566334829791027310`) and
 identifiers, not credentials. Release-note mentions cannot ping members, other
 roles, or everyone. Manual connection tests never ping any role.
 Both release types use the existing
-announcements webhook; `DISCORD_PREVIEW_RELEASE_WEBHOOK` is no longer used.
+release-updates webhook; `DISCORD_PREVIEW_RELEASE_WEBHOOK` is no longer used.
+
+The automated feed is [#release-updates](https://discord.com/channels/1566295768489263136/1566483143748231228).
+`#announcements` is reserved for posts from the project team. Both release webhooks
+were moved to the new channel in Discord; the saved webhook URLs still work.
+The legacy secret name `DISCORD_STABLE_RELEASE_WEBHOOK` remains the single sender
+for Stable and Preview posts. New members see release-updates by default.
 
 ## One-time connection
 
 1. In Discord, open **Server Settings → Integrations → Webhooks**. Create a
-   webhook named **TimeSplitters Releases** for `#announcements`. Confirm the
+   webhook named **TimeSplitters Releases** for `#release-updates`. Confirm the
    selected channel before copying its URL. The existing webhook can be reused.
 2. In this GitHub repository, open **Settings → Secrets and variables → Actions**.
    Save its URL as `DISCORD_STABLE_RELEASE_WEBHOOK` for both release types.
@@ -36,7 +42,7 @@ announcements webhook; `DISCORD_PREVIEW_RELEASE_WEBHOOK` is no longer used.
 4. To verify delivery without publishing a release, open **Actions → Discord game
    release announcements → Run workflow**, keep branch **main**, and choose
    **stable** or **preview** to choose the TEST card's release label. Both post
-   one card to announcements using the same webhook. Confirm a successful job
+   one card to release-updates using the same webhook. Confirm a successful job
    and the visible card in Discord. This tests delivery, not the GitHub release
    event itself.
 5. After the next real release is published, inspect **Actions → Discord game

@@ -1,6 +1,6 @@
 # Game releases: Stable and named previews
 
-[Discord release notifications](discord-announcements.md): Stable and previews post to announcements.
+[Discord release notifications](discord-announcements.md): Stable and previews post to release-updates; announcements is for team posts.
 
 [Back to the README](../../README.md) | [Launcher releases](launcher-releases.md)
 
