@@ -58,6 +58,15 @@ executable SHA-2569629ce4ebd986e15912f55bdce42445d7f48dde72146b4602b8560d37bfb45
 Native Mac execution remains unrun on this Windows host; upstream platform
 acceptance records remain.
 
+## Prerelease Discord announcement routing (2026-11-01)
+
+Both game release types and their manual tests now post only to announcements,
+using DISCORD_STABLE_RELEASE_WEBHOOK. Preview cards retain their test-build label
+and opt-in guidance. The playtesting webhook is no longer consumed. Fifteen mocked
+regressions pass on Windows, including both release types reaching announcements
+with no Preview secret. Live preview-to-announcements delivery is pending merge;
+the announcements webhook was verified with an Actions test before this change.
+
 ## Discord manual connection test (2026-11-01)
 
 The release notification workflow now offers a manual Stable/Preview connection

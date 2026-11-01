@@ -1,4 +1,4 @@
-"""Announce a published game release through a channel-specific Discord webhook."""
+"""Announce a published game release through the Discord announcements webhook."""
 
 import importlib.util
 import json
@@ -104,6 +104,13 @@ def send(webhook, payload):
         raise ValueError('Discord delivery was not confirmed; inspect the channel before rerunning.') from None
 
 
+def deliver(route, payload, secrets):
+    # Both release types use the existing announcements webhook.
+    webhook = secrets.get('DISCORD_STABLE_RELEASE_WEBHOOK', '')
+    send(webhook, payload)
+    print(f'Discord {route} delivery confirmed for announcements.')
+
+
 def main():
     event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text(encoding='utf-8'))
     testing = os.environ.get('GITHUB_EVENT_NAME') == 'workflow_dispatch'
@@ -112,10 +119,9 @@ def main():
         print('No published game release to announce.')
         return
     route, payload = result
-    secret = f'DISCORD_{route.upper()}_RELEASE_WEBHOOK'
-    send(os.environ.get(secret, ''), payload)
+    deliver(route, payload, os.environ)
     kind = 'connection test' if testing else 'game release announcement'
-    print(f'Published {kind} to the {route} channel.')
+    print(f'Published {route} {kind}.')
 
 
 if __name__ == '__main__':
