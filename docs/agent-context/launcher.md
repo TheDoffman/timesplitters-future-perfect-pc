@@ -530,3 +530,10 @@ src/interface/pc_game_language_guest.h, composed in pc_native_numeric.h.
 Correct launcher environment/EEPROM output alone was insufficient on the US
 title. The local combined test runtime must be refreshed after this rebuild;
 its separate Settings/Saves and linked Data remain intact.
+
+Mac installed packages forward native BUILD language_packs to the top-level
+release manifest through package-native-mac.py, alongside auto_display_resolution.
+Absent capabilities remain false for older native builds. The portable Mac
+package suite exercises the real manifest/archive writer for true/false/missing
+flags, with only host binary tools replaced by fixtures. Native loading still
+requires Mac execution.

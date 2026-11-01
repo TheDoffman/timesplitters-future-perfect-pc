@@ -1,3 +1,15 @@
+## PR436 Mac package capability repair (2026-11-01)
+
+Review of source1d262bb0 identified that package-native-mac.py rebuilt the release
+manifest without copying language_packs, so installed Mac games could not enable
+non-English selection despite a capable runtime. The packager now forwards that
+flag to the top-level installed manifest; old native builds default false.
+Three regression cases run the real package/manifest/archive writer with tiny
+payloads and host tools mocked, covering true, false and absent build flags.
+They reproduced the missing-key failure before repair. This is a portable package
+contract, not native Mach-O/loading or game validation. Updated GitHub checks are
+required before the authorized merge. No published release/issue closure.
+
 ## Language selection PR preparation (2026-11-01)
 
 [PR #436](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/436)

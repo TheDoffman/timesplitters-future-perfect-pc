@@ -8088,3 +8088,7 @@ hook/scope cases pass. Windows full Build and bounded French/German menu session
 pass with unchanged US region. The repaired paired test runtime is language-test.2;
 user settings/profile hashes were preserved. Native Mac build/menu/voice and
 localized gameplay acceptance remains pending. See STATUS's US startup repair.
+
+MAC-126 PR436 review repair: native package manifests now forward language_packs
+from the native build to the installed top level. Three portable real-writer
+regressions cover enabled/disabled/absent flags; native host CI remains the gate.
