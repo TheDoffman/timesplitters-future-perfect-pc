@@ -256,6 +256,8 @@ namespace TimeSplitters.Launcher
             };
             Button("SavesNav").Click += (s, e) => ShowSaves();
             Button("SupportNav").Click += (s, e) => Open("https://github.com/" + ReleaseClient.Repository + "/issues");
+            Button("DiscordNav").Click += (s, e) => Open(ReleaseClient.DiscordInvite);
+            Button("JoinDiscordButton").Click += (s, e) => Open(ReleaseClient.DiscordInvite);
             Button("LogsButton").Click += (s, e) => OpenFolder(".launcher");
             Window.Loaded += async (s, e) =>
             {

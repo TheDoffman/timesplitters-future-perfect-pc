@@ -1,5 +1,11 @@
 # README visuals
 
+- `discord-community.svg`: clickable Discord community button with Discord's
+  mark from [Simple Icons](https://github.com/simple-icons/simple-icons/blob/develop/icons/discord.svg)
+  (CC0). The same mark geometry is used in the launcher's shared XAML. Discord
+  branding belongs to Discord; this button links to the fan project's server.
+  The SVG is self-contained; its destination and accessible label live in README.
+
 - `online-host.png`, `online-join.png`, `online-invitation.png`: actual Windows
   Tk widgets rendered from `tools/network/online.py` at source revision `ed8bff1`,
   captured on 2026-10-17 for `docs/players/multiplayer.md`. Main-window captures are
