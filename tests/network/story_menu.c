@@ -5,8 +5,11 @@
 #include <string.h>
 #include <stdarg.h>
 #include "pc_online.h"
+#ifndef PC_EXTERNAL_BUILD_VERSION
 #ifndef TSFP_PC_VERSION
 #define TSFP_PC_VERSION "0.5.0-story-coop-beta.1"
+#endif
+#include "diagnostics/pc_build_version.inc"
 #endif
 #ifndef EXPECT_STORY_COOP
 #define EXPECT_STORY_COOP 1

@@ -2273,6 +2273,15 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Story flag version ownership repair (2026-11-01, uncommitted):** Shared
+  menu code now calls the diagnostics-owned `pc_build_version()` used by the
+  watermark, rather than reading a private definition from another build
+  target. The provider is compiled on both hosts; no native adapter is needed.
+  Separate-unit menu/provider tests exercise both display variants, including
+  conflicting private definitions. Windows real linked build tests verify
+  stable/preview state. Native CI and physical menu acceptance remain distinct;
+  native Story transport is still pending. See STATUS for actual results.
+
 - **Story release flag (2026-11-01, uncommitted):** The chooser now uses the
   shared compiled version policy in `src/interface/pc_feature_flags.h`,
   `src/network/pc_story_menu.inc` and `src/interface/pc_display_menu.c`.

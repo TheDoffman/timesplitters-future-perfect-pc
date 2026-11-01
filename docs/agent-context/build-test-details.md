@@ -8,6 +8,18 @@ untouched when disabled, all four private callbacks are absent, and the complete
 existing chooser/reentry/host-loss checks still pass when enabled. Neither this
 native fixture nor Windows validation establishes physical Mac gameplay.
 
+The version matrix now compiles the real diagnostics version provider and menu
+in separate translation units, with an intentionally conflicting menu macro.
+This reproduces the shipping target boundary instead of injecting the right
+macro directly into the menu. The actual Windows linked debug executable also
+asserts watermark/flag agreement and prints the resolved version and chooser
+state during official Build tests. Validate stable and Story preview builds.
+
+Explicit preview repair tests in `test_publish_release.py` retain normal release
+immutability while checking replacement draft/tag/upload ordering, immutable or
+Stable/draft refusal, concurrent edit and saved-receipt detection, and bad-upload
+draft retention. See the replacement procedure in `docs/release/releasing.md`.
+
 The first Mac CI run exposed signed counter snapshots in the menu fixture,
 a missing lobby-spy forward declaration, a maximal-munch hex expression, and
 an unused bot validator in the native fallback. Keep counter snapshots typed
