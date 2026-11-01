@@ -1,5 +1,7 @@
 # Build, run and validation map
 
+Discord release webhooks target #release-updates; #announcements holds team posts.
+
 PC Settings bar: [persistence checks](interaction-input.md#pc-settings-bar-visibility).
 
 Native Online link/mode checks: `tests/graphics/test_quit_menu.py` and native

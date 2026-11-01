@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       channel:
-        description: Release type for the TEST card (posts to announcements; no release is created)
+        description: Release type for the TEST card (posts to release-updates; no release is created)
         type: choice
         options: [stable, preview]
         default: stable

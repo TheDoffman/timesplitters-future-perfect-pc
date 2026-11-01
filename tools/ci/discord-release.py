@@ -1,4 +1,4 @@
-"""Announce a published game release through the Discord announcements webhook."""
+"""Announce a published game release through the Discord release-updates webhook."""
 
 import importlib.util
 import json
@@ -105,10 +105,10 @@ def send(webhook, payload):
 
 
 def deliver(route, payload, secrets):
-    # Both release types use the existing announcements webhook.
+    # Both release types use the existing release-updates webhook.
     webhook = secrets.get('DISCORD_STABLE_RELEASE_WEBHOOK', '')
     send(webhook, payload)
-    print(f'Discord {route} delivery confirmed for announcements.')
+    print(f'Discord {route} delivery confirmed for release-updates.')
 
 
 def notification_role(route, payload, settings):
