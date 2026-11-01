@@ -1276,3 +1276,24 @@ also govern shake. Barrels retain their own EDD40 feedback.
 This remains inside the existing Windows Story adapter; native Story transport
 and camera integration are still pending under MAC-013. The policy uses guest
 memory and common guest-call APIs and needs no OS-specific shake algorithm.
+
+## First-mission barricade explosion and broken mesh (2026-10-31)
+
+The recorded tag47525452 prop (mesh1344) disappears on the host near98s and is replaced
+by tag47525442 mesh1345. Guest world-removal replication previously carried only its
+cleanup. `pc_story_world.inc::story_world_barricade` now reconstructs that exact
+static replacement with local A6F90 before cleanup. Copy only finite numeric
+position/angles; resolve the preloaded mesh through the local resource table,
+require type1 with no script initializer, and tag the result tag47525442. Existing
+replacement detection and removal-event serial deduplication prevent duplicates.
+Other meshes/tags retain ordinary removal. This does not replay the host script.
+
+Original2160D0 creates two profile18 explosions at the barricade. These are
+outside the216230/219CA0 ambience scopes, so `pc_story_effects.inc` now captures
+only the two known EFBD0 callers216135/21617A. Existing reliable kind4 events
+carry positions/directions; guest startup marks profile18 cosmetic before EDD40.
+The original EE9D0 branch creates three local particle emitters per blast, with
+its original assets. EDBE0 events, navigation destruction and later radius damage
+remain suppressed for replay. Barrels, random bombs and host damage are retained.
+The existing Windows Story transport gate remains; native integration/scene
+acceptance is still tracked under MAC-013, with no separate OS-specific policy.

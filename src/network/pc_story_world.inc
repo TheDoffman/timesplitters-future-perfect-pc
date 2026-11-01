@@ -95,6 +95,39 @@ uint32_t pc_story_network_world_entity(uint32_t key)
 #endif
 }
 #ifdef _WIN32
+extern void sub_000A6F90(void);
+/* The recorded first-mission tag47525452 barricade is replaced by the preloaded
+   tag47525442 broken mesh. A9070 alone removes collision but cannot create that mesh. */
+static void story_world_barricade(uint32_t entity)
+{
+    if(WORD_AT(entity+0x20u)!=1u || (WORD_AT(entity+0x94u)&65535u)!=1344u ||
+       WORD_AT(entity+0x60u)!=0x47525452u) return;
+    const uint32_t pool=WORD_AT(0x0072f5e8u),count=WORD_AT(0x007b4facu);
+    if(!pool || count>16384u || !guest_writable(pool,count*0x2e8u)) return;
+    for(unsigned slot=0;slot<count;slot++) {
+        const uint32_t existing=pool+slot*0x2e8u;
+        if(WORD_AT(existing+0x20u)==1u && !(WORD_AT(existing+0x28u)&0x80000000u) &&
+           (WORD_AT(existing+0x94u)&65535u)==1345u && WORD_AT(existing+0x60u)==0x47525442u) return;
+    }
+    const int16_t index=*(const int16_t *)((uintptr_t)(0x0078b860u+1345u*2u)+g_xbox_mem_offset);
+    const uint32_t resources=WORD_AT(0x00791d4cu);
+    if(index<0 || !resources || !guest_writable(resources+(uint32_t)index*48u,48u) ||
+       WORD_AT(resources+(uint32_t)index*48u)!=1u || WORD_AT(resources+(uint32_t)index*48u+44u)) return;
+    const uint32_t frame=g_esp;
+    if(frame<2048u || !guest_writable(frame-2048u,2048u)) return;
+    float transform[6];
+    memcpy(transform,(const void *)((uintptr_t)(entity+0x64u)+g_xbox_mem_offset),12u);
+    const uint32_t angles[3]={0xc0u,0x70u,0xc8u};
+    for(unsigned i=0;i<3u;i++) memcpy(transform+3u+i,(const void *)((uintptr_t)(entity+angles[i])+g_xbox_mem_offset),4u);
+    for(unsigned i=0;i<6u;i++) if(!isfinite(transform[i]) || fabsf(transform[i])>1000000.f) return;
+    const uint32_t storage=frame-256u;
+    memcpy((void *)((uintptr_t)storage+g_xbox_mem_offset),transform,sizeof transform);
+    GuestRegisters saved;save_registers(&saved);g_esp=frame-512u;
+    const uint32_t broken=guest_call(sub_000A6F90,5,1345u,storage,storage+12u,0u,0u);
+    if(broken && guest_writable(broken,0x2e8u) && WORD_AT(broken+0x20u)==1u &&
+       (WORD_AT(broken+0x94u)&65535u)==1345u) WORD_AT(broken+0x60u)=0x47525442u;
+    restore_registers(&saved);
+}
 static void story_world_frame(void)
 {
     if(!story_world_session()) return;
@@ -108,7 +141,10 @@ static void story_world_frame(void)
         story_world_read=(story_world_read+1u)%256u;--story_world_count;
         if(s.match!=story_npc_match()) continue;
         const uint32_t entity=pc_story_network_world_entity(s.key);
-        if(entity) {story_world_replay=1;guest_call(sub_000A9070,1,entity);story_world_replay=0;}
+        if(entity) {
+            story_world_replay=1;story_world_barricade(entity);
+            guest_call(sub_000A9070,1,entity);story_world_replay=0;
+        }
     }
     restore_registers(&saved);
 }

@@ -14,7 +14,8 @@
 #endif
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"FAIL line %d: %s\n",__LINE__,#x);exit(1);}}while(0)
 #ifdef _WIN32
-static unsigned bomb_shakes;
+static unsigned bomb_shakes,barricade_meshes;
+void sub_000A6F90(void){}
 static uint32_t memory[0x800000/4],g_esp,g_eax,g_ebx,g_ecx,g_edx,g_esi;
 static uintptr_t g_xbox_mem_offset;
 #define WORD_AT(a) (*(uint32_t *)((uintptr_t)(a)+g_xbox_mem_offset))
@@ -204,6 +205,13 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
         ++blood_decals;return 1;
     }
     if(fn==sub_001B67E0) {CHECK(count==2 && args[0]==0x50000 && args[1]==3);return ammo_loaded;}
+    if(fn==sub_000A6F90) {
+        CHECK(count==5 && args[0]==1345 && args[2]==args[1]+12 && !args[3] && !args[4]);
+        CHECK(WORD_AT(args[1])==0x3f800000u && WORD_AT(args[2])==0x40000000u);
+        const uint32_t broken=0x210000+0x2e8;
+        WORD_AT(broken+0x20)=1;WORD_AT(broken+0x94)=1345;WORD_AT(broken+0x28)=0;
+        ++barricade_meshes;return broken;
+    }
     if(fn==sub_000A9070 && args[0]>=0x210000) {CHECK(count==1);WORD_AT(args[0]+0x28)|=0x80000000u;++world_removed;return 0;}
     if(fn==sub_000CC170) {CHECK(count==3 && args[0]==0x180000 && args[1]==0x40a00000 && args[2]==0x74400);++feed_starts;return 0;}
     if(fn==sub_000C9C90) {CHECK(count==0);++feed_stops;return 0;}
@@ -234,7 +242,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
         ++bomb_shakes;return 0;
     }
     if(fn==sub_000EFBD0) {
-        if(args[0]==1 || args[0]==40 || args[0]==47) {
+        if(args[0]==1 || args[0]==18 || args[0]==40 || args[0]==47) {
             CHECK(count==8 && args[1]==UINT32_MAX && !args[4] && !args[5] && !args[6] && args[7]==1);
             if(args[0]==1) CHECK(!args[3]);
             else CHECK(args[3] && WORD_AT(args[3])==0x3f800000u);
@@ -1636,6 +1644,25 @@ int main(void)
         s.a=41;CHECK(!story_effect_valid(&s));s.a=40;
         s.direction[0]=NAN;CHECK(!story_effect_valid(&s));
 
+        /* The recorded barricade callback2160D0 emits two profile18 blasts,
+           independent of host random ambience. Both replay once cosmetically. */
+        story_effect_reset();WORD_AT(0x76b140)=1;g_esp=0x1800;
+        for(unsigned blast=0;blast<2;blast++) {
+            WORD_AT(g_esp)=blast?0x21617a:0x216135;WORD_AT(g_esp+4)=18;WORD_AT(g_esp+8)=UINT32_MAX;
+            WORD_AT(g_esp+12)=0x170000;WORD_AT(g_esp+16)=0x170010;
+            WORD_AT(g_esp+20)=WORD_AT(g_esp+24)=WORD_AT(g_esp+28)=0;WORD_AT(g_esp+32)=1;
+            pc_story_network_effect_create(effect_factory_original,1);
+            memcpy(&s,npc_sent+4,sizeof s);
+            CHECK(s.kind==4 && s.a==18 && s.serial==blast+1 && s.decal_flags==1 && story_effect_valid(&s));
+            WORD_AT(0x76b140)=2;memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+            const unsigned before=effect_barrels;
+            story_effect_receive(0x31000,0x32000,0x1e,sizeof s);story_effect_frame();
+            CHECK(effect_barrels==before+1 && !story_effect_barrel_replay && !story_effect_cosmetic_depth);
+            story_effect_receive(0x31000,0x32000,0x1e,sizeof s);story_effect_frame();CHECK(effect_barrels==before+1);
+            WORD_AT(0x76b140)=1;g_esp=0x1800;
+        }
+        s.a=19;CHECK(!story_effect_valid(&s));
+
         story_effect_reset();
     }
     {
@@ -1836,6 +1863,23 @@ int main(void)
         WORD_AT(0x31000)=0;story_world_receive(0x31000,0x32000,0x1e,sizeof removal);
         story_world_receive(0x31000,0x32000,0x1e,sizeof removal);CHECK(story_world_count==1);
         story_world_frame();CHECK(world_removed==1 && !pc_story_network_world_entity(key));
+        /* Replay the exact recorded tag47525452 -> tag47525442 mesh replacement. */
+        WORD_AT(a+0x28)=0;WORD_AT(a+0x94)=1344;WORD_AT(a+0x60)=0x47525452;
+        WORD_AT(a+0x64)=0x3f800000;WORD_AT(a+0xc0)=0x40000000;
+        WORD_AT(b+0x28)=0x80000000;WORD_AT(b+0x60)=0;
+        WORD_AT(0x78b860+1345*2)=0;WORD_AT(0x791d4c)=0x250000;
+        WORD_AT(0x250000)=1;WORD_AT(0x25002c)=0;
+        removal.serial++;removal.key=pc_story_network_world_key(a);
+        memcpy((uint8_t *)memory+0x32000,&removal,sizeof removal);
+        story_world_receive(0x31000,0x32000,0x1e,sizeof removal);g_esp=0x1800;story_world_frame();
+        CHECK(barricade_meshes==1 && WORD_AT(b+0x60)==0x47525442 && (WORD_AT(a+0x28)&0x80000000));
+        story_world_receive(0x31000,0x32000,0x1e,sizeof removal);story_world_frame();CHECK(barricade_meshes==1);
+        WORD_AT(a+0x28)=0;story_world_barricade(a);CHECK(barricade_meshes==1); /* existing replacement */
+        WORD_AT(b+0x28)=0x80000000;WORD_AT(0x25002c)=0x12345;
+        story_world_barricade(a);CHECK(barricade_meshes==1); /* never replay a script initializer */
+        WORD_AT(0x25002c)=0;WORD_AT(a+0x60)=0x42415252;
+        story_world_barricade(a);CHECK(barricade_meshes==1); /* unrelated prop */
+
         /* Never choose between duplicate authored keys by local pool order. */
         WORD_AT(a+0x28)=WORD_AT(b+0x28)=0;CHECK(!pc_story_network_world_entity(key));
         online_mode=PC_ONLINE_ARCADE;CHECK(!pc_story_network_world_key(a));

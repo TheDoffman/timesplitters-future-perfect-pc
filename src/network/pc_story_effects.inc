@@ -55,7 +55,7 @@ static int story_effect_valid(const StoryEffect *s)
     if(s->kind==0u) return s->a<=32u && s->b<=32u && s->options<=65535u;
     if(s->kind==1u) return s->a==39u && s->b==UINT32_MAX && s->value==0.f && s->options==1u;
     if(s->kind==2u) return s->a<=3u && !s->b && !s->options;
-    if(s->kind==4u) return (s->a==1u || s->a==40u || s->a==47u) &&
+    if(s->kind==4u) return (s->a==1u || s->a==18u || s->a==40u || s->a==47u) &&
         s->b==23u && s->value==0.f && s->options==1u && s->decal_flags<=1u;
     return s->a>=957u && s->a<=963u && s->b<=2u && s->options<=4u &&
         s->value>0.f && s->value<=1000.f && s->decal_flags<=1u &&
@@ -153,10 +153,9 @@ static void story_effect_frame(void)
             story_effect_bomb_feedback(&s);
         }
         else if(s.kind==4u) {
-            /*40/47 dispatch through EDD40's EF444 branch: four authored
-               emitters plus their original scale and camera feedback. Their
-               empty ordinary particle-table rows do not mean no visuals.
-               Keep that profile and direction; never replay host owners. */
+            /*18 uses EDD40's EE9D0 branch for the barricade's three authored
+               emitters;40/47 use EF444's four emitters and camera feedback.
+               Keep the original profile/direction and local resources. */
             ++story_effect_barrel_replay;
             guest_call(sub_000EFBD0,8,s.a,UINT32_MAX,position,
                        s.decal_flags?direction:0u,0u,0u,0u,s.options);
@@ -280,10 +279,15 @@ void pc_story_network_effect_create(void (*original)(void),unsigned kind)
     const int authored_barrel=kind==1u && guest_writable(frame,36u) &&
         ((WORD_AT(frame)==0x00218702u && WORD_AT(frame+4u)==47u) ||
          (WORD_AT(frame)==0x00218727u && WORD_AT(frame+4u)==40u));
+    /*2160D0 is the first mission's scripted barricade blast. Its two
+       profile18 explosions are outside the random ambience decision scope. */
+    const int barricade=kind==1u && guest_writable(frame,36u) &&
+        (WORD_AT(frame)==0x00216135u || WORD_AT(frame)==0x0021617au) &&
+        WORD_AT(frame+4u)==18u && WORD_AT(frame+8u)==UINT32_MAX;
     const int barrel=authored_barrel || (kind==1u && guest_writable(frame,36u) && WORD_AT(frame)==0x000bc70cu &&
         WORD_AT(frame+4u)==1u && WORD_AT(frame+8u)==23u && !WORD_AT(frame+16u));
     int capture=story_effect_session() && WORD_AT(0x0076b140u)==1u &&
-        ((story_effect_depth&(1u<<kind)) || barrel) && guest_writable(frame,kind?36u:28u);
+        ((story_effect_depth&(1u<<kind)) || barrel || barricade) && guest_writable(frame,kind?36u:28u);
     if(capture) {
         const uint32_t position=WORD_AT(frame+12u),direction=WORD_AT(frame+16u);
         capture=guest_writable(position,12u) &&
@@ -294,7 +298,7 @@ void pc_story_network_effect_create(void (*original)(void),unsigned kind)
             if(!barrel || (direction && guest_writable(direction,12u))) memcpy(s.direction,(const void *)((uintptr_t)direction+g_xbox_mem_offset),12u);
             memcpy(&s.value,(const void *)((uintptr_t)(frame+(kind?28u:20u))+g_xbox_mem_offset),4u);
             s.options=WORD_AT(frame+(kind?32u:24u));
-            if(barrel) {
+            if(barrel || barricade) {
                 /* Preserve the authored profile and optional direction. Never
                    transfer the host's local attacker/source entity handles. */
                 s.kind=4u;s.b=23u;
@@ -326,7 +330,7 @@ void pc_story_network_blast_start(void (*original)(void))
     const uint32_t effect=guest_writable(g_esp,8u)?WORD_AT(g_esp+4u):0u;
     const int cosmetic=story_effect_barrel_replay && story_effect_session() &&
         WORD_AT(0x0076b140u)==2u && guest_writable(effect,0x1c4u) &&
-        WORD_AT(effect)==23u && (WORD_AT(effect+4u)==1u ||
+        WORD_AT(effect)==23u && (WORD_AT(effect+4u)==1u || WORD_AT(effect+4u)==18u ||
         WORD_AT(effect+4u)==40u || WORD_AT(effect+4u)==47u);
     if(cosmetic) {WORD_AT(effect+0xcu)|=0x20001u;++story_effect_cosmetic_depth;}
 #endif

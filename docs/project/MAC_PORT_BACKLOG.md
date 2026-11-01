@@ -2254,6 +2254,15 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Story barricade presentation (2026-10-31, uncommitted):**
+  `src/network/pc_story_effects.inc` replays the original pair of profile18
+  cosmetic explosions, and `pc_story_world.inc` restores the recorded local
+  static1345/tag47525442 replacement for1344/tag47525452 cleanup. Windows original-callback
+  and protocol fixtures cover emitters, deduplication and no guest damage/script
+  pass. These remain in the existing Windows Story adapter; native transport
+  integration and physical Mac/mixed-host barricade/debris acceptance are pending.
+  Reuse the same guest APIs and numeric transform policy when wiring native Story.
+
 - **Story falling-bomb feedback (2026-10-31, uncommitted):**
   `src/network/pc_story_effects.inc` now replays the original distance-sensitive
   camera shake and impact feedback after host profile39 explosions. The current

@@ -959,3 +959,18 @@ including each guest slot1..3; far/nonfinite camera positions produce no shake.
 Story lobby fixture replays the actual network event, verifies owned-camera
 selection and distance attenuation, and rejects duplicate serial feedback.
 This is original-callback/state evidence, not rendered explosion acceptance.
+
+## Barricade presentation regression (2026-10-31)
+
+Existing CI-selected `test_quit_menu.py::test_story_original_barrel_blast` also
+executes original2160D0/EFBD0/EDD40 for the barricade's two profile18 blasts.
+It requires six original emitter creations with the original descriptor order
+and positions, while cosmetic guards suppress script/navigation/radius damage.
+SSE constants are seeded from the verified supported-US executable. Particle
+allocation is a checked collaborator, so this is not rendered debris acceptance.
+Story lobby fixtures verify both unscoped host call sites, reliable event replay
+and deduplication, plus the recorded1344/tag47525452 ->1345/tag47525442 replacement. Local
+resource/type/initializer, existing-replacement and unrelated-tag guards prevent
+script execution and duplicate geometry. FOV tests declare the added constructor
+collaborator. Use a bounded isolated paired startup to inspect actual preloaded
+mesh metadata; human retesting establishes the end-of-level explosion visuals.

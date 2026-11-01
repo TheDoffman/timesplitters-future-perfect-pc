@@ -186,10 +186,10 @@ def test_story_original_barrel_blast(tmp_path):
     try:
         config.configure_from_xbe(str(xbe))
         functions={start:dict(name=f'sub_{start:08X}',end=end) for start,end in (
-            (0xefbd0,0xeff3b),(0xedd40,0xefb15),(0xedbe0,0xedca3),(0xeff90,0xf042c))}
+            (0xefbd0,0xeff3b),(0xedd40,0xefb15),(0xedbe0,0xedca3),(0xeff90,0xf042c),(0x2160d0,0x216181))}
         translator=FunctionTranslator(image,functions)
         code='\n'.join(translator.translate_function(a,info) for a,info in functions.items())
-        constants={int(a,16) for a in re.findall(r'MEMF\(0x([0-9A-Fa-f]+)\)',code)}
+        constants={int(a,16)+offset for a in re.findall(r'0x([0-9A-Fa-f]+)',code) for offset in (0,4,8,12)}
         constants={a for a in constants if 0x470000<=a<0x500000}
         constants.update(range(0x4db490,0x4db490+49*24,4))
         constants.update(range(0xefb18,0xefb18+43*4,4))

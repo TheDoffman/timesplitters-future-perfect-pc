@@ -1,3 +1,45 @@
+## Story barricade guest explosion and broken mesh - 2026-10-31
+
+Local/uncommitted `online-story-coop` follow-up based ond7821fa6. Recovered
+user demonstration `logs/story-barricade-demo-20261031-215656` contains the
+host explosion near98s. Numeric evidence shows host mesh1344/tag47525452
+removed at98.074s and replaced by1345/tag47525442; the guest removed the source
+at98.381s but never created the replacement. The host's two original2160D0
+profile18 blasts also bypassed the old ambience/barrel capture filter.
+
+The existing reliable effect replay now captures exactly those two original
+calls and creates their original local particle emitters with cosmetic flags.
+World removal also creates the exact preloaded static broken mesh with local
+finite position/angles. Require type1/no script initializer, avoid an existing
+replacement, and retain event deduplication. No host handles/script state are
+transferred; host damage, navigation and story progression remain authoritative.
+Other props, levels, random bombs and barrel authority retain their behavior.
+
+Windows x64/MSVC14.42/D3D11, supported US XBE SHA-256 verified;401.96GiB free
+before build. Official Build/full patch verification and built-in checks passed.
+Affected suite56passed2Mac-host-only skipped in30.16s. Original US2160D0 plus
+EFBD0/EDD40 verifies two blasts/six authored emitters and original positions,
+with no replay damage/navigation/script pass. Fixtures check both call sites,
+serial deduplication, static replacement and resource/type/initializer/tag guards.
+Raycast/particle allocation and constructor dispatch have controlled collaborators;
+these tests do not establish rendered debris or full-mission completion.
+
+Bounded isolated two-peer Story startup/intro/movement and read-only resource
+observation both exited0; both game runners exited0. Each peer preloaded1344 at
+resource slot965 and1345 at966, type1/initializer0. Disposable profiles/settings
+and existing run locks/cleanup routing were used; user data and fixture remained
+untouched. This is startup/resource validation, not a replay of the late barricade.
+Source logic unchanged after that run; only comments corrected the tag labels.
+Final official rebuild and content/executable verification passed. Both test
+profiles released run locks and recycled all disposable partition images.
+Compatibility 32bf1e05866e3c1c4d6b06c3fc5b8715502d3d4fcc2b2232032e14d8aca475fc;
+executable SHA-256 b41e254c47cfbf249350bf331e1622b1609d4249f58f1603a57f70860e810120.
+
+The user confirmed the explosion/debris fix in Windows gameplay and requested
+this commit. Native Story transport
+integration and physical Mac/mixed-host barricade acceptance remain pending
+under MAC-013. Commit requested after acceptance; push/publication pending.
+
 ## Story falling-bomb guest feedback - 2026-10-31
 
 Local/uncommitted `online-story-coop` change based on75c87dfc. The first revised
