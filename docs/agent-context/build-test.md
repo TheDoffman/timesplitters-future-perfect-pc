@@ -1,5 +1,10 @@
 # Build, run and validation map
 
+Native Online release-link regression: the existing Story lobby fixture now calls
+the inactive native exports, and the real Mac Online self-test checks initial,
+accepted/cancelled and disconnected mode state plus unsupported-mode rejection.
+Run `tests/graphics/test_quit_menu.py` and the official native `--test` build.
+
 Game 0.4.1 uses the official Windows publisher and matching native Mac packager
 from one clean pushed revision. Full release, actual installer/preservation and
 portable Online checks remain required; a version bump alone is not validation.

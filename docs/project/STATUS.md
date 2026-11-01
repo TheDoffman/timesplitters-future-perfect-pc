@@ -1,3 +1,14 @@
+## Game 0.4.1 native link repair (2026-11-01)
+
+The actual Apple Silicon release build found three missing Online/Story symbols
+after main's Story integration. Native Online now reports accepted Arcade mode
+and clears it on disconnect, rejecting unsupported Story transport. Shared native
+Story lobby exports remain inactive under the existing MAC-013 limitation.
+The native fallback fixture calls both exports; the real Online self-test checks
+mode transitions and rejection. Windows focused Quit/Story suite passed all
+47 tests in 31.93 seconds; full build/package validation is pending.
+The interrupted Windows candidate is not a completed release validation run.
+
 ## Fresh weapon clicks / #434 (2026-11-01)
 
 Implementation commit 33363bfc. Integrated main bbab9c3d; focused trigger,

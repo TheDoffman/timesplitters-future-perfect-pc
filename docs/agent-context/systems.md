@@ -2,7 +2,7 @@
 
 Fresh clicks: [contract](interaction-input.md#fresh-weapon-clicks-434).
 
-Story/Online integration: [contracts](systems-details.md).
+Story/Online and native link: [contracts](systems-details.md).
 
 Battle Mech mouse: [shared routing and guards](mounted-mouse.md#battle-mech-mouse-425).
 
