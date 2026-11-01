@@ -1,12 +1,16 @@
 # Build, run and validation map
 
+Native Online link/mode checks: `tests/graphics/test_quit_menu.py` and native
+`--test`/`--online-self-test`. Clang Story fixtures select the Windows guest
+adapter but use the real host trap; hexadecimal additions need token boundaries.
+
 Game 0.4.1 uses the official Windows publisher and matching native Mac packager
 from one clean pushed revision. Full release, actual installer/preservation and
 portable Online checks remain required; a version bump alone is not validation.
 
 Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh-weapon-clicks-434).
 
-[NPC/cinematics](build-test-details.md); [Saves](save-locations.md); [Discord alerts](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
+[NPC/cinematics, version and repair checks](build-test-details.md); [Saves](save-locations.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
 
 Minigun readiness/release, pause and input checks: [original-code coverage](native-minigun.md). Existing CI selects test_native_timing.py; private-XBE absence skips original-code tests. Historical stack fixtures exclude minigun intent and player-trigger event patches until the full native stack is applied.
 

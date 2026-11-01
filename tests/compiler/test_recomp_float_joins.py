@@ -88,7 +88,10 @@ def compile_and_run(tmp_path, source, expect_success=True):
     compiler, environment = native_compiler(tmp_path)
     path = tmp_path / 'float_join.c'
     if 'tsfp_guest_divide_error(' in source and not re.search(r'\bvoid\s+tsfp_guest_divide_error\s*\([^;{]*\)\s*\{', source):
-        source += '\n' + (ROOT / 'src/runtime/guest_integer_fault.c').read_text(encoding='utf-8')
+        # Some guest fixtures select Windows-only gameplay branches on every
+        # compiler. Restore the real host for the separately appended OS trap.
+        source += ('\n#undef _WIN32\n' if os.name != 'nt' else '\n')
+        source += (ROOT / 'src/runtime/guest_integer_fault.c').read_text(encoding='utf-8')
     path.write_text(source, encoding='utf-8')
     executable = tmp_path / ('float_join.exe' if os.name == 'nt' else 'float_join')
     includes = RUNTIME / 'templates/runtime'

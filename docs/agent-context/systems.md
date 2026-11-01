@@ -2,7 +2,7 @@
 
 Fresh clicks: [contract](interaction-input.md#fresh-weapon-clicks-434).
 
-Story/Online integration: [contracts](systems-details.md).
+Story/Online and native link: [contracts](systems-details.md).
 
 Battle Mech mouse: [shared routing and guards](mounted-mouse.md#battle-mech-mouse-425).
 
@@ -966,7 +966,7 @@ checks actual viewport scaling, target position, reset and seven display shapes.
 
 Bot corpses: [contracts](systems-details.md#online-bot-corpses).
 
-[Story release flag](systems-details.md#story-co-op-release-flag).
+[Shared Story version provider](systems-details.md#story-co-op-release-flag).
 
 Physics: [poses](systems-details.md#guest-ragdolls-and-physical-npc-drops).
 

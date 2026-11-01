@@ -586,6 +586,10 @@ static void effect_decision_original(void)
 #endif
 int main(void)
 {
+#ifndef _WIN32
+    CHECK(pc_story_network_player_limit()==0u);
+    pc_story_network_lobby_config(); /* Must link and remain safe without guest RAM. */
+#endif
 #ifdef _WIN32
     (void)pc_network_bot_state_valid; /* This fixture exercises Story state instead. */
     (void)story_rewards_profiles_capture; /* The menu owns this included entry point. */
