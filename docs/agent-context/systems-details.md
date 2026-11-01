@@ -12,6 +12,9 @@ the preview branch's version. Preview version bumps stay separate from the
 integration commit. Native Story transport remains a separate MAC-013 gap;
 enabling the chooser does not supply that adapter.
 
+The authored loadout record explicitly initializes `equipped` to zero for
+strict Clang builds; this preserves its previous implicit-zero behavior.
+
 # Story guest lobby host loss - 2026-10-31
 
 Story chooser rows use the original main menu's centered32200 builder style

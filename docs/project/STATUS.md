@@ -1,3 +1,23 @@
+## Story integration Clang fixture repair - 2026-11-01
+
+PR441 at c5c16a43 passed Windows runtime, both patch-upgrade jobs and both
+launcher builds/compatibility. Mac runtime reported 16 compile failures in
+Story menu/lobby fixtures (2334 passed, 349 skips, 18 subtests). Repairs retain
+strict warnings and original assertions: signed counter snapshots, declaration
+ordering, separated hexadecimal addition tokens and scoped unused-header
+references. The loadout's omitted equipped field is explicitly zero, preserving
+behavior. The affected Windows matrix/lobby fixtures pass all16 cases; fresh
+Mac CI is required before merge. Official Windows Release Build also passes
+full patch validation and built-in checks. No gameplay behavior or personal data changed.
+
+Windows preview preparation at526912a9 passed the full release suite:
+3106 tests/112 subtests,55 skips,443.38s, plus MSVC Release build, exact package
+integrity, isolated fresh install and upgrade/preservation, and three-peer
+portable Online relay checks. The locally prepared beta-suffix package is not
+published: existing launchers interpret it as a separate track. Publication is
+paused for the user's existing Story Coop track/version choice. A changed source
+revision must go through the publisher again; this record does not validate it.
+
 ## Story chooser release flag - 2026-11-01
 
 On Windows x64, the shared menu policy now exposes Story Local/Online only
