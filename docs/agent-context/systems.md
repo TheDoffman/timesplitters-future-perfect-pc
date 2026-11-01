@@ -958,3 +958,5 @@ not screen centre. This preserves both alignment and glyph/box proportions.
 Guest flush boundaries isolate markers and restore the parent HUD. The existing
 wide/single-player guards preserve 4:3 and split-screen. `test_ui_layout.py`
 checks actual viewport scaling, target position, reset and seven display shapes.
+
+Launcher language startup: [shared guest hooks, US gate and tests](language-packs.md).

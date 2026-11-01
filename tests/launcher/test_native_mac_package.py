@@ -149,3 +149,56 @@ def test_mac_packager_only_audits_textures_when_explicit(tmp_path, monkeypatch, 
     if calls:
         assert calls[0][0] == tmp_path
         assert calls[0][1] == (Path('custom') if '--texture-pack' in options else None)
+
+
+@pytest.mark.parametrize('supported', [True, False, None])
+def test_installed_package_keeps_language_capability(tmp_path, monkeypatch, supported):
+    """Run the real package writer with host tools replaced by tiny fixtures."""
+    def put(path, value=b'fixture'):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(value)
+    native_dir = tmp_path/'build/macos'
+    executable = native_dir/'futureperfect_recomp'
+    put(executable)
+    native = dict(executable_sha256=package.digest(executable), renderer='vulkan',
+                  vulkan_driver='moltenvk', source_revision='revision', runtime_revision='revision',
+                  source_sha256={}, auto_display_resolution=True)
+    if supported is not None:
+        native['language_packs'] = supported
+    put(native_dir/'BUILD.json', json.dumps(native).encode())
+    sdk = tmp_path/'sdk'
+    put(sdk/'share/vulkan/icd.d/MoltenVK_icd.json', b'{"ICD":{"library_path":"driver"}}')
+    monkeypatch.setattr(package, 'ROOT', tmp_path)
+    monkeypatch.setattr(package.platform, 'system', lambda: 'Darwin')
+    monkeypatch.setattr(package.platform, 'machine', lambda: 'arm64')
+    monkeypatch.setattr(package, 'run', lambda *args: 'revision')
+    monkeypatch.setattr(package.subprocess, 'check_output', lambda *args, **kwargs: b'')
+    monkeypatch.setattr(package.subprocess, 'run', lambda *args, **kwargs: None)
+    monkeypatch.setattr(package.vulkan_sdk, 'verify_install', lambda: sdk)
+    monkeypatch.setattr(package, 'prepare_licenses', lambda *args: None)
+    def libraries(executable, stage, sdk):
+        for name in ('libvulkan.1.dylib', 'libMoltenVK.dylib', 'libdxcompiler.dylib'):
+            put(stage/'Bin'/name)
+        return []
+    monkeypatch.setattr(package, 'bundle_libraries', libraries)
+    def online(root, stage, copy):
+        for name in ('bin/python3', 'bin/python-real'):
+            put(stage/'Support/Python'/name)
+        (stage/'Support/Python/lib/native').mkdir(parents=True)
+        for name in ('online.py', 'online_platform.py', 'network-identity.json', 'network-build.json', 'multiplayer.png'):
+            put(stage/'Support/Online'/name)
+        return {}
+    monkeypatch.setattr(package, 'bundle_online', online)
+    monkeypatch.setattr(package, 'minimum_macos', lambda *args: '26.0')
+    monkeypatch.setattr(package.shutil, 'copy2', lambda source, target: put(target,
+        b'{"version":"1.4.1"}' if target.name == 'manifest.json' else b'fixture'))
+    monkeypatch.setattr(package.shutil, 'copytree', lambda source, target: put(target/'Contents/MacOS/TimeSplitters.Launcher'))
+    monkeypatch.setattr(package, 'write_source_files', lambda *args: None)
+    monkeypatch.setattr(sys, 'argv', ['package-native-mac.py', '--version', 'v1.0.0'])
+    package.main()
+    stage = tmp_path/'build/releases/TimeSplitters-Future-Perfect-PC-v1.0.0-macos-arm64'
+    manifest = json.loads((stage/'BUILD.json').read_text())
+    assert manifest['language_packs'] is (supported is True)
+    assert manifest['auto_display_resolution'] is True
+    assert manifest['native_build'] == native
+    package.verify_payload(stage, manifest)

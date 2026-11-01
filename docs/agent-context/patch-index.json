@@ -1525,6 +1525,14 @@
       ]
     },
     {
+      "name": "2310-game-language.patch",
+      "path": "patches/platform/2310-game-language.patch",
+      "sha256": "6bb7a0a5e632b509b1e2a4c93163af160107701cddf523367716bad98a960f98",
+      "targets": [
+        "src/kernel/kernel_xbox.c"
+      ]
+    },
+    {
       "name": "independent-condition-fixture.patch",
       "path": "patches/compiler/independent-condition-fixture.patch",
       "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",

@@ -33,6 +33,18 @@ namespace TimeSplitters.Launcher
         public bool DiscordEnabled;
         public bool EnhancedTextures;
         public bool EnhancedAudio;
+        public string LanguagePack = "en";
+        public static readonly string[] LanguagePacks = { "en", "fr", "de", "it", "es" };
+        public static readonly string[] LanguagePackLabels = { "English", "Français", "Deutsch", "Italiano", "Español" };
+        public bool CanSelectLanguagePack
+        {
+            get {
+                string path=Core.PathIn(root,LauncherPlatform.ManifestPath(root));
+                if(!File.Exists(path))return true; // Development build.
+                try { return Json.Flag(Json.Object(Text(Read(path))),"language_packs"); }
+                catch { return false; }
+            }
+        }
         public string DiscordApplicationId = "1561627743353962566";
         public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes;
         public const int FovDefault = 55, FovMin = 40, FovMax = 100;
@@ -99,6 +111,11 @@ namespace TimeSplitters.Launcher
             if (model.document.TryGetValue("launcher", out value))
             {
                 var launcher = Map(value);
+                if (launcher.TryGetValue("language_pack", out value))
+                {
+                    Core.Require(value is string, "Language pack must be a language code. No settings were changed.");
+                    model.LanguagePack = (string)value;
+                }
                 if (launcher.TryGetValue("enhanced_textures", out value))
                 {
                     Core.Require(value is bool, "Enhanced textures must be true or false. No settings were changed.");
@@ -265,6 +282,8 @@ namespace TimeSplitters.Launcher
         { string v; int n; if (!values.TryGetValue(key, out v)) return fallback; if (Int32.TryParse(v, out n)) return n; if (v == "true" || v == "on" || v == "yes") return 1; if (v == "false" || v == "off" || v == "no") return 0; throw new InvalidDataException("Invalid runtime setting: " + key); }
         public void Validate(bool loading=false)
         {
+            Core.Require(LanguagePacks.Contains(LanguagePack), "Choose a supported game language pack.");
+            Core.Require(loading || LanguagePack == "en" || CanSelectLanguagePack, "Update the game to a release with language-pack support before selecting another language.");
             Core.Require(NativeFrameRates.Contains(NativeFps), "Choose 60 FPS (Original), 120 FPS (Beta), 180 FPS (Beta), or 240 FPS (Beta).");
             ulong discordId;
             Core.Require((!DiscordEnabled && DiscordApplicationId.Length == 0) ||
@@ -326,6 +345,7 @@ namespace TimeSplitters.Launcher
             if (!document.TryGetValue("launcher", out value)) document["launcher"] = value = new Dictionary<string, object>();
             Map(value)["skip_startup_splashes"] = SkipStartupSplashes;
             Map(value)["enhanced_textures"] = EnhancedTextures;
+            Map(value)["language_pack"] = LanguagePack;
             var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
             graphics["frame_target"] = PresentationFps.ToString();
             graphics["refresh_rate"] = RefreshRate.ToString();
@@ -347,6 +367,16 @@ namespace TimeSplitters.Launcher
         {
             var model = Load(root, null); model.Validate();
             SaveLocations.Resolve(root); // Fail visibly before launching if the chosen drive is missing.
+            // Check the selected archive without copying or modifying imported data.
+            if(model.LanguagePack != "en") {
+                string suffix = new Dictionary<string,string> { {"fr","f"},{"de","g"},{"it","i"},{"es","s"} }[model.LanguagePack];
+                string pack=Core.PathIn(root,LauncherPlatform.Data(root)+"/pak/sounds_"+suffix+".pak");
+                Core.Require(File.Exists(pack), "The selected language pack is missing. Import your complete supported US Xbox game data again, or choose English.");
+                using(var stream=File.OpenRead(pack)) {
+                    var magic=new byte[4];
+                    Core.Require(stream.Read(magic,0,4)==4 && Encoding.ASCII.GetString(magic)=="P5CK", "The selected language pack is invalid. Import your game data again.");
+                }
+            }
             var Files = model.Files;
             var info = new ProcessStartInfo(Core.PathIn(root, LauncherPlatform.GamePath(root))) { WorkingDirectory = Core.PathIn(root, "Bin"), UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
             foreach (string key in info.EnvironmentVariables.Keys.Cast<string>().ToArray())
@@ -356,6 +386,7 @@ namespace TimeSplitters.Launcher
             info.EnvironmentVariables["TSFP_CRASH_EXTENDED"] = CrashReports.ExtendedForNextLaunch ? "1" : "0";
             // Explicit zero also overrides an old native_fps runtime preference.
             info.EnvironmentVariables["TSFP_NATIVE_FPS"] = model.NativeFps.ToString(CultureInfo.InvariantCulture);
+            info.EnvironmentVariables["TSFP_GAME_LANGUAGE"] = model.LanguagePack;
             info.EnvironmentVariables["RECOMP_FRAME_INTERP"] = "1";
             info.EnvironmentVariables["RECOMP_FRAME_TARGET"] = "0";
             info.EnvironmentVariables["RECOMP_FPS_CAP"] = "60";

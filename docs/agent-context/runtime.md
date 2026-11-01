@@ -971,3 +971,7 @@ the first outline draw's projected midpoint. Shared PcUiWorldAnchor retains that
 anchor for labels and resets at placement boundaries; viewport/scissor share it.
 Both common backends and legacy GL consume the helper. Original world projection,
 visibility and objective logic remain guest-owned (Refs #338).
+
+## Console language and included packs
+
+[Language policy, US startup gate, original-routine tests and host validation](language-packs.md).
