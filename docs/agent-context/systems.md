@@ -2,9 +2,11 @@
 
 PC bar: [persistence](interaction-input.md#pc-settings-bar-visibility).
 
+Fresh clicks: [contract](interaction-input.md#fresh-weapon-clicks-434).
+
 Story/Online integration: [contracts](systems-details.md).
 
-Battle Mech mouse: [shared routing and guards](mounted-mouse.md#battle-mech-mouse-425).
+Mech: [mouse routing](mounted-mouse.md#battle-mech-mouse-425).
 
 Minigun: [motor/release policy](native-minigun.md).
 
@@ -16,7 +18,7 @@ Guest storage: [allocation](independent.md#guest-allocation-ownership), [threads
 
 Image/state/ABI: [image](independent.md#native-image-loading), [execution](independent.md#guest-state-and-abi-reports).
 
-Procedural wind: [ownership/time scopes](native-wind.md).
+Wind: [time scopes](native-wind.md).
 
 Aim/animation: [diagnostic limits](native-local-trace.md).
 
@@ -24,7 +26,7 @@ GPU state-cache acceptance: shared Vulkan/WARP pixel fixture and frontend
 header configuration are in [runtime](runtime.md).
 
 Native player contact: [clear-slide policy/trace](native-player-contact.md).
-Live integer/vector register references: [four-site policy and tests](gpr-refs.md).
+Registers: [policy/tests](gpr-refs.md).
 Script/audio clocks: [contracts](native-script-clocks.md).
 
 <!-- packet:start -->

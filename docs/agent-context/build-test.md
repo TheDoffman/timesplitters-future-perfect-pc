@@ -2,9 +2,11 @@
 
 PC Settings bar: [persistence checks](interaction-input.md#pc-settings-bar-visibility).
 
+Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh-weapon-clicks-434).
+
 [NPC/cinematics](build-test-details.md); [Saves](save-locations.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
 
-Minigun readiness/release, pause and input checks: [original-code coverage](native-minigun.md). CI selects test_native_timing.py; private-XBE absence skips original-code tests. Historical stacks exclude minigun intent until the full native stack is applied.
+Minigun: [readiness/release/pause/input tests](native-minigun.md). CI selects test_native_timing.py; original-code tests require the private XBE. Historical stacks exclude minigun/player-trigger patches until full native timing applies.
 
 Release 0.4.0 / launcher 1.4.1 tests cover aliases and upload recovery; Mac
 Online notices follow [installer paths](multiplayer-ui.md).
