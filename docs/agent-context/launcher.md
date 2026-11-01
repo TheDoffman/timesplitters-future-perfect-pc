@@ -1,5 +1,16 @@
 # Launcher internals
 
+## Discord community link
+
+`ReleaseClient.DiscordInvite` owns the public, non-expiring community invite.
+The shared `Launcher.xaml` has a labeled Discord-logo navigation button; WPF
+routes it through `Open`, while Avalonia uses `NativeHost.Open`. Both open the
+same browser destination only on click. This is separate from Rich Presence
+settings and does not join a server or transmit diagnostics automatically.
+The README's local SVG button links to the same invite. Validate with the
+Windows launcher build/tests and shared-layout translation checks; native Mac
+browser dispatch and visual acceptance still need a Mac host.
+
 Launcher 1.4.1 prepares the merged save-folder and native Mac multiplayer work
 for the next Stable release alongside game 0.4.0. Only version identities change;
 publication still requires both host checks and all ten verified launcher assets.
