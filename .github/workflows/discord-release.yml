@@ -1,6 +1,14 @@
 name: Discord game release announcements
 
 on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Send a clearly labeled test notification (no release is created)
+        type: choice
+        options: [stable, preview]
+        default: stable
+        required: true
   release:
     types: [published]
   pull_request:
@@ -39,7 +47,7 @@ jobs:
 
   announce:
     needs: validate
-    if: github.event_name == 'release' && github.repository == 'TheDoffman/timesplitters-future-perfect-pc'
+    if: (github.event_name == 'release' || github.event_name == 'workflow_dispatch') && github.repository == 'TheDoffman/timesplitters-future-perfect-pc'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

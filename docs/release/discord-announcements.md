@@ -26,7 +26,14 @@ Notifications do not ping users or roles.
 3. Merge the workflow through a reviewed PR. Include it in future game release
    branches/tags, including named preview branches. Notification code is checked
    out from the default branch; no release notes are executed as code.
-4. After the next real release is published, inspect **Actions → Discord game
+4. To verify delivery without publishing a release, open **Actions → Discord game
+   release announcements → Run workflow**, keep branch **main**, and choose
+   **stable** (announcements) or **preview** (playtesting). Each run sends one
+   clearly labeled TEST card through the same sender and selected channel secret.
+   The selected channel must have its webhook secret configured; the other secret
+   is not required for this test. Confirm both a successful job and the visible
+   card in Discord. This tests delivery, not the GitHub release event itself.
+5. After the next real release is published, inspect **Actions → Discord game
    release announcements** and confirm its card reached the correct channel.
    Do not publish a fake release just to test the integration.
 
