@@ -715,6 +715,7 @@ def test_optional_texture_policy_needs_no_lfs_and_rejects_bundled_payload(publis
 
 @pytest.mark.parametrize('version,channel', [
     ('0.4.1', 'stable'), ('0.5.0-story-coop.1', 'story-coop'),
+    ('0.5.0-story-coop-beta.1', 'story-coop-beta'),
     ('0.5.0-beta.2', 'beta'), ('0.3.1-alpha.2', 'legacy'), ('0.4.0-preview.1', 'legacy')])
 def test_game_channel_identity(version, channel):
     assert module.CHANNELS.identity(version)['channel'] == channel

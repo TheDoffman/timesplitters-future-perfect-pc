@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[Saves](save-locations.md); [Discord UI](launcher.md), MAC-126; [routing](../release/discord-announcements.md).
+[Saves](save-locations.md); [Discord](../release/discord-announcements.md); [Story beta](../release/story-coop-beta-handoff.md).
 
 test_native_timing.py::test_original_minigun_spin runs the complete supported-US callback with controlled audio/model services. It reproduces the old high-FPS failure and checks readiness, release, pause and input guards at 60/120/144/180/240 FPS. Existing CI selects this suite; private-XBE absence skips it. Historical stack fixtures exclude minigun intent until the full native stack is applied. See native-minigun.md.
 
@@ -1027,7 +1027,7 @@ Crossplay: [acceptance](multiplayer-ui.md#physical-windowsmac-online-acceptance)
 Crossplay rotation/lock/recycle: `test_crossplay_peer.py`; Online interpreter:
 `test_native_mac_tools.py`. See multiplayer-ui.md.
 
-Markers: test_ui_layout.py; test_patch_updates.py checks 2290/2291 after migration.
+Markers: test_ui_layout.py; test_patch_updates.py covers 2290/2291.
 
 Mech input: test_mounted_mouse.py; [scope](mounted-mouse.md#battle-mech-mouse-425).
 
