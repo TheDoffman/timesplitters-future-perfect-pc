@@ -1297,3 +1297,64 @@ its original assets. EDBE0 events, navigation destruction and later radius damag
 remain suppressed for replay. Barrels, random bombs and host damage are retained.
 The existing Windows Story transport gate remains; native integration/scene
 acceptance is still tracked under MAC-013, with no separate OS-specific policy.
+
+## Four-player first-mission cinematic staging (2026-11-01)
+
+The sniper demonstration shows slots2/3 retaining their initial positions despite
+rifle inventory replication. The user accepted the initial extra-player transport,
+but clarified a timing defect: a guest can walk around the marine before the
+scene, then is staged/frozen later while aiming at the bunker. This is not body
+pass-through. No NPC collision flag or artificial wall is changed.
+
+`pc_story_cinematic.inc` SCY7/SPY7 carries a reliable rally serial, guest slot mask
+and three feet/heading records in its checksummed cinematic state. Capture host
+D4B00/D4BE0 events for any human context, rather than only pool slot0. Duplicate
+starts of the same active tag/flags/mode still run the original local behavior,
+but do not restart every peer's camera. A host-local context pointer remembers
+the triggering role for numeric staging; no pointer or script callback is sent.
+During post-opening active scenes use that role's feet and heading, with separate
+guest offsets. Refresh the anchor during active scenes: original camera begin
+can precede the same-update authored warp. An edge-only capture retained the old
+checkpoint position until exit in the recorded reproduction. Advance rally serial
+only when phase/mask/coordinates change; stable snapshots remain deduplicated. Native host roles0/1 retain their authored root movement;
+extra host roles and every owning guest receive the shared placement.
+
+Guests hold their numeric staging throughout active scenes, including scenes
+inferred from the host's state256 without a captured camera cue. Original D2CE0
+provides the movement lock. Clear the owned replica actor's C04 cinematic-root
+link so its independent local script animation cannot move the staged body.
+Original D2DE0 resets body/history/eye position, room and velocity, followed by
+shared spatial refresh. Placement is active-only; camera end restores normal
+control and inactive snapshots never apply retained rally positions. Epoch,
+host authentication, fragment checksum, finite values, slot ownership and
+context/body/actor links guard this path. Rejoin preserves its established spawn;
+opening and dead/disconnected contexts retain their existing handling.
+Native Story retains its existing adapter gate; MAC-013 integration/physical
+Mac scene acceptance remain pending. Live timing acceptance is distinct from
+production-fixture regression coverage.
+
+The second sniper demonstration (final attempt114-125s) also records the host's
+context+C bit8000 script preparation marker about2.4s before SCAM, while the
+guest remains mobile. Treat this as a first-mission phase cue, not as proof of
+the bit's complete native semantics. SCY7 carries only a validated control-lock
+boolean. Original D2CE0 holds owned guest movement during the lead-in without
+moving it or starting a camera early. The host remembers whether an active scene
+has occurred under this guard, excluding its short post-camera tail from the
+lock. Reset clears all latch/owned-control state. Explicit SCAM end also latches
+completion until reset, preventing later clear/set pulses of the preparation
+marker from arming another hold. Camera end releases control immediately. The new
+record's C04 links are zero; a live root link did not cause this reproduction.
+
+Post-camera correction (2026-11-01): the user accepts the early marine stop but
+reports a second freeze/teleport afterward. Inactive rally snapshots must be
+ignored even if their serial was never applied; no exit placement is scheduled.
+After a captured begin/end pair, explicit cue lifetime owns active state. Residual
+context256/global02000000 cannot reopen a closed camera; opening and initial
+no-cue fallback remain. An owned guest's late local state256 is reconciled to2
+when the host has explicitly ended the camera and no new preparation lock or
+scene is active; other states, including death/inactivity, remain untouched.
+These are adapter contracts covered by fixtures, not proof of visual acceptance.
+Latest human retest accepts the early marine stop but still finds a brief extra
+guest freeze after the cutscene. It clears after a few seconds and gameplay can
+continue. The user deferred that residual issue; preserve this evidence and do
+not describe the post-camera freeze as resolved.

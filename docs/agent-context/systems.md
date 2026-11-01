@@ -1,6 +1,6 @@
 # Subsystem entry points
 
-Story chooser centering/reentry/lobby host loss, Game Over Quit, guest camera/weapon lifetime, in-progress rejoin, guest departure and in-match abort routing, bomb/barricade effects, Online Back navigation/browser level details, co-op movie score-packet lifetime, guest reward pages/context, NPC arms, corpse, pickup motion, barrel and camouflage integration keeps the
+Story chooser centering/reentry/lobby host loss, Game Over Quit, camera/weapon lifetime, in-progress rejoin, guest departure and in-match abort routing, cinematic staging/effects, Online Back navigation/browser level details, co-op movie score-packet lifetime, guest reward pages/context, NPC arms, corpse, pickup motion, barrel and camouflage integration keeps the
 shared source and main paths; see [details](systems-details.md).
 
 Battle Mech mouse: [shared routing and guards](mounted-mouse.md#battle-mech-mouse-425).

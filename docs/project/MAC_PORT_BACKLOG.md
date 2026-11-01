@@ -2254,6 +2254,20 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Story cinematic staging and timing (2026-11-01, this change):**
+  `src/network/pc_story_cinematic.inc` extends first-mission cinematic snapshots
+  with numeric destinations for all guests, active anchor refresh, preparation
+  movement lock with explicit camera-end authority, all-human host cue capture
+  and active-only placement through original D2DE0
+  and shared spatial refresh. Windows fixtures cover slots1/2/3, camera cue
+  deduplication, release/no reteleport, checksum/mask/finite and rejoin guards.
+  Windows build and57 affected checks pass. Human testing accepts all-player
+  transport and the early marine stop; a brief extra guest freeze afterward
+  persists and was explicitly deferred by the user.
+  The existing Windows Story gate remains: native Story transport integration,
+  physical Mac/mixed-host positioning, ground clearance and scene acceptance
+  remain pending. Reuse the shared guest-memory policy and guest APIs.
+
 - **Story barricade presentation (2026-10-31, uncommitted):**
   `src/network/pc_story_effects.inc` replays the original pair of profile18
   cosmetic explosions, and `pc_story_world.inc` restores the recorded local

@@ -2,17 +2,19 @@
    numeric fades and the primary hero's pose; never send camera/model pointers. */
 #ifdef _WIN32
 extern void sub_000C6100(void),sub_000D4B00(void),sub_000D4BE0(void);
-extern void sub_000CC170(void),sub_000C9C90(void);
+extern void sub_000CC170(void),sub_000C9C90(void),sub_000D2DE0(void);
 typedef struct StoryCinematic {
     uint32_t magic,match,serial,active,pose_present,opening,view_visible;
     uint32_t cue_serial,cue_active,cue_tag,cue_flags,cue_mode;
     uint32_t fade_present,fade[7];
     uint32_t feed_serial,feed_active,feed_tag,feed_target;
     float feed_remaining;
+    uint32_t rally_serial,rally_mask,control_lock;
+    float rally[3][4]; /* guest feet and heading, never peer pointers */
     PcCharacterPose pose;
 } StoryCinematic;
-#define STORY_CINE_MAGIC 0x34594353u
-#define STORY_CINE_POSE_MAGIC 0x34505953u
+#define STORY_CINE_MAGIC 0x37594353u
+#define STORY_CINE_POSE_MAGIC 0x37505953u
 #define STORY_CINE_BASE_BYTES offsetof(StoryCinematic,pose)
 typedef struct StoryCinematicBase {uint8_t state[STORY_CINE_BASE_BYTES];uint32_t checksum;} StoryCinematicBase;
 typedef struct StoryCinematicPose {uint32_t magic,match,serial,checksum;PcCharacterPose pose;} StoryCinematicPose;
@@ -21,10 +23,11 @@ _Static_assert(sizeof(StoryCinematicPose)+4u<=256u,"Cinematic pose sender limit"
 static StoryCinematic story_cine_state,story_cine_pending;
 static uint32_t story_cine_serial,story_cine_seen,story_cine_checksum_pending,story_cine_tick;
 static uint32_t story_cine_cue_serial,story_cine_cue_active,story_cine_cue_tag,story_cine_cue_flags,story_cine_cue_mode;
-static uint32_t story_cine_cue_applied;
-static uint32_t story_cine_feed_applied;
+static uint32_t story_cine_cue_applied,story_cine_anchor;
+static uint32_t story_cine_feed_applied,story_cine_control_held;
 static unsigned story_cine_parts;
-static int story_cine_published,story_cine_replay,story_cine_was_active;
+static uint32_t story_cine_rally_applied[4];
+static int story_cine_published,story_cine_replay,story_cine_was_active,story_cine_guard_saw_scene,story_cine_sniper_complete;
 static int story_cine_session(void)
 { return story_npc_session() && WORD_AT(0x0079094cu)==2u && WORD_AT(0x0076b1a4u)==15u; }
 static void story_cine_reset(void)
@@ -32,8 +35,9 @@ static void story_cine_reset(void)
     memset(&story_cine_state,0,sizeof story_cine_state);memset(&story_cine_pending,0,sizeof story_cine_pending);
     story_cine_serial=story_cine_seen=story_cine_parts=0;
     story_cine_cue_serial=story_cine_cue_active=story_cine_cue_tag=story_cine_cue_flags=story_cine_cue_mode=0;
-    story_cine_cue_applied=0;story_cine_published=story_cine_replay=story_cine_was_active=0;
-    story_cine_feed_applied=0;story_rejoin_view_pending=0;
+    story_cine_cue_applied=story_cine_anchor=0;story_cine_published=story_cine_replay=story_cine_was_active=0;
+    story_cine_feed_applied=story_cine_control_held=0;story_cine_guard_saw_scene=story_cine_sniper_complete=0;story_rejoin_view_pending=0;
+    memset(story_cine_rally_applied,0,sizeof story_cine_rally_applied);
 }
 static uint32_t story_cine_checksum(const StoryCinematic *s)
 {
@@ -46,6 +50,9 @@ static int story_cine_valid(const StoryCinematic *s,int complete)
     if(s->magic!=STORY_CINE_MAGIC || !s->serial || s->active>1u || s->pose_present>1u || s->opening>1u ||
        s->view_visible>1u || s->cue_active>1u || s->cue_flags>65535u || s->cue_mode>64u || s->fade_present>1u ||
        (s->cue_active && (!s->cue_serial || !s->cue_tag))) return 0;
+    if(s->control_lock>1u || s->rally_mask&~14u || (s->rally_mask && !s->rally_serial)) return 0;
+    for(unsigned slot=0;slot<3u;slot++) for(unsigned axis=0;axis<4u;axis++)
+        if(!isfinite(s->rally[slot][axis]) || fabsf(s->rally[slot][axis])>1000000.f) return 0;
     if(complete && s->pose_present && !pc_character_pose_valid(&s->pose)) return 0;
     if(s->feed_active>1u || (s->feed_active && (!s->feed_serial || !s->feed_tag)) ||
        !isfinite(s->feed_remaining) || s->feed_remaining<0.f || s->feed_remaining>3600.f) return 0;
@@ -80,14 +87,24 @@ static int story_cine_script(void (*original)(void),uint32_t address)
     if((address!=0x000d4b00u && address!=0x000d4be0u) || story_cine_replay ||
        !story_cine_session() || !story_cine_local_context()) return 0;
     if(WORD_AT(0x0076b140u)==2u) {g_esp+=4u;return 1;}
-    if(WORD_AT(0x0076b140u)!=1u || !guest_writable(g_esp,address==0x000d4b00u?28u:8u) ||
-       WORD_AT(g_esp+4u)!=WORD_AT(0x007b0c48u)) return 0;
+    if(WORD_AT(0x0076b140u)!=1u || !guest_writable(g_esp,address==0x000d4b00u?28u:8u)) return 0;
+    const uint32_t context=WORD_AT(g_esp+4u),pool=WORD_AT(0x007b0c48u);
+    if(context<pool || !pool || (context-pool)%0x1584u ||
+       (context-pool)/0x1584u>=story_npc_humans() || !guest_writable(context,0x1584u)) return 0;
     uint32_t tag=0,flags=0,mode=0;
     if(address==0x000d4b00u) {
         tag=story_cine_camera_tag(WORD_AT(g_esp+8u));flags=WORD_AT(g_esp+16u);mode=WORD_AT(g_esp+20u);
         if(!tag || flags>65535u || mode>64u) return 0;
     } else if(!story_cine_cue_active) return 0;
+    const int duplicate=address==0x000d4b00u && story_cine_cue_active &&
+        story_cine_cue_tag==tag && story_cine_cue_flags==flags && story_cine_cue_mode==mode;
+    const int sniper_end=address==0x000d4be0u && story_cine_cue_tag==0x5343414du;
     original();
+    if(sniper_end) story_cine_sniper_complete=1;
+    /* Local co-op may start the same scene for both authored roles. Capture
+       the first triggering human, without restarting the peer camera twice. */
+    if(duplicate) return 1;
+    if(address==0x000d4b00u) story_cine_anchor=context;
     if(!++story_cine_cue_serial) ++story_cine_cue_serial;
     story_cine_cue_active=address==0x000d4b00u;story_cine_cue_tag=tag;
     story_cine_cue_flags=flags;story_cine_cue_mode=mode;
@@ -156,6 +173,89 @@ static int story_cine_camera(uint32_t context,int begin,uint32_t tag,uint32_t fl
     WORD_AT(0x007b0c48u)=contexts;WORD_AT(0x00790950u)=count;WORD_AT(0x007b0c7cu)=current;
     restore_registers(&saved);return 1;
 }
+/* Stage every guest at the host's scene boundary, including the second
+   original Local Story role. Its local script timing is not network authority. */
+static void story_cine_rally_prepare(StoryCinematic *s)
+{
+    s->rally_serial=story_cine_state.rally_serial;s->rally_mask=story_cine_state.rally_mask;
+    memcpy(s->rally,story_cine_state.rally,sizeof s->rally);
+    const unsigned count=story_npc_humans();
+    if(count<2u || count>4u || s->opening || !s->active) return;
+    const uint32_t pool=WORD_AT(0x007b0c48u);
+    if(!guest_writable(pool,count*0x1584u)) return;
+    const uint32_t anchor=story_cine_anchor>=pool && (story_cine_anchor-pool)%0x1584u==0u &&
+        (story_cine_anchor-pool)/0x1584u<count ? story_cine_anchor : pool;
+    float feet[3],heading;
+    memcpy(feet,(const void *)((uintptr_t)(anchor+0xa8u)+g_xbox_mem_offset),12u);
+    memcpy(&heading,(const void *)((uintptr_t)(anchor+0x100u)+g_xbox_mem_offset),4u);
+    for(unsigned axis=0;axis<3u;axis++) if(!isfinite(feet[axis]) || fabsf(feet[axis])>999990.f) return;
+    if(!isfinite(heading) || fabsf(heading)>1000000.f) return;
+    s->rally_mask=0;
+    for(unsigned slot=1;slot<count;slot++) {
+        const uint32_t context=pool+slot*0x1584u,body=WORD_AT(context+0x14u);
+        if(WORD_AT(context)!=slot || WORD_AT(context+0x114u)==16u ||
+           !guest_writable(body,0x2e8u) || WORD_AT(body+0x150u)!=context) continue;
+        memcpy(s->rally[slot-1u],feet,12u);
+        s->rally[slot-1u][0]+=slot==1u?0.f:slot==2u?-1.25f:1.25f;
+        s->rally[slot-1u][2]+=1.25f;s->rally[slot-1u][3]=heading;
+        s->rally_mask|=1u<<slot;
+    }
+    /* Script camera begin precedes the authored human warp in the same game
+       update. Refresh the anchor during the scene instead of retaining the
+       pre-warp checkpoint position until its end. Stable samples keep serial. */
+    if(s->active!=story_cine_state.active || s->rally_mask!=story_cine_state.rally_mask ||
+       memcmp(s->rally,story_cine_state.rally,sizeof s->rally))
+        if(!++s->rally_serial) ++s->rally_serial;
+}
+static void story_cine_rally_apply(const StoryCinematic *s)
+{
+    const unsigned count=story_npc_humans(),role=WORD_AT(0x0076b140u);
+    const uint32_t pool=WORD_AT(0x007b0c48u);
+    /* Inactive snapshots may retain a rally that this peer never applied.
+       Camera end grants control; it must never trigger a delayed placement. */
+    if(!s->active || !s->rally_serial || count<2u || count>4u || !guest_writable(pool,count*0x1584u)) return;
+    GuestRegisters saved;save_registers(&saved);
+    for(unsigned slot=1;slot<count;slot++) {
+        const uint32_t context=pool+slot*0x1584u,body=WORD_AT(context+0x14u);
+        if(!(s->rally_mask&(1u<<slot)) ||
+           ((int32_t)(s->rally_serial-story_cine_rally_applied[slot])<=0 && !(role==2u && s->active)) ||
+           (role==1u && slot==1u) ||
+           WORD_AT(context)!=slot || (role==2u && WORD_AT(context+4u)!=0u) ||
+           !guest_writable(body,0x2e8u) || WORD_AT(body+0x150u)!=context ||
+           !guest_writable(WORD_AT(body+0x7cu),0xea0u) || WORD_AT(context+0x114u)==16u) continue;
+        if(role!=2u || !story_rejoin_view_pending) {
+            memcpy((void *)((uintptr_t)(context+0xa8u)+g_xbox_mem_offset),s->rally[slot-1u],12u);
+            memcpy((void *)((uintptr_t)(context+0x100u)+g_xbox_mem_offset),s->rally[slot-1u]+3,4u);
+            guest_call(sub_000D2DE0,1,context); /* body, movement history, room and velocity */
+            pc_network_bots_entity_refresh(body);
+            /* State-only script scenes need the same input lock as camera
+               cues. Keep native guest root motion from moving the staged view. */
+            if(role==2u) {
+                WORD_AT(WORD_AT(body+0x7cu)+0xc04u)=0u;
+                if(s->active && WORD_AT(context+0x114u)!=256u) guest_call(sub_000D2CE0,2,context,256u);
+            }
+        }
+        story_cine_rally_applied[slot]=s->rally_serial;
+    }
+    restore_registers(&saved);
+}
+static void story_cine_control_prepare(StoryCinematic *s,uint32_t context)
+{
+    const int guard=!!(WORD_AT(context+0xcu)&0x8000u);
+    if(!guard) story_cine_guard_saw_scene=0;
+    else if(s->active) story_cine_guard_saw_scene=1;
+    /* The authored guard outlives camera end briefly. Do not introduce a
+       second input freeze during that tail after the player regains the view. */
+    s->control_lock=!s->opening && guard &&
+        (s->active || (!story_cine_guard_saw_scene && !story_cine_sniper_complete));
+}
+static int story_cine_host_active(int opening,uint32_t context)
+{
+    /* Once a camera cue has an explicit end, residual human/global script
+       state cannot reopen it. Only a new authored begin can start another. */
+    return opening || (story_cine_cue_serial ? story_cine_cue_active :
+        (WORD_AT(context+0x114u)==256u || !!(WORD_AT(0x007de45cu)&0x02000000u)));
+}
 static void story_cine_frame(void)
 {
     if(!story_cine_session() || WORD_AT(0x007de30cu)!=7u) return;
@@ -180,7 +280,11 @@ static void story_cine_frame(void)
            It cannot own the lifetime of the opening's frozen pose replay. */
         s.opening=!story_loadout_host[0].equipped &&
             !(bookmarks && guest_writable(bookmarks,8u) && story_checkpoint_available(WORD_AT(bookmarks+4u)));
-        s.active=s.opening || story_cine_cue_active || WORD_AT(context+0x114u)==256u || (WORD_AT(0x007de45cu)&0x02000000u);
+        s.active=(uint32_t)story_cine_host_active((int)s.opening,context);
+        /* The first mission's script preparation guard begins before SCAM.
+           It is a phase marker, not a replicated set of arbitrary context bits.
+           Hold peer input during its lead-in, then release at camera end. */
+        story_cine_control_prepare(&s,context);
         const uint32_t camera=WORD_AT(context+8u);
         if(!camera || !guest_writable(camera,0x220u)) return;
         s.view_visible=WORD_AT(camera+0x21cu)&1u;
@@ -218,7 +322,9 @@ static void story_cine_frame(void)
             if(observations++<16u) fprintf(stderr,"[PC-STORY-CINE] host snapshot tick=%u active=%u pose=%u opening=%u clip=%d/%d fade=%08X valid=%d\n",
                 tick,s.active,s.pose_present,s.opening,s.pose.clip,s.pose.next_clip,fade,story_cine_valid(&s,1));
         }
+        story_cine_rally_prepare(&s);
         if(!story_cine_valid(&s,1)) return;
+        story_cine_rally_apply(&s);
         story_cine_state=s;story_cine_published=1;story_cine_tick=tick;
         const uint32_t checksum=story_cine_checksum(&s),buffer=frame-768u;
         StoryCinematicBase base;memcpy(base.state,&s,STORY_CINE_BASE_BYTES);base.checksum=checksum;
@@ -235,6 +341,7 @@ static void story_cine_frame(void)
     if(role!=2u || !story_cine_state.serial || story_cine_state.match!=story_npc_match()) return;
     const uint32_t context=story_cine_local_context();if(!context) return;
     const StoryCinematic *s=&story_cine_state;
+    story_cine_rally_apply(s);
     /* A late join has not observed the host's earlier camera-end transition.
        Rebind its locally created opening/shared Story camera to the owned body
        even when the first received snapshot is already ordinary gameplay. */
@@ -297,6 +404,18 @@ static void story_cine_frame(void)
                 WORD_AT(fade+0x20u),s->fade[6],s->opening);
         }
         memcpy((void *)((uintptr_t)(fade+8u)+g_xbox_mem_offset),s->fade,sizeof s->fade);
+    }
+    const int camera_ended=s->cue_serial && !s->cue_active && !s->active;
+    if(!story_rejoin_view_pending && (s->control_lock || story_cine_control_held || camera_ended)) {
+        GuestRegisters saved;save_registers(&saved);
+        const uint32_t state=WORD_AT(context+0x114u);
+        if(s->control_lock && state==2u) {
+            guest_call(sub_000D2CE0,2,context,256u);story_cine_control_held=context;
+        } else if(!s->control_lock && !s->active && (story_cine_control_held==context || camera_ended) && state==256u) {
+            guest_call(sub_000D2CE0,2,context,2u);
+        }
+        if(!s->control_lock) story_cine_control_held=0u;
+        restore_registers(&saved);
     }
     story_cine_was_active=(int)s->active;
 }

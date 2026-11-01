@@ -1,3 +1,60 @@
+## Sniper lead-in and stale staging anchor - 2026-11-01
+
+Local `online-story-coop` changes based on e3cf543e. The user
+rejected the SCY6 timing candidate and provided a second demonstration in
+`logs/story-sniper-timing-demo-20261101-005534`: finalized156s/1974frames,
+1612 valid state rows from four games, with camera tags/callbacks/root links.
+The final attempt is visible in the foreground guest PID4440 near114-125s.
+Host PID23528 sets its script preparation marker (context+C bit8000) at114.53s,
+while the guest remains in state2 and crosses the marine at115.2s. The SCAM
+camera starts around117s. The host is then at(-81.33,-12.37,-127.84), but the
+guest freezes at(-87.88,-12.42,-112.51), derived from the host's older checkpoint
+position. It finally moves to(-81.33,-12.35,-126.59) at125.01s when the scene
+ends. The same early script marker precedes the camera by about2.4s in all
+three attempts. The recorded C04 links are zero; no claim that a live C04 link
+caused this reproduction is supported.
+
+The prior rally captured the anchor only on the active-state edge, before the
+original same-update staging warp had finished, and retained that old location
+until exit. SCY7/SPY7 now refreshes the numeric anchor throughout active scenes;
+only a phase/mask/destination change increments the rally serial. Stable samples
+remain deduplicated. The user accepted the early stop but reported the second
+post-cutscene freeze/teleport persists in the prior candidate. The follow-up
+removes exit placement entirely: inactive snapshots cannot apply any rally,
+including a serial never applied during the scene. Explicit camera end wins
+over residual context256/global02000000 when deriving active state. SCAM end
+latches completion so later preparation-marker pulses cannot arm another hold.
+An owned guest's late local256 is released to2 once the host camera is explicitly
+ended and there is no new active scene or preparation lock. The host script marker
+is a phase cue, not a copied set of context flags: transmit a bounded control-lock
+boolean for the preparation lead-in. Guests use original D2CE0 to hold movement
+without a camera replay or teleport until actual staging. A host-side scene-seen
+latch excludes the script marker's short post-camera tail so camera end releases
+control immediately. Opening and reset/rejoin/dead-context guards remain.
+First-mission shared policy remains behind its existing Windows Story adapter;
+no artificial wall or marine collision-flag changes are included.
+
+Windows x64/MSVC14.42/D3D11, supported-US XBE SHA-256 verified. Affected suite
+57passed2Mac-only skipped in30.34s, covering pre-camera lock without placement,
+release/no late lock, updated/stable active anchor, cue/fragment/slot/rejoin guards,
+and original D2DE0 body/eye/history/room/velocity writes with controlled services.
+Follow-up affected suite57passed2Mac-only skipped in30.59s adds explicit-end vs
+residual state, no post-SCAM guard rearming, late local256 reconciliation and
+inactive unseen-rally placement rejection. Official Build/full patch validation
+and built-in tests passed with400.11GiB free before build. Content/executable
+identity verification and context/diff checks passed. Compatibility:
+72e8e55e739c92882b37f969cce0721b325f2dc3b1a31aeb5da5336d681c11ac.
+Executable SHA-256:
+d4f166f66724fbddfebbebbb2bd503f47bbc222f644d620db17252aa8cbaea72.
+Latest human retest confirms the early stop at the marine works, but the extra
+guest freeze still occurs after the cutscene. The guest recovers after a few
+seconds and can continue the level. The user explicitly deferred this remaining,
+nonblocking issue; do not mark it fixed from the passing regression fixtures.
+All-player transport was accepted earlier. No automated full-mission gameplay
+or physical Mac acceptance is claimed; native integration remains MAC-013 work.
+Personal saves/settings and the canonical fixture remain untouched. Changes are
+saved locally with this change; no push requested.
+
 ## Story barricade guest explosion and broken mesh - 2026-10-31
 
 Local/uncommitted `online-story-coop` follow-up based ond7821fa6. Recovered

@@ -974,3 +974,34 @@ resource/type/initializer, existing-replacement and unrelated-tag guards prevent
 script execution and duplicate geometry. FOV tests declare the added constructor
 collaborator. Use a bounded isolated paired startup to inspect actual preloaded
 mesh metadata; human retesting establishes the end-of-level explosion visuals.
+
+## Guest cinematic staging and timing checks (2026-11-01)
+
+The Story lobby fixture covers host extra slots2/3, guest slot1 and extra owned
+slots, distinct destinations, active staging/lock, inactive release without exit placement or
+subsequent reteleport, rejoin preservation and invalid masks/nonfinite data.
+A host camera event targeting slot1 must publish immediately; the same cue for
+slot0 must not restart it, and an end targeting slot1 must publish its release.
+Existing checksummed fragment tests use SCY7/SPY7 and the extended base, bounded
+by sender-size assertions. `test_quit_menu.py::test_original_story_position_reset`
+executes supported-US D2DE0 and verifies body/prior-position, eye, room and zero
+velocity writes with controlled room/plane lookup collaborators. No fixture
+establishes rendered ground clearance or the actual marine approach timing;
+human four-player retesting remains required.
+
+The follow-up fixtures reproduce an entry anchor captured before the authored
+warp, require a new serial while still active when the anchor moves, and retain
+serial on a stable sample. A preparation snapshot without camera/rally must lock
+owned movement without moving feet or ending/starting a camera; clearing it must
+restore normal state. Host guard latch coverage includes lead-in, active scene,
+marker tail after camera end, later new guard and opening exclusion. Nonboolean
+control-lock data is rejected. These are production-adapter checks; the actual
+script preparation marker's measured timing comes from the recorded four-game
+trace, not the fixture.
+
+Post-camera regressions: an explicit host cue end stays inactive despite residual
+human256/global02000000, and a new actual begin can reactivate it. SCAM end must
+suppress later marker clear/set rearming. A late owned guest256 after explicit
+host end returns to2 without another camera end. An inactive never-applied rally
+serial100 cannot move the guest after release; active anchor updates and accepted
+prelude hold remain covered.

@@ -688,3 +688,28 @@ def test_story_original_bomb_feedback(tmp_path):
     source=source.replace('/* UNREACHED */','\n'.join('void '+name+'(void){assert(!"unexpected '+name+'");}' for name in sorted(missing)))
     source=source.replace('/* ORIGINAL_CONSTANTS */',seeds)
     assert 'PASS:' in compile_and_run(tmp_path,source)
+
+
+def test_original_story_position_reset(tmp_path):
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    import re
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={0xd2de0:dict(name='sub_000D2DE0',end=0xd2fce)}
+        code=FunctionTranslator(image,functions).translate_function(0xd2de0,functions[0xd2de0])
+        constants={int(a,16)+offset for a in re.findall(r'0x([0-9A-Fa-f]+)',code) for offset in (0,4,8,12)}
+        constants={a for a in constants if 0x470000<=a<0x500000}
+        seeds='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x}u;' for a in sorted(constants))
+    finally:
+        vars(config).update(previous)
+    source=(ROOT/'tests/network/story_position_reset.c').read_text(encoding='utf-8')
+    source=source.replace('/* ORIGINAL_POSITION_RESET */',code).replace('/* ORIGINAL_CONSTANTS */',seeds)
+    assert 'PASS:' in compile_and_run(tmp_path,source)
