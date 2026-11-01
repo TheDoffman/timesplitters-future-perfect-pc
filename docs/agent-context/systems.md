@@ -974,3 +974,8 @@ Bot corpses: [contracts](systems-details.md#online-bot-corpses).
 Physics: [poses](systems-details.md#guest-ragdolls-and-physical-npc-drops).
 
 [Language startup](language-packs.md).
+
+Original-based local 2x production, including 164 approved character icons:
+[pipeline and validation](original-upscale.md). The active local pack has 6,812
+pairs; Classic retains original archives. Historical icon exclusions no longer
+describe current policy.

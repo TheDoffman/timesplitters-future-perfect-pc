@@ -1572,6 +1572,32 @@ before checking release, matching the existing asynchronous settings contract.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- **2026-11-01 original-based 2x production (uncommitted, issue #74):** shared
+  `tools/textures/texture-upscale-originals.py` adds local model inference and
+  DDS production from verified original game payloads. Alpha, dimensions,
+  provenance, budgets and conservative specialist/data routing are shared.
+  Synthetic contracts are in `tests/textures/test_texture_upscale_originals.py`.
+  Windows completed/activated 6,648 original-based 2x pairs with 131 targeted tests,
+  native parser/alpha/hash audits and selected offline comparisons. 164 icons
+  were initially retained. The user's later approval adds all 164 faithful 2x
+  icons to the active and installed Windows pack (6,812 total pairs), with native
+  parser/alpha/hash checks and unchanged prior-file/settings hashes. Explicit
+  policy approval makes future generation reproducible. Mac execution and
+  in-game icon acceptance remain unverified. One stationary bot-free Hotel on/off view is now captured
+  on Windows (85 replacement keys loaded); broad scene validation remains
+  pending. A separate sixteen-key 4x Hotel preview also passes Windows offline
+  and runtime dimension checks; its 1080p visual gain is subtle and the active
+  pack remains 2x. See the Hotel capture/preview entries in STATUS. Local activation uses
+  shared logic with a Windows installation/process adapter. Mac model execution
+  and real-scene rendering remain unverified. The optional launcher install
+  currently targets the Windows `.exe` layout; Mac needs app-layout/process
+  adapter acceptance before using that installation option. No new renderer adapter is needed
+  for common RGBA8/DXT1 DDS; legacy GL RGBA limitations remain unchanged.
+  **Awaiting validation:** run synthetic tests on Mac, supply a compatible local
+  ncnn executable, verify deterministic non-AI paths and representative common
+  renderer scenes, alpha and residency. Do not infer Mac validation from PC.
+
+
 - Classic request deferral (commit carrying this entry): `src/textures/texture_pack.c`
   and `src/native/gl_texture_pack.inc` leave new replacements unrequested until
   Enhanced binds them. Cached switching, original fallback and content-change

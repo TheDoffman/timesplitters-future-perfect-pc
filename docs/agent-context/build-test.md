@@ -662,12 +662,12 @@ No game launch is required for this export-only change.
 
 ## Original character icon policy
 
-`config/textures/texture-originals.json` excludes user-retained original icons from
-`texture-worklist.py` and `texture-hybrid-plan.py`. Offline regression coverage
-is in `tests/textures/texture_pack_tools.py` (including rejection of accidental reinstall)
-and `tests/textures/test_texture_hybrid_plan.py`. These tests are already registered in CI.
-Asset removal also requires pack count/size audit and unchanged-file hashes;
-no game rebuild is needed.
+`texture-originals.json` supports retained-key exclusion; its current policy
+approves 164 reviewed icons for 2x Enhanced. `test_texture_upscale_originals.py`
+checks explicit neural approval, overlap/unknown/data refusal and default UI
+routing. `texture_pack_tools.py` and `test_texture_hybrid_plan.py` retain exclusion
+coverage. Tests run in CI. Pack updates require count/size and unchanged-file
+hash audits; no game rebuild is needed.
 
 Retired-icon upgrade coverage also runs through `tests/launcher/launcher_textures.cs`
 in Windows and native Mac launcher checks. `tests/textures/test_build_textures.py` verifies
@@ -1035,3 +1035,5 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 [Story flag and Clang fixtures](build-test-details.md#story-release-flag-regression).
 
 [Languages](launcher.md#complete-game-language-packs-discussion-263).
+
+[2x tests](original-upscale.md).
