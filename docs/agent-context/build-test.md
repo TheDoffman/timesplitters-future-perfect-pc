@@ -9,6 +9,8 @@ Minigun readiness/release, pause and input checks: [original-code coverage](nati
 Release 0.4.0 / launcher 1.4.1 tests cover aliases and upload recovery; Mac
 Online notices follow [installer paths](multiplayer-ui.md).
 Run `python -m unittest discover -s tests/launcher -p test_launcher_release.py -v`.
+Launcher 1.4.2 uses the same dual-host workflow and ten-asset verification gates;
+the version-only preparation does not change build, install or preservation paths.
 
 Windows builds pass `config/build/windows-game.manifest` as
 `TSFP_GAME_MANIFEST`; patch 2130 attaches it only to the game target. CMake
