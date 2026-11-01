@@ -1,3 +1,23 @@
+## Story preview build-version repair - 2026-11-01
+
+The initial beta.1 archive had the correct preview watermark but hid Story's
+chooser: TSFP_PC_VERSION was private to xbox_input, while the menu belongs to
+the title target and silently used development. The flag now calls a shared
+version provider in the diagnostics compilation unit; the watermark uses the
+same provider. Separate-unit tests deliberately give the menu a conflicting
+macro. The real linked Windows debug test asserts flag/watermark agreement.
+
+Windows x64 targeted menu/camera checks49passed2Mac-only skips; publisher
+checks141passed9prerequisite skips, including explicit repair ordering,
+concurrent edits/tag changes, invalid/immutable/Stable/draft refusal, asset
+preservation and bad-upload draft retention. Official MSVC stable Release
+Build passes full patch/built-in checks and reports version0.4.0/chooser disabled.
+Preview linked-build acceptance, full release preparation and native CI remain
+pending. The user explicitly requested replacing the existing mutable beta.1
+release; normal publication remains immutable. See the documented repair mode.
+No personal saves/settings were changed; the standalone launcher is not published
+by this task. Native Story transport and physical Mac gameplay remain separate.
+
 ## Fresh weapon clicks / #434 (2026-11-01)
 
 Implementation commit 33363bfc. Integrated main bbab9c3d; focused trigger,

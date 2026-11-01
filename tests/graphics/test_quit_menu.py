@@ -722,13 +722,17 @@ def test_story_version_feature_flag(tmp_path, version, enabled, native):
     # Compile the production chooser and callback lookup, not a second policy.
     source = (ROOT/'tests/network/story_menu.c').read_text(encoding='utf-8')
     fixture = tmp_path/'story_version.c'
-    fixture.write_text('#define TSFP_PC_VERSION "'+version+'"\n#define EXPECT_STORY_COOP '+str(enabled)+'\n'+source, encoding='utf-8')
+    # The menu target deliberately has a different private macro. Only the
+    # separately compiled diagnostics provider owns the actual build version.
+    fixture.write_text('#define TSFP_PC_VERSION "menu-target"\n#define PC_EXTERNAL_BUILD_VERSION 1\n#define EXPECT_STORY_COOP '+str(enabled)+'\n'+source, encoding='utf-8')
+    provider = tmp_path/'build_version.c'
+    provider.write_text('#define TSFP_PC_VERSION "'+version+'"\n#include "diagnostics/pc_build_version.inc"\n', encoding='utf-8')
     compiler, env = native_compiler(tmp_path)
     exe = tmp_path/('story_version.exe' if os.name=='nt' else 'story_version')
     if os.name=='nt':
-        args = [compiler, '/nologo', '/std:c11', '/O2', '/W4', '/I'+str(ROOT/'src'), str(fixture), '/Fe:'+str(exe)]
+        args = [compiler, '/nologo', '/std:c11', '/O2', '/W4', '/I'+str(ROOT/'src'), str(fixture), str(provider), '/Fe:'+str(exe)]
     else:
-        args = [compiler, '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', '-I'+str(ROOT/'src'), str(fixture), '-lm', '-o', str(exe)]
+        args = [compiler, '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', '-I'+str(ROOT/'src'), str(fixture), str(provider), '-lm', '-o', str(exe)]
     if native:
         args.insert(1, '/DTSFP_NATIVE_DISPLAY' if os.name=='nt' else '-DTSFP_NATIVE_DISPLAY')
     built = subprocess.run(args, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=60)
