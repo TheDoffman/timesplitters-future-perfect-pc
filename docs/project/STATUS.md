@@ -17,6 +17,37 @@ Mac backlog integrity, context and whitespace checks pass. The prompt test
 uses a disposable input JSON so its F1 changes cannot mutate shared fixtures.
 Native Mac has no in-window F1 bar; its system menu/pointer behavior is unchanged.
 
+## Story co-op beta published - 2026-11-01
+
+Published [v0.5.0-story-coop-beta.1](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/v0.5.0-story-coop-beta.1)
+from clean pushed preview commit7262f76d2db128bb4f584533b19c494baca6ec29.
+The public Windows x64 prerelease has exactly its ZIP, checksum and BUILD.json;
+all three uploaded SHA-256 digests and the immutable source tag were verified.
+ZIP SHA-256:a120fb0620811543f69dffbbe76c0345a8256a6a9b70069c4ce0909a3ff5ee20.
+
+Windows11 build26300/Python3.14.2/MSBuild17.12.6: official MSVC x64 Release
+build/full patch validation passed. The final
+release suite passed3109 tests/112 subtests with55 expected skips in440.67s.
+Exact1283-file fresh install, upgrade/personal-file preservation, ZIP integrity,
+and isolated portable Python/Tk/TLS/directory/invitation/three-peer UDP relay
+checks passed.569.28s total preparation;400.31GiB free before preparation.
+This is Windows build/fixture/package/transport validation, not a complete
+mission playthrough. Personal saves/settings and canonical profiles were preserved.
+
+PR441 merged507c5d45 after Windows/Mac runtime, GPU, patch and launcher checks.
+PR444 merged5bdfccb3 after both launcher host checks. Main keeps0.4.0 and its
+original Story menu; the tested preview source differed only in VERSION.
+The shared launcher groups the raw story-coop-beta channel into story-coop,
+preserving tag metadata, saved choices and exact legacy selection. Current
+published launcher remains launcher-v1.4.1/Latest; no standalone launcher was
+published or version-bumped here. Its next publication belongs to another user;
+see the [handoff](../release/story-coop-beta-handoff.md).
+
+The brief extra guest freeze after the sniper cutscene remains deferred. Other
+Story missions and native Mac Story transport/physical gameplay remain unverified.
+Published game metadata identifies only windows-x64. Later documentation commits
+do not change the tested release tag or relabel its binaries.
+
 ## Story integration Clang fixture repair - 2026-11-01
 
 Follow-up at32a832c8: Mac CI now passes2349 cases/18 subtests with349 skips,
