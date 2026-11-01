@@ -3009,13 +3009,13 @@ fireball visibility and authoritative enemy blast damage without duplicates.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
-- **Story co-op beta track alias (2026-11-01, uncommitted):** Shared
+- **Story co-op beta track alias (2026-11-01, PR #444 / a7da87b9):** Shared
   `tools/launcher/ReleaseClient.cs` groups `story-coop-beta` into `story-coop`
   after validating the original tag/metadata identity, and migrates saved track
   choices without changing unrelated preferences. Both launchers already use
   this policy; no Mac adapter is needed. The shared UI fixture covers catalog,
   metadata, installed-version and preference behavior on both hosts. Windows
-  build/tests and native CI are the acceptance routes; physical Mac selector
+  build/tests and native launcher CI passed; physical Mac selector
   validation remains pending. Publication belongs to another user; see
   [handoff](../release/story-coop-beta-handoff.md).
 
