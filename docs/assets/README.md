@@ -1,10 +1,12 @@
 # README visuals
 
-- `discord-community.svg`: clickable Discord community button with Discord's
+- `discord-community.svg`: clickable Discord community icon with Discord's
   mark from [Simple Icons](https://github.com/simple-icons/simple-icons/blob/develop/icons/discord.svg)
   (CC0). The same mark geometry is used in the launcher's shared XAML. Discord
-  branding belongs to Discord; this button links to the fan project's server.
+  branding belongs to Discord; this icon links to the fan project's server.
   The SVG is self-contained; its destination and accessible label live in README.
+  The icon sits at the top right of the README and uses Discord blurple on a
+  transparent background so it works with GitHub light and dark themes.
 
 - `online-host.png`, `online-join.png`, `online-invitation.png`: actual Windows
   Tk widgets rendered from `tools/network/online.py` at source revision `ed8bff1`,
@@ -59,7 +61,7 @@
   `Launcher.xaml`. Heading text remains Markdown with decorative empty image
   alt text. Explicit anchors preserve the original section links because GitHub
   adds a leading dash to automatically generated slugs for icon-first headings.
-  All new SVGs are self-contained, with opaque backgrounds and
+  Section and download SVGs are self-contained, with opaque backgrounds and
   contrasting foregrounds for both light and dark GitHub pages. They contain
   no scripts, remote resources or embedded raster artwork.
 
