@@ -2,7 +2,7 @@
 
 Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh-weapon-clicks-434).
 
-[NPC/cinematics](build-test-details.md); [Saves](save-locations.md); [Discord UI](launcher.md), MAC-126; [release tests](../release/discord-announcements.md).
+[NPC/cinematics](build-test-details.md); [Saves](save-locations.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
 
 Minigun readiness/release, pause and input checks: [original-code coverage](native-minigun.md). Existing CI selects test_native_timing.py; private-XBE absence skips original-code tests. Historical stack fixtures exclude minigun intent and player-trigger event patches until the full native stack is applied.
 
@@ -1013,7 +1013,7 @@ Crossplay: [acceptance](multiplayer-ui.md#physical-windowsmac-online-acceptance)
 
 Crossplay tests: see multiplayer-ui.md.
 
-Markers: test_ui_layout.py; test_patch_updates.py checks 2290/2291 after migration.
+Markers: test_ui_layout.py; test_patch_updates.py covers 2290/2291.
 
 Mech input: test_mounted_mouse.py; [scope](mounted-mouse.md#battle-mech-mouse-425).
 
