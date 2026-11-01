@@ -1,5 +1,9 @@
 # Build, run and validation map
 
+Game 0.4.1 uses the official Windows publisher and matching native Mac packager
+from one clean pushed revision. Full release, actual installer/preservation and
+portable Online checks remain required; a version bump alone is not validation.
+
 Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh-weapon-clicks-434).
 
 [NPC/cinematics](build-test-details.md); [Saves](save-locations.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
