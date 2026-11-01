@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[NPC/cinematic tests](build-test-details.md); [Save checks](save-locations.md); [Discord checks](launcher.md#discord-community-link) (MAC-126).
+[NPC/cinematics](build-test-details.md); [Saves](save-locations.md); [Discord UI](launcher.md), MAC-126; [release tests](../release/discord-announcements.md).
 
 
 test_native_timing.py::test_original_minigun_spin runs the complete supported-US callback with fake services. It reproduces the old high-FPS failure and checks readiness, release, pause and input guards at 60/120/144/180/240 FPS. Existing CI selects this suite; private-XBE absence skips it. Historical fixtures exclude minigun intent until the native stack is applied. See native-minigun.md.
