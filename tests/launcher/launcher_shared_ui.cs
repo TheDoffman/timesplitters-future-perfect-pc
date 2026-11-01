@@ -183,7 +183,34 @@ public static class LauncherSharedUiChecks
                 Need(releases.Any(r=>r.Tag=="v0.6.0-preview.99"&&r.Channel=="legacy"),"Historical preview was relabeled Beta");
                 Need(!GameChannels.Choices(releases,"beta").Any(c=>c.Id=="legacy"),"Legacy versions must stay in history, outside testing tracks");
                 Need(GameChannels.Select(releases,"withdrawn")==null,"Missing experiment must not substitute Stable");
+                Need(GameChannels.Select(releases,"legacy").Channel=="legacy","Exact legacy selection was redirected to Beta");
                 Need(GameChannels.Choices(releases,"withdrawn").Any(c=>c.Id=="withdrawn"),"Unavailable selected channel was lost");
+            });
+            Test("Story co-op beta joins its existing track while retaining exact tag metadata",()=>{
+                var record=ChannelRecord("v0.5.0-story-coop-beta.1",true);
+                var metadata=new Dictionary<string,object>{{"schema",1},{"channel","story-coop-beta"},{"name","Story Co-op Beta Preview"},{"source_commit",new string('a',40)},{"minimum_launcher","1.3.0"}};
+                record["body"]="<!-- tsfp-release "+Json.Encode(metadata)+" -->\nBeta notes";
+                var releases=ReleaseClient.GameVersions(Json.Encode(new[]{record,ChannelRecord("v0.4.0-story-coop.1",true),ChannelRecord("v0.5.0-beta.1",true),ChannelRecord("v0.6.0-other-beta.1",true)})).Releases;
+                var selected=GameChannels.Select(releases,"story-coop");
+                Need(selected.Tag=="v0.5.0-story-coop-beta.1"&&selected.Channel=="story-coop"&&selected.ChannelName=="Story Co-op Preview","Beta was split from the existing Story track");
+                Need(GameChannels.Select(releases,"story-coop-beta")==selected,"Saved beta track did not resolve to Story co-op");
+                var choices=GameChannels.Choices(releases,"story-coop-beta");
+                Need(choices.Count(c=>c.Id=="story-coop")==1&&!choices.Any(c=>c.Id=="story-coop-beta"),"Duplicate Story tracks were offered");
+                Need(GameChannels.Select(releases,"beta").Tag=="v0.5.0-beta.1"&&GameChannels.Select(releases,"other-beta").Tag=="v0.6.0-other-beta.1","Unrelated beta tracks were merged");
+                Need(GameChannels.FromTag(selected.Tag)=="story-coop"&&!GameChannels.CanInstall(selected,selected.Tag),"Installed beta identity was lost");
+                metadata["channel"]="story-coop";record["body"]="<!-- tsfp-release "+Json.Encode(metadata)+" -->";
+                Need(ReleaseClient.GameVersions(Json.Encode(new[]{record})).Releases.Length==0,"Alias accepted metadata that did not match its immutable tag");
+            });
+            Test("Story beta preferences migrate without writing on read or losing unrelated settings",()=>{
+                string folder=Path.Combine(root,"story-beta-channels");Directory.CreateDirectory(folder);
+                string path=Core.PathIn(folder,".launcher/preferences.json");
+                Core.Write(path,Json.Encode(new {game_channel="story-coop-beta",game_preview_track="story-coop-beta",launcher_preview=true,custom="keep"}));
+                string original=File.ReadAllText(path);
+                Need(GameChannels.Read(folder)=="story-coop"&&GameChannels.ReadPreviewTrack(folder)=="story-coop"&&File.ReadAllText(path)==original,"Reading beta preferences changed the file or lost its track");
+                GameChannels.Save(folder,"story-coop-beta");var prefs=Json.Object(File.ReadAllText(path));
+                Need(Json.String(prefs,"game_channel")=="story-coop"&&Json.String(prefs,"game_preview_track")=="story-coop"&&Json.String(prefs,"custom")=="keep"&&SelfUpdate.PreviewChannel(folder),"Migrating Story beta lost preferences");
+                GameChannels.Save(folder,"stable","story-coop-beta");
+                Need(GameChannels.Read(folder)=="stable"&&GameChannels.ReadPreviewTrack(folder)=="story-coop","Stable lost the remembered Story track");
             });
             Test("game preview preferences migrate without enrolling launcher previews or losing unrelated preferences",()=>{
                 string folder=Path.Combine(root,"channels");Directory.CreateDirectory(folder);

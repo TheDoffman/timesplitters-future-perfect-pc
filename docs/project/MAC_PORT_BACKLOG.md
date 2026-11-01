@@ -3008,6 +3008,16 @@ fireball visibility and authoritative enemy blast damage without duplicates.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Story co-op beta track alias (2026-11-01, uncommitted):** Shared
+  `tools/launcher/ReleaseClient.cs` groups `story-coop-beta` into `story-coop`
+  after validating the original tag/metadata identity, and migrates saved track
+  choices without changing unrelated preferences. Both launchers already use
+  this policy; no Mac adapter is needed. The shared UI fixture covers catalog,
+  metadata, installed-version and preference behavior on both hosts. Windows
+  build/tests and native CI are the acceptance routes; physical Mac selector
+  validation remains pending. Publication belongs to another user; see
+  [handoff](../release/story-coop-beta-handoff.md).
+
 - **PR #390 malformed-metadata recovery:** All 28 hosted shared UI groups passed
   after notification repair. Packaged repair then exposed a native JSON exception
   type escaping backup-label fallback. JsonAdapter now normalizes malformed JSON
