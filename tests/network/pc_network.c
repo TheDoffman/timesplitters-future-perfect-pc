@@ -92,14 +92,23 @@ int main(void)
         a[0]=address(800);a[1]=address(150);a[2]=address(850);CHECK(!call(0x43172c));
         pc_network_bots_context(2,host,match,2,6);
         memcpy(packet,"TSFP\1\0\0\0",8);memcpy(packet+8,version,32);
-        memcpy(packet+40,"TSFBAI1",8);memcpy(packet+48,memory+150,8);memcpy(packet+56,&match,4);
+        memcpy(packet+40,"TSFBAI2",8);memcpy(packet+48,memory+150,8);memcpy(packet+56,&match,4);
         bot.slot=2;bot.tick=10;bot.health=1.f;bot.position[0]=25.f;
+        bot.ragdoll.kind=4;bot.ragdoll.count=3;
+        for(unsigned i=0;i<3;i++){PcRigidBodyState *r=bot.ragdoll.parts+i;r->present=1;
+            r->rotation[0]=r->rotation[4]=r->rotation[8]=1;r->angular[2]=1.25f;}
+
         memcpy(packet+60,&bot,sizeof bot);
         CHECK(sendto(raw,(char *)packet,sizeof packet,0,(struct sockaddr *)&to,sizeof to)==sizeof packet);
         Sleep(10);a[0]=receiver;a[1]=address(500);a[2]=100;a[3]=0;
         CHECK(call(0x43184c)==UINT32_MAX);
         CHECK(pc_network_bots_receive(2,&received) && received.tick==10 && received.position[0]==25.f);
+        CHECK(received.ragdoll.count==3 && received.ragdoll.parts[2].angular[2]==1.25f);
         CHECK(!pc_network_bots_receive(2,&received));
+        bot.tick=11;bot.ragdoll.parts[0].rotation[0]=NAN;memcpy(packet+60,&bot,sizeof bot);
+        CHECK(sendto(raw,(char *)packet,sizeof packet,0,(struct sockaddr *)&to,sizeof to)==sizeof packet);
+        Sleep(10);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_bots_receive(2,&received));
+        memset(&bot.ragdoll,0,sizeof bot.ragdoll);
         bot.tick=9;memcpy(packet+60,&bot,sizeof bot);
         CHECK(sendto(raw,(char *)packet,sizeof packet,0,(struct sockaddr *)&to,sizeof to)==sizeof packet);
         Sleep(10);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_bots_receive(2,&received));
@@ -126,11 +135,11 @@ int main(void)
             pc_network_bots_context(1,0,match,2,6);
             pc_network_bots_targets(&target_ip,1);bot.tick=12;
             pc_network_bots_send(&bot);
-            CHECK(recv(target,(char *)outbound,sizeof outbound,0)==sizeof outbound);
+            CHECK(recv(target,(char *)outbound,sizeof outbound,0)==60+offsetof(PcNetworkBotState,ragdoll));
             CHECK(!memcmp(outbound,"TSFP\1\0\0\0",8));
-            CHECK(!memcmp(outbound+40,"TSFBAI1",8));
+            CHECK(!memcmp(outbound+40,"TSFBAI2",8));
             CHECK(!memcmp(outbound+48,memory+150,8));
-            memcpy(&received,outbound+60,sizeof received);CHECK(received.tick==12 && received.slot==2);
+            memset(&received,0,sizeof received);memcpy(&received,outbound+60,offsetof(PcNetworkBotState,ragdoll));CHECK(received.tick==12 && received.slot==2);
             closesocket(target);pc_network_bots_context(0,0,0,0,0);
         }
     }
@@ -182,7 +191,7 @@ int main(void)
             memset(memory+800,0,36);memcpy(memory+800,&host,4);
             a[0]=address(800);a[1]=address(150);a[2]=address(850);CHECK(!call(0x43172c));
             pc_network_bots_context(2,host,match,2,6);
-            memcpy(frame,packet,68);memcpy(frame+68,"TSFBAI1",8);
+            memcpy(frame,packet,68);memcpy(frame+68,"TSFBAI2",8);
             memcpy(frame+76,memory+150,8);memcpy(frame+84,&match,4);
             bot.slot=2;bot.tick=10;bot.body_present=1;bot.health=1.f;bot.position[0]=25.f;
             memcpy(frame+88,&bot,sizeof bot);
@@ -211,12 +220,12 @@ int main(void)
             CHECK(!call(0x431721)); /* A foreign session cannot replace/clear ours. */
             pc_network_bots_context(1,0,match,2,6);pc_network_bots_targets(&host,1);
             pc_network_bots_send(&bot);
-            CHECK(recv(raw,(char *)frame,sizeof frame,0)==sizeof frame);
+            CHECK(recv(raw,(char *)frame,sizeof frame,0)==88+offsetof(PcNetworkBotState,ragdoll));
             CHECK(!memcmp(frame,"TSFB\1\0\0\0",8));
             CHECK(!memcmp(frame+56,memory+100,4) && !memcmp(frame+60,&host,4));
             CHECK(*(uint16_t *)(frame+64)==htons(1000) && *(uint16_t *)(frame+66)==htons(1000));
-            CHECK(!memcmp(frame+68,"TSFBAI1",8) && !memcmp(frame+76,memory+150,8));
-            memcpy(&received,frame+88,sizeof received);CHECK(received.tick==11 && received.slot==2);
+            CHECK(!memcmp(frame+68,"TSFBAI2",8) && !memcmp(frame+76,memory+150,8));
+            memset(&received,0,sizeof received);memcpy(&received,frame+88,offsetof(PcNetworkBotState,ragdoll));CHECK(received.tick==11 && received.slot==2);
             /* A stale self-discovery cache must not keep an unregistered
                session alive. A new key must be registered before use. */
             timeout=50;setsockopt(raw,SOL_SOCKET,SO_RCVTIMEO,(const char *)&timeout,sizeof timeout);
@@ -224,11 +233,11 @@ int main(void)
             a[0]=address(150);CHECK(!call(0x431721));
             pc_network_bots_send(&bot);CHECK(recv(raw,(char *)frame,sizeof frame,0)==SOCKET_ERROR);
             a[1]=address(160);CHECK(!call(0x431716));
-            pc_network_bots_send(&bot);CHECK(recv(raw,(char *)frame,sizeof frame,0)==sizeof frame);
+            pc_network_bots_send(&bot);CHECK(recv(raw,(char *)frame,sizeof frame,0)==88+offsetof(PcNetworkBotState,ragdoll));
             a[0]=address(920);a[1]=address(940);CHECK(!call(0x43170b));
             pc_network_bots_send(&bot);CHECK(recv(raw,(char *)frame,sizeof frame,0)==SOCKET_ERROR);
             CHECK(!call(0x431716));
-            pc_network_bots_send(&bot);CHECK(recv(raw,(char *)frame,sizeof frame,0)==sizeof frame);
+            pc_network_bots_send(&bot);CHECK(recv(raw,(char *)frame,sizeof frame,0)==88+offsetof(PcNetworkBotState,ragdoll));
             CHECK(!memcmp(frame+76,memory+920,8));
             pc_network_bots_context(0,0,0,0,0);
             a[0]=receiver;a[1]=address(500);a[2]=100;a[3]=0;a[4]=address(420);a[5]=address(400);

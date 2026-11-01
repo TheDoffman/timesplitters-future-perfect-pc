@@ -90,6 +90,10 @@ int main(void)
     {
         PcNetworkBotState state={0};state.slot=2;state.health=1;
         CHECK(pc_network_bot_state_valid(&state,2,6));
+        state.camo.flags=0x10;CHECK(!pc_network_bot_state_valid(&state,2,6));
+        state.camo.fade_phase=1;CHECK(pc_network_bot_state_valid(&state,2,6));
+        state.camo.cycle_values[3]=INFINITY;CHECK(!pc_network_bot_state_valid(&state,2,6));
+        memset(&state.camo,0,sizeof state.camo);
         state.body_present=2;CHECK(!pc_network_bot_state_valid(&state,2,6));
         state.body_present=1;
         state.position[0]=NAN;CHECK(!pc_network_bot_state_valid(&state,2,6));
@@ -109,6 +113,7 @@ int main(void)
         CHECK(!pc_network_bot_state_valid(&state,2,6));
         state.overlay_phase=0;state.shot.serial=1;state.shot.weapon=7;state.shot.target_slot=1;
         CHECK(pc_network_bot_state_valid(&state,2,6));
+        state.primary_room=214;CHECK(!pc_network_bot_state_valid(&state,2,6));state.primary_room=5;
         state.shot.hand=2;CHECK(!pc_network_bot_state_valid(&state,2,6));
         state.shot.hand=0;state.shot.weapon=66;CHECK(!pc_network_bot_state_valid(&state,2,6));
         state.shot.weapon=7;state.shot.target_slot=8;CHECK(!pc_network_bot_state_valid(&state,2,6));

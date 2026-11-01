@@ -143,7 +143,8 @@ class LocalDirectory:
         self.server.server_close()
 
 
-def start_match(root, public_address, compatibility, name, port, public, directory_port=30820):
+def start_match(root, public_address, compatibility, name, port, public, directory_port=30820, *, mode='arcade'):
+    Session.validate_mode(mode)
     if public_address is None:
         public_address = fetch_public_ipv4()
     if not public_address:
@@ -156,7 +157,7 @@ def start_match(root, public_address, compatibility, name, port, public, directo
                              'or turn off automatic hosting to use the existing directory.') from error
         raise
     try:
-        active = Session.create(Client(directory.address, directory.fingerprint), compatibility, name, port, public)
+        active = Session.create(Client(directory.address, directory.fingerprint), compatibility, name, port, public, mode=mode)
         active.local_directory = directory
         active.invitation = invitation(directory.public_url, directory.fingerprint, active.lobby['code'])
         return active

@@ -46,7 +46,7 @@ namespace TimeSplitters.Launcher
                 using(var output=new FileStream(temporary,FileMode.CreateNew,FileAccess.Write,FileShare.None,4096,FileOptions.WriteThrough)) {
                     byte[] bytes=new UTF8Encoding(false).GetBytes(text);output.Write(bytes,0,bytes.Length);output.Flush(true);
                 }
-                if(File.Exists(path))File.Replace(temporary,path,null);else File.Move(temporary,path);
+                if(File.Exists(path))Core.AtomicReplace(temporary,path);else File.Move(temporary,path);
             } finally {if(File.Exists(temporary))File.Delete(temporary);}
         }
         internal static Dictionary<string,object> CaptureSession(string root)

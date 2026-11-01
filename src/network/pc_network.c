@@ -4,6 +4,7 @@
 #include "pc_network_platform.h"
 #include "../runtime/pc_guest_memory.h"
 #include <stdint.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -265,14 +266,15 @@ void pc_network_bots_targets(const uint32_t *addresses,unsigned count)
 static int bot_control(const struct sockaddr_in *address,const unsigned char *data,int length)
 {
     PcNetworkBotState state;uint32_t match;unsigned i;
-    if(length<8 || memcmp(data,"TSFBAI1",8)) return 0;
-    if(length!=20+sizeof state || bot_context.role!=2 ||
+    if(length<8 || memcmp(data,"TSFBAI2",8)) return 0;
+    const size_t base=offsetof(PcNetworkBotState,ragdoll);
+    if((length!=20+base && length!=20+sizeof state) || bot_context.role!=2 ||
        address->sin_addr.s_addr!=bot_context.host_ip) return 1;
     memcpy(&match,data+16,4);
     if(match!=bot_context.match) return 1;
     for(i=0;i<peer_count;i++) if(peers[i].ip==bot_context.host_ip && !memcmp(peers[i].key,data+8,8)) break;
     if(i==peer_count) return 1;
-    memcpy(&state,data+20,sizeof state);
+    memset(&state,0,sizeof state);memcpy(&state,data+20,(size_t)length-20u);
     if(!pc_network_bot_state_valid(&state,bot_context.humans,bot_context.bots)) return 1;
     i=state.slot;
     if(bot_seen[i] && (int32_t)(state.tick-bot_last_tick[i])<=0) return 1;
@@ -285,7 +287,8 @@ void pc_network_bots_send(const PcNetworkBotState *state)
     net_lock(&network_lock);
     if(!initialized || !local_session_registered || bot_context.role!=1 ||
        !pc_network_bot_state_valid(state,bot_context.humans,bot_context.bots)) goto done;
-    memcpy(data,"TSFBAI1",8);memcpy(data+16,&bot_context.match,4);memcpy(data+20,state,sizeof *state);
+    const size_t bytes=state->ragdoll.count?sizeof *state:offsetof(PcNetworkBotState,ragdoll);
+    memcpy(data,"TSFBAI2",8);memcpy(data+16,&bot_context.match,4);memcpy(data+20,state,bytes);
     /* Use the registered local session, even before any self-discovery.
        Guests still validate this ID against the host they actually joined. */
     memcpy(data+8,local_session_id,8);
@@ -295,7 +298,7 @@ void pc_network_bots_send(const PcNetworkBotState *state)
         address.sin_family=AF_INET;address.sin_addr.s_addr=bot_targets[i];
         for(j=0;j<MAX_SOCKETS;j++) if(sockets[j].socket!=INVALID_SOCKET && sockets[j].port) {
             address.sin_port=htons((uint16_t)sockets[j].port);
-            send_packet(&sockets[j],(const char *)data,sizeof data,0,&address);
+            send_packet(&sockets[j],(const char *)data,(int)(20u+bytes),0,&address);
         }
     }
 done:

@@ -1,0 +1,14 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -121,1 +121,11 @@
++extern void sub_000D50E0_gen(void);
++void sub_000D50E0(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_failure_trace(sub_000D50E0_gen,0x000D50E0u);
++#else
++    sub_000D50E0_gen();
++#endif
++}
++
+ extern void sub_000D4B00_gen(void);

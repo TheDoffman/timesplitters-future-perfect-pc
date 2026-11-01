@@ -17,6 +17,21 @@ static unsigned pc_network_bots_option(const char *name,unsigned fallback,unsign
 }
 #endif
 #include "pc_network_bots_lobby.inc"
+#ifdef _WIN32
+extern void sub_000658D0_gen(void);
+int pc_story_network_prepare(uint32_t address);
+void pc_story_network_activate(void);
+int pc_story_network_actor_active(uint32_t caller,unsigned index,uint32_t entity);
+int pc_story_network_hit_trace(void (*original)(void));
+int pc_story_network_damage(void);
+int pc_story_network_replica(uint32_t entity);
+int pc_story_network_replica_bounds(uint32_t entity);
+int pc_story_network_cinematic_pose(uint32_t entity);
+int pc_story_network_shot(void (*original)(void));
+uint32_t pc_story_network_wire_entity(unsigned slot);
+uint32_t pc_story_network_world_key(uint32_t entity);
+uint32_t pc_story_network_world_entity(uint32_t key);
+#endif
 static void pc_network_bots_guest_config(void (*original)(void))
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
@@ -24,8 +39,14 @@ static void pc_network_bots_guest_config(void (*original)(void))
        final serialization and the host's pending-load copy. */
     uint32_t address=*(uint32_t *)((uintptr_t)(g_esp+4u)+g_xbox_mem_offset);
     if(address==0x0078AD58u) pc_network_bots_lobby_prepare(1);
+    const int story=pc_story_network_prepare(address);
 #endif
     original();
+#ifdef _WIN32
+    /* Both original entry points retain their ABI. Only the pending-load
+       function may change simulation mode, never the start serializer. */
+    if(story && original==sub_000658D0_gen) pc_story_network_activate();
+#endif
 }
 
 /* The stock activity predicate checks controller records, so it rejects every
@@ -35,6 +56,10 @@ static void pc_network_bots_guest_active(void (*original)(void))
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     const uint32_t caller=*(uint32_t *)((uintptr_t)g_esp+g_xbox_mem_offset);
+    const unsigned story_index=*(uint32_t *)((uintptr_t)(g_esp+4u)+g_xbox_mem_offset);
+    if(pc_story_network_actor_active(caller,story_index,g_ebx)) {
+        g_eax=1u;g_esp+=4u;return;
+    }
     switch (caller) {
     case 0x00064743u: /* team score ordering */
     case 0x00064856u: /* score calculation: human + AI actor records */
@@ -104,16 +129,22 @@ static void pc_network_bots_guest_pose(void (*original)(void))
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     uint32_t stack=g_esp;
     uint32_t entity=*(uint32_t *)((uintptr_t)(stack+4u)+g_xbox_mem_offset);
+    if(pc_story_network_cinematic_pose(entity)) {
+        uint32_t *advance=(uint32_t *)((uintptr_t)(stack+8u)+g_xbox_mem_offset),saved=*advance;
+        *advance=0;original();*advance=saved;return;
+    }
     if(*(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==2u &&
        *(uint32_t *)((uintptr_t)0x0076b1a4u+g_xbox_mem_offset)==15u &&
        pc_network_enabled() &&
-       pc_network_bots_guest_slot(entity)<16u) {
+       (pc_network_bots_guest_slot(entity)<16u || pc_story_network_replica(entity))) {
         uint32_t *advance=(uint32_t *)((uintptr_t)(stack+8u)+g_xbox_mem_offset);
         uint32_t saved=*advance;
+        pc_character_ragdoll_evaluate(entity);
         *advance=0;
         original();
         *advance=saved;
         pc_network_bots_pose_weapons(entity);
+        pc_character_camo_present(entity);
         return;
     }
 #endif
@@ -127,6 +158,13 @@ static void pc_network_bots_guest_death_gate(void (*original)(void))
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     uint32_t context=*(uint32_t *)((uintptr_t)(g_esp+4u)+g_xbox_mem_offset);
+    if(context) {
+        const uint32_t entity=*(uint32_t *)((uintptr_t)context+g_xbox_mem_offset);
+        for(unsigned slot=0;entity && slot<32u;slot++) if(pc_story_network_wire_entity(slot)==entity) {
+            g_eax=*(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==1u;
+            g_esp+=4u;return;
+        }
+    }
     if(context && pc_network_bots_guest_slot(*(uint32_t *)((uintptr_t)context+g_xbox_mem_offset))<16u) {
         g_eax=*(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==1u;
         g_esp+=4u;return;
@@ -151,6 +189,7 @@ static void pc_network_bots_guest_bounds(void (*original)(void))
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     const uint32_t entity=g_esi;
     original();
+    if(pc_story_network_replica_bounds(entity)) return;
     if(entity &&
        *(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==2u &&
        *(uint32_t *)((uintptr_t)0x0076b1a4u+g_xbox_mem_offset)==15u &&
@@ -173,6 +212,7 @@ static void pc_network_bots_guest_bounds(void (*original)(void))
 static void pc_network_bots_guest_shot(void (*original)(void))
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    if(pc_story_network_shot(original)) return;
     PcNetworkBotShot shot;unsigned slot=16u;
     if(*(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==1u &&
        *(uint32_t *)((uintptr_t)0x0076b1a4u+g_xbox_mem_offset)==15u &&
@@ -239,6 +279,10 @@ static void pc_network_bots_guest_serializable(void (*original)(void))
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     const uint32_t entity=*(uint32_t *)((uintptr_t)(g_esp+4u)+g_xbox_mem_offset);
     unsigned index;
+    if(pc_story_network_world_key(entity)) {g_eax=1u;g_esp+=4u;return;}
+    if(entity) for(index=0;index<32u;index++) if(pc_story_network_wire_entity(index)==entity) {
+        g_eax=1u;g_esp+=4u;return;
+    }
     if(entity) for(index=0;index<16u;index++) {
         if(pc_network_bots_guest_entity(index)==entity) {
             g_eax=1u;g_esp+=4u;return;
@@ -251,6 +295,17 @@ static void pc_network_bots_guest_encode(void (*original)(void))
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     unsigned index;
+    const uint32_t world_key=pc_story_network_world_key(g_ecx);
+    if(world_key) {
+        uint32_t *cursor=(uint32_t *)((uintptr_t)g_eax+g_xbox_mem_offset);
+        uint8_t *bytes=(uint8_t *)((uintptr_t)*cursor+g_xbox_mem_offset);
+        bytes[0]=5u;memcpy(bytes+1u,&world_key,4u);*cursor+=5u;g_esp+=4u;return;
+    }
+    if(g_ecx) for(index=0;index<32u;index++) if(pc_story_network_wire_entity(index)==g_ecx) {
+        uint32_t *cursor=(uint32_t *)((uintptr_t)g_eax+g_xbox_mem_offset);
+        uint8_t *bytes=(uint8_t *)((uintptr_t)*cursor+g_xbox_mem_offset);
+        bytes[0]=4u;bytes[1]=(uint8_t)index;*cursor+=2u;g_esp+=4u;return;
+    }
     if (g_ecx) for (index=0;index<16u;index++) {
         if (pc_network_bots_guest_entity(index)==g_ecx) {
             uint32_t *cursor=(uint32_t *)((uintptr_t)g_eax+g_xbox_mem_offset);
@@ -267,8 +322,14 @@ static void pc_network_bots_guest_decode(void (*original)(void))
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     uint32_t *cursor=(uint32_t *)((uintptr_t)g_ecx+g_xbox_mem_offset);
     const uint8_t *bytes=(const uint8_t *)((uintptr_t)*cursor+g_xbox_mem_offset);
+    if(bytes[0]==5u) {
+        uint32_t key;memcpy(&key,bytes+1u,4u);g_eax=pc_story_network_world_entity(key);
+        *cursor+=5u;g_esp+=4u;return;
+    }
     if (bytes[0]==4u) {
-        g_eax=pc_network_bots_guest_entity(bytes[1]);*cursor+=2u;
+        g_eax=pc_story_network_wire_entity(bytes[1]);
+        if(!g_eax) g_eax=pc_network_bots_guest_entity(bytes[1]);
+        *cursor+=2u;
         g_esp+=4u;return;
     }
 #endif
@@ -283,6 +344,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
     static uint32_t seen_shots[16];
     static int16_t seen_kills[16][16];
     static PcNetworkBotMotion motion[16];
+    static unsigned char corpse_copied[16];
     static uint32_t motion_match,motion_pool,motion_host;
     const uint8_t *config=(const uint8_t *)((uintptr_t)0x007DE400u+g_xbox_mem_offset);
     unsigned role=*(uint32_t *)((uintptr_t)0x0076B140u+g_xbox_mem_offset);
@@ -294,7 +356,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
         pc_network_bots_context(0,0,0,0,0);sent=0;
         memset(pc_network_bot_shots,0,sizeof pc_network_bot_shots);memset(seen_shots,0,sizeof seen_shots);
         memset(pc_network_bot_bounds,0,sizeof pc_network_bot_bounds);
-        memset(motion,0,sizeof motion);
+        memset(motion,0,sizeof motion);memset(corpse_copied,0,sizeof corpse_copied);
         memset(seen_kills,0,sizeof seen_kills);return;
     }
     pool=*(uint32_t *)((uintptr_t)0x007356D8u+g_xbox_mem_offset);
@@ -308,7 +370,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
     }
     match=config[0x99]|((uint32_t)config[0x54]<<8)|((uint32_t)config[0x55]<<16)|((uint32_t)config[0x56]<<24);
     if(role!=2u || motion_match!=match || motion_pool!=pool || motion_host!=host_ip) {
-        memset(motion,0,sizeof motion);
+        memset(motion,0,sizeof motion);memset(corpse_copied,0,sizeof corpse_copied);
         motion_match=match;motion_pool=pool;motion_host=host_ip;
     }
     tick=*(uint32_t *)((uintptr_t)0x007DE318u+g_xbox_mem_offset);
@@ -330,8 +392,20 @@ static void pc_network_bots_guest_frame(void (*original)(void))
             PcNetworkBotState received;
             double now=pc_network_bots_time();
             if(pc_network_bots_receive(index,&received) &&
-               pc_network_bot_state_valid(&received,humans,bots))
+               pc_network_bot_state_valid(&received,humans,bots)) {
+                const PcNetworkBotState *previous=&motion[index].target;
+                /* Copy the last posed dead body before absence or a new spawn
+                   overwrites it. Host packet pointers never cross this boundary. */
+                if(motion[index].ready && previous->body_present && previous->health<=0.f &&
+                   (!received.body_present || received.spawn!=previous->spawn) &&
+                   !corpse_copied[index] && entity)
+                    corpse_copied[index]=(unsigned char)pc_network_bots_preserve_corpse(entity,previous->spawn);
+                if(received.body_present && (!motion[index].ready || !previous->body_present ||
+                   received.spawn!=previous->spawn)) corpse_copied[index]=0;
+                if(motion[index].ready && received.spawn!=previous->spawn && entity)
+                    pc_character_ragdoll_release(entity);
                 pc_network_bot_motion_push(&motion[index],&received,now);
+            }
             if(!pc_network_bot_motion_sample(&motion[index],now,&state)) continue;
             unsigned killer;
             /* Scores outlive bodies. Apply the confirmed NPC victim column
@@ -351,6 +425,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
             }
             if(!state.body_present) {
                 if(entity) {
+                    pc_character_ragdoll_release(entity);
                     uint32_t flags;float zero=0.f;
                     memcpy(&flags,body+0x28,4);flags&=~0x71u;memcpy(body+0x28,&flags,4);
                     memcpy(body+0x1cc,&zero,4);
@@ -366,7 +441,10 @@ static void pc_network_bots_guest_frame(void (*original)(void))
         } else if(role==2u) continue;
         if(role==1u) {
             uint32_t flags,life,dead;float health;unsigned killer;
-            if(sent && tick-last_tick<3u) continue;
+            /* Frozen replica animation cannot reconstruct atomic blend, overlay
+               and death channels between packets. Publish each simulated pose,
+               while duplicate callbacks in the same tick remain silent. */
+            if(sent && tick==last_tick) continue;
             memset(&state,0,sizeof state);state.slot=index;state.tick=tick;
             memcpy(state.scores,actor+0xa10,sizeof state.scores);
             for(killer=0;killer<humans+bots;killer++)
@@ -387,7 +465,9 @@ static void pc_network_bots_guest_frame(void (*original)(void))
             }
             /* 0x10 is the original damage-acceptance bit, separate from hit
                collision. It must also follow death/respawn on the host. */
+            pc_character_camo_capture(&state.camo,actor);
             state.entity_flags=flags&0x71u;
+            memcpy(&state.primary_room,body+0x34,4);
             memcpy(state.flags,actor+0x24,12);memcpy(state.life,actor+0x10,16);
             memcpy(&state.animation,actor+0x94,4);memcpy(state.position,body+0x64,12);
             state.health=health;memcpy(&state.armor,body+0x1d0,4);
@@ -402,16 +482,13 @@ static void pc_network_bots_guest_frame(void (*original)(void))
             {
                 uint32_t model;memcpy(&model,body+4,4);
                 if(model) {
-                    const uint8_t *pose=(const uint8_t *)((uintptr_t)model+g_xbox_mem_offset);
-                    memcpy(&state.clip,pose+0xd4,4);memcpy(state.clip_channels,pose+0xdc,72);
-                    memcpy(&state.clip_cycle,pose+0x124,4);memcpy(&state.clip_flags,pose+0x128,4);
-                    memcpy(&state.next_clip,pose+0x12c,4);memcpy(state.next_channels,pose+0x134,72);
-                    memcpy(&state.next_cycle,pose+0x17c,4);memcpy(&state.next_flags,pose+0x180,4);
-                    memcpy(&state.overlay_phase,pose+0xa8,4);memcpy(state.overlay_channels,pose+0xac,32);
-                    memcpy(state.blend_channels,pose+0x198,12);
+                    PcCharacterPose pose;
+                    pc_character_pose_read(&pose,(const void *)((uintptr_t)model+g_xbox_mem_offset),(const void *)actor);
+                    memcpy(&state.clip,&pose,sizeof pose);
                 }
             }
             memcpy(state.scores,actor+0xa10,sizeof state.scores);
+            pc_character_ragdoll_capture(&state.ragdoll,entity);
             state.shot=pc_network_bot_shots[index];
             pc_network_bots_send(&state);
         } else {
@@ -436,12 +513,19 @@ static void pc_network_bots_guest_frame(void (*original)(void))
             memcpy(pc_network_bot_bounds[index].radius,state.bounds_radius,12);
             memcpy(body+0x1a8,state.bounds_center,12);
             memcpy(body+0x1c0,state.bounds_radius,12);
+            pc_character_camo_apply(actor,&state.camo);
             pc_network_bots_present(entity,&state);
             pc_network_bots_entity_refresh(entity);
+            pc_network_bots_entity_room(entity,state.primary_room);
+            /* The host can retire drawing before releasing its actor link.
+               Preserve this final death pose once, before the hidden replica
+               is reused. Cached snapshots and reliable replays cannot duplicate it. */
+            if(state.health<=0.f && !(state.entity_flags&1u) && !corpse_copied[index])
+                corpse_copied[index]=(unsigned char)pc_network_bots_preserve_corpse(entity,state.spawn);
             if(state.shot.serial!=seen_shots[index]) {
                 seen_shots[index]=state.shot.serial;
                 if(state.shot.serial && state.shot.spawn==state.spawn && state.tick-state.shot.tick<=30u &&
-                   state.shot.target_slot<humans+bots && state.health>0.f)
+                   (state.shot.target_slot==UINT32_MAX || state.shot.target_slot<humans+bots) && state.health>0.f)
                     pc_network_bots_present_shot(entity,&state.shot);
             }
             /* Pose, weapon and spatial refreshes can overwrite local bounds.
@@ -450,7 +534,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
             memcpy(body+0x1c0,state.bounds_radius,12);
         }
     }
-    if(role==1u && (!sent || tick-last_tick>=3u)) {last_tick=tick;sent=1;}
+    if(role==1u && (!sent || tick!=last_tick)) {last_tick=tick;sent=1;}
 #endif
 }
 
@@ -459,6 +543,8 @@ static void pc_network_bots_guest_frame(void (*original)(void))
 static void pc_network_bots_guest_damage(void (*original)(void))
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    if(pc_story_network_damage()) {g_eax=0;g_esp+=4u;return;}
+    if(pc_story_network_hit_trace(original)) return;
     static unsigned traces;
     /* Guest shot replay (including delayed projectile effects) is cosmetic.
        Only the original incoming host event may apply bot-sourced damage. */

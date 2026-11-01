@@ -33,6 +33,8 @@ static int slider_capture_enabled;
 HWND xbox_D3D8Window(void) { return NULL; }
 int xbox_D3D8ChangeResolution(unsigned w,unsigned h) { (void)w;(void)h;return available; }
 int pc_online_connect(void) { return 0; }
+int pc_online_connect_mode(PcOnlineMode mode) { (void)mode;return 0; }
+PcOnlineMode pc_online_mode(void) { return PC_ONLINE_NONE; }
 void pc_online_disconnect(void) {}
 uint32_t xbox_HeapAlloc(uint32_t size,uint32_t alignment) { (void)size;(void)alignment;return 0x100000; }
 #define STUB(name) void name(void) { g_esp+=4; }
@@ -72,11 +74,26 @@ MOUSE_STUB(sub_000746D0) MOUSE_STUB(sub_0007CCA0) MOUSE_STUB(sub_00071940)
  * this isolated FOV fixture. Bot behavior has its own network regressions. */
 #define BOT_STUB(name) void name(void) { CHECK(0); }
 BOT_STUB(sub_000DAC30) BOT_STUB(sub_000D7570) BOT_STUB(sub_0009FBE0)
-BOT_STUB(sub_000966E0) BOT_STUB(sub_001BE870) BOT_STUB(sub_0035C870)
+BOT_STUB(sub_001BE870) BOT_STUB(sub_0035C870)
+BOT_STUB(sub_000A0860) BOT_STUB(sub_000A2B50)
+BOT_STUB(sub_0011F7E0) BOT_STUB(sub_0011D510)
+BOT_STUB(sub_000B3630) BOT_STUB(sub_000C1950) BOT_STUB(sub_001B67E0)
 BOT_STUB(sub_000CF440) BOT_STUB(sub_001BB5C0)
+BOT_STUB(sub_001BA2B0) BOT_STUB(sub_001BFCA0) BOT_STUB(sub_001BA130)
+BOT_STUB(sub_0025EE60) BOT_STUB(sub_002EB0A0) BOT_STUB(sub_002EBE60) BOT_STUB(sub_00065420) BOT_STUB(sub_00065470_gen) BOT_STUB(sub_00065C70)
+BOT_STUB(sub_002EAF60_gen) BOT_STUB(sub_002EAFC0_gen) BOT_STUB(sub_002EB030_gen) BOT_STUB(sub_002EC090_gen) BOT_STUB(sub_002EC650_gen)
+BOT_STUB(sub_002CBBA0) BOT_STUB(sub_002CBAF0) BOT_STUB(sub_002CBB60) BOT_STUB(sub_002CB550)
 BOT_STUB(sub_002C2C20) BOT_STUB(sub_002C0490) BOT_STUB(sub_002C19F0)
 BOT_STUB(sub_002C1570) BOT_STUB(sub_002C1490)
 #undef BOT_STUB
+static unsigned pose_clip_bindings;
+void sub_000966E0(void)
+{
+    CHECK(WORD_AT(g_esp+4)==0x540000 && WORD_AT(g_esp+8)==43);
+    WORD_AT(0x5400d4)=43;++pose_clip_bindings;g_esp+=4;
+}
+
+
 /* Unlock Content has its own profile/menu fixture. This settings-only test
  * must link those dependencies without accidentally entering their paths. */
 #define UNLOCK_STUB(name) void name(void) { CHECK(0); }
@@ -85,8 +102,8 @@ UNLOCK_STUB(sub_001CD040) UNLOCK_STUB(sub_00075E70)
 #undef UNLOCK_STUB
 /* Other shared translation-unit hooks must not run in this display fixture. */
 int pc_weapon_slot_take(void) { CHECK(0);return 0; }
-STUB(sub_001BAA70) STUB(sub_001BA410) STUB(sub_001BA130) STUB(sub_00142820)
-STUB(sub_00071B60) STUB(sub_00041DC0)
+STUB(sub_001BAA70) STUB(sub_001BA410) STUB(sub_00142820)
+STUB(sub_00071B60)
 static int storage_continued,storage_chosen,storage_choose_ok,storage_scanned;
 void sub_00024EC0(void) {
     CHECK(WORD_AT(g_esp+4)==0xffffffffu&&WORD_AT(g_esp+8)==0x190f70u&&WORD_AT(g_esp+12)==0);
@@ -136,7 +153,7 @@ void sub_00075B70(void) {
     CHECK(isfinite(width) && width>0 && left>=0 && left+width<=100.f);
     g_esp+=4;
 }
-STUB(sub_00071B10) STUB(sub_00071C50)
+STUB(sub_00071B10) STUB(sub_00071C50) STUB(sub_00071BE0)
 STUB(sub_000771D0)
 void sub_000770E0(void) {
     unsigned index=WORD_AT(g_esp+8);CHECK(index<built_row_count);
@@ -169,6 +186,16 @@ void sub_001CDAE0(void) { g_eax=1;g_esp+=4; }
 void host_SetTwoDPlacement(int placement,uint32_t tag) { (void)placement;(void)tag; }
 void sub_00079710(void) { separators++;g_esp+=4; }
 STUB(sub_00074910) STUB(sub_001A0A60)
+    STUB(sub_000653B0) STUB(sub_00065940) STUB(sub_00352640) STUB(sub_00352650) STUB(sub_00356490) STUB(sub_002EB030)
+STUB(sub_00170ED0) STUB(sub_00165D80) STUB(sub_00165A40) STUB(sub_00167CA0) STUB(sub_00167CE0) STUB(sub_00167BC0)
+STUB(sub_00351580) STUB(sub_003515A0) STUB(sub_00352200) STUB(sub_00351F60) STUB(sub_003513C0) STUB(sub_001677E0) STUB(sub_000B2E50) STUB(sub_0034FF30)
+STUB(sub_000D7550) STUB(sub_000A9070) STUB(sub_0015BCA0) STUB(sub_0015BCC0)
+STUB(sub_002402B0) STUB(sub_00353A90)
+STUB(sub_0025EAD0) STUB(sub_0025EC70) STUB(sub_000C6100) STUB(sub_000D4B00) STUB(sub_000D4BE0) STUB(sub_000D1EC0) STUB(sub_000D2DE0) STUB(sub_000A6F90)
+STUB(sub_001A8D30) STUB(sub_001A8F30) STUB(sub_002CB090) STUB(sub_002CAFE0) STUB(sub_002D62F0)
+STUB(sub_00197890) STUB(sub_002CA9F0) STUB(sub_003535C0) STUB(sub_003544B0) STUB(sub_00359EB0) STUB(sub_00198E20) STUB(sub_00040F00) STUB(sub_00041DC0)
+STUB(sub_00080F20)
+STUB(sub_002CAD80)
 static float drawn;
 void sub_000814B0(void) { uint32_t b=WORD_AT(g_esp+4);memcpy(&drawn,&b,4);g_esp+=4; }
 void sub_00154FE0(void) { g_eax=WORD_AT(g_esp+4);g_esp+=4; }
@@ -391,6 +418,24 @@ int main(int argc,char **argv)
     g_esp=0x700000;WORD_AT(g_esp)=0x2c4042;WORD_AT(g_esp+20)=0;WORD_AT(g_esp+12)=0x20000;WORD_AT(g_esp+16)=bits(54.f);
     pc_display_menu_button(button_probe);
     CHECK((observed_row_flags&0x21)==0x21 && WORD_AT(0x70000c)==0x20000 && g_esp==0x700004);
+    /* The common pose renderer preserves local asset/bone handles and clears
+       root-motion flags already represented by the host body transform. */
+    const uint32_t entity=0x520000,model=0x540000;
+    WORD_AT(entity+4)=model;WORD_AT(model+0xd4)=42;WORD_AT(model+0x12c)=43;
+    WORD_AT(model+0xd8)=0xcafe;WORD_AT(model+0x18c)=0xbabe;
+    WORD_AT(model+0x128)=0xc03;WORD_AT(model+0x180)=0xc05;
+    *(int16_t *)((uintptr_t)(0x7e03c0+43*2)+g_xbox_mem_offset)=17;
+    PcCharacterPose pose;pc_character_pose_read(&pose,(void *)((uintptr_t)model+g_xbox_mem_offset),NULL);
+    CHECK(pc_character_pose_valid(&pose));pose.clip=43;pose.clip_channels[0]=.5f;
+    pose.blend_channels[2]=.75f;g_esp=0x700000;
+    pc_character_pose_present(entity,&pose);
+    float pose_time;memcpy(&pose_time,&WORD_AT(model+0xdc),4);
+    CHECK(pose_clip_bindings==1 && pose_time==.5f && WORD_AT(model+0x130)==17 &&
+          WORD_AT(model+0x128)==3 && WORD_AT(model+0x180)==5 &&
+          WORD_AT(model+0xd8)==0xcafe && WORD_AT(model+0x18c)==0xbabe && g_esp==0x700000);
+    pose.clip_channels[0]=NAN;pc_character_pose_present(entity,&pose);
+    CHECK(pose_clip_bindings==1);
+
     CHECK(audio_beta_row==0x510000 && observed_beta_height==bits(54.f));
     WORD_AT(audio_beta_row+0xc8)=1;call(AUDIO_BETA_CHANGE,0,0);CHECK(enhanced_audio==1);
     audio_save_ok=0;WORD_AT(audio_beta_row+0xc8)=0;call(AUDIO_BETA_CHANGE,0,0);
@@ -437,3 +482,10 @@ int main(int argc,char **argv)
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
     return 0;
 }
+
+STUB(sub_001A4350) STUB(sub_001A8CE0) STUB(sub_001A8EE0)
+
+STUB(sub_001CC360)
+
+void sub_000D2CE0(void){}
+void sub_0015BCC0_gen(void){}
