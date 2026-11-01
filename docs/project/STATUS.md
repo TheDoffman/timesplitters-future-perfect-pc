@@ -1,3 +1,18 @@
+## Discord feedback forum and opt-in alerts (2026-11-01)
+
+Created feedback-and-ideas with guidelines and five topic tags. Created Stable
+Release Alerts and Preview Testing Alerts, enabled their mentions, and published
+an optional multi-select onboarding question. Native new-member preview verified
+assignment of either/both roles and hidden staff/developer channels. Public
+Channels & Roles now exposes these choices. No roles were assigned to real
+members during preview validation.
+
+Release automation now selects only the matching opt-in role for real releases;
+manual tests remain silent. Seventeen offline regressions pass on Windows.
+Automatic role mentions await reviewed merge and the next real release; webhook
+delivery was already verified for both channels before the announcements-only
+change. Source and validation details: [Discord alerts](../release/discord-announcements.md).
+
 ## Game 0.4.1 native link repair (2026-11-01)
 
 The actual Apple Silicon release build found three missing Online/Story symbols

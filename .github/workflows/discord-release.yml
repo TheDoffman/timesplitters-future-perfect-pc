@@ -62,4 +62,6 @@ jobs:
       - name: Announce the published game release
         env:
           DISCORD_STABLE_RELEASE_WEBHOOK: ${{ secrets.DISCORD_STABLE_RELEASE_WEBHOOK }}
+          DISCORD_STABLE_RELEASE_ROLE_ID: '1566334829791027310'
+          DISCORD_PREVIEW_RELEASE_ROLE_ID: '1566334962834087997'
         run: python tools/ci/discord-release.py
