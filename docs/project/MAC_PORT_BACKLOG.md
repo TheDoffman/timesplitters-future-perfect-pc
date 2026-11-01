@@ -8577,6 +8577,15 @@ profiles. No new OS adapter or duplicate native policy is needed; this existing
 Story Online transport path remains Awaiting validation on Mac. Native fallback
 compiles in the shared fixture; that does not establish native Online playback.
 
+MAC-013 game 0.4.1 release-link repair (2026-11-01, uncommitted): the actual
+Apple Silicon build exposed missing mode/lobby exports after Story integration.
+`online_macos.m` tracks accepted Arcade mode, clears it on disconnect and rejects
+unsupported Story requests. `pc_story_lobby.inc` supplies inactive native lobby
+exports for shared guest dispatch. This preserves existing Arcade support without
+claiming native Story transport. Native fallback fixture and real supervisor
+mode-state acceptance were extended; fresh host build/package checks are pending.
+Native Story transport and physical mixed-host Story acceptance remain deferred.
+
 ## MAC-125 - Assault objective widescreen placement (#338) - Awaiting validation
 
 Patches2290/2291 and shared PcUiWorldAnchor fit a complete marker around its

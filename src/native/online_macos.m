@@ -18,6 +18,7 @@
 #include "online-python.h"
 extern char **environ;
 static pid_t companion;
+static PcOnlineMode active_mode;
 static char ready_path[PATH_MAX],stop_path[PATH_MAX];
 static int running(void) {
     if(!companion)return 0;
@@ -30,6 +31,7 @@ static int running(void) {
     return 1;
 }
 void pc_online_disconnect(void) {
+    active_mode=PC_ONLINE_NONE;
     if(running()) {
         FILE *file=fopen(stop_path,"w");if(file)fclose(file);
         for(unsigned i=0;i<160 && running();i++)usleep(50000);
@@ -44,7 +46,12 @@ static int fail(const char *message) {
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Online",message,SDL_GetKeyboardFocus());
     return 0;
 }
-int pc_online_connect(void) {
+PcOnlineMode pc_online_mode(void) { return active_mode; }
+int pc_online_connect(void) { return pc_online_connect_mode(PC_ONLINE_ARCADE); }
+int pc_online_connect_mode(PcOnlineMode mode) {
+    /* Native Story transport remains deferred under MAC-013. Do not silently
+       join its lobby using the Arcade adapter. */
+    if(mode!=PC_ONLINE_ARCADE)return 0;
     @autoreleasepool {
         pc_online_disconnect();
         char executable[PATH_MAX],resolved[PATH_MAX],pid[32],python[PATH_MAX],script[PATH_MAX];
@@ -90,6 +97,7 @@ int pc_online_connect(void) {
             SDL_PumpEvents();
         }
         if(window){SDL_RaiseWindow(window);SDL_SetWindowMouseGrab(window,grabbed);SDL_SetWindowRelativeMouseMode(window,relative);}
+        if(accepted)active_mode=PC_ONLINE_ARCADE;
         return accepted;
     }
 }
@@ -97,15 +105,19 @@ int pc_online_connect(void) {
 /* Asset-free supervisor acceptance, using the same connect/disconnect path. */
 int pc_online_self_test(void) {
     if(!getenv("TSFP_ONLINE_TEST_COMMAND"))return 2;
+    if(pc_online_mode()!=PC_ONLINE_NONE || pc_online_connect_mode(PC_ONLINE_STORY) ||
+       pc_online_connect_mode(PC_ONLINE_NONE))return 5;
     if(!SDL_Init(SDL_INIT_VIDEO))return 3;
     SDL_Window *window=SDL_CreateWindow("Multiplayer adapter test",400,200,0);
     if(!window){SDL_Quit();return 4;}
     int connected=pc_online_connect();
     int expected=getenv("TSFP_ONLINE_TEST_CANCEL")?0:1;
-    int valid=connected==expected && (!connected || pc_network_enabled());
+    int valid=connected==expected && (!connected || pc_network_enabled()) &&
+        pc_online_mode()==(connected?PC_ONLINE_ARCADE:PC_ONLINE_NONE);
     fprintf(stderr,"[ONLINE-TEST] connected=%d expected=%d enabled=%d\n",connected,expected,pc_network_enabled());
     pc_online_disconnect();
-    valid=valid && !running() && access(ready_path,F_OK)!=0 && access(stop_path,F_OK)!=0;
+    valid=valid && pc_online_mode()==PC_ONLINE_NONE && !running() &&
+        access(ready_path,F_OK)!=0 && access(stop_path,F_OK)!=0;
     SDL_DestroyWindow(window);SDL_Quit();
     if(valid)puts("PASS: native Online browser, handshake, return and companion cleanup");
     return valid?0:1;

@@ -1,3 +1,24 @@
+## Game 0.4.1 native link repair (2026-11-01)
+
+The actual Apple Silicon release build found three missing Online/Story symbols
+after main's Story integration. Native Online now reports accepted Arcade mode
+and clears it on disconnect, rejecting unsupported Story transport. Shared native
+Story lobby exports remain inactive under the existing MAC-013 limitation.
+The native fallback fixture calls both exports; the real Online self-test checks
+mode transitions and rejection. Windows focused Quit/Story suite passed all
+47 tests in 31.93 seconds; full build/package validation is pending.
+The interrupted Windows candidate is not a completed release validation run.
+The extra Mac private-XBE suite exposed four pre-existing fixture portability
+failures: synthetic Windows selection leaked into the appended host trap, a
+hexadecimal addition token was ambiguous to Clang, and a Story fixture did not
+select its intended Windows adapter. These fixtures are corrected without
+changing game behavior or removing assertions. The integrated release candidate
+46e6c616 passed all47 native Mac guest tests in9.97s, native build/checks,
+37 shared launcher UI groups, actual1400-file fresh/upgrade preservation and
+relocated Online checks. Real native host/cancel supervisor checks passed.
+Windows full release validation remains in progress on that frozen candidate;
+the review branch separately incorporates later preview-publisher repairs.
+
 ## Story beta.1 corrected in place - 2026-11-01
 
 At the user's explicit request, republished the existing mutable preview

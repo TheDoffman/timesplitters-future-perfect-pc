@@ -1,5 +1,9 @@
 # Build, run and validation map
 
+Native Online link/mode checks: `tests/graphics/test_quit_menu.py` and native
+`--test`/`--online-self-test`. Clang Story fixtures select the Windows guest
+adapter but use the real host trap; hexadecimal additions need token boundaries.
+
 Game 0.4.1 uses the official Windows publisher and matching native Mac packager
 from one clean pushed revision. Full release, actual installer/preservation and
 portable Online checks remain required; a version bump alone is not validation.
