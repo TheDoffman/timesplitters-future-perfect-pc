@@ -13,7 +13,13 @@ The GitHub prerelease flag must agree with the game tag; a mismatch fails withou
 posting. Cards include bounded public release notes, the game version and track,
 launcher update instructions, and a link to that exact release. `/releases/latest`
 belongs to the launcher and is deliberately not used for game downloads.
-Notifications do not ping users or roles. Both release types use the existing
+Real releases mention only their matching opt-in alert role, configured through
+`DISCORD_STABLE_RELEASE_ROLE_ID` or `DISCORD_PREVIEW_RELEASE_ROLE_ID` in the workflow.
+The current roles are **Stable Release Alerts** (`1566334829791027310`) and
+**Preview Testing Alerts** (`1566334962834087997`). These are public Discord role
+identifiers, not credentials. Release-note mentions cannot ping members, other
+roles, or everyone. Manual connection tests never ping any role.
+Both release types use the existing
 announcements webhook; `DISCORD_PREVIEW_RELEASE_WEBHOOK` is no longer used.
 
 ## One-time connection
@@ -49,6 +55,22 @@ logs. Discord redirects are refused. A post waits for confirmation and is not
 automatically retried: timeouts can occur after delivery. Inspect the Discord
 channel before rerunning a failed job; a manual rerun can duplicate a post.
 Notification failure does not undo or modify the published game release.
+
+## Member notification choices
+
+Discord's native **Channels & Roles → Customize** page offers the optional
+question **Which release notifications would you like? (Optional)**. Members may
+choose Stable releases, Preview testing, both, or neither and change this later.
+The answers assign only the matching alert roles; no staff/developer roles are
+offered. The new-member preview verified both assignments and hidden private
+channels. Onboarding is enabled with the public channels available by default.
+Both alert roles are mentionable for webhook delivery; staff may also mention
+them manually. Discord members' own mute and role-notification suppression
+settings can still prevent push notifications.
+
+The **feedback-and-ideas** forum is under Community, with Gameplay, Launcher,
+Graphics, Multiplayer, and Accessibility tags. Its posting guidelines request
+one clear idea per post and direct reproducible bugs to help-and-bug-reports.
 
 ## Offline validation
 
