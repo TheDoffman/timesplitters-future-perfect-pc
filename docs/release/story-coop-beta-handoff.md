@@ -1,5 +1,10 @@
 # Story co-op beta launcher handoff
 
+The [Windows game beta is published](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/v0.5.0-story-coop-beta.1)
+from commit7262f76d. The compatibility source merged into main through
+[PR444](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/444),
+including both launcher hosts' CI checks. Launcher publication is still delegated.
+
 The game preview is `v0.5.0-story-coop-beta.1`, published from
 `online-story-coop`. Its immutable tag-derived metadata channel remains
 `story-coop-beta`, with display name **Story Co-op Beta Preview**. Keep the
