@@ -1,0 +1,14 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -121,1 +121,11 @@
++extern void sub_000CF060_gen(void);
++void sub_000CF060(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_spawn_pad(sub_000CF060_gen);
++#else
++    sub_000CF060_gen();
++#endif
++}
++
+ extern void sub_001986A0_gen(void);

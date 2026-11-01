@@ -1,3 +1,4 @@
+#include <stddef.h>
 /* US Xbox build 45410066. Insert through the title's own button builder:
    Settings sub_002CBFC0, and paused Options sub_002F5520. Original controls,
    audio/video, layout, highlighting and navigation stay in the guest engine. */
@@ -39,6 +40,11 @@ static uint32_t kb_caption(void);
 
 extern uint32_t xbox_HeapAlloc(uint32_t bytes, uint32_t alignment);
 #define WORD_AT(a) (*(uint32_t *)((uintptr_t)(uint32_t)(a) + g_xbox_mem_offset))
+static int pc_story_menu_button(void (*original)(void));
+#ifdef _WIN32
+static int pc_story_lobby_button(void (*original)(void));
+static int story_result_button(void (*original)(void));
+#endif
 
 typedef struct GuestRegisters {
     uint32_t a,c,d,sp,b,si,di,bp,seh;
@@ -255,6 +261,10 @@ void pc_display_menu_button(void (*original)(void))
     const int frontend=callsite==0x002CC116u && callback==0x002CBE50u;
     const int paused=callsite==0x002F561Cu && callback==0x002EC1A0u;
     GuestRegisters r;
+    pc_story_network_pause_style();
+    if(pc_story_menu_button(original)) return;
+
+
     if(callsite==0x0019440bu)sd_width();
     if(callsite==0x001944c3u && callback==0x00192e60u){sd_buttons(original);return;}
     if(callsite==0x0019450au){sd_capacity(original);return;}
@@ -280,6 +290,10 @@ void pc_display_menu_button(void (*original)(void))
         uint32_t frame=g_esp,flags=WORD_AT(frame+12);
         WORD_AT(frame+12)=flags|0x21u;original();WORD_AT(frame+12)=flags;return;
     }
+#ifdef _WIN32
+    if(story_result_button(original)) return;
+    if(pc_story_lobby_button(original)) return;
+#endif
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     if(callsite==0x001CC0A3u && callback==0x001CC050u) {
         static uint32_t online_caption;
@@ -418,6 +432,40 @@ static void audio_beta_change(void)
 #include "pc_profile_accept.inc"
 #include "pc_weapon_slots_guest.inc"
 
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+#include "pc_character_corpses.inc"
+#endif
+/* Only the current host-owned bot replica may produce a local cosmetic copy.
+   The caller owns per-generation deduplication; never copy a respawned body. */
+int pc_network_bots_preserve_corpse(uint32_t entity,uint32_t spawn)
+{
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    static uint32_t copied_entity[16],copied_spawn[16],copied_pool,copied_match,copied_host;
+    const uint32_t pool=WORD_AT(0x007356d8u);
+    const uint8_t *config=(const uint8_t *)((uintptr_t)0x007de400u+g_xbox_mem_offset);
+    const unsigned humans=config[0],bots=config[2];
+    if(!pool || !humans || !bots || bots>10u || humans+bots>16u ||
+       WORD_AT(0x0076b140u)!=2u || WORD_AT(0x0076b1a4u)!=15u ||
+       !guest_writable(entity,0x25cu) || WORD_AT(entity+0x258u)!=spawn) return 0;
+    const uint32_t match=config[0x99]|((uint32_t)config[0x54]<<8)|
+        ((uint32_t)config[0x55]<<16)|((uint32_t)config[0x56]<<24);
+    const uint32_t host=WORD_AT(0x00774040u);
+    if(pool!=copied_pool || match!=copied_match || host!=copied_host) {
+        memset(copied_entity,0,sizeof copied_entity);memset(copied_spawn,0,sizeof copied_spawn);
+        copied_pool=pool;copied_match=match;copied_host=host;
+    }
+    const uint32_t actor=WORD_AT(entity+0x7cu);
+    for(unsigned slot=humans;slot<humans+bots;slot++) if(actor==pool+slot*0xea0u) {
+        if(copied_entity[slot]==entity && copied_spawn[slot]==spawn) return 1;
+        if(!pc_character_preserve_corpse(actor,entity)) return 0;
+        copied_entity[slot]=entity;copied_spawn[slot]=spawn;return 1;
+    }
+#else
+    (void)entity;(void)spawn;
+#endif
+    return 0;
+}
+
 /* Recreate only a missing guest body using the same constructor as the
  * original Arcade initializer. Keep the existing actor-list entry and scores;
  * never run guest AI decisions or add a duplicate entry to 0x7A3580. */
@@ -454,19 +502,180 @@ void pc_network_bots_entity_refresh(uint32_t entity)
            invalidates the cached rotation consumed by sub_000A14B0. */
         WORD_AT(entity+0x28u)|=0x1000u;
         guest_call(sub_0009FBE0,1,entity);
+        /* Original A7360 also invalidates the room-dependent clipping modes
+           after movement. A1AB0 otherwise trusts the old plane/transform cache
+           at+2b4, even after9FBE0 selected a different room. */
+        WORD_AT(entity+0x2b4u)|=0x80000000u;
     }
 #else
     (void)entity;
 #endif
 }
-void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state)
+/* 9FBE0 retains the previous primary room whenever the new bounds overlap it.
+   Replicas skip the host's movement/AI room selection. A1EA0 indexes render
+   candidates by primary room alone, so a stale overlapping room hides an actor
+   before A2430 can even test its portal rectangle. Keep local overlap data,
+   but select the authoritative primary when it belongs to those bounds. */
+void pc_network_bots_entity_room(uint32_t entity,uint32_t room)
+{
+#ifdef _WIN32
+    const unsigned scene_rooms=WORD_AT(0x007b975cu);
+    if(!guest_writable(entity,0x2d8u) || !room || room>200u || room>scene_rooms) return;
+    const unsigned count=*(const uint8_t *)((uintptr_t)(entity+0x30u)+g_xbox_mem_offset);
+    if(count>10u) return;
+    for(unsigned i=0;i<count;i++) {
+        if(WORD_AT(entity+0x38u+i*4u)==room) {
+            if(WORD_AT(entity+0x34u)!=room) {
+                WORD_AT(entity+0x34u)=room;
+                WORD_AT(entity+0x2b4u)|=0x80000000u;
+            }
+            return;
+        }
+    }
+#else
+    (void)entity;(void)room;
+#endif
+}
+#include "pc_physical_state.h"
+/* Original165690/1679D0 access a512-byte local physics record by handle slot.
+   Its full generation token and world owner must match before reading it. */
+static uint32_t pc_rigid_body_record(uint32_t entity)
+{
+    if(!guest_writable(entity,0x2e8u)) return 0;
+    const uint32_t handle=WORD_AT(entity+0x80u),pool=WORD_AT(0x0074c458u),owners=WORD_AT(0x0074c46cu);
+    const uint32_t index=handle&65535u,record=pool+index*512u,owner=owners+index*4u;
+    if(!handle || !pool || !owners || !guest_writable(record,512u) ||
+       !guest_writable(owner,4u) || WORD_AT(record+0x1e4u)!=handle || WORD_AT(owner)!=entity) return 0;
+    return record;
+}
+void pc_rigid_body_capture(PcRigidBodyState *state,uint32_t entity)
+{
+    memset(state,0,sizeof *state);
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    const uint32_t record=pc_rigid_body_record(entity);
+    if(!record) return;
+    state->present=1;
+    for(unsigned r=0;r<3u;r++) memcpy(state->rotation+r*3u,(const void *)((uintptr_t)(record+r*16u)+g_xbox_mem_offset),12);
+    memcpy(state->position,(const void *)((uintptr_t)(record+0x140u)+g_xbox_mem_offset),12);
+    memcpy(state->velocity,(const void *)((uintptr_t)(record+0x14cu)+g_xbox_mem_offset),12);
+    memcpy(state->angular,(const void *)((uintptr_t)(record+0x128u)+g_xbox_mem_offset),12);
+    if(!pc_rigid_body_valid(state)) memset(state,0,sizeof *state);
+#else
+    (void)entity;
+#endif
+}
+void pc_rigid_body_pause(uint32_t entity)
+{
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    extern void sub_001677E0(void);
+    if(pc_rigid_body_record(entity)) guest_call(sub_001677E0,1,WORD_AT(entity+0x80u));
+#else
+    (void)entity;
+#endif
+}
+void pc_rigid_body_remove(uint32_t entity)
+{
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    extern void sub_00170ED0(void);
+    if(pc_rigid_body_record(entity)) guest_call(sub_00170ED0,1,entity);
+#else
+    (void)entity;
+#endif
+}
+int pc_rigid_body_present(uint32_t entity,const PcRigidBodyState *state)
+{
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    extern void sub_00165D80(void),sub_00165A40(void),sub_00167CA0(void),sub_00167CE0(void),sub_00167BC0(void);
+    const uint32_t frame=g_esp,record=pc_rigid_body_record(entity);
+    if(!state->present || !pc_rigid_body_valid(state) || !record || frame<512u ||
+       !guest_writable(frame-512u,512u)) return 0;
+    const uint32_t scratch=frame-128u,handle=WORD_AT(entity+0x80u);
+    float rotation[16]={0};rotation[15]=1.f;
+    for(unsigned r=0;r<3u;r++) memcpy(rotation+r*4u,state->rotation+r*3u,12);
+    memcpy((void *)((uintptr_t)scratch+g_xbox_mem_offset),rotation,64);
+    memcpy((void *)((uintptr_t)(scratch+64u)+g_xbox_mem_offset),state->position,12);
+    memcpy((void *)((uintptr_t)(scratch+76u)+g_xbox_mem_offset),state->velocity,12);
+    memcpy((void *)((uintptr_t)(scratch+88u)+g_xbox_mem_offset),state->angular,12);
+    g_esp=frame-256u;
+    guest_call(sub_00165D80,3,handle,scratch,0u);
+    guest_call(sub_00167CA0,2,handle,scratch+64u);
+    guest_call(sub_00167CE0,2,handle,scratch+76u);
+    guest_call(sub_00167BC0,2,handle,scratch+88u);
+    guest_call(sub_00165A40,1,handle);
+    g_esp=frame;return 1;
+#else
+    (void)entity;(void)state;return 0;
+#endif
+}
+#include "pc_character_ragdoll.inc"
+/* Share the contiguous animation slice across both NPC protocols. */
+_Static_assert(sizeof(PcCharacterPose)==232,"Character pose wire layout");
+_Static_assert(offsetof(PcNetworkBotState,shot)-offsetof(PcNetworkBotState,clip)==sizeof(PcCharacterPose),"Bot pose slice");
+void pc_character_pose_present(uint32_t entity,const PcCharacterPose *pose)
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     extern void sub_000966E0(void);
-    uint32_t model,speed,actor;unsigned hand;
-    const int32_t clip=state->clip;
+    uint32_t model,speed;
+    PcCharacterPose local_pose=*pose;
+    local_pose.clip=pc_character_ragdoll_clip(entity,pose->clip);
+    local_pose.next_clip=pc_character_ragdoll_clip(entity,pose->next_clip);
+    if(local_pose.clip<0 || local_pose.next_clip<0) return;
+    pose=&local_pose;
+    const int32_t clip=pose->clip;
     int16_t next_index;
-    if(!guest_writable(entity,0x238u) || clip<0 || clip>4095 || state->next_clip<0 || state->next_clip>4095) return;
+    if(!guest_writable(entity,0x238u) || !pc_character_pose_valid(pose)) return;
+    model=WORD_AT(entity+4u);
+    if(!guest_writable(model,0x200u)) return;
+    if((int32_t)WORD_AT(model+0xd4u)!=clip) {
+        memcpy(&speed,pose->clip_channels+11,4);
+        guest_call(sub_000966E0,3,model,(uint32_t)clip,speed);
+    }
+    memcpy((void *)((uintptr_t)(model+0xdcu)+g_xbox_mem_offset),pose->clip_channels,72);
+    WORD_AT(model+0x124u)=pose->clip_cycle;WORD_AT(model+0x128u)=pose->clip_flags&~0xc00u;
+    /* The original character animator crossfades a second numeric clip block
+       into the first. Resolve its asset index locally; never copy host handles. */
+    next_index=*(int16_t *)((uintptr_t)(0x007e03c0u+(uint32_t)pose->next_clip*2u)+g_xbox_mem_offset);
+    WORD_AT(model+0x12cu)=(uint32_t)pose->next_clip;WORD_AT(model+0x130u)=(uint32_t)(int32_t)next_index;
+    memcpy((void *)((uintptr_t)(model+0x134u)+g_xbox_mem_offset),pose->next_channels,72);
+    WORD_AT(model+0x17cu)=pose->next_cycle;WORD_AT(model+0x180u)=pose->next_flags&~0xc00u;
+    /* US5AFB0 resolves A0/A4 through the local clip table. A mask/enable bit
+       alone invokes that sampler with clip0, which may not even be loaded. */
+    const uint32_t limb_first=pose->limb_clips_flags&4095u;
+    const uint32_t limb_second=(pose->limb_clips_flags>>12)&4095u;
+    uint32_t limb_flags=(pose->limb_clips_flags>>24)&31u;
+    const uint32_t assets=WORD_AT(0x007e3954u);
+    int16_t limb_index[2];
+    memcpy(limb_index,(const void *)((uintptr_t)(0x007e03c0u+limb_first*2u)+g_xbox_mem_offset),2);
+    memcpy(limb_index+1,(const void *)((uintptr_t)(0x007e03c0u+limb_second*2u)+g_xbox_mem_offset),2);
+    for(unsigned i=0;pose->limb_mask && !(limb_flags&1u) &&
+        i<(pose->overlay_phase?2u:1u);i++) {
+        const uint32_t cell=assets+(uint32_t)(uint16_t)limb_index[i]*4u;
+        if(limb_index[i]<0 || !assets || !guest_writable(cell,4u) ||
+           !guest_writable(WORD_AT(cell),0x20u)) limb_flags=1u;
+    }
+    WORD_AT(model+0x9cu)=pose->limb_mask;
+    WORD_AT(model+0xa0u)=limb_first;WORD_AT(model+0xa4u)=limb_second;
+    WORD_AT(model+0xd0u)=limb_flags;
+    memcpy((void *)((uintptr_t)(model+0xccu)+g_xbox_mem_offset),&pose->limb_elapsed,4);
+    const uint32_t actor=WORD_AT(entity+0x7cu);
+    if(guest_writable(actor,0xea0u) && WORD_AT(actor)==entity)
+        memcpy((void *)((uintptr_t)(actor+0xb08u)+g_xbox_mem_offset),&pose->aim_frame,4);
+    WORD_AT(model+0xa8u)=pose->overlay_phase;
+    memcpy((void *)((uintptr_t)(model+0xacu)+g_xbox_mem_offset),pose->overlay_channels,32);
+    memcpy((void *)((uintptr_t)(model+0x198u)+g_xbox_mem_offset),pose->blend_channels,12);
+    /* 0xc00 carries pending root translation/rotation, already included in
+       the host's body transform. Do not apply it twice. Bone buffers belong
+       to the frame arena: evaluate in the normal animation pass, not here.
+       sub_00096C20 is lighting preparation, not skeleton evaluation. */
+#else
+    (void)entity;(void)pose;
+#endif
+}
+void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state)
+{
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    uint32_t actor;unsigned hand;
+    if(!guest_writable(entity,0x238u)) return;
     actor=WORD_AT(entity+0x7cu);
     if(guest_writable(actor,0xea0u)) for(hand=0;hand<2u;hand++) {
         uint32_t weapon=WORD_AT(actor+0x18cu+hand*0x130u);
@@ -475,36 +684,57 @@ void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state)
             else WORD_AT(weapon+0x28u)&=~1u;
         }
     }
-    if(!state->body_present) return;
-    model=WORD_AT(entity+4u);
-    if(!guest_writable(model,0x200u)) return;
-    if((int32_t)WORD_AT(model+0xd4u)!=clip) {
-        memcpy(&speed,state->clip_channels+11,4);
-        guest_call(sub_000966E0,3,model,(uint32_t)clip,speed);
+    if(state->body_present) {
+        pc_character_ragdoll_present(entity,&state->ragdoll);
+        PcCharacterPose pose;memcpy(&pose,&state->clip,sizeof pose);
+        pc_character_pose_present(entity,&pose);
     }
-    memcpy((void *)((uintptr_t)(model+0xdcu)+g_xbox_mem_offset),state->clip_channels,72);
-    WORD_AT(model+0x124u)=state->clip_cycle;WORD_AT(model+0x128u)=state->clip_flags&~0xc00u;
-    /* The original character animator crossfades a second numeric clip block
-       into the first. Resolve its asset index locally; never copy host handles. */
-    next_index=*(int16_t *)((uintptr_t)(0x007e03c0u+(uint32_t)state->next_clip*2u)+g_xbox_mem_offset);
-    WORD_AT(model+0x12cu)=(uint32_t)state->next_clip;WORD_AT(model+0x130u)=(uint32_t)(int32_t)next_index;
-    memcpy((void *)((uintptr_t)(model+0x134u)+g_xbox_mem_offset),state->next_channels,72);
-    WORD_AT(model+0x17cu)=state->next_cycle;WORD_AT(model+0x180u)=state->next_flags&~0xc00u;
-    WORD_AT(model+0xa8u)=state->overlay_phase;
-    memcpy((void *)((uintptr_t)(model+0xacu)+g_xbox_mem_offset),state->overlay_channels,32);
-    memcpy((void *)((uintptr_t)(model+0x198u)+g_xbox_mem_offset),state->blend_channels,12);
-    /* 0xc00 carries pending root translation/rotation, already included in
-       the host's body transform. Do not apply it twice. Bone buffers belong
-       to the frame arena: evaluate in the normal animation pass, not here.
-       sub_00096C20 is lighting preparation, not skeleton evaluation. */
 #else
     (void)entity;(void)state;
+#endif
+}
+/* Replica body effects need their original material pass even while AI is
+   frozen. Keep the host's fade/cycle numbers; only local model bindings change. */
+void pc_character_camo_present(uint32_t entity)
+{
+#ifdef _WIN32
+    extern void sub_0011F7E0(void),sub_0011D510(void);
+    static uint32_t bodies[32],spawns[32];static unsigned char active[32];
+    if(WORD_AT(0x0076b140u)!=2u || !guest_writable(entity,0x25cu)) return;
+    const uint32_t actor=WORD_AT(entity+0x7cu);
+    if(!guest_writable(actor,0xea0u) || WORD_AT(actor)!=entity) return;
+    const unsigned slot=WORD_AT(actor+8u);if(slot>=32u) return;
+    const uint32_t spawn=WORD_AT(entity+0x258u);
+    if(bodies[slot]!=entity || spawns[slot]!=spawn) {
+        bodies[slot]=entity;spawns[slot]=spawn;active[slot]=0;
+    }
+    PcCharacterCamo state;
+    pc_character_camo_capture(&state,(const uint8_t *)((uintptr_t)actor+g_xbox_mem_offset));
+    if(!pc_character_camo_valid(&state)) return;
+    const int enabled=(state.flags&0x10u)!=0;
+    if(!enabled && !active[slot]) return;
+    GuestRegisters saved;save_registers(&saved);
+    if(enabled) {
+        /* Disable the guest's independent random cloak cycle. The original
+           cosmetic pass may advance temporary fade values for this frame;
+           restore all authoritative numbers and flags after its model writes. */
+        WORD_AT(actor+0xc6cu)&=~0x01000000u;g_esi=actor+0xc68u;
+        guest_call(sub_0011F7E0,0u);
+        pc_character_camo_apply((uint8_t *)((uintptr_t)actor+g_xbox_mem_offset),&state);
+    } else {
+        /* Original fade endpoint:127 is full opacity. Resolve model handles
+           through the original actor effect selector; never copy host models. */
+        guest_call(sub_0011D510,5u,actor+0xc68u,3u,15u,4u,127u);
+    }
+    active[slot]=(unsigned char)enabled;restore_registers(&saved);
+#else
+    (void)entity;
 #endif
 }
 void pc_network_bots_pose_weapons(uint32_t entity)
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
-    extern void sub_001BE870(void);
+    extern void sub_001BE870(void),sub_000A0860(void),sub_000A2B50(void);
     float health;
     if(!guest_writable(entity,0x2e8u)) return;
     memcpy(&health,(void *)((uintptr_t)(entity+0x1ccu)+g_xbox_mem_offset),4);
@@ -512,6 +742,22 @@ void pc_network_bots_pose_weapons(uint32_t entity)
         /* Only after the engine has allocated/evaluated this frame's bones. */
         guest_call(sub_001BE870,2,entity,0u);
         guest_call(sub_001BE870,2,entity,1u);
+        const uint32_t actor=WORD_AT(entity+0x7cu),model=WORD_AT(entity+4u);
+        if(!guest_writable(actor,0xea0u) || WORD_AT(actor)!=entity ||
+           !guest_writable(model,0x200u) || !guest_writable(WORD_AT(model+0x10u),64u) ||
+           !(WORD_AT(entity+0x28u)&0x200000u)) return;
+        for(unsigned hand=0;hand<2u;hand++) {
+            const uint32_t record=actor+0xa4u+hand*0x130u,weapon=WORD_AT(record+0xe8u);
+            if(!guest_writable(weapon,0x2e8u) || WORD_AT(weapon+0x20u)!=0x20u ||
+               WORD_AT(weapon+0x7cu)!=record || WORD_AT(record+0xecu)!=actor ||
+               WORD_AT(weapon+0x78u)!=model || (WORD_AT(weapon+0x28u)&0x80000000u)) continue;
+            const uint32_t wm=WORD_AT(weapon+4u);
+            if(!guest_writable(wm,0x200u) || !guest_writable(WORD_AT(wm+0x10u),64u)) continue;
+            /* Rebuild from this frame's corrected arm bones, then update the
+               world/lighting origin. Do not wait for a later entity-list pass. */
+            guest_call(sub_000A0860,1,weapon);
+            guest_call(sub_000A2B50,1,weapon);
+        }
     }
 #else
     (void)entity;
@@ -558,16 +804,17 @@ void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot)
     extern void sub_001BB5C0(void);
     uint32_t actor,target,pool,previous_target,weapon,result;
     if(!guest_writable(entity,0x25cu) || shot->hand>1u || shot->mode>1u || shot->flags>1u ||
-       shot->weapon<0 || shot->weapon>=66 || shot->target_slot>=16u ||
+       shot->weapon<0 || shot->weapon>=66 ||
+       (shot->target_slot!=UINT32_MAX && shot->target_slot>=(pc_online_mode()==PC_ONLINE_STORY?32u:16u)) ||
        WORD_AT(0x0076b140u)!=2u || WORD_AT(0x0076b1a4u)!=15u) return;
     actor=WORD_AT(entity+0x7cu);pool=WORD_AT(0x007356d8u);
-    if(!guest_writable(actor,0xea0u) || !guest_writable(pool,16u*0xea0u)) return;
-    target=WORD_AT(pool+shot->target_slot*0xea0u);
-    if(!guest_writable(target,0x25cu)) return;
+    if(!guest_writable(actor,0xea0u) || !guest_writable(pool,(pc_online_mode()==PC_ONLINE_STORY?32u:16u)*0xea0u)) return;
+    target=shot->target_slot==UINT32_MAX?0u:WORD_AT(pool+shot->target_slot*0xea0u);
+    if(target && !guest_writable(target,0x25cu)) return;
     weapon=actor+0xa4u+shot->hand*0x130u;
     /* A late shot from the previous weapon must not use the new model. */
     if(WORD_AT(weapon+0x30u)!=(uint32_t)shot->weapon ||
-       !guest_writable(WORD_AT(weapon+0xe8u),0x24u)) return;
+       (pc_network_bot_shot_needs_model(shot->weapon) && !guest_writable(WORD_AT(weapon+0xe8u),0x24u))) return;
     previous_target=WORD_AT(actor+4u);WORD_AT(actor+4u)=target;
     /* Preserve local model/owner handles at weapon + E8/EC. */
     memcpy((void *)((uintptr_t)weapon+g_xbox_mem_offset),shot->transform,48);
@@ -1013,12 +1260,40 @@ static void online_activate(void)
     restore_registers(&r); g_esp+=4;
 }
 #endif
+#include "pc_story_menu.inc"
+#include "pc_story_lobby.inc"
+#include "pc_story_browser.inc"
+#include "pc_story_load.inc"
+
 #include "pc_keyboard_menu.inc"
 #include "pc_storage_menu.inc"
 #include "pc_unlock_menu.inc"
 
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
+    void (*story_entry_handler)(void)=story_menu_lookup(address);
+    if(story_entry_handler) return story_entry_handler;
+#ifdef _WIN32
+    void (*story_back_handler)(void)=story_online_back_lookup(address);
+    if(story_back_handler) return story_back_handler;
+    if(story_network_session() && WORD_AT(0x79094cu)==106u && address>=0x2b0000u && address<0x300000u && getenv("TSFP_STORY_TRACE")) {
+        static uint32_t observed[64];static unsigned count;
+        unsigned i;for(i=0;i<count && observed[i]!=address;i++) {}
+        if(i==count && count<64u) {
+            observed[count++]=address;
+            fprintf(stderr,"[PC-STORY-REWARD-CALL] address=%08X caller=%08X role=%u pending=%u\n",
+                address,guest_writable(g_esp,4u)?WORD_AT(g_esp):0u,WORD_AT(0x76b140u),story_pending_stage);
+        }
+    }
+    if(address==0x002EBE60u && story_restart_session()) return story_leave_confirm;
+    if(address==0x002EB0A0u) return story_rewards_continue;
+    if(address==0x002CBBA0u) return story_rewards_build;
+    if(address==0x002CBAF0u) return story_rewards_page;
+    if(address==0x002CBB60u) return story_rewards_tick;
+    void (*story_callback)(void)=story_lobby_lookup(address);
+    if(story_callback) return story_callback;
+#endif
+
     if(address==0x002D9390u)return display_highlight_draw;
     if(address==0x002C3E20u)return audio_options_build;
     if(address==0x002CBFC0u)return settings_build;

@@ -1,0 +1,24 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -121,1 +121,21 @@
++extern void sub_003592F0_gen(void);
++void sub_003592F0(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_return_lobby(sub_003592F0_gen);
++#else
++    sub_003592F0_gen();
++#endif
++}
++
++extern void sub_00065420_gen(void);
++void sub_00065420(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_disconnect_exit(sub_00065420_gen);
++#else
++    sub_00065420_gen();
++#endif
++}
++
+ extern void sub_00079860_gen(void);

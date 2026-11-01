@@ -1,0 +1,44 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -121,1 +121,41 @@
++extern void sub_00216230_gen(void);
++void sub_00216230(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_effect_decision(sub_00216230_gen,0u);
++#else
++    sub_00216230_gen();
++#endif
++}
++
++extern void sub_00219CA0_gen(void);
++void sub_00219CA0(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_effect_decision(sub_00219CA0_gen,1u);
++#else
++    sub_00219CA0_gen();
++#endif
++}
++
++extern void sub_000FFDA0_gen(void);
++void sub_000FFDA0(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_effect_create(sub_000FFDA0_gen,0u);
++#else
++    sub_000FFDA0_gen();
++#endif
++}
++
++extern void sub_000EFBD0_gen(void);
++void sub_000EFBD0(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_effect_create(sub_000EFBD0_gen,1u);
++#else
++    sub_000EFBD0_gen();
++#endif
++}
++
+ extern void sub_0025EF80_gen(void);
