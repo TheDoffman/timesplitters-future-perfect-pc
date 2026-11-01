@@ -20,7 +20,8 @@ Bounded directory batches amortize model loading. Oversized originals use
 Scratch PNGs remain under the shared 256 MiB temporary budget; candidate bytes
 plus metadata stay under 6 GiB. Catalog/model receipts and per-key hashes support
 restart, while mismatches/incomplete pairs require inspection. No automatic
-activation or publication occurs. Original-derived assets remain private.
+activation or publication occurs. Compiled assets require explicit user approval
+for publication; original archives and private provenance remain local.
 Offline audits and selected comparisons do not establish full scene fidelity.
 
 Synthetic checks in `tests/textures/test_texture_upscale_originals.py` cover
@@ -77,3 +78,11 @@ invalid/overlapping/data-key refusal. Historical 6,648-key activation receipts
 are immutable; private `active-pack.json` points to the current complete plan
 and additive icon receipt. Earlier image-generation examples are illustrative
 and are not these Real-ESRGAN results. See STATUS for evidence and review limits.
+
+The user approved this complete pack as the replacement optional Enhanced
+release. Exported keyed DDS/JSON use Git LFS and sanitized metadata. The current
+large export uses temporary same-volume hard links and Git's persistent LFS
+filter, then restores verified pointer-only working files. Every index pointer
+must match the source SHA-256/size and source payloads are rehashed afterward.
+The release publisher preserves prior immutable versions and streams one bounded
+ZIP at a time; launchers need the new download manifest merged into main.

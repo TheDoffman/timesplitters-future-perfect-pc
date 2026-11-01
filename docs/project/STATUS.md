@@ -4280,6 +4280,24 @@ full-campaign behavior are not claimed. The PR has not been merged into main.
 
 ## Original-based 2x texture production (2026-11-01, issue #74)
 
+### Replacement Enhanced pack export (2026-11-01)
+
+The user authorized pushing the complete original-based 2x pack and explicitly
+requested that it replace the old texture work. The repository now contains
+6,812 audited keyed DDS LFS pointers and sanitized metadata pairs, replacing
+the prior 2,261-key artwork inventory. Public installed size is 1,574,002,482
+bytes (private provenance sidecars are larger and are not published). Every
+index pointer matches its active-pack SHA-256 and byte size, and all source DDS
+payloads were rehashed afterward. Original archives, private production records,
+old artwork and recovery packs remain local; the prior release stays immutable.
+
+The source branch was rebased onto main 0b0fcb8b, preserving both sides of four
+documentation conflicts. 164 targeted packaging/upscale/planner/CI-scope tests
+and 21 subtests pass. A broader texture-test attempt could not run prepared
+runtime-dependent fixtures in this source-only worktree; no renderer change is
+included. Version 0.2.0-beta.1 publication and download-manifest integration are
+the next steps; export alone does not make this discoverable in launchers.
+
 ### Approved character icons activated (2026-11-01)
 
 User approved the complete faithful 2x icon set for the enhancement pack. All

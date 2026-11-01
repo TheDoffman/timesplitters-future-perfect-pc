@@ -657,7 +657,7 @@ clean command reads stdin without a destination filename: an existing pointer
 filename can supply the wrong size and truncate the streamed DDS. Exact pointer
 hash/size comparison remains mandatory. `tests/textures/test_build_textures.py` covers
 first export and updating an existing pointer with a DDS larger than 1 KiB.
-Use `tests/textures/test_texture_release.py` for format/hash/privacy and package limits.
+`test_texture_release.py` checks format/hash/privacy and package limits.
 No game launch is required for this export-only change.
 
 ## Original character icon policy

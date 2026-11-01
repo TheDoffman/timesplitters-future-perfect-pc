@@ -2,11 +2,13 @@
 
 [Back to the README](../../README.md)
 
-The current private original-based 2x pack contains all 6,812 known supported
-keys, including the 164 user-approved character selection/profile icons. It is
-installed locally; full-game visual and Mac validation remain pending. Original
+The replacement original-based 2x pack contains all 6,812 known supported
+keys, including the 164 user-approved character selection/profile icons. Its
+compiled DDS and sanitized metadata now replace the old repository artwork.
+It is installed locally; full-game visual and Mac validation remain pending. Original
 archives and Classic fallback are preserved. See [STATUS](../project/STATUS.md).
-The older authored/publication inventory below is historical and separate.
+The older authored/publication inventory below is historical; it is preserved
+for recovery and is superseded by this complete original-based 2x pack.
 
 This branch contains **2,261 replacements**, about **1.91 GiB installed**, covering
 approximately 33% of the 6,812 known supported keys. The menu progress and
@@ -87,7 +89,9 @@ Older traces from `2230901` omit hashing and cached calls and lack hash columns.
 
 ## Publishing optional pack updates
 
-1. Audit and hydrate the committed `assets/textures` pack. Keep private source art
+1. Audit and hydrate the committed `assets/textures` pack. For an approved private
+   pack, export with `texture-repository.py --source PATH --pointers-only` to keep
+   only pointers in the checkout, verifying every LFS hash/size. Keep private source art
    out of publication. Choose a new texture version; published versions are immutable.
 2. Run `python tools/textures/texture-release.py publish --version X.Y.Z`. This streams at
    most one bounded part at a time, verifies uploaded hashes and writes the public
@@ -320,7 +324,9 @@ mode. After auditing, an explicitly requested activation can move the prior
 active pack to an archival folder under `authored/` and move the candidate pack
 to the single active `pack/` folder, preserving recovery and source artwork.
 Restart the game to load changed files. This local workflow does not publish
-original-derived game assets to Git or texture downloads.
+game assets to Git or texture downloads without explicit user approval. The user
+has approved publication of the reviewed original-based 2x replacement pack;
+source archives, private provenance, settings and saves remain local.
 
 For an explicitly requested local activation after full production and review:
 
