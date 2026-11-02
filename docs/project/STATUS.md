@@ -38312,3 +38312,54 @@ consumer and compiled canonical EBP checks (logs/canonical-frame-ci-repair.log).
 No production C change or new game artifact in this repair; prior bounded
 Windows Story acceptance remains the evidence for the unchanged game. New-head
 CI/native Mac confirmation remains pending; full replacement remains active.
+
+
+### Stage0257: production continuation export (2026-11-02)
+
+Shared split generation now exports original decoded-control blocks and an exact
+PC registry. Consistent shared tails and overlapping streams validate byte and
+operand identity, with lowest-entry ownership. Local branches execute within a
+block; CALL/RET retain guest stack/target semantics. Restored Jcc retains the
+maintained static branch policy. Manual-only entries remain explicit native
+capabilities, and unsupported bodies reject rather than become cold-path no-ops.
+Generation stages chunks before publication; manifest-last text hashes and full
+owned-file-set checks prevent accepting partial/stale output as current.
+
+Windows95 compiler/CLI/manifest checks pass17.44s;114 repository/scope/gate cases
+pass4.20s. Earlier CI repair858721c8 separately passed83 cases33.54s. New index
+and exporter tests are registered in the common both-host runtime workflow.
+Supported-US Generate97218 exits0: normal15838/15863/0fail6595934lines unchanged,
+cold15746 bodies1198926 exact PCs62486 shared entries158 chunks13880749 lines,
+92 unsupported bodies and25 opaque entries; lift139.84s. These counts establish
+export coverage, not dynamic execution or complete CPU support. The normal
+path's previously reported728 unsupported instruction comments remain unchanged.
+
+Release68938 exits0, including built-in tests and matching crash-symbol archive.
+Audit logs/verify-continuation-production.py confirms all159 new C units selected
+once and compiled, complete/current manifest, original context headers, and all
+prior normal generated files byte-identical to the accepted canonical EBP stage.
+The kernel still does NOT select guest_context_execution.c; native state/ownership
+adapters, opaque host barriers, wrapper lifetimes and actual302/312 remain open.
+The game does not yet execute the new cold continuation dispatcher.
+
+Executable SHA25602537f12303269f9e90147903c05a5afddd4bc0ccc34f5abd835e48006a4a0d8.
+Fresh isolated independent-context-export-20261102 runner74054/controller42965
+both exit0. Story intro30/1 and playable4/1/input enabled verified. Forward
+movement11.15251329/back6.18489098, ammo8to6, pause39 samples with frozen ticks,
+resume58 with advancing ticks, last101.212s below240. Three fresh start/fire/pause
+captures visually reviewed. Source/runner/executable provenance matches; fixture
+valid;26 protected files retain hashes/sizes/times; no owned game left running,
+lock, dump or disposable Partition image. Evidence logs/continuation-production-
+{generate,build}.log, continuation-production-build.json, context-export-{game,
+controller}.log, context-export-game-check.json and the isolated report/provenance.
+Windows11/D3D11 flip/Classic/Original60/minimized synthetic/movies skipped only;
+not physical-input/listening, full-campaign, native Mac title or cold-path game
+execution proof. Shared generator/receipt changes serve native Mac too; new-stage
+Mac checks and new-head CI remain pending. Current858 repair runs41508449633
+runtime/41508449624 launcher were queued at last observation; no green claim.
+
+Guide: docs/agent-context/continuation-generation.md. This stage remains part of
+the full objective: live context/SEH plus remaining kernel, graphics, audio/movie,
+input/device/network, title/tooling/header/fixture and provenance replacement.
+Final generation/build/package with BOTH old checkout and snapshot unavailable
+has not passed and remains required. No PR merged and no full completion claim.

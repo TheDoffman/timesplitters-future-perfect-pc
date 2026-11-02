@@ -12,22 +12,22 @@ from translation_decode import Disassembler
 ROOT=Path(__file__).resolve().parents[2]
 
 
-def generate(raw,start=0x1000):
+def generate(raw,start=0x1000,*,run=False):
     data=bytes.fromhex(raw)
-    return emit(start,Disassembler().disassemble_function(data,start,start+len(data)))
+    return emit(start,Disassembler().disassemble_function(data,start,start+len(data)),run=run)
 
 
-def execute(tmp_path,programs,body,support='',mutation=None,refs=False,dispatch=False):
+def execute(tmp_path,programs,body,support='',mutation=None,refs=False,dispatch=False,run=False,policy=''):
     names=('recomp_types.h','guest_status_flags.h','guest_state.c',
            'guest_context_execution.h','guest_context_execution.c','guest_x86_context.h')
     for name in names:(tmp_path/name).write_bytes((ROOT/'src/runtime'/name).read_bytes())
-    generated='\n'.join(generate(raw,start) for start,raw in programs.items())
+    generated='\n'.join(generate(raw,start,run=run) for start,raw in programs.items())
     if dispatch:
-        generated+='\n'+emit_dispatch({start:Disassembler().disassemble_function(bytes.fromhex(raw),start,start+len(bytes.fromhex(raw))) for start,raw in programs.items()})
+        generated+='\n'+emit_dispatch({start:Disassembler().disassemble_function(bytes.fromhex(raw),start,start+len(bytes.fromhex(raw))) for start,raw in programs.items()},run=run)
     if mutation:
         before,after=mutation;assert before in generated;generated=generated.replace(before,after)
     source=tmp_path/'continuation.c'
-    source.write_bytes(('''
+    source.write_bytes((policy+'''
 #define RECOMP_GENERATED_CODE 1
 #define RECOMP_FAST_ENTRY(site) 0
 '''+('#define RECOMP_GPR_REFS_SUPPORTED 1\n#define RECOMP_USE_GPR_REFS 1\n#define RECOMP_GPR_ANCHORS(site) 1\n' if refs else '')+'''

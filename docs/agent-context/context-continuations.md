@@ -1,10 +1,10 @@
 # Translated instruction continuations
 
-This opt-in generator API is a prerequisite for the unfinished context/SEH
-replacement. Normal game generation still emits the existing fast C functions.
-There is no production CLI flag, CMake selection, live architectural adapter or
-raise/unwind binding for this cold path yet. Do not claim that the game executes
-it. [Checkpoint ownership](context-execution.md) and [record/native evidence](context-records.md)
+The original instruction API now also has a production exporter selected by the
+shared split-generation pipeline. [Export and exact-PC contracts](continuation-generation.md)
+describe its CLI, chunk publication, batched execution and generation receipts.
+There is still no production live architectural adapter or raise/unwind binding;
+do not claim that gameplay executes this cold path. [Checkpoint ownership](context-execution.md) and [record/native evidence](context-records.md)
 remain separate contracts.
 
 ## Generator and dispatch
@@ -34,11 +34,13 @@ size of its counter. Ordinary instructions reuse original project lifters.
 Unsupported opcodes, live selector/system register operands, far/16-bit control
 transfers and forced-return/manual-entry policy gaps reject explicitly.
 
-emit_dispatch builds a constant host function table for disjoint decoded
-ownership spans. Binary range lookup is followed by exact instruction membership;
-interior bytes and decode holes are never admitted. Guest bytes cannot supply a
-host function pointer. Empty/overlapping spans reject; opaque HLE/kernel entries
-require a separate adapter. A default/NULL-next step fails without guest writes.
+emit_dispatch builds an exact decoded-PC registry, allowing consistent shared
+instructions and overlapping streams. Byte and decoded metadata conflicts reject;
+interior bytes and decode holes are never admitted. A constant function table
+supplies host targets; guest bytes cannot supply a host function pointer. Empty
+standalone registries reject; the exporter emits an explicit all-denied dispatcher
+when no body is eligible. Opaque HLE/kernel entries require a native adapter.
+A default/NULL-next step fails without guest writes.
 Generated C and metadata stay ignored/local when derived from the private title.
 The new provider participates in the generation-source fingerprint.
 

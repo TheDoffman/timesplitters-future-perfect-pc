@@ -1,7 +1,7 @@
 """Original instruction-boundary execution for restored guest continuations.
 
-Normal translation remains unchanged. This cold path yields after each guest
-instruction and represents CALL/RET/JMP with guest PCs, never native C calls.
+Normal translation remains unchanged. This cold path can step one instruction
+or execute local control flow until a handoff. CALL/RET targets remain guest PCs.
 It needs the project's persistent flags ABI and an external admitted dispatcher.
 """
 from copy import copy
@@ -39,7 +39,13 @@ class ContinuationLifter(Lifter):
         raise ValueError(f'Unsupported continuation instruction at {instruction.address:#x}: {mnemonic}')
 
 
-def _control(instruction):
+def _flow(address, local):
+    if local is not None and address in local:
+        return [f'goto context_at_{address:08X};']
+    return _handoff(_hex(address))
+
+
+def _control(instruction,local=None):
     name, operands = instruction.mnemonic, instruction.operands
     following = _hex(instruction.end_address)
     if name in ('retf','lcall','ljmp','iret','iretd'):
@@ -64,6 +70,8 @@ def _control(instruction):
         # The operand, including [ESP], is sampled before the guest stack write.
         result=[f'uint32_t context_target = (uint32_t)({read(operand)});']
         if name=='call':result.append(f'PUSH32(esp, {following});')
+        if name=='jmp' and operand.type=='imm' and local is not None:
+            return _flow(operand.imm,local)
         return result+_handoff('context_target')
     if name in ('ret','retn'):
         if len(operands)>1 or (operands and operands[0].type!='imm'):
@@ -85,18 +93,22 @@ def _control(instruction):
             condition=f'{counter} != 0'+(f' && ({condition})' if name!='loop' else '')
         else:
             before,condition=_condition(name)
+        if name not in LOOP_JUMPS and name not in ('jcxz','jecxz'):
+            condition=f'RECOMP_FLOAT_BRANCH_AT({_hex(instruction.address)}, ({condition}))'
+        if local is not None:
+            return before+[f'if ({condition}) {{',*_flow(instruction.jump_target,local),'} else {',*_flow(instruction.end_address,local),'}']
         return before+_handoff(f'({condition}) ? {_hex(instruction.jump_target)} : {following}')
     if name.startswith(('set','cmov')) and _status_code(name) is not None:
         before,condition=_condition(name)
         if name.startswith('set') and len(operands)==1:
-            return before+[write(operands[0],f'({condition}) ? 1 : 0')]+_handoff(following)
+            return before+[write(operands[0],f'({condition}) ? 1 : 0')]+_flow(instruction.end_address,local)
         if name.startswith('cmov') and len(operands)==2:
-            return before+[f'if ({condition}) '+write(operands[0],read(operands[1]))]+_handoff(following)
+            return before+[f'if ({condition}) '+write(operands[0],read(operands[1]))]+_flow(instruction.end_address,local)
         raise ValueError('Malformed continuation flag consumer')
     return None
 
 
-def emit(start, instructions, lifter=None):
+def emit(start, instructions, lifter=None, *, run=False):
     """Emit a PC membership predicate and one-instruction step over decoded code.
 
     The caller owns decode/recovery and dispatch admission. Unsupported opcode
@@ -123,7 +135,7 @@ def emit(start, instructions, lifter=None):
     lines += [f'    case {_hex(address)}:' for address in sorted(addresses)]
     lines += ['        return 1;','    default:return 0;','    }','}',
               '#define ebp g_ebp',
-              f'int tsfp_context_step_{start:08X}(uint32_t context_pc,uint32_t *context_next)', '{',
+              f'int tsfp_context_{"run" if run else "step"}_{start:08X}(uint32_t context_pc,uint32_t *context_next)', '{',
               '    if (!context_next) return TSFP_CONTEXT_STEP_ERROR;',
               f'    RECOMP_DECLARE_GPRS({_hex(start)});',
               '    uint32_t _fa=0,_fb=0; int32_t _fas=0,_fbs=0;',
@@ -131,8 +143,11 @@ def emit(start, instructions, lifter=None):
               '    (void)_fa;(void)_fb;(void)_fas;(void)_fbs;',
               '    (void)_fca;(void)_fcb;(void)_flags;(void)_cf;',
               *FP_STACK_MACROS,'    switch(context_pc) {']
+    if run:
+        lines += [f'    case {_hex(address)}:goto context_at_{address:08X};' for address in sorted(addresses)]
+        lines += ['    default:return TSFP_CONTEXT_STEP_ERROR;', '    }']
     for instruction in sorted(instructions,key=lambda i:i.address):
-        emitted=_control(instruction)
+        emitted=_control(instruction,addresses if run else None)
         if emitted is None:
             # Never substitute zero for an architectural selector/control cell.
             if any(op.type=='reg' and (op.reg in ('cs','ss','ds','es','fs','gs') or
@@ -143,9 +158,11 @@ def emit(start, instructions, lifter=None):
                 emitted+=_known(1)
             if instruction.mnemonic=='lahf':emitted+=_known(0xd5)
             statements,_=block(lifter,BasicBlock(instruction.address,[instruction]))
-            emitted+=statements+_handoff(_hex(instruction.end_address))
-        lines += [f'    case {_hex(instruction.address)}: {{', *('        '+line for line in emitted),'    }']
-    lines += ['    default:return TSFP_CONTEXT_STEP_ERROR;', '    }', *FP_STACK_UNDEFS, '}', '#undef ebp','']
+            emitted+=statements+_flow(instruction.end_address,addresses if run else None)
+        label=f'context_at_{instruction.address:08X}: ; {{' if run else f'    case {_hex(instruction.address)}: {{'
+        lines += [label, *('        '+line for line in emitted),'    }']
+    if not run:lines += ['    default:return TSFP_CONTEXT_STEP_ERROR;', '    }']
+    lines += [*FP_STACK_UNDEFS, '}', '#undef ebp','']
     return '\n'.join(lines)
 
 
@@ -181,47 +198,12 @@ def translate_function(translator, start, info):
     return emit(start,instructions,lifter) if instructions else None
 
 
-def emit_dispatch(functions):
-    """Resolve exact decoded PCs through a fixed host table, never a guest cast.
-
-    Functions must have disjoint ownership spans. Each range's generated
-    membership predicate checks instruction boundaries and holes before dispatch.
-    Manual/kernel capabilities belong to the caller's separate opaque adapter.
-    """
-    entries=[];last=0
-    for start,instructions in sorted(functions.items()):
-        instructions=tuple(instructions)
-        addresses=[i.address for i in instructions]
-        if (not addresses or start!=min(addresses) or start<=last or
-                len(set(addresses))!=len(addresses) or
-                any(not 0<i.address<2**32 or not 0<i.size<=15 or i.end_address>2**32 for i in instructions)):
-            raise ValueError('Continuation dispatch needs disjoint decoded ownership spans')
-        last=max(i.end_address for i in instructions)-1
-        entries.append((start,max(addresses)))
-    if not entries:raise ValueError('Continuation dispatch needs decoded functions')
-    lines=['#include "guest_context_execution.h"']
-    for start,_ in entries:
-        lines += [f'int tsfp_context_has_{start:08X}(uint32_t);',
-                  f'int tsfp_context_step_{start:08X}(uint32_t,uint32_t *);']
-    lines += ['typedef struct tsfp_context_code_entry {', '    uint32_t first,last;',
-              '    int (*has)(uint32_t);', '    int (*step)(uint32_t,uint32_t *);',
-              '} tsfp_context_code_entry;',
-              'static const tsfp_context_code_entry tsfp_context_code[] = {']
-    lines += [f'    {{{_hex(start)},{_hex(end)},tsfp_context_has_{start:08X},tsfp_context_step_{start:08X}}},' for start,end in entries]
-    lines += ['};',
-              'static const tsfp_context_code_entry *tsfp_context_code_find(uint32_t pc) {',
-              '    size_t low=0,high=sizeof tsfp_context_code/sizeof tsfp_context_code[0];',
-              '    while(low<high) {', '        size_t middle=low+(high-low)/2;',
-              '        if(tsfp_context_code[middle].first<=pc)low=middle+1;',
-              '        else high=middle;', '    }', '    if(!low)return NULL;',
-              '    const tsfp_context_code_entry *entry=&tsfp_context_code[low-1];',
-              '    return pc<=entry->last && entry->has(pc)?entry:NULL;', '}',
-              'int tsfp_context_generated_admit(uint32_t pc) {',
-              '    return tsfp_context_code_find(pc)!=NULL;', '}',
-              'int tsfp_context_generated_step(uint32_t pc,uint32_t *next) {',
-              '    const tsfp_context_code_entry *entry=tsfp_context_code_find(pc);',
-              '    return entry && next?entry->step(pc,next):TSFP_CONTEXT_STEP_ERROR;', '}', '']
-    return '\n'.join(lines)
+def emit_dispatch(functions, *, run=False):
+    """Resolve exact decoded PCs, including consistent shared code entries."""
+    from continuation_index import InstructionIndex
+    index=InstructionIndex()
+    for start,instructions in sorted(functions.items()):index.add(start,instructions)
+    return index.emit(run=run)
 
 
 def translate_functions(translator, functions):
