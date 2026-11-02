@@ -190,14 +190,18 @@ Final shared Vulkan patch2411 uses `src/graphics/upload_copy.h` to batch tight
 rows/slices while preserving padded/short-row bytes. Uniform buffer updates
 compare exact CPU-shadow bytes (including signed zero/NaN payloads); unchanged
 updates retain the existing dirty state/snapshot instead of forcing a new GPU
-copy. Direct map/unmap stays dirty, and frame/range changes still resnapshot.
+copy. Direct map/unmap still marks dirty; snapshot creation compares against an
+optional CPU mirror of the last snapshot before allocating again. Reuse requires
+the same frame, sufficient range and exact bytes. No GPU/upload-memory reads
+are introduced. Allocation failure retains the original upload behavior, and
+frame/range changes still resnapshot.
 All Vulkan hosts share this implementation; D3D11 is unchanged. The real GPU
 512-draw/six-arena fixture repeats both dirty and clean identical updates.
 The byte-copy fixture checks tight/padded/short/compressed layouts, slice gaps,
 sentinels and uniform identity under optimized/sanitized builds.
 
 Opt-in `TSFP_RHI_UPLOAD_PROFILE=1` logs cumulative image bytes/copy calls,
-uniform updates/skips, GPU uniform bytes, wait API calls/time and pipeline
+uniform updates/skips, snapshot checks/reuses, GPU uniform bytes, wait API calls/time and pipeline
 creation calls each300 frames. Counters describe host work/API wait duration,
 not GPU completion. Default runs perform no profiling clock queries or logs.
 `TSFP_RHI_UPLOAD_BASELINE=1` selects legacy row copies/dirty updates for a

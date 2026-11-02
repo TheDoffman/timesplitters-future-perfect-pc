@@ -3088,7 +3088,7 @@
     {
       "name": "2411-vulkan-upload-efficiency.patch",
       "path": "patches/graphics/rendering/2411-vulkan-upload-efficiency.patch",
-      "sha256": "2a9ee0f830f26c58f55c6c582a8b8451d0e49a807cb0b735a657f7d5612677d9",
+      "sha256": "fd3c026447f51058d1722df5aabaa50743481557805e6fc3655852925e5fea74",
       "targets": [
         "src/d3d/rhi_vulkan.c"
       ]

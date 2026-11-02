@@ -33,6 +33,9 @@ static void rhi_compatibility_test(RhiView *rtv) {
             RhiRect rect={(int)(i%64),(int)(i/64),(int)(i%64+1),(int)(i/64+1)};
             rhi_set_scissor(&rect);rhi_buffer_update(parameters,q);rhi_buffer_update(parameters,q);rhi_draw(3,0);
             rhi_buffer_update(parameters,q);rhi_draw(3,0);
+            /* Actual game constants use map/unmap, not only update(). */
+            void *mapped=rhi_buffer_map(parameters,RHI_MAP_WRITE_DISCARD);CHECK(mapped);
+            memcpy(mapped,q,sizeof q);rhi_buffer_unmap(parameters);rhi_draw(3,0);
         }
         CHECK(rhi_image_readback(target,0,pixels,64*4*sizeof(float))==0);
         for(unsigned i=0;i<512;i++) {

@@ -8,14 +8,22 @@
  #include "rhi_vulkan_bindings.h"
  #include "rhi_shader_cache.h"
  
-@@ -460,6 +461,46 @@
+@@ -92,6 +93,7 @@
+     int           uniform;
+     /* constant buffers: the CPU copy and where the last snapshot went */
+     uint8_t      *shadow;
++    uint8_t *snap_shadow;
+     int           dirty;
+     uint64_t      snap_frame;
+     VkBuffer      snap_b;
+@@ -460,6 +462,47 @@
      V.ntrash = k;
  }
  
 +/* Opt-in cumulative diagnostics; no file or extra clock queries normally. */
 +static struct {
 +    uint64_t image_updates,image_bytes,copy_calls,uniform_updates,uniform_skips;
-+    uint64_t ubo_uploads,ubo_bytes,wait_calls,wait_ns,pipeline_calls;
++    uint64_t ubo_uploads,ubo_bytes,wait_calls,wait_ns,pipeline_calls,ubo_checks,ubo_reuses;
 +} upload_metrics;
 +static int upload_profile_enabled(void)
 +{
@@ -43,11 +51,12 @@
 +static void upload_note_frame(void)
 +{
 +    if(upload_profile_enabled() && V.frame_no && !(V.frame_no%300))
-+        fprintf(stderr,"[VK-UPLOAD] frames=%llu optimized=%d images=%llu image_bytes=%llu copy_calls=%llu uniform_updates=%llu uniform_skips=%llu ubo_uploads=%llu ubo_bytes=%llu wait_calls=%llu wait_us=%llu pipeline_calls=%llu\n",
++        fprintf(stderr,"[VK-UPLOAD] frames=%llu optimized=%d images=%llu image_bytes=%llu copy_calls=%llu uniform_updates=%llu uniform_skips=%llu ubo_checks=%llu ubo_reuses=%llu ubo_uploads=%llu ubo_bytes=%llu wait_calls=%llu wait_us=%llu pipeline_calls=%llu\n",
 +            (unsigned long long)V.frame_no,upload_batch_enabled(),
 +            (unsigned long long)upload_metrics.image_updates,(unsigned long long)upload_metrics.image_bytes,
 +            (unsigned long long)upload_metrics.copy_calls,(unsigned long long)upload_metrics.uniform_updates,
-+            (unsigned long long)upload_metrics.uniform_skips,(unsigned long long)upload_metrics.ubo_uploads,
++            (unsigned long long)upload_metrics.uniform_skips,(unsigned long long)upload_metrics.ubo_checks,
++            (unsigned long long)upload_metrics.ubo_reuses,(unsigned long long)upload_metrics.ubo_uploads,
 +            (unsigned long long)upload_metrics.ubo_bytes,(unsigned long long)upload_metrics.wait_calls,
 +            (unsigned long long)(upload_metrics.wait_ns/1000),(unsigned long long)upload_metrics.pipeline_calls);
 +}
@@ -55,7 +64,7 @@
  static void wait_serial(uint64_t s)
  {
      VkSemaphoreWaitInfo wi = { VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO };
-@@ -468,7 +509,9 @@
+@@ -468,7 +511,9 @@
      wi.semaphoreCount = 1;
      wi.pSemaphores = &V.timeline;
      wi.pValues = &s;
@@ -65,7 +74,7 @@
      update_completed();
  }
  
-@@ -1683,6 +1726,7 @@
+@@ -1683,6 +1728,7 @@
  static void next_frame(void)
  {
      V.frame_no++;
@@ -73,7 +82,25 @@
      V.fi = (V.fi + 1) % FRAMES;
      wait_serial(V.frames[V.fi].last_serial);
      V.frames[V.fi].ring.cur = 0;
-@@ -1878,6 +1922,14 @@
+@@ -1825,6 +1871,9 @@
+         if (initial)
+             memcpy(b->shadow, initial, d->size);
+         b->dirty = 1;
++        /* Optional CPU copy of the last GPU snapshot: never compare against
++         * mapped upload memory, which may be write-combined or GPU-owned. */
++        if(upload_batch_enabled())b->snap_shadow=malloc(d->size?d->size:16);
+         return b;
+     }
+     if (!new_version(b)) {
+@@ -1854,6 +1903,7 @@
+     }
+     free(b->ver);
+     free(b->shadow);
++    free(b->snap_shadow);
+     free(b);
+ }
+ 
+@@ -1878,6 +1928,14 @@
  
  static void v_buffer_update(RhiBuffer *b, const void *data)
  {
@@ -88,7 +115,7 @@
      void *p = v_buffer_map(b, RHI_MAP_WRITE_DISCARD);
      if (p) {
          memcpy(p, data, b->desc.size);
-@@ -2058,11 +2110,11 @@
+@@ -2058,11 +2116,11 @@
      p = ring_alloc((VkDeviceSize)row_bytes * rows * bd, 16, &staging, &off);
      if (!p)
          return;
@@ -105,7 +132,7 @@
  
      end_rendering();
      if (img->steady != VK_IMAGE_LAYOUT_GENERAL)
-@@ -3306,6 +3358,7 @@
+@@ -3306,6 +3364,7 @@
      gci.pColorBlendState = &cb;
      gci.pDynamicState = &dy;
      gci.layout = V.pipe_layout;
@@ -113,10 +140,24 @@
      if (vkCreateGraphicsPipelines(V.dev, V.pcache, 1, &gci, NULL, &p->pipe) != VK_SUCCESS) {
          static int said;
          if (said++ < 10)
-@@ -3382,6 +3435,7 @@
+@@ -3376,12 +3435,21 @@
+         return 1;
+     }
+     range = b->desc.size > need ? b->desc.size : need;
++    if(b->dirty && b->snap_shadow && b->snap_frame==V.frame_no+1 && b->snap_range>=range) {
++        if(upload_profile_enabled())upload_metrics.ubo_checks++;
++        if(!memcmp(b->shadow,b->snap_shadow,b->desc.size)) {
++            b->dirty=0;
++            if(upload_profile_enabled())upload_metrics.ubo_reuses++;
++        }
++    }
+     if (b->dirty || b->snap_frame != V.frame_no + 1 || b->snap_range < range) {
+         uint8_t *p = ring_alloc(range, V.props.limits.minUniformBufferOffsetAlignment,
+                                 &b->snap_b, &b->snap_off);
          if (!p)
              return 0;
          memcpy(p, b->shadow, b->desc.size);
++        if(b->snap_shadow)memcpy(b->snap_shadow,b->shadow,b->desc.size);
 +        if(upload_profile_enabled()){upload_metrics.ubo_uploads++;upload_metrics.ubo_bytes+=b->desc.size;}
          if (range > b->desc.size)
              memset(p + b->desc.size, 0, (size_t)(range - b->desc.size));
