@@ -151,6 +151,9 @@ def test_upgrade_native_checkpoint_preserves_fixed_default(checkout, tmp_path):
     prior=tmp_path/'native-prior-patches'
     prior.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
+        prefix = patch.name.split('-', 1)[0]
+        if prefix.isdigit() and 2495 <= int(prefix) <= 2514:
+            continue  # Historical stacks predate the graphics/display dependencies.
         if patch.name in ('2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
             continue  # These historical subsets predate the optional feed and its wrappers.
@@ -221,6 +224,9 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in installer.active_patch_paths(PATCHES):
+        prefix = patch.name.split('-', 1)[0]
+        if prefix.isdigit() and 2495 <= int(prefix) <= 2514:
+            continue  # Historical stacks predate the graphics/display dependencies.
         if patch.name in ('2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
             continue  # These historical subsets predate the optional feed and its wrappers.
@@ -332,6 +338,9 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches = tmp_path / 'mac-only-patches'
     old_patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
+        prefix = patch.name.split('-', 1)[0]
+        if prefix.isdigit() and 2495 <= int(prefix) <= 2514:
+            continue  # Historical stacks predate the graphics/display dependencies.
         if patch.name in ('2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
             continue  # These historical subsets predate the optional feed and its wrappers.
@@ -387,6 +396,9 @@ def texture_branch_patches(tmp_path):
     patches = tmp_path / 'texture-patches'
     patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
+        prefix = patch.name.split('-', 1)[0]
+        if prefix.isdigit() and 2495 <= int(prefix) <= 2514:
+            continue  # Historical stacks predate the graphics/display dependencies.
         if patch.name in ('2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
             continue  # These historical subsets predate the optional feed and its wrappers.
@@ -403,6 +415,9 @@ def main_branch_patches(tmp_path):
     patches = tmp_path / 'main-patches'
     patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
+        prefix = patch.name.split('-', 1)[0]
+        if prefix.isdigit() and 2495 <= int(prefix) <= 2514:
+            continue  # Historical stacks predate the graphics/display dependencies.
         if patch.name in ('2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
             continue  # These historical subsets predate the optional feed and its wrappers.
@@ -650,7 +665,7 @@ def test_graphics_branch_round_trip_preserves_local_edits(checkout, tmp_path, cr
     baseline.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
         prefix = patch.name.split('-', 1)[0]
-        if not (prefix.isdigit() and 2495 <= int(prefix) <= 2513):
+        if not (prefix.isdigit() and 2495 <= int(prefix) <= 2514):
             shutil.copyfile(patch, baseline / patch.name)
     shutil.copytree(PATCHES / 'legacy', baseline / 'legacy')
     installer.apply_patches(checkout, baseline)

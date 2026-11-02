@@ -283,3 +283,10 @@ all effects off, each effect separately, and combinations that reproduce it.
 Inspect the flash and following world/weapon frames, not just a final screenshot.
 Repeat the reproducing combination after repair at the supported FPS settings;
 record measured rates and backend. Missing live/platform evidence stays pending.
+
+Merge validation: the Windows Release rebuild and built-ins pass with latest main
+(a1f039cb). The 127 CI planning/context checks pass locally after updating the
+patch-order contract and normalizing patch2514 to LF. Historical migration fixture
+sets now exclude graphics2495-2514 until the complete-stack upgrade; injecting
+these new patches into a pre-display/pre-feed checkpoint was not a valid old
+installation. Complete current-stack and graphics round-trip coverage remain.
