@@ -407,3 +407,7 @@ unchanged. See [exception contracts](guest-exceptions.md).
 Stage0259 extends the patch tail56to57 for execution ownership after0258.
 The ordering assertion and five historical omission sets follow that dependency;
 see [ownership and test routes](execution-ownership.md).
+
+Stage0260 extends the patch tail57to58 for original host policies after0259.
+The ordering assertion and five historical omission sets follow this dependency;
+see [host scheduling and test routes](execution-host.md).

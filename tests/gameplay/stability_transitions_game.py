@@ -78,6 +78,8 @@ def main():
         help='0 selects Original60; positive rates select the native fractional clock')
     parser.add_argument('--manual-start',action='store_true')
     parser.add_argument('--guest-lock',action='store_true',help='Enable serialized guest execution in this isolated session')
+    parser.add_argument('--dispatch-lock',action='store_true',help='Enable bounded dispatch parking in this isolated session')
+    parser.add_argument('--guest-one-cpu',type=int,choices=range(66),default=0,help='Windows guest affinity: 0 off, 1 automatic, 2-65 processor index plus two')
     parser.add_argument('--watch-guest-execution',action='store_true',help='Enable guest thread concurrency diagnostics in this isolated session')
     parser.add_argument('--fullscreen',action='store_true',help='Start this isolated session borderless on its monitor; actual client size is reported separately')
     parser.add_argument('--display-size',type=int,nargs=2,default=(1280,720),metavar=('WIDTH','HEIGHT'),help='Isolated render resolution; actual window state is reported separately')
@@ -168,7 +170,8 @@ def main():
         subprocess.run([sys.executable,str(ROOT/'tools/build/network-identity.py'),'--verify',
                         '--executable',str(ROOT/'build/windows/Release/futureperfect_recomp.exe')],check=True)
     run=ROOT/'private/test-saves'/args.run_name;env=prepare_run(ROOT,run)
-    env.update(RECOMP_GUEST_LOCK=str(int(args.guest_lock)),RECOMP_GUEST_CONCURRENCY=str(int(args.watch_guest_execution)))
+    env.update(RECOMP_GUEST_LOCK=str(int(args.guest_lock)),RECOMP_GUEST_CONCURRENCY=str(int(args.watch_guest_execution)),
+               RECOMP_DISPATCH_LOCK=str(int(args.dispatch_lock)),RECOMP_GUEST_ONE_CPU=str(args.guest_one_cpu))
     stop_request=run/'stop-request'
     assert not stop_request.is_symlink()
     stop_request.unlink(missing_ok=True)
@@ -809,7 +812,7 @@ def main():
         native_surface_mode="default" if args.native_surfaces is None else ("enabled" if args.native_surfaces else "disabled"),
         profile_delay_seconds=args.profile_delay_seconds,
         profile_pc_symbol=args.profile_pc_symbol,
-        guest_lock=args.guest_lock,guest_concurrency=args.watch_guest_execution,native_fps=args.native_fps or 0,native_surfaces=args.native_surfaces,scenario=args.scenario,seconds=args.seconds,captures=not args.no_captures,watch_effects=args.watch_effects,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
+        guest_lock=args.guest_lock,dispatch_lock=args.dispatch_lock,guest_one_cpu=args.guest_one_cpu,guest_concurrency=args.watch_guest_execution,native_fps=args.native_fps or 0,native_surfaces=args.native_surfaces,scenario=args.scenario,seconds=args.seconds,captures=not args.no_captures,watch_effects=args.watch_effects,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:
         launch(index)

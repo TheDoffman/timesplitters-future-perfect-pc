@@ -1026,4 +1026,4 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [2x tests](original-upscale.md).
 
-[RTL](guest-stack-trace.md), [ownership](execution-ownership.md).
+[RTL](guest-stack-trace.md), [host policy](execution-host.md).

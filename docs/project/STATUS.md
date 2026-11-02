@@ -38520,3 +38520,75 @@ source still requires its own head CI. No PR merged. Broader kernel/graphics/
 audio/movies/input/devices/network/title/tooling/header/fixture and provenance
 replacement, plus final generation/build/package with BOTH upstream sources
 unavailable, remain incomplete. Guide: docs/agent-context/execution-ownership.md.
+
+
+## Stage0260: original host execution policies (2026-11-02)
+
+Local source afterd36e0303. guest_execution_host.inc replaces inherited guest
+lock bootstrap, cached switches, dispatch parking, concurrency diagnostics and
+Windows affinity selection through0260-original-execution-host-policy.patch.
+Owned guest_kernel_execution.inc now delegates to that own host policy.
+guest_cpu_choice.h and guest_execution_cpu.inc implement bounded mask selection
+and SDK-field CPU enumeration. Native Mac shares locking/parking/counters through
+the existing platform adapter and omits Windows affinity. The platform adapter,
+IRQL/DPC scheduler and actual265/302/312 imports remain provenance work.
+
+113 focused ownership/host/object/boot/device-host/thread-memory cases pass249.21s.
+The12 new cases are a subset: deterministic ownership/timeouts/configuration and
+malformed CPU queries, nine compiled wrong providers rejected at runtime, plus
+actual Windows threads/critical sections/events/InitOnce/affinity with four
+workers doing100 suspend/restore cycles. The initial12 also pass4.73s. Both-host
+runtime CI selects the shared tests; the native Windows API case skips on Mac.
+No new Mac result is claimed. Parking remains optional and best-effort at50/100ms
+bounds. A timed-out requester cannot steal or release another owner's gate;
+nested release retains the outer owner. Oversized CPU settings reject before
+shifting. CPU-set selection is independent of record order and stays group-local.
+
+Production apply60626 and Release49959 exit0, including built-ins and matching
+crash symbols. Audit logs/verify-execution-host-build.py confirms actual own
+includes/archive exports and removal of inherited policy bodies; all normal
+and159 cold generated C units remain unchanged with a current generation receipt.
+EXE3315060a9648b86640ddb641598f128c954ea44569de7a62f78f299eee5dbc77.
+Full177 historical migration/repository/context/scope/backlog/gate cases pass
+1172.30s on the original handle25162, terminal0. Combined with113 focused cases,
+290 distinct checks passed; no run was restarted for silence or buffered output.
+
+Fresh default-off Story root independent-execution-host-off2-20261102 runner35111/
+controller88608 both exit0: forward11.1762443920/back6.3910484303, ammo8to6,
+pause39 frozen/resume58 advancing, last98.728s below240. Diagnostic peak2 counted
+threads/126 overlap entries. Fresh enabled root independent-execution-host-on-
+20261102 runner25530/controller76442 both exit0: guest lock plus dispatch parking
+and automatic Windows affinity requested, startup confirms mask0x8000 and lockon;
+forward11.1745438671/back5.9700438212, ammo8to6, pause39/resume58, last99.193s.
+Every enabled concurrency row reports peak1/overlaps0. These observations do not
+prove every legacy callback is accounted for or that actual game IRQL paths were
+exercised. Native/deterministic policy tests supply those separate API contracts.
+
+The final verifier checks all1680 build-input hashes, runner/executable hashes,
+actual mode provenance, gameplay assertions, clean runner PASS, no unresolved
+calls/crash/ownership diagnostic and no disposable disk/lock/dump artifacts.
+Six fresh start/fire/pause captures reviewed. All26 protected personal files
+retain hashes/sizes/times. Evidence logs/execution-host-{build,final-check}.json,
+focused/build/migration logs, off2/on runner/controller logs and both isolated
+reports/provenance/captures. Windows11/D3D11 flip/Classic/Original60/minimized
+synthetic/movies-skipped scope; not physical input/listening/full-campaign/Mac
+native title or actual edited-context/exception resumption proof.
+
+The first off run is retained as a failed test invocation: --manual-start disabled
+the route's required profile replay, the capture showed the profile menu and the
+controller stopped at its intro assertion. No production change was made for
+that failure. An initial controller started before its marker existed and sent
+no input; the later on launch was refused while another checkout ran its game.
+Those terminal test attempts were not called successful or bypassed. The other
+session was left alone; the final enabled run started after the inventory cleared.
+
+Isolated runner --dispatch-lock and --guest-one-cpu apply after prepare_run strips
+parent variables and are recorded in provenance. Shipping settings are unchanged.
+Prior exactd36 CI is fully successful: runtime41527543804 all11 jobs, including
+Windows native125559250416, Mac native125559250446, both upgrades, both launchers,
+dual-platform package verification and transition/PR gates; standalone41527543813
+all5 jobs, including Mac125560698934. The new stage needs its own head CI. No PR merged. See
+docs/agent-context/execution-host.md. Whole runtime/tooling/title/header/fixture
+replacement and generation/build/package with both upstream sources unavailable
+remain incomplete. Live architectural capture and native callback barriers are
+still required before binding the original exception provider to game imports.

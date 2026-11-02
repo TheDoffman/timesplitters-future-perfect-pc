@@ -1,34 +1,10 @@
-/* Original execution-ownership binding. Included after the platform's parking,
- * affinity and diagnostic declarations. Those host policies remain separate. */
+/* Original execution-ownership binding, after guest_execution_host.inc. */
 #include "guest_kernel_execution.h"
-static int execution_lock_enabled(void *opaque) {
-    (void)opaque;return g_guest_cs_ready && xbox_GuestLockOn();
-}
-static void execution_lock(void *opaque) {(void)opaque;EnterCriticalSection(&g_guest_cs);}
-static void execution_unlock(void *opaque) {(void)opaque;LeaveCriticalSection(&g_guest_cs);}
-static void execution_activate(void *opaque) {
-    LONG running;(void)opaque;
-#ifdef _WIN32
-    static RECOMP_TLS unsigned affinity_initialized;
-    if(!affinity_initialized) {
-        DWORD_PTR mask=guest_cpu_mask();affinity_initialized=1;
-        if(mask)SetThreadAffinityMask(GetCurrentThread(),mask);
-    }
-#endif
-    park_enter();
-    if(!xbox_GuestConcurrencyOn())return;
-    running=InterlockedIncrement(&g_lifted_now);
-    if(running>1)InterlockedIncrement(&g_lifted_overlaps);
-    for(;;) {
-        LONG peak=g_lifted_peak;
-        if(peak>=running || InterlockedCompareExchange(&g_lifted_peak,running,peak)==peak)break;
-    }
-}
-static void execution_deactivate(void *opaque) {
-    (void)opaque;
-    if(park_on())InterlockedDecrement(&g_park_running);
-    if(xbox_GuestConcurrencyOn())InterlockedDecrement(&g_lifted_now);
-}
+static int execution_lock_enabled(void *opaque) {(void)opaque;return xbox_GuestLockOn();}
+static void execution_lock(void *opaque) {(void)opaque;EnterCriticalSection(&execution_host_lock);}
+static void execution_unlock(void *opaque) {(void)opaque;LeaveCriticalSection(&execution_host_lock);}
+static void execution_activate(void *opaque) {(void)opaque;execution_host_activate();}
+static void execution_deactivate(void *opaque) {(void)opaque;execution_host_deactivate();}
 const tsfp_guest_execution_ops tsfp_kernel_execution_ops={
     NULL,execution_lock_enabled,execution_lock,execution_unlock,execution_activate,execution_deactivate
 };

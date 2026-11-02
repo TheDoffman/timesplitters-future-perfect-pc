@@ -184,6 +184,10 @@ def patch_records(paths):
     if execution_ownership:
         paths.remove(execution_ownership)
         paths.append(execution_ownership)
+    execution_host = by_name.get('0260-original-execution-host-policy.patch')
+    if execution_host:
+        paths.remove(execution_host)
+        paths.append(execution_host)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

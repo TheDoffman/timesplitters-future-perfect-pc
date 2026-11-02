@@ -29,10 +29,11 @@ Invalid owner/domain/count/acquisition requests reject before host effects.
 
 guest_kernel_execution.inc, included by the patched xbox_memory_layout.c, supplies
 the shared kernel domain and existing xbox_GuestLock/GuestLifted exports. It uses
-standard critical-section/atomic APIs and delegates the remaining platform's
-parking, optional Windows CPU-affinity choice, configuration and diagnostic
-storage. Those retained host policies still need provenance replacement; this
-does not claim that the whole concurrency or platform backend is independent.
+standard critical-section/atomic APIs. The following0260 host-policy stage
+replaces the inherited policy bodies; see [host scheduling](execution-host.md)
+for initialization, dispatch parking, counters, optional Windows affinity and
+actual host validation. This does not claim the wider platform backend is
+independent.
 
 ## Normal return, abandonment and exit
 
