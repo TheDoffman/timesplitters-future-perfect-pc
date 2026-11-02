@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "f4cf92b9c1e9589c6cd4d8ecd80e63851a1f65befdf7af701930e0b860d811d8",
+  "loaderSha256": "59cf8c6333e4c03c0f5fe5c0c59724ad2af6bc5b9523e87c040aab19807451a3",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3051,6 +3051,14 @@
       "targets": [
         "CMakeLists.txt",
         "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2406-native-vblank-alias.patch",
+      "path": "patches/platform/2406-native-vblank-alias.patch",
+      "sha256": "cef6f6566ecb8568bb999073429f149d830f14109954685a1db41673f1976453",
+      "targets": [
+        "src/kernel/kernel_bridge.c"
       ]
     }
   ]
