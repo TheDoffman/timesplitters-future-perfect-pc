@@ -1,3 +1,79 @@
+## Linux standalone desktop/media preview (2026-11-02)
+
+Local `feature/linux-runtime-completion`, based on unmerged `11bb17ab`; runtime
+source through `9fc32517`. No push, publication, merge or Steam Deck transfer.
+Linux now has GTK controls/graphics/debug editors using shared settings models,
+and XMV startup movies use the common WMV2/PCM/ADPCM/audio/RHI pipeline. The
+POSIX player guard requires the common RHI; legacy Mac GL retains its prior stub.
+GTK does not change the game's numeric locale. Binding dropdowns work;
+capture-to-bind remains pending. Native Mac execution remains unavailable.
+
+The local Linux x64 preview targets the Ubuntu24.04/glibc2.39 baseline and a
+working system Vulkan driver. It includes the game, existing self-contained
+launcher, application ELF dependency closure including dynamically loaded DXC
+and FFmpeg, isolated Python/Tk/TLS/Online support, source and notices. Game data,
+personal settings and saves are excluded. Native source/binary receipts and
+all payload hashes are checked. RPATH relocation is followed by executable
+resealing. The installed Python interpreter is executed during package checks.
+The launcher uses its normal writable installation; direct `Launch.sh --game`
+supports a read-only install, external game data and XDG user state. First-run
+controls are published atomically, preserving existing/concurrent settings.
+
+Archive: `TimeSplitters-Future-Perfect-PC-v0.4.2-alpha.1-linux-x64.zip`.
+SHA256: `4e6c41bb54c59b785bc2762a4b00cd6e72638b97ec352dc0170fa7f8c3e4dd25`.
+Linux build artifact: `build/linux-runtime-preview-11/`; verified copy in the
+Windows editing checkout: `build/linux-runtime-preview/`. This is a local
+experimental preview, not a published release or a guarantee for older glibc.
+
+| Check | Measured result |
+| --- | --- |
+| Final Linux shared desktop/package/runner/storage/I/O/audio/movie suite |204 passed,10 host/data-specific skips |
+| Windows media/storage suite |162 passed,1 skipped |
+| Windows changed storage/package/runner contracts |86 passed,7 skipped |
+| Windows final repository/CI/backlog/package/runner gate |152 passed,7 skipped |
+| Full patch upgrades/tracking/snapshot suite |60 passed in373s before the final RHI-only guard refinement; latest stack applied by the final build and positive/negative build guards pass |
+| Linux native build and MMIO/CRTC/AC97 check |Passed with optimized host libraries, assertions and title numeric policy retained |
+| Linux launcher adapters and shared UI |Passed;37 shared UI groups |
+| Fresh/upgrade game-package installation |1370 files verified; corrupted executable rejected; game data/saves/settings preserved; installed Python/Tk/TLS imports and trust passed |
+| Read-only relocation as nobody, spaces/non-ASCII path, no checkout SDK/build outputs |GTK settings/debug, SDL controller hotplug/focus and actual renderer pixels/fullscreen all passed |
+| Earlier relocated preview, ordinary user |300-second state-verified Story run passed; no full-campaign claim |
+| Final package, native case-sensitive directory entries backed by symlinks to the original assets |150-second Story run passed with150.13s bound; actual first-person capture visually checked |
+| Native startup movies |Two real-file decode/PCM/timestamp hash fixtures pass across refresh rates; actual packaged EA/FRD playback completes, and EA movie capture visually checked |
+| Shared Vulkan GPU/production replay |Software1.3 and forced1.2 paths pass with SDK validation; expected injected present failure remains part of the contract |
+
+The final case-sensitive test did not duplicate the game extract: only directory
+entries and file symlinks were created in the Linux filesystem. Its7500 reported
+presents were guest presents, with zero interpolated/skipped/failed. The active
+640x480 llvmpipe window measured45.84 host presents/s, p95 25.688ms and p99
+27.467ms. This is software rendering with captures, not a hardware performance
+comparison or a sustained60/240 claim. Presets60/120/180/240 are unchanged.
+Resource samples recorded57 threads and23 descriptors at the end; RSS was about
+440MiB. A short steady interval does not establish leak-free campaign play.
+
+Packaged functional runs do not include the optional SDK validation layer. The
+runner now records validation_requested separately from actual activation; the
+older300-second receipt's flag described the request, not an active layer.
+The final150-second capture run explicitly used --performance and records
+validation_enabled=false. SDK GPU contracts provide the separate API validation.
+Raw Xvfb without a window manager correctly failed fullscreen acceptance; the
+isolated Xvfb/Openbox session passed without weakening assertions.
+
+Additional repairs exposed by GCC strict checks separate existing guard/lock/
+copy statements in storage/device providers and one callback fixture; control
+flow is unchanged. Windows and Linux contracts cover them. WSL CreateVm timeouts
+interrupted final attempts; source and passing receipts were preserved, the
+Linux checkout recovered, and final build/package checks completed. Failed
+stages remain ignored for diagnosis. No Windows restart was requested/performed.
+
+Evidence is in each host's ignored `logs/linux-runtime-*`; Linux also retains
+`linux-relocated-*`, `linux-final-*`, `linux-desktop-*` and movie captures. See
+[Linux acceptance](../development/linux-acceptance.md) for commands and the
+remaining native GPU/session, physical audio/device switching, suspend/resume,
+multiple-mission, multiplayer, clean-machine and Steam Deck checks. Dependency
+source/license review and the actual release/update path remain publication
+requirements. Shared source does not establish native Mac or universal distro
+support.
+
 ## Cross-platform base-game audit (2026-11-02)
 
 Local follow-up on `perf/linux-upload-waits`, audit base `71c6557f`, shared code
