@@ -10,10 +10,11 @@ FPS / Ping uses `GameSettings.ShowCounter` and the game-owned
 `debug.show_counter` boolean in controls JSON. Both launcher UI hosts share
 this control. Legacy runtime FPS diagnostics and other debug keys are preserved.
 The settings regression covers game-written values and launcher persistence.
-SMAA: shared `GameSettings.Smaa` loads/saves runtime `smaa = 0/1` and defaults
-off. `SettingsPage` exposes `SmaaAntiAliasing` in Quality & performance, includes
-it in dirty-draft detection and saves it through the existing atomic settings
-transaction. Restart and compatible-renderer requirements are in its tooltip.
+Post-process AA: `GameSettings.PostAntiAliasing` maps Off/FXAA/SMAA to the
+existing `EdgeSmoothing` and `Smaa` keys. `SettingsPage.PostAntiAliasing` replaces
+the separate controls; saving normalizes them within the existing transaction.
+Legacy dual-enabled choices display SMAA. Advanced holds MSAA/cache/console scale;
+scale appears only at Original resolution. View & HUD holds FOV/FPS, General holds startup.
 Both WPF and Avalonia consume this page/model; native Mac execution is unverified.
 
 Game 0.4.2 preparation retains Stable channel selection, optional texture delivery

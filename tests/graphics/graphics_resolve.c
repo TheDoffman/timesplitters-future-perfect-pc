@@ -55,6 +55,15 @@ int main(void)
     assert(d3d8_display_policy()->anisotropy==16);
     options.anisotropy=1;assert(pc_graphics_set(&options));
     assert(d3d8_display_policy()->anisotropy==1);
+    /* Legacy dual-enabled preferences must produce SMAA alone, never stacked AA. */
+    assert(_putenv_s("TSFP_SMAA","1")==0);
+    assert(SUCCEEDED(d3d8_display_resolve(srv,32,32,rtv,fit)));
+    assert(rhi_image_readback(target,0,on,32*4)==0);
+    options.edge_smoothing=1;assert(pc_graphics_set(&options));
+    assert(SUCCEEDED(d3d8_display_resolve(srv,32,32,rtv,fit)));
+    assert(rhi_image_readback(target,0,again,32*4)==0);
+    assert(!memcmp(on,again,sizeof on));
+    assert(_putenv_s("TSFP_SMAA","0")==0);
     test_graphics_transition();
     options.edge_smoothing=0;assert(pc_graphics_set(&options));
     /* A save failure cannot publish an unpersisted rendering preference. */

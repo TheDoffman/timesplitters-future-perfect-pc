@@ -1849,9 +1849,9 @@
     {
       "name": "2495-graphics-options.patch",
       "path": "patches/graphics/rendering/2495-graphics-options.patch",
-      "sha256": "bf838bbef3638967b65c2239dc421dbbad3a9869dead73c96c23d19b97dcc0a0",
+      "sha256": "c9635f5c751b38a8b761cb58738ba243c20b070a2b77b736d9a07cc9412e0997",
       "targets": [
-        "src/d3d/d3d8_display.c"
+        "src/d3d/d3d8_display.c\r"
       ]
     },
     {

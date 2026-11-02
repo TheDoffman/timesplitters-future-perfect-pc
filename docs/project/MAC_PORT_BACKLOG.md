@@ -8775,6 +8775,13 @@ and real two-machine LAN acceptance are pending; a loopback test with startup
 network overrides does not validate this path. See STATUS for Windows build evidence.
 
 
+Graphics settings cleanup (local, `feature/graphics-settings-cleanup`, base
+`627b05bd`): shared launcher/game now have one Off/FXAA/SMAA selector, separate
+MSAA and cache controls under Advanced, consistent AF labels and reorganized
+launcher General/View & HUD sections. Existing files are preserved; the common
+resolve prevents stacked FXAA/SMAA. No new host adapter is needed. Windows
+validation is in STATUS; native Mac/Linux UI and game acceptance remain pending.
+
 Optional graphics (uncommitted, feature/graphics-options): shared Video Options
 and launcher SettingsPage expose MSAA, FXAA, AF, half-size SSAO, shader caching,
 Clear Cache and FPS/Ping. Patches2495–2513 implement shared policy plus D3D11/

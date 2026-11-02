@@ -385,14 +385,14 @@ public static class LauncherSettingsChecks
                 Require(Read(root,"Settings/runtime.conf").Contains("future_graphics = keep"));
                 saved.Smaa=false;saved.Save();Require(!GameSettings.Load(root,null).Smaa);
             });
-            Test("SMAA checkbox participates in settings drafts, cancel and save",()=>STA(()=>{
+            Test("Post-process AA participates in settings drafts, cancel and save",()=>STA(()=>{
                 string root=Root("smaa-ui");var owner=new System.Windows.Window();
                 var editor=new SettingsPage(owner.Resources,root,true);owner.Content=editor.View;
                 var nodes=Descendants(editor.View).ToList();
-                var smaa=nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="SmaaAntiAliasing");
+                var smaa=nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="PostAntiAliasing");
                 var save=nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton");
-                Require(smaa.IsChecked==false);
-                smaa.IsChecked=true;Require(save.IsEnabled);
+                Require(smaa.SelectedIndex==0);
+                smaa.SelectedIndex=2;Require(save.IsEnabled);
                 Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsCancelButton"));
                 Require(Directory.GetFiles(root,"*",SearchOption.AllDirectories).Length==0);
                 Click(save);Require(GameSettings.Load(root,null).Smaa && !save.IsEnabled);
@@ -525,7 +525,7 @@ public static class LauncherSettingsChecks
                 string root=Root("graphics-ui-roundtrip");
                 var page=new SettingsPage(new System.Windows.Window().Resources,root,true);page.SelectTab(1);
                 var nodes=Descendants(page.View).ToList();
-                foreach(var choice in new[]{new[]{"MultisampleAntialiasing","8x"},new[]{"EdgeSmoothing","FXAA"},new[]{"AnisotropicFiltering","16"}})
+                foreach(var choice in new[]{new[]{"MultisampleAntialiasing","8x"},new[]{"PostAntiAliasing","FXAA"},new[]{"AnisotropicFiltering","16"}})
                     nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name==choice[0]).SelectedItem=choice[1];
                 nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="AmbientOcclusion").IsChecked=true;
                 nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="ShaderCache").IsChecked=false;
@@ -563,9 +563,11 @@ public static class LauncherSettingsChecks
                     page.View.Measure(new System.Windows.Size(1000,900));
                     page.View.Arrange(new System.Windows.Rect(0,0,1000,900));page.View.UpdateLayout();
                     if(Environment.GetEnvironmentVariable("TSFP_GRAPHICS_PREVIEW")=="1") {
+                        Descendants(page.View).OfType<System.Windows.Controls.Expander>().Single(c=>c.Name=="AdvancedGraphics").IsExpanded=true;
+                        page.View.UpdateLayout();
                         var graphicsScroll=Descendants(page.View).OfType<System.Windows.Controls.ScrollViewer>()
                             .First(v=>Descendants(v).OfType<System.Windows.Controls.ComboBox>().Any(c=>c.Name=="MultisampleAntialiasing"));
-                        var qualityStart=Descendants(page.View).OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="ConsoleRenderScale");
+                        var qualityStart=Descendants(page.View).OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="PostAntiAliasing");
                         double qualityY=qualityStart.TransformToAncestor(graphicsScroll).Transform(new System.Windows.Point(0,0)).Y;
                         graphicsScroll.ScrollToVerticalOffset(graphicsScroll.VerticalOffset+qualityY-90);page.View.UpdateLayout();
                     }

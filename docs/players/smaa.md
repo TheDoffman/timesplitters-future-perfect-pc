@@ -1,14 +1,17 @@
 # SMAA anti-aliasing
 
-Open **Game settings → Graphics & resolution → Quality & performance**, enable
-**SMAA anti-aliasing**, save, and restart the game with a build containing this
+Open **Game settings → Graphics & resolution → Quality & performance**, choose
+**Post-process anti-aliasing → SMAA**, save, and restart the game with a build containing this
 feature. It defaults to Off; disabling it restores the existing display resolve.
 
-You can also use **Settings → Video Options → SMAA anti-aliasing** in the game,
-including **Options → Video Options** while paused. Choose **Off** or **On**, then
+You can also use **Settings → Video Options → Graphics → Post-process anti-aliasing** in the game,
+including **Options → Video Options** while paused. Choose **Off**, **FXAA**, or **SMAA**, then
 select **Apply**. This switches SMAA live and saves the same preference used by
 the launcher. **Back** discards unapplied edits. If you also change resolution,
-SMAA waits until you confirm **Keep changes**.
+anti-aliasing waits until you confirm **Keep changes**. Only one post-process
+method runs at a time. MSAA remains a separate choice under **Advanced**, where
+you can also find shader caching and its clear action. Console render scale is
+in the launcher's Advanced section and appears only at Original resolution.
 
 SMAA 1x High smooths jagged edges in the completed picture. It works with Classic
 and Enhanced textures and can be combined with console supersampling. It also

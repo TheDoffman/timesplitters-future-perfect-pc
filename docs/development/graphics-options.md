@@ -17,7 +17,7 @@ and native validation must be reported separately for each host.
 | Control | Choices / behavior |
 | --- | --- |
 | Multisample antialiasing | Off, 2x, 4x, 8x; supported fallback; restart notice where needed |
-| Edge smoothing | Off, FXAA (or SMAA); usable with MSAA |
+| Post-process anti-aliasing | Off, FXAA, SMAA; usable with independent MSAA |
 | Anisotropic filtering | Original, 2x, 4x, 8x, 16x |
 | Ambient occlusion | Off / On; half-resolution processing |
 | Shader cache | Off / On, plus Clear Shader Cache action |
@@ -31,6 +31,23 @@ and preservation through game/launcher updates. No F1-only controls satisfy
 this requirement.
 
 ## Current implementation
+
+Settings cleanup (`feature/graphics-settings-cleanup`, based on unmerged graphics
+options at `627b05bd`): launcher and game expose one Off/FXAA/SMAA selector.
+The launcher maps it to existing files through `GameSettings.PostAntiAliasing`.
+In-game `post_aa_settings.h` saves graphics first and SMAA last; a failed SMAA
+save restores the previous graphics snapshot. The selector follows staged Apply,
+Back/discard and resolution confirmation. Existing dual-enabled records select
+SMAA; the shared resolve suppresses FXAA whenever SMAA is enabled, including
+legacy/manual configurations. No settings schema is replaced.
+
+MSAA and shader cache/clear live in Advanced in both interfaces. The launcher
+shows Console render scale there only at Original console resolution, preserving
+the saved scale when hidden. General contains Startup; View & HUD contains FOV
+and FPS/Ping. In-game View & HUD retains subtitles and Kill Feed. Filtering is
+consistently called Anisotropic filtering. Cache remains enabled by default.
+The game Advanced page preserves the Graphics tab highlight and returns there
+on Back. Display, Graphics, View & HUD and Advanced reserve equal row counts.
 
 `src/graphics/graphics_options.h` and `graphics_settings.h` own the versioned
 `TSFP_GRAPHICS_V1 msaa edge anisotropy ao cache` record in `pc-graphics.ini`,

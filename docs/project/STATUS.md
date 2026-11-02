@@ -1,3 +1,28 @@
+## Graphics settings cleanup (2026-11-02)
+
+Local `feature/graphics-settings-cleanup`, based on unmerged graphics-options
+`627b05bd`. Off/FXAA/SMAA share one staged selector; MSAA remains independent.
+Both interfaces put MSAA/cache under Advanced. Launcher console scale appears
+there only at Original resolution; General holds Startup and View & HUD holds
+FOV/FPS. In-game AF naming is now consistent with the launcher.
+
+Windows x64/MSVC: full patch loader validated the amended 2495 patch; focused
+settings, mouse, WARP resolve and SMAA tests passed (15 tests, 2 Mac-only skips).
+The pixel check proves legacy simultaneous FXAA/SMAA produces exactly SMAA-only
+output. Menu tests cover all three choices, failed-save rollback, staged
+Apply/Back/Keep, Advanced navigation and native click sound routing. Full Windows
+launcher regressions passed (43.28 seconds, including the shared UI exercising
+all three AA modes); 44 final settings checks and 24 context/structural/backlog
+checks passed. Both the main and expanded Advanced launcher renders were inspected.
+A repeat of the updater suite for the optional screenshot harness was blocked by
+another running game; that process was left alone. No product source changed
+between the passing full launcher run and final settings-only verification.
+Supported Release Build and all built-in checks passed. Executable SHA-256:
+`7a721be8b1b6591699b5ccc9c9ba9f3aada77dd465d75a7d756ebd7c4f7af6e5`.
+Native Mac/Linux execution and physical frontend/pause acceptance remain
+unverified. No merge,
+release or cross-device synchronization is claimed.
+
 ## Graphics / SMAA integration (PR #468, 2026-11-02)
 
 Merged main 623acff4 into the graphics branch, preserving SMAA and native
