@@ -282,3 +282,7 @@ same owned-child Story observation can therefore validate a relocated binary.
 `--movies` enables real startup XMV playback for separate movie/overlay/audio
 acceptance; routine Story benchmarks still skip it. Linux binding changes are
 currently available through dropdowns; capture-to-bind self-test remains skip77.
+
+Linux CI compiles the actual GTK adapter against pinned SDL and system GTK headers
+with implicit API declarations fatal, after runtime preparation; original movie
+fixtures also run there when local movie data is available.

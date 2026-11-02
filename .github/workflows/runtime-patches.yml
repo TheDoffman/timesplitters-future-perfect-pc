@@ -326,7 +326,8 @@ jobs:
             tests/graphics/test_cutscene_letterbox.py tests/graphics/test_menu_text.py
             tests/graphics/test_quit_menu.py tests/graphics/test_channel_clears.py
             tests/media/test_audio_timing.py tests/media/test_audio_output_gain.py
-            tests/media/test_audio_device_recovery.py
+            tests/media/test_audio_device_recovery.py tests/media/test_native_movie_file.py
+            tests/compiler/test_linux_desktop.py
           )
           .venv-linux/bin/python -m pytest "${tests[@]}" -q --tb=short
       - name: Retain Linux validation evidence
