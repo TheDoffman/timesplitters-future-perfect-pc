@@ -92,6 +92,9 @@ static uint32_t guest_call(void (*fn)(void),unsigned n,...)
     WORD_AT(menu+0x198)=item; ++selections; return 0;
 }
 #include "menu_guest_region.h"
+static unsigned video_click_sounds;
+static void menu_video_click_sound(uint32_t menu,uint32_t item)
+{(void)menu;(void)item;++video_click_sounds;}
 #include "pc_menu_mouse_guest.inc"
 static void original(void) { ++original_calls;WORD_AT(WORD_AT(g_esp+4)+0xc4)|=navigation;g_esp+=4; }
 static void dispatch(void)
@@ -283,8 +286,9 @@ static void setting_slider_tests(void)
         CHECK(!menu_slider_drag && FLOAT_AT(0x7ba3dc+((player+1)%4)*0x1e0)==0);
         WORD_AT(0x7ba9e0)=player;setting_tracks(m,sensitivity,fov);
         cursor.left=0;run(m);cursor.x=ox+335*scale;cursor.y=oy+213*scale;
-        run(m);cursor.left=1;run(m);CHECK(slider_fov==55 && menu_slider_drag==fov);
-        cursor.x=ox+410*scale;run(m);CHECK(slider_fov==100);
+        run(m);unsigned clicks=video_click_sounds;
+        cursor.left=1;run(m);CHECK(slider_fov==55 && menu_slider_drag==fov && video_click_sounds==clicks+1);
+        cursor.x=ox+410*scale;run(m);CHECK(slider_fov==100 && video_click_sounds==clicks+1);
         cursor.x=ox+300*scale;run(m);CHECK(slider_fov==40);
         cursor.valid=0;run(m);cursor.valid=1;cursor.x=ox+360*scale;run(m);
         CHECK(slider_fov==40 && !menu_slider_drag); /* focus loss */
@@ -354,12 +358,19 @@ static void choice_tests(void)
         float left=120.f+100*align,right=left+120.f;
         choice_capture(item,4,left);choice_capture(item,8,right);
         cursor=(PcMenuPointer){ox+(left+3)*scale,oy+116*scale,(float)shape_w,(float)shape_h,1,0,0,0};
+        unsigned clicks=video_click_sounds;
         run(m);cursor.left=1;run(m);
         CHECK(WORD_AT(m+0x198)==item && WORD_AT(m+0xc4)==0x40000);
+        CHECK(video_click_sounds==clicks); /* native arrow path already owns its sound */
         CHECK(!(WORD_AT(m+0xc8)&0x1f));
         run(m);CHECK(!WORD_AT(m+0xc4)); /* no repeating while held */
         cursor.left=0;run(m);cursor.x=ox+(right+3)*scale;cursor.left=1;run(m);
         CHECK(WORD_AT(m+0xc4)==0x80000);
+        CHECK(video_click_sounds==clicks);
+        cursor.left=0;run(m);cursor.x=ox+110*scale;run(m);
+        CHECK(video_click_sounds==clicks); /* hovering is silent */
+        cursor.left=1;run(m);CHECK(video_click_sounds==clicks+1);
+        run(m);CHECK(video_click_sounds==clicks+1); /* held click never repeats */
         for(custom_painter=0;custom_painter<2;custom_painter++) {
             memset(menu_choice_arrows,0,sizeof menu_choice_arrows);
             custom_choice_painter();CHECK(!menu_choice_arrows[0].item);

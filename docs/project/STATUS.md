@@ -1,3 +1,122 @@
+## Video Options menu-switch click feedback (2026-11-02)
+
+PR #469 native Mac CI passed 2,653 runtime tests but exposed one locale-dependent
+SMAA generator failure. Explicit upstream Windows-1252/project UTF-8 encoding
+fixes that read without changing the embedded shader or pinned vendor bytes.
+The shader freshness regression now runs under Python UTF-8 mode on every host.
+
+PR #469 initial CI caught a missing structured MAC-129 status and queue row.
+The handoff now uses the required format; no runtime behavior changed.
+The launcher packaging fixture now supplies and checks the required SMAA license;
+the native package fixture also checks its manifest entry.
+
+Local uncommitted follow-up on `feature/smaa-antialiasing`. Fresh mouse clicks
+on enabled Video setting rows now call the original menu-switch sound, including
+clicks that capture the FOV bar. Held/hover events do not repeat this added
+feedback; arrow changes keep their native sound path. Apply/confirmation and
+other menus retain their original behavior. The helper respects the guest sound
+enable flag and validates the active native sound table. Shared Windows/native
+guest logic; no new audio assets or host audio API were added.
+
+Windows x64/MSVC: supported Release Build and built-in checks passed. Pointer
+and guest-menu fixtures passed (9 tests, 2 native Mac compile skips), covering
+fresh clicks, hover/hold suppression, native-arrow deduplication, FOV capture,
+Video descriptor/owner checks, disabled rows, confirmation and muted/invalid
+sound-table guards. Context checks passed (20 tests).
+
+One bounded disposable Test Lab frontend session selected Video Options, clicked
+the Aspect Ratio and Resolution labels, changed SMAA with its native arrow, and
+clicked FOV twice. The bounded original US21780 trace recorded four calls from
+our US12008 guest-call adapter, matching the four row/FOV clicks. Native sound
+calls retained their original caller addresses. This verifies live sound
+dispatch, not a physical listening test on another host. The session closed
+normally; saved runtime/display preferences stayed unchanged because edits were
+not applied, and its disposable partition images were recycled. Native Mac
+physical audibility and paused-gameplay acceptance remain unverified.
+
+Executable SHA-256:
+`0be1743fc2b0cff1938a9bc34ed7b0bcbf75d98b4ec6cbdb32da912c7f3a0c1e`.
+Evidence: `logs/video-click-sound-{tests,build,context,ui}.log` and
+`private/test-saves/video-click-sound/game.err`. No merge, push or publication.
+
+## SMAA in the redesigned in-game Video Options (2026-11-02)
+
+Local uncommitted follow-up on `feature/smaa-antialiasing`, main base `a1f039cb`.
+Both frontend and pause use the shared ninth selector, **SMAA anti-aliasing**,
+after Texture style. Choices stage until Apply; Back discards them, rebuilds
+retain them, and resolution Keep/Revert controls the whole staged batch.
+Successful Apply saves the launcher-compatible runtime `smaa` key atomically,
+preserves other settings/comments, then publishes live to the render thread.
+Failure leaves SMAA unchanged and restores earlier display/frame-rate writes.
+
+Windows x64/MSVC/D3D11, same Windows 11/RTX 4070 SUPER host described below:
+supported Release Build and built-in checks passed. Targeted menu/SMAA/display
+tests passed (9 passed, 2 Mac-only skips); the final enhanced rollback fixtures
+and WARP/hardware tests passed (7 passed, 2 Mac-only skips). Context, concurrent
+configuration initialization and menu-text checks passed (25 tests). The GPU
+fixture verifies actual live publication, selective persistence and read-only
+save failure as well as the existing rendering/fallback checks.
+
+A bounded disposable Test Lab session visually verified the nine-row frontend
+layout at 1280x720 rendering in the 640x480 window. Mouse navigation staged On
+while the file remained Off; Apply wrote On and the running D3D11 renderer logged
+SMAA enabled. Staging Off retained the saved On value until the second Apply,
+which restored Off. Other runtime preferences were unchanged; Apply returned to
+disabled after each save. Closed this test window normally; personal settings,
+saves, canonical fixture and optional textures were preserved. Pause-menu wiring
+uses the same tested callbacks; actual paused gameplay and native Mac remain
+unverified, along with the broader scene/performance limits below.
+
+Latest executable SHA-256:
+`664887810240401f6574f5e77ce57cf872232a19e14038ea2523ad19420f5b2a`.
+Evidence: `logs/smaa-video-build.log`, `smaa-video-tests.log`,
+`smaa-video-final-tests.log`, `smaa-video-context-tests.log`, and the isolated
+`private/test-saves/smaa-video-ui` logs/settings. No merge or publication.
+
+## Optional SMAA 1x High (2026-11-02)
+
+Local, uncommitted `feature/smaa-antialiasing`, base main `a1f039cb`; isolated
+worktree preserves concurrent Linux development. The shared RHI display resolve
+now offers default-Off SMAA 1x High, with official pinned shaders/lookup tables,
+output-sized passes, resize/cleanup and original-resolve fallback. The shared
+launcher exposes the setting under Graphics & resolution → Quality & performance;
+runtime/launcher persistence and Windows/Mac license packaging are included.
+See [SMAA behavior](../players/smaa.md), [contracts](../agent-context/smaa.md) and MAC-129.
+
+Windows 11 Pro x64 10.0.26300, MSVC x64, D3D11 WARP and NVIDIA RTX 4070 SUPER
+driver 32.0.16.1742: supported US XBE SHA-256 verified. Fresh generation completed
+with 15,838/15,863 translated functions and zero failed translations; this is
+generation scope, not evidence that every game path is implemented. Supported
+Release Build and its built-in native checks passed. Executable SHA-256:
+`e3c3fb6dbd7011fab01ee6d2f1bbf575066fad7b2de718677029d8045819079b`.
+
+The production display/SMAA/RHI pixel fixture passed on WARP and the hardware
+device: diagonal smoothing, flat/axis colors, alpha, resize, bars, output-state
+restoration, Off, config round trips, shader/image/map failure fallback and
+resource recreation. Pinned-reference/embedded-shader checks, concurrent config
+initialization and portable Mac package checks passed (23 focused tests).
+The complete Windows launcher build/test suite passed, including 40 settings
+checks with SMAA save/cancel/draft and unrelated-key preservation. Initial
+launcher attempts were blocked by another running game; guards were retained.
+Patch tracking, full-stack/branch-switch migration and shared RHI regressions
+passed (81 checks in the broader run). The two historical upgrade paths and
+context/order checks passed in a final 22-check rerun after historical fixtures
+excluded SMAA until upgrade and the expected final patch tail included it.
+Repository context/index freshness and Git whitespace checks passed.
+
+Bounded real-game sessions used disposable Test Lab copies and isolated controls,
+runtime/display settings and save paths. SMAA enabled on the D3D11 renderer;
+startup, profile, Story chooser/difficulty and briefing menus were visually
+reviewed through the displayed window. The old timed gameplay replay selected
+profile creation and did not establish movement/firing/pause acceptance, both
+with SMAA on and off. A disposable adapted replay also failed to reach gameplay;
+no gameplay, image-quality comparison or performance acceptance is claimed from
+those runs. Guest frame dumps precede the display resolve and do not prove SMAA
+output. Native Mac/Vulkan execution, legacy GL support, 4K/ultrawide scenes and
+broad scene/performance acceptance remain unverified; legacy GL retains the key
+without applying the effect. Personal saves/settings and optional packs were
+preserved. No merge, push or release publication was performed.
+
 ## System Link activation from normal launches (2026-11-01)
 
 User reports the Windows-host/Mac-guest test fixed after aligning identities.

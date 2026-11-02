@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "8c2a3d64c5dfec4c3f668297e102841651b1f61ad0a63835ef96e3e8e7ef5951",
+  "loaderSha256": "f6a26972c48e8b0c6186432101e79dcf3c4c137972cbaca905f87a24c456c52e",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3089,6 +3089,16 @@
       "sha256": "c100faf4246139ba9144851469fc377ff8ffbf80bf88d4694a11602877354e51",
       "targets": [
         "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2470-smaa-antialiasing.patch",
+      "path": "patches/graphics/rendering/2470-smaa-antialiasing.patch",
+      "sha256": "43f8b18597dee8e0c58903322af0e1994b69eb78dff560e8485432636229a1ab",
+      "targets": [
+        "src/config/recomp_config.c",
+        "src/config/recomp_config.h",
+        "src/d3d/d3d8_display.c"
       ]
     }
   ]

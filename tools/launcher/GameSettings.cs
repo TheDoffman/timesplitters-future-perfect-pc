@@ -79,6 +79,7 @@ namespace TimeSplitters.Launcher
         public bool SupportsResolution(int width, int height)
         { return (!(width==1 && height==1) || CanAutoResolution) && DisplayMode.Valid(width,height) && (SupportsExtendedDisplay || height <= 2160); }
         public int Width, Height, Scale = 1, Anisotropy = 1;
+        public bool Smaa;
         // Retained keys migrate old installations; they are no longer user options.
         public int Interpolation { get { return 1; } }
         public int PresentationFps { get { return 0; } }
@@ -162,6 +163,7 @@ namespace TimeSplitters.Launcher
             var settings = ParseRuntime(model.runtime);
             model.Scale = Number(settings, "resolution_scale", 1);
             model.Anisotropy = Number(settings, "anisotropy", 1);
+            model.Smaa = Number(settings, "smaa", 0) != 0;
             model.Fullscreen = Number(settings, "fullscreen", 0) != 0;
             model.Vrr = Number(settings, "vrr", 1) != 0;
             model.FpsOverlay = Number(settings, "fps_overlay", 0) != 0;
@@ -346,7 +348,7 @@ namespace TimeSplitters.Launcher
             Map(value)["skip_startup_splashes"] = SkipStartupSplashes;
             Map(value)["enhanced_textures"] = EnhancedTextures;
             Map(value)["language_pack"] = LanguagePack;
-            var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
+            var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"smaa",Smaa?"1":"0"}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
             graphics["frame_target"] = PresentationFps.ToString();
             graphics["refresh_rate"] = RefreshRate.ToString();
             var payload = new[] { Json.Encode(document) + "\n", (VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),

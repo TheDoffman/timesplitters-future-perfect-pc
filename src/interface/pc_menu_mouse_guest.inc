@@ -516,6 +516,7 @@ void pc_display_menu_mouse(void (*original)(void))
     if(hit && (actions&3)) {
         if(WORD_AT(menu+0x198)!=hit) guest_call(sub_00076EF0,2,menu,hit);
         if(actions&2) {
+            if(!choice_direction)menu_video_click_sound(menu,hit);
             if(choice_direction) {
                 /* Exactly one native Previous/Next edge, not Confirm. Native
                  * callbacks retain wrapping, disabled choices and saving. */

@@ -376,6 +376,28 @@ public static class LauncherSettingsChecks
                 Require(model.Sensitivity==.10 && model.Binding(14)[0]=="key:W" && !model.SkipStartupSplashes);
                 Require(Directory.GetFiles(root,"*",SearchOption.AllDirectories).Length==0);
             });
+            Test("SMAA defaults off, saves both ways and preserves other graphics",()=>{
+                string root=Root("smaa");var model=GameSettings.Load(root,null);
+                Require(!model.Smaa);
+                Put(root,"Settings/runtime.conf","# custom graphics\nanisotropy = 16\nfuture_graphics = keep\n");
+                model=GameSettings.Load(root,null);model.Smaa=true;model.Save();
+                var saved=GameSettings.Load(root,null);Require(saved.Smaa && saved.Anisotropy==16);
+                Require(Read(root,"Settings/runtime.conf").Contains("future_graphics = keep"));
+                saved.Smaa=false;saved.Save();Require(!GameSettings.Load(root,null).Smaa);
+            });
+            Test("SMAA checkbox participates in settings drafts, cancel and save",()=>STA(()=>{
+                string root=Root("smaa-ui");var owner=new System.Windows.Window();
+                var editor=new SettingsPage(owner.Resources,root,true);owner.Content=editor.View;
+                var nodes=Descendants(editor.View).ToList();
+                var smaa=nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="SmaaAntiAliasing");
+                var save=nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton");
+                Require(smaa.IsChecked==false);
+                smaa.IsChecked=true;Require(save.IsEnabled);
+                Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsCancelButton"));
+                Require(Directory.GetFiles(root,"*",SearchOption.AllDirectories).Length==0);
+                Click(save);Require(GameSettings.Load(root,null).Smaa && !save.IsEnabled);
+                owner.Close();
+            }));
             Test("Discord defaults, validation, persistence, launch routing and concurrent edits",()=>{
                 string root=Root("discord");var model=GameSettings.Load(root,null);
                 Require(!model.DiscordEnabled && model.DiscordApplicationId=="1561627743353962566");
