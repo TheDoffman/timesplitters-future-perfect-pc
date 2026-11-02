@@ -24,6 +24,14 @@ set(SDL_GPU OFF CACHE BOOL "" FORCE)
 set(SDL_RENDER OFF CACHE BOOL "" FORCE)
 add_subdirectory("${TSFP_RUNTIME_DIR}/third_party/SDL" SDL EXCLUDE_FROM_ALL)
 add_subdirectory("${TSFP_RUNTIME_DIR}/src/platform" platform)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_executable(tsfp_native_mmio_test
+        "${TSFP_PROJECT_ROOT}/tests/gameplay/native_mmio_linux.c"
+        "${TSFP_NATIVE_DIR}/mmio_linux.c")
+    target_include_directories(tsfp_native_mmio_test PRIVATE "${TSFP_NATIVE_DIR}"
+        "${TSFP_RUNTIME_DIR}/include")
+    target_link_libraries(tsfp_native_mmio_test PRIVATE platform)
+endif()
 # Include the production frontend as well: the frame replay contract must
 # exercise its real capture parser, window adapter, draw and readback paths.
 set(TSFP_NATIVE_RHI ON CACHE BOOL "" FORCE)

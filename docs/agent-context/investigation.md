@@ -1,5 +1,9 @@
 # Investigation memory and handoffs
 
+Linux game patch2402 follows2401 at the end of the effective stack. Context
+order assertions and historical subset exclusions track both dependencies;
+complete-stack transitions must still apply them. See [game adapters](linux-game.md).
+
 Linux bring-up follows the user's shared Windows/macOS/Linux rule. Root AGENTS
 allows a native-filesystem WSL working checkout synchronized from the Windows
 editing checkout through Git; ignored Linux dependencies stay inside Ubuntu.

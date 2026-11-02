@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "7ed1b6126dd9fb4b3e5badbc32072977f0a6c9f69bc00f582ea67409df5855b1",
+  "loaderSha256": "2e10f94c6d534d467988da67c652e53e452077abbd0140ba9c2b40b1efac6284",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3009,6 +3009,17 @@
         "src/d3d/d3d8_internal.h",
         "src/replay/CMakeLists.txt",
         "src/replay/d3d8_replay.c"
+      ]
+    },
+    {
+      "name": "2402-linux-native-game.patch",
+      "path": "patches/platform/2402-linux-native-game.patch",
+      "sha256": "c907c2c152cd492af52fd5c5d458acbd11e14a08e7882c3e6c3c35b460f05826",
+      "targets": [
+        "CMakeLists.txt",
+        "src/hle/CMakeLists.txt",
+        "src/input/CMakeLists.txt",
+        "titles/futureperfect/CMakeLists.txt"
       ]
     }
   ]

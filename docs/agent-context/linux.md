@@ -8,7 +8,7 @@ remaining title work are in [Linux development](../development/linux.md).
 
 Final patch `patches/platform/2401-linux-vulkan-foundation.patch` extends the
 common Xbox frontend and replay SDL guards after layout/Online patches. The
-loader orders it last. `src/native/vulkan_backend.cmake` selects host DXC/library
+loader orders it after layout/Online, followed by game patch2402. `src/native/vulkan_backend.cmake` selects host DXC/library
 syntax only; shaders, renderer policy and the historical patch stack stay shared.
 Mac GL guards, SDK pin/driver and Cocoa adapters remain unchanged.
 
@@ -54,8 +54,8 @@ unit on both Linux and Mac. Local Linux build, software Vulkan pixels/resources/
 presentation and production frame replay now pass; measured revisions and driver
 scope are in [STATUS](../project/STATUS.md).
 
-WSL first setup may require a Windows restart. No Linux game
-target exists yet: Linux MMIO/fault/crash, text/settings/Online and title build
-adapters remain. Preserve shared gameplay changes, the supported XBE pin,
+Linux game integration is now in bring-up; see [game adapters](linux-game.md).
+Compilation, protected-MMIO, native host checks and actual game scenes must be
+measured separately. Desktop settings/debug editors remain an explicit gap. Preserve shared gameplay changes, the supported XBE pin,
 original 60 FPS defaults and user saves/settings. Steam Deck is secondary
 hardware acceptance; WSL/software Vulkan does not establish Deck performance.

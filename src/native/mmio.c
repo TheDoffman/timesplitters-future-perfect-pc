@@ -2,8 +2,7 @@
  * Guest MMIO stays protected. Shared writable aliases avoid changing page
  * protection while another guest thread is running. */
 #include "arm64_access.h"
-#include "platform/win32_compat.h"
-#include "apu/apu.h"
+#include "mmio_device.h"
 #include <sys/ucontext.h>
 #include <signal.h>
 #include <string.h>
@@ -32,25 +31,7 @@ int tsfp_native_mmio(siginfo_t *info, void *context)
     if (access.bytes < 8) value &= (1ull << (access.bytes * 8)) - 1;
     void *alias = w32_guest_mmio_alias((void *)host, access.bytes);
     if (!alias) return 0;
-    if (apu) {
-        if (!g_apu_state || access.bytes > 4 || va + access.bytes > 0xfe830000u) return 0;
-        if (access.load) value = mcpx_apu_mmio_read(g_apu_state, va - 0xfe800000u, access.bytes);
-        else mcpx_apu_mmio_write(g_apu_state, va - 0xfe800000u, value, access.bytes);
-    } else if (access.load) {
-        value = 0; memcpy(&value, alias, access.bytes);
-    } else {
-        if (crtc && va == 0xfd600100u) {
-            if (access.bytes != 4) return 0;
-            uint32_t remaining = __atomic_fetch_and((uint32_t *)alias, ~(uint32_t)value, __ATOMIC_SEQ_CST) & ~(uint32_t)value;
-            uint32_t *pmc = w32_guest_mmio_alias((void *)((uintptr_t)g_xbox_mem_offset + 0xfd000100u), 4);
-            if (!pmc) return 0;
-            if (remaining) __atomic_fetch_or(pmc, 0x01000000u, __ATOMIC_SEQ_CST);
-            else __atomic_fetch_and(pmc, ~0x01000000u, __ATOMIC_SEQ_CST);
-        } else {
-            if (ac97 && (va == 0xfec0011bu || va == 0xfec0017bu)) value &= ~2ull;
-            memcpy(alias, &value, access.bytes);
-        }
-    }
+    if (!tsfp_mmio_device(host,access.bytes,access.load,&value)) return 0;
     if (access.load && access.rt != 31) {
         if (access.sign_extend) {
             unsigned shift = 64 - access.bytes * 8;

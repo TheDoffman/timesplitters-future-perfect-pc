@@ -1,4 +1,4 @@
-/* Native macOS bring-up entry point. No Win32 executable or compatibility layer. */
+/* Shared native POSIX entry point; OS faults and desktop services are adapters. */
 #include <xbox/xboxrecomp.h>
 #include "xbox_watchpoint.h"
 #include "recomp_config.h"
@@ -91,7 +91,11 @@ int main(int argc, char **argv)
         fclose(f); free(data); return 2;
     }
     fclose(f);
+#ifdef __linux__
+    printf("[NATIVE-BOOT] TimeSplitters: Future Perfect — Linux x64\n");
+#else
     printf("[NATIVE-BOOT] TimeSplitters: Future Perfect — macOS ARM64\n");
+#endif
     printf("[NATIVE-BOOT] XBE loaded: %ld bytes; saves: %s\n", size, saves);
     if (!xbox_MemoryLayoutInit(data, (size_t)size)) {
         fprintf(stderr, "[NATIVE-BOOT] Xbox memory initialization failed\n");

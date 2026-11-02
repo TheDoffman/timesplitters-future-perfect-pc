@@ -139,10 +139,11 @@ def patch_records(paths):
         paths.append(online)
     # Linux extends the final grouped SDL/RHI adapters. Keep every historical
     # Windows/Mac patch intact and replay this after their source-layout work.
-    linux = by_name.get('2401-linux-vulkan-foundation.patch')
-    if linux:
-        paths.remove(linux)
-        paths.append(linux)
+    for name in ('2401-linux-vulkan-foundation.patch', '2402-linux-native-game.patch'):
+        linux = by_name.get(name)
+        if linux:
+            paths.remove(linux)
+            paths.append(linux)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

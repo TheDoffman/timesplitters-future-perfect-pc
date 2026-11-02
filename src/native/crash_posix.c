@@ -1,10 +1,21 @@
-/* Darwin host adapter for local reports. The faulting thread only copies its
+/* Shared POSIX reports with Darwin/Linux host services. The faulting thread only copies its
  * register context into preallocated shared memory, notifies and waits boundedly.
  * Hashing, symbolication, log tails and hang samples happen in a separate process. */
+#if defined(__linux__) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE 1
+#endif
 #include "crash_posix.h"
+#ifdef __APPLE__
+#define TSFP_NATIVE_PLATFORM "macos-arm64"
+#define TSFP_NATIVE_SYSTEM "Mac"
+#else
+#define TSFP_NATIVE_PLATFORM "linux-x64"
+#define TSFP_NATIVE_SYSTEM "Linux"
+#endif
 #include "../diagnostics/pc_hang_policy.h"
 #include "../diagnostics/pc_breadcrumbs.h"
 #include "../diagnostics/pc_capture_health.h"
+#ifdef __APPLE__
 #include <CommonCrypto/CommonDigest.h>
 #ifndef TSFP_CRASH_TEST
 #include <CoreGraphics/CoreGraphics.h>
@@ -12,11 +23,22 @@
 #include <dlfcn.h>
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
+#include <mach-o/dyld.h>
+#else
+#include <openssl/sha.h>
+#include <sys/uio.h>
+#define CC_SHA256_DIGEST_LENGTH SHA256_DIGEST_LENGTH
+#define CC_SHA256_CTX SHA256_CTX
+#define CC_SHA256_Init SHA256_Init
+#define CC_SHA256_Update SHA256_Update
+#define CC_SHA256_Final SHA256_Final
+#define CC_LONG size_t
+#endif
+#include <dlfcn.h>
 #include "../diagnostics/pc_guest_capture.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <mach-o/dyld.h>
 #include <poll.h>
 #include <stdatomic.h>
 #include <stdio.h>
@@ -48,7 +70,7 @@ static pid_t helper;
 static char alternate_stack[65536];
 static uint64_t ticks(void){struct timespec t;clock_gettime(CLOCK_MONOTONIC,&t);return (uint64_t)t.tv_sec*1000+t.tv_nsec/1000000;}
 static int foreground(Capture *c){
-#ifdef TSFP_CRASH_TEST
+#if defined(TSFP_CRASH_TEST) || defined(__linux__)
     return atomic_load(&c->focused);
 #else
     /* Query outside the game: a stalled event thread cannot notice focus loss. */
@@ -96,19 +118,34 @@ static void tool(char *const argv[],int output){
     if(child<0)return;uint64_t end=ticks()+5000;int status;
     while(waitpid(child,&status,WNOHANG)==0){if(ticks()>=end){kill(child,SIGKILL);waitpid(child,&status,0);break;}usleep(20000);}
 }
-typedef struct NativeGuestReader { mach_port_t task; uint64_t base; } NativeGuestReader;
+#ifdef __APPLE__
+typedef mach_port_t NativeTask;
+static int native_task_open(int pid,NativeTask *task){return task_for_pid(mach_task_self(),pid,task)==KERN_SUCCESS;}
+static void native_task_close(NativeTask task){if(task!=MACH_PORT_NULL)mach_port_deallocate(mach_task_self(),task);}
+#else
+typedef pid_t NativeTask;
+static int native_task_open(int pid,NativeTask *task){*task=pid;return 1;}
+static void native_task_close(NativeTask task){(void)task;}
+#endif
+typedef struct NativeGuestReader { NativeTask task; uint64_t base; } NativeGuestReader;
 static int native_guest_read(void *opaque,uint32_t address,void *out,size_t bytes) {
-    NativeGuestReader *r=opaque;mach_vm_size_t copied=0;
+    NativeGuestReader *r=opaque;
     if(!pc_guest_capture_span(address,bytes)||r->base>UINT64_MAX-address)return 0;
+#ifdef __APPLE__
+    mach_vm_size_t copied=0;
     return mach_vm_read_overwrite(r->task,r->base+address,bytes,(mach_vm_address_t)(uintptr_t)out,&copied)==KERN_SUCCESS && copied==bytes;
+#else
+    struct iovec local={out,bytes},remote={(void *)(uintptr_t)(r->base+address),bytes};
+    return process_vm_readv(r->task,&local,1,&remote,1,0)==(ssize_t)bytes;
+#endif
 }
 static void guest_report(Capture *c,int dir,int hang) {
-    const char *status="unavailable";int saved=0;mach_port_t task=MACH_PORT_NULL;
+    const char *status="unavailable";int saved=0;NativeTask task=0;
     /* No permission escalation: some signing configurations deny task access.
      * Report that explicitly and retain the normal native context. */
     uint64_t base=atomic_load(&c->guest_base);
     if(hang)status="unavailable-for-hang";
-    else if(base && task_for_pid(mach_task_self(),c->pid,&task)==KERN_SUCCESS) {
+    else if(base && native_task_open(c->pid,&task)) {
         FILE *f=new_file(dir,"guest-memory.bin");
         if(f){NativeGuestReader reader={task,base};
             uint32_t r[]={c->guest[0],c->guest[4],c->guest[1],c->guest[2],c->guest[5],c->guest[6],c->guest[3],c->guest[7]};
@@ -117,7 +154,7 @@ static void guest_report(Capture *c,int dir,int hang) {
         }
         status=saved?"captured-with-per-region-status":"write-failed";
     } else if(base)status="process-memory-access-denied";
-    if(task!=MACH_PORT_NULL)mach_port_deallocate(mach_task_self(),task);
+    native_task_close(task);
     FILE *f=new_file(dir,"diagnostics.json");
     if(f){fprintf(f,"{\"schema\":1,\"extended\":%s,\"guest_capture_saved\":%s,\"guest_capture_status\":\"%s\",\"memory_limit_bytes\":%u,\"root_cause\":\"undetermined\"}\n",c->extended?"true":"false",saved?"true":"false",status,PC_GUEST_CAPTURE_LIMIT);fclose(f);}
 }
@@ -133,6 +170,7 @@ static void report(Capture *c,int hang){
     executable_hash(c->executable,hash);
     FILE *out=new_file(dir,"native-stack.txt");
     if(out){
+#ifdef __APPLE__
         if(hang){char pid[20];snprintf(pid,sizeof pid,"%d",c->pid);char *args[]={"/usr/bin/sample",pid,"1","1",NULL};fflush(out);tool(args,fileno(out));}
         else {
             fprintf(out,"Native ARM64 register context\nSignal: %d\nFault address: 0x%llx\nPC: 0x%llx SP: 0x%llx Image base: 0x%llx\n",c->signal,(unsigned long long)c->address,(unsigned long long)c->pc,(unsigned long long)c->sp,(unsigned long long)c->base);
@@ -141,15 +179,24 @@ static void report(Capture *c,int hang){
             char base[24],pc[24],lr[24];snprintf(base,sizeof base,"0x%llx",(unsigned long long)c->base);snprintf(pc,sizeof pc,"0x%llx",(unsigned long long)c->pc);snprintf(lr,sizeof lr,"0x%llx",(unsigned long long)c->registers[30]);
             char *args[]={"/usr/bin/atos","-arch","arm64","-o",c->executable,"-l",base,pc,lr,NULL};tool(args,fileno(out));
             char pid[20];snprintf(pid,sizeof pid,"%d",c->pid);char *sample[]={"/usr/bin/sample",pid,"1","1",NULL};tool(sample,fileno(out));
-        }fclose(out);
+        }
+#else
+        fprintf(out,"Native Linux x64 register context\nSignal: %d\nFault address: 0x%llx\nPC: 0x%llx SP: 0x%llx\n",
+            c->signal,(unsigned long long)c->address,(unsigned long long)c->pc,(unsigned long long)c->sp);
+        for(int i=0;i<23;i++)fprintf(out,"greg%d = 0x%016llx\n",i,(unsigned long long)c->registers[i]);
+        if(!hang){char pc[24];snprintf(pc,sizeof pc,"0x%llx",(unsigned long long)c->pc);
+            char *args[]={"/usr/bin/addr2line","-f","-C","-e",c->executable,pc,NULL};fflush(out);tool(args,fileno(out));}
+        else fputs("Live stack sampling unavailable; process left running.\n",out);
+#endif
+        fclose(out);
     }
     int input=open(c->log,O_RDONLY|O_NOFOLLOW|O_CLOEXEC);if(input>=0){struct stat st;if(!fstat(input,&st)&&S_ISREG(st.st_mode)){lseek(input,st.st_size>65536?st.st_size-65536:0,SEEK_SET);out=new_file(dir,"game-log-tail.txt");if(out){char bytes[65536];ssize_t n=read(input,bytes,sizeof bytes);if(n>0)fwrite(bytes,1,(size_t)n,out);fclose(out);}}close(input);}
-    out=new_file(dir,"report.txt");if(out){fprintf(out,"TimeSplitters native Mac %s\n%s\nSignal: %d\nExecutable SHA-256: %s\nNative context: native-stack.txt\nNothing was uploaded. Review the context and log excerpt before sharing.\n",hang?"suspected hang":"fatal signal",hang?"Frame progress stopped; the game was left running.":"The native game received a fatal signal.",hang?0:c->signal,hash);fclose(out);}
+    out=new_file(dir,"report.txt");if(out){fprintf(out,"TimeSplitters native " TSFP_NATIVE_SYSTEM " %s\n%s\nSignal: %d\nExecutable SHA-256: %s\nNative context: native-stack.txt\nNothing was uploaded. Review the context and log excerpt before sharing.\n",hang?"suspected hang":"fatal signal",hang?"Frame progress stopped; the game was left running.":"The native game received a fatal signal.",hang?0:c->signal,hash);fclose(out);}
     out=new_file(dir,"breadcrumbs.txt");if(out){pc_crumb_report(out,&c->breadcrumbs);fclose(out);}
     out=new_file(dir,"model-history.txt");if(out){pc_crumb_report(out,&c->models);fclose(out);}
     out=new_file(dir,"allocation-history.txt");if(out){pc_crumb_report(out,&c->allocations);fclose(out);}
     /* Metadata written last: readers never see a partially populated report. */
-    out=new_file(dir,"report.json");if(out){fprintf(out,"{\"schema\":1,\"kind\":\"%s\",\"platform\":\"macos-arm64\",\"pid\":%d,\"signal\":%d,\"exception_code\":\"0x%08x\",\"dump_saved\":false,\"native_capture_saved\":true,\"executable_sha256\":\"%s\",\"frame_sequence\":%llu}\n",hang?"suspected_hang":"unhandled_exception",c->pid,hang?0:c->signal,hang?0:c->signal,hash,atomic_load(&c->frames));fclose(out);}
+    out=new_file(dir,"report.json");if(out){fprintf(out,"{\"schema\":1,\"kind\":\"%s\",\"platform\":\"" TSFP_NATIVE_PLATFORM "\",\"pid\":%d,\"signal\":%d,\"exception_code\":\"0x%08x\",\"dump_saved\":false,\"native_capture_saved\":true,\"executable_sha256\":\"%s\",\"frame_sequence\":%llu}\n",hang?"suspected_hang":"unhandled_exception",c->pid,hang?0:c->signal,hang?0:c->signal,hash,atomic_load(&c->frames));fclose(out);}
     flock(locked,LOCK_UN);close(locked);close(dir);
 }
 int tsfp_native_crash_helper(int argc,char **argv){
@@ -175,7 +222,13 @@ int tsfp_native_crash_init(NativeGuestCapture guest){
     int pipefd[2];if(ftruncate(mapfd,sizeof(Capture))||pipe(pipefd)){close(mapfd);return 0;}
     Capture *c=mmap(NULL,sizeof *c,PROT_READ|PROT_WRITE,MAP_SHARED,mapfd,0);if(c==MAP_FAILED){close(mapfd);close(pipefd[0]);close(pipefd[1]);return 0;}
     memset(c,0,sizeof *c);uint32_t length=sizeof c->executable;char exe[PATH_MAX];
+#ifdef __APPLE__
     if(_NSGetExecutablePath(exe,&length)||!realpath(exe,c->executable)||strlen(root)>=sizeof c->root)goto fail;
+#else
+    (void)length;ssize_t count=readlink("/proc/self/exe",exe,sizeof exe-1);
+    if(count<=0||(size_t)count>=sizeof exe-1)goto fail;exe[count]=0;
+    if(!realpath(exe,c->executable)||strlen(root)>=sizeof c->root)goto fail;
+#endif
     strcpy(c->root,root);const char *log=getenv("RECOMP_LOG_FILE");if(log&&strlen(log)<sizeof c->log)strcpy(c->log,log);
     const char *extended=getenv("TSFP_CRASH_EXTENDED");c->extended=extended && !strcmp(extended,"1");
     c->started_ms=ticks();pc_crumb_add(&c->breadcrumbs,0,PC_CRUMB_STARTED,0);
@@ -195,8 +248,14 @@ fail:munmap(c,sizeof *c);close(mapfd);close(pipefd[0]);close(pipefd[1]);return 0
 }
 void tsfp_native_crash_signal(int sig,siginfo_t *info,void *context){
     Capture *c=capture;int expected=0;if(c && atomic_compare_exchange_strong(&c->entered,&expected,1)){
-        ucontext_t *uc=context;c->signal=sig;c->address=(uintptr_t)info->si_addr;c->pc=uc->uc_mcontext->__ss.__pc;c->sp=uc->uc_mcontext->__ss.__sp;
+        ucontext_t *uc=context;c->signal=sig;c->address=(uintptr_t)info->si_addr;
+#ifdef __APPLE__
+        c->pc=uc->uc_mcontext->__ss.__pc;c->sp=uc->uc_mcontext->__ss.__sp;
         for(int i=0;i<29;i++)c->registers[i]=uc->uc_mcontext->__ss.__x[i];c->registers[29]=uc->uc_mcontext->__ss.__fp;c->registers[30]=uc->uc_mcontext->__ss.__lr;
+#else
+        c->pc=(uint64_t)uc->uc_mcontext.gregs[REG_RIP];c->sp=(uint64_t)uc->uc_mcontext.gregs[REG_RSP];
+        for(int i=0;i<23;i++)c->registers[i]=(uint64_t)uc->uc_mcontext.gregs[i];
+#endif
         if(guest_capture)guest_capture(c->guest);atomic_store(&c->entered,2);(void)write(notify_fd,"x",1);
     }
     if(c){struct timespec delay={0,10000000};for(int i=0;i<1200 && !atomic_load(&c->done);i++)nanosleep(&delay,NULL);}

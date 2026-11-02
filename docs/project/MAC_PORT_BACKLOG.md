@@ -1,5 +1,15 @@
 # PC features awaiting Mac adaptation
 
+Linux native game integration (uncommitted, `feature/linux-x64`): common native
+boot, SDL input/audio, shared debug/configuration/network code and the full
+Xbox/Vulkan frontend are reused. ARM64 and Linux x64 protected-register adapters
+now call one native MMIO device-policy helper. Shared POSIX crash handling keeps
+Darwin services and adds Linux OS adapters. Existing Mac controls/frameworks and
+GL route remain selected on Mac; native Mac build and protected-MMIO/crash
+acceptance remain pending. Linux desktop editing/debug dialogs, movie decoding
+and portable packaging remain explicit Linux gaps. See
+[integration contracts](../agent-context/linux-game.md) and STATUS for evidence.
+
 Linux x64 foundation (2026-11-01, `feature/linux-x64`, local `1c981c0a`): **Not
 applicable** as a new Mac feature. The common Vulkan backend gains Linux SDK
 library selection and frontend/replay build guards; existing Mac SDK/driver,

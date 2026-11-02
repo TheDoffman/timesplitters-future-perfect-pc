@@ -62,7 +62,8 @@ def main():
     run(cmake, '-S', ROOT / 'tests/rhi', '-B', build, '-G', 'Ninja',
         '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_MAKE_PROGRAM=' + str(ninja),
         '-DTSFP_VULKAN_SDK=' + str(sdk))
-    run(cmake, '--build', build, '--target', 'tsfp_rhi_vulkan_test', 'd3d8_replay', '--parallel', '4')
+    run(cmake, '--build', build, '--target', 'tsfp_rhi_vulkan_test', 'd3d8_replay', 'tsfp_native_mmio_test', '--parallel', '4')
+    run(build / 'tsfp_native_mmio_test')
     exe, replay = build / 'tsfp_rhi_vulkan_test', build / 'replay/d3d8_replay'
     compiler = re.search(r'^CMAKE_C_COMPILER:[^=]+=(.+)$',
                          (build / 'CMakeCache.txt').read_text(), re.M)[1]

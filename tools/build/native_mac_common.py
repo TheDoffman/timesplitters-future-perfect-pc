@@ -21,7 +21,8 @@ import time
 
 def recycle_test_disks(root, test_directory):
     root, test = Path(root).resolve(), Path(test_directory)
-    allowed = (root / 'private/test-saves/native-mac', root / 'build/macos/path-tests')
+    allowed = (root / 'private/test-saves/native-mac', root / 'build/macos/path-tests',
+               root / 'private/test-saves/native-linux', root / 'build/linux/game/path-tests')
     if test.is_symlink() or test.resolve() not in allowed:
         raise RuntimeError(f'Refusing unexpected test directory: {test}')
     if not test.exists():
