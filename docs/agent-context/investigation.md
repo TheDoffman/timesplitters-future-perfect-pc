@@ -1,5 +1,9 @@
 # Investigation memory and handoffs
 
+Graphics patch ordering is covered by the explicit tail-order regression in
+`tests/repository/test_repo_context.py`; patch2514 must retain LF bytes so its
+indexed digest matches fresh Windows/Mac/Linux checkouts.
+
 Root AGENTS.md and the PR template require a short user-facing Change and Cause
 and fix description. Keep technical evidence in the existing project records;
 the simpler opening description does not remove testing or platform obligations.
