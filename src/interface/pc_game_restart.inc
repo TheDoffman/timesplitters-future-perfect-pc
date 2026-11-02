@@ -57,6 +57,7 @@ int pc_game_restart(void)
     return requested;
 }
 #else
+#include <SDL3/SDL.h>
 #include <unistd.h>
 #include <spawn.h>
 #include <fcntl.h>
@@ -102,8 +103,9 @@ int pc_game_restart(void)
     pid_t child;int result=posix_spawn(&child,restart_executable,NULL,NULL,restart_arguments,env);
     free(env);close(pipefd[0]);
     if(result){close(pipefd[1]);return 0;}
-    extern int tsfp_native_request_quit(void);
-    requested=tsfp_native_request_quit();
+    /* Both the game and standalone replay consume the host SDL quit event. */
+    SDL_Event event={0};event.type=SDL_EVENT_QUIT;
+    requested=SDL_PushEvent(&event);
     if(!requested){kill(child,SIGTERM);close(pipefd[1]);}
     /* On success keep the write end until process exit, including all cleanup. */
     return requested;

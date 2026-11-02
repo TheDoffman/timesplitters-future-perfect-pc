@@ -42,7 +42,8 @@ int main(int argc,char **argv)
 #include <stdlib.h>
 #include <string.h>
 static int closing;
-int tsfp_native_request_quit(void){closing=1;return 1;}
+#include <SDL3/SDL.h>
+bool SDL_PushEvent(SDL_Event *event){closing=event->type==SDL_EVENT_QUIT;return closing;}
 #include "interface/pc_game_restart.inc"
 int main(int argc,char **argv)
 {

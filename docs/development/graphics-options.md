@@ -290,3 +290,5 @@ patch-order contract and normalizing patch2514 to LF. Historical migration fixtu
 sets now exclude graphics2495-2514 until the complete-stack upgrade; injecting
 these new patches into a pre-display/pre-feed checkpoint was not a valid old
 installation. Complete current-stack and graphics round-trip coverage remain.
+
+POSIX restart posts SDL_EVENT_QUIT directly. This allows the standalone replay target to link the display module without game-only input symbols; the real process-handoff fixture verifies the SDL quit request.

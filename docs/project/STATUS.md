@@ -38258,3 +38258,5 @@ from the separately tested host restart implementation. The4 related Windows
 checks pass. Windows CI reported the same two fixture failures with2756 other tests passing.
 Updated CI/native Mac GPU and live canyon event remain pending.
 PR468 follow-up: both native pytest suites and both historical-upgrade jobs passed on37a38ed9. Native Mac GPU compilation then found a missing string.h declaration in the shared MSAA fixture; added its direct include. Windows WARP pixel check and WSL Clang syntax check of the MSAA header pass. New native Mac GPU run is still required.
+
+PR468 native replay link follow-up: the restarted Mac GPU build compiled the MSAA fixture, then found pc_display restart referenced the game-only input quit wrapper. POSIX restart now queues SDL_EVENT_QUIT directly, also consumed by replay. Windows restart/sizing checks pass (3); WSL Clang strict compilation and real parent/child handoff pass with SDL event assertion. Native Mac GPU/replay rerun remains required; live canyon blackout remains unconfirmed.

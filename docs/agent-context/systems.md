@@ -1,4 +1,4 @@
-[Video](../development/graphics-options.md).
+[Video/restart](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # Subsystem entry points
 
