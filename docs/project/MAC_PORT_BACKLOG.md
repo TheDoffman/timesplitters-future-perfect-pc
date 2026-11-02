@@ -9007,7 +9007,7 @@ staged whitespace checks pass. Exact90086818 CI is now fully green: all11 runtim
 completed success; standalone launcher41482780544 also completed success. This
 is acceptance of the preceding commit; the new prerequisite needs its own CI.
 
-Original instruction-continuation prerequisite (2026-11-02, PR465): opt-in
+Original instruction-continuation prerequisite (2026-11-02, follow-up to PR465): opt-in
 FunctionTranslator context methods and translation_continuation.py emit one
 instruction per step plus an exact-PC dispatcher over disjoint owned spans.
 CALL samples before push; RET reads its actual guest PC and emits RETURN;
@@ -9054,3 +9054,8 @@ Final repository-context/CI-scope/PR-gate checks:114pass4.28s (328 distinct
 covered checks with the214 compiler cases). Staged whitespace and context map
 pass. Final source/executable hashes unchanged since accepted game. Last guest
 presentation samples57.8/58.0/58.2 FPS are not scanout measurements.
+
+PR465 merged as main a1f039cb while this follow-up was being finalized. The
+new continuation commit is preserved on feature/context-continuations, with
+latest main integrated. This follow-up requires its own review and CI; no
+merge of the new work was performed.
