@@ -1,5 +1,11 @@
 # Investigation memory and handoffs
 
+Linux bring-up follows the user's shared Windows/macOS/Linux rule. Root AGENTS
+now names `build/linux`, a separate Linux Python environment, no concurrent
+Windows/WSL mutation of one runtime tree, WSL primary development and Steam Deck
+secondary validation. Preserve [Linux acceptance scope](../development/linux.md)
+in handoffs; renderer contracts do not establish game support.
+
 Root AGENTS.md and the PR template require a short user-facing Change and Cause
 and fix description. Keep technical evidence in the existing project records;
 the simpler opening description does not remove testing or platform obligations.

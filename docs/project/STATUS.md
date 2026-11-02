@@ -1,3 +1,40 @@
+## Linux x64 SDL/Vulkan foundation (2026-11-01)
+
+Local branch `feature/linux-x64`, based on main `4f80b5e5`. The initial Linux
+foundation extends the existing common Xbox/Vulkan frontend and production
+frame-replay tool; it does not yet build a Linux game executable. Shared shaders,
+gameplay/source models and the complete historical patch stack remain common.
+Linux host page queries and free-physical-memory snapshots extend the existing
+adapters; Windows and Darwin branches retain their implementations.
+
+`tools/testing/test-rhi-linux.py` builds/tests the asset-free renderer/replay
+contracts using the same SDK version as Mac, pinned separately for Linux x64
+with publisher size/SHA-256 and installed-file receipts. The Linux SDK archive
+was downloaded and its exact size/checksum verified on this Windows host.
+It has not been installed or executed on Linux. The runtime patch stack applies
+successfully, including the new final frontend/replay guard patch.
+
+Windows x64 validation passed: 27 SDK/isolation and host-memory checks; 103
+SDK/CI gate/Windows WARP renderer checks (the groups overlap); 21 repository
+context/backlog checks. The WARP fixture checks shared GPU semantics, not Linux
+Vulkan or gameplay. Patch transition results are recorded below once complete.
+`repo-context.py check --base 4f80b5e5` and whitespace checks pass.
+
+Microsoft WSL 2.7.14 and the Ubuntu 24.04 LTS app are installed on the Windows
+host. VirtualMachinePlatform enabled successfully with DISM exit 3010;
+Windows requires a restart before the VM/hypervisor can start. Ubuntu distro
+registration/first boot and Linux dependencies remain pending that restart.
+No Linux executable, GPU check, gameplay test or physical Mac validation has
+run. The new Ubuntu/lavapipe CI job is configured but has not run remotely.
+No source changes have been pushed, merged or published.
+
+After reboot, initialize Ubuntu and run the real Linux memory checks and shared
+Vulkan/replay contracts before title integration. Remaining x64 fault/MMIO,
+crash, settings/text, Online and title-build adapters plus feature acceptance are
+listed in [Linux development](../development/linux.md). Steam Deck is the planned
+secondary hardware test; it has not been connected or modified. WSL/software
+Vulkan must not be represented as Deck performance or full Linux feature parity.
+
 ## Optional Arcade kill feed (2026-11-01)
 
 Feature/arcade-kill-feed, based on main 0b0fcb8b. Windows x64

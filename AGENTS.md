@@ -87,14 +87,23 @@ providers, perform handoffs or limit themselves to advisory work.
 ## Shared features and platform exceptions
 
 - Implement ordinary new gameplay, input rules, rendering policy, settings and
-  fixes once in shared source or the shared patch stack, for both Windows and
-  native Mac. Build on the shared interfaces documented in
+  fixes once in shared source or the shared patch stack, for Windows,
+  native Mac and Linux. Build on the shared interfaces documented in
   `docs/development/shared-platform.md`; extend their host adapters when needed. Do not copy
   feature logic into a second Mac implementation or guard portable behavior
   behind `_WIN32` merely because it was first developed on PC.
 - Keep OS events/windows, graphics resource access and file-system operations in
   thin platform adapters. Shared shader algorithms belong in `src/graphics`;
   shader-language adapters map syntax/intrinsics rather than duplicate policy.
+  Linux x64 bring-up uses SDL and the common Vulkan frontend; follow
+  `docs/development/linux.md`. Track Linux adapter/acceptance gaps there rather
+  than duplicating gameplay logic. Linux source/build, GPU contracts and actual
+  gameplay are distinct milestones. Use `build/linux` and a host-local Python
+  environment (`.venv-linux` on a shared Windows checkout). Never build or apply
+  runtime patches concurrently from Windows and WSL against the same runtime.
+  WSL is the primary local Linux development environment; Steam Deck is a
+  secondary hardware acceptance target. Do not infer Deck performance/input
+  support from WSL or software Vulkan. No automatic host restart.
   Shared debug setting fields, labels, keys and capability requirements belong
   in `src/diagnostics/pc_debug_options.def`, consumed by both dialogs and JSON persistence.
 - Genuine platform dependencies or an explicitly PC-only task may be deferred.

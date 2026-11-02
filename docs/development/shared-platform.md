@@ -1,6 +1,14 @@
-# Shared PC and native Mac implementation
+# Shared Windows, macOS and Linux implementation
 
-Ordinary features should be implemented once and built for both hosts. This
+Linux x64 now has an initial SDL/common Vulkan contract build. The same RHI
+pixel/resource fixture and production frame-replay tool are the entry points;
+Linux host page queries extend the existing POSIX mapping providers. See
+[Linux development](linux.md) for setup, measured scope and remaining game-host
+adapters. This foundation does not yet supply a Linux game executable or verify
+existing features on Linux. Keep common fixes in the existing shared code and
+patch stack, and add only thin Linux OS adapters.
+
+Ordinary features should be implemented once and built for supported hosts. This
 requires common behavior plus small adapters for each operating system or GPU
 API. Git synchronization, a shared account and a backlog do not translate code.
 

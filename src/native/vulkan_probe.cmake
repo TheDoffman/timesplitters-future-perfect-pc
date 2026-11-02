@@ -1,5 +1,5 @@
 # Asset-free contract for the production common RHI backend.
-set(TSFP_VULKAN_SDK "" CACHE PATH "Pinned local macOS Vulkan SDK (macOS directory)")
+set(TSFP_VULKAN_SDK "" CACHE PATH "Verified local host Vulkan SDK directory")
 if(TSFP_VULKAN_SDK)
     if(NOT TSFP_RUNTIME_DIR)
         get_filename_component(TSFP_RUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)

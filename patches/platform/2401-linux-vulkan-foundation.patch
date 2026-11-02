@@ -1,0 +1,87 @@
+--- a/src/d3d/CMakeLists.txt
++++ b/src/d3d/CMakeLists.txt
+@@ -2,8 +2,8 @@
+ #   _WIN32 -> backed by Direct3D 11 (d3d8_*.c, d3d8_combiners.c, d3d8_vsh.c)
+ #   POSIX  -> backed by OpenGL 3.3 core via SDL3 + libepoxy (d3d8_gl.c)
+ 
+-option(TSFP_NATIVE_RHI "Use the common Xbox renderer on native Mac (experimental)" OFF)
+-if(WIN32 OR (APPLE AND TSFP_NATIVE_RHI))
++option(TSFP_NATIVE_RHI "Use the common Xbox renderer on native macOS/Linux (experimental)" OFF)
++if(WIN32 OR (UNIX AND TSFP_NATIVE_RHI))
+     add_library(xbox_d3d8 STATIC
+         d3d8_device.c
+         d3d8_resources.c
+@@ -142,11 +142,11 @@
+     target_include_directories(xbox_d3d8 PRIVATE "${TSFP_NATIVE_DIR}")
+ endif()
+ 
+-if(APPLE AND TSFP_NATIVE_DIR)
++if(UNIX AND TSFP_NATIVE_DIR)
+     target_sources(xbox_d3d8 PRIVATE "${TSFP_NATIVE_DIR}/../interface/pc_display.c")
+     target_include_directories(xbox_d3d8 PRIVATE "${TSFP_NATIVE_DIR}/..")
+ endif()
+ 
+-if(APPLE AND TSFP_NATIVE_DIR)
++if(UNIX AND TSFP_NATIVE_DIR)
+     include("${TSFP_NATIVE_DIR}/vulkan_probe.cmake")
+ endif()
+--- a/src/d3d/d3d8_internal.h
++++ b/src/d3d/d3d8_internal.h
+@@ -16,7 +16,7 @@
+  * (d3d8_device.c on Windows, d3d8_gl.c on POSIX). */
+ IDirect3DDevice8 *d3d8_GetDevice(void);
+ 
+-#if defined(_WIN32) || defined(__APPLE__)
++#if defined(_WIN32) || defined(__APPLE__) || defined(TSFP_RHI_RENDERER)
+ /* === Everything below is the rhi.h renderer. The POSIX d3d8_compat
+  * library (d3d8_gl.c) implements its own internal state and does not
+  * need any of these declarations. === */
+--- a/src/replay/CMakeLists.txt
++++ b/src/replay/CMakeLists.txt
+@@ -30,7 +30,7 @@
+ target_link_libraries(d3d8_replay PRIVATE xbox_d3d8)
+ if(WIN32)
+     target_link_libraries(d3d8_replay PRIVATE user32)
+-elseif(APPLE AND TSFP_NATIVE_RHI)
++elseif(UNIX AND TSFP_NATIVE_RHI)
+     target_include_directories(d3d8_replay PRIVATE "${TSFP_NATIVE_DIR}")
+     target_sources(d3d8_replay PRIVATE "${TSFP_NATIVE_DIR}/config_files.c")
+ endif()
+--- a/src/replay/d3d8_replay.c
++++ b/src/replay/d3d8_replay.c
+@@ -269,7 +269,7 @@
+ 
+ /* ------------------------------------------------------------------ window */
+ 
+-#if defined(__APPLE__)
++#if defined(__APPLE__) || defined(TSFP_RHI_RENDERER)
+ #include "replay_host_sdl.h"
+ #else
+ static LRESULT CALLBACK replay_wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+@@ -1520,7 +1520,7 @@
+ 
+     hwnd = replay_window(r.width, r.height);
+     if (!hwnd) {
+-#if defined(__APPLE__)
++#if defined(__APPLE__) || defined(TSFP_RHI_RENDERER)
+         fprintf(stderr, "[replay] CreateWindow failed: %s\n", SDL_GetError());
+ #else
+         fprintf(stderr, "[replay] CreateWindow failed (%lu)\n", GetLastError());
+@@ -1540,7 +1540,7 @@
+     pp.EnableAutoDepthStencil = TRUE;
+ 
+     if (backend) {
+-#if defined(__APPLE__)
++#if defined(__APPLE__) || defined(TSFP_RHI_RENDERER)
+         setenv("RECOMP_D3D8_BACKEND", backend, 1);
+ #else
+         _putenv_s("RECOMP_D3D8_BACKEND", backend);
+@@ -1597,7 +1597,7 @@
+     }
+ 
+     if (hold) {
+-#if defined(__APPLE__)
++#if defined(__APPLE__) || defined(TSFP_RHI_RENDERER)
+         replay_hold();
+ #else
+         MSG msg;

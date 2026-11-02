@@ -1,5 +1,13 @@
 # PC features awaiting Mac adaptation
 
+Linux x64 foundation (2026-11-01, `feature/linux-x64`, uncommitted): **Not
+applicable** as a new Mac feature. The common Vulkan backend gains Linux SDK
+library selection and frontend/replay build guards; existing Mac SDK/driver,
+GL fallback and Cocoa adapters remain in place. Windows host-memory/SDK checks
+pass; Mac build/GPU regression execution is pending. Linux does not yet have a
+game target. See [Linux scope](../development/linux.md) and STATUS for validation
+and remaining adapters. Shared policy must serve all three platforms.
+
 PC Settings menu-bar visibility (2026-11-01): **Not applicable** to native Mac.
 The Windows F1 bar now persists `pc_menu_visible` in the active input profile;
 Mac has no equivalent in-window bar and retains its system menu and F1 pointer

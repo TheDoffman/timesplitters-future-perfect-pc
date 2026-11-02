@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "e5fc54fd8b15ceaf6ee297047ba9e45c4c125d16e2a9dc36b73cbb50c6bb715d",
+  "loaderSha256": "7ed1b6126dd9fb4b3e5badbc32072977f0a6c9f69bc00f582ea67409df5855b1",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2998,6 +2998,17 @@
       "sha256": "4b5969a17815e4b753508dd7f76c38b2f4ac86930256daa9f9709c91e4a23640",
       "targets": [
         "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2401-linux-vulkan-foundation.patch",
+      "path": "patches/platform/2401-linux-vulkan-foundation.patch",
+      "sha256": "3767de07803987d046f7bea82a64e1d83accf2b66b637ae0b9c4cff8f2be6ef3",
+      "targets": [
+        "src/d3d/CMakeLists.txt",
+        "src/d3d/d3d8_internal.h",
+        "src/replay/CMakeLists.txt",
+        "src/replay/d3d8_replay.c"
       ]
     }
   ]

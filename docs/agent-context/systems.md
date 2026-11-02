@@ -2,6 +2,8 @@
 [exFAT](host-storage.md)
 # Subsystem entry points
 
+[Linux](linux.md).
+
 PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
 [Clicks](interaction-input.md#fresh-weapon-clicks-434).

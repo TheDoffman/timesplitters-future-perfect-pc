@@ -2,6 +2,8 @@ FOV fixture stubs HUD draws and checks the Kill Feed row.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build, run and validation map
 
+[Linux](linux.md).
+
 Discord release webhooks target #release-updates; #announcements holds team posts.
 
 PC Settings bar: [persistence checks](interaction-input.md#pc-settings-bar-visibility).

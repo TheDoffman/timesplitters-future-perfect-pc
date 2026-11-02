@@ -1,3 +1,5 @@
+Linux SDL/Vulkan: [entry points, final patch and limits](linux.md).
+
 Kill feed: timing scopes, attribution, viewport colors and rematch reset are
 documented in [the feed guide](../development/arcade-kill-feed.md).
 Story rewards: additive2465 wraps356800 for the single frontend context;
