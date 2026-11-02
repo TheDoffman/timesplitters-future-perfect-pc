@@ -1866,7 +1866,7 @@
     {
       "name": "2497-msaa-resolve.patch",
       "path": "patches/graphics/rendering/2497-msaa-resolve.patch",
-      "sha256": "0ed66970c6f12a73f13e98b87d2893e3f8bb3c636979295e1b1a26feac9ded5f",
+      "sha256": "968de7ea44014e48c47b24ae1a1fc7d38b67b3ef8d51fcf4a4f947e280d5d976",
       "targets": [
         "src/d3d/rhi.c",
         "src/d3d/rhi.h",

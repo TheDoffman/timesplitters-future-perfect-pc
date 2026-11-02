@@ -73,6 +73,16 @@
  #endif /* _WIN32 */
 --- a/src/d3d/rhi_vulkan.c
 +++ b/src/d3d/rhi_vulkan.c
+@@ -1174,6 +1174,9 @@
+     f2.features.depthClamp = V.feat_depth_clamp = have.features.depthClamp;
+     f2.features.depthBiasClamp = V.feat_bias_clamp = have.features.depthBiasClamp;
+     f2.features.samplerAnisotropy = V.feat_aniso = have.features.samplerAnisotropy;
++    /* Sample-index shaders require this device feature even without forcing
++     * sampleShadingEnable on every multisampled pipeline. */
++    f2.features.sampleRateShading = have.features.sampleRateShading;
+     f12.timelineSemaphore = VK_TRUE;
+     f12.scalarBlockLayout = have12.scalarBlockLayout;
+     f12.samplerMirrorClampToEdge = have12.samplerMirrorClampToEdge;
 @@ -3564,6 +3564,27 @@
      vkCmdDrawIndexed(cmd(), n, 1, first, base, 0);
  }
