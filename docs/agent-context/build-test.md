@@ -1032,4 +1032,4 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [RTL](guest-stack-trace.md), [context](context-execution.md).
 
-MSAA: string.h; POSIX restart: SDL quit mock.
+GPU assertions stay on; POSIX restart mocks SDL.

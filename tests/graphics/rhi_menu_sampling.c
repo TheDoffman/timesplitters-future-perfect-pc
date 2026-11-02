@@ -1,5 +1,8 @@
 /* The same production HLSL and pixel contract through the common RHI.
  * No game assets, saves or generated game code are consumed. */
+#ifdef NDEBUG
+#undef NDEBUG /* Pixel/resource assertions also execute in Release CI builds. */
+#endif
 #ifdef _WIN32
 #define COBJMACROS
 #include <d3d11.h>
