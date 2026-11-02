@@ -136,4 +136,16 @@ def select_driver(env, manifest):
     bridge = Path('/usr/lib/wsl/lib')
     if (bridge / 'libd3d12.so').is_file():
         env['LD_LIBRARY_PATH'] = env.get('LD_LIBRARY_PATH', '') + ':' + str(bridge)
+        if 'vulkan_dzn' in spec['ICD']['library_path']:
+            # glibc's REP MOVSB path is extremely slow on this WSL D3D12
+            # write-combined upload memory. Select its normal vector copies
+            # for this child only; retain unrelated user tunables/features.
+            tunables = env.get('GLIBC_TUNABLES', '').split(':')
+            for i, value in enumerate(tunables):
+                if value.startswith('glibc.cpu.hwcaps='):
+                    tunables[i] = value + ',-ERMS,-FSRM'
+                    break
+            else:
+                tunables.append('glibc.cpu.hwcaps=-ERMS,-FSRM')
+            env['GLIBC_TUNABLES'] = ':'.join(value for value in tunables if value)
     return path

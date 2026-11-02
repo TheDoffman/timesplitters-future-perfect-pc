@@ -15,6 +15,21 @@ configure()
 import linux_vulkan_sdk as sdk
 
 
+@pytest.mark.parametrize('driver,bridge_present', [('libvulkan_dzn.so',True),('libvulkan_dzn.so',False),('libvulkan_lvp.so',True)])
+def test_explicit_driver_preserves_tunables_and_limits_wsl_workaround(tmp_path,monkeypatch,driver,bridge_present):
+    bridge=tmp_path/'wsl';bridge.mkdir()
+    if bridge_present:(bridge/'libd3d12.so').touch()
+    manifest=tmp_path/'icd.json';manifest.write_text(json.dumps({'ICD':{'library_path':driver}}))
+    monkeypatch.setattr(sdk,'Path',lambda value:bridge if str(value)=='/usr/lib/wsl/lib' else Path(value))
+    env={'LD_LIBRARY_PATH':'sdk','GLIBC_TUNABLES':'glibc.malloc.trim_threshold=2048:glibc.cpu.hwcaps=-AVX512F'}
+    sdk.select_driver(env,manifest)
+    assert env['VK_DRIVER_FILES']==str(manifest.resolve())
+    assert 'glibc.malloc.trim_threshold=2048' in env['GLIBC_TUNABLES']
+    assert '-AVX512F' in env['GLIBC_TUNABLES']
+    assert ('-ERMS,-FSRM' in env['GLIBC_TUNABLES'])==(bridge_present and 'dzn' in driver)
+    assert env['LD_LIBRARY_PATH']==('sdk:'+str(bridge) if bridge_present else 'sdk')
+
+
 def fixture(root, monkeypatch, extra=()):
     download = root / 'external/vulkan-sdk/download'
     download.mkdir(parents=True)

@@ -26,6 +26,7 @@ def main():
     p.add_argument('--seconds',type=int,default=120)
     p.add_argument('--driver-manifest',type=Path)
     p.add_argument('--capture',action='store_true')
+    p.add_argument('--performance',action='store_true',help='Measure interactive settings: shader cache on, validation off (not validation acceptance)')
     p.add_argument('--unlocked-profile',action='store_true',help='Use the shared local Test Lab fixture in a disposable nested profile')
     p.add_argument('--test-keys',action='store_true',help='Read synthetic SDL events from the isolated test-keys.txt')
     args=p.parse_args()
@@ -64,6 +65,7 @@ def main():
                         'TSFP_TEXTURE_PACK_DIR','TSFP_TEXTURE_MODE'):
                 env[key]=prepared[key]
         if args.driver_manifest:linux_vulkan_sdk.select_driver(env,args.driver_manifest)
+        if args.performance:env.update(RECOMP_VK_VALIDATION='0',RECOMP_SHADER_CACHE='1')
         if args.capture:env.update(RECOMP_HLE_D3D8_DUMP=str(capture/'frame'),RECOMP_HLE_D3D8_DUMP_EVERY='60',RECOMP_HLE_D3D8_DUMP_KEEP_LAST='2')
         if args.test_keys:
             keys=test/'test-keys.txt';keys.touch(exist_ok=True);env['TSFP_NATIVE_TEST_KEYS']=str(keys)
@@ -88,6 +90,7 @@ def main():
         presents=re.findall(r'\[PRESENT\] backend=\S+ total=(\d+) guest=(\d+) interpolated=(\d+) other=(\d+) skipped=(\d+) failed=(\d+)',text)
         summary=dict(source_revision=manifest['source_revision'],executable_sha256=manifest['executable_sha256'],
             host=platform.platform(),driver_manifest=env.get('VK_DRIVER_FILES','system discovery'),
+            validation_enabled=not args.performance,shader_cache_enabled=args.performance,
             profile='Test Lab disposable copy' if args.unlocked_profile else 'isolated fresh/local test profile',
             returncode=child.returncode,bounded_stop=timed_out,stop_reason=reason,seconds=round(time.monotonic()-started,2),
             entered_guest='Entering translated Xbox entry' in text,

@@ -137,3 +137,14 @@ checks permissions, changing protection, invalid boundaries, holes and fallback.
 receipt and opens direct Wayland on WSLg with persistent isolated manual saves,
 shader caching and bounded logs. Validation is opt-in for interactive performance;
 the bounded acceptance runners keep validation enabled.
+
+The WSL Dozen ICD selection also disables glibc's ERMS/FSRM memcpy dispatch for
+that child process only, preserving other tunables. Profiling found REP MOVSB
+dominating copies to D3D12 upload memory; this selects the existing vector-copy
+implementation. Ordinary native Linux/system/software drivers retain their
+environment. Tests cover this scope and preservation; see
+[WSL GPU development](../development/wsl-vulkan.md) for build/play commands.
+
+The bounded game runner's explicit `--performance` uses interactive cache/on and
+validation/off settings and records both in its receipt. It is performance
+evidence, not validation acceptance; the default runner remains validation/on.
