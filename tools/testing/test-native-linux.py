@@ -20,6 +20,13 @@ from vulkan_sdk import sha256
 from native_mac_common import recycle_test_disks
 EXPECTED='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
 
+def original_frame_rate(test):
+    # Saved preferences override TSFP_NATIVE_FPS. Reset only this disposable
+    # profile, and refuse links instead of touching another profile's timing.
+    fd=os.open(test/'pc-frame-rate.ini',os.O_WRONLY|os.O_CREAT|os.O_TRUNC|os.O_NOFOLLOW,0o600)
+    with os.fdopen(fd,'w') as output:output.write('TSFP_FRAME_RATE_V1 0\n')
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--game-dir',type=Path,required=True)
@@ -51,6 +58,7 @@ def main():
             if not (test/name).exists():shutil.copyfile(source,test/name)
         if not (test/'runtime.conf').exists():(test/'runtime.conf').write_text('# Isolated Linux defaults\n')
         if not (test/'pc-display.ini').exists():(test/'pc-display.ini').write_text('TSFP_DISPLAY_V2 640 480 55\n')
+        original_frame_rate(test)
         env=linux_vulkan_sdk.probe_environment(linux_vulkan_sdk.verify_install())
         env.update(RECOMP_GAME_DIR=str(game),RECOMP_SAVE_DIR=str(test),
             RECOMP_INPUT_CONFIG=str(test/'pc-controls.json'),RECOMP_DISPLAY_CONFIG=str(test/'runtime.conf'),
@@ -70,6 +78,8 @@ def main():
         if args.test_keys:
             keys=test/'test-keys.txt';keys.touch(exist_ok=True);env['TSFP_NATIVE_TEST_KEYS']=str(keys)
         logs=ROOT/'logs';logs.mkdir(exist_ok=True);started=time.monotonic();timed_out=False;reason='process_exit'
+        import resource
+        cpu_before=resource.getrusage(resource.RUSAGE_CHILDREN)
         with (logs/'linux-game.out').open('w') as out,(logs/'linux-game.err').open('w') as err:
             child=subprocess.Popen([str(exe)],cwd=ROOT,env=env,stdout=out,stderr=err,start_new_session=True)
             try:
@@ -86,11 +96,16 @@ def main():
                 # A terminated game may leave its crash helper waiting on shared state.
                 try:os.killpg(child.pid,signal.SIGTERM)
                 except ProcessLookupError:pass
+        cpu_after=resource.getrusage(resource.RUSAGE_CHILDREN)
         text=(logs/'linux-game.out').read_text(errors='replace')+(logs/'linux-game.err').read_text(errors='replace')
         presents=re.findall(r'\[PRESENT\] backend=\S+ total=(\d+) guest=(\d+) interpolated=(\d+) other=(\d+) skipped=(\d+) failed=(\d+)',text)
         summary=dict(source_revision=manifest['source_revision'],executable_sha256=manifest['executable_sha256'],
             host=platform.platform(),driver_manifest=env.get('VK_DRIVER_FILES','system discovery'),
             validation_enabled=not args.performance,shader_cache_enabled=args.performance,
+            host_optimization=manifest.get('host_optimization','legacy unoptimized host'),
+            cpu_user_seconds=round(cpu_after.ru_utime-cpu_before.ru_utime,3),
+            cpu_system_seconds=round(cpu_after.ru_stime-cpu_before.ru_stime,3),
+            native_fps=0,original_timing_observed='[native] fixed 60 FPS' in text,
             profile='Test Lab disposable copy' if args.unlocked_profile else 'isolated fresh/local test profile',
             returncode=child.returncode,bounded_stop=timed_out,stop_reason=reason,seconds=round(time.monotonic()-started,2),
             entered_guest='Entering translated Xbox entry' in text,
@@ -101,7 +116,7 @@ def main():
         summary['vulkan_validation_errors']=text.count('[VKVAL]')+text.count('[VKVAL error]')
         summary['disposable_test_disks']=recycle_test_disks(ROOT,test)
         (logs/'linux-game.json').write_text(json.dumps(summary,indent=2)+'\n');print(json.dumps(summary,indent=2))
-        passed=timed_out and summary['presents'] and summary['presents']['guest']>0 and not summary['vulkan_validation_errors']
+        passed=timed_out and summary['original_timing_observed'] and summary['presents'] and summary['presents']['guest']>0 and not summary['vulkan_validation_errors']
         if not passed:raise SystemExit(1)
 
 if __name__=='__main__':main()

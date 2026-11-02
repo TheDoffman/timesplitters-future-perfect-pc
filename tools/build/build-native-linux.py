@@ -27,6 +27,8 @@ def main():
     parser.add_argument('--setup',action='store_true',help='Initialize pinned submodules and build the symbol scanner')
     parser.add_argument('--generate',action='store_true',help='Generate current guest C from the verified XBE')
     parser.add_argument('--test',action='store_true',help='Run protected-MMIO regression after building')
+    parser.add_argument('--host-optimization',choices=('optimized','debug'),default='optimized',
+                        help='Optimize host libraries while retaining assertions/symbols; debug restores unoptimized host code')
     args=parser.parse_args()
     if platform.system()!='Linux' or platform.machine().lower() not in ('x86_64','amd64'):
         parser.error('Requires Linux x64 and a Linux Python environment')
@@ -62,8 +64,12 @@ def main():
     run(sys.executable,ROOT/'tools/build/recomp-generation.py',runtime)
     run(sys.executable,ROOT/'tools/build/network-identity.py','--runtime',runtime,'--game',game,'--output',build/'generated')
     (build/'generated/online-python.h').write_text('#define TSFP_ONLINE_PYTHON '+json.dumps(sys.executable)+'\n')
+    # Keep Debug assertions and symbols, plus the title's existing precise
+    # -O2/no-vectorization policy. Host libraries need optimization as well.
+    host_flags='-O2 -g' if args.host_optimization=='optimized' else '-g'
     command=[cmake,'-S',runtime/'titles/futureperfect','-B',build,'-G','Ninja',
         '-DCMAKE_BUILD_TYPE=Debug','-DCMAKE_MAKE_PROGRAM='+str(ninja),
+        '-DCMAKE_C_FLAGS_DEBUG='+host_flags,'-DCMAKE_CXX_FLAGS_DEBUG='+host_flags,
         '-DTSFP_NATIVE_DIR='+str(ROOT/'src/native'),'-DTSFP_NATIVE_RHI=ON','-DTSFP_VULKAN_SDK='+str(sdk)]
     run(*command)
     run(cmake,'--build',build,'--target','futureperfect_recomp','tsfp_native_mmio_test','--parallel',args.jobs)
@@ -72,6 +78,7 @@ def main():
     sources=[p for area in ('src','patches') for p in (ROOT/area).rglob('*')
              if p.is_file() and 'legacy' not in p.relative_to(ROOT).parts]
     manifest=dict(platform='linux-x64',renderer='vulkan',build_type='Debug',
+        host_optimization=args.host_optimization,host_debug_flags=host_flags,assertions_enabled=True,
         source_revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         working_tree_changes=subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True),
         runtime_revision=revision,xbe_sha256=expected,game_directory=str(game),
