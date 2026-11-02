@@ -11,6 +11,7 @@ Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer
 <p>
 <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip"><img src="docs/assets/download-windows-launcher.svg" alt="Download the latest Windows launcher (x64)" width="280" height="52"></a>
 <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip"><img src="docs/assets/download-mac-launcher.svg" alt="Download the latest Mac launcher (Apple Silicon)" width="280" height="52"></a>
+<img src="docs/assets/linux-coming-soon.svg" alt="Linux launcher — Coming soon 11/4" title="Linux launcher — Coming soon November 4, 2026" width="280" height="52">
 </p>
 
 <sub>Direct ZIP downloads of the latest stable launcher &middot; <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest">Release notes &amp; checksums</a></sub>
