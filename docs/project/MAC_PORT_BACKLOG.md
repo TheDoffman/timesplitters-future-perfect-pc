@@ -9006,3 +9006,51 @@ staged whitespace checks pass. Exact90086818 CI is now fully green: all11 runtim
 41482780542 jobs, including both native hosts/upgrades/transitions and PR gate,
 completed success; standalone launcher41482780544 also completed success. This
 is acceptance of the preceding commit; the new prerequisite needs its own CI.
+
+Original instruction-continuation prerequisite (2026-11-02, PR465): opt-in
+FunctionTranslator context methods and translation_continuation.py emit one
+instruction per step plus an exact-PC dispatcher over disjoint owned spans.
+CALL samples before push; RET reads its actual guest PC and emits RETURN;
+entering at Jcc consumes restored flags without repeating CMP. Canonical EBP
+is maintained directly. Unknown required flags and unsupported policy/ISA forms
+reject explicitly. Normal game generation does not use this cold path yet;
+manual/native capabilities, live selector/FP snapshots, lifetime/fiber integration
+and actual exception/unwind bindings remain required. This is not their removal.
+All212 compiler/checkpoint/status checks pass31.89s; final42 continuation and
+generation-fingerprint tests pass10.79s (214 distinct checks covered). The40
+continuation checks include1024 independent condition cases, five compiled bad
+providers, full GPR/status/FP/vector/RAM parity and actual native checkpoint
+resumption at an edited translated PC. An EBP parity mismatch was traced to the
+normal fast path's frame cache; cold EBP uses an independent architectural oracle.
+The initial title scan revealed repeated whole-image helper discovery per function;
+reusing immutable discoveries fixes that quadratic work, guarded by a test.
+Supported-US metadata scan:15771/15863 selected functions emitted,92 rejected,
+28.063s. It omits production manual/forced-return policy adapters and proves
+translation coverage only. Rejections include privileged I/O/selectors/far control
+and further x87/stack opcodes; inspect local scan JSON before production enablement.
+Generation8087 exited0:15838/15863 functions,0fail,6575724lines,93.22s lift;
+all22 normal generated C/headers byte-identical to accepted0253. Release63331
+exited0 including built-ins/crash symbols; archive/header/feature/current-generation
+and source hash audit pass. Native checkpoint provider remains unselected.
+Executable SHA256 f842f6961e2cb59a46292f5b6aabf7b5d16de125502847e4fd17cc959d1fd478.
+Fresh disposable Story runner27011/controller2203 both exited0. Scene4/mission1,
+input enabled, forward11.17454/back6.07313, ammo8to6, pause39 frozen samples,
+resume58 advancing; last96.771s below240. Three fresh captures reviewed;
+source/run/executable provenance matches, fixture valid,26 protected files retain
+hashes/sizes/times; no live owned game, run lock, dump or Partition image. Windows11
+Pro10.0.26300x64/D3D11 flip/Classic/Original60/minimized synthetic/movies skipped.
+This is normal-path regression acceptance, not gameplay through the cold provider,
+physical-input/listening/full-campaign or native Mac title verification. The
+first-person mode remains2; it is a view mode, not an animation-phase assertion.
+Evidence logs/continuation-{generate,build,game,game-controller}.log,
+continuation-{build,game-check}.json, accepted report/provenance/run0.err and
+private/test-saves/independent-continuations-20261102 captures. Prior2a84fd6c CI
+fully passed: runtime41487615373 and launcher41487615218. New-stage CI is required;
+portable cases are registered for both hosts, but new-generator native Mac results
+remain pending. Full runtime/tooling/title/header/fixture/provenance replacement
+and checkout/snapshot-unavailable production generation/build/package remain open.
+
+Final repository-context/CI-scope/PR-gate checks:114pass4.28s (328 distinct
+covered checks with the214 compiler cases). Staged whitespace and context map
+pass. Final source/executable hashes unchanged since accepted game. Last guest
+presentation samples57.8/58.0/58.2 FPS are not scanout measurements.

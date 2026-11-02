@@ -237,6 +237,14 @@ class FunctionTranslator(FunctionDiscovery):
             lines.append('')
         return lines
 
+    def translate_context_function(self, func_addr, func_info):
+        from translation_continuation import translate_function
+        return translate_function(self,func_addr,func_info)
+
+    def translate_context_functions(self, functions):
+        from translation_continuation import translate_functions
+        return translate_functions(self,functions)
+
     def translate_function(self, func_addr, func_info):
         start = func_addr
         recovered = self._recovered_cfg.get(start)
