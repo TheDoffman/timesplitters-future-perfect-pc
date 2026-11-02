@@ -64,8 +64,8 @@ shared Windows/Mac CI; hardware oracle skips off Windows. Precedingf6edb895 CI
 runtime41449486367 and launcher41449486247 completed successfully.
 
 Production generation/build, fresh installed-stack/context checks and isolated
-Story acceptance pass for this stage; new-head CI remains pending. Floating compares, string compare
-status, PUSHFD/POPFD/control state and actual context/exception continuation remain
+Story acceptance pass for this stage; new-head CI remains pending. [Floating/string comparisons](comparison-flags.md) extend the next producers.
+PUSHFD/POPFD/control state and actual context/exception continuation remain
 unfinished, alongside the wider kernel/graphics/audio/input/title/header/fixture
 replacement and final snapshot-unavailable production audit.
 

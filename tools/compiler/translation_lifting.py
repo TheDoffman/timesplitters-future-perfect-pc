@@ -149,7 +149,7 @@ def adjacent_condition(instructions, index, lifter=None):
 def preserves(insn):
     return (insn.mnemonic in _PRESERVE or insn.mnemonic in _SIMD_PRESERVE
             or insn.mnemonic.startswith('prefetch') or sse.preserves_flags(insn)
-            or mmx.preserves_flags(insn) or x87.preserves_flags(insn))
+            or mmx.preserves_flags(insn) or x87.preserves_flags(insn) or strings.preserves_flags(insn))
 
 
 def successor_state(previous, insn):
@@ -248,7 +248,8 @@ def _status_after(context,insn):
         # arithmetic/bit operations must not retain falsely known status.
         return [] if name in ('xchg','xadd','cmpxchg') else _status(context,['tsfp_status_forget(&g_status_flags,TSFP_STATUS_FLAGS);'])
     if name in ('add','sub','adc','sbb','and','or','xor','inc','dec','neg','cmp','test','stc','clc','cmc','shl','sal','shr','sar','shld','shrd','rol','ror','rcl','rcr','mul','imul','bt','bts','btr','btc','bsf','bsr','xadd','cmpxchg'):return []
-    if name in _SETTERS | _X87_FLAGS | {'popfd','div','idiv'} or strings.is_compare(insn):mask='TSFP_STATUS_FLAGS'
+    if name in _FLOAT_FLAGS | _X87_FLAGS or strings.is_compare(insn):return []
+    if name in _SETTERS | {'popfd','div','idiv'}:mask='TSFP_STATUS_FLAGS'
     elif preserves(insn) or name.startswith(('j','set','cmov')) or insn.is_ret or name=='rdtsc' or name=='cpuid':return []
     else:mask='TSFP_STATUS_FLAGS'
     return _status(context,[f'tsfp_status_forget(&g_status_flags,{mask});'])

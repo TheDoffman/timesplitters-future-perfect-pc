@@ -8881,3 +8881,18 @@ movement/fire/pause/resume pass withfe25b7b4 bytes.26 protected files unchanged.
 Implementation remains shared; native hardware oracle Windows-only, portable
 contracts selected for both CI hosts. New-head CI/native Mac title pending;
 floating/string/control flags and actual context/SEH remain unfinished.
+
+Stage0251 in progress (2026-11-02, PR465): portable sampled floating/string
+comparison flag publishers plus REPnoncompare preservation;307focused and21
+install/context Windows checks pass. Portable model/production/negative tests
+selected for both CI hosts; raw ML64oracles Windows-only, FS/narrow wrapping
+validated by portable model. No guest MXCSR/unmasked-FPU/tag/80bit claim.
+Preceding96255dc2 both workflows green. New generation0fail; Release/game/
+new-headCI/native Mac title acceptance pending. Control flags/context/SEH open.
+
+Stage0251 final Windows local acceptance: production generation/Release/built-ins/
+audit and bounded Story movement/fire/pause/resume pass withcda96a1a bytes.
+307 focused/21 install-context pass,26 protected files unchanged. Shared code and
+portable checks selected for both hosts; native oracles Windows-only. No new
+OS adapter. New-head CI and native Mac title remain pending; control/context/
+SEH and wider replacement unfinished. See STATUS stage0251 for evidence/limits.

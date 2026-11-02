@@ -1,11 +1,18 @@
 """Original comparison snapshots and implicit accumulator sign extension.
 
-Snapshots retain the existing branch-consumer ABI. General condition lowering,
-full EFLAGS/AF and guest memory-fault delivery are separate components.
+Snapshots retain the legacy branch-consumer ABI; producers also publish defined
+arithmetic status. Full control flags and guest fault delivery remain separate.
 """
 from translation_decode import Operand
 from translation_integer import _width, _status
 from translation_operands import _fmt_operand_read, _fmt_mem
+
+
+def floating_status(context, left, right):
+    """Publish masked-exception comparison status from already sampled values."""
+    value=(f'((isnan({left}) || isnan({right})) ? (TSFP_FLAG_CF | TSFP_FLAG_PF | TSFP_FLAG_ZF) : '
+           f'(({left}) < ({right})) ? TSFP_FLAG_CF : (({left}) == ({right})) ? TSFP_FLAG_ZF : 0)')
+    return _status(context,[f'tsfp_status_write(&g_status_flags,TSFP_STATUS_FLAGS,{value},0);'])
 
 
 def normalise_zero_test(mnemonic, operands):

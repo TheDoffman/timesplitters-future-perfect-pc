@@ -199,6 +199,9 @@ def emit(context,instruction,mnemonic,operands):
                  'g_fp_cmp = (isnan(_fp_left) || isnan(_fp_right)) ? 2 : (_fp_left < _fp_right ? -1 : (_fp_left > _fp_right ? 1 : 0));']
         integer_flags=mnemonic.endswith(('i','ip'))
         if not integer_flags:body += ['g_fp_cc = (uint16_t)(g_fp_cmp == 2 ? 0x4500u : (g_fp_cmp < 0 ? 0x0100u : (g_fp_cmp == 0 ? 0x4000u : 0u)));']
+        elif getattr(context,'track_status_flags',False):
+            from translation_compare import floating_status
+            body += floating_status(context,'_fp_left','_fp_right')
         pops=2 if mnemonic.endswith('pp') else int(mnemonic.endswith(('p','pi')))
         body += ['fp_pop();']*pops;return finish()
     if mnemonic in ('fnstsw','fstsw','fnstcw','fstcw','fldcw'):

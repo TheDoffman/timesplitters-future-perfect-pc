@@ -38025,3 +38025,40 @@ Guest presentation57.8/57.9/57.9 FPS, not scanout.281 focused and21 fresh/repeat
 install/context pass; context/index/whitespace check pending final before commit.
 No new-head CI or nativeMac title/campaign/physical-input/listening claim.
 Final stage0250 context/index and whitespace checks pass before commit.
+
+## Floating/string status in progress (2026-11-02, stage0251, PR465)
+
+After96255dc2, whose runtime41454608583 and launcher41454608604 CI both passed.
+Original COMI/x87-I comparison publishers record unordered/less/equal/greater
+CF/PF/ZF, clearing OF/SF/AF, from sampled values; non-I FPU comparisons preserve
+CPU flags. This uses existing default masked binary32/binary64 semantics, not
+new guest MXCSR/unmasked-FPU/80bit/tag support. CMPS/SCAS publish full arithmetic
+status at each completed element; REPzero performs no reads/preserves flags.
+Model tests exposed previous discard of knowledge after REP MOVS/STOS/LODS;
+validated noncompare-string preservation repairs it, including bulk paths.
+
+New actual-production matrices:19float forms/16728IEEE-random requests with
+ML64EFLAGS+FPCC+normalizedTOP,144string forms/70120model requests and17522
+flat-native cases; DF/narrow-address-wrap/FS-source, memory/register/payload
+preservation, compiled bad publishers, zero-invalid-memory and branch checks.
+307expanded focus78.14s pass; fresh/repeatinstall+context21 pass25.91s. No new
+patch/headerABI, tail54 unchanged; previousfullmigrationCI still covers identical
+patch bytes. New generation15838/15863/0fail/6575684lines94.25s lift. Release
+is running; no new-stage game acceptance yet.26 protected files unchanged.
+
+Stage0251 Windows production accepted: Release/built-ins and current generation/
+archive/header/template/producer/source audit pass. Executable SHA256:
+cda96a1a09339b59fa0f228ef1466cd05813aba6e1f8668214bde1ce011f9ed9.
+Runner4180/controller23703 both exited0; scene4/mission1/inputenabled/ammo8to6,
+forward11.1745492885/back6.1848918370, pause39 frozen/resume58 advancing;
+last115.162s under240s. Reviewed3 fresh captures; exact run/build input hashes,
+26 protected files unchanged, profiles/fixture valid, no lock/dump/Partition
+images. Windows11 Pro10.0.26300 x64/MSVC19.44.35224.0, D3D11 flip, Classic/
+Original60, minimized synthetic input/movies skipped. Another checkout launched
+a game after our guarded startup; functional checks pass, no exclusive host-
+performance claim. Evidence logs/comparison-flags-build.json, game-check.json,
+comparison-flags-final-{game,controller}.log and comparison-flags-captures.
+An earlier operator-missed menu deadline and guard-blocked retries remain
+unaccepted and retained.307 focused/21 install-context pass; context/index and
+whitespace checks pass. New-head CI/native Mac title acceptance pending.
+Full control flags/context/SEH and wider replacement remain unfinished.
