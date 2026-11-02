@@ -141,6 +141,9 @@ def emit(context, instruction, mnemonic, operands):
         require_xmm();field,_,_,width=_shape(mnemonic)
         body += _read(dst,'_simd_a',width)+_read(src,'_simd_b',width)
         body += [f'_fca = _simd_a.{field}[0]; _fcb = _simd_b.{field}[0];']
+        if getattr(context,'track_status_flags',False):
+            from translation_compare import floating_status
+            body += floating_status(context,'_fca','_fcb')
         return finish()
     if mnemonic.startswith('movmsk'):
         if not _general(dst) or not _xmm(src): raise ValueError('MOVMSK requires r32,xmm')

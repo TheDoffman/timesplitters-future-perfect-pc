@@ -1012,3 +1012,7 @@ visibility and objective logic remain guest-owned (Refs #338).
 [Language policy, US startup gate, original-routine tests and host validation](language-packs.md).
 
 Graphics guide: patch2512 Linux declarations, legacy GL preference adapter and WSL evidence.
+
+Stage0241: [original extended product and ABI checks](guest-integer-product.md).
+
+RTL: [arithmetic/memory](guest-memory-ops.md), [strings](guest-stack-trace.md); [status flags](context-records.md).

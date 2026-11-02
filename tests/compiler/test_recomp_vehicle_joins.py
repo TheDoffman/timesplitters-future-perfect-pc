@@ -2,6 +2,7 @@
 
 
 import hashlib
+import re
 import struct
 
 import pytest
@@ -63,7 +64,8 @@ def test_joins_without_consumers_do_not_emit_undeclared_flag():
     # xor eax,eax; jmp join; inc ebx; join: mov eax,edx; ret.
     # Extracted entry points can include unreachable predecessor blocks.
     code = translate(bytes.fromhex("31c0eb014389d0c3"))
-    assert "_flags" not in code
+    # The scalar fallback identifier is distinct from the persistent TLS cell.
+    assert not re.search(r"\b_flags\b", code)
 
 
 def test_unknown_edges_and_other_flags_remain_unknown():

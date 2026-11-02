@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "b5bddf436f6f1280fc48f6d394a421c6fd75d9ae11bab94b580ecc2d5c448575",
+  "loaderSha256": "ac7da16f92753e26476995a65be4adb9723683f4b64d7d20662bca5c0bdf4644",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3098,6 +3098,15 @@
       ]
     },
     {
+      "name": "0241-original-extended-product.patch",
+      "path": "patches/compiler/0241-original-extended-product.patch",
+      "sha256": "7181c2c4bc75cac16401368a3680efbf9093b1874e3f9cba4574403f634d0635",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
       "name": "2303-audio-window-exit.patch",
       "path": "patches/media/2303-audio-window-exit.patch",
       "sha256": "72cca9dddaace1b9035f3e07bdf2b7d569f5aaf9de6cb03e7e6a3e82ac917818",
@@ -3190,6 +3199,88 @@
         "src/d3d/d3d8_internal.h",
         "src/d3d/d3d8_resources.c",
         "src/d3d/d3d8_screencopy.c"
+      ]
+    },
+    {
+      "name": "0242-original-extended-division.patch",
+      "path": "patches/compiler/0242-original-extended-division.patch",
+      "sha256": "01861d082565830a455a756228d5c55a164694c0c78797a6cbc56ffd95acfec3",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c",
+        "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0243-original-memory-operations.patch",
+      "path": "patches/compiler/0243-original-memory-operations.patch",
+      "sha256": "d2434631fc3a52f460f49b5c205359526688362a155bd7e355b8cda401828ab6",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0244-original-counted-codec.patch",
+      "path": "patches/compiler/0244-original-counted-codec.patch",
+      "sha256": "2b2c13c6c796e73c67285f9a0020926d03b57fd296040afed2999440fe9128e0",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0245-original-string-transform.patch",
+      "path": "patches/compiler/0245-original-string-transform.patch",
+      "sha256": "76b46f90c349a755440816b7b5e62fc715e531b309c96fbd5b789bbc2c8f3d72",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0246-original-raw-codec.patch",
+      "path": "patches/compiler/0246-original-raw-codec.patch",
+      "sha256": "1c112c44ff163949cd7f06ce7b7ac010de4be3bf01f1a3c1e8f475318e1f9ba8",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0247-original-stack-diagnostics.patch",
+      "path": "patches/compiler/0247-original-stack-diagnostics.patch",
+      "sha256": "371a614d513656618488e647b292e40b31e8071284ade0650985cd9853bbf061",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/xbox_memory_layout.c",
+        "src/kernel/xbox_memory_layout.h"
+      ]
+    },
+    {
+      "name": "0248-original-status-flags.patch",
+      "path": "patches/compiler/0248-original-status-flags.patch",
+      "sha256": "adde1a2e59198f95c2281e172e22f64b1e7696dbf3ee8b5e89ef5a592ecb1efd",
+      "targets": [
+        "titles/futureperfect/CMakeLists.txt",
+        "tools/recomp/test_flag_join_backedge.py"
+      ]
+    },
+    {
+      "name": "0249-status-header-template.patch",
+      "path": "patches/compiler/0249-status-header-template.patch",
+      "sha256": "6766d9c7609e217ae36c108988de65f84d9843a0fe969d241493c28dda475007",
+      "targets": [
+        "templates/runtime/recomp_types.h"
+      ]
+    },
+    {
+      "name": "0253-original-context-records.patch",
+      "path": "patches/compiler/0253-original-context-records.patch",
+      "sha256": "c100faf4246139ba9144851469fc377ff8ffbf80bf88d4694a11602877354e51",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
       ]
     }
   ]

@@ -4,8 +4,14 @@ typedef struct {
     uint32_t eax,ebx,ecx,edx,esi,edi,esp,ebp,seh,fs,saved_esp,dispatch;
     RecompXmm xmm[8];RecompMmx mm[8];double fp[8];
     int top,cmp,df;uint16_t control,cc;
+#ifdef RECOMP_STATUS_FLAGS_SUPPORTED
+    tsfp_status_flags status;
+#endif
 } callback_state;
 static void capture(callback_state *s) {
+#ifdef RECOMP_STATUS_FLAGS_SUPPORTED
+    s->status=g_status_flags;
+#endif
     s->eax=g_eax;s->ebx=g_ebx;s->ecx=g_ecx;s->edx=g_edx;
     s->esi=g_esi;s->edi=g_edi;s->esp=g_esp;s->ebp=g_ebp;s->seh=g_seh_ebp;s->fs=g_fs_base;
     s->saved_esp=g_icall_saved_esp;s->dispatch=g_icall_dispatch_form;
@@ -17,6 +23,9 @@ static void capture(callback_state *s) {
     s->df=g_df;s->control=g_fp_control_word;s->cc=g_fp_cc;
 }
 static void restore(const callback_state *s) {
+#ifdef RECOMP_STATUS_FLAGS_SUPPORTED
+    g_status_flags=s->status;
+#endif
     g_eax=s->eax;g_ebx=s->ebx;g_ecx=s->ecx;g_edx=s->edx;
     g_esi=s->esi;g_edi=s->edi;g_esp=s->esp;g_ebp=s->ebp;g_seh_ebp=s->seh;g_fs_base=s->fs;
     g_icall_saved_esp=s->saved_esp;g_icall_dispatch_form=s->dispatch;
@@ -53,7 +62,7 @@ int tsfp_guest_callback_prepare(const tsfp_guest_callback_ops *ops,uint32_t rout
     candidate.entry=entry;candidate.frame=frame;candidate.address=address;
     candidate.bytes=bytes;candidate.count=count;*out=candidate;return 1;
 }
-int tsfp_guest_callback_invoke(tsfp_guest_callback_plan *prepared,int (*admit)(void *),void *context,uint32_t *result) {
+static int invoke(tsfp_guest_callback_plan *prepared,int (*admit)(void *),void *context,uint32_t *result,int caller_cleanup) {
     callback_state saved;tsfp_guest_entry_t entry;unsigned char *frame;
     uint32_t address,value,words[4];unsigned i,count;int balanced;
     if(!prepared)return 0;
@@ -66,9 +75,18 @@ int tsfp_guest_callback_invoke(tsfp_guest_callback_plan *prepared,int (*admit)(v
     memcpy(words,prepared->words,sizeof(words));capture(&saved);put(frame,0);
     for(i=0;i<count;++i)put(frame+4+4*i,words[i]);
     g_esp=address;g_seh_ebp=address;entry();
-    value=g_eax;balanced=g_esp==saved.esp;restore(&saved);
+    value=g_eax;balanced=g_esp==saved.esp-(caller_cleanup?4*count:0);restore(&saved);
     if(balanced && result)*result=value;
     return balanced;
+}
+int tsfp_guest_callback_invoke(tsfp_guest_callback_plan *prepared,int (*admit)(void *),void *context,uint32_t *result) {
+    return invoke(prepared,admit,context,result,0);
+}
+int tsfp_guest_callback_cdecl(const tsfp_guest_callback_ops *ops,uint32_t routine,
+    const uint32_t *arguments,unsigned count,uint32_t *result) {
+    tsfp_guest_callback_plan prepared;
+    return tsfp_guest_callback_prepare(ops,routine,arguments,count,&prepared) &&
+        invoke(&prepared,NULL,NULL,result,1);
 }
 int tsfp_guest_callback_stdcall(const tsfp_guest_callback_ops *ops,uint32_t routine,
     const uint32_t *arguments,unsigned count,uint32_t *result) {

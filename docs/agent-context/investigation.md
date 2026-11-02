@@ -365,3 +365,36 @@ request and active-pack choice. For that task, preserve prior hybrid artwork
 and recovery packs, use verified originals as inputs, and follow the
 [original upscale workflow](original-upscale.md). Historical hybrid batch
 instructions do not override this task's newer user direction.
+
+Stage0241 extends the maintained effective-tail assertion and historical upgrade exclusions; see [product evidence](guest-integer-product.md).
+
+Stage0242: [division providers, ABI and oracle](guest-integer-division.md).
+
+
+For patch-switch byte drift, inspect changed source lines rather than dumping a
+whole pytest snapshot. Stage0242 exposed reverse-added LF lines in a CRLF source
+on Mac. apply-patches.py preserve_line_endings keeps exact unchanged endings and
+uses replaced/adjacent source style for new lines, preserving patch text and
+final-newline presence before transactional publication. Test both Git
+core.autocrlf settings explicitly; a host's global Git config can mask the bug.
+See [division migration evidence](guest-integer-division.md).
+
+Stage0243 extends the effective tail and historical exclusions; [memory/bit contracts](guest-memory-ops.md) include native stack-probe and public fastcall ABI evidence.
+
+Stage0244: [counted codec/ownership](guest-text-codec.md); native pointer records are separate from guest records, and fresh heap rollback zeroing is not an all-RAM transaction claim.
+
+Stage0245: [creation/case](guest-string-transform.md); native case strings do not append NUL; libc mapping is not NT NLS equivalence.
+
+Stage0246: [raw codec](guest-text-raw.md); native uppercase truncation returned80000005 despite documentation; keep raw32-bit/no-NUL policy separate from counted conversion.
+
+Stage0247: [stack diagnostics](guest-stack-trace.md); native x86 proves parent ordering/hash and4-argument capture, public Xbox Assert has4 arguments. Full EFLAGS/guest continuation work is still required for real context/SEH.
+
+Stage0248 extends the effective tail to53 original stages; historical exclusions
+and the installed shared title feature definition are checked by repository tests.
+See [status tracking](guest-status-flags.md) for contracts and pending acceptance.
+
+Stage0249 extends the original effective tail to54 and checks canonical installed
+header text; [shift/rotate status](guest-shift-flags.md) records CI repair and tests.
+
+The exact loader-tail assertion now includes0253 context records after0249;
+keep all55 entries ordered. [Context/handler contracts](context-records.md).

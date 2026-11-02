@@ -29,7 +29,7 @@ CASES = {
                  'stdcall_contract.c', [
         ('guest_callback_call.c', old, new) for old, new in [
             ('put(frame+4+4*i,words[i]);', 'put(frame+4+4*i,words[i]+1);'),
-            ('value=g_eax;balanced=g_esp==saved.esp;', 'value=saved.eax;balanced=g_esp==saved.esp;'),
+            ('value=g_eax;balanced=', 'value=saved.eax;balanced='),
             ('if(balanced && result)*result=value;', 'if(result)*result=value;'),
             ('count>4', 'count>1'), ('bytes=4+4*count;', 'bytes=4+4*count+4;'),
             ('if(admit && !admit(context))return 0;', 'if(admit)(void)admit(context);'),

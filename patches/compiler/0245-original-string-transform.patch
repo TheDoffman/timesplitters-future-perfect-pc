@@ -1,0 +1,168 @@
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -29,6 +29,8 @@
+ add_library(xbox_kernel STATIC ${KERNEL_SOURCES})
+ 
+ target_sources(xbox_kernel PRIVATE
++    "${TSFP_SHARED_SOURCE}/runtime/guest_string_transform.c"
++    "${TSFP_SHARED_SOURCE}/runtime/host_string_case.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_text_codec.c"
+     "${TSFP_SHARED_SOURCE}/runtime/host_text_codec.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_memory_ops.c"
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -4656,18 +4656,6 @@
+ 
+ /* Byte length (in UTF-16 bytes) of the guest C string at src_va, capped so the
+  * caller can always add a terminator without overflowing USHORT Length. */
+-static uint32_t bridge_guest_wcslen_bytes(uint32_t src_va)
+-{
+-    const uint16_t *wp = (const uint16_t *)XBOX_TO_NATIVE(src_va);
+-    uint32_t bytes = 0;
+-
+-    while (wp[bytes / 2]) {
+-        bytes += sizeof(uint16_t);
+-        if (bytes > 0xFFFE)
+-            return 0xFFFE;
+-    }
+-    return bytes;
+-}
+ 
+ /* ── Rtl Append (ordinals 261, 262, 263) ────────────────────
+  * Each appends a source to a destination XBOX_*_STRING, honouring the
+@@ -4712,55 +4700,19 @@
+ /* 274: BOOLEAN RtlCreateUnicodeString(PXBOX_UNICODE_STRING Dest, PCWSTR Src)
+  * The buffer is carved from the guest heap so the Buffer field stays a guest
+  * VA the title can dereference.  Returns TRUE on success. */
+-static void bridge_RtlCreateUnicodeString(void)
+-{
+-    uint32_t dst_va = STACK_ARG(0);
+-    uint32_t src_va = STACK_ARG(1);
+-    uint32_t bytes, buf_va;
+-
+-    if (!dst_va || !src_va) { g_eax = 0; return; }
+-    bytes = bridge_guest_wcslen_bytes(src_va);
+-    buf_va = xbox_HeapAlloc(bytes + sizeof(uint16_t), 16);
+-    if (!buf_va) { g_eax = 0; return; }
+-    memcpy(XBOX_TO_NATIVE(buf_va), XBOX_TO_NATIVE(src_va), bytes);
+-    ((uint16_t *)XBOX_TO_NATIVE(buf_va))[bytes / 2] = 0;
+-    BRIDGE_MEM16(dst_va + 0) = (uint16_t)bytes;
+-    BRIDGE_MEM16(dst_va + 2) = (uint16_t)(bytes + sizeof(uint16_t));
+-    BRIDGE_MEM32(dst_va + 4) = buf_va;
+-    g_eax = 1;
+-}
++#include "guest_kernel_string_transform.inc"
+ 
+ /* 287: VOID RtlFreeUnicodeString(PXBOX_UNICODE_STRING Str) */
+ 
+ /* ── Rtl Control characters (ordinals 275, 296, 313, 316) ── */
+ 
+ /* 275: WCHAR RtlDowncaseUnicodeChar(WCHAR Ch) */
+-static void bridge_RtlDowncaseUnicodeChar(void)
+-{
+-    uint32_t ch = STACK_ARG(0);
+-    g_eax = (uint32_t)(uint16_t)towlower((wint_t)(uint16_t)ch);
+-}
+ 
+ /* 296: CHAR RtlLowerChar(CHAR Ch) */
+-static void bridge_RtlLowerChar(void)
+-{
+-    uint32_t ch = STACK_ARG(0);
+-    g_eax = (uint32_t)(uint8_t)tolower((int)(uint8_t)ch);
+-}
+ 
+ /* 313: WCHAR RtlUpcaseUnicodeChar(WCHAR Ch) */
+-static void bridge_RtlUpcaseUnicodeChar(void)
+-{
+-    uint32_t ch = STACK_ARG(0);
+-    g_eax = (uint32_t)(uint16_t)towupper((wint_t)(uint16_t)ch);
+-}
+ 
+ /* 316: CHAR RtlUpperChar(CHAR Ch) */
+-static void bridge_RtlUpperChar(void)
+-{
+-    uint32_t ch = STACK_ARG(0);
+-    g_eax = (uint32_t)(uint8_t)toupper((int)(uint8_t)ch);
+-}
+ 
+ /* ── Rtl Upcase/Downcase string (ordinals 276, 314) ─────────
+  * NT name suggests (2 args) but the real signature takes a third
+@@ -4769,78 +4721,8 @@
+  * Dest->Buffer; otherwise the caller's existing buffer must fit. */
+ 
+ /* 276: NTSTATUS RtlDowncaseUnicodeString(Dest, Src, AllocDest) */
+-static void bridge_RtlDowncaseUnicodeString(void)
+-{
+-    uint32_t dst_va = STACK_ARG(0);
+-    uint32_t src_va = STACK_ARG(1);
+-    uint32_t do_alloc = STACK_ARG(2);
+-    uint16_t s_len, d_max = 0;
+-    uint32_t s_buf, d_buf = 0, i;
+-    const uint16_t *sp;
+-    uint16_t *dp;
+-
+-    if (!dst_va || !src_va) { g_eax = (uint32_t)STATUS_INVALID_PARAMETER; return; }
+-    s_len = BRIDGE_MEM16(src_va + 0);
+-    s_buf = BRIDGE_MEM32(src_va + 4);
+-    if (s_len && !s_buf) { g_eax = (uint32_t)STATUS_INVALID_PARAMETER; return; }
+-
+-    if (do_alloc) {
+-        d_buf = xbox_HeapAlloc((uint32_t)s_len + sizeof(uint16_t), 16);
+-        if (!d_buf) { g_eax = (uint32_t)STATUS_NO_MEMORY; return; }
+-        BRIDGE_MEM16(dst_va + 2) = (uint16_t)(s_len + sizeof(uint16_t));
+-        BRIDGE_MEM32(dst_va + 4) = d_buf;
+-    } else {
+-        d_max = BRIDGE_MEM16(dst_va + 2);
+-        d_buf = BRIDGE_MEM32(dst_va + 4);
+-        if (d_max < s_len) { g_eax = (uint32_t)STATUS_BUFFER_TOO_SMALL; return; }
+-        if (s_len && !d_buf) { g_eax = (uint32_t)STATUS_INVALID_PARAMETER; return; }
+-    }
+-
+-    sp = (const uint16_t *)XBOX_TO_NATIVE(s_buf);
+-    dp = (uint16_t *)XBOX_TO_NATIVE(d_buf);
+-    for (i = 0; i < (uint32_t)(s_len / 2); i++)
+-        dp[i] = (uint16_t)towlower((wint_t)sp[i]);
+-    dp[(uint32_t)(s_len / 2)] = 0;
+-    BRIDGE_MEM16(dst_va + 0) = s_len;
+-    g_eax = 0;   /* STATUS_SUCCESS */
+-}
+ 
+ /* 314: NTSTATUS RtlUpcaseUnicodeString(Dest, Src, AllocDest) */
+-static void bridge_RtlUpcaseUnicodeString(void)
+-{
+-    uint32_t dst_va = STACK_ARG(0);
+-    uint32_t src_va = STACK_ARG(1);
+-    uint32_t do_alloc = STACK_ARG(2);
+-    uint16_t s_len, d_max = 0;
+-    uint32_t s_buf, d_buf = 0, i;
+-    const uint16_t *sp;
+-    uint16_t *dp;
+-
+-    if (!dst_va || !src_va) { g_eax = (uint32_t)STATUS_INVALID_PARAMETER; return; }
+-    s_len = BRIDGE_MEM16(src_va + 0);
+-    s_buf = BRIDGE_MEM32(src_va + 4);
+-    if (s_len && !s_buf) { g_eax = (uint32_t)STATUS_INVALID_PARAMETER; return; }
+-
+-    if (do_alloc) {
+-        d_buf = xbox_HeapAlloc((uint32_t)s_len + sizeof(uint16_t), 16);
+-        if (!d_buf) { g_eax = (uint32_t)STATUS_NO_MEMORY; return; }
+-        BRIDGE_MEM16(dst_va + 2) = (uint16_t)(s_len + sizeof(uint16_t));
+-        BRIDGE_MEM32(dst_va + 4) = d_buf;
+-    } else {
+-        d_max = BRIDGE_MEM16(dst_va + 2);
+-        d_buf = BRIDGE_MEM32(dst_va + 4);
+-        if (d_max < s_len) { g_eax = (uint32_t)STATUS_BUFFER_TOO_SMALL; return; }
+-        if (s_len && !d_buf) { g_eax = (uint32_t)STATUS_INVALID_PARAMETER; return; }
+-    }
+-
+-    sp = (const uint16_t *)XBOX_TO_NATIVE(s_buf);
+-    dp = (uint16_t *)XBOX_TO_NATIVE(d_buf);
+-    for (i = 0; i < (uint32_t)(s_len / 2); i++)
+-        dp[i] = (uint16_t)towupper((wint_t)sp[i]);
+-    dp[(uint32_t)(s_len / 2)] = 0;
+-    BRIDGE_MEM16(dst_va + 0) = s_len;
+-    g_eax = 0;   /* STATUS_SUCCESS */
+-}
+ 
+ /* ── Rtl Integer conversion (ordinals 292, 293) ─────────────
+  * NT pads RtlIntegerToChar's output to Length with leading zeros and expects

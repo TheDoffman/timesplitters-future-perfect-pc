@@ -52,4 +52,10 @@ int tsfp_thread_stack_release(tsfp_thread_memory *, uint32_t top);
  * Acquisition does not clear guest stack bytes. Returns -1 on exhaustion. */
 int tsfp_worker_stack_acquire(tsfp_thread_memory *);
 int tsfp_worker_stack_release(tsfp_thread_memory *, int index);
+/* Read a consistent active stack extent containing esp. Bootstrap extents stop at live
+ * worker slices; a worker gets its exact slice. Heap stacks need a live owner. Bounds are [low,high), not cloned TIB hints.
+ * Distinct output words are stable host storage outside this service. Failure
+ * preserves them. Metadata locking is not a mapping/stack lifetime pin. */
+int tsfp_thread_stack_bounds(tsfp_thread_memory *,uint32_t esp,uint32_t *low,uint32_t *high);
+
 #endif

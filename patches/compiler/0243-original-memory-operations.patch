@@ -1,0 +1,124 @@
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -29,6 +29,7 @@
+ add_library(xbox_kernel STATIC ${KERNEL_SOURCES})
+ 
+ target_sources(xbox_kernel PRIVATE
++    "${TSFP_SHARED_SOURCE}/runtime/guest_memory_ops.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_integer_division.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_integer_fault.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_integer_product.c"
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -4974,39 +4974,11 @@
+ /* ── Rtl Memory (ordinals 284, 298, 320) ──────────────────── */
+ 
+ /* 284: VOID RtlFillMemory(PVOID Dest, SIZE_T Len, UCHAR Fill) */
+-static void bridge_RtlFillMemory(void)
+-{
+-    uint32_t dest_va = STACK_ARG(0);
+-    uint32_t len     = STACK_ARG(1);
+-    uint32_t fill    = STACK_ARG(2);
+-
+-    if (dest_va && len)
+-        memset(XBOX_TO_NATIVE(dest_va), (int)(UCHAR)fill, (size_t)len);
+-    g_eax = 0;
+-}
++#include "guest_kernel_memory_ops.inc"
+ 
+ /* 298: VOID RtlMoveMemory(PVOID Dest, PVOID Src, SIZE_T Len) */
+-static void bridge_RtlMoveMemory(void)
+-{
+-    uint32_t dest_va = STACK_ARG(0);
+-    uint32_t src_va  = STACK_ARG(1);
+-    uint32_t len     = STACK_ARG(2);
+-
+-    if (dest_va && src_va && len)
+-        memmove(XBOX_TO_NATIVE(dest_va), XBOX_TO_NATIVE(src_va), (size_t)len);
+-    g_eax = 0;
+-}
+ 
+ /* 320: VOID RtlZeroMemory(PVOID Dest, SIZE_T Len) */
+-static void bridge_RtlZeroMemory(void)
+-{
+-    uint32_t dest_va = STACK_ARG(0);
+-    uint32_t len     = STACK_ARG(1);
+-
+-    if (dest_va && len)
+-        memset(XBOX_TO_NATIVE(dest_va), 0, (size_t)len);
+-    g_eax = 0;
+-}
+ 
+ /* ── Rtl MultiByte <-> Unicode (ordinals 299, 300, 310, 311, 315) ──
+  * All buffers are guest VAs.  MultiByteToWideChar / WideCharToMultiByte are
+@@ -5136,21 +5108,8 @@
+  * Hand-rolled rather than MSVC _byteswap_* so the file stays portable. */
+ 
+ /* 307: ULONG RtlUlongByteSwap(ULONG Value) */
+-static void bridge_RtlUlongByteSwap(void)
+-{
+-    uint32_t v = STACK_ARG(0);
+-    g_eax = ((v & 0x000000FFu) << 24) |
+-            ((v & 0x0000FF00u) << 8)  |
+-            ((v & 0x00FF0000u) >> 8)  |
+-            ((v & 0xFF000000u) >> 24);
+-}
+ 
+ /* 318: USHORT RtlUshortByteSwap(USHORT Value) */
+-static void bridge_RtlUshortByteSwap(void)
+-{
+-    uint32_t v = STACK_ARG(0);
+-    g_eax = (uint32_t)(uint16_t)(((v & 0xFFu) << 8) | ((v >> 8) & 0xFFu));
+-}
+ 
+ /* Critical-section imports use the shared original registry above. */
+ 
+@@ -5168,10 +5127,6 @@
+ }
+ 
+ /* 297: VOID RtlMapGenericMask(PACCESS_MASK AccessMask, PRTL_GENERIC_MAPPING) */
+-static void bridge_RtlMapGenericMask(void)
+-{
+-    g_eax = 0;
+-}
+ 
+ /* 319: ULONG RtlWalkFrameChain(PVOID *Callers, ULONG Count, ULONG Flags) */
+ static void bridge_RtlWalkFrameChain(void)
+@@ -6767,19 +6722,6 @@
+ /* --- RtlFillMemoryUlong (ordinal 285, 3 args = 12 bytes)
+  * VOID RtlFillMemoryUlong(PVOID Destination, ULONG Length, ULONG Pattern);
+  * Length is multiples of 4 by contract. */
+-static void bridge_RtlFillMemoryUlong(void)
+-{
+-    volatile uint32_t *dst = (volatile uint32_t *)XBOX_TO_NATIVE(STACK_ARG(0));
+-    uint32_t length = STACK_ARG(1);
+-    uint32_t pattern = STACK_ARG(2);
+-    uint32_t i;
+-
+-    if (!dst)
+-        return;
+-    for (i = 0; i < length / 4; i++)
+-        dst[i] = pattern;
+-    g_eax = 0;
+-}
+ 
+ /* --- RtlFreeAnsiString (ordinal 286, 1 arg = 4 bytes)
+  * VOID RtlFreeAnsiString(PANSI_STRING AnsiString);
+@@ -7061,7 +7003,7 @@
+     case 299: return 20;  /* RtlMultiByteToUnicodeN (5) */
+     case 300: return 12;  /* RtlMultiByteToUnicodeSize (3) */
+     case 306: return  4;  /* RtlTryEnterCriticalSection (1) */
+-    case 307: return  4;  /* RtlUlongByteSwap (1) */
++    case 307: return  0;  /* RtlUlongByteSwap (fastcall ECX) */
+     case 309: return 12;  /* RtlUnicodeStringToInteger (3) */
+     case 310: return 20;  /* RtlUnicodeToMultiByteN (5) */
+     case 311: return 12;  /* RtlUnicodeToMultiByteSize (3) */
+@@ -7070,7 +7012,7 @@
+     case 315: return 20;  /* RtlUpcaseUnicodeToMultiByteN (5) */
+     case 316: return  4;  /* RtlUpperChar (1) */
+     case 317: return  8;  /* RtlUpperString (2) */
+-    case 318: return  4;  /* RtlUshortByteSwap (1) */
++    case 318: return  0;  /* RtlUshortByteSwap (fastcall ECX) */
+     case 319: return 12;  /* RtlWalkFrameChain (3) */
+     case 320: return  8;  /* RtlZeroMemory (2) */
+     case 321: return  0;  /* XboxEEPROMKey (void) */
