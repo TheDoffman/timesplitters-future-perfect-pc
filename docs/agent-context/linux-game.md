@@ -240,3 +240,9 @@ shadow can accept it, but D3D11 correctly rejects discard mapping without dynami
 usage/CPU-write access. Rebind the default buffer before cleanup so subsequent
 pixel tests retain their original state. This same fixture runs on Windows WARP,
 Mac Vulkan and Linux Vulkan; no host-specific test exclusion is needed.
+
+Linux GCC also compiles shared Story cinematic/menu contracts with fatal warnings.
+Keep the zero-serial skip and subsequent assignment on separate statements/lines;
+this is an unconditional assignment after the skip, not part of the if body.
+Demo mutation fixtures accept both glibc and Windows/macOS assertion prefixes
+while requiring the specific broken expression; assertion failures remain required.

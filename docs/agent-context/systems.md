@@ -2,7 +2,7 @@
 [exFAT](host-storage.md)
 # Subsystem entry points
 
-[Vulkan uploads](linux-game.md).
+[Linux contracts](linux-game.md).
 
 PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 

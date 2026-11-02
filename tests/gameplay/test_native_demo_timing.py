@@ -64,7 +64,7 @@ def test_shared_demo_playback_regressions(tmp_path, mutation):
         '"'+playback_path.as_posix()+'"'))
     source = (ROOT / "tests/gameplay/native_demo_schedule.c").read_text().replace(
         "../src/gameplay/pc_native_demo_guest.inc", parent_path.as_posix())
-    with pytest.raises(AssertionError, match=r"Assertion failed:.*"+re.escape(message)):
+    with pytest.raises(AssertionError, match=r"Assertion[^\n]*"+re.escape(message)):
         compile_and_run(tmp_path, source)
 
 
@@ -173,10 +173,10 @@ def test_demo_transition_regressions_are_detected(demo_source, tmp_path, mutatio
     if mutation == "timer":
         before = "pc_native_demo_interval_active ? pc_native_demo_raw_interval : right"
         after = "right"
-        message = r"Assertion failed:.*0x6b98b0"
+        message = r"Assertion[^\n]*0x6b98b0"
     else:
         before, after = "if(active &&", "if(0 && active &&"
-        message = r"Assertion failed:.*0x4e7940"
+        message = r"Assertion[^\n]*0x4e7940"
     assert source.count(before) == 1
     mutated = tmp_path / "demo_mutation.inc"
     mutated.write_text(source.replace(before, after))
@@ -232,7 +232,7 @@ def test_demo_recording_regressions_are_detected(demo_source, tmp_path, mutation
     assert source.count(before) == 1
     mutated = tmp_path / "demo_record_mutation.inc"
     mutated.write_text(source.replace(before, after))
-    with pytest.raises(AssertionError, match=r"Assertion failed:.*"+re.escape(message)):
+    with pytest.raises(AssertionError, match=r"Assertion[^\n]*"+re.escape(message)):
         compile_and_run(tmp_path, demo_source.replace(path.as_posix(), mutated.as_posix()))
 
 

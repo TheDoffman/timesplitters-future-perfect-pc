@@ -96,7 +96,7 @@ otherwise GL. SDK pin: `config/build/vulkan-sdk.json`; driver provenance:
 `tools/build/vulkan_sdk.py` and `BUILD.json`.
 Isolated gameplay: `tools/testing/testing_profile.py --play --seconds 120` (Windows),
 `tools/testing/test-native-mac.py --unlocked-profile --seconds 120` (Mac), with .venv.
-Root AGENTS owns assets/isolation/storage. Build, startup and gameplay are
+AGENTS owns isolation/storage. Build, startup and gameplay are
 different evidence; unavailable hardware/private data remain validation gaps.
 For movement input changes, sampler and guest-only fixtures do not prove
 gameplay speed. Use an isolated Story run and compare actual player-position
