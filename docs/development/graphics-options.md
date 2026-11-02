@@ -292,3 +292,5 @@ these new patches into a pre-display/pre-feed checkpoint was not a valid old
 installation. Complete current-stack and graphics round-trip coverage remain.
 
 POSIX restart posts SDL_EVENT_QUIT directly. This allows the standalone replay target to link the display module without game-only input symbols; the real process-handoff fixture verifies the SDL quit request.
+
+Native Mac GPU CI327eb4c reproduced visibility0.874528 on a z=2 foreground plane at half-target pixel33 in the65x33 scene, with a distant z=10 background and radius0.75. Shared SSAO now explicitly rejects equal raw-depth taps and distances outside the radius before angular weighting, and bounds reciprocal-square-root input. Existing odd/even flat/sky/foreground and close-contact assertions remain unchanged. Exact compiler/driver cause is not established; native Mac rerun is required.
