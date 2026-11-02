@@ -21,11 +21,11 @@ Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh
 
 Minigun: [readiness/release/pause/input tests](native-minigun.md). CI selects test_native_timing.py; original-code tests require the private XBE. Historical stacks exclude minigun/player-trigger patches until full native timing applies.
 
-Linux launcher: see [host checks](launcher.md).
-Linux game builds optimize host libraries with symbols/assertions retained;
-`--host-optimization debug` restores the old host flags. The bounded runner's
-`--fps 60|120|180|240` sets isolated saved timing and records CPU usage.
-See [Linux host contracts](linux-game.md).
+Linux: optimized host builds retain assertions/numeric policy. Runner presets
+60/120/180/240, frame profiles and synthetic Story input use isolated named
+fixtures; cleanup selects only the active save root. Upload-copy/sanitizer and
+GPU snapshot contracts run in CI. See [contracts](linux-game.md) and
+[launcher checks](launcher.md).
 
 Windows builds pass `config/build/windows-game.manifest` as
 `TSFP_GAME_MANIFEST`; patch 2130 attaches it only to the game target. CMake

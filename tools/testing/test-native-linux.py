@@ -170,7 +170,7 @@ def main():
             import native_frame_stats
             summary['frame_timings']=native_frame_stats.summarize(ROOT/'logs/linux-game-frames.csv',args.profile_start)
             summary['frame_timings']['scope']='Successful host-present intervals; not GPU completion or scanout'
-        summary['disposable_test_disks']=recycle_test_disks(ROOT,test)
+        summary['disposable_test_disks']=recycle_test_disks(ROOT,test,save_directory=Path(env['RECOMP_SAVE_DIR']))
         (logs/'linux-game.json').write_text(json.dumps(summary,indent=2)+'\n');print(json.dumps(summary,indent=2))
         passed=timed_out and summary['requested_timing_observed'] and summary['presents'] and summary['presents']['guest']>0 and not summary['vulkan_validation_errors']
         if not passed:raise SystemExit(1)

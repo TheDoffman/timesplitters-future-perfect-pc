@@ -241,7 +241,7 @@ jobs:
             tests/graphics/test_channel_clears.py tests/graphics/test_objectives_health.py
             tests/graphics/test_fov_settings.py tests/storage/test_storage_menu.py tests/input/test_text_read_scope.py tests/diagnostics/test_trace_filter.py tests/diagnostics/test_sample_chains.py tests/diagnostics/test_sample_pc_locations.py tests/graphics/test_gpu_flush_ack.py
             tests/graphics/test_menu_sampling.py tests/graphics/test_pushbuffer_policy.py tests/graphics/test_shader_source_lookup.py tests/textures/test_texel_sample_lanes.py
-            tests/graphics/test_renderer_host.py tests/graphics/test_render_state_cache.py tests/repository/test_vulkan_sdk.py tests/graphics/test_rhi_menu_sampling.py tests/graphics/test_vulkan_interface.py
+            tests/graphics/test_renderer_host.py tests/graphics/test_render_state_cache.py tests/repository/test_vulkan_sdk.py tests/graphics/test_rhi_menu_sampling.py tests/graphics/test_vulkan_interface.py tests/graphics/test_upload_rows.py
             tests/gameplay/test_frame_replay.py
             tests/diagnostics/test_debug_settings_model.py
             tests/network/test_native_network.py tests/network/test_crossplay_peer.py tests/network/test_online_companion.py tests/network/test_online_theme.py tests/network/test_online.py tests/network/test_online_host.py tests/network/test_network_identity.py
@@ -308,7 +308,7 @@ jobs:
           python -m venv .venv-linux
           .venv-linux/bin/python -m pip install -r requirements.txt
       - name: Check SDK isolation and real Linux host memory providers
-        run: .venv-linux/bin/python -m pytest tests/repository/test_linux_foundation.py tests/gameplay/test_native_linux.py tests/gameplay/test_auto_look.py tests/gameplay/test_native_crash.py tests/compiler/test_linux_host.py tests/compiler/test_linux_map_query.py tests/graphics/test_vulkan_interface.py tests/compiler/test_host_pages.py tests/compiler/test_host_memory_stats.py tests/compiler/test_native_vm_host.py tests/compiler/test_shared_views.py -q --tb=short
+        run: .venv-linux/bin/python -m pytest tests/repository/test_linux_foundation.py tests/gameplay/test_native_linux.py tests/gameplay/test_auto_look.py tests/gameplay/test_native_crash.py tests/compiler/test_linux_host.py tests/compiler/test_linux_map_query.py tests/graphics/test_vulkan_interface.py tests/graphics/test_upload_rows.py tests/compiler/test_host_pages.py tests/compiler/test_host_memory_stats.py tests/compiler/test_native_vm_host.py tests/compiler/test_shared_views.py -q --tb=short
       - name: Run shared Vulkan and production replay contracts with software Vulkan
         run: |
           LVP_ICD=$(find /usr/share/vulkan/icd.d -name 'lvp_icd*.json' -print -quit)

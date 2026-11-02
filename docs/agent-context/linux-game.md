@@ -183,3 +183,38 @@ at 60 Hz. This is the shared pacing rule, not a Linux-specific timing algorithm.
 Linux CI now runs the existing frame-clock deadline/preset fixtures after the
 RHI step prepares and patches the runtime; these fixtures must exercise the
 Linux branch, not only Windows/Mac host builds.
+
+## Vulkan upload batching and benchmark evidence
+
+Final shared Vulkan patch2411 uses `src/graphics/upload_copy.h` to batch tight
+rows/slices while preserving padded/short-row bytes. Uniform buffer updates
+compare exact CPU-shadow bytes (including signed zero/NaN payloads); unchanged
+updates retain the existing dirty state/snapshot instead of forcing a new GPU
+copy. Direct map/unmap stays dirty, and frame/range changes still resnapshot.
+All Vulkan hosts share this implementation; D3D11 is unchanged. The real GPU
+512-draw/six-arena fixture repeats both dirty and clean identical updates.
+The byte-copy fixture checks tight/padded/short/compressed layouts, slice gaps,
+sentinels and uniform identity under optimized/sanitized builds.
+
+Opt-in `TSFP_RHI_UPLOAD_PROFILE=1` logs cumulative image bytes/copy calls,
+uniform updates/skips, GPU uniform bytes, wait API calls/time and pipeline
+creation calls each300 frames. Counters describe host work/API wait duration,
+not GPU completion. Default runs perform no profiling clock queries or logs.
+`TSFP_RHI_UPLOAD_BASELINE=1` selects legacy row copies/dirty updates for a
+same-binary comparison. Runner `--upload-profile`/`--upload-baseline` select
+these diagnostics explicitly; inherited overrides are still removed.
+
+The runner's `--profile-name` keeps named fixture copies separate and reserves
+manual/XDG/crash folders. `--frame-profile --profile-start SECONDS` records
+bounded present intervals and percentiles using the shared analysis helper.
+`--input-script tests/fixtures/linux-story-benchmark.json` provides bounded
+synthetic SDL navigation into Story2401 Normal using the existing Test Lab
+profile. Script size/event count/time ordering/command grammar are validated
+before a game starts. Captures must establish the actual measured scene;
+a successful script alone is not gameplay evidence. The script uses S for
+fixture menu movement and Escape/Continue after loading; frame timings begin
+after110seconds. Keep loading/cutscenes separate from stationary gameplay.
+
+Linux cleanup now passes the active RECOMP_SAVE_DIR into the shared recycler;
+only its direct Partition0..5 images move to Trash. Manual and sibling test
+profiles remain untouched. Existing Mac recycler callers retain their scope.

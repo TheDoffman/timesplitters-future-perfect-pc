@@ -78,3 +78,26 @@ def test_runner_selects_each_supported_preset_over_stale_preferences(tmp_path,fp
 def test_runner_rejects_unknown_preset_without_creating_files(tmp_path):
     with pytest.raises(ValueError):runner().test_frame_rate(tmp_path,200)
     assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize('bad',[
+    {'at':float('nan'),'commands':['+E']},
+    {'at':1,'commands':['quit']},
+    {'at':1,'commands':['+E\ncrash']},
+    {'at':200,'commands':['+E']},
+    {'at':True,'commands':['+E']},
+])
+def test_input_schedule_rejects_unsafe_or_unbounded_commands(tmp_path,bad):
+    import json
+    path=tmp_path/'script.json';path.write_text(json.dumps({'schema':1,'events':[bad]}))
+    with pytest.raises(ValueError):runner().input_script(path,150)
+
+
+def test_input_schedule_validates_real_benchmark_and_order(tmp_path):
+    import json
+    module=runner();events=module.input_script(ROOT/'tests/fixtures/linux-story-benchmark.json',150)
+    assert events[0]==(6,'focus 1\n+E\n')
+    assert events[-1]==(93.3,'-E\n')
+    path=tmp_path/'script.json';path.write_text(json.dumps({'schema':1,'events':[
+        {'at':2,'commands':['+E']},{'at':1,'commands':['-E']}]}))
+    with pytest.raises(ValueError):module.input_script(path,150)
