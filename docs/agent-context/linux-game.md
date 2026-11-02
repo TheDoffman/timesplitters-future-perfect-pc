@@ -125,3 +125,15 @@ must survive; validation stays enabled. `linux_vulkan_sdk.select_driver` supplie
 WSL's installed D3D12 bridge search path for explicit ICD selection in both test
 runners. `tools/build/build-wsl-vulkan.py` reproduces the private pinned driver
 with publisher archive, patch, manifest and resulting-library hashes.
+
+Hardware-driver profiling exposed repeated text `/proc/self/maps` scans in
+`pc_guest_query_region` as a CPU bottleneck. Linux now tries the kernel 6.11+
+PROCMAP_QUERY binary ioctl (fixed 104-byte UAPI, without relying on new headers),
+then falls back to text only for an unsupported ioctl. Holes/permission failures
+remain denied; every access re-queries live protection boundaries. No snapshots
+persist across guest execution. The controlled `test_linux_map_query.py` fixture
+checks permissions, changing protection, invalid boundaries, holes and fallback.
+`tools/play-native-linux.py --game-dir PATH --wsl-gpu` verifies the private driver
+receipt and opens direct Wayland on WSLg with persistent isolated manual saves,
+shader caching and bounded logs. Validation is opt-in for interactive performance;
+the bounded acceptance runners keep validation enabled.

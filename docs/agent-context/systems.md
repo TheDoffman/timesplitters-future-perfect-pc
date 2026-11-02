@@ -2,7 +2,7 @@
 [exFAT](host-storage.md)
 # Subsystem entry points
 
-[Linux GPU](linux.md).
+[Linux GPU and live memory query](linux-game.md).
 
 PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
