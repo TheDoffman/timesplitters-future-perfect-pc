@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 static void test_msaa_resolve(void)
 {
     const char *hlsl="struct O{float4 p:SV_POSITION;}; O vs(uint id:SV_VertexID){"
