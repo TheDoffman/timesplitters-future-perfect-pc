@@ -1,3 +1,22 @@
+## Linux rebuild after main sync (2026-11-02)
+
+`feature/linux-launcher` merged `origin/main` at `040874b3` with merge commit
+`8da427d5`, retaining Linux/GPU/launcher work and main's System Link row-callback
+fix plus game0.4.2. Documentation conflicts retain both sets of evidence and
+context guides remain within their size limits. The native Ubuntu checkout was
+fast-forwarded through Git and rebuilt with the existing verified US game data.
+Protected-MMIO checks pass. ELF SHA256:
+`cd93a20e4b06c396e6f7f8213d27aa93d2a162f378cbdf65d55c9c717da1b2f1`.
+
+Windows selected menu/System Link/context/backlog checks:25 passed,2 native-Mac
+skips; CI policy checks:94 passed. A30.19-second isolated RTX/Dozen Wayland run
+with validation completed at least2,100 guest frames/presents with zero failed
+or skipped presents and zero validation errors. The rendered Video Options
+screen was reviewed; its persisted beta refresh setting makes this startup/UI
+evidence, not a controlled FPS comparison or a new gameplay/LAN acceptance run.
+No Windows/Mac game rebuild or physical LAN check was performed. The reverted
+machine networking setup is unchanged by this source sync.
+
 ## Linux RTX hardware rendering (2026-11-02)
 
 Local unpublished `feature/linux-launcher`, shared GPU changes from `9e451a55`
