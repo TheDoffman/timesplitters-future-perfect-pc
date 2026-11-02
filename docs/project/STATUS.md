@@ -37627,3 +37627,52 @@ division-eol-context.log and division-ci-fixes-focused.log.
 Whole-runtime replacement, remaining charset/ownership/exception/kernel services,
 graphics/audio/input/title/fixture replacement and snapshot-unavailable production
 acceptance remain unfinished. No merge is authorized by this checkpoint.
+
+
+## Original RTL memory and bit services (2026-11-02, stage0243, PR465)
+
+Baseline083d13c8 passed runtime41412095577 and launcher41412095536 completely,
+including Windows/Mac native and patch-upgrade jobs. This accepts the previous
+EOL/negative-control repairs and records a passing unchanged sampler run; the
+prior Windows access violation's cause remains unproven. Native Mac gameplay
+is separate. Stage0243 continues from those inputs on feature/guest-arithmetic.
+
+Original guest_memory_ops.c/.h and guest_kernel_memory_ops.inc replace seven
+inherited bodies:284 fill,285 DWORD fill,298 move,320 zero,307/318 byte swaps and
+297 generic-mask mapping. The old mask no-op is replaced. Both swaps now read ECX
+and use zero dispatcher cleanup, supported by public Xbox SDK declarations and
+real native x86 fastcall references; the other five retain8/12-byte checked frames.
+No SDK implementation/dependency is added. See
+[complete contracts](../agent-context/guest-memory-ops.md).
+
+Windows x64/MSVC14.44:69 focused cases passed27.29s, including14007 independent
+whole512-byte RAM vectors through actual provider/imports, nine compile-first bad
+variants,4305 actual x86 ntdll calls, executed real dispatcher size checks and
+existing numeric/arithmetic/context coverage. Binary streams use explicit binary
+mode. The initial native probe's mistaken stdcall swap prototype was rejected by
+its stack check; correcting it exposed and led to correcting the guest ABI too.
+All35 migration/line-ending cases passed527.06s with two workers. Combined
+with the69 focused cases,104 distinct local cases passed.
+
+Release build, utility/built-in tests and matching crash symbols passed. Provider
+selection/archive symbols are current; the old seven bodies are absent. Generation
+is current and all generated game bytes match the accepted arithmetic build.
+Executable SHA256:
+`206c6a4b28374786b1d3593d0b974852c754928c579fe73d732d279152910080`.
+Exact source/patch/tool/kernel/archive/generated provenance is in ignored
+logs/memory-ops-build.json. The pre-build26-file preservation check passed.
+Both bounded Story runner and controller exited0. Scotland scene4/mission1:
+forward11.174544, backward6.184889, ammo8 to6,39 frozen pause samples and58
+advancing resume samples. Last checkpoint206.127s was within240s cap. Fresh
+start/fire/pause captures were reviewed. Profile signatures/fixture were valid;
+all26 protected hashes/sizes/mtimes were unchanged. No run lock, dump or Partition
+image remained. Source/build/game hashes agree (logs/memory-ops-game-check.json,
+logs/memory-ops-captures). This was minimized synthetic Original60/movie-skipped
+validation; no physical-input/listening/full-campaign claim follows.
+
+The supported US XBE imports none of these seven routines; fixtures exercise the
+new services directly while game tests check integration stability. New-stage CI,
+native Mac title/gameplay and final toolkit/snapshot-unavailable generation/build/
+package acceptance remain pending. Charset conversion, string ownership,
+exception/unwind and other kernel/graphics/audio/input/title/fixture replacement
+remain unfinished; no whole-project independence claim is made.

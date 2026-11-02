@@ -8765,3 +8765,15 @@ with Clang fatal warnings. Windows73 distinct focused/repository cases passed;
 Mac repair execution/CI and native Mac title remain pending. See STATUS for the
 failed fdce CI jobs and exact unchanged game-build provenance. No new host adapter
 or alternate Mac arithmetic is introduced.
+
+
+Stage0243 original memory/bit services (2026-11-02, PR465 continuation): same pure
+provider and guest adapters serve Windows and Mac; no host adapter needed. Uses
+standard memmove/memset and fixed guest-width bit/byte operations. Swaps
+read ECX with no guest cleanup; the actual native Windows reference uses x86
+fastcall. Windows69 focused tests and Release/built-in/provider checks pass;
+Story and all35 migrations passed; new-stage Mac CI/title execution
+pending (STATUS). Portable cases run with undefined-behavior sanitizer on Mac;
+4305 real ntdll reference cases require Windows/WoW64. Previous083d repair stage
+passed both-host runtime41412095577 and launcher41412095536. Native Mac gameplay
+and full runtime independence remain unverified.

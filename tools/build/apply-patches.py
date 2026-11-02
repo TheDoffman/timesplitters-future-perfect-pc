@@ -144,6 +144,10 @@ def patch_records(paths):
     if division:
         paths.remove(division)
         paths.append(division)
+    memory_ops = by_name.get('0243-original-memory-operations.patch')
+    if memory_ops:
+        paths.remove(memory_ops)
+        paths.append(memory_ops)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

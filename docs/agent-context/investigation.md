@@ -378,3 +378,5 @@ uses replaced/adjacent source style for new lines, preserving patch text and
 final-newline presence before transactional publication. Test both Git
 core.autocrlf settings explicitly; a host's global Git config can mask the bug.
 See [division migration evidence](guest-integer-division.md).
+
+Stage0243 extends the effective tail and historical exclusions; [memory/bit contracts](guest-memory-ops.md) include native stack-probe and public fastcall ABI evidence.

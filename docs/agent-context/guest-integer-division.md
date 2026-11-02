@@ -117,3 +117,10 @@ actual fault/publication contract. Fatal warnings and negative controls remain.
 Windows CI's separate live-sampler fixture exited C0000005 during reporting;
 all18 local division/sampler cases passed unchanged sampler source. That failure's
 cause is unproven; new CI results are required, not an inferred sampler fix.
+
+
+Repair acceptance:083d13c8 passed both runtime41412095577 and
+launcher41412095536, including both-host native and upgrade jobs. This verifies
+the EOL/negative-control fixes and a passing unchanged Windows sampler run;
+it does not prove the old sampler crash's cause or native Mac gameplay.
+Next [memory/bit stage0243](guest-memory-ops.md) has separate acceptance.

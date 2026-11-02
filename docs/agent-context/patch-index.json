@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "79b2a4452c56f2298d7121d5a92ec6cf3d496bbd7802cfc0324eae36d12f01ed",
+  "loaderSha256": "8f5b17f12c13e64530cb58aedee8234d6b01c583c8309b384d33221f3d2e6e8d",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3017,6 +3017,15 @@
         "src/kernel/CMakeLists.txt",
         "src/kernel/kernel_bridge.c",
         "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0243-original-memory-operations.patch",
+      "path": "patches/compiler/0243-original-memory-operations.patch",
+      "sha256": "d2434631fc3a52f460f49b5c205359526688362a155bd7e355b8cda401828ab6",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
       ]
     }
   ]

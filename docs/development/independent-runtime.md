@@ -8,7 +8,9 @@ Current kernel work has original providers for [pool allocation](../agent-contex
 Stage0241 adds original [extended integer multiplication](../agent-context/guest-integer-product.md);
 its build and focused/migration checks pass, with exact acceptance in STATUS.
 Stage0242 adds [original extended division](../agent-context/guest-integer-division.md)
-and corrects the magic-division ABI. Final-stage acceptance is tracked in STATUS.
+and corrects the magic-division ABI. Stage0243 selects original
+[memory/bit operations](../agent-context/guest-memory-ops.md): fills, move, swaps
+and generic-mask mapping. Exact stage acceptance is tracked in STATUS.
 The complete old native RTL module is excluded from the build. Guest exceptions,
 charset conversion, string allocation/freeing and other arithmetic helpers remain,
 along with other kernel, graphics, audio, input, title and fixture work.
