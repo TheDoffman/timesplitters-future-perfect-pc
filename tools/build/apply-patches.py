@@ -25,6 +25,7 @@ else:
 
 from pathlib import Path
 import argparse
+import difflib
 import hashlib
 import json
 import os
@@ -184,6 +185,50 @@ def read_state(path):
     return raw, state['patches']
 
 
+def preserve_line_endings(before, after):
+    """Keep existing source formatting independently of Git's host EOL setting.
+
+    Git can restore removed CRLF lines as LF when reversing a normalized patch.
+    Keep exact endings on unchanged lines; new/replaced lines inherit the replaced
+    region's style, or adjacent source for a pure insertion. Content and final-
+    newline presence come from the validated patch result. Never alter binary data.
+    """
+    if before == after or b'\0' in before or b'\0' in after:
+        return after
+
+    def split(data):
+        rows = data.split(b'\n')
+        result = [(row[:-1], b'\r\n') if row.endswith(b'\r') else (row, b'\n')
+                  for row in rows[:-1]]
+        if rows[-1]:
+            result.append((rows[-1], b''))
+        return result
+
+    old, new = split(before), split(after)
+    old_text = [body for body, _ in old]
+    new_text = [body for body, _ in new]
+    if old_text == new_text:
+        return b''.join(body + (old[i][1] if ending and old[i][1] else ending)
+                        for i, (body, ending) in enumerate(new))
+
+    def style(rows, fallback):
+        crlf = sum(ending == b'\r\n' for _, ending in rows)
+        lf = sum(ending == b'\n' for _, ending in rows)
+        return (b'\r\n' if crlf >= lf else b'\n') if crlf + lf else fallback
+
+    default = style(old, b'\n')
+    output = []
+    for action, a, b, c, d in difflib.SequenceMatcher(None, old_text, new_text).get_opcodes():
+        if action == 'equal':
+            output.extend(body + (old[a + i][1] if ending and old[a + i][1] else ending)
+                          for i, (body, ending) in enumerate(new[c:d]))
+        else:
+            nearby = old[max(0, a - 1):min(len(old), b + 1)]
+            ending = style(old[a:b], style(nearby, default))
+            output.extend(body + (ending if present else b'') for body, present in new[c:d])
+    return b''.join(output)
+
+
 def validation_key(record, patches, originals, git_version):
     """Exact content receipt; never trust file size/mtime or only a Git revision."""
     value = dict(schema=1, validator=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
@@ -280,6 +325,14 @@ def apply_patches(runtime, patch_dir, *, force=False):
                         f'{patch["name"]} conflicts with the runtime checkout during {phase}. '
                         f'No runtime files were changed.\n{result.stderr}'
                     )
+        # Preserve author-owned source formatting after the whole semantic
+        # migration, before its transactional validation/publication boundary.
+        for name in names:
+            target = stage / name
+            patched = target.read_bytes()
+            preserved = preserve_line_endings(originals[name], patched)
+            if preserved != patched:
+                target.write_bytes(preserved)
         changed = [name for name in sorted(names)
                    if (stage / name).read_bytes() != originals[name]]
         # Do not overwrite an edit made while the stack was being validated.

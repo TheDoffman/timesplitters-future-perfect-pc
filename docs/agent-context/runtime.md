@@ -1011,4 +1011,4 @@ visibility and objective logic remain guest-owned (Refs #338).
 
 Stage0241: [original extended product and ABI checks](guest-integer-product.md).
 
-Stage0242: [division providers, ABI and oracle](guest-integer-division.md).
+Stage0242: [division ABI and source EOL preservation](guest-integer-division.md).

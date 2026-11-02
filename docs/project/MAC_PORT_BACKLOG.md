@@ -8755,3 +8755,13 @@ undefined-behavior sanitizer on Mac; actual x86 ntdll/SEH reference is Windows-
 only. Earlier ad9f product stage passed both-host runtime41404919917 and
 launcher41404919890. Native Mac title/gameplay and complete guest SEH remain
 separate unfinished requirements, not inferred from shared source or Windows.
+
+
+Stage0242 CI follow-up (2026-11-02, PR465): shared patch installation now preserves
+source EOL metadata independently of the host Git setting, including strict
+current/historical reverse migrations. The negative-control fixture now asserts
+caller-address preservation so its deliberately missing fault call still compiles
+with Clang fatal warnings. Windows73 distinct focused/repository cases passed;
+Mac repair execution/CI and native Mac title remain pending. See STATUS for the
+failed fdce CI jobs and exact unchanged game-build provenance. No new host adapter
+or alternate Mac arithmetic is introduced.

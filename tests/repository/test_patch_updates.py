@@ -415,8 +415,13 @@ def main_branch_patches(tmp_path):
     return patches
 
 
+@pytest.mark.parametrize('autocrlf', ['false', 'true'])
 @pytest.mark.parametrize('crlf', [False, True])
-def test_switch_from_texture_branch_to_main_and_back(checkout, tmp_path, crlf):
+def test_switch_from_texture_branch_to_main_and_back(checkout, tmp_path, crlf, autocrlf, monkeypatch):
+    count = int(os.environ.get('GIT_CONFIG_COUNT', '0'))
+    monkeypatch.setenv('GIT_CONFIG_COUNT', str(count + 1))
+    monkeypatch.setenv(f'GIT_CONFIG_KEY_{count}', 'core.autocrlf')
+    monkeypatch.setenv(f'GIT_CONFIG_VALUE_{count}', autocrlf)
     main_patches = main_branch_patches(tmp_path)
     texture_patches = texture_branch_patches(tmp_path)
     installer.apply_patches(checkout, texture_patches)
@@ -658,3 +663,20 @@ def assert_current_original_division_installed(tree):
     assert 'case 283: return 20;' in bridge
     assert (kernel/'CMakeLists.txt').read_text(encoding='utf-8').count('${TSFP_SHARED_SOURCE}/runtime/guest_integer_fault.c')==1
     assert 'guest_integer_fault.c' not in (tree/'titles/futureperfect/CMakeLists.txt').read_text(encoding='utf-8')
+
+
+@pytest.mark.parametrize('before,after,expected', [
+    (b'a\r\nold\r\nz\r\n', b'a\r\nnew\nz\r\n', b'a\r\nnew\r\nz\r\n'),
+    (b'a\nold\nz\n', b'a\r\nnew\r\nz\r\n', b'a\nnew\nz\n'),
+    (b'a\r\nold\r\nz\r\n/* local */\n', b'a\r\nnew\nz\r\n/* local */\n', b'a\r\nnew\r\nz\r\n/* local */\n'),
+    (b'a\r\nkeep\nz\r\n', b'a\nkeep\r\nz\n', b'a\r\nkeep\nz\r\n'),
+    (b'a\r\nz\r\n', b'a\r\ninsert\nz\r\n', b'a\r\ninsert\r\nz\r\n'),
+    (b'a\r\nold', b'a\r\nnew', b'a\r\nnew'),
+    (b'a', b'a\n', b'a\n'),
+    (b'a\r\n', b'a', b'a'),
+    (b'', b'new\n', b'new\n'),
+    (b'', b'', b''),
+    (b'a\0\r\n', b'b\0\n', b'b\0\n'),
+])
+def test_source_line_endings_preserve_edits_and_patch_content(before, after, expected):
+    assert installer.preserve_line_endings(before, after) == expected

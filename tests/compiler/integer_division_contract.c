@@ -60,7 +60,7 @@ int main(void) {
         setup(op,a,b,shift,out);if(out&UINT32_C(0x80000000))g_esp|=UINT32_C(0x80000000);
         out=g_esp;
         if(setjmp(fault_jump)==0)invoke(op);
-        assert(g_esp==out && lookups==1 && reads==1);
+        assert(g_esp==out && lookups==1 && reads==1 && g_xbox_kernel_caller==0x11223344);
         printf("%016" PRIx64 " %08" PRIx32 " %08" PRIx32 "%08" PRIx32 " %u ",direct.quotient,direct.remainder,g_edx,g_eax,faults);
         for(unsigned i=0;i<sizeof(ram);++i)printf("%02x",(unsigned)ram[i]);
         printf("\n");

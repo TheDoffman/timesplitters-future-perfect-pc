@@ -92,3 +92,28 @@ inspection and bounded Scotland movement/fire/pause/resume passed on6cfbb400.
 All generated title bytes match the accepted product build. See STATUS for exact
 hashes/measurements and limits. New division-stage CI/native Mac title execution
 remain pending; earlier ad9f product CI passed on both hosts.
+
+
+## CI follow-up: source formatting and negative-control portability
+
+CI fdce4701 exposed CRLF restoration drift under Mac's core.autocrlf=false:
+Git's reversed LF patch recreated removed division lines with LF. The installer
+now reconciles line endings after full staged migration, before write/receipt
+publication. Exact endings of unchanged lines are retained; replaced/new lines
+inherit the replaced region or adjacent source style. Content and final-newline
+presence follow the validated patch result; binary data is untouched. This
+preserves mixed files and unrelated edits without relying on global Git settings.
+The validator's own source hash already invalidates older cached receipts.
+
+The full texture/main/current reverse test now selects both false/true Git EOL
+settings and both LF/CRLF sources, retaining exact snapshot equality and the
+unrelated-edit assertions. Literal cases exercise inserts/replacements, mixed
+endings, binary data, empty files and final-newline additions/removals.
+
+Mac also caught a compile-first mutation that removed the only use of the guest
+caller fixture variable. The import fixture now asserts that caller address is
+preserved on every request; the broken adapter must still compile and fail its
+actual fault/publication contract. Fatal warnings and negative controls remain.
+Windows CI's separate live-sampler fixture exited C0000005 during reporting;
+all18 local division/sampler cases passed unchanged sampler source. That failure's
+cause is unproven; new CI results are required, not an inferred sampler fix.

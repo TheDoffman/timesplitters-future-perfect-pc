@@ -369,3 +369,12 @@ instructions do not override this task's newer user direction.
 Stage0241 extends the maintained effective-tail assertion and historical upgrade exclusions; see [product evidence](guest-integer-product.md).
 
 Stage0242: [division providers, ABI and oracle](guest-integer-division.md).
+
+
+For patch-switch byte drift, inspect changed source lines rather than dumping a
+whole pytest snapshot. Stage0242 exposed reverse-added LF lines in a CRLF source
+on Mac. apply-patches.py preserve_line_endings keeps exact unchanged endings and
+uses replaced/adjacent source style for new lines, preserving patch text and
+final-newline presence before transactional publication. Test both Git
+core.autocrlf settings explicitly; a host's global Git config can mask the bug.
+See [division migration evidence](guest-integer-division.md).
