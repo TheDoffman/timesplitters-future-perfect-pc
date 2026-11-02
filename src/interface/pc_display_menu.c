@@ -4,6 +4,7 @@
    audio/video, layout, highlighting and navigation stay in the guest engine. */
 #include "pc_display_menu.h"
 #include "pc_settings.h"
+#include "pc_debug.h"
 #define KB_OPEN 0x1200fu
 static uint32_t kb_caption(void);
 #include "pc_display_memory.h"
@@ -363,7 +364,7 @@ static int mode_count, selected_mode, page, staged_fov, previous_fov;
 static int staged_rate, applied_rate;
 static unsigned applied_texture;
 static uint32_t apply_row;
-static uint32_t rate_row,subtitle_row,feed_row;
+static uint32_t rate_row,subtitle_row,feed_row,counter_row;
 static unsigned staged_subtitles,applied_subtitles;
 static uint32_t resolution_row, aspect_row;
 static uint32_t texture_row;
@@ -1014,7 +1015,7 @@ static void update_apply(void)
 }
 static void labels(void)
 {
-    resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=apply_row=0;
+    resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=apply_row=0;
     if(page==DISPLAY_HOME) {
         aspect_row=guest_call(sub_00079D60_gen,6,text_at(7,"Aspect ratio"),0u,0u,0u,0u,0u);
         guest_call(sub_0007D480,2,0x8400u,0u);
@@ -1049,6 +1050,11 @@ static void labels(void)
         guest_call(sub_000717D0,1,text_at(16,"Off"));
         guest_call(sub_000717D0,1,text_at(17,"On"));
         guest_call(sub_00075430,2,feed_row,(uint32_t)pc_feed_enabled());
+        counter_row=guest_call(sub_00079D60_gen,6,text_at(18,"FPS / Ping"),11u,0u,0u,0u,0u);
+        guest_call(sub_0007D480,2,0x8400u,0u);
+        guest_call(sub_000717D0,1,TEXT_ADDRESS(16));
+        guest_call(sub_000717D0,1,TEXT_ADDRESS(17));
+        guest_call(sub_00075430,2,counter_row,(uint32_t)pc_counter_enabled());
         if(*status)small_note(21,status);
         apply_row=guest_call(sub_00079D60_gen,6,text_at(4,"Apply"),3u,0u,0u,SELECT_CB,0u);
         update_apply();
@@ -1070,6 +1076,12 @@ static void read_choices(void)
             snprintf(status,sizeof status,"Could not save Kill Feed preference.");
         } else pc_feed_clear(&kill_feed);
     }
+    if(counter_row && WORD_AT(counter_row+0xc8)<=1u && (int)WORD_AT(counter_row+0xc8)!=pc_counter_enabled()) {
+        if(!pc_counter_set_enabled((int)WORD_AT(counter_row+0xc8))) {
+            guest_call(sub_00075430,2,counter_row,(uint32_t)pc_counter_enabled());
+            snprintf(status,sizeof status,"Could not save FPS / Ping preference.");
+        }
+    }
     if(rate_row && WORD_AT(rate_row+0xc8)<PC_FRAME_RATE_COUNT)
         staged_rate=(int)WORD_AT(rate_row+0xc8);
 }
@@ -1086,7 +1098,7 @@ static void build_menu(void)
 }
 static void refresh(int next,int selected)
 {
-    page=next;resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=apply_row=0;
+    page=next;resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=apply_row=0;
     guest_call(sub_00078980,1,current_menu);
     /* Guest rebuild restores old choices by row ID. Reapply every staged value,
      * including the newly filtered resolution list, without committing it. */

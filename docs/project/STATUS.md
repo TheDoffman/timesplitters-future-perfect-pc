@@ -1,3 +1,16 @@
+# FPS / Ping counter (2026-11-01, uncommitted)
+
+Branch feature/fps-network-counter based on 4f80b5e5. Saved Video Options
+row defaults OFF; shows presented FPS and fresh Online RTT, no frame time.
+Common RHI and legacy GL scale uniformly, with a readable minimum size.
+Windows x64 D3D11 full Build and built-in tests passed (892f117e local build
+identity); focused tests: 7 passed, 2 Mac-only skips. Fresh/repeated patch and
+branch-switch checks passed (3 cases). Live 1280x720 frontend verified OFF/ON
+changes immediately and persists show_counter in isolated controls JSON.
+Evidence: private/test-saves/kill-feed/fps-ping-menu.jpg. Menu accepts nine
+rows without clipping. Native Mac, pause interaction and live Online remain
+unverified; synthetic RTT formatting is not a real peer test.
+
 ## Optional Arcade kill feed (2026-11-01)
 
 Feature/arcade-kill-feed, based on main 0b0fcb8b. Windows x64

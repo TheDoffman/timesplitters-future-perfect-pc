@@ -33,6 +33,7 @@ namespace TimeSplitters.Launcher
         public bool DiscordEnabled;
         public bool EnhancedTextures;
         public bool EnhancedAudio;
+        public bool ShowCounter;
         public string LanguagePack = "en";
         public static readonly string[] LanguagePacks = { "en", "fr", "de", "it", "es" };
         public static readonly string[] LanguagePackLabels = { "English", "Français", "Deutsch", "Italiano", "Español" };
@@ -125,6 +126,15 @@ namespace TimeSplitters.Launcher
                 {
                     Core.Require(value is bool, "Skip startup splash screens must be true or false. No settings were changed.");
                     model.SkipStartupSplashes = (bool)value;
+                }
+            }
+            if (model.document.TryGetValue("debug", out value))
+            {
+                object counter;
+                if (Map(value).TryGetValue("show_counter", out counter))
+                {
+                    Core.Require(counter is bool, "FPS / Ping must be true or false. No settings were changed.");
+                    model.ShowCounter = (bool)counter;
                 }
             }
             if (model.document.TryGetValue("mouse", out value))
@@ -346,6 +356,8 @@ namespace TimeSplitters.Launcher
             Map(value)["skip_startup_splashes"] = SkipStartupSplashes;
             Map(value)["enhanced_textures"] = EnhancedTextures;
             Map(value)["language_pack"] = LanguagePack;
+            if (!document.TryGetValue("debug", out value)) document["debug"] = value = new Dictionary<string, object>();
+            Map(value)["show_counter"] = ShowCounter;
             var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
             graphics["frame_target"] = PresentationFps.ToString();
             graphics["refresh_rate"] = RefreshRate.ToString();

@@ -1,5 +1,10 @@
 # PC features awaiting Mac adaptation
 
+FPS / Ping counter (2026-11-01, uncommitted): shared settings/formatting and
+common RHI scaling; legacy GL uses the same layout helper. No new network
+provider; existing Online RTT is used where supported. Native Mac rendering,
+menu persistence and live Online validation remain pending.
+
 PC Settings menu-bar visibility (2026-11-01): **Not applicable** to native Mac.
 The Windows F1 bar now persists `pc_menu_visible` in the active input profile;
 Mac has no equivalent in-window bar and retains its system menu and F1 pointer

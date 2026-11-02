@@ -1,3 +1,4 @@
+Counter patch 2490 scales the host overlay without changing guest captures.
 Kill feed: timing scopes, attribution, viewport colors and rematch reset are
 documented in [the feed guide](../development/arcade-kill-feed.md).
 Story rewards: additive2465 wraps356800 for the single frontend context;

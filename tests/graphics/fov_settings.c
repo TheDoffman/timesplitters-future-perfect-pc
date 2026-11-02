@@ -20,6 +20,9 @@ static int available=1,returned;
 static int enhanced_audio,audio_save_ok=1;
 int pc_audio_enhanced_enabled(void) {return enhanced_audio;}
 int pc_audio_set_enhanced(int enabled) {if(!audio_save_ok)return 0;enhanced_audio=!!enabled;return 1;}
+static int counter_enabled,counter_save_ok=1;
+int pc_counter_enabled(void) { return counter_enabled; }
+int pc_counter_set_enabled(int value) { if(!counter_save_ok)return 0;counter_enabled=!!value;return 1; }
 static unsigned built_rows, built_row_count, built_ids[32],separators;
 static char runtime_path[MAX_PATH];
 static int requested_rate=-1;
@@ -276,7 +279,12 @@ int main(int argc,char **argv)
     reload("TSFP_DISPLAY_V1 1280 720\n");
     tsfp_texture_set_4k(0);
     call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
-    CHECK(page==DISPLAY_HOME && built_row_count==8 && separators==0 && (built_rows & (1u<<10)));
+    CHECK(page==DISPLAY_HOME && built_row_count==9 && separators==0 && (built_rows & (1u<<10)) && (built_rows & (1u<<11)));
+    WORD_AT(counter_row+0xc8)=1;read_choices();CHECK(counter_enabled);
+    counter_save_ok=0;WORD_AT(counter_row+0xc8)=0;read_choices();
+    CHECK(counter_enabled && WORD_AT(counter_row+0xc8)==1);
+    counter_save_ok=1;WORD_AT(counter_row+0xc8)=0;read_choices();CHECK(!counter_enabled);
+    status[0]=0;
     { /* Shared focus bars stay rounded regardless of the menu descriptor. */
         float bounds[4]={20,20,220,47};
         WORD_AT(current_menu+4)=storage;WORD_AT(current_menu+0x20)=0x310000;

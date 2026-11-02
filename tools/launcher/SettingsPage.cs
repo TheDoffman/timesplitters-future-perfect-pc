@@ -234,7 +234,7 @@ namespace TimeSplitters.Launcher
             var qualityColumns=Columns(quality);var qualityLeft=Column(qualityColumns,0);var qualityRight=Column(qualityColumns,1);
             scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString());scale.Name="ConsoleRenderScale";Field(qualityLeft,"Console render scale",scale);
             filtering=Choices(new[]{"1","2","4","8","16"},model.Anisotropy.ToString());Field(qualityRight,"Anisotropic filtering",filtering);
-            vrr=Check("Variable refresh rate",model.Vrr);vrr.Name="VariableRefreshRate";Ui.Tip(vrr,"Allows unsynchronized presentation in fullscreen. Enable VRR in your monitor and driver too; a fixed-refresh display may tear.");fps=Check("Show FPS overlay",model.FpsOverlay);
+            vrr=Check("Variable refresh rate",model.Vrr);vrr.Name="VariableRefreshRate";Ui.Tip(vrr,"Allows unsynchronized presentation in fullscreen. Enable VRR in your monitor and driver too; a fixed-refresh display may tear.");fps=Check("FPS / Ping",model.ShowCounter);fps.Name="FpsPingCounter";Ui.Tip(fps,"Shows FPS and, during online play, network ping in milliseconds. Also available in the in-game Video Options.");
             var qualityToggles=new WrapPanel();qualityToggles.Children.Add(vrr);qualityToggles.Children.Add(fps);quality.Children.Add(qualityToggles);
             performanceAdvice=Text("",12);performanceAdvice.Name="PerformanceAdvice";
             performanceAdvice.Foreground=Muted;quality.Children.Add(performanceAdvice);
@@ -427,7 +427,7 @@ namespace TimeSplitters.Launcher
                 model.Sensitivity=number; model.MouseEnabled=enabled.IsChecked==true; model.InvertY=invert.IsChecked==true;
                 string chosenDevice=Devices[device.SelectedIndex]; if(chosenDevice!=model.Device.Replace("xinput:","gamepad:")) model.Device=chosenDevice;
                 model.VerticalFov=(int)Math.Round(fov.Value);
-                model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.FpsOverlay=fps.IsChecked==true;
+                model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.ShowCounter=fps.IsChecked==true;
                 model.NativeFps=GameSettings.NativeFrameRates[frameRate.SelectedIndex];
                 model.EnhancedTextures=enhancedTextures.IsChecked==true;
                 model.EnhancedAudio=enhancedAudio.IsChecked==true;

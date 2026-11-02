@@ -1,4 +1,4 @@
-[HUD](../development/arcade-kill-feed.md)
+FPS/Ping: shown FPS and fresh Online RTT in pc_debug.c.
 [exFAT](host-storage.md)
 # Subsystem entry points
 

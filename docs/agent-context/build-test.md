@@ -1,4 +1,4 @@
-FOV fixture stubs HUD draws and checks the Kill Feed row.
+FOV fixture checks HUD rows; debug model/Build tests cover FPS/Ping.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build, run and validation map
 

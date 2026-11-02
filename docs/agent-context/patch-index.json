@@ -1837,6 +1837,16 @@
       ]
     },
     {
+      "name": "2490-fps-counter-scaling.patch",
+      "path": "patches/graphics/interface/2490-fps-counter-scaling.patch",
+      "sha256": "85e6d36b10a7237e53b81868f5790ced9fbeb0cb9f817059afb934e8953995ff",
+      "targets": [
+        "src/d3d/d3d8_overlay.c",
+        "src/d3d/d3d8_overlay.h",
+        "src/hle/hle_d3d8.c"
+      ]
+    },
+    {
       "name": "independent-condition-fixture.patch",
       "path": "patches/compiler/independent-condition-fixture.patch",
       "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",

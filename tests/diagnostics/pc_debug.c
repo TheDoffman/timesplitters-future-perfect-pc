@@ -156,6 +156,23 @@ int main(int argc, char **argv)
     CHECK(pc_debug_overlay(overlay,sizeof overlay,"auto") && strstr(overlay,"RTT: waiting"));
     pc_debug_latency(1,NAN,1);
     CHECK(pc_debug_overlay(overlay,sizeof overlay,"auto") && !strstr(overlay,"nan"));
+    /* Product counter uses presented FPS, hides offline/LAN latency and never
+     * exposes guest frame time or the debug target/cap labels. */
+    CHECK(pc_counter_set_enabled(1) && pc_counter_enabled());
+    pc_debug_config_read(&readback);CHECK(readback.show_counter && readback.show_issues);
+    pc_debug_sample(60,120);pc_debug_latency(0,42.5,1);
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && !strcmp(overlay,"120 FPS"));
+    pc_debug_latency(1,42.5,1);
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && !strcmp(overlay,"120 FPS"));
+    pc_debug_latency(2,42.5,1);
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && !strcmp(overlay,"120 FPS | Ping 42 ms"));
+    pc_debug_latency(2,-1,0);
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && !strcmp(overlay,"120 FPS | Ping --"));
+    CHECK(SetFileAttributesA(config,FILE_ATTRIBUTE_READONLY));
+    CHECK(!pc_counter_set_enabled(0) && pc_counter_enabled());
+    CHECK(SetFileAttributesA(config,FILE_ATTRIBUTE_NORMAL));
+    CHECK(pc_counter_set_enabled(0) && !pc_counter_enabled());
+    pc_debug_set(&options);
     pc_debug_frame(); Sleep(65); pc_debug_frame();
     pc_debug_snapshot(&snapshot); CHECK(snapshot.slow_frames==1);
     pc_debug_toggle_fps(); pc_debug_get(&readback); CHECK(!readback.show_fps && readback.show_issues);

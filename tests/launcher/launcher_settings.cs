@@ -451,6 +451,18 @@ public static class LauncherSettingsChecks
                 Require(Read(root,"Settings/runtime.conf").Contains("# Keep this comment") && Read(root,"Settings/runtime.conf").Contains("future_graphics = keep"));
                 Require(File.Exists(Path.Combine(root,"Settings/pc-controls.json.bak")));
             });
+            Test("FPS counter shares game debug preference and preserves diagnostic fields",()=>{
+                string root=Root("fps-ping");var model=GameSettings.Load(root,null);
+                Require(!model.ShowCounter);model.Save();
+                var json=Json.Object(Read(root,"Settings/pc-controls.json"));
+                json["debug"]=new System.Collections.Generic.Dictionary<string,object>{{"show_counter",true},{"show_fps",true},{"future_debug","keep"}};
+                Put(root,"Settings/pc-controls.json",Json.Encode(json));
+                model=GameSettings.Load(root,null);Require(model.ShowCounter);
+                model.ShowCounter=false;model.Save();
+                var debug=(System.Collections.Generic.Dictionary<string,object>)Json.Object(Read(root,"Settings/pc-controls.json"))["debug"];
+                Require(!(bool)debug["show_counter"] && (bool)debug["show_fps"] && (string)debug["future_debug"]=="keep");
+                Require(!GameSettings.Load(root,null).ShowCounter);
+            });
             Test("legacy timing settings migrate to 60 FPS without losing unrelated preferences",()=>{
                 foreach(int target in new[]{0,120,144}) {
                     string root=Root("retired-fps-"+target);
