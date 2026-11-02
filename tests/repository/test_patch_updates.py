@@ -458,7 +458,7 @@ def test_native_boot_source_conflict_preserves_all_files(checkout):
     installer.apply_patches(checkout, PATCHES)
     cmake = checkout / 'titles/futureperfect/CMakeLists.txt'
     content = cmake.read_bytes()
-    native_sources = b'list(APPEND GAME_SOURCES "${TSFP_NATIVE_DIR}/main.c" "${TSFP_NATIVE_DIR}/mmio.c")'
+    native_sources = b'list(APPEND GAME_SOURCES "${TSFP_NATIVE_DIR}/main.c")'
     assert native_sources in content
     cmake.write_bytes(content.replace(native_sources,
                                      native_sources.replace(b'${TSFP_NATIVE_DIR}/main.c', b'custom_main.c')))

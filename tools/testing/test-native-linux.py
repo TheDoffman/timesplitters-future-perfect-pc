@@ -26,6 +26,7 @@ def main():
     p.add_argument('--seconds',type=int,default=120)
     p.add_argument('--driver-manifest',type=Path)
     p.add_argument('--capture',action='store_true')
+    p.add_argument('--unlocked-profile',action='store_true',help='Use the shared local Test Lab fixture in a disposable nested profile')
     p.add_argument('--test-keys',action='store_true',help='Read synthetic SDL events from the isolated test-keys.txt')
     args=p.parse_args()
     if platform.system()!='Linux' or platform.machine().lower() not in ('x86_64','amd64'):p.error('Requires Linux x64')
@@ -56,6 +57,12 @@ def main():
             XDG_CONFIG_HOME=str(test/'xdg-config'),XDG_DATA_HOME=str(test/'xdg-data'),XDG_CACHE_HOME=str(test/'xdg-cache'),
             RECOMP_LOG_FILE=str(ROOT/'logs/linux-game.err'),TSFP_CRASH_DIR=str(test/'crashes'),
             RECOMP_XMV_PLAY='0',RECOMP_FPS_CAP='60',TSFP_NATIVE_FPS='0',RECOMP_TRACE_BUDGET='500')
+        if args.unlocked_profile:
+            from testing_profile import prepare_run
+            prepared=prepare_run(ROOT,test/'unlocked')
+            for key in ('RECOMP_SAVE_DIR','RECOMP_INPUT_CONFIG','RECOMP_ICALL_FEEDBACK_PATH',
+                        'TSFP_TEXTURE_PACK_DIR','TSFP_TEXTURE_MODE'):
+                env[key]=prepared[key]
         if args.driver_manifest:env['VK_DRIVER_FILES']=str(args.driver_manifest.resolve(strict=True))
         if args.capture:env.update(RECOMP_HLE_D3D8_DUMP=str(capture/'frame'),RECOMP_HLE_D3D8_DUMP_EVERY='60',RECOMP_HLE_D3D8_DUMP_KEEP_LAST='2')
         if args.test_keys:
@@ -81,6 +88,7 @@ def main():
         presents=re.findall(r'\[PRESENT\] backend=\S+ total=(\d+) guest=(\d+) interpolated=(\d+) other=(\d+) skipped=(\d+) failed=(\d+)',text)
         summary=dict(source_revision=manifest['source_revision'],executable_sha256=manifest['executable_sha256'],
             host=platform.platform(),driver_manifest=env.get('VK_DRIVER_FILES','system discovery'),
+            profile='Test Lab disposable copy' if args.unlocked_profile else 'isolated fresh/local test profile',
             returncode=child.returncode,bounded_stop=timed_out,stop_reason=reason,seconds=round(time.monotonic()-started,2),
             entered_guest='Entering translated Xbox entry' in text,
             presents=dict(zip(('total','guest','interpolated','other','skipped','failed'),map(int,presents[-1]))) if presents else None,

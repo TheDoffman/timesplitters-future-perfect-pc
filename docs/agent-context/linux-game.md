@@ -81,3 +81,8 @@ runner, in addition to the hard aggregate log cap.
 The x64 adapter also handles compiler-folded immediate TEST reads, preserving
 registers and computing SF/ZF/PF/CF/OF. Protected APU fixture reads check both
 branch outcomes; unsupported arithmetic instructions still fail closed.
+`--unlocked-profile` prepares the same immutable Test Lab fixture used by
+Windows/Mac in the locked runner's disposable `unlocked` child. Only its save,
+input, feedback and texture environment is adopted; Linux display/XDG/crash
+isolation remains active. The fixture contains five small host save files, not
+virtual disk images, and is never edited by the game.
