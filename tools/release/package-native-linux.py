@@ -94,7 +94,7 @@ def bundle_python(root,stage):
                 destination=site/path;destination.parent.mkdir(parents=True,exist_ok=True);destination.write_bytes(archive.read(entry))
         pins.append(dict(requirement=requirement,sha256=digest(wheel)))
     wrapper=runtime/'bin/python3'
-    wrapper.write_text("#!/bin/sh\nset -eu\nhere=$(CDPATH= cd -- \"$(dirname -- \"$0\")/..\" && pwd)\nexport PYTHONHOME=\"$here\" PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1\nunset PYTHONPATH\nexport TCL_LIBRARY=\"$here/lib/tcl\" TK_LIBRARY=\"$here/lib/tk\" SSL_CERT_FILE=\"$here/certificates.pem\"\nexec \"$here/bin/python-real\" -s \"$@\"\n")
+    wrapper.write_text("#!/bin/sh\nset -eu\nhere=$(CDPATH= cd -- \"$(dirname -- \"$0\")/..\" && pwd)\nexport PYTHONHOME=\"$here\" PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1\nexport PYTHONPATH=\"$here/lib/python@VERSION@/site-packages\"\nexport TCL_LIBRARY=\"$here/lib/tcl\" TK_LIBRARY=\"$here/lib/tk\" SSL_CERT_FILE=\"$here/certificates.pem\"\nexec \"$here/bin/python-real\" -s \"$@\"\n".replace("@VERSION@",version))
     wrapper.chmod(0o755)
     pairs=[(executable,target)]
     for item in library.rglob('*'):

@@ -13,14 +13,20 @@ if [ "${1-}" = "--data" ]; then
 fi
 if [ "$#" -gt 1 ]; then echo "Use --game [--data PATH] [--settings-self-test|--debug-self-test|--input-self-test|--renderer-self-test|--online-self-test]" >&2; exit 2; fi
 case "${1-}" in ""|--settings-self-test|--debug-self-test|--input-self-test|--renderer-self-test|--online-self-test) ;; *) echo "Unknown game option: $1" >&2; exit 2;; esac
-base=${XDG_DATA_HOME:-"$HOME/.local/share"}/timesplitters-future-perfect
-config=${XDG_CONFIG_HOME:-"$HOME/.config"}/timesplitters-future-perfect
-state=${XDG_STATE_HOME:-"$HOME/.local/state"}/timesplitters-future-perfect
-cache=${XDG_CACHE_HOME:-"$HOME/.cache"}/timesplitters-future-perfect
+xdg_path() { case "$1" in /*) printf '%s' "$1";; *) printf '%s/%s' "$HOME" "$2";; esac; }
+base=$(xdg_path "${XDG_DATA_HOME-}" .local/share)/timesplitters-future-perfect
+config=$(xdg_path "${XDG_CONFIG_HOME-}" .config)/timesplitters-future-perfect
+state=$(xdg_path "${XDG_STATE_HOME-}" .local/state)/timesplitters-future-perfect
+cache=$(xdg_path "${XDG_CACHE_HOME-}" .cache)/timesplitters-future-perfect
 mkdir -p "$base/Saves" "$config" "$state/online" "$state/crashes" "$cache"
 if [ ! -f "$config/pc-controls.json" ]; then
-    # noclobber: another launch must never overwrite settings created concurrently.
-    (set -C; cat "$root/Settings/pc-controls.json" > "$config/pc-controls.json") 2>/dev/null || [ -f "$config/pc-controls.json" ]
+    # Publish a complete seed atomically; never overwrite concurrent/user settings.
+    seed=$(mktemp "$config/.controls.XXXXXX")
+    trap 'rm -f -- "$seed"' EXIT HUP INT TERM
+    cat "$root/Settings/pc-controls.json" > "$seed"
+    ln "$seed" "$config/pc-controls.json" 2>/dev/null || [ -f "$config/pc-controls.json" ]
+    rm -f -- "$seed"
+    trap - EXIT HUP INT TERM
 fi
 unset LD_PRELOAD LD_LIBRARY_PATH PYTHONPATH PYTHONHOME VK_DRIVER_FILES VK_ICD_FILENAMES VK_LAYER_PATH SDL_VULKAN_LIBRARY
 export RECOMP_GAME_DIR="$data" RECOMP_SAVE_DIR="$base/Saves"
