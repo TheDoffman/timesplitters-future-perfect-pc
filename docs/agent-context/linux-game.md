@@ -62,3 +62,6 @@ Patch2404 enables the existing Mac/Windows HLE graphics bridge on Linux,
 including texture/state/vertex submission and shared frame capture. Native
 MMIO fixtures link libm for the POSIX floating-point compatibility functions.
 The auto-look span fixture also runs on Linux with real mmap/mprotect boundaries.
+`test_native_crash.py` runs the shared fatal-signal/helper, watchdog suppression,
+report contents and linked-root rejection checks on Linux as well as Darwin;
+Linux fatal symbols use non-PIE ELF plus addr2line, with hang sampling explicit.
