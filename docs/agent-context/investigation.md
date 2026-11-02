@@ -403,3 +403,7 @@ Stage0258 extends the verified patch-order tail from55to56 with the original
 exception dispatcher after0253. test_repo_context and five historical omission
 sets in test_patch_updates now include that dependency; old patch bytes remain
 unchanged. See [exception contracts](guest-exceptions.md).
+
+Stage0259 extends the patch tail56to57 for execution ownership after0258.
+The ordering assertion and five historical omission sets follow that dependency;
+see [ownership and test routes](execution-ownership.md).

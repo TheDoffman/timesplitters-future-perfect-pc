@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "810788e086d76383a8c658e95e6f7e4b0b4772906467b9ec6de515277d8025e2",
+  "loaderSha256": "12f49f979d533dda0328dc1fbec894d6897f143f4138ea7a3f5472e17ee9d72a",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3106,6 +3106,16 @@
       "sha256": "662e9ad973cc59a457aa84a2612cb50ee007fe211ae2afa7043be92954b65e98",
       "targets": [
         "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0259-original-execution-ownership.patch",
+      "path": "patches/compiler/0259-original-execution-ownership.patch",
+      "sha256": "356946afe075993e1fcf55c19955291575415745d47eaf149164024279b6f74b",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/xbox_memory_layout.c"
       ]
     }
   ]

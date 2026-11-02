@@ -8,6 +8,7 @@
 #include <string.h>
 #include "guest_virtual_memory.h"
 #include "guest_lifetime.h"
+#include "guest_kernel_execution.h"
 #ifdef TSFP_REAL_THREAD_MEMORY
 #include "guest_thread_memory.h"
 #define BINDING_RAM_BYTES (40*1024*1024)
@@ -94,6 +95,9 @@ static uint32_t xbox_AllocThreadStack(void) {
 #endif
 }
 static void xbox_FreeThreadStack(uint32_t top) {
+    tsfp_guest_execution_snapshot execution;
+    CHECK(tsfp_guest_execution_capture(&tsfp_kernel_execution_ops,&execution));
+    CHECK(!execution.lock_depth && !execution.active_depth);
 #ifdef TSFP_REAL_THREAD_MEMORY
     CHECK(top && InterlockedDecrement(&stack_live)>=0);
     CHECK(tsfp_thread_stack_release(&real_threads,top));InterlockedIncrement(&frees);
@@ -122,9 +126,23 @@ uint32_t xbox_CurrentThreadObject(void) {
     return BRIDGE_MEM32(g_fs_base+0x28);
 #endif
 }
-static void xbox_GuestLockEnter(void) { }
-static void xbox_GuestLiftedEnter(void) { }
-static void xbox_GuestLiftedExit(void) { }
+static INIT_ONCE execution_once=INIT_ONCE_STATIC_INIT;
+static CRITICAL_SECTION execution_lock;
+static RECOMP_TLS unsigned execution_active;
+static BOOL CALLBACK initialize_execution(PINIT_ONCE once,PVOID parameter,PVOID *context) {
+    (void)once;(void)parameter;(void)context;InitializeCriticalSection(&execution_lock);return TRUE;
+}
+static int execution_enabled(void *opaque) {
+    (void)opaque;CHECK(InitOnceExecuteOnce(&execution_once,initialize_execution,NULL,NULL));return 1;
+}
+static void acquire_execution(void *opaque){(void)opaque;EnterCriticalSection(&execution_lock);}
+static void release_execution(void *opaque){(void)opaque;LeaveCriticalSection(&execution_lock);}
+static void activate_execution(void *opaque){(void)opaque;CHECK(!execution_active);execution_active=1;}
+static void deactivate_execution(void *opaque){(void)opaque;CHECK(execution_active);execution_active=0;}
+const tsfp_guest_execution_ops tsfp_kernel_execution_ops={NULL,execution_enabled,acquire_execution,release_execution,activate_execution,deactivate_execution};
+static void xbox_GuestLockEnter(void) {CHECK(tsfp_guest_execution_lock_enter(&tsfp_kernel_execution_ops));}
+static void xbox_GuestLiftedEnter(void) {CHECK(tsfp_guest_execution_enter(&tsfp_kernel_execution_ops));}
+static void xbox_GuestLiftedExit(void) {tsfp_guest_execution_snapshot discarded;CHECK(tsfp_guest_execution_suspend(&tsfp_kernel_execution_ops,&discarded));}
 static void xbox_NameCurrentThread(const wchar_t *name) { CHECK(name); }
 static void worker(void);
 static recomp_func_t recomp_lookup(uint32_t address) { return address==0x1234?worker:NULL; }

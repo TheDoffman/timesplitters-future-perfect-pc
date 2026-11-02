@@ -87,3 +87,7 @@ Current generated title C remains unchanged. Fresh final160.977s bounded Story
 movement/fire/pause-resume and three captures pass;26 protected files unchanged.
 See STATUS for exact hashes, the retained earlier candidate, CI retry/compiler
 fixture repair, and the still-inherited kernel entry points.
+
+The [original execution-ownership adapter](execution-ownership.md) now binds
+production kernel entry/return, resource-ledger abandonment and thread teardown.
+Guest-context capture, actual302/312 binding and foreign native barriers remain.

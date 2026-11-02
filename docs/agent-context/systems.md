@@ -972,4 +972,4 @@ Physics: [poses](systems-details.md#guest-ragdolls-and-physical-npc-drops).
 
 [2x texture workflow](original-upscale.md).
 
-[RTL](guest-stack-trace.md), [SEH](guest-exceptions.md).
+[RTL](guest-stack-trace.md), [ownership](execution-ownership.md).

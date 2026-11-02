@@ -74,3 +74,7 @@ live-state/SEH/fiber integration remains open.
 The following [original registration-chain dispatcher](guest-exceptions.md)
 implements raise/unwind bodies and a translated edited-PC integration fixture;
 actual kernel import binding and native ownership/barriers remain unfinished.
+
+The [original execution-ownership adapter](execution-ownership.md) now binds
+production kernel entry/return, resource-ledger abandonment and thread teardown.
+Guest-context capture, actual302/312 binding and foreign native barriers remain.

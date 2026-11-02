@@ -180,6 +180,10 @@ def patch_records(paths):
     if exception_dispatch:
         paths.remove(exception_dispatch)
         paths.append(exception_dispatch)
+    execution_ownership = by_name.get('0259-original-execution-ownership.patch')
+    if execution_ownership:
+        paths.remove(execution_ownership)
+        paths.append(execution_ownership)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

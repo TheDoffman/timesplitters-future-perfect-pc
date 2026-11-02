@@ -38438,3 +38438,85 @@ workflow is reported fully green. No PR merged. Actual native adapter/import
 binding, wider runtime/tooling/title/header/fixture/provenance replacement and
 final generation/build/package with BOTH upstream sources unavailable remain
 incomplete. See docs/agent-context/guest-exceptions.md.
+
+
+### Stage0259: original production execution ownership (2026-11-02)
+
+Original guest_execution_state.c/.h now owns per-host-thread lock and active
+nesting, with exact thread/domain-checked snapshots. guest_execution_scope.c/.h
+binds normal return and abandonment to the existing object ledger. Kernel dispatch
+uses the new scopes; the seven inherited GuestLock/GuestLifted bodies and old
+private depth storage are replaced through0259-original-execution-ownership.patch.
+The host binding retains the remaining parking, optional affinity, configuration
+and diagnostic policies as delegates; whole-platform provenance replacement is
+not complete. Shared CMake selects each new provider once; ordering tail is57.
+
+Nonlocal restoration validates its mark before effects, suspends execution,
+drains all leases/cleanup while inactive/unlocked, then restores the oldest
+abandoned snapshot once. Reacquisition is exact rather than additive across
+nested callbacks. Failure still drains remaining scopes and reports failure.
+Thread exit uses a separate abort mode that never reacquires a saved lock just
+to terminate. Object/thread teardown releases ownership before guest stack free;
+normal worker exit no longer performs the former early partial exit. The existing
+CRT lifetime hook now restores both object and execution ownership before native
+longjmp. This does not permit unwinding foreign OS/C++/Objective-C frames or
+switching peer guest TIB/fiber identity. Actual265/302/312 imports are STILL
+inherited and guest_context_execution.c remains unselected; live capture and
+native exception/callback transport are the next integration work.
+
+Tests:281 broad ownership/object/device/boot/callback/context/continuation/
+nonlocal/thread-memory/profile cases pass109.32s;149 full historical migration/
+repository/context/scope/gate cases pass905.18s.430 distinct cases covered; the
+initial84 native binding cases41.59s are a subset. The new core checks256 exact
+state transitions, resource-close-before-reactivation order, a real guest CRT
+longjmp, stale/duplicate/foreign-owner rejection, failed cleanup and four native
+threads doing64 restoration cycles each. Seven compiled incorrect providers
+must fail at runtime. Windows binding fixtures now use the real provider and a
+native recursive critical section, assert zero ownership before stack release,
+and preserve their publication/suspended/explicit-exit/failed-creation negatives.
+All relevant tests remain selected on both CI hosts (Windows-only API cases skip
+on Mac). Full migrations were awaited on their original live handle98601.
+
+Final Release39454 exits0, including built-in tests and matching crash symbols.
+Audit logs/verify-execution-ownership-build.py confirms both new providers once,
+archived state/scope/domain symbols, actual kernel enter/leave/unwind/exit
+bindings, no inherited depth cell, valid generation receipt and all159 existing
+continuation units. All normal generated C is byte-identical to accepted0257;
+no generation input/ABI changed, so generation was not repeated. Audit includes
+current project source, the changed actual kernel sources/CMake/headers and the
+kernel archive checksum. Exception imports remain explicitly marked inherited.
+Executable SHA256b4bbf2ecdf4006f465e50115c33e43199fb957fbe7eb3b81b720eb017106151c.
+
+Two fresh bounded Story runs of the SAME rebuilt executable pass. Lock-off root
+independent-execution-ownership-off-20261102 runner6583/controller47663 both exit0:
+scene4/mission1/input enabled, forward11.1745441952/back6.1859750900, ammo8to6,
+pause39 frozen/resume58 advancing, last99.352s below240. Diagnostic samples
+report peak2 counted guest threads/90 overlap entries. Lock-on root
+independent-execution-ownership-on-20261102 runner75466/controller49358 both exit0:
+forward11.1745438671/back5.9700438212, ammo8to6, pause39/resume58, last95.011s below240.
+The lock-on startup message and provenance confirm the requested mode; every
+reported concurrency row has peak1/overlaps0. These are observations of counted
+guest threads, not proof that all retained host/callback paths are independent.
+Last guest presentation samples58.0(off)/58.2(on) FPS, not monitor scanout.
+Six fresh start/fire/pause captures reviewed. Source/runner/executable hashes
+match both actual runs; all26 protected files retain hashes/sizes/times, fixture
+valid, no owned games, lock, dump or disposable Partition images remain.
+
+Windows runner options --guest-lock and --watch-guest-execution apply only to
+the isolated session after prepare_run strips parent diagnostic variables; both
+requested modes are recorded in provenance. Shipping defaults stay lock-off.
+Evidence execution-ownership-{build,off-game-check,on-game-check}.json, final
+build/off/on game/controller/migration logs, and both isolated reports/provenance.
+Windows11/D3D11 flip/Classic/Original60/minimized synthetic/movies skipped scope;
+not physical-input/listening/full-campaign/native Mac title or actual game SEH
+resumption proof. New runtime logic is shared with Mac, whose new-stage CI and
+title gameplay confirmation remain pending.
+
+Prior36e752d8 CI is FULLY successful: runtime41517937798 all11 jobs, including
+Mac native125526457084, Windows native125526457100, both upgrades, embedded dual-
+host launcher and gates; standalone41517937692 all5 jobs, including native Mac
+125527974718. This resolves the prior harness declaration repair. This new0259
+source still requires its own head CI. No PR merged. Broader kernel/graphics/
+audio/movies/input/devices/network/title/tooling/header/fixture and provenance
+replacement, plus final generation/build/package with BOTH upstream sources
+unavailable, remain incomplete. Guide: docs/agent-context/execution-ownership.md.
