@@ -1,5 +1,8 @@
 ## Video Options menu-switch click feedback (2026-11-02)
 
+PR #469 initial CI caught a missing structured MAC-129 status and queue row.
+The handoff now uses the required format; no runtime behavior changed.
+
 Local uncommitted follow-up on `feature/smaa-antialiasing`. Fresh mouse clicks
 on enabled Video setting rows now call the original menu-switch sound, including
 clicks that capture the FOV bar. Held/hover events do not repeat this added

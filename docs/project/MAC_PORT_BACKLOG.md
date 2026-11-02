@@ -329,6 +329,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-126 | Launcher Discord community button | Awaiting validation |
 | MAC-127 | Complete launcher language packs | Awaiting validation |
 | MAC-128 | Fresh weapon trigger timing (#434) | Awaiting validation |
+| MAC-129 | Optional SMAA anti-aliasing | Awaiting validation |
 
 ### MAC-126 - Launcher Discord community button
 
@@ -8706,7 +8707,10 @@ MAC-127 PR436 review repair: native package manifests now forward language_packs
 from the native build to the installed top level. Three portable real-writer
 regressions cover enabled/disabled/absent flags; native host CI remains the gate.
 
-### MAC-129 - Optional SMAA anti-aliasing - Awaiting validation
+### MAC-129 - Optional SMAA anti-aliasing
+
+- **Status:** Awaiting validation
+- **Source:** [PR #469](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/469), initial implementation `fa75cb41`.
 
 Video click feedback (same local branch): shared `menu_video_click_sound` uses
 the original guest menu-switch sound for fresh Video setting-row/FOV-bar clicks.
@@ -8721,7 +8725,7 @@ RHI renderer reads this shared model. Include Back/discard, resolution Keep/
 Revert, failed-save rollback and switching without restart in native acceptance.
 No separate Mac feature logic is needed; legacy GL still lacks the effect.
 
-2026-11-02, local uncommitted on `feature/smaa-antialiasing`: shared launcher
+2026-11-02, `feature/smaa-antialiasing` (PR #469): shared launcher
 `GameSettings.Smaa`/`SettingsPage` and patch `2470-smaa-antialiasing.patch` add
 default-Off SMAA 1x High through `src/graphics/pc_smaa.inc`. The common Vulkan
 frontend uses the same shader/lookup algorithm and resources as Windows D3D11;
