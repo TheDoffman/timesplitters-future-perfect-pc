@@ -38246,3 +38246,14 @@ staged whitespace checks pass. Exact90086818 CI is now fully green: all11 runtim
 41482780542 jobs, including both native hosts/upgrades/transitions and PR gate,
 completed success; standalone launcher41482780544 also completed success. This
 is acceptance of the preceding commit; the new prerequisite needs its own CI.
+
+PR468 merge preparation: Windows Release and built-in checks passed after
+integrating main a1f039cb. Focused graphics/launcher/migration run:78 passed,
+4 skipped; eight historical-fixture failures corrected and all8 pass on rerun.
+Planning/context checks:127 passed,29 subtests. Both launcher hosts and package
+verification passed CI41501593160. Mac native suite:2659 passed,383 skipped;
+two stale fixtures failed (capture version9 vs10 and restart dependency in the
+mocked SDL sizing adapter). Corrected the version contract and isolated sizing
+from the separately tested host restart implementation. The4 related Windows
+checks pass. Windows CI reported the same two fixture failures with2756 other tests passing.
+Updated CI/native Mac GPU and live canyon event remain pending.
