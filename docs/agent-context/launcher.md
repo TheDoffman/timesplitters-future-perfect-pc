@@ -609,3 +609,8 @@ NativeGamePackageChecks is the shared Mac/Linux fresh/upgrade package verifier.
 It exercises the real installer, native hashes, launcher completeness, executable
 corruption rejection and personal-file preservation. Mac retains its signature
 callback; Linux handles --verify-game-package without opening an interactive UI.
+
+POSIX installation marks exactly Support/Python/bin/python3 and python-real as
+executables. The native game-package verifier now starts the installed bundled
+interpreter and checks Tk/TLS/crypto imports and certificate trust, catching mode
+loss during unpack/install rather than only checking the original staging tree.

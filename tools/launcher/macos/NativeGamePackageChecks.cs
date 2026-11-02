@@ -18,6 +18,14 @@ namespace TimeSplitters.Launcher
                     var manifest=NativeHost.CheckBuild(root);var files=(Dictionary<string,object>)manifest["files"];
                     foreach(var pair in files){if(preserve&&pair.Key=="Settings/pc-controls.json")continue;Core.Require(Core.Hash(Core.PathIn(root,pair.Key))==(string)pair.Value,"Installed file changed: "+pair.Key);}
                     Core.Require(SelfUpdate.Complete(root)&&(hostCheck==null||hostCheck(root)),"Bundled launcher failed host validation");
+                    foreach(var name in new[]{"Support/Python/bin/python3","Support/Python/bin/python-real"})
+                        Core.Require((File.GetUnixFileMode(Core.PathIn(root,name))&UnixFileMode.UserExecute)!=0,"Installed Online interpreter is not executable: "+name);
+                    var python=new System.Diagnostics.ProcessStartInfo(Core.PathIn(root,"Support/Python/bin/python3")){UseShellExecute=false,WorkingDirectory=root};
+                    python.ArgumentList.Add("-c");python.ArgumentList.Add("import ssl,tkinter,cryptography,cffi; assert ssl.create_default_context().cert_store_stats()['x509_ca']>0");
+                    using(var child=System.Diagnostics.Process.Start(python)){
+                        if(!child.WaitForExit(30000)){child.Kill(true);throw new InvalidDataException("Installed Python timed out");}
+                        Core.Require(child.ExitCode==0,"Installed Python/Tk/TLS failed");
+                    }
                     string exe=Core.PathIn(root,LauncherPlatform.GameBinary);byte original;
                     using(var stream=new FileStream(exe,FileMode.Open,FileAccess.ReadWrite)){original=(byte)stream.ReadByte();stream.Position=0;stream.WriteByte((byte)(original^1));}
                     bool rejected=false;try{NativeHost.CheckBuild(root);}catch(InvalidDataException){rejected=true;}

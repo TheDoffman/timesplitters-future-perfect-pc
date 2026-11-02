@@ -85,6 +85,10 @@ def runtime_target(package_root=None):
     manifest=json.loads((build/'BUILD.json').read_text())
     expected=manifest.get('files',{}).get('Bin/futureperfect_recomp') if package_root else manifest.get('executable_sha256')
     if not expected or sha256(exe)!=expected:raise ValueError('Game executable differs from build receipt')
+    if package_root:
+        native=manifest.get('native_build',{})
+        manifest=dict(manifest,source_revision=manifest.get('source_commit',native.get('source_revision','unknown')),
+                      executable_sha256=expected,host_optimization=native.get('host_optimization','unknown packaged host'))
     return build,exe,manifest
 
 def runtime_environment(package_root=None):
