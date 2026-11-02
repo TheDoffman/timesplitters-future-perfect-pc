@@ -72,7 +72,7 @@ Windows Reload fixture: [clock-domain expiry check](vertex-expand.md#controls-fi
 Windows diagnostics and `test_sample_pc_locations.py`: see [runtime](runtime.md).
 Broken variants must compile before their runtime checks reject them.
 
-WARP/Vulkan buffers: [usage contract](linux-game.md#cross-platform-buffer-contract).
+[GPU buffer contract](linux-game.md#cross-platform-buffer-contract).
 [runtime](runtime.md). Vulkan defines `TSFP_RHI_RENDERER`.
 
 `test_gpr_refs.py` covers four-site selection, integer/vector live-cell references, callbacks, aliasing,
