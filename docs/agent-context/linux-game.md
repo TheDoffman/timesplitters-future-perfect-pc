@@ -246,3 +246,8 @@ Keep the zero-serial skip and subsequent assignment on separate statements/lines
 this is an unconditional assignment after the skip, not part of the if body.
 Demo mutation fixtures accept both glibc and Windows/macOS assertion prefixes
 while requiring the specific broken expression; assertion failures remain required.
+
+Linux runtime CI now runs the same shared timing/vehicle/demo/wind, mouse/reload,
+HUD/FOV/cutscene/menu and audio contracts after applying the runtime. Asset-free
+cases execute on CI; original-routine cases additionally require the local US XBE.
+Windows/macOS native jobs retain their existing suites and the shared GPU fixture.

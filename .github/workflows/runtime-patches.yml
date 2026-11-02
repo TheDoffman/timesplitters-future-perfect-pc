@@ -315,8 +315,20 @@ jobs:
           test -n "$LVP_ICD"
           xvfb-run -a .venv-linux/bin/python tools/testing/test-rhi-linux.py --prepare-runtime --setup-sdk --driver-manifest "$LVP_ICD"
           xvfb-run -a .venv-linux/bin/python tools/testing/test-rhi-linux.py --driver-manifest "$LVP_ICD" --compat12
-      - name: Check Linux vblank deadlines and native preset transitions
-        run: .venv-linux/bin/python -m pytest tests/gameplay/test_frame_clock.py -q --tb=short
+      - name: Check shared gameplay, HUD, menus and audio on Linux
+        run: |
+          tests=(
+            tests/gameplay/test_frame_clock.py tests/gameplay/test_native_timing.py
+            tests/gameplay/test_native_vehicle_timing.py tests/gameplay/test_native_wind.py
+            tests/gameplay/test_native_demo_timing.py tests/gameplay/test_auto_look.py
+            tests/gameplay/test_mounted_mouse.py tests/gameplay/test_reload_keys.py
+            tests/graphics/test_kill_feed.py tests/graphics/test_fov_settings.py
+            tests/graphics/test_cutscene_letterbox.py tests/graphics/test_menu_text.py
+            tests/graphics/test_quit_menu.py tests/graphics/test_channel_clears.py
+            tests/media/test_audio_timing.py tests/media/test_audio_output_gain.py
+            tests/media/test_audio_device_recovery.py
+          )
+          .venv-linux/bin/python -m pytest "${tests[@]}" -q --tb=short
       - name: Retain Linux validation evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

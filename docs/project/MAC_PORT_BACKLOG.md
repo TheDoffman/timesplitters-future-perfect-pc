@@ -1,5 +1,17 @@
 # PC features awaiting Mac adaptation
 
+Cross-platform base-game audit (2026-11-02, local `perf/linux-upload-waits`):
+**Implemented** as shared code and test corrections. Default uniform update
+and dynamic CPU-write map paths now use legal buffer descriptors on all RHIs;
+Windows D3D11 WARP and Linux hardware/software Vulkan pixel checks pass.
+Shared Story cinematic sequencing is unchanged while compiling cleanly under
+Linux GCC fatal warnings; demo mutation tests accept host assertion diagnostics.
+Linux CI now includes shared timing/input/HUD/menu/audio contracts already
+covered by the Windows/macOS native jobs. Native Mac GPU and full-game acceptance
+still require a Mac; source/test portability is not a native verification claim.
+See [STATUS](STATUS.md) for results and [shared-platform rules](../development/shared-platform.md)
+for feature/adapter boundaries.
+
 Shared Vulkan upload efficiency (2026-11-02, local `perf/linux-upload-waits`,
 runtime `6d38019a`): **Implemented** in shared patch2411 and
 `src/graphics/upload_copy.h`. Tight image copies batch; exact CPU uniform mirrors
