@@ -1,0 +1,101 @@
+--- a/src/d3d/rhi.h
++++ b/src/d3d/rhi.h
+@@ -400,6 +400,10 @@
+  * of identical size/format. No CPU readback. Returns 0 on success, -1 for an
+  * unsupported pair; restores output bindings. Arrays/depth are not supported. */
+ int rhi_image_resolve(RhiImage *source, RhiImage *destination);
++/* Resolve one MSAA array layer into a matching single-sample mip/array layer.
++ * Subresources are layer*mip_levels+mip, including cube faces. */
++int rhi_image_resolve_subresource(RhiImage *source,uint32_t source_subresource,
++                                  RhiImage *destination,uint32_t destination_subresource);
+ 
+ /* desc may be NULL: the whole image, viewed as the image says. */
+ RhiView   *rhi_view_create(RhiImage *img, uint32_t kind, const RhiViewDesc *desc);
+--- a/src/d3d/rhi_backend.h
++++ b/src/d3d/rhi_backend.h
+@@ -78,7 +78,7 @@
+     void (*draw_indexed)(uint32_t, uint32_t, int32_t);
+     void (*clear_color)(RhiView *, const float *);
+     void (*clear_depth)(RhiView *, uint32_t, float, uint8_t);
+-    int (*image_resolve)(RhiImage *, RhiImage *);
++    int (*image_resolve)(RhiImage *, uint32_t, RhiImage *, uint32_t);
+ } RhiBackend;
+ 
+ extern const RhiBackend rhi_d3d11_backend;
+--- a/src/d3d/rhi.c
++++ b/src/d3d/rhi.c
+@@ -206,18 +206,32 @@
+     return g_rhi->image_readback(img, sub, dst, dst_pitch);
+ }
+ 
+-int rhi_image_resolve(RhiImage *source, RhiImage *destination)
++int rhi_image_resolve_subresource(RhiImage *source,uint32_t source_sub,
++                                  RhiImage *destination,uint32_t destination_sub)
+ {
+     RhiImageDesc a,b;RhiOutputState saved;int result;
+     if(!source || !destination || source==destination || !g_rhi->image_resolve)return -1;
+     rhi_image_get_desc(source,&a);rhi_image_get_desc(destination,&b);
+-    if(a.type!=RHI_IMAGE_2D || b.type!=RHI_IMAGE_2D || a.depth!=1 || b.depth!=1 ||
+-       a.mip_levels!=1 || b.mip_levels!=1 || a.samples<=1 || b.samples>1 ||
+-       a.width!=b.width || a.height!=b.height || a.format!=b.format ||
+-       (a.bind & RHI_BIND_DEPTH) || (b.bind & RHI_BIND_DEPTH))return -1;
++    if(a.type!=RHI_IMAGE_2D || b.type!=RHI_IMAGE_2D || !a.depth || !b.depth ||
++       a.mip_levels!=1 || !b.mip_levels || a.samples<=1 || b.samples>1 ||
++       source_sub>=a.depth || destination_sub/b.mip_levels>=b.depth ||
++       a.format!=b.format || (a.bind&RHI_BIND_DEPTH) || (b.bind&RHI_BIND_DEPTH))return -1;
++    uint32_t mip=destination_sub%b.mip_levels;
++    if(mip>=32)return -1;
++    uint32_t width=b.width>>mip,height=b.height>>mip;
++    if(!width)width=1;if(!height)height=1;
++    if(a.width!=width || a.height!=height)return -1;
+     rhi_output_save(&saved);rhi_set_render_target(NULL,NULL);
+-    result=g_rhi->image_resolve(source,destination);
++    result=g_rhi->image_resolve(source,source_sub,destination,destination_sub);
+     rhi_output_restore(&saved);return result;
++}
++int rhi_image_resolve(RhiImage *source, RhiImage *destination)
++{
++    RhiImageDesc a,b;
++    if(!source || !destination)return -1;
++    rhi_image_get_desc(source,&a);rhi_image_get_desc(destination,&b);
++    if(a.depth!=1 || b.depth!=1 || a.mip_levels!=1 || b.mip_levels!=1)return -1;
++    return rhi_image_resolve_subresource(source,0,destination,0);
+ }
+ 
+ RhiView  *rhi_view_create(RhiImage *img, uint32_t kind, const RhiViewDesc *d) { return g_rhi->view_create(img, kind, d); }
+--- a/src/d3d/rhi_d3d11.c
++++ b/src/d3d/rhi_d3d11.c
+@@ -1319,10 +1319,10 @@
+         ID3D11DeviceContext_ClearDepthStencilView(g_ctx, (ID3D11DepthStencilView *)v->v, flags, z, s);
+ }
+ 
+-static int d_image_resolve(RhiImage *source,RhiImage *destination)
++static int d_image_resolve(RhiImage *source,uint32_t source_sub,RhiImage *destination,uint32_t destination_sub)
+ {
+     if(!source->res || !destination->res)return -1;
+-    ID3D11DeviceContext_ResolveSubresource(g_ctx,destination->res,0,source->res,0,
++    ID3D11DeviceContext_ResolveSubresource(g_ctx,destination->res,destination_sub,source->res,source_sub,
+                                           (DXGI_FORMAT)source->desc.format);
+     return 0;
+ }
+--- a/src/d3d/rhi_vulkan.c
++++ b/src/d3d/rhi_vulkan.c
+@@ -3565,7 +3565,7 @@
+     vkCmdDrawIndexed(cmd(), n, 1, first, base, 0);
+ }
+ 
+-static int v_image_resolve(RhiImage *source,RhiImage *destination)
++static int v_image_resolve(RhiImage *source,uint32_t source_sub,RhiImage *destination,uint32_t destination_sub)
+ {
+     VkImageResolve region;VkImage src,dst;
+     VkImageLayout old_src=source->layout,old_dst=destination->layout;
+@@ -3578,6 +3578,9 @@
+     memset(&region,0,sizeof region);
+     region.srcSubresource.aspectMask=region.dstSubresource.aspectMask=VK_IMAGE_ASPECT_COLOR_BIT;
+     region.srcSubresource.layerCount=region.dstSubresource.layerCount=1;
++    region.srcSubresource.baseArrayLayer=source_sub;
++    region.dstSubresource.baseArrayLayer=destination_sub/destination->desc.mip_levels;
++    region.dstSubresource.mipLevel=destination_sub%destination->desc.mip_levels;
+     region.extent.width=source->desc.width;region.extent.height=source->desc.height;region.extent.depth=1;
+     vkCmdResolveImage(cmd(),src,source->layout,dst,destination->layout,1,&region);
+     full_barrier(cmd());

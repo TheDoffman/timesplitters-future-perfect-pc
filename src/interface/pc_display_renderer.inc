@@ -5,9 +5,11 @@ HWND xbox_D3D8Window(void) { return g_device_state.hwnd; }
 
 static void pc_destroy_targets(D3D8DeviceState *s)
 {
+    if(s->scene_surface)IDirect3DSurface8_Release(&s->scene_surface->iface);
     rhi_view_destroy(s->depth_view); rhi_image_destroy(s->depth_image);
     rhi_view_destroy(s->rhi_scene_srv); rhi_view_destroy(s->rhi_default_rtv);
     rhi_image_destroy(s->rhi_scene_image);
+    rhi_image_destroy(s->rhi_scene_resolved);
 }
 
 int xbox_D3D8ChangeResolution(unsigned width,unsigned height)
@@ -27,7 +29,7 @@ int xbox_D3D8ChangeResolution(unsigned width,unsigned height)
     }
     auto_view=rhi_view_create(next.depth_image,RHI_VIEW_DEPTH,NULL);
     if(!auto_view) {
-        rhi_set_render_target(s->rhi_default_rtv,g_cur_ds?g_cur_ds->dsv:NULL);
+        rhi_set_render_target(d3d8_surface_draw_view(s->scene_surface),g_cur_ds?g_cur_ds->dsv:NULL);
         pc_destroy_targets(&next); return 0;
     }
     rhi_view_destroy(g_auto_ds->dsv);
@@ -35,10 +37,12 @@ int xbox_D3D8ChangeResolution(unsigned width,unsigned height)
     g_auto_ds->dsv=auto_view;
     g_auto_ds->image=rhi_image_retain(next.depth_image);
     g_auto_ds->width=width; g_auto_ds->height=height;
-    rhi_set_render_target(next.rhi_default_rtv,g_cur_ds?g_cur_ds->dsv:NULL);
+    rhi_set_render_target(d3d8_surface_draw_view(next.scene_surface),g_cur_ds?g_cur_ds->dsv:NULL);
     pc_destroy_targets(s);
+    s->scene_surface=next.scene_surface;
     s->depth_image=next.depth_image; s->depth_view=next.depth_view;
     s->rhi_scene_image=next.rhi_scene_image; s->rhi_scene_srv=next.rhi_scene_srv;
+    s->rhi_scene_resolved=next.rhi_scene_resolved;
     s->rhi_default_rtv=next.rhi_default_rtv; s->width=width; s->height=height;
     apply_host_viewport(); rebind_stage_srvs(NULL);
     fprintf(stderr,"[PC-DISPLAY] Native scene target %ux%u\n",width,height);

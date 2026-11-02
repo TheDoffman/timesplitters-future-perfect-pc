@@ -12,7 +12,7 @@ if(TSFP_VULKAN_SDK)
         "${TSFP_VK_SOURCE}/d3d8_screencopy.c" "${TSFP_VK_SOURCE}/d3d8_states.c")
     target_include_directories(tsfp_rhi_vulkan_test PRIVATE "${TSFP_VK_SOURCE}"
         "${TSFP_RUNTIME_DIR}/src" "${TSFP_RUNTIME_DIR}/src/config" "${TSFP_NATIVE_DIR}/.." "${TSFP_NATIVE_DIR}/../../tests")
-    target_link_libraries(tsfp_rhi_vulkan_test PRIVATE platform)
+    target_link_libraries(tsfp_rhi_vulkan_test PRIVATE platform xbox_config)
     target_compile_definitions(tsfp_rhi_vulkan_test PRIVATE TSFP_RHI_RENDERER)
     target_compile_options(tsfp_rhi_vulkan_test PRIVATE -O2)
     include("${TSFP_NATIVE_DIR}/vulkan_backend.cmake")

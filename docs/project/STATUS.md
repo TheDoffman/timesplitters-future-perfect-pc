@@ -1,3 +1,33 @@
+# Video menu follow-up (2026-11-02, local development)
+
+Compact native font, rounded centered tabs and MSAA Later/Restart Now prompt
+implemented on feature/graphics-options, base54c06a4c plus uncommitted work.
+Windows build/built-ins pass (build badge2a8f56b9). Focused13pass/2Macskips;
+Windows and Ubuntu WSL real-process restart handoffs pass. Live ultrawide main
+layout fits; user testing ongoing. Full in-game restart and Mac remain unverified.
+User isolates dark gun/geometry halos to AO. Reduced production contact radius
+50 to .75; new GPU regression fails before/passes after and retains close-contact
+shading. Windows rebuild and captured bridge replay pass. First-person live
+confirmation remains pending; another desktop launcher session was preserved.
+
+# Optional graphics controls (2026-11-02, local development)
+
+Video Options now uses Display, Graphics, and View & HUD tabs with a fixed
+tab position and persistent selected-section highlight. Staged choices survive
+section changes. The Windows build and focused checks passed (12 passed,
+2 Mac-only skips); live main-menu mouse navigation and FPS toggle were verified.
+Pause shares the implementation, but live pause interaction was not verified
+because diagnostic keyboard input was unreliable. Native Mac/Linux follow-up
+validation remains pending. These tab changes are local and unpublished.
+
+Uncommitted feature/graphics-options work adds MSAA, FXAA, AF, half-resolution
+SSAO, persistent shader caches and FPS/Ping parity in launcher and main/pause
+Graphics menus. Windows build/gameplay and focused pixel tests passed. Isolated
+Linux launcher and software Vulkan tests passed against the Linux feature branch;
+native Mac and physical Linux GPU validation remain outstanding. Nothing published.
+See [implementation and validation](../development/graphics-options.md) for scope,
+platform dependency, commands, and limitations.
+
 # FPS / Ping counter (2026-11-02, local development)
 
 Branch feature/fps-network-counter based on 4f80b5e5. Saved Video Options
@@ -37505,3 +37535,13 @@ unverified. Expanded viewport checks cover seven ratios, eleven positions, three
 marker widths and consecutive targets. All 12 UI/backlog tests and repository
 context checks pass. Mars Prison captured replay remains the visual proof.
 Native Mac and exhaustive encounter coverage remain unverified; publication pending.
+
+### Graphics merge checks - 2026-11-02
+
+Feature/graphics-options: compact Video Options tabs, optional MSAA/FXAA/AF/AO,
+shader cache, FPS/online-ping and launcher parity prepared for main at user request.
+Effects remain off by default. Windows synthetic transition regression checks
+48 combinations x six frames x disabled/cold/warm caches (864 frames), passing.
+The reported later canyon explosion blackout is NOT confirmed fixed. Live event
+and native Mac/Linux GPU acceptance remain pending; see graphics-options.md.
+Publication and issue closure are not part of this merge.

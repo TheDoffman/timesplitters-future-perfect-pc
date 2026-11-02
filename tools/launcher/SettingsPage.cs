@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-#if MACOS
+#if MACOS || LINUX
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -49,8 +49,8 @@ namespace TimeSplitters.Launcher
         string savedDraft;
         readonly Slider fov;
         readonly TextBox sensitivity, width, height, discordId;
-        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled, enhancedTextures;
-        readonly ComboBox device, resolution, aspect, scale, filtering, frameRate, languagePack;
+        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled, enhancedTextures, ambientOcclusion, shaderCache;
+        readonly ComboBox device, resolution, aspect, scale, filtering, frameRate, languagePack, msaa, edgeSmoothing;
         readonly TextBlock performanceAdvice;
         readonly Button[,] bindingButtons = new Button[GameSettings.Actions.Length,GameSettings.BindingSlots];
         static readonly string[] Devices = { "keyboard", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "none" };
@@ -233,8 +233,19 @@ namespace TimeSplitters.Launcher
             var quality=PageTheme.Section(graphics,"Quality & performance","");
             var qualityColumns=Columns(quality);var qualityLeft=Column(qualityColumns,0);var qualityRight=Column(qualityColumns,1);
             scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString());scale.Name="ConsoleRenderScale";Field(qualityLeft,"Console render scale",scale);
-            filtering=Choices(new[]{"1","2","4","8","16"},model.Anisotropy.ToString());Field(qualityRight,"Anisotropic filtering",filtering);
+            filtering=Choices(new[]{"1","2","4","8","16"},model.Anisotropy.ToString());filtering.Name="AnisotropicFiltering";Field(qualityRight,"Anisotropic filtering",filtering);
+            msaa=Choices(new[]{"Off","2x","4x","8x"},model.Msaa==1?"Off":model.Msaa+"x");msaa.Name="MultisampleAntialiasing";
+            Field(qualityLeft,"MSAA · restart required",msaa);
+            edgeSmoothing=Choices(new[]{"Off","FXAA"},model.EdgeSmoothing==0?"Off":"FXAA");edgeSmoothing.Name="EdgeSmoothing";
+            Field(qualityRight,"Edge smoothing",edgeSmoothing);
+            ambientOcclusion=Check("Ambient occlusion",model.AmbientOcclusion!=0);ambientOcclusion.Name="AmbientOcclusion";
+            Ui.Tip(ambientOcclusion,"Half-resolution contact shadows. Can be combined with MSAA and FXAA.");qualityLeft.Children.Add(ambientOcclusion);
+            shaderCache=Check("Shader cache",model.ShaderCache);shaderCache.Name="ShaderCache";
+            Ui.Tip(shaderCache,"Reuses compiled shaders between launches to reduce compilation stalls.");qualityRight.Children.Add(shaderCache);
             vrr=Check("Variable refresh rate",model.Vrr);vrr.Name="VariableRefreshRate";Ui.Tip(vrr,"Allows unsynchronized presentation in fullscreen. Enable VRR in your monitor and driver too; a fixed-refresh display may tear.");fps=Check("FPS / Ping",model.ShowCounter);fps.Name="FpsPingCounter";Ui.Tip(fps,"Shows FPS and, during online play, network ping in milliseconds. Also available in the in-game Video Options.");
+            var clearCache=Button("Clear shader cache");clearCache.Name="ClearShaderCache";
+            clearCache.Click+=(sender,args)=>{try { int count=model.ClearShaderCache();status.Text="Shader cache cleared ("+count+" files)."; } catch(Exception ex) {status.Text=ex.Message;}};
+            qualityRight.Children.Add(clearCache);
             var qualityToggles=new WrapPanel();qualityToggles.Children.Add(vrr);qualityToggles.Children.Add(fps);quality.Children.Add(qualityToggles);
             performanceAdvice=Text("",12);performanceAdvice.Name="PerformanceAdvice";
             performanceAdvice.Foreground=Muted;quality.Children.Add(performanceAdvice);
@@ -276,16 +287,16 @@ namespace TimeSplitters.Launcher
             if(!model.CanSelectLanguagePack)language.Children.Add(Text("Update the game to enable language-pack selection. Your saved choice is kept.",12));
             tabs.Items.Add(new TabItem {Header="Audio & language",Content=Scroll(audioPanel)});
             foreach(var entry in new[]{sensitivity,width,height,discordId})Ui.TextChanged(entry,RefreshSaveState);
-            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,discordEnabled,enhancedTextures,enhancedAudio})Ui.CheckedChanged(check,RefreshSaveState);
-            foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
+            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,discordEnabled,enhancedTextures,enhancedAudio,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
+            foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack,msaa,edgeSmoothing})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
             Ui.ValueChanged(fov,RefreshSaveState);
         }
         string Draft()
         {
             return Json.Encode(new object[]{sensitivity.Text,width.Text,height.Text,discordId.Text,
-                enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,
+                enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,ambientOcclusion.IsChecked,shaderCache.IsChecked,
                 skipSplashes.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
-                device.SelectedIndex,scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,
+                device.SelectedIndex,scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,
                 (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
         void RefreshSaveState()
@@ -428,6 +439,8 @@ namespace TimeSplitters.Launcher
                 string chosenDevice=Devices[device.SelectedIndex]; if(chosenDevice!=model.Device.Replace("xinput:","gamepad:")) model.Device=chosenDevice;
                 model.VerticalFov=(int)Math.Round(fov.Value);
                 model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.ShowCounter=fps.IsChecked==true;
+                model.Msaa=new[]{1,2,4,8}[msaa.SelectedIndex];model.EdgeSmoothing=edgeSmoothing.SelectedIndex;
+                model.AmbientOcclusion=ambientOcclusion.IsChecked==true?1:0;model.ShaderCache=shaderCache.IsChecked==true;
                 model.NativeFps=GameSettings.NativeFrameRates[frameRate.SelectedIndex];
                 model.EnhancedTextures=enhancedTextures.IsChecked==true;
                 model.EnhancedAudio=enhancedAudio.IsChecked==true;

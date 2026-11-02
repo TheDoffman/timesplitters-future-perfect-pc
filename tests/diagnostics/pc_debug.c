@@ -166,6 +166,14 @@ int main(int argc, char **argv)
     CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && !strcmp(overlay,"120 FPS"));
     pc_debug_latency(2,42.5,1);
     CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && !strcmp(overlay,"120 FPS | Ping 42 ms"));
+    /* A disconnected/stalled online peer must not leave a plausible old ping.
+     * Exercise the production monotonic clock rather than a formatting stub. */
+    /* GetTickCount64 is quantized on Windows; 5010 ms can still measure exactly
+     * 5000 ms, which is legitimately not beyond the production expiry. */
+    Sleep(5100);
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && !strcmp(overlay,"120 FPS | Ping --"));
+    pc_debug_latency(2,18,1);
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && !strcmp(overlay,"120 FPS | Ping 18 ms"));
     pc_debug_latency(2,-1,0);
     CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && !strcmp(overlay,"120 FPS | Ping --"));
     CHECK(SetFileAttributesA(config,FILE_ATTRIBUTE_READONLY));

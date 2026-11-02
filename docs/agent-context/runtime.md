@@ -1,4 +1,5 @@
-Counter patch 2490 scales the host overlay without changing guest captures.
+[Graphics/restart2514](../development/graphics-options.md).
+Counter2490: host overlay sizing.
 Kill feed: timing scopes, attribution, viewport colors and rematch reset are
 documented in [the feed guide](../development/arcade-kill-feed.md).
 Story rewards: additive2465 wraps356800 for the single frontend context;
@@ -1009,3 +1010,5 @@ visibility and objective logic remain guest-owned (Refs #338).
 ## Console language and included packs
 
 [Language policy, US startup gate, original-routine tests and host validation](language-packs.md).
+
+Graphics guide: patch2512 Linux declarations, legacy GL preference adapter and WSL evidence.

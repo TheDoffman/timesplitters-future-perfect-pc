@@ -8739,3 +8739,32 @@ same lookup/activation policy; no additional Mac adapter is required. Windows
 production-resolver and original-US callback regressions pass. Native Mac build
 and real two-machine LAN acceptance are pending; a loopback test with startup
 network overrides does not validate this path. See STATUS for Windows build evidence.
+
+
+Optional graphics (uncommitted, feature/graphics-options): shared Video Options
+and launcher SettingsPage expose MSAA, FXAA, AF, half-size SSAO, shader caching,
+Clear Cache and FPS/Ping. Patches2495–2513 implement shared policy plus D3D11/
+Vulkan adapters; the native launcher compiles the same model and page. Windows
+build, WARP GPU fixtures, captured 1x/2x/4x/8x replay and one AO scene comparison
+pass. Native Mac compilation, Vulkan resolves/depth sampling, cache reuse and
+main/pause/launcher visual acceptance remain unverified. Legacy GL feature
+capability/fallback also needs native acceptance. Linux launcher integration and software Vulkan rendering passed in an isolated
+copy combined with feature/linux-launcher at 80239186. That platform branch is
+not merged here; physical Linux GPU gameplay remains unverified. See docs/development/graphics-options.md for exact evidence
+and outstanding requirements. No release or cross-device synchronization claimed.
+
+Legacy OpenGL compatibility: `src/native/graphics_preferences_gl.inc` now owns
+get/set/clear definitions for that renderer, which does not link d3d8_display.c.
+It preserves the shared saved choices and clears recognized title cache blobs.
+The in-game menu explicitly says graphics effects require Vulkan on this path.
+A standalone adapter test passes on Windows and Ubuntu WSL, including legacy AF
+migration, saving/reloading all effect choices and absent-cache clearing. This
+prevents a new missing-symbol regression; it does not implement these effects
+on legacy GL. A full native Mac GL build remains required. GCC's strict format
+warning also prompted an explicitly bounds-checked temporary-path copy.
+
+Video restart follow-up (uncommitted): compact rounded tabs and MSAA prompt are
+shared. Native main calls the POSIX wait/exec bootstrap; macOS executable lookup
+uses _NSGetExecutablePath, Linux uses /proc/self/exe. Windows and Ubuntu WSL
+process-handoff fixtures pass. Native Mac compilation and real quit/relaunch
+with saved graphics settings remain unverified. No platform exemption claimed.

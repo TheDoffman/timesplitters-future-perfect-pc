@@ -29,6 +29,7 @@ static PcCombinerConstants native_float_constants;
 #include "pc_ui_layout.h"
 #include "pc_menu_sampling.h"
 #include "pc_debug.h"
+#include "graphics_preferences_gl.inc"
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl3.h>

@@ -48,7 +48,7 @@ def test_common_renderer_compiles(tmp_path, source):
                 '/DTSFP_TEXTURE_PACK', '/DTSFP_RHI_RENDERER']
         args += ['/I'+str(path) for path in includes]
     else:
-        args = [compiler, '-std=c11', '-fsyntax-only', '-Werror=implicit-function-declaration',
+        args = [compiler, '-std=c11', '-D_POSIX_C_SOURCE=200809L', '-fsyntax-only', '-Werror=implicit-function-declaration',
                 '-DTSFP_PC_DISPLAY', '-DTSFP_TEXTURE_PACK', '-DTSFP_RHI_RENDERER']
         args += ['-I'+str(path) for path in includes]
     result = subprocess.run([*args, str(D3D / source)], cwd=tmp_path, env=env,

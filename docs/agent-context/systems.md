@@ -1,4 +1,4 @@
-FPS/Ping: shown FPS and fresh Online RTT in pc_debug.c.
+[Video](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # Subsystem entry points
 

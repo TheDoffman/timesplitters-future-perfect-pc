@@ -1,0 +1,112 @@
+--- a/src/d3d/rhi.h
++++ b/src/d3d/rhi.h
+@@ -396,6 +396,11 @@
+ int        rhi_image_readback(RhiImage *img, uint32_t subresource,
+                               void *dst, uint32_t dst_pitch);
+ 
++/* Resolve a complete multisampled 2D color image to a single-sample image
++ * of identical size/format. No CPU readback. Returns 0 on success, -1 for an
++ * unsupported pair; restores output bindings. Arrays/depth are not supported. */
++int rhi_image_resolve(RhiImage *source, RhiImage *destination);
++
+ /* desc may be NULL: the whole image, viewed as the image says. */
+ RhiView   *rhi_view_create(RhiImage *img, uint32_t kind, const RhiViewDesc *desc);
+ void       rhi_view_destroy(RhiView *v);
+--- a/src/d3d/rhi_backend.h
++++ b/src/d3d/rhi_backend.h
+@@ -78,6 +78,7 @@
+     void (*draw_indexed)(uint32_t, uint32_t, int32_t);
+     void (*clear_color)(RhiView *, const float *);
+     void (*clear_depth)(RhiView *, uint32_t, float, uint8_t);
++    int (*image_resolve)(RhiImage *, RhiImage *);
+ } RhiBackend;
+ 
+ extern const RhiBackend rhi_d3d11_backend;
+--- a/src/d3d/rhi.c
++++ b/src/d3d/rhi.c
+@@ -204,6 +204,20 @@
+ int rhi_image_readback(RhiImage *img, uint32_t sub, void *dst, uint32_t dst_pitch)
+ {
+     return g_rhi->image_readback(img, sub, dst, dst_pitch);
++}
++
++int rhi_image_resolve(RhiImage *source, RhiImage *destination)
++{
++    RhiImageDesc a,b;RhiOutputState saved;int result;
++    if(!source || !destination || source==destination || !g_rhi->image_resolve)return -1;
++    rhi_image_get_desc(source,&a);rhi_image_get_desc(destination,&b);
++    if(a.type!=RHI_IMAGE_2D || b.type!=RHI_IMAGE_2D || a.depth!=1 || b.depth!=1 ||
++       a.mip_levels!=1 || b.mip_levels!=1 || a.samples<=1 || b.samples>1 ||
++       a.width!=b.width || a.height!=b.height || a.format!=b.format ||
++       (a.bind & RHI_BIND_DEPTH) || (b.bind & RHI_BIND_DEPTH))return -1;
++    rhi_output_save(&saved);rhi_set_render_target(NULL,NULL);
++    result=g_rhi->image_resolve(source,destination);
++    rhi_output_restore(&saved);return result;
+ }
+ 
+ RhiView  *rhi_view_create(RhiImage *img, uint32_t kind, const RhiViewDesc *d) { return g_rhi->view_create(img, kind, d); }
+--- a/src/d3d/rhi_d3d11.c
++++ b/src/d3d/rhi_d3d11.c
+@@ -1319,6 +1319,14 @@
+         ID3D11DeviceContext_ClearDepthStencilView(g_ctx, (ID3D11DepthStencilView *)v->v, flags, z, s);
+ }
+ 
++static int d_image_resolve(RhiImage *source,RhiImage *destination)
++{
++    if(!source->res || !destination->res)return -1;
++    ID3D11DeviceContext_ResolveSubresource(g_ctx,destination->res,0,source->res,0,
++                                          (DXGI_FORMAT)source->desc.format);
++    return 0;
++}
++
+ const RhiBackend rhi_d3d11_backend = {
+     "d3d11",
+     d_device_create, d_device_destroy, d_device_ready, d_swapchain_view, d_swapchain_resize,
+@@ -1333,7 +1341,7 @@
+     d_set_render_target, d_output_save, d_output_restore, d_output_color_is, d_set_viewports, d_set_scissor,
+     d_set_topology, d_set_vertex_layout, d_set_vertex_buffer, d_set_index_buffer, d_set_shader,
+     d_set_uniform_buffers, d_set_textures, d_set_samplers, d_set_blend_state, d_set_depth_state,
+-    d_set_raster_state, d_draw, d_draw_indexed, d_clear_color, d_clear_depth,
++    d_set_raster_state, d_draw, d_draw_indexed, d_clear_color, d_clear_depth, d_image_resolve,
+ };
+ 
+ #endif /* _WIN32 */
+--- a/src/d3d/rhi_vulkan.c
++++ b/src/d3d/rhi_vulkan.c
+@@ -3564,6 +3564,27 @@
+     vkCmdDrawIndexed(cmd(), n, 1, first, base, 0);
+ }
+ 
++static int v_image_resolve(RhiImage *source,RhiImage *destination)
++{
++    VkImageResolve region;VkImage src,dst;
++    VkImageLayout old_src=source->layout,old_dst=destination->layout;
++    if(source->swapchain || destination->swapchain || is_depth_format(image_format(source)))return -1;
++    src=image_handle(source);dst=image_handle(destination);
++    if(!src || !dst)return -1;
++    end_rendering();
++    to_layout(source,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
++    to_layout(destination,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
++    memset(&region,0,sizeof region);
++    region.srcSubresource.aspectMask=region.dstSubresource.aspectMask=VK_IMAGE_ASPECT_COLOR_BIT;
++    region.srcSubresource.layerCount=region.dstSubresource.layerCount=1;
++    region.extent.width=source->desc.width;region.extent.height=source->desc.height;region.extent.depth=1;
++    vkCmdResolveImage(cmd(),src,source->layout,dst,destination->layout,1,&region);
++    full_barrier(cmd());
++    to_layout(source,old_src==VK_IMAGE_LAYOUT_UNDEFINED?source->steady:old_src);
++    to_layout(destination,old_dst==VK_IMAGE_LAYOUT_UNDEFINED?destination->steady:old_dst);
++    return 0;
++}
++
+ const RhiBackend rhi_vulkan_backend = {
+     "vulkan",
+     v_device_create, v_device_destroy, v_device_ready, v_swapchain_view, v_swapchain_resize,
+@@ -3578,7 +3599,7 @@
+     v_set_render_target, v_output_save, v_output_restore, v_output_color_is, v_set_viewports, v_set_scissor,
+     v_set_topology, v_set_vertex_layout, v_set_vertex_buffer, v_set_index_buffer, v_set_shader,
+     v_set_uniform_buffers, v_set_textures, v_set_samplers, v_set_blend_state, v_set_depth_state,
+-    v_set_raster_state, v_draw, v_draw_indexed, v_clear_color, v_clear_depth,
++    v_set_raster_state, v_draw, v_draw_indexed, v_clear_color, v_clear_depth, v_image_resolve,
+ };
+ 
+ #endif /* RHI_HAVE_VULKAN */

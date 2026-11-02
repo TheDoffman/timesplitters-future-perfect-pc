@@ -1,0 +1,196 @@
+--- a/src/d3d/d3d8_device.c
++++ b/src/d3d/d3d8_device.c
+@@ -23,6 +23,7 @@
+ #include "d3d8_display.h"
+ #include "graphics/interpolation_depth.h"
+ #include "graphics/msaa_targets.h"
++#include "graphics/graphics_settings.h"
+ #ifdef TSFP_PC_DISPLAY
+ #include "pc_display.h"
+ #include "pc_ui_layout.h"
+@@ -74,6 +75,7 @@
+     UINT                    swap_width;
+     UINT                    swap_height;
+     RhiImage                 *rhi_scene_image;  /* what every draw goes to */
++    D3D8Surface              *scene_surface;
+     RhiImage                 *rhi_scene_resolved; /* single-sample read image, or NULL */
+     RhiView                  *rhi_scene_srv;    /* the finished frame, to read */
+     RhiView                  *rhi_default_rtv;  /* "the back buffer" to a title */
+@@ -225,7 +227,8 @@
+ RhiView *d3d8_GetSceneView(void)
+ {
+     D3D8DeviceState *s=&g_device_state;
+-    if(s->rhi_scene_resolved && rhi_image_resolve(s->rhi_scene_image,s->rhi_scene_resolved)!=0)return NULL;
++    D3D8Surface *current=g_cur_rt?g_cur_rt:s->scene_surface;
++    if(current && current->image==s->rhi_scene_image && !d3d8_surface_msaa_resolve(current))return NULL;
+     return s->rhi_scene_srv;
+ }
+ RhiImage *d3d8_GetSceneImage(void)
+@@ -233,7 +236,7 @@
+     RhiView *view=d3d8_GetSceneView();
+     return view?rhi_view_image(view):NULL;
+ }
+-RhiView  *d3d8_GetDefaultTargetView(void) { return g_device_state.rhi_default_rtv; }
++RhiView  *d3d8_GetDefaultTargetView(void) { return d3d8_surface_draw_view(g_device_state.scene_surface); }
+ 
+ /* Guest render-target pixels to host pixels, for the viewport and the
+  * scissor rectangle -- the two pieces of state a title hands us measured
+@@ -587,19 +590,42 @@
+ 
+ static HRESULT create_render_targets(D3D8DeviceState *state)
+ {
+-    TsfpMsaaTargets targets={0};
+-    /* Single-sample policy remains until guest offscreen surfaces participate
+-     * in matching sample/depth ownership. Do not enable only the main target. */
+-    if(!tsfp_msaa_targets_create(&targets,state->width,state->height,
+-        RHI_FORMAT_R8G8B8A8_UNORM,RHI_FORMAT_D24_UNORM_S8_UINT,1))return E_FAIL;
+-    state->rhi_scene_image=targets.color;
+-    state->rhi_scene_resolved=targets.resolved;
+-    state->rhi_default_rtv=targets.rtv;
+-    state->rhi_scene_srv=targets.srv;
+-    state->depth_image=targets.depth;
+-    state->depth_view=targets.dsv;
+-    rhi_set_render_target(state->rhi_default_rtv,state->depth_view);
+-    return S_OK;
++    unsigned requested=pc_graphics_get().msaa;
++    /* These are the title's common color render formats. Shared depth must
++     * remain compatible when a floating-point feedback target is selected. */
++    const RhiFormat formats[]={RHI_FORMAT_R8G8B8A8_UNORM,RHI_FORMAT_B8G8R8A8_UNORM,
++        RHI_FORMAT_R16G16B16A16_FLOAT,RHI_FORMAT_R32G32B32A32_FLOAT};
++    if(requested!=2&&requested!=4&&requested!=8)requested=1;
++    for(unsigned i=0;i<sizeof formats/sizeof formats[0];i++)
++        while(requested>1&&!rhi_sample_count_supported(formats[i],requested))requested/=2;
++    for(;;){
++        TsfpMsaaTargets t={0};
++        if(!tsfp_msaa_targets_create(&t,state->width,state->height,
++            RHI_FORMAT_R8G8B8A8_UNORM,RHI_FORMAT_D24_UNORM_S8_UINT,requested))return E_FAIL;
++        unsigned samples=t.samples;
++        RhiImage *color=rhi_image_retain(t.resolved?t.resolved:t.color);
++        RhiView *single_rtv=rhi_view_create(color,RHI_VIEW_RENDER_TARGET,NULL);
++        D3D8Surface *surface=(D3D8Surface *)d3d8_surface_create(color,0,0,state->width,state->height,
++            D3DFMT_A8B8G8R8,D3DPOOL_DEFAULT,D3DUSAGE_RENDERTARGET,D3DMULTISAMPLE_NONE,NULL,0);
++        /* Surface ownership supplies the render companion; release the initial
++         * pair's MS color before allocating it to avoid doubling peak memory. */
++        rhi_view_destroy(t.rtv);t.rtv=NULL;
++        rhi_image_destroy(t.color);t.color=NULL;rhi_image_destroy(t.resolved);t.resolved=NULL;
++        RhiView *draw=surface&&single_rtv?d3d8_surface_msaa_prepare(surface,samples):NULL;
++        if(draw){
++            state->scene_surface=surface;state->rhi_scene_image=color;
++            state->rhi_scene_resolved=NULL;state->rhi_default_rtv=single_rtv;
++            state->rhi_scene_srv=t.srv;state->depth_image=t.depth;state->depth_view=t.dsv;
++            rhi_set_render_target(draw,t.dsv);
++            fprintf(stderr,"[GRAPHICS] Scene %ux%u, MSAA %u requested / %u active\n",
++                state->width,state->height,pc_graphics_get().msaa,samples);
++            return S_OK;
++        }
++        if(surface)IDirect3DSurface8_Release(&surface->iface);
++        rhi_view_destroy(single_rtv);rhi_image_destroy(color);tsfp_msaa_targets_destroy(&t);
++        if(samples<=1)return E_FAIL;
++        requested=samples/2;
++    }
+ }
+ 
+ static void d3d8_init_default_states(D3D8DeviceState *state)
+@@ -712,6 +738,7 @@
+         if (g_auto_ds) { IDirect3DSurface8_Release(&g_auto_ds->iface); g_auto_ds = NULL; }
+         interp_target_destroy();
+         tsfp_ssao_destroy(&g_scene_ao);
++        if(s->scene_surface){IDirect3DSurface8_Release(&s->scene_surface->iface);s->scene_surface=NULL;}
+         rhi_view_destroy(s->depth_view); s->depth_view = NULL;
+         rhi_image_destroy(s->depth_image); s->depth_image = NULL;
+         rhi_view_destroy(s->rhi_scene_srv); s->rhi_scene_srv = NULL;
+@@ -840,7 +867,7 @@
+ 
+     /* Clear the currently bound targets. With no depth surface bound there
+      * is no depth to clear (SetRenderTarget). */
+-    RhiView *rtv = g_cur_rt ? d3d8_surface_draw_view(g_cur_rt) : g_device_state.rhi_default_rtv;
++    RhiView *rtv = d3d8_surface_draw_view(g_cur_rt?g_cur_rt:g_device_state.scene_surface);
+     RhiView *dsv = draw_depth_view(g_cur_ds);
+ 
+     if ((Flags & (D3DCLEAR_TARGET | D3DCLEAR_CHANNEL_MASK)) && rtv) {
+@@ -1666,11 +1693,14 @@
+     }
+     /* Never submit mismatched attachments. Single-sample guest color textures
+      * can acquire a companion matching their persistent depth surface. */
+-    if((!rt || color_desc.samples>1) && samples!=(color_desc.samples?color_desc.samples:1))return E_INVALIDARG;
+-    if(!d3d8_surface_msaa_resolve(g_cur_rt))return E_FAIL;
+-    rtv=rt ? (color_desc.samples>1 ? rt->rtv : d3d8_surface_msaa_prepare(rt,samples))
+-           : g_device_state.rhi_default_rtv;
+-    if(!rtv)return E_FAIL;
++    if(color_desc.samples>1 && samples!=color_desc.samples)return E_INVALIDARG;
++    D3D8Surface *previous=g_cur_rt?g_cur_rt:g_device_state.scene_surface;
++    D3D8Surface *next=rt?rt:g_device_state.scene_surface;
++    if(!d3d8_surface_msaa_resolve(previous))return E_FAIL;
++    BOOL previous_active=previous?previous->msaa_active:FALSE;
++    if(previous)previous->msaa_active=FALSE;
++    rtv=color_desc.samples>1?next->rtv:d3d8_surface_msaa_prepare(next,samples);
++    if(!rtv){if(previous)previous->msaa_active=previous_active;return E_FAIL;}
+     if (rt) IDirect3DSurface8_AddRef(pRenderTarget);
+     if (ds) IDirect3DSurface8_AddRef(pZStencilSurface);
+     if (g_cur_rt) IDirect3DSurface8_Release(&g_cur_rt->iface);
+@@ -2367,6 +2397,7 @@
+  * ================================================================ */
+ 
+ static RhiImage *g_interp_image, *g_interp_resolved;
++static D3D8Surface *g_interp_surface;
+ static RhiView  *g_interp_rtv, *g_interp_srv;
+ static UINT      g_interp_w, g_interp_h;
+ static BOOL g_interp_predict;
+@@ -2377,6 +2408,7 @@
+     if(g_interp_saved_rt){IDirect3DSurface8_Release(&g_interp_saved_rt->iface);g_interp_saved_rt=NULL;}
+     if(g_interp_saved_ds){IDirect3DSurface8_Release(&g_interp_saved_ds->iface);g_interp_saved_ds=NULL;}
+     tsfp_replay_depth_destroy(&g_interp_depth);
++    if(g_interp_surface){IDirect3DSurface8_Release(&g_interp_surface->iface);g_interp_surface=NULL;}
+     rhi_view_destroy(g_interp_srv); g_interp_srv = NULL;
+     rhi_view_destroy(g_interp_rtv); g_interp_rtv = NULL;
+     rhi_image_destroy(g_interp_image); g_interp_image = NULL;
+@@ -2388,6 +2420,8 @@
+ static void interp_target_swap(void)
+ {
+     D3D8DeviceState *s = &g_device_state;
++    D3D8Surface *surface=s->scene_surface;
++    s->scene_surface=g_interp_surface;g_interp_surface=surface;
+     RhiImage *image = s->rhi_scene_image, *resolved=s->rhi_scene_resolved;
+     RhiView *rtv = s->rhi_default_rtv, *srv = s->rhi_scene_srv;
+ 
+@@ -2399,7 +2433,7 @@
+     g_interp_resolved = resolved;
+     g_interp_rtv = rtv;
+     g_interp_srv = srv;
+-    rhi_set_render_target(g_cur_rt ? d3d8_surface_draw_view(g_cur_rt) : s->rhi_default_rtv, draw_depth_view(g_cur_ds));
++    rhi_set_render_target(d3d8_surface_draw_view(g_cur_rt?g_cur_rt:s->scene_surface), draw_depth_view(g_cur_ds));
+ }
+ 
+ BOOL xbox_D3D8InterpCanPredict(void)
+@@ -2437,7 +2471,9 @@
+             g_interp_rtv = rhi_view_create(g_interp_image, RHI_VIEW_RENDER_TARGET, NULL);
+         if (g_interp_rtv)
+             g_interp_srv = rhi_view_create(g_interp_image, RHI_VIEW_SAMPLED, NULL);
+-        if (!g_interp_srv) {
++        if(g_interp_srv)g_interp_surface=(D3D8Surface *)d3d8_surface_create(g_interp_image,0,0,
++            s->width,s->height,D3DFMT_A8B8G8R8,D3DPOOL_DEFAULT,D3DUSAGE_RENDERTARGET,D3DMULTISAMPLE_NONE,NULL,0);
++        if (!g_interp_srv || !g_interp_surface || !g_interp_surface->rtv) {
+             interp_target_destroy();
+             return FALSE;
+         }
+@@ -2447,6 +2483,11 @@
+     tsfp_replay_depth_begin(&g_interp_depth);
+     g_interp_on = TRUE;
+     if(g_cur_ds && !draw_depth_view(g_cur_ds)) {
++        g_interp_on=FALSE;tsfp_replay_depth_end(&g_interp_depth);return FALSE;
++    }
++    RhiView *depth_view=draw_depth_view(g_cur_ds);RhiImageDesc depth_desc={0};
++    if(depth_view)rhi_image_get_desc(rhi_view_image(depth_view),&depth_desc);
++    if(!d3d8_surface_msaa_prepare(g_interp_surface,depth_view?depth_desc.samples:1)){
+         g_interp_on=FALSE;tsfp_replay_depth_end(&g_interp_depth);return FALSE;
+     }
+     g_interp_saved_rt=g_cur_rt;g_interp_saved_ds=g_cur_ds;
+@@ -2621,7 +2662,7 @@
+     }
+     g_cur_ds = g_auto_ds;
+     IDirect3DSurface8_AddRef(&g_auto_ds->iface);
+-    rhi_set_render_target(g_device_state.rhi_default_rtv, g_auto_ds->dsv);
++    rhi_set_render_target(d3d8_surface_draw_view(g_device_state.scene_surface), g_auto_ds->dsv);
+ 
+     d3d8_init_default_states(&g_device_state);
+ 

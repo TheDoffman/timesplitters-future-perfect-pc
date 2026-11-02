@@ -626,3 +626,37 @@ def assert_current_original_numbers_installed(tree):
     assert bridge.count('#include "guest_kernel_numbers.inc"')==1
     for name in ('RtlIntegerToChar','RtlIntegerToUnicodeString','RtlCharToInteger','RtlUnicodeStringToInteger'):
         assert 'static void bridge_'+name+'(void)' not in bridge
+
+
+@pytest.mark.parametrize('crlf', [False, True])
+def test_graphics_branch_round_trip_preserves_local_edits(checkout, tmp_path, crlf):
+    baseline = tmp_path / 'without-graphics'
+    baseline.mkdir()
+    for patch in installer.active_patch_paths(PATCHES):
+        prefix = patch.name.split('-', 1)[0]
+        if not (prefix.isdigit() and 2495 <= int(prefix) <= 2513):
+            shutil.copyfile(patch, baseline / patch.name)
+    shutil.copytree(PATCHES / 'legacy', baseline / 'legacy')
+    installer.apply_patches(checkout, baseline)
+    manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
+    manual.write_bytes(manual.read_bytes() + b'\n/* preserved graphics test local edit */\n')
+    # The pristine Windows archive may already contain CRLF. Establish the
+    # requested convention explicitly; do not accidentally test mixed endings.
+    for name, content in snapshot(checkout).items():
+        normalized = content.replace(b'\r\n', b'\n')
+        (checkout / name).write_bytes(normalized.replace(b'\n', b'\r\n') if crlf else normalized)
+    before = snapshot(checkout)
+    installer.apply_patches(checkout, PATCHES)
+    assert 'd3d8_msaa_image_written' in (checkout / 'src/d3d/d3d8_screencopy.c').read_text()
+    assert '8, 9, 10, 11' in (checkout / 'src/d3d/rhi_vulkan.c').read_text()
+    assert 'preserved graphics test local edit' in manual.read_text()
+    assert installer.apply_patches(checkout, PATCHES) == []
+    installer.apply_patches(checkout, baseline)
+    after = snapshot(checkout)
+    # Git may restore the upstream CRLF convention during unwind/reapply.
+    # Compare source content; CRLF input must also remain byte-identical here.
+    assert {name: data.replace(b'\r\n', b'\n') for name, data in after.items()} == {
+        name: data.replace(b'\r\n', b'\n') for name, data in before.items()}
+    if crlf and os.name == 'nt':
+        assert after == before
+    assert installer.apply_patches(checkout, baseline) == []
