@@ -6,6 +6,7 @@ import pytest
 from test_translation_function import translator
 from test_translation_product import _compile
 from test_guest_status_flags import model, STATUS
+from test_guest_integer_flags import CASES as INTEGER_CASES
 
 ROOT=Path(__file__).resolve().parents[2]
 
@@ -28,7 +29,8 @@ def execute(tmp_path,raw,initial,check,callee=None):
 #include "recomp_types.h"
 #include <stdio.h>
 ptrdiff_t g_xbox_mem_offset;
-static unsigned char ram[8192];
+static union { uint64_t alignment; unsigned char bytes[8192]; } storage;
+#define ram storage.bytes
 #define CHECK(x) do { if(!(x)) {fprintf(stderr,"line%d: %s\\n",__LINE__,#x);return 1;} } while(0)
 '''+prefix+generated+'\nint main(void) {\ng_xbox_mem_offset=(ptrdiff_t)ram;\n'+initial+'\nguest_body();\n'+check+'\nreturn 0; }\n').encode())
     flag='/DTSFP_RECORD_STATUS_FLAGS=1' if os.name=='nt' else '-DTSFP_RECORD_STATUS_FLAGS=1'
@@ -130,3 +132,36 @@ def test_production_shift_routes_and_dynamic_counts(tmp_path,op,width):
 def test_carry_rotate_consumes_callee_status(tmp_path,raw,a,result):
     execute(tmp_path,'e8fb0f0000'+raw+'c3',f'g_esp=100;g_eax={a}u;g_status_flags.value=2;g_status_flags.known=2;',
             f'CHECK(g_eax=={result}u);CHECK(g_status_flags.value==0x803);CHECK(g_status_flags.known==0x803);CHECK(g_esp==104);',callee='f9c3')
+
+
+@pytest.mark.parametrize('op,width,form',INTEGER_CASES)
+def test_production_remaining_integer_flag_routes(tmp_path,op,width,form):
+    from test_guest_integer_flags import CASES,model as integer_model,MULTIPLIER
+    if op in ('mul','imul'):raw=('f6' if width==8 else 'f7')+('e1' if op=='mul' else 'e9')
+    elif op=='imul2':raw='0fafc1'
+    elif op=='imul3':raw='6bc1f9'
+    elif op.startswith('bt'):raw='0f'+dict(bt='a3',bts='ab',btr='b3',btc='bb')[op]+('0b' if form=='mem' else 'c8')
+    elif op in ('bsf','bsr'):raw='0f'+('bc' if op=='bsf' else 'bd')+'c1'
+    elif op=='xchg':raw=('86' if width==8 else '87')+('0b' if form in ('mem','lock') else 'c8')
+    else:
+        instruction=dict(xadd=('c0' if width==8 else 'c1'),cmpxchg=('b0' if width==8 else 'b1'))[op]
+        modrm='0b' if form in ('mem','lock') else 'e0' if form=='overlap' else 'c9' if form=='alias' and op=='xadd' else 'c8' if form=='alias' or op=='xadd' else 'ca'
+        raw='0f'+instruction+modrm
+    if width==16:raw='66'+raw
+    if form=='lock':raw='f0'+raw
+    index=CASES.index((op,width,form))
+    checks=[]
+    def seed(a,d,c,value,known):
+        memory=''.join(f'MEM32({1024+i*4})={(d^((i*MULTIPLIER)&0xffffffff))}u;' for i in range(-8,9))
+        return f'g_esp=100;g_eax={a}u;g_edx={d}u;g_ecx={c}u;g_ebx=1024;g_status_flags.value={value}u;g_status_flags.known={known}u;'+memory
+    inputs=[(0x80000001,0x7fffffff,0xffffffff,0x8d7,0x8d7),(0,0,0,2,2),(0x7f,1,1,2,0x8d7)]
+    for n,(a,d,c,value,known) in enumerate(inputs):
+        if op.startswith('bt') and form=='mem':c=((c%129)-64)&0xffffffff
+        expected=integer_model((index,width,a,d,c,value,known))
+        if n:checks += [seed(a,d,c,value,known),'guest_body();']
+        checks += [f'CHECK(g_eax=={expected[0]}u);CHECK(g_edx=={expected[1]}u);CHECK(g_ecx=={expected[2]}u);CHECK(g_esp==104);',
+                   f'CHECK(g_status_flags.value=={expected[20]}u);CHECK(g_status_flags.known=={expected[21]}u);']
+        checks += [f'CHECK(MEM32({992+i*4})=={v}u);' for i,v in enumerate(expected[3:20])]
+    a,d,c,value,known=inputs[0]
+    if op.startswith('bt') and form=='mem':c=((c%129)-64)&0xffffffff
+    execute(tmp_path,raw+'c3',seed(a,d,c,value,known),'\n'.join(checks))

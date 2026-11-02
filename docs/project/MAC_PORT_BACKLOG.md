@@ -8866,3 +8866,18 @@ pass, production generation/Release/built-ins/audit, fresh isolated Story
 movement/fire/pause/resume pass with9c0f5a59 bytes;26 protected files unchanged.
 Shared implementation, portable tests selected for both hosts; native Mac title
 and new-head CI acceptance pending. PreviousCI failure is recorded, not green.
+
+Stage0250 in progress (2026-11-02, PR465): original shared integer producer
+status for products/bit/scans/exchanges,281 Windows focused and21 fresh-install/
+context checks pass. Portable models/compiled controls/production routes are
+selected on both hosts; actual ML64 oracle is Windows-only. Precedingf6edb895
+runtime41449486367 and launcher41449486247 CI both green. Current generation
+0fail; Release is running, new game/new-head CI/native Mac title pending. No
+OS-specific adapter duplicated; full saved context/SEH remains unfinished.
+
+Stage0250 final Windows local acceptance:281 focused/21 fresh-repeat-install
+and context checks, generation/Release/built-ins/audit and fresh isolated Story
+movement/fire/pause/resume pass withfe25b7b4 bytes.26 protected files unchanged.
+Implementation remains shared; native hardware oracle Windows-only, portable
+contracts selected for both CI hosts. New-head CI/native Mac title pending;
+floating/string/control flags and actual context/SEH remain unfinished.

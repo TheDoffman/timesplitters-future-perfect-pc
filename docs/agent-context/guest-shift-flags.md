@@ -33,8 +33,9 @@ only on the original top two operand bits.
 defines the count masks, flag preservation and undefined results. The persistent
 known mask distinguishes those undefined bits from deterministic fallback values.
 Legacy block snapshots remain available to standalone ABI consumers. Full CPU
-context and other flag producers (products, scans/bit tests, exchanges, floating
-compares, strings and PUSHFD/POPFD) remain unfinished.
+context remains unfinished. [Integer producers](guest-integer-flags.md) extend
+products, scans/bit tests and exchanges; floating compares, strings and
+PUSHFD/POPFD remain incomplete.
 
 ## Evidence and CI repair
 

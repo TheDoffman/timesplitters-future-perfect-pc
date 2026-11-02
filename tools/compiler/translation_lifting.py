@@ -243,10 +243,12 @@ def _status_after(context,insn):
         target=insn.call_target
         if target in context.func_db and target not in context.manual_functions and target not in context.SEH_PROLOGS | context.SEH_EPILOGS and target not in (context.SETJMP_FN,context.LONGJMP_FN,context.CXX_THROW):return []
         return _status(context,['tsfp_status_forget(&g_status_flags,TSFP_STATUS_FLAGS);'])
-    if name in ('add','sub','adc','sbb','and','or','xor','inc','dec','neg','cmp','test','stc','clc','cmc','shl','sal','shr','sar','shld','shrd','rol','ror','rcl','rcr'):return []
-    if name in ('bt','bts','btr','btc'):mask='TSFP_STATUS_FLAGS'
-    elif name in ('rol','ror','rcl','rcr'):mask='TSFP_FLAG_CF | TSFP_FLAG_OF'
-    elif name in _SETTERS | _X87_FLAGS | {'popfd','div','idiv'} or strings.is_compare(insn):mask='TSFP_STATUS_FLAGS'
+    if insn.mnemonic.startswith('lock '):
+        # Only these LOCK forms have original handlers here. Unsupported LOCK
+        # arithmetic/bit operations must not retain falsely known status.
+        return [] if name in ('xchg','xadd','cmpxchg') else _status(context,['tsfp_status_forget(&g_status_flags,TSFP_STATUS_FLAGS);'])
+    if name in ('add','sub','adc','sbb','and','or','xor','inc','dec','neg','cmp','test','stc','clc','cmc','shl','sal','shr','sar','shld','shrd','rol','ror','rcl','rcr','mul','imul','bt','bts','btr','btc','bsf','bsr','xadd','cmpxchg'):return []
+    if name in _SETTERS | _X87_FLAGS | {'popfd','div','idiv'} or strings.is_compare(insn):mask='TSFP_STATUS_FLAGS'
     elif preserves(insn) or name.startswith(('j','set','cmov')) or insn.is_ret or name=='rdtsc' or name=='cpuid':return []
     else:mask='TSFP_STATUS_FLAGS'
     return _status(context,[f'tsfp_status_forget(&g_status_flags,{mask});'])

@@ -37990,3 +37990,38 @@ production generation/Release/built-ins/audit and bounded Story acceptance
 above remain current, with exact source/exe hashes. Both earlier CI causes
 are repaired and target tests pass; new-head CI still required after push.
 Full flag producers/context/SEH and broader replacement remain unfinished.
+
+## Persistent product/bit/exchange flags in progress (2026-11-02, stage0250, PR465)
+
+Afterf6edb895, whose runtime41449486367 and launcher41449486247 CI both passed.
+Project-owned lowerers now publish defined multiplication CF/OF, bit-test CF
+with ZF preserved, scan ZF before destructive scanning and sampled XADD/CAS
+arithmetic status. Undefined flags remain unknown. Explicit LOCK XCHG preserves
+flags, while unsupported LOCK arithmetic/bit families still invalidate status.
+Narrow memory bit writes explicitly cast width for strict compiler warnings.
+No new patch/ABI/provider: effective patch tail54 and historical bytes unchanged.
+
+New model/native test executes64 forms/198368requests with full17word RAM,
+8-bit multiply exhaustion, signed bit-string offsets, aliases/locks/CAS results,
+known-mask combinations and five compiled bad providers. Actual production
+FunctionTranslator64forms x3inputs execute canonical headers/storage.281 final
+focused checks pass67.74s; fresh/repeated installation+context21 pass23.75s.
+New generation15838/15863/0fail/6582869lines98.28s lift. Release build is running;
+new game acceptance not yet established. All26 protected files unchanged.
+Floating/string/control flags, actual saved context/exception delivery and the
+wider runtime replacement/snapshot-unavailable production goal remain open.
+
+Stage0250 Windows production accepted: Windows11 Pro10.0.26300 x64, MSVC
+19.44.35224.0, D3D11 flip backend, Classic/Original60, minimized synthetic
+input/movies skipped. Release/built-ins and current generation/source/archive/
+header/feature audit pass.6589product/2bit/4scan/26exchange producers, one per
+actual body;16 translated units changed. SHA256:
+fe25b7b49984b75418602695957fa881f5581fad70659893aee661a5b78928a2.
+Runner69080/controller6482 both0. Scene4/mission1/unpaused/inputenabled/ammo8to6;
+forward11.1542059606/back6.1848884405, pause39frozen/resume58advancing; last
+139.604s under240s.3fresh captures reviewed, exact source/exe provenance;26
+protected files unchanged, profiles/fixture valid, no lock/dump/Partition images.
+Guest presentation57.8/57.9/57.9 FPS, not scanout.281 focused and21 fresh/repeat
+install/context pass; context/index/whitespace check pending final before commit.
+No new-head CI or nativeMac title/campaign/physical-input/listening claim.
+Final stage0250 context/index and whitespace checks pass before commit.
