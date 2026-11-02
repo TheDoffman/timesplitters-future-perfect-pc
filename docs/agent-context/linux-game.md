@@ -78,3 +78,6 @@ first game boot exposed that host RMW fault; the protected-MMIO fixture checks
 production through the same helper before guest acknowledgement clears it.
 Linux game runs use the same 500-entry translated-call trace budget as the Mac
 runner, in addition to the hard aggregate log cap.
+The x64 adapter also handles compiler-folded immediate TEST reads, preserving
+registers and computing SF/ZF/PF/CF/OF. Protected APU fixture reads check both
+branch outcomes; unsupported arithmetic instructions still fail closed.

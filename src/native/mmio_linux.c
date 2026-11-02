@@ -13,7 +13,9 @@ int tsfp_native_mmio(siginfo_t *info,void *context) {
     uint64_t value=a.has_immediate?a.immediate:(regs[a.reg]>>a.shift);
     if(a.bytes<8)value&=(UINT64_C(1)<<(a.bytes*8))-1;
     if(!tsfp_mmio_device(a.address,a.bytes,a.load,&value))return 0;
-    if(a.load)uc->uc_mcontext.gregs[index[a.reg]]=(greg_t)tsfp_x64_load_result(regs[a.reg],value,&a);
+    if(a.test)uc->uc_mcontext.gregs[REG_EFL]=(greg_t)tsfp_x64_test_flags(
+        (uint64_t)uc->uc_mcontext.gregs[REG_EFL],value&a.immediate,a.bytes);
+    else if(a.load)uc->uc_mcontext.gregs[index[a.reg]]=(greg_t)tsfp_x64_load_result(regs[a.reg],value,&a);
     uc->uc_mcontext.gregs[REG_RIP]+=(greg_t)a.length;
     return 1;
 }

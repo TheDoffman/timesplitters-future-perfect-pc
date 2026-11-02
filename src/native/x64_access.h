@@ -8,7 +8,7 @@
 typedef struct {
     uintptr_t address;
     uint64_t immediate;
-    unsigned length,bytes,result_bytes,reg,shift,load,sign_extend,has_immediate;
+    unsigned length,bytes,result_bytes,reg,shift,load,sign_extend,has_immediate,test;
 } TsfpX64Access;
 static inline int tsfp_x64_access(const unsigned char *code,size_t available,
                                  uintptr_t pc,const uint64_t regs[16],TsfpX64Access *out) {
@@ -24,10 +24,11 @@ static inline int tsfp_x64_access(const unsigned char *code,size_t available,
         else break;
     }
     BYTE(op);a.bytes=(rex&8)?8:word?2:4;a.result_bytes=a.bytes;
-    if(op==0x8a||op==0x88||op==0xc6)a.bytes=a.result_bytes=1;
+    if(op==0x8a||op==0x88||op==0xc6||op==0xf6)a.bytes=a.result_bytes=1;
     if(op==0x8b||op==0x8a)a.load=1;
     else if(op==0x89||op==0x88){}
     else if(op==0xc6||op==0xc7)a.has_immediate=1;
+    else if(op==0xf6||op==0xf7){a.has_immediate=a.load=a.test=1;}
     else if(op==0x63 && (rex&8)){a.load=a.sign_extend=1;a.bytes=4;a.result_bytes=8;}
     else if(op==0x0f) {
         unsigned second;BYTE(second);
@@ -61,6 +62,16 @@ static inline int tsfp_x64_access(const unsigned char *code,size_t available,
     a.address=(uintptr_t)(address+(uint64_t)(int64_t)displacement+(rip_relative?pc+n:0));
     a.length=(unsigned)n;*out=a;return 1;
 #undef BYTE
+}
+static inline uint64_t tsfp_x64_test_flags(uint64_t flags,uint64_t value,unsigned bytes) {
+    if(bytes<8)value&=(UINT64_C(1)<<(bytes*8))-1;
+    /* TEST defines SF/ZF/PF and clears CF/OF; AF is architecturally undefined. */
+    flags&=~UINT64_C(0x8c5);
+    if(!value)flags|=0x40;
+    if(value&(UINT64_C(1)<<(bytes*8-1)))flags|=0x80;
+    unsigned parity=(unsigned)value&255;parity^=parity>>4;parity&=15;
+    if(!((0x6996u>>parity)&1))flags|=4;
+    return flags;
 }
 static inline uint64_t tsfp_x64_load_result(uint64_t old,uint64_t value,const TsfpX64Access *a) {
     if(a->bytes<8){unsigned bits=a->bytes*8;value&=(UINT64_C(1)<<bits)-1;

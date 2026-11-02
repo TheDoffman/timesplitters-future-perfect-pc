@@ -19,6 +19,13 @@ static int tsfp_x64_decoder_cases(void){
     CHECK(tsfp_x64_access(imm,sizeof imm,0x1000,r,&a)&&a.length==11&&a.address==0x101b&&a.immediate==UINT64_MAX);
     for(size_t n=0;n<sizeof imm;n++)CHECK(!tsfp_x64_access(imm,n,0x1000,r,&a));
     const unsigned char nope[]={0x90};CHECK(!tsfp_x64_access(nope,1,0,r,&a));
+    const unsigned char test[]={0x41,0xf7,0x84,0x06,0xf0,0x1f,0xfe,0xff,0x18,0,0,0};
+    r[14]=0xfe820010;
+    CHECK(tsfp_x64_access(test,sizeof test,0,r,&a)&&a.test&&a.load&&a.bytes==4&&a.immediate==0x18&&a.address==0x1fe802000);
+    for(size_t n=0;n<sizeof test;n++)CHECK(!tsfp_x64_access(test,n,0,r,&a));
+    CHECK((tsfp_x64_test_flags(0x202|0x801,0,4)&0x8c5)==0x44);
+    CHECK((tsfp_x64_test_flags(0x202,0x80000001,4)&0x8c5)==0x80);
+    CHECK((tsfp_x64_test_flags(0x202,3,1)&0x8c5)==4);
     return 1;
 #undef CHECK
 }

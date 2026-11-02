@@ -11,7 +11,7 @@
 #include <unistd.h>
 ptrdiff_t g_xbox_mem_offset;
 MCPXAPUState *g_apu_state;
-uint64_t mcpx_apu_mmio_read(MCPXAPUState *d,uint64_t a,unsigned s){(void)d;(void)a;(void)s;abort();}
+uint64_t mcpx_apu_mmio_read(MCPXAPUState *d,uint64_t a,unsigned s){if(d!=(void *)1||a!=0x20000||s!=4)abort();return 0x18;}
 void mcpx_apu_mmio_write(MCPXAPUState *d,uint64_t a,uint64_t v,unsigned s){(void)d;(void)a;(void)v;(void)s;abort();}
 extern int tsfp_native_mmio(siginfo_t *,void *);
 static volatile sig_atomic_t faults;
@@ -27,10 +27,15 @@ int main(void){
     *status=0;CHECK(tsfp_guest_raise_vblank((uintptr_t)base));CHECK(*status==1);
     struct sigaction sa={0};sa.sa_flags=SA_SIGINFO;sa.sa_sigaction=handle;sigemptyset(&sa.sa_mask);
     CHECK(!sigaction(SIGSEGV,&sa,NULL));CHECK(!sigaction(SIGBUS,&sa,NULL));
+    g_apu_state=(void *)1;CHECK(VirtualProtect(mc+0x20000,0x1000,PAGE_NOACCESS,&old));
+    unsigned char nonzero,zero;
+    __asm__ volatile("testl $0x18,(%1); setnz %0":"=qm"(nonzero):"r"(mc+0x20000):"cc","memory");
+    __asm__ volatile("testl $0x20,(%1); setz %0":"=qm"(zero):"r"(mc+0x20000):"cc","memory");
+    CHECK(nonzero&&zero);
     *(volatile uint32_t *)(nv+0x600140)=0x12345678;
     CHECK(*(volatile uint32_t *)(nv+0x600140)==0x12345678);
     *(volatile uint32_t *)(nv+0x600100)=1;CHECK(*status==0&&*(uint32_t *)(nv+0x100)==0);
     *(volatile unsigned char *)(mc+0x40011b)=3;CHECK(*(volatile unsigned char *)(mc+0x40011b)==1);
-    CHECK(faults==3);CHECK(tsfp_guest_arena_release());
+    CHECK(faults==5);CHECK(tsfp_guest_arena_release());
     puts("PASS: x64 decoder, protected writes, shared CRTC acknowledgement and AC97 reset");return 0;
 }
