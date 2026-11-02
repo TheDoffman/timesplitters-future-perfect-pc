@@ -392,3 +392,6 @@ Stage0247: [stack diagnostics](guest-stack-trace.md); native x86 proves parent o
 Stage0248 extends the effective tail to53 original stages; historical exclusions
 and the installed shared title feature definition are checked by repository tests.
 See [status tracking](guest-status-flags.md) for contracts and pending acceptance.
+
+Stage0249 extends the original effective tail to54 and checks canonical installed
+header text; [shift/rotate status](guest-shift-flags.md) records CI repair and tests.

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "8f471a09cd4dc138fb4f489c6f49c7e4b24ef51fc97fcf9e41010e852e5ffc7c",
+  "loaderSha256": "6147995bb7601bce77ac5132b939b368e2284ff5a55616f1235f9aa7ec1d3525",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3073,6 +3073,14 @@
       "targets": [
         "titles/futureperfect/CMakeLists.txt",
         "tools/recomp/test_flag_join_backedge.py"
+      ]
+    },
+    {
+      "name": "0249-status-header-template.patch",
+      "path": "patches/compiler/0249-status-header-template.patch",
+      "sha256": "6766d9c7609e217ae36c108988de65f84d9843a0fe969d241493c28dda475007",
+      "targets": [
+        "templates/runtime/recomp_types.h"
       ]
     }
   ]

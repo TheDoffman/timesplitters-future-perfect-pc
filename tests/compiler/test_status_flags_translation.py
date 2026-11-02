@@ -65,7 +65,7 @@ def test_translated_producers_publish_actual_flags(tmp_path,raw,op,a,b,carry):
     ('c1e000c3','g_eax=42;g_status_flags.value=0x8d7;g_status_flags.known=0x8d7;',
      'CHECK(g_eax==42);CHECK(g_status_flags.known==0x8d7);'),
     ('d1e0c3','g_eax=42;g_status_flags.value=0x8d7;g_status_flags.known=0x8d7;',
-     'CHECK(g_eax==84);CHECK(!(g_status_flags.known&TSFP_STATUS_FLAGS));'),
+     'CHECK(g_eax==84);CHECK(g_status_flags.value==2);CHECK(g_status_flags.known==0x8c7);'),
     ('39d87c06b901000000c3b902000000c3','g_eax=0x80000000u;g_ebx=1;g_status_flags.value=2;g_status_flags.known=2;',
      'CHECK(g_ecx==2);CHECK(g_status_flags.known==0x8d7);CHECK(g_status_flags.value&2048);'),
     ('11d8c3','g_eax=42;g_ebx=0;g_status_flags.value=0x8d7;g_status_flags.known=2;',
@@ -108,3 +108,25 @@ def test_complete_remainder_exits_guest_reduction_loop(tmp_path,remainder):
     execute(tmp_path,remainder+'dfe09e7af9c3',
             'g_esp=100;g_fp_top=0;g_fp_stack[0]=7.;g_fp_stack[1]=2.;g_fp_cc=0x4500;',
             'CHECK(!(g_fp_cc&0x400));CHECK(!(g_status_flags.value&TSFP_FLAG_PF));CHECK(g_esp==104);')
+
+
+@pytest.mark.parametrize('op,width',[(op,width) for op in ('shl','shr','sar','shld','shrd','rol','ror','rcl','rcr') for width in (8,16,32) if width!=8 or op not in ('shld','shrd')])
+def test_production_shift_routes_and_dynamic_counts(tmp_path,op,width):
+    from test_guest_shift_flags import COMBOS,model as shift_model
+    if op in ('shld','shrd'):raw='0f'+('a5' if op=='shld' else 'ad')+'d0'
+    else:raw=('d2' if width==8 else 'd3')+dict(shl='e0',shr='e8',sar='f8',rol='c0',ror='c8',rcl='d0',rcr='d8')[op]
+    if width==16:raw='66'+raw
+    index=COMBOS.index((op,width));a=0xf080807f;b=0x89abcdef
+    def seed(count):return f'g_esp=100;g_eax={a}u;g_edx={b}u;g_ecx={count};g_status_flags.value=0x8d7;g_status_flags.known=0x8d7;'
+    checks=[]
+    for count in (0,1,width,width+1,32,33,255):
+        result,value,known,_=shift_model((index,width,a,b,count,0x8d7,0x8d7))
+        if count:checks += [seed(count),'guest_body();']
+        checks += [f'CHECK(g_eax=={result}u);CHECK(g_status_flags.value=={value}u);CHECK(g_status_flags.known=={known}u);CHECK(g_esp==104);']
+    execute(tmp_path,raw+'c3',seed(0),'\n'.join(checks))
+
+
+@pytest.mark.parametrize('raw,a,result',[('d1d0',0x80000000,1),('d1d8',1,0x80000000)])
+def test_carry_rotate_consumes_callee_status(tmp_path,raw,a,result):
+    execute(tmp_path,'e8fb0f0000'+raw+'c3',f'g_esp=100;g_eax={a}u;g_status_flags.value=2;g_status_flags.known=2;',
+            f'CHECK(g_eax=={result}u);CHECK(g_status_flags.value==0x803);CHECK(g_status_flags.known==0x803);CHECK(g_esp==104);',callee='f9c3')

@@ -5,8 +5,9 @@ compiler producers/consumers. Windows124 focused checks and55 migration/context
 checks pass; fresh production generation, Release/built-ins/build audit and a
 clean bounded Story run pass after the remainder fix below. This is a foundation
 for saved CPU context, not completed guest CONTEXT or exception delivery.
-Preceding9003b35d runtime41435004586/launcher41435004575 CI passed; new-head CI
-and native Mac title execution remain separate pending acceptance.
+Preceding9003b35d CI passed. Stage0248 runtime41444560160 later failed two
+identifier/template checks on both hosts; [stage0249](guest-shift-flags.md)
+repairs them. Launcher41444560191 passed; native Mac title remains unverified.
 
 ## Storage and contracts
 
@@ -31,9 +32,9 @@ translation_integer.py and translation_compare.py emit producers;
 translation_lifting.py routes consumers and invalidations; translation_function.py
 enables recording for production functions and seeds local carry. Direct known
 translated calls retain callee flags. Opaque calls/tails and fast entry invalidate
-unmodeled status. Constant-zero shifts preserve flags. Other shift/product/bit/
-floating compare/string producer families remain incomplete and conservatively
-invalidate affected knowledge; rotations invalidate CF/OF. Legacy block snapshots
+unmodeled status. [Shift/rotate producers](guest-shift-flags.md) now track defined status and
+dynamic zero counts. Product/bit/floating compare/string producer families remain
+incomplete and conservatively invalidate affected knowledge. Legacy block snapshots
 remain fallback compatibility, not a proof of complete cross-block EFLAGS.
 
 guest_callback_call.c, pc_display_menu.c and pc_acoustic_guest.inc include status

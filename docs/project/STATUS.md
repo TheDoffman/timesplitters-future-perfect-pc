@@ -37947,3 +37947,46 @@ status-flags-accepted logs. Earlier failed35270399 attempts retained, not passes
 Current repair is shared; native Mac title/physical input/audio listening/full
 campaign and full EFLAGS/context/SEH remain unverified or unfinished. Wider
 replacement and snapshot-unavailable production acceptance remain incomplete.
+
+## Persistent shift/rotate status in progress (2026-11-02, stage0249, PR465)
+
+After0b9d2456. Shift/rotate helpers now publish architecturally defined status
+and invalidate undefined knowledge, preserving dynamic zero counts. Carry
+rotates consume persistent CF across calls. Shared code for Windows/native Mac.
+195 expanded focused checks pass43.04s, including independent280288 bit-loop
+requests,274070 valid raw native EFLAGS cases, six compiled bad producers and
+25 production instruction/width routes with seven dynamic counts. Native actual
+x86 checks skip on Mac; full context/exception replacement remains unfinished.
+
+Previous0b9d2456 launcher41444560191 succeeded; runtime41444560160 FAILED.
+Both native jobs failed the same two checks: scalar _flags substring collision
+and installed template missing canonical guarded status ABI. Patch transitions
+failed because the native/release prerequisite failed. Exact-identifier test
+and additive0249-status-header-template.patch repair these without weakening
+header equality. Effective tail54, historical exclusions and install audit
+updated; pristine snapshot untouched. Mac native2496pass373skip18subtests;
+Windows native2584pass295skip18subtests besides the two failures.
+
+New generation completed15838/15863 functions,0 failures,6,582,869 lines; lift
+93.72s. New Release build and full migration/context suites are running.
+Stage0248 accepted game8c2c5757 remains prior evidence, not stage0249 acceptance.
+
+Stage0249 Windows build/game accepted pending full migration gate: Release/
+built-ins terminal0; audit counts11062 shift+43 rotate producers, exact
+per-body coverage in16 updated units, unchanged canonical generated header,
+synchronized template, feature/archive/current-generation/input hashes. SHA256
+9c0f5a5945f4a84020859f05e0dc244e0edde2f978e8f0d8f4b1806f59dcaade.
+Runner82090/controller48170 both0; scene4/mission1/inputenabled/ammo8to6,
+forward11.1745451650/back5.8669620283, pause39frozen/resume58advancing;
+last117.155s below240s. Reviewed3fresh captures, source/exe provenance exact.
+Protected26hashes/sizes/mtimes unchanged; no lock/dump/Partition images. Guest
+presentation samples57.9/58.1/57.9 FPS in playable range, not scanout evidence.
+No nativeMac title/physicalinput/listening/fullcampaign claim.195focused pass;
+complete migration suite still live, so no new commit/push/CI acceptance yet.
+
+Stage0249 final local gate: complete migration/context55 passed1080.73s;
+195 expanded focused43.04s; context/index and whitespace checks pass. Fresh
+production generation/Release/built-ins/audit and bounded Story acceptance
+above remain current, with exact source/exe hashes. Both earlier CI causes
+are repaired and target tests pass; new-head CI still required after push.
+Full flag producers/context/SEH and broader replacement remain unfinished.

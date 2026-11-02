@@ -1,7 +1,7 @@
-"""Project width-aware shift and rotate lowering against the current flag ABI.
+"""Project width-aware shifts/rotates with persistent defined-status producers.
 
-Undefined narrow double-shift counts leave state unchanged. Complete dynamic
-flag provenance and overflow-condition lowering are separate integration work.
+Undefined narrow double-shift counts retain the destination and invalidate status
+knowledge. Zero counts preserve flags; undefined OF/AF/CF are never advertised.
 """
 
 # Direct-command imports share the repository's grouped helper paths.
@@ -19,7 +19,7 @@ else:
     def repo_file(root, area, name):
         return _LayoutPath(root) / area / name
 
-from translation_integer import _width
+from translation_integer import _width, _status
 from translation_operands import _fmt_operand_read, _fmt_operand_write
 
 _OPERATIONS = frozenset(('shl','sal','shr','sar','shld','shrd','rol','ror','rcl','rcr'))
@@ -80,7 +80,8 @@ def _shift(context, instruction, operands, operation):
         carry = f'(_bit_count <= {bits}u ? ((_bit_value >> ({distance})) & 1u) : 0u)'
     if getattr(context, 'needs_cf', False):
         lines.append(f'_cf = (int){carry};')
-    return [*lines, *_result(operands[0], bits), '} }']
+    record=f'tsfp_status_shift(&g_status_flags,{bits},_bit_value,_bit_count,_bit_result,TSFP_SHIFT_'+{'shl':'LEFT','shr':'RIGHT','sar':'ARITHMETIC'}[operation]+');'
+    return [*lines, *_result(operands[0], bits), *_status(context,[record]), '} }']
 
 
 def shift(context, instruction, operands, operator):
@@ -109,7 +110,9 @@ def double_shift(context, instruction, operands, mnemonic):
              f'uint32_t _bit_result = (uint32_t){expression} & {mask};']
     if getattr(context, 'needs_cf', False):
         lines.append(f'_cf = (int)((_bit_value >> ({distance})) & 1u);')
-    return [*lines, *_result(operands[0],bits), '} }']
+    record=f'tsfp_status_shift(&g_status_flags,{bits},_bit_value,_bit_count,_bit_result,TSFP_SHIFT_DOUBLE_'+('LEFT' if mnemonic=='shld' else 'RIGHT')+');'
+    return [*lines, *_result(operands[0],bits), *_status(context,[record]), '}',
+            *_status(context,[f'if (_bit_count > {bits}u) tsfp_status_forget(&g_status_flags,TSFP_STATUS_FLAGS);']), '}']
 
 
 def shld(context, instruction, operands):
@@ -136,7 +139,8 @@ def rotate(context, instruction, operands, mnemonic):
     if getattr(context, 'needs_cf', False):
         bit = '0' if mnemonic == 'rol' else str(bits-1)
         lines.append(f'_cf = (int)((_bit_result >> {bit}) & 1u);')
-    return [*lines, _fmt_operand_write(operands[0], '_bit_result'), '} }']
+    record=f'tsfp_status_rotate(&g_status_flags,{bits},_bit_value,_bit_count,_bit_result,TSFP_ROTATE_'+('LEFT' if mnemonic=='rol' else 'RIGHT')+');'
+    return [*lines, _fmt_operand_write(operands[0], '_bit_result'), *_status(context,[record]), '} }']
 
 
 def rotate_carry(context, instruction, operands, mnemonic):
@@ -146,10 +150,23 @@ def rotate_carry(context, instruction, operands, mnemonic):
     value = _fmt_operand_read(operands[0])
     first, second = ('<<','>>') if mnemonic == 'rcl' else ('>>','<<')
     ring_mask = f'0x{(1<<(bits+1))-1:X}ull'
-    return [f'{{ unsigned _bit_count = ((unsigned)({count}) & 31u) % {bits+1}u;',
+    if not getattr(context,'track_status_flags',False):
+        return [f'{{ unsigned _bit_count = ((unsigned)({count}) & 31u) % {bits+1}u;',
             'if (_bit_count) {',
             f'uint64_t _bit_ring = ((uint64_t)(_cf != 0) << {bits}) | ((uint32_t)({value}) & {mask});',
             f'_bit_ring = ((_bit_ring {first} _bit_count) | (_bit_ring {second} ({bits+1}u - _bit_count))) & {ring_mask};',
             f'uint32_t _bit_result = (uint32_t)_bit_ring & {mask};',
             f'_cf = (int)((_bit_ring >> {bits}) & 1u);',
             _fmt_operand_write(operands[0], '_bit_result'), '} }']
+    return [f'{{ unsigned _bit_masked_count = (unsigned)({count}) & 31u;',
+            f'unsigned _bit_count = _bit_masked_count % {bits+1}u;',
+            *_status(context,['_cf = (int)RECOMP_STATUS_CARRY(_cf);']),
+            'if (_bit_count) {',
+            f'uint32_t _bit_value = (uint32_t)({value}) & {mask};',
+            f'uint64_t _bit_ring = ((uint64_t)(_cf != 0) << {bits}) | _bit_value;',
+            f'_bit_ring = ((_bit_ring {first} _bit_count) | (_bit_ring {second} ({bits+1}u - _bit_count))) & {ring_mask};',
+            f'uint32_t _bit_result = (uint32_t)_bit_ring & {mask};',
+            f'_cf = (int)((_bit_ring >> {bits}) & 1u);',
+            _fmt_operand_write(operands[0], '_bit_result'),
+            *_status(context,[f'tsfp_status_rotate(&g_status_flags,{bits},_bit_value,_bit_masked_count,_bit_result,TSFP_ROTATE_CARRY_'+('LEFT' if mnemonic=='rcl' else 'RIGHT')+');']),
+            '}', *_status(context,['else if (_bit_masked_count) tsfp_status_write(&g_status_flags,0,0,TSFP_FLAG_OF);']), '}']

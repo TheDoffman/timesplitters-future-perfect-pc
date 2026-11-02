@@ -62,4 +62,48 @@ static inline uint32_t tsfp_status_condition(const tsfp_status_flags *s,unsigned
     }
     return v^(code&1);
 }
+enum {TSFP_SHIFT_LEFT,TSFP_SHIFT_RIGHT,TSFP_SHIFT_ARITHMETIC,TSFP_SHIFT_DOUBLE_LEFT,TSFP_SHIFT_DOUBLE_RIGHT};
+static inline void tsfp_status_shift(tsfp_status_flags *s,unsigned bits,uint32_t input,unsigned count,uint32_t result,unsigned operation) {
+    uint32_t mask,value,defined=TSFP_FLAG_SF|TSFP_FLAG_ZF|TSFP_FLAG_PF;
+    uint32_t undefined=TSFP_FLAG_CF|TSFP_FLAG_OF|TSFP_FLAG_AF,carry=0;
+    if(!s || (bits!=8 && bits!=16 && bits!=32) || operation>TSFP_SHIFT_DOUBLE_RIGHT)return;
+    if(operation>=TSFP_SHIFT_DOUBLE_LEFT && bits==8)return;
+    count&=31u;if(!count)return;
+    if(operation>=TSFP_SHIFT_DOUBLE_LEFT && count>bits){tsfp_status_forget(s,TSFP_STATUS_FLAGS);return;}
+    mask=bits==32?UINT32_MAX:(UINT32_C(1)<<bits)-1;input&=mask;result&=mask;
+    value=tsfp_status_szp(result,bits);
+    if(operation==TSFP_SHIFT_ARITHMETIC || operation>=TSFP_SHIFT_DOUBLE_LEFT || count<bits) {
+        if(operation==TSFP_SHIFT_LEFT || operation==TSFP_SHIFT_DOUBLE_LEFT)carry=(input>>(bits-count))&1u;
+        else if(operation==TSFP_SHIFT_ARITHMETIC && count>=bits)carry=(input>>(bits-1))&1u;
+        else carry=(input>>(count-1))&1u;
+        defined|=TSFP_FLAG_CF;undefined&=~TSFP_FLAG_CF;value|=carry;
+    }
+    if(count==1) {
+        uint32_t overflow=operation==TSFP_SHIFT_ARITHMETIC?0:
+            operation==TSFP_SHIFT_RIGHT?(input>>(bits-1))&1u:((input^result)>>(bits-1))&1u;
+        defined|=TSFP_FLAG_OF;undefined&=~TSFP_FLAG_OF;value|=overflow*TSFP_FLAG_OF;
+    }
+    tsfp_status_write(s,defined,value,undefined);
+}
+enum {TSFP_ROTATE_LEFT,TSFP_ROTATE_RIGHT,TSFP_ROTATE_CARRY_LEFT,TSFP_ROTATE_CARRY_RIGHT};
+static inline void tsfp_status_rotate(tsfp_status_flags *s,unsigned bits,uint32_t input,unsigned count,uint32_t result,unsigned operation) {
+    uint32_t value,defined=TSFP_FLAG_CF,undefined=TSFP_FLAG_OF,carry,sign,prior_carry_known;
+    unsigned distance;
+    if(!s || (bits!=8 && bits!=16 && bits!=32) || operation>TSFP_ROTATE_CARRY_RIGHT)return;
+    count&=31u;if(!count)return;
+    distance=count%(bits+(operation>=TSFP_ROTATE_CARRY_LEFT));
+    if(!distance && operation>=TSFP_ROTATE_CARRY_LEFT){tsfp_status_write(s,0,0,TSFP_FLAG_OF);return;}
+    prior_carry_known=s->known&TSFP_FLAG_CF;sign=UINT32_C(1)<<(bits-1);
+    if(operation==TSFP_ROTATE_LEFT)carry=result&1u;
+    else if(operation==TSFP_ROTATE_RIGHT)carry=!!(result&sign);
+    else if(operation==TSFP_ROTATE_CARRY_LEFT)carry=(input>>(bits-distance))&1u;
+    else carry=(input>>(distance-1))&1u;
+    value=carry;
+    if(count==1 && (operation!=TSFP_ROTATE_CARRY_RIGHT || prior_carry_known)) {
+        uint32_t overflow=operation==TSFP_ROTATE_CARRY_LEFT?((input^(input<<1))&sign):
+            operation==TSFP_ROTATE_LEFT?((!!(result&sign)^carry)*sign):((result^(result<<1))&sign);
+        defined|=TSFP_FLAG_OF;undefined=0;value|=overflow?TSFP_FLAG_OF:0;
+    }
+    tsfp_status_write(s,defined,value,undefined);
+}
 #endif

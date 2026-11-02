@@ -168,6 +168,10 @@ def patch_records(paths):
     if status_flags:
         paths.remove(status_flags)
         paths.append(status_flags)
+    status_header = by_name.get('0249-status-header-template.patch')
+    if status_header:
+        paths.remove(status_header)
+        paths.append(status_header)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

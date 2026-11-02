@@ -8851,3 +8851,18 @@ context cases; generation/Release/built-ins/audit; clean isolated Story movement
 fire and pause/resume all pass with8c2c5757 bytes. Earlier failed attempts retained.
 26 protected files unchanged. Code/test selection shared; native Mac title and
 new-head CI acceptance remain pending. Full EFLAGS/context/SEH remains open.
+
+Stage0249 in progress (2026-11-02, PR465): shared persistent shift/rotate
+status/zero-count/cross-call carry emission,195 Windows focused checks. Native
+x86 oracle skips on Mac, portable model/negative/production routes selected
+in shared CI. Previous0b9d2456 native jobs both failed scalar-name/template ABI
+checks; exact-name check and additive0249 template synchronization repair
+these locally. Launcher/upgrade/package jobs passed; runtime overall failed.
+New generation0fail; fresh build/game, complete migrations and new-head CI
+pending. Full context/SEH and native Mac title acceptance remain incomplete.
+
+Stage0249 final Windows acceptance:195 focused and55 migration/context tests
+pass, production generation/Release/built-ins/audit, fresh isolated Story
+movement/fire/pause/resume pass with9c0f5a59 bytes;26 protected files unchanged.
+Shared implementation, portable tests selected for both hosts; native Mac title
+and new-head CI acceptance pending. PreviousCI failure is recorded, not green.
