@@ -1,5 +1,15 @@
 # PC features awaiting Mac adaptation
 
+Shared Vulkan 1.2 / WSL hardware support (2026-11-02, local `9e451a55` through
+`2b0a7fd8`): **Implemented** in the common Vulkan backend, with descriptor arena,
+baked state and SPIR-V interface fallbacks. Vulkan1.3/Mac selection is retained;
+Windows WARP and Linux RTX/software contracts pass. Native Mac GPU revalidation
+is pending on a Mac host. Linux-only live VMA query and explicit experimental
+WSL Dozen environment are thin host adapters, with no duplicate gameplay policy.
+The private driver does not replace system Mesa. See STATUS and
+[GPU contracts](../agent-context/linux-game.md) for evidence and remaining30 FPS/
+full-game/Deck acceptance limits.
+
 Linux launcher (2026-11-01, `feature/linux-launcher`, local commits beginning
 `c8b3a534`): **Not applicable** as a new Mac feature. Linux links the existing
 Avalonia host and shared C# models/pages; native calls, ELF/package names and

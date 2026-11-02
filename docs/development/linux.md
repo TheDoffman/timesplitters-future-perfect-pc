@@ -116,23 +116,15 @@ automatically. Microsoft's [shared-memory failure report](https://github.com/mic
 describes the same transparent-window symptom. The local update result is
 measured evidence, not a guarantee that every WSLg transport failure is fixed.
 
-Direct window delivery does not establish GPU acceleration. The installed
-Ubuntu Vulkan drivers still expose llvmpipe on this host: the RTX 4070 SUPER is
-not used by that software Vulkan driver. Reviewed first-level play was roughly
-15–20 FPS on the CPU. Keep Original 60 FPS when evaluating this baseline; beta
-240 FPS is not appropriate evidence of hardware performance. Hardware-backed
-WSL Vulkan requires separate driver and renderer-contract acceptance.
-
-An isolated Mesa 26.2.5 Dozen probe detected the RTX 4070 SUPER as a hardware
-Vulkan device, but advertised API 1.2.354 and no maintenance4 extension. The
-production RHI contract rejected it before device creation because this shared
-backend requires Vulkan 1.3 (including maintenance4 shader-interface rules).
-Do not override the advertised API version or remove required feature checks
-to make a driver appear compatible. System Mesa and the SDK pins remain unchanged.
-The optional driver probe is local development evidence, not a supported game
-configuration. Linux GPU performance acceptance still requires a compatible
-hardware driver; software-rendered WSL timings cannot establish native Linux or
-Steam Deck performance. See STATUS for the exact probe scope.
+Hardware rendering now works through an isolated Mesa 26.2.5 Dozen driver on
+the RTX 4070 SUPER. Shared Vulkan 1.2 compatibility preserves required rendering
+semantics through descriptor/state/interface fallbacks; no API version spoofing
+is used. Renderer/replay and bounded first-level gameplay pass with validation.
+See [WSL hardware Vulkan](wsl-vulkan.md) for the pinned private driver build,
+direct interactive launcher and measured scope. System Mesa and SDK pins remain
+unchanged; llvmpipe is retained as a software baseline. Checked gameplay is about
+30 FPS on hardware; this is not steady-60 or full-game/Steam Deck acceptance.
+Keep Original 60 FPS selected while testing.
 
 ## Native game build and isolated tests
 

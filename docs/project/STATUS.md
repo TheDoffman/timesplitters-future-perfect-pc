@@ -1,3 +1,54 @@
+## Linux RTX hardware rendering (2026-11-02)
+
+Local unpublished `feature/linux-launcher`, shared GPU changes from `9e451a55`
+through `2b0a7fd8`; this supersedes the earlier API-1.2 rejection and software-only
+performance limitation below. Final patches2407/2408 provide legal Vulkan 1.2
+descriptor sets, baked pipeline state and matching SPIR-V interfaces while
+retaining the existing 1.3 path. The isolated Mesa 26.2.5 Dozen build selects
+Microsoft Direct3D12 / NVIDIA GeForce RTX 4070 SUPER through WSL. Its small queue
+granularity correction, archive/library/manifest hashes and reproducible helper
+are recorded; Ubuntu system Mesa and project Vulkan SDK pins are unchanged.
+Dozen remains experimental/nonconformant, separate from native Linux/Deck drivers.
+
+Ubuntu 24.04 / WSL 3.0.3, kernel6.18.54.1, WSLg1.0.79, SDK1.4.363.0:
+the complete shared RHI pixels/resources/presentation and production replay pass
+on RTX hardware with validation, and on llvmpipe with both the existing and
+forced compatibility paths. New real pixels cover varying widths1/2/3, 512
+distinct descriptor/uniform/scissor draws without intervening flush and six
+arena reuses. Windows WARP passes the same extended pixel contract. Native Mac
+hardware validation remains unrun; shared Mac paths remain selected.
+
+Actual game ELF built at `1f1926e6`, SHA256
+`b2ec7d3a67c60c027d2569eb3e1fefe590417ef48f9cc05a98c861a37b618ab6`,
+passes a 300.19-second isolated RTX/Wayland run: at least10,500 guest frames and
+presents, zero skipped/failed presents and zero Vulkan validation errors/warnings.
+Reviewed 2401 tunnel gameplay includes movement/camera, firing ammo16->14,
+pause and resume. This is a bounded scene check, not a campaign playthrough.
+The following 120.18-second performance run disables validation and enables the
+isolated shader cache, recording3,900 presents, zero failed/skipped presents.
+Its reviewed subsequent outdoor scene is about30 FPS (149–150 frames/5seconds),
+with menus reaching about60; the scenes differ, so this is not a controlled
+before/after benchmark or steady60 acceptance. Personal saves remain untouched.
+
+Profiling found two additional CPU costs: repeated text `/proc/self/maps` scans
+and REP MOVSB copies to D3D12 upload memory. Linux guest guards now use the live
+kernel PROCMAP_QUERY ioctl with older-kernel fallback, preserving permission
+and hole rejection. Explicit WSL Dozen selection uses glibc vector copies only
+in the child environment, preserving unrelated tunables. Windows/Mac policies
+and native Linux/system drivers retain their adapters.
+
+Windows: 46 patch tracking/historical transition tests pass (616.13s), 46 selected
+shared memory/render/context tests pass (19.69s), 115 CI/backlog/context checks
+pass (4.72s), and13 driver/memory-query checks pass. Linux's complete selected
+host suite passes78 checks with2 Windows-only skips (31.94s), including real
+auto-look protections, crash/helper, MMIO, SPIR-V, query and driver checks.
+The interactive GPU session was opened and brought forward through WSLg; its
+direct native window visibly renders the player-selection menu at60 FPS.
+Configured CI now exercises both Vulkan routes; this is not a remote CI result.
+See [WSL GPU development](../development/wsl-vulkan.md) for reproducible build,
+acceptance and direct-window play commands. All changes are local Git commits;
+no main merge, push or publication was performed.
+
 ## Linux desktop launcher validation (2026-11-01)
 
 Local `feature/linux-launcher`, launcher source through `d5a3398a` (unpublished),
