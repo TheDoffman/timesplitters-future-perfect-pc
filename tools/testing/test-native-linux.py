@@ -20,11 +20,12 @@ from vulkan_sdk import sha256
 from native_mac_common import recycle_test_disks
 EXPECTED='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
 
-def original_frame_rate(test):
+def test_frame_rate(test,fps):
     # Saved preferences override TSFP_NATIVE_FPS. Reset only this disposable
     # profile, and refuse links instead of touching another profile's timing.
+    if fps not in (60,120,180,240):raise ValueError('Unsupported frame-rate preset')
     fd=os.open(test/'pc-frame-rate.ini',os.O_WRONLY|os.O_CREAT|os.O_TRUNC|os.O_NOFOLLOW,0o600)
-    with os.fdopen(fd,'w') as output:output.write('TSFP_FRAME_RATE_V1 0\n')
+    with os.fdopen(fd,'w') as output:output.write(f'TSFP_FRAME_RATE_V1 {0 if fps==60 else fps}\n')
 
 
 def main():
@@ -34,6 +35,8 @@ def main():
     p.add_argument('--driver-manifest',type=Path)
     p.add_argument('--capture',action='store_true')
     p.add_argument('--performance',action='store_true',help='Measure interactive settings: shader cache on, validation off (not validation acceptance)')
+    p.add_argument('--fps',type=int,choices=(60,120,180,240),default=60,
+                   help='Explicit isolated timing preset; high refresh retains the existing beta policy')
     p.add_argument('--unlocked-profile',action='store_true',help='Use the shared local Test Lab fixture in a disposable nested profile')
     p.add_argument('--test-keys',action='store_true',help='Read synthetic SDL events from the isolated test-keys.txt')
     args=p.parse_args()
@@ -58,14 +61,14 @@ def main():
             if not (test/name).exists():shutil.copyfile(source,test/name)
         if not (test/'runtime.conf').exists():(test/'runtime.conf').write_text('# Isolated Linux defaults\n')
         if not (test/'pc-display.ini').exists():(test/'pc-display.ini').write_text('TSFP_DISPLAY_V2 640 480 55\n')
-        original_frame_rate(test)
+        test_frame_rate(test,args.fps)
         env=linux_vulkan_sdk.probe_environment(linux_vulkan_sdk.verify_install())
         env.update(RECOMP_GAME_DIR=str(game),RECOMP_SAVE_DIR=str(test),
             RECOMP_INPUT_CONFIG=str(test/'pc-controls.json'),RECOMP_DISPLAY_CONFIG=str(test/'runtime.conf'),
             TSFP_DISPLAY_CONFIG=str(test/'pc-display.ini'),TSFP_SAVE_LOCATION_LOCK='1',
             XDG_CONFIG_HOME=str(test/'xdg-config'),XDG_DATA_HOME=str(test/'xdg-data'),XDG_CACHE_HOME=str(test/'xdg-cache'),
             RECOMP_LOG_FILE=str(ROOT/'logs/linux-game.err'),TSFP_CRASH_DIR=str(test/'crashes'),
-            RECOMP_XMV_PLAY='0',RECOMP_FPS_CAP='60',TSFP_NATIVE_FPS='0',RECOMP_TRACE_BUDGET='500')
+            RECOMP_XMV_PLAY='0',RECOMP_FPS_CAP='60',TSFP_NATIVE_FPS=str(0 if args.fps==60 else args.fps),RECOMP_TRACE_BUDGET='500')
         if args.unlocked_profile:
             from testing_profile import prepare_run
             prepared=prepare_run(ROOT,test/'unlocked')
@@ -105,7 +108,8 @@ def main():
             host_optimization=manifest.get('host_optimization','legacy unoptimized host'),
             cpu_user_seconds=round(cpu_after.ru_utime-cpu_before.ru_utime,3),
             cpu_system_seconds=round(cpu_after.ru_stime-cpu_before.ru_stime,3),
-            native_fps=0,original_timing_observed='[native] fixed 60 FPS' in text,
+            requested_fps=args.fps,
+            requested_timing_observed=('[native] fixed 60 FPS' if args.fps==60 else f'[native] target {args.fps} fresh game FPS') in text,
             profile='Test Lab disposable copy' if args.unlocked_profile else 'isolated fresh/local test profile',
             returncode=child.returncode,bounded_stop=timed_out,stop_reason=reason,seconds=round(time.monotonic()-started,2),
             entered_guest='Entering translated Xbox entry' in text,
@@ -116,7 +120,7 @@ def main():
         summary['vulkan_validation_errors']=text.count('[VKVAL]')+text.count('[VKVAL error]')
         summary['disposable_test_disks']=recycle_test_disks(ROOT,test)
         (logs/'linux-game.json').write_text(json.dumps(summary,indent=2)+'\n');print(json.dumps(summary,indent=2))
-        passed=timed_out and summary['original_timing_observed'] and summary['presents'] and summary['presents']['guest']>0 and not summary['vulkan_validation_errors']
+        passed=timed_out and summary['requested_timing_observed'] and summary['presents'] and summary['presents']['guest']>0 and not summary['vulkan_validation_errors']
         if not passed:raise SystemExit(1)
 
 if __name__=='__main__':main()

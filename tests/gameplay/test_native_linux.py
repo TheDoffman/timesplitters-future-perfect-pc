@@ -43,3 +43,38 @@ def test_build_rejects_wrong_xbe_before_dependencies_or_patches(tmp_path,monkeyp
     monkeypatch.setattr(module.linux_vulkan_sdk,'verify_install',lambda *a:pytest.fail('Invalid-XBE dependency access'))
     with pytest.raises(SystemExit) as error:module.main()
     assert error.value.code==2
+
+
+def runner():
+    spec=importlib.util.spec_from_file_location('linux_game_runner',ROOT/'tools/testing/test-native-linux.py')
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX no-follow file creation')
+def test_runner_resets_only_disposable_high_refresh_preference(tmp_path):
+    rate=tmp_path/'pc-frame-rate.ini';rate.write_text('TSFP_FRAME_RATE_V1 240\n')
+    unrelated=tmp_path/'pc-display.ini';unrelated.write_text('retain resolution and FOV')
+    runner().test_frame_rate(tmp_path,60)
+    assert rate.read_text()=='TSFP_FRAME_RATE_V1 0\n'
+    assert unrelated.read_text()=='retain resolution and FOV'
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX no-follow file creation')
+def test_runner_rejects_linked_frame_rate_without_changing_its_target(tmp_path):
+    personal=tmp_path/'personal.ini';personal.write_text('TSFP_FRAME_RATE_V1 240\n')
+    (tmp_path/'pc-frame-rate.ini').symlink_to(personal)
+    with pytest.raises(OSError):runner().test_frame_rate(tmp_path,60)
+    assert personal.read_text()=='TSFP_FRAME_RATE_V1 240\n'
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX no-follow file creation')
+@pytest.mark.parametrize('fps',[60,120,180,240])
+def test_runner_selects_each_supported_preset_over_stale_preferences(tmp_path,fps):
+    path=tmp_path/'pc-frame-rate.ini';path.write_text('TSFP_FRAME_RATE_V1 180\n')
+    runner().test_frame_rate(tmp_path,fps)
+    assert path.read_text()==f'TSFP_FRAME_RATE_V1 {0 if fps==60 else fps}\n'
+
+
+def test_runner_rejects_unknown_preset_without_creating_files(tmp_path):
+    with pytest.raises(ValueError):runner().test_frame_rate(tmp_path,200)
+    assert not list(tmp_path.iterdir())
