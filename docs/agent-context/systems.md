@@ -58,7 +58,7 @@ Textures: `src/textures/`, runtime `src/d3d/` and HLE
 texture hooks; offline tooling `tools/textures/`. Sanitized replacements now live
 in `assets/textures` (DDS via Git LFS), audited by `tools/textures/build_textures.py` for optional delivery;
 Private art stays local. Networking: `src/network/`, HLE/kernel patches and
-`tools/network/online.py`; [Online UI](multiplayer-ui.md). Crash capture:
+`tools/network/online.py`; [LAN](system-link.md), [Online UI](multiplayer-ui.md). Crash capture:
 `src/diagnostics/`, runtime crash hooks and launcher diagnostics.
 Audio: `src/hle/hle_dsound*`, `hle_xmv*`. [Beta audio](../development/positional-audio.md).
 General buffering, lifecycle, format and device recovery are unconditional;
@@ -971,10 +971,10 @@ checks actual viewport scaling, target position, reset and seven display shapes.
 
 Bot corpses: [contracts](systems-details.md#online-bot-corpses).
 
-[Shared Story version provider](systems-details.md#story-co-op-release-flag).
+[Story version](systems-details.md#story-co-op-release-flag).
 
 Physics: [poses](systems-details.md#guest-ragdolls-and-physical-npc-drops).
 
 [Language startup](language-packs.md).
 
-[2x texture workflow](original-upscale.md).
+[2x](original-upscale.md).

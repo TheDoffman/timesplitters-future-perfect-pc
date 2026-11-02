@@ -23,7 +23,7 @@ Linux game runtime publication remains separate; no compatible release is
 offered until a matching runtime ZIP is published. See
 [Linux launcher](../players/linux-launcher.md) for usage and STATUS for host evidence.
 
-Game 0.4.1 preparation retains Stable channel selection, optional texture delivery
+Game 0.4.2 preparation retains Stable channel selection, optional texture delivery
 and the existing install/preservation contracts. Its packages embed launcher 1.4.2;
 game and launcher publication remain independent.
 

@@ -2,7 +2,7 @@ FOV fixture stubs HUD draws and checks the Kill Feed row.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build, run and validation map
 
-[Linux: GPU, MMIO and host models](linux.md).
+[Linux](linux.md); [LAN](system-link.md).
 
 Discord release webhooks target #release-updates; #announcements holds team posts.
 
@@ -12,7 +12,7 @@ Native Online link/mode checks: `tests/graphics/test_quit_menu.py` and native
 `--test`/`--online-self-test`. Clang Story fixtures select the Windows guest
 adapter but use the real host trap; hexadecimal additions need token boundaries.
 
-Game 0.4.1: use one clean pushed revision for both publishers; installer,
+Game 0.4.2: use one clean pushed revision for both publishers; installer,
 preservation and portable Online checks remain required.
 
 Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh-weapon-clicks-434).

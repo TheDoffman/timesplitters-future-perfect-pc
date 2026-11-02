@@ -5,7 +5,7 @@
 [Back to the README](../../README.md) | [Launcher releases](launcher-releases.md)
 
 Game and launcher versions are independent. The next Stable game source version
-is **0.4.1**, including the merged game fixes since `0.4.0`. This source change does not
+is **0.4.2**, including the System Link activation hotfix and changes merged since `0.4.1`. This source change does not
 publish a release or establish full campaign/platform validation. Historical
 alpha and `-preview.N` releases remain available in Game versions; do not
 relabel their assets or offer them as Beta updates.
