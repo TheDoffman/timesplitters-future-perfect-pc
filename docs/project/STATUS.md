@@ -1,3 +1,57 @@
+## Cross-platform base-game audit (2026-11-02)
+
+Local follow-up on `perf/linux-upload-waits`, audit base `71c6557f`, shared code
+through `d394ae0e`. All three builders apply the same patch stack. Ordinary
+base-game behavior stays in shared source; Vulkan upload policy is common to
+Vulkan hosts, while D3D11 retains its own resource adapter. No push/publication
+or Steam Deck transfer. Native Mac hardware is unavailable here.
+
+The audit found and fixed a shared GPU fixture that discard-mapped a default
+buffer: D3D11 requires a dynamic CPU-write buffer. The fixture now separately
+checks ordinary default-buffer updates and repeated dynamic map/unmap draws
+on every RHI, preserving subsequent bindings. It passes on Windows WARP and
+Linux Vulkan hardware/software; no platform exclusion was added. Shared Story
+cinematic serial assignment and two test varargs loops now compile under GCC
+fatal warnings without ambiguous indentation. Demo mutation tests require the
+same failed expression with glibc or Windows/macOS assertion diagnostics.
+
+Linux runtime CI now runs shared clock/vehicle/demo/wind, mouse/reload,
+HUD/FOV/cutscene/menu and audio contracts after patch application. Existing
+Windows/macOS suites remain enabled. The shared-platform guide now reflects
+the Linux game executable and current60/120/180/240 presets.
+
+| Validation | Actual result |
+| --- | --- |
+| Windows full supported build and built-in path/input/display/debug/settings/texture checks | Passed |
+| Windows RHI/upload/interface/state/host/repository bundle |133 passed,1 skipped; D3D11 WARP pixels passed |
+| Windows shared gameplay/HUD/menu/audio contracts with US XBE |446 passed,3 skipped; one deliberate-failure physics mutation timed out and passed in isolation (1 passed,18 deselected) |
+| Windows fixes/CI/demo/Story menu regression bundle |258 passed |
+| Final repository/context/CI/backlog checks |115 passed; context and diff checks passed |
+| Linux same gameplay/HUD/menu/audio contracts with linked US XBE |438 passed,12 host-specific skips |
+| Linux Vulkan pixel/resource/production replay | Passed on llvmpipe Vulkan1.3 path and private Dozen/RTX4070SUPER Vulkan1.2 path |
+| Updated Linux game build and MMIO/CRTC/AC97 checks | Passed |
+| Native Mac GPU/build/gameplay | Unrun locally; pending Mac execution |
+
+Windows executable SHA256:
+`85f9df0e09263b93e5e945fd3a27ecd405bed57b6deee7a1af42b8f05d98c4bd`.
+This build selects D3D11 (`XBOXRECOMP_VULKAN=OFF`); Windows Vulkan execution is
+not established by the WARP fixture. Updated Linux ELF SHA256:
+`0445d694b1a160c1071a134fc0d2686462833e7707099157568c602061f09159`.
+
+The bounded Windows120 Story run observed correct movement, ammo consumption,
+hand animation, opening firearm handoff and pause/resume. Captured active-game
+pixels were visually checked. At roughly111seconds its window received a close
+request (`window closed`, exit0); the runner correctly retained completed=false,
+passed=false. This interrupted run is not a completed120-second acceptance pass.
+Receipts/captures remain ignored in `private/test-saves/high-refresh/` with
+`native-120-platform-parity` prefix. Local test/build logs use
+`logs/platform-parity-*` in their respective host checkouts.
+
+Shared implementation and these scoped checks do not prove every mission,
+legacy renderer or peripheral on every host. Existing movie/dialog/host gaps
+remain in the Linux development guide and Mac backlog; native Mac and actual
+Steam Deck acceptance are still required before claiming full platform parity.
+
 ## Vulkan upload reduction and Linux Story checks (2026-11-02)
 
 Local `perf/linux-upload-waits`, based on unmerged `7489cd5c`; no push,
