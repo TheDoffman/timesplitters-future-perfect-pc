@@ -161,7 +161,17 @@ def emit(context,instruction,mnemonic,operands):
             expression={'fpatan':'atan2(_fp_next, _fp_top)','fyl2x':'_fp_next * log2(_fp_top)','fyl2xp1':'_fp_next * log2(_fp_top + 1.0)'}[mnemonic]
             body += [f'fp_st1() = {expression};','fp_pop();']
         elif mnemonic in ('fprem','fprem1'):
-            body += [f'fp_top() = {"fmod" if mnemonic=="fprem" else "remainder"}(_fp_top, _fp_next);']
+            # libm completes the binary64 reduction in one operation. Publish
+            # completed C2 and the absolute quotient's low three bits, including
+            # quotients too large to represent as a C integer or exact double.
+            body += ['int _fp_quotient = 0;',
+                     'double _fp_remainder = remquo(_fp_top, _fp_next, &_fp_quotient);',
+                     'unsigned _fp_q = _fp_quotient < 0 ? 0u - (unsigned)_fp_quotient : (unsigned)_fp_quotient;']
+            if mnemonic=='fprem':
+                body += ['if (_fp_remainder != 0.0 && !!signbit(_fp_remainder) != !!signbit(_fp_top)) --_fp_q;',
+                         'fp_top() = fmod(_fp_top, _fp_next);']
+            else:body += ['fp_top() = _fp_remainder;']
+            body += ['g_fp_cc = (uint16_t)((g_fp_cc & ~0x4700u) | ((_fp_q & 4u) << 6) | ((_fp_q & 1u) << 9) | ((_fp_q & 2u) << 13));']
         else:
             body += ['if (isnan(_fp_top) || isnan(_fp_next)) fp_top() = NAN;',
                      'else if (isinf(_fp_next)) {',
@@ -189,6 +199,9 @@ def emit(context,instruction,mnemonic,operands):
                  'g_fp_cmp = (isnan(_fp_left) || isnan(_fp_right)) ? 2 : (_fp_left < _fp_right ? -1 : (_fp_left > _fp_right ? 1 : 0));']
         integer_flags=mnemonic.endswith(('i','ip'))
         if not integer_flags:body += ['g_fp_cc = (uint16_t)(g_fp_cmp == 2 ? 0x4500u : (g_fp_cmp < 0 ? 0x0100u : (g_fp_cmp == 0 ? 0x4000u : 0u)));']
+        elif getattr(context,'track_status_flags',False):
+            from translation_compare import floating_status
+            body += floating_status(context,'_fp_left','_fp_right')
         pops=2 if mnemonic.endswith('pp') else int(mnemonic.endswith(('p','pi')))
         body += ['fp_pop();']*pops;return finish()
     if mnemonic in ('fnstsw','fstsw','fnstcw','fstcw','fldcw'):

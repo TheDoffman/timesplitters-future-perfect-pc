@@ -71,6 +71,8 @@ int main(int argc,char **argv) {
 #endif
     tsfp_kernel_rtl_rip(&vm,129,161,193);CHECK(!strcmp(last_log,"RtlRip: api %n - x > 0: hello"));
     tsfp_kernel_rtl_rip(&vm,0,UINT32_MAX,1023);CHECK(!strcmp(last_log,"RtlRip: ? - ?: ?"));
+    tsfp_kernel_rtl_assert(&vm,161,129,42,193);CHECK(!strcmp(last_log,"RtlAssert: api %n:42 x > 0 - hello"));
+    tsfp_kernel_rtl_assert(&vm,0,UINT32_MAX,UINT32_MAX,1023);CHECK(!strcmp(last_log,"RtlAssert: ?:4294967295 ? - ?"));
     CHECK(!memcmp(before,ram,sizeof(ram)));
     puts("PASS: actual mapped kernel critical/try/leave aliases and independent ownership, native status fallback, bounded Rip and untouched guest bytes");return 0;
 }

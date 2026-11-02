@@ -959,3 +959,8 @@ under the allocator lock only after successful ownership changes. It is used
 for bounded crash evidence and must not allocate, block or reenter. Existing
 placement/zeroing/release rules are unchanged; `test_allocation_observer.py`
 covers successful release/reuse and failed-operation exclusion.
+
+Stage0247 adds read-only tsfp_thread_stack_bounds metadata queries for
+[guest stack diagnostics](guest-stack-trace.md): bootstrap regions stop at live
+worker slices; heap extents require active tracked owners. Bounds do not trust
+cloned TIB hints or pin lifetime; allocation/release policy is unchanged.

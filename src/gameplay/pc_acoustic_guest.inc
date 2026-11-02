@@ -95,6 +95,9 @@ static int pc_acoustic_ray(unsigned room,const float *from,const float *to,void 
     RecompXmm xm[]={g_xmm0,g_xmm1,g_xmm2,g_xmm3,g_xmm4,g_xmm5,g_xmm6,g_xmm7};
     double fp[8];memcpy(fp,g_fp_stack,sizeof fp);int top=g_fp_top,cmp=g_fp_cmp;
     uint16_t cc=g_fp_cc,cw=g_fp_control_word;
+#ifdef RECOMP_STATUS_FLAGS_SUPPORTED
+    tsfp_status_flags status=g_status_flags;
+#endif
     uint32_t scratch=g_esp-512;float start[3],delta[3];
     float length=pc_acoustic_distance(from,to);
     if(length<.04f)return 1;
@@ -110,6 +113,9 @@ static int pc_acoustic_ray(unsigned room,const float *from,const float *to,void 
     g_xmm0=xm[0];g_xmm1=xm[1];g_xmm2=xm[2];g_xmm3=xm[3];
     g_xmm4=xm[4];g_xmm5=xm[5];g_xmm6=xm[6];g_xmm7=xm[7];
     memcpy(g_fp_stack,fp,sizeof fp);g_fp_top=top;g_fp_cmp=cmp;g_fp_cc=cc;g_fp_control_word=cw;
+#ifdef RECOMP_STATUS_FLAGS_SUPPORTED
+    g_status_flags=status;
+#endif
     return clear;
 }
 static PcAcousticResult pc_acoustic_guest(uint32_t key,const float *raw_listener,const float *raw_source)

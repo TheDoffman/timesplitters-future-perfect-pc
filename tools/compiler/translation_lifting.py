@@ -14,6 +14,7 @@ import translation_sse as sse
 import translation_strings as strings
 import translation_x87 as x87
 from translation_decode import LOOP_JUMPS
+from translation_integer import _status
 from translation_moves import _c_string
 from translation_operands import _fmt_operand_read as read, _fmt_operand_write as write, _operand_width
 
@@ -41,8 +42,8 @@ _STRING_NAMES = frozenset(stem+width for stem in ('movs','stos','lods','cmps','s
 _FLOAT_FLAGS = frozenset(stem+width for stem in ('comi','ucomi') for width in ('ss','sd'))
 _X87_FLAGS = frozenset('fcomi fcomip fcompi fucomi fucomip fucompi'.split())
 _SETTERS = frozenset('cmp test add sub adc sbb and or xor inc dec neg shl shr sar imul mul shld shrd rol ror rcl rcr bsf bsr bt bts btr btc cmpxchg xadd'.split()) | _FLOAT_FLAGS
-_INVALIDATORS = frozenset('div idiv rdtsc cpuid popfd'.split())
-_PRESERVE = frozenset('mov lea push pop nop leave ret movzx movsx xchg bswap cdq cwde cbw cwd lahf not call int3 int wait cld std cli sti pushfd pushal sgdt ljmp sfence'.split()) | LOOP_JUMPS | (_STRING_NAMES - {s for s in _STRING_NAMES if s.startswith(('cmps','scas'))})
+_INVALIDATORS = frozenset('div idiv rdtsc cpuid popfd popf'.split())
+_PRESERVE = frozenset('mov lea push pop nop leave ret movzx movsx xchg bswap cdq cwde cbw cwd lahf not call int3 int wait cld std cli sti pushf pushfd pushal sgdt ljmp sfence'.split()) | LOOP_JUMPS | (_STRING_NAMES - {s for s in _STRING_NAMES if s.startswith(('cmps','scas'))})
 # Preserve the established policy even for unsupported operand forms in these
 # register families. Supported handlers provide their own precise predicates.
 _SIMD_PRESERVE = (sse.MNEMONICS - _FLOAT_FLAGS) | mmx.MNEMONICS | frozenset('paddq pmulhuw pshufd pshufhw pshuflw punpcklqdq punpckhqdq'.split())
@@ -79,6 +80,18 @@ def instruction(context, insn):
     if name=='int' and operands and operands[0].type=='imm' and operands[0].imm==45:
         return ['recomp_debug_service(eax, ecx); /* int 0x2d */']
     if name=='int3': return [f'recomp_int3_reached(0x{insn.address:08X}U); /* int3, stepped over */']
+    if name in ('pushf','pushfd','popf','popfd') and getattr(context,'track_status_flags',False):
+        width=16 if name in ('pushf','popf') else 32
+        size=width//8
+        if name.startswith('push'):
+            body=[f'{{ uint32_t _saved_flags = tsfp_status_stack_image(&g_status_flags,g_df,{width});',
+                  f'  esp -= {size}; MEM{width}(esp) = (uint{width}_t)_saved_flags; }} /* {name} */']
+        else:
+            body=[f'{{ uint32_t _saved_flags = MEM{width}(esp);',
+                  f'  if (tsfp_status_stack_restore(&g_status_flags,&g_df,_saved_flags,{width},0)) esp += {size};',
+                  f'  else RECOMP_UNIMPL("{name}: unsupported flags mode",0x{insn.address:08X}u); }}']
+        return ['#ifdef RECOMP_STATUS_FLAGS_SUPPORTED',*body,'#else',
+                f'RECOMP_UNIMPL("{name}",0x{insn.address:08X}u);','#endif']
     if name=='leave': return ['esp = ebp;', 'POP32(esp, ebp); /* leave */']
     fixed = {'wait':'/* wait - FPU sync */',
              'lahf':'/* lahf - load AH from flags (used in FPU compare idiom) */',
@@ -99,8 +112,10 @@ def instruction(context, insn):
     if name.startswith('prefetch') or name in ('sfence','lfence','mfence'):
         return [f'(void)0; /* {name}: cache/ordering hint, nothing to model */']
     if name in ('stc','clc','cmc'):
-        if not context.needs_cf: return [f'/* {name}: no adc/sbb in this function consumes CF */']
-        return [f"_cf = {dict(stc='1',clc='0',cmc='!_cf')[name]}; /* {name} */"]
+        result=([f"_cf = {dict(stc='1',clc='0',cmc='!_cf')[name]}; /* {name} */"] if context.needs_cf else [f'/* {name}: no adc/sbb in this function consumes CF */'])
+        record='tsfp_status_complement_carry(&g_status_flags);' if name=='cmc' else f'tsfp_status_write(&g_status_flags,TSFP_FLAG_CF,{int(name=="stc")},0);'
+        if name=='cmc' and context.needs_cf:result=_status(context,['_cf = (int)RECOMP_STATUS_CARRY(_cf);'])+result
+        return result+_status(context,[record])
     if name=='rdtsc':
         return ['{ uint64_t _tsc = xbox_ReadTimeStampCounter();',
                 '  eax = (uint32_t)_tsc; edx = (uint32_t)(_tsc >> 32); }  /* rdtsc */']
@@ -146,7 +161,7 @@ def adjacent_condition(instructions, index, lifter=None):
 def preserves(insn):
     return (insn.mnemonic in _PRESERVE or insn.mnemonic in _SIMD_PRESERVE
             or insn.mnemonic.startswith('prefetch') or sse.preserves_flags(insn)
-            or mmx.preserves_flags(insn) or x87.preserves_flags(insn))
+            or mmx.preserves_flags(insn) or x87.preserves_flags(insn) or strings.preserves_flags(insn))
 
 
 def successor_state(previous, insn):
@@ -165,30 +180,91 @@ def successor_state(previous, insn):
     return None
 
 
+def _status_choice(context,old,new):
+    return ['#ifdef RECOMP_STATUS_FLAGS_SUPPORTED',*new,'#else',*old,'#endif'] if getattr(context,'track_status_flags',False) else old
+
+
+def _status_code(name):
+    prefix='cmov' if name.startswith('cmov') else 'set' if name.startswith('set') else 'j'
+    canonical=conditions._CANONICAL.get(name[len(prefix):])
+    return ('o','no','b','ae','e','ne','be','a','s','ns','p','np','l','ge','le','g').index(canonical) if canonical else None
+
+
+def _status_fallback(context,insn):
+    if not getattr(context,'track_status_flags',False):return None
+    code=_status_code(insn.mnemonic)
+    if code is None:return None
+    old=context.lift_instruction(insn);fallback='_flags'
+    if insn.is_cond_jump and context.needs_cf and code in (2,3):fallback='_cf' if code==2 else '!_cf'
+    value=f'tsfp_status_condition(&g_status_flags,{code},({fallback}))'
+    if insn.is_cond_jump:new=[control.conditional(value,insn.mnemonic,'architectural status',insn.jump_target,context)]
+    elif insn.mnemonic.startswith('set') and insn.operands:new=[write(insn.operands[0],f'({value}) ? 1 : 0')]
+    elif insn.mnemonic.startswith('cmov') and len(insn.operands)>=2:new=[f'if ({value}) '+write(insn.operands[0],read(insn.operands[1]))]
+    else:return None
+    return _status_choice(context,old,new)
+
+
 def _consumer(context, insn, state):
     """Return None when a consumer needs the ordinary fallback emitter."""
     name=insn.mnemonic
     if name in ('jecxz','jcxz'): return context._lift_jcc(insn)
     if name in LOOP_JUMPS:
         condition=conditions.make_condition('je' if name in ('loope','loopz') else 'jne',*state) if state and name!='loop' else None
-        return context._lift_loop(insn,condition[0] if condition else None)
-    if not state: return None
+        fallback=condition[0] if condition else None
+        old=context._lift_loop(insn,fallback)
+        if name=='loop' or not getattr(context,'track_status_flags',False):return old
+        code=4 if name in ('loope','loopz') else 5
+        tracked=f'tsfp_status_condition(&g_status_flags,{code},({fallback or "_flags"}))'
+        return _status_choice(context,old,context._lift_loop(insn,tracked))
+    if name=='lahf' and getattr(context,'track_status_flags',False):
+        value=conditions.lahf(*state) if state else None
+        legacy=[f'SET_HI8(eax, {value}); /* lahf */'] if value else ['/* lahf: no complete legacy snapshot */']
+        fallback=value or 'HI8(eax)'
+        return ['#ifdef RECOMP_STATUS_FLAGS_SUPPORTED',f'SET_HI8(eax, tsfp_status_lahf(&g_status_flags,{fallback})); /* architectural status */','#else',*legacy,'#endif']
+    if not state: return _status_fallback(context,insn)
     if insn.is_cond_jump:
         condition=conditions.make_condition(name,*state)
         if condition:
             expression,description=condition
-            if state[0] in _FLOAT_FLAGS: expression=f'RECOMP_FLOAT_BRANCH_AT(0x{insn.address:X}, ({expression}))'
-            return [control.conditional(expression,name,description,insn.jump_target,context)]
+            code=_status_code(name);tracked=f'tsfp_status_condition(&g_status_flags,{code},({expression}))'
+            if state[0] in _FLOAT_FLAGS:
+                expression=f'RECOMP_FLOAT_BRANCH_AT(0x{insn.address:X}, ({expression}))'
+                tracked=f'RECOMP_FLOAT_BRANCH_AT(0x{insn.address:X}, ({tracked}))'
+            return _status_choice(context,[control.conditional(expression,name,description,insn.jump_target,context)],[control.conditional(tracked,name,description,insn.jump_target,context)])
     if name=='lahf':
         value=conditions.lahf(*state)
         return [f'SET_HI8(eax, {value}); /* lahf */'] if value else None
     if name.startswith('set') and insn.operands:
         value=conditions.setcc(name,*state)
-        if value is not None: return [write(insn.operands[0],f'({value}) ? 1 : 0')+f' /* {name} */']
+        if value is not None:
+            tracked=f'tsfp_status_condition(&g_status_flags,{_status_code(name)},({value}))'
+            return _status_choice(context,[write(insn.operands[0],f'({value}) ? 1 : 0')+f' /* {name} */'],[write(insn.operands[0],f'({tracked}) ? 1 : 0')+f' /* {name} */'])
     if name.startswith('cmov') and len(insn.operands)>=2:
         value=conditions.cmovcc(name,*state)
-        if value is not None: return [f'if ({value}) '+write(insn.operands[0],read(insn.operands[1]))+f' /* {name} */']
-    return None
+        if value is not None:
+            tracked=f'tsfp_status_condition(&g_status_flags,{_status_code(name)},({value}))'
+            return _status_choice(context,[f'if ({value}) '+write(insn.operands[0],read(insn.operands[1]))+f' /* {name} */'],[f'if ({tracked}) '+write(insn.operands[0],read(insn.operands[1]))+f' /* {name} */'])
+    return _status_fallback(context,insn)
+
+
+def _status_after(context,insn):
+    name=insn.mnemonic.removeprefix('lock ')
+    if bits.constant_noop(insn):return []
+    if name=='sahf':return _status(context,['tsfp_status_write(&g_status_flags,TSFP_STATUS_FLAGS & ~TSFP_FLAG_OF,HI8(eax),0);'])
+    if insn.is_call:
+        target=insn.call_target
+        if target in context.func_db and target not in context.manual_functions and target not in context.SEH_PROLOGS | context.SEH_EPILOGS and target not in (context.SETJMP_FN,context.LONGJMP_FN,context.CXX_THROW):return []
+        return _status(context,['tsfp_status_forget(&g_status_flags,TSFP_STATUS_FLAGS);'])
+    if insn.mnemonic.startswith('lock '):
+        # Only these LOCK forms have original handlers here. Unsupported LOCK
+        # arithmetic/bit operations must not retain falsely known status.
+        return [] if name in ('xchg','xadd','cmpxchg') else _status(context,['tsfp_status_forget(&g_status_flags,TSFP_STATUS_FLAGS);'])
+    if name in ('add','sub','adc','sbb','and','or','xor','inc','dec','neg','cmp','test','stc','clc','cmc','shl','sal','shr','sar','shld','shrd','rol','ror','rcl','rcr','mul','imul','bt','bts','btr','btc','bsf','bsr','xadd','cmpxchg'):return []
+    if name in _FLOAT_FLAGS | _X87_FLAGS | {'popf','popfd'} or strings.is_compare(insn):return []
+    if name in _SETTERS | {'popfd','div','idiv'}:mask='TSFP_STATUS_FLAGS'
+    elif preserves(insn) or name.startswith(('j','set','cmov')) or insn.is_ret or name=='rdtsc' or name=='cpuid':return []
+    else:mask='TSFP_STATUS_FLAGS'
+    return _status(context,[f'tsfp_status_forget(&g_status_flags,{mask});'])
 
 
 def block(context, basic_block, flag_state=None):
@@ -199,7 +275,9 @@ def block(context, basic_block, flag_state=None):
         if pair:
             state=compare.normalise_zero_test(insn.mnemonic,list(insn.operands))
             output.extend(context._snapshot_flags(insn,state[1],state[0]))
-            output.append(pair[0]); index+=pair[1]; continue
+            consumer=_consumer(context,instructions[index+1],state) if getattr(context,'track_status_flags',False) else None
+            output.extend(consumer if consumer is not None else [pair[0]])
+            index+=pair[1]; continue
         consumed=_consumer(context,insn,state)
         if consumed is not None:
             output.extend(consumed); index+=1; continue
@@ -217,6 +295,7 @@ def block(context, basic_block, flag_state=None):
                 condition=conditions.make_condition('je',*state)
                 if condition: output.append(f'_flags = ({condition[0]}) ? 1 : 0; /* ZF in: a zero count keeps it */')
         output.extend(emitted)
+        output.extend(_status_after(context,insn) if getattr(context,"track_status_flags",False) else [])
         state=successor_state(state,insn)
         index+=1
     return output,state

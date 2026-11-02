@@ -52,10 +52,16 @@ typedef struct GuestRegisters {
     double fp[8];
     int fp_top,fp_cmp,df;
     uint16_t fp_cc,fp_control;
+#ifdef RECOMP_STATUS_FLAGS_SUPPORTED
+    tsfp_status_flags status;
+#endif
 } GuestRegisters;
 
 static void save_registers(GuestRegisters *r)
 {
+#ifdef RECOMP_STATUS_FLAGS_SUPPORTED
+    r->status=g_status_flags;
+#endif
     r->a=g_eax; r->c=g_ecx; r->d=g_edx; r->sp=g_esp;
     r->b=g_ebx; r->si=g_esi; r->di=g_edi; r->bp=g_ebp; r->seh=g_seh_ebp;
     r->xmm[0]=g_xmm0; r->xmm[1]=g_xmm1; r->xmm[2]=g_xmm2; r->xmm[3]=g_xmm3;
@@ -67,6 +73,9 @@ static void save_registers(GuestRegisters *r)
 
 static void restore_registers(const GuestRegisters *r)
 {
+#ifdef RECOMP_STATUS_FLAGS_SUPPORTED
+    g_status_flags=r->status;
+#endif
     g_eax=r->a; g_ecx=r->c; g_edx=r->d; g_esp=r->sp;
     g_ebx=r->b; g_esi=r->si; g_edi=r->di; g_ebp=r->bp; g_seh_ebp=r->seh;
     g_xmm0=r->xmm[0]; g_xmm1=r->xmm[1]; g_xmm2=r->xmm[2]; g_xmm3=r->xmm[3];

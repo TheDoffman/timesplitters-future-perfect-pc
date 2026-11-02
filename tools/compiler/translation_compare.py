@@ -1,11 +1,18 @@
 """Original comparison snapshots and implicit accumulator sign extension.
 
-Snapshots retain the existing branch-consumer ABI. General condition lowering,
-full EFLAGS/AF and guest memory-fault delivery are separate components.
+Snapshots retain the legacy branch-consumer ABI; producers also publish defined
+arithmetic status. Full control flags and guest fault delivery remain separate.
 """
 from translation_decode import Operand
-from translation_integer import _width
+from translation_integer import _width, _status
 from translation_operands import _fmt_operand_read, _fmt_mem
+
+
+def floating_status(context, left, right):
+    """Publish masked-exception comparison status from already sampled values."""
+    value=(f'((isnan({left}) || isnan({right})) ? (TSFP_FLAG_CF | TSFP_FLAG_PF | TSFP_FLAG_ZF) : '
+           f'(({left}) < ({right})) ? TSFP_FLAG_CF : (({left}) == ({right})) ? TSFP_FLAG_ZF : 0)')
+    return _status(context,[f'tsfp_status_write(&g_status_flags,TSFP_STATUS_FLAGS,{value},0);'])
 
 
 def normalise_zero_test(mnemonic, operands):
@@ -35,6 +42,11 @@ def snapshot(context, instruction, operands, kind):
     if getattr(context, 'needs_cf', False):
         result.append('_cf = (int)(_fa < _fb);' if kind == 'cmp' and not
                       (operands[1].type == 'imm' and not operands[1].imm) else '_cf = 0;')
+    if getattr(instruction,'mnemonic',kind)=='test':
+        value='_fa' if kind=='cmp' else '(_fa & _fb)'
+        result += _status(context,[f'tsfp_status_logic(&g_status_flags,{bits},{value});'])
+    else:
+        result += _status(context,[f'tsfp_status_alu(&g_status_flags,{bits},_fa,_fb,0,_fa - _fb,1,TSFP_STATUS_FLAGS);'])
     return result
 
 

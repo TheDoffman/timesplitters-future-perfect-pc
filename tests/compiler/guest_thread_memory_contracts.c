@@ -164,6 +164,38 @@ static void failure_contracts(void) {
         assert(tsfp_thread_tib_create(&state));
     }
 }
+
+static void stack_bounds_contracts(void) {
+    for(unsigned shift=0;shift<=0x1a0000;shift+=0x1a0000) {
+        uint32_t lo=123,hi=456,begin=shift+0x780000,end=shift+0xf80000,top,foreign;
+        setup(0,0,0,shift);assert(tsfp_thread_memory_init(&state,&allocations,&info));
+        assert(tsfp_thread_stack_bounds(&state,begin,&lo,&hi) && lo==begin && hi==end);
+        assert(tsfp_worker_stack_acquire(&state)==0);
+        assert(tsfp_thread_stack_bounds(&state,begin+1,&lo,&hi) && lo==begin && hi==begin+262144);
+        assert(tsfp_thread_stack_bounds(&state,begin+262144,&lo,&hi) && lo==begin+262144 && hi==end);
+        assert(tsfp_worker_stack_acquire(&state)==1);
+        assert(tsfp_worker_stack_release(&state,0));
+        assert(tsfp_thread_stack_bounds(&state,begin,&lo,&hi) && lo==begin && hi==begin+262144);
+        assert(tsfp_thread_stack_bounds(&state,begin+262144,&lo,&hi) && lo==begin+262144 && hi==begin+524288);
+        assert(tsfp_thread_stack_bounds(&state,end-1,&lo,&hi) && lo==begin+524288 && hi==end);
+        assert(tsfp_worker_stack_release(&state,1));
+        assert(tsfp_thread_stack_bounds(&state,end-1,&lo,&hi) && lo==begin && hi==end);
+        top=tsfp_thread_stack_acquire(&state);assert(top);
+        assert(tsfp_thread_stack_bounds(&state,top,&lo,&hi) && lo==top+16-524288 && hi==top+16);
+        foreign=tsfp_heap_allocate(&allocations,524288,4096);assert(foreign);
+        lo=123;hi=456;assert(!tsfp_thread_stack_bounds(&state,foreign,&lo,&hi) && lo==123 && hi==456);
+        assert(!tsfp_thread_stack_bounds(&state,0,&lo,&hi) && lo==123 && hi==456);
+        assert(!tsfp_thread_stack_bounds(&state,begin,&lo,&lo) && lo==123);
+        assert(!tsfp_thread_stack_bounds(&state,begin,NULL,&hi) && hi==456);
+        assert(tsfp_thread_stack_release(&state,top));
+        assert(!tsfp_thread_stack_bounds(&state,top,&lo,&hi) && lo==123 && hi==456);
+        assert(tsfp_heap_release(&allocations,foreign));
+        tsfp_thread_memory_stop(&state);
+        assert(!tsfp_thread_stack_bounds(&state,begin,&lo,&hi) && lo==123 && hi==456);
+    }
+    puts("stack extent contracts passed");
+}
+
 static void stack_contracts(void) {
     uint32_t tops[8];
     setup(0, 0, 0, 0);
@@ -281,6 +313,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(argv[1], "private")) private_contracts();
     else if (!strcmp(argv[1], "failure")) failure_contracts();
     else if (!strcmp(argv[1], "stacks")) stack_contracts();
+    else if (!strcmp(argv[1], "stack_bounds")) stack_bounds_contracts();
     else if (!strcmp(argv[1], "concurrent")) concurrent_contracts();
     else if (!strcmp(argv[1], "us") && argc == 3) supported_contracts(argv[2]);
     else abort();

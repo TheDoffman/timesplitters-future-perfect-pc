@@ -139,6 +139,15 @@ typedef union RecompMmx {
 } RecompMmx;
 #endif
 
+/* Enabled by the shared production title build; older stand-alone ABI fixtures
+ * can still consume the register header without status tracking. */
+#ifdef TSFP_RECORD_STATUS_FLAGS
+#include "guest_status_flags.h"
+extern RECOMP_TLS tsfp_status_flags g_status_flags;
+#define RECOMP_STATUS_FLAGS_SUPPORTED 1
+#define RECOMP_STATUS_CARRY(fallback) tsfp_status_carry(&g_status_flags,(uint32_t)(fallback))
+#endif
+
 extern RECOMP_TLS uint32_t g_eax, g_ebx, g_ecx, g_edx;
 extern RECOMP_TLS uint32_t g_esi, g_edi, g_esp;
 extern RECOMP_TLS uint32_t g_ebp, g_seh_ebp, g_fs_base;

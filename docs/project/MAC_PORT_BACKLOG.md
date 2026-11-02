@@ -8734,3 +8734,275 @@ same lookup/activation policy; no additional Mac adapter is required. Windows
 production-resolver and original-US callback regressions pass. Native Mac build
 and real two-machine LAN acceptance are pending; a loopback test with startup
 network overrides does not validate this path. See STATUS for Windows build evidence.
+
+
+Stage0241 extended integer product (2026-11-02, c7f276a7/PR465): original shared
+unsigned bit arithmetic and fixed guest-frame adapter replace ordinal281 on both
+build paths. No host adapter or native API is needed. Windows Release and local
+product/numeric/context/migration and isolated Story checks pass (STATUS); native Mac portable CI passed runtime41404919917; native Mac title execution
+remains pending. Mac selects the same mathematical/adapter suite with undefined-
+behavior sanitizer. Division/magic helpers and complete runtime independence
+remain separate unfinished work; Windows integration is not Mac title evidence.
+
+
+Stage0242 extended division (2026-11-02, PR465 continuation): common
+pure arithmetic and checked16/20-byte imports need no host-specific math adapter.
+The original fatal divide boundary now belongs to the shared kernel library;
+Windows uses its existing host exception, Mac its existing POSIX signal path.
+Windows Release/utility/focused/Story checks pass (STATUS); new-stage native Mac
+execution/CI pending. Portable tests use independent Python arithmetic and
+undefined-behavior sanitizer on Mac; actual x86 ntdll/SEH reference is Windows-
+only. Earlier ad9f product stage passed both-host runtime41404919917 and
+launcher41404919890. Native Mac title/gameplay and complete guest SEH remain
+separate unfinished requirements, not inferred from shared source or Windows.
+
+
+Stage0242 CI follow-up (2026-11-02, PR465): shared patch installation now preserves
+source EOL metadata independently of the host Git setting, including strict
+current/historical reverse migrations. The negative-control fixture now asserts
+caller-address preservation so its deliberately missing fault call still compiles
+with Clang fatal warnings. Windows73 distinct focused/repository cases passed;
+Mac repair execution/CI and native Mac title remain pending. See STATUS for the
+failed fdce CI jobs and exact unchanged game-build provenance. No new host adapter
+or alternate Mac arithmetic is introduced.
+
+
+Stage0243 original memory/bit services (2026-11-02, PR465 continuation): same pure
+provider and guest adapters serve Windows and Mac; no host adapter needed. Uses
+standard memmove/memset and fixed guest-width bit/byte operations. Swaps
+read ECX with no guest cleanup; the actual native Windows reference uses x86
+fastcall. Windows69 focused tests and Release/built-in/provider checks pass;
+Story and all35 migrations passed; new-stage Mac CI/title execution
+pending (STATUS). Portable cases run with undefined-behavior sanitizer on Mac;
+4305 real ntdll reference cases require Windows/WoW64. Previous083d repair stage
+passed both-host runtime41412095577 and launcher41412095536. Native Mac gameplay
+and full runtime independence remain unverified.
+
+
+Stage0244 counted conversion/free (2026-11-02, PR465 continuation): shared original
+checked descriptor/encoding/ownership policy serves both hosts. Windows NLS is a
+thin standard API adapter; Mac keeps the existing Latin-1/single-byte fallback.
+No new Mac code-page equivalence is claimed. Windows92 focused cases, Release/
+utilities/archive/generation and isolated Story movement/fire/pause/resume pass;
+see STATUS and guest-text-codec.md for exact limits and ownership contracts.
+Portable cases use undefined-behavior sanitizer on Mac; four Windows-only native/
+code-page references skip. New-stage Mac CI/title acceptance is pending. Prior
+85363cc5 passed both-host runtime41415470820 and launcher41415470866. Complete
+runtime replacement and snapshot-unavailable production acceptance remain open.
+
+
+Stage0245 string creation/case (2026-11-02, PR465 continuation): same
+original shared checked records/ownership/staging provider and standard libc
+character-mapping leaf serve Windows and Mac. No OS adapter is needed; each keeps
+its existing locale policy, not promised full NT NLS case tables. Windows92
+focused tests, Release/built-ins/archive/generation and isolated Scotland movement/
+fire/pause/resume pass (STATUS). Portable tests use undefined-behavior sanitizer;
+6000 native ntdll references are Windows-only. Mac title/gameplay and new-stage CI
+remain pending, as do full runtime and snapshot-unavailable production acceptance.
+
+
+Stage0246 raw charset services (2026-11-02, PR465 continuation): one shared original
+provider replaces five raw bridges, reusing existing original host codec/case
+leaves. Mac keeps its single-byte/Latin-1 and standard libc policy; Windows keeps
+standard ACP NLS. No new Mac adapter or claimed NT case table equivalence. Raw32-
+bit/no-NUL/prefix/status policy is shared. Windows81 distinct focused cases,
+Release/built-ins/archive/generation and fresh isolated Story movement/fire/pause/
+resume pass (STATUS). Portable cases use undefined-behavior sanitizer; four actual
+Windows native/code-page cases skip on Mac. New-stage Mac CI/title validation and
+complete runtime/snapshot-unavailable production acceptance remain pending.
+
+Stage0245 portable CI acceptance:7a88cd4c passed runtime41427412517 and
+launcher41427412497 across both hosts, including native/GPU/upgrade/transition
+and package jobs. Native Mac title/gameplay remains unverified. Stage0246 all35
+local migrations also passed; its new-head Mac CI is still pending.
+
+
+Stage0247 stack/assert diagnostics (2026-11-02, PR465 continuation): one original
+shared EBP walker and thread-storage extent query serve both builds. No new host
+stack-walking dependency or OS adapter is introduced; assertion logging retains
+the existing debug-only Windows/POSIX trap leaf. Windows76 focused and35 full
+migration cases, Release/built-ins/archive/generation pass (STATUS). Portable
+cases use undefined-behavior sanitizer; the527-call real x86 ntdll oracle skips
+on Mac. New-stage Mac CI/title gameplay remains pending; previous5c24789c passed
+both-host runtime41429855993 and launcher41429856151. Full guest context/SEH,
+other inherited services and snapshot-unavailable production acceptance remain
+unfinished. Diagnostic replacement is not full exception delivery.
+
+Stage0247 Windows isolated Story retry passed with exact audited6bbf7486 bytes,
+movement/fire/pause/resume and26 protected files unchanged. The first attempt's
+operator-driven menu delay/controller timeout is retained and not accepted as a
+pass. Native Mac title/gameplay is still pending; see STATUS for bounded scope.
+
+Stage0248 in progress (2026-11-02, PR465, uncommitted): common title CMake enables
+original persistent status recording on both hosts. Canonical storage, compiler
+and register scopes are shared. Windows focused113 pass; real x86 oracle skips
+on Mac. Shared native CI selects both new suites. Previous9003b35d runtime and
+launcher CI both passed. Current generation/migration is running; production
+build/game and native Mac acceptance remain pending. This does not implement
+full CONTEXT/SEH or complete the broader runtime replacement.
+
+Stage0248 regression repair in progress: Windows sampled Story stall exposed
+stale x87 FPREM completion status. Shared x87 compiler now publishes quotient
+bits and completed C2, with31 focused checks (native x87 cases Windows only).
+New generation/build/game acceptance remains pending; no Mac title claim.
+
+Stage0248 Windows repaired production accepted:124 focused and55 migration/
+context cases; generation/Release/built-ins/audit; clean isolated Story movement,
+fire and pause/resume all pass with8c2c5757 bytes. Earlier failed attempts retained.
+26 protected files unchanged. Code/test selection shared; native Mac title and
+new-head CI acceptance remain pending. Full EFLAGS/context/SEH remains open.
+
+Stage0249 in progress (2026-11-02, PR465): shared persistent shift/rotate
+status/zero-count/cross-call carry emission,195 Windows focused checks. Native
+x86 oracle skips on Mac, portable model/negative/production routes selected
+in shared CI. Previous0b9d2456 native jobs both failed scalar-name/template ABI
+checks; exact-name check and additive0249 template synchronization repair
+these locally. Launcher/upgrade/package jobs passed; runtime overall failed.
+New generation0fail; fresh build/game, complete migrations and new-head CI
+pending. Full context/SEH and native Mac title acceptance remain incomplete.
+
+Stage0249 final Windows acceptance:195 focused and55 migration/context tests
+pass, production generation/Release/built-ins/audit, fresh isolated Story
+movement/fire/pause/resume pass with9c0f5a59 bytes;26 protected files unchanged.
+Shared implementation, portable tests selected for both hosts; native Mac title
+and new-head CI acceptance pending. PreviousCI failure is recorded, not green.
+
+Stage0250 in progress (2026-11-02, PR465): original shared integer producer
+status for products/bit/scans/exchanges,281 Windows focused and21 fresh-install/
+context checks pass. Portable models/compiled controls/production routes are
+selected on both hosts; actual ML64 oracle is Windows-only. Precedingf6edb895
+runtime41449486367 and launcher41449486247 CI both green. Current generation
+0fail; Release is running, new game/new-head CI/native Mac title pending. No
+OS-specific adapter duplicated; full saved context/SEH remains unfinished.
+
+Stage0250 final Windows local acceptance:281 focused/21 fresh-repeat-install
+and context checks, generation/Release/built-ins/audit and fresh isolated Story
+movement/fire/pause/resume pass withfe25b7b4 bytes.26 protected files unchanged.
+Implementation remains shared; native hardware oracle Windows-only, portable
+contracts selected for both CI hosts. New-head CI/native Mac title pending;
+floating/string/control flags and actual context/SEH remain unfinished.
+
+Stage0251 in progress (2026-11-02, PR465): portable sampled floating/string
+comparison flag publishers plus REPnoncompare preservation;307focused and21
+install/context Windows checks pass. Portable model/production/negative tests
+selected for both CI hosts; raw ML64oracles Windows-only, FS/narrow wrapping
+validated by portable model. No guest MXCSR/unmasked-FPU/tag/80bit claim.
+Preceding96255dc2 both workflows green. New generation0fail; Release/game/
+new-headCI/native Mac title acceptance pending. Control flags/context/SEH open.
+
+Stage0251 final Windows local acceptance: production generation/Release/built-ins/
+audit and bounded Story movement/fire/pause/resume pass withcda96a1a bytes.
+307 focused/21 install-context pass,26 protected files unchanged. Shared code and
+portable checks selected for both hosts; native oracles Windows-only. No new
+OS adapter. New-head CI and native Mac title remain pending; control/context/
+SEH and wider replacement unfinished. See STATUS stage0251 for evidence/limits.
+
+Stage0252 in progress afterf49e53b8: original protected-mode flags stack provider
+and production16/32-bit routes shared across hosts.138 initial Windows checks
+pass; portable model/negative/production checks selected in both-host CI.512
+actual native ring3 cases Windows-only; CPL0 uses explicit model/manual rules.
+No OS adapter duplicated. Generation/Release/Story/new-head CI/native Mac title
+pending. TF/AC exceptions, IRQ scheduling/context/SEH and wider replacement open.
+
+Stage0252 final Windows local acceptance:299 focused/21 install-context pass,
+production generation/Release/built-ins/audit and bounded Story movement/fire/
+pause/resume pass with33f5d2c6 bytes.26 protected files unchanged. No duplicated
+host adapter; portable contracts selected both hosts, real ring3 oracle Windows
+only. Previousf49e53b8 both workflows fully green. New-head CI/native Mac title
+acceptance pending. Full control/context/exception/IRQ and wider replacement open.
+
+Stage0253 in progress (2026-11-02, PR465): original716-byte i386 context codec
+(all six groups, host-independent words/rawFP images) and cdecl callback primitive,
+with shared archive selection through0253. This does not replace live capture265
+or raise302/unwind312 yet.31 initial checks pass13.49s, including SDK layout,
+alias/preservation/negative tests, both callback ABIs and actual16-case Win32 x86
+unwind continuation evidence. Portable tests selected both hosts; native probes
+Windows-only. No native Mac title/full-context/SEH/IRQ claim. Full migrations,
+generation/build/fresh Story/new-head CI pending.
+Preceding81f3808d runtime41467203151 FAILED Mac native due to missing stdlib.h
+in the test abort preamble; Windows native and both upgrades passed, transition
+gates propagated that failure. Launcher41467203152 passed. Added the header
+without changing production flag behavior; Mac revalidation pending.
+
+Stage0253 production checkpoint:309 broader checks pass71.63s; generation
+15838/15863/0fail,6575724lines103.75s lift. Release/built-ins/crash symbols pass.
+Audit selects one original context provider and finds codec/cdecl symbols in
+the kernel archive; all generated C/header bytes match the preceding stage.
+Executable SHA256:
+0001c4388b43f599560d02807104533f105d172f928ea93226acf5945a7806fc.
+All26 protected files unchanged. Full migrations remain live; fresh Story
+acceptance waits for a separate TSFP Launcher game session to finish. This is
+not yet new-stage gameplay or CI acceptance; live context/SEH adapters remain
+inherited and full replacement remains incomplete.
+
+Stage0253 migration gate:78passed/1failure1209.87s; only repository-context's
+exact54-tail expectation was stale. It now asserts all55 entries with0253 last;
+all20 context checks pass on rerun. The59 patch upgrade/tracking cases passed
+without a patch/loader/provider change afterward. Fresh gameplay remains pending
+while the separate installed game is open. Production source/executable hashes
+remain exact; the only post-build code-tree change is that repository test.
+
+Flag-stack CI repair (2026-11-02, after81f3808d, PR465): Mac native job
+125351318125 failed six test compilations because the abort fixture lacked
+stdlib.h. Both-host patch upgrades and Windows native passed; transition gates
+correctly propagated the native failure. The test preamble now includes the
+standard declaration. Local flag-stack/production translation checks pass;
+production runtime bytes are unchanged by this repair. Exact-head CI and native
+Mac title gameplay are separate; CI revalidation remains pending.
+
+Stage0253 final Windows local acceptance:309 focused checks71.63s plus59
+patch migration/tracking cases and20 repository-context checks now pass.
+Original combined migration run78pass/one stale54-tail assertion1209.87s;
+its full55-entry order repaired and all20 context checks rerun5.80s.
+Generation15838/15863/0fail,6575724lines103.75s lift; Release/built-ins/crash
+symbols pass. Canonical header/template/feature and current source/archive
+audit pass; codec selected once, codec/cdecl symbols archived, generated bytes
+unchanged. Executable SHA256:
+0001c4388b43f599560d02807104533f105d172f928ea93226acf5945a7806fc.
+Runner37205/controller21885 both exited0: scene4/mission1/inputenabled,
+forward11.1762388966/back6.1848863931, ammo8to6, pause38 frozen/resume58
+advancing, last112.909s under240. Reviewed3fresh captures; source inputs and
+actual run executable provenance match. All26 protected files unchanged,
+profiles/fixture valid, no lock/dump/Partition images. Windows11 Pro10.0.26300
+x64/MSVC19.44.35224.0, D3D11 flip, Classic/Original60/minimized synthetic/
+movies skipped; guest presentation57.7/57.9/58.4 FPS, not scanout. Not physical
+input/listening/full-campaign/native Mac title proof. Evidence logs/context-
+foundation-{build,game-check}.json, final game/controller logs, accepted report/
+provenance/run0.err and captures.
+Standalone test-header CI repair is committed/pushed asc573b863; runtime
+41475286277 and launcher41475286281 remain live at this checkpoint. No test
+weakening or production flag change; new-stage CI remains required.
+This stage provides original context-record/cdecl primitives, not live265/302/
+312 replacement. Translated-PC continuation, missing live architectural state
+and actual exception/unwind/IRQ support remain open, as does the full runtime/
+tooling/title/header/fixture/provenance and toolkit-unavailable production goal.
+
+Context primitive CI follow-up (2026-11-02, aftera0d4fd9a, PR465): runtime
+41476378361 failed only test_io_lifetime callback-7 on both hosts before its
+mutation compiled: the mutation's exact old balance expression was stale.
+The repair targets the unique result-capture prefix, preserves the cleanup
+formula and still requires the compiled wrong caller-EAX provider to fail.
+Other native cases: Windows2739pass/Mac2644pass; Windows upgrades passed, Mac
+upgrades cancelled, transition/PR gates inherited failure. No production change;
+existing0001c438 Windows build/Story evidence remains current for committed code.
+New-head CI pending; live context/SEH and full replacement remain unfinished.
+
+Continuation checkpoint prerequisite (2026-11-02, PR465): original
+src/runtime/guest_context_execution.c/.h now has live native checkpoints,
+validated guest PC/state admission, deepest-first per-root ledger cleanup and
+explicit yield/return outcomes. A jump or context transfer to the stop PC cannot
+fake a completed return. Tests reproduced the ledger and false-completion bugs
+before repair;72 focused tests pass26.73s, including7 compiled wrong providers,
+400 threaded transfers and real Windows fiber transport. All26 protected files
+retain hashes/sizes/times. The provider is not selected by production CMake or
+called by the game; no new production gameplay result is claimed. Existing
+stage0253 build/Story evidence remains the latest game acceptance. There is no
+production Mac fiber adapter; portable native cases are now selected in both-host
+CI, but new-provider Mac results remain pending. See context-execution guide.
+Live architectural snapshots, instruction-boundary dispatch and actual guest
+raise/unwind remain open, as does full upstream removal/final independence audit.
+All114 repository-context/CI-scope/PR-gate tests pass4.12s; context map and
+staged whitespace checks pass. Exact90086818 CI is now fully green: all11 runtime
+41482780542 jobs, including both native hosts/upgrades/transitions and PR gate,
+completed success; standalone launcher41482780544 also completed success. This
+is acceptance of the preceding commit; the new prerequisite needs its own CI.
