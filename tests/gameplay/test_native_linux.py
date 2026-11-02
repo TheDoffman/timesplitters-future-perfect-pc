@@ -109,6 +109,9 @@ def test_story_observer_distinguishes_intro_pause_and_active_gameplay():
     assert module.story_snapshot(words.__getitem__)['active']
     words[0x7DE458]=0x20000000
     assert not module.story_snapshot(words.__getitem__)['active']
+    words[0x79094C]=24
+    assert not module.story_snapshot(words.__getitem__)['active']
+    words[0x79094C]=2
     words[0x7DE458]=0;words[0x761C48]=0x10000;words[0x10000]=1
     assert not module.story_snapshot(words.__getitem__)['active']
     words[0x761C48]=0xfffffff0

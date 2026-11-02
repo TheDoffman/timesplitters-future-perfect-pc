@@ -176,9 +176,12 @@ def main():
                             if not states or (state['scene'],state['flags']&0x20000000,state['paused'])!=(states[-1]['scene'],states[-1]['flags']&0x20000000,states[-1]['paused']):
                                 print(f"[STORY-STATE] pid={child.pid} seconds={elapsed:.3f} scene={state['scene']} cinematic={int(bool(state['flags']&0x20000000))} paused={state['paused']}",flush=True)
                             states.append(state)
-                            cinematic=state['scene']==2 and bool(state['flags']&0x20000000)
+                            # The US opening movie uses scene24, before Story
+                            # scene2. Match the existing Windows observer: the
+                            # cinematic flag identifies the skippable intro.
+                            cinematic=bool(state['flags']&0x20000000)
                             if cinematic and cutscene_since is None:cutscene_since=elapsed
-                            if cinematic and cutscene_since is not None and elapsed-cutscene_since>=2 and skip_at is None:
+                            if cinematic and elapsed>=50 and cutscene_since is not None and elapsed-cutscene_since>=2 and skip_at is None:
                                 skip_at=elapsed;events.extend([(elapsed,'+Escape\n'),(elapsed+.2,'-Escape\n')]);events.sort()
                             if skip_at is not None and .5<elapsed-skip_at<5 and state['paused'] and not resumed:
                                 resumed=True;events.extend([(elapsed,'+E\n'),(elapsed+.2,'-E\n')]);events.sort()
