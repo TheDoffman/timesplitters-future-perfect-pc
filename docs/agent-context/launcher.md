@@ -1,5 +1,15 @@
 # Launcher internals
 
+[Graphics preference contract](../development/graphics-options.md).
+Launcher graphics UI regression changes all shared controls, saves, reloads
+the model and reopens the page; AnisotropicFiltering names the AF selector.
+The shared WPF/Avalonia UI suite also exercises graphics ON/OFF saving and
+reopening. Native execution remains a separate host check.
+
+FPS / Ping uses `GameSettings.ShowCounter` and the game-owned
+`debug.show_counter` boolean in controls JSON. Both launcher UI hosts share
+this control. Legacy runtime FPS diagnostics and other debug keys are preserved.
+The settings regression covers game-written values and launcher persistence.
 SMAA: shared `GameSettings.Smaa` loads/saves runtime `smaa = 0/1` and defaults
 off. `SettingsPage` exposes `SmaaAntiAliasing` in Quality & performance, includes
 it in dirty-draft detection and saves it through the existing atomic settings
@@ -582,3 +592,5 @@ Absent capabilities remain false for older native builds. The portable Mac
 package suite exercises the real manifest/archive writer for true/false/missing
 flags, with only host binary tools replaced by fixtures. Native loading still
 requires Mac execution.
+
+Graphics controls passed shared Avalonia UI and Linux adapter tests in an isolated integration with feature/linux-launcher at 80239186; see the graphics guide.

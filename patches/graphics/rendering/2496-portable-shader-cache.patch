@@ -1,0 +1,292 @@
+--- a/src/d3d/rhi_shader_cache.c
++++ b/src/d3d/rhi_shader_cache.c
+@@ -22,9 +22,15 @@
+  * turns it off.
+  */
+ 
++#ifndef _WIN32
++#ifndef _POSIX_C_SOURCE
++#define _POSIX_C_SOURCE 200809L
++#endif
++#endif
+ #include "rhi.h"
+ #include "rhi_shader_cache.h"
+ #include "recomp_config.h"
++#include "graphics/graphics_settings.h"
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -34,11 +40,21 @@
+ #  include <windows.h>
+ #else
+ #  include <strings.h>
++#  include <unistd.h>
++#  include <sys/stat.h>
++#  include <errno.h>
++typedef long LONG;
++static long cache_increment(volatile long *v) { return __atomic_add_fetch(v,1,__ATOMIC_RELAXED); }
++#  define InterlockedIncrement cache_increment
+ #  define _stricmp strcasecmp
+ #endif
+ 
++#include "graphics/shader_cache_clear.h"
++
+ #define CACHE_MAGIC   0x43535258u   /* "XRSC" */
+-#define CACHE_VERSION 1u
++#define CACHE_VERSION 2u
++#define CACHE_MAX_KEY (2u * 1024u * 1024u)
++#define CACHE_MAX_BLOB (64u * 1024u * 1024u)
+ 
+ /* Everything the compile depended on, as one byte string. */
+ typedef struct {
+@@ -48,6 +64,7 @@
+ 
+ static int key_add(KeyText *k, const void *data, size_t n)
+ {
++    if (n >= CACHE_MAX_KEY || k->n >= CACHE_MAX_KEY - n) return 0;
+     if (k->n + n + 1 > k->cap) {
+         size_t cap = k->cap ? k->cap * 2 : 4096;
+         char *p;
+@@ -101,16 +118,42 @@
+ 
+ static int cache_enabled(void)
+ {
+-    static int on = -1;
+-
+-    if (on < 0) {
+-        const char *v = getenv("RECOMP_SHADER_CACHE");
+-        on = !(v && (strcmp(v, "0") == 0 || _stricmp(v, "off") == 0));
+-    }
+-    return on;
+-}
+-
+-#if defined(_WIN32)
++    /* Honour the diagnostic override, then the same persisted preference the
++     * launcher and game use. Re-read here so toggling takes effect immediately
++     * without creating a renderer-to-input-library link dependency. */
++    const char *value=getenv("RECOMP_SHADER_CACHE");
++    char path[32768];FILE *file;
++    TsfpGraphicsOptions options=tsfp_graphics_defaults();
++    if(value && (!strcmp(value,"0") || !_stricmp(value,"off")))return 0;
++    if(pc_graphics_path(path,sizeof path) && (file=fopen(path,"rb"))!=NULL) {
++        tsfp_graphics_read(file,&options);fclose(file);
++    }
++    return options.shader_cache;
++}
++
++/* Cache paths accept only a single backend/file component. */
++static int cache_component(const char *s)
++{
++    if(!s || !*s || strstr(s,".."))return 0;
++    for(;*s;s++) if(!((*s>='a' && *s<='z') || (*s>='A' && *s<='Z') ||
++        (*s>='0' && *s<='9') || *s=='-' || *s=='_' || *s=='.'))return 0;
++    return 1;
++}
++static void cache_mkdir(const char *path)
++{
++    char copy[1024];size_t i;
++    if(strlen(path)>=sizeof copy)return;
++    strcpy(copy,path);
++    for(i=1;;i++) if(copy[i]=='/' || copy[i]=='\\' || copy[i]==0) {
++        char end=copy[i];copy[i]=0;
++#ifdef _WIN32
++        if(i!=2 || copy[1]!=':')CreateDirectoryA(copy,NULL);
++#else
++        mkdir(copy,0700);
++#endif
++        copy[i]=end;if(!end)break;
++    }
++}
+ 
+ /* The directory for this backend, made on first use. 0 if there is none. */
+ static int cache_dir(const char *backend, char *out, size_t n)
+@@ -118,23 +161,23 @@
+     char base[600];
+     int len;
+ 
+-    if (!recomp_config_user_dir(base, sizeof base))
+-        return 0;
+-    CreateDirectoryA(base, NULL);
+-    len = snprintf(out, n, "%s\\shadercache", base);
++    if (!cache_component(backend) || !recomp_config_user_dir(base, sizeof base))
++        return 0;
++    cache_mkdir(base);
++    len = snprintf(out, n, "%s/shadercache", base);
+     if (len <= 0 || (size_t)len >= n)
+         return 0;
+-    CreateDirectoryA(out, NULL);
+-    len = snprintf(out, n, "%s\\shadercache\\%08X", base,
++    cache_mkdir(out);
++    len = snprintf(out, n, "%s/shadercache/%08X", base,
+                    (unsigned)recomp_config_title_id());
+     if (len <= 0 || (size_t)len >= n)
+         return 0;
+-    CreateDirectoryA(out, NULL);
+-    len = snprintf(out, n, "%s\\shadercache\\%08X\\%s", base,
++    cache_mkdir(out);
++    len = snprintf(out, n, "%s/shadercache/%08X/%s", base,
+                    (unsigned)recomp_config_title_id(), backend);
+     if (len <= 0 || (size_t)len >= n)
+         return 0;
+-    CreateDirectoryA(out, NULL);
++    cache_mkdir(out);
+     return 1;
+ }
+ 
+@@ -145,7 +188,7 @@
+ 
+     if (!cache_dir(backend, dir, sizeof dir))
+         return 0;
+-    len = snprintf(out, n, "%s\\%016llX.bin", dir,
++    len = snprintf(out, n, "%s/%016llX.bin", dir,
+                    (unsigned long long)fnv64(k->p, k->n));
+     return len > 0 && (size_t)len < n;
+ }
+@@ -173,6 +216,7 @@
+     char path[1024];
+     FILE *f = NULL;
+     uint32_t hdr[4];
++    uint64_t checksum;
+     char *stored = NULL;
+     void *data = NULL;
+     int ok = 0;
+@@ -190,12 +234,13 @@
+         goto done;
+     if (fread(hdr, sizeof hdr, 1, f) != 1 || hdr[0] != CACHE_MAGIC ||
+         hdr[1] != CACHE_VERSION || hdr[2] != (uint32_t)k.n || !hdr[3] ||
+-        hdr[3] > 64u * 1024u * 1024u)
++        hdr[3] > CACHE_MAX_BLOB || fread(&checksum,sizeof checksum,1,f)!=1)
+         goto done;
+     stored = (char *)malloc(k.n);
+     data = malloc(hdr[3]);
+     if (!stored || !data || fread(stored, 1, k.n, f) != k.n ||
+-        memcmp(stored, k.p, k.n) != 0 || fread(data, 1, hdr[3], f) != hdr[3])
++        memcmp(stored, k.p, k.n) != 0 || fread(data, 1, hdr[3], f) != hdr[3] ||
++        fnv64((const char *)data,hdr[3]) != checksum || fgetc(f) != EOF || ferror(f))
+         goto done;
+     *blob = data;
+     *bytes = hdr[3];
+@@ -220,9 +265,10 @@
+     char path[1024], tmp[1100];
+     FILE *f;
+     uint32_t hdr[4];
++    uint64_t checksum;
+     int ok;
+ 
+-    if (!cache_enabled() || !src || !src->hlsl || !blob || !bytes)
++    if (!cache_enabled() || !src || !src->hlsl || !blob || !bytes || bytes > CACHE_MAX_BLOB)
+         return;
+     if (!key_build(&k, src, backend)) {
+         free(k.p);
+@@ -232,8 +278,16 @@
+         free(k.p);
+         return;
+     }
+-    snprintf(tmp, sizeof tmp, "%s.%lu.tmp", path, (unsigned long)GetCurrentThreadId());
++#ifdef _WIN32
++    snprintf(tmp, sizeof tmp, "%s.%lu.%lu.tmp", path,
++        (unsigned long)GetCurrentProcessId(), (unsigned long)GetCurrentThreadId());
+     f = fopen(tmp, "wb");
++#else
++    snprintf(tmp,sizeof tmp,"%s.XXXXXX",path);
++    int fd=mkstemp(tmp);
++    f=fd<0?NULL:fdopen(fd,"wb");
++    if(fd>=0 && !f){close(fd);unlink(tmp);}
++#endif
+     if (!f) {
+         free(k.p);
+         return;
+@@ -242,14 +296,39 @@
+     hdr[1] = CACHE_VERSION;
+     hdr[2] = (uint32_t)k.n;
+     hdr[3] = (uint32_t)bytes;
+-    ok = fwrite(hdr, sizeof hdr, 1, f) == 1 && fwrite(k.p, 1, k.n, f) == k.n &&
++    checksum=fnv64((const char *)blob,bytes);
++    ok = fwrite(hdr, sizeof hdr, 1, f) == 1 && fwrite(&checksum,sizeof checksum,1,f)==1 && fwrite(k.p, 1, k.n, f) == k.n &&
+          fwrite(blob, 1, bytes, f) == bytes;
+     ok = (fclose(f) == 0) && ok;
+-    if (!ok || !MoveFileExA(tmp, path, MOVEFILE_REPLACE_EXISTING))
+-        DeleteFileA(tmp);
+-    else
+-        note("written to disk", InterlockedIncrement(&g_writes));
++#ifdef _WIN32
++    if(ok)ok=MoveFileExA(tmp,path,MOVEFILE_REPLACE_EXISTING)!=0;
++#else
++    if(ok)ok=rename(tmp,path)==0;
++#endif
++    if(!ok)remove(tmp);
++    else note("written to disk", InterlockedIncrement(&g_writes));
+     free(k.p);
++}
++
++static volatile LONG g_cache_cleared;
++static int cache_was_cleared(void)
++{
++#ifdef _WIN32
++    return InterlockedCompareExchange(&g_cache_cleared,0,0)!=0;
++#else
++    return __atomic_load_n(&g_cache_cleared,__ATOMIC_ACQUIRE)!=0;
++#endif
++}
++int rhi_shader_cache_clear(void)
++{
++    char base[600],path[800];int n;
++    if(!recomp_config_user_dir(base,sizeof base))return -1;
++    n=snprintf(path,sizeof path,"%s/shadercache/%08X",base,(unsigned)recomp_config_title_id());
++    if(n<0 || (size_t)n>=sizeof path)return -1;
++    /* Do not resurrect the in-memory Vulkan pipeline cache at shutdown. New
++     * shaders may still populate fresh files after the user clears the cache. */
++    InterlockedIncrement(&g_cache_cleared);
++    return tsfp_cache_clear_level(path,0);
+ }
+ 
+ int rhi_cache_file_path(const char *backend, const char *name, char *out, size_t n)
+@@ -257,33 +336,9 @@
+     char dir[800];
+     int len;
+ 
+-    if (!cache_enabled() || !cache_dir(backend, dir, sizeof dir))
+-        return 0;
+-    len = snprintf(out, n, "%s\\%s", dir, name);
++    if (cache_was_cleared() || !cache_component(name) || !cache_enabled() || !cache_dir(backend, dir, sizeof dir))
++        return 0;
++    len = snprintf(out, n, "%s/%s", dir, name);
+     return len > 0 && (size_t)len < n;
+ }
+ 
+-#else  /* not Windows: no cache */
+-
+-int rhi_shader_cache_get(const RhiShaderSource *src, const char *backend,
+-                         void **blob, size_t *bytes)
+-{
+-    (void)src; (void)backend;
+-    *blob = NULL;
+-    *bytes = 0;
+-    return 0;
+-}
+-
+-void rhi_shader_cache_put(const RhiShaderSource *src, const char *backend,
+-                          const void *blob, size_t bytes)
+-{
+-    (void)src; (void)backend; (void)blob; (void)bytes;
+-}
+-
+-int rhi_cache_file_path(const char *backend, const char *name, char *out, size_t n)
+-{
+-    (void)backend; (void)name; (void)out; (void)n;
+-    return 0;
+-}
+-
+-#endif
+--- a/src/d3d/rhi_shader_cache.h
++++ b/src/d3d/rhi_shader_cache.h
+@@ -19,6 +19,9 @@
+ /* Keep a freshly compiled blob for the next run. */
+ void rhi_shader_cache_put(const RhiShaderSource *src, const char *backend,
+                           const void *blob, size_t bytes);
++/* Remove only this title's recognized disk cache files. Count or -1 on failure. */
++int rhi_shader_cache_clear(void);
++
+ /* A file named `name` in the backend's cache directory, for other caches
+  * (the Vulkan pipeline cache). 0 if there is none or caching is off. */
+ int  rhi_cache_file_path(const char *backend, const char *name, char *out, size_t n);

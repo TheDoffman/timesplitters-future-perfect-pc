@@ -130,7 +130,32 @@ static void sampler_failures(int at_capacity) {
     CHECK(peak[3]<=33);
     puts("PASS: sampler failure retries, live owners retained, replaced stages rebind and shutdown owns once");
 }
+static void filtering_preferences(void) {
+    defaults();CHECK(d3d8_states_init()==S_OK);
+    texture_states[0][D3DTSS_MINFILTER]=D3DTEXF_LINEAR;
+    texture_states[0][D3DTSS_MAGFILTER]=D3DTEXF_LINEAR;
+    texture_states[0][D3DTSS_MIPFILTER]=D3DTEXF_LINEAR;
+    for(unsigned requested=1;requested<=16;requested*=2) {
+        policy.anisotropy=requested;d3d8_states_apply_sampler(0);
+        CHECK(g_sampler_states[0]->desc.max_anisotropy==requested);
+        CHECK(g_sampler_states[0]->desc.filter==(requested>1?RHI_FILTER_ANISOTROPIC:RHI_FILTER_LINEAR));
+    }
+    /* Returning to Original must replace a cached 16x sampler immediately. */
+    policy.anisotropy=1;d3d8_states_apply_sampler(0);
+    CHECK(g_sampler_states[0]->desc.filter==RHI_FILTER_LINEAR);
+    CHECK(g_sampler_states[0]->desc.max_anisotropy==1);
+    /* Pixel-authored HUD/font sampling remains nearest despite forced AF. */
+    texture_states[0][D3DTSS_MINFILTER]=D3DTEXF_POINT;
+    texture_states[0][D3DTSS_MAGFILTER]=D3DTEXF_POINT;
+    texture_states[0][D3DTSS_MIPFILTER]=D3DTEXF_POINT;
+    policy.anisotropy=16;d3d8_states_apply_sampler(0);
+    CHECK(g_sampler_states[0]->desc.filter==RHI_FILTER_POINT);
+    CHECK(g_sampler_states[0]->desc.max_anisotropy==1);
+    d3d8_states_shutdown();CHECK(alive[3]==0);
+    puts("PASS: live AF 1/2/4/8/16, original restoration and nearest HUD preservation");
+}
 int main(int argc,char **argv) {
+    if(argc>1&&!strcmp(argv[1],"filtering")){filtering_preferences();return 0;}
     if(argc>1) { sampler_failures(!strcmp(argv[1],"sampler-replace"));return 0; }
     unsigned i,j,initial[3];defaults();CHECK(d3d8_states_init()==S_OK);
     for(i=0;i<2000;i++) { material(i%16);d3d8_states_apply(); }

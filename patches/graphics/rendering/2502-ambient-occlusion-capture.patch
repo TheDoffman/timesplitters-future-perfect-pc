@@ -1,0 +1,75 @@
+--- a/src/hle/d3d8_capture.h
++++ b/src/hle/d3d8_capture.h
+@@ -108,7 +108,8 @@
+  * filled from memory and the stage palettes P8 textures are expanded with. */
+ /* Version 8 carries per-channel colour-clear flags; older captures still read. */
+ /* Version 9 adds lossless host pixel constant overrides. */
+-#define D3D8CAP_VERSION      9u
++/* Version 10 records the per-view AO camera snapshot. */
++#define D3D8CAP_VERSION      10u
+ /* The oldest version the reader still accepts. A bump that only adds chunk
+  * kinds leaves an older file a valid newer one that happens not to contain
+  * them (version 6 added three; version 5 one), so it leaves this alone. A
+@@ -156,7 +157,8 @@
+     D3D8CAP_CUBE_LEVEL          = 29, /* D3D8CapCubeLevel + bytes (version 7) */
+     D3D8CAP_PALETTE             = 30, /* D3D8CapPalette (version 7) */
+     D3D8CAP_PS_FLOAT_CONSTANT   = 31, /* D3D8CapPsFloatConstant (version 9) */
+-    D3D8CAP_CHUNK_KINDS         = 32  /* one past the last, for per-kind counters */
++    D3D8CAP_AMBIENT_OCCLUSION   = 32, /* float projection[16] (version 10) */
++    D3D8CAP_CHUNK_KINDS         = 33  /* one past the last, for per-kind counters */
+ };
+ 
+ typedef struct {
+--- a/src/hle/d3d8_capture.c
++++ b/src/hle/d3d8_capture.c
+@@ -276,7 +276,7 @@
+         "vs_create", "vs_delete", "vs_declaration", "vs_constants",
+         "vs_screenspace", "ps_token", "depth_surface", "set_render_target",
+         "vs_vertex_data", "cube_texture", "scissors", "material", "light",
+-        "light_enable", "two_d_placement", "cube_level", "palette", "ps_float_constant"
++        "light_enable", "two_d_placement", "cube_level", "palette", "ps_float_constant", "ambient_occlusion"
+     };
+ 
+     return type < D3D8CAP_CHUNK_KINDS ? names[type] : "unknown";
+--- a/src/hle/hle_d3d8_record.c
++++ b/src/hle/hle_d3d8_record.c
+@@ -1258,6 +1258,8 @@
+     }
+     if(hle_d3d8_interp_rec)
+         hle_d3d8_interp_op(op_ambient_occlusion,projection,16*sizeof(float));
++    if(g_cap)
++        chunk(D3D8CAP_AMBIENT_OCCLUSION, projection, 16*sizeof(float), NULL, 0, NULL, 0);
+     xbox_D3D8AmbientOcclusion(projection);
+ }
+ 
+--- a/src/replay/d3d8_replay.c
++++ b/src/replay/d3d8_replay.c
+@@ -1132,6 +1132,17 @@
+         r->dev->lpVtbl->SetViewport(r->dev, &vp);
+         break;
+     }
++    case D3D8CAP_AMBIENT_OCCLUSION: {
++        extern void xbox_D3D8AmbientOcclusion(const float *projection);
++        float projection[16];
++        if(c->bytes != sizeof projection) {
++            r->malformed++;
++            break;
++        }
++        memcpy(projection,c->data,sizeof projection);
++        xbox_D3D8AmbientOcclusion(projection);
++        break;
++    }
+     case D3D8CAP_TWOD_PLACEMENT: {
+         const D3D8CapTwoDPlacement *p = c->data;
+         int placement, k;
+--- a/tests/d3d8_capture/test_main.c
++++ b/tests/d3d8_capture/test_main.c
+@@ -422,7 +422,7 @@
+         return;
+     }
+     h = d3d8cap_header(r);
+-    check(h->version == 9 && D3D8CAP_VERSION == 9, "the version is 9");
++    check(h->version == 10 && D3D8CAP_VERSION == 10, "the version is 10");
+     check(h->frame == 7 && h->width == 640 && h->height == 480, "header fields");
+     check(h->chunk_count == SNAPSHOT_CHUNKS + FRAME_CHUNKS, "chunk_count is patched in");
+ 

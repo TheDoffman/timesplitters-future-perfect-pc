@@ -136,3 +136,5 @@ void pc_kill_feed_death(void (*original)(void));
 void pc_kill_feed_fire(void (*original)(void),int npc);
 void pc_kill_feed_allocate(void (*original)(void));
 #endif
+
+void pc_graphics_world_finish(void (*original)(void));

@@ -1,0 +1,36 @@
+--- a/src/hle/hle_d3d8_record.h
++++ b/src/hle/hle_d3d8_record.h
+@@ -84,6 +84,8 @@
+ void hle_d3d8_defer_op(void (*fn)(const void *arg), const void *arg, size_t size);
+ /* Run everything queued, in order. Safe to call when nothing is. */
+ void hle_d3d8_defer_flush(void);
++/* Queue the per-view post-process with the world camera snapshot. */
++void host_AmbientOcclusion(const float projection[16]);
+ 
+ /* --------------------------------------------------- frame interpolation
+  *
+--- a/src/hle/hle_d3d8_record.c
++++ b/src/hle/hle_d3d8_record.c
+@@ -1245,6 +1245,22 @@
+     xbox_D3D8SetTwoDPlacement(placement, tag);
+ }
+ 
++extern void xbox_D3D8AmbientOcclusion(const float *projection);
++static void op_ambient_occlusion(const void *arg)
++{
++    host_AmbientOcclusion((const float *)arg);
++}
++void host_AmbientOcclusion(const float projection[16])
++{
++    if(!projection)return;
++    if(hle_d3d8_defer_recording()) {
++        hle_d3d8_defer_op(op_ambient_occlusion,projection,16*sizeof(float));return;
++    }
++    if(hle_d3d8_interp_rec)
++        hle_d3d8_interp_op(op_ambient_occlusion,projection,16*sizeof(float));
++    xbox_D3D8AmbientOcclusion(projection);
++}
++
+ static void op_viewport(const void *arg)
+ {
+     host_SetViewport(hle_d3d8_shadow_device(), (const D3DVIEWPORT8 *)arg);

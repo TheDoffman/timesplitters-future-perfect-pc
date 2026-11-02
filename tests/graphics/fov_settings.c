@@ -20,6 +20,17 @@ static int available=1,returned;
 static int enhanced_audio,audio_save_ok=1;
 int pc_audio_enhanced_enabled(void) {return enhanced_audio;}
 int pc_audio_set_enhanced(int enabled) {if(!audio_save_ok)return 0;enhanced_audio=!!enabled;return 1;}
+#include "graphics/graphics_options.h"
+static TsfpGraphicsOptions graphics_options={1,0,1,0,1};
+static int graphics_save_ok=1;
+static int cache_clear_calls;
+void host_AmbientOcclusion(const float *projection){(void)projection;}
+int pc_graphics_clear_cache(void){cache_clear_calls++;return 4;}
+TsfpGraphicsOptions pc_graphics_get(void){return graphics_options;}
+int pc_graphics_set(const TsfpGraphicsOptions *o){if(!graphics_save_ok)return 0;graphics_options=*o;return 1;}
+static int counter_enabled,counter_save_ok=1;
+int pc_counter_enabled(void) { return counter_enabled; }
+int pc_counter_set_enabled(int value) { if(!counter_save_ok)return 0;counter_enabled=!!value;return 1; }
 static int smaa_preference,smaa_save_ok=1;
 int pc_smaa_enabled(void){return smaa_preference;}
 int pc_smaa_set_enabled(int enabled){if(!smaa_save_ok)return 0;smaa_preference=enabled;return 1;}
@@ -229,11 +240,10 @@ void sub_000814B0(void) { uint32_t b=WORD_AT(g_esp+4);memcpy(&drawn,&b,4);g_esp+
 void sub_00154FE0(void) { g_eax=WORD_AT(g_esp+4);g_esp+=4; }
 void sub_00079B70(void) { returned++;g_esp+=4; }
 void sub_00079D60_gen(void) {
-    unsigned id=WORD_AT(g_esp+8);CHECK(id<32);
+    unsigned id=WORD_AT(g_esp+8);CHECK(id<128);
     if(page==DISPLAY_HOME && id>=20 && id<=21)CHECK(!strncmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+4)),"\vs75",4));
-    built_rows|=1u<<id;built_ids[built_row_count++]=id;
-    g_eax=0x200000+id*0x200;WORD_AT(g_eax+0x28)=WORD_AT(g_esp+12)|0x2000u;
-    WORD_AT(g_eax+0x88)=current_menu;g_esp+=4;
+    if(id<32)built_rows|=1u<<id;CHECK(built_row_count<32);built_ids[built_row_count++]=id;
+    g_eax=0x200000+id*0x200;WORD_AT(g_eax+0x28)=WORD_AT(g_esp+12)|0x2000u;WORD_AT(g_eax+0x88)=current_menu;g_esp+=4;
 }
 static void call(uint32_t address,int selected,unsigned buttons)
 {
@@ -311,24 +321,64 @@ int main(int argc,char **argv)
     reload("TSFP_DISPLAY_V1 1280 720\n");
     tsfp_texture_set_4k(0);
     call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
-    CHECK(page==DISPLAY_HOME && built_row_count==9 && separators==0 && (built_rows & (1u<<10)) && (built_rows & (1u<<11)));
+    CHECK(page==DISPLAY_HOME && built_row_count==10 && separators==0 && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
+    page=DISPLAY_GRAPHICS;built_rows=built_row_count=separators=0;labels();
+    CHECK(graphics_rows[0] && graphics_rows[4] && texture_row && !counter_row && !aspect_row);
+    WORD_AT(graphics_rows[1]+0xc8)=1;read_choices();CHECK(graphics_options.edge_smoothing==1);
+    graphics_save_ok=0;WORD_AT(graphics_rows[2]+0xc8)=4;read_choices();
+    CHECK(graphics_options.anisotropy==1 && WORD_AT(graphics_rows[2]+0xc8)==0);
+    graphics_save_ok=1;WORD_AT(graphics_rows[2]+0xc8)=4;read_choices();CHECK(graphics_options.anisotropy==16);
+    /* Failed persistence never requests restart; successful MSAA changes do. */
+    graphics_save_ok=0;WORD_AT(graphics_rows[0]+0xc8)=1;read_choices();
+    CHECK(!msaa_restart_prompt && graphics_options.msaa==1);
+    graphics_save_ok=1;WORD_AT(graphics_rows[0]+0xc8)=1;
+    call(TICK_CB,100,0);CHECK(page==DISPLAY_RESTART && graphics_options.msaa==2);
+    CHECK(!msaa_restart_prompt);
+    call(SELECT_CB,0,0);CHECK(page==DISPLAY_GRAPHICS);
+    call(TICK_CB,100,0);CHECK(page==DISPLAY_GRAPHICS); /* Later does not nag. */
+    WORD_AT(graphics_rows[0]+0xc8)=0;call(TICK_CB,100,0);
+    CHECK(page==DISPLAY_RESTART && graphics_options.msaa==1);
+    call(BACK_CB,0,0);CHECK(page==DISPLAY_GRAPHICS);
+
+    refresh(DISPLAY_VIEW,0);CHECK(subtitle_row && counter_row && !texture_row && !rate_row);
+    WORD_AT(counter_row+0xc8)=1;read_choices();CHECK(counter_enabled);
+    counter_save_ok=0;WORD_AT(counter_row+0xc8)=0;read_choices();
+    CHECK(counter_enabled && WORD_AT(counter_row+0xc8)==1);
+    counter_save_ok=1;WORD_AT(counter_row+0xc8)=0;read_choices();CHECK(!counter_enabled);
+    page=DISPLAY_HOME;built_rows=built_row_count=separators=0;labels();
+    call(SELECT_CB,VIDEO_TABS_ID,0);CHECK(page==DISPLAY_GRAPHICS);
+    call(TICK_CB,VIDEO_TABS_ID,0x80000u);CHECK(page==DISPLAY_VIEW);
+    call(TICK_CB,VIDEO_TABS_ID,0x40000u);CHECK(page==DISPLAY_GRAPHICS);
+    video_tab_bounds_valid=1;
+    video_tab_bounds[0]=20;video_tab_bounds[1]=30;video_tab_bounds[2]=320;video_tab_bounds[3]=54;
+    CHECK(video_tab_hit(20,30)==0 && video_tab_hit(120,40)==1 && video_tab_hit(319,53)==2);
+    CHECK(video_tab_hit(320,40)==-1 && video_tab_hit(21,54)==-1);
+    staged_fov=67;texture_choice=1;refresh(DISPLAY_VIEW,0);refresh(DISPLAY_GRAPHICS,0);
+    CHECK(staged_fov==67 && texture_choice==1 && WORD_AT(texture_row+0xc8)==1);
+    staged_fov=previous_fov;texture_choice=applied_texture;refresh(DISPLAY_GRAPHICS,0);
+    call(SELECT_CB,106,0);CHECK(cache_clear_calls==1 && page==DISPLAY_GRAPHICS);
+    {int before=returned;call(BACK_CB,0,0);CHECK(returned==before+1);}
+    refresh(DISPLAY_VIEW,0);
+    status[0]=0;
     { /* Use the native switch sound for all Video setting rows, not Apply. */
         WORD_AT(current_menu+4)=storage;WORD_AT(0x7ba16c)=1;WORD_AT(0x7ba178)=0x510000;
         WORD_AT(0x510008)=0x1234;
-        unsigned ids[]={0,1,2,7,8,9,10,11};
+        refresh(DISPLAY_GRAPHICS,0);
+        unsigned ids[]={100,101,102,103,104,7,11};
         for(unsigned i=0;i<sizeof ids/sizeof ids[0];i++)
             menu_video_click_sound(current_menu,0x200000+ids[i]*0x200);
-        CHECK(video_sounds==8);
-        menu_video_click_sound(current_menu,apply_row);CHECK(video_sounds==8);
-        WORD_AT(smaa_row+0x28)|=1;menu_video_click_sound(current_menu,smaa_row);CHECK(video_sounds==8);
+        CHECK(video_sounds==7);
+        menu_video_click_sound(current_menu,apply_row);CHECK(video_sounds==7);
+        WORD_AT(smaa_row+0x28)|=1;menu_video_click_sound(current_menu,smaa_row);CHECK(video_sounds==7);
         WORD_AT(smaa_row+0x28)&=~1u;
-        WORD_AT(current_menu+4)=0;menu_video_click_sound(current_menu,smaa_row);CHECK(video_sounds==8);
+        WORD_AT(current_menu+4)=0;menu_video_click_sound(current_menu,smaa_row);CHECK(video_sounds==7);
         WORD_AT(current_menu+4)=storage;
-        page=DISPLAY_CONFIRM;menu_video_click_sound(current_menu,smaa_row);CHECK(video_sounds==8);
-        page=DISPLAY_HOME;WORD_AT(0x7ba178)=0;
-        menu_video_click_sound(current_menu,smaa_row);CHECK(video_sounds==8);
-        WORD_AT(0x7ba16c)=0;menu_video_click_sound(current_menu,smaa_row);CHECK(video_sounds==8);
+        page=DISPLAY_CONFIRM;menu_video_click_sound(current_menu,smaa_row);CHECK(video_sounds==7);
+        page=DISPLAY_GRAPHICS;WORD_AT(0x7ba178)=0;
+        menu_video_click_sound(current_menu,smaa_row);CHECK(video_sounds==7);
+        WORD_AT(0x7ba16c)=0;menu_video_click_sound(current_menu,smaa_row);CHECK(video_sounds==7);
     }
+    refresh(DISPLAY_VIEW,0);
     { /* Shared focus bars stay rounded regardless of the menu descriptor. */
         float bounds[4]={20,20,220,47};
         WORD_AT(current_menu+4)=storage;WORD_AT(current_menu+0x20)=0x310000;
@@ -349,20 +399,24 @@ int main(int argc,char **argv)
     CHECK(!(built_rows&(1u<<5)) && !(built_rows&(1u<<4))); /* No Back or reset row. */
     CHECK(!(built_rows&(1u<<20))); /* FOV has no default-value helper row. */
     CHECK(!display_dirty() && (WORD_AT(apply_row+0x28)&1));
+    refresh(DISPLAY_GRAPHICS,0);
     /* SMAA is staged, survives a menu rebuild, and Back discards it. */
     CHECK(!staged_smaa && !pc_smaa_enabled());
     WORD_AT(smaa_row+0xc8)=1;call(TICK_CB,11,0);
     CHECK(display_dirty() && !pc_smaa_enabled());
-    refresh(DISPLAY_HOME,0);CHECK(WORD_AT(smaa_row+0xc8)==1 && display_dirty());
+    refresh(DISPLAY_GRAPHICS,0);CHECK(WORD_AT(smaa_row+0xc8)==1 && display_dirty());
     call(BACK_CB,0,0);call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
+    refresh(DISPLAY_GRAPHICS,0);
     CHECK(!staged_smaa && !display_dirty());
     WORD_AT(smaa_row+0xc8)=1;call(TICK_CB,11,0);smaa_save_ok=0;
     call(SELECT_CB,3,0);CHECK(!pc_smaa_enabled() && display_dirty() && *status);
     smaa_save_ok=1;call(SELECT_CB,3,0);CHECK(pc_smaa_enabled() && !display_dirty());
     call(BACK_CB,0,0);call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
+    refresh(DISPLAY_GRAPHICS,0);
     CHECK(staged_smaa && applied_smaa && WORD_AT(smaa_row+0xc8)==1 && !display_dirty());
     WORD_AT(smaa_row+0xc8)=0;call(TICK_CB,11,0);call(SELECT_CB,3,0);
     CHECK(!pc_smaa_enabled() && !display_dirty());
+    refresh(DISPLAY_VIEW,0);
     CHECK(built_rows&(1u<<9));
     WORD_AT(subtitle_row+0xc8)=1;call(TICK_CB,9,0);
     CHECK(display_dirty() && !WORD_AT(0x400130) && !WORD_AT(0x7613dc));
@@ -370,6 +424,7 @@ int main(int argc,char **argv)
     CHECK(WORD_AT(0x400130)==1 && WORD_AT(0x7613dc)==1 && (WORD_AT(0x78ad24)&0x10000));
     CHECK(!display_dirty() && (WORD_AT(apply_row+0x28)&1));
 
+    refresh(DISPLAY_HOME,0);
     call(SELECT_CB,3,0);CHECK(requested_rate==-1 && pc_frame_rate_read()==-1);
     for(unsigned a=1;a<PC_DISPLAY_ASPECT_COUNT;a++) {
         WORD_AT(aspect_row+0xc8)=a;call(TICK_CB,0,0);
@@ -384,7 +439,9 @@ int main(int argc,char **argv)
     }
     CHECK(current.width==1280 && current.height==720);
     /* Back key discards all staged settings without a dedicated Back row. */
-    WORD_AT(texture_row+0xc8)=1;WORD_AT(rate_row+0xc8)=1;
+    refresh(DISPLAY_GRAPHICS,0);WORD_AT(texture_row+0xc8)=1;read_choices();
+    refresh(DISPLAY_HOME,0);WORD_AT(rate_row+0xc8)=1;read_choices();
+    refresh(DISPLAY_VIEW,0);
     for(int i=0;i<20;i++)call(TICK_CB,2,0x80000);
     CHECK(staged_fov==75 && pc_display_fov()==55 && !tsfp_texture_is_4k());
     CHECK(display_dirty() && !(WORD_AT(apply_row+0x28)&1));
@@ -392,6 +449,7 @@ int main(int argc,char **argv)
     call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
     CHECK(!display_dirty() && staged_fov==55 && staged_rate==0 && texture_choice==0);
     content("TSFP_DISPLAY_V1 1280 720\n");
+    refresh(DISPLAY_VIEW,0);
     for(int i=0;i<100;i++)call(TICK_CB,2,0x80000);CHECK(staged_fov==100 && pc_display_fov()==55);
     for(int i=0;i<100;i++)call(TICK_CB,2,0x40000);CHECK(staged_fov==40);
     WORD_AT(0x70000c)=0x400000;
@@ -409,24 +467,35 @@ int main(int argc,char **argv)
     CHECK(menu_slider_pointer(0x300000,pointer,2,348,8,1920,1080));
     CHECK(staged_fov==70 && pc_display_fov()==55);
     pointer.left=0;CHECK(!menu_slider_pointer(0x300000,pointer,0,348,8,1920,1080));slider_capture_enabled=0;
-    WORD_AT(texture_row+0xc8)=1;WORD_AT(rate_row+0xc8)=1;
+    refresh(DISPLAY_GRAPHICS,0);WORD_AT(texture_row+0xc8)=1;read_choices();
+    refresh(DISPLAY_HOME,0);WORD_AT(rate_row+0xc8)=1;read_choices();
+    refresh(DISPLAY_VIEW,0);
     call(TICK_CB,8,0);CHECK(!tsfp_texture_is_4k() && requested_rate==-1);
     call(SELECT_CB,3,0);
     CHECK(page==DISPLAY_HOME && pc_display_fov()==70 && tsfp_texture_is_4k());
     CHECK(requested_rate==120 && pc_frame_rate_read()==120);
     CHECK(!display_dirty() && (WORD_AT(apply_row+0x28)&1));
     content("TSFP_DISPLAY_V2 1280 720 70\n");
-    /* A failed SMAA save rolls back earlier display/rate saves in this batch. */
-    staged_fov=75;WORD_AT(rate_row+0xc8)=2;WORD_AT(smaa_row+0xc8)=1;smaa_save_ok=0;
+    /* A failed SMAA save rolls back the staged display/rate batch across tabs. */
+    staged_fov=75;WORD_AT(rate_row+0xc8)=2;read_choices();
+    refresh(DISPLAY_GRAPHICS,0);WORD_AT(smaa_row+0xc8)=1;smaa_save_ok=0;
     call(SELECT_CB,3,0);
     CHECK(pc_display_fov()==70 && requested_rate==120 && pc_frame_rate_read()==120 && !pc_smaa_enabled());
     content("TSFP_DISPLAY_V2 1280 720 70\n");
-    smaa_save_ok=1;staged_fov=70;WORD_AT(rate_row+0xc8)=1;WORD_AT(smaa_row+0xc8)=0;
-    call(TICK_CB,11,0);CHECK(!display_dirty());
+    smaa_save_ok=1;staged_fov=70;staged_rate=applied_rate;staged_smaa=applied_smaa;
+    refresh(DISPLAY_GRAPHICS,0);call(TICK_CB,11,0);CHECK(!display_dirty());
+    WORD_AT(smaa_row+0xc8)=1;read_choices();refresh(DISPLAY_VIEW,0);
+    CHECK(staged_smaa==1 && !pc_smaa_enabled());
+    call(SELECT_CB,3,0);CHECK(pc_smaa_enabled() && !display_dirty());
+    refresh(DISPLAY_GRAPHICS,0);WORD_AT(smaa_row+0xc8)=0;call(SELECT_CB,3,0);
+    CHECK(!pc_smaa_enabled() && !display_dirty());
+    refresh(DISPLAY_VIEW,0);
     call(TICK_CB,2,0x80000);CHECK(!(WORD_AT(apply_row+0x28)&1));
     call(TICK_CB,2,0x40000);CHECK(WORD_AT(apply_row+0x28)&1);
     /* Failed display save must not publish FPS or texture changes. */
-    staged_fov=75;WORD_AT(rate_row+0xc8)=2;WORD_AT(texture_row+0xc8)=0;WORD_AT(subtitle_row+0xc8)=0;
+    staged_fov=75;WORD_AT(subtitle_row+0xc8)=0;read_choices();
+    refresh(DISPLAY_GRAPHICS,0);WORD_AT(texture_row+0xc8)=0;read_choices();
+    refresh(DISPLAY_HOME,0);WORD_AT(rate_row+0xc8)=2;
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));call(SELECT_CB,3,0);
     CHECK(pc_display_fov()==70 && requested_rate==120 && tsfp_texture_is_4k() && WORD_AT(0x400130)==1);
     CHECK(display_dirty() && !(WORD_AT(apply_row+0x28)&1) && *status);
@@ -441,7 +510,7 @@ int main(int argc,char **argv)
     CHECK(!display_dirty() && (WORD_AT(apply_row+0x28)&1));
     /* Resolution preview defers the complete batch until Keep. */
     resolution_row=0;staged=(PcDisplayMode){1920,1080};staged_fov=80;
-    WORD_AT(rate_row+0xc8)=0;WORD_AT(texture_row+0xc8)=1;call(SELECT_CB,3,0);
+    WORD_AT(rate_row+0xc8)=0;texture_choice=1;call(SELECT_CB,3,0);
     CHECK(page==DISPLAY_CONFIRM && current.width==1920 && pc_display_fov()==75);
     CHECK(requested_rate==180 && !tsfp_texture_is_4k());call(BACK_CB,0,0);
     CHECK(page==DISPLAY_HOME && current.width==1280 && pc_display_fov()==75 && display_dirty());
@@ -453,6 +522,7 @@ int main(int argc,char **argv)
     CHECK(requested_rate==0 && tsfp_texture_is_4k() && !display_dirty());
     CHECK(WORD_AT(apply_row+0x28)&1);content("TSFP_DISPLAY_V2 1920 1080 80\n");
     /* External F10 follows the model unless this menu has an unapplied choice. */
+    refresh(DISPLAY_GRAPHICS,0);
     tsfp_texture_toggle();call(TICK_CB,7,0);
     CHECK(!tsfp_texture_is_4k() && texture_choice==0 && !display_dirty());
     WORD_AT(texture_row+0xc8)=1;call(TICK_CB,7,0);CHECK(!tsfp_texture_is_4k() && display_dirty());

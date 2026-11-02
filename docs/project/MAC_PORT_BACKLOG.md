@@ -1,5 +1,10 @@
 # PC features awaiting Mac adaptation
 
+FPS / Ping counter (2026-11-01, uncommitted): shared settings/formatting and
+common RHI scaling; legacy GL uses the same layout helper. No new network
+provider; existing Online RTT is used where supported. Native Mac rendering,
+menu persistence and live Online validation remain pending.
+
 PC Settings menu-bar visibility (2026-11-01): **Not applicable** to native Mac.
 The Windows F1 bar now persists `pc_menu_visible` in the active input profile;
 Mac has no equivalent in-window bar and retains its system menu and F1 pointer
@@ -8769,6 +8774,34 @@ production-resolver and original-US callback regressions pass. Native Mac build
 and real two-machine LAN acceptance are pending; a loopback test with startup
 network overrides does not validate this path. See STATUS for Windows build evidence.
 
+
+Optional graphics (uncommitted, feature/graphics-options): shared Video Options
+and launcher SettingsPage expose MSAA, FXAA, AF, half-size SSAO, shader caching,
+Clear Cache and FPS/Ping. Patches2495–2513 implement shared policy plus D3D11/
+Vulkan adapters; the native launcher compiles the same model and page. Windows
+build, WARP GPU fixtures, captured 1x/2x/4x/8x replay and one AO scene comparison
+pass. Native Mac compilation, Vulkan resolves/depth sampling, cache reuse and
+main/pause/launcher visual acceptance remain unverified. Legacy GL feature
+capability/fallback also needs native acceptance. Linux launcher integration and software Vulkan rendering passed in an isolated
+copy combined with feature/linux-launcher at 80239186. That platform branch is
+not merged here; physical Linux GPU gameplay remains unverified. See docs/development/graphics-options.md for exact evidence
+and outstanding requirements. No release or cross-device synchronization claimed.
+
+Legacy OpenGL compatibility: `src/native/graphics_preferences_gl.inc` now owns
+get/set/clear definitions for that renderer, which does not link d3d8_display.c.
+It preserves the shared saved choices and clears recognized title cache blobs.
+The in-game menu explicitly says graphics effects require Vulkan on this path.
+A standalone adapter test passes on Windows and Ubuntu WSL, including legacy AF
+migration, saving/reloading all effect choices and absent-cache clearing. This
+prevents a new missing-symbol regression; it does not implement these effects
+on legacy GL. A full native Mac GL build remains required. GCC's strict format
+warning also prompted an explicitly bounds-checked temporary-path copy.
+
+Video restart follow-up (uncommitted): compact rounded tabs and MSAA prompt are
+shared. Native main calls the POSIX wait/exec bootstrap; macOS executable lookup
+uses _NSGetExecutablePath, Linux uses /proc/self/exe. Windows and Ubuntu WSL
+process-handoff fixtures pass. Native Mac compilation and real quit/relaunch
+with saved graphics settings remain unverified. No platform exemption claimed.
 
 Stage0241 extended integer product (2026-11-02, c7f276a7/PR465): original shared
 unsigned bit arithmetic and fixed guest-frame adapter replace ordinal281 on both

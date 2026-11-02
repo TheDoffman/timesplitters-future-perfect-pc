@@ -1,10 +1,18 @@
 #include "pc_debug.h"
+#include "../../src/interface/pc_counter_layout.h"
 #include <stdio.h>
 #include <string.h>
 #define CHECK(x) do { if(!(x)) {fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x);return 1;} } while(0)
 int main(void)
 {
     PcDebugOptions values={0},before;
+    float hd=pc_counter_scale(1920,1080,240,28);
+    CHECK(pc_counter_scale(640,480,240,28)==1.f);
+    CHECK(hd>0 && pc_counter_scale(3840,2160,240,28)>hd);
+    CHECK(pc_counter_scale(3440,1440,240,28)==pc_counter_scale(2560,1440,240,28));
+    CHECK(pc_counter_scale(120,1080,240,28)*256<=120);
+    CHECK(pc_counter_scale(0,0,0,0)==1.f);
+    CHECK(!values.show_counter);
     CHECK(pc_debug_option_count(PC_DEBUG_CAP_NETWORK)==PC_DEBUG_OPTION_COUNT);
     CHECK(pc_debug_option_count(0)==PC_DEBUG_OPTION_COUNT-1);
     for(unsigned i=0;i<PC_DEBUG_OPTION_COUNT;i++) {

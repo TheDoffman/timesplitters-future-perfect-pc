@@ -473,6 +473,40 @@ public static class LauncherSettingsChecks
                 Require(Read(root,"Settings/runtime.conf").Contains("# Keep this comment") && Read(root,"Settings/runtime.conf").Contains("future_graphics = keep"));
                 Require(File.Exists(Path.Combine(root,"Settings/pc-controls.json.bak")));
             });
+            Test("shader cache clearing preserves unrelated and nested files",()=>{
+                string root=Root("clear-shader-cache"),cache=Path.Combine(root,"shadercache","45410066"),backend=Path.Combine(cache,"d3d11-fxc-1");
+                Directory.CreateDirectory(Path.Combine(backend,"nested"));
+                File.WriteAllText(Path.Combine(backend,"0123456789ABCDEF.bin"),"cache");
+                File.WriteAllText(Path.Combine(backend,"pipelines.bin"),"pipeline");
+                File.WriteAllText(Path.Combine(backend,"save.bin"),"keep");
+                File.WriteAllText(Path.Combine(backend,"nested","0123456789ABCDEF.bin"),"keep nested");
+                Require(GameSettings.ClearShaderCacheDirectory(cache)==2);
+                Require(File.Exists(Path.Combine(backend,"save.bin")) && File.Exists(Path.Combine(backend,"nested","0123456789ABCDEF.bin")));
+                Require(GameSettings.ClearShaderCacheDirectory(cache)==0);
+            });
+            Test("graphics settings preserve user choices and reject unsupported wire values",()=>{
+                string root=Root("graphics-options");var model=GameSettings.Load(root,null);
+                Require(model.Msaa==1 && model.EdgeSmoothing==0 && model.AmbientOcclusion==0 && model.ShaderCache);
+                model.Msaa=8;model.EdgeSmoothing=1;model.Anisotropy=16;model.AmbientOcclusion=1;model.ShaderCache=false;model.Save();
+                Require(Read(root,"Settings/pc-graphics.ini")=="TSFP_GRAPHICS_V1 8 1 16 1 0\n");
+                model=GameSettings.Load(root,null);
+                Require(model.Msaa==8 && model.EdgeSmoothing==1 && model.Anisotropy==16 && model.AmbientOcclusion==1 && !model.ShaderCache);
+                Put(root,"Settings/pc-graphics.ini","TSFP_GRAPHICS_V1 3 1 16 1 1\n");
+                bool rejected=false;try { GameSettings.Load(root,null); } catch { rejected=true; }
+                Require(rejected);
+            });
+            Test("FPS counter shares game debug preference and preserves diagnostic fields",()=>{
+                string root=Root("fps-ping");var model=GameSettings.Load(root,null);
+                Require(!model.ShowCounter);model.Save();
+                var json=Json.Object(Read(root,"Settings/pc-controls.json"));
+                json["debug"]=new System.Collections.Generic.Dictionary<string,object>{{"show_counter",true},{"show_fps",true},{"future_debug","keep"}};
+                Put(root,"Settings/pc-controls.json",Json.Encode(json));
+                model=GameSettings.Load(root,null);Require(model.ShowCounter);
+                model.ShowCounter=false;model.Save();
+                var debug=(System.Collections.Generic.Dictionary<string,object>)Json.Object(Read(root,"Settings/pc-controls.json"))["debug"];
+                Require(!(bool)debug["show_counter"] && (bool)debug["show_fps"] && (string)debug["future_debug"]=="keep");
+                Require(!GameSettings.Load(root,null).ShowCounter);
+            });
             Test("legacy timing settings migrate to 60 FPS without losing unrelated preferences",()=>{
                 foreach(int target in new[]{0,120,144}) {
                     string root=Root("retired-fps-"+target);
@@ -487,6 +521,25 @@ public static class LauncherSettingsChecks
                     Require(values["future_graphics"]=="keep" && model.Fullscreen);
                 }
             });
+            Test("graphics UI saves every shared graphics and counter choice",()=>STA(()=>{
+                string root=Root("graphics-ui-roundtrip");
+                var page=new SettingsPage(new System.Windows.Window().Resources,root,true);page.SelectTab(1);
+                var nodes=Descendants(page.View).ToList();
+                foreach(var choice in new[]{new[]{"MultisampleAntialiasing","8x"},new[]{"EdgeSmoothing","FXAA"},new[]{"AnisotropicFiltering","16"}})
+                    nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name==choice[0]).SelectedItem=choice[1];
+                nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="AmbientOcclusion").IsChecked=true;
+                nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="ShaderCache").IsChecked=false;
+                nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="FpsPingCounter").IsChecked=true;
+                Require(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="ClearShaderCache").IsEnabled);
+                var save=nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton");
+                Require(save.IsEnabled);save.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+                var model=GameSettings.Load(root,null);
+                Require(model.Msaa==8 && model.EdgeSmoothing==1 && model.Anisotropy==16 && model.AmbientOcclusion==1 && !model.ShaderCache && model.ShowCounter);
+                var reopened=new SettingsPage(new System.Windows.Window().Resources,root,true);reopened.SelectTab(1);
+                var again=Descendants(reopened.View).ToList();
+                Require(Convert.ToString(again.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="MultisampleAntialiasing").SelectedItem)=="8x");
+                Require(again.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="AmbientOcclusion").IsChecked==true);
+            }));
             Test("graphics page keeps retired interpolation and presentation controls removed",()=>STA(()=>{
                 var page=new SettingsPage(new System.Windows.Window().Resources,Root("fixed-fps-ui"),true);page.SelectTab(1);
                 var names=Descendants(page.View).OfType<System.Windows.FrameworkElement>().Select(n=>n.Name).ToList();
@@ -509,6 +562,13 @@ public static class LauncherSettingsChecks
                 if(!String.IsNullOrEmpty(preview)) {
                     page.View.Measure(new System.Windows.Size(1000,900));
                     page.View.Arrange(new System.Windows.Rect(0,0,1000,900));page.View.UpdateLayout();
+                    if(Environment.GetEnvironmentVariable("TSFP_GRAPHICS_PREVIEW")=="1") {
+                        var graphicsScroll=Descendants(page.View).OfType<System.Windows.Controls.ScrollViewer>()
+                            .First(v=>Descendants(v).OfType<System.Windows.Controls.ComboBox>().Any(c=>c.Name=="MultisampleAntialiasing"));
+                        var qualityStart=Descendants(page.View).OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="ConsoleRenderScale");
+                        double qualityY=qualityStart.TransformToAncestor(graphicsScroll).Transform(new System.Windows.Point(0,0)).Y;
+                        graphicsScroll.ScrollToVerticalOffset(graphicsScroll.VerticalOffset+qualityY-90);page.View.UpdateLayout();
+                    }
                     var bitmap=new System.Windows.Media.Imaging.RenderTargetBitmap(1000,900,96,96,System.Windows.Media.PixelFormats.Pbgra32);bitmap.Render(page.View);
                     var encoder=new System.Windows.Media.Imaging.PngBitmapEncoder();encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
                     using(var stream=File.Create(preview))encoder.Save(stream);

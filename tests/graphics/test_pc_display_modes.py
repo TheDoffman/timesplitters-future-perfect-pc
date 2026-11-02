@@ -45,8 +45,19 @@ static SDL_DisplayMode **SDL_GetFullscreenDisplayModes(SDL_DisplayID d,int *n){(
 #define SDL_free free
 ''')
     executable = tmp_path / ('auto.exe' if sys.platform == 'win32' else 'auto')
-    source = ROOT / 'tests/graphics/pc_display_auto.c'
-    includes = [tmp_path, ROOT / 'src/native']
+    # This fixture deliberately uses the SDL sizing adapter even under MSVC.
+    # The independent restart fixture compiles/runs the real host process code;
+    # do not pull POSIX process headers into the mocked SDL-on-Windows build.
+    policy = (ROOT / 'src/interface/pc_display.c').read_text(encoding='utf-8')
+    restart_include = '#include "pc_game_restart.inc"'
+    assert policy.count(restart_include) == 1
+    (tmp_path / 'pc_display_policy.c').write_text(
+        policy.replace(restart_include, ''), encoding='utf-8')
+    fixture = (ROOT / 'tests/graphics/pc_display_auto.c').read_text(encoding='utf-8')
+    source = tmp_path / 'auto.c'
+    source.write_text(fixture.replace('../src/interface/pc_display.c', 'pc_display_policy.c'),
+                      encoding='utf-8')
+    includes = [tmp_path, ROOT / 'src/native', ROOT / 'src/interface']
     if sys.platform == 'win32':
         command = [compiler, '/nologo', '/std:c11', '/O2', '/MD',
                    *['/I'+str(p) for p in includes], str(source),

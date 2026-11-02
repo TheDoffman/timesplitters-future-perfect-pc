@@ -26,7 +26,7 @@ Shared D3D11/Vulkan policy; legacy GL retains the key without applying it.
 The shared launcher `GameSettings.Smaa`/`SettingsPage` owns the UI and atomic
 settings save. See [player behavior](../players/smaa.md).
 
-The unified frontend/pause Video Options adds native selector ID11 after Texture
+The unified frontend/pause Video Options adds native selector ID11 on the Graphics tab after Texture
 style. It stages `staged_smaa` against `applied_smaa`; Back discards edits, menu
 rebuilds retain them, and resolution confirmation defers the batch. Apply saves
 SMAA last, before publishing FPS/textures/subtitles, and rolls back earlier
@@ -48,7 +48,7 @@ selects the new test. Windows/Mac packages include `Licenses/SMAA.txt`.
 Portable package fixtures assert the license is included; the Windows fixture
 also checks the shipped bytes against its source.
 Historical patch-migration fixtures omit SMAA until their complete-stack upgrade.
-The guest FOV/settings fixture covers the ninth row, staging, Back, rebuild,
+The guest FOV/settings fixture covers the Graphics row, staging, Back, rebuild,
 Apply and failed-SMAA-save rollback of earlier resolution/FPS writes. GPU fixtures
 also exercise the real saved/live model and read-only preference failure.
 

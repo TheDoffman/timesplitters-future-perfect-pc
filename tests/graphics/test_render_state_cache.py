@@ -49,7 +49,7 @@ def state_cache_runs(tmp_path_factory):
         built=subprocess.run(command,cwd=target,env=env,capture_output=True,text=True,timeout=60)
         assert built.returncode==0,built.stdout+built.stderr
         results[name]=subprocess.run([str(executable)],capture_output=True,text=True,timeout=10)
-        for mode in ('sampler-retry','sampler-replace'):
+        for mode in ('sampler-retry','sampler-replace','filtering'):
             results[name+'-'+mode]=subprocess.run([str(executable),mode],capture_output=True,text=True,timeout=10)
     return results
 
@@ -83,3 +83,9 @@ def test_sampler_allocation_failure_recovers(state_cache_runs,mode,marker):
 def test_render_state_cache_negative_controls(state_cache_runs,name):
     result=state_cache_runs[name]
     assert result.returncode!=0 and 'FAIL:' in result.stderr,result.stdout+result.stderr
+
+
+def test_live_filtering_preferences(state_cache_runs):
+    result = state_cache_runs['cache-filtering']
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert 'nearest HUD preservation' in result.stdout
