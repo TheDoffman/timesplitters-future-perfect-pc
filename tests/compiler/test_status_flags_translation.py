@@ -11,7 +11,7 @@ from test_guest_integer_flags import CASES as INTEGER_CASES
 ROOT=Path(__file__).resolve().parents[2]
 
 
-def execute(tmp_path,raw,initial,check,callee=None):
+def execute(tmp_path,raw,initial,check,callee=None,support=""):
     t,info=translator(raw)
     prefix=''
     if callee:
@@ -32,7 +32,7 @@ ptrdiff_t g_xbox_mem_offset;
 static union { uint64_t alignment; unsigned char bytes[8192]; } storage;
 #define ram storage.bytes
 #define CHECK(x) do { if(!(x)) {fprintf(stderr,"line%d: %s\\n",__LINE__,#x);return 1;} } while(0)
-'''+prefix+generated+'\nint main(void) {\ng_xbox_mem_offset=(ptrdiff_t)ram;\n'+initial+'\nguest_body();\n'+check+'\nreturn 0; }\n').encode())
+'''+support+prefix+generated+'\nint main(void) {\ng_xbox_mem_offset=(ptrdiff_t)ram;\n'+initial+'\nguest_body();\n'+check+'\nreturn 0; }\n').encode())
     flag='/DTSFP_RECORD_STATUS_FLAGS=1' if os.name=='nt' else '-DTSFP_RECORD_STATUS_FLAGS=1'
     exe=_compile(tmp_path,source,extra=[tmp_path/'guest_state.c',flag])
     result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=20)

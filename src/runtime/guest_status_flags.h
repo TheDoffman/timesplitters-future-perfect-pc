@@ -106,4 +106,31 @@ static inline void tsfp_status_rotate(tsfp_status_flags *s,unsigned bits,uint32_
     }
     tsfp_status_write(s,defined,value,undefined);
 }
+
+/* Protected-mode stack images. The guest's control bits share this cell;
+ * arithmetic writers preserve them. DF remains authoritative in the string
+ * engine's separate direction register and is merged when exporting an image.
+ * This does not dispatch TF/AC faults or emulate virtual-8086 execution. */
+enum {TSFP_FLAG_TF=0x100,TSFP_FLAG_IF=0x200,TSFP_FLAG_DF=0x400,
+      TSFP_FLAG_IOPL=0x3000,TSFP_FLAG_NT=0x4000,TSFP_FLAG_RF=0x10000,
+      TSFP_FLAG_VM=0x20000,TSFP_FLAG_AC=0x40000,TSFP_FLAG_VIF=0x80000,
+      TSFP_FLAG_VIP=0x100000,TSFP_FLAG_ID=0x200000,TSFP_EFLAGS_BITS=0x3f7fd7};
+static inline uint32_t tsfp_status_stack_image(const tsfp_status_flags *s,int direction,unsigned bits) {
+    uint32_t value=s?s->value:2;
+    value=(value&~(TSFP_FLAG_DF|TSFP_FLAG_RF|TSFP_FLAG_VM))|(direction?TSFP_FLAG_DF:0)|2;
+    value&=TSFP_EFLAGS_BITS;
+    return bits==16?value&0xffffu:bits==32?value:0;
+}
+static inline int tsfp_status_stack_restore(tsfp_status_flags *s,int *direction,uint32_t image,unsigned bits,unsigned privilege) {
+    uint32_t writable=0x7fd5u,value;
+    if(!s || !direction || (bits!=16 && bits!=32) || privilege>3 || (s->value&TSFP_FLAG_VM))return 0;
+    if(bits==32)writable|=TSFP_FLAG_AC|TSFP_FLAG_ID;
+    if(privilege)writable&=~TSFP_FLAG_IOPL;
+    if(privilege>((s->value&TSFP_FLAG_IOPL)>>12))writable&=~TSFP_FLAG_IF;
+    value=(s->value&~writable)|(image&writable);
+    s->value=(value&TSFP_EFLAGS_BITS&~TSFP_FLAG_RF)|2;
+    s->known=((s->known|writable|TSFP_FLAG_RF)&TSFP_EFLAGS_BITS)|2;
+    *direction=!!(s->value&TSFP_FLAG_DF);
+    return 1;
+}
 #endif

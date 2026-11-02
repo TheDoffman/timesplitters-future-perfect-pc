@@ -8896,3 +8896,17 @@ audit and bounded Story movement/fire/pause/resume pass withcda96a1a bytes.
 portable checks selected for both hosts; native oracles Windows-only. No new
 OS adapter. New-head CI and native Mac title remain pending; control/context/
 SEH and wider replacement unfinished. See STATUS stage0251 for evidence/limits.
+
+Stage0252 in progress afterf49e53b8: original protected-mode flags stack provider
+and production16/32-bit routes shared across hosts.138 initial Windows checks
+pass; portable model/negative/production checks selected in both-host CI.512
+actual native ring3 cases Windows-only; CPL0 uses explicit model/manual rules.
+No OS adapter duplicated. Generation/Release/Story/new-head CI/native Mac title
+pending. TF/AC exceptions, IRQ scheduling/context/SEH and wider replacement open.
+
+Stage0252 final Windows local acceptance:299 focused/21 install-context pass,
+production generation/Release/built-ins/audit and bounded Story movement/fire/
+pause/resume pass with33f5d2c6 bytes.26 protected files unchanged. No duplicated
+host adapter; portable contracts selected both hosts, real ring3 oracle Windows
+only. Previousf49e53b8 both workflows fully green. New-head CI/native Mac title
+acceptance pending. Full control/context/exception/IRQ and wider replacement open.

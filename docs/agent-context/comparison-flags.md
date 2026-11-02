@@ -80,3 +80,7 @@ functional checks pass without an exclusive performance claim. Prior operator-
 missed deadline and guard-blocked retries are retained and not accepted.
 Evidence logs/comparison-flags-build.json, game-check.json, final game/controller
 logs and captures. New-head CI pending.
+
+Stage0251 committed/pushed asf49e53b8. Exact-head runtime41463409584 and
+launcher41463409585 both succeeded, including both-host native, upgrade and
+transition jobs. This does not establish native Mac title gameplay.

@@ -42,8 +42,8 @@ _STRING_NAMES = frozenset(stem+width for stem in ('movs','stos','lods','cmps','s
 _FLOAT_FLAGS = frozenset(stem+width for stem in ('comi','ucomi') for width in ('ss','sd'))
 _X87_FLAGS = frozenset('fcomi fcomip fcompi fucomi fucomip fucompi'.split())
 _SETTERS = frozenset('cmp test add sub adc sbb and or xor inc dec neg shl shr sar imul mul shld shrd rol ror rcl rcr bsf bsr bt bts btr btc cmpxchg xadd'.split()) | _FLOAT_FLAGS
-_INVALIDATORS = frozenset('div idiv rdtsc cpuid popfd'.split())
-_PRESERVE = frozenset('mov lea push pop nop leave ret movzx movsx xchg bswap cdq cwde cbw cwd lahf not call int3 int wait cld std cli sti pushfd pushal sgdt ljmp sfence'.split()) | LOOP_JUMPS | (_STRING_NAMES - {s for s in _STRING_NAMES if s.startswith(('cmps','scas'))})
+_INVALIDATORS = frozenset('div idiv rdtsc cpuid popfd popf'.split())
+_PRESERVE = frozenset('mov lea push pop nop leave ret movzx movsx xchg bswap cdq cwde cbw cwd lahf not call int3 int wait cld std cli sti pushf pushfd pushal sgdt ljmp sfence'.split()) | LOOP_JUMPS | (_STRING_NAMES - {s for s in _STRING_NAMES if s.startswith(('cmps','scas'))})
 # Preserve the established policy even for unsupported operand forms in these
 # register families. Supported handlers provide their own precise predicates.
 _SIMD_PRESERVE = (sse.MNEMONICS - _FLOAT_FLAGS) | mmx.MNEMONICS | frozenset('paddq pmulhuw pshufd pshufhw pshuflw punpcklqdq punpckhqdq'.split())
@@ -80,6 +80,18 @@ def instruction(context, insn):
     if name=='int' and operands and operands[0].type=='imm' and operands[0].imm==45:
         return ['recomp_debug_service(eax, ecx); /* int 0x2d */']
     if name=='int3': return [f'recomp_int3_reached(0x{insn.address:08X}U); /* int3, stepped over */']
+    if name in ('pushf','pushfd','popf','popfd') and getattr(context,'track_status_flags',False):
+        width=16 if name in ('pushf','popf') else 32
+        size=width//8
+        if name.startswith('push'):
+            body=[f'{{ uint32_t _saved_flags = tsfp_status_stack_image(&g_status_flags,g_df,{width});',
+                  f'  esp -= {size}; MEM{width}(esp) = (uint{width}_t)_saved_flags; }} /* {name} */']
+        else:
+            body=[f'{{ uint32_t _saved_flags = MEM{width}(esp);',
+                  f'  if (tsfp_status_stack_restore(&g_status_flags,&g_df,_saved_flags,{width},0)) esp += {size};',
+                  f'  else RECOMP_UNIMPL("{name}: unsupported flags mode",0x{insn.address:08X}u); }}']
+        return ['#ifdef RECOMP_STATUS_FLAGS_SUPPORTED',*body,'#else',
+                f'RECOMP_UNIMPL("{name}",0x{insn.address:08X}u);','#endif']
     if name=='leave': return ['esp = ebp;', 'POP32(esp, ebp); /* leave */']
     fixed = {'wait':'/* wait - FPU sync */',
              'lahf':'/* lahf - load AH from flags (used in FPU compare idiom) */',
@@ -248,7 +260,7 @@ def _status_after(context,insn):
         # arithmetic/bit operations must not retain falsely known status.
         return [] if name in ('xchg','xadd','cmpxchg') else _status(context,['tsfp_status_forget(&g_status_flags,TSFP_STATUS_FLAGS);'])
     if name in ('add','sub','adc','sbb','and','or','xor','inc','dec','neg','cmp','test','stc','clc','cmc','shl','sal','shr','sar','shld','shrd','rol','ror','rcl','rcr','mul','imul','bt','bts','btr','btc','bsf','bsr','xadd','cmpxchg'):return []
-    if name in _FLOAT_FLAGS | _X87_FLAGS or strings.is_compare(insn):return []
+    if name in _FLOAT_FLAGS | _X87_FLAGS | {'popf','popfd'} or strings.is_compare(insn):return []
     if name in _SETTERS | {'popfd','div','idiv'}:mask='TSFP_STATUS_FLAGS'
     elif preserves(insn) or name.startswith(('j','set','cmov')) or insn.is_ret or name=='rdtsc' or name=='cpuid':return []
     else:mask='TSFP_STATUS_FLAGS'

@@ -38062,3 +38062,38 @@ An earlier operator-missed menu deadline and guard-blocked retries remain
 unaccepted and retained.307 focused/21 install-context pass; context/index and
 whitespace checks pass. New-head CI/native Mac title acceptance pending.
 Full control flags/context/SEH and wider replacement remain unfinished.
+
+## Protected-mode flag stack in progress (2026-11-02, stage0252, PR465)
+
+Afterf49e53b8, original status helpers export16/32-bit EFLAGS images and restore
+protected-mode writable bits with old-IOPL permissions, RF clearing, reserved
+bits, liveDF and partial-knowledge contracts. Original production routes now
+execute PUSHF/PUSHFD/POPF/POPFD instead of unsupported diagnostics under the
+status ABI; legacy isolated fixtures keep their disabled-feature behavior.
+No new patch/header ABI/storage field; effective tail54 unchanged. This does
+not supply TF/AC exception delivery, IRQ/STI shadow, virtual-8086 execution,
+context restore or SEH/unwind. Model checks cover allCPL/IOPL cases; actual512
+Win32 ring3 hardware cases cover arithmetic/DF/ID and full images. Four compiled
+wrong providers must fail. Full FunctionTranslator tests cover stack width,
+whole memory/upper-register preservation, carry consumers and overflow after
+clobber.138 initial combined checks pass25.48s; broader/build/game pending.
+
+Stage0252 final Windows local acceptance:299 focused checks69.84s and21
+fresh/repeated install-context22.40s pass. Generation15838/15863/0fail,
+6575724lines96.58s lift. Release/built-ins/crash-symbol bundle and current
+archive/header/template/generation/source audit pass. Static5 save/5 restore
+sites across4 generated units; this does not prove Story executes those sites.
+Executable SHA256:
+33f5d2c6344ec6d17e46fd5a215f9b6e9754fa6eb1de5ba44226fbf86d8639d7.
+Runner42302/controller44792 both exited0: scene4/mission1/inputenabled,
+forward11.1728401285/back6.1848919536, ammo8to6, pause39 frozen/resume58
+advancing, last113.462s under240. Three fresh captures reviewed; all build
+input and run executable hashes match.26 protected files unchanged, profiles/
+fixture valid, no lock/dump/Partition images. Windows11 Pro10.0.26300 x64,
+MSVC19.44.35224.0, D3D11 flip, Classic/Original60/minimized synthetic input/
+movies skipped. Guest presentation58.2/58.1/58.0 FPS, not scanout. No physical
+input/listening/full-campaign/native Mac title claim. Evidence logs/control-
+flags-{build,game-check}.json, final game/controller logs, accepted report/
+provenance and captures. Previousf49e53b8 CI runtime41463409584 and launcher
+41463409585 both fully succeeded; new-head CI pending. Full flags/control,
+actual context/exception/IRQ and broader replacement remain unfinished.
