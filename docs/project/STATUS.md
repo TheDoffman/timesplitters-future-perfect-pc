@@ -38291,8 +38291,9 @@ full-campaign or native Mac title proof. Evidence logs/canonical-ebp-{generate,
 build,final-game,final-controller}.log, canonical-ebp-{build,game-check}.json,
 accepted report/provenance/run0.err and final isolated captures. Initial failure
 and profiled retry are separate retained runs.
-Priorcbee4c17 CI fully passed runtime41491790255/launcher41491790215; this phase
-needs new-head CI. Shared changes and portable contracts serve both hosts, but
+Priorcbee4c17 runtime41491790255 passed all jobs, but standalone launcher
+41491790215 failed. Its failed job is being inspected; do not report that run
+as successful. This phase needs its own new-head CI. Shared changes and portable contracts serve both hosts, but
 new-stage Mac results remain pending. Native/context adapters, opaque lifetime
 barriers and actual raise/unwind remain unfinished. The cold dispatcher is still
 opt-in, and265/302/312 remain inherited. Wider runtime/tooling/title/headers/
