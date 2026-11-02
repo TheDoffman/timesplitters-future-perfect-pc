@@ -81,3 +81,12 @@ Inherited Windows capture_crash_guest still reports g_seh_ebp, unlike native Mac
 actual g_ebp capture; the remaining title/diagnostic adapter audit must resolve it.
 It is a crash snapshot, not an interrupt save/restore path. No claim of complete
 live context/SEH, native Mac gameplay or whole-runtime independence is made here.
+
+CI follow-up: runtime41502644343 failed on both hosts because four inherited
+frame tests and one original product fixture still required copied EBP locals
+or legacy g_seh_ebp restoration. The new independent-canonical-frame-fixtures
+patch replaces both inherited test bodies with original live-cell checks. The
+product probe now seeds distinct real/cache values and requires the real EBP
+to survive a divide fault. Eight enclosing installed-consumer checks and all83
+selected local cases pass33.54s. No production C or accepted game binary changes
+for this repair; new-head CI remains required. Launcher41502644418 passed.

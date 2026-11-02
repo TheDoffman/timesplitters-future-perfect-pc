@@ -1837,6 +1837,15 @@
       ]
     },
     {
+      "name": "independent-canonical-frame-fixtures.patch",
+      "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
+      "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",
+      "targets": [
+        "tools/recomp/test_prologue_saved_frame.py",
+        "tools/recomp/test_translator_ebp_init.py"
+      ]
+    },
+    {
       "name": "independent-condition-fixture.patch",
       "path": "patches/compiler/independent-condition-fixture.patch",
       "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",

@@ -9112,3 +9112,16 @@ barriers and actual raise/unwind remain unfinished. The cold dispatcher is still
 opt-in, and265/302/312 remain inherited. Wider runtime/tooling/title/headers/
 fixtures/provenance removal and checkout/snapshot-unavailable production proof
 remain required; the full objective is active.
+
+Canonical EBP CI follow-up (2026-11-02; uncommitted):16754532 launcher
+41502644418 succeeded; runtime41502644343 failed both native host suites.
+Downloaded job logs125477468688/125477469190 establish four stale inherited
+frame assertions plus the original product fixture requiring old EBP/cache
+behavior, propagated through eight installed-consumer tests. Replaced the two
+inherited fixture bodies with original checks via the shared patch stack and
+corrected the original divide probe to require real EBP with a distinct stale
+cache. Local Windows83 selected cases pass33.54s, including every failing outer
+consumer and compiled canonical EBP checks (logs/canonical-frame-ci-repair.log).
+No production C change or new game artifact in this repair; prior bounded
+Windows Story acceptance remains the evidence for the unchanged game. New-head
+CI/native Mac confirmation remains pending; full replacement remains active.
