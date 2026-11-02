@@ -179,3 +179,7 @@ frames still bypass the original gate, and their return-to-original handoff
 retains the last real vblank. The existing missing-observer mutation still must
 fail. Cheap frames and absent signals continue waiting; the console ISR stays
 at 60 Hz. This is the shared pacing rule, not a Linux-specific timing algorithm.
+
+Linux CI now runs the existing frame-clock deadline/preset fixtures after the
+RHI step prepares and patches the runtime; these fixtures must exercise the
+Linux branch, not only Windows/Mac host builds.
