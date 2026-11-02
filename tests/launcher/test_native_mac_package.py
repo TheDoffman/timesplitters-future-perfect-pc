@@ -201,4 +201,5 @@ def test_installed_package_keeps_language_capability(tmp_path, monkeypatch, supp
     assert manifest['language_packs'] is (supported is True)
     assert manifest['auto_display_resolution'] is True
     assert manifest['native_build'] == native
+    assert 'Licenses/SMAA.txt' in manifest['files']
     package.verify_payload(stage, manifest)

@@ -88,6 +88,7 @@ class LauncherPackaging(unittest.TestCase):
                          root / 'config/pc-discord.default.ini', root / 'docs/players/discord-presence.md',
                          root / 'tools/start-game.ps1', root / 'tools/release/ImportGame.cs',
                          root / 'tools/launcher/GameMonogram.NOTICE.txt',
+                         root / 'vendor/smaa/LICENSE.txt',
                          root / 'tools/release/Import-game.ps1', root / 'tools/release/Play.cmd',
                          root / 'Data/default.xbe', root / 'Saves/profile',
                          root / 'Settings/pc-controls.json']:
@@ -132,6 +133,8 @@ class LauncherPackaging(unittest.TestCase):
                 self.assertFalse(any(name.endswith('.pdb') for name in archive.namelist()))
                 self.assertIn(prefix + 'Support/Launcher/manifest.json', archive.namelist())
                 self.assertIn(prefix + 'Licenses/Game-icon-lettering.txt', archive.namelist())
+                self.assertEqual(archive.read(prefix + 'Licenses/SMAA.txt'),
+                                 (root / 'vendor/smaa/LICENSE.txt').read_bytes())
                 self.assertFalse(any('/Data/' in name or '/Saves/' in name for name in archive.namelist()))
                 manifest = json.loads(archive.read(prefix + 'BUILD.json'))
                 self.assertEqual(manifest['version'], 'v1.2.3')

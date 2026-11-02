@@ -2,6 +2,8 @@
 
 PR #469 initial CI caught a missing structured MAC-129 status and queue row.
 The handoff now uses the required format; no runtime behavior changed.
+The launcher packaging fixture now supplies and checks the required SMAA license;
+the native package fixture also checks its manifest entry.
 
 Local uncommitted follow-up on `feature/smaa-antialiasing`. Fresh mouse clicks
 on enabled Video setting rows now call the original menu-switch sound, including

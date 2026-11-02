@@ -42,6 +42,8 @@ alpha, odd resize, fitted bars, viewport restoration, Off and shader/image/map
 failure fallback/recreation. Launcher settings tests exercise persistence,
 unrelated-key preservation and the checkbox draft/save/cancel path. Runtime CI
 selects the new test. Windows/Mac packages include `Licenses/SMAA.txt`.
+Portable package fixtures assert the license is included; the Windows fixture
+also checks the shipped bytes against its source.
 Historical patch-migration fixtures omit SMAA until their complete-stack upgrade.
 The guest FOV/settings fixture covers the ninth row, staging, Back, rebuild,
 Apply and failed-SMAA-save rollback of earlier resolution/FPS writes. GPU fixtures
