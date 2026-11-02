@@ -8976,3 +8976,13 @@ This stage provides original context-record/cdecl primitives, not live265/302/
 312 replacement. Translated-PC continuation, missing live architectural state
 and actual exception/unwind/IRQ support remain open, as does the full runtime/
 tooling/title/header/fixture/provenance and toolkit-unavailable production goal.
+
+Context primitive CI follow-up (2026-11-02, aftera0d4fd9a, PR465): runtime
+41476378361 failed only test_io_lifetime callback-7 on both hosts before its
+mutation compiled: the mutation's exact old balance expression was stale.
+The repair targets the unique result-capture prefix, preserves the cleanup
+formula and still requires the compiled wrong caller-EAX provider to fail.
+Other native cases: Windows2739pass/Mac2644pass; Windows upgrades passed, Mac
+upgrades cancelled, transition/PR gates inherited failure. No production change;
+existing0001c438 Windows build/Story evidence remains current for committed code.
+New-head CI pending; live context/SEH and full replacement remain unfinished.

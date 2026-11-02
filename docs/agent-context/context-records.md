@@ -124,3 +124,13 @@ This stage provides original context-record/cdecl primitives, not live265/302/
 312 replacement. Translated-PC continuation, missing live architectural state
 and actual exception/unwind/IRQ support remain open, as does the full runtime/
 tooling/title/header/fixture/provenance and toolkit-unavailable production goal.
+
+Exacta0d4fd9a runtime41476378361 failed one callback mutation on both hosts:
+test_io_lifetime's wrong-EAX mutation still expected the pre-cdecl full balance
+statement. The actual provider correctly includes caller_cleanup now. The
+mutation matches only the unique value=g_eax;balanced= prefix and still replaces
+callee EAX with saved caller EAX; compiled runtime rejection is still mandatory.
+No production behavior or negative assertion is removed. Windows2739 andMac2644
+other native cases passed; Windows patch upgrades passed, Mac upgrades cancelled,
+and transition/PR gates failed with the native result. New-head CI remains
+required. The original context/cdecl tests themselves passed in both native jobs.
