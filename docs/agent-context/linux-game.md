@@ -116,3 +116,12 @@ The shared texture contract accepts the two permitted UNORM conversion integers,
 then compares sampling against independent raw readback; half-float is bit-exact.
 `tests/graphics/test_vulkan_interface.py` runs the bounded SPIR-V adapter fixture
 without graphics hardware or game assets in the native shared CI suite.
+
+Final patch2408 tracks each descriptor pool's 128-set capacity before allocating,
+avoiding expected pool-exhaustion warnings during longer gameplay. The shared RHI
+contract now checks varying widths 1/2/3 and 512 distinct uniform/scissor draws
+without intervening flush, repeated across six submissions. All pixel values
+must survive; validation stays enabled. `linux_vulkan_sdk.select_driver` supplies
+WSL's installed D3D12 bridge search path for explicit ICD selection in both test
+runners. `tools/build/build-wsl-vulkan.py` reproduces the private pinned driver
+with publisher archive, patch, manifest and resulting-library hashes.

@@ -1,0 +1,40 @@
+--- a/src/d3d/rhi_vulkan.c
++++ b/src/d3d/rhi_vulkan.c
+@@ -185,7 +185,7 @@
+     uint64_t        last_serial;
+     Ring            ring;
+     VkDescriptorPool *descriptor_pools;
+-    uint32_t descriptor_count, descriptor_cap, descriptor_current;
++    uint32_t descriptor_count, descriptor_cap, descriptor_current, descriptor_used;
+ } Frame;
+ 
+ enum { T_BUFFER, T_IMAGE, T_VIEW, T_SAMPLER, T_MODULE };
+@@ -555,7 +555,7 @@
+     /* The same submission serial protects command buffers and descriptor sets. */
+     for(uint32_t i=0;i<f->descriptor_count;i++)
+         vkResetDescriptorPool(V.dev,f->descriptor_pools[i],0);
+-    f->descriptor_current=0;
++    f->descriptor_current=0;f->descriptor_used=0;
+     bi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+     vkBeginCommandBuffer(f->cmd, &bi);
+     V.recording = 1;
+@@ -3425,6 +3425,7 @@
+ {
+     Frame *f=&V.frames[V.fi];
+     for(;;) {
++        if(f->descriptor_used==128){f->descriptor_current++;f->descriptor_used=0;}
+         if(f->descriptor_current==f->descriptor_count) {
+             if(f->descriptor_count==f->descriptor_cap) {
+                 uint32_t cap=f->descriptor_cap?f->descriptor_cap*2:4;
+@@ -3441,9 +3442,9 @@
+         VkDescriptorSetAllocateInfo ai={VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};VkDescriptorSet set;
+         ai.descriptorPool=f->descriptor_pools[f->descriptor_current];ai.descriptorSetCount=1;ai.pSetLayouts=&V.set_layout;
+         VkResult result=vkAllocateDescriptorSets(V.dev,&ai,&set);
+-        if(result==VK_SUCCESS)return set;
++        if(result==VK_SUCCESS){f->descriptor_used++;return set;}
+         if(result!=VK_ERROR_OUT_OF_POOL_MEMORY&&result!=VK_ERROR_FRAGMENTED_POOL)return VK_NULL_HANDLE;
+-        f->descriptor_current++;
++        f->descriptor_current++;f->descriptor_used=0;
+     }
+ }
+ 

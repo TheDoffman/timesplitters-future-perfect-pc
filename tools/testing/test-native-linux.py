@@ -63,7 +63,7 @@ def main():
             for key in ('RECOMP_SAVE_DIR','RECOMP_INPUT_CONFIG','RECOMP_ICALL_FEEDBACK_PATH',
                         'TSFP_TEXTURE_PACK_DIR','TSFP_TEXTURE_MODE'):
                 env[key]=prepared[key]
-        if args.driver_manifest:env['VK_DRIVER_FILES']=str(args.driver_manifest.resolve(strict=True))
+        if args.driver_manifest:linux_vulkan_sdk.select_driver(env,args.driver_manifest)
         if args.capture:env.update(RECOMP_HLE_D3D8_DUMP=str(capture/'frame'),RECOMP_HLE_D3D8_DUMP_EVERY='60',RECOMP_HLE_D3D8_DUMP_KEEP_LAST='2')
         if args.test_keys:
             keys=test/'test-keys.txt';keys.touch(exist_ok=True);env['TSFP_NATIVE_TEST_KEYS']=str(keys)

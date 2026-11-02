@@ -124,3 +124,16 @@ def probe_environment(sdk, root=ROOT):
     # XDG_RUNTIME_DIR and display/session variables remain owned by WSLg/the
     # desktop. Driver selection is deliberately explicit in the test runner.
     return env
+
+
+def select_driver(env, manifest):
+    """Select an explicit ICD; expose WSL's D3D12 bridge only when installed."""
+    path = Path(manifest).resolve(strict=True)
+    spec = json.loads(path.read_text())
+    if not isinstance(spec.get('ICD', {}).get('library_path'), str):
+        raise RuntimeError('Invalid Vulkan driver manifest')
+    env['VK_DRIVER_FILES'] = str(path)
+    bridge = Path('/usr/lib/wsl/lib')
+    if (bridge / 'libd3d12.so').is_file():
+        env['LD_LIBRARY_PATH'] = env.get('LD_LIBRARY_PATH', '') + ':' + str(bridge)
+    return path

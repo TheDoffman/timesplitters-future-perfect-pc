@@ -82,9 +82,7 @@ def main():
         return
     env = linux_vulkan_sdk.probe_environment(sdk)
     if args.driver_manifest:
-        manifest = args.driver_manifest.resolve(strict=True)
-        json.loads(manifest.read_text())
-        env['VK_DRIVER_FILES'] = str(manifest)
+        manifest = linux_vulkan_sdk.select_driver(env, args.driver_manifest)
         summary['driver_manifest'] = str(manifest)
         summary['driver_manifest_sha256'] = sha256(manifest)
     else:

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "90b048f52f59bcfaa20788c06c0e3c91c210282cb195fef67b8e51764aa4516f",
+  "loaderSha256": "9a4df9044be180483a217b20edd3889c11878b4417aacaddd92f44c2ae7505e8",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3065,6 +3065,14 @@
       "name": "2407-vulkan12-compatibility.patch",
       "path": "patches/graphics/rendering/2407-vulkan12-compatibility.patch",
       "sha256": "f3172773da0796536d31d3e124d045b1a0bf77df02f68f81df648f133f2463ac",
+      "targets": [
+        "src/d3d/rhi_vulkan.c"
+      ]
+    },
+    {
+      "name": "2408-vulkan-descriptor-capacity.patch",
+      "path": "patches/graphics/rendering/2408-vulkan-descriptor-capacity.patch",
+      "sha256": "f91f72ed5e89be4be1ef262ebbfdee4bf72cf7e5ee7d357c29fa7a61f35e78a5",
       "targets": [
         "src/d3d/rhi_vulkan.c"
       ]
