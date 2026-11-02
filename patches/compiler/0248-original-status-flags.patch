@@ -1,0 +1,29 @@
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -19,6 +19,7 @@
+ add_compile_definitions(
+     WIN32_LEAN_AND_MEAN
+     NOMINMAX
++    TSFP_RECORD_STATUS_FLAGS=1
+ )
+ 
+ # ── xboxrecomp toolkit ──────────────────────────────────────────
+--- a/tools/recomp/test_flag_join_backedge.py
++++ b/tools/recomp/test_flag_join_backedge.py
+@@ -31,6 +31,7 @@
+ 
+ import os
+ import sys
++import re
+ 
+ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+ 
+@@ -63,7 +64,7 @@
+              b"\xEB\xFA"          # jmp -6 -> the jz
+              b"\xC3")             # ret
+     code = _translate(image)
+-    assert "_flags" not in code.replace("int _flags = 0", ""), code
++    assert not re.search(r"\b_flags\b", code.replace("int _flags = 0", "")), code
+     assert "CMP_EQ" in code or "== 0" in code, code
+ 
+ 

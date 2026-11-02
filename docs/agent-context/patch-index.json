@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "f334001df7d7c86252366a538b2b1a9f4c3a4d3a3149aa5a2cfde5e0168796b5",
+  "loaderSha256": "8f471a09cd4dc138fb4f489c6f49c7e4b24ef51fc97fcf9e41010e852e5ffc7c",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3064,6 +3064,15 @@
         "src/kernel/kernel_bridge.c",
         "src/kernel/xbox_memory_layout.c",
         "src/kernel/xbox_memory_layout.h"
+      ]
+    },
+    {
+      "name": "0248-original-status-flags.patch",
+      "path": "patches/compiler/0248-original-status-flags.patch",
+      "sha256": "adde1a2e59198f95c2281e172e22f64b1e7696dbf3ee8b5e89ef5a592ecb1efd",
+      "targets": [
+        "titles/futureperfect/CMakeLists.txt",
+        "tools/recomp/test_flag_join_backedge.py"
       ]
     }
   ]

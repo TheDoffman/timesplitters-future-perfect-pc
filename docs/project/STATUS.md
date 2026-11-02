@@ -37890,3 +37890,60 @@ a fabricated host context or claim completed guest SEH. Native Mac title, other
 kernel/graphics/audio/input/title/header/fixture replacement and old-checkout/
 snapshot-unavailable production generation/build/package proof remain unfinished.
 Goal active; no main merge/publication. New-head CI remains pending.
+
+## Persistent guest arithmetic status in progress (2026-11-02, stage0248, PR465)
+
+After9003b35d, both preceding-head CI workflows completed successfully: runtime
+41435004586 and launcher41435004575. Current work is uncommitted. Original
+value/known-mask storage and compiler producers/consumers are implemented for
+core integer arithmetic and branch/SET/CMOV/loop/SAHF/LAHF handling. Unknown state
+is explicitly invalidated; this is a foundation, not full guest CONTEXT/SEH.
+
+Focused Windows production/header/native-oracle/callback/compiler checks:
+113 passed20.93s (logs/status-flags-integration-final.log). The condition oracle
+checks131072 value/knowledge/fallback requests; native x86 exhausts8-bit ADD/SUB
+and ADC/SBB pairs. Production translations compile with real canonical header
+and register storage, including cross-call CF, partial-width writes and adjacent
+signed branching. Callback tests run both ABIs and a compiled broken restore.
+Both new suites are registered in shared native CI; no new-head CI yet.
+Context links/index check and git diff whitespace check pass. All26 protected
+settings/save/fixture files retain hashes, sizes and mtimes. Production generation
+and full migration/context suites were started; build/game are not yet accepted.
+See docs/agent-context/guest-status-flags.md for remaining producers and limits.
+
+Stage0248 generation completed15838/15863 functions,0 failures,6,582,628 lines;
+Release and built-ins terminal0. Build audit passes feature definition, state
+archive symbol, current generation, exact Windows-line-ending header conversion
+and all16 translated units changed. SHA256:
+35270399b17ce401d9fefd461fbd921dfe2b4bca64877bc2420c37259d5dba0a.
+First game attempt is NOT accepted: scene30/mission1 boat intro, level_ticks787;
+~56-58 FPS until~105s then0 swaps. Controller11515 terminal1 (playable timeout),
+runner95326 terminal0 after queued stop, profiles unchanged/signatures valid.
+Failed evidence retained logs/status-flags-attempt1-* and status-flags-game.log.
+A second bounded CPU-sampled diagnostic run was started to locate the stall;
+full migrations still running. No commit/push or new-head CI acceptance.
+
+Stage0248 diagnosis: sampled second attempt reproduces the stall in
+sub_003C9DE8/fmod; FPREM completed without clearing stale x87 C2, so newly
+accurate SAHF/JP repeats the reduction forever. Original x87 emitter now
+publishes completed C2 and absolute quotient low bits using remquo plus
+FPREM truncation correction.31 focused checks pass6.33s, including1248 real
+x87 valid pairs, compiled bad-C2 control and both production reduction loops.
+Full migration/context suite55 passed1093.01s. New production generation is
+running; old35270399 executable is rejected and predates the repair. Fresh
+Release and game acceptance required. Both failed reports/CPU samples retained.
+
+Stage0248 accepted Windows repair: combined124 tests22.16s; migration/context55
+tests1093.01s, generation15838/15863/0fail/6582633lines; Release/built-ins and
+archive/feature/header/generation audit terminal0. New executable SHA256
+8c2c57575b3d7d17ce1b9f8a62fff60aa5411bfb12407717cafd63a8557e6c68.
+Clean isolated runner21355/controller35157 both0. Scene4/mission1/inputenabled/
+ammo8; forward11.1745442522/back6.1924855243; fire8-to6; pause39 frozen/resume58
+advancing; lastcheckpoint117.595s under240s. Fresh3 captures reviewed, profiles
+unchanged/signatures valid; protected26 hashes/sizes/mtimes identical. No lock,
+dumps or Partition images. Current source hashes and provenance match audited
+exe. Evidence logs/status-flags-build.json/game-check.json/captures and
+status-flags-accepted logs. Earlier failed35270399 attempts retained, not passes.
+Current repair is shared; native Mac title/physical input/audio listening/full
+campaign and full EFLAGS/context/SEH remain unverified or unfinished. Wider
+replacement and snapshot-unavailable production acceptance remain incomplete.

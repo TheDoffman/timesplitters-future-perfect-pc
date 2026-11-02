@@ -47,13 +47,23 @@ def _snapshot(bits):
     return ['_fa = _alu_result;', f'_fas = (int32_t)(int{bits}_t)_fa;']
 
 
+def _status(context, statements):
+    """Production records are guarded for legacy standalone header consumers."""
+    return ['#ifdef RECOMP_STATUS_FLAGS_SUPPORTED',*statements,'#endif'] if getattr(context,'track_status_flags',False) else []
+
+
 def _binary(context, instruction, operands, operation):
     bits, mask = _width(operands, 2)
     left, right = map(_fmt_operand_read, operands)
     lines = [f'{{ uint32_t _alu_left = (uint32_t)({left}) & {mask};',
              f'uint32_t _alu_right = (uint32_t)({right}) & {mask};']
     if operation in ('adc','sbb'):
-        lines.append('uint32_t _alu_carry = (_cf != 0);')
+        if getattr(context,'track_status_flags',False):
+            lines += ['#ifdef RECOMP_STATUS_FLAGS_SUPPORTED',
+                      'unsigned _alu_carry_known = (g_status_flags.known & TSFP_FLAG_CF) != 0;',
+                      'uint32_t _alu_carry = RECOMP_STATUS_CARRY(_cf != 0);','#else',
+                      'uint32_t _alu_carry = (_cf != 0);','#endif']
+        else: lines.append('uint32_t _alu_carry = (_cf != 0);')
     if operation in ('add','adc','sub','sbb'):
         operator = '+' if operation in ('add','adc') else '-'
         extra = f' {operator} _alu_carry' if operation in ('adc','sbb') else ''
@@ -76,7 +86,13 @@ def _binary(context, instruction, operands, operation):
         if getattr(context, 'needs_cf', False):
             lines.append('_cf = 0;')
     lines.append(_fmt_operand_write(operands[0], '_alu_result'))
-    return [*lines, *_snapshot(bits), '}']
+    if operation in ('and','or','xor'):
+        record=[f'tsfp_status_logic(&g_status_flags,{bits},_alu_result);']
+    else:
+        carry='_alu_carry' if operation in ('adc','sbb') else '0'
+        update=f'tsfp_status_alu(&g_status_flags,{bits},_alu_left,_alu_right,{carry},_alu_result,{int(operation in ("sub","sbb"))},TSFP_STATUS_FLAGS);'
+        record=([f'if (_alu_carry_known) {update}', 'else tsfp_status_forget(&g_status_flags,TSFP_STATUS_FLAGS);'] if operation in ('adc','sbb') else [update])
+    return [*lines, *_snapshot(bits), *_status(context,record), '}']
 
 
 def alu_binop(context, instruction, operands, mnemonic):
@@ -103,8 +119,10 @@ def inc_dec(context, instruction, operands, mnemonic):
     operation = '+' if mnemonic == 'inc' else '-'
     overflow = (1<<(bits-1)) - (mnemonic == 'dec')
     return [f'{{ uint32_t _alu_result = ((uint32_t)({value}) {operation} 1u) & {mask};',
+            *(_status(context,['_cf = (int)RECOMP_STATUS_CARRY(_cf);']) if getattr(context,'needs_cf',False) else []),
             _fmt_operand_write(operands[0], '_alu_result'), *_snapshot(bits),
-            f'_fb = (_alu_result == 0x{overflow:X}u);', '}']
+            f'_fb = (_alu_result == 0x{overflow:X}u);',
+            *_status(context,[f'tsfp_status_alu(&g_status_flags,{bits},_alu_result {"-" if mnemonic=="inc" else "+"} 1u,1,0,_alu_result,{int(mnemonic=="dec")},TSFP_STATUS_FLAGS & ~TSFP_FLAG_CF);']), '}']
 
 
 def neg(context, instruction, operands, preserve_carry=False):
@@ -114,7 +132,7 @@ def neg(context, instruction, operands, preserve_carry=False):
              f'uint32_t _alu_result = (0u - _alu_left) & {mask};']
     if preserve_carry or getattr(context, 'needs_cf', False):
         lines.append('_cf = (_alu_left != 0);')
-    return [*lines, _fmt_operand_write(operands[0], '_alu_result'), *_snapshot(bits), '}']
+    return [*lines, _fmt_operand_write(operands[0], '_alu_result'), *_snapshot(bits), *_status(context,[f'tsfp_status_alu(&g_status_flags,{bits},0,_alu_left,0,_alu_result,1,TSFP_STATUS_FLAGS);']), '}']
 
 
 def bit_not(context, instruction, operands):

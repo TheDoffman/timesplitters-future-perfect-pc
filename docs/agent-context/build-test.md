@@ -1026,4 +1026,4 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [2x tests](original-upscale.md).
 
-[Counted codec/ownership checks](guest-stack-trace.md).
+[RTL](guest-stack-trace.md), [flags](guest-status-flags.md).

@@ -164,6 +164,10 @@ def patch_records(paths):
     if stack_diagnostics:
         paths.remove(stack_diagnostics)
         paths.append(stack_diagnostics)
+    status_flags = by_name.get('0248-original-status-flags.patch')
+    if status_flags:
+        paths.remove(status_flags)
+        paths.append(status_flags)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

@@ -4,8 +4,14 @@ typedef struct {
     uint32_t eax,ebx,ecx,edx,esi,edi,esp,ebp,seh,fs,saved_esp,dispatch;
     RecompXmm xmm[8];RecompMmx mm[8];double fp[8];
     int top,cmp,df;uint16_t control,cc;
+#ifdef RECOMP_STATUS_FLAGS_SUPPORTED
+    tsfp_status_flags status;
+#endif
 } callback_state;
 static void capture(callback_state *s) {
+#ifdef RECOMP_STATUS_FLAGS_SUPPORTED
+    s->status=g_status_flags;
+#endif
     s->eax=g_eax;s->ebx=g_ebx;s->ecx=g_ecx;s->edx=g_edx;
     s->esi=g_esi;s->edi=g_edi;s->esp=g_esp;s->ebp=g_ebp;s->seh=g_seh_ebp;s->fs=g_fs_base;
     s->saved_esp=g_icall_saved_esp;s->dispatch=g_icall_dispatch_form;
@@ -17,6 +23,9 @@ static void capture(callback_state *s) {
     s->df=g_df;s->control=g_fp_control_word;s->cc=g_fp_cc;
 }
 static void restore(const callback_state *s) {
+#ifdef RECOMP_STATUS_FLAGS_SUPPORTED
+    g_status_flags=s->status;
+#endif
     g_eax=s->eax;g_ebx=s->ebx;g_ecx=s->ecx;g_edx=s->edx;
     g_esi=s->esi;g_edi=s->edi;g_esp=s->esp;g_ebp=s->ebp;g_seh_ebp=s->seh;g_fs_base=s->fs;
     g_icall_saved_esp=s->saved_esp;g_icall_dispatch_form=s->dispatch;

@@ -266,12 +266,14 @@ class FunctionTranslator(FunctionDiscovery):
         lifter.trace_exit_name = name if start in self.trace_functions else None
         lifter.force_return_value = self.force_returns.get(start)
         lifter.needs_cf = self._function_needs_cf(instructions)
+        lifter.track_status_flags = True
         lifter.publishes_ebp = self._func_owns_a_frame(instructions)
         description = f'{name}: guest 0x{start:08X}..0x{end:08X}; {len(instructions)} instructions; category={classified.get("category","unknown")}; source={classified.get("source_file","")}; ABI={abi.get("calling_convention","cdecl")}, {abi.get("estimated_params",0)} parameters, {abi.get("return_hint","int_or_void")}; frame={frame}'
         lines = ['/* '+_comment(description)+' */','#ifdef RECOMP_GPR_REFS_SUPPORTED',
                  f'#define RECOMP_REGISTER_SITE 0x{start:08X}u','#include "recomp_types.h"','#endif',f'void {name}(void)','{']
         if start in self.trace_functions or self.trace_all_entries: lines.append(f'    RECOMP_TRACE_ENTER("{name}", 0x{start:08X});')
-        if start not in self.trace_functions and start not in self.force_returns: lines.append(f'    if (RECOMP_FAST_ENTRY(0x{start:08X}u)) return;')
+        if start not in self.trace_functions and start not in self.force_returns:
+            lines += [f'    if (RECOMP_FAST_ENTRY(0x{start:08X}u)) {{','#ifdef RECOMP_STATUS_FLAGS_SUPPORTED','        tsfp_status_forget(&g_status_flags,TSFP_STATUS_FLAGS);','#endif','        return;','    }']
         lines += ['#ifdef RECOMP_GPR_REFS_SUPPORTED',f'    RECOMP_DECLARE_GPRS(0x{start:08X}u);','#endif']
         if start == lifter.CXX_THROW: lines.append('    recomp_cxx_throw(MEM32(esp + 4), MEM32(esp + 8));')
         if 'ebp' in used: lines += ['    uint32_t ebp = 0;','    ebp = g_ebp; /* incoming frame register */']
@@ -280,7 +282,9 @@ class FunctionTranslator(FunctionDiscovery):
         if any(i.mnemonic in snapshots or (strings.is_compare(i) and not i.mnemonic.startswith('rep')) for i in instructions):
             lines += ['    uint32_t _fa = 0, _fb = 0;','    int32_t _fas = 0, _fbs = 0;','    (void)_fa; (void)_fb; (void)_fas; (void)_fbs;']
         if any(i.mnemonic in _FLOAT_COMPARE for i in instructions): lines += ['    double _fca = 0.0, _fcb = 0.0;','    (void)_fca; (void)_fcb;']
-        if lifter.needs_cf: lines.append('    int _cf = 0; /* captured carry */')
+        if lifter.needs_cf:
+            lines += ['    int _cf = 0; /* captured carry */','#ifdef RECOMP_STATUS_FLAGS_SUPPORTED',
+                      '    _cf = (int)RECOMP_STATUS_CARRY(_cf);','#endif']
         if floating: lines.extend(FP_STACK_MACROS)
         if frame == 'fpo_leaf' and 'ebp' in used and not prologue: lines.append('    ebp = g_seh_ebp; /* inherited shared frame */')
         lines += ['']+self._emit_blocks(blocks,instructions,start,end,conditional)

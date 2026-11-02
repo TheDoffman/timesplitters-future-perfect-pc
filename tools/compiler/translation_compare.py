@@ -4,7 +4,7 @@ Snapshots retain the existing branch-consumer ABI. General condition lowering,
 full EFLAGS/AF and guest memory-fault delivery are separate components.
 """
 from translation_decode import Operand
-from translation_integer import _width
+from translation_integer import _width, _status
 from translation_operands import _fmt_operand_read, _fmt_mem
 
 
@@ -35,6 +35,11 @@ def snapshot(context, instruction, operands, kind):
     if getattr(context, 'needs_cf', False):
         result.append('_cf = (int)(_fa < _fb);' if kind == 'cmp' and not
                       (operands[1].type == 'imm' and not operands[1].imm) else '_cf = 0;')
+    if getattr(instruction,'mnemonic',kind)=='test':
+        value='_fa' if kind=='cmp' else '(_fa & _fb)'
+        result += _status(context,[f'tsfp_status_logic(&g_status_flags,{bits},{value});'])
+    else:
+        result += _status(context,[f'tsfp_status_alu(&g_status_flags,{bits},_fa,_fb,0,_fa - _fb,1,TSFP_STATUS_FLAGS);'])
     return result
 
 

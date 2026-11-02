@@ -8832,3 +8832,22 @@ Stage0247 Windows isolated Story retry passed with exact audited6bbf7486 bytes,
 movement/fire/pause/resume and26 protected files unchanged. The first attempt's
 operator-driven menu delay/controller timeout is retained and not accepted as a
 pass. Native Mac title/gameplay is still pending; see STATUS for bounded scope.
+
+Stage0248 in progress (2026-11-02, PR465, uncommitted): common title CMake enables
+original persistent status recording on both hosts. Canonical storage, compiler
+and register scopes are shared. Windows focused113 pass; real x86 oracle skips
+on Mac. Shared native CI selects both new suites. Previous9003b35d runtime and
+launcher CI both passed. Current generation/migration is running; production
+build/game and native Mac acceptance remain pending. This does not implement
+full CONTEXT/SEH or complete the broader runtime replacement.
+
+Stage0248 regression repair in progress: Windows sampled Story stall exposed
+stale x87 FPREM completion status. Shared x87 compiler now publishes quotient
+bits and completed C2, with31 focused checks (native x87 cases Windows only).
+New generation/build/game acceptance remains pending; no Mac title claim.
+
+Stage0248 Windows repaired production accepted:124 focused and55 migration/
+context cases; generation/Release/built-ins/audit; clean isolated Story movement,
+fire and pause/resume all pass with8c2c5757 bytes. Earlier failed attempts retained.
+26 protected files unchanged. Code/test selection shared; native Mac title and
+new-head CI acceptance remain pending. Full EFLAGS/context/SEH remains open.

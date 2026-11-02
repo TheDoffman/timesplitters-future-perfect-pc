@@ -33,7 +33,11 @@ def _tail_body(context,address=None,expression=None):
     if expression is not None:call=f'RECOMP_ITAIL({expression});'
     elif address in context.manual_functions:call=f'RECOMP_ITAIL({_hex(address)});'
     else:call=f'{context._call_target_name(address)}();'
-    return f'g_seh_ebp = ebp; {call} {_force(context)}return;'
+    opaque=getattr(context,'track_status_flags',False) and (expression is not None or address in context.manual_functions or address not in context.func_db)
+    forget=('\n#ifdef RECOMP_STATUS_FLAGS_SUPPORTED\n'
+            'tsfp_status_forget(&g_status_flags,TSFP_STATUS_FLAGS);\n#endif\n'
+            if getattr(context,'track_status_flags',False) and opaque else ' ')
+    return f'g_seh_ebp = ebp; {call}{forget}{_force(context)}return;'
 
 
 def conditional(condition,mnemonic,description,target,context=None):

@@ -4,6 +4,9 @@
  */
 #include "recomp_types.h"
 
+#ifdef RECOMP_STATUS_FLAGS_SUPPORTED
+RECOMP_TLS tsfp_status_flags g_status_flags={2,2};
+#endif
 RECOMP_TLS uint32_t g_eax, g_ebx, g_ecx, g_edx;
 RECOMP_TLS uint32_t g_esi, g_edi, g_esp, g_ebp, g_seh_ebp;
 /* Bootstrap TIB address in the current loader's low-memory layout. Spawned
