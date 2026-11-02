@@ -229,3 +229,14 @@ verify pixels separately with captures and validation enabled.
 Linux cleanup now passes the active RECOMP_SAVE_DIR into the shared recycler;
 only its direct Partition0..5 images move to Trash. Manual and sibling test
 profiles remain untouched. Existing Mac recycler callers retain their scope.
+
+## Cross-platform buffer contract
+
+The shared `tests/support/rhi_compatibility.h` fixture uses default uniform
+buffers for update() and a separate dynamic CPU-write uniform buffer for discard
+map/unmap. Both paths render repeated identical constants and changed values
+across512 draws and six arena reuses. Do not map a default buffer: Vulkan's CPU
+shadow can accept it, but D3D11 correctly rejects discard mapping without dynamic
+usage/CPU-write access. Rebind the default buffer before cleanup so subsequent
+pixel tests retain their original state. This same fixture runs on Windows WARP,
+Mac Vulkan and Linux Vulkan; no host-specific test exclusion is needed.

@@ -1,12 +1,13 @@
 # Shared Windows, macOS and Linux implementation
 
-Linux x64 now has an initial SDL/common Vulkan contract build. The same RHI
-pixel/resource fixture and production frame-replay tool are the entry points;
-Linux host page queries extend the existing POSIX mapping providers. See
-[Linux development](linux.md) for setup, measured scope and remaining game-host
-adapters. This foundation does not yet supply a Linux game executable or verify
-existing features on Linux. Keep common fixes in the existing shared code and
-patch stack, and add only thin Linux OS adapters.
+Windows, native macOS and Linux x64 use the common game patch stack. Linux now
+builds the native game with SDL and the common Vulkan frontend; isolated first-
+mission gameplay has been exercised under WSL. The same RHI pixel/resource and
+production frame-replay contracts serve the SDL Vulkan hosts, while Windows
+also runs the common frontend against D3D11 WARP. These checks cover their named
+contracts, not every mission or native GPU. See [Linux development](linux.md)
+and [measured status](../project/STATUS.md) for current adapter/acceptance gaps.
+Keep common fixes in shared source/patches and OS operations in thin adapters.
 
 Ordinary features should be implemented once and built for supported hosts. This
 requires common behavior plus small adapters for each operating system or GPU
@@ -96,7 +97,7 @@ remote Windows job has run successfully.
 
 Use the supported native builder and bounded isolated runner for local game
 checks. Preserve original 60 FPS defaults and the 60 Hz console interrupt clock.
-The launcher offers opt-in native 120/144 beta settings for compatible game builds;
+The launcher offers opt-in native 120/180/240 beta settings for compatible game builds;
 this does not revive the retired interpolation/prediction engine or automatic
 monitor switching. Historical patches/contracts below describe implementation
 history, not current feature validation.
