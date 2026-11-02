@@ -1027,4 +1027,4 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [2x tests](original-upscale.md).
 
-[Vulkan/GPU, WSL copy dispatch tests/play](linux-game.md).
+[Vulkan/GPU: both CI paths, WSL copy tests/play](linux-game.md).

@@ -308,12 +308,13 @@ jobs:
           python -m venv .venv-linux
           .venv-linux/bin/python -m pip install -r requirements.txt
       - name: Check SDK isolation and real Linux host memory providers
-        run: .venv-linux/bin/python -m pytest tests/repository/test_linux_foundation.py tests/gameplay/test_native_linux.py tests/gameplay/test_auto_look.py tests/gameplay/test_native_crash.py tests/compiler/test_linux_host.py tests/compiler/test_host_pages.py tests/compiler/test_host_memory_stats.py tests/compiler/test_native_vm_host.py tests/compiler/test_shared_views.py -q --tb=short
+        run: .venv-linux/bin/python -m pytest tests/repository/test_linux_foundation.py tests/gameplay/test_native_linux.py tests/gameplay/test_auto_look.py tests/gameplay/test_native_crash.py tests/compiler/test_linux_host.py tests/compiler/test_linux_map_query.py tests/graphics/test_vulkan_interface.py tests/compiler/test_host_pages.py tests/compiler/test_host_memory_stats.py tests/compiler/test_native_vm_host.py tests/compiler/test_shared_views.py -q --tb=short
       - name: Run shared Vulkan and production replay contracts with software Vulkan
         run: |
           LVP_ICD=$(find /usr/share/vulkan/icd.d -name 'lvp_icd*.json' -print -quit)
           test -n "$LVP_ICD"
           xvfb-run -a .venv-linux/bin/python tools/testing/test-rhi-linux.py --prepare-runtime --setup-sdk --driver-manifest "$LVP_ICD"
+          xvfb-run -a .venv-linux/bin/python tools/testing/test-rhi-linux.py --driver-manifest "$LVP_ICD" --compat12
       - name: Retain Linux validation evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -321,7 +322,9 @@ jobs:
           name: linux-x64-vulkan-foundation
           path: |
             logs/rhi-linux.*
+            logs/rhi-linux-compat12.*
             logs/replay-linux.log
+            logs/replay-linux-compat12.log
           if-no-files-found: ignore
           retention-days: 14
 

@@ -148,3 +148,5 @@ environment. Tests cover this scope and preservation; see
 The bounded game runner's explicit `--performance` uses interactive cache/on and
 validation/off settings and records both in its receipt. It is performance
 evidence, not validation acceptance; the default runner remains validation/on.
+Linux CI also runs the shared RHI/replay with explicit `--compat12`; separate
+receipt/log suffixes retain both normal and compatibility evidence.

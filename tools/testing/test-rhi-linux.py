@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--setup-sdk', action='store_true', help='Download/verify the pinned local Linux SDK')
     parser.add_argument('--prepare-runtime', action='store_true', help='Import the pinned snapshot and initialize renderer submodules')
     parser.add_argument('--build-only', action='store_true', help='Compile without requiring a display or Vulkan device')
+    parser.add_argument('--compat12', action='store_true', help='Force Vulkan 1.2 compatibility resources/state on a newer driver')
     parser.add_argument('--driver-manifest', type=Path, help='Explicit Vulkan ICD, e.g. Mesa lavapipe for VM/CI checks')
     args = parser.parse_args()
     if platform.system() != 'Linux' or platform.machine().lower() not in ('x86_64', 'amd64'):
@@ -36,7 +37,8 @@ def main():
     # looking like evidence for the current attempt.
     logs = ROOT / 'logs'
     logs.mkdir(exist_ok=True)
-    record = logs / 'rhi-linux.json'
+    suffix = '-compat12' if args.compat12 else ''
+    record = logs / ('rhi-linux' + suffix + '.json')
     record.write_text(json.dumps(dict(host=platform.platform(), build_passed=False,
                                       gpu_test='not run', replay_test='not run', passed=False,
                                       scope='Linux foundation attempt; not gameplay'), indent=2) + '\n')
@@ -73,6 +75,7 @@ def main():
                    compiler=subprocess.check_output([compiler, '--version'], text=True).splitlines()[0],
                    cmake=subprocess.check_output([str(cmake), '--version'], text=True).splitlines()[0],
                    sdk_version=linux_vulkan_sdk.pin()['version'], build_passed=True,
+                   compatibility_forced=args.compat12,
                    executable_sha256=sha256(exe), replay_executable_sha256=sha256(replay),
                    gpu_test='not run', replay_test='not run', passed=False,
                    scope='Asset-free shared Vulkan pixels/resources/presentation and frame replay; not a game build or gameplay validation')
@@ -81,6 +84,7 @@ def main():
         print('Linux renderer/replay compiled; GPU and gameplay validation NOT run.')
         return
     env = linux_vulkan_sdk.probe_environment(sdk)
+    if args.compat12:env['RECOMP_VK_COMPAT12']='1'
     if args.driver_manifest:
         manifest = linux_vulkan_sdk.select_driver(env, args.driver_manifest)
         summary['driver_manifest'] = str(manifest)
@@ -92,7 +96,7 @@ def main():
     try:
         result = subprocess.run([str(exe)], cwd=ROOT, env=env, capture_output=True, text=True, timeout=90)
         output = result.stdout + result.stderr
-        (logs / 'rhi-linux.log').write_text(output)
+        (logs / ('rhi-linux' + suffix + '.log')).write_text(output)
         print(output)
         result.check_returncode()
         require_clean_validation(output)
@@ -100,7 +104,7 @@ def main():
             raise RuntimeError('Shared RHI success marker missing')
         summary['gpu_test'] = 'passed'
         output = frame_replay_contract.run(replay, build / 'replay-contract', env)
-        (logs / 'replay-linux.log').write_text(output)
+        (logs / ('replay-linux' + suffix + '.log')).write_text(output)
         require_clean_validation(output)
         summary['replay_test'] = 'passed'
         summary['passed'] = True
