@@ -39,7 +39,8 @@ int xbox_D3D8ChangeResolution(unsigned w,unsigned h) { (void)w;(void)h;return av
 int pc_online_connect(void) { return 0; }
 int pc_online_connect_mode(PcOnlineMode mode) { (void)mode;return 0; }
 PcOnlineMode pc_online_mode(void) { return PC_ONLINE_NONE; }
-void pc_online_disconnect(void) {}
+static unsigned online_disconnects,lan_browser_entries;
+void pc_online_disconnect(void) { online_disconnects++; }
 uint32_t xbox_HeapAlloc(uint32_t size,uint32_t alignment) { (void)size;(void)alignment;return 0x100000; }
 #define STUB(name) void name(void) { g_esp+=4; }
 /* The menu translation unit also contains tutorial hooks. Their drawing and
@@ -193,7 +194,24 @@ void sub_00069640(void) { g_eax=0x400000;g_esp+=4; }
 void sub_001CDAE0(void) { g_eax=1;g_esp+=4; }
 void host_SetTwoDPlacement(int placement,uint32_t tag) { (void)placement;(void)tag; }
 void sub_00079710(void) { separators++;g_esp+=4; }
-STUB(sub_00074910) STUB(sub_001A0A60)
+STUB(sub_00074910)
+void sub_001A0A60(void) {
+    CHECK(getenv("TSFP_NETWORK") && !strcmp(getenv("TSFP_NETWORK"),"1"));
+    CHECK(!getenv("TSFP_ONLINE_CONFIG") || !*getenv("TSFP_ONLINE_CONFIG"));
+    lan_browser_entries++;g_esp+=4;
+}
+#ifdef TSFP_TEST_ORIGINAL_SYSTEM_LINK
+#define eax g_eax
+#define esp g_esp
+#include "system_link_original.inc"
+#undef eax
+#undef esp
+#else
+void sub_001A2700(void) {
+    if(WORD_AT(WORD_AT(g_esp+4)+0x18c)==8u) sub_001A0A60();
+    else g_esp+=4;
+}
+#endif
     STUB(sub_000653B0) STUB(sub_00065940) STUB(sub_00352640) STUB(sub_00352650) STUB(sub_00356490) STUB(sub_002EB030)
 STUB(sub_00170ED0) STUB(sub_00165D80) STUB(sub_00165A40) STUB(sub_00167CA0) STUB(sub_00167CE0) STUB(sub_00167BC0)
 STUB(sub_00351580) STUB(sub_003515A0) STUB(sub_00352200) STUB(sub_00351F60) STUB(sub_003513C0) STUB(sub_001677E0) STUB(sub_000B2E50) STUB(sub_0034FF30)
@@ -250,6 +268,17 @@ int main(int argc,char **argv)
     {FILE *f=fopen(runtime_path,"wb");CHECK(f);fputs("# preserve\nframe_interp = 3\nframe_cap = 30\nfuture_key = keep\n",f);fclose(f);}
     void *mem=VirtualAlloc(NULL,0x800000,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE);CHECK(mem);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)mem;
+    { /* No startup network overrides: the real row callback must enable LAN. */
+        CHECK(!_putenv_s("TSFP_NETWORK",""));
+        CHECK(!_putenv_s("TSFP_ONLINE_CONFIG","keep-online"));
+        call(0x001A2700u,0,0);call(0x001A2700u,7,0);
+        CHECK(!online_disconnects && !lan_browser_entries);
+        CHECK(!strcmp(getenv("TSFP_ONLINE_CONFIG"),"keep-online"));
+        call(0x001A2700u,8,0);
+        CHECK(online_disconnects==1 && lan_browser_entries==1);
+        call(0x001A2700u,8,0);
+        CHECK(online_disconnects==2 && lan_browser_entries==2);
+    }
     { /* Descriptor +12 is a per-frame callback, not a destructor. */
         CHECK(kb_caption());kb_page=KB_CAPTURE;
         call(KB_BUILD,0,0);

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="280" height="52" viewBox="0 0 280 52" role="img" aria-labelledby="title desc">
+  <title id="title">Linux launcher — Coming soon 11/4</title>
+  <desc id="desc">Linux launcher coming November 4, 2026. This is an announcement, not a download link.</desc>
+  <rect x=".5" y=".5" width="279" height="51" rx="3" fill="#C4D4E0" stroke="#3B5268"/>
+  <g fill="none" stroke="#112A40" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="26" cy="26" r="10"/>
+    <path d="M26 20v6l4 3"/>
+  </g>
+  <text x="155" y="23" text-anchor="middle" fill="#112A40" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="600" letter-spacing=".4">LINUX</text>
+  <text x="155" y="39" text-anchor="middle" fill="#24435C" font-family="Segoe UI,Arial,sans-serif" font-size="10">Coming soon 11/4</text>
+</svg>

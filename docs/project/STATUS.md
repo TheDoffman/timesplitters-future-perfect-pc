@@ -1,4 +1,4 @@
-# FPS / Ping counter (2026-11-01, uncommitted)
+# FPS / Ping counter (2026-11-02, local development)
 
 Branch feature/fps-network-counter based on 4f80b5e5. Saved Video Options
 row defaults OFF; shows presented FPS and fresh Online RTT, no frame time.
@@ -10,6 +10,46 @@ changes immediately and persists show_counter in isolated controls JSON.
 Evidence: private/test-saves/kill-feed/fps-ping-menu.jpg. Menu accepts nine
 rows without clipping. Native Mac, pause interaction and live Online remain
 unverified; synthetic RTT formatting is not a real peer test.
+
+## System Link activation from normal launches (2026-11-01)
+
+User reports the Windows-host/Mac-guest test fixed after aligning identities.
+Manifest comparison matched 1,330 of 1,331 inputs; the Windows ignored runtime
+had extra unshared kernel bridge self-wait edits. A pristine snapshot plus the
+complete ordered patch stack reproduced the Mac bridge hash exactly. Preserved
+the Windows edits in ignored recovery evidence, restored that canonical runtime,
+and completed the supported Windows Build (exit 0). Both manifests then matched
+`a397d7776a44070fe03d0e207c20d45ebdb4b709611947991f0cfceda0043b0b`.
+This user-reported physical test is separate from the automated loopback checks
+below; it is not evidence of a completed match or wider Mac runtime validation.
+
+Preparing Stable v0.4.2 at the user's request. It includes this hotfix and the
+changes already merged on main since v0.4.1. Publication remains pending until
+the normal release build/test/package/installer checks and upload complete.
+
+Branch `fix-system-link-activation`, main base `4f80b5e5`; publication pending.
+The installed v0.4.1 session had no PC-NET initialization messages. The original
+US System Link row callback 1A2700 tail-calls browser 1A0A60 directly on event 8;
+the previous browser-only manual lookup never activated LAN along that route.
+The test script masked this by setting TSFP_NETWORK before process startup.
+The shared menu resolver now activates LAN before the original row callback's
+selection path, while preserving Online on non-selection events.
+
+Windows x64, MSVC 14.42 / D3D11: supported US XBE SHA-256 verified; complete
+patch-stack preparation and native Build tests passed. Four FOV/menu regressions
+passed, including the original lifted callback and a missing-interception
+negative control; two Mac-only compile cases skipped. The separate shared
+network/menu suite passed all 55 tests. Existing CI already runs these test files.
+
+Bounded isolated Test Lab pair: no TSFP_NETWORK startup setting; explicit
+127.0.0.2/3 bind and peer addresses isolate the windows. Both enabled LAN via
+the normal menu, bound UDP 1000/3000/9999, exchanged discovery packets, and the
+guest's match list gained the host row. Joining reached host network state 11
+and guest state 12. Logs/snapshots are under ignored `logs/system-link-smoke`;
+the disposable partition images were recycled and run locks removed. No personal
+saves/settings were used. This verifies activation and loopback lobby discovery/
+joining, not physical LAN broadcast delivery, a completed match or Mac execution.
+The installed game and published releases remain unchanged.
 
 ## Optional Arcade kill feed (2026-11-01)
 

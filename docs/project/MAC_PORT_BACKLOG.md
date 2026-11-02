@@ -8731,3 +8731,11 @@ unsupported Windows sparse marking with checked regular allocation. This is a
 Windows API adapter repair; shared geometry/ownership and native POSIX ftruncate
 are unchanged. No Mac port change is required. Physical exFAT gameplay on either
 host remains unverified; see STATUS and host-storage.md for injected Windows tests.
+
+System Link menu activation repair (2026-11-01, `fix-system-link-activation`): the shared
+`src/interface/pc_display_menu.c` now enables LAN on the original row's select
+event before its direct browser tail call. Windows and native Mac consume the
+same lookup/activation policy; no additional Mac adapter is required. Windows
+production-resolver and original-US callback regressions pass. Native Mac build
+and real two-machine LAN acceptance are pending; a loopback test with startup
+network overrides does not validate this path. See STATUS for Windows build evidence.
