@@ -8734,3 +8734,12 @@ same lookup/activation policy; no additional Mac adapter is required. Windows
 production-resolver and original-US callback regressions pass. Native Mac build
 and real two-machine LAN acceptance are pending; a loopback test with startup
 network overrides does not validate this path. See STATUS for Windows build evidence.
+
+
+Stage0241 extended integer product (2026-11-02, uncommitted): original shared
+unsigned bit arithmetic and fixed guest-frame adapter replace ordinal281 on both
+build paths. No host adapter or native API is needed. Windows Release and local
+product/numeric/context/migration and isolated Story checks pass (STATUS); native Mac execution/CI
+remain pending. Mac selects the same mathematical/adapter suite with undefined-
+behavior sanitizer. Division/magic helpers and complete runtime independence
+remain separate unfinished work; Windows integration is not Mac title evidence.

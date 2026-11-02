@@ -365,3 +365,5 @@ request and active-pack choice. For that task, preserve prior hybrid artwork
 and recovery packs, use verified originals as inputs, and follow the
 [original upscale workflow](original-upscale.md). Historical hybrid batch
 instructions do not override this task's newer user direction.
+
+Stage0241 extends the maintained effective-tail assertion and historical upgrade exclusions; see [product evidence](guest-integer-product.md).

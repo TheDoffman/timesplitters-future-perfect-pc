@@ -140,7 +140,6 @@ Fire presses use the shared key-edge path and a
 Fire pulses; later presses can interrupt. Context resets discard pulses.
 Pad input stays separate.
 
-
 `pc_model_transform_guest.inc` implements the US151E80 affine point fast path.
 It checks disjoint/wrap-safe buffers and magnitudes at most2^33, then uses local
 binary32 intermediates with explicit rounding, preserving final GPR/SSE state.
@@ -164,7 +163,6 @@ not a reconstructed call stack or guaranteed checkpoint/load-event history.
 heartbeat JSON. Each helper atomically replaces `capture-health.json` every two
 seconds in its safe report directory. No valid token means no health file.
 Windows packet schema is now3; a mismatched older helper cannot claim readiness.
-
 
 Windows `pc_menu_theme.h` snapshots each native menu item's caption, tab-separated
 shortcut and separator type before owner drawing. Command IDs stay untouched;
@@ -935,9 +933,7 @@ Statistics: D2CB7 scopes D1FD0 to carried ticks. Time totals keep Original
 cadence; distance stays per-frame. D2079 blocks paused stale ticks.
 Impact sparks: see [native spark timing](native-impact-sparks.md).
 
-
 [Devices](kernel-devices.md).
-
 
 Project-owned I/O contracts: [sharing](kernel-sharing.md),
 [request lifetime](request-lifetime.md), [driver calls](driver-call.md),
@@ -951,8 +947,7 @@ retain their existing route. Vehicle limits and locked states differ from mode
 `0x80`; see [mounted and vehicle mouse contracts](mounted-mouse.md). Both Windows
 and SDL adapters consume this helper. Exact mission validation remains separate.
 
-Tank keyboard/mouse policy shares `pc_tank.h` and the
-1730E0 guest wrapper. See [tank scope and original aim route](mounted-mouse.md).
+[Tank keyboard/mouse scope and original aim route](mounted-mouse.md).
 
 Kernel: [pool](kernel-pool.md), [time](kernel-time.md), [RTL](kernel-rtl.md), [numbers](guest-numbers.md), [crashes](crash-evidence.md).
 
@@ -976,3 +971,5 @@ Physics: [poses](systems-details.md#guest-ragdolls-and-physical-npc-drops).
 [Language startup](language-packs.md).
 
 [2x texture workflow](original-upscale.md).
+
+[Original ordinal281 product and checks](guest-integer-product.md).

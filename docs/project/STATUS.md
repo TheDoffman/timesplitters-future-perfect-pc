@@ -37492,3 +37492,40 @@ unverified. Expanded viewport checks cover seven ratios, eleven positions, three
 marker widths and consecutive targets. All 12 UI/backlog tests and repository
 context checks pass. Mars Prison captured replay remains the visual proof.
 Native Mac and exhaustive encounter coverage remain unverified; publication pending.
+
+
+## Original extended integer product (2026-11-02, stage0241)
+
+Working branch `feature/guest-arithmetic`, based on main `a4ccf22d` (uncommitted
+stage at this checkpoint). PR421 was externally merged; its head9b021ba passed
+Runtime patch transitions41050661178 and Launcher compatibility41050661162.
+New ordinal281 provider/import and patch0241 remove inherited signed-overflow
+multiplication. Shared source and checked guest frames are documented in
+[the product guide](../agent-context/guest-integer-product.md).
+
+On this Windows x64/MSVC14.44 computer,44 focused tests passed20.02s (7 product,
+17 numeric,20 repository-context). Product cases compare20080 independent Python
+big-integer results with both real provider and import, and compile/reject five
+bad variants. All22 patch migration tests passed703.16s. Repository context/index
+checks passed against a4ccf22d. Release regeneration/build, built-in tests and
+matching crash symbols passed; provider selection/archive/current-generation
+inspection passed. Executable SHA256:
+`60c183112730ee9b5993c6dad66ca24c9c0b33c7e71e95d42ebf29b44dc6755d`.
+Ignored logs/product-build.json records exact source/patch/generated/archive hashes
+and dirty-base provenance. Protected26 files retained hashes/sizes/mtimes before
+build. Both bounded Story runner and controller exited0. Scotland scene4/mission1
+movement measured11.195015 forward and6.184892 backward; ammo8 to6,39 frozen
+pause samples and58 advancing resume samples. Final checkpoint142.263s was
+within240s cap. Fresh start/fire/pause captures were reviewed. Profile signatures
+and fixture remained valid; protected26 hashes/sizes/mtimes were intact after
+shutdown. No test lock, dump or Partition image remained. Game provenance and
+source/archive/generated/build hashes agree (logs/product-build.json,
+logs/product-game-check.json; selected captures in logs/product-captures). This
+was minimized synthetic Original60/movie-skipped testing, not physical input.
+
+The supported US import table contains none of281/282/283; fixtures exercise the
+new arithmetic directly, while gameplay checks production integration stability.
+Division282, magic283, guest exception dispatch and the wider replacement goal
+remain unfinished. Native Mac execution and new-stage CI are not yet verified;
+no physical-input, audio-listening, campaign or snapshot-unavailable acceptance
+is inferred from these checks.

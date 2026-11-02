@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "e5fc54fd8b15ceaf6ee297047ba9e45c4c125d16e2a9dc36b73cbb50c6bb715d",
+  "loaderSha256": "def19a10c2c3f28f1a5b695a7d6713063d74c02ed9307b51ec63695d61f0f3a4",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2957,6 +2957,15 @@
       "name": "0240-original-guest-numbers.patch",
       "path": "patches/compiler/0240-original-guest-numbers.patch",
       "sha256": "697414cab37b60be730c0ef3fda389199e772f8ac613ca8112bd62e95585029a",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0241-original-extended-product.patch",
+      "path": "patches/compiler/0241-original-extended-product.patch",
+      "sha256": "7181c2c4bc75cac16401368a3680efbf9093b1874e3f9cba4574403f634d0635",
       "targets": [
         "src/kernel/CMakeLists.txt",
         "src/kernel/kernel_bridge.c"

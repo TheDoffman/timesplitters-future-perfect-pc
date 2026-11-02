@@ -5,8 +5,10 @@ Current kernel work has original providers for [pool allocation](../agent-contex
 [critical sections, status and diagnostics](../agent-context/kernel-rtl.md), and
 [narrow guest formatting](../agent-context/guest-printf.md), and
 [integer/string conversions](../agent-context/guest-numbers.md) through patch0240.
+Stage0241 adds original [extended integer multiplication](../agent-context/guest-integer-product.md);
+its build and focused/migration checks pass, with final stage acceptance in STATUS.
 The complete old native RTL module is excluded from the build. Guest exceptions,
-charset conversion, string allocation/freeing and arithmetic helpers remain,
+charset conversion, string allocation/freeing and other arithmetic helpers remain,
 along with other kernel, graphics, audio, input, title and fixture work.
 
 Stages0239/0240 passed Windows Release builds, local contracts, both-host CI and
