@@ -1,3 +1,67 @@
+## Linux host optimization and full preset checks (2026-11-02)
+
+Local `perf/linux-host-runtime`, based on unmerged Linux/GPU/launcher work at
+`80239186`; no Deck transfer, push or publication. Linux game source through
+`1fe9783b`, Ubuntu24.04/WSL kernel6.18.54.1, Clang18.1.3, SDK1.4.363.0,
+private Mesa26.2.5 Dozen/RTX4070SUPER. New ELF SHA256:
+`67d678965c7e04f8e71cafe671b7e53df1558f17d38939fb72a98073320b5b38`.
+
+The Linux builder now optimizes host C/C++ libraries with `-O2 -g`, retaining
+Debug assertions/symbols and the title's existing scalar numeric flags. A
+`--host-optimization debug` option restores the old host profile. This is not
+an optimization based on disabling assertions, Vulkan validation, original
+60Hz console timing, game logic or graphics defaults.
+
+Six existing positive late-frame deadline tests failed on Linux because the
+shared FlipGateArm late-vblank path was guarded for Windows/Mac only. Final
+additive platform patch2409 enables that same path on Linux. All20 Linux
+runner/deadline/preset checks now pass, including the missing-observer mutation.
+Cheap frames and absent vblank signals still wait; high-refresh bypass and
+return-to-original observation retain the existing rule. Linux CI now exercises
+these fixtures after runtime preparation.
+
+The bounded runner explicitly selects60/120/180/240 presets, writes only its
+no-follow disposable timing file, checks the mode actually reported at startup
+and records child CPU usage. A saved240 preference previously overrode an
+attempted60 environment override; that first uncontrolled run was excluded
+from the comparison. No personal preferences or shared Test Lab fixture changed.
+
+A matched40-second Original60 title-screen comparison (640x480, same hardware
+ICD, cache on, validation off and rotating captures) recorded2100 presents in
+both builds. Baseline CPU11.394user+3.696system=15.090seconds; host-optimized
+CPU11.266+3.710=14.976seconds. This difference is too small to claim a meaningful
+performance win. The pacing improvement is established by the deadline
+regressions, not a claimed broad FPS increase from compiler flags.
+
+Final ELF startup/title/profile checks, each30seconds:
+
+| Requested preset | Reported mode | Recorded guest presents | Failed/skipped presents |
+| --- | --- | ---: | --- |
+|120 performance|120|3300|0/0|
+|180 performance|180|4800|0/0|
+|240 performance|240|6600|0/0|
+|60 validation|Original60|1500|0/0|
+
+Counts include startup and stop at the last300-frame report; they are not
+steady-scene FPS measurements. The60 validation run has zero Vulkan validation
+errors, cache off. Performance runs explicitly disable validation and enable
+the isolated cache. Captures were retained/reviewed. An additional120.16-second
+120-target synthetic navigation run recorded14100 presents without failed/
+skipped presents; its reviewed screen was profile-name entry, so it does not
+establish first-level gameplay or sustained high-refresh gameplay. No full
+campaign, physical AMD/native-Linux, Deck or Mac acceptance is claimed.
+
+Windows:69 selected timing/clock checks,45 patch/context/backlog policy checks
+and94 CI scope/gate checks pass. Linux:61 selected host checks pass with2
+Windows-only skips, plus the20 updated runner/clock checks. Protected-MMIO
+build regression passes. All22 real patch-upgrade/history checks pass (611.04seconds).
+Evidence stays in ignored logs/linux-opt-*.json/log/txt and
+private/captures/linux-optimization; Linux and Windows source synchronization
+uses Git. Windows/Mac build options are unchanged; native Mac revalidation is
+unrun locally. Remaining optimization needs controlled real gameplay profiling,
+including waiting/copy costs, rather than assuming the title screen establishes
+60â€“240 FPS throughout the game.
+
 ## Linux rebuild after main sync (2026-11-02)
 
 `feature/linux-launcher` merged `origin/main` at `040874b3` with merge commit

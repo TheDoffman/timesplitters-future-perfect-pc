@@ -159,7 +159,7 @@ existing Debug configuration. The title retains its explicit `-O2
 interrupt timing remain. `--host-optimization debug` restores `-g` for host
 libraries in the same build tree; both flags are passed explicitly to replace
 cached CMake settings. BUILD.json records the selected host profile/flags.
-Windows/Mac build options and shared runtime source are unchanged.
+Windows/Mac build options and their existing runtime branches are unchanged.
 
 The bounded runner offers `--fps 60|120|180|240`, with 60 as the default.
 It writes only its disposable adjacent pc-frame-rate.ini, refusing file links,

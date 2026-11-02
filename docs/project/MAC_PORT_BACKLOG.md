@@ -3,8 +3,9 @@
 Linux host build optimization (2026-11-02, local `perf/linux-host-runtime`):
 **Not applicable** as a new Mac behavior. Only the Linux builder enables host
 `-O2 -g`, retaining Debug assertions and the title numeric flags. Windows/Mac
-build settings and common runtime source remain unchanged. The Linux test
-runner now selects isolated 60/120/180/240 presets explicitly; this does not
+build settings remain unchanged. Final patch2409 enables the same existing
+Windows/Mac late-vblank observation on Linux; native Mac behavior is unchanged
+and execution remains unverified locally. The Linux test runner now selects isolated 60/120/180/240 presets explicitly; this does not
 alter launcher choices or console timing. Linux execution is measured in
 STATUS; no Mac source/build change or new native validation is claimed.
 
