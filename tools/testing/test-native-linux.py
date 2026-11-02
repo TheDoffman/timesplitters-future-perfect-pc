@@ -2,6 +2,8 @@
 """Bounded Linux game run with isolated saves/settings and two rotating captures."""
 import argparse
 import json
+import hashlib
+import math
 import os
 from pathlib import Path
 import platform
@@ -28,6 +30,24 @@ def test_frame_rate(test,fps):
     with os.fdopen(fd,'w') as output:output.write(f'TSFP_FRAME_RATE_V1 {0 if fps==60 else fps}\n')
 
 
+def input_script(path,seconds):
+    if path.stat().st_size>65536:raise ValueError('Input script is too large')
+    data=json.loads(path.read_text(encoding='utf-8'))
+    if not isinstance(data,dict) or data.get('schema')!=1 or not isinstance(data.get('events'),list) or len(data['events'])>256:
+        raise ValueError('Invalid input script')
+    events=[];previous=-1
+    for event in data['events']:
+        if not isinstance(event,dict):raise ValueError('Invalid input event')
+        at=event.get('at');commands=event.get('commands')
+        if type(at) not in (int,float) or not math.isfinite(at) or not previous<=at<seconds or at<0:
+            raise ValueError('Input events must be ordered inside the bounded run')
+        if not isinstance(commands,list) or not 1<=len(commands)<=16 or any(
+            not isinstance(line,str) or not re.fullmatch(r'(?:focus [01]|[+-][A-Za-z0-9 ]{1,32})',line) for line in commands):
+            raise ValueError('Only bounded synthetic keyboard/focus commands are allowed')
+        events.append((at,'\n'.join(commands)+'\n'));previous=at
+    return events
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--game-dir',type=Path,required=True)
@@ -41,6 +61,7 @@ def main():
     p.add_argument('--profile-name',default='unlocked',help='Separate disposable fixture copy; preserves other runs')
     p.add_argument('--frame-profile',action='store_true',help='Record bounded actual present intervals and timing percentiles')
     p.add_argument('--profile-start',type=int,default=0,help='Seconds after first present before collecting frame timings')
+    p.add_argument('--input-script',type=Path,help='Bounded synthetic keyboard schedule, run only in the isolated profile')
     p.add_argument('--test-keys',action='store_true',help='Read synthetic SDL events from the isolated test-keys.txt')
     args=p.parse_args()
     if platform.system()!='Linux' or platform.machine().lower() not in ('x86_64','amd64'):p.error('Requires Linux x64')
@@ -48,6 +69,8 @@ def main():
     if not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,47}',args.profile_name) or args.profile_name in ('manual','crashes','xdg-cache','xdg-config','xdg-data'):
         p.error('Use a simple disposable profile name, excluding reserved folders')
     if not 0<=args.profile_start<args.seconds:p.error('Profile start must be inside the bounded run')
+    try:events=input_script(args.input_script,args.seconds) if args.input_script else []
+    except (ValueError,OSError) as error:p.error(str(error))
     game=args.game_dir.resolve()
     if sha256(game/'default.xbe')!=EXPECTED:p.error('Unsupported XBE')
     build=ROOT/'build/linux/game';exe=build/'futureperfect_recomp'
@@ -87,8 +110,10 @@ def main():
             env.update(TSFP_FRAME_PROFILE=str(ROOT/'logs/linux-game-frames.csv'),
                        TSFP_FRAME_PROFILE_DELAY_MS=str(args.profile_start*1000))
         if args.capture:env.update(RECOMP_HLE_D3D8_DUMP=str(capture/'frame'),RECOMP_HLE_D3D8_DUMP_EVERY='60',RECOMP_HLE_D3D8_DUMP_KEEP_LAST='2')
-        if args.test_keys:
-            keys=test/'test-keys.txt';keys.touch(exist_ok=True);env['TSFP_NATIVE_TEST_KEYS']=str(keys)
+        if args.test_keys or args.input_script:
+            keys=test/'test-keys.txt'
+            flags=os.O_WRONLY|os.O_CREAT|os.O_NOFOLLOW|(os.O_TRUNC if args.input_script else os.O_APPEND)
+            os.close(os.open(keys,flags,0o600));env['TSFP_NATIVE_TEST_KEYS']=str(keys)
         logs=ROOT/'logs';logs.mkdir(exist_ok=True);started=time.monotonic();timed_out=False;reason='process_exit'
         import resource
         cpu_before=resource.getrusage(resource.RUSAGE_CHILDREN)
@@ -96,6 +121,10 @@ def main():
             child=subprocess.Popen([str(exe)],cwd=ROOT,env=env,stdout=out,stderr=err,start_new_session=True)
             try:
                 while child.poll() is None:
+                    while events and time.monotonic()-started>=events[0][0]:
+                        _,commands=events.pop(0)
+                        fd=os.open(keys,os.O_WRONLY|os.O_APPEND|os.O_NOFOLLOW)
+                        with os.fdopen(fd,'w') as stream:stream.write(commands)
                     if time.monotonic()-started>=args.seconds:timed_out=True;reason='time_limit';break
                     if (logs/'linux-game.out').stat().st_size+(logs/'linux-game.err').stat().st_size>8*1024**2:
                         reason='log_limit';break
@@ -118,6 +147,7 @@ def main():
             cpu_user_seconds=round(cpu_after.ru_utime-cpu_before.ru_utime,3),
             cpu_system_seconds=round(cpu_after.ru_stime-cpu_before.ru_stime,3),
             requested_fps=args.fps,
+            input_script_sha256=hashlib.sha256(args.input_script.read_bytes()).hexdigest() if args.input_script else None,
             requested_timing_observed=('[native] fixed 60 FPS' if args.fps==60 else f'[native] target {args.fps} fresh game FPS') in text,
             profile='Test Lab disposable copy' if args.unlocked_profile else 'isolated fresh/local test profile',
             returncode=child.returncode,bounded_stop=timed_out,stop_reason=reason,seconds=round(time.monotonic()-started,2),

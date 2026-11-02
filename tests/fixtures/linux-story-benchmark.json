@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "description": "Synthetic Test Lab: one player, select existing Test Lab, Story 2401 Normal. No input after briefing; review gameplay captures before accepting measurements.",
+  "events": [
+    {
+      "at": 6,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 6.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 8,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 8.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 10,
+      "commands": [
+        "focus 1",
+        "+S"
+      ]
+    },
+    {
+      "at": 10.3,
+      "commands": [
+        "-S"
+      ]
+    },
+    {
+      "at": 11,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 11.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 14,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 14.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 16,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 16.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 18,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 18.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 20,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 20.3,
+      "commands": [
+        "-E"
+      ]
+    }
+  ]
+}
