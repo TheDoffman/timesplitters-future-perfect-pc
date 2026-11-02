@@ -274,3 +274,7 @@ protected/linked payloads, and checks its archive with the actual launcher.
 for read-only installs; default launch opens the portable launcher in a writable
 install. System Vulkan ICDs are not copied. A clean-machine pass and dependency
 source/license audit remain separate publication requirements.
+
+The bounded runner's `--package-root` verifies the package ELF hash, uses its
+local RPATH/FFmpeg/Online files, and removes checkout SDK/loader overrides. The
+same owned-child Story observation can therefore validate a relocated binary.

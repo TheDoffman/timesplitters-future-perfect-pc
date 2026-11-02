@@ -79,9 +79,29 @@ def story_window(samples,frames):
     return result
 
 
+def runtime_target(package_root=None):
+    build=Path(package_root).resolve() if package_root else ROOT/'build/linux/game'
+    exe=build/('Bin/futureperfect_recomp' if package_root else 'futureperfect_recomp')
+    manifest=json.loads((build/'BUILD.json').read_text())
+    expected=manifest.get('files',{}).get('Bin/futureperfect_recomp') if package_root else manifest.get('executable_sha256')
+    if not expected or sha256(exe)!=expected:raise ValueError('Game executable differs from build receipt')
+    return build,exe,manifest
+
+def runtime_environment(package_root=None):
+    if not package_root:return linux_vulkan_sdk.probe_environment(linux_vulkan_sdk.verify_install())
+    # Relocation acceptance must not find the checkout SDK through LD_LIBRARY_PATH.
+    env={k:v for k,v in os.environ.items() if not k.startswith(('RECOMP_','TSFP_','VK_','SDL_VULKAN','DYLD_'))
+         and k not in ('LD_LIBRARY_PATH','LD_PRELOAD','PYTHONPATH','PYTHONHOME')}
+    root=Path(package_root).resolve()
+    env.update(RECOMP_FFMPEG_DIR=str(root/'Bin'),RECOMP_VK_VALIDATION='1',RECOMP_SHADER_CACHE='0',
+        TSFP_ONLINE_PYTHON=str(root/'Support/Python/bin/python3'),TSFP_ONLINE_SCRIPT=str(root/'Support/Online/online.py'),
+        TSFP_ONLINE_MANIFEST=str(root/'Support/Online/network-identity.json'))
+    return env
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--game-dir',type=Path,required=True)
+    p.add_argument('--package-root',type=Path,help='Verify and run a relocated package without the checkout SDK')
     p.add_argument('--seconds',type=int,default=120)
     p.add_argument('--driver-manifest',type=Path)
     p.add_argument('--capture',action='store_true')
@@ -109,9 +129,8 @@ def main():
     except (ValueError,OSError) as error:p.error(str(error))
     game=args.game_dir.resolve()
     if sha256(game/'default.xbe')!=EXPECTED:p.error('Unsupported XBE')
-    build=ROOT/'build/linux/game';exe=build/'futureperfect_recomp'
-    manifest=json.loads((build/'BUILD.json').read_text())
-    if sha256(exe)!=manifest['executable_sha256']:p.error('Game executable differs from build receipt')
+    try:build,exe,manifest=runtime_target(args.package_root)
+    except (ValueError,OSError) as error:p.error(str(error))
     test=ROOT/'private/test-saves/native-linux';capture=ROOT/'private/captures/native-linux'
     for folder in (test,capture):
         if folder.is_symlink() or not folder.resolve().is_relative_to((ROOT/'private').resolve()):p.error('Redirected test directory')
@@ -127,7 +146,7 @@ def main():
         if not (test/'runtime.conf').exists():(test/'runtime.conf').write_text('# Isolated Linux defaults\n')
         if not (test/'pc-display.ini').exists():(test/'pc-display.ini').write_text('TSFP_DISPLAY_V2 640 480 55\n')
         test_frame_rate(test,args.fps)
-        env=linux_vulkan_sdk.probe_environment(linux_vulkan_sdk.verify_install())
+        env=runtime_environment(args.package_root)
         env.update(RECOMP_GAME_DIR=str(game),RECOMP_SAVE_DIR=str(test),
             RECOMP_INPUT_CONFIG=str(test/'pc-controls.json'),RECOMP_DISPLAY_CONFIG=str(test/'runtime.conf'),
             TSFP_DISPLAY_CONFIG=str(test/'pc-display.ini'),TSFP_SAVE_LOCATION_LOCK='1',

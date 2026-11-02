@@ -132,3 +132,19 @@ def test_story_window_uses_complete_host_intervals_after_active_warmup(tmp_path)
     result=module.story_window(samples,path)
     assert result['guest_fps']==10 and result['start_ns']>=origin+8*10**9
     with pytest.raises(ValueError):module.story_window([dict(active=False,clock_ns=origin)],path)
+
+
+def test_packaged_runtime_uses_manifest_hash_without_checkout_sdk(tmp_path,monkeypatch):
+    import hashlib,json,importlib.util
+    spec=importlib.util.spec_from_file_location('package_linux_runner',ROOT/'tools/testing/test-native-linux.py')
+    runner=importlib.util.module_from_spec(spec);spec.loader.exec_module(runner)
+    exe=tmp_path/'Bin/futureperfect_recomp';exe.parent.mkdir();exe.write_bytes(b'packaged executable')
+    (tmp_path/'BUILD.json').write_text(json.dumps({'files':{'Bin/futureperfect_recomp':hashlib.sha256(exe.read_bytes()).hexdigest()}}))
+    assert runner.runtime_target(tmp_path)[1]==exe
+    monkeypatch.setattr(runner.linux_vulkan_sdk,'verify_install',lambda:pytest.fail('Packaged game used checkout SDK'))
+    monkeypatch.setenv('LD_LIBRARY_PATH','checkout-sdk');monkeypatch.setenv('VK_DRIVER_FILES','checkout-driver')
+    env=runner.runtime_environment(tmp_path)
+    assert 'LD_LIBRARY_PATH' not in env and 'VK_DRIVER_FILES' not in env
+    assert env['RECOMP_FFMPEG_DIR']==str(tmp_path/'Bin')
+    exe.write_bytes(b'changed')
+    with pytest.raises(ValueError,match='differs'):runner.runtime_target(tmp_path)

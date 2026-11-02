@@ -59,3 +59,8 @@ def test_game_entrypoint_uses_xdg_and_preserves_settings(tmp_path):
     subprocess.run([str(script),'--game'],env=env,capture_output=True,check=True)
     assert config.read_text()=='{"personal":true}'
     bad=subprocess.run([str(script),'--game','--bad'],env=env,capture_output=True);assert bad.returncode==2
+
+
+def test_companion_source_layout_is_complete():
+    for name in package.COMPANION:
+        assert package.repo_file(ROOT,'tools',name).is_file(),name

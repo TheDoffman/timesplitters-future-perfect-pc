@@ -17,7 +17,7 @@ ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools'))
 from project_paths import configure
 configure()
-from bundle_online import COMPANION
+from bundle_online import COMPANION, repo_file
 
 # These are the host ABI, not distributable application dependencies. Keep the
 # host GPU/GL/Vulkan drivers and loader selection; never ship a hardware ICD.
@@ -47,7 +47,7 @@ def bundle_libraries(pairs,stage):
         if not elf(source):raise ValueError('Expected Linux x64 ELF: '+str(source))
         for name,origin in dependencies(source):
             if HOST.fullmatch(name):continue
-            if name in origins and origins[name]!=origin:raise ValueError('Conflicting ELF dependency: '+name)
+            if name in origins and origins[name]!=origin and origin!=(bin_dir/name).resolve():raise ValueError('Conflicting ELF dependency: '+name)
             if name not in origins:
                 origins[name]=origin;destination=bin_dir/name
                 if destination.exists() and digest(destination)!=digest(origin):raise ValueError('Duplicate ELF name: '+name)
@@ -137,7 +137,7 @@ def main():
         if source.is_file():copy(source,stage,source.relative_to(args.launcher))
     copy(ROOT/'config/pc-controls.default.json',stage,'Settings/pc-controls.json')
     copy(ROOT/'LICENSE',stage,'Licenses/Project.txt')
-    for file in COMPANION:copy(ROOT/'tools/network'/file,stage,'Support/Online/'+file)
+    for file in COMPANION:copy(repo_file(ROOT,'tools',file),stage,'Support/Online/'+file)
     copy(ROOT/'build/online-icon/multiplayer.png',stage,'Support/Online/multiplayer.png')
     for file in ('network-identity.json','network-build.json'):copy(build/'generated'/file,stage,'Support/Online/'+file)
     python_pairs,python=bundle_python(ROOT,stage)
