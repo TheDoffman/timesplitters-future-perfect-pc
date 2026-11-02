@@ -160,6 +160,10 @@ def patch_records(paths):
     if raw_codec:
         paths.remove(raw_codec)
         paths.append(raw_codec)
+    stack_diagnostics = by_name.get('0247-original-stack-diagnostics.patch')
+    if stack_diagnostics:
+        paths.remove(stack_diagnostics)
+        paths.append(stack_diagnostics)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

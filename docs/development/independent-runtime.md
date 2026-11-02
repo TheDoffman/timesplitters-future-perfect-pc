@@ -16,7 +16,10 @@ with a shared checked guest policy and thin standard host charset adapters.
 Stage0245 adds [checked creation/case services](../agent-context/guest-string-transform.md)
 and removes the unchecked UTF-16 scanner. Stage0246 replaces the five
 [raw charset helpers](../agent-context/guest-text-raw.md) with original32-bit
-conversion/query policy. Exact stage acceptance is tracked in STATUS.
+conversion/query policy. Stage0247 adds original
+[guest stack/assert diagnostics](../agent-context/guest-stack-trace.md) with
+owner-based bounds and corrected capture/assert argument counts. Exact stage
+acceptance is tracked in STATUS.
 The complete old native RTL module is excluded from the build. Guest exceptions,
 other inherited helpers remain,
 along with other kernel, graphics, audio, input, title and fixture work.

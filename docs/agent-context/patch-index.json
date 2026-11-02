@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "1884e999a21caca393b594be028795ec8f5133a17a49eac9f1951f76c98f7e42",
+  "loaderSha256": "f334001df7d7c86252366a538b2b1a9f4c3a4d3a3149aa5a2cfde5e0168796b5",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3053,6 +3053,17 @@
       "targets": [
         "src/kernel/CMakeLists.txt",
         "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0247-original-stack-diagnostics.patch",
+      "path": "patches/compiler/0247-original-stack-diagnostics.patch",
+      "sha256": "371a614d513656618488e647b292e40b31e8071284ade0650985cd9853bbf061",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/xbox_memory_layout.c",
+        "src/kernel/xbox_memory_layout.h"
       ]
     }
   ]

@@ -8815,3 +8815,20 @@ Stage0245 portable CI acceptance:7a88cd4c passed runtime41427412517 and
 launcher41427412497 across both hosts, including native/GPU/upgrade/transition
 and package jobs. Native Mac title/gameplay remains unverified. Stage0246 all35
 local migrations also passed; its new-head Mac CI is still pending.
+
+
+Stage0247 stack/assert diagnostics (2026-11-02, PR465 continuation): one original
+shared EBP walker and thread-storage extent query serve both builds. No new host
+stack-walking dependency or OS adapter is introduced; assertion logging retains
+the existing debug-only Windows/POSIX trap leaf. Windows76 focused and35 full
+migration cases, Release/built-ins/archive/generation pass (STATUS). Portable
+cases use undefined-behavior sanitizer; the527-call real x86 ntdll oracle skips
+on Mac. New-stage Mac CI/title gameplay remains pending; previous5c24789c passed
+both-host runtime41429855993 and launcher41429856151. Full guest context/SEH,
+other inherited services and snapshot-unavailable production acceptance remain
+unfinished. Diagnostic replacement is not full exception delivery.
+
+Stage0247 Windows isolated Story retry passed with exact audited6bbf7486 bytes,
+movement/fire/pause/resume and26 protected files unchanged. The first attempt's
+operator-driven menu delay/controller timeout is retained and not accepted as a
+pass. Native Mac title/gameplay is still pending; see STATUS for bounded scope.

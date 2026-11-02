@@ -14,8 +14,8 @@ SetCrtLockTable, status conversion, Rip, unused Unwind/RaiseException and four
 unused printf wrappers. Only excluded kernel_rtl/kernel_thunks retain names.
 Stage0239 selects [original narrow formatting](guest-printf.md);0240 adds
 [original numeric conversions](guest-numbers.md). Guest
-exception/unwind paths and raw charset/create services elsewhere in
-kernel_bridge.c remain replacement work; unused native wrapper retirement alone
+exception/unwind/context paths in kernel_bridge.c remain replacement work;
+[stack/assert diagnostics](guest-stack-trace.md) are original at0247; unused native wrapper retirement alone
 did not replace those guest implementations. Snapshot and
 historical patch bytes remain for reproducible migration and notices.
 

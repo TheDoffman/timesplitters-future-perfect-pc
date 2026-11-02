@@ -37821,3 +37821,72 @@ Native Mac title, exception/context and remaining kernel/graphics/audio/input/
 title/header/fixture replacement, unused compatibility retirement and generation/
 build/package with old checkout/snapshot unavailable remain unfinished. Goal active;
 no merge into main or publication.
+
+
+## Original guest stack/assert diagnostics (2026-11-02, stage0247, PR465)
+
+Previous5c24789c passed runtime41429855993 and launcher41429856151 completely,
+including both-host native/GPU/upgrade/transition and packaging jobs. Continuing
+on feature/guest-arithmetic, original guest_stack_trace.c/.h and its checked import
+include replace288 GetCallersAddress,319 WalkFrameChain and266 CaptureStackBackTrace;
+original bounded assertion logging replaces264 Assert. Capture/Assert now both
+read and clean FOUR arguments/16 bytes, correcting inherited20/12-byte cleanup.
+Frame ordering/hash are supported by real x86 native probes and public Xbox
+interface declarations. See [complete contracts](../agent-context/guest-stack-trace.md).
+
+Original tsfp_thread_stack_bounds queries the existing thread-storage registry:
+active worker slices clip bootstrap bounds, workers get exact slices and heap
+stacks require live tracked ownership. It preserves the full bootstrap extent
+when workers are absent, relocation and existing allocation/release policy.
+Cloned TIB stack hints are not used. This is metadata consistency, not lifetime
+pinning. Collected guest EBP return PCs publish only after full staging; corrupt
+chains return a valid prefix, bad output/hash aliases preserve memory, optional
+caller outputs handle missing parents and exact aliases explicitly. Assertions
+read bounded text, include the optional fourth message and preserve literal
+format directives. Walk's undocumented flags have explicit project policy;
+native reference equality covers flags0 only, not every undocumented NT quirk.
+
+Windows x64/MSVC:76 selected cases passed43.87s (13 stack,43 thread-storage/critical,
+20 context).6128 independent whole4096-byte RAM requests run through direct and
+actual import paths; ten compile-first bad walkers/adapters must fail.527 real
+x86 ntdll calls use controlled native EBP records and separately normalized PCs;
+raw native hash sums and stack-pointer equality are checked before normalization.
+Storage contracts add relocated/bootstrap/worker/heap bounds, foreign/freed/stop/
+null/alias exclusions and four compile-first broken extent queries. Actual mapped
+logger tests verify fourth-message routing, literal%n, invalid strings and
+unchanged guest RAM. The first alignment mutation exposed a missing otherwise-
+valid misaligned fixture; that counterexample was added without weakening checks.
+All35 full migration/EOL cases passed535.15s with two workers. Combined111 distinct
+local checks; the earlier43-case storage run is included, not counted twice.
+
+Release, utility/built-in tests and matching crash symbols passed. Provider/archive
+selection, all four removed bodies, new bounds routing and actual dispatcher16/
+16/8/12-byte sizes are verified. Generation is current and all generated guest
+C/header bytes match the accepted arithmetic stage. Executable SHA256:
+`6bbf7486c54bcf27ff37cf200041de9e868ea9895e7b6a085091add67b55f19f`.
+The audit also hashes both installed memory-layout C/header files, alongside root
+source/patch/tool/kernel/archive/generated provenance. Evidence:
+logs/stack-diagnostics-build.json and selected test/build logs.
+
+The first game attempt is NOT accepted: the operator left the initial menu until
+143s while documenting; intro174.561 arrived after the controller's160s deadline.
+The controller exited1 and stopped the runner cleanly (exit0). No runtime crash
+was established. Failed report/provenance/logs remain in stack-diagnostics-attempt1-*.
+The unchanged build then passed with prompt menu input: runner52020/controller34467
+both exited0. Scotland scene4/mission1: forward11.176239, backward6.391052, ammo8
+to6,38 frozen pause samples and58 advancing resume samples. Last checkpoint149.932s
+was inside240s cap. Fresh start/fire/pause captures were reviewed; source/build/
+game hashes agree, including both installed memory-layout inputs. Profiles and
+fixture signatures were valid; all26 protected hashes/sizes/mtimes were unchanged,
+with no run lock/dump/Partition image remaining. Evidence:
+logs/stack-diagnostics-game-check.json and stack-diagnostics-captures. This was
+minimized synthetic Original60/movie-skipped validation, not physical controls,
+listening, full campaign, all diagnostic branches or native Mac title gameplay.
+
+Full guest CONTEXT/EFLAGS capture/restore, real exception dispatch and inherited
+Unwind remain unfinished. The translator's own condition guide explicitly records
+missing complete EFLAGS across calls/joins. This stage does not replace that with
+a fabricated host context or claim completed guest SEH. Native Mac title, other
+kernel/graphics/audio/input/title/header/fixture replacement and old-checkout/
+snapshot-unavailable production generation/build/package proof remain unfinished.
+Goal active; no main merge/publication. New-head CI remains pending.

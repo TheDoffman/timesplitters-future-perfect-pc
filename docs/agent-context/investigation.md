@@ -386,3 +386,5 @@ Stage0244: [counted codec/ownership](guest-text-codec.md); native pointer record
 Stage0245: [creation/case](guest-string-transform.md); native case strings do not append NUL; libc mapping is not NT NLS equivalence.
 
 Stage0246: [raw codec](guest-text-raw.md); native uppercase truncation returned80000005 despite documentation; keep raw32-bit/no-NUL policy separate from counted conversion.
+
+Stage0247: [stack diagnostics](guest-stack-trace.md); native x86 proves parent ordering/hash and4-argument capture, public Xbox Assert has4 arguments. Full EFLAGS/guest continuation work is still required for real context/SEH.
