@@ -41,7 +41,7 @@ def test_wrong_cpu_policies_compile_then_fail(tmp_path,mutation):
     ('guest_execution_host.inc','if(execution_host_park_depth++)return;','++execution_host_park_depth;'),
     ('guest_execution_host.inc','if(--execution_host_park_depth || !execution_host_park_held)return;',
        'if(--execution_host_park_depth)return;'),
-    ('guest_execution_host.inc','if(!owner || owner==me)break;','if(!owner)break;'),
+    ('guest_execution_host.inc','if(!owner || owner==me)break;','(void)me;if(!owner)break;'),
     ('guest_execution_host.inc','if(running>1)InterlockedIncrement(&execution_host_overlaps);',
        'InterlockedIncrement(&execution_host_overlaps);'),
     ('guest_execution_host.inc','execution_host_park_on=0;','execution_host_park_on=1;'),

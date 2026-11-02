@@ -38718,6 +38718,47 @@ checks/build/both Story runs recorded above. Main advanced to623acff4 (PR469 SMA
 and Video Options sounds), causing loader/order/index conflicts and preventing
 fe70 pull-request CI dispatch. The safe merge retains both sets of code, applies
 SMAA2470 after0260 (tail59), retains all historical omission entries and regenerates
-the index. No resets or personal-file changes. Merged build, relevant tests,
-new isolated gameplay and exact merged-head CI are pending; fe70 evidence alone
-does not establish the imported graphics/menu changes on this computer.
+the index. No resets or personal-file changes. Merged Release64865 exits0 with built-ins/matching crash symbols;117 quick
+repository/context/CI/path checks pass6.96s and15 host-policy/SMAA cases pass8.51s.
+The full177 merged migrations pass907.81s on the original83784 handle, terminal0.
+The117 quick checks are a subset; merged validation covers192 distinct cases
+when combined with the15 host-policy/SMAA checks.
+Actual merged source/archive audit confirms unchanged generated C/current receipt
+and includes the six pinned SMAA inputs. Executable SHA256:
+c38d267424e2d529e783eec0b0990b01eb80f3b74adff20a77e78a6845e6770c.
+
+Both fresh merged Story runs pass on that SAME executable: default-off runner12983/
+controller14915 both0, last99.172s, forward11.1950150209/back6.1848924481;
+enabled lock/dispatch/auto-CPU runner18222/controller49894 both0, last99.267s,
+forward11.1745396311/back6.2879705023. Each fires ammo8to6, freezes39 pause
+samples and advances58 resumed samples. Diagnostics peak2/overlap104 off and
+peak1/overlap0 on. Six fresh captures reviewed; all1693 current build inputs,
+runner/executable hashes and actual mode provenance match. All26 protected
+personal files unchanged, no owned game/lock/dump/disposable Partition images
+remain. Evidence logs/execution-host-merged-{build,final-check}.json and fresh
+independent-execution-host-merged-off/on-20261102 reports/logs/captures.
+Windows-only synthetic/minimized/Classic/Original60 scope; not native Mac title,
+full campaign, physical input/listening, or actual game exception resumption.
+
+Current revision0477fdb1 is committed/pushed and contains main623acff4; no PR
+merged. Exact-head runtime41532493664 and standalone41532493218 are live, not
+fully green yet. The failed fe70 CI dispatch is superseded by this real merged-
+head run. Earlier d36 CI was fully successful; that is not0477 acceptance.
+
+
+Exact0477 CI: standalone41532493218 succeeds all5 jobs. Runtime41532493664 fails
+Mac native125576134602 at one negative host-policy case;2759 other cases and18
+subtests pass,385 skip. The deliberate mutation removes the same-owner park
+exemption, leaving its me variable set-but-unused. Clang rejects the mutated
+fixture under the required fatal warnings before runtime rejection can run.
+The mutation now explicitly consumes me while retaining the wrong behavior;
+no warning suppression, assertion removal or production policy change. Windows
+native125576134548 and upgrade125576134626 pass; Mac upgrade125576134653 cancels
+and aggregate gates fail with the Mac result. A new head needs fresh CI.
+
+Merged local177 migrations pass907.81s;117 quick cases are a subset. With15
+host/SMAA cases this is192 distinct checks, plus both fresh merged99.172/99.267s
+Story runs, six reviewed captures and26 protected files unchanged, as above.
+The CI repair changes only the negative fixture and validation notes; it requires
+no product regeneration/rebuild. Separate native-boundary/DPC source work is
+still local and is not included in this test-only repair or its acceptance.

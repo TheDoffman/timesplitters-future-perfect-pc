@@ -96,3 +96,18 @@ Isolated Windows runner flags --dispatch-lock and --guest-one-cpu are explicit
 per-run settings, applied after parent-environment stripping and recorded in
 provenance alongside lock/counter modes. Use off/default and on/automatic-CPU
 Story routes; fresh native title acceptance is still pending.
+
+Merged main623acff4 source is committed/pushed as0477fdb1. Merged Release,
+117 quick metadata checks and15 host/SMAA cases pass; fresh99.172/99.267s off/on
+Story runs pass with current source/executable provenance, six captures reviewed
+and26 protected files unchanged. Full177 merged migrations83784 pass907.81s (terminal0); the117 quick
+checks are a subset, giving192 distinct merged checks with the15 host/SMAA cases.
+Exact-head CI runtime41532493664/launcher41532493218 remains to be concluded. See STATUS for distinct
+pre-merge versus merged executable evidence; do not reuse fe70 gameplay as0477
+proof. Actual265/302/312 integration and full independence remain unfinished.
+
+0477 runtime41532493664 fails one Mac negative-fixture compile: removing the
+same-owner exemption left me set-but-unused. The mutation now consumes me and
+must still fail its runtime owner-entry timing assertion. Production policy and
+accepted build/game source are unchanged.2759 other Mac cases pass; Windows
+native/upgrades and standalone launcher CI pass. New-head CI remains required.
