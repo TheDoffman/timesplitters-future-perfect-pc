@@ -101,3 +101,31 @@ def test_input_schedule_validates_real_benchmark_and_order(tmp_path):
     path=tmp_path/'script.json';path.write_text(json.dumps({'schema':1,'events':[
         {'at':2,'commands':['+E']},{'at':1,'commands':['-E']}]}))
     with pytest.raises(ValueError):module.input_script(path,150)
+
+
+def test_story_observer_distinguishes_intro_pause_and_active_gameplay():
+    module=runner()
+    words={0x79094C:2,0x7DE458:0,0x761C48:0}
+    assert module.story_snapshot(words.__getitem__)['active']
+    words[0x7DE458]=0x20000000
+    assert not module.story_snapshot(words.__getitem__)['active']
+    words[0x7DE458]=0;words[0x761C48]=0x10000;words[0x10000]=1
+    assert not module.story_snapshot(words.__getitem__)['active']
+    words[0x761C48]=0xfffffff0
+    with pytest.raises(ValueError):module.story_snapshot(words.__getitem__)
+
+
+def test_story_window_uses_complete_host_intervals_after_active_warmup(tmp_path):
+    import csv
+    module=runner();origin=10**12
+    path=tmp_path/'frames.csv'
+    with path.open('w',newline='') as out:
+        writer=csv.DictWriter(out,fieldnames=['frame','elapsed_ms','frame_ms','swap_ms','kind','guest_frame','clock_ns'])
+        writer.writeheader()
+        for frame in range(2,402):
+            writer.writerow(dict(frame=frame,elapsed_ms=(frame-1)*100,frame_ms=100,
+                                 swap_ms=1,kind='guest',guest_frame=frame,clock_ns=origin+(frame-1)*100_000_000))
+    samples=[dict(active=3<=second<=35,clock_ns=origin+second*10**9) for second in range(40)]
+    result=module.story_window(samples,path)
+    assert result['guest_fps']==10 and result['start_ns']>=origin+8*10**9
+    with pytest.raises(ValueError):module.story_window([dict(active=False,clock_ns=origin)],path)

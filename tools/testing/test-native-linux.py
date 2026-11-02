@@ -172,7 +172,10 @@ def main():
                             elif elapsed>15:raise RuntimeError('Owned child did not report its guest mapping')
                         if offset is not None:
                             def word(address):return struct.unpack('<I',os.pread(memory_fd,4,offset+address))[0]
-                            state=story_snapshot(word);state.update(seconds=round(elapsed,3),clock_ns=time.monotonic_ns());states.append(state)
+                            state=story_snapshot(word);state.update(seconds=round(elapsed,3),clock_ns=time.monotonic_ns())
+                            if not states or (state['scene'],state['flags']&0x20000000,state['paused'])!=(states[-1]['scene'],states[-1]['flags']&0x20000000,states[-1]['paused']):
+                                print(f"[STORY-STATE] pid={child.pid} seconds={elapsed:.3f} scene={state['scene']} cinematic={int(bool(state['flags']&0x20000000))} paused={state['paused']}",flush=True)
+                            states.append(state)
                             cinematic=state['scene']==2 and bool(state['flags']&0x20000000)
                             if cinematic and cutscene_since is None:cutscene_since=elapsed
                             if cinematic and cutscene_since is not None and elapsed-cutscene_since>=2 and skip_at is None:
