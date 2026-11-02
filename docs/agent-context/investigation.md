@@ -380,3 +380,5 @@ core.autocrlf settings explicitly; a host's global Git config can mask the bug.
 See [division migration evidence](guest-integer-division.md).
 
 Stage0243 extends the effective tail and historical exclusions; [memory/bit contracts](guest-memory-ops.md) include native stack-probe and public fastcall ABI evidence.
+
+Stage0244: [counted codec/ownership](guest-text-codec.md); native pointer records are separate from guest records, and fresh heap rollback zeroing is not an all-RAM transaction claim.

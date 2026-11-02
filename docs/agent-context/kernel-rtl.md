@@ -14,7 +14,7 @@ SetCrtLockTable, status conversion, Rip, unused Unwind/RaiseException and four
 unused printf wrappers. Only excluded kernel_rtl/kernel_thunks retain names.
 Stage0239 selects [original narrow formatting](guest-printf.md);0240 adds
 [original numeric conversions](guest-numbers.md). Guest
-exception/unwind paths and charset/create/free services elsewhere in
+exception/unwind paths and raw charset/create services elsewhere in
 kernel_bridge.c remain replacement work; unused native wrapper retirement alone
 did not replace those guest implementations. Snapshot and
 historical patch bytes remain for reproducible migration and notices.
@@ -120,3 +120,5 @@ Story movement/fire/pause/resume and fresh captures agree with a586004e runtime
 bytes.26 protected files unchanged; exact counts/limits are in STATUS stage0238.
 Latest maincc531ea9 is already included. Native Mac title gameplay and the overall
 replacement remain unfinished; PR#413 remains draft/unmerged.
+
+Stage0244 now replaces counted conversions and both free imports: [ownership/encoding contracts](guest-text-codec.md).

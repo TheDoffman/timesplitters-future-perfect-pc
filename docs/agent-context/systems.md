@@ -972,4 +972,4 @@ Physics: [poses](systems-details.md#guest-ragdolls-and-physical-npc-drops).
 
 [2x texture workflow](original-upscale.md).
 
-[RTL memory/bit contracts](guest-memory-ops.md).
+[Counted conversion/ownership](guest-text-codec.md).

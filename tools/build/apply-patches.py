@@ -148,6 +148,10 @@ def patch_records(paths):
     if memory_ops:
         paths.remove(memory_ops)
         paths.append(memory_ops)
+    codec = by_name.get('0244-original-counted-codec.patch')
+    if codec:
+        paths.remove(codec)
+        paths.append(codec)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

@@ -37676,3 +37676,47 @@ native Mac title/gameplay and final toolkit/snapshot-unavailable generation/buil
 package acceptance remain pending. Charset conversion, string ownership,
 exception/unwind and other kernel/graphics/audio/input/title/fixture replacement
 remain unfinished; no whole-project independence claim is made.
+
+
+## Original counted conversion and string ownership (2026-11-02, stage0244, PR465)
+
+Previous85363cc5 passed runtime41415470820 and launcher41415470866 completely,
+including both native and patch-upgrade hosts. The draft PR remains unmerged.
+Original guest_text_codec.c/.h, host_text_codec.c/.h and the checked import include
+replace260/308 counted ANSI/Unicode conversions and286/287 matching frees.
+Both providers are linked once and all four inherited bridge bodies are removed.
+The shared policy uses explicit eight-byte guest records, complete source spans,
+staged encoding, encoding-valid ANSI overflow prefixes, correct BOOLEAN handling,
+real guest heap ownership and rollback of unpublished ownership. Windows uses
+standard OS NLS APIs; Mac retains the existing Latin-1 fallback. No inherited
+conversion implementation or native pointer record is used. Contracts and limits:
+[codec guide](../agent-context/guest-text-codec.md).
+
+Windows x64:92 focused/compiler/allocator/pool/memory/context checks passed35.86s.
+The17 new cases include10224 independent whole1024-byte RAM/ownership vectors
+through direct services and real imports, ten compile-first broken controls,
+6000 actual ntdll counted-conversion references, CP1252/932/65001 prefix boundaries,
+maximum lengths, rollback, free lifetime and executed dispatcher-size checks.
+Native Mac title execution and complete NT NLS compatibility are not inferred.
+
+Release, built-in/utility tests and matching crash symbols passed. Archive symbols
+and single-provider selection are verified; generation is current and every
+produced guest C/header byte matches the accepted arithmetic stage. Executable:
+`7079f8d73d0a27bd915bdcceca082b44e50561405cecf0c8fe395cc59b0e88df`.
+The build manifest records source/patch/tool/kernel/library/generated hashes.
+Both isolated Story runner and controller exited0. Scotland scene4/mission1:
+forward11.174544, backward6.192486, ammo8 to6,39 frozen pause samples and58
+advancing resume samples; last checkpoint134.445s within the240s bound. Fresh
+start/fire/pause captures were reviewed. Profiles/signatures/fixture stayed valid,
+all26 protected file hashes/sizes/mtimes were unchanged, and no run lock/dump/
+Partition image remained. Source/build/game hashes agree. Evidence: ignored
+logs/text-codec-build.json, text-codec-game-check.json and text-codec-captures.
+This was minimized synthetic Original60/movie-skipped validation, not physical
+input/audio/full campaign or native Mac title acceptance. US imports260/308;
+that import presence and game integration do not prove every branch executed.
+
+All35 full forward/reverse migration and line-ending cases passed. Together with
+the92 focused cases,127 distinct local checks passed. New-head CI remains pending.
+String creation/case/raw charset, exception/unwind, remaining kernel/graphics/
+audio/input/title/header/fixture replacements and old-checkout/snapshot-unavailable
+generation/build/package acceptance remain unfinished. Goal active; no merge.

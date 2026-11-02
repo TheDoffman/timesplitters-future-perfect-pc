@@ -8777,3 +8777,15 @@ pending (STATUS). Portable cases run with undefined-behavior sanitizer on Mac;
 4305 real ntdll reference cases require Windows/WoW64. Previous083d repair stage
 passed both-host runtime41412095577 and launcher41412095536. Native Mac gameplay
 and full runtime independence remain unverified.
+
+
+Stage0244 counted conversion/free (2026-11-02, PR465 continuation): shared original
+checked descriptor/encoding/ownership policy serves both hosts. Windows NLS is a
+thin standard API adapter; Mac keeps the existing Latin-1/single-byte fallback.
+No new Mac code-page equivalence is claimed. Windows92 focused cases, Release/
+utilities/archive/generation and isolated Story movement/fire/pause/resume pass;
+see STATUS and guest-text-codec.md for exact limits and ownership contracts.
+Portable cases use undefined-behavior sanitizer on Mac; four Windows-only native/
+code-page references skip. New-stage Mac CI/title acceptance is pending. Prior
+85363cc5 passed both-host runtime41415470820 and launcher41415470866. Complete
+runtime replacement and snapshot-unavailable production acceptance remain open.

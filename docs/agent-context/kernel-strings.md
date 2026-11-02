@@ -10,11 +10,11 @@ return signed32 differences, equality0/1, appends NTSTATUS, prefix counts bytes.
 
 The six old native init/conversion/equality/pattern helpers and kernel.h prototypes
 are retired after caller audit. Only the excluded kernel_thunks resolver retains
-the native symbols. The guest ANSI/Unicode conversion bridges still remain legacy
-work; removing their unused native host-heap counterparts does not replace those
-bridges. Stage0238 now retires the whole native kernel_rtl.c through [original critical/
-status services](kernel-rtl.md); its unused native exception/format wrappers retire. Stage0240 selects [original numeric conversions](guest-numbers.md). Create/free/
-case conversion, arithmetic helpers and remaining charset services and the old raw wcslen helper remain replacement work.
+the native symbols. Stage0244 now replaces the live guest counted conversion/free bridges through
+[original codec/ownership services](guest-text-codec.md). Native wrapper removal
+alone did not replace those bridges. Stage0238 now retires the whole native kernel_rtl.c through [original critical/
+status services](kernel-rtl.md); its unused native exception/format wrappers retire. Stage0240 selects [original numeric conversions](guest-numbers.md). Create/
+case conversion and remaining raw charset services and the old raw wcslen helper remain replacement work.
 Vendor/historical patch bytes remain for reproducible unwind and notices.
 
 The shared provider treats descriptors as eight little-endian bytes: Length16,

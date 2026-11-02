@@ -1026,4 +1026,4 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [2x tests](original-upscale.md).
 
-[RTL memory/bit checks](guest-memory-ops.md).
+[Counted codec/ownership checks](guest-text-codec.md).
