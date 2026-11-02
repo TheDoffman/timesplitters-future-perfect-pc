@@ -76,3 +76,5 @@ OR, using `guest_mmio_interrupt.h`. The producer must set interrupt bits, not
 execute the guest acknowledgement policy on a write-trapped CRTC page. Linux's
 first game boot exposed that host RMW fault; the protected-MMIO fixture checks
 production through the same helper before guest acknowledgement clears it.
+Linux game runs use the same 500-entry translated-call trace budget as the Mac
+runner, in addition to the hard aggregate log cap.

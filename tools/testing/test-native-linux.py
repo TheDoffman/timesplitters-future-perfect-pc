@@ -55,7 +55,7 @@ def main():
             TSFP_DISPLAY_CONFIG=str(test/'pc-display.ini'),TSFP_SAVE_LOCATION_LOCK='1',
             XDG_CONFIG_HOME=str(test/'xdg-config'),XDG_DATA_HOME=str(test/'xdg-data'),XDG_CACHE_HOME=str(test/'xdg-cache'),
             RECOMP_LOG_FILE=str(ROOT/'logs/linux-game.err'),TSFP_CRASH_DIR=str(test/'crashes'),
-            RECOMP_XMV_PLAY='0',RECOMP_FPS_CAP='60',TSFP_NATIVE_FPS='0')
+            RECOMP_XMV_PLAY='0',RECOMP_FPS_CAP='60',TSFP_NATIVE_FPS='0',RECOMP_TRACE_BUDGET='500')
         if args.driver_manifest:env['VK_DRIVER_FILES']=str(args.driver_manifest.resolve(strict=True))
         if args.capture:env.update(RECOMP_HLE_D3D8_DUMP=str(capture/'frame'),RECOMP_HLE_D3D8_DUMP_EVERY='60',RECOMP_HLE_D3D8_DUMP_KEEP_LAST='2')
         if args.test_keys:
