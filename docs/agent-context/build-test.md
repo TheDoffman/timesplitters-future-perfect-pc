@@ -21,11 +21,10 @@ Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh
 
 Minigun: [readiness/release/pause/input tests](native-minigun.md). CI selects test_native_timing.py; original-code tests require the private XBE. Historical stacks exclude minigun/player-trigger patches until full native timing applies.
 
-Release 0.4.0 / launcher 1.4.1 tests cover aliases and upload recovery; Mac
-Online notices follow [installer paths](multiplayer-ui.md).
-Run `python -m unittest discover -s tests/launcher -p test_launcher_release.py -v`.
-Launcher 1.4.2 uses the same dual-host workflow and ten-asset verification gates;
-the version-only preparation does not change build, install or preservation paths.
+Linux launcher: `tools/build/build-linux-launcher.py --install-sdk --test --package`
+uses the pinned SDK/shared Avalonia host. Xvfb tests adapters, shared UI and
+package repair/restart. Release CI requires three hosts and 15 assets. See
+[launcher internals](launcher.md) and [Online install paths](multiplayer-ui.md).
 
 Windows builds pass `config/build/windows-game.manifest` as
 `TSFP_GAME_MANIFEST`; patch 2130 attaches it only to the game target. CMake
@@ -147,7 +146,6 @@ Camera/mothership/spawn/rigid fixtures include the shared helper.
 
 Crash capture/heartbeat and bounded Windows sharing retries: `test_crash_capture.py`.
 Darwin: `test_native_crash.py`. Both hosts run shared UI identity/failure/ZIP tests.
-
 
 `stability_transitions_game.py --scenario rocket-impact --native-fps 240
 --watch-actors --watch-effects --no-captures --no-native-trace --seconds 180`: Temple floor rocket, cleanup,
@@ -899,13 +897,11 @@ suite and both-host CI. See docs/project/STATUS.md for measured local results; n
 behavior or generated guest code changed, and no game build/publication is
 established by these asset-free checks.
 
-
 Grouped Preview UI: GameChannelPickerPage.cs uses both hosts' *Page.cs includes.
 tests/launcher/launcher_shared_ui.cs covers tracks, Save state and launcher_saves.cs
 (sparse backups, update protection, restore failures). Run
 tools/build/build-launcher.ps1 -Test. --render-preview uses synthetic tracks.
 No game build or publisher/tag-format change is required for this grouping.
-
 
 Local Windows artwork selection: build-launcher.ps1 resolves explicit image
 arguments first, then validates each build/launcher-art PNG against the shared
@@ -913,7 +909,6 @@ artwork pin, then uses the existing private legacy fallback if no cached file
 exists. fetch-launcher-art.ps1 recovers the pinned banner/backdrop/logo without
 executing downloaded code. -RequireArtwork checks the selected resources; normal
 local rebuilds now reuse the same verified art as release CI when cached.
-
 
 Beta publication (2026-10-23): release_channels.identity defaults to history parsing;
 publishing=True rejects alpha/preview/rc/legacy suffixes. Version preparation,
@@ -942,9 +937,7 @@ See [water tests](water-tests.md) for CPU/GPU validation and live limits; see
 CI discovers unittest in each owning test folder. Changes to project_paths.py
 or conftest.py select all runtime and launcher suites.
 
-
 [Request CI](kernel-objects.md).
-
 
 Stage0219 device/name source and contracts use maintained src/runtime and tests/compiler
 paths; see [device ownership](kernel-devices.md). Shared CI selects every new portable
@@ -953,9 +946,7 @@ that skip does not replace native Mac compilation or title gameplay.
 
 [Unlock migrations](unlock-content.md).
 
-
 Original sharing bridges and ordinal80 cleanup: [contracts and checks](kernel-sharing.md).
-
 
 Stage0220 migration models: native-checkpoint, old-controls and old-Mac fixtures
 omit0220 together with its0219 prerequisite while constructing historical inputs.
@@ -963,25 +954,20 @@ Each complete upgrade explicitly asserts the original sharing include/provider
 and ordinal80/16byte cleanup. Full current stacks still include0220. No loader,
 patch bytes, runtime behavior, strict warnings or final upgrade checks are weakened.
 
-
 Online loopback CI synchronization: test_online.py's three-peer handshake waits
 for the host's two authenticated latency replies as well as each guest's first
 reply, matching its existing assertions. The same four-second deadline, nonce/
 credential/replay checks and relay assertions remain. A partial host roster must
 not end that wait. This test-only fix changes no transport or runtime behavior.
 
-
 Original request lifetime/callback prerequisites: [contracts and ABI boundary](request-lifetime.md).
 
-
 Stage0222: [original driver-call composition and opaque stack payload](driver-call.md).
-
 
 Driver fault controls must compile under Clang/Werror before runtime rejection:
 target expected-pointer weakening retains the expected operand; separate wrong
 rollback location/pointer controls retain put. See test_io_target/test_io_call;
 unused-mutant compiler errors are fixture failures, never passing fault evidence.
-
 
 Stage0223: [private request construction and completion delivery](transfer-completion.md).
 
@@ -1023,7 +1009,6 @@ error; native calendar source and the accepted game binary do not change.
 
 [Strings](kernel-strings.md), [RTL](kernel-rtl.md), [formatting](guest-printf.md), [numbers](guest-numbers.md).
 
-
 [Crash evidence and historical upgrades](build-test-details.md#crash-evidence-and-historical-upgrades).
 
 Crossplay: [acceptance](multiplayer-ui.md#physical-windowsmac-online-acceptance).
@@ -1041,15 +1026,3 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 [Languages](launcher.md#complete-game-language-packs-discussion-263).
 
 [2x tests](original-upscale.md).
-
-## Linux launcher build and delivery
-
-`tools/build/build-linux-launcher.py --install-sdk --test --package` builds the
-shared Avalonia launcher on Linux x64, using a separate pinned SDK and output
-under `build/linux-launcher`. The runtime host SDK/Avalonia versions match Mac.
-Xvfb is required for headless shared UI/package restart checks. The reusable
-launcher workflow now requires the Linux job and includes linux-x64 in release
-verification, execute-bit checks and all-or-nothing publication (15 assets).
-Portable release-policy tests exercise missing Linux execute permissions and
-forbidden game payloads. Windows/Mac launcher behavior remains host-tested by
-their existing jobs; a Linux pass does not replace either host.

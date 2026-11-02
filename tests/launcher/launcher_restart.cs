@@ -80,7 +80,10 @@ public static class LauncherRestartChecks
 
             var start = LauncherPlatform.RestartInfo(root);
             Need(start.WorkingDirectory == root, "Restart changed the installation");
-#if MACOS || LINUX
+#if LINUX
+            Need(start.FileName == Core.PathIn(root,Core.LauncherName) && start.ArgumentList.SequenceEqual(new[] {
+                "--skip-self-update", "--root", root }), "Linux restart lost the selected root or retry guard");
+#elif MACOS
             Need(start.FileName == "/usr/bin/open" && start.ArgumentList.SequenceEqual(new[] {
                 "-n", Core.PathIn(root, "TimeSplitters Launcher.app"), "--args",
                 "--skip-self-update", "--root", root }), "Mac restart lost the selected root or retry guard");
