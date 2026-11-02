@@ -38,10 +38,16 @@ def main():
     p.add_argument('--fps',type=int,choices=(60,120,180,240),default=60,
                    help='Explicit isolated timing preset; high refresh retains the existing beta policy')
     p.add_argument('--unlocked-profile',action='store_true',help='Use the shared local Test Lab fixture in a disposable nested profile')
+    p.add_argument('--profile-name',default='unlocked',help='Separate disposable fixture copy; preserves other runs')
+    p.add_argument('--frame-profile',action='store_true',help='Record bounded actual present intervals and timing percentiles')
+    p.add_argument('--profile-start',type=int,default=0,help='Seconds after first present before collecting frame timings')
     p.add_argument('--test-keys',action='store_true',help='Read synthetic SDL events from the isolated test-keys.txt')
     args=p.parse_args()
     if platform.system()!='Linux' or platform.machine().lower() not in ('x86_64','amd64'):p.error('Requires Linux x64')
     if not 1<=args.seconds<=600:p.error('Duration must be 1–600 seconds')
+    if not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,47}',args.profile_name) or args.profile_name in ('manual','crashes','xdg-cache','xdg-config','xdg-data'):
+        p.error('Use a simple disposable profile name, excluding reserved folders')
+    if not 0<=args.profile_start<args.seconds:p.error('Profile start must be inside the bounded run')
     game=args.game_dir.resolve()
     if sha256(game/'default.xbe')!=EXPECTED:p.error('Unsupported XBE')
     build=ROOT/'build/linux/game';exe=build/'futureperfect_recomp'
@@ -71,12 +77,15 @@ def main():
             RECOMP_XMV_PLAY='0',RECOMP_FPS_CAP='60',TSFP_NATIVE_FPS=str(0 if args.fps==60 else args.fps),RECOMP_TRACE_BUDGET='500')
         if args.unlocked_profile:
             from testing_profile import prepare_run
-            prepared=prepare_run(ROOT,test/'unlocked')
+            prepared=prepare_run(ROOT,test/args.profile_name)
             for key in ('RECOMP_SAVE_DIR','RECOMP_INPUT_CONFIG','RECOMP_ICALL_FEEDBACK_PATH',
                         'TSFP_TEXTURE_PACK_DIR','TSFP_TEXTURE_MODE'):
                 env[key]=prepared[key]
         if args.driver_manifest:linux_vulkan_sdk.select_driver(env,args.driver_manifest)
         if args.performance:env.update(RECOMP_VK_VALIDATION='0',RECOMP_SHADER_CACHE='1')
+        if args.frame_profile:
+            env.update(TSFP_FRAME_PROFILE=str(ROOT/'logs/linux-game-frames.csv'),
+                       TSFP_FRAME_PROFILE_DELAY_MS=str(args.profile_start*1000))
         if args.capture:env.update(RECOMP_HLE_D3D8_DUMP=str(capture/'frame'),RECOMP_HLE_D3D8_DUMP_EVERY='60',RECOMP_HLE_D3D8_DUMP_KEEP_LAST='2')
         if args.test_keys:
             keys=test/'test-keys.txt';keys.touch(exist_ok=True);env['TSFP_NATIVE_TEST_KEYS']=str(keys)
@@ -118,6 +127,10 @@ def main():
             scope='Bounded isolated actual game; captures require visual review; not a full playthrough')
         summary['completed_guest_frames_at_least']=max([int(n) for n in re.findall(r'\[NATIVE-GUEST\] completed frame (\d+)',text)],default=0)
         summary['vulkan_validation_errors']=text.count('[VKVAL]')+text.count('[VKVAL error]')
+        if args.frame_profile:
+            import native_frame_stats
+            summary['frame_timings']=native_frame_stats.summarize(ROOT/'logs/linux-game-frames.csv',args.profile_start)
+            summary['frame_timings']['scope']='Successful host-present intervals; not GPU completion or scanout'
         summary['disposable_test_disks']=recycle_test_disks(ROOT,test)
         (logs/'linux-game.json').write_text(json.dumps(summary,indent=2)+'\n');print(json.dumps(summary,indent=2))
         passed=timed_out and summary['requested_timing_observed'] and summary['presents'] and summary['presents']['guest']>0 and not summary['vulkan_validation_errors']
