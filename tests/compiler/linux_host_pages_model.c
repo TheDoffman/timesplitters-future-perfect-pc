@@ -8,6 +8,10 @@
 #ifndef __linux__
 #define __linux__ 1
 #endif
+#define sysconf tsfp_test_sysconf
+#define mmap tsfp_test_mmap
+#define munmap tsfp_test_munmap
+#define mprotect tsfp_test_mprotect
 static const char *mapping_text;
 static FILE *proc_maps(const char *path,const char *mode) {
     assert(!strcmp(path,"/proc/self/maps") && !strcmp(mode,"r"));

@@ -39,7 +39,10 @@ Tests: `tests/repository/test_linux_foundation.py` checks SDK integrity/isolatio
 Controlled Linux memory branches also execute on Windows/Mac via
 `tests/compiler/test_linux_host.py` (VMA permissions/holes and sysinfo units,
 overflow/failure preservation). Existing real-host pages/stats/native-VM/shared-
-view contracts run on Linux. CI's
+view contracts run on Linux.
+Controlled POSIX model functions use fixture-prefixed symbols, so libc calls
+made by Clang's sanitizer runtime cannot accidentally enter mocked sysconf/mmap.
+CI's
 `linux-foundation` job uses Ubuntu x64, Xvfb and Mesa lavapipe, and the PR gate
 requires success when GPU checks are selected. These are asset-free checks;
 configured CI and Windows passing tests do not establish Linux execution.

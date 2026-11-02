@@ -6,6 +6,7 @@
 #ifndef __linux__
 #define __linux__ 1
 #endif
+#define sysinfo tsfp_test_sysinfo
 #include "host_memory_stats.c"
 static uint64_t pages;
 static unsigned unit;
