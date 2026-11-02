@@ -25,7 +25,7 @@ namespace TimeSplitters.Launcher
                         output.WriteByte(0);output.Flush(true);
                     }
                 } catch {return prefix+"Report storage unavailable. Capture may fail; check folder permissions and free space.";}
-#if !MACOS
+#if !MACOS && !LINUX
                 if(!File.Exists(Path.Combine(Path.GetDirectoryName(game),"tsfp_crash_helper.exe")))
                     return prefix+"Crash helper missing. Native crash and freeze capture unavailable; session summaries may still work.";
 #endif
@@ -112,7 +112,7 @@ namespace TimeSplitters.Launcher
                     return name+"\nType: Unexpected exit\n"+detail+"\nMinidump: not captured for this session\nAn interrupted launcher, forced closure or reboot can also leave an unfinished session.";
                 }
                 string code = Json.String(metadata,"exception_code"), hash = Json.String(metadata,"executable_sha256");
-                if(Json.String(metadata,"platform")=="macos-arm64")return name+"\nType: "+(Json.String(metadata,"kind")=="suspected_hang"?"Suspected hang (the game was left running)":"Fatal native signal "+Json.String(metadata,"signal"))+"\nNative context: "+(metadata.ContainsKey("native_capture_saved")&&Object.Equals(metadata["native_capture_saved"],true)?"saved":"unavailable")+"\nExecutable SHA-256: "+(Regex.IsMatch(hash,@"^[0-9a-f]{64}$")?hash:"unavailable")+Evidence(root,name);
+                if((Json.String(metadata,"platform")=="macos-arm64" || Json.String(metadata,"platform")=="linux-x64"))return name+"\nType: "+(Json.String(metadata,"kind")=="suspected_hang"?"Suspected hang (the game was left running)":"Fatal native signal "+Json.String(metadata,"signal"))+"\nNative context: "+(metadata.ContainsKey("native_capture_saved")&&Object.Equals(metadata["native_capture_saved"],true)?"saved":"unavailable")+"\nExecutable SHA-256: "+(Regex.IsMatch(hash,@"^[0-9a-f]{64}$")?hash:"unavailable")+Evidence(root,name);
                 if (!Regex.IsMatch(code,@"^0x[0-9A-Fa-f]{8}$")) code="unknown";
                 if (!Regex.IsMatch(hash,@"^[0-9a-f]{64}$")) hash="unavailable";
                 return name+(Json.String(metadata,"kind")=="suspected_hang"?"\nType: Suspected hang (the game was left running)":"\nException: "+code)+"\nMinidump: "+(metadata.ContainsKey("dump_saved") && Object.Equals(metadata["dump_saved"],true)?"saved":"unavailable; summary retained")+"\nExecutable SHA-256: "+hash+Evidence(root,name);

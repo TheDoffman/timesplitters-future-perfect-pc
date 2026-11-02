@@ -74,7 +74,7 @@ namespace TimeSplitters.Launcher
         }
         public static int Apply(string root,int parent,bool probe=false)
         {
-            try{SelfUpdate.WaitForParent(parent);using(var guard=new FileStream(Core.PathIn(root,".launcher/mac.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None)){
+            try{SelfUpdate.WaitForParent(parent);using(var guard=new FileStream(Core.PathIn(root,LauncherPlatform.LockFile),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None)){
                 Core.RecoverLauncher(root);SelfUpdate.InstallPending(root);
             }
             Restart(root,probe,"self-update-preview.png");return 0;

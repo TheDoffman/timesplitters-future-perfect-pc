@@ -400,7 +400,7 @@ namespace TimeSplitters.Launcher
             info.EnvironmentVariables["RECOMP_MOUSE_INVERT_Y"] = model.InvertY ? "1" : "0";
             info.EnvironmentVariables["RECOMP_MOUSE_SENSITIVITY"] = model.Sensitivity.ToString("R", CultureInfo.InvariantCulture);
             info.EnvironmentVariables["TSFP_TEXTURE_MODE"] = model.EnhancedTextures ? "4k" : "classic";
-            #if MACOS
+            #if MACOS || LINUX
             NativeHost.Configure(info,root);
 #endif
             return info;

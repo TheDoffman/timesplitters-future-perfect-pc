@@ -9,7 +9,9 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Themes.Fluent;
 using Avalonia.Styling;
+#if MACOS
 [assembly: System.Runtime.Versioning.SupportedOSPlatform("macos12.0")]
+#endif
 namespace TimeSplitters.Launcher
 {
     public static class Program
@@ -24,12 +26,23 @@ namespace TimeSplitters.Launcher
             if(args.Length==3 && (args[0]=="--apply-game" || args[0]=="--rollback-game" || args[0]=="--test-game-helper"))
                 return NativeStartup.ApplyGame(Path.GetFullPath(args[1]),Int32.Parse(args[2]),args[0]=="--rollback-game",args[0]=="--test-game-helper");
             if(args.Length==3 && args[0]=="--extract-art") { ExtractArt(args[1],args[2]);return 0; }
-            if(args.Length==1 && args[0]=="--test")return NativeTests.Run();
+            if(args.Length==1 && args[0]=="--test")
+#if LINUX
+                return LinuxTests.Run();
+#else
+                return NativeTests.Run();
+#endif
+#if MACOS
             if(args.Length==3 && args[0]=="--verify-package")return NativeTests.VerifyPackage(args[1],args[2]);
             if(args.Length==3 && args[0]=="--verify-game-package")return NativeTests.VerifyGamePackage(args[1],args[2]);
-            if(args.Length==1 && args[0]=="--test-ui"){AppBuilder.Configure<NativeApplication>().UsePlatformDetect().SetupWithoutStarting();try{NativeTests.LocationUi();return LauncherSharedUiChecks.Run();}catch(Exception e){Console.Error.WriteLine(e);return 1;}}
+#endif
+            if(args.Length==1 && args[0]=="--test-ui"){AppBuilder.Configure<NativeApplication>().UsePlatformDetect().SetupWithoutStarting();try{
+#if MACOS
+NativeTests.LocationUi();
+#endif
+return LauncherSharedUiChecks.Run();}catch(Exception e){Console.Error.WriteLine(e);return 1;}}
             Root=FindRoot(args);
-            if(args.Contains("--check")){try{Core.Require(!NativeInstallation.Translocated(Root),NativeInstallation.Guidance);NativeHost.CheckData(Root);NativeHost.CheckBuild(Root);GameSettings.Load(Root,null);Console.WriteLine("Native Mac launcher prerequisites passed.");return 0;}catch(Exception e){Console.Error.WriteLine(e.Message);return 1;}}
+            if(args.Contains("--check")){try{Core.Require(!NativeInstallation.Translocated(Root),NativeInstallation.Guidance);NativeHost.CheckData(Root);NativeHost.CheckBuild(Root);GameSettings.Load(Root,null);Console.WriteLine(LauncherPlatform.HostName+" launcher prerequisites passed.");return 0;}catch(Exception e){Console.Error.WriteLine(e.Message);return 1;}}
             return AppBuilder.Configure<NativeApplication>().UsePlatformDetect().StartWithClassicDesktopLifetime(args);
         }
         internal static string FindRoot(string[] args, string baseDirectory=null)
@@ -37,7 +50,7 @@ namespace TimeSplitters.Launcher
             int option=Array.IndexOf(args,"--root");if(option>=0){if(option+1>=args.Length)throw new ArgumentException("--root needs a path");return Path.GetFullPath(args[option+1]);}
             baseDirectory=baseDirectory??AppContext.BaseDirectory;
             for(var dir=new DirectoryInfo(baseDirectory);dir!=null;dir=dir.Parent)
-                if(File.Exists(Path.Combine(dir.FullName,"tools/play-native-mac.py")))return dir.FullName;
+                if(LauncherPlatform.Checkout(dir.FullName))return dir.FullName;
             var bundle=new DirectoryInfo(baseDirectory).Parent?.Parent;
             if(bundle!=null && bundle.Name.EndsWith(".app"))return bundle.Parent.FullName;
             return baseDirectory;

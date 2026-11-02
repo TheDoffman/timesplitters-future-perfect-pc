@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-#if MACOS
+#if MACOS || LINUX
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;

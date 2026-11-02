@@ -11,6 +11,7 @@ namespace TimeSplitters.Launcher
     public static class NativeHost
     {
         public const string XbeHash="3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc";
+#if MACOS
         const string CG="/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics";
         const string CF="/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation";
         [DllImport(CG)]static extern uint CGMainDisplayID();
@@ -38,6 +39,13 @@ namespace TimeSplitters.Launcher
             finally{CFRelease(array);}return modes;
         }
         public static string Graphics() { return "Apple Silicon / native " + RuntimeInformation.OSDescription; }
+#else
+        // Wayland does not permit querying another process's windows. Do not
+        // treat process startup as visual acceptance for update recovery.
+        public static bool GameWindowReady(int pid) { return false; }
+        public static IEnumerable<DisplayMode> DisplayModes() { return Array.Empty<DisplayMode>(); }
+        public static string Graphics() { return RuntimeInformation.OSDescription+" / system Vulkan driver"; }
+#endif
         public static string Version(string root)
         {
             string value=Core.InstalledVersion(root);if(!String.IsNullOrEmpty(value))return value;
@@ -55,17 +63,25 @@ namespace TimeSplitters.Launcher
         }
         public static Dictionary<string,object> CheckBuild(string root)
         {
-            var manifest=Core.PathIn(root,LauncherPlatform.ManifestPath(root));Core.Require(File.Exists(manifest),"Native Mac build manifest is missing. Build the native runtime first.");
-            var m=Json.Object(File.ReadAllText(manifest));var exe=Core.PathIn(root,LauncherPlatform.GamePath(root));Core.Require(File.Exists(exe),"Native Mac game executable is missing.");
+            var manifest=Core.PathIn(root,LauncherPlatform.ManifestPath(root));Core.Require(File.Exists(manifest),LauncherPlatform.HostName+" build manifest is missing. Build the native runtime first.");
+            var m=Json.Object(File.ReadAllText(manifest));var exe=Core.PathIn(root,LauncherPlatform.GamePath(root));Core.Require(File.Exists(exe),LauncherPlatform.HostName+" game executable is missing.");
             string expected=Json.String(m,"executable_sha256");
             if(expected.Length==0 && m.TryGetValue("files",out var files) && files is Dictionary<string,object> map)expected=Json.String(map,LauncherPlatform.GameBinary);
             Core.Require(expected.Length==64 && Core.Hash(exe)==expected,"Native executable differs from its build manifest. Rebuild or repair before playing.");
+#if LINUX
+            using(var stream=File.OpenRead(exe)) { var header=new byte[20];Core.Require(stream.Read(header,0,20)==20 && header[0]==0x7f && header[1]==(byte)'E' && header[2]==(byte)'L' && header[3]==(byte)'F' && header[4]==2 && header[5]==1 && header[18]==62 && header[19]==0,"This launcher requires a Linux x64 ELF game executable."); }
+#else
             using(var stream=File.OpenRead(exe)){var header=new byte[8];Core.Require(stream.Read(header,0,8)==8 && BitConverter.ToUInt32(header,0)==0xfeedfacf && BitConverter.ToUInt32(header,4)==0x0100000c,"This launcher requires a native Apple Silicon game executable.");}
+#endif
             if(Json.String(m,"renderer")=="vulkan")GpuEnvironment(root,m);
             return m;
         }
         static Dictionary<string,object> GpuEnvironment(string root,Dictionary<string,object> manifest)
         {
+#if LINUX
+            // Linux uses the system loader and hardware ICD; never select a Mac driver.
+            return new Dictionary<string,object>();
+#else
             if(!LauncherPlatform.Checkout(root))return PortableGpuEnvironment(root,manifest);
             string python=Path.Combine(root,".venv/bin/python");
             Core.Require(LauncherPlatform.Checkout(root) && File.Exists(python) && File.Exists(Core.PathIn(root,"tools/build/vulkan_sdk.py")),"This Vulkan build needs its pinned checkout SDK and verification helper.");
@@ -75,6 +91,7 @@ namespace TimeSplitters.Launcher
             if(manifest.TryGetValue("vulkan_driver",out var driver))selection["vulkan_driver"]=driver;
             info.ArgumentList.Add("-c");info.ArgumentList.Add("import pathlib,sys,json; sys.dont_write_bytecode=True; sys.path.insert(0,str(pathlib.Path(sys.argv[1])/'tools/build'))\ntry:\n import vulkan_sdk; print(json.dumps(vulkan_sdk.launch_environment(pathlib.Path(sys.argv[1]),json.loads(sys.argv[2]))))\nexcept Exception as error:\n print(str(error)); sys.exit(1)");info.ArgumentList.Add(root);info.ArgumentList.Add(Json.Encode(selection));
             return Json.Object(ReadGpuHelper(info));
+#endif
         }
         internal static Dictionary<string,object> PortableGpuEnvironment(string root,Dictionary<string,object> manifest)
         {
@@ -150,6 +167,12 @@ namespace TimeSplitters.Launcher
             try { token.ThrowIfCancellationRequested();CheckBuild(root);result.Checked=1;result.ManifestHash=Core.Hash(Core.PathIn(root,LauncherPlatform.ManifestPath(root))); }
             catch(Exception ex){result.Issues.Add(ex.Message);}return result;
         }
-        public static void Open(string target) { var info=new ProcessStartInfo("/usr/bin/open"){UseShellExecute=false};info.ArgumentList.Add(target);Process.Start(info); }
+        public static void Open(string target) { var info=new ProcessStartInfo(
+#if LINUX
+            "xdg-open"
+#else
+            "/usr/bin/open"
+#endif
+            ){UseShellExecute=false};info.ArgumentList.Add(target);Process.Start(info); }
     }
 }

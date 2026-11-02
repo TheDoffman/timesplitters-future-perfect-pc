@@ -1,6 +1,6 @@
 using System;
 using System.IO;
-#if MACOS
+#if MACOS || LINUX
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -27,7 +27,7 @@ namespace TimeSplitters.Launcher
     // live in the shared *Page.cs files compiled by both launcher builds.
     public static class Ui
     {
-#if MACOS
+#if MACOS || LINUX
         public static FontFamily Monospace { get { return new FontFamily("Menlo"); } }
         public static Brush Brush(string value) { return Avalonia.Media.Brush.Parse(value); }
         public static void Freeze(SolidColorBrush brush) { }

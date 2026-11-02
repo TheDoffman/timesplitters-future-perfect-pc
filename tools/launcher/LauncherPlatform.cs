@@ -14,27 +14,47 @@ namespace TimeSplitters.Launcher
         // state serializes save work; standalone callers still acquire that lock.
         public static IDisposable AcquireSaveLock(string root,bool installationLockHeld)
         {
-#if MACOS
+#if MACOS || LINUX
             if(installationLockHeld)return null;
 #endif
             return AcquireUpdateLock(root);
         }
         public static bool IsCloudTag(uint tag) { return (tag & 0xFFFF0FFFu) == 0x9000001Au; }
-#if MACOS
+#if MACOS || LINUX
         public static void PrepareSparse(FileStream file) { /* Native SetLength leaves unwritten regions as holes. */ }
         public static IDisposable AcquireUpdateLock(string root)
         {
-            return new FileStream(Core.PathIn(root, ".launcher/mac.lock"),
+            return new FileStream(Core.PathIn(root, LockFile),
                 FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
         }
         public static ProcessStartInfo RestartInfo(string root)
         {
+#if LINUX
+            var linux = new ProcessStartInfo(Core.PathIn(root, LauncherBinary)) { UseShellExecute = false, WorkingDirectory = root };
+            foreach (var arg in new[] { "--skip-self-update", "--root", root }) linux.ArgumentList.Add(arg);
+            return linux;
+#else
             var info = new ProcessStartInfo("/usr/bin/open") { UseShellExecute = false, WorkingDirectory = root };
             foreach (var arg in new[] { "-n", Core.PathIn(root, "TimeSplitters Launcher.app"),
                 "--args", "--skip-self-update", "--root", root }) info.ArgumentList.Add(arg);
             return info;
+#endif
         }
         public static bool IsCloudPlaceholder(string path) { return false; }
+#if LINUX
+        public const string AssetSuffix = "linux-x64", HostName = "Linux x64", LockFile = ".launcher/linux.lock";
+        public const int LauncherArchiveLimit = 256*1024*1024, LauncherExpandedLimit = 512*1024*1024, LauncherFileLimit = 4096, LauncherManifestLimit = 1024*1024;
+        public const string DisplaySettingsLocation = "your desktop's Display settings";
+        public const string UpdateManifest = "launcher-update-linux-x64.json";
+        public const string GameBinary = "Bin/futureperfect_recomp", LaunchScript = "Launch.sh";
+        public const string LauncherBinary = "TimeSplitters.Launcher", LauncherApplication = "Support/Launcher/application.json";
+        public static bool LauncherResource(string name) { return name.StartsWith("Support/Launcher/Licenses/",StringComparison.Ordinal) && name.EndsWith(".txt",StringComparison.Ordinal); }
+        public static string SessionLog(string tag) { return "logs/native-play.err"; }
+        public static bool Checkout(string root) { return File.Exists(Path.Combine(root,"tools/build/build-native-linux.py")); }
+        public static string GamePath(string root) { return Checkout(root)?"build/linux/futureperfect_recomp":GameBinary; }
+        public static string ManifestPath(string root) { return Checkout(root)?"build/linux/BUILD.json":"BUILD.json"; }
+#else
+        public const string HostName = "macOS ARM64", LockFile = ".launcher/mac.lock";
         public const string AssetSuffix = "macos-arm64";
         public static string SessionLog(string tag){return "logs/native-play.err";}
         public const int LauncherArchiveLimit = 256*1024*1024, LauncherExpandedLimit = 512*1024*1024, LauncherFileLimit = 4096, LauncherManifestLimit = 1024*1024;
@@ -48,6 +68,7 @@ namespace TimeSplitters.Launcher
         public static bool Checkout(string root) { return File.Exists(Path.Combine(root,"tools/play-native-mac.py")); }
         public static string GamePath(string root) { return Checkout(root)?"build/macos/futureperfect_recomp":GameBinary; }
         public static string ManifestPath(string root) { return Checkout(root)?"build/macos/BUILD.json":"BUILD.json"; }
+#endif
         public static string[] Settings(string root) { return Checkout(root)?new[]{"config/pc-controls.json","config/pc-display.ini","private/native-settings/runtime.conf","config/pc-discord.ini","config/pc-frame-rate.ini","config/pc-audio.ini"}:new[]{"Settings/pc-controls.json","Settings/pc-display.ini","Settings/runtime.conf","Settings/pc-discord.ini","Settings/pc-frame-rate.ini","Settings/pc-audio.ini"}; }
         public static string Data(string root) { return Checkout(root)?"private/game":"Data"; }
         public static string Saves(string root) { return Checkout(root)?"private/saves":"Saves"; }
@@ -57,7 +78,7 @@ namespace TimeSplitters.Launcher
             try { File.Copy(source,temporary,false); File.Move(temporary,target,true); Executable(target); }
             finally { if(File.Exists(temporary))File.Delete(temporary); }
         }
-        public static void Executable(string path) { if(OperatingSystem.IsMacOS() && File.Exists(path) && (path.EndsWith("/futureperfect_recomp") || path.EndsWith("/TimeSplitters.Launcher") || path.EndsWith(".command"))) File.SetUnixFileMode(path,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute|UnixFileMode.GroupRead|UnixFileMode.GroupExecute|UnixFileMode.OtherRead|UnixFileMode.OtherExecute); }
+        public static void Executable(string path) { if(!OperatingSystem.IsWindows() && File.Exists(path) && (path.EndsWith("/futureperfect_recomp") || path.EndsWith("/TimeSplitters.Launcher") || path.EndsWith(".command") || path.EndsWith(".sh"))) File.SetUnixFileMode(path,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute|UnixFileMode.GroupRead|UnixFileMode.GroupExecute|UnixFileMode.OtherRead|UnixFileMode.OtherExecute); }
 #else
         [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError=true)]
         static extern bool DeviceIoControl(Microsoft.Win32.SafeHandles.SafeFileHandle file,uint code,
