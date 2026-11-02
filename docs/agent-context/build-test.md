@@ -1026,3 +1026,5 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 [Languages](launcher.md#complete-game-language-packs-discussion-263).
 
 [2x tests](original-upscale.md).
+
+[Vulkan 1.2 tests](linux-game.md).

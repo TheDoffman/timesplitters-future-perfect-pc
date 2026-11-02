@@ -108,3 +108,11 @@ interfaces receive full vertex output vectors and extract their original lanes
 through the bounded SPIR-V adapter `src/graphics/vulkan_interface.h`. The existing
 1.3 path remains, with `RECOMP_VK_COMPAT12` for software-driver regression checks.
 No driver version spoofing or skipped required render policy is intended.
+
+The isolated Dozen build carries `tools/build/mesa-dzn-granularity.diff`: graphics
+and compute queues must report texel-granular copies (1,1,1), which its region
+copy implementation supports. This changes neither feature bits nor API version.
+The shared texture contract accepts the two permitted UNORM conversion integers,
+then compares sampling against independent raw readback; half-float is bit-exact.
+`tests/graphics/test_vulkan_interface.py` runs the bounded SPIR-V adapter fixture
+without graphics hardware or game assets in the native shared CI suite.
