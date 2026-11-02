@@ -1,3 +1,29 @@
+## System Link activation from normal launches (2026-11-01)
+
+Branch `fix-system-link-activation`, main base `4f80b5e5`; publication pending.
+The installed v0.4.1 session had no PC-NET initialization messages. The original
+US System Link row callback 1A2700 tail-calls browser 1A0A60 directly on event 8;
+the previous browser-only manual lookup never activated LAN along that route.
+The test script masked this by setting TSFP_NETWORK before process startup.
+The shared menu resolver now activates LAN before the original row callback's
+selection path, while preserving Online on non-selection events.
+
+Windows x64, MSVC 14.42 / D3D11: supported US XBE SHA-256 verified; complete
+patch-stack preparation and native Build tests passed. Four FOV/menu regressions
+passed, including the original lifted callback and a missing-interception
+negative control; two Mac-only compile cases skipped. The separate shared
+network/menu suite passed all 55 tests. Existing CI already runs these test files.
+
+Bounded isolated Test Lab pair: no TSFP_NETWORK startup setting; explicit
+127.0.0.2/3 bind and peer addresses isolate the windows. Both enabled LAN via
+the normal menu, bound UDP 1000/3000/9999, exchanged discovery packets, and the
+guest's match list gained the host row. Joining reached host network state 11
+and guest state 12. Logs/snapshots are under ignored `logs/system-link-smoke`;
+the disposable partition images were recycled and run locks removed. No personal
+saves/settings were used. This verifies activation and loopback lobby discovery/
+joining, not physical LAN broadcast delivery, a completed match or Mac execution.
+The installed game and published releases remain unchanged.
+
 ## Optional Arcade kill feed (2026-11-01)
 
 Feature/arcade-kill-feed, based on main 0b0fcb8b. Windows x64
