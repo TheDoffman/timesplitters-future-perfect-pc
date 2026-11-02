@@ -8,6 +8,7 @@ import subprocess
 import sys
 import pytest
 ROOT=Path(__file__).resolve().parents[2]
+FATAL_STATUS=132 if sys.platform=='linux' else 134
 pytestmark=pytest.mark.skipif(sys.platform not in ('darwin','linux'),reason='POSIX crash adapters')
 @pytest.fixture(scope='module')
 def client(tmp_path_factory):
@@ -21,7 +22,7 @@ def test_capture(client,tmp_path,mode,count):
     log=tmp_path/'game.err';log.write_text('local diagnostic tail\n')
     env=dict(os.environ,TSFP_CAPTURE_SESSION='c'*32,TSFP_CRASH_DIR=str(tmp_path/'reports'),RECOMP_LOG_FILE=str(log))
     result=subprocess.run([str(client),mode],env=env,capture_output=True,text=True,timeout=15)
-    assert result.returncode==(134 if 'crash' in mode else 0),result.stderr
+    assert result.returncode==(FATAL_STATUS if 'crash' in mode else 0),result.stderr
     reports=sorted((tmp_path/'reports').glob('*/report.json'));assert len(reports)==count
     for path in reports:
         crumbs=(path.parent/'breadcrumbs.txt').read_text();assert 'scene-id 4' in crumbs and len(crumbs)<8192
@@ -40,4 +41,4 @@ def test_capture(client,tmp_path,mode,count):
 def test_refuses_linked_report_root(client,tmp_path):
     outside=tmp_path/'outside';outside.mkdir();link=tmp_path/'reports';link.symlink_to(outside,target_is_directory=True)
     result=subprocess.run([str(client),'crash'],env=dict(os.environ,TSFP_CAPTURE_SESSION='c'*32,TSFP_CRASH_DIR=str(link)),timeout=15)
-    assert result.returncode==134 and not list(outside.iterdir())
+    assert result.returncode==FATAL_STATUS and not list(outside.iterdir())

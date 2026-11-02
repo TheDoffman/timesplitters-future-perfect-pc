@@ -4,12 +4,21 @@
 #include <string.h>
 #include <unistd.h>
 static void guest(uint32_t r[8]){for(unsigned i=0;i<8;i++)r[i]=0x12340000+i;}
-__attribute__((noinline)) void tsfp_native_crash_test_site(void){raise(SIGABRT);}
+__attribute__((noinline)) void tsfp_native_crash_test_site(void){
+#ifdef __linux__
+    __asm__ volatile("ud2"); /* Fault at our symbol, rather than inside libc raise. */
+#else
+    raise(SIGABRT);
+#endif
+}
 int main(int argc,char **argv){
     int result=tsfp_native_crash_helper(argc,argv);if(result>=0)return result;
     if(argc!=2 || !tsfp_native_crash_init(guest))return 2;
     pc_capture_gameplay(4,4,0,1,2,0);pc_capture_model(0x811ee970u,15,123);pc_capture_allocation(1,0x10000,4096);pc_capture_allocation(257,0x10000,4096);
     struct sigaction action={0};action.sa_sigaction=tsfp_native_crash_signal;action.sa_flags=SA_SIGINFO|SA_ONSTACK;sigemptyset(&action.sa_mask);sigaction(SIGABRT,&action,NULL);
+#ifdef __linux__
+    sigaction(SIGILL,&action,NULL);
+#endif
     if(!strcmp(argv[1],"crash")){tsfp_native_crash_test_site();return 3;}
     if(!strcmp(argv[1],"unarmed")){usleep(1800000);return 0;}
     tsfp_native_crash_armed(1);

@@ -184,6 +184,7 @@ static void report(Capture *c,int hang){
         fprintf(out,"Native Linux x64 register context\nSignal: %d\nFault address: 0x%llx\nPC: 0x%llx SP: 0x%llx\n",
             c->signal,(unsigned long long)c->address,(unsigned long long)c->pc,(unsigned long long)c->sp);
         for(int i=0;i<23;i++)fprintf(out,"greg%d = 0x%016llx\n",i,(unsigned long long)c->registers[i]);
+        fprintf(out,"Xbox eax ecx edx esp ebx esi edi ebp:");for(int i=0;i<8;i++)fprintf(out," %08x",c->guest[i]);fputc('\n',out);
         if(!hang){char pc[24];snprintf(pc,sizeof pc,"0x%llx",(unsigned long long)c->pc);
             char *args[]={"/usr/bin/addr2line","-f","-C","-e",c->executable,pc,NULL};fflush(out);tool(args,fileno(out));}
         else fputs("Live stack sampling unavailable; process left running.\n",out);

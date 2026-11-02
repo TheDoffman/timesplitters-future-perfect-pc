@@ -65,3 +65,5 @@ The auto-look span fixture also runs on Linux with real mmap/mprotect boundaries
 `test_native_crash.py` runs the shared fatal-signal/helper, watchdog suppression,
 report contents and linked-root rejection checks on Linux as well as Darwin;
 Linux fatal symbols use non-PIE ELF plus addr2line, with hang sampling explicit.
+The Linux fixture faults at a named UD2 instruction to verify the captured
+fault PC symbol; reports include both native and guest registers.
