@@ -1,0 +1,123 @@
+--- a/src/d3d/rhi_vulkan.c
++++ b/src/d3d/rhi_vulkan.c
+@@ -60,6 +60,7 @@
+ 
+ #include "rhi_backend.h"
+ #include "vulkan_interface.h"
++#include "upload_copy.h"
+ #include "rhi_vulkan_bindings.h"
+ #include "rhi_shader_cache.h"
+ 
+@@ -460,6 +461,46 @@
+     V.ntrash = k;
+ }
+ 
++/* Opt-in cumulative diagnostics; no file or extra clock queries normally. */
++static struct {
++    uint64_t image_updates,image_bytes,copy_calls,uniform_updates,uniform_skips;
++    uint64_t ubo_uploads,ubo_bytes,wait_calls,wait_ns,pipeline_calls;
++} upload_metrics;
++static int upload_profile_enabled(void)
++{
++    static int enabled=-1;
++    if(enabled<0){const char *v=getenv("TSFP_RHI_UPLOAD_PROFILE");enabled=v && !strcmp(v,"1");}
++    return enabled;
++}
++static int upload_batch_enabled(void)
++{
++    static int enabled=-1;
++    if(enabled<0){const char *v=getenv("TSFP_RHI_UPLOAD_BASELINE");enabled=!(v && !strcmp(v,"1"));}
++    return enabled;
++}
++static uint64_t upload_clock_ns(void)
++{
++#if defined(RHI_VULKAN_SDL)
++    return SDL_GetTicksNS();
++#elif defined(_WIN32)
++    LARGE_INTEGER now,freq;QueryPerformanceCounter(&now);QueryPerformanceFrequency(&freq);
++    return (uint64_t)((double)now.QuadPart*1e9/(double)freq.QuadPart);
++#else
++    return 0;
++#endif
++}
++static void upload_note_frame(void)
++{
++    if(upload_profile_enabled() && V.frame_no && !(V.frame_no%300))
++        fprintf(stderr,"[VK-UPLOAD] frames=%llu optimized=%d images=%llu image_bytes=%llu copy_calls=%llu uniform_updates=%llu uniform_skips=%llu ubo_uploads=%llu ubo_bytes=%llu wait_calls=%llu wait_us=%llu pipeline_calls=%llu\n",
++            (unsigned long long)V.frame_no,upload_batch_enabled(),
++            (unsigned long long)upload_metrics.image_updates,(unsigned long long)upload_metrics.image_bytes,
++            (unsigned long long)upload_metrics.copy_calls,(unsigned long long)upload_metrics.uniform_updates,
++            (unsigned long long)upload_metrics.uniform_skips,(unsigned long long)upload_metrics.ubo_uploads,
++            (unsigned long long)upload_metrics.ubo_bytes,(unsigned long long)upload_metrics.wait_calls,
++            (unsigned long long)(upload_metrics.wait_ns/1000),(unsigned long long)upload_metrics.pipeline_calls);
++}
++
+ static void wait_serial(uint64_t s)
+ {
+     VkSemaphoreWaitInfo wi = { VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO };
+@@ -468,7 +509,9 @@
+     wi.semaphoreCount = 1;
+     wi.pSemaphores = &V.timeline;
+     wi.pValues = &s;
++    uint64_t start=upload_profile_enabled()?upload_clock_ns():0;
+     vkWaitSemaphores(V.dev, &wi, UINT64_MAX);
++    if(upload_profile_enabled()){upload_metrics.wait_calls++;upload_metrics.wait_ns+=upload_clock_ns()-start;}
+     update_completed();
+ }
+ 
+@@ -1683,6 +1726,7 @@
+ static void next_frame(void)
+ {
+     V.frame_no++;
++    upload_note_frame();
+     V.fi = (V.fi + 1) % FRAMES;
+     wait_serial(V.frames[V.fi].last_serial);
+     V.frames[V.fi].ring.cur = 0;
+@@ -1878,6 +1922,14 @@
+ 
+ static void v_buffer_update(RhiBuffer *b, const void *data)
+ {
++    if(b->uniform) {
++        if(upload_profile_enabled())upload_metrics.uniform_updates++;
++        if(upload_batch_enabled()) {
++            int changed=tsfp_upload_uniform(b->shadow,data,b->desc.size,&b->dirty);
++            if(!changed && upload_profile_enabled())upload_metrics.uniform_skips++;
++            return;
++        }
++    }
+     void *p = v_buffer_map(b, RHI_MAP_WRITE_DISCARD);
+     if (p) {
+         memcpy(p, data, b->desc.size);
+@@ -2058,11 +2110,11 @@
+     p = ring_alloc((VkDeviceSize)row_bytes * rows * bd, 16, &staging, &off);
+     if (!p)
+         return;
+-    for (k = 0; k < bd; k++)
+-        for (r = 0; r < rows; r++)
+-            memcpy(p + ((size_t)k * rows + r) * row_bytes,
+-                   (const uint8_t *)data + (size_t)k * slice_pitch + (size_t)r * row_pitch,
+-                   row_bytes < row_pitch ? row_bytes : row_pitch);
++    size_t copies=tsfp_upload_rows(p,data,row_bytes,rows,bd,row_pitch,slice_pitch,upload_batch_enabled());
++    if(upload_profile_enabled()) {
++        upload_metrics.image_updates++;upload_metrics.copy_calls+=copies;
++        upload_metrics.image_bytes+=(uint64_t)(row_bytes<row_pitch?row_bytes:row_pitch)*rows*bd;
++    }
+ 
+     end_rendering();
+     if (img->steady != VK_IMAGE_LAYOUT_GENERAL)
+@@ -3306,6 +3358,7 @@
+     gci.pColorBlendState = &cb;
+     gci.pDynamicState = &dy;
+     gci.layout = V.pipe_layout;
++    if(upload_profile_enabled())upload_metrics.pipeline_calls++;
+     if (vkCreateGraphicsPipelines(V.dev, V.pcache, 1, &gci, NULL, &p->pipe) != VK_SUCCESS) {
+         static int said;
+         if (said++ < 10)
+@@ -3382,6 +3435,7 @@
+         if (!p)
+             return 0;
+         memcpy(p, b->shadow, b->desc.size);
++        if(upload_profile_enabled()){upload_metrics.ubo_uploads++;upload_metrics.ubo_bytes+=b->desc.size;}
+         if (range > b->desc.size)
+             memset(p + b->desc.size, 0, (size_t)(range - b->desc.size));
+         b->snap_range = range;

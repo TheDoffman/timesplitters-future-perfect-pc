@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "7bec6c87e03e2905b29a3041d822a104a1e14a8cf5cfbd9e32998ae5aa80c603",
+  "loaderSha256": "8b150bef2bc48126966a644cfbdb0aa627ee194215b63736c48ef89014511e20",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3083,6 +3083,14 @@
       "sha256": "8b5669705864017f1fa180a5bf0576fa59e87b4f5966e01b42c00581917227ef",
       "targets": [
         "src/kernel/xbox_memory_layout.c"
+      ]
+    },
+    {
+      "name": "2411-vulkan-upload-efficiency.patch",
+      "path": "patches/graphics/rendering/2411-vulkan-upload-efficiency.patch",
+      "sha256": "2a9ee0f830f26c58f55c6c582a8b8451d0e49a807cb0b735a657f7d5612677d9",
+      "targets": [
+        "src/d3d/rhi_vulkan.c"
       ]
     }
   ]

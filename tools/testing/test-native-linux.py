@@ -62,6 +62,8 @@ def main():
     p.add_argument('--frame-profile',action='store_true',help='Record bounded actual present intervals and timing percentiles')
     p.add_argument('--profile-start',type=int,default=0,help='Seconds after first present before collecting frame timings')
     p.add_argument('--input-script',type=Path,help='Bounded synthetic keyboard schedule, run only in the isolated profile')
+    p.add_argument('--upload-profile',action='store_true',help='Record opt-in Vulkan upload and wait counters')
+    p.add_argument('--upload-baseline',action='store_true',help='Use the legacy upload copies for a same-binary A/B comparison')
     p.add_argument('--test-keys',action='store_true',help='Read synthetic SDL events from the isolated test-keys.txt')
     args=p.parse_args()
     if platform.system()!='Linux' or platform.machine().lower() not in ('x86_64','amd64'):p.error('Requires Linux x64')
@@ -106,6 +108,8 @@ def main():
                 env[key]=prepared[key]
         if args.driver_manifest:linux_vulkan_sdk.select_driver(env,args.driver_manifest)
         if args.performance:env.update(RECOMP_VK_VALIDATION='0',RECOMP_SHADER_CACHE='1')
+        if args.upload_profile:env['TSFP_RHI_UPLOAD_PROFILE']='1'
+        if args.upload_baseline:env['TSFP_RHI_UPLOAD_BASELINE']='1'
         if args.frame_profile:
             env.update(TSFP_FRAME_PROFILE=str(ROOT/'logs/linux-game-frames.csv'),
                        TSFP_FRAME_PROFILE_DELAY_MS=str(args.profile_start*1000))
@@ -147,6 +151,7 @@ def main():
             cpu_user_seconds=round(cpu_after.ru_utime-cpu_before.ru_utime,3),
             cpu_system_seconds=round(cpu_after.ru_stime-cpu_before.ru_stime,3),
             requested_fps=args.fps,
+            upload_optimization=not args.upload_baseline,
             input_script_sha256=hashlib.sha256(args.input_script.read_bytes()).hexdigest() if args.input_script else None,
             requested_timing_observed=('[native] fixed 60 FPS' if args.fps==60 else f'[native] target {args.fps} fresh game FPS') in text,
             profile='Test Lab disposable copy' if args.unlocked_profile else 'isolated fresh/local test profile',
@@ -157,6 +162,10 @@ def main():
             scope='Bounded isolated actual game; captures require visual review; not a full playthrough')
         summary['completed_guest_frames_at_least']=max([int(n) for n in re.findall(r'\[NATIVE-GUEST\] completed frame (\d+)',text)],default=0)
         summary['vulkan_validation_errors']=text.count('[VKVAL]')+text.count('[VKVAL error]')
+        if args.upload_profile:
+            summary['upload_metrics']=[{key:int(value) for key,value in re.findall(r'(\w+)=(\d+)',line)}
+                                       for line in text.splitlines() if line.startswith('[VK-UPLOAD]')]
+            if not summary['upload_metrics']:raise RuntimeError('No upload metrics: rebuild the Vulkan runtime with profiling support')
         if args.frame_profile:
             import native_frame_stats
             summary['frame_timings']=native_frame_stats.summarize(ROOT/'logs/linux-game-frames.csv',args.profile_start)
