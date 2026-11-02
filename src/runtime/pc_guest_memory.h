@@ -5,6 +5,8 @@
 #ifdef __APPLE__
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
+#elif defined(__linux__)
+#include <stdio.h>
 #else
 #include <windows.h>
 #endif
@@ -33,6 +35,21 @@ static inline PcGuestRegion pc_guest_query_region(uintptr_t address)
        !(info.protection&VM_PROT_READ))return region;
     region.base=(uintptr_t)base;region.size=(size_t)size;
     region.writable=(info.protection&VM_PROT_WRITE)!=0;
+#elif defined(__linux__)
+    /* Query current protection boundaries; never cache across guest execution. */
+    FILE *maps=fopen("/proc/self/maps","r");
+    if(!maps)return region;
+    char line[512],permissions[5];unsigned long long lo,hi;
+    while(fgets(line,sizeof line,maps)) {
+        if(sscanf(line,"%llx-%llx %4s",&lo,&hi,permissions)!=3)continue;
+        if(address<lo || address>=hi)continue;
+        if(permissions[0]=='r') {
+            region.base=(uintptr_t)lo;region.size=(size_t)(hi-lo);
+            region.writable=permissions[1]=='w';
+        }
+        break;
+    }
+    fclose(maps);
 #else
     MEMORY_BASIC_INFORMATION m;
     if(!VirtualQuery((void*)address,&m,sizeof m) || m.State!=MEM_COMMIT ||

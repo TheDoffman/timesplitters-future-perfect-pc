@@ -52,3 +52,8 @@ Use the project-owned guest_arena_service API for MMIO maps/aliases and test
 arenas. The former w32_guest_* compatibility aliases were retired; native ARM64
 and x64 fixtures now call the same canonical provider. Patch2403 imports OpenSSL
 in the input subdirectory where its non-global imported target is consumed.
+
+Linux shared guest pointer guards query current `/proc/self/maps` protection
+boundaries. Known-size span guards use that provider; the resident-page PSAPI
+optimization remains Windows-only. Snapshots retain their existing lifetime of
+one uninterrupted host operation, never across guest calls/protection changes.
