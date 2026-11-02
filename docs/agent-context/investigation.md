@@ -1,5 +1,9 @@
 # Investigation memory and handoffs
 
+SMAA adds the final `2470-smaa-antialiasing.patch` after config/timing migrations;
+`test_repo_context.py` checks the resulting 56-patch tail. Historical migration
+fixtures omit this feature until their full-stack upgrade. See [contracts](smaa.md).
+
 Root AGENTS.md and the PR template require a short user-facing Change and Cause
 and fix description. Keep technical evidence in the existing project records;
 the simpler opening description does not remove testing or platform obligations.

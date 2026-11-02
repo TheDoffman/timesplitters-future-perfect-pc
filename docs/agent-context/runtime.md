@@ -59,7 +59,7 @@ shared Story adapter so a guest's blocked movie advance does not release its
 still-rendered stream at99BB7. Real load teardown and other modes retain the
 original close. See [contracts](systems-details.md) and [fixture](build-test-details.md).
 
-# Runtime and patch navigation
+# Runtime ([SMAA](smaa.md))
 
 Patch2180 wraps US1C2AF0 for an already-eligible fresh player trigger only;
 the patch loader orders it after native minigun/timing wrappers. It preserves

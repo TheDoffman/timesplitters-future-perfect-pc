@@ -1,0 +1,87 @@
+--- a/src/d3d/d3d8_display.c
++++ b/src/d3d/d3d8_display.c
+@@ -344,7 +344,9 @@
+     return 1;
+ }
+ 
+-HRESULT d3d8_display_resolve(RhiView *scene, UINT scene_w, UINT scene_h,
++#include "graphics/pc_smaa.inc"
++
++static HRESULT display_resolve_original(RhiView *scene, UINT scene_w, UINT scene_h,
+                              RhiView *out, D3D8DisplayFit fit)
+ {
+     RhiOutputState saved;
+@@ -418,8 +420,24 @@
+     return S_OK;
+ }
+ 
++HRESULT d3d8_display_resolve(RhiView *scene, UINT scene_w, UINT scene_h,
++                             RhiView *out, D3D8DisplayFit fit)
++{
++    if (!scene || !out || !scene_w || !scene_h || !fit.w || !fit.h)
++        return E_INVALIDARG;
++    if (pc_smaa_prepare(fit.w, fit.h)) {
++        D3D8DisplayFit local = { 0, 0, fit.w, fit.h };
++        HRESULT hr = display_resolve_original(scene, scene_w, scene_h, smaa.color.rtv, local);
++        if (FAILED(hr)) return hr;
++        pc_smaa_apply(out, fit);
++        return S_OK;
++    }
++    return display_resolve_original(scene, scene_w, scene_h, out, fit);
++}
++
+ void d3d8_display_shutdown(void)
+ {
++    pc_smaa_shutdown();
+     rhi_shader_destroy(g.vs);            g.vs = NULL;
+     rhi_shader_destroy(g.ps);            g.ps = NULL;
+     rhi_buffer_destroy(g.cb);            g.cb = NULL;
+--- a/src/config/recomp_config.h
++++ b/src/config/recomp_config.h
+@@ -79,6 +79,7 @@
+     int  hor_plus_register;     /* per title; 60 for TimeSplitters 2 */
+     char widescreen_2d[16];     /* "auto" or "centre": where 2D goes in widescreen */
+     int  anisotropy;            /* 1..16 */
++    int  smaa;                  /* optional SMAA 1x High, common RHI */
+     char frame_cap[16];         /* "adaptive", "60", "30", "0" */
+     int  fps_overlay;           /* 0 or 1 */
+     int  fullscreen;            /* 0 or 1: borderless, on the window's monitor */
+--- a/src/config/recomp_config.c
++++ b/src/config/recomp_config.c
+@@ -8,6 +8,9 @@
+  * build from running.
+  */
+ #include "recomp_config.h"
++#define PC_SMAA_SETTINGS_IMPLEMENTATION
++#include "graphics/pc_smaa_settings.h"
++#undef PC_SMAA_SETTINGS_IMPLEMENTATION
+ #include "pc_frame_rate_settings.h"
+ #include "pc_frame_rate_live.inc"
+ 
+@@ -240,6 +243,8 @@
+             snprintf(s->widescreen_2d, sizeof s->widescreen_2d, "%s", v);
+         if ((v = from_table("anisotropy")) != NULL)
+             s->anisotropy = clamp_int(atoi(v), 1, 16);
++        if ((v = from_table("smaa")) != NULL)
++            s->smaa = !off_word(v);
+         if ((v = from_table("fps_overlay")) != NULL)
+             s->fps_overlay = !off_word(v);
+         if ((v = from_table("fullscreen")) != NULL)
+@@ -332,6 +337,8 @@
+         "# Sharpen textures seen at a glancing angle, 1 to 16. The flat layer\n"
+         "# is left alone, which wants no filtering.              [RECOMP_ANISO]\n"
+         "anisotropy = %d\n"
++        "\n# SMAA 1x High anti-aliasing, 0 off / 1 on. [TSFP_SMAA]\n"
++        "smaa = %d\n"
+         "\n"
+         "# Fixed 60 FPS pacing.\n"
+         "frame_cap = %s\n"
+@@ -357,7 +364,7 @@
+         "#                                                   [RECOMP_GAME_DIR]\n",
+         s->resolution_scale, s->widescreen, s->hor_plus, s->hor_plus_register,
+         s->widescreen_2d[0] ? s->widescreen_2d : "auto",
+-        s->anisotropy, "60", s->fps_overlay,
++        s->anisotropy, s->smaa, "60", s->fps_overlay,
+         s->fullscreen, s->vrr, 1, 0, 0);
+ 
+     if (s->game_dir[0])

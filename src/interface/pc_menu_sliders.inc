@@ -145,6 +145,8 @@ static int menu_slider_pointer(uint32_t menu,PcMenuPointer p,unsigned actions,
     WORD_AT(menu+0xc4)&=~0x001F001Fu;
     WORD_AT(menu+0xc8)&=~0x1Fu;
     if(WORD_AT(menu+0x198)!=track->item) guest_call(sub_00076EF0,2,menu,track->item);
+    if((actions&2) && track-menu_slider_tracks==MENU_FOV)
+        menu_video_click_sound(menu,track->item);
     menu_slider_set(track,(unsigned)(track-menu_slider_tracks),x);
     return 1;
 }

@@ -8706,6 +8706,36 @@ MAC-127 PR436 review repair: native package manifests now forward language_packs
 from the native build to the installed top level. Three portable real-writer
 regressions cover enabled/disabled/absent flags; native host CI remains the gate.
 
+### MAC-129 - Optional SMAA anti-aliasing - Awaiting validation
+
+Video click feedback (same local branch): shared `menu_video_click_sound` uses
+the original guest menu-switch sound for fresh Video setting-row/FOV-bar clicks.
+Native arrow feedback remains owned by the original dispatcher. No Mac adapter
+change is required; physical Mac audibility/input acceptance remains pending.
+See [Video contracts](../agent-context/video-options.md).
+
+In-game follow-up (2026-11-02, same local branch): the common Video Options
+frontend/pause selector now stages SMAA and saves the same runtime key on Apply.
+`src/graphics/pc_smaa_settings.h` publishes live after atomic persistence; the
+RHI renderer reads this shared model. Include Back/discard, resolution Keep/
+Revert, failed-save rollback and switching without restart in native acceptance.
+No separate Mac feature logic is needed; legacy GL still lacks the effect.
+
+2026-11-02, local uncommitted on `feature/smaa-antialiasing`: shared launcher
+`GameSettings.Smaa`/`SettingsPage` and patch `2470-smaa-antialiasing.patch` add
+default-Off SMAA 1x High through `src/graphics/pc_smaa.inc`. The common Vulkan
+frontend uses the same shader/lookup algorithm and resources as Windows D3D11;
+no separate Mac feature implementation is needed. The fallback legacy GL
+renderer lacks the RHI pass and retains but does not apply the saved key.
+Porting this effect to legacy GL is deferred because that adapter has a separate
+resource/shader pipeline; do not duplicate the common algorithm there.
+
+Acceptance: build native Mac Vulkan and launcher; confirm checkbox persistence,
+diagonal edges, HUD/menu text, 1080p/4K/ultrawide fit, window resize, Classic and
+Enhanced textures, Off and fallback; measure GPU cost and check validation logs.
+Windows pixel-fixture evidence is in [STATUS](STATUS.md); it does not establish
+native Mac scene fidelity or performance.
+
 ### MAC-128 - Fresh weapon trigger timing (#434)
 
 - **Status:** Awaiting validation

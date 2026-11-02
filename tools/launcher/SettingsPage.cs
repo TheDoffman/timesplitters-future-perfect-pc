@@ -49,7 +49,7 @@ namespace TimeSplitters.Launcher
         string savedDraft;
         readonly Slider fov;
         readonly TextBox sensitivity, width, height, discordId;
-        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled, enhancedTextures;
+        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled, enhancedTextures, smaa;
         readonly ComboBox device, resolution, aspect, scale, filtering, frameRate, languagePack;
         readonly TextBlock performanceAdvice;
         readonly Button[,] bindingButtons = new Button[GameSettings.Actions.Length,GameSettings.BindingSlots];
@@ -234,6 +234,8 @@ namespace TimeSplitters.Launcher
             var qualityColumns=Columns(quality);var qualityLeft=Column(qualityColumns,0);var qualityRight=Column(qualityColumns,1);
             scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString());scale.Name="ConsoleRenderScale";Field(qualityLeft,"Console render scale",scale);
             filtering=Choices(new[]{"1","2","4","8","16"},model.Anisotropy.ToString());Field(qualityRight,"Anisotropic filtering",filtering);
+            smaa=Check("SMAA anti-aliasing",model.Smaa);smaa.Name="SmaaAntiAliasing";qualityLeft.Children.Add(smaa);
+            Ui.Tip(smaa,"Smooths jagged edges using SMAA 1x High. Applies after saving and restarting with a compatible game build. Legacy OpenGL does not support this option.");
             vrr=Check("Variable refresh rate",model.Vrr);vrr.Name="VariableRefreshRate";Ui.Tip(vrr,"Allows unsynchronized presentation in fullscreen. Enable VRR in your monitor and driver too; a fixed-refresh display may tear.");fps=Check("Show FPS overlay",model.FpsOverlay);
             var qualityToggles=new WrapPanel();qualityToggles.Children.Add(vrr);qualityToggles.Children.Add(fps);quality.Children.Add(qualityToggles);
             performanceAdvice=Text("",12);performanceAdvice.Name="PerformanceAdvice";
@@ -276,7 +278,7 @@ namespace TimeSplitters.Launcher
             if(!model.CanSelectLanguagePack)language.Children.Add(Text("Update the game to enable language-pack selection. Your saved choice is kept.",12));
             tabs.Items.Add(new TabItem {Header="Audio & language",Content=Scroll(audioPanel)});
             foreach(var entry in new[]{sensitivity,width,height,discordId})Ui.TextChanged(entry,RefreshSaveState);
-            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,discordEnabled,enhancedTextures,enhancedAudio})Ui.CheckedChanged(check,RefreshSaveState);
+            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,discordEnabled,enhancedTextures,enhancedAudio,smaa})Ui.CheckedChanged(check,RefreshSaveState);
             foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
             Ui.ValueChanged(fov,RefreshSaveState);
         }
@@ -284,7 +286,7 @@ namespace TimeSplitters.Launcher
         {
             return Json.Encode(new object[]{sensitivity.Text,width.Text,height.Text,discordId.Text,
                 enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,
-                skipSplashes.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
+                skipSplashes.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,smaa.IsChecked,
                 device.SelectedIndex,scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,
                 (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
@@ -435,6 +437,7 @@ namespace TimeSplitters.Launcher
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
                 model.DiscordEnabled=discordEnabled.IsChecked==true;model.DiscordApplicationId=discordId.Text.Trim();
                 model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem);
+                model.Smaa=smaa.IsChecked==true;
                 model.Save();UpdateTextureDetails();savedDraft=Draft();RefreshSaveState();
                 if(Saved!=null)Saved();
             }
