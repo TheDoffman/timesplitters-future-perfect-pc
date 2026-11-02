@@ -10,6 +10,7 @@ import platform
 import re
 import shutil
 import signal
+import struct
 import subprocess
 import sys
 import time
@@ -48,6 +49,36 @@ def input_script(path,seconds):
     return events
 
 
+def story_snapshot(word):
+    """Same supported-US scene/flags observed by native_refresh_game.py."""
+    scene,flags,pointer=word(0x79094C),word(0x7DE458),word(0x761C48)
+    if pointer and not 0x10000<=pointer<0x84000000:raise ValueError('Invalid Story pause pointer')
+    paused=word(pointer)&1 if pointer else 0
+    return dict(scene=scene,flags=flags,paused=paused,active=scene==2 and not flags&0x20000000 and not paused)
+
+
+def story_window(samples,frames):
+    import csv
+    import native_frame_stats
+    windows=[];start=None
+    for sample in samples:
+        if sample['active']:
+            if start is None:start=sample['clock_ns']
+            end=sample['clock_ns']
+        elif start is not None:windows.append((start,end));start=None
+    if start is not None:windows.append((start,end))
+    if not windows:raise ValueError('No active Story gameplay observed')
+    start,end=max(windows,key=lambda span:span[1]-span[0])
+    with frames.open() as source:rows=list(csv.DictReader(source))
+    if len(rows)<2:raise ValueError('No complete frame timing evidence')
+    start=max(start+5_000_000_000,int(rows[0]['clock_ns'])+1)
+    end=min(end,int(rows[-1]['clock_ns'])-1)
+    if end-start<15_000_000_000:raise ValueError('Need at least 15 measured seconds of active, unpaused Story gameplay')
+    result=native_frame_stats.summarize_clock_window(frames,start,end)
+    result.update(start_ns=start,end_ns=end,scope='State-verified active Story, excluding five-second warmup; host presents, not scanout')
+    return result
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--game-dir',type=Path,required=True)
@@ -64,6 +95,7 @@ def main():
     p.add_argument('--input-script',type=Path,help='Bounded synthetic keyboard schedule, run only in the isolated profile')
     p.add_argument('--upload-profile',action='store_true',help='Record opt-in Vulkan upload and wait counters')
     p.add_argument('--upload-baseline',action='store_true',help='Use the legacy upload copies for a same-binary A/B comparison')
+    p.add_argument('--story-benchmark',action='store_true',help='Observe only this child scene/flags, skip its intro, and require a gameplay timing window')
     p.add_argument('--test-keys',action='store_true',help='Read synthetic SDL events from the isolated test-keys.txt')
     args=p.parse_args()
     if platform.system()!='Linux' or platform.machine().lower() not in ('x86_64','amd64'):p.error('Requires Linux x64')
@@ -71,6 +103,8 @@ def main():
     if not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,47}',args.profile_name) or args.profile_name in ('manual','crashes','xdg-cache','xdg-config','xdg-data'):
         p.error('Use a simple disposable profile name, excluding reserved folders')
     if not 0<=args.profile_start<args.seconds:p.error('Profile start must be inside the bounded run')
+    if args.story_benchmark and not (args.input_script and args.unlocked_profile and args.frame_profile):
+        p.error('Story benchmarks require an isolated fixture, input script and frame profiling')
     try:events=input_script(args.input_script,args.seconds) if args.input_script else []
     except (ValueError,OSError) as error:p.error(str(error))
     game=args.game_dir.resolve()
@@ -119,12 +153,32 @@ def main():
             flags=os.O_WRONLY|os.O_CREAT|os.O_NOFOLLOW|(os.O_TRUNC if args.input_script else os.O_APPEND)
             os.close(os.open(keys,flags,0o600));env['TSFP_NATIVE_TEST_KEYS']=str(keys)
         logs=ROOT/'logs';logs.mkdir(exist_ok=True);started=time.monotonic();timed_out=False;reason='process_exit'
+        (logs/'linux-game.json').write_text(json.dumps(dict(completed=False,source_revision=manifest['source_revision'])))
+        states=[];memory_fd=None;offset=None;next_state=0;skip_at=None;resumed=False;cutscene_since=None
         import resource
         cpu_before=resource.getrusage(resource.RUSAGE_CHILDREN)
         with (logs/'linux-game.out').open('w') as out,(logs/'linux-game.err').open('w') as err:
             child=subprocess.Popen([str(exe)],cwd=ROOT,env=env,stdout=out,stderr=err,start_new_session=True)
             try:
                 while child.poll() is None:
+                    elapsed=time.monotonic()-started
+                    if args.story_benchmark and elapsed>=next_state:
+                        next_state=elapsed+.5
+                        if offset is None:
+                            boot=(logs/'linux-game.out').read_text(errors='replace')
+                            match=re.search(r'Xbox memory offset: (0x[0-9a-fA-F]+)',boot)
+                            if match:
+                                offset=int(match[1],16);memory_fd=os.open(f'/proc/{child.pid}/mem',os.O_RDONLY|os.O_CLOEXEC)
+                            elif elapsed>15:raise RuntimeError('Owned child did not report its guest mapping')
+                        if offset is not None:
+                            def word(address):return struct.unpack('<I',os.pread(memory_fd,4,offset+address))[0]
+                            state=story_snapshot(word);state.update(seconds=round(elapsed,3),clock_ns=time.monotonic_ns());states.append(state)
+                            cinematic=state['scene']==2 and bool(state['flags']&0x20000000)
+                            if cinematic and cutscene_since is None:cutscene_since=elapsed
+                            if cinematic and cutscene_since is not None and elapsed-cutscene_since>=2 and skip_at is None:
+                                skip_at=elapsed;events.extend([(elapsed,'+Escape\n'),(elapsed+.2,'-Escape\n')]);events.sort()
+                            if skip_at is not None and .5<elapsed-skip_at<5 and state['paused'] and not resumed:
+                                resumed=True;events.extend([(elapsed,'+E\n'),(elapsed+.2,'-E\n')]);events.sort()
                     while events and time.monotonic()-started>=events[0][0]:
                         _,commands=events.pop(0)
                         fd=os.open(keys,os.O_WRONLY|os.O_APPEND|os.O_NOFOLLOW)
@@ -141,6 +195,7 @@ def main():
                 # A terminated game may leave its crash helper waiting on shared state.
                 try:os.killpg(child.pid,signal.SIGTERM)
                 except ProcessLookupError:pass
+                if memory_fd is not None:os.close(memory_fd)
         cpu_after=resource.getrusage(resource.RUSAGE_CHILDREN)
         text=(logs/'linux-game.out').read_text(errors='replace')+(logs/'linux-game.err').read_text(errors='replace')
         presents=re.findall(r'\[PRESENT\] backend=\S+ total=(\d+) guest=(\d+) interpolated=(\d+) other=(\d+) skipped=(\d+) failed=(\d+)',text)
@@ -166,13 +221,18 @@ def main():
             summary['upload_metrics']=[{key:int(value) for key,value in re.findall(r'(\w+)=(\d+)',line)}
                                        for line in text.splitlines() if line.startswith('[VK-UPLOAD]')]
             if not summary['upload_metrics']:raise RuntimeError('No upload metrics: rebuild the Vulkan runtime with profiling support')
+        analysis_ok=True
         if args.frame_profile:
             import native_frame_stats
             summary['frame_timings']=native_frame_stats.summarize(ROOT/'logs/linux-game-frames.csv',args.profile_start)
             summary['frame_timings']['scope']='Successful host-present intervals; not GPU completion or scanout'
+        if args.story_benchmark:
+            summary['story_samples']=states
+            try:summary['gameplay_timings']=story_window(states,ROOT/'logs/linux-game-frames.csv')
+            except ValueError as error:summary['gameplay_error']=str(error);analysis_ok=False
         summary['disposable_test_disks']=recycle_test_disks(ROOT,test,save_directory=Path(env['RECOMP_SAVE_DIR']))
         (logs/'linux-game.json').write_text(json.dumps(summary,indent=2)+'\n');print(json.dumps(summary,indent=2))
-        passed=timed_out and summary['requested_timing_observed'] and summary['presents'] and summary['presents']['guest']>0 and not summary['vulkan_validation_errors']
+        passed=analysis_ok and timed_out and summary['requested_timing_observed'] and summary['presents'] and summary['presents']['guest']>0 and not summary['vulkan_validation_errors']
         if not passed:raise SystemExit(1)
 
 if __name__=='__main__':main()

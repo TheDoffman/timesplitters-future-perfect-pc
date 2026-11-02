@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "description": "Synthetic Test Lab: one player, existing Test Lab, Story2401 Normal; Escape/Continue after loading. Measure after110seconds and review first-person captures.",
+  "description": "Synthetic Test Lab: one player, existing Test Lab, Story2401 Normal. Use --story-benchmark for state-based intro skip and active gameplay timings.",
   "events": [
     {
       "at": 6,
@@ -102,30 +102,6 @@
     },
     {
       "at": 20.3,
-      "commands": [
-        "-E"
-      ]
-    },
-    {
-      "at": 90,
-      "commands": [
-        "+Escape"
-      ]
-    },
-    {
-      "at": 90.3,
-      "commands": [
-        "-Escape"
-      ]
-    },
-    {
-      "at": 93,
-      "commands": [
-        "+E"
-      ]
-    },
-    {
-      "at": 93.3,
       "commands": [
         "-E"
       ]

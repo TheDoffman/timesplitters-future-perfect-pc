@@ -97,7 +97,7 @@ def test_input_schedule_validates_real_benchmark_and_order(tmp_path):
     import json
     module=runner();events=module.input_script(ROOT/'tests/fixtures/linux-story-benchmark.json',150)
     assert events[0]==(6,'focus 1\n+E\n')
-    assert events[-1]==(93.3,'-E\n')
+    assert events[-1]==(20.3,'-E\n')
     path=tmp_path/'script.json';path.write_text(json.dumps({'schema':1,'events':[
         {'at':2,'commands':['+E']},{'at':1,'commands':['-E']}]}))
     with pytest.raises(ValueError):module.input_script(path,150)
