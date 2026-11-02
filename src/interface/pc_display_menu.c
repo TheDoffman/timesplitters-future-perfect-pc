@@ -1077,17 +1077,18 @@ static void labels(void)
         static const char *const toggle[]={"Off","On"};
         counter_row=graphics_choice(5,"FPS / Ping",toggle,2,pc_counter_enabled());
     } else if(page==DISPLAY_RESTART) {
-        small_note(20,"Restart to apply MSAA changes.");
+        small_note(20,"Restart to apply graphics changes.");
         small_note(21,"This leaves the current game.");
         row(0,"Later");row(1,"Restart Now");
     } else { row(0,"Keep changes");row(1,"Revert"); }
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
         /* Reserve equal section heights so tabs do not move under the cursor. */
-        int padding=page==DISPLAY_HOME?5:page==DISPLAY_VIEW?4:0;
+        int padding=page==DISPLAY_HOME?6:page==DISPLAY_VIEW?5:0;
         for(int i=0;i<padding;i++)
             guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(MODE_TEXT_BASE+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT+3),
                 (uint32_t)(110+i),4u,0u,0u,0u);
-        if(*status)small_note(21,status);
+        /* Graphics already owns a status/help row; do not add a twelfth row. */
+        if(*status && page!=DISPLAY_GRAPHICS)small_note(21,status);
         apply_row=guest_call(sub_00079D60_gen,6,text_at(4,"Apply"),3u,0u,0u,SELECT_CB,0u);
         update_apply();
     }
@@ -1120,7 +1121,9 @@ static void build_menu(void)
     save_registers(&r);current_menu=menu;
     guest_call(sub_00075B70,5,0xa000u,text_at(0,"%s",page==DISPLAY_CONFIRM?"Keep changes?":page==DISPLAY_RESTART?"Restart game?":"Video Options"),
         bits(page==DISPLAY_CONFIRM?55.f:85.f),0u,BACK_CB);
-    guest_call(sub_00071B10,4,1u,bits(1.6f),1u,1u);
+    /* Eleven rows, including supersampling, must fit the original 480-line
+     * canvas with Apply fully above the footer in both main and pause. */
+    guest_call(sub_00071B10,4,1u,bits(1.45f),1u,1u);
     guest_call(sub_00071C50,1,0x26200u);
     labels();guest_call(sub_000771D0,1,menu);
     restore_registers(&r);g_esp+=4;

@@ -74,6 +74,7 @@ public static class LauncherSharedUiChecks
                     var page=new SettingsPage(new ResourceDictionary(),install,true);page.SelectTab(1);
                     Find<ComboBox>(page.View,"MultisampleAntialiasing").SelectedItem=enabled?"8x":"Off";
                     Find<ComboBox>(page.View,"EdgeSmoothing").SelectedItem=enabled?"FXAA":"Off";
+                    Find<ComboBox>(page.View,"Supersampling").SelectedItem=enabled?"200%":"100% (Off)";
                     Find<ComboBox>(page.View,"AnisotropicFiltering").SelectedItem=enabled?"16":"1";
                     Find<CheckBox>(page.View,"AmbientOcclusion").IsChecked=enabled;
                     Find<CheckBox>(page.View,"ShaderCache").IsChecked=enabled;
@@ -82,9 +83,11 @@ public static class LauncherSharedUiChecks
                     Click(Find<Button>(page.View,"SettingsSaveButton"));
                     var saved=GameSettings.Load(install,null);
                     Need(saved.Msaa==(enabled?8:1) && saved.EdgeSmoothing==(enabled?1:0) && saved.Anisotropy==(enabled?16:1),"Graphics selection not saved");
+                    Need(saved.Supersampling==(enabled?3:0),"Supersampling not saved");
                     Need(saved.AmbientOcclusion==(enabled?1:0) && saved.ShaderCache==enabled && saved.ShowCounter==enabled,"Graphics toggles not saved");
                     var reopened=new SettingsPage(new ResourceDictionary(),install,true);reopened.SelectTab(1);
                     Need(Convert.ToString(Find<ComboBox>(reopened.View,"MultisampleAntialiasing").SelectedItem)==(enabled?"8x":"Off"),"MSAA choice not restored");
+                    Need(Convert.ToString(Find<ComboBox>(reopened.View,"Supersampling").SelectedItem)==(enabled?"200%":"100% (Off)"),"Supersampling choice not restored");
                     Need(Find<CheckBox>(reopened.View,"AmbientOcclusion").IsChecked==enabled && Find<CheckBox>(reopened.View,"FpsPingCounter").IsChecked==enabled,"Toggles not restored");
                 }
             });

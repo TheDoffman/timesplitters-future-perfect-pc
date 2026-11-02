@@ -21,7 +21,7 @@ static int enhanced_audio,audio_save_ok=1;
 int pc_audio_enhanced_enabled(void) {return enhanced_audio;}
 int pc_audio_set_enhanced(int enabled) {if(!audio_save_ok)return 0;enhanced_audio=!!enabled;return 1;}
 #include "graphics/graphics_options.h"
-static TsfpGraphicsOptions graphics_options={1,0,1,0,1};
+static TsfpGraphicsOptions graphics_options={1,0,1,0,1,0};
 static int graphics_save_ok=1;
 static int cache_clear_calls;
 void host_AmbientOcclusion(const float *projection){(void)projection;}
@@ -316,7 +316,7 @@ int main(int argc,char **argv)
     reload("TSFP_DISPLAY_V1 1280 720\n");
     tsfp_texture_set_4k(0);
     call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
-    CHECK(page==DISPLAY_HOME && built_row_count==10 && separators==0 && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
+    CHECK(page==DISPLAY_HOME && built_row_count==11 && separators==0 && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
     page=DISPLAY_GRAPHICS;built_rows=built_row_count=separators=0;labels();
     CHECK(graphics_rows[0] && graphics_rows[4] && texture_row && !counter_row && !aspect_row);
     WORD_AT(graphics_rows[1]+0xc8)=1;read_choices();CHECK(graphics_options.edge_smoothing==1);
@@ -334,6 +334,12 @@ int main(int argc,char **argv)
     WORD_AT(graphics_rows[0]+0xc8)=0;call(TICK_CB,100,0);
     CHECK(page==DISPLAY_RESTART && graphics_options.msaa==1);
     call(BACK_CB,0,0);CHECK(page==DISPLAY_GRAPHICS);
+
+    graphics_save_ok=0;WORD_AT(graphics_rows[5]+0xc8)=3;read_choices();
+    CHECK(!graphics_options.supersampling && WORD_AT(graphics_rows[5]+0xc8)==0 && !msaa_restart_prompt);
+    graphics_save_ok=1;WORD_AT(graphics_rows[5]+0xc8)=2;call(TICK_CB,105,0);
+    CHECK(page==DISPLAY_RESTART && graphics_options.supersampling==2);
+    call(SELECT_CB,0,0);CHECK(page==DISPLAY_GRAPHICS && WORD_AT(graphics_rows[5]+0xc8)==2);
 
     refresh(DISPLAY_VIEW,0);CHECK(subtitle_row && counter_row && !texture_row && !rate_row);
     WORD_AT(counter_row+0xc8)=1;read_choices();CHECK(counter_enabled);

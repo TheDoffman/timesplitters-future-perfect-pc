@@ -589,3 +589,12 @@ flags, with only host binary tools replaced by fixtures. Native loading still
 requires Mac execution.
 
 Graphics controls passed shared Avalonia UI and Linux adapter tests in an isolated integration with feature/linux-launcher at 80239186; see the graphics guide.
+
+## Supersampling preference
+
+GameSettings and shared SettingsPage expose restart-required 100/125/150/200%
+supersampling independently of output resolution and legacy console scale.
+pc-graphics.ini reads V1 (100%) or V2 with a sixth index0..3; defaults write V1,
+non-defaults V2. Existing settings transactions/concurrent-edit rejection remain.
+Model and WPF/Avalonia UI fixtures cover saving/reopening and 200% pixel-cost
+guidance. Older games/launchers cannot consume non-default V2 graphics files.

@@ -38260,3 +38260,42 @@ Updated CI/native Mac GPU and live canyon event remain pending.
 PR468 follow-up: both native pytest suites and both historical-upgrade jobs passed on37a38ed9. Native Mac GPU compilation then found a missing string.h declaration in the shared MSAA fixture; added its direct include. Windows WARP pixel check and WSL Clang syntax check of the MSAA header pass. New native Mac GPU run is still required.
 
 PR468 native replay link follow-up: the restarted Mac GPU build compiled the MSAA fixture, then found pc_display restart referenced the game-only input quit wrapper. POSIX restart now queues SDL_EVENT_QUIT directly, also consumed by replay. Windows restart/sizing checks pass (3); WSL Clang strict compilation and real parent/child handoff pass with SDL event assertion. Native Mac GPU/replay rerun remains required; live canyon blackout remains unconfirmed.
+# Supersampling (2026-11-02, local development)
+
+Implemented on `feature/supersampling`, based on graphics-options 327eb4c0.
+Windows x64/D3D11 build and built-in checks passed from that base plus the
+supersampling changes. This task has not been merged, pushed or published.
+Requested scale remains 100% by default; personal settings/saves and textures
+were preserved. See [usage and contracts](../development/graphics-options.md#supersampling).
+
+- Shared V1/V2 persistence, main/pause Graphics selector and launcher control
+  expose 100/125/150/200% per axis. Supersampling latches at startup; the in-game
+  menu offers Later/Restart Now. Existing MSAA, FXAA and Enhanced texture choices
+  stay independent. Internal-size fallback preserves the saved request.
+- Windows focused graphics/display/menu/WARP checks: 10 passed, 2 native Mac skips.
+  The production shader preserves 1:1 pixels and exactly averages all 2x2 GPU
+  footprints; scale bounds/overflow, legacy migration, restart latch and save
+  failure are covered. Additional renderer/state/ghost/replay checks: 32 passed,
+  1 native Mac skip. Full launcher suite passed, including 42 settings checks and
+  shared WPF/Avalonia graphics save/reopen controls.
+- Fresh application/repeated-build and graphics branch round trips passed
+  (3 tests, including LF/CRLF and unrelated edits). Historical graphics-off
+  fixtures exclude 2515 with its 2495..2514 prerequisites. Context refresh/check
+  passes against 327eb4c0.
+- Bounded isolated game runs verify actual 1920x1080, 2880x1620 and 3840x2160 scene
+  targets for 1080p output at 100/150/200%. Scene captures match the allocations;
+  no crash or unresolved-call diagnostics were found. Native Mac/Vulkan,
+  physical Linux, real low-memory allocation failure, all-map visual acceptance
+  and comparative performance remain unverified. Legacy GL uses shared sizing
+  and its existing linear blit; fractional-scale quality needs native review.
+- Evidence stays ignored in `logs/supersampling-*.log` and
+  `private/test-saves/supersampling`. Disposable partition images are recycled;
+  temporary BMPs are bounded and selected PNGs retained. No game data or
+  captures were added to Git.
+- Final Windows main-menu review checks the Supersampling row, all controls and
+  fully visible Apply after reducing shared row spacing to 1.45. Changing 150%
+  to 200% displays the restart prompt; Later returns with 200% saved in V2 while
+  this process retains its 150% scene. Error feedback reuses the Graphics help
+  row instead of adding an overflowing duplicate. The final supported rebuild
+  and repeated menu suite pass (4 passed, 2 native Mac skips). Pause uses the
+  same menu implementation; a separate final pause-layout review is unrun.

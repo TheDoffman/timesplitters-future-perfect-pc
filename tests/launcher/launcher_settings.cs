@@ -469,6 +469,16 @@ public static class LauncherSettingsChecks
                 Require(Read(root,"Settings/pc-graphics.ini")=="TSFP_GRAPHICS_V1 8 1 16 1 0\n");
                 model=GameSettings.Load(root,null);
                 Require(model.Msaa==8 && model.EdgeSmoothing==1 && model.Anisotropy==16 && model.AmbientOcclusion==1 && !model.ShaderCache);
+                Require(model.Supersampling==0);
+                for(int scale=1;scale<=3;scale++) {
+                    model.Supersampling=scale;model.Save();
+                    Require(Read(root,"Settings/pc-graphics.ini")=="TSFP_GRAPHICS_V2 8 1 16 1 0 "+scale+"\n");
+                    model=GameSettings.Load(root,null);Require(model.Supersampling==scale);
+                }
+                model.Supersampling=4;Reject(()=>model.Save());
+                Require(GameSettings.Load(root,null).Supersampling==3);
+                model.Supersampling=0;model.Save();
+                Require(Read(root,"Settings/pc-graphics.ini")=="TSFP_GRAPHICS_V1 8 1 16 1 0\n");
                 Put(root,"Settings/pc-graphics.ini","TSFP_GRAPHICS_V1 3 1 16 1 1\n");
                 bool rejected=false;try { GameSettings.Load(root,null); } catch { rejected=true; }
                 Require(rejected);
@@ -503,7 +513,7 @@ public static class LauncherSettingsChecks
                 string root=Root("graphics-ui-roundtrip");
                 var page=new SettingsPage(new System.Windows.Window().Resources,root,true);page.SelectTab(1);
                 var nodes=Descendants(page.View).ToList();
-                foreach(var choice in new[]{new[]{"MultisampleAntialiasing","8x"},new[]{"EdgeSmoothing","FXAA"},new[]{"AnisotropicFiltering","16"}})
+                foreach(var choice in new[]{new[]{"MultisampleAntialiasing","8x"},new[]{"EdgeSmoothing","FXAA"},new[]{"AnisotropicFiltering","16"},new[]{"Supersampling","150%"}})
                     nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name==choice[0]).SelectedItem=choice[1];
                 nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="AmbientOcclusion").IsChecked=true;
                 nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="ShaderCache").IsChecked=false;
@@ -512,10 +522,11 @@ public static class LauncherSettingsChecks
                 var save=nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton");
                 Require(save.IsEnabled);save.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
                 var model=GameSettings.Load(root,null);
-                Require(model.Msaa==8 && model.EdgeSmoothing==1 && model.Anisotropy==16 && model.AmbientOcclusion==1 && !model.ShaderCache && model.ShowCounter);
+                Require(model.Msaa==8 && model.EdgeSmoothing==1 && model.Anisotropy==16 && model.AmbientOcclusion==1 && !model.ShaderCache && model.ShowCounter && model.Supersampling==2);
                 var reopened=new SettingsPage(new System.Windows.Window().Resources,root,true);reopened.SelectTab(1);
                 var again=Descendants(reopened.View).ToList();
                 Require(Convert.ToString(again.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="MultisampleAntialiasing").SelectedItem)=="8x");
+                Require(Convert.ToString(again.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="Supersampling").SelectedItem)=="150%");
                 Require(again.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="AmbientOcclusion").IsChecked==true);
             }));
             Test("graphics page keeps retired interpolation and presentation controls removed",()=>STA(()=>{
@@ -535,6 +546,10 @@ public static class LauncherSettingsChecks
                 resolution.SelectedItem=resolution.Items.OfType<DisplayMode>().First(m=>m.Width==1920 && m.Height==1080);
                 Require(!scale.IsEnabled && advice.Text.Contains("console scale is inactive"));
                 Require(Convert.ToString(scale.SelectedItem)=="4");
+                var supersampling=nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="Supersampling");
+                Require(supersampling.IsEnabled && advice.Text.Contains("Supersampling is off"));
+                supersampling.SelectedItem="200%";
+                Require(advice.Text.Contains("200% on each axis (4× scene pixels)"));
                 Require(advice.Text.Contains("60 FPS"));
                 string preview=Environment.GetEnvironmentVariable("TSFP_PERFORMANCE_PREVIEW");
                 if(!String.IsNullOrEmpty(preview)) {

@@ -34,6 +34,7 @@ def test_graphics_resolve(tmp_path):
                                 capture_output=True, text=True, timeout=60)
         assert result.returncode == 0, label + '\n' + result.stdout + result.stderr
         assert 'graphics transition combinations, six consecutive frames each' in result.stdout
+        assert 'supersampling exact 2x2 GPU resolve, size limits and restart latch' in result.stdout
         print(label + ': ' + next(line for line in result.stdout.splitlines()
                                  if 'graphics transition combinations' in line))
         entries = list(cache_home.rglob('*.bin'))

@@ -35,6 +35,7 @@ namespace TimeSplitters.Launcher
         public bool EnhancedAudio;
         public bool ShowCounter;
         public int Msaa = 1, EdgeSmoothing, AmbientOcclusion;
+        public int Supersampling;
         public bool ShaderCache = true;
         public string LanguagePack = "en";
         public static readonly string[] LanguagePacks = { "en", "fr", "de", "it", "es" };
@@ -179,13 +180,15 @@ namespace TimeSplitters.Launcher
             model.FpsOverlay = Number(settings, "fps_overlay", 0) != 0;
             string graphicsOptions = Text(model.originals[Files[6]]);
             if (graphicsOptions.Length > 0) {
-                var match = Regex.Match(graphicsOptions, @"\ATSFP_GRAPHICS_V1\s+(1|2|4|8)\s+([01])\s+([1-9]|1[0-6])\s+([01])\s+([01])\s*\z");
+                bool version2=graphicsOptions.StartsWith("TSFP_GRAPHICS_V2",StringComparison.Ordinal);
+                var match = Regex.Match(graphicsOptions, @"\ATSFP_GRAPHICS_V"+(version2?"2":"1")+@"\s+(1|2|4|8)\s+([01])\s+([1-9]|1[0-6])\s+([01])\s+([01])"+(version2?@"\s+([0-3])":"")+@"\s*\z");
                 Core.Require(match.Success, "Graphics settings are invalid. No settings were changed.");
                 model.Msaa = Int32.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
                 model.EdgeSmoothing = Int32.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
                 model.Anisotropy = Int32.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
                 model.AmbientOcclusion = Int32.Parse(match.Groups[4].Value, CultureInfo.InvariantCulture);
                 model.ShaderCache = match.Groups[5].Value == "1";
+                model.Supersampling = version2?Int32.Parse(match.Groups[6].Value,CultureInfo.InvariantCulture):0;
             }
             model.Validate(true);
             return model;
@@ -382,7 +385,7 @@ namespace TimeSplitters.Launcher
         public void Save()
         {
             Core.Require(new[]{1,2,4,8}.Contains(Msaa) && (EdgeSmoothing==0 || EdgeSmoothing==1) &&
-                (Anisotropy>=1 && Anisotropy<=16) && (AmbientOcclusion==0 || AmbientOcclusion==1),
+                (Anisotropy>=1 && Anisotropy<=16) && (AmbientOcclusion==0 || AmbientOcclusion==1) && Supersampling>=0 && Supersampling<=3,
                 "Graphics settings are invalid. No settings were changed.");
             Validate(); Core.Require(!Running(root), "Close the game before saving settings.");
             foreach (string file in Files)
@@ -410,7 +413,7 @@ namespace TimeSplitters.Launcher
                 "TSFP_DISCORD_V1 " + (DiscordEnabled ? "1" : "0") + " " + (DiscordApplicationId.Length == 0 ? "0" : DiscordApplicationId) + "\n",
                 "TSFP_FRAME_RATE_V1 " + NativeFps.ToString(CultureInfo.InvariantCulture) + "\n",
                 "TSFP_AUDIO_V1 " + (EnhancedAudio ? "1" : "0") + "\n",
-                "TSFP_GRAPHICS_V1 " + Msaa.ToString(CultureInfo.InvariantCulture) + " " + EdgeSmoothing.ToString(CultureInfo.InvariantCulture) + " " + Anisotropy.ToString(CultureInfo.InvariantCulture) + " " + AmbientOcclusion.ToString(CultureInfo.InvariantCulture) + " " + (ShaderCache ? "1" : "0") + "\n" };
+                (Supersampling==0?"TSFP_GRAPHICS_V1 ":"TSFP_GRAPHICS_V2 ") + Msaa.ToString(CultureInfo.InvariantCulture) + " " + EdgeSmoothing.ToString(CultureInfo.InvariantCulture) + " " + Anisotropy.ToString(CultureInfo.InvariantCulture) + " " + AmbientOcclusion.ToString(CultureInfo.InvariantCulture) + " " + (ShaderCache ? "1" : "0") + (Supersampling==0?"":" "+Supersampling.ToString(CultureInfo.InvariantCulture)) + "\n" };
             int committed = 0;
             try { for (int i = 0; i < Files.Length; i++) { Replace(Core.PathIn(root, Files[i]), Encoding.UTF8.GetBytes(payload[i]), true); committed++; } }
             catch

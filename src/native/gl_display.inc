@@ -20,7 +20,12 @@ static void native_viewport(void) {
     glViewport((GLint)x,(GLint)(native_target_height*sy-y-height),(GLsizei)width,(GLsizei)height);
 }
 static int native_scene_resize(unsigned w,unsigned h) {
+    static int supersampling=-1;
+    unsigned sw,sh;
     if(!w)w=g.backbuf_w;if(!h)h=g.backbuf_h;
+    if(supersampling<0)supersampling=pc_graphics_get().supersampling;
+    tsfp_supersampling_size(w,h,supersampling,&sw,&sh);
+    w=sw;h=sh;
     if(w==native_scene_w&&h==native_scene_h)return 1;
     GLint limit,read,draw;glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE,&limit);
     if(w>(unsigned)limit||h>(unsigned)limit)return 0;

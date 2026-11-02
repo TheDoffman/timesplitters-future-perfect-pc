@@ -21,6 +21,7 @@ and native validation must be reported separately for each host.
 | Anisotropic filtering | Original, 2x, 4x, 8x, 16x |
 | Ambient occlusion | Off / On; half-resolution processing |
 | Shader cache | Off / On, plus Clear Shader Cache action |
+| Supersampling | 100% (Off), 125%, 150%, 200% per axis; restart required |
 | FPS / Ping | Off / On; FPS plus latency in ms during online play only |
 
 Both entry points must read the same saved choice after reopening. In-game
@@ -40,6 +41,46 @@ JSON. No saves or personal settings are migrated. Both interfaces persist these
 same files; launcher saves participate in its transaction, concurrent-change
 checks and rollback. Invalid files are not silently overwritten. Native setters
 publish a complete snapshot only after a successful atomic save.
+
+Supersampling adds a sixth field (index 0/1/2/3) in `TSFP_GRAPHICS_V2`.
+V1 still loads with 100%; saving 100% writes V1 for older-build compatibility.
+Non-default V2 files require a supersampling-aware game and launcher. Other
+preferences and Enhanced texture controls retain their existing behavior.
+
+### Supersampling
+
+Both Graphics menus and the launcher expose 100%, 125%, 150% and 200%.
+The percentage multiplies each scene axis after Auto/manual/Original resolution
+selection. For example, 1920x1080 at 150% renders 2880x1620; 200% renders
+3840x2160 and draws four times the pixels. The legacy console scale still
+applies only in Original mode; supersampling multiplies that result too.
+Output shape, guest coordinates, FOV, window size and texture choice are
+independent. Original-resolution mode still follows the existing window-fit
+presentation policy; its percentage is relative to the console scene size.
+
+`src/graphics/supersampling.h` supplies deterministic ceil-rounded dimensions
+and reduces added scaling through the available presets to keep internal targets
+within 7680x4320 / 33,177,600 pixels. It never reduces the unscaled base target.
+The requested preference is retained. Patch 2515 latches the active scale when
+the common renderer first creates its scene; resolution changes/Auto resizing
+use that same latch. Startup allocation failure retries lower supersampling
+presets; live resolution allocation failure retains the existing targets and
+uses the display model's rollback. The log reports requested/effective dimensions.
+
+The existing production box resolve downsamples the larger scene before FXAA.
+Its sample origin now starts at the output pixel's top-left footprint rather
+than shifting by half a pixel; 100% is an exact copy and 200% averages each 2x2
+footprint. Legacy GL uses the same scene-size policy and its existing linear
+framebuffer blit; native rendering and fractional-scale quality remain unverified.
+New game/launcher preferences remain restart-required on every host.
+Video Options uses the same 1.45 native text/row scale across all tabs so the
+eleven-row Graphics page, including Apply, fits above the original footer.
+
+Checks extend `test_graphics_options.py` (all wire-format/preset round trips,
+odd sizes, bounds/overflow), `test_graphics_resolve.py` (exact production GPU
+2x2 averages, baseline copy and restart latch), `test_fov_settings.py` (menu
+failure/restart/reopen), the launcher model/shared UI suite and graphics branch
+migration fixtures. Windows evidence and unrun native checks are in STATUS.
 
 `src/interface/pc_video_tabs.inc` supplies the persistent top tab strip in both
 main/pause Video Options. Display contains aspect ratio, resolution and frame

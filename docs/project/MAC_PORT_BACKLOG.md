@@ -1,5 +1,15 @@
 # PC features awaiting Mac adaptation
 
+Supersampling (2026-11-02, local `feature/supersampling`, based on graphics-options
+327eb4c0): **Implemented, native validation pending**. Shared percentages,
+V1/V2 preferences, in-game/launcher UI and common Vulkan scene/box resolve are
+implemented once. Legacy GL consumes the shared scene-size helper and retains
+its linear framebuffer blit. No separate Mac policy is needed. Windows model,
+menu and WARP pixel checks pass; native Mac builds, all-scale/main/pause UI,
+Retina Auto resizing, failure recovery, performance and scene acceptance remain
+unrun. Legacy GL fractional-filter quality requires native review. See
+[graphics contract](../development/graphics-options.md#supersampling) and STATUS.
+
 FPS / Ping counter (2026-11-01, uncommitted): shared settings/formatting and
 common RHI scaling; legacy GL uses the same layout helper. No new network
 provider; existing Online RTT is used where supported. Native Mac rendering,

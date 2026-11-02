@@ -1972,6 +1972,16 @@
       ]
     },
     {
+      "name": "2515-supersampling.patch",
+      "path": "patches/graphics/rendering/2515-supersampling.patch",
+      "sha256": "f69b264fb78d8a28e1f726e24f07254a363231b84c9b7d3e107f6040937d4a30",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_display.c",
+        "src/d3d/d3d8_display.h"
+      ]
+    },
+    {
       "name": "independent-condition-fixture.patch",
       "path": "patches/compiler/independent-condition-fixture.patch",
       "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",
