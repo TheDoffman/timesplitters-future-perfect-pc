@@ -6,7 +6,9 @@ Current kernel work has original providers for [pool allocation](../agent-contex
 [narrow guest formatting](../agent-context/guest-printf.md), and
 [integer/string conversions](../agent-context/guest-numbers.md) through patch0240.
 Stage0241 adds original [extended integer multiplication](../agent-context/guest-integer-product.md);
-its build and focused/migration checks pass, with final stage acceptance in STATUS.
+its build and focused/migration checks pass, with exact acceptance in STATUS.
+Stage0242 adds [original extended division](../agent-context/guest-integer-division.md)
+and corrects the magic-division ABI. Final-stage acceptance is tracked in STATUS.
 The complete old native RTL module is excluded from the build. Guest exceptions,
 charset conversion, string allocation/freeing and other arithmetic helpers remain,
 along with other kernel, graphics, audio, input, title and fixture work.
@@ -23,15 +25,15 @@ final builds/generation/packaging with both unavailable have not passed yet.
 
 | Area | Remaining replacement or proof |
 | --- | --- |
-| Kernel/runtime | Exceptions/context/unwind, character conversion/string ownership, arithmetic helpers, and inherited parts of file/thread/synchronization/interrupt/crypto services and diagnostics |
+| Kernel/runtime | Exceptions/context/unwind, character conversion/string ownership, remaining arithmetic/memory helpers, and inherited parts of file/thread/synchronization/interrupt/crypto services and diagnostics |
 | Graphics | NV2A command/vertex/shader processing, remaining D3D8/HLE/backend and framebuffer/presentation code |
 | Audio/movies | APU/DSP/voices, DirectSound/XAudio2 glue, Xbox ADPCM and remaining XMV demux/decode/player/pump code |
 | Input/devices | Remaining HLE/input models, controller bindings, USB/OHCI and XInput adapters |
 | Integration | Remaining title/platform/runtime interfaces, headers, inherited smoke fixtures, and build/package routing away from the snapshot; audit any inherited network glue |
 | Final independence | Remove inherited code and snapshot/toolkit dependencies, retain permitted libraries, reconcile provenance/notices and prove generation/build/package plus bounded gameplay with old sources unavailable |
 
-The current configured Windows targets still compile30 runtime files and6 smoke
-fixtures byte-identical to the snapshot. They also compile44 modified runtime
+The current configured Windows targets still compile29 runtime files and6 smoke
+fixtures byte-identical to the snapshot. They also compile45 modified runtime
 files with snapshot counterparts; modification alone does not establish original
 ownership. These counts include utility targets and exclude headers/data/tooling,
 so they are neither a complete rewrite count nor a completion percentage. SDL,

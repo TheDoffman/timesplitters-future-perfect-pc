@@ -37529,3 +37529,59 @@ Division282, magic283, guest exception dispatch and the wider replacement goal
 remain unfinished. Native Mac execution and new-stage CI are not yet verified;
 no physical-input, audio-listening, campaign or snapshot-unavailable acceptance
 is inferred from these checks.
+
+
+## Original extended division and magic ABI (2026-11-02, stage0242)
+
+Continuation of arithmetic PR465 on source baseline ad9f434c, from
+main a4ccf22d. The earlier ad9f multiplication stage passed both runtime
+41404919917 and launcher41404919890 completely, including Windows/Mac jobs.
+This is prior-stage CI evidence; new division-stage CI remains pending.
+
+Original guest_integer_division.c/.h and guest_kernel_division.inc replace
+ordinals282/283. Zero division uses the existing original fatal boundary rather
+than silently returning zero. Magic division uses a64-bit fractional factor and
+shift; its documented five-word frame now cleans20 bytes instead of16. Existing
+guest_integer_fault.c moves from title sources into the kernel library so game
+and utility consumers share one owner. The first build caught this dependency
+as utility LNK2019; the corrected build passes. Guest SEH/access-violation
+dispatch and full Xbox kernel compatibility remain unfinished. See
+[arithmetic contracts](../agent-context/guest-integer-division.md).
+
+Windows x64/MSVC14.44:57 focused tests passed22.43s, including12440 independent
+whole-RAM/provider/import vectors, eight compile-first negative controls,
+executed actual dispatcher argument sizes,6440 real x86 ntdll reference calls
+with stack/host-SEH checks, and existing product/numeric/fatal/context coverage.
+All22 migration cases are verified:19 passed in the initial full run434.67s;
+three historical-fixture failures were repaired and all3 affected cases passed
+245.80s, now including full-current/reverse-historical/current transitions with
+both LF/CRLF files and unrelated edits preserved. Historical pre-layout subsets
+omit0242 with2090/2140 because their grouped paths did not exist yet. Context/index
+checks passed. Release build, utility/built-in tests and matching crash symbols passed.
+Archive/provider selection passed; generation is current and all generated title
+bytes are unchanged from the accepted multiplication build. Executable SHA256:
+`6cfbb400b162980380feefeba8a92d2d0256689fc19f14b1db82b3f728d58e08`.
+Ignored logs/division-build.json records source/patch/tool/kernel/generated and
+archive hashes with dirty-ad9f provenance. The interrupted migration attempt
+was stopped before patch inputs changed and is not acceptance evidence.
+
+Both isolated Story runner and controller exited0. Scotland scene4/mission1
+movement measured11.195015 forward and6.184892 backward; ammo8 to6,39 frozen
+pause samples and58 advancing resume samples; final checkpoint136.060s within
+240s cap. Fresh start/fire/pause captures were reviewed. Profile signatures and
+fixture were preserved;26 protected files retained hashes/sizes/mtimes. No
+run lock, dump or Partition image remained. Build/source/game hashes agree.
+Evidence: logs/division-game-check.json and logs/division-captures. This was
+minimized synthetic Original60/movie-skipped testing. The US XBE imports none
+of281/282/283; compiled fixtures exercise the new arithmetic directly, and game
+checks establish integration stability. No physical input/listening/full-campaign
+or native Mac title verification is claimed.
+
+Fresh configured-source inventory still has80 snapshot counterparts:29 runtime
+files plus6 smoke fixtures byte-identical,45 modified. kernel_xbox.c changed
+since the older inventory through incoming main, not through this stage; modified
+files still require provenance review. Headers, data and tooling are outside this
+count. Complete runtime replacement and toolkit/snapshot-unavailable production
+generation/build/package acceptance remain unfinished. Maintained Windows and
+Mac package command entry points resolve via --help; this produced no packages
+and is not native Mac build or packaging acceptance.

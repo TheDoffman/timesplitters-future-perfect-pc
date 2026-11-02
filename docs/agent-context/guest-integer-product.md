@@ -4,8 +4,8 @@ Stage0241 replaces ordinal 281 RtlExtendedIntegerMultiply through
 src/runtime/guest_integer_product.c/.h and guest_kernel_product.inc. The additive
 0241-original-extended-product.patch removes the inherited bridge body and links
 one shared provider on Windows/Mac. Dispatcher selection and 12-byte stdcall
-cleanup remain unchanged. Division 282 and magic division 283 remain separate
-replacement work; no claim about their signatures or fault behavior is made here.
+cleanup remain unchanged. Stage0242 separately replaces division282/magic283;
+see [division contracts and evidence](guest-integer-division.md).
 
 The multiplicand is a 64-bit two's-complement bit pattern and the multiplier a
 32-bit two's-complement bit pattern. Explicit unsigned sign extension followed
@@ -52,6 +52,8 @@ Whole-runtime independence and toolkit/snapshot-unavailable builds remain open.
 Local acceptance on main a4ccf22d plus stage0241:44 focused and22 migration tests,
 Windows Release/current generation/archive inspection and bounded Scotland
 movement/fire/pause/resume passed on executable60c18311. Exact evidence and
-limits are recorded in STATUS. New-stage CI/native Mac execution remain pending.
+limits are recorded in STATUS. Both runtime41404919917 and launcher41404919890 passed on ad9f434c, including
+portable Mac product tests. Native Mac title/gameplay acceptance remains pending.
+Stage0242 continues with [original division](guest-integer-division.md).
 
 Source commit c7f276a7 is reviewable in [draft PR465](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/465).

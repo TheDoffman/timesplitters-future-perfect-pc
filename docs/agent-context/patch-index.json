@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "def19a10c2c3f28f1a5b695a7d6713063d74c02ed9307b51ec63695d61f0f3a4",
+  "loaderSha256": "67dded89cd4e936b098be6d4b2bb3d5a8a89dd6871813d2408899e10cab9a8e4",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3006,6 +3006,16 @@
       "path": "patches/network/2140-native-online.patch",
       "sha256": "4b5969a17815e4b753508dd7f76c38b2f4ac86930256daa9f9709c91e4a23640",
       "targets": [
+        "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0242-original-extended-division.patch",
+      "path": "patches/compiler/0242-original-extended-division.patch",
+      "sha256": "01861d082565830a455a756228d5c55a164694c0c78797a6cbc56ffd95acfec3",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c",
         "titles/futureperfect/CMakeLists.txt"
       ]
     }

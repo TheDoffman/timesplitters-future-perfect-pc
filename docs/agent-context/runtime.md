@@ -1010,3 +1010,5 @@ visibility and objective logic remain guest-owned (Refs #338).
 [Language policy, US startup gate, original-routine tests and host validation](language-packs.md).
 
 Stage0241: [original extended product and ABI checks](guest-integer-product.md).
+
+Stage0242: [division providers, ABI and oracle](guest-integer-division.md).

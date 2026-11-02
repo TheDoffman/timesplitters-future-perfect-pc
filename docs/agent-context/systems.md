@@ -972,4 +972,4 @@ Physics: [poses](systems-details.md#guest-ragdolls-and-physical-npc-drops).
 
 [2x texture workflow](original-upscale.md).
 
-[Original ordinal281 product and checks](guest-integer-product.md).
+[Arithmetic imports and checks](guest-integer-division.md).

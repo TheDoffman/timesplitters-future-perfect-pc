@@ -367,3 +367,5 @@ and recovery packs, use verified originals as inputs, and follow the
 instructions do not override this task's newer user direction.
 
 Stage0241 extends the maintained effective-tail assertion and historical upgrade exclusions; see [product evidence](guest-integer-product.md).
+
+Stage0242: [division providers, ABI and oracle](guest-integer-division.md).

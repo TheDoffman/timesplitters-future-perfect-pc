@@ -1026,4 +1026,4 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [2x tests](original-upscale.md).
 
-[Original ordinal281 product and checks](guest-integer-product.md).
+[Arithmetic imports and checks](guest-integer-division.md).

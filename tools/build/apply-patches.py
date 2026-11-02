@@ -137,6 +137,12 @@ def patch_records(paths):
     if online:
         paths.remove(online)
         paths.append(online)
+    # Kernel arithmetic now shares the original fault boundary with utility
+    # consumers. Move its source ownership after the historical path migration.
+    division = by_name.get('0242-original-extended-division.patch')
+    if division:
+        paths.remove(division)
+        paths.append(division)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate
