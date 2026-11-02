@@ -1,3 +1,16 @@
+# Supersampling HUD follow-up (2026-11-02, local development)
+
+On feature/supersampling after 27c2925b, single-view common-renderer gameplay
+resolves the world before the original HUD, keeping HUD pixels at the selected
+output resolution. Shared depth/stencil transfer preserves marker occlusion,
+MSAA and later stencil reads/writes. Split/offscreen and legacy GL use the
+existing path; native Mac/Vulkan GPU acceptance remains pending.
+Windows build and built-in checks pass. Nine real D3D11 GPU fixtures, 33 related
+regressions and three fresh/repeated/graphics-branch patch checks pass. Isolated
+Vietnam gameplay confirms 2560x1440 world / 1280x720 HUD, with zero failed
+presents or draw/target operations. Comparison captures remain private/local.
+See the [rendering contract](../development/graphics-options.md#output-resolution-hud-with-supersampling).
+
 # Video menu follow-up (2026-11-02, local development)
 
 Compact native font, rounded centered tabs and MSAA Later/Restart Now prompt

@@ -1,5 +1,16 @@
 # PC features awaiting Mac adaptation
 
+Output-resolution HUD with supersampling (2026-11-02, local follow-up to
+27c2925b): **Common implementation, native validation pending**. The common
+Windows/Vulkan frontend shares `graphics/native_hud*.h`, the scene-owner adapter
+and guest HUD hints. Deferred/captured hints use the existing placement ABI;
+original HUD/kill-feed logic executes once. Single-view depth/stencil history, MSAA
+and frame reset pass Windows GPU fixtures. Patch 2517 adds sampled stencil
+plane views to the D3D11/Vulkan adapters; native GPU acceptance remains pending. Legacy GL ignores these hints and retains its
+existing whole-frame path; separate GL color/depth target switching and native
+Mac Retina, resize, pause/fades and gameplay checks remain. No native Mac or
+physical Linux acceptance is claimed. See the [HUD contract](../development/graphics-options.md#output-resolution-hud-with-supersampling).
+
 Supersampling (2026-11-02, local `feature/supersampling`, based on graphics-options
 327eb4c0): **Implemented, native validation pending**. Shared percentages,
 V1/V2 preferences, in-game/launcher UI and common Vulkan scene/box resolve are

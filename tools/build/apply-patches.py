@@ -166,6 +166,15 @@ def patch_records(paths):
     if copy_sync:
         paths.remove(copy_sync)
         paths.append(copy_sync)
+    # Native HUD switches the final scene/depth ownership introduced by MSAA.
+    native_hud = by_name.get('2516-native-resolution-hud.patch')
+    if native_hud:
+        paths.remove(native_hud)
+        paths.append(native_hud)
+    hud_stencil = by_name.get('2517-native-hud-stencil-plane.patch')
+    if hud_stencil:
+        paths.remove(hud_stencil)
+        paths.append(hud_stencil)
 
     # Kernel arithmetic now shares the original fault boundary with utility
     # consumers. Move its source ownership after the historical path migration.

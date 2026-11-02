@@ -1,4 +1,4 @@
-[Graphics/SSAA tests](../development/graphics-options.md): FPS/Ping, box resolve and flash recovery.
+[Graphics/HUD tests](../development/graphics-options.md): FPS/Ping, box resolve and flash recovery.
 Auto-sizing fixtures isolate the SDL policy; real restart handoff is tested separately.
 `tests/graphics/test_fov_settings.py` also exercises Video Options tabs, section
 ownership, pointer-region boundaries, keyboard cycling and staged-value retention.

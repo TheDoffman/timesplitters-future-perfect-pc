@@ -22,6 +22,7 @@
 #include "renderer_host_sdl.h"
 #include "rhi.h"
 #include "graphics/combiner_constants.h"
+#include "graphics/native_hud.h"
 static PcCombinerConstants native_float_constants;
 #include "graphics/present_metrics.h"
 #include "settings_macos.h"
@@ -1432,6 +1433,7 @@ void xbox_D3D8SetWideFrames(BOOL wide) { (void)wide; }
 /* The shared HLE records these tags during interpolation too. */
 void xbox_D3D8SetTwoDPlacement(int placement, uint32_t tag)
 {
+    if(tsfp_native_hud_hint(placement,tag))return;
     native_placement=placement;native_placement_tag=tag;
     pc_ui_world_begin(&native_world_anchor,placement,tag);
 }

@@ -82,6 +82,39 @@ odd sizes, bounds/overflow), `test_graphics_resolve.py` (exact production GPU
 failure/restart/reopen), the launcher model/shared UI suite and graphics branch
 migration fixtures. Windows evidence and unrun native checks are in STATUS.
 
+### Output-resolution HUD with supersampling
+
+The common renderer automatically resolves a completed single-view world before
+the audited US `14F0B0` HUD pass. The original HUD and optional kill feed then
+draw at the selected output resolution, using their original shaders, clipping,
+blending and guest coordinates. Remaining overlays for that frame use the same
+target. FXAA applies to the world before this boundary; it does not blur the HUD
+a second time. The original guest HUD function executes exactly once.
+
+`graphics/native_hud.h` reserves placement hints 6/7 with tag `14F0B0`. The
+existing host placement operation copies, defers and captures these hints in
+order; they do not change UI placement. Patches 2516/2517 apply after the complete
+MSAA scene-ownership stack. `native_hud_device.inc` retains the supersampled
+targets while swapping in a cached single-sample output-sized color/depth pair.
+The auto-depth surface keeps its identity. `native_hud_depth.h` copies the
+world depth at output-pixel centres, choosing the nearest MSAA sample, so HUD
+markers retain occlusion. The sampled stencil plane is reconstructed with eight
+masked replace passes, preserving all bits without optional stencil-export
+shader extensions. Both D3D11 and Vulkan expose that plane through the RHI.
+Present and resize restore the world targets before subsequent work; teardown releases both pairs and cached shaders.
+
+Native HUD admission requires supersampling above the base size, one complete
+viewport, the automatic scene depth and no interpolation/offscreen target.
+Split-screen, camera feeds, unsupported allocations and legacy OpenGL keep
+their existing supersampled path. A process-local `TSFP_NATIVE_HUD=0` override permits controlled comparisons and
+does not change saved preferences. This adds no separate user setting.
+
+`test_native_hud.py` builds the actual common renderer/replay and runs synthetic
+captures through three successive frames. Checks cover native one-pixel stems
+at 125/150/200%, MSAA, world-only FXAA, hidden/visible depth-tested markers,
+preserved stencil history (including later reads/writes), partial-view fallback
+and capture compatibility without hints. These Windows GPU checks are distinct from native Vulkan/legacy-GL acceptance.
+
 `src/interface/pc_video_tabs.inc` supplies the persistent top tab strip in both
 main/pause Video Options. Display contains aspect ratio, resolution and frame
 rate; Graphics contains effects, filtering, cache and texture style; View & HUD

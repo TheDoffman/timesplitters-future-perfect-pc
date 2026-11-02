@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "ac7da16f92753e26476995a65be4adb9723683f4b64d7d20662bca5c0bdf4644",
+  "loaderSha256": "f1e93ea3614c0f2d61ba846990f857e23b5c3845e92e73fbc338cdff1b21773c",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3209,6 +3209,27 @@
         "src/d3d/d3d8_internal.h",
         "src/d3d/d3d8_resources.c",
         "src/d3d/d3d8_screencopy.c"
+      ]
+    },
+    {
+      "name": "2516-native-resolution-hud.patch",
+      "path": "patches/graphics/rendering/2516-native-resolution-hud.patch",
+      "sha256": "a2bba518837588f0fff2e6894a6d07299d293c3a85767af1ea1a23022a521b28",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_display.c",
+        "src/d3d/d3d8_display.h"
+      ]
+    },
+    {
+      "name": "2517-native-hud-stencil-plane.patch",
+      "path": "patches/graphics/rendering/2517-native-hud-stencil-plane.patch",
+      "sha256": "9f9e012cdd326096411445b61621bf424782bf9cbce288f7a3b1e7aeeba74df0",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/rhi.h",
+        "src/d3d/rhi_d3d11.c",
+        "src/d3d/rhi_vulkan.c"
       ]
     },
     {

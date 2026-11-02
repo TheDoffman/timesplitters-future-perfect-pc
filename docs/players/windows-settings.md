@@ -12,6 +12,9 @@ Start with 125% or 150%. At 1080p, 200% renders at 4K before downsampling and
 draws four times the pixels. Turn it back to 100% if performance drops.
 Supersampling works with Auto, fixed resolutions and Original, with either
 Classic or Enhanced textures. It smooths the scene without replacing artwork.
+In supported single-view gameplay, the 3D world is downsampled before the HUD,
+so text and counters stay at the selected output resolution. Split-screen and
+unsupported rendering paths retain the existing whole-frame supersampling.
 Large internal targets use a lower effective scale without changing the saved
 choice. The legacy Console render scale only affects Original resolution and
 multiplies with supersampling; leave it at 1 for a predictable starting point.

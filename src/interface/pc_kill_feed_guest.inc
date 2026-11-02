@@ -134,7 +134,7 @@ static void feed_text(const char *name,float x,float y,unsigned color,unsigned a
     guest_call(sub_00041E30,5,bits(x),bits(y),feed_scratch,color|alpha,alpha);
     guest_call(sub_00022FF0,0);
 }
-void pc_kill_feed_hud(void (*original)(void)) {
+static void feed_hud_render(void (*original)(void)) {
     original();
     GuestRegisters registers;save_registers(&registers);
     uint32_t pool=WORD_AT(0x007356D8u),tick=WORD_AT(0x007DE318u);
@@ -218,4 +218,12 @@ void pc_kill_feed_hud(void (*original)(void)) {
     guest_call(sub_0003F8D0,0);guest_call(sub_0003FA10,1,font);
     guest_call(sub_00021450,2,32u,1u);ui_place(old,old_tag);
     restore_registers(&registers);
+}
+/* Keep both the original HUD and the optional feed in the same native pass.
+ * The original guest function still executes exactly once. */
+void pc_kill_feed_hud(void (*original)(void))
+{
+    int native=pc_graphics_hud_begin();
+    feed_hud_render(original);
+    if(native)pc_graphics_hud_end();
 }

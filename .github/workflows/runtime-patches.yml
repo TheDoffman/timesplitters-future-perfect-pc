@@ -243,7 +243,7 @@ jobs:
             tests/graphics/test_menu_sampling.py tests/graphics/test_pushbuffer_policy.py tests/graphics/test_shader_source_lookup.py tests/textures/test_texel_sample_lanes.py
             tests/graphics/test_renderer_host.py tests/graphics/test_render_state_cache.py tests/repository/test_vulkan_sdk.py tests/graphics/test_rhi_menu_sampling.py
             tests/gameplay/test_frame_replay.py
-            tests/graphics/test_graphics_options.py tests/graphics/test_graphics_resolve.py tests/graphics/test_graphics_spirv.py
+            tests/graphics/test_graphics_options.py tests/graphics/test_graphics_resolve.py tests/graphics/test_graphics_spirv.py tests/graphics/test_native_hud.py
             tests/graphics/test_shader_cache.py tests/graphics/test_ambient_occlusion_queue.py
             tests/diagnostics/test_debug_settings_model.py
             tests/network/test_native_network.py tests/network/test_crossplay_peer.py tests/network/test_online_companion.py tests/network/test_online_theme.py tests/network/test_online.py tests/network/test_online_host.py tests/network/test_network_identity.py

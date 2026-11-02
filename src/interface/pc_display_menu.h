@@ -138,3 +138,5 @@ void pc_kill_feed_allocate(void (*original)(void));
 #endif
 
 void pc_graphics_world_finish(void (*original)(void));
+int pc_graphics_hud_begin(void);
+void pc_graphics_hud_end(void);
