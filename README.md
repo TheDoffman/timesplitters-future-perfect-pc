@@ -102,6 +102,7 @@ and audio fidelity remain unverified. See [measured progress](docs/project/STATU
 | --- | --- |
 | **Keyboard and mouse** | Direct aiming, customizable bindings, mouse-driven menus and input prompts that follow your controls. |
 | **Widescreen** | 1080p, 1440p, 4K and ultrawide support, with adjustable field of view. |
+| **Anti-aliasing** | Optional [SMAA 1x High](docs/players/smaa.md) smooths jagged edges on compatible Direct3D 11/Vulkan builds. |
 | **High frame rate** | Original 60 FPS by default; compatible game builds offer opt-in [120/180/240 FPS beta settings](docs/analysis/native-high-refresh.md). |
 | **Launcher** | Game installation, updates, repair, rollback and settings. |
 | **Online multiplayer** | Player-hosted Online and LAN matches with bot support. Windows only. |

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "c4004bbb9c9e044585b7e3054b46ef709f6644924eec12a033812cc5daa311eb",
+  "loaderSha256": "d8cd656ee85fcc1ef82e6c114b69aaba4f1ae12a1d7b890e601689a8a8c406bd",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3124,6 +3124,16 @@
       "sha256": "cc155c4da87cdfec385660c79fbcd350fb3c507a46a1a43cebe3634af212633d",
       "targets": [
         "src/kernel/xbox_memory_layout.c"
+      ]
+    },
+    {
+      "name": "2470-smaa-antialiasing.patch",
+      "path": "patches/graphics/rendering/2470-smaa-antialiasing.patch",
+      "sha256": "43f8b18597dee8e0c58903322af0e1994b69eb78dff560e8485432636229a1ab",
+      "targets": [
+        "src/config/recomp_config.c",
+        "src/config/recomp_config.h",
+        "src/d3d/d3d8_display.c"
       ]
     }
   ]

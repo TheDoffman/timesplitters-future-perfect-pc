@@ -1,5 +1,11 @@
 # Launcher internals
 
+SMAA: shared `GameSettings.Smaa` loads/saves runtime `smaa = 0/1` and defaults
+off. `SettingsPage` exposes `SmaaAntiAliasing` in Quality & performance, includes
+it in dirty-draft detection and saves it through the existing atomic settings
+transaction. Restart and compatible-renderer requirements are in its tooltip.
+Both WPF and Avalonia consume this page/model; native Mac execution is unverified.
+
 Game 0.4.2 preparation retains Stable channel selection, optional texture delivery
 and the existing install/preservation contracts. Its packages embed launcher 1.4.2;
 game and launcher publication remain independent.

@@ -240,7 +240,7 @@ jobs:
             tests/graphics/test_cutscene_letterbox.py tests/graphics/test_pc_display_modes.py tests/graphics/test_decal_projection.py
             tests/graphics/test_channel_clears.py tests/graphics/test_objectives_health.py
             tests/graphics/test_fov_settings.py tests/storage/test_storage_menu.py tests/input/test_text_read_scope.py tests/diagnostics/test_trace_filter.py tests/diagnostics/test_sample_chains.py tests/diagnostics/test_sample_pc_locations.py tests/graphics/test_gpu_flush_ack.py
-            tests/graphics/test_menu_sampling.py tests/graphics/test_pushbuffer_policy.py tests/graphics/test_shader_source_lookup.py tests/textures/test_texel_sample_lanes.py
+            tests/graphics/test_menu_sampling.py tests/graphics/test_smaa.py tests/graphics/test_pushbuffer_policy.py tests/graphics/test_shader_source_lookup.py tests/textures/test_texel_sample_lanes.py
             tests/graphics/test_renderer_host.py tests/graphics/test_render_state_cache.py tests/repository/test_vulkan_sdk.py tests/graphics/test_rhi_menu_sampling.py
             tests/gameplay/test_frame_replay.py
             tests/diagnostics/test_debug_settings_model.py

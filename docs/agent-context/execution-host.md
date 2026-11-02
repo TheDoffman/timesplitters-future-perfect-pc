@@ -72,7 +72,8 @@ events and affinity APIs, with four workers doing100 suspend/restore cycles.
 All12 checks pass locally4.73s; Windows evidence only. Shared checks are registered
 on both CI hosts; native Mac results for this stage are pending.
 
-Patch tail58 and all five historical omission sets include0260 after0259.
+The own-stage tail58 and all five historical omission sets include0260 after0259.
+Integration with main623acff4 adds SMAA2470 after0260, making the combined tail59.
 Production apply60626 and Release49959 exit0, including built-ins/crash symbols.
 The actual source/archive audit confirms own policies and unchanged generated
 C/current receipt.113 focused cases pass249.21s (the12 new checks are a subset).

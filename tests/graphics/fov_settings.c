@@ -20,6 +20,9 @@ static int available=1,returned;
 static int enhanced_audio,audio_save_ok=1;
 int pc_audio_enhanced_enabled(void) {return enhanced_audio;}
 int pc_audio_set_enhanced(int enabled) {if(!audio_save_ok)return 0;enhanced_audio=!!enabled;return 1;}
+static int smaa_preference,smaa_save_ok=1;
+int pc_smaa_enabled(void){return smaa_preference;}
+int pc_smaa_set_enabled(int enabled){if(!smaa_save_ok)return 0;smaa_preference=enabled;return 1;}
 static unsigned built_rows, built_row_count, built_ids[32],separators;
 static char runtime_path[MAX_PATH];
 static int requested_rate=-1;
@@ -70,7 +73,9 @@ MOUSE_STUB(sub_002C4310)
 MOUSE_STUB(sub_001922D0)
 MOUSE_STUB(sub_002E49F0) MOUSE_STUB(sub_002E4A30)
 /* Audio-slider preview calls are covered by menu_mouse.c, not this fixture. */
-MOUSE_STUB(sub_00045C60) MOUSE_STUB(sub_00021780)
+MOUSE_STUB(sub_00045C60)
+static unsigned video_sounds;
+void sub_00021780(void){CHECK(WORD_AT(g_esp+4)==0x1234u);++video_sounds;g_esp+=4;}
 MOUSE_STUB(sub_00045390) MOUSE_STUB(sub_00045820)
 MOUSE_STUB(sub_0007DB20) MOUSE_STUB(sub_0007C410) MOUSE_STUB(sub_0007C300)
 MOUSE_STUB(sub_0007C390) MOUSE_STUB(sub_0007C4F0) MOUSE_STUB(sub_0007CDE0)
@@ -227,7 +232,8 @@ void sub_00079D60_gen(void) {
     unsigned id=WORD_AT(g_esp+8);CHECK(id<32);
     if(page==DISPLAY_HOME && id>=20 && id<=21)CHECK(!strncmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+4)),"\vs75",4));
     built_rows|=1u<<id;built_ids[built_row_count++]=id;
-    g_eax=0x200000+id*0x200;WORD_AT(g_eax+0x28)=WORD_AT(g_esp+12)|0x2000u;g_esp+=4;
+    g_eax=0x200000+id*0x200;WORD_AT(g_eax+0x28)=WORD_AT(g_esp+12)|0x2000u;
+    WORD_AT(g_eax+0x88)=current_menu;g_esp+=4;
 }
 static void call(uint32_t address,int selected,unsigned buttons)
 {
@@ -305,7 +311,24 @@ int main(int argc,char **argv)
     reload("TSFP_DISPLAY_V1 1280 720\n");
     tsfp_texture_set_4k(0);
     call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
-    CHECK(page==DISPLAY_HOME && built_row_count==8 && separators==0 && (built_rows & (1u<<10)));
+    CHECK(page==DISPLAY_HOME && built_row_count==9 && separators==0 && (built_rows & (1u<<10)) && (built_rows & (1u<<11)));
+    { /* Use the native switch sound for all Video setting rows, not Apply. */
+        WORD_AT(current_menu+4)=storage;WORD_AT(0x7ba16c)=1;WORD_AT(0x7ba178)=0x510000;
+        WORD_AT(0x510008)=0x1234;
+        unsigned ids[]={0,1,2,7,8,9,10,11};
+        for(unsigned i=0;i<sizeof ids/sizeof ids[0];i++)
+            menu_video_click_sound(current_menu,0x200000+ids[i]*0x200);
+        CHECK(video_sounds==8);
+        menu_video_click_sound(current_menu,apply_row);CHECK(video_sounds==8);
+        WORD_AT(smaa_row+0x28)|=1;menu_video_click_sound(current_menu,smaa_row);CHECK(video_sounds==8);
+        WORD_AT(smaa_row+0x28)&=~1u;
+        WORD_AT(current_menu+4)=0;menu_video_click_sound(current_menu,smaa_row);CHECK(video_sounds==8);
+        WORD_AT(current_menu+4)=storage;
+        page=DISPLAY_CONFIRM;menu_video_click_sound(current_menu,smaa_row);CHECK(video_sounds==8);
+        page=DISPLAY_HOME;WORD_AT(0x7ba178)=0;
+        menu_video_click_sound(current_menu,smaa_row);CHECK(video_sounds==8);
+        WORD_AT(0x7ba16c)=0;menu_video_click_sound(current_menu,smaa_row);CHECK(video_sounds==8);
+    }
     { /* Shared focus bars stay rounded regardless of the menu descriptor. */
         float bounds[4]={20,20,220,47};
         WORD_AT(current_menu+4)=storage;WORD_AT(current_menu+0x20)=0x310000;
@@ -326,6 +349,20 @@ int main(int argc,char **argv)
     CHECK(!(built_rows&(1u<<5)) && !(built_rows&(1u<<4))); /* No Back or reset row. */
     CHECK(!(built_rows&(1u<<20))); /* FOV has no default-value helper row. */
     CHECK(!display_dirty() && (WORD_AT(apply_row+0x28)&1));
+    /* SMAA is staged, survives a menu rebuild, and Back discards it. */
+    CHECK(!staged_smaa && !pc_smaa_enabled());
+    WORD_AT(smaa_row+0xc8)=1;call(TICK_CB,11,0);
+    CHECK(display_dirty() && !pc_smaa_enabled());
+    refresh(DISPLAY_HOME,0);CHECK(WORD_AT(smaa_row+0xc8)==1 && display_dirty());
+    call(BACK_CB,0,0);call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
+    CHECK(!staged_smaa && !display_dirty());
+    WORD_AT(smaa_row+0xc8)=1;call(TICK_CB,11,0);smaa_save_ok=0;
+    call(SELECT_CB,3,0);CHECK(!pc_smaa_enabled() && display_dirty() && *status);
+    smaa_save_ok=1;call(SELECT_CB,3,0);CHECK(pc_smaa_enabled() && !display_dirty());
+    call(BACK_CB,0,0);call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
+    CHECK(staged_smaa && applied_smaa && WORD_AT(smaa_row+0xc8)==1 && !display_dirty());
+    WORD_AT(smaa_row+0xc8)=0;call(TICK_CB,11,0);call(SELECT_CB,3,0);
+    CHECK(!pc_smaa_enabled() && !display_dirty());
     CHECK(built_rows&(1u<<9));
     WORD_AT(subtitle_row+0xc8)=1;call(TICK_CB,9,0);
     CHECK(display_dirty() && !WORD_AT(0x400130) && !WORD_AT(0x7613dc));
@@ -379,6 +416,13 @@ int main(int argc,char **argv)
     CHECK(requested_rate==120 && pc_frame_rate_read()==120);
     CHECK(!display_dirty() && (WORD_AT(apply_row+0x28)&1));
     content("TSFP_DISPLAY_V2 1280 720 70\n");
+    /* A failed SMAA save rolls back earlier display/rate saves in this batch. */
+    staged_fov=75;WORD_AT(rate_row+0xc8)=2;WORD_AT(smaa_row+0xc8)=1;smaa_save_ok=0;
+    call(SELECT_CB,3,0);
+    CHECK(pc_display_fov()==70 && requested_rate==120 && pc_frame_rate_read()==120 && !pc_smaa_enabled());
+    content("TSFP_DISPLAY_V2 1280 720 70\n");
+    smaa_save_ok=1;staged_fov=70;WORD_AT(rate_row+0xc8)=1;WORD_AT(smaa_row+0xc8)=0;
+    call(TICK_CB,11,0);CHECK(!display_dirty());
     call(TICK_CB,2,0x80000);CHECK(!(WORD_AT(apply_row+0x28)&1));
     call(TICK_CB,2,0x40000);CHECK(WORD_AT(apply_row+0x28)&1);
     /* Failed display save must not publish FPS or texture changes. */

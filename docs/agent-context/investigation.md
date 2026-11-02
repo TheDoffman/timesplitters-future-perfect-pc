@@ -1,5 +1,9 @@
 # Investigation memory and handoffs
 
+SMAA adds the final `2470-smaa-antialiasing.patch` after config/timing migrations;
+`test_repo_context.py` checks the resulting 56-patch tail. Historical migration
+fixtures omit this feature until their full-stack upgrade. See [contracts](smaa.md).
+
 Root AGENTS.md and the PR template require a short user-facing Change and Cause
 and fix description. Keep technical evidence in the existing project records;
 the simpler opening description does not remove testing or platform obligations.
@@ -411,3 +415,7 @@ see [ownership and test routes](execution-ownership.md).
 Stage0260 extends the patch tail57to58 for original host policies after0259.
 The ordering assertion and five historical omission sets follow this dependency;
 see [host scheduling and test routes](execution-host.md).
+
+PR466 integration with main623acff4 retains0260 and then applies SMAA2470.
+The complete maintained tail is59; merge resolution preserves both loader
+additions, all historical omission entries and regenerates the patch index.

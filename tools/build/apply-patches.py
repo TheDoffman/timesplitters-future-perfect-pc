@@ -188,6 +188,11 @@ def patch_records(paths):
     if execution_host:
         paths.remove(execution_host)
         paths.append(execution_host)
+    # SMAA extends the final config writer after native timing migrations.
+    smaa = by_name.get('2470-smaa-antialiasing.patch')
+    if smaa:
+        paths.remove(smaa)
+        paths.append(smaa)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate
