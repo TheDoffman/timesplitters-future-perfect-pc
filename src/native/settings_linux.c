@@ -31,6 +31,7 @@ int pc_storage_picker_poll(char *out,size_t capacity){
 #include <gtk/gtk.h>
 #include <stdlib.h>
 #include <math.h>
+#include <locale.h>
 #include <unistd.h>
 #include <limits.h>
 static int dialog_test; /* Nonzero only from isolated native self-tests. */
@@ -203,7 +204,9 @@ void pc_debug_show(HWND owner){
     g_source_remove(timer);gtk_widget_destroy(e.dialog);tsfp_native_settings_release_input(game_window);tsfp_native_crash_inhibit(0);
 }
 int tsfp_native_settings_test(void){
+    char numeric_locale[256];snprintf(numeric_locale,sizeof numeric_locale,"%s",setlocale(LC_NUMERIC,NULL));
     if(!getenv("RECOMP_INPUT_CONFIG")||!gtk_ready())return 1;
+    if(strcmp(numeric_locale,setlocale(LC_NUMERIC,NULL))){fputs("FAIL: GTK changed game numeric locale\n",stderr);return 1;}
     PcSettings initial,actual;char error[512];if(!pc_settings_read(&initial,error,sizeof error))return 0;
     dialog_test=1;LinuxSettings e=make_settings(&initial);gtk_widget_show_all(e.dialog);
     gtk_entry_set_text(GTK_ENTRY(e.sensitivity),"nan");int ok=!save_controls(&e,error,sizeof error);

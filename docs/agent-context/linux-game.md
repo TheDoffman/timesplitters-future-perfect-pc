@@ -300,3 +300,8 @@ so GCC fatal-warning fixtures compile; the callback fixture does the same.
 Runner receipts distinguish validation_requested from validation_enabled; the
 latter requires the RHI's actual activation log. An unavailable optional SDK
 validation layer in an ordinary package must not be reported as API validation.
+
+`--resources` samples only the owned child's RSS/address-space bytes, thread and
+file-descriptor counts every five seconds, with at most128 scalar samples. It
+reads no environment, unrelated process or memory contents. Compare stable
+active phases; allocation/cache warmup is not by itself evidence of a leak.

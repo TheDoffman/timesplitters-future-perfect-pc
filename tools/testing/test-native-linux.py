@@ -79,6 +79,14 @@ def story_window(samples,frames):
     return result
 
 
+def owned_resource_snapshot(pid,elapsed,proc=Path('/proc')):
+    # Only called with the Popen child owned by this bounded runner; no process scan.
+    base=proc/str(pid)
+    values=dict(re.findall(r'^(VmRSS|VmSize|Threads):\s+(\d+)',(base/'status').read_text(),re.M))
+    return dict(seconds=round(elapsed,3),rss_bytes=int(values['VmRSS'])*1024,
+                virtual_bytes=int(values['VmSize'])*1024,threads=int(values['Threads']),
+                open_fds=len(list((base/'fd').iterdir())))
+
 def validation_active(text,requested):
     return bool(requested and re.search(r'\[RHI\] vulkan: [^\n]*validation on',text))
 
@@ -112,6 +120,7 @@ def main():
     p.add_argument('--seconds',type=int,default=120)
     p.add_argument('--driver-manifest',type=Path)
     p.add_argument('--capture',action='store_true')
+    p.add_argument('--resources',action='store_true',help='Sample only the owned child RSS, address space, threads and FD count every five seconds')
     p.add_argument('--movies',action='store_true',help='Play startup XMV movies instead of skipping them')
     p.add_argument('--performance',action='store_true',help='Measure interactive settings: shader cache on, validation off (not validation acceptance)')
     p.add_argument('--fps',type=int,choices=(60,120,180,240),default=60,
@@ -181,6 +190,7 @@ def main():
             os.close(os.open(keys,flags,0o600));env['TSFP_NATIVE_TEST_KEYS']=str(keys)
         logs=ROOT/'logs';logs.mkdir(exist_ok=True);started=time.monotonic();timed_out=False;reason='process_exit'
         (logs/'linux-game.json').write_text(json.dumps(dict(completed=False,source_revision=manifest['source_revision'])))
+        resources=[];next_resource=0
         states=[];memory_fd=None;offset=None;next_state=0;skip_at=None;resumed=False;cutscene_since=None
         import resource
         cpu_before=resource.getrusage(resource.RUSAGE_CHILDREN)
@@ -189,6 +199,10 @@ def main():
             try:
                 while child.poll() is None:
                     elapsed=time.monotonic()-started
+                    if args.resources and elapsed>=next_resource and len(resources)<128:
+                        next_resource=elapsed+5
+                        try:resources.append(owned_resource_snapshot(child.pid,elapsed))
+                        except (OSError,KeyError) as error:resources.append(dict(seconds=round(elapsed,3),error=type(error).__name__))
                     if args.story_benchmark and elapsed>=next_state:
                         next_state=elapsed+.5
                         if offset is None:
@@ -236,6 +250,7 @@ def main():
             host=platform.platform(),driver_manifest=env.get('VK_DRIVER_FILES','system discovery'),
             validation_requested=not args.performance,validation_enabled=validation_active(text,not args.performance),shader_cache_enabled=args.performance,
             host_optimization=manifest.get('host_optimization','legacy unoptimized host'),
+            resource_sampling=args.resources,resource_samples=resources,
             cpu_user_seconds=round(cpu_after.ru_utime-cpu_before.ru_utime,3),
             cpu_system_seconds=round(cpu_after.ru_stime-cpu_before.ru_stime,3),
             requested_fps=args.fps,

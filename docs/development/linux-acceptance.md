@@ -60,7 +60,7 @@ For each available native host, test controller unplug/reconnect while a button
 is held, focus loss during movement, audio-device switching, display changes,
 and suspend/resume. Run multiple Story missions, Arcade and matching-build
 multiplayer, then repeat save/load and level transitions in a longer session.
-Track memory and handles across repetitions; a shorter first-mission pass is
+Use --resources to track owned-child memory, threads and descriptors across repetitions; a shorter first-mission pass is
 not full-campaign or multiplayer acceptance. Do not suspend a user's computer
 or alter its driver/system image automatically.
 

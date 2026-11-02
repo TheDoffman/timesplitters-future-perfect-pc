@@ -162,3 +162,13 @@ def test_validation_receipt_reports_actual_layer(text,requested,active):
     spec=importlib.util.spec_from_file_location('linux_validation_runner',ROOT/'tools/testing/test-native-linux.py')
     runner=importlib.util.module_from_spec(spec);spec.loader.exec_module(runner)
     assert runner.validation_active(text,requested)==active
+
+
+def test_owned_resource_snapshot_uses_only_scalar_child_fields(tmp_path):
+    import importlib.util
+    spec=importlib.util.spec_from_file_location('linux_resources_runner',ROOT/'tools/testing/test-native-linux.py')
+    runner=importlib.util.module_from_spec(spec);spec.loader.exec_module(runner)
+    base=tmp_path/'123';(base/'fd').mkdir(parents=True)
+    (base/'status').write_text('Name: game\nVmSize: 8192 kB\nVmRSS: 1024 kB\nThreads: 4\n')
+    for name in ('0','1','2'):(base/'fd'/name).touch()
+    assert runner.owned_resource_snapshot(123,5.1234,tmp_path)==dict(seconds=5.123,rss_bytes=1048576,virtual_bytes=8388608,threads=4,open_fds=3)
