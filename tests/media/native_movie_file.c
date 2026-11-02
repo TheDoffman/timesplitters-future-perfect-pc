@@ -46,8 +46,13 @@ static int compare_intervals(const void *a,const void *b)
 static uint64_t hash_bytes(uint64_t hash,const uint8_t *p,size_t n)
 { for(size_t i=0;i<n;i++)hash=(hash^p[i])*1099511628211ull;return hash; }
 int xbox_EnvSwitch(const char *name,int fallback) { return fallback; }
+#ifdef _WIN32
 BOOL xbox_translate_path(const char *path,WCHAR *out,DWORD count)
 { assert(!strcmp(path,"d:\\xmv\\eag_e.xmv"));return MultiByteToWideChar(CP_UTF8,0,host_path,-1,out,count)!=0; }
+#else
+BOOL xbox_translate_path(const char *path,char *out,DWORD count)
+{ assert(!strcmp(path,"d:\\xmv\\eag_e.xmv"));return snprintf(out,count,"%s",host_path)<(int)count; }
+#endif
 void hle_d3d8_movie_surface(uint32_t data,uint32_t format) { assert(!data && !format); }
 void d3d8_movie_clear(void) {}
 void d3d8_movie_set_frame(const uint8_t *pixels,uint32_t w,uint32_t h,int fill,unsigned l,unsigned r)

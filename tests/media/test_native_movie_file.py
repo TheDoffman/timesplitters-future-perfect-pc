@@ -15,11 +15,12 @@ RUNTIME = ROOT / 'external/ts3FPrecomp'
 MOVIES = ROOT / 'private/game/xmv'
 
 
-@pytest.mark.skipif(os.name != 'nt' or not MOVIES.exists(),
-                    reason='Requires Windows host movie backend and local XMV data')
+@pytest.mark.skipif(not MOVIES.exists(),
+                    reason='Requires local XMV data')
 @pytest.mark.parametrize('live_clock', [False, True], ids=['controlled-clock', 'windows-timers'])
 @pytest.mark.parametrize('movie_name', ['eag_e.xmv', 'frd.xmv'])
 def test_real_movie_native_cadence(tmp_path, live_clock, movie_name):
+    if live_clock and os.name!='nt':pytest.skip('Live host-timer fixture uses the Windows timer inspection API')
     movie = MOVIES / movie_name
     if not movie.is_file():
         pytest.skip('Local XMV data required; never included in CI')
@@ -27,13 +28,13 @@ def test_real_movie_native_cadence(tmp_path, live_clock, movie_name):
     assert hashlib.sha256(xbe.read_bytes()).hexdigest() == (
         '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc')
     ffmpeg = RUNTIME / 'third_party/ffmpeg'
-    if not (ffmpeg / 'include/libavcodec/avcodec.h').exists():
+    if os.name=='nt' and not (ffmpeg / 'include/libavcodec/avcodec.h').exists():
         pytest.skip('Verified local FFmpeg dependency is unavailable')
     compiler, env = native_compiler(tmp_path)
     src = RUNTIME / 'src'
     includes = [src, src/'hle', src/'d3d', src/'video', src/'config',
                 ROOT/'src', ffmpeg/'include']
-    executable = tmp_path/'movie.exe'
+    executable = tmp_path/('movie.exe' if os.name=='nt' else 'movie')
     command = [compiler, '/nologo', '/O2', '/std:c11', '/DXMV_HAVE_FFMPEG']
     if live_clock:
         command.append('/DLIVE_HOST_CLOCK')
@@ -41,6 +42,11 @@ def test_real_movie_native_cadence(tmp_path, live_clock, movie_name):
     command += [str(ROOT/'tests/media/native_movie_file.c'), str(src/'video/xmv_demux.c'),
                 str(src/'video/xmv_decode.c'), str(src/'hle/xbox_adpcm.c'),
                 '/Fe:'+str(executable), '/Fo:'+str(tmp_path)+'\\']
+    if os.name!='nt':
+        flags=subprocess.check_output(['pkg-config','--cflags','libavcodec','libavutil'],text=True).split()
+        command=[compiler,'-std=c11','-O2','-DXMV_HAVE_FFMPEG',*flags,*['-I'+str(p) for p in includes],
+            str(ROOT/'tests/media/native_movie_file.c'),str(src/'video/xmv_demux.c'),
+            str(src/'video/xmv_decode.c'),str(src/'hle/xbox_adpcm.c'),'-ldl','-lm','-o',str(executable)]
     compiled = subprocess.run(command, cwd=tmp_path, env=env, capture_output=True,
                               text=True, timeout=60)
     assert compiled.returncode == 0, compiled.stdout+compiled.stderr

@@ -264,3 +264,13 @@ Linux Online accepts explicit interpreter/script/manifest/handshake environment
 paths for relocated packages; checkout defaults remain. Never package developer
 venvs, game assets or personal settings. Native UI/runtime validation is separate
 from source/portable fixture checks.
+
+`tools/release/package-native-linux.py` assembles an asset-free Linux preview
+with the existing self-contained launcher, ELF dependency closure excluding
+host glibc, a relocated Python/Tk/TLS Online runtime and checksummed source/notices.
+It verifies the native source/binary receipt, preserves existing outputs, rejects
+protected/linked payloads, and checks its archive with the actual launcher.
+`linux-launch.sh --game` supports an external data path and XDG writable state
+for read-only installs; default launch opens the portable launcher in a writable
+install. System Vulkan ICDs are not copied. A clean-machine pass and dependency
+source/license audit remain separate publication requirements.
