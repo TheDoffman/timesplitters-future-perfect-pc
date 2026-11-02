@@ -1,7 +1,6 @@
 [Graphics/restart2514](../development/graphics-options.md).
 Counter2490: host overlay sizing.
-Kill feed: timing scopes, attribution, viewport colors and rematch reset are
-documented in [the feed guide](../development/arcade-kill-feed.md).
+[Kill feed contracts](../development/arcade-kill-feed.md).
 Story rewards: additive2465 wraps356800 for the single frontend context;
 profile mapper356870 stays original. See [contract](systems-details.md#four-player-rewards-context).
 
@@ -1011,7 +1010,6 @@ visibility and objective logic remain guest-owned (Refs #338).
 
 [Language policy, US startup gate, original-routine tests and host validation](language-packs.md).
 
-Graphics guide: patch2512 Linux declarations, legacy GL preference adapter and WSL evidence.
 
 Stage0241: [original extended product and ABI checks](guest-integer-product.md).
 
