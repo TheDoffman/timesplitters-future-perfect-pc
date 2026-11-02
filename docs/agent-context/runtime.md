@@ -1,5 +1,5 @@
 [Graphics/restart2514](../development/graphics-options.md).
-Counter2490: host overlay sizing.
+Counter2490: overlay sizing.
 [Kill feed contracts](../development/arcade-kill-feed.md).
 Story rewards: additive2465 wraps356800 for the single frontend context;
 profile mapper356870 stays original. See [contract](systems-details.md#four-player-rewards-context).
