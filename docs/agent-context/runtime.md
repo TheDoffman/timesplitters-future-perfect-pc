@@ -1,4 +1,4 @@
-Linux GPU/media: patches2407â€“2411; [contracts](linux-game.md).
+Linux GPU/media: patches2407â€“2412; [contracts](linux-game.md).
 
 Kill feed: timing scopes, attribution, viewport colors and rematch reset are
 documented in [the feed guide](../development/arcade-kill-feed.md).

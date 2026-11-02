@@ -160,7 +160,8 @@ void tsfp_device_factory_stop(tsfp_device_factory *f) {
 int tsfp_device_factory_retry_one(tsfp_device_factory *f) {
     tsfp_device_node *n;if(!f)return 0;
     lock(f);for(n=f->head;n;n=n->next)if(n->phase==UNPUBLISHED_FAILED && n->cleanup==0)break;
-    if(n)n->phase=DISPOSING;unlock(f);return n?cleanup(f,n,0)==1:0;
+    if(n)n->phase=DISPOSING;
+    unlock(f);return n?cleanup(f,n,0)==1:0;
 }
 int tsfp_device_factory_pin_finalization(tsfp_device_factory *f,const tsfp_device_finalization *ticket,
     tsfp_device_final_pin *out,void **mapping,uint32_t *bytes) {

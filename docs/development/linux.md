@@ -54,7 +54,8 @@ sudo apt-get install -y build-essential clang pkg-config git python3-venv \
   libxss-dev libxtst-dev libwayland-dev libxkbcommon-dev libxkbcommon-x11-dev \
   libdrm-dev libgbm-dev libegl1-mesa-dev libdecor-0-dev \
   libasound2-dev libpulse-dev libudev-dev libvulkan1 mesa-vulkan-drivers \
-  vulkan-tools xvfb xauth libssl-dev libfreetype-dev libfontconfig-dev python3-tk
+  vulkan-tools xvfb xauth libssl-dev libfreetype-dev libfontconfig-dev python3-tk \
+  libgtk-3-dev libavcodec-dev libavutil-dev patchelf
 python3 -m venv .venv-linux
 .venv-linux/bin/python -m pip install -r requirements.txt
 ```
@@ -159,11 +160,14 @@ For routine gameplay, add `--unlocked-profile` with the existing local Test Lab
 fixture under `private/test-fixtures/unlocked`. This prepares a disposable copy
 of its five host save files; the canonical fixture remains unchanged.
 
-Linux desktop settings/debug editing dialogs and movie decoding remain pending;
-the manifest exposes these capabilities as unavailable. Shared in-game Video
-Options, controls JSON and existing gameplay changes use the common models.
-Portable packaging, audible output, networking and hardware acceptance remain
-separate work. See [integration contracts](../agent-context/linux-game.md).
+Linux desktop settings/debug editing now uses GTK3 and the shared models;
+startup XMV movies use the common FFmpeg/audio/RHI pipeline. Bindings can be
+edited through dropdowns; capture-to-bind remains pending. A relocatable local
+preview includes runtime libraries and Python/Tk/Online support, without game data.
+Run `tools/release/package-native-linux.py --version TAG --output NEW_DIRECTORY`
+after building/testing the game and Linux launcher. Native hardware, audible
+output, multiplayer and full-campaign acceptance remain separate work. See the
+[acceptance matrix](linux-acceptance.md) and [contracts](../agent-context/linux-game.md).
 
 Then validate isolated boot/menus, movement/fire/pause, save/load, movies/audio,
 fullscreen/resize/focus, networking, textures and supported refresh settings.
@@ -187,8 +191,8 @@ C# models with Mac, plus the same policy as Windows. Build/test/package with
 [Linux launcher guide](../players/linux-launcher.md). Source checkout routing
 uses `build/linux/game`, not the RHI probe directory. Its self-contained ZIP
 contains only launcher files/notices, never game data or personal settings.
-Linux runtime packaging/publication and physical desktop/Deck gameplay through
-the launcher remain separate acceptance work.
+Local Linux runtime preview packaging now exists; publication and physical
+desktop/Deck acceptance remain pending. See [acceptance](linux-acceptance.md).
 
 ## Host optimization and performance comparisons
 

@@ -2,7 +2,7 @@
 [exFAT](host-storage.md)
 # Subsystem entry points
 
-[Linux UI/media](linux-game.md).
+[Linux](linux-game.md).
 
 PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 

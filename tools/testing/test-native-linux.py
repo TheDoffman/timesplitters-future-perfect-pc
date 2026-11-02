@@ -79,6 +79,9 @@ def story_window(samples,frames):
     return result
 
 
+def validation_active(text,requested):
+    return bool(requested and re.search(r'\[RHI\] vulkan: [^\n]*validation on',text))
+
 def runtime_target(package_root=None):
     build=Path(package_root).resolve() if package_root else ROOT/'build/linux/game'
     exe=build/('Bin/futureperfect_recomp' if package_root else 'futureperfect_recomp')
@@ -231,7 +234,7 @@ def main():
         presents=re.findall(r'\[PRESENT\] backend=\S+ total=(\d+) guest=(\d+) interpolated=(\d+) other=(\d+) skipped=(\d+) failed=(\d+)',text)
         summary=dict(source_revision=manifest['source_revision'],executable_sha256=manifest['executable_sha256'],
             host=platform.platform(),driver_manifest=env.get('VK_DRIVER_FILES','system discovery'),
-            validation_enabled=not args.performance,shader_cache_enabled=args.performance,
+            validation_requested=not args.performance,validation_enabled=validation_active(text,not args.performance),shader_cache_enabled=args.performance,
             host_optimization=manifest.get('host_optimization','legacy unoptimized host'),
             cpu_user_seconds=round(cpu_after.ru_utime-cpu_before.ru_utime,3),
             cpu_system_seconds=round(cpu_after.ru_stime-cpu_before.ru_stime,3),

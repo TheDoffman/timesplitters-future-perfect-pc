@@ -14,10 +14,15 @@ fi
 if [ "$#" -gt 1 ]; then echo "Use --game [--data PATH] [--settings-self-test|--debug-self-test|--input-self-test|--renderer-self-test|--online-self-test]" >&2; exit 2; fi
 case "${1-}" in ""|--settings-self-test|--debug-self-test|--input-self-test|--renderer-self-test|--online-self-test) ;; *) echo "Unknown game option: $1" >&2; exit 2;; esac
 xdg_path() { case "$1" in /*) printf '%s' "$1";; *) printf '%s/%s' "$HOME" "$2";; esac; }
-base=$(xdg_path "${XDG_DATA_HOME-}" .local/share)/timesplitters-future-perfect
-config=$(xdg_path "${XDG_CONFIG_HOME-}" .config)/timesplitters-future-perfect
-state=$(xdg_path "${XDG_STATE_HOME-}" .local/state)/timesplitters-future-perfect
-cache=$(xdg_path "${XDG_CACHE_HOME-}" .cache)/timesplitters-future-perfect
+XDG_DATA_HOME=$(xdg_path "${XDG_DATA_HOME-}" .local/share)
+XDG_CONFIG_HOME=$(xdg_path "${XDG_CONFIG_HOME-}" .config)
+XDG_STATE_HOME=$(xdg_path "${XDG_STATE_HOME-}" .local/state)
+XDG_CACHE_HOME=$(xdg_path "${XDG_CACHE_HOME-}" .cache)
+export XDG_DATA_HOME XDG_CONFIG_HOME XDG_STATE_HOME XDG_CACHE_HOME
+base=$XDG_DATA_HOME/timesplitters-future-perfect
+config=$XDG_CONFIG_HOME/timesplitters-future-perfect
+state=$XDG_STATE_HOME/timesplitters-future-perfect
+cache=$XDG_CACHE_HOME/timesplitters-future-perfect
 mkdir -p "$base/Saves" "$config" "$state/online" "$state/crashes" "$cache"
 if [ ! -f "$config/pc-controls.json" ]; then
     # Publish a complete seed atomically; never overwrite concurrent/user settings.

@@ -1,5 +1,18 @@
 # PC features awaiting Mac adaptation
 
+Linux standalone/UI/media completion (2026-11-02, local
+`feature/linux-runtime-completion`, based on unmerged `11bb17ab`): **Implemented**
+as Linux adapters and shared contracts. GTK uses the common settings/display/debug
+models. Shared XMV host playback now compiles for POSIX Vulkan; Windows keeps its
+existing clock/path adapter. Legacy Mac GL retains its movie stub, and native
+Mac codec integration/execution remains pending (MAC-009). No Mac GTK adapter
+is needed; Cocoa remains its UI. Native game-package verification is shared
+between Mac/Linux and now starts the installed Python/Tk/TLS interpreter; POSIX
+installation preserves the executable permissions of its two fixed interpreter
+paths. Mac signatures still use the existing native callback. Linux source/
+package contracts and unprivileged relocated self-tests pass; native Mac build,
+GPU/movie/installer execution is unavailable here. See STATUS for exact scope.
+
 Cross-platform base-game audit (2026-11-02, local `perf/linux-upload-waits`):
 **Implemented** as shared code and test corrections. Default uniform update
 and dynamic CPU-write map paths now use legal buffer descriptors on all RHIs;

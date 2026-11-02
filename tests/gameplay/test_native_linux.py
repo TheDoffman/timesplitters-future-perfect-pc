@@ -139,8 +139,10 @@ def test_packaged_runtime_uses_manifest_hash_without_checkout_sdk(tmp_path,monke
     spec=importlib.util.spec_from_file_location('package_linux_runner',ROOT/'tools/testing/test-native-linux.py')
     runner=importlib.util.module_from_spec(spec);spec.loader.exec_module(runner)
     exe=tmp_path/'Bin/futureperfect_recomp';exe.parent.mkdir();exe.write_bytes(b'packaged executable')
-    (tmp_path/'BUILD.json').write_text(json.dumps({'files':{'Bin/futureperfect_recomp':hashlib.sha256(exe.read_bytes()).hexdigest()}}))
-    assert runner.runtime_target(tmp_path)[1]==exe
+    (tmp_path/'BUILD.json').write_text(json.dumps({'source_commit':'fixture-revision','files':{'Bin/futureperfect_recomp':hashlib.sha256(exe.read_bytes()).hexdigest()}}))
+    _,actual,manifest=runner.runtime_target(tmp_path)
+    assert actual==exe and manifest['source_revision']=='fixture-revision'
+    assert manifest['executable_sha256']==hashlib.sha256(exe.read_bytes()).hexdigest()
     monkeypatch.setattr(runner.linux_vulkan_sdk,'verify_install',lambda:pytest.fail('Packaged game used checkout SDK'))
     monkeypatch.setenv('LD_LIBRARY_PATH','checkout-sdk');monkeypatch.setenv('VK_DRIVER_FILES','checkout-driver')
     env=runner.runtime_environment(tmp_path)
@@ -148,3 +150,15 @@ def test_packaged_runtime_uses_manifest_hash_without_checkout_sdk(tmp_path,monke
     assert env['RECOMP_FFMPEG_DIR']==str(tmp_path/'Bin')
     exe.write_bytes(b'changed')
     with pytest.raises(ValueError,match='differs'):runner.runtime_target(tmp_path)
+
+
+@pytest.mark.parametrize('text,requested,active',[
+    ('[RHI] vulkan: llvmpipe, Vulkan 1.4, depth D24S8, validation on',True,True),
+    ('[RHI] vulkan: validation asked for, but the layer is not installed',True,False),
+    ('[RHI] vulkan: llvmpipe, validation on',False,False),
+    ('',True,False)])
+def test_validation_receipt_reports_actual_layer(text,requested,active):
+    import importlib.util
+    spec=importlib.util.spec_from_file_location('linux_validation_runner',ROOT/'tools/testing/test-native-linux.py')
+    runner=importlib.util.module_from_spec(spec);spec.loader.exec_module(runner)
+    assert runner.validation_active(text,requested)==active

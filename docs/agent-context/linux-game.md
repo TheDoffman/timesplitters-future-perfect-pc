@@ -29,12 +29,13 @@ the last SDL observation, not an external desktop query. Linux ELF uses -no-pie
 for deterministic addr2line addresses; report metadata says linux-x64.
 
 `text_bitmap_linux.c` adapts Fontconfig/FreeType to the existing RHI bitmap
-callbacks. `settings_linux.c` supplies folder dialogs and shared debug attachment;
-the Linux editing/debug dialogs are pending (explicit self-test skip77). Common
-in-game Video Options and controls JSON remain available, with unsupported
-saved fields preserved. Its graphics check tests shared resolution apply/restore,
-not GUI parity. `online_linux.c` supervises the same Python Online companion/
-handshake and uses shared network policy; portable release packaging is pending.
+callbacks. `settings_linux.c` supplies GTK settings/debug editing and the SDL
+folder picker, using shared validation, bindings, display and debug models.
+Unsupported saved fields are preserved. Capture-to-bind is still pending;
+bindings can be edited through dropdowns. Native UI self-tests are distinct
+from shared resolution apply/restore and physical desktop acceptance. `online_linux.c` supervises the same Python Online companion/
+handshake and uses shared network policy; local standalone preview packaging
+exists, while public release acceptance remains pending.
 
 `tools/testing/test-native-linux.py` bounds game runs to600s, locks
 `private/test-saves/native-linux`, isolates all input/display/save/XDG/crash paths,
@@ -42,8 +43,8 @@ and skips startup movies like the routine Windows runner. `--capture` retains tw
 rotating BMPs under `private/captures/native-linux`; `--test-keys` consumes the
 existing synthetic SDL event format. Test scripts never use personal configs/saves.
 Successful presents and captures are separate from visually reviewed gameplay.
-Initial Linux movie decoding is unavailable until the pinned FFmpeg integration
-is adapted; this must stay explicit in manifests/documentation.
+Patch2412 enables the shared XMV/FFmpeg player on native Vulkan hosts. Routine
+runs skip startup movies; use --movies for separate movie acceptance.
 
 The shared native test-disk recycler also permits the two exact Linux test roots;
 it still rejects redirected paths and unknown partition names. Completed tests
@@ -290,3 +291,12 @@ fixtures also run there when local movie data is available.
 POSIX movie playback is enabled only with TSFP_RHI_RENDERER, matching its video
 library link. Legacy Mac GL keeps its prior movie stub; shared native Vulkan
 hosts compile the player. This avoids introducing RHI symbols into legacy GL.
+
+GTK initialization preserves the game's process-wide locale, and sensitivity
+fields format/parse ASCII numbers. Shared storage snapshots and device retry
+unlocking retain their original control flow with unambiguous statement breaks
+so GCC fatal-warning fixtures compile; the callback fixture does the same.
+
+Runner receipts distinguish validation_requested from validation_enabled; the
+latter requires the RHI's actual activation log. An unavailable optional SDK
+validation layer in an ordinary package must not be reported as API validation.

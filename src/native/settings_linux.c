@@ -34,7 +34,13 @@ int pc_storage_picker_poll(char *out,size_t capacity){
 #include <unistd.h>
 #include <limits.h>
 static int dialog_test; /* Nonzero only from isolated native self-tests. */
-static int gtk_ready(void){return gtk_init_check(NULL,NULL);}
+static int gtk_ready(void){
+    static int initialized;
+    /* The game owns numeric formatting/parsing. A dialog must not change its
+     * process-wide locale when GTK initializes for the first time. */
+    if(!initialized){gtk_disable_setlocale();initialized=1;}
+    return gtk_init_check(NULL,NULL);
+}
 static void alert(GtkWidget *parent,const char *text){
     if(dialog_test){fprintf(stderr,"[linux-dialog-test] %s\n",text);return;}
     GtkWidget *m=gtk_message_dialog_new(GTK_WINDOW(parent),GTK_DIALOG_MODAL,
@@ -69,7 +75,7 @@ static void fill_controls(LinuxSettings *e,const PcSettings *value){
         char id[16];snprintf(id,sizeof id,"%d",value->keys[a][slot]);
         gtk_combo_box_set_active_id(GTK_COMBO_BOX(e->keys[a][slot]),id);
     }
-    char text[32];snprintf(text,sizeof text,"%.6g",value->sensitivity);
+    char text[32];g_ascii_dtostr(text,sizeof text,value->sensitivity);
     gtk_entry_set_text(GTK_ENTRY(e->sensitivity),text);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(e->enabled),value->enabled);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(e->invert),value->invert_y);
@@ -139,7 +145,7 @@ static int save_controls(LinuxSettings *e,char *error,size_t bytes){
 void tsfp_native_settings_attach(SDL_Window *window){game_window=window;pc_debug_init((HWND)window);}
 void tsfp_native_settings_show(SDL_Window *window){
     game_window=window;if(!gtk_ready()){SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Settings","Could not connect to the desktop display.",window);return;}
-    PcSettings initial;char error[512];if(!pc_settings_read(&initial,error,sizeof error))return;
+    PcSettings initial;char error[512];if(!pc_settings_read(&initial,error,sizeof error)){alert(NULL,error);return;}
     tsfp_native_settings_release_input(window);tsfp_native_crash_inhibit(1);
     LinuxSettings e=make_settings(&initial);GtkWidget *button=gtk_dialog_add_button(GTK_DIALOG(e.dialog),"Defaults",100);
     g_signal_connect(button,"clicked",G_CALLBACK(defaults),&e);gtk_widget_show_all(e.dialog);
