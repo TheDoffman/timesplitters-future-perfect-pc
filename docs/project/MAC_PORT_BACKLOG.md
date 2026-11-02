@@ -1,6 +1,6 @@
 # PC features awaiting Mac adaptation
 
-Linux x64 foundation (2026-11-01, `feature/linux-x64`, uncommitted): **Not
+Linux x64 foundation (2026-11-01, `feature/linux-x64`, local `1c981c0a`): **Not
 applicable** as a new Mac feature. The common Vulkan backend gains Linux SDK
 library selection and frontend/replay build guards; existing Mac SDK/driver,
 GL fallback and Cocoa adapters remain in place. Windows host-memory/SDK checks

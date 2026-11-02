@@ -1,6 +1,6 @@
 ## Linux x64 SDL/Vulkan foundation (2026-11-01)
 
-Local branch `feature/linux-x64`, based on main `4f80b5e5`. The initial Linux
+Local source commit `1c981c0a` on `feature/linux-x64`, based on main `4f80b5e5`. The initial Linux
 foundation extends the existing common Xbox/Vulkan frontend and production
 frame-replay tool; it does not yet build a Linux game executable. Shared shaders,
 gameplay/source models and the complete historical patch stack remain common.
@@ -14,10 +14,14 @@ was downloaded and its exact size/checksum verified on this Windows host.
 It has not been installed or executed on Linux. The runtime patch stack applies
 successfully, including the new final frontend/replay guard patch.
 
-Windows x64 validation passed: 27 SDK/isolation and host-memory checks; 103
+Windows x64 validation passed: 29 SDK/isolation and host-memory checks,
+including controlled Linux VMA/sysinfo failure/overflow branches; 103
 SDK/CI gate/Windows WARP renderer checks (the groups overlap); 21 repository
 context/backlog checks. The WARP fixture checks shared GPU semantics, not Linux
-Vulkan or gameplay. Patch transition results are recorded below once complete.
+Vulkan or gameplay. All 24 patch-tracking checks and all 22 historical patch
+transition checks passed; the latter completed in 13m50s with two workers.
+Historical subset fixtures exclude the Linux patch alongside its grouped-layout
+prerequisite; complete-stack upgrades still apply and verify it.
 `repo-context.py check --base 4f80b5e5` and whitespace checks pass.
 
 Microsoft WSL 2.7.14 and the Ubuntu 24.04 LTS app are installed on the Windows
