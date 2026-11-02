@@ -13,9 +13,10 @@ and corrects the magic-division ABI. Stage0243 selects original
 and generic-mask mapping. Stage0244 adds original
 [counted conversion and buffer ownership](../agent-context/guest-text-codec.md)
 with a shared checked guest policy and thin standard host charset adapters.
-Exact stage acceptance is tracked in STATUS.
+Stage0245 adds [checked creation/case services](../agent-context/guest-string-transform.md)
+and removes the unchecked UTF-16 scanner. Exact stage acceptance is tracked in STATUS.
 The complete old native RTL module is excluded from the build. Guest exceptions,
-string creation/case/raw charset services and other inherited helpers remain,
+raw charset services and other inherited helpers remain,
 along with other kernel, graphics, audio, input, title and fixture work.
 
 Stages0239/0240 passed Windows Release builds, local contracts, both-host CI and
@@ -30,7 +31,7 @@ final builds/generation/packaging with both unavailable have not passed yet.
 
 | Area | Remaining replacement or proof |
 | --- | --- |
-| Kernel/runtime | Exceptions/context/unwind, string creation/case/raw charset services, remaining helpers, and inherited parts of file/thread/synchronization/interrupt/crypto services and diagnostics |
+| Kernel/runtime | Exceptions/context/unwind, raw charset services, remaining helpers, and inherited parts of file/thread/synchronization/interrupt/crypto services and diagnostics |
 | Graphics | NV2A command/vertex/shader processing, remaining D3D8/HLE/backend and framebuffer/presentation code |
 | Audio/movies | APU/DSP/voices, DirectSound/XAudio2 glue, Xbox ADPCM and remaining XMV demux/decode/player/pump code |
 | Input/devices | Remaining HLE/input models, controller bindings, USB/OHCI and XInput adapters |

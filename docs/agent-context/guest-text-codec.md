@@ -105,5 +105,5 @@ sanitizer; the four Windows-only reference cases skip. Build/archive/generation,
 packaging and bounded game checks remain separate. Unlike the previous unused
 helper stages, the supported US import table includes260/308. Actual build/game/
 CI evidence belongs in STATUS; native Mac title and whole-runtime/snapshot-
-unavailable production acceptance remain unfinished. Create/case/raw charset,
+unavailable production acceptance remain unfinished. [Creation/case](guest-string-transform.md) is original; raw charset,
 exception/unwind, other kernel/graphics/audio/input/title/fixture work remains.

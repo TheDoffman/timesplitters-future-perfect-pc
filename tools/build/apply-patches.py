@@ -152,6 +152,10 @@ def patch_records(paths):
     if codec:
         paths.remove(codec)
         paths.append(codec)
+    transform = by_name.get('0245-original-string-transform.patch')
+    if transform:
+        paths.remove(transform)
+        paths.append(transform)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

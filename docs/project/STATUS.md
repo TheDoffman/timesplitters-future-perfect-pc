@@ -37720,3 +37720,54 @@ the92 focused cases,127 distinct local checks passed. New-head CI remains pendin
 String creation/case/raw charset, exception/unwind, remaining kernel/graphics/
 audio/input/title/header/fixture replacements and old-checkout/snapshot-unavailable
 generation/build/package acceptance remain unfinished. Goal active; no merge.
+
+
+## Original string creation and case services (2026-11-02, stage0245, PR465)
+
+Continuing fromfaff4dcd on feature/guest-arithmetic, original
+guest_string_transform.c/.h, host_string_case.c/.h and the checked import include
+replace274 creation,275/313 Unicode character case,296/316 byte character case
+and276/314 counted Unicode case. Both providers are selected once; seven old
+bridge bodies and the unchecked bridge_guest_wcslen_bytes scanner are removed.
+Create now bounds/checks the terminated source and real guest ownership. Case
+strings copy exactly Length bytes with no terminator, fixing the inherited write
+past exact capacity; insufficient capacity now returns80000005 unchanged. The
+standard libc character policy remains explicit, including host locale/NT NLS
+differences. Complete NT case-table equivalence is not claimed. See
+[creation/case contracts](../agent-context/guest-string-transform.md).
+
+On this Windows x64/MSVC computer,92 focused cases passed37.98s: the new transform
+suite plus counted codec, strings, allocator, pool and repository-context suites.
+Thirteen new cases include10432 independent whole1024-byte RAM/ownership vectors
+through both direct providers and real imports, eight compile-first broken
+variants plus a ninth bad maximum bound,6000 actual ntdll creation/ASCII case
+references and262144 standard C library leaf comparisons. Maximum creation,
+full65534-byte counted output, empty allocation, null callbacks, frame failures,
+heap rollback and actual matching free lifetime are exercised. All35 full forward/
+reverse migration and EOL cases passed; together with92 focused cases,127 distinct
+local checks passed. These counts exclude earlier repeats.
+
+Release, utility/built-in tests and matching crash symbols passed. Selection and
+archive audits prove original symbols and removed bridge/scanner bodies. Generation
+is current; every generated guest C/header byte still matches the accepted
+arithmetic stage. Executable SHA256:
+`b8e98bf2a6c612ffee1977e2648e4aba03b634123f43138b94490cca22fda7d4`.
+Both isolated Story runner and controller exited0. Scotland scene4/mission1:
+forward11.174540, backward6.184892, ammo8 to6,39 frozen pause samples and58
+advancing resume samples. Last checkpoint138.710s was inside240s cap. Fresh
+start/fire/pause captures were reviewed; source/build/game hashes agree. All26
+protected hashes/sizes/mtimes were unchanged, profile signatures/fixture were
+valid, and no lock/dump/Partition image remained. Ignored evidence:
+logs/string-transform-build.json, string-transform-game-check.json and
+string-transform-captures. Validation was minimized synthetic Original60/movie-
+skipped; it does not establish physical controls, listening, full campaign,
+all routine branches or native Mac title gameplay.
+
+New-head CI, native Mac title execution, remaining raw charset/exception/kernel/
+graphics/audio/input/title/header/fixture replacement and generation/build/package
+with the old checkout/snapshot unavailable remain unfinished. Goal active; no merge.
+
+Priorfaff4dcd CI acceptance at this checkpoint: launcher41425010450 succeeded;
+runtime41425010537 has passing Windows/Mac native, upgrade and transition jobs
+but still awaits the queued native Mac launcher package job. The entire runtime
+workflow is not yet accepted as complete. No failed job is being suppressed.

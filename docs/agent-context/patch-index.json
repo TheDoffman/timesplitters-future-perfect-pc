@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "726fc23779e5efcd43f0319704bad3065f3bba98fd964b1c516429ed4a26b300",
+  "loaderSha256": "4b18b2fbbffd363ffa2cf0e277166d85003032ae7e2d236414fc15ecaf2cc4b5",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3032,6 +3032,15 @@
       "name": "0244-original-counted-codec.patch",
       "path": "patches/compiler/0244-original-counted-codec.patch",
       "sha256": "2b2c13c6c796e73c67285f9a0020926d03b57fd296040afed2999440fe9128e0",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0245-original-string-transform.patch",
+      "path": "patches/compiler/0245-original-string-transform.patch",
+      "sha256": "76b46f90c349a755440816b7b5e62fc715e531b309c96fbd5b789bbc2c8f3d72",
       "targets": [
         "src/kernel/CMakeLists.txt",
         "src/kernel/kernel_bridge.c"

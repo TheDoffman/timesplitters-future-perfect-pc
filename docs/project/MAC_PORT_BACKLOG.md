@@ -8789,3 +8789,13 @@ Portable cases use undefined-behavior sanitizer on Mac; four Windows-only native
 code-page references skip. New-stage Mac CI/title acceptance is pending. Prior
 85363cc5 passed both-host runtime41415470820 and launcher41415470866. Complete
 runtime replacement and snapshot-unavailable production acceptance remain open.
+
+
+Stage0245 string creation/case (2026-11-02, PR465 continuation): same
+original shared checked records/ownership/staging provider and standard libc
+character-mapping leaf serve Windows and Mac. No OS adapter is needed; each keeps
+its existing locale policy, not promised full NT NLS case tables. Windows92
+focused tests, Release/built-ins/archive/generation and isolated Scotland movement/
+fire/pause/resume pass (STATUS). Portable tests use undefined-behavior sanitizer;
+6000 native ntdll references are Windows-only. Mac title/gameplay and new-stage CI
+remain pending, as do full runtime and snapshot-unavailable production acceptance.

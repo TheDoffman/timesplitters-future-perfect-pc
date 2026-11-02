@@ -1011,4 +1011,4 @@ visibility and objective logic remain guest-owned (Refs #338).
 
 Stage0241: [original extended product and ABI checks](guest-integer-product.md).
 
-RTL: [arithmetic/memory](guest-memory-ops.md), [strings](guest-text-codec.md).
+RTL: [arithmetic/memory](guest-memory-ops.md), [strings](guest-string-transform.md).
