@@ -41,6 +41,8 @@ namespace TimeSplitters.Launcher
             string root=Path.Combine(Path.GetTempPath(),"tsfp-linux-launcher-"+Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(root);
             try {
+                LauncherRestartChecks.Run();
+                LauncherTextureChecks.Run();
                 Need(LauncherPlatform.AssetSuffix=="linux-x64","Wrong release platform");
                 Directory.CreateDirectory(Path.Combine(root,".launcher"));
                 using(var held=LauncherPlatform.AcquireUpdateLock(root)) {

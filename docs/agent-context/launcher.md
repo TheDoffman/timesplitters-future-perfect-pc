@@ -1,5 +1,28 @@
 # Launcher internals
 
+Linux x64 now links the existing Avalonia host/pages through
+`tools/launcher/linux/LinuxLauncher.csproj` (`LINUX`); Windows WPF and Mac
+`MACOS` retain their adapters. `build-linux-launcher.py` uses a SHA-512-pinned
+8.0.426 Linux SDK and the same locked Avalonia 11.3.22 graph. Layout/theme
+translation is shared; Linux generated XAML stays under its build output.
+`LauncherPlatform` selects linux-x64 release names, ELF game paths in
+`build/linux/game`, POSIX locks, executable permissions and direct restart.
+`NativeHost` validates ELF x64 instead of Mach-O, uses the system Vulkan ICD,
+clears inherited driver overrides, isolates XDG storage and opens with xdg-open.
+Mac CoreGraphics/open and Windows WPF/system calls retain their branches.
+Linux display enumeration uses shared presets/Auto/saved custom resolutions;
+window observation is unavailable (Wayland), so post-play rollback cleanup is
+conservatively deferred. Do not equate process startup with visual acceptance.
+
+Linux build `--test --package` runs adapter/install contracts, shared restart/texture
+checks, the same 37 UI groups and actual package corruption/repair/helper restart
+with rendered output, all under Xvfb and disposable roots. The reusable launcher
+workflow requires Windows, Mac and Linux before verifying all 15 release assets
+(including stable ZIP aliases). No publication is performed by local builds.
+Linux game runtime publication remains separate; no compatible release is
+offered until a matching runtime ZIP is published. See
+[Linux launcher](../players/linux-launcher.md) for usage and STATUS for host evidence.
+
 Game 0.4.1 preparation retains Stable channel selection, optional texture delivery
 and the existing install/preservation contracts. Its packages embed launcher 1.4.2;
 game and launcher publication remain independent.

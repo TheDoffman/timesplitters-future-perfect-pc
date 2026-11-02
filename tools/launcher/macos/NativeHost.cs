@@ -143,6 +143,7 @@ namespace TimeSplitters.Launcher
             string settings=LauncherPlatform.Checkout(root)?"private/native-settings":"Settings";
             info.EnvironmentVariables["XDG_CONFIG_HOME"]=Core.PathIn(root,settings+"/xdg-config");
             info.EnvironmentVariables["XDG_DATA_HOME"]=Core.PathIn(root,settings+"/xdg-data");
+            info.EnvironmentVariables["XDG_CACHE_HOME"]=Core.PathIn(root,settings+"/xdg-cache");
             info.EnvironmentVariables["TSFP_ONLINE_SETTINGS"]=Core.PathIn(root,LauncherPlatform.Checkout(root)?"config/pc-online.json":"Settings/pc-online.json");
             info.EnvironmentVariables.Remove("RECOMP_FFMPEG_DIR");
             info.EnvironmentVariables["RECOMP_LOG_FILE"]=Core.PathIn(root,"logs/native-play.err");

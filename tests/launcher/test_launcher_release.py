@@ -144,6 +144,14 @@ class LauncherReleaseTests(unittest.TestCase):
                                 size=archive.stat().st_size, sha256=checksum))
         return archive
 
+    def test_linux_package_rejects_missing_execute_permissions_and_game_data(self):
+        self.package('linux-x64', executable=False)
+        with self.assertRaisesRegex(ValueError, 'permissions'):
+            release.verify_package(self.directory, self.plan, 'linux-x64')
+        self.package('linux-x64', extra={'Data/default.xbe': b'never bundled'})
+        with self.assertRaisesRegex(ValueError, 'Unexpected launcher payload'):
+            release.verify_package(self.directory, self.plan, 'linux-x64')
+
     def both(self):
         for platform in release.PLATFORMS:
             self.package(platform)

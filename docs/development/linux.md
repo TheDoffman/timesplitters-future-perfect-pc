@@ -186,3 +186,14 @@ After a runnable game package exists, test desktop and gaming mode, built-in
 controls/Steam Input, suspend/resume, fullscreen/scaling and performance. WSL or
 software-renderer results do not replace those hardware checks. No Deck has been
 connected or modified by this initial work.
+
+## Desktop launcher
+
+The Linux x64 desktop launcher now shares the existing Avalonia interface and
+C# models with Mac, plus the same policy as Windows. Build/test/package with
+`tools/build/build-linux-launcher.py`; see the
+[Linux launcher guide](../players/linux-launcher.md). Source checkout routing
+uses `build/linux/game`, not the RHI probe directory. Its self-contained ZIP
+contains only launcher files/notices, never game data or personal settings.
+Linux runtime packaging/publication and physical desktop/Deck gameplay through
+the launcher remain separate acceptance work.

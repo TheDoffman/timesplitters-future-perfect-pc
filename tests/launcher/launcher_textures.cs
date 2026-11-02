@@ -306,7 +306,12 @@ public static class LauncherTextureChecks
             });
 #if MACOS || LINUX
             Test("native checkout installs to private pack and rejects source symlinks",()=>{
-                string r=root(),source=root();Put(Path.Combine(r,"tools","play-native-mac.py"),new byte[]{1});
+                string r=root(),source=root();
+#if LINUX
+                Put(Path.Combine(r,"tools","build","build-native-linux.py"),new byte[]{1});
+#else
+                Put(Path.Combine(r,"tools","play-native-mac.py"),new byte[]{1});
+#endif
                 Put(Path.Combine(source,A+".dds"),Dds());
                 TexturePack.Install(r,source,null,CancellationToken.None);
                 Need(File.Exists(Path.Combine(r,"private","texture-remaster","pack",A+".dds")),"Checkout texture path not used");

@@ -1,5 +1,14 @@
 # PC features awaiting Mac adaptation
 
+Linux launcher (2026-11-01, `feature/linux-launcher`, local commits beginning
+`c8b3a534`): **Not applicable** as a new Mac feature. Linux links the existing
+Avalonia host and shared C# models/pages; native calls, ELF/package names and
+checkout paths are selected by the Linux adapter. Mac retains CoreGraphics,
+Mach-O validation, open, app bundles, mac.lock and its pinned SDK. Release CI
+adds Linux without removing Windows/Mac checks. Mac native build/UI/package
+revalidation is pending on a Mac host; portable Mac launcher tests pass locally.
+See STATUS for measured Linux and Windows evidence.
+
 Linux native game integration (local `45078c9f` through `c1b5a016`,
 `feature/linux-x64`): common native
 boot, SDL input/audio, shared debug/configuration/network code and the full

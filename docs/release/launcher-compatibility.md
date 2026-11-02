@@ -1,7 +1,7 @@
 # Automatic launcher compatibility checks
 
-`Launcher compatibility checks` validates launcher changes on Windows x64 and
-native Mac ARM64. It uses standard GitHub-hosted runners, which are free for this
+`Launcher compatibility checks` validates launcher changes on Windows x64,
+native Mac ARM64 and Linux x64. It uses standard GitHub-hosted runners, which are free for this
 public repository. No OpenAI API key, API credits or third-party AI service is
 required. The prior paid review/proposal workflow has been replaced.
 
@@ -9,9 +9,9 @@ required. The prior paid review/proposal workflow has been replaced.
 
 1. Every PR and push to `main` runs a small scope check so the final `Launcher compatibility` status
    is always reported. Launcher source, adapters, tests, shared configuration and
-   build/workflow changes select both hosts. Removed or renamed launcher files
+   build/workflow changes select all three hosts. Removed or renamed launcher files
    remain in scope. Unrelated game/documentation changes skip launcher builds.
-2. The shared read-only `launcher-build.yml` workflow builds/tests both launchers,
+2. The shared read-only `launcher-build.yml` workflow builds/tests all three launchers,
    runs their common UI tests, verifies all release assets and exercises the Mac
    packaged install/corruption/repair/restart path. It also owns the Windows
    startup-preference, packaging and game-icon checks. Runtime CI no longer
@@ -267,3 +267,11 @@ branch protection. `Launcher compatibility` separately gates both launcher build
 Manual dispatch selects all suites owned by that workflow: dispatch runtime CI
 for full runtime validation and launcher compatibility for both launcher builds.
 These asset-free checks do not launch the game or verify visual/gameplay parity.
+
+Linux runs the linked Avalonia host on Ubuntu 24.04 under Xvfb. Its pinned SDK,
+shared UI/model contracts, Linux adapter/install/permission checks, actual
+package corruption/repair/helper restart and rendered restart output are
+required by the reusable build. The final package verifier requires matching
+Windows/Mac/Linux source receipts and all 15 publication assets. These checks
+do not establish Linux game delivery, Wayland window enumeration or Steam Deck
+performance. See [Linux launcher](../players/linux-launcher.md).

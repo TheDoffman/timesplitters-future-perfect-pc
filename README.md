@@ -177,3 +177,8 @@ components retain their own [licenses and credits](LICENSES/README.md).
 **This license does not cover the original TimeSplitters game or its assets.**
 You must supply your own supported game files. Original game data, generated
 game code, personal settings and saves are not included in this repository.
+
+The [Linux x64 launcher](docs/players/linux-launcher.md) is available as a source
+build using the shared desktop interface. Linux launcher packages and updater
+verification are implemented; published Linux game runtime availability remains
+separate.

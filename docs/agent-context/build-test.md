@@ -1041,3 +1041,15 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 [Languages](launcher.md#complete-game-language-packs-discussion-263).
 
 [2x tests](original-upscale.md).
+
+## Linux launcher build and delivery
+
+`tools/build/build-linux-launcher.py --install-sdk --test --package` builds the
+shared Avalonia launcher on Linux x64, using a separate pinned SDK and output
+under `build/linux-launcher`. The runtime host SDK/Avalonia versions match Mac.
+Xvfb is required for headless shared UI/package restart checks. The reusable
+launcher workflow now requires the Linux job and includes linux-x64 in release
+verification, execute-bit checks and all-or-nothing publication (15 assets).
+Portable release-policy tests exercise missing Linux execute permissions and
+forbidden game payloads. Windows/Mac launcher behavior remains host-tested by
+their existing jobs; a Linux pass does not replace either host.
