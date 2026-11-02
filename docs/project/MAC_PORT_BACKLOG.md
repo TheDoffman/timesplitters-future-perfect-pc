@@ -1,6 +1,7 @@
 # PC features awaiting Mac adaptation
 
-Linux native game integration (uncommitted, `feature/linux-x64`): common native
+Linux native game integration (local `45078c9f` through `c1b5a016`,
+`feature/linux-x64`): common native
 boot, SDL input/audio, shared debug/configuration/network code and the full
 Xbox/Vulkan frontend are reused. ARM64 and Linux x64 protected-register adapters
 now call one native MMIO device-policy helper. Shared POSIX crash handling keeps
@@ -9,13 +10,16 @@ GL route remain selected on Mac; native Mac build and protected-MMIO/crash
 acceptance remain pending. Linux desktop editing/debug dialogs, movie decoding
 and portable packaging remain explicit Linux gaps. See
 [integration contracts](../agent-context/linux-game.md) and STATUS for evidence.
+Linux now passes reviewed first-level movement/firing/pause/resume checks under
+software Vulkan. The native vblank producer also uses writable aliases shared
+with Mac, preserving guest write-to-clear semantics; Mac execution is unverified.
 
 Linux x64 foundation (2026-11-01, `feature/linux-x64`, local `1c981c0a`): **Not
 applicable** as a new Mac feature. The common Vulkan backend gains Linux SDK
 library selection and frontend/replay build guards; existing Mac SDK/driver,
 GL fallback and Cocoa adapters remain in place. Windows host-memory/SDK checks
-pass; Mac build/GPU regression execution is pending. Linux does not yet have a
-game target. See [Linux scope](../development/linux.md) and STATUS for validation
+pass; Mac build/GPU regression execution is pending. The subsequent game
+integration above supplies the Linux title target. See [Linux scope](../development/linux.md) and STATUS for validation
 and remaining adapters. Shared policy must serve all three platforms.
 Linux renderer/replay validation now passes at local `14866028`; Linux Clang
 memory/SDK checks pass at `93861d06`. Mac's VMA diagnostic flag remains enabled

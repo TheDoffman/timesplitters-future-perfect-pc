@@ -1,7 +1,8 @@
 # Native Linux game integration
 
-Work in progress on `feature/linux-x64`, continuing the verified shared-renderer
-foundation. No game acceptance is claimed until recorded in STATUS.
+Native game bring-up on `feature/linux-x64`, continuing the verified shared-renderer
+foundation. Reviewed Linux menus/first-level movement, firing and pause/resume
+now pass bounded isolated runs; see STATUS for exact revisions and limits.
 
 `tools/build/build-native-linux.py --game-dir PATH --setup --generate --test`
 uses the same runtime/XBE/Python pins, complete patch stack and generator as

@@ -7,12 +7,12 @@ in their existing source directories. Do not create a Linux copy of game logic.
 
 ## Current milestone
 
-The initial target builds the existing asset-free common-renderer pixel/resource/
-presentation contract and production frame-replay tool on Linux x64. Linux host
-page queries and available-memory snapshots extend the existing platform adapters.
-This is **not yet a Linux game build or a playable Linux release**. Compilation,
-GPU contracts, boot, gameplay and full feature parity are separate acceptance steps.
-Linux execution must be measured on Linux; a Windows test cannot establish it.
+The Linux game target now compiles the same generated title, SDL input/audio,
+shared settings models and Xbox/Vulkan frontend as Windows/Mac. Its Linux x64
+fault handler and host adapters are under active validation. Compilation,
+GPU contracts, boot, gameplay and full feature parity remain separate acceptance
+steps; this is not a complete Linux release. Linux execution must be measured
+on Linux; a Windows test cannot establish it.
 
 The shared renderer/replay contracts now pass locally on Ubuntu/WSL with Mesa
 software Vulkan. See [measured validation](../project/STATUS.md#linux-native-validation-after-restart-2026-11-01)
@@ -54,7 +54,7 @@ sudo apt-get install -y build-essential clang pkg-config git python3-venv \
   libxss-dev libxtst-dev libwayland-dev libxkbcommon-dev libxkbcommon-x11-dev \
   libdrm-dev libgbm-dev libegl1-mesa-dev libdecor-0-dev \
   libasound2-dev libpulse-dev libudev-dev libvulkan1 mesa-vulkan-drivers \
-  vulkan-tools xvfb xauth
+  vulkan-tools xvfb xauth libssl-dev libfreetype-dev libfontconfig-dev python3-tk
 python3 -m venv .venv-linux
 .venv-linux/bin/python -m pip install -r requirements.txt
 ```
@@ -91,19 +91,50 @@ Run the same host-memory contracts on Linux:
   tests/compiler/test_native_vm_host.py tests/compiler/test_shared_views.py -q
 ```
 
-## Remaining game bring-up and secondary Steam Deck validation
+## Native game build and isolated tests
 
-Before advertising a Linux game executable, implement and test Linux x64 fault/
-MMIO decoding and fatal-signal reporting, wire the shared SDL input/audio and
-title entry into the Linux build, supply text/settings/Online host adapters, and
-verify movie/dependency loading. Keep unsupported capabilities explicit and
-preserve their saved values. Continue to use the supported US XBE hash, complete
-patch stack, reproducible generation, original 60 FPS defaults and 60 Hz console
-clock. Settings/UI support must consume the common definitions, not duplicate them.
+Use the existing supported US Xbox game directory, with `default.xbe`, `pak`
+and `xmv`. It may be a Windows path mounted through `/mnt/c`; no duplicate
+extract is needed. The scanner writes derived analysis JSON beside the XBE.
+Original game assets and personal saves/settings stay local and unchanged.
+
+```sh
+CC=clang CXX=clang++ .venv-linux/bin/python tools/build/build-native-linux.py \
+  --game-dir '/mnt/c/path/to/private/game' --setup --generate --test
+```
+
+Later incremental builds omit `--setup --generate`. Default compiler parallelism
+is two workers to bound WSL memory use; `--jobs 1` through `--jobs 8` is explicit.
+The ELF and source/binary/compatibility receipt are in `build/linux/game`.
+The complete patch stack and current generation fingerprint are required.
+
+```sh
+SDL_VIDEODRIVER=x11 xvfb-run -a .venv-linux/bin/python \
+  tools/testing/test-native-linux.py --game-dir '/mnt/c/path/to/private/game' \
+  --seconds 120 --capture --driver-manifest /absolute/path/to/lvp_icd.json
+```
+
+The runner isolates input/display/runtime configs, XDG directories, crash reports
+and saves in `private/test-saves/native-linux`. It uses original 60 FPS/60 Hz,
+skips startup movies, bounds logs and keeps two rotating BMPs. `--test-keys`
+uses the common synthetic SDL event file in that isolated directory, not physical
+input. Only known disposable partition images are recycled. Presents/counters
+require visual review before claiming menus or gameplay. Evidence goes in STATUS.
+For routine gameplay, add `--unlocked-profile` with the existing local Test Lab
+fixture under `private/test-fixtures/unlocked`. This prepares a disposable copy
+of its five host save files; the canonical fixture remains unchanged.
+
+Linux desktop settings/debug editing dialogs and movie decoding remain pending;
+the manifest exposes these capabilities as unavailable. Shared in-game Video
+Options, controls JSON and existing gameplay changes use the common models.
+Portable packaging, audible output, networking and hardware acceptance remain
+separate work. See [integration contracts](../agent-context/linux-game.md).
 
 Then validate isolated boot/menus, movement/fire/pause, save/load, movies/audio,
 fullscreen/resize/focus, networking, textures and supported refresh settings.
 Do not use personal saves or overwrite installed controls for automated tests.
+
+## Secondary Steam Deck validation
 
 The Steam Deck is the planned secondary Linux x64 hardware test. First run the
 asset-free probe in desktop mode using a separate development environment; do

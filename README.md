@@ -92,6 +92,7 @@ and audio fidelity remain unverified. See [measured progress](docs/project/STATU
 | --- | --- |
 | **Windows 10/11 x64** | Keyboard and mouse, graphics settings and experimental Online/LAN multiplayer. See the [Windows launcher guide](docs/players/launcher.md), including [startup security prompts](docs/players/launcher.md#windows-security-prompts-at-startup). |
 | **Mac (Apple Silicon)** | Native launcher and game; Intel Macs are unsupported. Save/load remains unverified; movie playback and multiplayer remain unfinished. The app is not notarized, so startup may require the [Mac installation and recovery guidance](docs/players/mac-launcher.md#shared-behavior-and-distribution). See [Mac controls and source builds](docs/players/macos.md) and [remaining Mac work](docs/project/MAC_PORT_BACKLOG.md). |
+| **Linux x64 (development)** | SDL and shared Vulkan source build, tested locally in Ubuntu/WSL through menus and first-level gameplay. Desktop settings/debug editors, movies and portable packaging remain pending. No published Linux launcher/package; see the [Linux build and test guide](docs/development/linux.md). |
 
 <a name="pc-features"></a>
 

@@ -1,3 +1,65 @@
+## Linux native game integration (2026-11-01)
+
+The native Linux x64 **actual game** now builds and reaches reviewed first-level
+play on local `feature/linux-x64`. Implementation commits `45078c9f` through
+`c1b5a016` add title/build/host adapters while retaining the shared generated game,
+gameplay patches, SDL controls/audio, display/debug models, textures and common
+Xbox/Vulkan frontend. The Linux runner gained the shared disposable Test Lab
+profile at `79c8fd37`. Nothing has been merged into main or published.
+
+The executable tested was built at `c1b5a016`, SHA-256
+`822b2fdc1428c4d900e19e482d753fb8dbef895a5c87b3ccb122b96dc1cb82eb`.
+It uses runtime `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`, the complete patch
+stack and the supported US XBE hash. Fresh Linux generation translated
+15,838/15,863 functions with zero failures, producing 5,268,355 C lines.
+Host: Ubuntu 24.04/WSL2 x64, glibc 2.39, Clang 18.1.3, pinned CMake 4.4.4 and
+Vulkan SDK 1.4.363.0. Mesa 25.2.8 llvmpipe LLVM 20.1.2/API 1.4 ran under X11/Xvfb
+with validation enabled. Game data was reused from Windows without another extract.
+
+- **120-second fresh/local-profile run:** at least 2,400 completed guest frames
+  and 2,400 successful guest presents; zero skipped/failed presents and zero
+  reported Vulkan validation errors. Reviewed player/profile menus and synthetic
+  SDL keyboard navigation through profile creation. Evidence: `logs/linux-menu.*`.
+- **300-second shared Test Lab run:** at least 7,200 completed guest frames and
+  7,200 successful guest presents; zero skipped/failed presents and zero reported
+  Vulkan validation errors. Reviewed main/Story/difficulty/briefing menus,
+  opening in-engine cinematic and visible first-level gameplay in 2401. Synthetic
+  keyboard/mouse input changed position/view, fired the SciFi Handgun (ammo 16→14),
+  opened the common pause/options menu and resumed visible gameplay. Evidence:
+  `logs/linux-game.json/.out/.err` and selected ignored captures under
+  `private/captures/native-linux`. These presentation counts are API outcomes,
+  not GPU completion, scanout or hardware-performance measurements.
+- Both runs used isolated saves/configs/XDG/crash paths, original 60 FPS timing and
+  the unchanged 60 Hz console clock. Disposable partition files were recycled by
+  the checked helper (six images, ~4.9 GiB apparent but 120 KiB allocated per run).
+  The canonical five-file Test Lab fixture hashes remain unchanged. Profile
+  loading passed; a full save/progression/reload round trip remains untested.
+- The protected Linux MMIO fixture passes real faults for MOV writes, APU TEST
+  reads/flags, native vblank production, guest CRTC write-to-clear and AC97 reset.
+  First boots exposed a host vblank RMW into a trapped page and compiler-folded
+  TEST reads; the fixes use writable producer aliases and a bounded decoder,
+  retaining failure for unknown instruction forms.
+- Linux contracts: **63 passed, 2 Windows-only skips**, covering patch tracking/
+  transitions, scalar decoder negative controls, real guest memory protections,
+  crash/helper/watchdog/report handling and build input guards. The shared SDL
+  input self-test passes bindings, focus, camera/mouse capture/release and virtual
+  pad hotplug. Shared Vulkan/resource/replay contracts pass again at `79c8fd37`,
+  with clean validation. Windows decoder/auto-look/context checks: **29 passed**. Complete Windows patch
+  tracking/historical transitions: **46 passed**. CI selection/gate, SDK and
+  backlog contracts: **104 passed**; repository context/index checks also pass.
+
+Audio uses the common SDL mixer and opened a host device; audible quality is
+unverified. The Story run reported 10,305 queue-full events with no invalid PCM,
+voice/device-open failures or unavailable-device events, so audio pacing/quality
+needs dedicated acceptance. Desktop Linux settings/debug editing dialogs return
+explicit skip 77; in-game options and shared models remain active. Movie decoding,
+portable launcher/package, Online transport acceptance, full save/load, Enhanced
+texture installation, resolution/fullscreen/focus acceptance and refresh options
+remain pending. Native Mac revalidation, physical input, accelerated Linux GPUs
+and Steam Deck were unavailable/unrun. This is bounded first-scene acceptance,
+not a full campaign or feature-parity claim. See [Linux usage](../development/linux.md)
+and [adapter contracts](../agent-context/linux-game.md).
+
 ## Linux native validation after restart (2026-11-01)
 
 WSL 2 and Ubuntu 24.04 LTS now boot on the Windows development machine.
