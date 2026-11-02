@@ -1,4 +1,4 @@
-Linux game/RHI: [entry points, final patch and limits](linux.md).
+Linux GPU/RHI: [entry points, final patch and limits](linux.md).
 
 Kill feed: timing scopes, attribution, viewport colors and rematch reset are
 documented in [the feed guide](../development/arcade-kill-feed.md).

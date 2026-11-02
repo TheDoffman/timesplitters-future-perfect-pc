@@ -99,3 +99,12 @@ The isolated Mesa 26.2.5 Dozen hardware probe detects the RTX 4070 SUPER but exp
 only Vulkan 1.2, without maintenance4. The shared production RHI contract rejects
 it; no API/feature checks were weakened. System Mesa/project pins are unchanged.
 The manual profile's 240 FPS beta choice was backed up and reset to Original 60 FPS.
+
+Vulkan1.2 compatibility is in development in final patch2407. Devices must
+expose dynamic-rendering/synchronization2 KHR extensions and timeline semaphores.
+Descriptor sets come from per-recording pools reset only after GPU serial
+completion; absent extended dynamic state is baked into pipeline keys. Fragment
+interfaces receive full vertex output vectors and extract their original lanes
+through the bounded SPIR-V adapter `src/graphics/vulkan_interface.h`. The existing
+1.3 path remains, with `RECOMP_VK_COMPAT12` for software-driver regression checks.
+No driver version spoofing or skipped required render policy is intended.

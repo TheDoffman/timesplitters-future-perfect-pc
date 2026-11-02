@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "59cf8c6333e4c03c0f5fe5c0c59724ad2af6bc5b9523e87c040aab19807451a3",
+  "loaderSha256": "90b048f52f59bcfaa20788c06c0e3c91c210282cb195fef67b8e51764aa4516f",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3059,6 +3059,14 @@
       "sha256": "cef6f6566ecb8568bb999073429f149d830f14109954685a1db41673f1976453",
       "targets": [
         "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "2407-vulkan12-compatibility.patch",
+      "path": "patches/graphics/rendering/2407-vulkan12-compatibility.patch",
+      "sha256": "f3172773da0796536d31d3e124d045b1a0bf77df02f68f81df648f133f2463ac",
+      "targets": [
+        "src/d3d/rhi_vulkan.c"
       ]
     }
   ]

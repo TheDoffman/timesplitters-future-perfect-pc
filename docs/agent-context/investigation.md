@@ -1,6 +1,6 @@
 # Investigation memory and handoffs
 
-Linux game patches2402/2403 follow2401 at the end of the effective stack. Context
+Linux game patches2402–2407 follow2401 at the end of the effective stack. Context
 order assertions and historical subset exclusions track both dependencies;
 complete-stack transitions must still apply them. See [game adapters](linux-game.md).
 
