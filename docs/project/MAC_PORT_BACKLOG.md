@@ -1,5 +1,15 @@
 # PC features awaiting Mac adaptation
 
+Shared Vulkan upload efficiency (2026-11-02, local `perf/linux-upload-waits`,
+runtime `6d38019a`): **Implemented** in shared patch2411 and
+`src/graphics/upload_copy.h`. Tight image copies batch; exact CPU uniform mirrors
+reuse same-frame GPU snapshots. No Mac adapter is needed; D3D11 is unchanged.
+Linux hardware Vulkan1.2/software Vulkan1.3 pixel/replay tests and portable
+Windows/Linux byte tests pass. Native Mac Vulkan/pixel/arena-reuse validation
+remains pending on a Mac. The recycler's optional active-save scope preserves
+existing Mac callers; Linux opts into scoped cleanup. See [STATUS](STATUS.md)
+for measured work reduction, unchanged average FPS and host acceptance limits.
+
 Linux host build optimization (2026-11-02, local `perf/linux-host-runtime`):
 **Not applicable** as a new Mac behavior. Only the Linux builder enables host
 `-O2 -g`, retaining Debug assertions and the title numeric flags. Windows/Mac

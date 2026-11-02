@@ -1,3 +1,48 @@
+## Vulkan upload reduction and Linux Story checks (2026-11-02)
+
+Local `perf/linux-upload-waits`, based on unmerged `7489cd5c`; no push,
+release or Deck transfer. Shared patch2411 batches tight image rows/slices
+and reuses byte-identical same-frame uniform snapshots through CPU mirrors.
+Range/frame changes still upload; allocation failure preserves baseline behavior.
+All Vulkan hosts share the change; D3D11 is unchanged. The runner adds bounded
+Story navigation, owned-child phase observation, named isolated profiles and
+present CSVs. Cleanup recycles only the active Linux test profile.
+
+Ubuntu24.04/WSL, private Mesa26.2.5 Dozen on RTX4070SUPER, 640x480, runtime
+source `6d38019a`, ELF SHA256
+`4770bb0926f89c49787a565d5d997b632f17754bea983144f73982ca60d4533c`.
+Same-binary legacy/optimized runs used120 FPS, validation off, cache on,
+no captures and active Story70..90seconds after the first observed active state.
+
+| Matched Story measurement | Legacy | Optimized |
+| --- | ---: | ---: |
+| Host presents/second |109.68|108.74|
+| p95 frame interval, ms |12.638|12.534|
+| p99 frame interval, ms |15.017|14.687|
+| Uniform snapshots/frame |515.66|252.26|
+| Uniform bytes/frame |518,921|406,918|
+| Image copy calls/image |28|1|
+
+Uniform GPU snapshots fell about51% and bytes about22%. Average FPS did not
+meaningfully improve; this single WSL sample does not establish native Linux,
+AMD or Deck performance. The240 preset produced108.09 host presents/second in
+its full active window, not sustained240 FPS. Presets60/120/180/240 are retained.
+Steady matched windows recorded zero fence waits and zero pipeline creation;
+capture-only waits are excluded. No speculative polling/fence changes were made.
+A separate20-second owned-child CPU sample showed scheduler/yield cost and guest
+execution; it does not establish which wait can safely change at high refresh.
+
+Separate Original60 validation/capture Story run:58.94 host presents/second,
+p95 19.466ms, p99 27.518ms, no intervals over33.33ms; first-person capture visually
+checked. Hardware Vulkan1.2 and software Vulkan1.3 RHI/pixel/production replay
+checks pass, including512 draws across six arena reuses and identical mapped
+and explicit uniform updates. Full patch transition suite:46 passed. Updated
+runner/recycler/copy/frame tests: Windows51 passed/8 skipped; Linux59 passed,
+including sanitized byte-copy contracts. Native Mac GPU execution is pending.
+See [Linux game context](../agent-context/linux-game.md). Ignored receipts/CSVs:
+`logs/linux-upload-final-*`; matched analysis in the Windows editing tree:
+`logs/linux-upload-matched-summary.json`; CPU profile in the Linux tree.
+
 ## Linux host optimization and full preset checks (2026-11-02)
 
 Local `perf/linux-host-runtime`, based on unmerged Linux/GPU/launcher work at

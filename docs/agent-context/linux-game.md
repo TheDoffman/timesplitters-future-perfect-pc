@@ -216,8 +216,15 @@ synthetic SDL navigation into Story2401 Normal using the existing Test Lab
 profile. Script size/event count/time ordering/command grammar are validated
 before a game starts. Captures must establish the actual measured scene;
 a successful script alone is not gameplay evidence. The script uses S for
-fixture menu movement and Escape/Continue after loading; frame timings begin
-after110seconds. Keep loading/cutscenes separate from stationary gameplay.
+fixture menu movement. `--story-benchmark` reads only its owned child's supported-US
+scene/cinematic/pause words through read-only `/proc/PID/mem`. Opening cinematic
+scene24 is skipped after50seconds plus two seconds of observed cinematic state;
+one Continue tap handles a resulting pause. Active Story requires scene2,
+no cinematic bit and no pause. Missing/short active windows fail the run.
+Frame timestamps share the monotonic clock; summaries exclude five seconds of
+active warmup and clip to CSV coverage. Compare equal simulation-phase windows,
+not merely equal wall-clock offsets. Disable captures for performance runs;
+verify pixels separately with captures and validation enabled.
 
 Linux cleanup now passes the active RECOMP_SAVE_DIR into the shared recycler;
 only its direct Partition0..5 images move to Trash. Manual and sibling test
