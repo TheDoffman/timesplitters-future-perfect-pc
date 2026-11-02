@@ -1,7 +1,9 @@
 # Investigation memory and handoffs
 
 Linux bring-up follows the user's shared Windows/macOS/Linux rule. Root AGENTS
-now names `build/linux`, a separate Linux Python environment, no concurrent
+allows a native-filesystem WSL working checkout synchronized from the Windows
+editing checkout through Git; ignored Linux dependencies stay inside Ubuntu.
+It also names `build/linux`, a separate Linux Python environment, no concurrent
 Windows/WSL mutation of one runtime tree, WSL primary development and Steam Deck
 secondary validation. Preserve [Linux acceptance scope](../development/linux.md)
 in handoffs; renderer contracts do not establish game support.

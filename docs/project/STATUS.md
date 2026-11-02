@@ -1,3 +1,55 @@
+## Linux native validation after restart (2026-11-01)
+
+WSL 2 and Ubuntu 24.04 LTS now boot on the Windows development machine.
+Kernel: 6.18.33.2-microsoft-standard-WSL2, x86_64, glibc 2.39.
+Native source/build/dependencies live in `/root/tsfp-linux` inside Ubuntu;
+the Windows Desktop checkout remains the editing root. The native checkout was
+cloned from the same local `feature/linux-x64` commits, with Git LFS smudging
+disabled. Original game data was not copied.
+
+The common Xbox/Vulkan renderer and production `d3d8_replay` build and pass on
+Linux at `14866028`. Toolchain: Ubuntu Clang 18.1.3, pinned CMake 4.4.4, SDK
+1.4.363.0. Mesa 25.2.8 llvmpipe (LLVM 20.1.2), Vulkan 1.4, X11/Xvfb, SDK
+validation enabled. This is software Vulkan correctness acceptance; NVIDIA
+hardware acceleration, performance, physical input and Steam Deck remain untested.
+
+The shared GPU contract passes HLSL/menu sampling, byte/half-float formats,
+cube/volume resources, Xbox texture factories, depth/stencil replay isolation,
+feedback conversion, screen-copy clipping/scaling/state restoration, blend/
+stencil/scissor caching and injected presentation outcomes. The production
+frame-replay contract produces the expected red triangle and blue clear,
+executes one guest present with zero failed host calls/malformed chunks/unknown
+chunks, and reports no Vulkan validation errors. `logs/rhi-linux.json`,
+`logs/rhi-linux.log` and `logs/replay-linux.log` are retained on both workspaces.
+The renderer and replay executable hashes are in the JSON receipt.
+
+The native Clang memory/SDK suite passes **54 checks with two intentional
+Windows-only skips** at `93861d06`. The first GCC run passed 53 checks before
+adding the receipt compatibility test. Clang exposed a test-only libc-symbol
+interposition problem in a controlled Mach fixture: sanitizer calls entered its
+mocked sysconf. Prefixing the fixture's OS symbols fixes the collision while
+preserving its assertions and negative controls. All 111 selected Windows
+SDK/CI/host-page checks also pass. Repository context checks pass.
+
+SDL configure initially required missing XTEST headers. Ubuntu installation and
+CI/docs now include those headers plus EGL/libdecor/XKB X11 development packages.
+Linux SDK verification checks the actual compiler/runtime headers, libraries and
+license, retaining full archive SHA-256 and compatibility with older full-file
+receipts. The native working checkout avoids severe DrvFS per-file overhead;
+its SDK contains only the seven receipted Linux build/runtime/license files.
+
+No Linux game executable or gameplay has been validated. Remaining title-build,
+x64 MMIO/fault/crash, text/settings and Online adapters are listed in
+[Linux development](../development/linux.md). Existing game timing defaults,
+Windows/Mac implementation and personal data remain unchanged. Mac execution
+and remote Linux CI remain unrun; all commits remain local and unpublished.
+
+Cleanup of the replaced Windows `.venv-linux` and staged Linux SDK directory
+was blocked by automatic approval review with the response "blocked by policy".
+Both were preserved; no alternative deletion was attempted. The active Linux
+checkout, environment and SDK are inside Ubuntu. Windows reported about 49.5 GiB
+free after setup; WSL's virtual disk capacity is not physical allocated storage.
+
 ## Linux x64 SDL/Vulkan foundation (2026-11-01)
 
 Local source commit `1c981c0a` on `feature/linux-x64`, based on main `4f80b5e5`. The initial Linux

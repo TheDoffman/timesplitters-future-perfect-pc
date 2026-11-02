@@ -68,7 +68,11 @@ providers, perform handoffs or limit themselves to advisory work.
   PR while it remains open; verify the remote merge state before starting its
   successor. This does not waive required checks or authorize unrelated merges.
 - Working root: the `timesplitters-future-perfect-pc` folder on that device's
-  Desktop, not the old Documents location. Resolve project paths relative to
+  Desktop, not the old Documents location.
+  For WSL builds, use a separate checkout inside Ubuntu's native filesystem
+  as documented in `docs/development/linux.md`; synchronize it with the Windows
+  editing checkout through Git. Keep ignored Linux dependencies/builds there,
+  and retain the existing game-data copy. Resolve project paths relative to
   the checkout or script; do not bake in a user's home directory, Windows drive
   letter, or platform-specific drive mapping.
 - At the start of work, inspect the branch, commit, and working-tree changes.

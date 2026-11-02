@@ -14,6 +14,10 @@ This is **not yet a Linux game build or a playable Linux release**. Compilation,
 GPU contracts, boot, gameplay and full feature parity are separate acceptance steps.
 Linux execution must be measured on Linux; a Windows test cannot establish it.
 
+The shared renderer/replay contracts now pass locally on Ubuntu/WSL with Mesa
+software Vulkan. See [measured validation](../project/STATUS.md#linux-native-validation-after-restart-2026-11-01)
+for source revisions, drivers and remaining game-integration limits.
+
 The Linux SDK pin is `config/build/vulkan-sdk-linux.json`, at the same version as
 the Mac SDK. Its publisher SHA-256/size is checked before extraction, installed
 files are receipted, and licenses remain beside it under
@@ -39,7 +43,9 @@ hosts sharing the same ignored runtime tree. No second game-data extract is need
 for these asset-free tests. Keep `build/windows`, `build/macos` and `build/linux`
 separate, and preserve personal settings/saves.
 
-On Ubuntu, install the development prerequisites:
+On Ubuntu, install the development prerequisites. SDL's upstream
+[Linux dependency guide](https://wiki.libsdl.org/SDL3/README-linux) includes the
+XTEST headers required by the pinned SDL configuration:
 
 ```sh
 sudo apt-get update

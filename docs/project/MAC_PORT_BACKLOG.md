@@ -7,6 +7,9 @@ GL fallback and Cocoa adapters remain in place. Windows host-memory/SDK checks
 pass; Mac build/GPU regression execution is pending. Linux does not yet have a
 game target. See [Linux scope](../development/linux.md) and STATUS for validation
 and remaining adapters. Shared policy must serve all three platforms.
+Linux renderer/replay validation now passes at local `14866028`; Linux Clang
+memory/SDK checks pass at `93861d06`. Mac's VMA diagnostic flag remains enabled
+through the common Clang guard; physical Mac revalidation is still pending.
 
 PC Settings menu-bar visibility (2026-11-01): **Not applicable** to native Mac.
 The Windows F1 bar now persists `pc_menu_visible` in the active input profile;
