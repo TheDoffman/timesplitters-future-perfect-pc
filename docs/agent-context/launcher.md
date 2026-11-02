@@ -604,3 +604,8 @@ Linux packaged NativeHost verifies all listed Bin hashes before play and sets
 relocatable FFmpeg/Online interpreter/script/manifest/handshake paths. Checkout
 routing and Mac GPU/runtime selection remain unchanged. Runtime dependency
 packaging is separate from the launcher self-contained build.
+
+NativeGamePackageChecks is the shared Mac/Linux fresh/upgrade package verifier.
+It exercises the real installer, native hashes, launcher completeness, executable
+corruption rejection and personal-file preservation. Mac retains its signature
+callback; Linux handles --verify-game-package without opening an interactive UI.

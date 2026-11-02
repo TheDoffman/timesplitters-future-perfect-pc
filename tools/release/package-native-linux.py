@@ -148,6 +148,7 @@ def main():
         if not path.is_file():raise ValueError('Missing FFmpeg development library: '+stem)
         soname=run('patchelf','--print-soname',path);dynamic.append((path,copy(path,stage,'Bin/'+soname)))
     records=bundle_libraries([(executable,game),*python_pairs,*dynamic],stage)
+    subprocess.run([sys.executable,str(repo_file(ROOT,'tools','network-identity.py')),'--output',str(build/'generated'),'--seal-executable',str(game)],check=True)
     # Preserve package-owner copyright/source information for every copied ELF.
     notices=stage/'Support/Runtime';notices.mkdir(parents=True)
     (notices/'dependencies.json').write_text(json.dumps(records,indent=2)+'\n')

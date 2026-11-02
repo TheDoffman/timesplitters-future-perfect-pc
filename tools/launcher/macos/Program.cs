@@ -38,6 +38,9 @@ namespace TimeSplitters.Launcher
 #if LINUX
             if(args.Length==3 && args[0]=="--verify-package")return LinuxTests.VerifyPackage(args[1],args[2]);
 #endif
+#if LINUX
+            if(args.Length==3 && args[0]=="--verify-game-package")return NativeGamePackageChecks.Verify(args[1],args[2]);
+#endif
 #if MACOS
             if(args.Length==3 && args[0]=="--verify-package")return NativeTests.VerifyPackage(args[1],args[2]);
             if(args.Length==3 && args[0]=="--verify-game-package")return NativeTests.VerifyGamePackage(args[1],args[2]);
