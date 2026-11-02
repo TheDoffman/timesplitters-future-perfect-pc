@@ -8736,7 +8736,7 @@ and real two-machine LAN acceptance are pending; a loopback test with startup
 network overrides does not validate this path. See STATUS for Windows build evidence.
 
 
-Stage0241 extended integer product (2026-11-02, uncommitted): original shared
+Stage0241 extended integer product (2026-11-02, c7f276a7/PR465): original shared
 unsigned bit arithmetic and fixed guest-frame adapter replace ordinal281 on both
 build paths. No host adapter or native API is needed. Windows Release and local
 product/numeric/context/migration and isolated Story checks pass (STATUS); native Mac execution/CI

@@ -53,3 +53,5 @@ Local acceptance on main a4ccf22d plus stage0241:44 focused and22 migration test
 Windows Release/current generation/archive inspection and bounded Scotland
 movement/fire/pause/resume passed on executable60c18311. Exact evidence and
 limits are recorded in STATUS. New-stage CI/native Mac execution remain pending.
+
+Source commit c7f276a7 is reviewable in [draft PR465](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/465).

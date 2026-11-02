@@ -37496,8 +37496,8 @@ Native Mac and exhaustive encounter coverage remain unverified; publication pend
 
 ## Original extended integer product (2026-11-02, stage0241)
 
-Working branch `feature/guest-arithmetic`, based on main `a4ccf22d` (uncommitted
-stage at this checkpoint). PR421 was externally merged; its head9b021ba passed
+Source commit `c7f276a7` on `feature/guest-arithmetic`, based on main `a4ccf22d`;
+[draft PR465](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/465). PR421 was externally merged; its head9b021ba passed
 Runtime patch transitions41050661178 and Launcher compatibility41050661162.
 New ordinal281 provider/import and patch0241 remove inherited signed-overflow
 multiplication. Shared source and checked guest frames are documented in
