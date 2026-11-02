@@ -1,5 +1,13 @@
 # PC features awaiting Mac adaptation
 
+Linux host build optimization (2026-11-02, local `perf/linux-host-runtime`):
+**Not applicable** as a new Mac behavior. Only the Linux builder enables host
+`-O2 -g`, retaining Debug assertions and the title numeric flags. Windows/Mac
+build settings and common runtime source remain unchanged. The Linux test
+runner now selects isolated 60/120/180/240 presets explicitly; this does not
+alter launcher choices or console timing. Linux execution is measured in
+STATUS; no Mac source/build change or new native validation is claimed.
+
 Shared Vulkan 1.2 / WSL hardware support (2026-11-02, local `9e451a55` through
 `2b0a7fd8`): **Implemented** in the common Vulkan backend, with descriptor arena,
 baked state and SPIR-V interface fallbacks. Vulkan1.3/Mac selection is retained;

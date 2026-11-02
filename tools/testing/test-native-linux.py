@@ -22,7 +22,7 @@ EXPECTED='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
 
 def test_frame_rate(test,fps):
     # Saved preferences override TSFP_NATIVE_FPS. Reset only this disposable
-    # profile, and refuse links instead of touching another profile's timing.
+    # profile to the requested preset, refusing redirected timing files.
     if fps not in (60,120,180,240):raise ValueError('Unsupported frame-rate preset')
     fd=os.open(test/'pc-frame-rate.ini',os.O_WRONLY|os.O_CREAT|os.O_TRUNC|os.O_NOFOLLOW,0o600)
     with os.fdopen(fd,'w') as output:output.write(f'TSFP_FRAME_RATE_V1 {0 if fps==60 else fps}\n')

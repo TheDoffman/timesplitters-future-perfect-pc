@@ -189,3 +189,18 @@ uses `build/linux/game`, not the RHI probe directory. Its self-contained ZIP
 contains only launcher files/notices, never game data or personal settings.
 Linux runtime packaging/publication and physical desktop/Deck gameplay through
 the launcher remain separate acceptance work.
+
+## Host optimization and performance comparisons
+
+Linux source builds now optimize the host C/C++ libraries with `-O2 -g` while
+retaining Debug assertions and the translated title's existing precise numeric
+flags. `--host-optimization debug` restores the earlier unoptimized host build
+for diagnosis. The build receipt records which profile was compiled.
+
+Use the same scene, resolution, driver and shader-cache conditions for before/
+after comparisons. The bounded runner accepts `--fps 60`, `--fps 120`,
+`--fps 180` and `--fps 240`; these are the existing Original/beta presets,
+not a performance guarantee. It resets only its disposable timing preference,
+checks the observed startup mode, and records child CPU seconds. Validation
+runs remain the default; `--performance` is separately labeled validation-off
+measurement. Keep personal preferences and the shared fixture unchanged.

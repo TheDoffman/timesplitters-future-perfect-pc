@@ -21,10 +21,11 @@ Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh
 
 Minigun: [readiness/release/pause/input tests](native-minigun.md). CI selects test_native_timing.py; original-code tests require the private XBE. Historical stacks exclude minigun/player-trigger patches until full native timing applies.
 
-Linux launcher: `tools/build/build-linux-launcher.py --install-sdk --test --package`
-uses the pinned SDK/shared Avalonia host. Xvfb tests adapters, shared UI and
-package repair/restart. Release CI requires three hosts and 15 assets. See
-[launcher internals](launcher.md) and [Online install paths](multiplayer-ui.md).
+Linux launcher: see [host checks](launcher.md).
+Linux game builds optimize host libraries with symbols/assertions retained;
+`--host-optimization debug` restores the old host flags. The bounded runner's
+`--fps 60|120|180|240` sets isolated saved timing and records CPU usage.
+See [Linux host contracts](linux-game.md).
 
 Windows builds pass `config/build/windows-game.manifest` as
 `TSFP_GAME_MANIFEST`; patch 2130 attaches it only to the game target. CMake

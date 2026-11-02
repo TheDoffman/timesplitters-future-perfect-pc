@@ -150,3 +150,23 @@ validation/off settings and records both in its receipt. It is performance
 evidence, not validation acceptance; the default runner remains validation/on.
 Linux CI also runs the shared RHI/replay with explicit `--compat12`; separate
 receipt/log suffixes retain both normal and compatibility evidence.
+
+## Linux host optimization and controlled refresh tests
+
+`build-native-linux.py` now applies `-O2 -g` to C/C++ host libraries in the
+existing Debug configuration. The title retains its explicit `-O2
+-fno-vectorize -fno-slp-vectorize` numeric policy; assertions, symbols and console
+interrupt timing remain. `--host-optimization debug` restores `-g` for host
+libraries in the same build tree; both flags are passed explicitly to replace
+cached CMake settings. BUILD.json records the selected host profile/flags.
+Windows/Mac build options and shared runtime source are unchanged.
+
+The bounded runner offers `--fps 60|120|180|240`, with 60 as the default.
+It writes only its disposable adjacent pc-frame-rate.ini, refusing file links,
+because saved game-menu preferences take precedence over TSFP_NATIVE_FPS.
+A stale 240 preference previously invalidated attempted 60-FPS comparisons.
+Receipts record the requested/observed startup mode and child user/system CPU
+seconds; a mismatched startup mode fails the run. High-refresh gameplay remains
+the existing beta feature; setting a target does not prove it is sustained.
+The Linux runner regressions check all four presets, invalid values and linked
+file preservation. Original-code native timing fixtures remain shared.
