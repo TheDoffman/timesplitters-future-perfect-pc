@@ -87,3 +87,15 @@ Windows/Mac in the locked runner's disposable `unlocked` child. Only its save,
 input, feedback and texture environment is adopted; Linux display/XDG/crash
 isolation remains active. The fixture contains five small host save files, not
 virtual disk images, and is never edited by the game.
+
+Direct WSLg delivery is now verified after an OS runtime update (WSL 3.0.3,
+WSLg 1.0.79); the prior transparent COPY MODE windows came from virtiofs shared-
+memory EIO, not renderer policy. Direct Wayland gameplay mouse capture/release
+was confirmed by the user. See development/linux.md and STATUS for scope.
+CPU llvmpipe remains a separate performance limit; direct delivery does not
+prove RTX acceleration. Original 60 FPS is the recovery setting for testing.
+
+The isolated Mesa 26.2.5 Dozen hardware probe detects the RTX 4070 SUPER but exposes
+only Vulkan 1.2, without maintenance4. The shared production RHI contract rejects
+it; no API/feature checks were weakened. System Mesa/project pins are unchanged.
+The manual profile's 240 FPS beta choice was backed up and reset to Original 60 FPS.

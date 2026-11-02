@@ -91,6 +91,49 @@ Run the same host-memory contracts on Linux:
   tests/compiler/test_native_vm_host.py tests/compiler/test_shared_views.py -q
 ```
 
+## Direct WSLg windows and mouse capture
+
+On this Windows host, WSL 2.7.14/WSLg 1.0.73.2 failed to paint direct game windows:
+Weston logged `rdp_allocate_shared_memory` with `Input/output error` and
+`use_gfxredir = 0`; the Windows window was transparent with a COPY MODE caption.
+The fault was in WSLg's shared-memory transport, not the shared game renderer.
+A restart alone did not reliably recover it. Updating the official WSL runtime
+restored direct delivery with WSL 3.0.3, kernel 6.18.54.1, WSLg 1.0.79 and
+MSRDC 1.2.7391. Windows was not restarted. Direct Wayland menus were visually
+verified, and the user confirmed gameplay mouse capture and Esc release.
+
+For direct play retain WSLg's desktop display variables. With SDL's Wayland
+backend, point `XDG_RUNTIME_DIR` at the actual WSLg socket directory if the
+user session's runtime directory has no `wayland-0`. Keep save/config/cache
+paths isolated as documented below. Do not route the game to an Xvfb display
+or a VNC viewer for mouse-capture acceptance. Esc releases capture, and focus
+loss clears controls through the shared SDL adapter.
+
+An invisible COPY MODE window should trigger inspection of
+`/mnt/wslg/weston.log` and the installed `wsl --version` before changing renderer
+code. Coordinate any WSL VM restart with running work; never restart Windows
+automatically. Microsoft's [shared-memory failure report](https://github.com/microsoft/WSL/issues/41903)
+describes the same transparent-window symptom. The local update result is
+measured evidence, not a guarantee that every WSLg transport failure is fixed.
+
+Direct window delivery does not establish GPU acceleration. The installed
+Ubuntu Vulkan drivers still expose llvmpipe on this host: the RTX 4070 SUPER is
+not used by that software Vulkan driver. Reviewed first-level play was roughly
+15–20 FPS on the CPU. Keep Original 60 FPS when evaluating this baseline; beta
+240 FPS is not appropriate evidence of hardware performance. Hardware-backed
+WSL Vulkan requires separate driver and renderer-contract acceptance.
+
+An isolated Mesa 26.2.5 Dozen probe detected the RTX 4070 SUPER as a hardware
+Vulkan device, but advertised API 1.2.354 and no maintenance4 extension. The
+production RHI contract rejected it before device creation because this shared
+backend requires Vulkan 1.3 (including maintenance4 shader-interface rules).
+Do not override the advertised API version or remove required feature checks
+to make a driver appear compatible. System Mesa and the SDK pins remain unchanged.
+The optional driver probe is local development evidence, not a supported game
+configuration. Linux GPU performance acceptance still requires a compatible
+hardware driver; software-rendered WSL timings cannot establish native Linux or
+Steam Deck performance. See STATUS for the exact probe scope.
+
 ## Native game build and isolated tests
 
 Use the existing supported US Xbox game directory, with `default.xbe`, `pak`

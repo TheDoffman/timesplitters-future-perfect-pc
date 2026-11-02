@@ -1,3 +1,41 @@
+## WSLg direct window and physical mouse acceptance (2026-11-01)
+
+Local `feature/linux-x64`, game ELF unchanged from `c1b5a016`: the invisible/
+transparent window was traced to WSLg shared-memory virtiofs errors, not the
+shared Vulkan renderer. Weston logged `rdp_allocate_shared_memory` failure
+(`Input/output error`) and `use_gfxredir = 0`; a VM restart alone was insufficient.
+The official WSL update installed WSL 3.0.3, kernel 6.18.54.1, WSLg 1.0.79 and
+MSRDC 1.2.7391. Windows was not restarted. Weston now negotiates shared-memory
+redirection; a direct Wayland game window was visibly verified on the Windows
+desktop without COPY MODE, browser, Xvfb or TigerVNC. The user explicitly
+confirmed gameplay mouse capture and Esc release work. No game/source change
+was required. The manual Test Lab profile and settings were retained.
+
+The user reported poor performance. The game still uses Mesa 25.2.8 llvmpipe CPU
+Vulkan; first-level logs show roughly 15–20 FPS despite the Windows RTX 4070 SUPER.
+The manual profile had saved 240 FPS beta timing, which was backed up in
+`pc-frame-rate.before-performance.ini` and restored to Original 60 FPS after the
+user closed the game. That setting change is not a GPU-performance fix.
+
+A bounded isolated GPU experiment compiled Mesa 26.2.5 Dozen from its official
+archive, SHA-256 `794b3d1729075dae7ebd47c7283b7ca0cdb5dec668f7f11cc0a5d82f6138a0a5`.
+Private Meson 1.9.2/DirectX-Headers 1.619.1 dependencies and the install prefix
+remain under ignored `external/mesa-dzn`; Ubuntu system Mesa and the game SDK/
+runtime pins were not replaced. `vulkaninfo --summary` passes and identifies
+`Microsoft Direct3D12 (NVIDIA GeForce RTX 4070 SUPER)`, discrete GPU, driver
+Mesa 26.2.5, Vulkan 1.2.354, nonconformant/experimental. Feature enumeration exposes
+dynamic-rendering and synchronization2 extensions but no maintenance4. The
+production shared RHI contract **correctly rejects this driver** at its Vulkan 1.3
+requirement before device creation. No requirements were weakened or version
+overrides used; this driver is not accepted for game rendering. Evidence:
+`logs/linux-dzn-vulkaninfo.log`, `logs/linux-dzn-features.log`,
+`logs/linux-dzn-rhi.log`, `logs/wslg-before-restart.log` and the WSLg live log.
+
+Direct display and real user mouse acceptance now pass; hardware-accelerated
+Vulkan performance in this WSL environment remains blocked by the available
+driver's feature level. These results do not establish native Linux or Steam
+Deck performance. See [WSLg recovery and performance limits](../development/linux.md#direct-wslg-windows-and-mouse-capture).
+
 ## Linux native game integration (2026-11-01)
 
 The native Linux x64 **actual game** now builds and reaches reviewed first-level
