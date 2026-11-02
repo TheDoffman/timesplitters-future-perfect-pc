@@ -1,3 +1,41 @@
+## Linux desktop launcher validation (2026-11-01)
+
+Local `feature/linux-launcher`, launcher source through `d5a3398a` (unpublished),
+based on the working Linux game branch `89b9989f`: Ubuntu 24.04 x64/WSL, pinned
+.NET SDK 8.0.426 and Avalonia 11.3.22. The Linux project links the existing
+Avalonia host, shared pages/models, importer and transaction code. It selects
+Linux releases and ELF x64 validation, `build/linux/game` checkout paths,
+POSIX file locks/permissions, system Vulkan and xdg-open.
+
+Under Xvfb, Linux adapter/settings/ELF/hash/symlink/lock/process detection and
+runtime ZIP installation checks pass. Shared restart and optional-texture
+regressions pass, plus all 37 shared UI groups including save backup/restore
+and custom save locations. The actual self-contained archive installs into a
+disposable path containing spaces, rejects corrupted application metadata,
+repairs through a copied process helper, restarts and renders, preserving
+synthetic saves and game metadata. The Python release verifier accepts the
+actual archive, hashes and executable permission. Home and graphics settings
+PNG previews with the existing checksum-verified artwork were visually reviewed.
+These are launcher/UI/update checks, not a new game playthrough.
+
+Windows compiled the launcher/test executables. Its full regression run stopped
+at the existing running-game guard because the user's separate installed game
+was running; that process was preserved. Seventy-two portable launcher/build/
+publication tests and 43 subtests pass on Windows, including Mac adapter
+contracts. Native Mac build/UI/package checks remain unrun locally. CI now
+requires Linux alongside the existing Windows/Mac checks and verifies all 15
+publication assets before publication; configured CI is not a measured CI pass.
+
+The local Linux ZIP/checksum/update manifest and source receipt are available
+under `build/linux-launcher` in both the Linux and Windows editing checkouts.
+No release was published. Matching Linux game runtime packaging/publication,
+actual gameplay launched through this UI, physical desktop/Wayland/Steam Deck,
+xdg-open dispatch and native file-dialog interaction remain acceptance gaps.
+Linux uses shared display presets/Auto/saved custom modes; desktop refresh
+switching and cross-process window observation are unavailable. Game process
+exit still restores the launcher; rollback cache cleanup remains conservative.
+See [usage](../players/linux-launcher.md).
+
 ## WSLg direct window and physical mouse acceptance (2026-11-01)
 
 Local `feature/linux-x64`, game ELF unchanged from `c1b5a016`: the invisible/
