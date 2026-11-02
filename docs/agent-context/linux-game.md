@@ -47,3 +47,8 @@ is adapted; this must stay explicit in manifests/documentation.
 The shared native test-disk recycler also permits the two exact Linux test roots;
 it still rejects redirected paths and unknown partition names. Completed tests
 recycle only their known disposable partitions; user saves are never selected.
+
+Use the project-owned guest_arena_service API for MMIO maps/aliases and test
+arenas. The former w32_guest_* compatibility aliases were retired; native ARM64
+and x64 fixtures now call the same canonical provider. Patch2403 imports OpenSSL
+in the input subdirectory where its non-global imported target is consumed.

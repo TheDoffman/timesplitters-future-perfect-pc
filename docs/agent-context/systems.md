@@ -2,7 +2,7 @@
 [exFAT](host-storage.md)
 # Subsystem entry points
 
-[Linux game](linux.md).
+[Linux MMIO](linux.md).
 
 PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 

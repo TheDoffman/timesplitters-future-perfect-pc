@@ -22,7 +22,8 @@ def run(*args,cwd=ROOT):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--game-dir',type=Path,required=True,help='Existing supported game folder; never copied or changed')
+    parser.add_argument('--game-dir',type=Path,required=True,help='Existing supported game folder; no duplicate asset extract')
+    parser.add_argument('--jobs',type=int,default=2,help='Compiler workers (default2 limits WSL memory use)')
     parser.add_argument('--setup',action='store_true',help='Initialize pinned submodules and build the symbol scanner')
     parser.add_argument('--generate',action='store_true',help='Generate current guest C from the verified XBE')
     parser.add_argument('--test',action='store_true',help='Run protected-MMIO regression after building')
@@ -30,6 +31,7 @@ def main():
     if platform.system()!='Linux' or platform.machine().lower() not in ('x86_64','amd64'):
         parser.error('Requires Linux x64 and a Linux Python environment')
     if sys.version_info<(3,12):parser.error('Use Python 3.12+ with the shared requirements')
+    if not 1<=args.jobs<=8:parser.error('--jobs must be 1–8')
     pins=(ROOT/'tsfp.ps1').read_text()
     revision=re.search(r"\$revision = '([a-f0-9]{40})'",pins)[1]
     expected=re.search(r"\$expectedHash = '([A-F0-9]{64})'",pins)[1].lower()
@@ -64,7 +66,7 @@ def main():
         '-DCMAKE_BUILD_TYPE=Debug','-DCMAKE_MAKE_PROGRAM='+str(ninja),
         '-DTSFP_NATIVE_DIR='+str(ROOT/'src/native'),'-DTSFP_NATIVE_RHI=ON','-DTSFP_VULKAN_SDK='+str(sdk)]
     run(*command)
-    run(cmake,'--build',build,'--target','futureperfect_recomp','tsfp_native_mmio_test','--parallel','4')
+    run(cmake,'--build',build,'--target','futureperfect_recomp','tsfp_native_mmio_test','--parallel',args.jobs)
     exe=build/'futureperfect_recomp'
     run(sys.executable,ROOT/'tools/build/network-identity.py','--output',build/'generated','--seal-executable',exe)
     sources=[p for area in ('src','patches') for p in (ROOT/area).rglob('*')

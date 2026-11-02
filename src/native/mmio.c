@@ -29,8 +29,6 @@ int tsfp_native_mmio(siginfo_t *info, void *context)
     if (!native_decode_access(ins, regs, &access) || access.address != host) return 0;
     uint64_t value = access.rt == 31 ? 0 : regs[access.rt];
     if (access.bytes < 8) value &= (1ull << (access.bytes * 8)) - 1;
-    void *alias = w32_guest_mmio_alias((void *)host, access.bytes);
-    if (!alias) return 0;
     if (!tsfp_mmio_device(host,access.bytes,access.load,&value)) return 0;
     if (access.load && access.rt != 31) {
         if (access.sign_extend) {

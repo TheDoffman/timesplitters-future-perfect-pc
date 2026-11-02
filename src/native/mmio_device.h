@@ -3,6 +3,7 @@
 #define TSFP_MMIO_DEVICE_H
 #include "platform/win32_compat.h"
 #include "apu/apu.h"
+#include "guest_arena_service.h"
 #include <string.h>
 extern ptrdiff_t g_xbox_mem_offset;
 static inline int tsfp_mmio_device(uintptr_t host,unsigned bytes,int load,uint64_t *value) {
@@ -12,7 +13,7 @@ static inline int tsfp_mmio_device(uintptr_t host,unsigned bytes,int load,uint64
     int crtc=va>=0xfd600000u&&va<0xfd604000u;
     int ac97=va>=0xfec00000u&&va<0xfec04000u;
     if(!apu&&!crtc&&!ac97)return 0;
-    void *alias=w32_guest_mmio_alias((void *)host,bytes);if(!alias)return 0;
+    void *alias=tsfp_guest_mmio_alias((void *)host,bytes);if(!alias)return 0;
     if(apu) {
         if(!g_apu_state||bytes>4||va+bytes>0xfe830000u)return 0;
         if(load)*value=mcpx_apu_mmio_read(g_apu_state,va-0xfe800000u,bytes);
@@ -20,7 +21,7 @@ static inline int tsfp_mmio_device(uintptr_t host,unsigned bytes,int load,uint64
     } else if(load){*value=0;memcpy(value,alias,bytes);}
     else if(crtc&&va==0xfd600100u) {
         if(bytes!=4)return 0;
-        uint32_t *pmc=w32_guest_mmio_alias((void *)((uintptr_t)g_xbox_mem_offset+0xfd000100u),4);
+        uint32_t *pmc=tsfp_guest_mmio_alias((void *)((uintptr_t)g_xbox_mem_offset+0xfd000100u),4);
         if(!pmc)return 0;
         uint32_t remaining=__atomic_fetch_and((uint32_t *)alias,~(uint32_t)*value,__ATOMIC_SEQ_CST)&~(uint32_t)*value;
         if(remaining)__atomic_fetch_or(pmc,0x01000000u,__ATOMIC_SEQ_CST);

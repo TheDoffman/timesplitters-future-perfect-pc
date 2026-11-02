@@ -2,7 +2,7 @@ FOV fixture stubs HUD draws and checks the Kill Feed row.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build, run and validation map
 
-[Linux: game and WSL host models](linux.md).
+[Linux: game, MMIO and host models](linux.md).
 
 Discord release webhooks target #release-updates; #announcements holds team posts.
 
