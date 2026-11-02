@@ -38246,3 +38246,55 @@ PR465 merged as main a1f039cb while this follow-up was being finalized. The
 new continuation commit is preserved on feature/context-continuations, with
 latest main integrated. This follow-up requires its own review and CI; no
 merge of the new work was performed.
+
+Canonical EBP/live register preparation (2026-11-02, PR466): regenerated normal
+functions bind EBP to the existing architectural TLS cell, instead of a copied C
+local and inherited FPO frame-cache value. Saved contexts now use macro-safe r_*
+register member names; the712-byte host state and716-byte guest record offsets
+are unchanged. The shared runtime/header ABI is unchanged; no capability flag,
+new patch or CMake provider is introduced. Existing guest epilogues restore EBP.
+The menu tab stack adapter changes only its stale local-EBP comment. Continuation
+reference fixtures now explicitly enable their capability macro, and actual
+edited-context checkpoint resumption runs in both reference modes.
+Before repair, all four native caller/return EBP cases failed; divide-fault
+publication already passed and remains checked. A compiled cached-cell provider
+must fail. Final246 native/compiler/context/callback checks pass59.23s,46 extra
+US/float/vehicle/control contracts pass8.88s,116 repository/context/scope/generation
+checks pass50.93s:408 distinct checks covered. During the first full rebuild one
+thread test hit its unchanged10s wait; after compilation became idle all27
+installed-header/nonlocal/generation checks passed10.99s without relaxing it.
+The prototype capability header failed source/template identity audit; that
+unnecessary flag was removed in favor of the existing g_ebp ABI. Its4bb21d7f
+executable and logs remain rejected, distinct from final production acceptance.
+Final generation17568 exited0:15838/15863 functions,0fail,6595934lines126.09s lift.
+Final Release32678 exited0 including built-ins/crash symbols. The audit verifies
+15838 function scopes/6447 live EBP bindings,16 changed regular C units, identical
+canonical source/template/generated types headers, archive selection/exports and
+current generation/source hashes. Executable SHA256:
+a7fc10be9fb228d6ff4b7959babe6746d4ad1892b74f4b581021a9e1bbc669d5.
+The first unprofiled run4176/controller77521 failed the intro checkpoint: scene101/
+mission0,2.4-3 FPS and timed inputs landing on earlier frontend menus. It remains
+rejected in independent-canonical-ebp-20261102. The unchanged executable passed a
+profiled retry47368/controller44416 and then the final unprofiled acceptance28575/
+controller73192, all four processes exited0. No product change was made between
+these attempts. The first slowdown's cause is unproven; do not label it a repaired
+EBP/interrupt bug or claim a proven external-load cause. A suspected main.c save
+was actually crash diagnostics, not an interrupt register save.
+Final clean run independent-canonical-ebp-final-20261102: scene4/mission1/input
+enabled, forward11.17624/back6.18489, ammo8to6, pause39 frozen/resume58 advancing,
+last99.188s below240. Three fresh captures reviewed; source/run/executable hashes
+match. Fixture valid; all26 protected files retain hashes/sizes/times; no owned
+live game/controller, lock, dump or Partition image. Guest presentation samples
+58.1/57.9/58.0 FPS, not scanout. Windows11 Pro10.0.26300x64/D3D11 flip/Classic/
+Original60/minimized synthetic/movies skipped; not physical-input/listening,
+full-campaign or native Mac title proof. Evidence logs/canonical-ebp-{generate,
+build,final-game,final-controller}.log, canonical-ebp-{build,game-check}.json,
+accepted report/provenance/run0.err and final isolated captures. Initial failure
+and profiled retry are separate retained runs.
+Priorcbee4c17 CI fully passed runtime41491790255/launcher41491790215; this phase
+needs new-head CI. Shared changes and portable contracts serve both hosts, but
+new-stage Mac results remain pending. Native/context adapters, opaque lifetime
+barriers and actual raise/unwind remain unfinished. The cold dispatcher is still
+opt-in, and265/302/312 remain inherited. Wider runtime/tooling/title/headers/
+fixtures/provenance removal and checkout/snapshot-unavailable production proof
+remain required; the full objective is active.

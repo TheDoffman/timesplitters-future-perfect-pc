@@ -16,7 +16,7 @@ def run(exe,*args):return subprocess.run([str(exe),*args],capture_output=True,te
 def test_real_checkpoint_context_cleanup_roots_threads_and_fibers(tmp_path):
     r=run(fixture(tmp_path));assert r.returncode==0,r.stdout+r.stderr
 @pytest.mark.parametrize('mutation',[
- ('saved.esp<=target->entry_sp','saved.esp>=target->entry_sp'),
+ ('saved.r_esp<=target->entry_sp','saved.r_esp>=target->entry_sp'),
  ('outcome==TSFP_CONTEXT_STEP_RETURN && next==root->stop','next==root->stop'),
  ('outcome!=TSFP_CONTEXT_STEP_YIELD && outcome!=TSFP_CONTEXT_STEP_RETURN','outcome==TSFP_CONTEXT_STEP_ERROR'),
  ('target->pending_apply=clean','target->pending_apply=0'),

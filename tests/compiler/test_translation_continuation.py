@@ -30,7 +30,7 @@ def execute(tmp_path,programs,body,support='',mutation=None,refs=False,dispatch=
     source.write_bytes(('''
 #define RECOMP_GENERATED_CODE 1
 #define RECOMP_FAST_ENTRY(site) 0
-'''+('#define RECOMP_USE_GPR_REFS 1\n#define RECOMP_GPR_ANCHORS(site) 1\n' if refs else '')+'''
+'''+('#define RECOMP_GPR_REFS_SUPPORTED 1\n#define RECOMP_USE_GPR_REFS 1\n#define RECOMP_GPR_ANCHORS(site) 1\n' if refs else '')+'''
 #include "recomp_types.h"
 #include "guest_context_execution.h"
 #include <stdio.h>
@@ -127,10 +127,11 @@ CHECK(!memcmp(before,&storage,sizeof storage));
 '''))
 
 
-def test_decoded_steps_resume_an_edited_context_through_real_checkpoint(tmp_path):
+@pytest.mark.parametrize('refs',[False,True])
+def test_decoded_steps_resume_an_edited_context_through_real_checkpoint(tmp_path,refs):
     check(execute(tmp_path,{0x1000:'b801000000 e8f66f0000 b802000000 c3'},'''
 tsfp_x86_context_state initial={0};tsfp_context_execution_ops ops={0};
-initial.eip=0x1000;initial.esp=1000;initial.eax=77;initial.eflags=2;
+initial.r_eip=0x1000;initial.r_esp=1000;initial.r_eax=77;initial.r_eflags=2;
 MEM32(1000)=0;ops.allow_pc=allow_pc;ops.allow_state=allow_state;
 ops.apply=apply;ops.step=dispatch;ops.same_stack=same_stack;
 CHECK(tsfp_context_execute(&ops,&initial,100,2000,0)==TSFP_CONTEXT_EXECUTE_COMPLETE);
@@ -139,19 +140,19 @@ CHECK(!tsfp_context_execution_depth());
 ''',support='''
 static unsigned old_after,transfers,applications;
 static int allow_pc(void *p,uint32_t pc){(void)p;return pc==0x8000 || tsfp_context_generated_admit(pc);}
-static int allow_state(void *p,const tsfp_x86_context_state *s){(void)p;return s->esp>=100 && s->esp<=1996;}
+static int allow_state(void *p,const tsfp_x86_context_state *s){(void)p;return s->r_esp>=100 && s->r_esp<=1996;}
 static int same_stack(void *p,uintptr_t tag){(void)p;return tag!=0;}
 static void apply(void *p,const tsfp_x86_context_state *s){
- (void)p;++applications;g_eax=s->eax;g_esp=s->esp;g_ebp=s->ebp;
- g_status_flags.value=s->eflags;g_status_flags.known=TSFP_STATUS_FLAGS|2;
+ (void)p;++applications;g_eax=s->r_eax;g_esp=s->r_esp;g_ebp=s->r_ebp;
+ g_status_flags.value=s->r_eflags;g_status_flags.known=TSFP_STATUS_FLAGS|2;
 }
 static int dispatch(void *p,uint32_t pc,uint32_t *next){
  (void)p;if(pc!=0x8000)return tsfp_context_generated_step(pc,next);
  {tsfp_x86_context_state edited={0};++transfers;CHECK(g_eax==1 && g_esp==996 && MEM32(996)==0x100a);
-  edited.eip=0x100f;edited.esp=1000;edited.eax=0x87654321;edited.eflags=2;
+  edited.r_eip=0x100f;edited.r_esp=1000;edited.r_eax=0x87654321;edited.r_eflags=2;
   (void)tsfp_context_transfer(&edited);++old_after;return TSFP_CONTEXT_STEP_ERROR;}
 }
-''',dispatch=True))
+''',dispatch=True,refs=refs))
 
 
 @pytest.mark.parametrize('raw',['66c3','cb','66ffd0','ea001000000800','0f0b','8cd8'])

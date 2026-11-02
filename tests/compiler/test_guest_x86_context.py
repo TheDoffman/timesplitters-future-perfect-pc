@@ -60,7 +60,7 @@ def agrees(exe):
 def test_context_groups_bytes_guards_rejections_and_aliases(tmp_path):assert agrees(fixture(tmp_path))
 
 @pytest.mark.parametrize('mutation',[
- ('WORD(1,184,eip)','WORD(1,184,eax)'),
+ ('WORD(1,184,r_eip)','WORD(1,184,r_eax)'),
  ('WORD(4,144,fs)','WORD(2,144,fs)'),
  ('flags=get(p);if(!flags_valid(flags))return 0;saved=*state;','flags=get(p);if(!flags_valid(flags))return 0;memset(&saved,0,sizeof saved);'),
  ('put(p,flags);return 1;','put(p,flags|32);return 1;'),

@@ -73,3 +73,8 @@ and Release succeed with all22 normal generated files unchanged. Fresh bounded
 normal-path Story acceptance passes at96.771s; see STATUS for exact scope/hashes.
 Preceding2a84 CI runtime41487615373/launcher41487615218 fully passed; this new
 provider still needs its own CI and production adapters before game execution.
+
+The following [canonical EBP stage](canonical-ebp.md) fixes normal fast-path live
+EBP and context field/macro compatibility. Its tests explicitly activate the
+reference capability; earlier USE/ANCHORS-only fixtures did not. The historical
+normal EBP cache mismatch above must not describe regenerated canonical bodies.

@@ -263,7 +263,6 @@ class FunctionTranslator(FunctionDiscovery):
         classified = self.classification_db.get(start,{})
         frame = abi.get('frame_type','fpo_leaf')
         used = self._find_used_registers(instructions)
-        prologue = self._func_has_prologue(instructions)
         floating = any(i.mnemonic.startswith('f') for i in instructions)
         conditional = any(i.is_cond_jump or i.mnemonic.startswith(('set','cmov')) for i in instructions)
         last = instructions[-1]
@@ -278,13 +277,15 @@ class FunctionTranslator(FunctionDiscovery):
         lifter.publishes_ebp = self._func_owns_a_frame(instructions)
         description = f'{name}: guest 0x{start:08X}..0x{end:08X}; {len(instructions)} instructions; category={classified.get("category","unknown")}; source={classified.get("source_file","")}; ABI={abi.get("calling_convention","cdecl")}, {abi.get("estimated_params",0)} parameters, {abi.get("return_hint","int_or_void")}; frame={frame}'
         lines = ['/* '+_comment(description)+' */','#ifdef RECOMP_GPR_REFS_SUPPORTED',
-                 f'#define RECOMP_REGISTER_SITE 0x{start:08X}u','#include "recomp_types.h"','#endif',f'void {name}(void)','{']
+                 f'#define RECOMP_REGISTER_SITE 0x{start:08X}u','#include "recomp_types.h"','#endif',
+                 '#define ebp (*_recomp_live_ebp)',f'void {name}(void)','{']
         if start in self.trace_functions or self.trace_all_entries: lines.append(f'    RECOMP_TRACE_ENTER("{name}", 0x{start:08X});')
         if start not in self.trace_functions and start not in self.force_returns:
             lines += [f'    if (RECOMP_FAST_ENTRY(0x{start:08X}u)) {{','#ifdef RECOMP_STATUS_FLAGS_SUPPORTED','        tsfp_status_forget(&g_status_flags,TSFP_STATUS_FLAGS);','#endif','        return;','    }']
         lines += ['#ifdef RECOMP_GPR_REFS_SUPPORTED',f'    RECOMP_DECLARE_GPRS(0x{start:08X}u);','#endif']
         if start == lifter.CXX_THROW: lines.append('    recomp_cxx_throw(MEM32(esp + 4), MEM32(esp + 8));')
-        if 'ebp' in used: lines += ['    uint32_t ebp = 0;','    ebp = g_ebp; /* incoming frame register */']
+        if 'ebp' in used:
+            lines += ['    uint32_t *const _recomp_live_ebp = &g_ebp;']
         if conditional or any(strings.is_compare(i) for i in instructions): lines.append('    int _flags = 0; /* captured fallback condition */')
         snapshots = {'cmp','test','bsf','bsr','cmpxchg','lock cmpxchg','xadd','lock xadd','inc','dec'} | context._RESULT_SNAPSHOT_SETTERS
         if any(i.mnemonic in snapshots or (strings.is_compare(i) and not i.mnemonic.startswith('rep')) for i in instructions):
@@ -294,7 +295,6 @@ class FunctionTranslator(FunctionDiscovery):
             lines += ['    int _cf = 0; /* captured carry */','#ifdef RECOMP_STATUS_FLAGS_SUPPORTED',
                       '    _cf = (int)RECOMP_STATUS_CARRY(_cf);','#endif']
         if floating: lines.extend(FP_STACK_MACROS)
-        if frame == 'fpo_leaf' and 'ebp' in used and not prologue: lines.append('    ebp = g_seh_ebp; /* inherited shared frame */')
         lines += ['']+self._emit_blocks(blocks,instructions,start,end,conditional)
         if fallthrough is not None:
             target = lifter._call_target_name(fallthrough)
@@ -306,7 +306,7 @@ class FunctionTranslator(FunctionDiscovery):
         lines = [re.sub(r'goto (loc_[0-9A-Fa-f]+);',resolve,line) for line in lines]
         # Every emitted label already has its required C null statement.
         if floating: lines.extend(FP_STACK_UNDEFS)
-        return '\n'.join(lines+['}',''])
+        return '\n'.join(lines+['}','#undef ebp',''])
 
 
 class BatchTranslator(batch.BatchTranslator):
