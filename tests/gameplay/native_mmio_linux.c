@@ -4,6 +4,7 @@
 #include "platform/win32_compat.h"
 #include "apu/apu.h"
 #include "guest_arena_service.h"
+#include "guest_mmio_interrupt.h"
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,6 +24,7 @@ int main(void){
     unsigned char *mc=tsfp_guest_mmio_map((unsigned char *)base+0xfe800000u,0x800000);CHECK(nv&&mc);
     uint32_t *status=tsfp_guest_mmio_alias(nv+0x600100,4);CHECK(status);*status=1;*(uint32_t *)(nv+0x100)=0x01000000u;
     DWORD old;CHECK(VirtualProtect(nv+0x600000,0x4000,PAGE_READONLY,&old));CHECK(VirtualProtect(mc+0x400000,0x4000,PAGE_READONLY,&old));
+    *status=0;CHECK(tsfp_guest_raise_vblank((uintptr_t)base));CHECK(*status==1);
     struct sigaction sa={0};sa.sa_flags=SA_SIGINFO;sa.sa_sigaction=handle;sigemptyset(&sa.sa_mask);
     CHECK(!sigaction(SIGSEGV,&sa,NULL));CHECK(!sigaction(SIGBUS,&sa,NULL));
     *(volatile uint32_t *)(nv+0x600140)=0x12345678;

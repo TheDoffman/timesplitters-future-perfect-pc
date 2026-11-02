@@ -71,3 +71,8 @@ Patch2405 enables C++ linking at the Linux title scope and resolves the static
 runtime library cycle with a GNU archive rescan group. Linux exposes the same
 native Arcade-only Online mode contract as Mac; Story transport is deferred.
 The Cocoa settings self-test is compiled only on Apple; Linux returns skip77.
+Patch2406 routes native vblank production through writable aliases with atomic
+OR, using `guest_mmio_interrupt.h`. The producer must set interrupt bits, not
+execute the guest acknowledgement policy on a write-trapped CRTC page. Linux's
+first game boot exposed that host RMW fault; the protected-MMIO fixture checks
+production through the same helper before guest acknowledgement clears it.
