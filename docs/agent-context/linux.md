@@ -15,6 +15,14 @@ Mac GL guards, SDK pin/driver and Cocoa adapters remain unchanged.
 SDK: `config/build/vulkan-sdk-linux.json`, `tools/build/linux_vulkan_sdk.py`.
 Same version as Mac; verify publisher size/SHA-256 before extraction, keep
 licenses and an installed-file receipt. The Linux archive's loader is under
+Receipt checks cover the runtime/compiler headers, libraries and LICENSE.txt;
+older full-file receipts remain compatible. Unused SDK tools are not loaded or
+hashed during each probe. Native Ubuntu storage avoids DrvFS per-file overhead;
+use a Linux working checkout of the same Git commit, with its own dependencies.
+Windows remains the editing checkout; synchronize committed source through Git.
+Do not duplicate original game data into the Linux checkout.
+
+The Linux archive's loader is under
 `x86_64/lib/VulkanLoader/lib`, not directly in `lib`. Use the system hardware
 ICD or pass an explicit software-driver manifest. Isolate user configs/caches;
 retain the desktop's display variables and XDG_RUNTIME_DIR. Use `.venv-linux`

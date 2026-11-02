@@ -10,6 +10,7 @@ from vulkan_sdk import sha256
 
 ROOT = Path(__file__).resolve().parents[2]
 CRITICAL = (
+    'LICENSE.txt',
     'x86_64/include/dxc/dxcapi.h', 'x86_64/include/dxc/WinAdapter.h',
     'x86_64/lib/libdxcompiler.so', 'x86_64/lib/VulkanLoader/lib/libvulkan.so.1',
     'x86_64/lib/libVkLayer_khronos_validation.so',
@@ -43,9 +44,15 @@ def verify_install(root=ROOT):
     files = receipt.get('files', {})
     if not set(CRITICAL).issubset(files) or not files:
         raise RuntimeError('Incomplete Linux SDK receipt')
-    for name, expected in files.items():
+    # The SDK also carries thousands of tools/headers this build never loads.
+    # Match the Mac receipt's scope: hash the actual compiler/loader/layer and
+    # headers/licenses, not every unused SDK component on each WSL invocation.
+    # Existing full-file receipts remain compatible at the same archive pin.
+    boundary = installed.resolve()
+    for name in CRITICAL:
+        expected = files[name]
         path = installed / name
-        if not path.resolve().is_relative_to(installed.resolve()) or sha256(path) != expected:
+        if not path.resolve().is_relative_to(boundary) or sha256(path) != expected:
             raise RuntimeError('Linux SDK file changed: ' + name)
     if not any('license' in name.lower() for name in files):
         raise RuntimeError('Linux SDK licenses missing')
@@ -89,8 +96,7 @@ def setup(root=ROOT):
                     'license' in part.lower() for part in relative.parts):
                 members.append(entry)
         bundle.extractall(installed.parent, members=members, filter='data')
-    files = {p.relative_to(installed).as_posix(): sha256(p)
-             for p in installed.rglob('*') if p.is_file()}
+    files = {name: sha256(installed / name) for name in CRITICAL}
     receipt = dict(version=spec['version'], archive_sha256=spec['sha256'], files=files)
     (installed / 'tsfp-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
     sdk = verify_install(root)
