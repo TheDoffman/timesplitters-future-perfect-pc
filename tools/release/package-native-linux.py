@@ -18,6 +18,7 @@ sys.path.insert(0,str(ROOT/'tools'))
 from project_paths import configure
 configure()
 from bundle_online import COMPANION, repo_file
+import linux_vulkan_sdk
 
 # These are the host ABI, not distributable application dependencies. Keep the
 # host GPU/GL/Vulkan drivers and loader selection; never ship a hardware ICD.
@@ -102,7 +103,7 @@ def bundle_python(root,stage):
     return pairs,dict(version=version,wheels=pins)
 
 def verify_payload(stage,manifest):
-    required={'Bin/futureperfect_recomp','TimeSplitters.Launcher','Launch.sh','Settings/pc-controls.json',
+    required={'Bin/libdxcompiler.so','Bin/futureperfect_recomp','TimeSplitters.Launcher','Launch.sh','Settings/pc-controls.json',
         'Support/Python/bin/python3','Support/Online/online.py','Support/Online/network-identity.json','Source/pc-port-source.zip'}
     files=manifest['files']
     if not required<=files.keys():raise ValueError('Incomplete Linux game package')
@@ -147,6 +148,10 @@ def main():
         path=Path(run('cc','-print-file-name='+stem)).resolve()
         if not path.is_file():raise ValueError('Missing FFmpeg development library: '+stem)
         soname=run('patchelf','--print-soname',path);dynamic.append((path,copy(path,stage,'Bin/'+soname)))
+    sdk=linux_vulkan_sdk.verify_install(ROOT)
+    dxc=sdk/'lib/libdxcompiler.so'
+    dynamic.append((dxc,copy(dxc,stage,'Bin/libdxcompiler.so')))
+    copy(sdk.parent/'LICENSE.txt',stage,'Support/Runtime/Vulkan-SDK-LICENSE.txt')
     records=bundle_libraries([(executable,game),*python_pairs,*dynamic],stage)
     subprocess.run([sys.executable,str(repo_file(ROOT,'tools','network-identity.py')),'--output',str(build/'generated'),'--seal-executable',str(game)],check=True)
     # Preserve package-owner copyright/source information for every copied ELF.

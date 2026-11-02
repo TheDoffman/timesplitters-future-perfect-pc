@@ -105,6 +105,7 @@ def main():
     p.add_argument('--seconds',type=int,default=120)
     p.add_argument('--driver-manifest',type=Path)
     p.add_argument('--capture',action='store_true')
+    p.add_argument('--movies',action='store_true',help='Play startup XMV movies instead of skipping them')
     p.add_argument('--performance',action='store_true',help='Measure interactive settings: shader cache on, validation off (not validation acceptance)')
     p.add_argument('--fps',type=int,choices=(60,120,180,240),default=60,
                    help='Explicit isolated timing preset; high refresh retains the existing beta policy')
@@ -152,7 +153,7 @@ def main():
             TSFP_DISPLAY_CONFIG=str(test/'pc-display.ini'),TSFP_SAVE_LOCATION_LOCK='1',
             XDG_CONFIG_HOME=str(test/'xdg-config'),XDG_DATA_HOME=str(test/'xdg-data'),XDG_CACHE_HOME=str(test/'xdg-cache'),
             RECOMP_LOG_FILE=str(ROOT/'logs/linux-game.err'),TSFP_CRASH_DIR=str(test/'crashes'),
-            RECOMP_XMV_PLAY='0',RECOMP_FPS_CAP='60',TSFP_NATIVE_FPS=str(0 if args.fps==60 else args.fps),RECOMP_TRACE_BUDGET='500')
+            RECOMP_XMV_PLAY='1' if args.movies else '0',RECOMP_FPS_CAP='60',TSFP_NATIVE_FPS=str(0 if args.fps==60 else args.fps),RECOMP_TRACE_BUDGET='500')
         if args.unlocked_profile:
             from testing_profile import prepare_run
             prepared=prepare_run(ROOT,test/args.profile_name)

@@ -278,3 +278,7 @@ source/license audit remain separate publication requirements.
 The bounded runner's `--package-root` verifies the package ELF hash, uses its
 local RPATH/FFmpeg/Online files, and removes checkout SDK/loader overrides. The
 same owned-child Story observation can therefore validate a relocated binary.
+
+`--movies` enables real startup XMV playback for separate movie/overlay/audio
+acceptance; routine Story benchmarks still skip it. Linux binding changes are
+currently available through dropdowns; capture-to-bind self-test remains skip77.

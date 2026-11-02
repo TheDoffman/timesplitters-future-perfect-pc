@@ -10,7 +10,7 @@ spec=importlib.util.spec_from_file_location('linux_package',ROOT/'tools/release/
 package=importlib.util.module_from_spec(spec);spec.loader.exec_module(package)
 
 def payload(root):
-    names=['Bin/futureperfect_recomp','TimeSplitters.Launcher','Launch.sh','Settings/pc-controls.json',
+    names=['Bin/libdxcompiler.so','Bin/futureperfect_recomp','TimeSplitters.Launcher','Launch.sh','Settings/pc-controls.json',
         'Support/Python/bin/python3','Support/Online/online.py','Support/Online/network-identity.json','Source/pc-port-source.zip']
     for name in names:
         p=root/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(b'fixture')
