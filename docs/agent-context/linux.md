@@ -14,7 +14,7 @@ Mac GL guards, SDK pin/driver and Cocoa adapters remain unchanged.
 
 SDK: `config/build/vulkan-sdk-linux.json`, `tools/build/linux_vulkan_sdk.py`.
 Same version as Mac; verify publisher size/SHA-256 before extraction, keep
-licenses and an installed-file receipt. The Linux archive's loader is under
+licenses and an installed-file receipt.
 Receipt checks cover the runtime/compiler headers, libraries and LICENSE.txt;
 older full-file receipts remain compatible. Unused SDK tools are not loaded or
 hashed during each probe. Native Ubuntu storage avoids DrvFS per-file overhead;
@@ -44,7 +44,14 @@ view contracts run on Linux. CI's
 requires success when GPU checks are selected. These are asset-free checks;
 configured CI and Windows passing tests do not establish Linux execution.
 
-Local WSL startup requires a Windows restart after installation. No Linux game
+Ubuntu's SDL configure requires XTEST headers (`libxtst-dev`); the CI/player
+setup list also supplies EGL/libdecor and XKB X11 development packages. Clang's
+VMA nullability diagnostic is suppressed only for that vendored translation
+unit on both Linux and Mac. Local Linux build, software Vulkan pixels/resources/
+presentation and production frame replay now pass; measured revisions and driver
+scope are in [STATUS](../project/STATUS.md).
+
+WSL first setup may require a Windows restart. No Linux game
 target exists yet: Linux MMIO/fault/crash, text/settings/Online and title build
 adapters remain. Preserve shared gameplay changes, the supported XBE pin,
 original 60 FPS defaults and user saves/settings. Steam Deck is secondary

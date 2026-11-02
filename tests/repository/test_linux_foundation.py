@@ -1,6 +1,7 @@
 """Linux SDK integrity/isolation contracts runnable on every development host."""
 import importlib.util
 import io
+import json
 from pathlib import Path
 import sys
 import tarfile
@@ -52,6 +53,21 @@ def test_sdk_rejects_corrupt_download_before_extract(tmp_path, monkeypatch):
     with pytest.raises(RuntimeError, match='publisher'):
         sdk.setup(tmp_path)
     assert not sdk.install_path(tmp_path).exists()
+
+
+def test_existing_full_receipt_checks_used_components_and_license(tmp_path, monkeypatch):
+    fixture(tmp_path, monkeypatch)
+    installed = sdk.setup(tmp_path)
+    path = installed.parent / 'tsfp-receipt.json'
+    receipt = json.loads(path.read_text())
+    # Older receipts included optional tools; their removal must not require
+    # downloading an SDK again when all build/runtime dependencies still match.
+    receipt['files']['x86_64/bin/unused-sdk-tool'] = '0' * 64
+    path.write_text(json.dumps(receipt))
+    assert sdk.verify_install(tmp_path) == installed
+    (installed.parent / 'LICENSE.txt').write_text('changed license')
+    with pytest.raises(RuntimeError, match='file changed: LICENSE.txt'):
+        sdk.verify_install(tmp_path)
 
 
 @pytest.mark.parametrize('name', ['../../outside', '/absolute', 'x86_64/../../../outside'])

@@ -28,9 +28,13 @@ reports version 2 before installing Linux build dependencies. Keep this check
 separate from the game build; no script should restart Windows automatically.
 
 Use a Linux virtual environment (`.venv-linux` when accessing a Windows checkout),
-never the Windows `.venv`. For the initial probe it is possible to use the shared
-checkout under `/mnt/c`; building on a native Linux filesystem is preferable for
-performance and file semantics. Never apply patches/build concurrently on two
+never the Windows `.venv`. Put the Linux working checkout, SDK and build tree
+inside Ubuntu's native filesystem; DrvFS `/mnt/c` has substantial per-file
+overhead during SDK/source verification. A local Git clone of the Windows
+checkout can use its unpushed commits without copying ignored game data. Keep
+the Windows editing checkout and Linux working checkout on the same committed
+source revision; fetch new commits from the Windows checkout before building.
+Preserve any Linux edits before switching revisions. Never apply patches/build concurrently on two
 hosts sharing the same ignored runtime tree. No second game-data extract is needed
 for these asset-free tests. Keep `build/windows`, `build/macos` and `build/linux`
 separate, and preserve personal settings/saves.
@@ -41,7 +45,8 @@ On Ubuntu, install the development prerequisites:
 sudo apt-get update
 sudo apt-get install -y build-essential clang pkg-config git python3-venv \
   libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxfixes-dev \
-  libxss-dev libwayland-dev libxkbcommon-dev libdrm-dev libgbm-dev \
+  libxss-dev libxtst-dev libwayland-dev libxkbcommon-dev libxkbcommon-x11-dev \
+  libdrm-dev libgbm-dev libegl1-mesa-dev libdecor-0-dev \
   libasound2-dev libpulse-dev libudev-dev libvulkan1 mesa-vulkan-drivers \
   vulkan-tools xvfb xauth
 python3 -m venv .venv-linux

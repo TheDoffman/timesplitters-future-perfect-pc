@@ -18,8 +18,6 @@ function(tsfp_add_vulkan_backend target runtime sdk)
     if(APPLE)
         set(dxc "${sdk}/lib/libdxcompiler.dylib")
         target_link_libraries(${target} PUBLIC c++)
-        set_source_files_properties("${source}/rhi_vulkan_vma.cpp" PROPERTIES
-            COMPILE_OPTIONS "-Wno-nullability-completeness")
     elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         set(dxc "${sdk}/lib/libdxcompiler.so")
     else()
@@ -31,6 +29,12 @@ function(tsfp_add_vulkan_backend target runtime sdk)
     target_compile_definitions(${target} PRIVATE RHI_HAVE_VULKAN RHI_VULKAN_SDL VK_NO_PROTOTYPES
         "RHI_DXC_LIBRARY=\"${dxc}\"")
     target_link_libraries(${target} PUBLIC SDL3::SDL3 ${CMAKE_DL_LIBS})
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        # VMA annotates some, but not all, pointers. Keep this vendored-only
+        # diagnostic policy identical for Apple Clang and Linux Clang.
+        set_source_files_properties("${source}/rhi_vulkan_vma.cpp" PROPERTIES
+            COMPILE_OPTIONS "-Wno-nullability-completeness")
+    endif()
     # C entry points consume the C++ DXC/VMA implementation on both hosts.
     set_target_properties(${target} PROPERTIES LINKER_LANGUAGE CXX)
     set_target_properties(${target} PROPERTIES CXX_STANDARD 17)
