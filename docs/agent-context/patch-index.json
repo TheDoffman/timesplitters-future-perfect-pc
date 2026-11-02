@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "9a4df9044be180483a217b20edd3889c11878b4417aacaddd92f44c2ae7505e8",
+  "loaderSha256": "7bec6c87e03e2905b29a3041d822a104a1e14a8cf5cfbd9e32998ae5aa80c603",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3075,6 +3075,14 @@
       "sha256": "f91f72ed5e89be4be1ef262ebbfdee4bf72cf7e5ee7d357c29fa7a61f35e78a5",
       "targets": [
         "src/d3d/rhi_vulkan.c"
+      ]
+    },
+    {
+      "name": "2409-linux-late-frame-pacing.patch",
+      "path": "patches/platform/2409-linux-late-frame-pacing.patch",
+      "sha256": "8b5669705864017f1fa180a5bf0576fa59e87b4f5966e01b42c00581917227ef",
+      "targets": [
+        "src/kernel/xbox_memory_layout.c"
       ]
     }
   ]

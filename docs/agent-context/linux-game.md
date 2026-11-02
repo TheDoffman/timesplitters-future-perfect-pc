@@ -170,3 +170,12 @@ seconds; a mismatched startup mode fails the run. High-refresh gameplay remains
 the existing beta feature; setting a target does not prove it is sustained.
 The Linux runner regressions check all four presets, invalid values and linked
 file preservation. Original-code native timing fixtures remain shared.
+
+Final platform patch2409 enables the existing Windows/Mac late-frame vblank
+observation on Linux. The missing host guard made all six positive native
+`test_frame_clock.py` deadline cases fail on Linux: a frame already late enough
+to consume a real signaled vblank instead waited another tick. High-refresh
+frames still bypass the original gate, and their return-to-original handoff
+retains the last real vblank. The existing missing-observer mutation still must
+fail. Cheap frames and absent signals continue waiting; the console ISR stays
+at 60 Hz. This is the shared pacing rule, not a Linux-specific timing algorithm.

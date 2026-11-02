@@ -1,4 +1,5 @@
-Linux GPU/RHI: [entry points, final patches2407/2408 and limits](linux-game.md).
+Linux pacing: patch2409 shares the existing late-vblank guard; see linux-game.md.
+Linux GPU/RHI: [entry points, final patches2407â€“2409 and limits](linux-game.md).
 
 Kill feed: timing scopes, attribution, viewport colors and rematch reset are
 documented in [the feed guide](../development/arcade-kill-feed.md).
