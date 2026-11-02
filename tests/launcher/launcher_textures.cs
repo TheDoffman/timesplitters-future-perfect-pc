@@ -304,7 +304,7 @@ public static class LauncherTextureChecks
                     TexturePack.ValidateDds(Path.Combine(TexturePack.Destination(r),A+".dds"));
                 }
             });
-#if MACOS
+#if MACOS || LINUX
             Test("native checkout installs to private pack and rejects source symlinks",()=>{
                 string r=root(),source=root();Put(Path.Combine(r,"tools","play-native-mac.py"),new byte[]{1});
                 Put(Path.Combine(source,A+".dds"),Dds());

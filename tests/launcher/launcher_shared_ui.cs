@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using TimeSplitters.Launcher;
-#if MACOS
+#if MACOS || LINUX
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -24,7 +24,7 @@ public static class LauncherSharedUiChecks
     static void Click(Button button){button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));}
     static IEnumerable<Element> All(Element root)
     {
-#if MACOS
+#if MACOS || LINUX
         return root.GetLogicalDescendants().OfType<Element>();
 #else
         return LogicalTreeHelper.GetChildren(root).OfType<Element>().SelectMany(c=>new[]{c}.Concat(All(c)));
@@ -33,7 +33,7 @@ public static class LauncherSharedUiChecks
     static T Find<T>(Element root,string name) where T:Element { return All(root).OfType<T>().Single(c=>c.Name==name); }
     public static int Run()
     {
-#if MACOS
+#if MACOS || LINUX
         return RunCore();
 #else
         Exception failure=null;var thread=new System.Threading.Thread(()=>{try{RunCore();}catch(Exception e){failure=e;}});
@@ -43,7 +43,7 @@ public static class LauncherSharedUiChecks
     }
     static string Tip(Button button)
     {
-#if MACOS
+#if MACOS || LINUX
         return Convert.ToString(ToolTip.GetTip(button));
 #else
         return Convert.ToString(button.ToolTip);
@@ -51,7 +51,7 @@ public static class LauncherSharedUiChecks
     }
     static string TestBase()
     {
-#if MACOS
+#if MACOS || LINUX
         // macOS's /var temp alias is a symlink; production intentionally rejects it.
         return Path.GetFullPath(".");
 #else
@@ -482,7 +482,7 @@ public static class LauncherSharedUiChecks
                 string folder=Path.Combine(root,"capture-health");Directory.CreateDirectory(folder);
                 Need(CrashReports.CaptureHealth(folder).Contains("Game not installed"),"Missing game claimed support");
                 string game=Core.PathIn(folder,LauncherPlatform.GamePath(folder));Directory.CreateDirectory(Path.GetDirectoryName(game));File.WriteAllText(game,"fixture");
-#if !MACOS
+#if !MACOS && !LINUX
                 Need(CrashReports.CaptureHealth(folder).Contains("helper missing"),"Missing helper claimed support");
                 File.WriteAllText(Path.Combine(Path.GetDirectoryName(game),"tsfp_crash_helper.exe"),"fixture");
 #endif
