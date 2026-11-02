@@ -6,7 +6,7 @@ static float video_tab_bounds[4];
 static int video_tab_bounds_valid;
 static uint32_t video_tab_measure;
 static int video_tab_index(void)
-{ return page==DISPLAY_GRAPHICS?1:page==DISPLAY_VIEW?2:0; }
+{ return (page==DISPLAY_GRAPHICS || page==DISPLAY_ADVANCED)?1:page==DISPLAY_VIEW?2:0; }
 static int video_tab_page(int index)
 { static const int pages[]={DISPLAY_HOME,DISPLAY_GRAPHICS,DISPLAY_VIEW};return pages[index]; }
 static int video_tab_hit(float x,float y)

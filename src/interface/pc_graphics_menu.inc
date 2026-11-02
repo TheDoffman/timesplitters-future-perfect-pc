@@ -15,18 +15,21 @@ static uint32_t graphics_choice(int slot,const char *label,const char *const *ch
 static void graphics_labels(void)
 {
     static const char *const msaa[]={"Off","2x","4x","8x"};
-    static const char *const edge[]={"Off","FXAA"};
     static const char *const af[]={"Original","2x","4x","8x","16x"};
     static const char *const toggle[]={"Off","On"};
     TsfpGraphicsOptions options=pc_graphics_get();int sample=0,filter=0;
     for(int i=0;i<4;i++)if(graphics_samples[i]==options.msaa)sample=i;
     for(int i=0;i<5;i++)if(graphics_filters[i]<=options.anisotropy)filter=i;
-    graphics_rows[0]=graphics_choice(0,"MSAA",msaa,4,sample);
-    graphics_rows[1]=graphics_choice(1,"Edge smoothing",edge,2,options.edge_smoothing);
-    graphics_rows[2]=graphics_choice(2,"Texture filtering",af,5,filter);
-    graphics_rows[3]=graphics_choice(3,"Ambient occlusion",toggle,2,options.ambient_occlusion);
-    graphics_rows[4]=graphics_choice(4,"Shader cache",toggle,2,options.shader_cache);
-    guest_call(sub_00079D60_gen,6,text_at(82,"Clear shader cache"),106u,0u,0u,SELECT_CB,0u);
+    memset(graphics_rows,0,sizeof graphics_rows);
+    if(page==DISPLAY_ADVANCED) {
+        graphics_rows[0]=graphics_choice(0,"MSAA (restart required)",msaa,4,sample);
+        graphics_rows[4]=graphics_choice(4,"Shader cache",toggle,2,options.shader_cache);
+        guest_call(sub_00079D60_gen,6,text_at(82,"Clear shader cache"),106u,0u,0u,SELECT_CB,0u);
+        guest_call(sub_00079D60_gen,6,text_at(83,"Back to Graphics"),107u,0u,0u,SELECT_CB,0u);
+    } else {
+        graphics_rows[2]=graphics_choice(2,"Anisotropic filtering",af,5,filter);
+        graphics_rows[3]=graphics_choice(3,"Ambient occlusion",toggle,2,options.ambient_occlusion);
+    }
 #if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
     small_note(81,*status?status:"MSAA changes require a restart");
 #else
@@ -36,9 +39,13 @@ static void graphics_labels(void)
 static void graphics_read_choices(void)
 {
     TsfpGraphicsOptions before=pc_graphics_get(),after=before;
-    int indices[5];
+    int sample=0,filter=0;
+    for(int i=0;i<4;i++)if(graphics_samples[i]==before.msaa)sample=i;
+    for(int i=0;i<5;i++)if(graphics_filters[i]<=before.anisotropy)filter=i;
+    int indices[5]={sample,before.edge_smoothing,filter,before.ambient_occlusion,before.shader_cache};
     for(int i=0;i<5;i++) {
-        if(!graphics_rows[i] || !guest_writable(graphics_rows[i],0xcc))return;
+        if(!graphics_rows[i])continue;
+        if(!guest_writable(graphics_rows[i],0xcc))return;
         indices[i]=(int)WORD_AT(graphics_rows[i]+0xc8);
         if(indices[i]<0 || indices[i]>=(i==0?4:i==2?5:2))return;
     }
@@ -51,7 +58,7 @@ static void graphics_read_choices(void)
     if(memcmp(&before,&after,sizeof before) && !pc_graphics_set(&after)) {
         int sample=0;for(int i=0;i<4;i++)if(graphics_samples[i]==before.msaa)sample=i;
         const int values[]={sample,before.edge_smoothing,old_filter,before.ambient_occlusion,before.shader_cache};
-        for(int i=0;i<5;i++)guest_call(sub_00075430,2,graphics_rows[i],(uint32_t)values[i]);
+        for(int i=0;i<5;i++)if(graphics_rows[i])guest_call(sub_00075430,2,graphics_rows[i],(uint32_t)values[i]);
         snprintf(status,sizeof status,"Could not save graphics settings");
         text_at(81,"\vs75%s\vs100",status);
     } else if(before.msaa!=after.msaa)msaa_restart_prompt=1;

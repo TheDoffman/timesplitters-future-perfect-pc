@@ -2,9 +2,12 @@
 
 The redesigned frontend and pause screen share `pc_display_menu.c`. Video
 setting IDs are 0/1/2 (aspect/resolution/FOV) and 7–11 (texture, frame rate,
-subtitles, Kill Feed, SMAA). Graphics choices are IDs100–104; FPS/Ping is ID105.
+subtitles, Kill Feed, post-process AA). Graphics choices use IDs100/102–104;
+FPS/Ping is ID105. Advanced navigation is ID108, return is ID107, clear cache ID106.
 The three tabs share click feedback; confirmation/restart prompts are excluded.
-SMAA is on Graphics and keeps staged Apply/Back behavior across tabs. Apply is ID3 and keeps its original feedback.
+Post-process AA (Off/FXAA/SMAA) is on Graphics and keeps staged Apply/Back behavior
+across tabs. MSAA and shader cache moved to `DISPLAY_ADVANCED`; Back returns to
+Graphics and that tab stays highlighted. Apply is ID3 and keeps its original feedback.
 See [SMAA and staged settings](smaa.md) for persistence/rollback contracts.
 
 `menu_video_click_sound` handles fresh mouse clicks on these enabled setting

@@ -35,6 +35,13 @@ namespace TimeSplitters.Launcher
         public bool EnhancedAudio;
         public bool ShowCounter;
         public int Msaa = 1, EdgeSmoothing, AmbientOcclusion;
+        public int PostAntiAliasing {
+            get { return Smaa ? 2 : EdgeSmoothing; }
+            set {
+                Core.Require(value>=0 && value<=2,"Choose Off, FXAA, or SMAA.");
+                Smaa=value==2;EdgeSmoothing=value==1?1:0;
+            }
+        }
         public bool ShaderCache = true;
         public string LanguagePack = "en";
         public static readonly string[] LanguagePacks = { "en", "fr", "de", "it", "es" };

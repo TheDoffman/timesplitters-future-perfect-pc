@@ -1,4 +1,4 @@
-[Graphics/MSAA2514](../development/graphics-options.md).
+[Graphics/AA cleanup](../development/graphics-options.md).
 Counter2490: overlay sizing.
 [Kill feed contracts](../development/arcade-kill-feed.md).
 Story rewards: additive2465 wraps356800 for the single frontend context;

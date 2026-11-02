@@ -45,7 +45,7 @@
          c.texel_y = 1.0f / (float)scene_h;
          c.inv_taps = 1.0f / (float)(taps * taps);
 -        c.pad = 0.0f;
-+        c.pad = (float)pc_graphics_get().edge_smoothing;
++        c.pad = pc_smaa_enabled() ? 0.0f : (float)pc_graphics_get().edge_smoothing;
          memcpy(mapped, &c, sizeof c);
          rhi_buffer_unmap(g.cb);
      }
