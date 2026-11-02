@@ -1,6 +1,6 @@
 # Launcher internals
 
-Game 0.4.1 preparation retains Stable channel selection, optional texture delivery
+Game 0.4.2 preparation retains Stable channel selection, optional texture delivery
 and the existing install/preservation contracts. Its packages embed launcher 1.4.2;
 game and launcher publication remain independent.
 

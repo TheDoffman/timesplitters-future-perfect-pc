@@ -1242,7 +1242,7 @@ static void activate(void)
     restore_registers(&r); g_esp+=4;
 }
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
-extern void sub_001A0A60(void);
+extern void sub_001A0A60(void),sub_001A2700(void);
 /* Indirect editor callbacks run after the constructor has returned. Give
    those callbacks the same Arcade Custom rules (including custom bot sets),
    with the network mode restored at every callback boundary. */
@@ -1253,15 +1253,29 @@ static void network_bots_tick(void) { pc_network_bots_menu(sub_002C0490); }
 static void network_bots_list(void) { pc_network_bots_menu(sub_002C19F0); }
 static void network_bots_list_tick(void) { pc_network_bots_menu(sub_002C1570); }
 static void network_bots_item_draw(void) { pc_network_bots_menu(sub_002C1490); }
-static void system_link_activate(void)
+static void system_link_enable(void)
 {
-    GuestRegisters r; save_registers(&r);
     pc_online_disconnect();
 #ifdef _WIN32
     _putenv_s("TSFP_ONLINE_CONFIG",""); _putenv_s("TSFP_NETWORK","1");
 #else
     unsetenv("TSFP_ONLINE_CONFIG"); setenv("TSFP_NETWORK","1",1);
 #endif
+    fprintf(stderr,"[PC-NET] System Link selected; enabling LAN transport\n");
+}
+static void system_link_select(void)
+{
+    const uint32_t row=WORD_AT(g_esp+4);
+    /* The original row callback tail-calls the browser directly on event 8,
+       bypassing the indirect lookup for 1A0A60. Activate before that tail call;
+       focus/draw events must leave an existing Online connection alone. */
+    if(guest_writable(row,0x190u) && WORD_AT(row+0x18cu)==8u) system_link_enable();
+    sub_001A2700();
+}
+static void system_link_activate(void)
+{
+    GuestRegisters r; save_registers(&r);
+    system_link_enable();
     guest_call(sub_001A0A60,0);
     restore_registers(&r); g_esp+=4;
 }
@@ -1351,9 +1365,9 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case 0x002C1490u: return network_bots_item_draw;
     /* Any remaining indirect reference to the retired Live entry uses Online. */
     case 0x001CC050u: return online_activate;
-    /* System Link is reached through the title's indirect menu table. Online
-       deliberately calls its generated body directly after configuring the
-       bridge, while ordinary System Link selection resets to LAN transport. */
+    case 0x001A2700u: return system_link_select;
+    /* Retain the explicit browser entry too. Online deliberately calls its
+       generated body directly after configuring the bridge. */
     case 0x001A0A60u: return system_link_activate;
 #endif
     default: return NULL;
