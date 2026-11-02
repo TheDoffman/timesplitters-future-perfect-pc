@@ -11,6 +11,9 @@ Shaders and immutable lookup bytes are pinned under `vendor/smaa`; regenerate
 `smaa_shader.h` with `tools/build/embed-smaa.py`. Only sampler bindings are
 adapted; the reference algorithm and lookup bytes remain unchanged. The shader
 uses 1x High, luma detection, gamma-encoded UNORM and zero subsample indices.
+The generator explicitly decodes the pinned upstream file as Windows-1252,
+and reads/writes project shader files as UTF-8. Its check runs in Python UTF-8
+mode on every host to catch locale-dependent generation.
 
 `src/graphics/pc_smaa.inc` owns render-thread resources, compilation, resize,
 three passes and cleanup. Input is the existing box resolve at fitted output

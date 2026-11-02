@@ -1,5 +1,10 @@
 ## Video Options menu-switch click feedback (2026-11-02)
 
+PR #469 native Mac CI passed 2,653 runtime tests but exposed one locale-dependent
+SMAA generator failure. Explicit upstream Windows-1252/project UTF-8 encoding
+fixes that read without changing the embedded shader or pinned vendor bytes.
+The shader freshness regression now runs under Python UTF-8 mode on every host.
+
 PR #469 initial CI caught a missing structured MAC-129 status and queue row.
 The handoff now uses the required format; no runtime behavior changed.
 The launcher packaging fixture now supplies and checks the required SMAA license;

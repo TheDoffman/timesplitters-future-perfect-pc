@@ -11,7 +11,7 @@ from native_compiler import native_compiler
 ROOT=Path(__file__).resolve().parents[2]
 
 def test_pinned_smaa_and_embedded_shader():
-    subprocess.run([sys.executable,str(ROOT/'tools/build/embed-smaa.py'),'--check'],check=True)
+    subprocess.run([sys.executable,'-X','utf8',str(ROOT/'tools/build/embed-smaa.py'),'--check'],check=True)
     pins=json.loads((ROOT/'vendor/smaa/provenance.json').read_text())
     for name,digest in pins['sha256'].items():
         assert hashlib.sha256((ROOT/'vendor/smaa'/name).read_bytes()).hexdigest()==digest
