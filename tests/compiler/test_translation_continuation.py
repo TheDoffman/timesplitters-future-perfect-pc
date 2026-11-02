@@ -17,7 +17,7 @@ def generate(raw,start=0x1000,*,run=False):
     return emit(start,Disassembler().disassemble_function(data,start,start+len(data)),run=run)
 
 
-def execute(tmp_path,programs,body,support='',mutation=None,refs=False,dispatch=False,run=False,policy=''):
+def execute(tmp_path,programs,body,support='',mutation=None,refs=False,dispatch=False,run=False,policy='',extra=()):
     names=('recomp_types.h','guest_status_flags.h','guest_state.c',
            'guest_context_execution.h','guest_context_execution.c','guest_x86_context.h')
     for name in names:(tmp_path/name).write_bytes((ROOT/'src/runtime'/name).read_bytes())
@@ -46,7 +46,7 @@ g_status_flags.value=2;g_status_flags.known=TSFP_STATUS_FLAGS|2;
 g_esp=1000;
 '''+body+'\nreturn 0;}\n').encode())
     flag='/DTSFP_RECORD_STATUS_FLAGS=1' if os.name=='nt' else '-DTSFP_RECORD_STATUS_FLAGS=1'
-    exe=_compile(tmp_path,source,extra=[tmp_path/'guest_state.c',tmp_path/'guest_context_execution.c',flag])
+    exe=_compile(tmp_path,source,extra=[tmp_path/'guest_state.c',tmp_path/'guest_context_execution.c',flag,*extra])
     return subprocess.run([str(exe)],capture_output=True,text=True,timeout=20)
 
 

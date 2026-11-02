@@ -81,6 +81,8 @@ def test_cli_exports_separately_compilable_exact_pc_execution(tmp_path,refs):
     source=directory/'harness.c'
     source.write_bytes(b'''#include "recomp_types.h"
 #include "guest_context_execution.h"
+int tsfp_context_generated_admit(uint32_t);
+int tsfp_context_generated_step(uint32_t,uint32_t *);
 ptrdiff_t g_xbox_mem_offset;
 static union {uint64_t alignment;unsigned char data[8192];} memory;
 int main(void){

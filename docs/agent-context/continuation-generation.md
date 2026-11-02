@@ -81,3 +81,12 @@ Production Windows acceptance:15746 bodies/1198926 PCs/62486 shared,158 chunks,
 new compiled units pass. Fresh101.212s Story movement/fire/pause-resume passes;
 source/run/executable and26 protected files verified. See STATUS for hashes and
 Windows-only synthetic scope. Native context execution remains unselected.
+
+The following [original registration-chain dispatcher](guest-exceptions.md)
+implements raise/unwind bodies and a translated edited-PC integration fixture;
+actual kernel import binding and native ownership/barriers remain unfinished.
+
+Mac CI756e0f46 retry exposed missing generated-API declarations in the separate
+CLI harness. The harness now declares admit/step explicitly; Clang C11 rejects
+implicit declarations which the default MSVC warning level did not flag. This
+is a test-only repair and does not change production generation or ABI.

@@ -9176,3 +9176,78 @@ the full objective: live context/SEH plus remaining kernel, graphics, audio/movi
 input/device/network, title/tooling/header/fixture and provenance replacement.
 Final generation/build/package with BOTH old checkout and snapshot unavailable
 has not passed and remains required. No PR merged and no full completion claim.
+
+
+### Stage0258: original exception registration dispatcher (2026-11-02)
+
+Original guest_exception.c/.h implements checked raise/search/unwind bodies,
+guarded cdecl callbacks, noncontinuability, nested/collided dispositions, edited
+contexts, target retention, corrupt-chain failures and context baseline
+preservation.0258-original-exception-dispatch.patch selects it in the shared
+kernel archive after0253; historical tail is56. This is NOT a completed kernel
+import replacement:265/302/312 remain inherited and the execution core remains
+unselected. Native live capture, guard capabilities, actual import binding,
+resource/guest-lock/lifted-state ownership and opaque host barriers remain open.
+
+Native Win32 i386 oracles cover eight actual RtlRaiseException cases and24
+RtlUnwind cases. Measurements corrected two prototype assumptions: nested flags
+stay visible to the boundary handler and clear afterward; collided unwind does
+not itself add flag64. Modern Windows raise's extra/XSTATE groups are not adopted
+as Xbox semantics. Native probes own their temporary stack FS registrations,
+with SafeSEH disabled solely in the oracle binaries. They establish Windows
+behavior, not complete physical Xbox conformance.
+
+The compiled integration calls a real translated cdecl handler, edits context
+EIP/EAX, then actually transfers via the original native checkpoint into decoded
+translated code at the edited PC, bypassing the old MOV. Both true GPR reference
+modes pass. This exposed callback_plan's esp field colliding with register
+macros; it is now r_esp with unchanged layout/behavior. Full caller snapshots
+preserve unselected context groups; final control-only/integer-only/group-free
+cases exposed and fixed an overly strict completion check. The before-fix case
+fails at runtime (logs/exception-partial-flags-before.log). No zero-filled live
+state or silent successful exception no-op substitutes for the missing adapters.
+
+Final183 focused compiler/callback/lifetime/context/continuation/codec/native
+checks pass50.52s (logs/exception-dispatch-partial-final-broad.log). Deliberately
+incorrect providers compile then fail. Full historical migration/repository/CI
+scope/gate suite149 passes901.12s (handle38330 terminal0; exception-dispatch-
+migrations.log). Context map and affected-owner checks pass. New portable tests
+and native SDK oracles are registered in the both-host workflow (SDK cases skip
+on Mac). Full migrations were not restarted on observation timeout.
+
+Final Release2786 exits0, including built-in checks and matching crash symbols.
+Audit logs/verify-exception-dispatch-build.py confirms one original provider
+selection and both archived symbols, valid current generation receipt, all159
+continuation units, unchanged normal generated C and inherited imports still
+present. Generation was not repeated: no generation source/header contract
+changed, and exact generated-file hashes match the accepted0257 output.
+Executable SHA25604ec7fb20ed747fc09b235bd14f1e1b2051a4c7eb15c3c6d04f2a665ee981392.
+Fresh isolated independent-exception-dispatch-final-20261102 runner84321/
+controller76913 both exit0. Intro30/1 and playable4/1/input enabled pass; forward
+11.1745451650/back6.1848909969, ammo8to6, pause39 frozen/resume58 advancing,
+last160.977s below240. The controller started later in this run; no timing
+threshold was weakened. Three fresh start/fire/pause captures reviewed.
+Source/runner/executable provenance matches; fixture valid;26 protected files
+retain hashes/sizes/times; no owned game, lock, dump or disposable Partition image.
+Earlier candidate9f3f and its102.318s run remain separate retained evidence, not
+the final source acceptance after the partial-context fix.
+Evidence logs/exception-dispatch-{build,final-game-check}.json, final build/game/
+controller logs and isolated report/provenance. Windows11/D3D11 flip/Classic/
+Original60/minimized synthetic/movies skipped only; not physical-input/listening,
+full-campaign/native Mac title or actual game exception-dispatch proof.
+
+Prior756e0f46 CI: Windows native, both upgrades and embedded dual-host launchers
+passed. First native Mac125504473134 and standalone Mac125503051059 were cancelled
+with runner_id0; GitHub annotations prove hosted-runner allocation failure and
+macOS arm64 capacity notices (logs/ci-context-export-cancellations.json). Both
+failed workflows were retried. Runtime41510644956 retry Mac125513992322 actually
+ran and exposed two Clang C11 failures: the separate CLI harness omitted generated
+admit/step declarations. Added explicit matching prototypes; eight local Windows
+CLI exporter checks pass2.88s. This test-only repair changes no production ABI/
+generation or executable. Its test input hash was refreshed in the audit; every
+production input remained unchanged. New-head Mac confirmation remains required.
+Standalone41510644990 retry Mac125517034554 was queued at last check. Neither
+workflow is reported fully green. No PR merged. Actual native adapter/import
+binding, wider runtime/tooling/title/header/fixture/provenance replacement and
+final generation/build/package with BOTH upstream sources unavailable remain
+incomplete. See docs/agent-context/guest-exceptions.md.

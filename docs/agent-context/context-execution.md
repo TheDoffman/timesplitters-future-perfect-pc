@@ -70,3 +70,7 @@ independence, and do not claim a production build tested it while it is unselect
 The opt-in [instruction continuation generator](context-continuations.md) now
 provides decoded steps and exact-PC dispatch in native tests. The production
 live-state/SEH/fiber integration remains open.
+
+The following [original registration-chain dispatcher](guest-exceptions.md)
+implements raise/unwind bodies and a translated edited-PC integration fixture;
+actual kernel import binding and native ownership/barriers remain unfinished.

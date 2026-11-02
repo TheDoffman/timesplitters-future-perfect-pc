@@ -19,7 +19,7 @@ def test_native_unwind_context_edits_and_handler_chain(tmp_path):
             assert int(m[2])==(2 if case&8 else 1),line
             assert int(m[3],16)==(0x87654321 if case&8 else 0x12345678),line
             assert m[4]==m[5]==m[6]=='1',line
-            assert int(m[7])==(2 if case&1 else 1),line
+            assert int(m[7])==(1 if case&16 else 2 if case&1 else 1),line
             assert int(m[8],16)==(3 if case&4 else 1),line
             continue
         m=re.fullmatch(r'handler(\d+) code([0-9a-f]+) flags([0-9a-f]+) frame_index(\d+) contextflags([0-9a-f]+) context_eax([0-9a-f]+) dispatcher([0-9a-f]+) head_is_frame(\d+) head_next_frame(\d+)',line)
@@ -30,5 +30,5 @@ def test_native_unwind_context_edits_and_handler_chain(tmp_path):
         assert int(m[4])==index and int(m[5],16)==0x10007,line
         assert int(m[6],16)==(0x87654321 if case&8 and index else 0x12345678),line
         assert int(m[7],16) and m[8]=='0' and m[9]=='1',line
-    assert cases==list(range(16))
-    assert all(rows==list(range(2 if case&1 else 1)) for case,rows in seen.items())
+    assert cases==list(range(16))+list(range(17,32,2))
+    assert all(rows==list(range(1 if case&16 else 2 if case&1 else 1)) for case,rows in seen.items())

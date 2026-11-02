@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "8c2a3d64c5dfec4c3f668297e102841651b1f61ad0a63835ef96e3e8e7ef5951",
+  "loaderSha256": "810788e086d76383a8c658e95e6f7e4b0b4772906467b9ec6de515277d8025e2",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3096,6 +3096,14 @@
       "name": "0253-original-context-records.patch",
       "path": "patches/compiler/0253-original-context-records.patch",
       "sha256": "c100faf4246139ba9144851469fc377ff8ffbf80bf88d4694a11602877354e51",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0258-original-exception-dispatch.patch",
+      "path": "patches/compiler/0258-original-exception-dispatch.patch",
+      "sha256": "662e9ad973cc59a457aa84a2612cb50ee007fe211ae2afa7043be92954b65e98",
       "targets": [
         "src/kernel/CMakeLists.txt"
       ]

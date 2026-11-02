@@ -139,3 +139,7 @@ Next prerequisite: [native execution checkpoints](context-execution.md).
 
 [Canonical EBP](canonical-ebp.md) documents the macro-safe r_* state members;
 the712-byte state and716-byte interchange offsets are unchanged.
+
+The following [original registration-chain dispatcher](guest-exceptions.md)
+implements raise/unwind bodies and a translated edited-PC integration fixture;
+actual kernel import binding and native ownership/barriers remain unfinished.

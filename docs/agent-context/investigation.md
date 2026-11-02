@@ -398,3 +398,8 @@ header text; [shift/rotate status](guest-shift-flags.md) records CI repair and t
 
 The exact loader-tail assertion now includes0253 context records after0249;
 keep all55 entries ordered. [Context/handler contracts](context-records.md).
+
+Stage0258 extends the verified patch-order tail from55to56 with the original
+exception dispatcher after0253. test_repo_context and five historical omission
+sets in test_patch_updates now include that dependency; old patch bytes remain
+unchanged. See [exception contracts](guest-exceptions.md).
