@@ -8799,3 +8799,19 @@ focused tests, Release/built-ins/archive/generation and isolated Scotland moveme
 fire/pause/resume pass (STATUS). Portable tests use undefined-behavior sanitizer;
 6000 native ntdll references are Windows-only. Mac title/gameplay and new-stage CI
 remain pending, as do full runtime and snapshot-unavailable production acceptance.
+
+
+Stage0246 raw charset services (2026-11-02, PR465 continuation): one shared original
+provider replaces five raw bridges, reusing existing original host codec/case
+leaves. Mac keeps its single-byte/Latin-1 and standard libc policy; Windows keeps
+standard ACP NLS. No new Mac adapter or claimed NT case table equivalence. Raw32-
+bit/no-NUL/prefix/status policy is shared. Windows81 distinct focused cases,
+Release/built-ins/archive/generation and fresh isolated Story movement/fire/pause/
+resume pass (STATUS). Portable cases use undefined-behavior sanitizer; four actual
+Windows native/code-page cases skip on Mac. New-stage Mac CI/title validation and
+complete runtime/snapshot-unavailable production acceptance remain pending.
+
+Stage0245 portable CI acceptance:7a88cd4c passed runtime41427412517 and
+launcher41427412497 across both hosts, including native/GPU/upgrade/transition
+and package jobs. Native Mac title/gameplay remains unverified. Stage0246 all35
+local migrations also passed; its new-head Mac CI is still pending.

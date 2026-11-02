@@ -37771,3 +37771,53 @@ Priorfaff4dcd CI acceptance at this checkpoint: launcher41425010450 succeeded;
 runtime41425010537 has passing Windows/Mac native, upgrade and transition jobs
 but still awaits the queued native Mac launcher package job. The entire runtime
 workflow is not yet accepted as complete. No failed job is being suppressed.
+
+
+## Original raw charset conversion services (2026-11-02, stage0246, PR465)
+
+Original guest_text_raw.c/.h and guest_kernel_text_raw.inc replace all five live
+raw charset bodies:299/300 multibyte-to-Unicode N/size,310/311 Unicode-to-multibyte
+N/size and315 uppercase Unicode-to-multibyte N. Continuing from7a88cd4c, these
+compose the project-owned host codec and case leaf; no new native toolkit shim
+or guest allocator is used. Raw32-bit counts, ordinary successful truncation,
+uppercase overflow, ignored incomplete Unicode byte and no-added-NUL policy are
+separate from counted-string conversion. Source/frame aliases are staged; actual
+count/output overlap rejects before publication. See
+[raw contracts](../agent-context/guest-text-raw.md) for host/locale/UTF-16 limits
+and the measured uppercase status difference from public documentation.
+
+Windows x64/MSVC:81 focused cases passed31.36s (raw, counted codec, create/case,
+counted strings and repository context). Seventeen raw cases then passed7.65s
+with expanded source/output/count/frame aliases; these are the same17 tests, not
+17 additional distinct cases.12450 independent complete1024-byte RAM requests
+run direct and actual imports; ten compile-first bad services/adapters must fail.
+7500 real ntdll references cover all five operations, with uppercase ASCII to
+respect the retained libc policy. CP1252/932/65001 tests independently verify
+prefixes/full queries. Compiled limits prove65538-byte full query,65534-byte bounded
+Unicode copy, odd65537-byte source, optional/no-op/null and missing-service behavior.
+Initial native fixture guard crossing and missing short-write counterexample were
+corrected without weakening output/state checks. All35 full migration/EOL cases
+passed537.42s with two workers. Combined with81 focused cases,116 distinct local
+checks passed; these counts exclude earlier repetitions.
+
+Release, utility/built-in tests and matching crash symbols passed. Single provider,
+archive symbol and removed-five-body audits pass; generation is current and all
+generated guest C/header bytes match the accepted arithmetic stage. Executable:
+`cffb414a745f1ec076e0a101315c958a7f692bdc2866ff8c2657a03dc0f9dc17`.
+Both isolated Story runner/controller exited0. Scotland scene4/mission1:
+forward11.174544, backward6.391049, ammo8 to6,39 frozen pause samples and58
+advancing resume samples; last checkpoint148.557s within240s bound. Fresh start/
+fire/pause captures were reviewed; source/build/game hashes agree. All26 protected
+file hashes/sizes/mtimes were unchanged, profiles/signatures/fixture valid, and
+no lock/dump/Partition image remained. Ignored provenance:
+logs/raw-codec-build.json, raw-codec-game-check.json and raw-codec-captures.
+Validation was minimized synthetic Original60/movie-skipped; no physical controls,
+listening, full campaign, all raw branches or native Mac title acceptance follows.
+
+Previous7a88cd4c passed launcher41427412497 and runtime41427412517 completely,
+including both-host native, upgrade, package and final transition jobs. This
+accepts stage0245 portable CI, not native Mac title gameplay. New-head CI is pending.
+Native Mac title, exception/context and remaining kernel/graphics/audio/input/
+title/header/fixture replacement, unused compatibility retirement and generation/
+build/package with old checkout/snapshot unavailable remain unfinished. Goal active;
+no merge into main or publication.

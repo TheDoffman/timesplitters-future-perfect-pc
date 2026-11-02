@@ -384,3 +384,5 @@ Stage0243 extends the effective tail and historical exclusions; [memory/bit cont
 Stage0244: [counted codec/ownership](guest-text-codec.md); native pointer records are separate from guest records, and fresh heap rollback zeroing is not an all-RAM transaction claim.
 
 Stage0245: [creation/case](guest-string-transform.md); native case strings do not append NUL; libc mapping is not NT NLS equivalence.
+
+Stage0246: [raw codec](guest-text-raw.md); native uppercase truncation returned80000005 despite documentation; keep raw32-bit/no-NUL policy separate from counted conversion.

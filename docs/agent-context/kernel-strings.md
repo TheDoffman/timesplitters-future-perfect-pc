@@ -14,7 +14,8 @@ the native symbols. Stage0244 now replaces the live guest counted conversion/fre
 [original codec/ownership services](guest-text-codec.md). Native wrapper removal
 alone did not replace those bridges. Stage0238 now retires the whole native kernel_rtl.c through [original critical/
 status services](kernel-rtl.md); its unused native exception/format wrappers retire. Stage0240 selects [original numeric conversions](guest-numbers.md). Stage0245 replaces creation/case and removes the raw wcslen helper through
-[checked transformation services](guest-string-transform.md). Raw charset services remain.
+[checked transformation services](guest-string-transform.md). Stage0246 replaces the remaining five raw charset bridges through
+[original raw services](guest-text-raw.md).
 Vendor/historical patch bytes remain for reproducible unwind and notices.
 
 The shared provider treats descriptors as eight little-endian bytes: Length16,

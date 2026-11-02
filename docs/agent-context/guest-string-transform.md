@@ -88,6 +88,8 @@ old scanner/body removal and executed dispatcher argument sizes are separate.
 
 Both CI hosts select this suite; portable Mac fixtures use undefined-behavior
 sanitizer, and actual ntdll references skip there. Exact local build/migration/game
-acceptance is in STATUS. Native Mac title gameplay, raw charset/exception/kernel/
+acceptance is in STATUS. Native Mac title gameplay, exception/kernel/
 graphics/audio/input/title/header/fixture work and final old-checkout/snapshot-
 unavailable generation/build/package proof remain unfinished.
+
+Stage0246 replaces [raw charset imports](guest-text-raw.md) with the same host leaves.
