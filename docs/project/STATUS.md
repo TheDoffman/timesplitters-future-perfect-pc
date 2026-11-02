@@ -4,7 +4,11 @@ Merged main 623acff4 into the graphics branch, preserving SMAA and native
 Video click feedback. SMAA lives on Graphics; staged Apply/Back and failed-save
 rollback survive tab changes. Shared click feedback also covers graphics and
 FPS/Ping rows. Windows focused menu/input/restart/SMAA/RHI/context checks:
-34 passed, 3 host skips. Full rebuild and latest CI are pending. The earlier
+34 passed, 3 host skips. Full Windows Release Build/built-ins and launcher
+-Test passed after integration. Graphics/options/cache tests also passed.
+The flash contract now includes SMAA Off/On: 96 combinations, six frames
+each, repeated with disabled/cold/warm shader cache (1,728 checked frames).
+This combined D3D11 WARP check passed; latest CI is pending. The earlier
 Mac GPU run passed all AO pixels but required the advertised Vulkan
 sampleRateShading device feature; that capability correction is included.
 The actual later canyon explosion blackout remains unconfirmed.

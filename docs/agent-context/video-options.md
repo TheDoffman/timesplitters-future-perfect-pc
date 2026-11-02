@@ -25,3 +25,7 @@ suppression, arrow deduplication and FOV capture; `test_fov_settings.py` checks
 actual Video scope, all selector IDs, disabled/confirmation/muted/missing-table
 guards and guest ABI. These dispatch tests do not establish physical audibility
 on a native Mac host.
+
+Combined graphics flash coverage includes SMAA Off/On alongside MSAA, AO
+and FXAA in `tests/graphics/graphics_transition.h`, using isolated runtime
+preferences and restoring SMAA Off at completion. Native validation is separate.
