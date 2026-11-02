@@ -57,3 +57,8 @@ Linux shared guest pointer guards query current `/proc/self/maps` protection
 boundaries. Known-size span guards use that provider; the resident-page PSAPI
 optimization remains Windows-only. Snapshots retain their existing lifetime of
 one uninterrupted host operation, never across guest calls/protection changes.
+
+Patch2404 enables the existing Mac/Windows HLE graphics bridge on Linux,
+including texture/state/vertex submission and shared frame capture. Native
+MMIO fixtures link libm for the POSIX floating-point compatibility functions.
+The auto-look span fixture also runs on Linux with real mmap/mprotect boundaries.

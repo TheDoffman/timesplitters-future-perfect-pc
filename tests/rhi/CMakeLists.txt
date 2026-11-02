@@ -30,7 +30,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         "${TSFP_NATIVE_DIR}/mmio_linux.c")
     target_include_directories(tsfp_native_mmio_test PRIVATE "${TSFP_NATIVE_DIR}"
         "${TSFP_RUNTIME_DIR}/include")
-    target_link_libraries(tsfp_native_mmio_test PRIVATE platform)
+    target_link_libraries(tsfp_native_mmio_test PRIVATE platform m)
 endif()
 # Include the production frontend as well: the frame replay contract must
 # exercise its real capture parser, window adapter, draw and readback paths.
