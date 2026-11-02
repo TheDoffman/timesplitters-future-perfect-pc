@@ -701,4 +701,6 @@ int tsfp_native_input_test(void) {
     return ok?0:1;
 }
 
+#ifdef __APPLE__
 #include "settings_selftest.inc"
+#endif

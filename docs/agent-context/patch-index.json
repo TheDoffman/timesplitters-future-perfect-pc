@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "73c37e6092da9b292118fc7ba590889a73b89fed4127c6a845143b452c2c9538",
+  "loaderSha256": "f4cf92b9c1e9589c6cd4d8ecd80e63851a1f65befdf7af701930e0b860d811d8",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3041,6 +3041,15 @@
         "src/hle/hle_d3d8_state.c",
         "src/hle/hle_d3d8_texture.c",
         "src/hle/hle_d3d8_vertex.c",
+        "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2405-linux-runtime-link.patch",
+      "path": "patches/platform/2405-linux-runtime-link.patch",
+      "sha256": "276d706b91ff55387ed6cd19b49c84a7a4bdd698778c2175c92a60c96911e6e6",
+      "targets": [
+        "CMakeLists.txt",
         "titles/futureperfect/CMakeLists.txt"
       ]
     }

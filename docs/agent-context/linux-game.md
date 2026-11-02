@@ -67,3 +67,7 @@ report contents and linked-root rejection checks on Linux as well as Darwin;
 Linux fatal symbols use non-PIE ELF plus addr2line, with hang sampling explicit.
 The Linux fixture faults at a named UD2 instruction to verify the captured
 fault PC symbol; reports include both native and guest registers.
+Patch2405 enables C++ linking at the Linux title scope and resolves the static
+runtime library cycle with a GNU archive rescan group. Linux exposes the same
+native Arcade-only Online mode contract as Mac; Story transport is deferred.
+The Cocoa settings self-test is compiled only on Apple; Linux returns skip77.

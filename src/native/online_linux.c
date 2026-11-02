@@ -16,6 +16,7 @@
 #include "online-python.h"
 extern char **environ;
 static pid_t companion;
+static PcOnlineMode active_mode;
 static char ready_path[4096],stop_path[4096];
 static int running(void){
     if(!companion)return 0;
@@ -23,6 +24,7 @@ static int running(void){
     if(result==companion||(result<0&&errno==ECHILD)){companion=0;return 0;}return 1;
 }
 void pc_online_disconnect(void){
+    active_mode=PC_ONLINE_NONE;
     if(running()){
         FILE *file=fopen(stop_path,"w");if(file)fclose(file);
         for(unsigned i=0;i<160&&running();i++)usleep(50000);
@@ -30,7 +32,10 @@ void pc_online_disconnect(void){
     }
     if(*ready_path)unlink(ready_path);if(*stop_path)unlink(stop_path);pc_network_set_online(NULL);
 }
-int pc_online_connect(void){
+PcOnlineMode pc_online_mode(void){return active_mode;}
+int pc_online_connect(void){return pc_online_connect_mode(PC_ONLINE_ARCADE);}
+int pc_online_connect_mode(PcOnlineMode mode){
+    if(mode!=PC_ONLINE_ARCADE)return 0; /* Same native Story transport gap as Mac. */
     pc_online_disconnect();char folder[4096],pid[32],script[4096];
     snprintf(folder,sizeof folder,"%s/private/online",TSFP_ONLINE_SOURCE_ROOT);
     snprintf(script,sizeof script,"%s/tools/network/online.py",TSFP_ONLINE_SOURCE_ROOT);
@@ -53,6 +58,7 @@ int pc_online_connect(void){
         if(SDL_IsMainThread())SDL_PumpEvents();SDL_Delay(50);
     }
     if(window){SDL_RaiseWindow(window);SDL_SetWindowMouseGrab(window,grabbed);SDL_SetWindowRelativeMouseMode(window,relative);}
+    if(accepted)active_mode=PC_ONLINE_ARCADE;
     return accepted;
 }
 int pc_online_self_test(void){
