@@ -12,7 +12,7 @@ Native Online link/mode checks: `tests/graphics/test_quit_menu.py` and native
 `--test`/`--online-self-test`. Clang Story fixtures select the Windows guest
 adapter but use the real host trap; hexadecimal additions need token boundaries.
 
-Game 0.4.1: use one clean pushed revision for both publishers; installer,
+Game 0.4.2: use one clean pushed revision for both publishers; installer,
 preservation and portable Online checks remain required.
 
 Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh-weapon-clicks-434).

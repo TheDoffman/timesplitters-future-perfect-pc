@@ -1,5 +1,19 @@
 ## System Link activation from normal launches (2026-11-01)
 
+User reports the Windows-host/Mac-guest test fixed after aligning identities.
+Manifest comparison matched 1,330 of 1,331 inputs; the Windows ignored runtime
+had extra unshared kernel bridge self-wait edits. A pristine snapshot plus the
+complete ordered patch stack reproduced the Mac bridge hash exactly. Preserved
+the Windows edits in ignored recovery evidence, restored that canonical runtime,
+and completed the supported Windows Build (exit 0). Both manifests then matched
+`a397d7776a44070fe03d0e207c20d45ebdb4b709611947991f0cfceda0043b0b`.
+This user-reported physical test is separate from the automated loopback checks
+below; it is not evidence of a completed match or wider Mac runtime validation.
+
+Preparing Stable v0.4.2 at the user's request. It includes this hotfix and the
+changes already merged on main since v0.4.1. Publication remains pending until
+the normal release build/test/package/installer checks and upload complete.
+
 Branch `fix-system-link-activation`, main base `4f80b5e5`; publication pending.
 The installed v0.4.1 session had no PC-NET initialization messages. The original
 US System Link row callback 1A2700 tail-calls browser 1A0A60 directly on event 8;
