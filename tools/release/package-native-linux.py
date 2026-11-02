@@ -129,7 +129,7 @@ def main():
         if digest(ROOT/name)!=sha:parser.error('Runtime source changed; rebuild: '+name)
     if not all(native['capabilities'].get(k) for k in ('movie_decode','settings_dialog','debug_dialog')):parser.error('Build the complete desktop/media runtime first')
     name='TimeSplitters-Future-Perfect-PC-'+args.version+'-linux-x64';stage=args.output.resolve()/name
-    if stage.exists() or stage.with_suffix('.zip').exists():parser.error('Use a new output directory; existing packages are preserved')
+    if stage.exists() or stage.with_name(stage.name+'.zip').exists():parser.error('Use a new output directory; existing packages are preserved')
     stage.mkdir(parents=True);game=copy(executable,stage,'Bin/futureperfect_recomp');game.chmod(0o755)
     if digest(args.launcher/'TimeSplitters.Launcher')!=json.loads((args.launcher/'Support/Launcher/manifest.json').read_text())['files']['TimeSplitters.Launcher']:parser.error('Launcher differs from its manifest')
     for source in args.launcher.rglob('*'):

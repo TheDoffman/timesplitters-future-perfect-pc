@@ -170,6 +170,11 @@ static gboolean refresh_debug(gpointer data){
 }
 static void debug_logs(GtkButton *b,gpointer data){(void)b;pc_debug_open_logs(data);}
 static void debug_clear(GtkButton *b,gpointer data){(void)b;(void)data;pc_debug_clear();}
+static gboolean debug_test_response(gpointer data){
+    LinuxDebug *e=data;
+    for(unsigned i=0;i<PC_DEBUG_OPTION_COUNT;i++)if(e->checks[i])gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(e->checks[i]),!checked(e->checks[i]));
+    gtk_dialog_response(GTK_DIALOG(e->dialog),dialog_test==2?GTK_RESPONSE_CANCEL:GTK_RESPONSE_ACCEPT);return G_SOURCE_REMOVE;
+}
 void pc_debug_show(HWND owner){
     if(!gtk_ready())return;tsfp_native_settings_release_input(game_window);tsfp_native_crash_inhibit(1);
     LinuxDebug e={0};e.dialog=dialog("Debug & Performance");GtkWidget *body=gtk_dialog_get_content_area(GTK_DIALOG(e.dialog));
@@ -184,6 +189,7 @@ void pc_debug_show(HWND owner){
     gtk_container_add(GTK_CONTAINER(buttons),logs);gtk_container_add(GTK_CONTAINER(buttons),clear);gtk_box_pack_start(GTK_BOX(body),buttons,FALSE,FALSE,8);
     g_signal_connect(logs,"clicked",G_CALLBACK(debug_logs),owner);g_signal_connect(clear,"clicked",G_CALLBACK(debug_clear),NULL);
     refresh_debug(&e);guint timer=g_timeout_add(500,refresh_debug,&e);gtk_widget_show_all(e.dialog);
+    if(dialog_test)g_timeout_add(30,debug_test_response,&e);
     while(gtk_dialog_run(GTK_DIALOG(e.dialog))==GTK_RESPONSE_ACCEPT){
         PcDebugOptions next=original;for(unsigned i=0;i<PC_DEBUG_OPTION_COUNT;i++)if(e.checks[i])pc_debug_option_set(&next,i,checked(e.checks[i]));
         char error[512];if(!pc_debug_config_save(&next,error,sizeof error)){alert(e.dialog,error);continue;}pc_debug_set(&next);break;
@@ -202,11 +208,16 @@ int tsfp_native_settings_test(void){
 }
 int tsfp_native_debug_test(void){
     if(!getenv("RECOMP_INPUT_CONFIG")||!gtk_ready())return 1;
-    PcDebugOptions old,read,next;char error[512];pc_debug_config_read(&old);next=old;
-    for(unsigned i=0;i<PC_DEBUG_OPTION_COUNT;i++)if(pc_debug_option_available(i,0))pc_debug_option_set(&next,i,!pc_debug_option_value(&old,i));
-    int ok=pc_debug_config_save(&next,error,sizeof error);pc_debug_config_read(&read);
-    for(unsigned i=0;i<PC_DEBUG_OPTION_COUNT;i++)ok&=pc_debug_option_value(&read,i)==pc_debug_option_value(&next,i);
-    ok&=pc_debug_config_save(&old,error,sizeof error);fprintf(stderr,"%s: shared debug definitions, persistence and unsupported-value retention\n",ok?"PASS":"FAIL");return ok?0:1;
+    PcDebugOptions old,read;char error[512];pc_debug_config_read(&old);pc_debug_set(&old);
+    dialog_test=2;pc_debug_show(NULL);pc_debug_config_read(&read);int ok=1;
+    for(unsigned i=0;i<PC_DEBUG_OPTION_COUNT;i++)ok&=pc_debug_option_value(&read,i)==pc_debug_option_value(&old,i);
+    dialog_test=3;pc_debug_show(NULL);pc_debug_config_read(&read);dialog_test=0;
+    for(unsigned i=0;i<PC_DEBUG_OPTION_COUNT;i++){
+        int expected=pc_debug_option_value(&old,i);if(pc_debug_option_available(i,0))expected=!expected;
+        ok&=pc_debug_option_value(&read,i)==expected;
+    }
+    ok&=pc_debug_config_save(&old,error,sizeof error);pc_debug_set(&old);
+    fprintf(stderr,"%s: real GTK debug Save/Cancel, shared definitions and unsupported-value retention\n",ok?"PASS":"FAIL");return ok?0:1;
 }
 int tsfp_native_capture_test(void){return 77;}
 int tsfp_native_graphics_settings_test(SDL_Window *window){
