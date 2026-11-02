@@ -1966,9 +1966,9 @@
     {
       "name": "2514-video-restart-handoff.patch",
       "path": "patches/graphics/rendering/2514-video-restart-handoff.patch",
-      "sha256": "35eab3a337deed7705786c6c0e7e0e40cd3e744d8985f18ff6106637207ca3d1",
+      "sha256": "e36a2d6f082999317fdcafef985426b95f52a567ab566001bd55f842b2318155",
       "targets": [
-        "titles/futureperfect/src/main.c\r"
+        "titles/futureperfect/src/main.c"
       ]
     },
     {
