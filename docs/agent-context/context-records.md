@@ -1,6 +1,6 @@
 # Original context records and caller-cleaned handlers
 
-Stage0253 in progress after81f3808d; full guest context/SEH replacement is NOT
+Stage0253 committed asa0d4fd9a; full guest context/SEH replacement is NOT
 complete. [Flag-stack contracts](stack-flags.md) remain the preceding stage.
 The new codec and callback convention are prerequisites, not a dispatcher.
 RtlCaptureContext265 still has its inherited zeroing stub; raise302/unwind312
@@ -134,3 +134,5 @@ No production behavior or negative assertion is removed. Windows2739 andMac2644
 other native cases passed; Windows patch upgrades passed, Mac upgrades cancelled,
 and transition/PR gates failed with the native result. New-head CI remains
 required. The original context/cdecl tests themselves passed in both native jobs.
+
+Next prerequisite: [native execution checkpoints](context-execution.md).

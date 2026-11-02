@@ -38173,3 +38173,23 @@ Other native cases: Windows2739pass/Mac2644pass; Windows upgrades passed, Mac
 upgrades cancelled, transition/PR gates inherited failure. No production change;
 existing0001c438 Windows build/Story evidence remains current for committed code.
 New-head CI pending; live context/SEH and full replacement remain unfinished.
+
+Continuation checkpoint prerequisite (2026-11-02, PR465): original
+src/runtime/guest_context_execution.c/.h now has live native checkpoints,
+validated guest PC/state admission, deepest-first per-root ledger cleanup and
+explicit yield/return outcomes. A jump or context transfer to the stop PC cannot
+fake a completed return. Tests reproduced the ledger and false-completion bugs
+before repair;72 focused tests pass26.73s, including7 compiled wrong providers,
+400 threaded transfers and real Windows fiber transport. All26 protected files
+retain hashes/sizes/times. The provider is not selected by production CMake or
+called by the game; no new production gameplay result is claimed. Existing
+stage0253 build/Story evidence remains the latest game acceptance. There is no
+production Mac fiber adapter; portable native cases are now selected in both-host
+CI, but new-provider Mac results remain pending. See context-execution guide.
+Live architectural snapshots, instruction-boundary dispatch and actual guest
+raise/unwind remain open, as does full upstream removal/final independence audit.
+All114 repository-context/CI-scope/PR-gate tests pass4.12s; context map and
+staged whitespace checks pass. Exact90086818 CI is now fully green: all11 runtime
+41482780542 jobs, including both native hosts/upgrades/transitions and PR gate,
+completed success; standalone launcher41482780544 also completed success. This
+is acceptance of the preceding commit; the new prerequisite needs its own CI.
