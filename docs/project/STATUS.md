@@ -1,5 +1,9 @@
 ## Graphics settings cleanup (2026-11-02)
 
+PR #470 initial CI caught a CRLF-derived index digest/target for patch2495.
+The working patch is now LF before regenerating the shared index; its Git
+payload and rendering behavior are unchanged.
+
 Local `feature/graphics-settings-cleanup`, based on unmerged graphics-options
 `627b05bd`. Off/FXAA/SMAA share one staged selector; MSAA remains independent.
 Both interfaces put MSAA/cache under Advanced. Launcher console scale appears
