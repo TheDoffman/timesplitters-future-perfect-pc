@@ -1032,4 +1032,4 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [RTL](guest-stack-trace.md), [context](context-execution.md).
 
-GPU assertions stay on; POSIX restart mocks SDL.
+GPU asserts stay on; AO logs scene/pixel failures.

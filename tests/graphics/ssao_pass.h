@@ -36,7 +36,12 @@ static void test_ssao_pass(RhiView *restore_target)
             unsigned dark=0;
             for(unsigned i=0;i<hw*hh;i++) {
                 CHECK(pixels[i*2]>=0&&pixels[i*2]<=1);
-                if(scene!=1&&scene!=4)CHECK(fabsf(pixels[i*2]-1)<.0001f);
+                if(scene!=1&&scene!=4) {
+                    if(!(fabsf(pixels[i*2]-1)<.0001f))
+                        fprintf(stderr,"AO mismatch: shape=%u scene=%u pixel=%u/%u visibility=%.9g depth=%.9g\n",
+                            shape,scene,i,hw*hh,pixels[i*2],pixels[i*2+1]);
+                    CHECK(fabsf(pixels[i*2]-1)<.0001f);
+                }
                 if(pixels[i*2]<.995f)dark++;
                 if(scene==2)CHECK(pixels[i*2+1]==0);
                 else CHECK(pixels[i*2+1]>(scene==4?1.84f:scene==3?1.99f:9.49f) && pixels[i*2+1]<10.01f);
