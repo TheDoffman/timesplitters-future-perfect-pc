@@ -27,6 +27,7 @@ def main():
     parser.add_argument('--install-sdk', action='store_true')
     parser.add_argument('--output', type=Path, default=ROOT / 'build/linux-launcher')
     parser.add_argument('--artwork-dir', type=Path, default=ROOT / 'private/launcher-art')
+    parser.add_argument('--require-artwork', action='store_true')
     parser.add_argument('--test', action='store_true')
     parser.add_argument('--package', action='store_true')
     args = parser.parse_args()
@@ -49,6 +50,10 @@ def main():
                DOTNET_SKIP_FIRST_TIME_EXPERIENCE='1')
     if subprocess.check_output([str(sdk), '--version'], env=env, text=True).strip() != pin['version']:
         raise SystemExit('Use the SDK pinned in config/build/linux-launcher-sdk.json.')
+    if args.require_artwork:
+        for name in ('launcher-banner.png', 'launcher-logo.png', 'launcher-backdrop.png'):
+            if not (args.artwork_dir / name).is_file():
+                raise SystemExit('Required artwork missing: ' + name)
     output = args.output.resolve()
     if output == ROOT or ROOT in output.parents and not output.is_relative_to(ROOT / 'build'):
         raise SystemExit('Use a dedicated build output directory.')
@@ -89,6 +94,7 @@ def main():
     # the verified SDK and locked package graph.
     for name in ('LICENSE.txt', 'ThirdPartyNotices.txt'):
         shutil.copyfile(sdk.parent / name, licenses / ('dotnet-' + name))
+    shutil.copyfile(ROOT / 'LICENSES/Avalonia.txt', licenses / 'Avalonia.txt')
     assets = json.loads((output / 'obj/project.assets.json').read_text())
     for name, metadata in assets.get('libraries', {}).items():
         for base in assets.get('packageFolders', {}):
@@ -118,6 +124,8 @@ def main():
                 zip.write(package / name, name)
         checksum = digest(archive)
         archive.with_suffix('.zip.sha256').write_text(f'{checksum}  {archive.name}\n')
+        if args.test:
+            subprocess.run([str(binary), '--verify-package', str(archive), version], check=True, cwd=ROOT, env=env)
         (output / 'launcher-update-linux-x64.json').write_text(json.dumps({
             'schema': 1, 'version': version, 'asset_name': archive.name,
             'size': archive.stat().st_size, 'sha256': checksum}, indent=2) + '\n')

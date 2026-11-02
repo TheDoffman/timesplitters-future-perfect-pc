@@ -28,7 +28,7 @@ namespace TimeSplitters.Launcher
     public static class Ui
     {
 #if MACOS || LINUX
-        public static FontFamily Monospace { get { return new FontFamily("Menlo"); } }
+        public static FontFamily Monospace { get { return new FontFamily(OperatingSystem.IsLinux()?"DejaVu Sans Mono":"Menlo"); } }
         public static Brush Brush(string value) { return Avalonia.Media.Brush.Parse(value); }
         public static void Freeze(SolidColorBrush brush) { }
         public static void Theme(Control view) { view.Styles.Add((Styles)AvaloniaXamlLoader.Load(new Uri("avares://TimeSplitters.Launcher/PageTheme.axaml"))); }

@@ -51,8 +51,8 @@ namespace TimeSplitters.Launcher
         public static bool LauncherResource(string name) { return name.StartsWith("Support/Launcher/Licenses/",StringComparison.Ordinal) && name.EndsWith(".txt",StringComparison.Ordinal); }
         public static string SessionLog(string tag) { return "logs/native-play.err"; }
         public static bool Checkout(string root) { return File.Exists(Path.Combine(root,"tools/build/build-native-linux.py")); }
-        public static string GamePath(string root) { return Checkout(root)?"build/linux/futureperfect_recomp":GameBinary; }
-        public static string ManifestPath(string root) { return Checkout(root)?"build/linux/BUILD.json":"BUILD.json"; }
+        public static string GamePath(string root) { return Checkout(root)?"build/linux/game/futureperfect_recomp":GameBinary; }
+        public static string ManifestPath(string root) { return Checkout(root)?"build/linux/game/BUILD.json":"BUILD.json"; }
 #else
         public const string HostName = "macOS ARM64", LockFile = ".launcher/mac.lock";
         public const string AssetSuffix = "macos-arm64";

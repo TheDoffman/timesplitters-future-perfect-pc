@@ -9,6 +9,9 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Themes.Fluent;
 using Avalonia.Styling;
+#if LINUX
+[assembly: System.Runtime.Versioning.SupportedOSPlatform("linux")]
+#endif
 #if MACOS
 [assembly: System.Runtime.Versioning.SupportedOSPlatform("macos12.0")]
 #endif
@@ -31,6 +34,9 @@ namespace TimeSplitters.Launcher
                 return LinuxTests.Run();
 #else
                 return NativeTests.Run();
+#endif
+#if LINUX
+            if(args.Length==3 && args[0]=="--verify-package")return LinuxTests.VerifyPackage(args[1],args[2]);
 #endif
 #if MACOS
             if(args.Length==3 && args[0]=="--verify-package")return NativeTests.VerifyPackage(args[1],args[2]);

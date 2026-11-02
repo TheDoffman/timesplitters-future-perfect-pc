@@ -65,7 +65,7 @@ class FakeGitHub:
             self.assets = [a for a in self.assets if a['id'] != int(path.rsplit('/', 1)[-1])]
             return None
         if method == 'PATCH':
-            assert len(self.assets) == 10, 'Never publish a partial release.'
+            assert len(self.assets) == 15, 'Never publish a partial release.'
             self.release.update(data)
             return self.release
         if path.endswith('/dispatches'):
@@ -120,6 +120,10 @@ class LauncherReleaseTests(unittest.TestCase):
                      'TimeSplitters Launcher.app/Contents/MacOS/TimeSplitters.Launcher': b'native',
                      'TimeSplitters Launcher.app/Contents/_CodeSignature/CodeResources': b'seal',
                      'TimeSplitters Launcher.app/Contents/Resources/Licenses/Avalonia.txt': b'license'})
+        if platform == 'linux-x64':
+            files = {'TimeSplitters.Launcher': b'linux',
+                     'Support/Launcher/application.json': b'{}',
+                     'Support/Launcher/Licenses/Avalonia.txt': b'license'}
         if not sealed:
             files.pop("TimeSplitters Launcher.app/Contents/_CodeSignature/CodeResources", None)
         if extra:
@@ -145,7 +149,7 @@ class LauncherReleaseTests(unittest.TestCase):
             self.package(platform)
             release.stamp(self.directory, self.plan, platform)
 
-    def test_complete_release_publishes_only_after_all_ten_uploads(self):
+    def test_complete_release_publishes_only_after_all_platform_uploads(self):
         self.both()
         url = release.publish(self.directory, self.plan, self.api)
         self.assertTrue(url.endswith('/launcher-v1.2.19'))
@@ -157,7 +161,9 @@ class LauncherReleaseTests(unittest.TestCase):
             self.assertIn('/releases/download/launcher-v1.2.19/TimeSplitters-Launcher-v1.2.19-'+platform+'.zip)',
                           self.api.release['body'])
         self.assertEqual(sorted(a['name'] for a in self.api.assets if a['name'].endswith('.zip')),
-                         ['TimeSplitters-Launcher-macos-arm64.zip',
+                         ['TimeSplitters-Launcher-linux-x64.zip',
+                          'TimeSplitters-Launcher-macos-arm64.zip',
+                          'TimeSplitters-Launcher-v1.2.19-linux-x64.zip',
                           'TimeSplitters-Launcher-v1.2.19-macos-arm64.zip',
                           'TimeSplitters-Launcher-v1.2.19-windows-x64.zip',
                           'TimeSplitters-Launcher-windows-x64.zip'])
@@ -252,7 +258,7 @@ class LauncherReleaseTests(unittest.TestCase):
             alias.with_suffix('.zip.sha256').write_text('old checksum')
             (self.directory/f'TimeSplitters-Launcher-v1.2.18-{platform}.zip').write_bytes(b'old package')
         release.publish(self.directory, self.plan, self.api)
-        self.assertEqual(len(self.api.assets), 10)
+        self.assertEqual(len(self.api.assets), 15)
         self.assertFalse(any('v1.2.18' in a['name'] for a in self.api.assets))
         assets = {a['name']: a for a in self.api.assets}
         for platform in release.PLATFORMS:
@@ -336,7 +342,7 @@ class LauncherReleaseTests(unittest.TestCase):
         self.api.fail_upload = None
         release.publish(self.directory, self.plan, self.api)
         self.assertFalse(self.api.release['draft'])
-        self.assertEqual(len(self.api.assets), 10)
+        self.assertEqual(len(self.api.assets), 15)
         self.assertEqual(sum(c[0] == 'POST' and c[1].endswith('/releases') for c in self.api.calls), 1)
 
     def test_failed_alias_upload_keeps_release_draft_until_retry(self):
@@ -349,7 +355,7 @@ class LauncherReleaseTests(unittest.TestCase):
         self.api.fail_upload = None
         release.publish(self.directory, self.plan, self.api)
         self.assertFalse(self.api.release['draft'])
-        self.assertEqual(len(self.api.assets), 10)
+        self.assertEqual(len(self.api.assets), 15)
 
     def test_digest_mismatch_keeps_draft_then_retry_repairs_owned_assets(self):
         self.both()
@@ -381,7 +387,7 @@ class LauncherReleaseTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'unrelated assets'):
             release.publish(self.directory, self.plan, self.api)
         self.assertTrue(all(c[0] == 'GET' for c in self.api.calls))
-        self.assertEqual(len(self.api.assets), 11)
+        self.assertEqual(len(self.api.assets), 16)
 
     def test_missing_published_asset_cannot_be_replaced(self):
         self.both()
@@ -402,7 +408,7 @@ class LauncherReleaseTests(unittest.TestCase):
         self.api.fail_upload = None
         release.publish(self.directory, self.plan, self.api)
         self.assertFalse(self.api.release['draft'])
-        self.assertEqual(len(self.api.assets), 10)
+        self.assertEqual(len(self.api.assets), 15)
 
     def test_existing_unowned_release_or_wrong_tag_is_not_modified(self):
         self.both()
@@ -484,7 +490,7 @@ class LauncherReleaseTests(unittest.TestCase):
         self.assertNotIn('secrets.GITHUB_TOKEN', build)
         self.assertIn('needs: build', publish)
         shared = (ROOT/'.github/workflows/launcher-build.yml').read_text()
-        self.assertIn('needs: [windows, mac]', shared)
+        self.assertIn('needs: [windows, mac, linux]', shared)
         self.assertNotIn(': write', shared)
         self.assertIn("github.event_name == 'push' || github.event_name == 'workflow_dispatch'", publish)
         self.assertIn('cancel-in-progress: false', workflow)
