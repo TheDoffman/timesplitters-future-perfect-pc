@@ -6,7 +6,7 @@
  
 -#if defined(_WIN32)
 -#include <windows.h>
-+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
++#if defined(_WIN32) || ((defined(__linux__) || defined(__APPLE__)) && defined(TSFP_RHI_RENDERER))
 +#include "platform/xbox_winnt.h"
  
  #include "audio_output.h"

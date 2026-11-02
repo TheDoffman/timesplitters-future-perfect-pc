@@ -29,6 +29,9 @@ static void sleep_ms(DWORD ms) { assert(ms==1);sleeps++;host_counter+=host_frequ
 #define Sleep sleep_ms
 #endif
 #define TSFP_PC_CONTROLS 1
+#ifndef _WIN32
+#define TSFP_RHI_RENDERER 1
+#endif
 #include "hle/hle_xmv_play.c"
 
 static char host_path[2048];

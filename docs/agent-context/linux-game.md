@@ -286,3 +286,7 @@ currently available through dropdowns; capture-to-bind self-test remains skip77.
 Linux CI compiles the actual GTK adapter against pinned SDL and system GTK headers
 with implicit API declarations fatal, after runtime preparation; original movie
 fixtures also run there when local movie data is available.
+
+POSIX movie playback is enabled only with TSFP_RHI_RENDERER, matching its video
+library link. Legacy Mac GL keeps its prior movie stub; shared native Vulkan
+hosts compile the player. This avoids introducing RHI symbols into legacy GL.

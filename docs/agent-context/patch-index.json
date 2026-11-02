@@ -3096,7 +3096,7 @@
     {
       "name": "2412-native-desktop-media.patch",
       "path": "patches/platform/2412-native-desktop-media.patch",
-      "sha256": "9bf26c031afefbfef57018749b3bc80b6af3cdae768b867c7d0164f579d30352",
+      "sha256": "fa6e49690b0956f5faea0fb07efbe179ad9ca727e3595c7e4312f893b0e9ec66",
       "targets": [
         "src/hle/CMakeLists.txt",
         "src/hle/hle_xmv_play.c",
