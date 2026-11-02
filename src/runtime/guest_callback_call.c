@@ -62,7 +62,7 @@ int tsfp_guest_callback_prepare(const tsfp_guest_callback_ops *ops,uint32_t rout
     candidate.entry=entry;candidate.frame=frame;candidate.address=address;
     candidate.bytes=bytes;candidate.count=count;*out=candidate;return 1;
 }
-int tsfp_guest_callback_invoke(tsfp_guest_callback_plan *prepared,int (*admit)(void *),void *context,uint32_t *result) {
+static int invoke(tsfp_guest_callback_plan *prepared,int (*admit)(void *),void *context,uint32_t *result,int caller_cleanup) {
     callback_state saved;tsfp_guest_entry_t entry;unsigned char *frame;
     uint32_t address,value,words[4];unsigned i,count;int balanced;
     if(!prepared)return 0;
@@ -75,9 +75,18 @@ int tsfp_guest_callback_invoke(tsfp_guest_callback_plan *prepared,int (*admit)(v
     memcpy(words,prepared->words,sizeof(words));capture(&saved);put(frame,0);
     for(i=0;i<count;++i)put(frame+4+4*i,words[i]);
     g_esp=address;g_seh_ebp=address;entry();
-    value=g_eax;balanced=g_esp==saved.esp;restore(&saved);
+    value=g_eax;balanced=g_esp==saved.esp-(caller_cleanup?4*count:0);restore(&saved);
     if(balanced && result)*result=value;
     return balanced;
+}
+int tsfp_guest_callback_invoke(tsfp_guest_callback_plan *prepared,int (*admit)(void *),void *context,uint32_t *result) {
+    return invoke(prepared,admit,context,result,0);
+}
+int tsfp_guest_callback_cdecl(const tsfp_guest_callback_ops *ops,uint32_t routine,
+    const uint32_t *arguments,unsigned count,uint32_t *result) {
+    tsfp_guest_callback_plan prepared;
+    return tsfp_guest_callback_prepare(ops,routine,arguments,count,&prepared) &&
+        invoke(&prepared,NULL,NULL,result,1);
 }
 int tsfp_guest_callback_stdcall(const tsfp_guest_callback_ops *ops,uint32_t routine,
     const uint32_t *arguments,unsigned count,uint32_t *result) {

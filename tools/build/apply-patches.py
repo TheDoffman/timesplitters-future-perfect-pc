@@ -172,6 +172,10 @@ def patch_records(paths):
     if status_header:
         paths.remove(status_header)
         paths.append(status_header)
+    context_records = by_name.get('0253-original-context-records.patch')
+    if context_records:
+        paths.remove(context_records)
+        paths.append(context_records)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "6147995bb7601bce77ac5132b939b368e2284ff5a55616f1235f9aa7ec1d3525",
+  "loaderSha256": "8c2a3d64c5dfec4c3f668297e102841651b1f61ad0a63835ef96e3e8e7ef5951",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3081,6 +3081,14 @@
       "sha256": "6766d9c7609e217ae36c108988de65f84d9843a0fe969d241493c28dda475007",
       "targets": [
         "templates/runtime/recomp_types.h"
+      ]
+    },
+    {
+      "name": "0253-original-context-records.patch",
+      "path": "patches/compiler/0253-original-context-records.patch",
+      "sha256": "c100faf4246139ba9144851469fc377ff8ffbf80bf88d4694a11602877354e51",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
       ]
     }
   ]

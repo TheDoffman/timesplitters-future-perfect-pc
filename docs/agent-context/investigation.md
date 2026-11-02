@@ -395,3 +395,6 @@ See [status tracking](guest-status-flags.md) for contracts and pending acceptanc
 
 Stage0249 extends the original effective tail to54 and checks canonical installed
 header text; [shift/rotate status](guest-shift-flags.md) records CI repair and tests.
+
+The exact loader-tail assertion now includes0253 context records after0249;
+keep all55 entries ordered. [Context/handler contracts](context-records.md).
