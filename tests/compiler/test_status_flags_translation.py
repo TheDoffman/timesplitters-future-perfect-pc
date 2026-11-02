@@ -28,6 +28,7 @@ def execute(tmp_path,raw,initial,check,callee=None,support=""):
 #define RECOMP_GENERATED_CODE 1
 #include "recomp_types.h"
 #include <stdio.h>
+#include <stdlib.h>
 ptrdiff_t g_xbox_mem_offset;
 static union { uint64_t alignment; unsigned char bytes[8192]; } storage;
 #define ram storage.bytes

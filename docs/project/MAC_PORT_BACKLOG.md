@@ -8910,3 +8910,11 @@ pause/resume pass with33f5d2c6 bytes.26 protected files unchanged. No duplicated
 host adapter; portable contracts selected both hosts, real ring3 oracle Windows
 only. Previousf49e53b8 both workflows fully green. New-head CI/native Mac title
 acceptance pending. Full control/context/exception/IRQ and wider replacement open.
+
+Flag-stack CI repair (2026-11-02, after81f3808d, PR465): Mac native job
+125351318125 failed six test compilations because the abort fixture lacked
+stdlib.h. Both-host patch upgrades and Windows native passed; transition gates
+correctly propagated the native failure. The test preamble now includes the
+standard declaration. Local flag-stack/production translation checks pass;
+production runtime bytes are unchanged by this repair. Exact-head CI and native
+Mac title gameplay are separate; CI revalidation remains pending.

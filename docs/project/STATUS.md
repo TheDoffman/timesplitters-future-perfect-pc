@@ -38097,3 +38097,11 @@ flags-{build,game-check}.json, final game/controller logs, accepted report/
 provenance and captures. Previousf49e53b8 CI runtime41463409584 and launcher
 41463409585 both fully succeeded; new-head CI pending. Full flags/control,
 actual context/exception/IRQ and broader replacement remain unfinished.
+
+Flag-stack CI repair (2026-11-02, after81f3808d, PR465): Mac native job
+125351318125 failed six test compilations because the abort fixture lacked
+stdlib.h. Both-host patch upgrades and Windows native passed; transition gates
+correctly propagated the native failure. The test preamble now includes the
+standard declaration. Local flag-stack/production translation checks pass;
+production runtime bytes are unchanged by this repair. Exact-head CI and native
+Mac title gameplay are separate; CI revalidation remains pending.

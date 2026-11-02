@@ -72,3 +72,10 @@ site counts do not establish dynamic coverage; helper and production fixtures
 provide direct semantics checks. Evidence logs/control-flags-build.json,
 game-check.json, final game/controller logs, accepted report/provenance and
 captures. New-head CI pending; whole replacement remains unfinished.
+
+Exact81f3808d CI runtime41467203151 failed: Mac native compilation of six
+stack-consumer fixtures lacked stdlib.h for abort; Windows native and both-host
+patch upgrades passed. Both transition gates propagated the native failure,
+not a second patch-migration defect. Launcher41467203152 passed. Stage0253 adds
+the standard header in the generated test preamble; no production flag logic
+is changed. New-head Mac acceptance remains required.
