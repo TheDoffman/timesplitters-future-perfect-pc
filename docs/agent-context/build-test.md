@@ -4,7 +4,7 @@ Auto-sizing fixtures isolate the SDL policy; real restart handoff is tested sepa
 ownership, pointer-region boundaries, keyboard cycling and staged-value retention.
 The Windows ping-expiry fixture waits past GetTickCount64's quantization boundary.
 [Kill feed](../development/arcade-kill-feed.md)
-# Build, run and validation map
+# Build/tests ([SMAA](smaa.md))
 
 [LAN tests](system-link.md).
 

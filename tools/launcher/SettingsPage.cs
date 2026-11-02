@@ -49,7 +49,7 @@ namespace TimeSplitters.Launcher
         string savedDraft;
         readonly Slider fov;
         readonly TextBox sensitivity, width, height, discordId;
-        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled, enhancedTextures, ambientOcclusion, shaderCache;
+        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled, enhancedTextures, ambientOcclusion, shaderCache, smaa;
         readonly ComboBox device, resolution, aspect, scale, filtering, frameRate, languagePack, msaa, edgeSmoothing;
         readonly TextBlock performanceAdvice;
         readonly Button[,] bindingButtons = new Button[GameSettings.Actions.Length,GameSettings.BindingSlots];
@@ -240,6 +240,8 @@ namespace TimeSplitters.Launcher
             Field(qualityRight,"Edge smoothing",edgeSmoothing);
             ambientOcclusion=Check("Ambient occlusion",model.AmbientOcclusion!=0);ambientOcclusion.Name="AmbientOcclusion";
             Ui.Tip(ambientOcclusion,"Half-resolution contact shadows. Can be combined with MSAA and FXAA.");qualityLeft.Children.Add(ambientOcclusion);
+            smaa=Check("SMAA anti-aliasing",model.Smaa);smaa.Name="SmaaAntiAliasing";qualityLeft.Children.Add(smaa);
+            Ui.Tip(smaa,"SMAA 1x High edge smoothing. Requires a compatible game build; legacy OpenGL retains the setting without applying it.");
             shaderCache=Check("Shader cache",model.ShaderCache);shaderCache.Name="ShaderCache";
             Ui.Tip(shaderCache,"Reuses compiled shaders between launches to reduce compilation stalls.");qualityRight.Children.Add(shaderCache);
             vrr=Check("Variable refresh rate",model.Vrr);vrr.Name="VariableRefreshRate";Ui.Tip(vrr,"Allows unsynchronized presentation in fullscreen. Enable VRR in your monitor and driver too; a fixed-refresh display may tear.");fps=Check("FPS / Ping",model.ShowCounter);fps.Name="FpsPingCounter";Ui.Tip(fps,"Shows FPS and, during online play, network ping in milliseconds. Also available in the in-game Video Options.");
@@ -287,14 +289,14 @@ namespace TimeSplitters.Launcher
             if(!model.CanSelectLanguagePack)language.Children.Add(Text("Update the game to enable language-pack selection. Your saved choice is kept.",12));
             tabs.Items.Add(new TabItem {Header="Audio & language",Content=Scroll(audioPanel)});
             foreach(var entry in new[]{sensitivity,width,height,discordId})Ui.TextChanged(entry,RefreshSaveState);
-            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,discordEnabled,enhancedTextures,enhancedAudio,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
+            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,discordEnabled,enhancedTextures,enhancedAudio,ambientOcclusion,shaderCache,smaa})Ui.CheckedChanged(check,RefreshSaveState);
             foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack,msaa,edgeSmoothing})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
             Ui.ValueChanged(fov,RefreshSaveState);
         }
         string Draft()
         {
             return Json.Encode(new object[]{sensitivity.Text,width.Text,height.Text,discordId.Text,
-                enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,ambientOcclusion.IsChecked,shaderCache.IsChecked,
+                enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,ambientOcclusion.IsChecked,shaderCache.IsChecked,smaa.IsChecked,
                 skipSplashes.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
                 device.SelectedIndex,scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,
                 (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
@@ -448,6 +450,7 @@ namespace TimeSplitters.Launcher
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
                 model.DiscordEnabled=discordEnabled.IsChecked==true;model.DiscordApplicationId=discordId.Text.Trim();
                 model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem);
+                model.Smaa=smaa.IsChecked==true;
                 model.Save();UpdateTextureDetails();savedDraft=Draft();RefreshSaveState();
                 if(Saved!=null)Saved();
             }

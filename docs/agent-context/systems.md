@@ -1,6 +1,6 @@
 [Video/AO](../development/graphics-options.md).
 [exFAT](host-storage.md)
-# Subsystem entry points
+# [Systems](video-options.md)
 
 PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
