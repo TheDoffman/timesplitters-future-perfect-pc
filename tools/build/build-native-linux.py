@@ -33,7 +33,7 @@ def main():
     if platform.system()!='Linux' or platform.machine().lower() not in ('x86_64','amd64'):
         parser.error('Requires Linux x64 and a Linux Python environment')
     if sys.version_info<(3,12):parser.error('Use Python 3.12+ with the shared requirements')
-    if not 1<=args.jobs<=8:parser.error('--jobs must be 1–8')
+    if not 1<=args.jobs<=8:parser.error('--jobs must be 1â€“8')
     pins=(ROOT/'tsfp.ps1').read_text()
     revision=re.search(r"\$revision = '([a-f0-9]{40})'",pins)[1]
     expected=re.search(r"\$expectedHash = '([A-F0-9]{64})'",pins)[1].lower()
@@ -88,8 +88,8 @@ def main():
         source_sha256={p.relative_to(ROOT).as_posix():sha256(p) for p in sorted(sources)},
         configure_command=[str(a) for a in command],
         runtime_libraries=subprocess.check_output(['ldd',str(exe)],text=True),
-        capabilities=dict(shared_input=True,shared_audio=True,settings_dialog=False,debug_dialog=False,
-                          source_online_adapter=True,movie_decode=False))
+        capabilities=dict(shared_input=True,shared_audio=True,settings_dialog=True,debug_dialog=True,
+                          source_online_adapter=True,movie_decode=True))
     (build/'BUILD.json').write_text(json.dumps(manifest,indent=2)+'\n')
     if args.test:run(build/'tsfp_native_mmio_test')
     print('Linux game built:',exe)

@@ -37,15 +37,22 @@ int pc_online_connect(void){return pc_online_connect_mode(PC_ONLINE_ARCADE);}
 int pc_online_connect_mode(PcOnlineMode mode){
     if(mode!=PC_ONLINE_ARCADE)return 0; /* Same native Story transport gap as Mac. */
     pc_online_disconnect();char folder[4096],pid[32],script[4096];
-    snprintf(folder,sizeof folder,"%s/private/online",TSFP_ONLINE_SOURCE_ROOT);
-    snprintf(script,sizeof script,"%s/tools/network/online.py",TSFP_ONLINE_SOURCE_ROOT);
-    if((mkdir(folder,0700)&&errno!=EEXIST)||access(TSFP_ONLINE_PYTHON,X_OK)||access(script,R_OK))return 0;
+    const char *python=getenv("TSFP_ONLINE_PYTHON"),*entry=getenv("TSFP_ONLINE_SCRIPT");
+    const char *handshakes=getenv("TSFP_ONLINE_HANDSHAKES"),*manifest=getenv("TSFP_ONLINE_MANIFEST");
+    if(!python||!*python)python=TSFP_ONLINE_PYTHON;
+    int n=handshakes&&*handshakes?snprintf(folder,sizeof folder,"%s",handshakes):
+        snprintf(folder,sizeof folder,"%s/private/online",TSFP_ONLINE_SOURCE_ROOT);
+    int m=entry&&*entry?snprintf(script,sizeof script,"%s",entry):
+        snprintf(script,sizeof script,"%s/tools/network/online.py",TSFP_ONLINE_SOURCE_ROOT);
+    if(n<0||n>=(int)sizeof folder||m<0||m>=(int)sizeof script)return 0;
+    if((mkdir(folder,0700)&&errno!=EEXIST)||access(python,X_OK)||access(script,R_OK))return 0;
+    if(!manifest||!*manifest)manifest=TSFP_ONLINE_MANIFEST;
     snprintf(pid,sizeof pid,"%d",getpid());
     if(snprintf(ready_path,sizeof ready_path,"%s/%s.ready",folder,pid)>=(int)sizeof ready_path||
        snprintf(stop_path,sizeof stop_path,"%s/%s.stop",folder,pid)>=(int)sizeof stop_path)return 0;
     unlink(ready_path);unlink(stop_path);
-    setenv("TSFP_ONLINE_HANDSHAKES",folder,1);setenv("TSFP_ONLINE_MANIFEST",TSFP_ONLINE_MANIFEST,1);
-    char *args[]={TSFP_ONLINE_PYTHON,"-B",script,"--pid",pid,"--result",ready_path,"--compatibility",TSFP_NETWORK_COMPATIBILITY_HEX,NULL};
+    setenv("TSFP_ONLINE_HANDSHAKES",folder,1);setenv("TSFP_ONLINE_MANIFEST",manifest,1);
+    char *args[]={(char *)python,"-B",script,"--pid",pid,"--result",ready_path,"--compatibility",TSFP_NETWORK_COMPATIBILITY_HEX,NULL};
     if(posix_spawn(&companion,args[0],NULL,NULL,args,environ)){companion=0;return 0;}
     SDL_Window *window=SDL_GetKeyboardFocus();
     bool relative=window?SDL_GetWindowRelativeMouseMode(window):false;

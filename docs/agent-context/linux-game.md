@@ -251,3 +251,16 @@ Linux runtime CI now runs the same shared timing/vehicle/demo/wind, mouse/reload
 HUD/FOV/cutscene/menu and audio contracts after applying the runtime. Asset-free
 cases execute on CI; original-routine cases additionally require the local US XBE.
 Windows/macOS native jobs retain their existing suites and the shared GPU fixture.
+
+## Desktop and standalone delivery
+
+Final additive patch2412 enables the existing XMV player on POSIX through the
+host clock/path/audio adapters and requires Linux FFmpeg headers via pkg-config.
+GTK3 is the Linux desktop widget adapter: settings_linux.c stages PcSettings,
+uses shared conflict/validation/atomic persistence, and applies the shared display
+model. Debug controls enumerate pc_debug_options.def, preserve unsupported
+capabilities and poll bounded shared snapshots. Windows/Cocoa retain their UIs.
+Linux Online accepts explicit interpreter/script/manifest/handshake environment
+paths for relocated packages; checkout defaults remain. Never package developer
+venvs, game assets or personal settings. Native UI/runtime validation is separate
+from source/portable fixture checks.

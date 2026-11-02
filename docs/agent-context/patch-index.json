@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "8b150bef2bc48126966a644cfbdb0aa627ee194215b63736c48ef89014511e20",
+  "loaderSha256": "a5aeaa846ee56a1874f4da08a1f0c40d00822c6a25e64f4eac083bf56db7a84b",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3091,6 +3091,17 @@
       "sha256": "fd3c026447f51058d1722df5aabaa50743481557805e6fc3655852925e5fea74",
       "targets": [
         "src/d3d/rhi_vulkan.c"
+      ]
+    },
+    {
+      "name": "2412-native-desktop-media.patch",
+      "path": "patches/platform/2412-native-desktop-media.patch",
+      "sha256": "9bf26c031afefbfef57018749b3bc80b6af3cdae768b867c7d0164f579d30352",
+      "targets": [
+        "src/hle/CMakeLists.txt",
+        "src/hle/hle_xmv_play.c",
+        "src/input/CMakeLists.txt",
+        "src/video/CMakeLists.txt"
       ]
     }
   ]

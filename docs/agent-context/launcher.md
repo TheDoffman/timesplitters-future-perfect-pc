@@ -599,3 +599,8 @@ Absent capabilities remain false for older native builds. The portable Mac
 package suite exercises the real manifest/archive writer for true/false/missing
 flags, with only host binary tools replaced by fixtures. Native loading still
 requires Mac execution.
+
+Linux packaged NativeHost verifies all listed Bin hashes before play and sets
+relocatable FFmpeg/Online interpreter/script/manifest/handshake paths. Checkout
+routing and Mac GPU/runtime selection remain unchanged. Runtime dependency
+packaging is separate from the launcher self-contained build.

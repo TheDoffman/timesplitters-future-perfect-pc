@@ -139,7 +139,7 @@ def patch_records(paths):
         paths.append(online)
     # Linux extends the final grouped SDL/RHI adapters. Keep every historical
     # Windows/Mac patch intact and replay this after their source-layout work.
-    for name in ('2401-linux-vulkan-foundation.patch', '2402-linux-native-game.patch', '2403-linux-native-crypto.patch', '2404-linux-hle-renderer.patch', '2405-linux-runtime-link.patch', '2406-native-vblank-alias.patch', '2407-vulkan12-compatibility.patch', '2408-vulkan-descriptor-capacity.patch', '2409-linux-late-frame-pacing.patch', '2411-vulkan-upload-efficiency.patch'):
+    for name in ('2401-linux-vulkan-foundation.patch', '2402-linux-native-game.patch', '2403-linux-native-crypto.patch', '2404-linux-hle-renderer.patch', '2405-linux-runtime-link.patch', '2406-native-vblank-alias.patch', '2407-vulkan12-compatibility.patch', '2408-vulkan-descriptor-capacity.patch', '2409-linux-late-frame-pacing.patch', '2411-vulkan-upload-efficiency.patch', '2412-native-desktop-media.patch'):
         linux = by_name.get(name)
         if linux:
             paths.remove(linux)

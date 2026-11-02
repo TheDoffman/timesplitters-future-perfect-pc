@@ -80,6 +80,13 @@ namespace TimeSplitters.Launcher
         {
 #if LINUX
             // Linux uses the system loader and hardware ICD; never select a Mac driver.
+            if(!LauncherPlatform.Checkout(root)){
+                Core.Require(manifest.TryGetValue("files",out var value)&&value is Dictionary<string,object>,"Packaged runtime hashes are missing.");
+                var hashes=(Dictionary<string,object>)value;
+                foreach(var name in hashes.Keys.Where(n=>n.StartsWith("Bin/",StringComparison.Ordinal))){
+                    var file=Core.PathIn(root,name);Core.Require(File.Exists(file)&&Core.Hash(file)==Json.String(hashes,name),"Packaged runtime is missing or changed: "+name);
+                }
+            }
             return new Dictionary<string,object>();
 #else
             if(!LauncherPlatform.Checkout(root))return PortableGpuEnvironment(root,manifest);
@@ -146,6 +153,16 @@ namespace TimeSplitters.Launcher
             info.EnvironmentVariables["XDG_CACHE_HOME"]=Core.PathIn(root,settings+"/xdg-cache");
             info.EnvironmentVariables["TSFP_ONLINE_SETTINGS"]=Core.PathIn(root,LauncherPlatform.Checkout(root)?"config/pc-online.json":"Settings/pc-online.json");
             info.EnvironmentVariables.Remove("RECOMP_FFMPEG_DIR");
+#if LINUX
+            if(!LauncherPlatform.Checkout(root)){
+                string bin=Core.PathIn(root,"Bin");
+                info.EnvironmentVariables["RECOMP_FFMPEG_DIR"]=bin;
+                info.EnvironmentVariables["TSFP_ONLINE_PYTHON"]=Core.PathIn(root,"Support/Python/bin/python3");
+                info.EnvironmentVariables["TSFP_ONLINE_SCRIPT"]=Core.PathIn(root,"Support/Online/online.py");
+                info.EnvironmentVariables["TSFP_ONLINE_MANIFEST"]=Core.PathIn(root,"Support/Online/network-identity.json");
+                info.EnvironmentVariables["TSFP_ONLINE_HANDSHAKES"]=Core.PathIn(root,".launcher/online");
+            }
+#endif
             info.EnvironmentVariables["RECOMP_LOG_FILE"]=Core.PathIn(root,"logs/native-play.err");
         }
         public static void Prepare(string root)
