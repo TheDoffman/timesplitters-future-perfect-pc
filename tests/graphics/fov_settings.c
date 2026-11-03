@@ -34,7 +34,7 @@ int pc_counter_set_enabled(int value) { if(!counter_save_ok)return 0;counter_ena
 static int smaa_preference,smaa_save_ok=1;
 int pc_smaa_enabled(void){return smaa_preference;}
 int pc_smaa_set_enabled(int enabled){if(!smaa_save_ok)return 0;smaa_preference=enabled;return 1;}
-static unsigned built_rows, built_row_count, built_ids[32],separators;
+static unsigned built_rows, built_row_count, built_ids[32],separators,separator_positions[2];
 static char runtime_path[MAX_PATH];
 static int requested_rate=-1;
 int recomp_config_request_native_rate(int rate) { requested_rate=rate;return 1; }
@@ -206,7 +206,11 @@ static void original_highlight(void) { highlight_fallback++;g_esp+=4; }
 void sub_00069640(void) { g_eax=0x400000;g_esp+=4; }
 void sub_001CDAE0(void) { g_eax=1;g_esp+=4; }
 void host_SetTwoDPlacement(int placement,uint32_t tag) { (void)placement;(void)tag; }
-void sub_00079710(void) { separators++;g_esp+=4; }
+void sub_00079710(void) {
+    CHECK(WORD_AT(g_esp+4)==0 && separators<2 && built_row_count<32);
+    separator_positions[separators++]=built_row_count;
+    built_ids[built_row_count++]=UINT32_MAX;g_esp+=4;
+}
 STUB(sub_00074910)
 void sub_001A0A60(void) {
     CHECK(getenv("TSFP_NETWORK") && !strcmp(getenv("TSFP_NETWORK"),"1"));
@@ -331,7 +335,7 @@ int main(int argc,char **argv)
     reload("TSFP_DISPLAY_V1 1280 720\n");
     tsfp_texture_set_4k(0);
     call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
-    CHECK(page==DISPLAY_HOME && built_row_count==8 && separators==0 && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
+    CHECK(page==DISPLAY_HOME && built_row_count==10 && separators==2 && separator_positions[0]==1 && separator_positions[1]==8 && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
     page=DISPLAY_GRAPHICS;built_rows=built_row_count=separators=0;labels();
     CHECK(!graphics_rows[0] && !graphics_rows[4] && texture_row && post_aa_row && !counter_row && !aspect_row);
     WORD_AT(post_aa_row+0xc8)=1;read_choices();
@@ -352,7 +356,7 @@ int main(int argc,char **argv)
     graphics_save_ok=1;refresh(DISPLAY_ADVANCED,0);
     CHECK(WORD_AT(graphics_rows[0]+0xc8)==1);
     call(SELECT_CB,3,0);CHECK(page==DISPLAY_RESTART && graphics_options.msaa==2);
-    call(SELECT_CB,0,0);CHECK(page==DISPLAY_ADVANCED && !display_dirty());
+    call(SELECT_CB,0,0);CHECK(page==DISPLAY_ADVANCED && !display_dirty() && WORD_AT(current_menu+0x18c)==100);
     call(TICK_CB,100,0);CHECK(page==DISPLAY_ADVANCED); /* Later does not nag. */
     /* Reverting a choice before Apply leaves no dirty state or prompt. */
     WORD_AT(graphics_rows[0]+0xc8)=0;call(TICK_CB,100,0);

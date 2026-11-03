@@ -1,3 +1,9 @@
+Video Options silver dividers (2026-11-03): shared menu builder uses the original
+native skin separator below tabs and above Apply in all four sections. Native
+layout supplies non-selectable lines and pointer/keyboard row placement; return
+focus accounts for the header line. Windows visual review and shared fixtures
+cover this follow-up; native Mac visual acceptance remains pending.
+
 Apply-only restart prompts and compact settings font (2026-11-02): shared Video
 Options stages MSAA/supersampling until Apply, preserves drafts across tabs,
 discards on leaving and rolls back restart values if a later save fails. Owned

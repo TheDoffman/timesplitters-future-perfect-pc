@@ -1,3 +1,17 @@
+## Video Options silver separators (2026-11-03, local development)
+
+Follow-up to9077fc02 on fix/restart-on-apply. Shared menu construction inserts
+original skin style0 dividers below the tabs and above Apply in Display,
+Graphics, View & HUD and Advanced. They are non-selectable; restart dialog
+return focus accounts for the added header row. Confirmation dialogs retain
+their original layout. Eight content rows now sit between native separators.
+Windows x64 Release Build/built-ins pass; shared UI/FOV15pass2Macskips,
+including separator positions and Later returning to MSAA. Main menu Graphics
+and Advanced plus all four paused sections were visually reviewed at1280x720:
+matching silver lines appear in both positions and all content fits.
+Native Mac visual validation remains pending. Personal saves/settings preserved;
+this follow-up is local and has not been pushed or merged.
+
 ## Apply-only restarts and compact Video Options (2026-11-03, local development)
 
 Branch fix/restart-on-apply based on c32c6f5e. MSAA/supersampling remain drafts

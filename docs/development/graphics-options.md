@@ -91,7 +91,7 @@ than shifting by half a pixel; 100% is an exact copy and 200% averages each 2x2
 footprint. Legacy GL uses the same scene-size policy and its existing linear
 framebuffer blit; native rendering and fractional-scale quality remain unverified.
 New game/launcher preferences remain restart-required on every host.
-Video Options uses 1.2 native row spacing, a 78%-width panel and eight-row section heights;
+Video Options uses 1.2 native row spacing, a 78%-width panel and eight content rows per section, plus native separators;
 Unused spacer rows are reduced equally across tabs so Apply stays above the footer.
 Its compact "Supersampling (restart)" label also fits the narrower pause panel.
 
@@ -419,3 +419,12 @@ width/height fitting, no enlargement and invalid measurements.
 Settings row spacing and panel width shrink together with typography. Native
 row bounds drive both focus painting and pointer selection; the smaller visible
 rows retain matching mouse hit areas in main/pause and all tabs.
+
+### Video Options section dividers
+
+Display, Graphics, View & HUD and Advanced use the original guest skin's silver
+separator (`79710`, style0) immediately below the tab strip and immediately
+above Apply. The native separator is non-selectable and participates in menu
+layout, matching other menus on both front-end and pause. Confirmation/restart
+dialogs retain their existing layout. Returning from Later/back or a failed
+restart selects the first Advanced control after the header divider.

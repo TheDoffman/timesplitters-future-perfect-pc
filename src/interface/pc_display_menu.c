@@ -1063,8 +1063,11 @@ static void labels(void)
 {
     resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=post_aa_row=apply_row=0;
     video_tab_bounds_valid=0;
-    if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART)
+    extern void sub_00079710(void);
+    if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
         guest_call(sub_00079D60_gen,6,text_at(MODE_TEXT_BASE+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT+3," "),VIDEO_TABS_ID,0x400u,0u,SELECT_CB,VIDEO_TABS_DRAW);
+        guest_call(sub_00079710,1,0u); /* Original skin's silver divider. */
+    }
     if(page==DISPLAY_HOME) {
         aspect_row=guest_call(sub_00079D60_gen,6,text_at(7,"Aspect ratio"),0u,0u,0u,0u,0u);
         guest_call(sub_0007D480,2,0x8400u,0u);
@@ -1126,6 +1129,7 @@ static void labels(void)
                 (uint32_t)(110+i),4u,0u,0u,0u);
         /* Both graphics sections already own a status/help row. */
         if(*status && page!=DISPLAY_GRAPHICS && page!=DISPLAY_ADVANCED)small_note(21,status);
+        guest_call(sub_00079710,1,0u);
         apply_row=guest_call(sub_00079D60_gen,6,text_at(4,"Apply"),3u,0u,0u,SELECT_CB,0u);
         update_apply();
     }
@@ -1198,7 +1202,7 @@ static void revert(void)
 static void back_callback(void)
 {
     GuestRegisters r;save_registers(&r);
-    if(page==DISPLAY_RESTART)refresh(DISPLAY_ADVANCED,1);
+    if(page==DISPLAY_RESTART)refresh(DISPLAY_ADVANCED,2);
     else if(page==DISPLAY_ADVANCED) {read_choices();refresh(DISPLAY_GRAPHICS,0);}
     else if(page==DISPLAY_CONFIRM)revert();else {read_choices();leave();}
     restore_registers(&r);g_esp+=4;
@@ -1263,10 +1267,10 @@ static void select_callback(void)
     int selected=(int)WORD_AT(menu+0x18c);save_registers(&r);
     fprintf(stderr,"[PC-DISPLAY-MENU] Selected page %d row %d\n",page,selected);
     if(page==DISPLAY_RESTART) {
-        if(selected==0)refresh(DISPLAY_ADVANCED,1);
+        if(selected==0)refresh(DISPLAY_ADVANCED,2);
         else if(selected==1 && !pc_game_restart()) {
             snprintf(status,sizeof status,"Could not restart. Please relaunch manually.");
-            refresh(DISPLAY_ADVANCED,1);
+            refresh(DISPLAY_ADVANCED,2);
         }
     } else if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART && selected==VIDEO_TABS_ID) {
         int tab=video_clicked_tab();
