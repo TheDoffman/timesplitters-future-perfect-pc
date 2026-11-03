@@ -1101,7 +1101,6 @@ static void labels(void)
         guest_call(sub_000717D0,1,text_at(22,"FXAA"));
         guest_call(sub_000717D0,1,text_at(84,"SMAA"));
         guest_call(sub_00075430,2,post_aa_row,staged_aa);
-        guest_call(sub_00079D60_gen,6,text_at(85,"Advanced"),108u,0u,0u,SELECT_CB,0u);
     } else if(page==DISPLAY_VIEW) {
         fov_label();
         guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(8),2u,0x400u,0u,0u,FOV_DRAW_CB);
@@ -1137,6 +1136,8 @@ static void labels(void)
 #endif
         } else if(*status)small_note(21,status);
         guest_call(sub_00079710,1,0u);
+        if(page==DISPLAY_GRAPHICS)
+            guest_call(sub_00079D60_gen,6,text_at(85,"Advanced"),108u,0u,0u,SELECT_CB,0u);
         apply_row=guest_call(sub_00079D60_gen,6,text_at(4,"Apply"),3u,0u,0u,SELECT_CB,0u);
         update_apply();
     }
@@ -1281,8 +1282,8 @@ static void select_callback(void)
         }
     } else if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART && selected==VIDEO_TABS_ID) {
         int tab=video_clicked_tab();
-        if(tab<0)tab=(video_tab_index()+1)%3;
-        read_choices();refresh(video_tab_page(tab),0);
+        if(tab==-1)tab=(video_tab_index()+1)%3;
+        if(tab>=0 && video_tab_page(tab)!=page) {read_choices();refresh(video_tab_page(tab),0);}
     }
     else if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART && selected==3) {
         read_choices();update_apply();

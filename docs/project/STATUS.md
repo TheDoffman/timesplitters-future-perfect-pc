@@ -1,3 +1,19 @@
+## Repeated Video tab clicks and Advanced placement (2026-11-03, local)
+
+Based onc38afb2d, fix/restart-on-apply. Active-tab clicks no longer rebuild the
+page or invalidate tab bounds. Mouse Confirm retains its identity after edge
+consumption; missing mouse hits leave the page unchanged rather than advancing
+to the next tab. Keyboard/controller Confirm still cycles. Graphics now puts
+Advanced below the lower silver line immediately above Apply in main and pause.
+Windows x64 shared UI4pass2nativeMacskips cover repeated Display clicks, stale
+bounds staying on Graphics, consumed-edge identity and footer row order.
+Release Build/built-ins pass. Initial isolated single-click baseline worked;
+final captures confirm three clicks per tab on the main menu and two per tab
+in pause retain the chosen page. Main/pause Graphics show Advanced between
+the lower separator and Apply. Tests used a640x480 client with16:9 letterboxing,
+1920x1080 front-end targets and1280x720 paused targets.
+Native Mac visual review remains pending; personal saves/settings untouched.
+
 ## Conditional restart labels (2026-11-03, local development)
 
 Based on173db75e, fix/restart-on-apply. Removed the general MSAA/supersampling

@@ -338,7 +338,7 @@ int main(int argc,char **argv)
     CHECK(page==DISPLAY_HOME && built_row_count==10 && separators==2 && separator_positions[0]==1 && separator_positions[1]==8 && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
     page=DISPLAY_GRAPHICS;built_rows=built_row_count=separators=0;labels();
     CHECK(!graphics_rows[0] && !graphics_rows[4] && texture_row && post_aa_row && !counter_row && !aspect_row);
-    CHECK(built_ids[2]==102 && built_ids[3]==103 && built_ids[4]==7 && built_ids[5]==11 && built_ids[6]==108 && built_ids[7]==81);
+    CHECK(built_ids[2]==102 && built_ids[3]==103 && built_ids[4]==7 && built_ids[5]==11 && built_ids[6]==81 && built_ids[7]==UINT32_MAX && built_ids[8]==108 && built_ids[9]==3);
     WORD_AT(post_aa_row+0xc8)=1;read_choices();
     CHECK(staged_aa==1 && !graphics_options.edge_smoothing);
     call(SELECT_CB,3,0);CHECK(graphics_options.edge_smoothing==1 && !pc_smaa_enabled());
@@ -399,6 +399,21 @@ int main(int argc,char **argv)
     video_tab_bounds[0]=20;video_tab_bounds[1]=30;video_tab_bounds[2]=320;video_tab_bounds[3]=54;
     CHECK(video_tab_hit(20,30)==0 && video_tab_hit(120,40)==1 && video_tab_hit(319,53)==2);
     CHECK(video_tab_hit(320,40)==-1 && video_tab_hit(21,54)==-1);
+    { /* A mouse Confirm chooses its tab, even after its edge was consumed. */
+        MenuMouseDispatch click={0};click.menu=current_menu;click.sampled=1;
+        click.pointer=(PcMenuPointer){397.5f,90.f,1920,1080,1,1,0,0};
+        menu_mouse_dispatch=&click;slider_capture_enabled=1;
+        WORD_AT(0x004E8CF0u)=640;WORD_AT(0x004E8CF4u)=480;
+        CHECK(video_clicked_tab()==0);
+        page=DISPLAY_GRAPHICS;call(SELECT_CB,VIDEO_TABS_ID,0);CHECK(page==DISPLAY_HOME);
+        video_tab_bounds_valid=1;
+        call(SELECT_CB,VIDEO_TABS_ID,0);CHECK(page==DISPLAY_HOME && video_tab_bounds_valid);
+        call(SELECT_CB,VIDEO_TABS_ID,0);CHECK(page==DISPLAY_HOME && video_tab_bounds_valid);
+        /* Stale/no hit is a no-op, never Graphics -> View & HUD. */
+        page=DISPLAY_GRAPHICS;video_tab_bounds_valid=0;
+        call(SELECT_CB,VIDEO_TABS_ID,0);CHECK(page==DISPLAY_GRAPHICS);
+        menu_mouse_dispatch=0;slider_capture_enabled=0;
+    }
     staged_fov=67;texture_choice=1;refresh(DISPLAY_VIEW,0);refresh(DISPLAY_GRAPHICS,0);
     CHECK(staged_fov==67 && texture_choice==1 && WORD_AT(texture_row+0xc8)==1);
     staged_fov=previous_fov;texture_choice=applied_texture;refresh(DISPLAY_GRAPHICS,0);

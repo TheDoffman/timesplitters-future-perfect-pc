@@ -79,9 +79,14 @@ static void video_tabs_draw(void)
 }
 static int video_clicked_tab(void)
 {
-    if(!menu_mouse_dispatch || menu_mouse_dispatch->menu!=current_menu || !(menu_mouse_dispatch->actions&2))return -1;
+    /* Only keyboard/controller Confirm may cycle. A mouse Confirm with a
+     * missing hit must never masquerade as a request for the next tab. */
+    if(!menu_mouse_dispatch || menu_mouse_dispatch->menu!=current_menu)return -1;
+    if(!(menu_mouse_dispatch->actions&2) && !menu_mouse_dispatch->pointer.left &&
+       !(menu_mouse_dispatch->injected&0x80u))return -1;
     float x,y,gw=(float)WORD_AT(0x004E8CF0u),gh=(float)WORD_AT(0x004E8CF4u);unsigned sw,sh;
     d3d8_display_output_shape((unsigned)gw,(unsigned)gh,&sw,&sh);
-    if(!sh || !pc_menu_mouse_position(menu_mouse_dispatch->pointer,(float)sw/sh,gw,gh,&x,&y))return -1;
-    return video_tab_hit(x,y);
+    if(!sh || !pc_menu_mouse_position(menu_mouse_dispatch->pointer,(float)sw/sh,gw,gh,&x,&y))return -2;
+    int hit=video_tab_hit(x,y);
+    return hit<0?-2:hit;
 }

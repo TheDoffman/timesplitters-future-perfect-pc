@@ -1,4 +1,4 @@
-[Hints](../development/graphics-options.md).
+[Clicks](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)
 

@@ -439,3 +439,12 @@ The restart dialog still appears only after Apply. The reserved status row sits 
 notice leaves no gap between Ambient occlusion and Texture style. It continues
 to display save/cache errors without moving the compact layout. Advanced omits
 the redundant Back to Graphics button; Back and the Graphics tab still return.
+
+### Tab click identity and Advanced footer
+
+Mouse Confirm selects the tab under the pointer; an unrecognized mouse hit
+leaves the page in place and never uses keyboard/controller cycling. Clicks on
+the active page do not rebuild it or invalidate its bounds. Consumed click edges
+still retain pointer/injected Confirm identity. Keyboard/controller Confirm and
+left/right navigation keep their cycling behavior. Graphics places Advanced
+below the lower silver separator, immediately before Apply, on main and pause.

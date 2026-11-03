@@ -1,3 +1,8 @@
+Video tab repeated clicks and Advanced footer (2026-11-03, local follow-up):
+common callbacks keep active tabs stable and distinguish unmatched mouse clicks
+from keyboard cycling. Graphics puts Advanced below the lower divider and above
+Apply. No host adaptation is needed; native Mac visual acceptance is pending.
+
 Conditional restart labels (2026-11-03, local follow-up): common Video Options
 removes the general notice and conditionally marks MSAA/Supersampling beside
 their names. Status is below all controls; Advanced uses Back/tab navigation
