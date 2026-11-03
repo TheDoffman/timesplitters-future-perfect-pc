@@ -1,3 +1,7 @@
+PR472 initial CI caught a stale loader-order expectation after the HUD patches
+moved behind SMAA. The fixture now includes both final HUD patches; selection
+and repository-context checks are rerun before retrying CI.
+
 ## Supersampling integration with current main (2026-11-02)
 
 Merged de28f5fc into feature/supersampling and resolved menu/launcher conflicts
