@@ -74,11 +74,14 @@ void pc_controls_text_mode(uint32_t owner) {(void)owner;CHECK(0);}
 unsigned pc_controls_text_event(uint32_t owner) {(void)owner;CHECK(0);return 0;}
 void pc_controls_menu_mode(int active) { (void)active; CHECK(0); }
 PcMenuPointer pc_controls_menu_pointer(void) { CHECK(0); return (PcMenuPointer){0}; }
-PcMenuPointer pc_controls_menu_hover_pointer(void) { CHECK(0); return (PcMenuPointer){0}; }
+static int tab_pointer_enabled;
+static PcMenuPointer tab_pointer;
+PcMenuPointer pc_controls_menu_hover_pointer(void) { CHECK(tab_pointer_enabled);return tab_pointer; }
 void d3d8_display_output_shape(unsigned w,unsigned h,unsigned *ow,unsigned *oh)
 { (void)w;(void)h;CHECK(slider_capture_enabled);*ow=1920;*oh=1080; }
 #define MOUSE_STUB(name) void name(void) { CHECK(0); }
-MOUSE_STUB(sub_00074760) MOUSE_STUB(sub_00076EF0) MOUSE_STUB(sub_00076510)
+void sub_00074760(void) {CHECK(tab_pointer_enabled);g_eax=1;g_esp+=4;}
+MOUSE_STUB(sub_00076EF0) MOUSE_STUB(sub_00076510)
 MOUSE_STUB(sub_002E6D40) MOUSE_STUB(sub_00079860)
 MOUSE_STUB(sub_002C4310)
 MOUSE_STUB(sub_001922D0)
@@ -434,6 +437,40 @@ int main(int argc,char **argv)
         page=DISPLAY_GRAPHICS;video_tab_bounds_valid=0;
         call(SELECT_CB,VIDEO_TABS_ID,0);CHECK(page==DISPLAY_GRAPHICS);
         menu_mouse_dispatch=0;slider_capture_enabled=0;
+    }
+    { /* Queue through native row gating; newest click wins, in both contexts. */
+        ULONGLONG old_clock=clock_ms;
+        uint32_t old_phase=WORD_AT(0x79094c),old_pause=WORD_AT(0x761c48);
+        WORD_AT(0x761c48)=0x410000;WORD_AT(0x410000)=1;
+        WORD_AT(current_menu+4)=storage;WORD_AT(current_menu+0x38)=0;
+        WORD_AT(0x4e8cf0)=640;WORD_AT(0x4e8cf4)=480;
+        tab_pointer_enabled=slider_capture_enabled=1;
+        for(int paused=0;paused<2;paused++) {
+            WORD_AT(0x79094c)=paused?1:101;
+            page=DISPLAY_GRAPHICS;video_tab_bounds_valid=1;
+            WORD_AT(current_menu+0x1b0)=1;video_pending_tab=-1;video_tab_left=1;
+            tab_pointer=(PcMenuPointer){397.5f,90,1920,1080,1,0,0,0};
+            CHECK(!menu_video_tabs_poll(current_menu));tab_pointer.left=1;
+            CHECK(menu_video_tabs_poll(current_menu) && video_pending_tab==0);
+            menu_video_tabs_flush();CHECK(page==DISPLAY_GRAPHICS && video_pending_tab==0);
+            tab_pointer.left=0;CHECK(!menu_video_tabs_poll(current_menu));
+            tab_pointer.x=847.5f;tab_pointer.left=1;
+            CHECK(menu_video_tabs_poll(current_menu) && video_pending_tab==2);
+            WORD_AT(current_menu+0x1b0)=3;menu_video_tabs_flush();
+            CHECK(page==DISPLAY_VIEW && video_pending_tab==-1);
+            CHECK(!menu_video_tabs_poll(current_menu)); /* Held click cannot repeat. */
+            tab_pointer.left=0;menu_video_tabs_poll(current_menu);
+            tab_pointer.x=397.5f;tab_pointer.left=1;CHECK(menu_video_tabs_poll(current_menu));
+            menu_video_tabs_flush();CHECK(page==DISPLAY_HOME);
+            tab_pointer.left=0;menu_video_tabs_poll(current_menu);
+            tab_pointer.x=622.5f;tab_pointer.left=1;CHECK(menu_video_tabs_poll(current_menu));
+            clock_ms+=1001;menu_video_tabs_flush();CHECK(page==DISPLAY_HOME && video_pending_tab==-1);
+        }
+        WORD_AT(0x79094c)=1;WORD_AT(0x410000)=0;
+        video_pending_tab=1;video_pending_menu=current_menu;video_pending_at=clock_ms;
+        menu_video_tabs_flush();CHECK(video_pending_tab==-1 && page==DISPLAY_HOME);
+        WORD_AT(0x79094c)=old_phase;WORD_AT(0x761c48)=old_pause;clock_ms=old_clock;
+        tab_pointer_enabled=slider_capture_enabled=0;
     }
     staged_fov=67;texture_choice=1;refresh(DISPLAY_VIEW,0);refresh(DISPLAY_GRAPHICS,0);
     CHECK(staged_fov==67 && texture_choice==1 && WORD_AT(texture_row+0xc8)==1);

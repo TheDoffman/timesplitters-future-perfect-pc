@@ -472,3 +472,15 @@ rebuilds instead of invalidating them until repaint. New Video sessions and
 confirmation/restart dialogs invalidate bounds; unrelated menus keep their own
 input handling. The callback fixture switches Display/Graphics/View before any
 intervening draw and checks that hit regions remain available.
+
+### Deferred direct mouse tabs
+
+Video tab clicks are sampled before the original row dispatcher, scoped to the
+owned Video callback table. They retain the latest target during native row
+transition/Confirm gating and rebuild only after the outermost dispatcher returns.
+A held click does not repeat; obsolete targets expire after one second and are
+cleared on leave, a new session or a confirmation/restart dialog. Normal rows,
+footer clicks and keyboard/controller navigation keep their original handling.
+The shared fixture queues two targets during a blocked transition in main/pause,
+then verifies the latest target, held-click rejection and expiry. The pointer
+adapter fixture verifies polling and a single flush outside nested dispatch.

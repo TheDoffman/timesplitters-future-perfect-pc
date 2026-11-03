@@ -1,3 +1,8 @@
+Direct Video tab targets (2026-11-03, local): shared mouse dispatch samples
+Video tab edges before native row gating and applies the latest target after
+the outer dispatcher returns. Hover pointers already exist on both hosts;
+no new OS adapter is needed. Native Mac visual acceptance remains pending.
+
 Apply-only AF/AO/cache (2026-11-03, local follow-up): shared Video Options
 stages all three across tabs and saves them only on Apply, without adding
 restart prompts. Shared main/pause logic needs no separate host adapter.

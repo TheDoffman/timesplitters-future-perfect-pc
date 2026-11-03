@@ -895,6 +895,8 @@ void pc_network_bots_menu(void (*original)(void))
 #endif
 }
 #include "pc_quit_menu.inc"
+static int menu_video_tabs_poll(uint32_t menu);
+static void menu_video_tabs_flush(void);
 #include "pc_menu_mouse_guest.inc"
 /* Identify this menu by its callback table, never the game phase alone. */
 static int video_font_menu(uint32_t menu)
@@ -1072,7 +1074,7 @@ static void labels(void)
 {
     resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=post_aa_row=apply_row=0;
     /* Section rebuilds keep the same tab strip; retain hits until repaint. */
-    if(page==DISPLAY_CONFIRM || page==DISPLAY_RESTART)video_tab_bounds_valid=0;
+    if(page==DISPLAY_CONFIRM || page==DISPLAY_RESTART) {video_tab_bounds_valid=0;video_pending_tab=-1;}
     extern void sub_00079710(void);
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
         guest_call(sub_00079D60_gen,6,text_at(MODE_TEXT_BASE+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT+3," "),VIDEO_TABS_ID,0x400u,0u,SELECT_CB,VIDEO_TABS_DRAW);
@@ -1204,6 +1206,7 @@ static void refresh(int next,int selected)
 }
 static void leave(void)
 {
+    video_pending_tab=-1;
     guest_call(sub_00079B70,2,parent_menu,previous_menu);
     fprintf(stderr,"[PC-DISPLAY-MENU] Returned to original menu\n");
 }
@@ -1394,7 +1397,7 @@ static void activate(void)
         all_mode_count=pc_display_modes(xbox_D3D8Window(),all_modes,PC_DISPLAY_MODE_CAPACITY);
         selected_aspect=pc_display_aspect(staged);if(selected_aspect<0)selected_aspect=0;filter_modes();
         parent_menu=WORD_AT(source+0x2c); previous_menu=WORD_AT(source+4);
-        page=0; apply_page=DISPLAY_HOME;deadline=0;video_tab_bounds_valid=0;
+        page=0; apply_page=DISPLAY_HOME;deadline=0;video_tab_bounds_valid=0;video_pending_tab=-1;video_tab_left=1;
         fprintf(stderr,"[PC-DISPLAY-MENU] Opened, %d resolutions\n",mode_count);
         guest_call(sub_00079B70,2,parent_menu,storage);
     }

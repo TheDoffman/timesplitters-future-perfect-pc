@@ -1,4 +1,4 @@
-[Draft tests](../development/graphics-options.md): HUD/SMAA order and texture-present fixtures.
+[Tab queue](../development/graphics-options.md): HUD/SMAA order and texture-present fixtures.
 Auto-sizing fixtures test SDL policy; restart handoff is separate.
 `tests/graphics/test_fov_settings.py` also exercises Video Options tabs, section
 ownership, pointer-region boundaries, keyboard cycling and staged-value retention.
