@@ -1,3 +1,7 @@
+Pause Advanced live review caught the supersampling restart suffix crowding
+its value. The label is now "Supersampling (restart)"; the restart help/prompt
+remains explicit. Final CI reruns on this layout correction.
+
 PR472 initial CI caught a stale loader-order expectation after the HUD patches
 moved behind SMAA. The fixture now includes both final HUD patches; selection
 and repository-context checks are rerun before retrying CI.

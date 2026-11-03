@@ -24,7 +24,7 @@ static void graphics_labels(void)
     memset(graphics_rows,0,sizeof graphics_rows);
     if(page==DISPLAY_ADVANCED) {
         graphics_rows[0]=graphics_choice(0,"MSAA (restart required)",msaa,4,sample);
-        graphics_rows[5]=graphics_choice(5,"Supersampling (restart required)",supersampling,4,options.supersampling);
+        graphics_rows[5]=graphics_choice(5,"Supersampling (restart)",supersampling,4,options.supersampling);
         graphics_rows[4]=graphics_choice(4,"Shader cache",toggle,2,options.shader_cache);
         guest_call(sub_00079D60_gen,6,text_at(82,"Clear shader cache"),106u,0u,0u,SELECT_CB,0u);
         guest_call(sub_00079D60_gen,6,text_at(83,"Back to Graphics"),107u,0u,0u,SELECT_CB,0u);

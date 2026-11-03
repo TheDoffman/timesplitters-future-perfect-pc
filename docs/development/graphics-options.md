@@ -93,6 +93,7 @@ framebuffer blit; native rendering and fractional-scale quality remain unverifie
 New game/launcher preferences remain restart-required on every host.
 Video Options retains the 1.6 native text/row scale and ten-row section heights;
 Advanced replaces one spacer with supersampling so Apply stays above the footer.
+Its compact "Supersampling (restart)" label also fits the narrower pause panel.
 
 Checks extend `test_graphics_options.py` (all wire-format/preset round trips,
 odd sizes, bounds/overflow), `test_graphics_resolve.py` (exact production GPU
