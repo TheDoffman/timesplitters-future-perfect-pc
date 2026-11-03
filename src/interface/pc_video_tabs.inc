@@ -4,6 +4,9 @@
 #define VIDEO_TABS_DRAW 0x1203fu
 static float video_tab_bounds[4];
 static int video_tab_bounds_valid;
+static int video_pending_tab=-1,video_tab_left=1;
+static uint32_t video_pending_menu;
+static ULONGLONG video_pending_at;
 static uint32_t video_tab_measure;
 static int video_tab_index(void)
 { return (page==DISPLAY_GRAPHICS || page==DISPLAY_ADVANCED)?1:page==DISPLAY_VIEW?2:0; }
@@ -89,4 +92,43 @@ static int video_clicked_tab(void)
     if(!sh || !pc_menu_mouse_position(menu_mouse_dispatch->pointer,(float)sw/sh,gw,gh,&x,&y))return -2;
     int hit=video_tab_hit(x,y);
     return hit<0?-2:hit;
+}
+
+/* Retain the latest mouse target through the guest's transition/Confirm
+ * cooldown. Rebuild only after the outer dispatcher releases its row pointers. */
+static int menu_video_tabs_poll(uint32_t menu)
+{
+    if(!video_font_menu(menu) || page==DISPLAY_CONFIRM || page==DISPLAY_RESTART ||
+       !menu_mouse_context())return 0;
+    PcMenuPointer pointer=pc_controls_menu_hover_pointer();
+    int pressed=pointer.valid && pointer.left && !video_tab_left;
+    video_tab_left=pointer.left;
+    if(!pressed)return 0;
+    float x,y,gw=(float)WORD_AT(0x004E8CF0u),gh=(float)WORD_AT(0x004E8CF4u);unsigned sw,sh;
+    d3d8_display_output_shape((unsigned)gw,(unsigned)gh,&sw,&sh);
+    if(!sh || !pc_menu_mouse_position(pointer,(float)sw/sh,gw,gh,&x,&y))return 0;
+    int hit=video_tab_hit(x,y);
+    if(hit<0)return 0;
+    video_pending_tab=hit;video_pending_menu=menu;video_pending_at=GetTickCount64();
+    /* Consume this click once; regular rows/footer keep their existing path. */
+    pc_menu_mouse_actions(&menu_mouse,menu,pointer,video_pending_at);
+    return 1;
+}
+static void read_choices(void);
+static void menu_video_tabs_flush(void)
+{
+    if(video_pending_tab<0)return;
+    if(!menu_mouse_context() || !video_font_menu(video_pending_menu) || page==DISPLAY_CONFIRM || page==DISPLAY_RESTART ||
+       GetTickCount64()-video_pending_at>1000) {video_pending_tab=-1;return;}
+    if(!guest_writable(video_pending_menu,0x1b4) || WORD_AT(video_pending_menu+0x38)!=0 ||
+       WORD_AT(video_pending_menu+0x1b0)!=3)return;
+    GuestRegisters r;save_registers(&r);
+    if(guest_call(sub_00074760,1,video_pending_menu)) {
+        int target=video_tab_page(video_pending_tab);video_pending_tab=-1;
+        if(target!=page) {
+            fprintf(stderr,"[PC-DISPLAY-MENU] Mouse tab %d -> %d\n",page,target);
+            read_choices();refresh(target,0);
+        }
+    }
+    restore_registers(&r);
 }

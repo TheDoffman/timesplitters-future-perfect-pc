@@ -74,11 +74,14 @@ void pc_controls_text_mode(uint32_t owner) {(void)owner;CHECK(0);}
 unsigned pc_controls_text_event(uint32_t owner) {(void)owner;CHECK(0);return 0;}
 void pc_controls_menu_mode(int active) { (void)active; CHECK(0); }
 PcMenuPointer pc_controls_menu_pointer(void) { CHECK(0); return (PcMenuPointer){0}; }
-PcMenuPointer pc_controls_menu_hover_pointer(void) { CHECK(0); return (PcMenuPointer){0}; }
+static int tab_pointer_enabled;
+static PcMenuPointer tab_pointer;
+PcMenuPointer pc_controls_menu_hover_pointer(void) { CHECK(tab_pointer_enabled);return tab_pointer; }
 void d3d8_display_output_shape(unsigned w,unsigned h,unsigned *ow,unsigned *oh)
 { (void)w;(void)h;CHECK(slider_capture_enabled);*ow=1920;*oh=1080; }
 #define MOUSE_STUB(name) void name(void) { CHECK(0); }
-MOUSE_STUB(sub_00074760) MOUSE_STUB(sub_00076EF0) MOUSE_STUB(sub_00076510)
+void sub_00074760(void) {CHECK(tab_pointer_enabled);g_eax=1;g_esp+=4;}
+MOUSE_STUB(sub_00076EF0) MOUSE_STUB(sub_00076510)
 MOUSE_STUB(sub_002E6D40) MOUSE_STUB(sub_00079860)
 MOUSE_STUB(sub_002C4310)
 MOUSE_STUB(sub_001922D0)
@@ -345,8 +348,18 @@ int main(int argc,char **argv)
     refresh(DISPLAY_GRAPHICS,0);WORD_AT(post_aa_row+0xc8)=0;call(SELECT_CB,3,0);
     refresh(DISPLAY_GRAPHICS,0);
     graphics_save_ok=0;WORD_AT(graphics_rows[2]+0xc8)=4;read_choices();
-    CHECK(graphics_options.anisotropy==1 && WORD_AT(graphics_rows[2]+0xc8)==0);
-    graphics_save_ok=1;WORD_AT(graphics_rows[2]+0xc8)=4;read_choices();CHECK(graphics_options.anisotropy==16);
+    CHECK(graphics_options.anisotropy==1 && staged_anisotropy==16 && display_dirty());
+    call(SELECT_CB,3,0);CHECK(page==DISPLAY_GRAPHICS && graphics_options.anisotropy==1 && staged_anisotropy==16 && display_dirty());
+    graphics_save_ok=1;call(SELECT_CB,3,0);CHECK(page==DISPLAY_GRAPHICS && graphics_options.anisotropy==16 && !display_dirty());
+    WORD_AT(graphics_rows[3]+0xc8)=1;read_choices();
+    CHECK(!graphics_options.ambient_occlusion && staged_ao && display_dirty());
+    refresh(DISPLAY_VIEW,0);refresh(DISPLAY_GRAPHICS,0);CHECK(WORD_AT(graphics_rows[3]+0xc8)==1);
+    call(SELECT_CB,3,0);CHECK(page==DISPLAY_GRAPHICS && graphics_options.ambient_occlusion && !display_dirty());
+    WORD_AT(graphics_rows[3]+0xc8)=0;WORD_AT(graphics_rows[2]+0xc8)=1;read_choices();
+    call(BACK_CB,0,0);call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);refresh(DISPLAY_GRAPHICS,0);
+    CHECK(staged_ao && staged_anisotropy==16 && graphics_options.ambient_occlusion && !display_dirty());
+    WORD_AT(graphics_rows[3]+0xc8)=0;read_choices();call(SELECT_CB,3,0);
+    CHECK(!graphics_options.ambient_occlusion && !display_dirty());
     call(SELECT_CB,108,0);CHECK(page==DISPLAY_ADVANCED && !post_aa_row && graphics_rows[0] && graphics_rows[4]);
     CHECK(!strcmp((char *)((uintptr_t)TEXT_ADDRESS(32)+g_xbox_mem_offset),"MSAA"));
     CHECK(!strcmp((char *)((uintptr_t)TEXT_ADDRESS(37)+g_xbox_mem_offset),"Supersampling"));
@@ -355,6 +368,9 @@ int main(int argc,char **argv)
     CHECK(strstr((char *)((uintptr_t)TEXT_ADDRESS(37)+g_xbox_mem_offset),"Requires restart"));
     staged_supersampling=0;graphics_restart_labels();
     CHECK(!strcmp((char *)((uintptr_t)TEXT_ADDRESS(37)+g_xbox_mem_offset),"Supersampling"));
+    WORD_AT(graphics_rows[4]+0xc8)=0;read_choices();
+    CHECK(graphics_options.shader_cache==1 && staged_cache==0 && display_dirty());
+    call(SELECT_CB,3,0);CHECK(page==DISPLAY_ADVANCED && graphics_options.shader_cache==0 && !display_dirty());
     /* Restart fields stay staged through edits/ticks/tabs until Apply. */
     WORD_AT(graphics_rows[0]+0xc8)=1;call(TICK_CB,100,0);
     CHECK(page==DISPLAY_ADVANCED && graphics_options.msaa==1 && staged_msaa==2);
@@ -379,7 +395,8 @@ int main(int argc,char **argv)
     call(TICK_CB,105,0);CHECK(page==DISPLAY_ADVANCED && graphics_options.msaa==2 && !graphics_options.supersampling);
     refresh(DISPLAY_GRAPHICS,0);CHECK(display_dirty());
     call(SELECT_CB,3,0);CHECK(page==DISPLAY_RESTART && graphics_options.msaa==1 && graphics_options.supersampling==2);
-    call(SELECT_CB,0,0);CHECK(page==DISPLAY_ADVANCED && WORD_AT(graphics_rows[5]+0xc8)==2 && !display_dirty());
+    call(SELECT_CB,0,0);CHECK(page==DISPLAY_GRAPHICS && staged_supersampling==2 && !display_dirty());
+    refresh(DISPLAY_ADVANCED,0);
     /* Leaving without Apply discards the uncommitted restart choice. */
     WORD_AT(graphics_rows[5]+0xc8)=3;read_choices();CHECK(staged_supersampling==3);
     call(BACK_CB,0,0);call(BACK_CB,0,0);
@@ -409,10 +426,51 @@ int main(int argc,char **argv)
         video_tab_bounds_valid=1;
         call(SELECT_CB,VIDEO_TABS_ID,0);CHECK(page==DISPLAY_HOME && video_tab_bounds_valid);
         call(SELECT_CB,VIDEO_TABS_ID,0);CHECK(page==DISPLAY_HOME && video_tab_bounds_valid);
+        /* Rapid different-tab clicks remain valid before another draw. */
+        click.pointer.x=622.5f;call(SELECT_CB,VIDEO_TABS_ID,0);
+        CHECK(page==DISPLAY_GRAPHICS && video_tab_bounds_valid);
+        click.pointer.x=847.5f;call(SELECT_CB,VIDEO_TABS_ID,0);
+        CHECK(page==DISPLAY_VIEW && video_tab_bounds_valid);
+        click.pointer.x=397.5f;call(SELECT_CB,VIDEO_TABS_ID,0);
+        CHECK(page==DISPLAY_HOME && video_tab_bounds_valid);
         /* Stale/no hit is a no-op, never Graphics -> View & HUD. */
         page=DISPLAY_GRAPHICS;video_tab_bounds_valid=0;
         call(SELECT_CB,VIDEO_TABS_ID,0);CHECK(page==DISPLAY_GRAPHICS);
         menu_mouse_dispatch=0;slider_capture_enabled=0;
+    }
+    { /* Queue through native row gating; newest click wins, in both contexts. */
+        ULONGLONG old_clock=clock_ms;
+        uint32_t old_phase=WORD_AT(0x79094c),old_pause=WORD_AT(0x761c48);
+        WORD_AT(0x761c48)=0x410000;WORD_AT(0x410000)=1;
+        WORD_AT(current_menu+4)=storage;WORD_AT(current_menu+0x38)=0;
+        WORD_AT(0x4e8cf0)=640;WORD_AT(0x4e8cf4)=480;
+        tab_pointer_enabled=slider_capture_enabled=1;
+        for(int paused=0;paused<2;paused++) {
+            WORD_AT(0x79094c)=paused?1:101;
+            page=DISPLAY_GRAPHICS;video_tab_bounds_valid=1;
+            WORD_AT(current_menu+0x1b0)=1;video_pending_tab=-1;video_tab_left=1;
+            tab_pointer=(PcMenuPointer){397.5f,90,1920,1080,1,0,0,0};
+            CHECK(!menu_video_tabs_poll(current_menu));tab_pointer.left=1;
+            CHECK(menu_video_tabs_poll(current_menu) && video_pending_tab==0);
+            menu_video_tabs_flush();CHECK(page==DISPLAY_GRAPHICS && video_pending_tab==0);
+            tab_pointer.left=0;CHECK(!menu_video_tabs_poll(current_menu));
+            tab_pointer.x=847.5f;tab_pointer.left=1;
+            CHECK(menu_video_tabs_poll(current_menu) && video_pending_tab==2);
+            WORD_AT(current_menu+0x1b0)=3;menu_video_tabs_flush();
+            CHECK(page==DISPLAY_VIEW && video_pending_tab==-1);
+            CHECK(!menu_video_tabs_poll(current_menu)); /* Held click cannot repeat. */
+            tab_pointer.left=0;menu_video_tabs_poll(current_menu);
+            tab_pointer.x=397.5f;tab_pointer.left=1;CHECK(menu_video_tabs_poll(current_menu));
+            menu_video_tabs_flush();CHECK(page==DISPLAY_HOME);
+            tab_pointer.left=0;menu_video_tabs_poll(current_menu);
+            tab_pointer.x=622.5f;tab_pointer.left=1;CHECK(menu_video_tabs_poll(current_menu));
+            clock_ms+=1001;menu_video_tabs_flush();CHECK(page==DISPLAY_HOME && video_pending_tab==-1);
+        }
+        WORD_AT(0x79094c)=1;WORD_AT(0x410000)=0;
+        video_pending_tab=1;video_pending_menu=current_menu;video_pending_at=clock_ms;
+        menu_video_tabs_flush();CHECK(video_pending_tab==-1 && page==DISPLAY_HOME);
+        WORD_AT(0x79094c)=old_phase;WORD_AT(0x761c48)=old_pause;clock_ms=old_clock;
+        tab_pointer_enabled=slider_capture_enabled=0;
     }
     staged_fov=67;texture_choice=1;refresh(DISPLAY_VIEW,0);refresh(DISPLAY_GRAPHICS,0);
     CHECK(staged_fov==67 && texture_choice==1 && WORD_AT(texture_row+0xc8)==1);
@@ -477,7 +535,7 @@ int main(int argc,char **argv)
     CHECK(!staged_aa && !display_dirty());
     WORD_AT(post_aa_row+0xc8)=2;call(TICK_CB,11,0);smaa_save_ok=0;
     call(SELECT_CB,3,0);CHECK(!pc_smaa_enabled() && display_dirty() && *status);
-    smaa_save_ok=1;call(SELECT_CB,3,0);CHECK(pc_smaa_enabled() && !display_dirty());
+    smaa_save_ok=1;call(SELECT_CB,3,0);CHECK(page==DISPLAY_GRAPHICS && pc_smaa_enabled() && !display_dirty());
     call(BACK_CB,0,0);call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
     refresh(DISPLAY_GRAPHICS,0);
     CHECK(staged_aa && applied_aa && WORD_AT(post_aa_row+0xc8)==2 && !display_dirty());
@@ -488,7 +546,7 @@ int main(int argc,char **argv)
     WORD_AT(subtitle_row+0xc8)=1;call(TICK_CB,9,0);
     CHECK(display_dirty() && !WORD_AT(0x400130) && !WORD_AT(0x7613dc));
     call(SELECT_CB,3,0);
-    CHECK(WORD_AT(0x400130)==1 && WORD_AT(0x7613dc)==1 && (WORD_AT(0x78ad24)&0x10000));
+    CHECK(page==DISPLAY_VIEW && WORD_AT(0x400130)==1 && WORD_AT(0x7613dc)==1 && (WORD_AT(0x78ad24)&0x10000));
     CHECK(!display_dirty() && (WORD_AT(apply_row+0x28)&1));
 
     refresh(DISPLAY_HOME,0);
@@ -539,18 +597,24 @@ int main(int argc,char **argv)
     refresh(DISPLAY_VIEW,0);
     call(TICK_CB,8,0);CHECK(!tsfp_texture_is_4k() && requested_rate==-1);
     call(SELECT_CB,3,0);
-    CHECK(page==DISPLAY_HOME && pc_display_fov()==70 && tsfp_texture_is_4k());
+    CHECK(page==DISPLAY_VIEW && pc_display_fov()==70 && tsfp_texture_is_4k());
     CHECK(requested_rate==120 && pc_frame_rate_read()==120);
     CHECK(!display_dirty() && (WORD_AT(apply_row+0x28)&1));
     content("TSFP_DISPLAY_V2 1280 720 70\n");
-    /* A failed SMAA save rolls back the staged display/rate batch across tabs. */
+    /* A failed SMAA save also rolls back every Apply-only graphics field. */
+    TsfpGraphicsOptions before_failed_batch=pc_graphics_get();
+    staged_anisotropy=4;staged_ao=!before_failed_batch.ambient_occlusion;staged_cache=!before_failed_batch.shader_cache;
     staged_msaa=4;
-    staged_fov=75;WORD_AT(rate_row+0xc8)=2;read_choices();
+    refresh(DISPLAY_HOME,0);staged_fov=75;WORD_AT(rate_row+0xc8)=2;read_choices();
     refresh(DISPLAY_GRAPHICS,0);WORD_AT(post_aa_row+0xc8)=2;smaa_save_ok=0;
     call(SELECT_CB,3,0);
     CHECK(pc_display_fov()==70 && requested_rate==120 && pc_frame_rate_read()==120 && !pc_smaa_enabled() && graphics_options.msaa==1 && staged_msaa==4 && page!=DISPLAY_RESTART);
     content("TSFP_DISPLAY_V2 1280 720 70\n");
+    CHECK(graphics_options.anisotropy==before_failed_batch.anisotropy &&
+          graphics_options.ambient_occlusion==before_failed_batch.ambient_occlusion &&
+          graphics_options.shader_cache==before_failed_batch.shader_cache);
     smaa_save_ok=1;staged_fov=70;staged_rate=applied_rate;staged_aa=applied_aa;staged_msaa=graphics_options.msaa;
+    staged_anisotropy=graphics_options.anisotropy;staged_ao=graphics_options.ambient_occlusion;staged_cache=graphics_options.shader_cache;
     refresh(DISPLAY_GRAPHICS,0);call(TICK_CB,11,0);CHECK(!display_dirty());
     WORD_AT(post_aa_row+0xc8)=2;read_choices();refresh(DISPLAY_VIEW,0);
     CHECK(staged_aa==2 && !pc_smaa_enabled());

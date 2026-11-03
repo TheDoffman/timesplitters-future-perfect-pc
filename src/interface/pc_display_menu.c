@@ -372,10 +372,12 @@ static PcDisplayMode modes[PC_DISPLAY_MODE_CAPACITY], all_modes[PC_DISPLAY_MODE_
 static int all_mode_count, selected_aspect;
 enum { DISPLAY_HOME, DISPLAY_CONFIRM, DISPLAY_GRAPHICS, DISPLAY_VIEW, DISPLAY_RESTART, DISPLAY_ADVANCED };
 static int mode_count, selected_mode, page, staged_fov, previous_fov;
+static int apply_page=DISPLAY_HOME;
 static int staged_rate, applied_rate;
 static unsigned applied_texture;
 static unsigned staged_aa,applied_aa;
 static int staged_msaa=1,staged_supersampling;
+static int staged_anisotropy=1,staged_ao,staged_cache=1;
 static int restart_baseline_set,running_msaa=1,running_supersampling;
 static uint32_t post_aa_row;
 static uint32_t apply_row;
@@ -893,6 +895,8 @@ void pc_network_bots_menu(void (*original)(void))
 #endif
 }
 #include "pc_quit_menu.inc"
+static int menu_video_tabs_poll(uint32_t menu);
+static void menu_video_tabs_flush(void);
 #include "pc_menu_mouse_guest.inc"
 /* Identify this menu by its callback table, never the game phase alone. */
 static int video_font_menu(uint32_t menu)
@@ -1031,6 +1035,12 @@ static int graphics_restart_dirty(void)
     TsfpGraphicsOptions saved=pc_graphics_get();
     return staged_msaa!=saved.msaa || staged_supersampling!=saved.supersampling;
 }
+static int graphics_dirty(void)
+{
+    TsfpGraphicsOptions saved=pc_graphics_get();
+    return graphics_restart_dirty() || staged_anisotropy!=saved.anisotropy ||
+        staged_ao!=saved.ambient_occlusion || staged_cache!=saved.shader_cache;
+}
 static void filter_modes(void)
 {
     mode_count=pc_display_filter_modes(all_modes,all_mode_count,selected_aspect,
@@ -1048,7 +1058,7 @@ static int mode_equal(PcDisplayMode a,PcDisplayMode b)
 static int display_dirty(void)
 {
     return !mode_equal(staged,previous) || staged_fov!=previous_fov ||
-        staged_rate!=applied_rate || texture_choice!=applied_texture || staged_subtitles!=applied_subtitles || staged_aa!=applied_aa || graphics_restart_dirty();
+        staged_rate!=applied_rate || texture_choice!=applied_texture || staged_subtitles!=applied_subtitles || staged_aa!=applied_aa || graphics_dirty();
 }
 static void update_apply(void)
 {
@@ -1063,7 +1073,8 @@ static void update_apply(void)
 static void labels(void)
 {
     resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=post_aa_row=apply_row=0;
-    video_tab_bounds_valid=0;
+    /* Section rebuilds keep the same tab strip; retain hits until repaint. */
+    if(page==DISPLAY_CONFIRM || page==DISPLAY_RESTART) {video_tab_bounds_valid=0;video_pending_tab=-1;}
     extern void sub_00079710(void);
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
         guest_call(sub_00079D60_gen,6,text_at(MODE_TEXT_BASE+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT+3," "),VIDEO_TABS_ID,0x400u,0u,SELECT_CB,VIDEO_TABS_DRAW);
@@ -1195,6 +1206,7 @@ static void refresh(int next,int selected)
 }
 static void leave(void)
 {
+    video_pending_tab=-1;
     guest_call(sub_00079B70,2,parent_menu,previous_menu);
     fprintf(stderr,"[PC-DISPLAY-MENU] Returned to original menu\n");
 }
@@ -1204,19 +1216,20 @@ static void revert(void)
         pc_display_set_fov(previous_fov);staged=previous;deadline=0;
         selected_aspect=pc_display_aspect(previous);if(selected_aspect<0)selected_aspect=0;
         filter_modes();*status=0;
-        refresh(DISPLAY_HOME,0);
+        refresh(apply_page,0);
     } else text_at(0,"Restoring resolution");
 }
 static void back_callback(void)
 {
     GuestRegisters r;save_registers(&r);
-    if(page==DISPLAY_RESTART)refresh(DISPLAY_ADVANCED,2);
+    if(page==DISPLAY_RESTART)refresh(apply_page,apply_page==DISPLAY_ADVANCED?2:0);
     else if(page==DISPLAY_ADVANCED) {read_choices();refresh(DISPLAY_GRAPHICS,0);}
     else if(page==DISPLAY_CONFIRM)revert();else {read_choices();leave();}
     restore_registers(&r);g_esp+=4;
 }
 static void apply_changes(void)
 {
+    if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART)apply_page=page;
     int display_changed=!mode_equal(staged,previous) || staged_fov!=previous_fov;
     int rate_changed=staged_rate!=applied_rate,display_saved=0,rate_saved=0;
     int restart_changed=graphics_restart_dirty(),graphics_saved=0;
@@ -1230,9 +1243,10 @@ static void apply_changes(void)
     }
     if(rate_changed && !pc_frame_rate_save(pc_frame_rate_value(staged_rate)))goto failed;
     rate_saved=rate_changed;
-    if(restart_changed) {
+    if(graphics_dirty()) {
         TsfpGraphicsOptions next=pc_graphics_get();
         next.msaa=staged_msaa;next.supersampling=staged_supersampling;
+        next.anisotropy=staged_anisotropy;next.ambient_occlusion=staged_ao;next.shader_cache=staged_cache;
         if(!pc_graphics_set(&next))goto failed;
         graphics_saved=1;
     }
@@ -1252,7 +1266,7 @@ static void apply_changes(void)
     previous=staged;previous_fov=staged_fov;applied_rate=staged_rate;applied_texture=texture_choice;
     applied_aa=staged_aa;
     deadline=0;*status=0;filter_modes();
-    refresh(restart_changed?DISPLAY_RESTART:DISPLAY_HOME,restart_changed?2:0);
+    refresh(restart_changed?DISPLAY_RESTART:apply_page,restart_changed?2:0);
     return;
 failed:
     pc_display_set_fov(previous_fov);
@@ -1262,12 +1276,14 @@ failed:
     if(graphics_saved) {
         TsfpGraphicsOptions undo=pc_graphics_get();
         undo.msaa=previous_graphics.msaa;undo.supersampling=previous_graphics.supersampling;
+        undo.anisotropy=previous_graphics.anisotropy;undo.ambient_occlusion=previous_graphics.ambient_occlusion;
+        undo.shader_cache=previous_graphics.shader_cache;
         graphics_restored=pc_graphics_set(&undo);
     }
     int saved_back=(!display_saved || (restored && pc_display_save())) && rate_restored && graphics_restored;
     snprintf(status,sizeof status,saved_back?"Could not save changes. Please try again.":"Could not restore saved display settings.");
     if(!restored) { deadline=GetTickCount64();return; }
-    deadline=0;refresh(DISPLAY_HOME,0);
+    deadline=0;refresh(apply_page,0);
 }
 static void select_callback(void)
 {
@@ -1275,10 +1291,10 @@ static void select_callback(void)
     int selected=(int)WORD_AT(menu+0x18c);save_registers(&r);
     fprintf(stderr,"[PC-DISPLAY-MENU] Selected page %d row %d\n",page,selected);
     if(page==DISPLAY_RESTART) {
-        if(selected==0)refresh(DISPLAY_ADVANCED,2);
+        if(selected==0)refresh(apply_page,apply_page==DISPLAY_ADVANCED?2:0);
         else if(selected==1 && !pc_game_restart()) {
             snprintf(status,sizeof status,"Could not restart. Please relaunch manually.");
-            refresh(DISPLAY_ADVANCED,2);
+            refresh(apply_page,apply_page==DISPLAY_ADVANCED?2:0);
         }
     } else if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART && selected==VIDEO_TABS_ID) {
         int tab=video_clicked_tab();
@@ -1288,11 +1304,12 @@ static void select_callback(void)
     else if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART && selected==3) {
         read_choices();update_apply();
         if(display_dirty()) {
+            apply_page=page;
             if(!mode_equal(staged,previous)) {
                 if(pc_display_preview(staged)) {
                     deadline=GetTickCount64()+15000;refresh(DISPLAY_CONFIRM,1);
                 } else {
-                    snprintf(status,sizeof status,"Cannot apply resolution");refresh(DISPLAY_HOME,0);
+                    snprintf(status,sizeof status,"Cannot apply resolution");refresh(apply_page,0);
                 }
             } else apply_changes();
         }
@@ -1366,6 +1383,7 @@ static void activate(void)
         staged_aa=applied_aa=pc_post_aa_get();
         TsfpGraphicsOptions graphics=pc_graphics_get();
         staged_msaa=graphics.msaa;staged_supersampling=graphics.supersampling;
+        staged_anisotropy=graphics.anisotropy;staged_ao=graphics.ambient_occlusion;staged_cache=graphics.shader_cache;
         if(!restart_baseline_set) {
             running_msaa=graphics.msaa;running_supersampling=graphics.supersampling;
             restart_baseline_set=1;
@@ -1379,7 +1397,7 @@ static void activate(void)
         all_mode_count=pc_display_modes(xbox_D3D8Window(),all_modes,PC_DISPLAY_MODE_CAPACITY);
         selected_aspect=pc_display_aspect(staged);if(selected_aspect<0)selected_aspect=0;filter_modes();
         parent_menu=WORD_AT(source+0x2c); previous_menu=WORD_AT(source+4);
-        page=0; deadline=0;
+        page=0; apply_page=DISPLAY_HOME;deadline=0;video_tab_bounds_valid=0;video_pending_tab=-1;video_tab_left=1;
         fprintf(stderr,"[PC-DISPLAY-MENU] Opened, %d resolutions\n",mode_count);
         guest_call(sub_00079B70,2,parent_menu,storage);
     }

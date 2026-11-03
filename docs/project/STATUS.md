@@ -1,3 +1,51 @@
+## Direct queued Video tab clicks (2026-11-03, local)
+
+Follow-up to aafb21e0 after the user still observed dropped fast clicks. The
+last fix preserved bounds but kept tabs on native Confirm dispatch. Owned Video
+mouse edges now queue a direct target before row gating; the latest target is
+applied after the outer dispatcher returns and the menu is ready. Held clicks
+do not repeat. Stale/closed/dialog targets are discarded. Other menus and
+keyboard/controller paths keep their existing input behavior.
+Shared Windows UI/pointer9pass2nativeMacskips cover blocked transitions, newest
+target, hold rejection, expiry, context close and outer-dispatch flush order.
+Release Build/built-ins pass; live main test registered nine tab switches with
+40ms down/up intervals. Pause registered all nine in the same order: all18
+were checked against the complete expected target sequence. Ordinary AF/AO/cache
+controls still kept the saved file unchanged until Apply in both contexts;
+final main/pause captures reviewed. No personal save/config was used.
+Native Mac visual review remains pending; saves/settings are isolated.
+
+## Apply-only AF, AO and Shader Cache (2026-11-03, local)
+
+Continuing fix/video-apply-stay-on-tab afterd1a58271: AF/AO/cache selectors now
+edit session drafts, enable Apply and retain edits across tabs. Only Apply
+saves/activates them. Leaving and reopening discards drafts. Live-only changes
+do not prompt for restart. Failed saves retain drafts; a later post-AA save
+failure restores all five graphics preference fields, including these three.
+Windows UI fixture4pass2Macskips covers delayed persistence, failed Apply,
+tab retention, discard/reopen, saved-value reversion and batch rollback.
+Release Build/built-ins pass after the user closed the game. Also retaining
+tab hit bounds during section rebuilds to prevent dropped rapid clicks; the
+fixture verifies different tabs before repaint. Isolated live main/pause each
+registered all six clicks with60ms down/up intervals. Saved V2 graphics fields
+were checked unchanged after AF/AO edits and cache edits across tabs; Apply
+then saved all three together, disabled Apply and retained Graphics. Main and
+pause captures reviewed; no restart dialog for these live-only changes.
+Native Mac visual review remains pending; personal saves/settings untouched.
+
+## Apply retains the current Video section (2026-11-03, local)
+
+Branch fix/video-apply-stay-on-tab based onf2b832ce. Apply remembers its source
+section before preview/restart dialogs. Success, save failure, Later and restart
+Back/failure return there, including Advanced. Resolution reversion/failure
+also preserves the source section. New sessions start on Display as before.
+Windows UI fixture4pass2nativeMacskips; Release Build and built-ins pass.
+Live isolated main Graphics and View & HUD remain selected after Apply; MSAA
+Apply/Later returns to Advanced. Paused Graphics and View & HUD also remain
+selected after Apply; final captures reviewed at1280x720.
+Native Mac visual review remains pending. Personal saves/settings preserved.
+This follow-up is local and has not been pushed or merged.
+
 ## PR473 integration with current main (2026-11-03)
 
 PR473 at4ba7e85b passed all runtime/upgrade/gate checks: Windows2772 tests,

@@ -95,6 +95,9 @@ static uint32_t guest_call(void (*fn)(void),unsigned n,...)
 static unsigned video_click_sounds;
 static void menu_video_click_sound(uint32_t menu,uint32_t item)
 {(void)menu;(void)item;++video_click_sounds;}
+static unsigned video_tab_polls,video_tab_flushes;
+static int menu_video_tabs_poll(uint32_t menu) {(void)menu;video_tab_polls++;return 0;}
+static void menu_video_tabs_flush(void) {CHECK(!in_dispatch);video_tab_flushes++;}
 #include "pc_menu_mouse_guest.inc"
 static void original(void) { ++original_calls;WORD_AT(WORD_AT(g_esp+4)+0xc4)|=navigation;g_esp+=4; }
 static void dispatch(void)
@@ -115,9 +118,11 @@ static void dispatch(void)
 static void run(uint32_t menu)
 {
     uint32_t pressed=WORD_AT(0x6b93e0),network_pressed=WORD_AT(0x6b94d8);
+    unsigned polls=video_tab_polls,flushes=video_tab_flushes;
     WORD_AT(menu+0xc4)=WORD_AT(menu+0xc8)=0;
     g_esp=0x1000;WORD_AT(g_esp+4)=menu;
     pc_display_menu_mouse_dispatch(dispatch);CHECK(g_esp==0x1004);
+    CHECK(video_tab_polls==polls+1 && video_tab_flushes==flushes+1);
     CHECK(WORD_AT(0x6b94d8)==network_pressed);
     CHECK(WORD_AT(0x6b93e0)==pressed); /* source edge never escapes dispatch */
 }

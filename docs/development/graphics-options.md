@@ -448,3 +448,39 @@ the active page do not rebuild it or invalidate its bounds. Consumed click edges
 still retain pointer/injected Confirm identity. Keyboard/controller Confirm and
 left/right navigation keep their cycling behavior. Graphics places Advanced
 below the lower silver separator, immediately before Apply, on main and pause.
+
+### Apply retains the originating section
+
+Apply records its current section before any resolution/restart dialog. Successful
+saves and failures rebuild that section instead of defaulting to Display. Later,
+restart Back/failure and resolution reversion also return there. Advanced remains
+Advanced, and drafts/save/rollback contracts are unchanged. New Video sessions
+reset the return section to Display. Shared main/pause callbacks use one rule.
+
+### Apply stages the remaining graphics effects
+
+Anisotropic filtering, Ambient occlusion and Shader cache now share the Video
+session's drafts. Their saved/runtime values change only on Apply; tab switches
+retain drafts, returning to saved values disables Apply, and leaving/reopening
+Video discards edits. These live options do not produce restart prompts. Apply
+saves them with MSAA/supersampling and restores all five if a later save fails.
+Legacy in-between AF preferences remain unchanged until that selector changes.
+Clear shader cache remains an explicit immediate action.
+
+Rapid tab switches retain the last painted tab bounds through same-menu section
+rebuilds instead of invalidating them until repaint. New Video sessions and
+confirmation/restart dialogs invalidate bounds; unrelated menus keep their own
+input handling. The callback fixture switches Display/Graphics/View before any
+intervening draw and checks that hit regions remain available.
+
+### Deferred direct mouse tabs
+
+Video tab clicks are sampled before the original row dispatcher, scoped to the
+owned Video callback table. They retain the latest target during native row
+transition/Confirm gating and rebuild only after the outermost dispatcher returns.
+A held click does not repeat; obsolete targets expire after one second and are
+cleared on leave, a new session or a confirmation/restart dialog. Normal rows,
+footer clicks and keyboard/controller navigation keep their original handling.
+The shared fixture queues two targets during a blocked transition in main/pause,
+then verifies the latest target, held-click rejection and expiry. The pointer
+adapter fixture verifies polling and a single flush outside nested dispatch.

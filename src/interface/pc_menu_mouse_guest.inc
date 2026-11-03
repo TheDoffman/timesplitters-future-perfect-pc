@@ -424,6 +424,9 @@ void pc_display_menu_mouse_dispatch(void (*original)(void))
     pc_display_menu_mouse_mode();
     MenuMouseDispatch *previous=menu_mouse_dispatch;
     menu_mouse_dispatch=&state;
+    /* Video tabs are direct targets, not native Confirm repeats. Capture
+     * their edges even while the guest temporarily gates row navigation. */
+    if(menu_video_tabs_poll(state.menu))state.sampled=1;
     menu_character_input(&state);
     menu_text_focus(state.menu);
     original();
@@ -444,6 +447,7 @@ void pc_display_menu_mouse_dispatch(void (*original)(void))
     } else if(state.tab_target && !state.close_pause) {
         menu_mouse_change_tab(state.tab_menu,state.tab_target);
     }
+    if(!previous)menu_video_tabs_flush();
     pc_display_menu_mouse_mode();
     if(menu_mouse_context())menu_text_events(state.menu);
 }
