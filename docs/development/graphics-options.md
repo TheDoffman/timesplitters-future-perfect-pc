@@ -456,3 +456,19 @@ saves and failures rebuild that section instead of defaulting to Display. Later,
 restart Back/failure and resolution reversion also return there. Advanced remains
 Advanced, and drafts/save/rollback contracts are unchanged. New Video sessions
 reset the return section to Display. Shared main/pause callbacks use one rule.
+
+### Apply stages the remaining graphics effects
+
+Anisotropic filtering, Ambient occlusion and Shader cache now share the Video
+session's drafts. Their saved/runtime values change only on Apply; tab switches
+retain drafts, returning to saved values disables Apply, and leaving/reopening
+Video discards edits. These live options do not produce restart prompts. Apply
+saves them with MSAA/supersampling and restores all five if a later save fails.
+Legacy in-between AF preferences remain unchanged until that selector changes.
+Clear shader cache remains an explicit immediate action.
+
+Rapid tab switches retain the last painted tab bounds through same-menu section
+rebuilds instead of invalidating them until repaint. New Video sessions and
+confirmation/restart dialogs invalidate bounds; unrelated menus keep their own
+input handling. The callback fixture switches Display/Graphics/View before any
+intervening draw and checks that hit regions remain available.

@@ -1,3 +1,21 @@
+## Apply-only AF, AO and Shader Cache (2026-11-03, local)
+
+Continuing fix/video-apply-stay-on-tab afterd1a58271: AF/AO/cache selectors now
+edit session drafts, enable Apply and retain edits across tabs. Only Apply
+saves/activates them. Leaving and reopening discards drafts. Live-only changes
+do not prompt for restart. Failed saves retain drafts; a later post-AA save
+failure restores all five graphics preference fields, including these three.
+Windows UI fixture4pass2Macskips covers delayed persistence, failed Apply,
+tab retention, discard/reopen, saved-value reversion and batch rollback.
+Release Build/built-ins pass after the user closed the game. Also retaining
+tab hit bounds during section rebuilds to prevent dropped rapid clicks; the
+fixture verifies different tabs before repaint. Isolated live main/pause each
+registered all six clicks with60ms down/up intervals. Saved V2 graphics fields
+were checked unchanged after AF/AO edits and cache edits across tabs; Apply
+then saved all three together, disabled Apply and retained Graphics. Main and
+pause captures reviewed; no restart dialog for these live-only changes.
+Native Mac visual review remains pending; personal saves/settings untouched.
+
 ## Apply retains the current Video section (2026-11-03, local)
 
 Branch fix/video-apply-stay-on-tab based onf2b832ce. Apply remembers its source

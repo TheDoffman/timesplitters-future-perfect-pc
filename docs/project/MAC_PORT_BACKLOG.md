@@ -1,3 +1,9 @@
+Apply-only AF/AO/cache (2026-11-03, local follow-up): shared Video Options
+stages all three across tabs and saves them only on Apply, without adding
+restart prompts. Shared main/pause logic needs no separate host adapter.
+Rapid tab rebuilds retain their existing hit bounds until repaint; fresh
+sessions/dialogs invalidate them. Native Mac visual acceptance remains pending.
+
 Apply keeps the current Video section (2026-11-03, local follow-up): shared
 callbacks remember the originating section through saves, failures, confirmation
 and restart dialogs. Main/pause need no separate OS adapter. Windows fixture

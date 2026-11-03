@@ -1,4 +1,4 @@
-[Apply](../development/graphics-options.md).
+[Drafts](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)
 
