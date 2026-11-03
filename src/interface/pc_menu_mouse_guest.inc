@@ -114,8 +114,8 @@ static int menu_mouse_tab_contains(const MenuMouseTab *t,uint32_t menu,
 }
 static int menu_mouse_tab_text(void)
 {
-    /* sub_002E4FF0's EBP is a generated local, not g_ebp. Its saved
-       one-based loop index is at +0x2c at this exact text call site. */
+    /* The saved one-based loop index is at +0x2c at this exact text call
+       site in sub_002E4FF0, independent of EBP publication by the generator. */
     uint32_t index=WORD_AT(g_esp+0x2c);
     if(index<1 || index>12) return 0;
     --index;

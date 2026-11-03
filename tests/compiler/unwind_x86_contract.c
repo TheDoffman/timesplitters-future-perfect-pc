@@ -12,7 +12,7 @@ static unwind_t unwind_fn;
 static void *target_frame,*original_head,*target_ip;
 static EXCEPTION_RECORD record,*record_arg;
 static unsigned route,observed_eax,before_sp,after_sp,wrapper_bp,after_bp,seen_count;
-static unsigned redirect,resume_label;
+static unsigned redirect,resume_label,collision;
 static unsigned seen[4][10];
 static EXCEPTION_DISPOSITION __cdecl handler(EXCEPTION_RECORD *r,void *frame,CONTEXT *c,void *dispatcher) {
  unsigned head;
@@ -21,6 +21,7 @@ static EXCEPTION_DISPOSITION __cdecl handler(EXCEPTION_RECORD *r,void *frame,CON
  unsigned i=seen_count++;
  if(i<4) {seen[i][0]=r->ExceptionCode;seen[i][1]=r->ExceptionFlags;seen[i][2]=(unsigned)frame;seen[i][3]=c?c->ContextFlags:0;seen[i][4]=c?c->Eip:0;seen[i][5]=c?c->Esp:0;seen[i][6]=c?c->Eax:0;seen[i][7]=(unsigned)dispatcher;seen[i][8]=head==(unsigned)frame;seen[i][9]=((node*)head)->next==(node*)frame;}
  if(redirect && c){c->Eip=resume_label;c->Eax=0x87654321;}
+ if(collision && !i){*(void **)dispatcher=(void *)((node *)frame)->next;return ExceptionCollidedUnwind;}
  return ExceptionContinueSearch;
 }
 __declspec(naked) static void exercise(void) {
@@ -61,7 +62,10 @@ int main(void) {
  unwind_fn=(unwind_t)GetProcAddress(GetModuleHandleW(L"ntdll.dll"),"RtlUnwind");if(!unwind_fn)return 2;
  __asm {mov eax,fs:[0]
         mov original_head,eax}
- for(attempt=0;attempt<16;attempt++) {
+ SetErrorMode(SEM_FAILCRITICALERRORS|SEM_NOGPFAULTERRORBOX);
+ for(attempt=0;attempt<32;attempt++) {
+  if((attempt&16) && !(attempt&1))continue;
+  collision=!!(attempt&16);
   memset(&record,0,sizeof record);record.ExceptionCode=0xe1234567;record.ExceptionFlags=1;record.NumberParameters=2;record.ExceptionInformation[0]=0x11223344;record.ExceptionInformation[1]=0x55667788;
   frames[0].next=&frames[1];frames[1].next=(node*)original_head;frames[0].handler=frames[1].handler=handler;
   target_frame=(attempt&1)?original_head:&frames[1];target_ip=(void*)((attempt&2)?1:0);record_arg=(attempt&4)?&record:NULL;

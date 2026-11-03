@@ -1,0 +1,306 @@
+--- a/src/kernel/xbox_memory_layout.c
++++ b/src/kernel/xbox_memory_layout.c
+@@ -561,302 +561,8 @@
+     { 0, 0, "off" },
+ };
+ 
+-/* A switch that is on unless it is turned off, or off unless turned on.
+- *
+- * The things a title needs in order to run at all -- the vblank, the audio
+- * codec's ready bit, the replacement renderer -- began as experiments, and an
+- * experiment is off until asked for. They are not experiments any more: a
+- * player double-clicking the executable should get the game, not a black
+- * window, so they default on and the variable turns them off. "0", "off",
+- * "no" and "false" mean off; anything else, including an empty value, means
+- * on. */
+-/* ── The guest lock ─────────────────────────────────────────────────────
+- * See xbox_memory_layout.h for what it is for. A CRITICAL_SECTION because it
+- * is recursive and uncontended acquisition is cheap, which matters: this is
+- * taken and dropped once per kernel call, and Dino Crisis 3 makes over a
+- * million of those a minute. */
+-static CRITICAL_SECTION g_guest_cs;
+-static int g_guest_cs_ready;
+-static int g_guest_lock_on = -1;
+-/* Lock/active nesting is owned by guest_execution_state.c. */
+-
+-/* How often two guest threads are inside lifted code at the same time.
+- *
+- * The threading hypothesis rests on that happening at all, and waiting for
+- * the resulting corruption to show is a poor way to find out: Dino Crisis 3
+- * faults on roughly one run in twenty, so an A/B of the guest lock over eight
+- * runs a side produced zero events on both sides and settled nothing.
+- *
+- * This measures the hazard instead of the damage, and it is deterministic.
+- * A guest thread is "in lifted code" whenever it is not inside a kernel
+- * bridge, which the existing drop/restore around bridge() already brackets.
+- * If the peak is 1, guest threads never overlap and threading cannot be the
+- * cause whatever else is wrong; if it is above 1, the uniprocessor
+- * assumption is being violated continuously and that is worth fixing on its
+- * own terms, crash or no crash.
+- *
+- * RECOMP_GUEST_CONCURRENCY=1. Independent of the lock, so the hazard can be
+- * measured with the lock off, which is the configuration that ships.
+- */
+-static volatile LONG g_lifted_now;
+-static volatile LONG g_lifted_peak;
+-static volatile LONG g_lifted_overlaps;
+-static int g_concurrency_on = -1;
+-
+-int xbox_GuestConcurrencyOn(void)
+-{
+-    if (g_concurrency_on < 0)
+-        g_concurrency_on = xbox_EnvSwitch("RECOMP_GUEST_CONCURRENCY", 0);
+-    return g_concurrency_on;
+-}
+-
+-/* One guest thread at DISPATCH_LEVEL stops the others.
+- *
+- * On the Xbox's single CPU a thread at DISPATCH_LEVEL is the only thing
+- * running until it lowers, and titles build on that: Marvel vs Capcom 2's
+- * ADX sound thread runs its server at DISPATCH_LEVEL, guarded only by a busy
+- * flag, and its main thread edits the same stream buffers at PASSIVE_LEVEL.
+- * Here the two run on two host cores, and a watchpoint saw both write one
+- * ring buffer's positions. No failure has been traced to that yet.
+- *
+- * The parking points are the bridge boundaries every guest thread already
+- * passes (the Lifted enter/leave pair): g_park_running counts guest threads
+- * in lifted code. A thread raising to DISPATCH_LEVEL (xbox_DispatchParkOthers,
+- * from kernel_hal.c) becomes the owner and waits for that count to drain;
+- * any other thread coming back from a bridge waits while an owner exists.
+- *
+- * Both waits are bounded. A thread spinning in lifted code never reaches a
+- * boundary, and one raised thread blocking on another would be a deadlock;
+- * past the bound each side proceeds and the first time says so. Off by
+- * default; RECOMP_DISPATCH_LOCK=1, the same switch as the DPC hold-off. */
+-static volatile LONG  g_park_running;
+-static volatile DWORD g_park_owner;
+-static HANDLE         g_park_free;     /* manual reset, set when no owner */
+-static int            g_park_on = -1;
+-
+-static int park_on(void)
+-{
+-    if (g_park_on < 0) {
+-        HANDLE ev = CreateEventW(NULL, TRUE, TRUE, NULL);
+-        if (InterlockedCompareExchangePointer((PVOID *)&g_park_free, ev, NULL))
+-            CloseHandle(ev);
+-        g_park_on = xbox_EnvSwitch("RECOMP_DISPATCH_LOCK", 0);
+-    }
+-    return g_park_on;
+-}
+-
+-void xbox_DispatchParkOthers(void)
+-{
+-    ULONGLONG deadline;
+-    DWORD me = GetCurrentThreadId();
+-
+-    if (!park_on())
+-        return;
+-    g_park_owner = me;
+-    ResetEvent(g_park_free);
+-    /* This thread is inside a bridge, so it is not counted itself. */
+-    if (g_park_running <= 0)
+-        return;
+-    deadline = GetTickCount64() + 50;
+-    while (g_park_running > 0) {
+-        if (GetTickCount64() >= deadline) {
+-            static volatile LONG said;
+-            if (InterlockedIncrement(&said) <= 3) {
+-                fprintf(stderr, "  [KERNEL] DISPATCH_LEVEL: %ld other guest "
+-                                "thread(s) still in lifted code after 50 ms; "
+-                                "going on without them (RECOMP_DISPATCH_LOCK)\n",
+-                        (long)g_park_running);
+-                fflush(stderr);
+-            }
+-            return;
+-        }
+-        SwitchToThread();
+-    }
+-}
+-
+-void xbox_DispatchReleaseOthers(void)
+-{
+-    if (!park_on())
+-        return;
+-    g_park_owner = 0;
+-    SetEvent(g_park_free);
+-}
+-
+-static void park_enter(void)
+-{
+-    DWORD me;
+-    ULONGLONG deadline = 0;
+-
+-    if (!park_on())
+-        return;
+-    me = GetCurrentThreadId();
+-    for (;;) {
+-        DWORD owner;
+-        InterlockedIncrement(&g_park_running);
+-        owner = g_park_owner;
+-        if (!owner || owner == me)
+-            return;
+-        InterlockedDecrement(&g_park_running);
+-        if (!deadline)
+-            deadline = GetTickCount64() + 100;
+-        else if (GetTickCount64() >= deadline) {
+-            static volatile LONG said;
+-            if (InterlockedIncrement(&said) <= 3) {
+-                fprintf(stderr, "  [KERNEL] DISPATCH_LEVEL held 100 ms by "
+-                                "thread %lu; this thread goes on "
+-                                "(RECOMP_DISPATCH_LOCK)\n", (unsigned long)owner);
+-                fflush(stderr);
+-            }
+-            InterlockedIncrement(&g_park_running);
+-            return;
+-        }
+-        WaitForSingleObject(g_park_free, 10);
+-    }
+-}
+-
+-/* RECOMP_GUEST_ONE_CPU: every guest thread on one host core, as on the Xbox.
+- *
+- * Guest code is written for a single CPU. It finishes a job and publishes
+- * the semaphore for it in two steps, or checks a count and then sleeps on
+- * it, trusting that nothing runs in between unless it blocks or its quantum
+- * ends. Run on several host cores at once, other guest threads land in those
+- * gaps all the time: Outrun 2 hung on its AM2 logo in 4 of 4 runs, a task
+- * finishing between "is it still running?" and "here is your semaphore".
+- * Host threads (the renderer, audio, the window) are left free.
+- *
+- * 1 picks a core for the guest: the highest-numbered core of the fastest
+- * class the process may run on. A number above 1 is taken as a core index
+- * + 1 (2 = core 1, ...). Off when unset or 0.
+- *
+- * "The fastest class" matters on a hybrid CPU. Windows numbers the
+- * efficiency cores last, so "the highest core" on an i7-12700H was CPU 19,
+- * an E-core, and the whole title -- lifted code, HLE, renderer submission --
+- * ran on it: Outrun 2's race measured 12-15 fps there and 35-40 fps on a
+- * P-core, the same build, the same drive (1 Oct 2026). CPU sets report each
+- * logical processor's EfficiencyClass (higher is faster); the pick is the
+- * highest-numbered processor of the highest class, which also keeps the
+- * guest off CPU 0. */
+-#ifdef _WIN32
+-typedef BOOL (WINAPI *GetSystemCpuSetInformation_t)(PVOID, ULONG, PULONG, HANDLE, ULONG);
+-
+-static DWORD_PTR fastest_core_mask(DWORD_PTR proc)
+-{
+-    GetSystemCpuSetInformation_t get_sets =
+-        (GetSystemCpuSetInformation_t)(void *)GetProcAddress(
+-            GetModuleHandleW(L"kernel32.dll"), "GetSystemCpuSetInformation");
+-    ULONG len = 0;
+-    BYTE *buf, *p;
+-    DWORD_PTR best = 0;
+-    int best_class = -1;
+-
+-    if (!get_sets)
+-        return 0;
+-    get_sets(NULL, 0, &len, GetCurrentProcess(), 0);
+-    if (!len || !(buf = (BYTE *)malloc(len)))
+-        return 0;
+-    if (!get_sets(buf, len, &len, GetCurrentProcess(), 0)) {
+-        free(buf);
+-        return 0;
+-    }
+-    /* SYSTEM_CPU_SET_INFORMATION: Size at +0, Type at +4 (0 = CpuSet), then
+-     * the CpuSet record at +8: Id (ULONG), Group (USHORT, +12),
+-     * LogicalProcessorIndex (BYTE, +14), CoreIndex (+15),
+-     * LastLevelCacheIndex (+16), NumaNodeIndex (+17), EfficiencyClass (+18).
+-     * Spelt out so this builds against older SDK headers. */
+-    for (p = buf; p + 24 <= buf + len; p += *(ULONG *)p) {
+-        ULONG size = *(ULONG *)p;
+-        BYTE lp = p[14], cls = p[18];
+-
+-        if (size < 24)
+-            break;
+-        if (*(ULONG *)(p + 4) != 0 || lp >= sizeof(DWORD_PTR) * 8)
+-            continue;
+-        if (!(proc & ((DWORD_PTR)1 << lp)))
+-            continue;
+-        if ((int)cls > best_class || ((int)cls == best_class && lp > 0)) {
+-            if ((int)cls > best_class)
+-                best = 0;
+-            best_class = cls;
+-            best = (DWORD_PTR)1 << lp;      /* highest index wins: ascending order */
+-        }
+-    }
+-    free(buf);
+-    return best;
+-}
+-
+-static DWORD_PTR guest_cpu_mask(void)
+-{
+-    static DWORD_PTR mask = (DWORD_PTR)-1;
+-    if (mask == (DWORD_PTR)-1) {
+-        const char *v = getenv("RECOMP_GUEST_ONE_CPU");
+-        long n = v ? strtol(v, NULL, 0) : 0;
+-        DWORD_PTR proc = 0, sys = 0;
+-        mask = 0;
+-        if (n > 0 && GetProcessAffinityMask(GetCurrentProcess(), &proc, &sys) && proc) {
+-            if (n == 1) {
+-                mask = fastest_core_mask(proc);
+-                if (!mask) {
+-                    /* No CPU-set information: the highest core allowed. */
+-                    for (mask = (DWORD_PTR)1 << (sizeof mask * 8 - 1); !(mask & proc); mask >>= 1)
+-                        ;
+-                }
+-            } else {
+-                mask = ((DWORD_PTR)1 << (n - 2)) & proc;
+-            }
+-            fprintf(stderr, "[THREAD] guest threads on one host core (mask 0x%llX, "
+-                    "RECOMP_GUEST_ONE_CPU)\n", (unsigned long long)mask);
+-        }
+-    }
+-    return mask;
+-}
+-
+-#endif /* _WIN32: CPU affinity is optional, not a macOS correctness primitive. */
+-
+-
+-
+-void xbox_GuestConcurrencyReport(void)
+-{
+-    if (!xbox_GuestConcurrencyOn())
+-        return;
+-    fprintf(stderr, "  [CONCURRENCY] peak guest threads in lifted code: %ld; "
+-                    "entries that found another already there: %ld\n",
+-            (long)g_lifted_peak, (long)g_lifted_overlaps);
+-    fflush(stderr);
+-}
+-
+-int xbox_GuestLockOn(void)
+-{
+-    if (g_guest_lock_on < 0)
+-        g_guest_lock_on = xbox_EnvSwitch("RECOMP_GUEST_LOCK", 0);
+-    return g_guest_lock_on;
+-}
+-
+-void xbox_GuestLockInit(void)
+-{
+-    if (g_guest_cs_ready)
+-        return;
+-    InitializeCriticalSection(&g_guest_cs);
+-    g_guest_cs_ready = 1;
+-    if (xbox_GuestLockOn()) {
+-        fprintf(stderr, "  Guest lock: on -- one guest thread runs lifted "
+-                        "code at a time (RECOMP_GUEST_LOCK=0 to switch off)\n");
+-        fflush(stderr);
+-    }
+-}
+-
++#include "guest_execution_host.inc"
+ #include "guest_kernel_execution.inc"
+-
+-int xbox_EnvSwitch(const char *name, int default_on)
+-{
+-    const char *v = name ? getenv(name) : NULL;
+-
+-    if (!v)
+-        return default_on;
+-    if (!*v)
+-        return 1;
+-    return !(strcmp(v, "0") == 0 || _stricmp(v, "off") == 0 ||
+-             _stricmp(v, "no") == 0 || _stricmp(v, "false") == 0);
+-}
+ 
+ static int flip_gate_divisor(void)
+ {

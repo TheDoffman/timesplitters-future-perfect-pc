@@ -1,8 +1,8 @@
 [Tab tests](../development/graphics-options.md): HUD/SMAA order and texture-present fixtures.
-Auto-sizing fixtures isolate the SDL policy; real restart handoff is tested separately.
+Auto-sizing fixtures test SDL policy; restart handoff is separate.
 `tests/graphics/test_fov_settings.py` also exercises Video Options tabs, section
 ownership, pointer-region boundaries, keyboard cycling and staged-value retention.
-The Windows ping-expiry fixture waits past GetTickCount64's quantization boundary.
+Ping-expiry tests wait past GetTickCount64 quantization.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build/tests ([SMAA](smaa.md))
 
@@ -1030,6 +1030,6 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [2x tests](original-upscale.md).
 
-[RTL](guest-stack-trace.md), [context](context-execution.md).
+[RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
 
 GPU asserts stay on; AO logs scene/pixel failures.

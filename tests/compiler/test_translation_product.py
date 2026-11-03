@@ -263,7 +263,7 @@ for name,raw in cases.items():
  data=bytes.fromhex(raw);info={'name':name,'size':len(data)}
  t=FunctionTranslator(b'',{0x1000:info});t._read_func_bytes=lambda a,b:data
  output[name]=t.translate_function(0x1000,info)
-assert 'uint32_t ebp = 0' in output['division_probe']
+assert 'uint32_t *const _recomp_live_ebp = &g_ebp;' in output['division_probe']
 print(json.dumps(output))
 '''
     run=subprocess.run([sys.executable,'-c',script],cwd=runtime,env=dict(os.environ,TSFP_PROJECT_ROOT=str(ROOT)),capture_output=True,text=True,timeout=30)
@@ -292,7 +292,7 @@ eax=values[i];ecx=values[j];cmov_probe();if(ebx!=(unsigned)of || ecx!=(of?values
 eax=values[i];ecx=values[j];branch_probe();if(ebx!=(unsigned)of)return 3;
 }
 eax=77;edx=0;esp=100;division_probe();if(eax!=1||edx!=0||esp!=104)return 4;
-eax=0;edx=77;esp=100;g_seh_ebp=0x3456;reason=0;
+eax=0;edx=77;esp=100;g_ebp=0x3456;g_seh_ebp=0xdead;reason=0;
 if(!setjmp(trap)){division_probe();return 5;}
 if(eax!=0||edx!=77||esp!=100||g_ebp!=0x3456||reason!=1)return 6;
 eax=0;edx=0x80000000u;ecx=0xffffffffu;reason=0;

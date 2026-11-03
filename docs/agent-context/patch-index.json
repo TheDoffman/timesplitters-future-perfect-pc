@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "bba02e5427294a75b12a7a2cefc0bf1c136bcc8b3fcda0a2676c7ae0685a09a3",
+  "loaderSha256": "98c579e5d2c3dc34d67db3964e9ab088490195483ae9607ebfd6f75dc8948d5e",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1990,6 +1990,15 @@
       ]
     },
     {
+      "name": "independent-canonical-frame-fixtures.patch",
+      "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
+      "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",
+      "targets": [
+        "tools/recomp/test_prologue_saved_frame.py",
+        "tools/recomp/test_translator_ebp_init.py"
+      ]
+    },
+    {
       "name": "independent-condition-fixture.patch",
       "path": "patches/compiler/independent-condition-fixture.patch",
       "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",
@@ -3299,6 +3308,32 @@
       "sha256": "c100faf4246139ba9144851469fc377ff8ffbf80bf88d4694a11602877354e51",
       "targets": [
         "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0258-original-exception-dispatch.patch",
+      "path": "patches/compiler/0258-original-exception-dispatch.patch",
+      "sha256": "662e9ad973cc59a457aa84a2612cb50ee007fe211ae2afa7043be92954b65e98",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0259-original-execution-ownership.patch",
+      "path": "patches/compiler/0259-original-execution-ownership.patch",
+      "sha256": "356946afe075993e1fcf55c19955291575415745d47eaf149164024279b6f74b",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/xbox_memory_layout.c"
+      ]
+    },
+    {
+      "name": "0260-original-execution-host-policy.patch",
+      "path": "patches/compiler/0260-original-execution-host-policy.patch",
+      "sha256": "cc155c4da87cdfec385660c79fbcd350fb3c507a46a1a43cebe3634af212633d",
+      "targets": [
+        "src/kernel/xbox_memory_layout.c"
       ]
     },
     {

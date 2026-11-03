@@ -12,8 +12,8 @@
 _Static_assert(sizeof(CONTEXT)==716,"Win32 i386 CONTEXT required");
 static int sdk_encode(void *buffer,size_t bytes,const tsfp_x86_context_state *s,uint32_t flags) {
  CONTEXT c;if(bytes<716 || (flags&0xffffffc0u)!=0x10000)return 0;memcpy(&c,buffer,716);c.ContextFlags=flags;
- if(flags&1) {c.Ebp=s->ebp;c.Eip=s->eip;c.SegCs=s->cs;c.EFlags=s->eflags;c.Esp=s->esp;c.SegSs=s->ss;}
- if(flags&2) {c.Edi=s->edi;c.Esi=s->esi;c.Ebx=s->ebx;c.Edx=s->edx;c.Ecx=s->ecx;c.Eax=s->eax;}
+ if(flags&1) {c.Ebp=s->r_ebp;c.Eip=s->r_eip;c.SegCs=s->cs;c.EFlags=s->r_eflags;c.Esp=s->r_esp;c.SegSs=s->ss;}
+ if(flags&2) {c.Edi=s->r_edi;c.Esi=s->r_esi;c.Ebx=s->r_ebx;c.Edx=s->r_edx;c.Ecx=s->r_ecx;c.Eax=s->r_eax;}
  if(flags&4) {c.SegGs=s->gs;c.SegFs=s->fs;c.SegEs=s->es;c.SegDs=s->ds;}
  if(flags&16) {c.Dr0=s->debug[0];c.Dr1=s->debug[1];c.Dr2=s->debug[2];c.Dr3=s->debug[3];c.Dr6=s->debug[4];c.Dr7=s->debug[5];}
  if(flags&8)memcpy(&c.FloatSave,s->x87,sizeof c.FloatSave);
@@ -23,8 +23,8 @@ static int sdk_encode(void *buffer,size_t bytes,const tsfp_x86_context_state *s,
 static uint32_t sdk_decode(tsfp_x86_context_state *s,const void *buffer,size_t bytes) {
  CONTEXT c;if(bytes<716)return 0;memcpy(&c,buffer,716);
  if((c.ContextFlags&0xffffffc0u)!=0x10000)return 0;
- if(c.ContextFlags&1) {s->ebp=c.Ebp;s->eip=c.Eip;s->cs=c.SegCs;s->eflags=c.EFlags;s->esp=c.Esp;s->ss=c.SegSs;}
- if(c.ContextFlags&2) {s->edi=c.Edi;s->esi=c.Esi;s->ebx=c.Ebx;s->edx=c.Edx;s->ecx=c.Ecx;s->eax=c.Eax;}
+ if(c.ContextFlags&1) {s->r_ebp=c.Ebp;s->r_eip=c.Eip;s->cs=c.SegCs;s->r_eflags=c.EFlags;s->r_esp=c.Esp;s->ss=c.SegSs;}
+ if(c.ContextFlags&2) {s->r_edi=c.Edi;s->r_esi=c.Esi;s->r_ebx=c.Ebx;s->r_edx=c.Edx;s->r_ecx=c.Ecx;s->r_eax=c.Eax;}
  if(c.ContextFlags&4) {s->gs=c.SegGs;s->fs=c.SegFs;s->es=c.SegEs;s->ds=c.SegDs;}
  if(c.ContextFlags&16) {s->debug[0]=c.Dr0;s->debug[1]=c.Dr1;s->debug[2]=c.Dr2;s->debug[3]=c.Dr3;s->debug[4]=c.Dr6;s->debug[5]=c.Dr7;}
  if(c.ContextFlags&8)memcpy(s->x87,&c.FloatSave,sizeof c.FloatSave);

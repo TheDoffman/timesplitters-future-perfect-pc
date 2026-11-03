@@ -1,0 +1,166 @@
+--- a/src/kernel/xbox_memory_layout.c
++++ b/src/kernel/xbox_memory_layout.c
+@@ -578,7 +578,7 @@
+ static CRITICAL_SECTION g_guest_cs;
+ static int g_guest_cs_ready;
+ static int g_guest_lock_on = -1;
+-static RECOMP_TLS int g_guest_depth;
++/* Lock/active nesting is owned by guest_execution_state.c. */
+ 
+ /* How often two guest threads are inside lifted code at the same time.
+  *
+@@ -680,13 +680,6 @@
+         return;
+     g_park_owner = 0;
+     SetEvent(g_park_free);
+-}
+-
+-/* A guest thread leaving lifted code for good (its thread function returned). */
+-void xbox_GuestLiftedExit(void)
+-{
+-    if (park_on())
+-        InterlockedDecrement(&g_park_running);
+ }
+ 
+ static void park_enter(void)
+@@ -819,42 +812,7 @@
+ 
+ #endif /* _WIN32: CPU affinity is optional, not a macOS correctness primitive. */
+ 
+-void xbox_GuestLiftedEnter(void)
+-{
+-    LONG n;
+-#ifdef _WIN32
+-    {
+-        static RECOMP_TLS int pinned;
+-        if (!pinned) {
+-            DWORD_PTR m = guest_cpu_mask();
+-            pinned = 1;
+-            if (m)
+-                SetThreadAffinityMask(GetCurrentThread(), m);
+-        }
+-    }
+-#endif
+-    park_enter();
+-    if (!xbox_GuestConcurrencyOn())
+-        return;
+-    n = InterlockedIncrement(&g_lifted_now);
+-    if (n > 1)
+-        InterlockedIncrement(&g_lifted_overlaps);
+-    for (;;) {
+-        LONG peak = g_lifted_peak;
+-        if (n <= peak ||
+-            InterlockedCompareExchange(&g_lifted_peak, n, peak) == peak)
+-            break;
+-    }
+-}
+-
+-void xbox_GuestLiftedLeave(void)
+-{
+-    if (park_on())
+-        InterlockedDecrement(&g_park_running);
+-    if (!xbox_GuestConcurrencyOn())
+-        return;
+-    InterlockedDecrement(&g_lifted_now);
+-}
++
+ 
+ void xbox_GuestConcurrencyReport(void)
+ {
+@@ -886,46 +844,7 @@
+     }
+ }
+ 
+-void xbox_GuestLockEnter(void)
+-{
+-    if (!xbox_GuestLockOn() || !g_guest_cs_ready)
+-        return;
+-    EnterCriticalSection(&g_guest_cs);
+-    g_guest_depth++;
+-}
+-
+-void xbox_GuestLockLeave(void)
+-{
+-    if (!xbox_GuestLockOn() || !g_guest_cs_ready || g_guest_depth <= 0)
+-        return;
+-    g_guest_depth--;
+-    LeaveCriticalSection(&g_guest_cs);
+-}
+-
+-/* Release every level this thread holds, so it cannot block while holding
+- * the lock, and report how many to take back afterwards. */
+-int xbox_GuestLockDrop(void)
+-{
+-    int held = 0;
+-    if (!xbox_GuestLockOn() || !g_guest_cs_ready)
+-        return 0;
+-    while (g_guest_depth > 0) {
+-        g_guest_depth--;
+-        LeaveCriticalSection(&g_guest_cs);
+-        held++;
+-    }
+-    return held;
+-}
+-
+-void xbox_GuestLockRestore(int held)
+-{
+-    if (!xbox_GuestLockOn() || !g_guest_cs_ready)
+-        return;
+-    while (held-- > 0) {
+-        EnterCriticalSection(&g_guest_cs);
+-        g_guest_depth++;
+-    }
+-}
++#include "guest_kernel_execution.inc"
+ 
+ int xbox_EnvSwitch(const char *name, int default_on)
+ {
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -1632,9 +1632,9 @@
+         /* The normal exit for a worker, and therefore the one that has to
+          * return the stack -- ExitThread never comes back to bridge_thread_main
+          * to do it. */
++        bridge_object_thread_exit();
+         xbox_FreeThreadStack(g_thread_stack_top);
+         g_thread_stack_top = 0;
+-        bridge_object_thread_exit();
+         ExitThread(exit_status);
+     }
+ }
+@@ -7640,10 +7640,9 @@
+          * to enumerate which ordinals block. It also costs one uncontended
+          * acquire per kernel call, which is the price of not having to be
+          * right about that list. */
+-        tsfp_guest_object_scope _object_scope;
+-        if(!tsfp_guest_scope_enter(&bridge_object_scopes,&_object_scope,&bridge_objects)) abort();
+-        int _guest_held = xbox_GuestLockDrop();
+-        xbox_GuestLiftedLeave();
++        tsfp_guest_execution_scope _execution_scope;
++        if(!tsfp_guest_execution_scope_enter(&bridge_object_scopes,&_execution_scope,
++            &bridge_objects,&tsfp_kernel_execution_ops)) abort();
+         if (xbox_FpsWaitProfileOn()) {
+             /* RECOMP_WAIT_PROFILE: how long this call held the thread. */
+             LARGE_INTEGER _t0, _t1;
+@@ -7660,9 +7659,7 @@
+          * the lock on -- which is meant to make overlap impossible -- took
+          * the reported overlaps from 1,625 to 8,265,550. The meter has to
+          * read zero under the lock or it is not measuring what it claims. */
+-        if(!tsfp_guest_scope_leave(&bridge_object_scopes,&_object_scope)) abort();
+-        xbox_GuestLockRestore(_guest_held);
+-        xbox_GuestLiftedEnter();
++        if(!tsfp_guest_execution_scope_leave(&bridge_object_scopes,&_execution_scope)) abort();
+         /* Guest callbacks run only after lock/lifted-state restoration. */
+         bridge_device_pump();
+         if (g_esp != _esp_before) {
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -29,6 +29,8 @@
+ add_library(xbox_kernel STATIC ${KERNEL_SOURCES})
+ 
+ target_sources(xbox_kernel PRIVATE
++    "${TSFP_SHARED_SOURCE}/runtime/guest_execution_state.c"
++    "${TSFP_SHARED_SOURCE}/runtime/guest_execution_scope.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_exception.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_x86_context.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_stack_trace.c"

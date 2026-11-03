@@ -1,0 +1,138 @@
+--- a/tools/recomp/test_prologue_saved_frame.py
++++ b/tools/recomp/test_prologue_saved_frame.py
+@@ -1,19 +1,17 @@
+-"""A classic prologue must save the caller's EBP, not a C indeterminate value."""
+-from tools.recomp import config
++"""Original installed-translator contract for the architectural frame cell."""
+ from tools.recomp.translator import FunctionTranslator
+ 
+ 
+-def test_prologue_saves_inherited_frame_before_establishing_its_own():
+-    base = 0x10000
+-    # push ebp; mov ebp,esp; mov eax,[ebp]; pop ebp; ret
+-    # The return value exposes the saved incoming frame pointer itself.
+-    image = bytes.fromhex('558bec8b45005dc3')
+-    config._install([config.Section('.text', base, len(image), 0, len(image), True)],
+-                    entry_point=base, kernel_thunk_addr=base,
+-                    origin='prologue-saved-frame-test')
+-    db = {base: {'start': hex(base), 'end': base + len(image),
+-                 '_addr': base, 'size': len(image)}}
+-    code = FunctionTranslator(image, db).translate_function(base, db[base])
+-    assert code.index('ebp = g_ebp;') < code.index('PUSH32(esp, ebp);')
+-    assert code.index('PUSH32(esp, ebp);') < code.index('ebp = esp;')
+-    assert 'eax = MEM32(ebp);' in code
++def test_prologue_saves_live_frame_before_establishing_its_own():
++    raw=bytes.fromhex('558bec8b45005dc3')
++    info={'end':0x1000+len(raw),'name':'frame_probe'}
++    translator=FunctionTranslator(b'',{0x1000:info})
++    translator._read_func_bytes=lambda start,end:raw
++    code=translator.translate_function(0x1000,info)
++    binding=code.index('uint32_t *const _recomp_live_ebp = &g_ebp;')
++    push=code.index('PUSH32(esp, ebp);')
++    setup=code.index('ebp = esp;')
++    assert binding<push<setup<code.index('eax = MEM32(ebp);')
++    assert code.index('POP32(esp, ebp);')<code.index('esp += 4; return; /* ret */')
++    assert '#define ebp (*_recomp_live_ebp)' in code
++    assert code.rstrip().endswith('#undef ebp')
+--- a/tools/recomp/test_translator_ebp_init.py
++++ b/tools/recomp/test_translator_ebp_init.py
+@@ -1,77 +1,24 @@
+-"""Self-check that the generated `ebp` local starts at a defined value.
+-
+-ebp is the one callee-saved register declared as a function local rather than
+-reached through a global macro. It was declared without an initialiser, and a
+-function with a real "push ebp; mov ebp, esp" prologue reads it on its very
+-first statement -- PUSH32(esp, ebp) runs before "ebp = esp" gives it a value.
+-
+-So the emitted function begins by pushing an indeterminate word. At -O0 that is
+-whatever the host stack held; from -O1 up it is poison the compiler may
+-propagate, and the word goes into the guest stack as a frame pointer that the
+-epilogue pops back and that frame walkers may follow.
+-"""
+-
+-import unittest
+-
+-from . import config
+-from .translator import FunctionTranslator
++"""Original frame-binding checks; native behavior lives in test_canonical_ebp."""
++import pytest
++from tools.recomp.translator import FunctionTranslator
+ 
+ 
+-BASE = 0x00011000
+-
+-# push ebp; mov ebp, esp; pop ebp; ret  -- a real frame.
+-PROLOGUE = bytes.fromhex("558BEC5DC3")
+-# mov eax, [ebp+8]; xor eax, eax; pop ebp; ret -- reads the caller's frame.
+-FRAMELESS = bytes.fromhex("8B450833C05DC3")
+-
+-# Every global config._install writes, so one test cannot leak into another.
+-_CONFIG_GLOBALS = (
+-    "_SECTIONS", "SECTIONS", "_configured_from",
+-    "TEXT_VA_START", "TEXT_VA_END", "RDATA_VA_START", "RDATA_VA_END",
+-    "DATA_VA_START", "DATA_VA_END", "KERNEL_THUNK_ADDR", "ENTRY_POINT",
+-)
+-
+-
+-class EbpInitTest(unittest.TestCase):
+-    def setUp(self):
+-        self._saved = {k: getattr(config, k) for k in _CONFIG_GLOBALS}
+-
+-    def tearDown(self):
+-        for k, v in self._saved.items():
+-            setattr(config, k, v)
+-
+-    def _translate(self, image):
+-        config._install(
+-            [config.Section(".text", BASE, len(image), 0x0000, len(image), True)],
+-            entry_point=BASE, kernel_thunk_addr=BASE, origin="ebp-init-test")
+-        db = {BASE: {"start": f"0x{BASE:08X}", "end": BASE + len(image),
+-                     "_addr": BASE, "size": len(image)}}
+-        return FunctionTranslator(image, db).translate_function(BASE, db[BASE])
+-
+-    def test_frame_function_declares_ebp_initialised(self):
+-        c = self._translate(PROLOGUE)
+-        self.assertIn("uint32_t ebp = 0;", c)
+-        # The pre-fix spelling. This is the whole bug: an uninitialised local.
+-        self.assertNotIn("uint32_t ebp;", c)
+-
+-    def test_the_prologue_really_does_read_ebp_first(self):
+-        """Why the initialiser matters: the push precedes the assignment."""
+-        c = self._translate(PROLOGUE)
+-        push = c.index("PUSH32(esp, ebp)")
+-        assign = c.index("ebp = esp")
+-        decl = c.index("uint32_t ebp")
+-        self.assertLess(decl, push, c)
+-        self.assertLess(push, assign,
+-                        "push no longer precedes the assignment; this test's "
+-                        "premise needs rechecking:\n" + c)
+-
+-    def test_frameless_function_still_inherits_the_caller_frame(self):
+-        """The initialiser must not displace the frameless inheritance."""
+-        c = self._translate(FRAMELESS)
+-        self.assertIn("uint32_t ebp = 0;", c)
+-        self.assertIn("ebp = g_ebp;", c)
+-        self.assertLess(c.index("uint32_t ebp = 0;"), c.index("ebp = g_ebp;"), c)
+-
+-
+-if __name__ == "__main__":
+-    unittest.main()
++@pytest.mark.parametrize('raw',[
++    '558bec5dc3',       # Establish and restore a frame.
++    '8b450833c05dc3',   # Read the incoming frame without establishing one.
++    'bd443322115dc3',   # Use EBP as an ordinary architectural register.
++])
++def test_register_storage_is_live_and_never_reinitialized_from_legacy_cache(raw):
++    data=bytes.fromhex(raw)
++    info={'end':0x1000+len(data),'name':'live_frame_probe'}
++    translator=FunctionTranslator(b'',{0x1000:info})
++    translator._read_func_bytes=lambda start,end:data
++    code=translator.translate_function(0x1000,info)
++    binding='uint32_t *const _recomp_live_ebp = &g_ebp;'
++    assert code.count(binding)==1
++    assert code.index(binding)<code.index('POP32(esp, ebp);')
++    assert 'uint32_t ebp' not in code
++    assert 'ebp = g_ebp;' not in code
++    assert 'ebp = g_seh_ebp;' not in code
++    assert code.count('#define ebp (*_recomp_live_ebp)')==1
++    assert code.count('#undef ebp')==1

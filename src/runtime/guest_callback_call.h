@@ -39,7 +39,7 @@ int tsfp_guest_callback_cdecl(const tsfp_guest_callback_ops *,uint32_t routine,
  * may be constructed from untrusted plan bytes. */
 typedef struct {
     tsfp_guest_entry_t entry;unsigned char *frame;
-    uint32_t esp,address,bytes,words[4];unsigned count;
+    uint32_t r_esp,address,bytes,words[4];unsigned count;
 } tsfp_guest_callback_plan;
 int tsfp_guest_callback_prepare(const tsfp_guest_callback_ops *,uint32_t,const uint32_t *,unsigned,tsfp_guest_callback_plan *);
 int tsfp_guest_callback_invoke(tsfp_guest_callback_plan *,int (*admit)(void *),void *,uint32_t *result);
