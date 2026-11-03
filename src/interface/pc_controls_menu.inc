@@ -112,7 +112,6 @@ static int controls_native_button(void (*original)(void))
      * Hidden records must not advance its vertical cursor. */
     if(id<10 && controller!=(controls_tab==1) && guest_writable(g_eax,0xb4))
         WORD_AT(g_eax+0xb0)=0;
-    if(id==9 && controls_tab==1)controls_padding(2);
     return 1;
 }
 static void controls_prepare_keyboard(void)

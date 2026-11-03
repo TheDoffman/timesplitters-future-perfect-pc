@@ -10,6 +10,9 @@ General has native IDs1 Crosshair,2 Auto Aim,4 Auto Lookahead,5 Aim Mode,
 6 Crouch and7 Weapon Change. Controller has0 Control Layout,3 Inverse Look,
 8 Vibration and9 Turn Speed. Both retain native10 Accept/11 Cancel and the
 native profile draft, selected player, Customize and Back behavior.
+The Controller footer follows Turn Speed directly, without padding rows.
+The shared native focus painter suppresses its full-row backdrop for the owned
+Controls header130; individual tab backgrounds/active state remain visible.
 
 The original2EA3F0 builds and initializes every native record. The button scope
 marks the other tab's fields hidden/disabled and clears row+B0 before native

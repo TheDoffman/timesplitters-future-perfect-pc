@@ -1,3 +1,7 @@
+Controls visual follow-up (2026-11-03, local): common focus painter suppresses
+the full-row header hover backdrop, and Controller removes footer padding after
+Turn Speed. No host adapter changes; native Mac visual acceptance is pending.
+
 Unified Controls (2026-11-03, local feature/unified-controls): shared menu source
 combines General Controls, Controller and Keyboard & Mouse under one entry,
 using the Video tab skin, compact fonts and native dividers. Native profile

@@ -925,6 +925,10 @@ void pc_display_menu_highlight(void (*original)(void))
        page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART && guest_writable(item,0x18) && WORD_AT(item+0x14)==120u) {
         g_esp+=4;return;
     }
+    /* The Controls header paints its own individual tabs, like Video. */
+    if(controls_font_menu(menu) && guest_writable(item,0x18) && WORD_AT(item+0x14)==130u) {
+        g_esp+=4;return;
+    }
     float bounds[4],fade;
     int left,top,right,bottom,radius=6;
     uint32_t color;

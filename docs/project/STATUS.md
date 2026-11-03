@@ -1,3 +1,15 @@
+## Controls hover and Controller spacing (2026-11-03, local)
+
+Follow-up on feature/unified-controls: the owned Controls header now suppresses
+the native full-row focus backdrop, matching Video Options. Individual tab
+backgrounds and active selection remain. Controller no longer inserts two blank
+rows between Turn Speed and the Accept/Cancel footer. Existing settings and
+navigation handlers are unchanged. Windows focused UI checks:15 passed,2 native
+Mac skips; supported Release Build and built-in checks pass. Isolated live
+Controller hover capture reviewed: no full-row backdrop and no footer gap.
+Native Mac visual
+acceptance remains pending; both changes use existing shared menu source.
+
 ## Unified Controls tabs (2026-11-03, local)
 
 Branch feature/unified-controls based on cd8544bf. One Controls entry replaces
