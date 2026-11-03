@@ -376,6 +376,7 @@ static int staged_rate, applied_rate;
 static unsigned applied_texture;
 static unsigned staged_aa,applied_aa;
 static int staged_msaa=1,staged_supersampling;
+static int restart_baseline_set,running_msaa=1,running_supersampling;
 static uint32_t post_aa_row;
 static uint32_t apply_row;
 static uint32_t rate_row,subtitle_row,feed_row,counter_row;
@@ -1123,12 +1124,18 @@ static void labels(void)
     } else { row(0,"Keep changes");row(1,"Revert"); }
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
         /* Reserve equal section heights so tabs do not move under the cursor. */
-        int padding=page==DISPLAY_HOME?3:page==DISPLAY_VIEW?2:0;
+        int padding=page==DISPLAY_HOME?3:page==DISPLAY_VIEW?2:page==DISPLAY_ADVANCED?1:0;
         for(int i=0;i<padding;i++)
             guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(MODE_TEXT_BASE+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT+3),
                 (uint32_t)(110+i),4u,0u,0u,0u);
-        /* Both graphics sections already own a status/help row. */
-        if(*status && page!=DISPLAY_GRAPHICS && page!=DISPLAY_ADVANCED)small_note(21,status);
+        /* Keep status below the controls, never between graphics settings. */
+        if(page==DISPLAY_GRAPHICS || page==DISPLAY_ADVANCED) {
+#if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
+            small_note(81,status);
+#else
+            small_note(81,*status?status:"Effects require Vulkan");
+#endif
+        } else if(*status)small_note(21,status);
         guest_call(sub_00079710,1,0u);
         apply_row=guest_call(sub_00079D60_gen,6,text_at(4,"Apply"),3u,0u,0u,SELECT_CB,0u);
         update_apply();
@@ -1290,8 +1297,6 @@ static void select_callback(void)
         }
     } else if(page==DISPLAY_GRAPHICS && selected==108) {
         read_choices();refresh(DISPLAY_ADVANCED,0);
-    } else if(page==DISPLAY_ADVANCED && selected==107) {
-        read_choices();refresh(DISPLAY_GRAPHICS,0);
     } else if(page==DISPLAY_ADVANCED && selected==106) {
         int cleared=pc_graphics_clear_cache();
         text_at(81,cleared<0?"\vs75Could not clear some cache files\vs100":"\vs75Shader cache cleared\vs100");
@@ -1360,6 +1365,10 @@ static void activate(void)
         staged_aa=applied_aa=pc_post_aa_get();
         TsfpGraphicsOptions graphics=pc_graphics_get();
         staged_msaa=graphics.msaa;staged_supersampling=graphics.supersampling;
+        if(!restart_baseline_set) {
+            running_msaa=graphics.msaa;running_supersampling=graphics.supersampling;
+            restart_baseline_set=1;
+        }
         {
             extern void sub_00069640(void);
             uint32_t profile=guest_call(sub_00069640,0);

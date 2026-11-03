@@ -1,3 +1,9 @@
+Conditional restart labels (2026-11-03, local follow-up): common Video Options
+removes the general notice and conditionally marks MSAA/Supersampling beside
+their names. Status is below all controls; Advanced uses Back/tab navigation
+without a redundant button. Shared behavior covers main and pause; no OS adapter
+change is needed. Native Mac visual acceptance remains pending.
+
 Video Options silver dividers (2026-11-03): shared menu builder uses the original
 native skin separator below tabs and above Apply in all four sections. Native
 layout supplies non-selectable lines and pointer/keyboard row placement; return

@@ -428,3 +428,14 @@ above Apply. The native separator is non-selectable and participates in menu
 layout, matching other menus on both front-end and pause. Confirmation/restart
 dialogs retain their existing layout. Returning from Later/back or a failed
 restart selects the first Advanced control after the header divider.
+
+### Conditional restart labels
+
+Video Options removes the general MSAA/supersampling restart notice. Each
+Advanced control appends `(Requires restart)` only while its draft differs
+from the process baseline captured when Video Options first opens. Changing
+back removes the suffix; Apply/Later and reopening retain it until relaunch.
+The restart dialog still appears only after Apply. The reserved status row sits after all graphics controls, so removing the
+notice leaves no gap between Ambient occlusion and Texture style. It continues
+to display save/cache errors without moving the compact layout. Advanced omits
+the redundant Back to Graphics button; Back and the Graphics tab still return.

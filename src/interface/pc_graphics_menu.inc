@@ -12,6 +12,11 @@ static uint32_t graphics_choice(int slot,const char *label,const char *const *ch
     guest_call(sub_00075430,2,item,(uint32_t)selected);
     return item;
 }
+static void graphics_restart_labels(void)
+{
+    text_at(32,"MSAA%s",staged_msaa!=running_msaa?" (Requires restart)":"");
+    text_at(37,"Supersampling%s",staged_supersampling!=running_supersampling?" (Requires restart)":"");
+}
 static void graphics_labels(void)
 {
     static const char *const msaa[]={"Off","2x","4x","8x"};
@@ -24,20 +29,15 @@ static void graphics_labels(void)
     for(int i=0;i<5;i++)if(graphics_filters[i]<=options.anisotropy)filter=i;
     memset(graphics_rows,0,sizeof graphics_rows);
     if(page==DISPLAY_ADVANCED) {
-        graphics_rows[0]=graphics_choice(0,"MSAA (restart required)",msaa,4,sample);
-        graphics_rows[5]=graphics_choice(5,"Supersampling (restart)",supersampling,4,options.supersampling);
+        graphics_rows[0]=graphics_choice(0,"MSAA",msaa,4,sample);
+        graphics_rows[5]=graphics_choice(5,"Supersampling",supersampling,4,options.supersampling);
         graphics_rows[4]=graphics_choice(4,"Shader cache",toggle,2,options.shader_cache);
         guest_call(sub_00079D60_gen,6,text_at(82,"Clear shader cache"),106u,0u,0u,SELECT_CB,0u);
-        guest_call(sub_00079D60_gen,6,text_at(83,"Back to Graphics"),107u,0u,0u,SELECT_CB,0u);
     } else {
         graphics_rows[2]=graphics_choice(2,"Anisotropic filtering",af,5,filter);
         graphics_rows[3]=graphics_choice(3,"Ambient occlusion",toggle,2,options.ambient_occlusion);
     }
-#if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
-    small_note(81,*status?status:"MSAA / supersampling require restart");
-#else
-    small_note(81,*status?status:"Supersampling: restart; effects: Vulkan");
-#endif
+    graphics_restart_labels();
 }
 static void graphics_read_choices(void)
 {
@@ -53,6 +53,7 @@ static void graphics_read_choices(void)
         if(indices[i]<0 || indices[i]>=(i==0 || i==5?4:i==2?5:2))return;
     }
     staged_msaa=graphics_samples[indices[0]];staged_supersampling=indices[5];
+    graphics_restart_labels();
     after.edge_smoothing=indices[1];
     /* Keep a legacy in-between filtering value until that row changes. */
     int old_filter=0;

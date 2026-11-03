@@ -1,3 +1,19 @@
+## Conditional restart labels (2026-11-03, local development)
+
+Based on173db75e, fix/restart-on-apply. Removed the general MSAA/supersampling
+notice and permanent restart suffixes. Advanced marks each changed field with
+(Requires restart) beside its name; returning to the process baseline removes
+it, while Apply/Later retains the reminder. Restart dialogs still wait for Apply.
+Shared Windows UI fixture:4passed2nativeMacskips, covering initial clean names,
+independent supersampling markers/revert and MSAA marker after Apply/Later.
+Windows x64 Release Build and built-in checks pass after the game was closed.
+The initial main/pause captures confirm per-field markers fit and disappear
+when reverted. Follow-up removes Back to Graphics and moves the reserved
+status row below the graphics controls to close the gap left by the notice;
+final main/pause Graphics and Advanced captures at1280x720 confirm contiguous
+controls, no redundant button, both markers fitting and successful reversion.
+Native Mac visual review remains unrun. Personal saves/settings untouched.
+
 ## Video Options silver separators (2026-11-03, local development)
 
 Follow-up to9077fc02 on fix/restart-on-apply. Shared menu construction inserts

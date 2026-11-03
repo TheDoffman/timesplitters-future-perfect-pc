@@ -338,6 +338,7 @@ int main(int argc,char **argv)
     CHECK(page==DISPLAY_HOME && built_row_count==10 && separators==2 && separator_positions[0]==1 && separator_positions[1]==8 && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
     page=DISPLAY_GRAPHICS;built_rows=built_row_count=separators=0;labels();
     CHECK(!graphics_rows[0] && !graphics_rows[4] && texture_row && post_aa_row && !counter_row && !aspect_row);
+    CHECK(built_ids[2]==102 && built_ids[3]==103 && built_ids[4]==7 && built_ids[5]==11 && built_ids[6]==108 && built_ids[7]==81);
     WORD_AT(post_aa_row+0xc8)=1;read_choices();
     CHECK(staged_aa==1 && !graphics_options.edge_smoothing);
     call(SELECT_CB,3,0);CHECK(graphics_options.edge_smoothing==1 && !pc_smaa_enabled());
@@ -347,9 +348,18 @@ int main(int argc,char **argv)
     CHECK(graphics_options.anisotropy==1 && WORD_AT(graphics_rows[2]+0xc8)==0);
     graphics_save_ok=1;WORD_AT(graphics_rows[2]+0xc8)=4;read_choices();CHECK(graphics_options.anisotropy==16);
     call(SELECT_CB,108,0);CHECK(page==DISPLAY_ADVANCED && !post_aa_row && graphics_rows[0] && graphics_rows[4]);
+    CHECK(!strcmp((char *)((uintptr_t)TEXT_ADDRESS(32)+g_xbox_mem_offset),"MSAA"));
+    CHECK(!strcmp((char *)((uintptr_t)TEXT_ADDRESS(37)+g_xbox_mem_offset),"Supersampling"));
+    CHECK(!strstr((char *)((uintptr_t)TEXT_ADDRESS(81)+g_xbox_mem_offset),"require restart"));
+    staged_supersampling=1;graphics_restart_labels();
+    CHECK(strstr((char *)((uintptr_t)TEXT_ADDRESS(37)+g_xbox_mem_offset),"Requires restart"));
+    staged_supersampling=0;graphics_restart_labels();
+    CHECK(!strcmp((char *)((uintptr_t)TEXT_ADDRESS(37)+g_xbox_mem_offset),"Supersampling"));
     /* Restart fields stay staged through edits/ticks/tabs until Apply. */
     WORD_AT(graphics_rows[0]+0xc8)=1;call(TICK_CB,100,0);
     CHECK(page==DISPLAY_ADVANCED && graphics_options.msaa==1 && staged_msaa==2);
+    CHECK(strstr((char *)((uintptr_t)TEXT_ADDRESS(32)+g_xbox_mem_offset),"Requires restart"));
+    CHECK(!strstr((char *)((uintptr_t)TEXT_ADDRESS(37)+g_xbox_mem_offset),"Requires restart"));
     CHECK(display_dirty() && !(WORD_AT(apply_row+0x28)&1));
     graphics_save_ok=0;call(SELECT_CB,3,0);
     CHECK(page!=DISPLAY_RESTART && graphics_options.msaa==1 && staged_msaa==2 && display_dirty());
@@ -358,9 +368,11 @@ int main(int argc,char **argv)
     call(SELECT_CB,3,0);CHECK(page==DISPLAY_RESTART && graphics_options.msaa==2);
     call(SELECT_CB,0,0);CHECK(page==DISPLAY_ADVANCED && !display_dirty() && WORD_AT(current_menu+0x18c)==100);
     call(TICK_CB,100,0);CHECK(page==DISPLAY_ADVANCED); /* Later does not nag. */
+    CHECK(strstr((char *)((uintptr_t)TEXT_ADDRESS(32)+g_xbox_mem_offset),"Requires restart"));
     /* Reverting a choice before Apply leaves no dirty state or prompt. */
     WORD_AT(graphics_rows[0]+0xc8)=0;call(TICK_CB,100,0);
     CHECK(graphics_options.msaa==2 && staged_msaa==1 && page==DISPLAY_ADVANCED);
+    CHECK(!strcmp((char *)((uintptr_t)TEXT_ADDRESS(32)+g_xbox_mem_offset),"MSAA"));
     WORD_AT(graphics_rows[0]+0xc8)=1;call(TICK_CB,100,0);CHECK(!display_dirty());
     /* Multiple restart changes produce one prompt, only after Apply. */
     WORD_AT(graphics_rows[0]+0xc8)=0;WORD_AT(graphics_rows[5]+0xc8)=2;
@@ -392,7 +404,7 @@ int main(int argc,char **argv)
     staged_fov=previous_fov;texture_choice=applied_texture;refresh(DISPLAY_GRAPHICS,0);
     call(SELECT_CB,108,0);CHECK(page==DISPLAY_ADVANCED);
     call(SELECT_CB,106,0);CHECK(cache_clear_calls==1 && page==DISPLAY_ADVANCED);
-    call(SELECT_CB,107,0);CHECK(page==DISPLAY_GRAPHICS);
+    call(BACK_CB,0,0);CHECK(page==DISPLAY_GRAPHICS);
     {int before=returned;call(BACK_CB,0,0);CHECK(returned==before+1);}
     refresh(DISPLAY_VIEW,0);
     status[0]=0;
