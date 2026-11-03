@@ -1,3 +1,17 @@
+## Original-style settings typography and tabs (2026-11-03, local)
+
+Continuing feature/unified-controls from2db57024. Shared Video/Controls tabs
+now use muted vertical shading, thin silver edges and uppercase measured
+captions. Keyboard menu rows and custom labels use uppercase display copies,
+matching the native Controls labels without changing stored bindings or saves.
+The tab painter retains fade, caption fitting and font restoration; edge/fill
+strips do not overlap. Existing settings/navigation behavior is unchanged.
+Windows focused UI/keyboard checks:16 passed,2 native Mac skips; supported Release
+Build and built-in checks pass. Isolated live frontend General, Controller,
+Keyboard, Mouse and Video captures reviewed for readability, fit and styling.
+US XBE hash validated; personal settings/saves untouched. Native Mac visual
+acceptance remains pending; changes share the existing guest/font adapters.
+
 ## Controls hover and Controller spacing (2026-11-03, local)
 
 Follow-up on feature/unified-controls: the owned Controls header now suppresses

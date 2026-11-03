@@ -5,6 +5,9 @@ US524A40, opened through native frontend2CBE50/pause2EC1A0 initialization.
 Settings and pause now expose one Controls entry. Root tabs are General Controls,
 Controller and Keyboard & Mouse, using the same measured tab painter as Video
 (`pc_settings_tabs.inc`), 78% width, compact65% fonts and native silver dividers.
+Video/Controls tabs use uppercase measured captions, muted vertical shading and
+non-overlapping silver edge strips. Keyboard labels use uppercase display copies
+only; stored key names, assignments and persistence remain unchanged.
 
 General has native IDs1 Crosshair,2 Auto Aim,4 Auto Lookahead,5 Aim Mode,
 6 Crouch and7 Weapon Change. Controller has0 Control Layout,3 Inverse Look,

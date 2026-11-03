@@ -1,3 +1,9 @@
+Native menu styling (2026-11-03, local): shared Video/Controls tab painter uses
+muted vertical shading, silver edges and uppercase captions. Controls keyboard
+labels format uppercase display copies. Existing native font/tint/fade helpers
+serve both hosts; no OS adapter changes. Windows focused checks/build pass;
+native Mac visual acceptance remains pending.
+
 Controls visual follow-up (2026-11-03, local): common focus painter suppresses
 the full-row header hover backdrop, and Controller removes footer padding after
 Turn Speed. No host adapter changes; native Mac visual acceptance is pending.

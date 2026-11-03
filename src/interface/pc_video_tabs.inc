@@ -23,7 +23,7 @@ static int video_tab_hit(float x,float y)
 static void video_tabs_draw(void)
 {
     extern void sub_00041DC0(void),sub_0003FCF0(void),sub_0001EFB0(void),sub_0003F8D0(void);
-    static const char *const names[]={"Display","Graphics","View & HUD"};
+    static const char *const names[]={"DISPLAY","GRAPHICS","VIEW & HUD"};
     GuestRegisters r;save_registers(&r);
     uint32_t menu=WORD_AT(g_esp+4),rect=WORD_AT(g_esp+12);
     if(menu==current_menu && page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART && guest_writable(menu,0xf8) && guest_writable(rect,16)) {

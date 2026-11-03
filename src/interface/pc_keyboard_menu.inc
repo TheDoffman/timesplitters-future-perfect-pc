@@ -37,8 +37,16 @@ static uint32_t kb_caption(void)
 /* Separate native Controller IDs from keyboard IDs during menu rebuilds. */
 static uint32_t kb_widget_id(int id) {return (uint32_t)(id+(controls_font_menu(kb_menu)?200:0));}
 static int kb_local_id(uint32_t id) {return (int)id-(controls_font_menu(kb_menu)?200:0);}
+static const char *kb_display_label(const char *label,char out[192])
+{
+    if(!controls_font_menu(kb_menu))return label;
+    unsigned i;
+    for(i=0;i<191 && label[i];i++)out[i]=label[i]>='a' && label[i]<='z'?label[i]-'a'+'A':label[i];
+    out[i]=0;return out;
+}
 static uint32_t kb_row(int id,const char *label,int note)
 {
+    char caption[192];label=kb_display_label(label,caption);
     uint32_t item=guest_call(sub_00079D60_gen,6,kb_text((unsigned)id+1,"\vs%d%s\vs100",note?65:controls_font_menu(kb_menu)?100:80,label),
         kb_widget_id(id),note?4u:0u,0u,note?0u:KB_SELECT,0u);
     if(guest_writable(item,0x2c))WORD_AT(item+0x28)&=~0x2000u;
@@ -76,7 +84,7 @@ static void kb_mouse_preview(void)
 {
     pc_controls_set_mouse(kb_settings.sensitivity,kb_settings.enabled,kb_settings.invert_y);
     kb_mouse_changed=GetTickCount64();
-    kb_text(2,"\vs%dSensitivity: %.3f\vs100",controls_font_menu(kb_menu)?100:80,kb_settings.sensitivity);
+    kb_text(2,"\vs%dSENSITIVITY: %.3f\vs100",controls_font_menu(kb_menu)?100:80,kb_settings.sensitivity);
 }
 static void menu_slider_keyboard_pointer(float x,float left,float width)
 {
@@ -88,6 +96,7 @@ static void menu_slider_keyboard_pointer(float x,float left,float width)
 extern void sub_00071B60(void),sub_00041DC0(void);
 static void kb_label(float x,float y,const char *text,int scale,uint32_t color)
 {
+    char caption[192];text=kb_display_label(text,caption);
     uint32_t align=WORD_AT(0x007E7260u);WORD_AT(0x007E7260u)=0;
     if(controls_font_menu(kb_menu))scale=(scale*100+32)/65;
     guest_call(sub_00041DC0,4,bits(x),bits(y),kb_text(30,"\vs%d%s\vs100",scale,text),color);
@@ -198,7 +207,7 @@ static void kb_build(void)
         guest_call(sub_0007D480,2,0x8400u,0u);
         guest_call(sub_000717D0,1,kb_text(20,"Off"));guest_call(sub_000717D0,1,kb_text(21,"On"));
         guest_call(sub_00075430,2,kb_enabled_row,(uint32_t)kb_settings.enabled);
-        uint32_t slider=guest_call(sub_00079D60_gen,6,kb_text(2,"\vs%dSensitivity: %.3f\vs100",controls_font_menu(kb_menu)?100:80,kb_settings.sensitivity),kb_widget_id(1),0x400u,0u,0u,KB_DRAW);
+        uint32_t slider=guest_call(sub_00079D60_gen,6,kb_text(2,"\vs%dSENSITIVITY: %.3f\vs100",controls_font_menu(kb_menu)?100:80,kb_settings.sensitivity),kb_widget_id(1),0x400u,0u,0u,KB_DRAW);
         if(guest_writable(slider,0x2c))WORD_AT(slider+0x28)&=~0x2000u;
         kb_invert_row=kb_row(2,"Invert vertical look",0);
         guest_call(sub_0007D480,2,0x8400u,0u);

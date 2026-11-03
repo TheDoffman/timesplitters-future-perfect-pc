@@ -211,7 +211,7 @@ static void controls_tabs_draw(void)
     if(controls_font_menu(menu) && controls_tabs_visible() && guest_writable(rect,16)) {
         memcpy(controls_bounds,(void *)((uintptr_t)rect+g_xbox_mem_offset),sizeof controls_bounds);
         controls_bounds_valid=1;
-        uint32_t captions[]={controls_text(1,"General Controls"),controls_text(2,"Controller"),controls_text(4,"Keyboard & Mouse")};
+        uint32_t captions[]={controls_text(1,"GENERAL CONTROLS"),controls_text(2,"CONTROLLER"),controls_text(4,"KEYBOARD & MOUSE")};
         settings_tabs_paint(menu,controls_bounds,captions,3,controls_tab);
     }
     restore_registers(&r);g_esp+=4;

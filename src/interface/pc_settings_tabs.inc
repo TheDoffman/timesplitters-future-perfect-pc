@@ -1,4 +1,13 @@
 /* Shared native tab skin for Video Options and Controls. */
+static uint32_t settings_tab_shade(uint32_t top,uint32_t bottom,int y,int height)
+{
+    uint32_t color=0;
+    for(unsigned shift=0;shift<32;shift+=8) {
+        int a=(int)((top>>shift)&255u),b=(int)((bottom>>shift)&255u);
+        color|=(uint32_t)(a+(b-a)*y/(height>1?height-1:1))<<shift;
+    }
+    return color;
+}
 static void settings_tabs_paint(uint32_t menu,const float bounds[4],
                                 const uint32_t *captions,int count,int active_index)
 {
@@ -27,15 +36,27 @@ static void settings_tabs_paint(uint32_t menu,const float bounds[4],
     for(int i=0;i<count;i++) {
         float x=bounds[0]+width*i;
         int active=i==active_index;
-        uint32_t bg=guest_call(sub_00154FE0,2,active?0x34577f7fu:0x1423367fu,WORD_AT(menu+0xf4));
+        uint32_t shade_top=guest_call(sub_00154FE0,2,active?0x50667c70u:0x23304358u,WORD_AT(menu+0xf4));
+        uint32_t shade_bottom=guest_call(sub_00154FE0,2,active?0x20334a70u:0x10192558u,WORD_AT(menu+0xf4));
+        uint32_t silver=guest_call(sub_00154FE0,2,active?0xaebdca70u:0x51627055u,WORD_AT(menu+0xf4));
         uint32_t fg=guest_call(sub_00154FE0,2,active?0xddeeff7fu:0x91a8c17fu,WORD_AT(menu+0xf4));
         /* Non-overlapping horizontal strips retain alpha at rounded corners. */
         int h=(int)height,w=(int)(width-4.f);
         static const int insets[]={4,2,1,0};
         for(int y=0;y<h;y++) {
             int edge=y<h-1-y?y:h-1-y,cut=edge<4?insets[edge]:0;
-            guest_call(sub_0001EFB0,5,(uint32_t)((int)x+cut),(uint32_t)((int)top+y),
-                (uint32_t)((int)x+w-cut),(uint32_t)((int)top+y+1),bg);
+            int left=(int)x+cut,right=(int)x+w-cut;
+            uint32_t bg=settings_tab_shade(shade_top,shade_bottom,y,h);
+            if(y==0 || y==h-1)guest_call(sub_0001EFB0,5,(uint32_t)left,(uint32_t)((int)top+y),
+                (uint32_t)right,(uint32_t)((int)top+y+1),silver);
+            else {
+                guest_call(sub_0001EFB0,5,(uint32_t)left,(uint32_t)((int)top+y),
+                    (uint32_t)(left+1),(uint32_t)((int)top+y+1),silver);
+                guest_call(sub_0001EFB0,5,(uint32_t)(left+1),(uint32_t)((int)top+y),
+                    (uint32_t)(right-1),(uint32_t)((int)top+y+1),bg);
+                guest_call(sub_0001EFB0,5,(uint32_t)(right-1),(uint32_t)((int)top+y),
+                    (uint32_t)right,(uint32_t)((int)top+y+1),silver);
+            }
         }
         uint32_t caption=captions[i];
         if(!video_tab_measure)video_tab_measure=xbox_HeapAlloc(8,4);
