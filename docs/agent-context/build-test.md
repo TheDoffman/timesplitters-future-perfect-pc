@@ -1,4 +1,8 @@
-FOV fixture stubs HUD draws and checks the Kill Feed row.
+[Graphics tests](../development/graphics-options.md): HUD/SMAA order and texture-present fixtures.
+Auto-sizing fixtures test SDL policy; restart handoff is separate.
+`tests/graphics/test_fov_settings.py` also exercises Video Options tabs, section
+ownership, pointer-region boundaries, keyboard cycling and staged-value retention.
+Ping-expiry tests wait past GetTickCount64 quantization.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build/tests ([SMAA](smaa.md))
 
@@ -130,7 +134,7 @@ dispatch and copy/rebase/leak mutations. Both hosts; mocked draws.
 
 Reload/Fire #337: `test_native_timing.py` covers the US decoder;
 `reload_phase_sweep.h` covers 864 schedules/1,728 presses. `test_reload_keys.py`
-covers 1,360 Reload and 680 Fire schedules at 60ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ240, priority, remaps and
+covers 1,360 Reload and 680 Fire schedules at 60-240, priority, remaps and
 lifecycle. `native_reload_input.c` adds 425 original-decoder Fire schedules
 (X surrogate). Windows `pc_controls.c` checks the event bridge.
 `native_refresh_game.py --native --fps 180 --short-fire --seconds 116` checks
@@ -1026,4 +1030,6 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [2x tests](original-upscale.md).
 
-[RTL](guest-stack-trace.md), [host policy](execution-host.md).
+[RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
+
+GPU asserts stay on; AO logs scene/pixel failures.

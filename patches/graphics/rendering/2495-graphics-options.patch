@@ -1,0 +1,51 @@
+--- a/src/d3d/d3d8_display.c
++++ b/src/d3d/d3d8_display.c
+@@ -12,6 +12,10 @@
+  */
+ #include "d3d8_display.h"
+ #include "recomp_config.h"
++#define TSFP_GRAPHICS_DEFAULT_ANISOTROPY recomp_config_int("RECOMP_ANISO", "anisotropy", 1)
++#define TSFP_GRAPHICS_SETTINGS_IMPLEMENTATION
++#include "graphics/graphics_settings.h"
++#include "graphics/fxaa_resolve.h"
+ #ifdef TSFP_PC_DISPLAY
+ #include "pc_display.h"
+ #endif
+@@ -88,6 +92,7 @@
+             fprintf(stderr, "D3D8 display: anisotropic filtering forced to %ux where the "
+                     "title filters linearly\n", g_policy.anisotropy);
+     }
++    g_policy.anisotropy = (UINT)pc_graphics_get().anisotropy;
+     return &g_policy;
+ }
+ 
+@@ -222,8 +227,8 @@
+     "}\n"
+     "Texture2D<float4> scene : register(t9);\n"
+     "SamplerState smp : register(s9);\n"
+-    "float4 ps_main(VSOut i) : SV_Target {\n"
+-    "    float2 base = (i.pos.xy - p.xy) * p.zw;\n"
++    "float4 sample_resolved(float2 pixel) {\n"
++    "    float2 base = (pixel - p.xy) * p.zw;\n"
+     "    float2 step = p.zw / TAPS;\n"
+     "    float4 sum = 0;\n"
+     "    [unroll] for (int y = 0; y < TAPS; y++)\n"
+@@ -231,7 +236,8 @@
+     "            sum += scene.SampleLevel(smp,\n"
+     "                       (base + (float2(x, y) + 0.5) * step) * q.xy, 0);\n"
+     "    return sum * q.z;\n"
+-    "}\n";
++    "}\n"
++    TSFP_FXAA_RESOLVE_HLSL;
+ 
+ static struct {
+     RhiShader      *vs;
+@@ -377,7 +383,7 @@
+         c.texel_x = 1.0f / (float)scene_w;
+         c.texel_y = 1.0f / (float)scene_h;
+         c.inv_taps = 1.0f / (float)(taps * taps);
+-        c.pad = 0.0f;
++        c.pad = pc_smaa_enabled() ? 0.0f : (float)pc_graphics_get().edge_smoothing;
+         memcpy(mapped, &c, sizeof c);
+         rhi_buffer_unmap(g.cb);
+     }

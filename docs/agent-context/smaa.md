@@ -26,17 +26,16 @@ Shared D3D11/Vulkan policy; legacy GL retains the key without applying it.
 The shared launcher `GameSettings.Smaa`/`SettingsPage` owns the UI and atomic
 settings save. See [player behavior](../players/smaa.md).
 
-The unified frontend/pause Video Options adds native selector ID11 after Texture
-style. It stages `staged_smaa` against `applied_smaa`; Back discards edits, menu
-rebuilds retain them, and resolution confirmation defers the batch. Apply saves
-SMAA last, before publishing FPS/textures/subtitles, and rolls back earlier
-display/rate saves if SMAA fails. `pc_smaa_settings.h`, implemented once by the
-runtime config unit, preserves unrelated runtime.conf bytes and replaces only
-the `smaa` setting through an exclusive temporary file and atomic rename. It
-publishes a process-local atomic value only after success; the render thread
-reads it through `pc_smaa_enabled` without UI-thread GPU work. Startup env values
-are superseded only by an explicit successful Apply. The in-game and launcher
-controls therefore use the same persisted key; no second preference file exists.
+The unified frontend/pause Graphics tab uses selector ID11 for post-process
+anti-aliasing (Off/FXAA/SMAA). `staged_aa`, `applied_aa` and `post_aa_row` retain
+Apply/Back, rebuild and Keep/Revert behavior. `post_aa_settings.h` maps the
+selector to existing graphics/SMAA preferences with rollback on a failed save.
+The display resolve suppresses FXAA while SMAA is enabled, so even legacy
+combinations run only one post-process method. The launcher uses the same
+mapping through `GameSettings.PostAntiAliasing` and its existing save transaction.
+`pc_smaa_settings.h` still persists only the runtime `smaa` key atomically and
+publishes live after success. The renderer reads it on the render thread.
+Startup env values are superseded only by an explicit successful SMAA save.
 
 `tests/graphics/test_smaa.py` checks pinned upstream hashes and embedded shader
 freshness, then compiles `smaa_rhi.c` against production display/RHI code on
@@ -48,7 +47,7 @@ selects the new test. Windows/Mac packages include `Licenses/SMAA.txt`.
 Portable package fixtures assert the license is included; the Windows fixture
 also checks the shipped bytes against its source.
 Historical patch-migration fixtures omit SMAA until their complete-stack upgrade.
-The guest FOV/settings fixture covers the ninth row, staging, Back, rebuild,
+The guest FOV/settings fixture covers the Graphics row, staging, Back, rebuild,
 Apply and failed-SMAA-save rollback of earlier resolution/FPS writes. GPU fixtures
 also exercise the real saved/live model and read-only preference failure.
 

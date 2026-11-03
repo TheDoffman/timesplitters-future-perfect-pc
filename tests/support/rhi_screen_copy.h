@@ -99,9 +99,45 @@ static void rhi_screen_copy_test(RhiView *restore_target) {
         RhiView *offscreen_rtv=rhi_view_create(offscreen,RHI_VIEW_RENDER_TARGET,NULL);
         RhiView *offscreen_srv=rhi_view_create(offscreen,RHI_VIEW_SAMPLED,NULL);CHECK(offscreen_rtv&&offscreen_srv);
         const float blue[4]={0,0,1,1};rhi_clear_color(offscreen_rtv,blue);
+        IDirect3DSurface8 *copy_surface=NULL;
+        CHECK(texture->lpVtbl->GetSurfaceLevel(texture,0,&copy_surface)==S_OK);
+        unsigned copy_samples=4;
+        while(copy_samples>1&&!rhi_sample_count_supported(RHI_FORMAT_B8G8R8A8_UNORM,copy_samples))copy_samples/=2;
+        CHECK(copy_samples>1);
+        RhiView *copy_ms=d3d8_surface_msaa_prepare((D3D8Surface *)copy_surface,copy_samples);CHECK(copy_ms);
+        rhi_clear_color(copy_ms,black);
+        IDirect3DSurface8 *source_surface=d3d8_surface_create(offscreen,0,0,4,2,
+            D3DFMT_A8B8G8R8,D3DPOOL_DEFAULT,D3DUSAGE_RENDERTARGET,
+            D3DMULTISAMPLE_NONE,NULL,0);CHECK(source_surface);
+        rhi_clear_color(offscreen_rtv,black);
+        RhiView *source_ms=d3d8_surface_msaa_prepare((D3D8Surface *)source_surface,copy_samples);CHECK(source_ms);
+        rhi_clear_color(source_ms,blue);
+
         CHECK(d3d8_CopyTextureView(texture,offscreen_srv)==S_OK && !((D3D8Texture *)texture)->screen_copy);
+        CHECK(d3d8_surface_msaa_resolve((D3D8Surface *)copy_surface));
         unsigned char pixels[8*6*4];CHECK(rhi_image_readback(((D3D8Texture *)texture)->image,0,pixels,8*4)==0);
         for(unsigned i=0;i<8*6;i++)CHECK(pixels[4*i]==255 && pixels[4*i+1]==0 && pixels[4*i+2]==0 && pixels[4*i+3]==255);
+        /* Partial copy changes only the requested area of an active target.
+         * Its untouched green pixels exist only in multisampled coverage. */
+        const float green[4]={0,1,0,1};rhi_clear_color(copy_ms,green);
+        RECT partial={0,0,2,2};POINT offset={3,2};
+        CHECK(xbox_D3D8CopyBackBufferRectToTexture(texture,&partial,&offset)==S_OK);
+        CHECK(d3d8_surface_msaa_resolve((D3D8Surface *)copy_surface));
+        CHECK(rhi_image_readback(((D3D8Texture *)texture)->image,0,pixels,8*4)==0);
+        for(unsigned y=0;y<6;y++)for(unsigned x=0;x<8;x++){
+            unsigned char *pixel=pixels+(y*8+x)*4;
+            int inside=x>=3&&x<5&&y>=2&&y<4;
+            CHECK(pixel[0]==0&&pixel[1]==(inside?0:255)&&pixel[2]==0&&pixel[3]==255);
+        }
+        D3DLOCKED_RECT upload;
+        CHECK(texture->lpVtbl->LockRect(texture,0,&upload,NULL,0)==S_OK);
+        for(unsigned y=0;y<6;y++)memset((unsigned char *)upload.pBits+y*upload.Pitch,99,8*4);
+        CHECK(texture->lpVtbl->UnlockRect(texture,0)==S_OK);
+        CHECK(d3d8_surface_msaa_resolve((D3D8Surface *)copy_surface));
+        CHECK(rhi_image_readback(((D3D8Texture *)texture)->image,0,pixels,8*4)==0);
+        for(unsigned i=0;i<sizeof pixels;i++)CHECK(pixels[i]==99);
+        copy_surface->lpVtbl->Release(copy_surface);
+        source_surface->lpVtbl->Release(source_surface);
         rhi_view_destroy(offscreen_rtv);rhi_view_destroy(offscreen_srv);rhi_image_destroy(offscreen);
         CHECK(xbox_D3D8CopyBackBufferToTexture(NULL)==E_INVALIDARG);
         CHECK(d3d8_CopyTextureView(texture,NULL)==E_INVALIDARG);

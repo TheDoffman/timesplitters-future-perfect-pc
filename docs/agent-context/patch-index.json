@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "d8cd656ee85fcc1ef82e6c114b69aaba4f1ae12a1d7b890e601689a8a8c406bd",
+  "loaderSha256": "98c579e5d2c3dc34d67db3964e9ab088490195483ae9607ebfd6f75dc8948d5e",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1837,6 +1837,151 @@
       ]
     },
     {
+      "name": "2490-fps-counter-scaling.patch",
+      "path": "patches/graphics/interface/2490-fps-counter-scaling.patch",
+      "sha256": "85e6d36b10a7237e53b81868f5790ced9fbeb0cb9f817059afb934e8953995ff",
+      "targets": [
+        "src/d3d/d3d8_overlay.c",
+        "src/d3d/d3d8_overlay.h",
+        "src/hle/hle_d3d8.c"
+      ]
+    },
+    {
+      "name": "2495-graphics-options.patch",
+      "path": "patches/graphics/rendering/2495-graphics-options.patch",
+      "sha256": "e76fb5c97bbf7802578e30f6d2706043edfa0754dce1e579479df3956b096d9e",
+      "targets": [
+        "src/d3d/d3d8_display.c"
+      ]
+    },
+    {
+      "name": "2496-portable-shader-cache.patch",
+      "path": "patches/graphics/rendering/2496-portable-shader-cache.patch",
+      "sha256": "3104b034bba413b032985e71e73e76fd108e5cddcc0e9c25b502ca8357657671",
+      "targets": [
+        "src/d3d/rhi_shader_cache.c",
+        "src/d3d/rhi_shader_cache.h"
+      ]
+    },
+    {
+      "name": "2497-msaa-resolve.patch",
+      "path": "patches/graphics/rendering/2497-msaa-resolve.patch",
+      "sha256": "968de7ea44014e48c47b24ae1a1fc7d38b67b3ef8d51fcf4a4f947e280d5d976",
+      "targets": [
+        "src/d3d/rhi.c",
+        "src/d3d/rhi.h",
+        "src/d3d/rhi_backend.h",
+        "src/d3d/rhi_d3d11.c",
+        "src/d3d/rhi_vulkan.c"
+      ]
+    },
+    {
+      "name": "2498-cache-menu-api.patch",
+      "path": "patches/graphics/rendering/2498-cache-menu-api.patch",
+      "sha256": "ab1febcb7372d2084fa0e38fe259dbbc5fdeb9e88672afcf000d6467ad1fb17a",
+      "targets": [
+        "src/d3d/d3d8_display.c"
+      ]
+    },
+    {
+      "name": "2499-msaa-surface-views.patch",
+      "path": "patches/graphics/rendering/2499-msaa-surface-views.patch",
+      "sha256": "b716eb8eb4f2d615fb02a66f2164fac03dc35b1530f7570d24d2540ea4a56b1a",
+      "targets": [
+        "src/d3d/d3d8_resources.c",
+        "src/d3d/rhi_d3d11.c"
+      ]
+    },
+    {
+      "name": "2500-world-ambient-occlusion.patch",
+      "path": "patches/graphics/rendering/2500-world-ambient-occlusion.patch",
+      "sha256": "b8bf34e66476e128a19c21295cda47b5b35e691241a28b7a9f4a5611d380fca5",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2501-deferred-ambient-occlusion.patch",
+      "path": "patches/graphics/rendering/2501-deferred-ambient-occlusion.patch",
+      "sha256": "8d37f18cfaf122351def72653aafdd819923f1e1cc2f4bb60aff1e87f0e25879",
+      "targets": [
+        "src/hle/hle_d3d8_record.c",
+        "src/hle/hle_d3d8_record.h"
+      ]
+    },
+    {
+      "name": "2503-pipeline-cache-integrity.patch",
+      "path": "patches/graphics/rendering/2503-pipeline-cache-integrity.patch",
+      "sha256": "94f7508e0c7ea8d3023ba16d534c738a7c58c66af660bd5b5d4b3085a5edf616",
+      "targets": [
+        "src/d3d/rhi_vulkan.c"
+      ]
+    },
+    {
+      "name": "2505-msaa-subresource-resolve.patch",
+      "path": "patches/graphics/rendering/2505-msaa-subresource-resolve.patch",
+      "sha256": "da2f2e17eb7739da1f35d45ce8c3650b02c48b90abac17823148e8b068759d55",
+      "targets": [
+        "src/d3d/rhi.c",
+        "src/d3d/rhi.h",
+        "src/d3d/rhi_backend.h",
+        "src/d3d/rhi_d3d11.c",
+        "src/d3d/rhi_vulkan.c"
+      ]
+    },
+    {
+      "name": "2506-msaa-surface-companions.patch",
+      "path": "patches/graphics/rendering/2506-msaa-surface-companions.patch",
+      "sha256": "b98e25ec621408effc9b2fba39a55b14c51ab895ee9d1e241267531574c9b34f",
+      "targets": [
+        "src/d3d/d3d8_internal.h",
+        "src/d3d/d3d8_resources.c"
+      ]
+    },
+    {
+      "name": "2509-msaa-surface-locks.patch",
+      "path": "patches/graphics/rendering/2509-msaa-surface-locks.patch",
+      "sha256": "0a2712cd80453f61deba3746a7ce60545f894a923c04279cacf6edc151e8dec5",
+      "targets": [
+        "src/d3d/d3d8_resources.c"
+      ]
+    },
+    {
+      "name": "2512-portable-renderer-declarations.patch",
+      "path": "patches/graphics/rendering/2512-portable-renderer-declarations.patch",
+      "sha256": "0c3ae0ec20b9ba3833b7c35617e8bfa47246f57dc5c72fa7be200add962b166f",
+      "targets": [
+        "src/d3d/d3d8_internal.h"
+      ]
+    },
+    {
+      "name": "2513-vulkan-ao-descriptors.patch",
+      "path": "patches/graphics/rendering/2513-vulkan-ao-descriptors.patch",
+      "sha256": "130105bdca862480ae27acc4e3c1000cb688c4be5a99865611097ada2fc4d453",
+      "targets": [
+        "src/d3d/rhi_vulkan.c"
+      ]
+    },
+    {
+      "name": "2514-video-restart-handoff.patch",
+      "path": "patches/graphics/rendering/2514-video-restart-handoff.patch",
+      "sha256": "e36a2d6f082999317fdcafef985426b95f52a567ab566001bd55f842b2318155",
+      "targets": [
+        "titles/futureperfect/src/main.c"
+      ]
+    },
+    {
+      "name": "2515-supersampling.patch",
+      "path": "patches/graphics/rendering/2515-supersampling.patch",
+      "sha256": "f69b264fb78d8a28e1f726e24f07254a363231b84c9b7d3e107f6040937d4a30",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_display.c",
+        "src/d3d/d3d8_display.h"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",
@@ -3019,6 +3164,63 @@
       ]
     },
     {
+      "name": "2502-ambient-occlusion-capture.patch",
+      "path": "patches/graphics/rendering/2502-ambient-occlusion-capture.patch",
+      "sha256": "ccebaee9c1042ec50aa5bdd4b2b2d88cfbd3ec83e392e8b849e66ccc0a497dcf",
+      "targets": [
+        "src/hle/d3d8_capture.c",
+        "src/hle/d3d8_capture.h",
+        "src/hle/hle_d3d8_record.c",
+        "src/replay/d3d8_replay.c",
+        "tests/d3d8_capture/test_main.c"
+      ]
+    },
+    {
+      "name": "2504-scene-target-lifecycle.patch",
+      "path": "patches/graphics/rendering/2504-scene-target-lifecycle.patch",
+      "sha256": "60d1f186c4189d6e5c4618340d781ea2bdd2555f8ec822f80ae2488a847291b7",
+      "targets": [
+        "src/d3d/d3d8_device.c"
+      ]
+    },
+    {
+      "name": "2507-msaa-offscreen-bindings.patch",
+      "path": "patches/graphics/rendering/2507-msaa-offscreen-bindings.patch",
+      "sha256": "43c83ead582e2d047aa2ae017a1793e62b9c4a855c4b0c943d3300a053203a7f",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_internal.h",
+        "src/d3d/d3d8_resources.c"
+      ]
+    },
+    {
+      "name": "2508-msaa-primary-scene.patch",
+      "path": "patches/graphics/rendering/2508-msaa-primary-scene.patch",
+      "sha256": "33445777a733421c0907a7929d1f3c178cba6bfac07e4aca0614bd65db7c1833",
+      "targets": [
+        "src/d3d/d3d8_device.c"
+      ]
+    },
+    {
+      "name": "2510-msaa-surface-aliases.patch",
+      "path": "patches/graphics/rendering/2510-msaa-surface-aliases.patch",
+      "sha256": "b36bc1252f5556607b9d1e15c17dc48bda39edcdd2613786d4bdc856545b2b08",
+      "targets": [
+        "src/d3d/d3d8_internal.h",
+        "src/d3d/d3d8_resources.c"
+      ]
+    },
+    {
+      "name": "2511-msaa-screen-copy-sync.patch",
+      "path": "patches/graphics/rendering/2511-msaa-screen-copy-sync.patch",
+      "sha256": "b31afb8ff826d5ff29c2df9feb582972d4e52c882a5b0c493d614ea1098197bd",
+      "targets": [
+        "src/d3d/d3d8_internal.h",
+        "src/d3d/d3d8_resources.c",
+        "src/d3d/d3d8_screencopy.c"
+      ]
+    },
+    {
       "name": "0242-original-extended-division.patch",
       "path": "patches/compiler/0242-original-extended-division.patch",
       "sha256": "01861d082565830a455a756228d5c55a164694c0c78797a6cbc56ffd95acfec3",
@@ -3134,6 +3336,27 @@
         "src/config/recomp_config.c",
         "src/config/recomp_config.h",
         "src/d3d/d3d8_display.c"
+      ]
+    },
+    {
+      "name": "2516-native-resolution-hud.patch",
+      "path": "patches/graphics/rendering/2516-native-resolution-hud.patch",
+      "sha256": "b0a212e0c9d2208effe2eafcee7151f03fa0a1a4f3487d7d89c8488b60a63a95",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_display.c",
+        "src/d3d/d3d8_display.h"
+      ]
+    },
+    {
+      "name": "2517-native-hud-stencil-plane.patch",
+      "path": "patches/graphics/rendering/2517-native-hud-stencil-plane.patch",
+      "sha256": "9f9e012cdd326096411445b61621bf424782bf9cbce288f7a3b1e7aeeba74df0",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/rhi.h",
+        "src/d3d/rhi_d3d11.c",
+        "src/d3d/rhi_vulkan.c"
       ]
     }
   ]

@@ -33,6 +33,17 @@ namespace TimeSplitters.Launcher
         public bool DiscordEnabled;
         public bool EnhancedTextures;
         public bool EnhancedAudio;
+        public bool ShowCounter;
+        public int Msaa = 1, EdgeSmoothing, AmbientOcclusion;
+        public int Supersampling;
+        public int PostAntiAliasing {
+            get { return Smaa ? 2 : EdgeSmoothing; }
+            set {
+                Core.Require(value>=0 && value<=2,"Choose Off, FXAA, or SMAA.");
+                Smaa=value==2;EdgeSmoothing=value==1?1:0;
+            }
+        }
+        public bool ShaderCache = true;
         public string LanguagePack = "en";
         public static readonly string[] LanguagePacks = { "en", "fr", "de", "it", "es" };
         public static readonly string[] LanguagePackLabels = { "English", "Français", "Deutsch", "Italiano", "Español" };
@@ -128,6 +139,15 @@ namespace TimeSplitters.Launcher
                     model.SkipStartupSplashes = (bool)value;
                 }
             }
+            if (model.document.TryGetValue("debug", out value))
+            {
+                object counter;
+                if (Map(value).TryGetValue("show_counter", out counter))
+                {
+                    Core.Require(counter is bool, "FPS / Ping must be true or false. No settings were changed.");
+                    model.ShowCounter = (bool)counter;
+                }
+            }
             if (model.document.TryGetValue("mouse", out value))
             {
                 var mouse = Map(value);
@@ -167,6 +187,18 @@ namespace TimeSplitters.Launcher
             model.Fullscreen = Number(settings, "fullscreen", 0) != 0;
             model.Vrr = Number(settings, "vrr", 1) != 0;
             model.FpsOverlay = Number(settings, "fps_overlay", 0) != 0;
+            string graphicsOptions = Text(model.originals[Files[6]]);
+            if (graphicsOptions.Length > 0) {
+                bool version2=graphicsOptions.StartsWith("TSFP_GRAPHICS_V2",StringComparison.Ordinal);
+                var match = Regex.Match(graphicsOptions, @"\ATSFP_GRAPHICS_V"+(version2?"2":"1")+@"\s+(1|2|4|8)\s+([01])\s+([1-9]|1[0-6])\s+([01])\s+([01])"+(version2?@"\s+([0-3])":"")+@"\s*\z");
+                Core.Require(match.Success, "Graphics settings are invalid. No settings were changed.");
+                model.Msaa = Int32.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+                model.EdgeSmoothing = Int32.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
+                model.Anisotropy = Int32.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
+                model.AmbientOcclusion = Int32.Parse(match.Groups[4].Value, CultureInfo.InvariantCulture);
+                model.ShaderCache = match.Groups[5].Value == "1";
+                model.Supersampling = version2?Int32.Parse(match.Groups[6].Value,CultureInfo.InvariantCulture):0;
+            }
             model.Validate(true);
             return model;
         }
@@ -329,8 +361,41 @@ namespace TimeSplitters.Launcher
             }
             finally { if (File.Exists(temp)) File.Delete(temp); }
         }
+        public int ClearShaderCache()
+        {
+            Core.Require(!Running(root), "Close the game before clearing the shader cache from the launcher.");
+            string directory;
+            if(Environment.OSVersion.Platform==PlatformID.Win32NT)
+                directory=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"xboxrecomp","shadercache","45410066");
+            else {
+                string config=Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
+                if(String.IsNullOrEmpty(config))config=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),".config");
+                directory=Path.Combine(config,"xboxrecomp","shadercache","45410066");
+            }
+            return ClearShaderCacheDirectory(directory);
+        }
+        internal static int ClearShaderCacheDirectory(string directory)
+        {
+            if(!Directory.Exists(directory))return 0;
+            Core.Require((File.GetAttributes(directory)&FileAttributes.ReparsePoint)==0,"Shader cache is a linked folder; it was not cleared.");
+            int removed=0;bool failed=false;
+            foreach(string backend in Directory.GetDirectories(directory)) {
+                if((File.GetAttributes(backend)&FileAttributes.ReparsePoint)!=0)continue;
+                foreach(string file in Directory.GetFiles(backend)) {
+                    string name=Path.GetFileName(file);
+                    if(name!="pipelines.bin" && !Regex.IsMatch(name,@"\A[0-9A-Fa-f]{16}\.bin\z"))continue;
+                    if((File.GetAttributes(file)&FileAttributes.ReparsePoint)!=0)continue;
+                    try { File.Delete(file);removed++; } catch(IOException) { failed=true; } catch(UnauthorizedAccessException) { failed=true; }
+                }
+            }
+            Core.Require(!failed,"Could not clear some shader cache files. Close other game instances and try again.");
+            return removed;
+        }
         public void Save()
         {
+            Core.Require(new[]{1,2,4,8}.Contains(Msaa) && (EdgeSmoothing==0 || EdgeSmoothing==1) &&
+                (Anisotropy>=1 && Anisotropy<=16) && (AmbientOcclusion==0 || AmbientOcclusion==1) && Supersampling>=0 && Supersampling<=3,
+                "Graphics settings are invalid. No settings were changed.");
             Validate(); Core.Require(!Running(root), "Close the game before saving settings.");
             foreach (string file in Files)
             {
@@ -348,13 +413,16 @@ namespace TimeSplitters.Launcher
             Map(value)["skip_startup_splashes"] = SkipStartupSplashes;
             Map(value)["enhanced_textures"] = EnhancedTextures;
             Map(value)["language_pack"] = LanguagePack;
+            if (!document.TryGetValue("debug", out value)) document["debug"] = value = new Dictionary<string, object>();
+            Map(value)["show_counter"] = ShowCounter;
             var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"smaa",Smaa?"1":"0"}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
             graphics["frame_target"] = PresentationFps.ToString();
             graphics["refresh_rate"] = RefreshRate.ToString();
             var payload = new[] { Json.Encode(document) + "\n", (VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),
                 "TSFP_DISCORD_V1 " + (DiscordEnabled ? "1" : "0") + " " + (DiscordApplicationId.Length == 0 ? "0" : DiscordApplicationId) + "\n",
                 "TSFP_FRAME_RATE_V1 " + NativeFps.ToString(CultureInfo.InvariantCulture) + "\n",
-                "TSFP_AUDIO_V1 " + (EnhancedAudio ? "1" : "0") + "\n" };
+                "TSFP_AUDIO_V1 " + (EnhancedAudio ? "1" : "0") + "\n",
+                (Supersampling==0?"TSFP_GRAPHICS_V1 ":"TSFP_GRAPHICS_V2 ") + Msaa.ToString(CultureInfo.InvariantCulture) + " " + EdgeSmoothing.ToString(CultureInfo.InvariantCulture) + " " + Anisotropy.ToString(CultureInfo.InvariantCulture) + " " + AmbientOcclusion.ToString(CultureInfo.InvariantCulture) + " " + (ShaderCache ? "1" : "0") + (Supersampling==0?"":" "+Supersampling.ToString(CultureInfo.InvariantCulture)) + "\n" };
             int committed = 0;
             try { for (int i = 0; i < Files.Length; i++) { Replace(Core.PathIn(root, Files[i]), Encoding.UTF8.GetBytes(payload[i]), true); committed++; } }
             catch
@@ -402,7 +470,7 @@ namespace TimeSplitters.Launcher
             info.EnvironmentVariables["RECOMP_MOUSE_INVERT_Y"] = model.InvertY ? "1" : "0";
             info.EnvironmentVariables["RECOMP_MOUSE_SENSITIVITY"] = model.Sensitivity.ToString("R", CultureInfo.InvariantCulture);
             info.EnvironmentVariables["TSFP_TEXTURE_MODE"] = model.EnhancedTextures ? "4k" : "classic";
-            #if MACOS
+            #if MACOS || LINUX
             NativeHost.Configure(info,root);
 #endif
             return info;

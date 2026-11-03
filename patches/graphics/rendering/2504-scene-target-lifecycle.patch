@@ -1,0 +1,176 @@
+--- a/src/d3d/d3d8_device.c
++++ b/src/d3d/d3d8_device.c
+@@ -22,6 +22,7 @@
+ #endif
+ #include "d3d8_display.h"
+ #include "graphics/interpolation_depth.h"
++#include "graphics/msaa_targets.h"
+ #ifdef TSFP_PC_DISPLAY
+ #include "pc_display.h"
+ #include "pc_ui_layout.h"
+@@ -73,6 +74,7 @@
+     UINT                    swap_width;
+     UINT                    swap_height;
+     RhiImage                 *rhi_scene_image;  /* what every draw goes to */
++    RhiImage                 *rhi_scene_resolved; /* single-sample read image, or NULL */
+     RhiView                  *rhi_scene_srv;    /* the finished frame, to read */
+     RhiView                  *rhi_default_rtv;  /* "the back buffer" to a title */
+     D3DFORMAT               backbuffer_format;
+@@ -220,8 +222,17 @@
+  * screen-space quad by the scene size would shrink it. */
+ UINT d3d8_GetGuestWidth(void)  { return g_guest_width  ? g_guest_width  : g_device_state.present_width; }
+ 
+-RhiImage *d3d8_GetSceneImage(void)      { return g_device_state.rhi_scene_image; }
+-RhiView  *d3d8_GetSceneView(void)       { return g_device_state.rhi_scene_srv; }
++RhiView *d3d8_GetSceneView(void)
++{
++    D3D8DeviceState *s=&g_device_state;
++    if(s->rhi_scene_resolved && rhi_image_resolve(s->rhi_scene_image,s->rhi_scene_resolved)!=0)return NULL;
++    return s->rhi_scene_srv;
++}
++RhiImage *d3d8_GetSceneImage(void)
++{
++    RhiView *view=d3d8_GetSceneView();
++    return view?rhi_view_image(view):NULL;
++}
+ RhiView  *d3d8_GetDefaultTargetView(void) { return g_device_state.rhi_default_rtv; }
+ 
+ /* Guest render-target pixels to host pixels, for the viewport and the
+@@ -434,7 +445,9 @@
+         d3d8_display_output_shape(s->width, s->height, &shape_w, &shape_h);
+         fit = d3d8_display_fit(shape_w, shape_h, s->swap_width, s->swap_height);
+     }
+-    d3d8_display_resolve(s->rhi_scene_srv, s->width, s->height, rhi_swapchain_view(), fit);
++    RhiView *scene=d3d8_GetSceneView();
++    if(!scene)return;
++    d3d8_display_resolve(scene, s->width, s->height, rhi_swapchain_view(), fit);
+     keep_presented();
+ }
+ 
+@@ -574,72 +587,18 @@
+ 
+ static HRESULT create_render_targets(D3D8DeviceState *state)
+ {
+-    RhiImageDesc depth_desc;
+-    HRESULT hr;
+-
+-    {
+-        RhiImageDesc sd;
+-
+-        /* An offscreen colour target the size of the scene, always, even
+-         * when that is the size the guest asked for. The swap chain
+-         * belongs to the window and the window can be any shape, so the
+-         * step that puts one on the other is where the picture is kept
+-         * from stretching -- and a path that only exists above scale 1 is
+-         * a path that is only right above scale 1. The cost when nothing
+-         * is scaled is one full-screen copy of a frame that was about to
+-         * be presented anyway.
+-         *
+-         * SHADER_RESOURCE because both the resolve and a title reading
+-         * back its own screen sample it. */
+-        memset(&sd, 0, sizeof sd);
+-        sd.type = RHI_IMAGE_2D;
+-        sd.width = state->width;
+-        sd.height = state->height;
+-        sd.depth = 1;
+-        sd.mip_levels = 1;
+-        sd.format = RHI_FORMAT_R8G8B8A8_UNORM;
+-        sd.samples = 1;
+-        sd.usage = RHI_USAGE_DEFAULT;
+-        sd.bind = RHI_BIND_RENDER_TARGET | RHI_BIND_SAMPLED;
+-
+-        hr = E_FAIL;
+-        state->rhi_scene_image = rhi_image_create(&sd, NULL);
+-        if (state->rhi_scene_image)
+-            state->rhi_default_rtv = rhi_view_create(state->rhi_scene_image,
+-                                                     RHI_VIEW_RENDER_TARGET, NULL);
+-        if (state->rhi_default_rtv)
+-            state->rhi_scene_srv = rhi_view_create(state->rhi_scene_image,
+-                                                   RHI_VIEW_SAMPLED, NULL);
+-        if (state->rhi_scene_srv)
+-            hr = S_OK;
+-        if (FAILED(hr))
+-            fprintf(stderr, "D3D8 display: the %ux%u scene target could not be "
+-                    "made (0x%08lX); nothing will be drawn\n",
+-                    state->width, state->height, (unsigned long)hr);
+-    }
+-    if (FAILED(hr)) return hr;
+-
+-    /* Create depth stencil */
+-    memset(&depth_desc, 0, sizeof(depth_desc));
+-    depth_desc.type = RHI_IMAGE_2D;
+-    depth_desc.width = state->width;
+-    depth_desc.height = state->height;
+-    depth_desc.depth = 1;
+-    depth_desc.mip_levels = 1;
+-    depth_desc.format = RHI_FORMAT_D24_UNORM_S8_UINT;
+-    depth_desc.samples = 1;
+-    depth_desc.usage = RHI_USAGE_DEFAULT;
+-    depth_desc.bind = RHI_BIND_DEPTH | RHI_BIND_SAMPLED;
+-
+-    state->depth_image = rhi_image_create(&depth_desc, NULL);
+-    if (!state->depth_image) return E_FAIL;
+-
+-    state->depth_view = rhi_view_create(state->depth_image, RHI_VIEW_DEPTH, NULL);
+-    if (!state->depth_view) return E_FAIL;
+-
+-    /* Bind default render targets */
+-    rhi_set_render_target(state->rhi_default_rtv, state->depth_view);
+-
++    TsfpMsaaTargets targets={0};
++    /* Single-sample policy remains until guest offscreen surfaces participate
++     * in matching sample/depth ownership. Do not enable only the main target. */
++    if(!tsfp_msaa_targets_create(&targets,state->width,state->height,
++        RHI_FORMAT_R8G8B8A8_UNORM,RHI_FORMAT_D24_UNORM_S8_UINT,1))return E_FAIL;
++    state->rhi_scene_image=targets.color;
++    state->rhi_scene_resolved=targets.resolved;
++    state->rhi_default_rtv=targets.rtv;
++    state->rhi_scene_srv=targets.srv;
++    state->depth_image=targets.depth;
++    state->depth_view=targets.dsv;
++    rhi_set_render_target(state->rhi_default_rtv,state->depth_view);
+     return S_OK;
+ }
+ 
+@@ -758,6 +717,7 @@
+         rhi_view_destroy(s->rhi_scene_srv); s->rhi_scene_srv = NULL;
+         rhi_view_destroy(s->rhi_default_rtv); s->rhi_default_rtv = NULL;
+         rhi_image_destroy(s->rhi_scene_image); s->rhi_scene_image = NULL;
++        rhi_image_destroy(s->rhi_scene_resolved); s->rhi_scene_resolved = NULL;
+         rhi_device_destroy();
+         g_device_initialized = FALSE;
+     }
+@@ -2392,7 +2352,7 @@
+  * translucent draws; guest depth survives for later draws and screen effects.
+  * ================================================================ */
+ 
+-static RhiImage *g_interp_image;
++static RhiImage *g_interp_image, *g_interp_resolved;
+ static RhiView  *g_interp_rtv, *g_interp_srv;
+ static UINT      g_interp_w, g_interp_h;
+ static BOOL g_interp_predict;
+@@ -2406,6 +2366,7 @@
+     rhi_view_destroy(g_interp_srv); g_interp_srv = NULL;
+     rhi_view_destroy(g_interp_rtv); g_interp_rtv = NULL;
+     rhi_image_destroy(g_interp_image); g_interp_image = NULL;
++    rhi_image_destroy(g_interp_resolved); g_interp_resolved = NULL;
+ }
+ 
+ /* Trade the scene target for the other image, and rebind it if the back
+@@ -2413,13 +2374,15 @@
+ static void interp_target_swap(void)
+ {
+     D3D8DeviceState *s = &g_device_state;
+-    RhiImage *image = s->rhi_scene_image;
++    RhiImage *image = s->rhi_scene_image, *resolved=s->rhi_scene_resolved;
+     RhiView *rtv = s->rhi_default_rtv, *srv = s->rhi_scene_srv;
+ 
+     s->rhi_scene_image = g_interp_image;
++    s->rhi_scene_resolved = g_interp_resolved;
+     s->rhi_default_rtv = g_interp_rtv;
+     s->rhi_scene_srv = g_interp_srv;
+     g_interp_image = image;
++    g_interp_resolved = resolved;
+     g_interp_rtv = rtv;
+     g_interp_srv = srv;
+     rhi_set_render_target(g_cur_rt ? g_cur_rt->rtv : s->rhi_default_rtv, draw_depth_view(g_cur_ds));

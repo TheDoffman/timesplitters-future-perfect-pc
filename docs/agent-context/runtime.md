@@ -1,5 +1,6 @@
-Kill feed: timing scopes, attribution, viewport colors and rematch reset are
-documented in [the feed guide](../development/arcade-kill-feed.md).
+[Graphics/HUD/AA](../development/graphics-options.md).
+Counter2490: overlay sizing.
+[Kill feed contracts](../development/arcade-kill-feed.md).
 Story rewards: additive2465 wraps356800 for the single frontend context;
 profile mapper356870 stays original. See [contract](systems-details.md#four-player-rewards-context).
 
@@ -1008,6 +1009,7 @@ visibility and objective logic remain guest-owned (Refs #338).
 ## Console language and included packs
 
 [Language policy, US startup gate, original-routine tests and host validation](language-packs.md).
+
 
 Stage0241: [original extended product and ABI checks](guest-integer-product.md).
 

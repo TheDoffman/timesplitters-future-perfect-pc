@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-#if MACOS
+#if MACOS || LINUX
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -49,9 +49,10 @@ namespace TimeSplitters.Launcher
         string savedDraft;
         readonly Slider fov;
         readonly TextBox sensitivity, width, height, discordId;
-        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled, enhancedTextures, smaa;
-        readonly ComboBox device, resolution, aspect, scale, filtering, frameRate, languagePack;
+        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled, enhancedTextures, ambientOcclusion, shaderCache;
+        readonly ComboBox device, resolution, aspect, scale, filtering, frameRate, languagePack, msaa, edgeSmoothing, supersampling;
         readonly TextBlock performanceAdvice;
+        readonly StackPanel consoleScalePanel;
         readonly Button[,] bindingButtons = new Button[GameSettings.Actions.Length,GameSettings.BindingSlots];
         static readonly string[] Devices = { "keyboard", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "none" };
         static Brush ColorBrush(byte r,byte g,byte b) { var brush=new SolidColorBrush(Color.FromRgb(r,g,b));Ui.Freeze(brush);return brush; }
@@ -167,7 +168,7 @@ namespace TimeSplitters.Launcher
             var sizes=DisplayModes.Primary(model.Width,model.Height).Where(m=>model.SupportsResolution(m.Width,m.Height) || (m.Automatic && model.Width==1 && model.Height==1)).ToList();
             aspect=new ComboBox { Name="AspectRatio" };
             foreach(var ratio in DisplayModes.Aspects.Where(r=>r.Label!="Auto" || model.CanAutoResolution))aspect.Items.Add(ratio);
-            aspect.SelectedIndex=0;Field(displayLeft,"Aspect ratio",aspect);
+            aspect.SelectedIndex=0;Field(displayLeft,"Aspect ratio",aspect);Ui.Tip(aspect,"Filters the resolution list by screen shape and selects a matching size.");
             resolution=new ComboBox { Name="OutputResolution" };
             foreach(var mode in sizes) resolution.Items.Add(mode);
             resolution.SelectedItem=sizes.FirstOrDefault(m=>m.Width==model.Width && m.Height==model.Height);
@@ -214,10 +215,11 @@ namespace TimeSplitters.Launcher
             Ui.ValueChanged(fov,()=>fovValue.Text=((int)Math.Round(fov.Value)).ToString(CultureInfo.InvariantCulture)+"°");
             fov.IsEnabled=model.CanAdjustFov;
             fieldOfView.Children.Add(fov);
-            var camera=PageTheme.Section(graphics,"Camera & window","");
-            var cameraColumns=Columns(camera);var cameraLeft=Column(cameraColumns,0);var cameraRight=Column(cameraColumns,1);
+            var viewHud=new StackPanel();
+            var camera=PageTheme.Section(viewHud,"Camera","");
+            var cameraLeft=camera;
             Field(cameraLeft,"Vertical FOV · 40–100°",fieldOfView);
-            fullscreen=Check("Borderless fullscreen",model.Fullscreen);fullscreen.Name="BorderlessFullscreen";Field(cameraRight,"Window mode",fullscreen);
+            fullscreen=Check("Borderless fullscreen",model.Fullscreen);fullscreen.Name="BorderlessFullscreen";Field(displayLeft,"Window mode",fullscreen);
             var resetFov=Button("Reset FOV to 55°"); resetFov.Name="ResetFovButton";
             resetFov.IsEnabled=model.CanAdjustFov;
             resetFov.HorizontalAlignment=HorizontalAlignment.Left; resetFov.Click+=(s,e)=>fov.Value=GameSettings.FovDefault;
@@ -232,23 +234,44 @@ namespace TimeSplitters.Launcher
             PageTheme.Details(timing,"High-refresh requirements",Text("120 / 180 / 240 FPS require a compatible game build and use native high refresh without interpolation. Older releases cannot enable it. Your desktop refresh rate stays unchanged.",12));
             var quality=PageTheme.Section(graphics,"Quality & performance","");
             var qualityColumns=Columns(quality);var qualityLeft=Column(qualityColumns,0);var qualityRight=Column(qualityColumns,1);
-            scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString());scale.Name="ConsoleRenderScale";Field(qualityLeft,"Console render scale",scale);
-            filtering=Choices(new[]{"1","2","4","8","16"},model.Anisotropy.ToString());Field(qualityRight,"Anisotropic filtering",filtering);
-            smaa=Check("SMAA anti-aliasing",model.Smaa);smaa.Name="SmaaAntiAliasing";qualityLeft.Children.Add(smaa);
-            Ui.Tip(smaa,"Smooths jagged edges using SMAA 1x High. Applies after saving and restarting with a compatible game build. Legacy OpenGL does not support this option.");
-            vrr=Check("Variable refresh rate",model.Vrr);vrr.Name="VariableRefreshRate";Ui.Tip(vrr,"Allows unsynchronized presentation in fullscreen. Enable VRR in your monitor and driver too; a fixed-refresh display may tear.");fps=Check("Show FPS overlay",model.FpsOverlay);
-            var qualityToggles=new WrapPanel();qualityToggles.Children.Add(vrr);qualityToggles.Children.Add(fps);quality.Children.Add(qualityToggles);
+            var advanced=new StackPanel();
+            scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString());scale.Name="ConsoleRenderScale";consoleScalePanel=new StackPanel();Field(consoleScalePanel,"Console render scale",scale);
+            var superLabels=new[]{"100% (Off)","125%","150%","200%"};
+            supersampling=Choices(superLabels,superLabels[model.Supersampling]);supersampling.Name="Supersampling";
+            Field(advanced,"Supersampling · restart required",supersampling);
+            Ui.Tip(supersampling,"Renders above the selected resolution, then downsamples. 200% draws four times the pixels. Works with Classic or Enhanced textures. Large targets use a lower effective scale.");
+            filtering=Choices(new[]{"1","2","4","8","16"},model.Anisotropy.ToString());filtering.Name="AnisotropicFiltering";Field(qualityRight,"Anisotropic filtering",filtering);
+            msaa=Choices(new[]{"Off","2x","4x","8x"},model.Msaa==1?"Off":model.Msaa+"x");msaa.Name="MultisampleAntialiasing";
+            Field(advanced,"MSAA · restart required",msaa);
+            edgeSmoothing=Choices(new[]{"Off","FXAA","SMAA"},new[]{"Off","FXAA","SMAA"}[model.PostAntiAliasing]);edgeSmoothing.Name="PostAntiAliasing";
+            Field(qualityLeft,"Post-process anti-aliasing",edgeSmoothing);
+            Ui.Tip(edgeSmoothing,"Choose one edge-smoothing method. Can be combined with MSAA in Advanced. Legacy OpenGL preserves the choice without applying it.");
+            ambientOcclusion=Check("Ambient occlusion",model.AmbientOcclusion!=0);ambientOcclusion.Name="AmbientOcclusion";
+            Ui.Tip(ambientOcclusion,"Half-resolution contact shadows. Can be combined with MSAA and post-process anti-aliasing.");qualityLeft.Children.Add(ambientOcclusion);
+            shaderCache=Check("Shader cache",model.ShaderCache);shaderCache.Name="ShaderCache";
+            Ui.Tip(shaderCache,"Reuses compiled shaders between launches to reduce compilation stalls.");advanced.Children.Add(shaderCache);
+            vrr=Check("Variable refresh rate (fullscreen)",model.Vrr);vrr.Name="VariableRefreshRate";Ui.Tip(vrr,"Allows unsynchronized presentation in fullscreen. Enable VRR in your monitor and driver too; a fixed-refresh display may tear.");fps=Check("FPS / Ping",model.ShowCounter);fps.Name="FpsPingCounter";Ui.Tip(fps,"Shows FPS and, during online play, network ping in milliseconds. Also available in the in-game Video Options.");
+            var clearCache=Button("Clear shader cache");clearCache.Name="ClearShaderCache";
+            clearCache.Click+=(sender,args)=>{try { int count=model.ClearShaderCache();status.Text="Shader cache cleared ("+count+" files)."; } catch(Exception ex) {status.Text=ex.Message;}};
+            advanced.Children.Add(clearCache);
+            advanced.Children.Add(consoleScalePanel);
+            advanced.Children.Add(Text("Console render scale is available only at Original console resolution. Changes apply after restarting.",12));
+            PageTheme.Details(quality,"Advanced",advanced).Name="AdvancedGraphics";
+            var qualityToggles=new WrapPanel();qualityToggles.Children.Add(vrr);quality.Children.Add(qualityToggles);
+            var hud=PageTheme.Section(viewHud,"HUD","");hud.Children.Add(fps);
             performanceAdvice=Text("",12);performanceAdvice.Name="PerformanceAdvice";
             performanceAdvice.Foreground=Muted;quality.Children.Add(performanceAdvice);
             frameRate.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
             scale.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
+            supersampling.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
             width.TextChanged+=(s,e)=>UpdatePerformanceAdvice();height.TextChanged+=(s,e)=>UpdatePerformanceAdvice();
             UpdatePerformanceAdvice();
-            PageTheme.Details(quality,"Performance tips",Text("Lower output resolution reduces GPU work. Console render scale / supersampling applies only at Original console resolution.",12),
+            PageTheme.Details(quality,"Performance tips",Text("Supersampling works at every resolution. Start at 125% or 150%; 200% draws four times the pixels. The legacy console render scale applies only at Original resolution and multiplies with supersampling.",12),
                 Text("VRR also needs monitor and driver support. A fixed-refresh display may tear.",12));
             graphics.Children.Add(texturePanel);
-            var startup=PageTheme.Section(graphics,"Startup","");
-            skipSplashes=Check("Skip startup splash screens",model.SkipStartupSplashes);startup.Children.Add(skipSplashes);
+            var general=new StackPanel();
+            var startup=PageTheme.Section(general,"Startup","");
+            skipSplashes=Check("Skip startup splash screens",model.SkipStartupSplashes);skipSplashes.Name="SkipStartupSplashes";startup.Children.Add(skipSplashes);
             var startupHint=Text("Story cutscenes still play.",12);startupHint.Foreground=Muted;startupHint.Margin=new Thickness(0,8,0,0);startup.Children.Add(startupHint);
             tabs.Items.Add(new TabItem { Header="Graphics & resolution", Content=Scroll(graphics) }); RefreshBindings();
             var discord=new StackPanel();
@@ -277,17 +300,19 @@ namespace TimeSplitters.Launcher
             languageHint.Name="LanguagePackNote";language.Children.Add(languageHint);
             if(!model.CanSelectLanguagePack)language.Children.Add(Text("Update the game to enable language-pack selection. Your saved choice is kept.",12));
             tabs.Items.Add(new TabItem {Header="Audio & language",Content=Scroll(audioPanel)});
+            tabs.Items.Add(new TabItem { Header="View & HUD",Content=Scroll(viewHud) });
+            tabs.Items.Add(new TabItem { Header="General",Content=Scroll(general) });
             foreach(var entry in new[]{sensitivity,width,height,discordId})Ui.TextChanged(entry,RefreshSaveState);
-            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,discordEnabled,enhancedTextures,enhancedAudio,smaa})Ui.CheckedChanged(check,RefreshSaveState);
-            foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
+            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,discordEnabled,enhancedTextures,enhancedAudio,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
+            foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack,msaa,edgeSmoothing,supersampling})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
             Ui.ValueChanged(fov,RefreshSaveState);
         }
         string Draft()
         {
             return Json.Encode(new object[]{sensitivity.Text,width.Text,height.Text,discordId.Text,
-                enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,
-                skipSplashes.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,smaa.IsChecked,
-                device.SelectedIndex,scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,
+                enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,ambientOcclusion.IsChecked,shaderCache.IsChecked,
+                skipSplashes.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
+                device.SelectedIndex,scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
                 (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
         void RefreshSaveState()
@@ -408,13 +433,15 @@ namespace TimeSplitters.Launcher
             if(vrr==null || scale==null) return;
             int w,h,n;
             bool original=Int32.TryParse(width.Text,out w) && Int32.TryParse(height.Text,out h) && w==0 && h==0;
-            scale.IsEnabled=original;
+            scale.IsEnabled=original;Ui.Show(consoleScalePanel,original);
             Int32.TryParse(Convert.ToString(scale.SelectedItem),out n);
             var notes=new System.Collections.Generic.List<string>();
             notes.Add(frameRate.SelectedIndex>0 ? "Native high-refresh target: "+GameSettings.NativeFrameRates[frameRate.SelectedIndex]+" FPS (Beta). Actual FPS depends on your game build, hardware and display." : "Original 60 FPS timing. Your desktop refresh rate stays unchanged.");
             if(original && n>1) notes.Add(n+"× console scale draws "+(n*n)+"× the scene pixels. Reduce it to 1 first if FPS drops.");
-            else if(!original) notes.Add("Your output resolution sets the scene size; console scale is inactive. Lower output resolution first if GPU load causes drops.");
+            else if(!original) notes.Add("The console scale is inactive at this output resolution.");
             else notes.Add("Console scale is already 1×.");
+            int percent=new[]{100,125,150,200}[supersampling.SelectedIndex];
+            notes.Add(percent==100?"Supersampling is off.":"Supersampling: "+percent+"% on each axis ("+((percent*percent)/10000.0).ToString("0.##",CultureInfo.InvariantCulture)+"× scene pixels). Reduce it if FPS drops. Internal targets are limited to 7680 × 4320; large modes use a lower scale.");
             notes.Add("Save and restart after changes.");
             performanceAdvice.Text=String.Join("\n\n",notes);
         }
@@ -429,7 +456,10 @@ namespace TimeSplitters.Launcher
                 model.Sensitivity=number; model.MouseEnabled=enabled.IsChecked==true; model.InvertY=invert.IsChecked==true;
                 string chosenDevice=Devices[device.SelectedIndex]; if(chosenDevice!=model.Device.Replace("xinput:","gamepad:")) model.Device=chosenDevice;
                 model.VerticalFov=(int)Math.Round(fov.Value);
-                model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.FpsOverlay=fps.IsChecked==true;
+                model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.ShowCounter=fps.IsChecked==true;
+                model.Msaa=new[]{1,2,4,8}[msaa.SelectedIndex];model.PostAntiAliasing=edgeSmoothing.SelectedIndex;
+                model.Supersampling=supersampling.SelectedIndex;
+                model.AmbientOcclusion=ambientOcclusion.IsChecked==true?1:0;model.ShaderCache=shaderCache.IsChecked==true;
                 model.NativeFps=GameSettings.NativeFrameRates[frameRate.SelectedIndex];
                 model.EnhancedTextures=enhancedTextures.IsChecked==true;
                 model.EnhancedAudio=enhancedAudio.IsChecked==true;
@@ -437,7 +467,6 @@ namespace TimeSplitters.Launcher
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
                 model.DiscordEnabled=discordEnabled.IsChecked==true;model.DiscordApplicationId=discordId.Text.Trim();
                 model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem);
-                model.Smaa=smaa.IsChecked==true;
                 model.Save();UpdateTextureDetails();savedDraft=Draft();RefreshSaveState();
                 if(Saved!=null)Saved();
             }

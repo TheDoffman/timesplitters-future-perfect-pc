@@ -138,6 +138,35 @@ def patch_records(paths):
     if online:
         paths.remove(online)
         paths.append(online)
+    # AO capture version 10 extends the version-9 surface-constant chunks.
+    ao_capture = by_name.get('2502-ambient-occlusion-capture.patch')
+    if ao_capture:
+        paths.remove(ao_capture)
+        paths.append(ao_capture)
+    # Scene ownership extends the final presentation/interpolation lifecycle.
+    scene_targets = by_name.get('2504-scene-target-lifecycle.patch')
+    if scene_targets:
+        paths.remove(scene_targets)
+        paths.append(scene_targets)
+    # Offscreen binding extends the final scene/interpolation target lifecycle.
+    msaa_bindings = by_name.get('2507-msaa-offscreen-bindings.patch')
+    if msaa_bindings:
+        paths.remove(msaa_bindings)
+        paths.append(msaa_bindings)
+    primary_msaa = by_name.get('2508-msaa-primary-scene.patch')
+    if primary_msaa:
+        paths.remove(primary_msaa)
+        paths.append(primary_msaa)
+    # Alias synchronization uses the final surface draw-view helper (2507).
+    aliases = by_name.get('2510-msaa-surface-aliases.patch')
+    if aliases:
+        paths.remove(aliases)
+        paths.append(aliases)
+    copy_sync = by_name.get('2511-msaa-screen-copy-sync.patch')
+    if copy_sync:
+        paths.remove(copy_sync)
+        paths.append(copy_sync)
+
     # Kernel arithmetic now shares the original fault boundary with utility
     # consumers. Move its source ownership after the historical path migration.
     division = by_name.get('0242-original-extended-division.patch')
@@ -193,6 +222,16 @@ def patch_records(paths):
     if smaa:
         paths.remove(smaa)
         paths.append(smaa)
+    # Native HUD switches the final scene/depth ownership introduced by MSAA.
+    native_hud = by_name.get('2516-native-resolution-hud.patch')
+    if native_hud:
+        paths.remove(native_hud)
+        paths.append(native_hud)
+    hud_stencil = by_name.get('2517-native-hud-stencil-plane.patch')
+    if hud_stencil:
+        paths.remove(hud_stencil)
+        paths.append(hud_stencil)
+
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

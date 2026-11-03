@@ -1,9 +1,20 @@
 # Launcher internals
 
-SMAA: shared `GameSettings.Smaa` loads/saves runtime `smaa = 0/1` and defaults
-off. `SettingsPage` exposes `SmaaAntiAliasing` in Quality & performance, includes
-it in dirty-draft detection and saves it through the existing atomic settings
-transaction. Restart and compatible-renderer requirements are in its tooltip.
+[Graphics preference contract](../development/graphics-options.md).
+Launcher graphics UI regression changes all shared controls, saves, reloads
+the model and reopens the page; AnisotropicFiltering names the AF selector.
+The shared WPF/Avalonia UI suite also exercises graphics ON/OFF saving and
+reopening. Native execution remains a separate host check.
+
+FPS / Ping uses `GameSettings.ShowCounter` and the game-owned
+`debug.show_counter` boolean in controls JSON. Both launcher UI hosts share
+this control. Legacy runtime FPS diagnostics and other debug keys are preserved.
+The settings regression covers game-written values and launcher persistence.
+Post-process AA: `GameSettings.PostAntiAliasing` maps Off/FXAA/SMAA to the
+existing `EdgeSmoothing` and `Smaa` keys. `SettingsPage.PostAntiAliasing` replaces
+the separate controls; saving normalizes them within the existing transaction.
+Legacy dual-enabled choices display SMAA. Advanced holds MSAA/supersampling/cache/console scale;
+scale appears only at Original resolution. View & HUD holds FOV/FPS, General holds startup.
 Both WPF and Avalonia consume this page/model; native Mac execution is unverified.
 
 Game 0.4.2 preparation retains Stable channel selection, optional texture delivery
@@ -582,3 +593,14 @@ Absent capabilities remain false for older native builds. The portable Mac
 package suite exercises the real manifest/archive writer for true/false/missing
 flags, with only host binary tools replaced by fixtures. Native loading still
 requires Mac execution.
+
+Graphics controls passed shared Avalonia UI and Linux adapter tests in an isolated integration with feature/linux-launcher at 80239186; see the graphics guide.
+
+## Supersampling preference
+
+GameSettings and shared SettingsPage expose restart-required 100/125/150/200%
+supersampling independently of output resolution and legacy console scale.
+pc-graphics.ini reads V1 (100%) or V2 with a sixth index0..3; defaults write V1,
+non-defaults V2. Existing settings transactions/concurrent-edit rejection remain.
+Model and WPF/Avalonia UI fixtures cover saving/reopening and 200% pixel-cost
+guidance. Older games/launchers cannot consume non-default V2 graphics files.

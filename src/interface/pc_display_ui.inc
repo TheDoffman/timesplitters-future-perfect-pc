@@ -262,12 +262,13 @@ void pc_display_main_menu_font(void (*original)(void),int building)
        their read spans together, then discard them before menu input/ticks. */
     pc_prompts_layout_begin();
     uint32_t menu=WORD_AT(g_esp+4u),item=WORD_AT(g_esp+8u);
-    if((int32_t)WORD_AT(0x0079094Cu)<=100) {original();pc_prompts_layout_end();return;}
+    int paused_video=(int32_t)WORD_AT(0x0079094Cu)<=100 && video_font_menu(menu);
+    if((int32_t)WORD_AT(0x0079094Cu)<=100 && !paused_video) {original();pc_prompts_layout_end();return;}
     if(!building) {
         if(!guest_writable(menu,0x23c) || !guest_writable(item,0x8c) ||
            WORD_AT(item)!=7 || WORD_AT(item+0x88u)!=menu) {original();pc_prompts_layout_end();return;}
         uint32_t descriptor=WORD_AT(menu+4u);
-        if(!guest_writable(descriptor,4) || WORD_AT(descriptor)!=0x002D0BE0u) {
+        if(!paused_video && (!guest_writable(descriptor,4) || WORD_AT(descriptor)!=0x002D0BE0u)) {
             original();pc_prompts_layout_end();return;
         }
     }

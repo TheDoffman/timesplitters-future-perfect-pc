@@ -239,10 +239,12 @@ jobs:
             tests/diagnostics/test_crash_capture.py tests/diagnostics/test_guest_capture.py tests/diagnostics/test_allocation_observer.py
             tests/graphics/test_cutscene_letterbox.py tests/graphics/test_pc_display_modes.py tests/graphics/test_decal_projection.py
             tests/graphics/test_channel_clears.py tests/graphics/test_objectives_health.py
-            tests/graphics/test_fov_settings.py tests/storage/test_storage_menu.py tests/input/test_text_read_scope.py tests/diagnostics/test_trace_filter.py tests/diagnostics/test_sample_chains.py tests/diagnostics/test_sample_pc_locations.py tests/graphics/test_gpu_flush_ack.py
+            tests/graphics/test_fov_settings.py tests/graphics/test_game_restart.py tests/storage/test_storage_menu.py tests/input/test_text_read_scope.py tests/diagnostics/test_trace_filter.py tests/diagnostics/test_sample_chains.py tests/diagnostics/test_sample_pc_locations.py tests/graphics/test_gpu_flush_ack.py
             tests/graphics/test_menu_sampling.py tests/graphics/test_smaa.py tests/graphics/test_pushbuffer_policy.py tests/graphics/test_shader_source_lookup.py tests/textures/test_texel_sample_lanes.py
             tests/graphics/test_renderer_host.py tests/graphics/test_render_state_cache.py tests/repository/test_vulkan_sdk.py tests/graphics/test_rhi_menu_sampling.py
             tests/gameplay/test_frame_replay.py
+            tests/graphics/test_graphics_options.py tests/graphics/test_graphics_resolve.py tests/graphics/test_graphics_spirv.py tests/graphics/test_native_hud.py
+            tests/graphics/test_shader_cache.py tests/graphics/test_ambient_occlusion_queue.py
             tests/diagnostics/test_debug_settings_model.py
             tests/network/test_native_network.py tests/network/test_crossplay_peer.py tests/network/test_online_companion.py tests/network/test_online_theme.py tests/network/test_online.py tests/network/test_online_host.py tests/network/test_network_identity.py
             tests/network/test_network_guest_dispatch.py tests/network/test_network_bot_results.py tests/network/test_network_movement_stats.py tests/network/test_network_motion_stats.py tests/network/test_network_pose_stats.py tests/analysis/test_procedural_surface_stats.py

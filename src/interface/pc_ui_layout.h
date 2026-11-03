@@ -5,6 +5,14 @@
 #include <stdint.h>
 #include <math.h>
 #include <string.h>
+/* Fit a custom caption inside its painted cell using the guest's measured
+ * glyph bounds. Never enlarge text; invalid measurements keep native scale. */
+static float pc_ui_caption_fit(float width,float height,float text_width,float text_height)
+{
+    if(!(width>0 && height>0 && text_width>0 && text_height>0) ||
+       !isfinite(width) || !isfinite(height) || !isfinite(text_width) || !isfinite(text_height))return 1.f;
+    return fminf(1.f,fminf(width/text_width,height/text_height));
+}
 /* One projected marker consists of an outline followed by separate labels.
  * Its first draw contains the complete outline. Fit every subsequent draw
  * around that same world-screen centre, never each label's own centre. */
