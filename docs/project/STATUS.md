@@ -1,3 +1,9 @@
+PR472 full macOS native suite: 2640 passed, 396 skipped; 22 texture harness
+setup errors share one missing native_hud_restore stub in the extracted present
+fixture. The fixture now models its absent HUD targets explicitly; production
+code is unchanged. Both launcher hosts and macOS historical upgrades passed.
+Updated full CI is required after the affected texture suite is rerun.
+
 ## Paused Video Options layout repair (2026-11-02, PR472)
 
 User review found the narrow paused panel still crowded despite the shorter
