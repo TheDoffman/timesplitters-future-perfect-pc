@@ -1,6 +1,7 @@
 /* Asset-free sequence contract, not a simulation of the canyon explosion.
  * Keep targets alive across flash/recovery and inspect every output pixel. */
 #include <math.h>
+#include "graphics/pc_smaa_settings.h"
 #include "graphics/msaa_color_surface.h"
 #include "graphics/ssao_pass.h"
 #include "graphics/ssao_settings.h"
@@ -33,7 +34,9 @@ static void test_graphics_transition(void)
         memset(input,0,n*4);rhi_image_update(scene,0,NULL,input,w*4,0);
         if(samples>1)assert(tsfp_msaa_color_create(&ms,scene,0,samples));
         for(unsigned enabled=0;enabled<2;enabled++)
-        for(unsigned smoothing=0;smoothing<2;smoothing++) {
+        for(unsigned smoothing=0;smoothing<2;smoothing++)
+        for(unsigned smaa_enabled=0;smaa_enabled<2;smaa_enabled++) {
+            assert(pc_smaa_set_enabled((int)smaa_enabled));
             TsfpGraphicsOptions options=tsfp_graphics_defaults();
             options.edge_smoothing=smoothing;options.ambient_occlusion=enabled;
             assert(pc_graphics_set(&options));
@@ -80,5 +83,6 @@ static void test_graphics_transition(void)
         rhi_view_destroy(scene_rtv);rhi_view_destroy(scene_srv);rhi_view_destroy(display_rtv);
         rhi_image_destroy(scene);rhi_image_destroy(display);free(input);free(output);free(depth);
     }
+    assert(pc_smaa_set_enabled(0));
     printf("PASS: %u graphics transition combinations, six consecutive frames each\n",cases);
 }

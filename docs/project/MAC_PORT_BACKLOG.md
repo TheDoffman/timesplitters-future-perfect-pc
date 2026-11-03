@@ -1,3 +1,10 @@
+Supersampling/main integration (2026-11-02): common HUD resolve now follows the
+published SMAA patch and bypasses both post-AA filters during HUD presentation.
+Windows GPU fixtures cover SMAA with supersampling/MSAA and preserve native HUD
+pixels. Game and shared WPF/Avalonia launcher place supersampling in Advanced,
+retaining the unified Off/FXAA/SMAA selector. Native Mac/Vulkan GPU/menu checks
+remain required; no additional platform acceptance is claimed.
+
 # PC features awaiting Mac adaptation
 
 Output-resolution HUD with supersampling (2026-11-02, local follow-up to
@@ -355,6 +362,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-126 | Launcher Discord community button | Awaiting validation |
 | MAC-127 | Complete launcher language packs | Awaiting validation |
 | MAC-128 | Fresh weapon trigger timing (#434) | Awaiting validation |
+| MAC-129 | Optional SMAA anti-aliasing | Awaiting validation |
 
 ### MAC-126 - Launcher Discord community button
 
@@ -8732,6 +8740,39 @@ MAC-127 PR436 review repair: native package manifests now forward language_packs
 from the native build to the installed top level. Three portable real-writer
 regressions cover enabled/disabled/absent flags; native host CI remains the gate.
 
+### MAC-129 - Optional SMAA anti-aliasing
+
+- **Status:** Awaiting validation
+- **Source:** [PR #469](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/469), initial implementation `fa75cb41`.
+
+Video click feedback (same local branch): shared `menu_video_click_sound` uses
+the original guest menu-switch sound for fresh Video setting-row/FOV-bar clicks.
+Native arrow feedback remains owned by the original dispatcher. No Mac adapter
+change is required; physical Mac audibility/input acceptance remains pending.
+See [Video contracts](../agent-context/video-options.md).
+
+In-game follow-up (2026-11-02, same local branch): the common Video Options
+frontend/pause selector now stages SMAA and saves the same runtime key on Apply.
+`src/graphics/pc_smaa_settings.h` publishes live after atomic persistence; the
+RHI renderer reads this shared model. Include Back/discard, resolution Keep/
+Revert, failed-save rollback and switching without restart in native acceptance.
+No separate Mac feature logic is needed; legacy GL still lacks the effect.
+
+2026-11-02, `feature/smaa-antialiasing` (PR #469): shared launcher
+`GameSettings.Smaa`/`SettingsPage` and patch `2470-smaa-antialiasing.patch` add
+default-Off SMAA 1x High through `src/graphics/pc_smaa.inc`. The common Vulkan
+frontend uses the same shader/lookup algorithm and resources as Windows D3D11;
+no separate Mac feature implementation is needed. The fallback legacy GL
+renderer lacks the RHI pass and retains but does not apply the saved key.
+Porting this effect to legacy GL is deferred because that adapter has a separate
+resource/shader pipeline; do not duplicate the common algorithm there.
+
+Acceptance: build native Mac Vulkan and launcher; confirm checkbox persistence,
+diagonal edges, HUD/menu text, 1080p/4K/ultrawide fit, window resize, Classic and
+Enhanced textures, Off and fallback; measure GPU cost and check validation logs.
+Windows pixel-fixture evidence is in [STATUS](STATUS.md); it does not establish
+native Mac scene fidelity or performance.
+
 ### MAC-128 - Fresh weapon trigger timing (#434)
 
 - **Status:** Awaiting validation
@@ -8761,6 +8802,13 @@ production-resolver and original-US callback regressions pass. Native Mac build
 and real two-machine LAN acceptance are pending; a loopback test with startup
 network overrides does not validate this path. See STATUS for Windows build evidence.
 
+
+Graphics settings cleanup (local, `feature/graphics-settings-cleanup`, base
+`627b05bd`): shared launcher/game now have one Off/FXAA/SMAA selector, separate
+MSAA and cache controls under Advanced, consistent AF labels and reorganized
+launcher General/View & HUD sections. Existing files are preserved; the common
+resolve prevents stacked FXAA/SMAA. No new host adapter is needed. Windows
+validation is in STATUS; native Mac/Linux UI and game acceptance remain pending.
 
 Optional graphics (uncommitted, feature/graphics-options): shared Video Options
 and launcher SettingsPage expose MSAA, FXAA, AF, half-size SSAO, shader caching,

@@ -93,7 +93,7 @@ add_subdirectory("${TSFP_RUNTIME_DIR}/src/replay" replay)
     return build / 'replay/d3d8_replay.exe', env
 
 
-def render(replay, folder, scale, samples=1, edge=0, **capture_options):
+def render(replay, folder, scale, samples=1, edge=0, smaa=0, **capture_options):
     exe, compiler_env = replay
     folder.mkdir()
     (folder / 'frame.d3dcap').write_bytes(hud_capture(**capture_options))
@@ -103,7 +103,7 @@ def render(replay, folder, scale, samples=1, edge=0, **capture_options):
     env = {k: v for k, v in compiler_env.items() if not k.startswith(('RECOMP_', 'TSFP_'))}
     env.update(RECOMP_DISPLAY_CONFIG=str(folder/'runtime.ini'), TSFP_DISPLAY_CONFIG=str(folder/'display.ini'),
                RECOMP_INPUT_CONFIG=str(folder/'controls.json'), RECOMP_SAVE_DIR=str(folder/'saves'),
-               APPDATA=str(folder/'appdata'), RECOMP_SHADER_CACHE='0')
+               APPDATA=str(folder/'appdata'), RECOMP_SHADER_CACHE='0', TSFP_SMAA=str(smaa))
     result = subprocess.run([str(exe), str(folder/'frame.d3dcap'), '--out', str(folder/'out-'),
                              '--loops', '3', '--dump-every', '--backend', 'd3d11'], cwd=folder,
                             env=env, capture_output=True, text=True, timeout=45)
@@ -115,15 +115,15 @@ def render(replay, folder, scale, samples=1, edge=0, **capture_options):
     return images[-1], log
 
 
-@pytest.mark.parametrize('scale,samples,edge', [(1,1,0), (2,1,0), (3,1,0), (2,4,0), (3,4,1)])
-def test_native_hud_pixels_depth_and_frame_reset(replay, tmp_path, scale, samples, edge):
+@pytest.mark.parametrize('scale,samples,edge,smaa', [(1,1,0,0), (2,1,0,0), (3,1,0,0), (2,4,0,0), (3,4,1,0), (1,1,0,1), (3,4,0,1)])
+def test_native_hud_pixels_depth_and_frame_reset(replay, tmp_path, scale, samples, edge, smaa):
     baseline, _ = render(replay, tmp_path/'baseline', 0)
-    image, log = render(replay, tmp_path/'native', scale, samples, edge)
+    image, log = render(replay, tmp_path/'native', scale, samples, edge, smaa)
     assert '[NATIVE-HUD] World' in log, log
     assert image.size == (64, 64)
     assert image.getpixel((10,10)) == (255,0,0), 'Occluded HUD marker lost world depth'
     assert image.getpixel((48,48)) == (0,255,0), 'Visible HUD marker lost depth/colour'
-    assert image.crop((40,28,62,44)).tobytes() == baseline.crop((40,28,62,44)).tobytes(), 'Native stems blurred by supersampling or post-HUD FXAA'
+    assert image.crop((40,28,62,44)).tobytes() == baseline.crop((40,28,62,44)).tobytes(), 'Native stems blurred by supersampling or post-HUD FXAA/SMAA'
 
 
 def test_native_hud_partial_view_fallback(replay, tmp_path):

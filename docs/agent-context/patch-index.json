@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "f1e93ea3614c0f2d61ba846990f857e23b5c3845e92e73fbc338cdff1b21773c",
+  "loaderSha256": "bba02e5427294a75b12a7a2cefc0bf1c136bcc8b3fcda0a2676c7ae0685a09a3",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1849,7 +1849,7 @@
     {
       "name": "2495-graphics-options.patch",
       "path": "patches/graphics/rendering/2495-graphics-options.patch",
-      "sha256": "bf838bbef3638967b65c2239dc421dbbad3a9869dead73c96c23d19b97dcc0a0",
+      "sha256": "e76fb5c97bbf7802578e30f6d2706043edfa0754dce1e579479df3956b096d9e",
       "targets": [
         "src/d3d/d3d8_display.c"
       ]
@@ -1866,7 +1866,7 @@
     {
       "name": "2497-msaa-resolve.patch",
       "path": "patches/graphics/rendering/2497-msaa-resolve.patch",
-      "sha256": "0ed66970c6f12a73f13e98b87d2893e3f8bb3c636979295e1b1a26feac9ded5f",
+      "sha256": "968de7ea44014e48c47b24ae1a1fc7d38b67b3ef8d51fcf4a4f947e280d5d976",
       "targets": [
         "src/d3d/rhi.c",
         "src/d3d/rhi.h",
@@ -3212,27 +3212,6 @@
       ]
     },
     {
-      "name": "2516-native-resolution-hud.patch",
-      "path": "patches/graphics/rendering/2516-native-resolution-hud.patch",
-      "sha256": "a2bba518837588f0fff2e6894a6d07299d293c3a85767af1ea1a23022a521b28",
-      "targets": [
-        "src/d3d/d3d8_device.c",
-        "src/d3d/d3d8_display.c",
-        "src/d3d/d3d8_display.h"
-      ]
-    },
-    {
-      "name": "2517-native-hud-stencil-plane.patch",
-      "path": "patches/graphics/rendering/2517-native-hud-stencil-plane.patch",
-      "sha256": "9f9e012cdd326096411445b61621bf424782bf9cbce288f7a3b1e7aeeba74df0",
-      "targets": [
-        "src/d3d/d3d8_device.c",
-        "src/d3d/rhi.h",
-        "src/d3d/rhi_d3d11.c",
-        "src/d3d/rhi_vulkan.c"
-      ]
-    },
-    {
       "name": "0242-original-extended-division.patch",
       "path": "patches/compiler/0242-original-extended-division.patch",
       "sha256": "01861d082565830a455a756228d5c55a164694c0c78797a6cbc56ffd95acfec3",
@@ -3312,6 +3291,37 @@
       "sha256": "c100faf4246139ba9144851469fc377ff8ffbf80bf88d4694a11602877354e51",
       "targets": [
         "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2470-smaa-antialiasing.patch",
+      "path": "patches/graphics/rendering/2470-smaa-antialiasing.patch",
+      "sha256": "43f8b18597dee8e0c58903322af0e1994b69eb78dff560e8485432636229a1ab",
+      "targets": [
+        "src/config/recomp_config.c",
+        "src/config/recomp_config.h",
+        "src/d3d/d3d8_display.c"
+      ]
+    },
+    {
+      "name": "2516-native-resolution-hud.patch",
+      "path": "patches/graphics/rendering/2516-native-resolution-hud.patch",
+      "sha256": "b0a212e0c9d2208effe2eafcee7151f03fa0a1a4f3487d7d89c8488b60a63a95",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_display.c",
+        "src/d3d/d3d8_display.h"
+      ]
+    },
+    {
+      "name": "2517-native-hud-stencil-plane.patch",
+      "path": "patches/graphics/rendering/2517-native-hud-stencil-plane.patch",
+      "sha256": "9f9e012cdd326096411445b61621bf424782bf9cbce288f7a3b1e7aeeba74df0",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/rhi.h",
+        "src/d3d/rhi_d3d11.c",
+        "src/d3d/rhi_vulkan.c"
       ]
     }
   ]

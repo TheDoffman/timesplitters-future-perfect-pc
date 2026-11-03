@@ -1,8 +1,11 @@
 # Investigation memory and handoffs
 
 Graphics patch ordering is covered by the explicit tail-order regression in
-`tests/repository/test_repo_context.py`; patch2514 must retain LF bytes so its
+`tests/repository/test_repo_context.py`; patches2495/2514 must retain LF bytes so its
 indexed digest matches fresh Windows/Mac/Linux checkouts.
+SMAA adds the final `2470-smaa-antialiasing.patch` after config/timing migrations;
+`test_repo_context.py` checks the resulting 62-patch tail. Historical migration
+fixtures omit this feature until their full-stack upgrade. See [contracts](smaa.md).
 
 Root AGENTS.md and the PR template require a short user-facing Change and Cause
 and fix description. Keep technical evidence in the existing project records;

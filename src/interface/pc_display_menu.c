@@ -22,6 +22,7 @@ static uint32_t kb_caption(void);
 #include "pc_native_rate.h"
 #include "pc_frame_rate_settings.h"
 #include "pc_audio_settings.h"
+#include "graphics/post_aa_settings.h"
 #include "texture_mode.h"
 #include "pc_cutscene.h"
 #ifndef _WIN32
@@ -369,10 +370,12 @@ extern void sub_0007D480(void), sub_000717D0(void), sub_00075430(void);
 static uint32_t storage, parent_menu, previous_menu, current_menu;
 static PcDisplayMode modes[PC_DISPLAY_MODE_CAPACITY], all_modes[PC_DISPLAY_MODE_CAPACITY], staged, previous;
 static int all_mode_count, selected_aspect;
-enum { DISPLAY_HOME, DISPLAY_CONFIRM, DISPLAY_GRAPHICS, DISPLAY_VIEW, DISPLAY_RESTART };
+enum { DISPLAY_HOME, DISPLAY_CONFIRM, DISPLAY_GRAPHICS, DISPLAY_VIEW, DISPLAY_RESTART, DISPLAY_ADVANCED };
 static int mode_count, selected_mode, page, staged_fov, previous_fov;
 static int staged_rate, applied_rate;
 static unsigned applied_texture;
+static unsigned staged_aa,applied_aa;
+static uint32_t post_aa_row;
 static uint32_t apply_row;
 static uint32_t rate_row,subtitle_row,feed_row,counter_row;
 static unsigned staged_subtitles,applied_subtitles;
@@ -404,6 +407,20 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     push(PC_DISPLAY_MENU_CALLBACK); fn(); result=g_eax;
     restore_registers(&r);
     return result;
+}
+static void menu_video_click_sound(uint32_t menu,uint32_t item)
+{
+    /* Native choice Previous/Next uses sound-table slot +8 at US75651/75720.
+     * Row clicks only move focus, so supply that same feedback for Video. */
+    extern void sub_00021780(void);
+    if(!storage || page==DISPLAY_CONFIRM || page==DISPLAY_RESTART || !guest_writable(menu,8) ||
+       WORD_AT(menu+4)!=storage || !guest_writable(item,0x8c) ||
+       WORD_AT(item+0x88)!=menu || (WORD_AT(item+0x28)&5u))return;
+    unsigned id=WORD_AT(item+0x14);
+    if(!(id<=2u || (id>=7u && id<=11u) || (id>=100u && id<=105u)))return;
+    uint32_t sounds=WORD_AT(0x007BA178u);
+    if(WORD_AT(0x007BA16Cu) && guest_writable(sounds,12))
+        guest_call(sub_00021780,1,WORD_AT(sounds+8));
 }
 #define AUDIO_BETA_CHANGE 0x00012027u
 static uint32_t audio_beta_row,audio_beta_labels;
@@ -1019,7 +1036,7 @@ static int mode_equal(PcDisplayMode a,PcDisplayMode b)
 static int display_dirty(void)
 {
     return !mode_equal(staged,previous) || staged_fov!=previous_fov ||
-        staged_rate!=applied_rate || texture_choice!=applied_texture || staged_subtitles!=applied_subtitles;
+        staged_rate!=applied_rate || texture_choice!=applied_texture || staged_subtitles!=applied_subtitles || staged_aa!=applied_aa;
 }
 static void update_apply(void)
 {
@@ -1033,7 +1050,7 @@ static void update_apply(void)
 #include "pc_video_tabs.inc"
 static void labels(void)
 {
-    resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=apply_row=0;
+    resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=post_aa_row=apply_row=0;
     video_tab_bounds_valid=0;
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART)
         guest_call(sub_00079D60_gen,6,text_at(MODE_TEXT_BASE+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT+3," "),VIDEO_TABS_ID,0x400u,0u,SELECT_CB,VIDEO_TABS_DRAW);
@@ -1054,6 +1071,8 @@ static void labels(void)
         for(int i=0;i<PC_FRAME_RATE_COUNT;i++)
             guest_call(sub_000717D0,1,text_at(24+i,"%s",pc_frame_rate_label(i)));
         guest_call(sub_00075430,2,rate_row,(uint32_t)staged_rate);
+    } else if(page==DISPLAY_ADVANCED) {
+        graphics_labels();
     } else if(page==DISPLAY_GRAPHICS) {
         graphics_labels();
         texture_row=guest_call(sub_00079D60_gen,6,text_at(2,"Texture style"),7u,0u,0u,0u,0u);
@@ -1061,6 +1080,13 @@ static void labels(void)
         guest_call(sub_000717D0,1,text_at(10,"Classic"));
         guest_call(sub_000717D0,1,text_at(11,"Enhanced"));
         guest_call(sub_00075430,2,texture_row,texture_choice);
+        post_aa_row=guest_call(sub_00079D60_gen,6,text_at(18,"Post-process anti-aliasing"),11u,0u,0u,0u,0u);
+        guest_call(sub_0007D480,2,0x8400u,0u);
+        guest_call(sub_000717D0,1,text_at(19,"Off"));
+        guest_call(sub_000717D0,1,text_at(22,"FXAA"));
+        guest_call(sub_000717D0,1,text_at(84,"SMAA"));
+        guest_call(sub_00075430,2,post_aa_row,staged_aa);
+        guest_call(sub_00079D60_gen,6,text_at(85,"Advanced"),108u,0u,0u,SELECT_CB,0u);
     } else if(page==DISPLAY_VIEW) {
         fov_label();
         guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(8),2u,0x400u,0u,0u,FOV_DRAW_CB);
@@ -1083,12 +1109,12 @@ static void labels(void)
     } else { row(0,"Keep changes");row(1,"Revert"); }
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
         /* Reserve equal section heights so tabs do not move under the cursor. */
-        int padding=page==DISPLAY_HOME?6:page==DISPLAY_VIEW?5:0;
+        int padding=page==DISPLAY_HOME?5:page==DISPLAY_VIEW?4:2;
         for(int i=0;i<padding;i++)
             guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(MODE_TEXT_BASE+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT+3),
                 (uint32_t)(110+i),4u,0u,0u,0u);
-        /* Graphics already owns a status/help row; do not add a twelfth row. */
-        if(*status && page!=DISPLAY_GRAPHICS)small_note(21,status);
+        /* Both graphics sections already own a status/help row. */
+        if(*status && page!=DISPLAY_GRAPHICS && page!=DISPLAY_ADVANCED)small_note(21,status);
         apply_row=guest_call(sub_00079D60_gen,6,text_at(4,"Apply"),3u,0u,0u,SELECT_CB,0u);
         update_apply();
     }
@@ -1096,7 +1122,7 @@ static void labels(void)
 static void read_choices(void)
 {
     if(page==DISPLAY_CONFIRM || page==DISPLAY_RESTART)return;
-    if(page==DISPLAY_GRAPHICS)graphics_read_choices();
+    if(page==DISPLAY_GRAPHICS || page==DISPLAY_ADVANCED)graphics_read_choices();
     counter_read_choice();
     if(resolution_row) {
         unsigned choice=WORD_AT(resolution_row+0xc8);
@@ -1104,6 +1130,7 @@ static void read_choices(void)
     }
     if(texture_row && WORD_AT(texture_row+0xc8)<=1u)
         texture_choice=WORD_AT(texture_row+0xc8);
+    if(post_aa_row && WORD_AT(post_aa_row+0xc8)<=2u)staged_aa=WORD_AT(post_aa_row+0xc8);
     if(subtitle_row && WORD_AT(subtitle_row+0xc8)<=1u)staged_subtitles=WORD_AT(subtitle_row+0xc8);
     if(feed_row && WORD_AT(feed_row+0xc8)<=1u && (int)WORD_AT(feed_row+0xc8)!=pc_feed_enabled()) {
         if(!pc_feed_set_enabled((int)WORD_AT(feed_row+0xc8))) {
@@ -1121,16 +1148,14 @@ static void build_menu(void)
     save_registers(&r);current_menu=menu;
     guest_call(sub_00075B70,5,0xa000u,text_at(0,"%s",page==DISPLAY_CONFIRM?"Keep changes?":page==DISPLAY_RESTART?"Restart game?":"Video Options"),
         bits(page==DISPLAY_CONFIRM?55.f:85.f),0u,BACK_CB);
-    /* Eleven rows, including supersampling, must fit the original 480-line
-     * canvas with Apply fully above the footer in both main and pause. */
-    guest_call(sub_00071B10,4,1u,bits(1.45f),1u,1u);
+    guest_call(sub_00071B10,4,1u,bits(1.6f),1u,1u);
     guest_call(sub_00071C50,1,0x26200u);
     labels();guest_call(sub_000771D0,1,menu);
     restore_registers(&r);g_esp+=4;
 }
 static void refresh(int next,int selected)
 {
-    page=next;resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=apply_row=0;
+    page=next;resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=post_aa_row=apply_row=0;
     guest_call(sub_00078980,1,current_menu);
     /* Guest rebuild restores old choices by row ID. Reapply every staged value,
      * including the newly filtered resolution list, without committing it. */
@@ -1138,6 +1163,7 @@ static void refresh(int next,int selected)
         if(aspect_row)guest_call(sub_00075430,2,aspect_row,(uint32_t)selected_aspect);
         if(resolution_row)guest_call(sub_00075430,2,resolution_row,(uint32_t)selected_mode);
         if(texture_row)guest_call(sub_00075430,2,texture_row,texture_choice);
+        if(post_aa_row)guest_call(sub_00075430,2,post_aa_row,staged_aa);
         if(rate_row)guest_call(sub_00075430,2,rate_row,(uint32_t)staged_rate);
         if(subtitle_row)guest_call(sub_00075430,2,subtitle_row,staged_subtitles);
         update_apply();
@@ -1161,14 +1187,15 @@ static void revert(void)
 static void back_callback(void)
 {
     GuestRegisters r;save_registers(&r);
-    if(page==DISPLAY_RESTART)refresh(DISPLAY_GRAPHICS,1);
+    if(page==DISPLAY_RESTART)refresh(DISPLAY_ADVANCED,1);
+    else if(page==DISPLAY_ADVANCED) {read_choices();refresh(DISPLAY_GRAPHICS,0);}
     else if(page==DISPLAY_CONFIRM)revert();else {read_choices();leave();}
     restore_registers(&r);g_esp+=4;
 }
 static void apply_changes(void)
 {
     int display_changed=!mode_equal(staged,previous) || staged_fov!=previous_fov;
-    int rate_changed=staged_rate!=applied_rate,display_saved=0;
+    int rate_changed=staged_rate!=applied_rate,display_saved=0,rate_saved=0;
     /* Resolution is already previewed/confirmed. Persist before publishing
      * FPS/texture changes so a failed save leaves those running values alone. */
     pc_display_set_fov(staged_fov);
@@ -1177,6 +1204,8 @@ static void apply_changes(void)
         display_saved=1;
     }
     if(rate_changed && !pc_frame_rate_save(pc_frame_rate_value(staged_rate)))goto failed;
+    rate_saved=rate_changed;
+    if(staged_aa!=applied_aa && !pc_post_aa_set(staged_aa))goto failed;
     if(rate_changed)recomp_config_request_native_rate(pc_frame_rate_value(staged_rate));
     if(staged_subtitles!=applied_subtitles) {
         extern void sub_00069640(void);
@@ -1190,13 +1219,15 @@ static void apply_changes(void)
     }
     tsfp_texture_set_4k((int)texture_choice);
     previous=staged;previous_fov=staged_fov;applied_rate=staged_rate;applied_texture=texture_choice;
+    applied_aa=staged_aa;
     deadline=0;*status=0;filter_modes();
     refresh(DISPLAY_HOME,0);
     return;
 failed:
     pc_display_set_fov(previous_fov);
     int restored=mode_equal(pc_display_current(),previous) || pc_display_apply(previous);
-    int saved_back=!display_saved || (restored && pc_display_save());
+    int rate_restored=!rate_saved || pc_frame_rate_save(pc_frame_rate_value(applied_rate));
+    int saved_back=(!display_saved || (restored && pc_display_save())) && rate_restored;
     snprintf(status,sizeof status,saved_back?"Could not save changes. Please try again.":"Could not restore saved display settings.");
     if(!restored) { deadline=GetTickCount64();return; }
     deadline=0;refresh(DISPLAY_HOME,0);
@@ -1207,10 +1238,10 @@ static void select_callback(void)
     int selected=(int)WORD_AT(menu+0x18c);save_registers(&r);
     fprintf(stderr,"[PC-DISPLAY-MENU] Selected page %d row %d\n",page,selected);
     if(page==DISPLAY_RESTART) {
-        if(selected==0)refresh(DISPLAY_GRAPHICS,1);
+        if(selected==0)refresh(DISPLAY_ADVANCED,1);
         else if(selected==1 && !pc_game_restart()) {
             snprintf(status,sizeof status,"Could not restart. Please relaunch manually.");
-            refresh(DISPLAY_GRAPHICS,1);
+            refresh(DISPLAY_ADVANCED,1);
         }
     } else if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART && selected==VIDEO_TABS_ID) {
         int tab=video_clicked_tab();
@@ -1228,7 +1259,11 @@ static void select_callback(void)
                 }
             } else apply_changes();
         }
-    } else if(page==DISPLAY_GRAPHICS && selected==106) {
+    } else if(page==DISPLAY_GRAPHICS && selected==108) {
+        read_choices();refresh(DISPLAY_ADVANCED,0);
+    } else if(page==DISPLAY_ADVANCED && selected==107) {
+        read_choices();refresh(DISPLAY_GRAPHICS,0);
+    } else if(page==DISPLAY_ADVANCED && selected==106) {
         int cleared=pc_graphics_clear_cache();
         text_at(81,cleared<0?"\vs75Could not clear some cache files\vs100":"\vs75Shader cache cleared\vs100");
     } else if(page==DISPLAY_CONFIRM) {
@@ -1240,7 +1275,7 @@ static void tick_menu(void)
 {
     GuestRegisters r;uint32_t menu=WORD_AT(g_esp+4);save_registers(&r);
     read_choices();
-    if(msaa_restart_prompt && page==DISPLAY_GRAPHICS) {
+    if(msaa_restart_prompt && page==DISPLAY_ADVANCED) {
         msaa_restart_prompt=0;refresh(DISPLAY_RESTART,2);
     }
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
@@ -1296,6 +1331,7 @@ static void activate(void)
         staged=previous=pc_display_current();staged_fov=previous_fov=pc_display_fov();
         staged_rate=applied_rate=pc_frame_rate_choice(pc_native_rate());
         texture_choice=applied_texture=(unsigned)tsfp_texture_is_4k();*status=0;
+        staged_aa=applied_aa=pc_post_aa_get();
         {
             extern void sub_00069640(void);
             uint32_t profile=guest_call(sub_00069640,0);

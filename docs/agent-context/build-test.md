@@ -1,10 +1,10 @@
-[Graphics/HUD tests](../development/graphics-options.md): FPS/Ping, box resolve and flash recovery.
+[Graphics/HUD/AA](../development/graphics-options.md), including rollback and single-pass post-AA checks.
 Auto-sizing fixtures isolate the SDL policy; real restart handoff is tested separately.
 `tests/graphics/test_fov_settings.py` also exercises Video Options tabs, section
 ownership, pointer-region boundaries, keyboard cycling and staged-value retention.
 The Windows ping-expiry fixture waits past GetTickCount64's quantization boundary.
 [Kill feed](../development/arcade-kill-feed.md)
-# Build, run and validation map
+# Build/tests ([SMAA](smaa.md))
 
 [LAN tests](system-link.md).
 

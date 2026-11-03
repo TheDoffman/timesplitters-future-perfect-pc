@@ -17,7 +17,7 @@ and native validation must be reported separately for each host.
 | Control | Choices / behavior |
 | --- | --- |
 | Multisample antialiasing | Off, 2x, 4x, 8x; supported fallback; restart notice where needed |
-| Edge smoothing | Off, FXAA (or SMAA); usable with MSAA |
+| Post-process anti-aliasing | Off, FXAA, SMAA; usable with independent MSAA |
 | Anisotropic filtering | Original, 2x, 4x, 8x, 16x |
 | Ambient occlusion | Off / On; half-resolution processing |
 | Shader cache | Off / On, plus Clear Shader Cache action |
@@ -32,6 +32,23 @@ and preservation through game/launcher updates. No F1-only controls satisfy
 this requirement.
 
 ## Current implementation
+
+Settings cleanup (`feature/graphics-settings-cleanup`, based on unmerged graphics
+options at `627b05bd`): launcher and game expose one Off/FXAA/SMAA selector.
+The launcher maps it to existing files through `GameSettings.PostAntiAliasing`.
+In-game `post_aa_settings.h` saves graphics first and SMAA last; a failed SMAA
+save restores the previous graphics snapshot. The selector follows staged Apply,
+Back/discard and resolution confirmation. Existing dual-enabled records select
+SMAA; the shared resolve suppresses FXAA whenever SMAA is enabled, including
+legacy/manual configurations. No settings schema is replaced.
+
+MSAA, supersampling and shader cache/clear live in Advanced in both interfaces. The launcher
+shows Console render scale there only at Original console resolution, preserving
+the saved scale when hidden. General contains Startup; View & HUD contains FOV
+and FPS/Ping. In-game View & HUD retains subtitles and Kill Feed. Filtering is
+consistently called Anisotropic filtering. Cache remains enabled by default.
+The game Advanced page preserves the Graphics tab highlight and returns there
+on Back. Display, Graphics, View & HUD and Advanced reserve equal row counts.
 
 `src/graphics/graphics_options.h` and `graphics_settings.h` own the versioned
 `TSFP_GRAPHICS_V1 msaa edge anisotropy ao cache` record in `pc-graphics.ini`,
@@ -49,7 +66,8 @@ preferences and Enhanced texture controls retain their existing behavior.
 
 ### Supersampling
 
-Both Graphics menus and the launcher expose 100%, 125%, 150% and 200%.
+Main/pause Graphics -> Advanced and launcher Graphics -> Advanced expose
+100%, 125%, 150% and 200%.
 The percentage multiplies each scene axis after Auto/manual/Original resolution
 selection. For example, 1920x1080 at 150% renders 2880x1620; 200% renders
 3840x2160 and draws four times the pixels. The legacy console scale still
@@ -73,8 +91,8 @@ than shifting by half a pixel; 100% is an exact copy and 200% averages each 2x2
 footprint. Legacy GL uses the same scene-size policy and its existing linear
 framebuffer blit; native rendering and fractional-scale quality remain unverified.
 New game/launcher preferences remain restart-required on every host.
-Video Options uses the same 1.45 native text/row scale across all tabs so the
-eleven-row Graphics page, including Apply, fits above the original footer.
+Video Options retains the 1.6 native text/row scale and ten-row section heights;
+Advanced replaces one spacer with supersampling so Apply stays above the footer.
 
 Checks extend `test_graphics_options.py` (all wire-format/preset round trips,
 odd sizes, bounds/overflow), `test_graphics_resolve.py` (exact production GPU
@@ -88,13 +106,15 @@ The common renderer automatically resolves a completed single-view world before
 the audited US `14F0B0` HUD pass. The original HUD and optional kill feed then
 draw at the selected output resolution, using their original shaders, clipping,
 blending and guest coordinates. Remaining overlays for that frame use the same
-target. FXAA applies to the world before this boundary; it does not blur the HUD
-a second time. The original guest HUD function executes exactly once.
+target. FXAA or SMAA applies to the world before this boundary. The final HUD
+copy bypasses both filters, including legacy dual-enabled preferences. The original guest HUD function executes exactly once.
 
 `graphics/native_hud.h` reserves placement hints 6/7 with tag `14F0B0`. The
 existing host placement operation copies, defers and captures these hints in
 order; they do not change UI placement. Patches 2516/2517 apply after the complete
-MSAA scene-ownership stack. `native_hud_device.inc` retains the supersampled
+MSAA scene-ownership and SMAA resolve stack. Patch 2470 keeps its published
+bytes; the unpublished HUD patch extends that final resolve and exposes an
+unfiltered copy. `native_hud_device.inc` retains the supersampled
 targets while swapping in a cached single-sample output-sized color/depth pair.
 The auto-depth surface keeps its identity. `native_hud_depth.h` copies the
 world depth at output-pixel centres, choosing the nearest MSAA sample, so HUD
@@ -111,7 +131,7 @@ does not change saved preferences. This adds no separate user setting.
 
 `test_native_hud.py` builds the actual common renderer/replay and runs synthetic
 captures through three successive frames. Checks cover native one-pixel stems
-at 125/150/200%, MSAA, world-only FXAA, hidden/visible depth-tested markers,
+at 125/150/200%, MSAA, world-only FXAA/SMAA, hidden/visible depth-tested markers,
 preserved stencil history (including later reads/writes), partial-view fallback
 and capture compatibility without hints. These Windows GPU checks are distinct from native Vulkan/legacy-GL acceptance.
 
@@ -366,3 +386,7 @@ these new patches into a pre-display/pre-feed checkpoint was not a valid old
 installation. Complete current-stack and graphics round-trip coverage remain.
 
 POSIX restart posts SDL_EVENT_QUIT directly. This allows the standalone replay target to link the display module without game-only input symbols; the real process-handoff fixture verifies the SDL quit request.
+
+Native Mac GPU CI327eb4c reproduced visibility0.874528 on a z=2 foreground plane at half-target pixel33 in the65x33 scene, with a distant z=10 background and radius0.75. Shared SSAO now explicitly rejects equal raw-depth taps and distances outside the radius before angular weighting, and bounds reciprocal-square-root input. Existing odd/even flat/sky/foreground and close-contact assertions remain unchanged. Exact compiler/driver cause is not established; native Mac rerun is required.
+
+Native Mac GPU4168ae8d passes all shared pixel assertions including AO flat/foreground/contact, MSAA averaging and depth ownership. Validation then reports SampleRateShading capability not enabled. Patch2497 now enables that device feature only when advertised by the Vulkan device, allowing sample-index shaders without forcing per-sample execution on ordinary pipelines. A clean validation/replay rerun remains required.

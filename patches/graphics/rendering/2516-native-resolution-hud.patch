@@ -83,40 +83,6 @@
      int anchor;
  #ifdef TSFP_PC_DISPLAY
      int previous_world=g_2d_world_anchor.active;
---- a/src/d3d/d3d8_display.c
-+++ b/src/d3d/d3d8_display.c
-@@ -378,8 +378,8 @@
-     return 1;
- }
- 
--HRESULT d3d8_display_resolve(RhiView *scene, UINT scene_w, UINT scene_h,
--                             RhiView *out, D3D8DisplayFit fit)
-+static HRESULT display_resolve(RhiView *scene, UINT scene_w, UINT scene_h,
-+                             RhiView *out, D3D8DisplayFit fit,int edge)
- {
-     RhiOutputState saved;
-     RhiViewport vp;
-@@ -411,7 +411,7 @@
-         c.texel_x = 1.0f / (float)scene_w;
-         c.texel_y = 1.0f / (float)scene_h;
-         c.inv_taps = 1.0f / (float)(taps * taps);
--        c.pad = (float)pc_graphics_get().edge_smoothing;
-+        c.pad = (float)edge;
-         memcpy(mapped, &c, sizeof c);
-         rhi_buffer_unmap(g.cb);
-     }
-@@ -452,6 +452,11 @@
-     return S_OK;
- }
- 
-+HRESULT d3d8_display_resolve(RhiView *scene,UINT w,UINT h,RhiView *out,D3D8DisplayFit fit)
-+{ return display_resolve(scene,w,h,out,fit,pc_graphics_get().edge_smoothing); }
-+HRESULT d3d8_display_copy(RhiView *scene,UINT w,UINT h,RhiView *out,D3D8DisplayFit fit)
-+{ return display_resolve(scene,w,h,out,fit,0); }
-+
- void d3d8_display_shutdown(void)
- {
-     rhi_shader_destroy(g.vs);            g.vs = NULL;
 --- a/src/d3d/d3d8_display.h
 +++ b/src/d3d/d3d8_display.h
 @@ -86,6 +86,8 @@
@@ -128,3 +94,44 @@
  
  void d3d8_display_shutdown(void);
  
+--- a/src/d3d/d3d8_display.c
++++ b/src/d3d/d3d8_display.c
+@@ -381,7 +381,7 @@
+ #include "graphics/pc_smaa.inc"
+ 
+ static HRESULT display_resolve_original(RhiView *scene, UINT scene_w, UINT scene_h,
+-                             RhiView *out, D3D8DisplayFit fit)
++                             RhiView *out, D3D8DisplayFit fit,int edge)
+ {
+     RhiOutputState saved;
+     RhiViewport vp;
+@@ -413,7 +413,7 @@
+         c.texel_x = 1.0f / (float)scene_w;
+         c.texel_y = 1.0f / (float)scene_h;
+         c.inv_taps = 1.0f / (float)(taps * taps);
+-        c.pad = pc_smaa_enabled() ? 0.0f : (float)pc_graphics_get().edge_smoothing;
++        c.pad = (float)edge;
+         memcpy(mapped, &c, sizeof c);
+         rhi_buffer_unmap(g.cb);
+     }
+@@ -461,13 +461,17 @@
+         return E_INVALIDARG;
+     if (pc_smaa_prepare(fit.w, fit.h)) {
+         D3D8DisplayFit local = { 0, 0, fit.w, fit.h };
+-        HRESULT hr = display_resolve_original(scene, scene_w, scene_h, smaa.color.rtv, local);
++        HRESULT hr = display_resolve_original(scene, scene_w, scene_h, smaa.color.rtv, local,0);
+         if (FAILED(hr)) return hr;
+         pc_smaa_apply(out, fit);
+         return S_OK;
+     }
+-    return display_resolve_original(scene, scene_w, scene_h, out, fit);
+-}
++    return display_resolve_original(scene, scene_w, scene_h, out, fit,pc_smaa_enabled()?0:pc_graphics_get().edge_smoothing);
++}
++
++/* Completed HUD presentation bypasses both world post-AA methods. */
++HRESULT d3d8_display_copy(RhiView *scene,UINT w,UINT h,RhiView *out,D3D8DisplayFit fit)
++{ return display_resolve_original(scene,w,h,out,fit,0); }
+ 
+ void d3d8_display_shutdown(void)
+ {
