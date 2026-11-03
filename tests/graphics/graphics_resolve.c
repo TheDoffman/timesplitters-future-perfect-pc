@@ -6,6 +6,51 @@
 #include "msaa_resolve.h"
 #include "graphics_transition.h"
 
+static void test_supersampling(void)
+{
+    /* Compare every output pixel to the exact 2x2 footprint. Irregular colors
+     * expose half-pixel shifts, missing taps and source/destination confusion. */
+    unsigned char input[32*24*4],output[16*12*4];
+    RhiImageDesc d={0};RhiSubresourceData data={0};
+    TsfpGraphicsOptions o=tsfp_graphics_defaults();
+    assert(pc_graphics_set(&o));
+    for(unsigned y=0;y<24;y++)for(unsigned x=0;x<32;x++) {
+        unsigned i=(y*32+x)*4;
+        input[i]=(unsigned char)((x*37+y*13)%256);
+        input[i+1]=(unsigned char)((x*19+y*53)%256);
+        input[i+2]=(unsigned char)((x*61+y*7)%256);
+        input[i+3]=255;
+    }
+    d.type=RHI_IMAGE_2D;d.width=32;d.height=24;d.depth=d.mip_levels=d.samples=1;
+    d.format=RHI_FORMAT_R8G8B8A8_UNORM;d.bind=RHI_BIND_SAMPLED;
+    data.data=input;data.row_pitch=32*4;data.slice_pitch=sizeof input;
+    RhiImage *scene=rhi_image_create(&d,&data);assert(scene);
+    RhiView *srv=rhi_view_create(scene,RHI_VIEW_SAMPLED,NULL);assert(srv);
+    d.width=16;d.height=12;d.bind=RHI_BIND_RENDER_TARGET;
+    RhiImage *target=rhi_image_create(&d,NULL);assert(target);
+    RhiView *rtv=rhi_view_create(target,RHI_VIEW_RENDER_TARGET,NULL);assert(rtv);
+    D3D8DisplayFit fit={0,0,16,12};
+    assert(SUCCEEDED(d3d8_display_resolve(srv,32,24,rtv,fit)));
+    assert(!rhi_image_readback(target,0,output,16*4));
+    for(unsigned y=0;y<12;y++)for(unsigned x=0;x<16;x++)for(unsigned c=0;c<4;c++) {
+        unsigned sum=0;
+        for(unsigned dy=0;dy<2;dy++)for(unsigned dx=0;dx<2;dx++)
+            sum+=input[((y*2+dy)*32+x*2+dx)*4+c];
+        assert(abs((int)output[(y*16+x)*4+c]-(int)((sum+2)/4))<=1);
+    }
+    rhi_set_render_target(NULL,NULL);rhi_view_destroy(srv);rhi_view_destroy(rtv);
+    rhi_image_destroy(scene);rhi_image_destroy(target);
+
+    /* Saved settings are distinct from the active restart-latched scale. */
+    unsigned w,h;o.supersampling=3;assert(pc_graphics_set(&o));
+    d3d8_display_supersample_size(1920,1080,&w,&h);assert(w==3840 && h==2160);
+    o.supersampling=0;assert(pc_graphics_set(&o));
+    d3d8_display_supersample_size(1920,1080,&w,&h);assert(w==3840 && h==2160);
+    d3d8_display_supersample_size(7680,4320,&w,&h);assert(w==7680 && h==4320);
+    assert(pc_graphics_get().supersampling==0);
+    puts("PASS: supersampling exact 2x2 GPU resolve, size limits and restart latch");
+}
+
 int main(void)
 {
     ID3D11Device *device=NULL;ID3D11DeviceContext *context=NULL;D3D_FEATURE_LEVEL level;
@@ -29,12 +74,10 @@ int main(void)
     assert(pc_graphics_set(&options));
     assert(SUCCEEDED(d3d8_display_resolve(srv,32,32,rtv,fit)));
     assert(rhi_image_readback(target,0,off,32*4)==0);
-    /* Existing display resolve samples at the next texel boundary (linear
-     * filtering). Check that exact legacy convention, not an idealized copy. */
+    /* Pixel centers must be preserved at 100%; a half-texel shift blurs the
+     * baseline and makes ordered-grid supersampling sample outside its cell. */
     for(int y=0;y<32;y++)for(int x=0;x<32;x++) {
-        int nx=x<31?x+1:x,ny=y<31?y+1:y;
-        int expected=(input[(y*32+x)*4]+input[(y*32+nx)*4]+
-            input[(ny*32+x)*4]+input[(ny*32+nx)*4])/4;
+        int expected=input[(y*32+x)*4];
         assert(abs((int)off[(y*32+x)*4]-expected)<=1);
     }
     options.edge_smoothing=1;assert(pc_graphics_set(&options));
@@ -63,8 +106,13 @@ int main(void)
     assert(SUCCEEDED(d3d8_display_resolve(srv,32,32,rtv,fit)));
     assert(rhi_image_readback(target,0,again,32*4)==0);
     assert(!memcmp(on,again,sizeof on));
+    /* Native HUD presentation must bypass both SMAA and legacy FXAA. */
+    assert(SUCCEEDED(d3d8_display_copy(srv,32,32,rtv,fit)));
+    assert(rhi_image_readback(target,0,again,32*4)==0);
+    assert(!memcmp(off,again,sizeof off));
     assert(_putenv_s("TSFP_SMAA","0")==0);
     test_graphics_transition();
+    test_supersampling();
     options.edge_smoothing=0;assert(pc_graphics_set(&options));
     /* A save failure cannot publish an unpersisted rendering preference. */
     assert(_putenv_s("TSFP_DISPLAY_CONFIG","missing/settings/display.ini")==0);

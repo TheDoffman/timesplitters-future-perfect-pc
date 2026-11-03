@@ -892,6 +892,12 @@ void pc_network_bots_menu(void (*original)(void))
 }
 #include "pc_quit_menu.inc"
 #include "pc_menu_mouse_guest.inc"
+/* Identify this menu by its callback table, never the game phase alone. */
+static int video_font_menu(uint32_t menu)
+{
+    return current_menu && storage && menu==current_menu && guest_writable(menu,8) &&
+           WORD_AT(menu+4u)==storage;
+}
 #include "pc_display_ui.inc"
 static uint32_t bits(float f) { uint32_t u; memcpy(&u,&f,4); return u; }
 #include "pc_kill_feed_guest.inc"
@@ -1103,17 +1109,18 @@ static void labels(void)
         static const char *const toggle[]={"Off","On"};
         counter_row=graphics_choice(5,"FPS / Ping",toggle,2,pc_counter_enabled());
     } else if(page==DISPLAY_RESTART) {
-        small_note(20,"Restart to apply MSAA changes.");
+        small_note(20,"Restart to apply graphics changes.");
         small_note(21,"This leaves the current game.");
         row(0,"Later");row(1,"Restart Now");
     } else { row(0,"Keep changes");row(1,"Revert"); }
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
         /* Reserve equal section heights so tabs do not move under the cursor. */
-        int padding=page==DISPLAY_HOME?5:page==DISPLAY_VIEW?4:page==DISPLAY_ADVANCED?3:2;
+        int padding=page==DISPLAY_HOME?5:page==DISPLAY_VIEW?4:2;
         for(int i=0;i<padding;i++)
             guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(MODE_TEXT_BASE+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT+3),
                 (uint32_t)(110+i),4u,0u,0u,0u);
-        if(*status)small_note(21,status);
+        /* Both graphics sections already own a status/help row. */
+        if(*status && page!=DISPLAY_GRAPHICS && page!=DISPLAY_ADVANCED)small_note(21,status);
         apply_row=guest_call(sub_00079D60_gen,6,text_at(4,"Apply"),3u,0u,0u,SELECT_CB,0u);
         update_apply();
     }

@@ -210,6 +210,16 @@ def patch_records(paths):
     if smaa:
         paths.remove(smaa)
         paths.append(smaa)
+    # Native HUD switches the final scene/depth ownership introduced by MSAA.
+    native_hud = by_name.get('2516-native-resolution-hud.patch')
+    if native_hud:
+        paths.remove(native_hud)
+        paths.append(native_hud)
+    hud_stencil = by_name.get('2517-native-hud-stencil-plane.patch')
+    if hud_stencil:
+        paths.remove(hud_stencil)
+        paths.append(hud_stencil)
+
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

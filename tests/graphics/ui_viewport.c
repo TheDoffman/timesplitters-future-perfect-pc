@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include "pc_ui_layout.h"
+#include "graphics/native_hud.h"
+static int hud_begins;
+static void native_hud_begin(void){hud_begins++;}
 #define TSFP_PC_DISPLAY
 #define TRUE 1
 #define FALSE 0
@@ -92,5 +95,11 @@ int main(void){
  float invalid[]={NAN,10};
  CHECK(!pc_ui_world_draw(&g_2d_world_anchor,invalid,4,2,0,640));
  CHECK(!g_2d_world_anchor.ready);
+ {
+  int placement=g_2d_placement,anchor=g_2d_anchor;uint32_t tag=g_2d_tag;
+  xbox_D3D8SetTwoDPlacement(TSFP_NATIVE_HUD_BEGIN,TSFP_NATIVE_HUD_TAG);
+  xbox_D3D8SetTwoDPlacement(TSFP_NATIVE_HUD_END,TSFP_NATIVE_HUD_TAG);
+  CHECK(hud_begins==1 && g_2d_placement==placement && g_2d_anchor==anchor && g_2d_tag==tag);
+ }
  puts("PASS: production viewport/scissor agreement at seven ratios and every anchor");return 0;
 }

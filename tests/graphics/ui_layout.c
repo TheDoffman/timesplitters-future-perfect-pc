@@ -37,6 +37,8 @@ static int drawn[1024],selected[1024],selection_count;
 static uint32_t tag;
 #define CHECK(x) do { if(!(x)){fprintf(stderr,"FAIL: %s line %d\n",#x,__LINE__);exit(1);} } while(0)
 float pc_display_hud_scale(void) { return hud_scale; }
+static int owned_video;
+static int video_font_menu(uint32_t menu) {return owned_video && menu==0x1000;}
 static int menu_filter_frontend;
 void pc_display_menu_filter_begin(int frontend) { menu_filter_frontend=frontend; }
 static int menu_font_filter;
@@ -181,18 +183,22 @@ static void test_aim_overlays(void)
 int main(void)
 {
     test_aim_overlays();
+    CHECK(fabsf(pc_ui_caption_fit(90,30,120,20)-.75f)<.00001f);
+    CHECK(fabsf(pc_ui_caption_fit(200,10,120,20)-.5f)<.00001f);
+    CHECK(pc_ui_caption_fit(200,40,120,20)==1.f);
+    CHECK(pc_ui_caption_fit(0,40,120,20)==1.f && pc_ui_caption_fit(90,40,NAN,20)==1.f);
     /* Measurement and glyph rendering must see the same two-axis scale.
        Other menu rows, descriptions and gameplay retain their original size. */
-    for(unsigned mode=0;mode<5;mode++) {
+    for(unsigned mode=0;mode<6;mode++) {
         float initial[2]={1.2f,.8f};memcpy(font_xy,initial,sizeof initial);
         g_esp=0;stack[1]=0x1000;stack[2]=0x2000;
         menu_data[1]=0x3000;item_data[0]=7;item_data[0x88/4]=0x1000;
         descriptor=mode==2?0x1234:0x2d0be0;
         if(mode==3)item_data[0]=9;
-        scene=mode==4?1:101;
+        scene=mode>=4?1:101;owned_video=mode==5;
         pc_display_main_menu_font(font_draw,mode==0);
-        CHECK(font_filter_seen==(mode==1) && menu_font_filter==0);
-        float scale=mode<2?.75f:1.f;
+        CHECK(font_filter_seen==(mode==1 || mode==5) && menu_font_filter==0);
+        float scale=mode<2 || mode==5?.75f:1.f;
         CHECK(fabsf(font_seen[0]-initial[0]*scale)<.00001f);
         CHECK(fabsf(font_seen[1]-initial[1]*scale)<.00001f);
         CHECK(!memcmp(font_xy,initial,sizeof initial) && g_esp==4);

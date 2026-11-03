@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "557c901d46fee05809eba95785f93a9b199325867096527d262f3383a1fa82ab",
+  "loaderSha256": "bba02e5427294a75b12a7a2cefc0bf1c136bcc8b3fcda0a2676c7ae0685a09a3",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1972,6 +1972,16 @@
       ]
     },
     {
+      "name": "2515-supersampling.patch",
+      "path": "patches/graphics/rendering/2515-supersampling.patch",
+      "sha256": "f69b264fb78d8a28e1f726e24f07254a363231b84c9b7d3e107f6040937d4a30",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_display.c",
+        "src/d3d/d3d8_display.h"
+      ]
+    },
+    {
       "name": "independent-condition-fixture.patch",
       "path": "patches/compiler/independent-condition-fixture.patch",
       "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",
@@ -3291,6 +3301,27 @@
         "src/config/recomp_config.c",
         "src/config/recomp_config.h",
         "src/d3d/d3d8_display.c"
+      ]
+    },
+    {
+      "name": "2516-native-resolution-hud.patch",
+      "path": "patches/graphics/rendering/2516-native-resolution-hud.patch",
+      "sha256": "b0a212e0c9d2208effe2eafcee7151f03fa0a1a4f3487d7d89c8488b60a63a95",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_display.c",
+        "src/d3d/d3d8_display.h"
+      ]
+    },
+    {
+      "name": "2517-native-hud-stencil-plane.patch",
+      "path": "patches/graphics/rendering/2517-native-hud-stencil-plane.patch",
+      "sha256": "9f9e012cdd326096411445b61621bf424782bf9cbce288f7a3b1e7aeeba74df0",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/rhi.h",
+        "src/d3d/rhi_d3d11.c",
+        "src/d3d/rhi_vulkan.c"
       ]
     }
   ]

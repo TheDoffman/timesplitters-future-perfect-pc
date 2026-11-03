@@ -1,3 +1,59 @@
+PR472 full macOS native suite: 2640 passed, 396 skipped; 22 texture harness
+setup errors share one missing native_hud_restore stub in the extracted present
+fixture. The fixture now models its absent HUD targets explicitly; production
+code is unchanged. Both launcher hosts and macOS historical upgrades passed.
+Updated full CI is required after the affected texture suite is rerun.
+
+## Paused Video Options layout repair (2026-11-02, PR472)
+
+User review found the narrow paused panel still crowded despite the shorter
+supersampling label. Front-end row typography was scoped out of all gameplay.
+The row-font hook now admits only the active paused Video menu by identity and
+callback table; foreign pause menus retain their native text. Tabs fit all
+captions with one common measured scale and restore glyph state afterward.
+15 shared UI/FOV checks pass (two native Mac skips), including paused ownership,
+restoration and caption-fit boundaries. Windows Release Build/built-ins pass.
+Actual single-view Vietnam pause Display, Graphics, View & HUD and Advanced
+captures reviewed at1280x720; labels, values, tab gaps and Apply fit. Front-end
+scope behavior remains covered by the same fixtures. Native Mac visual review
+is still pending. Updated PR CI must pass before merge.
+
+Pause Advanced live review caught the supersampling restart suffix crowding
+its value. The label is now "Supersampling (restart)"; the restart help/prompt
+remains explicit. Final CI reruns on this layout correction.
+
+PR472 initial CI caught a stale loader-order expectation after the HUD patches
+moved behind SMAA. The fixture now includes both final HUD patches; selection
+and repository-context checks are rerun before retrying CI.
+
+## Supersampling integration with current main (2026-11-02)
+
+Merged de28f5fc into feature/supersampling and resolved menu/launcher conflicts
+by retaining the unified Off/FXAA/SMAA control and placing supersampling in
+Advanced. Patch2516 now follows published SMAA2470; its HUD copy bypasses both
+post-AA filters while the world uses the selected method once.
+Windows Release Build/built-ins, full launcher -Test and 44 focused pytest
+checks plus 29 subtests pass (two native Mac skips). Three fresh/repeated and
+graphics-branch round-trip patch checks pass. Added GPU coverage for native HUD
+with SMAA and MSAA, and pixel-exact unfiltered copy with both legacy AA flags.
+Real isolated Vietnam gameplay confirms 150% world1920x1080 with 4x MSAA,
+SMAA enabled and HUD1280x720. Gameplay and pause captures reviewed; no failed
+presents/draws/target operations. Main Advanced/restart/Later/200% persistence
+captures reviewed. The shared restart handoff fixture passes; final combined
+native Mac/Vulkan gameplay remains unverified. PR CI is pending.
+
+# Supersampling HUD follow-up (2026-11-02, local development)
+
+On feature/supersampling after 27c2925b, single-view common-renderer gameplay
+resolves the world before the original HUD, keeping HUD pixels at the selected
+output resolution. Shared depth/stencil transfer preserves marker occlusion,
+MSAA and later stencil reads/writes. Split/offscreen and legacy GL use the
+existing path; native Mac/Vulkan GPU acceptance remains pending.
+Windows build and built-in checks pass. Nine real D3D11 GPU fixtures, 33 related
+regressions and three fresh/repeated/graphics-branch patch checks pass. Isolated
+Vietnam gameplay confirms 2560x1440 world / 1280x720 HUD, with zero failed
+presents or draw/target operations. Comparison captures remain private/local.
+See the [rendering contract](../development/graphics-options.md#output-resolution-hud-with-supersampling).
 ## Graphics settings cleanup (2026-11-02)
 
 PR #470 initial CI caught a CRLF-derived index digest/target for patch2495.
@@ -38422,6 +38478,45 @@ Updated CI/native Mac GPU and live canyon event remain pending.
 PR468 follow-up: both native pytest suites and both historical-upgrade jobs passed on37a38ed9. Native Mac GPU compilation then found a missing string.h declaration in the shared MSAA fixture; added its direct include. Windows WARP pixel check and WSL Clang syntax check of the MSAA header pass. New native Mac GPU run is still required.
 
 PR468 native replay link follow-up: the restarted Mac GPU build compiled the MSAA fixture, then found pc_display restart referenced the game-only input quit wrapper. POSIX restart now queues SDL_EVENT_QUIT directly, also consumed by replay. Windows restart/sizing checks pass (3); WSL Clang strict compilation and real parent/child handoff pass with SDL event assertion. Native Mac GPU/replay rerun remains required; live canyon blackout remains unconfirmed.
+# Supersampling (2026-11-02, local development)
+
+Implemented on `feature/supersampling`, based on graphics-options 327eb4c0.
+Windows x64/D3D11 build and built-in checks passed from that base plus the
+supersampling changes. This task has not been merged, pushed or published.
+Requested scale remains 100% by default; personal settings/saves and textures
+were preserved. See [usage and contracts](../development/graphics-options.md#supersampling).
+
+- Shared V1/V2 persistence, main/pause Graphics selector and launcher control
+  expose 100/125/150/200% per axis. Supersampling latches at startup; the in-game
+  menu offers Later/Restart Now. Existing MSAA, FXAA and Enhanced texture choices
+  stay independent. Internal-size fallback preserves the saved request.
+- Windows focused graphics/display/menu/WARP checks: 10 passed, 2 native Mac skips.
+  The production shader preserves 1:1 pixels and exactly averages all 2x2 GPU
+  footprints; scale bounds/overflow, legacy migration, restart latch and save
+  failure are covered. Additional renderer/state/ghost/replay checks: 32 passed,
+  1 native Mac skip. Full launcher suite passed, including 42 settings checks and
+  shared WPF/Avalonia graphics save/reopen controls.
+- Fresh application/repeated-build and graphics branch round trips passed
+  (3 tests, including LF/CRLF and unrelated edits). Historical graphics-off
+  fixtures exclude 2515 with its 2495..2514 prerequisites. Context refresh/check
+  passes against 327eb4c0.
+- Bounded isolated game runs verify actual 1920x1080, 2880x1620 and 3840x2160 scene
+  targets for 1080p output at 100/150/200%. Scene captures match the allocations;
+  no crash or unresolved-call diagnostics were found. Native Mac/Vulkan,
+  physical Linux, real low-memory allocation failure, all-map visual acceptance
+  and comparative performance remain unverified. Legacy GL uses shared sizing
+  and its existing linear blit; fractional-scale quality needs native review.
+- Evidence stays ignored in `logs/supersampling-*.log` and
+  `private/test-saves/supersampling`. Disposable partition images are recycled;
+  temporary BMPs are bounded and selected PNGs retained. No game data or
+  captures were added to Git.
+- Final Windows main-menu review checks the Supersampling row, all controls and
+  fully visible Apply after reducing shared row spacing to 1.45. Changing 150%
+  to 200% displays the restart prompt; Later returns with 200% saved in V2 while
+  this process retains its 150% scene. Error feedback reuses the Graphics help
+  row instead of adding an overflowing duplicate. The final supported rebuild
+  and repeated menu suite pass (4 passed, 2 native Mac skips). Pause uses the
+  same menu implementation; a separate final pause-layout review is unrun.
 
 PR468 AO sample rejection: both Windows WARP suites pass (shared RHI and864-frame transition checks). Current SSAO shader/fixtures linked with the earlier isolated Linux graphics RHI also pass on lavapipe; this is targeted shared-shader evidence, not a full current Linux build or validation-layer acceptance. Mac odd-size foreground pixel failure is recorded in graphics-options.md and awaits rerun after explicit sample rejection. Canyon gameplay blackout remains unconfirmed.
 

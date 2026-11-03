@@ -21,6 +21,7 @@ and native validation must be reported separately for each host.
 | Anisotropic filtering | Original, 2x, 4x, 8x, 16x |
 | Ambient occlusion | Off / On; half-resolution processing |
 | Shader cache | Off / On, plus Clear Shader Cache action |
+| Supersampling | 100% (Off), 125%, 150%, 200% per axis; restart required |
 | FPS / Ping | Off / On; FPS plus latency in ms during online play only |
 
 Both entry points must read the same saved choice after reopening. In-game
@@ -41,7 +42,7 @@ Back/discard and resolution confirmation. Existing dual-enabled records select
 SMAA; the shared resolve suppresses FXAA whenever SMAA is enabled, including
 legacy/manual configurations. No settings schema is replaced.
 
-MSAA and shader cache/clear live in Advanced in both interfaces. The launcher
+MSAA, supersampling and shader cache/clear live in Advanced in both interfaces. The launcher
 shows Console render scale there only at Original console resolution, preserving
 the saved scale when hidden. General contains Startup; View & HUD contains FOV
 and FPS/Ping. In-game View & HUD retains subtitles and Kill Feed. Filtering is
@@ -58,13 +59,93 @@ same files; launcher saves participate in its transaction, concurrent-change
 checks and rollback. Invalid files are not silently overwritten. Native setters
 publish a complete snapshot only after a successful atomic save.
 
+Supersampling adds a sixth field (index 0/1/2/3) in `TSFP_GRAPHICS_V2`.
+V1 still loads with 100%; saving 100% writes V1 for older-build compatibility.
+Non-default V2 files require a supersampling-aware game and launcher. Other
+preferences and Enhanced texture controls retain their existing behavior.
+
+### Supersampling
+
+Main/pause Graphics -> Advanced and launcher Graphics -> Advanced expose
+100%, 125%, 150% and 200%.
+The percentage multiplies each scene axis after Auto/manual/Original resolution
+selection. For example, 1920x1080 at 150% renders 2880x1620; 200% renders
+3840x2160 and draws four times the pixels. The legacy console scale still
+applies only in Original mode; supersampling multiplies that result too.
+Output shape, guest coordinates, FOV, window size and texture choice are
+independent. Original-resolution mode still follows the existing window-fit
+presentation policy; its percentage is relative to the console scene size.
+
+`src/graphics/supersampling.h` supplies deterministic ceil-rounded dimensions
+and reduces added scaling through the available presets to keep internal targets
+within 7680x4320 / 33,177,600 pixels. It never reduces the unscaled base target.
+The requested preference is retained. Patch 2515 latches the active scale when
+the common renderer first creates its scene; resolution changes/Auto resizing
+use that same latch. Startup allocation failure retries lower supersampling
+presets; live resolution allocation failure retains the existing targets and
+uses the display model's rollback. The log reports requested/effective dimensions.
+
+The existing production box resolve downsamples the larger scene before FXAA.
+Its sample origin now starts at the output pixel's top-left footprint rather
+than shifting by half a pixel; 100% is an exact copy and 200% averages each 2x2
+footprint. Legacy GL uses the same scene-size policy and its existing linear
+framebuffer blit; native rendering and fractional-scale quality remain unverified.
+New game/launcher preferences remain restart-required on every host.
+Video Options retains the 1.6 native text/row scale and ten-row section heights;
+Advanced replaces one spacer with supersampling so Apply stays above the footer.
+Its compact "Supersampling (restart)" label also fits the narrower pause panel.
+
+Checks extend `test_graphics_options.py` (all wire-format/preset round trips,
+odd sizes, bounds/overflow), `test_graphics_resolve.py` (exact production GPU
+2x2 averages, baseline copy and restart latch), `test_fov_settings.py` (menu
+failure/restart/reopen), the launcher model/shared UI suite and graphics branch
+migration fixtures. Windows evidence and unrun native checks are in STATUS.
+
+### Output-resolution HUD with supersampling
+
+The common renderer automatically resolves a completed single-view world before
+the audited US `14F0B0` HUD pass. The original HUD and optional kill feed then
+draw at the selected output resolution, using their original shaders, clipping,
+blending and guest coordinates. Remaining overlays for that frame use the same
+target. FXAA or SMAA applies to the world before this boundary. The final HUD
+copy bypasses both filters, including legacy dual-enabled preferences. The original guest HUD function executes exactly once.
+
+`graphics/native_hud.h` reserves placement hints 6/7 with tag `14F0B0`. The
+existing host placement operation copies, defers and captures these hints in
+order; they do not change UI placement. Patches 2516/2517 apply after the complete
+MSAA scene-ownership and SMAA resolve stack. Patch 2470 keeps its published
+bytes; the unpublished HUD patch extends that final resolve and exposes an
+unfiltered copy. `native_hud_device.inc` retains the supersampled
+targets while swapping in a cached single-sample output-sized color/depth pair.
+The auto-depth surface keeps its identity. `native_hud_depth.h` copies the
+world depth at output-pixel centres, choosing the nearest MSAA sample, so HUD
+markers retain occlusion. The sampled stencil plane is reconstructed with eight
+masked replace passes, preserving all bits without optional stencil-export
+shader extensions. Both D3D11 and Vulkan expose that plane through the RHI.
+Present and resize restore the world targets before subsequent work; teardown releases both pairs and cached shaders.
+
+Native HUD admission requires supersampling above the base size, one complete
+viewport, the automatic scene depth and no interpolation/offscreen target.
+Split-screen, camera feeds, unsupported allocations and legacy OpenGL keep
+their existing supersampled path. A process-local `TSFP_NATIVE_HUD=0` override permits controlled comparisons and
+does not change saved preferences. This adds no separate user setting.
+
+`test_native_hud.py` builds the actual common renderer/replay and runs synthetic
+captures through three successive frames. Checks cover native one-pixel stems
+at 125/150/200%, MSAA, world-only FXAA/SMAA, hidden/visible depth-tested markers,
+preserved stencil history (including later reads/writes), partial-view fallback
+and capture compatibility without hints. These Windows GPU checks are distinct from native Vulkan/legacy-GL acceptance.
+
 `src/interface/pc_video_tabs.inc` supplies the persistent top tab strip in both
 main/pause Video Options. Display contains aspect ratio, resolution and frame
 rate; Graphics contains effects, filtering, cache and texture style; View & HUD
 contains vertical FOV, subtitles, Kill Feed and FPS/Ping. Click a tab, or focus
 the strip and use left/right (Confirm cycles forward). Back returns to Settings.
 Sections reserve the same native row count so the tabs stay in place. The active
-tab has a persistent blue fill independent of setting-row focus.
+tab has a persistent blue fill independent of setting-row focus. Captions use
+one scale derived from the largest measured caption and the painted cell,
+keeping horizontal/vertical padding in the narrower paused panel. Font globals
+are flushed and restored around custom tab painting.
 `src/interface/pc_graphics_menu.inc` supplies the Graphics tab's controls.
 Native changes save immediately; failed writes restore the selector. The launcher
 uses its normal Save workflow. MSAA requires restart and is labeled accordingly;
@@ -313,3 +394,14 @@ POSIX restart posts SDL_EVENT_QUIT directly. This allows the standalone replay t
 Native Mac GPU CI327eb4c reproduced visibility0.874528 on a z=2 foreground plane at half-target pixel33 in the65x33 scene, with a distant z=10 background and radius0.75. Shared SSAO now explicitly rejects equal raw-depth taps and distances outside the radius before angular weighting, and bounds reciprocal-square-root input. Existing odd/even flat/sky/foreground and close-contact assertions remain unchanged. Exact compiler/driver cause is not established; native Mac rerun is required.
 
 Native Mac GPU4168ae8d passes all shared pixel assertions including AO flat/foreground/contact, MSAA averaging and depth ownership. Validation then reports SampleRateShading capability not enabled. Patch2497 now enables that device feature only when advertised by the Vulkan device, allowing sample-index shaders without forcing per-sample execution on ordinary pipelines. A clean validation/replay rerun remains required.
+
+### Paused Video Options typography
+
+The common row-font hook admits paused Video Options only when the menu identity
+matches the active Video callback table. Its row glyphs then use the same 75%
+two-axis scale as the front-end. Other pause menus, HUD/gameplay text and foreign
+menu descriptors retain their native scale. Custom tabs also fit their actual
+guest-measured bounds to the available cells through `pc_ui_caption_fit`; drawing
+and centering use the same scaled measurements and hit testing keeps the painted
+cell bounds. Shared UI fixtures cover owned/unowned pause font scopes, restoration,
+width/height fitting, no enlargement and invalid measurements.

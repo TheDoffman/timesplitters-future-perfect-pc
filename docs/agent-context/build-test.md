@@ -1,4 +1,4 @@
-[Graphics/AA](../development/graphics-options.md), including rollback and single-pass post-AA checks.
+[Graphics tests](../development/graphics-options.md): HUD/SMAA order and texture-present fixtures.
 Auto-sizing fixtures isolate the SDL policy; real restart handoff is tested separately.
 `tests/graphics/test_fov_settings.py` also exercises Video Options tabs, section
 ownership, pointer-region boundaries, keyboard cycling and staged-value retention.

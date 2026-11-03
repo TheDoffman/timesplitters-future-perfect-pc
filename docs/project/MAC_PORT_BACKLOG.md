@@ -1,4 +1,38 @@
+Paused Video Options fit (2026-11-02, PR472 follow-up): shared guest row-font
+scope now admits only this menu during pause; custom tabs fit measured caption
+bounds and restore font state. Shared fixture coverage includes pause ownership,
+scale restoration and caption limits. The same code serves Windows/Mac; actual
+native Mac paused-menu visual acceptance remains pending.
+
+Supersampling/main integration (2026-11-02): common HUD resolve now follows the
+published SMAA patch and bypasses both post-AA filters during HUD presentation.
+Windows GPU fixtures cover SMAA with supersampling/MSAA and preserve native HUD
+pixels. Game and shared WPF/Avalonia launcher place supersampling in Advanced,
+retaining the unified Off/FXAA/SMAA selector. Native Mac/Vulkan GPU/menu checks
+remain required; no additional platform acceptance is claimed.
+
 # PC features awaiting Mac adaptation
+
+Output-resolution HUD with supersampling (2026-11-02, local follow-up to
+27c2925b): **Common implementation, native validation pending**. The common
+Windows/Vulkan frontend shares `graphics/native_hud*.h`, the scene-owner adapter
+and guest HUD hints. Deferred/captured hints use the existing placement ABI;
+original HUD/kill-feed logic executes once. Single-view depth/stencil history, MSAA
+and frame reset pass Windows GPU fixtures. Patch 2517 adds sampled stencil
+plane views to the D3D11/Vulkan adapters; native GPU acceptance remains pending. Legacy GL ignores these hints and retains its
+existing whole-frame path; separate GL color/depth target switching and native
+Mac Retina, resize, pause/fades and gameplay checks remain. No native Mac or
+physical Linux acceptance is claimed. See the [HUD contract](../development/graphics-options.md#output-resolution-hud-with-supersampling).
+
+Supersampling (2026-11-02, local `feature/supersampling`, based on graphics-options
+327eb4c0): **Implemented, native validation pending**. Shared percentages,
+V1/V2 preferences, in-game/launcher UI and common Vulkan scene/box resolve are
+implemented once. Legacy GL consumes the shared scene-size helper and retains
+its linear framebuffer blit. No separate Mac policy is needed. Windows model,
+menu and WARP pixel checks pass; native Mac builds, all-scale/main/pause UI,
+Retina Auto resizing, failure recovery, performance and scene acceptance remain
+unrun. Legacy GL fractional-filter quality requires native review. See
+[graphics contract](../development/graphics-options.md#supersampling) and STATUS.
 
 FPS / Ping counter (2026-11-01, uncommitted): shared settings/formatting and
 common RHI scaling; legacy GL uses the same layout helper. No new network

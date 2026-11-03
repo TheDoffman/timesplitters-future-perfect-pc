@@ -50,7 +50,7 @@ namespace TimeSplitters.Launcher
         readonly Slider fov;
         readonly TextBox sensitivity, width, height, discordId;
         readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled, enhancedTextures, ambientOcclusion, shaderCache;
-        readonly ComboBox device, resolution, aspect, scale, filtering, frameRate, languagePack, msaa, edgeSmoothing;
+        readonly ComboBox device, resolution, aspect, scale, filtering, frameRate, languagePack, msaa, edgeSmoothing, supersampling;
         readonly TextBlock performanceAdvice;
         readonly StackPanel consoleScalePanel;
         readonly Button[,] bindingButtons = new Button[GameSettings.Actions.Length,GameSettings.BindingSlots];
@@ -236,6 +236,10 @@ namespace TimeSplitters.Launcher
             var qualityColumns=Columns(quality);var qualityLeft=Column(qualityColumns,0);var qualityRight=Column(qualityColumns,1);
             var advanced=new StackPanel();
             scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString());scale.Name="ConsoleRenderScale";consoleScalePanel=new StackPanel();Field(consoleScalePanel,"Console render scale",scale);
+            var superLabels=new[]{"100% (Off)","125%","150%","200%"};
+            supersampling=Choices(superLabels,superLabels[model.Supersampling]);supersampling.Name="Supersampling";
+            Field(advanced,"Supersampling · restart required",supersampling);
+            Ui.Tip(supersampling,"Renders above the selected resolution, then downsamples. 200% draws four times the pixels. Works with Classic or Enhanced textures. Large targets use a lower effective scale.");
             filtering=Choices(new[]{"1","2","4","8","16"},model.Anisotropy.ToString());filtering.Name="AnisotropicFiltering";Field(qualityRight,"Anisotropic filtering",filtering);
             msaa=Choices(new[]{"Off","2x","4x","8x"},model.Msaa==1?"Off":model.Msaa+"x");msaa.Name="MultisampleAntialiasing";
             Field(advanced,"MSAA · restart required",msaa);
@@ -259,9 +263,10 @@ namespace TimeSplitters.Launcher
             performanceAdvice.Foreground=Muted;quality.Children.Add(performanceAdvice);
             frameRate.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
             scale.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
+            supersampling.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
             width.TextChanged+=(s,e)=>UpdatePerformanceAdvice();height.TextChanged+=(s,e)=>UpdatePerformanceAdvice();
             UpdatePerformanceAdvice();
-            PageTheme.Details(quality,"Performance tips",Text("Lower output resolution reduces GPU work. Console render scale / supersampling applies only at Original console resolution.",12),
+            PageTheme.Details(quality,"Performance tips",Text("Supersampling works at every resolution. Start at 125% or 150%; 200% draws four times the pixels. The legacy console render scale applies only at Original resolution and multiplies with supersampling.",12),
                 Text("VRR also needs monitor and driver support. A fixed-refresh display may tear.",12));
             graphics.Children.Add(texturePanel);
             var general=new StackPanel();
@@ -299,7 +304,7 @@ namespace TimeSplitters.Launcher
             tabs.Items.Add(new TabItem { Header="General",Content=Scroll(general) });
             foreach(var entry in new[]{sensitivity,width,height,discordId})Ui.TextChanged(entry,RefreshSaveState);
             foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,discordEnabled,enhancedTextures,enhancedAudio,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
-            foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack,msaa,edgeSmoothing})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
+            foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack,msaa,edgeSmoothing,supersampling})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
             Ui.ValueChanged(fov,RefreshSaveState);
         }
         string Draft()
@@ -307,7 +312,7 @@ namespace TimeSplitters.Launcher
             return Json.Encode(new object[]{sensitivity.Text,width.Text,height.Text,discordId.Text,
                 enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,ambientOcclusion.IsChecked,shaderCache.IsChecked,
                 skipSplashes.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
-                device.SelectedIndex,scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,
+                device.SelectedIndex,scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
                 (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
         void RefreshSaveState()
@@ -433,8 +438,10 @@ namespace TimeSplitters.Launcher
             var notes=new System.Collections.Generic.List<string>();
             notes.Add(frameRate.SelectedIndex>0 ? "Native high-refresh target: "+GameSettings.NativeFrameRates[frameRate.SelectedIndex]+" FPS (Beta). Actual FPS depends on your game build, hardware and display." : "Original 60 FPS timing. Your desktop refresh rate stays unchanged.");
             if(original && n>1) notes.Add(n+"× console scale draws "+(n*n)+"× the scene pixels. Reduce it to 1 first if FPS drops.");
-            else if(!original) notes.Add("Your output resolution sets the scene size; console scale is inactive. Lower output resolution first if GPU load causes drops.");
+            else if(!original) notes.Add("The console scale is inactive at this output resolution.");
             else notes.Add("Console scale is already 1×.");
+            int percent=new[]{100,125,150,200}[supersampling.SelectedIndex];
+            notes.Add(percent==100?"Supersampling is off.":"Supersampling: "+percent+"% on each axis ("+((percent*percent)/10000.0).ToString("0.##",CultureInfo.InvariantCulture)+"× scene pixels). Reduce it if FPS drops. Internal targets are limited to 7680 × 4320; large modes use a lower scale.");
             notes.Add("Save and restart after changes.");
             performanceAdvice.Text=String.Join("\n\n",notes);
         }
@@ -451,6 +458,7 @@ namespace TimeSplitters.Launcher
                 model.VerticalFov=(int)Math.Round(fov.Value);
                 model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.ShowCounter=fps.IsChecked==true;
                 model.Msaa=new[]{1,2,4,8}[msaa.SelectedIndex];model.PostAntiAliasing=edgeSmoothing.SelectedIndex;
+                model.Supersampling=supersampling.SelectedIndex;
                 model.AmbientOcclusion=ambientOcclusion.IsChecked==true?1:0;model.ShaderCache=shaderCache.IsChecked==true;
                 model.NativeFps=GameSettings.NativeFrameRates[frameRate.SelectedIndex];
                 model.EnhancedTextures=enhancedTextures.IsChecked==true;

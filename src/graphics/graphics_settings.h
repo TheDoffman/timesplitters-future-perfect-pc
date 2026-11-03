@@ -40,7 +40,8 @@ static long pc_graphics_atomic_read(void)
 static long pc_graphics_pack(const TsfpGraphicsOptions *o)
 {
     return o->msaa | (o->edge_smoothing << 4) | (o->anisotropy << 5) |
-           (o->ambient_occlusion << 10) | (o->shader_cache << 11);
+           (o->ambient_occlusion << 10) | (o->shader_cache << 11) |
+           (o->supersampling << 12);
 }
 TsfpGraphicsOptions pc_graphics_get(void)
 {
@@ -66,7 +67,7 @@ TsfpGraphicsOptions pc_graphics_get(void)
     }
     o.msaa=(int)(state&15);o.edge_smoothing=(int)((state>>4)&1);
     o.anisotropy=(int)((state>>5)&31);o.ambient_occlusion=(int)((state>>10)&1);
-    o.shader_cache=(int)((state>>11)&1);return o;
+    o.shader_cache=(int)((state>>11)&1);o.supersampling=(int)((state>>12)&3);return o;
 }
 
 /* UI-thread operation. Save before publishing a complete atomic snapshot to

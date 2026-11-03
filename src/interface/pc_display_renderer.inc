@@ -14,6 +14,7 @@ static void pc_destroy_targets(D3D8DeviceState *s)
 
 int xbox_D3D8ChangeResolution(unsigned width,unsigned height)
 {
+    native_hud_restore();
     D3D8DeviceState next={0}, *s=&g_device_state;
     RhiView *auto_view;
     if(!g_device_initialized || g_cur_rt || !g_auto_ds || (g_cur_ds && g_cur_ds!=g_auto_ds)) return 0;
@@ -21,6 +22,7 @@ int xbox_D3D8ChangeResolution(unsigned width,unsigned height)
         width=s->present_width*d3d8_display_policy()->scale;
         height=s->present_height*d3d8_display_policy()->scale;
     }
+    d3d8_display_supersample_size(width,height,&width,&height);
     if(width==s->width && height==s->height) return 1;
     next.width=width; next.height=height;
     if(FAILED(create_render_targets(&next))) {

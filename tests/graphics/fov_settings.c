@@ -21,7 +21,7 @@ static int enhanced_audio,audio_save_ok=1;
 int pc_audio_enhanced_enabled(void) {return enhanced_audio;}
 int pc_audio_set_enhanced(int enabled) {if(!audio_save_ok)return 0;enhanced_audio=!!enabled;return 1;}
 #include "graphics/graphics_options.h"
-static TsfpGraphicsOptions graphics_options={1,0,1,0,1};
+static TsfpGraphicsOptions graphics_options={1,0,1,0,1,0};
 static int graphics_save_ok=1;
 static int cache_clear_calls;
 void host_AmbientOcclusion(const float *projection){(void)projection;}
@@ -354,6 +354,12 @@ int main(int argc,char **argv)
     WORD_AT(graphics_rows[0]+0xc8)=0;call(TICK_CB,100,0);
     CHECK(page==DISPLAY_RESTART && graphics_options.msaa==1);
     call(BACK_CB,0,0);CHECK(page==DISPLAY_ADVANCED);
+
+    graphics_save_ok=0;WORD_AT(graphics_rows[5]+0xc8)=3;read_choices();
+    CHECK(!graphics_options.supersampling && WORD_AT(graphics_rows[5]+0xc8)==0 && !msaa_restart_prompt);
+    graphics_save_ok=1;WORD_AT(graphics_rows[5]+0xc8)=2;call(TICK_CB,105,0);
+    CHECK(page==DISPLAY_RESTART && graphics_options.supersampling==2);
+    call(SELECT_CB,0,0);CHECK(page==DISPLAY_ADVANCED && WORD_AT(graphics_rows[5]+0xc8)==2);
 
     call(BACK_CB,0,0);CHECK(page==DISPLAY_GRAPHICS);
     refresh(DISPLAY_VIEW,0);CHECK(subtitle_row && counter_row && !texture_row && !rate_row);
