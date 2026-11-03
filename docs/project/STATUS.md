@@ -1,3 +1,90 @@
+## Final pause-menu visual review and repairs (2026-11-03, local)
+
+Continuing feature/unified-controls from9706b01a. Live pause review found moving
+Controls tab positions and clipped custom keyboard labels/diagram keys. Tabbed
+roots now retain the first finalized native Y position across sections, while
+the footer follows each page's content without blank rows above Accept. Modals
+and binding lists keep their native centring; new sessions reset the anchor.
+Keyboard labels now measure and draw plain captions under the same explicit
+glyph scale, fit their cells and restore font state. No binding/save behavior
+changes. Do not call native77320 after771D0: it remeasures pending builder rows;
+the finalized native Y field is written directly instead.
+
+Windows focused UI/input checks:21 passed,2 native Mac skips; Release Build and
+built-in checks pass. Isolated main and paused General/Controller/Keyboard/Mouse
+and binding pages reviewed. Root tab headers align in both contexts; diagram
+letters, column headings, names and help text fit. Paused Next/Previous pages,
+Back return hierarchy and all three Video tabs reviewed at1280x720; main review
+used the normal1920x1080 guest menu target. Original footer prompts remain.
+Supported US XBE hash validated; personal saves/settings untouched. Native Mac
+visual acceptance and physical-controller testing remain unverified.
+
+## Controls Accept state and Keyboard footer navigation (2026-11-03, local)
+
+Continuing feature/unified-controls from9d18ca40. General/Controller Accept starts
+disabled, enables when the native per-player draft changes and disables on full
+reversion. Baseline survives tabs and Customize; the callback rejects a clean
+session. Keyboard pages remove on-screen Back while retaining native Back;
+binding pagination moves below the silver divider. Non-paginated lists omit the
+empty footer divider. Existing keyboard live/debounced persistence is unchanged.
+Windows focused UI/input checks:21 passed,2 native Mac skips. Tests include clean
+Accept callback rejection, edit/revert, cross-tab state, fresh paused session,
+keyboard Back-row removal and Next placement. Release Build and built-in checks
+pass after game close. Isolated frontend captures verify General and Controller
+Accept gray/edit-enabled/reverted-gray states, Keyboard/Mouse without Back rows,
+and binding-list Next below the divider. US XBE hash validated; personal data
+untouched.
+Native Mac visual acceptance remains pending; no new host adapter is needed.
+
+## Original-style settings typography and tabs (2026-11-03, local)
+
+Continuing feature/unified-controls from2db57024. Shared Video/Controls tabs
+now use muted vertical shading, thin silver edges and uppercase measured
+captions. Keyboard menu rows and custom labels use uppercase display copies,
+matching the native Controls labels without changing stored bindings or saves.
+The tab painter retains fade, caption fitting and font restoration; edge/fill
+strips do not overlap. Existing settings/navigation behavior is unchanged.
+Windows focused UI/keyboard checks:16 passed,2 native Mac skips; supported Release
+Build and built-in checks pass. Isolated live frontend General, Controller,
+Keyboard, Mouse and Video captures reviewed for readability, fit and styling.
+US XBE hash validated; personal settings/saves untouched. Native Mac visual
+acceptance remains pending; changes share the existing guest/font adapters.
+
+## Controls hover and Controller spacing (2026-11-03, local)
+
+Follow-up on feature/unified-controls: the owned Controls header now suppresses
+the native full-row focus backdrop, matching Video Options. Individual tab
+backgrounds and active selection remain. Controller no longer inserts two blank
+rows between Turn Speed and the Accept/Cancel footer. Existing settings and
+navigation handlers are unchanged. Windows focused UI checks:15 passed,2 native
+Mac skips; supported Release Build and built-in checks pass. Isolated live
+Controller hover capture reviewed: no full-row backdrop and no footer gap.
+Native Mac visual
+acceptance remains pending; both changes use existing shared menu source.
+
+## Unified Controls tabs (2026-11-03, local)
+
+Branch feature/unified-controls based on cd8544bf. One Controls entry replaces
+the separate controller/keyboard entries. General Controls contains Crosshair,
+Auto Aim, Auto Lookahead, Aim Mode, Crouch and Weapon Change; Controller contains
+Layout, Inverse Look, Vibration and Turn Speed; Keyboard & Mouse retains its
+existing pages. Tabs share the Video skin, compact fonts and native dividers.
+Native profile drafts, Accept/Cancel/Back/Customize and keyboard live/debounced
+saves, binding capture/conflicts/reset remain on their existing handlers.
+
+Windows focused shared UI/input tests:21 passed,2 native-Mac skips. Coverage
+includes complete native reader/action records across filtered tabs, both native
+entry points, keyboard ID isolation/focus, live preview, debounce, failed-save
+rollback, queued targets/expiry/held clicks and owned font restoration. Supported
+Release Build and built-in tests pass. Isolated live main/pause captures reviewed
+for all three tabs and Mouse options; frontend Customize, binding list/action,
+capture/cancel and return hierarchy exercised. Live frontend Crosshair change
+was discarded by Cancel and retained by Accept after reopening; Video Options
+rendering also rechecked after the shared tab-painter extraction. US XBE hash validated;
+no personal saves/configs used. Deeper native Customize keeps its original skin.
+Native Mac visual acceptance remains pending; shared source needs no new adapter.
+Contracts/test routes: [Controls](../agent-context/controls-options.md).
+
 ## Direct queued Video tab clicks (2026-11-03, local)
 
 Follow-up to aafb21e0 after the user still observed dropped fast clicks. The

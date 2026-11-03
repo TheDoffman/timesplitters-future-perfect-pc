@@ -37,7 +37,8 @@ static int drawn[1024],selected[1024],selection_count;
 static uint32_t tag;
 #define CHECK(x) do { if(!(x)){fprintf(stderr,"FAIL: %s line %d\n",#x,__LINE__);exit(1);} } while(0)
 float pc_display_hud_scale(void) { return hud_scale; }
-static int owned_video;
+static int owned_video,owned_controls;
+static int controls_font_menu(uint32_t menu) {return owned_controls && menu==0x1000;}
 static int video_font_menu(uint32_t menu) {return owned_video && menu==0x1000;}
 static int menu_filter_frontend;
 void pc_display_menu_filter_begin(int frontend) { menu_filter_frontend=frontend; }
@@ -194,7 +195,10 @@ int main(void)
         owned_video=1;g_esp=0;stack[1]=0x1000;stack[2]=0x2000;
         pc_display_video_menu_font(nested_video_text);
         CHECK(!video_font_depth && !memcmp(font_xy,initial,sizeof initial) && !menu_font_filter);
-        owned_video=0;g_esp=0;
+        owned_video=0;owned_controls=1;g_esp=0;
+        pc_display_video_menu_font(nested_video_text);
+        CHECK(!video_font_depth && !memcmp(font_xy,initial,sizeof initial) && !menu_font_filter);
+        owned_controls=0;g_esp=0;
         pc_display_video_menu_font(font_draw);
         CHECK(font_seen[0]==1.f && font_seen[1]==1.f && !menu_font_filter);
     }

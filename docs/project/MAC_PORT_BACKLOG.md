@@ -1,3 +1,36 @@
+Controls pause visual review (2026-11-03, local): shared tabbed roots compensate
+for section height changes through the native Y offset, keeping the header still
+without reintroducing footer padding. Keyboard diagram/column labels now fit
+measured cells with explicit glyph scale and restoration. Both changes use common
+guest/font helpers; no OS adapter required. Windows live review is recorded in
+STATUS; native Mac visual acceptance remains pending.
+
+Controls Accept state and keyboard footers (2026-11-03, local): shared menu
+compares the original per-player native draft to enable Accept only for edits,
+including reversion and tab retention. Keyboard pages omit on-screen Back and
+put binding pagination below the divider; native Back remains. Windows shared
+checks pass; no OS adapter needed. Native Mac visual acceptance remains pending.
+
+Native menu styling (2026-11-03, local): shared Video/Controls tab painter uses
+muted vertical shading, silver edges and uppercase captions. Controls keyboard
+labels format uppercase display copies. Existing native font/tint/fade helpers
+serve both hosts; no OS adapter changes. Windows focused checks/build pass;
+native Mac visual acceptance remains pending.
+
+Controls visual follow-up (2026-11-03, local): common focus painter suppresses
+the full-row header hover backdrop, and Controller removes footer padding after
+Turn Speed. No host adapter changes; native Mac visual acceptance is pending.
+
+Unified Controls (2026-11-03, local feature/unified-controls): shared menu source
+combines General Controls, Controller and Keyboard & Mouse under one entry,
+using the Video tab skin, compact fonts and native dividers. Native profile
+Accept/Cancel/Customize and keyboard live/debounced persistence remain intact.
+No new OS adapter is needed: existing guest dispatch, font and hover-pointer
+interfaces serve both hosts. Source/contracts: [Controls](../agent-context/controls-options.md).
+Windows shared fixtures and isolated main/pause visual evidence are recorded in
+[STATUS](STATUS.md). Native Mac visual/navigation acceptance remains pending;
+this local revision has not been synchronized or verified on a Mac.
+
 Direct Video tab targets (2026-11-03, local): shared mouse dispatch samples
 Video tab edges before native row gating and applies the latest target after
 the outer dispatcher returns. Hover pointers already exist on both hosts;

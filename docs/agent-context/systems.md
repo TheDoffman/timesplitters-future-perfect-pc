@@ -1,3 +1,4 @@
+[Controls layout](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)
@@ -6,7 +7,7 @@ PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
 [Clicks](interaction-input.md#fresh-weapon-clicks-434).
 
-Story/Online: [contracts](systems-details.md).
+[Story/Online](systems-details.md).
 
 Mech: [mouse routing](mounted-mouse.md#battle-mech-mouse-425).
 
@@ -24,8 +25,7 @@ Wind: [time scopes](native-wind.md).
 
 Aim/animation: [diagnostic limits](native-local-trace.md).
 
-GPU state-cache acceptance: shared Vulkan/WARP pixel fixture and frontend
-header configuration are in [runtime](runtime.md).
+GPU cache fixture/config: [runtime](runtime.md).
 
 Native player contact: [clear-slide policy/trace](native-player-contact.md).
 Registers: [policy/tests](gpr-refs.md).
@@ -37,7 +37,7 @@ Tracked policy: `src/input/` owns controls, bindings and prompts;
 `src/gameplay/` owns simulation and camera policy;
 `src/diagnostics/` owns shared debug fields, crashes and hang reporting;
 `src/graphics/` for common shader/math policy; `src/native/` for host adapters.
-For movement regressions, compare player-position displacement in game as well
+Compare player displacement for movement regressions as well
 as sampled stick values: the title attenuates diagonals after the binding
 sampler. Windows mouse confinement is owned by `pc_controls.c`; native SDL
 relative mode is owned by `src/native/input_sdl.c` and should recover from

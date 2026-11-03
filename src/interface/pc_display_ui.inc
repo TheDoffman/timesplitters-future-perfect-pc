@@ -261,7 +261,7 @@ static RECOMP_TLS int video_font_depth;
  * the label-row routine. Scale the complete owned menu once. */
 void pc_display_video_menu_font(void (*original)(void))
 {
-    if(!video_font_menu(WORD_AT(g_esp+4u)) || video_font_depth) {original();return;}
+    if(!(video_font_menu(WORD_AT(g_esp+4u)) || controls_font_menu(WORD_AT(g_esp+4u))) || video_font_depth) {original();return;}
     uint32_t saved_x=WORD_AT(0x007E7270u),saved_y=WORD_AT(0x007E7280u);
     float x,y;memcpy(&x,&saved_x,4);memcpy(&y,&saved_y,4);
     x*=.65f;y*=.65f;guest_call(sub_00022FF0,0);
@@ -280,7 +280,7 @@ void pc_display_main_menu_font(void (*original)(void),int building)
        their read spans together, then discard them before menu input/ticks. */
     pc_prompts_layout_begin();
     uint32_t menu=WORD_AT(g_esp+4u),item=WORD_AT(g_esp+8u);
-    int own_video=video_font_menu(menu);
+    int own_video=video_font_menu(menu) || controls_font_menu(menu);
     if(own_video && video_font_depth) {original();pc_prompts_layout_end();return;}
     int paused_video=(int32_t)WORD_AT(0x0079094Cu)<=100 && own_video;
     if((int32_t)WORD_AT(0x0079094Cu)<=100 && !paused_video) {original();pc_prompts_layout_end();return;}
