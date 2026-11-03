@@ -1,4 +1,4 @@
-[HUD fit](../development/graphics-options.md).
+[Pause fit](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)
 

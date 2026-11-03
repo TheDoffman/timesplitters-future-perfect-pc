@@ -1,3 +1,9 @@
+Paused Video Options fit (2026-11-02, PR472 follow-up): shared guest row-font
+scope now admits only this menu during pause; custom tabs fit measured caption
+bounds and restore font state. Shared fixture coverage includes pause ownership,
+scale restoration and caption limits. The same code serves Windows/Mac; actual
+native Mac paused-menu visual acceptance remains pending.
+
 Supersampling/main integration (2026-11-02): common HUD resolve now follows the
 published SMAA patch and bypasses both post-AA filters during HUD presentation.
 Windows GPU fixtures cover SMAA with supersampling/MSAA and preserve native HUD

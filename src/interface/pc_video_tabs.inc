@@ -18,7 +18,7 @@ static int video_tab_hit(float x,float y)
 }
 static void video_tabs_draw(void)
 {
-    extern void sub_00041DC0(void),sub_0003FCF0(void),sub_0001EFB0(void);
+    extern void sub_00041DC0(void),sub_0003FCF0(void),sub_0001EFB0(void),sub_0003F8D0(void);
     static const char *const names[]={"Display","Graphics","View & HUD"};
     GuestRegisters r;save_registers(&r);
     uint32_t menu=WORD_AT(g_esp+4),rect=WORD_AT(g_esp+12);
@@ -27,6 +27,24 @@ static void video_tabs_draw(void)
         video_tab_bounds_valid=1;
         float width=(video_tab_bounds[2]-video_tab_bounds[0])/3.f;
         float top=video_tab_bounds[1],height=video_tab_bounds[3]-top;
+        /* Pause uses a narrower cell and a larger inherited font. Measure all
+         * captions first, then use one common scale for drawing and centering. */
+        if(!video_tab_measure)video_tab_measure=xbox_HeapAlloc(8,4);
+        float scale=1.f;
+        for(int i=0;i<3 && video_tab_measure;i++) {
+            uint32_t caption=text_at(MODE_TEXT_BASE+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT+i,"%s",names[i]);
+            guest_call(sub_0003FCF0,4,video_tab_measure,video_tab_measure+4,caption,0u);
+            float tw,th;memcpy(&tw,(void *)((uintptr_t)video_tab_measure+g_xbox_mem_offset),4);
+            memcpy(&th,(void *)((uintptr_t)video_tab_measure+4+g_xbox_mem_offset),4);
+            scale=fminf(scale,pc_ui_caption_fit(width-12.f,height-4.f,tw,th));
+        }
+        uint32_t saved_x=WORD_AT(0x007E7270u),saved_y=WORD_AT(0x007E7280u);
+        if(scale<1.f) {
+            float x,y;memcpy(&x,&saved_x,4);memcpy(&y,&saved_y,4);
+            x*=scale;y*=scale;guest_call(sub_00022FF0,0);
+            memcpy(&WORD_AT(0x007E7270u),&x,4);memcpy(&WORD_AT(0x007E7280u),&y,4);
+            guest_call(sub_0003F8D0,0);
+        }
         uint32_t align=WORD_AT(0x007E7260u);WORD_AT(0x007E7260u)=0;
         for(int i=0;i<3;i++) {
             float x=video_tab_bounds[0]+width*i;
@@ -49,6 +67,11 @@ static void video_tabs_draw(void)
                 memcpy(&th,(void *)((uintptr_t)video_tab_measure+4+g_xbox_mem_offset),4);
                 guest_call(sub_00041DC0,4,bits(x+(w-tw)*.5f),bits(top+(height-th)*.5f),caption,fg);
             }
+        }
+        if(scale<1.f) {
+            guest_call(sub_00022FF0,0);
+            WORD_AT(0x007E7270u)=saved_x;WORD_AT(0x007E7280u)=saved_y;
+            guest_call(sub_0003F8D0,0);
         }
         WORD_AT(0x007E7260u)=align;
     }

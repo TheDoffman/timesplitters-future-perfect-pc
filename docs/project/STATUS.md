@@ -1,3 +1,17 @@
+## Paused Video Options layout repair (2026-11-02, PR472)
+
+User review found the narrow paused panel still crowded despite the shorter
+supersampling label. Front-end row typography was scoped out of all gameplay.
+The row-font hook now admits only the active paused Video menu by identity and
+callback table; foreign pause menus retain their native text. Tabs fit all
+captions with one common measured scale and restore glyph state afterward.
+15 shared UI/FOV checks pass (two native Mac skips), including paused ownership,
+restoration and caption-fit boundaries. Windows Release Build/built-ins pass.
+Actual single-view Vietnam pause Display, Graphics, View & HUD and Advanced
+captures reviewed at1280x720; labels, values, tab gaps and Apply fit. Front-end
+scope behavior remains covered by the same fixtures. Native Mac visual review
+is still pending. Updated PR CI must pass before merge.
+
 Pause Advanced live review caught the supersampling restart suffix crowding
 its value. The label is now "Supersampling (restart)"; the restart help/prompt
 remains explicit. Final CI reruns on this layout correction.

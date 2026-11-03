@@ -892,6 +892,12 @@ void pc_network_bots_menu(void (*original)(void))
 }
 #include "pc_quit_menu.inc"
 #include "pc_menu_mouse_guest.inc"
+/* Identify this menu by its callback table, never the game phase alone. */
+static int video_font_menu(uint32_t menu)
+{
+    return current_menu && storage && menu==current_menu && guest_writable(menu,8) &&
+           WORD_AT(menu+4u)==storage;
+}
 #include "pc_display_ui.inc"
 static uint32_t bits(float f) { uint32_t u; memcpy(&u,&f,4); return u; }
 #include "pc_kill_feed_guest.inc"

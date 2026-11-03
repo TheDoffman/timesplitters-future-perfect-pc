@@ -142,7 +142,10 @@ rate; Graphics contains effects, filtering, cache and texture style; View & HUD
 contains vertical FOV, subtitles, Kill Feed and FPS/Ping. Click a tab, or focus
 the strip and use left/right (Confirm cycles forward). Back returns to Settings.
 Sections reserve the same native row count so the tabs stay in place. The active
-tab has a persistent blue fill independent of setting-row focus.
+tab has a persistent blue fill independent of setting-row focus. Captions use
+one scale derived from the largest measured caption and the painted cell,
+keeping horizontal/vertical padding in the narrower paused panel. Font globals
+are flushed and restored around custom tab painting.
 `src/interface/pc_graphics_menu.inc` supplies the Graphics tab's controls.
 Native changes save immediately; failed writes restore the selector. The launcher
 uses its normal Save workflow. MSAA requires restart and is labeled accordingly;
@@ -391,3 +394,14 @@ POSIX restart posts SDL_EVENT_QUIT directly. This allows the standalone replay t
 Native Mac GPU CI327eb4c reproduced visibility0.874528 on a z=2 foreground plane at half-target pixel33 in the65x33 scene, with a distant z=10 background and radius0.75. Shared SSAO now explicitly rejects equal raw-depth taps and distances outside the radius before angular weighting, and bounds reciprocal-square-root input. Existing odd/even flat/sky/foreground and close-contact assertions remain unchanged. Exact compiler/driver cause is not established; native Mac rerun is required.
 
 Native Mac GPU4168ae8d passes all shared pixel assertions including AO flat/foreground/contact, MSAA averaging and depth ownership. Validation then reports SampleRateShading capability not enabled. Patch2497 now enables that device feature only when advertised by the Vulkan device, allowing sample-index shaders without forcing per-sample execution on ordinary pipelines. A clean validation/replay rerun remains required.
+
+### Paused Video Options typography
+
+The common row-font hook admits paused Video Options only when the menu identity
+matches the active Video callback table. Its row glyphs then use the same 75%
+two-axis scale as the front-end. Other pause menus, HUD/gameplay text and foreign
+menu descriptors retain their native scale. Custom tabs also fit their actual
+guest-measured bounds to the available cells through `pc_ui_caption_fit`; drawing
+and centering use the same scaled measurements and hit testing keeps the painted
+cell bounds. Shared UI fixtures cover owned/unowned pause font scopes, restoration,
+width/height fitting, no enlargement and invalid measurements.
