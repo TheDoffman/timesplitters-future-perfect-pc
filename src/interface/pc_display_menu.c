@@ -375,6 +375,8 @@ static int mode_count, selected_mode, page, staged_fov, previous_fov;
 static int staged_rate, applied_rate;
 static unsigned applied_texture;
 static unsigned staged_aa,applied_aa;
+static int staged_msaa=1,staged_supersampling;
+static int restart_baseline_set,running_msaa=1,running_supersampling;
 static uint32_t post_aa_row;
 static uint32_t apply_row;
 static uint32_t rate_row,subtitle_row,feed_row,counter_row;
@@ -1024,7 +1026,11 @@ static void fov_draw(void)
     restore_registers(&r); g_esp+=4;
 }
 static void refresh(int next,int selected);
-static int msaa_restart_prompt;
+static int graphics_restart_dirty(void)
+{
+    TsfpGraphicsOptions saved=pc_graphics_get();
+    return staged_msaa!=saved.msaa || staged_supersampling!=saved.supersampling;
+}
 static void filter_modes(void)
 {
     mode_count=pc_display_filter_modes(all_modes,all_mode_count,selected_aspect,
@@ -1042,7 +1048,7 @@ static int mode_equal(PcDisplayMode a,PcDisplayMode b)
 static int display_dirty(void)
 {
     return !mode_equal(staged,previous) || staged_fov!=previous_fov ||
-        staged_rate!=applied_rate || texture_choice!=applied_texture || staged_subtitles!=applied_subtitles || staged_aa!=applied_aa;
+        staged_rate!=applied_rate || texture_choice!=applied_texture || staged_subtitles!=applied_subtitles || staged_aa!=applied_aa || graphics_restart_dirty();
 }
 static void update_apply(void)
 {
@@ -1058,8 +1064,11 @@ static void labels(void)
 {
     resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=post_aa_row=apply_row=0;
     video_tab_bounds_valid=0;
-    if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART)
+    extern void sub_00079710(void);
+    if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
         guest_call(sub_00079D60_gen,6,text_at(MODE_TEXT_BASE+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT+3," "),VIDEO_TABS_ID,0x400u,0u,SELECT_CB,VIDEO_TABS_DRAW);
+        guest_call(sub_00079710,1,0u); /* Original skin's silver divider. */
+    }
     if(page==DISPLAY_HOME) {
         aspect_row=guest_call(sub_00079D60_gen,6,text_at(7,"Aspect ratio"),0u,0u,0u,0u,0u);
         guest_call(sub_0007D480,2,0x8400u,0u);
@@ -1092,7 +1101,6 @@ static void labels(void)
         guest_call(sub_000717D0,1,text_at(22,"FXAA"));
         guest_call(sub_000717D0,1,text_at(84,"SMAA"));
         guest_call(sub_00075430,2,post_aa_row,staged_aa);
-        guest_call(sub_00079D60_gen,6,text_at(85,"Advanced"),108u,0u,0u,SELECT_CB,0u);
     } else if(page==DISPLAY_VIEW) {
         fov_label();
         guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(8),2u,0x400u,0u,0u,FOV_DRAW_CB);
@@ -1115,12 +1123,21 @@ static void labels(void)
     } else { row(0,"Keep changes");row(1,"Revert"); }
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
         /* Reserve equal section heights so tabs do not move under the cursor. */
-        int padding=page==DISPLAY_HOME?5:page==DISPLAY_VIEW?4:2;
+        int padding=page==DISPLAY_HOME?3:page==DISPLAY_VIEW?2:page==DISPLAY_ADVANCED?1:0;
         for(int i=0;i<padding;i++)
             guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(MODE_TEXT_BASE+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT+3),
                 (uint32_t)(110+i),4u,0u,0u,0u);
-        /* Both graphics sections already own a status/help row. */
-        if(*status && page!=DISPLAY_GRAPHICS && page!=DISPLAY_ADVANCED)small_note(21,status);
+        /* Keep status below the controls, never between graphics settings. */
+        if(page==DISPLAY_GRAPHICS || page==DISPLAY_ADVANCED) {
+#if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
+            small_note(81,status);
+#else
+            small_note(81,*status?status:"Effects require Vulkan");
+#endif
+        } else if(*status)small_note(21,status);
+        guest_call(sub_00079710,1,0u);
+        if(page==DISPLAY_GRAPHICS)
+            guest_call(sub_00079D60_gen,6,text_at(85,"Advanced"),108u,0u,0u,SELECT_CB,0u);
         apply_row=guest_call(sub_00079D60_gen,6,text_at(4,"Apply"),3u,0u,0u,SELECT_CB,0u);
         update_apply();
     }
@@ -1153,8 +1170,8 @@ static void build_menu(void)
     GuestRegisters r;uint32_t menu=WORD_AT(g_esp+4);
     save_registers(&r);current_menu=menu;
     guest_call(sub_00075B70,5,0xa000u,text_at(0,"%s",page==DISPLAY_CONFIRM?"Keep changes?":page==DISPLAY_RESTART?"Restart game?":"Video Options"),
-        bits(page==DISPLAY_CONFIRM?55.f:85.f),0u,BACK_CB);
-    guest_call(sub_00071B10,4,1u,bits(1.6f),1u,1u);
+        bits(page==DISPLAY_CONFIRM?55.f:78.f),0u,BACK_CB);
+    guest_call(sub_00071B10,4,1u,bits(1.2f),1u,1u);
     guest_call(sub_00071C50,1,0x26200u);
     labels();guest_call(sub_000771D0,1,menu);
     restore_registers(&r);g_esp+=4;
@@ -1193,7 +1210,7 @@ static void revert(void)
 static void back_callback(void)
 {
     GuestRegisters r;save_registers(&r);
-    if(page==DISPLAY_RESTART)refresh(DISPLAY_ADVANCED,1);
+    if(page==DISPLAY_RESTART)refresh(DISPLAY_ADVANCED,2);
     else if(page==DISPLAY_ADVANCED) {read_choices();refresh(DISPLAY_GRAPHICS,0);}
     else if(page==DISPLAY_CONFIRM)revert();else {read_choices();leave();}
     restore_registers(&r);g_esp+=4;
@@ -1202,6 +1219,8 @@ static void apply_changes(void)
 {
     int display_changed=!mode_equal(staged,previous) || staged_fov!=previous_fov;
     int rate_changed=staged_rate!=applied_rate,display_saved=0,rate_saved=0;
+    int restart_changed=graphics_restart_dirty(),graphics_saved=0;
+    TsfpGraphicsOptions previous_graphics=pc_graphics_get();
     /* Resolution is already previewed/confirmed. Persist before publishing
      * FPS/texture changes so a failed save leaves those running values alone. */
     pc_display_set_fov(staged_fov);
@@ -1211,6 +1230,12 @@ static void apply_changes(void)
     }
     if(rate_changed && !pc_frame_rate_save(pc_frame_rate_value(staged_rate)))goto failed;
     rate_saved=rate_changed;
+    if(restart_changed) {
+        TsfpGraphicsOptions next=pc_graphics_get();
+        next.msaa=staged_msaa;next.supersampling=staged_supersampling;
+        if(!pc_graphics_set(&next))goto failed;
+        graphics_saved=1;
+    }
     if(staged_aa!=applied_aa && !pc_post_aa_set(staged_aa))goto failed;
     if(rate_changed)recomp_config_request_native_rate(pc_frame_rate_value(staged_rate));
     if(staged_subtitles!=applied_subtitles) {
@@ -1227,13 +1252,19 @@ static void apply_changes(void)
     previous=staged;previous_fov=staged_fov;applied_rate=staged_rate;applied_texture=texture_choice;
     applied_aa=staged_aa;
     deadline=0;*status=0;filter_modes();
-    refresh(DISPLAY_HOME,0);
+    refresh(restart_changed?DISPLAY_RESTART:DISPLAY_HOME,restart_changed?2:0);
     return;
 failed:
     pc_display_set_fov(previous_fov);
     int restored=mode_equal(pc_display_current(),previous) || pc_display_apply(previous);
     int rate_restored=!rate_saved || pc_frame_rate_save(pc_frame_rate_value(applied_rate));
-    int saved_back=(!display_saved || (restored && pc_display_save())) && rate_restored;
+    int graphics_restored=1;
+    if(graphics_saved) {
+        TsfpGraphicsOptions undo=pc_graphics_get();
+        undo.msaa=previous_graphics.msaa;undo.supersampling=previous_graphics.supersampling;
+        graphics_restored=pc_graphics_set(&undo);
+    }
+    int saved_back=(!display_saved || (restored && pc_display_save())) && rate_restored && graphics_restored;
     snprintf(status,sizeof status,saved_back?"Could not save changes. Please try again.":"Could not restore saved display settings.");
     if(!restored) { deadline=GetTickCount64();return; }
     deadline=0;refresh(DISPLAY_HOME,0);
@@ -1244,15 +1275,15 @@ static void select_callback(void)
     int selected=(int)WORD_AT(menu+0x18c);save_registers(&r);
     fprintf(stderr,"[PC-DISPLAY-MENU] Selected page %d row %d\n",page,selected);
     if(page==DISPLAY_RESTART) {
-        if(selected==0)refresh(DISPLAY_ADVANCED,1);
+        if(selected==0)refresh(DISPLAY_ADVANCED,2);
         else if(selected==1 && !pc_game_restart()) {
             snprintf(status,sizeof status,"Could not restart. Please relaunch manually.");
-            refresh(DISPLAY_ADVANCED,1);
+            refresh(DISPLAY_ADVANCED,2);
         }
     } else if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART && selected==VIDEO_TABS_ID) {
         int tab=video_clicked_tab();
-        if(tab<0)tab=(video_tab_index()+1)%3;
-        read_choices();refresh(video_tab_page(tab),0);
+        if(tab==-1)tab=(video_tab_index()+1)%3;
+        if(tab>=0 && video_tab_page(tab)!=page) {read_choices();refresh(video_tab_page(tab),0);}
     }
     else if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART && selected==3) {
         read_choices();update_apply();
@@ -1267,8 +1298,6 @@ static void select_callback(void)
         }
     } else if(page==DISPLAY_GRAPHICS && selected==108) {
         read_choices();refresh(DISPLAY_ADVANCED,0);
-    } else if(page==DISPLAY_ADVANCED && selected==107) {
-        read_choices();refresh(DISPLAY_GRAPHICS,0);
     } else if(page==DISPLAY_ADVANCED && selected==106) {
         int cleared=pc_graphics_clear_cache();
         text_at(81,cleared<0?"\vs75Could not clear some cache files\vs100":"\vs75Shader cache cleared\vs100");
@@ -1281,9 +1310,6 @@ static void tick_menu(void)
 {
     GuestRegisters r;uint32_t menu=WORD_AT(g_esp+4);save_registers(&r);
     read_choices();
-    if(msaa_restart_prompt && page==DISPLAY_ADVANCED) {
-        msaa_restart_prompt=0;refresh(DISPLAY_RESTART,2);
-    }
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
         unsigned actual=(unsigned)tsfp_texture_is_4k();
         if(actual!=applied_texture) {
@@ -1338,6 +1364,12 @@ static void activate(void)
         staged_rate=applied_rate=pc_frame_rate_choice(pc_native_rate());
         texture_choice=applied_texture=(unsigned)tsfp_texture_is_4k();*status=0;
         staged_aa=applied_aa=pc_post_aa_get();
+        TsfpGraphicsOptions graphics=pc_graphics_get();
+        staged_msaa=graphics.msaa;staged_supersampling=graphics.supersampling;
+        if(!restart_baseline_set) {
+            running_msaa=graphics.msaa;running_supersampling=graphics.supersampling;
+            restart_baseline_set=1;
+        }
         {
             extern void sub_00069640(void);
             uint32_t profile=guest_call(sub_00069640,0);

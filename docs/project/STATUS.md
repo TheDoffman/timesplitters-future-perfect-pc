@@ -1,3 +1,81 @@
+## PR473 integration with current main (2026-11-03)
+
+PR473 at4ba7e85b passed all runtime/upgrade/gate checks: Windows2772 tests,
+Mac2662 tests plus native GPU validation. PR466 then advanced main to31aee5c9.
+Merged that revision into the Video Options branch, retaining both context
+updates and regenerating the combined patch index. UI/context24pass2Macskips;
+combined-revision Build and full PR CI are rerun before merge.
+
+## Repeated Video tab clicks and Advanced placement (2026-11-03, local)
+
+Based onc38afb2d, fix/restart-on-apply. Active-tab clicks no longer rebuild the
+page or invalidate tab bounds. Mouse Confirm retains its identity after edge
+consumption; missing mouse hits leave the page unchanged rather than advancing
+to the next tab. Keyboard/controller Confirm still cycles. Graphics now puts
+Advanced below the lower silver line immediately above Apply in main and pause.
+Windows x64 shared UI4pass2nativeMacskips cover repeated Display clicks, stale
+bounds staying on Graphics, consumed-edge identity and footer row order.
+Release Build/built-ins pass. Initial isolated single-click baseline worked;
+final captures confirm three clicks per tab on the main menu and two per tab
+in pause retain the chosen page. Main/pause Graphics show Advanced between
+the lower separator and Apply. Tests used a640x480 client with16:9 letterboxing,
+1920x1080 front-end targets and1280x720 paused targets.
+Native Mac visual review remains pending; personal saves/settings untouched.
+
+## Conditional restart labels (2026-11-03, local development)
+
+Based on173db75e, fix/restart-on-apply. Removed the general MSAA/supersampling
+notice and permanent restart suffixes. Advanced marks each changed field with
+(Requires restart) beside its name; returning to the process baseline removes
+it, while Apply/Later retains the reminder. Restart dialogs still wait for Apply.
+Shared Windows UI fixture:4passed2nativeMacskips, covering initial clean names,
+independent supersampling markers/revert and MSAA marker after Apply/Later.
+Windows x64 Release Build and built-in checks pass after the game was closed.
+The initial main/pause captures confirm per-field markers fit and disappear
+when reverted. Follow-up removes Back to Graphics and moves the reserved
+status row below the graphics controls to close the gap left by the notice;
+final main/pause Graphics and Advanced captures at1280x720 confirm contiguous
+controls, no redundant button, both markers fitting and successful reversion.
+Native Mac visual review remains unrun. Personal saves/settings untouched.
+
+## Video Options silver separators (2026-11-03, local development)
+
+Follow-up to9077fc02 on fix/restart-on-apply. Shared menu construction inserts
+original skin style0 dividers below the tabs and above Apply in Display,
+Graphics, View & HUD and Advanced. They are non-selectable; restart dialog
+return focus accounts for the added header row. Confirmation dialogs retain
+their original layout. Eight content rows now sit between native separators.
+Windows x64 Release Build/built-ins pass; shared UI/FOV15pass2Macskips,
+including separator positions and Later returning to MSAA. Main menu Graphics
+and Advanced plus all four paused sections were visually reviewed at1280x720:
+matching silver lines appear in both positions and all content fits.
+Native Mac visual validation remains pending. Personal saves/settings preserved;
+this follow-up is local and has not been pushed or merged.
+
+## Apply-only restarts and compact Video Options (2026-11-03, local development)
+
+Branch fix/restart-on-apply based on c32c6f5e. MSAA/supersampling remain drafts
+across tab changes until Apply; Back out of Video Options discards them. Apply
+saves both together and shows one Later/Restart Now prompt only after successful
+saves. Returning a choice to its saved value disables Apply; failed saves retain
+the draft and do not prompt. Later does not repeat the prompt. A failed post-AA
+save restores any restart fields already saved in that Apply batch.
+Settings typography is scoped to the whole original76810 menu painter by
+additive2518: selected values and labels share65% glyph scale, nested row hooks
+avoid double scaling, and foreign menus/font state remain unchanged. Video
+Options uses1.2 row spacing,78% panel width and eight equal-height rows per tab
+so focus bounds/pointer regions follow the compact layout.
+Windows Build/built-ins pass. FOV/UI tests15pass2Macskips; whole-font/nested and
+foreign-scope coverage included. Additional overlay/options regressions14pass;
+repository-context20pass; fresh/repeated/graphics-branch migrations3pass.
+Real front-end captures confirm smaller labels/values, no dialog after changing
+150% to200%, and a single restart prompt after Apply with200% persisted. Pause
+Apply behavior was also observed. Final compact pause Display, Graphics, View &
+HUD and Advanced captures were reviewed: selected values match the smaller
+labels, the eight-row panel is shorter, and all controls/Apply fit.
+Native Mac visual/full-game restart validation remains unrun; no push or merge
+has been performed for this follow-up. Personal config/saves remain untouched.
+
 PR472 full macOS native suite: 2640 passed, 396 skipped; 22 texture harness
 setup errors share one missing native_hud_restore stub in the extracted present
 fixture. The fixture now models its absent HUD targets explicitly; production

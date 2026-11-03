@@ -1982,6 +1982,14 @@
       ]
     },
     {
+      "name": "2518-video-menu-font-scope.patch",
+      "path": "patches/graphics/interface/2518-video-menu-font-scope.patch",
+      "sha256": "b7b4fb75a61863b42c5f8fa4ddb3678e770bc0f7d71286e8a22ef1163d50552d",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",

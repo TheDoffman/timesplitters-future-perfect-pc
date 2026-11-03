@@ -1,3 +1,27 @@
+Video tab repeated clicks and Advanced footer (2026-11-03, local follow-up):
+common callbacks keep active tabs stable and distinguish unmatched mouse clicks
+from keyboard cycling. Graphics puts Advanced below the lower divider and above
+Apply. No host adaptation is needed; native Mac visual acceptance is pending.
+
+Conditional restart labels (2026-11-03, local follow-up): common Video Options
+removes the general notice and conditionally marks MSAA/Supersampling beside
+their names. Status is below all controls; Advanced uses Back/tab navigation
+without a redundant button. Shared behavior covers main and pause; no OS adapter
+change is needed. Native Mac visual acceptance remains pending.
+
+Video Options silver dividers (2026-11-03): shared menu builder uses the original
+native skin separator below tabs and above Apply in all four sections. Native
+layout supplies non-selectable lines and pointer/keyboard row placement; return
+focus accounts for the header line. Windows visual review and shared fixtures
+cover this follow-up; native Mac visual acceptance remains pending.
+
+Apply-only restart prompts and compact settings font (2026-11-02): shared Video
+Options stages MSAA/supersampling until Apply, preserves drafts across tabs,
+discards on leaving and rolls back restart values if a later save fails. Owned
+Video settings labels/choice text use65% glyph scale; foreign menus retain their
+existing fonts. Main/pause share these guest rules on all hosts. Native Mac
+visual review and full-game restart acceptance remain pending.
+
 Paused Video Options fit (2026-11-02, PR472 follow-up): shared guest row-font
 scope now admits only this menu during pause; custom tabs fit measured caption
 bounds and restore font state. Shared fixture coverage includes pause ownership,

@@ -34,7 +34,7 @@ int pc_counter_set_enabled(int value) { if(!counter_save_ok)return 0;counter_ena
 static int smaa_preference,smaa_save_ok=1;
 int pc_smaa_enabled(void){return smaa_preference;}
 int pc_smaa_set_enabled(int enabled){if(!smaa_save_ok)return 0;smaa_preference=enabled;return 1;}
-static unsigned built_rows, built_row_count, built_ids[32],separators;
+static unsigned built_rows, built_row_count, built_ids[32],separators,separator_positions[2];
 static char runtime_path[MAX_PATH];
 static int requested_rate=-1;
 int recomp_config_request_native_rate(int rate) { requested_rate=rate;return 1; }
@@ -206,7 +206,11 @@ static void original_highlight(void) { highlight_fallback++;g_esp+=4; }
 void sub_00069640(void) { g_eax=0x400000;g_esp+=4; }
 void sub_001CDAE0(void) { g_eax=1;g_esp+=4; }
 void host_SetTwoDPlacement(int placement,uint32_t tag) { (void)placement;(void)tag; }
-void sub_00079710(void) { separators++;g_esp+=4; }
+void sub_00079710(void) {
+    CHECK(WORD_AT(g_esp+4)==0 && separators<2 && built_row_count<32);
+    separator_positions[separators++]=built_row_count;
+    built_ids[built_row_count++]=UINT32_MAX;g_esp+=4;
+}
 STUB(sub_00074910)
 void sub_001A0A60(void) {
     CHECK(getenv("TSFP_NETWORK") && !strcmp(getenv("TSFP_NETWORK"),"1"));
@@ -331,9 +335,10 @@ int main(int argc,char **argv)
     reload("TSFP_DISPLAY_V1 1280 720\n");
     tsfp_texture_set_4k(0);
     call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
-    CHECK(page==DISPLAY_HOME && built_row_count==10 && separators==0 && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
+    CHECK(page==DISPLAY_HOME && built_row_count==10 && separators==2 && separator_positions[0]==1 && separator_positions[1]==8 && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
     page=DISPLAY_GRAPHICS;built_rows=built_row_count=separators=0;labels();
     CHECK(!graphics_rows[0] && !graphics_rows[4] && texture_row && post_aa_row && !counter_row && !aspect_row);
+    CHECK(built_ids[2]==102 && built_ids[3]==103 && built_ids[4]==7 && built_ids[5]==11 && built_ids[6]==81 && built_ids[7]==UINT32_MAX && built_ids[8]==108 && built_ids[9]==3);
     WORD_AT(post_aa_row+0xc8)=1;read_choices();
     CHECK(staged_aa==1 && !graphics_options.edge_smoothing);
     call(SELECT_CB,3,0);CHECK(graphics_options.edge_smoothing==1 && !pc_smaa_enabled());
@@ -343,24 +348,43 @@ int main(int argc,char **argv)
     CHECK(graphics_options.anisotropy==1 && WORD_AT(graphics_rows[2]+0xc8)==0);
     graphics_save_ok=1;WORD_AT(graphics_rows[2]+0xc8)=4;read_choices();CHECK(graphics_options.anisotropy==16);
     call(SELECT_CB,108,0);CHECK(page==DISPLAY_ADVANCED && !post_aa_row && graphics_rows[0] && graphics_rows[4]);
-    /* Failed persistence never requests restart; successful MSAA changes do. */
-    graphics_save_ok=0;WORD_AT(graphics_rows[0]+0xc8)=1;read_choices();
-    CHECK(!msaa_restart_prompt && graphics_options.msaa==1);
-    graphics_save_ok=1;WORD_AT(graphics_rows[0]+0xc8)=1;
-    call(TICK_CB,100,0);CHECK(page==DISPLAY_RESTART && graphics_options.msaa==2);
-    CHECK(!msaa_restart_prompt);
-    call(SELECT_CB,0,0);CHECK(page==DISPLAY_ADVANCED);
+    CHECK(!strcmp((char *)((uintptr_t)TEXT_ADDRESS(32)+g_xbox_mem_offset),"MSAA"));
+    CHECK(!strcmp((char *)((uintptr_t)TEXT_ADDRESS(37)+g_xbox_mem_offset),"Supersampling"));
+    CHECK(!strstr((char *)((uintptr_t)TEXT_ADDRESS(81)+g_xbox_mem_offset),"require restart"));
+    staged_supersampling=1;graphics_restart_labels();
+    CHECK(strstr((char *)((uintptr_t)TEXT_ADDRESS(37)+g_xbox_mem_offset),"Requires restart"));
+    staged_supersampling=0;graphics_restart_labels();
+    CHECK(!strcmp((char *)((uintptr_t)TEXT_ADDRESS(37)+g_xbox_mem_offset),"Supersampling"));
+    /* Restart fields stay staged through edits/ticks/tabs until Apply. */
+    WORD_AT(graphics_rows[0]+0xc8)=1;call(TICK_CB,100,0);
+    CHECK(page==DISPLAY_ADVANCED && graphics_options.msaa==1 && staged_msaa==2);
+    CHECK(strstr((char *)((uintptr_t)TEXT_ADDRESS(32)+g_xbox_mem_offset),"Requires restart"));
+    CHECK(!strstr((char *)((uintptr_t)TEXT_ADDRESS(37)+g_xbox_mem_offset),"Requires restart"));
+    CHECK(display_dirty() && !(WORD_AT(apply_row+0x28)&1));
+    graphics_save_ok=0;call(SELECT_CB,3,0);
+    CHECK(page!=DISPLAY_RESTART && graphics_options.msaa==1 && staged_msaa==2 && display_dirty());
+    graphics_save_ok=1;refresh(DISPLAY_ADVANCED,0);
+    CHECK(WORD_AT(graphics_rows[0]+0xc8)==1);
+    call(SELECT_CB,3,0);CHECK(page==DISPLAY_RESTART && graphics_options.msaa==2);
+    call(SELECT_CB,0,0);CHECK(page==DISPLAY_ADVANCED && !display_dirty() && WORD_AT(current_menu+0x18c)==100);
     call(TICK_CB,100,0);CHECK(page==DISPLAY_ADVANCED); /* Later does not nag. */
+    CHECK(strstr((char *)((uintptr_t)TEXT_ADDRESS(32)+g_xbox_mem_offset),"Requires restart"));
+    /* Reverting a choice before Apply leaves no dirty state or prompt. */
     WORD_AT(graphics_rows[0]+0xc8)=0;call(TICK_CB,100,0);
-    CHECK(page==DISPLAY_RESTART && graphics_options.msaa==1);
-    call(BACK_CB,0,0);CHECK(page==DISPLAY_ADVANCED);
-
-    graphics_save_ok=0;WORD_AT(graphics_rows[5]+0xc8)=3;read_choices();
-    CHECK(!graphics_options.supersampling && WORD_AT(graphics_rows[5]+0xc8)==0 && !msaa_restart_prompt);
-    graphics_save_ok=1;WORD_AT(graphics_rows[5]+0xc8)=2;call(TICK_CB,105,0);
-    CHECK(page==DISPLAY_RESTART && graphics_options.supersampling==2);
-    call(SELECT_CB,0,0);CHECK(page==DISPLAY_ADVANCED && WORD_AT(graphics_rows[5]+0xc8)==2);
-
+    CHECK(graphics_options.msaa==2 && staged_msaa==1 && page==DISPLAY_ADVANCED);
+    CHECK(!strcmp((char *)((uintptr_t)TEXT_ADDRESS(32)+g_xbox_mem_offset),"MSAA"));
+    WORD_AT(graphics_rows[0]+0xc8)=1;call(TICK_CB,100,0);CHECK(!display_dirty());
+    /* Multiple restart changes produce one prompt, only after Apply. */
+    WORD_AT(graphics_rows[0]+0xc8)=0;WORD_AT(graphics_rows[5]+0xc8)=2;
+    call(TICK_CB,105,0);CHECK(page==DISPLAY_ADVANCED && graphics_options.msaa==2 && !graphics_options.supersampling);
+    refresh(DISPLAY_GRAPHICS,0);CHECK(display_dirty());
+    call(SELECT_CB,3,0);CHECK(page==DISPLAY_RESTART && graphics_options.msaa==1 && graphics_options.supersampling==2);
+    call(SELECT_CB,0,0);CHECK(page==DISPLAY_ADVANCED && WORD_AT(graphics_rows[5]+0xc8)==2 && !display_dirty());
+    /* Leaving without Apply discards the uncommitted restart choice. */
+    WORD_AT(graphics_rows[5]+0xc8)=3;read_choices();CHECK(staged_supersampling==3);
+    call(BACK_CB,0,0);call(BACK_CB,0,0);
+    call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
+    CHECK(staged_supersampling==2 && !display_dirty());refresh(DISPLAY_ADVANCED,0);
     call(BACK_CB,0,0);CHECK(page==DISPLAY_GRAPHICS);
     refresh(DISPLAY_VIEW,0);CHECK(subtitle_row && counter_row && !texture_row && !rate_row);
     WORD_AT(counter_row+0xc8)=1;read_choices();CHECK(counter_enabled);
@@ -375,12 +399,27 @@ int main(int argc,char **argv)
     video_tab_bounds[0]=20;video_tab_bounds[1]=30;video_tab_bounds[2]=320;video_tab_bounds[3]=54;
     CHECK(video_tab_hit(20,30)==0 && video_tab_hit(120,40)==1 && video_tab_hit(319,53)==2);
     CHECK(video_tab_hit(320,40)==-1 && video_tab_hit(21,54)==-1);
+    { /* A mouse Confirm chooses its tab, even after its edge was consumed. */
+        MenuMouseDispatch click={0};click.menu=current_menu;click.sampled=1;
+        click.pointer=(PcMenuPointer){397.5f,90.f,1920,1080,1,1,0,0};
+        menu_mouse_dispatch=&click;slider_capture_enabled=1;
+        WORD_AT(0x004E8CF0u)=640;WORD_AT(0x004E8CF4u)=480;
+        CHECK(video_clicked_tab()==0);
+        page=DISPLAY_GRAPHICS;call(SELECT_CB,VIDEO_TABS_ID,0);CHECK(page==DISPLAY_HOME);
+        video_tab_bounds_valid=1;
+        call(SELECT_CB,VIDEO_TABS_ID,0);CHECK(page==DISPLAY_HOME && video_tab_bounds_valid);
+        call(SELECT_CB,VIDEO_TABS_ID,0);CHECK(page==DISPLAY_HOME && video_tab_bounds_valid);
+        /* Stale/no hit is a no-op, never Graphics -> View & HUD. */
+        page=DISPLAY_GRAPHICS;video_tab_bounds_valid=0;
+        call(SELECT_CB,VIDEO_TABS_ID,0);CHECK(page==DISPLAY_GRAPHICS);
+        menu_mouse_dispatch=0;slider_capture_enabled=0;
+    }
     staged_fov=67;texture_choice=1;refresh(DISPLAY_VIEW,0);refresh(DISPLAY_GRAPHICS,0);
     CHECK(staged_fov==67 && texture_choice==1 && WORD_AT(texture_row+0xc8)==1);
     staged_fov=previous_fov;texture_choice=applied_texture;refresh(DISPLAY_GRAPHICS,0);
     call(SELECT_CB,108,0);CHECK(page==DISPLAY_ADVANCED);
     call(SELECT_CB,106,0);CHECK(cache_clear_calls==1 && page==DISPLAY_ADVANCED);
-    call(SELECT_CB,107,0);CHECK(page==DISPLAY_GRAPHICS);
+    call(BACK_CB,0,0);CHECK(page==DISPLAY_GRAPHICS);
     {int before=returned;call(BACK_CB,0,0);CHECK(returned==before+1);}
     refresh(DISPLAY_VIEW,0);
     status[0]=0;
@@ -505,12 +544,13 @@ int main(int argc,char **argv)
     CHECK(!display_dirty() && (WORD_AT(apply_row+0x28)&1));
     content("TSFP_DISPLAY_V2 1280 720 70\n");
     /* A failed SMAA save rolls back the staged display/rate batch across tabs. */
+    staged_msaa=4;
     staged_fov=75;WORD_AT(rate_row+0xc8)=2;read_choices();
     refresh(DISPLAY_GRAPHICS,0);WORD_AT(post_aa_row+0xc8)=2;smaa_save_ok=0;
     call(SELECT_CB,3,0);
-    CHECK(pc_display_fov()==70 && requested_rate==120 && pc_frame_rate_read()==120 && !pc_smaa_enabled());
+    CHECK(pc_display_fov()==70 && requested_rate==120 && pc_frame_rate_read()==120 && !pc_smaa_enabled() && graphics_options.msaa==1 && staged_msaa==4 && page!=DISPLAY_RESTART);
     content("TSFP_DISPLAY_V2 1280 720 70\n");
-    smaa_save_ok=1;staged_fov=70;staged_rate=applied_rate;staged_aa=applied_aa;
+    smaa_save_ok=1;staged_fov=70;staged_rate=applied_rate;staged_aa=applied_aa;staged_msaa=graphics_options.msaa;
     refresh(DISPLAY_GRAPHICS,0);call(TICK_CB,11,0);CHECK(!display_dirty());
     WORD_AT(post_aa_row+0xc8)=2;read_choices();refresh(DISPLAY_VIEW,0);
     CHECK(staged_aa==2 && !pc_smaa_enabled());
