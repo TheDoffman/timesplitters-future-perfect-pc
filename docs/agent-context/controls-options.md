@@ -13,6 +13,11 @@ General has native IDs1 Crosshair,2 Auto Aim,4 Auto Lookahead,5 Aim Mode,
 6 Crouch and7 Weapon Change. Controller has0 Control Layout,3 Inverse Look,
 8 Vibration and9 Turn Speed. Both retain native10 Accept/11 Cancel and the
 native profile draft, selected player, Customize and Back behavior.
+Accept is disabled until the native draft differs from its session baseline;
+restoring the original values disables it again. The baseline is31 dwords at
+7BA364 + selected-player *1E0, matching the native open/copy contract. Capture it
+once after initial construction, retain across tabs and Customize, reset on open.
+Tick refreshes Accept's disabled flag; its callback also rejects clean sessions.
 The Controller footer follows Turn Speed directly, without padding rows.
 The shared native focus painter suppresses its full-row backdrop for the owned
 Controls header130; individual tab backgrounds/active state remain visible.
@@ -29,7 +34,10 @@ Keyboard uses the same descriptor but preserves existing capture/conflict/reset,
 live preview and250ms debounced autosave rules. Its IDs are offset200 only in
 this owned menu, preventing native refresh choice restoration across overlapping
 Controller IDs. Tabs appear on keyboard home/mouse pages, not binding lists or
-capture/modal pages. Back retains the existing keyboard page hierarchy.
+capture/modal pages. Back retains the existing keyboard page hierarchy through
+native keyboard/controller Back; unified pages omit their on-screen Back rows.
+Binding-list Previous/Next page actions follow the footer divider; groups with
+no pagination omit that otherwise-empty divider.
 The immutable Controls entry caption uses its own text slot, independent of
 modal titles. Deeper native Controller Customize keeps its original layout.
 

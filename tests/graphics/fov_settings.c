@@ -817,10 +817,18 @@ int main(int argc,char **argv)
     CHECK(fixture_native_rows()==general && separators==2);
     CHECK(WORD_AT(0x200000+0xb0)==0 && WORD_AT(0x200200+0xb0)==1);
     call(0x2eab30,1,0);CHECK(native_control_ticks==1 && fixture_native_rows()==general);
+    CHECK(!controls_dirty() && (WORD_AT(0x201400+0x28)&1));
+    call(0x2cbe00,10,0);CHECK(native_control_actions==0);
+    WORD_AT(controls_draft())^=1u;call(0x2eab30,CONTROLS_TABS_ID,0);
+    CHECK(controls_dirty() && !(WORD_AT(0x201400+0x28)&1));
+    WORD_AT(controls_draft())^=1u;call(0x2eab30,CONTROLS_TABS_ID,0);
+    CHECK(!controls_dirty() && (WORD_AT(0x201400+0x28)&1));
+    WORD_AT(controls_draft())^=1u;
     call(0x2cbe00,10,0);call(0x2d0970,11,0);
     CHECK(native_control_actions==2 && fixture_native_rows()==general);
     call(0x2eab30,CONTROLS_TABS_ID,0x80000);
     CHECK(controls_tab==1 && fixture_native_rows()==controller && separators==2);
+    CHECK(controls_dirty() && !(WORD_AT(0x201400+0x28)&1));
     call(0x2ea210,0,0);CHECK(native_control_actions==3 && fixture_native_rows()==controller);
     call(0x2eab30,3,0);CHECK(native_control_ticks==2 && fixture_native_rows()==controller);
     /* Header navigation and keyboard IDs do not save or inherit native values. */
@@ -828,6 +836,11 @@ int main(int argc,char **argv)
     CHECK(controls_tab==2 && kb_page==KB_HOME && controls_test_saves==0);
     CHECK(built_ids[0]==CONTROLS_TABS_ID && kb_widget_id(0)==200);
     CHECK(kb_local_id(200)==0 && kb_local_id(205)==5);
+    CHECK(built_ids[built_row_count-1]==205); /* No on-screen Back. */
+    kb_group=0;kb_refresh(KB_LIST,0);
+    CHECK(separators==1 && built_ids[built_row_count-1]==208);
+    CHECK(separator_positions[0]==built_row_count-2); /* Next below divider. */
+    kb_refresh(KB_HOME,0);
     /* Mouse settings keep their live preview/debounced save and rollback. */
     kb_refresh(KB_MOUSE,0);CHECK(WORD_AT(0x30018c)==kb_widget_id(0));clock_ms=20000;tab_pointer.left=0;
     WORD_AT(kb_enabled_row+0xc8)=0;call(0x2eab30,kb_widget_id(0),0);
@@ -848,7 +861,7 @@ int main(int argc,char **argv)
     call(0x2e9fc0,0,0);CHECK(native_control_backs==1 && fixture_native_rows()==0xfff);
     WORD_AT(0x79094c)=1;call(0x2ec1a0,0,0);
     CHECK(native_control_opens[1]==1 && controls_tab==0);
-    call(0x2ea8e0,0,0);call(0x2e9e50,10,0);call(0x2e9ea0,11,0);
+    call(0x2ea8e0,0,0);CHECK(!controls_dirty());WORD_AT(controls_draft())^=1u;call(0x2e9e50,10,0);call(0x2e9ea0,11,0);
     CHECK(native_control_actions==5 && fixture_native_rows()==general);
     /* The same direct tab queue serves Controls in main and pause menus. */
     slider_capture_enabled=1;WORD_AT(0x761c48)=0x410000;WORD_AT(0x410000)=1;

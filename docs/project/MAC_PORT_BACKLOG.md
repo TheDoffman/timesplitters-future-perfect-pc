@@ -1,3 +1,9 @@
+Controls Accept state and keyboard footers (2026-11-03, local): shared menu
+compares the original per-player native draft to enable Accept only for edits,
+including reversion and tab retention. Keyboard pages omit on-screen Back and
+put binding pagination below the divider; native Back remains. Windows shared
+checks pass; no OS adapter needed. Native Mac visual acceptance remains pending.
+
 Native menu styling (2026-11-03, local): shared Video/Controls tab painter uses
 muted vertical shading, silver edges and uppercase captions. Controls keyboard
 labels format uppercase display copies. Existing native font/tint/fade helpers

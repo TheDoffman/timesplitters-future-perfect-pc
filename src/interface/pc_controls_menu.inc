@@ -42,6 +42,31 @@ static void controls_collect_rows(void)
     }
     controls_link_rows(0);
 }
+/* Native opens copy 31 dwords into a per-player draft (stride 0x1e0). */
+static unsigned char controls_original[0x7c];
+static int controls_original_ready;
+static uint32_t controls_draft(void)
+{
+    unsigned player=WORD_AT(0x7ba9e0);
+    uint32_t address=0x7ba364u+player*0x1e0u;
+    return player<4 && guest_writable(address,sizeof controls_original)?address:0;
+}
+static int controls_dirty(void)
+{
+    uint32_t draft=controls_draft();
+    return !draft || !controls_original_ready ||
+        memcmp(controls_original,(void *)(g_xbox_mem_offset+draft),sizeof controls_original)!=0;
+}
+static void controls_accept_state(void)
+{
+    for(unsigned i=0;i<controls_row_count;i++) {
+        uint32_t row=controls_rows[i];
+        if(WORD_AT(row+0x14)==10) {
+            if(controls_dirty())WORD_AT(row+0x28)&=~1u;else WORD_AT(row+0x28)|=1u;
+            break;
+        }
+    }
+}
 static uint32_t controls_text_storage;
 static int controls_tab,controls_building,controls_bounds_valid,controls_left=1;
 static int controls_pending=-1;
@@ -127,7 +152,7 @@ static void controls_prepare_keyboard(void)
 static void controls_open_tab(int tab)
 {
     GuestRegisters r;save_registers(&r);uint32_t source=WORD_AT(g_esp+4);
-    controls_tab=tab;controls_pending=-1;controls_bounds_valid=0;controls_left=1;
+    controls_tab=tab;controls_pending=-1;controls_bounds_valid=0;controls_left=1;controls_original_ready=0;
     controls_prepare_keyboard();
     guest_call((int32_t)WORD_AT(0x79094c)>100?sub_002CBE50:sub_002EC1A0,1,source);
     restore_registers(&r);g_esp+=4;
@@ -140,7 +165,12 @@ static void controls_controller_build(void)
         WORD_AT(controls_menu+0x10)=0;
         guest_call(sub_00071C50,1,0x2000u);
         controls_building=1;guest_call(sub_002EA3F0,1,controls_menu);controls_building=0;
-        controls_collect_rows();
+        uint32_t draft=controls_draft();
+        if(!controls_original_ready && draft) {
+            memcpy(controls_original,(void *)(g_xbox_mem_offset+draft),sizeof controls_original);
+            controls_original_ready=1;
+        }
+        controls_collect_rows();controls_accept_state();
         guest_call(sub_000771D0,1,controls_menu);
         guest_call(sub_000770E0,2,controls_menu,0u);
     } else guest_call(sub_002EA8E0,1,controls_menu);
@@ -178,7 +208,11 @@ static void controls_native_action(void (*action)(void))
     if(controls_font_menu(menu) && guest_call(sub_00074760,1,menu))controls_link_rows(0);
     restore_registers(&r);g_esp+=4;
 }
-static void controls_accept(void) {controls_native_action((int32_t)WORD_AT(0x79094c)>100?sub_002CBE00:sub_002E9E50);}
+static void controls_accept(void)
+{
+    if(!controls_dirty()){g_esp+=4;return;}
+    controls_native_action((int32_t)WORD_AT(0x79094c)>100?sub_002CBE00:sub_002E9E50);
+}
 static void controls_cancel(void) {controls_native_action((int32_t)WORD_AT(0x79094c)>100?sub_002D0970:sub_002E9EA0);}
 static void controls_customize(void) {controls_native_action(sub_002EA210);}
 static void controls_tick(void)
@@ -192,6 +226,7 @@ static void controls_tick(void)
         }
     } else if(controls_tab==2)guest_call(kb_tick,1,menu);
     else {controls_link_rows(1);guest_call(sub_002EAB30,1,menu);controls_link_rows(0);}
+    if(controls_tab!=2)controls_accept_state();
     restore_registers(&r);g_esp+=4;
 }
 static void controls_tabs_select(void)

@@ -1,3 +1,20 @@
+## Controls Accept state and Keyboard footer navigation (2026-11-03, local)
+
+Continuing feature/unified-controls from9d18ca40. General/Controller Accept starts
+disabled, enables when the native per-player draft changes and disables on full
+reversion. Baseline survives tabs and Customize; the callback rejects a clean
+session. Keyboard pages remove on-screen Back while retaining native Back;
+binding pagination moves below the silver divider. Non-paginated lists omit the
+empty footer divider. Existing keyboard live/debounced persistence is unchanged.
+Windows focused UI/input checks:21 passed,2 native Mac skips. Tests include clean
+Accept callback rejection, edit/revert, cross-tab state, fresh paused session,
+keyboard Back-row removal and Next placement. Release Build and built-in checks
+pass after game close. Isolated frontend captures verify General and Controller
+Accept gray/edit-enabled/reverted-gray states, Keyboard/Mouse without Back rows,
+and binding-list Next below the divider. US XBE hash validated; personal data
+untouched.
+Native Mac visual acceptance remains pending; no new host adapter is needed.
+
 ## Original-style settings typography and tabs (2026-11-03, local)
 
 Continuing feature/unified-controls from2db57024. Shared Video/Controls tabs

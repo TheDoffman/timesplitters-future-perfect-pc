@@ -1,4 +1,4 @@
-[Controls checks](controls-options.md).
+[Controls state checks](controls-options.md).
 [Tab queue](../development/graphics-options.md): HUD/SMAA order and texture-present fixtures.
 Auto-sizing fixtures test SDL policy; restart handoff is separate.
 `test_fov_settings.py` checks Video tabs, ownership, pointer bounds, keyboard

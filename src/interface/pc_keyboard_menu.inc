@@ -201,7 +201,7 @@ static void kb_build(void)
         kb_row(0,"Mouse options",0);
         for(int i=0;i<4;i++)kb_row(i+1,pc_keyboard_group_names[i],0);
         if(unified){controls_padding(1);guest_call(sub_00079710,1,0u);}
-        kb_row(5,"Restore defaults",0);kb_row(6,"Back",0);
+        kb_row(5,"Restore defaults",0);if(!unified)kb_row(6,"Back",0);
     } else if(kb_page==KB_MOUSE) {
         kb_enabled_row=kb_row(0,"Mouse look",0);
         guest_call(sub_0007D480,2,0x8400u,0u);
@@ -214,7 +214,7 @@ static void kb_build(void)
         guest_call(sub_000717D0,1,KB_TEXT(20));guest_call(sub_000717D0,1,KB_TEXT(21));
         guest_call(sub_00075430,2,kb_invert_row,(uint32_t)kb_settings.invert_y);
         if(unified){controls_padding(2);guest_call(sub_00079710,1,0u);}
-        kb_row(3,"Reset mouse options",0);kb_row(6,"Back",0);
+        kb_row(3,"Reset mouse options",0);if(!unified)kb_row(6,"Back",0);
     } else if(kb_page==KB_LIST) {
         kb_row(10," ",1);
         for(int i=kb_offset;i<kb_offset+6 && i<12;i++) {
@@ -226,10 +226,10 @@ static void kb_build(void)
             if(guest_writable(item,0x2c))WORD_AT(item+0x28)&=~0x2000u;
         }
         guest_call(sub_00071B60,3,1u,bits(30.f),bits(85.f));
+        if(unified && (kb_offset || pc_keyboard_groups[kb_group][6]>=0))guest_call(sub_00079710,1,0u);
         if(kb_offset)kb_row(7,"Previous page",0);
         if(!kb_offset && pc_keyboard_groups[kb_group][6]>=0)kb_row(8,"Next page",0);
-        if(unified)guest_call(sub_00079710,1,0u);
-        kb_row(9,"Back",0);
+        if(!unified)kb_row(9,"Back",0);
     } else if(kb_page==KB_ACTION || kb_page==KB_CLEAR || kb_page==KB_ESCAPE) {
         for(int i=0;i<PC_BINDING_SLOTS;i++) {
             pc_settings_key_name(kb_settings.keys[kb_action][i],name,sizeof name);
@@ -237,7 +237,7 @@ static void kb_build(void)
             kb_row(i,line,0);
         }
         if(kb_page==KB_ACTION) {kb_row(4,"Clear a binding",0);kb_row(5,"Bind Escape",0);}
-        kb_row(6,"Back",0);
+        if(!unified)kb_row(6,"Back",0);
     } else if(kb_page==KB_CAPTURE) {
         /* Native update callbacks require a selectable row. Capture consumes
          * its input before the ordinary Select handler. */
@@ -251,7 +251,7 @@ static void kb_build(void)
         kb_row(0,"Cancel",0);kb_row(1,"Restore all keyboard and mouse defaults",0);
     }
     if(*kb_status)kb_row(15,kb_status,1);
-    if(kb_page==KB_ERROR)kb_row(6,"Back",0);
+    if(kb_page==KB_ERROR && !unified)kb_row(6,"Back",0);
     guest_call(sub_000771D0,1,kb_menu);
     restore_registers(&r);g_esp+=4;
 }

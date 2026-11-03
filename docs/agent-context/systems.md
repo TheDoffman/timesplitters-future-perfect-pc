@@ -1,4 +1,4 @@
-[Controls style](controls-options.md).
+[Controls state](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)
