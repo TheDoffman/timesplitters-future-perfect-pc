@@ -1,3 +1,10 @@
+Controls pause visual review (2026-11-03, local): shared tabbed roots compensate
+for section height changes through the native Y offset, keeping the header still
+without reintroducing footer padding. Keyboard diagram/column labels now fit
+measured cells with explicit glyph scale and restoration. Both changes use common
+guest/font helpers; no OS adapter required. Windows live review is recorded in
+STATUS; native Mac visual acceptance remains pending.
+
 Controls Accept state and keyboard footers (2026-11-03, local): shared menu
 compares the original per-player native draft to enable Accept only for edits,
 including reversion and tab retention. Keyboard pages omit on-screen Back and

@@ -19,6 +19,14 @@ restoring the original values disables it again. The baseline is31 dwords at
 once after initial construction, retain across tabs and Customize, reset on open.
 Tick refreshes Accept's disabled flag; its callback also rejects clean sessions.
 The Controller footer follows Turn Speed directly, without padding rows.
+Tabbed roots retain their first section's top anchor through native Y offset
+field64 (setter77320), retaining its first finalized value without adding rows above Accept.
+Modal and binding-list pages retain native centring; new sessions reset anchoring.
+Write the finalized Y field directly; calling77320 after771D0 remeasures pending
+builder rows and changes the layout a second time.
+Custom keyboard glyphs/column headings/names fit their measured cells. Draw plain
+captions under explicit glyph scale, then flush/restore it: inline size escapes
+would override the fit. This also keeps diagram letters inside their key boxes.
 The shared native focus painter suppresses its full-row backdrop for the owned
 Controls header130; individual tab backgrounds/active state remain visible.
 

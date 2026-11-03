@@ -11,6 +11,8 @@ extern void sub_002CBE00(void),sub_002E9E50(void),sub_002D0970(void),sub_002E9EA
 static uint32_t controls_menu;
 static uint32_t controls_rows[48],controls_next[48],controls_sibling[48];
 static unsigned controls_row_count,controls_native_count,controls_native_selectable;
+static int controls_anchor_ready;
+static float controls_anchor_y;
 /* Native readers still see every original record; layout/input see this tab. */
 static void controls_link_rows(int all)
 {
@@ -152,7 +154,7 @@ static void controls_prepare_keyboard(void)
 static void controls_open_tab(int tab)
 {
     GuestRegisters r;save_registers(&r);uint32_t source=WORD_AT(g_esp+4);
-    controls_tab=tab;controls_pending=-1;controls_bounds_valid=0;controls_left=1;controls_original_ready=0;
+    controls_tab=tab;controls_pending=-1;controls_bounds_valid=0;controls_left=1;controls_original_ready=0;controls_anchor_ready=0;
     controls_prepare_keyboard();
     guest_call((int32_t)WORD_AT(0x79094c)>100?sub_002CBE50:sub_002EC1A0,1,source);
     restore_registers(&r);g_esp+=4;
@@ -175,11 +177,23 @@ static void controls_controller_build(void)
         guest_call(sub_000770E0,2,controls_menu,0u);
     } else guest_call(sub_002EA8E0,1,controls_menu);
 }
+/* Retain the first finalized tabbed page's native Y position. Its footer
+ * still follows its own content; no blank rows are needed to hold the header. */
+static void controls_anchor(void)
+{
+    if(!controls_tabs_visible())return;
+    float y=FLOAT_AT(controls_menu+0x64);
+    if(!isfinite(y))return;
+    if(!controls_anchor_ready) {controls_anchor_y=y;controls_anchor_ready=1;}
+    /* 77320 writes this field but also remeasures pending builder rows. */
+    WORD_AT(controls_menu+0x64)=bits(controls_anchor_y);
+}
 static void controls_build(void)
 {
     GuestRegisters r;save_registers(&r);controls_menu=WORD_AT(g_esp+4);controls_row_count=0;
     if(controls_tab==2) {kb_menu=controls_menu;guest_call(kb_build,1,controls_menu);}
     else controls_controller_build();
+    controls_anchor();
     restore_registers(&r);g_esp+=4;
 }
 static void controls_change_tab(int tab)

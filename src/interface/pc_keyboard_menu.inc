@@ -94,12 +94,30 @@ static void menu_slider_keyboard_pointer(float x,float left,float width)
     if(fabs(value-kb_settings.sensitivity)>1e-8) {kb_settings.sensitivity=value;kb_mouse_preview();}
 }
 extern void sub_00071B60(void),sub_00041DC0(void);
-static void kb_label(float x,float y,const char *text,int scale,uint32_t color)
+static uint32_t kb_label_measure;
+static void kb_label(float x,float y,float width,float height,const char *text,int scale,uint32_t color)
 {
+    extern void sub_0003FCF0(void),sub_0003F8D0(void);
     char caption[192];text=kb_display_label(text,caption);
     uint32_t align=WORD_AT(0x007E7260u);WORD_AT(0x007E7260u)=0;
     if(controls_font_menu(kb_menu))scale=(scale*100+32)/65;
-    guest_call(sub_00041DC0,4,bits(x),bits(y),kb_text(30,"\vs%d%s\vs100",scale,text),color);
+    uint32_t label=kb_text(30,"%s",text);
+    uint32_t saved_x=WORD_AT(0x7e7270),saved_y=WORD_AT(0x7e7280);
+    float fx=FLOAT_AT(0x7e7270)*scale*.01f,fy=FLOAT_AT(0x7e7280)*scale*.01f;
+    guest_call(sub_00022FF0,0);WORD_AT(0x7e7270)=bits(fx);WORD_AT(0x7e7280)=bits(fy);
+    guest_call(sub_0003F8D0,0);
+    if(!kb_label_measure)kb_label_measure=xbox_HeapAlloc(8,4);
+    if(kb_label_measure) {
+        guest_call(sub_0003FCF0,4,kb_label_measure,kb_label_measure+4,label,0u);
+        float fit=pc_ui_caption_fit(width,height,FLOAT_AT(kb_label_measure),FLOAT_AT(kb_label_measure+4));
+        if(fit<1.f) {
+            guest_call(sub_00022FF0,0);WORD_AT(0x7e7270)=bits(fx*fit);WORD_AT(0x7e7280)=bits(fy*fit);
+            guest_call(sub_0003F8D0,0);
+        }
+    }
+    guest_call(sub_00041DC0,4,bits(x),bits(y),label,color);
+    guest_call(sub_00022FF0,0);WORD_AT(0x7e7270)=saved_x;WORD_AT(0x7e7280)=saved_y;
+    guest_call(sub_0003F8D0,0);
     WORD_AT(0x007E7260u)=align;
 }
 static void kb_box(float x,float y,float w,float h,uint32_t color)
@@ -114,7 +132,7 @@ static void kb_device(float x,float y,float scale,uint32_t menu)
     uint32_t light=guest_call(sub_00154FE0,2,0x8cabc97fu,WORD_AT(menu+0xf4));
     int id=kb_local_id(WORD_AT(menu+0x18c)),action=id>=0 && id<6?pc_keyboard_groups[kb_group][kb_offset+id]:-1;
     int a=action>=0?kb_settings.keys[action][0]:0,b=action>=0?kb_settings.keys[action][1]:0;
-    kb_label(x,y-19*scale,"KEYBOARD + MOUSE",50,light);
+    kb_label(x,y-19*scale,144*scale,14*scale,"KEYBOARD + MOUSE",50,light);
     kb_box(x-3*scale,y-3*scale,144*scale,69*scale,edge);
     kb_box(x-2*scale,y-2*scale,142*scale,67*scale,dim);
     static const char *rows[]={"1234567890","QWERTYUIOP","ASDFGHJKL","ZXCVBNM"};
@@ -122,7 +140,7 @@ static void kb_device(float x,float y,float scale,uint32_t menu)
         char key[2]={rows[row][col],0};float kx=x+(col*13+row*3)*scale,ky=y+row*13*scale;
         int on=a==key[0] || b==key[0];
         kb_box(kx,ky,12*scale,12*scale,on?light:edge);
-        kb_label(kx+2*scale,ky+scale,key,32,on?dim:light);
+        kb_label(kx+2*scale,ky+scale,8*scale,9*scale,key,32,on?dim:light);
     }
     kb_box(x+35*scale,y+53*scale,70*scale,9*scale,(a==32 || b==32)?light:edge);
     float mx=x+49*scale,my=y+83*scale;
@@ -130,7 +148,7 @@ static void kb_device(float x,float y,float scale,uint32_t menu)
     kb_box(mx+3*scale,my+3*scale,15*scale,19*scale,(a==1 || b==1)?light:edge);
     kb_box(mx+21*scale,my+3*scale,15*scale,19*scale,(a==2 || b==2)?light:edge);
     kb_box(mx+18*scale,my+6*scale,3*scale,11*scale,(a==4 || b==4 || a==134 || b==134 || a==135 || b==135)?light:edge);
-    kb_label(x,y+144*scale,"Select a binding to change it",42,light);
+    kb_label(x,y+144*scale,144*scale,12*scale,"Select a binding to change it",42,light);
 }
 static void kb_binding_draw(uint32_t menu,uint32_t item,const float b[4])
 {
@@ -140,10 +158,10 @@ static void kb_binding_draw(uint32_t menu,uint32_t item,const float b[4])
     uint32_t color=guest_call(sub_00154FE0,2,0xc7d6e57fu,WORD_AT(menu+0xf4));
     float w=b[2]-b[0],y=b[1];char name[80];
     /* The row uses the same native panel/highlight as controller Customize. */
-    kb_label(b[0],y,pc_keyboard_action_labels[action],58,color);
+    kb_label(b[0],y,w*.52f-4.f,b[3]-y-2.f,pc_keyboard_action_labels[action],58,color);
     for(int slot=0;slot<PC_BINDING_SLOTS;slot++) {
         pc_settings_key_name(kb_settings.keys[action][slot],name,sizeof name);
-        kb_label(b[0]+w*(slot?.79f:.55f),y,name,53,color);
+        kb_label(b[0]+w*(slot?.79f:.55f),y,w*(slot?.21f:.24f)-4.f,b[3]-y-2.f,name,53,color);
     }
 
 }
@@ -160,8 +178,8 @@ static void kb_draw(void)
                 float x=FLOAT_AT(menu+0xe4)+10.f;
                 kb_device(x,top+12.f,(left-x-14.f)/144.f,menu);
                 uint32_t color=guest_call(sub_00154FE0,2,0x8cabc97fu,WORD_AT(menu+0xf4));
-                kb_label(left+(right-left)*.55f,top-17.f,"PRIMARY",45,color);
-                kb_label(left+(right-left)*.79f,top-17.f,"ALTERNATE",45,color);
+                kb_label(left+(right-left)*.55f,top-17.f,(right-left)*.24f-4.f,12.f,"PRIMARY",45,color);
+                kb_label(left+(right-left)*.79f,top-17.f,(right-left)*.21f-4.f,12.f,"ALTERNATE",45,color);
             }
         }
         restore_registers(&r);g_esp+=4;return;

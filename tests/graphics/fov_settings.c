@@ -897,6 +897,17 @@ int main(int argc,char **argv)
         call(CONTROLS_TABS_SELECT,CONTROLS_TABS_ID,0);CHECK(controls_tab==1);
         menu_mouse_dispatch=0;
     }
+    /* Keep the root header fixed as content height changes; modal pages
+     * retain their own native centring. */
+    controls_tab=0;controls_anchor_ready=0;
+    WORD_AT(controls_menu+0x68)=bits(200.f);WORD_AT(controls_menu+0x64)=bits(12.f);
+    controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==12.f);
+    WORD_AT(controls_menu+0x68)=bits(120.f);WORD_AT(controls_menu+0x64)=bits(0.f);
+    controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==12.f);
+    WORD_AT(controls_menu+0x68)=bits(240.f);controls_anchor();
+    CHECK(FLOAT_AT(controls_menu+0x64)==12.f);
+    controls_tab=2;kb_page=KB_CAPTURE;WORD_AT(controls_menu+0x64)=bits(55.f);
+    controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==55.f);
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
     return 0;

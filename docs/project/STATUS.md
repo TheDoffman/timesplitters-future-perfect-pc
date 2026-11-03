@@ -1,3 +1,24 @@
+## Final pause-menu visual review and repairs (2026-11-03, local)
+
+Continuing feature/unified-controls from9706b01a. Live pause review found moving
+Controls tab positions and clipped custom keyboard labels/diagram keys. Tabbed
+roots now retain the first finalized native Y position across sections, while
+the footer follows each page's content without blank rows above Accept. Modals
+and binding lists keep their native centring; new sessions reset the anchor.
+Keyboard labels now measure and draw plain captions under the same explicit
+glyph scale, fit their cells and restore font state. No binding/save behavior
+changes. Do not call native77320 after771D0: it remeasures pending builder rows;
+the finalized native Y field is written directly instead.
+
+Windows focused UI/input checks:21 passed,2 native Mac skips; Release Build and
+built-in checks pass. Isolated main and paused General/Controller/Keyboard/Mouse
+and binding pages reviewed. Root tab headers align in both contexts; diagram
+letters, column headings, names and help text fit. Paused Next/Previous pages,
+Back return hierarchy and all three Video tabs reviewed at1280x720; main review
+used the normal1920x1080 guest menu target. Original footer prompts remain.
+Supported US XBE hash validated; personal saves/settings untouched. Native Mac
+visual acceptance and physical-controller testing remain unverified.
+
 ## Controls Accept state and Keyboard footer navigation (2026-11-03, local)
 
 Continuing feature/unified-controls from9d18ca40. General/Controller Accept starts
