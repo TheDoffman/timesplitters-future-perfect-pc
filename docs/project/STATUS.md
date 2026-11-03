@@ -1,3 +1,16 @@
+## Apply retains the current Video section (2026-11-03, local)
+
+Branch fix/video-apply-stay-on-tab based onf2b832ce. Apply remembers its source
+section before preview/restart dialogs. Success, save failure, Later and restart
+Back/failure return there, including Advanced. Resolution reversion/failure
+also preserves the source section. New sessions start on Display as before.
+Windows UI fixture4pass2nativeMacskips; Release Build and built-ins pass.
+Live isolated main Graphics and View & HUD remain selected after Apply; MSAA
+Apply/Later returns to Advanced. Paused Graphics and View & HUD also remain
+selected after Apply; final captures reviewed at1280x720.
+Native Mac visual review remains pending. Personal saves/settings preserved.
+This follow-up is local and has not been pushed or merged.
+
 ## PR473 integration with current main (2026-11-03)
 
 PR473 at4ba7e85b passed all runtime/upgrade/gate checks: Windows2772 tests,

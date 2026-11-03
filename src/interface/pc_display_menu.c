@@ -372,6 +372,7 @@ static PcDisplayMode modes[PC_DISPLAY_MODE_CAPACITY], all_modes[PC_DISPLAY_MODE_
 static int all_mode_count, selected_aspect;
 enum { DISPLAY_HOME, DISPLAY_CONFIRM, DISPLAY_GRAPHICS, DISPLAY_VIEW, DISPLAY_RESTART, DISPLAY_ADVANCED };
 static int mode_count, selected_mode, page, staged_fov, previous_fov;
+static int apply_page=DISPLAY_HOME;
 static int staged_rate, applied_rate;
 static unsigned applied_texture;
 static unsigned staged_aa,applied_aa;
@@ -1204,19 +1205,20 @@ static void revert(void)
         pc_display_set_fov(previous_fov);staged=previous;deadline=0;
         selected_aspect=pc_display_aspect(previous);if(selected_aspect<0)selected_aspect=0;
         filter_modes();*status=0;
-        refresh(DISPLAY_HOME,0);
+        refresh(apply_page,0);
     } else text_at(0,"Restoring resolution");
 }
 static void back_callback(void)
 {
     GuestRegisters r;save_registers(&r);
-    if(page==DISPLAY_RESTART)refresh(DISPLAY_ADVANCED,2);
+    if(page==DISPLAY_RESTART)refresh(apply_page,apply_page==DISPLAY_ADVANCED?2:0);
     else if(page==DISPLAY_ADVANCED) {read_choices();refresh(DISPLAY_GRAPHICS,0);}
     else if(page==DISPLAY_CONFIRM)revert();else {read_choices();leave();}
     restore_registers(&r);g_esp+=4;
 }
 static void apply_changes(void)
 {
+    if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART)apply_page=page;
     int display_changed=!mode_equal(staged,previous) || staged_fov!=previous_fov;
     int rate_changed=staged_rate!=applied_rate,display_saved=0,rate_saved=0;
     int restart_changed=graphics_restart_dirty(),graphics_saved=0;
@@ -1252,7 +1254,7 @@ static void apply_changes(void)
     previous=staged;previous_fov=staged_fov;applied_rate=staged_rate;applied_texture=texture_choice;
     applied_aa=staged_aa;
     deadline=0;*status=0;filter_modes();
-    refresh(restart_changed?DISPLAY_RESTART:DISPLAY_HOME,restart_changed?2:0);
+    refresh(restart_changed?DISPLAY_RESTART:apply_page,restart_changed?2:0);
     return;
 failed:
     pc_display_set_fov(previous_fov);
@@ -1267,7 +1269,7 @@ failed:
     int saved_back=(!display_saved || (restored && pc_display_save())) && rate_restored && graphics_restored;
     snprintf(status,sizeof status,saved_back?"Could not save changes. Please try again.":"Could not restore saved display settings.");
     if(!restored) { deadline=GetTickCount64();return; }
-    deadline=0;refresh(DISPLAY_HOME,0);
+    deadline=0;refresh(apply_page,0);
 }
 static void select_callback(void)
 {
@@ -1275,10 +1277,10 @@ static void select_callback(void)
     int selected=(int)WORD_AT(menu+0x18c);save_registers(&r);
     fprintf(stderr,"[PC-DISPLAY-MENU] Selected page %d row %d\n",page,selected);
     if(page==DISPLAY_RESTART) {
-        if(selected==0)refresh(DISPLAY_ADVANCED,2);
+        if(selected==0)refresh(apply_page,apply_page==DISPLAY_ADVANCED?2:0);
         else if(selected==1 && !pc_game_restart()) {
             snprintf(status,sizeof status,"Could not restart. Please relaunch manually.");
-            refresh(DISPLAY_ADVANCED,2);
+            refresh(apply_page,apply_page==DISPLAY_ADVANCED?2:0);
         }
     } else if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART && selected==VIDEO_TABS_ID) {
         int tab=video_clicked_tab();
@@ -1288,11 +1290,12 @@ static void select_callback(void)
     else if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART && selected==3) {
         read_choices();update_apply();
         if(display_dirty()) {
+            apply_page=page;
             if(!mode_equal(staged,previous)) {
                 if(pc_display_preview(staged)) {
                     deadline=GetTickCount64()+15000;refresh(DISPLAY_CONFIRM,1);
                 } else {
-                    snprintf(status,sizeof status,"Cannot apply resolution");refresh(DISPLAY_HOME,0);
+                    snprintf(status,sizeof status,"Cannot apply resolution");refresh(apply_page,0);
                 }
             } else apply_changes();
         }
@@ -1379,7 +1382,7 @@ static void activate(void)
         all_mode_count=pc_display_modes(xbox_D3D8Window(),all_modes,PC_DISPLAY_MODE_CAPACITY);
         selected_aspect=pc_display_aspect(staged);if(selected_aspect<0)selected_aspect=0;filter_modes();
         parent_menu=WORD_AT(source+0x2c); previous_menu=WORD_AT(source+4);
-        page=0; deadline=0;
+        page=0; apply_page=DISPLAY_HOME;deadline=0;
         fprintf(stderr,"[PC-DISPLAY-MENU] Opened, %d resolutions\n",mode_count);
         guest_call(sub_00079B70,2,parent_menu,storage);
     }

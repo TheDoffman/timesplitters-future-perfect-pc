@@ -1,3 +1,8 @@
+Apply keeps the current Video section (2026-11-03, local follow-up): shared
+callbacks remember the originating section through saves, failures, confirmation
+and restart dialogs. Main/pause need no separate OS adapter. Windows fixture
+passes; native Mac visual acceptance remains pending.
+
 Video tab repeated clicks and Advanced footer (2026-11-03, local follow-up):
 common callbacks keep active tabs stable and distinguish unmatched mouse clicks
 from keyboard cycling. Graphics puts Advanced below the lower divider and above

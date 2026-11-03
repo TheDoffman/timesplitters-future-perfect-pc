@@ -448,3 +448,11 @@ the active page do not rebuild it or invalidate its bounds. Consumed click edges
 still retain pointer/injected Confirm identity. Keyboard/controller Confirm and
 left/right navigation keep their cycling behavior. Graphics places Advanced
 below the lower silver separator, immediately before Apply, on main and pause.
+
+### Apply retains the originating section
+
+Apply records its current section before any resolution/restart dialog. Successful
+saves and failures rebuild that section instead of defaulting to Display. Later,
+restart Back/failure and resolution reversion also return there. Advanced remains
+Advanced, and drafts/save/rollback contracts are unchanged. New Video sessions
+reset the return section to Display. Shared main/pause callbacks use one rule.
