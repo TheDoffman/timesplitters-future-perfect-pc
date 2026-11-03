@@ -54,7 +54,7 @@ int tsfp_guest_callback_prepare(const tsfp_guest_callback_ops *ops,uint32_t rout
     uint32_t address,bytes;unsigned i;
     if(!out || !ops || !ops->lookup || !ops->output || !routine || count>4 || (count && !arguments))return 0;
     bytes=4+4*count;if(g_esp<bytes)return 0;
-    memset(&candidate,0,sizeof(candidate));candidate.esp=g_esp;
+    memset(&candidate,0,sizeof(candidate));candidate.r_esp=g_esp;
     for(i=0;i<count;++i)candidate.words[i]=arguments[i];
     entry=ops->lookup(ops->context,routine);if(!entry)return 0;
     address=g_esp-bytes;frame=(unsigned char *)ops->output(ops->context,address,bytes);
@@ -67,9 +67,9 @@ static int invoke(tsfp_guest_callback_plan *prepared,int (*admit)(void *),void *
     uint32_t address,value,words[4];unsigned i,count;int balanced;
     if(!prepared)return 0;
     entry=prepared->entry;prepared->entry=NULL;
-    if(!entry || !prepared->frame || prepared->count > 4 || g_esp!=prepared->esp ||
-       prepared->bytes!=4+4*prepared->count || prepared->esp<prepared->bytes ||
-       prepared->address!=prepared->esp-prepared->bytes)return 0;
+    if(!entry || !prepared->frame || prepared->count > 4 || g_esp!=prepared->r_esp ||
+       prepared->bytes!=4+4*prepared->count || prepared->r_esp<prepared->bytes ||
+       prepared->address!=prepared->r_esp-prepared->bytes)return 0;
     if(admit && !admit(context))return 0;
     frame=prepared->frame;address=prepared->address;count=prepared->count;
     memcpy(words,prepared->words,sizeof(words));capture(&saved);put(frame,0);

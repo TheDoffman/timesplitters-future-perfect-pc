@@ -6,8 +6,10 @@
 enum {TSFP_CONTEXT_I386=0x10000,TSFP_CONTEXT_CONTROL=1,TSFP_CONTEXT_INTEGER=2,
       TSFP_CONTEXT_SEGMENTS=4,TSFP_CONTEXT_FLOAT=8,TSFP_CONTEXT_DEBUG=16,
       TSFP_CONTEXT_EXTENDED=32,TSFP_CONTEXT_BYTES=716};
+/* Prefix register members so generated architectural-name macros cannot
+ * rewrite declarations or field accesses. Binary layout is unchanged. */
 typedef struct tsfp_x86_context_state {
-    uint32_t eax,ebx,ecx,edx,esi,edi,esp,ebp,eip,eflags;
+    uint32_t r_eax,r_ebx,r_ecx,r_edx,r_esi,r_edi,r_esp,r_ebp,r_eip,r_eflags;
     uint32_t cs,ss,ds,es,fs,gs,debug[6];
     unsigned char x87[112],extended[512];
 } tsfp_x86_context_state;

@@ -405,3 +405,20 @@ header text; [shift/rotate status](guest-shift-flags.md) records CI repair and t
 
 The exact loader-tail assertion now includes0253 context records after0249;
 keep all55 entries ordered. [Context/handler contracts](context-records.md).
+
+Stage0258 extends the verified patch-order tail from55to56 with the original
+exception dispatcher after0253. test_repo_context and five historical omission
+sets in test_patch_updates now include that dependency; old patch bytes remain
+unchanged. See [exception contracts](guest-exceptions.md).
+
+Stage0259 extends the patch tail56to57 for execution ownership after0258.
+The ordering assertion and five historical omission sets follow that dependency;
+see [ownership and test routes](execution-ownership.md).
+
+Stage0260 extends the patch tail57to58 for original host policies after0259.
+The ordering assertion and five historical omission sets follow this dependency;
+see [host scheduling and test routes](execution-host.md).
+
+PR466 integration with main623acff4 retains0260 and then applies SMAA2470.
+The complete maintained tail is59; merge resolution preserves both loader
+additions, all historical omission entries and regenerates the patch index.

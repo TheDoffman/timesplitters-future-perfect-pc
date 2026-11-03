@@ -22,6 +22,40 @@ import re
 from pathlib import Path
 
 
+def context_outputs(runtime):
+    """Seal generated continuation files; a partial publication is never current."""
+    directory=runtime/'titles/futureperfect/src/recomp/gen'
+    manifest=directory/'recomp_context_manifest.json'
+    owned=re.compile(r'recomp_context_(?:[0-9]{4,}|dispatch)\.c\Z')
+    actual={p.name for p in directory.glob('recomp_context_*.c') if owned.fullmatch(p.name)}
+    if manifest.is_symlink():raise ValueError('Invalid continuation manifest')
+    if not manifest.exists():
+        if actual:raise ValueError('Continuation output has no complete manifest')
+        return {}
+    if manifest.is_symlink() or manifest.stat().st_size>8*1024*1024:
+        raise ValueError('Invalid continuation manifest')
+    text=manifest.read_text(encoding='utf-8');record=json.loads(text)
+    count=record.get('chunks') if isinstance(record,dict) else None
+    if (not isinstance(record,dict) or record.get('version')!=1 or record.get('mode')!='decoded-control-blocks'
+            or type(count) is not int or not 0<=count<=65536):
+        raise ValueError('Invalid continuation manifest version or chunk count')
+    expected={f'recomp_context_{i:04d}.c' for i in range(count)}|{'recomp_context_dispatch.c'}
+    headers={'guest_context_execution.h','guest_x86_context.h'}
+    hashes=record.get('sha256_text')
+    if not isinstance(hashes,dict) or set(hashes)!=expected|headers or actual!=expected:
+        raise ValueError('Continuation publication is incomplete')
+    result={'generated-context/manifest':hashlib.sha256(text.encode()).hexdigest()}
+    for name,digest in hashes.items():
+        path=directory/name
+        if (not isinstance(digest,str) or not re.fullmatch('[0-9a-f]{64}',digest)
+                or path.is_symlink() or path.resolve().parent!=directory.resolve()):
+            raise ValueError('Invalid continuation output identity')
+        current=hashlib.sha256(path.read_text(encoding='utf-8').encode()).hexdigest()
+        if current!=digest:raise ValueError('Continuation output changed: '+name)
+        result['generated-context/'+name]=current
+    return result
+
+
 def fingerprint(runtime):
     paths = [runtime / 'scripts/recompile.py',
              runtime / 'titles/futureperfect/src/recomp_manual.c']
@@ -38,10 +72,10 @@ def fingerprint(runtime):
     result = {p.relative_to(runtime).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
               for p in sorted(paths)}
     project = Path(__file__).resolve().parents[2]
-    for name in ('xbe_image.py', 'xbe_kernel_exports.def', 'recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'x86_recovery.py', 'x86_functions.py', 'recomp_symbols.py', 'analysis_cache.py', 'analysis_config.py', 'analysis_output.py', 'analysis_runner.py', 'xdk_catalog.py', 'compile_pipeline.py', 'function_evidence.py', 'function_categories.py', 'function_catalog.py', 'c_source_scan.py', 'generation_output.py', 'translation_decode.py', 'translation_layout.py', 'translation_hooks.py', 'branch_feedback.py', 'unresolved_report.py', 'translation_operands.py', 'translation_moves.py', 'translation_integer.py', 'translation_bits.py', 'translation_product.py', 'translation_bitops.py', 'translation_exchange.py', 'translation_compare.py', 'translation_strings.py', 'translation_conditions.py', 'translation_sse.py', 'translation_mmx.py', 'translation_x87.py', 'translation_control.py', 'translation_lifting.py', 'translation_context.py', 'translation_helpers.py', 'translation_names.py', 'translation_host_symbols.txt', 'translation_host_symbols.json', 'translation_batch.py', 'translation_discovery.py', 'translation_function.py', 'translation_cli.py'):
+    for name in ('xbe_image.py', 'xbe_kernel_exports.def', 'recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'x86_recovery.py', 'x86_functions.py', 'recomp_symbols.py', 'analysis_cache.py', 'analysis_config.py', 'analysis_output.py', 'analysis_runner.py', 'xdk_catalog.py', 'compile_pipeline.py', 'function_evidence.py', 'function_categories.py', 'function_catalog.py', 'c_source_scan.py', 'generation_output.py', 'translation_decode.py', 'translation_layout.py', 'translation_hooks.py', 'branch_feedback.py', 'unresolved_report.py', 'translation_operands.py', 'translation_moves.py', 'translation_integer.py', 'translation_bits.py', 'translation_product.py', 'translation_bitops.py', 'translation_exchange.py', 'translation_compare.py', 'translation_strings.py', 'translation_conditions.py', 'translation_sse.py', 'translation_mmx.py', 'translation_x87.py', 'translation_control.py', 'translation_lifting.py', 'translation_context.py', 'translation_helpers.py', 'translation_names.py', 'translation_host_symbols.txt', 'translation_host_symbols.json', 'translation_batch.py', 'translation_discovery.py', 'translation_function.py', 'translation_continuation.py', 'continuation_index.py', 'continuation_output.py', 'translation_cli.py'):
         result['project/tools/' + name] = hashlib.sha256(
             (repo_file(project, 'tools', name)).read_bytes()).hexdigest()
-    for name in ('recomp_types.h', 'tsfp_branch_feedback.h'):
+    for name in ('recomp_types.h', 'tsfp_branch_feedback.h', 'guest_context_execution.h', 'guest_x86_context.h'):
         result['project/src/runtime/' + name] = hashlib.sha256(
             (project / 'src/runtime' / name).read_bytes()).hexdigest()
     helper = project / 'tools/project_paths.py'
@@ -59,6 +93,7 @@ def fingerprint(runtime):
         declarations.update(pattern.findall(source.read_text(encoding='utf-8')))
     result['hle-declarations'] = hashlib.sha256(
         json.dumps(sorted(declarations)).encode('utf-8')).hexdigest()
+    result.update(context_outputs(runtime))
     return result
 
 

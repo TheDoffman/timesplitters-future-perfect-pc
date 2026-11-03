@@ -37,16 +37,16 @@ static int valid_ops(const tsfp_context_execution_ops *ops) {
 int tsfp_context_execute(const tsfp_context_execution_ops *ops,
     const tsfp_x86_context_state *initial,uint64_t low,uint64_t high,uint32_t stop) {
     execution_root *root;volatile unsigned char native_anchor=0;int result;
-    if(!valid_ops(ops) || !initial || !initial->eip ||
+    if(!valid_ops(ops) || !initial || !initial->r_eip ||
        low>=high || high>UINT64_C(0x100000000) ||
-       low>initial->esp || (uint64_t)initial->esp+4>high ||
-       root_depth==ROOT_LIMIT || !ops->allow_pc(ops->opaque,initial->eip) ||
+       low>initial->r_esp || (uint64_t)initial->r_esp+4>high ||
+       root_depth==ROOT_LIMIT || !ops->allow_pc(ops->opaque,initial->r_eip) ||
        !ops->allow_state(ops->opaque,initial))return TSFP_CONTEXT_EXECUTE_REJECTED;
     root=(execution_root *)calloc(1,sizeof *root);
     if(!root)return TSFP_CONTEXT_EXECUTE_REJECTED;
     root->previous=current_root;root->ops=*ops;root->pending=*initial;
-    root->low=low;root->high=high;root->entry_sp=initial->esp;
-    root->pc=initial->eip;root->stop=stop;root->pending_apply=1;
+    root->low=low;root->high=high;root->entry_sp=initial->r_esp;
+    root->pc=initial->r_eip;root->stop=stop;root->pending_apply=1;
     root->native_tag=(uintptr_t)&native_anchor;
     current_root=root;++root_depth;
     for(;;) {
@@ -79,14 +79,14 @@ int tsfp_context_transfer(const tsfp_x86_context_state *state) {
     execution_root *target,*discard;tsfp_x86_context_state saved;int same,clean;
     if(!state || !current_root)return 0;
     saved=*state;
-    if(!saved.eip)return 0;
+    if(!saved.r_eip)return 0;
     target=current_root;
     while(target) {
-        if(stack_contains(target,saved.esp) &&
-           (!target->previous || saved.esp<=target->entry_sp))break;
+        if(stack_contains(target,saved.r_esp) &&
+           (!target->previous || saved.r_esp<=target->entry_sp))break;
         target=target->previous;
     }
-    if(!target || !target->ops.allow_pc(target->ops.opaque,saved.eip) ||
+    if(!target || !target->ops.allow_pc(target->ops.opaque,saved.r_eip) ||
        !target->ops.allow_state(target->ops.opaque,&saved))return 0;
     same=target->ops.same_stack(target->ops.opaque,target->native_tag);
     if(!same && !target->ops.foreign_jump)return 0;
@@ -101,7 +101,7 @@ int tsfp_context_transfer(const tsfp_x86_context_state *state) {
         if(cursor==target)break;
     }
     target->pending=saved;target->pending_apply=clean;target->failed=!clean;
-    target->pc=saved.eip;
+    target->pc=saved.r_eip;
     discard=current_root;
     while(discard!=target) {
         execution_root *previous=discard->previous;

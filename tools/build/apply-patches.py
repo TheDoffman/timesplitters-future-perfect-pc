@@ -205,6 +205,18 @@ def patch_records(paths):
     if context_records:
         paths.remove(context_records)
         paths.append(context_records)
+    exception_dispatch = by_name.get('0258-original-exception-dispatch.patch')
+    if exception_dispatch:
+        paths.remove(exception_dispatch)
+        paths.append(exception_dispatch)
+    execution_ownership = by_name.get('0259-original-execution-ownership.patch')
+    if execution_ownership:
+        paths.remove(execution_ownership)
+        paths.append(execution_ownership)
+    execution_host = by_name.get('0260-original-execution-host-policy.patch')
+    if execution_host:
+        paths.remove(execution_host)
+        paths.append(execution_host)
     # SMAA extends the final config writer after native timing migrations.
     smaa = by_name.get('2470-smaa-antialiasing.patch')
     if smaa:

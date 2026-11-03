@@ -66,3 +66,15 @@ integration, then guest exception dispatch/unwind and edited-context resumption.
 Current callbacks in the fixture are test machine steps, not translated title
 instructions. Do not equate this primitive with complete SEH or whole-runtime
 independence, and do not claim a production build tested it while it is unselected.
+
+The opt-in [instruction continuation generator](context-continuations.md) now
+provides decoded steps and exact-PC dispatch in native tests. The production
+live-state/SEH/fiber integration remains open.
+
+The following [original registration-chain dispatcher](guest-exceptions.md)
+implements raise/unwind bodies and a translated edited-PC integration fixture;
+actual kernel import binding and native ownership/barriers remain unfinished.
+
+The [original execution-ownership adapter](execution-ownership.md) now binds
+production kernel entry/return, resource-ledger abandonment and thread teardown.
+Guest-context capture, actual302/312 binding and foreign native barriers remain.

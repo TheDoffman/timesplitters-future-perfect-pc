@@ -32,22 +32,36 @@ those stages, not current whole-project or cross-platform gameplay acceptance.
 The runtime checkout and bundled snapshot are still production dependencies;
 final builds/generation/packaging with both unavailable have not passed yet.
 
+Current continuation/exception work in [draft PR466](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/466)
+adds original status flags, context records, exact-instruction continuation export,
+and exception-chain dispatch/unwind providers. Kernel dispatch now uses original
+[execution ownership](../agent-context/execution-ownership.md); the next
+[host-policy replacement](../agent-context/execution-host.md) removes inherited
+lock initialization, parking, concurrency counters and optional Windows affinity.
+Its Windows build and both default/enabled bounded Story runs pass; final migration
+and new-head CI acceptance are recorded separately in STATUS. These are actual
+production ownership/host-policy replacements, while game exception imports265/
+302/312 remain inherited. Live architectural capture, checkpoint transport and
+foreign callback barriers are still required before switching those imports.
+
 ## Remaining work
 
 | Area | Remaining replacement or proof |
 | --- | --- |
-| Kernel/runtime | Exceptions/context/unwind, remaining helpers, and inherited parts of file/thread/synchronization/interrupt/crypto services and diagnostics |
+| Kernel/runtime | Connect original exception/context/unwind providers to live state and safe native resumption; replace remaining inherited file/thread/synchronization/interrupt/crypto services, platform helpers and diagnostics |
 | Graphics | NV2A command/vertex/shader processing, remaining D3D8/HLE/backend and framebuffer/presentation code |
 | Audio/movies | APU/DSP/voices, DirectSound/XAudio2 glue, Xbox ADPCM and remaining XMV demux/decode/player/pump code |
 | Input/devices | Remaining HLE/input models, controller bindings, USB/OHCI and XInput adapters |
 | Integration | Remaining title/platform/runtime interfaces, headers, inherited smoke fixtures, and build/package routing away from the snapshot; audit any inherited network glue |
 | Final independence | Remove inherited code and snapshot/toolkit dependencies, retain permitted libraries, reconcile provenance/notices and prove generation/build/package plus bounded gameplay with old sources unavailable |
 
-The current configured Windows targets still compile29 runtime files and6 smoke
-fixtures byte-identical to the snapshot. They also compile45 modified runtime
-files with snapshot counterparts; modification alone does not establish original
-ownership. These counts include utility targets and exclude headers/data/tooling,
-so they are neither a complete rewrite count nor a completion percentage. SDL,
+A historical configured-Windows-target audit found29 runtime files and6 smoke
+fixtures byte-identical to the snapshot, plus45 modified runtime files with
+snapshot counterparts. This predates the continuation/execution-ownership stages
+and has not been refreshed for this branch; it is not a current remaining-file
+count. Modification alone does not establish original ownership. That audit
+included utility targets and excluded headers/data/tooling, so it was neither
+a complete rewrite count nor a completion percentage. SDL,
 FFmpeg, Capstone and permitted host SDKs do not need project-owned replacements.
 
 Unused POSIX file-map/query/statistics APIs and their registry are retired in

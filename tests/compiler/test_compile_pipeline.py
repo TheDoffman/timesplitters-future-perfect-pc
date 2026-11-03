@@ -73,6 +73,7 @@ def test_title_seeds_custom_metadata_and_output_routing(tmp_path, monkeypatch):
     assert '--trace-all-entries' in lift and '--game-only' in lift
     assert lift[lift.index('--game-name') + 1] == 'Example Title'
     assert lift[lift.index('--split') + 1] == '33'
+    assert '--context-continuations' in lift
 
 
 @pytest.mark.parametrize('flags,stages', [(['--only', 'lift'], ['lift']),
