@@ -35,6 +35,8 @@ static int smaa_preference,smaa_save_ok=1;
 int pc_smaa_enabled(void){return smaa_preference;}
 int pc_smaa_set_enabled(int enabled){if(!smaa_save_ok)return 0;smaa_preference=enabled;return 1;}
 static unsigned built_rows, built_row_count, built_ids[32],separators,separator_positions[2];
+static uint32_t last_built_item;
+static void fixture_link(uint32_t item) {WORD_AT(item+4)=0;WORD_AT(item+8)=0;if(last_built_item){WORD_AT(last_built_item+4)=item;WORD_AT(last_built_item+8)=item;}else WORD_AT(0x300178)=item;last_built_item=item;}
 static char runtime_path[MAX_PATH];
 static int requested_rate=-1;
 int recomp_config_request_native_rate(int rate) { requested_rate=rate;return 1; }
@@ -52,7 +54,7 @@ int pc_online_connect_mode(PcOnlineMode mode) { (void)mode;return 0; }
 PcOnlineMode pc_online_mode(void) { return PC_ONLINE_NONE; }
 static unsigned online_disconnects,lan_browser_entries;
 void pc_online_disconnect(void) { online_disconnects++; }
-uint32_t xbox_HeapAlloc(uint32_t size,uint32_t alignment) { (void)size;(void)alignment;return 0x100000; }
+uint32_t xbox_HeapAlloc(uint32_t size,uint32_t alignment) {static uint32_t next=0x100000;next=(next+alignment-1)&~(alignment-1);uint32_t result=next;next+=size;CHECK(next<0x1f0000);return result;}
 #define STUB(name) void name(void) { g_esp+=4; }
 /* The menu translation unit also contains tutorial hooks. Their drawing and
  * input behavior is covered by tutorial_layout.c; these paths must not run
@@ -161,32 +163,75 @@ static int capture_active,capture_begins,capture_ends;
 void pc_settings_capture_begin(void) { capture_active=1;capture_begins++; }
 void pc_settings_capture_end(void) { capture_active=0;capture_ends++; }
 int pc_settings_capture_event(void) { CHECK(capture_active);return 0; }
-void pc_settings_defaults(PcSettings *s) { (void)s;CHECK(0); }
-int pc_settings_read(PcSettings *s,char *e,size_t n) { (void)s;(void)e;(void)n;CHECK(0);return 0; }
-int pc_settings_save(const PcSettings *s,char *e,size_t n) { (void)s;(void)e;(void)n;CHECK(0);return 0; }
-void pc_settings_key_name(int k,char *t,size_t n) { (void)k;(void)t;(void)n;CHECK(0); }
+static int controls_test_enabled,controls_test_save_ok=1;
+static unsigned controls_test_saves,controls_test_previews;
+static PcSettings controls_test_settings;
+void pc_settings_defaults(PcSettings *s) {CHECK(controls_test_enabled);*s=controls_test_settings;s->sensitivity=.1;s->enabled=1;s->invert_y=0;}
+int pc_settings_read(PcSettings *s,char *e,size_t n) { (void)e;(void)n;CHECK(controls_test_enabled);*s=controls_test_settings;return 1; }
+int pc_settings_save(const PcSettings *s,char *e,size_t n) {CHECK(controls_test_enabled);if(!controls_test_save_ok){snprintf(e,n,"Test save failed");return 0;}controls_test_settings=*s;controls_test_saves++;return 1; }
+void pc_settings_key_name(int k,char *t,size_t n) {CHECK(controls_test_enabled);snprintf(t,n,"Key %d",k);}
 int pc_settings_conflict(const PcSettings *s,int a,int k) { (void)s;(void)a;(void)k;CHECK(0);return 0; }
 int pc_settings_key_allowed(int k) { (void)k;CHECK(0);return 0; }
 int pc_settings_assign(PcSettings *s,int a,int slot,int k,int move) { (void)s;(void)a;(void)slot;(void)k;(void)move;CHECK(0);return 0; }
-void pc_controls_set_mouse(double s,int enabled,int invert) { (void)s;(void)enabled;(void)invert;CHECK(0); }
+void pc_controls_set_mouse(double s,int enabled,int invert) { (void)s;(void)enabled;(void)invert;CHECK(controls_test_enabled);controls_test_previews++; }
 /* Native builder/centring contract: width is a percentage, not pixels.
  * An out-of-range width renders a panel with its rows outside the canvas. */
 void sub_00075B70(void) {
-    built_rows=built_row_count=separators=0;
+    built_rows=built_row_count=separators=0;last_built_item=0;WORD_AT(0x300178)=0;
     uint32_t word=WORD_AT(g_esp+12);float width;memcpy(&width,&word,4);
     float left=(100.f-width)*.5f;
     CHECK(isfinite(width) && width>0 && left>=0 && left+width<=100.f);
     g_esp+=4;
 }
+static unsigned native_control_ticks,native_control_backs,native_control_opens[2];
+static void fixture_controller_button(void) {pc_display_menu_button(sub_00079D60_gen);}
+void sub_002EA3F0(void) {
+    for(unsigned id=0;id<12;id++) {
+        if(id==10)guest_call(sub_00079710,1,0u);
+        guest_call(fixture_controller_button,6,controls_text(5,"Native control"),id,0u,0u,0u,0u);
+    }
+    g_esp+=4;
+}
+static unsigned fixture_native_rows(void) {
+    unsigned mask=0;
+    for(uint32_t row=WORD_AT(0x300178);row;row=WORD_AT(row+4)) {
+        CHECK(WORD_AT(row+8)==WORD_AT(row+4));
+        unsigned id=WORD_AT(row+0x14);if(id<12)mask|=1u<<id;
+    }
+    return mask;
+}
+void sub_002EAB30(void) {CHECK(fixture_native_rows()==0xfff);native_control_ticks++;g_esp+=4;}
+void sub_002E9FC0(void) {if(controls_tab!=2)CHECK(fixture_native_rows()==0xfff);native_control_backs++;g_esp+=4;}
+void sub_002EA8E0(void) {CHECK(0);}
+static unsigned native_control_actions;
+static void fixture_native_action(void) {CHECK(fixture_native_rows()==0xfff);native_control_actions++;g_esp+=4;}
+void sub_002CBE00(void) {fixture_native_action();}
+void sub_002E9E50(void) {fixture_native_action();}
+void sub_002D0970(void) {fixture_native_action();}
+void sub_002E9EA0(void) {fixture_native_action();}
+void sub_002EA210(void) {fixture_native_action();}
+void sub_002CBE50(void) {native_control_opens[0]++;g_esp+=4;}
+void sub_002EC1A0(void) {native_control_opens[1]++;g_esp+=4;}
 STUB(sub_00071B10) STUB(sub_00071C50) STUB(sub_00071BE0)
 STUB(sub_000771D0)
 void sub_000770E0(void) {
     unsigned index=WORD_AT(g_esp+8);CHECK(index<built_row_count);
-    WORD_AT(WORD_AT(g_esp+4)+0x18c)=built_ids[index];g_esp+=4;
+    uint32_t menu=WORD_AT(g_esp+4),id=built_ids[index];
+    if(controls_font_menu(menu)) {
+        uint32_t row=WORD_AT(menu+0x178);
+        for(;row;row=WORD_AT(row+8)) {
+            uint32_t type=WORD_AT(row);
+            if(type!=4 && type!=7 && type!=8)continue;
+            if(!index){id=WORD_AT(row+0x14);break;}index--;
+        }
+        CHECK(row);
+    }
+    WORD_AT(menu+0x18c)=id;g_esp+=4;
 }
 void sub_00078980(void) {
     unsigned first=WORD_AT(0x200000+0xc8),second=WORD_AT(0x200200+0xc8),
-        textures=WORD_AT(0x200e00+0xc8);build_menu();
+        textures=WORD_AT(0x200e00+0xc8);
+    if(controls_font_menu(WORD_AT(g_esp+4)))controls_build();else build_menu();
     /* Native refresh restores choices by row ID, even across different pages. */
     WORD_AT(0x200000+0xc8)=first;WORD_AT(0x200200+0xc8)=second;
     WORD_AT(0x200e00+0xc8)=textures;
@@ -212,7 +257,8 @@ void host_SetTwoDPlacement(int placement,uint32_t tag) { (void)placement;(void)t
 void sub_00079710(void) {
     CHECK(WORD_AT(g_esp+4)==0 && separators<2 && built_row_count<32);
     separator_positions[separators++]=built_row_count;
-    built_ids[built_row_count++]=UINT32_MAX;g_esp+=4;
+    built_ids[built_row_count++]=UINT32_MAX;
+    uint32_t item=0x230000+separators*0x200;WORD_AT(item)=9;WORD_AT(item+0x14)=UINT32_MAX;fixture_link(item);g_esp+=4;
 }
 STUB(sub_00074910)
 void sub_001A0A60(void) {
@@ -247,10 +293,10 @@ void sub_000814B0(void) { uint32_t b=WORD_AT(g_esp+4);memcpy(&drawn,&b,4);g_esp+
 void sub_00154FE0(void) { g_eax=WORD_AT(g_esp+4);g_esp+=4; }
 void sub_00079B70(void) { returned++;g_esp+=4; }
 void sub_00079D60_gen(void) {
-    unsigned id=WORD_AT(g_esp+8);CHECK(id<128);
+    unsigned id=WORD_AT(g_esp+8);CHECK(id<256);
     if(page==DISPLAY_HOME && id>=20 && id<=21)CHECK(!strncmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+4)),"\vs75",4));
     if(id<32)built_rows|=1u<<id;CHECK(built_row_count<32);built_ids[built_row_count++]=id;
-    g_eax=0x200000+id*0x200;WORD_AT(g_eax+0x28)=WORD_AT(g_esp+12)|0x2000u;WORD_AT(g_eax+0x88)=current_menu;g_esp+=4;
+    g_eax=0x200000+id*0x200;WORD_AT(g_eax)=4;WORD_AT(g_eax+0xb0)=1;WORD_AT(g_eax+0x14)=id;fixture_link(g_eax);WORD_AT(g_eax+0x28)=WORD_AT(g_esp+12)|0x2000u;WORD_AT(g_eax+0x88)=current_menu;g_esp+=4;
 }
 static void call(uint32_t address,int selected,unsigned buttons)
 {
@@ -679,8 +725,8 @@ int main(int argc,char **argv)
         WORD_AT(g_esp+4)=0x510000;WORD_AT(g_esp+20)=callback;
         observed_callback_count=0;
         pc_display_menu_button(button_probe);
-        CHECK(observed_callback_count==3 && observed_callbacks[0]==PC_DISPLAY_MENU_CALLBACK);
-        CHECK(observed_callbacks[1]==KB_OPEN && observed_callbacks[2]==callback && WORD_AT(0x700014)==callback);
+        CHECK(observed_callback_count==2 && observed_callbacks[0]==PC_DISPLAY_MENU_CALLBACK);
+        CHECK(observed_callbacks[1]==callback && WORD_AT(0x700014)==callback);
         CHECK(WORD_AT(0x700004)==0x510000 && g_esp==0x700004 && g_eax==0x510000);
     }
     /* Pause Options supplies its own centered (or split-screen) style.
@@ -757,6 +803,86 @@ int main(int argc,char **argv)
         call(SD_SELECT,2,0);picker_result=1;storage_choose_ok=0;call(0x192770,2,0);
         CHECK(strstr(sd_notice,"not writable") && storage_continued==continued+1);
         WORD_AT(0x74f9ec)=7;call(0x192770,3,0);CHECK(WORD_AT(0x7a1564)==3);
+    }
+    /* Split Controls retains all native profile records for readers/actions,
+     * while only the selected section occupies the layout and input list. */
+    controls_test_enabled=1;controls_test_settings.sensitivity=.1;
+    controls_test_settings.enabled=1;tab_pointer_enabled=1;
+    WORD_AT(0x79094c)=101;call(0x2cbe50,0,0);
+    CHECK(native_control_opens[0]==1 && controls_tab==0);
+    WORD_AT(0x300004)=CONTROLS_DESCRIPTOR;call(0x2ea8e0,0,0);
+    CHECK(controls_font_menu(0x300000) && !controls_font_menu(0x320000));
+    unsigned general=(1u<<1)|(1u<<2)|(1u<<4)|(1u<<5)|(1u<<6)|(1u<<7)|(1u<<10)|(1u<<11);
+    unsigned controller=(1u<<0)|(1u<<3)|(1u<<8)|(1u<<9)|(1u<<10)|(1u<<11);
+    CHECK(fixture_native_rows()==general && separators==2);
+    CHECK(WORD_AT(0x200000+0xb0)==0 && WORD_AT(0x200200+0xb0)==1);
+    call(0x2eab30,1,0);CHECK(native_control_ticks==1 && fixture_native_rows()==general);
+    call(0x2cbe00,10,0);call(0x2d0970,11,0);
+    CHECK(native_control_actions==2 && fixture_native_rows()==general);
+    call(0x2eab30,CONTROLS_TABS_ID,0x80000);
+    CHECK(controls_tab==1 && fixture_native_rows()==controller && separators==2);
+    call(0x2ea210,0,0);CHECK(native_control_actions==3 && fixture_native_rows()==controller);
+    call(0x2eab30,3,0);CHECK(native_control_ticks==2 && fixture_native_rows()==controller);
+    /* Header navigation and keyboard IDs do not save or inherit native values. */
+    call(0x2eab30,CONTROLS_TABS_ID,0x80000);
+    CHECK(controls_tab==2 && kb_page==KB_HOME && controls_test_saves==0);
+    CHECK(built_ids[0]==CONTROLS_TABS_ID && kb_widget_id(0)==200);
+    CHECK(kb_local_id(200)==0 && kb_local_id(205)==5);
+    /* Mouse settings keep their live preview/debounced save and rollback. */
+    kb_refresh(KB_MOUSE,0);CHECK(WORD_AT(0x30018c)==kb_widget_id(0));clock_ms=20000;tab_pointer.left=0;
+    WORD_AT(kb_enabled_row+0xc8)=0;call(0x2eab30,kb_widget_id(0),0);
+    CHECK(kb_settings.enabled==0 && controls_test_previews==1 && !controls_test_saves);
+    clock_ms+=249;call(0x2eab30,kb_widget_id(0),0);CHECK(!controls_test_saves);
+    clock_ms++;call(0x2eab30,kb_widget_id(0),0);
+    CHECK(controls_test_saves==1 && controls_test_settings.enabled==0);
+    controls_test_save_ok=0;WORD_AT(kb_enabled_row+0xc8)=1;
+    clock_ms++;call(0x2eab30,kb_widget_id(0),0);
+    clock_ms+=250;call(0x2eab30,kb_widget_id(0),0);
+    CHECK(kb_settings.enabled==0 && !kb_mouse_changed && controls_test_saves==1);
+    controls_test_save_ok=1;kb_refresh(KB_HOME,0);
+    CHECK(controls_tabs_visible());kb_page=KB_CAPTURE;CHECK(!controls_tabs_visible());kb_page=KB_HOME;
+    uint32_t caption=controls_caption();controls_text(0,"Choose a binding");
+    CHECK(!strcmp((char *)(g_xbox_mem_offset+caption),"Controls"));
+    call(0x2eab30,CONTROLS_TABS_ID,0x80000);
+    CHECK(controls_tab==0 && fixture_native_rows()==general && controls_test_saves==1);
+    call(0x2e9fc0,0,0);CHECK(native_control_backs==1 && fixture_native_rows()==0xfff);
+    WORD_AT(0x79094c)=1;call(0x2ec1a0,0,0);
+    CHECK(native_control_opens[1]==1 && controls_tab==0);
+    call(0x2ea8e0,0,0);call(0x2e9e50,10,0);call(0x2e9ea0,11,0);
+    CHECK(native_control_actions==5 && fixture_native_rows()==general);
+    /* The same direct tab queue serves Controls in main and pause menus. */
+    slider_capture_enabled=1;WORD_AT(0x761c48)=0x410000;WORD_AT(0x410000)=1;
+    WORD_AT(0x4e8cf0)=640;WORD_AT(0x4e8cf4)=480;
+    for(unsigned paused=0;paused<2;paused++) {
+        WORD_AT(0x79094c)=paused?1:101;controls_tab=0;
+        controls_bounds[0]=20;controls_bounds[1]=30;controls_bounds[2]=320;controls_bounds[3]=54;
+        controls_bounds_valid=1;controls_left=1;controls_pending=-1;
+        WORD_AT(0x300038)=0;WORD_AT(0x3001b0)=1;
+        tab_pointer=(PcMenuPointer){397.5f,90,1920,1080,1,0,0,0};
+        CHECK(!menu_video_tabs_poll(0x300000));tab_pointer.left=1;
+        CHECK(menu_video_tabs_poll(0x300000) && controls_pending==0);
+        menu_video_tabs_flush();CHECK(controls_tab==0 && controls_pending==0);
+        tab_pointer.left=0;menu_video_tabs_poll(0x300000);
+        tab_pointer.x=847.5f;tab_pointer.left=1;
+        CHECK(menu_video_tabs_poll(0x300000) && controls_pending==2);
+        WORD_AT(0x3001b0)=3;menu_video_tabs_flush();
+        CHECK(controls_tab==2 && controls_pending==-1);
+        CHECK(!menu_video_tabs_poll(0x300000));
+        tab_pointer.left=0;menu_video_tabs_poll(0x300000);
+        tab_pointer.x=622.5f;tab_pointer.left=1;CHECK(menu_video_tabs_poll(0x300000));
+        menu_video_tabs_flush();CHECK(controls_tab==1);
+        tab_pointer.left=0;menu_video_tabs_poll(0x300000);
+        tab_pointer.x=397.5f;tab_pointer.left=1;CHECK(menu_video_tabs_poll(0x300000));
+        clock_ms+=1001;menu_video_tabs_flush();CHECK(controls_tab==1 && controls_pending==-1);
+    }
+    { /* Consumed or unmatched mouse Confirm must never cycle tabs. */
+        MenuMouseDispatch click={0};click.menu=controls_menu;click.injected=0x80u;
+        click.pointer=(PcMenuPointer){397.5f,90,1920,1080,1,0,0,0};
+        menu_mouse_dispatch=&click;controls_bounds_valid=0;
+        call(CONTROLS_TABS_SELECT,CONTROLS_TABS_ID,0);CHECK(controls_tab==1);
+        controls_bounds_valid=1;click.pointer.x=622.5f;
+        call(CONTROLS_TABS_SELECT,CONTROLS_TABS_ID,0);CHECK(controls_tab==1);
+        menu_mouse_dispatch=0;
     }
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");

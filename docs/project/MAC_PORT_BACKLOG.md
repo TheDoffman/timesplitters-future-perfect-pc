@@ -1,3 +1,13 @@
+Unified Controls (2026-11-03, local feature/unified-controls): shared menu source
+combines General Controls, Controller and Keyboard & Mouse under one entry,
+using the Video tab skin, compact fonts and native dividers. Native profile
+Accept/Cancel/Customize and keyboard live/debounced persistence remain intact.
+No new OS adapter is needed: existing guest dispatch, font and hover-pointer
+interfaces serve both hosts. Source/contracts: [Controls](../agent-context/controls-options.md).
+Windows shared fixtures and isolated main/pause visual evidence are recorded in
+[STATUS](STATUS.md). Native Mac visual/navigation acceptance remains pending;
+this local revision has not been synchronized or verified on a Mac.
+
 Direct Video tab targets (2026-11-03, local): shared mouse dispatch samples
 Video tab edges before native row gating and applies the latest target after
 the outer dispatcher returns. Hover pointers already exist on both hosts;

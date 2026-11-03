@@ -1,3 +1,26 @@
+## Unified Controls tabs (2026-11-03, local)
+
+Branch feature/unified-controls based on cd8544bf. One Controls entry replaces
+the separate controller/keyboard entries. General Controls contains Crosshair,
+Auto Aim, Auto Lookahead, Aim Mode, Crouch and Weapon Change; Controller contains
+Layout, Inverse Look, Vibration and Turn Speed; Keyboard & Mouse retains its
+existing pages. Tabs share the Video skin, compact fonts and native dividers.
+Native profile drafts, Accept/Cancel/Back/Customize and keyboard live/debounced
+saves, binding capture/conflicts/reset remain on their existing handlers.
+
+Windows focused shared UI/input tests:21 passed,2 native-Mac skips. Coverage
+includes complete native reader/action records across filtered tabs, both native
+entry points, keyboard ID isolation/focus, live preview, debounce, failed-save
+rollback, queued targets/expiry/held clicks and owned font restoration. Supported
+Release Build and built-in tests pass. Isolated live main/pause captures reviewed
+for all three tabs and Mouse options; frontend Customize, binding list/action,
+capture/cancel and return hierarchy exercised. Live frontend Crosshair change
+was discarded by Cancel and retained by Accept after reopening; Video Options
+rendering also rechecked after the shared tab-painter extraction. US XBE hash validated;
+no personal saves/configs used. Deeper native Customize keeps its original skin.
+Native Mac visual acceptance remains pending; shared source needs no new adapter.
+Contracts/test routes: [Controls](../agent-context/controls-options.md).
+
 ## Direct queued Video tab clicks (2026-11-03, local)
 
 Follow-up to aafb21e0 after the user still observed dropped fast clicks. The

@@ -8,6 +8,11 @@
 #include "graphics/graphics_settings.h"
 #define KB_OPEN 0x1200fu
 static uint32_t kb_caption(void);
+static uint32_t controls_caption(void);
+static int controls_native_button(void (*original)(void));
+static int controls_font_menu(uint32_t menu);
+static int controls_tabs_poll(uint32_t menu);
+static void controls_tabs_flush(void);
 #include "pc_display_memory.h"
 #include "pc_prompts.h"
 #ifdef TSFP_PC_DISCORD
@@ -273,6 +278,7 @@ void pc_display_menu_button(void (*original)(void))
     const int frontend=callsite==0x002CC116u && callback==0x002CBE50u;
     const int paused=callsite==0x002F561Cu && callback==0x002EC1A0u;
     GuestRegisters r;
+    if(controls_native_button(original))return;
     pc_story_network_pause_style();
     if(pc_story_menu_button(original)) return;
 
@@ -346,11 +352,9 @@ void pc_display_menu_button(void (*original)(void))
         }
     }
     restore_registers(&r);
-    if(kb_caption()) {
-        push(0);push(KB_OPEN);push(0);push(0);push(UINT32_MAX);push(kb_caption());push(callsite);
-        original();restore_registers(&r);
-    }
-    original();
+    uint32_t frame=g_esp,old_caption=WORD_AT(frame+4),label=controls_caption();
+    if(label)WORD_AT(frame+4)=label;
+    original();WORD_AT(frame+4)=old_caption;
 }
 
 
@@ -978,8 +982,7 @@ static void settings_build(void)
     guest_call(sub_00071C50,1,0x26200u);
     guest_call(sub_00079D60_gen,6,audio_options_caption(),UINT32_MAX,0u,0u,0x002CBE10u,0u);
     guest_call(sub_00079D60_gen,6,video_caption,UINT32_MAX,0u,0u,PC_DISPLAY_MENU_CALLBACK,0u);
-    if(kb_caption())guest_call(sub_00079D60_gen,6,kb_caption(),UINT32_MAX,0u,0u,KB_OPEN,0u);
-    guest_call(sub_00079D60_gen,6,guest_call(sub_0003D7B0,1,0x17A4u),UINT32_MAX,0u,0u,0x002CBE50u,0u);
+    guest_call(sub_00079D60_gen,6,controls_caption(),UINT32_MAX,0u,0u,0x002CBE50u,0u);
     if(WORD_AT(0x005236C4u)>1u) {
         uint32_t selector=guest_call(sub_00079D60_gen,6,guest_call(sub_0003D7B0,1,0x39Cu),0u,0u,0u,0u,0u);
         guest_call(sub_0007D480,2,0xA000u,0u);
@@ -1453,7 +1456,12 @@ static void online_activate(void)
 #include "pc_story_browser.inc"
 #include "pc_story_load.inc"
 
+extern void sub_00079710(void);
+static int controls_frame(uint32_t menu,const char *subtitle);
+static void controls_leave(void);
+static void controls_padding(int count);
 #include "pc_keyboard_menu.inc"
+#include "pc_controls_menu.inc"
 #include "pc_storage_menu.inc"
 #include "pc_unlock_menu.inc"
 
@@ -1500,7 +1508,17 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case 0x00192770u:return sd_profile_tick;
     case SD_SELECT:return sd_select;
     case SD_DRAW:return sd_draw;
-    case KB_OPEN:return kb_open;
+    case 0x002CBE50u:return controls_open;
+    case 0x002EC1A0u:return controls_open;
+    case 0x002EA8E0u:return controls_build;
+    case 0x002EAB30u:return controls_tick;
+    case 0x002E9FC0u:return controls_font_menu(WORD_AT(g_esp+4u))?controls_back:NULL;
+    case 0x002CBE00u:case 0x002E9E50u:return controls_font_menu(WORD_AT(g_esp+4u))?controls_accept:NULL;
+    case 0x002D0970u:case 0x002E9EA0u:return controls_font_menu(WORD_AT(g_esp+4u))?controls_cancel:NULL;
+    case 0x002EA210u:return controls_font_menu(WORD_AT(g_esp+4u))?controls_customize:NULL;
+    case CONTROLS_TABS_DRAW:return controls_tabs_draw;
+    case CONTROLS_TABS_SELECT:return controls_tabs_select;
+    case KB_OPEN:return controls_open_keyboard;
     case KB_BUILD:return kb_build;
     case KB_TICK:return kb_tick;
     case KB_SELECT:return kb_select;
