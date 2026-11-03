@@ -91,8 +91,8 @@ than shifting by half a pixel; 100% is an exact copy and 200% averages each 2x2
 footprint. Legacy GL uses the same scene-size policy and its existing linear
 framebuffer blit; native rendering and fractional-scale quality remain unverified.
 New game/launcher preferences remain restart-required on every host.
-Video Options retains the 1.6 native text/row scale and ten-row section heights;
-Advanced replaces one spacer with supersampling so Apply stays above the footer.
+Video Options uses 1.2 native row spacing, a 78%-width panel and eight-row section heights;
+Unused spacer rows are reduced equally across tabs so Apply stays above the footer.
 Its compact "Supersampling (restart)" label also fits the narrower pause panel.
 
 Checks extend `test_graphics_options.py` (all wire-format/preset round trips,
@@ -147,7 +147,9 @@ one scale derived from the largest measured caption and the painted cell,
 keeping horizontal/vertical padding in the narrower paused panel. Font globals
 are flushed and restored around custom tab painting.
 `src/interface/pc_graphics_menu.inc` supplies the Graphics tab's controls.
-Native changes save immediately; failed writes restore the selector. The launcher
+Live graphics changes save immediately; failed writes restore the selector. MSAA
+and supersampling stay staged across tabs until Apply. Leaving without Apply
+discards those restart-only drafts. The launcher
 uses its normal Save workflow. MSAA requires restart and is labeled accordingly;
 FXAA, AF, AO and the counter update live. Cache operations re-read the preference.
 Switching tabs retains pending display/texture/subtitle changes. Apply still
@@ -308,11 +310,15 @@ remain unverified for this follow-up. No commit, push or publication performed.
 
 ### Compact tabs and restart handoff (2026-11-02)
 
-Video Options uses native font scale 1.6 instead of 2.0. Rounded tab backgrounds
+Video Options uses 1.2 native row spacing alongside the separate compact glyph scope. Rounded tab backgrounds
 use disjoint strips, and captions are centered using the guest font measurement.
-The shared menu prompts Later/Restart Now after a successfully saved MSAA change;
+The shared menu prompts Later/Restart Now only after Apply successfully saves
+staged MSAA/supersampling changes; browsing choices never opens that dialog.
+Apply stays enabled for restart-only edits, including after switching tabs;
 Later is the default and Back cancels the prompt. It warns that restarting leaves
-the current game. Failed persistence restores the selection without restarting.
+the current game. Failed persistence leaves the draft available for retry and
+never opens the restart dialog. A later post-AA save failure restores the prior
+restart preferences as part of the display/rate batch rollback.
 `src/interface/pc_game_restart.inc` preserves command arguments, working directory
 and the launch environment. Windows passes an inherited synchronization handle
 using a restricted handle list; POSIX passes a pipe and waits for parent exit.
@@ -398,10 +404,18 @@ Native Mac GPU4168ae8d passes all shared pixel assertions including AO flat/fore
 ### Paused Video Options typography
 
 The common row-font hook admits paused Video Options only when the menu identity
-matches the active Video callback table. Its row glyphs then use the same 75%
-two-axis scale as the front-end. Other pause menus, HUD/gameplay text and foreign
+matches the active Video callback table. Video settings labels and choice text
+use a 65% two-axis glyph scale in both front-end and pause. Patch2518 wraps the
+original76810 complete menu painter so selected values and row labels share
+that scale. Nested label hooks skip a second reduction and the original font
+state/filter is restored on exit. The surrounding
+front-end menus retain their existing 75% scale. Other pause menus, HUD/gameplay text and foreign
 menu descriptors retain their native scale. Custom tabs also fit their actual
 guest-measured bounds to the available cells through `pc_ui_caption_fit`; drawing
 and centering use the same scaled measurements and hit testing keeps the painted
 cell bounds. Shared UI fixtures cover owned/unowned pause font scopes, restoration,
 width/height fitting, no enlargement and invalid measurements.
+
+Settings row spacing and panel width shrink together with typography. Native
+row bounds drive both focus painting and pointer selection; the smaller visible
+rows retain matching mouse hit areas in main/pause and all tabs.

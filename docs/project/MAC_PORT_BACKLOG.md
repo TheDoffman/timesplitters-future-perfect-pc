@@ -1,3 +1,10 @@
+Apply-only restart prompts and compact settings font (2026-11-02): shared Video
+Options stages MSAA/supersampling until Apply, preserves drafts across tabs,
+discards on leaving and rolls back restart values if a later save fails. Owned
+Video settings labels/choice text use65% glyph scale; foreign menus retain their
+existing fonts. Main/pause share these guest rules on all hosts. Native Mac
+visual review and full-game restart acceptance remain pending.
+
 Paused Video Options fit (2026-11-02, PR472 follow-up): shared guest row-font
 scope now admits only this menu during pause; custom tabs fit measured caption
 bounds and restore font state. Shared fixture coverage includes pause ownership,

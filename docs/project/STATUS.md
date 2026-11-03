@@ -1,3 +1,27 @@
+## Apply-only restarts and compact Video Options (2026-11-03, local development)
+
+Branch fix/restart-on-apply based on c32c6f5e. MSAA/supersampling remain drafts
+across tab changes until Apply; Back out of Video Options discards them. Apply
+saves both together and shows one Later/Restart Now prompt only after successful
+saves. Returning a choice to its saved value disables Apply; failed saves retain
+the draft and do not prompt. Later does not repeat the prompt. A failed post-AA
+save restores any restart fields already saved in that Apply batch.
+Settings typography is scoped to the whole original76810 menu painter by
+additive2518: selected values and labels share65% glyph scale, nested row hooks
+avoid double scaling, and foreign menus/font state remain unchanged. Video
+Options uses1.2 row spacing,78% panel width and eight equal-height rows per tab
+so focus bounds/pointer regions follow the compact layout.
+Windows Build/built-ins pass. FOV/UI tests15pass2Macskips; whole-font/nested and
+foreign-scope coverage included. Additional overlay/options regressions14pass;
+repository-context20pass; fresh/repeated/graphics-branch migrations3pass.
+Real front-end captures confirm smaller labels/values, no dialog after changing
+150% to200%, and a single restart prompt after Apply with200% persisted. Pause
+Apply behavior was also observed. Final compact pause Display, Graphics, View &
+HUD and Advanced captures were reviewed: selected values match the smaller
+labels, the eight-row panel is shorter, and all controls/Apply fit.
+Native Mac visual/full-game restart validation remains unrun; no push or merge
+has been performed for this follow-up. Personal config/saves remain untouched.
+
 PR472 full macOS native suite: 2640 passed, 396 skipped; 22 texture harness
 setup errors share one missing native_hud_restore stub in the extracted present
 fixture. The fixture now models its absent HUD targets explicitly; production

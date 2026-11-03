@@ -100,6 +100,7 @@ void pc_display_footer_background(void (*original)(void));
 void pc_display_title_matte(void (*original)(void));
 void pc_display_menu_backdrop(void (*original)(void));
 void pc_display_main_menu_font(void (*original)(void),int building);
+void pc_display_video_menu_font(void (*original)(void));
 void pc_display_radar_begin(void);
 void pc_display_health(void (*original)(void));
 void pc_display_health_side(void);

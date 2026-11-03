@@ -1,0 +1,19 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -1917,6 +1917,16 @@
+     pc_display_main_menu_font(sub_002D0BE0_gen,1);
+ #else
+     sub_002D0BE0_gen();
++#endif
++}
++
++extern void sub_00076810_gen(void);
++void sub_00076810(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_display_video_menu_font(sub_00076810_gen);
++#else
++    sub_00076810_gen();
+ #endif
+ }
+ 

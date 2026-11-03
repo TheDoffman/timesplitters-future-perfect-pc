@@ -375,6 +375,7 @@ static int mode_count, selected_mode, page, staged_fov, previous_fov;
 static int staged_rate, applied_rate;
 static unsigned applied_texture;
 static unsigned staged_aa,applied_aa;
+static int staged_msaa=1,staged_supersampling;
 static uint32_t post_aa_row;
 static uint32_t apply_row;
 static uint32_t rate_row,subtitle_row,feed_row,counter_row;
@@ -1024,7 +1025,11 @@ static void fov_draw(void)
     restore_registers(&r); g_esp+=4;
 }
 static void refresh(int next,int selected);
-static int msaa_restart_prompt;
+static int graphics_restart_dirty(void)
+{
+    TsfpGraphicsOptions saved=pc_graphics_get();
+    return staged_msaa!=saved.msaa || staged_supersampling!=saved.supersampling;
+}
 static void filter_modes(void)
 {
     mode_count=pc_display_filter_modes(all_modes,all_mode_count,selected_aspect,
@@ -1042,7 +1047,7 @@ static int mode_equal(PcDisplayMode a,PcDisplayMode b)
 static int display_dirty(void)
 {
     return !mode_equal(staged,previous) || staged_fov!=previous_fov ||
-        staged_rate!=applied_rate || texture_choice!=applied_texture || staged_subtitles!=applied_subtitles || staged_aa!=applied_aa;
+        staged_rate!=applied_rate || texture_choice!=applied_texture || staged_subtitles!=applied_subtitles || staged_aa!=applied_aa || graphics_restart_dirty();
 }
 static void update_apply(void)
 {
@@ -1115,7 +1120,7 @@ static void labels(void)
     } else { row(0,"Keep changes");row(1,"Revert"); }
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
         /* Reserve equal section heights so tabs do not move under the cursor. */
-        int padding=page==DISPLAY_HOME?5:page==DISPLAY_VIEW?4:2;
+        int padding=page==DISPLAY_HOME?3:page==DISPLAY_VIEW?2:0;
         for(int i=0;i<padding;i++)
             guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(MODE_TEXT_BASE+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT+3),
                 (uint32_t)(110+i),4u,0u,0u,0u);
@@ -1153,8 +1158,8 @@ static void build_menu(void)
     GuestRegisters r;uint32_t menu=WORD_AT(g_esp+4);
     save_registers(&r);current_menu=menu;
     guest_call(sub_00075B70,5,0xa000u,text_at(0,"%s",page==DISPLAY_CONFIRM?"Keep changes?":page==DISPLAY_RESTART?"Restart game?":"Video Options"),
-        bits(page==DISPLAY_CONFIRM?55.f:85.f),0u,BACK_CB);
-    guest_call(sub_00071B10,4,1u,bits(1.6f),1u,1u);
+        bits(page==DISPLAY_CONFIRM?55.f:78.f),0u,BACK_CB);
+    guest_call(sub_00071B10,4,1u,bits(1.2f),1u,1u);
     guest_call(sub_00071C50,1,0x26200u);
     labels();guest_call(sub_000771D0,1,menu);
     restore_registers(&r);g_esp+=4;
@@ -1202,6 +1207,8 @@ static void apply_changes(void)
 {
     int display_changed=!mode_equal(staged,previous) || staged_fov!=previous_fov;
     int rate_changed=staged_rate!=applied_rate,display_saved=0,rate_saved=0;
+    int restart_changed=graphics_restart_dirty(),graphics_saved=0;
+    TsfpGraphicsOptions previous_graphics=pc_graphics_get();
     /* Resolution is already previewed/confirmed. Persist before publishing
      * FPS/texture changes so a failed save leaves those running values alone. */
     pc_display_set_fov(staged_fov);
@@ -1211,6 +1218,12 @@ static void apply_changes(void)
     }
     if(rate_changed && !pc_frame_rate_save(pc_frame_rate_value(staged_rate)))goto failed;
     rate_saved=rate_changed;
+    if(restart_changed) {
+        TsfpGraphicsOptions next=pc_graphics_get();
+        next.msaa=staged_msaa;next.supersampling=staged_supersampling;
+        if(!pc_graphics_set(&next))goto failed;
+        graphics_saved=1;
+    }
     if(staged_aa!=applied_aa && !pc_post_aa_set(staged_aa))goto failed;
     if(rate_changed)recomp_config_request_native_rate(pc_frame_rate_value(staged_rate));
     if(staged_subtitles!=applied_subtitles) {
@@ -1227,13 +1240,19 @@ static void apply_changes(void)
     previous=staged;previous_fov=staged_fov;applied_rate=staged_rate;applied_texture=texture_choice;
     applied_aa=staged_aa;
     deadline=0;*status=0;filter_modes();
-    refresh(DISPLAY_HOME,0);
+    refresh(restart_changed?DISPLAY_RESTART:DISPLAY_HOME,restart_changed?2:0);
     return;
 failed:
     pc_display_set_fov(previous_fov);
     int restored=mode_equal(pc_display_current(),previous) || pc_display_apply(previous);
     int rate_restored=!rate_saved || pc_frame_rate_save(pc_frame_rate_value(applied_rate));
-    int saved_back=(!display_saved || (restored && pc_display_save())) && rate_restored;
+    int graphics_restored=1;
+    if(graphics_saved) {
+        TsfpGraphicsOptions undo=pc_graphics_get();
+        undo.msaa=previous_graphics.msaa;undo.supersampling=previous_graphics.supersampling;
+        graphics_restored=pc_graphics_set(&undo);
+    }
+    int saved_back=(!display_saved || (restored && pc_display_save())) && rate_restored && graphics_restored;
     snprintf(status,sizeof status,saved_back?"Could not save changes. Please try again.":"Could not restore saved display settings.");
     if(!restored) { deadline=GetTickCount64();return; }
     deadline=0;refresh(DISPLAY_HOME,0);
@@ -1281,9 +1300,6 @@ static void tick_menu(void)
 {
     GuestRegisters r;uint32_t menu=WORD_AT(g_esp+4);save_registers(&r);
     read_choices();
-    if(msaa_restart_prompt && page==DISPLAY_ADVANCED) {
-        msaa_restart_prompt=0;refresh(DISPLAY_RESTART,2);
-    }
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
         unsigned actual=(unsigned)tsfp_texture_is_4k();
         if(actual!=applied_texture) {
@@ -1338,6 +1354,8 @@ static void activate(void)
         staged_rate=applied_rate=pc_frame_rate_choice(pc_native_rate());
         texture_choice=applied_texture=(unsigned)tsfp_texture_is_4k();*status=0;
         staged_aa=applied_aa=pc_post_aa_get();
+        TsfpGraphicsOptions graphics=pc_graphics_get();
+        staged_msaa=graphics.msaa;staged_supersampling=graphics.supersampling;
         {
             extern void sub_00069640(void);
             uint32_t profile=guest_call(sub_00069640,0);
