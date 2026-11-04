@@ -1,3 +1,23 @@
+## Fab keyboard/mouse prompt artwork (2026-11-04, local)
+
+Branch `feature/fab-input-prompts` from main63896020; Windows x64/MSVC,
+shared Xbox/Vulkan UI path. Rendrify's CC BY4.0 pack is decoded from the acquired
+Unreal asset packages to100 original128px PNGs kept locally. A manifest maps107
+physical inputs plus generic Mouse, with SHA-256 provenance. Shared native glyph
+callbacks render a compiled32px RGBA derivative and preserve original native
+text measurement, tint, fades and controller glyphs. Missing keys and composite
+labels keep outlined fallbacks. Bindings and settings persistence are unchanged.
+The importer deduplicates identical idle/pressed images and aliases; this pack
+supplies no separate pressed artwork. Transparent margins are compensated when
+placing icons. Root NOTICE and asset attribution retain the creator/license.
+
+Windows focused suite36 passed,2 native Mac skips; package writers22 passed
+with2 subtests (Mac packaging uses synthetic host fixtures). Supported Release Build and
+built-in tests pass. Isolated main/pause sections, binding lists and assignment/
+capture dialogs were rendered and reviewed. Mac build/visual acceptance remains
+pending; existing shared font/quad/input adapters require no new OS adapter.
+This is a local preview, not a published release or a main-branch update.
+
 ## Shared keyboard/mouse keycaps (isolated local work)
 
 Keyboard/mouse prompts use rounded outlined keycaps through the translated

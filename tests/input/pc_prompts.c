@@ -397,6 +397,9 @@ int main(int argc,char **argv)
     CHECK(pc_prompts_keycap_label("Wheel up",8));
     CHECK(pc_prompts_keycap_label("Left/Right",10));
     CHECK(pc_prompts_keycap_label("<",1));
+    CHECK(pc_prompts_keycap_key("E",1)=='E');
+    CHECK(pc_prompts_keycap_key("<",1)==VK_LEFT);
+    CHECK(pc_prompts_keycap_key("Not a key",9)==-1);
     pc_prompts_keyboard();
     CHECK(pc_prompts_rewrite("[Left] Previous tab [Right] Next tab",text,sizeof text));
     CHECK(!strcmp(text,"[<] Previous tab [>] Next tab"));

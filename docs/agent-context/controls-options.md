@@ -1,5 +1,25 @@
 # Unified Controls options
 
+Imported PNG prompts can replace recognized single-key labels through
+`pc_input_icons.inc`, using generated `pc_input_icon_data.inc` lookup/span data.
+`tools/graphics/import-input-icons.py` reads an attributed asset manifest, validates
+128px source PNGs and virtual-key uniqueness, and packs 32px antialiased RGBA runs.
+Absent icon data or unmapped keys retain the original keycap renderer. Input
+lookup uses cached localized key names; held states require both raw and focused
+input. Imported images use square placement, native RGB tint/fade and the unclipped
+solid-quad emitter; original text advances remain authoritative.
+Rendrify's CC BY4.0 artwork supplies107 physical inputs plus generic Mouse;
+Escape/Space/side buttons and composites retain outlined fallbacks. Manifest
+slot0 is generic Mouse only, never Unbound. Source PNGs stay private; the importer
+accepts `--source-dir`, verifies manifest SHA-256 and deduplicates shared images.
+Attribution/modifications are in `assets/ui/input-icons/ATTRIBUTION.md` and NOTICE.
+Windows release/playable and native Mac packagers retain the complete credit
+as `Licenses/Keyboard-mouse-icons.txt`.
+The compiled span include ships in source; builds need no artwork download.
+Tests use synthetic image data, covering lossless packing, path bounds, duplicate
+keys, pressed/idle selection and original mouse/controller fallback; CI runs both
+the importer and shared glyph fixtures on its supported hosts.
+
 Keyboard/mouse prompts use shared outlined keycaps. Additive2340 scopes the
 translated40FA0 draw and wraps its native40260 glyph callback, also routing
 alternate402D0 callbacks through the shared menu lookup. The renderer replaces

@@ -24,6 +24,11 @@ Existing notices in source files and patches must also be preserved.
 
 ## Other dependencies and artwork
 
+- Keyboard/mouse prompt images are Rendrify's PC Keyboard & Mouse Icon Pack,
+  under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+  [Attribution and modifications](../assets/ui/input-icons/ATTRIBUTION.md)
+  accompany the generated native UI data; public game packages retain the full
+  credit as `Licenses/Keyboard-mouse-icons.txt`. Root NOTICE also credits it.
 - SDL and FFmpeg keep the licenses supplied in their pinned dependency folders.
   Public game ZIPs retain these in `Licenses/SDL.txt` and
   `Licenses/FFmpeg-LGPL-3.0.txt`.

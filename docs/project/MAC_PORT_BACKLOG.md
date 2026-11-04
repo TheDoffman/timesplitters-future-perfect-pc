@@ -1,3 +1,13 @@
+Imported prompt artwork (local feature/fab-input-prompts): shared
+`pc_keycaps.inc`, `pc_input_icons.inc` and generated span data use Rendrify's
+CC BY4.0 keyboard/mouse artwork with native tint/fade and original text advances.
+Key-name lookup remains shared. No new OS/font/graphics adapter is needed;
+Mac build and visual acceptance are pending (main/pause footer fit, binding and
+capture dialogs, device switch, remapped/missing keys and tutorial/HUD wrapping).
+Windows shared fixtures, supported Build and isolated menu review are recorded
+in [STATUS](STATUS.md). Source PNGs stay local; attributed compiled data travels
+with Git, so another host needs no Fab sign-in or image tooling to build.
+
 Keycap prompts (local feature/flat-settings-menu, uncommitted): shared
 pc_keycaps.inc and pc_prompts vocabulary plus additive2340 render keyboard/mouse
 prompts through native glyph geometry. Binding-menu cells share the renderer.
