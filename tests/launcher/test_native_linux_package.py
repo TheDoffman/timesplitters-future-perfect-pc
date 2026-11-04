@@ -20,7 +20,7 @@ def payload(root):
     for name in names:
         p=root/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(b'fixture')
     (root/'BUILD.json').write_text('{}')
-    (root/'Support/Runtime/dependency-audit.json').write_text(json.dumps(dict(components={},source_packages={})))
+    (root/'Support/Runtime/dependency-audit.json').write_text(json.dumps(dict(components={},source_packages={},data_components={'Support/Desktop/share/mime/packages/freedesktop.org.xml':dict(sha256=package.digest(root/'Support/Desktop/share/mime/packages/freedesktop.org.xml'))})))
     return dict(media=dict(archive='source.tar.gz',sha256=package.digest(root/'Source/FFmpeg/source.tar.gz')),files={name:package.digest(root/name) for name in names})
 
 def test_launcher_sidecars_cannot_be_silently_rehashed(tmp_path):
@@ -43,7 +43,7 @@ def test_release_assets_pin_actual_preview_and_launcher_without_publishing(tmp_p
     archive.write_bytes(b'archive')
     manifest=dict(version='v0.4.2-linux-experimental.1',packaging_commit='a'*40,
         release_channel=dict(schema=1,channel='linux-experimental',name='Linux Experimental Preview',minimum_launcher='1.4.0'))
-    package.write_release_assets(tmp_path,manifest,archive)
+    package.write_release_assets(manifest,archive)
     notes=archive.with_suffix('.notes.md').read_text()
     metadata=json.loads(notes.split('<!-- tsfp-release ',1)[1].split(' -->',1)[0])
     assert metadata['channel']=='linux-experimental' and metadata['minimum_launcher']=='1.4.0'
@@ -93,3 +93,11 @@ def test_game_entrypoint_uses_xdg_and_preserves_settings(tmp_path):
 def test_companion_source_layout_is_complete():
     for name in package.COMPANION:
         assert package.repo_file(ROOT,'tools',name).is_file(),name
+
+
+def test_desktop_data_provenance_is_required(tmp_path):
+    manifest=payload(tmp_path)
+    audit=tmp_path/'Support/Runtime/dependency-audit.json'
+    report=json.loads(audit.read_text());report['data_components']={}
+    audit.write_text(json.dumps(report));manifest['files'][audit.relative_to(tmp_path).as_posix()]=package.digest(audit)
+    with pytest.raises(ValueError,match='desktop data audit'):package.verify_payload(tmp_path,manifest)

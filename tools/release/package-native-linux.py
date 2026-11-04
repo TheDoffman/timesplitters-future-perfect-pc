@@ -154,11 +154,15 @@ def verify_payload(stage,manifest):
     if digest(stage/'Source/FFmpeg'/archive)!=media.get('sha256'):raise ValueError('FFmpeg source archive checksum mismatch')
     audit=json.loads((stage/'Support/Runtime/dependency-audit.json').read_text())
     if set(audit.get('components',{}))!={name for name in files if elf(stage/name)}:raise ValueError('Incomplete ELF provider audit')
+    data=audit.get('data_components',{})
+    if set(data)!={'Support/Desktop/share/mime/packages/freedesktop.org.xml'}:raise ValueError('Incomplete desktop data audit')
+    for name,record in data.items():
+        if record.get('sha256')!=files.get(name):raise ValueError('Desktop source data checksum mismatch')
     for source in audit.get('source_packages',{}).values():
         for name,sha in source['files'].items():
             if files.get(name)!=sha:raise ValueError('Incomplete corresponding sources')
 
-def write_release_assets(stage,manifest,archive_path):
+def write_release_assets(manifest,archive_path):
     """Prepare reviewable upload assets; never create a tag or contact GitHub."""
     archive_path.with_suffix('.zip.sha256').write_text(digest(archive_path)+'  '+archive_path.name+'\n')
     archive_path.with_suffix('.BUILD.json').write_text(json.dumps(manifest,indent=2)+'\n')
@@ -286,5 +290,5 @@ def main():
     with zipfile.ZipFile(archive_path) as archive:
         if archive.testzip():raise ValueError('Corrupt Linux package')
     subprocess.run([str(stage/'TimeSplitters.Launcher'),'--verify-game-package',str(archive_path),args.version],check=True,timeout=60)
-    write_release_assets(stage,manifest,archive_path);print(archive_path)
+    write_release_assets(manifest,archive_path);print(archive_path)
 if __name__=='__main__':main()

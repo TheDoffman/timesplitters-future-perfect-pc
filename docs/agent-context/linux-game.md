@@ -417,3 +417,6 @@ Clean-userspace read-only mount paths include spaces/Unicode for game and data.
 `linux-arcade-release.json` reuses the shared rocket-impact Arcade menu route
 through bounded SDL keys/mouse on a disposable Test Lab profile. Captures must
 establish actual Arcade gameplay; mere script completion is not acceptance.
+
+Payload validation requires the dynamically loaded desktop components and
+checks the shipped MIME source input against its separate data provenance hash.
