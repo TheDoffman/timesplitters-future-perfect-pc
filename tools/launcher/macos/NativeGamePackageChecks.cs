@@ -11,7 +11,7 @@ namespace TimeSplitters.Launcher
             string test=Path.Combine(Path.GetTempPath(),"tsfp-native-game-package-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(test);
             try {
                 foreach(bool preserve in new[]{false,true}){
-                    string root=Path.Combine(test,preserve?"existing":"fresh"),pending=Path.Combine(root,".launcher/pending");Directory.CreateDirectory(pending);
+                    string root=Path.Combine(test,preserve?"existing installation Ω":"fresh installation Ω"),pending=Path.Combine(root,".launcher/pending");Directory.CreateDirectory(pending);
                     void Write(string name,string value){string path=Core.PathIn(root,name);Directory.CreateDirectory(Path.GetDirectoryName(path));File.WriteAllText(path,value);}
                     if(preserve){Write("Data/keep","game data");Write("Saves/keep","save");Write("Settings/pc-controls.json","personal controls");Write("Settings/pc-display.ini","personal display");}
                     Core.Unpack(archive,Path.Combine(pending,"payload"),version);Core.Write(Path.Combine(pending,"release.json"),Json.Encode(new{version=version}));Core.InstallPending(root);
@@ -26,6 +26,15 @@ namespace TimeSplitters.Launcher
                         if(!child.WaitForExit(30000)){child.Kill(true);throw new InvalidDataException("Installed Python timed out");}
                         Core.Require(child.ExitCode==0,"Installed Python/Tk/TLS failed");
                     }
+                    #if LINUX
+                    string query=Core.PathIn(root,"Support/Desktop/gdk-pixbuf-query-loaders");
+                    var loader=new System.Diagnostics.ProcessStartInfo(query){UseShellExecute=false,RedirectStandardOutput=true,RedirectStandardError=true};
+                    loader.ArgumentList.Add(Core.PathIn(root,"Support/Desktop/pixbuf/libpixbufloader-svg.so"));
+                    using(var child=System.Diagnostics.Process.Start(loader)){
+                        string output=child.StandardOutput.ReadToEnd();string error=child.StandardError.ReadToEnd();
+                        Core.Require(child.WaitForExit(30000)&&child.ExitCode==0&&output.Contains("image/svg+xml")&&error.Length==0,"Installed GTK loader failed: "+error);
+                    }
+#endif
                     string exe=Core.PathIn(root,LauncherPlatform.GameBinary);byte original;
                     using(var stream=new FileStream(exe,FileMode.Open,FileAccess.ReadWrite)){original=(byte)stream.ReadByte();stream.Position=0;stream.WriteByte((byte)(original^1));}
                     bool rejected=false;try{NativeHost.CheckBuild(root);}catch(InvalidDataException){rejected=true;}

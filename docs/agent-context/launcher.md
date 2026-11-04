@@ -650,3 +650,7 @@ guidance. Older games/launchers cannot consume non-default V2 graphics files.
 Linux installed executable modes also preserve the bundled GTK module-query
 tool; clean-userspace launcher UI acceptance detects dynamic session libraries
 that do not appear in ELF imports. See [Linux release checks](linux-game.md).
+
+Native game-package checks now install into fresh/upgrade paths containing
+spaces and Unicode. Linux additionally executes the installed GTK SVG query
+helper, checking its executable mode and relocated module closure.

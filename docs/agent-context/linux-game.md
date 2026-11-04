@@ -405,3 +405,11 @@ relative motion, wheel and five mouse buttons with finite magnitude limits.
 pause/resume, weapon selection and reload in a 300-second isolated Story run.
 Host-present resource/timing observations remain separate from full-campaign
 or hardware input-device acceptance.
+
+Release packaging requires a clean tracked tree. Successful verification emits
+ZIP/SHA256, external BUILD.json and reviewable notes with the named channel,
+actual bundled minimum launcher, packaging commit and Linux-only platform list.
+No tag, release, upload or network request is made by this preparation.
+The shared native game installer verifier uses spaces/Unicode in fresh and
+upgrade folders; Linux also executes the installed SVG module-query helper.
+Clean-userspace read-only mount paths include spaces/Unicode for game and data.
