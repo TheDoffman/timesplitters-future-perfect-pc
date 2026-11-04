@@ -87,11 +87,17 @@ def test_original_actor_voice_clock(tmp_path):
         # Mutations disable only the original generation checks, never production.
         for target in ('00164EC6','00164F52'):
             branches = list(re.finditer(r'if \(([^\n]+)\) goto loc_'+target+r'; /\* jne:', code))
-            assert len(branches)==1
-            condition = branches[0][1]
-            assert '_fa' in condition and '_fb' in condition and '_flags' not in condition
-            needle = f'if ({condition}) goto loc_{target};'
-            code = code.replace(needle,f'if (!ignore_generation && ({condition})) goto loc_{target};')
+            # Status-aware lowering retains the legacy expression in its else
+            # path. Mutate both routes of this one guest instruction.
+            legacy=[branch for branch in branches if 'tsfp_status_condition' not in branch[1]]
+            status=[branch for branch in branches if 'tsfp_status_condition(&g_status_flags,' in branch[1]]
+            assert len(legacy)==1 and len(status)<=1 and len(branches)==len(legacy)+len(status)
+            for branch in branches:
+                condition=branch[1]
+                assert '_fa' in condition and '_fb' in condition
+                needle=f'if ({condition}) goto loc_{target};'
+                assert code.count(needle)==1
+                code=code.replace(needle,f'if (!ignore_generation && ({condition})) goto loc_{target};')
         source = (ROOT/'tests/gameplay/native_actor_voice_clock.c').read_text()
         defined = set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',source+code))
         parent = pieces[0x1ce2e0]
@@ -953,7 +959,12 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             ('if(candidate)RECOMP_DIRECT_CALLEE_AT(0xc5ad6u,sub_000C54A0)();',
              'if(candidate)sub_000C54A0();'),
         ):
-            assert source.count(needle)==1,needle
+            count=source.count(needle)
+            if needle.startswith('RECOMP_FLOAT_BRANCH_AT('):
+                assert count in (1,2),needle
+                if count==2:
+                    assert re.search(r'tsfp_status_condition[^\n]*'+re.escape(needle),source)
+            else:assert count==1,needle
             with pytest.raises(AssertionError,match='distance>.001f'):
                 compile_and_run(tmp_path,source.replace(needle,replacement))
         print(output)

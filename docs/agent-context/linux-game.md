@@ -437,3 +437,9 @@ settings/precision fixtures. Their non-Windows strict-C11 compiler commands now
 select _DEFAULT_SOURCE, matching the existing native transport fixture. This
 exposes setenv/fileno without weakening implicit-declaration diagnostics or
 changing production code; Windows flags remain unchanged.
+
+Private original-code timing checks also select glibc default declarations in
+the shared compile-and-run helper. Actor-generation and walk-contact mutation
+checks recognize the compiler's status-aware branch plus legacy fallback as
+two routes of one guest instruction and mutate both. Existing stale-generation
+and contact-distance negative controls must still fail; production is untouched.
