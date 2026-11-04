@@ -1,3 +1,9 @@
+Controller detection/reconnect follow-up (local after cc8b05fb): shared presence
+mask provisioning, Automatic labels and SDL patch2360 need no separate host
+implementation. Windows automated tests include real SDL virtual reconnects.
+Mac/Linux physical device enumeration, profile joining and USB/Bluetooth
+reconnect acceptance remain pending; do not infer them from Windows results.
+
 Local player devices (local feat/local-player-devices, uncommitted): shared
 pc_bindings.inc, keyboard/Controls menus, patch2350 and launcher GameSettings/
 SettingsPage implement assignment, identification and exclusive routing. The

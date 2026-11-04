@@ -618,3 +618,5 @@ Local multiplayer explains the native profile screen's automatic Start-to-join.
 There is no auto-join checkbox or setting; legacy auto_assign_players is ignored.
 Manual device assignments remain available. README documents the player-count,
 Start-order and profile-selection sequence.
+
+Unassigned device choices are labeled Automatic (legacy JSON none). Presence detection makes these available for joining; this is not a separate opt-in setting.

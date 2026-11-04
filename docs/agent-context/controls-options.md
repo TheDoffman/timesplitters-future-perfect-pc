@@ -126,8 +126,9 @@ Keyboard/mouse ownership remains local slot zero and only a keyboard profile
 receives raw camera motion. Controller profiles retain stored keyboard bindings
 for switching back but do not execute them. Patch2350 excludes those key sources
 and reserves disconnected SDL seats by device path for the current session.
-Missing/changed paths do not silently reclaim a reserved seat; startup slot
-identity across reordered enumeration still needs follow-up validation.
+Patch2360 also matches serial+GUID or an unambiguous disconnected model when
+paths change or are absent. Ambiguous identical devices still need explicit
+assignment; startup identity across reordered enumeration remains unverified.
 
 Local-player device assignment: controller_profile fixtures now simulate two
 independent pads and actual SDL scan reconnect slot reservation; launcher_settings
@@ -163,3 +164,14 @@ rewrite controls JSON. No-waiting/focus loss clears pending joins. Manual device
 settings remain; the former auto_assign_players key is ignored. Controller-model
 and actual profile callback regressions cover unconfigured devices, P1 ownership,
 repeat presses, reversed connection order and player-count bounds.
+
+Presence detection now calls pc_settings_players_detect before computing the
+250ms port mask. This exposes connected pads in unassigned (legacy none) ports
+before native player-count selection; joining still uses the native Start order.
+Session preferred ports survive manual unassignment, without rewriting JSON.
+The UI calls none Automatic, since it no longer excludes connected controllers.
+Patch2360 retains the SDL lock through reads so another scan cannot close the
+handle mid-sample. Tests cover the real presence function plus changed/absent
+paths and repeated SDL virtual-device detach/reattach (controller_hotplug.c).
+
+Automatically detected ports remain provisional until native Start-to-join claims them; they do not reserve the controller away from Player 1 automatic fallback. Explicit device saves clear provisional flags. The production sampler regression checks both provisional sharing and exclusive joined ownership.

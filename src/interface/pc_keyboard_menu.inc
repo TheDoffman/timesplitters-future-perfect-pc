@@ -226,7 +226,7 @@ static void kb_build(void)
     kb_enabled_row=kb_invert_row=0;
     WORD_AT(kb_menu+0x10)=kb_page==KB_LIST?KB_DRAW:0;
     if(kb_page==KB_PLAYERS) {
-        const char *devices[]={"Keyboard & Mouse","Disabled","Controller 1","Controller 2","Controller 3","Controller 4"};
+        const char *devices[]={"Keyboard & Mouse","Automatic","Controller 1","Controller 2","Controller 3","Controller 4"};
         for(int i=0;i<4;i++) {
             snprintf(line,sizeof line,"Player %d",i+1);kb_device_rows[i]=kb_row(i,line,0);
             guest_call(sub_0007D480,2,0x8400u,0u);

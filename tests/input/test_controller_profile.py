@@ -112,7 +112,7 @@ def test_controller_hotplug_keeps_player_slots(tmp_path):
 #include <string.h>
 #include <assert.h>
 typedef int SDL_JoystickID;
-typedef struct { int connected; const char *path; } SDL_Gamepad;
+typedef struct { int connected; const char *path; const char *serial; const char *name; } SDL_Gamepad;
 static SDL_Gamepad pads[10];static int ids[4],count;
 #define RECOMP_PAD_SLOTS 4
 #define SCAN_MS 250
@@ -121,7 +121,10 @@ static void SDL_CloseGamepad(SDL_Gamepad *p){(void)p;}
 static int *SDL_GetGamepads(int *n){*n=count;return ids;}
 static const char *SDL_GetGamepadPathForID(int id){return pads[id].path;}
 static SDL_Gamepad *SDL_OpenGamepad(int id){return &pads[id];}
-static const char *SDL_GetGamepadName(SDL_Gamepad *p){return p->path;}
+static const char *SDL_GetGamepadName(SDL_Gamepad *p){return p->name?p->name:p->path;}
+static const char *SDL_GetGamepadSerial(SDL_Gamepad *p){return p->serial;}
+static const char *SDL_GetGamepadGUIDForID(int id){return pads[id].name?pads[id].name:pads[id].path;}
+static void SDL_GUIDToString(const char *guid,char *out,int n){snprintf(out,n,"%s",guid?guid:"");}
 static void SDL_free(void *p){(void)p;}
 """ + slot + "\nstatic SdlSlot g_sdl[4];static uint64_t g_scan_at;\n" + scan + r"""
 int main(void){
@@ -132,7 +135,22 @@ int main(void){
  assert(!g_sdl[0].pad && g_sdl[1].pad==&pads[2] && g_sdl[2].pad==&pads[3]);
  pads[4]=(SDL_Gamepad){1,"pad-a"};ids[0]=3;ids[1]=4;ids[2]=2;count=3;sdl_scan(500);
  assert(g_sdl[0].pad==&pads[4] && g_sdl[1].pad==&pads[2] && g_sdl[2].pad==&pads[3]);
- puts("PASS: reconnect restores its seat; another device cannot steal it");return 0;
+ /* A reconnecting controller can have a changed USB/Bluetooth path. */
+ memset(g_sdl,0,sizeof g_sdl);count=2;ids[0]=1;ids[1]=2;
+ pads[1]=(SDL_Gamepad){1,"old-path","serial-a","same-model"};
+ pads[2]=(SDL_Gamepad){1,"other-path","serial-b","same-model"};sdl_scan(750);
+ pads[1].connected=0;pads[5]=(SDL_Gamepad){1,"new-path","serial-a","same-model"};ids[0]=5;
+ sdl_scan(1000);assert(g_sdl[0].pad==&pads[5] && g_sdl[1].pad==&pads[2]);
+ /* Pathless devices must not consume a new reserved slot on every reconnect. */
+ memset(g_sdl,0,sizeof g_sdl);count=1;ids[0]=6;
+ pads[6]=(SDL_Gamepad){1,NULL,NULL,"pathless-model"};sdl_scan(1250);
+ for(int cycle=0;cycle<8;cycle++) {
+  int old=ids[0],next=old==6?7:6;pads[old].connected=0;
+  pads[next]=(SDL_Gamepad){1,NULL,NULL,"pathless-model"};ids[0]=next;
+  sdl_scan(1500+cycle*250);assert(g_sdl[0].pad==&pads[next]);
+  for(int j=1;j<4;j++)assert(!g_sdl[j].pad);
+ }
+ puts("PASS: stable/changed/pathless reconnect restores seats without stealing another controller");return 0;
 }
 """
     path=tmp_path / "hotplug.c";path.write_text(fixture)
@@ -152,6 +170,12 @@ def test_start_to_join(tmp_path):
 #include "pc_local_join.h"
 int main(void) {
  PcLocalJoin s={0}; int d[4]={-2,-1,-1,-1};
+ int preferred[4]={-1,-1,-1,-1};
+ pc_local_detect(d,preferred,5);assert(d[0]==-2 && d[1]==0 && d[2]==2 && d[3]==-1);
+ /* Disabling a session port restores its same controller when available. */
+ preferred[1]=0;d[1]=-1;pc_local_detect(d,preferred,5);assert(d[1]==0 && d[2]==2);
+ pc_local_detect(d,preferred,4);assert(d[1]==0); /* disconnected seat retained */
+ d[1]=d[2]=d[3]=-1;
  /* P1 already owns keyboard port 0; controller connection order is irrelevant. */
  assert(pc_local_join(&s,d,0,1)==-1);
  assert(pc_local_join(&s,d,4,1)==1); assert(d[0]==-2 && d[1]==2);
@@ -186,3 +210,76 @@ int main(void) {
     assert result.returncode == 0, result.stdout + result.stderr
     result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=15)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_presence_detects_unconfigured_controllers(tmp_path):
+    bindings=(ROOT / "src/input/pc_bindings.inc").read_text()
+    detect=re.search(r"static void pc_settings_players_detect\(.*?\n\}",bindings,re.S).group()
+    runtime=(RUNTIME / "input/input_bindings.c").read_text()
+    present=re.search(r"unsigned recomp_bindings_present_mask\(.*?\n\}",runtime,re.S).group()
+    source=tmp_path / "presence.c"
+    source.write_text(r'''#include <assert.h>
+#include <stdio.h>
+#include "pc_local_join.h"
+#define TSFP_NATIVE_INPUT
+#define DEV_NONE 0
+#define DEV_KEYBOARD 1
+#define DEV_PAD 2
+#define SRC_NONE 0
+#define SRC_KEY 1
+#define CONTROL_COUNT 1
+#define PORTS 4
+#define AcquireSRWLockExclusive(x) ((void)0)
+#define ReleaseSRWLockExclusive(x) ((void)0)
+typedef struct {int count;struct {int kind;} src[2];} Binding;
+typedef struct {int device,pad,has_key,pad_fallback;Binding bind[1];char label[32];} Controller;
+typedef struct {int unused;} RecompPadState;
+static unsigned g_players_auto_ports;
+static Controller g_ctl[4];static int g_players_preferred[4]={-1,-1,-1,-1};
+static unsigned connected;static unsigned long long tick;
+static int recomp_pad_read(int slot,RecompPadState *p){(void)p;return !!(connected&(1u<<slot));}
+static void describe(Controller *c,char *s,unsigned n){(void)c;(void)s;(void)n;}
+static void recomp_bindings_init(void){}
+static unsigned long long now_ms(void){return tick+=251;}
+''' + detect + "\n" + present + r'''
+int main(void) {
+ g_ctl[0].device=DEV_KEYBOARD;
+ connected=5;assert(recomp_bindings_present_mask()==7);
+ assert(g_ctl[1].pad==0 && g_ctl[2].pad==2 && g_players_auto_ports==6);
+ connected=4;assert(recomp_bindings_present_mask()==5);
+ connected=5;assert(recomp_bindings_present_mask()==7);
+ g_ctl[1].device=DEV_NONE;g_ctl[1].pad=-1;
+ assert(recomp_bindings_present_mask()==7 && g_ctl[1].pad==0);
+ return 0;
+}
+''')
+    compiler,env=native_compiler(tmp_path)
+    exe=tmp_path / ("presence.exe" if os.name=="nt" else "presence")
+    inc=str(ROOT / "src/input")
+    args=([compiler,"/nologo","/std:c11","/I"+inc,str(source),"/Fe:"+str(exe)] if os.name=="nt" else
+          [compiler,"-std=c11","-I"+inc,str(source),"-o",str(exe)])
+    result=subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
+    assert result.returncode==0,result.stdout+result.stderr
+    result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=15)
+    assert result.returncode==0,result.stdout+result.stderr
+
+
+def test_real_sdl_controller_reconnect(tmp_path):
+    library=ROOT / "build/windows/xboxrecomp/third_party/SDL/Release/SDL3-static.lib"
+    if os.name!="nt" or not library.is_file():
+        pytest.skip("Real SDL lifecycle test requires the Windows build's SDL static library")
+    compiler,env=native_compiler(tmp_path)
+    exe=tmp_path / "hotplug.exe"
+    args=[compiler,"/nologo","/std:c11","/MD",
+          "/I"+str(ROOT / "external/ts3FPrecomp/third_party/SDL/include"),
+          "/I"+str(RUNTIME / "input"),str(ROOT / "tests/input/controller_hotplug.c"),
+          str(RUNTIME / "input/recomp_pad.c"),"/Fe:"+str(exe),str(library)]
+    args += [x+".lib" for x in ["user32","gdi32","shell32","ole32","oleaut32","uuid",
+              "advapi32","setupapi","dinput8","imm32","version","winmm","xinput","cfgmgr32"]]
+    env=dict(env,RECOMP_PAD_API="sdl")
+    result=subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
+    assert result.returncode==0,result.stdout+result.stderr
+    result=subprocess.run([str(exe)],cwd=tmp_path,env=env,capture_output=True,text=True,timeout=20)
+    if "SKIP:" in result.stdout:pytest.skip(result.stdout.strip())
+    assert result.returncode==0,result.stdout+result.stderr
+    assert "six real SDL detach/reattach cycles" in result.stdout

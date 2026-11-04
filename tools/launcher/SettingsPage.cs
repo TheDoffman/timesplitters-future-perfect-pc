@@ -111,7 +111,7 @@ namespace TimeSplitters.Launcher
             controls.Children.Add(Text("In-game settings tabs: Left / Right arrows or controller LB / RB switch tabs. A / D changes option values.",12));
             var input=PageTheme.Section(controls,"Input & mouse","Choose your input device and adjust how the camera responds.");
             var inputColumns=Columns(input);var inputLeft=Column(inputColumns,0);var inputRight=Column(inputColumns,1);
-            var deviceLabels=new[]{"Keyboard & mouse","Controller 1","Controller 2","Controller 3","Controller 4","Disabled"};
+            var deviceLabels=new[]{"Keyboard & mouse","Controller 1","Controller 2","Controller 3","Controller 4","Automatic"};
             device=Choices(deviceLabels,deviceLabels[Array.IndexOf(Devices,model.Device.Replace("xinput:","gamepad:"))]);Field(inputLeft,"Player 1 input device",device);
             var local=PageTheme.Section(controls,"Local multiplayer","Assign one device to each player. Keyboard & mouse belongs to Player 1. Choose the player count in the game's multiplayer menu.");
             local.Children.Add(Text("At the profile screen, additional controllers join in the order they press Start. No device setup is required to join.",12));

@@ -115,6 +115,10 @@ def patch_records(paths):
     if players:
         paths.remove(players)
         paths.append(players)
+    reconnect = by_name.get('2360-controller-reconnect-identity.patch')
+    if reconnect:
+        paths.remove(reconnect)
+        paths.append(reconnect)
 
     # Own instruction bodies replace the final title-instrumented handlers.
     # Replay all historical instrumentation first so older stacks still unwind.

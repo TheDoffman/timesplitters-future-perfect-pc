@@ -1,3 +1,19 @@
+## Controller detection and reconnect follow-up (local, uncommitted)
+
+Based on cc8b05fb on feat/local-player-devices. User confirmed earlier manual
+assignment works, but reported disabled ports hiding player-count choices and
+blocking reconnect. Shared presence detection now activates connected devices
+in unassigned ports without rewriting settings; UI labels these Automatic.
+Detected ports stay provisional so Player 1 automatic pad fallback still works
+until a controller joins. Native profile prompts retain Start-order assignment.
+Patch2360 restores SDL
+seats by serial/path or unambiguous model and keeps handles locked during reads.
+Windows: 48 input/menu tests pass, two Mac compile checks skipped; this includes
+six real SDL virtual-controller detach/reattach cycles with independent second
+controller input. Game build checks and full launcher suite pass. These checks
+do not prove physical USB/Bluetooth gameplay or native Mac/Linux acceptance.
+The mixed-optimization test build limitation described below still applies.
+
 ## Local player devices (local feat/local-player-devices, uncommitted)
 
 Base 471936e7, Windows x64. Shared launcher and in-game General Controls now

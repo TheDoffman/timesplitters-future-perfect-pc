@@ -1,3 +1,4 @@
+static unsigned g_players_auto_ports;
 /* Headless sampler integration. OS focus is an explicit test input; no desktop
  * events or personal settings are touched. Parser and sampler are production. */
 #define main profile_fixture_main
@@ -35,6 +36,11 @@ int main(void)
     for(int i=0;i<4;i++)defaults_for(&g_ctl[i],i);
     assert(parse_config(config));g_ready=1;connected=1;selected_slot=0;
     state.lx=32767;state.right_trigger=255;
+    /* Detection exposes spare ports without stealing P1's automatic pad. */
+    g_players_auto_ports=2u;
+    assert(test_sample(0,&one));assert(one.sThumbLX==32767);
+    /* Joining claims that pad exclusively for its new player. */
+    g_players_auto_ports=0;
     assert(test_sample(0,&one));assert(!memcmp(&one,&neutral,sizeof one));
     assert(test_sample(1,&two));assert(two.sThumbLX==32767 && two.bAnalogButtons[XBOX_BUTTON_RTRIGGER]==255);
 #ifdef _WIN32

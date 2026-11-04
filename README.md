@@ -59,7 +59,9 @@ build when available. Launcher and game versions are separate.
 
 ### Local split-screen setup
 
-1. Connect your controllers and choose the number of players on the opening screen.
+1. Connect your controllers. The opening player-count screen detects them
+   automatically, including ports previously saved as Disabled. Choose the number
+   of players.
 2. Player 1 keeps the input they are using. At the profile screen, the first unused
    controller to press **Start** joins the next **Press START to Join** panel
    (Player 2), the next joins Player 3, and so on up to the chosen player count.
@@ -69,7 +71,8 @@ build when available. Launcher and game versions are separate.
    into a mode supporting the selected player count.
 
 Join assignments last for the session. For a fixed device setup, use the launcher
-or **Controls > General > Local multiplayer**. Already participating controllers
+or **Controls > General > Local multiplayer**. **Automatic** (formerly Disabled)
+lets the game use a connected controller without a fixed assignment. Already participating controllers
 cannot join twice. To change the participating players, return to the main menu;
 joining during an active match is not supported. Only one keyboard/mouse player
 is supported; additional players need controllers.

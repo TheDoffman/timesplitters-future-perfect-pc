@@ -265,6 +265,30 @@ static int pc_write_config(const char *text)
 /* Public local-player assignments: -2 keyboard, -1 disabled, 0..3 pad. */
 #include "pc_local_join.h"
 static PcLocalJoin g_players_join;
+static unsigned g_players_auto_ports; /* Visible, but not claimed by another player yet. */
+static int g_players_preferred[4]={-1,-1,-1,-1};
+static void pc_settings_players_detect(void)
+{
+    int devices[4];unsigned connected=0;
+    for(int i=0;i<4;i++) {RecompPadState pad;if(recomp_pad_read(i,&pad))connected|=1u<<i;}
+    AcquireSRWLockExclusive(&g_pc_bindings_lock);
+    for(int i=0;i<4;i++) {
+        devices[i]=g_ctl[i].device==DEV_KEYBOARD?-2:g_ctl[i].device==DEV_PAD?g_ctl[i].pad:-1;
+        if(devices[i]>=0)g_players_preferred[i]=devices[i];
+    }
+    pc_local_detect(devices,g_players_preferred,connected);
+    for(int i=1;i<4;i++)if(g_ctl[i].device==DEV_NONE && devices[i]>=0) {
+        Controller *c=&g_ctl[i];c->device=DEV_PAD;c->pad=devices[i];
+        int has_pad=0;
+        for(int k=0;k<CONTROL_COUNT;k++)for(int b=0;b<c->bind[k].count;b++)
+            if(c->bind[k].src[b].kind!=SRC_KEY && c->bind[k].src[b].kind!=SRC_NONE)has_pad=1;
+        c->pad_fallback=c->has_key&&!has_pad;
+        g_players_auto_ports|=1u<<i;
+        g_players_preferred[i]=devices[i];describe(c,c->label,sizeof c->label);
+    }
+    ReleaseSRWLockExclusive(&g_pc_bindings_lock);
+}
+
 int pc_settings_players_join(unsigned used_ports)
 {
     recomp_bindings_init();
@@ -284,6 +308,7 @@ int pc_settings_players_join(unsigned used_ports)
     int port=pc_local_join(&g_players_join,devices,starts,used_ports);
     if(port<0)return -1;
     AcquireSRWLockExclusive(&g_pc_bindings_lock);
+    g_players_auto_ports&=~(1u<<port);
     for(int i=0;i<4;i++)if(devices[i]>=0 && (g_ctl[i].device!=DEV_PAD || g_ctl[i].pad!=devices[i])) {
         Controller *c=&g_ctl[i];int has_pad=0;
         c->device=DEV_PAD;c->pad=devices[i];
@@ -366,7 +391,9 @@ int pc_settings_players_save(const int devices[4],char *error,size_t bytes)
     ReleaseSRWLockExclusive(&g_pc_bindings_lock);
     if(!valid || !pc_write_config(text))goto fail;
     for(int i=0;i<4;i++)if(before[i].device==DEV_PAD)recomp_pad_rumble(before[i].pad,0,0);
-    AcquireSRWLockExclusive(&g_pc_bindings_lock);memcpy(g_ctl,next,sizeof next);
+    AcquireSRWLockExclusive(&g_pc_bindings_lock);
+    for(int i=0;i<4;i++)if(before[i].device==DEV_PAD)g_players_preferred[i]=before[i].pad;
+    memcpy(g_ctl,next,sizeof next);g_players_auto_ports=0;
     ReleaseSRWLockExclusive(&g_pc_bindings_lock);
     ok=1;
 fail:
