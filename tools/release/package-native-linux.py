@@ -19,6 +19,9 @@ from project_paths import configure
 configure()
 from bundle_online import COMPANION, repo_file
 import linux_vulkan_sdk
+import linux_ffmpeg
+from runtime_licenses import prepare as prepare_runtime_licenses
+from linux_dependency_sources import collect as collect_dependency_sources
 
 # These are the host ABI, not distributable application dependencies. Keep the
 # host GPU/GL/Vulkan drivers and loader selection; never ship a hardware ICD.
@@ -46,6 +49,7 @@ def bundle_libraries(pairs,stage):
         if target in visited:continue
         visited.add(target)
         if not elf(source):raise ValueError('Expected Linux x64 ELF: '+str(source))
+        records[target.relative_to(stage).as_posix()]=dict(source=str(source.resolve()),source_sha256=digest(source))
         for name,origin in dependencies(source):
             if HOST.fullmatch(name):continue
             if name in origins and origins[name]!=origin and origin!=(bin_dir/name).resolve():raise ValueError('Conflicting ELF dependency: '+name)
@@ -53,7 +57,6 @@ def bundle_libraries(pairs,stage):
                 origins[name]=origin;destination=bin_dir/name
                 if destination.exists() and digest(destination)!=digest(origin):raise ValueError('Duplicate ELF name: '+name)
                 shutil.copy2(origin,destination);pending.append((origin,destination))
-                records[name]=dict(source=str(origin),source_sha256=digest(origin))
         relative=os.path.relpath(bin_dir,target.parent)
         subprocess.run(['patchelf','--set-rpath','$ORIGIN'+('/'+relative if relative!='.' else ''),str(target)],check=True)
     for target in visited:
@@ -99,7 +102,7 @@ def bundle_python(root,stage):
     wrapper.chmod(0o755)
     pairs=[(executable,target)]
     for item in library.rglob('*'):
-        if item.is_file() and elf(item):pairs.append((item,item))
+        if item.is_file() and elf(item):pairs.append((standard/item.relative_to(library),item))
     return pairs,dict(version=version,wheels=pins)
 
 def verify_payload(stage,manifest):
@@ -142,38 +145,51 @@ def main():
     copy(ROOT/'build/online-icon/multiplayer.png',stage,'Support/Online/multiplayer.png')
     for file in ('network-identity.json','network-build.json'):copy(build/'generated'/file,stage,'Support/Online/'+file)
     python_pairs,python=bundle_python(ROOT,stage)
-    # FFmpeg is opened dynamically, so include it explicitly in the closure.
+    # Package only our verified decoder-only media build, never the host's
+    # GPL/external-codec dependency closure. Include exact sources and recipe.
     dynamic=[]
-    for stem in ('libavcodec.so','libavutil.so'):
-        path=Path(run('cc','-print-file-name='+stem)).resolve()
-        if not path.is_file():raise ValueError('Missing FFmpeg development library: '+stem)
+    media,media_receipt=linux_ffmpeg.verify_install(ROOT)
+    for stem in media_receipt['pin']['libraries']:
+        path=(media/'install/lib'/stem).resolve()
         soname=run('patchelf','--print-soname',path);dynamic.append((path,copy(path,stage,'Bin/'+soname)))
+    copy(media/media_receipt['pin']['archive'],stage,'Source/FFmpeg/'+media_receipt['pin']['archive'])
+    copy(ROOT/'tools/build/linux_ffmpeg.py',stage,'Source/FFmpeg/linux_ffmpeg.py')
+    copy(ROOT/'config/build/ffmpeg-linux.json',stage,'Source/FFmpeg/pin.json')
+    for name in ('COPYING.LGPLv2.1','LICENSE.md'):
+        copy(media/media_receipt['pin']['archive_prefix']/name,stage,'Licenses/FFmpeg-'+name+'.txt')
     sdk=linux_vulkan_sdk.verify_install(ROOT)
     dxc=sdk/'lib/libdxcompiler.so'
     dynamic.append((dxc,copy(dxc,stage,'Bin/libdxcompiler.so')))
     copy(sdk.parent/'LICENSE.txt',stage,'Support/Runtime/Vulkan-SDK-LICENSE.txt')
-    records=bundle_libraries([(executable,game),*python_pairs,*dynamic],stage)
+    licenses=ROOT/'external/native-runtime-licenses'
+    prepare_runtime_licenses(ROOT,licenses,{'DXC.txt','DXC-ThirdParty.txt'})
+    for name in ('DXC.txt','DXC-ThirdParty.txt'):copy(licenses/name,stage,'Licenses/'+name)
+    upstream=ROOT/'external/ts3FPrecomp'
+    for origin,target in [('LICENSE','Runtime-GPL-3.0.txt'),('LICENSE.upstream-MIT','Runtime-upstream-MIT.txt'),('NOTICE','Runtime-NOTICE.txt'),('LICENSES/LGPL-2.1.txt','Runtime-LGPL-2.1.txt'),('third_party/SDL/LICENSE.txt','SDL.txt'),('third_party/volk/LICENSE.md','volk.txt'),('third_party/VulkanMemoryAllocator/LICENSE.txt','VulkanMemoryAllocator.txt')]:copy(upstream/origin,stage,'Licenses/'+target)
+    for source in (upstream/'third_party/Vulkan-Headers/LICENSES').iterdir():
+        if source.is_file():copy(source,stage,'Licenses/Vulkan-Headers/'+source.name)
+    if (ROOT/'vendor/smaa/LICENSE.txt').is_file():copy(ROOT/'vendor/smaa/LICENSE.txt',stage,'Licenses/SMAA.txt')
+    roots=[(executable,game),*python_pairs,*dynamic];known={p.resolve() for _,p in roots}
+    for member in stage.rglob('*'):
+        if member.is_file() and elf(member) and member.resolve() not in known:
+            origin=args.launcher/member.relative_to(stage)
+            roots.append((origin if origin.is_file() else member,member))
+    records=bundle_libraries(roots,stage)
     subprocess.run([sys.executable,str(repo_file(ROOT,'tools','network-identity.py')),'--output',str(build/'generated'),'--seal-executable',str(game)],check=True)
     # Preserve package-owner copyright/source information for every copied ELF.
     notices=stage/'Support/Runtime';notices.mkdir(parents=True,exist_ok=True)
-    (notices/'dependencies.json').write_text(json.dumps(records,indent=2)+'\n')
-    for number,record in enumerate(records.values()):
-        owner=''
-        if record['source'].startswith('/usr/'):
-            found=subprocess.run(['dpkg-query','-S',record['source']],capture_output=True,text=True)
-            if found.returncode:found=subprocess.run(['dpkg-query','-S',record['source'].removeprefix('/usr')],capture_output=True,text=True)
-            if not found.returncode:owner=found.stdout.split(': /',1)[0].split(':',1)[0]
-        notice=Path('/usr/share/doc')/owner/'copyright'
-        if owner and notice.is_file():copy(notice,stage,f'Licenses/Runtime-{number}-{owner}.txt')
+    audit=collect_dependency_sources(ROOT,stage,records,args.launcher,media,sdk,python)
+    (notices/'dependencies.json').write_text(json.dumps(audit['components'],indent=2)+'\n')
     source=stage/'Source/pc-port-source.zip';source.parent.mkdir()
     with zipfile.ZipFile(source,'x',zipfile.ZIP_DEFLATED) as archive:
         for file in run('git','ls-files','-z').split('\0'):
             if file and (ROOT/file).is_file():archive.write(ROOT/file,file)
     (stage/'Launch.sh').write_text((ROOT/'tools/release/linux-launch.sh').read_text());(stage/'Launch.sh').chmod(0o755)
     (stage/'README.txt').write_text('Linux x64 experimental preview. Extract into a writable folder and run ./Launch.sh.\nImport your supported US Xbox files using the launcher. Game data is not included.\nRequires a Vulkan-capable system driver and the build host glibc baseline (Ubuntu24.04).\nNo development checkout, system Python or Vulkan SDK is needed.\nFor a read-only game installation use ./Launch.sh --game --data /path/to/game.\nSource, runtime notices and exact build provenance are included. This local preview is not a published release.\n')
+    public_native={k:v for k,v in native.items() if k not in ('game_directory','configure_command','runtime_libraries','working_tree_changes')}
     manifest=dict(version=args.version,platform='linux-x64',renderer='vulkan',source_commit=native['source_revision'],packaging_commit=run('git','rev-parse','HEAD'),
-        minimum_glibc=run('getconf','GNU_LIBC_VERSION').split()[-1],native_build=native,python=python,
-        runtime_libraries=records,files={p.relative_to(stage).as_posix():digest(p) for p in stage.rglob('*') if p.is_file()})
+        minimum_glibc=run('getconf','GNU_LIBC_VERSION').split()[-1],native_build=public_native,python=python,
+        runtime_libraries=audit['components'],media=media_receipt['pin'],files={p.relative_to(stage).as_posix():digest(p) for p in stage.rglob('*') if p.is_file()})
     (stage/'BUILD.json').write_text(json.dumps(manifest,indent=2)+'\n');verify_payload(stage,manifest)
     env=dict(os.environ);env.pop('PYTHONPATH',None)
     subprocess.run([str(stage/'Support/Python/bin/python3'),'-c','import ssl,tkinter,cryptography,cffi; t=tkinter.Tk();t.withdraw();t.update();t.destroy();assert ssl.create_default_context().cert_store_stats()["x509_ca"]>0;print("PASS relocated Python/Tk/TLS")'],env=env,check=True,timeout=30)

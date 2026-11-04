@@ -270,7 +270,7 @@ jobs:
           python tools/testing/test-rhi-mac.py --setup-sdk --driver moltenvk
       - name: Test release validation and disposable fixture cleanup
         if: needs.plan.outputs.release == 'true'
-        run: python -m pytest tests/launcher/test_publish_release.py tests/diagnostics/test_crash_symbols.py tests/launcher/test_native_mac_package.py tests/launcher/test_native_linux_package.py tests/textures/test_build_textures.py tests/textures/test_texture_release.py -q --tb=short --durations=20 --suite-profile=ci-release
+        run: python -m pytest tests/launcher/test_publish_release.py tests/diagnostics/test_crash_symbols.py tests/launcher/test_native_mac_package.py tests/launcher/test_native_linux_package.py tests/launcher/test_linux_dependency_sources.py tests/repository/test_linux_media.py tests/textures/test_build_textures.py tests/textures/test_texture_release.py -q --tb=short --durations=20 --suite-profile=ci-release
 
       - name: Save suite timing history
         if: always() && hashFiles('build/test-performance/**/state.json') != ''
@@ -312,7 +312,7 @@ jobs:
           python -m venv .venv-linux
           .venv-linux/bin/python -m pip install -r requirements.txt
       - name: Check SDK isolation and real Linux host memory providers
-        run: .venv-linux/bin/python -m pytest tests/repository/test_linux_foundation.py tests/launcher/test_native_linux_package.py tests/gameplay/test_native_linux.py tests/gameplay/test_auto_look.py tests/gameplay/test_native_crash.py tests/compiler/test_linux_host.py tests/compiler/test_linux_map_query.py tests/graphics/test_vulkan_interface.py tests/graphics/test_upload_rows.py tests/compiler/test_host_pages.py tests/compiler/test_host_memory_stats.py tests/compiler/test_native_vm_host.py tests/compiler/test_shared_views.py -q --tb=short
+        run: .venv-linux/bin/python -m pytest tests/repository/test_linux_foundation.py tests/launcher/test_native_linux_package.py tests/launcher/test_linux_dependency_sources.py tests/repository/test_linux_media.py tests/gameplay/test_native_linux.py tests/gameplay/test_auto_look.py tests/gameplay/test_native_crash.py tests/compiler/test_linux_host.py tests/compiler/test_linux_map_query.py tests/graphics/test_vulkan_interface.py tests/graphics/test_upload_rows.py tests/compiler/test_host_pages.py tests/compiler/test_host_memory_stats.py tests/compiler/test_native_vm_host.py tests/compiler/test_shared_views.py -q --tb=short
       - name: Run shared Vulkan and production replay contracts with software Vulkan
         run: |
           LVP_ICD=$(find /usr/share/vulkan/icd.d -name 'lvp_icd*.json' -print -quit)

@@ -75,7 +75,7 @@ def main():
     run(cmake,'--build',build,'--target','futureperfect_recomp','tsfp_native_mmio_test','--parallel',args.jobs)
     exe=build/'futureperfect_recomp'
     run(sys.executable,ROOT/'tools/build/network-identity.py','--output',build/'generated','--seal-executable',exe)
-    sources=[p for area in ('src','patches') for p in (ROOT/area).rglob('*')
+    sources=[p for area in ('src','patches','vendor/smaa') for p in (ROOT/area).rglob('*')
              if p.is_file() and 'legacy' not in p.relative_to(ROOT).parts]
     manifest=dict(platform='linux-x64',renderer='vulkan',build_type='Debug',
         host_optimization=args.host_optimization,host_debug_flags=host_flags,assertions_enabled=True,

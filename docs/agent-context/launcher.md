@@ -1,5 +1,9 @@
 # Launcher and menu shortcuts
 
+Linux release packaging closes dependencies for all launcher/Python ELFs,
+not only the game. Provider/source and notice verification is described in
+[Linux release contracts](linux-game.md#experimental-release-preparation).
+
 [Settings shortcuts](controls-options.md); [graphics contract](../development/graphics-options.md).
 Launcher graphics UI regression changes all shared controls, saves, reloads
 the model and reopens the page; AnisotropicFiltering names the AF selector.

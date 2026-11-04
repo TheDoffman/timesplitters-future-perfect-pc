@@ -1,5 +1,23 @@
 # Native Linux game integration
 
+## Experimental release preparation
+
+`tools/build/build-linux-media.py` builds the pinned FFmpeg6.1.5 WMV2-only LGPL
+shared libraries in the private dependency tree. The source pin identifies the
+official signed tag/commit and archive SHA256; changed archives, extracted source
+or libraries fail verification. System FFmpeg is left intact. The Linux package
+includes the source archive, configuration and build recipe; it cannot silently
+substitute Ubuntu's full GPL/external-codec build.
+
+`linux_dependency_sources.py` classifies every shipped ELF, including launcher
+and Python extension roots, resolves exact distro source versions and verifies
+downloaded source components against authenticated APT source-index SHA256/size.
+It includes notices plus source/build-patch archives and fails on unknown owners
+or unavailable exact versions. Static SDL/VMA/volk/Vulkan-Headers and DXC notices
+are explicit; pinned notice retrieval is shared with the Mac packager without
+changing the Mac policy. Public receipts omit developer data/configure paths.
+The Linux native source receipt also covers the new vendored SMAA inputs.
+
 ## Portable declaration guard
 
 Main's patch2512 is exactly the d3d8_internal.h guard already contained in2401.
