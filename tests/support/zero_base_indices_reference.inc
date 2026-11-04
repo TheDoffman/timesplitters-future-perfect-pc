@@ -3,7 +3,7 @@ HLE_EXPORT(D3DDevice_DrawIndexedVertices)
 {
     static int seen;
     uint32_t xpt = HLE_ARG(0);
-#if defined(_WIN32) || defined(__APPLE__)
+#if defined(_WIN32) || defined(__APPLE__) || defined(__linux__)
     uint32_t count = HLE_ARG(1), index_va = HLE_ARG(2);
 #endif
 
@@ -12,7 +12,7 @@ HLE_EXPORT(D3DDevice_DrawIndexedVertices)
                          "D3DDevice_DrawIndexedVertices"))
         HLE_RETURN(0u);
     HLE_CALL_ORIGINAL(D3DDevice_DrawIndexedVertices);
-#if defined(_WIN32) || defined(__APPLE__)
+#if defined(_WIN32) || defined(__APPLE__) || defined(__linux__)
     if (hle_d3d8_shadow_device() && count && index_va &&
         guest_readable(index_va, (uint64_t)count * 2u)) {
         const uint16_t *idx = (const uint16_t *)HLE_PTR(index_va);

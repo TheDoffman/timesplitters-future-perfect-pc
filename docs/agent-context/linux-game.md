@@ -452,3 +452,8 @@ The indexed-draw parity fixture locates its boundary at the next constant-
 forwarding function, independent of its platform guard expression. All four
 copy/rebase/leak controls now run on Linux as well as Windows/Mac, including
 the Linux CI job; they still execute the real extracted draw function.
+
+The stored pre-optimization indexed-draw reference enables its same shared
+shadow driver on Linux; otherwise it would compare Linux's production draw
+against the reference's non-native no-draw fallback. Its indexing/dispatch
+algorithm is unchanged, and all three negative mutations remain mandatory.
