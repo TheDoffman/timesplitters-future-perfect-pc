@@ -183,3 +183,12 @@ def test_owned_resource_snapshot_uses_only_scalar_child_fields(tmp_path):
     (base/'status').write_text('Name: game\nVmSize: 8192 kB\nVmRSS: 1024 kB\nThreads: 4\n')
     for name in ('0','1','2'):(base/'fd'/name).touch()
     assert runner.owned_resource_snapshot(123,5.1234,tmp_path)==dict(seconds=5.123,rss_bytes=1048576,virtual_bytes=8388608,threads=4,open_fds=3)
+
+
+def test_startup_movie_receipt_requires_complete_decode_not_only_open():
+    text = r"[XMV] playing d:\xmv\eag_e.xmv: 640x480, PCM sound"+"\n"
+    assert runner().movie_results(text)==[]
+    partial=text+"[XMV] movie closed after 2 pictures\n"
+    assert runner().movie_results(partial)==[dict(name='eag_e.xmv',pictures=2,eof=False)]
+    full=text+"[XMV] update #176: the movie is over\n[XMV] movie closed after 88 pictures\n"
+    assert runner().movie_results(full)==[dict(name='eag_e.xmv',pictures=88,eof=True)]

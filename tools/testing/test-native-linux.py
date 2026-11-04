@@ -68,6 +68,14 @@ def story_snapshot(word):
     return dict(scene=scene,flags=flags,paused=paused,active=scene==2 and not flags&0x20000000 and not paused)
 
 
+def movie_results(text):
+    completed=[]
+    for match in re.finditer(r'\[XMV\] playing ([^\n]+\.xmv):[^\n]*\n(.*?)\[XMV\] movie closed after (\d+) pictures',text,re.S):
+        completed.append(dict(name=match[1].replace('\\','/').rsplit('/',1)[-1].lower(),
+                              pictures=int(match[3]),eof='the movie is over' in match[2]))
+    return completed
+
+
 def story_window(samples,frames):
     import csv
     import native_frame_stats
@@ -148,6 +156,7 @@ def main():
     args=p.parse_args()
     if platform.system()!='Linux' or platform.machine().lower() not in ('x86_64','amd64'):p.error('Requires Linux x64')
     if not 1<=args.seconds<=600:p.error('Duration must be 1–600 seconds')
+    if args.movies and args.seconds<15:p.error('Startup movie acceptance needs at least 15 seconds')
     if not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,47}',args.profile_name) or args.profile_name in ('manual','crashes','xdg-cache','xdg-config','xdg-data'):
         p.error('Use a simple disposable profile name, excluding reserved folders')
     if not 0<=args.profile_start<args.seconds:p.error('Profile start must be inside the bounded run')
@@ -276,6 +285,8 @@ def main():
             scope='Bounded isolated actual game; captures require visual review; not a full playthrough')
         summary['completed_guest_frames_at_least']=max([int(n) for n in re.findall(r'\[NATIVE-GUEST\] completed frame (\d+)',text)],default=0)
         summary['vulkan_validation_errors']=text.count('[VKVAL]')+text.count('[VKVAL error]')
+        summary['movies_requested']=args.movies
+        summary['movies']=movie_results(text)
         if args.upload_profile:
             summary['upload_metrics']=[{key:int(value) for key,value in re.findall(r'(\w+)=(\d+)',line)}
                                        for line in text.splitlines() if line.startswith('[VK-UPLOAD]')]
@@ -292,6 +303,8 @@ def main():
         summary['disposable_test_disks']=recycle_test_disks(ROOT,test,save_directory=Path(env['RECOMP_SAVE_DIR']))
         (logs/'linux-game.json').write_text(json.dumps(summary,indent=2)+'\n');print(json.dumps(summary,indent=2))
         passed=analysis_ok and timed_out and summary['requested_timing_observed'] and summary['presents'] and summary['presents']['guest']>0 and not summary['vulkan_validation_errors']
+        if args.movies:
+            passed &= {m['name']:m['pictures'] for m in summary['movies'] if m['eof']}=={'eag_e.xmv':88,'frd.xmv':81}
         if not passed:raise SystemExit(1)
 
 if __name__=='__main__':main()
