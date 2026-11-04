@@ -15,6 +15,7 @@ int pc_prompts_format(const char *source, char *out, size_t capacity,
 int pc_prompts_rewrite(const char *source, char *out, size_t capacity);
 /* Recognize key names (including localized/remapped names) inside a keycap. */
 int pc_prompts_keycap_label(const char *label,size_t length);
+int pc_prompts_keycap_key(const char *label,size_t length);
 /* Synchronous word-wrap only; mapping facts expire on return. */
 void pc_prompts_layout_begin(void);
 void pc_prompts_layout_end(void);

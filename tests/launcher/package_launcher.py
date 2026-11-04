@@ -88,12 +88,15 @@ class LauncherPackaging(unittest.TestCase):
                          root / 'config/pc-discord.default.ini', root / 'docs/players/discord-presence.md',
                          root / 'tools/start-game.ps1', root / 'tools/release/ImportGame.cs',
                          root / 'tools/launcher/GameMonogram.NOTICE.txt',
+                         root / 'assets/ui/input-icons/ATTRIBUTION.md',
                          root / 'vendor/smaa/LICENSE.txt',
                          root / 'tools/release/Import-game.ps1', root / 'tools/release/Play.cmd',
                          root / 'Data/default.xbe', root / 'Saves/profile',
                          root / 'Settings/pc-controls.json']:
                 put(path)
             discord_default = (ROOT / 'config/pc-discord.default.ini').read_bytes()
+            icon_credit = (ROOT / 'assets/ui/input-icons/ATTRIBUTION.md').read_bytes()
+            (root / 'assets/ui/input-icons/ATTRIBUTION.md').write_bytes(icon_credit)
             (root / 'config/pc-discord.default.ini').write_bytes(discord_default)
             (root / 'config/pc-discord.ini').write_text('TSFP_DISCORD_V1 1 999999999999999999\n')
             manifest_path = root / 'build/launcher/Support/Launcher/manifest.json'
@@ -133,6 +136,7 @@ class LauncherPackaging(unittest.TestCase):
                 self.assertFalse(any(name.endswith('.pdb') for name in archive.namelist()))
                 self.assertIn(prefix + 'Support/Launcher/manifest.json', archive.namelist())
                 self.assertIn(prefix + 'Licenses/Game-icon-lettering.txt', archive.namelist())
+                self.assertEqual(archive.read(prefix + 'Licenses/Keyboard-mouse-icons.txt'), icon_credit)
                 self.assertEqual(archive.read(prefix + 'Licenses/SMAA.txt'),
                                  (root / 'vendor/smaa/LICENSE.txt').read_bytes())
                 self.assertFalse(any('/Data/' in name or '/Saves/' in name for name in archive.namelist()))

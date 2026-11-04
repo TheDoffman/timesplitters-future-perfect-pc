@@ -7,6 +7,11 @@ in their existing source directories. Do not create a Linux copy of game logic.
 
 ## Current milestone
 
+Keyboard/mouse icon drawing uses the common native prompt renderer. Linux game
+packages retain the Rendrify attribution and require it during payload checking.
+The new icon/footer visuals still need Linux game acceptance; Windows fixture
+checks do not establish Linux visual parity. See [prompt contracts](../agent-context/controls-options.md).
+
 The Linux game target now compiles the same generated title, SDL input/audio,
 shared settings models and Xbox/Vulkan frontend as Windows/Mac. Its Linux x64
 fault handler and host adapters are under active validation. Compilation,

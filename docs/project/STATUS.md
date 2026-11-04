@@ -1,3 +1,51 @@
+## Profile footer fit (2026-11-04, local)
+
+The profile footer's native clip cannot accommodate full-size imported key
+faces on two lines. Shared drawing now uses compact1.2-height icons only in
+this picker (other prompts retain1.5). Select/Back remains at native Y; Delete
+moves down2 layout pixels. Normal/hover drawings, cached hit regions and scoped
+icon state remain consistent. Controller layout is unchanged.
+Windows focused fixtures21 passed,2 native Mac skips. Supported Release Build
+and built-in checks pass; the final isolated profile capture shows complete
+rounded key faces, inter-row separation and bottom clearance. Main integration
+with471936e7 passed67 focused checks and2 subtests (2 native Mac skips), covering
+icon imports/rendering, menu input, mounted mouse and both package writers.
+Integration with maina6779179 preserves the Linux experimental preparation
+records and includes the icon credit in Linux packages and payload validation.
+The merged focused suite passed89 checks and2 subtests (3 host-specific skips).
+Earlier b6eba922 CI passed both runtime hosts, Mac GPU, both patch-upgrade hosts,
+and the standalone Windows/Mac launcher workflow. Checks for this integrated
+revision remain separate. Native Mac/Linux game visual acceptance is pending;
+the renderer uses shared interfaces.
+
+## Adjust footer icons (2026-11-04, local)
+
+The shared Video/Controls footer now formats `[A] / [D] Adjust`, allowing each
+key to use the Fab artwork. Native footer measurement, centering, scaling,
+controller hints and adjustment input are retained. Windows focused fixtures16
+passed,2 native Mac skips; supported Release build and built-in checks pass.
+Native Mac visual acceptance remains pending.
+
+## Fab keyboard/mouse prompt artwork (2026-11-04, local)
+
+Branch `feature/fab-input-prompts` from main63896020; Windows x64/MSVC,
+shared Xbox/Vulkan UI path. Rendrify's CC BY4.0 pack is decoded from the acquired
+Unreal asset packages to100 original128px PNGs kept locally. A manifest maps107
+physical inputs plus generic Mouse, with SHA-256 provenance. Shared native glyph
+callbacks render a compiled32px RGBA derivative and preserve original native
+text measurement, tint, fades and controller glyphs. Missing keys and composite
+labels keep outlined fallbacks. Bindings and settings persistence are unchanged.
+The importer deduplicates identical idle/pressed images and aliases; this pack
+supplies no separate pressed artwork. Transparent margins are compensated when
+placing icons. Root NOTICE and asset attribution retain the creator/license.
+
+Windows focused suite36 passed,2 native Mac skips; package writers22 passed
+with2 subtests (Mac packaging uses synthetic host fixtures). Supported Release Build and
+built-in tests pass. Isolated main/pause sections, binding lists and assignment/
+capture dialogs were rendered and reviewed. Mac build/visual acceptance remains
+pending; existing shared font/quad/input adapters require no new OS adapter.
+This is a local preview, not a published release or a main-branch update.
+
 ## Linux public experimental preparation (2026-11-04)
 
 Local `feature/linux-experimental-release` now has an audited, relocatable

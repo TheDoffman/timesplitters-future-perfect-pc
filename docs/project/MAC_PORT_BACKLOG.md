@@ -1,3 +1,21 @@
+Profile footer fit (local feature/fab-input-prompts): shared profile text
+rendering scopes compact imported icon faces to the native two-line clip.
+Select/Back keeps native Y, Delete is native+2; hover/hit regions follow the same
+baselines and scoped icon state is restored. No OS adapter or controller
+layout change. Windows evidence is in STATUS; native Mac visual acceptance
+is pending (complete key faces, bottom margin and footer hover).
+
+Imported prompt artwork (local feature/fab-input-prompts): shared
+`pc_keycaps.inc`, `pc_input_icons.inc` and generated span data use Rendrify's
+CC BY4.0 keyboard/mouse artwork with native tint/fade and original text advances.
+Key-name lookup remains shared. The Adjust footer uses separate A/D icon labels
+through the same native measurement on both hosts. No new adapter is needed;
+Mac build and visual acceptance are pending (main/pause footer fit, binding and
+capture dialogs, device switch, remapped/missing keys and tutorial/HUD wrapping).
+Windows shared fixtures, supported Build and isolated menu review are recorded
+in [STATUS](STATUS.md). Source PNGs stay local; attributed compiled data travels
+with Git, so another host needs no Fab sign-in or image tooling to build.
+
 Linux experimental release preparation (2026-11-04, local
 feature/linux-experimental-release): SDL key/pad exports fix the native link
 against current shared settings navigation; Windows/SDL use one menu-alias

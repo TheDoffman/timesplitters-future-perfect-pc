@@ -132,7 +132,7 @@ def verify_payload(stage,manifest):
         'Support/Python/bin/python3','Support/Online/online.py','Support/Online/network-identity.json','Source/pc-port-source.zip',
         'Bin/libavcodec.so.60','Bin/libavutil.so.58','Source/FFmpeg/pin.json','Source/FFmpeg/linux_ffmpeg.py',
         'Licenses/SDL.txt','Licenses/DXC.txt','Licenses/DXC-ThirdParty.txt','Licenses/Runtime-GPL-3.0.txt',
-        'Licenses/FFmpeg-COPYING.LGPLv2.1.txt','Support/Runtime/dependency-audit.json',
+        'Licenses/FFmpeg-COPYING.LGPLv2.1.txt','Licenses/Keyboard-mouse-icons.txt','Support/Runtime/dependency-audit.json',
         'Bin/libICE.so.6','Bin/libSM.so.6','Support/Desktop/gdk-pixbuf-query-loaders',
         'Support/Desktop/pixbuf/libpixbufloader-svg.so','Support/Desktop/fonts.conf',
         'Support/Desktop/share/mime/mime.cache','Support/Desktop/share/mime/packages/freedesktop.org.xml'}
@@ -256,6 +256,7 @@ def main():
     for source in (upstream/'third_party/Vulkan-Headers/LICENSES').iterdir():
         if source.is_file():copy(source,stage,'Licenses/Vulkan-Headers-'+source.name)
     if (ROOT/'vendor/smaa/LICENSE.txt').is_file():copy(ROOT/'vendor/smaa/LICENSE.txt',stage,'Licenses/SMAA.txt')
+    copy(ROOT/'assets/ui/input-icons/ATTRIBUTION.md',stage,'Licenses/Keyboard-mouse-icons.txt')
     roots=[(executable,game),*python_pairs,*dynamic];known={p.resolve() for _,p in roots}
     for member in stage.rglob('*'):
         if member.is_file() and elf(member) and member.resolve() not in known:

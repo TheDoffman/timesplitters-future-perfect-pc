@@ -1,15 +1,35 @@
 /* Use the native glyph callback so keycaps follow actual wrapped positions,
  * font size, fades and HUD placement rather than estimating text advances. */
+#if !defined(TSFP_KEYCAP_TEST) && defined(__has_include)
+#if __has_include("pc_input_icon_data.inc")
+#include "pc_input_icon_data.inc"
+#endif
+#endif
+#ifndef TSFP_INPUT_ICONS
+#define TSFP_INPUT_ICONS 0
+#endif
+typedef struct PcKeycapCap {
+    int x,y,r,b,radius,arrow;uint32_t colour;
+#if TSFP_INPUT_ICONS
+    int styled,icon,pressed;
+#endif
+} PcKeycapCap;
 typedef struct PcKeycapDraw {
     char text[2048];size_t next;
     int enabled,open,mouse,arrow;
     float left,top,bottom;
-    struct {int x,y,r,b,radius,arrow;uint32_t colour;} caps[64];
+    PcKeycapCap caps[64];
+#if TSFP_INPUT_ICONS
+    int styled,icon,pressed;unsigned char keys[256];
+#endif
     unsigned count;
 } PcKeycapDraw;
 static RECOMP_TLS PcKeycapDraw keycap_draw;
 static void keycap_flush(void);
 static void keycap_line(int x,int y,int right,int bottom,uint32_t colour);
+#if TSFP_INPUT_ICONS
+#include "pc_input_icons.inc"
+#endif
 
 void pc_display_keycap_text(void (*original)(void))
 {
@@ -28,6 +48,9 @@ void pc_display_keycap_text(void (*original)(void))
             if(end) {keycap_draw.enabled=strchr(keycap_draw.text,'[')!=NULL;break;}
         }
     }
+#if TSFP_INPUT_ICONS
+    if(keycap_draw.enabled)pc_controls_binding_keys(keycap_draw.keys);
+#endif
     original();
     if(keycap_draw.count) {
         GuestRegisters registers;save_registers(&registers);
@@ -41,6 +64,9 @@ static void keycap_flush(void)
      * between individual glyphs. Borders never cover the key-label interiors. */
     guest_call(sub_00022FF0,0);
     for(unsigned n=0;n<keycap_draw.count;n++) {
+#if TSFP_INPUT_ICONS
+        if(keycap_draw.caps[n].styled) {input_icon_paint(&keycap_draw.caps[n]);continue;}
+#endif
         int x=keycap_draw.caps[n].x,y=keycap_draw.caps[n].y;
         int r=keycap_draw.caps[n].r,b=keycap_draw.caps[n].b,radius=keycap_draw.caps[n].radius;
         uint32_t colour=keycap_draw.caps[n].colour;
@@ -93,6 +119,15 @@ void pc_display_keycap_glyph(void (*original)(void))
             if(keycap_draw.count<64 && pc_prompts_keycap_label(start+1,(size_t)(end-start-1))) {
                 keycap_draw.open=1;keycap_draw.mouse=!_strnicmp(start+1,"Mouse",5) || !_strnicmp(start+1,"Wheel",5);
                 keycap_draw.arrow=end-start==2 && start[1]=='<'?-1:end-start==2 && start[1]=='>'?1:0;
+#if TSFP_INPUT_ICONS
+                int key=pc_prompts_keycap_key(start+1,(size_t)(end-start-1));
+                /* Manifest slot zero is the generic mouse-motion prompt, never
+                 * the unbound binding value. Physical keys occupy slots1..255. */
+                keycap_draw.icon=input_icon_id(key>0?key:
+                    end-start==6 && !_strnicmp(start+1,"Mouse",5)?0:-1);
+                keycap_draw.styled=keycap_draw.icon>=0;
+                keycap_draw.pressed=key>0 && key<256 && keycap_draw.keys[key] && pc_controls_key_down(key);
+#endif
                 keycap_draw.left=FLOAT_AT(state+0x18);keycap_draw.top=FLOAT_AT(state+0x1c);
                 keycap_draw.bottom=FLOAT_AT(state+0x24);g_esp+=4;return;
             }
@@ -111,9 +146,16 @@ void pc_display_keycap_glyph(void (*original)(void))
             keycap_draw.caps[n].radius=keycap_draw.mouse?3:2;
             keycap_draw.caps[n].arrow=keycap_draw.arrow;
             keycap_draw.caps[n].colour=WORD_AT(state);
+#if TSFP_INPUT_ICONS
+            keycap_draw.caps[n].styled=keycap_draw.styled;keycap_draw.caps[n].icon=keycap_draw.icon;
+            keycap_draw.caps[n].pressed=keycap_draw.pressed;
+#endif
         }
         keycap_draw.open=0;g_esp+=4;return;
     }
+#if TSFP_INPUT_ICONS
+    if(keycap_draw.open && keycap_draw.styled) {g_esp+=4;return;}
+#endif
     if(keycap_draw.open && keycap_draw.arrow && (c=='<' || c=='>')) {g_esp+=4;return;}
     original();
 }

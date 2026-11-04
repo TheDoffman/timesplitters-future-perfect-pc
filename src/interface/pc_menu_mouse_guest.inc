@@ -2,6 +2,7 @@
  * before sub_0007A7B0 consumes menu actions. Keep callbacks, transitions,
  * sound and disabled-item behavior owned by that original dispatcher. */
 #include "pc_menu_mouse.h"
+static RECOMP_TLS int menu_mouse_profile_icons;
 #if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY) || defined(TSFP_MENU_MOUSE_TEST)
 #ifndef TSFP_MENU_MOUSE_TEST
 #include "pc_controls.h"
@@ -233,7 +234,12 @@ static int menu_mouse_profile_text(void (*original)(void))
     }
     if(!count) return 0;
     float height,width=menu_mouse_measure_prefix(text,length,&height);
-    float origin=FLOAT_AT(frame+4),y=FLOAT_AT(frame+8),positions[4];
+    /* This footer has a fixed native text clip. Keep Select/Back at its
+     * authored baseline and use compact key faces; only Delete needs a
+     * two-unit nudge. Hit regions follow the same visible baselines. */
+    int keyboard=pc_prompts_keyboard_active();
+    float offset=keyboard && count==1 && buttons[0]==3?2.f:0.f;
+    float origin=FLOAT_AT(frame+4),y=FLOAT_AT(frame+8)+offset,positions[4];
     uint32_t alignment=WORD_AT(0x007E7260u);
     if(alignment==1)origin-=width*.5f;else if(alignment==2)origin-=width;
     unsigned sw,sh;d3d8_display_output_shape(WORD_AT(0x004E8CF0u),WORD_AT(0x004E8CF4u),&sw,&sh);
@@ -254,9 +260,17 @@ static int menu_mouse_profile_text(void (*original)(void))
         f->sw=sw;f->sh=sh;f->time=GetTickCount64();
         if(valid && menu_mouse_profile_contains(f,menu,x,py,sw,sh)) hover=(int)i;
     }
-    if(hover<0) return 0;
+    if(hover<0) {
+        if(!keyboard)return 0;
+        uint32_t baseline=WORD_AT(frame+8);
+        int prior_icons=menu_mouse_profile_icons;menu_mouse_profile_icons=1;
+        FLOAT_AT(frame+8)=y;original();WORD_AT(frame+8)=baseline;
+        menu_mouse_profile_icons=prior_icons;
+        return 1;
+    }
     GuestRegisters before;save_registers(&before);
     uint32_t color=WORD_AT(frame+16);
+    int prior_icons=menu_mouse_profile_icons;menu_mouse_profile_icons=keyboard;
     /* Render disjoint spans once each, preserving alpha and exact advances.
        Keep strings above their scratch call frame, clear of nested callees. */
     for(unsigned i=0;i<count;i++) {
@@ -265,9 +279,11 @@ static int menu_mouse_profile_text(void (*original)(void))
         memcpy(&WORD_AT(frame-512),str+starts[i],stops[i]-starts[i]);
         ((char *)&WORD_AT(frame-512))[stops[i]-starts[i]]=0;
         WORD_AT(g_esp+12)=frame-512;FLOAT_AT(g_esp+4)=positions[i];
+        FLOAT_AT(g_esp+8)=y;
         WORD_AT(g_esp+16)=(int)i==hover?0x405a7f00u|(color&0xffu):color;
         WORD_AT(0x007E7260u)=0;original();
     }
+    menu_mouse_profile_icons=prior_icons;
     WORD_AT(0x007E7260u)=alignment;restore_registers(&before);g_esp=frame+4;
     return 1;
 }

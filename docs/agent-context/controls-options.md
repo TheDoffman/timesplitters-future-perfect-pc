@@ -1,5 +1,33 @@
 # Unified Controls options
 
+Imported PNG prompts can replace recognized single-key labels through
+`pc_input_icons.inc`, using generated `pc_input_icon_data.inc` lookup/span data.
+`tools/graphics/import-input-icons.py` reads an attributed asset manifest, validates
+128px source PNGs and virtual-key uniqueness, and packs 32px antialiased RGBA runs.
+Absent icon data or unmapped keys retain the original keycap renderer. Input
+lookup uses cached localized key names; held states require both raw and focused
+input. Imported images use square placement, native RGB tint/fade and the unclipped
+solid-quad emitter; original text advances remain authoritative.
+Rendrify's CC BY4.0 artwork supplies107 physical inputs plus generic Mouse;
+Escape/Space/side buttons and composites retain outlined fallbacks. Manifest
+slot0 is generic Mouse only, never Unbound. Source PNGs stay private; the importer
+accepts `--source-dir`, verifies manifest SHA-256 and deduplicates shared images.
+Attribution/modifications are in `assets/ui/input-icons/ATTRIBUTION.md` and NOTICE.
+Windows release/playable, native Mac and Linux packagers retain the complete credit
+as `Licenses/Keyboard-mouse-icons.txt`.
+The Linux payload verifier requires that notice; its shared icon renderer needs
+no additional Linux adapter. Linux game visual acceptance is still pending.
+The compiled span include ships in source; builds need no artwork download.
+The profile picker has a fixed two-line text clip. `menu_mouse_profile_text`
+scopes compact imported key faces (1.2 instead of1.5 glyph-height multiplier),
+keeps Select/Back at native Y and moves Delete only2 layout pixels down. Normal/
+hover draws and cached hit regions use the same baselines; the icon scope and
+stack argument are restored. Controller layout remains native. Fixtures cover
+compact image bounds, shifted hit regions, stack restoration and scope lifetime.
+Tests use synthetic image data, covering lossless packing, path bounds, duplicate
+keys, pressed/idle selection and original mouse/controller fallback; CI runs both
+the importer and shared glyph fixtures on its supported hosts.
+
 Keyboard/mouse prompts use shared outlined keycaps. Additive2340 scopes the
 translated40FA0 draw and wraps its native40260 glyph callback, also routing
 alternate402D0 callbacks through the shared menu lookup. The renderer replaces
@@ -22,6 +50,8 @@ Historical controls-only fixtures predate native-prompts/display wrappers;
 asserted afterwards, rather than applied to that deliberately older subset.
 
 `pc_settings_navigation.inc` shares section input, sounds and footer hints.
+Its Adjust hint uses separate `[A] / [D]` labels so both keys use imported artwork;
+native measurement still centers/fits the complete footer in main and pause.
 Physical Left/Right arrows switch sections from any root setting; native A/D
 adjustment and header navigation remain. Controller Black/White C4/C8 masks
 0x200/0x400 correspond to LB/RB through the common adapter; held shortcuts

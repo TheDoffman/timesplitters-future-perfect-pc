@@ -13,7 +13,7 @@ def payload(root):
     names=['Bin/libdxcompiler.so','Bin/futureperfect_recomp','TimeSplitters.Launcher','Launch.sh','Settings/pc-controls.json',
         'Support/Python/bin/python3','Support/Online/online.py','Support/Online/network-identity.json','Source/pc-port-source.zip',
         'Bin/libavcodec.so.60','Bin/libavutil.so.58','Source/FFmpeg/pin.json','Source/FFmpeg/linux_ffmpeg.py','Source/FFmpeg/source.tar.gz',
-        'Licenses/SDL.txt','Licenses/DXC.txt','Licenses/DXC-ThirdParty.txt','Licenses/Runtime-GPL-3.0.txt','Licenses/FFmpeg-COPYING.LGPLv2.1.txt','Support/Runtime/dependency-audit.json',
+        'Licenses/SDL.txt','Licenses/DXC.txt','Licenses/DXC-ThirdParty.txt','Licenses/Runtime-GPL-3.0.txt','Licenses/FFmpeg-COPYING.LGPLv2.1.txt','Licenses/Keyboard-mouse-icons.txt','Support/Runtime/dependency-audit.json',
         'Bin/libICE.so.6','Bin/libSM.so.6','Support/Desktop/gdk-pixbuf-query-loaders',
         'Support/Desktop/pixbuf/libpixbufloader-svg.so','Support/Desktop/fonts.conf',
         'Support/Desktop/share/mime/mime.cache','Support/Desktop/share/mime/packages/freedesktop.org.xml']
@@ -36,6 +36,12 @@ def test_complete_payload_and_corruption(tmp_path):
     manifest=payload(tmp_path);package.verify_payload(tmp_path,manifest)
     (tmp_path/'Bin/futureperfect_recomp').write_bytes(b'changed')
     with pytest.raises(ValueError,match='checksum'):package.verify_payload(tmp_path,manifest)
+
+def test_keyboard_icon_credit_is_required(tmp_path):
+    manifest=payload(tmp_path)
+    del manifest['files']['Licenses/Keyboard-mouse-icons.txt']
+    (tmp_path/'Licenses/Keyboard-mouse-icons.txt').unlink()
+    with pytest.raises(ValueError,match='Incomplete'):package.verify_payload(tmp_path,manifest)
 
 
 def test_release_assets_pin_actual_preview_and_launcher_without_publishing(tmp_path):
