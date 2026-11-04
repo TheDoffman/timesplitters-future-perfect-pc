@@ -181,6 +181,10 @@ static int test_player_devices[4]={-2,-1,-1,-1},test_player_saves;
 void pc_settings_players_read(int d[4]) {memcpy(d,test_player_devices,sizeof test_player_devices);}
 int pc_settings_players_save(const int d[4],char *e,size_t n) {(void)e;(void)n;memcpy(test_player_devices,d,sizeof test_player_devices);test_player_saves++;return 1;}
 static unsigned test_pad_buttons;
+static int test_auto_players=1;
+int pc_settings_players_auto(void){return test_auto_players;}
+int pc_settings_players_auto_save(int on,char *e,size_t n){(void)e;(void)n;test_auto_players=on;return 1;}
+void pc_settings_players_join(void){}
 void pc_settings_pad_status(int slot,char *name,size_t n,int *pressed) {snprintf(name,n,"Test controller %d",slot+1);*pressed=(test_pad_buttons>>slot)&1;}
 int pc_settings_save(const PcSettings *s,char *e,size_t n) {CHECK(controls_test_enabled);if(!controls_test_save_ok){snprintf(e,n,"Test save failed");return 0;}controls_test_settings=*s;controls_test_saves++;return 1; }
 void pc_settings_key_name(int k,char *t,size_t n) {CHECK(controls_test_enabled);snprintf(t,n,"Key %d",k);}

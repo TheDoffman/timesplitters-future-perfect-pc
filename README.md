@@ -57,6 +57,27 @@ Windows and Mac use the same installation steps:
 available offline. Use **Check updates → Update release** to install a newer game
 build when available. Launcher and game versions are separate.
 
+### Local split-screen setup
+
+In builds with **Local multiplayer** device settings, automatic joining defaults
+to **ON** unless you previously disabled it:
+
+1. Connect your controllers. Enable **Press Start to join at profile selection**
+   in the launcher's Local multiplayer settings, or **Start to join** under
+   in-game **Controls > General > Local multiplayer**.
+2. At the opening Player 1-4 profile screen, press and release **Start** on each
+   controller in the order you want players assigned. For keyboard/mouse plus
+   controllers, use the keyboard or mouse on that screen first to keep Player 1.
+3. Each player selects a profile using their assigned device. Then choose a mode
+   supporting the selected player count.
+
+Automatic seats last for that session. Existing assigned controllers keep their
+seats. For a fixed setup, assign Players 1-4 in the launcher or in-game Local
+multiplayer menu and apply; manual Apply turns automatic joining off. Unused
+players should be **Disabled**. Joining happens at profile selection, not during
+an active match: return to the main menu to change the participating players.
+Only one keyboard/mouse player is supported; additional players need controllers.
+
 ### Launcher preview
 
 ![TimeSplitters launcher v1.4.0 with Stable selected, Play Game, updates and settings](docs/assets/launcher-preview.png)

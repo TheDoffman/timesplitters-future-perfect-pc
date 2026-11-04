@@ -613,3 +613,5 @@ still use the existing transaction/concurrent-edit checks. Player 1 alone can
 use keyboard/mouse. Native launcher visual validation remains pending.
 
 For legacy non-primary profiles, absent device/profile entries display the runtime's numbered-pad default. Explicit port ordering and xinput aliases are preserved; invalid local-device values fail with an explanatory error before indexing selector labels.
+
+Local multiplayer includes persisted auto_assign_players (Start-to-join). Absent preference defaults ON, including legacy pad setups; explicit OFF persists. Manual SetPlayerDevices disables auto; SettingsPage saves the explicit checkbox after the device transaction. README documents joining and manual setup.

@@ -144,3 +144,37 @@ int main(void){
     assert result.returncode==0,result.stdout+result.stderr
     result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=15)
     assert result.returncode==0,result.stdout+result.stderr
+
+
+def test_start_to_join(tmp_path):
+    source = tmp_path / "join.c"
+    source.write_text(r'''#include <assert.h>
+#include "pc_local_join.h"
+int main(void) {
+ PcLocalJoin s={0}; int d[4]={-2,-1,-1,-1};
+ /* Entry-held Start cannot steal a seat. Release, then press. */
+ assert(!pc_local_join(&s,d,4,0)); assert(d[0]==-2);
+ pc_local_join(&s,d,0,0); assert(pc_local_join(&s,d,4,0)); assert(d[0]==2);
+ assert(!pc_local_join(&s,d,4,0));
+ pc_local_join(&s,d,0,0); assert(pc_local_join(&s,d,1,0)); assert(d[1]==0);
+ pc_local_join(&s,d,0,0); assert(pc_local_join(&s,d,10,0));
+ assert(d[2]==1 && d[3]==3);
+ pc_local_join(&s,d,0,0); assert(!pc_local_join(&s,d,15,0));
+ /* Keyboard gets P1 when used first; manually owned pads keep their seats. */
+ s=(PcLocalJoin){0}; d[0]=-2;d[1]=3;d[2]=-1;d[3]=-1;
+ pc_local_join(&s,d,0,1); assert(pc_local_join(&s,d,1,0));
+ assert(d[0]==-2 && d[1]==3 && d[2]==0);
+ pc_local_join(&s,d,0,0); assert(!pc_local_join(&s,d,8,0));
+ assert(d[1]==3);
+ return 0;
+}
+''')
+    compiler, env = native_compiler(tmp_path)
+    exe = tmp_path / ("join.exe" if os.name == "nt" else "join")
+    inc = str(ROOT / "src/input")
+    args = ([compiler, "/nologo", "/std:c11", "/I"+inc, str(source), "/Fe:"+str(exe)]
+            if os.name == "nt" else [compiler, "-std=c11", "-I"+inc, str(source), "-o", str(exe)])
+    result = subprocess.run(args, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr
+    result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stdout + result.stderr

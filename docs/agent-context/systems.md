@@ -1,4 +1,4 @@
-[Settings sections and keycap/footer drawing](controls-options.md).
+[Controls and Start-to-join](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)

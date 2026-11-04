@@ -152,3 +152,5 @@ reservation, free-pad fallback, disconnect and focus gating; Windows also mocks
 physical key polling to check independent keyboard movement/fire. Removing the
 reservation guard must fail at the P1-neutral assertion. These are sampler tests,
 not live OS event delivery or proof of a rendered two-player match.
+
+Start-to-join uses shared pc_local_join.h and polls only the opening profile screen. Raw Start edges assign free seats in press order; keyboard interaction reserves P1. Seats are session-only; manual Apply disables auto joining. Focus loss re-arms edges. test_controller_profile.py covers ordering, held buttons, capacity and existing owners.

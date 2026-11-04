@@ -226,6 +226,7 @@ static void kb_build(void)
     kb_enabled_row=kb_invert_row=0;
     WORD_AT(kb_menu+0x10)=kb_page==KB_LIST?KB_DRAW:0;
     if(kb_page==KB_PLAYERS) {
+        kb_row(8,pc_settings_players_auto()?"Start to join: ON":"Start to join: OFF",0);
         const char *devices[]={"Keyboard & Mouse","Disabled","Controller 1","Controller 2","Controller 3","Controller 4"};
         for(int i=0;i<4;i++) {
             snprintf(line,sizeof line,"Player %d",i+1);kb_device_rows[i]=kb_row(i,line,0);
@@ -342,7 +343,11 @@ static void kb_select(void)
     int id=guest_writable(menu,0x190)?kb_local_id(WORD_AT(menu+0x18c)):-1;
     if(id==50) {controls_players_open(menu);}
     else if(kb_page==KB_PLAYERS) {
-        if(id==4) {
+        if(id==8) {
+            if(pc_settings_players_auto_save(!pc_settings_players_auto(),kb_status,sizeof kb_status))
+                snprintf(kb_status,sizeof kb_status,"Return to profile selection and press Start to join.");
+            kb_refresh(KB_PLAYERS,8);
+        } else if(id==4) {
             if(pc_settings_players_save(kb_devices,kb_status,sizeof kb_status))snprintf(kb_status,sizeof kb_status,"Player devices applied.");
             kb_refresh(KB_PLAYERS,4);
         } else if(id==5)kb_refresh(KB_PLAYER_PICK,0);

@@ -108,6 +108,14 @@ namespace TimeSplitters.Launcher
                 "Player "+(player+1)+" has an unsupported input device. No settings were changed.");
             return device;
         }
+        public bool AutoAssignPlayers {
+            get { object value;if(document.TryGetValue("auto_assign_players",out value)) {
+                Core.Require(value is bool,"Automatic player assignment must be true or false.");return (bool)value;
+            }
+                return true;
+            }
+            set { document["auto_assign_players"]=value; }
+        }
         Dictionary<string,object> PlayerProfile(int player,bool create)
         {
             var profiles=((IEnumerable)document["controllers"]).Cast<object>().ToList();
@@ -140,6 +148,7 @@ namespace TimeSplitters.Launcher
             // bindings and unknown fields when only the device changes.
             for(int i=0;i<4;i++)PlayerProfile(i,false);
             for(int i=0;i<4;i++)PlayerProfile(i,true)["device"]=devices[i];
+            AutoAssignPlayers=false;
         }
         readonly string[] Files;
         static Dictionary<string, object> Map(object value)

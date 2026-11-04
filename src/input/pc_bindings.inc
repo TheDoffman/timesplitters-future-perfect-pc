@@ -263,6 +263,49 @@ static int pc_write_config(const char *text)
 }
 
 /* Public local-player assignments: -2 keyboard, -1 disabled, 0..3 pad. */
+#include "pc_local_join.h"
+static int g_players_auto=-1;
+static PcLocalJoin g_players_join;
+int pc_settings_players_auto(void)
+{
+    recomp_bindings_init();
+    if(g_players_auto<0) {
+        char *text=g_have_path?read_file(g_path):NULL;
+        const char *value=text?pc_member(text,"auto_assign_players",NULL):NULL;
+        g_players_auto=1;
+        if(value)g_players_auto=!strncmp(value,"true",4);
+        free(text);
+    }
+    return g_players_auto;
+}
+int pc_settings_players_auto_save(int enabled,char *error,size_t bytes)
+{
+    recomp_bindings_init();
+    char *text=g_have_path?read_file(g_path):NULL;
+    int ok=text && pc_replace_member(&text,ws(text),"auto_assign_players",enabled?"true":"false") && pc_write_config(text);
+    free(text);
+    if(!ok){snprintf(error,bytes,"Could not save automatic joining.");return 0;}
+    g_players_auto=!!enabled;memset(&g_players_join,0,sizeof g_players_join);return 1;
+}
+void pc_settings_players_join(void)
+{
+    recomp_bindings_init();if(!pc_settings_players_auto())return;
+    int devices[4];unsigned starts=0;unsigned char keys[256];
+    pc_settings_players_read(devices);
+    if(!pc_controls_binding_keys(keys)) { g_players_join.held=15; return; }
+    int keyboard=keys[1]||keys[13]||keys['E']||keys[32];
+    for(int i=0;i<4;i++){RecompPadState pad;if(recomp_pad_read(i,&pad) && (pad.buttons&RECOMP_PAD_START))starts|=1u<<i;}
+    if(!pc_local_join(&g_players_join,devices,starts,keyboard))return;
+    AcquireSRWLockExclusive(&g_pc_bindings_lock);
+    for(int i=0;i<4;i++)if(devices[i]>=0 && (g_ctl[i].device!=DEV_PAD || g_ctl[i].pad!=devices[i])) {
+        Controller *c=&g_ctl[i];int has_pad=0;
+        c->device=DEV_PAD;c->pad=devices[i];
+        for(int k=0;k<CONTROL_COUNT;k++)for(int b=0;b<c->bind[k].count;b++)
+            if(c->bind[k].src[b].kind!=SRC_KEY && c->bind[k].src[b].kind!=SRC_NONE)has_pad=1;
+        c->pad_fallback=c->has_key&&!has_pad;describe(c,c->label,sizeof c->label);
+    }
+    ReleaseSRWLockExclusive(&g_pc_bindings_lock);
+}
 int pc_settings_keyboard_player(void)
 {
     int active;recomp_bindings_init();AcquireSRWLockShared(&g_pc_bindings_lock);
@@ -333,7 +376,8 @@ int pc_settings_players_save(const int devices[4],char *error,size_t bytes)
     }
     memcpy(next,g_ctl,sizeof next);memcpy(g_ctl,before,sizeof before);
     ReleaseSRWLockExclusive(&g_pc_bindings_lock);
-    if(!valid || !pc_write_config(text))goto fail;
+    if(!valid || !pc_replace_member(&text,ws(text),"auto_assign_players","false") || !pc_write_config(text))goto fail;
+    g_players_auto=0;
     for(int i=0;i<4;i++)if(before[i].device==DEV_PAD)recomp_pad_rumble(before[i].pad,0,0);
     AcquireSRWLockExclusive(&g_pc_bindings_lock);memcpy(g_ctl,next,sizeof next);
     ReleaseSRWLockExclusive(&g_pc_bindings_lock);
