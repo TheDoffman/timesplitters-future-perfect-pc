@@ -31,6 +31,8 @@ provider with the same SONAME, and executes the relocated output to verify the
 new implementation. It also checks exact preservation of a single-file overlay.
 Named Linux release metadata requires the version of the actually verified
 launcher included in the package, rather than the older global minimum.
+ZIP naming and its single top-level directory derive from the immutable staging
+directory name, independent of library/license iteration variable names.
 
 The SDL host now exports the shared `pc_controls_key_down` and
 `pc_controls_accept_pad` contracts used by settings-tab navigation. Windows and

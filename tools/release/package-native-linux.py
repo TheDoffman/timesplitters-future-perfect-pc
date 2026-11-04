@@ -233,10 +233,10 @@ def main():
     (stage/'BUILD.json').write_text(json.dumps(manifest,indent=2)+'\n');verify_payload(stage,manifest)
     env=dict(os.environ);env.pop('PYTHONPATH',None)
     subprocess.run([str(stage/'Support/Python/bin/python3'),'-c','import ssl,tkinter,cryptography,cffi; t=tkinter.Tk();t.withdraw();t.update();t.destroy();assert ssl.create_default_context().cert_store_stats()["x509_ca"]>0;print("PASS relocated Python/Tk/TLS")'],env=env,check=True,timeout=30)
-    archive_path=stage.with_name(name+'.zip')
+    archive_path=stage.with_name(stage.name+'.zip')
     with zipfile.ZipFile(archive_path,'x',zipfile.ZIP_DEFLATED,compresslevel=1) as archive:
         for path in sorted(stage.rglob('*')):
-            if path.is_file():archive.write(path,name+'/'+path.relative_to(stage).as_posix())
+            if path.is_file():archive.write(path,stage.name+'/'+path.relative_to(stage).as_posix())
     with zipfile.ZipFile(archive_path) as archive:
         if archive.testzip():raise ValueError('Corrupt Linux package')
     subprocess.run([str(stage/'TimeSplitters.Launcher'),'--verify-game-package',str(archive_path),args.version],check=True,timeout=60)
