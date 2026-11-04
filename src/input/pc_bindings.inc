@@ -195,7 +195,7 @@ static const char *pc_member(const char *object, const char *wanted, const char 
     return NULL;
 }
 
-static const char *pc_controller(const char *text)
+static const char *pc_controller_port(const char *text,int wanted)
 {
     const char *p = pc_member(text, "controllers", NULL), *port;
     int index=0;
@@ -205,12 +205,14 @@ static const char *pc_controller(const char *text)
         const char *next = jskip(p);
         if (!next || *p != '{') return NULL;
         port = pc_member(p, "port", NULL);
-        if ((port && strtol(port,NULL,10) == 1) || (!port && index == 0)) return p;
+        if ((port && strtol(port,NULL,10) == wanted+1) || (!port && index == wanted)) return p;
         p = ws(next); if (*p == ',') p = ws(p+1);
         index++;
     }
     return NULL;
 }
+
+static const char *pc_controller(const char *text) {return pc_controller_port(text,0);}
 
 static int pc_replace_member(char **text, const char *object, const char *name, const char *value)
 {
@@ -258,6 +260,94 @@ static int pc_write_config(const char *text)
     }
     return 1;
 #endif
+}
+
+/* Public local-player assignments: -2 keyboard, -1 disabled, 0..3 pad. */
+int pc_settings_keyboard_player(void)
+{
+    int active;recomp_bindings_init();AcquireSRWLockShared(&g_pc_bindings_lock);
+    active=g_ctl[0].device==DEV_KEYBOARD;ReleaseSRWLockShared(&g_pc_bindings_lock);return active;
+}
+void pc_settings_players_read(int devices[4])
+{
+    recomp_bindings_init();AcquireSRWLockShared(&g_pc_bindings_lock);
+    for(int i=0;i<4;i++)devices[i]=g_ctl[i].device==DEV_KEYBOARD?-2:g_ctl[i].device==DEV_PAD?g_ctl[i].pad:-1;
+    ReleaseSRWLockShared(&g_pc_bindings_lock);
+}
+int pc_settings_players_save(const int devices[4],char *error,size_t bytes)
+{
+    unsigned used=0;char *text=NULL;int ok=0;
+    recomp_bindings_init();
+    for(int i=0;i<4;i++) {
+        int d=devices[i];
+        if(d < -2 || d>3 || (i && d==-2) || (!i && d==-1)) {
+            snprintf(error,bytes,"Player 1 needs a device; keyboard and mouse belong to Player 1.");return 0;
+        }
+        if(d>=0 && (used&(1u<<d))) {
+            snprintf(error,bytes,"Assign each controller to only one player.");return 0;
+        }
+        if(d>=0)used|=1u<<d;
+    }
+    text=g_have_path?read_file(g_path):NULL;if(!text)goto fail;
+    /* Ambiguous profiles cannot be safely edited: the normal loader could
+     * otherwise select a different duplicate after the next restart. */
+    {
+        const char *p=pc_member(text,"controllers",NULL);unsigned ports=0;int index=0;
+        if(!p || *p++!='[')goto fail;
+        p=ws(p);
+        while(*p && *p!=']') {
+            const char *next=jskip(p),*port=pc_member(p,"port",NULL);char *tail;
+            long slot=port?strtol(port,&tail,10)-1:index;
+            if(!next || *p!='{' || slot<0 || slot>3 || (ports&(1u<<slot)))goto fail;
+            if(port && *ws(tail)!=',' && *ws(tail)!='}')goto fail;
+            ports|=1u<<slot;index++;p=ws(next);if(*p==',')p=ws(p+1);
+        }
+        if(*p!=']')goto fail;
+    }
+    for(int i=0;i<4;i++) {
+        const char *profile=pc_controller_port(text,i);char value[40];
+        if(!profile) {
+            const char *end,*array=pc_member(text,"controllers",&end);
+            if(!array || *array!='[' || end<=array || end[-1]!=']')goto fail;
+            size_t n=(size_t)(end-array)-1;char *expanded=malloc(n+64);
+            if(!expanded)goto fail;
+            memcpy(expanded,array,n);
+            snprintf(expanded+n,64,"%s{\"port\":%d,\"device\":\"none\"}]",*ws(array+1)==']'?"":",",i+1);
+            int changed=pc_replace_member(&text,ws(text),"controllers",expanded);free(expanded);
+            if(!changed)goto fail;
+            profile=pc_controller_port(text,i);if(!profile)goto fail;
+        }
+        if(devices[i]>=0)snprintf(value,sizeof value,"\"gamepad:%d\"",devices[i]);
+        else snprintf(value,sizeof value,"\"%s\"",devices[i]==-2?"keyboard":"none");
+        if(!pc_replace_member(&text,profile,"device",value))goto fail;
+    }
+    /* Validate with the normal parser before touching disk or publishing.
+     * Its destination is global, so keep the temporary state private under
+     * the same lock used by the sampler, then restore it before file I/O. */
+    Controller before[4],next[4];int valid=1;
+    AcquireSRWLockExclusive(&g_pc_bindings_lock);memcpy(before,g_ctl,sizeof before);
+    for(int i=0;i<4;i++) {
+        int bad=0;
+        if(!parse_controller(pc_controller_port(text,i),i,&bad) || bad)valid=0;
+        describe(&g_ctl[i],g_ctl[i].label,sizeof g_ctl[i].label);
+    }
+    memcpy(next,g_ctl,sizeof next);memcpy(g_ctl,before,sizeof before);
+    ReleaseSRWLockExclusive(&g_pc_bindings_lock);
+    if(!valid || !pc_write_config(text))goto fail;
+    for(int i=0;i<4;i++)if(before[i].device==DEV_PAD)recomp_pad_rumble(before[i].pad,0,0);
+    AcquireSRWLockExclusive(&g_pc_bindings_lock);memcpy(g_ctl,next,sizeof next);
+    ReleaseSRWLockExclusive(&g_pc_bindings_lock);
+    ok=1;
+fail:
+    free(text);if(!ok)snprintf(error,bytes,"Could not save player devices. Active assignments were kept.");
+    return ok;
+}
+void pc_settings_pad_status(int slot,char *name,size_t bytes,int *pressed)
+{
+    RecompPadState pad;*pressed=0;
+    if(slot<0 || slot>=4 || !recomp_pad_read(slot,&pad)) {snprintf(name,bytes,"Disconnected");return;}
+    recomp_pad_name(slot,name,bytes);
+    *pressed=pad.buttons!=0;
 }
 
 static int pc_debug_bool(const char *object, const char *name)

@@ -1,3 +1,28 @@
+## Local player devices (local feat/local-player-devices, uncommitted)
+
+Base 471936e7, Windows x64. Shared launcher and in-game General Controls now
+offer explicit Player 1–4 assignments. Keyboard/mouse belongs to Player 1;
+controllers are exclusive. In-game identification captures a fresh button press,
+and Apply persists all assignments without replacing bindings. Controller-owned
+players ignore stored keyboard sources and raw mouse camera input. SDL reconnects
+reserve their original device-path seats for the current process.
+
+Full patch application and generation pass. Controller checks: 36 pass, including
+reordered profiles and headless Windows/SDL keyboard-plus-pad reservation tests
+with deliberate broken-guard detection; mounted-input checks: 19 pass. Menu
+callback checks: 4 pass, 2 native Mac compile checks skipped. Full
+Windows launcher suite and game build tests pass, including assignment save,
+read-only failure rollback and binding retention. The optimized game compile hit
+MSVC C1002 on generated continuation files; the local test executable finishes
+with /Od on remaining generated objects. This is not optimized-release evidence.
+One existing virtual-pad prompt test skipped because foreground activation was
+denied. The isolated Test Lab executable starts, but desktop input/capture also
+fails (GetCursorPos access denied / monitor capture unavailable), so visual menu
+acceptance and a live two-player match remain pending. Physical hotplug, Mac and
+Linux validation remain pending. Numbered slots persist; device identity across
+reordered startup enumeration is not guaranteed. Multiple independent keyboard/
+mouse sets are outside this feature.
+
 ## Shared keyboard/mouse keycaps (isolated local work)
 
 Keyboard/mouse prompts use rounded outlined keycaps through the translated

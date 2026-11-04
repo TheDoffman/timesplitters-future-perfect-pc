@@ -1034,3 +1034,5 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 [RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
 
 GPU asserts stay on; AO logs scene/pixel failures.
+
+Local-player tests: controls-options.md.

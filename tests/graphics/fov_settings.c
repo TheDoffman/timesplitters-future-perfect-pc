@@ -177,6 +177,11 @@ static unsigned controls_test_saves,controls_test_previews;
 static PcSettings controls_test_settings;
 void pc_settings_defaults(PcSettings *s) {CHECK(controls_test_enabled);*s=controls_test_settings;s->sensitivity=.1;s->enabled=1;s->invert_y=0;}
 int pc_settings_read(PcSettings *s,char *e,size_t n) { (void)e;(void)n;CHECK(controls_test_enabled);*s=controls_test_settings;return 1; }
+static int test_player_devices[4]={-2,-1,-1,-1},test_player_saves;
+void pc_settings_players_read(int d[4]) {memcpy(d,test_player_devices,sizeof test_player_devices);}
+int pc_settings_players_save(const int d[4],char *e,size_t n) {(void)e;(void)n;memcpy(test_player_devices,d,sizeof test_player_devices);test_player_saves++;return 1;}
+static unsigned test_pad_buttons;
+void pc_settings_pad_status(int slot,char *name,size_t n,int *pressed) {snprintf(name,n,"Test controller %d",slot+1);*pressed=(test_pad_buttons>>slot)&1;}
 int pc_settings_save(const PcSettings *s,char *e,size_t n) {CHECK(controls_test_enabled);if(!controls_test_save_ok){snprintf(e,n,"Test save failed");return 0;}controls_test_settings=*s;controls_test_saves++;return 1; }
 void pc_settings_key_name(int k,char *t,size_t n) {CHECK(controls_test_enabled);snprintf(t,n,"Key %d",k);}
 int pc_settings_conflict(const PcSettings *s,int a,int k) { (void)s;(void)a;(void)k;CHECK(0);return 0; }
@@ -964,6 +969,37 @@ int main(int argc,char **argv)
         settings_keys[0x27]=1;call(TICK_CB,VIDEO_TABS_ID,0x80008);
         CHECK(page==DISPLAY_GRAPHICS && staged_anisotropy==16 && WORD_AT(graphics_rows[2]+0xc8)==4);
         settings_keys[0x27]=0;
+    }
+    { /* Local-player choices use native selectors and commit only on Apply. */
+        controls_tab=0;controls_test_enabled=1;
+        WORD_AT(controls_menu+4)=CONTROLS_DESCRIPTOR;
+        controls_players_open(controls_menu);
+        CHECK(kb_page==KB_PLAYERS && kb_devices[0]==-2 && kb_devices[1]==-1);
+        CHECK(WORD_AT(kb_device_rows[0]+0xc8)==0 && WORD_AT(kb_device_rows[1]+0xc8)==0);
+        WORD_AT(kb_device_rows[1]+0xc8)=1;
+        call(KB_TICK,0,0);
+        CHECK(kb_devices[1]==0 && test_player_saves==0);
+        call(KB_SELECT,204,0);
+        CHECK(test_player_saves==1 && test_player_devices[1]==0);
+        call(KB_SELECT,205,0);CHECK(kb_page==KB_PLAYER_PICK);
+        call(KB_SELECT,202,0);CHECK(kb_page==KB_PLAYER_WAIT && capture_active);
+        call(KB_SELECT,206,0);CHECK(kb_page==KB_PLAYERS && !capture_active);
+        call(KB_SELECT,205,0);call(KB_SELECT,202,0);
+        test_pad_buttons=1;call(KB_TICK,0,0);
+        CHECK(kb_page==KB_PLAYER_WAIT && kb_devices[2]==-1); /* Held button ignored. */
+        test_pad_buttons=0;call(KB_TICK,0,0);
+        test_pad_buttons=1;call(KB_TICK,0,0);
+        CHECK(kb_page==KB_PLAYERS && kb_devices[2]==-1 && !capture_active);
+        CHECK(strstr(kb_status,"already assigned to Player 2"));
+        test_pad_buttons=0;call(KB_SELECT,205,0);call(KB_SELECT,202,0);call(KB_TICK,0,0);
+        test_pad_buttons=2;call(KB_TICK,0,0);
+        CHECK(kb_page==KB_PLAYERS && kb_devices[2]==1 && !capture_active);
+        CHECK(test_player_saves==1 && test_player_devices[2]==-1); /* Still a draft. */
+        call(KB_SELECT,204,0);CHECK(test_player_devices[2]==1 && test_player_saves==2);
+        test_pad_buttons=0;call(KB_SELECT,205,0);call(KB_SELECT,203,0);
+        clock_ms+=20001;call(KB_TICK,0,0);
+        CHECK(kb_page==KB_PLAYERS && !capture_active && kb_devices[3]==-1);
+        call(KB_SELECT,206,0);CHECK(controls_tab==0);
     }
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");

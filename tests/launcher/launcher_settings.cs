@@ -149,6 +149,27 @@ public static class LauncherSettingsChecks
         Directory.CreateDirectory(temp);
         try
         {
+            Test("local player assignments are exclusive and preserve bindings",()=>{
+                var r=Root("local-players");var m=GameSettings.Load(r,null);
+                m.Assign(2,0,'T',true);
+                m.SetPlayerDevices(new[]{"keyboard","gamepad:0","gamepad:1","none"});m.Save();
+                m=GameSettings.Load(r,null);
+                Require(m.PlayerDevice(1)=="gamepad:0" && m.PlayerDevice(2)=="gamepad:1");
+                Require(GameSettings.KeyCode(m.Binding(2)[0])=='T');
+                Reject(()=>m.SetPlayerDevices(new[]{"keyboard","gamepad:0","gamepad:0","none"}));
+                Require(m.PlayerDevice(2)=="gamepad:1");
+                Reject(()=>m.SetPlayerDevices(new[]{"none","gamepad:0","gamepad:1","none"}));
+                Reject(()=>m.SetPlayerDevices(new[]{"gamepad:0","keyboard","none","none"}));
+            });
+            Test("local player legacy defaults and reordered profiles preserve their ports",()=>{
+                var r=Root("legacy-local-players");
+                Put(r,"Settings/pc-controls.json","{\"controllers\":[{\"port\":3},{\"port\":1,\"device\":\"keyboard\"},{\"port\":2,\"device\":\"xinput:0\",\"retained\":true}]}");
+                var m=GameSettings.Load(r,null);
+                Require(m.PlayerDevice(1)=="gamepad:0" && m.PlayerDevice(2)=="gamepad:2" && m.PlayerDevice(3)=="gamepad:3");
+                m.SetPlayerDevices(new[]{"keyboard","gamepad:0","gamepad:2","none"});m.Save();
+                m=GameSettings.Load(r,null);Require(m.PlayerDevice(1)=="gamepad:0" && m.PlayerDevice(2)=="gamepad:2" && m.PlayerDevice(3)=="none");
+                Require(File.ReadAllText(Path.Combine(r,"Settings/pc-controls.json")).Contains("retained"));
+            });
             Test("weapon slots migrate stock keys, preserve custom keys and round trip",()=>{
                 var r=Root("weapon-slots");
                 Put(r,"Settings/pc-controls.json","{\"controllers\":[{\"port\":1,\"device\":\"keyboard\",\"bindings\":{\"white\":\"key:1\",\"black\":\"key:2\",\"x\":\"key:3\"}}]}");

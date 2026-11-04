@@ -604,3 +604,12 @@ pc-graphics.ini reads V1 (100%) or V2 with a sixth index0..3; defaults write V1,
 non-defaults V2. Existing settings transactions/concurrent-edit rejection remain.
 Model and WPF/Avalonia UI fixtures cover saving/reopening and 200% pixel-cost
 guidance. Older games/launchers cannot consume non-default V2 graphics files.
+
+Local multiplayer: GameSettings.PlayerDevice/SetPlayerDevices expose all four
+profiles without discarding bindings or unknown fields. Shared SettingsPage
+adds Players 2–4 beside the existing Player 1 selector. Validation rejects
+reused controllers and a disabled Player 1 before mutating the draft. Settings
+still use the existing transaction/concurrent-edit checks. Player 1 alone can
+use keyboard/mouse. Native launcher visual validation remains pending.
+
+For legacy non-primary profiles, absent device/profile entries display the runtime's numbered-pad default. Explicit port ordering and xinput aliases are preserved; invalid local-device values fail with an explanatory error before indexing selector labels.

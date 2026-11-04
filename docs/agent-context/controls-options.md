@@ -111,3 +111,44 @@ debounce, failed-save rollback and direct queued tab clicks. `test_ui_layout.py`
 checks owned Controls font scale/restoration alongside Video. Input fixtures
 continue to cover binding/model and pointer behavior. Native Mac uses the same
 source; Windows evidence does not establish native Mac visual acceptance.
+
+Local player device work in progress: General Controls exposes Local Multiplayer
+through the existing keyboard-page callback dispatcher. Four device rows edit a
+draft; Apply validates exclusive assignments and persists them through
+pc_settings_players_save. A button-driven identification flow reads raw pad
+buttons, requires release, blocks normal menu actions during capture and times
+out after twenty seconds. Keyboard/mouse remains Player 1 only. Main-menu and
+pause use the same page; live presentation and split-screen gameplay still need
+acceptance checks. Back leaves unapplied assignments unchanged.
+
+Local player assignment uses pc_settings_players_read/save in pc_bindings.inc.
+Keyboard/mouse ownership remains local slot zero and only a keyboard profile
+receives raw camera motion. Controller profiles retain stored keyboard bindings
+for switching back but do not execute them. Patch2350 excludes those key sources
+and reserves disconnected SDL seats by device path for the current session.
+Missing/changed paths do not silently reclaim a reserved seat; startup slot
+identity across reordered enumeration still needs follow-up validation.
+
+Local-player device assignment: controller_profile fixtures now simulate two
+independent pads and actual SDL scan reconnect slot reservation; launcher_settings
+covers assignment round trips and atomic duplicate rejection. Patch2350 follows
+the late reload/radial sampler in apply-patches.py. Its policy must remain shared
+between Windows and SDL. Live split-screen and physical hotplug checks are still
+required in addition to those fixtures.
+
+pc_settings native fixture also exercises live four-port publication, retained
+bindings/unknown JSON, duplicate rejection and read-only save rollback. The FOV
+menu fixture covers native player selectors, explicit Apply and identification
+cancel. Both mouse adapter bodies test that controller ownership drains mouse
+deltas without moving the camera. All remain in existing CI test entry points.
+Patch2350 also distinguishes explicit device choices from implicit defaults
+when profiles are reordered: parse_controller must never replace an explicit
+pad index with the guest port index. Controller fixtures cover both array orders.
+Identification tests include held-button rejection, already-owned pads, timeout
+and draft-only capture until Apply.
+The headless local_player_routing fixture compiles the actual sampler under both
+host branches with explicit focus/capture inputs. It verifies assigned-pad
+reservation, free-pad fallback, disconnect and focus gating; Windows also mocks
+physical key polling to check independent keyboard movement/fire. Removing the
+reservation guard must fail at the P1-neutral assertion. These are sampler tests,
+not live OS event delivery or proof of a rendered two-player match.

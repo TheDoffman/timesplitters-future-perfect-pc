@@ -40,6 +40,10 @@ int pc_settings_assign(PcSettings *settings, int action, int slot, int key, int 
 /* Per-input-profile Windows menu-bar preference; absent means hidden. */
 int pc_settings_menu_visible(void);
 int pc_settings_save_menu_visible(int visible);
+int pc_settings_keyboard_player(void);
+void pc_settings_players_read(int devices[4]);
+int pc_settings_players_save(const int devices[4],char *error,size_t bytes);
+void pc_settings_pad_status(int slot,char *name,size_t bytes,int *pressed);
 void pc_settings_attach(HWND game);
 void pc_settings_toggle_menu(HWND game);
 void pc_settings_detach(HWND game);

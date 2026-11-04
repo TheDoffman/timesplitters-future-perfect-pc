@@ -629,6 +629,10 @@ void pc_controls_apply_mouse(uint32_t player, uint32_t fov_object, ptrdiff_t mem
         ReleaseSRWLockExclusive(&lock);
         return;
     }
+    if(!pc_settings_keyboard_player()) {
+        input.dx=input.dy=0;input.cockpit_active=0;
+        ReleaseSRWLockExclusive(&lock);return;
+    }
     pc_reload_guest_context(&input.reload,player,memory_offset,GetTickCount64(),&region);
     terminal = pc_terminal_mouse_in_region(&input, GetTickCount64(), sensitivity, player, memory_offset, pc_native_rate()!=0,&region);
     pc_input_terminal_context(&input, terminal >= 0, input.keys[VK_LBUTTON]);

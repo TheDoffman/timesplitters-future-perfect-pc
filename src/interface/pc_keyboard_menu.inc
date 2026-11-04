@@ -9,10 +9,15 @@
 #define KB_DRAW 0x12017u
 #define KB_TEXT_BYTES 192u
 #define KB_TEXT(i) (kb_storage+32u+(uint32_t)(i)*KB_TEXT_BYTES)
-enum { KB_HOME,KB_MOUSE,KB_LIST,KB_ACTION,KB_CAPTURE,KB_CONFLICT,KB_CLEAR,KB_ESCAPE,KB_RESET,KB_ERROR };
+enum { KB_HOME,KB_MOUSE,KB_LIST,KB_ACTION,KB_CAPTURE,KB_CONFLICT,KB_CLEAR,KB_ESCAPE,KB_RESET,KB_ERROR,KB_PLAYERS,KB_PLAYER_PICK,KB_PLAYER_WAIT };
 static uint32_t kb_storage,kb_parent,kb_previous,kb_menu,kb_enabled_row,kb_invert_row;
 static int kb_page,kb_group,kb_offset,kb_action,kb_slot,kb_key,kb_conflict,kb_capture_pending;
 static PcSettings kb_settings,kb_saved;
+static int kb_devices[4];
+static uint32_t kb_device_rows[4];
+static int kb_player_target;
+static unsigned kb_player_blocked;
+static uint64_t kb_player_deadline;
 static uint64_t kb_mouse_changed;
 static char kb_status[192];
 static void kb_refresh(int page,int selected);
@@ -74,6 +79,8 @@ static void kb_back_action(void)
 {
     kb_capture_pending=0;pc_settings_capture_end();kb_flush_mouse();
     switch(kb_page) {
+    case KB_PLAYERS:controls_players_back();break;
+    case KB_PLAYER_PICK:case KB_PLAYER_WAIT:kb_refresh(KB_PLAYERS,5);break;
     case KB_HOME:case KB_ERROR:kb_leave();break;
     case KB_LIST:case KB_MOUSE:case KB_RESET:kb_refresh(KB_HOME,0);break;
     case KB_ACTION:kb_refresh(KB_LIST,0);break;
@@ -203,6 +210,8 @@ static void kb_build(void)
 {
     GuestRegisters r;save_registers(&r);kb_menu=WORD_AT(g_esp+4);
     const char *title="Keyboard and Mouse";char line[192],name[80];
+    if(kb_page==KB_PLAYERS || kb_page==KB_PLAYER_PICK)title="Local multiplayer";
+    if(kb_page==KB_PLAYER_WAIT)title="Assign controller";
     if(kb_page==KB_MOUSE)title="Mouse options";
     if(kb_page==KB_LIST)title=pc_keyboard_group_names[kb_group];
     if(kb_page==KB_ACTION || kb_page==KB_CLEAR || kb_page==KB_ESCAPE)title=pc_action_labels[kb_action];
@@ -216,7 +225,23 @@ static void kb_build(void)
     } else if(kb_page==KB_MOUSE)kb_row(16,title,1);
     kb_enabled_row=kb_invert_row=0;
     WORD_AT(kb_menu+0x10)=kb_page==KB_LIST?KB_DRAW:0;
-    if(kb_page==KB_HOME) {
+    if(kb_page==KB_PLAYERS) {
+        const char *devices[]={"Keyboard & Mouse","Disabled","Controller 1","Controller 2","Controller 3","Controller 4"};
+        for(int i=0;i<4;i++) {
+            snprintf(line,sizeof line,"Player %d",i+1);kb_device_rows[i]=kb_row(i,line,0);
+            guest_call(sub_0007D480,2,0x8400u,0u);
+            for(int j=i?1:0;j<6;j++)guest_call(sub_000717D0,1,kb_text(20+j,"%s",devices[j]));
+            guest_call(sub_00075430,2,kb_device_rows[i],(uint32_t)(kb_devices[i]+(i?1:2)));
+        }
+        guest_call(sub_00079710,1,0u);kb_row(4,"Apply player devices",0);kb_row(5,"Press a button to assign",0);kb_row(6,"Back",0);
+        kb_row(7,"One controller per player. Keyboard & mouse: Player 1.",1);
+    } else if(kb_page==KB_PLAYER_PICK) {
+        for(int i=0;i<4;i++){snprintf(line,sizeof line,"Assign controller to Player %d",i+1);kb_row(i,line,0);}
+        kb_row(6,"Back",0);
+    } else if(kb_page==KB_PLAYER_WAIT) {
+        snprintf(line,sizeof line,"Press a controller button for Player %d",kb_player_target+1);kb_row(0,line,1);
+        kb_row(1,"Release held buttons first. Escape cancels.",1);kb_row(6,"Cancel",0);
+    } else if(kb_page==KB_HOME) {
         if(unified)guest_call(sub_00071B10,4,1u,bits(1.44f),1u,1u);
         kb_row(0,"Mouse options",0);
         for(int i=0;i<4;i++)kb_row(i+1,pc_keyboard_group_names[i],0);
@@ -313,8 +338,22 @@ static void kb_assign(int key,int move)
 static void kb_select(void)
 {
     GuestRegisters r;save_registers(&r);uint32_t menu=WORD_AT(g_esp+4);
+    if(controls_font_menu(menu))kb_menu=menu;
     int id=guest_writable(menu,0x190)?kb_local_id(WORD_AT(menu+0x18c)):-1;
-    if(kb_page==KB_HOME) {
+    if(id==50) {controls_players_open(menu);}
+    else if(kb_page==KB_PLAYERS) {
+        if(id==4) {
+            if(pc_settings_players_save(kb_devices,kb_status,sizeof kb_status))snprintf(kb_status,sizeof kb_status,"Player devices applied.");
+            kb_refresh(KB_PLAYERS,4);
+        } else if(id==5)kb_refresh(KB_PLAYER_PICK,0);
+        else if(id==6)kb_back_action();
+    } else if(kb_page==KB_PLAYER_PICK) {
+        if(id>=0 && id<4) {
+            kb_player_target=id;kb_player_blocked=15;kb_player_deadline=GetTickCount64()+20000;
+            pc_settings_capture_begin();kb_refresh(KB_PLAYER_WAIT,6);
+        } else if(id==6)kb_back_action();
+    } else if(kb_page==KB_PLAYER_WAIT) {if(id==6)kb_back_action();
+    } else if(kb_page==KB_HOME) {
         if(id==0)kb_refresh(KB_MOUSE,0);
         else if(id>=1 && id<=4){kb_group=id-1;kb_offset=0;kb_refresh(KB_LIST,0);}
         else if(id==5)kb_refresh(KB_RESET,0);else if(id==6)kb_leave();
@@ -350,7 +389,24 @@ static void kb_select(void)
 static void kb_tick(void)
 {
     GuestRegisters r;save_registers(&r);uint32_t menu=WORD_AT(g_esp+4);
-    if(kb_page==KB_CAPTURE) {
+    if(kb_page==KB_PLAYERS) {
+        for(int i=0;i<4;i++)if(guest_writable(kb_device_rows[i],0xcc)) {
+            unsigned choice=WORD_AT(kb_device_rows[i]+0xc8);
+            if(choice<(i?5u:6u))kb_devices[i]=(int)choice-(i?1:2);
+        }
+    } else if(kb_page==KB_PLAYER_WAIT) {
+        if(pc_settings_capture_event()<0 || GetTickCount64()>=kb_player_deadline)kb_back_action();
+        else for(int slot=0;slot<4;slot++) {
+            char name[120];int down=0;pc_settings_pad_status(slot,name,sizeof name,&down);
+            if(!down){kb_player_blocked&=~(1u<<slot);continue;}
+            if(kb_player_blocked&(1u<<slot))continue;
+            kb_player_blocked|=1u<<slot;int owner=-1;
+            for(int i=0;i<4;i++)if(i!=kb_player_target && kb_devices[i]==slot)owner=i;
+            if(owner>=0)snprintf(kb_status,sizeof kb_status,"Controller already assigned to Player %d.",owner+1);
+            else {kb_devices[kb_player_target]=slot;snprintf(kb_status,sizeof kb_status,"Player %d: %.100s. Select Apply to save.",kb_player_target+1,name);}
+            pc_settings_capture_end();kb_refresh(KB_PLAYERS,kb_player_target);break;
+        }
+    } else if(kb_page==KB_CAPTURE) {
         if(kb_capture_pending){pc_settings_capture_begin();kb_capture_pending=0;}
         int event=pc_settings_capture_event();
         if(event<0)kb_back_action();

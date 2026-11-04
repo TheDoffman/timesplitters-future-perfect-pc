@@ -376,6 +376,10 @@ void pc_controls_apply_mouse(uint32_t player,uint32_t fov_object,ptrdiff_t offse
         pthread_mutex_unlock(&camera_lock);
         return;
     }
+    if(!pc_settings_keyboard_player()) {
+        camera_input.dx=camera_input.dy=0;camera_input.cockpit_active=0;
+        pthread_mutex_unlock(&camera_lock);return;
+    }
     pc_reload_guest_context(&camera_input.reload,player,offset,SDL_GetTicks(),&region);
     int terminal=pc_terminal_mouse_in_region(&camera_input,SDL_GetTicks(),atomic_load(&mouse_sensitivity),player,offset,pc_native_rate()!=0,&region);
     pc_input_terminal_context(&camera_input,terminal>=0,atomic_load(&keys[1]));

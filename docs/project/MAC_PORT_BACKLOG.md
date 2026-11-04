@@ -1,3 +1,14 @@
+Local player devices (local feat/local-player-devices, uncommitted): shared
+pc_bindings.inc, keyboard/Controls menus, patch2350 and launcher GameSettings/
+SettingsPage implement assignment, identification and exclusive routing. The
+native SDL mouse adapter uses the same ownership guard; SDL pad path reservation
+is common across hosts. No additional Mac adapter is currently identified.
+Windows validation and remaining live/hardware gaps are recorded in STATUS.md.
+Native Mac and Linux acceptance pending: launcher selectors/persistence, main
+and pause menu layout, keyboard+pad and two-pad play, disconnect/reconnect,
+changed device enumeration and assignment failure rollback. Windows fixtures
+do not establish physical-device or native-host acceptance.
+
 Keycap prompts (local feature/flat-settings-menu, uncommitted): shared
 pc_keycaps.inc and pc_prompts vocabulary plus additive2340 render keyboard/mouse
 prompts through native glyph geometry. Binding-menu cells share the renderer.

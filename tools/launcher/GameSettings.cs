@@ -97,6 +97,50 @@ namespace TimeSplitters.Launcher
         public int RefreshRate { get { return 0; } }
         public string FrameCap { get { return "60"; } }
         public string Device { get { return Convert.ToString(controller["device"], CultureInfo.InvariantCulture); } set { controller["device"] = value; } }
+        public string PlayerDevice(int player)
+        {
+            Core.Require(player>=0 && player<4,"Invalid local player.");
+            var profile=PlayerProfile(player,false);object value;
+            var device=profile!=null && profile.TryGetValue("device",out value)
+                ? Convert.ToString(value,CultureInfo.InvariantCulture).Replace("xinput:","gamepad:") : "gamepad:"+player;
+            Core.Require(device=="none" || (player==0 && device=="keyboard") ||
+                new[]{"gamepad:0","gamepad:1","gamepad:2","gamepad:3"}.Contains(device),
+                "Player "+(player+1)+" has an unsupported input device. No settings were changed.");
+            return device;
+        }
+        Dictionary<string,object> PlayerProfile(int player,bool create)
+        {
+            var profiles=((IEnumerable)document["controllers"]).Cast<object>().ToList();
+            Dictionary<string,object> found=null;int index=0;
+            foreach(var item in profiles) {
+                var profile=Map(item);object port;
+                int slot=profile.TryGetValue("port",out port)?Convert.ToInt32(port)-1:index;
+                Core.Require(slot>=0 && slot<4,"Local player ports must be between 1 and 4.");
+                if(slot==player) { Core.Require(found==null,"Duplicate local player profiles.");found=profile; }
+                index++;
+            }
+            if(found==null && create) {
+                found=new Dictionary<string,object>{{"port",player+1},{"device","none"}};
+                profiles.Add(found);document["controllers"]=profiles.ToArray();
+            }
+            return found;
+        }
+        public void SetPlayerDevices(string[] devices)
+        {
+            Core.Require(devices!=null && devices.Length==4,"Choose devices for all four players.");
+            var used=new HashSet<string>(StringComparer.Ordinal);
+            for(int i=0;i<4;i++) {
+                string value=devices[i];
+                Core.Require(value=="none" || (i==0 && value=="keyboard") ||
+                    new[]{"gamepad:0","gamepad:1","gamepad:2","gamepad:3"}.Contains(value),"Choose a supported player device.");
+                Core.Require(value=="none" || used.Add(value),"Each controller can be assigned to only one player.");
+            }
+            Core.Require(devices[0]!="none","Player 1 needs an input device.");
+            // Validate the whole draft before changing any profile. Preserve its
+            // bindings and unknown fields when only the device changes.
+            for(int i=0;i<4;i++)PlayerProfile(i,false);
+            for(int i=0;i<4;i++)PlayerProfile(i,true)["device"]=devices[i];
+        }
         readonly string[] Files;
         static Dictionary<string, object> Map(object value)
         { var map = value as Dictionary<string, object>; Core.Require(map != null, "Settings contain an invalid object."); return map; }
