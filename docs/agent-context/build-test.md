@@ -1031,7 +1031,7 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [2x tests](original-upscale.md).
 
-[Linux release/closure/input](linux-game.md).
+[Linux release: ELF/input](linux-game.md).
 
 [RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
 

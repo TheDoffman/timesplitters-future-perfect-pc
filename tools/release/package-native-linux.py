@@ -58,7 +58,8 @@ def bundle_libraries(pairs,stage):
             if name not in origins:
                 origins[name]=origin;destination=bin_dir/name
                 if destination.exists() and digest(destination)!=digest(origin):raise ValueError('Duplicate ELF name: '+name)
-                shutil.copy2(origin,destination);pending.append((origin,destination))
+                if origin!=destination.resolve():shutil.copy2(origin,destination)
+                pending.append((origin,destination))
         # .NET single-file AppHost is itself checksummed and contains a bundle
         # overlay. Preserve it byte-for-byte; Launch.sh supplies its local search.
         if target.name!='TimeSplitters.Launcher':

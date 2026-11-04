@@ -26,6 +26,9 @@ ELF closure resolution prefers the already-staged pinned providers, preventing
 system libavutil from replacing the release-media build. The checksummed .NET
 single-file host is never rewritten by patchelf; Launch.sh supplies its local
 Bin search path, and the package rechecks the original launcher hash afterward.
+The real-ELF closure regression links against an older provider, stages a newer
+provider with the same SONAME, and executes the relocated output to verify the
+new implementation. It also checks exact preservation of a single-file overlay.
 
 The SDL host now exports the shared `pc_controls_key_down` and
 `pc_controls_accept_pad` contracts used by settings-tab navigation. Windows and
