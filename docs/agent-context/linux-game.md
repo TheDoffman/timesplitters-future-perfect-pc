@@ -20,6 +20,8 @@ The Linux native source receipt also covers the new vendored SMAA inputs.
 Game builds use `--release-media` to select those headers/libraries through a
 fresh pkg-config query. The receipt records the exact media build and packaging
 requires it to match; a system-library build cannot be silently repackaged.
+Python standard-library extension origins retain their distro provenance;
+extensions from pinned wheels retain their wheel provenance after relocation.
 
 The SDL host now exports the shared `pc_controls_key_down` and
 `pc_controls_accept_pad` contracts used by settings-tab navigation. Windows and

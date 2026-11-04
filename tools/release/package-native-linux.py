@@ -116,7 +116,9 @@ def bundle_python(root,stage):
     wrapper.chmod(0o755)
     pairs=[(executable,target)]
     for item in library.rglob('*'):
-        if item.is_file() and elf(item):pairs.append((standard/item.relative_to(library),item))
+        if item.is_file() and elf(item):
+            original=standard/item.relative_to(library)
+            pairs.append((original if original.is_file() else item,item))
     return pairs,dict(version=version,wheels=pins)
 
 def verify_payload(stage,manifest):
