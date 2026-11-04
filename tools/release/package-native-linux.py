@@ -132,7 +132,10 @@ def verify_payload(stage,manifest):
         'Support/Python/bin/python3','Support/Online/online.py','Support/Online/network-identity.json','Source/pc-port-source.zip',
         'Bin/libavcodec.so.60','Bin/libavutil.so.58','Source/FFmpeg/pin.json','Source/FFmpeg/linux_ffmpeg.py',
         'Licenses/SDL.txt','Licenses/DXC.txt','Licenses/DXC-ThirdParty.txt','Licenses/Runtime-GPL-3.0.txt',
-        'Licenses/FFmpeg-COPYING.LGPLv2.1.txt','Support/Runtime/dependency-audit.json'}
+        'Licenses/FFmpeg-COPYING.LGPLv2.1.txt','Support/Runtime/dependency-audit.json',
+        'Bin/libICE.so.6','Bin/libSM.so.6','Support/Desktop/gdk-pixbuf-query-loaders',
+        'Support/Desktop/pixbuf/libpixbufloader-svg.so','Support/Desktop/fonts.conf',
+        'Support/Desktop/share/mime/mime.cache','Support/Desktop/share/mime/packages/freedesktop.org.xml'}
     media=manifest.get('media',{})
     archive=media.get('archive','')
     if not archive or Path(archive).name!=archive:raise ValueError('Incomplete media source metadata')
@@ -155,11 +158,31 @@ def verify_payload(stage,manifest):
         for name,sha in source['files'].items():
             if files.get(name)!=sha:raise ValueError('Incomplete corresponding sources')
 
+def write_release_assets(stage,manifest,archive_path):
+    """Prepare reviewable upload assets; never create a tag or contact GitHub."""
+    archive_path.with_suffix('.zip.sha256').write_text(digest(archive_path)+'  '+archive_path.name+'\n')
+    archive_path.with_suffix('.BUILD.json').write_text(json.dumps(manifest,indent=2)+'\n')
+    channel=dict(manifest['release_channel'],source_commit=manifest['packaging_commit'],platforms=['linux-x64'])
+    notes=('<!-- tsfp-release '+json.dumps(channel,separators=(',',':'))+' -->\n\n'
+        '# Linux x64 experimental preview\n\n'
+        'Requires Ubuntu 24.04 / glibc 2.39 or newer, a desktop session and a working Vulkan driver. '
+        'Extract into a writable folder and run `./Launch.sh`; import your supported US Xbox game files. '
+        'Game data is not included. Start with Original 60 FPS.\n\n'
+        'The SDL Linux host shares gameplay, settings and the Vulkan renderer with Windows and Mac. '
+        'The package includes its launcher, movie decoder, Online runtime, corresponding source and notices.\n\n'
+        'Experimental limitations: physical Linux desktops and Steam Deck acceptance remain pending. '
+        'WSL results do not establish native driver, audio, controller or suspend/resume behavior. '
+        'Linux Online supports Arcade; Story co-op transport is unavailable. '
+        'Use the launcher or dropdowns to edit bindings; native GTK capture-to-bind remains pending. '
+        'Higher frame-rate modes remain experimental. Full-campaign and external-network acceptance are pending.\n')
+    archive_path.with_suffix('.notes.md').write_text(notes)
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--version',required=True)
     parser.add_argument('--output',type=Path,default=ROOT/'build/releases');parser.add_argument('--launcher',type=Path,default=ROOT/'build/linux-launcher/package')
     args=parser.parse_args()
     if platform.system()!='Linux' or platform.machine()!='x86_64':parser.error('Package on the Linux x64 build host')
+    if run('git','status','--porcelain'):parser.error('Commit source changes before preparing a release candidate')
     try:release=release_identity(args.version,publishing=True)
     except ValueError as error:parser.error(str(error))
     if release['channel']=='stable':parser.error('Linux experimental packages require a named preview channel, e.g. v0.4.2-linux-experimental.1')
@@ -263,5 +286,5 @@ def main():
     with zipfile.ZipFile(archive_path) as archive:
         if archive.testzip():raise ValueError('Corrupt Linux package')
     subprocess.run([str(stage/'TimeSplitters.Launcher'),'--verify-game-package',str(archive_path),args.version],check=True,timeout=60)
-    archive_path.with_suffix('.zip.sha256').write_text(digest(archive_path)+'  '+archive_path.name+'\n');print(archive_path)
+    write_release_assets(stage,manifest,archive_path);print(archive_path)
 if __name__=='__main__':main()

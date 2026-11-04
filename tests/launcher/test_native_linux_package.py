@@ -13,7 +13,10 @@ def payload(root):
     names=['Bin/libdxcompiler.so','Bin/futureperfect_recomp','TimeSplitters.Launcher','Launch.sh','Settings/pc-controls.json',
         'Support/Python/bin/python3','Support/Online/online.py','Support/Online/network-identity.json','Source/pc-port-source.zip',
         'Bin/libavcodec.so.60','Bin/libavutil.so.58','Source/FFmpeg/pin.json','Source/FFmpeg/linux_ffmpeg.py','Source/FFmpeg/source.tar.gz',
-        'Licenses/SDL.txt','Licenses/DXC.txt','Licenses/DXC-ThirdParty.txt','Licenses/Runtime-GPL-3.0.txt','Licenses/FFmpeg-COPYING.LGPLv2.1.txt','Support/Runtime/dependency-audit.json']
+        'Licenses/SDL.txt','Licenses/DXC.txt','Licenses/DXC-ThirdParty.txt','Licenses/Runtime-GPL-3.0.txt','Licenses/FFmpeg-COPYING.LGPLv2.1.txt','Support/Runtime/dependency-audit.json',
+        'Bin/libICE.so.6','Bin/libSM.so.6','Support/Desktop/gdk-pixbuf-query-loaders',
+        'Support/Desktop/pixbuf/libpixbufloader-svg.so','Support/Desktop/fonts.conf',
+        'Support/Desktop/share/mime/mime.cache','Support/Desktop/share/mime/packages/freedesktop.org.xml']
     for name in names:
         p=root/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(b'fixture')
     (root/'BUILD.json').write_text('{}')
@@ -33,6 +36,20 @@ def test_complete_payload_and_corruption(tmp_path):
     manifest=payload(tmp_path);package.verify_payload(tmp_path,manifest)
     (tmp_path/'Bin/futureperfect_recomp').write_bytes(b'changed')
     with pytest.raises(ValueError,match='checksum'):package.verify_payload(tmp_path,manifest)
+
+
+def test_release_assets_pin_actual_preview_and_launcher_without_publishing(tmp_path):
+    archive=tmp_path/'TimeSplitters-Future-Perfect-PC-v0.4.2-linux-experimental.1-linux-x64.zip'
+    archive.write_bytes(b'archive')
+    manifest=dict(version='v0.4.2-linux-experimental.1',packaging_commit='a'*40,
+        release_channel=dict(schema=1,channel='linux-experimental',name='Linux Experimental Preview',minimum_launcher='1.4.0'))
+    package.write_release_assets(tmp_path,manifest,archive)
+    notes=archive.with_suffix('.notes.md').read_text()
+    metadata=json.loads(notes.split('<!-- tsfp-release ',1)[1].split(' -->',1)[0])
+    assert metadata['channel']=='linux-experimental' and metadata['minimum_launcher']=='1.4.0'
+    assert metadata['platforms']==['linux-x64'] and metadata['source_commit']=='a'*40
+    assert json.loads(archive.with_suffix('.BUILD.json').read_text())==manifest
+    assert archive.with_suffix('.zip.sha256').read_text()==package.digest(archive)+'  '+archive.name+'\n'
 
 @pytest.mark.parametrize('name',['../outside','/absolute','Data/default.xbe','data/file','Saves/save','private/data','Textures/image','Settings/runtime.conf','Bin/movie.xmv','Support/a.img','Support\\bad',''])
 def test_protected_payload_paths(tmp_path,name):
