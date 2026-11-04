@@ -35,6 +35,11 @@ ZIP naming and its single top-level directory derive from the immutable staging
 directory name, independent of library/license iteration variable names.
 All dependency notices use the shared launcher's flat Licenses/*.txt contract;
 Ubuntu copyright names include the binary package, preserving distinct notices.
+`test-linux-clean-package.py` runs the read-only package/assets as nobody in a
+private mount namespace and prepared minimal Ubuntu userspace, on a dedicated
+Xvfb display. It checks native settings/debug/input/renderer/online self-tests,
+bundled Python/Tk/TLS and the actual launcher shared UI checks. It uses temporary
+state and software Vulkan; this is not physical desktop/GPU acceptance.
 
 The SDL host now exports the shared `pc_controls_key_down` and
 `pc_controls_accept_pad` contracts used by settings-tab navigation. Windows and
