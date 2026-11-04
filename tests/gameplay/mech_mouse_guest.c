@@ -44,5 +44,18 @@ int main(void){
  assert(fabsf(MEMF(DATA+0x30)-352)<.001f && MEMF(DATA+0x2c)==0);
  MEMF(LOOK)=MEMF(LOOK+4)=0;MEM32(DATA+0x50)=0;
  float yaw=MEMF(DATA+0x30);step();assert(MEMF(DATA+0x30)==yaw);
+ /* The live Machine Wars cockpit is mode100 with callback21C900. Feed
+  * its actual camera builder, not the unrelated mode8000 gun vector. */
+ MEM32(PLAYER+0x114)=0x100;MEM32(PLAYER+0x157c)=0x21c900;
+ MEM32(PLAYER+8)=FOV;MEM32(FOV+0x26c)=0x78cf40;MEM32(0x78d02c)=PLAYER;
+ MEM32(SCENE+0x2ac)=0;
+ for(int rate=60;rate<=240;rate+=60){
+  MEM32(0x4e7944)=rate==60;MEMF(0x4e794c)=60.f/rate;
+  MEMF(0x75c0fc)=350;MEMF(0x75c100)=10;
+  PcInput input={0};pc_input_focus(&input,1);pc_input_capture(&input,1);pc_input_motion(&input,1,-1,1000);
+  int handled=pc_mounted_mouse(&input,1001,.1f,0,PLAYER,FOV,g_xbox_mem_offset,rate!=60);assert(handled==1);
+  g_esp=STACK;MEM32(STACK+4)=ENTITY;sub_0021C7B0();assert(g_esp==STACK+4);
+  assert(MEMF(0x78cf78)>.9f && MEMF(0x78cf7c)>.1f && MEMF(0x78cf80)>.1f);
+ }
  free(memory);puts("PASS: original mech input, mouse targets and controller path");return 0;
 }

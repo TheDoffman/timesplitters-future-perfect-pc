@@ -9,7 +9,7 @@ PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
 [Story/Online](systems-details.md).
 
-Mech: [mouse routing](mounted-mouse.md#battle-mech-mouse-425).
+Mech/cockpit: [mouse routing](mounted-mouse.md).
 
 Minigun: [policy](native-minigun.md).
 

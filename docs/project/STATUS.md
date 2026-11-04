@@ -39323,3 +39323,29 @@ The shared checkout was switched concurrently to feature/flat-settings-tabs.
 Only this task's verified audio edits were moved to a separate source-only
 worktree on fix/audio-truncated-tails; unrelated UI work and user files were
 preserved. No game-data, binaries or dependency environments were copied.
+
+## 2026-11-04 - Machine Wars final cockpit mouse routing
+
+Live Windows Test Lab capture reproduced the reported failure: mode100 and
+callback21C900 were active, but mouse input fell through to ordinary player angles; cockpit
+angles75C0FC/75C100 remained zero. The prior mode8000 repair covered a
+different control path. Shared input now routes this specific owned cockpit
+to its authored angles. Local changes are uncommitted; no release claim.
+Validation results and rebuilt gameplay acceptance are recorded below. Native
+Mac/Linux live input has not been tested on this Windows computer.
+
+Windows validation: mounted-mouse suite **19 passed**, including original-US
+21C7B0 camera direction and old-route rejection. Supported Windows build and
+its build tests passed (logs/machine-wars-cockpit-build.log in the test checkout).
+Final rebuilt encounter acceptance remains pending.
+
+User confirmed rebuilt Machine Wars mouse aim works, but reported body clipping
+on fast turns. Follow-up caps cockpit angular displacement to the original
+controller envelope; all **19 tests passed** including rate-equivalent saturated
+swipes. Fast-turn live acceptance and follow-up rebuild remain pending game close.
+
+User rejected the turn-speed cap in favor of model/camera follow. The unbuilt
+cap and its tests were removed; responsive mouse aiming is retained. Fast-turn
+clipping investigation continues; no model-follow fix has been claimed.
+
+Machine Wars minigun: cockpit-only right mouse secondary fire added. Windows Build, 19 mounted-input tests and context check passed. Shared Windows/SDL policy; Mac/Linux physical validation and live minigun acceptance pending. Fast-turn clipping remains unresolved; no turn cap applied.
