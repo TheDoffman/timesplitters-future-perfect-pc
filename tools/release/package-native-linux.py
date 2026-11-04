@@ -171,7 +171,8 @@ def main():
     name='TimeSplitters-Future-Perfect-PC-'+args.version+'-linux-x64';stage=args.output.resolve()/name
     if stage.exists() or stage.with_name(stage.name+'.zip').exists():parser.error('Use a new output directory; existing packages are preserved')
     stage.mkdir(parents=True);game=copy(executable,stage,'Bin/futureperfect_recomp');game.chmod(0o755)
-    verify_launcher(args.launcher)
+    launcher_manifest=verify_launcher(args.launcher)
+    release['minimum_launcher']=launcher_manifest['version']
     for source in args.launcher.rglob('*'):
         if source.is_symlink():raise ValueError('Linked launcher member')
         if source.is_file():copy(source,stage,source.relative_to(args.launcher))
@@ -219,7 +220,7 @@ def main():
     notices=stage/'Support/Runtime';notices.mkdir(parents=True,exist_ok=True)
     audit=collect_dependency_sources(ROOT,stage,records,args.launcher,media,sdk,python)
     (notices/'dependencies.json').write_text(json.dumps(audit['components'],indent=2)+'\n')
-    source=stage/'Source/pc-port-source.zip';source.parent.mkdir()
+    source=stage/'Source/pc-port-source.zip';source.parent.mkdir(exist_ok=True)
     with zipfile.ZipFile(source,'x',zipfile.ZIP_DEFLATED) as archive:
         for file in run('git','ls-files','-z').split('\0'):
             if file and (ROOT/file).is_file():archive.write(ROOT/file,file)

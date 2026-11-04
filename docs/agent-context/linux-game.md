@@ -29,6 +29,8 @@ Bin search path, and the package rechecks the original launcher hash afterward.
 The real-ELF closure regression links against an older provider, stages a newer
 provider with the same SONAME, and executes the relocated output to verify the
 new implementation. It also checks exact preservation of a single-file overlay.
+Named Linux release metadata requires the version of the actually verified
+launcher included in the package, rather than the older global minimum.
 
 The SDL host now exports the shared `pc_controls_key_down` and
 `pc_controls_accept_pad` contracts used by settings-tab navigation. Windows and
