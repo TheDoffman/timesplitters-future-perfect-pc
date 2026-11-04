@@ -190,3 +190,17 @@ assignments on unused rows do not block Apply; newly selected unavailable
 inputs and changes stranding joined players are rejected before persistence.
 The native menu fixture reproduces P1 keyboard, old P2 pad1/old P3 pad0 with pad0
 joining guest P2, Automatic retention, rejected theft, connected swap and reopen.
+
+Frontend Settings input handoff: native Settings descriptor 523910 selects the
+profile at 78AD34 (2CBEE0), while 73870 normally polls menu+3C player-mask bits.
+menu_settings_input_owner checks that root or its bounded descriptor history
+(7BA264) and overrides only that mask while native input is gathered. Native
+42760 still maps logical players through 6B93C0. Menu+38 and profile/save globals
+remain unchanged. Returning to main removes Settings from history, restoring
+normal P1 input even if the selected-profile value remains stale. Pause, gameplay
+and unrelated frontend menus are excluded. P1 mouse, text injection, queued tab
+clicks and keyboard section shortcuts are suppressed for a secondary selected
+player; their native controller shoulders still switch sections. menu_mouse.c
+covers P2/P3/P4, nonidentity controller mapping, submenu history, return to main,
+invalid selection and gameplay exclusion. Physical controller acceptance remains
+pending despite the automated route checks.

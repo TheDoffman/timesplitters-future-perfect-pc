@@ -285,7 +285,7 @@ static void controls_tabs_draw(void)
 }
 static int controls_tabs_poll(uint32_t menu)
 {
-    if(!controls_font_menu(menu) || !controls_tabs_visible() || !menu_mouse_context())return 0;
+    if(!controls_font_menu(menu) || !controls_tabs_visible() || !menu_mouse_context() || menu_settings_input_owner(menu)>0)return 0;
     PcMenuPointer pointer=pc_controls_menu_hover_pointer();
     settings_tabs_hover(menu,controls_pointer_tab(pointer),CONTROLS_TABS_ID);
     int pressed=pointer.valid && pointer.left && !controls_left;controls_left=pointer.left;
@@ -297,7 +297,7 @@ static int controls_tabs_poll(uint32_t menu)
 static void controls_tabs_flush(void)
 {
     if(controls_pending<0)return;
-    if(!menu_mouse_context() || !controls_font_menu(controls_pending_menu) || !controls_tabs_visible() ||
+    if(menu_settings_input_owner(controls_pending_menu)>0 || !menu_mouse_context() || !controls_font_menu(controls_pending_menu) || !controls_tabs_visible() ||
        GetTickCount64()-controls_pending_at>1000) {controls_pending=-1;return;}
     if(WORD_AT(controls_pending_menu+0x38)!=0 || WORD_AT(controls_pending_menu+0x1b0)!=3)return;
     GuestRegisters r;save_registers(&r);

@@ -102,6 +102,48 @@ static int menu_video_tabs_poll(uint32_t menu) {(void)menu;video_tab_polls++;ret
 static void menu_video_tabs_flush(void) {CHECK(!in_dispatch);video_tab_flushes++;}
 #include "pc_menu_mouse_guest.inc"
 static void original(void) { ++original_calls;WORD_AT(WORD_AT(g_esp+4)+0xc4)|=navigation;g_esp+=4; }
+static unsigned settings_sample_mask;
+static void settings_sample(void)
+{
+    uint32_t menu=WORD_AT(g_esp+4);settings_sample_mask=WORD_AT(menu+0x3c);
+    /* Native 73870 iterates logical-player bits; 42760 maps through 6B93C0. */
+    WORD_AT(menu+0xc4)=0;
+    for(unsigned p=0;p<4;p++)if(settings_sample_mask&(1u<<p))
+        WORD_AT(menu+0xc4)|=WORD_AT(0x6b93e0+WORD_AT(0x6b93c0+p*4)*0x3c);
+    g_esp+=4;
+}
+static void settings_owner_tests(void)
+{
+    uint32_t menu=0x7000,history=0x9000;
+    WORD_AT(0x79094c)=101;WORD_AT(0x5236c4)=2;WORD_AT(0x78ad34)=1;
+    WORD_AT(0x6b93c0)=0;WORD_AT(0x6b93c4)=2;
+    WORD_AT(menu+4)=0x523910;WORD_AT(menu+0x38)=0;WORD_AT(menu+0x3c)=1;
+    WORD_AT(0x6b93e0)=1;WORD_AT(0x6b93e0+2*0x3c)=2;
+    g_esp=0x1000;WORD_AT(g_esp+4)=menu;pc_display_menu_mouse_input(settings_sample);
+    CHECK(settings_sample_mask==2 && WORD_AT(menu+0xc4)==2 && WORD_AT(menu+0x3c)==1);
+    CHECK(WORD_AT(menu+0x38)==0); /* never move native menu/profile ownership */
+    /* Arbitrary settings descendants inherit the selected player's input. */
+    WORD_AT(menu+4)=0x524a40;WORD_AT(0x7ba264)=history;
+    WORD_AT(history)=2;WORD_AT(history+4)=0x5236dc;WORD_AT(history+8)=0x523910;
+    g_esp=0x1000;pc_display_menu_mouse_input(settings_sample);
+    CHECK(settings_sample_mask==2 && WORD_AT(menu+0xc4)==2);
+    /* Returning to main restores P1 despite a stale selected-profile value. */
+    WORD_AT(menu+4)=0x5236dc;WORD_AT(history)=0;
+    g_esp=0x1000;pc_display_menu_mouse_input(settings_sample);
+    CHECK(settings_sample_mask==1 && WORD_AT(menu+0xc4)==1);
+    /* The same route covers P3/P4, independent of physical port order. */
+    WORD_AT(menu+4)=0x523910;WORD_AT(0x5236c4)=4;
+    for(unsigned player=2;player<4;player++) {
+        WORD_AT(0x78ad34)=player;WORD_AT(0x6b93c0+player*4)=1;
+        WORD_AT(0x6b93e0+0x3c)=4;
+        g_esp=0x1000;pc_display_menu_mouse_input(settings_sample);
+        CHECK(settings_sample_mask==(1u<<player) && WORD_AT(menu+0xc4)==4);
+    }
+    WORD_AT(menu+4)=0x523910;WORD_AT(0x79094c)=50;
+    g_esp=0x1000;pc_display_menu_mouse_input(settings_sample);CHECK(settings_sample_mask==1);
+    WORD_AT(0x79094c)=101;WORD_AT(0x78ad34)=4;
+    g_esp=0x1000;pc_display_menu_mouse_input(settings_sample);CHECK(settings_sample_mask==1);
+}
 static void dispatch(void)
 {
     uint32_t menu=WORD_AT(g_esp+4);
@@ -806,6 +848,7 @@ int main(void)
     choice_tests();
     team_tests();
     character_tests();
+    settings_owner_tests();
     puts("PASS: menu pointer mapping, selection, click lifetime and gameplay isolation");
     return 0;
 }

@@ -1,4 +1,4 @@
-[Joined device Apply](controls-options.md).
+[Settings ownership](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)

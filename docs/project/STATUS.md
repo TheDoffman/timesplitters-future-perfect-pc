@@ -1,3 +1,13 @@
+## Settings input handoff (local, uncommitted)
+
+Base 4eaacf6d, feat/local-player-devices. Settings Player selector now hands
+native menu input to that logical player throughout Settings/submenus and
+returns it to P1 outside that history. Profile/save ownership is untouched.
+Windows automated menu checks: 9 passed, 2 Mac compiler checks skipped. Tests
+cover P2/P3/P4, nonidentity input ports, return to main and gameplay exclusion.
+Windows build and linked checks passed; physical controller acceptance remains
+pending. The existing mixed-optimization test-build limitation still applies.
+
 ## Joined-player settings follow-up (local, uncommitted)
 
 Base e0496b89, feat/local-player-devices. User reported native Start-to-join

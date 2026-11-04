@@ -1053,6 +1053,17 @@ int main(int argc,char **argv)
         CHECK(test_player_saves==saves+2 && test_player_devices[2]==1 && test_player_devices[1]==0);
         controls_players_open(controls_menu);CHECK(kb_devices[1]==1 && kb_devices[2]==0);
     }
+    { /* P2 shoulder navigation does not depend on P1's keyboard prompt mode. */
+        uint32_t descriptor=WORD_AT(controls_menu+4);
+        WORD_AT(0x79094c)=101;WORD_AT(0x5236c4)=2;WORD_AT(0x78ad34)=1;
+        WORD_AT(controls_menu+4)=0x523910;WORD_AT(controls_menu+0x38)=0;
+        WORD_AT(controls_menu+0xc4)=WORD_AT(controls_menu+0xc8)=0;
+        settings_keyboard=1;settings_pad_allowed=1;settings_tabs_input_reset();
+        CHECK(!settings_tabs_direction(controls_menu));
+        settings_keys[0x27]=1;CHECK(!settings_tabs_direction(controls_menu));
+        WORD_AT(controls_menu+0xc4)=0x400;CHECK(settings_tabs_direction(controls_menu)==1);
+        settings_keys[0x27]=0;settings_pad_allowed=0;WORD_AT(controls_menu+4)=descriptor;
+    }
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
     return 0;

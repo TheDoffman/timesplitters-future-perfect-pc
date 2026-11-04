@@ -44,6 +44,23 @@ static void menu_mouse_press(MenuMouseDispatch *s,uint32_t buttons)
 static void menu_team_arrow(unsigned direction);
 #include "pc_menu_choices.inc"
 
+/* US Settings root 523910 uses 78AD34 for its selected profile. Native
+ * menu history at 7BA264 retains that descriptor while a submenu is open.
+ * Change the accepted logical-player mask, not the menu/profile owner fields. */
+static int menu_settings_input_owner(uint32_t menu)
+{
+    if((int32_t)WORD_AT(0x79094c)<=100 || !guest_writable(menu,0x40) || WORD_AT(menu+0x38)!=0)return -1;
+    int in_settings=WORD_AT(menu+4)==0x523910u;
+    uint32_t history=WORD_AT(0x7ba264);
+    if(!in_settings && guest_writable(history,4)) {
+        unsigned count=WORD_AT(history);
+        if(count<=60 && guest_writable(history,4+count*4))
+            for(unsigned i=0;i<count;i++)if(WORD_AT(history+4+i*4)==0x523910u)in_settings=1;
+    }
+    unsigned player=WORD_AT(0x78ad34),count=WORD_AT(0x5236c4);
+    return in_settings && count>=1 && count<=4 && player<count?(int)player:-1;
+}
+
 /* The player-1 pause/status flags cover both Start and Back/Tab menus.
  * Scene alone cannot distinguish them from gameplay. */
 static int menu_mouse_context(void)
@@ -381,7 +398,12 @@ void pc_display_menu_mouse_input(void (*original)(void))
     GuestRegisters r;
     float x,y,gw,gh;
     unsigned sw,sh;
+    int settings_owner=menu_settings_input_owner(menu);
+    uint32_t mask=settings_owner>=0?WORD_AT(menu+0x3c):0;
+    if(settings_owner>=0)WORD_AT(menu+0x3c)=1u<<(unsigned)settings_owner;
     original();
+    if(settings_owner>=0)WORD_AT(menu+0x3c)=mask;
+    if(settings_owner>0)return; /* Player 1 mouse/text cannot steer P2 settings. */
     menu_text_input(menu);
     if(!s || s->sampled || s->menu!=menu || !menu_mouse_context() || !guest_writable(menu,0x23c) ||
        WORD_AT(menu+0x38)!=0 || WORD_AT(menu+0x1b0)!=3) return;
@@ -429,9 +451,9 @@ void pc_display_menu_mouse_dispatch(void (*original)(void))
     menu_mouse_dispatch=&state;
     /* Video tabs are direct targets, not native Confirm repeats. Capture
      * their edges even while the guest temporarily gates row navigation. */
-    if(menu_video_tabs_poll(state.menu))state.sampled=1;
+    if(menu_settings_input_owner(state.menu)<=0 && menu_video_tabs_poll(state.menu))state.sampled=1;
     menu_character_input(&state);
-    menu_text_focus(state.menu);
+    if(menu_settings_input_owner(state.menu)<=0)menu_text_focus(state.menu);
     original();
     if(state.injected)
         WORD_AT(state.pressed_address)=(WORD_AT(state.pressed_address)&~state.injected)|(state.pressed&state.injected);
@@ -452,7 +474,7 @@ void pc_display_menu_mouse_dispatch(void (*original)(void))
     }
     if(!previous)menu_video_tabs_flush();
     pc_display_menu_mouse_mode();
-    if(menu_mouse_context())menu_text_events(state.menu);
+    if(menu_mouse_context() && menu_settings_input_owner(state.menu)<=0)menu_text_events(state.menu);
 }
 
 void pc_display_menu_mouse(void (*original)(void))
@@ -464,7 +486,7 @@ void pc_display_menu_mouse(void (*original)(void))
     PcMenuPointer pointer;
     original();
     if(!menu_mouse_context() || !guest_writable(menu,0x23c) ||
-       WORD_AT(menu+0x38)!=0 || WORD_AT(menu+0x1b0)!=3) {
+       WORD_AT(menu+0x38)!=0 || menu_settings_input_owner(menu)>0 || WORD_AT(menu+0x1b0)!=3) {
         if(menu_slider_owner.menu==menu) menu_slider_drag=0;
         return;
     }
