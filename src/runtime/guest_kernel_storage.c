@@ -217,7 +217,9 @@ int xbox_set_profile_root_utf8(const char *root) {
 }
 int xbox_save_root_utf8(char *out,unsigned capacity) {
     tsfp_storage_snapshot snapshot;size_t n;
-    if(!out || !bridge_path_snapshot(&snapshot))return 0;n=strlen(snapshot.save);
-    if(n>=capacity)return 0;memcpy(out,snapshot.save,n+1);return 1;
+    if(!out || !bridge_path_snapshot(&snapshot))return 0;
+    n=strlen(snapshot.save);
+    if(n>=capacity)return 0;
+    memcpy(out,snapshot.save,n+1);return 1;
 }
 #include "guest_kernel_paths.inc"

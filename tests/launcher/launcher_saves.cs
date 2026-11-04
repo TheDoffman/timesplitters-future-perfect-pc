@@ -51,7 +51,7 @@ public static class SaveBackupChecks
             string root=Path.Combine(parent,"save-roundtrip");Directory.CreateDirectory(root);Put(root,"BUILD.json","{\"version\":\"v1.0.0\"}");
             Directory.CreateDirectory(Core.PathIn(root,".launcher"));
             using(LauncherPlatform.AcquireUpdateLock(root)) {
-#if MACOS
+#if MACOS || LINUX
             Reject(()=>SaveBackups.Create(root,"Manual",null,CancellationToken.None));
 #endif
             string saves=Saves(root);Directory.CreateDirectory(saves);string partition=Core.PathIn(saves,"Partition1.img");
@@ -129,7 +129,7 @@ public static class SaveBackupChecks
             Need(SaveBackups.List(root).Any(i=>i.Reason=="Before game update" && i.Game=="v1.0.0"),"Update skipped save backup");
             Core.Rollback(root);Need(SaveBackups.List(root).Any(i=>i.Reason=="Before game update" && i.Game=="v1.1.0"),"Rollback skipped backup");
             Need(File.ReadAllText(Core.PathIn(saves,"profile"))=="player progress","Runtime update modified saves");
-#if !MACOS
+#if !MACOS && !LINUX
             using(var locked=new FileStream(Core.PathIn(saves,"profile"),FileMode.Open,FileAccess.ReadWrite,FileShare.None))
                 Reject(()=>Core.Apply(root,new List<Change>{new Change{Name="BUILD.json",Source=source}},null));
             Need(Core.InstalledVersion(root)=="v1.0.0","Failed automatic backup still replaced the runtime");

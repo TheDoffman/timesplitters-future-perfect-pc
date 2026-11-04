@@ -71,19 +71,8 @@ def minimum_macos(paths):
 
 
 def prepare_licenses(directory):
-    pins = json.loads((ROOT/'config/build/native-mac-runtime-licenses.json').read_text())
-    directory.mkdir(parents=True, exist_ok=True)
-    for name, pin in pins.items():
-        path = directory/name
-        if not path.exists():
-            with urllib.request.urlopen(pin['url'], timeout=30) as response:
-                data = response.read()
-            if hashlib.sha256(data).hexdigest() != pin['sha256']:
-                raise ValueError('Downloaded license differs from its pin: '+name)
-            with path.open('xb') as output:
-                output.write(data)
-        if path.is_symlink() or digest(path) != pin['sha256']:
-            raise ValueError('Runtime license differs from its pin: '+name)
+    from runtime_licenses import prepare
+    prepare(ROOT, directory)
 
 
 def bundle_libraries(executable, stage, sdk):

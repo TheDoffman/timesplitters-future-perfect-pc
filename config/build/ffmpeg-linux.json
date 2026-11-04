@@ -1,0 +1,11 @@
+{
+  "version": "6.1.5",
+  "commit": "a44ab44236a99ae26594fb3e14fe0c956210673d",
+  "tag_object": "029df193e91538fa3d03aaeb00719acc47a7c28f",
+  "url": "https://codeload.github.com/FFmpeg/FFmpeg/tar.gz/refs/tags/n6.1.5",
+  "archive": "ffmpeg-n6.1.5.tar.gz",
+  "sha256": "4bdedf0bfc705c99f515391054cd4df8723494c66016c33e0009419da5231e63",
+  "archive_prefix": "FFmpeg-n6.1.5",
+  "libraries": ["libavcodec.so.60", "libavutil.so.58"],
+  "configuration": ["--disable-everything", "--disable-autodetect", "--disable-network", "--disable-programs", "--disable-doc", "--disable-static", "--enable-shared", "--enable-pic", "--enable-avcodec", "--enable-avutil", "--disable-avformat", "--disable-avdevice", "--disable-avfilter", "--disable-swscale", "--disable-swresample", "--disable-postproc", "--enable-decoder=wmv2"]
+}

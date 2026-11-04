@@ -4,6 +4,9 @@
 #include "text_bitmap_macos.h"
 #include "rhi.h"
 #include "pc_display.h"
+#if defined(__linux__)
+#include "pc_debug.h"
+#endif
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,6 +50,13 @@ static void pump_events(void *context)
     SDL_Event event;
     (void)context;
     if (!SDL_IsMainThread() || !host.window) return;
+#if defined(__linux__)
+    /* Cocoa supplies a native run-loop timer; Linux uses the SDL main thread
+     * to poll the same shared reader. */
+    static Uint64 debug_polled;
+    Uint64 now=SDL_GetTicks();
+    if(now-debug_polled>=500){debug_polled=now;pc_debug_poll();}
+#endif
     tsfp_native_input_frame(host.window);
     while (SDL_PollEvent(&event)) {
         tsfp_native_input_event(&event, host.window);

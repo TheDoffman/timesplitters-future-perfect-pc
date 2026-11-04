@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "description": "Synthetic Test Lab: one player, existing Test Lab, Story2401 Normal. Use --story-benchmark for state-based intro skip and active gameplay timings.",
+  "events": [
+    {
+      "at": 6,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 6.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 8,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 8.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 10,
+      "commands": [
+        "focus 1",
+        "+S"
+      ]
+    },
+    {
+      "at": 10.3,
+      "commands": [
+        "-S"
+      ]
+    },
+    {
+      "at": 11,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 11.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 14,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 14.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 16,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 16.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 18,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 18.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 20,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 20.3,
+      "commands": [
+        "-E"
+      ]
+    }
+  ]
+}

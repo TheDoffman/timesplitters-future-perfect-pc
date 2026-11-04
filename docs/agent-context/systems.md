@@ -3,6 +3,8 @@
 [exFAT](host-storage.md)
 # [Systems](video-options.md)
 
+[Linux input](linux-game.md).
+
 PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
 [Clicks](interaction-input.md#fresh-weapon-clicks-434).
@@ -964,7 +966,7 @@ checks actual viewport scaling, target position, reset and seven display shapes.
 
 Bot corpses: [contracts](systems-details.md#online-bot-corpses).
 
-[Shared Story version provider](systems-details.md#story-co-op-release-flag).
+[Story version](systems-details.md#story-co-op-release-flag).
 
 Physics: [poses](systems-details.md#guest-ragdolls-and-physical-npc-drops).
 

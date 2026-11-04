@@ -84,7 +84,7 @@ namespace TimeSplitters.Launcher
         public static List<DisplayMode> Primary(int savedWidth,int savedHeight)
         {
             var reported=new List<DisplayMode>();
-            #if MACOS
+            #if MACOS || LINUX
             reported.AddRange(NativeHost.DisplayModes());
 #else
             var screen=System.Windows.Forms.Screen.PrimaryScreen;
@@ -100,7 +100,7 @@ namespace TimeSplitters.Launcher
         public static List<int> PrimaryRefreshRates()
         {
             var rates=new List<int>{0};
-#if MACOS
+#if MACOS || LINUX
             return rates; // Native refresh switching is not implemented; keep the saved rate.
 #else
             var screen=System.Windows.Forms.Screen.PrimaryScreen;
@@ -116,7 +116,7 @@ namespace TimeSplitters.Launcher
         }
         public static int PrimaryRefreshRate()
         {
-#if MACOS
+#if MACOS || LINUX
             return 0; // Variable refresh displays may not expose a fixed desktop rate.
 #else
             var screen=System.Windows.Forms.Screen.PrimaryScreen;

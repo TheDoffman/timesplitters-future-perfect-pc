@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
-#if MACOS
+#if MACOS || LINUX
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;

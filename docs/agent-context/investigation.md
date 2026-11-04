@@ -1,5 +1,17 @@
 # Investigation memory and handoffs
 
+Linux patches2402 through2412 follow2401; its duplicate2512 is omitted. Context
+order assertions and historical subset exclusions track both dependencies;
+complete-stack transitions must still apply them. See [game adapters](linux-game.md).
+
+Linux bring-up follows the user's shared Windows/macOS/Linux rule. Root AGENTS
+allows a native-filesystem WSL working checkout synchronized from the Windows
+editing checkout through Git; ignored Linux dependencies stay inside Ubuntu.
+It also names `build/linux`, a separate Linux Python environment, no concurrent
+Windows/WSL mutation of one runtime tree, WSL primary development and Steam Deck
+secondary validation. Preserve [Linux acceptance scope](../development/linux.md)
+in handoffs; renderer contracts do not establish game support.
+
 Graphics patch ordering is covered by the explicit tail-order regression in
 `tests/repository/test_repo_context.py`; patches2495/2514 must retain LF bytes so its
 indexed digest matches fresh Windows/Mac/Linux checkouts.

@@ -13,8 +13,10 @@ Escape/Space/side buttons and composites retain outlined fallbacks. Manifest
 slot0 is generic Mouse only, never Unbound. Source PNGs stay private; the importer
 accepts `--source-dir`, verifies manifest SHA-256 and deduplicates shared images.
 Attribution/modifications are in `assets/ui/input-icons/ATTRIBUTION.md` and NOTICE.
-Windows release/playable and native Mac packagers retain the complete credit
+Windows release/playable, native Mac and Linux packagers retain the complete credit
 as `Licenses/Keyboard-mouse-icons.txt`.
+The Linux payload verifier requires that notice; its shared icon renderer needs
+no additional Linux adapter. Linux game visual acceptance is still pending.
 The compiled span include ships in source; builds need no artwork download.
 The profile picker has a fixed two-line text clip. `menu_mouse_profile_text`
 scopes compact imported key faces (1.2 instead of1.5 glyph-height multiplier),

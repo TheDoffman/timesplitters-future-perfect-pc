@@ -21,11 +21,15 @@ namespace TimeSplitters.Launcher
 
         public static bool Translocated(string path)
         {
+#if LINUX
+            return false;
+#else
             var parts = Path.GetFullPath(path).Split(Path.DirectorySeparatorChar);
             for (int i = 0; i + 2 < parts.Length; i++)
                 if (parts[i] == "AppTranslocation" && Guid.TryParse(parts[i + 1], out _) && parts[i + 2] == "d")
                     return true;
             return false;
+#endif
         }
 
         public static string ValidateFolder(string folder, string runningExecutable)

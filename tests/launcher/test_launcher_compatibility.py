@@ -17,7 +17,8 @@ class Compatibility(unittest.TestCase):
     def test_shared_pages_platform_adapters_and_build_inputs_select_both_hosts(self):
         for path in ('tools/launcher/SettingsPage.cs', 'tools/launcher/macos/NativeHost.cs',
                      'tools/launcher/LauncherPlatform.cs', 'tools/build/build-launcher.ps1',
-                     'tools/build/build-mac-launcher.py', 'tests/launcher/launcher_shared_ui.cs',
+                     'tools/build/build-mac-launcher.py', 'tools/build/build-linux-launcher.py',
+                     'config/build/linux-launcher-sdk.json', 'tests/launcher/launcher_shared_ui.cs',
                      'config/build/mac-launcher-sdk.json', 'src/interface/pc_display_modes.inc',
                      '.github/workflows/launcher-build.yml'):
             with self.subTest(path=path):

@@ -1,6 +1,6 @@
 using System;
 using System.Linq;
-#if MACOS
+#if MACOS || LINUX
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;

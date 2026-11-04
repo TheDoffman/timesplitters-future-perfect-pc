@@ -1,0 +1,454 @@
+{
+  "schema": 1,
+  "description": "Disposable Linux Test Lab: existing shared rocket-impact Arcade route adapted to bounded SDL events; review captures to establish actual gameplay.",
+  "events": [
+    {
+      "at": 6,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 6.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 8,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 8.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 10,
+      "commands": [
+        "focus 1",
+        "+S"
+      ]
+    },
+    {
+      "at": 10.3,
+      "commands": [
+        "-S"
+      ]
+    },
+    {
+      "at": 11,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 11.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 14,
+      "commands": [
+        "focus 1",
+        "+Down"
+      ]
+    },
+    {
+      "at": 14.12,
+      "commands": [
+        "-Down"
+      ]
+    },
+    {
+      "at": 15.32,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 15.44,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 16.64,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 16.76,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 17.96,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 18.08,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 19.28,
+      "commands": [
+        "focus 1",
+        "+Down"
+      ]
+    },
+    {
+      "at": 19.4,
+      "commands": [
+        "-Down"
+      ]
+    },
+    {
+      "at": 20.6,
+      "commands": [
+        "focus 1",
+        "+Down"
+      ]
+    },
+    {
+      "at": 20.72,
+      "commands": [
+        "-Down"
+      ]
+    },
+    {
+      "at": 21.92,
+      "commands": [
+        "focus 1",
+        "+Down"
+      ]
+    },
+    {
+      "at": 22.04,
+      "commands": [
+        "-Down"
+      ]
+    },
+    {
+      "at": 23.24,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 23.36,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 26.56,
+      "commands": [
+        "focus 1",
+        "+Up"
+      ]
+    },
+    {
+      "at": 26.68,
+      "commands": [
+        "-Up"
+      ]
+    },
+    {
+      "at": 27.18,
+      "commands": [
+        "focus 1",
+        "+Up"
+      ]
+    },
+    {
+      "at": 27.3,
+      "commands": [
+        "-Up"
+      ]
+    },
+    {
+      "at": 27.8,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 27.92,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 29.42,
+      "commands": [
+        "focus 1",
+        "+Right"
+      ]
+    },
+    {
+      "at": 29.54,
+      "commands": [
+        "-Right"
+      ]
+    },
+    {
+      "at": 29.84,
+      "commands": [
+        "focus 1",
+        "+Right"
+      ]
+    },
+    {
+      "at": 29.96,
+      "commands": [
+        "-Right"
+      ]
+    },
+    {
+      "at": 30.26,
+      "commands": [
+        "focus 1",
+        "+Right"
+      ]
+    },
+    {
+      "at": 30.38,
+      "commands": [
+        "-Right"
+      ]
+    },
+    {
+      "at": 30.68,
+      "commands": [
+        "focus 1",
+        "+Right"
+      ]
+    },
+    {
+      "at": 30.8,
+      "commands": [
+        "-Right"
+      ]
+    },
+    {
+      "at": 31.1,
+      "commands": [
+        "focus 1",
+        "+Right"
+      ]
+    },
+    {
+      "at": 31.22,
+      "commands": [
+        "-Right"
+      ]
+    },
+    {
+      "at": 31.52,
+      "commands": [
+        "focus 1",
+        "+Right"
+      ]
+    },
+    {
+      "at": 31.64,
+      "commands": [
+        "-Right"
+      ]
+    },
+    {
+      "at": 32.94,
+      "commands": [
+        "focus 1",
+        "+F"
+      ]
+    },
+    {
+      "at": 33.06,
+      "commands": [
+        "-F"
+      ]
+    },
+    {
+      "at": 35.06,
+      "commands": [
+        "focus 1",
+        "+Down"
+      ]
+    },
+    {
+      "at": 35.18,
+      "commands": [
+        "-Down"
+      ]
+    },
+    {
+      "at": 35.68,
+      "commands": [
+        "focus 1",
+        "+Down"
+      ]
+    },
+    {
+      "at": 35.8,
+      "commands": [
+        "-Down"
+      ]
+    },
+    {
+      "at": 37.3,
+      "commands": [
+        "focus 1",
+        "+Up"
+      ]
+    },
+    {
+      "at": 37.42,
+      "commands": [
+        "-Up"
+      ]
+    },
+    {
+      "at": 38.02,
+      "commands": [
+        "focus 1",
+        "+Left"
+      ]
+    },
+    {
+      "at": 38.14,
+      "commands": [
+        "-Left"
+      ]
+    },
+    {
+      "at": 38.74,
+      "commands": [
+        "focus 1",
+        "+Down"
+      ]
+    },
+    {
+      "at": 38.86,
+      "commands": [
+        "-Down"
+      ]
+    },
+    {
+      "at": 40.46,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 40.58,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 41.78,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 41.9,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 43.1,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 43.22,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 50.42,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 50.54,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 59.04,
+      "commands": [
+        "motion 8 0"
+      ]
+    },
+    {
+      "at": 61.04,
+      "commands": [
+        "focus 1",
+        "button 1 1"
+      ]
+    },
+    {
+      "at": 61.22,
+      "commands": [
+        "button 1 0"
+      ]
+    },
+    {
+      "at": 67.52,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 67.64,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 73.14,
+      "commands": [
+        "focus 1",
+        "+W"
+      ]
+    },
+    {
+      "at": 74.14,
+      "commands": [
+        "-W"
+      ]
+    }
+  ]
+}

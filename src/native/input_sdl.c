@@ -234,6 +234,18 @@ int tsfp_native_key_down(int vk) {
     if(vk==0x12)return atomic_load(&keys[0xa4])||atomic_load(&keys[0xa5]);
     return atomic_load(&keys[vk]);
 }
+int pc_controls_accept_pad(void) {
+    return atomic_load(&focused) && !pc_settings_capture_blocked();
+}
+int pc_controls_key_down(int vk) {
+    if(pc_settings_capture_blocked())return 0;
+    int down=tsfp_native_key_down(vk);
+    if(atomic_load(&menu_active)) {
+        unsigned alias=pc_input_menu_alias((unsigned)vk);
+        if(alias)down|=tsfp_native_key_down((int)alias);
+    }
+    return down;
+}
 void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
     if(e->type==SDL_EVENT_MOUSE_MOTION || e->type==SDL_EVENT_MOUSE_BUTTON_DOWN || e->type==SDL_EVENT_MOUSE_BUTTON_UP) {
         int motion=e->type==SDL_EVENT_MOUSE_MOTION;
@@ -702,4 +714,6 @@ int tsfp_native_input_test(void) {
     return ok?0:1;
 }
 
+#ifdef __APPLE__
 #include "settings_selftest.inc"
+#endif

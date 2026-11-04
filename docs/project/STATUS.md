@@ -10,7 +10,13 @@ and built-in checks pass; the final isolated profile capture shows complete
 rounded key faces, inter-row separation and bottom clearance. Main integration
 with471936e7 passed67 focused checks and2 subtests (2 native Mac skips), covering
 icon imports/rendering, menu input, mounted mouse and both package writers.
-Native Mac visual acceptance remains pending; this uses shared interfaces.
+Integration with maina6779179 preserves the Linux experimental preparation
+records and includes the icon credit in Linux packages and payload validation.
+The merged focused suite passed89 checks and2 subtests (3 host-specific skips).
+Earlier b6eba922 CI passed both runtime hosts, Mac GPU, both patch-upgrade hosts,
+and the standalone Windows/Mac launcher workflow. Checks for this integrated
+revision remain separate. Native Mac/Linux game visual acceptance is pending;
+the renderer uses shared interfaces.
 
 ## Adjust footer icons (2026-11-04, local)
 
@@ -39,6 +45,557 @@ built-in tests pass. Isolated main/pause sections, binding lists and assignment/
 capture dialogs were rendered and reviewed. Mac build/visual acceptance remains
 pending; existing shared font/quad/input adapters require no new OS adapter.
 This is a local preview, not a published release or a main-branch update.
+
+## Linux public experimental preparation (2026-11-04)
+
+Local `feature/linux-experimental-release` now has an audited, relocatable
+`v0.4.2-linux-experimental.1` candidate with launcher1.4.2. Complete shared
+Windows/Mac/Linux source remains in one stack. Game/media build, source audit,
+fresh/upgrade/corruption/repair, minimal Ubuntu userspace, shared Vulkan,
+five-minute Story, captured Arcade, actual startup movies and local Online
+checks pass. See the [candidate, exact hashes, measured scope and remaining
+release gates](../development/linux-experimental-release.md). No push/tag/upload,
+native Mac/Deck validation or Windows/WSL networking change is claimed.
+
+## Linux standalone desktop/media preview (2026-11-02)
+
+Local `feature/linux-runtime-completion`, based on unmerged `11bb17ab`; runtime
+source through `9fc32517`. No push, publication, merge or Steam Deck transfer.
+Linux now has GTK controls/graphics/debug editors using shared settings models,
+and XMV startup movies use the common WMV2/PCM/ADPCM/audio/RHI pipeline. The
+POSIX player guard requires the common RHI; legacy Mac GL retains its prior stub.
+GTK does not change the game's numeric locale. Binding dropdowns work;
+capture-to-bind remains pending. Native Mac execution remains unavailable.
+
+The local Linux x64 preview targets the Ubuntu24.04/glibc2.39 baseline and a
+working system Vulkan driver. It includes the game, existing self-contained
+launcher, application ELF dependency closure including dynamically loaded DXC
+and FFmpeg, isolated Python/Tk/TLS/Online support, source and notices. Game data,
+personal settings and saves are excluded. Native source/binary receipts and
+all payload hashes are checked. RPATH relocation is followed by executable
+resealing. The installed Python interpreter is executed during package checks.
+The launcher uses its normal writable installation; direct `Launch.sh --game`
+supports a read-only install, external game data and XDG user state. First-run
+controls are published atomically, preserving existing/concurrent settings.
+
+Archive: `TimeSplitters-Future-Perfect-PC-v0.4.2-alpha.1-linux-x64.zip`.
+SHA256: `4e6c41bb54c59b785bc2762a4b00cd6e72638b97ec352dc0170fa7f8c3e4dd25`.
+Linux build artifact: `build/linux-runtime-preview-11/`; verified copy in the
+Windows editing checkout: `build/linux-runtime-preview/`. This is a local
+experimental preview, not a published release or a guarantee for older glibc.
+
+| Check | Measured result |
+| --- | --- |
+| Final Linux shared desktop/package/runner/storage/I/O/audio/movie suite |204 passed,10 host/data-specific skips |
+| Windows media/storage suite |162 passed,1 skipped |
+| Windows changed storage/package/runner contracts |86 passed,7 skipped |
+| Windows final repository/CI/backlog/package/runner gate |152 passed,7 skipped |
+| Full patch upgrades/tracking/snapshot suite |60 passed in373s before the final RHI-only guard refinement; latest stack applied by the final build and positive/negative build guards pass |
+| Linux native build and MMIO/CRTC/AC97 check |Passed with optimized host libraries, assertions and title numeric policy retained |
+| Linux launcher adapters and shared UI |Passed;37 shared UI groups |
+| Fresh/upgrade game-package installation |1370 files verified; corrupted executable rejected; game data/saves/settings preserved; installed Python/Tk/TLS imports and trust passed |
+| Read-only relocation as nobody, spaces/non-ASCII path, no checkout SDK/build outputs |GTK settings/debug, SDL controller hotplug/focus and actual renderer pixels/fullscreen all passed |
+| Earlier relocated preview, ordinary user |300-second state-verified Story run passed; no full-campaign claim |
+| Final package, native case-sensitive directory entries backed by symlinks to the original assets |150-second Story run passed with150.13s bound; actual first-person capture visually checked |
+| Native startup movies |Two real-file decode/PCM/timestamp hash fixtures pass across refresh rates; actual packaged EA/FRD playback completes, and EA movie capture visually checked |
+| Shared Vulkan GPU/production replay |Software1.3 and forced1.2 paths pass with SDK validation; expected injected present failure remains part of the contract |
+
+The final case-sensitive test did not duplicate the game extract: only directory
+entries and file symlinks were created in the Linux filesystem. Its7500 reported
+presents were guest presents, with zero interpolated/skipped/failed. The active
+640x480 llvmpipe window measured45.84 host presents/s, p95 25.688ms and p99
+27.467ms. This is software rendering with captures, not a hardware performance
+comparison or a sustained60/240 claim. Presets60/120/180/240 are unchanged.
+Resource samples recorded57 threads and23 descriptors at the end; RSS was about
+440MiB. A short steady interval does not establish leak-free campaign play.
+
+Packaged functional runs do not include the optional SDK validation layer. The
+runner now records validation_requested separately from actual activation; the
+older300-second receipt's flag described the request, not an active layer.
+The final150-second capture run explicitly used --performance and records
+validation_enabled=false. SDK GPU contracts provide the separate API validation.
+Raw Xvfb without a window manager correctly failed fullscreen acceptance; the
+isolated Xvfb/Openbox session passed without weakening assertions.
+
+Additional repairs exposed by GCC strict checks separate existing guard/lock/
+copy statements in storage/device providers and one callback fixture; control
+flow is unchanged. Windows and Linux contracts cover them. WSL CreateVm timeouts
+interrupted final attempts; source and passing receipts were preserved, the
+Linux checkout recovered, and final build/package checks completed. Failed
+stages remain ignored for diagnosis. No Windows restart was requested/performed.
+
+Evidence is in each host's ignored `logs/linux-runtime-*`; Linux also retains
+`linux-relocated-*`, `linux-final-*`, `linux-desktop-*` and movie captures. See
+[Linux acceptance](../development/linux-acceptance.md) for commands and the
+remaining native GPU/session, physical audio/device switching, suspend/resume,
+multiple-mission, multiplayer, clean-machine and Steam Deck checks. Dependency
+source/license review and the actual release/update path remain publication
+requirements. Shared source does not establish native Mac or universal distro
+support.
+
+## Cross-platform base-game audit (2026-11-02)
+
+Local follow-up on `perf/linux-upload-waits`, audit base `71c6557f`, shared code
+through `d394ae0e`. All three builders apply the same patch stack. Ordinary
+base-game behavior stays in shared source; Vulkan upload policy is common to
+Vulkan hosts, while D3D11 retains its own resource adapter. No push/publication
+or Steam Deck transfer. Native Mac hardware is unavailable here.
+
+The audit found and fixed a shared GPU fixture that discard-mapped a default
+buffer: D3D11 requires a dynamic CPU-write buffer. The fixture now separately
+checks ordinary default-buffer updates and repeated dynamic map/unmap draws
+on every RHI, preserving subsequent bindings. It passes on Windows WARP and
+Linux Vulkan hardware/software; no platform exclusion was added. Shared Story
+cinematic serial assignment and two test varargs loops now compile under GCC
+fatal warnings without ambiguous indentation. Demo mutation tests require the
+same failed expression with glibc or Windows/macOS assertion diagnostics.
+
+Linux runtime CI now runs shared clock/vehicle/demo/wind, mouse/reload,
+HUD/FOV/cutscene/menu and audio contracts after patch application. Existing
+Windows/macOS suites remain enabled. The shared-platform guide now reflects
+the Linux game executable and current60/120/180/240 presets.
+
+| Validation | Actual result |
+| --- | --- |
+| Windows full supported build and built-in path/input/display/debug/settings/texture checks | Passed |
+| Windows RHI/upload/interface/state/host/repository bundle |133 passed,1 skipped; D3D11 WARP pixels passed |
+| Windows shared gameplay/HUD/menu/audio contracts with US XBE |446 passed,3 skipped; one deliberate-failure physics mutation timed out and passed in isolation (1 passed,18 deselected) |
+| Windows fixes/CI/demo/Story menu regression bundle |258 passed |
+| Final repository/context/CI/backlog checks |115 passed; context and diff checks passed |
+| Linux same gameplay/HUD/menu/audio contracts with linked US XBE |438 passed,12 host-specific skips |
+| Linux Vulkan pixel/resource/production replay | Passed on llvmpipe Vulkan1.3 path and private Dozen/RTX4070SUPER Vulkan1.2 path |
+| Updated Linux game build and MMIO/CRTC/AC97 checks | Passed |
+| Native Mac GPU/build/gameplay | Unrun locally; pending Mac execution |
+
+Windows executable SHA256:
+`85f9df0e09263b93e5e945fd3a27ecd405bed57b6deee7a1af42b8f05d98c4bd`.
+This build selects D3D11 (`XBOXRECOMP_VULKAN=OFF`); Windows Vulkan execution is
+not established by the WARP fixture. Updated Linux ELF SHA256:
+`0445d694b1a160c1071a134fc0d2686462833e7707099157568c602061f09159`.
+
+The bounded Windows120 Story run observed correct movement, ammo consumption,
+hand animation, opening firearm handoff and pause/resume. Captured active-game
+pixels were visually checked. At roughly111seconds its window received a close
+request (`window closed`, exit0); the runner correctly retained completed=false,
+passed=false. This interrupted run is not a completed120-second acceptance pass.
+Receipts/captures remain ignored in `private/test-saves/high-refresh/` with
+`native-120-platform-parity` prefix. Local test/build logs use
+`logs/platform-parity-*` in their respective host checkouts.
+
+Shared implementation and these scoped checks do not prove every mission,
+legacy renderer or peripheral on every host. Existing movie/dialog/host gaps
+remain in the Linux development guide and Mac backlog; native Mac and actual
+Steam Deck acceptance are still required before claiming full platform parity.
+
+## Vulkan upload reduction and Linux Story checks (2026-11-02)
+
+Local `perf/linux-upload-waits`, based on unmerged `7489cd5c`; no push,
+release or Deck transfer. Shared patch2411 batches tight image rows/slices
+and reuses byte-identical same-frame uniform snapshots through CPU mirrors.
+Range/frame changes still upload; allocation failure preserves baseline behavior.
+All Vulkan hosts share the change; D3D11 is unchanged. The runner adds bounded
+Story navigation, owned-child phase observation, named isolated profiles and
+present CSVs. Cleanup recycles only the active Linux test profile.
+
+Ubuntu24.04/WSL, private Mesa26.2.5 Dozen on RTX4070SUPER, 640x480, runtime
+source `6d38019a`, ELF SHA256
+`4770bb0926f89c49787a565d5d997b632f17754bea983144f73982ca60d4533c`.
+Same-binary legacy/optimized runs used120 FPS, validation off, cache on,
+no captures and active Story70..90seconds after the first observed active state.
+
+| Matched Story measurement | Legacy | Optimized |
+| --- | ---: | ---: |
+| Host presents/second |109.68|108.74|
+| p95 frame interval, ms |12.638|12.534|
+| p99 frame interval, ms |15.017|14.687|
+| Uniform snapshots/frame |515.66|252.26|
+| Uniform bytes/frame |518,921|406,918|
+| Image copy calls/image |28|1|
+
+Uniform GPU snapshots fell about51% and bytes about22%. Average FPS did not
+meaningfully improve; this single WSL sample does not establish native Linux,
+AMD or Deck performance. The240 preset produced108.09 host presents/second in
+its full active window, not sustained240 FPS. Presets60/120/180/240 are retained.
+Steady matched windows recorded zero fence waits and zero pipeline creation;
+capture-only waits are excluded. No speculative polling/fence changes were made.
+A separate20-second owned-child CPU sample showed scheduler/yield cost and guest
+execution; it does not establish which wait can safely change at high refresh.
+
+Separate Original60 validation/capture Story run:58.94 host presents/second,
+p95 19.466ms, p99 27.518ms, no intervals over33.33ms; first-person capture visually
+checked. Hardware Vulkan1.2 and software Vulkan1.3 RHI/pixel/production replay
+checks pass, including512 draws across six arena reuses and identical mapped
+and explicit uniform updates. Full patch transition suite:46 passed. Updated
+runner/recycler/copy/frame tests: Windows51 passed/8 skipped; Linux59 passed,
+including sanitized byte-copy contracts. Native Mac GPU execution is pending.
+See [Linux game context](../agent-context/linux-game.md). Ignored receipts/CSVs:
+`logs/linux-upload-final-*`; matched analysis in the Windows editing tree:
+`logs/linux-upload-matched-summary.json`; CPU profile in the Linux tree.
+
+## Linux host optimization and full preset checks (2026-11-02)
+
+Local `perf/linux-host-runtime`, based on unmerged Linux/GPU/launcher work at
+`80239186`; no Deck transfer, push or publication. Linux game source through
+`1fe9783b`, Ubuntu24.04/WSL kernel6.18.54.1, Clang18.1.3, SDK1.4.363.0,
+private Mesa26.2.5 Dozen/RTX4070SUPER. New ELF SHA256:
+`67d678965c7e04f8e71cafe671b7e53df1558f17d38939fb72a98073320b5b38`.
+
+The Linux builder now optimizes host C/C++ libraries with `-O2 -g`, retaining
+Debug assertions/symbols and the title's existing scalar numeric flags. A
+`--host-optimization debug` option restores the old host profile. This is not
+an optimization based on disabling assertions, Vulkan validation, original
+60Hz console timing, game logic or graphics defaults.
+
+Six existing positive late-frame deadline tests failed on Linux because the
+shared FlipGateArm late-vblank path was guarded for Windows/Mac only. Final
+additive platform patch2409 enables that same path on Linux. All20 Linux
+runner/deadline/preset checks now pass, including the missing-observer mutation.
+Cheap frames and absent vblank signals still wait; high-refresh bypass and
+return-to-original observation retain the existing rule. Linux CI now exercises
+these fixtures after runtime preparation.
+
+The bounded runner explicitly selects60/120/180/240 presets, writes only its
+no-follow disposable timing file, checks the mode actually reported at startup
+and records child CPU usage. A saved240 preference previously overrode an
+attempted60 environment override; that first uncontrolled run was excluded
+from the comparison. No personal preferences or shared Test Lab fixture changed.
+
+A matched40-second Original60 title-screen comparison (640x480, same hardware
+ICD, cache on, validation off and rotating captures) recorded2100 presents in
+both builds. Baseline CPU11.394user+3.696system=15.090seconds; host-optimized
+CPU11.266+3.710=14.976seconds. This difference is too small to claim a meaningful
+performance win. The pacing improvement is established by the deadline
+regressions, not a claimed broad FPS increase from compiler flags.
+
+Final ELF startup/title/profile checks, each30seconds:
+
+| Requested preset | Reported mode | Recorded guest presents | Failed/skipped presents |
+| --- | --- | ---: | --- |
+|120 performance|120|3300|0/0|
+|180 performance|180|4800|0/0|
+|240 performance|240|6600|0/0|
+|60 validation|Original60|1500|0/0|
+
+Counts include startup and stop at the last300-frame report; they are not
+steady-scene FPS measurements. The60 validation run has zero Vulkan validation
+errors, cache off. Performance runs explicitly disable validation and enable
+the isolated cache. Captures were retained/reviewed. An additional120.16-second
+120-target synthetic navigation run recorded14100 presents without failed/
+skipped presents; its reviewed screen was profile-name entry, so it does not
+establish first-level gameplay or sustained high-refresh gameplay. No full
+campaign, physical AMD/native-Linux, Deck or Mac acceptance is claimed.
+
+Windows:69 selected timing/clock checks,45 patch/context/backlog policy checks
+and94 CI scope/gate checks pass. Linux:61 selected host checks pass with2
+Windows-only skips, plus the20 updated runner/clock checks. Protected-MMIO
+build regression passes. All22 real patch-upgrade/history checks pass (611.04seconds).
+Evidence stays in ignored logs/linux-opt-*.json/log/txt and
+private/captures/linux-optimization; Linux and Windows source synchronization
+uses Git. Windows/Mac build options are unchanged; native Mac revalidation is
+unrun locally. Remaining optimization needs controlled real gameplay profiling,
+including waiting/copy costs, rather than assuming the title screen establishes
+60â€“240 FPS throughout the game.
+
+## Linux rebuild after main sync (2026-11-02)
+
+`feature/linux-launcher` merged `origin/main` at `040874b3` with merge commit
+`8da427d5`, retaining Linux/GPU/launcher work and main's System Link row-callback
+fix plus game0.4.2. Documentation conflicts retain both sets of evidence and
+context guides remain within their size limits. The native Ubuntu checkout was
+fast-forwarded through Git and rebuilt with the existing verified US game data.
+Protected-MMIO checks pass. ELF SHA256:
+`cd93a20e4b06c396e6f7f8213d27aa93d2a162f378cbdf65d55c9c717da1b2f1`.
+
+Windows selected menu/System Link/context/backlog checks:25 passed,2 native-Mac
+skips; CI policy checks:94 passed. A30.19-second isolated RTX/Dozen Wayland run
+with validation completed at least2,100 guest frames/presents with zero failed
+or skipped presents and zero validation errors. The rendered Video Options
+screen was reviewed; its persisted beta refresh setting makes this startup/UI
+evidence, not a controlled FPS comparison or a new gameplay/LAN acceptance run.
+No Windows/Mac game rebuild or physical LAN check was performed. The reverted
+machine networking setup is unchanged by this source sync.
+
+## Linux RTX hardware rendering (2026-11-02)
+
+Local unpublished `feature/linux-launcher`, shared GPU changes from `9e451a55`
+through `2b0a7fd8`; this supersedes the earlier API-1.2 rejection and software-only
+performance limitation below. Final patches2407/2408 provide legal Vulkan 1.2
+descriptor sets, baked pipeline state and matching SPIR-V interfaces while
+retaining the existing 1.3 path. The isolated Mesa 26.2.5 Dozen build selects
+Microsoft Direct3D12 / NVIDIA GeForce RTX 4070 SUPER through WSL. Its small queue
+granularity correction, archive/library/manifest hashes and reproducible helper
+are recorded; Ubuntu system Mesa and project Vulkan SDK pins are unchanged.
+Dozen remains experimental/nonconformant, separate from native Linux/Deck drivers.
+
+Ubuntu 24.04 / WSL 3.0.3, kernel6.18.54.1, WSLg1.0.79, SDK1.4.363.0:
+the complete shared RHI pixels/resources/presentation and production replay pass
+on RTX hardware with validation, and on llvmpipe with both the existing and
+forced compatibility paths. New real pixels cover varying widths1/2/3, 512
+distinct descriptor/uniform/scissor draws without intervening flush and six
+arena reuses. Windows WARP passes the same extended pixel contract. Native Mac
+hardware validation remains unrun; shared Mac paths remain selected.
+
+Actual game ELF built at `1f1926e6`, SHA256
+`b2ec7d3a67c60c027d2569eb3e1fefe590417ef48f9cc05a98c861a37b618ab6`,
+passes a 300.19-second isolated RTX/Wayland run: at least10,500 guest frames and
+presents, zero skipped/failed presents and zero Vulkan validation errors/warnings.
+Reviewed 2401 tunnel gameplay includes movement/camera, firing ammo16->14,
+pause and resume. This is a bounded scene check, not a campaign playthrough.
+The following 120.18-second performance run disables validation and enables the
+isolated shader cache, recording3,900 presents, zero failed/skipped presents.
+Its reviewed subsequent outdoor scene is about30 FPS (149–150 frames/5seconds),
+with menus reaching about60; the scenes differ, so this is not a controlled
+before/after benchmark or steady60 acceptance. Personal saves remain untouched.
+
+Profiling found two additional CPU costs: repeated text `/proc/self/maps` scans
+and REP MOVSB copies to D3D12 upload memory. Linux guest guards now use the live
+kernel PROCMAP_QUERY ioctl with older-kernel fallback, preserving permission
+and hole rejection. Explicit WSL Dozen selection uses glibc vector copies only
+in the child environment, preserving unrelated tunables. Windows/Mac policies
+and native Linux/system drivers retain their adapters.
+
+Windows: 46 patch tracking/historical transition tests pass (616.13s), 46 selected
+shared memory/render/context tests pass (19.69s), 115 CI/backlog/context checks
+pass (4.72s), and13 driver/memory-query checks pass. Linux's complete selected
+host suite passes78 checks with2 Windows-only skips (31.94s), including real
+auto-look protections, crash/helper, MMIO, SPIR-V, query and driver checks.
+The interactive GPU session was opened and brought forward through WSLg; its
+direct native window visibly renders the player-selection menu at60 FPS.
+Configured CI now exercises both Vulkan routes; this is not a remote CI result.
+See [WSL GPU development](../development/wsl-vulkan.md) for reproducible build,
+acceptance and direct-window play commands. All changes are local Git commits;
+no main merge, push or publication was performed.
+
+## Linux desktop launcher validation (2026-11-01)
+
+Local `feature/linux-launcher`, launcher source through `d5a3398a` (unpublished),
+based on the working Linux game branch `89b9989f`: Ubuntu 24.04 x64/WSL, pinned
+.NET SDK 8.0.426 and Avalonia 11.3.22. The Linux project links the existing
+Avalonia host, shared pages/models, importer and transaction code. It selects
+Linux releases and ELF x64 validation, `build/linux/game` checkout paths,
+POSIX file locks/permissions, system Vulkan and xdg-open.
+
+Under Xvfb, Linux adapter/settings/ELF/hash/symlink/lock/process detection and
+runtime ZIP installation checks pass. Shared restart and optional-texture
+regressions pass, plus all 37 shared UI groups including save backup/restore
+and custom save locations. The actual self-contained archive installs into a
+disposable path containing spaces, rejects corrupted application metadata,
+repairs through a copied process helper, restarts and renders, preserving
+synthetic saves and game metadata. The Python release verifier accepts the
+actual archive, hashes and executable permission. Home and graphics settings
+PNG previews with the existing checksum-verified artwork were visually reviewed.
+These are launcher/UI/update checks, not a new game playthrough.
+
+Windows compiled the launcher/test executables. Its full regression run stopped
+at the existing running-game guard because the user's separate installed game
+was running; that process was preserved. Seventy-two portable launcher/build/
+publication tests and 43 subtests pass on Windows, including Mac adapter
+contracts. Native Mac build/UI/package checks remain unrun locally. CI now
+requires Linux alongside the existing Windows/Mac checks and verifies all 15
+publication assets before publication; configured CI is not a measured CI pass.
+
+The local Linux ZIP/checksum/update manifest and source receipt are available
+under `build/linux-launcher` in both the Linux and Windows editing checkouts.
+No release was published. Matching Linux game runtime packaging/publication,
+actual gameplay launched through this UI, physical desktop/Wayland/Steam Deck,
+xdg-open dispatch and native file-dialog interaction remain acceptance gaps.
+Linux uses shared display presets/Auto/saved custom modes; desktop refresh
+switching and cross-process window observation are unavailable. Game process
+exit still restores the launcher; rollback cache cleanup remains conservative.
+See [usage](../players/linux-launcher.md).
+
+## WSLg direct window and physical mouse acceptance (2026-11-01)
+
+Local `feature/linux-x64`, game ELF unchanged from `c1b5a016`: the invisible/
+transparent window was traced to WSLg shared-memory virtiofs errors, not the
+shared Vulkan renderer. Weston logged `rdp_allocate_shared_memory` failure
+(`Input/output error`) and `use_gfxredir = 0`; a VM restart alone was insufficient.
+The official WSL update installed WSL 3.0.3, kernel 6.18.54.1, WSLg 1.0.79 and
+MSRDC 1.2.7391. Windows was not restarted. Weston now negotiates shared-memory
+redirection; a direct Wayland game window was visibly verified on the Windows
+desktop without COPY MODE, browser, Xvfb or TigerVNC. The user explicitly
+confirmed gameplay mouse capture and Esc release work. No game/source change
+was required. The manual Test Lab profile and settings were retained.
+
+The user reported poor performance. The game still uses Mesa 25.2.8 llvmpipe CPU
+Vulkan; first-level logs show roughly 15–20 FPS despite the Windows RTX 4070 SUPER.
+The manual profile had saved 240 FPS beta timing, which was backed up in
+`pc-frame-rate.before-performance.ini` and restored to Original 60 FPS after the
+user closed the game. That setting change is not a GPU-performance fix.
+
+A bounded isolated GPU experiment compiled Mesa 26.2.5 Dozen from its official
+archive, SHA-256 `794b3d1729075dae7ebd47c7283b7ca0cdb5dec668f7f11cc0a5d82f6138a0a5`.
+Private Meson 1.9.2/DirectX-Headers 1.619.1 dependencies and the install prefix
+remain under ignored `external/mesa-dzn`; Ubuntu system Mesa and the game SDK/
+runtime pins were not replaced. `vulkaninfo --summary` passes and identifies
+`Microsoft Direct3D12 (NVIDIA GeForce RTX 4070 SUPER)`, discrete GPU, driver
+Mesa 26.2.5, Vulkan 1.2.354, nonconformant/experimental. Feature enumeration exposes
+dynamic-rendering and synchronization2 extensions but no maintenance4. The
+production shared RHI contract **correctly rejects this driver** at its Vulkan 1.3
+requirement before device creation. No requirements were weakened or version
+overrides used; this driver is not accepted for game rendering. Evidence:
+`logs/linux-dzn-vulkaninfo.log`, `logs/linux-dzn-features.log`,
+`logs/linux-dzn-rhi.log`, `logs/wslg-before-restart.log` and the WSLg live log.
+
+Direct display and real user mouse acceptance now pass; hardware-accelerated
+Vulkan performance in this WSL environment remains blocked by the available
+driver's feature level. These results do not establish native Linux or Steam
+Deck performance. See [WSLg recovery and performance limits](../development/linux.md#direct-wslg-windows-and-mouse-capture).
+
+## Linux native game integration (2026-11-01)
+
+The native Linux x64 **actual game** now builds and reaches reviewed first-level
+play on local `feature/linux-x64`. Implementation commits `45078c9f` through
+`c1b5a016` add title/build/host adapters while retaining the shared generated game,
+gameplay patches, SDL controls/audio, display/debug models, textures and common
+Xbox/Vulkan frontend. The Linux runner gained the shared disposable Test Lab
+profile at `79c8fd37`. Nothing has been merged into main or published.
+
+The executable tested was built at `c1b5a016`, SHA-256
+`822b2fdc1428c4d900e19e482d753fb8dbef895a5c87b3ccb122b96dc1cb82eb`.
+It uses runtime `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`, the complete patch
+stack and the supported US XBE hash. Fresh Linux generation translated
+15,838/15,863 functions with zero failures, producing 5,268,355 C lines.
+Host: Ubuntu 24.04/WSL2 x64, glibc 2.39, Clang 18.1.3, pinned CMake 4.4.4 and
+Vulkan SDK 1.4.363.0. Mesa 25.2.8 llvmpipe LLVM 20.1.2/API 1.4 ran under X11/Xvfb
+with validation enabled. Game data was reused from Windows without another extract.
+
+- **120-second fresh/local-profile run:** at least 2,400 completed guest frames
+  and 2,400 successful guest presents; zero skipped/failed presents and zero
+  reported Vulkan validation errors. Reviewed player/profile menus and synthetic
+  SDL keyboard navigation through profile creation. Evidence: `logs/linux-menu.*`.
+- **300-second shared Test Lab run:** at least 7,200 completed guest frames and
+  7,200 successful guest presents; zero skipped/failed presents and zero reported
+  Vulkan validation errors. Reviewed main/Story/difficulty/briefing menus,
+  opening in-engine cinematic and visible first-level gameplay in 2401. Synthetic
+  keyboard/mouse input changed position/view, fired the SciFi Handgun (ammo 16→14),
+  opened the common pause/options menu and resumed visible gameplay. Evidence:
+  `logs/linux-game.json/.out/.err` and selected ignored captures under
+  `private/captures/native-linux`. These presentation counts are API outcomes,
+  not GPU completion, scanout or hardware-performance measurements.
+- Both runs used isolated saves/configs/XDG/crash paths, original 60 FPS timing and
+  the unchanged 60 Hz console clock. Disposable partition files were recycled by
+  the checked helper (six images, ~4.9 GiB apparent but 120 KiB allocated per run).
+  The canonical five-file Test Lab fixture hashes remain unchanged. Profile
+  loading passed; a full save/progression/reload round trip remains untested.
+- The protected Linux MMIO fixture passes real faults for MOV writes, APU TEST
+  reads/flags, native vblank production, guest CRTC write-to-clear and AC97 reset.
+  First boots exposed a host vblank RMW into a trapped page and compiler-folded
+  TEST reads; the fixes use writable producer aliases and a bounded decoder,
+  retaining failure for unknown instruction forms.
+- Linux contracts: **63 passed, 2 Windows-only skips**, covering patch tracking/
+  transitions, scalar decoder negative controls, real guest memory protections,
+  crash/helper/watchdog/report handling and build input guards. The shared SDL
+  input self-test passes bindings, focus, camera/mouse capture/release and virtual
+  pad hotplug. Shared Vulkan/resource/replay contracts pass again at `79c8fd37`,
+  with clean validation. Windows decoder/auto-look/context checks: **29 passed**. Complete Windows patch
+  tracking/historical transitions: **46 passed**. CI selection/gate, SDK and
+  backlog contracts: **104 passed**; repository context/index checks also pass.
+
+Audio uses the common SDL mixer and opened a host device; audible quality is
+unverified. The Story run reported 10,305 queue-full events with no invalid PCM,
+voice/device-open failures or unavailable-device events, so audio pacing/quality
+needs dedicated acceptance. Desktop Linux settings/debug editing dialogs return
+explicit skip 77; in-game options and shared models remain active. Movie decoding,
+portable launcher/package, Online transport acceptance, full save/load, Enhanced
+texture installation, resolution/fullscreen/focus acceptance and refresh options
+remain pending. Native Mac revalidation, physical input, accelerated Linux GPUs
+and Steam Deck were unavailable/unrun. This is bounded first-scene acceptance,
+not a full campaign or feature-parity claim. See [Linux usage](../development/linux.md)
+and [adapter contracts](../agent-context/linux-game.md).
+
+## Linux native validation after restart (2026-11-01)
+
+WSL 2 and Ubuntu 24.04 LTS now boot on the Windows development machine.
+Kernel: 6.18.33.2-microsoft-standard-WSL2, x86_64, glibc 2.39.
+Native source/build/dependencies live in `/root/tsfp-linux` inside Ubuntu;
+the Windows Desktop checkout remains the editing root. The native checkout was
+cloned from the same local `feature/linux-x64` commits, with Git LFS smudging
+disabled. Original game data was not copied.
+
+The common Xbox/Vulkan renderer and production `d3d8_replay` build and pass on
+Linux at `14866028`. Toolchain: Ubuntu Clang 18.1.3, pinned CMake 4.4.4, SDK
+1.4.363.0. Mesa 25.2.8 llvmpipe (LLVM 20.1.2), Vulkan 1.4, X11/Xvfb, SDK
+validation enabled. This is software Vulkan correctness acceptance; NVIDIA
+hardware acceleration, performance, physical input and Steam Deck remain untested.
+
+The shared GPU contract passes HLSL/menu sampling, byte/half-float formats,
+cube/volume resources, Xbox texture factories, depth/stencil replay isolation,
+feedback conversion, screen-copy clipping/scaling/state restoration, blend/
+stencil/scissor caching and injected presentation outcomes. The production
+frame-replay contract produces the expected red triangle and blue clear,
+executes one guest present with zero failed host calls/malformed chunks/unknown
+chunks, and reports no Vulkan validation errors. `logs/rhi-linux.json`,
+`logs/rhi-linux.log` and `logs/replay-linux.log` are retained on both workspaces.
+The renderer and replay executable hashes are in the JSON receipt.
+
+The native Clang memory/SDK suite passes **54 checks with two intentional
+Windows-only skips** at `93861d06`. The first GCC run passed 53 checks before
+adding the receipt compatibility test. Clang exposed a test-only libc-symbol
+interposition problem in a controlled Mach fixture: sanitizer calls entered its
+mocked sysconf. Prefixing the fixture's OS symbols fixes the collision while
+preserving its assertions and negative controls. All 111 selected Windows
+SDK/CI/host-page checks also pass. Repository context checks pass.
+
+SDL configure initially required missing XTEST headers. Ubuntu installation and
+CI/docs now include those headers plus EGL/libdecor/XKB X11 development packages.
+Linux SDK verification checks the actual compiler/runtime headers, libraries and
+license, retaining full archive SHA-256 and compatibility with older full-file
+receipts. The native working checkout avoids severe DrvFS per-file overhead;
+its SDK contains only the seven receipted Linux build/runtime/license files.
+
+No Linux game executable or gameplay has been validated. Remaining title-build,
+x64 MMIO/fault/crash, text/settings and Online adapters are listed in
+[Linux development](../development/linux.md). Existing game timing defaults,
+Windows/Mac implementation and personal data remain unchanged. Mac execution
+and remote Linux CI remain unrun; all commits remain local and unpublished.
+
+Cleanup of the replaced Windows `.venv-linux` and staged Linux SDK directory
+was blocked by automatic approval review with the response "blocked by policy".
+Both were preserved; no alternative deletion was attempted. The active Linux
+checkout, environment and SDK are inside Ubuntu. Windows reported about 49.5 GiB
+free after setup; WSL's virtual disk capacity is not physical allocated storage.
+
+## Linux x64 SDL/Vulkan foundation (2026-11-01)
+
+Local source commit `1c981c0a` on `feature/linux-x64`, based on main `4f80b5e5`. The initial Linux
+foundation extends the existing common Xbox/Vulkan frontend and production
+frame-replay tool; it does not yet build a Linux game executable. Shared shaders,
+gameplay/source models and the complete historical patch stack remain common.
+Linux host page queries and free-physical-memory snapshots extend the existing
+adapters; Windows and Darwin branches retain their implementations.
+
+`tools/testing/test-rhi-linux.py` builds/tests the asset-free renderer/replay
+contracts using the same SDK version as Mac, pinned separately for Linux x64
+with publisher size/SHA-256 and installed-file receipts. The Linux SDK archive
+was downloaded and its exact size/checksum verified on this Windows host.
+It has not been installed or executed on Linux. The runtime patch stack applies
+successfully, including the new final frontend/replay guard patch.
+
+Windows x64 validation passed: 29 SDK/isolation and host-memory checks,
+including controlled Linux VMA/sysinfo failure/overflow branches; 103
+SDK/CI gate/Windows WARP renderer checks (the groups overlap); 21 repository
+context/backlog checks. The WARP fixture checks shared GPU semantics, not Linux
+Vulkan or gameplay. All 24 patch-tracking checks and all 22 historical patch
+transition checks passed; the latter completed in 13m50s with two workers.
+Historical subset fixtures exclude the Linux patch alongside its grouped-layout
+prerequisite; complete-stack upgrades still apply and verify it.
+`repo-context.py check --base 4f80b5e5` and whitespace checks pass.
+
+Microsoft WSL 2.7.14 and the Ubuntu 24.04 LTS app are installed on the Windows
+host. VirtualMachinePlatform enabled successfully with DISM exit 3010;
+Windows requires a restart before the VM/hypervisor can start. Ubuntu distro
+registration/first boot and Linux dependencies remain pending that restart.
+No Linux executable, GPU check, gameplay test or physical Mac validation has
+run. The new Ubuntu/lavapipe CI job is configured but has not run remotely.
+No source changes have been pushed, merged or published.
+
+After reboot, initialize Ubuntu and run the real Linux memory checks and shared
+Vulkan/replay contracts before title integration. Remaining x64 fault/MMIO,
+crash, settings/text, Online and title-build adapters plus feature acceptance are
+listed in [Linux development](../development/linux.md). Steam Deck is the planned
+secondary hardware test; it has not been connected or modified. WSL/software
+Vulkan must not be represented as Deck performance or full Linux feature parity.
 
 ## Shared keyboard/mouse keycaps (isolated local work)
 

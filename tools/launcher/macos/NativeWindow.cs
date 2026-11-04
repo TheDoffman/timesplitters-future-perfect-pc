@@ -28,7 +28,7 @@ namespace TimeSplitters.Launcher
             AvaloniaXamlLoader.Load(this);Artwork();
             Find<ContentControl>("GameChannelPickerHost").Content=channelPicker.View;
             channelPicker.SetReleases(Array.Empty<Release>(),GameChannels.Read(root),GameChannels.ReadPreviewTrack(root));
-            Label("LauncherVersionLabel","LAUNCHER "+LauncherVersion.Value+"  /  macOS ARM64");
+            Label("LauncherVersionLabel","LAUNCHER "+LauncherVersion.Value+"  /  "+LauncherPlatform.HostName);
             Click("HomeNav",()=>Page("CommandCenter"));Click("SettingsNav",ShowSettings);Click("NewsNav",()=>Run(News));
             Click("RepairNav",()=>Maintenance());Click("SupportNav",()=>NativeHost.Open("https://github.com/"+ReleaseClient.Repository+"/issues"));
             Click("DiscordNav",()=>NativeHost.Open(ReleaseClient.DiscordInvite));
@@ -45,7 +45,7 @@ namespace TimeSplitters.Launcher
             Opened+=async(s,e)=>{try{
                 if(args.Contains("--test-session")){await TestSession();return;}
                 if(render){Refresh();await Render();return;}
-                Directory.CreateDirectory(Core.PathIn(root,".launcher"));installationLock=new FileStream(Core.PathIn(root,".launcher/mac.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);
+                Directory.CreateDirectory(Core.PathIn(root,".launcher"));installationLock=new FileStream(Core.PathIn(root,LauncherPlatform.LockFile),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);
                 Core.RecoverLauncher(root);Core.Recover(root);TexturePack.Recover(root);Core.CleanupGameAfterStartup(root);string recovered=null;try{recovered=GameSessions.Recover(root);}catch(Exception ex){LauncherLog.Write(root,"Session recovery deferred: "+ex.GetType().Name);}Refresh();if(recovered!=null)Maintenance(true);SelfUpdate.CleanupAfterStartup(root);
                 foreach(var name in new[]{".launcher/mac-self-helper",".launcher/mac-update-helper"})try{File.Delete(Core.PathIn(root,name));}catch(IOException){}
                 await Check();string result=Core.PathIn(root,".launcher/last-result.txt");if(File.Exists(result)){Status(File.ReadAllText(result));File.Delete(result);}
@@ -85,7 +85,7 @@ namespace TimeSplitters.Launcher
             bool data=File.Exists(Core.PathIn(root,LauncherPlatform.Data(root)+"/default.xbe"));
             Label("InstalledLabel",render?"LOCAL BUILD":NativeHost.Version(root));
             Label("ReadyTitle",gameRunning?"Game running":installed||render?(data||render?"Ready to play":"Set up game data"):"Install game");
-            Label("ReadyDescription",gameRunning?"The launcher will return when the game closes.":installed||render?"Your native Mac game is ready. Adjust settings before you play.":"Install a native Mac release, then import your US Xbox game data.");
+            Label("ReadyDescription",gameRunning?"The launcher will return when the game closes.":installed||render?"Your "+LauncherPlatform.HostName+" game is ready. Adjust settings before you play.":"Install a "+LauncherPlatform.HostName+" release, then import your US Xbox game data.");
             Find<Button>("PlayButton").IsEnabled=(installed&&data||render)&&!busy&&!gameRunning;
             Label("DataLabel",data||render?"✓  Game data installed":"○  ISO required");
             Label("GameDataHint",data?"Your local game files are kept between updates.":"Import your supported US Xbox ISO or extracted game folder.");
@@ -94,7 +94,7 @@ namespace TimeSplitters.Launcher
             channelPicker.SetEnabled(!busy&&!gameRunning);
             Find<Button>("RollbackButton").IsEnabled=!busy&&!gameRunning&&!LauncherPlatform.Checkout(root)&&Core.CanRollback(root);
             Label("ChannelBadge", Preview?"\u25cf  PREVIEW CHANNEL":"\u25cf  STABLE CHANNEL");
-            if(render){Label("ReleaseTitle","Native Mac launcher");Label("ReleaseDescription","Preview layout · native Mac releases appear here when published.");Label("UpdateStateLabel","MAC PREVIEW");Status("Preview only · no game launched, network requests or personal files changed.");}
+            if(render){Label("ReleaseTitle",LauncherPlatform.HostName+" launcher");Label("ReleaseDescription","Preview layout · "+LauncherPlatform.HostName+" releases appear here when published.");Label("UpdateStateLabel",LauncherPlatform.HostName+" PREVIEW");Status("Preview only · no game launched, network requests or personal files changed.");}
         }
         async void Run(Func<Task> action){try{await action();}catch(OperationCanceledException){Status("Download paused. Choose Install release to resume.");}catch(Exception e){Status(e.Message);if(!Find<Control>("CommandCenter").IsVisible)await MessageDialog("TimeSplitters",e.Message,false).ShowDialog(this);}}
         async Task Check()
@@ -102,12 +102,12 @@ namespace TimeSplitters.Launcher
             if(busy)return;int revision=++checkRevision;string channel=SelectedGameChannel;Label("ReleaseTitle","Checking for updates…");
             using(var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(8))){try{
                 var catalog=await client.ReadGameCatalog(timeout.Token);if(revision!=checkRevision)return;SetChannels(catalog,channel);latest=GameChannels.Select(catalog,channel);
-                Label("ReleaseTitle",latest==null?"No Mac release available":"Available: "+latest.Tag);
-                Label("ReleaseDescription",latest==null?"No compatible native Mac package is published on this channel. Your local build remains available.":ReleaseNews.Availability(Core.InstalledVersion(root),latest,false));
+                Label("ReleaseTitle",latest==null?"No "+LauncherPlatform.HostName+" release available":"Available: "+latest.Tag);
+                Label("ReleaseDescription",latest==null?"No compatible "+LauncherPlatform.HostName+" package is published on this channel. Your local build remains available.":ReleaseNews.Availability(Core.InstalledVersion(root),latest,false));
                 bool newer=GameChannels.CanInstall(latest,Core.InstalledVersion(root));
                 Find<Button>("UpdateButton").IsEnabled=newer&&!LauncherPlatform.Checkout(root)&&!gameRunning;
                 Find<Button>("UpdateButton").Content=latest!=null && latest.Channel!=GameChannels.Installed(root)?"Switch game channel":String.IsNullOrEmpty(Core.InstalledVersion(root))?"Install release":"Update release";
-                Label("UpdateStateLabel",latest==null?"NATIVE MAC":"CHECKED");
+                Label("UpdateStateLabel",latest==null?LauncherPlatform.HostName:"CHECKED");
                 Status(LauncherPlatform.Checkout(root)?"Development build · published updates install into a separate portable installation.":"Update check complete.");
             }catch(Exception e){Label("ReleaseTitle","Couldn't check updates");Label("ReleaseDescription","Your installed game remains available. "+e.Message);}}
             Refresh();

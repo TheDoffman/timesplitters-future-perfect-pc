@@ -1,6 +1,7 @@
 # Local tool checkouts and environments
 /external/
 /.venv/
+/.venv-linux/
 /build/
 /logs/
 /.pytest_cache/
