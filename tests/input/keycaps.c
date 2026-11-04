@@ -13,6 +13,7 @@
 #define TSFP_KEYCAP_TEST 1
 #ifdef TSFP_TEST_INPUT_ICONS
 #define TSFP_INPUT_ICONS 1
+static int menu_mouse_profile_icons;
 typedef struct PcInputIconSpan {unsigned char x,y,w,h,r,g,b,a;} PcInputIconSpan;
 typedef struct PcInputIconImage {unsigned first,count;} PcInputIconImage;
 static const PcInputIconSpan input_icon_spans[]={{0,0,32,32,244,244,242,255},{0,0,32,32,41,49,59,255}};
@@ -89,6 +90,8 @@ int main(void)
     input_icon_lookup['E']=4;input_icon_lookup[0x25]=6;input_icon_lookup[0x27]=8;
     input_icon_lookup[0]=0;
     run("[E]");CHECK(!glyphs && lines==1 && seen_colour==0x5b5b5b55);
+    int normal_width=max_x-min_x;
+    menu_mouse_profile_icons=1;run("[E]");CHECK(max_x-min_x<normal_width);menu_mouse_profile_icons=0;
     held_keys['E']=1;run("[E]");CHECK(!glyphs && lines==1 && seen_colour==0x0f121655);held_keys['E']=0;
     run("[Mouse 1]");CHECK(glyphs==6 && lines>1);
     run("[Mouse]");CHECK(!glyphs && lines==1);

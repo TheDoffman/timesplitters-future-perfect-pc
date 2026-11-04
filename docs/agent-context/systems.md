@@ -1,4 +1,4 @@
-[Settings/profile input icons](controls-options.md).
+[Settings/profile footer fit](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)

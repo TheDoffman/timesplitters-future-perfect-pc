@@ -20,7 +20,8 @@ static void input_icon_paint(const PcKeycapCap *cap)
 {
     /* The supplied PNGs include transparent margins; compensate so their
      * visible key faces remain legible beside the game's original lettering. */
-    float h=(cap->b-cap->y)*1.5f;
+    /* The profile picker reserves a shorter, fixed two-line clip. */
+    float h=(cap->b-cap->y)*(menu_mouse_profile_icons?1.2f:1.5f);
     float x=(cap->x+cap->r-h)*.5f,y=(cap->y+cap->b-h)*.5f;
     input_icon_image(input_icons[cap->icon*2+!!cap->pressed],x,y,h,h,cap->colour);
 }

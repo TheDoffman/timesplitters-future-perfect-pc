@@ -1,10 +1,12 @@
-## Profile Delete hint spacing (2026-11-04, local)
+## Profile footer fit (2026-11-04, local)
 
-The keyboard profile picker lowers its separate Y/Delete Profile hint by6
-layout pixels. Normal/hover draws and cached mouse hit areas share the adjusted
-baseline; the original stack argument and controller layout remain native.
-Windows mouse-policy fixtures5 passed; supported Release build/built-ins pass.
-Native Mac visual acceptance remains pending; this uses shared menu/font code.
+The profile footer's native clip cannot accommodate full-size imported key
+faces on two lines. Shared drawing now uses compact1.2-height icons only in
+this picker (other prompts retain1.5). Select/Back remains at native Y; Delete
+moves down2 layout pixels. Normal/hover drawings, cached hit regions and scoped
+icon state remain consistent. Controller layout is unchanged.
+Windows focused fixtures21 passed,2 native Mac skips. Native Mac visual
+acceptance remains pending; this uses the shared menu/font/quad interfaces.
 
 ## Adjust footer icons (2026-11-04, local)
 
