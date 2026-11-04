@@ -6,6 +6,8 @@ static void clear_transient(PcInput *s)
 {
     memset(s->keys, 0, sizeof s->keys);
     pc_reload_reset(&s->reload);
+    s->cockpit_active=s->cockpit_blocked=0;
+    s->cockpit_at=0;
     s->dx = s->dy = 0;
     s->motion_at = 0;
     s->wheel_queue = s->wheel_key = 0;

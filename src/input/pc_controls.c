@@ -509,6 +509,7 @@ void pc_controls_reload_sample(const unsigned char roles[256],int active,
     active=active && !InterlockedCompareExchange(&editing,0,0) && !menu_mode && !text_input.owner &&
         input.focused && input.captured && (replaying || GetForegroundWindow()==window_handle);
     pc_reload_sample(&input.reload,roles,active,GetTickCount64(),reload,fire,secondary);
+    pc_input_cockpit_fire(&input,active,GetTickCount64(),secondary);
     ReleaseSRWLockExclusive(&lock);
 }
 

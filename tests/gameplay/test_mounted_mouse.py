@@ -174,7 +174,7 @@ def test_original_vehicle_mouse(tmp_path, legacy):
     finally:
         vars(config).update(previous)
 
-@pytest.mark.parametrize('legacy', [False, True], ids=['mech-mouse', 'old-mech-route'])
+@pytest.mark.parametrize('legacy', [False, True, 'cockpit'], ids=['mech-mouse', 'old-mech-route', 'old-cockpit-route'])
 def test_original_mech_mouse(tmp_path, legacy):
     import hashlib
     import struct
@@ -188,7 +188,7 @@ def test_original_mech_mouse(tmp_path, legacy):
     try:
         config.configure_from_xbe(str(xbe))
         functions = {a: dict(name=f'sub_{a:08X}', end=end) for a, end in
-                     ((0x37aa70,0x37acaa),(0x3797b0,0x379957))}
+                     ((0x37aa70,0x37acaa),(0x3797b0,0x379957),(0x21c7b0,0x21c8ff))}
         translator = FunctionTranslator(image, functions)
         code = '\n'.join(translator.translate_function(a, f) for a, f in functions.items())
         fixture = (ROOT / 'tests/gameplay/mech_mouse_guest.c').read_text()
@@ -199,8 +199,10 @@ def test_original_mech_mouse(tmp_path, legacy):
                               for a in sorted(set(int(x,16) for x in re.findall(r'0x([0-9A-Fa-f]+)',code + fixture)))
                               if 0x470000 <= a < 0x4a0000)
         helper = (ROOT / 'src/input/pc_mounted.h').read_text()
-        if legacy:
+        if legacy is True:
             helper = helper.replace(' && mode!=0x8000', '')
+        elif legacy == 'cockpit':
+            helper = helper.replace(' && mode!=0x100', '')
         source = tmp_path / 'mech_mouse.c'
         source.write_text(fixture.replace('/* GENERATED_ROUTINES */', code).replace('/* UNREACHED */', stubs)
                           .replace('/* CONSTANTS */', constants).replace('/* MOUSE_IMPLEMENTATION */', helper))
