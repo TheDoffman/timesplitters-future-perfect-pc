@@ -15,9 +15,13 @@ US524A40, opened through native frontend2CBE50/pause2EC1A0 initialization.
 Settings and pause now expose one Controls entry. Root tabs are General Controls,
 Controller and Keyboard & Mouse, using the same measured tab painter as Video
 (`pc_settings_tabs.inc`), 78% width, compact65% fonts and native silver dividers.
-Video/Controls tabs use uppercase measured captions, muted vertical shading and
-non-overlapping silver edge strips. Keyboard labels use uppercase display copies
+Video/Controls sections use flat uppercase labels: the current page stays blue,
+and one unbordered, rounded native-colour highlight follows pointer or header focus.
+Inactive labels have no background, gradient, bevel or edge strips. Keyboard labels use uppercase display copies
 only; stored key names, assignments and persistence remain unchanged.
+Section captions select the first visible setting row's native font (`row+1c`,
+setter3FA10) before measuring and drawing, so frontend headers use the same game
+font as pause headers. Flush batches and restore the enclosing font afterwards.
 
 General has native IDs1 Crosshair,2 Auto Aim,4 Auto Lookahead,5 Aim Mode,
 6 Crouch and7 Weapon Change. Controller has0 Control Layout,3 Inverse Look,
@@ -38,7 +42,7 @@ Custom keyboard glyphs/column headings/names fit their measured cells. Draw plai
 captions under explicit glyph scale, then flush/restore it: inline size escapes
 would override the fit. This also keeps diagram letters inside their key boxes.
 The shared native focus painter suppresses its full-row backdrop for the owned
-Controls header130; individual tab backgrounds/active state remain visible.
+Controls header130; the shared section painter owns its single highlight.
 
 The original2EA3F0 builds and initializes every native record. The button scope
 marks the other tab's fields hidden/disabled and clears row+B0 before native

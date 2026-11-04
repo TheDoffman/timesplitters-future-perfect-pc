@@ -1,19 +1,21 @@
-/* Shared native tab skin for Video Options and Controls. */
-static uint32_t settings_tab_shade(uint32_t top,uint32_t bottom,int y,int height)
-{
-    uint32_t color=0;
-    for(unsigned shift=0;shift<32;shift+=8) {
-        int a=(int)((top>>shift)&255u),b=(int)((bottom>>shift)&255u);
-        color|=(uint32_t)(a+(b-a)*y/(height>1?height-1:1))<<shift;
-    }
-    return color;
-}
+/* Flat section labels use the native option-row selection colours. */
 static void settings_tabs_paint(uint32_t menu,const float bounds[4],
                                 const uint32_t *captions,int count,int active_index)
 {
-    extern void sub_00041DC0(void),sub_0003FCF0(void),sub_0001EFB0(void),sub_0003F8D0(void);
+    extern void sub_00041DC0(void),sub_0003FCF0(void),sub_0001EFB0(void),sub_0003F8D0(void),sub_0003FA10(void);
     float width=(bounds[2]-bounds[0])/(float)count;
     float top=bounds[1],height=bounds[3]-top;
+    /* Custom header callbacks inherit a different frontend font. Native label
+     * painter76150 selects row+1c through3FA10; use the first visible setting's
+     * font for both measuring and drawing, then restore the enclosing font. */
+    uint32_t saved_font=WORD_AT(0x6b93b4),font=saved_font;
+    uint32_t row=guest_writable(menu,0x17c)?WORD_AT(menu+0x178):0;
+    for(unsigned n=0;row && n<64 && guest_writable(row,0x2c);n++,row=WORD_AT(row+4)) {
+        uint32_t type=WORD_AT(row),id=WORD_AT(row+0x14);
+        if(id!=120u && id!=130u && !(WORD_AT(row+0x28)&0x20u) &&
+           (type==4 || type==7 || type==8)) {font=WORD_AT(row+0x1c);break;}
+    }
+    if(font!=saved_font) {guest_call(sub_00022FF0,0);guest_call(sub_0003FA10,1,font);}
     /* Pause uses a narrower cell and a larger inherited font. Measure all
      * captions first, then use one common scale for drawing and centering. */
     if(!video_tab_measure)video_tab_measure=xbox_HeapAlloc(40,4);
@@ -37,29 +39,39 @@ static void settings_tabs_paint(uint32_t menu,const float bounds[4],
         guest_call(sub_0003F8D0,0);
     }
     uint32_t align=WORD_AT(0x007E7260u);WORD_AT(0x007E7260u)=0;
+    int hovered=-1;
+    if(menu_mouse_context()) {
+        PcMenuPointer pointer=pc_controls_menu_hover_pointer();
+        float px,py,gw=(float)WORD_AT(0x4e8cf0),gh=(float)WORD_AT(0x4e8cf4);
+        unsigned sw,sh;d3d8_display_output_shape((unsigned)gw,(unsigned)gh,&sw,&sh);
+        if(sh && pc_menu_mouse_position(pointer,(float)sw/sh,gw,gh,&px,&py) &&
+           px>=bounds[0] && px<bounds[2] && py>=top && py<bounds[3])
+            hovered=(int)((px-bounds[0])/width);
+    }
+    int focused=guest_writable(menu,0x190) &&
+        (WORD_AT(menu+0x18c)==120u || WORD_AT(menu+0x18c)==130u);
+    int highlighted=hovered>=0?hovered:focused?active_index:-1;
     for(int i=0;i<count;i++) {
         float x=bounds[0]+width*i;
         int active=i==active_index;
-        uint32_t shade_top=guest_call(sub_00154FE0,2,active?0x50667c70u:0x23304358u,WORD_AT(menu+0xf4));
-        uint32_t shade_bottom=guest_call(sub_00154FE0,2,active?0x20334a70u:0x10192558u,WORD_AT(menu+0xf4));
-        uint32_t silver=guest_call(sub_00154FE0,2,active?0xaebdca70u:0x51627055u,WORD_AT(menu+0xf4));
-        uint32_t fg=guest_call(sub_00154FE0,2,active?0xddeeff7fu:0x91a8c17fu,WORD_AT(menu+0xf4));
-        /* Non-overlapping horizontal strips retain alpha at rounded corners. */
-        int h=(int)height,w=(int)(width-4.f);
-        static const int insets[]={4,2,1,0};
-        for(int y=0;y<h;y++) {
-            int edge=y<h-1-y?y:h-1-y,cut=edge<4?insets[edge]:0;
-            int left=(int)x+cut,right=(int)x+w-cut;
-            uint32_t bg=settings_tab_shade(shade_top,shade_bottom,y,h);
-            if(y==0 || y==h-1)guest_call(sub_0001EFB0,5,(uint32_t)left,(uint32_t)((int)top+y),
-                (uint32_t)right,(uint32_t)((int)top+y+1),silver);
-            else {
-                guest_call(sub_0001EFB0,5,(uint32_t)left,(uint32_t)((int)top+y),
-                    (uint32_t)(left+1),(uint32_t)((int)top+y+1),silver);
-                guest_call(sub_0001EFB0,5,(uint32_t)(left+1),(uint32_t)((int)top+y),
-                    (uint32_t)(right-1),(uint32_t)((int)top+y+1),bg);
-                guest_call(sub_0001EFB0,5,(uint32_t)(right-1),(uint32_t)((int)top+y),
-                    (uint32_t)right,(uint32_t)((int)top+y+1),silver);
+        int w=(int)(width-4.f);
+        /* Native glyph RGB is half intensity (0x7f is white). */
+        uint32_t fg=guest_call(sub_00154FE0,2,active?0x405a7f7fu:0x7073777fu,WORD_AT(menu+0xf4));
+        /* One flat highlight follows pointer/focus; inactive labels have no
+         * background, border or bevel. The current section stays blue. */
+        if(i==highlighted) {
+            uint32_t bg=guest_call(sub_00154FE0,2,0x354b6448u,WORD_AT(menu+0xf4));
+            int left=(int)x,right=(int)(x+w),y0=(int)top,h=(int)bounds[3]-y0;
+            /* Match the native option-row six-unit rounded corners. Disjoint
+             * strips keep the translucent fill even at the curved edges. */
+            for(int y=0;y<h;y++) {
+                static const unsigned inset[]={4,2,1,1,0,0};
+                int edge=y<h-1-y?y:h-1-y;
+                unsigned cut=edge<6?inset[edge]:0;
+                int end=edge>=6?h-6:y+1;
+                guest_call(sub_0001EFB0,5,(uint32_t)(left+cut),(uint32_t)(y0+y),
+                    (uint32_t)(right-cut),(uint32_t)(y0+end),bg);
+                y=end-1;
             }
         }
         uint32_t caption=captions[i];
@@ -77,4 +89,5 @@ static void settings_tabs_paint(uint32_t menu,const float bounds[4],
         guest_call(sub_0003F8D0,0);
     }
     WORD_AT(0x007E7260u)=align;
+    if(font!=saved_font) {guest_call(sub_00022FF0,0);guest_call(sub_0003FA10,1,saved_font);}
 }

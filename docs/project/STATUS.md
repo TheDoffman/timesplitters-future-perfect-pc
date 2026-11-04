@@ -1,3 +1,22 @@
+## Flat settings section labels (2026-11-03, isolated local work)
+
+Branch feature/flat-settings-menu from595ffe70 in a separate menu worktree.
+The shared Video/Controls header painter replaces shaded bordered tiles with
+plain labels. The current section stays blue; one rounded native-colour highlight
+follows the pointer or keyboard/controller header focus. Body focus leaves the
+section labels unboxed. Measured captions, cell geometry, native silver dividers,
+input routing and saving behavior are retained in both main and pause contexts.
+
+Focused Windows UI/input checks:21 passed,2 native Mac skips. Isolated Release
+build and built-in checks pass. Main1920x1080 and pause1280x720 Controls/Video
+sections reviewed live, including header/body focus and rounded highlights.
+Native glyph RGB is half intensity; caption colours use0x7f as white to preserve
+the active blue instead of saturating to white.
+Header captions select the first visible native setting's font for measurement
+and rendering, then restore it; this corrects the frontend's inherited plain font.
+The separate checkout preserves the active audio work; no audio source or personal save/settings changes belong
+to this task. Native Mac visual and physical-controller acceptance remain pending.
+
 ## Settings visual refinement in both menu contexts (2026-11-03, local)
 
 Branch feature/settings-visual-refinements from d415de00; shared presentation

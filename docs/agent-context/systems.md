@@ -1,4 +1,4 @@
-[Controls layout, shared tab lettering and balanced spacing](controls-options.md).
+[Flat settings sections, focus and balanced spacing](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)

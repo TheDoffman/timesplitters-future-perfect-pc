@@ -1,3 +1,10 @@
+Flat settings headers (2026-11-03, local feature/flat-settings-menu): shared
+pc_settings_tabs.inc uses plain section labels, blue current-page text and one
+rounded hover/focus highlight in Video/Controls. Existing guest pointer, colour,
+font and rectangle helpers serve both hosts; no new adapter is needed. Windows
+focused UI/input checks, Release build and isolated main/pause review pass;
+native Mac visual acceptance remains pending.
+
 Settings visual refinement (2026-11-03, local feature/settings-visual-refinements):
 shared Video/Controls tab captions use one measured reference, short pages
 balance native leading rather than blank footer rows, Video retains its native
