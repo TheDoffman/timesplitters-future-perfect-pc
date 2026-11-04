@@ -22,6 +22,7 @@ import linux_vulkan_sdk
 import linux_ffmpeg
 from runtime_licenses import prepare as prepare_runtime_licenses
 from linux_dependency_sources import collect as collect_dependency_sources
+from release_channels import identity as release_identity
 
 # These are the host ABI, not distributable application dependencies. Keep the
 # host GPU/GL/Vulkan drivers and loader selection; never ship a hardware ICD.
@@ -68,6 +69,19 @@ def bundle_libraries(pairs,stage):
 def copy(source,stage,name):
     target=stage/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source,target);return target
 
+def verify_launcher(directory):
+    manifest=json.loads((directory/'Support/Launcher/manifest.json').read_text())
+    files=manifest.get('files',{})
+    if 'TimeSplitters.Launcher' not in files:raise ValueError('Incomplete launcher manifest')
+    for name,sha in files.items():
+        part=PurePosixPath(name)
+        if not name or part.is_absolute() or '..' in part.parts or '\\' in name or ':' in name:raise ValueError('Unsafe launcher path')
+        path=directory/part
+        if path.is_symlink() or not path.resolve().is_relative_to(directory.resolve()) or digest(path)!=sha:raise ValueError('Launcher checksum mismatch: '+name)
+    actual={p.relative_to(directory).as_posix() for p in directory.rglob('*') if p.is_file()}
+    if actual!=set(files)|{'Support/Launcher/manifest.json'}:raise ValueError('Unlisted launcher member')
+    return manifest
+
 def bundle_python(root,stage):
     import tkinter,_tkinter
     version=f'{sys.version_info.major}.{sys.version_info.minor}'
@@ -107,7 +121,14 @@ def bundle_python(root,stage):
 
 def verify_payload(stage,manifest):
     required={'Bin/libdxcompiler.so','Bin/futureperfect_recomp','TimeSplitters.Launcher','Launch.sh','Settings/pc-controls.json',
-        'Support/Python/bin/python3','Support/Online/online.py','Support/Online/network-identity.json','Source/pc-port-source.zip'}
+        'Support/Python/bin/python3','Support/Online/online.py','Support/Online/network-identity.json','Source/pc-port-source.zip',
+        'Bin/libavcodec.so.60','Bin/libavutil.so.58','Source/FFmpeg/pin.json','Source/FFmpeg/linux_ffmpeg.py',
+        'Licenses/SDL.txt','Licenses/DXC.txt','Licenses/DXC-ThirdParty.txt','Licenses/Runtime-GPL-3.0.txt',
+        'Licenses/FFmpeg-COPYING.LGPLv2.1.txt','Support/Runtime/dependency-audit.json'}
+    media=manifest.get('media',{})
+    archive=media.get('archive','')
+    if not archive or Path(archive).name!=archive:raise ValueError('Incomplete media source metadata')
+    required.add('Source/FFmpeg/'+archive)
     files=manifest['files']
     if not required<=files.keys():raise ValueError('Incomplete Linux game package')
     for name,sha in files.items():
@@ -119,13 +140,21 @@ def verify_payload(stage,manifest):
         if path.is_symlink() or not path.resolve().is_relative_to(stage.resolve()) or digest(path)!=sha:raise ValueError('Package checksum mismatch: '+name)
     actual={p.relative_to(stage).as_posix() for p in stage.rglob('*') if p.is_file()}
     if actual!=set(files)|{'BUILD.json'}:raise ValueError('Unlisted package file')
+    if digest(stage/'Source/FFmpeg'/archive)!=media.get('sha256'):raise ValueError('FFmpeg source archive checksum mismatch')
+    audit=json.loads((stage/'Support/Runtime/dependency-audit.json').read_text())
+    if set(audit.get('components',{}))!={name for name in files if elf(stage/name)}:raise ValueError('Incomplete ELF provider audit')
+    for source in audit.get('source_packages',{}).values():
+        for name,sha in source['files'].items():
+            if files.get(name)!=sha:raise ValueError('Incomplete corresponding sources')
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--version',required=True)
     parser.add_argument('--output',type=Path,default=ROOT/'build/releases');parser.add_argument('--launcher',type=Path,default=ROOT/'build/linux-launcher/package')
     args=parser.parse_args()
     if platform.system()!='Linux' or platform.machine()!='x86_64':parser.error('Package on the Linux x64 build host')
-    if not re.fullmatch(r'v\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?',args.version):parser.error('Use a release-style version tag')
+    try:release=release_identity(args.version,publishing=True)
+    except ValueError as error:parser.error(str(error))
+    if release['channel']=='stable':parser.error('Linux experimental packages require a named preview channel, e.g. v0.4.2-linux-experimental.1')
     if not shutil.which('patchelf'):parser.error('Install patchelf on the build host')
     build=ROOT/'build/linux/game';native=json.loads((build/'BUILD.json').read_text());executable=build/'futureperfect_recomp'
     if digest(executable)!=native['executable_sha256']:parser.error('Native executable differs from BUILD.json')
@@ -135,7 +164,7 @@ def main():
     name='TimeSplitters-Future-Perfect-PC-'+args.version+'-linux-x64';stage=args.output.resolve()/name
     if stage.exists() or stage.with_name(stage.name+'.zip').exists():parser.error('Use a new output directory; existing packages are preserved')
     stage.mkdir(parents=True);game=copy(executable,stage,'Bin/futureperfect_recomp');game.chmod(0o755)
-    if digest(args.launcher/'TimeSplitters.Launcher')!=json.loads((args.launcher/'Support/Launcher/manifest.json').read_text())['files']['TimeSplitters.Launcher']:parser.error('Launcher differs from its manifest')
+    verify_launcher(args.launcher)
     for source in args.launcher.rglob('*'):
         if source.is_symlink():raise ValueError('Linked launcher member')
         if source.is_file():copy(source,stage,source.relative_to(args.launcher))
@@ -187,7 +216,7 @@ def main():
     (stage/'Launch.sh').write_text((ROOT/'tools/release/linux-launch.sh').read_text());(stage/'Launch.sh').chmod(0o755)
     (stage/'README.txt').write_text('Linux x64 experimental preview. Extract into a writable folder and run ./Launch.sh.\nImport your supported US Xbox files using the launcher. Game data is not included.\nRequires a Vulkan-capable system driver and the build host glibc baseline (Ubuntu24.04).\nNo development checkout, system Python or Vulkan SDK is needed.\nFor a read-only game installation use ./Launch.sh --game --data /path/to/game.\nSource, runtime notices and exact build provenance are included. This local preview is not a published release.\n')
     public_native={k:v for k,v in native.items() if k not in ('game_directory','configure_command','runtime_libraries','working_tree_changes')}
-    manifest=dict(version=args.version,platform='linux-x64',renderer='vulkan',source_commit=native['source_revision'],packaging_commit=run('git','rev-parse','HEAD'),
+    manifest=dict(version=args.version,platform='linux-x64',renderer='vulkan',release_channel=release,source_commit=native['source_revision'],packaging_commit=run('git','rev-parse','HEAD'),
         minimum_glibc=run('getconf','GNU_LIBC_VERSION').split()[-1],native_build=public_native,python=python,
         runtime_libraries=audit['components'],media=media_receipt['pin'],files={p.relative_to(stage).as_posix():digest(p) for p in stage.rglob('*') if p.is_file()})
     (stage/'BUILD.json').write_text(json.dumps(manifest,indent=2)+'\n');verify_payload(stage,manifest)

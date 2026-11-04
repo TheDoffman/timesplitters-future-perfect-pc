@@ -11,11 +11,23 @@ package=importlib.util.module_from_spec(spec);spec.loader.exec_module(package)
 
 def payload(root):
     names=['Bin/libdxcompiler.so','Bin/futureperfect_recomp','TimeSplitters.Launcher','Launch.sh','Settings/pc-controls.json',
-        'Support/Python/bin/python3','Support/Online/online.py','Support/Online/network-identity.json','Source/pc-port-source.zip']
+        'Support/Python/bin/python3','Support/Online/online.py','Support/Online/network-identity.json','Source/pc-port-source.zip',
+        'Bin/libavcodec.so.60','Bin/libavutil.so.58','Source/FFmpeg/pin.json','Source/FFmpeg/linux_ffmpeg.py','Source/FFmpeg/source.tar.gz',
+        'Licenses/SDL.txt','Licenses/DXC.txt','Licenses/DXC-ThirdParty.txt','Licenses/Runtime-GPL-3.0.txt','Licenses/FFmpeg-COPYING.LGPLv2.1.txt','Support/Runtime/dependency-audit.json']
     for name in names:
         p=root/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(b'fixture')
     (root/'BUILD.json').write_text('{}')
-    return dict(files={name:package.digest(root/name) for name in names})
+    (root/'Support/Runtime/dependency-audit.json').write_text(json.dumps(dict(components={},source_packages={})))
+    return dict(media=dict(archive='source.tar.gz',sha256=package.digest(root/'Source/FFmpeg/source.tar.gz')),files={name:package.digest(root/name) for name in names})
+
+def test_launcher_sidecars_cannot_be_silently_rehashed(tmp_path):
+    (tmp_path/'Support/Launcher').mkdir(parents=True)
+    (tmp_path/'TimeSplitters.Launcher').write_bytes(b'exe')
+    side=tmp_path/'Support/Launcher/notice.txt';side.write_bytes(b'notice')
+    files={p.relative_to(tmp_path).as_posix():package.digest(p) for p in tmp_path.rglob('*') if p.is_file()}
+    (tmp_path/'Support/Launcher/manifest.json').write_text(json.dumps(dict(files=files)))
+    package.verify_launcher(tmp_path);side.write_bytes(b'changed')
+    with pytest.raises(ValueError,match='checksum'):package.verify_launcher(tmp_path)
 
 def test_complete_payload_and_corruption(tmp_path):
     manifest=payload(tmp_path);package.verify_payload(tmp_path,manifest)

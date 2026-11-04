@@ -541,8 +541,7 @@ int pc_controls_key_down(int key)
     down = pc_input_down(&input, (unsigned)key, GetTickCount64());
     /* Custom menus may read D-pad edges instead of the WASD analogue stick. */
     if(menu_mode) {
-        unsigned alias=key==VK_LEFT?'A':key==VK_RIGHT?'D':
-                       key==VK_UP?'W':key==VK_DOWN?'S':0;
+        unsigned alias=pc_input_menu_alias((unsigned)key);
         if(alias) down|=pc_input_down(&input,alias,GetTickCount64());
     }
     if(text_input.owner && pc_text_key((unsigned)key))down=0;

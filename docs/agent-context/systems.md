@@ -3,7 +3,7 @@
 [exFAT](host-storage.md)
 # [Systems](video-options.md)
 
-[Linux](linux-game.md).
+[Linux input](linux-game.md).
 
 PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 

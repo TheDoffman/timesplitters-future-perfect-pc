@@ -18,6 +18,13 @@ are explicit; pinned notice retrieval is shared with the Mac packager without
 changing the Mac policy. Public receipts omit developer data/configure paths.
 The Linux native source receipt also covers the new vendored SMAA inputs.
 
+The SDL host now exports the shared `pc_controls_key_down` and
+`pc_controls_accept_pad` contracts used by settings-tab navigation. Windows and
+SDL call one portable WASD menu-alias helper; SDL retains atomic focus/keys,
+capture blocking and text-input suppression. Native menu self-tests check alias
+scope, focus loss and held-key release. This fixes the actual link failure after
+integrating current shared settings; Mac uses the same SDL adapter.
+
 ## Portable declaration guard
 
 Main's patch2512 is exactly the d3d8_internal.h guard already contained in2401.
