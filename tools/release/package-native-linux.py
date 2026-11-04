@@ -178,6 +178,7 @@ def main():
     # GPL/external-codec dependency closure. Include exact sources and recipe.
     dynamic=[]
     media,media_receipt=linux_ffmpeg.verify_install(ROOT)
+    if native.get('release_media')!=media_receipt:raise ValueError('Rebuild the game with --release-media before packaging')
     for stem in media_receipt['pin']['libraries']:
         path=(media/'install/lib'/stem).resolve()
         soname=run('patchelf','--print-soname',path);dynamic.append((path,copy(path,stage,'Bin/'+soname)))

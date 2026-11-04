@@ -15,10 +15,11 @@ sys.path.insert(0,str(ROOT/'tools'))
 from project_paths import configure
 configure()
 import linux_vulkan_sdk
+import linux_ffmpeg
 from vulkan_sdk import sha256
 
-def run(*args,cwd=ROOT):
-    subprocess.run([str(a) for a in args],cwd=cwd,env=dict(os.environ,TSFP_PROJECT_ROOT=str(ROOT)),check=True)
+def run(*args,cwd=ROOT,env=None):
+    subprocess.run([str(a) for a in args],cwd=cwd,env=dict(os.environ if env is None else env,TSFP_PROJECT_ROOT=str(ROOT)),check=True)
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
@@ -27,6 +28,7 @@ def main():
     parser.add_argument('--setup',action='store_true',help='Initialize pinned submodules and build the symbol scanner')
     parser.add_argument('--generate',action='store_true',help='Generate current guest C from the verified XBE')
     parser.add_argument('--test',action='store_true',help='Run protected-MMIO regression after building')
+    parser.add_argument('--release-media',action='store_true',help='Compile/link against the verified decoder-only media build for packaging')
     parser.add_argument('--host-optimization',choices=('optimized','debug'),default='optimized',
                         help='Optimize host libraries while retaining assertions/symbols; debug restores unoptimized host code')
     args=parser.parse_args()
@@ -71,13 +73,18 @@ def main():
         '-DCMAKE_BUILD_TYPE=Debug','-DCMAKE_MAKE_PROGRAM='+str(ninja),
         '-DCMAKE_C_FLAGS_DEBUG='+host_flags,'-DCMAKE_CXX_FLAGS_DEBUG='+host_flags,
         '-DTSFP_NATIVE_DIR='+str(ROOT/'src/native'),'-DTSFP_NATIVE_RHI=ON','-DTSFP_VULKAN_SDK='+str(sdk)]
-    run(*command)
+    media=None;configure_env=dict(os.environ)
+    command.append('-U*XMV_FFMPEG*')
+    if args.release_media:
+        media_root,media=linux_ffmpeg.verify_install(ROOT)
+        configure_env['PKG_CONFIG_PATH']=str(media_root/'install/lib/pkgconfig')+(':'+configure_env['PKG_CONFIG_PATH'] if configure_env.get('PKG_CONFIG_PATH') else '')
+    run(*command,env=configure_env)
     run(cmake,'--build',build,'--target','futureperfect_recomp','tsfp_native_mmio_test','--parallel',args.jobs)
     exe=build/'futureperfect_recomp'
     run(sys.executable,ROOT/'tools/build/network-identity.py','--output',build/'generated','--seal-executable',exe)
     sources=[p for area in ('src','patches','vendor/smaa') for p in (ROOT/area).rglob('*')
              if p.is_file() and 'legacy' not in p.relative_to(ROOT).parts]
-    manifest=dict(platform='linux-x64',renderer='vulkan',build_type='Debug',
+    manifest=dict(platform='linux-x64',renderer='vulkan',build_type='Debug',release_media=media,
         host_optimization=args.host_optimization,host_debug_flags=host_flags,assertions_enabled=True,
         source_revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         working_tree_changes=subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True),
