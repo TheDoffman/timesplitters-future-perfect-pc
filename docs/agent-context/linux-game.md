@@ -39,7 +39,7 @@ Ubuntu copyright names include the binary package, preserving distinct notices.
 private mount namespace and prepared minimal Ubuntu userspace, on a dedicated
 Xvfb display with its own Openbox window manager (verified Xvfb only). It checks native settings/debug/input/renderer/online self-tests,
 bundled Python/Tk/TLS and the actual launcher shared UI checks. It uses temporary
-state and software Vulkan; this is not physical desktop/GPU acceptance.
+state/cwd under its disposable home and software Vulkan; this is not physical desktop/GPU acceptance.
 
 The SDL host now exports the shared `pc_controls_key_down` and
 `pc_controls_accept_pad` contracts used by settings-tab navigation. Windows and

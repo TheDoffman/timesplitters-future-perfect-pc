@@ -70,8 +70,8 @@ def main():
     run('mount', '-t', 'tmpfs', '-o', 'mode=1777,size=512m', 'tmpfs', home)
     env = ['HOME=/tmp/tsfp-clean-home', 'PATH=/usr/bin:/bin', 'LANG=C.UTF-8',
            'DISPLAY='+os.environ['DISPLAY'], 'SDL_VIDEODRIVER=x11', 'SDL_AUDIODRIVER=dummy',
-           'LIBGL_ALWAYS_SOFTWARE=1']
-    prefix = ['chroot', '--userspec=65534:65534', str(rootfs), '/usr/bin/env', '-i', *env]
+           'LIBGL_ALWAYS_SOFTWARE=1', 'LD_LIBRARY_PATH=/app/Bin']
+    prefix = ['chroot', '--userspec=65534:65534', str(rootfs), '/usr/bin/env', '-i', *env, '/bin/sh', '-c', 'cd "$HOME" && exec "$@"', 'tsfp-clean']
     results = {}
     for option in ('settings', 'debug', 'input', 'renderer', 'online'):
         command = [*prefix, '/app/Launch.sh', '--game', '--data', '/game-data', '--'+option+'-self-test']
@@ -86,7 +86,7 @@ def main():
                             capture_output=True, text=True, timeout=45)
     print(result.stdout+result.stderr, flush=True)
     results['python'] = dict(exit_code=result.returncode, output=result.stdout+result.stderr)
-    result = subprocess.run([*prefix, 'LD_LIBRARY_PATH=/app/Bin', 'FONTCONFIG_FILE=/app/Support/Desktop/fonts.conf', '/app/TimeSplitters.Launcher', '--test-ui'],
+    result = subprocess.run([*prefix, '/usr/bin/env', 'FONTCONFIG_FILE=/app/Support/Desktop/fonts.conf', '/app/TimeSplitters.Launcher', '--test-ui'],
                             capture_output=True, text=True, timeout=90)
     print(result.stdout+result.stderr, flush=True)
     results['launcher_ui'] = dict(exit_code=result.returncode, output=result.stdout+result.stderr)
