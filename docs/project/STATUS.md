@@ -5,8 +5,12 @@ faces on two lines. Shared drawing now uses compact1.2-height icons only in
 this picker (other prompts retain1.5). Select/Back remains at native Y; Delete
 moves down2 layout pixels. Normal/hover drawings, cached hit regions and scoped
 icon state remain consistent. Controller layout is unchanged.
-Windows focused fixtures21 passed,2 native Mac skips. Native Mac visual
-acceptance remains pending; this uses the shared menu/font/quad interfaces.
+Windows focused fixtures21 passed,2 native Mac skips. Supported Release Build
+and built-in checks pass; the final isolated profile capture shows complete
+rounded key faces, inter-row separation and bottom clearance. Main integration
+with471936e7 passed67 focused checks and2 subtests (2 native Mac skips), covering
+icon imports/rendering, menu input, mounted mouse and both package writers.
+Native Mac visual acceptance remains pending; this uses shared interfaces.
 
 ## Adjust footer icons (2026-11-04, local)
 
