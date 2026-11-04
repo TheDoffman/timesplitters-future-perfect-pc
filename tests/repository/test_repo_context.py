@@ -21,13 +21,25 @@ def test_repository_context_links_index_and_summary_budgets():
         assert len(context.packet(ROOT, query).encode('utf-8')) <= 6500
 
 
+def test_portable_guard_is_preserved_without_linux_and_not_applied_twice():
+    spec = importlib.util.spec_from_file_location('guard_loader', ROOT/'tools/build/apply-patches.py')
+    loader = importlib.util.module_from_spec(spec);spec.loader.exec_module(loader)
+    linux = ROOT/'patches/platform/2401-linux-vulkan-foundation.patch'
+    guard = ROOT/'patches/graphics/rendering/2512-portable-renderer-declarations.patch'
+    text = linux.read_text(encoding='utf-8')
+    duplicate = text[text.index('--- a/src/d3d/d3d8_internal.h'):text.index('--- a/src/replay/CMakeLists.txt')]
+    assert duplicate.strip() == guard.read_text(encoding='utf-8').strip()
+    assert [p['name'] for p in loader.patch_records([guard])] == [guard.name]
+    assert [p['name'] for p in loader.patch_records([guard,linux])] == [linux.name]
+
+
 def test_index_excludes_untracked_experiments_and_uses_real_loader_order():
     index = context.patch_index(ROOT)
     tracked = context.tracked(ROOT)
     names = [p['name'] for p in index['patches']]
     assert {p['path'] for p in index['patches']} == {
         n for n in tracked if n.startswith('patches/') and n.endswith('.patch')
-        and 'legacy' not in Path(n).parts}
+        and 'legacy' not in Path(n).parts and not n.endswith('2512-portable-renderer-declarations.patch')}
     assert all(Path(p['path']).name == p['name'] for p in index['patches'])
     def position(suffix):
         return next(i for i, name in enumerate(names) if name.endswith(suffix))

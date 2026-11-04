@@ -1,5 +1,12 @@
 # Native Linux game integration
 
+## Portable declaration guard
+
+Main's patch2512 is exactly the d3d8_internal.h guard already contained in2401.
+The loader omits2512 when2401 is present, while preserving2512 for stacks without
+Linux. Its immutable patch remains tracked; effective-order/index coverage
+records this one explicit duplicate rather than applying the same hunk twice.
+
 Native game bring-up on `feature/linux-x64`, continuing the verified shared-renderer
 foundation. Reviewed Linux menus/first-level movement, firing and pause/resume
 now pass bounded isolated runs; see STATUS for exact revisions and limits.

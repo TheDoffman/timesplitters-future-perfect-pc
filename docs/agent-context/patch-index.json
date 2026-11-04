@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "d6c4a8bd6df04447f4bbaecfae6198f4b1fd0f4a9a4da626572cb5545a573daa",
+  "loaderSha256": "349f2aaba8b2c6757c52fd0c3d2c9abb1a249c20ec56ab5bee1657a7ce92fd8b",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1979,14 +1979,6 @@
       "sha256": "0a2712cd80453f61deba3746a7ce60545f894a923c04279cacf6edc151e8dec5",
       "targets": [
         "src/d3d/d3d8_resources.c"
-      ]
-    },
-    {
-      "name": "2512-portable-renderer-declarations.patch",
-      "path": "patches/graphics/rendering/2512-portable-renderer-declarations.patch",
-      "sha256": "0c3ae0ec20b9ba3833b7c35617e8bfa47246f57dc5c72fa7be200add962b166f",
-      "targets": [
-        "src/d3d/d3d8_internal.h"
       ]
     },
     {

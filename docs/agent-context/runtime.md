@@ -1,4 +1,4 @@
-[Linux](linux-game.md).
+[2401/2512](linux-game.md).
 
 [Keycaps](controls-options.md).
 Counter2490: overlay sizing.
