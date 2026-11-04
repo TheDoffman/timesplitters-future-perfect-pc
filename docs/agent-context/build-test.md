@@ -7,7 +7,7 @@ Ping-expiry tests wait past GetTickCount64 quantization.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build/tests ([SMAA](smaa.md))
 
-[LAN tests](system-link.md).
+[Linux](linux-game.md); [LAN](system-link.md).
 
 Discord release webhooks target #release-updates; #announcements holds team posts.
 
@@ -26,11 +26,11 @@ Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh
 
 Minigun: [readiness/release/pause/input tests](native-minigun.md). CI selects test_native_timing.py; original-code tests require the private XBE. Historical stacks exclude minigun/player-trigger patches until full native timing applies.
 
-Release 0.4.0 / launcher 1.4.1 tests cover aliases and upload recovery; Mac
-Online notices follow [installer paths](multiplayer-ui.md).
-Run `python -m unittest discover -s tests/launcher -p test_launcher_release.py -v`.
-Launcher 1.4.2 uses the same dual-host workflow and ten-asset verification gates;
-the version-only preparation does not change build, install or preservation paths.
+Linux: optimized host builds retain assertions/numeric policy. Runner presets
+60/120/180/240, frame profiles and synthetic Story input use isolated named
+fixtures; cleanup selects only the active save root. Upload-copy/sanitizer and
+GPU snapshot contracts run in CI. See [contracts](linux-game.md) and
+[launcher checks](launcher.md).
 
 Windows builds pass `config/build/windows-game.manifest` as
 `TSFP_GAME_MANIFEST`; patch 2130 attaches it only to the game target. CMake
@@ -77,7 +77,7 @@ Windows Reload fixture: [clock-domain expiry check](vertex-expand.md#controls-fi
 Windows diagnostics and `test_sample_pc_locations.py`: see [runtime](runtime.md).
 Broken variants must compile before their runtime checks reject them.
 
-State-cache binding/failure and WARP/Vulkan pixel fixtures:
+[GPU buffer contract](linux-game.md#cross-platform-buffer-contract).
 [runtime](runtime.md). Vulkan defines `TSFP_RHI_RENDERER`.
 
 `test_gpr_refs.py` covers four-site selection, integer/vector live-cell references, callbacks, aliasing,
@@ -101,7 +101,7 @@ otherwise GL. SDK pin: `config/build/vulkan-sdk.json`; driver provenance:
 `tools/build/vulkan_sdk.py` and `BUILD.json`.
 Isolated gameplay: `tools/testing/testing_profile.py --play --seconds 120` (Windows),
 `tools/testing/test-native-mac.py --unlocked-profile --seconds 120` (Mac), with .venv.
-Root AGENTS owns assets/isolation/storage. Build, startup and gameplay are
+AGENTS owns isolation/storage. Build, startup and gameplay are
 different evidence; unavailable hardware/private data remain validation gaps.
 For movement input changes, sampler and guest-only fixtures do not prove
 gameplay speed. Use an isolated Story run and compare actual player-position
@@ -131,7 +131,7 @@ guard pages, large buffers and32-bit wrapping. Both native CI hosts run it.
 See [pushed-array checks and timing scope](vertex-expand.md#pushed-array-gathering).
 
 `test_zero_base_indices.py`: old/new HLE parity, fresh indices, failures, stream
-dispatch and copy/rebase/leak mutations. Both hosts; mocked draws.
+dispatch and copy/rebase/leak mutations. Windows/Mac/Linux; mocked draws.
 
 Reload/Fire #337: `test_native_timing.py` covers the US decoder;
 `reload_phase_sweep.h` covers 864 schedules/1,728 presses. `test_reload_keys.py`
@@ -1030,6 +1030,8 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 [Languages](launcher.md#complete-game-language-packs-discussion-263).
 
 [2x tests](original-upscale.md).
+
+[Linux release/CI/POSIX](linux-game.md).
 
 [RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
 

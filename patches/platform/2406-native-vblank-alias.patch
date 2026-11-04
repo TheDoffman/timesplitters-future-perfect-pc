@@ -1,0 +1,25 @@
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -26,6 +26,9 @@
+  */
+ 
+ #include "kernel.h"
++#ifndef _WIN32
++#include "guest_mmio_interrupt.h"
++#endif
+ #include "guest_virtual_memory.h"
+ #include "guest_memory_services.h"
+ #include "xbox_memory_layout.h"
+@@ -2025,8 +2028,12 @@
+      * DPC drain, which is a state hardware never presents -- and both were
+      * guesses at a protocol the guest was perfectly capable of running.
+      */
++#ifdef _WIN32
+     BRIDGE_MEM32(XBOX_NV2A_REG_BASE + NV2A_PCRTC_INTR_0) |= NV2A_PCRTC_INTR_VBLANK;
+     BRIDGE_MEM32(XBOX_NV2A_REG_BASE + NV2A_PMC_INTR_0)   |= NV2A_PMC_INTR_PCRTC;
++#else
++    if (!tsfp_guest_raise_vblank((uintptr_t)g_xbox_mem_offset)) return;
++#endif
+ 
+     {
+         static unsigned n;

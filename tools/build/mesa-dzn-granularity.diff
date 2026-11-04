@@ -1,0 +1,20 @@
+--- a/src/microsoft/vulkan/dzn_device.c
++++ b/src/microsoft/vulkan/dzn_device.c
+@@ -469,7 +469,7 @@
+                        VK_QUEUE_TRANSFER_BIT,
+          .queueCount = 4,
+          .timestampValidBits = 64,
+-         .minImageTransferGranularity = { 0, 0, 0 },
++         .minImageTransferGranularity = { 1, 1, 1 },
+       },
+       .desc = {
+          .Type = D3D12_COMMAND_LIST_TYPE_DIRECT,
+@@ -482,7 +482,7 @@
+                        VK_QUEUE_TRANSFER_BIT,
+          .queueCount = 8,
+          .timestampValidBits = 64,
+-         .minImageTransferGranularity = { 0, 0, 0 },
++         .minImageTransferGranularity = { 1, 1, 1 },
+       },
+       .desc = {
+          .Type = D3D12_COMMAND_LIST_TYPE_COMPUTE,

@@ -93,3 +93,10 @@ valid when copied from exFAT to NTFS; no sparse conversion is required. Absolute
 save-folder settings are not automatically rewritten by moving the installation;
 users select a relocated folder explicitly. Future storage changes must preserve
 this compatibility and existing bytes, including independently stored saves.
+
+GCC compilation checks retain the early null guard before snapshot locking;
+the following enter/ready check is a separate unconditional statement. The
+formatting repair changes neither root synchronization nor storage behavior.
+
+The UTF-8 save-root copy also retains separate early snapshot/capacity guards
+before strlen/memcpy, so GCC strict builds check it without changing its bytes.

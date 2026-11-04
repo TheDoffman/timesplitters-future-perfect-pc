@@ -1,0 +1,87 @@
+--- a/src/hle/hle_xmv_play.c
++++ b/src/hle/hle_xmv_play.c
+@@ -22,8 +22,8 @@
+ #include "hle.h"
+ #include "../kernel/xbox_memory_layout.h"   /* xbox_EnvSwitch */
+ 
+-#if defined(_WIN32)
+-#include <windows.h>
++#if defined(_WIN32) || ((defined(__linux__) || defined(__APPLE__)) && defined(TSFP_RHI_RENDERER))
++#include "platform/xbox_winnt.h"
+ 
+ #include "audio_output.h"
+ #include "xbox_adpcm.h"
+@@ -40,7 +40,11 @@
+ void hle_d3d8_movie_surface(uint32_t data, uint32_t xbox_format);
+ 
+ /* kernel_path.c: an Xbox path to the host file it names. */
++#ifdef _WIN32
+ BOOL xbox_translate_path(const char *xbox_path, WCHAR *host_path_buf, DWORD buf_size);
++#else
++BOOL xbox_translate_path(const char *xbox_path, char *host_path_buf, DWORD buf_size);
++#endif
+ 
+ #define MAX_MOVIES      4
+ #define MAX_CATCH_UP    8u          /* pictures decoded in one poll when behind */
+@@ -223,7 +227,11 @@
+ int xmv_play_open(uint32_t source_va, uint32_t *width, uint32_t *height)
+ {
+     char path[300];
++#ifdef _WIN32
+     WCHAR host[MAX_PATH * 2];
++#else
++    char host[4096];
++#endif
+     FILE *f;
+     movie *m = NULL;
+     int i;
+@@ -242,7 +250,12 @@
+         }
+     if (!m)
+         return 0;
+-    if (!xbox_translate_path(path, host, MAX_PATH * 2) || !(f = _wfopen(host, L"rb"))) {
++#ifdef _WIN32
++    int opened=xbox_translate_path(path,host,MAX_PATH*2) && (f=_wfopen(host,L"rb"));
++#else
++    int opened=xbox_translate_path(path,host,sizeof host) && (f=fopen(host,"rb"));
++#endif
++    if (!opened) {
+         fprintf(stderr, "[XMV] %s: not found on the host; the movie is skipped\n", path);
+         return 0;
+     }
+--- a/src/video/CMakeLists.txt
++++ b/src/video/CMakeLists.txt
+@@ -27,6 +27,11 @@
+     target_compile_definitions(xbox_video PRIVATE XMV_HAVE_FFMPEG
+         XMV_FFMPEG_BIN="${XBOXRECOMP_FFMPEG_DIR}/bin")
+     message(STATUS "xbox_video: XMV movies through FFmpeg at ${XBOXRECOMP_FFMPEG_DIR}")
++elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
++    find_package(PkgConfig REQUIRED)
++    pkg_check_modules(XMV_FFMPEG REQUIRED IMPORTED_TARGET libavcodec libavutil)
++    target_link_libraries(xbox_video PRIVATE PkgConfig::XMV_FFMPEG ${CMAKE_DL_LIBS})
++    target_compile_definitions(xbox_video PRIVATE XMV_HAVE_FFMPEG)
+ else()
+     message(STATUS "xbox_video: no FFmpeg headers at ${XBOXRECOMP_FFMPEG_DIR}; XMV movies are skipped")
+ endif()
+--- a/src/hle/CMakeLists.txt
++++ b/src/hle/CMakeLists.txt
+@@ -78,3 +78,7 @@
+     target_compile_definitions(xbox_hle PRIVATE TSFP_PC_CONTROLS TSFP_RHI_RENDERER)
+     target_include_directories(xbox_hle PRIVATE "${TSFP_NATIVE_DIR}/.." "${TSFP_NATIVE_DIR}")
+ endif()
++
++if(UNIX AND TSFP_NATIVE_RHI)
++    target_link_libraries(xbox_hle PRIVATE xbox_video)
++endif()
+--- a/src/input/CMakeLists.txt
++++ b/src/input/CMakeLists.txt
+@@ -72,6 +72,9 @@
+         find_package(PkgConfig REQUIRED)
+         pkg_check_modules(FONTCONFIG REQUIRED IMPORTED_TARGET fontconfig)
+         target_sources(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/text_bitmap_linux.c" "${TSFP_NATIVE_DIR}/settings_linux.c")
++        find_package(PkgConfig REQUIRED)
++        pkg_check_modules(GTK3 REQUIRED IMPORTED_TARGET gtk+-3.0)
++        target_link_libraries(xbox_input PUBLIC PkgConfig::GTK3)
+         target_link_libraries(xbox_input PUBLIC Freetype::Freetype PkgConfig::FONTCONFIG)
+     endif()
+     target_include_directories(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/..")

@@ -210,24 +210,7 @@ namespace TimeSplitters.Launcher
             finally{Directory.Delete(test,true);}
         }
         public static int VerifyGamePackage(string archive,string version)
-        {
-            string test=Path.Combine(Path.GetDirectoryName(Path.GetFullPath(archive)),"game-package-check-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(test);
-            try {
-                foreach(bool preserve in new[]{false,true}){
-                    string root=Path.Combine(test,preserve?"existing":"fresh"),pending=Path.Combine(root,".launcher/pending");Directory.CreateDirectory(pending);
-                    if(preserve){Write(root,"Data/keep","game data");Write(root,"Saves/keep","save");Write(root,"Settings/pc-controls.json","personal controls");Write(root,"Settings/pc-display.ini","personal display");}
-                    Core.Unpack(archive,Path.Combine(pending,"payload"),version);Write(pending,"release.json",Json.Encode(new{version=version}));
-                    Core.InstallPending(root);
-                    var manifest=NativeHost.CheckBuild(root);var files=(Dictionary<string,object>)manifest["files"];
-                    foreach(var pair in files){if(preserve&&pair.Key=="Settings/pc-controls.json")continue;Need(Core.Hash(Core.PathIn(root,pair.Key))==(string)pair.Value,"Installed package file changed: "+pair.Key);}
-                    Need(SelfUpdate.Complete(root)&&BundleSignatureValid(root),"Bundled launcher failed installation/signature checks");
-                    if(preserve)Need(File.ReadAllText(Core.PathIn(root,"Data/keep"))=="game data"&&File.ReadAllText(Core.PathIn(root,"Saves/keep"))=="save"&&File.ReadAllText(Core.PathIn(root,"Settings/pc-controls.json"))=="personal controls"&&File.ReadAllText(Core.PathIn(root,"Settings/pc-display.ini"))=="personal display","Personal files changed");
-                    Console.WriteLine("Mac game package installed and verified "+files.Count+" files (preserve personal files: "+preserve+").");
-                }
-                return 0;
-            }catch(Exception e){Console.Error.WriteLine(e);return 1;}
-            finally{Directory.Delete(test,true);}
-        }
+        { return NativeGamePackageChecks.Verify(archive,version,BundleSignatureValid); }
         public static int Run()
         {
             sandbox=Path.Combine(AppContext.BaseDirectory,"tsfp-mac-launcher-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(sandbox);

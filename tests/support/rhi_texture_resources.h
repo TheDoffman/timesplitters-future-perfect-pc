@@ -140,11 +140,11 @@ static void rhi_texture_resources_test(RhiView *restore_target) {
         rhi_view_destroy(view);rhi_image_destroy(image);
     }
     /* Actual render-target writes, sampling and readback must retain sub-byte
-     * feedback in half float. Both values intentionally round to byte 128. */
+     * feedback in half float. Byte conversion may select either adjacent integer. */
     RhiShader *precision_ps=shader(RHI_STAGE_PIXEL,
         "cbuffer Q:register(b0){float4 q;}float4 main():SV_TARGET{return q;}","ps_5_0");
     const float precise[4]={.501953125f,.50244140625f,.5f,1};
-    const float quantized[4]={128/255.f,128/255.f,128/255.f,1};
+    float quantized[4]={0};
     for(unsigned half=0;half<2;half++) {
         RhiImageDesc pd={0};pd.width=pd.height=pd.depth=pd.mip_levels=pd.samples=1;
         pd.format=half?RHI_FORMAT_R16G16B16A16_FLOAT:RHI_FORMAT_R8G8B8A8_UNORM;
@@ -160,6 +160,17 @@ static void rhi_texture_resources_test(RhiView *restore_target) {
             uint16_t bytes[4]={0};
             CHECK(rhi_image_readback(image,0,bytes,sizeof bytes)==0);
             CHECK(bytes[0]==0x3804 && bytes[1]==0x3805 && bytes[2]==0x3800 && bytes[3]==0x3c00);
+        } else {
+            /* Vulkan permits either adjacent integer when converting UNORM.
+             * Validate the conversion, then independently compare sampling
+             * with the bytes actually stored. Half-float stays bit-exact. */
+            unsigned char bytes[4]={0};
+            CHECK(rhi_image_readback(image,0,bytes,sizeof bytes)==0);
+            for(unsigned c=0;c<4;c++) {
+                float scaled=precise[c]*255;
+                CHECK(bytes[c]==(unsigned)floorf(scaled)||bytes[c]==(unsigned)ceilf(scaled));
+                quantized[c]=bytes[c]/255.f;
+            }
         }
         rhi_set_render_target(restore_target,NULL);rhi_set_viewports(1,&full);
         rhi_set_shader(RHI_STAGE_PIXEL,format_ps);rhi_set_textures(0,1,&sample);

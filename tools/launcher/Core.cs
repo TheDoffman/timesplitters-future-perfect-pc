@@ -45,6 +45,9 @@ namespace TimeSplitters.Launcher
             Name(name);
             if (TextureFile(name)) return true;
             if (RootFiles.Contains(name) || name == LauncherPlatform.GameBinary || name == LauncherPlatform.LaunchScript || LauncherFile(name)) return true;
+#if LINUX
+            if (name.StartsWith("Bin/",StringComparison.Ordinal) && Regex.IsMatch(name.Substring(4), @"^[A-Za-z0-9_.+-]+\.so(?:\.[0-9]+)*$")) return true;
+#endif
 #if MACOS
             if (name.StartsWith("Bin/",StringComparison.Ordinal) && name.EndsWith(".dylib",StringComparison.Ordinal)) return true;
 #endif

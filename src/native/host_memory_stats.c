@@ -8,6 +8,8 @@
 #include <mach/mach_host.h>
 #include <mach/host_info.h>
 #include <mach/vm_statistics.h>
+#elif defined(__linux__)
+#include <sys/sysinfo.h>
 #endif
 
 int tsfp_host_available_memory(uint64_t *bytes) {
@@ -35,8 +37,14 @@ int tsfp_host_available_memory(uint64_t *bytes) {
     result=(uint64_t)info.free_count+(uint64_t)info.inactive_count;
     if(result>UINT64_MAX/page)return 0;
     result*=page;
+#elif defined(__linux__)
+    struct sysinfo info={0};
+    if(sysinfo(&info) || !info.mem_unit)return 0;
+    /* Conservative free physical RAM; excludes reclaimable page cache. */
+    result=(uint64_t)info.freeram;
+    if(result>UINT64_MAX/info.mem_unit)return 0;
+    result*=info.mem_unit;
 #else
-    /* The supported native hosts are Windows and Darwin. */
     return 0;
 #endif
     *bytes=result;return 1;

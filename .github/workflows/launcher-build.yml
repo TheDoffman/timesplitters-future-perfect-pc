@@ -132,9 +132,43 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  linux:
+    name: Build and test Linux launcher
+    needs: windows
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.source_ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: launcher-build-inputs
+          path: build
+      - name: Install native desktop test dependencies
+        run: sudo apt-get update && sudo apt-get install -y xvfb xauth libice6 libsm6 libfontconfig1 libx11-6 libxrandr2 libxi6 libxcursor1
+      - name: Build and test shared Linux launcher
+        run: xvfb-run -a python tools/build/build-linux-launcher.py --install-sdk --test --require-artwork --artwork-dir build/launcher-art --package
+      - name: Verify Linux update package and record its source
+        run: python tools/release/launcher-release.py stamp --directory build/linux-launcher --platform linux-x64
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: launcher-linux
+          path: |
+            build/linux-launcher/TimeSplitters-Launcher-v${{ needs.windows.outputs.version }}-linux-x64.zip
+            build/linux-launcher/TimeSplitters-Launcher-v${{ needs.windows.outputs.version }}-linux-x64.zip.sha256
+            build/linux-launcher/launcher-update-linux-x64.json
+            build/linux-launcher/launcher-build-linux-x64.json
+          if-no-files-found: error
+          retention-days: 7
+
   verify:
-    name: Verify complete dual-platform release
-    needs: [windows, mac]
+    name: Verify complete three-platform release
+    needs: [windows, mac, linux]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

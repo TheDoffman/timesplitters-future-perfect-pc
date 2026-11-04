@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 project(tsfp_common_rhi_contract C CXX)
 set(CMAKE_C_STANDARD 11)
-if(NOT APPLE)
-    message(FATAL_ERROR "This target currently validates the native Mac Vulkan adapter")
+if(NOT APPLE AND NOT (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64)$"))
+    message(FATAL_ERROR "This target validates the macOS and Linux x64 SDL Vulkan adapters")
 endif()
 get_filename_component(TSFP_PROJECT_ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 set(TSFP_RUNTIME_DIR "${TSFP_PROJECT_ROOT}/external/ts3FPrecomp")
@@ -24,6 +24,14 @@ set(SDL_GPU OFF CACHE BOOL "" FORCE)
 set(SDL_RENDER OFF CACHE BOOL "" FORCE)
 add_subdirectory("${TSFP_RUNTIME_DIR}/third_party/SDL" SDL EXCLUDE_FROM_ALL)
 add_subdirectory("${TSFP_RUNTIME_DIR}/src/platform" platform)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_executable(tsfp_native_mmio_test
+        "${TSFP_PROJECT_ROOT}/tests/gameplay/native_mmio_linux.c"
+        "${TSFP_NATIVE_DIR}/mmio_linux.c")
+    target_include_directories(tsfp_native_mmio_test PRIVATE "${TSFP_NATIVE_DIR}"
+        "${TSFP_RUNTIME_DIR}/include")
+    target_link_libraries(tsfp_native_mmio_test PRIVATE platform m)
+endif()
 # Include the production frontend as well: the frame replay contract must
 # exercise its real capture parser, window adapter, draw and readback paths.
 set(TSFP_NATIVE_RHI ON CACHE BOOL "" FORCE)

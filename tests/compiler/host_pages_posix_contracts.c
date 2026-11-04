@@ -8,6 +8,15 @@
 #ifndef __APPLE__
 #define __APPLE__ 1
 #endif
+/* Keep controlled calls local to this fixture. Clang's sanitizer runtime may
+ * itself call sysconf/mmap; overriding libc symbols corrupts that runtime. */
+#define sysconf tsfp_test_sysconf
+#define mmap tsfp_test_mmap
+#define munmap tsfp_test_munmap
+#define mprotect tsfp_test_mprotect
+#define mach_task_self tsfp_test_mach_task_self
+#define mach_port_deallocate tsfp_test_mach_port_deallocate
+#define mach_vm_region tsfp_test_mach_vm_region
 #include "host_pages.c"
 
 static long page=4096;

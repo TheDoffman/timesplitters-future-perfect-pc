@@ -19,15 +19,22 @@ from pathlib import Path
 import time
 
 
-def recycle_test_disks(root, test_directory):
+def recycle_test_disks(root, test_directory, *, save_directory=None):
     root, test = Path(root).resolve(), Path(test_directory)
-    allowed = (root / 'private/test-saves/native-mac', root / 'build/macos/path-tests')
+    allowed = (root / 'private/test-saves/native-mac', root / 'build/macos/path-tests',
+               root / 'private/test-saves/native-linux', root / 'build/linux/game/path-tests')
     if test.is_symlink() or test.resolve() not in allowed:
         raise RuntimeError(f'Refusing unexpected test directory: {test}')
     if not test.exists():
         return {'files': 0, 'logical_bytes': 0, 'allocated_bytes': 0}
+    # A Linux test root also holds retained manual and other benchmark profiles.
+    # An explicit active save directory must never recycle sibling profiles.
+    scan=Path(save_directory) if save_directory is not None else test
+    if scan.is_symlink() or not scan.resolve().is_relative_to(test.resolve()):
+        raise RuntimeError(f'Refusing unexpected save directory: {scan}')
     images = []
-    for p in test.rglob('Partition*.img'):
+    candidates=scan.glob('Partition*.img') if save_directory is not None else scan.rglob('Partition*.img')
+    for p in candidates:
         if p.is_symlink() or not p.resolve().is_relative_to(test.resolve()):
             raise RuntimeError(f'Refusing unexpected partition path: {p}')
         if p.name not in {f'Partition{i}.img' for i in range(6)}:

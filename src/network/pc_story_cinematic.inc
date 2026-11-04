@@ -275,7 +275,8 @@ static void story_cine_frame(void)
         if(!entity || !guest_writable(entity,0x154u)) return;
         StoryCinematic s;memset(&s,0,sizeof s);
         s.magic=STORY_CINE_MAGIC;s.match=story_npc_match();
-        if(!++story_cine_serial) ++story_cine_serial;s.serial=story_cine_serial;
+        if(!++story_cine_serial) ++story_cine_serial;
+        s.serial=story_cine_serial;
         /* Mode3 remains selected during ordinary gameplay until another cue.
            It cannot own the lifetime of the opening's frozen pose replay. */
         s.opening=!story_loadout_host[0].equipped &&

@@ -48,7 +48,8 @@ int main(void) {
     CHECK(!tsfp_guest_callback_one(&ops,0,0x2468));
     CHECK(!tsfp_guest_callback_one(&ops,0x9999,0x2468));
     resolve_fail=1;CHECK(!tsfp_guest_callback_one(&ops,0x4444,0x2468));resolve_fail=0;
-    for(i=0;i<sizeof(ram);++i)CHECK(ram[i]==0xa7);check_seed();CHECK(!called && g_esp==0x1007);
+    for(i=0;i<sizeof(ram);++i)CHECK(ram[i]==0xa7);
+    check_seed();CHECK(!called && g_esp==0x1007);
     CHECK(tsfp_guest_callback_one(&ops,0x4444,0x2468));check_seed();CHECK(called==1 && g_esp==0x1007);
     CHECK(ram[0xffe]==0xa7 && ram[0x1007]==0xa7);
     malformed=1;CHECK(!tsfp_guest_callback_one(&ops,0x4444,0x2468));check_seed();CHECK(called==2 && g_esp==0x1007);

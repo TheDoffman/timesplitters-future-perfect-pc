@@ -4,7 +4,8 @@
 #include <stdint.h>
 /* Windows reports its available physical bytes. Darwin estimates available
  * bytes from free plus inactive pages; this is not exact guest free storage or
- * a promise that inactive pages can be reclaimed without work. Failure leaves
+ * a promise that inactive pages can be reclaimed without work. Linux reports
+ * conservative free physical RAM from sysinfo, excluding reclaimable cache. Failure leaves
  * output untouched. A zero snapshot is valid. */
 int tsfp_host_available_memory(uint64_t *bytes);
 #endif

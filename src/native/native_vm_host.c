@@ -1,3 +1,6 @@
+#if defined(__linux__) && !defined(_DEFAULT_SOURCE)
+#define _DEFAULT_SOURCE 1
+#endif
 #include "native_vm_host.h"
 #include <string.h>
 #if defined(_WIN32)

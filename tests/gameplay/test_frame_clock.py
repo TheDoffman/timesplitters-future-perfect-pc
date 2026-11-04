@@ -45,7 +45,7 @@ def test_target_settings_round_trip(tmp_path):
     sources=[str(ROOT / 'tests/gameplay/frame_target_settings.c'), str(config / 'recomp_config.c')]
     command=([compiler, '/nologo', '/std:c11', '/I'+str(config), '/I'+str(ROOT/'src'), *sources,
               '/Fe:'+str(output), '/Fo:'+str(tmp_path)+os.sep]
-             if os.name == 'nt' else [compiler, '-std=c11', '-I'+str(config), '-I'+str(ROOT/'src'), *sources, '-o', str(output)])
+             if os.name == 'nt' else [compiler, '-std=c11', '-D_DEFAULT_SOURCE', '-I'+str(config), '-I'+str(ROOT/'src'), *sources, '-o', str(output)])
     subprocess.run(command, cwd=tmp_path, env=environment, check=True)
     subprocess.run([str(output), str(tmp_path / 'runtime.ini')], check=True, timeout=10)
 
@@ -57,7 +57,7 @@ def test_player_frame_rate_startup_preference(tmp_path):
     sources=[str(ROOT/'tests/gameplay/frame_rate_settings.c'),str(config/'recomp_config.c')]
     command=([compiler,'/nologo','/std:c11','/I'+str(config),'/I'+str(ROOT/'src'),*sources,
               '/Fe:'+str(output),'/Fo:'+str(tmp_path)+os.sep] if os.name=='nt' else
-             [compiler,'-std=c11','-I'+str(config),'-I'+str(ROOT/'src'),*sources,'-o',str(output)])
+             [compiler,'-std=c11','-D_DEFAULT_SOURCE','-I'+str(config),'-I'+str(ROOT/'src'),*sources,'-o',str(output)])
     subprocess.run(command,cwd=tmp_path,env=environment,check=True)
     display=tmp_path/'display.ini'
     display.write_text('TSFP_DISPLAY_V2 1920 1080 75\n')
