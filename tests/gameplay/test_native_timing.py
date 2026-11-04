@@ -3,6 +3,7 @@
 from project_paths import source_file as repo_file
 
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
