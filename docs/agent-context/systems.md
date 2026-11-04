@@ -1,4 +1,4 @@
-[Settings ownership](controls-options.md).
+[Shared Settings input](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)

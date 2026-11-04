@@ -120,13 +120,13 @@ static void settings_owner_tests(void)
     WORD_AT(menu+4)=0x523910;WORD_AT(menu+0x38)=0;WORD_AT(menu+0x3c)=1;
     WORD_AT(0x6b93e0)=1;WORD_AT(0x6b93e0+2*0x3c)=2;
     g_esp=0x1000;WORD_AT(g_esp+4)=menu;pc_display_menu_mouse_input(settings_sample);
-    CHECK(settings_sample_mask==2 && WORD_AT(menu+0xc4)==2 && WORD_AT(menu+0x3c)==1);
+    CHECK(settings_sample_mask==3 && WORD_AT(menu+0xc4)==3 && WORD_AT(menu+0x3c)==1);
     CHECK(WORD_AT(menu+0x38)==0); /* never move native menu/profile ownership */
     /* Arbitrary settings descendants inherit the selected player's input. */
     WORD_AT(menu+4)=0x524a40;WORD_AT(0x7ba264)=history;
     WORD_AT(history)=2;WORD_AT(history+4)=0x5236dc;WORD_AT(history+8)=0x523910;
     g_esp=0x1000;pc_display_menu_mouse_input(settings_sample);
-    CHECK(settings_sample_mask==2 && WORD_AT(menu+0xc4)==2);
+    CHECK(settings_sample_mask==3 && WORD_AT(menu+0xc4)==3);
     /* Returning to main restores P1 despite a stale selected-profile value. */
     WORD_AT(menu+4)=0x5236dc;WORD_AT(history)=0;
     g_esp=0x1000;pc_display_menu_mouse_input(settings_sample);
@@ -137,7 +137,7 @@ static void settings_owner_tests(void)
         WORD_AT(0x78ad34)=player;WORD_AT(0x6b93c0+player*4)=1;
         WORD_AT(0x6b93e0+0x3c)=4;
         g_esp=0x1000;pc_display_menu_mouse_input(settings_sample);
-        CHECK(settings_sample_mask==(1u<<player) && WORD_AT(menu+0xc4)==4);
+        CHECK(settings_sample_mask==(1u|(1u<<player)) && WORD_AT(menu+0xc4)==5);
     }
     WORD_AT(menu+4)=0x523910;WORD_AT(0x79094c)=50;
     g_esp=0x1000;pc_display_menu_mouse_input(settings_sample);CHECK(settings_sample_mask==1);
@@ -630,12 +630,15 @@ int main(void)
     WORD_AT(m+0x1b0)=3;WORD_AT(m+0x178)=item;WORD_AT(item)=4;
     FLOAT_AT(m+0xe4)=100;FLOAT_AT(m+0xe8)=70;FLOAT_AT(m+0xec)=540;FLOAT_AT(m+0xf0)=400;
     FLOAT_AT(item+0x78)=200;FLOAT_AT(item+0x7c)=100;FLOAT_AT(item+0x80)=440;FLOAT_AT(item+0x84)=160;
+    /* P1 mouse remains usable while Settings is editing P2. */
+    WORD_AT(m+4)=0x523910;WORD_AT(0x5236c4)=2;WORD_AT(0x78ad34)=1;
     cursor=(PcMenuPointer){640,180,1280,720,1,0,0,0};
     run(m);CHECK(!selections && mode);
     cursor.y=181;run(m);CHECK(selections==1 && WORD_AT(m+0x198)==item);
     WORD_AT(m+0x198)=0;run(m);CHECK(!WORD_AT(m+0x198)); /* keyboard keeps selection */
     cursor.left=1;run(m);CHECK(WORD_AT(m+0xc4)==0x100010 && selections==2);
     run(m);CHECK(!WORD_AT(m+0xc4)); /* held click does not repeat */
+    WORD_AT(m+4)=0;WORD_AT(0x78ad34)=0;
     cursor.left=0;run(m);
     WORD_AT(0x6b93e0)=0x180;cursor.left=1;run(m); /* preserve real pad edges */
     CHECK(WORD_AT(0x6b93e0)==0x180);

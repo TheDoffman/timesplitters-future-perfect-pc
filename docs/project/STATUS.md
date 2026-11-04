@@ -1,3 +1,12 @@
+## Shared Settings control (local, uncommitted)
+
+Base 642372af. User clarified P1 must always retain control. Settings now accepts
+P1 plus the selected player; mouse/text and keyboard shortcuts remain available
+to P1. Edited-profile ownership is unchanged. Returning to main keeps native P1
+control. Windows automated menu tests: 9 passed, 2 Mac compiler checks skipped.
+Windows build and linked checks passed; physical controller acceptance pending.
+Existing mixed-optimization test-build limitation still applies.
+
 ## Settings input handoff (local, uncommitted)
 
 Base 4eaacf6d, feat/local-player-devices. Settings Player selector now hands

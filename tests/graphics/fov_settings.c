@@ -1060,7 +1060,8 @@ int main(int argc,char **argv)
         WORD_AT(controls_menu+0xc4)=WORD_AT(controls_menu+0xc8)=0;
         settings_keyboard=1;settings_pad_allowed=1;settings_tabs_input_reset();
         CHECK(!settings_tabs_direction(controls_menu));
-        settings_keys[0x27]=1;CHECK(!settings_tabs_direction(controls_menu));
+        settings_keys[0x27]=1;CHECK(settings_tabs_direction(controls_menu)==1);
+        settings_keys[0x27]=0;CHECK(!settings_tabs_direction(controls_menu));
         WORD_AT(controls_menu+0xc4)=0x400;CHECK(settings_tabs_direction(controls_menu)==1);
         settings_keys[0x27]=0;settings_pad_allowed=0;WORD_AT(controls_menu+4)=descriptor;
     }

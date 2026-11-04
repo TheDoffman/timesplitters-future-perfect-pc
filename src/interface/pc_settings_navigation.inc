@@ -23,7 +23,7 @@ static int settings_tabs_direction(uint32_t menu)
 {
     unsigned char keys[256]={0};
     int secondary=menu_settings_input_owner(menu)>0;
-    if(!secondary)pc_controls_binding_keys(keys);
+    pc_controls_binding_keys(keys);
     if(getenv("TSFP_SETTINGS_INPUT_TRACE") && WORD_AT(menu+0xc4))
         fprintf(stderr,"[PC-SETTINGS-INPUT] edges=%08x held=%08x\n",WORD_AT(menu+0xc4),WORD_AT(menu+0xc8));
     unsigned arrows=(keys[0x25]?1u:0u)|(keys[0x27]?2u:0u);

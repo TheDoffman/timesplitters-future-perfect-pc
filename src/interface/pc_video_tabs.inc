@@ -82,7 +82,7 @@ static void menu_video_tabs_flush(void)
 {
     controls_tabs_flush();
     if(video_pending_tab<0)return;
-    if(menu_settings_input_owner(video_pending_menu)>0 || !menu_mouse_context() || !video_font_menu(video_pending_menu) || page==DISPLAY_CONFIRM || page==DISPLAY_RESTART ||
+    if(!menu_mouse_context() || !video_font_menu(video_pending_menu) || page==DISPLAY_CONFIRM || page==DISPLAY_RESTART ||
        GetTickCount64()-video_pending_at>1000) {video_pending_tab=-1;return;}
     if(!guest_writable(video_pending_menu,0x1b4) || WORD_AT(video_pending_menu+0x38)!=0 ||
        WORD_AT(video_pending_menu+0x1b0)!=3)return;

@@ -194,13 +194,22 @@ joining guest P2, Automatic retention, rejected theft, connected swap and reopen
 Frontend Settings input handoff: native Settings descriptor 523910 selects the
 profile at 78AD34 (2CBEE0), while 73870 normally polls menu+3C player-mask bits.
 menu_settings_input_owner checks that root or its bounded descriptor history
-(7BA264) and overrides only that mask while native input is gathered. Native
+(7BA264) and temporarily accepts both P1 and the selected player while input is gathered. Native
 42760 still maps logical players through 6B93C0. Menu+38 and profile/save globals
 remain unchanged. Returning to main removes Settings from history, restoring
 normal P1 input even if the selected-profile value remains stale. Pause, gameplay
-and unrelated frontend menus are excluded. P1 mouse, text injection, queued tab
-clicks and keyboard section shortcuts are suppressed for a secondary selected
-player; their native controller shoulders still switch sections. menu_mouse.c
+and unrelated frontend menus are excluded. P1 retains mouse, text input, queued tab clicks and keyboard section shortcuts
+while a secondary player is selected; that player’s native controller shoulders
+also switch sections. Selection chooses the edited profile, not exclusive control. menu_mouse.c
 covers P2/P3/P4, nonidentity controller mapping, submenu history, return to main,
 invalid selection and gameplay exclusion. Physical controller acceptance remains
 pending despite the automated route checks.
+
+Shared Settings control regression also checks simultaneous P1/selected-player
+input masks, P1 mouse clicks while P2 is selected, and P1 keyboard tab navigation
+alongside P2 controller shoulders. Outside Settings, native P1-only control remains.
+
+README local split-screen instructions now distinguish Start-order joining,
+physical controller numbers versus player rows, shared Settings navigation with
+P1 retained, Automatic resolving a joined player’s device, and Apply validation.
+They identify this branch’s behavior as not yet published.
