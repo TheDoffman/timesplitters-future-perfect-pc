@@ -57,26 +57,6 @@ Windows and Mac use the same installation steps:
 available offline. Use **Check updates → Update release** to install a newer game
 build when available. Launcher and game versions are separate.
 
-### Local split-screen setup
-
-1. Connect your controllers. The opening player-count screen detects them
-   automatically, including ports previously saved as Disabled. Choose the number
-   of players.
-2. Player 1 keeps the input they are using. At the profile screen, the first unused
-   controller to press **Start** joins the next **Press START to Join** panel
-   (Player 2), the next joins Player 3, and so on up to the chosen player count.
-   Connection order does not determine player order; no launcher setup or toggle
-   is needed. Release Start between presses.
-3. Each player selects or creates a profile with their controller, then continues
-   into a mode supporting the selected player count.
-
-Join assignments last for the session. For a fixed device setup, use the launcher
-or **Controls > General > Local multiplayer**. **Automatic** (formerly Disabled)
-lets the game use a connected controller without a fixed assignment. Already participating controllers
-cannot join twice. To change the participating players, return to the main menu;
-joining during an active match is not supported. Only one keyboard/mouse player
-is supported; additional players need controllers.
-
 ### Launcher preview
 
 ![TimeSplitters launcher v1.4.0 with Stable selected, Play Game, updates and settings](docs/assets/launcher-preview.png)
@@ -112,7 +92,7 @@ and audio fidelity remain unverified. See [measured progress](docs/project/STATU
 | Platform | Support and known limits |
 | --- | --- |
 | **Windows 10/11 x64** | Keyboard and mouse, graphics settings and experimental Online/LAN multiplayer. See the [Windows launcher guide](docs/players/launcher.md), including [startup security prompts](docs/players/launcher.md#windows-security-prompts-at-startup). |
-| **Mac (Apple Silicon)** | Native launcher and game; Intel Macs are unsupported. Save/load remains unverified; movie playback and multiplayer remain unfinished. The app is not notarized, so startup may require the [Mac installation and recovery guidance](docs/players/mac-launcher.md#shared-behavior-and-distribution). See [Mac controls and source builds](docs/players/macos.md) and [remaining Mac work](docs/project/MAC_PORT_BACKLOG.md). |
+| **Mac (Apple Silicon)** | Native launcher and game; Intel Macs are unsupported. The app is not notarized, so startup may require the [Mac installation and recovery guidance](docs/players/mac-launcher.md#shared-behavior-and-distribution). See [Mac controls and source builds](docs/players/macos.md) and [remaining Mac work](docs/project/MAC_PORT_BACKLOG.md). |
 
 <a name="pc-features"></a>
 
@@ -125,6 +105,7 @@ and audio fidelity remain unverified. See [measured progress](docs/project/STATU
 | **Anti-aliasing** | Optional [SMAA 1x High](docs/players/smaa.md) smooths jagged edges on compatible Direct3D 11/Vulkan builds. |
 | **High frame rate** | Original 60 FPS by default; compatible game builds offer opt-in [120/180/240 FPS beta settings](docs/analysis/native-high-refresh.md). |
 | **Launcher** | Game installation, updates, repair, rollback and settings. |
+| **Local split-screen** | Play with multiple players on the same screen using controllers. |
 | **Online multiplayer** | Player-hosted Online and LAN matches with bot support. Windows only. |
 | **Extras** | Optional [Discord Rich Presence](docs/players/discord-presence.md), FPS overlays and local crash diagnostics. |
 
@@ -134,13 +115,30 @@ launcher's **Release notes**, [platform status](#platform-status) and
 
 ## Multiplayer
 
-On Windows, choose **Online / System Link → Online** to host or join a match,
+### Local split-screen
+
+1. Connect your controllers and choose the number
+   of players.
+2. Press **Start** on your controllers in the order you want to join.
+3. Select or create a profile, then continue.
+
+Join assignments last for the session. To configure the devices manually, use the launcher
+or the in-game **Controls > General > Local multiplayer**.
+
+**Automatic**
+lets the game use a connected controller without a fixed assignment. To change the player count, return to the main menu;
+joining during an active match is not supported. Only one keyboard/mouse player
+is supported; additional players need controllers.
+
+### Online / LAN
+
+Choose **Online / System Link → Online** to host or join a match,
 or **System Link** for LAN play. Everyone needs matching game builds and data.
 Online hosts need port forwarding; guests join using the host's invitation.
 Follow the [multiplayer guide](docs/players/multiplayer.md) for setup, ports and bots.
 
 Online is experimental;
-Story co-op and native Mac multiplayer are not supported yet.
+Story co-op is not supported yet.
 
 ## Enhanced textures
 
