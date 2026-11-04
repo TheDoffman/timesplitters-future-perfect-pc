@@ -22,6 +22,10 @@ fresh pkg-config query. The receipt records the exact media build and packaging
 requires it to match; a system-library build cannot be silently repackaged.
 Python standard-library extension origins retain their distro provenance;
 extensions from pinned wheels retain their wheel provenance after relocation.
+ELF closure resolution prefers the already-staged pinned providers, preventing
+system libavutil from replacing the release-media build. The checksummed .NET
+single-file host is never rewritten by patchelf; Launch.sh supplies its local
+Bin search path, and the package rechecks the original launcher hash afterward.
 
 The SDL host now exports the shared `pc_controls_key_down` and
 `pc_controls_accept_pad` contracts used by settings-tab navigation. Windows and

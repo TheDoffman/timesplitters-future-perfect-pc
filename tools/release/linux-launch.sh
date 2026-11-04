@@ -3,6 +3,8 @@
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 if [ "${1-}" != "--game" ]; then
+    unset LD_PRELOAD
+    export LD_LIBRARY_PATH="$root/Bin"
     exec "$root/TimeSplitters.Launcher" --root "$root" "$@"
 fi
 shift

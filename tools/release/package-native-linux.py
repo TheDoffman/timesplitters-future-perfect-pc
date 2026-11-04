@@ -33,9 +33,10 @@ def run(*args):return subprocess.check_output(list(map(str,args)),text=True).str
 def elf(path):
     with Path(path).open('rb') as f:h=f.read(20)
     return len(h)==20 and h[:6]==b'\x7fELF\x02\x01' and h[18:20]==b'\x3e\x00'
-def dependencies(path):
+def dependencies(path,search=None):
     result=[]
-    for line in run('ldd',path).splitlines():
+    output=run('ldd',path) if search is None else subprocess.check_output(['ldd',str(path)],text=True,env=dict(os.environ,LD_LIBRARY_PATH=str(search)))
+    for line in output.splitlines():
         if '=> not found' in line:raise ValueError('Unresolved dependency: '+line.strip())
         match=re.match(r'\s*(\S+) => (/\S+) \(',line)
         if match:result.append((match[1],Path(match[2]).resolve()))
@@ -51,17 +52,20 @@ def bundle_libraries(pairs,stage):
         visited.add(target)
         if not elf(source):raise ValueError('Expected Linux x64 ELF: '+str(source))
         records[target.relative_to(stage).as_posix()]=dict(source=str(source.resolve()),source_sha256=digest(source))
-        for name,origin in dependencies(source):
+        for name,origin in dependencies(source,bin_dir):
             if HOST.fullmatch(name):continue
             if name in origins and origins[name]!=origin and origin!=(bin_dir/name).resolve():raise ValueError('Conflicting ELF dependency: '+name)
             if name not in origins:
                 origins[name]=origin;destination=bin_dir/name
                 if destination.exists() and digest(destination)!=digest(origin):raise ValueError('Duplicate ELF name: '+name)
                 shutil.copy2(origin,destination);pending.append((origin,destination))
-        relative=os.path.relpath(bin_dir,target.parent)
-        subprocess.run(['patchelf','--set-rpath','$ORIGIN'+('/'+relative if relative!='.' else ''),str(target)],check=True)
+        # .NET single-file AppHost is itself checksummed and contains a bundle
+        # overlay. Preserve it byte-for-byte; Launch.sh supplies its local search.
+        if target.name!='TimeSplitters.Launcher':
+            relative=os.path.relpath(bin_dir,target.parent)
+            subprocess.run(['patchelf','--set-rpath','$ORIGIN'+('/'+relative if relative!='.' else ''),str(target)],check=True)
     for target in visited:
-        for name,path in dependencies(target):
+        for name,path in dependencies(target,bin_dir):
             if not HOST.fullmatch(name) and not path.is_relative_to(stage.resolve()):
                 raise ValueError('External application dependency remains: '+name)
     return records
@@ -207,6 +211,8 @@ def main():
             origin=args.launcher/member.relative_to(stage)
             roots.append((origin if origin.is_file() else member,member))
     records=bundle_libraries(roots,stage)
+    if digest(stage/'TimeSplitters.Launcher')!=json.loads((stage/'Support/Launcher/manifest.json').read_text())['files']['TimeSplitters.Launcher']:
+        raise ValueError('Relocation changed the signed launcher bundle')
     subprocess.run([sys.executable,str(repo_file(ROOT,'tools','network-identity.py')),'--output',str(build/'generated'),'--seal-executable',str(game)],check=True)
     # Preserve package-owner copyright/source information for every copied ELF.
     notices=stage/'Support/Runtime';notices.mkdir(parents=True,exist_ok=True)
