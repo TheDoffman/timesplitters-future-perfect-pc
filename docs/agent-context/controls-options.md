@@ -1,5 +1,18 @@
 # Unified Controls options
 
+`pc_settings_navigation.inc` shares section input, sounds and footer hints.
+Physical Left/Right arrows switch sections from any root setting; native A/D
+adjustment and header navigation remain. Controller Black/White C4/C8 masks
+0x200/0x400 correspond to LB/RB through the common adapter; held shortcuts
+latch across rebuilds and require release. Capture/list/modal pages are excluded.
+The second footer line inherits the native Select/Back footer font and switches
+between keyboard and controller hints without
+changing native Select/Back prompts. The launcher explains the same shortcuts.
+Hover entry uses native sound-table slot0, actual section changes slot8, through
+21780 with the native enable flag and table bounds. Repeated hover, held buttons,
+same-page clicks, muted/missing sound tables do not produce extra feedback.
+`TSFP_SETTINGS_INPUT_TRACE` records native C4/C8 masks only for diagnosis.
+
 Visual refinement: the shared tab painter measures a common longest caption
 (`KEYBOARD & MOUSE`) in both Video and Controls, preventing shorter Video labels
 from growing. Owned setting-row focus uses a slightly brighter blue tint; header

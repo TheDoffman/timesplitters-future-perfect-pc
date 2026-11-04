@@ -1,6 +1,6 @@
-# Launcher internals
+# Launcher and menu shortcuts
 
-[Graphics preference contract](../development/graphics-options.md).
+[Settings shortcuts](controls-options.md); [graphics contract](../development/graphics-options.md).
 Launcher graphics UI regression changes all shared controls, saves, reloads
 the model and reopens the page; AnisotropicFiltering names the AF selector.
 The shared WPF/Avalonia UI suite also exercises graphics ON/OFF saving and

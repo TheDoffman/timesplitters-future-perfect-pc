@@ -22,6 +22,7 @@ void sub_00071940(void) {}
 static PcMenuPointer cursor;
 static int active=1,mode,original_calls,selections;
 static uint32_t navigation;
+static void settings_tabs_footer(uint32_t menu) {(void)menu;}
 static int closed_pause,in_dispatch,changed_tab;
 static unsigned long long tick=1000;
 static unsigned long long GetTickCount64(void) {return tick;}

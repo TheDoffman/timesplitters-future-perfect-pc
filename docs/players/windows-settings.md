@@ -223,6 +223,11 @@ game's save-error screen before quitting. This is
 separate from the PC keyboard/mouse window's **Save & Close** and Display
 settings' explicit save/confirmation controls.
 
+Settings sections also show fixed navigation hints: **Left/Right arrows** or
+controller **LB/RB** switch tabs. Use **A/D** to adjust setting values. These
+shortcuts apply while the Video Options or Controls section tabs are visible;
+binding capture and confirmation screens keep their normal controls.
+
 In-game button prompts automatically show the **first assigned keyboard or mouse
 binding** for each control, for example **[E] Select** and **[F] Back**. Saving
 bindings in F2 updates the prompts immediately. Unassigned controls show

@@ -1,3 +1,14 @@
+## Settings section navigation (isolated local work)
+
+Shared Video/Controls sections use native highlight and transition sounds,
+physical Left/Right arrows and controller LB/RB shortcuts. Held input is latched
+across section rebuilds; capture and modal pages retain their native behavior.
+Footer hints use the native Select/Back font and switch with the input device;
+the launcher explains arrows, bumpers and A/D adjustment. Live keyboard review
+passes in main/pause menus; native Black/White masks0x200/0x400 were confirmed
+through replay. Windows focused tests21 pass/2 native Mac skips; launcher tests
+and supported Release build pass. Physical controller/native Mac checks pending.
+
 ## Flat settings section labels (2026-11-03, isolated local work)
 
 Branch feature/flat-settings-menu from595ffe70 in a separate menu worktree.

@@ -8,13 +8,7 @@ static void settings_tabs_paint(uint32_t menu,const float bounds[4],
     /* Custom header callbacks inherit a different frontend font. Native label
      * painter76150 selects row+1c through3FA10; use the first visible setting's
      * font for both measuring and drawing, then restore the enclosing font. */
-    uint32_t saved_font=WORD_AT(0x6b93b4),font=saved_font;
-    uint32_t row=guest_writable(menu,0x17c)?WORD_AT(menu+0x178):0;
-    for(unsigned n=0;row && n<64 && guest_writable(row,0x2c);n++,row=WORD_AT(row+4)) {
-        uint32_t type=WORD_AT(row),id=WORD_AT(row+0x14);
-        if(id!=120u && id!=130u && !(WORD_AT(row+0x28)&0x20u) &&
-           (type==4 || type==7 || type==8)) {font=WORD_AT(row+0x1c);break;}
-    }
+    uint32_t saved_font=WORD_AT(0x6b93b4),font=settings_tabs_font(menu,saved_font);
     if(font!=saved_font) {guest_call(sub_00022FF0,0);guest_call(sub_0003FA10,1,font);}
     /* Pause uses a narrower cell and a larger inherited font. Measure all
      * captions first, then use one common scale for drawing and centering. */
@@ -40,7 +34,7 @@ static void settings_tabs_paint(uint32_t menu,const float bounds[4],
     }
     uint32_t align=WORD_AT(0x007E7260u);WORD_AT(0x007E7260u)=0;
     int hovered=-1;
-    if(menu_mouse_context()) {
+    if(menu_mouse_context() && pc_prompts_keyboard_active()) {
         PcMenuPointer pointer=pc_controls_menu_hover_pointer();
         float px,py,gw=(float)WORD_AT(0x4e8cf0),gh=(float)WORD_AT(0x4e8cf4);
         unsigned sw,sh;d3d8_display_output_shape((unsigned)gw,(unsigned)gh,&sw,&sh);
