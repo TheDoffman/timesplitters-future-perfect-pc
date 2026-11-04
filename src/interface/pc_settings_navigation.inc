@@ -73,7 +73,7 @@ static void settings_tabs_footer(uint32_t menu)
     extern void sub_00041DC0(void),sub_0003FCF0(void),sub_0003F8D0(void);
     static uint32_t scratch;if(!scratch)scratch=xbox_HeapAlloc(256,4);if(!scratch)return;
     snprintf((char *)(g_xbox_mem_offset+scratch+8),248,"%s",pc_prompts_keyboard_active()?
-        "[Left] Previous tab   [Right] Next tab   [A/D] Adjust":"[LB] Previous tab   [RB] Next tab");
+        "[Left] Previous tab   [Right] Next tab   [A] / [D] Adjust":"[LB] Previous tab   [RB] Next tab");
     GuestRegisters saved;save_registers(&saved);
     uint32_t sx=WORD_AT(0x7e7270),sy=WORD_AT(0x7e7280),align=WORD_AT(0x7e7260);
     int place=ui_placement;uint32_t tag=ui_tag;ui_place(2,0x1203fu);WORD_AT(0x7e7260)=0;

@@ -1,4 +1,4 @@
-[Settings and imported input icons](controls-options.md).
+[Settings/footer input icons](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)

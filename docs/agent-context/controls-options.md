@@ -42,6 +42,8 @@ Historical controls-only fixtures predate native-prompts/display wrappers;
 asserted afterwards, rather than applied to that deliberately older subset.
 
 `pc_settings_navigation.inc` shares section input, sounds and footer hints.
+Its Adjust hint uses separate `[A] / [D]` labels so both keys use imported artwork;
+native measurement still centers/fits the complete footer in main and pause.
 Physical Left/Right arrows switch sections from any root setting; native A/D
 adjustment and header navigation remain. Controller Black/White C4/C8 masks
 0x200/0x400 correspond to LB/RB through the common adapter; held shortcuts

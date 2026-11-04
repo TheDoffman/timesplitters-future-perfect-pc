@@ -1,7 +1,8 @@
 Imported prompt artwork (local feature/fab-input-prompts): shared
 `pc_keycaps.inc`, `pc_input_icons.inc` and generated span data use Rendrify's
 CC BY4.0 keyboard/mouse artwork with native tint/fade and original text advances.
-Key-name lookup remains shared. No new OS/font/graphics adapter is needed;
+Key-name lookup remains shared. The Adjust footer uses separate A/D icon labels
+through the same native measurement on both hosts. No new adapter is needed;
 Mac build and visual acceptance are pending (main/pause footer fit, binding and
 capture dialogs, device switch, remapped/missing keys and tutorial/HUD wrapping).
 Windows shared fixtures, supported Build and isolated menu review are recorded

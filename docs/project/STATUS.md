@@ -1,3 +1,11 @@
+## Adjust footer icons (2026-11-04, local)
+
+The shared Video/Controls footer now formats `[A] / [D] Adjust`, allowing each
+key to use the Fab artwork. Native footer measurement, centering, scaling,
+controller hints and adjustment input are retained. Windows focused fixtures16
+passed,2 native Mac skips; supported Release build and built-in checks pass.
+Native Mac visual acceptance remains pending.
+
 ## Fab keyboard/mouse prompt artwork (2026-11-04, local)
 
 Branch `feature/fab-input-prompts` from main63896020; Windows x64/MSVC,
