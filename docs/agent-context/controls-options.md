@@ -17,6 +17,9 @@ Keyboard binding cells and assignment/conflict rows opt into the same renderer.
 `tests/input/keycaps.c` exercises actual callback geometry/colour, mouse labels,
 controller fallback and nested draw restoration; pc_prompts tests cover vocabulary.
 The supported build refreshes generated code for the new native glyph wrapper.
+Historical controls-only fixtures predate native-prompts/display wrappers;
+2340 is installed during their complete migration, with both keycap hooks
+asserted afterwards, rather than applied to that deliberately older subset.
 
 `pc_settings_navigation.inc` shares section input, sounds and footer hints.
 Physical Left/Right arrows switch sections from any root setting; native A/D
