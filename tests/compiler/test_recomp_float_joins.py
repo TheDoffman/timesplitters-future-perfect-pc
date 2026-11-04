@@ -99,7 +99,7 @@ def compile_and_run(tmp_path, source, expect_success=True):
         command = [compiler, '/nologo', '/O2', '/I' + str(includes), str(path),
                    '/Fe:' + str(executable), '/Fo:' + str(tmp_path / 'float_join.obj')]
     else:
-        command = [compiler, '-std=c11', '-O2', '-I', str(includes), str(path), '-lm', '-o', str(executable)]
+        command = [compiler, '-std=c11', '-D_DEFAULT_SOURCE', '-O2', '-I', str(includes), str(path), '-lm', '-o', str(executable)]
     built = subprocess.run(command, cwd=tmp_path, env=environment, capture_output=True, text=True)
     assert built.returncode == 0, built.stdout + built.stderr
     result = subprocess.run([str(executable)], capture_output=True, text=True, timeout=15)

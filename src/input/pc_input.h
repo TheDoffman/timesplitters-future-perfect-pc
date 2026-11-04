@@ -3,6 +3,11 @@
 #include <stdint.h>
 #include "pc_reload_input.h"
 
+/* Menu navigation uses the same WASD aliases on every input host. */
+static inline unsigned pc_input_menu_alias(unsigned key) {
+    return key==0x25?'A':key==0x27?'D':key==0x26?'W':key==0x28?'S':0;
+}
+
 typedef struct PcInput {
     unsigned char keys[256];
     PcReloadInput reload;

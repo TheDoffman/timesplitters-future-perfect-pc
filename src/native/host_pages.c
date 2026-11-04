@@ -1,9 +1,16 @@
+#if defined(__linux__) && !defined(_DEFAULT_SOURCE)
+#define _DEFAULT_SOURCE 1
+#endif
 #include "host_pages.h"
 #if defined(_WIN32)
 #include <windows.h>
 #else
 #include <unistd.h>
 #include <sys/mman.h>
+#if defined(__linux__) && !defined(__APPLE__)
+#include <stdio.h>
+#include <inttypes.h>
+#endif
 #if defined(__APPLE__)
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
@@ -73,7 +80,7 @@ int tsfp_host_pages_protect(void *address,size_t bytes,uint32_t protection) {
 #endif
 }
 int tsfp_host_pages_query(const void *address,tsfp_host_page_region *out) {
-    tsfp_host_page_region result;
+    tsfp_host_page_region result={0};
     uintptr_t pointer=(uintptr_t)address;
     if(!pointer || !out)return 0;
 #if defined(_WIN32)
@@ -98,8 +105,29 @@ int tsfp_host_pages_query(const void *address,tsfp_host_page_region *out) {
             ((info.protection&VM_PROT_READ)?32u:16u);
     else result.protection=(info.protection&VM_PROT_WRITE)?4u:
         ((info.protection&VM_PROT_READ)?2u:1u);
+#elif defined(__linux__)
+    /* Query without touching the target: it may be a protected guest/MMIO page.
+     * /proc returns the containing VMA, or a gap; never report the next VMA.
+     * This is a snapshot, just like VirtualQuery and mach_vm_region. */
+    FILE *maps=fopen("/proc/self/maps","r");
+    char line[4096],permissions[5];
+    uintptr_t start,end;
+    int found=0;
+    if(!maps)return 0;
+    while(fgets(line,sizeof line,maps)) {
+        if(sscanf(line,"%" SCNxPTR "-%" SCNxPTR " %4s",&start,&end,permissions)!=3)continue;
+        if(pointer<start)break;
+        if(pointer>=end)continue;
+        if(end<=start)break;
+        result.base=start;result.bytes=end-start;
+        if(permissions[2]=='x')
+            result.protection=permissions[1]=='w'?64u:(permissions[0]=='r'?32u:16u);
+        else result.protection=permissions[1]=='w'?4u:(permissions[0]=='r'?2u:1u);
+        found=1;break;
+    }
+    fclose(maps);
+    if(!found)return 0;
 #else
-    /* Only the supported Windows and Darwin hosts provide region queries. */
     return 0;
 #endif
     if(!result.bytes || pointer<result.base || pointer-result.base>=result.bytes ||

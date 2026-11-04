@@ -5,6 +5,20 @@
 #ifdef __APPLE__
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
+#elif defined(__linux__)
+#include <stdio.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+/* Linux 6.11 PROCMAP_QUERY UAPI. Keep the fixed ABI layout here so builds
+ * using older distro headers can use a newer running kernel. No map snapshots
+ * are cached: each query observes current mprotect/unmap boundaries. */
+typedef struct PcLinuxMapQuery {
+    uint64_t size, flags, address, start, end, permissions, page_size, offset, inode;
+    uint32_t device_major, device_minor, name_size, build_id_size;
+    uint64_t name_address, build_id_address;
+} PcLinuxMapQuery;
 #else
 #include <windows.h>
 #endif
@@ -33,6 +47,40 @@ static inline PcGuestRegion pc_guest_query_region(uintptr_t address)
        !(info.protection&VM_PROT_READ))return region;
     region.base=(uintptr_t)base;region.size=(size_t)size;
     region.writable=(info.protection&VM_PROT_WRITE)!=0;
+#elif defined(__linux__)
+    /* Query current protection boundaries; never cache across guest execution. */
+    int fd=open("/proc/self/maps",O_RDONLY
+#ifdef O_CLOEXEC
+                |O_CLOEXEC
+#endif
+                );
+    if(fd<0)return region;
+    PcLinuxMapQuery query={0};query.size=sizeof query;query.address=address;
+    int status=ioctl(fd,_IOWR('f',17,PcLinuxMapQuery),&query),error=errno;
+    close(fd);
+    if(!status) {
+        if(query.start<=address && address<query.end && query.end<=UINTPTR_MAX &&
+           (query.permissions&1)) {
+            region.base=(uintptr_t)query.start;region.size=(size_t)(query.end-query.start);
+            region.writable=(query.permissions&2)!=0;
+        }
+        return region;
+    }
+    /* Old kernels retain the text parser. Holes and denied queries fail closed. */
+    if(error!=ENOTTY && error!=EINVAL && error!=ENOSYS && error!=EOPNOTSUPP)return region;
+    FILE *maps=fopen("/proc/self/maps","r");
+    if(!maps)return region;
+    char line[512],permissions[5];unsigned long long lo,hi;
+    while(fgets(line,sizeof line,maps)) {
+        if(sscanf(line,"%llx-%llx %4s",&lo,&hi,permissions)!=3)continue;
+        if(address<lo || address>=hi)continue;
+        if(permissions[0]=='r') {
+            region.base=(uintptr_t)lo;region.size=(size_t)(hi-lo);
+            region.writable=permissions[1]=='w';
+        }
+        break;
+    }
+    fclose(maps);
 #else
     MEMORY_BASIC_INFORMATION m;
     if(!VirtualQuery((void*)address,&m,sizeof m) || m.State!=MEM_COMMIT ||

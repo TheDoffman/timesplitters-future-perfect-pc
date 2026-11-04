@@ -227,7 +227,8 @@ def test_single_gate_covers_runtime_and_launcher_without_changing_old_checks():
     assert 'uses: ./.github/workflows/launcher-build.yml' in launcher
     assert 'source_ref: ${{ needs.plan.outputs.head }}' in launcher
     assert 'name: PR validation' in gate
-    assert 'needs: [plan, patches, native, launcher]' in gate
+    assert 'needs: [plan, patches, native, launcher, linux-foundation]' in gate
+    assert 'needs.linux-foundation.result' in gate
     assert 'if: always()' in gate
     assert 'python tools/ci/ci-pr-gate.py' in gate
 

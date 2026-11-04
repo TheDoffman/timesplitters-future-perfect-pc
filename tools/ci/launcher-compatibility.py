@@ -29,6 +29,7 @@ POLICY_FILES = {
     'tools/ci/launcher-compatibility.py', 'tests/launcher/test_launcher_compatibility.py',
     'tools/release/launcher-release.py', 'tools/build/build-launcher.ps1',
     'tools/release/release_channels.py',
+    'tools/build/build-linux-launcher.py', 'config/build/linux-launcher-sdk.json',
     'tools/build/build-mac-launcher.py', 'tools/build/fetch-launcher-art.ps1',
     'tools/play-native-mac.py', 'tools/testing/test-mac-launcher.py',
     'tools/playable-launch.ps1', 'config/build/mac-launcher-sdk.json',

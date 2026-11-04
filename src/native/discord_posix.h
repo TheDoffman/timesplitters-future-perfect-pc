@@ -39,7 +39,13 @@ static int transfer(DiscordPipe p,void *buffer,uint32_t bytes,int writing){
         struct pollfd fds[2]={{p,writing?POLLOUT:POLLIN,0},{wakeup[0],POLLIN,0}};
         int result=poll(fds,2,left);if(result<0 && errno==EINTR)continue;
         if(result<=0 || fds[1].revents || (fds[0].revents&(POLLHUP|POLLERR|POLLNVAL)))return 0;
-        ssize_t n=writing?send(p,(char *)buffer+done,bytes-done,0):recv(p,(char *)buffer+done,bytes-done,0);
+        ssize_t n=writing?send(p,(char *)buffer+done,bytes-done,
+#ifdef MSG_NOSIGNAL
+            MSG_NOSIGNAL
+#else
+            0
+#endif
+        ):recv(p,(char *)buffer+done,bytes-done,0);
         if(n<0 && (errno==EAGAIN || errno==EINTR))continue;
         if(n<=0)return 0;done+=(size_t)n;
     }return 1;
@@ -61,7 +67,9 @@ static DiscordPipe open_pipe(void){
 #endif
         if(n<0 || (size_t)n>=sizeof address.sun_path || lstat(address.sun_path,&st) || !S_ISSOCK(st.st_mode) || st.st_uid!=geteuid())continue;
         int fd=socket(AF_UNIX,SOCK_STREAM,0);if(fd<0)continue;
+        #ifdef SO_NOSIGPIPE
         int yes=1;setsockopt(fd,SOL_SOCKET,SO_NOSIGPIPE,&yes,sizeof yes);
+#endif
         fcntl(fd,F_SETFD,FD_CLOEXEC);fcntl(fd,F_SETFL,O_NONBLOCK);
         if(!connect(fd,(struct sockaddr *)&address,sizeof address))return fd;
         if(errno==EINPROGRESS){struct pollfd p={fd,POLLOUT,0};int error=0;socklen_t size=sizeof error;

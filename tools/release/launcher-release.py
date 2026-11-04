@@ -31,7 +31,7 @@ import zipfile
 
 ROOT = _layout_root
 REPOSITORY = 'TheDoffman/timesplitters-future-perfect-pc'
-PLATFORMS = ('windows-x64', 'macos-arm64')
+PLATFORMS = ('windows-x64', 'macos-arm64', 'linux-x64')
 VERSION = re.compile(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z.-]+))?\Z')
 
 
@@ -93,7 +93,7 @@ def plan_release(event, kind, ref, sha, repository):
 
 
 def manifest_name(platform):
-    return 'launcher-update.json' if platform == 'windows-x64' else 'launcher-update-macos-arm64.json'
+    return 'launcher-update.json' if platform == 'windows-x64' else 'launcher-update-' + platform + '.json'
 
 
 def package_names(version, platform):
@@ -105,6 +105,9 @@ def package_names(version, platform):
 def allowed_file(name, platform):
     if platform == 'windows-x64':
         return name in ('TimeSplitters Launcher.exe', 'Bin/TimeSplitters.App.exe')
+    if platform == 'linux-x64':
+        return name in ('TimeSplitters.Launcher', 'Support/Launcher/application.json') or (
+            name.startswith('Support/Launcher/Licenses/') and name.endswith('.txt'))
     prefix = 'TimeSplitters Launcher.app/Contents/'
     return name in (prefix+'Info.plist', prefix+'MacOS/TimeSplitters.Launcher',
                     prefix+'_CodeSignature/CodeResources') or (
@@ -144,10 +147,15 @@ def verify_package(directory, plan, platform):
                     else {'TimeSplitters Launcher.app/Contents/Info.plist',
                           'TimeSplitters Launcher.app/Contents/_CodeSignature/CodeResources',
                           'TimeSplitters Launcher.app/Contents/MacOS/TimeSplitters.Launcher'})
+        if platform == 'linux-x64':
+            required = {'TimeSplitters.Launcher', 'Support/Launcher/application.json'}
         require(required <= set(files), 'Missing launcher entry point.')
         for name, expected in files.items():
             require(allowed_file(name, platform), 'Unexpected launcher payload: ' + name)
             require(hashlib.sha256(package.read(name)).hexdigest() == expected, 'Installed file hash mismatch.')
+        if platform == 'linux-x64':
+            executable = package.getinfo('TimeSplitters.Launcher')
+            require(executable.external_attr >> 16 & 0o111, 'Linux executable permissions are missing.')
         if platform == 'macos-arm64':
             executable = package.getinfo('TimeSplitters Launcher.app/Contents/MacOS/TimeSplitters.Launcher')
             require(executable.external_attr >> 16 & 0o111, 'Mac app executable permissions are missing.')
@@ -334,8 +342,9 @@ def publish(directory, plan, api):
         download = 'https://github.com/'+REPOSITORY+'/releases/download/'+tag+'/'
         links = ' · '.join('['+label+']('+download+package_names(version, platform)[0]+')'
                            for label, platform in [('Download Windows x64', 'windows-x64'),
-                                                   ('Download Mac (Apple Silicon)', 'macos-arm64')])
-        body = ('One launcher release for Windows x64 and native Apple Silicon Mac. Download the ZIP for your platform; '
+                                                   ('Download Mac (Apple Silicon)', 'macos-arm64'),
+                                                   ('Download Linux x64', 'linux-x64')])
+        body = ('One launcher release for Windows x64, native Apple Silicon Mac and Linux x64. Download the ZIP for your platform; '
                 'existing launchers select their matching update automatically. Saves and settings are preserved.\n\n'
                 + links + '\n\n' +
                 'Mac v1.2.19 users: manually replace the app and Support/Launcher/manifest.json with this release; '
@@ -395,7 +404,7 @@ def main():
         if args.command == 'stamp':
             stamp(args.directory, plan, args.platform)
         elif args.command == 'verify':
-            print('Verified both platform packages:', len(release_assets(args.directory, plan)), 'release assets')
+            print('Verified all platform packages:', len(release_assets(args.directory, plan)), 'release assets')
         else:
             print(publish(args.directory, plan, GitHub(os.environ.get('GITHUB_TOKEN'))))
 

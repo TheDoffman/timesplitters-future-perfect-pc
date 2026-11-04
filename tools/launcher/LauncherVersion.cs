@@ -1,4 +1,4 @@
-#if !MACOS
+#if !MACOS && !LINUX
 [assembly: System.Runtime.Versioning.TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
 #endif
 [assembly: System.Reflection.AssemblyVersion("1.4.2.0")]

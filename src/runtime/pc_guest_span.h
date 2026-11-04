@@ -1,7 +1,7 @@
 #ifndef TSFP_PC_GUEST_SPAN_H
 #define TSFP_PC_GUEST_SPAN_H
 #include "pc_guest_memory.h"
-#ifndef __APPLE__
+#ifdef _WIN32
 #include <psapi.h>
 #endif
 
@@ -14,7 +14,7 @@
  * https://learn.microsoft.com/en-us/windows/win32/api/psapi/ns-psapi-psapi_working_set_ex_block */
 static inline PcGuestRegion pc_guest_query_span(uintptr_t address,size_t bytes)
 {
-#ifndef __APPLE__
+#ifdef _WIN32
     SYSTEM_INFO system;
     GetSystemInfo(&system);
     if(system.dwPageSize && bytes && bytes<=UINTPTR_MAX-address) {

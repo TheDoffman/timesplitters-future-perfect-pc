@@ -1,0 +1,10 @@
+--- a/src/input/CMakeLists.txt
++++ b/src/input/CMakeLists.txt
+@@ -93,6 +93,7 @@
+     if(APPLE)
+         target_link_libraries(xbox_input PUBLIC "-framework CoreGraphics" "-framework CoreFoundation")
+     else()
++        find_package(OpenSSL REQUIRED)
+         target_link_libraries(xbox_input PUBLIC OpenSSL::Crypto ${CMAKE_DL_LIBS})
+     endif()
+ endif()

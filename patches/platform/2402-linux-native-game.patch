@@ -1,0 +1,154 @@
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -103,8 +103,15 @@
+     # src/custom_renderer.c
+ )
+ 
+-if(APPLE AND TSFP_NATIVE_DIR)
+-    list(APPEND GAME_SOURCES "${TSFP_NATIVE_DIR}/main.c" "${TSFP_NATIVE_DIR}/mmio.c")
++if(UNIX AND TSFP_NATIVE_DIR)
++    list(APPEND GAME_SOURCES "${TSFP_NATIVE_DIR}/main.c")
++    if(APPLE)
++        list(APPEND GAME_SOURCES "${TSFP_NATIVE_DIR}/mmio.c")
++    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64)$")
++        list(APPEND GAME_SOURCES "${TSFP_NATIVE_DIR}/mmio_linux.c")
++    else()
++        message(FATAL_ERROR "Unsupported native CPU/OS")
++    endif()
+ elseif(WIN32)
+     list(APPEND GAME_SOURCES src/main.c)
+ else()
+@@ -289,7 +296,7 @@
+     add_test(NAME native_paths COMMAND tsfp_native_paths_test "${CMAKE_BINARY_DIR}/path-tests")
+ endif()
+ 
+-if(APPLE AND TSFP_NATIVE_DIR)
++if(UNIX AND TSFP_NATIVE_DIR)
+     target_sources(${PROJECT_NAME} PRIVATE "${TSFP_NATIVE_DIR}/../interface/pc_display_menu.c")
+     set_source_files_properties("${TSFP_NATIVE_DIR}/../interface/pc_display_menu.c" PROPERTIES
+         INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/src/recomp/gen")
+@@ -305,7 +312,7 @@
+     target_include_directories(tsfp_pc_discord_test PRIVATE "${TSFP_PC_CONTROLS_DIR}")
+ endif()
+ 
+-if(APPLE AND TSFP_NATIVE_DIR)
++if(UNIX AND TSFP_NATIVE_DIR)
+     set_property(SOURCE "${TSFP_NATIVE_DIR}/../interface/pc_display_menu.c" APPEND PROPERTY
+         COMPILE_DEFINITIONS TSFP_PC_DISCORD)
+ endif()
+@@ -322,3 +329,20 @@
+     target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_BINARY_DIR}/generated")
+     target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3 "-framework Cocoa")
+ endif()
++
++# Linux uses the same title, HLE, display, input and Vulkan frontend.
++if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND TSFP_NATIVE_DIR)
++    target_compile_options(${PROJECT_NAME} PRIVATE -O2 -fno-vectorize -fno-slp-vectorize)
++    target_link_options(${PROJECT_NAME} PRIVATE -no-pie)
++    target_sources(${PROJECT_NAME} PRIVATE "${TSFP_NATIVE_DIR}/../network/pc_network.c" "${TSFP_NATIVE_DIR}/online_linux.c")
++    target_compile_definitions(${PROJECT_NAME} PRIVATE TSFP_NATIVE_NETWORK
++        TSFP_ONLINE_SOURCE_ROOT="${TSFP_NATIVE_DIR}/../.."
++        TSFP_ONLINE_MANIFEST="${CMAKE_BINARY_DIR}/generated/network-identity.json")
++    target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_BINARY_DIR}/generated")
++    target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3)
++    enable_testing()
++    add_executable(tsfp_native_mmio_test "${TSFP_NATIVE_DIR}/../../tests/gameplay/native_mmio_linux.c" "${TSFP_NATIVE_DIR}/mmio_linux.c")
++    target_include_directories(tsfp_native_mmio_test PRIVATE "${TSFP_NATIVE_DIR}" "${XBOXRECOMP_DIR}/include")
++    target_link_libraries(tsfp_native_mmio_test PRIVATE platform)
++    add_test(NAME native_mmio_linux COMMAND tsfp_native_mmio_test)
++endif()
+--- a/src/input/CMakeLists.txt
++++ b/src/input/CMakeLists.txt
+@@ -55,18 +55,25 @@
+     target_link_libraries(xbox_input PUBLIC shell32)
+ endif()
+ 
+-if(APPLE AND TSFP_NATIVE_DIR)
++if(UNIX AND TSFP_NATIVE_DIR)
+     # Compile the same portable input model used by the Windows adapter.
+     target_sources(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/input_sdl.c"
+                                       "${TSFP_NATIVE_DIR}/../input/pc_input.c"
+                                       "${TSFP_NATIVE_DIR}/config_files.c"
+-                                      "${TSFP_NATIVE_DIR}/text_bitmap_macos.m"
+-                                      "${TSFP_NATIVE_DIR}/settings_macos.m"
+                                       "${TSFP_NATIVE_DIR}/../input/pc_prompts.c"
+                                       "${TSFP_NATIVE_DIR}/../diagnostics/pc_debug.c")
+-    enable_language(OBJC)
+-    set_source_files_properties("${TSFP_NATIVE_DIR}/settings_macos.m" PROPERTIES COMPILE_FLAGS "-fobjc-arc")
+-    target_link_libraries(xbox_input PUBLIC "-framework Cocoa" "-framework CoreText")
++    if(APPLE)
++        enable_language(OBJC)
++        target_sources(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/text_bitmap_macos.m" "${TSFP_NATIVE_DIR}/settings_macos.m")
++        set_source_files_properties("${TSFP_NATIVE_DIR}/settings_macos.m" PROPERTIES COMPILE_FLAGS "-fobjc-arc")
++        target_link_libraries(xbox_input PUBLIC "-framework Cocoa" "-framework CoreText")
++    else()
++        find_package(Freetype REQUIRED)
++        find_package(PkgConfig REQUIRED)
++        pkg_check_modules(FONTCONFIG REQUIRED IMPORTED_TARGET fontconfig)
++        target_sources(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/text_bitmap_linux.c" "${TSFP_NATIVE_DIR}/settings_linux.c")
++        target_link_libraries(xbox_input PUBLIC Freetype::Freetype PkgConfig::FONTCONFIG)
++    endif()
+     target_include_directories(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/..")
+     target_include_directories(xbox_input PRIVATE "${TSFP_NATIVE_DIR}")
+     target_compile_definitions(xbox_input PRIVATE TSFP_NATIVE_INPUT)
+@@ -80,9 +87,13 @@
+                                       "${TSFP_PC_CONTROLS_DIR}/network/pc_discord_model.c")
+ endif()
+ 
+-if(APPLE AND TSFP_NATIVE_DIR)
++if(UNIX AND TSFP_NATIVE_DIR)
+     target_sources(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/../network/pc_discord.c"
+         "${TSFP_NATIVE_DIR}/../network/pc_discord_model.c" "${TSFP_NATIVE_DIR}/crash_posix.c")
+-    target_link_libraries(xbox_input PUBLIC "-framework CoreGraphics" "-framework CoreFoundation")
++    if(APPLE)
++        target_link_libraries(xbox_input PUBLIC "-framework CoreGraphics" "-framework CoreFoundation")
++    else()
++        target_link_libraries(xbox_input PUBLIC OpenSSL::Crypto ${CMAKE_DL_LIBS})
++    endif()
+ endif()
+ 
+--- a/src/hle/CMakeLists.txt
++++ b/src/hle/CMakeLists.txt
+@@ -42,7 +42,7 @@
+         audio_output_xaudio2.cpp
+     )
+ endif()
+-if(APPLE AND TSFP_NATIVE_DIR)
++if(UNIX AND TSFP_NATIVE_DIR)
+     target_sources(xbox_hle PRIVATE "${TSFP_NATIVE_DIR}/audio_sdl.c")
+     target_link_libraries(xbox_hle PRIVATE SDL3::SDL3)
+ endif()
+@@ -52,7 +52,7 @@
+     if(WIN32)
+         target_sources(xbox_hle PRIVATE "${TSFP_PC_CONTROLS_DIR}/interface/pc_refresh.c")
+     endif()
+-elseif(APPLE AND TSFP_NATIVE_DIR)
++elseif(UNIX AND TSFP_NATIVE_DIR)
+     target_include_directories(xbox_hle PRIVATE "${TSFP_NATIVE_DIR}/..")
+ endif()
+ target_link_libraries(xbox_hle PUBLIC xbox_config)
+@@ -70,11 +70,11 @@
+     target_link_libraries(xbox_hle PRIVATE xbox_d3d8 xbox_video user32)
+ endif()
+ 
+-if(APPLE)
++if(UNIX)
+     target_link_libraries(xbox_hle PRIVATE xbox_d3d8)
+ endif()
+ 
+-if(APPLE AND TSFP_NATIVE_RHI)
++if(UNIX AND TSFP_NATIVE_RHI)
+     target_compile_definitions(xbox_hle PRIVATE TSFP_PC_CONTROLS TSFP_RHI_RENDERER)
+     target_include_directories(xbox_hle PRIVATE "${TSFP_NATIVE_DIR}/.." "${TSFP_NATIVE_DIR}")
+ endif()
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -113,7 +113,7 @@
+ 
+ # Frame replay tool: replays a D3D8 capture into the host renderer with no
+ # game running (src/hle/d3d8_capture.h), through the common Xbox frontend.
+-if(WIN32 OR (APPLE AND TSFP_NATIVE_RHI))
++if(WIN32 OR (UNIX AND TSFP_NATIVE_RHI))
+     add_subdirectory(src/replay)
+ endif()
+ 

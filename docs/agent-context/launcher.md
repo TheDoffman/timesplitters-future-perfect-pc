@@ -1,5 +1,9 @@
 # Launcher and menu shortcuts
 
+Linux release packaging closes dependencies for all launcher/Python ELFs,
+not only the game. Provider/source and notice verification is described in
+[Linux release contracts](linux-game.md#experimental-release-preparation).
+
 [Settings shortcuts](controls-options.md); [graphics contract](../development/graphics-options.md).
 Launcher graphics UI regression changes all shared controls, saves, reloads
 the model and reopens the page; AnisotropicFiltering names the AF selector.
@@ -16,6 +20,29 @@ the separate controls; saving normalizes them within the existing transaction.
 Legacy dual-enabled choices display SMAA. Advanced holds MSAA/supersampling/cache/console scale;
 scale appears only at Original resolution. View & HUD holds FOV/FPS, General holds startup.
 Both WPF and Avalonia consume this page/model; native Mac execution is unverified.
+
+Linux x64 now links the existing Avalonia host/pages through
+`tools/launcher/linux/LinuxLauncher.csproj` (`LINUX`); Windows WPF and Mac
+`MACOS` retain their adapters. `build-linux-launcher.py` uses a SHA-512-pinned
+8.0.426 Linux SDK and the same locked Avalonia 11.3.22 graph. Layout/theme
+translation is shared; Linux generated XAML stays under its build output.
+`LauncherPlatform` selects linux-x64 release names, ELF game paths in
+`build/linux/game`, POSIX locks, executable permissions and direct restart.
+`NativeHost` validates ELF x64 instead of Mach-O, uses the system Vulkan ICD,
+clears inherited driver overrides, isolates XDG storage and opens with xdg-open.
+Mac CoreGraphics/open and Windows WPF/system calls retain their branches.
+Linux display enumeration uses shared presets/Auto/saved custom resolutions;
+window observation is unavailable (Wayland), so post-play rollback cleanup is
+conservatively deferred. Do not equate process startup with visual acceptance.
+
+Linux build `--test --package` runs adapter/install contracts, shared restart/texture
+checks, the same 37 UI groups and actual package corruption/repair/helper restart
+with rendered output, all under Xvfb and disposable roots. The reusable launcher
+workflow requires Windows, Mac and Linux before verifying all 15 release assets
+(including stable ZIP aliases). No publication is performed by local builds.
+Linux game runtime publication remains separate; no compatible release is
+offered until a matching runtime ZIP is published. See
+[Linux launcher](../players/linux-launcher.md) for usage and STATUS for host evidence.
 
 Game 0.4.2 preparation retains Stable channel selection, optional texture delivery
 and the existing install/preservation contracts. Its packages embed launcher 1.4.2;
@@ -594,6 +621,21 @@ package suite exercises the real manifest/archive writer for true/false/missing
 flags, with only host binary tools replaced by fixtures. Native loading still
 requires Mac execution.
 
+Linux packaged NativeHost verifies all listed Bin hashes before play and sets
+relocatable FFmpeg/Online interpreter/script/manifest/handshake paths. Checkout
+routing and Mac GPU/runtime selection remain unchanged. Runtime dependency
+packaging is separate from the launcher self-contained build.
+
+NativeGamePackageChecks is the shared Mac/Linux fresh/upgrade package verifier.
+It exercises the real installer, native hashes, launcher completeness, executable
+corruption rejection and personal-file preservation. Mac retains its signature
+callback; Linux handles --verify-game-package without opening an interactive UI.
+
+POSIX installation marks exactly Support/Python/bin/python3 and python-real as
+executables. The native game-package verifier now starts the installed bundled
+interpreter and checks Tk/TLS/crypto imports and certificate trust, catching mode
+loss during unpack/install rather than only checking the original staging tree.
+
 Graphics controls passed shared Avalonia UI and Linux adapter tests in an isolated integration with feature/linux-launcher at 80239186; see the graphics guide.
 
 ## Supersampling preference
@@ -620,3 +662,11 @@ Manual device assignments remain available. README documents the player-count,
 Start-order and profile-selection sequence.
 
 Unassigned device choices are labeled Automatic (legacy JSON none). Presence detection makes these available for joining; this is not a separate opt-in setting.
+
+Linux installed executable modes also preserve the bundled GTK module-query
+tool; clean-userspace launcher UI acceptance detects dynamic session libraries
+that do not appear in ELF imports. See [Linux release checks](linux-game.md).
+
+Native game-package checks now install into fresh/upgrade paths containing
+spaces and Unicode. Linux additionally executes the installed GTK SVG query
+helper, checking its executable mode and relocated module closure.

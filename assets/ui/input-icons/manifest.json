@@ -1,0 +1,547 @@
+{
+  "pack": "Rendrify PC Keyboard & Mouse Icon Pack",
+  "license": "CC-BY-4.0",
+  "keys": [
+    {
+      "key": 0,
+      "idle": "T_MouseDefault.png",
+      "sha256": "471c1d009917c5b94475baff455a3b0d231d5afb18627aa4fea78616eec59982",
+      "purpose": "Generic mouse-motion prompt; not an unbound binding"
+    },
+    {
+      "key": 1,
+      "idle": "T_MouseLeftClick.png",
+      "sha256": "a19dca027f4f8e796b70ff5a7d83f9cefd8be65c2117168cd6278405a00ff2cb"
+    },
+    {
+      "key": 2,
+      "idle": "T_MouseRightClick.png",
+      "sha256": "487c218b244dfc4526ad9a38f968685108b1ede43099f98c0d21913029480153"
+    },
+    {
+      "key": 4,
+      "idle": "T_MouseScroll.png",
+      "sha256": "7b88e5032f5fd4b0fdd44a566fce75092e838d010b72cee9e55c3ea922d1868d"
+    },
+    {
+      "key": 8,
+      "idle": "T_KeyboardBackspaceIcon.png",
+      "sha256": "cbab97bfdd179ca3e45d8ae7782a40b6516064a50e6dcdd3cbc328d817efd487"
+    },
+    {
+      "key": 9,
+      "idle": "T_KeyboardTab.png",
+      "sha256": "6a0f29b747e43eac2bbcb8b74052f6ca8776e21dadd51213e0fa6c6e1d5c4be5"
+    },
+    {
+      "key": 13,
+      "idle": "T_KeyboardEnterIcon.png",
+      "sha256": "3e6e9f2b23ce87af0c9181b3a86dd7b4ffdf376273d907b53f523179c20be2be"
+    },
+    {
+      "key": 16,
+      "idle": "T_KeyboardShift.png",
+      "sha256": "0281a79b297dbe8fc605e8bc138578e97cacb6a447808107f79d95ce9de14171"
+    },
+    {
+      "key": 17,
+      "idle": "T_KeyboardCTRL.png",
+      "sha256": "cfb507b7b70998b9b84d5680bf1ba1883552fa4140a7f5e21713acdbfee393a0"
+    },
+    {
+      "key": 18,
+      "idle": "T_KeyboardAlt.png",
+      "sha256": "14334f4c9abb646a862379b820ba55ce3cfaff2e17e526b4487449db2d30f5ca"
+    },
+    {
+      "key": 19,
+      "idle": "T_KeyboardPB.png",
+      "sha256": "9f488c3616b9eef04072b8238a4e4dbbb7278d8e402f2d2bf290f47411ef4a3c"
+    },
+    {
+      "key": 20,
+      "idle": "T_KeyboardCaps.png",
+      "sha256": "68c1e2cb0210320e7360066ca3db20ae3238cc9211e86243b5ccc452ad041f5a"
+    },
+    {
+      "key": 33,
+      "idle": "T_KeyboardPageUp.png",
+      "sha256": "1f38cdaf183d375b8ef22c9713ff09bbf8b4b02d78c3e6144d429e3f2544b1c4"
+    },
+    {
+      "key": 34,
+      "idle": "T_KeyboardPageDown.png",
+      "sha256": "ae3f52fc2c4bb523e89ebfc1e10a63cc66c418fbce8881a8302cd8c9ded08ec3"
+    },
+    {
+      "key": 35,
+      "idle": "T_KeyboardEnd.png",
+      "sha256": "6ee89efe716b62b57a7a5322c6a551b56b7fce3c410416b003c41b05bfa3946b"
+    },
+    {
+      "key": 36,
+      "idle": "T_KeyboardHome.png",
+      "sha256": "0f254f39043ae8275eaf7d0f64d1ce07f66b8977a50ac0e377d7a69e23d3d2cb"
+    },
+    {
+      "key": 37,
+      "idle": "T_KeyboardLeftArrow.png",
+      "sha256": "e81347044b6b5b6965c97aeaa25d0151ea8150065593ca6194437bee8c1d012f"
+    },
+    {
+      "key": 38,
+      "idle": "T_KeyboardUpArrow.png",
+      "sha256": "bfc90b378ebd8ea2171e3ff46322efbbc60e3be2013c6bfab6901cd6abc97d68"
+    },
+    {
+      "key": 39,
+      "idle": "T_KeyboardRightArrow.png",
+      "sha256": "1c4e5f759f39ee5c0a6ab7837eca0459a5ff3f4bb6bc62199b9f1dcc2e395057"
+    },
+    {
+      "key": 40,
+      "idle": "T_KeyboardDownArrow.png",
+      "sha256": "20c9c6c9d29becf2d3d92a4b1578d75e62e2b7651674af6108a9ed20c3ac2d38"
+    },
+    {
+      "key": 44,
+      "idle": "T_KeyboardPrintScreen.png",
+      "sha256": "40286c6a443fd286f7c5dedc95eab22b4948b8058ef94c7032b8962164a54ee2"
+    },
+    {
+      "key": 45,
+      "idle": "T_KeyboardInsert.png",
+      "sha256": "2b399aae88c5ad16b4fbe87fc1616b2ed0cd076391c312535b43f585bd35f4b4"
+    },
+    {
+      "key": 46,
+      "idle": "T_KeyboardDelete.png",
+      "sha256": "58dc335297755a8f7c33eb4c4d386a1fda04095e5be5845ee1e22b9f031bbc06"
+    },
+    {
+      "key": 48,
+      "idle": "T_Keyboard0.png",
+      "sha256": "2532dd93704df422b031b18288cf32440e57ca6aab5c7e97c65ea5ed04c9d720"
+    },
+    {
+      "key": 49,
+      "idle": "T_Keyboard1.png",
+      "sha256": "b1d15d5625968f0ce4045b46847b7b583daa26dd3716d60cc7a7c376135a7b6e"
+    },
+    {
+      "key": 50,
+      "idle": "T_Keyboard2.png",
+      "sha256": "3d34e2baac9eba0c5a73989a3b9003e228b7930880630edc8ea09280ad833a2d"
+    },
+    {
+      "key": 51,
+      "idle": "T_Keyboard3.png",
+      "sha256": "e08d6f9c10fdf82f3779d13f24ebd0774017879ae396cf4320d4a9ea42825f11"
+    },
+    {
+      "key": 52,
+      "idle": "T_Keyboard4.png",
+      "sha256": "018e33f22572bf7ae5601a7dff67f2ceefe837c0a0fa5ec4870c17b62dee500c"
+    },
+    {
+      "key": 53,
+      "idle": "T_Keyboard5.png",
+      "sha256": "5777d71445dfb6b1268d625bfa5781bc11ccc5f0feda8563d71eeb24c49765af"
+    },
+    {
+      "key": 54,
+      "idle": "T_Keyboard6.png",
+      "sha256": "f30ee17d1c05525528a98f8dfada6db99929f4238e580832f6e4d5a950c4919f"
+    },
+    {
+      "key": 55,
+      "idle": "T_Keyboard7.png",
+      "sha256": "a1b50420c3f792960a676a39ad4c9c2a8f3ea5cafe36481a728966cba7039f81"
+    },
+    {
+      "key": 56,
+      "idle": "T_Keyboard8.png",
+      "sha256": "ee8e1186c1df007b42ce968497f9fe057868ce266bae5b7cc4545ea231574057"
+    },
+    {
+      "key": 57,
+      "idle": "T_Keyboard9.png",
+      "sha256": "eb41e04c5f85f0968d5e6cd8e04ae88216f7574d3b85a11c4378b2043f239f13"
+    },
+    {
+      "key": 65,
+      "idle": "T_KeyboardA.png",
+      "sha256": "9ff979c01f77c7b47ea0d3566e6f77c4103b6a667328d03adaf9e13b53fa6267"
+    },
+    {
+      "key": 66,
+      "idle": "T_KeyboardB.png",
+      "sha256": "dc9239ff575dfc46b613d1ff0864e50dad51c79e2a37350f49c83b8c6fb0b16d"
+    },
+    {
+      "key": 67,
+      "idle": "T_KeyboardC.png",
+      "sha256": "ffe845ab857f74cebe7c86edb92db2f4ab616bf8c192719b908f7e54241bddbc"
+    },
+    {
+      "key": 68,
+      "idle": "T_KeyboardD.png",
+      "sha256": "7564a9a96147cf254d0ea478bf76a92392756f3e3d61011b7d9bf22b325d79ae"
+    },
+    {
+      "key": 69,
+      "idle": "T_KeyboardE.png",
+      "sha256": "0cda526985881e4da85ad26abf2d4474d71f9bff9132b01ad3a6fe3809ebd861"
+    },
+    {
+      "key": 70,
+      "idle": "T_KeyboardF.png",
+      "sha256": "e16adc99eb9835835f9c529054e18159e1c3283018631ccebbacba9d531a0de5"
+    },
+    {
+      "key": 71,
+      "idle": "T_KeyboardG.png",
+      "sha256": "c788fc1e35c9f24dcd8ba05a3b78cc3534d8a7cbf0a4c2b7596b09a97e1f0589"
+    },
+    {
+      "key": 72,
+      "idle": "T_KeyboardH.png",
+      "sha256": "fb6393a6b6476ee4f518de881c2b211f480be29287f7547c5d5e6b3f2e6875ab"
+    },
+    {
+      "key": 73,
+      "idle": "T_KeyboardI.png",
+      "sha256": "11d4bf75e04c4531a85239e777b47cdb418a8ed36e924f6fcc37f04caa062bc7"
+    },
+    {
+      "key": 74,
+      "idle": "T_KeyboardJ.png",
+      "sha256": "7efe571e5e71ec0dfa38eaacfdcfd4398b2377c292d27ca5f250bbb10237859d"
+    },
+    {
+      "key": 75,
+      "idle": "T_KeyboardK.png",
+      "sha256": "b966ac3d71f7e7d6b1be32a18d96ef509aec381f1a9595b4c806360d135880d1"
+    },
+    {
+      "key": 76,
+      "idle": "T_KeyboardL.png",
+      "sha256": "988b0348e594a0e9eff18edd30aa1513bf3f41688932dbbe8d2a05b4845be6bb"
+    },
+    {
+      "key": 77,
+      "idle": "T_KeyboardM.png",
+      "sha256": "d125d42945d79cce504733ec7fb77536dfd50c7d05996df52f4b809bc32f19a0"
+    },
+    {
+      "key": 78,
+      "idle": "T_KeyboardN.png",
+      "sha256": "82daa5291be08de6c7f9d3f74d98b3c901219735359a4d08b9f6ca7a0ff77496"
+    },
+    {
+      "key": 79,
+      "idle": "T_KeyboardO.png",
+      "sha256": "83e37b1bdf9939c90fd421b18ea302723392e4e5013b9b432727bb3ab2e369f8"
+    },
+    {
+      "key": 80,
+      "idle": "T_KeyboardP.png",
+      "sha256": "87fdc38ff79ff2a2b991357ed89abd6db3eee393e488c3f0ae973ea69c3404ee"
+    },
+    {
+      "key": 81,
+      "idle": "T_KeyboardQ.png",
+      "sha256": "679f9f8990328d1abfb5e3d210912aa8bdf182e7f3240ec8439d9b9f9c290fb4"
+    },
+    {
+      "key": 82,
+      "idle": "T_KeyboardR.png",
+      "sha256": "3e8dba63d823173b8d1ccb69ed85beeff75cca5d12521694deb30744e652c709"
+    },
+    {
+      "key": 83,
+      "idle": "T_KeyboardS.png",
+      "sha256": "22156ddd99de94b648e6789bc51b62ab7652158131bb9bb62f154ba05cc76b3a"
+    },
+    {
+      "key": 84,
+      "idle": "T_KeyboardT.png",
+      "sha256": "71f2ee9739ad62a61c5af8a5f82c7545f16689bfe101a720c48ab1344cf1921e"
+    },
+    {
+      "key": 85,
+      "idle": "T_KeyboardU.png",
+      "sha256": "01170cc06f7737f865e2185316d1e5d99ae5d31389f06a40adafbaa2f5ea320c"
+    },
+    {
+      "key": 86,
+      "idle": "T_KeyboardV.png",
+      "sha256": "ea2f44acb17bb628235c1867eb3f1248b1040a76163a5009df6fd56020140c1e"
+    },
+    {
+      "key": 87,
+      "idle": "T_KeyboardW.png",
+      "sha256": "9ca13e77fe0d099ecea7c339781155fd41cb12dfc41ac8a7a7d2a6f3a6257d5c"
+    },
+    {
+      "key": 88,
+      "idle": "T_KeyboardX.png",
+      "sha256": "99af85f04048a1237f89c264c001bf2c0dcd93889d26fa2b0fe63bdb1404eee5"
+    },
+    {
+      "key": 89,
+      "idle": "T_KeyboardY.png",
+      "sha256": "7567cd5b104b9c50be2345cf0daa6f9b10c0b47a58ef9f0955204a83e9a597a0"
+    },
+    {
+      "key": 90,
+      "idle": "T_KeyboardZ.png",
+      "sha256": "b0091f00bda3fd3b75b934254054ad867f507fd6ee143752cab4617c13f820d3"
+    },
+    {
+      "key": 91,
+      "idle": "T_KeyboardWindowsLogo.png",
+      "sha256": "24758dc8c27040c10c78906a8d50b0474f05e98be3c795d674fd51fa1ad5be2e"
+    },
+    {
+      "key": 92,
+      "idle": "T_KeyboardWindowsLogo.png",
+      "sha256": "24758dc8c27040c10c78906a8d50b0474f05e98be3c795d674fd51fa1ad5be2e"
+    },
+    {
+      "key": 96,
+      "idle": "T_Keyboard0.png",
+      "sha256": "2532dd93704df422b031b18288cf32440e57ca6aab5c7e97c65ea5ed04c9d720"
+    },
+    {
+      "key": 97,
+      "idle": "T_Keyboard1.png",
+      "sha256": "b1d15d5625968f0ce4045b46847b7b583daa26dd3716d60cc7a7c376135a7b6e"
+    },
+    {
+      "key": 98,
+      "idle": "T_Keyboard2.png",
+      "sha256": "3d34e2baac9eba0c5a73989a3b9003e228b7930880630edc8ea09280ad833a2d"
+    },
+    {
+      "key": 99,
+      "idle": "T_Keyboard3.png",
+      "sha256": "e08d6f9c10fdf82f3779d13f24ebd0774017879ae396cf4320d4a9ea42825f11"
+    },
+    {
+      "key": 100,
+      "idle": "T_Keyboard4.png",
+      "sha256": "018e33f22572bf7ae5601a7dff67f2ceefe837c0a0fa5ec4870c17b62dee500c"
+    },
+    {
+      "key": 101,
+      "idle": "T_Keyboard5.png",
+      "sha256": "5777d71445dfb6b1268d625bfa5781bc11ccc5f0feda8563d71eeb24c49765af"
+    },
+    {
+      "key": 102,
+      "idle": "T_Keyboard6.png",
+      "sha256": "f30ee17d1c05525528a98f8dfada6db99929f4238e580832f6e4d5a950c4919f"
+    },
+    {
+      "key": 103,
+      "idle": "T_Keyboard7.png",
+      "sha256": "a1b50420c3f792960a676a39ad4c9c2a8f3ea5cafe36481a728966cba7039f81"
+    },
+    {
+      "key": 104,
+      "idle": "T_Keyboard8.png",
+      "sha256": "ee8e1186c1df007b42ce968497f9fe057868ce266bae5b7cc4545ea231574057"
+    },
+    {
+      "key": 105,
+      "idle": "T_Keyboard9.png",
+      "sha256": "eb41e04c5f85f0968d5e6cd8e04ae88216f7574d3b85a11c4378b2043f239f13"
+    },
+    {
+      "key": 106,
+      "idle": "T_KeyboardAsterik.png",
+      "sha256": "d0d2f0b8fd86b0808626b246e3569349ff2a54af5eaeae0c45e089b11db7b1de"
+    },
+    {
+      "key": 107,
+      "idle": "T_KeyboardPlus.png",
+      "sha256": "e0fc5425d805fcd2c2777dc5a199e2c1c4118199e2973524a09c2c36e6e5f5bf"
+    },
+    {
+      "key": 109,
+      "idle": "T_KeyboardMinus.png",
+      "sha256": "4665555b65b2ae9f926a7654c449fb07b3d4708ac5ce714d46a1551a26ed6198"
+    },
+    {
+      "key": 110,
+      "idle": "T_KeyboardPeriod.png",
+      "sha256": "bf34a0679b12b434ebb9e12d0ab7a15a96166487794ae12a13f7d7b9a006d1b5"
+    },
+    {
+      "key": 111,
+      "idle": "T_KeyboardSlash.png",
+      "sha256": "d1e101746e831254ceed5928fa25518bfeb5c42641761a03911d544358f187e9"
+    },
+    {
+      "key": 112,
+      "idle": "T_KeyboardF1.png",
+      "sha256": "8aa600f16fd9545d33c38bd2a64f21b0d49b9480819bf9c91b6529b75134de06"
+    },
+    {
+      "key": 113,
+      "idle": "T_KeyboardF2.png",
+      "sha256": "08488970ef6c7b80bc7b7b606f52dc2c002cfe792a6e5c4b41bfe2d4f2e7b7e4"
+    },
+    {
+      "key": 114,
+      "idle": "T_KeyboardF3.png",
+      "sha256": "659b6c5f1e6d4959ec80ee7739f74c23373d057c3f6b4b72565243066db7fea6"
+    },
+    {
+      "key": 115,
+      "idle": "T_KeyboardF4.png",
+      "sha256": "646a119059cb8a82465ce74b63f0debcfdda7288eee1e638e149e12f11ba9107"
+    },
+    {
+      "key": 116,
+      "idle": "T_KeyboardF5.png",
+      "sha256": "57854f1cca7445ef3d2dda0bdbc3976187900f07acdda3f04feb902723d316cd"
+    },
+    {
+      "key": 117,
+      "idle": "T_KeyboardF6.png",
+      "sha256": "d1404f7b99fd7a1b69dd4b4f6b694be0560c7a04b37a87cb2a5fe2c2dc5f6f14"
+    },
+    {
+      "key": 118,
+      "idle": "T_KeyboardF7.png",
+      "sha256": "76eae9ecf7fb2e1995bb069524afe9656be0eb045797b8c99b2404f7c8de9001"
+    },
+    {
+      "key": 119,
+      "idle": "T_KeyboardF8.png",
+      "sha256": "16893aeca7e2e98474f7c57044f6558470c4dee7dcfbb65261f164afd6460d62"
+    },
+    {
+      "key": 120,
+      "idle": "T_KeyboardF9.png",
+      "sha256": "a4c41c061a6d7b7a1053de70e8dc9805246e2ab3df06c3ef2a4233e18433733e"
+    },
+    {
+      "key": 121,
+      "idle": "T_KeyboardF10.png",
+      "sha256": "cc82be31aed6966eeac213090eb740fd6d78e48496e0855828bbe72b0f554c6b"
+    },
+    {
+      "key": 122,
+      "idle": "T_KeyboardF11.png",
+      "sha256": "f847be812c133d89e088931774da54586c8a82586ae41831eb83d96a031b1f9c"
+    },
+    {
+      "key": 123,
+      "idle": "T_KeyboardF12.png",
+      "sha256": "2d89f36db8b65d916d0e5d8b8c19b327b59d98c1468d3e08cb2f74714e806365"
+    },
+    {
+      "key": 134,
+      "idle": "T_MouseScroll.png",
+      "sha256": "7b88e5032f5fd4b0fdd44a566fce75092e838d010b72cee9e55c3ea922d1868d"
+    },
+    {
+      "key": 135,
+      "idle": "T_MouseScroll.png",
+      "sha256": "7b88e5032f5fd4b0fdd44a566fce75092e838d010b72cee9e55c3ea922d1868d"
+    },
+    {
+      "key": 144,
+      "idle": "T_KeyboardNumLock.png",
+      "sha256": "d1f8407ba289db4e05fbd746432dc0947d3ce0449d8f96152e6ceb3f758d6d7f"
+    },
+    {
+      "key": 145,
+      "idle": "T_KeyboardLock.png",
+      "sha256": "ad80ef08cf28a2a46d6eb01c61f2d8664b9bc4d2b82963efcf516a96964ceefc"
+    },
+    {
+      "key": 160,
+      "idle": "T_KeyboardShift.png",
+      "sha256": "0281a79b297dbe8fc605e8bc138578e97cacb6a447808107f79d95ce9de14171"
+    },
+    {
+      "key": 161,
+      "idle": "T_KeyboardShift.png",
+      "sha256": "0281a79b297dbe8fc605e8bc138578e97cacb6a447808107f79d95ce9de14171"
+    },
+    {
+      "key": 162,
+      "idle": "T_KeyboardCTRL.png",
+      "sha256": "cfb507b7b70998b9b84d5680bf1ba1883552fa4140a7f5e21713acdbfee393a0"
+    },
+    {
+      "key": 163,
+      "idle": "T_KeyboardCTRL.png",
+      "sha256": "cfb507b7b70998b9b84d5680bf1ba1883552fa4140a7f5e21713acdbfee393a0"
+    },
+    {
+      "key": 164,
+      "idle": "T_KeyboardAlt.png",
+      "sha256": "14334f4c9abb646a862379b820ba55ce3cfaff2e17e526b4487449db2d30f5ca"
+    },
+    {
+      "key": 165,
+      "idle": "T_KeyboardAlt.png",
+      "sha256": "14334f4c9abb646a862379b820ba55ce3cfaff2e17e526b4487449db2d30f5ca"
+    },
+    {
+      "key": 186,
+      "idle": "T_KeyboardSemicolon.png",
+      "sha256": "45372b643d19e250affeb94e66c3dcfaf00fafe985049c4c0c0d23ec64702ba3"
+    },
+    {
+      "key": 187,
+      "idle": "T_KeyboardEquals.png",
+      "sha256": "b2f8883d01f75c1de591eb5cc61bef06847aee80f70fc763af355b31a3c6b0bd"
+    },
+    {
+      "key": 188,
+      "idle": "T_KeyboardComma.png",
+      "sha256": "ccf88d64c40516344c7a5df764cec31f98b3445ae815ebff1b2c56836330ee20"
+    },
+    {
+      "key": 189,
+      "idle": "T_KeyboardMinus.png",
+      "sha256": "4665555b65b2ae9f926a7654c449fb07b3d4708ac5ce714d46a1551a26ed6198"
+    },
+    {
+      "key": 190,
+      "idle": "T_KeyboardPeriod.png",
+      "sha256": "bf34a0679b12b434ebb9e12d0ab7a15a96166487794ae12a13f7d7b9a006d1b5"
+    },
+    {
+      "key": 191,
+      "idle": "T_KeyboardSlash.png",
+      "sha256": "d1e101746e831254ceed5928fa25518bfeb5c42641761a03911d544358f187e9"
+    },
+    {
+      "key": 192,
+      "idle": "T_KeyboardTilde.png",
+      "sha256": "464b35867f36190f0311cb9b6c28716d21086b149e32a0cd8f09b95981cf703c"
+    },
+    {
+      "key": 219,
+      "idle": "T_KeyboardLBracket.png",
+      "sha256": "dc8d87516db8393624052079486ad23ce9e2bc80a22f691b3b388dfba6b3c692"
+    },
+    {
+      "key": 221,
+      "idle": "T_KeyboardRBracket.png",
+      "sha256": "bcac5aa07fdc83923a5035b7e629e117aaedb462a758fdc345a9be6621b97e69"
+    },
+    {
+      "key": 222,
+      "idle": "T_KeyboardApostrophe.png",
+      "sha256": "702102f5ac6baaf615e2b652397ee5e3cfdc287b91746932ea1fead332bdfe6a"
+    }
+  ]
+}

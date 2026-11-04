@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_transport(tmp_path, fixture):
     if fixture == 'pc_network.c' and sys.platform != 'win32':
         pytest.skip('Windows extended fixture uses multiple loopback aliases')
-    if sys.platform not in ('win32', 'darwin'):
+    if sys.platform not in ('win32', 'darwin', 'linux'):
         pytest.skip('Supported desktop guest-memory adapters')
     (tmp_path/'pc_network_build.h').write_text(
         '#define TSFP_NETWORK_COMPATIBILITY {1}\n'
@@ -31,9 +31,11 @@ def test_transport(tmp_path, fixture):
             objects.append(str(obj))
         command = [compiler, '/nologo', *objects, '/Fe:'+str(executable), 'ws2_32.lib', 'bcrypt.lib']
     else:
-        command = [compiler, '-std=c11', '-Wall', '-Wextra', '-I'+str(tmp_path),
+        command = [compiler, '-std=c11', '-D_DEFAULT_SOURCE', '-Wall', '-Wextra', '-pthread',
+                   '-I'+str(tmp_path), '-I'+str(ROOT/'src/network'),
                    *map(str, sources), '-o', str(executable)]
-    subprocess.run(command, env=environment, cwd=tmp_path, check=True, capture_output=True, text=True)
+    compiled = subprocess.run(command, env=environment, cwd=tmp_path, capture_output=True, text=True)
+    assert compiled.returncode == 0, compiled.stdout+compiled.stderr
     result = subprocess.run([str(executable)], capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout+result.stderr
     assert 'PASS:' in result.stdout

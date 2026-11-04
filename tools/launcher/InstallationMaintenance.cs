@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-#if !MACOS
+#if !MACOS && !LINUX
 using System.Management;
 #endif
 using System.Reflection;
@@ -128,7 +128,7 @@ namespace TimeSplitters.Launcher
         }
         public static string Graphics()
         {
-#if MACOS
+#if MACOS || LINUX
             return NativeHost.Graphics();
 #else
             try {

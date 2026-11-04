@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "b5d42be89ac75203d7c86b7bdf0932f0fe9211a7e711d10d5c2896a2d1adb172",
+  "loaderSha256": "39570637ce657ad90cade0bda5e101896ba829ee6db51081d5696b789cd84078",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1982,14 +1982,6 @@
       ]
     },
     {
-      "name": "2512-portable-renderer-declarations.patch",
-      "path": "patches/graphics/rendering/2512-portable-renderer-declarations.patch",
-      "sha256": "0c3ae0ec20b9ba3833b7c35617e8bfa47246f57dc5c72fa7be200add962b166f",
-      "targets": [
-        "src/d3d/d3d8_internal.h"
-      ]
-    },
-    {
       "name": "2513-vulkan-ao-descriptors.patch",
       "path": "patches/graphics/rendering/2513-vulkan-ao-descriptors.patch",
       "sha256": "130105bdca862480ae27acc4e3c1000cb688c4be5a99865611097ada2fc4d453",
@@ -3417,6 +3409,110 @@
         "src/d3d/rhi.h",
         "src/d3d/rhi_d3d11.c",
         "src/d3d/rhi_vulkan.c"
+      ]
+    },
+    {
+      "name": "2401-linux-vulkan-foundation.patch",
+      "path": "patches/platform/2401-linux-vulkan-foundation.patch",
+      "sha256": "3767de07803987d046f7bea82a64e1d83accf2b66b637ae0b9c4cff8f2be6ef3",
+      "targets": [
+        "src/d3d/CMakeLists.txt",
+        "src/d3d/d3d8_internal.h",
+        "src/replay/CMakeLists.txt",
+        "src/replay/d3d8_replay.c"
+      ]
+    },
+    {
+      "name": "2402-linux-native-game.patch",
+      "path": "patches/platform/2402-linux-native-game.patch",
+      "sha256": "c907c2c152cd492af52fd5c5d458acbd11e14a08e7882c3e6c3c35b460f05826",
+      "targets": [
+        "CMakeLists.txt",
+        "src/hle/CMakeLists.txt",
+        "src/input/CMakeLists.txt",
+        "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2403-linux-native-crypto.patch",
+      "path": "patches/platform/2403-linux-native-crypto.patch",
+      "sha256": "928662de989c5db4ae2a875a30374e8346248748f52a4369764dd93c008e8aa9",
+      "targets": [
+        "src/input/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2404-linux-hle-renderer.patch",
+      "path": "patches/platform/2404-linux-hle-renderer.patch",
+      "sha256": "5e5467008b8990d69c6fb43e8b3e2e1d1704b399f79d3ba6cf6f5839c5968c62",
+      "targets": [
+        "src/hle/hle_d3d8.c",
+        "src/hle/hle_d3d8_record.c",
+        "src/hle/hle_d3d8_record.h",
+        "src/hle/hle_d3d8_state.c",
+        "src/hle/hle_d3d8_texture.c",
+        "src/hle/hle_d3d8_vertex.c",
+        "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2405-linux-runtime-link.patch",
+      "path": "patches/platform/2405-linux-runtime-link.patch",
+      "sha256": "276d706b91ff55387ed6cd19b49c84a7a4bdd698778c2175c92a60c96911e6e6",
+      "targets": [
+        "CMakeLists.txt",
+        "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2406-native-vblank-alias.patch",
+      "path": "patches/platform/2406-native-vblank-alias.patch",
+      "sha256": "cef6f6566ecb8568bb999073429f149d830f14109954685a1db41673f1976453",
+      "targets": [
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "2407-vulkan12-compatibility.patch",
+      "path": "patches/graphics/rendering/2407-vulkan12-compatibility.patch",
+      "sha256": "f3172773da0796536d31d3e124d045b1a0bf77df02f68f81df648f133f2463ac",
+      "targets": [
+        "src/d3d/rhi_vulkan.c"
+      ]
+    },
+    {
+      "name": "2408-vulkan-descriptor-capacity.patch",
+      "path": "patches/graphics/rendering/2408-vulkan-descriptor-capacity.patch",
+      "sha256": "f91f72ed5e89be4be1ef262ebbfdee4bf72cf7e5ee7d357c29fa7a61f35e78a5",
+      "targets": [
+        "src/d3d/rhi_vulkan.c"
+      ]
+    },
+    {
+      "name": "2409-linux-late-frame-pacing.patch",
+      "path": "patches/platform/2409-linux-late-frame-pacing.patch",
+      "sha256": "8b5669705864017f1fa180a5bf0576fa59e87b4f5966e01b42c00581917227ef",
+      "targets": [
+        "src/kernel/xbox_memory_layout.c"
+      ]
+    },
+    {
+      "name": "2411-vulkan-upload-efficiency.patch",
+      "path": "patches/graphics/rendering/2411-vulkan-upload-efficiency.patch",
+      "sha256": "fd3c026447f51058d1722df5aabaa50743481557805e6fc3655852925e5fea74",
+      "targets": [
+        "src/d3d/rhi_vulkan.c"
+      ]
+    },
+    {
+      "name": "2412-native-desktop-media.patch",
+      "path": "patches/platform/2412-native-desktop-media.patch",
+      "sha256": "fa6e49690b0956f5faea0fb07efbe179ad9ca727e3595c7e4312f893b0e9ec66",
+      "targets": [
+        "src/hle/CMakeLists.txt",
+        "src/hle/hle_xmv_play.c",
+        "src/input/CMakeLists.txt",
+        "src/video/CMakeLists.txt"
       ]
     }
   ]

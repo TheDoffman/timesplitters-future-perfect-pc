@@ -1,4 +1,4 @@
-[Pads](controls-options.md).
+[Linux](linux-game.md).
 Counter2490: overlay sizing.
 [Kill feed contracts](../development/arcade-kill-feed.md).
 Story rewards: additive2465 wraps356800 for the single frontend context;

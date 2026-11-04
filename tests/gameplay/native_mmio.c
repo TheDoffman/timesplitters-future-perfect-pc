@@ -2,6 +2,7 @@
 #include "arm64_access.h"
 #include "platform/win32_compat.h"
 #include "apu/apu.h"
+#include "guest_arena_service.h"
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,13 +37,13 @@ int main(void)
     CHECK(!native_decode_access(0xd503201fu, r, &a)); /* nop */
     CHECK(!native_decode_access(0x3d800020u, r, &a)); /* str q0,[x1]: SIMD unsupported */
 
-    void *base = w32_guest_arena_reserve(0x100000000ull);
+    void *base = tsfp_guest_arena_reserve(0x100000000ull);
     CHECK(base != NULL);
     g_xbox_mem_offset = (ptrdiff_t)base;
-    uint8_t *nv = w32_guest_mmio_map((uint8_t *)base + 0xfd000000u, 0x1000000);
-    uint8_t *mc = w32_guest_mmio_map((uint8_t *)base + 0xfe800000u, 0x800000);
+    uint8_t *nv = tsfp_guest_mmio_map((uint8_t *)base + 0xfd000000u, 0x1000000);
+    uint8_t *mc = tsfp_guest_mmio_map((uint8_t *)base + 0xfe800000u, 0x800000);
     CHECK(nv && mc);
-    uint32_t *status = w32_guest_mmio_alias(nv + 0x600100, 4);
+    uint32_t *status = tsfp_guest_mmio_alias(nv + 0x600100, 4);
     CHECK(status != NULL);
     *status = 1;
     *(uint32_t *)(nv + 0x100) = 0x01000000u;
@@ -58,11 +59,11 @@ int main(void)
     *(volatile uint8_t *)(mc + 0x40011b) = 3;
     CHECK(*(volatile uint8_t *)(mc + 0x40011b) == 1); /* reset self-clears */
     CHECK(faults == 3);
-    CHECK(w32_guest_arena_release());
-    base = w32_guest_arena_reserve(0x100000000ull);
+    CHECK(tsfp_guest_arena_release());
+    base = tsfp_guest_arena_reserve(0x100000000ull);
     CHECK(base != NULL);
-    CHECK(w32_guest_mmio_map((uint8_t *)base + 0xfd000000u, 0x1000000) != NULL);
-    CHECK(w32_guest_arena_release());
+    CHECK(tsfp_guest_mmio_map((uint8_t *)base + 0xfd000000u, 0x1000000) != NULL);
+    CHECK(tsfp_guest_arena_release());
     puts("PASS: ARM64 decoder, protected register writes, NV2A interrupt acknowledgement and AC97 reset");
     return 0;
 }

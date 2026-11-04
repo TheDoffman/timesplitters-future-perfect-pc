@@ -1,0 +1,255 @@
+{
+  "schema": 1,
+  "description": "Disposable Test Lab Story: startup, movement, mouse fire/turn, held-input focus loss, pause/resume twice, weapon change and reload; 300-second bounded resource run.",
+  "events": [
+    {
+      "at": 6,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 6.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 8,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 8.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 10,
+      "commands": [
+        "focus 1",
+        "+S"
+      ]
+    },
+    {
+      "at": 10.3,
+      "commands": [
+        "-S"
+      ]
+    },
+    {
+      "at": 11,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 11.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 14,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 14.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 16,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 16.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 18,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 18.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 20,
+      "commands": [
+        "focus 1",
+        "+E"
+      ]
+    },
+    {
+      "at": 20.3,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 62,
+      "commands": [
+        "button 1 1"
+      ]
+    },
+    {
+      "at": 62.5,
+      "commands": [
+        "button 1 0"
+      ]
+    },
+    {
+      "at": 64,
+      "commands": [
+        "motion 12 -3"
+      ]
+    },
+    {
+      "at": 66,
+      "commands": [
+        "+W"
+      ]
+    },
+    {
+      "at": 67,
+      "commands": [
+        "-W"
+      ]
+    },
+    {
+      "at": 68,
+      "commands": [
+        "+S"
+      ]
+    },
+    {
+      "at": 69,
+      "commands": [
+        "-S"
+      ]
+    },
+    {
+      "at": 72,
+      "commands": [
+        "+W",
+        "focus 0"
+      ]
+    },
+    {
+      "at": 73,
+      "commands": [
+        "-W"
+      ]
+    },
+    {
+      "at": 74,
+      "commands": [
+        "focus 1"
+      ]
+    },
+    {
+      "at": 80,
+      "commands": [
+        "+Escape"
+      ]
+    },
+    {
+      "at": 80.12,
+      "commands": [
+        "-Escape"
+      ]
+    },
+    {
+      "at": 83,
+      "commands": [
+        "+E"
+      ]
+    },
+    {
+      "at": 83.12,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 100,
+      "commands": [
+        "+Y"
+      ]
+    },
+    {
+      "at": 100.12,
+      "commands": [
+        "-Y"
+      ]
+    },
+    {
+      "at": 110,
+      "commands": [
+        "+R"
+      ]
+    },
+    {
+      "at": 110.12,
+      "commands": [
+        "-R"
+      ]
+    },
+    {
+      "at": 130,
+      "commands": [
+        "+Escape"
+      ]
+    },
+    {
+      "at": 130.12,
+      "commands": [
+        "-Escape"
+      ]
+    },
+    {
+      "at": 133,
+      "commands": [
+        "+E"
+      ]
+    },
+    {
+      "at": 133.12,
+      "commands": [
+        "-E"
+      ]
+    },
+    {
+      "at": 200,
+      "commands": [
+        "button 1 1"
+      ]
+    },
+    {
+      "at": 201,
+      "commands": [
+        "button 1 0"
+      ]
+    }
+  ]
+}

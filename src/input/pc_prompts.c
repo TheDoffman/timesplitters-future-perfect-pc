@@ -112,24 +112,28 @@ static void key_label(int key, char *out, size_t capacity)
     for (size_t i=0;out[i];i++) if ((unsigned char)out[i]<32) out[i]='?';
 }
 
-int pc_prompts_keycap_label(const char *label,size_t length)
+int pc_prompts_keycap_key(const char *label,size_t length)
 {
     static SRWLOCK names_lock=SRWLOCK_INIT;
     static char names[256][32];static int ready;
-    if(!label || !length || length>128)return 0;
-    if(length==1 && (*label=='<' || *label=='>'))return 1;
+    if(!label || !length || length>128)return -1;
+    if(length==1 && *label=='<')return VK_LEFT;
+    if(length==1 && *label=='>')return VK_RIGHT;
     AcquireSRWLockExclusive(&names_lock);
     if(!ready) {for(int i=0;i<256;i++)key_label(i,names[i],sizeof names[i]);ready=1;}
     ReleaseSRWLockExclusive(&names_lock);
+    for(int i=0;i<256;i++)if(strlen(names[i])==length && !_strnicmp(label,names[i],length))return i;
+    return -1;
+}
+int pc_prompts_keycap_label(const char *label,size_t length)
+{
+    if(!label || !length || length>128)return 0;
     if(length==5 && !_strnicmp(label,"Mouse",5))return 1;
-    for(int i=0;i<256;i++)if(strlen(names[i])==length && !_strnicmp(label,names[i],length))return 1;
+    if(pc_prompts_keycap_key(label,length)>=0)return 1;
     size_t start=0;
     while(start<length) {
         size_t end=start;while(end<length && label[end]!='/')end++;
-        int found=0;
-        for(int i=0;i<256;i++)if(strlen(names[i])==end-start &&
-            !_strnicmp(label+start,names[i],end-start)) {found=1;break;}
-        if(!found)return 0;
+        if(pc_prompts_keycap_key(label+start,end-start)<0)return 0;
         if(end==length)return 1;
         start=end+1;
     }

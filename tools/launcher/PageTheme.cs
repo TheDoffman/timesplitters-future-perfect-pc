@@ -1,5 +1,5 @@
 
-#if MACOS
+#if MACOS || LINUX
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -66,10 +66,10 @@ namespace TimeSplitters.Launcher
         { button.Background=Brush("#A7D9FA");button.Foreground=Brush("#0B2337");button.BorderBrush=Brush("#D6EBFA"); }
         public static void Secondary(Button button)
         { button.Background=Brush("#1C3349");button.Foreground=Brush("#DFEAF4");button.BorderBrush=Brush("#405D76"); }
-#if !MACOS
+#if !MACOS && !LINUX
         public static ResourceDictionary Tabs() { return Ui.LoadTheme("TabsTheme.xaml"); }
 #endif
-#if !MACOS
+#if !MACOS && !LINUX
         public static ResourceDictionary Resources() { return Ui.LoadTheme("PageTheme.xaml"); }
 #endif
     }

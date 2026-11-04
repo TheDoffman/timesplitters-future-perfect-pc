@@ -2,6 +2,15 @@
 static int native_test_menu_input(SDL_Window *window) {
     int ok=1;SDL_Event e={0};XBOX_GAMEPAD pad;PcMenuPointer p;
     e.type=SDL_EVENT_WINDOW_FOCUS_GAINED;tsfp_native_input_event(&e,window);
+    ok &= pc_controls_accept_pad();
+    e=(SDL_Event){0};e.type=SDL_EVENT_KEY_DOWN;e.key.scancode=SDL_SCANCODE_A;
+    tsfp_native_input_event(&e,window);pc_controls_menu_mode(1);
+    ok &= pc_controls_key_down('A') && pc_controls_key_down(0x25);
+    pc_controls_menu_mode(0);ok &= pc_controls_key_down('A') && !pc_controls_key_down(0x25);
+    e.type=SDL_EVENT_WINDOW_FOCUS_LOST;tsfp_native_input_event(&e,window);
+    ok &= !pc_controls_accept_pad() && !pc_controls_key_down('A');
+    e.type=SDL_EVENT_WINDOW_FOCUS_GAINED;tsfp_native_input_event(&e,window);
+    ok &= pc_controls_accept_pad() && !pc_controls_key_down('A');
     pc_controls_menu_mode(1);tsfp_native_input_frame(window);
     ok &= !captured && !SDL_GetWindowRelativeMouseMode(window);
     e=(SDL_Event){0};e.type=SDL_EVENT_MOUSE_MOTION;e.motion.x=160;e.motion.y=120;

@@ -22,6 +22,34 @@ and pause menu layout, keyboard+pad and two-pad play, disconnect/reconnect,
 changed device enumeration and assignment failure rollback. Windows fixtures
 do not establish physical-device or native-host acceptance.
 
+Profile footer fit (local feature/fab-input-prompts): shared profile text
+rendering scopes compact imported icon faces to the native two-line clip.
+Select/Back keeps native Y, Delete is native+2; hover/hit regions follow the same
+baselines and scoped icon state is restored. No OS adapter or controller
+layout change. Windows evidence is in STATUS; native Mac visual acceptance
+is pending (complete key faces, bottom margin and footer hover).
+
+Imported prompt artwork (local feature/fab-input-prompts): shared
+`pc_keycaps.inc`, `pc_input_icons.inc` and generated span data use Rendrify's
+CC BY4.0 keyboard/mouse artwork with native tint/fade and original text advances.
+Key-name lookup remains shared. The Adjust footer uses separate A/D icon labels
+through the same native measurement on both hosts. No new adapter is needed;
+Mac build and visual acceptance are pending (main/pause footer fit, binding and
+capture dialogs, device switch, remapped/missing keys and tutorial/HUD wrapping).
+Windows shared fixtures, supported Build and isolated menu review are recorded
+in [STATUS](STATUS.md). Source PNGs stay local; attributed compiled data travels
+with Git, so another host needs no Fab sign-in or image tooling to build.
+
+Linux experimental release preparation (2026-11-04, local
+feature/linux-experimental-release): SDL key/pad exports fix the native link
+against current shared settings navigation; Windows/SDL use one menu-alias
+helper. Linux release source/media audits, relocated desktop dependencies and
+Unicode installer checks are covered locally. Shared runtime-license retrieval
+retains the existing Mac policy and Mac packaging regressions pass on Windows;
+actual native Mac execution remains pending. See [Linux release evidence and
+limits](../development/linux-experimental-release.md). No Mac driver/OS/gameplay
+parity is inferred from WSL results.
+
 Keycap prompts (local feature/flat-settings-menu, uncommitted): shared
 pc_keycaps.inc and pc_prompts vocabulary plus additive2340 render keyboard/mouse
 prompts through native glyph geometry. Binding-menu cells share the renderer.
@@ -140,6 +168,94 @@ retaining the unified Off/FXAA/SMAA selector. Native Mac/Vulkan GPU/menu checks
 remain required; no additional platform acceptance is claimed.
 
 # PC features awaiting Mac adaptation
+
+Linux standalone/UI/media completion (2026-11-02, local
+`feature/linux-runtime-completion`, based on unmerged `11bb17ab`): **Implemented**
+as Linux adapters and shared contracts. GTK uses the common settings/display/debug
+models. Shared XMV host playback now compiles for POSIX Vulkan; Windows keeps its
+existing clock/path adapter. Legacy Mac GL retains its movie stub, and native
+Mac codec integration/execution remains pending (MAC-009). No Mac GTK adapter
+is needed; Cocoa remains its UI. Native game-package verification is shared
+between Mac/Linux and now starts the installed Python/Tk/TLS interpreter; POSIX
+installation preserves the executable permissions of its two fixed interpreter
+paths. Mac signatures still use the existing native callback. Linux source/
+package contracts and unprivileged relocated self-tests pass; native Mac build,
+GPU/movie/installer execution is unavailable here. See STATUS for exact scope.
+
+Cross-platform base-game audit (2026-11-02, local `perf/linux-upload-waits`):
+**Implemented** as shared code and test corrections. Default uniform update
+and dynamic CPU-write map paths now use legal buffer descriptors on all RHIs;
+Windows D3D11 WARP and Linux hardware/software Vulkan pixel checks pass.
+Shared Story cinematic sequencing is unchanged while compiling cleanly under
+Linux GCC fatal warnings; demo mutation tests accept host assertion diagnostics.
+Linux CI now includes shared timing/input/HUD/menu/audio contracts already
+covered by the Windows/macOS native jobs. Native Mac GPU and full-game acceptance
+still require a Mac; source/test portability is not a native verification claim.
+See [STATUS](STATUS.md) for results and [shared-platform rules](../development/shared-platform.md)
+for feature/adapter boundaries.
+
+Shared Vulkan upload efficiency (2026-11-02, local `perf/linux-upload-waits`,
+runtime `6d38019a`): **Implemented** in shared patch2411 and
+`src/graphics/upload_copy.h`. Tight image copies batch; exact CPU uniform mirrors
+reuse same-frame GPU snapshots. No Mac adapter is needed; D3D11 is unchanged.
+Linux hardware Vulkan1.2/software Vulkan1.3 pixel/replay tests and portable
+Windows/Linux byte tests pass. Native Mac Vulkan/pixel/arena-reuse validation
+remains pending on a Mac. The recycler's optional active-save scope preserves
+existing Mac callers; Linux opts into scoped cleanup. See [STATUS](STATUS.md)
+for measured work reduction, unchanged average FPS and host acceptance limits.
+
+Linux host build optimization (2026-11-02, local `perf/linux-host-runtime`):
+**Not applicable** as a new Mac behavior. Only the Linux builder enables host
+`-O2 -g`, retaining Debug assertions and the title numeric flags. Windows/Mac
+build settings remain unchanged. Final patch2409 enables the same existing
+Windows/Mac late-vblank observation on Linux; native Mac behavior is unchanged
+and execution remains unverified locally. The Linux test runner now selects isolated 60/120/180/240 presets explicitly; this does not
+alter launcher choices or console timing. Linux execution is measured in
+STATUS; no Mac source/build change or new native validation is claimed.
+
+Shared Vulkan 1.2 / WSL hardware support (2026-11-02, local `9e451a55` through
+`2b0a7fd8`): **Implemented** in the common Vulkan backend, with descriptor arena,
+baked state and SPIR-V interface fallbacks. Vulkan1.3/Mac selection is retained;
+Windows WARP and Linux RTX/software contracts pass. Native Mac GPU revalidation
+is pending on a Mac host. Linux-only live VMA query and explicit experimental
+WSL Dozen environment are thin host adapters, with no duplicate gameplay policy.
+The private driver does not replace system Mesa. See STATUS and
+[GPU contracts](../agent-context/linux-game.md) for evidence and remaining30 FPS/
+full-game/Deck acceptance limits.
+
+Linux launcher (2026-11-01, `feature/linux-launcher`, local commits beginning
+`c8b3a534`): **Not applicable** as a new Mac feature. Linux links the existing
+Avalonia host and shared C# models/pages; native calls, ELF/package names and
+checkout paths are selected by the Linux adapter. Mac retains CoreGraphics,
+Mach-O validation, open, app bundles, mac.lock and its pinned SDK. Release CI
+adds Linux without removing Windows/Mac checks. Mac native build/UI/package
+revalidation is pending on a Mac host; portable Mac launcher tests pass locally.
+See STATUS for measured Linux and Windows evidence.
+
+Linux native game integration (local `45078c9f` through `c1b5a016`,
+`feature/linux-x64`): common native
+boot, SDL input/audio, shared debug/configuration/network code and the full
+Xbox/Vulkan frontend are reused. ARM64 and Linux x64 protected-register adapters
+now call one native MMIO device-policy helper. Shared POSIX crash handling keeps
+Darwin services and adds Linux OS adapters. Existing Mac controls/frameworks and
+GL route remain selected on Mac; native Mac build and protected-MMIO/crash
+acceptance remain pending. Linux desktop editing/debug dialogs, movie decoding
+and portable packaging remain explicit Linux gaps. See
+[integration contracts](../agent-context/linux-game.md) and STATUS for evidence.
+Linux now passes reviewed first-level movement/firing/pause/resume checks under
+software Vulkan. The native vblank producer also uses writable aliases shared
+with Mac, preserving guest write-to-clear semantics; Mac execution is unverified.
+
+Linux x64 foundation (2026-11-01, `feature/linux-x64`, local `1c981c0a`): **Not
+applicable** as a new Mac feature. The common Vulkan backend gains Linux SDK
+library selection and frontend/replay build guards; existing Mac SDK/driver,
+GL fallback and Cocoa adapters remain in place. Windows host-memory/SDK checks
+pass; Mac build/GPU regression execution is pending. The subsequent game
+integration above supplies the Linux title target. See [Linux scope](../development/linux.md) and STATUS for validation
+and remaining adapters. Shared policy must serve all three platforms.
+Linux renderer/replay validation now passes at local `14866028`; Linux Clang
+memory/SDK checks pass at `93861d06`. Mac's VMA diagnostic flag remains enabled
+through the common Clang guard; physical Mac revalidation is still pending.
 
 Output-resolution HUD with supersampling (2026-11-02, local follow-up to
 27c2925b): **Common implementation, native validation pending**. The common

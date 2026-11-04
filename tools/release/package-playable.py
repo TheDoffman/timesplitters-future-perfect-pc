@@ -63,6 +63,7 @@ for source, name in [
     ('external/ts3FPrecomp/third_party/ffmpeg/LICENSE.txt', 'FFmpeg.txt'),
     ('external/ts3FPrecomp/third_party/SDL/LICENSE.txt', 'SDL.txt'),
     ('tools/launcher/GameMonogram.NOTICE.txt', 'Game-icon-lettering.txt'),
+    ('assets/ui/input-icons/ATTRIBUTION.md', 'Keyboard-mouse-icons.txt'),
 ]:
     copy(ROOT / source, Path('Licenses') / name)
 copy(ROOT / 'tools/playable-launch.ps1', Path('Launch.ps1'))
