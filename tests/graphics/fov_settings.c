@@ -384,10 +384,10 @@ int main(int argc,char **argv)
     reload("TSFP_DISPLAY_V1 1280 720\n");
     tsfp_texture_set_4k(0);
     call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
-    CHECK(page==DISPLAY_HOME && built_row_count==10 && separators==2 && separator_positions[0]==1 && separator_positions[1]==8 && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
+    CHECK(page==DISPLAY_HOME && built_row_count==7 && separators==2 && separator_positions[0]==1 && separator_positions[1]==5 && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
     page=DISPLAY_GRAPHICS;built_rows=built_row_count=separators=0;labels();
     CHECK(!graphics_rows[0] && !graphics_rows[4] && texture_row && post_aa_row && !counter_row && !aspect_row);
-    CHECK(built_ids[2]==102 && built_ids[3]==103 && built_ids[4]==7 && built_ids[5]==11 && built_ids[6]==81 && built_ids[7]==UINT32_MAX && built_ids[8]==108 && built_ids[9]==3);
+    CHECK(built_ids[2]==102 && built_ids[3]==103 && built_ids[4]==7 && built_ids[5]==11 && built_ids[6]==UINT32_MAX && built_ids[7]==108 && built_ids[8]==3);
     WORD_AT(post_aa_row+0xc8)=1;read_choices();
     CHECK(staged_aa==1 && !graphics_options.edge_smoothing);
     call(SELECT_CB,3,0);CHECK(graphics_options.edge_smoothing==1 && !pc_smaa_enabled());

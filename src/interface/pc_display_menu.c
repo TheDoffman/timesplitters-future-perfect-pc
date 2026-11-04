@@ -943,7 +943,8 @@ void pc_display_menu_highlight(void (*original)(void))
     if(right-left<12 || bottom-top<12){original();return;}
     if(original!=sub_002D9390)guest_call(sub_00072510,2,menu,(uint32_t)(int)(127.f*fade));
     guest_call(sub_00019D70,1,original==sub_002D9390?2u:8u);
-    color=guest_call(sub_00154FE0,2,original==sub_002D9390?0x2f3c503cu:WORD_AT(style+0x74),bits(fade));
+    int settings=video_font_menu(menu) || controls_font_menu(menu);
+    color=guest_call(sub_00154FE0,2,settings?0x354b6448u:original==sub_002D9390?0x2f3c503cu:WORD_AT(style+0x74),bits(fade));
     /* Circular six-unit corners; disjoint strips avoid alpha accumulation. */
     for(int y=0;y<bottom-top;y++) {
         static const unsigned inset[6]={4,2,1,1,0,0};
@@ -1088,6 +1089,7 @@ static void labels(void)
         guest_call(sub_00079710,1,0u); /* Original skin's silver divider. */
     }
     if(page==DISPLAY_HOME) {
+        guest_call(sub_00071B10,4,1u,bits(3.f),1u,1u);
         aspect_row=guest_call(sub_00079D60_gen,6,text_at(7,"Aspect ratio"),0u,0u,0u,0u,0u);
         guest_call(sub_0007D480,2,0x8400u,0u);
         for(int i=0;i<PC_DISPLAY_ASPECT_COUNT;i++)
@@ -1140,15 +1142,12 @@ static void labels(void)
         row(0,"Later");row(1,"Restart Now");
     } else { row(0,"Keep changes");row(1,"Revert"); }
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
-        /* Reserve equal section heights so tabs do not move under the cursor. */
-        int padding=page==DISPLAY_HOME?3:page==DISPLAY_VIEW?2:page==DISPLAY_ADVANCED?1:0;
-        for(int i=0;i<padding;i++)
-            guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(MODE_TEXT_BASE+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT+3),
-                (uint32_t)(110+i),4u,0u,0u,0u);
+        /* Body leading balances short pages; footer actions keep native spacing. */
+        guest_call(sub_00071B10,4,1u,bits(1.2f),1u,1u);
         /* Keep status below the controls, never between graphics settings. */
         if(page==DISPLAY_GRAPHICS || page==DISPLAY_ADVANCED) {
 #if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
-            small_note(81,status);
+            if(*status)small_note(81,status);
 #else
             small_note(81,*status?status:"Effects require Vulkan");
 #endif
@@ -1192,6 +1191,13 @@ static void build_menu(void)
     guest_call(sub_00071B10,4,1u,bits(1.2f),1u,1u);
     guest_call(sub_00071C50,1,0x26200u);
     labels();guest_call(sub_000771D0,1,menu);
+    if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
+        float y=FLOAT_AT(menu+0x64);
+        if(isfinite(y)) {
+            if(!video_anchor_ready){video_anchor_y=y;video_anchor_ready=1;}
+            WORD_AT(menu+0x64)=bits(video_anchor_y);
+        }
+    }
     restore_registers(&r);g_esp+=4;
 }
 static void refresh(int next,int selected)
@@ -1404,7 +1410,7 @@ static void activate(void)
         all_mode_count=pc_display_modes(xbox_D3D8Window(),all_modes,PC_DISPLAY_MODE_CAPACITY);
         selected_aspect=pc_display_aspect(staged);if(selected_aspect<0)selected_aspect=0;filter_modes();
         parent_menu=WORD_AT(source+0x2c); previous_menu=WORD_AT(source+4);
-        page=0; apply_page=DISPLAY_HOME;deadline=0;video_tab_bounds_valid=0;video_pending_tab=-1;video_tab_left=1;
+        page=0; apply_page=DISPLAY_HOME;deadline=0;video_tab_bounds_valid=0;video_pending_tab=-1;video_tab_left=1;video_anchor_ready=0;
         fprintf(stderr,"[PC-DISPLAY-MENU] Opened, %d resolutions\n",mode_count);
         guest_call(sub_00079B70,2,parent_menu,storage);
     }
@@ -1463,7 +1469,6 @@ static void online_activate(void)
 extern void sub_00079710(void);
 static int controls_frame(uint32_t menu,const char *subtitle);
 static void controls_leave(void);
-static void controls_padding(int count);
 #include "pc_keyboard_menu.inc"
 #include "pc_controls_menu.inc"
 #include "pc_storage_menu.inc"

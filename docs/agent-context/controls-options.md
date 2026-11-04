@@ -1,5 +1,15 @@
 # Unified Controls options
 
+Visual refinement: the shared tab painter measures a common longest caption
+(`KEYBOARD & MOUSE`) in both Video and Controls, preventing shorter Video labels
+from growing. Owned setting-row focus uses a slightly brighter blue tint; header
+backdrops remain suppressed. Short root sections distribute native leading among
+their real rows rather than inserting blank footer spacers. General uses1.2,
+Controller3.6, keyboard home1.44 and mouse3.34; footer actions restore1.2.
+Video roots also retain their first finalized native Y field64 across rebuilds,
+reset on activation and excluded from confirmation/restart prompts. Empty status
+notes no longer reserve a row. These are shared presentation changes only.
+
 `src/interface/pc_controls_menu.inc` owns the original Controller descriptor
 US524A40, opened through native frontend2CBE50/pause2EC1A0 initialization.
 Settings and pause now expose one Controls entry. Root tabs are General Controls,

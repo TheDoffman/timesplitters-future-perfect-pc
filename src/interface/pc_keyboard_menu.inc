@@ -216,11 +216,13 @@ static void kb_build(void)
     kb_enabled_row=kb_invert_row=0;
     WORD_AT(kb_menu+0x10)=kb_page==KB_LIST?KB_DRAW:0;
     if(kb_page==KB_HOME) {
+        if(unified)guest_call(sub_00071B10,4,1u,bits(1.44f),1u,1u);
         kb_row(0,"Mouse options",0);
         for(int i=0;i<4;i++)kb_row(i+1,pc_keyboard_group_names[i],0);
-        if(unified){controls_padding(1);guest_call(sub_00079710,1,0u);}
+        if(unified){guest_call(sub_00071B10,4,1u,bits(1.2f),1u,1u);guest_call(sub_00079710,1,0u);}
         kb_row(5,"Restore defaults",0);if(!unified)kb_row(6,"Back",0);
     } else if(kb_page==KB_MOUSE) {
+        if(unified)guest_call(sub_00071B10,4,1u,bits(3.34f),1u,1u);
         kb_enabled_row=kb_row(0,"Mouse look",0);
         guest_call(sub_0007D480,2,0x8400u,0u);
         guest_call(sub_000717D0,1,kb_text(20,"Off"));guest_call(sub_000717D0,1,kb_text(21,"On"));
@@ -231,7 +233,7 @@ static void kb_build(void)
         guest_call(sub_0007D480,2,0x8400u,0u);
         guest_call(sub_000717D0,1,KB_TEXT(20));guest_call(sub_000717D0,1,KB_TEXT(21));
         guest_call(sub_00075430,2,kb_invert_row,(uint32_t)kb_settings.invert_y);
-        if(unified){controls_padding(2);guest_call(sub_00079710,1,0u);}
+        if(unified){guest_call(sub_00071B10,4,1u,bits(1.2f),1u,1u);guest_call(sub_00079710,1,0u);}
         kb_row(3,"Reset mouse options",0);if(!unified)kb_row(6,"Back",0);
     } else if(kb_page==KB_LIST) {
         kb_row(10," ",1);

@@ -1,3 +1,10 @@
+Settings visual refinement (2026-11-03, local feature/settings-visual-refinements):
+shared Video/Controls tab captions use one measured reference, short pages
+balance native leading rather than blank footer rows, Video retains its native
+Y anchor, and owned row focus uses a brighter tint. Existing guest/font interfaces
+serve both hosts; no OS adapter is required. Windows build/shared checks pass;
+live review is recorded in STATUS. Native Mac visual acceptance remains pending.
+
 Controls pause visual review (2026-11-03, local): shared tabbed roots compensate
 for section height changes through the native Y offset, keeping the header still
 without reintroducing footer padding. Keyboard diagram/column labels now fit

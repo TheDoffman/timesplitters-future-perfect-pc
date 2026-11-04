@@ -8,6 +8,8 @@ static int video_pending_tab=-1,video_tab_left=1;
 static uint32_t video_pending_menu;
 static ULONGLONG video_pending_at;
 static uint32_t video_tab_measure;
+static int video_anchor_ready;
+static float video_anchor_y;
 static int video_tab_index(void)
 { return (page==DISPLAY_GRAPHICS || page==DISPLAY_ADVANCED)?1:page==DISPLAY_VIEW?2:0; }
 static int video_tab_page(int index)
