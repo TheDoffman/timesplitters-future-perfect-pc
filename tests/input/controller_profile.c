@@ -4,16 +4,19 @@
 #include <string.h>
 #include "input_bindings.h"
 #ifdef _WIN32
-static SHORT test_key_state(int vk) { (void)vk; return 0; }
+static int held_key;
+static SHORT test_key_state(int vk) { return vk==held_key?(SHORT)0x8000:0; }
 #define GetAsyncKeyState test_key_state
 #endif
 #include "input_bindings.c"
 
 static RecompPadState state;
-static int connected, selected_slot;
+static int connected, selected_slot, multi;
+static RecompPadState second_state;
 int recomp_pad_read(int slot, RecompPadState *out)
 {
     memset(out,0,sizeof *out);
+    if(multi && slot==1){*out=second_state;return 1;}
     if (!connected || slot!=selected_slot) return 0;
     *out=state; return 1;
 }
@@ -32,6 +35,24 @@ int main(int argc,char **argv)
     text=read_file(argv[1]); assert(text);
     for(int i=0;i<PORTS;i++) defaults_for(&g_ctl[i],i);
     assert(parse_config(text)); free(text); g_ready=1;
+    if(!strcmp(argv[3],"two")) {
+        multi=connected=1;selected_slot=0;
+        state.lx=32767;state.right_trigger=255;
+        second_state.ly=-32767;second_state.buttons=RECOMP_PAD_A;
+#ifdef _WIN32
+        held_key='E'; /* Stored keyboard mappings must not leak into pad slots. */
+#endif
+        assert(recomp_bindings_sample(0,&out));
+        assert(out.sThumbLX==32767 && !out.sThumbLY && !out.bAnalogButtons[XBOX_BUTTON_A]);
+        assert(out.bAnalogButtons[XBOX_BUTTON_RTRIGGER]==255);
+        assert(recomp_bindings_sample(1,&out));
+        assert(!out.sThumbLX && out.sThumbLY==-32767 && out.bAnalogButtons[XBOX_BUTTON_A]==255);
+        assert(!out.bAnalogButtons[XBOX_BUTTON_RTRIGGER]);
+        connected=0;recomp_bindings_sample(0,&out);assert(!memcmp(&out,&neutral,sizeof out));
+        recomp_bindings_sample(1,&out);assert(out.sThumbLY==-32767);
+        connected=1;recomp_bindings_sample(0,&out);assert(out.sThumbLX==32767);
+        puts("PASS: independent local movement/fire, keyboard exclusion and reconnect");return 0;
+    }
     memcpy(saved,g_ctl[0].bind,sizeof saved);
     connected=1;
     state.buttons=RECOMP_PAD_A|RECOMP_PAD_START|RECOMP_PAD_DPAD_DOWN;

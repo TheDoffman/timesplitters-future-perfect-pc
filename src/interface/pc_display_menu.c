@@ -1480,6 +1480,8 @@ static void online_activate(void)
 extern void sub_00079710(void);
 static int controls_frame(uint32_t menu,const char *subtitle);
 static void controls_leave(void);
+static void controls_players_open(uint32_t menu);
+static void controls_players_back(void);
 #include "pc_keyboard_menu.inc"
 #include "pc_controls_menu.inc"
 #include "pc_storage_menu.inc"

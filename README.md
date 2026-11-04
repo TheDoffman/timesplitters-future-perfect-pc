@@ -92,7 +92,7 @@ and audio fidelity remain unverified. See [measured progress](docs/project/STATU
 | Platform | Support and known limits |
 | --- | --- |
 | **Windows 10/11 x64** | Keyboard and mouse, graphics settings and experimental Online/LAN multiplayer. See the [Windows launcher guide](docs/players/launcher.md), including [startup security prompts](docs/players/launcher.md#windows-security-prompts-at-startup). |
-| **Mac (Apple Silicon)** | Native launcher and game; Intel Macs are unsupported. Save/load remains unverified; movie playback and multiplayer remain unfinished. The app is not notarized, so startup may require the [Mac installation and recovery guidance](docs/players/mac-launcher.md#shared-behavior-and-distribution). See [Mac controls and source builds](docs/players/macos.md) and [remaining Mac work](docs/project/MAC_PORT_BACKLOG.md). |
+| **Mac (Apple Silicon)** | Native launcher and game; Intel Macs are unsupported. The app is not notarized, so startup may require the [Mac installation and recovery guidance](docs/players/mac-launcher.md#shared-behavior-and-distribution). See [Mac controls and source builds](docs/players/macos.md) and [remaining Mac work](docs/project/MAC_PORT_BACKLOG.md). |
 | **Linux x64 (development)** | SDL and shared Vulkan source build, tested locally in Ubuntu/WSL through menus and first-level gameplay. Desktop settings/debug editors, movies and portable packaging remain pending. No published Linux launcher/package; see the [Linux build and test guide](docs/development/linux.md). |
 
 <a name="pc-features"></a>
@@ -106,6 +106,7 @@ and audio fidelity remain unverified. See [measured progress](docs/project/STATU
 | **Anti-aliasing** | Optional [SMAA 1x High](docs/players/smaa.md) smooths jagged edges on compatible Direct3D 11/Vulkan builds. |
 | **High frame rate** | Original 60 FPS by default; compatible game builds offer opt-in [120/180/240 FPS beta settings](docs/analysis/native-high-refresh.md). |
 | **Launcher** | Game installation, updates, repair, rollback and settings. |
+| **Local split-screen** | Play with multiple players on the same screen using controllers. |
 | **Online multiplayer** | Player-hosted Online and LAN matches with bot support. Windows only. |
 | **Extras** | Optional [Discord Rich Presence](docs/players/discord-presence.md), FPS overlays and local crash diagnostics. |
 
@@ -115,13 +116,70 @@ launcher's **Release notes**, [platform status](#platform-status) and
 
 ## Multiplayer
 
-On Windows, choose **Online / System Link → Online** to host or join a match,
+### Local split-screen
+
+These instructions describe the updated local-player controls in this branch;
+they are not yet included in a published release.
+
+1. **Connect your controllers before choosing the player count.** The opening
+   screen detects available inputs, including slots previously saved as Disabled.
+   Choose **2, 3, or 4 Players** as appropriate.
+2. **Join at the game's profile screen.** Player 1 keeps their input. On each
+   **Press START to Join** panel, press **Start** on an unused controller. The
+   first controller to join becomes Player 2, the next becomes Player 3, then
+   Player 4. Connection order does not determine player order. No separate
+   auto-join setting is required, and one controller cannot join twice.
+3. **Select a profile for each player**, then enter a mode supporting that player
+   count. Player 1 can use keyboard/mouse or a controller; additional players
+   need their own controllers. Two or more controller players are supported.
+
+#### Let each player configure their settings
+
+1. From the main menu, open **Settings**.
+2. Change the **Player** row to the player whose settings you want to edit.
+3. That player's controller can now navigate Settings and its submenus, including
+   **Controls**, and configure their options. **Player 1 always retains control**
+   and can also navigate using their assigned input. Both operate the same menu;
+   the Player row determines whose profile settings are being edited. Shared
+   video/display options still apply to the game as a whole.
+4. Return to the main menu when finished. Main-menu navigation returns to Player 1.
+
+For example, selecting **Player 2** lets Player 2 adjust their controller settings
+while Player 1 can still help with the mouse, keyboard, or their controller.
+
+#### Change which controller a player uses
+
+Open **Settings → Controls → General Controls → Local multiplayer**, choose the
+inputs, and select **Apply player devices**. The rows show the actual players
+assigned by Start to Join, even if their controller numbers differ from their
+player numbers. **Controller 1** means a detected device, not necessarily Player 1.
+You can also configure devices before launch in the launcher's settings.
+
+- **Press a button to assign** lets you choose a player and identify the intended
+  controller by pressing a button on it. Then select **Apply player devices**.
+- **Automatic** replaces the old Disabled option. For a player who has already
+  joined, it keeps their connected controller when available, or chooses an
+  available unassigned controller. Applying it stores the resolved controller,
+  and the row shows that controller's name/number afterward. It does not remove
+  the player from the session.
+- A change that would leave a joined player without a connected input is rejected
+  with a message. Connect the intended controller and try Apply again; the working
+  assignments are retained until a valid change is applied.
+- If a controller disconnects, reconnect it to resume its assigned player.
+
+Start-to-join assignments last for the session; applying manual device choices
+saves them. To change the number of participating players, return to the opening
+player-count/profile flow. Joining during an active match is not supported.
+
+### Online / LAN
+
+Choose **Online / System Link → Online** to host or join a match,
 or **System Link** for LAN play. Everyone needs matching game builds and data.
 Online hosts need port forwarding; guests join using the host's invitation.
 Follow the [multiplayer guide](docs/players/multiplayer.md) for setup, ports and bots.
 
 Online is experimental;
-Story co-op and native Mac multiplayer are not supported yet.
+Story co-op is not supported yet.
 
 ## Enhanced textures
 

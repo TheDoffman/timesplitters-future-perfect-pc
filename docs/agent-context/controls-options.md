@@ -141,3 +141,108 @@ debounce, failed-save rollback and direct queued tab clicks. `test_ui_layout.py`
 checks owned Controls font scale/restoration alongside Video. Input fixtures
 continue to cover binding/model and pointer behavior. Native Mac uses the same
 source; Windows evidence does not establish native Mac visual acceptance.
+
+Local player device work in progress: General Controls exposes Local Multiplayer
+through the existing keyboard-page callback dispatcher. Four device rows edit a
+draft; Apply validates exclusive assignments and persists them through
+pc_settings_players_save. A button-driven identification flow reads raw pad
+buttons, requires release, blocks normal menu actions during capture and times
+out after twenty seconds. Keyboard/mouse remains Player 1 only. Main-menu and
+pause use the same page; live presentation and split-screen gameplay still need
+acceptance checks. Back leaves unapplied assignments unchanged.
+
+Local player assignment uses pc_settings_players_read/save in pc_bindings.inc.
+Keyboard/mouse ownership remains local slot zero and only a keyboard profile
+receives raw camera motion. Controller profiles retain stored keyboard bindings
+for switching back but do not execute them. Patch2350 excludes those key sources
+and reserves disconnected SDL seats by device path for the current session.
+Patch2360 also matches serial+GUID or an unambiguous disconnected model when
+paths change or are absent. Ambiguous identical devices still need explicit
+assignment; startup identity across reordered enumeration remains unverified.
+
+Local-player device assignment: controller_profile fixtures now simulate two
+independent pads and actual SDL scan reconnect slot reservation; launcher_settings
+covers assignment round trips and atomic duplicate rejection. Patch2350 follows
+the late reload/radial sampler in apply-patches.py. Its policy must remain shared
+between Windows and SDL. Live split-screen and physical hotplug checks are still
+required in addition to those fixtures.
+
+pc_settings native fixture also exercises live four-port publication, retained
+bindings/unknown JSON, duplicate rejection and read-only save rollback. The FOV
+menu fixture covers native player selectors, explicit Apply and identification
+cancel. Both mouse adapter bodies test that controller ownership drains mouse
+deltas without moving the camera. All remain in existing CI test entry points.
+Patch2350 also distinguishes explicit device choices from implicit defaults
+when profiles are reordered: parse_controller must never replace an explicit
+pad index with the guest port index. Controller fixtures cover both array orders.
+Identification tests include held-button rejection, already-owned pads, timeout
+and draft-only capture until Apply.
+The headless local_player_routing fixture compiles the actual sampler under both
+host branches with explicit focus/capture inputs. It verifies assigned-pad
+reservation, free-pad fallback, disconnect and focus gating; Windows also mocks
+physical key polling to check independent keyboard movement/fire. Removing the
+reservation guard must fail at the P1-neutral assertion. These are sampler tests,
+not live OS event delivery or proof of a rendered two-player match.
+
+Start-to-join is intrinsic to the native profile chooser, not a setting. The
+192770 state-1 callback (pc_storage_menu.inc) reads raw physical Start through
+pc_settings_players_join, excludes ports already in 74E914, and gives the first
+waiting panel its port via native42D00/42870 before state2. 5236C4 limits the
+selected player count. pc_local_join.h queues fresh edges, including disabled
+ports; connection order never sets guest player order. Session mappings do not
+rewrite controls JSON. No-waiting/focus loss clears pending joins. Manual device
+settings remain; the former auto_assign_players key is ignored. Controller-model
+and actual profile callback regressions cover unconfigured devices, P1 ownership,
+repeat presses, reversed connection order and player-count bounds.
+
+Presence detection now calls pc_settings_players_detect before computing the
+250ms port mask. This exposes connected pads in unassigned (legacy none) ports
+before native player-count selection; joining still uses the native Start order.
+Session preferred ports survive manual unassignment, without rewriting JSON.
+The UI calls none Automatic, since it no longer excludes connected controllers.
+Patch2360 retains the SDL lock through reads so another scan cannot close the
+handle mid-sample. Tests cover the real presence function plus changed/absent
+paths and repeated SDL virtual-device detach/reattach (controller_hotplug.c).
+
+Automatically detected ports remain provisional until native Start-to-join claims them; they do not reserve the controller away from Player 1 automatic fallback. Explicit device saves clear provisional flags. The production sampler regression checks both provisional sharing and exclusive joined ownership.
+
+Live device Apply checks pc_settings_pad_status connectivity for every explicitly selected controller before publishing or saving. An unavailable selection leaves current input assignments intact and displays an inline connection error, preventing entry into the native reconnect modal merely by choosing an absent pad. pc_settings_pad_status now returns connection status independently of held buttons. Launcher/offline configuration remains possible. The native menu fixture covers rejected initial assignment, rejected replacement preserving two ports, and successful retry after connection. This prevents the absent-target case; a report involving two connected controllers still needs live reproduction.
+
+Joined-player settings follow the native player-to-port mapping at 6B93C0,
+limited by 5236C4, rather than assuming player number equals input port. The
+Local Multiplayer page snapshots a complete port permutation: joined players
+first, then unused ports. kb_players_apply translates choices back into those
+same ports without changing native ownership. Automatic on a joined player
+resolves to its existing connected controller (or a free connected pad), then
+persists that concrete assignment; reopening displays the actual controller.
+It must never publish DEV_NONE for a joined player. Unchanged disconnected
+assignments on unused rows do not block Apply; newly selected unavailable
+inputs and changes stranding joined players are rejected before persistence.
+The native menu fixture reproduces P1 keyboard, old P2 pad1/old P3 pad0 with pad0
+joining guest P2, Automatic retention, rejected theft, connected swap and reopen.
+
+Frontend Settings input handoff: native Settings descriptor 523910 selects the
+profile at 78AD34 (2CBEE0), while 73870 normally polls menu+3C player-mask bits.
+menu_settings_input_owner checks that root or its bounded descriptor history
+(7BA264) and temporarily accepts both P1 and the selected player while input is gathered. Native
+42760 still maps logical players through 6B93C0. Menu+38 and profile/save globals
+remain unchanged. Returning to main removes Settings from history, restoring
+normal P1 input even if the selected-profile value remains stale. Pause, gameplay
+and unrelated frontend menus are excluded. P1 retains mouse, text input, queued tab clicks and keyboard section shortcuts
+while a secondary player is selected; that player’s native controller shoulders
+also switch sections. Selection chooses the edited profile, not exclusive control. menu_mouse.c
+covers P2/P3/P4, nonidentity controller mapping, submenu history, return to main,
+invalid selection and gameplay exclusion. Physical controller acceptance remains
+pending despite the automated route checks.
+
+Shared Settings control regression also checks simultaneous P1/selected-player
+input masks, P1 mouse clicks while P2 is selected, and P1 keyboard tab navigation
+alongside P2 controller shoulders. Outside Settings, native P1-only control remains.
+
+README local split-screen instructions now distinguish Start-order joining,
+physical controller numbers versus player rows, shared Settings navigation with
+P1 retained, Automatic resolving a joined player’s device, and Apply validation.
+They identify this branch’s behavior as not yet published.
+
+The local-player sampler fixture uses external linkage for its reload stub to
+match pc_input.h on Clang as well as MSVC.

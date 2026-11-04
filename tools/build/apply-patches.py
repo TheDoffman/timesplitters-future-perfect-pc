@@ -110,6 +110,16 @@ def patch_records(paths):
     if radial:
         paths.remove(radial)
         paths.append(radial)
+    # Player device isolation extends both the late reload sampler and pad routing.
+    players = by_name.get('2350-local-player-devices.patch')
+    if players:
+        paths.remove(players)
+        paths.append(players)
+    reconnect = by_name.get('2360-controller-reconnect-identity.patch')
+    if reconnect:
+        paths.remove(reconnect)
+        paths.append(reconnect)
+
     # Own instruction bodies replace the final title-instrumented handlers.
     # Replay all historical instrumentation first so older stacks still unwind.
     for name in ('0180-independent-translation-moves.patch', '0170-independent-translation-integer.patch',

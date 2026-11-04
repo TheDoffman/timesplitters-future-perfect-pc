@@ -1,4 +1,4 @@
-[Input icon/profile fit checks](controls-options.md).
+[Input tests](controls-options.md).
 [Tab queue](../development/graphics-options.md): HUD/SMAA order and texture-present fixtures.
 Auto-sizing fixtures test SDL policy; restart handoff is separate.
 `test_fov_settings.py` checks Video tabs, ownership, pointer bounds, keyboard
@@ -1036,3 +1036,5 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 [RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
 
 GPU asserts stay on; AO logs scene/pixel failures.
+
+Local-player tests: controls-options.md.

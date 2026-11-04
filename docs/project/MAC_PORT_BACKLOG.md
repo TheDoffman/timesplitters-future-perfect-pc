@@ -1,3 +1,27 @@
+## Joined-player device settings — validation pending
+
+Shared pc_keyboard_menu.inc/pc_controls_menu.inc map UI player rows to native
+ports and resolve Automatic before publishing joined devices. No new OS adapter
+is needed. Windows menu regression passes; native Mac/Linux build and physical
+controller checks remain pending. Source is local/uncommitted after e0496b89.
+
+Controller detection/reconnect follow-up (local after cc8b05fb): shared presence
+mask provisioning, Automatic labels and SDL patch2360 need no separate host
+implementation. Windows automated tests include real SDL virtual reconnects.
+Mac/Linux physical device enumeration, profile joining and USB/Bluetooth
+reconnect acceptance remain pending; do not infer them from Windows results.
+
+Local player devices (local feat/local-player-devices, uncommitted): shared
+pc_bindings.inc, keyboard/Controls menus, patch2350 and launcher GameSettings/
+SettingsPage implement assignment, identification and exclusive routing. The
+native SDL mouse adapter uses the same ownership guard; SDL pad path reservation
+is common across hosts. No additional Mac adapter is currently identified.
+Windows validation and remaining live/hardware gaps are recorded in STATUS.md.
+Native Mac and Linux acceptance pending: launcher selectors/persistence, main
+and pause menu layout, keyboard+pad and two-pad play, disconnect/reconnect,
+changed device enumeration and assignment failure rollback. Windows fixtures
+do not establish physical-device or native-host acceptance.
+
 Profile footer fit (local feature/fab-input-prompts): shared profile text
 rendering scopes compact imported icon faces to the native two-line clip.
 Select/Back keeps native Y, Delete is native+2; hover/hit regions follow the same

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "349f2aaba8b2c6757c52fd0c3d2c9abb1a249c20ec56ab5bee1657a7ce92fd8b",
+  "loaderSha256": "39570637ce657ad90cade0bda5e101896ba829ee6db51081d5696b789cd84078",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2533,6 +2533,24 @@
       "sha256": "6719d10e202746e0d5d7f29ed418f63bcc1b0ecb610ffbd9f5691eb2de43675e",
       "targets": [
         "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2350-local-player-devices.patch",
+      "path": "patches/input/2350-local-player-devices.patch",
+      "sha256": "4496bde82689ec7ffefca68624061e35cd70d8256bdca281aabc5618e50c25ca",
+      "targets": [
+        "src/input/input_bindings.c",
+        "src/input/recomp_pad.c"
+      ]
+    },
+    {
+      "name": "2360-controller-reconnect-identity.patch",
+      "path": "patches/input/2360-controller-reconnect-identity.patch",
+      "sha256": "6c56c0d88aa9cecbb83ef73ae3fa2a904c6da62ff02d99543993d3b0a93735e9",
+      "targets": [
+        "src/input/input_bindings.c",
+        "src/input/recomp_pad.c"
       ]
     },
     {

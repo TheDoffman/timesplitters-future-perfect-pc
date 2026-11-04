@@ -647,6 +647,22 @@ non-defaults V2. Existing settings transactions/concurrent-edit rejection remain
 Model and WPF/Avalonia UI fixtures cover saving/reopening and 200% pixel-cost
 guidance. Older games/launchers cannot consume non-default V2 graphics files.
 
+Local multiplayer: GameSettings.PlayerDevice/SetPlayerDevices expose all four
+profiles without discarding bindings or unknown fields. Shared SettingsPage
+adds Players 2–4 beside the existing Player 1 selector. Validation rejects
+reused controllers and a disabled Player 1 before mutating the draft. Settings
+still use the existing transaction/concurrent-edit checks. Player 1 alone can
+use keyboard/mouse. Native launcher visual validation remains pending.
+
+For legacy non-primary profiles, absent device/profile entries display the runtime's numbered-pad default. Explicit port ordering and xinput aliases are preserved; invalid local-device values fail with an explanatory error before indexing selector labels.
+
+Local multiplayer explains the native profile screen's automatic Start-to-join.
+There is no auto-join checkbox or setting; legacy auto_assign_players is ignored.
+Manual device assignments remain available. README documents the player-count,
+Start-order and profile-selection sequence.
+
+Unassigned device choices are labeled Automatic (legacy JSON none). Presence detection makes these available for joining; this is not a separate opt-in setting.
+
 Linux installed executable modes also preserve the bundled GTK module-query
 tool; clean-userspace launcher UI acceptance detects dynamic session libraries
 that do not appear in ELF imports. See [Linux release checks](linux-game.md).

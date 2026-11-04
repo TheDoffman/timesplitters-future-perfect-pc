@@ -1,3 +1,85 @@
+## 2026-11-04 - Local-player Settings integration validation
+
+Merged main ff643ed4 into the local-player branch. Windows supported Build and
+linked checks passed; launcher regression suite passed. Focused menu/FOV tests
+passed (9, two Mac-compiler skips). PR #484 Mac CI found only a test-stub
+linkage mismatch: pc_controls_reload_sample now matches the shared header.
+All 39 controller-profile tests pass locally after correction. Hosted native
+Mac rerun remains pending; physical shared-controller acceptance remains pending.
+
+## Shared Settings control (local, uncommitted)
+
+Base 642372af. User clarified P1 must always retain control. Settings now accepts
+P1 plus the selected player; mouse/text and keyboard shortcuts remain available
+to P1. Edited-profile ownership is unchanged. Returning to main keeps native P1
+control. Windows automated menu tests: 9 passed, 2 Mac compiler checks skipped.
+Windows build and linked checks passed; physical controller acceptance pending.
+Existing mixed-optimization test-build limitation still applies.
+
+## Settings input handoff (local, uncommitted)
+
+Base 4eaacf6d, feat/local-player-devices. Settings Player selector now hands
+native menu input to that logical player throughout Settings/submenus and
+returns it to P1 outside that history. Profile/save ownership is untouched.
+Windows automated menu checks: 9 passed, 2 Mac compiler checks skipped. Tests
+cover P2/P3/P4, nonidentity input ports, return to main and gameplay exclusion.
+Windows build and linked checks passed; physical controller acceptance remains
+pending. The existing mixed-optimization test-build limitation still applies.
+
+## Joined-player settings follow-up (local, uncommitted)
+
+Base e0496b89, feat/local-player-devices. User reported native Start-to-join
+selected a different input port than the numbered settings row, and Automatic
+then removed the joined port. Settings now translate through the native player
+mapping and preserve usable input for every joined player. Automatic resolves
+to a connected controller and stores the resolved choice for an active player;
+unused Automatic slots retain normal detection. Menu regression reproduces the
+reported old P2/P3 assignment order, preservation, rejection, swap and reopen.
+Windows: 48 input/menu checks passed, 2 Mac compiler checks skipped. Game
+build and linked build tests passed. No physical controller acceptance claimed.
+The existing mixed-optimization test-build limitation still applies.
+
+## Controller detection and reconnect follow-up (local, uncommitted)
+
+Based on cc8b05fb on feat/local-player-devices. User confirmed earlier manual
+assignment works, but reported disabled ports hiding player-count choices and
+blocking reconnect. Shared presence detection now activates connected devices
+in unassigned ports without rewriting settings; UI labels these Automatic.
+Detected ports stay provisional so Player 1 automatic pad fallback still works
+until a controller joins. Native profile prompts retain Start-order assignment.
+Patch2360 restores SDL
+seats by serial/path or unambiguous model and keeps handles locked during reads.
+Windows: 48 input/menu tests pass, two Mac compile checks skipped; this includes
+six real SDL virtual-controller detach/reattach cycles with independent second
+controller input. Game build checks and full launcher suite pass. These checks
+do not prove physical USB/Bluetooth gameplay or native Mac/Linux acceptance.
+The mixed-optimization test build limitation described below still applies.
+
+## Local player devices (local feat/local-player-devices, uncommitted)
+
+Base 471936e7, Windows x64. Shared launcher and in-game General Controls now
+offer explicit Player 1–4 assignments. Keyboard/mouse belongs to Player 1;
+controllers are exclusive. In-game identification captures a fresh button press,
+and Apply persists all assignments without replacing bindings. Controller-owned
+players ignore stored keyboard sources and raw mouse camera input. SDL reconnects
+reserve their original device-path seats for the current process.
+
+Full patch application and generation pass. Controller checks: 36 pass, including
+reordered profiles and headless Windows/SDL keyboard-plus-pad reservation tests
+with deliberate broken-guard detection; mounted-input checks: 19 pass. Menu
+callback checks: 4 pass, 2 native Mac compile checks skipped. Full
+Windows launcher suite and game build tests pass, including assignment save,
+read-only failure rollback and binding retention. The optimized game compile hit
+MSVC C1002 on generated continuation files; the local test executable finishes
+with /Od on remaining generated objects. This is not optimized-release evidence.
+One existing virtual-pad prompt test skipped because foreground activation was
+denied. The isolated Test Lab executable starts, but desktop input/capture also
+fails (GetCursorPos access denied / monitor capture unavailable), so visual menu
+acceptance and a live two-player match remain pending. Physical hotplug, Mac and
+Linux validation remain pending. Numbered slots persist; device identity across
+reordered startup enumeration is not guaranteed. Multiple independent keyboard/
+mouse sets are outside this feature.
+
 ## Profile footer fit (2026-11-04, local)
 
 The profile footer's native clip cannot accommodate full-size imported key

@@ -1,4 +1,4 @@
-[Settings/profile footer fit](controls-options.md).
+[Settings input/layout](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)
@@ -975,3 +975,5 @@ Physics: [poses](systems-details.md#guest-ragdolls-and-physical-npc-drops).
 [2x texture workflow](original-upscale.md).
 
 [RTL](guest-stack-trace.md), [host policy](execution-host.md).
+
+Local player assignment: controls-options.md.

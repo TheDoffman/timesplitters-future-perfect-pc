@@ -236,6 +236,24 @@ int main(int argc,char **argv)
     { int ok=pc_settings_save(&settings,error,sizeof error); if(!ok)fprintf(stderr,"Final settings save: %s\n",error); CHECK(ok); }
     CHECK(pc_settings_read(&current,error,sizeof error) && current.keys[33][0]=='1' && !current.keys[24][0]);
     DestroyWindow(owner);
+    {
+        int devices[4]={-2,0,1,-1},actual[4];
+        CHECK(pc_settings_players_save(devices,error,sizeof error));
+        pc_settings_players_read(actual);CHECK(!memcmp(devices,actual,sizeof devices));
+        CHECK(pc_settings_keyboard_player());
+        saved=load(path);CHECK(saved && strstr(saved,"retained_mouse") && strstr(saved,"key:#74"));free(saved);
+        devices[2]=0;CHECK(!pc_settings_players_save(devices,error,sizeof error));
+        pc_settings_players_read(actual);CHECK(actual[2]==1);
+        devices[0]=2;devices[2]=1;
+        CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
+        CHECK(!pc_settings_players_save(devices,error,sizeof error));
+        CHECK(pc_settings_keyboard_player());
+        CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
+        CHECK(pc_settings_players_save(devices,error,sizeof error));
+        CHECK(!pc_settings_keyboard_player());
+        devices[0]=-2;CHECK(pc_settings_players_save(devices,error,sizeof error));
+        CHECK(pc_settings_keyboard_player());
+    }
     /* Replay mode leaves desktop messages alone. */
     CHECK(pc_controls_message(NULL,WM_MOUSEACTIVATE,0,0,&result)==0); /* replay does not consume native messages */
     puts("PASS: live rebind sampling, atomic persistence/backup, unrelated JSON retention, validation, defaults, menu creation, Cancel, keyboard/wheel capture, conflict reassignment, and dialog save");

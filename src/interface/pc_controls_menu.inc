@@ -130,6 +130,8 @@ static int controls_native_button(void (*original)(void))
     /* Spread the shorter section evenly over the General section's height;
      * retain the compact footer instead of inserting empty rows above it. */
     guest_call(sub_00071B10,4,1u,bits(id<10 && controls_tab==1?3.6f:1.2f),1u,1u);
+    if(id==10 && controls_tab==0)
+        guest_call(sub_00079D60_gen,6,controls_text(5,"Local multiplayer"),250u,0u,0u,KB_SELECT,0u);
     if(id==10 || id==11)guest_call(sub_00071C50,1,0x26200u);
     original();WORD_AT(frame+12)=flags;
     /* Native layout measures rows incrementally before the next constructor.
@@ -156,6 +158,16 @@ static void controls_open_tab(int tab)
     settings_tabs_input_reset();settings_tabs_hover_reset();
     guest_call((int32_t)WORD_AT(0x79094c)>100?sub_002CBE50:sub_002EC1A0,1,source);
     restore_registers(&r);g_esp+=4;
+}
+static void controls_players_open(uint32_t menu)
+{
+    controls_link_rows(1);controls_tab=2;kb_menu=menu;*kb_status=0;
+    kb_players_read();kb_refresh(KB_PLAYERS,0);
+}
+static void controls_players_back(void)
+{
+    controls_tab=0;*kb_status=0;guest_call(sub_00078980,1,controls_menu);
+    guest_call(sub_000770E0,2,controls_menu,0u);
 }
 static void controls_open(void) {controls_open_tab(0);}
 static void controls_open_keyboard(void) {controls_open_tab(2);}

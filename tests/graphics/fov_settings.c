@@ -178,6 +178,17 @@ static unsigned controls_test_saves,controls_test_previews;
 static PcSettings controls_test_settings;
 void pc_settings_defaults(PcSettings *s) {CHECK(controls_test_enabled);*s=controls_test_settings;s->sensitivity=.1;s->enabled=1;s->invert_y=0;}
 int pc_settings_read(PcSettings *s,char *e,size_t n) { (void)e;(void)n;CHECK(controls_test_enabled);*s=controls_test_settings;return 1; }
+static int test_player_devices[4]={-2,-1,-1,-1},test_player_saves;
+void pc_settings_players_read(int d[4]) {memcpy(d,test_player_devices,sizeof test_player_devices);}
+int pc_settings_players_save(const int d[4],char *e,size_t n) {(void)e;(void)n;memcpy(test_player_devices,d,sizeof test_player_devices);test_player_saves++;return 1;}
+static unsigned test_pad_buttons,test_pad_connected=15;
+static int join_port=-1;
+static unsigned join_used;
+int pc_settings_players_join(unsigned used){if(used>15)return -1;join_used=used;int p=join_port;join_port=-1;return p;}
+void sub_00042D00(void){WORD_AT(0x6b93c0+WORD_AT(g_esp+4)*4)=WORD_AT(g_esp+8);g_esp+=4;}
+void sub_00042870(void){g_esp+=4;}
+
+int pc_settings_pad_status(int slot,char *name,size_t n,int *pressed) {snprintf(name,n,"Test controller %d",slot+1);*pressed=(test_pad_buttons>>slot)&1;return (test_pad_connected>>slot)&1;}
 int pc_settings_save(const PcSettings *s,char *e,size_t n) {CHECK(controls_test_enabled);if(!controls_test_save_ok){snprintf(e,n,"Test save failed");return 0;}controls_test_settings=*s;controls_test_saves++;return 1; }
 void pc_settings_key_name(int k,char *t,size_t n) {CHECK(controls_test_enabled);snprintf(t,n,"Key %d",k);}
 int pc_settings_conflict(const PcSettings *s,int a,int k) { (void)s;(void)a;(void)k;CHECK(0);return 0; }
@@ -777,6 +788,20 @@ int main(int argc,char **argv)
     audio_save_ok=0;WORD_AT(audio_beta_row+0xc8)=0;call(AUDIO_BETA_CHANGE,0,0);
     CHECK(enhanced_audio==1 && WORD_AT(audio_beta_row+0xc8)==1);
     audio_save_ok=1;WORD_AT(audio_beta_row+0xc8)=0;call(AUDIO_BETA_CHANGE,0,0);CHECK(enhanced_audio==0);
+    /* The actual native waiting panel adopts an unconfigured pad's input port,
+     * advances only the first waiting player, and preserves P1's controller. */
+    WORD_AT(0x5236c4)=3;WORD_AT(0x74f9ec)=3;
+    WORD_AT(0x74f9f0)=WORD_AT(0x74f9f4)=1;WORD_AT(0x74e914)=0;
+    WORD_AT(0x320038)=2;WORD_AT(0x3201b8)=bits(1.f);WORD_AT(0x475cd4)=bits(.5f);
+    join_port=3;g_esp=0x700000;WORD_AT(g_esp+4)=0x320000;
+    sd_profile_tick();CHECK(join_port==3 && WORD_AT(0x74f9f4)==1);
+    WORD_AT(0x320038)=1;g_esp=0x700000;sd_profile_tick();
+    CHECK(join_used==1 && WORD_AT(0x74f9f0)==2 && WORD_AT(0x74e918)==3);
+    CHECK(WORD_AT(0x6b93c4)==3 && WORD_AT(0x74e914)==0 && g_esp==0x700004);
+    WORD_AT(0x320038)=2;join_port=1;g_esp=0x700000;sd_profile_tick();
+    CHECK(join_used==9 && WORD_AT(0x74f9f4)==2 && WORD_AT(0x74e91c)==1);
+    WORD_AT(0x5236c4)=1;join_port=2;g_esp=0x700000;sd_profile_tick();CHECK(join_port==2);
+    join_port=-1;
     /* Drives use alphabetical letters/names, independent of the active drive,
        and keep host IDs away from the console device table. */
     {
@@ -965,6 +990,81 @@ int main(int argc,char **argv)
         settings_keys[0x27]=1;call(TICK_CB,VIDEO_TABS_ID,0x80008);
         CHECK(page==DISPLAY_GRAPHICS && staged_anisotropy==16 && WORD_AT(graphics_rows[2]+0xc8)==4);
         settings_keys[0x27]=0;
+    }
+    { /* Local-player choices use native selectors and commit only on Apply. */
+        controls_tab=0;controls_test_enabled=1;
+        WORD_AT(0x5236c4)=1;WORD_AT(0x6b93c0)=0;
+        WORD_AT(controls_menu+4)=CONTROLS_DESCRIPTOR;
+        controls_players_open(controls_menu);
+        CHECK(kb_page==KB_PLAYERS && kb_devices[0]==-2 && kb_devices[1]==-1);
+        CHECK(WORD_AT(kb_device_rows[0]+0xc8)==0 && WORD_AT(kb_device_rows[1]+0xc8)==0);
+        WORD_AT(kb_device_rows[1]+0xc8)=1;
+        call(KB_TICK,0,0);
+        CHECK(kb_devices[1]==0 && test_player_saves==0);
+        test_pad_connected=0;call(KB_SELECT,204,0);
+        CHECK(test_player_saves==0 && test_player_devices[1]==-1);
+        CHECK(strstr(kb_status,"connected controller"));
+        test_pad_connected=15;
+        call(KB_SELECT,204,0);
+        CHECK(test_player_saves==1 && test_player_devices[1]==0);
+        call(KB_SELECT,205,0);CHECK(kb_page==KB_PLAYER_PICK);
+        call(KB_SELECT,202,0);CHECK(kb_page==KB_PLAYER_WAIT && capture_active);
+        call(KB_SELECT,206,0);CHECK(kb_page==KB_PLAYERS && !capture_active);
+        call(KB_SELECT,205,0);call(KB_SELECT,202,0);
+        test_pad_buttons=1;call(KB_TICK,0,0);
+        CHECK(kb_page==KB_PLAYER_WAIT && kb_devices[2]==-1); /* Held button ignored. */
+        test_pad_buttons=0;call(KB_TICK,0,0);
+        test_pad_buttons=1;call(KB_TICK,0,0);
+        CHECK(kb_page==KB_PLAYERS && kb_devices[2]==-1 && !capture_active);
+        CHECK(strstr(kb_status,"already assigned to Player 2"));
+        test_pad_buttons=0;call(KB_SELECT,205,0);call(KB_SELECT,202,0);call(KB_TICK,0,0);
+        test_pad_buttons=2;call(KB_TICK,0,0);
+        CHECK(kb_page==KB_PLAYERS && kb_devices[2]==1 && !capture_active);
+        CHECK(test_player_saves==1 && test_player_devices[2]==-1); /* Still a draft. */
+        call(KB_SELECT,204,0);CHECK(test_player_devices[2]==1 && test_player_saves==2);
+        /* Switching an existing player to an absent pad keeps both live ports. */
+        kb_devices[1]=2;test_pad_connected=3;call(KB_SELECT,204,0);
+        CHECK(test_player_saves==2 && test_player_devices[1]==0 && test_player_devices[2]==1);
+        CHECK(strstr(kb_status,"connected controller"));
+        test_pad_connected=7;call(KB_SELECT,204,0);
+        CHECK(test_player_saves==3 && test_player_devices[1]==2);
+        test_pad_connected=15;
+        test_pad_buttons=0;call(KB_SELECT,205,0);call(KB_SELECT,203,0);
+        clock_ms+=20001;call(KB_TICK,0,0);
+        CHECK(kb_page==KB_PLAYERS && !capture_active && kb_devices[3]==-1);
+        call(KB_SELECT,206,0);CHECK(controls_tab==0);
+    }
+    { /* Reported case: one pad joins P2 through old P3 input port. */
+        WORD_AT(0x5236c4)=2;WORD_AT(0x6b93c0)=0;WORD_AT(0x6b93c4)=2;
+        test_player_devices[0]=-2;test_player_devices[1]=1;
+        test_player_devices[2]=0;test_player_devices[3]=-1;test_pad_connected=1;
+        controls_players_open(controls_menu);
+        CHECK(kb_devices[0]==-2 && kb_devices[1]==0 && kb_devices[2]==1);
+        CHECK(kb_player_ports[1]==2 && kb_player_ports[2]==1);
+        int saves=test_player_saves;
+        kb_devices[1]=-1;call(KB_SELECT,204,0);
+        CHECK(test_player_saves==saves+1 && test_player_devices[2]==0);
+        CHECK(test_player_devices[1]==1 && kb_devices[1]==0);
+        /* Assigning that sole pad elsewhere must not strand joined P2. */
+        kb_devices[1]=-1;kb_devices[2]=0;call(KB_SELECT,204,0);
+        CHECK(test_player_saves==saves+1 && test_player_devices[2]==0);
+        CHECK(strstr(kb_status,"Player 2 needs a connected controller"));
+        /* With a second pad connected, simultaneous swap stays in guest ports. */
+        test_pad_connected=3;kb_devices[1]=1;kb_devices[2]=0;call(KB_SELECT,204,0);
+        CHECK(test_player_saves==saves+2 && test_player_devices[2]==1 && test_player_devices[1]==0);
+        controls_players_open(controls_menu);CHECK(kb_devices[1]==1 && kb_devices[2]==0);
+    }
+    { /* P2 shoulder navigation does not depend on P1's keyboard prompt mode. */
+        uint32_t descriptor=WORD_AT(controls_menu+4);
+        WORD_AT(0x79094c)=101;WORD_AT(0x5236c4)=2;WORD_AT(0x78ad34)=1;
+        WORD_AT(controls_menu+4)=0x523910;WORD_AT(controls_menu+0x38)=0;
+        WORD_AT(controls_menu+0xc4)=WORD_AT(controls_menu+0xc8)=0;
+        settings_keyboard=1;settings_pad_allowed=1;settings_tabs_input_reset();
+        CHECK(!settings_tabs_direction(controls_menu));
+        settings_keys[0x27]=1;CHECK(settings_tabs_direction(controls_menu)==1);
+        settings_keys[0x27]=0;CHECK(!settings_tabs_direction(controls_menu));
+        WORD_AT(controls_menu+0xc4)=0x400;CHECK(settings_tabs_direction(controls_menu)==1);
+        settings_keys[0x27]=0;settings_pad_allowed=0;WORD_AT(controls_menu+4)=descriptor;
     }
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
