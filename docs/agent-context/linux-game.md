@@ -373,7 +373,9 @@ On POSIX it compiles against those selected headers and loads that prefix/lib,
 so a successful system FFmpeg decode cannot stand in for the shipped decoder.
 
 GTK SVG type detection also needs shared-mime-info data. The Linux package
-includes its compiled mime.cache and exact Ubuntu source/notices, recorded in
+generates its own mime.cache from the packaged, dpkg-owned freedesktop.org.xml
+using update-mime-database, never the host's merged/unowned cache. Exact Ubuntu
+source/notices and the XML input are recorded in
 dependency-audit data_components separately from ELF components. Launch.sh
 prepends the package data directory to XDG_DATA_DIRS. Clean-userspace reports
 77 from the unconfigured Online adapter as explicitly skipped, never passed;

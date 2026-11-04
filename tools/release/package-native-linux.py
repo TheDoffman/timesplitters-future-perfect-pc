@@ -12,6 +12,7 @@ import ssl
 import subprocess
 import sys
 import sysconfig
+import tempfile
 import zipfile
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools'))
@@ -197,8 +198,15 @@ def main():
                           (pixbuf/'2.10.0/loaders/libpixbufloader-svg.so','Support/Desktop/pixbuf/libpixbufloader-svg.so')]:
         dynamic.append((origin,copy(origin,stage,target)))
     copy(ROOT/'config/build/linux-fonts.conf',stage,'Support/Desktop/fonts.conf')
-    mime=Path('/usr/share/mime/mime.cache')
-    mime_target=copy(mime,stage,'Support/Desktop/share/mime/mime.cache')
+    # The host cache merges unrelated installed packages and has no dpkg owner.
+    # Generate ours from the single authenticated shared-mime-info source input.
+    mime=Path('/usr/share/mime/packages/freedesktop.org.xml')
+    mime_target=copy(mime,stage,'Support/Desktop/share/mime/packages/freedesktop.org.xml')
+    with tempfile.TemporaryDirectory(prefix='tsfp-mime-') as temporary:
+        database=Path(temporary)/'mime';(database/'packages').mkdir(parents=True)
+        shutil.copy2(mime,database/'packages/freedesktop.org.xml')
+        subprocess.run(['update-mime-database',str(database)],check=True)
+        copy(database/'mime.cache',stage,'Support/Desktop/share/mime/mime.cache')
     media,media_receipt=linux_ffmpeg.verify_install(ROOT)
     if native.get('release_media')!=media_receipt:raise ValueError('Rebuild the game with --release-media before packaging')
     for stem in media_receipt['pin']['libraries']:
