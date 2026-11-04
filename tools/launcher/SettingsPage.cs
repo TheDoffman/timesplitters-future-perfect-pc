@@ -38,7 +38,7 @@ namespace TimeSplitters.Launcher
         TextBlock textureStatus, textureDetails;
         Border textureBadge;
         Button textureCheck, textureInstall, textureVerify;
-        CheckBox textureUpdates, enhancedAudio, autoPlayers;
+        CheckBox textureUpdates, enhancedAudio;
         TextureRelease textureAvailable;
         long textureDownloadBytes;
         bool textureBusy;
@@ -114,10 +114,7 @@ namespace TimeSplitters.Launcher
             var deviceLabels=new[]{"Keyboard & mouse","Controller 1","Controller 2","Controller 3","Controller 4","Disabled"};
             device=Choices(deviceLabels,deviceLabels[Array.IndexOf(Devices,model.Device.Replace("xinput:","gamepad:"))]);Field(inputLeft,"Player 1 input device",device);
             var local=PageTheme.Section(controls,"Local multiplayer","Assign one device to each player. Keyboard & mouse belongs to Player 1. Choose the player count in the game's multiplayer menu.");
-            autoPlayers=Check("Press Start to join at profile selection",model.AutoAssignPlayers);
-            autoPlayers.Name="AutoAssignPlayers";local.Children.Add(autoPlayers);
-            autoPlayers.Checked+=(s,e)=>RefreshSaveState();autoPlayers.Unchecked+=(s,e)=>RefreshSaveState();
-            local.Children.Add(Text("Start assigns unassigned controllers in press order. Use keyboard/mouse first to keep Player 1. Existing manual assignments are retained.",12));
+            local.Children.Add(Text("At the profile screen, additional controllers join in the order they press Start. No device setup is required to join.",12));
             for(int player=1;player<4;player++) {
                 var choices=Choices(deviceLabels.Skip(1).ToArray(),deviceLabels[Array.IndexOf(Devices,model.PlayerDevice(player))]);
                 choices.Name="Player"+(player+1)+"Device";localDevices[player-1]=choices;
@@ -325,7 +322,7 @@ namespace TimeSplitters.Launcher
             return Json.Encode(new object[]{sensitivity.Text,width.Text,height.Text,discordId.Text,
                 enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,ambientOcclusion.IsChecked,shaderCache.IsChecked,
                 skipSplashes.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
-                device.SelectedIndex,localDevices.Select(x=>x.SelectedIndex).ToArray(),autoPlayers.IsChecked,scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
+                device.SelectedIndex,localDevices.Select(x=>x.SelectedIndex).ToArray(),scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
                 (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
         void RefreshSaveState()
@@ -468,7 +465,6 @@ namespace TimeSplitters.Launcher
                 Core.Require(Int32.TryParse(width.Text,out w) && Int32.TryParse(height.Text,out h),"Enter a whole-number width and height (0 × 0 keeps the console resolution).");
                 model.Sensitivity=number; model.MouseEnabled=enabled.IsChecked==true; model.InvertY=invert.IsChecked==true;
                 model.SetPlayerDevices(new[]{Devices[device.SelectedIndex]}.Concat(localDevices.Select(x=>Devices[x.SelectedIndex+1])).ToArray());
-                model.AutoAssignPlayers=autoPlayers.IsChecked==true;
                 model.VerticalFov=(int)Math.Round(fov.Value);
                 model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.ShowCounter=fps.IsChecked==true;
                 model.Msaa=new[]{1,2,4,8}[msaa.SelectedIndex];model.PostAntiAliasing=edgeSmoothing.SelectedIndex;

@@ -149,16 +149,6 @@ public static class LauncherSettingsChecks
         Directory.CreateDirectory(temp);
         try
         {
-            Test("automatic player joining persists and manual assignment opts out",()=>{
-                var r=Root("auto-local-players");var m=GameSettings.Load(r,null);
-                Require(m.AutoAssignPlayers);
-                m.SetPlayerDevices(new[]{"keyboard","gamepad:0","none","none"});
-                Require(!m.AutoAssignPlayers);
-                m.AutoAssignPlayers=true;m.Save();m=GameSettings.Load(r,null);
-                Require(m.AutoAssignPlayers && m.PlayerDevice(1)=="gamepad:0");
-                m.AutoAssignPlayers=false;m.Save();m=GameSettings.Load(r,null);
-                Require(!m.AutoAssignPlayers);
-            });
             Test("local player assignments are exclusive and preserve bindings",()=>{
                 var r=Root("local-players");var m=GameSettings.Load(r,null);
                 m.Assign(2,0,'T',true);
@@ -176,7 +166,6 @@ public static class LauncherSettingsChecks
                 Put(r,"Settings/pc-controls.json","{\"controllers\":[{\"port\":3},{\"port\":1,\"device\":\"keyboard\"},{\"port\":2,\"device\":\"xinput:0\",\"retained\":true}]}");
                 var m=GameSettings.Load(r,null);
                 Require(m.PlayerDevice(1)=="gamepad:0" && m.PlayerDevice(2)=="gamepad:2" && m.PlayerDevice(3)=="gamepad:3");
-                Require(m.AutoAssignPlayers); // Absent preference defaults ON, including legacy pad setups.
                 m.SetPlayerDevices(new[]{"keyboard","gamepad:0","gamepad:2","none"});m.Save();
                 m=GameSettings.Load(r,null);Require(m.PlayerDevice(1)=="gamepad:0" && m.PlayerDevice(2)=="gamepad:2" && m.PlayerDevice(3)=="none");
                 Require(File.ReadAllText(Path.Combine(r,"Settings/pc-controls.json")).Contains("retained"));

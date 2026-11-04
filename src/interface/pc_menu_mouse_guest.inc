@@ -381,11 +381,6 @@ void pc_display_menu_mouse_input(void (*original)(void))
     GuestRegisters r;
     float x,y,gw,gh;
     unsigned sw,sh;
-    /* Registration belongs to the opening profile screen, before native input
-     * is gathered. Never add players from a pause menu or an active match. */
-    if(guest_writable(menu,0x23c) && WORD_AT(menu+4)==0x004E8D54u &&
-       (int32_t)WORD_AT(0x0079094Cu)>100 && WORD_AT(menu+0x38)==0 && WORD_AT(menu+0x1b0)==3)
-        pc_settings_players_join();
     original();
     menu_text_input(menu);
     if(!s || s->sampled || s->menu!=menu || !menu_mouse_context() || !guest_writable(menu,0x23c) ||

@@ -59,24 +59,20 @@ build when available. Launcher and game versions are separate.
 
 ### Local split-screen setup
 
-In builds with **Local multiplayer** device settings, automatic joining defaults
-to **ON** unless you previously disabled it:
+1. Connect your controllers and choose the number of players on the opening screen.
+2. Player 1 keeps the input they are using. At the profile screen, the first unused
+   controller to press **Start** joins the next **Press START to Join** panel
+   (Player 2), the next joins Player 3, and so on up to the chosen player count.
+   Connection order does not determine player order; no launcher setup or toggle
+   is needed. Release Start between presses.
+3. Each player selects or creates a profile with their controller, then continues
+   into a mode supporting the selected player count.
 
-1. Connect your controllers. Enable **Press Start to join at profile selection**
-   in the launcher's Local multiplayer settings, or **Start to join** under
-   in-game **Controls > General > Local multiplayer**.
-2. At the opening Player 1-4 profile screen, press and release **Start** on each
-   controller in the order you want players assigned. For keyboard/mouse plus
-   controllers, use the keyboard or mouse on that screen first to keep Player 1.
-3. Each player selects a profile using their assigned device. Then choose a mode
-   supporting the selected player count.
-
-Automatic seats last for that session. Existing assigned controllers keep their
-seats. For a fixed setup, assign Players 1-4 in the launcher or in-game Local
-multiplayer menu and apply; manual Apply turns automatic joining off. Unused
-players should be **Disabled**. Joining happens at profile selection, not during
-an active match: return to the main menu to change the participating players.
-Only one keyboard/mouse player is supported; additional players need controllers.
+Join assignments last for the session. For a fixed device setup, use the launcher
+or **Controls > General > Local multiplayer**. Already participating controllers
+cannot join twice. To change the participating players, return to the main menu;
+joining during an active match is not supported. Only one keyboard/mouse player
+is supported; additional players need controllers.
 
 ### Launcher preview
 

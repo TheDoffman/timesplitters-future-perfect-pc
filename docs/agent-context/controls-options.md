@@ -153,4 +153,13 @@ physical key polling to check independent keyboard movement/fire. Removing the
 reservation guard must fail at the P1-neutral assertion. These are sampler tests,
 not live OS event delivery or proof of a rendered two-player match.
 
-Start-to-join uses shared pc_local_join.h and polls only the opening profile screen. Raw Start edges assign free seats in press order; keyboard interaction reserves P1. Seats are session-only; manual Apply disables auto joining. Focus loss re-arms edges. test_controller_profile.py covers ordering, held buttons, capacity and existing owners.
+Start-to-join is intrinsic to the native profile chooser, not a setting. The
+192770 state-1 callback (pc_storage_menu.inc) reads raw physical Start through
+pc_settings_players_join, excludes ports already in 74E914, and gives the first
+waiting panel its port via native42D00/42870 before state2. 5236C4 limits the
+selected player count. pc_local_join.h queues fresh edges, including disabled
+ports; connection order never sets guest player order. Session mappings do not
+rewrite controls JSON. No-waiting/focus loss clears pending joins. Manual device
+settings remain; the former auto_assign_players key is ignored. Controller-model
+and actual profile callback regressions cover unconfigured devices, P1 ownership,
+repeat presses, reversed connection order and player-count bounds.

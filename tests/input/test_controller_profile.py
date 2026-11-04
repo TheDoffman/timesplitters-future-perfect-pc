@@ -152,20 +152,28 @@ def test_start_to_join(tmp_path):
 #include "pc_local_join.h"
 int main(void) {
  PcLocalJoin s={0}; int d[4]={-2,-1,-1,-1};
- /* Entry-held Start cannot steal a seat. Release, then press. */
- assert(!pc_local_join(&s,d,4,0)); assert(d[0]==-2);
- pc_local_join(&s,d,0,0); assert(pc_local_join(&s,d,4,0)); assert(d[0]==2);
- assert(!pc_local_join(&s,d,4,0));
- pc_local_join(&s,d,0,0); assert(pc_local_join(&s,d,1,0)); assert(d[1]==0);
- pc_local_join(&s,d,0,0); assert(pc_local_join(&s,d,10,0));
- assert(d[2]==1 && d[3]==3);
- pc_local_join(&s,d,0,0); assert(!pc_local_join(&s,d,15,0));
- /* Keyboard gets P1 when used first; manually owned pads keep their seats. */
- s=(PcLocalJoin){0}; d[0]=-2;d[1]=3;d[2]=-1;d[3]=-1;
- pc_local_join(&s,d,0,1); assert(pc_local_join(&s,d,1,0));
- assert(d[0]==-2 && d[1]==3 && d[2]==0);
- pc_local_join(&s,d,0,0); assert(!pc_local_join(&s,d,8,0));
- assert(d[1]==3);
+ /* P1 already owns keyboard port 0; controller connection order is irrelevant. */
+ assert(pc_local_join(&s,d,0,1)==-1);
+ assert(pc_local_join(&s,d,4,1)==1); assert(d[0]==-2 && d[1]==2);
+ assert(pc_local_join(&s,d,4,3)==-1); /* held cannot join twice */
+ pc_local_join(&s,d,0,3);
+ assert(pc_local_join(&s,d,1,3)==2); assert(d[2]==0);
+ pc_local_join(&s,d,0,7);
+ assert(pc_local_join(&s,d,8,7)==3); assert(d[3]==3);
+ pc_local_join(&s,d,0,15);assert(pc_local_join(&s,d,2,15)==-1);
+ /* Existing configuration does not dictate guest player order. */
+ s=(PcLocalJoin){0};d[0]=3;d[1]=0;d[2]=1;d[3]=2;
+ pc_local_join(&s,d,0,1);
+ assert(pc_local_join(&s,d,4,1)==3); /* first Start -> guest P2, input port 3 */
+ pc_local_join(&s,d,0,9);
+ assert(pc_local_join(&s,d,8,9)==-1); /* P1 controller cannot join again */
+ assert(pc_local_join(&s,d,1,9)==1); /* next Start -> guest P3 */
+ /* Simultaneous unused pads each receive one seat, even after release. */
+ s=(PcLocalJoin){0};d[0]=-2;d[1]=d[2]=d[3]=-1;
+ pc_local_join(&s,d,0,1);
+ assert(pc_local_join(&s,d,6,1)==1);
+ assert(pc_local_join(&s,d,0,3)==2);
+ assert(d[1]==1 && d[2]==2);
  return 0;
 }
 ''')

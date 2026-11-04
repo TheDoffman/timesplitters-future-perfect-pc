@@ -614,4 +614,7 @@ use keyboard/mouse. Native launcher visual validation remains pending.
 
 For legacy non-primary profiles, absent device/profile entries display the runtime's numbered-pad default. Explicit port ordering and xinput aliases are preserved; invalid local-device values fail with an explanatory error before indexing selector labels.
 
-Local multiplayer includes persisted auto_assign_players (Start-to-join). Absent preference defaults ON, including legacy pad setups; explicit OFF persists. Manual SetPlayerDevices disables auto; SettingsPage saves the explicit checkbox after the device transaction. README documents joining and manual setup.
+Local multiplayer explains the native profile screen's automatic Start-to-join.
+There is no auto-join checkbox or setting; legacy auto_assign_players is ignored.
+Manual device assignments remain available. README documents the player-count,
+Start-order and profile-selection sequence.
