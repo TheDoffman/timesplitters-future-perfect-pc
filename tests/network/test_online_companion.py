@@ -46,7 +46,9 @@ def test_game_process_detects_parent_exit(tmp_path):
             process.terminate(); process.wait(timeout=5)
 
 
-@pytest.mark.skipif(sys.platform not in ('win32', 'darwin'), reason='Desktop Tk runtime')
+@pytest.mark.skipif(sys.platform not in ('win32', 'darwin', 'linux') or
+                    (sys.platform=='linux' and not os.environ.get('DISPLAY')),
+                    reason='Desktop Tk runtime/display required')
 @pytest.mark.parametrize('action', ['host', 'join', 'cancel'])
 def test_browser_lifetime(tmp_path, action):
     support = tmp_path/'Support/Online'; support.mkdir(parents=True)

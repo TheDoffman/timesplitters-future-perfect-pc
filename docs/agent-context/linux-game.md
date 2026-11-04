@@ -378,3 +378,8 @@ dependency-audit data_components separately from ELF components. Launch.sh
 prepends the package data directory to XDG_DATA_DIRS. Clean-userspace reports
 77 from the unconfigured Online adapter as explicitly skipped, never passed;
 companion/local transport tests provide separate network evidence.
+
+The actual Tk companion lifetime fixture now runs on Linux when DISPLAY is
+available: host, join, cancel, bridge handshake, parent lifetime and cleanup.
+It uses isolated loopback directory/UDP peers; it does not change Windows/WSL
+forwarding or establish WAN/physical-peer connectivity.
