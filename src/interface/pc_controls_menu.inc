@@ -120,11 +120,6 @@ static int controls_frame(uint32_t menu,const char *subtitle)
     } else {controls_bounds_valid=0;controls_pending=-1;}
     return 1;
 }
-static void controls_padding(int count)
-{
-    for(int i=0;i<count;i++)guest_call(sub_00079D60_gen,6,controls_text(6," "),
-        (uint32_t)(140+i),4u,0u,0u,0u);
-}
 static int controls_native_button(void (*original)(void))
 {
     if(!controls_building)return 0;
@@ -132,7 +127,9 @@ static int controls_native_button(void (*original)(void))
     uint32_t frame=g_esp,id=WORD_AT(frame+8),flags=WORD_AT(frame+12);
     int controller=id==0 || id==3 || id==8 || id==9;
     if(id<10 && controller!=(controls_tab==1))WORD_AT(frame+12)=flags|0x21u;
-    guest_call(sub_00071B10,4,1u,bits(1.2f),1u,1u);
+    /* Spread the shorter section evenly over the General section's height;
+     * retain the compact footer instead of inserting empty rows above it. */
+    guest_call(sub_00071B10,4,1u,bits(id<10 && controls_tab==1?3.6f:1.2f),1u,1u);
     if(id==10 || id==11)guest_call(sub_00071C50,1,0x26200u);
     original();WORD_AT(frame+12)=flags;
     /* Native layout measures rows incrementally before the next constructor.

@@ -91,9 +91,12 @@ than shifting by half a pixel; 100% is an exact copy and 200% averages each 2x2
 footprint. Legacy GL uses the same scene-size policy and its existing linear
 framebuffer blit; native rendering and fractional-scale quality remain unverified.
 New game/launcher preferences remain restart-required on every host.
-Video Options uses 1.2 native row spacing, a 78%-width panel and eight content rows per section, plus native separators;
-Unused spacer rows are reduced equally across tabs so Apply stays above the footer.
-Its compact "Supersampling (restart)" label also fits the narrower pause panel.
+Video Options uses a 78%-width panel, compact fonts and native separators.
+Display distributes its three settings with3.0 leading; four-setting sections
+use1.2. Footers restore1.2, blank status/spacer records are omitted, and the first
+finalized native Y anchor is retained across tabs. Tab captions fit the same
+longest reference as Controls, keeping their lettering consistent. Restart labels
+remain next to changed MSAA/supersampling settings.
 
 Checks extend `test_graphics_options.py` (all wire-format/preset round trips,
 odd sizes, bounds/overflow), `test_graphics_resolve.py` (exact production GPU

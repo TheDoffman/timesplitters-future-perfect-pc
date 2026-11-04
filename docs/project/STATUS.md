@@ -1,3 +1,24 @@
+## Settings visual refinement in both menu contexts (2026-11-03, local)
+
+Branch feature/settings-visual-refinements from d415de00; shared presentation
+changes in pc_settings_tabs.inc, pc_controls_menu.inc, pc_keyboard_menu.inc,
+pc_video_tabs.inc and pc_display_menu.c. Video and Controls measure tab lettering
+against the same longest caption. Short pages balance native leading between
+real settings; empty footer spacers and empty status notes are omitted. Video
+roots retain their first finalized Y anchor through rebuilds. Owned setting-row
+focus has a brighter blue tint; tab backdrops remain suppressed. Save/Apply,
+Accept/Cancel, binding capture and Back behavior are unchanged.
+
+Windows x64 Release Build and built-in checks pass; focused graphics UI/input
+fixtures:21 passed,2 native Mac skips. Main menu at1920x1080 reviewed live across
+General, Controller, Keyboard, Mouse, bindings and all three Video tabs. Footer
+dividers align closely without a dedicated blank gap; tab positions stay fixed.
+Pause menus at1280x720 reviewed across the same pages, with labels and keyboard
+diagram fitting their cells and fixed tab positions. Captures are refined-main/pause PNGs in
+the ignored video-separators-review directory. Supported US XBE hash validated;
+isolated unlocked profile/config only, personal saves/settings preserved.
+Native Mac visual acceptance and physical-controller testing remain unverified.
+
 ## Final pause-menu visual review and repairs (2026-11-03, local)
 
 Continuing feature/unified-controls from9706b01a. Live pause review found moving

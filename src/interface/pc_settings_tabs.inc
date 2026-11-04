@@ -16,10 +16,14 @@ static void settings_tabs_paint(uint32_t menu,const float bounds[4],
     float top=bounds[1],height=bounds[3]-top;
     /* Pause uses a narrower cell and a larger inherited font. Measure all
      * captions first, then use one common scale for drawing and centering. */
-    if(!video_tab_measure)video_tab_measure=xbox_HeapAlloc(8,4);
+    if(!video_tab_measure)video_tab_measure=xbox_HeapAlloc(40,4);
+    /* Fit both sections against the same longest tab, so shorter Video
+     * captions do not become larger than the Controls captions. */
+    if(video_tab_measure)memcpy((void *)(g_xbox_mem_offset+video_tab_measure+8),
+                              "KEYBOARD & MOUSE",17);
     float scale=1.f;
-    for(int i=0;i<count && video_tab_measure;i++) {
-        uint32_t caption=captions[i];
+    for(int i=0;i<=count && video_tab_measure;i++) {
+        uint32_t caption=i<count?captions[i]:video_tab_measure+8;
         guest_call(sub_0003FCF0,4,video_tab_measure,video_tab_measure+4,caption,0u);
         float tw,th;memcpy(&tw,(void *)((uintptr_t)video_tab_measure+g_xbox_mem_offset),4);
         memcpy(&th,(void *)((uintptr_t)video_tab_measure+4+g_xbox_mem_offset),4);
@@ -59,7 +63,7 @@ static void settings_tabs_paint(uint32_t menu,const float bounds[4],
             }
         }
         uint32_t caption=captions[i];
-        if(!video_tab_measure)video_tab_measure=xbox_HeapAlloc(8,4);
+        if(!video_tab_measure)video_tab_measure=xbox_HeapAlloc(40,4);
         if(video_tab_measure) {
             guest_call(sub_0003FCF0,4,video_tab_measure,video_tab_measure+4,caption,0u);
             float tw,th;memcpy(&tw,(void *)((uintptr_t)video_tab_measure+g_xbox_mem_offset),4);
