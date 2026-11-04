@@ -1,6 +1,11 @@
 #include "audio_xaudio_fake.h"
 #include "hle/audio_output_xaudio2.cpp"
 extern "C" int audio_lifecycle_stress(int enhanced);
+extern "C" int audio_tail_completion(void (*stage)(int));
+static void tail_stage(int stage) {
+    assert(voices[0].source);
+    voices[0].source->queued=stage==2?0:1;
+}
 extern "C" void test_output_fault(void) { registered->OnCriticalError(XAUDIO2_E_DEVICE_INVALIDATED); }
 extern "C" void test_output_recover(void) { fake_ms += 1000; }
 extern "C" int test_output_active(unsigned slot) { return voices[slot].source != nullptr; }
@@ -9,6 +14,7 @@ extern "C" int test_output_clean(unsigned slot) {
 }
 int main(int argc, char **argv) {
     assert(argc == 2);
+    if(!strcmp(argv[1],"tail")) return audio_tail_completion(tail_stage);
     int result = audio_lifecycle_stress(atoi(argv[1]));
     assert(source_created == source_destroyed);
     return result;

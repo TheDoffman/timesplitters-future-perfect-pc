@@ -9644,3 +9644,14 @@ Story runs, six reviewed captures and26 protected files unchanged, as above.
 The CI repair changes only the negative fixture and validation notes; it requires
 no product regeneration/rebuild. Separate native-boundary/DPC source work is
 still local and is not included in this test-only repair or its acceptance.
+
+Audio buffering/completion follow-up (PR478): shared patches2304/2305 change
+natural completion and learned effects lead; patch2306 supplies a dedicated
+finite-tail drain in the SDL adapter. The earlier claim that SDL already
+exposed queue depth was incorrect. Its hardware position remains unavailable;
+stream/movie wall-clock fallback is preserved. End-of-input flushing releases
+resampler-held samples once, and pending converted output keeps the tail alive.
+Complete-HLE/complete-adapter regression tests cover both hosts' adapters via
+host doubles; the SDL case fails without2306. Physical native Mac gameplay and
+listening remain pending. Windows FPS limits/residual underruns are in STATUS;
+release publication is pending. This does not change the Enhanced Audio beta.

@@ -39205,3 +39205,79 @@ were preserved. See [usage and contracts](../development/graphics-options.md#sup
 PR468 AO sample rejection: both Windows WARP suites pass (shared RHI and864-frame transition checks). Current SSAO shader/fixtures linked with the earlier isolated Linux graphics RHI also pass on lavapipe; this is targeted shared-shader evidence, not a full current Linux build or validation-layer acceptance. Mac odd-size foreground pixel failure is recorded in graphics-options.md and awaits rerun after explicit sample rejection. Canyon gameplay blackout remains unconfirmed.
 
 PR468 native Mac GPU4168ae8d: all pixel assertions pass, confirming the AO foreground repair; Vulkan validation remains red because sample-index shaders require sampleRateShading enabled at device creation. Patch2497 now enables the supported feature; native rerun pending. No claim of canyon gameplay acceptance.
+
+Audio buffering and completion (2026-11-03, based on595ffe70): shared patches
+2304/2305 keep naturally completed one-shots PLAYING until their accepted host
+tail drains and share learned busy-service headroom across fresh effect slots.
+The lead remains capped at90ms; explicit fixed/zero overrides, cursor clocks,
+voice priority, explicit Stop/Release and the Enhanced Audio toggle retain
+their existing contracts. Patch2306 supplies the SDL finite-tail drain that
+the original completion implementation lacked. Native Mac gameplay/listening
+remains pending.
+
+The queued-tail and fresh-burst regressions fail before their respective
+patches and pass afterward. The Windows Release build and its built-in checks
+passed. Media suites pass107 tests with1 opt-in hardware check skipped; a real
+XAudio reopen/silent-playback check passed separately. The initial isolated
+ten-bot Hotel comparison improved from473 underruns across836 starts to12
+across813 starts, with later patched combat reports remaining at12. No effects
+submission refusals, slot exhaustion or host engine glitches were reported.
+
+All four current FPS presets and legacy diagnostic144 were subsequently tested
+in roughly70-second ten-bot combat windows. Results below distinguish requested
+settings from measured successful guest Present API calls, which do not prove
+GPU completion or monitor scanout:
+
+| Target FPS | Mode | Measured presents/sec | Additional combat underruns |
+| --- | --- | --- | --- |
+| 60 | Original, windowed | 58.9 | 0 |
+| 120 | Beta, windowed | 117.9 | 0 |
+| 144 | Legacy diagnostic, windowed | 140.5 | 8 |
+| 180 | Beta, windowed | 141.8 | 0 |
+| 240 | Beta, windowed | 142.6 | 0 |
+| 144 | Legacy diagnostic, fullscreen/VRR | 76.9 | 0 |
+| 180 | Beta, fullscreen/VRR | 76.8 | 0 |
+| 240 | Beta, fullscreen/VRR | 75.1 | 12 |
+
+Windowed rendering used1280x720; actual fullscreen was3440x1440. The live host
+did not sustain180/240 FPS. Five CPU/device-double cases independently check64
+voices at exact60/120/144/180/240 service cadences with repeated37ms delays,
+zero steady-service underruns, bounded queues and learned recovery.
+
+The residual144-windowed/240-fullscreen events remain unexplained. Their
+largest profiled render gaps were37.8/41.3ms, so a >90ms render hitch is not a
+supported explanation. Per-voice audio-service timing and queue details are
+still needed; counters alone do not prove audible loss per event. Complete
+dropout elimination, network multiplayer, every map and other-host listening
+remain unverified. This is an improvement, not complete audio acceptance.
+
+Local reproducibility records: logs/audio-tail-build.log,
+logs/audio-burst-build.log, logs/audio-burst-comparison.json and
+logs/audio-fps-validation.json, plus isolated per-rate evidence beneath
+private/test-saves/audio-fps-matrix. Six protected config/save hashes and the
+canonical Test Lab fixture remain unchanged; disposable disks were recycled.
+Repository context, patch-tracking and Mac-backlog checks passed45 tests.
+The user authorized integration into main. A published runtime release is
+still pending; original game data, personal settings and private logs are
+excluded from the source change.
+
+PR478 review correction: the original SDL position function returns0 and did
+not expose the queue depth assumed by patch2304. The PR was held as draft
+before merging. Patch2306 adds a separate finite-tail drain operation, preserving
+SDL's unavailable hardware cursor and continuous stream/movie fallback. SDL
+flushes an accepted end-of-input once and keeps pending input/converted output
+alive; reset/new input clears the marker and failures use existing per-voice
+recovery. XAudio delegates to its existing queue snapshot.
+
+A regression linking complete HLE/model and each complete adapter now covers
+natural completion through actual adapter calls. The SDL case fails against
+the pre2306 HLE and passes afterward. Media suites now pass110 checks with1
+opt-in device skip; the real Windows device check also passes separately,
+compiling/linking the complete XAudio implementation against the Windows SDK.
+The earlier live FPS matrix tested the unchanged Windows queue policy; this
+follow-up does not claim new hardware listening or a new whole-game build.
+
+The shared checkout was switched concurrently to feature/flat-settings-tabs.
+Only this task's verified audio edits were moved to a separate source-only
+worktree on fix/audio-truncated-tails; unrelated UI work and user files were
+preserved. No game-data, binaries or dependency environments were copied.

@@ -65,7 +65,7 @@ def sdl_recovery_exe(tmp_path_factory):
     assert built.returncode == 0, built.stdout+built.stderr
     return exe
 
-@pytest.mark.parametrize('scenario', ['startup', 'subsystem', 'shutdown', 'queue', 'bind', 'put', 'volume', 'enhanced-on', 'enhanced-off', 'diagnostics', 'exit-failure', 'exit-muted'])
+@pytest.mark.parametrize('scenario', ['startup', 'subsystem', 'shutdown', 'queue', 'bind', 'put', 'volume', 'enhanced-on', 'enhanced-off', 'diagnostics', 'exit-failure', 'exit-muted', 'tail'])
 def test_sdl_recovery(sdl_recovery_exe, scenario):
     env = {k:v for k,v in os.environ.items() if k not in ('RECOMP_AUDIO_GAIN', 'RECOMP_MUTE')}
     if scenario == 'exit-muted': env['RECOMP_AUDIO_GAIN'] = '0'
@@ -155,3 +155,11 @@ def test_release_during_recovery_and_scene_teardown(lifecycle_exe, enhanced):
     assert result.stderr.count('[DSOUND] final health:') == 1
     assert 'occupied=0/256 pool_full=0 release_calls=256 released_slots=256' in result.stderr
     assert result.stderr.count('[audio-output] final health:') == 1
+
+
+def test_adapter_backed_tail_completion(lifecycle_exe):
+    env = {k:v for k,v in os.environ.items() if not k.startswith(('RECOMP_', 'TSFP_'))}
+    result = subprocess.run([str(lifecycle_exe), 'tail'], env=env,
+                            capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert 'PASS: adapter-backed one-shot tail completion' in result.stdout

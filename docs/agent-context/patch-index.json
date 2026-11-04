@@ -1653,6 +1653,32 @@
       ]
     },
     {
+      "name": "2304-dsound-buffer-completion.patch",
+      "path": "patches/media/2304-dsound-buffer-completion.patch",
+      "sha256": "43edcdc3b0c610026f65cc1203caae3f617adbc71f94383c55228c8f3f712285",
+      "targets": [
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
+      "name": "2305-dsound-burst-headroom.patch",
+      "path": "patches/media/2305-dsound-burst-headroom.patch",
+      "sha256": "72ebfd8e1939817ad9d99c05a9640f74a4cc034f2b0c4ce49d3726ea69c29246",
+      "targets": [
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
+      "name": "2306-dsound-tail-drain-adapters.patch",
+      "path": "patches/media/2306-dsound-tail-drain-adapters.patch",
+      "sha256": "7106da711954e5c9cf15cda3eb0075e964f1d176e4bb1727fa84585f8c8e816a",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
       "name": "2310-game-language.patch",
       "path": "patches/platform/2310-game-language.patch",
       "sha256": "6bb7a0a5e632b509b1e2a4c93163af160107701cddf523367716bad98a960f98",

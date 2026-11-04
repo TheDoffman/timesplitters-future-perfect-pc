@@ -207,7 +207,7 @@ presence semantics, decoding/reporting, and repeated-lookup/executor mutations.
 
 `test_window_theme.py`: menu drawing, mnemonics, inserted/reordered rows (#333).
 
-[Audio tests](audio-buffers.md): timing/gain, Release/recovery stress, exit reports,
+[Audio tests](audio-buffers.md): rates/gain/drain/bursts, Release/recovery stress, exits,
 beta ON/OFF. RHI tests cover WM_QUIT/HostExit cleanup.
 
 `test_controller_profile.py`: devices/maps/disconnect and SDL virtual input;

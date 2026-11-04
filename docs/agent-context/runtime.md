@@ -69,7 +69,7 @@ held-fire and continuation calls. See [input contract](interaction-input.md#fres
 Story co-op integration: [contracts](systems-details.md).
 
 Audio recovery patches0055-0058: [buffering, lifecycle, format and device contracts](audio-buffers.md).
-Audio release/normal-exit patches2300-2303: [contracts and diagnostics](audio-buffers.md).
+Audio release/exit/completion patches2300-2306: [contracts and diagnostics](audio-buffers.md).
 
 
 Patch 2140-native-minigun-intent follows the native weapon wrappers in loader dependency order. It scopes held-primary intent around original US 1C74D0 event 1. Generic shots remain on whole ticks; numeric site 1C7600 normalizes release damping. See native-minigun.md.
