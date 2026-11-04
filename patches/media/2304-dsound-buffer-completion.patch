@@ -1,0 +1,20 @@
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -1068,6 +1068,17 @@
+             status = 1u | ((b->model.play_flags & RECOMP_DSOUND_PLAY_LOOPING) ? 4u : 0u);
+         else if (b->paused)
+             status = 2u | ((b->paused_flags & RECOMP_DSOUND_PLAY_LOOPING) ? 4u : 0u);
++        else if (b->output && b->fed &&
++                 !(b->model.play_flags & RECOMP_DSOUND_PLAY_LOOPING)) {
++            /* The wall clock can finish before a starved host voice. Keep
++             * PLAYING until its accepted tail drains, otherwise the title
++             * may Stop/reuse the buffer and discard those unheard samples.
++             * Explicit Stop/pause/reset clears fed; absent output keeps the
++             * existing wall-clock fallback rather than waiting on a device. */
++            uint32_t queued = 0u;
++            if (recomp_audio_output_position(slot_of(b), NULL, &queued) && queued)
++                status = 1u;
++        }
+     }
+     unlock();
+     HLE_MEM32(out) = status;          /* never played here: not playing */

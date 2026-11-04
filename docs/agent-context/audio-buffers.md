@@ -119,8 +119,9 @@ physical Mac acceptance.
 ## Runtime contracts
 
 Effects buffering: `media/0055-dsound-busy-buffer-recovery.patch` extends the
-shared `hle_dsound.c` pump. Its default 40 ms lead grows per buffer to the
-observed active service interval plus 10 ms, capped at 90 ms. Explicit
+shared `hle_dsound.c` pump. Its default 40 ms lead grows to the
+observed active service interval plus 10 ms, capped at 90 ms; patch2305 shares
+that measured headroom across fresh effect slots. Explicit
 `RECOMP_DSOUND_LEAD_MS` values stay fixed, including legacy zero. Play still
 submits immediately; pause/stop resets prevent learning inactive intervals.
 After a >100 ms output-model interval, stale data is skipped only up to now,
@@ -210,3 +211,62 @@ failed-start/muted exit and repeated explicit shutdown. The real RHI host
 fixture posts WM_QUIT; a separate test compiles the real xbox_HostExit body
 and checks diagnostics and exit handlers. These
 are controlled lifecycle checks, not a real level transition or listening test.
+
+## One-shot completion follows queued output
+
+`media/2304-dsound-buffer-completion.patch` extends GetStatus after natural
+wall-clock completion of a non-looping buffer. If that buffer has accepted
+PCM and its host voice still has queued buffers, status remains PLAYING.
+This prevents a status-driven Stop/reuse from discarding the last samples
+after an underrun. The guest cursor clock, lead, stale-data policy and explicit
+Stop/Release semantics are unchanged. Explicit reset clears `fed`; paused
+buffers retain PAUSED; unavailable output retains wall-clock completion.
+Both XAudio and SDL already supply the queue-depth interface, so no separate
+Mac implementation is required. Physical listening remains a separate check.
+
+`test_audio_timing.py::test_buffer_audible_completion` executes the real pump
+and GetStatus with a 100ms PCM one-shot and a 60ms service interval. The initial
+40ms queue runs dry for 20ms; all 9600 source bytes are submitted but the last
+20ms remains queued at guest completion. Status now waits for that tail, then
+finishes. Stop/reset, pause and device-unavailable controls retain their status.
+
+## Fresh effects inherit busy-service headroom
+
+`media/2305-dsound-burst-headroom.patch` shares observed active effects service
+headroom across buffer lifetimes under the existing HLE lock. Previously each
+fresh slot started at 40ms even after other voices had learned 70-90ms was
+needed. Repeated short effects could therefore suffer their own initial
+underrun before adapting. The shared value only grows from an active, fed
+buffer's service gap, remains capped at 90ms, and never overrides explicit
+fixed/zero lead. Play still submits immediately. Guest clocks, sound priority,
+slot capacity, stream buffering and explicit stops are unchanged. No audio
+thread or host adapter change is introduced. The higher learned lead persists
+for the process, including across scenes; queued SDL routing changes can take
+up to that bounded lead to reach playback.
+
+The existing `test_effects_under_load` route adds `burst`: an active voice
+learns a 60ms service interval, then eight rounds replace 63 simultaneous
+non-looping voices. Each fresh voice must start with 70ms of PCM, retain its
+own queue, and avoid another underrun at the next 60ms service. This regression
+fails before patch2305. Existing fixed/zero, steady, long-hitch, refused-output,
+finite-tail and expiry cases retain their previous behavior.
+
+## FPS validation and remaining runtime limits
+
+The load fixture additionally runs 64 independent voices at millisecond-
+quantized 60/120/144/180/240 service cadences, with repeated 37ms delays. It
+requires zero steady-service underruns, bounded queues, and no recurring
+starvation after the first delayed service teaches the lead. These CPU/device-
+double tests cover requested cadences independently of physical render speed.
+They do not establish audible whole-game acceptance.
+
+The 2026-11-03 Windows ten-bot Hotel matrix exercised all four current presets
+and the legacy diagnostic144 rate. Windowed60/120/180/240 had no increase in
+combat underruns; windowed144 added8. Verified fullscreen/VRR repeats added0
+at180,12 at240,0 at144. All runs had zero effects submission refusals and zero
+slot-exhaustion failures. The live machine did not sustain180/240 rendering;
+see STATUS for measured present rates. Additional counter events remain
+unexplained and must not be called fixed or attributed to long render hitches:
+the profiled render gaps did not exceed90ms in these residual cases. Counter
+events alone do not establish audible loss. Native Mac/network listening and
+other scenes remain separate acceptance work.

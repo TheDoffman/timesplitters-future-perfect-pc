@@ -66,13 +66,20 @@ def test_stream_headroom(buffer_test):
     assert 'PASS:' in result.stdout
 
 
+def test_buffer_audible_completion(buffer_test):
+    result = subprocess.run([str(buffer_test), 'completion'], capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert 'PASS: completion' in result.stdout
+
+
 @pytest.fixture(scope='module')
 def load_test(tmp_path_factory):
     return compile_audio('load', tmp_path_factory)
 
 
 @pytest.mark.parametrize('scenario', ['steady', 'busy', 'stall', 'stall-refused',
-                                     'tail', 'expired', 'fixed', 'legacy'])
+                                     'tail', 'expired', 'fixed', 'legacy', 'burst',
+                                     'fps-60', 'fps-120', 'fps-144', 'fps-180', 'fps-240'])
 def test_effects_under_load(load_test, scenario):
     env = dict(os.environ)
     if scenario in ('fixed', 'legacy'):

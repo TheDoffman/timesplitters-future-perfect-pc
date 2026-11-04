@@ -9644,3 +9644,12 @@ Story runs, six reviewed captures and26 protected files unchanged, as above.
 The CI repair changes only the negative fixture and validation notes; it requires
 no product regeneration/rebuild. Separate native-boundary/DPC source work is
 still local and is not included in this test-only repair or its acceptance.
+
+Audio buffering/completion follow-up (2026-11-03): patches2304/2305 change shared
+HLE GetStatus and learned effects lead only. XAudio and SDL already implement
+the required queue-depth contract; no new Mac adapter or duplicate policy is
+needed. The existing90ms maximum and SDL queued-routing delay remain. Windows
+CPU, build and ten-bot FPS validation are recorded in STATUS; residual144-
+windowed/240-fullscreen counters remain unresolved. Native Mac execution and
+listening remain pending. Source integration is authorized; release publication
+is pending. This does not change the Enhanced Audio beta.
