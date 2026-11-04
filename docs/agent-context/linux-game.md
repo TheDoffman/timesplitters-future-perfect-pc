@@ -33,6 +33,8 @@ Named Linux release metadata requires the version of the actually verified
 launcher included in the package, rather than the older global minimum.
 ZIP naming and its single top-level directory derive from the immutable staging
 directory name, independent of library/license iteration variable names.
+All dependency notices use the shared launcher's flat Licenses/*.txt contract;
+Ubuntu copyright names include the binary package, preserving distinct notices.
 
 The SDL host now exports the shared `pc_controls_key_down` and
 `pc_controls_accept_pad` contracts used by settings-tab navigation. Windows and

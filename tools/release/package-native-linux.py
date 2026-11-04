@@ -205,7 +205,7 @@ def main():
     upstream=ROOT/'external/ts3FPrecomp'
     for origin,target in [('LICENSE','Runtime-GPL-3.0.txt'),('LICENSE.upstream-MIT','Runtime-upstream-MIT.txt'),('NOTICE','Runtime-NOTICE.txt'),('LICENSES/LGPL-2.1.txt','Runtime-LGPL-2.1.txt'),('third_party/SDL/LICENSE.txt','SDL.txt'),('third_party/volk/LICENSE.md','volk.txt'),('third_party/VulkanMemoryAllocator/LICENSE.txt','VulkanMemoryAllocator.txt')]:copy(upstream/origin,stage,'Licenses/'+target)
     for source in (upstream/'third_party/Vulkan-Headers/LICENSES').iterdir():
-        if source.is_file():copy(source,stage,'Licenses/Vulkan-Headers/'+source.name)
+        if source.is_file():copy(source,stage,'Licenses/Vulkan-Headers-'+source.name)
     if (ROOT/'vendor/smaa/LICENSE.txt').is_file():copy(ROOT/'vendor/smaa/LICENSE.txt',stage,'Licenses/SMAA.txt')
     roots=[(executable,game),*python_pairs,*dynamic];known={p.resolve() for _,p in roots}
     for member in stage.rglob('*'):

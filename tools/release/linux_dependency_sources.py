@@ -73,9 +73,9 @@ def collect(root,stage,records,launcher,media,sdk,python):
         owner=package_owner(origin);name,version=source_identity(owner);key=name+'='+version
         copyright=Path('/usr/share/doc')/owner.split(':')[0]/'copyright'
         if not copyright.is_file():raise ValueError('Missing distro copyright: '+owner)
-        notice=stage/'Licenses/System'/name/'copyright';notice.parent.mkdir(parents=True,exist_ok=True)
+        notice=stage/'Licenses'/('System-'+owner.replace(':','-')+'-copyright.txt');notice.parent.mkdir(parents=True,exist_ok=True)
         if notice.exists() and digest(notice)!=digest(copyright):
-            notice=notice.with_name(owner.replace(':','-')+'-copyright')
+            raise ValueError('Conflicting distro copyright: '+owner)
         shutil.copy2(copyright,notice)
         if key not in sources:
             cache=root/'external/linux-package-sources'/name/version.replace(':','_')
@@ -97,7 +97,7 @@ def collect(root,stage,records,launcher,media,sdk,python):
             sources[key]=dict(package=name,version=version,files=files)
         components[target]=dict(common,provider='Ubuntu',binary_package=owner,source_package=key,notice=notice.relative_to(stage).as_posix())
     for path in Path('/usr/share/common-licenses').iterdir():
-        if path.is_file():dest=stage/'Licenses/Common'/path.name;dest.parent.mkdir(exist_ok=True);shutil.copy2(path,dest)
+        if path.is_file():dest=stage/'Licenses'/('Common-'+path.name+'.txt');dest.parent.mkdir(exist_ok=True);shutil.copy2(path,dest)
     report=dict(schema=1,components=components,source_packages=sources)
     (stage/'Support/Runtime/dependency-audit.json').write_text(json.dumps(report,indent=2)+'\n')
     return report
