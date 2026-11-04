@@ -184,7 +184,19 @@ def main():
     python_pairs,python=bundle_python(ROOT,stage)
     # Package only our verified decoder-only media build, never the host's
     # GPL/external-codec dependency closure. Include exact sources and recipe.
+    # Avalonia loads session libraries through P/Invoke, and GTK loads its SVG
+    # decoder as a module: ldd alone cannot discover these desktop dependencies.
     dynamic=[]
+    for soname in ('libICE.so.6','libSM.so.6'):
+        matches=[Path(line.split(' => ',1)[1]) for line in run('ldconfig','-p').splitlines()
+                 if line.strip().startswith(soname+' ') and 'x86-64' in line]
+        if len(matches)!=1:raise ValueError('Missing unique desktop dependency: '+soname)
+        origin=matches[0].resolve();dynamic.append((origin,copy(origin,stage,'Bin/'+soname)))
+    pixbuf=Path('/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0')
+    for origin,target in [(pixbuf/'gdk-pixbuf-query-loaders','Support/Desktop/gdk-pixbuf-query-loaders'),
+                          (pixbuf/'2.10.0/loaders/libpixbufloader-svg.so','Support/Desktop/pixbuf/libpixbufloader-svg.so')]:
+        dynamic.append((origin,copy(origin,stage,target)))
+    copy(ROOT/'config/build/linux-fonts.conf',stage,'Support/Desktop/fonts.conf')
     media,media_receipt=linux_ffmpeg.verify_install(ROOT)
     if native.get('release_media')!=media_receipt:raise ValueError('Rebuild the game with --release-media before packaging')
     for stem in media_receipt['pin']['libraries']:

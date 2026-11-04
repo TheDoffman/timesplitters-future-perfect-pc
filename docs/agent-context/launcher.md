@@ -646,3 +646,7 @@ pc-graphics.ini reads V1 (100%) or V2 with a sixth index0..3; defaults write V1,
 non-defaults V2. Existing settings transactions/concurrent-edit rejection remain.
 Model and WPF/Avalonia UI fixtures cover saving/reopening and 200% pixel-cost
 guidance. Older games/launchers cannot consume non-default V2 graphics files.
+
+Linux installed executable modes also preserve the bundled GTK module-query
+tool; clean-userspace launcher UI acceptance detects dynamic session libraries
+that do not appear in ELF imports. See [Linux release checks](linux-game.md).

@@ -78,7 +78,7 @@ namespace TimeSplitters.Launcher
             try { File.Copy(source,temporary,false); File.Move(temporary,target,true); Executable(target); }
             finally { if(File.Exists(temporary))File.Delete(temporary); }
         }
-        public static void Executable(string path) { if(!OperatingSystem.IsWindows() && File.Exists(path) && (path.EndsWith("/futureperfect_recomp") || path.EndsWith("/TimeSplitters.Launcher") || path.EndsWith(".command") || path.EndsWith(".sh") || path.EndsWith("/Support/Python/bin/python3",StringComparison.Ordinal) || path.EndsWith("/Support/Python/bin/python-real",StringComparison.Ordinal))) File.SetUnixFileMode(path,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute|UnixFileMode.GroupRead|UnixFileMode.GroupExecute|UnixFileMode.OtherRead|UnixFileMode.OtherExecute); }
+        public static void Executable(string path) { if(!OperatingSystem.IsWindows() && File.Exists(path) && (path.EndsWith("/futureperfect_recomp") || path.EndsWith("/TimeSplitters.Launcher") || path.EndsWith(".command") || path.EndsWith(".sh") || path.EndsWith("/Support/Python/bin/python3",StringComparison.Ordinal) || path.EndsWith("/Support/Python/bin/python-real",StringComparison.Ordinal) || path.EndsWith("/Support/Desktop/gdk-pixbuf-query-loaders",StringComparison.Ordinal))) File.SetUnixFileMode(path,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute|UnixFileMode.GroupRead|UnixFileMode.GroupExecute|UnixFileMode.OtherRead|UnixFileMode.OtherExecute); }
 #else
         [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError=true)]
         static extern bool DeviceIoControl(Microsoft.Win32.SafeHandles.SafeFileHandle file,uint code,

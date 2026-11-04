@@ -9,6 +9,8 @@ This checks userspace relocation, not a physical Linux desktop or GPU driver.
 import argparse
 import json
 import os
+import re
+import time
 from pathlib import Path
 import subprocess
 import sys
@@ -33,9 +35,21 @@ def main():
     if not os.environ.get('DISPLAY') or not Path('/tmp/.X11-unix').is_dir():
         parser.error('Start under a dedicated Xvfb display')
     if not args.inside:
-        subprocess.run(['unshare', '--mount', '--fork', sys.executable, str(Path(__file__).resolve()),
+        display = re.fullmatch(r':([0-9]+)(?:\.[0-9]+)?', os.environ['DISPLAY'])
+        if not display:
+            parser.error('Expected a local dedicated Xvfb display')
+        server = Path('/tmp/.X'+display[1]+'-lock').read_text().strip()
+        if b'Xvfb' not in Path('/proc/'+server+'/cmdline').read_bytes().split(b'\0')[0]:
+            parser.error('Refusing to start a window manager on a non-Xvfb desktop')
+        wm = subprocess.Popen(['openbox', '--sm-disable'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        time.sleep(.5)
+        try:
+            subprocess.run(['unshare', '--mount', '--fork', sys.executable, str(Path(__file__).resolve()),
                         '--inside', '--rootfs', str(rootfs), '--package', str(package),
                         '--game-dir', str(game)], check=True)
+        finally:
+            wm.terminate()
+            wm.wait(timeout=10)
         return
     run = lambda *command: subprocess.run([str(x) for x in command], check=True)
     run('mount', '--make-rprivate', '/')
@@ -72,7 +86,7 @@ def main():
                             capture_output=True, text=True, timeout=45)
     print(result.stdout+result.stderr, flush=True)
     results['python'] = dict(exit_code=result.returncode, output=result.stdout+result.stderr)
-    result = subprocess.run([*prefix, 'LD_LIBRARY_PATH=/app/Bin', '/app/TimeSplitters.Launcher', '--test-ui'],
+    result = subprocess.run([*prefix, 'LD_LIBRARY_PATH=/app/Bin', 'FONTCONFIG_FILE=/app/Support/Desktop/fonts.conf', '/app/TimeSplitters.Launcher', '--test-ui'],
                             capture_output=True, text=True, timeout=90)
     print(result.stdout+result.stderr, flush=True)
     results['launcher_ui'] = dict(exit_code=result.returncode, output=result.stdout+result.stderr)

@@ -37,7 +37,7 @@ All dependency notices use the shared launcher's flat Licenses/*.txt contract;
 Ubuntu copyright names include the binary package, preserving distinct notices.
 `test-linux-clean-package.py` runs the read-only package/assets as nobody in a
 private mount namespace and prepared minimal Ubuntu userspace, on a dedicated
-Xvfb display. It checks native settings/debug/input/renderer/online self-tests,
+Xvfb display with its own Openbox window manager (verified Xvfb only). It checks native settings/debug/input/renderer/online self-tests,
 bundled Python/Tk/TLS and the actual launcher shared UI checks. It uses temporary
 state and software Vulkan; this is not physical desktop/GPU acceptance.
 
@@ -360,3 +360,9 @@ validation layer in an ordinary package must not be reported as API validation.
 file-descriptor counts every five seconds, with at most128 scalar samples. It
 reads no environment, unrelated process or memory contents. Compare stable
 active phases; allocation/cache warmup is not by itself evidence of a leak.
+
+Clean-userspace testing exposed dynamically loaded libICE/libSM and GTK SVG
+modules that ELF imports omit. The package now includes/audits these roots and
+the module-query tool; Launch.sh writes a relocatable module cache under XDG
+cache and supplies fallback font configuration only if system configuration is
+absent. Installer executable modes include the module-query tool.

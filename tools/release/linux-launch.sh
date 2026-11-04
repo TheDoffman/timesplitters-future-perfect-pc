@@ -2,6 +2,25 @@
 # Relocatable Linux entry point. Keep writable state out of an immutable package.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+# GTK's SVG module and fontconfig data are not part of ELF dependency discovery.
+# Build a relocatable module cache in user state, never in the package directory.
+if [ -x "$root/Support/Desktop/gdk-pixbuf-query-loaders" ]; then
+    case "${XDG_CACHE_HOME-}" in /*) desktop_cache=$XDG_CACHE_HOME;; *) desktop_cache=$HOME/.cache;; esac
+    desktop_cache=$desktop_cache/timesplitters-future-perfect
+    mkdir -p "$desktop_cache"
+    module_cache=$(mktemp "$desktop_cache/.pixbuf.XXXXXX")
+    if "$root/Support/Desktop/gdk-pixbuf-query-loaders" "$root/Support/Desktop/pixbuf/libpixbufloader-svg.so" > "$module_cache"; then
+        mv -f -- "$module_cache" "$desktop_cache/pixbuf-loaders.cache"
+        export GDK_PIXBUF_MODULE_FILE="$desktop_cache/pixbuf-loaders.cache"
+    else
+        rm -f -- "$module_cache"
+        echo "Could not initialize the bundled GTK image loader" >&2
+        exit 1
+    fi
+fi
+if [ ! -f /etc/fonts/fonts.conf ] && [ -f "$root/Support/Desktop/fonts.conf" ]; then
+    export FONTCONFIG_FILE="$root/Support/Desktop/fonts.conf"
+fi
 if [ "${1-}" != "--game" ]; then
     unset LD_PRELOAD
     export LD_LIBRARY_PATH="$root/Bin"
