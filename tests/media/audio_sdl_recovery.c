@@ -7,6 +7,32 @@ static int submit(unsigned slot) {
 }
 int main(int argc, char **argv) {
     assert(argc==2);
+    if(!strcmp(argv[1],"tail")) {
+        assert(submit(0) && submit(1));
+        SDL_AudioStream *s=voices[0].stream;
+        uint64_t played=123;uint32_t queued=456;
+        assert(!recomp_audio_output_position(0,&played,&queued));
+        assert(played==123 && queued==456); /* no invented SDL device clock */
+        s->queued=4;
+        assert(recomp_audio_output_tail_pending(0,0) && !s->flushes);
+        assert(recomp_audio_output_tail_pending(0,1));
+        assert(s->flushes==1 && !s->queued && s->available==4);
+        assert(recomp_audio_output_tail_pending(0,1) && s->flushes==1);
+        s->available=0;assert(!recomp_audio_output_tail_pending(0,1));
+        recomp_audio_output_reset_voice(0);
+        assert(!recomp_audio_output_tail_pending(0,1));
+        assert(submit(0));s=voices[0].stream;assert(!voices[0].flushed);
+        fail_flush=1;assert(!recomp_audio_output_tail_pending(0,1));
+        assert(!voices[0].stream && voices[1].stream);
+        assert(recomp_audio_output_take_discontinuity(0));
+        fail_flush=0;sdl_now=1000;assert(submit(0));
+        fail_available=1;assert(!recomp_audio_output_tail_pending(0,0));
+        assert(!voices[0].stream && voices[1].stream);
+        fail_available=0;recomp_audio_output_shutdown();
+        assert(!recomp_audio_output_tail_pending(1,1));
+        assert(!recomp_audio_output_tail_pending(SLOT_COUNT,1));
+        return 0;
+    }
     if(!strcmp(argv[1],"exit-failure")) {
         fail_open=1; assert(!submit(0)); return 0;
     }

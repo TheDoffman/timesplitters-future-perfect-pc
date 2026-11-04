@@ -173,3 +173,29 @@ int tsfp_worker_stack_release(tsfp_thread_memory *s, int index) {
     }
     leave(s); return result;
 }
+
+int tsfp_thread_stack_bounds(tsfp_thread_memory *s,uint32_t esp,uint32_t *low,uint32_t *high) {
+    uint32_t begin=0,end=0;int found=0;
+    if(!s || !low || !high || low==high)return 0;
+    enter(s);
+    if(s->active) {
+        uint64_t bootstrap=(uint64_t)s->low_shift+STACK_OFFSET;
+        uint64_t top=(uint64_t)s->low_shift+STACK_END;
+        if(top<=UINT32_MAX && esp>=bootstrap && esp<top) {
+            begin=(uint32_t)bootstrap;end=(uint32_t)top;found=1;
+            for(unsigned i=0;i<TSFP_WORKER_STACK_COUNT;++i) {
+                if(!(s->worker_mask&(UINT32_C(1)<<i)))continue;
+                uint32_t a=(uint32_t)bootstrap+i*TSFP_WORKER_STACK_BYTES,b=a+TSFP_WORKER_STACK_BYTES;
+                if(esp>=a && esp<b){begin=a;end=b;break;}
+                if(b<=esp && b>begin)begin=b;
+                if(a>esp && a<end)end=a;
+            }
+        } else for(unsigned i=0;i<TSFP_THREAD_STACK_COUNT;++i) {
+            uint32_t stack=s->stacks[i];
+            if(!stack || stack>UINT32_MAX-16 || stack+16<TSFP_THREAD_STACK_BYTES)continue;
+            uint32_t a=stack+16-TSFP_THREAD_STACK_BYTES,b=stack+16;
+            if(esp>=a && esp<b){begin=a;end=b;found=1;break;}
+        }
+    }
+    leave(s);if(found){*low=begin;*high=end;}return found;
+}

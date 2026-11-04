@@ -110,3 +110,16 @@ void tsfp_kernel_rtl_rip(const tsfp_guest_vm *vm,uint32_t api,uint32_t expressio
 void tsfp_kernel_rtl_fault(enum tsfp_critical_result result) {
     fprintf(stderr,"[RTL-CS] fatal host synchronization failure %u\n",(unsigned)result);fflush(stderr);exit(EXIT_FAILURE);
 }
+
+void tsfp_kernel_rtl_assert(const tsfp_guest_vm *vm,uint32_t expression,uint32_t file,uint32_t line,uint32_t message) {
+    char a[256],b[256],c[512];
+    (void)tsfp_rtl_text(vm,expression,a,sizeof(a));(void)tsfp_rtl_text(vm,file,b,sizeof(b));(void)tsfp_rtl_text(vm,message,c,sizeof(c));
+    xbox_log(XBOX_LOG_ERROR,XBOX_LOG_RTL,"RtlAssert: %s:%u %s - %s",b,(unsigned)line,a,c);
+#ifdef _DEBUG
+#ifdef _WIN32
+    DebugBreak();
+#else
+    (void)raise(SIGTRAP);
+#endif
+#endif
+}

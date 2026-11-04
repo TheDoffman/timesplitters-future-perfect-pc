@@ -36,6 +36,8 @@ static DWORD g_d3d_settransform_count,g_d3d_setrs_count,g_d3d_settexture_count;
 static void follow_vrr(void) {}
 static void two_d_tag_frame(void) {}
 static void present_scene(void) {}
+/* This texture-only fixture has no alternate HUD targets. */
+static void native_hud_restore(void) {}
 static void d3d8_display_frame_done(void) {}
 void rhi_pump_events(void) {}
 int32_t rhi_present_kind(uint32_t interval,uint32_t kind)

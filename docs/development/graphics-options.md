@@ -1,0 +1,489 @@
+# Optional graphics settings (in development)
+
+Acceptance requirement: every graphics setting, the FPS/online-ping counter,
+and Clear Shader Cache must be available in both the in-game settings (main
+menu and pause) and the launcher on Windows, macOS, and Linux. Both interfaces
+must preserve the same preferences between launches. Apply changes live where
+supported and explicitly label settings requiring restart. FPS/Ping shows only
+FPS and network latency in milliseconds during online play, not frame time.
+
+## Required settings parity
+
+The task is not complete until every row below can be changed from both
+**main menu and pause menu -> Video Options** tabs and the launcher's
+**Graphics settings**. This includes Windows, macOS, and Linux; implementation
+and native validation must be reported separately for each host.
+
+| Control | Choices / behavior |
+| --- | --- |
+| Multisample antialiasing | Off, 2x, 4x, 8x; supported fallback; restart notice where needed |
+| Post-process anti-aliasing | Off, FXAA, SMAA; usable with independent MSAA |
+| Anisotropic filtering | Original, 2x, 4x, 8x, 16x |
+| Ambient occlusion | Off / On; half-resolution processing |
+| Shader cache | Off / On, plus Clear Shader Cache action |
+| Supersampling | 100% (Off), 125%, 150%, 200% per axis; restart required |
+| FPS / Ping | Off / On; FPS plus latency in ms during online play only |
+
+Both entry points must read the same saved choice after reopening. In-game
+changes apply live where supported. Restart-required controls must say so;
+unsupported hardware must retain the requested preference while using a safe
+fallback. Verify setting round trips in both directions, failed-save behavior,
+and preservation through game/launcher updates. No F1-only controls satisfy
+this requirement.
+
+## Current implementation
+
+Settings cleanup (`feature/graphics-settings-cleanup`, based on unmerged graphics
+options at `627b05bd`): launcher and game expose one Off/FXAA/SMAA selector.
+The launcher maps it to existing files through `GameSettings.PostAntiAliasing`.
+In-game `post_aa_settings.h` saves graphics first and SMAA last; a failed SMAA
+save restores the previous graphics snapshot. The selector follows staged Apply,
+Back/discard and resolution confirmation. Existing dual-enabled records select
+SMAA; the shared resolve suppresses FXAA whenever SMAA is enabled, including
+legacy/manual configurations. No settings schema is replaced.
+
+MSAA, supersampling and shader cache/clear live in Advanced in both interfaces. The launcher
+shows Console render scale there only at Original console resolution, preserving
+the saved scale when hidden. General contains Startup; View & HUD contains FOV
+and FPS/Ping. In-game View & HUD retains subtitles and Kill Feed. Filtering is
+consistently called Anisotropic filtering. Cache remains enabled by default.
+The game Advanced page preserves the Graphics tab highlight and returns there
+on Back. Display, Graphics, View & HUD and Advanced reserve equal row counts.
+
+`src/graphics/graphics_options.h` and `graphics_settings.h` own the versioned
+`TSFP_GRAPHICS_V1 msaa edge anisotropy ao cache` record in `pc-graphics.ini`,
+beside the display configuration. Defaults are `1 0 1 0 1`: effects disabled,
+original filtering, cache enabled. FPS/Ping uses `debug.show_counter` in controls
+JSON. No saves or personal settings are migrated. Both interfaces persist these
+same files; launcher saves participate in its transaction, concurrent-change
+checks and rollback. Invalid files are not silently overwritten. Native setters
+publish a complete snapshot only after a successful atomic save.
+
+Supersampling adds a sixth field (index 0/1/2/3) in `TSFP_GRAPHICS_V2`.
+V1 still loads with 100%; saving 100% writes V1 for older-build compatibility.
+Non-default V2 files require a supersampling-aware game and launcher. Other
+preferences and Enhanced texture controls retain their existing behavior.
+
+### Supersampling
+
+Main/pause Graphics -> Advanced and launcher Graphics -> Advanced expose
+100%, 125%, 150% and 200%.
+The percentage multiplies each scene axis after Auto/manual/Original resolution
+selection. For example, 1920x1080 at 150% renders 2880x1620; 200% renders
+3840x2160 and draws four times the pixels. The legacy console scale still
+applies only in Original mode; supersampling multiplies that result too.
+Output shape, guest coordinates, FOV, window size and texture choice are
+independent. Original-resolution mode still follows the existing window-fit
+presentation policy; its percentage is relative to the console scene size.
+
+`src/graphics/supersampling.h` supplies deterministic ceil-rounded dimensions
+and reduces added scaling through the available presets to keep internal targets
+within 7680x4320 / 33,177,600 pixels. It never reduces the unscaled base target.
+The requested preference is retained. Patch 2515 latches the active scale when
+the common renderer first creates its scene; resolution changes/Auto resizing
+use that same latch. Startup allocation failure retries lower supersampling
+presets; live resolution allocation failure retains the existing targets and
+uses the display model's rollback. The log reports requested/effective dimensions.
+
+The existing production box resolve downsamples the larger scene before FXAA.
+Its sample origin now starts at the output pixel's top-left footprint rather
+than shifting by half a pixel; 100% is an exact copy and 200% averages each 2x2
+footprint. Legacy GL uses the same scene-size policy and its existing linear
+framebuffer blit; native rendering and fractional-scale quality remain unverified.
+New game/launcher preferences remain restart-required on every host.
+Video Options uses a 78%-width panel, compact fonts and native separators.
+Display distributes its three settings with3.0 leading; four-setting sections
+use1.2. Footers restore1.2, blank status/spacer records are omitted, and the first
+finalized native Y anchor is retained across tabs. Tab captions fit the same
+longest reference as Controls, keeping their lettering consistent. Restart labels
+remain next to changed MSAA/supersampling settings.
+
+Checks extend `test_graphics_options.py` (all wire-format/preset round trips,
+odd sizes, bounds/overflow), `test_graphics_resolve.py` (exact production GPU
+2x2 averages, baseline copy and restart latch), `test_fov_settings.py` (menu
+failure/restart/reopen), the launcher model/shared UI suite and graphics branch
+migration fixtures. Windows evidence and unrun native checks are in STATUS.
+
+### Output-resolution HUD with supersampling
+
+The common renderer automatically resolves a completed single-view world before
+the audited US `14F0B0` HUD pass. The original HUD and optional kill feed then
+draw at the selected output resolution, using their original shaders, clipping,
+blending and guest coordinates. Remaining overlays for that frame use the same
+target. FXAA or SMAA applies to the world before this boundary. The final HUD
+copy bypasses both filters, including legacy dual-enabled preferences. The original guest HUD function executes exactly once.
+
+`graphics/native_hud.h` reserves placement hints 6/7 with tag `14F0B0`. The
+existing host placement operation copies, defers and captures these hints in
+order; they do not change UI placement. Patches 2516/2517 apply after the complete
+MSAA scene-ownership and SMAA resolve stack. Patch 2470 keeps its published
+bytes; the unpublished HUD patch extends that final resolve and exposes an
+unfiltered copy. `native_hud_device.inc` retains the supersampled
+targets while swapping in a cached single-sample output-sized color/depth pair.
+The auto-depth surface keeps its identity. `native_hud_depth.h` copies the
+world depth at output-pixel centres, choosing the nearest MSAA sample, so HUD
+markers retain occlusion. The sampled stencil plane is reconstructed with eight
+masked replace passes, preserving all bits without optional stencil-export
+shader extensions. Both D3D11 and Vulkan expose that plane through the RHI.
+Present and resize restore the world targets before subsequent work; teardown releases both pairs and cached shaders.
+
+Native HUD admission requires supersampling above the base size, one complete
+viewport, the automatic scene depth and no interpolation/offscreen target.
+Split-screen, camera feeds, unsupported allocations and legacy OpenGL keep
+their existing supersampled path. A process-local `TSFP_NATIVE_HUD=0` override permits controlled comparisons and
+does not change saved preferences. This adds no separate user setting.
+
+`test_native_hud.py` builds the actual common renderer/replay and runs synthetic
+captures through three successive frames. Checks cover native one-pixel stems
+at 125/150/200%, MSAA, world-only FXAA/SMAA, hidden/visible depth-tested markers,
+preserved stencil history (including later reads/writes), partial-view fallback
+and capture compatibility without hints. These Windows GPU checks are distinct from native Vulkan/legacy-GL acceptance.
+
+`src/interface/pc_video_tabs.inc` supplies the persistent top tab strip in both
+main/pause Video Options. Display contains aspect ratio, resolution and frame
+rate; Graphics contains effects, filtering, cache and texture style; View & HUD
+contains vertical FOV, subtitles, Kill Feed and FPS/Ping. Click a tab, or focus
+the strip and use left/right (Confirm cycles forward). Back returns to Settings.
+Sections reserve the same native row count so the tabs stay in place. The active
+tab has a persistent blue fill independent of setting-row focus. Captions use
+one scale derived from the largest measured caption and the painted cell,
+keeping horizontal/vertical padding in the narrower paused panel. Font globals
+are flushed and restored around custom tab painting.
+`src/interface/pc_graphics_menu.inc` supplies the Graphics tab's controls.
+Live graphics changes save immediately; failed writes restore the selector. MSAA
+and supersampling stay staged across tabs until Apply. Leaving without Apply
+discards those restart-only drafts. The launcher
+uses its normal Save workflow. MSAA requires restart and is labeled accordingly;
+FXAA, AF, AO and the counter update live. Cache operations re-read the preference.
+Switching tabs retains pending display/texture/subtitle changes. Apply still
+uses the original timed resolution confirmation and rollback. Effects, cache,
+Kill Feed and FPS/Ping keep their immediate persistence behavior.
+
+### Antialiasing and filtering
+
+Patch 2495 connects final-resolve FXAA and live AF policy to shared preferences.
+FXAA operates in output pixels after the existing supersampling filter. The
+production-resolve test checks changed edges, unchanged flat areas, exact OFF
+restoration and failed-save isolation. FXAA can be combined with MSAA. The production sampler fixture also verifies
+1x/2x/4x/8x/16x policy changes, immediate restoration to Original and preservation
+of nearest-filtered HUD/font textures (`test_render_state_cache.py`).
+
+Patches 2497/2499/2504-2511 implement MSAA scene and guest-surface ownership.
+`msaa_targets.h` allocates matching color/depth attachments, chooses the highest
+supported requested-or-lower count, and preserves the old allocation on failure.
+The saved request remains unchanged when hardware requires fallback. At one
+sample there is no extra resolve image. D3D11 and Vulkan resolve on the GPU.
+
+Guest textures stay single-sampled, with per-surface coverage companions in
+`msaa_color_surface.h`. Binding resolves the previous attachment and seeds the
+next; shared depth history survives color-target changes. Resolve targets the
+correct cube face/mip. Image/subresource aliases synchronize surface locks, CPU
+uploads and screen copies; partial writes preserve untouched pixels. Surface
+locks read back the GPU. Parent texture locks retain their existing CPU-upload
+buffer semantics. Resize, release and interpolation use the same ownership rules.
+
+### Ambient occlusion
+
+`ssao_shader.h` / `ssao_pass.h` implement half-resolution SSAO with a deterministic
+32-tap spiral, reconstructed camera-space positions, depth-derived normals,
+tangent bias and radius falloff. A depth-aware full-size composite preserves
+alpha and rejects foreground/background bleeding. Odd sizes round up. MSAA depth
+uses the nearest sample. Viewport origin/extent bounds both sampling and shading,
+including split-view rectangles. Defaults in `ssao_settings.h` use radius .75, bias .025 and strength 1.5;
+broader artistic tuning remains subject to gameplay review.
+
+Patches 2500-2502 submit AO after world rendering and before HUD drawing through
+`pc_graphics_world_finish` (US 1CE9A0). Deferred submission copies the 16 projection
+floats; capture v10 opcode 32 stores them, with v5-v9 read compatibility. Replay
+checks exact payload sizes and handles unaligned input. Invalid/orthographic
+lenses and offscreen targets are excluded. Device teardown frees AO resources.
+Patch 2513 declares Vulkan texture slots 10/11 used by AO compositing; the Linux
+pixel test caught this omission even though all shaders compiled successfully.
+
+### Cache and counter
+
+Patches 2496/2498 implement persistent shared shader caching and clear controls.
+The V2 envelope bounds keys/blobs, checks full keys and payload integrity, and
+rejects truncated/trailing data. Compiler/backend ABI tags invalidate stale
+entries. Patch 2503 protects Vulkan pipeline caches: the envelope
+checks size/checksum and driver vendor/device/UUID before submission. Temporary
+writes use process/thread identities on Windows and mkstemp on POSIX.
+
+Clear removes recognized shader blobs and pipeline files only, preserving unknown
+files and nested folders and rejecting links/reparse points. It suppresses stale
+in-memory Vulkan pipeline-cache rewrites for the current process. Disabled effects
+retain the original rendering path; disabling disk cache does not require removing
+already-created in-memory shaders.
+
+FPS/Ping displays presented FPS and fresh online latency in milliseconds, with no
+frame-time figure. Offline/LAN latency is hidden. Tests cover missing peers,
+five-second stale-sample expiry and recovery; this is formatter/clock evidence,
+not a real internet-peer test.
+
+## Platform coverage and limitations
+
+Windows uses the shared D3D11 path. Native Vulkan uses the same HLSL/algorithms.
+Patch 2512 exposes common renderer declarations under TSFP_RHI_RENDERER.
+`src/native/vulkan_probe.cmake` links xbox_config for cache paths.
+The legacy OpenGL adapter (`graphics_preferences_gl.inc`) preserves preferences
+and supplies cache controls, but explicitly labels graphics effects as requiring
+Vulkan. These effects are not implemented in legacy GL.
+
+Linux host integration was tested against `feature/linux-launcher` revision
+802391863019b651dbb20e1e7625bd86e6153395 in an isolated copy, retaining its Linux
+adapters. This graphics branch does not yet contain that branch's entire Linux
+foundation; shared UI/model guards support MACOS and LINUX. The isolated source
+export compiled its launcher but lacked Git metadata for the packaging receipt.
+Do not treat this as a release-package validation or a merge of that branch.
+
+| Validation | Evidence and scope |
+| --- | --- |
+| Windows game | Full build and built-in checks passed; isolated first-mission gameplay with 4x MSAA, FXAA, 16x AF and AO |
+| Windows rendering | WARP shared RHI pixel tests, production FXAA resolve, AO queue/capture/replay, cache integrity and alias/copy regressions pass |
+| Windows UI | Main and pause Graphics menus visually checked; 640x480 main menu fits; live AO change persists after reopening; WPF launcher panel fits at 1000x900 |
+| Captured scene | 509 draws and one AO command; AO OFF/ON replay has no failed calls; visible terrain/bridge shading, mean RGB decrease 2.16/255 |
+| MSAA replay | Same scene at Off/2x/4x/8x reports actual requested counts; inspected edge changes with scene content preserved |
+| Cache reuse | Isolated cold/warm Windows replays reuse disk entries; repeat-frame differences at most one channel level in seven pixels, also seen without cache changes |
+| Linux WSL | Native preference/cache/AO-queue tests pass; 16 production DXC shader variants compile; full shared RHI suite passes on lavapipe software Vulkan, with isolated cold/warm runs confirming disk shader-cache reuse |
+| Linux launcher | Shared Avalonia UI save/reopen suite and adapter/settings/install/texture-preservation tests pass under Xvfb |
+| Not verified | Physical Linux GPU gameplay, native macOS builds/rendering/UI, full release packaging, all-map AO tuning, live split-screen AO placement and real online latency |
+
+The Linux pixel suite covers AO contact shading, flat surfaces, sky, alpha,
+viewport isolation and resize, plus MSAA samples, cube/mip resolves, copies,
+companions and shared depth. It validates fallback on a device supporting 4x but
+not 2x. This is stronger than syntax validation but is not physical GPU evidence.
+
+## Repeatable checks
+
+- Windows: `powershell -NoProfile -File tsfp.ps1 -Action Build`.
+- Launcher: `powershell -NoProfile -File tools/build/build-launcher.ps1 -Test`.
+- Graphics: `python -m pytest tests/graphics/test_rhi_menu_sampling.py tests/graphics/test_graphics_options.py tests/graphics/test_graphics_resolve.py tests/graphics/test_shader_cache.py tests/graphics/test_ambient_occlusion_queue.py -q`.
+- Patch reproducibility: `tests/repository/test_patch_updates.py`, including fresh application and graphics-on/off branch round trips with LF/CRLF and unrelated local edits.
+- Capture/replay: `tests/gameplay/test_frame_replay.py` and renderer-host fixtures.
+- Native shaders: `VULKAN_SDK=<sdk-root> python -m pytest tests/graphics/test_graphics_spirv.py -q`; configured broken SDKs fail, absent SDKs/platform mismatches explicitly skip.
+- Native Vulkan: standalone `tests/rhi` CMake target `tsfp_rhi_vulkan_test`, using the pinned SDK and applicable platform adapter.
+
+Runtime CI selects the focused graphics checks. Keep native skips distinct from
+passes. No generated runtime, private capture, personal configuration or save is
+part of the source change. Native macOS and physical Linux acceptance must be
+reported separately before claiming those hosts have been validated.
+
+## Local completion audit (2026-11-02)
+
+The requested shared implementation and Windows validation are complete locally.
+This is not a release or a claim of native Mac/physical Linux acceptance.
+
+- MSAA Off/2x/4x/8x: production scene allocation, per-sample averaging,
+  subresource/alias/copy tests, capability fallback, and captured-scene matrix.
+- FXAA with MSAA: production-resolve pixel checks plus combined-effects gameplay.
+- AF through 16x: saved options, live sampler translation at every level,
+  restoration to Original and nearest-filtered HUD preservation.
+- Half-resolution SSAO: Windows and software Vulkan pixel tests, shader variants,
+  deferred/capture/replay checks and one live-game scene comparison.
+- Cache controls: persistent cold/warm Windows and Vulkan shader reuse,
+  corruption/invalidation/clear containment tests, menu callback and launcher
+  deletion helpers. The launcher requires a stopped game before clearing.
+- Main/pause/launcher settings: shared persistence and failed-save checks;
+  main/pause Windows visuals and WPF/Avalonia UI round trips.
+- FPS/Ping: shared toggle, presented FPS, online milliseconds, offline/stale
+  handling; actual internet-peer acceptance is not claimed.
+- Reproducibility: fresh application, repeat application, graphics branch round
+  trips with LF/CRLF and preserved local source edits; context/diff checks pass.
+
+Final Windows checks: full game build and built-in tests; full launcher suite;
+8 focused graphics tests; 7 renderer-state tests; 28 menu/renderer/replay checks
+with 3 explicit platform skips; 2 graphics branch-transition tests. Physical
+Linux and Mac checks remain as listed above. The separate Linux integration
+worktree retains its four launcher adaptations; integrating the Linux foundation
+into this feature branch or main has not been authorized or performed.
+
+### Tabbed-menu follow-up (2026-11-02)
+
+Windows x64/D3D11 on base 54c06a4c plus local changes: full supported Build and
+built-in checks pass. Twelve focused menu/settings tests pass, with two native
+Mac compile cases explicitly skipped. Tests cover section membership, tab
+cycling/hit boundaries, pending changes, failed writes and resolution rollback.
+Live isolated 640x480 main-menu checks confirm all three tabs fit, retain their
+position and active highlight, accept mouse selection, and update FPS/Ping live.
+Story gameplay was reached. Live pause navigation could not be completed because
+synthetic keyboard input did not register reliably in this session; this is not
+evidence of a diagnosed game-input regression. Both entry points use the same
+shared Video menu. Physical controller, Mac, Linux and widescreen tab acceptance
+remain unverified for this follow-up. No commit, push or publication performed.
+
+### Compact tabs and restart handoff (2026-11-02)
+
+Video Options uses 1.2 native row spacing alongside the separate compact glyph scope. Rounded tab backgrounds
+use disjoint strips, and captions are centered using the guest font measurement.
+The shared menu prompts Later/Restart Now only after Apply successfully saves
+staged MSAA/supersampling changes; browsing choices never opens that dialog.
+Apply stays enabled for restart-only edits, including after switching tabs;
+Later is the default and Back cancels the prompt. It warns that restarting leaves
+the current game. Failed persistence leaves the draft available for retry and
+never opens the restart dialog. A later post-AA save failure restores the prior
+restart preferences as part of the display/rate batch rollback.
+`src/interface/pc_game_restart.inc` preserves command arguments, working directory
+and the launch environment. Windows passes an inherited synchronization handle
+using a restricted handle list; POSIX passes a pipe and waits for parent exit.
+Early bootstrap (patch2514 and native main) waits before opening saves/devices.
+Spawn failure leaves the current game open. Windows native close / SDL quit remain
+the owners of normal shutdown. A 60-second startup wait fails closed.
+
+Windows supported Build/built-ins pass; focused checks: 13 passed, 2 Mac-only
+skips. A real two-process fixture checks shutdown ordering, duplicate requests,
+arguments containing spaces and inherited save routing. The same POSIX fixture
+passes with GCC -Wall -Wextra -Werror on Ubuntu24.04 WSL; this is not Linux GPU
+or Mac validation. Live ultrawide main Graphics layout fits inside the theme.
+The user is testing the game; full in-game Restart Now and native Mac remain
+unverified. No commit/push. New reported AO-like weapon/geometry halos are under
+investigation and supersede earlier visual completeness claims.
+
+### AO silhouette regression (2026-11-02)
+
+User isolated the black gun/terrain outlines by turning only AO off. The original
+50-unit radius lets separate foreground geometry darken a distant backdrop. The
+production contact radius is now .75, bias .025 and strength 1.5. The exact game
+defaults live in `ssao_settings.h` and are used by the GPU fixture: a foreground
+plane at depth2 must not shade the separate plane at10, while nearby 1.85/2
+contacts must retain shading. Both even/odd targets and compositing are checked.
+The new fixture fails with the old production radius and passes with the revised
+defaults. This corrects the contact range; it is not a new world-occlusion system
+or a dedicated first-person-weapon mask.
+
+Windows full Build/built-ins and 13 focused tests pass (2 Mac-only skips).
+The earlier 640x480 bridge capture replays with AO on/off, zero replay errors;
+new maximum per-channel difference is8/6/4 levels versus the old recorded max70.
+This capture has no first-person weapon. The actual user-reported gun/canyon view
+still needs visual confirmation in the rebuilt game. Another desktop launcher
+session is running; it was left untouched. Native Mac/GPU Linux remain unverified.
+
+### Multi-frame transition regression (2026-11-02)
+
+`tests/graphics/graphics_transition.h`, called by the production display-resolve
+fixture, keeps color, MSAA companion and AO targets alive across six frames:
+world, full-white flash with cleared depth, two fading frames, and world recovery.
+A separate bright region stands in for a weapon; every pixel is checked, including
+background and viewport edges. This detects black output, stale resolves, missed
+full-screen coverage and background loss while the foreground survives.
+The fixture uses real MSAA seed/resolve, SSAO render/apply and FXAA display resolve.
+It is synthetic; it does not execute the guest explosion or its draw ordering.
+
+Windows WARP: 48 combinations (1/2/4/8 samples, AO off/on, FXAA off/on,
+4:3/16:9/ultrawide small targets) passed across six consecutive frames, repeated
+in separate cache-disabled, cold-cache and warm-cache processes. Cache files are
+isolated via subprocess APPDATA, populated on cold startup and checked unchanged
+on warm startup. Existing shader-cache corruption and RHI/AO checks also pass
+(four pytest cases). This is 864 pixel-checked frames, not an FPS benchmark.
+The existing CI test_graphics_resolve.py entry automatically includes this check.
+
+The reported blackout is at the later canyon ship explosion during gameplay,
+not the opening cutscene. Cause remains unconfirmed; MSAA is a hypothesis, not a
+finding. The new sequence passes, so no additional renderer change was justified
+by it. Live reproduction at 60/120/180/240 FPS, real display resolutions, AF
+combinations, and Mac/Linux GPU acceptance remain outstanding. Desktop automation
+returned a stale game-window handle twice while opening an isolated 240-FPS-target
+Test Lab run; no canyon verification was obtained. Do not describe this test as
+proof that the reported blackout is fixed or that all enhancements are safe.
+
+Before publishing the graphics feature, retain an actual explosion sequence with
+all effects off, each effect separately, and combinations that reproduce it.
+Inspect the flash and following world/weapon frames, not just a final screenshot.
+Repeat the reproducing combination after repair at the supported FPS settings;
+record measured rates and backend. Missing live/platform evidence stays pending.
+
+Merge validation: the Windows Release rebuild and built-ins pass with latest main
+(a1f039cb). The 127 CI planning/context checks pass locally after updating the
+patch-order contract and normalizing patch2514 to LF. Historical migration fixture
+sets now exclude graphics2495-2514 until the complete-stack upgrade; injecting
+these new patches into a pre-display/pre-feed checkpoint was not a valid old
+installation. Complete current-stack and graphics round-trip coverage remain.
+
+POSIX restart posts SDL_EVENT_QUIT directly. This allows the standalone replay target to link the display module without game-only input symbols; the real process-handoff fixture verifies the SDL quit request.
+
+Native Mac GPU CI327eb4c reproduced visibility0.874528 on a z=2 foreground plane at half-target pixel33 in the65x33 scene, with a distant z=10 background and radius0.75. Shared SSAO now explicitly rejects equal raw-depth taps and distances outside the radius before angular weighting, and bounds reciprocal-square-root input. Existing odd/even flat/sky/foreground and close-contact assertions remain unchanged. Exact compiler/driver cause is not established; native Mac rerun is required.
+
+Native Mac GPU4168ae8d passes all shared pixel assertions including AO flat/foreground/contact, MSAA averaging and depth ownership. Validation then reports SampleRateShading capability not enabled. Patch2497 now enables that device feature only when advertised by the Vulkan device, allowing sample-index shaders without forcing per-sample execution on ordinary pipelines. A clean validation/replay rerun remains required.
+
+### Paused Video Options typography
+
+The common row-font hook admits paused Video Options only when the menu identity
+matches the active Video callback table. Video settings labels and choice text
+use a 65% two-axis glyph scale in both front-end and pause. Patch2518 wraps the
+original76810 complete menu painter so selected values and row labels share
+that scale. Nested label hooks skip a second reduction and the original font
+state/filter is restored on exit. The surrounding
+front-end menus retain their existing 75% scale. Other pause menus, HUD/gameplay text and foreign
+menu descriptors retain their native scale. Custom tabs also fit their actual
+guest-measured bounds to the available cells through `pc_ui_caption_fit`; drawing
+and centering use the same scaled measurements and hit testing keeps the painted
+cell bounds. Shared UI fixtures cover owned/unowned pause font scopes, restoration,
+width/height fitting, no enlargement and invalid measurements.
+
+Settings row spacing and panel width shrink together with typography. Native
+row bounds drive both focus painting and pointer selection; the smaller visible
+rows retain matching mouse hit areas in main/pause and all tabs.
+
+### Video Options section dividers
+
+Display, Graphics, View & HUD and Advanced use the original guest skin's silver
+separator (`79710`, style0) immediately below the tab strip and immediately
+above Apply. The native separator is non-selectable and participates in menu
+layout, matching other menus on both front-end and pause. Confirmation/restart
+dialogs retain their existing layout. Returning from Later/back or a failed
+restart selects the first Advanced control after the header divider.
+
+### Conditional restart labels
+
+Video Options removes the general MSAA/supersampling restart notice. Each
+Advanced control appends `(Requires restart)` only while its draft differs
+from the process baseline captured when Video Options first opens. Changing
+back removes the suffix; Apply/Later and reopening retain it until relaunch.
+The restart dialog still appears only after Apply. The reserved status row sits after all graphics controls, so removing the
+notice leaves no gap between Ambient occlusion and Texture style. It continues
+to display save/cache errors without moving the compact layout. Advanced omits
+the redundant Back to Graphics button; Back and the Graphics tab still return.
+
+### Tab click identity and Advanced footer
+
+Mouse Confirm selects the tab under the pointer; an unrecognized mouse hit
+leaves the page in place and never uses keyboard/controller cycling. Clicks on
+the active page do not rebuild it or invalidate its bounds. Consumed click edges
+still retain pointer/injected Confirm identity. Keyboard/controller Confirm and
+left/right navigation keep their cycling behavior. Graphics places Advanced
+below the lower silver separator, immediately before Apply, on main and pause.
+
+### Apply retains the originating section
+
+Apply records its current section before any resolution/restart dialog. Successful
+saves and failures rebuild that section instead of defaulting to Display. Later,
+restart Back/failure and resolution reversion also return there. Advanced remains
+Advanced, and drafts/save/rollback contracts are unchanged. New Video sessions
+reset the return section to Display. Shared main/pause callbacks use one rule.
+
+### Apply stages the remaining graphics effects
+
+Anisotropic filtering, Ambient occlusion and Shader cache now share the Video
+session's drafts. Their saved/runtime values change only on Apply; tab switches
+retain drafts, returning to saved values disables Apply, and leaving/reopening
+Video discards edits. These live options do not produce restart prompts. Apply
+saves them with MSAA/supersampling and restores all five if a later save fails.
+Legacy in-between AF preferences remain unchanged until that selector changes.
+Clear shader cache remains an explicit immediate action.
+
+Rapid tab switches retain the last painted tab bounds through same-menu section
+rebuilds instead of invalidating them until repaint. New Video sessions and
+confirmation/restart dialogs invalidate bounds; unrelated menus keep their own
+input handling. The callback fixture switches Display/Graphics/View before any
+intervening draw and checks that hit regions remain available.
+
+### Deferred direct mouse tabs
+
+Video tab clicks are sampled before the original row dispatcher, scoped to the
+owned Video callback table. They retain the latest target during native row
+transition/Confirm gating and rebuild only after the outermost dispatcher returns.
+A held click does not repeat; obsolete targets expire after one second and are
+cleared on leave, a new session or a confirmation/restart dialog. Normal rows,
+footer clicks and keyboard/controller navigation keep their original handling.
+The shared fixture queues two targets during a blocked transition in main/pause,
+then verifies the latest target, held-click rejection and expiry. The pointer
+adapter fixture verifies polling and a single flush outside nested dispatch.

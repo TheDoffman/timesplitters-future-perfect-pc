@@ -1,7 +1,8 @@
-Linux GPU/media: patches2407â€“2412; [contracts](linux-game.md).
+[Linux](linux-game.md).
 
-Kill feed: timing scopes, attribution, viewport colors and rematch reset are
-documented in [the feed guide](../development/arcade-kill-feed.md).
+[Keycaps](controls-options.md).
+Counter2490: overlay sizing.
+[Kill feed contracts](../development/arcade-kill-feed.md).
 Story rewards: additive2465 wraps356800 for the single frontend context;
 profile mapper356870 stays original. See [contract](systems-details.md#four-player-rewards-context).
 
@@ -61,7 +62,7 @@ shared Story adapter so a guest's blocked movie advance does not release its
 still-rendered stream at99BB7. Real load teardown and other modes retain the
 original close. See [contracts](systems-details.md) and [fixture](build-test-details.md).
 
-# Runtime and patch navigation
+# Runtime ([SMAA](smaa.md))
 
 Patch2180 wraps US1C2AF0 for an already-eligible fresh player trigger only;
 the patch loader orders it after native minigun/timing wrappers. It preserves
@@ -70,7 +71,7 @@ held-fire and continuation calls. See [input contract](interaction-input.md#fres
 Story co-op integration: [contracts](systems-details.md).
 
 Audio recovery patches0055-0058: [buffering, lifecycle, format and device contracts](audio-buffers.md).
-Audio release/normal-exit patches2300-2303: [contracts and diagnostics](audio-buffers.md).
+Audio release/exit/completion patches2300-2306: [contracts and diagnostics](audio-buffers.md).
 
 
 Patch 2140-native-minigun-intent follows the native weapon wrappers in loader dependency order. It scopes held-primary intent around original US 1C74D0 event 1. Generic shots remain on whole ticks; numeric site 1C7600 normalizes release damping. See native-minigun.md.
@@ -1010,3 +1011,8 @@ visibility and objective logic remain guest-owned (Refs #338).
 ## Console language and included packs
 
 [Language policy, US startup gate, original-routine tests and host validation](language-packs.md).
+
+
+Stage0241: [original extended product and ABI checks](guest-integer-product.md).
+
+RTL: [arithmetic/memory](guest-memory-ops.md), [strings](guest-stack-trace.md); [host policy](execution-host.md).

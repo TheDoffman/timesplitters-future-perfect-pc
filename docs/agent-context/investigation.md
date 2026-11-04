@@ -12,6 +12,13 @@ Windows/WSL mutation of one runtime tree, WSL primary development and Steam Deck
 secondary validation. Preserve [Linux acceptance scope](../development/linux.md)
 in handoffs; renderer contracts do not establish game support.
 
+Graphics patch ordering is covered by the explicit tail-order regression in
+`tests/repository/test_repo_context.py`; patches2495/2514 must retain LF bytes so its
+indexed digest matches fresh Windows/Mac/Linux checkouts.
+SMAA2470 follows config/timing migrations; HUD2516/2517 then extend its final
+resolve. `test_repo_context.py` checks the resulting 64-patch tail. Historical migration
+fixtures omit this feature until their full-stack upgrade. See [contracts](smaa.md).
+
 Root AGENTS.md and the PR template require a short user-facing Change and Cause
 and fix description. Keep technical evidence in the existing project records;
 the simpler opening description does not remove testing or platform obligations.
@@ -377,3 +384,53 @@ request and active-pack choice. For that task, preserve prior hybrid artwork
 and recovery packs, use verified originals as inputs, and follow the
 [original upscale workflow](original-upscale.md). Historical hybrid batch
 instructions do not override this task's newer user direction.
+
+Stage0241 extends the maintained effective-tail assertion and historical upgrade exclusions; see [product evidence](guest-integer-product.md).
+
+Stage0242: [division providers, ABI and oracle](guest-integer-division.md).
+
+
+For patch-switch byte drift, inspect changed source lines rather than dumping a
+whole pytest snapshot. Stage0242 exposed reverse-added LF lines in a CRLF source
+on Mac. apply-patches.py preserve_line_endings keeps exact unchanged endings and
+uses replaced/adjacent source style for new lines, preserving patch text and
+final-newline presence before transactional publication. Test both Git
+core.autocrlf settings explicitly; a host's global Git config can mask the bug.
+See [division migration evidence](guest-integer-division.md).
+
+Stage0243 extends the effective tail and historical exclusions; [memory/bit contracts](guest-memory-ops.md) include native stack-probe and public fastcall ABI evidence.
+
+Stage0244: [counted codec/ownership](guest-text-codec.md); native pointer records are separate from guest records, and fresh heap rollback zeroing is not an all-RAM transaction claim.
+
+Stage0245: [creation/case](guest-string-transform.md); native case strings do not append NUL; libc mapping is not NT NLS equivalence.
+
+Stage0246: [raw codec](guest-text-raw.md); native uppercase truncation returned80000005 despite documentation; keep raw32-bit/no-NUL policy separate from counted conversion.
+
+Stage0247: [stack diagnostics](guest-stack-trace.md); native x86 proves parent ordering/hash and4-argument capture, public Xbox Assert has4 arguments. Full EFLAGS/guest continuation work is still required for real context/SEH.
+
+Stage0248 extends the effective tail to53 original stages; historical exclusions
+and the installed shared title feature definition are checked by repository tests.
+See [status tracking](guest-status-flags.md) for contracts and pending acceptance.
+
+Stage0249 extends the original effective tail to54 and checks canonical installed
+header text; [shift/rotate status](guest-shift-flags.md) records CI repair and tests.
+
+The exact loader-tail assertion now includes0253 context records after0249;
+keep all55 entries ordered. [Context/handler contracts](context-records.md).
+
+Stage0258 extends the verified patch-order tail from55to56 with the original
+exception dispatcher after0253. test_repo_context and five historical omission
+sets in test_patch_updates now include that dependency; old patch bytes remain
+unchanged. See [exception contracts](guest-exceptions.md).
+
+Stage0259 extends the patch tail56to57 for execution ownership after0258.
+The ordering assertion and five historical omission sets follow that dependency;
+see [ownership and test routes](execution-ownership.md).
+
+Stage0260 extends the patch tail57to58 for original host policies after0259.
+The ordering assertion and five historical omission sets follow this dependency;
+see [host scheduling and test routes](execution-host.md).
+
+PR466 integration with main623acff4 retains0260 and then applies SMAA2470.
+The complete maintained tail is59; merge resolution preserves both loader
+additions, all historical omission entries and regenerates the patch index.

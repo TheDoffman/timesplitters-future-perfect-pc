@@ -1,0 +1,19 @@
+--- a/src/d3d/rhi_vulkan.c
++++ b/src/d3d/rhi_vulkan.c
+@@ -1241,14 +1241,14 @@
+ }
+ 
+ /* The one descriptor set (rhi_vulkan_bindings.h): vertex b0-b3 and b7,
+- * pixel b0, b1 and b7, t0-t3, t8 and t9, s0-s3, s8 and s9 -- every slot
++ * pixel b0, b1 and b7, t0-t3, t8-t11, s0-s3 and s8-s11 -- every slot
+  * the renderer binds (section 4.2). */
+ static const uint32_t g_ubo_bindings[] = {
+     RHI_VK_VS_UNIFORM_BASE + 0, RHI_VK_VS_UNIFORM_BASE + 1, RHI_VK_VS_UNIFORM_BASE + 2,
+     RHI_VK_VS_UNIFORM_BASE + 3, RHI_VK_VS_UNIFORM_BASE + 7,
+     RHI_VK_PS_UNIFORM_BASE + 0, RHI_VK_PS_UNIFORM_BASE + 1, RHI_VK_PS_UNIFORM_BASE + 7,
+ };
+-static const uint32_t g_tex_slots[] = { 0, 1, 2, 3, 8, 9 };
++static const uint32_t g_tex_slots[] = { 0, 1, 2, 3, 8, 9, 10, 11 };
+ 
+ static int binding_declared(uint32_t binding, uint32_t kind)
+ {

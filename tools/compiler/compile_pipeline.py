@@ -87,7 +87,7 @@ def build_commands(args, xbe, analysis_json):
     if project is not None and (project / 'src/recomp_manual.c').is_file():
         lift.extend(['--exclude-manual', str(project / 'src/recomp_manual.c')])
     if args.split:
-        lift.extend(['--split', str(args.split)])
+        lift.extend(['--split', str(args.split), '--context-continuations'])
     if args.game_name:
         lift.extend(['--game-name', args.game_name])
     if args.trace_all_entries:

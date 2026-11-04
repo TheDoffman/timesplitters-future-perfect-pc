@@ -100,12 +100,15 @@ void pc_display_footer_background(void (*original)(void));
 void pc_display_title_matte(void (*original)(void));
 void pc_display_menu_backdrop(void (*original)(void));
 void pc_display_main_menu_font(void (*original)(void),int building);
+void pc_display_video_menu_font(void (*original)(void));
 void pc_display_radar_begin(void);
 void pc_display_health(void (*original)(void));
 void pc_display_health_side(void);
 void pc_display_tutorial(void (*original)(void));
 void pc_display_tutorial_wrap(void (*original)(void));
 void pc_display_tutorial_text(void (*original)(void));
+void pc_display_keycap_text(void (*original)(void));
+void pc_display_keycap_glyph(void (*original)(void));
 void pc_display_perspective_projection(void (*original)(void));
 void pc_story_failure_trace(void (*original)(void),uint32_t address);
 void pc_story_network_frame(void (*original)(void));
@@ -136,3 +139,7 @@ void pc_kill_feed_death(void (*original)(void));
 void pc_kill_feed_fire(void (*original)(void),int npc);
 void pc_kill_feed_allocate(void (*original)(void));
 #endif
+
+void pc_graphics_world_finish(void (*original)(void));
+int pc_graphics_hud_begin(void);
+void pc_graphics_hud_end(void);

@@ -21,7 +21,7 @@ else:
     def repo_file(root, area, name):
         return _LayoutPath(root) / area / name
 
-from translation_integer import _width
+from translation_integer import _width, _status
 from translation_operands import _fmt_mem, _fmt_operand_read, _fmt_operand_write
 
 
@@ -52,11 +52,11 @@ def bit_test(context, instruction, operands, operation):
     if operation != 'bt':
         operator = {'bts': '|', 'btr': '& ~', 'btc': '^'}[operation]
         result = f'(_bitop_value {operator} (1u << _bitop_index))'
-        lines.append(f'{value} = {result};' if destination.type == 'mem' else
+        lines.append(f'{value} = (uint{bits}_t){result};' if destination.type == 'mem' else
                      _fmt_operand_write(destination, result))
     else:
         lines.append('(void)_bitop_value;')
-    return [*lines, '}']
+    return [*lines, *_status(context,['tsfp_status_write(&g_status_flags,TSFP_FLAG_CF,(_bitop_value >> _bitop_index) & 1u,TSFP_STATUS_FLAGS & ~(TSFP_FLAG_CF | TSFP_FLAG_ZF));']), '}']
 
 
 def scan(context, instruction, operands, operation):
@@ -67,6 +67,7 @@ def scan(context, instruction, operands, operation):
         raise ValueError('Bit scan requires word/dword register and register/memory source')
     lines = [f'{{ uint32_t _bitop_value = (uint32_t)({_fmt_operand_read(operands[1])}) & {mask};',
              '_fa = _bitop_value; _fb = 0; _fas = (int32_t)_fa; _fbs = 0;',
+             *_status(context,['tsfp_status_write(&g_status_flags,TSFP_FLAG_ZF,_bitop_value ? 0 : TSFP_FLAG_ZF,TSFP_STATUS_FLAGS & ~TSFP_FLAG_ZF);']),
              'if (_bitop_value) {', 'unsigned _bitop_index = 0;']
     if operation == 'bsf':
         lines.append('while (!(_bitop_value & 1u)) { _bitop_value >>= 1; ++_bitop_index; }')

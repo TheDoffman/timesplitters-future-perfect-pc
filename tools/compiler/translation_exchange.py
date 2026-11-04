@@ -4,7 +4,7 @@ Memory forms use sequentially consistent host atomics, including implicit-lock
 XCHG. Unlocked memory XADD/CMPXCHG retain the existing stronger atomic policy.
 Guest fault delivery, MMIO and other LOCK instruction families remain separate.
 """
-from translation_integer import _width
+from translation_integer import _width, _status
 from translation_operands import _fmt_mem, _fmt_operand_read, _fmt_operand_write
 
 
@@ -60,7 +60,8 @@ def exchange(context, instruction, operands, operation=None):
         if destination.type == 'reg':
             lines += ['} else {', _fmt_operand_write(destination, '_exchange_source')]
         lines.append('}')
-    return [*lines, '}']
+    record=f'tsfp_status_alu(&g_status_flags,{bits},{left},{right},0,_exchange_result,{int(name=="cmpxchg")},TSFP_STATUS_FLAGS);'
+    return [*lines, *_status(context,[record]), '}']
 
 
 def condition(jump, setter, operands):

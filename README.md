@@ -11,6 +11,7 @@ Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer
 <p>
 <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip"><img src="docs/assets/download-windows-launcher.svg" alt="Download the latest Windows launcher (x64)" width="280" height="52"></a>
 <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip"><img src="docs/assets/download-mac-launcher.svg" alt="Download the latest Mac launcher (Apple Silicon)" width="280" height="52"></a>
+<img src="docs/assets/linux-coming-soon.svg" alt="Linux launcher — Coming soon 11/4" title="Linux launcher — Coming soon November 4, 2026" width="280" height="52">
 </p>
 
 <sub>Direct ZIP downloads of the latest stable launcher &middot; <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest">Release notes &amp; checksums</a></sub>
@@ -102,6 +103,7 @@ and audio fidelity remain unverified. See [measured progress](docs/project/STATU
 | --- | --- |
 | **Keyboard and mouse** | Direct aiming, customizable bindings, mouse-driven menus and input prompts that follow your controls. |
 | **Widescreen** | 1080p, 1440p, 4K and ultrawide support, with adjustable field of view. |
+| **Anti-aliasing** | Optional [SMAA 1x High](docs/players/smaa.md) smooths jagged edges on compatible Direct3D 11/Vulkan builds. |
 | **High frame rate** | Original 60 FPS by default; compatible game builds offer opt-in [120/180/240 FPS beta settings](docs/analysis/native-high-refresh.md). |
 | **Launcher** | Game installation, updates, repair, rollback and settings. |
 | **Online multiplayer** | Player-hosted Online and LAN matches with bot support. Windows only. |

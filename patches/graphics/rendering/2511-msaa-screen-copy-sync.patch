@@ -1,0 +1,81 @@
+--- a/src/d3d/d3d8_resources.c
++++ b/src/d3d/d3d8_resources.c
+@@ -1176,14 +1176,14 @@
+ /* Surface wrappers may alias the same texture subresource. Synchronize by
+  * image identity, not by the wrapper used for LockRect or upload. All callers
+  * execute on the serialized renderer thread. */
+-static int msaa_image_read(RhiImage *image,unsigned subresource)
++int d3d8_msaa_image_read(RhiImage *image,unsigned subresource)
+ {
+     for(D3D8Surface *sf=g_msaa_surfaces;sf;sf=sf->msaa_next)
+         if(sf->image==image && sf->subresource==subresource &&
+            !d3d8_surface_msaa_resolve(sf))return 0;
+     return 1;
+ }
+-static int msaa_image_written(RhiImage *image,unsigned subresource)
++int d3d8_msaa_image_written(RhiImage *image,unsigned subresource)
+ {
+     for(D3D8Surface *sf=g_msaa_surfaces;sf;sf=sf->msaa_next)
+         if(sf->image==image && sf->subresource==subresource && sf->msaa_active &&
+@@ -1329,7 +1329,7 @@
+ 
+     full = (BYTE *)malloc((size_t)full_pitch * full_rows);
+     if (!full) return E_OUTOFMEMORY;
+-    if (!msaa_image_read(sf->image,sf->subresource) ||
++    if (!d3d8_msaa_image_read(sf->image,sf->subresource) ||
+         rhi_image_readback(sf->image, sf->subresource, full, full_pitch) != 0) {
+         free(full);
+         return E_FAIL;
+@@ -1409,7 +1409,7 @@
+                          sf->locked_bits, (uint32_t)sf->locked_pitch, 0);
+         /* The bound coverage image must see this CPU edit before the next
+          * draw or resolve. Read-only locks leave its samples untouched. */
+-        if (!msaa_image_written(sf->image,sf->subresource)) result = E_FAIL;
++        if (!d3d8_msaa_image_written(sf->image,sf->subresource)) result = E_FAIL;
+     }
+ 
+     free(sf->locked_bits);
+@@ -1571,7 +1571,7 @@
+     }
+ 
+     rhi_image_update(image, subresource, NULL, upload_data, upload_pitch, upload_pitch * rows);
+-    if(!msaa_image_written(image,subresource))
++    if(!d3d8_msaa_image_written(image,subresource))
+         fprintf(stderr,"D3D8: MSAA upload synchronization failed\n");
+ 
+     if (linear) free(linear);
+--- a/src/d3d/d3d8_internal.h
++++ b/src/d3d/d3d8_internal.h
+@@ -229,6 +229,8 @@
+ 
+ RhiView *d3d8_surface_msaa_prepare(D3D8Surface *surface,unsigned samples);
+ int d3d8_surface_msaa_resolve(D3D8Surface *surface);
++int d3d8_msaa_image_read(RhiImage *image,unsigned subresource);
++int d3d8_msaa_image_written(RhiImage *image,unsigned subresource);
+ RhiView *d3d8_surface_draw_view(D3D8Surface *surface);
+ 
+ /* 2D texture. See tex_* implementation.
+--- a/src/d3d/d3d8_screencopy.c
++++ b/src/d3d/d3d8_screencopy.c
+@@ -270,6 +270,13 @@
+         return E_FAIL;
+     }
+ 
++    /* Preserve untouched destination pixels, and sample the latest source
++     * coverage rather than an older resolved texture. These views use mip 0. */
++    if (!d3d8_msaa_image_read(dst_image,0) ||
++        (source && !d3d8_msaa_image_read(rhi_view_image(source),0))) {
++        rhi_view_destroy(rtv);
++        return E_FAIL;
++    }
+     rhi_output_save(&saved);
+     if (!source) probe_source(&saved, tex, back_w, back_h);
+ 
+@@ -343,6 +350,7 @@
+     }
+     rhi_output_restore(&saved);
+     rhi_view_destroy(rtv);
++    if (!d3d8_msaa_image_written(dst_image,0)) return E_FAIL;
+     g.copies++;
+     /* A draw sampling this is re-presenting the frame, and has to cover
+      * the whole of it; see d3d8_draw_escapes_squeeze. */

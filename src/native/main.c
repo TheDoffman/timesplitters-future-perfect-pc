@@ -34,6 +34,8 @@ static void capture_guest(uint32_t r[8]){r[0]=g_eax;r[1]=g_ecx;r[2]=g_edx;r[3]=g
 
 int main(int argc, char **argv)
 {
+    extern int pc_game_restart_bootstrap(int,char **);
+    if(!pc_game_restart_bootstrap(argc,argv))return 1;
     int helper_result=tsfp_native_crash_helper(argc,argv);if(helper_result>=0)return helper_result;
     if(argc==2 && strcmp(argv[1],"--online-self-test")==0) {
         extern int pc_online_self_test(void);return pc_online_self_test();

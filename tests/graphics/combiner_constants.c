@@ -59,7 +59,7 @@ int main(void) {
     for(unsigned i=0;i<3;i++)recorded[i].op(&recorded[i].payload);
     assert(constants.mask[1]==0);
     char err[256];D3D8CapReader *reader=d3d8cap_open("constants.d3dcap",err,sizeof err);assert(reader);
-    assert(d3d8cap_header(reader)->version==9);
+    assert(d3d8cap_header(reader)->version==10); /* Includes the AO command. */
     Replay r={0};D3D8CapChunk c;
     for(unsigned i=0;i<3;i++) {
         assert(d3d8cap_next(reader,&c)>0 && c.type==D3D8CAP_PS_FLOAT_CONSTANT);

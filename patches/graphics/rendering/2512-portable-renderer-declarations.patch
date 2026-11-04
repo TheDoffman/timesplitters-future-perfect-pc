@@ -1,0 +1,11 @@
+--- a/src/d3d/d3d8_internal.h
++++ b/src/d3d/d3d8_internal.h
+@@ -16,7 +16,7 @@
+  * (d3d8_device.c on Windows, d3d8_gl.c on POSIX). */
+ IDirect3DDevice8 *d3d8_GetDevice(void);
+ 
+-#if defined(_WIN32) || defined(__APPLE__)
++#if defined(_WIN32) || defined(__APPLE__) || defined(TSFP_RHI_RENDERER)
+ /* === Everything below is the rhi.h renderer. The POSIX d3d8_compat
+  * library (d3d8_gl.c) implements its own internal state and does not
+  * need any of these declarations. === */

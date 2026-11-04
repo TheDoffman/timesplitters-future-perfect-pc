@@ -392,6 +392,17 @@ int main(int argc,char **argv)
         }
         VirtualFree(memory,0,MEM_RELEASE);
     }
+    CHECK(pc_prompts_keycap_label("E",1));
+    CHECK(pc_prompts_keycap_label("Mouse 1",7));
+    CHECK(pc_prompts_keycap_label("Wheel up",8));
+    CHECK(pc_prompts_keycap_label("Left/Right",10));
+    CHECK(pc_prompts_keycap_label("<",1));
+    pc_prompts_keyboard();
+    CHECK(pc_prompts_rewrite("[Left] Previous tab [Right] Next tab",text,sizeof text));
+    CHECK(!strcmp(text,"[<] Previous tab [>] Next tab"));
+    CHECK(!pc_prompts_keycap_label("Not a key",9));
+    CHECK(!pc_prompts_keycap_label("E/",2));
+    CHECK(!pc_prompts_keycap_label("",0));
     CHECK(!virtual_pad_test());
     DeleteFileA(config); DeleteFileA(backup);
     puts("PASS: input switching, drift/held-button suppression, disconnect, assigned labels, mouse/sticks, trigger labels, unbound keys, formatting, and bounds");

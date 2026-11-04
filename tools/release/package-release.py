@@ -101,6 +101,7 @@ def main():
     ]:
         copy(upstream / source, 'Licenses/' + dest)
     copy(ROOT / 'tools/launcher/GameMonogram.NOTICE.txt', 'Licenses/Game-icon-lettering.txt')
+    copy(ROOT / 'vendor/smaa/LICENSE.txt', 'Licenses/SMAA.txt')
     online = bundle(ROOT, stage, copy)
     # Include the exact local source edits used for this test package, since
     # those may not yet exist at the source_commit recorded below.

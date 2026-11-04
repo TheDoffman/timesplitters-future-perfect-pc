@@ -5,6 +5,8 @@
 #else
 typedef void *HWND;
 #endif
+int pc_game_restart_bootstrap(int argc,char **argv);
+int pc_game_restart(void);
 #define PC_FOV_DEFAULT 55
 #define PC_FOV_MIN 40
 #define PC_FOV_MAX 100

@@ -51,6 +51,7 @@ def test_guest_placement_hooks():
     assert 'pc_display_title_matte(sub_002BD810_gen);' in manual
     assert 'pc_display_main_menu_font(sub_002D0BE0_gen,1);' in manual
     assert 'pc_display_main_menu_font(sub_00076150_gen,0);' in manual
+    assert 'pc_display_video_menu_font(sub_00076810_gen);' in manual
     assert 'pc_display_health(sub_0013AB60_gen);' in manual
     assert 'if(FP_MEM32(g_esp)==0x0013BA9Cu)pc_display_health_side();' in manual
 

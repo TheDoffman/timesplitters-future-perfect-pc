@@ -12,4 +12,5 @@ uint32_t tsfp_kernel_rtl_error(uint32_t);
 void tsfp_kernel_rtl_rip(const tsfp_guest_vm *,uint32_t,uint32_t,uint32_t);
 /* Infrastructure failure cannot return success and run an unprotected region. */
 void tsfp_kernel_rtl_fault(enum tsfp_critical_result);
+void tsfp_kernel_rtl_assert(const tsfp_guest_vm *,uint32_t expression,uint32_t file,uint32_t line,uint32_t message);
 #endif

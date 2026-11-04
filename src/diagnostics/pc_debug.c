@@ -70,6 +70,18 @@ void pc_debug_set(const PcDebugOptions *value)
     AcquireSRWLockExclusive(&debug_lock); options = *value; ReleaseSRWLockExclusive(&debug_lock);
 }
 
+int pc_counter_enabled(void)
+{
+    PcDebugOptions value;pc_debug_get(&value);return value.show_counter!=0;
+}
+
+int pc_counter_set_enabled(int enabled)
+{
+    PcDebugOptions value;char error[512];pc_debug_get(&value);
+    value.show_counter=!!enabled;
+    return pc_debug_config_save(&value,error,sizeof error);
+}
+
 void pc_debug_toggle_fps(void)
 {
     AcquireSRWLockExclusive(&debug_lock); options.show_fps = !options.show_fps; ReleaseSRWLockExclusive(&debug_lock);
@@ -152,6 +164,18 @@ int pc_debug_overlay(char *text, size_t bytes, const char *cap)
     char fps[48] = "", ms[32] = "", issues[64] = "", cap_text[24] = "", latency[64]="";
     int shown;
     AcquireSRWLockShared(&debug_lock);
+    if(options.show_counter) {
+        char rate[32],ping[48]="";
+        if(stats.shown_fps>0)snprintf(rate,sizeof rate,"%.0f FPS",stats.shown_fps);
+        else snprintf(rate,sizeof rate,"-- FPS");
+        if(stats.network_mode==2) {
+            if(GetTickCount64()-latency_updated>5000 || stats.latency_ms<0 || !stats.latency_peers)
+                snprintf(ping,sizeof ping," | Ping --");
+            else snprintf(ping,sizeof ping," | Ping %.0f ms",stats.latency_ms);
+        }
+        snprintf(text,bytes,"%s%s",rate,ping);
+        ReleaseSRWLockShared(&debug_lock);return 1;
+    }
     shown = options.show_fps || options.show_frame_time || options.show_issues ||
             (options.show_latency && stats.network_mode);
     if (options.show_fps) {

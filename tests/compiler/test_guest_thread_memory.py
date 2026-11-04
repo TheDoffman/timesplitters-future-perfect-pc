@@ -42,7 +42,7 @@ def storage(tmp_path_factory):
     return compile_storage(tmp_path_factory.mktemp('thread-memory'))
 
 
-@pytest.mark.parametrize('mode', ['main', 'private', 'failure', 'stacks', 'concurrent'])
+@pytest.mark.parametrize('mode', ['main', 'private', 'failure', 'stacks', 'stack_bounds', 'concurrent'])
 def test_thread_storage_contracts(storage, mode):
     run = subprocess.run([str(storage), mode], capture_output=True, text=True, timeout=60)
     assert run.returncode == 0, run.stdout + run.stderr
@@ -148,3 +148,15 @@ int main(void) {
     run = subprocess.run([str(exe)], capture_output=True, text=True, timeout=60)
     assert run.returncode == 0, run.stdout + run.stderr
     assert 'passed' in run.stdout
+
+
+@pytest.mark.parametrize('mutation',[
+ ('if(!s || !low || !high || low==high)return 0;', 'if(!s || !low || !high)return 0;'),
+ ('if(!(s->worker_mask&(UINT32_C(1)<<i)))continue;', 'if(!(s->worker_mask&(UINT32_C(1)<<i)))break;'),
+ ('if(s->active) {\n        uint64_t bootstrap', 'if(1) {\n        uint64_t bootstrap'),
+ ('if(b<=esp && b>begin)begin=b;', 'if(b<esp && b>begin)begin=b;'),
+])
+def test_compiled_bad_stack_extents_rejected(tmp_path,mutation):
+    exe=compile_storage(tmp_path,mutation)
+    r=subprocess.run([str(exe),'stack_bounds'],capture_output=True,text=True,timeout=60)
+    assert r.returncode!=0,r.stdout+r.stderr

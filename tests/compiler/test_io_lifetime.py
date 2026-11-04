@@ -29,11 +29,11 @@ CASES = {
                  'stdcall_contract.c', [
         ('guest_callback_call.c', old, new) for old, new in [
             ('put(frame+4+4*i,words[i]);', 'put(frame+4+4*i,words[i]+1);'),
-            ('value=g_eax;balanced=g_esp==saved.esp;', 'value=saved.eax;balanced=g_esp==saved.esp;'),
+            ('value=g_eax;balanced=', 'value=saved.eax;balanced='),
             ('if(balanced && result)*result=value;', 'if(result)*result=value;'),
             ('count>4', 'count>1'), ('bytes=4+4*count;', 'bytes=4+4*count+4;'),
             ('if(admit && !admit(context))return 0;', 'if(admit)(void)admit(context);'),
-            ('prepared->entry=NULL;', '(void)entry;'), ('g_esp!=prepared->esp', 'g_esp==0'),
+            ('prepared->entry=NULL;', '(void)entry;'), ('g_esp!=prepared->r_esp', 'g_esp==0'),
             ('candidate.frame=frame;', 'candidate.frame=frame;put(frame,0);')]]),
     'attachment': (DEVICES, 'io_device_attachment_contract.c', [
         ('guest_io_owner.c', 'if(release)release(attachment);', '(void)release;(void)attachment;'),

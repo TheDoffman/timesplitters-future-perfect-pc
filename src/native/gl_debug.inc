@@ -1,3 +1,4 @@
+#include "pc_counter_layout.h"
 /* Host-only overlay: drawn after scene presentation so guest captures, copied
  * textures, and interpolation history cannot contain the debug text. */
 typedef struct NativeDebugLine {
@@ -27,11 +28,13 @@ static void native_debug_line(NativeDebugLine *cache,const char *text,GLuint des
     glFramebufferTexture2D(GL_READ_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,cache->texture,0);
     if(glCheckFramebufferStatus(GL_READ_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE) {
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER,destination);
-        int shown=width-20<cache->width?width-20:cache->width;
-        int x=bottom?width-10-shown:10,y=bottom?10:height-58;
+        float scale=!bottom && pc_counter_enabled()?pc_counter_scale(width,height,cache->width,48):1.f;
+        int line_height=(int)(48*scale),margin=(int)(10*scale);
+        int shown=width-2*margin<cache->width*scale?width-2*margin:(int)(cache->width*scale);
+        int x=bottom?width-margin-shown:margin,y=bottom?margin:height-line_height-margin;
         /* Fit the complete line when the drawable is narrow. CoreText truncates
          * only text exceeding the cache itself, with an explicit ellipsis. */
-        glBlitFramebuffer(0,48,cache->width,0,x,y,x+shown,y+48,GL_COLOR_BUFFER_BIT,GL_LINEAR);
+        glBlitFramebuffer(0,48,cache->width,0,x,y,x+shown,y+line_height,GL_COLOR_BUFFER_BIT,GL_LINEAR);
     }
 }
 static void native_debug_draw(GLuint destination,int width,int height) {
@@ -39,7 +42,7 @@ static void native_debug_draw(GLuint destination,int width,int height) {
     char text[320],line[384];
     int show=pc_debug_overlay(text,sizeof text,NULL);
     PcDebugOptions options;pc_debug_get(&options);
-    snprintf(line,sizeof line,"%s%s",options.show_fps?"Game/Shown: ":"",show?text:"");
+    snprintf(line,sizeof line,"%s%s",options.show_fps && !options.show_counter?"Game/Shown: ":"",show?text:"");
     GLint read,draw,binding,unpack,row,skip_rows,skip_pixels,pbo;
     GLboolean scissor=glIsEnabled(GL_SCISSOR_TEST);
     glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING,&read);glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,&draw);

@@ -326,3 +326,8 @@ void pc_display_frame_done(void)
         fprintf(stderr,"[PC-DISPLAY] Preview timed out; previous display settings restored\n");
     }
 }
+
+#include <stdint.h>
+#include <limits.h>
+#include <errno.h>
+#include "pc_game_restart.inc"

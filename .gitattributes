@@ -21,3 +21,8 @@ assets/textures/*.json text eol=lf
 
 # Pristine runtime snapshot: preserve upstream bytes for exact Git identity.
 vendor/ts3FPrecomp/source/** -text -filter -whitespace linguist-vendored
+# Pinned SMAA reference files retain upstream bytes for provenance verification.
+vendor/smaa/SMAA.hlsl -text -filter -whitespace linguist-vendored
+vendor/smaa/AreaTex.h -text -filter -whitespace linguist-vendored
+vendor/smaa/SearchTex.h -text -filter -whitespace linguist-vendored
+vendor/smaa/LICENSE.txt -text -filter -whitespace linguist-vendored

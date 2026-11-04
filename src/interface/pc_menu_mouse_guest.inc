@@ -114,8 +114,8 @@ static int menu_mouse_tab_contains(const MenuMouseTab *t,uint32_t menu,
 }
 static int menu_mouse_tab_text(void)
 {
-    /* sub_002E4FF0's EBP is a generated local, not g_ebp. Its saved
-       one-based loop index is at +0x2c at this exact text call site. */
+    /* The saved one-based loop index is at +0x2c at this exact text call
+       site in sub_002E4FF0, independent of EBP publication by the generator. */
     uint32_t index=WORD_AT(g_esp+0x2c);
     if(index<1 || index>12) return 0;
     --index;
@@ -295,8 +295,10 @@ void pc_display_menu_mouse_footer(void (*original)(void))
         memset(menu_mouse_footer,0,sizeof menu_mouse_footer);
         menu_mouse_footer_drawing=menu;
     } else menu_mouse_footer_drawing=0;
+    settings_tabs_footer_style(0,0,0,0);
     original();
     menu_mouse_footer_drawing=previous;
+    settings_tabs_footer(menu);
 }
 /* Share the visible, enabled hit area between clicks and hover feedback. */
 static int menu_mouse_footer_contains(const MenuMouseFooter *f,uint32_t menu,
@@ -335,6 +337,7 @@ static int menu_mouse_footer_text(void)
         index=slot;
     }
     MenuMouseFooter *f=&menu_mouse_footer[index];
+    settings_tabs_footer_style(menu,WORD_AT(0x7e7270),WORD_AT(0x7e7280),WORD_AT(g_esp+16));
     f->menu=menu;
     memcpy(f->descriptor,&WORD_AT(menu+0x128+index*16),16);
     f->x=FLOAT_AT(g_esp+4);f->y=FLOAT_AT(g_esp+8);
@@ -424,6 +427,9 @@ void pc_display_menu_mouse_dispatch(void (*original)(void))
     pc_display_menu_mouse_mode();
     MenuMouseDispatch *previous=menu_mouse_dispatch;
     menu_mouse_dispatch=&state;
+    /* Video tabs are direct targets, not native Confirm repeats. Capture
+     * their edges even while the guest temporarily gates row navigation. */
+    if(menu_video_tabs_poll(state.menu))state.sampled=1;
     menu_character_input(&state);
     menu_text_focus(state.menu);
     original();
@@ -444,6 +450,7 @@ void pc_display_menu_mouse_dispatch(void (*original)(void))
     } else if(state.tab_target && !state.close_pause) {
         menu_mouse_change_tab(state.tab_menu,state.tab_target);
     }
+    if(!previous)menu_video_tabs_flush();
     pc_display_menu_mouse_mode();
     if(menu_mouse_context())menu_text_events(state.menu);
 }
@@ -516,6 +523,7 @@ void pc_display_menu_mouse(void (*original)(void))
     if(hit && (actions&3)) {
         if(WORD_AT(menu+0x198)!=hit) guest_call(sub_00076EF0,2,menu,hit);
         if(actions&2) {
+            if(!choice_direction)menu_video_click_sound(menu,hit);
             if(choice_direction) {
                 /* Exactly one native Previous/Next edge, not Confirm. Native
                  * callbacks retain wrapping, disabled choices and saving. */

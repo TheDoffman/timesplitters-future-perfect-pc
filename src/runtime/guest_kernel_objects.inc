@@ -3,6 +3,8 @@
 #include "guest_object_services.h"
 #include "guest_object_scope.h"
 #include "guest_lifetime.h"
+#include "guest_execution_scope.h"
+#include "guest_kernel_execution.h"
 
 #define TSFP_KERNEL_OBJECT_LIMIT 16383
 #define TSFP_KERNEL_ASYNC_FILE 1u
@@ -94,7 +96,7 @@ static uint64_t bridge_object_current_key(void *context,uint32_t pseudo) {
     return pseudo==UINT32_MAX?bridge_process_key:bridge_thread_key;
 }
 static uint64_t bridge_object_capture(void) { return tsfp_guest_scope_mark(&bridge_object_scopes); }
-static int bridge_object_restore(uint64_t mark) { return tsfp_guest_scope_unwind(&bridge_object_scopes,mark); }
+static int bridge_object_restore(uint64_t mark) { return tsfp_guest_execution_scope_unwind(&bridge_object_scopes,mark,&tsfp_kernel_execution_ops); }
 static int bridge_object_publish_thread(uint64_t key,uint32_t tib) {
     uint32_t body,winner=0;unsigned char *p;
     p=(unsigned char *)bridge_object_output(NULL,tib+0x28,4);
@@ -198,10 +200,11 @@ static uint32_t bridge_object_finish(bridge_object_creation *creation,HANDLE hos
     bridge_object_word(creation->output,creation->ticket);creation->ticket=0;return status;
 }
 static void bridge_object_thread_exit(void) {
-    if(!tsfp_guest_scope_abort(&bridge_object_scopes)) abort();
+    if(!tsfp_guest_execution_scope_abort(&bridge_object_scopes,&tsfp_kernel_execution_ops)) abort();
     if(bridge_thread_key) {
         uint64_t key=bridge_thread_key;bridge_thread_key=0;
         if(!tsfp_guest_objects_dereference(&bridge_objects,key)) abort();
     }
+    xbox_GuestLiftedExit();
 }
 void xbox_bridge_thread_objects_exit(void) { bridge_object_thread_exit(); }

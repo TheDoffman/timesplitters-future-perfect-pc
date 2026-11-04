@@ -1,5 +1,8 @@
 /* The same production HLSL and pixel contract through the common RHI.
  * No game assets, saves or generated game code are consumed. */
+#ifdef NDEBUG
+#undef NDEBUG /* Pixel/resource assertions also execute in Release CI builds. */
+#endif
 #ifdef _WIN32
 #define COBJMACROS
 #include <d3d11.h>
@@ -7,6 +10,9 @@
 #include "rhi.h"
 #include "pc_menu_sampling.h"
 #include "graphics/point_size_shader.h"
+#include "msaa_resolve.h"
+#include "msaa_targets.h"
+#include "msaa_color_surface.h"
 #include "menu_sampling_cases.h"
 #include <stdlib.h>
 #ifdef RHI_VULKAN_SDL
@@ -31,6 +37,9 @@ static RhiShader *shader(uint32_t stage,const char *text,const char *profile) {
 #include "rhi_depth_replay.h"
 #include "rhi_texture_resources.h"
 #include "rhi_xbox_textures.h"
+#include "msaa_surface_views.h"
+#include "msaa_shared_depth.h"
+#include "ssao_pass.h"
 #include "rhi_screen_copy.h"
 #include "rhi_state_cache.h"
 #include "rhi_compatibility.h"
@@ -134,6 +143,11 @@ int main(void) {
     rhi_depth_replay_test(rtv);
     rhi_screen_copy_test(rtv);
     rhi_state_cache_test(rtv);
+    rhi_set_raster_state(raster);rhi_set_depth_state(depth,0);
+    rhi_set_blend_state(blend,NULL,~0u);rhi_set_topology(RHI_TOPOLOGY_TRIANGLES);
+    test_guest_surface_companion(rtv);
+    test_msaa_surface_views(rtv);
+    test_ssao_pass(rtv);
 
 #ifdef RHI_VULKAN_SDL
     /* Also exercise presentation and the swapchain readback channel order. */
@@ -151,6 +165,11 @@ int main(void) {
     rhi_view_destroy(srv);rhi_image_destroy(texture);rhi_view_destroy(rtv);rhi_image_destroy(target);
     rhi_shader_destroy(ps);rhi_shader_destroy(vs);rhi_raster_state_destroy(raster);
     rhi_depth_state_destroy(depth);rhi_blend_state_destroy(blend);
+    test_msaa_resolve();
+    test_msaa_subresources();
+    test_msaa_color_surface();
+    test_msaa_targets();
+    test_msaa_shared_depth();
     rhi_device_destroy();
 #ifdef RHI_VULKAN_SDL
     SDL_DestroyWindow(window);SDL_Quit();

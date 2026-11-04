@@ -1,6 +1,7 @@
-[HUD](../development/arcade-kill-feed.md)
+[Settings sections and keycap/footer drawing](controls-options.md).
+[Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
-# Subsystem entry points
+# [Systems](video-options.md)
 
 [Linux](linux-game.md).
 
@@ -8,7 +9,7 @@ PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
 [Clicks](interaction-input.md#fresh-weapon-clicks-434).
 
-Story/Online: [contracts](systems-details.md).
+[Story/Online](systems-details.md).
 
 Mech: [mouse routing](mounted-mouse.md#battle-mech-mouse-425).
 
@@ -26,8 +27,7 @@ Wind: [time scopes](native-wind.md).
 
 Aim/animation: [diagnostic limits](native-local-trace.md).
 
-GPU state-cache acceptance: shared Vulkan/WARP pixel fixture and frontend
-header configuration are in [runtime](runtime.md).
+GPU cache fixture/config: [runtime](runtime.md).
 
 Native player contact: [clear-slide policy/trace](native-player-contact.md).
 Registers: [policy/tests](gpr-refs.md).
@@ -39,7 +39,7 @@ Tracked policy: `src/input/` owns controls, bindings and prompts;
 `src/gameplay/` owns simulation and camera policy;
 `src/diagnostics/` owns shared debug fields, crashes and hang reporting;
 `src/graphics/` for common shader/math policy; `src/native/` for host adapters.
-For movement regressions, compare player-position displacement in game as well
+Compare player displacement for movement regressions as well
 as sampled stick values: the title attenuates diagonals after the binding
 sampler. Windows mouse confinement is owned by `pc_controls.c`; native SDL
 relative mode is owned by `src/native/input_sdl.c` and should recover from
@@ -67,7 +67,7 @@ lead from 40 to 90 ms and refill immediately after skipping stale hitch data.
 Explicit lead overrides stay fixed. Final buffer Release also reclaims host
 slots; XAudio/SDL expose lifetime failure-category counters in the periodic
 DSOUND health report and an idempotent normal-exit summary. Windows WM_QUIT
-runs registered cleanup, matching the SDL close path. See [contracts](audio-buffers.md).
+runs registered cleanup, matching the SDL close path. Tail drain: [contracts](audio-buffers.md).
 `audio_output.h` owns `RECOMP_AUDIO_DEFAULT_GAIN` (0.5, about -6 dB).
 XAudio applies it once to the master; SDL applies it once per stream. This
 quiets the output at 100% without changing saved Music/Sound sliders, their
@@ -142,7 +142,6 @@ Fire presses use the shared key-edge path and a
 Fire pulses; later presses can interrupt. Context resets discard pulses.
 Pad input stays separate.
 
-
 `pc_model_transform_guest.inc` implements the US151E80 affine point fast path.
 It checks disjoint/wrap-safe buffers and magnitudes at most2^33, then uses local
 binary32 intermediates with explicit rounding, preserving final GPR/SSE state.
@@ -166,7 +165,6 @@ not a reconstructed call stack or guaranteed checkpoint/load-event history.
 heartbeat JSON. Each helper atomically replaces `capture-health.json` every two
 seconds in its safe report directory. No valid token means no health file.
 Windows packet schema is now3; a mismatched older helper cannot claim readiness.
-
 
 Windows `pc_menu_theme.h` snapshots each native menu item's caption, tab-separated
 shortcut and separator type before owner drawing. Command IDs stay untouched;
@@ -937,9 +935,7 @@ Statistics: D2CB7 scopes D1FD0 to carried ticks. Time totals keep Original
 cadence; distance stays per-frame. D2079 blocks paused stale ticks.
 Impact sparks: see [native spark timing](native-impact-sparks.md).
 
-
 [Devices](kernel-devices.md).
-
 
 Project-owned I/O contracts: [sharing](kernel-sharing.md),
 [request lifetime](request-lifetime.md), [driver calls](driver-call.md),
@@ -953,8 +949,7 @@ retain their existing route. Vehicle limits and locked states differ from mode
 `0x80`; see [mounted and vehicle mouse contracts](mounted-mouse.md). Both Windows
 and SDL adapters consume this helper. Exact mission validation remains separate.
 
-Tank keyboard/mouse policy shares `pc_tank.h` and the
-1730E0 guest wrapper. See [tank scope and original aim route](mounted-mouse.md).
+[Tank keyboard/mouse scope and original aim route](mounted-mouse.md).
 
 Kernel: [pool](kernel-pool.md), [time](kernel-time.md), [RTL](kernel-rtl.md), [numbers](guest-numbers.md), [crashes](crash-evidence.md).
 
@@ -977,4 +972,6 @@ Physics: [poses](systems-details.md#guest-ragdolls-and-physical-npc-drops).
 
 [Language startup](language-packs.md).
 
-[2x](original-upscale.md).
+[2x texture workflow](original-upscale.md).
+
+[RTL](guest-stack-trace.md), [host policy](execution-host.md).

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "a5aeaa846ee56a1874f4da08a1f0c40d00822c6a25e64f4eac083bf56db7a84b",
+  "loaderSha256": "d6c4a8bd6df04447f4bbaecfae6198f4b1fd0f4a9a4da626572cb5545a573daa",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1653,6 +1653,32 @@
       ]
     },
     {
+      "name": "2304-dsound-buffer-completion.patch",
+      "path": "patches/media/2304-dsound-buffer-completion.patch",
+      "sha256": "43edcdc3b0c610026f65cc1203caae3f617adbc71f94383c55228c8f3f712285",
+      "targets": [
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
+      "name": "2305-dsound-burst-headroom.patch",
+      "path": "patches/media/2305-dsound-burst-headroom.patch",
+      "sha256": "72ebfd8e1939817ad9d99c05a9640f74a4cc034f2b0c4ce49d3726ea69c29246",
+      "targets": [
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
+      "name": "2306-dsound-tail-drain-adapters.patch",
+      "path": "patches/media/2306-dsound-tail-drain-adapters.patch",
+      "sha256": "7106da711954e5c9cf15cda3eb0075e964f1d176e4bb1727fa84585f8c8e816a",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
       "name": "2310-game-language.patch",
       "path": "patches/platform/2310-game-language.patch",
       "sha256": "6bb7a0a5e632b509b1e2a4c93163af160107701cddf523367716bad98a960f98",
@@ -1680,6 +1706,14 @@
       "name": "2330-story-checkpoints.patch",
       "path": "patches/network/2330-story-checkpoints.patch",
       "sha256": "659de804c7552b3774c7d5b98fe1ebdb988aadb35cdc9fb3765e4eb9b8937140",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2340-keycap-prompts.patch",
+      "path": "patches/input/2340-keycap-prompts.patch",
+      "sha256": "2503f98777789b84ceeb4bb55995622df2138d19d54c76dffe5e4318b1f309c4",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
       ]
@@ -1834,6 +1868,168 @@
       "sha256": "c6d3c4bfd11676b9a4c0f425a21e9c4a5f94efa7c9255b92d3247ccaaa1c530c",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2490-fps-counter-scaling.patch",
+      "path": "patches/graphics/interface/2490-fps-counter-scaling.patch",
+      "sha256": "85e6d36b10a7237e53b81868f5790ced9fbeb0cb9f817059afb934e8953995ff",
+      "targets": [
+        "src/d3d/d3d8_overlay.c",
+        "src/d3d/d3d8_overlay.h",
+        "src/hle/hle_d3d8.c"
+      ]
+    },
+    {
+      "name": "2495-graphics-options.patch",
+      "path": "patches/graphics/rendering/2495-graphics-options.patch",
+      "sha256": "e76fb5c97bbf7802578e30f6d2706043edfa0754dce1e579479df3956b096d9e",
+      "targets": [
+        "src/d3d/d3d8_display.c"
+      ]
+    },
+    {
+      "name": "2496-portable-shader-cache.patch",
+      "path": "patches/graphics/rendering/2496-portable-shader-cache.patch",
+      "sha256": "3104b034bba413b032985e71e73e76fd108e5cddcc0e9c25b502ca8357657671",
+      "targets": [
+        "src/d3d/rhi_shader_cache.c",
+        "src/d3d/rhi_shader_cache.h"
+      ]
+    },
+    {
+      "name": "2497-msaa-resolve.patch",
+      "path": "patches/graphics/rendering/2497-msaa-resolve.patch",
+      "sha256": "968de7ea44014e48c47b24ae1a1fc7d38b67b3ef8d51fcf4a4f947e280d5d976",
+      "targets": [
+        "src/d3d/rhi.c",
+        "src/d3d/rhi.h",
+        "src/d3d/rhi_backend.h",
+        "src/d3d/rhi_d3d11.c",
+        "src/d3d/rhi_vulkan.c"
+      ]
+    },
+    {
+      "name": "2498-cache-menu-api.patch",
+      "path": "patches/graphics/rendering/2498-cache-menu-api.patch",
+      "sha256": "ab1febcb7372d2084fa0e38fe259dbbc5fdeb9e88672afcf000d6467ad1fb17a",
+      "targets": [
+        "src/d3d/d3d8_display.c"
+      ]
+    },
+    {
+      "name": "2499-msaa-surface-views.patch",
+      "path": "patches/graphics/rendering/2499-msaa-surface-views.patch",
+      "sha256": "b716eb8eb4f2d615fb02a66f2164fac03dc35b1530f7570d24d2540ea4a56b1a",
+      "targets": [
+        "src/d3d/d3d8_resources.c",
+        "src/d3d/rhi_d3d11.c"
+      ]
+    },
+    {
+      "name": "2500-world-ambient-occlusion.patch",
+      "path": "patches/graphics/rendering/2500-world-ambient-occlusion.patch",
+      "sha256": "b8bf34e66476e128a19c21295cda47b5b35e691241a28b7a9f4a5611d380fca5",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2501-deferred-ambient-occlusion.patch",
+      "path": "patches/graphics/rendering/2501-deferred-ambient-occlusion.patch",
+      "sha256": "8d37f18cfaf122351def72653aafdd819923f1e1cc2f4bb60aff1e87f0e25879",
+      "targets": [
+        "src/hle/hle_d3d8_record.c",
+        "src/hle/hle_d3d8_record.h"
+      ]
+    },
+    {
+      "name": "2503-pipeline-cache-integrity.patch",
+      "path": "patches/graphics/rendering/2503-pipeline-cache-integrity.patch",
+      "sha256": "94f7508e0c7ea8d3023ba16d534c738a7c58c66af660bd5b5d4b3085a5edf616",
+      "targets": [
+        "src/d3d/rhi_vulkan.c"
+      ]
+    },
+    {
+      "name": "2505-msaa-subresource-resolve.patch",
+      "path": "patches/graphics/rendering/2505-msaa-subresource-resolve.patch",
+      "sha256": "da2f2e17eb7739da1f35d45ce8c3650b02c48b90abac17823148e8b068759d55",
+      "targets": [
+        "src/d3d/rhi.c",
+        "src/d3d/rhi.h",
+        "src/d3d/rhi_backend.h",
+        "src/d3d/rhi_d3d11.c",
+        "src/d3d/rhi_vulkan.c"
+      ]
+    },
+    {
+      "name": "2506-msaa-surface-companions.patch",
+      "path": "patches/graphics/rendering/2506-msaa-surface-companions.patch",
+      "sha256": "b98e25ec621408effc9b2fba39a55b14c51ab895ee9d1e241267531574c9b34f",
+      "targets": [
+        "src/d3d/d3d8_internal.h",
+        "src/d3d/d3d8_resources.c"
+      ]
+    },
+    {
+      "name": "2509-msaa-surface-locks.patch",
+      "path": "patches/graphics/rendering/2509-msaa-surface-locks.patch",
+      "sha256": "0a2712cd80453f61deba3746a7ce60545f894a923c04279cacf6edc151e8dec5",
+      "targets": [
+        "src/d3d/d3d8_resources.c"
+      ]
+    },
+    {
+      "name": "2512-portable-renderer-declarations.patch",
+      "path": "patches/graphics/rendering/2512-portable-renderer-declarations.patch",
+      "sha256": "0c3ae0ec20b9ba3833b7c35617e8bfa47246f57dc5c72fa7be200add962b166f",
+      "targets": [
+        "src/d3d/d3d8_internal.h"
+      ]
+    },
+    {
+      "name": "2513-vulkan-ao-descriptors.patch",
+      "path": "patches/graphics/rendering/2513-vulkan-ao-descriptors.patch",
+      "sha256": "130105bdca862480ae27acc4e3c1000cb688c4be5a99865611097ada2fc4d453",
+      "targets": [
+        "src/d3d/rhi_vulkan.c"
+      ]
+    },
+    {
+      "name": "2514-video-restart-handoff.patch",
+      "path": "patches/graphics/rendering/2514-video-restart-handoff.patch",
+      "sha256": "e36a2d6f082999317fdcafef985426b95f52a567ab566001bd55f842b2318155",
+      "targets": [
+        "titles/futureperfect/src/main.c"
+      ]
+    },
+    {
+      "name": "2515-supersampling.patch",
+      "path": "patches/graphics/rendering/2515-supersampling.patch",
+      "sha256": "f69b264fb78d8a28e1f726e24f07254a363231b84c9b7d3e107f6040937d4a30",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_display.c",
+        "src/d3d/d3d8_display.h"
+      ]
+    },
+    {
+      "name": "2518-video-menu-font-scope.patch",
+      "path": "patches/graphics/interface/2518-video-menu-font-scope.patch",
+      "sha256": "b7b4fb75a61863b42c5f8fa4ddb3678e770bc0f7d71286e8a22ef1163d50552d",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "independent-canonical-frame-fixtures.patch",
+      "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
+      "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",
+      "targets": [
+        "tools/recomp/test_prologue_saved_frame.py",
+        "tools/recomp/test_translator_ebp_init.py"
       ]
     },
     {
@@ -2963,6 +3159,15 @@
       ]
     },
     {
+      "name": "0241-original-extended-product.patch",
+      "path": "patches/compiler/0241-original-extended-product.patch",
+      "sha256": "7181c2c4bc75cac16401368a3680efbf9093b1874e3f9cba4574403f634d0635",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
       "name": "2303-audio-window-exit.patch",
       "path": "patches/media/2303-audio-window-exit.patch",
       "sha256": "72cca9dddaace1b9035f3e07bdf2b7d569f5aaf9de6cb03e7e6a3e82ac917818",
@@ -2998,6 +3203,202 @@
       "sha256": "4b5969a17815e4b753508dd7f76c38b2f4ac86930256daa9f9709c91e4a23640",
       "targets": [
         "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2502-ambient-occlusion-capture.patch",
+      "path": "patches/graphics/rendering/2502-ambient-occlusion-capture.patch",
+      "sha256": "ccebaee9c1042ec50aa5bdd4b2b2d88cfbd3ec83e392e8b849e66ccc0a497dcf",
+      "targets": [
+        "src/hle/d3d8_capture.c",
+        "src/hle/d3d8_capture.h",
+        "src/hle/hle_d3d8_record.c",
+        "src/replay/d3d8_replay.c",
+        "tests/d3d8_capture/test_main.c"
+      ]
+    },
+    {
+      "name": "2504-scene-target-lifecycle.patch",
+      "path": "patches/graphics/rendering/2504-scene-target-lifecycle.patch",
+      "sha256": "60d1f186c4189d6e5c4618340d781ea2bdd2555f8ec822f80ae2488a847291b7",
+      "targets": [
+        "src/d3d/d3d8_device.c"
+      ]
+    },
+    {
+      "name": "2507-msaa-offscreen-bindings.patch",
+      "path": "patches/graphics/rendering/2507-msaa-offscreen-bindings.patch",
+      "sha256": "43c83ead582e2d047aa2ae017a1793e62b9c4a855c4b0c943d3300a053203a7f",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_internal.h",
+        "src/d3d/d3d8_resources.c"
+      ]
+    },
+    {
+      "name": "2508-msaa-primary-scene.patch",
+      "path": "patches/graphics/rendering/2508-msaa-primary-scene.patch",
+      "sha256": "33445777a733421c0907a7929d1f3c178cba6bfac07e4aca0614bd65db7c1833",
+      "targets": [
+        "src/d3d/d3d8_device.c"
+      ]
+    },
+    {
+      "name": "2510-msaa-surface-aliases.patch",
+      "path": "patches/graphics/rendering/2510-msaa-surface-aliases.patch",
+      "sha256": "b36bc1252f5556607b9d1e15c17dc48bda39edcdd2613786d4bdc856545b2b08",
+      "targets": [
+        "src/d3d/d3d8_internal.h",
+        "src/d3d/d3d8_resources.c"
+      ]
+    },
+    {
+      "name": "2511-msaa-screen-copy-sync.patch",
+      "path": "patches/graphics/rendering/2511-msaa-screen-copy-sync.patch",
+      "sha256": "b31afb8ff826d5ff29c2df9feb582972d4e52c882a5b0c493d614ea1098197bd",
+      "targets": [
+        "src/d3d/d3d8_internal.h",
+        "src/d3d/d3d8_resources.c",
+        "src/d3d/d3d8_screencopy.c"
+      ]
+    },
+    {
+      "name": "0242-original-extended-division.patch",
+      "path": "patches/compiler/0242-original-extended-division.patch",
+      "sha256": "01861d082565830a455a756228d5c55a164694c0c78797a6cbc56ffd95acfec3",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c",
+        "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0243-original-memory-operations.patch",
+      "path": "patches/compiler/0243-original-memory-operations.patch",
+      "sha256": "d2434631fc3a52f460f49b5c205359526688362a155bd7e355b8cda401828ab6",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0244-original-counted-codec.patch",
+      "path": "patches/compiler/0244-original-counted-codec.patch",
+      "sha256": "2b2c13c6c796e73c67285f9a0020926d03b57fd296040afed2999440fe9128e0",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0245-original-string-transform.patch",
+      "path": "patches/compiler/0245-original-string-transform.patch",
+      "sha256": "76b46f90c349a755440816b7b5e62fc715e531b309c96fbd5b789bbc2c8f3d72",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0246-original-raw-codec.patch",
+      "path": "patches/compiler/0246-original-raw-codec.patch",
+      "sha256": "1c112c44ff163949cd7f06ce7b7ac010de4be3bf01f1a3c1e8f475318e1f9ba8",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0247-original-stack-diagnostics.patch",
+      "path": "patches/compiler/0247-original-stack-diagnostics.patch",
+      "sha256": "371a614d513656618488e647b292e40b31e8071284ade0650985cd9853bbf061",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/xbox_memory_layout.c",
+        "src/kernel/xbox_memory_layout.h"
+      ]
+    },
+    {
+      "name": "0248-original-status-flags.patch",
+      "path": "patches/compiler/0248-original-status-flags.patch",
+      "sha256": "adde1a2e59198f95c2281e172e22f64b1e7696dbf3ee8b5e89ef5a592ecb1efd",
+      "targets": [
+        "titles/futureperfect/CMakeLists.txt",
+        "tools/recomp/test_flag_join_backedge.py"
+      ]
+    },
+    {
+      "name": "0249-status-header-template.patch",
+      "path": "patches/compiler/0249-status-header-template.patch",
+      "sha256": "6766d9c7609e217ae36c108988de65f84d9843a0fe969d241493c28dda475007",
+      "targets": [
+        "templates/runtime/recomp_types.h"
+      ]
+    },
+    {
+      "name": "0253-original-context-records.patch",
+      "path": "patches/compiler/0253-original-context-records.patch",
+      "sha256": "c100faf4246139ba9144851469fc377ff8ffbf80bf88d4694a11602877354e51",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0258-original-exception-dispatch.patch",
+      "path": "patches/compiler/0258-original-exception-dispatch.patch",
+      "sha256": "662e9ad973cc59a457aa84a2612cb50ee007fe211ae2afa7043be92954b65e98",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0259-original-execution-ownership.patch",
+      "path": "patches/compiler/0259-original-execution-ownership.patch",
+      "sha256": "356946afe075993e1fcf55c19955291575415745d47eaf149164024279b6f74b",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/xbox_memory_layout.c"
+      ]
+    },
+    {
+      "name": "0260-original-execution-host-policy.patch",
+      "path": "patches/compiler/0260-original-execution-host-policy.patch",
+      "sha256": "cc155c4da87cdfec385660c79fbcd350fb3c507a46a1a43cebe3634af212633d",
+      "targets": [
+        "src/kernel/xbox_memory_layout.c"
+      ]
+    },
+    {
+      "name": "2470-smaa-antialiasing.patch",
+      "path": "patches/graphics/rendering/2470-smaa-antialiasing.patch",
+      "sha256": "43f8b18597dee8e0c58903322af0e1994b69eb78dff560e8485432636229a1ab",
+      "targets": [
+        "src/config/recomp_config.c",
+        "src/config/recomp_config.h",
+        "src/d3d/d3d8_display.c"
+      ]
+    },
+    {
+      "name": "2516-native-resolution-hud.patch",
+      "path": "patches/graphics/rendering/2516-native-resolution-hud.patch",
+      "sha256": "b0a212e0c9d2208effe2eafcee7151f03fa0a1a4f3487d7d89c8488b60a63a95",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_display.c",
+        "src/d3d/d3d8_display.h"
+      ]
+    },
+    {
+      "name": "2517-native-hud-stencil-plane.patch",
+      "path": "patches/graphics/rendering/2517-native-hud-stencil-plane.patch",
+      "sha256": "9f9e012cdd326096411445b61621bf424782bf9cbce288f7a3b1e7aeeba74df0",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/rhi.h",
+        "src/d3d/rhi_d3d11.c",
+        "src/d3d/rhi_vulkan.c"
       ]
     },
     {

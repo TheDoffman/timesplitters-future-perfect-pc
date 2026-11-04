@@ -1,6 +1,11 @@
-FOV fixture stubs HUD draws and checks the Kill Feed row.
+[Keycap/upgrade checks](controls-options.md).
+[Tab queue](../development/graphics-options.md): HUD/SMAA order and texture-present fixtures.
+Auto-sizing fixtures test SDL policy; restart handoff is separate.
+`test_fov_settings.py` checks Video tabs, ownership, pointer bounds, keyboard
+cycling and staged-value retention.
+Ping-expiry tests wait past GetTickCount64 quantization.
 [Kill feed](../development/arcade-kill-feed.md)
-# Build, run and validation map
+# Build/tests ([SMAA](smaa.md))
 
 [Linux](linux-game.md); [LAN](system-link.md).
 
@@ -130,7 +135,7 @@ dispatch and copy/rebase/leak mutations. Both hosts; mocked draws.
 
 Reload/Fire #337: `test_native_timing.py` covers the US decoder;
 `reload_phase_sweep.h` covers 864 schedules/1,728 presses. `test_reload_keys.py`
-covers 1,360 Reload and 680 Fire schedules at 60ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ240, priority, remaps and
+covers 1,360 Reload and 680 Fire schedules at 60-240, priority, remaps and
 lifecycle. `native_reload_input.c` adds 425 original-decoder Fire schedules
 (X surrogate). Windows `pc_controls.c` checks the event bridge.
 `native_refresh_game.py --native --fps 180 --short-fire --seconds 116` checks
@@ -202,7 +207,7 @@ presence semantics, decoding/reporting, and repeated-lookup/executor mutations.
 
 `test_window_theme.py`: menu drawing, mnemonics, inserted/reordered rows (#333).
 
-[Audio tests](audio-buffers.md): timing/gain, Release/recovery stress, exit reports,
+[Audio tests](audio-buffers.md): rates/gain/drain/bursts, Release/recovery stress, exits,
 beta ON/OFF. RHI tests cover WM_QUIT/HostExit cleanup.
 
 `test_controller_profile.py`: devices/maps/disconnect and SDL virtual input;
@@ -1014,8 +1019,6 @@ error; native calendar source and the accepted game binary do not change.
 
 Crossplay: [acceptance](multiplayer-ui.md#physical-windowsmac-online-acceptance).
 
-Crossplay tests: see multiplayer-ui.md.
-
 Markers: test_ui_layout.py; test_patch_updates.py covers 2290/2291.
 
 Mech input: test_mounted_mouse.py; [scope](mounted-mouse.md#battle-mech-mouse-425).
@@ -1028,4 +1031,8 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [2x tests](original-upscale.md).
 
-[Vulkan/GPU: both CI paths, WSL copy tests/play](linux-game.md).
+[Linux GPU](linux-game.md).
+
+[RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
+
+GPU asserts stay on; AO logs scene/pixel failures.

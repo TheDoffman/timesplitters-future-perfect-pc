@@ -196,6 +196,7 @@ def run_binding(tmp_path,mutation=None,real_memory=False):
         ('guest_thread_memory.c','guest_allocation.c','guest_image.c')]+['/DTSFP_REAL_THREAD_MEMORY']) if real_memory else []
     exe=_compile(tmp_path,tmp_path/'binding.c',extra=[tmp_path/'guest_objects.c',
         tmp_path/'guest_object_scope.c',tmp_path/'guest_object_services.c',
+        ROOT/'src/runtime/guest_execution_state.c',ROOT/'src/runtime/guest_execution_scope.c',
         '/I'+str(ROOT/'src/runtime'),'/W4','/D_CRT_SECURE_NO_WARNINGS',*memory_sources])
     return subprocess.run([str(exe)],capture_output=True,text=True,timeout=30)
 
@@ -215,8 +216,8 @@ def test_actual_kernel_thread_and_object_adapters(tmp_path,real_memory):
      '!launch->tib'),
     ('guest_kernel_threads.inc','xbox_HeapFree(launch->tib);xbox_FreeThreadStack(launch->stack);free(launch);',
      'xbox_FreeThreadStack(launch->stack);free(launch);'),
-    ('binding.c','        bridge_object_thread_exit();\n        ExitThread(exit_status);',
-     '        ExitThread(exit_status);'),
+    ('binding.c','        bridge_object_thread_exit();\n        xbox_FreeThreadStack(g_thread_stack_top);',
+     '        xbox_FreeThreadStack(g_thread_stack_top);'),
 ])
 def test_broken_native_kernel_bindings_are_rejected(tmp_path,mutation):
     result=run_binding(tmp_path,mutation)

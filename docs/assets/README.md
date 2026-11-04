@@ -56,6 +56,9 @@
 - `download-windows-launcher.svg` and `download-mac-launcher.svg`: flat pale-blue
   platform buttons with the launcher's three-pixel corners, thin border and
   line-icon weight. Links and accessible labels live in the README.
+- `linux-coming-soon.svg`: matching muted-blue Linux announcement with a clock
+  icon and “Coming soon 11/4” label (November 4, 2026). It has no download link
+  while the Linux launcher is pending.
 - `icon-play.svg`, `icon-settings.svg` and `icon-support.svg`: small section
   markers using the launcher's line-icon style; the settings glyph follows
   `Launcher.xaml`. Heading text remains Markdown with decorative empty image

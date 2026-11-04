@@ -56,6 +56,57 @@ static int load_case(const char *scenario)
         puts("PASS: legacy");
         return 0;
     }
+    if (!strncmp(scenario, "fps-", 4)) {
+        unsigned fps = (unsigned)atoi(scenario + 4);
+        CHECK(fps == 60 || fps == 120 || fps == 144 || fps == 180 || fps == 240);
+        uint64_t stalls = 0;
+        for (tick = 1; tick <= fps * 4; ++tick) {
+            /* Millisecond clock quantization at the exact requested cadence,
+             * plus repeated 37ms busy-frame delays after steady service. */
+            if (tick % 80 == 0) stalls += 37;
+            fake_now = now = 1000 + (uint64_t)tick * 1000 / fps + stalls;
+            for (i = 0; i < voices; ++i) {
+                pump(&g_buffers[i], now);
+                CHECK(fake_until[i] > now);
+                CHECK(fake_until[i] - now <= 180);
+            }
+            if (tick < 80) CHECK(g_stat.underruns == 0);
+            /* One initial delayed service can run dry; recurring delays
+             * must be covered by the learned bounded headroom. */
+            CHECK(g_stat.underruns <= voices);
+        }
+        printf("PASS: %s (64 independent voices, bounded recurring-delay recovery)\n", scenario);
+        return 0;
+    }
+    if (!strcmp(scenario, "burst")) {
+        /* Sustained busy service was already observed by an active voice.
+         * New gunfire buffers must not relearn it by first running dry. */
+        fake_now = now = 1060;
+        pump(&g_buffers[0], now);
+        CHECK(g_buffers[0].adaptive_lead_ms == 70);
+        for (unsigned round = 0; round < 8; ++round) {
+            for (i = 1; i < voices; ++i) {
+                Buffer identity = g_buffers[i];
+                retire(&g_buffers[i]);
+                Buffer *b = &g_buffers[i];
+                b->iface = identity.iface; b->data = identity.data;
+                b->size = identity.size; b->format = identity.format;
+                b->output = 1;
+                fake_until[i] = 0;
+                CHECK(recomp_dsound_buffer_configure(&b->model, b->size, 48000, 2, now) == 0);
+                CHECK(recomp_dsound_buffer_play(&b->model, 0, now) == 0);
+                b->output_model = b->model;
+                pump(b, now);
+                CHECK(fake_until[i] == now + 70);
+            }
+            uint64_t underruns = g_stat.underruns;
+            fake_now = now += 60;
+            for (i = 0; i < voices; ++i) pump(&g_buffers[i], now);
+            CHECK(g_stat.underruns == underruns);
+        }
+        puts("PASS: burst (new voices inherit measured busy service headroom)");
+        return 0;
+    }
     if (stalled) {
         RecompDsoundBufferModel before = g_buffers[0].output_model;
         now += 150;

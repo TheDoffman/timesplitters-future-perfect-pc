@@ -5,8 +5,23 @@ Current kernel work has original providers for [pool allocation](../agent-contex
 [critical sections, status and diagnostics](../agent-context/kernel-rtl.md), and
 [narrow guest formatting](../agent-context/guest-printf.md), and
 [integer/string conversions](../agent-context/guest-numbers.md) through patch0240.
+Stage0241 adds original [extended integer multiplication](../agent-context/guest-integer-product.md);
+its build and focused/migration checks pass, with exact acceptance in STATUS.
+Stage0242 adds [original extended division](../agent-context/guest-integer-division.md)
+and corrects the magic-division ABI. Stage0243 selects original
+[memory/bit operations](../agent-context/guest-memory-ops.md): fills, move, swaps
+and generic-mask mapping. Stage0244 adds original
+[counted conversion and buffer ownership](../agent-context/guest-text-codec.md)
+with a shared checked guest policy and thin standard host charset adapters.
+Stage0245 adds [checked creation/case services](../agent-context/guest-string-transform.md)
+and removes the unchecked UTF-16 scanner. Stage0246 replaces the five
+[raw charset helpers](../agent-context/guest-text-raw.md) with original32-bit
+conversion/query policy. Stage0247 adds original
+[guest stack/assert diagnostics](../agent-context/guest-stack-trace.md) with
+owner-based bounds and corrected capture/assert argument counts. Exact stage
+acceptance is tracked in STATUS.
 The complete old native RTL module is excluded from the build. Guest exceptions,
-charset conversion, string allocation/freeing and arithmetic helpers remain,
+other inherited helpers remain,
 along with other kernel, graphics, audio, input, title and fixture work.
 
 Stages0239/0240 passed Windows Release builds, local contracts, both-host CI and
@@ -17,22 +32,36 @@ those stages, not current whole-project or cross-platform gameplay acceptance.
 The runtime checkout and bundled snapshot are still production dependencies;
 final builds/generation/packaging with both unavailable have not passed yet.
 
+Current continuation/exception work in [draft PR466](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/466)
+adds original status flags, context records, exact-instruction continuation export,
+and exception-chain dispatch/unwind providers. Kernel dispatch now uses original
+[execution ownership](../agent-context/execution-ownership.md); the next
+[host-policy replacement](../agent-context/execution-host.md) removes inherited
+lock initialization, parking, concurrency counters and optional Windows affinity.
+Its Windows build and both default/enabled bounded Story runs pass; final migration
+and new-head CI acceptance are recorded separately in STATUS. These are actual
+production ownership/host-policy replacements, while game exception imports265/
+302/312 remain inherited. Live architectural capture, checkpoint transport and
+foreign callback barriers are still required before switching those imports.
+
 ## Remaining work
 
 | Area | Remaining replacement or proof |
 | --- | --- |
-| Kernel/runtime | Exceptions/context/unwind, character conversion/string ownership, arithmetic helpers, and inherited parts of file/thread/synchronization/interrupt/crypto services and diagnostics |
+| Kernel/runtime | Connect original exception/context/unwind providers to live state and safe native resumption; replace remaining inherited file/thread/synchronization/interrupt/crypto services, platform helpers and diagnostics |
 | Graphics | NV2A command/vertex/shader processing, remaining D3D8/HLE/backend and framebuffer/presentation code |
 | Audio/movies | APU/DSP/voices, DirectSound/XAudio2 glue, Xbox ADPCM and remaining XMV demux/decode/player/pump code |
 | Input/devices | Remaining HLE/input models, controller bindings, USB/OHCI and XInput adapters |
 | Integration | Remaining title/platform/runtime interfaces, headers, inherited smoke fixtures, and build/package routing away from the snapshot; audit any inherited network glue |
 | Final independence | Remove inherited code and snapshot/toolkit dependencies, retain permitted libraries, reconcile provenance/notices and prove generation/build/package plus bounded gameplay with old sources unavailable |
 
-The current configured Windows targets still compile30 runtime files and6 smoke
-fixtures byte-identical to the snapshot. They also compile44 modified runtime
-files with snapshot counterparts; modification alone does not establish original
-ownership. These counts include utility targets and exclude headers/data/tooling,
-so they are neither a complete rewrite count nor a completion percentage. SDL,
+A historical configured-Windows-target audit found29 runtime files and6 smoke
+fixtures byte-identical to the snapshot, plus45 modified runtime files with
+snapshot counterparts. This predates the continuation/execution-ownership stages
+and has not been refreshed for this branch; it is not a current remaining-file
+count. Modification alone does not establish original ownership. That audit
+included utility targets and excluded headers/data/tooling, so it was neither
+a complete rewrite count nor a completion percentage. SDL,
 FFmpeg, Capstone and permitted host SDKs do not need project-owned replacements.
 
 Unused POSIX file-map/query/statistics APIs and their registry are retired in

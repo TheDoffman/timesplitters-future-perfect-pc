@@ -75,6 +75,11 @@ int recomp_guest_longjmp(uint32_t guest_buffer, uint32_t result)
     g_esi=MEM32(guest_buffer+12u);
     g_esp=MEM32(guest_buffer+16u)+4u;
     active=index+1u;
+#ifdef RECOMP_STATUS_FLAGS_SUPPORTED
+    /* The guest CRT jump buffer does not save EFLAGS. Do not publish status
+     * bits from abandoned callback/cleanup work as the resumed caller's flags. */
+    tsfp_status_forget(&g_status_flags,TSFP_STATUS_FLAGS);
+#endif
 
     /* Preserve all guest result bits; the supported hosts use 32-bit int. */
     const uint32_t bits=result ? result : 1u;
