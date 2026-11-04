@@ -385,3 +385,7 @@ The actual Tk companion lifetime fixture now runs on Linux when DISPLAY is
 available: host, join, cancel, bridge handshake, parent lifetime and cleanup.
 It uses isolated loopback directory/UDP peers; it does not change Windows/WSL
 forwarding or establish WAN/physical-peer connectivity.
+
+The production Xbox UDP transport fixture also runs on Linux; only the separate
+Windows extended loopback-alias fixture and Mach process observer remain host
+specific. The same native transport exposes a bounded --listen/--peer probe.

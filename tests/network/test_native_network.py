@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_transport(tmp_path, fixture):
     if fixture == 'pc_network.c' and sys.platform != 'win32':
         pytest.skip('Windows extended fixture uses multiple loopback aliases')
-    if sys.platform not in ('win32', 'darwin'):
+    if sys.platform not in ('win32', 'darwin', 'linux'):
         pytest.skip('Supported desktop guest-memory adapters')
     (tmp_path/'pc_network_build.h').write_text(
         '#define TSFP_NETWORK_COMPATIBILITY {1}\n'
