@@ -389,3 +389,7 @@ forwarding or establish WAN/physical-peer connectivity.
 The production Xbox UDP transport fixture also runs on Linux; only the separate
 Windows extended loopback-alias fixture and Mach process observer remain host
 specific. The same native transport exposes a bounded --listen/--peer probe.
+
+The standalone Linux UDP fixture explicitly enables glibc default/POSIX
+declarations, pthreads and the production header directory under strict C11;
+compiler failures expose stderr. Native game CMake already provides GNU C mode.
