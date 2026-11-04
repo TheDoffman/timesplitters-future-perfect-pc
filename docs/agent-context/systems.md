@@ -1,4 +1,4 @@
-[Join/reconnect](controls-options.md).
+[Safe device Apply](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)

@@ -400,12 +400,12 @@ fail:
     free(text);if(!ok)snprintf(error,bytes,"Could not save player devices. Active assignments were kept.");
     return ok;
 }
-void pc_settings_pad_status(int slot,char *name,size_t bytes,int *pressed)
+int pc_settings_pad_status(int slot,char *name,size_t bytes,int *pressed)
 {
     RecompPadState pad;*pressed=0;
-    if(slot<0 || slot>=4 || !recomp_pad_read(slot,&pad)) {snprintf(name,bytes,"Disconnected");return;}
+    if(slot<0 || slot>=4 || !recomp_pad_read(slot,&pad)) {snprintf(name,bytes,"Disconnected");return 0;}
     recomp_pad_name(slot,name,bytes);
-    *pressed=pad.buttons!=0;
+    *pressed=pad.buttons!=0;return 1;
 }
 
 static int pc_debug_bool(const char *object, const char *name)

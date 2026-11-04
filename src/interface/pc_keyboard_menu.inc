@@ -343,7 +343,17 @@ static void kb_select(void)
     if(id==50) {controls_players_open(menu);}
     else if(kb_page==KB_PLAYERS) {
         if(id==4) {
-            if(pc_settings_players_save(kb_devices,kb_status,sizeof kb_status))snprintf(kb_status,sizeof kb_status,"Player devices applied.");
+            /* Never remove a working input by applying an absent physical pad.
+             * The native reconnect modal prevents returning here to undo it. */
+            int available=1;
+            for(int i=0;i<4;i++)if(kb_devices[i]>=0) {
+                char name[120];int pressed;
+                if(!pc_settings_pad_status(kb_devices[i],name,sizeof name,&pressed)) {
+                    snprintf(kb_status,sizeof kb_status,"Controller %d is disconnected. Connect it before applying.",kb_devices[i]+1);
+                    available=0;break;
+                }
+            }
+            if(available && pc_settings_players_save(kb_devices,kb_status,sizeof kb_status))snprintf(kb_status,sizeof kb_status,"Player devices applied.");
             kb_refresh(KB_PLAYERS,4);
         } else if(id==5)kb_refresh(KB_PLAYER_PICK,0);
         else if(id==6)kb_back_action();

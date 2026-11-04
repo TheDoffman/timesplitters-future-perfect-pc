@@ -43,7 +43,7 @@ int pc_settings_save_menu_visible(int visible);
 int pc_settings_keyboard_player(void);
 void pc_settings_players_read(int devices[4]);
 int pc_settings_players_save(const int devices[4],char *error,size_t bytes);
-void pc_settings_pad_status(int slot,char *name,size_t bytes,int *pressed);
+int pc_settings_pad_status(int slot,char *name,size_t bytes,int *pressed);
 int pc_settings_players_join(unsigned used_ports);
 void pc_settings_attach(HWND game);
 void pc_settings_toggle_menu(HWND game);

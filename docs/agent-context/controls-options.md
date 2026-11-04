@@ -175,3 +175,5 @@ handle mid-sample. Tests cover the real presence function plus changed/absent
 paths and repeated SDL virtual-device detach/reattach (controller_hotplug.c).
 
 Automatically detected ports remain provisional until native Start-to-join claims them; they do not reserve the controller away from Player 1 automatic fallback. Explicit device saves clear provisional flags. The production sampler regression checks both provisional sharing and exclusive joined ownership.
+
+Live device Apply checks pc_settings_pad_status connectivity for every explicitly selected controller before publishing or saving. An unavailable selection leaves current input assignments intact and displays an inline connection error, preventing entry into the native reconnect modal merely by choosing an absent pad. pc_settings_pad_status now returns connection status independently of held buttons. Launcher/offline configuration remains possible. The native menu fixture covers rejected initial assignment, rejected replacement preserving two ports, and successful retry after connection. This prevents the absent-target case; a report involving two connected controllers still needs live reproduction.
