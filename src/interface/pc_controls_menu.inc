@@ -162,7 +162,7 @@ static void controls_open_tab(int tab)
 static void controls_players_open(uint32_t menu)
 {
     controls_link_rows(1);controls_tab=2;kb_menu=menu;*kb_status=0;
-    pc_settings_players_read(kb_devices);kb_refresh(KB_PLAYERS,0);
+    kb_players_read();kb_refresh(KB_PLAYERS,0);
 }
 static void controls_players_back(void)
 {

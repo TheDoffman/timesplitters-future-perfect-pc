@@ -177,3 +177,16 @@ paths and repeated SDL virtual-device detach/reattach (controller_hotplug.c).
 Automatically detected ports remain provisional until native Start-to-join claims them; they do not reserve the controller away from Player 1 automatic fallback. Explicit device saves clear provisional flags. The production sampler regression checks both provisional sharing and exclusive joined ownership.
 
 Live device Apply checks pc_settings_pad_status connectivity for every explicitly selected controller before publishing or saving. An unavailable selection leaves current input assignments intact and displays an inline connection error, preventing entry into the native reconnect modal merely by choosing an absent pad. pc_settings_pad_status now returns connection status independently of held buttons. Launcher/offline configuration remains possible. The native menu fixture covers rejected initial assignment, rejected replacement preserving two ports, and successful retry after connection. This prevents the absent-target case; a report involving two connected controllers still needs live reproduction.
+
+Joined-player settings follow the native player-to-port mapping at 6B93C0,
+limited by 5236C4, rather than assuming player number equals input port. The
+Local Multiplayer page snapshots a complete port permutation: joined players
+first, then unused ports. kb_players_apply translates choices back into those
+same ports without changing native ownership. Automatic on a joined player
+resolves to its existing connected controller (or a free connected pad), then
+persists that concrete assignment; reopening displays the actual controller.
+It must never publish DEV_NONE for a joined player. Unchanged disconnected
+assignments on unused rows do not block Apply; newly selected unavailable
+inputs and changes stranding joined players are rejected before persistence.
+The native menu fixture reproduces P1 keyboard, old P2 pad1/old P3 pad0 with pad0
+joining guest P2, Automatic retention, rejected theft, connected swap and reopen.

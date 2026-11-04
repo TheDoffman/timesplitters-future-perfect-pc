@@ -1,3 +1,16 @@
+## Joined-player settings follow-up (local, uncommitted)
+
+Base e0496b89, feat/local-player-devices. User reported native Start-to-join
+selected a different input port than the numbered settings row, and Automatic
+then removed the joined port. Settings now translate through the native player
+mapping and preserve usable input for every joined player. Automatic resolves
+to a connected controller and stores the resolved choice for an active player;
+unused Automatic slots retain normal detection. Menu regression reproduces the
+reported old P2/P3 assignment order, preservation, rejection, swap and reopen.
+Windows: 48 input/menu checks passed, 2 Mac compiler checks skipped. Game
+build and linked build tests passed. No physical controller acceptance claimed.
+The existing mixed-optimization test-build limitation still applies.
+
 ## Controller detection and reconnect follow-up (local, uncommitted)
 
 Based on cc8b05fb on feat/local-player-devices. User confirmed earlier manual

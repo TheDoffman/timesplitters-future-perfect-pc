@@ -1,3 +1,10 @@
+## Joined-player device settings — validation pending
+
+Shared pc_keyboard_menu.inc/pc_controls_menu.inc map UI player rows to native
+ports and resolve Automatic before publishing joined devices. No new OS adapter
+is needed. Windows menu regression passes; native Mac/Linux build and physical
+controller checks remain pending. Source is local/uncommitted after e0496b89.
+
 Controller detection/reconnect follow-up (local after cc8b05fb): shared presence
 mask provisioning, Automatic labels and SDL patch2360 need no separate host
 implementation. Windows automated tests include real SDL virtual reconnects.

@@ -2,6 +2,7 @@
  * All callbacks occupy verified unused INT3 bytes in the supported US XBE. */
 #include "pc_settings.h"
 #include "pc_keyboard_menu_model.h"
+#include "../input/pc_local_join.h"
 #define KB_BUILD 0x1201cu
 #define KB_TICK 0x1201du
 #define KB_SELECT 0x1201eu
@@ -14,6 +15,7 @@ static uint32_t kb_storage,kb_parent,kb_previous,kb_menu,kb_enabled_row,kb_inver
 static int kb_page,kb_group,kb_offset,kb_action,kb_slot,kb_key,kb_conflict,kb_capture_pending;
 static PcSettings kb_settings,kb_saved;
 static int kb_devices[4];
+static unsigned kb_player_ports[4]={0,1,2,3},kb_player_count;
 static uint32_t kb_device_rows[4];
 static int kb_player_target;
 static unsigned kb_player_blocked;
@@ -21,6 +23,55 @@ static uint64_t kb_player_deadline;
 static uint64_t kb_mouse_changed;
 static char kb_status[192];
 static void kb_refresh(int page,int selected);
+/* Native Start-to-join assigns players to ports in press order, which may
+ * differ from persisted port order. Keep the remaining rows a full permutation. */
+static void kb_players_read(void)
+{
+    int devices[4];unsigned used=0;
+    pc_settings_players_read(devices);
+    kb_player_count=WORD_AT(0x5236c4);
+    if(kb_player_count>4)kb_player_count=0;
+    for(unsigned i=0;i<4;i++)kb_player_ports[i]=4;
+    for(unsigned i=0;i<kb_player_count;i++) {
+        unsigned port=WORD_AT(0x6b93c0+i*4);
+        if(port<4 && !(used&(1u<<port))) {kb_player_ports[i]=port;used|=1u<<port;}
+    }
+    for(unsigned i=0;i<4;i++)if(kb_player_ports[i]==4) {
+        unsigned port=0;while(used&(1u<<port))port++;
+        kb_player_ports[i]=port;used|=1u<<port;
+    }
+    for(unsigned i=0;i<4;i++)kb_devices[i]=devices[kb_player_ports[i]];
+}
+static void kb_players_apply(void)
+{
+    int previous[4],draft[4],resolved[4];unsigned connected=0;
+    pc_settings_players_read(previous);
+    for(unsigned i=0;i<4;i++)draft[kb_player_ports[i]]=kb_devices[i];
+    for(int pad=0;pad<4;pad++) {
+        char name[120];int pressed;
+        if(pc_settings_pad_status(pad,name,sizeof name,&pressed))connected|=1u<<pad;
+    }
+    memcpy(resolved,draft,sizeof resolved);
+    pc_local_detect(resolved,previous,connected);
+    for(unsigned i=0;i<4;i++) {
+        unsigned port=kb_player_ports[i];int d=resolved[port];
+        /* Existing offline assignments for unused ports need not block a
+         * change. Joined players and newly selected pads must be available. */
+        if((i<kb_player_count || draft[port]!=previous[port]) &&
+           ((d>=0 && !(connected&(1u<<d))) || (i<kb_player_count && d==-1))) {
+            snprintf(kb_status,sizeof kb_status,"Player %u needs a connected controller. Assignments kept.",i+1);
+            return;
+        }
+        /* Automatic for a joined player retains an actual usable device.
+         * Do not publish DEV_NONE even briefly: native removal closes the
+         * port and opens a modal which prevents undoing this change. */
+        if(i<kb_player_count && draft[port]==-1)draft[port]=d;
+    }
+    if(pc_settings_players_save(draft,kb_status,sizeof kb_status)) {
+        kb_players_read();
+        snprintf(kb_status,sizeof kb_status,"Player devices applied.");
+    }
+}
 static uint32_t kb_text(unsigned slot,const char *format,...)
 {
     va_list args;va_start(args,format);
@@ -343,17 +394,7 @@ static void kb_select(void)
     if(id==50) {controls_players_open(menu);}
     else if(kb_page==KB_PLAYERS) {
         if(id==4) {
-            /* Never remove a working input by applying an absent physical pad.
-             * The native reconnect modal prevents returning here to undo it. */
-            int available=1;
-            for(int i=0;i<4;i++)if(kb_devices[i]>=0) {
-                char name[120];int pressed;
-                if(!pc_settings_pad_status(kb_devices[i],name,sizeof name,&pressed)) {
-                    snprintf(kb_status,sizeof kb_status,"Controller %d is disconnected. Connect it before applying.",kb_devices[i]+1);
-                    available=0;break;
-                }
-            }
-            if(available && pc_settings_players_save(kb_devices,kb_status,sizeof kb_status))snprintf(kb_status,sizeof kb_status,"Player devices applied.");
+            kb_players_apply();
             kb_refresh(KB_PLAYERS,4);
         } else if(id==5)kb_refresh(KB_PLAYER_PICK,0);
         else if(id==6)kb_back_action();

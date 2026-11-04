@@ -992,6 +992,7 @@ int main(int argc,char **argv)
     }
     { /* Local-player choices use native selectors and commit only on Apply. */
         controls_tab=0;controls_test_enabled=1;
+        WORD_AT(0x5236c4)=1;WORD_AT(0x6b93c0)=0;
         WORD_AT(controls_menu+4)=CONTROLS_DESCRIPTOR;
         controls_players_open(controls_menu);
         CHECK(kb_page==KB_PLAYERS && kb_devices[0]==-2 && kb_devices[1]==-1);
@@ -1001,7 +1002,7 @@ int main(int argc,char **argv)
         CHECK(kb_devices[1]==0 && test_player_saves==0);
         test_pad_connected=0;call(KB_SELECT,204,0);
         CHECK(test_player_saves==0 && test_player_devices[1]==-1);
-        CHECK(strstr(kb_status,"disconnected"));
+        CHECK(strstr(kb_status,"connected controller"));
         test_pad_connected=15;
         call(KB_SELECT,204,0);
         CHECK(test_player_saves==1 && test_player_devices[1]==0);
@@ -1023,7 +1024,7 @@ int main(int argc,char **argv)
         /* Switching an existing player to an absent pad keeps both live ports. */
         kb_devices[1]=2;test_pad_connected=3;call(KB_SELECT,204,0);
         CHECK(test_player_saves==2 && test_player_devices[1]==0 && test_player_devices[2]==1);
-        CHECK(strstr(kb_status,"Controller 3 is disconnected"));
+        CHECK(strstr(kb_status,"connected controller"));
         test_pad_connected=7;call(KB_SELECT,204,0);
         CHECK(test_player_saves==3 && test_player_devices[1]==2);
         test_pad_connected=15;
@@ -1031,6 +1032,26 @@ int main(int argc,char **argv)
         clock_ms+=20001;call(KB_TICK,0,0);
         CHECK(kb_page==KB_PLAYERS && !capture_active && kb_devices[3]==-1);
         call(KB_SELECT,206,0);CHECK(controls_tab==0);
+    }
+    { /* Reported case: one pad joins P2 through old P3 input port. */
+        WORD_AT(0x5236c4)=2;WORD_AT(0x6b93c0)=0;WORD_AT(0x6b93c4)=2;
+        test_player_devices[0]=-2;test_player_devices[1]=1;
+        test_player_devices[2]=0;test_player_devices[3]=-1;test_pad_connected=1;
+        controls_players_open(controls_menu);
+        CHECK(kb_devices[0]==-2 && kb_devices[1]==0 && kb_devices[2]==1);
+        CHECK(kb_player_ports[1]==2 && kb_player_ports[2]==1);
+        int saves=test_player_saves;
+        kb_devices[1]=-1;call(KB_SELECT,204,0);
+        CHECK(test_player_saves==saves+1 && test_player_devices[2]==0);
+        CHECK(test_player_devices[1]==1 && kb_devices[1]==0);
+        /* Assigning that sole pad elsewhere must not strand joined P2. */
+        kb_devices[1]=-1;kb_devices[2]=0;call(KB_SELECT,204,0);
+        CHECK(test_player_saves==saves+1 && test_player_devices[2]==0);
+        CHECK(strstr(kb_status,"Player 2 needs a connected controller"));
+        /* With a second pad connected, simultaneous swap stays in guest ports. */
+        test_pad_connected=3;kb_devices[1]=1;kb_devices[2]=0;call(KB_SELECT,204,0);
+        CHECK(test_player_saves==saves+2 && test_player_devices[2]==1 && test_player_devices[1]==0);
+        controls_players_open(controls_menu);CHECK(kb_devices[1]==1 && kb_devices[2]==0);
     }
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
