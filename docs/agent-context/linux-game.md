@@ -447,3 +447,8 @@ and contact-distance negative controls must still fail; production is untouched.
 The offline snapshot regression compares exact effective patch records with
 the installed ledger, rather than counting raw patch files. This preserves
 order/content/options coverage when the identical2401/2512 guard is omitted.
+
+The indexed-draw parity fixture locates its boundary at the next constant-
+forwarding function, independent of its platform guard expression. All four
+copy/rebase/leak controls now run on Linux as well as Windows/Mac, including
+the Linux CI job; they still execute the real extracted draw function.

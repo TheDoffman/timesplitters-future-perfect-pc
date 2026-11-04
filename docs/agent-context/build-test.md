@@ -131,7 +131,7 @@ guard pages, large buffers and32-bit wrapping. Both native CI hosts run it.
 See [pushed-array checks and timing scope](vertex-expand.md#pushed-array-gathering).
 
 `test_zero_base_indices.py`: old/new HLE parity, fresh indices, failures, stream
-dispatch and copy/rebase/leak mutations. Both hosts; mocked draws.
+dispatch and copy/rebase/leak mutations. Windows/Mac/Linux; mocked draws.
 
 Reload/Fire #337: `test_native_timing.py` covers the US decoder;
 `reload_phase_sweep.h` covers 864 schedules/1,728 presses. `test_reload_keys.py`

@@ -2,6 +2,7 @@
 
 
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -10,12 +11,14 @@ from native_compiler import native_compiler
 
 ROOT=Path(__file__).resolve().parents[2]
 
-@pytest.mark.skipif(sys.platform not in ('win32','darwin'), reason='Native HLE hosts')
+@pytest.mark.skipif(sys.platform not in ('win32','darwin','linux'), reason='Native HLE hosts')
 @pytest.mark.parametrize('mutation',['none','always-copy','omit-rebase','leak-indices'])
 def test_zero_base_indices(tmp_path,mutation):
     text=(ROOT/'external/ts3FPrecomp/src/hle/hle_d3d8_vertex.c').read_text()
     start=text.index('HLE_EXPORT(D3DDevice_DrawIndexedVertices)\n')
-    candidate=text[start:text.index('\n#if defined(_WIN32) || defined(__APPLE__)\nstatic void forward_constants',start)]
+    boundary=re.search(r'\n#if [^\n]+\nstatic void forward_constants\b',text[start:])
+    assert boundary, 'Missing indexed-draw boundary before constant forwarding'
+    candidate=text[start:start+boundary.start()]
     assert 'if (!lo || rebased)' in candidate
     reference=(ROOT/'tests/support/zero_base_indices_reference.inc').read_text()
     replacements={
