@@ -393,3 +393,8 @@ specific. The same native transport exposes a bounded --listen/--peer probe.
 The standalone Linux UDP fixture explicitly enables glibc default/POSIX
 declarations, pthreads and the production header directory under strict C11;
 compiler failures expose stderr. Native game CMake already provides GNU C mode.
+
+Set TSFP_TEST_LINUX_PACKAGE to run three additional companion lifecycle cases
+through the actual packaged native Online adapter and its bundled interpreter.
+The fixture uses the package compatibility identity, separate temporary data,
+loopback peers and asserts native connect/disconnect plus handshake cleanup.

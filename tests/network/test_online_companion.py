@@ -51,11 +51,17 @@ def test_game_process_detects_parent_exit(tmp_path):
                     reason='Desktop Tk runtime/display required')
 @pytest.mark.parametrize('action', ['host', 'join', 'cancel'])
 def test_browser_lifetime(tmp_path, action):
+    run_browser_lifetime(tmp_path, action)
+
+
+def run_browser_lifetime(tmp_path, action, package=None):
+    compatibility = VERSION if package is None else json.loads(
+        (package/'Support/Online/network-identity.json').read_text())['compatibility']
     support = tmp_path/'Support/Online'; support.mkdir(parents=True)
     for name in COMPANION:
         shutil.copy2(repo_file(ROOT, 'tools', name), support/name)
     game = tmp_path/'Data'; game.mkdir(); (game/'default.xbe').write_bytes(b'isolated test content')
-    manifest = dict(protocol='tsfp-pc-system-link-v1', compatibility=VERSION,
+    manifest = dict(protocol='tsfp-pc-system-link-v1', compatibility=compatibility,
                     files=[['game/default.xbe', hashlib.sha256((game/'default.xbe').read_bytes()).hexdigest()]])
     (support/'network-identity.json').write_text(json.dumps(manifest))
     handshakes = tmp_path/'Logs/Online'; handshakes.mkdir(parents=True)
@@ -67,18 +73,24 @@ def test_browser_lifetime(tmp_path, action):
         # UI validates the advertised UDP port. Reserve a free unprivileged port.
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.bind(('127.0.0.1', 0)); port = sock.getsockname()[1]
-        host = Session.create(client, VERSION, 'fixture', port, True) if action == 'join' else None
+        host = Session.create(client, compatibility, 'fixture', port, True) if action == 'join' else None
         command = tmp_path/'private/network-validation/command.json'; command.parent.mkdir(parents=True)
         command.write_text(json.dumps(dict(action=action, directory=address, port=port,
                                           code=host.lobby['code'] if host else '')))
         environment = dict(os.environ, RECOMP_GAME_DIR=str(game),
             TSFP_ONLINE_HANDSHAKES=str(handshakes), TSFP_ONLINE_MANIFEST=str(support/'network-identity.json'),
             TSFP_ONLINE_SETTINGS=str(tmp_path/'Settings/online.json'), TSFP_ONLINE_TEST_COMMAND=str(command))
-        process = subprocess.Popen([sys.executable, '-B', str(support/'online.py'), '--pid', str(os.getpid()),
-            '--result', str(result), '--compatibility', VERSION], env=environment,
+        command_line = [sys.executable, '-B', str(support/'online.py'), '--pid', str(os.getpid()),
+                        '--result', str(result), '--compatibility', compatibility]
+        if package is not None:
+            environment.update(TSFP_ONLINE_SCRIPT=str(support/'online.py'),
+                TSFP_ONLINE_PYTHON=str(package/'Support/Python/bin/python3'))
+            if action=='cancel':environment['TSFP_ONLINE_TEST_CANCEL']='1'
+            command_line=[str(package/'Bin/futureperfect_recomp'), '--online-self-test']
+        process = subprocess.Popen(command_line, env=environment,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         try:
-            if action != 'cancel':
+            if action != 'cancel' and package is None:
                 deadline = time.monotonic()+15
                 while not result.exists() and process.poll() is None and time.monotonic()<deadline:
                     time.sleep(.05)
@@ -91,7 +103,7 @@ def test_browser_lifetime(tmp_path, action):
             stdout, stderr = process.communicate(timeout=12)
             assert process.returncode == 0, stdout+stderr
             assert not result.exists() and not result.with_suffix('.stop').exists()
-            lobbies = client.request('GET', '/v2/lobbies?compatibility='+VERSION)['lobbies']
+            lobbies = client.request('GET', '/v2/lobbies?compatibility='+compatibility)['lobbies']
             assert len(lobbies) == (1 if host else 0)
         finally:
             if process.poll() is None:
@@ -99,3 +111,11 @@ def test_browser_lifetime(tmp_path, action):
             if host:
                 host.close()
             server.shutdown(); thread.join(timeout=3)
+
+
+@pytest.mark.skipif(sys.platform != "linux" or not os.environ.get("DISPLAY") or
+                    not os.environ.get("TSFP_TEST_LINUX_PACKAGE"),
+                    reason="Requires a local Linux package and private desktop display")
+@pytest.mark.parametrize("action", ["host", "join", "cancel"])
+def test_packaged_native_adapter_lifetime(tmp_path, action):
+    run_browser_lifetime(tmp_path, action, Path(os.environ["TSFP_TEST_LINUX_PACKAGE"]).resolve())
