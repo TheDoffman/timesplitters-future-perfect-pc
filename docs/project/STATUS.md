@@ -1,3 +1,14 @@
+## Linux public experimental preparation (2026-11-04)
+
+Local `feature/linux-experimental-release` now has an audited, relocatable
+`v0.4.2-linux-experimental.1` candidate with launcher1.4.2. Complete shared
+Windows/Mac/Linux source remains in one stack. Game/media build, source audit,
+fresh/upgrade/corruption/repair, minimal Ubuntu userspace, shared Vulkan,
+five-minute Story, captured Arcade, actual startup movies and local Online
+checks pass. See the [candidate, exact hashes, measured scope and remaining
+release gates](../development/linux-experimental-release.md). No push/tag/upload,
+native Mac/Deck validation or Windows/WSL networking change is claimed.
+
 ## Linux standalone desktop/media preview (2026-11-02)
 
 Local `feature/linux-runtime-completion`, based on unmerged `11bb17ab`; runtime

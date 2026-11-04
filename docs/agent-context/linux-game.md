@@ -15,7 +15,7 @@ downloaded source components against authenticated APT source-index SHA256/size.
 It includes notices plus source/build-patch archives and fails on unknown owners
 or unavailable exact versions. Static SDL/VMA/volk/Vulkan-Headers and DXC notices
 are explicit; pinned notice retrieval is shared with the Mac packager without
-changing the Mac policy. Public receipts omit developer data/configure paths.
+changing the Mac policy. Public receipts omit game-data paths and native configure commands.
 The Linux native source receipt also covers the new vendored SMAA inputs.
 Game builds use `--release-media` to select those headers/libraries through a
 fresh pkg-config query. The receipt records the exact media build and packaging
@@ -427,3 +427,7 @@ merely opened movie from earning a pass. PCM/device audibility remains separate.
 
 Linux CI now runs production UDP and actual Tk companion host/join/cancel
 fixtures under Xvfb, preventing the prior platform skip from hiding regressions.
+
+Current measured candidate/artifact hashes, actual test scope, unavailable
+hardware/WAN checks and publication gates are consolidated in
+[Linux experimental release evidence](../development/linux-experimental-release.md).

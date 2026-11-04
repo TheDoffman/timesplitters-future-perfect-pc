@@ -1,5 +1,8 @@
 # Linux acceptance before release
 
+For the latest local candidate, repairs and measured results see the
+[2026-11-04 experimental release report](linux-experimental-release.md).
+
 A passing WSL build does not establish support on every Linux installation.
 The current preview targets Linux x64 with the Ubuntu24.04/glibc2.39 baseline,
 a working desktop display and a system Vulkan driver. No Steam Deck transfer or

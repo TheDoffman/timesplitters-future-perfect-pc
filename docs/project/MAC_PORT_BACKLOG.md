@@ -1,3 +1,13 @@
+Linux experimental release preparation (2026-11-04, local
+feature/linux-experimental-release): SDL key/pad exports fix the native link
+against current shared settings navigation; Windows/SDL use one menu-alias
+helper. Linux release source/media audits, relocated desktop dependencies and
+Unicode installer checks are covered locally. Shared runtime-license retrieval
+retains the existing Mac policy and Mac packaging regressions pass on Windows;
+actual native Mac execution remains pending. See [Linux release evidence and
+limits](../development/linux-experimental-release.md). No Mac driver/OS/gameplay
+parity is inferred from WSL results.
+
 Keycap prompts (local feature/flat-settings-menu, uncommitted): shared
 pc_keycaps.inc and pc_prompts vocabulary plus additive2340 render keyboard/mouse
 prompts through native glyph geometry. Binding-menu cells share the renderer.
