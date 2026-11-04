@@ -1,3 +1,14 @@
+## Shared keyboard/mouse keycaps (isolated local work)
+
+Keyboard/mouse prompts use rounded outlined keycaps through the translated
+native text/glyph path, including menus, tutorial/HUD text and binding dialogs.
+Left/Right captions compact to vector arrow icons in both measurement and draw.
+Actual glyph positions and final color preserve font size, gray tint, fade and
+wrapping; borders flush after font batches. Controller glyphs remain native.
+Windows focused checks32 pass/2 native Mac skips; supported Release build and
+built-in tests pass. Main/pause footers and binding lists reviewed live. Native
+Mac visual acceptance remains pending; the renderer uses existing shared APIs.
+
 ## Settings section navigation (isolated local work)
 
 Shared Video/Controls sections use native highlight and transition sounds,

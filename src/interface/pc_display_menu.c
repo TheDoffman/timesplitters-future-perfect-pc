@@ -915,6 +915,7 @@ static int video_font_menu(uint32_t menu)
 static uint32_t bits(float f) { uint32_t u; memcpy(&u,&f,4); return u; }
 #include "pc_kill_feed_guest.inc"
 #include "pc_tutorial_ui.inc"
+#include "pc_keycaps.inc"
 
 /* The title's focus painter takes (menu, row, float bounds[4]). Replace
  * every shared focus bar, retaining native background, tint and fade. */
@@ -1486,6 +1487,7 @@ static void controls_leave(void);
 
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
+    if(address==0x000402D0u)return keycap_alternate_glyph;
     /* HUD callbacks stop on results/loading screens. Reset before a rematch
        reuses the same actor pool and level; pause keeps active phase seven. */
     if(kill_feed.ready && WORD_AT(0x007DE30Cu)!=7u) {

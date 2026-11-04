@@ -1,4 +1,4 @@
-[Settings sections: shortcuts, sounds and matching footer text](controls-options.md).
+[Settings sections and shared keycap prompts](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)

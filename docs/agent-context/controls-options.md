@@ -1,5 +1,20 @@
 # Unified Controls options
 
+Keyboard/mouse prompts use shared outlined keycaps. Additive2340 scopes the
+translated40FA0 draw and wraps its native40260 glyph callback, also routing
+alternate402D0 callbacks through the shared menu lookup. The renderer replaces
+recognized key-label brackets with rounded borders at actual glyph
+positions; native text measurement/advances, font, grey tint, fades, clipping and
+HUD placement remain authoritative. Controller glyphs and ordinary bracketed
+text are retained. Mouse/wheel names use softer corners. Key vocabulary caches
+all256 localized names, plus composite controls, without caching assignments.
+Left/Right labels compact to visual arrow markers during both measurement and
+drawing; the renderer paints directional arrows inside their keycaps.
+Keyboard binding cells and assignment/conflict rows opt into the same renderer.
+`tests/input/keycaps.c` exercises actual callback geometry/colour, mouse labels,
+controller fallback and nested draw restoration; pc_prompts tests cover vocabulary.
+The supported build refreshes generated code for the new native glyph wrapper.
+
 `pc_settings_navigation.inc` shares section input, sounds and footer hints.
 Physical Left/Right arrows switch sections from any root setting; native A/D
 adjustment and header navigation remain. Controller Black/White C4/C8 masks

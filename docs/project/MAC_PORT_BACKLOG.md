@@ -1,3 +1,10 @@
+Keycap prompts (local feature/flat-settings-menu, uncommitted): shared
+pc_keycaps.inc and pc_prompts vocabulary plus additive2340 render keyboard/mouse
+prompts through native glyph geometry. Binding-menu cells share the renderer.
+Existing native font/rectangle/input adapters serve both hosts; no new adapter.
+Windows Release build/shared checks and main/pause menu review pass; native Mac keycap/layout acceptance
+remains pending (menus, tutorial wrapping, HUD, device switch and remapped keys).
+
 Settings section shortcuts (local feature/flat-settings-menu): shared
 pc_settings_navigation.inc adds native hover/transition sounds, physical arrow
 keys and LB/RB tab switching, with device-sensitive footer hints. Shared launcher

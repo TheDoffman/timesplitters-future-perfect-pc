@@ -62,6 +62,9 @@ uint32_t xbox_HeapAlloc(uint32_t size,uint32_t alignment) {static uint32_t next=
 static int settings_keyboard=1,settings_pad_allowed;
 static unsigned char settings_keys[256];
 int pc_prompts_keyboard_active(void) { return settings_keyboard; }
+void sub_000402D0(void) {CHECK(0);}
+int pc_prompts_keycap_label(const char *label,size_t length) {(void)label;(void)length;CHECK(0);return 0;}
+size_t pc_prompts_read_region(uintptr_t address) {(void)address;CHECK(0);return 0;}
 int pc_controls_accept_pad(void) {return settings_pad_allowed;}
 int pc_controls_binding_keys(unsigned char keys[256]) {memcpy(keys,settings_keys,256);return 1;}
 int pc_controls_key_down(int key) {return key>0 && key<256?settings_keys[key]:0;}

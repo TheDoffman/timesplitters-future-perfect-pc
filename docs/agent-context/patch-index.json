@@ -1685,6 +1685,14 @@
       ]
     },
     {
+      "name": "2340-keycap-prompts.patch",
+      "path": "patches/input/2340-keycap-prompts.patch",
+      "sha256": "2daf5abab068cf3c181c32ada1a4e2c61d2df2549412f6511b9ac19d64cfc60b",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c\r"
+      ]
+    },
+    {
       "name": "2340-story-world-effects.patch",
       "path": "patches/network/2340-story-world-effects.patch",
       "sha256": "9585b7dab28aa9b3196b29df030212aef3688f616314c25085530a047811de0e",

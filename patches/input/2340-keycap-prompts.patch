@@ -1,0 +1,29 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -1175,8 +1175,25 @@
+ extern void sub_00040FA0_gen(void);
++static void pc_keycap_text_original(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_display_keycap_text(sub_00040FA0_gen);
++#else
++    sub_00040FA0_gen();
++#endif
++}
++extern void sub_00040260_gen(void);
++void sub_00040260(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_display_keycap_glyph(sub_00040260_gen);
++#else
++    sub_00040260_gen();
++#endif
++}
+ void sub_00040FA0(void)
+ {
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_PROMPTS)
+-    pc_prompt_guest(sub_00040FA0_gen,4,6);
++    pc_prompt_guest(pc_keycap_text_original,4,6);
+ #else
+     sub_00040FA0_gen();
+ #endif

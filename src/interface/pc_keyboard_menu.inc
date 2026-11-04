@@ -156,12 +156,13 @@ static void kb_binding_draw(uint32_t menu,uint32_t item,const float b[4])
     if(id<0 || id>=6)return;
     int action=pc_keyboard_groups[kb_group][kb_offset+id];if(action<0)return;
     uint32_t color=guest_call(sub_00154FE0,2,0xc7d6e57fu,WORD_AT(menu+0xf4));
-    float w=b[2]-b[0],y=b[1];char name[80];
+    float w=b[2]-b[0],y=b[1];char name[80],cap[84];
     /* The row uses the same native panel/highlight as controller Customize. */
     kb_label(b[0],y,w*.52f-4.f,b[3]-y-2.f,pc_keyboard_action_labels[action],58,color);
     for(int slot=0;slot<PC_BINDING_SLOTS;slot++) {
         pc_settings_key_name(kb_settings.keys[action][slot],name,sizeof name);
-        kb_label(b[0]+w*(slot?.79f:.55f),y,w*(slot?.21f:.24f)-4.f,b[3]-y-2.f,name,53,color);
+        snprintf(cap,sizeof cap,"[%s]",name);
+        kb_label(b[0]+w*(slot?.79f:.55f),y,w*(slot?.21f:.24f)-4.f,b[3]-y-2.f,cap,53,color);
     }
 
 }
@@ -253,7 +254,7 @@ static void kb_build(void)
     } else if(kb_page==KB_ACTION || kb_page==KB_CLEAR || kb_page==KB_ESCAPE) {
         for(int i=0;i<PC_BINDING_SLOTS;i++) {
             pc_settings_key_name(kb_settings.keys[kb_action][i],name,sizeof name);
-            snprintf(line,sizeof line,"%s%s: %s",kb_page==KB_CLEAR?"Clear ":kb_page==KB_ESCAPE?"Assign Escape to ":"",i?"Alternate":"Primary",name);
+            snprintf(line,sizeof line,"%s%s: [%s]",kb_page==KB_CLEAR?"Clear ":kb_page==KB_ESCAPE?"Assign Escape to ":"",i?"Alternate":"Primary",name);
             kb_row(i,line,0);
         }
         if(kb_page==KB_ACTION) {kb_row(4,"Clear a binding",0);kb_row(5,"Bind Escape",0);}
@@ -262,10 +263,10 @@ static void kb_build(void)
         /* Native update callbacks require a selectable row. Capture consumes
          * its input before the ordinary Select handler. */
         kb_row(0,"Press a key, mouse button or mouse wheel",0);
-        kb_row(1,"Escape cancels. Release any held keys first.",1);
+        kb_row(1,"[Esc] cancels. Release any held keys first.",1);
     } else if(kb_page==KB_CONFLICT) {
         pc_settings_key_name(kb_key,name,sizeof name);
-        snprintf(line,sizeof line,"%s is assigned to %s",name,pc_action_labels[kb_conflict]);kb_row(0,line,1);
+        snprintf(line,sizeof line,"[%s] is assigned to %s",name,pc_action_labels[kb_conflict]);kb_row(0,line,1);
         kb_row(1,"Move this binding",0);kb_row(2,"Choose another key",0);kb_row(6,"Cancel",0);
     } else if(kb_page==KB_RESET) {
         kb_row(0,"Cancel",0);kb_row(1,"Restore all keyboard and mouse defaults",0);

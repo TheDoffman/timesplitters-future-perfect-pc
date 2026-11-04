@@ -107,6 +107,8 @@ void pc_display_health_side(void);
 void pc_display_tutorial(void (*original)(void));
 void pc_display_tutorial_wrap(void (*original)(void));
 void pc_display_tutorial_text(void (*original)(void));
+void pc_display_keycap_text(void (*original)(void));
+void pc_display_keycap_glyph(void (*original)(void));
 void pc_display_perspective_projection(void (*original)(void));
 void pc_story_failure_trace(void (*original)(void),uint32_t address);
 void pc_story_network_frame(void (*original)(void));
