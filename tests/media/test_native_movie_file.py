@@ -12,7 +12,8 @@ from native_compiler import native_compiler
 
 ROOT = Path(__file__).resolve().parents[2]
 RUNTIME = ROOT / 'external/ts3FPrecomp'
-MOVIES = ROOT / 'private/game/xmv'
+GAME = Path(os.environ.get('TSFP_TEST_GAME_DIR', ROOT / 'private/game'))
+MOVIES = GAME / 'xmv'
 
 
 @pytest.mark.skipif(not MOVIES.exists(),
@@ -24,10 +25,10 @@ def test_real_movie_native_cadence(tmp_path, live_clock, movie_name):
     movie = MOVIES / movie_name
     if not movie.is_file():
         pytest.skip('Local XMV data required; never included in CI')
-    xbe = ROOT / 'private/game/default.xbe'
+    xbe = GAME / 'default.xbe'
     assert hashlib.sha256(xbe.read_bytes()).hexdigest() == (
         '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc')
-    ffmpeg = RUNTIME / 'third_party/ffmpeg'
+    ffmpeg = Path(os.environ.get('TSFP_TEST_FFMPEG_DIR', RUNTIME / 'third_party/ffmpeg'))
     if os.name=='nt' and not (ffmpeg / 'include/libavcodec/avcodec.h').exists():
         pytest.skip('Verified local FFmpeg dependency is unavailable')
     compiler, env = native_compiler(tmp_path)
@@ -43,7 +44,8 @@ def test_real_movie_native_cadence(tmp_path, live_clock, movie_name):
                 str(src/'video/xmv_decode.c'), str(src/'hle/xbox_adpcm.c'),
                 '/Fe:'+str(executable), '/Fo:'+str(tmp_path)+'\\']
     if os.name!='nt':
-        flags=subprocess.check_output(['pkg-config','--cflags','libavcodec','libavutil'],text=True).split()
+        flags = (['-I'+str(ffmpeg/'include')] if 'TSFP_TEST_FFMPEG_DIR' in os.environ else
+                 subprocess.check_output(['pkg-config','--cflags','libavcodec','libavutil'],text=True).split())
         command=[compiler,'-std=c11','-O2','-DXMV_HAVE_FFMPEG',*flags,*['-I'+str(p) for p in includes],
             str(ROOT/'tests/media/native_movie_file.c'),str(src/'video/xmv_demux.c'),
             str(src/'video/xmv_decode.c'),str(src/'hle/xbox_adpcm.c'),'-ldl','-lm','-o',str(executable)]
@@ -51,7 +53,7 @@ def test_real_movie_native_cadence(tmp_path, live_clock, movie_name):
                               text=True, timeout=60)
     assert compiled.returncode == 0, compiled.stdout+compiled.stderr
     environment = {k:v for k,v in env.items() if not k.startswith(('TSFP_', 'RECOMP_'))}
-    environment['RECOMP_FFMPEG_DIR'] = str(ffmpeg/'bin')
+    environment['RECOMP_FFMPEG_DIR'] = str(ffmpeg/('bin' if os.name=='nt' else 'lib'))
     results = []
     native_rates = ('60', '120', '144', '180', '240')
     for rate in (native_rates if live_clock else ('original', *native_rates)):

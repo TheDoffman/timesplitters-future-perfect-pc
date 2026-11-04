@@ -366,3 +366,8 @@ modules that ELF imports omit. The package now includes/audits these roots and
 the module-query tool; Launch.sh writes a relocatable module cache under XDG
 cache and supplies fallback font configuration only if system configuration is
 absent. Installer executable modes include the module-query tool.
+
+The real-file movie fixture accepts TSFP_TEST_GAME_DIR for the existing single
+asset copy and TSFP_TEST_FFMPEG_DIR for the private release-media install prefix.
+On POSIX it compiles against those selected headers and loads that prefix/lib,
+so a successful system FFmpeg decode cannot stand in for the shipped decoder.
