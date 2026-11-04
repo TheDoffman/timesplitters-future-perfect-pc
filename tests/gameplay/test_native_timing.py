@@ -250,7 +250,7 @@ def test_native_timing(source, mutation, tmp_path):
                    *['/I' + str(path) for path in includes], str(source_path),
                    '/Fe:' + str(output), '/Fo:' + str(tmp_path / 'timing.obj')]
     else:
-        command = [compiler, '-std=c11', '-Wall', '-Wextra',
+        command = [compiler, '-std=c11', '-D_DEFAULT_SOURCE', '-Wall', '-Wextra',
                    *['-I' + str(path) for path in includes], str(source_path),
                    '-lm', '-o', str(output)]
     subprocess.run(command, env=environment, cwd=tmp_path, check=True)

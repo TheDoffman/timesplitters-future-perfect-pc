@@ -431,3 +431,9 @@ fixtures under Xvfb, preventing the prior platform skip from hiding regressions.
 Current measured candidate/artifact hashes, actual test scope, unavailable
 hardware/WAN checks and publication gates are consolidated in
 [Linux experimental release evidence](../development/linux-experimental-release.md).
+
+Linux Clang CI exposed missing glibc POSIX declarations in standalone frame
+settings/precision fixtures. Their non-Windows strict-C11 compiler commands now
+select _DEFAULT_SOURCE, matching the existing native transport fixture. This
+exposes setenv/fileno without weakening implicit-declaration diagnostics or
+changing production code; Windows flags remain unchanged.
