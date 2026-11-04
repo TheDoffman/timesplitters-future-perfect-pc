@@ -25,6 +25,30 @@ static uint32_t prepare_buffer(unsigned i)
     HLE_MEM32(base + 0x200 + SET_ALIGN) = 2;
     return iface;
 }
+int audio_tail_completion(void (*stage)(int))
+{
+    g_xbox_mem_offset = (ptrdiff_t)memory;
+    g_esp = 0x48000; g_lead_ms = 40; g_layout = 0;
+    uint32_t iface = prepare_buffer(0);
+    HLE_MEM32(HLE_MEM32(iface) + SET_SIZE) = 9600;
+    uint64_t start = now_ms() - 100;
+    Buffer *b = model_for(iface, start); CHECK(b);
+    CHECK(!recomp_dsound_buffer_play(&b->model, 0, start));
+    b->output_model = b->model;
+    pump(b, start); pump(b, start + 60);
+    CHECK(b->fed && !b->output_model.playing);
+    stage(0); /* the device heard the prefix, but still holds the tail */
+    HLE_ARG(0) = iface; HLE_ARG(1) = 0x49000;
+    hle_IDirectSoundBuffer_GetStatus(); CHECK(HLE_MEM32(0x49000) == 1);
+    CHECK(!b->model.playing);
+    stage(1); /* input drained/conversion completed; output still pending */
+    hle_IDirectSoundBuffer_GetStatus(); CHECK(HLE_MEM32(0x49000) == 1);
+    stage(2);
+    hle_IDirectSoundBuffer_GetStatus(); CHECK(HLE_MEM32(0x49000) == 0);
+    retire(b); CHECK(!test_output_active(0));
+    puts("PASS: adapter-backed one-shot tail completion");
+    return 0;
+}
 int audio_lifecycle_stress(int enhanced)
 {
     g_xbox_mem_offset = (ptrdiff_t)memory;

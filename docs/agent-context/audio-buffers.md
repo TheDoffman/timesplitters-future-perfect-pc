@@ -221,8 +221,8 @@ This prevents a status-driven Stop/reuse from discarding the last samples
 after an underrun. The guest cursor clock, lead, stale-data policy and explicit
 Stop/Release semantics are unchanged. Explicit reset clears `fed`; paused
 buffers retain PAUSED; unavailable output retains wall-clock completion.
-Both XAudio and SDL already supply the queue-depth interface, so no separate
-Mac implementation is required. Physical listening remains a separate check.
+XAudio supplies queue depth. Patch2306 adds an explicit SDL finite-tail drain
+without claiming a device cursor. Physical listening remains a separate check.
 
 `test_audio_timing.py::test_buffer_audible_completion` executes the real pump
 and GetStatus with a 100ms PCM one-shot and a 60ms service interval. The initial
@@ -270,3 +270,29 @@ unexplained and must not be called fixed or attributed to long render hitches:
 the profiled render gaps did not exceed90ms in these residual cases. Counter
 events alone do not establish audible loss. Native Mac/network listening and
 other scenes remain separate acceptance work.
+
+## SDL finite-tail drain (review correction)
+
+The original completion change incorrectly assumed SDL's position stub exposed
+queue depth. Patch2306 introduces `recomp_audio_output_tail_pending(slot,finish)`
+in the shared output contract and uses it for natural one-shot completion.
+XAudio delegates to its existing queue snapshot. SDL retains position()==0,
+so streams and movies still use their existing wall-clock fallback. Its new
+drain operation checks both queued input and available converted output;
+once the producer has accepted the entire tail, it flushes the resampling
+remainder once. Successful new input/reset clears the flush marker. Ordinary
+chunks, looping sounds, pause and explicit Stop do not flush through this path.
+Query/flush failure retires only that voice and uses existing retry/discontinuity
+handling; absent/reset/shutdown output reports no pending tail.
+
+The complete shared HLE/model is now linked to each complete XAudio/SDL adapter
+in a tail regression, with only host APIs doubled. A late natural completion
+must retain PLAYING across pending input and converted output, then finish on
+drain. The SDL case fails before2306 and passes afterward. Direct SDL tests
+also verify no invented device cursor, one flush, reset/reuse, unavailable
+output, query/flush failures and preservation of unrelated voices. These tests
+are in the existing dual-host `test_audio_device_recovery.py` CI selection.
+
+API semantics: [SDL queued input](https://wiki.libsdl.org/SDL3/SDL_GetAudioStreamQueued),
+[available output](https://wiki.libsdl.org/SDL3/SDL_GetAudioStreamAvailable),
+[end-of-input flush](https://wiki.libsdl.org/SDL3/SDL_FlushAudioStream).

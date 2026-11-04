@@ -1669,6 +1669,16 @@
       ]
     },
     {
+      "name": "2306-dsound-tail-drain-adapters.patch",
+      "path": "patches/media/2306-dsound-tail-drain-adapters.patch",
+      "sha256": "7106da711954e5c9cf15cda3eb0075e964f1d176e4bb1727fa84585f8c8e816a",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
       "name": "2310-game-language.patch",
       "path": "patches/platform/2310-game-language.patch",
       "sha256": "6bb7a0a5e632b509b1e2a4c93163af160107701cddf523367716bad98a960f98",

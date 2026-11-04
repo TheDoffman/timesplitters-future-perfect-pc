@@ -48,6 +48,12 @@ int recomp_audio_output_position(uint32_t slot, uint64_t *played, uint32_t *queu
     if (queued) *queued = fake_until[slot] > fake_now;
     return 1;
 }
+int recomp_audio_output_tail_pending(uint32_t slot, int finish)
+{
+    uint32_t queued = 0;
+    (void)finish;
+    return recomp_audio_output_position(slot, NULL, &queued) && queued;
+}
 void recomp_audio_output_set_ambience(uint32_t slot,int enabled) {}
 void recomp_audio_output_set_acoustics(uint32_t slot,float obstruction,float room) {}
 void recomp_audio_output_set_spatial(uint32_t slot,float pan,int enabled) { }

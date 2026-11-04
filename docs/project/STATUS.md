@@ -39211,8 +39211,9 @@ Audio buffering and completion (2026-11-03, based on595ffe70): shared patches
 tail drains and share learned busy-service headroom across fresh effect slots.
 The lead remains capped at90ms; explicit fixed/zero overrides, cursor clocks,
 voice priority, explicit Stop/Release and the Enhanced Audio toggle retain
-their existing contracts. Both XAudio and SDL already provide queue depth;
-no new host adapter is needed. Native Mac execution/listening remains pending.
+their existing contracts. Patch2306 supplies the SDL finite-tail drain that
+the original completion implementation lacked. Native Mac gameplay/listening
+remains pending.
 
 The queued-tail and fresh-burst regressions fail before their respective
 patches and pass afterward. The Windows Release build and its built-in checks
@@ -39259,3 +39260,24 @@ Repository context, patch-tracking and Mac-backlog checks passed45 tests.
 The user authorized integration into main. A published runtime release is
 still pending; original game data, personal settings and private logs are
 excluded from the source change.
+
+PR478 review correction: the original SDL position function returns0 and did
+not expose the queue depth assumed by patch2304. The PR was held as draft
+before merging. Patch2306 adds a separate finite-tail drain operation, preserving
+SDL's unavailable hardware cursor and continuous stream/movie fallback. SDL
+flushes an accepted end-of-input once and keeps pending input/converted output
+alive; reset/new input clears the marker and failures use existing per-voice
+recovery. XAudio delegates to its existing queue snapshot.
+
+A regression linking complete HLE/model and each complete adapter now covers
+natural completion through actual adapter calls. The SDL case fails against
+the pre2306 HLE and passes afterward. Media suites now pass110 checks with1
+opt-in device skip; the real Windows device check also passes separately,
+compiling/linking the complete XAudio implementation against the Windows SDK.
+The earlier live FPS matrix tested the unchanged Windows queue policy; this
+follow-up does not claim new hardware listening or a new whole-game build.
+
+The shared checkout was switched concurrently to feature/flat-settings-tabs.
+Only this task's verified audio edits were moved to a separate source-only
+worktree on fix/audio-truncated-tails; unrelated UI work and user files were
+preserved. No game-data, binaries or dependency environments were copied.
