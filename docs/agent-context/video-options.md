@@ -1,5 +1,10 @@
 # Video Options click feedback
 
+Section selectors share `pc_settings_navigation.inc` with Controls: native
+highlight sound on hover changes, switch sound only after a real section change,
+global physical Left/Right arrows and controller LB/RB, and adaptive footer hints.
+Native A/D value adjustment remains. Existing staged Apply/Back policy is retained.
+
 The redesigned frontend and pause screen share `pc_display_menu.c`. Video
 setting IDs are 0/1/2 (aspect/resolution/FOV) and 7–11 (texture, frame rate,
 subtitles, Kill Feed, post-process AA). Graphics choices use IDs100/102–104;

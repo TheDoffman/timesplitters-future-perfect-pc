@@ -295,8 +295,10 @@ void pc_display_menu_mouse_footer(void (*original)(void))
         memset(menu_mouse_footer,0,sizeof menu_mouse_footer);
         menu_mouse_footer_drawing=menu;
     } else menu_mouse_footer_drawing=0;
+    settings_tabs_footer_style(0,0,0,0);
     original();
     menu_mouse_footer_drawing=previous;
+    settings_tabs_footer(menu);
 }
 /* Share the visible, enabled hit area between clicks and hover feedback. */
 static int menu_mouse_footer_contains(const MenuMouseFooter *f,uint32_t menu,
@@ -335,6 +337,7 @@ static int menu_mouse_footer_text(void)
         index=slot;
     }
     MenuMouseFooter *f=&menu_mouse_footer[index];
+    settings_tabs_footer_style(menu,WORD_AT(0x7e7270),WORD_AT(0x7e7280),WORD_AT(g_esp+16));
     f->menu=menu;
     memcpy(f->descriptor,&WORD_AT(menu+0x128+index*16),16);
     f->x=FLOAT_AT(g_esp+4);f->y=FLOAT_AT(g_esp+8);

@@ -153,6 +153,7 @@ static void controls_open_tab(int tab)
     GuestRegisters r;save_registers(&r);uint32_t source=WORD_AT(g_esp+4);
     controls_tab=tab;controls_pending=-1;controls_bounds_valid=0;controls_left=1;controls_original_ready=0;controls_anchor_ready=0;
     controls_prepare_keyboard();
+    settings_tabs_input_reset();settings_tabs_hover_reset();
     guest_call((int32_t)WORD_AT(0x79094c)>100?sub_002CBE50:sub_002EC1A0,1,source);
     restore_registers(&r);g_esp+=4;
 }
@@ -200,6 +201,7 @@ static void controls_change_tab(int tab)
     controls_link_rows(1);
     controls_tab=tab;guest_call(sub_00078980,1,controls_menu);
     guest_call(sub_000770E0,2,controls_menu,0u);
+    settings_tabs_sound(8);
 }
 static void controls_leave(void)
 {
@@ -229,6 +231,13 @@ static void controls_customize(void) {controls_native_action(sub_002EA210);}
 static void controls_tick(void)
 {
     GuestRegisters r;save_registers(&r);uint32_t menu=WORD_AT(g_esp+4);
+    if(controls_tabs_visible()) {
+        int direction=settings_tabs_direction(menu);
+        if(direction) {
+            controls_change_tab((controls_tab+(direction<0?2:1))%3);
+            restore_registers(&r);g_esp+=4;return;
+        }
+    }
     if(controls_tabs_visible() && WORD_AT(menu+0x18c)==CONTROLS_TABS_ID) {
         uint32_t buttons=WORD_AT(menu+0xc4);
         if(buttons&0xc0000u) {
@@ -266,6 +275,7 @@ static int controls_tabs_poll(uint32_t menu)
 {
     if(!controls_font_menu(menu) || !controls_tabs_visible() || !menu_mouse_context())return 0;
     PcMenuPointer pointer=pc_controls_menu_hover_pointer();
+    settings_tabs_hover(menu,controls_pointer_tab(pointer),CONTROLS_TABS_ID);
     int pressed=pointer.valid && pointer.left && !controls_left;controls_left=pointer.left;
     if(!pressed)return 0;
     int hit=controls_pointer_tab(pointer);if(hit<0)return 0;

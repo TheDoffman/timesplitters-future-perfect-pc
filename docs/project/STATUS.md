@@ -1,3 +1,45 @@
+## Shared keyboard/mouse keycaps (isolated local work)
+
+Keyboard/mouse prompts use rounded outlined keycaps through the translated
+native text/glyph path, including menus, tutorial/HUD text and binding dialogs.
+Left/Right captions compact to vector arrow icons in both measurement and draw.
+Actual glyph positions and final color preserve font size, gray tint, fade and
+wrapping; borders flush after font batches. Controller glyphs remain native.
+Windows focused checks32 pass/2 native Mac skips; supported Release build and
+built-in tests pass. Main/pause footers and binding lists reviewed live. Native
+Mac visual acceptance remains pending; the renderer uses existing shared APIs.
+
+## Settings section navigation (isolated local work)
+
+Shared Video/Controls sections use native highlight and transition sounds,
+physical Left/Right arrows and controller LB/RB shortcuts. Held input is latched
+across section rebuilds; capture and modal pages retain their native behavior.
+Footer hints use the native Select/Back font, exact glyph scales and final gray
+colour (captured before hover tint), and switch with the input device;
+the launcher explains arrows, bumpers and A/D adjustment. Live keyboard review
+passes in main/pause menus; native Black/White masks0x200/0x400 were confirmed
+through replay. Windows focused tests21 pass/2 native Mac skips; launcher tests
+and supported Release build pass. Physical controller/native Mac checks pending.
+
+## Flat settings section labels (2026-11-03, isolated local work)
+
+Branch feature/flat-settings-menu from595ffe70 in a separate menu worktree.
+The shared Video/Controls header painter replaces shaded bordered tiles with
+plain labels. The current section stays blue; one rounded native-colour highlight
+follows the pointer or keyboard/controller header focus. Body focus leaves the
+section labels unboxed. Measured captions, cell geometry, native silver dividers,
+input routing and saving behavior are retained in both main and pause contexts.
+
+Focused Windows UI/input checks:21 passed,2 native Mac skips. Isolated Release
+build and built-in checks pass. Main1920x1080 and pause1280x720 Controls/Video
+sections reviewed live, including header/body focus and rounded highlights.
+Native glyph RGB is half intensity; caption colours use0x7f as white to preserve
+the active blue instead of saturating to white.
+Header captions select the first visible native setting's font for measurement
+and rendering, then restore it; this corrects the frontend's inherited plain font.
+The separate checkout preserves the active audio work; no audio source or personal save/settings changes belong
+to this task. Native Mac visual and physical-controller acceptance remain pending.
+
 ## Settings visual refinement in both menu contexts (2026-11-03, local)
 
 Branch feature/settings-visual-refinements from d415de00; shared presentation
