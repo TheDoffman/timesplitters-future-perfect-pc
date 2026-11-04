@@ -10,6 +10,9 @@ text are retained. Mouse/wheel names use softer corners. Key vocabulary caches
 all256 localized names, plus composite controls, without caching assignments.
 Left/Right labels compact to visual arrow markers during both measurement and
 drawing; the renderer paints directional arrows inside their keycaps.
+Borders use solid-rectangle emitter1A2E0 with float coordinates, below1EFB0's
+world-view clamp: pause footer text extends below that world rectangle. Native
+host viewport/scissor still clips these quads just like the font glyphs.
 Keyboard binding cells and assignment/conflict rows opt into the same renderer.
 `tests/input/keycaps.c` exercises actual callback geometry/colour, mouse labels,
 controller fallback and nested draw restoration; pc_prompts tests cover vocabulary.

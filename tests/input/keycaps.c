@@ -25,15 +25,17 @@ static size_t pc_prompts_read_region(uintptr_t a){return a>=(uintptr_t)memory &&
 static int guest_writable(uint32_t a,size_t n){return a<sizeof memory && n<=sizeof memory-a;}
 static int pc_prompts_keycap_label(const char *s,size_t n){return (n==1 && (*s=='E' || *s=='<' || *s=='>')) || (n==7 && !memcmp(s,"Mouse 1",7));}
 static unsigned glyphs,lines;static int min_x,max_x;static uint32_t seen_colour;
-static void sub_0001EFB0(void){}
+static void sub_0001A2E0(void){}
+static uint32_t bits(float f){uint32_t word;memcpy(&word,&f,4);return word;}
+static int coordinate(uint32_t word){float f;memcpy(&f,&word,4);return (int)f;}
 static void sub_00022FF0(void){}
 void sub_000402D0(void){g_esp+=4;}
 static uint32_t guest_call(void (*f)(void),unsigned n,...)
 {
-    if(f==sub_0001EFB0) {
+    if(f==sub_0001A2E0) {
         CHECK(n==5);va_list ap;va_start(ap,n);
-        int x=(int)va_arg(ap,uint32_t);(void)va_arg(ap,uint32_t);
-        int r=(int)va_arg(ap,uint32_t);(void)va_arg(ap,uint32_t);
+        int x=coordinate(va_arg(ap,uint32_t));(void)va_arg(ap,uint32_t);
+        int r=coordinate(va_arg(ap,uint32_t));(void)va_arg(ap,uint32_t);
         seen_colour=va_arg(ap,uint32_t);va_end(ap);
         if(!lines || x<min_x)min_x=x;
         if(!lines || r>max_x)max_x=r;

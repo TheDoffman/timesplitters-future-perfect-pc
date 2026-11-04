@@ -72,9 +72,12 @@ static void keycap_flush(void)
 
 static void keycap_line(int x,int y,int right,int bottom,uint32_t colour)
 {
-    extern void sub_0001EFB0(void);
-    if(right>x && bottom>y)guest_call(sub_0001EFB0,5,(uint32_t)x,(uint32_t)y,
-                                     (uint32_t)right,(uint32_t)bottom,colour);
+    extern void sub_0001A2E0(void);
+    /* Use the rectangle emitter below1EFB0's world-view clamp. Pause text can
+     * extend into the footer outside that world view; host scissoring still
+     * applies exactly as it does to the native glyph quads. */
+    if(right>x && bottom>y)guest_call(sub_0001A2E0,5,bits((float)x),bits((float)y),
+                                     bits((float)right),bits((float)bottom),colour);
 }
 void pc_display_keycap_glyph(void (*original)(void))
 {
