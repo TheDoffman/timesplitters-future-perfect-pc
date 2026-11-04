@@ -103,6 +103,17 @@ def test_input_schedule_validates_real_benchmark_and_order(tmp_path):
     with pytest.raises(ValueError):module.input_script(path,150)
 
 
+@pytest.mark.parametrize('command', ['button 1 1','button 5 0','pointer 640 480','motion -4096 4096','wheel -8'])
+def test_script_accepts_bounded_mouse_input(command):
+    assert runner().script_command(command)
+
+
+@pytest.mark.parametrize('command', ['button 6 1','button 1 2','motion inf 0','pointer nan 3',
+                                    'motion 4097 0','wheel 9','wheel 1\nquit','pointer 0 1 2'])
+def test_script_rejects_unbounded_mouse_input(command):
+    assert not runner().script_command(command)
+
+
 def test_story_observer_distinguishes_intro_pause_and_active_gameplay():
     module=runner()
     words={0x79094C:2,0x7DE458:0,0x761C48:0}

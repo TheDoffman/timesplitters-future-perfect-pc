@@ -31,6 +31,17 @@ def test_frame_rate(test,fps):
     with os.fdopen(fd,'w') as output:output.write(f'TSFP_FRAME_RATE_V1 {0 if fps==60 else fps}\n')
 
 
+def script_command(line):
+    if not isinstance(line,str) or len(line)>96:return False
+    if re.fullmatch(r'(?:focus [01]|[+-][A-Za-z0-9 ]{1,32}|button [1-5] [01])',line):return True
+    parts=line.split(' ')
+    if not parts or parts[0] not in ('pointer','motion','wheel'):return False
+    count,limit=(1,8) if parts[0]=='wheel' else (2,16384 if parts[0]=='pointer' else 4096)
+    if len(parts)!=count+1:return False
+    try:return all(math.isfinite(float(v)) and abs(float(v))<=limit for v in parts[1:])
+    except ValueError:return False
+
+
 def input_script(path,seconds):
     if path.stat().st_size>65536:raise ValueError('Input script is too large')
     data=json.loads(path.read_text(encoding='utf-8'))
@@ -43,8 +54,8 @@ def input_script(path,seconds):
         if type(at) not in (int,float) or not math.isfinite(at) or not previous<=at<seconds or at<0:
             raise ValueError('Input events must be ordered inside the bounded run')
         if not isinstance(commands,list) or not 1<=len(commands)<=16 or any(
-            not isinstance(line,str) or not re.fullmatch(r'(?:focus [01]|[+-][A-Za-z0-9 ]{1,32})',line) for line in commands):
-            raise ValueError('Only bounded synthetic keyboard/focus commands are allowed')
+            not script_command(line) for line in commands):
+            raise ValueError('Only bounded synthetic SDL input commands are allowed')
         events.append((at,'\n'.join(commands)+'\n'));previous=at
     return events
 

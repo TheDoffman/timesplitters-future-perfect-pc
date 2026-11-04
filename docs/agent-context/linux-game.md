@@ -398,3 +398,10 @@ Set TSFP_TEST_LINUX_PACKAGE to run three additional companion lifecycle cases
 through the actual packaged native Online adapter and its bundled interpreter.
 The fixture uses the package compatibility identity, separate temporary data,
 loopback peers and asserts native connect/disconnect plus handshake cleanup.
+
+Bounded SDL schedules also accept the existing native test hook's pointer,
+relative motion, wheel and five mouse buttons with finite magnitude limits.
+`linux-story-release.json` exercises movement, fire/turn, held-key focus loss,
+pause/resume, weapon selection and reload in a 300-second isolated Story run.
+Host-present resource/timing observations remain separate from full-campaign
+or hardware input-device acceptance.
