@@ -108,6 +108,7 @@ namespace TimeSplitters.Launcher
             status=Text("Home keeps your draft. Save when you’re ready.",12);status.Foreground=Muted;status.Margin=new Thickness(0,0,16,0);status.VerticalAlignment=VerticalAlignment.Center;footer.Children.Add(status);
             tabs=new TabControl { Background=Brushes.Transparent,BorderThickness=new Thickness(0), Margin=new Thickness(0,8,0,12) };layout.Children.Add(tabs);
             var controls=new StackPanel();
+            controls.Children.Add(Text("In-game settings tabs: Left / Right arrows or controller LB / RB switch tabs. A / D changes option values.",12));
             var input=PageTheme.Section(controls,"Input & mouse","Choose your input device and adjust how the camera responds.");
             var inputColumns=Columns(input);var inputLeft=Column(inputColumns,0);var inputRight=Column(inputColumns,1);
             var deviceLabels=new[]{"Keyboard & mouse","Controller 1","Controller 2","Controller 3","Controller 4","Disabled"};

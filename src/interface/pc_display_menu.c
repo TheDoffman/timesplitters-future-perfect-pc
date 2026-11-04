@@ -11,6 +11,9 @@ static uint32_t kb_caption(void);
 static uint32_t controls_caption(void);
 static int controls_native_button(void (*original)(void));
 static int controls_font_menu(uint32_t menu);
+static int controls_tabs_visible(void);
+static void settings_tabs_footer(uint32_t menu);
+static void settings_tabs_footer_style(uint32_t menu,uint32_t sx,uint32_t sy,uint32_t colour);
 static int controls_tabs_poll(uint32_t menu);
 static void controls_tabs_flush(void);
 #include "pc_display_memory.h"
@@ -912,6 +915,7 @@ static int video_font_menu(uint32_t menu)
 static uint32_t bits(float f) { uint32_t u; memcpy(&u,&f,4); return u; }
 #include "pc_kill_feed_guest.inc"
 #include "pc_tutorial_ui.inc"
+#include "pc_keycaps.inc"
 
 /* The title's focus painter takes (menu, row, float bounds[4]). Replace
  * every shared focus bar, retaining native background, tint and fade. */
@@ -1312,7 +1316,7 @@ static void select_callback(void)
     } else if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART && selected==VIDEO_TABS_ID) {
         int tab=video_clicked_tab();
         if(tab==-1)tab=(video_tab_index()+1)%3;
-        if(tab>=0 && video_tab_page(tab)!=page) {read_choices();refresh(video_tab_page(tab),0);}
+        if(tab>=0 && video_tab_page(tab)!=page) {read_choices();refresh(video_tab_page(tab),0);settings_tabs_sound(8);}
     }
     else if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART && selected==3) {
         read_choices();update_apply();
@@ -1341,6 +1345,11 @@ static void tick_menu(void)
     GuestRegisters r;uint32_t menu=WORD_AT(g_esp+4);save_registers(&r);
     read_choices();
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
+        int direction=settings_tabs_direction(menu);
+        if(direction) {
+            refresh(video_tab_page((video_tab_index()+(direction<0?2:1))%3),0);
+            settings_tabs_sound(8);restore_registers(&r);g_esp+=4;return;
+        }
         unsigned actual=(unsigned)tsfp_texture_is_4k();
         if(actual!=applied_texture) {
             if(texture_choice==applied_texture) {
@@ -1368,6 +1377,7 @@ static void tick_menu(void)
                 int next=(video_tab_index()+((buttons&0x40000u)?2:1))%3;
                 guest_call(sub_00074910,3,menu,0u,1u);
                 refresh(video_tab_page(next),0);
+                settings_tabs_sound(8);
             }
         }
         update_apply();
@@ -1411,6 +1421,7 @@ static void activate(void)
         selected_aspect=pc_display_aspect(staged);if(selected_aspect<0)selected_aspect=0;filter_modes();
         parent_menu=WORD_AT(source+0x2c); previous_menu=WORD_AT(source+4);
         page=0; apply_page=DISPLAY_HOME;deadline=0;video_tab_bounds_valid=0;video_pending_tab=-1;video_tab_left=1;video_anchor_ready=0;
+        settings_tabs_input_reset();settings_tabs_hover_reset();
         fprintf(stderr,"[PC-DISPLAY-MENU] Opened, %d resolutions\n",mode_count);
         guest_call(sub_00079B70,2,parent_menu,storage);
     }
@@ -1476,6 +1487,7 @@ static void controls_leave(void);
 
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
+    if(address==0x000402D0u)return keycap_alternate_glyph;
     /* HUD callbacks stop on results/loading screens. Reset before a rematch
        reuses the same actor pool and level; pause keeps active phase seven. */
     if(kill_feed.ready && WORD_AT(0x007DE30Cu)!=7u) {

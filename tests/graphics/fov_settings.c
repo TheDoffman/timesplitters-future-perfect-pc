@@ -59,7 +59,16 @@ uint32_t xbox_HeapAlloc(uint32_t size,uint32_t alignment) {static uint32_t next=
 /* The menu translation unit also contains tutorial hooks. Their drawing and
  * input behavior is covered by tutorial_layout.c; these paths must not run
  * during the FOV/settings test. */
-int pc_prompts_keyboard_active(void) { CHECK(0); return 0; }
+static int settings_keyboard=1,settings_pad_allowed;
+static unsigned char settings_keys[256];
+int pc_prompts_keyboard_active(void) { return settings_keyboard; }
+void sub_000402D0(void) {CHECK(0);}
+void sub_0001A2E0(void) {CHECK(0);}
+int pc_prompts_keycap_label(const char *label,size_t length) {(void)label;(void)length;CHECK(0);return 0;}
+size_t pc_prompts_read_region(uintptr_t address) {(void)address;CHECK(0);return 0;}
+int pc_controls_accept_pad(void) {return settings_pad_allowed;}
+int pc_controls_binding_keys(unsigned char keys[256]) {memcpy(keys,settings_keys,256);return 1;}
+int pc_controls_key_down(int key) {return key>0 && key<256?settings_keys[key]:0;}
 void pc_prompts_layout_begin(void) {}
 void pc_prompts_layout_end(void) {}
 #define TUTORIAL_STUB(name) void name(void) { CHECK(0); }
@@ -90,8 +99,8 @@ MOUSE_STUB(sub_001922D0)
 MOUSE_STUB(sub_002E49F0) MOUSE_STUB(sub_002E4A30)
 /* Audio-slider preview calls are covered by menu_mouse.c, not this fixture. */
 MOUSE_STUB(sub_00045C60)
-static unsigned video_sounds;
-void sub_00021780(void){CHECK(WORD_AT(g_esp+4)==0x1234u);++video_sounds;g_esp+=4;}
+static unsigned video_sounds,highlight_sounds;
+void sub_00021780(void){uint32_t sound=WORD_AT(g_esp+4);CHECK(sound==0x1234u || sound==0x4321u);if(sound==0x4321u)highlight_sounds++;else video_sounds++;g_esp+=4;}
 MOUSE_STUB(sub_00045390) MOUSE_STUB(sub_00045820)
 MOUSE_STUB(sub_0007DB20) MOUSE_STUB(sub_0007C410) MOUSE_STUB(sub_0007C300)
 MOUSE_STUB(sub_0007C390) MOUSE_STUB(sub_0007C4F0) MOUSE_STUB(sub_0007CDE0)
@@ -908,6 +917,54 @@ int main(int argc,char **argv)
     CHECK(FLOAT_AT(controls_menu+0x64)==12.f);
     controls_tab=2;kb_page=KB_CAPTURE;WORD_AT(controls_menu+0x64)=bits(55.f);
     controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==55.f);
+    { /* Section shortcuts work from a setting row, once per press, without
+       * stealing the native A/D adjustment path or changing staged values. */
+        controls_tab=0;kb_page=KB_HOME;
+        WORD_AT(0x7ba178)=0x510000;WORD_AT(0x510000)=0x4321;WORD_AT(0x510008)=0x1234;
+        WORD_AT(0x7ba16c)=1;unsigned sounds=video_sounds;
+        settings_tabs_input_reset();call(0x2eab30,1,0);
+        settings_keys[0x27]=1;call(0x2eab30,1,0);CHECK(controls_tab==1 && video_sounds==sounds+1);
+        call(0x2eab30,CONTROLS_TABS_ID,0x80008);CHECK(controls_tab==1 && video_sounds==sounds+1);
+        settings_keys[0x27]=0;call(0x2eab30,CONTROLS_TABS_ID,0);
+        settings_keys[0x25]=1;call(0x2eab30,3,0);CHECK(controls_tab==0 && video_sounds==sounds+2);
+        settings_keys[0x25]=0;settings_tabs_direction(controls_menu);
+        settings_keys['A']=1;WORD_AT(controls_menu+0xc4)=0x40004;
+        CHECK(!settings_tabs_direction(controls_menu) && WORD_AT(controls_menu+0xc4)==0x40004);
+        settings_keys['A']=0;settings_keyboard=0;settings_pad_allowed=1;
+        WORD_AT(controls_menu+0xc8)=0x200;call(0x2eab30,1,0x2000200);
+        CHECK(controls_tab==2 && video_sounds==sounds+3);
+        WORD_AT(controls_menu+0xc8)=0x200;call(0x2eab30,CONTROLS_TABS_ID,0x2000200);
+        CHECK(controls_tab==2 && video_sounds==sounds+3);
+        WORD_AT(controls_menu+0xc8)=0;call(0x2eab30,CONTROLS_TABS_ID,0);
+        WORD_AT(controls_menu+0xc8)=0x400;call(0x2eab30,CONTROLS_TABS_ID,0x4000400);
+        CHECK(controls_tab==0 && video_sounds==sounds+4);
+        settings_keyboard=1;settings_pad_allowed=0;WORD_AT(controls_menu+0xc8)=0;
+        unsigned h=highlight_sounds;settings_tabs_hover_reset();WORD_AT(controls_menu+0x18c)=1;
+        settings_tabs_hover(controls_menu,-1,CONTROLS_TABS_ID);
+        WORD_AT(controls_menu+0x18c)=CONTROLS_TABS_ID;
+        settings_tabs_hover(controls_menu,0,CONTROLS_TABS_ID);CHECK(highlight_sounds==h);
+        settings_tabs_hover(controls_menu,1,CONTROLS_TABS_ID);CHECK(highlight_sounds==h+1);
+        settings_tabs_hover(controls_menu,1,CONTROLS_TABS_ID);CHECK(highlight_sounds==h+1);
+        settings_keyboard=0;settings_tabs_hover(controls_menu,2,CONTROLS_TABS_ID);
+        CHECK(highlight_sounds==h+1);settings_keyboard=1;
+        WORD_AT(0x7ba16c)=0;settings_tabs_hover(controls_menu,2,CONTROLS_TABS_ID);
+        settings_tabs_sound(8);CHECK(highlight_sounds==h+1 && video_sounds==sounds+4);
+        WORD_AT(0x7ba16c)=1;WORD_AT(0x7ba178)=0;settings_tabs_sound(0);settings_tabs_sound(8);
+        CHECK(highlight_sounds==h+1 && video_sounds==sounds+4);
+        WORD_AT(0x7ba16c)=0;
+    }
+    { /* Video shortcuts preserve staged graphics choices across sections. */
+        WORD_AT(current_menu+4)=storage;refresh(DISPLAY_GRAPHICS,0);
+        WORD_AT(graphics_rows[2]+0xc8)=4;read_choices();
+        settings_tabs_input_reset();call(TICK_CB,102,0);
+        settings_keys[0x25]=1;call(TICK_CB,102,0x40004);
+        CHECK(page==DISPLAY_HOME && staged_anisotropy==16);
+        call(TICK_CB,VIDEO_TABS_ID,0x40004);CHECK(page==DISPLAY_HOME);
+        settings_keys[0x25]=0;call(TICK_CB,VIDEO_TABS_ID,0);
+        settings_keys[0x27]=1;call(TICK_CB,VIDEO_TABS_ID,0x80008);
+        CHECK(page==DISPLAY_GRAPHICS && staged_anisotropy==16 && WORD_AT(graphics_rows[2]+0xc8)==4);
+        settings_keys[0x27]=0;
+    }
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
     return 0;

@@ -1,3 +1,27 @@
+Keycap prompts (local feature/flat-settings-menu, uncommitted): shared
+pc_keycaps.inc and pc_prompts vocabulary plus additive2340 render keyboard/mouse
+prompts through native glyph geometry. Binding-menu cells share the renderer.
+Existing native font/rectangle/input adapters serve both hosts; no new adapter.
+Windows Release build/shared checks and main/pause menu review pass; native Mac keycap/layout acceptance
+remains pending (menus, tutorial wrapping, HUD, device switch and remapped keys).
+
+Settings section shortcuts (local feature/flat-settings-menu): shared
+pc_settings_navigation.inc adds native hover/transition sounds, physical arrow
+keys and LB/RB tab switching, with device-sensitive footer hints. Shared launcher
+SettingsPage explains the shortcuts. Footer hints reuse native Select/Back
+glyph scales and final gray/fade colour on both hosts. Common input/font/sound adapters
+serve both hosts; no new Mac adapter needed. Windows focused tests, launcher
+tests and main/pause keyboard visual review pass. Physical controller and native
+Mac acceptance remain pending (tap/hold/release, wrap, capture/modal exclusion,
+footer device switching and sound deduplication).
+
+Flat settings headers (2026-11-03, local feature/flat-settings-menu): shared
+pc_settings_tabs.inc uses plain section labels, blue current-page text and one
+rounded hover/focus highlight in Video/Controls. Existing guest pointer, colour,
+font and rectangle helpers serve both hosts; no new adapter is needed. Windows
+focused UI/input checks, Release build and isolated main/pause review pass;
+native Mac visual acceptance remains pending.
+
 Settings visual refinement (2026-11-03, local feature/settings-visual-refinements):
 shared Video/Controls tab captions use one measured reference, short pages
 balance native leading rather than blank footer rows, Video retains its native

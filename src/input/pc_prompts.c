@@ -112,6 +112,30 @@ static void key_label(int key, char *out, size_t capacity)
     for (size_t i=0;out[i];i++) if ((unsigned char)out[i]<32) out[i]='?';
 }
 
+int pc_prompts_keycap_label(const char *label,size_t length)
+{
+    static SRWLOCK names_lock=SRWLOCK_INIT;
+    static char names[256][32];static int ready;
+    if(!label || !length || length>128)return 0;
+    if(length==1 && (*label=='<' || *label=='>'))return 1;
+    AcquireSRWLockExclusive(&names_lock);
+    if(!ready) {for(int i=0;i<256;i++)key_label(i,names[i],sizeof names[i]);ready=1;}
+    ReleaseSRWLockExclusive(&names_lock);
+    if(length==5 && !_strnicmp(label,"Mouse",5))return 1;
+    for(int i=0;i<256;i++)if(strlen(names[i])==length && !_strnicmp(label,names[i],length))return 1;
+    size_t start=0;
+    while(start<length) {
+        size_t end=start;while(end<length && label[end]!='/')end++;
+        int found=0;
+        for(int i=0;i<256;i++)if(strlen(names[i])==end-start &&
+            !_strnicmp(label+start,names[i],end-start)) {found=1;break;}
+        if(!found)return 0;
+        if(end==length)return 1;
+        start=end+1;
+    }
+    return 0;
+}
+
 static int prompt_actions(unsigned char token, int actions[4], int mouse)
 {
     static const int buttons[]={1,0,3,2,4,5,6}; /* B A Y X Black White Start */
@@ -192,11 +216,26 @@ static int network_labels(const char *source, char *out, size_t capacity)
     return changed;
 }
 
+static int keycap_arrows(const char *source,char *out,size_t capacity)
+{
+    size_t used=0;int changed=0;
+    for(size_t i=0;source[i];) {
+        size_t n=0;char arrow=0;
+        if(!_strnicmp(source+i,"[Left]",6)) {n=6;arrow='<';}
+        else if(!_strnicmp(source+i,"[Right]",7)) {n=7;arrow='>';}
+        if(n) {
+            if(used+3>=capacity)return 0;
+            out[used++]='[';out[used++]=arrow;out[used++]=']';i+=n;changed=1;
+        } else {if(used+1>=capacity)return 0;out[used++]=source[i++];}
+    }
+    out[used]=0;return changed;
+}
+
 int pc_prompts_rewrite(const char *source, char *out, size_t capacity)
 {
     int keys[PC_ACTION_COUNT],enabled,inverted;
     double sensitivity;
-    char renamed[2048];
+    char renamed[2048],formatted[2048];
     int changed;
     if(!source || !out || !capacity) return 0;
     /* Menu names change for every input device, including title/breadcrumb
@@ -206,8 +245,9 @@ int pc_prompts_rewrite(const char *source, char *out, size_t capacity)
     if(changed) source=renamed;
     if(strchr(source,'\v') && pc_prompts_keyboard_active() && pc_settings_prompt_keys(keys)) {
         pc_controls_get_mouse(&sensitivity,&enabled,&inverted);
-        if(pc_prompts_format(source,out,capacity,keys,enabled)) return 1;
+        if(pc_prompts_format(source,formatted,sizeof formatted,keys,enabled)) {source=formatted;changed=1;}
     }
+    if(pc_prompts_keyboard_active() && keycap_arrows(source,out,capacity))return 1;
     if(changed && strlen(source)<capacity) {
         memcpy(out,source,strlen(source)+1);
         return 1;

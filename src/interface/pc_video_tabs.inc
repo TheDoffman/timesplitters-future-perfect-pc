@@ -21,6 +21,7 @@ static int video_tab_hit(float x,float y)
        x>=video_tab_bounds[2] || y<video_tab_bounds[1] || y>=video_tab_bounds[3])return -1;
     return (int)((x-video_tab_bounds[0])*3.f/width);
 }
+#include "pc_settings_navigation.inc"
 #include "pc_settings_tabs.inc"
 static void video_tabs_draw(void)
 {
@@ -59,6 +60,10 @@ static int menu_video_tabs_poll(uint32_t menu)
     if(!video_font_menu(menu) || page==DISPLAY_CONFIRM || page==DISPLAY_RESTART ||
        !menu_mouse_context())return 0;
     PcMenuPointer pointer=pc_controls_menu_hover_pointer();
+    float hx,hy,hgw=(float)WORD_AT(0x4e8cf0),hgh=(float)WORD_AT(0x4e8cf4);unsigned hsw,hsh;
+    d3d8_display_output_shape((unsigned)hgw,(unsigned)hgh,&hsw,&hsh);
+    int hover=hsh && pc_menu_mouse_position(pointer,(float)hsw/hsh,hgw,hgh,&hx,&hy)?video_tab_hit(hx,hy):-1;
+    settings_tabs_hover(menu,hover,VIDEO_TABS_ID);
     int pressed=pointer.valid && pointer.left && !video_tab_left;
     video_tab_left=pointer.left;
     if(!pressed)return 0;
@@ -86,7 +91,7 @@ static void menu_video_tabs_flush(void)
         int target=video_tab_page(video_pending_tab);video_pending_tab=-1;
         if(target!=page) {
             fprintf(stderr,"[PC-DISPLAY-MENU] Mouse tab %d -> %d\n",page,target);
-            read_choices();refresh(target,0);
+            read_choices();refresh(target,0);settings_tabs_sound(8);
         }
     }
     restore_registers(&r);

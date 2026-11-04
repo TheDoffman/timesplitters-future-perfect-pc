@@ -1,5 +1,41 @@
 # Unified Controls options
 
+Keyboard/mouse prompts use shared outlined keycaps. Additive2340 scopes the
+translated40FA0 draw and wraps its native40260 glyph callback, also routing
+alternate402D0 callbacks through the shared menu lookup. The renderer replaces
+recognized key-label brackets with rounded borders at actual glyph
+positions; native text measurement/advances, font, grey tint, fades, clipping and
+HUD placement remain authoritative. Controller glyphs and ordinary bracketed
+text are retained. Mouse/wheel names use softer corners. Key vocabulary caches
+all256 localized names, plus composite controls, without caching assignments.
+Left/Right labels compact to visual arrow markers during both measurement and
+drawing; the renderer paints directional arrows inside their keycaps.
+Borders use solid-rectangle emitter1A2E0 with float coordinates, below1EFB0's
+world-view clamp: pause footer text extends below that world rectangle. Native
+host viewport/scissor still clips these quads just like the font glyphs.
+Keyboard binding cells and assignment/conflict rows opt into the same renderer.
+`tests/input/keycaps.c` exercises actual callback geometry/colour, mouse labels,
+controller fallback and nested draw restoration; pc_prompts tests cover vocabulary.
+The supported build refreshes generated code for the new native glyph wrapper.
+Historical controls-only fixtures predate native-prompts/display wrappers;
+2340 is installed during their complete migration, with both keycap hooks
+asserted afterwards, rather than applied to that deliberately older subset.
+
+`pc_settings_navigation.inc` shares section input, sounds and footer hints.
+Physical Left/Right arrows switch sections from any root setting; native A/D
+adjustment and header navigation remain. Controller Black/White C4/C8 masks
+0x200/0x400 correspond to LB/RB through the common adapter; held shortcuts
+latch across rebuilds and require release. Capture/list/modal pages are excluded.
+The second footer line captures the native Select/Back glyph scales and final
+colour before hover tinting, matching its size, gray tint and fade. It inherits
+the footer font and switches
+between keyboard and controller hints without
+changing native Select/Back prompts. The launcher explains the same shortcuts.
+Hover entry uses native sound-table slot0, actual section changes slot8, through
+21780 with the native enable flag and table bounds. Repeated hover, held buttons,
+same-page clicks, muted/missing sound tables do not produce extra feedback.
+`TSFP_SETTINGS_INPUT_TRACE` records native C4/C8 masks only for diagnosis.
+
 Visual refinement: the shared tab painter measures a common longest caption
 (`KEYBOARD & MOUSE`) in both Video and Controls, preventing shorter Video labels
 from growing. Owned setting-row focus uses a slightly brighter blue tint; header
@@ -15,9 +51,13 @@ US524A40, opened through native frontend2CBE50/pause2EC1A0 initialization.
 Settings and pause now expose one Controls entry. Root tabs are General Controls,
 Controller and Keyboard & Mouse, using the same measured tab painter as Video
 (`pc_settings_tabs.inc`), 78% width, compact65% fonts and native silver dividers.
-Video/Controls tabs use uppercase measured captions, muted vertical shading and
-non-overlapping silver edge strips. Keyboard labels use uppercase display copies
+Video/Controls sections use flat uppercase labels: the current page stays blue,
+and one unbordered, rounded native-colour highlight follows pointer or header focus.
+Inactive labels have no background, gradient, bevel or edge strips. Keyboard labels use uppercase display copies
 only; stored key names, assignments and persistence remain unchanged.
+Section captions select the first visible setting row's native font (`row+1c`,
+setter3FA10) before measuring and drawing, so frontend headers use the same game
+font as pause headers. Flush batches and restore the enclosing font afterwards.
 
 General has native IDs1 Crosshair,2 Auto Aim,4 Auto Lookahead,5 Aim Mode,
 6 Crouch and7 Weapon Change. Controller has0 Control Layout,3 Inverse Look,
@@ -38,7 +78,7 @@ Custom keyboard glyphs/column headings/names fit their measured cells. Draw plai
 captions under explicit glyph scale, then flush/restore it: inline size escapes
 would override the fit. This also keeps diagram letters inside their key boxes.
 The shared native focus painter suppresses its full-row backdrop for the owned
-Controls header130; individual tab backgrounds/active state remain visible.
+Controls header130; the shared section painter owns its single highlight.
 
 The original2EA3F0 builds and initializes every native record. The button scope
 marks the other tab's fields hidden/disabled and clears row+B0 before native
