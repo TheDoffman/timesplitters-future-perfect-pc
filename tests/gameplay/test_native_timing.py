@@ -964,7 +964,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             if needle.startswith('RECOMP_FLOAT_BRANCH_AT('):
                 assert count in (1,2),needle
                 if count==2:
-                    assert re.search(r'tsfp_status_condition[^\n]*'+re.escape(needle),source)
+                    assert sum('tsfp_status_condition(&g_status_flags,' in line
+                               for line in source.splitlines() if needle in line)==1
             else:assert count==1,needle
             with pytest.raises(AssertionError,match='distance>.001f'):
                 compile_and_run(tmp_path,source.replace(needle,replacement))

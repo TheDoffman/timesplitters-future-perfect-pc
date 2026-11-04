@@ -443,3 +443,7 @@ the shared compile-and-run helper. Actor-generation and walk-contact mutation
 checks recognize the compiler's status-aware branch plus legacy fallback as
 two routes of one guest instruction and mutate both. Existing stale-generation
 and contact-distance negative controls must still fail; production is untouched.
+
+The offline snapshot regression compares exact effective patch records with
+the installed ledger, rather than counting raw patch files. This preserves
+order/content/options coverage when the identical2401/2512 guard is omitted.
