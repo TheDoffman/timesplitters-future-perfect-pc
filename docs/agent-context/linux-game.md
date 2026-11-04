@@ -371,3 +371,10 @@ The real-file movie fixture accepts TSFP_TEST_GAME_DIR for the existing single
 asset copy and TSFP_TEST_FFMPEG_DIR for the private release-media install prefix.
 On POSIX it compiles against those selected headers and loads that prefix/lib,
 so a successful system FFmpeg decode cannot stand in for the shipped decoder.
+
+GTK SVG type detection also needs shared-mime-info data. The Linux package
+includes its compiled mime.cache and exact Ubuntu source/notices, recorded in
+dependency-audit data_components separately from ELF components. Launch.sh
+prepends the package data directory to XDG_DATA_DIRS. Clean-userspace reports
+77 from the unconfigured Online adapter as explicitly skipped, never passed;
+companion/local transport tests provide separate network evidence.

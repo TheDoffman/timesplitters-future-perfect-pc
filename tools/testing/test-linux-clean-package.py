@@ -92,8 +92,10 @@ def main():
     results['launcher_ui'] = dict(exit_code=result.returncode, output=result.stdout+result.stderr)
     logs = ROOT/'logs'
     logs.mkdir(exist_ok=True)
+    skipped = [name for name,r in results.items() if name=='online' and r['exit_code']==77]
     report = dict(scope='Read-only package and assets, nobody, minimal Ubuntu userspace; software Vulkan',
-                  package=str(package), tests=results, passed=all(r['exit_code']==0 for r in results.values()))
+                  package=str(package), tests=results, skipped=skipped,
+                  passed=all(r['exit_code']==0 or name in skipped for name,r in results.items()))
     (logs/'linux-clean-package.json').write_text(json.dumps(report, indent=2)+'\n')
     if not report['passed']:
         raise SystemExit('FAIL clean-userspace acceptance; see logs/linux-clean-package.json')

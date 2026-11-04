@@ -2,6 +2,9 @@
 # Relocatable Linux entry point. Keep writable state out of an immutable package.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+if [ -f "$root/Support/Desktop/share/mime/mime.cache" ]; then
+    export XDG_DATA_DIRS="$root/Support/Desktop/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+fi
 # GTK's SVG module and fontconfig data are not part of ELF dependency discovery.
 # Build a relocatable module cache in user state, never in the package directory.
 if [ -x "$root/Support/Desktop/gdk-pixbuf-query-loaders" ]; then

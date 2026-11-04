@@ -52,11 +52,12 @@ def apt_options(root):
         (base/'updated').write_text('Authenticated Ubuntu source indexes\n')
     return options
 
-def collect(root,stage,records,launcher,media,sdk,python):
+def collect(root,stage,records,launcher,media,sdk,python,data_records=None):
     """Fail closed for unclassified libraries or missing notices/source archives."""
     root,stage,launcher=Path(root),Path(stage),Path(launcher).resolve()
     components={};sources={};options=None
-    for target,record in records.items():
+    data_records=data_records or {}
+    for target,record in (records|data_records).items():
         origin=Path(record['source']).resolve()
         common=dict(sha256=record['source_sha256'])
         if origin.is_relative_to(media.resolve()):
@@ -98,6 +99,7 @@ def collect(root,stage,records,launcher,media,sdk,python):
         components[target]=dict(common,provider='Ubuntu',binary_package=owner,source_package=key,notice=notice.relative_to(stage).as_posix())
     for path in Path('/usr/share/common-licenses').iterdir():
         if path.is_file():dest=stage/'Licenses'/('Common-'+path.name+'.txt');dest.parent.mkdir(exist_ok=True);shutil.copy2(path,dest)
-    report=dict(schema=1,components=components,source_packages=sources)
+    data_components={target:components.pop(target) for target in data_records}
+    report=dict(schema=1,components=components,data_components=data_components,source_packages=sources)
     (stage/'Support/Runtime/dependency-audit.json').write_text(json.dumps(report,indent=2)+'\n')
     return report

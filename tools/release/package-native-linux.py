@@ -197,6 +197,8 @@ def main():
                           (pixbuf/'2.10.0/loaders/libpixbufloader-svg.so','Support/Desktop/pixbuf/libpixbufloader-svg.so')]:
         dynamic.append((origin,copy(origin,stage,target)))
     copy(ROOT/'config/build/linux-fonts.conf',stage,'Support/Desktop/fonts.conf')
+    mime=Path('/usr/share/mime/mime.cache')
+    mime_target=copy(mime,stage,'Support/Desktop/share/mime/mime.cache')
     media,media_receipt=linux_ffmpeg.verify_install(ROOT)
     if native.get('release_media')!=media_receipt:raise ValueError('Rebuild the game with --release-media before packaging')
     for stem in media_receipt['pin']['libraries']:
@@ -230,7 +232,8 @@ def main():
     subprocess.run([sys.executable,str(repo_file(ROOT,'tools','network-identity.py')),'--output',str(build/'generated'),'--seal-executable',str(game)],check=True)
     # Preserve package-owner copyright/source information for every copied ELF.
     notices=stage/'Support/Runtime';notices.mkdir(parents=True,exist_ok=True)
-    audit=collect_dependency_sources(ROOT,stage,records,args.launcher,media,sdk,python)
+    audit=collect_dependency_sources(ROOT,stage,records,args.launcher,media,sdk,python,
+        {mime_target.relative_to(stage).as_posix():dict(source=str(mime),source_sha256=digest(mime))})
     (notices/'dependencies.json').write_text(json.dumps(audit['components'],indent=2)+'\n')
     source=stage/'Source/pc-port-source.zip';source.parent.mkdir(exist_ok=True)
     with zipfile.ZipFile(source,'x',zipfile.ZIP_DEFLATED) as archive:
