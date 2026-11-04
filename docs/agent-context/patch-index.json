@@ -1713,9 +1713,9 @@
     {
       "name": "2340-keycap-prompts.patch",
       "path": "patches/input/2340-keycap-prompts.patch",
-      "sha256": "2daf5abab068cf3c181c32ada1a4e2c61d2df2549412f6511b9ac19d64cfc60b",
+      "sha256": "2503f98777789b84ceeb4bb55995622df2138d19d54c76dffe5e4318b1f309c4",
       "targets": [
-        "titles/futureperfect/src/recomp_manual.c\r"
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     },
     {
