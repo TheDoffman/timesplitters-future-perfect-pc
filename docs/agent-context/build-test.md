@@ -1031,7 +1031,7 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [2x tests](original-upscale.md).
 
-[Linux release audits/ZIP](linux-game.md).
+[Linux release audits/ZIP, clean userspace and CI network checks](linux-game.md).
 
 [RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
 

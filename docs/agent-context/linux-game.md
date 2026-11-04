@@ -424,3 +424,6 @@ checks the shipped MIME source input against its separate data provenance hash.
 `--movies` requires at least15 seconds and reports per-file completed decode/EOF
 counts. Acceptance requires all88 EA and81 FRD pictures, preventing a skipped or
 merely opened movie from earning a pass. PCM/device audibility remains separate.
+
+Linux CI now runs production UDP and actual Tk companion host/join/cancel
+fixtures under Xvfb, preventing the prior platform skip from hiding regressions.
