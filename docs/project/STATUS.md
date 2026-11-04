@@ -1,3 +1,11 @@
+## Profile Delete hint spacing (2026-11-04, local)
+
+The keyboard profile picker lowers its separate Y/Delete Profile hint by6
+layout pixels. Normal/hover draws and cached mouse hit areas share the adjusted
+baseline; the original stack argument and controller layout remain native.
+Windows mouse-policy fixtures5 passed; supported Release build/built-ins pass.
+Native Mac visual acceptance remains pending; this uses shared menu/font code.
+
 ## Adjust footer icons (2026-11-04, local)
 
 The shared Video/Controls footer now formats `[A] / [D] Adjust`, allowing each

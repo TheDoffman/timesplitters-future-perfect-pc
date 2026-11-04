@@ -16,6 +16,10 @@ Attribution/modifications are in `assets/ui/input-icons/ATTRIBUTION.md` and NOTI
 Windows release/playable and native Mac packagers retain the complete credit
 as `Licenses/Keyboard-mouse-icons.txt`.
 The compiled span include ships in source; builds need no artwork download.
+Profile picker Y/Delete text is lowered6 layout pixels for keyboard prompts in
+`menu_mouse_profile_text`; both normal/hover draws and cached hit areas use the
+same baseline. The original call argument is restored; controller layout stays
+native. `test_menu_mouse.py` covers the shifted hit area and stack restoration.
 Tests use synthetic image data, covering lossless packing, path bounds, duplicate
 keys, pressed/idle selection and original mouse/controller fallback; CI runs both
 the importer and shared glyph fixtures on its supported hosts.

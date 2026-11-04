@@ -1,3 +1,9 @@
+Profile Delete hint spacing (local feature/fab-input-prompts): shared
+`menu_mouse_profile_text` lowers keyboard Delete Profile by6 layout pixels,
+including hover rendering and click geometry; no OS adapter or controller
+layout change. Windows fixture/build evidence is in STATUS. Native Mac visual
+acceptance remains pending (profile panel clearance and Delete hint hover).
+
 Imported prompt artwork (local feature/fab-input-prompts): shared
 `pc_keycaps.inc`, `pc_input_icons.inc` and generated span data use Rendrify's
 CC BY4.0 keyboard/mouse artwork with native tint/fade and original text advances.

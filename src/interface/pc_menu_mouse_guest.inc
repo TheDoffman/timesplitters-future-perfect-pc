@@ -233,7 +233,11 @@ static int menu_mouse_profile_text(void (*original)(void))
     }
     if(!count) return 0;
     float height,width=menu_mouse_measure_prefix(text,length,&height);
-    float origin=FLOAT_AT(frame+4),y=FLOAT_AT(frame+8),positions[4];
+    /* The imported keyboard key faces are taller than the original glyphs.
+     * Give the profile's separate Y/Delete row a little breathing room;
+     * cache the shifted baseline so hover/clicks follow the visible hint. */
+    int lower_delete=pc_prompts_keyboard_active() && count==1 && buttons[0]==3;
+    float origin=FLOAT_AT(frame+4),y=FLOAT_AT(frame+8)+(lower_delete?6.f:0.f),positions[4];
     uint32_t alignment=WORD_AT(0x007E7260u);
     if(alignment==1)origin-=width*.5f;else if(alignment==2)origin-=width;
     unsigned sw,sh;d3d8_display_output_shape(WORD_AT(0x004E8CF0u),WORD_AT(0x004E8CF4u),&sw,&sh);
@@ -254,7 +258,12 @@ static int menu_mouse_profile_text(void (*original)(void))
         f->sw=sw;f->sh=sh;f->time=GetTickCount64();
         if(valid && menu_mouse_profile_contains(f,menu,x,py,sw,sh)) hover=(int)i;
     }
-    if(hover<0) return 0;
+    if(hover<0) {
+        if(!lower_delete)return 0;
+        uint32_t baseline=WORD_AT(frame+8);
+        FLOAT_AT(frame+8)=y;original();WORD_AT(frame+8)=baseline;
+        return 1;
+    }
     GuestRegisters before;save_registers(&before);
     uint32_t color=WORD_AT(frame+16);
     /* Render disjoint spans once each, preserving alpha and exact advances.
@@ -265,6 +274,7 @@ static int menu_mouse_profile_text(void (*original)(void))
         memcpy(&WORD_AT(frame-512),str+starts[i],stops[i]-starts[i]);
         ((char *)&WORD_AT(frame-512))[stops[i]-starts[i]]=0;
         WORD_AT(g_esp+12)=frame-512;FLOAT_AT(g_esp+4)=positions[i];
+        FLOAT_AT(g_esp+8)=y;
         WORD_AT(g_esp+16)=(int)i==hover?0x405a7f00u|(color&0xffu):color;
         WORD_AT(0x007E7260u)=0;original();
     }

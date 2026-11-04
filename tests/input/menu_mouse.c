@@ -28,6 +28,8 @@ static int closed_pause,in_dispatch,changed_tab;
 static unsigned long long tick=1000;
 static unsigned long long GetTickCount64(void) {return tick;}
 static int footer_enabled=1,measure_profile;
+static int profile_keyboard=1;
+static int pc_prompts_keyboard_active(void) {return profile_keyboard;}
 static uint32_t early_action,early_held,early_source;
 static unsigned shape_w=16,shape_h=9;
 static unsigned music_previews,sound_previews,sensitivity_previews;
@@ -156,13 +158,14 @@ static void capture_footer(uint32_t menu)
 }
 static unsigned profile_draws;
 static uint32_t profile_colors[4];
-static float profile_x[4];
+static float profile_x[4],profile_y[4];
 static char profile_labels[4][100];
 static void profile_draw(void)
 {
     CHECK(profile_draws<4);
     profile_colors[profile_draws]=WORD_AT(g_esp+16);
     profile_x[profile_draws]=FLOAT_AT(g_esp+4);
+    profile_y[profile_draws]=FLOAT_AT(g_esp+8);
     snprintf(profile_labels[profile_draws],100,"%s",(char *)&WORD_AT(WORD_AT(g_esp+12)));
     ++profile_draws;g_esp+=4;
 }
@@ -799,6 +802,21 @@ int main(void)
     g_esp=0x1800;CHECK(!menu_mouse_profile_text(profile_draw)); /* disabled label */
     WORD_AT(item+0x28)&=~1u;cursor.left=0;run(m);tick+=101;
     cursor.left=1;run(m);CHECK(!early_action); /* stale profile footer */
+    /* The Delete hint and its hit area move together, without changing the
+       native call frame or the controller layout. */
+    strcpy((char *)&WORD_AT(0x6000),"\v3 Delete Profile");
+    cursor=(PcMenuPointer){0};profile_draws=0;
+    g_esp=0x1800;g_edi=m;g_esi=item;WORD_AT(g_esp)=0x763c3;
+    FLOAT_AT(g_esp+4)=320;FLOAT_AT(g_esp+8)=330;
+    WORD_AT(g_esp+12)=0x6000;WORD_AT(g_esp+16)=0x7f7f7f55;
+    CHECK(menu_mouse_profile_text(profile_draw));
+    CHECK(profile_draws==1 && profile_y[0]==336 && FLOAT_AT(0x1808)==330 && g_esp==0x1804);
+    MenuMouseProfilePrompt *deletion=&menu_mouse_profile[3];
+    CHECK(!menu_mouse_profile_contains(deletion,m,deletion->x+1,335,deletion->sw,deletion->sh));
+    CHECK(menu_mouse_profile_contains(deletion,m,deletion->x+1,336,deletion->sw,deletion->sh));
+    profile_keyboard=0;g_esp=0x1800;
+    CHECK(!menu_mouse_profile_text(profile_draw) && menu_mouse_profile[3].y==330);
+    profile_keyboard=1;
     cursor.left=0;run(m);WORD_AT(m+4)=0;cursor.left=1;run(m);CHECK(!early_action);
     CHECK(original_calls>10);
     audio_tests();
