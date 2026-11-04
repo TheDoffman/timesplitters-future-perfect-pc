@@ -1,0 +1,44 @@
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -1082,8 +1082,7 @@
+              * may Stop/reuse the buffer and discard those unheard samples.
+              * Explicit Stop/pause/reset clears fed; absent output keeps the
+              * existing wall-clock fallback rather than waiting on a device. */
+-            uint32_t queued = 0u;
+-            if (recomp_audio_output_position(slot_of(b), NULL, &queued) && queued)
++            if (recomp_audio_output_tail_pending(slot_of(b), !b->output_model.playing))
+                 status = 1u;
+         }
+     }
+--- a/src/hle/audio_output.h
++++ b/src/hle/audio_output.h
+@@ -68,6 +68,13 @@
+ int recomp_audio_output_position(uint32_t slot, uint64_t *played_bytes,
+                                  uint32_t *queued_buffers);
+ 
++/* Whether accepted PCM remains queued, without promising a device cursor.
++   finish signals no more input for this sound: adapters may release a held
++   resampling tail once. Do not set finish while more PCM remains to submit.
++   Returns 0 after drain, reset or unavailable output. Continuous stream/movie
++   clock selection still uses position() and is unaffected by this query. */
++int recomp_audio_output_tail_pending(uint32_t slot, int finish);
++
+ /* The slot's volume, now, for everything it has queued: a voice whose level
+    changes while it plays (a 3D sound moving) follows without waiting for its
+    next submission. 0 when there is no voice. */
+--- a/src/hle/audio_output_xaudio2.cpp
++++ b/src/hle/audio_output_xaudio2.cpp
+@@ -318,6 +318,13 @@
+         *played_bytes = static_cast<uint64_t>(state.SamplesPlayed) * block_align;
+     if (queued_buffers) *queued_buffers = state.BuffersQueued;
+     return 1;
++}
++
++extern "C" int recomp_audio_output_tail_pending(uint32_t slot, int finish)
++{
++    uint32_t queued = 0;
++    (void)finish; /* XAudio already consumes every accepted frame. */
++    return recomp_audio_output_position(slot, nullptr, &queued) && queued != 0;
+ }
+ 
+ static float gainOf(int32_t volume_hundredth_db)

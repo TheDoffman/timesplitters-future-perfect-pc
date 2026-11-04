@@ -65,7 +65,7 @@ lead from 40 to 90 ms and refill immediately after skipping stale hitch data.
 Explicit lead overrides stay fixed. Final buffer Release also reclaims host
 slots; XAudio/SDL expose lifetime failure-category counters in the periodic
 DSOUND health report and an idempotent normal-exit summary. Windows WM_QUIT
-runs registered cleanup, matching the SDL close path. See [contracts](audio-buffers.md).
+runs registered cleanup, matching the SDL close path. Tail drain: [contracts](audio-buffers.md).
 `audio_output.h` owns `RECOMP_AUDIO_DEFAULT_GAIN` (0.5, about -6 dB).
 XAudio applies it once to the master; SDL applies it once per stream. This
 quiets the output at 100% without changing saved Music/Sound sliders, their

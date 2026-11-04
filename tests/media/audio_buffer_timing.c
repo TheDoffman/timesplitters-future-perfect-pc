@@ -48,6 +48,12 @@ int recomp_audio_output_position(uint32_t slot, uint64_t *played, uint32_t *queu
     if (queued) *queued = fake_until[slot] > fake_now;
     return 1;
 }
+int recomp_audio_output_tail_pending(uint32_t slot, int finish)
+{
+    uint32_t queued = 0;
+    (void)finish;
+    return recomp_audio_output_position(slot, NULL, &queued) && queued;
+}
 void recomp_audio_output_set_ambience(uint32_t slot,int enabled) {}
 void recomp_audio_output_set_acoustics(uint32_t slot,float obstruction,float room) {}
 void recomp_audio_output_set_spatial(uint32_t slot,float pan,int enabled) { }
@@ -77,6 +83,62 @@ int xbox_adpcm_decode_block(const uint8_t *block, size_t bytes, unsigned channel
 #ifndef TSFP_INTEGRATED_AUDIO
 int main(int argc, char **argv)
 {
+    if (argc == 2 && !strcmp(argv[1], "completion")) {
+        Buffer *b = &g_buffers[0];
+        g_xbox_mem_offset = (ptrdiff_t)memory;
+        g_esp = 0x70000;
+        g_lead_ms = 40;
+        fake_device = 1;
+        uint64_t start = now_ms() - 100;
+        fake_now = start;
+        b->iface = 0x11020;
+        b->size = 9600;
+        b->data = 0x20000;
+        b->format = 1u | (1u << 16) | (16u << 24);
+        b->output = 1;
+        g_layout = 0;
+        accept = 1;
+        HLE_MEM32(b->iface) = 0x12000;
+        HLE_MEM32(b->iface - 0xCu) = 0x13000;
+        HLE_MEM32(0x12000 + SET_DATA) = b->data;
+        HLE_MEM32(0x12000 + SET_SIZE) = b->size;
+        HLE_MEM32(0x13000 + SET_FORMAT) = b->format;
+        memset(memory + b->data, 0x5A, b->size);
+        CHECK(recomp_dsound_buffer_configure(&b->model, b->size, 48000, 2, start) == 0);
+        CHECK(recomp_dsound_buffer_play(&b->model, 0, start) == 0);
+        b->output_model = b->model;
+        pump(b, fake_now);
+        CHECK(accepted_bytes == 3840);
+        fake_now += 60; /* initial 40ms queue ran dry for 20ms */
+        pump(b, fake_now);
+        CHECK(accepted_bytes == b->size && !b->output_model.playing);
+        fake_now = start + 100;
+        CHECK(fake_until[0] == fake_now + 20);
+        /* The actual pump queued every byte, but playback finishes 20ms
+         * after the guest clock. A status-driven Stop would cut that tail. */
+        HLE_ARG(0) = b->iface;
+        HLE_ARG(1) = 0x71000;
+        hle_IDirectSoundBuffer_GetStatus();
+        CHECK(HLE_MEM32(0x71000) == 1);
+        CHECK(!b->model.playing); /* do not alter the guest cursor clock */
+        fake_now += 20;
+        hle_IDirectSoundBuffer_GetStatus();
+        CHECK(HLE_MEM32(0x71000) == 0);
+        fake_until[0] = fake_now + 30;
+        b->fed = 0; /* explicit Stop/reset must never retain PLAYING */
+        hle_IDirectSoundBuffer_GetStatus();
+        CHECK(HLE_MEM32(0x71000) == 0);
+        b->fed = 1;
+        b->paused = 1;
+        hle_IDirectSoundBuffer_GetStatus();
+        CHECK(HLE_MEM32(0x71000) == 2);
+        b->paused = 0;
+        fake_device = 0; /* unavailable output retains clock fallback */
+        hle_IDirectSoundBuffer_GetStatus();
+        CHECK(HLE_MEM32(0x71000) == 0);
+        puts("PASS: completion waits for the audible tail, with stop/pause/device fallback");
+        return 0;
+    }
     if(argc==2 && !strcmp(argv[1],"acoustics")) {
         g_xbox_mem_offset=(ptrdiff_t)memory;g_esp=0x60000;
         g_ebx=11;g_esi=22;g_edi=33;g_xmm7.f[0]=44;g_fp_top=5;g_fp_stack[0]=66;
