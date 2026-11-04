@@ -243,3 +243,6 @@ README local split-screen instructions now distinguish Start-order joining,
 physical controller numbers versus player rows, shared Settings navigation with
 P1 retained, Automatic resolving a joined player’s device, and Apply validation.
 They identify this branch’s behavior as not yet published.
+
+The local-player sampler fixture uses external linkage for its reload stub to
+match pc_input.h on Clang as well as MSVC.

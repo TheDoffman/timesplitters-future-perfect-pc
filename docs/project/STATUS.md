@@ -1,3 +1,12 @@
+## 2026-11-04 - Local-player Settings integration validation
+
+Merged main ff643ed4 into the local-player branch. Windows supported Build and
+linked checks passed; launcher regression suite passed. Focused menu/FOV tests
+passed (9, two Mac-compiler skips). PR #484 Mac CI found only a test-stub
+linkage mismatch: pc_controls_reload_sample now matches the shared header.
+All 39 controller-profile tests pass locally after correction. Hosted native
+Mac rerun remains pending; physical shared-controller acceptance remains pending.
+
 ## Shared Settings control (local, uncommitted)
 
 Base 642372af. User clarified P1 must always retain control. Settings now accepts
