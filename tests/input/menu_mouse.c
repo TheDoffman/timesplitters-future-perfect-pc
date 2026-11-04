@@ -23,6 +23,7 @@ static PcMenuPointer cursor;
 static int active=1,mode,original_calls,selections;
 static uint32_t navigation;
 static void settings_tabs_footer(uint32_t menu) {(void)menu;}
+static void settings_tabs_footer_style(uint32_t menu,uint32_t sx,uint32_t sy,uint32_t colour) {(void)menu;(void)sx;(void)sy;(void)colour;}
 static int closed_pause,in_dispatch,changed_tab;
 static unsigned long long tick=1000;
 static unsigned long long GetTickCount64(void) {return tick;}

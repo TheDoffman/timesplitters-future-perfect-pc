@@ -1,7 +1,8 @@
 Settings section shortcuts (local feature/flat-settings-menu): shared
 pc_settings_navigation.inc adds native hover/transition sounds, physical arrow
 keys and LB/RB tab switching, with device-sensitive footer hints. Shared launcher
-SettingsPage explains the shortcuts. Existing common input/font/sound adapters
+SettingsPage explains the shortcuts. Footer hints reuse native Select/Back
+glyph scales and final gray/fade colour on both hosts. Common input/font/sound adapters
 serve both hosts; no new Mac adapter needed. Windows focused tests, launcher
 tests and main/pause keyboard visual review pass. Physical controller and native
 Mac acceptance remain pending (tap/hold/release, wrap, capture/modal exclusion,

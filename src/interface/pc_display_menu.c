@@ -13,6 +13,7 @@ static int controls_native_button(void (*original)(void));
 static int controls_font_menu(uint32_t menu);
 static int controls_tabs_visible(void);
 static void settings_tabs_footer(uint32_t menu);
+static void settings_tabs_footer_style(uint32_t menu,uint32_t sx,uint32_t sy,uint32_t colour);
 static int controls_tabs_poll(uint32_t menu);
 static void controls_tabs_flush(void);
 #include "pc_display_memory.h"

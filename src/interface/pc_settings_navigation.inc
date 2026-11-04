@@ -58,8 +58,16 @@ static void settings_tabs_hover(uint32_t menu,int hover,unsigned header)
     settings_hover_index=hover;settings_hover_focused=focused;
 }
 static void settings_tabs_hover_reset(void) {settings_hover_menu=0;settings_hover_index=-1;}
+static uint32_t settings_footer_menu,settings_footer_x,settings_footer_y,settings_footer_colour;
+static void settings_tabs_footer_style(uint32_t menu,uint32_t sx,uint32_t sy,uint32_t colour)
+{
+    if(!menu || settings_footer_menu!=menu) {
+        settings_footer_menu=menu;settings_footer_x=sx;settings_footer_y=sy;settings_footer_colour=colour;
+    }
+}
 static void settings_tabs_footer(uint32_t menu)
 {
+    if(settings_footer_menu!=menu)return;
     if(!((video_font_menu(menu) && page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) ||
          (controls_font_menu(menu) && controls_tabs_visible())))return;
     extern void sub_00041DC0(void),sub_0003FCF0(void),sub_0003F8D0(void);
@@ -69,12 +77,14 @@ static void settings_tabs_footer(uint32_t menu)
     GuestRegisters saved;save_registers(&saved);
     uint32_t sx=WORD_AT(0x7e7270),sy=WORD_AT(0x7e7280),align=WORD_AT(0x7e7260);
     int place=ui_placement;uint32_t tag=ui_tag;ui_place(2,0x1203fu);WORD_AT(0x7e7260)=0;
+    WORD_AT(0x7e7270)=settings_footer_x;WORD_AT(0x7e7280)=settings_footer_y;
+    guest_call(sub_0003F8D0,0);
     guest_call(sub_0003FCF0,4,scratch,scratch+4,scratch+8,0u);
-    float fit=pc_ui_caption_fit((float)WORD_AT(0x4e8cf0)-32.f,14.f,FLOAT_AT(scratch),FLOAT_AT(scratch+4));
+    float fit=fminf(1.f,((float)WORD_AT(0x4e8cf0)-32.f)/fmaxf(1.f,FLOAT_AT(scratch)));
     WORD_AT(0x7e7270)=bits(FLOAT_AT(0x7e7270)*fit);
     WORD_AT(0x7e7280)=bits(FLOAT_AT(0x7e7280)*fit);guest_call(sub_0003F8D0,0);
     guest_call(sub_0003FCF0,4,scratch,scratch+4,scratch+8,0u);
-    uint32_t colour=guest_call(sub_00154FE0,2,0x65707f7fu,WORD_AT(menu+0xf4));
+    uint32_t colour=settings_footer_colour;
     guest_call(sub_00041DC0,4,bits(((float)WORD_AT(0x4e8cf0)-FLOAT_AT(scratch))*.5f),
         bits((float)WORD_AT(0x4e8cf4)-26.f),scratch+8,colour);
     guest_call(sub_00022FF0,0);WORD_AT(0x7e7270)=sx;WORD_AT(0x7e7280)=sy;

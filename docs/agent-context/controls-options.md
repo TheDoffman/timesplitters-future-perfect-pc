@@ -5,7 +5,9 @@ Physical Left/Right arrows switch sections from any root setting; native A/D
 adjustment and header navigation remain. Controller Black/White C4/C8 masks
 0x200/0x400 correspond to LB/RB through the common adapter; held shortcuts
 latch across rebuilds and require release. Capture/list/modal pages are excluded.
-The second footer line inherits the native Select/Back footer font and switches
+The second footer line captures the native Select/Back glyph scales and final
+colour before hover tinting, matching its size, gray tint and fade. It inherits
+the footer font and switches
 between keyboard and controller hints without
 changing native Select/Back prompts. The launcher explains the same shortcuts.
 Hover entry uses native sound-table slot0, actual section changes slot8, through
