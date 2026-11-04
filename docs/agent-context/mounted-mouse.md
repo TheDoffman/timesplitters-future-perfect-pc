@@ -151,3 +151,30 @@ The registered test_mounted_mouse.py suite includes mech_mouse.c (60/120/180/
 host adapters, and optional original-XBE 37AA70/3797B0 execution. The old-route
 mutation must fail. The original-code fixture proves target survival, direction
 vector updates and controller inputs; it is not a live mission or Mac-input test.
+
+## Machine Wars final cockpit (scripted mode 0x100)
+
+Live Windows capture on 2026-11-04 identified player mode 0x100, callback
++157C = 21C900, camera+26C = 78CF40 and global owner 78D02C equal to the
+local player. This is distinct from the mode8000 Battle Mech above; scene+2AC
+was null. US 2206DC installs this scripted camera; D4CF0 calls its input
+callback, which updates yaw75C0FC and pitch75C100. 21C7B0 consumes those
+angles to build camera position/direction. Ordinary player yaw/pitch do not
+control this view.
+
+pc_mounted.h accepts only that callback for mode100, verifies the local owner,
+player/camera link and camera descriptor, then applies raw displacement once
+with sensitivity/FOV/inversion. Pitch clamps to signed +/-60 before wrapping;
+yaw wraps. Other scripted callbacks retain their existing route. Original
+controller, firing and encounter logic are unchanged. Tests cover 60/120/180/
+240, focus/capture/pause, ownership, invalid links and unrelated callbacks.
+The original-XBE fixture runs 21C7B0 and verifies the camera direction changes;
+its old-cockpit-route mutation must fail. Shared Windows/SDL input uses the
+same implementation; native Mac/Linux gameplay requires separate validation.
+
+The final scripted cockpit also maps held right mouse to secondary fire (the
+minigun: US 21C900 tests held bit 0x400; primary bit 0x800 fires the other weapon).
+Both host adapters apply the shared PcInput policy to keyboard magnitudes only.
+The cockpit context expires after 100 ms and requires its callback, descriptor,
+owner and local slot. Entering with RMB held requires release first. Focus,
+capture and menu gating prevent background fire; normal bindings stay intact.

@@ -55,6 +55,7 @@ void pc_controls_reload_sample(const unsigned char roles[256],int active,
     pthread_mutex_lock(&camera_lock);
     active=active && atomic_load(&focused) && captured && !atomic_load(&menu_active) && !text_input.owner;
     pc_reload_sample(&camera_input.reload,roles,active,SDL_GetTicks(),reload,fire,secondary);
+    pc_input_cockpit_fire(&camera_input,active,SDL_GetTicks(),secondary);
     pthread_mutex_unlock(&camera_lock);
 }
 /* Publish edges as well as held state: SDL may deliver down/up in one pump. */
