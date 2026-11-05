@@ -49,6 +49,13 @@ and open its keyboard with X. Click the game once if the desktop has left
 another window focused. Changing the game's mouse-capture setting does not
 change Steam's desktop controller layout.
 
+For a per-game Steam Input layout, add `TimeSplitters.Launcher` to Steam as a
+non-Steam game, enable Steam Input for that entry, select a Gamepad layout,
+and start the Steam entry instead of opening the file directly. Steam must
+recognize the running game to apply that layout; if the desktop layout remains
+active, use the Menu-button switch above. Launcher/child-process tracking still
+needs Steam Deck acceptance. Do not enable Proton for this native Linux build.
+
 Fullscreen in the launcher's settings is applied when the game starts.
 F11 toggles fullscreen during play for the current session. Both the shared
 SDL/Vulkan and legacy native GL renderers read the saved startup preference.

@@ -1,3 +1,42 @@
+## 2026-11-05 - Native fullscreen startup and Steam Deck Desktop controls
+
+User launches directly from Desktop Mode. Holding Menu to select Steam's
+Gamepad layout resolved both stick-as-mouse behavior and X opening Steam's
+keyboard, confirmed by the user. No game input policy or global Steam mapping
+was changed. A non-Steam launcher entry with a Gamepad layout is documented as
+the Steam-managed route; automatic launcher/child tracking needs Deck testing.
+
+The launcher already saved fullscreen, but native SDL window creation ignored
+it. Shared window_startup_sdl.h now reads the existing fullscreen setting and
+RECOMP_FULLSCREEN override for both Vulkan and legacy GL creation. Windows's
+existing adapter remains unchanged. This work depends on the local unmerged
+Wayland package fix at a5080220 and retains it in the candidate.
+
+Ubuntu24.04 x64/WSL: supported release-media build and x64 MMIO test passed;
+58 selected Python startup/package/ELF/SDK/media checks passed. Actual packaged
+startup from saved fullscreen=0/1 and full render/readback/depth/present and
+window transitions passed in minimal Ubuntu under Xvfb/Openbox. Settings,
+debug, input, Python/Tk/TLS and all40 launcher UI groups passed; Online retains
+its77 clean-root skip. Both saved modes also passed actual shared-renderer
+checks under headless Weston/software Vulkan without preload.
+
+The expanded tests initially exposed fixed64x64 pixel/depth assumptions and
+Wayland's deferred fullscreen acknowledgement. The self-test now waits for
+the initial request and uses a fresh disposable64x64 window for fixed-size
+fixtures, without changing the saved preference. The failed unpublished .2
+candidate was recycled; diagnostic logs were retained. Native Mac and physical
+Deck fullscreen checks remain pending; CPU/software-GPU tests are not those
+hardware checks. An ancillary Windows Python run had48passes/1POSIXskip and
+3SDK-fixture failures because C: had less than the existing5GiB setup guard;
+the corresponding Linux tests passed without changing that guard.
+
+Local candidate v0.5.2-linux-experimental.3: runtime and packaging source
+1f351352, unchanged launcher1.5.1. ZIP SHA256
+b11397a698237ad38450e80cf5cc82dbac1b0175bf3947168ff59e69ea915873.
+Fresh/upgrade install, corruption rejection and personal preservation passed.
+Verified delivery copy is on D: in TimeSplitters Test Builds due low C: space.
+No publication, main merge or native Mac acceptance is claimed.
+
 ## 2026-11-05 - Linux system Wayland package fix
 
 User's Steam Deck renderer log showed RADV failing to load with missing
