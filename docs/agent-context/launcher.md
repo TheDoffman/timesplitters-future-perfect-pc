@@ -61,9 +61,8 @@ The README's local SVG button links to the same invite. Validate with the
 Windows launcher build/tests and shared-layout translation checks; native Mac
 browser dispatch and visual acceptance still need a Mac host.
 
-Launcher 1.4.2 prepares the merged launcher updates since 1.4.1 for the next
-Stable release. The version bump changes only version identities;
-publication still requires both host checks and all ten verified launcher assets.
+Launcher 1.5.0 accompanies game 0.5.0. Publication requires Windows, Mac and Linux
+host checks and all fifteen assets, including the three README download aliases.
 Mac Online formula notices now use the existing flat `.txt` license layout;
 notice bytes and the installer's protected-file rules stay unchanged.
 
