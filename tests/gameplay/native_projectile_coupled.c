@@ -19,6 +19,7 @@ RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
 enum { SHOT=0x1000,TARGET=0x2000,FX=0x5000,STACK=0x30000 };
 static unsigned sweeps,scans,rng,fx_updates,allocated,retired,opened,seed;
 static unsigned lifecycle,hits,impacts,damage_calls,cleanups,quiet;
+static unsigned rocket,smoke;
 static float hit_plane,record_multiplier;
 static unsigned damage_records,power_calls;
 #undef RECOMP_ITAIL
@@ -32,6 +33,9 @@ static uint32_t gate(uint32_t site,uint32_t address,uint32_t value) {
 }
 #define RECOMP_LOAD_GLOBAL_U32(site,address,value) gate(site,address,value)
 void sub_00101660(void) {
+    if(rocket) {
+        assert(!allocated);g_eax=FX;allocated++;g_esp+=4;return;
+    }
     const unsigned ids[]={83,83,84,85};
     assert(allocated<4 && MEM32(g_esp+8)==ids[allocated]);
     assert(MEM32(g_esp+4)==SHOT+0xac+4*allocated);
@@ -42,7 +46,7 @@ void sub_000FF420(void) {
     const float sizes[]={45,40,37,35};
     uint32_t fx=MEM32(g_esp+4);
     assert(fx>=FX && fx<FX+1024 && (fx-FX)%256==0);
-    assert(MEMF(g_esp+8)==sizes[(fx-FX)/256]);g_esp+=4;
+    assert(rocket || MEMF(g_esp+8)==sizes[(fx-FX)/256]);g_esp+=4;
 }
 void sub_000FF490(void) {
     uint32_t fx=MEM32(g_esp+4),point=MEM32(g_esp+8);
@@ -78,7 +82,7 @@ void sub_000DC2B0(void) { assert(lifecycle && MEM32(g_esp+4)==SHOT && MEM32(g_es
 void sub_000DC4A0(void) { assert(lifecycle && MEM32(g_esp+4)==23);impacts++;memset((void *)((uintptr_t)0x6000+g_xbox_mem_offset),0,0x22c);g_eax=0x6000;g_esp+=4; }
 void sub_000DC5D0(void) { assert(!"Unexpected call sub_000DC5D0"); }
 void sub_0012A170(void) {
-    assert(lifecycle && hits==1 && MEM32(g_esp+8)==35);
+    assert(lifecycle && hits==1 && MEM32(g_esp+8)==(rocket?rocket:35));
     record_multiplier=MEMF(g_esp+12);damage_records++;g_esp+=4;
 }
 /* Original CRT adapter accepts base in ST(1), exponent in ST(0), and
@@ -93,13 +97,13 @@ void sub_000E2520(void) { assert(!"Unexpected call sub_000E2520"); }
 void sub_000E94E0(void) { assert(lifecycle && hits==1 && MEM32(g_esp+4)==SHOT && MEMF(MEM32(g_esp+12))==hit_plane);g_esp+=4; }
 void sub_000E9FE0(void) { assert(!"Unexpected call sub_000E9FE0"); }
 void sub_000EDD40(void) { assert(lifecycle && MEM32(g_esp+4)==0x6000);g_esp+=4; }
-void sub_000F85C0(void) { assert(!"Unexpected call sub_000F85C0"); }
-void sub_000FF3D0(void) { assert(!"Unexpected call sub_000FF3D0"); }
+void sub_000F85C0(void) { assert(rocket);smoke++;g_esp+=4; }
+void sub_000FF3D0(void) { assert(lifecycle && rocket);g_esp+=4; }
 void sub_00100260(void) { assert(lifecycle);g_eax=0;g_esp+=4; }
-void sub_00100AA0(void) { assert(!"Unexpected call sub_00100AA0"); }
-void sub_00105910(void) { assert(!"Unexpected call sub_00105910"); }
+void sub_00100AA0(void) { assert(lifecycle && rocket);g_eax=0;g_esp+=4; }
+void sub_00105910(void) { assert(rocket==39 && !allocated);g_eax=FX;allocated++;g_esp+=4; }
 void sub_00114AF0(void) { assert(!"Unexpected call sub_00114AF0"); }
-void sub_00153BD0(void) { assert(!"Unexpected call sub_00153BD0"); }
+void sub_00153BD0(void) { assert(rocket);rng++;g_fp_top=(g_fp_top-1)&7;g_fp_stack[g_fp_top]=.5;g_esp+=4; }
 void sub_001CDAE0(void) { assert(lifecycle);g_eax=1;g_esp+=4; }
 void sub_00238510(void) { assert(!"Unexpected call sub_00238510"); }
 void sub_000CFE40(void) { assert(!"Unexpected call sub_000CFE40"); }
@@ -116,6 +120,14 @@ void pc_native_kind35_rng(void)
 { pc_native_kind35_rng_guest(sub_00153B40,MEM32(g_esp),&g_eax,&g_esp); }
 void pc_native_kind35_target(void)
 { pc_native_kind35_target_guest(sub_000E1FA0,MEM32(g_esp+4)); }
+void pc_native_projectile_smoke_rng(void) {
+    if(!pc_native_projectile_skip_smoke()) { sub_00153BD0();return; }
+    g_fp_top=(g_fp_top-1)&7;g_fp_stack[g_fp_top]=.5;g_esp+=4;
+}
+void pc_native_projectile_smoke(void) {
+    if(!pc_native_projectile_skip_smoke()) { sub_000F85C0();return; }
+    g_esp+=4;
+}
 /* GENERATED_ROUTINES */
 static void call(void (*fn)(void)) {
     g_esp=STACK;MEM32(STACK)=0x12345678;MEM32(STACK+4)=SHOT;
@@ -165,22 +177,23 @@ static void run(unsigned fps,int native,float slow,unsigned homing,unsigned open
  * sound and damage boundaries are controlled spies. No full damage claim. */
 static float run_lifecycle(unsigned fps,float slow,unsigned hit) {
     memset((void *)((uintptr_t)SHOT+g_xbox_mem_offset),0,0x22c);
-    MEM32(SHOT)=35;MEMF(SHOT+0x64)=1;MEMF(SHOT+0x88)=240;
+    MEM32(SHOT)=rocket?rocket:35;MEMF(SHOT+0x64)=1;MEMF(SHOT+0x88)=240;
     MEM32(TARGET+0x20)=0;MEM32(TARGET+0x28)=0;
     sweeps=scans=rng=fx_updates=allocated=retired=0;seed=1;
     MEM32(SHOT+8)=UINT32_MAX; /* captured kind-35 damage profile */
     damage_records=power_calls=0;record_multiplier=-1;
     hits=impacts=damage_calls=cleanups=0;lifecycle=1;hit_plane=hit?100.f:0;
-    g_tsfp_native_timing_active=1;opened=0;call(sub_000E78F0);
+    g_tsfp_native_timing_active=1;opened=0;
+    if(!rocket)call(sub_000E78F0);else pc_kind35_clear(pc_kind35_slot(SHOT));
     double ticks=0;unsigned previous=0;float delta=60.f/fps*slow;
     for(unsigned i=0;i<fps*20/slow && !retired;i++) {
         ticks+=60.0/fps*slow;unsigned whole=(unsigned)(ticks+1e-6)-previous;previous+=whole;
         MEMF(SHOT+0x98)+=delta/60;MEM32(0x4e7944)=whole;MEMF(0x4e794c)=delta;
         call(sub_000F08D0);
     }
-    assert(retired==1 && impacts==1 && cleanups==4 && hits==hit && damage_calls==hit);
+    assert(retired==1 && impacts==1 && cleanups==allocated && hits==hit && damage_calls==hit);
     assert(MEM32(SHOT)==UINT32_MAX);
-    assert(damage_records==hit && power_calls==0);if(hit)assert(record_multiplier==0);
+    assert(damage_records==hit && power_calls==0);if(hit)assert(record_multiplier==((MEM32(0x4deb54+(rocket?rocket:35)*64)&4)?1.f:0.f));
     assert(!pc_kind35_context.cache);lifecycle=0;hit_plane=0;
     printf("projectile_lifecycle fps=%u slow=%.2f hit=%u age=%.6f impacts=%u damage=%u cleanup=%u\n",
            fps,slow,hit,MEMF(SHOT+0x98),impacts,damage_calls,cleanups);
@@ -246,6 +259,39 @@ static void missing_emitters(void) {
     for(unsigned j=0;j<2;j++)for(unsigned k=0;k<3;k++)
         assert(fabsf(before[j*3+k]-(MEMF(FX+(j+1)*256+0x20+k*4)-MEMF(SHOT+0x1c+k*4)))<.0001f);
 }
+static void noop(void) {}
+
+static void rocket_motion(unsigned kind,unsigned fps,float slow,unsigned homing,unsigned native) {
+    rocket=kind;
+    memset((void *)((uintptr_t)SHOT+g_xbox_mem_offset),0,0x22c);
+    memset((void *)((uintptr_t)FX+g_xbox_mem_offset),0,1024);
+    MEM32(SHOT)=kind;MEMF(SHOT+0x64)=1;MEMF(SHOT+0x88)=kind==42?1:240;
+    MEM32(SHOT+0xc)=homing?0x2000:0;
+    MEM32(SHOT+0x19c)=homing?TARGET:0;
+    MEMF(TARGET+0x64)=1000;MEMF(TARGET+0x68)=500;
+    sweeps=scans=rng=fx_updates=allocated=retired=smoke=0;seed=1;
+    g_tsfp_native_timing_active=native;opened=0;
+    pc_native_kind35_init_guest(noop,SHOT);
+    unsigned frames=(unsigned)(fps/slow),previous=0;
+    double ticks=0;float delta=60.f/fps*slow;
+    for(unsigned i=0;i<frames;i++) {
+        ticks+=60.0/fps*slow;unsigned whole=(unsigned)(ticks+1e-6)-previous;previous+=whole;
+        MEMF(SHOT+0x98)+=delta/60;MEM32(0x4e7944)=whole;MEMF(0x4e794c)=delta;
+        call(sub_000F08D0);
+        assert(!retired);
+        unsigned char saved[0x22c];memcpy(saved,(void *)((uintptr_t)SHOT+g_xbox_mem_offset),sizeof saved);
+        unsigned prior_rng=rng,prior_sweeps=sweeps,prior_smoke=smoke;
+        MEM32(0x4e7944)=native?1:0;MEMF(0x4e794c)=0;call(sub_000F08D0);
+        assert(!memcmp(saved,(void *)((uintptr_t)SHOT+g_xbox_mem_offset),sizeof saved));
+        assert(rng==prior_rng && sweeps==prior_sweeps && smoke==prior_smoke);
+    }
+    printf("rocket kind=%u fps=%u slow=%.2f homing=%u native=%u x=%.6f y=%.6f speed=%.6f scans=%u smoke=%u rng=%u sweeps=%u\n",
+        kind,fps,slow,homing,native,MEMF(SHOT+0x1c),MEMF(SHOT+0x20),MEMF(SHOT+0x88),scans,smoke,rng,sweeps);
+    assert(sweeps==frames);
+    if(kind==8 || kind==10 || kind==42)assert(smoke==60 && rng==180);
+    rocket=0;
+}
+
 int main(void) {
     unsigned char *memory=calloc(1,0x800000);assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
@@ -270,6 +316,15 @@ int main(void) {
         for(unsigned i=0;i<sizeof rates/sizeof rates[0];i++)for(unsigned slow=0;slow<2;slow++)
             assert(fabsf(run_lifecycle(rates[i],slow?.25f:1,hit)-base)<1.f/60+.0001f);
     }
+    const unsigned kinds[]={8,9,10,11,39,42},rates[]={60,120,144,180,240};
+    for(unsigned k=0;k<6;k++)for(unsigned r=0;r<5;r++)for(unsigned h=0;h<2;h++)
+        for(unsigned slow=0;slow<2;slow++)rocket_motion(kinds[k],rates[r],slow?.25f:1,h,1);
+    for(unsigned k=0;k<6;k++)for(unsigned h=0;h<2;h++)rocket_motion(kinds[k],60,1,h,0);
+    for(unsigned k=0;k<6;k++)for(unsigned hit=0;hit<2;hit++) {
+        rocket=kinds[k];float base=run_lifecycle(60,1,hit);
+        for(unsigned r=1;r<5;r++)assert(fabsf(run_lifecycle(rates[r],1,hit)-base)<1.f/60+.0001f);
+    }
+    rocket=0;
     missing_emitters();
     uneven_motion();
     damage_profile_controls();

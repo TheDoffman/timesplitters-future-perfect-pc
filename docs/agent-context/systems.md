@@ -1,4 +1,5 @@
-[Settings input/layout](controls-options.md).
+[Projectile timing](native-projectiles.md).
+[Input](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)
@@ -11,7 +12,7 @@ PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
 [Story/Online](systems-details.md).
 
-Mech/cockpit: [mouse routing](mounted-mouse.md).
+[Mech](mounted-mouse.md).
 
 Minigun: [policy](native-minigun.md).
 
