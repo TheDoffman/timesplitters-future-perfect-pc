@@ -24,7 +24,10 @@ Through ordinary menus, Custom 5 slot 1 was set to Minigun, bots disabled and
 a two-minute round selected. Normal mouse primary bursts consumed ammunition
 from 200 to 9; secondary spin was also exercised. Read-only observation found
 hand and linked weapon-state agreement (value 7). This run establishes actual
-weapon use rather than a synthetic buffer-only fixture.
+weapon use rather than a synthetic buffer-only fixture. The round then reached
+the first-place Results screen, which explicitly named Minigun as Favourite Gun.
+`logs/audio-live-observation/victory-results.bmp` preserves that end-of-round
+trigger; it does not establish audible victory-theme correctness.
 
 The existing diagnostics recorded 1,020 SetFrequency calls, 941 rate changes,
 605 changes while playing, and 1,995 voice resets at one burst checkpoint.
