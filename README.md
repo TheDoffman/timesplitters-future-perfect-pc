@@ -1,5 +1,7 @@
-<a href="https://discord.gg/hFkfcCUm56"><img align="right" src="docs/assets/discord-community.svg" alt="Join the TimeSplitters: Future Perfect Recomp Discord community" title="Join our Discord community" width="32" height="32"></a>
-<a href="https://ko-fi.com/thedoffman"><img align="right" src="docs/assets/ko-fi.png" alt="Support the project on Ko-fi" title="Support us on Ko-fi" width="40" height="32"></a>
+<p align="right">
+<a href="https://ko-fi.com/thedoffman"><img src="docs/assets/ko-fi.png" alt="Support the project on Ko-fi" title="Support us on Ko-fi" width="40" height="32"></a>
+<a href="https://discord.gg/hFkfcCUm56"><img src="docs/assets/discord-community.svg" alt="Join the TimeSplitters: Future Perfect Recomp Discord community" title="Join our Discord community" width="32" height="32"></a>
+</p>
 
 <div align="center">
 
