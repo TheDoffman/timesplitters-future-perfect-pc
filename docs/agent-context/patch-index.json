@@ -2259,9 +2259,9 @@
     {
       "name": "2605-native-projectile-families.patch",
       "path": "patches/gameplay/timing/2605-native-projectile-families.patch",
-      "sha256": "adc3b9ccb9b2bddab1336e44849a5017112816e13eaeb3b9108ab9b42672a733",
+      "sha256": "76ab592c3e90e04037c5d04964226309d69c09b6c3b1caf4652e7254a5bd7ade",
       "targets": [
-        "titles/futureperfect/src/recomp_manual.c\r"
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     },
     {

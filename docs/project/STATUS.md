@@ -23,7 +23,9 @@ policy ablations trigger behavioral failures (six flare, tank gate, vector drag)
 Fixtures execute original gravity and matrix helpers; scene/particle/sound
 boundaries are controlled. Existing rocket impact/expiry and slot/nesting checks
 remain. The complete native timing suite passed140 cases in149.57 seconds.
-Supported build, migrations and live candidate acceptance are in progress. No new live fix, Discord resolution or main merge
+Supported build, migrations and live candidate acceptance are in progress.
+The first CI selector caught a CRLF/LF mismatch in the new patch-index hash;
+the patch working copy and generated index now use the tracked LF bytes. No new live fix, Discord resolution or main merge
 is claimed from these fixture checks.
 
 ## 2026-11-05 - Shared MSAA regression declaration
