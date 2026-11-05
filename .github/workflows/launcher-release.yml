@@ -1,4 +1,4 @@
-name: Launcher release (Windows + Mac)
+name: Launcher release (Windows + Mac + Linux)
 
 on:
   push:
@@ -20,13 +20,13 @@ concurrency:
 
 jobs:
   build:
-    name: Validate both launchers
+    name: Validate all three launchers
     uses: ./.github/workflows/launcher-build.yml
     permissions:
       contents: read
 
   publish:
-    name: Publish both platform updates together
+    name: Publish all three platform updates together
     needs: build
     if: >-
       needs.build.outputs.publish == 'true' &&

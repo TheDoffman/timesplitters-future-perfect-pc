@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a relocatable Linux x64 preview from verified binaries, without game data."""
+"""Prepare a relocatable Linux x64 package from verified binaries, without game data."""
 import argparse
 import hashlib
 import json
@@ -24,6 +24,7 @@ import linux_ffmpeg
 from runtime_licenses import prepare as prepare_runtime_licenses
 from linux_dependency_sources import collect as collect_dependency_sources
 from release_channels import identity as release_identity
+from build_textures import optional_identity, write_source_files
 
 # These are the host ABI, not distributable application dependencies. Keep the
 # host GPU/GL/Vulkan drivers and loader selection; never ship a hardware ICD.
@@ -161,6 +162,8 @@ def verify_payload(stage,manifest):
     for source in audit.get('source_packages',{}).values():
         for name,sha in source['files'].items():
             if files.get(name)!=sha:raise ValueError('Incomplete corresponding sources')
+    if (manifest.get('textures') or {}).get('delivery')!='optional':
+        raise ValueError('Linux release requires the optional texture policy')
 
 def write_release_assets(manifest,archive_path):
     """Prepare reviewable upload assets; never create a tag or contact GitHub."""
@@ -168,7 +171,7 @@ def write_release_assets(manifest,archive_path):
     archive_path.with_suffix('.BUILD.json').write_text(json.dumps(manifest,indent=2)+'\n')
     channel=dict(manifest['release_channel'],source_commit=manifest['packaging_commit'],platforms=['linux-x64'])
     notes=('<!-- tsfp-release '+json.dumps(channel,separators=(',',':'))+' -->\n\n'
-        '# Linux x64 experimental preview\n\n'
+        '# Linux x64 experimental support\n\n'
         'Requires Ubuntu 24.04 / glibc 2.39 or newer, a desktop session and a working Vulkan driver. '
         'Extract into a writable folder and run `./Launch.sh`; import your supported US Xbox game files. '
         'Game data is not included. Start with Original 60 FPS.\n\n'
@@ -189,7 +192,6 @@ def main():
     if run('git','status','--porcelain'):parser.error('Commit source changes before preparing a release candidate')
     try:release=release_identity(args.version,publishing=True)
     except ValueError as error:parser.error(str(error))
-    if release['channel']=='stable':parser.error('Linux experimental packages require a named preview channel, e.g. v0.4.2-linux-experimental.1')
     if not shutil.which('patchelf'):parser.error('Install patchelf on the build host')
     build=ROOT/'build/linux/game';native=json.loads((build/'BUILD.json').read_text());executable=build/'futureperfect_recomp'
     if digest(executable)!=native['executable_sha256']:parser.error('Native executable differs from BUILD.json')
@@ -273,12 +275,12 @@ def main():
     (notices/'dependencies.json').write_text(json.dumps(audit['components'],indent=2)+'\n')
     source=stage/'Source/pc-port-source.zip';source.parent.mkdir(exist_ok=True)
     with zipfile.ZipFile(source,'x',zipfile.ZIP_DEFLATED) as archive:
-        for file in run('git','ls-files','-z').split('\0'):
-            if file and (ROOT/file).is_file():archive.write(ROOT/file,file)
+        write_source_files(archive,ROOT,run('git','ls-files','-z').split('\0'))
     (stage/'Launch.sh').write_text((ROOT/'tools/release/linux-launch.sh').read_text());(stage/'Launch.sh').chmod(0o755)
-    (stage/'README.txt').write_text('Linux x64 experimental preview. Extract into a writable folder and run ./Launch.sh.\nImport your supported US Xbox files using the launcher. Game data is not included.\nRequires a Vulkan-capable system driver and the build host glibc baseline (Ubuntu24.04).\nNo development checkout, system Python or Vulkan SDK is needed.\nFor a read-only game installation use ./Launch.sh --game --data /path/to/game.\nSource, runtime notices and exact build provenance are included. This local preview is not a published release.\n')
+    (stage/'README.txt').write_text('Linux x64 experimental support. Extract into a writable folder and run ./Launch.sh.\nImport your supported US Xbox files using the launcher. Game data is not included.\nRequires a Vulkan-capable system driver and the build host glibc baseline (Ubuntu24.04).\nNo development checkout, system Python or Vulkan SDK is needed.\nFor a read-only game installation use ./Launch.sh --game --data /path/to/game.\nSource, runtime notices and exact build provenance are included. Native desktop and Steam Deck acceptance remain pending.\n')
     public_native={k:v for k,v in native.items() if k not in ('game_directory','configure_command','runtime_libraries','working_tree_changes')}
     manifest=dict(version=args.version,platform='linux-x64',renderer='vulkan',release_channel=release,source_commit=native['source_revision'],packaging_commit=run('git','rev-parse','HEAD'),
+        launcher_version=launcher_manifest['version'],textures=optional_identity(ROOT) or dict(delivery='optional'),
         minimum_glibc=run('getconf','GNU_LIBC_VERSION').split()[-1],native_build=public_native,python=python,
         runtime_libraries=audit['components'],media=media_receipt['pin'],files={p.relative_to(stage).as_posix():digest(p) for p in stage.rglob('*') if p.is_file()})
     (stage/'BUILD.json').write_text(json.dumps(manifest,indent=2)+'\n');verify_payload(stage,manifest)

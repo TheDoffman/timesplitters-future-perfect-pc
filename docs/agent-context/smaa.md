@@ -1,5 +1,13 @@
 # SMAA implementation and validation
 
+Patch2595 runs after grouped/native target migrations and configures xbox_config
+with the active TSFP_SHARED_SOURCE before the
+legacy dependency-relative include path. Reused Mac/other-host runtime trees
+must not read a different checkout's SMAA settings header. The CMake regression
+compiles real settings against a relocated source, with a stale-header negative
+control, for both native and Windows source routes in test_smaa.py. It resolves
+CMake/Ninja from their pinned Python packages, including non-venv CI installs.
+
 Additive `graphics/rendering/2470-smaa-antialiasing.patch` runs after the final
 timing/config migrations. It wraps `d3d8_display_resolve` around the existing box
 resolve, then the shared `src/graphics/pc_smaa.inc` RHI passes. `smaa` defaults

@@ -5,7 +5,7 @@
 [Back to the README](../../README.md) | [Launcher releases](launcher-releases.md)
 
 Game and launcher versions are independent. The next Stable game source version
-is **0.4.2**, including the System Link activation hotfix and changes merged since `0.4.1`. This source change does not
+is **0.5.0**, including the Linux package and changes merged since `0.4.2`. This source change does not
 publish a release or establish full campaign/platform validation. Historical
 alpha and `-preview.N` releases remain available in Game versions; do not
 relabel their assets or offer them as Beta updates.
@@ -90,6 +90,16 @@ This appears as **Preview -> Beta**. Repeat the same branch argument without
 name is fixed; `-ChannelName` customizes named feature tracks only.
 
 ## Build, inspect and publish
+
+Game 0.5.0 includes a Linux x64 package on Stable, with experimental platform
+support. Build it from the same clean source with `--release-media` and use
+`tools/release/package-native-linux.py --version v0.5.0` after the native and
+launcher checks. Retain its dependency source audit, actual launcher minimum and
+optional-texture policy. Verify the clean-userspace package and isolated gameplay
+checks in [Linux acceptance](../development/linux-acceptance.md); publish the
+remaining native desktop GPU/Wayland/controller/Steam Deck gaps explicitly.
+Attach the verified Linux ZIP, checksum and BUILD receipt alongside Windows/Mac,
+then verify all nine assets and combined platform metadata before publishing.
 
 The complete regression suite uses up to four workers and reuses successful
 compiler environment setup. No cases are omitted. Use `-TestWorkers 1` for a

@@ -255,6 +255,11 @@ def patch_records(paths):
         if linux:
             paths.remove(linux)
             paths.append(linux)
+    # Settings must use the active source after grouped/native target migrations.
+    config_source = by_name.get('2595-config-source-worktree.patch')
+    if config_source:
+        paths.remove(config_source)
+        paths.append(config_source)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

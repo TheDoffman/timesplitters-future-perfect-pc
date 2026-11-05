@@ -14,7 +14,8 @@ flag and a positive --split; header/single-function/category-list/HLE-refresh
 modes reject that combination before writing output. Existing normal function
 generation is unchanged. HLE-only refresh does not remove continuation files.
 
-continuation_output.py stages recomp_context_NNNN.c chunks (100 functions each),
+continuation_output.py stages recomp_context_NNNN.c chunks (at most100 functions
+and512KiB of body text, with an oversized function isolated intact),
 recomp_context_dispatch.c, two original context headers and a manifest in the
 selected generated directory. Production location is the maintained runtime
 title's src/recomp/gen directory; CONFIGURE_DEPENDS already selects its C files.
@@ -65,6 +66,9 @@ exercises real CLI generation and separately compiled chunks in both actual GPR
 reference modes, idempotence, generation failure preservation, stale cleanup and
 manual/kept selection. test_recomp_generation.py rejects partial/modified output
 receipts and unsafe manifest identities. These join both-host runtime CI.
+The compiled CLI fixture also forces byte splitting and verifies identical body
+bytes, exact-PC dispatch and execution in both GPR modes. This bounds MSVC heap
+use for large SIMD groups without changing optimization flags or decoded code.
 Initial95 focused checks pass17.44s on Windows; full title generation/build/game
 results belong in STATUS. Neither native Mac title execution nor production
 continuation execution is established by those synthetic checks.

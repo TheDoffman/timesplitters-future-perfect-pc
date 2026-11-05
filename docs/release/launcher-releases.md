@@ -1,12 +1,12 @@
-# One launcher release for Windows and Mac
+# One launcher release for Windows, Mac and Linux
 
-The next Stable launcher source version is **1.4.2**, including the merged
-community links, language selection and Story Co-op track updates. The source bump does not
-publish either platform; the workflow below must pass before release.
+The next Stable launcher source version is **1.5.0**, including Linux x64 and
+the merged shared settings updates. Source preparation does not publish packages;
+the workflow below must pass before release.
 
-The **Launcher release (Windows + Mac)** workflow builds the Windows x64 launcher
-and native Apple Silicon Mac app from the same source revision and shared version.
-It publishes both packages in one GitHub release only after both hosts pass their
+The **Launcher release (Windows + Mac + Linux)** workflow builds Windows x64,
+Apple Silicon Mac and Linux x64 launchers from the same source revision and shared version.
+It publishes all three packages in one GitHub release only after all three hosts pass their
 launcher regressions and package checks. Each installed launcher selects its own
 platform's update manifest. Game releases remain independent. [Game Stable and named preview channels](releasing.md) do not control launcher self-updates. Publish stable launcher 1.3.0+ before publishing games using the new channel strategy.
 
@@ -16,9 +16,9 @@ platform's update manifest. Game releases remain independent. [Game Stable and n
    assembly/file attributes, to a new unused version. Keep the attributes numeric
    (`X.Y.Z.0`); a preview may use `X.Y.Z-beta.1` for `Value`.
 2. Merge that change and the desired launcher updates into `main` through a PR.
-3. In **Actions → Launcher release (Windows + Mac) → Run workflow**, select `main`,
+3. In **Actions → Launcher release (Windows + Mac + Linux) → Run workflow**, select `main`,
    enable **publish**, and run it once. The workflow creates `launcher-vX.Y.Z` at
-   the tested commit and publishes both packages. There is no second Mac release
+   the tested commit and publishes all three packages. There is no separate native release
    step and no locally installed SDK or artwork needed on the maintainer's device.
 
 Alternatively, push a `launcher-vX.Y.Z` tag on the merged commit. Its version must
@@ -29,7 +29,7 @@ access; no personal access token is needed.
 
 Leave **publish** off for a build/test run with downloadable Actions artifacts.
 Relevant launcher PRs run this validation automatically, with no publication
-credentials. Windows is built first so both hosts receive the same original
+credentials. Windows is built first so all three hosts receive the same original
 artwork and newly generated shared icon. Mac uses the pinned SDK and locked NuGet
 dependencies. Source artwork remains ignored; `config/build/launcher-artwork.json` pins
 the archive and three embedded PNG checksums from the existing Windows release.
@@ -39,10 +39,11 @@ requires updating those shared pins after the new assets are available.
 ## Published assets and failure handling
 
 New releases contain one versioned ZIP and one direct-download alias per platform,
-two SHA-256 sidecars, two build receipts and two update manifests (ten assets):
+three SHA-256 sidecars, three build receipts and three update manifests (fifteen assets):
 
 - Windows: `launcher-update.json`, selecting `windows-x64`.
 - Mac: `launcher-update-macos-arm64.json`, selecting `macos-arm64`.
+- Linux: `launcher-update-linux-x64.json`, selecting `linux-x64`.
 
 The workflow verifies internal manifests, archive hashes, permissions, source
 receipts and uploaded GitHub digests before publishing. Failed builds leave no
@@ -50,7 +51,8 @@ release; failed uploads leave a draft that can be resumed. Published assets and
 tags are immutable: fixes require a new version.
 
 Stable launcher releases become **Latest**. README buttons download the matching
-`TimeSplitters-Launcher-windows-x64.zip` or `TimeSplitters-Launcher-macos-arm64.zip`
+`TimeSplitters-Launcher-windows-x64.zip`, `TimeSplitters-Launcher-macos-arm64.zip`
+or `TimeSplitters-Launcher-linux-x64.zip`
 through GitHub's `/releases/latest/download/` route. A separate link opens release
 notes and checksums. Previews do not replace Latest.
 Versioned ZIP names and update manifests retain their existing format, so
@@ -58,7 +60,7 @@ installed launchers can still discover, verify and repair their matching package
 Aliases are uploaded from the verified versioned ZIP paths without creating
 local copies. Stale aliases in build folders are ignored. Both public ZIP names
 have identical bytes and SHA-256 digests; the versioned checksum sidecars also
-verify the aliases. All ten assets must verify before a draft becomes public.
+verify the aliases. All fifteen assets must verify before a draft becomes public.
 
 Publication explicitly refreshes the issue-form version workflow because releases
 created using `GITHUB_TOKEN` do not trigger its release event.
