@@ -41,6 +41,7 @@ static RhiShader *shader(uint32_t stage,const char *text,const char *profile) {
 #include "msaa_shared_depth.h"
 #include "ssao_pass.h"
 #include "rhi_screen_copy.h"
+#include "msaa_scaled_target.h"
 #include "rhi_state_cache.h"
 #include "rhi_compatibility.h"
 #ifdef RHI_VULKAN_SDL
@@ -170,6 +171,7 @@ int main(void) {
     test_msaa_color_surface();
     test_msaa_targets();
     test_msaa_shared_depth();
+    test_msaa_scaled_target();
     rhi_device_destroy();
 #ifdef RHI_VULKAN_SDL
     SDL_DestroyWindow(window);SDL_Quit();
