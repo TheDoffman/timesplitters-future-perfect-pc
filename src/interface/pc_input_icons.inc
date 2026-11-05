@@ -21,7 +21,15 @@ static void input_icon_paint(const PcKeycapCap *cap)
     /* The supplied PNGs include transparent margins; compensate so their
      * visible key faces remain legible beside the game's original lettering. */
     /* The profile picker reserves a shorter, fixed two-line clip. */
-    float h=(cap->b-cap->y)*(menu_mouse_profile_icons?1.2f:1.5f);
+    float h=(cap->b-cap->y)*(cap->controller?1.15f:menu_mouse_profile_icons?1.f:1.15f);
+#ifdef TSFP_INPUT_ICON_METRICS
+    /* Wide key faces (Space, Shift, Enter) use the label's existing advance
+     * rather than shrinking their lettering into a single square-key width. */
+    if(!cap->controller) {
+        float scale=input_icons[cap->icon*2+!!cap->pressed].scale;
+        h=fminf(h*scale,fmaxf(h,(float)(cap->r-cap->x)+4.f));
+    }
+#endif
     float x=(cap->x+cap->r-h)*.5f,y=(cap->y+cap->b-h)*.5f;
     input_icon_image(input_icons[cap->icon*2+!!cap->pressed],x,y,h,h,cap->colour);
 }

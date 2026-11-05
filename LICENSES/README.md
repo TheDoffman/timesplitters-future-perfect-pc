@@ -24,8 +24,8 @@ Existing notices in source files and patches must also be preserved.
 
 ## Other dependencies and artwork
 
-- Keyboard/mouse prompt images are Rendrify's PC Keyboard & Mouse Icon Pack,
-  under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- Keyboard/mouse and controller prompt images are Julio Cacko's FREE Input
+  Prompts Pack 1.4, under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
   [Attribution and modifications](../assets/ui/input-icons/ATTRIBUTION.md)
   accompany the generated native UI data; public game packages retain the full
   credit as `Licenses/Keyboard-mouse-icons.txt`. Root NOTICE also credits it.

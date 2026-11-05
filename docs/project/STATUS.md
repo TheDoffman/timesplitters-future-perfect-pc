@@ -1,3 +1,57 @@
+## 2026-11-05 - Julio keyboard and controller prompt artwork
+
+Local feature/julio-input-prompts, based on main772a38df: replaced the previous
+Rendrify spans with Julio Cacko FREE Input Prompts Pack1.4 under CC0. Shared
+source now supplies83 keyboard/mouse images and25 native controller tokens.
+Controller prompts retain the game's Xbox logical labels; automatic family
+selection is unchanged. Unmapped keys, composites and unknown native tokens
+retain their existing fallback. Private PNGs are hashed in the public manifest;
+reimport reproduces the generated include byte-for-byte without build-time art
+downloads. Packaging retains the complete updated credit through its existing
+Keyboard-mouse-icons.txt route on Windows, Mac and Linux.
+
+The actual native icon texture bank distinguishes digit and letter indices,
+including after clipped or wrapped text. Original text advances, actions,
+keyboard remapping, color/fade and profile baselines remain authoritative.
+Wide keyboard faces use alpha-derived height compensation bounded by the
+existing label advance. Settings bumper hints use native Black/White tokens.
+
+Validation on Windows x64, MSVC19.44.35207, SDK10.0.26100, common Xbox/D3D11
+frontend, supported US XBE3cfd001a…a41816bc:
+
+- 27 focused input/menu/import fixtures passed;2 native Mac compile contracts
+ skipped on Windows. Includes separate VK/controller banks, native atlas/token
+ decoding, idle/pressed fallback, native tint/alpha, wide-key sizing, profile
+ scopes and existing settings interactions. Deterministic reimport passed.
+- Full Generate completed15838/15863 functions,0 failed (6.6M lines). The
+ supported Windows Build and linked build checks passed, with matching crash
+ symbols. Initial unbounded /MP exhausted memory; limiting workers still hit
+ the known large-SSE optimizer failure. The successful local build used /MP6
+ and the existing seven /Od /Ob0 exceptions: regular0011 and context0752-0756,
+ 0774, imported through ignored logs/msvc-local.props. Other units retain/O2.
+ This is validation with a local compiler workaround, not default-flags Release
+ acceptance. Exe SHA256:
+ `261f09ed6fd70d30dd64b21e96ce53cc6c80874088b7ad46aeb2009632ecebea`.
+- An initial isolated UI relink reused byte-identical non-UI source objects for
+ early review. Final profile/main/pause evidence was repeated on the complete
+ supported build. A disposable Test Lab profile reached a Deathmatch game and
+ pause Controls/Keyboard/Menu actions. Profile footer, main and pause footers,
+ arrow/Adjust hints and binding prompts were reviewed at640x480. Wide Space,
+ Escape and Tab icons were visible. This is menu/entry evidence, not a campaign,
+ movement/firing or broad-resolution acceptance pass. Early timed replays
+ accidentally entered profile naming; corrected startup timing selected Test Lab.
+ The screenshot worker's rotating-file race was fixed locally; game code was
+ unchanged by that harness correction.
+- No XInput pad was connected. Controller art/mappings are covered by native
+ glyph fixtures; physical controller and hotplug visual acceptance remain open.
+ Native Mac/Linux builds and visual acceptance remain pending in the backlog.
+
+A private playable preview launcher uses its own retained Test Lab profile and
+settings. Existing game sessions, personal saves/settings, other checkout edits
+and source artwork remain separate. No PR, push, merge or publication is claimed.
+Selected screenshots, build logs, a private build receipt and bounded replay
+records remain local under logs/private.
+
 ## 2026-11-05 - Projectile flight timing verified on Windows
 
 Shared patch2605 and numeric/projectile policy repair the remaining affected

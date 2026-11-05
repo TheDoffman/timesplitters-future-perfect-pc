@@ -8,21 +8,38 @@ Absent icon data or unmapped keys retain the original keycap renderer. Input
 lookup uses cached localized key names; held states require both raw and focused
 input. Imported images use square placement, native RGB tint/fade and the unclipped
 solid-quad emitter; original text advances remain authoritative.
-Rendrify's CC BY4.0 artwork supplies107 physical inputs plus generic Mouse;
-Escape/Space/side buttons and composites retain outlined fallbacks. Manifest
-slot0 is generic Mouse only, never Unbound. Source PNGs stay private; the importer
-accepts `--source-dir`, verifies manifest SHA-256 and deduplicates shared images.
-Attribution/modifications are in `assets/ui/input-icons/ATTRIBUTION.md` and NOTICE.
+Julio Cacko's CC0 1.4 pack supplies dark keyboard/mouse and default Xbox-style
+controller art. The manifest has separate `keys` (VK) and `controller` (native
+ASCII token) banks; equal numbers never alias the two namespaces. Compiled images
+are shared between banks/states when source paths match. Missing keys/composites
+and unsupported controller tokens retain native fallback. There is no new
+controller-family detection. Slot0 is generic Mouse, never Unbound; F23/F24
+are the binding model's wheel pseudo-keys. The author's duplicate3 filename
+ending -1 is its4 key. Source PNGs stay private; --source-dir verifies hashes.
+Native40FA0 supplies state+40 icon markers and state+38 zero-based digit/letter
+indices. The glyph texture handle at state+3C identifies digit icons through table7E72A0;
+atlas letter indices resolve independently, so clipped earlier tokens cannot
+shift the selected image. This preserves
+measurement, native advances, binding actions and layout. B/A/Y/X, LB/RB, Start,
+triggers, sticks and directional tokens use the controller lookup. Unknown/null
+icons retain their original callbacks. The settings footer now emits native
+Black/White tokens instead of literal [LB]/[RB]. Both hosts use the same wrapper.
+Import-time alpha bounds provide a capped face-height scale for wide keyboard
+keys such as Space/Shift/Enter; the native label advance bounds their width.
+Dark PNG margins require1.15 glyph-height scaling, compact1.0 for the profile
+keyboard footer. Native controller bounds use1.15. No separate pressed art is
+provided, so idle images are reused. Credits and modifications are in
+`assets/ui/input-icons/ATTRIBUTION.md` and NOTICE.
 Windows release/playable, native Mac and Linux packagers retain the complete credit
 as `Licenses/Keyboard-mouse-icons.txt`.
 The Linux payload verifier requires that notice; its shared icon renderer needs
 no additional Linux adapter. Linux game visual acceptance is still pending.
 The compiled span include ships in source; builds need no artwork download.
 The profile picker has a fixed two-line text clip. `menu_mouse_profile_text`
-scopes compact imported key faces (1.2 instead of1.5 glyph-height multiplier),
+scopes compact imported key faces (1.0 instead of1.15 glyph-height multiplier),
 keeps Select/Back at native Y and moves Delete only2 layout pixels down. Normal/
 hover draws and cached hit regions use the same baselines; the icon scope and
-stack argument are restored. Controller layout remains native. Fixtures cover
+stack argument are restored. Controller text layout remains native; its icon images use the same glyph bounds. Fixtures cover
 compact image bounds, shifted hit regions, stack restoration and scope lifetime.
 Tests use synthetic image data, covering lossless packing, path bounds, duplicate
 keys, pressed/idle selection and original mouse/controller fallback; CI runs both
@@ -33,7 +50,7 @@ translated40FA0 draw and wraps its native40260 glyph callback, also routing
 alternate402D0 callbacks through the shared menu lookup. The renderer replaces
 recognized key-label brackets with rounded borders at actual glyph
 positions; native text measurement/advances, font, grey tint, fades, clipping and
-HUD placement remain authoritative. Controller glyphs and ordinary bracketed
+HUD placement remain authoritative. Unmapped controller glyphs and ordinary bracketed
 text are retained. Mouse/wheel names use softer corners. Key vocabulary caches
 all256 localized names, plus composite controls, without caching assignments.
 Left/Right labels compact to visual arrow markers during both measurement and
@@ -229,7 +246,7 @@ menu_settings_input_owner checks that root or its bounded descriptor history
 remain unchanged. Returning to main removes Settings from history, restoring
 normal P1 input even if the selected-profile value remains stale. Pause, gameplay
 and unrelated frontend menus are excluded. P1 retains mouse, text input, queued tab clicks and keyboard section shortcuts
-while a secondary player is selected; that player’s native controller shoulders
+while a secondary player is selected; that playerâ€™s native controller shoulders
 also switch sections. Selection chooses the edited profile, not exclusive control. menu_mouse.c
 covers P2/P3/P4, nonidentity controller mapping, submenu history, return to main,
 invalid selection and gameplay exclusion. Physical controller acceptance remains
@@ -241,8 +258,8 @@ alongside P2 controller shoulders. Outside Settings, native P1-only control rema
 
 README local split-screen instructions now distinguish Start-order joining,
 physical controller numbers versus player rows, shared Settings navigation with
-P1 retained, Automatic resolving a joined player’s device, and Apply validation.
-They identify this branch’s behavior as not yet published.
+P1 retained, Automatic resolving a joined playerâ€™s device, and Apply validation.
+They identify this branchâ€™s behavior as not yet published.
 
 The local-player sampler fixture uses external linkage for its reload stub to
 match pc_input.h on Clang as well as MSVC.

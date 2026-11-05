@@ -30,12 +30,13 @@ def rectangles(image):
 def compile_pack(manifest, output, source_dir=None):
     config = json.loads(manifest.read_text(encoding='utf-8'))
     source_dir = (source_dir or manifest.parent).resolve()
-    shapes = []; icons = []; lookup = [-1]*256; images = {}
-    for entry in config['keys']:
-        key = entry['key']
-        if not isinstance(key,int) or not 0<=key<256 or lookup[key]>=0:
+    shapes = []; icons = []; lookup = [-1]*256; controller_lookup = [-1]*256; images = {}
+    for entry in config['keys'] + config.get('controller', []):
+        target = controller_lookup if 'token' in entry else lookup
+        key = entry.get('token', entry.get('key'))
+        if not isinstance(key,int) or not 0<=key<256 or target[key]>=0:
             raise ValueError('Invalid or duplicated virtual key')
-        lookup[key]=len(icons)//2
+        target[key]=len(icons)//2
         for state in ('idle','pressed'):
             relative=entry.get(state,entry['idle'])
             image_path=(source_dir/relative).resolve()
@@ -48,21 +49,27 @@ def compile_pack(manifest, output, source_dir=None):
             with Image.open(image_path) as source:
                 if source.size!=(128,128):
                     raise ValueError('Expected 128px square source icons')
-                image=source.convert('RGBA').resize((32,32),Image.Resampling.LANCZOS)
-            data=rectangles(image);image_range=(len(shapes),len(data))
+                rgba=source.convert('RGBA')
+                bounds=rgba.getchannel('A').point(lambda a:255 if a>=64 else 0).getbbox()
+                scale=min(2.,max(1.,104./(bounds[3]-bounds[1]))) if bounds else 1.
+                image=rgba.resize((32,32),Image.Resampling.LANCZOS)
+            data=rectangles(image);image_range=(len(shapes),len(data),scale)
             images[image_path]=image_range;icons.append(image_range);shapes.extend(data)
     if not icons: raise ValueError('No icons in manifest')
-    text=['/* Rendrify PC Keyboard & Mouse Icon Pack, CC BY 4.0.',
+    text=['/* Input artwork: see assets/ui/input-icons/ATTRIBUTION.md.',
           ' * Generated from assets/ui/input-icons/manifest.json.',
           ' * Attribution and modifications: assets/ui/input-icons/ATTRIBUTION.md. */',
           '#define TSFP_INPUT_ICONS 1',
           'typedef struct PcInputIconSpan { unsigned char x,y,w,h,r,g,b,a; } PcInputIconSpan;',
           'static const PcInputIconSpan input_icon_spans[]={']
     text += ['{'+','.join(map(str,shape))+'},' for shape in shapes]
-    text += ['};','typedef struct PcInputIconImage { unsigned first,count; } PcInputIconImage;',
+    text += ['};','typedef struct PcInputIconImage { unsigned first,count; float scale; } PcInputIconImage;',
              'static const PcInputIconImage input_icons[]={']
-    text += ['{%d,%d},'%image for image in icons]
-    text += ['};','static const short input_icon_lookup[256]={',','.join(map(str,lookup)),'};','']
+    text += ['{%d,%d,%.6ff},'%image for image in icons]
+    text += ['};','static const short input_icon_lookup[256]={',','.join(map(str,lookup)),'};',
+             '#define TSFP_INPUT_ICON_METRICS 1',
+             '#define TSFP_CONTROLLER_ICONS 1',
+             'static const short input_controller_lookup[256]={',','.join(map(str,controller_lookup)),'};','']
     output.parent.mkdir(parents=True,exist_ok=True)
     output.write_text('\n'.join(text),encoding='utf-8',newline='\n')
     return len(shapes)
