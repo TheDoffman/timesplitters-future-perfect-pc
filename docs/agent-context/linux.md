@@ -64,3 +64,5 @@ Native game source builds and isolated first-level gameplay now execute locally
 on Ubuntu/WSL. The same CI host suite also exercises real POSIX crash/helper and
 guest-pointer protection boundaries; OpenSSL development headers are required.
 See STATUS for exact revision, software driver, input scope and remaining gaps.
+
+Linux launcher icon and destination-volume checks are covered in LinuxTests and the shared launcher UI suite. NativeApplication assigns the embedded existing ICO to launcher windows; Linux release artwork validation requires it. Icons on arbitrary ELF files in file managers and desktop shortcut installation are separate from the running-window icon. Steam Deck hardware acceptance remains unverified.

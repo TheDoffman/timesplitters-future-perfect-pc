@@ -9826,3 +9826,5 @@ Complete-HLE/complete-adapter regression tests cover both hosts' adapters via
 host doubles; the SDL case fails without2306. Physical native Mac gameplay and
 listening remain pending. Windows FPS limits/residual underruns are in STATUS;
 release publication is pending. This does not change the Enhanced Audio beta.
+
+Linux launcher icon/storage follow-up (fix/linux-launcher-icon, uncommitted): Linux windows use the existing embedded launcher icon; Mac bundle icon handling is unchanged. Shared destination-volume free-space checks replace filesystem-root checks in install/import and diagnostics. Native failure dialogs now also show on Home. Windows/Linux validation is recorded in STATUS; native Mac regression and physical Steam Deck acceptance remain pending.
