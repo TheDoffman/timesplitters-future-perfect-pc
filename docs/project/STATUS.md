@@ -1,3 +1,12 @@
+## 2026-11-05 - Shared MSAA regression declaration
+
+PR495 Linux CI exposed a Windows-only declaration guard on the already-shared
+xbox_D3D8PrepareSharedDepthTarget implementation. Patch2600 now exposes that
+prototype on every RHI host. It applies after temporal-map/header migrations;
+historical pre-MSAA seeds omit this dependent repair until their full upgrade.
+The same scaled-target test exercises each host;
+no platform check is bypassed. Cross-host CI is being rerun before main merge.
+
 ## 2026-11-05 - Verified Discord fix integration
 
 User authorized main integration of the confirmed MSAA and Uplink fixes.

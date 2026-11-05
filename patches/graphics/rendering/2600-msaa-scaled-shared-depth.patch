@@ -12,3 +12,12 @@
      replacement = *tex;
      desc.width = ds->width;
      desc.height = ds->height;
+--- a/src/d3d/d3d8_xbox.h
++++ b/src/d3d/d3d8_xbox.h
+@@ -1264,6 +1264,4 @@
+    The destination must be a render-target texture. */
+-#ifdef _WIN32
+ HRESULT xbox_D3D8PrepareSharedDepthTarget(IDirect3DTexture8 *texture,
+                                          IDirect3DSurface8 *depth);
+-#endif
+ HRESULT       xbox_D3D8CopyBackBufferToTexture(IDirect3DTexture8 *dst);

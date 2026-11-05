@@ -69,3 +69,7 @@ Native Mac GPU/gameplay acceptance remains separate; see MAC-129 and STATUS.
 
 Video Options setting-row clicks reuse the native switch sound; see
 [click feedback and tests](video-options.md).
+
+The shared-depth resize declaration is exposed on every RHI host; its existing
+implementation is common. The scaled-target fixture compiles on Windows,
+macOS and Linux rather than relying on a Windows-only prototype.

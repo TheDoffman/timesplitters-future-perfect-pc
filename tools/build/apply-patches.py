@@ -260,6 +260,12 @@ def patch_records(paths):
     if config_source:
         paths.remove(config_source)
         paths.append(config_source)
+    # Shared-depth resize extends the final header after temporal map and
+    # Linux declaration migrations. Keep those historical hunks unchanged.
+    shared_depth_resize = by_name.get('2600-msaa-scaled-shared-depth.patch')
+    if shared_depth_resize:
+        paths.remove(shared_depth_resize)
+        paths.append(shared_depth_resize)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

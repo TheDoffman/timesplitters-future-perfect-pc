@@ -152,7 +152,7 @@ def test_upgrade_native_checkpoint_preserves_fixed_default(checkout, tmp_path):
     prior.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
         prefix = patch.name.split('-', 1)[0]
-        if prefix.isdigit() and 2495 <= int(prefix) <= 2518:
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name == '2600-msaa-scaled-shared-depth.patch':
             continue  # Historical stacks predate the graphics/display dependencies.
         if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
@@ -225,7 +225,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in installer.active_patch_paths(PATCHES):
         prefix = patch.name.split('-', 1)[0]
-        if prefix.isdigit() and 2495 <= int(prefix) <= 2518:
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name == '2600-msaa-scaled-shared-depth.patch':
             continue  # Historical stacks predate the graphics/display dependencies.
         if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
@@ -341,7 +341,7 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
         prefix = patch.name.split('-', 1)[0]
-        if prefix.isdigit() and 2495 <= int(prefix) <= 2518:
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name == '2600-msaa-scaled-shared-depth.patch':
             continue  # Historical stacks predate the graphics/display dependencies.
         if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
@@ -399,7 +399,7 @@ def texture_branch_patches(tmp_path):
     patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
         prefix = patch.name.split('-', 1)[0]
-        if prefix.isdigit() and 2495 <= int(prefix) <= 2518:
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name == '2600-msaa-scaled-shared-depth.patch':
             continue  # Historical stacks predate the graphics/display dependencies.
         if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
@@ -418,7 +418,7 @@ def main_branch_patches(tmp_path):
     patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
         prefix = patch.name.split('-', 1)[0]
-        if prefix.isdigit() and 2495 <= int(prefix) <= 2518:
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name == '2600-msaa-scaled-shared-depth.patch':
             continue  # Historical stacks predate the graphics/display dependencies.
         if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
