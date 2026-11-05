@@ -17,9 +17,11 @@ def test_reused_runtime_config_uses_active_source(tmp_path, source_variable):
     """Compile real settings with an unrelated dependency checkout and stale header."""
     upstream=ROOT/'external/ts3FPrecomp'
     compiler,env=native_compiler(tmp_path)
-    tools=Path(sys.executable).parent
-    cmake=tools/('cmake.exe' if os.name=='nt' else 'cmake')
-    ninja=tools/('ninja.exe' if os.name=='nt' else 'ninja')
+    import cmake as cmake_package
+    import ninja as ninja_package
+    cmake=Path(cmake_package.CMAKE_BIN_DIR)/('cmake.exe' if os.name=='nt' else 'cmake')
+    ninja=Path(ninja_package.BIN_DIR)/('ninja.exe' if os.name=='nt' else 'ninja')
+    assert cmake.is_file() and ninja.is_file(), 'Install the pinned CMake and Ninja packages'
     runtime=tmp_path/'dependency/runtime'
     for folder in ('src/config','tests/config_smoke','src/launcher'):
         shutil.copytree(upstream/folder,runtime/folder)
