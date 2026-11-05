@@ -1,3 +1,10 @@
+Patches2540/2550 follow2530. 2540 appends a host-only binding to runtime controls;
+it is skipped by Xbox pad synthesis. 2550 integrates movie time at current
+Developer Tools speed and enables movie-only XAudio frequency changes; SDL
+uses the same rate contract. Ordinary voices retain their existing pitch flags.
+2550 also wraps native98E50 to use its fractional cinematic position path,
+scoping the borrowed flag after99990 clamps debug seeking and rebasing its
+real-clock origin for a smooth Tools-disable transition. Regenerate guest C.
 Patch2530 follows2520: local damage/ammo, detached world masks and viewport draw hooks.
 Patch2520 follows final Linux adapters: Developer Tools input/UI, CCAB0 wrapper,
 HUD draw scopes and HLE-owned renderer callbacks. See systems.md; regenerate guest code.

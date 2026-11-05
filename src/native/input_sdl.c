@@ -299,7 +299,7 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
         int vk=tsfp_native_virtual_key(e->key.scancode),down=e->type==SDL_EVENT_KEY_DOWN;
         if(!down && vk>0 && vk<256)atomic_store(&developer_blocked[vk],0);
         if(!down && vk>=0xa0 && vk<=0xa5)atomic_store(&developer_blocked[0x10+(vk-0xa0)/2],0);
-        if(e->key.scancode==SDL_SCANCODE_F1) {
+        if(pc_developer_shortcut_key(vk)) {
             if(down && !e->key.repeat && window)pc_developer_toggle();
             return;
         }

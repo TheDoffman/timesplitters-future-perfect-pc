@@ -8,7 +8,7 @@ from native_compiler import native_compiler
 ROOT = Path(__file__).resolve().parents[2]
 
 
-@pytest.mark.parametrize('name', ['input/developer_tools.c', 'gameplay/developer_tools_guest.c'])
+@pytest.mark.parametrize('name', ['input/developer_tools.c', 'gameplay/developer_tools_guest.c', 'network/developer_lobby_guest.c'])
 def test_developer_tools_input(tmp_path, name):
     compiler, env = native_compiler(tmp_path)
     exe = tmp_path / ('developer-tools.exe' if os.name == 'nt' else 'developer-tools')
@@ -27,6 +27,7 @@ def test_developer_tools_input(tmp_path, name):
 @pytest.mark.parametrize('fixture,address,end,marker', [
     ('developer_checkpoint_original.c',0x25EC30,0x25EC66,'/* ORIGINAL_CHECKPOINT_LOOKUP */'),
     ('developer_ammo_original.c',0x1B66E0,0x1B673F,'/* ORIGINAL_AMMO_CONSUMPTION */'),
+    ('developer_cutscene_original.c',0x98E50,0x98F51,'/* ORIGINAL_CUTSCENE_CLOCK */'),
 ])
 def test_original_developer_routine(tmp_path,fixture,address,end,marker):
     import hashlib

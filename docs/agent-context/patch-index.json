@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "90b52831716fee2caf862d108c6e4510e93e8fba3682ff1241519d2eee4b071b",
+  "loaderSha256": "9ca96783db7d85b120b595ee08b9f069d7c287fa092a510577d855e43d66ce1b",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3533,6 +3533,25 @@
       "path": "patches/diagnostics/2530-developer-tools-controls-and-cheats.patch",
       "sha256": "eac0b865580ae3f3620bb00ae242130e52f6a9ca58992fa36cdcc92a38fb3d95",
       "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2540-developer-tools-settings-and-shortcut.patch",
+      "path": "patches/diagnostics/2540-developer-tools-settings-and-shortcut.patch",
+      "sha256": "47eb18ce894e500ab3b26e838b01a7568791def671aef045bbfb4be0f06e17ab",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2550-developer-tools-cutscene-speed.patch",
+      "path": "patches/diagnostics/2550-developer-tools-cutscene-speed.patch",
+      "sha256": "ca72f2b8e2bf2612c2ef8919d142eeb1a4ae8e634b23d1acdbe04f8d9f41a16d",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_xmv_play.c",
         "titles/futureperfect/src/recomp_manual.c"
       ]
     }

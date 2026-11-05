@@ -49,7 +49,7 @@ namespace TimeSplitters.Launcher
         string savedDraft;
         readonly Slider fov;
         readonly TextBox sensitivity, width, height, discordId;
-        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled, enhancedTextures, ambientOcclusion, shaderCache;
+        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, developerTools, discordEnabled, enhancedTextures, ambientOcclusion, shaderCache;
         readonly ComboBox device, resolution, aspect, scale, filtering, frameRate, languagePack, msaa, edgeSmoothing, supersampling;
         readonly TextBlock performanceAdvice;
         readonly StackPanel consoleScalePanel;
@@ -279,6 +279,13 @@ namespace TimeSplitters.Launcher
                 Text("VRR also needs monitor and driver support. A fixed-refresh display may tear.",12));
             graphics.Children.Add(texturePanel);
             var general=new StackPanel();
+            var developer=PageTheme.Section(general,"Developer Tools","Enable the in-game overlay. Its shortcut can be changed in Key bindings.");
+            developerTools=Check("Enable Developer Tools",model.DeveloperToolsEnabled);developerTools.Name="DeveloperToolsEnabled";developer.Children.Add(developerTools);
+            developerTools.Checked+=(sender,args)=> {
+                var names=model.Binding(Array.IndexOf(GameSettings.Actions,"developer_tools")).Select(KeyName).Where(name=>name!="Unbound").ToArray();
+                var message=Prompt("Developer Tools","Warning: Usage of Developer Tools can cause instability and unintended behavior. Use at your discretion.\nPress "+(names.Length>0?String.Join(" / ",names):"the shortcut (currently unbound)")+" to open");
+                var okay=Button("Continue");okay.Click+=(sender2,args2)=>DismissPrompt();message.Children.Add(okay);okay.Focus();
+            };
             var startup=PageTheme.Section(general,"Startup","");
             skipSplashes=Check("Skip startup splash screens",model.SkipStartupSplashes);skipSplashes.Name="SkipStartupSplashes";startup.Children.Add(skipSplashes);
             var startupHint=Text("Story cutscenes still play.",12);startupHint.Foreground=Muted;startupHint.Margin=new Thickness(0,8,0,0);startup.Children.Add(startupHint);
@@ -312,7 +319,7 @@ namespace TimeSplitters.Launcher
             tabs.Items.Add(new TabItem { Header="View & HUD",Content=Scroll(viewHud) });
             tabs.Items.Add(new TabItem { Header="General",Content=Scroll(general) });
             foreach(var entry in new[]{sensitivity,width,height,discordId})Ui.TextChanged(entry,RefreshSaveState);
-            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,discordEnabled,enhancedTextures,enhancedAudio,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
+            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,developerTools,discordEnabled,enhancedTextures,enhancedAudio,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
             foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack,msaa,edgeSmoothing,supersampling})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
             Ui.ValueChanged(fov,RefreshSaveState);
         }
@@ -321,7 +328,7 @@ namespace TimeSplitters.Launcher
         {
             return Json.Encode(new object[]{sensitivity.Text,width.Text,height.Text,discordId.Text,
                 enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,ambientOcclusion.IsChecked,shaderCache.IsChecked,
-                skipSplashes.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
+                skipSplashes.IsChecked,developerTools.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
                 device.SelectedIndex,localDevices.Select(x=>x.SelectedIndex).ToArray(),scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
                 (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
@@ -475,6 +482,7 @@ namespace TimeSplitters.Launcher
                 model.EnhancedAudio=enhancedAudio.IsChecked==true;
                 model.LanguagePack=GameSettings.LanguagePacks[languagePack.SelectedIndex];
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
+                model.DeveloperToolsEnabled=developerTools.IsChecked==true;
                 model.DiscordEnabled=discordEnabled.IsChecked==true;model.DiscordApplicationId=discordId.Text.Trim();
                 model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem);
                 model.Save();UpdateTextureDetails();savedDraft=Draft();RefreshSaveState();

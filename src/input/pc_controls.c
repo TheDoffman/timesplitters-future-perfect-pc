@@ -234,7 +234,7 @@ void pc_controls_attach(HWND window)
     if(test_state_path && *test_state_path) {
         replaying=1; pc_input_focus(&input,1); pc_input_capture(&input,1);
     } else test_state_path=NULL;
-    fprintf(stderr, "[PC-INPUT] WASD/mouse controls ready; %.3f degrees/count, invert Y %s. F1 opens Developer Tools; F2 opens settings; F10 switches Classic/4K textures; F12 opens Debug; Alt+Enter toggles fullscreen; Escape releases mouse.\n",
+    fprintf(stderr, "[PC-INPUT] WASD/mouse controls ready; %.3f degrees/count, invert Y %s. Configured shortcut opens enabled Developer Tools; F2 opens settings; F10 switches Classic/4K textures; F12 opens Debug; Alt+Enter toggles fullscreen; Escape releases mouse.\n",
             sensitivity, invert_y ? "on" : "off");
     if (window) { pc_settings_attach(window); SetTimer(window, PC_MOUSE_CAPTURE_TIMER, 250, NULL); }
     pc_debug_init(window);
@@ -293,10 +293,10 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
     int captured, frontend;
     *result = 0;
     if (window != window_handle) return 0;
-    if((message==WM_KEYDOWN || message==WM_SYSKEYDOWN) && wp==VK_F1) {
+    if((message==WM_KEYDOWN || message==WM_SYSKEYDOWN) && !InterlockedCompareExchange(&editing,0,0) && pc_developer_shortcut_key((int)wp)) {
         if(!(lp&((LPARAM)1<<30)))pc_developer_toggle();return 1;
     }
-    if((message==WM_KEYUP || message==WM_SYSKEYUP) && wp==VK_F1)return 1;
+    if((message==WM_KEYUP || message==WM_SYSKEYUP) && !InterlockedCompareExchange(&editing,0,0) && pc_developer_shortcut_key((int)wp))return 1;
     if(message==PC_SAVE_FOLDER_MESSAGE){choose_save_folder(window);return 1;}
     if (pc_menu_theme_message(window,message,wp,lp,result)) return 1;
     if (message == WM_SETTINGCHANGE || message == WM_THEMECHANGED) pc_window_theme_apply(window);
@@ -443,7 +443,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         ReleaseSRWLockExclusive(&lock);
         break;
     case WM_KEYUP: case WM_SYSKEYUP:
-        if (wp == VK_F1 || wp == VK_F2 || wp == VK_F12 || wp == VK_F11 || wp == VK_F10) return 1;
+        if (wp == VK_F2 || wp == VK_F12 || wp == VK_F11 || wp == VK_F10) return 1;
         AcquireSRWLockExclusive(&lock);
         pc_input_key_at(&input, (unsigned)wp, 0,GetTickCount64());
         if(wp<256)developer_blocked[wp]=0;

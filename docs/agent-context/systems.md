@@ -1,5 +1,31 @@
 ## Developer Tools overlay
 
+Developer Tools is opt-in (`developer_tools_enabled`, absent=false, in controls
+JSON). Extras appends a native OFF/ON selector using its cached per-menu tick (menu+C, copied by native78E50);
+enabling shows a modal overlay warning with the assigned shortcut. Host action
+`developer_tools` is appended after weapon slots (PC_DEVELOPER_ACTION); default
+F1 migrates only when absent and unclaimed. Native Keyboard & Mouse includes it
+under Menu actions; the Windows/Cocoa editors and overlay share PC_ACTION_COUNT.
+Input capture must bypass the shortcut during rebinding. Disabled tools reset
+active cheats/flight/HUD; F2/F12 remain available. Native cinematic98E50 uses
+its fractional game-delta branch while Tools is enabled offline; the borrowed
+6D60F0 flag is restored and the real-clock origin rebased before returning,
+so disabling Tools preserves position. Original pause/end checks stay active.
+The native real-clock branch otherwise ignores scaled game delta. XMV time integrates the
+requested speed and both audio adapters change the existing movie voice rate,
+preserving queued PCM. Freecam's own-body draw temporarily bypasses native
+1265B0 near-eye fade bit 2, restores model draw style/effect flags afterward.
+`pc_developer_lobby_guest.inc` uses native 353760 roster names and peer IPs;
+compatibility-framed TSFDEV1 metadata announces availability, never cheat state.
+Only admitted roster IPs with the current host lobby session key enter the
+expiring cache. Native role/host index774040 identifies that session. Hosts use
+their owned registered key; guests resolve the joined host key. Neither sender
+nor receiver requires a per-guest XNADDR discovery entry. Retiring a host key
+clears cached notices, including when stale self-discovery still exists.
+LAN and Online bridge envelopes share validation; names are copied from the
+native roster. The timing boundary polls host/guest lobby states11/12, even
+when local Tools is disabled; the overlay renders the named notice independently.
+
 `src/interface/pc_developer.c` owns F1 overlay navigation, nested PC Settings,
 flight state and value-only developer requests. Windows/SDL adapters own host
 input/capture/fullscreen/log-folder operations. The old Windows bar is hidden;
@@ -692,7 +718,7 @@ variant filter `sub_001BAA70`, usability `sub_001BA410` and selection
 `sub_001BA130`, then refreshes the weapon HUD with `sub_00142820`. It deduplicates
 weapon groups, checks local input slot zero rather than network player ID, and
 never grants inventory. Empty slots do nothing. Settings expose exactly ten bindable
-slots, defaulting to 1Ã¢â‚¬â€œ9/0. The separate 70-entry internal table bound covers
+slots, defaulting to 1ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“9/0. The separate 70-entry internal table bound covers
 weapon IDs and variants; it does not add settings rows.
 
 ## Themed live keyboard and mouse editor

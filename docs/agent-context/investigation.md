@@ -1,3 +1,8 @@
+Developer Tools revised notes: patches2540/2550 now follow2530; the generated
+index must include all four additions after the platform adapters. Body-opacity
+investigation confirmed native1265B0 effect bit2 is the first-person eye fade;
+borrow it only for the owned detached world draw and restore style/effect fields.
+
 Developer Tools patches2520 then2530 extend the final Windows/SDL/HLE layout
 and run after all Linux patches. Keep this order in the loader/order fixture.
 Task memory is `logs/developer-tools-investigation.md`; the pre-existing

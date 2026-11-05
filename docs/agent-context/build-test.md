@@ -1,3 +1,20 @@
+Revised Developer Tools regression additions: original-XBE98E50 fixture proves
+that the fractional native cinematic branch follows game delta while the real
+clock branch ignores it; guest fixture checks scoped flag restoration/origin
+rebasing. Shared launcher UI tests change only Developer Tools ON/OFF and verify
+Save draft state, persistence and the F3 warning. Native host acceptance remains
+separate from Windows fixture/build evidence.
+
+Revised Developer Tools checks: input fixtures cover disabled defaults,
+reassigned shortcut/warning and closed-overlay lobby notices; unlock-content
+fixtures execute the actual Extras selector tick. Both UDP LAN and Online
+bridge fixtures deliver TSFDEV1 frames with native capacity=1, validate session
+keys, availability changes and roster removal. The real bridge also tests an
+admitted guest without an XNADDR entry and retirement with stale self-discovery. The native name getter adapter
+is exercised separately. Movie fixtures integrate rate changes without clock
+jumps and both real audio adapters preserve their queued voice/stream on rate
+changes. Windows launcher tests round-trip enablement and the shared binding.
+
 Developer Tools follow-up fixtures check remapped flight and native look signs,
 held-speed restoration/opt-in, hidden reticles, local damage/ammo and owned-body matrix preparation/renderer guards.
 Original A02F9 inclusion and A1BF1 alternate-mesh branches prevent reversed

@@ -1,3 +1,15 @@
+Developer Tools opt-in participates in the shared settings draft and checked
+change notification, so changing only that switch enables Save. Shared UI
+regression covers the assigned F3 warning and ON/OFF persistence.
+
+Developer Tools: `GameSettings.DeveloperToolsEnabled` reads/writes the root
+`developer_tools_enabled` boolean in controls JSON, default false. The shared
+General page has an opt-in checkbox and assigned-shortcut warning. Its host
+binding follows weapon slots in Actions/Labels, defaults F1 only when missing,
+and participates in ordinary conflict/move/unbind/save behavior. Runtime and
+launcher preserve the same key; native Keyboard & Mouse exposes it in Menu
+actions. Enabling does not grant network gameplay cheats; lobbies show availability.
+
 # Launcher and menu shortcuts
 
 Linux release packaging closes dependencies for all launcher/Python ELFs,

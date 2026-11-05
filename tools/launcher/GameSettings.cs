@@ -23,8 +23,8 @@ namespace TimeSplitters.Launcher
             return Map(profile["bindings"]).Keys.Where(k=>k.StartsWith("weapon_slot_",StringComparison.Ordinal))
                 .OrderBy(k=>Int32.Parse(k.Substring(12),CultureInfo.InvariantCulture)).ToArray();
         }
-        public static readonly string[] Actions=PadActions.Concat(WeaponActions()).ToArray();
-        public static readonly string[] Labels=PadLabels.Concat(WeaponActions().Select(k=>"Weapon slot "+k.Substring(12))).ToArray();
+        public static readonly string[] Actions=PadActions.Concat(WeaponActions()).Concat(new[]{"developer_tools"}).ToArray();
+        public static readonly string[] Labels=PadLabels.Concat(WeaponActions().Select(k=>"Weapon slot "+k.Substring(12))).Concat(new[]{"Developer Tools"}).ToArray();
         readonly string root;
         readonly Dictionary<string, byte[]> originals = new Dictionary<string, byte[]>();
         Dictionary<string, object> document, controller, bindings;
@@ -57,7 +57,7 @@ namespace TimeSplitters.Launcher
             }
         }
         public string DiscordApplicationId = "1561627743353962566";
-        public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes;
+        public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes, DeveloperToolsEnabled;
         public const int FovDefault = 55, FovMin = 40, FovMax = 100;
         public int VerticalFov = FovDefault;
         // Zero selects the original clock; 60 is not the experimental native-60 path.
@@ -164,6 +164,10 @@ namespace TimeSplitters.Launcher
                 model.DiscordApplicationId = presence.Groups[2].Value == "0" ? "" : presence.Groups[2].Value;
             }
             object value;
+            if(model.document.TryGetValue("developer_tools_enabled",out value)) {
+                Core.Require(value is bool,"Developer Tools enabled must be true or false. No settings were changed.");
+                model.DeveloperToolsEnabled=(bool)value;
+            }
             if (model.document.TryGetValue("launcher", out value))
             {
                 var launcher = Map(value);
@@ -279,7 +283,7 @@ namespace TimeSplitters.Launcher
             }
             for(int action=PadActions.Length;action<Actions.Length;action++) {
                 if(bindings.ContainsKey(Actions[action]))continue;
-                int slot=action-PadActions.Length, key=slot<9?'1'+slot:slot==9?'0':0;
+                int slot=action-PadActions.Length, key=Actions[action]=="developer_tools"?112:slot<9?'1'+slot:slot==9?'0':0;
                 bindings[Actions[action]]=key!=0 && Conflict(action,key)<0?"key:#"+key:"none";
             }
         }
@@ -309,7 +313,7 @@ namespace TimeSplitters.Launcher
             return token.StartsWith("key:",StringComparison.OrdinalIgnoreCase)?token.Substring(4):token;
         }
         public static bool KeyAllowed(int key)
-        { return key >= 0 && key <= 255 && key != 112 && key != 113 && !(key >= 120 && key <= 123) && key != 91 && key != 92; }
+        { return key >= 0 && key <= 255 && key != 113 && !(key >= 120 && key <= 123) && key != 91 && key != 92; }
         public static int KeyCode(string token)
         {
             if (!token.StartsWith("key:", StringComparison.OrdinalIgnoreCase)) return 0;
@@ -450,6 +454,7 @@ namespace TimeSplitters.Launcher
                 Core.Require(!File.Exists(path) || (File.GetAttributes(path) & FileAttributes.ReadOnly) == 0, "A settings file is read-only. No settings were saved.");
             }
             if (Device == "keyboard") foreach (int action in Enumerable.Range(0, Actions.Length)) bindings[Actions[action]] = Binding(action);
+            document["developer_tools_enabled"]=DeveloperToolsEnabled;
             object value;
             if (!document.TryGetValue("mouse", out value)) document["mouse"] = value = new Dictionary<string, object>();
             var mouse = Map(value); mouse["sensitivity"] = Sensitivity; mouse["enabled"] = MouseEnabled; mouse["invert_y"] = InvertY;

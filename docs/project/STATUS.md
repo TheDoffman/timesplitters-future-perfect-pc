@@ -1,7 +1,52 @@
+## 2026-11-05 - Revised Developer Tools notes
+
+Previous work committed first as 906a2c8e on developer-tools-overlay. Revised
+work is included in this revision. Tools defaults OFF; native Main Menu > Extras
+and launcher General enable it, with the requested warning and assigned
+shortcut. The binding is shared by the launcher, overlay and native editors.
+Freecam borrows only the local body's near-eye fade/style during its world draw.
+Native cinematics use their fractional clock; XMV movie time and movie voices
+scale together. Current host-session metadata names enabled lobby players,
+including on a Tools-disabled client. Admitted peers need no discovery-cache
+entry; expired/retired sessions and roster changes discard old announcements.
+
+Windows x64, supported US XBE hash verified, complete patches2540/2550 after2530,
+MSVC supported Build12 and all linked checks passed. Final executable SHA-256:
+`54ca3a6aace4cbee0c0020ba541541fc7d33b144ece7d4aec30f3c043ccba0a8`.
+Sealed game-content/executable verification passed. Affected regression set:
+412 unique passes, 3 host/data skips. Four socket/timer cases failed inside the
+restricted process sandbox; all passed in the actual-host rerun (6 cases).
+The subsequent session/admission changes passed nine affected fixtures, then
+two final UDP/Online bridge tests including no-discovery guests and stale
+self-discovery retirement. Windows launcher tests passed:47 isolated settings
+checks and existing shared UI/install/restart suites, with a new ON/OFF-only
+Save draft/warning regression. Final launcher resource build also passed.
+
+Isolated native movie acceptance: Welcome Home position advanced .99779 seconds
+per second at1x and1.98880 at2x, with cinematic flags verified. The native raw
+clock branch had ignored the scaled game delta; original-XBE98E50 and scoped
+wrapper fixtures now cover that distinction and origin rebasing. Earlier XMV
+real-file cadence/image/PCM checks and XAudio/SDL queued-voice fixtures passed.
+Extras ON/OFF saved successfully, the F3 warning matched the assigned binding,
+OFF blocked the shortcut, and F3 opened/closed the enabled overlay. Reviewed
+first-level freecam capture shows Cortez's complete body against the light
+terrain. Actual two-instance System Link host/guest reached states11/12 and
+both displayed the enabled host's name while the guest's Tools remained OFF.
+A separate actual Online pair used a local directory and independent authenticated
+bridge ports. Native browser discovery, host11/guest12 membership and the enabled
+host notice on the disabled guest were verified in its reviewed capture. These are bounded replay/loopback checks, not
+physical multiplayer, every cutscene or every scene. Native Mac/Linux builds,
+audio/UI/physical input and multiplayer acceptance remain unrun.
+
+Tests preserved personal controls/display and canonical fixture hashes, recycled
+their disposable partitions and retained selected captures. Fourteen compiler
+scratch directories were recycled (5647.7 MiB summed file lengths, not physical
+allocation). Source/patches/defaults travel through Git; no push or publication.
+
 ## 2026-11-05 - Developer Tools notes follow-up
 
 Original overlay committed locally as af616873 before applying the Changes
-section of the user's notes. Follow-up remains local/uncommitted on
+section of the user's notes. Follow-up committed locally as906a2c8e on
 developer-tools-overlay, Windows x64. Shared flight reads configured bindings,
 sensitivity/inversion and native player direction; no-clip retains firing and
 weapon selection. HUD/UI hiding includes known crosshair/aim primitives.

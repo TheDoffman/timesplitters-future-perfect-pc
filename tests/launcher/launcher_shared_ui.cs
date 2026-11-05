@@ -379,6 +379,21 @@ public static class LauncherSharedUiChecks
                 Click(Find<Button>(page.View,"SettingsSaveButton"));var saved=GameSettings.Load(shared,null);
                 Need(saved.VerticalFov==70 && saved.PresentationFps==0 && saved.RefreshRate==0 && saved.Interpolation==1 && saved.FrameCap=="60","Retired timing settings survived migration");
             });
+            Test("Developer Tools opt-in alone enables Save and warns with the configured shortcut",()=>{
+                string folder=Path.Combine(root,"developer-tools");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);model.Assign(34,0,114,true);model.Save();
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(3);
+                var toggle=Find<CheckBox>(page.View,"DeveloperToolsEnabled");
+                var save=Find<Button>(page.View,"SettingsSaveButton");
+                Click(save);Need(toggle.IsChecked==false && !save.IsEnabled,"Tools must default OFF with a clean saved draft");
+                toggle.IsChecked=true;
+                Need(All(page.View).OfType<TextBlock>().Any(t=>t.Text.Contains("Press F3 to open")),"Warning ignores configured shortcut");
+                page.DismissPrompt();Need(save.IsEnabled,"Tools-only change did not enable Save");Click(save);
+                Need(GameSettings.Load(folder,null).DeveloperToolsEnabled && !save.IsEnabled,"Tools ON not saved");
+                toggle.IsChecked=false;Need(save.IsEnabled,"Tools OFF did not enable Save");Click(save);
+                var saved=GameSettings.Load(folder,null);
+                Need(!saved.DeveloperToolsEnabled && GameSettings.KeyCode(saved.Binding(34)[0])==114,"Tools OFF lost shortcut");
+            });
             Test("beta audio opt-in, draft state and game-menu synchronization",()=>{
                 string folder=Path.Combine(root,"enhanced-audio");Directory.CreateDirectory(folder);
                 string sidecar=Path.Combine(folder,"Settings/pc-audio.ini");

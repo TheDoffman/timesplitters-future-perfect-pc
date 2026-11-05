@@ -22,6 +22,7 @@ int main(int argc, char **argv)
     LRESULT message_result = 0;
     int16_t mx = 32767, my = 32767;
     CHECK(argc == 3);
+    _putenv_s("RECOMP_INPUT_CONFIG",argv[1]);
     CHECK(pc_controls_message(NULL, WM_MOUSEACTIVATE, 0, 0, &message_result));
     CHECK(message_result == MA_ACTIVATEANDEAT);
     pc_controls_menu_mode(1);

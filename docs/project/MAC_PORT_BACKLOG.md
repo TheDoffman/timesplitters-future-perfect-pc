@@ -1,4 +1,15 @@
-Developer Tools notes follow-up (local after af616873): shared configured flight,
+Developer Tools revised notes (included in this revision after906a2c8e): shared opt-in,
+native Extras selector, assigned shortcut/warning, current-session named lobby
+metadata, native cinematic clock and near-eye fade scope are implemented once.
+Windows XAudio and SDL movie streams change rate without replacing queued
+voices. Cocoa uses the shared binding model. No new host policy is duplicated.
+Windows Build12, launcher and affected fixtures pass; bounded native movie rates
+and Online/System Link disabled-client notices are verified in [STATUS](STATUS.md).
+Native Mac/Linux build, UI, movie/voice timing, first-level body opacity and
+physical Online/System Link acceptance remain pending. Preserve settings/saves;
+run isolated native checks before marking those hosts verified.
+
+Developer Tools notes follow-up (committed906a2c8e after af616873): shared configured flight,
 weapon routing, HUD/viewport masks, held speed, God/ammo services and patch2530
 need no duplicated host gameplay implementation. Windows focused fixtures pass;
 Windows Build and bounded weapon/cheat/speed/flight acceptance pass; native

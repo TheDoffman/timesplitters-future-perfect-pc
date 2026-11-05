@@ -207,7 +207,7 @@ int main(int argc, char **argv)
     CHECK(!_putenv_s("TSFP_DEBUG_QUIET","0"));
     pc_debug_poll(); pc_debug_snapshot(&snapshot); CHECK(snapshot.errors==2);
     owner=CreateWindowExA(0,"STATIC","PC debug test",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
-    CHECK(owner); pc_settings_attach(owner);
+    CHECK(owner); {char error[160];CHECK(pc_settings_developer_save(1,error,sizeof error));}pc_settings_attach(owner);
     CHECK(!GetMenu(owner));pc_settings_toggle_menu(owner);CHECK(pc_developer_open());
     HMENU commands=(HMENU)GetPropA(owner,"TSFP.PcSettingsMenu");
     CHECK(GetMenuItemID(GetSubMenu(commands,0),1)==PC_DEBUG_COMMAND);

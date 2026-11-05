@@ -216,7 +216,7 @@ static INT_PTR CALLBACK settings_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
         LVCOLUMNA column={0};
         const char *headers[]={"Action","Primary","Alternate"};
         e=(Editor *)lp; SetWindowLongPtr(d,DWLP_USER,lp);
-        control(d,"STATIC","Double-click a binding to change it. F2 opens settings; F1 opens Developer Tools.\nEscape releases the mouse. Pause a mission before opening PC settings.",0,ID_HELP);
+        control(d,"STATIC","Double-click a binding to change it. F2 opens settings. Developer Tools has a configurable shortcut.\nEscape releases the mouse. Pause a mission before opening PC settings.",0,ID_HELP);
         e->list=control(d,WC_LISTVIEWA,"",WS_TABSTOP|LVS_REPORT|LVS_SINGLESEL|LVS_SHOWSELALWAYS|WS_BORDER,ID_ACTIONS);
         ListView_SetExtendedListViewStyle(e->list,LVS_EX_FULLROWSELECT|LVS_EX_GRIDLINES|LVS_EX_DOUBLEBUFFER);
         for(i=0;i<=PC_BINDING_SLOTS;i++) { column.mask=LVCF_TEXT|LVCF_WIDTH; column.pszText=(char *)headers[i]; column.cx=i?105:225; ListView_InsertColumn(e->list,i,&column); }

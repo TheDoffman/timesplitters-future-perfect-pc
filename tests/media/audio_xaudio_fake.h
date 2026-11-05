@@ -39,6 +39,8 @@ static IXAudio2EngineCallback *registered;
 struct IXAudio2MasteringVoice;
 struct IXAudio2SourceVoice {
     float matrix[4]={1,0,0,1};
+    float speed=1.f;
+    HRESULT SetFrequencyRatio(float ratio){speed=ratio;return S_OK;}
     void GetOutputMatrix(IXAudio2MasteringVoice *,unsigned src,unsigned dst,float *m) { assert(dst==2); if(src==1){m[0]=1;m[1]=1;}else memcpy(m,matrix,4*sizeof(float)); }
     HRESULT SetOutputMatrix(IXAudio2MasteringVoice *,unsigned src,unsigned dst,const float *m) { assert(dst==2);memcpy(matrix,m,src*dst*sizeof(float));return S_OK; }
     uint32_t queued = 0;

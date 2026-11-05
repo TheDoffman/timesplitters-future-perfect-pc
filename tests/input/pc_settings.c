@@ -186,6 +186,7 @@ int main(int argc,char **argv)
     owner=CreateWindowExA(0,"STATIC","PC settings integration test",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
     CHECK(owner);
     CHECK(!pc_settings_menu_visible());
+    CHECK(pc_settings_developer_save(1,error,sizeof error));
     pc_settings_attach(owner); CHECK(!GetMenu(owner));
     pc_settings_toggle_menu(owner);
     CHECK(pc_developer_open() && !GetMenu(owner));

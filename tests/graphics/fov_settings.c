@@ -1102,3 +1102,12 @@ void sub_000D2CE0(void){}
 void sub_0015BCC0_gen(void){}
 
 void sub_000A2740(void){}
+
+int pc_developer_enabled(void) {return 0;}
+int pc_developer_set_enabled(int enabled) {(void)enabled;assert(0);return 0;}
+void pc_developer_lobby_notice(const char *names) {(void)names;}
+int pc_network_enabled(void) {return 0;}
+void pc_network_developer_lobby(const PcDeveloperPeer *roster,unsigned count,int enabled,char *names,size_t bytes)
+{(void)roster;(void)count;(void)enabled;(void)bytes;names[0]=0;}
+
+void sub_00353760(void) {g_eax=0;g_esp+=4;}

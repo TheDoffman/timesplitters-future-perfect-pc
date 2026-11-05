@@ -8,6 +8,7 @@ static ULONGLONG test_time;
 #define GetTickCount64() test_time
 #include "pc_developer.c"
 static unsigned char test_keys[256];
+static int dev_enabled,dev_key=0x70;
 static int focus=1,menu_captured,fullscreen,texture,saves;
 static PcMenuPointer pointer;
 static PcDebugOptions debug;
@@ -18,6 +19,11 @@ const char *const pc_action_labels[PC_ACTION_COUNT]={
 int pc_controls_developer_keys(unsigned char out[256]) {memcpy(out,test_keys,256);return focus;}
 void pc_controls_developer_release(void) {}
 void pc_settings_capture_end(void) {}
+int pc_settings_capture_blocked(void) {return 0;}
+int pc_settings_developer_enabled(void) {return dev_enabled;}
+int pc_settings_developer_save(int enabled,char *e,size_t n) {(void)e;(void)n;dev_enabled=enabled;return 1;}
+void pc_settings_developer_keys(int keys[PC_BINDING_SLOTS]) {keys[0]=dev_key;keys[1]=0;}
+
 void pc_controls_text_mode(uint32_t owner) {(void)owner;}
 void pc_controls_menu_mode(int active) {menu_captured=active;}
 PcMenuPointer pc_controls_developer_pointer(void) {return pointer;}
@@ -44,6 +50,15 @@ static void frame(void) {test_time+=16;pc_developer_frame();}
 static void key(int k) {test_keys[k]=1;frame();test_keys[k]=0;frame();}
 int main(void) {
     PcDeveloperState s;PcDeveloperLine lines[16];
+    pc_developer_toggle();assert(!pc_developer_open());frame();
+    dev_key=0x72;assert(pc_developer_set_enabled(1));
+    assert(pc_developer_lines(840,620,lines,16)==5 && strstr(lines[3].text,"Key 114"));
+    key(13);assert(!pc_developer_open());
+    key(0x70);assert(!pc_developer_open());key(0x72);assert(pc_developer_open());
+    key(0x72);assert(!pc_developer_open());dev_key=0x70;
+    pc_developer_lobby_notice("Alice, Bob");assert(pc_developer_lines(840,620,lines,16)==2 && strstr(lines[1].text,"Alice"));
+    test_time+=1001;assert(pc_developer_lines(840,620,lines,16)==0);
+
     float origin[3]={1,2,3},direction[3]={0,0,-1},position[3],forward[3];
     assert(pc_developer_flight_step(2,origin,direction,0,position,forward));
     assert(position[0]==1&&position[1]==2&&position[2]==3&&forward[2]<-.99f);

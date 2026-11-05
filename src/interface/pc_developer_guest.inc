@@ -121,10 +121,22 @@ void pc_developer_draw_body(void)
      * its colour-pass matrix pointer is empty. Force native A1B80 to prepare
      * the detached world pose; retain its animation, allocator and lighting. */
     WORD_AT(body+0x14u)&=~(1u<<WORD_AT(camera+0x214u));
+    /* 1265B0's effect bit 2 fades the owner against its first-person eye.
+     * A detached camera must render normal opaque materials instead. Borrow
+     * only the draw fields; keep the gameplay effect and all timers intact. */
+    uint32_t effects=WORD_AT(actor+0xc6cu),style=WORD_AT(model+0x1f8u);
+    WORD_AT(actor+0xc6cu)=effects&~2u;
+    WORD_AT(model+0x1f8u)=(style&0xff000000u)|0x007fffffu;
     for(unsigned pass=0;pass<3;pass++)guest_call(sub_000A2740,2,body,pass);
+    if(developer_actor()==actor && WORD_AT(body+4u)==model) {
+        WORD_AT(model+0x1f8u)=style;
+        if(WORD_AT(actor+0xc6cu)==(effects&~2u))WORD_AT(actor+0xc6cu)=effects;
+    }
 }
 void pc_developer_guest_frame(void)
 {
+    uint32_t lobby=WORD_AT(0x76b1a4u);
+    if(WORD_AT(0x76b108u) && (lobby==11u || lobby==12u))pc_developer_lobby_guest();
     developer_refill_ammo();
     static unsigned handled;
     PcDeveloperState state;pc_developer_get(&state);
@@ -248,4 +260,24 @@ void pc_developer_camera_guest(void (*original)(void))
         developer_bits(0),developer_bits(1),developer_bits(0));
     guest_call(sub_00153270,3,combined,view,projection);
     guest_call(sub_00152260,2,inverse,view);
+}
+
+/* US98E50 normally derives movie position from the real 7497A8 clock.
+ * Its own fractional branch integrates 4E794C / 4D1994 instead. Borrow
+ * that branch only inside this update, after 99990's debug-speed clamp.
+ * Rebase the real-clock origin so disabling Tools never snaps playback. */
+void pc_developer_cutscene_guest(void (*original)(void))
+{
+    if(!pc_developer_enabled() || !(WORD_AT(0x7de458u)&0x20000200u) ||
+       (WORD_AT(0x76b0fcu)&&WORD_AT(0x76b108u)) ||
+       WORD_AT(0x6d60f0u) || WORD_AT(0x6d60f4u) || !guest_writable(g_esp,8u)) {original();return;}
+    uint32_t object=WORD_AT(g_esp+4u);
+    if(!guest_writable(object,16u)){original();return;}
+    WORD_AT(0x6d60f0u)=1;
+    original();
+    WORD_AT(0x6d60f0u)=0;
+    float elapsed;memcpy(&elapsed,(const void *)((uintptr_t)(object+8u)+g_xbox_mem_offset),4);
+    double ticks=(double)elapsed*(int32_t)WORD_AT(0x4e8cecu);
+    if(isfinite(ticks)&&ticks>=0.&&ticks<4294967295.)
+        WORD_AT(object+4u)=WORD_AT(0x7497a8u)-(uint32_t)(ticks+.5);
 }

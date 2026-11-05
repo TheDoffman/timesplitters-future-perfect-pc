@@ -1,6 +1,7 @@
 #include "pc_prompts.h"
 #include "pc_controls.h"
 #include "pc_developer.h"
+#include "pc_settings.h"
 #include "texture_mode.h"
 #include "input_bindings.h"
 #include <SDL3/SDL.h>
@@ -55,6 +56,7 @@ static int virtual_pad_test(void)
     CHECK(RegisterClassA(&wc));
     window=CreateWindowA(wc.lpszClassName,"Input prompt test",WS_OVERLAPPEDWINDOW,0,0,320,200,NULL,NULL,wc.hInstance,NULL);
     CHECK(window); pc_controls_attach(window);
+    {char error[160];CHECK(pc_settings_developer_save(1,error,sizeof error));}
     {
         CHECK(!GetMenu(window) && !pc_developer_open());
         SendMessage(window,WM_KEYDOWN,VK_F1,0);

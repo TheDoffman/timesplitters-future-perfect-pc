@@ -196,7 +196,10 @@ When the optional pack is available, use **Game settings → Graphics & resoluti
 
 ## Developer Tools (local source build)
 
-Press **F1** to open or close the in-game Developer Tools overlay. Use the mouse
+Enable **Developer Tools** in **Main Menu > Extras** or the launcher's **General**
+settings. It defaults to OFF and displays a warning when enabled. Press **F1**
+(default) to open or close the overlay; change its shortcut in the launcher's
+key bindings or in-game **Keyboard & Mouse > Menu actions**. Use the mouse
 or arrow keys and Enter; Escape goes back. **PC Settings** contains keyboard and
 mouse bindings, Debug, Enhanced Textures and Fullscreen. F2/F12 also remain
 available for the existing settings dialogs.
@@ -210,7 +213,10 @@ available. Flight follows configured movement/look controls, **Interact/Crouch**
 up/down and **Shift** for 4x speed. No-clip retains firing and weapon switching.
 Free-cam hides the HUD, crosshair and first-person weapon while keeping the
 world character visible. Turning it off restores HUD and player control/view.
-Gameplay tools are available during offline gameplay.
+Game speed also controls native cutscenes and videos; video audio follows the
+selected speed. Multiplayer lobbies
+show a notice naming players with Developer Tools enabled. Gameplay tools are
+available during offline gameplay.
 Native Mac/Linux acceptance is pending; see [validation](docs/project/STATUS.md).
 
 ## <img src="docs/assets/icon-support.svg" alt="" width="24" height="24"> Guides & support

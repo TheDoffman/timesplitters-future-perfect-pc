@@ -22,6 +22,9 @@ STUB(sub_0003D7B0) STUB(sub_00075E70) STUB(sub_00075B70)
 STUB(sub_00071B10) STUB(sub_00071C50) STUB(sub_00079D60_gen)
 STUB(sub_000771D0) STUB(sub_0007D480) STUB(sub_000717D0)
 STUB(sub_00075430) STUB(sub_00079B70)
+static int developer_enabled,developer_enables;
+int pc_developer_enabled(void){return developer_enabled;}
+int pc_developer_set_enabled(int enabled){developer_enabled=enabled;developer_enables++;return 1;}
 static uint32_t row_count,callbacks[32],row_ids[32],last_row,saves,transition;
 static uint32_t expected_parent=0x2000,expected_previous=0x524578;
 static uint32_t guest_call(void (*fn)(void),unsigned count,...);
@@ -109,9 +112,12 @@ int main(void)
     active_profile-=PC_UNLOCK_PROFILE_SIZE;assert(uc_flags()==PC_UNLOCK_ALL);
     /* Actual Extras/category callbacks, including ABI, row ownership and save. */
     WORD_AT(0x2000+0x2c)=expected_parent;WORD_AT(0x2000+4)=expected_previous;
-    row_count=0;call(uc_extras_build,0x2000);
-    assert(row_count==4 && callbacks[0]==0x2d08a0 && callbacks[1]==0x2d0880);
-    assert(callbacks[2]==UC_OPEN && callbacks[3]==0x2cbe30);
+    row_count=0;WORD_AT(0x2004)=0x524578;call(uc_extras_build,0x2000);expected_previous=WORD_AT(0x2004);
+    assert(WORD_AT(0x2004)==UC_EXTRAS_DESCRIPTOR && WORD_AT(0x200c)==UC_DEVELOPER_TICK);
+    assert(row_count==5 && callbacks[0]==0x2d08a0 && callbacks[1]==0x2d0880);
+    assert(callbacks[2]==UC_OPEN && !callbacks[3] && callbacks[4]==0x2cbe30);
+    WORD_AT(uc_developer_row+0xc8)=1;call(uc_developer_tick,0x2000);assert(developer_enabled && developer_enables==1);
+    WORD_AT(uc_developer_row+0xc8)=0;call(uc_developer_tick,0x2000);assert(!developer_enabled && developer_enables==2);
     call(uc_open,0x2000);assert(transition==uc_storage);
     row_count=0;call(uc_build,0x2000);assert(row_count==PC_UNLOCK_COUNT);
     for(unsigned i=0;i<PC_UNLOCK_COUNT;i++)assert(!callbacks[i] && row_ids[i]==i && WORD_AT(uc_rows[i]+0xc8)==1);
@@ -122,7 +128,7 @@ int main(void)
     WORD_AT(uc_rows[PC_UNLOCK_STORY]+0xc8)=0;call(uc_tick,0x2000);
     assert(!uc_flags());active_profile-=PC_UNLOCK_PROFILE_SIZE;assert(uc_flags()==before);
     call(uc_back,0x2000);assert(saves==1 && !uc_rows[0]);
-    row_count=0;call(uc_extras_build,0x2000);assert(row_count==3);
+    row_count=0;WORD_AT(0x2004)=0x524578;call(uc_extras_build,0x2000);expected_previous=WORD_AT(0x2004);assert(row_count==4);
     /* Known-new initialization clears stale metadata on slot reuse only. */
     g_esp=0x800000;pc_unlock_profile_init(initialized);assert(uc_flags());
     WORD_AT(0x4024)=UINT32_MAX;g_esp=0x800000;pc_unlock_profile_init(initialized);assert(!uc_flags());

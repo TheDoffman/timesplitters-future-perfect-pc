@@ -17,6 +17,13 @@ typedef struct PcDeveloperLine {
     float x,y,width,height;
 } PcDeveloperLine;
 int pc_developer_open(void);
+int pc_developer_enabled(void);
+int pc_developer_set_enabled(int enabled);
+int pc_developer_shortcut_key(int key);
+void pc_developer_lobby_notice(const char *names);
+void pc_developer_lobby_guest(void);
+double pc_developer_speed(void);
+void pc_developer_movie(int active);
 void pc_developer_toggle(void);
 void pc_developer_close(void);
 void pc_developer_frame(void);

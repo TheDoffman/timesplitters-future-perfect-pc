@@ -121,7 +121,7 @@ static void pc_native_timing_guest(void (*original)(void))
     uint32_t developer_mode=NT_WORD(0x78AD20u);
     int developer_network=NT_WORD(0x76B0FCu) && NT_WORD(0x76B108u);
     uint32_t developer_phase=NT_WORD(0x7DE30Cu);
-    int developer_play=developer_scene>=0 && developer_scene<=100 && (developer_phase==1u || developer_phase==7u);
+    int developer_play=developer_scene>=0 && developer_scene<=100 && (developer_phase==1u || developer_phase==7u || (NT_WORD(0x7de458u)&0x20000000u));
     pc_developer_publish(developer_play,developer_mode==4u || developer_mode==14u,developer_network);
     pc_developer_guest_frame();
     int rate = pc_native_rate();

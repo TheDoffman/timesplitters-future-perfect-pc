@@ -18,6 +18,7 @@ static uint64_t retry_ms;
 static int discontinuity[SLOT_COUNT];
 static RecompAudioEngineStats health; /* protected by lock; lifetime counters */
 static float master_gain = RECOMP_AUDIO_DEFAULT_GAIN;
+static float movie_speed=1.f;
 static struct { SDL_AudioStream *stream; SDL_AudioSpec spec; uint64_t retry_ms; int flushed; } voices[SLOT_COUNT];
 static struct {float pan;int enabled;} spatial[SLOT_COUNT];
 static PcAcousticDsp acoustics[SLOT_COUNT];
@@ -83,6 +84,15 @@ static void fail_voice(uint32_t slot)
     voices[slot].flushed = 0;
     voices[slot].retry_ms = SDL_GetTicks() + RECOMP_AUDIO_RETRY_MS;
     discontinuity[slot] = 1;
+}
+
+void recomp_audio_output_movie_speed(float ratio)
+{
+    if(!(ratio>=.05f && ratio<=4.f))return;
+    pthread_mutex_lock(&lock);movie_speed=ratio;
+    SDL_AudioStream *stream=voices[RECOMP_AUDIO_SLOT_MOVIE].stream;
+    if(stream && !SDL_SetAudioStreamFrequencyRatio(stream,ratio))fail_voice(RECOMP_AUDIO_SLOT_MOVIE);
+    pthread_mutex_unlock(&lock);
 }
 
 void recomp_audio_output_reset_voice(uint32_t slot)
@@ -160,6 +170,7 @@ int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes
         voices[slot].stream = s; voices[slot].spec = spec; voices[slot].flushed = 0;
     }
     SDL_AudioStream *s = voices[slot].stream;
+    if(slot==RECOMP_AUDIO_SLOT_MOVIE && !SDL_SetAudioStreamFrequencyRatio(s,movie_speed)){fail_voice(slot);goto done;}
     int queued = SDL_GetAudioStreamQueued(s);
     /* Bound each voice to at most half a second plus one accepted packet. */
     if (queued < 0) { fail_voice(slot); goto done; }

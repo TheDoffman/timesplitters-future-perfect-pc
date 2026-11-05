@@ -1,5 +1,9 @@
 /* Shared US frontend and access-check hooks. No earned progress is changed. */
 #include "pc_unlock_content.h"
+#include "pc_developer.h"
+#define UC_DEVELOPER_TICK 0x1237fu
+static uint32_t uc_developer_menu,uc_developer_row;
+#define UC_EXTRAS_DESCRIPTOR 0x524578u
 #define UC_OPEN 0x1237bu
 #define UC_BUILD 0x1237cu
 #define UC_TICK 0x1237du
@@ -83,13 +87,26 @@ static uint32_t uc_text(unsigned slot,const char *text)
 static int uc_prepare(void)
 {
     if(!uc_storage) {
-        uc_storage=xbox_HeapAlloc(32+16*192,4);
+        uc_storage=xbox_HeapAlloc(32+18*192,4);
         if(!uc_storage)return 0;
-        memset((void *)((uintptr_t)uc_storage+g_xbox_mem_offset),0,32+16*192);
+        memset((void *)((uintptr_t)uc_storage+g_xbox_mem_offset),0,32+18*192);
         WORD_AT(uc_storage)=UC_BUILD;WORD_AT(uc_storage+4)=UC_TICK;
         uc_text(0,"Unlock Content");uc_text(12,"Off");uc_text(13,"On");
+        uc_text(14,"Developer Tools");uc_text(15,"OFF");uc_text(16,"ON");
     }
     return 1;
+}
+static void uc_developer_tick(void)
+{
+    GuestRegisters r;save_registers(&r);
+    if(guest_writable(uc_developer_menu,0x30u) && WORD_AT(uc_developer_menu+4u)==UC_EXTRAS_DESCRIPTOR && WORD_AT(uc_developer_menu+0xcu)==UC_DEVELOPER_TICK &&
+       guest_writable(uc_developer_row,0xccu)) {
+        uint32_t choice=WORD_AT(uc_developer_row+0xc8u);
+        int before=pc_developer_enabled();
+        if(choice<=1u && choice!=(uint32_t)before && !pc_developer_set_enabled((int)choice))
+            guest_call(sub_00075430,2,uc_developer_row,(uint32_t)before);
+    }
+    restore_registers(&r);g_esp+=4u;
 }
 static void uc_extras_build(void)
 {
@@ -102,6 +119,19 @@ static void uc_extras_build(void)
     guest_call(sub_00079D60_gen,6,guest_call(sub_0003D7B0,1,0x40fu),UINT32_MAX,0u,0u,0x2d08a0u,0u);
     guest_call(sub_00079D60_gen,6,guest_call(sub_0003D7B0,1,0x410u),UINT32_MAX,0u,0u,0x2d0880u,0u);
     if(uc_prepare())guest_call(sub_00079D60_gen,6,UC_TEXT(0),UINT32_MAX,uc_active_profile()?0u:1u,0u,UC_OPEN,0u);
+    if(uc_prepare() && guest_writable(menu,0x30u) && WORD_AT(menu+4u)==UC_EXTRAS_DESCRIPTOR) {
+        /* 78E50 copies descriptor callbacks to menu+8..14 before invoking
+         * Build. Install this instance's cached Tick, retaining its identity. */
+        WORD_AT(menu+0xcu)=UC_DEVELOPER_TICK;uc_developer_menu=menu;
+        guest_call(sub_00071B10,4,1u,bits(1.1f),1u,1u);
+        guest_call(sub_00071C50,1,0x26200u);
+        uc_developer_row=guest_call(sub_00079D60_gen,6,UC_TEXT(14),UINT32_MAX,0u,0u,0u,0u);
+        guest_call(sub_0007D480,2,0x8400u,0u);
+        guest_call(sub_000717D0,1,UC_TEXT(15));guest_call(sub_000717D0,1,UC_TEXT(16));
+        guest_call(sub_00075430,2,uc_developer_row,(uint32_t)pc_developer_enabled());
+        guest_call(sub_00071B10,4,1u,bits(2.f),1u,1u);
+        guest_call(sub_00071C50,1,0x32200u);
+    }
     if(guest_call(sub_001CD120,0))
         guest_call(sub_00079D60_gen,6,guest_call(sub_0003D7B0,1,0x1a0fu),UINT32_MAX,0u,0u,0x2cbe30u,0u);
     guest_call(sub_000771D0,1,menu);guest_call(sub_00075E70,0);

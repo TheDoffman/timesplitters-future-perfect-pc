@@ -265,6 +265,14 @@ def patch_records(paths):
     if developer_changes:
         paths.remove(developer_changes)
         paths.append(developer_changes)
+    developer_settings=by_name.get('2540-developer-tools-settings-and-shortcut.patch')
+    if developer_settings:
+        paths.remove(developer_settings)
+        paths.append(developer_settings)
+    developer_movies=by_name.get('2550-developer-tools-cutscene-speed.patch')
+    if developer_movies:
+        paths.remove(developer_movies)
+        paths.append(developer_movies)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate
