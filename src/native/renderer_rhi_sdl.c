@@ -38,6 +38,9 @@ int tsfp_native_renderer_test(void)
     D3DPRESENT_PARAMETERS pp={0};pp.BackBufferWidth=pp.BackBufferHeight=64;pp.Windowed=TRUE;
     pp.hDeviceWindow=tsfp_native_renderer_window(64,64);
     if(pp.hDeviceWindow) {
+        /* Wayland reports fullscreen only after the compositor acknowledges
+         * the creation request; do not mistake that pending state for failure. */
+        if(!SDL_SyncWindow(pp.hDeviceWindow))return 1;
         int wanted=recomp_config_bool("RECOMP_FULLSCREEN","fullscreen",0);
         int active=(SDL_GetWindowFlags(pp.hDeviceWindow)&SDL_WINDOW_FULLSCREEN)!=0;
         fprintf(stderr,"[native-window-test] saved startup fullscreen %d: %s\n",wanted,active==wanted?"PASS":"FAIL");
