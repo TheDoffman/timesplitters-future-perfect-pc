@@ -1234,3 +1234,51 @@ def test_original_player_trigger(tmp_path):
             assert broken.returncode != 0 and message in broken.stderr
     finally:
         vars(config).update(previous)
+
+def test_original_uplink_hold_gates(tmp_path):
+    """Execute the US request/repeat gates, Uplink callback and charge routine.
+
+    Target selection and the intervening weapon-state handoff are controlled;
+    this fixture does not claim rigid-body motion or live-map acceptance.
+    """
+    import hashlib
+    import struct
+    from test_recomp_float_joins import config, FunctionTranslator, compile_and_run
+    xbe = ROOT / 'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported US XBE required for Uplink holding regression')
+    image = xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous = dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        # 1C395B..1C399C is an isolated instruction block from 1C3100.
+        # Its skipped-work continuation is an explicit non-RET test boundary.
+        ranges = [(0x1c395b, 0x1c399c), (0x1c2af0, 0x1c2bfd),
+                  (0x1c55f0, 0x1c5d4d), (0x3508b0, 0x350be9)]
+        functions = {a: dict(name=f'sub_{a:08X}', end=b) for a, b in ranges}
+        translator = FunctionTranslator(image, functions)
+        code = '\n'.join('void ' + f['name'] + '(void);' for f in functions.values())
+        code += '\n' + '\n'.join(translator.translate_function(a, f) for a, f in functions.items())
+        source = (ROOT / 'tests/gameplay/native_uplink_trigger.c').read_text()
+        defined = set(re.findall(r'void (sub_[0-9A-F]+)\(void\)', source + code))
+        calls = set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)', code))
+        calls.update(re.findall(r'\b(sub_[0-9A-F]+)\(\);', code))
+        services = '\n'.join(f'void {n}(void){{fprintf(stderr,"UNEXPECTED {n}\\n");abort();}}'
+                             for n in sorted(calls - defined))
+        addresses = [0x475c78, 0x475cd8, 0x475d24,
+                     *range(0x1c5d50, 0x1c5dac, 4), *range(0x350bec, 0x350c40, 4)]
+        constants = '\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I", image, config.va_to_file_offset(a))[0]:08x};'
+                              for a in addresses)
+        source = source.replace('/* POLICY */', f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/gameplay/pc_native_numeric.h").as_posix()}"')
+        source = source.replace('../src/gameplay/pc_native_weapon_guest.h', (ROOT / 'src/gameplay/pc_native_weapon_guest.h').as_posix())
+        source = source.replace('/* CODE */', code).replace('/* SERVICES */', services).replace('/* CONSTANTS */', constants)
+        print(compile_and_run(tmp_path, source))
+        executable = tmp_path / ('float_join.exe' if os.name == 'nt' else 'float_join')
+        for mutation, route in [('legacy-request', 0), ('legacy-shot', 1)]:
+            broken = subprocess.run([str(executable), mutation], capture_output=True, text=True, timeout=15)
+            assert broken.returncode != 0 and 'Uplink fractional holding requests lost' in broken.stderr
+            assert 'UNEXPECTED' not in broken.stderr
+            assert f'route={route} fps=120 slow=1 phase=0 requests=60' in broken.stdout
+    finally:
+        vars(config).update(previous)

@@ -1,3 +1,14 @@
+## 2026-11-05 - Discord Uplink candidate (gameplay acceptance pending)
+
+Branch fix/discord-uplink, base831c324a. Shared numeric gates admit Uplink
+physics-mode primary holding on fractional frames. Original-US request/block,
+weapon callback and charge regression passes both paths at60/120/144/180/240,
+four carried phases and normal/quarter speed. Restoring either old gate loses
+requests and charge at120. Existing fresh-trigger/scope checks also pass
+(3 selected pytest tests). Targeting, weapon-state handoff and rigid-body
+services remain controlled. Full build and live lift/release acceptance are
+pending; no Discord resolution comment posted. See native-uplink.md.
+
 ## 2026-11-05 - Native fullscreen startup and Steam Deck Desktop controls
 
 User launches directly from Desktop Mode. Holding Menu to select Steam's

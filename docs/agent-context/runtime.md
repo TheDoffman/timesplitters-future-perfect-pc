@@ -1,4 +1,4 @@
-[Projectile timing](native-projectiles.md).
+[Uplink/rockets](native-uplink.md).
 [Linux](linux-game.md); [SMAA](smaa.md).
 [Kill feed contracts](../development/arcade-kill-feed.md).
 Story rewards: 2465 wraps356800 for the frontend;

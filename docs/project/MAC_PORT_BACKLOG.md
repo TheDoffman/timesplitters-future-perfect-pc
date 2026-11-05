@@ -1,3 +1,13 @@
+## Uplink native holding — validation pending
+
+Candidate fix/discord-uplink after831c324a: shared pc_native_numeric.h and
+pc_native_uplink.h admit fractional primary holding requests. No new host
+adapter is required. Original-US request/charge regression passes on Windows;
+Windows live acceptance and native Mac/Linux build/gameplay remain pending.
+Check pickup, sustained floating, release/throw, pause, map mode and ordinary
+gun cadence at60/120/144/180/240. See STATUS.md and native-uplink.md.
+Source currently uncommitted.
+
 ## Saved native fullscreen startup — validation pending
 
 Local fix/linux-deck-desktop-input: window_startup_sdl.h applies the existing
