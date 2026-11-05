@@ -3,6 +3,7 @@
 #endif
 #define _WIN32_WINNT 0x0601
 #include "pc_settings.h"
+#include "pc_developer.h"
 #include "texture_mode.h"
 #include "pc_debug.h"
 #include "pc_menu_theme.h"
@@ -215,7 +216,7 @@ static INT_PTR CALLBACK settings_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
         LVCOLUMNA column={0};
         const char *headers[]={"Action","Primary","Alternate"};
         e=(Editor *)lp; SetWindowLongPtr(d,DWLP_USER,lp);
-        control(d,"STATIC","Double-click a binding to change it. F2 opens settings; F1 shows/hides the menu bar.\nEscape releases the mouse. Pause a mission before opening PC settings.",0,ID_HELP);
+        control(d,"STATIC","Double-click a binding to change it. F2 opens settings; F1 opens Developer Tools.\nEscape releases the mouse. Pause a mission before opening PC settings.",0,ID_HELP);
         e->list=control(d,WC_LISTVIEWA,"",WS_TABSTOP|LVS_REPORT|LVS_SINGLESEL|LVS_SHOWSELALWAYS|WS_BORDER,ID_ACTIONS);
         ListView_SetExtendedListViewStyle(e->list,LVS_EX_FULLROWSELECT|LVS_EX_GRIDLINES|LVS_EX_DOUBLEBUFFER);
         for(i=0;i<=PC_BINDING_SLOTS;i++) { column.mask=LVCF_TEXT|LVCF_WIDTH; column.pszText=(char *)headers[i]; column.cx=i?105:225; ListView_InsertColumn(e->list,i,&column); }
@@ -293,18 +294,7 @@ static const char menu_property[]="TSFP.PcSettingsMenu";
 
 void pc_settings_toggle_menu(HWND game)
 {
-    HMENU bar=(HMENU)GetPropA(game,menu_property);
-    if(!bar || !SetMenu(game,GetMenu(game) ? NULL : bar)) return;
-    if(!pc_settings_save_menu_visible(GetMenu(game)!=NULL))
-        fprintf(stderr,"[settings] Could not save PC Settings bar visibility.\n");
-    if(GetMenu(game)) {
-        pc_menu_theme_attach(game);
-        pc_menu_theme_refresh(game,pc_window_theme_dark());
-    }
-    /* Keep the outer window bounds, including borderless fullscreen. The
-       renderer follows the new client size and WM_SIZE updates mouse clipping. */
-    SetWindowPos(game,NULL,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE|SWP_FRAMECHANGED);
-    DrawMenuBar(game);
+    (void)game;pc_developer_toggle();
 }
 
 void pc_settings_detach(HWND game)
@@ -331,7 +321,7 @@ void pc_settings_attach(HWND game)
     AppendMenuA(settings,MF_STRING,PC_MENU_BAR_COMMAND,"&Hide Menu Bar\tF1");
     AppendMenuA(bar,MF_POPUP,(UINT_PTR)settings,"&PC Settings");
     if(!SetPropA(game,menu_property,(HANDLE)bar)) { DestroyMenu(bar); return; }
-    if(pc_settings_menu_visible()) SetMenu(game,bar);
+    /* The menu is now drawn in the game. Keep old saved visibility data intact. */
     pc_menu_theme_attach(game);
     rect=client;
     AdjustWindowRectEx(&rect,(DWORD)GetWindowLongPtr(game,GWL_STYLE),GetMenu(game)!=NULL,(DWORD)GetWindowLongPtr(game,GWL_EXSTYLE));

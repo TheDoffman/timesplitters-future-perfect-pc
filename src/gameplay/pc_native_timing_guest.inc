@@ -7,6 +7,7 @@
 #include "pc_native_rate.h"
 #include "pc_native_timing.h"
 #include "pc_native_clock.h"
+#include "pc_developer.h"
 extern uint64_t xbox_ReadTimeStampCounter(void);
 extern void sub_000455B0(void), sub_000455C0(void), sub_00150190(void);
 int g_tsfp_native_timing_active;
@@ -116,7 +117,19 @@ static void pc_native_timing_guest(void (*original)(void))
     pc_native_pose_trace();
     pc_native_local_trace();
     recomp_config_commit_native_rate();
+    int32_t developer_scene=(int32_t)NT_WORD(0x79094Cu);
+    uint32_t developer_mode=NT_WORD(0x78AD20u);
+    int developer_network=NT_WORD(0x76B0FCu) && NT_WORD(0x76B108u);
+    uint32_t developer_phase=NT_WORD(0x7DE30Cu);
+    int developer_play=developer_scene>=0 && developer_scene<=100 && (developer_phase==1u || developer_phase==7u);
+    pc_developer_publish(developer_play,developer_mode==4u || developer_mode==14u,developer_network);
+    pc_developer_guest_frame();
     int rate = pc_native_rate();
+    PcDeveloperState developer;
+    pc_developer_get(&developer);
+    /* Non-original game speed needs fractional consumers even at 60 FPS.
+     * Presentation, input, audio and the Xbox interrupt clock keep real time. */
+    if(!rate && developer.speed!=1.)rate=60;
     if (!rate) {
         g_tsfp_native_step=(PcNativeStep){0};
         if (g_tsfp_native_timing_active) {
@@ -174,8 +187,8 @@ static void pc_native_timing_guest(void (*original)(void))
         pc_native_clock_catch_up(&pacing, now.QuadPart);
     }
     int32_t pause = (int32_t)NT_WORD(0x7497B4u);
-    PcNativeStep step = pc_native_timing_step(&clock, now.QuadPart,
-        frequency.QuadPart, rate, pause > 0);
+    PcNativeStep step = pc_native_timing_step_scaled(&clock, now.QuadPart,
+        frequency.QuadPart, rate, pause > 0,developer.speed);
     g_tsfp_native_step=step;
     if (!announced) {
         announced = 1;

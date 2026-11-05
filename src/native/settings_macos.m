@@ -128,7 +128,7 @@ static void (^graphics_test_ready)(TSFPSettings *,NSTabView *,NSPopUpButton *,NS
     sensitivity=[[NSTextField alloc] initWithFrame:NSMakeRect(160,75,100,24)];[cv addSubview:sensitivity];
     enabled=[NSButton checkboxWithTitle:@"Mouse look enabled" target:nil action:NULL];enabled.frame=NSMakeRect(285,75,200,24);[cv addSubview:enabled];
     invert=[NSButton checkboxWithTitle:@"Invert vertical look" target:nil action:NULL];invert.frame=NSMakeRect(510,75,240,24);[cv addSubview:invert];
-    label(cv,@"F1 releases/captures the pointer. F2 opens Settings. Reserved shortcuts cannot be rebound.",NSMakeRect(10,35,785,30));
+    label(cv,@"F1 opens Developer Tools. F2 opens Settings. Reserved shortcuts cannot be rebound.",NSMakeRect(10,35,785,30));
     [self fill:&original];
     NSTabViewItem *graphics=[[NSTabViewItem alloc] initWithIdentifier:@"graphics"];graphics.label=@"Graphics";
     NSView *gv=[[NSView alloc] initWithFrame:cv.frame];graphics.view=gv;[tabs addTabViewItem:graphics];

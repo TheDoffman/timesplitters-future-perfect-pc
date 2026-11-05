@@ -1579,3 +1579,4 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
 }
 
 #include "pc_graphics_world.inc"
+#include "pc_developer_guest.inc"

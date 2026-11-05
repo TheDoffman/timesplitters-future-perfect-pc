@@ -194,6 +194,21 @@ When the optional pack is available, use **Game settings → Graphics & resoluti
 
 <a name="guides--support"></a>
 
+## Developer Tools (local source build)
+
+Press **F1** to open or close the in-game Developer Tools overlay. Use the mouse
+or arrow keys and Enter; Escape goes back. **PC Settings** contains keyboard and
+mouse bindings, Debug, Enhanced Textures and Fullscreen. F2/F12 also remain
+available for the existing settings dialogs.
+
+The tools toggle HUD/UI and the version watermark, enable no-clip or detached
+free-cam, advance Story checkpoints (or start the ending after the last one),
+and set game speed from 0.05x to 4x. Hold **[** or **]** to adjust speed by 0.1.
+Flight uses **WASD + mouse**, **Space/Ctrl** up/down and **Shift** for 4x speed.
+Free-cam hides the HUD; turning it off restores HUD and player control/view.
+Flight, checkpoint and speed tools are available during offline gameplay.
+Native Mac/Linux acceptance is pending; see [validation](docs/project/STATUS.md).
+
 ## <img src="docs/assets/icon-support.svg" alt="" width="24" height="24"> Guides & support
 
 [All documentation](docs/README.md) · [Repository layout and naming](docs/development/repository-layout.md)

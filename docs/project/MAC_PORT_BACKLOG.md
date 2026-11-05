@@ -1,3 +1,19 @@
+## Developer Tools overlay - implemented, native acceptance pending
+
+Local/uncommitted developer-tools-overlay after d2d2c8d5. Shared
+`src/interface/pc_developer.c`, `pc_developer_guest.inc` and clock policy provide
+F1 overlay, PC Settings, HUD/watermark toggles, flight, Story checkpoint advance
+and game speed. Windows/SDL adapters own capture, fullscreen and log operations.
+Common RHI and native legacy GL draw rows and suppress HUD draws while retaining
+guest logic. No separate Mac gameplay implementation is required; existing
+F2/F12 settings remain available. Windows Build, CPU/GPU checks and bounded Story/menu acceptance passed; see
+[STATUS](STATUS.md).
+Native Mac/Linux build and gameplay acceptance remain pending: F1 isolation,
+settings/persistence, focus/fullscreen/pointer scaling, original/native rates,
+flight geometry and camera return/visibility, HUD/watermark recovery, Story
+checkpoint restoration/final ending, bracket repeats and pause. Windows CPU
+fixtures do not verify these hosts. Use isolated saves/settings for checks.
+
 ## Joined-player device settings — validation pending
 
 Shared pc_keyboard_menu.inc/pc_controls_menu.inc map UI player rows to native

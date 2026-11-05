@@ -2,6 +2,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include "pc_settings.h"
+#include "pc_developer.h"
 #include "pc_prompts.h"
 #include "pc_controls.h"
 #include "input_bindings.h"
@@ -124,7 +125,7 @@ int main(int argc,char **argv)
         CHECK(!current.keys[19][0] && current.keys[19][1]=='K');
         CHECK(pc_settings_menu_visible());
         owner=CreateWindowExA(0,"STATIC","Restored menu",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
-        CHECK(owner); pc_settings_attach(owner); CHECK(GetMenu(owner));
+        CHECK(owner); pc_settings_attach(owner); CHECK(!GetMenu(owner));
         pc_settings_detach(owner); DestroyWindow(owner);
         puts("PASS: bindings and menu visibility reload in a fresh process"); return 0;
     }
@@ -187,14 +188,17 @@ int main(int argc,char **argv)
     CHECK(!pc_settings_menu_visible());
     pc_settings_attach(owner); CHECK(!GetMenu(owner));
     pc_settings_toggle_menu(owner);
-    CHECK(GetMenu(owner) && GetMenuItemCount(GetMenu(owner))==1);
-    CHECK(pc_settings_menu_visible());
+    CHECK(pc_developer_open() && !GetMenu(owner));
+    CHECK(!pc_settings_menu_visible());
     pc_settings_toggle_menu(owner); CHECK(!GetMenu(owner));
+    CHECK(!pc_developer_open());
     CHECK(!pc_settings_menu_visible());
     pc_settings_detach(owner); DestroyWindow(owner);
     owner=CreateWindowExA(0,"STATIC","PC settings restart test",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
     CHECK(owner); pc_settings_attach(owner); CHECK(!GetMenu(owner));
-    pc_settings_toggle_menu(owner); CHECK(GetMenu(owner));
+    pc_settings_toggle_menu(owner); CHECK(pc_developer_open() && !GetMenu(owner));
+    pc_developer_close();
+    CHECK(pc_settings_save_menu_visible(1)); /* Preserve legacy JSON, never attach a bar. */
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
     CHECK(!pc_settings_save_menu_visible(0));
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
@@ -227,9 +231,10 @@ int main(int argc,char **argv)
     }
     pc_settings_defaults(&current); CHECK(current.keys[14][0]=='W' && fabs(current.sensitivity-.1)<.0001);
     {
-        HMENU bar=GetMenu(owner);
-        pc_settings_toggle_menu(owner); CHECK(!GetMenu(owner) && IsMenu(bar));
+        HMENU bar=(HMENU)GetPropA(owner,"TSFP.PcSettingsMenu");
+        pc_settings_toggle_menu(owner); CHECK(pc_developer_open() && !GetMenu(owner) && IsMenu(bar));
         pc_settings_detach(owner); CHECK(!IsMenu(bar));
+        pc_developer_close();
     }
     CHECK(pc_settings_read(&settings,error,sizeof error));
     CHECK(pc_settings_assign(&settings,33,0,'1',1)==1 && !settings.keys[24][0]);

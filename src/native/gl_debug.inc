@@ -1,4 +1,5 @@
 #include "pc_counter_layout.h"
+#include "pc_developer.h"
 /* Host-only overlay: drawn after scene presentation so guest captures, copied
  * textures, and interpolation history cannot contain the debug text. */
 typedef struct NativeDebugLine {
@@ -7,12 +8,19 @@ typedef struct NativeDebugLine {
     int width;
 } NativeDebugLine;
 static NativeDebugLine native_debug_lines[2];
+static NativeDebugLine native_developer_lines[16];
+static PcDeveloperLine native_developer_layout[16];
 static void native_debug_release(void) {
     for(int i=0;i<2;i++) {
         if(native_debug_lines[i].texture)glDeleteTextures(1,&native_debug_lines[i].texture);
         if(native_debug_lines[i].fbo)glDeleteFramebuffers(1,&native_debug_lines[i].fbo);
     }
     memset(native_debug_lines,0,sizeof native_debug_lines);
+    for(int i=0;i<16;i++) {
+        if(native_developer_lines[i].texture)glDeleteTextures(1,&native_developer_lines[i].texture);
+        if(native_developer_lines[i].fbo)glDeleteFramebuffers(1,&native_developer_lines[i].fbo);
+    }
+    memset(native_developer_lines,0,sizeof native_developer_lines);
 }
 static void native_debug_line(NativeDebugLine *cache,const char *text,GLuint destination,
                               int width,int height,int bottom) {
@@ -32,12 +40,19 @@ static void native_debug_line(NativeDebugLine *cache,const char *text,GLuint des
         int line_height=(int)(48*scale),margin=(int)(10*scale);
         int shown=width-2*margin<cache->width*scale?width-2*margin:(int)(cache->width*scale);
         int x=bottom?width-margin-shown:margin,y=bottom?margin:height-line_height-margin;
+        if(bottom>=2) {
+            PcDeveloperLine *row=&native_developer_layout[bottom-2];
+            scale=row->height/48.f;line_height=(int)row->height;
+            shown=(int)fminf(row->width,cache->width*scale);
+            x=(int)row->x;y=height-(int)row->y-line_height;
+        }
         /* Fit the complete line when the drawable is narrow. CoreText truncates
          * only text exceeding the cache itself, with an explicit ellipsis. */
         glBlitFramebuffer(0,48,cache->width,0,x,y,x+shown,y+line_height,GL_COLOR_BUFFER_BIT,GL_LINEAR);
     }
 }
 static void native_debug_draw(GLuint destination,int width,int height) {
+    pc_developer_frame();
     if(width<=20 || height<=60)return;
     char text[320],line[384];
     int show=pc_debug_overlay(text,sizeof text,NULL);
@@ -53,7 +68,9 @@ static void native_debug_draw(GLuint destination,int width,int height) {
     glPixelStorei(GL_UNPACK_ROW_LENGTH,0);glPixelStorei(GL_UNPACK_SKIP_ROWS,0);glPixelStorei(GL_UNPACK_SKIP_PIXELS,0);
     glDisable(GL_SCISSOR_TEST);
     if(show)native_debug_line(&native_debug_lines[0],line,destination,width,height,0);
-    native_debug_line(&native_debug_lines[1],pc_debug_watermark(),destination,width,height,1);
+    if(pc_developer_watermark_visible())native_debug_line(&native_debug_lines[1],pc_debug_watermark(),destination,width,height,1);
+    unsigned developer_count=pc_developer_lines(width,height,native_developer_layout,16);
+    for(unsigned i=0;i<developer_count;i++)native_debug_line(&native_developer_lines[i],native_developer_layout[i].text,destination,width,height,2+i);
     if(scissor)glEnable(GL_SCISSOR_TEST);
     glBindFramebuffer(GL_READ_FRAMEBUFFER,read);glBindFramebuffer(GL_DRAW_FRAMEBUFFER,draw);
     glBindTexture(GL_TEXTURE_2D,binding);glPixelStorei(GL_UNPACK_ALIGNMENT,unpack);

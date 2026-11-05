@@ -1,3 +1,48 @@
+## 2026-11-04 - Developer Tools overlay
+
+Local/uncommitted developer-tools-overlay, base d2d2c8d5, Windows x64.
+F1 opens an in-game overlay with the existing PC Settings (bindings/mouse,
+debug options/statistics/logs, textures and fullscreen) and all six requested
+tools. The old Windows toolbar stays hidden. Flight/checkpoint/game-speed
+changes are offline only; game speed accepts 0.05?4.0, held brackets repeat
+0.1 steps. Flight uses WASD/mouse, Space/Ctrl and Shift (4x). Shared policy,
+Windows/SDL adapters, common RHI and legacy GL implementation are present.
+
+Supported US XBE SHA-256 verified against the pinned 3cfd001a?41816bc.
+Final supported MSVC x64 Build and linked settings/debug checks passed (exit 0).
+Executable SHA-256: `6ee75ba59a074d09857b5073bdb25b8ed1444a4c285e72b9725a7478b8e30565`;
+sealed game-content/executable identity verification passed. Final combined
+regression set: **167 passed, 2 Mac compiler skips**. Earlier CPU suites:
+123 timing/menu/tools checks passed; 43 repository/debug/mounted-input checks
+passed; latest flight/FOV/input follow-up 26 passed with two Mac compiler skips.
+Real D3D11 GPU replay: 13 passed, including final-output overlay glyphs at
+MSAA 1/4 and unchanged guest scene pixels. The latter read back the completed
+swapchain before Present; reading after DXGI flip was rejected as evidence.
+Temporary test-only _CL_=/Z7 avoids this host's standalone PDB manager mismatch;
+normal supported builds use the project flags.
+
+Bounded isolated Windows acceptance: menu mouse/keyboard navigation, binding
+settings save (sensitivity 0.2), debug, texture and fullscreen round trips,
+watermark toggle and F1 reopen passed. Story run (96 seconds) verified noclip
+camera follows player while floating, detached flight and mouse look with
+unchanged character x/z and facing, HUD hiding/restoration, camera/control
+return, speed 0.5 and held ] increase (~1.2), and native checkpoint reloads.
+Three successive authored positions were (52.67,0.45,16.12),
+(-87.88,-10.73,-113.76), (-85.07,-4.82,-162.81); the next advance entered the
+native Cortez elevator ending cinematic. This is one Story level, not an
+all-level checkpoint audit or a complete campaign playthrough. Shift's 4x
+movement and offline guards have deterministic fixtures. A final 63-second
+Story run also verified stationary floating and Ctrl flight through the ground
+(camera still attached), then measured Shift: 426 ordinary-motion samples
+averaged 7.48 units/sec, 73 boosted samples 29.99 units/sec (4.01x). These are
+automated host input replays; physical-device and native Mac/Linux gameplay
+checks remain unrun.
+
+Evidence: logs/developer-tools-*.log; private/test-saves/developer-tools contains
+bounded JSON results, pose traces and selected own-window captures. Hashes of
+personal controls/display and the canonical Test Lab fixture were unchanged;
+six disposable partition images recycled after each run. No release/push claim.
+
 ## 2026-11-04 - Local-player Settings integration validation
 
 Merged main ff643ed4 into the local-player branch. Windows supported Build and

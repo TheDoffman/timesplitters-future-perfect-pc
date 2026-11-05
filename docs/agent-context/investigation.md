@@ -1,3 +1,8 @@
+Developer Tools patch2520 extends the final Windows/SDL/HLE layout and runs
+after all Linux patches. Keep its final position in the loader/order fixture.
+Task memory is `logs/developer-tools-investigation.md`; the pre-existing
+investigation file belongs to other tasks and remains preserved.
+
 # Investigation memory and handoffs
 
 Linux patches2402 through2412 follow2401; its duplicate2512 is omitted. Context

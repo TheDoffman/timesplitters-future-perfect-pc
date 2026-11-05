@@ -57,9 +57,19 @@ Native Mac gameplay remains pending under MAC-121.
 
 ## PC Settings bar visibility
 
-PC Settings bar: `pc_settings_attach/toggle_menu` in `src/interface/pc_settings.c` restore/save top-level `pc_menu_visible` in the active input JSON via `pc_bindings.inc`. Missing preference starts hidden; F1 and Hide Menu Bar persist immediately through the existing atomic writer, preserving bindings and other JSON. Window sizing uses actual menu visibility. Native Mac uses its system menu and F1 pointer capture, so this Windows bar preference does not alter that host.
+Developer Tools replaces the Windows bar with the shared F1 overlay in
+`src/interface/pc_developer.c`. `pc_settings_attach` keeps the old command
+registry hidden; `pc_settings_toggle_menu` now toggles the overlay. The old
+`pc_menu_visible` JSON is retained and survives binding saves, but no longer
+attaches a toolbar. Windows and SDL F1 now open the same overlay and release
+the pointer for its exclusive keyboard/mouse input. Closing latches held keys
+until release. Original menus receive empty pointer/text/key input while open.
 
-PC Settings bar persistence is covered by the existing Windows `tsfp_pc_settings_test`: absent/hidden/shown, reattachment, fresh-process restoration, read-only failure and preservation through binding saves. The standard Build action runs it on isolated test JSON.
+The Windows settings, prompts and debug linked checks retain legacy JSON and
+hidden-command coverage while checking F1 repeat handling, overlay toggling and
+unchanged dialog behavior. Shared Developer Tools fixtures cover its settings,
+binding capture/conflict and numeric editing routes. Live acceptance remains
+separate; see STATUS.
 
 ## Fresh weapon clicks (#434)
 

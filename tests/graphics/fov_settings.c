@@ -4,11 +4,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 static ULONGLONG clock_ms;
 static ULONGLONG ticks(void) { return clock_ms; }
 #define GetTickCount64 ticks
 #include "../src/interface/pc_display.c"
 #include "../src/interface/pc_display_menu.c"
+/* Developer Tools is a separate guest-thread consumer. These menu fixtures
+ * retain normal HUD visibility and reject accidental flight/Story actions. */
+void pc_developer_get(PcDeveloperState *out) {*out=(PcDeveloperState){0,0,0,0,1.,0};}
+int pc_developer_hud_visible(void) {return 1;}
+void pc_developer_close(void) {assert(!"unexpected Developer Tools close");}
+void pc_developer_report(const char *message) {(void)message;assert(!"unexpected developer request");}
+int pc_developer_flight_step(int mode,const float origin[3],const float direction[3],double seconds,float position[3],float forward[3])
+{(void)mode;(void)origin;(void)direction;(void)seconds;(void)position;(void)forward;assert(!"unexpected flight");return 0;}
+void sub_0025EF80(void) {assert(!"unexpected checkpoint capture");}
+void sub_001519E0(void) {assert(!"unexpected camera view");}
+void sub_00153270(void) {assert(!"unexpected camera composition");}
+void sub_00152260(void) {assert(!"unexpected camera inverse");}
+void sub_0006BB90(void) {assert(!"unexpected checkpoint lookup");}
+void sub_00067450(void) {assert(!"unexpected mission ending");}
+void pc_controls_apply_mouse(uint32_t player,uint32_t camera,ptrdiff_t offset)
+{(void)player;(void)camera;(void)offset;assert(!"unexpected developer mouse update");}
 const char *pc_build_version(void) { return "development"; }
 ptrdiff_t g_xbox_mem_offset;
 RECOMP_TLS uint32_t g_eax,g_ecx,g_edx,g_esp,g_ebx,g_esi,g_edi,g_ebp,g_seh_ebp;

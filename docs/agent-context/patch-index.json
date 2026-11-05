@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "39570637ce657ad90cade0bda5e101896ba829ee6db51081d5696b789cd84078",
+  "loaderSha256": "12adb667c7411f46525ecd24853895607afe56887242faeee967600ddd897acc",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3513,6 +3513,19 @@
         "src/hle/hle_xmv_play.c",
         "src/input/CMakeLists.txt",
         "src/video/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2520-developer-tools-overlay.patch",
+      "path": "patches/diagnostics/2520-developer-tools-overlay.patch",
+      "sha256": "fda0cf5fd032b02a1548c18ccc11a714ca7f2fc4c6b0007ff82557fbe61b876a",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_overlay.c",
+        "src/d3d/d3d8_overlay.h",
+        "src/hle/hle_d3d8.c",
+        "src/input/CMakeLists.txt",
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     }
   ]

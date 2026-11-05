@@ -255,6 +255,12 @@ def patch_records(paths):
         if linux:
             paths.remove(linux)
             paths.append(linux)
+    # Developer Tools consumes the final shared Windows/SDL input layout and
+    # positioned RHI overlays, including Linux's last host-adapter extensions.
+    developer_tools = by_name.get('2520-developer-tools-overlay.patch')
+    if developer_tools:
+        paths.remove(developer_tools)
+        paths.append(developer_tools)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

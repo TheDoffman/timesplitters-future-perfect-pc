@@ -7,6 +7,7 @@
 #include "input_bindings.h"
 #include "pc_prompts.h"
 #include "pc_settings.h"
+#include "pc_developer.h"
 #include "pc_camera.h"
 #include "pc_reload_guest.h"
 #include "pc_mounted.h"
@@ -28,9 +29,16 @@ int tsfp_native_request_quit(void) {
     return SDL_PushEvent(&event);
 }
 static atomic_uchar keys[256];
+static atomic_uchar developer_blocked[256];
 static atomic_int focused;
 static PcInput camera_input;
 static pthread_mutex_t camera_lock=PTHREAD_MUTEX_INITIALIZER;
+void pc_controls_developer_release(void) {
+    for(unsigned i=0;i<256;i++)atomic_store(&developer_blocked[i],atomic_load(&keys[i]));
+    for(unsigned i=0;i<3;i++)atomic_store(&developer_blocked[0x10+i],atomic_load(&keys[0xa0+i*2])||atomic_load(&keys[0xa1+i*2]));
+    pthread_mutex_lock(&camera_lock);pc_reload_reset(&camera_input.reload);
+    camera_input.dx=camera_input.dy=0;pthread_mutex_unlock(&camera_lock);
+}
 static atomic_int mouse_enabled=1, mouse_invert;
 static _Atomic float mouse_sensitivity=0.10f;
 static atomic_int captured;
@@ -45,7 +53,7 @@ static Uint64 menu_wheel_at;
 static PcTextInput text_input;
 int pc_controls_weapon_slots_active(void) {
     pthread_mutex_lock(&camera_lock);
-    int active=atomic_load(&focused) && captured && !atomic_load(&menu_active) && !text_input.owner;
+    int active=!pc_developer_flying() && atomic_load(&focused) && captured && !atomic_load(&menu_active) && !text_input.owner;
     pthread_mutex_unlock(&camera_lock);
     return active;
 }
@@ -53,7 +61,7 @@ int pc_controls_weapon_slots_active(void) {
 void pc_controls_reload_sample(const unsigned char roles[256],int active,
                                int *reload,int *fire,int *secondary) {
     pthread_mutex_lock(&camera_lock);
-    active=active && atomic_load(&focused) && captured && !atomic_load(&menu_active) && !text_input.owner;
+    active=active && !pc_developer_flying() && atomic_load(&focused) && captured && !atomic_load(&menu_active) && !text_input.owner;
     pc_reload_sample(&camera_input.reload,roles,active,SDL_GetTicks(),reload,fire,secondary);
     pc_input_cockpit_fire(&camera_input,active,SDL_GetTicks(),secondary);
     pthread_mutex_unlock(&camera_lock);
@@ -75,6 +83,7 @@ static void reload_key_event(unsigned vk,int down) {
 }
 
 void pc_controls_text_mode(uint32_t owner) {
+    if(pc_developer_open())owner=0;
     pthread_mutex_lock(&camera_lock);
     if(text_input.owner!=owner) {
         pc_text_session(&text_input,owner);
@@ -90,6 +99,7 @@ unsigned pc_controls_text_event(uint32_t owner) {
 }
 
 void pc_controls_menu_mode(int active) {
+    active=active || pc_developer_open();
     pthread_mutex_lock(&camera_lock);
     if(atomic_load(&menu_active)!=!!active) {
         menu_button_block=(menu_pointer_state.left?1u:0u)|(menu_pointer_state.right?2u:0u);
@@ -108,11 +118,12 @@ static PcMenuPointer menu_pointer_snapshot(int consume) {
     p.wheel=consume && p.valid && SDL_GetTicks()-menu_wheel_at<250?p.wheel:0;
     if(consume)menu_pointer_state.wheel=0;
     pthread_mutex_unlock(&camera_lock);
-    if(pc_settings_capture_blocked())p.valid=p.left=p.right=p.wheel=0;
+    if(pc_settings_capture_blocked()&&!pc_developer_open())p.valid=p.left=p.right=p.wheel=0;
     return p;
 }
-PcMenuPointer pc_controls_menu_pointer(void) {return menu_pointer_snapshot(1);}
-PcMenuPointer pc_controls_menu_hover_pointer(void) {return menu_pointer_snapshot(0);}
+PcMenuPointer pc_controls_developer_pointer(void) {return menu_pointer_snapshot(1);}
+PcMenuPointer pc_controls_menu_pointer(void) {PcMenuPointer empty={0};return pc_developer_open()?empty:menu_pointer_snapshot(1);}
+PcMenuPointer pc_controls_menu_hover_pointer(void) {PcMenuPointer empty={0};return pc_developer_open()?empty:menu_pointer_snapshot(0);}
 
 void tsfp_native_mouse_config(int enabled,double sensitivity,int invert_y) {
     atomic_store(&mouse_enabled,!!enabled);
@@ -188,7 +199,7 @@ static void set_capture(SDL_Window *window,int wanted) {
     fprintf(stderr,"[native-input] mouse capture %s\n",captured?"on":"off");
 }
 static void release_all(void) {
-    for(int i=0;i<256;i++)atomic_store(&keys[i],0);
+    for(int i=0;i<256;i++){atomic_store(&keys[i],0);atomic_store(&developer_blocked[i],0);}
     clear_mouse();capture_click=0;
     pthread_mutex_lock(&camera_lock);
     menu_pointer_state.valid=menu_pointer_state.left=menu_pointer_state.right=menu_pointer_state.wheel=0;
@@ -199,19 +210,25 @@ static void release_all(void) {
 }
 void tsfp_native_settings_release_input(SDL_Window *window) {release_all();set_capture(window,0);}
 int tsfp_native_input_focused(void) {return atomic_load(&focused);}
-int pc_controls_binding_keys(unsigned char down[256]) {
+int pc_controls_developer_keys(unsigned char down[256]) {
     memset(down,0,256);
     int focus=atomic_load(&focused);
     if(!focus)return 0;
-    for(unsigned i=1;i<256;i++)down[i]=atomic_load(&keys[i]);
+    for(unsigned i=1;i<256;i++)down[i]=atomic_load(&keys[i]) &&
+        (pc_developer_open() || !atomic_load(&developer_blocked[i]));
     down[0x10]=down[0xa0]||down[0xa1];down[0x11]=down[0xa2]||down[0xa3];down[0x12]=down[0xa4]||down[0xa5];
     memset(down+0xa0,0,6);
     pthread_mutex_lock(&camera_lock);
     if(SDL_GetTicks()-menu_wheel_at<250) {down[0x86]|=menu_pointer_state.wheel>0;down[0x87]|=menu_pointer_state.wheel<0;}
     pthread_mutex_unlock(&camera_lock);return 1;
 }
+int pc_controls_binding_keys(unsigned char down[256]) {
+    if(pc_developer_open()){memset(down,0,256);return 0;}
+    return pc_controls_developer_keys(down);
+}
 int tsfp_native_key_down(int vk) {
     if(!atomic_load(&focused)||vk<=0||vk>255)return 0;
+    if(atomic_load(&developer_blocked[vk]))return 0;
     pthread_mutex_lock(&camera_lock);
     int typing=text_input.owner && pc_text_key((unsigned)vk);
     pthread_mutex_unlock(&camera_lock);
@@ -235,9 +252,10 @@ int tsfp_native_key_down(int vk) {
     return atomic_load(&keys[vk]);
 }
 int pc_controls_accept_pad(void) {
-    return atomic_load(&focused) && !pc_settings_capture_blocked();
+    return !pc_developer_open() && !pc_developer_flying() && atomic_load(&focused) && !pc_settings_capture_blocked();
 }
 int pc_controls_key_down(int vk) {
+    if(pc_developer_open() || pc_developer_flying())return 0;
     if(pc_settings_capture_blocked())return 0;
     int down=tsfp_native_key_down(vk);
     if(atomic_load(&menu_active)) {
@@ -279,6 +297,12 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
     }
     if(e->type==SDL_EVENT_KEY_DOWN||e->type==SDL_EVENT_KEY_UP){
         int vk=tsfp_native_virtual_key(e->key.scancode),down=e->type==SDL_EVENT_KEY_DOWN;
+        if(!down && vk>0 && vk<256)atomic_store(&developer_blocked[vk],0);
+        if(!down && vk>=0xa0 && vk<=0xa5)atomic_store(&developer_blocked[0x10+(vk-0xa0)/2],0);
+        if(e->key.scancode==SDL_SCANCODE_F1) {
+            if(down && !e->key.repeat && window)pc_developer_toggle();
+            return;
+        }
         if(pc_settings_capture_blocked()) {
             if(vk){atomic_store(&keys[vk],down);reload_key_event(vk,down);}
             if(down && atomic_load(&focused))pc_settings_capture_key(vk);
@@ -302,9 +326,6 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
         if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F11 && window){
             tsfp_native_settings_release_input(window);
             SDL_SetWindowFullscreen(window,!(SDL_GetWindowFlags(window)&SDL_WINDOW_FULLSCREEN));return;
-        }
-        if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F1 && window && !atomic_load(&menu_active)){
-            set_capture(window,!captured);
         }
         if(down && e->key.scancode==SDL_SCANCODE_ESCAPE){
             set_capture(window,0);
@@ -331,7 +352,7 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
         }
         int vk=e->button.button==SDL_BUTTON_LEFT?1:e->button.button==SDL_BUTTON_RIGHT?2:
                e->button.button==SDL_BUTTON_MIDDLE?4:e->button.button==SDL_BUTTON_X1?5:e->button.button==SDL_BUTTON_X2?6:0;
-        if(vk){atomic_store(&keys[vk],down);reload_key_event(vk,down);}
+        if(vk){if(!down)atomic_store(&developer_blocked[vk],0);atomic_store(&keys[vk],down);reload_key_event(vk,down);}
         if(down && atomic_load(&focused))pc_settings_capture_key(vk);
     }
     if(e->type==SDL_EVENT_MOUSE_WHEEL && atomic_load(&menu_active) && atomic_load(&focused)) {
@@ -393,6 +414,9 @@ void pc_controls_apply_mouse(uint32_t player,uint32_t fov_object,ptrdiff_t offse
         pthread_mutex_unlock(&camera_lock);return;
     }
     pc_reload_guest_context(&camera_input.reload,player,offset,SDL_GetTicks(),&region);
+    if(pc_developer_mouse(&camera_input,SDL_GetTicks(),atomic_load(&mouse_sensitivity),atomic_load(&mouse_invert),1.f)) {
+        pthread_mutex_unlock(&camera_lock);return;
+    }
     int terminal=pc_terminal_mouse_in_region(&camera_input,SDL_GetTicks(),atomic_load(&mouse_sensitivity),player,offset,pc_native_rate()!=0,&region);
     pc_input_terminal_context(&camera_input,terminal>=0,atomic_load(&keys[1]));
     if(terminal>=0 || pc_mounted_mouse_in_region(&camera_input,SDL_GetTicks(),atomic_load(&mouse_sensitivity),
@@ -407,7 +431,15 @@ void pc_controls_apply_mouse(uint32_t player,uint32_t fov_object,ptrdiff_t offse
     static unsigned samples;
     if(changed && samples++<12)fprintf(stderr,"[native-mouse] yaw %.3f -> %.3f pitch %.3f -> %.3f fov %.3f\n",old_yaw,*yaw,old_pitch,*pitch,fov);
 }
+static atomic_int developer_fullscreen_request;
+static atomic_int developer_debug_request;
+void pc_controls_developer_debug_action(int open_folder) {atomic_store(&developer_debug_request,open_folder?2:1);}
+void pc_controls_developer_fullscreen(void) {atomic_store(&developer_fullscreen_request,1);}
 void tsfp_native_input_frame(SDL_Window *window) {
+    int developer_debug=atomic_exchange(&developer_debug_request,0);
+    if(developer_debug==2)pc_debug_open_logs(NULL);else if(developer_debug==1)pc_debug_clear();
+    if(window && atomic_exchange(&developer_fullscreen_request,0))
+        SDL_SetWindowFullscreen(window,!(SDL_GetWindowFlags(window)&SDL_WINDOW_FULLSCREEN));
     tsfp_native_crash_frame();
     if(window)tsfp_native_crash_focus((SDL_GetWindowFlags(window)&(SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MINIMIZED))==SDL_WINDOW_INPUT_FOCUS);
     atomic_store(&keys[0x86],0);atomic_store(&keys[0x87],0);
