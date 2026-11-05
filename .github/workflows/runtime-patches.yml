@@ -308,7 +308,7 @@ jobs:
       - name: Install Linux host development dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang pkg-config libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxfixes-dev libxss-dev libxtst-dev libwayland-dev libxkbcommon-dev libxkbcommon-x11-dev libdrm-dev libgbm-dev libegl1-mesa-dev libdecor-0-dev libasound2-dev libpulse-dev libudev-dev libvulkan1 mesa-vulkan-drivers vulkan-tools xvfb xauth libssl-dev libgtk-3-dev libavcodec-dev libavutil-dev patchelf python3-tk
+          sudo apt-get install -y clang pkg-config libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxfixes-dev libxss-dev libxtst-dev libwayland-dev libxkbcommon-dev libxkbcommon-x11-dev libdrm-dev libgbm-dev libegl1-mesa-dev libdecor-0-dev libasound2-dev libpulse-dev libudev-dev libvulkan1 mesa-vulkan-drivers vulkan-tools xvfb xauth weston libssl-dev libgtk-3-dev libavcodec-dev libavutil-dev patchelf python3-tk
           python -m venv .venv-linux
           .venv-linux/bin/python -m pip install -r requirements.txt
       - name: Check SDK isolation and real Linux host memory providers
@@ -333,7 +333,7 @@ jobs:
             tests/graphics/test_quit_menu.py tests/graphics/test_channel_clears.py
             tests/media/test_audio_timing.py tests/media/test_audio_output_gain.py
             tests/media/test_audio_device_recovery.py tests/media/test_native_movie_file.py
-            tests/compiler/test_linux_desktop.py tests/compiler/test_guest_storage.py
+            tests/compiler/test_linux_desktop.py tests/compiler/test_linux_video_startup.py tests/compiler/test_guest_storage.py
             tests/compiler/test_guest_paths.py tests/compiler/test_io_lifetime.py
           )
           .venv-linux/bin/python -m pytest "${tests[@]}" -q --tb=short
