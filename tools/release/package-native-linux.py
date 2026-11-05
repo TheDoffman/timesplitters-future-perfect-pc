@@ -28,7 +28,10 @@ from build_textures import optional_identity, write_source_files
 
 # These are the host ABI, not distributable application dependencies. Keep the
 # host GPU/GL/Vulkan drivers and loader selection; never ship a hardware ICD.
-HOST=re.compile(r"^(?:ld-linux-x86-64\.so\.2|lib(?:c|m|pthread|dl|rt|util|resolv)\.so\.[0-9]+|libnss_[^.]+\.so\.[0-9]+)$")
+# Mesa can require newer Wayland symbols than the packaging host provides, even
+# for X11 windows. Keep the whole Wayland ABI with the user's graphics stack.
+WAYLAND_HOST=re.compile(r"^libwayland-(?:(?:client|cursor)\.so\.0|egl\.so\.1)(?:\.[0-9]+)*$")
+HOST=re.compile(r"^(?:ld-linux-x86-64\.so\.2|lib(?:c|m|pthread|dl|rt|util|resolv)\.so\.[0-9]+|libnss_[^.]+\.so\.[0-9]+|libwayland-(?:client|cursor)\.so\.0|libwayland-egl\.so\.1)$")
 def digest(path):
     with Path(path).open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
 def run(*args):return subprocess.check_output(list(map(str,args)),text=True).strip()
@@ -48,6 +51,9 @@ def bundle_libraries(pairs,stage):
     """Copy complete direct ELF closures; apply local RPATH without glibc/ICDs."""
     pending=list(pairs);visited=set();origins={};records={}
     bin_dir=stage/'Bin';bin_dir.mkdir(exist_ok=True)
+    for member in stage.rglob('*'):
+        if member.is_file() and WAYLAND_HOST.fullmatch(member.name):
+            raise ValueError('Host Wayland library in Linux package: '+str(member))
     while pending:
         source,target=pending.pop(0)
         if target in visited:continue
@@ -145,6 +151,7 @@ def verify_payload(stage,manifest):
     if not required<=files.keys():raise ValueError('Incomplete Linux game package')
     for name,sha in files.items():
         p=PurePosixPath(name)
+        if WAYLAND_HOST.fullmatch(p.name):raise ValueError('Host Wayland library in Linux package: '+name)
         if ":" in name or not p.parts or p.is_absolute() or '..' in p.parts or '\\' in name or p.parts[0].lower() in {'data','saves','private','textures'} or p.suffix.lower() in {'.xbe','.pak','.iso','.img','.xmv'}:
             raise ValueError('Protected package path: '+name)
         if p.parts[0]=='Settings' and name!='Settings/pc-controls.json':raise ValueError('Personal settings in package')

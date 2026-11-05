@@ -3,7 +3,8 @@
 
 Use an isolated Xvfb display with access control disabled. Mounts are private to
 the child namespace; the package and original game data are bound read-only.
-The prepared root must contain libvulkan1, Mesa Vulkan drivers, fonts and CAs.
+The prepared root must contain libvulkan1, Mesa Vulkan drivers, fonts and CAs,
+plus libwayland-client0, libwayland-cursor0 and libwayland-egl1 (also for X11).
 This checks userspace relocation, not a physical Linux desktop or GPU driver.
 """
 import argparse

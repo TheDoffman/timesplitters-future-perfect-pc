@@ -44,6 +44,26 @@ def test_complete_payload_and_corruption(tmp_path):
     (tmp_path/'Bin/futureperfect_recomp').write_bytes(b'changed')
     with pytest.raises(ValueError,match='checksum'):package.verify_payload(tmp_path,manifest)
 
+
+@pytest.mark.parametrize('name', ['libwayland-client.so.0', 'libwayland-cursor.so.0',
+                                 'libwayland-egl.so.1', 'libwayland-client.so.0.22.0'])
+def test_bundled_wayland_is_rejected_even_with_valid_hash(tmp_path, name):
+    manifest=payload(tmp_path)
+    relative='Bin/'+name
+    (tmp_path/relative).write_bytes(b'old host library')
+    manifest['files'][relative]=package.digest(tmp_path/relative)
+    with pytest.raises(ValueError,match='Host Wayland library'):
+        package.verify_payload(tmp_path,manifest)
+    with pytest.raises(ValueError,match='Host Wayland library'):
+        package.bundle_libraries([],tmp_path)
+
+
+def test_wayland_host_boundary_keeps_application_libraries_bundled():
+    for name in ('libwayland-client.so.0','libwayland-cursor.so.0','libwayland-egl.so.1'):
+        assert package.HOST.fullmatch(name)
+    for name in ('libgtk-3.so.0','libavcodec.so.60','libstdc++.so.6','libxkbcommon.so.0'):
+        assert not package.HOST.fullmatch(name)
+
 def test_keyboard_icon_credit_is_required(tmp_path):
     manifest=payload(tmp_path)
     del manifest['files']['Licenses/Keyboard-mouse-icons.txt']

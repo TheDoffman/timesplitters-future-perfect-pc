@@ -2,6 +2,16 @@
 
 ## Experimental release preparation
 
+Linux package closure leaves libwayland-client.so.0, libwayland-cursor.so.0
+and libwayland-egl.so.1 on the host, with the graphics driver, for X11 and
+Wayland alike. Steam Deck's newer RADV requires symbols absent from Ubuntu
+24.04's bundled client. Both staging and payload verification reject copied
+Wayland runtimes, including versioned filenames. Minimal installs need the
+three distro runtime packages; no newer Wayland ABI is required by this change.
+The actual-ELF closure fixture executes older and newer simulated host/driver
+pairs without preload; its negative control reproduces the missing-symbol
+failure when the older bundled client is restored. See test_linux_elf_closure.py.
+
 The authorized 0.5.0 release uses Stable channel metadata for Linux as well as
 Windows/Mac. package-native-linux.py accepts the shared Stable/preview identities;
 both retain explicit experimental Linux limitations and the actual bundled

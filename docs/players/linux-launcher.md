@@ -21,6 +21,12 @@ Install your distribution's desktop libraries if needed. On Ubuntu these include
 `libsm6` and `xdg-utils`. The game additionally needs its Linux Vulkan/runtime
 dependencies; see [Linux development](../development/linux.md).
 
+Linux game packages use your distribution's Wayland runtime alongside its
+graphics driver, including when using X11. On minimal Ubuntu installations,
+install `libwayland-client0`, `libwayland-cursor0` and `libwayland-egl1`.
+These are normal desktop runtime libraries; a Wayland desktop session is not
+required. This keeps newer Mesa drivers compatible with the package.
+
 The launcher offers only published `linux-x64` game packages on the selected
 channel. A launcher ZIP contains no game runtime or original game data. Until a
 matching Linux game release is published, the launcher reports that none is
