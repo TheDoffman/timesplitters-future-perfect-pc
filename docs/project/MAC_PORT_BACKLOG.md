@@ -1,3 +1,13 @@
+## Saved native fullscreen startup — validation pending
+
+Local fix/linux-deck-desktop-input: window_startup_sdl.h applies the existing
+runtime fullscreen preference when creating shared SDL/Vulkan and legacy GL
+windows. No separate Mac adapter is needed. Windows already reads this setting
+through its existing window path. Linux saved-windowed/fullscreen startup and
+render/present checks are recorded in STATUS.md; native Mac builds and visual
+acceptance remain pending. Check both renderers with saved fullscreen=0/1,
+F11 transitions and unchanged personal settings on a native Mac host.
+
 ## Joined-player device settings — validation pending
 
 Shared pc_keyboard_menu.inc/pc_controls_menu.inc map UI player rows to native
