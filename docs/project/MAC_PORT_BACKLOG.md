@@ -4985,15 +4985,17 @@ Windows loopback evidence in `docs/project/STATUS.md` does not establish native 
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
-2026-11-05 projectile follow-up (`fix/flare-projectile-timing`, patch2605):
-**Awaiting validation.** Shared numeric/projectile headers repair moving-family
-entry gates, flare step/look-ahead/velocity, vector drag, scripted steering and
-RNG cadence. The54-entry table includes Machine Wars tank weapon59 / kind51.
-No host adapter or Windows guard is added. Original-code Windows fixtures cover
-60/120/144/180/240, normal/quarter time, pause, exact native60 state and independent
-failure controls. Build/live evidence is separate in STATUS. Native Mac/Linux
-acceptance remains pending; check flight distance/speed, steering, gravity,
-impact/expiry, pause and recycled slots at native presets.
+2026-11-05 projectile follow-up (`fix/flare-projectile-timing`, patch2605,
+code3b9a4540): **Awaiting validation.** Shared numeric/projectile headers repair
+moving-family gates, flare step/look-ahead/velocity, vector drag, scripted
+steering and RNG cadence; the54-entry audit includes tank weapon59 / kind51.
+No host adapter or Windows guard is added. Windows original-code timing140 and
+patch/repository82 checks pass; paired live flare travel/impact now matches60 Hz
+at the180 target. The supported local build and its seven active compiler
+exceptions are recorded in STATUS. Shared Windows/Mac checks and patch upgrades,
+and Linux foundation CI pass. Live tank firing and native Mac/Linux private-game
+acceptance remain pending; check distance/speed, steering, gravity, impact/expiry,
+pause, trails and reused slots at the native presets.
 
 - Handheld minigun spin (2026-10-30, fix/handheld-minigun-native-fps): shared
   src/gameplay/pc_native_minigun_guest.h, pc_native_numeric.h and patch 2140
