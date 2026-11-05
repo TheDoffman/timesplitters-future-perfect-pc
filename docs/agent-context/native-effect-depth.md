@@ -35,3 +35,9 @@ nor disproves this candidate for #497. Actual through-wall encounter validation
 remains outstanding. Local evidence is logs/issue497-visual in the Linux checkout;
 these private game captures must not be committed. The temporary baseline
 replay mutation was restored and the corrected replay rebuilt.
+
+The historical-controls upgrade fixture predates patch1130's shared-depth
+helper and patch2600. Exclude patch2610 from that old starting subset, then
+assert both native guards and helper calls after applying the full current
+stack. This preserves upgrade coverage without inventing an impossible old
+renderer state.

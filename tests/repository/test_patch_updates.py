@@ -229,7 +229,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in installer.active_patch_paths(PATCHES):
         prefix = patch.name.split('-', 1)[0]
-        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch'):
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
         if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
@@ -301,6 +301,11 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     manual.write_bytes(manual.read_bytes() + b'\r\n/* unrelated local edit */\r\n')
     assert installer.apply_patches(checkout, PATCHES)
     assert_current_calendar_installed(checkout)
+    # This historical snapshot predates shared effect depth; verify the full upgrade.
+    for name in ('src/hle/hle_d3d8_record.c', 'src/replay/d3d8_replay.c'):
+        text = (checkout / name).read_text()
+        assert '#if defined(_WIN32) || defined(TSFP_RHI_RENDERER)' in text
+        assert 'xbox_D3D8PrepareSharedDepthTarget' in text
     assert_current_sharing_installed(checkout)
     assert b'pc_display_aim_panel(sub_00137010_gen,0x00137010u);' in manual.read_bytes()
     assert b'pc_display_ui(sub_00142D10_gen,0x00142D10u);' in manual.read_bytes()
