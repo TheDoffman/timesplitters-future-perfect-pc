@@ -18,7 +18,7 @@ Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer
 
 **[Install & play](#start-playing)** · [Launcher guides](#guides--support) · [Multiplayer](docs/players/multiplayer.md) · [Build from source](docs/development/building.md)
 
-<sub>Windows 10/11 x64 · Native Apple Silicon Mac · Experimental port · Supported US Xbox game required</sub>
+<sub>Windows 10/11 x64 · Native Apple Silicon Mac · Linux x64 · Experimental port · Supported US Xbox game required</sub>
 
 </div>
 
@@ -37,18 +37,18 @@ Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer
 
 > [!IMPORTANT]
 > You need your own supported **US Xbox ISO or extracted game data**. Import it through the launcher.
-> Original game files are not included. Neither version needs an emulator.
+> Original game files are not included. No platform version needs an emulator.
 
 <a name="start-playing"></a>
 
 ## <img src="docs/assets/icon-play.svg" alt="" width="24" height="24"> Start playing
 
-Windows and Mac use the same installation steps:
+Windows, Mac and Linux use the same installation steps:
 
 | Step | Installation |
 | :---: | --- |
 | **01** | **Download the launcher:** [Windows x64](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip), [Mac (Apple Silicon)](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip), or [Linux x64](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-linux-x64.zip). The download starts directly; you can also use the buttons above. |
-| **02** | **Extract and open.** Extract the whole ZIP to a writable folder. On Windows, open **TimeSplitters Launcher.exe**, keeping `Bin` and `Support` with it. On Mac, open **TimeSplitters Launcher.app**, keeping its `Support` folder beside it. |
+| **02** | **Extract and open.** Extract the whole ZIP to a writable folder. On Windows, open **TimeSplitters Launcher.exe**, keeping `Bin` and `Support` with it. On Mac, open **TimeSplitters Launcher.app**, keeping its `Support` folder beside it. On Linux, preserve executable permissions and run **Launch.sh** or **TimeSplitters.Launcher**, keeping the full package together. |
 | **03** | **Install the game runtime.** Keep **Update channel → Stable**, then choose **Install release**. The launcher downloads and verifies the latest available game build for your platform. Choose a preview only when opting into testing. |
 | **04** | **Import your game once.** Choose **Locate ISO**, or **Use extracted files** for a folder containing `default.xbe`, `pak` and `xmv`. |
 | **05** | **Press Play Game.** The launcher minimizes while the game runs and returns when you finish. |

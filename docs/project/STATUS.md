@@ -40044,3 +40044,22 @@ cap and its tests were removed; responsive mouse aiming is retained. Fast-turn
 clipping investigation continues; no model-follow fix has been claimed.
 
 Machine Wars minigun: cockpit-only right mouse secondary fire added. Windows Build, 19 mounted-input tests and context check passed. Shared Windows/SDL policy; Mac/Linux physical validation and live minigun acceptance pending. Fast-turn clipping remains unresolved; no turn cap applied.
+
+## Release 0.5.0 continuation compilation bound (2026-11-04)
+
+The actual Windows release build exposed MSVC C1002 in a generated continuation
+translation unit, both with two compiler workers and one. A private diagnostic
+compiled an unchanged failing body alone at `/O2 /Ob2`, while grouping 25 bodies
+still exhausted compiler memory. All nine groups capped at 512 KiB of body text
+compiled successfully with those same flags. The common continuation publisher
+now bounds both function count and body-text bytes, isolating oversized bodies
+intact; decoded instructions, function identity, dispatch and optimization flags
+are retained on Windows, Mac and Linux.
+
+The real CLI regression forces separate translation units, compares normalized
+body text and exact dispatch bytes, then executes the separately compiled outputs
+in both GPR modes. Focused export/index/receipt/launcher checks: 66 passed and
+10 subtests on Windows. Full regenerated release build/package acceptance is
+pending at this checkpoint; current results belong in the ignored release notes.
+This build fix does not establish live guest-context/SEH integration or broader
+gameplay, native desktop Linux or Steam Deck acceptance.

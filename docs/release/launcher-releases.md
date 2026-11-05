@@ -16,9 +16,9 @@ platform's update manifest. Game releases remain independent. [Game Stable and n
    assembly/file attributes, to a new unused version. Keep the attributes numeric
    (`X.Y.Z.0`); a preview may use `X.Y.Z-beta.1` for `Value`.
 2. Merge that change and the desired launcher updates into `main` through a PR.
-3. In **Actions → Launcher release (Windows + Mac) → Run workflow**, select `main`,
+3. In **Actions → Launcher release (Windows + Mac + Linux) → Run workflow**, select `main`,
    enable **publish**, and run it once. The workflow creates `launcher-vX.Y.Z` at
-   the tested commit and publishes both packages. There is no second Mac release
+   the tested commit and publishes all three packages. There is no separate native release
    step and no locally installed SDK or artwork needed on the maintainer's device.
 
 Alternatively, push a `launcher-vX.Y.Z` tag on the merged commit. Its version must
