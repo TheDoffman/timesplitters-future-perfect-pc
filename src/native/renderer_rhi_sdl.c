@@ -45,13 +45,20 @@ int tsfp_native_renderer_test(void)
         int active=(SDL_GetWindowFlags(pp.hDeviceWindow)&SDL_WINDOW_FULLSCREEN)!=0;
         fprintf(stderr,"[native-window-test] saved startup fullscreen %d: %s\n",wanted,active==wanted?"PASS":"FAIL");
         if(active!=wanted)return 1;
-        /* The draw/readback/depth fixtures below require a 64x64 target.
-         * Verify the real saved startup first, then resize this disposable
-         * window before creating their device. Full-size present is tested
-         * separately by native_test_renderer_window_modes below. */
-        if(!SDL_SetWindowFullscreen(pp.hDeviceWindow,false) || !SDL_SyncWindow(pp.hDeviceWindow) ||
-           !SDL_SetWindowSize(pp.hDeviceWindow,64,64) || !SDL_SyncWindow(pp.hDeviceWindow))return 1;
-        rhi_pump_events();
+        /* The pixel/depth fixtures need a fresh 64x64 window. Some Wayland
+         * compositors retain the desktop size when a window was born fullscreen.
+         * Dispose only this test's startup window, without changing preferences;
+         * fullscreen drawing/present is tested again by the mode checks below. */
+        if(wanted) {
+            tsfp_renderer_host_bind(NULL,NULL);SDL_DestroyWindow(native_window);
+            native_window=SDL_CreateWindow("Native renderer regression",64,64,
+                SDL_WINDOW_VULKAN|SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY);
+            pp.hDeviceWindow=native_window;
+            if(!native_window)return 1;
+            tsfp_renderer_host_bind(native_window,d3d8_overlay_shutdown);
+            tsfp_native_settings_attach(native_window);
+            if(!SDL_SyncWindow(native_window))return 1;
+        }
     }
     if(!pp.hDeviceWindow || FAILED(api->lpVtbl->CreateDevice(api,0,1,pp.hDeviceWindow,0,&pp,&dev)) || !dev)return 1;
     struct Vertex {float x,y,z,w;DWORD color;} vertices[3]={
