@@ -7,7 +7,8 @@ Windows live acceptance and native Mac/Linux build/gameplay remain pending.
 Check pickup, sustained floating, release/throw, pause, map mode and ordinary
 gun cadence at60/120/144/180/240. See STATUS.md and native-uplink.md.
 Source69f783ed builds on Windows with the recorded local compiler workaround;
-live lift/release acceptance remains pending.
+live testing rejected its function0 guard. The corrected function1 guard and
+original-input regression pass; corrected build/live acceptance remain pending.
 
 ## Saved native fullscreen startup — validation pending
 

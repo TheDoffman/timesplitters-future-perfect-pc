@@ -1254,12 +1254,13 @@ def test_original_uplink_hold_gates(tmp_path):
         config.configure_from_xbe(str(xbe))
         # 1C395B..1C399C is an isolated instruction block from 1C3100.
         # Its skipped-work continuation is an explicit non-RET test boundary.
-        ranges = [(0x1c395b, 0x1c399c), (0x1c2af0, 0x1c2bfd),
+        ranges = [(0x1c2c00, 0x1c2e7b), (0x1b7ed0, 0x1b8160), (0x1c395b, 0x1c399c), (0x1c2af0, 0x1c2bfd),
                   (0x1c55f0, 0x1c5d4d), (0x3508b0, 0x350be9)]
         functions = {a: dict(name=f'sub_{a:08X}', end=b) for a, b in ranges}
         translator = FunctionTranslator(image, functions)
         code = '\n'.join('void ' + f['name'] + '(void);' for f in functions.values())
         code += '\n' + '\n'.join(translator.translate_function(a, f) for a, f in functions.items())
+        code=code.replace('void sub_001C2AF0(void)','void sub_001C2AF0_gen(void)')
         source = (ROOT / 'tests/gameplay/native_uplink_trigger.c').read_text()
         defined = set(re.findall(r'void (sub_[0-9A-F]+)\(void\)', source + code))
         calls = set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)', code))
@@ -1272,6 +1273,8 @@ def test_original_uplink_hold_gates(tmp_path):
                               for a in addresses)
         source = source.replace('/* POLICY */', f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/gameplay/pc_native_numeric.h").as_posix()}"')
         source = source.replace('../src/gameplay/pc_native_weapon_guest.h', (ROOT / 'src/gameplay/pc_native_weapon_guest.h').as_posix())
+        descriptor = '\n'.join(f'MEM32(T+0x{off:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(0x4f4d64)+off)[0]:08x};' for off in range(0,0x29c,4))
+        source=source.replace('/* UPLINK_DESCRIPTOR */',descriptor)
         source = source.replace('/* CODE */', code).replace('/* SERVICES */', services).replace('/* CONSTANTS */', constants)
         print(compile_and_run(tmp_path, source))
         executable = tmp_path / ('float_join.exe' if os.name == 'nt' else 'float_join')

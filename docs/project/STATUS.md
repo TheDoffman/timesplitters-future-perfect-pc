@@ -15,7 +15,12 @@ This uses supported split100 generation and the prior local MSVC C1002
 workaround (/Od;/Ob0 on seven generated SSE units); it is not evidence of a
 default-flags Release build. Rendering and remaining units retain Release
 optimization. Source69f783ed reaches live Scotland with weapon36, variant1,
-primary0; actual object lift/release acceptance remains pending. No Discord
+function1. Live Russian Connection input/descriptor tracing then identified
+that the initial candidate incorrectly required function0. The corrected
+regression now derives function1 through original1C2C00/1B7ED0 with the authored
+Uplink descriptor. It passes all holding cases and both old-gate mutations.
+The above99c408 build is the rejected function0 candidate, not the corrected
+fix. A corrected build and actual object lift/release remain pending. No Discord
 resolution comment posted. See docs/agent-context/native-uplink.md.
 
 ## 2026-11-05 - Native fullscreen startup and Steam Deck Desktop controls
