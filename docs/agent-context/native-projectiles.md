@@ -53,7 +53,10 @@ The historic kind35 helper names remain ABI entrypoints in
 `pc_native_projectile_guest.h`. Sidecars cover the original 85-slot /22C pool,
 restore nested contexts and reset on every DC4A0 allocation, even when native
 timing is off or the new kind has no initializer. Existing E28D0/E78F0 resets
-remain. Patch2605 follows2596 in the loader's deferred order.
+remain. Patch2605 follows2596 in the loader's deferred order. Each wrapped original
+must have its own `extern void sub_ADDRESS_gen(void);` declaration: the
+production C scanner does not discover comma-separated extern declarators.
+The fresh-stack fixture checks all five originals with that actual scanner.
 
 Flight-smoke RNG/emission sites in F08D0, F1A90, F2B80 and F39A0 keep whole-tick
 cadence. The F33FF/F3428/F3451 object-spin samples and existing rocket visual

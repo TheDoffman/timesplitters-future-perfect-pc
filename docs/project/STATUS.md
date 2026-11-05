@@ -34,6 +34,12 @@ The first supported build hit MSVC C1002 in newly affected generated unit0011;
 the existing ignored validation-only /Od /Ob0 workaround now covers that unit
 in addition to the seven previously documented units. Other units retain /O2.
 This is a local validation build, not default-flags Release acceptance.
+Linking then exposed five missing generated originals: the C-source scanner
+requires separate extern declarations for these wrappers. Patch2605 now uses
+those declarations, and the fresh-stack fixture checks discovery through the
+production scanner. Generator renumbering also relocated the existing local
+context compiler exceptions; their final mapping is recorded with the build.
+
  No new live fix, Discord resolution or main merge
 is claimed from these fixture checks.
 

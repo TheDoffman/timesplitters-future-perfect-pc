@@ -1,12 +1,15 @@
 --- a/titles/futureperfect/src/recomp_manual.c
 +++ b/titles/futureperfect/src/recomp_manual.c
-@@ -255,6 +255,32 @@
+@@ -255,6 +255,35 @@
      g_esp+=4;
  }
  
 +/* Shared projectile families keep flight time independent of render rate. */
-+extern void sub_000E2F90_gen(void),sub_000F1A90_gen(void);
-+extern void sub_000F2B80_gen(void),sub_000F39A0_gen(void),sub_000ECB90_gen(void);
++extern void sub_000E2F90_gen(void);
++extern void sub_000F1A90_gen(void);
++extern void sub_000F2B80_gen(void);
++extern void sub_000F39A0_gen(void);
++extern void sub_000ECB90_gen(void);
 +void sub_000E2F90(void)
 +{ pc_native_kind35_init_guest(sub_000E2F90_gen, *(const uint32_t *)((uintptr_t)g_esp+4+g_xbox_mem_offset)); }
 +void sub_000F1A90(void)

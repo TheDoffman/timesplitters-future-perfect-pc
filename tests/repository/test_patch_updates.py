@@ -116,6 +116,10 @@ def test_fresh_checkout_and_repeated_build(checkout):
     assert 'pc_story_network_blood_decal(sub_001128C0_gen)' in manual
     wrappers = Counter(re.findall(r'\bvoid\s+(sub_[0-9A-Fa-f]+)\s*\([^)]*\)\s*\{', manual))
     assert all(count == 1 for count in wrappers.values()), wrappers
+    # Production discovery must retain the bodies called by projectile wrappers.
+    from c_source_scan import scan
+    _, generated_originals, _ = scan(checkout/'titles/futureperfect/src/recomp_manual.c')
+    assert {0xe2f90,0xf1a90,0xf2b80,0xf39a0,0xecb90} <= generated_originals
     # Both common RHI and legacy GL link the same live mode policy.
     assert (checkout / 'src/d3d/CMakeLists.txt').read_text().count(
         '"${TSFP_NATIVE_DIR}/../textures/texture_mode.c"') == 2
