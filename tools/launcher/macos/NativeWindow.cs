@@ -204,7 +204,8 @@ namespace TimeSplitters.Launcher
             // button templates used by the shared pages instead of Fluent defaults.
             Ui.Theme(dialog);
             var panel=new StackPanel{Margin=new Thickness(24),Spacing=24};
-            panel.Children.Add(new ScrollViewer{Content=PageTheme.Text(text,14),MaxHeight=Math.Min(360,Math.Max(80,ClientSize.Height-160)),
+            var message=PageTheme.Text(text,14);message.MaxWidth=dialog.Width-72;
+            panel.Children.Add(new ScrollViewer{Content=message,MaxHeight=Math.Min(360,Math.Max(80,ClientSize.Height-160)),
                 HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled});
             var actions=new StackPanel{Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Right,Spacing=12};
             if(confirmation){
