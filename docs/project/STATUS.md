@@ -1,3 +1,23 @@
+## 2026-11-05 - Verified Discord fix integration
+
+User authorized main integration of the confirmed MSAA and Uplink fixes.
+Combined latest main831c324a with branches c0c63c6f and2aff082b; code merged
+without conflicts. Retained all existing projectile/Deck documentation and
+both fixes' validation records while resolving overlapping guide/status edits.
+Unresolved report experiments and investigation branches are excluded.
+
+The complete runtime patch stack applied successfully. Combined Windows
+renderer/native-HUD/SMAA and selected native timing checks passed81 cases
+(53 unrelated original-routine cases deselected), including the WARP MSAA
+resize regression, original Uplink request/repeat negative controls, original
+player-trigger and projectile checks. Repository context tests passed21 cases;
+index/guide ownership validation and whitespace checks passed. One initial
+context run rejected a guide one byte over its size cap; compacting the merged
+links fixed it. Individual fixes' prior supported builds and actual gameplay
+acceptance remain recorded below; this integration did not rebuild/retest the
+entire combined game. Native Mac/Linux acceptance and release publication
+remain pending. Existing Discord resolution comments were not duplicated.
+
 ## 2026-11-05 - Discord Uplink holding verified on Windows
 
 Branch fix/discord-uplink, base831c324a; core source b3545910. Uplink physics

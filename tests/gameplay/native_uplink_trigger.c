@@ -115,4 +115,3 @@ int main(int argc,char **argv){
  assert(pc_native_uplink_gate(H,3)==3);
  puts("PASS: Uplink fractional requests and original charge integration");
 }
-

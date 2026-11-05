@@ -1,7 +1,7 @@
-[Projectiles](native-projectiles.md); [Uplink](native-uplink.md).
+[Rockets](native-projectiles.md); [Uplink](native-uplink.md).
 [Linux](linux-game.md); [MSAA](smaa.md).
 [Kill feed contracts](../development/arcade-kill-feed.md).
-2465 wraps356800 for frontend rewards;
+2465 wraps356800 for rewards;
 profile mapper356870 stays original. See [contract](systems-details.md#four-player-rewards-context).
 
 Story lobby host loss: additive2460 wraps1AF950. The shared menu adapter scopes

@@ -1,4 +1,4 @@
-[Uplink/rockets](native-uplink.md).
+[Uplink](native-uplink.md); [rockets](native-projectiles.md).
 [Input tests](controls-options.md).
 [HUD/MSAA tests](../development/graphics-options.md).
 [SDL startup/fullscreen tests](linux-game.md).
@@ -1035,6 +1035,6 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
 
-GPU asserts stay on; AO logs scene/pixel failures.
+GPU asserts on; AO logs errors.
 
 Local-player tests: controls-options.md.
