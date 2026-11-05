@@ -1,3 +1,10 @@
+PRs/main use one `PR validation` gate in `runtime-patches.yml`. Its plan
+selects runtime, launcher, Linux, issue forms/resolution and texture jobs;
+`ci-pr-gate.py` rejects failures, cancellation, missing outputs and
+unexpected skips. Launcher builds run once; standalone compatibility
+is manual-only. The repair worker requires this gate/workflow.
+Scope/gate/worker tests run in the plan; host suites remain unchanged.
+
 # Launcher and menu shortcuts
 
 Linux release packaging closes dependencies for all launcher/Python ELFs,

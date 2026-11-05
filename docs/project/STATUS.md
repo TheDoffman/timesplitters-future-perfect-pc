@@ -40111,3 +40111,19 @@ both desktops using Mesa lavapipe. Separate isolated 30-second boots each produc
 X11 capture was visually reviewed at player selection. Windows portable tests:
 114 passed, six POSIX-only skips. Evidence: WSL build/deck-display-check and
 build/deck-window-build.log; no RADV GPU/physical Deck acceptance claimed.
+
+
+## PR check consolidation - 2026-11-05
+
+Task base: fccce8a7; Windows x64, Python 3.12 virtual environment. Runtime CI
+owns PR/main events, scopes reusable issue-form/resolution/texture jobs, and
+reports one fail-closed PR validation gate including Linux. Launcher builds run
+once. Manual launcher checks remain available. The local repair worker now
+recognizes the consolidated workflow/gate. Host suite commands are preserved.
+
+Focused scope/gate/worker/launcher-policy/issue/Linux-policy validation passed:
+280 tests, 81 subtests; 3 existing host/tool skips. All five changed workflows
+passed checksum-verified actionlint 1.7.12; 23 Node context/evidence tests and
+repository context/whitespace checks passed. Windows/Mac/Linux hosted
+builds and LFS texture verification await the PR's GitHub Actions run. No game
+launch or visual/gameplay validation is claimed for this CI-only change.

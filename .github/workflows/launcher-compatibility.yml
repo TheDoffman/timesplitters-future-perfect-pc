@@ -1,10 +1,7 @@
 name: Launcher compatibility checks
 
-# Report on every PR so the final check can be required, including unrelated PRs.
+# Optional manual launcher-only validation. PR/main builds belong to runtime-patches.yml.
 on:
-  pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
