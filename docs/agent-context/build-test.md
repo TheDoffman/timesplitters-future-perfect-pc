@@ -1,4 +1,4 @@
-[Projectile timing](native-projectiles.md).
+[Uplink/rockets](native-uplink.md).
 [Input tests](controls-options.md).
 [HUD/MSAA tests](../development/graphics-options.md).
 [SDL startup/fullscreen tests](linux-game.md).

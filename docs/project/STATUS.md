@@ -1,3 +1,41 @@
+## 2026-11-05 - Discord Uplink holding verified on Windows
+
+Branch fix/discord-uplink, base831c324a; core source b3545910. Uplink physics
+function1 now reaches the original holding updater on fractional native
+intervals at both audited request/repeat gates. The shared clock, integer
+cooldowns, other weapons and map/function0 retain their original behavior.
+
+The original-US regression derives function1 through1C2C00/1B7ED0 using the
+actual Uplink descriptor, then executes the request gate, repeat-gate block,
+weapon callback and charge updater. Both holding paths pass at60/120/144/180/
+240, four carried phases and normal/quarter speed. Separate old-gate mutations
+fail; first-press fractional clock restoration and scope guards pass. Targeting
+and the intervening weapon-state handoff remain controlled in this CPU fixture.
+Three selected Uplink/trigger tests and all32 common fixtures pass. The other85
+original-routine cases passed in the earlier full run.
+
+The supported Windows Build native checks pass. Executable SHA256:
+4b29fad154beb8ef1c7f5d474e70aaab6456f1c5b4e4b45393882a0a52a6b4c5.
+This uses supported split100 generation and the local MSVC C1002 workaround
+(/Od;/Ob0 on seven generated SSE units); default-flags Release is unverified.
+Rendering and remaining generated units retain Release optimization.
+
+Real Russian Connection tests use the unlocked disposable Test Lab fixture,
+normal synthetic input and read-only state observation. No entity/clock writes
+or teleports are used; original targeting, geometry and rigid-body physics run.
+The same barrel18C00095/body10067 starts atY0. In the120 baseline (99c408,
+whose erroneous function0 guard leaves the active function1 gates unchanged),
+four seconds of holding reaches only0.0423 strength andY0.262. The corrected
+120 run reaches strength1 andY1.585; the reporter's180 setting reaches
+strength1 andY1.433. Both visibly float the barrel in front of the player and
+release it: strength returns0 and height falls below0.53 within one second.
+Each hold has80 samples; occasional null current-player snapshots are retained
+as incomplete observations. These are gameplay/charge results, not scanout or
+GPU-completion measurements. Logs and selected before/after BMPs remain ignored
+under logs/uplink-{baseline,fixed,fixed-180}-*. Canonical fixture bytes remain
+protected. Resolution is verified; merge/publication are pending. Native Mac
+and Linux build/gameplay acceptance remain separate. See native-uplink.md.
+
 ## 2026-11-05 - Chinese MSAA: Windows verified, publication pending
 
 Local fix/discord-msaa-rendering after221c6b32, not yet published. Existing
