@@ -468,3 +468,5 @@ The stored pre-optimization indexed-draw reference enables its same shared
 shadow driver on Linux; otherwise it would compare Linux's production draw
 against the reference's non-native no-draw fallback. Its indexing/dispatch
 algorithm is unchanged, and all three negative mutations remain mandatory.
+
+Linux main initializes SDL video before guest/audio workers through video_startup_sdl.h. Otherwise audio-first SDL initialization on a worker can claim SDL main/event thread ownership, causing the renderer to reject window creation while audio continues. Initialization logs the selected X11/Wayland backend and exits before guest boot on failure. No Vulkan ICD is forced; RADV remains system-selected. Real SDL tests require Xvfb and headless Weston and reject an audio-first negative control.

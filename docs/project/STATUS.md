@@ -40097,3 +40097,17 @@ in both GPR modes. Focused export/index/receipt/launcher checks: 66 passed and
 pending at this checkpoint; current results belong in the ignored release notes.
 This build fix does not establish live guest-context/SEH integration or broader
 gameplay, native desktop Linux or Steam Deck acceptance.
+
+## 2026-11-04 - Linux audio-first window investigation
+
+Reproduced with the pinned SDL: worker audio initialization before video makes SDL_IsMainThread false on the actual main thread. Early video initialization prevents it. Released 0.5.0 renderer passed windowed/fullscreen/restored presentation under isolated headless Weston with Mesa lavapipe. WSLg fullscreen alone failed, so that result is not evidence of a game fullscreen defect. Steam Deck/RADV hardware acceptance remains pending.
+
+Validation at 378552fd: Linux optimized release-media build and protected-MMIO
+check passed. Real SDL startup regressions passed under Xvfb/X11 and headless
+Weston/Wayland; both audio-first negative controls failed as expected. The rebuilt
+game passed renderer clear/draw/readback, fullscreen/restore and present tests on
+both desktops using Mesa lavapipe. Separate isolated 30-second boots each produced
+1,500 guest presents, zero failed presents and zero Vulkan validation errors.
+X11 capture was visually reviewed at player selection. Windows portable tests:
+114 passed, six POSIX-only skips. Evidence: WSL build/deck-display-check and
+build/deck-window-build.log; no RADV GPU/physical Deck acceptance claimed.
