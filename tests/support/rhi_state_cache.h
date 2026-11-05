@@ -78,6 +78,45 @@ static void rhi_state_cache_test(RhiView *rtv) {
     cache_rs[D3DRS_DESTBLEND]=D3DBLEND_INVSRCALPHA;
     cache_rs[D3DRS_ALPHABLENDENABLE]=1;
     rhi_clear_color(rtv,blue);cache_draw_read(pixels);cache_pixel(pixels,32,32,.5f,0,.5f);
+    /* Coplanar layers: LESS rejects the second pass until the original
+     * signed offset is enabled. Toggle it repeatedly to exercise cache hits.
+     * An offset must still leave genuinely nearer geometry in front. */
+    cache_scissor_on=0;cache_rs[D3DRS_STENCILENABLE]=0;
+    cache_rs[D3DRS_ALPHABLENDENABLE]=0;
+    cache_rs[D3DRS_ZENABLE]=cache_rs[D3DRS_ZWRITEENABLE]=1;
+    cache_rs[D3DRS_ZFUNC]=D3DCMP_LESS;
+    float bias=-3.0f;memcpy(&cache_rs[D3DRS_POLYGONOFFSETZOFFSET],&bias,4);
+    puts("Testing coplanar polygon offsets");
+    for(unsigned repeat=0;repeat<4;repeat++) {
+        cache_rs[D3DRS_SOLIDOFFSETENABLE]=0;
+        rhi_clear_depth(dsv,RHI_CLEAR_DEPTH,1,0);
+        rhi_set_shader(RHI_STAGE_PIXEL,red);cache_draw_read(pixels);
+        cache_rs[D3DRS_ZWRITEENABLE]=0;rhi_set_shader(RHI_STAGE_PIXEL,green);
+        cache_draw_read(pixels);cache_pixel(pixels,32,32,1,0,0);
+        cache_rs[D3DRS_SOLIDOFFSETENABLE]=1;
+        cache_draw_read(pixels);cache_pixel(pixels,32,32,0,1,0);
+        cache_rs[D3DRS_SOLIDOFFSETENABLE]=0;rhi_clear_color(rtv,blue);
+        cache_draw_read(pixels);cache_pixel(pixels,32,32,0,0,1);
+        cache_rs[D3DRS_SOLIDOFFSETENABLE]=1;
+        rhi_clear_depth(dsv,RHI_CLEAR_DEPTH,.49f,0);
+        cache_draw_read(pixels);cache_pixel(pixels,32,32,0,0,1);
+        cache_rs[D3DRS_ZWRITEENABLE]=1;
+    }
+    RhiShader *tilted=shader(RHI_STAGE_VERTEX,
+        "float4 main(uint id:SV_VertexID):SV_POSITION {float x=id==2?3.0:-1.0;"
+        "return float4(x,id==1?3.0:-1.0,.5+.1*x,1);}","vs_5_0");
+    rhi_set_shader(RHI_STAGE_VERTEX,tilted);
+    cache_rs[D3DRS_SOLIDOFFSETENABLE]=0;
+    cache_rs[D3DRS_POLYGONOFFSETZOFFSET]=0;
+    rhi_clear_depth(dsv,RHI_CLEAR_DEPTH,1,0);
+    rhi_set_shader(RHI_STAGE_PIXEL,red);cache_draw_read(pixels);
+    float slope=-.4f;memcpy(&cache_rs[D3DRS_POLYGONOFFSETZSLOPESCALE],&slope,4);
+    cache_rs[D3DRS_ZWRITEENABLE]=0;cache_rs[D3DRS_SOLIDOFFSETENABLE]=1;
+    rhi_set_shader(RHI_STAGE_PIXEL,green);cache_draw_read(pixels);
+    cache_pixel(pixels,16,32,0,1,0);cache_pixel(pixels,48,32,0,1,0);
+    cache_rs[D3DRS_SOLIDOFFSETENABLE]=0;rhi_clear_color(rtv,blue);
+    cache_draw_read(pixels);cache_pixel(pixels,32,32,0,0,1);
+    rhi_shader_destroy(tilted);
     d3d8_states_shutdown();
     rhi_set_render_target(rtv,NULL);rhi_view_destroy(dsv);rhi_image_destroy(depth);
     rhi_shader_destroy(vs);rhi_shader_destroy(red);rhi_shader_destroy(green);

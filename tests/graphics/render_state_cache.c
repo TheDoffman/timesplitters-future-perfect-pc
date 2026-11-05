@@ -154,7 +154,32 @@ static void filtering_preferences(void) {
     d3d8_states_shutdown();CHECK(alive[3]==0);
     puts("PASS: live AF 1/2/4/8/16, original restoration and nearest HUD preservation");
 }
+static void polygon_offset(void) {
+    defaults();CHECK(d3d8_states_init()==S_OK);
+    float bias=-3.0f,slope=-.4f;
+    memcpy(&render_states[D3DRS_POLYGONOFFSETZOFFSET],&bias,4);
+    memcpy(&render_states[D3DRS_POLYGONOFFSETZSLOPESCALE],&slope,4);
+    for(unsigned mode=D3DFILL_POINT;mode<=D3DFILL_SOLID;mode++) {
+        render_states[D3DRS_FILLMODE]=mode;
+        for(unsigned enabled=0;enabled<8;enabled++) {
+            render_states[D3DRS_POINTOFFSETENABLE]=enabled&1;
+            render_states[D3DRS_WIREFRAMEOFFSETENABLE]=enabled&2;
+            render_states[D3DRS_SOLIDOFFSETENABLE]=enabled&4;
+            d3d8_states_apply();
+            int on=(enabled & (1u<<(mode-1)))!=0;
+            CHECK(g_raster_state->desc.depth_bias==(on?-3:0));
+            CHECK(g_raster_state->desc.slope_scaled_depth_bias==(on?slope:0));
+        }
+    }
+    render_states[D3DRS_POLYGONOFFSETZOFFSET]=0x7fc00000;
+    render_states[D3DRS_POLYGONOFFSETZSLOPESCALE]=0x7f800000;
+    d3d8_states_apply();
+    CHECK(g_raster_state->desc.depth_bias==0);
+    CHECK(g_raster_state->desc.slope_scaled_depth_bias==0);
+    d3d8_states_shutdown();puts("PASS: original polygon offset modes and signed floats");
+}
 int main(int argc,char **argv) {
+    if(argc>1&&!strcmp(argv[1],"polygon-offset")){polygon_offset();return 0;}
     if(argc>1&&!strcmp(argv[1],"filtering")){filtering_preferences();return 0;}
     if(argc>1) { sampler_failures(!strcmp(argv[1],"sampler-replace"));return 0; }
     unsigned i,j,initial[3];defaults();CHECK(d3d8_states_init()==S_OK);

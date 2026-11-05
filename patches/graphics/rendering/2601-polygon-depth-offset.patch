@@ -1,0 +1,68 @@
+--- a/src/d3d/d3d8_xbox.h
++++ b/src/d3d/d3d8_xbox.h
+@@ -345,6 +345,12 @@
+     D3DRS_MULTISAMPLEMASK          = 162,
+     D3DRS_COLORWRITEENABLE         = 168,
+     D3DRS_BLENDOP                  = 171,
++    /* NV2A polygon offset, carried losslessly through capture/replay. */
++    D3DRS_POLYGONOFFSETZSLOPESCALE = 174,
++    D3DRS_POLYGONOFFSETZOFFSET     = 175,
++    D3DRS_POINTOFFSETENABLE       = 176,
++    D3DRS_WIREFRAMEOFFSETENABLE   = 177,
++    D3DRS_SOLIDOFFSETENABLE       = 178,
+     /* The final combiner's own two constants (NV2A SPECULAR_FOG_FACTOR 0/1),
+      * Xbox D3DRS_PSFINALCOMBINERCONSTANT0/1. Not the last stage's C0/C1.
+      * Just below the pixel-shader block, so one range (198-253) is every
+--- a/src/hle/hle_d3d8_state.c
++++ b/src/hle/hle_d3d8_state.c
+@@ -414,6 +414,11 @@
+     {  72, D3DRS_STENCILMASK,      AS_IS },
+     {  73, D3DRS_STENCILWRITEMASK, AS_IS },
+     {  74, D3DRS_BLENDOP,          BLENDOP },
++    {  77, D3DRS_POLYGONOFFSETZSLOPESCALE, AS_IS },
++    {  78, D3DRS_POLYGONOFFSETZOFFSET, AS_IS },
++    {  79, D3DRS_POINTOFFSETENABLE, AS_IS },
++    {  80, D3DRS_WIREFRAMEOFFSETENABLE, AS_IS },
++    {  81, D3DRS_SOLIDOFFSETENABLE, AS_IS },
+     {  92, D3DRS_FOGENABLE,        AS_IS },
+     {  93, D3DRS_FOGTABLEMODE,     AS_IS },
+     {  94, D3DRS_FOGSTART,         AS_IS },  /* float bits */
+--- a/src/d3d/d3d8_states.c
++++ b/src/d3d/d3d8_states.c
+@@ -13,6 +13,8 @@
+ #include "d3d8_internal.h"
+ #include "d3d8_display.h"
+ #include <string.h>
++#include <math.h>
++#include <limits.h>
+ #include <stdio.h>
+ 
+ /* ================================================================
+@@ -227,6 +229,27 @@
+     default:           rd.cull = RHI_CULL_BACK; break;
+     }
+ 
++    /* Xbox offset states contain IEEE floats in window-depth units. The
++     * title uses a 24-bit fixed depth buffer, matching the common D24 RHI
++     * target. Preserve its signed constant offset and slope factor, only
++     * while enabled for the selected fill mode. Disabled values must not
++     * leak from a decal into subsequent world/weapon draws. */
++    DWORD offset_enable = rs[D3DRS_FILLMODE] == D3DFILL_POINT
++        ? rs[D3DRS_POINTOFFSETENABLE]
++        : rs[D3DRS_FILLMODE] == D3DFILL_WIREFRAME
++        ? rs[D3DRS_WIREFRAMEOFFSETENABLE] : rs[D3DRS_SOLIDOFFSETENABLE];
++    if (offset_enable) {
++        float bias, slope;
++        memcpy(&bias, &rs[D3DRS_POLYGONOFFSETZOFFSET], sizeof(bias));
++        memcpy(&slope, &rs[D3DRS_POLYGONOFFSETZSLOPESCALE], sizeof(slope));
++        if (isfinite(bias)) {
++            if ((double)bias >= INT_MAX) rd.depth_bias = INT_MAX;
++            else if ((double)bias <= INT_MIN) rd.depth_bias = INT_MIN;
++            else rd.depth_bias = (int32_t)bias;
++        }
++        if (isfinite(slope)) rd.slope_scaled_depth_bias = slope;
++    }
++
+     rd.front_ccw = 0;
+     rd.depth_clip = 1;
+     rd.scissor = scissor ? 1 : 0;

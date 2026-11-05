@@ -1,8 +1,9 @@
-[Projectile timing](native-projectiles.md).
+[Polygon offsets](polygon-depth-offset.md).
+[Projectiles](native-projectiles.md).
 [Linux](linux-game.md); [SMAA](smaa.md).
-[Kill feed contracts](../development/arcade-kill-feed.md).
-Story rewards: 2465 wraps356800 for the frontend;
-profile mapper356870 stays original. See [contract](systems-details.md#four-player-rewards-context).
+[Kill feed](../development/arcade-kill-feed.md).
+Story rewards: 2465 wraps356800; mapper356870 stays original.
+[Contract](systems-details.md#four-player-rewards-context).
 
 Story lobby host loss: additive2460 wraps1AF950. The shared menu adapter scopes
 the native guest-lobby8D notification to main return, preserving transport reset

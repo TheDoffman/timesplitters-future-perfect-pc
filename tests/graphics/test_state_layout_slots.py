@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import pytest
+import re
 from native_compiler import native_compiler
 
 ROOT=Path(__file__).resolve().parents[2]
@@ -25,6 +26,7 @@ def state_slot_results(tmp_path_factory):
               'stale-layout':text.replace('slot_layout == (int)g_layout','slot_layout >= 0'),
               'stale-values':text.replace('uint32_t v=slot<0 ? 0u : HLE_MEM32(hle_var_D3D_g_RenderState+4u*(uint32_t)slot);','uint32_t v=g_prev_valid ? g_prev_rs[x] : (slot<0 ? 0u : HLE_MEM32(hle_var_D3D_g_RenderState+4u*(uint32_t)slot));')}
     assert all(v!=text for k,v in variants.items() if k!='current')
+    variants['dropped-offset']=re.sub(r'^.*\{  (?:77|78|79|80|81), D3DRS_.*\n','',text,flags=re.M)
     results={}
     for name,source in variants.items():
         d=folder/name;(d/'hle').mkdir(parents=True,exist_ok=True)
@@ -39,6 +41,9 @@ def state_slot_results(tmp_path_factory):
         assert ran.returncode==0,ran.stdout+ran.stderr
         assert len(ran.stdout.split())==2
         results[name]=ran.stdout
+        if name in ('current','dropped-offset'):
+            offsets=subprocess.run([str(exe),'polygon-offset'],capture_output=True,text=True,timeout=10)
+            results[name+'-polygon-offset']=offsets
     return results
 
 def test_layout_slot_live_state_parity(state_slot_results):
@@ -47,3 +52,9 @@ def test_layout_slot_live_state_parity(state_slot_results):
 @pytest.mark.parametrize('mutation',['stale-layout','stale-values'])
 def test_layout_slot_negative_controls(state_slot_results,mutation):
     assert state_slot_results[mutation]!=state_slot_results['original']
+
+
+def test_live_polygon_offset_forwarding(state_slot_results):
+    current=state_slot_results['current-polygon-offset']
+    assert current.returncode==0,current.stdout+current.stderr
+    assert state_slot_results['dropped-offset-polygon-offset'].returncode==2

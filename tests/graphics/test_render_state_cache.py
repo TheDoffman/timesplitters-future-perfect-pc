@@ -32,7 +32,8 @@ def state_cache_runs(tmp_path_factory):
     variants={'baseline':original,'sampler-only':baseline.read_text(),'cache':source,
               'no-reuse':source.replace('return name##_cache[i].state;', 'break;'),
               'lost-mask':source.replace('bd.write_mask = rs[D3DRS_COLORWRITEENABLE] & 0x0F;', 'bd.write_mask = 15;'),
-              'failed-hit':source.replace('if (!state) return NULL;', '/* mutation: retain failed entry */')}
+              'failed-hit':source.replace('if (!state) return NULL;', '/* mutation: retain failed entry */'),
+              'dropped-offset':source.replace('rd.depth_bias = (int32_t)bias;', 'rd.depth_bias = 0;')}
     compiler,env=native_compiler(folder);results={}
     for name,implementation in variants.items():
         target=folder/name;target.mkdir(exist_ok=True)
@@ -49,7 +50,7 @@ def state_cache_runs(tmp_path_factory):
         built=subprocess.run(command,cwd=target,env=env,capture_output=True,text=True,timeout=60)
         assert built.returncode==0,built.stdout+built.stderr
         results[name]=subprocess.run([str(executable)],capture_output=True,text=True,timeout=10)
-        for mode in ('sampler-retry','sampler-replace','filtering'):
+        for mode in ('sampler-retry','sampler-replace','filtering','polygon-offset'):
             results[name+'-'+mode]=subprocess.run([str(executable),mode],capture_output=True,text=True,timeout=10)
     return results
 
@@ -89,3 +90,11 @@ def test_live_filtering_preferences(state_cache_runs):
     result = state_cache_runs['cache-filtering']
     assert result.returncode == 0, result.stdout + result.stderr
     assert 'nearest HUD preservation' in result.stdout
+
+
+def test_original_polygon_offsets(state_cache_runs):
+    result=state_cache_runs['cache-polygon-offset']
+    assert result.returncode==0,result.stdout+result.stderr
+    assert 'signed floats' in result.stdout
+    old=state_cache_runs['dropped-offset-polygon-offset']
+    assert old.returncode!=0 and 'depth_bias' in old.stderr,old.stdout+old.stderr

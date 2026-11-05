@@ -18,6 +18,7 @@ const uint32_t hle_var_D3D_g_DeferredTextureState=2048;
 void (*const hle_original_D3DDevice_SetRenderState_Simple)(void)=NULL;
 static unsigned long long digest=1469598103934665603ull;
 static unsigned calls,active_bank,feedback;
+static DWORD observed_rs[256];
 static void record(unsigned kind,unsigned stage,unsigned state,unsigned value)
 {
     digest=(digest^kind)*1099511628211ull;
@@ -29,7 +30,7 @@ static void record(unsigned kind,unsigned stage,unsigned state,unsigned value)
     if(feedback)memory[active_bank][256/4+148]^=0x01010101u;
 }
 HRESULT host_SetRenderState(IDirect3DDevice8 *d,D3DRENDERSTATETYPE s,DWORD v)
-{ (void)d;record(1,0,s,v);return S_OK; }
+{ (void)d;observed_rs[s]=v;record(1,0,s,v);return S_OK; }
 HRESULT host_SetTextureStageState(IDirect3DDevice8 *d,DWORD stage,D3DTEXTURESTAGESTATETYPE s,DWORD v)
 { (void)d;record(2,stage,s,v);return S_OK; }
 void host_combiners_set_pixel_shader(DWORD token) {record(3,0,0,token);}
@@ -37,11 +38,25 @@ void host_combiners_set_float_constant(unsigned bank,unsigned stage,const float 
 {record(4,bank,stage,value!=NULL);}
 static uint32_t rng=0x12345678u;
 static uint32_t next_value(void) {rng=rng*1664525u+1013904223u;return rng;}
-int main(void)
+int main(int argc,char **argv)
 {
     IDirect3DDevice8 device;
     memset(&device,0,sizeof device);
     g_state_ready=1;g_ps_def_ok=1;g_ps_def=0;
+    if(argc>1 && !strcmp(argv[1],"polygon-offset")) {
+        const DWORD values[5]={0xbecccccd,0xc0400000,1,0,1};
+        g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory[0];
+        for(unsigned layout=0;layout<3;layout++) {
+            g_layout=(enum rs_layout)layout;g_prev_valid=0;
+            for(unsigned j=0;j<5;j++)memory[0][256/4+77+j]=values[j];
+            memset(observed_rs,0,sizeof observed_rs);
+            hle_d3d8_shadow_apply_states(&device);
+            for(unsigned j=0;j<5;j++)if(observed_rs[174+j]!=values[j])return 2;
+            memory[0][256/4+81]=0;hle_d3d8_shadow_apply_states(&device);
+            if(observed_rs[D3DRS_SOLIDOFFSETENABLE]!=0)return 3;
+        }
+        puts("PASS: live polygon offset forwarding for three XDK layouts");return 0;
+    }
     /* Resetting readiness is controlled: all three recognized layouts must use
      * their original mapping, including absent render-state slots returning0. */
     for(unsigned round=0;round<60;round++) {

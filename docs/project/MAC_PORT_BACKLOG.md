@@ -1,3 +1,12 @@
+## Polygon depth offsets - native acceptance pending
+
+Discord texture branch2601 forwards original raw offset states to the shared
+rasterizer and existing Vulkan/D3D11 descriptor paths. Windows CPU/HLE and D24
+GPU checks pass with negative controls; the game-report comparison is pending.
+Run the same common-RHI coplanar/nearer-occluder checks and the reported kitchen
+and Plasma Autorifle scenes on native Mac/Linux. No physical-host visual or
+performance acceptance is claimed. See polygon-depth-offset.md and STATUS.md.
+
 ## Saved native fullscreen startup — validation pending
 
 Local fix/linux-deck-desktop-input: window_startup_sdl.h applies the existing

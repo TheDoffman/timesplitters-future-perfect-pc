@@ -2016,6 +2016,16 @@
       ]
     },
     {
+      "name": "2601-polygon-depth-offset.patch",
+      "path": "patches/graphics/rendering/2601-polygon-depth-offset.patch",
+      "sha256": "ff2809a1a032ff93c0c510cc07b06e4411decfd40ca92ba030a71debd1547b8b",
+      "targets": [
+        "src/d3d/d3d8_states.c\r",
+        "src/d3d/d3d8_xbox.h\r",
+        "src/hle/hle_d3d8_state.c\r"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",

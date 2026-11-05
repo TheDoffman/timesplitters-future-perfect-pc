@@ -1,3 +1,30 @@
+## 2026-11-05 - Discord texture flicker: polygon offset candidate
+
+Branch `fix/discord-texture-flickering`, base831c324a. Additive2601 forwards
+original polygon-offset floats and point/wire/solid enables through the common
+renderer and capture/replay. The old HLE map omitted all five states and the
+rasterizer always used zero offsets. Real Original-60 Chinese state sampling
+observed enabled offsets including slope-.4 and constant-3.
+
+Twelve selected full-module HLE/rasterizer checks and two real D24 WARP cases
+passed, including omitted-state/dropped-offset negative controls, cache enable
+transitions, sloped coplanar layers and preservation of nearer occluders. The
+supported Windows Build and native checks passed. Full default-O2 compilation
+still hits the pre-existing generated-SSE MSVC heap limit: this validation uses
+split100 generation and the local ignored seven-unit Od/Ob0 compiler override.
+Candidate executable SHA256:
+`2bd739dea9475b4403acd4a760c85cbba8857158a11b4f82409eeb1178df1bd8`.
+
+A disposable unlocked Test Lab profile reached Chinese with ordinary synthetic
+input. Bots were disabled through its menu for the surface-only comparison;
+this does not validate the separate bot-through-wall report. Baseline kitchen
+screenshots show changing counter/ceiling surfaces at a stationary camera;
+its host capture replays with zero failed calls or malformed chunks. Candidate
+live comparison remains in progress. No texture-report resolution comment has
+been posted; do not treat the missing-state contract as report confirmation.
+Shared Mac/Linux code is implemented, physical acceptance remains unverified.
+See [contract and limits](../agent-context/polygon-depth-offset.md).
+
 ## 2026-11-05 - Native fullscreen startup and Steam Deck Desktop controls
 
 User launches directly from Desktop Mode. Holding Menu to select Steam's
