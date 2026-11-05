@@ -1,3 +1,10 @@
+## 2026-11-04 - Small-screen launcher fitting
+
+Native Mac/Linux launcher fits the monitor working area and scales its shared
+layout uniformly below the original minimum. Dialog text scrolls within the
+available height. Ubuntu WSL build/package and all 40 shared UI groups passed;
+physical Steam Deck and native Mac acceptance remain pending.
+
 ## 2026-11-04 - Launcher 1.5.1 release preparation
 
 User authorized main merge and publication. Source version/assembly attributes

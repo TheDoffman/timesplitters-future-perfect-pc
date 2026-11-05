@@ -68,6 +68,17 @@ public static class LauncherSharedUiChecks
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
+#if MACOS || LINUX
+            Test("launcher fits small and scaled desktop work areas",()=>{
+                foreach(var desktop in new[]{new Size(1280,800),new Size(1024,640),new Size(853,533),new Size(1920,1080)}) {
+                    var client=NativeApplication.LauncherClientArea(desktop);
+                    Need(client.Width+32<=desktop.Width&&client.Height+64<=desktop.Height,"Window exceeds desktop work area");
+                    var layout=NativeApplication.LauncherLayoutArea(client);
+                    Need(layout.Width>=999.9&&layout.Height>=719.9,"Layout fell below supported content size");
+                    Need(Math.Abs(layout.Width/layout.Height-client.Width/client.Height)<0.001,"Layout would clip instead of scaling uniformly");
+                }
+            });
+#endif
 #if LINUX
             Test("launcher windows retain embedded icons",()=>{
                 using(var resource=typeof(NativeApplication).Assembly.GetManifestResourceStream("launcher.ico")) {

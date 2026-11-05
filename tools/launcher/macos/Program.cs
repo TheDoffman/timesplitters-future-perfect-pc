@@ -86,6 +86,40 @@ return LauncherSharedUiChecks.Run();}catch(Exception e){Console.Error.WriteLine(
                 if(stream!=null)window.Icon=new Avalonia.Controls.WindowIcon(stream);
 #endif
         }
+        internal static Size LauncherClientArea(Size workingArea)
+        {
+            // Leave room for desktop panels, borders and the window title bar.
+            return new Size(Math.Max(1,Math.Min(1152,workingArea.Width-32)),
+                            Math.Max(1,Math.Min(772,workingArea.Height-64)));
+        }
+        internal static Size LauncherLayoutArea(Size client)
+        {
+            double scale=Math.Min(1,Math.Min(client.Width/1000,client.Height/720));
+            return scale>0?new Size(client.Width/scale,client.Height/scale):new Size(1000,720);
+        }
+        internal static void FitLauncher(Avalonia.Controls.Window window)
+        {
+            var body=(Avalonia.Controls.Control)window.Content;
+            var viewport=new Avalonia.Controls.Viewbox {Stretch=Avalonia.Media.Stretch.Uniform,
+                StretchDirection=Avalonia.Media.StretchDirection.DownOnly};
+            window.Content=null;viewport.Child=body;window.Content=viewport;
+            Action resize=()=>{
+                var size=LauncherLayoutArea(window.ClientSize);
+                body.Width=size.Width;body.Height=size.Height;
+            };
+            Action fit=()=>{
+                var screen=window.Screens.ScreenFromWindow(window)??window.Screens.Primary;
+                if(screen==null)return;
+                var area=LauncherClientArea(new Size(screen.WorkingArea.Width/screen.Scaling,
+                                                     screen.WorkingArea.Height/screen.Scaling));
+                window.MinWidth=Math.Min(640,area.Width);window.MinHeight=Math.Min(400,area.Height);
+                window.Width=area.Width;window.Height=area.Height;resize();
+            };
+            window.PropertyChanged+=(sender,args)=>{
+                if(args.Property==Avalonia.Controls.TopLevel.ClientSizeProperty)resize();
+            };
+            fit();window.Opened+=(sender,args)=>fit();
+        }
         internal static Avalonia.Controls.Window StartupWindow(string root,string[] args)
         {
             if(NativeInstallation.Translocated(root)||args.Contains("--render-location-preview"))return new NativeLocationWindow(args);

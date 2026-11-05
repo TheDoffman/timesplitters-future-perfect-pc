@@ -679,3 +679,10 @@ Destination free-space checks in Core and diagnostics use TsfpDiskSpace.Availabl
 Launcher 1.5.1 packages these icon/storage/error-reporting fixes through the
 shared Windows/Mac/Linux release workflow; physical Steam Deck acceptance is
 still pending. Version and assembly attributes remain synchronized.
+
+NativeApplication.FitLauncher sizes the Mac/Linux main window to the current
+monitor working area in logical pixels, reserving decoration space. A uniform
+Viewbox keeps the shared 1000x720 layout reachable on small/scaled desktops.
+MessageDialog bounds its width and scroll body to its owner. --render-deck and
+--render-deck-settings preserve the fitted size for Xvfb visual checks. Shared
+UI tests cover 1280x800, 1024x640, 853x533 and desktop geometry.
