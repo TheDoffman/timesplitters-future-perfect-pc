@@ -424,6 +424,9 @@ No tag, release, upload or network request is made by this preparation.
 The shared native game installer verifier uses spaces/Unicode in fresh and
 upgrade folders; Linux also executes the installed SVG module-query helper.
 Clean-userspace read-only mount paths include spaces/Unicode for game and data.
+Its disposable HOME has a 1 GiB tmpfs limit so the launcher's 512 MiB-plus-overhead
+save-backup preflight can run. This is a capacity bound, not preallocated RAM;
+the real free-space guard and all backup/preservation checks remain active.
 
 `linux-arcade-release.json` reuses the shared rocket-impact Arcade menu route
 through bounded SDL keys/mouse on a disposable Test Lab profile. Captures must

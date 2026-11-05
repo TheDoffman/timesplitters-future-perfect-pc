@@ -69,7 +69,9 @@ def main():
     # tmpfs keeps each clean-room profile disposable and isolated from past runs.
     home = rootfs/'tmp/tsfp-clean-home'
     home.mkdir(exist_ok=True)
-    run('mount', '-t', 'tmpfs', '-o', 'mode=1777,size=512m', 'tmpfs', home)
+    # Save-backup preflight reserves 512 MiB plus overhead. A 512 MiB test
+    # filesystem rejects that check even when the fixture stores tiny files.
+    run('mount', '-t', 'tmpfs', '-o', 'mode=1777,size=1024m', 'tmpfs', home)
     env = ['HOME=/tmp/tsfp-clean-home', 'PATH=/usr/bin:/bin', 'LANG=C.UTF-8',
            'DISPLAY='+os.environ['DISPLAY'], 'SDL_VIDEODRIVER=x11', 'SDL_AUDIODRIVER=dummy',
            'LIBGL_ALWAYS_SOFTWARE=1', 'LD_LIBRARY_PATH='+APP+'/Bin']
