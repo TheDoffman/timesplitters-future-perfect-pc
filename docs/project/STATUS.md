@@ -1,3 +1,36 @@
+## 2026-11-05 - Linux system Wayland package fix
+
+User's Steam Deck renderer log showed RADV failing to load with missing
+wl_display_dispatch_queue_timeout; preloading SteamOS's Wayland client made
+the game display. Linux closure now excludes the system Wayland client,
+cursor and EGL runtimes, and staging/payload verification reject copied
+versions. Other application libraries retain their existing bundling policy.
+Minimal desktop installs need the documented distro runtime packages, even
+on X11. No newer host Wayland version or Deck-specific library path is imposed.
+The launcher already prunes unchanged files owned by an older game manifest;
+use its normal upgrade flow or extract into a fresh directory, since manually
+overlaying a ZIP can leave old libraries behind.
+
+Validation on Windows x64 and Ubuntu24.04 x64/WSL: 51 Python checks passed,
+one POSIX-only skip on Windows; all 56 selected Linux checks passed. Real ELF
+fixtures cover both older and newer simulated driver ABIs without preload,
+with a negative control that reproduces the missing-symbol failure.
+The rebuilt candidate passed actual fresh/upgrade installation, corruption
+rejection and personal-file preservation. In the minimal Ubuntu24.04 root,
+read-only package tests passed settings/debug/input/renderer, Python/Tk/TLS
+and 40 shared launcher UI groups under Xvfb; Online returned its existing
+77 skip. Headless Weston plus software Vulkan also passed actual packaged
+clear/draw/readback/overlay/present and window/fullscreen/restore checks.
+The first Weston harness attempt named a nonexistent ICD file; correcting it
+to the host's actual Lavapipe manifest passed without product changes.
+These checks do not establish all-distro, physical-GPU or new Deck acceptance.
+
+Local candidate v0.5.2-linux-experimental.1 embeds unchanged game build
+47fc559c and launcher1.5.1, packaged from 1e715110. ZIP:805515880 bytes,
+SHA256 7d7c7682829fe38aaadc0c5e30058acb7f8a7c821b7f51a21ef0c4230f454fc4.
+It is a packaging fix, not a rebuild of the game runtime. No release publication
+or main merge performed; Windows/Mac packaging and runtime are unchanged.
+
 ## 2026-11-04 - Small-screen launcher fitting
 
 Native Mac/Linux launcher fits the monitor working area and scales its shared
