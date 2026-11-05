@@ -9,6 +9,9 @@ static ULONGLONG ticks(void) { return clock_ms; }
 #define GetTickCount64 ticks
 #include "../src/interface/pc_display.c"
 #include "../src/interface/pc_display_menu.c"
+int tsfp_input_icon_begin(const void *spans,unsigned count,unsigned size) {(void)spans;(void)count;(void)size;return 0;}
+void tsfp_input_icon_end(void) {}
+void sub_0001B7B0(void) {g_esp+=4;}
 const char *pc_build_version(void) { return "development"; }
 ptrdiff_t g_xbox_mem_offset;
 RECOMP_TLS uint32_t g_eax,g_ecx,g_edx,g_esp,g_ebx,g_esi,g_edi,g_ebp,g_seh_ebp;

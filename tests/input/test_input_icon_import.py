@@ -69,3 +69,15 @@ def test_wide_key_face_keeps_its_caption_height(tmp_path):
     manifest.write_text(json.dumps({'keys':[{'key':32,'idle':'space.png'}]}))
     output=tmp_path/'data.inc';icons.compile_pack(manifest,output)
     assert ',1.529412f}' in output.read_text()
+
+
+def test_original_single_pixel_detail_is_preserved(tmp_path):
+    image=Image.new('RGBA',(128,128))
+    image.putpixel((127,127),(15,25,35,45))
+    image.save(tmp_path/'fine.png')
+    manifest=tmp_path/'manifest.json'
+    manifest.write_text(json.dumps({'keys':[{'key':69,'idle':'fine.png'}]}))
+    output=tmp_path/'data.inc';assert icons.compile_pack(manifest,output)==1
+    data=output.read_text()
+    assert '#define TSFP_INPUT_ICON_SIZE 128' in data
+    assert '{127,127,1,1,15,25,35,45}' in data

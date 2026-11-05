@@ -1,0 +1,20 @@
+--- a/src/hle/hle_d3d8_record.c
++++ b/src/hle/hle_d3d8_record.c
+@@ -1359,9 +1359,17 @@
+                                 p->stride);
+ }
+ 
++#if defined(__has_include)
++#if __has_include("pc_input_icon_gpu.inc")
++#include "pc_input_icon_gpu.inc"
++#endif
++#endif
+ HRESULT host_DrawPrimitiveUP(IDirect3DDevice8 *dev, D3DPRIMITIVETYPE type,
+                              UINT prims, const void *vertices, UINT stride)
+ {
++#ifdef TSFP_INPUT_ICON_GPU
++    if(input_gpu_active)return input_gpu_dispatch(dev,type,prims,vertices,stride);
++#endif
+     if (hle_d3d8_defer_recording() && vertices && stride) {
+         dq_draw_up p;
+         uint64_t bytes = (uint64_t)d3d8_up_vertices_read(type, prims) * stride;

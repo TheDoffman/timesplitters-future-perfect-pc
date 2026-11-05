@@ -3,11 +3,12 @@
 Imported PNG prompts can replace recognized single-key labels through
 `pc_input_icons.inc`, using generated `pc_input_icon_data.inc` lookup/span data.
 `tools/graphics/import-input-icons.py` reads an attributed asset manifest, validates
-128px source PNGs and virtual-key uniqueness, and packs 32px antialiased RGBA runs.
+128px source PNGs and virtual-key uniqueness, and preserves the original128px
+RGBA pixels as lossless runs. No thumbnail downsampling remains.
 Absent icon data or unmapped keys retain the original keycap renderer. Input
 lookup uses cached localized key names; held states require both raw and focused
-input. Imported images use square placement, native RGB tint/fade and the unclipped
-solid-quad emitter; original text advances remain authoritative.
+input. Imported images use native textured quads, placement, tint/fade and scissor;
+original text advances remain authoritative.
 Julio Cacko's CC0 1.4 pack supplies dark keyboard/mouse and default Xbox-style
 controller art. The manifest has separate `keys` (VK) and `controller` (native
 ASCII token) banks; equal numbers never alias the two namespaces. Compiled images
@@ -35,6 +36,34 @@ as `Licenses/Keyboard-mouse-icons.txt`.
 The Linux payload verifier requires that notice; its shared icon renderer needs
 no additional Linux adapter. Linux game visual acceptance is still pending.
 The compiled span include ships in source; builds need no artwork download.
+
+Patch2610 connects the shared host DrawPrimitiveUP boundary to
+`pc_input_icon_gpu.inc`. Each source image is uploaded once into a bounded256
+entry cache: Xbox A8R8G8B8 locks require Morton order at every mip. The eight
+128-to1 levels contain premultiplied RGBA, averaged before upload; linear min,
+mag and mip sampling gives smooth transparent edges without dark fringes.
+The title's textured1B7B0 quad supplies native geometry and viewport/scissor.
+Its UV range is normalized in a copied vertex buffer; native RGBA7-bit white/
+opaque0x7f expands before premultiplication. Original vertices are untouched.
+The font batch flush stays inside begin/end. No font size or binding changes.
+All writes use recorded host wrappers. Native deferred draws queue the complete
+image/vertex operation so state queries/restoration run at execution time.
+Texture, pixel shader, blend/alpha test and sampler/stage states are restored;
+binding the previous texture precedes restoring COLOROP because SetTexture
+can enable it. Failed upload retains the rectangle fallback. A device change
+releases cached images; reuse avoids repeat upload. No OS-specific adapter.
+
+Binding-value cells scope a22-unit canvas capped by the row height minus4 and
+the measured column width. Space/Shift/Enter retain their alpha-bound aspect
+compensation. Captions, key assignments, column metrics, original text advances,
+footer/profile sizing and hit targets stay unchanged. This removes the former
+extra shrink inherited from the small binding-caption font.
+`input_icon_gpu.c`, in the existing text-read-scope test route, verifies native
+Morton mip data, seven-bit tint, premultiplied filtering, cache/device/failure
+paths, native quad geometry and state restoration with immediate/deferred draws.
+Importer tests retain a single original pixel at127,127. Keycap fixtures exercise
+binding-cell enlargement separately from caption/footer sizing.
+
 The profile picker has a fixed two-line text clip. `menu_mouse_profile_text`
 scopes compact imported key faces (1.0 instead of1.15 glyph-height multiplier),
 keeps Select/Back at native Y and moves Delete only2 layout pixels down. Normal/

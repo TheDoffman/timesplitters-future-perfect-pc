@@ -1,3 +1,57 @@
+## 2026-11-05 - Filtered original-resolution input icons
+
+Quality follow-up to9188b2c9 on local feature/julio-input-prompts keeps Julio's
+original128x128 pixels instead of the previous32px thumbnails. New shared
+patch2610 scopes filtered native textures around the existing guest textured
+quad. Each image is uploaded once with eight premultiplied mip levels and
+Morton lock ordering. Vertex RGBA uses the title's seven-bit white/opaque0x7f
+convention before premultiplication. A copied UV/color buffer preserves native
+positions, font placement and scissor; blend, shader, texture and stage states
+restore after immediate or deferred execution through the recorded host calls.
+The rectangle path remains an upload/unavailable-backend fallback. No new OS
+adapter or input/action/persistence rules are introduced.
+
+Binding-value images now have a22-unit canvas bounded by the native row and
+column; wide Space/Shift/Enter retain their aspect compensation. Captions,
+settings font size, navigation, footer geometry and profile baselines remain
+unchanged. Full-resolution pixels are stored losslessly as131519 source runs;
+normal rendering uses one native textured quad per displayed image, avoiding
+the former per-pixel rectangle draw load. No art download is required to build.
+
+Windows x64 validation, MSVC19.44.35207/SDK10.0.26100, common D3D11 frontend:
+
+- Supported Build and linked checks passed with the existing local /MP6 and
+  seven generated large-SSE /Od /Ob0 exceptions documented below. No generated
+  game C or compiler-default source policy was edited. Matching crash symbols
+  were produced. Artifact hashes and source receipt remain private.
+- 29 focused importer, glyph, binding, settings and pointer tests passed;2 native
+ Mac compile checks skipped on Windows. New GPU fixture covers Morton pixels,
+ premultiplied mip data, native RGBA/tint, quad/UV copies, cache reuse, device
+ changes, upload/read/draw failure and state restoration. It simulates queued
+ state changes so deferred execution must restore the later state, and catches
+ SetTexture enabling COLOROP. Import tests preserve a single pixel at127,127;
+ reimport reproduces the compiled include byte-for-byte.
+- Actual profile/main and paused Deathmatch menus were reviewed at640x480,
+ including Menu Actions E/Y/X/Z, Space/Esc/Tab, and footer Select/Back. Binding
+ images are larger/readable and the font/footer brightness agrees with the
+ native text. Main and pause screenshots are retained in logs as
+ review-quality-bindings.png and review-quality-pause-bindings.png, with the
+ prior pause image kept for comparison. This is menu/game-entry evidence, not
+ broad-resolution, full campaign or physical-controller acceptance.
+- A separate bounded run explicitly enabled deferred draws and recorded an
+ actual menu frame (5.1MB). Production d3d8_replay rendered it successfully:
+ 105 draw-up calls,0 failed host calls,0 malformed chunks,0 unmapped handles
+ and0 unknown chunks. The replayed menu/footer was visually reviewed. This
+ verifies recording/replay of the native icon texture path; exact whole-frame
+ pixel parity is not claimed.
+
+Native Mac/Linux builds and GPU/menu acceptance, physical controller use,
+resize/device-reset behavior and broad resolutions remain pending. Their shared
+implementation and acceptance checks are recorded in MAC_PORT_BACKLOG.md. The
+Desktop TSFP Input Preview launcher uses the rebuilt executable and a separate
+retained Test Lab profile; other running game sessions and personal data remain
+untouched. Changes are local and not published or merged.
+
 ## 2026-11-05 - Julio keyboard and controller prompt artwork
 
 Local feature/julio-input-prompts, based on main772a38df: replaced the previous

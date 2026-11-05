@@ -52,7 +52,7 @@ def compile_pack(manifest, output, source_dir=None):
                 rgba=source.convert('RGBA')
                 bounds=rgba.getchannel('A').point(lambda a:255 if a>=64 else 0).getbbox()
                 scale=min(2.,max(1.,104./(bounds[3]-bounds[1]))) if bounds else 1.
-                image=rgba.resize((32,32),Image.Resampling.LANCZOS)
+                image=rgba
             data=rectangles(image);image_range=(len(shapes),len(data),scale)
             images[image_path]=image_range;icons.append(image_range);shapes.extend(data)
     if not icons: raise ValueError('No icons in manifest')
@@ -60,6 +60,7 @@ def compile_pack(manifest, output, source_dir=None):
           ' * Generated from assets/ui/input-icons/manifest.json.',
           ' * Attribution and modifications: assets/ui/input-icons/ATTRIBUTION.md. */',
           '#define TSFP_INPUT_ICONS 1',
+          '#define TSFP_INPUT_ICON_SIZE 128',
           'typedef struct PcInputIconSpan { unsigned char x,y,w,h,r,g,b,a; } PcInputIconSpan;',
           'static const PcInputIconSpan input_icon_spans[]={']
     text += ['{'+','.join(map(str,shape))+'},' for shape in shapes]

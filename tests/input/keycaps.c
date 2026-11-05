@@ -64,7 +64,7 @@ static uint32_t guest_call(void (*f)(void),unsigned n,...)
 }
 #include "../src/interface/pc_keycaps.inc"
 static void glyph(void){glyphs++;g_esp+=4;}
-static int nested;
+static int nested;static float glyph_height=20.f;
 static void draw(void)
 {
     uint32_t frame=g_esp,text=WORD_AT(frame+16);
@@ -74,7 +74,7 @@ static void draw(void)
         unsigned token=controller?memory[text+(++i)]:0;
         uint32_t state=1024;WORD_AT(state)=0x60606055;
         FLOAT_AT(state+0x18)=20.f+i*8.f;FLOAT_AT(state+0x1c)=10.f;
-        FLOAT_AT(state+0x20)=28.f+i*8.f;FLOAT_AT(state+0x24)=30.f;
+        FLOAT_AT(state+0x20)=28.f+i*8.f;FLOAT_AT(state+0x24)=10.f+glyph_height;
         WORD_AT(state+0x3c)=controller && token<'A'?55:77;
         WORD_AT(state+0x40)=controller;memory[state+0x38]=controller?(unsigned char)(token>='A'?token-'A':token-'1'):memory[text+i];
         g_esp=512;WORD_AT(g_esp+4)=state;pc_display_keycap_glyph(glyph);CHECK(g_esp==516);
@@ -99,6 +99,9 @@ int main(void)
     input_icon_lookup[0]=0;input_icon_lookup[32]=10;
     run("[E]");CHECK(!glyphs && lines==1 && seen_colour==0x5b5b5b55);
     int normal_width=max_x-min_x;
+    glyph_height=8.f;run("[E]");int small_width=max_x-min_x;
+    input_icon_cell_height=22.f;input_icon_cell_width=48.f;run("[E]");CHECK(max_x-min_x>small_width && max_x-min_x<=48);
+    input_icon_cell_height=input_icon_cell_width=0;glyph_height=20.f;
     run("[Space]");CHECK(!glyphs && lines==1 && max_x-min_x>normal_width && max_x-min_x<=60);
     menu_mouse_profile_icons=1;run("[E]");CHECK(max_x-min_x<normal_width);menu_mouse_profile_icons=0;
     held_keys['E']=1;run("[E]");CHECK(!glyphs && lines==1 && seen_colour==0x0f121655);held_keys['E']=0;

@@ -59,11 +59,18 @@ baselines and scoped icon state is restored. No OS adapter or controller
 layout change. Windows evidence is in STATUS; native Mac visual acceptance
 is pending (complete key faces, bottom margin and footer hover).
 
-Imported prompt artwork (local feature/julio-input-prompts, uncommitted): shared
+Imported prompt artwork (local feature/julio-input-prompts): shared
 `pc_keycaps.inc`, `pc_input_icons.inc` and generated data replace the prior
 Rendrify art with Julio Cacko CC0 keyboard/mouse and Xbox-style controller icons.
 Native token/VK banks, glyph bounds, text advances and fade remain shared;
-no OS adapter is needed. Controller-family detection is unchanged. Windows
+no OS adapter is needed. Controller-family detection is unchanged.
+Quality follow-up (local, uncommitted) preserves128px pixels, uses shared native
+textured quads and recorded immediate/deferred GPU state scopes (patch2610),
+Morton-ordered premultiplied mips and linear sampling. Binding icons grow inside
+existing rows/columns. The same D3D8/RHI API is used on all hosts; no new OS
+adapter is identified. Mac/Linux builds and actual GPU acceptance remain pending,
+including legacy GL texture locks/state getters, pause scissor, footer fades,
+controller prompts, resize/device reset and capture/replay parity. Windows
 fixtures/build and available visual evidence are recorded in STATUS. Mac and
 Linux builds and visual acceptance remain pending: profile/main/pause footer
 fit, binding dialogs, device switching and tutorial/HUD wrapping. Source PNGs

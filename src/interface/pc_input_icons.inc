@@ -1,4 +1,13 @@
 /* Shared PNG-span renderer. Image data and attribution are generated separately. */
+#ifndef TSFP_INPUT_ICON_SIZE
+#define TSFP_INPUT_ICON_SIZE 32
+#endif
+/* Only binding value cells opt in; captions and footer text retain their scale. */
+static RECOMP_TLS float input_icon_cell_height,input_icon_cell_width;
+#ifndef TSFP_KEYCAP_TEST
+extern int tsfp_input_icon_begin(const void *spans,unsigned count,unsigned size);
+extern void tsfp_input_icon_end(void);
+#endif
 static int input_icon_id(int key)
 {
     return key>=0 && key<256?input_icon_lookup[key]:-1;
@@ -6,14 +15,23 @@ static int input_icon_id(int key)
 static void input_icon_image(PcInputIconImage image,float x,float y,float w,float h,uint32_t tint)
 {
     extern void sub_0001A2E0(void);
+#ifndef TSFP_KEYCAP_TEST
+    if(tsfp_input_icon_begin(input_icon_spans+image.first,image.count,TSFP_INPUT_ICON_SIZE)) {
+        extern void sub_0001B7B0(void);
+        /* Native textured quad preserves the title's placement and scissor.
+         * Flush it inside the texture scope, before another font draw. */
+        guest_call(sub_0001B7B0,9,bits(x),bits(y),bits(x+w),bits(y+h),0u,0u,2048u,2048u,tint);
+        guest_call(sub_00022FF0,0);tsfp_input_icon_end();return;
+    }
+#endif
     for(unsigned i=0;i<image.count;i++) {
         const PcInputIconSpan *s=&input_icon_spans[image.first+i];
         unsigned a=(unsigned)s->a*(tint&255u)/255u;
         uint32_t colour=((uint32_t)(s->r*((tint>>24)&255u)/255u)<<24)|
                         ((uint32_t)(s->g*((tint>>16)&255u)/255u)<<16)|
                         ((uint32_t)(s->b*((tint>>8)&255u)/255u)<<8)|a;
-        guest_call(sub_0001A2E0,5,bits(x+w*s->x/32.f),bits(y+h*s->y/32.f),
-                   bits(x+w*(s->x+s->w)/32.f),bits(y+h*(s->y+s->h)/32.f),colour);
+        guest_call(sub_0001A2E0,5,bits(x+w*s->x/(float)TSFP_INPUT_ICON_SIZE),bits(y+h*s->y/(float)TSFP_INPUT_ICON_SIZE),
+                   bits(x+w*(s->x+s->w)/(float)TSFP_INPUT_ICON_SIZE),bits(y+h*(s->y+s->h)/(float)TSFP_INPUT_ICON_SIZE),colour);
     }
 }
 static void input_icon_paint(const PcKeycapCap *cap)
@@ -30,6 +48,10 @@ static void input_icon_paint(const PcKeycapCap *cap)
         h=fminf(h*scale,fmaxf(h,(float)(cap->r-cap->x)+4.f));
     }
 #endif
+    if(input_icon_cell_height>0.f && input_icon_cell_width>0.f) {
+        float scale=input_icons[cap->icon*2+!!cap->pressed].scale;
+        h=fminf(input_icon_cell_height*scale,input_icon_cell_width);
+    }
     float x=(cap->x+cap->r-h)*.5f,y=(cap->y+cap->b-h)*.5f;
     input_icon_image(input_icons[cap->icon*2+!!cap->pressed],x,y,h,h,cap->colour);
 }

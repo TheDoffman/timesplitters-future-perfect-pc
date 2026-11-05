@@ -2016,6 +2016,14 @@
       ]
     },
     {
+      "name": "2610-filtered-input-icons.patch",
+      "path": "patches/graphics/interface/2610-filtered-input-icons.patch",
+      "sha256": "6ee09852f01250fc8b9590dab4d231608abaaa1a51cd1286a24c252da4e7d4a8",
+      "targets": [
+        "src/hle/hle_d3d8_record.c"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",
