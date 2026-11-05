@@ -35,7 +35,13 @@ Validation uses the existing CI routes:
   pass, reject it when disabled and retain occlusion by nearer geometry through
   repeated state-cache hits. The old dropped-offset mutation must fail pixels.
 
-Status: candidate only. These contracts verify the missing state path; they do
-not yet confirm that the reporter's kitchen wall/ceiling or Plasma Autorifle
-flicker is resolved. No resolution comment has been posted on this report.
+Status: the omitted state path is repaired, but the texture-report hypothesis
+was not confirmed. Original-60 Classic runs reached the identical kitchen
+position/yaw with bots disabled through the normal menu. Both the baseline and
+candidate retained temporal counter/ceiling changes. Replaying the candidate's
+same captured frame with only offset states174..178 zeroed changed27 of518400
+pixels by more than one channel value; textures, vertices and all other state
+were identical. Both replays had zero failed calls or malformed chunks. The
+broad reported flicker therefore needs further investigation; no resolution
+comment has been posted. Do not merge this experiment as a confirmed report fix.
 Physical Mac/Linux acceptance remains unverified.

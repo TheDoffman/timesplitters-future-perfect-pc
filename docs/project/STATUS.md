@@ -20,8 +20,13 @@ input. Bots were disabled through its menu for the surface-only comparison;
 this does not validate the separate bot-through-wall report. Baseline kitchen
 screenshots show changing counter/ceiling surfaces at a stationary camera;
 its host capture replays with zero failed calls or malformed chunks. Candidate
-live comparison remains in progress. No texture-report resolution comment has
-been posted; do not treat the missing-state contract as report confirmation.
+live comparison did not confirm resolution. At the identical kitchen position
+and yaw, temporal surface changes remained in both builds. A same-capture
+offset-enabled/disabled replay changed only27/518400 pixels by more than one
+channel value; all other inputs were identical and both replays had zero failed
+calls or malformed chunks. The missing-state hypothesis does not explain the
+broad flicker. No texture-report resolution comment has been posted. Retain
+this isolated experiment for review; do not merge it as a confirmed report fix.
 Shared Mac/Linux code is implemented, physical acceptance remains unverified.
 See [contract and limits](../agent-context/polygon-depth-offset.md).
 
