@@ -1,4 +1,5 @@
 <a href="https://discord.gg/hFkfcCUm56"><img align="right" src="docs/assets/discord-community.svg" alt="Join the TimeSplitters: Future Perfect Recomp Discord community" title="Join our Discord community" width="32" height="32"></a>
+<a href="https://ko-fi.com/thedoffman"><img align="right" src="docs/assets/ko-fi.png" alt="Support the project on Ko-fi" title="Support us on Ko-fi" width="40" height="32"></a>
 
 <div align="center">
 
@@ -217,12 +218,6 @@ Suggest improvements in **[Ideas](https://github.com/TheDoffman/timesplitters-fu
 To contribute, read the [contributing guide](CONTRIBUTING.md),
 [project rules](AGENTS.md) and [code of conduct](CODE_OF_CONDUCT.md).
 Report security vulnerabilities privately using the [security policy](SECURITY.md).
-
-## Support the project
-
-Enjoying the project? [Buy me a coffee on Ko-fi](https://ko-fi.com/thedoffman)
-to support continued work on TimeSplitters and the discoveries shared along the way.
-Thank you for being part of the project!
 
 ## Credits & license
 
