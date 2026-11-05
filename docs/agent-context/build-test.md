@@ -1,6 +1,6 @@
 [Input tests](controls-options.md).
 [Tab queue](../development/graphics-options.md): HUD/SMAA order and texture-present fixtures.
-[SDL startup tests](linux-game.md).
+[SDL startup/fullscreen tests](linux-game.md).
 `test_fov_settings.py` checks Video tabs, ownership, pointer bounds, keyboard
 cycling and staged-value retention.
 Ping-expiry tests wait past GetTickCount64 quantization.
