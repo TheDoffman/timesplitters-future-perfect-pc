@@ -54,13 +54,13 @@ class PolicyTests(unittest.TestCase):
 
     def test_waits_for_complete_current_head_ci_and_latest_attempt(self):
         self.assertEqual(len(W.failed_runs(runs(), HEAD)), 1)
-        self.assertIsNone(W.failed_runs(runs()[:1], HEAD))
+        self.assertIsNone(W.failed_runs(runs()[:-1], HEAD))
         self.assertIsNone(W.failed_runs(runs('b' * 40), HEAD))
         for status in ['queued', 'in_progress']:
-            r = runs(); r[1]['status'] = status
+            r = runs(); r[0]['status'] = status
             self.assertIsNone(W.failed_runs(r, HEAD))
         for conclusion in ['cancelled', 'skipped', 'neutral', None]:
-            r = runs(); r[1]['conclusion'] = conclusion
+            r = runs(); r[0]['conclusion'] = conclusion
             self.assertIsNone(W.failed_runs(r, HEAD))
         r = runs(); rerun = {**r[0], 'run_attempt': 2, 'status': 'in_progress'}
         self.assertIsNone(W.failed_runs(r + [rerun], HEAD))
@@ -390,7 +390,7 @@ class MergeTests(unittest.TestCase):
         original = self.pages('', 'workflow_runs')
         original = [{**r, 'head_sha': self.repair['head']['sha'], 'pull_requests': [{'number': 43}]}
                     for r in original]
-        variants = [[], original[:1], [{**r, 'status': 'in_progress'} for r in original],
+        variants = [[], original[:-1], [{**r, 'status': 'in_progress'} for r in original],
                     [{**r, 'head_sha': 'f' * 40} for r in original],
                     [{**r, 'pull_requests': [{'number': 99}]} for r in original],
                     [{**r, 'conclusion': 'cancelled'} for r in original]]

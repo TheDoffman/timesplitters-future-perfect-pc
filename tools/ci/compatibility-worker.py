@@ -46,18 +46,17 @@ REPO = 'TheDoffman/timesplitters-future-perfect-pc'
 OWNER = 'TheDoffman'
 REMOTE = 'https://github.com/' + REPO + '.git'
 LABEL = 'com.timesplitters.compatibility-worker'
-WORKFLOWS = {'.github/workflows/launcher-compatibility.yml',
-             '.github/workflows/runtime-patches.yml'}
+WORKFLOWS = {'.github/workflows/runtime-patches.yml'}
 MAX_OUTPUT = 8 * 1024 * 1024
 MAX_SOURCE = 96 * 1024 * 1024
 MAX_FILE = 2 * 1024 * 1024
 MAX_CHANGES = 30
 INTERVAL = 900
 TIMEOUT = 1800
-REQUIRED_CHECKS = {'Launcher compatibility', 'Patch transitions (windows-latest)',
-                   'Patch transitions (macos-latest)'}
+REQUIRED_CHECKS = {'PR validation'}
 FOLLOWUP = {'published_awaiting_ci', 'repair_merging', 'parent_awaiting_ci', 'parent_merging'}
-PROTECTED = {'tools/ci/compatibility-worker.py', 'tools/ci/launcher-compatibility.py',
+PROTECTED = {'tools/ci/ci-pr-gate.py', 'tests/repository/test_ci_pr_gate.py',
+             'tools/ci/compatibility-worker.py', 'tools/ci/launcher-compatibility.py',
              'tools/ci/ci-runtime-scope.py', 'tests/repository/test_compatibility_worker.py',
              'tests/launcher/test_launcher_compatibility.py', 'tests/repository/test_ci_runtime_scope.py'}
 CODEX_LOCATIONS = (

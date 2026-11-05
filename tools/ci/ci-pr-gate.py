@@ -32,14 +32,23 @@ launcher = load('launcher_scope', 'launcher-compatibility.py')
 
 
 def gate(plan, transitions, native, release, run_launcher,
-         patches_result, native_result, launcher_result):
+         patches_result, native_result, launcher_result, *, checks=()):
     runtime.gate(plan, transitions, native, release,
                  patches_result, native_result)
     launcher.gate(plan, run_launcher, launcher_result)
+    for name, selected, result in checks:
+        if selected not in ('true', 'false'):
+            raise ValueError(f'{name}: missing/invalid scope output {selected!r}')
+        expected = 'success' if selected == 'true' else 'skipped'
+        if result != expected:
+            raise ValueError(f'{name}: expected {expected}, got {result!r}')
     return 'All selected PR checks passed on their required hosts.'
 
 
 if __name__ == '__main__':
     names = ('PLAN_RESULT', 'RUN_TRANSITIONS', 'RUN_NATIVE', 'RUN_RELEASE',
              'RUN_LAUNCHER', 'PATCHES_RESULT', 'NATIVE_RESULT', 'LAUNCHER_RESULT')
-    print(gate(*(os.environ.get(name, '') for name in names)))
+    checks = [(name, os.environ.get('RUN_' + name, ''),
+               os.environ.get(name + '_RESULT', ''))
+              for name in ('LINUX', 'ISSUE_FORMS', 'ISSUE_RESOLUTION', 'TEXTURES')]
+    print(gate(*(os.environ.get(name, '') for name in names), checks=checks))
