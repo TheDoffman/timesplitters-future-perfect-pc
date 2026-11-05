@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "39570637ce657ad90cade0bda5e101896ba829ee6db51081d5696b789cd84078",
+  "loaderSha256": "c7361835cd30e077ba15e54856653f246cb6c114a928f5e34906b5c8620c3212",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3513,6 +3513,14 @@
         "src/hle/hle_xmv_play.c",
         "src/input/CMakeLists.txt",
         "src/video/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2595-config-source-worktree.patch",
+      "path": "patches/platform/2595-config-source-worktree.patch",
+      "sha256": "7a830ed1842fd74284252ac1f958a1e0713b74b0e8cb44ef7f524676a3bfac92",
+      "targets": [
+        "titles/futureperfect/CMakeLists.txt"
       ]
     }
   ]

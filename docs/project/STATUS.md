@@ -1,3 +1,17 @@
+## 2026-11-04 - Game 0.5.0 / launcher 1.5.0 release preparation
+
+The requested release targets Windows x64, Apple Silicon Mac and Linux x64.
+Version/README preparation passed83 tests and41 subtests on Windows. Actual Mac
+compilation then found a reused-runtime source-path error for the SMAA header;
+additive2595 selects the active shared source for xbox_config after target
+migrations. The real relocated-source CMake fixture passes both source routes
+and rejects its stale-header negative control. Linux packaging now accepts the
+shared Stable identity while retaining explicit experimental limitations and
+the optional-texture/retired-icon metadata. Focused delivery checks passed26
+tests with1 POSIX-only skip on Windows in7.76s. Full three-host builds, clean
+Linux package acceptance and publication remain pending. The stopped earlier
+Windows/Linux pipelines are not completed validation; personal data is preserved.
+
 ## 2026-11-04 - Local-player Settings integration validation
 
 Merged main ff643ed4 into the local-player branch. Windows supported Build and

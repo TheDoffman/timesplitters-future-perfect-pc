@@ -91,6 +91,16 @@ name is fixed; `-ChannelName` customizes named feature tracks only.
 
 ## Build, inspect and publish
 
+Game 0.5.0 includes a Linux x64 package on Stable, with experimental platform
+support. Build it from the same clean source with `--release-media` and use
+`tools/release/package-native-linux.py --version v0.5.0` after the native and
+launcher checks. Retain its dependency source audit, actual launcher minimum and
+optional-texture policy. Verify the clean-userspace package and isolated gameplay
+checks in [Linux acceptance](../development/linux-acceptance.md); publish the
+remaining native desktop GPU/Wayland/controller/Steam Deck gaps explicitly.
+Attach the verified Linux ZIP, checksum and BUILD receipt alongside Windows/Mac,
+then verify all nine assets and combined platform metadata before publishing.
+
 The complete regression suite uses up to four workers and reuses successful
 compiler environment setup. No cases are omitted. Use `-TestWorkers 1` for a
 serial diagnostic run, or `-TestWorkers N` to set the worker count. Any test or

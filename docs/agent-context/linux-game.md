@@ -2,6 +2,13 @@
 
 ## Experimental release preparation
 
+The authorized 0.5.0 release uses Stable channel metadata for Linux as well as
+Windows/Mac. package-native-linux.py accepts the shared Stable/preview identities;
+both retain explicit experimental Linux limitations and the actual bundled
+launcher minimum. This does not establish native desktop or Steam Deck acceptance.
+The Linux BUILD receipt includes the same optional-texture/retired-icon policy
+as Windows/Mac and identifies its bundled launcher; no texture hydration is needed.
+
 `tools/build/build-linux-media.py` builds the pinned FFmpeg6.1.5 WMV2-only LGPL
 shared libraries in the private dependency tree. The source pin identifies the
 official signed tag/commit and archive SHA256; changed archives, extracted source

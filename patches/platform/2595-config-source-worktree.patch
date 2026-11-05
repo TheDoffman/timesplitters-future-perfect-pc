@@ -1,0 +1,12 @@
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -78,3 +78,9 @@
+ # and provides the 'xboxrecomp' umbrella target to link against.
+ add_subdirectory(${XBOXRECOMP_DIR} ${CMAKE_BINARY_DIR}/xboxrecomp)
++
++# Reused dependency trees must read settings headers from this source worktree,
++# ahead of the runtime's legacy checkout-relative include directory.
++if(TSFP_SHARED_SOURCE)
++    target_include_directories(xbox_config BEFORE PRIVATE "${TSFP_SHARED_SOURCE}")
++endif()
+ 

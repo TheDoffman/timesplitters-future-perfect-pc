@@ -8992,6 +8992,13 @@ regressions cover enabled/disabled/absent flags; native host CI remains the gate
 
 ### MAC-129 - Optional SMAA anti-aliasing
 
+Release 0.5.0 preparation (2026-11-04): a real native build with reused dependencies
+could not find the current SMAA settings header. Additive2595 gives xbox_config
+the active TSFP_SHARED_SOURCE before its legacy dependency-relative path. The
+relocated-source CMake regression includes a stale-header negative control for
+Windows/native routes. The shader/settings behavior is unchanged; native build
+and scene validation remain separate, with fresh release build checks pending.
+
 - **Status:** Awaiting validation
 - **Source:** [PR #469](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/469), initial implementation `fa75cb41`.
 
