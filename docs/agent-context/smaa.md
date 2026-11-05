@@ -1,5 +1,11 @@
 # SMAA implementation and validation
 
+Shared MSAA target resizing (rendering2600): a single-sample guest color image
+may resize to multisample automatic depth dimensions before SetRenderTarget
+creates its coverage companion. Sampled textures remain single-sampled. The
+msaa_scaled_target.h GPU fixture checks color preservation, logical dimensions
+and coverage at1/2/4/8 samples. See graphics-options.md and STATUS for acceptance.
+
 Patch2595 runs after grouped/native target migrations and configures xbox_config
 with the active TSFP_SHARED_SOURCE before the
 legacy dependency-relative include path. Reused Mac/other-host runtime trees
@@ -63,3 +69,7 @@ Native Mac GPU/gameplay acceptance remains separate; see MAC-129 and STATUS.
 
 Video Options setting-row clicks reuse the native switch sound; see
 [click feedback and tests](video-options.md).
+
+The shared-depth resize declaration is exposed on every RHI host; its existing
+implementation is common. The scaled-target fixture compiles on Windows,
+macOS and Linux rather than relying on a Windows-only prototype.

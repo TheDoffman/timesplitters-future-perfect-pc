@@ -1,3 +1,23 @@
+## Uplink native holding — validation pending
+
+Shared pc_native_numeric.h and pc_native_uplink.h admit Uplink physics
+function1 holding on fractional intervals. Coreb3545910 on fix/discord-uplink
+requires no new host adapter. The original-US input/charge regression covers
+60/120/144/180/240; Windows live Russian Connection barrel pickup, floating
+and release pass at120/180. The supported Windows build passes with the
+recorded local MSVC workaround; native Mac/Linux builds and live acceptance
+remain pending. Check lift/hold/release, throw, pause, map mode and ordinary gun
+cadence at the native presets. See STATUS.md and native-uplink.md.
+
+## Shared MSAA texture resize — host acceptance pending
+
+Code ae271f20 on fix/discord-msaa-rendering after221c6b32: rendering2600 repairs
+the common offscreen color resize preceding MSAA companion creation. No new
+OS adapter is required. Windows WARP regression fails before/passes after;
+the isolated Windows Chinese8x scene passes with the documented CPU compiler
+workaround. Native Mac/Linux GPU and Chinese-map gameplay at2/4/8x remain pending.
+See STATUS for the compatibility baseline and full-build acceptance limits.
+
 ## Saved native fullscreen startup — validation pending
 
 Local fix/linux-deck-desktop-input: window_startup_sdl.h applies the existing

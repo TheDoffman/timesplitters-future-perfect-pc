@@ -1,7 +1,7 @@
-[Projectile timing](native-projectiles.md).
-[Linux](linux-game.md); [SMAA](smaa.md).
+[Rockets](native-projectiles.md); [Uplink](native-uplink.md).
+[Linux](linux-game.md); [MSAA](smaa.md).
 [Kill feed contracts](../development/arcade-kill-feed.md).
-Story rewards: 2465 wraps356800 for the frontend;
+2465 wraps356800 for rewards;
 profile mapper356870 stays original. See [contract](systems-details.md#four-player-rewards-context).
 
 Story lobby host loss: additive2460 wraps1AF950. The shared menu adapter scopes
@@ -60,7 +60,7 @@ shared Story adapter so a guest's blocked movie advance does not release its
 still-rendered stream at99BB7. Real load teardown and other modes retain the
 original close. See [contracts](systems-details.md) and [fixture](build-test-details.md).
 
-# Runtime ([SMAA](smaa.md))
+# Runtime ([MSAA](smaa.md))
 
 Patch2180 wraps US1C2AF0 for an already-eligible fresh player trigger only;
 the patch loader orders it after native minigun/timing wrappers. It preserves

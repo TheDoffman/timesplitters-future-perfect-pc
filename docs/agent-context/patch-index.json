@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "9a41764a289e7978da77941174577b915f410a183b54e06690bd83783bbaac7f",
+  "loaderSha256": "a39aba24ea36ce6ce37de717a771eb1a33958a4f3f50294df25701d5158b6788",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3529,6 +3529,15 @@
       "sha256": "7a830ed1842fd74284252ac1f958a1e0713b74b0e8cb44ef7f524676a3bfac92",
       "targets": [
         "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2600-msaa-scaled-shared-depth.patch",
+      "path": "patches/graphics/rendering/2600-msaa-scaled-shared-depth.patch",
+      "sha256": "34f3406ac0c11f6df6e477e3c2e0f8cfd79b14c99c39ece4c90079c623efb3b6",
+      "targets": [
+        "src/d3d/d3d8_resources.c",
+        "src/d3d/d3d8_xbox.h"
       ]
     }
   ]
