@@ -1,3 +1,11 @@
+## 2026-11-05 - Discord Neophyte Lucian LOD investigation
+
+Branch fix/discord-lucian-lod records a controlled character108 reproduction
+setup and actual close-model views on main831c324a. The expected gray clothing
+is visible nearby; distant frames were mostly occluded, so the pale low-LOD
+report remains unresolved. No resolution comment was posted and no rendering
+or asset change is proposed. See [evidence and limits](../development/discord-lucian-lod-investigation.md).
+
 ## 2026-11-05 - Native fullscreen startup and Steam Deck Desktop controls
 
 User launches directly from Desktop Mode. Holding Menu to select Steam's
