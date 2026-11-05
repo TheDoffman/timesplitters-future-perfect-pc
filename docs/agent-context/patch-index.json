@@ -2016,6 +2016,14 @@
       ]
     },
     {
+      "name": "2600-msaa-scaled-shared-depth.patch",
+      "path": "patches/graphics/rendering/2600-msaa-scaled-shared-depth.patch",
+      "sha256": "d685214f535443dfbc06d8809824639ecbbbb0b417929befd583529ee6230b2f",
+      "targets": [
+        "src/d3d/d3d8_resources.c"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",

@@ -1,4 +1,4 @@
-[Linux](linux-game.md); [2595](smaa.md).
+[Linux](linux-game.md); [MSAA](smaa.md).
 2490: overlay.
 [Kill feed contracts](../development/arcade-kill-feed.md).
 Story rewards: additive2465 wraps356800 for the single frontend context;

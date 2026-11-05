@@ -1,3 +1,24 @@
+## 2026-11-05 - Discord Chinese MSAA investigation (candidate)
+
+Local fix/discord-msaa-rendering after221c6b32, not yet published. Existing
+Windows x64 game4edca1d2a9665d8d8785aa4ffa07463707087f84f81a16a6de290203d8efd257
+(displayed v0.4.2/5b57580e) reproduces the almost-black Chinese Deathmatch scene
+at8x MSAA,960x540,Original60,Classic textures, with accumulating target-binding
+failures. Supported US XBE checksum verified; synthetic input and disposable
+Test Lab profile/settings only. This executable is a compatibility baseline,
+not a build of the investigation HEAD. Private scene capture replayed through
+current source with zero failed host calls, but remains black because its
+recorded failed-target fallback already lost the intended offscreen pass.
+
+Patch2600 permits single-sample color resizing against MSAA depth before its
+coverage companion is created. New msaa_scaled_target GPU regression compiles
+and fails before the repair, passes afterward on Windows D3D11 WARP. It checks
+1/2/4/8 sample depth, exact resized color, unchanged logical texture dimensions,
+single-sample sampling and matching coverage. Existing shared RHI and eleven
+native-HUD regressions passed before the change; broader after-change checks
+and the full game rebuild/live acceptance are pending. Native Mac/Linux GPU
+and game acceptance remain unverified. No resolution comment posted yet.
+
 ## 2026-11-04 - Small-screen launcher fitting
 
 Native Mac/Linux launcher fits the monitor working area and scales its shared
