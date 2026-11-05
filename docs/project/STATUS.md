@@ -1,3 +1,12 @@
+## 2026-11-05 - Discord report sweep: two verified fixes, six unresolved
+
+Eight active posts were investigated on separate branches; the two user-marked
+older resolved posts were excluded. MSAA and Uplink fixes were independently
+verified and received the exact requested Discord resolution comment. Six
+other reports remain open; passing baseline checks was not treated as a fix.
+See [the branch/outcome index](../development/discord-report-triage.md) and
+[cutscene evidence](../development/discord-cutscene-investigation.md).
+
 ## 2026-11-05 - Native fullscreen startup and Steam Deck Desktop controls
 
 User launches directly from Desktop Mode. Holding Menu to select Steam's
