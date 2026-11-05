@@ -1,3 +1,10 @@
+## 2026-11-05 - Discord audio report remains unresolved
+
+Actual Chinese minigun firing and existing audio checks (59 passed) were exercised
+on main 831c324a. Frequent live pitch changes/voice resets are a lead, not a proven
+cause or fix. No resolution comment was posted. See
+[the evidence and acceptance limits](../development/discord-audio-investigation.md).
+
 ## 2026-11-05 - Native fullscreen startup and Steam Deck Desktop controls
 
 User launches directly from Desktop Mode. Holding Menu to select Steam's
