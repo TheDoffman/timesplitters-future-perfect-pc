@@ -728,9 +728,9 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             if harness_name=='native_character_scale.c':
                 addresses.update(range(0x12609c,0x1260b4,4))
             if harness_name in ('native_projectile_motion.c','native_projectile_coupled.c'):
-                # Captured projectile kinds and damage profiles. These are
-                # original table entries, not made-up falloff coefficients.
-                addresses.update(0x4deb54+kind*64 for kind in (24,28,31,35,45,46))
+                # Audited projectile kinds and damage profiles: original table
+                # entries, not made-up falloff coefficients.
+                addresses.update(0x4deb54+kind*64 for kind in (8,9,10,11,24,28,31,35,39,42,45,46))
                 for profile in (2,8,9,11,12):
                     addresses.update((0x4dad4c+profile*60,0x4dad78+profile*60))
             if harness_name=='native_player_dispatch.c':
@@ -746,6 +746,9 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                 f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
                 for address in sorted(addresses))
         if harness_name=='native_projectile_coupled.c':
+            for kind in (8,9,10,11,39,42):
+                offset=config.va_to_file_offset(0x4deb28+64*kind+0x30)
+                assert struct.unpack_from('<II',image,offset)==(0xe28d0,0xf08d0)
             # Original CRT pow adapter marshals ST(1) base and ST(0) exponent.
             offset=config.va_to_file_offset(0x3c8c64)
             expected=bytes.fromhex('eb0083ec14d9c9dd1c24dd5424088b44240ce80d00000083c414c3')
@@ -1090,6 +1093,25 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                         r['rng']!=reference['rng'] or r['scans']!=reference['scans'] or
                         int(r['fx'])!=4*int(r['frames'])):
                         raise AssertionError(output)
+        rockets=[dict(field.split('=',1) for field in line.split()[1:])
+                 for line in output.splitlines() if line.startswith('rocket ')]
+        assert len(rockets)==132,output
+        for row in rockets:
+            reference=next(r for r in rockets if r['kind']==row['kind'] and
+                           r['homing']==row['homing'] and r['native']=='0')
+            # Original whole-tick acceleration/homing has at most one 60-Hz
+            # integration step of phase error; quarter-speed travel is equal.
+            assert math.hypot(float(row['x'])-float(reference['x']),
+                              float(row['y'])-float(reference['y']))<float(reference['speed'])/60+.1, row
+            assert abs(float(row['speed'])-float(reference['speed']))<.01,row
+            if row['fps']=='60' and row['slow']=='1.00':
+                assert all(row[k]==reference[k] for k in ('x','y','speed','scans','rng','smoke')),row
+            assert row['scans']==reference['scans'],row
+            assert row['rng']==reference['rng'] and row['smoke']==reference['smoke'],row
+        needle='RECOMP_LOAD_GLOBAL_U32(0xF08D0, 0x4E7944, MEM32(0x4E7944))'
+        assert source.count(needle)==1
+        with pytest.raises(AssertionError):
+            compile_and_run(tmp_path,source.replace(needle,'MEM32(0x4E7944)'))
     if harness_name=='native_npc_aim.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('npc_aim ')]
