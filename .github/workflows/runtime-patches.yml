@@ -3,21 +3,6 @@ name: Runtime patch transitions
 on:
   push:
     branches: [main]
-    paths:
-      - src/**
-      - patches/**
-      - vendor/**
-      - tests/**
-      - tools/**
-      - config/**
-      - requirements.txt
-      - requirements-release.txt
-      - tsfp.ps1
-      - AGENTS.md
-      - docs/agent-context/**
-      - docs/project/MAC_PORT_BACKLOG.md
-      - .github/workflows/runtime-patches.yml
-      - .github/workflows/launcher*.yml
   pull_request:
   workflow_dispatch:
 
@@ -37,6 +22,9 @@ jobs:
       transitions: ${{ steps.scope.outputs.transitions }}
       native: ${{ steps.scope.outputs.native }}
       gpu: ${{ steps.scope.outputs.gpu }}
+      issue_forms: ${{ steps.scope.outputs.issue_forms }}
+      issue_resolution: ${{ steps.scope.outputs.issue_resolution }}
+      textures: ${{ steps.scope.outputs.textures }}
       release: ${{ steps.scope.outputs.release }}
       launcher: ${{ steps.launcher.outputs.run }}
       head: ${{ steps.launcher.outputs.head }}
@@ -83,6 +71,8 @@ jobs:
         run: python -m pytest tests/repository/test_ci_runtime_scope.py tests/repository/test_ci_pr_gate.py tests/repository/test_linux_foundation.py tests/repository/test_project_paths.py tests/launcher/test_launcher_compatibility.py tests/repository/test_mac_backlog.py tests/repository/test_repo_context.py -q --tb=short
       - name: Validate repository context and affected-system guide updates
         run: python tools/repo-context.py check --ci
+      - name: Test subscription worker selection and publication boundaries
+        run: python -m unittest discover -s tests/repository -p test_compatibility_worker.py -v
       - name: Test optional local-router context reader
         run: node --test tests/repository/repository-context.test.mjs tests/repository/repository-evidence.test.mjs
 
@@ -357,11 +347,25 @@ jobs:
     with:
       source_ref: ${{ needs.plan.outputs.head }}
 
-  # Candidate single required check. Keep the established required names below
-  # until the branch ruleset points to this successfully exercised gate.
+  issue_forms:
+    needs: plan
+    if: needs.plan.outputs.issue_forms == 'true'
+    uses: ./.github/workflows/issue-forms.yml
+
+  issue_resolution:
+    needs: plan
+    if: needs.plan.outputs.issue_resolution == 'true'
+    uses: ./.github/workflows/issue-resolution.yml
+
+  textures:
+    needs: plan
+    if: needs.plan.outputs.textures == 'true'
+    uses: ./.github/workflows/texture-pack.yml
+
+  # Always report one result; selected work must pass, unselected work must skip.
   pr-validation:
     name: PR validation
-    needs: [plan, patches, native, launcher, linux-foundation]
+    needs: [plan, patches, native, launcher, linux-foundation, issue_forms, issue_resolution, textures]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -379,44 +383,12 @@ jobs:
           PATCHES_RESULT: ${{ needs.patches.result }}
           NATIVE_RESULT: ${{ needs.native.result }}
           LAUNCHER_RESULT: ${{ needs.launcher.result }}
-        run: python tools/ci/ci-pr-gate.py
-      - name: Require selected Linux foundation checks
-        env:
           RUN_LINUX: ${{ needs.plan.outputs.gpu }}
           LINUX_RESULT: ${{ needs.linux-foundation.result }}
-        run: |
-          if [ "$RUN_LINUX" = true ] && [ "$LINUX_RESULT" != success ]; then
-            echo "Selected Linux foundation checks did not pass: $LINUX_RESULT"
-            exit 1
-          fi
-
-  # Preserve the two existing branch-protection check names. An intentional
-  # scope skip passes; failed/cancelled/missing or unexpectedly skipped work fails.
-  patch-transitions:
-    name: Patch transitions (${{ matrix.os }})
-    needs: [plan, patches, native]
-    if: always()
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 5
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, macos-latest]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        with:
-          python-version: '3.12'
-      - name: Test subscription worker selection and publication boundaries
-        run: python -m unittest discover -s tests/repository -p test_compatibility_worker.py -v
-      - name: Require all selected host checks
-        env:
-          PLAN_RESULT: ${{ needs.plan.result }}
-          RUN_TRANSITIONS: ${{ needs.plan.outputs.transitions }}
-          RUN_NATIVE: ${{ needs.plan.outputs.native }}
-          RUN_RELEASE: ${{ needs.plan.outputs.release }}
-          PATCHES_RESULT: ${{ needs.patches.result }}
-          NATIVE_RESULT: ${{ needs.native.result }}
-        run: python tools/ci/ci-runtime-scope.py --gate
+          RUN_ISSUE_FORMS: ${{ needs.plan.outputs.issue_forms }}
+          ISSUE_FORMS_RESULT: ${{ needs.issue_forms.result }}
+          RUN_ISSUE_RESOLUTION: ${{ needs.plan.outputs.issue_resolution }}
+          ISSUE_RESOLUTION_RESULT: ${{ needs.issue_resolution.result }}
+          RUN_TEXTURES: ${{ needs.plan.outputs.textures }}
+          TEXTURES_RESULT: ${{ needs.textures.result }}
+        run: python tools/ci/ci-pr-gate.py

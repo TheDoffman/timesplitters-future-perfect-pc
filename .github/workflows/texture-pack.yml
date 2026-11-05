@@ -1,26 +1,7 @@
 name: Repository texture pack
 
 on:
-  pull_request:
-    paths:
-      - 'assets/textures/**'
-      - '.gitattributes'
-      - 'config/textures/texture-pack.json'
-      - 'tools/textures/build_textures.py'
-      - 'tools/textures/texture-repository.py'
-      - 'tools/textures/texture-release.py'
-      - 'tests/textures/test_build_textures.py'
-      - '.github/workflows/texture-pack.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'assets/textures/**'
-      - 'config/textures/texture-pack.json'
-      - 'tools/textures/build_textures.py'
-      - 'tools/textures/texture-repository.py'
-      - 'tools/textures/texture-release.py'
-      - '.gitattributes'
-      - '.github/workflows/texture-pack.yml'
+  workflow_call:
   workflow_dispatch:
 
 permissions:

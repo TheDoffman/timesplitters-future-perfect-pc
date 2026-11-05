@@ -121,11 +121,10 @@ SDL tests (`tools/build/build-native-mac.py --test`) cover the two-slot E/Space
 cap, requested capture, release and frame-applied mouse disable. They preserve
 bindings; physical input remains unverified.
 
-CI: `runtime-patches.yml` selects work; `ci-pr-gate.py` requires both hosts.
-Native jobs allow 45 minutes on Windows and 30 on Mac; patch upgrades allow 30.
-Required check names remain.
-`test_ci_pr_gate.py` rejects missing/failed/skipped results;
-`test_ci_runtime_scope.py` checks wiring. Issue jobs select their sources.
+CI: `runtime-patches.yml` scopes runtime/launcher/Linux/issue/texture jobs.
+Only `PR validation` is required; `ci-pr-gate.py` fails closed. Launcher builds
+run once; standalone checks are manual-only. Worker uses this gate. Plan tests
+scope/gate/worker; host suites unchanged. Native Windows45m/Mac30m; upgrades30m.
 
 `test_push_gather.py`: full original-reference gathering, fresh bytes, failures,
 guard pages, large buffers and32-bit wrapping. Both native CI hosts run it.
@@ -552,7 +551,7 @@ instrumentation preserves libc copy macros; a redefinition mutation must fail.
 
 `tools/ci/compatibility-worker.py` runs on the designated Mac outside CI. Install
 with `--auto-merge` only for authorized repair follow-through. It publishes a
-repair PR against its original branch, waits for both host workflows/checks and
+repair PR against its original branch, waits for the consolidated workflow/checks and
 reviews, merges the exact repair SHA, then requires fresh parent CI before its
 SHA-conditional merge into protected main. It refuses missing effective gates,
 changed revisions and failed follow-up CI. Legacy state is not automatically

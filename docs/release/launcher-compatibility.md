@@ -7,22 +7,18 @@ required. The prior paid review/proposal workflow has been replaced.
 
 ## What happens on a PR
 
-1. Every PR and push to `main` runs a small scope check so the final `Launcher compatibility` status
-   is always reported. Launcher source, adapters, tests, shared configuration and
-   build/workflow changes select all three hosts. Removed or renamed launcher files
-   remain in scope. Unrelated game/documentation changes skip launcher builds.
-2. The shared read-only `launcher-build.yml` workflow builds/tests all three launchers,
-   runs their common UI tests, verifies all release assets and exercises the Mac
-   packaged install/corruption/repair/restart path. It also owns the Windows
-   startup-preference, packaging and game-icon checks. Runtime CI no longer
-   repeats launcher builds or these tests. Releases reuse this workflow.
-3. `Launcher compatibility` passes only after the scope check and all selected
-   builds/tests/package checks pass. Failure, cancellation, missing output or an
-   unexpectedly skipped build cannot pass. Fork PRs use read-only permissions and
-   GitHub's ordinary approval policy; no secrets are needed.
-4. Failed checks link to build logs. Fix the shared source or the missing host
-   adapter in the same PR, or ask Codex in the existing chat to make the repair.
-   CI itself does not generate code, open repair PRs, merge or publish a release.
+1. Every PR and push to `main` uses `runtime-patches.yml` to select work and
+   report the required **PR validation** result. Launcher source, adapters, tests,
+   shared configuration and build inputs select all supported launcher hosts.
+   Deleted/renamed files remain in scope; unrelated changes skip launcher builds.
+2. The shared read-only `launcher-build.yml` builds/tests/packages each selected
+   host once. Releases reuse it. The launcher compatibility workflow remains
+   available for manual launcher-only validation, without PR/main triggers.
+3. `PR validation` requires every selected runtime, launcher, Linux, issue and
+   texture job to pass. Failed/cancelled/missing or unexpectedly skipped work
+   fails the gate. Fork checks remain read-only and require no secrets.
+4. Failed checks link to logs. Fix shared source or missing adapters in the same
+   PR; CI does not generate code, merge or publish releases.
 
 Common UI/model changes compile into both launchers. OS-specific calls still need
 an implementation for the other host or an explicit capability/backlog entry.
@@ -41,12 +37,10 @@ and clean-machine delivery may need additional host checks. Record gaps in
 
 ## Installation and operation
 
-Merge the shared launcher/dual-platform release stack after its checks pass.
-Add **Launcher compatibility** from GitHub Actions to the default branch's
-required checks after its first successful PR run, preserving existing Windows/Mac
-checks and the up-to-date requirement. Human merging is the default; the dedicated
-worker can be explicitly installed with checked merge follow-through below.
-The workflow can also be dispatched manually to validate the selected branch; it never publishes.
+Require **PR validation** from GitHub Actions in the default branch ruleset,
+preserving strict up-to-date checks and the other protection rules. It replaces
+the two Patch transitions contexts and Launcher compatibility. Human merging
+remains the default. Manual launcher-only runs do not satisfy the PR gate.
 
 No enable variable or API secret is used. Repository setup removed
 `OPENAI_API_KEY` and `LAUNCHER_COMPATIBILITY_ENABLED`. The ignored local API key
@@ -115,8 +109,8 @@ repair/parent merging is an explicit installation option, authorized by the
 maintainer on 2026-10-21; it never bypasses repository rules or required reviews.
 ChatGPT plan allowances still apply. Install on **one Mac only**.
 
-The initial trigger is a failed current-head `Launcher compatibility checks` or
-`Runtime patch transitions` run. Both workflows must finish first. Draft/fork
+The initial trigger is a failed current-head `Runtime patch transitions` run.
+The workflow must finish first. Draft/fork
 PRs, other authors, other base branches, cancelled/partial runs and previously
 attempted PR revisions are skipped without invoking a model. Automatic Code
 Review remains separate; a review comment alone does not trigger this worker.
@@ -131,8 +125,8 @@ The controller creates `codex/compat-repair-<PR>-<head>` and opens a repair PR
 unchanged. In default mode a maintainer reviews/merges the proposed fix. With
 `--auto-merge`, the trusted controller follows new repairs across restarts:
 
-1. Wait for both current-head workflows associated with the repair PR, the
-   three required gate jobs, every other reported check, and GitHub's clean
+1. Wait for the current-head workflow associated with the repair PR, the
+   required PR validation gate, every other reported check, and GitHub's clean
    mergeability/review decision. Missing, pending or cancelled runs cannot pass.
 2. Recheck the original head and merge only the recorded repair commit into
    that branch, using GitHub's SHA-conditional merge endpoint.
@@ -254,19 +248,18 @@ does not promise fewer total runner minutes for a full runtime change.
 
 Selections combine for mixed changes. Shared inputs can deliberately select both
 runtime and launcher workflows. Unknown runtime inputs retain GPU coverage;
-only explicitly recognized offline tools omit it. Issue automation keeps its
-existing separate checks.
+only explicitly recognized offline tools omit it. Issue forms/resolution and
+texture checks are scoped reusable jobs included in PR validation.
 
-The required names `Patch transitions (windows-latest)` and
-`Patch transitions (macos-latest)` stay unchanged. These final jobs retain worker
-regressions on their real hosts and require every selected runtime matrix to
-succeed. An intentional scope skip is allowed; missing output, failure,
-cancellation or an unexpected skip fails both gates. They do not need changes to
-branch protection. `Launcher compatibility` separately gates both launcher builds.
+The required check is `PR validation`. It requires every selected matrix and
+repository job to succeed. Intentional scope skips pass; missing outputs,
+failures, cancellation and unexpected skips fail. Worker policy tests run in
+the Ubuntu plan job instead of starting two extra host runners just to report
+the old gate names. Host runtime/launcher tests retain their supported runners.
 
-Manual dispatch selects all suites owned by that workflow: dispatch runtime CI
-for full runtime validation and launcher compatibility for both launcher builds.
-These asset-free checks do not launch the game or verify visual/gameplay parity.
+Manual runtime dispatch selects every suite, including LFS texture verification;
+manual launcher compatibility selects only launcher builds. Asset-free runtime
+fixtures do not establish visual/gameplay parity or require private game data.
 
 Linux runs the linked Avalonia host on Ubuntu 24.04 under Xvfb. Its pinned SDK,
 shared UI/model contracts, Linux adapter/install/permission checks, actual
