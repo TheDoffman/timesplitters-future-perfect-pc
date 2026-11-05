@@ -5,7 +5,8 @@
 [Back to the README](../../README.md) | [Launcher releases](launcher-releases.md)
 
 Game and launcher versions are independent. The next Stable game source version
-is **0.5.0**, including the Linux package and changes merged since `0.4.2`. This source change does not
+is **0.5.1**, including the Linux window-startup fix merged after `0.5.0` and
+bundling the already released launcher **1.5.1**. This source change does not
 publish a release or establish full campaign/platform validation. Historical
 alpha and `-preview.N` releases remain available in Game versions; do not
 relabel their assets or offer them as Beta updates.
