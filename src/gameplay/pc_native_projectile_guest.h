@@ -12,8 +12,8 @@ extern int g_tsfp_native_timing_active;
 #endif
 
 /* US 0xE8EB0 allocates 0xB8A0 bytes: 85 complete 0x22C projectile slots.
- * Keep visual random values outside guest objects. The kind-35 initializer
- * resets its slot on every reuse, including when native timing is disabled. */
+ * Keep visual random values outside guest objects. Both projectile initializers
+ * reset their slot on every reuse, including when native timing is disabled. */
 typedef struct PcKind35Cache {
     uint32_t random[9];
     unsigned ready, target_ready, first_whole;
@@ -61,12 +61,20 @@ static void pc_native_kind35_update_guest(void (*original)(void),uint32_t shot)
     pc_kind35_context.shot=shot;
     if(g_tsfp_native_timing_active) {
         PcKind35Cache *cache=pc_kind35_slot(shot);
-        if(cache && *pc_kind35_word(shot)==35)
+        /* F08D0 also updates rocket-family kinds. Their translation already
+         * uses fractional delta, but its entry gate discarded intervening time.
+         * Kind 50 has a different target/steering path and remains unchanged. */
+        uint32_t kind=cache ? *pc_kind35_word(shot) : UINT32_MAX;
+        if(cache && ((kind>=8 && kind<=11) || kind==35 || kind==39 || kind==42))
             pc_kind35_context.cache=cache;
     }
     original();
     pc_kind35_context=saved;
 }
+/* The two smoke branches emit once per original game tick. Their random
+ * calls are visual-only and must not advance the shared RNG at render rate. */
+static int pc_native_projectile_skip_smoke(void)
+{ return pc_kind35_context.cache && *pc_kind35_word(0x4E7944u)==0; }
 uint32_t pc_native_kind35_gate(uint32_t value)
 { return pc_kind35_context.cache ? pc_kind35_delta()>0 : value; }
 float pc_native_kind35_turn(float value)

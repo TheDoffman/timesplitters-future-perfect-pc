@@ -388,6 +388,12 @@ static inline uint32_t pc_native_wind_global_load(uint32_t address,uint32_t valu
  * Do not rewrite the shared 0.5 constant or unrelated multiplications. */
 static inline float pc_native_multiply(uint32_t site, float left, float right)
 {
+    /* Kind-42 boost follows the whole-tick speed multiplier in F08D0.
+     * Applying it before fractional frames' next multiplier amplifies it.
+     * Keep both speed changes at the original boundary; motion stays fractional. */
+    if(site==0xF15DDu && g_tsfp_native_timing_active && right<1.f)
+        right=(float)*(const uint32_t *)((uintptr_t)0x4E7944u+g_xbox_mem_offset);
+
     /* Minigun spin-down is authored once per game tick, not render frame. */
     if(site==0x1C7600u && g_tsfp_native_timing_active) {
         float delta=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
@@ -571,6 +577,7 @@ extern int pc_native_character_trace_requested(void);
 extern void pc_native_character_update(void);
 extern void pc_native_kind35_rng(void);
 extern void pc_native_kind35_target(void);
+extern void pc_native_projectile_smoke_rng(void),pc_native_projectile_smoke(void);
 extern void pc_native_physics_solver(void),pc_native_physics_random(void);
 extern void pc_native_wind_step(void);
 extern int pc_native_walk_trace_requested(void);
@@ -590,6 +597,9 @@ extern void pc_native_walk_collision(void),pc_native_walk_sweep(void);
     (site)==0x120BBFu ? pc_native_character_scale : \
     ((site)==0x126029u && pc_native_character_trace_requested()) ? pc_native_character_update : \
     (site)==0xF0CA7u ? pc_native_kind35_target : \
+    ((site)==0xF156Du || (site)==0xF1582u || (site)==0xF1597u || \
+     (site)==0xF19C9u || (site)==0xF19DEu || (site)==0xF19F9u) ? pc_native_projectile_smoke_rng : \
+    ((site)==0xF15C4u || (site)==0xF1A2Du) ? pc_native_projectile_smoke : \
     ((site)==0xF1741u || (site)==0xF1770u || (site)==0xF17A0u || \
      (site)==0xF17F0u || (site)==0xF181Fu || (site)==0xF184Fu || \
      (site)==0xF189Fu || (site)==0xF18CEu || (site)==0xF18FEu) ? pc_native_kind35_rng : \

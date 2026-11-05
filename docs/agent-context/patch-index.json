@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "c7361835cd30e077ba15e54856653f246cb6c114a928f5e34906b5c8620c3212",
+  "loaderSha256": "9a41764a289e7978da77941174577b915f410a183b54e06690bd83783bbaac7f",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2246,6 +2246,14 @@
         "templates/runtime/recomp_types.h",
         "titles/futureperfect/src/recomp_manual.c",
         "tools/recomp/lifter.py"
+      ]
+    },
+    {
+      "name": "2596-native-rocket-projectile-timing.patch",
+      "path": "patches/gameplay/timing/2596-native-rocket-projectile-timing.patch",
+      "sha256": "b0c33335355075fa22506773105e768f827b662e5eadce8de7b4077572f41836",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     },
     {

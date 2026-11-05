@@ -1,3 +1,14 @@
+## 2026-11-05 - Rocket speed at high frame rates
+
+Shared projectile timing correction on fix/high-fps-projectile-speed, based on
+3ddc46e9. Windows x64 Release rebuild and standard build checks passed. Original
+US guest-code projectile fixtures passed on Windows and Ubuntu 24.04 WSL at
+60/120/144/180/240 FPS, including homing, smoke cadence, impact and expiry.
+Patch migration and tracking checks passed. The user tested the isolated rebuilt
+Windows Test Lab game and confirmed the reported projectile-speed issue resolved.
+Native Mac gameplay and physical Linux/Steam Deck gameplay are not verified.
+The fix uses shared source/patches and needs no new platform adapter.
+
 ## 2026-11-04 - Small-screen launcher fitting
 
 Native Mac/Linux launcher fits the monitor working area and scales its shared
