@@ -33,6 +33,9 @@ together; failed proposals discard both histories before authored fallback.
 
 The implementation is shared C for Windows and native Mac. The public `test_native_wind.py` checks independent authored low-angle steps,
 exact clock guards, ownership and manual wrapper scanning without game assets.
+The standalone original-code fixture discovers tail calls even when status-flag
+cleanup separates the call from its return. An asset-free discovery check covers
+both forms; the original solver/ownership assertions remain unchanged.
 It also runs `native_wind_original.c` when the verified local XBE is available:
 22 original routines/constants are injected at test time, never tracked. That
 check covers two-owner data/matrix equality, pause/resume, unmatched timing

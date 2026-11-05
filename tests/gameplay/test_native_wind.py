@@ -2,12 +2,32 @@
 
 
 import os
+import re
 from pathlib import Path
 import subprocess
 
 from native_compiler import native_compiler
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def translated_calls(code):
+    calls=set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]{8})',code))
+    # Status cleanup may separate a tail call from its return statement.
+    calls.update(re.findall(r'g_seh_ebp\s*=\s*ebp;\s*(sub_[0-9A-F]{8})\(\);',code))
+    return calls
+
+
+def test_fixture_discovers_direct_and_status_preserving_tail_calls():
+    code='''RECOMP_DIRECT_CALLEE_AT(0x1234, sub_00001234);
+g_seh_ebp = ebp; sub_00005678(); return;
+g_seh_ebp = ebp; sub_00009ABC();
+#ifdef RECOMP_STATUS_FLAGS_SUPPORTED
+tsfp_status_forget(&g_status_flags,TSFP_STATUS_FLAGS);
+#endif
+return;
+'''
+    assert translated_calls(code)=={'sub_00001234','sub_00005678','sub_00009ABC'}
 
 
 def test_wind_wrappers_are_generated_and_called_through_manual_entry():
@@ -100,8 +120,7 @@ def test_original_wind_registration_clock_and_two_owners(tmp_path):
         source = source.replace('/* TIMING_HEADER */', '#include "' + (ROOT / 'src/gameplay/pc_native_timing.h').as_posix() + '"')
         source = source.replace('/* WIND_GUEST */', '#include "' + (ROOT / 'src/gameplay/pc_native_wind_guest.inc').as_posix() + '"')
         defined = set(re.findall(r'void (sub_[0-9A-F]{8}(?:_actual|_gen)?)\(void\)', source + code))
-        calls = set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]{8})', code))
-        calls.update(re.findall(r'g_seh_ebp = ebp; (sub_[0-9A-F]{8})\(\); return;', code))
+        calls = translated_calls(code)
         stubs = '\n'.join(f'void {name}(void){{g_eax=0;g_esp+=4;}}' for name in sorted(calls-defined))
         declarations = '\n'.join('void ' + name + '(void);' for name in sorted(defined | calls))
         source = source.replace('/* ORIGINAL_ROUTINES */', declarations + '\n' + stubs + '\n' + code).replace('/* ORIGINAL_CONSTANTS */', values)
