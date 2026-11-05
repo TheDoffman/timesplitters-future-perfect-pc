@@ -1,4 +1,4 @@
-## 2026-11-05 - Discord Chinese MSAA investigation (candidate)
+## 2026-11-05 - Chinese MSAA: Windows verified, publication pending
 
 Local fix/discord-msaa-rendering after221c6b32, not yet published. Existing
 Windows x64 game4edca1d2a9665d8d8785aa4ffa07463707087f84f81a16a6de290203d8efd257
@@ -15,9 +15,26 @@ coverage companion is created. New msaa_scaled_target GPU regression compiles
 and fails before the repair, passes afterward on Windows D3D11 WARP. It checks
 1/2/4/8 sample depth, exact resized color, unchanged logical texture dimensions,
 single-sample sampling and matching coverage. Existing shared RHI and eleven
-native-HUD regressions passed before the change; broader after-change checks
-and the full game rebuild/live acceptance are pending. Native Mac/Linux GPU
-and game acceptance remain unverified. No resolution comment posted yet.
+native-HUD regressions passed before the change. After-change renderer/HUD
+checks passed28 with1 platform skip; context/index validation and the supported
+Windows build's native tests passed.
+
+Code ae271f20 was built with MSVC14.44.35207,Windows SDK10.0.26100 and D3D11.
+Generated output used the supported --split100 setting. MSVC C1002 also required
+a local validation-only CMake include disabling optimization/inlining for
+recomp_0114.c and continuation chunks0752-0756/0774. Renderer and all other
+units retained Release optimization. This is not a passing default-flags game
+build; the compiler limitation remains separate from the rendering repair.
+FFmpeg headers/runtime use the existing local pinned installation.
+
+Validation game SHA256
+2cb51819358a5b4feb7b5e69e98ff1bc853df5d981c07fe842159d247a3f94c0:
+the same isolated Chinese Deathmatch route at8x MSAA,960x540,Classic,Original60
+now shows the world and weapon normally. Its log reaches8700 successful guest
+presents and66884 target sets with zero binding failures; these API counters
+are not measurements of GPU completion or scanout. Retained private before/
+after captures and provenance accompany the150-second bounded run. Native
+Mac/Linux GPU and gameplay acceptance remain unverified. Publication is pending.
 
 ## 2026-11-04 - Small-screen launcher fitting
 

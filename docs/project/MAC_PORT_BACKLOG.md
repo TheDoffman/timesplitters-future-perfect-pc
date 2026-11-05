@@ -1,9 +1,10 @@
 ## Shared MSAA texture resize — host acceptance pending
 
-Local fix/discord-msaa-rendering after221c6b32, uncommitted: rendering2600 repairs
+Code ae271f20 on fix/discord-msaa-rendering after221c6b32: rendering2600 repairs
 the common offscreen color resize preceding MSAA companion creation. No new
 OS adapter is required. Windows WARP regression fails before/passes after;
-native Mac/Linux GPU and Chinese-map gameplay checks at2/4/8x remain pending.
+the isolated Windows Chinese8x scene passes with the documented CPU compiler
+workaround. Native Mac/Linux GPU and Chinese-map gameplay at2/4/8x remain pending.
 See STATUS for the compatibility baseline and full-build acceptance limits.
 
 ## Joined-player device settings — validation pending
