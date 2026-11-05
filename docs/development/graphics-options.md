@@ -1,5 +1,14 @@
 # Optional graphics settings (in development)
 
+Rendering patch2600 permits a single-sample guest texture to resize to the
+automatic depth buffer's host dimensions even when depth uses MSAA. Its draw
+companion is created afterward by SetRenderTarget; the sampled texture remains
+single-sampled. Previously the resize rejected differing sample counts before
+the companion could be created. The RHI GPU fixture checks resized color
+preservation, logical dimensions and matching coverage at 1/2/4/8 samples.
+Live Chinese-map acceptance is recorded in STATUS; these contracts alone do
+not establish a whole-scene fix on every backend.
+
 Acceptance requirement: every graphics setting, the FPS/online-ping counter,
 and Clear Shader Cache must be available in both the in-game settings (main
 menu and pause) and the launcher on Windows, macOS, and Linux. Both interfaces

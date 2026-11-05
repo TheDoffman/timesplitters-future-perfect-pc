@@ -1,3 +1,108 @@
+## 2026-11-05 - Shared MSAA regression declaration
+
+PR495 Linux CI exposed a Windows-only declaration guard on the already-shared
+xbox_D3D8PrepareSharedDepthTarget implementation. Patch2600 now exposes that
+prototype on every RHI host. It applies after temporal-map/header migrations;
+historical pre-MSAA seeds omit this dependent repair until their full upgrade.
+The same scaled-target test exercises each host;
+no platform check is bypassed. Cross-host CI is being rerun before main merge.
+
+## 2026-11-05 - Verified Discord fix integration
+
+User authorized main integration of the confirmed MSAA and Uplink fixes.
+Combined latest main831c324a with branches c0c63c6f and2aff082b; code merged
+without conflicts. Retained all existing projectile/Deck documentation and
+both fixes' validation records while resolving overlapping guide/status edits.
+Unresolved report experiments and investigation branches are excluded.
+
+The complete runtime patch stack applied successfully. Combined Windows
+renderer/native-HUD/SMAA and selected native timing checks passed81 cases
+(53 unrelated original-routine cases deselected), including the WARP MSAA
+resize regression, original Uplink request/repeat negative controls, original
+player-trigger and projectile checks. Repository context tests passed21 cases;
+index/guide ownership validation and whitespace checks passed. One initial
+context run rejected a guide one byte over its size cap; compacting the merged
+links fixed it. Individual fixes' prior supported builds and actual gameplay
+acceptance remain recorded below; this integration did not rebuild/retest the
+entire combined game. Native Mac/Linux acceptance and release publication
+remain pending. Existing Discord resolution comments were not duplicated.
+
+## 2026-11-05 - Discord Uplink holding verified on Windows
+
+Branch fix/discord-uplink, base831c324a; core source b3545910. Uplink physics
+function1 now reaches the original holding updater on fractional native
+intervals at both audited request/repeat gates. The shared clock, integer
+cooldowns, other weapons and map/function0 retain their original behavior.
+
+The original-US regression derives function1 through1C2C00/1B7ED0 using the
+actual Uplink descriptor, then executes the request gate, repeat-gate block,
+weapon callback and charge updater. Both holding paths pass at60/120/144/180/
+240, four carried phases and normal/quarter speed. Separate old-gate mutations
+fail; first-press fractional clock restoration and scope guards pass. Targeting
+and the intervening weapon-state handoff remain controlled in this CPU fixture.
+Three selected Uplink/trigger tests and all32 common fixtures pass. The other85
+original-routine cases passed in the earlier full run.
+
+The supported Windows Build native checks pass. Executable SHA256:
+4b29fad154beb8ef1c7f5d474e70aaab6456f1c5b4e4b45393882a0a52a6b4c5.
+This uses supported split100 generation and the local MSVC C1002 workaround
+(/Od;/Ob0 on seven generated SSE units); default-flags Release is unverified.
+Rendering and remaining generated units retain Release optimization.
+
+Real Russian Connection tests use the unlocked disposable Test Lab fixture,
+normal synthetic input and read-only state observation. No entity/clock writes
+or teleports are used; original targeting, geometry and rigid-body physics run.
+The same barrel18C00095/body10067 starts atY0. In the120 baseline (99c408,
+whose erroneous function0 guard leaves the active function1 gates unchanged),
+four seconds of holding reaches only0.0423 strength andY0.262. The corrected
+120 run reaches strength1 andY1.585; the reporter's180 setting reaches
+strength1 andY1.433. Both visibly float the barrel in front of the player and
+release it: strength returns0 and height falls below0.53 within one second.
+Each hold has80 samples; occasional null current-player snapshots are retained
+as incomplete observations. These are gameplay/charge results, not scanout or
+GPU-completion measurements. Logs and selected before/after BMPs remain ignored
+under logs/uplink-{baseline,fixed,fixed-180}-*. Canonical fixture bytes remain
+protected. Resolution is verified; merge/publication are pending. Native Mac
+and Linux build/gameplay acceptance remain separate. See native-uplink.md.
+
+## 2026-11-05 - Chinese MSAA: Windows verified, publication pending
+
+Local fix/discord-msaa-rendering after221c6b32, not yet published. Existing
+Windows x64 game4edca1d2a9665d8d8785aa4ffa07463707087f84f81a16a6de290203d8efd257
+(displayed v0.4.2/5b57580e) reproduces the almost-black Chinese Deathmatch scene
+at8x MSAA,960x540,Original60,Classic textures, with accumulating target-binding
+failures. Supported US XBE checksum verified; synthetic input and disposable
+Test Lab profile/settings only. This executable is a compatibility baseline,
+not a build of the investigation HEAD. Private scene capture replayed through
+current source with zero failed host calls, but remains black because its
+recorded failed-target fallback already lost the intended offscreen pass.
+
+Patch2600 permits single-sample color resizing against MSAA depth before its
+coverage companion is created. New msaa_scaled_target GPU regression compiles
+and fails before the repair, passes afterward on Windows D3D11 WARP. It checks
+1/2/4/8 sample depth, exact resized color, unchanged logical texture dimensions,
+single-sample sampling and matching coverage. Existing shared RHI and eleven
+native-HUD regressions passed before the change. After-change renderer/HUD
+checks passed28 with1 platform skip; context/index validation and the supported
+Windows build's native tests passed.
+
+Code ae271f20 was built with MSVC14.44.35207,Windows SDK10.0.26100 and D3D11.
+Generated output used the supported --split100 setting. MSVC C1002 also required
+a local validation-only CMake include disabling optimization/inlining for
+recomp_0114.c and continuation chunks0752-0756/0774. Renderer and all other
+units retained Release optimization. This is not a passing default-flags game
+build; the compiler limitation remains separate from the rendering repair.
+FFmpeg headers/runtime use the existing local pinned installation.
+
+Validation game SHA256
+2cb51819358a5b4feb7b5e69e98ff1bc853df5d981c07fe842159d247a3f94c0:
+the same isolated Chinese Deathmatch route at8x MSAA,960x540,Classic,Original60
+now shows the world and weapon normally. Its log reaches8700 successful guest
+presents and66884 target sets with zero binding failures; these API counters
+are not measurements of GPU completion or scanout. Retained private before/
+after captures and provenance accompany the150-second bounded run. Native
+Mac/Linux GPU and gameplay acceptance remain unverified. Publication is pending.
+
 ## 2026-11-05 - Native fullscreen startup and Steam Deck Desktop controls
 
 User launches directly from Desktop Mode. Holding Menu to select Steam's

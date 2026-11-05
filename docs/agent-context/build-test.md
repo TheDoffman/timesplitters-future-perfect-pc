@@ -1,12 +1,12 @@
-[Projectile timing](native-projectiles.md).
+[Uplink](native-uplink.md); [rockets](native-projectiles.md).
 [Input tests](controls-options.md).
-[HUD/SMAA tests](../development/graphics-options.md).
-[SDL startup/fullscreen tests](linux-game.md).
+[HUD/MSAA tests](../development/graphics-options.md).
+[SDL startup/fullscreen](linux-game.md).
 `test_fov_settings.py` checks Video tabs, ownership, pointer bounds, keyboard
 cycling and staged-value retention.
-Ping-expiry tests wait past GetTickCount64 quantization.
+Ping expiry waits past GetTickCount64 quantization.
 [Kill feed](../development/arcade-kill-feed.md)
-# Build/tests ([SMAA](smaa.md))
+# Build/tests ([MSAA](smaa.md))
 
 [Linux](linux-game.md); [LAN](system-link.md).
 
@@ -1035,6 +1035,6 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
 
-GPU asserts stay on; AO logs scene/pixel failures.
+2600 applies last; old seeds predate MSAA.
 
 Local-player tests: controls-options.md.

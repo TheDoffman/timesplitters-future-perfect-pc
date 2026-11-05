@@ -436,3 +436,7 @@ see [host scheduling and test routes](execution-host.md).
 PR466 integration with main623acff4 retains0260 and then applies SMAA2470.
 The complete maintained tail is59; merge resolution preserves both loader
 additions, all historical omission entries and regenerates the patch index.
+
+Shared MSAA resize2600 is last after the temporal-map and Linux/header
+migrations. The exact loader-order assertion includes it; five pre-MSAA seed
+sets omit it only until full upgrade. Full-stack migration still applies it.

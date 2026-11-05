@@ -1,4 +1,4 @@
-[Projectile timing](native-projectiles.md).
+[Uplink/rockets](native-uplink.md).
 [Input](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)

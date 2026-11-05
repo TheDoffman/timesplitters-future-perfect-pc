@@ -22,6 +22,7 @@ extern int pc_model_transform_entry(void);
 #define RECOMP_FAST_ENTRY(site) ((site)==0x151E80u && pc_model_transform_entry())
 extern ptrdiff_t g_xbox_mem_offset;
 extern int g_tsfp_native_timing_active;
+#include "pc_native_uplink.h"
 #include "pc_native_material.h"
 #include "pc_native_statistics_guest.h"
 #include "pc_native_trap_guest.h"
@@ -375,7 +376,10 @@ static inline uint32_t pc_native_wind_global_load(uint32_t address,uint32_t valu
     return value;
 }
 #define RECOMP_LOAD_GLOBAL_U32(site, address, value) \
-    ((site)==0x433A0u && (address)==0x6B98A4u ? pc_native_demo_dispatch_mode((uint32_t)(value)) : \
+    (((site)==0x1C397Fu || (site)==0x1C2B36u) && (address)==0x4E7944u ? \
+     pc_native_uplink_gate((site)==0x1C397Fu ? g_ebp : \
+       *(const uint32_t *)((uintptr_t)g_esp+0x14u+g_xbox_mem_offset),(uint32_t)(value)) : \
+    (site)==0x433A0u && (address)==0x6B98A4u ? pc_native_demo_dispatch_mode((uint32_t)(value)) : \
     (site)==0xF08D0u ? pc_native_kind35_gate((uint32_t)(value)) : \
     ((site)==0xA8595u || (site)==0xA8980u) ? \
     pc_native_rocking_gate((uint32_t)(site),pc_native_global_load((uint32_t)(site),(uint32_t)(address),(uint32_t)(value))) : \
