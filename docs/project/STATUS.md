@@ -1,27 +1,40 @@
-## 2026-11-05 - Discord Uplink candidate (gameplay acceptance pending)
+## 2026-11-05 - Discord Uplink holding verified on Windows
 
-Branch fix/discord-uplink, base831c324a. Shared numeric gates admit Uplink
-physics-mode primary holding on fractional frames. Original-US request/block,
-weapon callback and charge regression passes both paths at60/120/144/180/240,
-four carried phases and normal/quarter speed. Restoring either old gate loses
-requests and charge at120. Existing fresh-trigger/scope checks also pass
-(3 selected pytest tests). Targeting, weapon-state handoff and rigid-body
-services remain controlled. All32 common fixtures pass after supplying the
-clock harness's newly required EBP cell; the other85 original-routine cases
-passed in the preceding full run. The supported Windows Build native checks
-also pass. Candidate executable SHA256:
-99c408c49d427b24e58e169fe6d99df2a816f48891ce841f074a53061b46a727.
-This uses supported split100 generation and the prior local MSVC C1002
-workaround (/Od;/Ob0 on seven generated SSE units); it is not evidence of a
-default-flags Release build. Rendering and remaining units retain Release
-optimization. Source69f783ed reaches live Scotland with weapon36, variant1,
-function1. Live Russian Connection input/descriptor tracing then identified
-that the initial candidate incorrectly required function0. The corrected
-regression now derives function1 through original1C2C00/1B7ED0 with the authored
-Uplink descriptor. It passes all holding cases and both old-gate mutations.
-The above99c408 build is the rejected function0 candidate, not the corrected
-fix. A corrected build and actual object lift/release remain pending. No Discord
-resolution comment posted. See docs/agent-context/native-uplink.md.
+Branch fix/discord-uplink, base831c324a; core source b3545910. Uplink physics
+function1 now reaches the original holding updater on fractional native
+intervals at both audited request/repeat gates. The shared clock, integer
+cooldowns, other weapons and map/function0 retain their original behavior.
+
+The original-US regression derives function1 through1C2C00/1B7ED0 using the
+actual Uplink descriptor, then executes the request gate, repeat-gate block,
+weapon callback and charge updater. Both holding paths pass at60/120/144/180/
+240, four carried phases and normal/quarter speed. Separate old-gate mutations
+fail; first-press fractional clock restoration and scope guards pass. Targeting
+and the intervening weapon-state handoff remain controlled in this CPU fixture.
+Three selected Uplink/trigger tests and all32 common fixtures pass. The other85
+original-routine cases passed in the earlier full run.
+
+The supported Windows Build native checks pass. Executable SHA256:
+4b29fad154beb8ef1c7f5d474e70aaab6456f1c5b4e4b45393882a0a52a6b4c5.
+This uses supported split100 generation and the local MSVC C1002 workaround
+(/Od;/Ob0 on seven generated SSE units); default-flags Release is unverified.
+Rendering and remaining generated units retain Release optimization.
+
+Real Russian Connection tests use the unlocked disposable Test Lab fixture,
+normal synthetic input and read-only state observation. No entity/clock writes
+or teleports are used; original targeting, geometry and rigid-body physics run.
+The same barrel18C00095/body10067 starts atY0. In the120 baseline (99c408,
+whose erroneous function0 guard leaves the active function1 gates unchanged),
+four seconds of holding reaches only0.0423 strength andY0.262. The corrected
+120 run reaches strength1 andY1.585; the reporter's180 setting reaches
+strength1 andY1.433. Both visibly float the barrel in front of the player and
+release it: strength returns0 and height falls below0.53 within one second.
+Each hold has80 samples; occasional null current-player snapshots are retained
+as incomplete observations. These are gameplay/charge results, not scanout or
+GPU-completion measurements. Logs and selected before/after BMPs remain ignored
+under logs/uplink-{baseline,fixed,fixed-180}-*. Canonical fixture bytes remain
+protected. Resolution is verified; merge/publication are pending. Native Mac
+and Linux build/gameplay acceptance remain separate. See native-uplink.md.
 
 ## 2026-11-05 - Native fullscreen startup and Steam Deck Desktop controls
 

@@ -77,7 +77,7 @@ int main(int argc,char **argv){
  unsigned rates[]={60,120,144,180,240};
  /* Derive the selected function through the original input/eligibility path,
   * rather than assuming that the primary button means function zero. */
- fresh_press=1;MEM32(0x4e7944)=1;MEMF(0x4e794c)=1;
+ fresh_press=1;MEM32(0x4e7944)=0;MEMF(0x4e794c)=.25f;
  g_esi=H;g_esp=STACK;MEM32(STACK+4)=1;sub_001C2C00();
  assert(MEM32(H+0x5c)==1);fresh_press=0;
  for(unsigned route=0;route<2;route++)for(unsigned rate=0;rate<5;rate++)
