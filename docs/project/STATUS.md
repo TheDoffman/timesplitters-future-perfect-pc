@@ -6,8 +6,17 @@ weapon callback and charge regression passes both paths at60/120/144/180/240,
 four carried phases and normal/quarter speed. Restoring either old gate loses
 requests and charge at120. Existing fresh-trigger/scope checks also pass
 (3 selected pytest tests). Targeting, weapon-state handoff and rigid-body
-services remain controlled. Full build and live lift/release acceptance are
-pending; no Discord resolution comment posted. See native-uplink.md.
+services remain controlled. All32 common fixtures pass after supplying the
+clock harness's newly required EBP cell; the other85 original-routine cases
+passed in the preceding full run. The supported Windows Build native checks
+also pass. Candidate executable SHA256:
+99c408c49d427b24e58e169fe6d99df2a816f48891ce841f074a53061b46a727.
+This uses supported split100 generation and the prior local MSVC C1002
+workaround (/Od;/Ob0 on seven generated SSE units); it is not evidence of a
+default-flags Release build. Rendering and remaining units retain Release
+optimization. Source69f783ed reaches live Scotland with weapon36, variant1,
+primary0; actual object lift/release acceptance remains pending. No Discord
+resolution comment posted. See docs/agent-context/native-uplink.md.
 
 ## 2026-11-05 - Native fullscreen startup and Steam Deck Desktop controls
 

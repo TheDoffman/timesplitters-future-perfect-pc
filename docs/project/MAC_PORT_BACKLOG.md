@@ -6,7 +6,8 @@ adapter is required. Original-US request/charge regression passes on Windows;
 Windows live acceptance and native Mac/Linux build/gameplay remain pending.
 Check pickup, sustained floating, release/throw, pause, map mode and ordinary
 gun cadence at60/120/144/180/240. See STATUS.md and native-uplink.md.
-Source currently uncommitted.
+Source69f783ed builds on Windows with the recorded local compiler workaround;
+live lift/release acceptance remains pending.
 
 ## Saved native fullscreen startup — validation pending
 
