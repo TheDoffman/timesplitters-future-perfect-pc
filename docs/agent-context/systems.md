@@ -3,7 +3,7 @@
 [exFAT](host-storage.md)
 # [Systems](video-options.md)
 
-[Linux input](linux-game.md).
+[SDL startup](linux-game.md).
 
 PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
@@ -977,5 +977,3 @@ Physics: [poses](systems-details.md#guest-ragdolls-and-physical-npc-drops).
 [RTL](guest-stack-trace.md), [host policy](execution-host.md).
 
 Local player assignment: controls-options.md.
-
-Linux native startup initializes SDL video on the main thread before guest/audio workers; see [Linux game](linux-game.md) for the X11/Wayland ownership regression.

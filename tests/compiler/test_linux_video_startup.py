@@ -40,7 +40,7 @@ def test_audio_first_cannot_claim_main_thread(tmp_path,backend):
                 assert (tmp_path/'tsfp-test').exists(),(tmp_path/'compositor.log').read_text()
             good=subprocess.run(prefix+[str(exe)],env=env,cwd=tmp_path,capture_output=True,text=True,timeout=20)
             assert good.returncode==0,good.stdout+good.stderr
-            assert f'display backend: {backend}' in good.stderr
+            assert f'display backend: {backend}' in good.stdout+good.stderr
             bad=subprocess.run(prefix+[str(exe),'audio-first'],env=env,cwd=tmp_path,capture_output=True,text=True,timeout=20)
             assert bad.returncode==4,bad.stdout+bad.stderr
         finally:
