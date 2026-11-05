@@ -42,6 +42,13 @@ int tsfp_native_renderer_test(void)
         int active=(SDL_GetWindowFlags(pp.hDeviceWindow)&SDL_WINDOW_FULLSCREEN)!=0;
         fprintf(stderr,"[native-window-test] saved startup fullscreen %d: %s\n",wanted,active==wanted?"PASS":"FAIL");
         if(active!=wanted)return 1;
+        /* The draw/readback/depth fixtures below require a 64x64 target.
+         * Verify the real saved startup first, then resize this disposable
+         * window before creating their device. Full-size present is tested
+         * separately by native_test_renderer_window_modes below. */
+        if(!SDL_SetWindowFullscreen(pp.hDeviceWindow,false) || !SDL_SyncWindow(pp.hDeviceWindow) ||
+           !SDL_SetWindowSize(pp.hDeviceWindow,64,64) || !SDL_SyncWindow(pp.hDeviceWindow))return 1;
+        rhi_pump_events();
     }
     if(!pp.hDeviceWindow || FAILED(api->lpVtbl->CreateDevice(api,0,1,pp.hDeviceWindow,0,&pp,&dev)) || !dev)return 1;
     struct Vertex {float x,y,z,w;DWORD color;} vertices[3]={
