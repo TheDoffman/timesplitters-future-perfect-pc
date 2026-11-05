@@ -1,3 +1,31 @@
+## 2026-11-05 - Remaining projectile flight timing
+
+Branch `fix/flare-projectile-timing`, based on merged main3bcbfcf3. Shared
+patch2605 and numeric/projectile policy extend the repair to affected weapon
+and vehicle families. Ordinary Flare Gun weapon4 uses kind38; Machine Wars
+scene5's loaded tracked vehicles expose weapon59 / kind51 as the main cannon
+and60 / kind45 as the secondary gun. This mapping was read from the isolated
+normal-menu scene. The original54-entry dispatch table is checked explicitly.
+
+Before repair, the original flare updater travelled15.0282 units at60 FPS but
+only7.7782 at native120 after .5 game seconds. The repair couples fractional
+movement, look-ahead and derived velocity, with whole-tick/interpolated jitter.
+The family audit also found fixed-frame vector drag; its three axes now use
+elapsed time. Moving-family entry gates retain every fractional flight interval.
+Scripted kind50 retains authored spring cadence with continuous translation.
+Random steering, object spin and flight smoke preserve whole-tick RNG cadence;
+allocation resets sidecars on slot reuse. Original clocks are not overwritten.
+
+Projectile checks passed26 cases locally, covering complete original routines,
+60/120/144/180/240, normal/quarter speed, .5/1/1.5-second flare flights, original
+speed envelopes, exact native60 state, pause and guest ABI. Eight independent
+policy ablations trigger behavioral failures (six flare, tank gate, vector drag).
+Fixtures execute original gravity and matrix helpers; scene/particle/sound
+boundaries are controlled. Existing rocket impact/expiry and slot/nesting checks
+remain. The complete native timing suite passed140 cases in149.57 seconds.
+Supported build, migrations and live candidate acceptance are in progress. No new live fix, Discord resolution or main merge
+is claimed from these fixture checks.
+
 ## 2026-11-05 - Shared MSAA regression declaration
 
 PR495 Linux CI exposed a Windows-only declaration guard on the already-shared

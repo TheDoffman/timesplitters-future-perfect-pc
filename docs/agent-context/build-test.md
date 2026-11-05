@@ -1,4 +1,4 @@
-[Uplink](native-uplink.md); [rockets](native-projectiles.md).
+[Uplink](native-uplink.md); [2605](native-projectiles.md).
 [Input tests](controls-options.md).
 [HUD/MSAA tests](../development/graphics-options.md).
 [SDL startup/fullscreen](linux-game.md).

@@ -234,6 +234,10 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||
          site == 0xA75E7u || site == 0x1B6FF0u || site == 0x217059u ||
          site == 0x216958u || site == 0xF4A66u || site == 0xBB6C0u ||
+         site == 0xF2CBBu || site == 0xF39E2u || site == 0xF5200u ||
+         site == 0xF5936u ||
+         site == 0xEAD16u || site == 0xF61E0u ||
+         site == 0xF6600u ||
          site == 0x2B93DAu || site == 0x14A5CDu || site == 0x17E6C3u ||
          site == 0x17DA03u || site == 0x166899u || site == 0x172AB5u) &&
         address == 0x4E7944u &&
@@ -364,6 +368,7 @@ static inline float pc_native_boost_drain(float left,float charge)
     ((site)==0x259060u ? pc_native_boost_drain((float)(left),(float)(right)) : \
     (site)==0xA8645u ? pc_native_rocking_sub((float)(left),(float)(right)) : ((left)-(right)))
 extern uint32_t pc_native_kind35_gate(uint32_t value);
+extern float pc_native_kind35_turn(float value);
 /* Only these wind loop reads depend on the exact published clock. Keep
  * other numeric consumers independent of that clock and its host storage. */
 static inline uint32_t pc_native_wind_global_load(uint32_t address,uint32_t value)
@@ -380,7 +385,7 @@ static inline uint32_t pc_native_wind_global_load(uint32_t address,uint32_t valu
      pc_native_uplink_gate((site)==0x1C397Fu ? g_ebp : \
        *(const uint32_t *)((uintptr_t)g_esp+0x14u+g_xbox_mem_offset),(uint32_t)(value)) : \
     (site)==0x433A0u && (address)==0x6B98A4u ? pc_native_demo_dispatch_mode((uint32_t)(value)) : \
-    (site)==0xF08D0u ? pc_native_kind35_gate((uint32_t)(value)) : \
+    ((site)==0xF08D0u || (site)==0xF1A96u) ? pc_native_kind35_gate((uint32_t)(value)) : \
     ((site)==0xA8595u || (site)==0xA8980u) ? \
     pc_native_rocking_gate((uint32_t)(site),pc_native_global_load((uint32_t)(site),(uint32_t)(address),(uint32_t)(value))) : \
     (((site)==0x1DDF7Bu || (site)==0x1DDF96u) ? \
@@ -457,7 +462,8 @@ static inline float pc_native_multiply(uint32_t site, float left, float right)
                 right=-expm1f(raw*log1pf(-weight))/game;
         }
     }
-    if ((site == 0xD5F60u || site == 0xD64A4u ||
+    if ((site == 0xEBA4Au || site == 0xEBA58u || site == 0xEBA67u ||
+         site == 0xD5F60u || site == 0xD64A4u ||
          site == 0xD64BDu || site == 0xD64D6u) && g_tsfp_native_timing_active) {
         float delta=*(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset);
         if (delta != 1.0f) right=powf(right,delta);
@@ -481,7 +487,9 @@ extern float pc_native_demo_timer_multiply(uint32_t site,float left,float right)
      pc_native_demo_timer_multiply((uint32_t)(site),(float)(left),(float)(right)) : \
      (site)==0x1C4539u && g_tsfp_native_timing_active ? \
      pc_native_weapon_sway((float)(left))*(float)(right) : \
-     pc_native_multiply((uint32_t)(site), (float)(left), (float)(right)))
+     (((site)==0xF1AF0u || (site)==0xF25D0u || (site)==0xF25E4u || (site)==0xF25F4u) ? \
+      pc_native_kind35_turn((float)(left)*(float)(right)) : \
+      pc_native_multiply((uint32_t)(site), (float)(left), (float)(right))))
 /* Scripted camera direction closes 1 / remaining_ticks of the angular gap
  * per original update. Normalize that decay to the live game interval,
  * preserving the original coefficient for one tick. Scaling the pause gate
@@ -582,6 +590,9 @@ extern void pc_native_character_update(void);
 extern void pc_native_kind35_rng(void);
 extern void pc_native_kind35_target(void);
 extern void pc_native_projectile_smoke_rng(void),pc_native_projectile_smoke(void);
+extern void pc_native_ballistic_finish(void);
+extern void pc_native_scripted_steer(void),pc_native_scripted_rotation(void);
+extern void pc_native_projectile_smoke_choice(void);
 extern void pc_native_physics_solver(void),pc_native_physics_random(void);
 extern void pc_native_wind_step(void);
 extern int pc_native_walk_trace_requested(void);
@@ -596,17 +607,26 @@ extern void pc_native_walk_collision(void),pc_native_walk_sweep(void);
     ((site)==0x172114u ? pc_native_physics_solver : \
     ((site)==0x1715A0u || (site)==0x170E51u) ? pc_native_physics_random : (function))
 #define RECOMP_DIRECT_CALLEE_AT(site,function) \
-    ((site)==0x1DDF91u ? pc_native_wind_step : \
+    ((site)==0xF28F4u ? pc_native_ballistic_finish : \
+    (site)==0xF0C9Au ? pc_native_scripted_steer : \
+    (site)==0xE280Au ? pc_native_scripted_rotation : \
+    (site)==0xF4739u ? pc_native_projectile_smoke_choice : \
+    (site)==0x1DDF91u ? pc_native_wind_step : \
     (site)==0xD2CB7u ? pc_native_player_statistics : \
     (site)==0x120BBFu ? pc_native_character_scale : \
     ((site)==0x126029u && pc_native_character_trace_requested()) ? pc_native_character_update : \
     (site)==0xF0CA7u ? pc_native_kind35_target : \
     ((site)==0xF156Du || (site)==0xF1582u || (site)==0xF1597u || \
-     (site)==0xF19C9u || (site)==0xF19DEu || (site)==0xF19F9u) ? pc_native_projectile_smoke_rng : \
-    ((site)==0xF15C4u || (site)==0xF1A2Du) ? pc_native_projectile_smoke : \
+     (site)==0xF19C9u || (site)==0xF19DEu || (site)==0xF19F9u || \
+     (site)==0xF282Fu || (site)==0xF2844u || (site)==0xF285Fu || \
+     (site)==0xF4773u || (site)==0xF4796u || (site)==0xF47B9u || \
+     (site)==0xF2EFAu || (site)==0xF2F0Fu || (site)==0xF2F2Au) ? pc_native_projectile_smoke_rng : \
+    ((site)==0xF15C4u || (site)==0xF1A2Du || (site)==0xF28D1u || (site)==0xF47F7u || (site)==0xF2F5Bu) ? pc_native_projectile_smoke : \
     ((site)==0xF1741u || (site)==0xF1770u || (site)==0xF17A0u || \
      (site)==0xF17F0u || (site)==0xF181Fu || (site)==0xF184Fu || \
-     (site)==0xF189Fu || (site)==0xF18CEu || (site)==0xF18FEu) ? pc_native_kind35_rng : \
+     (site)==0xF189Fu || (site)==0xF18CEu || (site)==0xF18FEu || \
+     (site)==0xF2672u || (site)==0xF26A3u || (site)==0xF26D4u || \
+     (site)==0xF33FFu || (site)==0xF3428u || (site)==0xF3451u || (site)==0xECCD6u) ? pc_native_kind35_rng : \
     ((site)==0x2B9478u && pc_native_skip_aim_random()) ? pc_native_rng_interval_skip : \
     PC_NATIVE_WALK_CALLEE(site,PC_NATIVE_PHYSICS_CALLEE(site,function)))
 #endif

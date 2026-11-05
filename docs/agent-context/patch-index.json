@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "a39aba24ea36ce6ce37de717a771eb1a33958a4f3f50294df25701d5158b6788",
+  "loaderSha256": "f4c4f3fbbb85519a69374dbf61e5dc1a3f248a6556fdcf7ccae01c97f8e666f9",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2254,6 +2254,14 @@
       "sha256": "b0c33335355075fa22506773105e768f827b662e5eadce8de7b4077572f41836",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2605-native-projectile-families.patch",
+      "path": "patches/gameplay/timing/2605-native-projectile-families.patch",
+      "sha256": "adc3b9ccb9b2bddab1336e44849a5017112816e13eaeb3b9108ab9b42672a733",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c\r"
       ]
     },
     {
