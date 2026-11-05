@@ -1,3 +1,10 @@
+## 2026-11-05 - Discord Chinese wall report remains unresolved
+
+The clip shows a character body through brick, not just a nameplate. A bounded
+Chinese six-bot run and 12 existing depth/state checks did not reproduce that
+failure. No runtime fix or resolution comment. See
+[the route, observations and limits](../development/discord-wall-visibility-investigation.md).
+
 ## 2026-11-05 - Native fullscreen startup and Steam Deck Desktop controls
 
 User launches directly from Desktop Mode. Holding Menu to select Steam's
