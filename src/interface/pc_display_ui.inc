@@ -420,6 +420,7 @@ void pc_display_aim_primitive(void (*original)(void),unsigned kind)
         case 0x00135CF6u:case 0x00135D58u:case 0x00135D95u:anchor=4;matched=1;break;
         }
     }
+    if(matched && !pc_developer_hud_visible()){g_esp+=4u;return;}
     if(!matched || !aim_full_view()){original();return;}
     uint32_t saved[8],old_tag=ui_tag;int old=ui_placement;
     float xy[8];
@@ -434,6 +435,7 @@ void pc_display_aim_primitive(void (*original)(void),unsigned kind)
 }
 void pc_display_aim_panel(void (*original)(void),uint32_t tag)
 {
+    if(!pc_developer_hud_visible()){g_esp+=4u;return;}
     if(!aim_full_view()){original();return;}
     uint32_t old_tag=ui_tag;int old=ui_placement;
     ui_place(1,tag);original();ui_place(old,old_tag);

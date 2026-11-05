@@ -1,5 +1,5 @@
-Developer Tools patch2520 extends the final Windows/SDL/HLE layout and runs
-after all Linux patches. Keep its final position in the loader/order fixture.
+Developer Tools patches2520 then2530 extend the final Windows/SDL/HLE layout
+and run after all Linux patches. Keep this order in the loader/order fixture.
 Task memory is `logs/developer-tools-investigation.md`; the pre-existing
 investigation file belongs to other tasks and remains preserved.
 

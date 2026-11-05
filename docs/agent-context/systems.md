@@ -8,7 +8,19 @@ its saved JSON is preserved. F2/F12 dialogs remain recovery routes.
 at the timing boundary. Noclip publishes feet/eye/history through D2DE0;
 both flight modes rebuild the final view after scripted cameras. Freecam
 starts at the player eye and consumes look without moving character angles. Flight uses
-real-time WASD, Space/Ctrl and Shift. Gameplay changes are offline-only.
+configured movement and Interact/Crouch bindings, player yaw/pitch conventions,
+mouse sensitivity/inversion and Shift boost. No-clip permits native weapon input;
+free-cam alone blocks character input. Gameplay changes are offline-only.
+Manual speed is separate from held [/] targets; an opt-in permits them outside
+the overlay, release/focus loss restores manual speed. God mode rejects owned
+local BB6C0 damage; 1B66E0 preserves shot accounting with zero ammo consumption,
+1BC650 restores spent grenade reserve. A0130 retains native clip flags while
+including the owned actor/attachments in the detached view. Before HUD/AO,
+`pc_developer_draw_body` submits the owned world body through native A2740.
+It clears only this view's prepared bit so A1B80 rebuilds colour bone matrices:
+native first-person preparation can leave the bit set with a null colour pointer.
+Native animation, lighting, materials and depth testing remain in use. 1B9120
+omits the owned first-person viewport draw. Patch2530 follows2520.
 Game speed scales game intervals and carried ticks, retaining raw input,
 presentation and ISR clocks. HUD draw suppression retains original HUD logic.
 Windows bounded Story/menu acceptance and remaining native-host limits are in STATUS.

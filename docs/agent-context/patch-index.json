@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "12adb667c7411f46525ecd24853895607afe56887242faeee967600ddd897acc",
+  "loaderSha256": "90b52831716fee2caf862d108c6e4510e93e8fba3682ff1241519d2eee4b071b",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3525,6 +3525,14 @@
         "src/d3d/d3d8_overlay.h",
         "src/hle/hle_d3d8.c",
         "src/input/CMakeLists.txt",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2530-developer-tools-controls-and-cheats.patch",
+      "path": "patches/diagnostics/2530-developer-tools-controls-and-cheats.patch",
+      "sha256": "eac0b865580ae3f3620bb00ae242130e52f6a9ca58992fa36cdcc92a38fb3d95",
+      "targets": [
         "titles/futureperfect/src/recomp_manual.c"
       ]
     }

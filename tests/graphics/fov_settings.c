@@ -13,7 +13,8 @@ static ULONGLONG ticks(void) { return clock_ms; }
 /* Developer Tools is a separate guest-thread consumer. These menu fixtures
  * retain normal HUD visibility and reject accidental flight/Story actions. */
 void pc_developer_get(PcDeveloperState *out) {*out=(PcDeveloperState){0,0,0,0,1.,0};}
-int pc_developer_hud_visible(void) {return 1;}
+static int developer_hud_visible=1;
+int pc_developer_hud_visible(void) {return developer_hud_visible;}
 void pc_developer_close(void) {assert(!"unexpected Developer Tools close");}
 void pc_developer_report(const char *message) {(void)message;assert(!"unexpected developer request");}
 int pc_developer_flight_step(int mode,const float origin[3],const float direction[3],double seconds,float position[3],float forward[3])
@@ -1083,6 +1084,11 @@ int main(int argc,char **argv)
         WORD_AT(controls_menu+0xc4)=0x400;CHECK(settings_tabs_direction(controls_menu)==1);
         settings_keys[0x27]=0;settings_pad_allowed=0;WORD_AT(controls_menu+4)=descriptor;
     }
+    /* Known reticle paths must obey hidden HUD even without widescreen. */
+    developer_hud_visible=0;g_esp=0x30000;WORD_AT(g_esp)=0x0014CC10u;
+    pc_display_aim_primitive(original_highlight,0);CHECK(g_esp==0x30004);
+    g_esp=0x30000;pc_display_aim_panel(original_highlight,0x137010u);CHECK(g_esp==0x30004);
+    developer_hud_visible=1;
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
     return 0;
@@ -1094,3 +1100,5 @@ STUB(sub_001CC360)
 
 void sub_000D2CE0(void){}
 void sub_0015BCC0_gen(void){}
+
+void sub_000A2740(void){}

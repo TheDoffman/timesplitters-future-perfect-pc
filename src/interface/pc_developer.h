@@ -9,6 +9,8 @@ typedef struct PcDeveloperState {
     int hide_hud, hide_watermark, noclip, freecam;
     double speed;
     unsigned checkpoint;
+    int speed_keys, god, infinite_ammo;
+    double manual_speed, slow_speed, fast_speed;
 } PcDeveloperState;
 typedef struct PcDeveloperLine {
     char text[160];
@@ -26,6 +28,7 @@ void pc_developer_guest_frame(void);
 int pc_developer_hud_visible(void);
 int pc_developer_watermark_visible(void);
 int pc_developer_flying(void);
+int pc_developer_blocks_player(void);
 int pc_developer_mouse(PcInput *input,uint64_t now,float sensitivity,int invert,float fov_scale);
 int pc_developer_flight_step(int mode,const float origin[3],const float direction[3],double seconds,
                              float position[3],float forward[3]);

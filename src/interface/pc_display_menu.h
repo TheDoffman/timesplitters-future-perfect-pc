@@ -144,3 +144,10 @@ void pc_graphics_world_finish(void (*original)(void));
 void pc_developer_camera_guest(void (*original)(void));
 int pc_graphics_hud_begin(void);
 void pc_graphics_hud_end(void);
+
+int pc_developer_damage_blocked(void);
+void pc_developer_ammo_guest(void (*original)(void));
+void pc_developer_world_visibility(void);
+void pc_developer_viewmodel_draw(void (*original)(void));
+void pc_developer_grenade_guest(void (*original)(void));
+void pc_developer_draw_body(void);

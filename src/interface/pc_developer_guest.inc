@@ -8,8 +8,124 @@ extern void sub_0006BB90(void),sub_0025EF80(void),sub_000653B0(void),sub_0006745
  * captured position. Original 25EC30 resolves that index through 6BB90 on
  * respawn. Original 25F010/25F0C0 restore checkpoint-indexed scripts as well.
  * Keep capture/reload and mission-success transitions owned by those routines. */
+/* Fresh ownership checks also protect detached rendering and local cheats. */
+static uint32_t developer_actor(void)
+{
+    uint32_t phase=WORD_AT(0x7de30cu),context=WORD_AT(0x7b0c48u);
+    if((phase!=1u&&phase!=7u)||WORD_AT(0x79094cu)>100u||
+       (WORD_AT(0x76b0fcu)&&WORD_AT(0x76b108u))||!guest_writable(context,0x1584u)||WORD_AT(context+4u)!=0u)return 0;
+    uint32_t body=WORD_AT(context+0x14u);
+    if(!guest_writable(body,0x154u)||WORD_AT(body+0x150u)!=context)return 0;
+    uint32_t actor=WORD_AT(body+0x7cu);
+    return guest_writable(actor,0xea0u)&&WORD_AT(actor)==body?actor:0;
+}
+int pc_developer_damage_blocked(void)
+{
+    PcDeveloperState state;pc_developer_get(&state);
+    uint32_t actor=state.god?developer_actor():0;
+    if(!actor||!guest_writable(g_esp,8u))return 0;
+    uint32_t damage=WORD_AT(g_esp+4u);
+    int blocked=guest_writable(damage,0x58u)&&WORD_AT(damage)==WORD_AT(actor);
+    static unsigned reports;
+    if(blocked&&reports++<16u)fprintf(stderr,"[DEVELOPER] God mode blocked local damage\n");
+    return blocked;
+}
+/* 1B66E0 counts the shot before consuming clip/reserve. Zero only its amount;
+ * retain native firing/animation/shot statistics and the caller's arguments. */
+void pc_developer_ammo_guest(void (*original)(void))
+{
+    PcDeveloperState state;pc_developer_get(&state);
+    uint32_t actor=state.infinite_ammo?developer_actor():0,frame=g_esp;
+    if(!actor||!guest_writable(frame,24u)||WORD_AT(frame+4u)!=actor||
+       (int32_t)WORD_AT(frame+16u)<=0){original();return;}
+    uint32_t amount=WORD_AT(frame+16u);WORD_AT(frame+16u)=0;
+    original();WORD_AT(frame+16u)=amount;
+    static unsigned reports;
+    if(reports++<16u)fprintf(stderr,"[DEVELOPER] Infinite ammo preserved local shot\n");
+}
+/* The native grenade transaction decrements reserve directly, outside 1B66E0. */
+void pc_developer_grenade_guest(void (*original)(void))
+{
+    PcDeveloperState state;pc_developer_get(&state);
+    uint32_t actor=state.infinite_ammo?developer_actor():0;
+    if(!actor||!guest_writable(g_esp,8u)||WORD_AT(g_esp+4u)!=WORD_AT(actor)){original();return;}
+    int16_t before[44];memcpy(before,(const void *)((uintptr_t)(actor+0x61eu)+g_xbox_mem_offset),sizeof before);
+    original();
+    if(developer_actor()!=actor)return;
+    for(unsigned i=0;i<44;i++) {
+        int16_t after;void *address=(void *)((uintptr_t)(actor+0x61eu+i*2u)+g_xbox_mem_offset);
+        memcpy(&after,address,2);if(before[i]>0&&after<before[i])memcpy(address,&before[i],2);
+    }
+}
+static void developer_refill_ammo(void)
+{
+    PcDeveloperState state;pc_developer_get(&state);
+    uint32_t actor=state.infinite_ammo?developer_actor():0;
+    if(!actor)return;
+    for(unsigned hand=0;hand<2;hand++) {
+        uint32_t record=actor+0xa4u+hand*0x130u,mode=WORD_AT(record+0x30u);
+        uint32_t descriptors=WORD_AT(0x4f9bacu);
+        if(mode>255u||!descriptors||!guest_writable(descriptors+mode*0x29cu,0x29cu))continue;
+        uint32_t descriptor=descriptors+mode*0x29cu;
+        for(unsigned secondary=0;secondary<2;secondary++) {
+            uint32_t kind=WORD_AT(descriptor+0x14u+secondary*8u),capacity=WORD_AT(descriptor+0x18u+secondary*8u);
+            if(!kind||kind>=44u||capacity>32767u)continue;
+            int16_t clip=(int16_t)capacity;
+            memcpy((void *)((uintptr_t)(record+0x38u+kind*2u)+g_xbox_mem_offset),&clip,2);
+            int32_t limit=(int32_t)WORD_AT(0x4ea3f8u+kind*0xe0u);
+            if(limit<=0||limit>32767)continue;
+            int16_t reserve=(int16_t)limit;
+            memcpy((void *)((uintptr_t)(actor+0x61eu+kind*2u)+g_xbox_mem_offset),&reserve,2);
+        }
+    }
+}
+/* Keep the owned actor and its world attachments included in the detached
+ * view. A0130 computes ordinary room/portal visibility; retain its clip bits. */
+void pc_developer_world_visibility(void)
+{
+    PcDeveloperState state;pc_developer_get(&state);
+    uint32_t actor=state.freecam?developer_actor():0;
+    if(!actor)return;
+    uint32_t context=WORD_AT(0x7b0c48u),camera=WORD_AT(context+8u);
+    if(!guest_writable(camera,0x218u)||WORD_AT(camera+0x214u)>=16u)return;
+    uint32_t bit=1u<<WORD_AT(camera+0x214u),body=WORD_AT(actor);
+    WORD_AT(body+0x10u)|=bit;
+    for(unsigned hand=0;hand<2;hand++) {
+        uint32_t record=actor+0xa4u+hand*0x130u,attachment=WORD_AT(record+0xe8u);
+        if(guest_writable(attachment,0x154u) && WORD_AT(attachment+0x7cu)==record && WORD_AT(record+0xecu)==actor)
+            WORD_AT(attachment+0x10u)|=bit;
+    }
+}
+/* 1B9120 draws the three local viewport-room passes, including bare hands.
+ * Scope the omission to this owned view; model/weapon update still runs. */
+void pc_developer_viewmodel_draw(void (*original)(void))
+{
+    PcDeveloperState state;pc_developer_get(&state);
+    if(state.freecam&&developer_actor()&&WORD_AT(0x7b0c7cu)==WORD_AT(0x7b0c48u))g_esp+=4u;
+    else original();
+}
+/* First-person ownership can omit the local actor from colour submission.
+ * Draw its existing world model through the native entity renderer, retaining
+ * the title's lighting, materials, animation matrices and depth testing. */
+extern void sub_000A2740(void);
+void pc_developer_draw_body(void)
+{
+    PcDeveloperState state;pc_developer_get(&state);
+    uint32_t actor=state.freecam?developer_actor():0;
+    if(!actor||WORD_AT(0x7b0c7cu)!=WORD_AT(0x7b0c48u))return;
+    uint32_t body=WORD_AT(actor),model=WORD_AT(body+4u);
+    if(!guest_writable(model,0x200u))return;
+    uint32_t camera=WORD_AT(0x7b0cc0u);
+    if(!guest_writable(camera,0x218u)||WORD_AT(camera+0x214u)>=16u)return;
+    /* Native first-person/shadow preparation can leave the view bit set while
+     * its colour-pass matrix pointer is empty. Force native A1B80 to prepare
+     * the detached world pose; retain its animation, allocator and lighting. */
+    WORD_AT(body+0x14u)&=~(1u<<WORD_AT(camera+0x214u));
+    for(unsigned pass=0;pass<3;pass++)guest_call(sub_000A2740,2,body,pass);
+}
 void pc_developer_guest_frame(void)
 {
+    developer_refill_ammo();
     static unsigned handled;
     PcDeveloperState state;pc_developer_get(&state);
     if(handled==state.checkpoint)return;
@@ -87,14 +203,19 @@ void pc_developer_camera_guest(void (*original)(void))
     /* The ordinary player input update may be suspended by a scripted camera.
      * Consume raw flight look here too; already-consumed motion is zero. */
     pc_controls_apply_mouse(context,camera,g_xbox_mem_offset);
-    developer_vector(camera+0x334u,direction,0);
+    float yaw,pitch;
+    memcpy(&yaw,(const void *)((uintptr_t)(context+0x100u)+g_xbox_mem_offset),4);
+    memcpy(&pitch,(const void *)((uintptr_t)(context+0x104u)+g_xbox_mem_offset),4);
+    if(!isfinite(yaw)||!isfinite(pitch)){original();return;}
+    yaw*=.01745329252f;pitch*=.01745329252f;
+    direction[0]=sinf(yaw)*cosf(pitch);direction[1]=sinf(pitch);direction[2]=cosf(yaw)*cosf(pitch);
     int positioned=0;
     if(mode==1) {
         developer_vector(context+0xa8u,origin,0);
         if((positioned=pc_developer_flight_step(mode,origin,direction,elapsed,position,forward))) {
             developer_vector(context+0xa8u,position,1);
-            WORD_AT(context+0x100u)=developer_bits(atan2f(-forward[0],-forward[2])*57.295779513f);
-            WORD_AT(context+0x104u)=developer_bits(-asinf(fmaxf(-1.f,fminf(1.f,forward[1])))*57.295779513f);
+            WORD_AT(context+0x100u)=developer_bits(atan2f(forward[0],forward[2])*57.295779513f);
+            WORD_AT(context+0x104u)=developer_bits(asinf(fmaxf(-1.f,fminf(1.f,forward[1])))*57.295779513f);
             guest_call(sub_000D2DE0,1,context);
             pc_network_bots_entity_refresh(entity);
         }
@@ -107,7 +228,6 @@ void pc_developer_camera_guest(void (*original)(void))
     if(mode==2) {
         /* Always start next to the player, even when the original scripted
          * camera is elsewhere. The detached pose remains host-owned. */
-        developer_vector(camera+0x334u,direction,0);
         if(!pc_developer_flight_step(mode,origin,direction,elapsed,position,forward))return;
     } else {
         if(!positioned)return;

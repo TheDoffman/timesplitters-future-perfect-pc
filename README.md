@@ -203,10 +203,14 @@ available for the existing settings dialogs.
 
 The tools toggle HUD/UI and the version watermark, enable no-clip or detached
 free-cam, advance Story checkpoints (or start the ending after the last one),
-and set game speed from 0.05x to 4x. Hold **[** or **]** to adjust speed by 0.1.
-Flight uses **WASD + mouse**, **Space/Ctrl** up/down and **Shift** for 4x speed.
-Free-cam hides the HUD; turning it off restores HUD and player control/view.
-Flight, checkpoint and speed tools are available during offline gameplay.
+and set manual game speed from 0.05x to 4x. Configure separate **[** and **]**
+held-speed values; release restores manual speed. Enable **Speed keys outside
+menu** to use them with the overlay closed. God mode and infinite ammo are also
+available. Flight follows configured movement/look controls, **Interact/Crouch**
+up/down and **Shift** for 4x speed. No-clip retains firing and weapon switching.
+Free-cam hides the HUD, crosshair and first-person weapon while keeping the
+world character visible. Turning it off restores HUD and player control/view.
+Gameplay tools are available during offline gameplay.
 Native Mac/Linux acceptance is pending; see [validation](docs/project/STATUS.md).
 
 ## <img src="docs/assets/icon-support.svg" alt="" width="24" height="24"> Guides & support

@@ -62,7 +62,9 @@ Developer Tools replaces the Windows bar with the shared F1 overlay in
 registry hidden; `pc_settings_toggle_menu` now toggles the overlay. The old
 `pc_menu_visible` JSON is retained and survives binding saves, but no longer
 attaches a toolbar. Windows and SDL F1 now open the same overlay and release
-the pointer for its exclusive keyboard/mouse input. Closing latches held keys
+the pointer for its exclusive keyboard/mouse input. Flight reads configured
+movement and Interact/Crouch keys without writing controls. No-clip retains
+firing/weapon keys; free-cam exclusively owns character input. Closing latches held keys
 until release. Original menus receive empty pointer/text/key input while open.
 
 The Windows settings, prompts and debug linked checks retain legacy JSON and

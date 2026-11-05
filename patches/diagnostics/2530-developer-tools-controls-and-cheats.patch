@@ -1,0 +1,61 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -690,6 +690,7 @@
+ {
+ #ifdef TSFP_PC_CONTROLS
+     pc_story_network_world_visibility(sub_000A0130_gen);
++    pc_developer_world_visibility();
+ #else
+     sub_000A0130_gen();
+ #endif
+@@ -1070,7 +1071,12 @@
+ { pc_network_bots_guest_lobby_text(sub_0003D7F0_gen); }
+ extern void sub_000BB6C0_gen(void);
+ void sub_000BB6C0(void)
+-{ pc_network_bots_guest_damage(sub_000BB6C0_gen); }
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    if(pc_developer_damage_blocked()){g_eax=0;g_esp+=4u;return;}
++#endif
++    pc_network_bots_guest_damage(sub_000BB6C0_gen);
++}
+ extern void sub_00356490_gen(void);
+ void sub_00356490(void)
+ { pc_network_bots_guest_config(sub_00356490_gen); }
+@@ -2513,3 +2519,36 @@
+     sub_000CCAB0_gen();
+ #endif
+ }
++
++/* Shared Developer Tools: native ammo_guest. */
++extern void sub_001B66E0_gen(void);
++void sub_001B66E0(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_developer_ammo_guest(sub_001B66E0_gen);
++#else
++    sub_001B66E0_gen();
++#endif
++}
++
++/* Shared Developer Tools: native grenade_guest. */
++extern void sub_001BC650_gen(void);
++void sub_001BC650(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_developer_grenade_guest(sub_001BC650_gen);
++#else
++    sub_001BC650_gen();
++#endif
++}
++
++/* Shared Developer Tools: native viewmodel_draw. */
++extern void sub_001B9120_gen(void);
++void sub_001B9120(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_developer_viewmodel_draw(sub_001B9120_gen);
++#else
++    sub_001B9120_gen();
++#endif
++}

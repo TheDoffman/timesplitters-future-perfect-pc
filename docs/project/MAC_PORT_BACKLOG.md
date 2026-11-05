@@ -1,6 +1,12 @@
+Developer Tools notes follow-up (local after af616873): shared configured flight,
+weapon routing, HUD/viewport masks, held speed, God/ammo services and patch2530
+need no duplicated host gameplay implementation. Windows focused fixtures pass;
+Windows Build and bounded weapon/cheat/speed/flight acceptance pass; native
+Mac/Linux build and gameplay checks remain pending; see [STATUS](STATUS.md).
+
 ## Developer Tools overlay - implemented, native acceptance pending
 
-Local/uncommitted developer-tools-overlay after d2d2c8d5. Shared
+Committed locally as af616873 on developer-tools-overlay, based on d2d2c8d5. Shared
 `src/interface/pc_developer.c`, `pc_developer_guest.inc` and clock policy provide
 F1 overlay, PC Settings, HUD/watermark toggles, flight, Story checkpoint advance
 and game speed. Windows/SDL adapters own capture, fullscreen and log operations.

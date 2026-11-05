@@ -1,6 +1,49 @@
+## 2026-11-05 - Developer Tools notes follow-up
+
+Original overlay committed locally as af616873 before applying the Changes
+section of the user's notes. Follow-up remains local/uncommitted on
+developer-tools-overlay, Windows x64. Shared flight reads configured bindings,
+sensitivity/inversion and native player direction; no-clip retains firing and
+weapon selection. HUD/UI hiding includes known crosshair/aim primitives.
+Freecam omits first-person viewport rendering and draws the owned world body
+through native A2740 before HUD/AO, rebuilding its missing colour bone matrices.
+The camera remains detached from the character. Held bracket speed targets are
+separate from manual speed; the outside-menu toggle defaults off, and release
+or focus loss restores manual speed. God mode and infinite ammo are local,
+offline services; native shot accounting, weapon transactions and grenade
+creation remain active. Personal settings, saves and the fixture are preserved.
+
+Supported US XBE hash verified, complete patch stack applied, supported Windows
+MSVC x64 Build and linked settings/debug checks passed. Executable SHA-256:
+`0ca4ba18bfa5427dbbf621981b6e0f1c5571aa2c75f23d1481ec66887db0a40a`;
+sealed executable/game-content identity verification passed. Final affected
+regression set: **180 passed, 2 Mac compiler skips** (115.97 seconds). This
+includes real original-XBE ammo/visibility branches and host-boundary fixtures.
+The final minimal-body build passed a 64.61-second isolated Arcade run with a
+reviewed full-body capture; no node masks, alternate headers or actor flags are
+overridden. Native Mac/Linux build/physical input/gameplay checks remain pending;
+Windows tests do not establish those.
+
+Bounded isolated acceptance: remapped IJKL movement, sensitivity 0.13 and invert-Y
+produced the expected native/flight direction and 13-degree look response.
+Held ] outside the closed menu produced game_delta approximately 2.019, release
+returned to 1.00. Armed Arcade accepted no-clip firing and weapon switching,
+logged preserved ammunition on actual shots, and rejected incoming local damage
+with God mode enabled. A detached camera capture confirmed the full player body
+in-world with first-person arms/gun, HUD and crosshair absent. These are bounded
+Story/Arcade replay checks, not every weapon, every scene or physical input.
+Each run stayed below 120 seconds and recycled its six disposable partitions;
+protected personal/canonical fixture hashes were unchanged.
+Final armed acceptance on the same minimal build completed in 86.24 seconds:
+actual no-clip shots preserved ammunition, switching reached fists, incoming
+hits were rejected, and disabling freecam restored the first-person hands/HUD.
+The clear full-body capture is retained from the 64.61-second run; the later
+armed body capture includes an occluding explosion. Compiler scratch directories
+were recycled after checks (1899.3 MiB total file lengths, not physical allocation).
+
 ## 2026-11-04 - Developer Tools overlay
 
-Local/uncommitted developer-tools-overlay, base d2d2c8d5, Windows x64.
+Committed locally as af616873 on developer-tools-overlay, base d2d2c8d5, Windows x64.
 F1 opens an in-game overlay with the existing PC Settings (bindings/mouse,
 debug options/statistics/logs, textures and fullscreen) and all six requested
 tools. The old Windows toolbar stays hidden. Flight/checkpoint/game-speed

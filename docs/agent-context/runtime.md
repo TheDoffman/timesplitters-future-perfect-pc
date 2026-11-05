@@ -1,3 +1,4 @@
+Patch2530 follows2520: local damage/ammo, detached world masks and viewport draw hooks.
 Patch2520 follows final Linux adapters: Developer Tools input/UI, CCAB0 wrapper,
 HUD draw scopes and HLE-owned renderer callbacks. See systems.md; regenerate guest code.
 

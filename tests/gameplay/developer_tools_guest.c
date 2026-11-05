@@ -7,13 +7,15 @@
 #include <math.h>
 static unsigned char memory[0x800000];
 static ptrdiff_t g_xbox_mem_offset;
+static uint32_t g_esp=0xc000;
 #define WORD_AT(a) (*(uint32_t *)(memory+(uint32_t)(a)))
 static PcDeveloperState options;
 static int original_count,teleports,refreshes,views,combines,inverses,called;
 static uint32_t arguments[12];static unsigned argc;
 static double last_elapsed;
-static unsigned captures,reloads,endings;
+static unsigned captures,reloads,endings,body_draws;
 static char report[160];
+void sub_000A2740(void) {called=9;}
 void sub_000D2DE0(void) {called=1;}
 void sub_001519E0(void) {called=2;}
 void sub_00153270(void) {called=3;}
@@ -45,10 +47,15 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...) {
     if(called==5){assert(argc==2&&arguments[1]==0);return arguments[0]<2?0x9000:0;}
     if(called==6){assert(argc==1&&arguments[0]<2);WORD_AT(0xb000)=arguments[0];WORD_AT(0xb004)|=1u<<arguments[0];captures++;}
     if(called==7){assert(argc==1&&arguments[0]==WORD_AT(0xb004));reloads++;}
+    if(called==9){assert(argc==2&&arguments[0]==0x6000&&arguments[1]==body_draws%3);assert(!(WORD_AT(0x6014)&1u));body_draws++;}
     if(called==8){assert(argc==1&&arguments[0]==0&&(WORD_AT(0x7de45c)&0x8000));endings++;}
     return 0;
 }
 #include "pc_developer_guest.inc"
+static unsigned ammo_calls;
+static uint32_t expected_amount;
+static void ammo_original(void) {assert(WORD_AT(g_esp+16)==expected_amount);ammo_calls++;g_esp+=4;}
+static void grenade_original(void) {(*(int16_t *)(memory+0xa620))--;g_esp+=4;}
 static void original(void) {
     original_count++;
     float eye[3]={1,2,3},direction[3]={0,0,-1};
@@ -85,5 +92,29 @@ int main(void) {
     options.checkpoint=3;pc_developer_guest_frame();assert(endings==1&&captures==2);
     WORD_AT(0x78ad20)=5;options.checkpoint=4;pc_developer_guest_frame();assert(endings==1&&captures==2);
     assert(strstr(report,"offline Story"));
+    WORD_AT(0xa000)=0x6000;
+    WORD_AT(0xc004)=0xd000;WORD_AT(0xd000)=0x6000;
+    options.god=1;assert(pc_developer_damage_blocked());
+    WORD_AT(0xd000)=0x6100;assert(!pc_developer_damage_blocked());WORD_AT(0xd000)=0x6000;
+    WORD_AT(0x76b0fc)=WORD_AT(0x76b108)=1;assert(!pc_developer_damage_blocked());
+    WORD_AT(0x76b0fc)=WORD_AT(0x76b108)=0;options.god=0;assert(!pc_developer_damage_blocked());
+    options.infinite_ammo=1;WORD_AT(0xc004)=0xa000;WORD_AT(0xc010)=2;expected_amount=0;
+    pc_developer_ammo_guest(ammo_original);assert(ammo_calls==1&&g_esp==0xc004&&WORD_AT(0xc010)==2);
+    g_esp=0xc000;WORD_AT(0xc004)=0xa100;expected_amount=2;pc_developer_ammo_guest(ammo_original);assert(ammo_calls==2);
+    g_esp=0xc000;WORD_AT(0x4f9bac)=0xe000;
+    WORD_AT(0xe014)=1;WORD_AT(0xe018)=6;WORD_AT(0x4ea4d8)=24;
+    pc_developer_guest_frame();assert(*(int16_t *)(memory+0xa0de)==6&&*(int16_t *)(memory+0xa620)==24);
+    WORD_AT(0xc004)=0x6000;pc_developer_grenade_guest(grenade_original);assert(*(int16_t *)(memory+0xa620)==24);g_esp=0xc000;
+    options.freecam=1;WORD_AT(0x4008)=0x2000;WORD_AT(0x2214)=0;WORD_AT(0x6010)=0xe0000000;WORD_AT(0x60a0)=1;
+    pc_developer_world_visibility();assert(WORD_AT(0x6010)==0xe0000001&&WORD_AT(0x60a0)==1&&WORD_AT(0xa02c)==0);
+    g_esp=0xc000;unsigned previous_calls=original_count;
+    pc_developer_viewmodel_draw(original);assert(g_esp==0xc004&&original_count==previous_calls);
+    WORD_AT(0x6004)=0x10000;WORD_AT(0x6014)=0xabcd0001;
+    pc_developer_draw_body();assert(body_draws==3&&WORD_AT(0x6014)==0xabcd0000);
+    WORD_AT(0x7b0c7c)=0x5000;pc_developer_draw_body();assert(body_draws==3);
+    WORD_AT(0x7b0c7c)=0x4000;WORD_AT(0x76b0fc)=WORD_AT(0x76b108)=1;
+    pc_developer_draw_body();assert(body_draws==3);WORD_AT(0x76b0fc)=WORD_AT(0x76b108)=0;
+    options.freecam=0;pc_developer_draw_body();assert(body_draws==3);
+    pc_developer_world_visibility();assert(WORD_AT(0x60a0)==1);pc_developer_viewmodel_draw(original);assert(original_count==previous_calls+1);
     puts("Developer camera: ordinary fallback, detached view ABI, player position, pause and mapping guards passed");return 0;
 }

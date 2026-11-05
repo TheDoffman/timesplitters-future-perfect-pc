@@ -11,7 +11,7 @@
 
 static SRWLOCK dev_lock=SRWLOCK_INIT;
 static volatile LONG opened;
-static PcDeveloperState state={0,0,0,0,1.,0};
+static PcDeveloperState state={.speed=1.,.manual_speed=1.,.slow_speed=.5,.fast_speed=2.};
 static int gameplay,story,network;
 /* Presentation-thread-owned navigation and settings drafts. */
 enum { HOME, SETTINGS, KEYBOARD, DEBUG, LOGS };
@@ -20,7 +20,6 @@ static int page,selected,scroll,slot,capture_action=-1,edit_number,conflict_key;
 static PcSettings draft;
 static unsigned char previous[256];
 static int previous_left;
-static ULONGLONG last_frame,repeat_at;
 static char status[160],number[32];
 static char result_message[160];
 static ULONGLONG result_until;
@@ -49,12 +48,13 @@ void pc_developer_report(const char *message) {
 void pc_developer_publish(int play,int campaign,int online) {
     AcquireSRWLockExclusive(&dev_lock);
     gameplay=play;story=campaign;network=online;
-    if(!play || online) {if(state.freecam)state.hide_hud=0;state.noclip=state.freecam=0;state.speed=1.;}
+    if(!play || online) {if(state.freecam)state.hide_hud=0;state.noclip=state.freecam=0;state.speed=state.manual_speed=1.;state.god=state.infinite_ammo=0;}
     ReleaseSRWLockExclusive(&dev_lock);
 }
 int pc_developer_hud_visible(void) {PcDeveloperState s;pc_developer_get(&s);return !s.hide_hud;}
 int pc_developer_watermark_visible(void) {PcDeveloperState s;pc_developer_get(&s);return !s.hide_watermark;}
 int pc_developer_flying(void) {PcDeveloperState s;pc_developer_get(&s);return s.noclip||s.freecam;}
+int pc_developer_blocks_player(void) {PcDeveloperState s;pc_developer_get(&s);return s.freecam;}
 int pc_developer_mouse(PcInput *input,uint64_t now,float sensitivity,int invert,float scale) {
     AcquireSRWLockExclusive(&dev_lock);
     int active=state.noclip||state.freecam;
@@ -68,6 +68,12 @@ int pc_developer_flight_step(int mode,const float origin[3],const float directio
                              float position[3],float forward[3]) {
     unsigned char keys[256]={0};int focus=pc_controls_developer_keys(keys);
     for(unsigned i=0;i<3;i++)if(!isfinite(origin[i])||!isfinite(direction[i]))return 0;
+    PcSettings controls;char error[160];
+    if(!pc_settings_read(&controls,error,sizeof error))pc_settings_defaults(&controls);
+    int actions[PC_ACTION_COUNT]={0};
+    for(unsigned i=0;i<PC_ACTION_COUNT;i++)for(unsigned j=0;j<PC_BINDING_SLOTS;j++) {
+        int key=controls.keys[i][j];if(key>0&&key<256)actions[i]|=keys[key];
+    }
     AcquireSRWLockExclusive(&dev_lock);
     if(!mode)flight.mode=0;
     else {
@@ -75,15 +81,15 @@ int pc_developer_flight_step(int mode,const float origin[3],const float directio
             float length=sqrtf(direction[0]*direction[0]+direction[1]*direction[1]+direction[2]*direction[2]);
             if(!(length>.01f)) {ReleaseSRWLockExclusive(&dev_lock);return 0;}
             memcpy(flight.position,origin,sizeof flight.position);
-            flight.yaw=atan2f(-direction[0],-direction[2])*57.295779513f;
-            flight.pitch=-asinf(fmaxf(-1,fminf(1,direction[1]/length)))*57.295779513f;
+            flight.yaw=atan2f(direction[0],direction[2])*57.295779513f;
+            flight.pitch=asinf(fmaxf(-1,fminf(1,direction[1]/length)))*57.295779513f;
             flight.mode=mode;
         }
         float y=flight.yaw*.01745329252f,p=flight.pitch*.01745329252f;
-        forward[0]=-sinf(y)*cosf(p);forward[1]=-sinf(p);forward[2]=-cosf(y)*cosf(p);
+        forward[0]=sinf(y)*cosf(p);forward[1]=sinf(p);forward[2]=cosf(y)*cosf(p);
         if(focus&&!pc_developer_open()&&isfinite(seconds)&&seconds>0) {
-            float f=(float)(keys['W']-keys['S']),r=(float)(keys['D']-keys['A']),u=(float)(keys[0x20]-keys[0x11]);
-            float delta[3]={f*forward[0]+r*cosf(y),f*forward[1]+u,f*forward[2]-r*sinf(y)};
+            float f=(float)(actions[14]-actions[15]),r=(float)(actions[17]-actions[16]),u=(float)(actions[0]-actions[18]);
+            float delta[3]={f*forward[0]-r*cosf(y),f*forward[1]+u,f*forward[2]+r*sinf(y)};
             float length=sqrtf(delta[0]*delta[0]+delta[1]*delta[1]+delta[2]*delta[2]);
             float distance=(float)fmin(seconds,.05)*8.f*(keys[0x10]?4.f:1.f)/fmaxf(1,length);
             for(unsigned i=0;i<3;i++)flight.position[i]+=delta[i]*distance;
@@ -92,7 +98,7 @@ int pc_developer_flight_step(int mode,const float origin[3],const float directio
     }
     ReleaseSRWLockExclusive(&dev_lock);return mode!=0;
 }
-static int row_count(void) {return page==HOME?9:page==SETTINGS?5:page==KEYBOARD?PC_ACTION_COUNT+6:page==LOGS?recent_count+1:PC_DEBUG_OPTION_COUNT+5;}
+static int row_count(void) {return page==HOME?14:page==SETTINGS?5:page==KEYBOARD?PC_ACTION_COUNT+6:page==LOGS?recent_count+1:PC_DEBUG_OPTION_COUNT+5;}
 static void navigate(int next) {
     fprintf(stderr,"[DEVELOPER] page %d\n",next);
     page=next;selected=scroll=0;capture_action=-1;edit_number=0;status[0]=0;
@@ -111,7 +117,7 @@ static void navigate(int next) {
 static void speed_adjust(double value) {
     if(!isfinite(value))return;
     AcquireSRWLockExclusive(&dev_lock);
-    if(!network)state.speed=fmax(.05,fmin(4.,value));
+    if(!network)state.speed=state.manual_speed=fmax(.05,fmin(4.,value));
     ReleaseSRWLockExclusive(&dev_lock);
 }
 static void activate(int direction) {
@@ -129,11 +135,23 @@ static void activate(int direction) {
         case 4:state.hide_watermark=!state.hide_watermark;break;
         case 5:if(story&&gameplay&&!network)state.checkpoint++;break;
         case 6:break;
+        case 9:state.speed_keys=!state.speed_keys;break;
+        case 10:case 11:break;
+        case 12:if(gameplay&&!network)state.god=!state.god;break;
+        case 13:if(gameplay&&!network)state.infinite_ammo=!state.infinite_ammo;break;
         }
         ReleaseSRWLockExclusive(&dev_lock);
         if(selected==6) {
-            if(direction)speed_adjust(s.speed+direction*.1);
+            if(direction)speed_adjust(s.manual_speed+direction*.1);
             else {edit_number=1;number[0]=0;snprintf(status,sizeof status,"Type speed 0.05 to 4.0, then Enter; Escape cancels.");}
+        }
+        if(selected==10||selected==11) {
+            if(direction) {
+                AcquireSRWLockExclusive(&dev_lock);
+                double *target=selected==10?&state.slow_speed:&state.fast_speed;
+                *target=fmax(.05,fmin(4.,*target+direction*.1));
+                ReleaseSRWLockExclusive(&dev_lock);
+            } else {edit_number=selected==10?3:4;number[0]=0;snprintf(status,sizeof status,"Type held speed 0.05 to 4.0, then Enter.");}
         }
     } else if(page==SETTINGS) {
         switch(selected) {
@@ -191,9 +209,14 @@ static void label(int row,char *out,size_t size) {
         case 3:snprintf(out,size,"Free-cam: %s%s",s.freecam?"On":"Off",availability);break;
         case 4:snprintf(out,size,"Version watermark: %s",s.hide_watermark?"Hidden":"Shown");break;
         case 5:snprintf(out,size,"Advance to next checkpoint%s",campaign?"":" (Story only, offline)");break;
-        case 6:snprintf(out,size,"Game speed: %.2fx   [ / ] or Left / Right, Enter to type",s.speed);break;
+        case 6:snprintf(out,size,"Manual game speed: %.2fx   Left/Right or Enter to type",s.manual_speed);break;
         case 7:snprintf(out,size,"Return to game (F1)");break;
-        default:snprintf(out,size,"Reset game speed to 1.00x");break;
+        case 8:snprintf(out,size,"Reset game speed to 1.00x");break;
+        case 9:snprintf(out,size,"Speed keys outside menu: %s",s.speed_keys?"On":"Off");break;
+        case 10:snprintf(out,size,"Hold [: %.2fx   Enter to configure",s.slow_speed);break;
+        case 11:snprintf(out,size,"Hold ]: %.2fx   Enter to configure",s.fast_speed);break;
+        case 12:snprintf(out,size,"God mode: %s%s",s.god?"On":"Off",availability);break;
+        default:snprintf(out,size,"Infinite ammo: %s%s",s.infinite_ammo?"On":"Off",availability);break;
         }
     } else if(page==SETTINGS) {
         static const char *names[]={"Keyboard & Mouse  >","Debug  >","Enhanced Textures","Fullscreen","Back"};
@@ -239,14 +262,15 @@ void pc_developer_frame(void) {
     /* Deterministic input replays publish raw virtual keys, while real host
      * adapters consume F1 before the guest. Toggle after releasing input locks. */
     if(focused && keys[0x70]&&!previous[0x70])pc_developer_toggle();
-    ULONGLONG now=GetTickCount64();
     int open=pc_developer_open();
-    if(!last_frame || now-last_frame>250)repeat_at=now;
-    last_frame=now;
     if(!open) {capture_action=-1;edit_number=0;}
-    if(focused && capture_action<0 && !edit_number && (keys[0xdb] || keys[0xdd]) && now>=repeat_at) {
-        PcDeveloperState s;pc_developer_get(&s);speed_adjust(s.speed+(keys[0xdd]-keys[0xdb])*.1);repeat_at=now+150;
+    AcquireSRWLockExclusive(&dev_lock);
+    state.speed=state.manual_speed;
+    if(focused && gameplay && !network && (open||state.speed_keys) && capture_action<0 && !edit_number) {
+        if(keys[0xdd])state.speed=state.fast_speed;
+        else if(keys[0xdb])state.speed=state.slow_speed;
     }
+    ReleaseSRWLockExclusive(&dev_lock);
     if(open&&focused) {
         PcMenuPointer p=pc_controls_developer_pointer();
         int left=keys[0x25]&&!previous[0x25],right=keys[0x27]&&!previous[0x27];
@@ -267,8 +291,10 @@ void pc_developer_frame(void) {
             if(escape){edit_number=0;status[0]=0;}
             else if(enter) {
                 char *end;double v=strtod(number,&end);
-                if(*number&&!*end&&isfinite(v)&&v>=(edit_number==1?.05:.001)&&v<=(edit_number==1?4.:10.)) {
-                    if(edit_number==1)speed_adjust(v);else draft.sensitivity=v;
+                if(*number&&!*end&&isfinite(v)&&v>=(edit_number==2?.001:.05)&&v<=(edit_number==2?10.:4.)) {
+                    if(edit_number==1)speed_adjust(v);
+                    else if(edit_number==2)draft.sensitivity=v;
+                    else {AcquireSRWLockExclusive(&dev_lock);if(edit_number==3)state.slow_speed=v;else state.fast_speed=v;ReleaseSRWLockExclusive(&dev_lock);}
                     edit_number=0;status[0]=0;
                 } else snprintf(status,sizeof status,"Enter a value in the displayed range.");
             } else {
@@ -312,6 +338,6 @@ unsigned pc_developer_lines(unsigned width,unsigned height,PcDeveloperLine *out,
     snprintf(line->text,sizeof line->text,"%s%s",edit_number?"Value: ":"",edit_number?number:status[0]?status:result_message[0]&&GetTickCount64()<result_until?result_message:"Select: arrows / mouse   Use: Enter / click   Back: Esc   Scroll: PgUp/PgDn");
     ReleaseSRWLockShared(&dev_lock);
     line=&out[n++];*line=(PcDeveloperLine){{0},x,y+514*s,780*s,28*s};
-    snprintf(line->text,sizeof line->text,"%s",capture_action>=0||edit_number?status:page==KEYBOARD?"Left/Right: binding slot   Enter: rebind   Save to apply":"Flight: WASD + mouse   Space/Ctrl: up/down   Shift: faster");
+    snprintf(line->text,sizeof line->text,"%s",capture_action>=0||edit_number?status:page==KEYBOARD?"Left/Right: binding slot   Enter: rebind   Save to apply":"Flight: configured move/look, Interact/Crouch: up/down, Shift: boost");
     return n;
 }

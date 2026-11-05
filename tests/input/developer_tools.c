@@ -24,7 +24,7 @@ PcMenuPointer pc_controls_developer_pointer(void) {return pointer;}
 void pc_controls_developer_fullscreen(void) {fullscreen++;}
 void pc_controls_developer_debug_action(int open_folder) {(void)open_folder;}
 void pc_controls_set_mouse(double s,int e,int i) {(void)s;(void)e;(void)i;}
-void pc_settings_defaults(PcSettings *s) {memset(s,0,sizeof *s);s->enabled=1;s->sensitivity=.1;}
+void pc_settings_defaults(PcSettings *s) {memset(s,0,sizeof *s);s->enabled=1;s->sensitivity=.1;s->keys[0][0]=0x20;s->keys[14][0]='I';s->keys[15][0]='K';s->keys[16][0]='J';s->keys[17][0]='L';s->keys[18][0]='C';}
 int pc_settings_read(PcSettings *s,char *error,size_t n) {pc_settings_defaults(s);(void)error;(void)n;return 1;}
 int pc_settings_save(const PcSettings *s,char *error,size_t n) {(void)s;(void)error;(void)n;saves++;return 1;}
 void pc_settings_key_name(int k,char *out,size_t n) {snprintf(out,n,"Key %d",k);}
@@ -48,9 +48,18 @@ int main(void) {
     assert(pc_developer_flight_step(2,origin,direction,0,position,forward));
     assert(position[0]==1&&position[1]==2&&position[2]==3&&forward[2]<-.99f);
     test_keys['W']=1;
+    pc_developer_flight_step(2,origin,direction,.05,position,forward);assert(position[2]==3); /* no hard-coded WASD */
+    test_keys['W']=0;test_keys['I']=1;
     pc_developer_flight_step(2,origin,direction,.05,position,forward);assert(fabs(position[2]-2.6)<.0001);
     test_keys[0x10]=1;
     pc_developer_flight_step(2,origin,direction,.05,position,forward);assert(fabs(position[2]-1.)<.0001);
+    /* Use the same yaw/pitch convention and sensitivity as the player. */
+    state.freecam=1;PcInput look={0};pc_input_focus(&look,1);pc_input_capture(&look,1);
+    float initial_yaw=flight.yaw;pc_input_motion(&look,30,20,test_time);
+    assert(pc_developer_mouse(&look,test_time,.2f,0,1));
+    assert(fabsf(flight.yaw-(initial_yaw-6))<.001f&&fabsf(flight.pitch+4)<.001f);
+    pc_input_motion(&look,0,20,test_time);pc_developer_mouse(&look,test_time,.2f,1,1);
+    assert(fabsf(flight.pitch)<.001f);state.freecam=0;
     memset(test_keys,0,sizeof test_keys);
     pc_developer_flight_step(0,origin,direction,0,position,forward);
     frame();assert(!pc_developer_open());pc_developer_toggle();frame();assert(menu_captured);
@@ -59,15 +68,22 @@ int main(void) {
     /* UI keyboard events exercise real navigation and value state. */
     key(0x28);key(13);assert(!pc_developer_hud_visible());
     key(0x28);key(13);pc_developer_get(&s);assert(!s.noclip); /* frontend guard */
-    pc_developer_publish(1,1,0);key(13);pc_developer_get(&s);assert(s.noclip);
-    key(0x28);key(13);pc_developer_get(&s);assert(s.freecam&&!s.noclip&&s.hide_hud);
+    pc_developer_publish(1,1,0);key(13);pc_developer_get(&s);assert(s.noclip&&!pc_developer_blocks_player());
+    key(0x28);key(13);pc_developer_get(&s);assert(s.freecam&&!s.noclip&&s.hide_hud&&pc_developer_blocks_player());
     key(13);pc_developer_get(&s);assert(!s.freecam&&!s.hide_hud);
     key(0x28);key(13);assert(!pc_developer_watermark_visible());
     key(0x28);key(13);pc_developer_get(&s);assert(s.checkpoint==1);
     key(0x28);key(13);key('2');key(13);pc_developer_get(&s);assert(s.speed==2.);
-    pc_developer_close();test_keys[0xdb]=1;test_time+=200;frame();pc_developer_get(&s);assert(fabs(s.speed-1.9)<.0001);
-    focus=0;test_time+=200;frame();pc_developer_get(&s);assert(fabs(s.speed-1.9)<.0001);focus=1;test_keys[0xdb]=0;
-    pc_developer_publish(1,1,1);pc_developer_get(&s);assert(s.speed==1.&&!s.freecam&&!s.noclip);
+    pc_developer_close();test_keys[0xdb]=1;frame();pc_developer_get(&s);assert(s.speed==2.); /* outside-menu disabled */
+    pc_developer_toggle();selected=9;key(13);pc_developer_close();frame();pc_developer_get(&s);assert(s.speed==.5&&s.manual_speed==2.);
+    test_keys[0xdd]=1;frame();pc_developer_get(&s);assert(s.speed==2.); /* ] wins ties */
+    test_keys[0xdd]=test_keys[0xdb]=0;frame();pc_developer_get(&s);assert(s.speed==2.);
+    pc_developer_toggle();selected=10;key(13);key('0');key(0xbe);key('2');key('5');key(13);pc_developer_get(&s);assert(s.slow_speed==.25);
+    selected=11;key(13);key('3');key(13);pc_developer_get(&s);assert(s.fast_speed==3.);
+    selected=12;key(13);selected=13;key(13);pc_developer_get(&s);assert(s.god&&s.infinite_ammo);
+    pc_developer_close();test_keys[0xdd]=1;frame();pc_developer_get(&s);assert(s.speed==3.);
+    focus=0;frame();pc_developer_get(&s);assert(s.speed==2.);focus=1;test_keys[0xdd]=0;
+    pc_developer_publish(1,1,1);pc_developer_get(&s);assert(s.speed==1.&&!s.freecam&&!s.noclip&&!s.god&&!s.infinite_ammo);
     pc_developer_toggle();key(27); /* Home Escape closes */
     assert(!pc_developer_open());
     pc_developer_toggle();selected=0;key(13);assert(page==SETTINGS);

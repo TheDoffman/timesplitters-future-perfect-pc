@@ -53,7 +53,7 @@ static Uint64 menu_wheel_at;
 static PcTextInput text_input;
 int pc_controls_weapon_slots_active(void) {
     pthread_mutex_lock(&camera_lock);
-    int active=!pc_developer_flying() && atomic_load(&focused) && captured && !atomic_load(&menu_active) && !text_input.owner;
+    int active=!pc_developer_blocks_player() && atomic_load(&focused) && captured && !atomic_load(&menu_active) && !text_input.owner;
     pthread_mutex_unlock(&camera_lock);
     return active;
 }
@@ -61,7 +61,7 @@ int pc_controls_weapon_slots_active(void) {
 void pc_controls_reload_sample(const unsigned char roles[256],int active,
                                int *reload,int *fire,int *secondary) {
     pthread_mutex_lock(&camera_lock);
-    active=active && !pc_developer_flying() && atomic_load(&focused) && captured && !atomic_load(&menu_active) && !text_input.owner;
+    active=active && !pc_developer_blocks_player() && atomic_load(&focused) && captured && !atomic_load(&menu_active) && !text_input.owner;
     pc_reload_sample(&camera_input.reload,roles,active,SDL_GetTicks(),reload,fire,secondary);
     pc_input_cockpit_fire(&camera_input,active,SDL_GetTicks(),secondary);
     pthread_mutex_unlock(&camera_lock);
@@ -252,10 +252,10 @@ int tsfp_native_key_down(int vk) {
     return atomic_load(&keys[vk]);
 }
 int pc_controls_accept_pad(void) {
-    return !pc_developer_open() && !pc_developer_flying() && atomic_load(&focused) && !pc_settings_capture_blocked();
+    return !pc_developer_open() && !pc_developer_blocks_player() && atomic_load(&focused) && !pc_settings_capture_blocked();
 }
 int pc_controls_key_down(int vk) {
-    if(pc_developer_open() || pc_developer_flying())return 0;
+    if(pc_developer_open() || pc_developer_blocks_player())return 0;
     if(pc_settings_capture_blocked())return 0;
     int down=tsfp_native_key_down(vk);
     if(atomic_load(&menu_active)) {

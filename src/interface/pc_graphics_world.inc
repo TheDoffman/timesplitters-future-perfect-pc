@@ -19,6 +19,7 @@ void pc_graphics_hud_end(void)
 
 void pc_graphics_world_finish(void (*original)(void))
 {
+    pc_developer_draw_body();
 #if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
     if(pc_graphics_get().ambient_occlusion && WORD_AT(0x0079094Cu)<=100u) {
         PcGuestRegion region={0,0,0};

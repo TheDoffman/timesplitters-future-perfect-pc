@@ -4,6 +4,7 @@
    audio/video, layout, highlighting and navigation stay in the guest engine. */
 #include "pc_display_menu.h"
 #include "pc_settings.h"
+#include "pc_developer.h"
 #include "pc_debug.h"
 #include "graphics/graphics_settings.h"
 #define KB_OPEN 0x1200fu

@@ -517,7 +517,7 @@ int pc_controls_weapon_slots_active(void)
 {
     int active;
     AcquireSRWLockShared(&lock);
-    active=!pc_developer_flying() && !InterlockedCompareExchange(&editing,0,0) && !menu_mode && !text_input.owner &&
+    active=!pc_developer_blocks_player() && !InterlockedCompareExchange(&editing,0,0) && !menu_mode && !text_input.owner &&
         input.focused && input.captured && (replaying || GetForegroundWindow()==window_handle);
     ReleaseSRWLockShared(&lock);
     return active;
@@ -528,7 +528,7 @@ void pc_controls_reload_sample(const unsigned char roles[256],int active,
 {
     AcquireSRWLockExclusive(&lock);
     replay_tick();
-    active=active && !pc_developer_flying() && !InterlockedCompareExchange(&editing,0,0) && !menu_mode && !text_input.owner &&
+    active=active && !pc_developer_blocks_player() && !InterlockedCompareExchange(&editing,0,0) && !menu_mode && !text_input.owner &&
         input.focused && input.captured && (replaying || GetForegroundWindow()==window_handle);
     pc_reload_sample(&input.reload,roles,active,GetTickCount64(),reload,fire,secondary);
     pc_input_cockpit_fire(&input,active,GetTickCount64(),secondary);
@@ -537,7 +537,7 @@ void pc_controls_reload_sample(const unsigned char roles[256],int active,
 
 int pc_controls_accept_pad(void)
 {
-    return !pc_developer_open() && !pc_developer_flying() && !replaying && !InterlockedCompareExchange(&editing,0,0) &&
+    return !pc_developer_open() && !pc_developer_blocks_player() && !replaying && !InterlockedCompareExchange(&editing,0,0) &&
            window_handle && GetForegroundWindow()==window_handle;
 }
 
@@ -567,7 +567,7 @@ int pc_controls_binding_keys(unsigned char keys[256]) {
 int pc_controls_key_down(int key)
 {
     int down;
-    if(pc_developer_open() || pc_developer_flying())return 0;
+    if(pc_developer_open() || pc_developer_blocks_player())return 0;
     if (InterlockedCompareExchange(&editing, 0, 0)) return 0;
     AcquireSRWLockExclusive(&lock);
     replay_tick();

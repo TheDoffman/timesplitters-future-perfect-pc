@@ -261,6 +261,10 @@ def patch_records(paths):
     if developer_tools:
         paths.remove(developer_tools)
         paths.append(developer_tools)
+    developer_changes=by_name.get('2530-developer-tools-controls-and-cheats.patch')
+    if developer_changes:
+        paths.remove(developer_changes)
+        paths.append(developer_changes)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

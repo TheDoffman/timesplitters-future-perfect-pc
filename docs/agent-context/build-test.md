@@ -1,3 +1,7 @@
+Developer Tools follow-up fixtures check remapped flight and native look signs,
+held-speed restoration/opt-in, hidden reticles, local damage/ammo and owned-body matrix preparation/renderer guards.
+Original A02F9 inclusion and A1BF1 alternate-mesh branches prevent reversed
+visibility-mask assumptions; original 1B66E0 tests retain shot accounting.
 Developer Tools: `tests/input/test_developer_tools.py` compiles deterministic
 input/settings and guest-camera/checkpoint fixtures. Its private-XBE case runs
 original US25EC30 to prove authored checkpoint-index destination lookup, rather
