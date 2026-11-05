@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ## 2026-11-05 - Native fullscreen startup and Steam Deck Desktop controls
 
 User launches directly from Desktop Mode. Holding Menu to select Steam's
@@ -70,7 +69,7 @@ Local candidate v0.5.2-linux-experimental.1 embeds unchanged game build
 SHA256 7d7c7682829fe38aaadc0c5e30058acb7f8a7c821b7f51a21ef0c4230f454fc4.
 It is a packaging fix, not a rebuild of the game runtime. No release publication
 or main merge performed; Windows/Mac packaging and runtime are unchanged.
-=======
+
 ## 2026-11-05 - Rocket speed at high frame rates
 
 Shared projectile timing correction on fix/high-fps-projectile-speed, based on
@@ -81,7 +80,6 @@ Patch migration and tracking checks passed. The user tested the isolated rebuilt
 Windows Test Lab game and confirmed the reported projectile-speed issue resolved.
 Native Mac gameplay and physical Linux/Steam Deck gameplay are not verified.
 The fix uses shared source/patches and needs no new platform adapter.
->>>>>>> 032b1cee557034991e5da872ec661cfb7399082f
 
 ## 2026-11-04 - Small-screen launcher fitting
 
