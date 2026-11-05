@@ -7,7 +7,7 @@ Ping-expiry tests wait past GetTickCount64 quantization.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build/tests ([SMAA](smaa.md))
 
-[Linux and host-Wayland ELF/package checks](linux-game.md); [LAN](system-link.md).
+[Linux host ABI](linux-game.md); [LAN](system-link.md).
 
 Discord release webhooks target #release-updates; #announcements holds team posts.
 
