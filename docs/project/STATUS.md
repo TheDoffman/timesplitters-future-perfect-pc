@@ -25,7 +25,16 @@ boundaries are controlled. Existing rocket impact/expiry and slot/nesting checks
 remain. The complete native timing suite passed140 cases in149.57 seconds.
 Supported build, migrations and live candidate acceptance are in progress.
 The first CI selector caught a CRLF/LF mismatch in the new patch-index hash;
-the patch working copy and generated index now use the tracked LF bytes. No new live fix, Discord resolution or main merge
+the patch working copy and generated index now use the tracked LF bytes.
+The first migration run passed76 cases and found six historical-seed failures:
+those seed sets omit the kill-feed allocator wrapper that2605 extends. They
+now omit2605 only while constructing the old state, and still apply it during
+the complete-stack upgrade. The complete migration suite is being rerun.
+The first supported build hit MSVC C1002 in newly affected generated unit0011;
+the existing ignored validation-only /Od /Ob0 workaround now covers that unit
+in addition to the seven previously documented units. Other units retain /O2.
+This is a local validation build, not default-flags Release acceptance.
+ No new live fix, Discord resolution or main merge
 is claimed from these fixture checks.
 
 ## 2026-11-05 - Shared MSAA regression declaration
