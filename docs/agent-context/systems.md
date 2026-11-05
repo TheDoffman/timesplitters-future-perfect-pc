@@ -1,4 +1,4 @@
-[Uplink/rockets](native-uplink.md).
+[Uplink](native-uplink.md);[2605](native-projectiles.md).
 [Input](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
@@ -16,7 +16,7 @@ PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
 Minigun: [policy](native-minigun.md).
 
-Kernel: [objects and boot](kernel-objects.md).
+[Kernel](kernel-objects.md).
 
 Memory: [retired APIs](retired-memory-compatibility.md).
 

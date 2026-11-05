@@ -1,3 +1,65 @@
+## 2026-11-05 - Projectile flight timing verified on Windows
+
+Shared patch2605 and numeric/projectile policy repair the remaining affected
+weapon and vehicle flight families. The full54-entry US dispatch table is
+checked explicitly. Ordinary Flare Gun weapon4 uses kind38; Machine Wars
+scene5's loaded tracked vehicles expose weapon59 / kind51 as the main cannon
+and60 / kind45 as the secondary gun. That mapping was read from the isolated
+normal-menu Story scene. The table audit includes vehicle kinds51-53.
+
+The flare repair couples fractional movement, look-ahead and derived velocity,
+with whole-tick/interpolated jitter. The family audit also found fixed-frame
+vector drag; its three axes now use elapsed game time. Moving-family entry
+gates retain fractional flight intervals; scripted kind50 keeps authored
+spring steering cadence with continuous translation. Random steering, object
+spin and flight smoke preserve whole-tick RNG cadence. Allocation resets
+sidecars on slot reuse. Shared clocks and instant-hit/age-based paths are retained.
+
+Validation of code3b9a4540861289a37565bc36aa3fa9f31eadbcda:
+
+- Full original-US native timing suite:140 passed in149.57 seconds. Its26
+  projectile cases include60/120/144/180/240, normal/quarter speed, .5/1/1.5-second
+  flare paths, original speed envelopes, exact native60 state, pause, original
+  gravity/matrix helpers and guest ABI. Eight independent policy ablations
+  must fail behavior (six flare, tank entry gate, vector drag). Existing rocket
+  impact/expiry, random cadence and slot/nesting checks remain.
+- Complete patch-upgrade/tracking/context suite:82 passed in1231.68 seconds.
+  Historical snapshots omit2605 while they lack its allocator-wrapper dependency,
+  then apply it in the complete upgrade. A fresh-stack production-scanner check
+  also passed after requiring separate declarations for the five generated
+  originals; the production alias planner and actual generated bodies were checked.
+- Supported Windows Build completed with its linked build checks and matching
+  crash symbols. Exe SHA256 is
+  `934d3f9ef9caacfdc1078ccc3686bcf3de5a61888af9efee12cbf9b75337659a`;
+  compatibility is`125ce351b41b80107e6f798590089627a1dd1fcb4195eb9c503b02a0536e3e2f`.
+  BUILD.json records clean source3b9a4540 and PDB SHA256
+  `a95c7ac2cf10f2d1734b282bee90ae7b382389ff9544718bb489e5be0f39c62e`.
+- The generated VCXPROJ confirms seven active local /Od /Ob0 exceptions:
+  regular unit0011 and context0752-0756/0774. All other units retain /O2.
+  These are the existing large-SSE optimizer workaround mapped to this generator's
+  output; the obsolete regular0114 property is not an active compile item.
+  This is local validation-build evidence, not default-flags Release acceptance.
+- Runtime CI on3b9a4540 passed Windows/Mac native checks and patch upgrades,
+  Linux SDL/Vulkan foundation, and PR validation:
+  https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/42073066455.
+  This validation-record follow-up is documentation only.
+
+Paired live Spaceport tests used the same isolated Test Lab profile,0bots,
+weapon4, spawn and flat aim, with normal input and read-only shot observations.
+At .5 game seconds, original60 travelled15.02553 units; the old180 target travelled
+only5.85526. The rebuilt180 target travelled15.02183, with fitted forward speed
+30.03075 units/second against the60-Hz reference30.23966 (old180:11.31913).
+The rebuilt flare impacted atage.56086 versus reference.56667, within one
+original tick. It retained the normal impact/effect path. Local provenance,
+raw pool snapshots, shot records and screenshots remain ignored.
+
+The tank's actual kind51 updater passed the original-code flight comparisons;
+live Story navigation did not reach a fired tank shot, so live vehicle handling
+or cannon firing is not claimed. Controlled scene/effect boundaries do not prove
+every map collision or rendered trail. Native Mac/Linux private-game acceptance
+remains pending in MAC-060. No new Discord resolution comment is inferred for
+these reports made in this chat. Publication remains pending; issues stay open.
+
 ## 2026-11-05 - Shared MSAA regression declaration
 
 PR495 Linux CI exposed a Windows-only declaration guard on the already-shared

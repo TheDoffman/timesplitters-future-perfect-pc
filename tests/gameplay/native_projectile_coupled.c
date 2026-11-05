@@ -93,7 +93,9 @@ void sub_003C8C64(void) {
     power_calls++;g_esp+=4;
 }
 void sub_000DD170(void) { assert(lifecycle);g_eax=0;g_esp+=4; }
-void sub_000E2520(void) { assert(!"Unexpected call sub_000E2520"); }
+void sub_000E2520(void),sub_00152770(void);
+void pc_native_scripted_steer(void){pc_native_scripted_steer_guest(sub_000E2520,&g_esp);}
+void pc_native_scripted_rotation(void){pc_native_scripted_rotation_guest(sub_00152770,g_esp);}
 void sub_000E94E0(void) { assert(lifecycle && hits==1 && MEM32(g_esp+4)==SHOT && MEMF(MEM32(g_esp+12))==hit_plane);g_esp+=4; }
 void sub_000E9FE0(void) { assert(!"Unexpected call sub_000E9FE0"); }
 void sub_000EDD40(void) { assert(lifecycle && MEM32(g_esp+4)==0x6000);g_esp+=4; }
@@ -133,6 +135,7 @@ static void call(void (*fn)(void)) {
     g_esp=STACK;MEM32(STACK)=0x12345678;MEM32(STACK+4)=SHOT;
     g_esi=0xdead;g_edi=0xfeed;g_ebx=0xbeef;g_ebp=0xabcd;
     fn();
+    if(g_esp!=STACK+4 || g_fp_top!=0)printf("ABI esp=%x fp=%d kind=%u\n",g_esp,g_fp_top,MEM32(SHOT));
     assert(g_esp==STACK+4 && g_fp_top==0);
     assert(g_esi==0xdead && g_edi==0xfeed && g_ebx==0xbeef && g_ebp==0xabcd);
 }
@@ -316,10 +319,10 @@ int main(void) {
         for(unsigned i=0;i<sizeof rates/sizeof rates[0];i++)for(unsigned slow=0;slow<2;slow++)
             assert(fabsf(run_lifecycle(rates[i],slow?.25f:1,hit)-base)<1.f/60+.0001f);
     }
-    const unsigned kinds[]={8,9,10,11,39,42},rates[]={60,120,144,180,240};
-    for(unsigned k=0;k<6;k++)for(unsigned r=0;r<5;r++)for(unsigned h=0;h<2;h++)
+    const unsigned kinds[]={8,9,10,11,39,42,50},rates[]={60,120,144,180,240};
+    for(unsigned k=0;k<7;k++)for(unsigned r=0;r<5;r++)for(unsigned h=0;h<2;h++)
         for(unsigned slow=0;slow<2;slow++)rocket_motion(kinds[k],rates[r],slow?.25f:1,h,1);
-    for(unsigned k=0;k<6;k++)for(unsigned h=0;h<2;h++)rocket_motion(kinds[k],60,1,h,0);
+    for(unsigned k=0;k<7;k++)for(unsigned h=0;h<2;h++)rocket_motion(kinds[k],60,1,h,0);
     for(unsigned k=0;k<6;k++)for(unsigned hit=0;hit<2;hit++) {
         rocket=kinds[k];float base=run_lifecycle(60,1,hit);
         for(unsigned r=1;r<5;r++)assert(fabsf(run_lifecycle(rates[r],1,hit)-base)<1.f/60+.0001f);

@@ -646,6 +646,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                                     (0xb9920,0xb995a),(0xb9720,0xb9789)]),
     ('native_projectile_coupled.c', [(0xf08d0,0xf1a4b),
                  (0xe78f0,0xe799a),(0xe1fa0,0xe2370),(0xe2370,0xe2514),
+                 (0xe2520,0xe28b0),(0x152770,0x15289f),(0x152090,0x15211f),
                  (0xdcef0,0xdcf85),(0xb9920,0xb995a),(0xb9720,0xb9789)]),
     ('native_npc_aim.c', [(0x2b93d5,0x2b9793),(0x2b9381,0x2b938a),
                                      (0x2b9389,0x2b938a),(0x2b938d,0x2b938e),
@@ -1095,7 +1096,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                         raise AssertionError(output)
         rockets=[dict(field.split('=',1) for field in line.split()[1:])
                  for line in output.splitlines() if line.startswith('rocket ')]
-        assert len(rockets)==132,output
+        assert len(rockets)==154,output
         for row in rockets:
             reference=next(r for r in rockets if r['kind']==row['kind'] and
                            r['homing']==row['homing'] and r['native']=='0')
@@ -1234,6 +1235,196 @@ def test_original_player_trigger(tmp_path):
             assert broken.returncode != 0 and message in broken.stderr
     finally:
         vars(config).update(previous)
+
+def test_original_projectile_dispatch_table():
+    """Audit every US projectile table entry, including vehicle-only kinds."""
+    import hashlib
+    import struct
+    from test_recomp_float_joins import config
+    xbe = ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported US XBE required for projectile dispatch audit')
+    image = xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous = dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        def word(address):
+            return struct.unpack_from('<I',image,config.va_to_file_offset(address))[0]
+        families = {
+            0: [0,1,2,36], 0xf4a50: [3,4,5,6,7,27,28,29,30,31,40,45,46,49],
+            0xf08d0: [8,9,10,11,35,39,42,50], 0xf2b80: [12,13,15],
+            0xf39a0: [14,16,17,18,19], 0xf51f0: [20], 0xf5920: [21,22],
+            0xeff90: [23], 0xf5ff0: [24,47], 0xec120: [25], 0xebb00: [26],
+            0xead10: [32,33], 0x389b0: [34], 0xf61e0: [37],
+            0xf1a90: [38,41], 0xecb90: [43], 0xe4800: [44], 0xe8490: [48],
+            0xf6600: [51], 0xed7c0: [52,53],
+        }
+        assert sorted(k for kinds in families.values() for k in kinds)==list(range(54))
+        for updater,kinds in families.items():
+            for kind in kinds:assert word(0x4deb28+kind*64+0x34)==updater
+        assert word(0x4deb28+38*64+0x30)==0xe2f90
+        weapons=word(0x4f9bac)
+        assert word(weapons+4*0x29c+0x6c)==38  # Flare gun, observed through normal menus.
+        assert word(weapons+59*0x29c+0x6c)==51 # Loaded Machine Wars tank main gun.
+    finally:
+        vars(config).update(previous)
+
+
+def _projectile_policies(tmp_path, mutation):
+    """Ablate a production policy; assertions must detect the missing repair."""
+    numeric = ROOT / 'src/gameplay/pc_native_numeric.h'
+    projectile = ROOT / 'src/gameplay/pc_native_projectile_guest.h'
+    if not mutation:
+        return numeric, projectile
+    n, p = numeric.read_text(), projectile.read_text()
+    replacements = {
+        'entry-gate': ('(site)==0xF1A96u', '(site)==0xFFFFFFFFu'),
+        'initial-step': ('(site)==0xF1AF0u', '(site)==0xFFFFFFFFu'),
+        'tank-gate': ('site == 0xF6600u', 'site == 0xFFFFFFFFu'),
+        'vector-drag': ('site == 0xEBA4Au', 'site == 0xFFFFFFFFu'),
+        'smoke-cadence': ('(site)==0xF28D1u', '(site)==0xFFFFFFFFu'),
+    }
+    if mutation in replacements:
+        old, new = replacements[mutation]
+        assert n.count(old) == 1
+        n = n.replace(old,new)
+    elif mutation == 'look-ahead':
+        for site in ('F25D0','F25E4','F25F4'):
+            assert n.count(f'(site)==0x{site}u') == 1
+            n = n.replace(f'(site)==0x{site}u','(site)==0xFFFFFFFFu')
+    elif mutation == 'velocity':
+        assert p.count('*speed/=delta;') == 1
+        p = p.replace('*speed/=delta;','/* Missing velocity normalization. */')
+    elif mutation == 'random-cadence':
+        assert p.count('} else *esp+=4;') == 1
+        p = p.replace('} else *esp+=4;','} else original();')
+    else:
+        raise AssertionError(mutation)
+    # Keep local dependencies authoritative while substituting only this policy.
+    def include_path(match):
+        choices = list((ROOT/'src').rglob(match[1]))
+        return '#include "' + choices[0].as_posix() + '"' if len(choices)==1 else match[0]
+    n = re.sub(r'#include "([^"\n]+)"', include_path, n)
+    numeric_copy, projectile_copy = tmp_path/'numeric-policy.h', tmp_path/'projectile-policy.h'
+    numeric_copy.write_text(n)
+    projectile_copy.write_text(p)
+    return numeric_copy, projectile_copy
+
+
+def _projectile_failure_control(source):
+    return source.replace('#include "recomp_types.h"', '#include "recomp_types.h"\n' +
+        '#undef assert\n#define assert(value) do { if(!(value)) { '
+        'fprintf(stderr,"FAIL: sensitivity projectile %s\\n",#value);exit(2); } } while(0)')
+
+
+@pytest.mark.parametrize('mutation', [None,'entry-gate','initial-step','look-ahead',
+                                     'velocity','random-cadence','smoke-cadence'])
+def test_original_projectile_ballistics(tmp_path,mutation):
+    """Execute the supported original flare/vehicle ballistic path."""
+    import hashlib
+    import struct
+    from guest_constants import absolute_data_words
+    from test_recomp_float_joins import config, FunctionTranslator, compile_and_run
+    xbe = ROOT / 'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported US XBE required for ballistic projectile regression')
+    image = xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous = dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        ranges = [(0xe0f30, 0xe10dd), (0xe2f90, 0xe316a), (0xf1a90, 0xf2907),
+                  (0xdcef0, 0xdcf85)]
+        functions = {a: dict(name=f'sub_{a:08X}', end=b) for a, b in ranges}
+        for a in (0xe2f90, 0xf1a90):
+            functions[a]['name'] += '_gen'
+        translator = FunctionTranslator(image, functions)
+        code = '\n'.join('void ' + f['name'] + '(void);' for f in functions.values())
+        code += '\n' + '\n'.join(translator.translate_function(a, f) for a, f in functions.items())
+        source = (ROOT / 'tests/gameplay/native_projectile_ballistic.c').read_text()
+        defined = set(re.findall(r'void (sub_[0-9A-F]+(?:_gen)?)\(void\)', source + code))
+        calls = set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)', code))
+        calls.update(re.findall(r'\b(sub_[0-9A-F]+)\(\);', code))
+        services = '\n'.join(f'void {n}(void){{fprintf(stderr,"UNEXPECTED {n}\\n");abort();}}'
+                             for n in sorted(calls - defined))
+        addresses = absolute_data_words(image, ranges, config.va_to_file_offset)
+        addresses = sorted(set(addresses) | {0x47d3c0, 0x47d3c4})
+        constants = '\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};'
+                              for a in addresses)
+        numeric,projectile = _projectile_policies(tmp_path,mutation)
+        source = source.replace('/* NUMERIC_POLICY */', f'#define RECOMP_NUMERIC_POLICY_HEADER "{numeric.as_posix()}"')
+        source = source.replace('/* PROJECTILE_POLICY */', f'#include "{projectile.as_posix()}"')
+        source = source.replace('/* GENERATED_ROUTINES */', code).replace('/* UNREACHED_SERVICES */', services)
+        source = source.replace('/* ORIGINAL_CONSTANTS */', constants)
+        if mutation:source = _projectile_failure_control(source)
+        print(compile_and_run(tmp_path, source,expect_success=not mutation))
+    finally:
+        vars(config).update(previous)
+
+
+@pytest.mark.parametrize('updater,end,kinds', [
+    (0xf2b80,0xf3950,[12,13,15]), (0xf39a0,0xf4830,[14,16,17,18,19]),
+    (0xf51f0,0xf5920,[20]), (0xf5920,0xf5d30,[21,22]),
+    (0xec120,0xec880,[25]), (0xebb00,0xec120,[26]),
+    (0xead10,0xebb00,[32,33]), (0xf61e0,0xf6600,[37]),
+    (0xe4800,0xe4ea0,[44]), (0xf6600,0xf6b70,[51]),
+    (0xed7c0,0xedbe0,[52,53]),
+    (0xf4a50,0xf51b0,[3,4,5,6,7,27,28,29,30,31,40,45,46,49]),
+    (0xecb90,0xed7c0,[43]),
+])
+def test_original_projectile_families(tmp_path,updater,end,kinds,mutation=None):
+    """Execute the supported original flare/vehicle ballistic path."""
+    import hashlib
+    import struct
+    from guest_constants import absolute_data_words
+    from test_recomp_float_joins import config, FunctionTranslator, compile_and_run
+    xbe = ROOT / 'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported US XBE required for ballistic projectile regression')
+    image = xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous = dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        ranges = [(updater,end-1),(0xdcef0,0xdcf85),(0xdc6f0,0xdc7a5),(0xe17c0,0xe1d6b),
+                  (0x151650,0x15178f),(0x151790,0x1518ef),
+                  (0x151e80,0x151f1f),(0x152260,0x15253f),
+                  (0x1531d0,0x1531ff),(0x153440,0x15348f),
+                  (0x1534e0,0x15354f),(0x152770,0x15289f)]
+        functions = {a: dict(name=f'sub_{a:08X}', end=b) for a,b in ranges}
+        translator = FunctionTranslator(image, functions)
+        code = '\n'.join('void ' + f['name'] + '(void);' for f in functions.values())
+        code += '\n' + '\n'.join(translator.translate_function(a, f) for a, f in functions.items())
+        source = (ROOT / 'tests/gameplay/native_projectile_families.c').read_text()
+        defined = set(re.findall(r'void (sub_[0-9A-F]+(?:_gen)?)\(void\)', source + code))
+        calls = set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)', code))
+        calls.update(re.findall(r'\b(sub_[0-9A-F]+)\(\);', code))
+        services = '\n'.join(f'void {n}(void){{fprintf(stderr,"UNEXPECTED {n}\\n");abort();}}'
+                             for n in sorted(calls - defined))
+        addresses = absolute_data_words(image, ranges, config.va_to_file_offset)
+        addresses = sorted(set(addresses) | {0x47d3c0, 0x47d3c4})
+        constants = '\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};'
+                              for a in addresses)
+        numeric,projectile = _projectile_policies(tmp_path,mutation)
+        source = source.replace('/* NUMERIC_POLICY */', f'#define RECOMP_NUMERIC_POLICY_HEADER "{numeric.as_posix()}"')
+        source = source.replace('/* PROJECTILE_POLICY */', f'#include "{projectile.as_posix()}"')
+        source = source.replace('/* GENERATED_ROUTINES */', code).replace('/* UNREACHED_SERVICES */', services)
+        source = source.replace('/* ORIGINAL_CONSTANTS */', constants)
+        source = source.replace('UPDATER',f'sub_{updater:08X}').replace('KINDS',','.join(map(str,kinds)))
+        if mutation:source = _projectile_failure_control(source)
+        print(compile_and_run(tmp_path, source,expect_success=not mutation))
+    finally:
+        vars(config).update(previous)
+
+
+@pytest.mark.parametrize('updater,end,kinds,mutation', [
+    (0xf6600,0xf6b70,[51],'tank-gate'),
+    (0xead10,0xebb00,[32,33],'vector-drag'),
+])
+def test_projectile_family_negative_controls(tmp_path,updater,end,kinds,mutation):
+    test_original_projectile_families(tmp_path,updater,end,kinds,mutation)
+
 
 def test_original_uplink_hold_gates(tmp_path):
     """Execute the US request/repeat gates, Uplink callback and charge routine.

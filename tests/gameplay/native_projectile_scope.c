@@ -79,8 +79,14 @@ int main(void)
         pc_native_kind35_update_guest(rocket_policy,SECOND);
         assert(!pc_native_projectile_skip_smoke());
     }
-    *pc_kind35_word(SECOND)=50; /* distinct scripted steering remains original */
-    pc_native_kind35_update_guest(original_policy,SECOND);
+    *pc_kind35_word(SECOND)=50;
+    pc_native_kind35_update_guest(rocket_policy,SECOND);
+    *pc_kind35_word(0x4E7944)=1;
+    pc_native_kind35_update_guest(sample,SECOND);
+    unsigned before_pause=draws;
+    *(float *)pc_kind35_word(0x4E794C)=0;
+    pc_native_kind35_update_guest(sample,SECOND);
+    assert(draws==before_pause); /* A stale whole count cannot advance RNG. */
     free(memory);
     return 0;
 }
