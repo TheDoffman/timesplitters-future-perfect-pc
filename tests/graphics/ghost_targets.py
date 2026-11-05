@@ -106,12 +106,14 @@ def check_bitmap(path, width, height):
         assert all(abs(a - b) <= 3 for a, b in zip(pixel, expected)), (fraction, tuple(pixel), expected)
 
 
-def main(executable):
+def main(executable, environment=None):
     executable = Path(executable).resolve()
     assert executable.is_file(), executable
     with tempfile.TemporaryDirectory(prefix='tsfp-ghost-targets-') as name:
         folder = Path(name)
-        env = {k: v for k, v in os.environ.items() if not k.startswith(('RECOMP_', 'TSFP_', 'XDG_'))}
+        env = dict(environment) if environment is not None else {
+            k: v for k, v in os.environ.items() if not k.startswith(('RECOMP_', 'TSFP_'))}
+        env['RECOMP_VK_VALIDATION'] = '1'
         for key in ('APPDATA', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME'):
             env[key] = str(folder)
         env.update(RECOMP_DISPLAY_CONFIG=str(folder / 'runtime.ini'),
@@ -125,6 +127,9 @@ def main(executable):
                                     capture_output=True, text=True, timeout=30)
             log = result.stdout + result.stderr
             assert result.returncode == 0 and '0 host calls failed' in log, f'exit={result.returncode}\n{log}'
+            from vulkan_sdk import require_clean_validation
+            if "[RHI] vulkan:" in log:
+                require_clean_validation(log)
             check_bitmap(folder / 'out000.bmp', width * scale, height * scale)
             print(f'PASS: shared depth and fresh feedback at {width}x{height}, scale {scale}')
 
