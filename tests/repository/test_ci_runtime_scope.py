@@ -38,12 +38,11 @@ def test_required_workflow_reports_on_every_pull_request():
 ])
 def test_unrequired_issue_jobs_run_only_for_relevant_prs(filename, inputs):
     workflow = (Path(__file__).resolve().parents[2] / '.github/workflows' / filename).read_text()
-    pr = workflow.split('  pull_request:\n', 1)[1].split('  push:\n', 1)[0]
-    push = workflow.split('  push:\n', 1)[1].split('\npermissions:', 1)[0]
-    assert '    paths:\n' in pr and '    paths:\n' in push
+    suite = 'issue_forms' if filename == 'issue-forms.yml' else 'issue_resolution'
+    assert '  workflow_call:' in workflow
     for path in inputs:
-        assert f'      - {path}\n' in pr
-        assert f'      - {path}\n' in push
+        assert scope.repository_checks([path])[suite]
+
 
 
 def test_version_refresh_cannot_push_directly_to_protected_main():
@@ -62,7 +61,7 @@ def test_version_refresh_cannot_push_directly_to_protected_main():
 def test_pr_issue_checks_contain_tests_only_and_keep_required_names(filename, job, check):
     workflow = (Path(__file__).resolve().parents[2] / '.github/workflows' / filename).read_text()
     triggers = workflow.split('\non:\n', 1)[1].split('\npermissions:\n', 1)[0]
-    assert set(re.findall(r'^  ([a-z_]+):', triggers, re.M)) == {'pull_request', 'push'}
+    assert set(re.findall(r'^  ([a-z_]+):', triggers, re.M)) == {'workflow_call', 'workflow_dispatch'}
     jobs = workflow.split('\njobs:\n', 1)[1]
     assert re.findall(r'^  ([a-z_-]+):', jobs, re.M) == [job]
     assert f'    name: {check}\n' in jobs
@@ -191,8 +190,8 @@ def test_parallel_workers_preserve_required_check_contract():
     workflow = (Path(__file__).resolve().parents[2] /
                 '.github/workflows/runtime-patches.yml').read_text()
     patches = workflow.split('\n  patches:\n')[1].split('\n  native:\n')[0]
-    native = workflow.split('\n  native:\n')[1].split('\n  patch-transitions:\n')[0]
-    gate = workflow.split('\n  patch-transitions:\n')[1]
+    native = workflow.split('\n  native:\n')[1].split('\n  linux-foundation:\n')[0]
+    gate = workflow.split('\n  pr-validation:\n')[1]
     for worker in (patches, native):
         assert '    needs: plan\n' in worker
         assert 'os: [windows-latest, macos-latest]' in worker
@@ -205,18 +204,16 @@ def test_parallel_workers_preserve_required_check_contract():
     assert 'runner.os' not in online  # Online now runs on both desktop hosts.
     assert 'python -m pip install -r requirements-release.txt' in native
     assert "needs.plan.outputs.gpu == 'true' && runner.os == 'macOS'" in native
-    assert 'name: Patch transitions (${{ matrix.os }})' in gate
-    assert 'needs: [plan, patches, native]' in gate and 'if: always()' in gate
-    assert 'python tools/ci/ci-runtime-scope.py --gate' in gate
-    assert 'runs-on: ${{ matrix.os }}' in gate
-    assert 'test_compatibility_worker.py' in gate
+    assert 'name: PR validation' in gate and 'if: always()' in gate
+    assert 'python tools/ci/ci-pr-gate.py' in gate
+    assert 'test_compatibility_worker.py' in workflow
     for expression in ('needs.plan.result', 'needs.plan.outputs.transitions',
                        'needs.plan.outputs.native', 'needs.plan.outputs.release',
                        'needs.patches.result', 'needs.native.result'):
         assert '${{ ' + expression + ' }}' in gate
 
 
-def test_single_gate_covers_runtime_and_launcher_without_changing_old_checks():
+def test_single_gate_covers_all_selected_work():
     workflow = (Path(__file__).resolve().parents[2] /
                 '.github/workflows/runtime-patches.yml').read_text()
     plan = workflow.split('\n  plan:\n', 1)[1].split('\n  patches:\n', 1)[0]
@@ -227,7 +224,8 @@ def test_single_gate_covers_runtime_and_launcher_without_changing_old_checks():
     assert 'uses: ./.github/workflows/launcher-build.yml' in launcher
     assert 'source_ref: ${{ needs.plan.outputs.head }}' in launcher
     assert 'name: PR validation' in gate
-    assert 'needs: [plan, patches, native, launcher, linux-foundation]' in gate
+    assert 'needs: [plan, patches, native, launcher, linux-foundation, issue_forms, issue_resolution, textures]' in gate
+    assert '\n  patch-transitions:' not in workflow
     assert 'needs.linux-foundation.result' in gate
     assert 'if: always()' in gate
     assert 'python tools/ci/ci-pr-gate.py' in gate
@@ -270,6 +268,41 @@ def test_event_routing_and_outputs(tmp_path, monkeypatch, kind):
         assert all(value == 'true' for value in result.values())
         assert not calls
     else:
-        assert result == dict(transitions='false', native='false', gpu='false', release='true')
+        assert result == dict(transitions='false', native='false', gpu='false', release='true',
+                              issue_forms='false', issue_resolution='false', textures='false')
         assert calls[0] == ['git', 'fetch', '--no-tags', '--depth=1', 'origin', base]
         assert calls[1] == ['git', 'diff', '--no-renames', '--name-only', '-z', base, 'HEAD']
+
+
+@pytest.mark.parametrize('path,suite', [
+    ('.github/ISSUE_TEMPLATE/01-bug-report.yml', 'issue_forms'),
+    ('VERSION', 'issue_forms'),
+    ('.github/known-issues.json', 'issue_forms'),
+    ('tools/ci/issue-resolution.py', 'issue_resolution'),
+    ('assets/textures/deleted.dds', 'textures'),
+    ('.gitattributes', 'textures'),
+    ('tests/textures/test_build_textures.py', 'textures'),
+])
+def test_repository_changes_select_their_gate(path, suite):
+    result = scope.repository_checks([path])
+    assert result[suite]
+    assert sum(result.values()) == 1
+
+
+def test_repository_docs_skip_and_manual_runs_select_everything():
+    assert not any(scope.repository_checks(['README.md']).values())
+    assert all(scope.repository_checks([], full=True).values())
+
+
+def test_repository_jobs_have_one_event_owner_and_join_the_gate():
+    root = Path(__file__).resolve().parents[2]
+    workflow = (root / '.github/workflows/runtime-patches.yml').read_text()
+    for suite, filename in [('issue_forms', 'issue-forms'),
+                            ('issue_resolution', 'issue-resolution'),
+                            ('textures', 'texture-pack')]:
+        child = (root / f'.github/workflows/{filename}.yml').read_text()
+        assert '  workflow_call:' in child
+        assert '  pull_request:' not in child and '  push:' not in child
+        assert f'if: needs.plan.outputs.{suite}' in workflow
+        assert f'needs.{suite}.result' in workflow
+        assert f'RUN_{suite.upper()}:' in workflow
