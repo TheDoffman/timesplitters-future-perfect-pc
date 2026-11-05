@@ -3,7 +3,7 @@
 [exFAT](host-storage.md)
 # [Systems](video-options.md)
 
-[SDL startup](linux-game.md).
+[SDL startup/fullscreen](linux-game.md).
 
 PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 

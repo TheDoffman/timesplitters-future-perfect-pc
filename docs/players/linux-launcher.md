@@ -40,6 +40,19 @@ startup uses the system Vulkan driver; inherited Mac/software-driver overrides
 are cleared. Desktop mode choices include common presets, Auto and any saved
 custom mode. Automatic desktop refresh switching is unavailable.
 
+## Steam Deck in Desktop Mode
+
+When opening the launcher directly from the desktop, switch the Deck controls
+to Gamepad mode by holding the Menu button (≡, beside Y) for about three
+seconds. Steam's desktop layout can otherwise move the mouse with the sticks
+and open its keyboard with X. Click the game once if the desktop has left
+another window focused. Changing the game's mouse-capture setting does not
+change Steam's desktop controller layout.
+
+Fullscreen in the launcher's settings is applied when the game starts.
+F11 toggles fullscreen during play for the current session. Both the shared
+SDL/Vulkan and legacy native GL renderers read the saved startup preference.
+
 ## Source builds
 
 Run in the native Linux checkout described in the development guide:

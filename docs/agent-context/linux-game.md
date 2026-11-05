@@ -2,6 +2,17 @@
 
 ## Experimental release preparation
 
+Native SDL startup uses window_startup_sdl.h to read the existing
+RECOMP_FULLSCREEN/fullscreen runtime preference before window creation in
+both renderer_rhi_sdl.c and renderer_gl.c. It does not force fullscreen or
+persist session F11 toggles. The real renderer self-test checks the initial
+window flag before any test toggles; clean-package acceptance now runs saved
+fullscreen=0 and fullscreen=1 through Launch.sh under the isolated HOME.
+Steam Desktop Mode's desktop/gamepad controller layout is outside game mouse
+capture; see the player guide. We do not change users' Steam mappings or focus
+background windows on controller activity. Native Mac uses the same startup
+helper; native Mac build/visual checks remain pending.
+
 Linux package closure leaves libwayland-client.so.0, libwayland-cursor.so.0
 and libwayland-egl.so.1 on the host, with the graphics driver, for X11 and
 Wayland alike. Steam Deck's newer RADV requires symbols absent from Ubuntu
