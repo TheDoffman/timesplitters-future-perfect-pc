@@ -1,3 +1,12 @@
+## 2026-11-05 - Discord rare connected-client weapon investigation
+
+Two real loopback Arcade instances on sealed main831c324a completed16 settled
+and48 overlapping switch/fire checks with host Original60/client native180.
+All settled hand/linked-state/host-actor IDs agreed and ammunition was consumed;
+fractional zero-whole-tick updates were observed. The rare report did not
+reproduce. No resolution reply or gameplay change is proposed. See
+[investigation and limits](../development/discord-client-weapon-investigation.md).
+
 ## 2026-11-05 - Native fullscreen startup and Steam Deck Desktop controls
 
 User launches directly from Desktop Mode. Holding Menu to select Steam's
