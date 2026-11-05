@@ -24,7 +24,7 @@ import linux_ffmpeg
 from runtime_licenses import prepare as prepare_runtime_licenses
 from linux_dependency_sources import collect as collect_dependency_sources
 from release_channels import identity as release_identity
-from build_textures import optional_identity
+from build_textures import optional_identity, write_source_files
 
 # These are the host ABI, not distributable application dependencies. Keep the
 # host GPU/GL/Vulkan drivers and loader selection; never ship a hardware ICD.
@@ -275,8 +275,7 @@ def main():
     (notices/'dependencies.json').write_text(json.dumps(audit['components'],indent=2)+'\n')
     source=stage/'Source/pc-port-source.zip';source.parent.mkdir(exist_ok=True)
     with zipfile.ZipFile(source,'x',zipfile.ZIP_DEFLATED) as archive:
-        for file in run('git','ls-files','-z').split('\0'):
-            if file and (ROOT/file).is_file():archive.write(ROOT/file,file)
+        write_source_files(archive,ROOT,run('git','ls-files','-z').split('\0'))
     (stage/'Launch.sh').write_text((ROOT/'tools/release/linux-launch.sh').read_text());(stage/'Launch.sh').chmod(0o755)
     (stage/'README.txt').write_text('Linux x64 experimental support. Extract into a writable folder and run ./Launch.sh.\nImport your supported US Xbox files using the launcher. Game data is not included.\nRequires a Vulkan-capable system driver and the build host glibc baseline (Ubuntu24.04).\nNo development checkout, system Python or Vulkan SDK is needed.\nFor a read-only game installation use ./Launch.sh --game --data /path/to/game.\nSource, runtime notices and exact build provenance are included. Native desktop and Steam Deck acceptance remain pending.\n')
     public_native={k:v for k,v in native.items() if k not in ('game_directory','configure_command','runtime_libraries','working_tree_changes')}
