@@ -77,6 +77,15 @@ return LauncherSharedUiChecks.Run();}catch(Exception e){Console.Error.WriteLine(
     public sealed class NativeApplication:Application
     {
         public override void Initialize(){Name="TimeSplitters Launcher";RequestedThemeVariant=ThemeVariant.Dark;Styles.Add(new FluentTheme());}
+        internal static void ApplyWindowIcon(Avalonia.Controls.Window window)
+        {
+#if LINUX
+            // Embed the icon so startup, update/restart and moved installations
+            // do not depend on loose artwork files or the working directory.
+            using(var stream=typeof(NativeApplication).Assembly.GetManifestResourceStream("launcher.ico"))
+                if(stream!=null)window.Icon=new Avalonia.Controls.WindowIcon(stream);
+#endif
+        }
         internal static Avalonia.Controls.Window StartupWindow(string root,string[] args)
         {
             if(NativeInstallation.Translocated(root)||args.Contains("--render-location-preview"))return new NativeLocationWindow(args);

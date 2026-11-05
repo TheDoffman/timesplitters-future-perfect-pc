@@ -1,3 +1,30 @@
+## 2026-11-04 - Launcher 1.5.1 release preparation
+
+User authorized main merge and publication. Source version/assembly attributes
+are 1.5.1; Linux icon/storage/error-dialog validation is recorded below.
+Three-platform PR and publication checks must pass before the release is live.
+Physical Steam Deck acceptance remains pending.
+
+## 2026-11-04 - Linux launcher icon and destination storage checks
+
+Local fix/linux-launcher-icon after main 03b8c4aa, uncommitted. Linux launcher
+now embeds the existing ICO and assigns it to startup/main/location windows;
+release artwork checks require it. Import/update capacity and diagnostics query
+the destination filesystem through TsfpDiskSpace, not the POSIX / filesystem.
+Native Home operation failures now show a dialog as well as the status/log.
+
+Ubuntu 24.04 x64 under WSL: pinned .NET 8.0.426 build --test --package passed,
+including 39 shared UI groups, required-icon decoding, separate /dev/shm mount
+and symlink capacity checks, hashed runtime install, self-package corruption,
+repair/helper restart/render and save/settings preservation. Logs:
+logs/linux-launcher-fixes.log. Windows launcher full regression suite passed
+(logs/linux-fixes-windows-tests.log). Packaging pytest: 3 passed, 2 subtests.
+Private minimal XISO fixture with the verified local US XBE plus tiny pak/xmv
+entries passed real Linux import, extracted-folder import, byte comparison and
+existing-Data refusal; not a complete disc/gameplay test. Temporary fixture was
+removed. Actual Steam Deck failure is not yet confirmed from logs or hardware;
+Mac native execution and physical Linux desktop icon appearance remain untested.
+
 ## 2026-11-04 - Game 0.5.0 / launcher 1.5.0 release preparation
 
 The requested release targets Windows x64, Apple Silicon Mac and Linux x64.

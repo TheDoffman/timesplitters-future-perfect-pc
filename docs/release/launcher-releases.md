@@ -1,7 +1,8 @@
 # One launcher release for Windows, Mac and Linux
 
-The next Stable launcher source version is **1.5.0**, including Linux x64 and
-the merged shared settings updates. Source preparation does not publish packages;
+The next Stable launcher source version is **1.5.1**, including Linux window
+icons, destination-volume space checks for installation/import, and visible
+operation error dialogs. Source preparation does not publish packages;
 the workflow below must pass before release.
 
 The **Launcher release (Windows + Mac + Linux)** workflow builds Windows x64,

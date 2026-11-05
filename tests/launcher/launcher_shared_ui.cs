@@ -68,6 +68,19 @@ public static class LauncherSharedUiChecks
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
+#if LINUX
+            Test("launcher windows retain embedded icons",()=>{
+                using(var resource=typeof(NativeApplication).Assembly.GetManifestResourceStream("launcher.ico")) {
+                    if(resource==null) { Need(Environment.GetEnvironmentVariable("TSFP_TEST_REQUIRE_ICON")!="1","Required launcher icon was not embedded"); Console.WriteLine("Developer build without optional icon artwork."); return; }
+                }
+                foreach(var window in new Window[]{new NativeStartup(root,Array.Empty<string>()),
+                    new NativeWindow(root,new[]{"--render-preview"}),new NativeLocationWindow(Array.Empty<string>())}) {
+                    Need(window.Icon!=null,"Launcher window has no application icon");
+                    using(var bytes=new MemoryStream()){window.Icon.Save(bytes);Need(bytes.Length>0,"Empty window icon");}
+                    window.Close();
+                }
+            });
+#endif
             Test("graphics controls persist across shared launcher hosts",()=>{
                 string install=Path.Combine(root,"graphics-controls");Directory.CreateDirectory(install);
                 foreach(int aa in new[]{2,1,0}) {

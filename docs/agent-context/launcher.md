@@ -672,3 +672,10 @@ that do not appear in ELF imports. See [Linux release checks](linux-game.md).
 Native game-package checks now install into fresh/upgrade paths containing
 spaces and Unicode. Linux additionally executes the installed GTK SVG query
 helper, checking its executable mode and relocated module closure.
+
+Linux launcher identity: LinuxLauncher.csproj embeds launcher.ico; NativeApplication.ApplyWindowIcon assigns it to startup/main/location windows. Release artwork validation requires the icon, and Linux shared UI tests decode each assigned icon.
+Destination free-space checks in Core and diagnostics use TsfpDiskSpace.Available from ImportGame.cs (also compiled into the Windows bootstrap). It probes an existing destination ancestor so POSIX home/SD mounts and symlinks use their own filesystem capacity. Native operation exceptions now open a dialog even on Home; status/log text remains.
+
+Launcher 1.5.1 packages these icon/storage/error-reporting fixes through the
+shared Windows/Mac/Linux release workflow; physical Steam Deck acceptance is
+still pending. Version and assembly attributes remain synchronized.

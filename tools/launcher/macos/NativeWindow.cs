@@ -25,7 +25,7 @@ namespace TimeSplitters.Launcher
         public NativeWindow(string root,string[] args)
         {
             this.root=root;this.args=args;render=args.Any(a=>a.StartsWith("--render-"));
-            AvaloniaXamlLoader.Load(this);Artwork();
+            AvaloniaXamlLoader.Load(this);NativeApplication.ApplyWindowIcon(this);Artwork();
             Find<ContentControl>("GameChannelPickerHost").Content=channelPicker.View;
             channelPicker.SetReleases(Array.Empty<Release>(),GameChannels.Read(root),GameChannels.ReadPreviewTrack(root));
             Label("LauncherVersionLabel","LAUNCHER "+LauncherVersion.Value+"  /  "+LauncherPlatform.HostName);
@@ -96,7 +96,7 @@ namespace TimeSplitters.Launcher
             Label("ChannelBadge", Preview?"\u25cf  PREVIEW CHANNEL":"\u25cf  STABLE CHANNEL");
             if(render){Label("ReleaseTitle",LauncherPlatform.HostName+" launcher");Label("ReleaseDescription","Preview layout · "+LauncherPlatform.HostName+" releases appear here when published.");Label("UpdateStateLabel",LauncherPlatform.HostName+" PREVIEW");Status("Preview only · no game launched, network requests or personal files changed.");}
         }
-        async void Run(Func<Task> action){try{await action();}catch(OperationCanceledException){Status("Download paused. Choose Install release to resume.");}catch(Exception e){Status(e.Message);if(!Find<Control>("CommandCenter").IsVisible)await MessageDialog("TimeSplitters",e.Message,false).ShowDialog(this);}}
+        async void Run(Func<Task> action){try{await action();}catch(OperationCanceledException){Status("Download paused. Choose Install release to resume.");}catch(Exception e){Status(e.Message);await MessageDialog("TimeSplitters",e.Message,false).ShowDialog(this);}}
         async Task Check()
         {
             if(busy)return;int revision=++checkRevision;string channel=SelectedGameChannel;Label("ReleaseTitle","Checking for updates…");
