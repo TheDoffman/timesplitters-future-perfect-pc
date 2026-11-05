@@ -41,6 +41,19 @@ namespace TimeSplitters.Launcher
             string root=Path.Combine(Path.GetTempPath(),"tsfp-linux-launcher-"+Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(root);
             try {
+                // /dev/shm is a separate filesystem on the Linux test hosts.
+                // A symlinked installation must query its target, not root's disk.
+                string mount=Environment.GetEnvironmentVariable("TSFP_TEST_SPACE_MOUNT")??"/dev/shm";
+                Need(Directory.Exists(mount),"Mounted filesystem fixture missing");
+                string linked=Path.Combine(root,"mounted storage");Directory.CreateSymbolicLink(linked,mount);
+                try {
+                    long expected=new DriveInfo(mount).AvailableFreeSpace;
+                    long actual=TsfpDiskSpace.Available(Path.Combine(linked,"not-created","Data"));
+                    Need(Math.Abs(actual-expected)<1024*1024,"Space check ignored destination mount/symlink");
+                    Reject(()=>Core.CheckSpace(linked,actual+1024*1024));
+                    Core.CheckSpace(linked,0);
+                    Console.WriteLine("PASS destination filesystem space checks, including nested paths and symlinks");
+                } finally {Directory.Delete(linked);}
                 LauncherRestartChecks.Run();
                 LauncherTextureChecks.Run();
                 Need(LauncherPlatform.AssetSuffix=="linux-x64","Wrong release platform");

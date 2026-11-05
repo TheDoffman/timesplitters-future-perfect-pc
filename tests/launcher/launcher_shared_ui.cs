@@ -68,6 +68,30 @@ public static class LauncherSharedUiChecks
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
+#if MACOS || LINUX
+            Test("launcher fits small and scaled desktop work areas",()=>{
+                foreach(var desktop in new[]{new Size(1280,800),new Size(1024,640),new Size(853,533),new Size(1920,1080)}) {
+                    var client=NativeApplication.LauncherClientArea(desktop);
+                    Need(client.Width+32<=desktop.Width&&client.Height+64<=desktop.Height,"Window exceeds desktop work area");
+                    var layout=NativeApplication.LauncherLayoutArea(client);
+                    Need(layout.Width>=999.9&&layout.Height>=719.9,"Layout fell below supported content size");
+                    Need(Math.Abs(layout.Width/layout.Height-client.Width/client.Height)<0.001,"Layout would clip instead of scaling uniformly");
+                }
+            });
+#endif
+#if LINUX
+            Test("launcher windows retain embedded icons",()=>{
+                using(var resource=typeof(NativeApplication).Assembly.GetManifestResourceStream("launcher.ico")) {
+                    if(resource==null) { Need(Environment.GetEnvironmentVariable("TSFP_TEST_REQUIRE_ICON")!="1","Required launcher icon was not embedded"); Console.WriteLine("Developer build without optional icon artwork."); return; }
+                }
+                foreach(var window in new Window[]{new NativeStartup(root,Array.Empty<string>()),
+                    new NativeWindow(root,new[]{"--render-preview"}),new NativeLocationWindow(Array.Empty<string>())}) {
+                    Need(window.Icon!=null,"Launcher window has no application icon");
+                    using(var bytes=new MemoryStream()){window.Icon.Save(bytes);Need(bytes.Length>0,"Empty window icon");}
+                    window.Close();
+                }
+            });
+#endif
             Test("graphics controls persist across shared launcher hosts",()=>{
                 string install=Path.Combine(root,"graphics-controls");Directory.CreateDirectory(install);
                 foreach(int aa in new[]{2,1,0}) {

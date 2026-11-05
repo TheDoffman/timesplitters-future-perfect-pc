@@ -1,6 +1,6 @@
 [Input tests](controls-options.md).
 [Tab queue](../development/graphics-options.md): HUD/SMAA order and texture-present fixtures.
-Auto-sizing fixtures test SDL policy; restart handoff is separate.
+SDL sizing and restart are separate. [Launcher checks](launcher.md).
 `test_fov_settings.py` checks Video tabs, ownership, pointer bounds, keyboard
 cycling and staged-value retention.
 Ping-expiry tests wait past GetTickCount64 quantization.

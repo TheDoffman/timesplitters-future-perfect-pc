@@ -154,7 +154,7 @@ namespace TimeSplitters.Launcher
         }
         public static void CheckSpace(string root, long bytes)
         {
-            Require(new DriveInfo(Path.GetPathRoot(Path.GetFullPath(root))).AvailableFreeSpace > bytes,
+            Require(TsfpDiskSpace.Available(root) > bytes,
                 "There is not enough free space for the download, extracted files and recovery copy.");
         }
 

@@ -51,7 +51,7 @@ def main():
     if subprocess.check_output([str(sdk), '--version'], env=env, text=True).strip() != pin['version']:
         raise SystemExit('Use the SDK pinned in config/build/linux-launcher-sdk.json.')
     if args.require_artwork:
-        for name in ('launcher-banner.png', 'launcher-logo.png', 'launcher-backdrop.png'):
+        for name in ('launcher-banner.png', 'launcher-logo.png', 'launcher-backdrop.png', 'launcher.ico'):
             if not (args.artwork_dir / name).is_file():
                 raise SystemExit('Required artwork missing: ' + name)
     output = args.output.resolve()
@@ -115,6 +115,7 @@ def main():
                'sdk': pin, 'files': files}
     (output / 'BUILD-launcher.json').write_text(json.dumps(receipt, indent=2) + '\n')
     if args.test:
+        env['TSFP_TEST_REQUIRE_ICON'] = '1' if (args.artwork_dir / 'launcher.ico').is_file() else '0'
         for mode in ('--test', '--test-ui'):
             subprocess.run([str(binary), mode], check=True, cwd=ROOT, env=env)
     if args.package:
