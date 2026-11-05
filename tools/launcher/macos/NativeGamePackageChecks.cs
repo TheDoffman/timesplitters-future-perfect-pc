@@ -8,7 +8,7 @@ namespace TimeSplitters.Launcher
     {
         public static int Verify(string archive,string version,Func<string,bool> hostCheck=null)
         {
-            string test=Path.Combine(Path.GetTempPath(),"tsfp-native-game-package-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(test);
+            string test=Path.Combine(Path.GetDirectoryName(Path.GetFullPath(archive)),"game-package-check-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(test);
             try {
                 foreach(bool preserve in new[]{false,true}){
                     string root=Path.Combine(test,preserve?"existing installation Ω":"fresh installation Ω"),pending=Path.Combine(root,".launcher/pending");Directory.CreateDirectory(pending);

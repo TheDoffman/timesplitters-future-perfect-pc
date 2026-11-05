@@ -10,6 +10,8 @@ The Linux BUILD receipt includes the same optional-texture/retired-icon policy
 as Windows/Mac and identifies its bundled launcher; no texture hydration is needed.
 Its source ZIP uses shared write_source_files to omit optional texture assets,
 matching Windows/Mac source bundles.
+An empty retirement list still emits delivery=optional on Linux; Windows/Mac's
+legacy null identity also means no bundled texture payload.
 
 `tools/build/build-linux-media.py` builds the pinned FFmpeg6.1.5 WMV2-only LGPL
 shared libraries in the private dependency tree. The source pin identifies the
