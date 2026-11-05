@@ -1,0 +1,22 @@
+--- a/src/hle/hle_d3d8_record.c
++++ b/src/hle/hle_d3d8_record.c
+@@ -1672,7 +1672,7 @@
+     } else if (texture) {
+         IDirect3DTexture8 *t = (IDirect3DTexture8 *)texture;
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
+         if (depth && depth == g_device_depth && level == 0) {
+             hr = xbox_D3D8PrepareSharedDepthTarget(t, depth);
+             if (FAILED(hr)) return hr;
+--- a/src/replay/d3d8_replay.c
++++ b/src/replay/d3d8_replay.c
+@@ -770,7 +770,7 @@
+         } else {
+             IDirect3DTexture8 *tex = (IDirect3DTexture8 *)slot->tex;
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
+             if (depth == r->device_depth && t->level == 0 &&
+                 FAILED(xbox_D3D8PrepareSharedDepthTarget(tex, depth))) {
+                 r->failed++;

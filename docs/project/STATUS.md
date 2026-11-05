@@ -1,3 +1,26 @@
+## 2026-11-05 - Issue497 native effect depth candidate
+
+Based on main772a38df; local fix/497-electricity-through-walls. Live HLE and
+replay effect targets were skipping shared-depth preparation outside Windows.
+Linux Ubuntu24.04 WSL x64, Mesa llvmpipe LLVM20.1.2/Vulkan1.4: original replay
+failed a color/depth size mismatch; corrected replay passed four aspect/scale
+cases with foreground occlusion, feedback refresh and retained depth writes.
+Shared Vulkan RHI suite passed. Windows adapter/readback/build-link tests:
+10 passed, including a failing old-guard mutation. Native Mac and the exact
+Electro Chimp/Russian Connection encounter remain unverified. No release or
+issue closure; the targeted renderer defect is proven, scene causality pending.
+Windows HLE/replay targets rebuilt, and all four replay cases passed on D3D11.
+Linux HLE compiled; integrated software-Vulkan renderer/replay validation passed.
+Linux adapter/readback tests:9 passed,1 Windows-only test skipped. Windows patch
+tracking/context/adapter checks:48 passed. Logs are under logs/issue497 on Windows
+and logs/issue497-* in the native Linux checkout.
+Full native Linux generation/build and protected-MMIO tests subsequently passed.
+An isolated older-build Electro Chimp run captured a real electrical beam.
+Replaying that frame with and without this correction produced identical pixels
+and no failed host calls. It did not reproduce the reported hidden glow; this
+is not visual confirmation of issue497. The temporary baseline replay mutation
+was restored and the corrected replay rebuilt. See native-effect-depth.md.
+
 ## 2026-11-05 - Projectile flight timing verified on Windows
 
 Shared patch2605 and numeric/projectile policy repair the remaining affected

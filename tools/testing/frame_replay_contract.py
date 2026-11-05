@@ -87,4 +87,11 @@ def run(executable, directory, environment, backend='vulkan'):
     (directory / 'replay.log').write_text(output)
     result.check_returncode()
     verify_triangle(image)
+    # Exercise effect targets sharing world depth, not just a single color draw.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "shared_effect_depth", repo_file(_layout_root, "tests", "ghost_targets.py"))
+    shared_depth = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(shared_depth)
+    shared_depth.main(executable, environment=environment)
     return output
