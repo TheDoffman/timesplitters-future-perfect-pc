@@ -35,6 +35,11 @@ hashes in ignored `external/mesa-dzn/SOURCE.json`. Its small
 to `(1,1,1)`, as required for those queues and supported by the driver's region
 copy implementation. No system drivers or project SDK pins change.
 
+The builder forces the reverse-patch dry run to retain its requested direction.
+GNU patch's batch mode otherwise automatically ignores `-R` on pristine source,
+which can incorrectly skip this fix on a fresh machine. The Linux foundation
+suite checks actual application, repeat builds and rejection of unknown source.
+
 The Linux test runners explicitly select the ICD and supply `/usr/lib/wsl/lib`
 when the installed D3D12 bridge exists. They keep Vulkan validation enabled.
 On a root WSL session, use the actual WSLg runtime directory if the inherited

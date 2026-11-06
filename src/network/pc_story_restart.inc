@@ -1,3 +1,6 @@
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+#include "pc_network_profiles.inc"
+#endif
 /* First-mission level reload: retain the original engine reload path on every
  * peer. No checkpoint buffers, guest pointers or saved profiles cross the wire. */
 #ifdef _WIN32
@@ -223,15 +226,8 @@ static void story_rewards_profiles_capture(void)
 {
     if(!story_network_session() || WORD_AT(0x79094cu)!=101u ||
        WORD_AT(0x76b1a4u)>=4u) return;
-    const unsigned count=WORD_AT(0x74e934u);
-    story_rewards_profile_count=0;
-    if(!count || count>16u) return;
-    for(unsigned i=0;i<count;i++) {
-        const uint32_t metadata=WORD_AT(0x7bedc0u+i*0x1f54u);
-        if(metadata<0x7bc9c0u || metadata>=0x7bedc0u || (metadata-0x7bc9c0u)%0x40u) return;
-        for(unsigned previous=0;previous<i;previous++) if(story_rewards_profiles[previous]==metadata) return;
-        story_rewards_profiles[i]=metadata;
-    }
+    network_profiles_capture(story_rewards_profiles,&story_rewards_profile_count);
+    const unsigned count=story_rewards_profile_count;
     static unsigned captures;
     if(getenv("TSFP_STORY_TRACE") && captures++<4u)
         fprintf(stderr,"[PC-STORY-PROFILES] entry captured=%u first=%08X phase=%u\n",count,story_rewards_profiles[0],WORD_AT(0x76b1a4u));
@@ -444,6 +440,9 @@ void pc_story_network_rewards_menu(void (*original)(void))
  * the original save routines and are never fabricated or bypassed here. */
 void pc_story_network_profile_save(void (*original)(void))
 {
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    if(multiplayer_profile_save(original)) return;
+#endif
 #ifdef _WIN32
     static unsigned observations;
     if(getenv("TSFP_STORY_TRACE") && observations++<12u) fprintf(stderr,
@@ -452,41 +451,7 @@ void pc_story_network_profile_save(void (*original)(void))
         story_network_session(),WORD_AT(0x74e934u),story_rewards_profile_count,
         guest_writable(g_esp,4u)?WORD_AT(g_esp):0u);
     if(story_rewards_guest() || (story_network_session() && story_leave_destination)) {
-        enum { PROFILE_BYTES=0x1f54u,PROFILE_SLOTS=16u };
-        const uint32_t table=0x7bedc0u;
-        const unsigned count=WORD_AT(0x74e934u);
-        unsigned source[PROFILE_SLOTS],changed=0;
-        if(!count || count>PROFILE_SLOTS || count!=story_rewards_profile_count ||
-           !guest_writable(table,PROFILE_BYTES*PROFILE_SLOTS)) {
-            original();return;
-        }
-        for(unsigned i=0;i<count;i++) {
-            unsigned matches=0;source[i]=0;
-            for(unsigned slot=0;slot<PROFILE_SLOTS;slot++) {
-                if(WORD_AT(table+slot*PROFILE_BYTES)==story_rewards_profiles[i]) {source[i]=slot;++matches;}
-            }
-            if(matches!=1u) {original();return;}
-            changed|=source[i]!=i;
-        }
-        if(!changed) {original();return;}
-        uint8_t *saved=(uint8_t *)malloc((PROFILE_SLOTS+count)*PROFILE_BYTES);
-        if(!saved) {original();return;}
-        uint8_t *updated=saved+PROFILE_SLOTS*PROFILE_BYTES;
-        uint8_t *profiles=(uint8_t *)((uintptr_t)table+g_xbox_mem_offset);
-        memcpy(saved,profiles,PROFILE_SLOTS*PROFILE_BYTES);
-        for(unsigned i=0;i<count;i++) memcpy(profiles+i*PROFILE_BYTES,saved+source[i]*PROFILE_BYTES,PROFILE_BYTES);
-        const uint32_t aggregate=WORD_AT(0x6f1e0cu);
-        for(unsigned i=0;i<count;i++) {
-            const uint32_t start=table+source[i]*PROFILE_BYTES;
-            if(aggregate>=start && aggregate-start<PROFILE_BYTES)
-                WORD_AT(0x6f1e0cu)=table+i*PROFILE_BYTES+(aggregate-start);
-        }
-        original();
-        WORD_AT(0x6f1e0cu)=aggregate;
-        memcpy(updated,profiles,count*PROFILE_BYTES);
-        memcpy(profiles,saved,PROFILE_SLOTS*PROFILE_BYTES);
-        for(unsigned i=0;i<count;i++) memcpy(profiles+source[i]*PROFILE_BYTES,updated+i*PROFILE_BYTES,PROFILE_BYTES);
-        free(saved);return;
+        network_profiles_save(original,story_rewards_profiles,story_rewards_profile_count);return;
     }
 #endif
     original();

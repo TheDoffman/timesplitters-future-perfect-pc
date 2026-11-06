@@ -2,6 +2,7 @@
 [UI](controls-options.md); [Kill feed](../development/arcade-kill-feed.md).
 [Effect depth](native-effect-depth.md).
 [Linux](linux-game.md); [MSAA](smaa.md).
+[MP hooks](multiplayer-exit.md)
 2465 wraps356800 for rewards;
 profile mapper356870 stays original. See [contract](systems-details.md#four-player-rewards-context).
 
@@ -1007,12 +1008,12 @@ anchor for labels and resets at placement boundaries; viewport/scissor share it.
 Both common backends and legacy GL consume the helper. Original world projection,
 visibility and objective logic remain guest-owned (Refs #338).
 
-## Console language and included packs
+## Languages
 
-[Language policy, US startup gate, original-routine tests and host validation](language-packs.md).
+[Language contracts](language-packs.md).
 
 
-Stage0241: [original extended product and ABI checks](guest-integer-product.md).
+0241: [product/ABI](guest-integer-product.md).
 
 RTL: [arithmetic/memory](guest-memory-ops.md), [strings](guest-stack-trace.md); [host policy](execution-host.md).
 

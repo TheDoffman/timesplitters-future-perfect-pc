@@ -1149,3 +1149,6 @@ STUB(sub_001CC360)
 
 void sub_000D2CE0(void){}
 void sub_0015BCC0_gen(void){}
+
+int pc_network_enabled(void){return 1;}
+void sub_000668F0(void){}

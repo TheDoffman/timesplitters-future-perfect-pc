@@ -72,6 +72,248 @@ logs/fullscreen-pause-kept.json). Both test runs have ended and their disposable
 disks were recycled. Native Mac/Linux build and live acceptance remain pending.
 No PR/main publication is authorized for this new feature.
 
+## 2026-11-06 - PR511 validation fixture corrections
+
+User confirmed the multiplayer fix and authorized PR/merge. PR511 initial CI
+found two outdated patch-upgrade expectations and a Clang unused fixture stub.
+Fresh stacks now expect shared multiplayer result dispatch; historical Mac-only
+seeds omit2620/2625 alongside their absent network dependencies, then install the
+complete stack on migration. Story fixture save stub follows its production
+Windows/native-network guard. No game code or compatibility identity changes.
+Two affected patch-upgrade scenarios pass Windows Python3.14 (49.18s); both Story
+lobby variants pass Ubuntu24.04 Python3.12/Clang (4.52s). Full CI rerun pending.
+Supported Windows build and built-in tests pass immediately before PR creation.
+
+## 2026-11-06 - Native lobby hooks repaired; Windows duplicate fixture isolated
+
+Repair e84135ad on multiplayer-lobby-return enables the thirteen existing shared
+return/result/save wrappers on native Mac/Linux (patch2625). Their Windows-only
+guards previously bypassed the compiled native adapters. Applied-wrapper dispatch
+regressions reproduce the omission and pass stock/Windows/native after repair.
+Windows menu suite54 passed; Linux targeted multiplayer checks7 passed. Supported
+Windows MSVC x64 and Ubuntu24.04 x64 Clang/Vulkan builds and MMIO checks pass.
+Both builds use compatibility e52bd9f001dc188b107f230b310565f61a16e9c31deb3fcf987458f96919fa58.
+
+Windows host plus WSL Linux guest now pass two mid-match returns, retained room
+membership and another round (175s functional run). A separate356s run reaches
+real five-point results twice, returns both players to usable lobbies11/12 each
+time and starts the intervening round. Linux guest has distinct signed progress;
+both peers report save_error0 throughout. Production test-key input, read-only
+memory observation, isolated saves/configs, Xvfb/Dozen native guest. Results receipt
+completed=true and cleanup_completed=true;43571 observations. Logs:
+multiplayer-win-linux.log, multiplayer-win-linux-results.log and corresponding
+online-bots-profile-win-linux[-results] provenance. The first run's cleanup used
+a Windows-only helper and failed after successful gameplay; its known six Linux
+test images were subsequently recycled with resolved-root/ownership checks. The
+results run uses the native recycler and finishes cleanup normally. No personal
+save was used for automated gameplay. Actual Mac, physical three-machine and
+System Link acceptance remain pending; software Vulkan does not establish Deck
+performance or physical-device support.
+
+The Windows host also had two healthy signed Test Lab profiles with different
+CRCs and directories. One was byte-identical to the unchanged canonical unlocked
+test fixture; the normal profile contained progress. Original name-only profile
+lookup can select the other same-name file before CRC validation, reproducing
+error7 in an isolated original-code probe with two healthy synthetic files. The
+Windows log fails on this initial save, before lobby construction, so the earlier
+late-save-scope repair alone could not solve this report. Do not bypass CRC errors
+or choose arbitrary duplicate folders: the original writer targets the canonical
+name-derived folder and could overwrite a distinct profile.
+
+With no game running, moved only the exact obsolete fixture directory out of
+UserData into private/saves/recovery/test-lab-fixture-20261106. Resolved paths,
+non-reparse directories, both exact source files and fixture hashes checked before
+moving; both moved files and the progressed normal profile verified unchanged
+afterwards. Recovery metadata retained there. Other saves/settings untouched.
+This is reversible local data recovery, not a general duplicate-profile migration.
+Mac's reported missing-profile panel remains for a rebuilt Mac rerun; its personal
+storage has not been inspected. Numeric diagnostics retain original errors.
+
+## 2026-11-06 - Three-platform save warning remains under investigation
+
+The user reproduced dc642eb3/compatibility511dc174 with Windows hosting WSL and
+Mac guests: Windows/WSL damaged-profile panels, Mac missing-Test-Lab panel.
+The previous save-scope repair does not resolve this report. The real Windows
+log shows4E8D40 during the initial return save at phase16, before lobby creation.
+Read-only signature checks of the three existing Windows profile files pass;
+no personal save was modified or used for automated gameplay.
+
+Found a separate native admission omission: thirteen shared return/result/save
+runtime wrappers still required TSFP_PC_CONTROLS, absent on native builds.
+Additive patch2625 admits TSFP_NATIVE_DISPLAY too. The compiled applied-wrapper
+regression fails native dispatch before the patch and passes stock/Windows/native
+after it. Shared CPU-only adapter fixtures did not exercise this boundary.
+Bounded numeric save diagnostics retain all original storage errors and will
+identify the remaining failure without logging profile names or bodies.
+
+Two Windows peers with separately signed progress, then three Windows peers in
+the same native match, pass two mid-match returns and another round. Three-player
+run169.6s, three human actors verified, retained lobbies11/12/12 and no save error.
+These Windows-only runs do not reproduce the mixed-platform report. An initial
+three-instance probe had not joined its third native player and is excluded.
+Logs: multiplayer-profile-distinct.log, multiplayer-three-distinct.log and their
+online-bots directories. Fixture copies and test disks isolated/recycled.
+Cross-platform acceptance and the Windows-host warning remain outstanding.
+
+## 2026-11-06 - Retained lobby profile-save warning follow-up
+
+Local, uncommitted on multiplayer-lobby-return, base3ff65a51. The retained party's
+profile bodies remain in network slots after the lobby factory consumes its
+exit destination. Arcade save admission now follows the active host/member
+session as well as a pending exit, so later stock saves retain the persistent
+local profile view. Transport, host-loss and guests' voluntary exits are unchanged.
+Story admission and real save-error handling remain original.
+
+Windows x64, MSVC14.42, D3D11, Original60, game0.5.1. Supported US XBE/title hash
+verified. Original-US save/CRC fixture with distinct local and remote CRCs
+reproduces damaged-profile error7 under the previous destination-only scope.
+The fixed scope saves local progress repeatedly, restores the remote body and
+aggregate pointer, and still exposes genuine corrupted-read and write failures.
+Menu/FOV/Story suite:55 passed,2 native-Mac-only checks skipped. The new original
+save fixture also passes after its final host-buffer alignment cleanup.
+Supported Windows build passes, including complete patch validation, built-in
+checks, isolated test-disk recycling, identity sealing and matching crash symbols.
+Receipt: logs/multiplayer-profile-build.log. Context and whitespace checks pass.
+
+Paired Online loopback acceptance: two isolated Test Lab copies, two humans and
+six bots, two mid-match host returns with a fresh round between. Both processes
+reach usable lobby descriptors4E99C4/4E99D4 at11/12, retain directory membership,
+and report no save error. Completed152.4s; disposable disks recycled. No captures
+in this follow-up. Logs/provenance: logs/online-bots-profile-return-fixed;
+logs/multiplayer-profile-fixed.log. Executable SHA-256:
+`96bcae4765991038742156aef1dc3f2805c52dd0e3c5e2d43ebdb044e6018c49`.
+The identical-profile live baseline also passed: the intermittent report was
+reproduced by the controlled original-save fixture, not by that live baseline.
+
+No new native Mac/Linux build/gameplay or physical two-machine System Link
+acceptance; results-screen live acceptance was not repeated in this follow-up.
+No personal saves/settings or canonical fixture were changed. Prior Linux
+checkout synchronization does not include these uncommitted follow-up sources.
+
+## 2026-11-06 - Linux setup on the RTX5090 Windows host
+
+Provisioned a fresh Ubuntu24.04 x64 WSL2 development environment. Updated WSL
+2.3.24 to3.0.3, kernel6.18.54.1 and WSLg1.0.79 without restarting Windows.
+The focused `linux-host-setup` branch depends on `multiplayer-lobby-return`
+`6a02dbc183281e38f4319009992c45b43c99a8cb`, the branch requested for testing.
+The separate native-filesystem Linux clone initially built that exact revision.
+Its Git remotes support fetching committed Windows edits and future upstream
+publication. One existing game extract is reused; the guarded runner has a
+verified23,402-byte fixture copy. Personal saves/settings remain untouched.
+
+Installed shared pinned Python requirements, Clang18.1.3, Vulkan SDK1.4.363.0,
+the pinned .NET launcher SDK, decoder-only FFmpeg6.1.5 and private Mesa26.2.5
+Dozen. The GPU is RTX5090 through the WSL D3D12 bridge, Windows driver621.01.
+System Mesa remains installed; the private experimental ICD is not shipped.
+This setup is local; no Git push, tag, release upload or other-device validation.
+
+Fresh provisioning exposed a real driver-builder bug: GNU patch's batch reverse
+dry run can ignore `-R` and return success on pristine source, skipping the
+existing transfer-granularity fix. The helper now forces the requested reverse
+direction. An actual-GNU-patch regression covers pristine/repeated/unknown source.
+This is WSL-only build tooling; no Mac adaptation is required, and native Mac
+build/game checks were not rerun.
+
+- Software Vulkan and RTX5090 Dozen renderer/replay checks pass with API validation.
+- The full Linux game build and protected MMIO/CRTC/AC97 checks pass, retaining
+  optimized host code, assertions and the title's numeric policy.
+- Direct WSLg Wayland Story run:120.26seconds, Original60, disposable Test Lab,
+  validation enabled, shader cache disabled,640x480;5100 guest presents,
+  zero failed/skipped/interpolated presents and zero Vulkan validation errors.
+  A first-person level/weapon/HUD capture was reviewed. The state-verified
+  gameplay window measured51.70 host presents/s, p95 23.08ms, p99 24.97ms.
+  These are host API intervals, not scanout or sustained60-FPS acceptance.
+- Linux launcher1.5.1 with exact existing embedded artwork/icon passes41 shared
+  UI groups and actual install/corrupt/repair/restart/render checks.
+- Linux host-memory/mapping contracts:58pass,2explicit skips on the requested
+  baseline; the repaired foundation suite separately passes13tests on Linux.
+  Linux package/media/source/ELF contracts:44pass. Windows foundation/context
+  checks:33pass,1Linux-only skip. Context freshness and whitespace checks pass.
+- Local `v0.5.1-linux-local.1` preview from6a02dbc:1551files verified for fresh
+  and upgrade installs, corruption rejected, personal-data preservation checked;
+  relocated Python/Tk/TLS pass. SHA256:
+  `dbcf8893c94220d3ac89d1cdb7f688cb890de50b03b31765c6d396456716c04d`.
+  Initial source auditing correctly rejected the fresh image's superseded SQLite;
+  updating Ubuntu allowed the exact authenticated dependency-source audit to pass.
+- A separate20-second packaged-executable run passed with its bundled decoder,
+  including all88 EA and81 FRD movie pictures reaching EOF. The ordinary package
+  has no development validation layer; this is distinct from validated RHI runs.
+
+Machine-local ignored helpers provide sync/build/play/test/launcher/package
+commands, require committed source, reject divergent Linux edits and stale build
+receipts, and never upload automatically. The runbook is under `private/linux-host`.
+Raw evidence is in Linux `logs/machine-*`; the selected capture and Story receipt
+are also retained in Windows ignored logs. Disposable test disks were recycled.
+Physical mouse/controller/audio, a real multiplayer match, native Linux desktop,
+Steam Deck and full-campaign acceptance remain unverified by this setup pass.
+
+## 2026-11-06 - Multiplayer branch integration with main
+
+Integrated main `5c5acf91` into `multiplayer-lobby-return` after the initial
+Windows acceptance below. Preserved upstream icon, compiler and native storage
+changes; resolved only overlapping validation/backlog notes. Complete runtime
+patch-stack revalidation passes. Combined menu/FOV/network checks:55 passed,
+2 native-Mac-only checks skipped. Repository context/patch tracking/Mac backlog:
+46 passed. Context freshness and whitespace checks pass. Shortened runtime
+navigation labels to keep its owning guide below the context size limit.
+
+A supported Windows build of the integrated source is running and regenerates
+all guest C because main changed compiler chunking; completion is pending.
+Its bounded output is logs/multiplayer-build-synced.log. The earlier successful
+build and paired gameplay below predate this integration; they do not establish
+acceptance of the new upstream icon/compiler/storage changes. No new physical
+System Link or native Mac/Linux gameplay acceptance was run during integration.
+
+## 2026-11-06 - Multiplayer host Return to Lobby
+
+Initial validation on `multiplayer-lobby-return`, based on
+`337be3bc3e89a57563cee09facf39f79b5b40077`. Shared network patch2620 and
+`src/network/pc_multiplayer_exit.inc` retain the host's party when returning from
+pause or results; the host rows now read Return to Lobby (EC060 during play,
+EC030 on Arcade results). Original reliable classB and the native16/17 handshake
+are reused. The returned lobby resets old match clocks/caches and retires the
+old advertised start intent. Explicit host loss routes to Online / System Link.
+The final user scope leaves a guest's own Leave Match/Quit and browser Back
+original, including its later phase18 teardown callback.
+
+`pc_network_profiles.inc` shares the existing Story profile identity mapping with
+these returns. The original save routine still owns metadata and checksums;
+only its synchronous profile view is remapped and restored. This removes the
+save-error screen that initially blocked a returning guest's lobby.
+
+Windows x64, MSVC14.42, game0.5.1, D3D11, Original60. The supported US XBE/title
+hash was verified before generation and each paired run. The complete patch
+stack and supported `tsfp.ps1 -Action Build` passed, including native built-in
+tests, isolated save cleanup, identity sealing and crash-symbol checks.
+Shared menu/Story/original-US/profile tests:53 passed;2 native-Mac-only checks
+skipped on Windows. Native UDP transport tests:2 passed on Windows loopback.
+Repository-context/index freshness and whitespace checks passed.
+
+Measured Online acceptance used the existing isolated paired runner with two
+local processes, Test Lab profile copies, file-driven keys and a temporary local
+directory. Host pause return reached usable host4E99C4/guest4E99D4 lobbies at
+phases11/12, retained directory membership and started another real match.
+The final results scenario completed five-point Deathmatch with2 humans/6 bots
+on level48; both peers had matching final score records. The host's results
+Return to Lobby then produced the same usable lobby descriptors and retained
+membership, and both peers started a fresh second round (phase15/state7).
+Selected host Options capture visibly reads Return to Lobby. Guest-owned leave
+callbacks and exact loss versus voluntary teardown routes are fixture-tested.
+
+Results run: `logs/multiplayer-paired-results-verified.log`, completed/cleanup
+true, 238.8s. Provenance and selected captures remain under
+`logs/online-bots-lobbyreturn`; disposable virtual disks were recycled.
+Paired executable SHA-256: `ac188eeb35bc021cc037bd0c5303004cc3d8c998278bf01f2576efefbd5010a3`.
+Final executable SHA-256: `edd00cc21987c46e6efe66a200a0fdd3b40ac4ed7544b8bbb9b4354c810ee7ef`. After the paired run, the only runtime
+change narrows host-loss admission to phases15/16, preserving the original
+voluntary phase18 retirement; its fixture and the final Windows build pass.
+Personal saves/settings and the canonical Test Lab fixture were preserved.
+
+Unrun: physical two-machine System Link, native Mac/Linux build/gameplay,
+real host outage during a paired game, Internet routing and physical-controller
+acceptance. CPU routing tests and same-machine Online do not establish those.
+See MAC-013 and `docs/agent-context/multiplayer-exit.md` for the shared contract.
+
 Icon PR strict-compiler follow-up: native Mac CI passed2866 tests but rejected
 an unused physical-size argument in the span-only imported-key fixture under
 -Werror. That test configuration now explicitly ignores the GPU-only argument.

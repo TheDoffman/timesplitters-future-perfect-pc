@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.mark.parametrize("native", [False, True])
-@pytest.mark.parametrize("fixture", ['quit_menu', 'story_menu', 'story_lobby', 'story_drop_state', 'story_browser'])
+@pytest.mark.parametrize("fixture", ['quit_menu', 'story_menu', 'story_lobby', 'story_drop_state', 'story_browser', 'multiplayer_exit'])
 def test_quit_menu(tmp_path, native, fixture):
     compiler, env = native_compiler(tmp_path)
     source = repo_file(ROOT, 'tests', fixture+'.c')
@@ -93,6 +93,12 @@ def test_story_original_us_entry_contract():
     assert struct.unpack('<I',read(0x524598,4))[0]==0x2d0be0
     assert struct.unpack('<I',read(0x4e99c4,4))[0]==0x1a8da0
     assert struct.unpack('<I',read(0x4e99d4,4))[0]==0x1a8fa0
+
+    # The unplanned multiplayer host-loss exit has this exact return address;
+    # voluntary guest Leave uses the separate 2EBDB0 path and stays original.
+    call=read(0x35c35b,5)
+    assert call[0]==0xe8 and 0x35c360+struct.unpack_from('<i',call,1)[0]==0x65420
+    assert struct.unpack('<I',read(0x4e92c4,4))[0]==0x1a2730
 
     # Browser selected-match arguments and the stock picture draw are separate
     # from the joined-lobby header. These exact returns scope the Story adapter.
@@ -525,7 +531,7 @@ def test_story_original_guest_rewards(tmp_path,context_mapping):
         vars(config).update(previous)
     source=(ROOT/'tests/network/story_rewards_guest.c').read_text(encoding='utf-8')
     production=(ROOT/'src/network/pc_story_restart.inc').read_text(encoding='utf-8')
-    adapters='static unsigned story_leave_destination;\nstatic int story_lobby_return_build;\nvoid pc_online_disconnect(void){assert(0);}\n'+production[production.index('extern void sub_002EB0A0('):production.index('static void story_rewards_continue(')]
+    adapters='#include "../src/network/pc_network_profiles.inc"\nstatic int multiplayer_profile_save(void (*fn)(void)){(void)fn;return 0;}\nstatic unsigned story_leave_destination;\nstatic int story_lobby_return_build;\nvoid pc_online_disconnect(void){assert(0);}\n'+production[production.index('extern void sub_002EB0A0('):production.index('static void story_rewards_continue(')]
     adapters+=production[production.index('void pc_story_network_rewards_context_slot('):production.index('void pc_story_network_result_action(void (*original)(void),unsigned action)\n{')]
     import re
     defined=set(re.findall(r'(?:void|uint32_t)\s+(sub_[0-9A-F]+(?:_gen)?)\s*\([^;]*?\)\s*\{',source+code))
@@ -740,3 +746,85 @@ def test_story_version_feature_flag(tmp_path, version, enabled, native):
     ran = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
     assert ran.returncode==0, ran.stdout+ran.stderr
     assert 'PASS:' in ran.stdout
+
+
+@pytest.mark.parametrize('short_scope', [False, True], ids=['fixed', 'short-scope-reproduction'])
+def test_multiplayer_original_profile_save(tmp_path, short_scope):
+    """Keep the stock CRC/write errors while saving the guest's persistent profile."""
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    xbe = ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image = xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous = dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions = {a: dict(name=f'sub_{a:08X}', end=b) for a,b in (
+            (0x1922d0,0x192578), (0x696f0,0x69716), (0x69750,0x69781),
+            (0x69790,0x697c1), (0x697d0,0x69811),
+            (0x1504f0,0x150522), (0x150560,0x15057c))}
+        translator = FunctionTranslator(image, functions)
+        code = '\n'.join(translator.translate_function(a, info) for a,info in functions.items())
+        table = '\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x}u;'
+                          for a in range(0x4e74b8,0x4e78b8,4))
+    finally:
+        vars(config).update(previous)
+    adapters = (ROOT/'src/network/pc_network_profiles.inc').read_text(encoding='utf-8')
+    production = (ROOT/'src/network/pc_multiplayer_exit.inc').read_text(encoding='utf-8')
+    adapters += production[production.index('static int multiplayer_profile_save(void (*original)(void))'):]
+    if short_scope:
+        adapters = adapters.replace('(multiplayer_destination ||\n       (WORD_AT(0x76b108u) && (WORD_AT(0x76b140u)==1u || WORD_AT(0x76b140u)==2u)))',
+                                    'multiplayer_destination')
+    source = (ROOT/'tests/network/multiplayer_profile_save.c').read_text(encoding='utf-8')
+    prototypes = '\n'.join(f'void {info["name"]}(void);' for info in functions.values())
+    source = source.replace('/* ORIGINAL_SAVE_PROTOTYPES */', prototypes)
+    source = source.replace('/* ORIGINAL_SAVE_FUNCTIONS */', code)
+    source = source.replace('/* ORIGINAL_CRC_TABLE */', table)
+    source = source.replace('/* PRODUCTION_NETWORK_PROFILE_SAVE */', adapters)
+    if short_scope:
+        source = '#define REPRODUCE_SHORT_SCOPE 1\n' + source
+    assert 'PASS:' in compile_and_run(tmp_path, source)
+
+
+@pytest.mark.parametrize('provider', ['stock', 'windows', 'native'])
+def test_multiplayer_runtime_wrapper_dispatch(tmp_path, provider):
+    """Compile the applied runtime wrappers, not just the shared adapter include."""
+    import re
+    manual = ROOT/'external/ts3FPrecomp/titles/futureperfect/src/recomp_manual.c'
+    if not manual.is_file():
+        pytest.skip('Prepared patched runtime required')
+    text = manual.read_text(encoding='utf-8')
+    addresses = ('003592F0', '00065420', '001AF950', '00079860', '001922D0',
+                 '002EAF60', '002EAFC0', '002EB030', '002EC090', '002EC650',
+                 '00065470', '002EB0C0', '002EB290')
+    wrappers = []
+    for address in addresses:
+        match = re.search(r'void sub_'+address+r'\(void\)\n\{\n.*?\n\}', text, re.S)
+        assert match, address
+        wrappers.append(match[0])
+    source = '#include <assert.h>\n#include <stdio.h>\nstatic unsigned adapters, originals;\n'
+    if provider != 'stock':
+        source += '#define '+('TSFP_PC_CONTROLS' if provider == 'windows' else 'TSFP_NATIVE_DISPLAY')+' 1\n'
+    for address in addresses:
+        source += f'void sub_{address}_gen(void){{++originals;}}\n'
+    callbacks = set(re.findall(r'\b(pc_[a-z_]+)\(', '\n'.join(wrappers)))
+    for callback in callbacks:
+        action = callback == 'pc_multiplayer_exit_action'
+        source += ('void '+callback+'(void (*fn)(void)'+(', unsigned action' if action else '')+'){'
+                   + ('(void)action;' if action else '')+'++adapters;fn();}\n')
+    source += '\n'.join(wrappers)
+    source += '\nint main(void){'+''.join(f'sub_{address}();' for address in addresses)
+    source += f'assert(originals=={len(addresses)} && adapters=={0 if provider=="stock" else len(addresses)});'
+    source += 'puts("PASS: native and Windows runtime wrapper dispatch");return 0;}\n'
+    compiler, env = native_compiler(tmp_path)
+    path = tmp_path/'wrapper.c';path.write_text(source, encoding='utf-8')
+    exe = tmp_path/('wrapper.exe' if os.name=='nt' else 'wrapper')
+    args = ([compiler, '/nologo', '/O2', str(path), '/Fe:'+str(exe)] if os.name=='nt' else
+            [compiler, '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', str(path), '-o', str(exe)])
+    built = subprocess.run(args, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=60)
+    assert built.returncode==0, built.stdout+built.stderr
+    result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
+    assert result.returncode==0, result.stdout+result.stderr

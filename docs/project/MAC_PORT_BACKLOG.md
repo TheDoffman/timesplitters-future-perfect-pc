@@ -15,6 +15,42 @@ physical Linux/Steam Deck acceptance remain pending. Native Mac build and live
 windowed/fullscreen, timeout, pause, hotkey and save/relaunch checks remain pending.
 The Linux result does not establish native Mac support.
 
+## Native multiplayer wrapper admission - MAC-013 validation pending
+
+Follow-up based on dc642eb3: patch2625 enables the thirteen existing shared
+Arcade return/result/profile-save wrappers for TSFP_NATIVE_DISPLAY, as well as
+Windows controls. Native Mac/Linux compiled the adapters but bypassed them under
+Windows-only wrapper guards. Applied-wrapper CPU tests reproduce that omission
+and pass with the repair. No duplicate native policy or OS adapter is needed.
+Windows-host/WSL-Linux-guest pause and real-results returns now pass with retained
+room membership and another round on e84135ad. Native Mac and physical three-peer
+acceptance remain pending. Windows duplicate fixture recovery is local storage
+maintenance, not a native adapter change; see STATUS.
+
+## Retained multiplayer profile-save scope - MAC-013 validation pending
+
+Uncommitted follow-up on multiplayer-lobby-return, base3ff65a51: shared Arcade
+profile mapping now follows the active host/member session after the lobby
+factory consumes the exit destination. Windows original-US CRC/save regression
+and shared menu checks pass; stock errors remain visible for actual corruption
+or failed writes. No new native adapter or transport change is required. Native
+Mac/Linux and physical System Link acceptance remain pending; see STATUS.
+
+## Arcade host lobby return - MAC-013 validation pending
+
+Implemented on multiplayer-lobby-return (initial validation base337be3bc). Shared
+src/network/pc_multiplayer_exit.inc and patch2620 implement host Return to Lobby
+with connected guests, including pause/results and explicit host-loss routing.
+The user's final scope keeps guests' own Leave Match/Quit and browser Back
+original. Shared pc_network_profiles.inc reuses Story's persistent profile mapping
+so a returning guest reaches its usable lobby rather than a save-error screen.
+Existing native Online/socket adapters provide the same transport calls; no new
+OS adapter is needed. Shared CPU fixtures run via the existing Windows/macOS menu
+suite. Physical native Mac/Linux gameplay and two-machine System Link are pending:
+check host return during play/results, real host loss, original guest exits and
+another match after return. STATUS.md records measured Windows build/acceptance;
+Windows tests do not verify Mac.
+
 ## MAC-130 - macOS Application Support storage (#502) - Awaiting validation
 
 Mac-specific installation convention; Windows/Linux portable storage is unchanged.

@@ -1,0 +1,110 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -439,7 +439,7 @@
+ void sub_003592F0(void)
+ {
+ #ifdef TSFP_PC_CONTROLS
+-    pc_story_network_return_lobby(sub_003592F0_gen);
++    pc_multiplayer_return_lobby(sub_003592F0_gen);
+ #else
+     sub_003592F0_gen();
+ #endif
+@@ -449,7 +449,7 @@
+ void sub_00065420(void)
+ {
+ #ifdef TSFP_PC_CONTROLS
+-    pc_story_network_disconnect_exit(sub_00065420_gen);
++    pc_multiplayer_disconnect_exit(sub_00065420_gen);
+ #else
+     sub_00065420_gen();
+ #endif
+@@ -479,7 +479,7 @@
+ void sub_001AF950(void)
+ {
+ #ifdef TSFP_PC_CONTROLS
+-    pc_story_network_lobby_lost(sub_001AF950_gen);
++    pc_multiplayer_lobby_lost(sub_001AF950_gen);
+ #else
+     sub_001AF950_gen();
+ #endif
+@@ -530,7 +530,7 @@
+ void sub_00079860(void)
+ {
+ #ifdef TSFP_PC_CONTROLS
+-    pc_story_network_rewards_menu(sub_00079860_gen);
++    pc_multiplayer_exit_menu(sub_00079860_gen);
+ #else
+     sub_00079860_gen();
+ #endif
+@@ -610,7 +610,7 @@
+ void sub_002EAF60(void)
+ {
+ #ifdef TSFP_PC_CONTROLS
+-    pc_story_network_result_action(sub_002EAF60_gen,0u);
++    pc_multiplayer_exit_action(sub_002EAF60_gen,0u);
+ #else
+     sub_002EAF60_gen();
+ #endif
+@@ -620,7 +620,7 @@
+ void sub_002EAFC0(void)
+ {
+ #ifdef TSFP_PC_CONTROLS
+-    pc_story_network_result_action(sub_002EAFC0_gen,0u);
++    pc_multiplayer_exit_action(sub_002EAFC0_gen,0u);
+ #else
+     sub_002EAFC0_gen();
+ #endif
+@@ -630,7 +630,7 @@
+ void sub_002EB030(void)
+ {
+ #ifdef TSFP_PC_CONTROLS
+-    pc_story_network_result_action(sub_002EB030_gen,0u);
++    pc_multiplayer_exit_action(sub_002EB030_gen,0u);
+ #else
+     sub_002EB030_gen();
+ #endif
+@@ -640,7 +640,7 @@
+ void sub_002EC090(void)
+ {
+ #ifdef TSFP_PC_CONTROLS
+-    pc_story_network_result_action(sub_002EC090_gen,0u);
++    pc_multiplayer_exit_action(sub_002EC090_gen,0u);
+ #else
+     sub_002EC090_gen();
+ #endif
+@@ -650,7 +650,7 @@
+ void sub_002EC650(void)
+ {
+ #ifdef TSFP_PC_CONTROLS
+-    pc_story_network_result_action(sub_002EC650_gen,0u);
++    pc_multiplayer_exit_action(sub_002EC650_gen,0u);
+ #else
+     sub_002EC650_gen();
+ #endif
+@@ -660,7 +660,7 @@
+ void sub_00065470(void)
+ {
+ #ifdef TSFP_PC_CONTROLS
+-    pc_story_network_result_action(sub_00065470_gen,0u);
++    pc_multiplayer_exit_action(sub_00065470_gen,0u);
+ #else
+     sub_00065470_gen();
+ #endif
+@@ -670,7 +670,7 @@
+ void sub_002EB0C0(void)
+ {
+ #ifdef TSFP_PC_CONTROLS
+-    pc_story_network_result_action(sub_002EB0C0_gen,1u);
++    pc_multiplayer_exit_action(sub_002EB0C0_gen,1u);
+ #else
+     sub_002EB0C0_gen();
+ #endif
+@@ -680,7 +680,7 @@
+ void sub_002EB290(void)
+ {
+ #ifdef TSFP_PC_CONTROLS
+-    pc_story_network_result_action(sub_002EB290_gen,2u);
++    pc_multiplayer_exit_action(sub_002EB290_gen,2u);
+ #else
+     sub_002EB290_gen();
+ #endif
