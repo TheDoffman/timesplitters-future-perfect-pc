@@ -49,6 +49,13 @@ The equivalent individual steps are still available for troubleshooting:
 .\tsfp.ps1 Build
 ```
 
+Windows builds limit MSVC to two compiler workers per project by default. Use
+`tsfp.ps1 Build -CompileJobs 1` to reduce peak memory further, or select another
+explicit worker count on a larger machine. This preserves normal Release
+optimization. Generated C is grouped by at most 100 functions and 512 KiB of
+body text per file; a single larger function stays intact in its own file.
+Generation automatically refreshes older output when these tools change.
+
 Disc extraction now uses this project's standard-library Python importer and
 can run before Setup, with no external toolkit checkout:
 

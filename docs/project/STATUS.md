@@ -1,3 +1,43 @@
+## 2026-11-06 - Windows compiler memory fix validation
+
+PR branch fix/windows-compiler-memory-pr, based on main c8ddc47f; Windows x64,
+Python 3.12 virtual environment, Visual Studio 2022/MSVC Release. The shared
+ordinary publisher now limits body text to 512 KiB as well as function count;
+pipeline and batch defaults are 100 functions. Oversized bodies remain whole.
+Windows Build defaults per-project CL_MPCount to 2 and accepts -CompileJobs 1..64, retaining
+Release optimization. This complements the continuation publisher's existing
+512 KiB budget; it is not a guarantee that any single function fits MSVC memory.
+
+Fresh isolated-checkout focused validation: 56 passed across compile_pipeline,
+translation_batch, translation_cli, translation_context and recomp_generation.
+These include native MSVC compilation/execution of separately published bodies,
+manual/wrapper/dispatch and stale-output behavior, exact/UTF-8 byte boundaries,
+count limits, empty input and oversized functions. Restoring the old pipeline
+default and count-only production chunk loop rejects both behavior regressions
+(2 expected failures, 1 unchanged control passes). The first isolated run lacked
+the prepared runtime (2 setup failures); preparing the pinned source and full
+patch stack resolved these, with no production correction needed.
+
+The existing Windows development checkout has byte-identical compiler files and
+tsfp.ps1. A fresh supported tsfp.ps1 -Action Build completed successfully, including
+all bundled build checks and crash-symbol packaging. This was an incremental
+verification: the retained compiler-memory-build.log separately records the prior
+regenerated full build (15,839/15,863 functions, zero translation failures), which
+also passed. The development checkout additionally contains launcher diagnostics
+already merged via PR505; those are excluded from this PR. Neither build result
+is isolated PR-head gameplay or a measured peak-memory comparison. No gameplay
+or private assets are added; native Mac/Linux execution remains unverified here.
+Repository context/patch-tracking/Mac-backlog suites: 46 passed. Context/index
+check against c8ddc47f and whitespace checks pass. PowerShell AST execution checks
+confirm default 2, accepted 1/64, rejected 0/65, and forwarding through the actual
+CMake build invocation to /p:CL_MPCount. CMake project parallelism remains four;
+the new setting limits each project's /MP workers, not a global worker total.
+The compiler tests already run in the shared Windows/macOS runtime CI selection.
+
+Local ignored receipts: logs/compiler-memory-pr-tests.log,
+logs/compiler-memory-pr-build.log, logs/compiler-memory-build.log and
+logs/compiler-memory-generation.log in the development checkout.
+
 ## 2026-11-06 — Antivirus blocking diagnostics (issue #476)
 
 Change on branch `fix/476-antivirus-errors`, based on main `fb555912`.
