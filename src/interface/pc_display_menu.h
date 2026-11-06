@@ -155,3 +155,6 @@ void pc_developer_draw_body(void);
 void pc_developer_lobby_guest(void);
 
 void pc_developer_cutscene_guest(void (*original)(void));
+
+void pc_developer_lobby_name(void (*original)(void));
+void pc_developer_lobby_text(void (*original)(void));

@@ -1,3 +1,7 @@
+Flight shortcuts append developer_noclip/developer_freecam as actions35/36;
+PC_ACTION_COUNT is37. Both default unbound and use the existing two-slot conflict,
+move/unbind and persistence paths. The Tools shortcut remains action34/F1.
+
 Developer Tools opt-in participates in the shared settings draft and checked
 change notification, so changing only that switch enables Save. Shared UI
 regression covers the assigned F3 warning and ON/OFF persistence.

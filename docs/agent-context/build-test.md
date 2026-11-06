@@ -1,3 +1,17 @@
+Latest notes: input regression toggles audio scaling at held3x, requires normal
+sound with unchanged game speed, then restores scaled sound. Real XMV fixtures
+exercise an independent audio toggle while video advances2x. Native Extras
+fixture requires one multiline warning and four total rows. Patch order ends2590.
+
+Further notes regression: audio output fixtures verify live gameplay ratios,
+unchanged movie queues and independent media-clock domains. Stream timing exercises
+0.5x/2x completion through the public tick. Input checks flight hotkeys, network
+reset and the registered audio callback; native Extras fixture opens its own
+Enable/Disable submenu with warning and configurable shortcut. Lobby guest fixture
+checks the actual41E30 outlined-name caller, float coordinates, slot ownership
+and decorated-name measurement without modifying names. The submenu fixture
+requires empty lifecycle slots. Launcher checks unbound flight defaults and both persisted binding slots.
+
 Revised Developer Tools regression additions: original-XBE98E50 fixture proves
 that the fractional native cinematic branch follows game delta while the real
 clock branch ignores it; guest fixture checks scoped flag restoration/origin

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "9ca96783db7d85b120b595ee08b9f069d7c287fa092a510577d855e43d66ce1b",
+  "loaderSha256": "4dd30acf2e1ddc3ecbba817b99c60e84b9fef7411ab3b998a2efb0a6a4e46ca3",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3553,6 +3553,44 @@
         "src/hle/audio_output_xaudio2.cpp",
         "src/hle/hle_xmv_play.c",
         "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2560-developer-tools-ui-audio-and-bindings.patch",
+      "path": "patches/diagnostics/2560-developer-tools-ui-audio-and-bindings.patch",
+      "sha256": "f9e72ed64caf58484737ddb5a14ded20a48f3b6970798b5dee0208921f617e21",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_d3d8.c",
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2570-developer-tools-game-audio-clock.patch",
+      "path": "patches/diagnostics/2570-developer-tools-game-audio-clock.patch",
+      "sha256": "d48e54e0a2dd75c9f1b5a57d43bf852cd12b3aa345016d3940cd3693dd2ffe7f",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_dsound.c",
+        "src/hle/hle_dsound_stream.c"
+      ]
+    },
+    {
+      "name": "2580-developer-tools-lobby-wrench.patch",
+      "path": "patches/diagnostics/2580-developer-tools-lobby-wrench.patch",
+      "sha256": "c81237d3379b8c808f099fb4467d9357a7f8030d5f719c55b2df7c2846a18329",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2590-developer-tools-optional-audio-speed.patch",
+      "path": "patches/diagnostics/2590-developer-tools-optional-audio-speed.patch",
+      "sha256": "55f094a7155fc5e8c5d8c128a373c7376358b2d68ae2f7170a769788efaaf4bb",
+      "targets": [
+        "src/hle/hle_xmv_play.c"
       ]
     }
   ]

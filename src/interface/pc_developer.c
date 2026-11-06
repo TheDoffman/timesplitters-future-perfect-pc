@@ -10,10 +10,13 @@
 #include <string.h>
 
 static SRWLOCK dev_lock=SRWLOCK_INIT;
-static volatile LONG opened,warning,shortcut_blocked;
+static volatile LONG opened,shortcut_blocked;
 static char lobby_notice[1152];
 static ULONGLONG lobby_notice_at;
-static PcDeveloperState state={.speed=1.,.manual_speed=1.,.slow_speed=.5,.fast_speed=2.};
+static void (*audio_set_speed)(float);
+/* Retained for a possible return to the named lobby disclaimer. */
+static int lobby_disclaimer_enabled;
+static PcDeveloperState state={.speed=1.,.manual_speed=1.,.slow_speed=.5,.fast_speed=2.,.audio_speed=1};
 static int gameplay,story,network,movie_active;
 /* Presentation-thread-owned navigation and settings drafts. */
 enum { HOME, SETTINGS, KEYBOARD, DEBUG, LOGS };
@@ -37,7 +40,7 @@ int pc_developer_shortcut_key(int key) {
     for(unsigned i=0;i<PC_BINDING_SLOTS;i++)if(keys[i]==key)return 1;
     return 0;
 }
-static void developer_shortcut_name(char *out,size_t bytes) {
+void pc_developer_shortcut_name(char *out,size_t bytes) {
     int keys[PC_BINDING_SLOTS];pc_settings_developer_keys(keys);out[0]=0;
     for(unsigned i=0;i<PC_BINDING_SLOTS;i++)if(keys[i]) {
         char key[48];pc_settings_key_name(keys[i],key,sizeof key);
@@ -45,15 +48,11 @@ static void developer_shortcut_name(char *out,size_t bytes) {
     }
     if(!out[0])snprintf(out,bytes,"the shortcut (currently unbound)");
 }
-static void developer_warning(void) {
-    InterlockedExchange(&warning,1);InterlockedExchange(&opened,1);
-    pc_settings_capture_end();pc_controls_text_mode(0);pc_controls_menu_mode(1);
-}
 int pc_developer_set_enabled(int enabled) {
     char error[160];
     if(!pc_settings_developer_save(enabled,error,sizeof error)){pc_developer_report(error);return 0;}
-    if(enabled)developer_warning();else {
-        pc_developer_close();InterlockedExchange(&warning,0);
+    if(!enabled) {
+        pc_developer_close();
         AcquireSRWLockExclusive(&dev_lock);
         state.hide_hud=state.hide_watermark=state.noclip=state.freecam=state.god=state.infinite_ammo=0;
         state.speed=state.manual_speed=1.;ReleaseSRWLockExclusive(&dev_lock);
@@ -68,7 +67,6 @@ void pc_developer_lobby_notice(const char *names) {
 int pc_developer_open(void) {return InterlockedCompareExchange(&opened,0,0)!=0;}
 void pc_developer_toggle(void) {
     if(!pc_developer_enabled())return;
-    if(InterlockedExchange(&warning,0))return;
     LONG old=InterlockedCompareExchange(&opened,0,0);
     while(InterlockedCompareExchange(&opened,!old,old)!=old)old=InterlockedCompareExchange(&opened,0,0);
     if(!old){pc_settings_capture_end();pc_controls_text_mode(0);}else pc_controls_developer_release();
@@ -83,6 +81,12 @@ double pc_developer_speed(void) {
     int enabled=pc_developer_enabled();double speed;
     AcquireSRWLockShared(&dev_lock);speed=enabled&&!network&&(gameplay||movie_active)?state.speed:1.;ReleaseSRWLockShared(&dev_lock);
     return speed;
+}
+double pc_developer_audio_speed(void) {
+    int enabled=pc_developer_enabled();double speed;
+    AcquireSRWLockShared(&dev_lock);
+    speed=enabled&&state.audio_speed&&!network&&(gameplay||movie_active)?state.speed:1.;
+    ReleaseSRWLockShared(&dev_lock);return speed;
 }
 void pc_developer_movie(int active) {
     AcquireSRWLockExclusive(&dev_lock);movie_active=!!active;
@@ -170,38 +174,53 @@ static void speed_adjust(double value) {
     if(!network)state.speed=state.manual_speed=fmax(.05,fmin(4.,value));
     ReleaseSRWLockExclusive(&dev_lock);
 }
+static void flight_toggle(int mode) {
+    AcquireSRWLockExclusive(&dev_lock);
+    if(gameplay&&!network) {
+        if(mode==1) {state.noclip=!state.noclip;if(state.freecam)state.hide_hud=0;state.freecam=0;}
+        else {state.freecam=!state.freecam;state.noclip=0;state.hide_hud=state.freecam;}
+    }
+    ReleaseSRWLockExclusive(&dev_lock);
+}
+void pc_developer_audio_register(void (*set_speed)(float)) {audio_set_speed=set_speed;}
+static int action_pressed(int action,const unsigned char keys[256]) {
+    int bindings[PC_BINDING_SLOTS];pc_settings_action_keys(action,bindings);
+    for(unsigned i=0;i<PC_BINDING_SLOTS;i++) {
+        int key=bindings[i];if(key>0&&key<256&&keys[key]&&!previous[key])return 1;
+    }
+    return 0;
+}
 static void activate(int direction) {
     fprintf(stderr,"[DEVELOPER] action page=%d row=%d direction=%d\n",page,selected,direction);
     PcDeveloperState s;pc_developer_get(&s);
     if(page==HOME) {
         if(selected==0){navigate(SETTINGS);return;}
-        if(selected==7){pc_developer_close();return;}
-        if(selected==8){speed_adjust(1);return;}
+        if(selected==2||selected==3){flight_toggle(selected-1);return;}
+        if(selected==7){speed_adjust(1);return;}
         AcquireSRWLockExclusive(&dev_lock);
         switch(selected) {
         case 1:state.hide_hud=!state.hide_hud;break;
-        case 2:if(gameplay&&!network){state.noclip=!state.noclip;if(state.freecam)state.hide_hud=0;state.freecam=0;}break;
-        case 3:if(gameplay&&!network){state.freecam=!state.freecam;state.noclip=0;state.hide_hud=state.freecam;}break;
         case 4:state.hide_watermark=!state.hide_watermark;break;
         case 5:if(story&&gameplay&&!network)state.checkpoint++;break;
         case 6:break;
-        case 9:state.speed_keys=!state.speed_keys;break;
-        case 10:case 11:break;
-        case 12:if(gameplay&&!network)state.god=!state.god;break;
-        case 13:if(gameplay&&!network)state.infinite_ammo=!state.infinite_ammo;break;
+        case 8:state.speed_keys=!state.speed_keys;break;
+        case 9:case 10:break;
+        case 11:if(gameplay&&!network)state.god=!state.god;break;
+        case 12:if(gameplay&&!network)state.infinite_ammo=!state.infinite_ammo;break;
+        case 13:state.audio_speed=!state.audio_speed;break;
         }
         ReleaseSRWLockExclusive(&dev_lock);
         if(selected==6) {
             if(direction)speed_adjust(s.manual_speed+direction*.1);
             else {edit_number=1;number[0]=0;snprintf(status,sizeof status,"Type speed 0.05 to 4.0, then Enter; Escape cancels.");}
         }
-        if(selected==10||selected==11) {
+        if(selected==9||selected==10) {
             if(direction) {
                 AcquireSRWLockExclusive(&dev_lock);
-                double *target=selected==10?&state.slow_speed:&state.fast_speed;
+                double *target=selected==9?&state.slow_speed:&state.fast_speed;
                 *target=fmax(.05,fmin(4.,*target+direction*.1));
                 ReleaseSRWLockExclusive(&dev_lock);
-            } else {edit_number=selected==10?3:4;number[0]=0;snprintf(status,sizeof status,"Type held speed 0.05 to 4.0, then Enter.");}
+            } else {edit_number=selected==9?3:4;number[0]=0;snprintf(status,sizeof status,"Type held speed 0.05 to 4.0, then Enter.");}
         }
     } else if(page==SETTINGS) {
         switch(selected) {
@@ -260,13 +279,13 @@ static void label(int row,char *out,size_t size) {
         case 4:snprintf(out,size,"Version watermark: %s",s.hide_watermark?"Hidden":"Shown");break;
         case 5:snprintf(out,size,"Advance to next checkpoint%s",campaign?"":" (Story only, offline)");break;
         case 6:snprintf(out,size,"Manual game speed: %.2fx   Left/Right or Enter to type",s.manual_speed);break;
-        case 7:snprintf(out,size,"Return to game");break;
-        case 8:snprintf(out,size,"Reset game speed to 1.00x");break;
-        case 9:snprintf(out,size,"Speed keys outside menu: %s",s.speed_keys?"On":"Off");break;
-        case 10:snprintf(out,size,"Hold [: %.2fx   Enter to configure",s.slow_speed);break;
-        case 11:snprintf(out,size,"Hold ]: %.2fx   Enter to configure",s.fast_speed);break;
-        case 12:snprintf(out,size,"God mode: %s%s",s.god?"On":"Off",availability);break;
-        default:snprintf(out,size,"Infinite ammo: %s%s",s.infinite_ammo?"On":"Off",availability);break;
+        case 7:snprintf(out,size,"Reset game speed to 1.00x");break;
+        case 8:snprintf(out,size,"Speed keys outside menu: %s",s.speed_keys?"On":"Off");break;
+        case 9:snprintf(out,size,"Hold [: %.2fx   Enter to configure",s.slow_speed);break;
+        case 10:snprintf(out,size,"Hold ]: %.2fx   Enter to configure",s.fast_speed);break;
+        case 11:snprintf(out,size,"God mode: %s%s",s.god?"On":"Off",availability);break;
+        case 12:snprintf(out,size,"Infinite ammo: %s%s",s.infinite_ammo?"On":"Off",availability);break;
+        default:snprintf(out,size,"Audio follows game speed: %s",s.audio_speed?"On":"Off");break;
         }
     } else if(page==SETTINGS) {
         static const char *names[]={"Keyboard & Mouse  >","Debug  >","Enhanced Textures","Fullscreen","Back"};
@@ -311,8 +330,6 @@ void pc_developer_frame(void) {
     unsigned char keys[256]={0};int focused=pc_controls_developer_keys(keys);
     /* Deterministic input replays publish raw virtual keys, while real host
      * adapters consume F1 before the guest. Toggle after releasing input locks. */
-    static int configured;
-    if(!configured){configured=1;if(pc_developer_enabled()&&!pc_developer_open())developer_warning();}
     int shortcut=0;
     for(int key=1;key<256;key++)if(focused && keys[key]&&!previous[key] && pc_developer_shortcut_key(key)){shortcut=1;break;}
     if(shortcut){pc_developer_toggle();memcpy(previous,keys,sizeof previous);return;}
@@ -326,12 +343,10 @@ void pc_developer_frame(void) {
         else if(keys[0xdb])state.speed=state.slow_speed;
     }
     ReleaseSRWLockExclusive(&dev_lock);
-    if(open && InterlockedCompareExchange(&warning,0,0)) {
-        PcMenuPointer p=pc_controls_developer_pointer();
-        if(focused && ((keys[13]&&!previous[13]) || (keys[27]&&!previous[27]) || (p.left&&!previous_left))) {
-            InterlockedExchange(&warning,0);pc_developer_close();
-        }
-        previous_left=p.left;memcpy(previous,keys,sizeof previous);return;
+    if(audio_set_speed)audio_set_speed((float)pc_developer_audio_speed());
+    if(!open && focused && pc_developer_enabled() && !pc_settings_capture_blocked()) {
+        if(action_pressed(PC_NOCLIP_ACTION,keys))flight_toggle(1);
+        if(action_pressed(PC_FREECAM_ACTION,keys))flight_toggle(2);
     }
     if(open&&focused) {
         PcMenuPointer p=pc_controls_developer_pointer();
@@ -390,7 +405,7 @@ unsigned pc_developer_lines(unsigned width,unsigned height,PcDeveloperLine *out,
     if(!pc_developer_open()) {
         char names[1152];ULONGLONG at;
         AcquireSRWLockShared(&dev_lock);snprintf(names,sizeof names,"%s",lobby_notice);at=lobby_notice_at;ReleaseSRWLockShared(&dev_lock);
-        if(!names[0] || GetTickCount64()-at>1000)return 0;
+        if(!lobby_disclaimer_enabled || !names[0] || GetTickCount64()-at>1000)return 0;
         float scale=fminf(width/840.f,height/620.f),x=(width-780*scale)*.5f;
         unsigned n=0;size_t offset=0;
         unsigned rows=1+(unsigned)(strlen(names)+75)/76;if(rows>capacity)rows=capacity;
@@ -404,20 +419,10 @@ unsigned pc_developer_lines(unsigned width,unsigned height,PcDeveloperLine *out,
         }
         return n;
     }
-    if(InterlockedCompareExchange(&warning,0,0)) {
-        char key[104];developer_shortcut_name(key,sizeof key);
-        const char *text[]={"Developer Tools","Warning: Usage of Developer Tools can cause instability","and unintended behavior. Use at your discretion.",NULL,"Continue (Enter / click)"};
-        float x,y,scale=layout((float)width,(float)height,&x,&y);unsigned count=capacity<5?capacity:5;
-        for(unsigned i=0;i<count;i++) {
-            out[i]=(PcDeveloperLine){{0},x,y+(64+40*i)*scale,780*scale,28*scale};
-            if(i==3)snprintf(out[i].text,160,"Press %s to open",key);else snprintf(out[i].text,160,"%s",text[i]);
-        }
-        return count;
-    }
     float x,y,s=layout((float)width,(float)height,&x,&y);unsigned n=0;
     PcDeveloperLine *line=&out[n++];
     *line=(PcDeveloperLine){{0},x,y,780*s,32*s};
-    char shortcut_name[104];developer_shortcut_name(shortcut_name,sizeof shortcut_name);
+    char shortcut_name[104];pc_developer_shortcut_name(shortcut_name,sizeof shortcut_name);
     snprintf(line->text,sizeof line->text,"Developer Tools%s   |   %s closes",page==HOME?"":page==SETTINGS?" / PC Settings":page==KEYBOARD?" / Keyboard & Mouse":" / Debug",shortcut_name);
     for(int r=scroll;r<row_count()&&r<scroll+VISIBLE&&n+2<capacity;r++) {
         char text[144];label(r,text,sizeof text);line=&out[n++];

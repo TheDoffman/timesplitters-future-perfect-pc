@@ -13,6 +13,9 @@ static uint64_t test_clock(void) { return test_now; }
 #undef GetTickCount64
 
 RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp;
+#include "gameplay/pc_audio_clock.h"
+static float test_speed=1.f;static PcAudioClock test_media_clock;
+uint64_t recomp_audio_output_game_time(uint64_t now,unsigned domain){(void)domain;return pc_audio_clock_step(&test_media_clock,now,test_speed);}
 static uint8_t memory[1024 * 1024];
 ptrdiff_t g_xbox_mem_offset;
 size_t g_xbox_total_ram = sizeof memory;
@@ -421,11 +424,22 @@ static int device_recovery(int early)
     return 0;
 }
 
+static int speed_changes(void)
+{
+    Stream *s=setup();s->output=0;packet(s,0x12000,0x13000);
+    test_speed=.5f;hle_dsound_stream_tick(1500);CHECK(s->count==1);
+    CHECK(HLE_MEM32(0x13000)==XMP_STATUS_PENDING);
+    test_speed=2.f;hle_dsound_stream_tick(1800);CHECK(s->count==1);
+    hle_dsound_stream_tick(1900);CHECK(s->count==0);
+    CHECK(HLE_MEM32(0x13000)==XMP_STATUS_SUCCESS);return 0;
+}
+
 int main(int argc, char **argv)
 {
     int result;
     if (argc != 2) return 2;
     if (!strcmp(argv[1], "underrun")) result = underrun();
+    else if (!strcmp(argv[1], "speed")) result=speed_changes();
     else if (!strcmp(argv[1], "process")) result = process_clock();
     else if (!strcmp(argv[1], "flush")) result = flush_origin();
     else if (!strcmp(argv[1], "fallback")) result = fallback();

@@ -69,7 +69,7 @@ const char *const pc_action_labels[PC_ACTION_COUNT] = {
 #define PC_WEAPON_SLOT(n,key) "Weapon slot " #n,
 #include "pc_weapon_slots.def"
 #undef PC_WEAPON_SLOT
-    "Developer Tools",
+    "Developer Tools", "Toggle no-clip", "Toggle free-cam",
 };
 
 void pc_settings_defaults(PcSettings *s)
@@ -82,7 +82,7 @@ void pc_settings_defaults(PcSettings *s)
 #define PC_WEAPON_SLOT(n,key) {key},
 #include "pc_weapon_slots.def"
 #undef PC_WEAPON_SLOT
-        {VK_F1},
+        {VK_F1}, {0}, {0},
     };
     memset(s, 0, sizeof *s);
     memcpy(s->keys, keys, sizeof keys);
@@ -272,10 +272,13 @@ int pc_settings_developer_enabled(void)
     ReleaseSRWLockShared(&g_pc_bindings_lock);return enabled;
 }
 void pc_settings_developer_keys(int keys[PC_BINDING_SLOTS])
+{ pc_settings_action_keys(PC_DEVELOPER_ACTION,keys); }
+void pc_settings_action_keys(int action,int keys[PC_BINDING_SLOTS])
 {
     recomp_bindings_init();memset(keys,0,PC_BINDING_SLOTS*sizeof *keys);
     AcquireSRWLockShared(&g_pc_bindings_lock);
-    const Binding *binding=&g_ctl[0].bind[PC_DEVELOPER_ACTION];
+    if(action<0 || action>=PC_ACTION_COUNT){ReleaseSRWLockShared(&g_pc_bindings_lock);return;}
+    const Binding *binding=&g_ctl[0].bind[action];
     for(int i=0;i<binding->count && i<PC_BINDING_SLOTS;i++)
         if(binding->src[i].kind==SRC_KEY)keys[i]=binding->src[i].arg;
     ReleaseSRWLockShared(&g_pc_bindings_lock);
@@ -577,7 +580,7 @@ static void pc_weapon_bindings_migrate(const char *text)
     Controller *c=&g_ctl[0];
     const char *enabled=pc_member(text,"developer_tools_enabled",NULL);
     g_pc_developer_enabled=enabled && !strncmp(enabled,"true",4);
-    if(bindings && !pc_member(bindings,"developer_tools",NULL)) {
+    if(!bindings || !pc_member(bindings,"developer_tools",NULL)) {
         Binding *binding=&c->bind[PC_DEVELOPER_ACTION];memset(binding,0,sizeof *binding);
         int used=0;
         for(int i=0;i<PC_DEVELOPER_ACTION;i++)for(int j=0;j<c->bind[i].count;j++)

@@ -1529,6 +1529,9 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case UC_BUILD:return uc_build;
     case UC_TICK:return uc_tick;
     case UC_DEVELOPER_TICK:return uc_developer_tick;
+    case UC_DEVELOPER_OPEN:return uc_developer_open;
+    case UC_DEVELOPER_BUILD:return uc_developer_build;
+    case UC_DEVELOPER_BACK:return uc_developer_back;
     case UC_BACK:return uc_back;
     case 0x00192770u:return sd_profile_tick;
     case SD_SELECT:return sd_select;

@@ -1,3 +1,13 @@
+Latest notes append2590 after2580; the ordered-tail fixture expects86 patches.
+Only the intended additive patch is staged for context-index refresh. Native
+warning consolidation and audio-toggle acceptance are logged in STATUS.
+
+Further Developer Tools notes append patches2560/2570/2580 after2550.
+The ordered-stack fixture now expects85 patches. Stage these intended patches
+before refreshing the generated context index. Current bounded investigation is
+logs/developer-tools-further-investigation.md; user screenshot disproved the prior
+freecam-opacity acceptance claim, so require a close-up capture before reasserting.
+
 Developer Tools revised notes: patches2540/2550 now follow2530; the generated
 index must include all four additions after the platform adapters. Body-opacity
 investigation confirmed native1265B0 effect bit2 is the first-person eye fade;

@@ -273,6 +273,14 @@ def patch_records(paths):
     if developer_movies:
         paths.remove(developer_movies)
         paths.append(developer_movies)
+    for name in ('2560-developer-tools-ui-audio-and-bindings.patch',
+                 '2570-developer-tools-game-audio-clock.patch',
+                 '2580-developer-tools-lobby-wrench.patch',
+                 '2590-developer-tools-optional-audio-speed.patch'):
+        followup=by_name.get(name)
+        if followup:
+            paths.remove(followup)
+            paths.append(followup)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

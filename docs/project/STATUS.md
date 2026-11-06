@@ -1,3 +1,76 @@
+## 2026-11-05 - Latest warning and optional audio-speed notes
+
+Uncommitted on developer-tools-overlay after a7271130 and the prior local changes.
+Extras now uses one nonselectable multiline warning entry; the native Status
+selector, configured shortcut and Back remain separate. Developer Tools adds
+Audio follows game speed (On by default, session only). Off restores1x audio
+without changing manual/held game speed or native/video clock speed. Both
+shared gameplay and XMV voice paths use pc_developer_audio_speed. Patch2590
+is additive after2580; no generated guest code or personal config was edited.
+
+Windows x64, MSVC supported Build passed linked checks, crash-symbol creation
+and content seal. Verified supported US XBE; D3D11 host. Executable SHA-256:
+6cdc922940ddeb7476349e420aae5990f4c99d6700af326f7839b4ae80eaf0c8.
+Fourteen focused input/native-menu/real-XMV checks passed;92 audio/repository
+contract checks passed. The movie test keeps video at2x while audio is1x,
+then restores2x audio; overlay input fixture exercises the same toggle at3x.
+Repository context/link/index validation passes against a7271130.
+
+Reviewed native capture confirms all three warning lines in a single entry,
+no clipping, working Enable/Disable saves and F3 shortcut round trip. Actual
+System Link pair reached host11/guest12 with two humans; the disabled guest
+shows a wrench beside only the enabled host, with no footer notice. This
+finishes the previously locked-session LAN visual check. The first menu replay
+used long key holds retained from the locked desktop and triggered native key
+repeat/Quit; it was corrected to normal holds and the rerun passed. No product
+failure was inferred from that automation issue. Reviewed overlay captures confirm the new audio row toggles On/Off/On. A separate
+actual Online pair used a local directory and independent authenticated bridges;
+host11/guest12 had two humans and the disabled guest displayed the enabled host's
+wrench. These finish the prior pending lobby visual checks. All test children
+stopped, disposable partition images recycled, and personal/canonical hashes
+unchanged. Mac/Linux native builds, physical input/audio,
+every scene and physical remote multiplayer acceptance remain unrun.
+
+## 2026-11-05 - Further Developer Tools notes
+
+Uncommitted after a7271130, branch developer-tools-overlay, Windows x64. All six
+updated notes implemented: game audio speed with scaled playback clocks; explicit
+opaque owned-body draw; native Extras submenu with Enable/Disable, warning and
+assigned shortcut; per-player lobby wrench with footer retained dormant; removed
+Return to game row; configurable no-clip/freecam shortcuts, default unbound.
+Complete additive patches2560/2570/2580 follow2550. Implementation is shared by
+Windows, Mac and Linux; host acceptance below is Windows only.
+
+Focused input/native menu/audio checks:82 passes. Expanded input/render/network/
+audio run:196 passes,14 host/data skips, four stale-API fixture compile failures;
+all four corrected renderer fixtures pass (two native-host skips). Windows
+launcher rebuild/test:48 isolated settings checks and existing shared UI suites
+passed. Supported Windows Build4 completed all linked checks, sealed content verification
+and matching crash symbols (MSVC x64, D3D11, verified US XBE). Final executable
+SHA-256: d638eb80a41fa4848bdfd126d6b3a69e6d62d724b6dbea0764e489b102633c23.
+Final audio regressions:71 passes; native label/outline/menu:22 passes, followed
+by the decorated-name/slot guard fixture passing. Repository context/link/index
+validation passed against a7271130.
+
+Live acceptance before the Windows session locked: close-up first-level freecam
+shows opaque torso/legs with terrain occluded; configured N/B flight toggles and
+return to player view work. Native submenu stays open after removing an erroneous
+lifecycle Back callback; Enable/Disable saves and assigned F3 opens/closes Tools.
+The initial System Link pair reached native host11/guest12 with two humans and
+preserved disabled-client operation, but caught a missing wrench:39010 is the
+conditional dimming draw. The final implementation uses the actual outlined-name
+41E30 caller199583, preserves prompt outline scopes and matches the painter's
+EBX roster slot to353760 capture. Decorated display labels are measured directly.
+
+Final wider-menu and corrected-wrench captures are pending. Windows LogonUI was
+active during the last replay; D3D11 host Present blocked214-263ms/frame. Those
+attempts missed profile/menu input and are not accepted as feature evidence.
+Native Mac/Linux build, physical input/audio, every scene and remote multiplayer
+acceptance remain unrun. Personal saves/settings and canonical fixture preserved.
+All test children stopped and disposable partitions recycled. Nine compiler
+fixture directories recycled (1319.7 MiB summed lengths, not physical allocation);
+selected captures and bounded logs retained. Changes are local and uncommitted.
+
 ## 2026-11-05 - Revised Developer Tools notes
 
 Previous work committed first as 906a2c8e on developer-tools-overlay. Revised
@@ -28,9 +101,8 @@ clock branch had ignored the scaled game delta; original-XBE98E50 and scoped
 wrapper fixtures now cover that distinction and origin rebasing. Earlier XMV
 real-file cadence/image/PCM checks and XAudio/SDL queued-voice fixtures passed.
 Extras ON/OFF saved successfully, the F3 warning matched the assigned binding,
-OFF blocked the shortcut, and F3 opened/closed the enabled overlay. Reviewed
-first-level freecam capture shows Cortez's complete body against the light
-terrain. Actual two-instance System Link host/guest reached states11/12 and
+OFF blocked the shortcut, and F3 opened/closed the enabled overlay. The prior first-level freecam capture established body visibility only;
+the user's subsequent close-up disproved the claimed opacity fix. Actual two-instance System Link host/guest reached states11/12 and
 both displayed the enabled host's name while the guest's Tools remained OFF.
 A separate actual Online pair used a local directory and independent authenticated
 bridge ports. Native browser discovery, host11/guest12 membership and the enabled

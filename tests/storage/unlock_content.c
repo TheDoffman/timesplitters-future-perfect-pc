@@ -23,6 +23,7 @@ STUB(sub_00071B10) STUB(sub_00071C50) STUB(sub_00079D60_gen)
 STUB(sub_000771D0) STUB(sub_0007D480) STUB(sub_000717D0)
 STUB(sub_00075430) STUB(sub_00079B70)
 static int developer_enabled,developer_enables;
+void pc_developer_shortcut_name(char *out,size_t bytes){snprintf(out,bytes,"F3");}
 int pc_developer_enabled(void){return developer_enabled;}
 int pc_developer_set_enabled(int enabled){developer_enabled=enabled;developer_enables++;return 1;}
 static uint32_t row_count,callbacks[32],row_ids[32],last_row,saves,transition;
@@ -113,11 +114,17 @@ int main(void)
     /* Actual Extras/category callbacks, including ABI, row ownership and save. */
     WORD_AT(0x2000+0x2c)=expected_parent;WORD_AT(0x2000+4)=expected_previous;
     row_count=0;WORD_AT(0x2004)=0x524578;call(uc_extras_build,0x2000);expected_previous=WORD_AT(0x2004);
-    assert(WORD_AT(0x2004)==UC_EXTRAS_DESCRIPTOR && WORD_AT(0x200c)==UC_DEVELOPER_TICK);
     assert(row_count==5 && callbacks[0]==0x2d08a0 && callbacks[1]==0x2d0880);
-    assert(callbacks[2]==UC_OPEN && !callbacks[3] && callbacks[4]==0x2cbe30);
-    WORD_AT(uc_developer_row+0xc8)=1;call(uc_developer_tick,0x2000);assert(developer_enabled && developer_enables==1);
-    WORD_AT(uc_developer_row+0xc8)=0;call(uc_developer_tick,0x2000);assert(!developer_enabled && developer_enables==2);
+    assert(callbacks[2]==UC_OPEN && callbacks[3]==UC_DEVELOPER_OPEN && callbacks[4]==0x2cbe30);
+    call(uc_developer_open,0x2000);assert(transition==UC_DEVELOPER_DESCRIPTOR);
+    assert(WORD_AT(UC_DEVELOPER_DESCRIPTOR+8)==0 && WORD_AT(UC_DEVELOPER_DESCRIPTOR+12)==0);
+    WORD_AT(0x3004)=UC_DEVELOPER_DESCRIPTOR;WORD_AT(0x300c)=UC_DEVELOPER_TICK;
+    row_count=0;call(uc_developer_build,0x3000);assert(row_count==4);
+    assert(strchr((char *)(memory+UC_TEXT(17)),'\n') && strstr((char *)(memory+UC_TEXT(17)),"Use at your discretion."));
+    assert(strstr((char *)(memory+UC_TEXT(17)),"Warning:") && strstr((char *)(memory+UC_TEXT(21)),"F3"));
+    WORD_AT(uc_developer_row+0xc8)=1;call(uc_developer_tick,0x3000);assert(developer_enabled && developer_enables==1);
+    WORD_AT(uc_developer_row+0xc8)=0;call(uc_developer_tick,0x3000);assert(!developer_enabled && developer_enables==2);
+    call(uc_developer_back,0x3000);assert(saves==1);saves=0;
     call(uc_open,0x2000);assert(transition==uc_storage);
     row_count=0;call(uc_build,0x2000);assert(row_count==PC_UNLOCK_COUNT);
     for(unsigned i=0;i<PC_UNLOCK_COUNT;i++)assert(!callbacks[i] && row_ids[i]==i && WORD_AT(uc_rows[i]+0xc8)==1);

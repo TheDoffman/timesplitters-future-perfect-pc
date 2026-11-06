@@ -1,0 +1,73 @@
+--- a/src/hle/audio_output.h
++++ b/src/hle/audio_output.h
+@@ -54,6 +54,8 @@
+ void recomp_audio_output_movie_speed(float ratio);
+ /* Changes existing gameplay voices in place; the video voice has its own clock. */
+ void recomp_audio_output_game_speed(float ratio);
++/* 0: QPC buffer clock; 1: tick stream clock. Each domain integrates separately. */
++uint64_t recomp_audio_output_game_time(uint64_t real_ms,unsigned domain);
+ 
+ int recomp_audio_output_submit(
+     uint32_t slot, const uint8_t *pcm, uint32_t bytes,
+--- a/src/hle/audio_output_xaudio2.cpp
++++ b/src/hle/audio_output_xaudio2.cpp
+@@ -6,6 +6,7 @@
+  * RECOMP_AUDIO_GAIN uses the shared output headroom here rather than muted.
+  */
+ #include "audio_output.h"
++#include "gameplay/pc_audio_clock.h"
+ #include "gameplay/pc_spatial_audio.h"
+ #include "gameplay/pc_acoustic_dsp.h"
+ 
+@@ -64,6 +65,7 @@
+ IXAudio2MasteringVoice *master;
+ OutputVoice voices[kVoiceCount];
+ float movie_speed=1.f,game_speed=1.f;
++PcAudioClock game_clocks[2];
+ PcAcousticDsp acoustics[kVoiceCount];
+ PcAcousticDsp acoustic_backup; /* serialized by output_lock */
+ struct Spatial { float pan; int enabled; } spatial[kVoiceCount];
+@@ -371,6 +373,13 @@
+     stats->active_voices = perf.ActiveSourceVoiceCount;
+     stats->total_voices = perf.TotalSourceVoiceCount;
+     return 1;
++}
++
++extern "C" uint64_t recomp_audio_output_game_time(uint64_t real_ms,unsigned domain)
++{
++    if(domain>=2)return real_ms;
++    std::lock_guard<std::recursive_mutex> guard(output_lock);
++    return pc_audio_clock_step(&game_clocks[domain],real_ms,game_speed);
+ }
+ 
+ extern "C" void recomp_audio_output_game_speed(float ratio)
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -177,7 +177,7 @@
+ 
+ static uint64_t now_ms(void)
+ {
+-    return lead_ms() ? qpc_us() / 1000u : GetTickCount64();
++    return recomp_audio_output_game_time(lead_ms() ? qpc_us() / 1000u : GetTickCount64(),0);
+ }
+ 
+ /* What the buffers did since start, for the five-second line. */
+--- a/src/hle/hle_dsound_stream.c
++++ b/src/hle/hle_dsound_stream.c
+@@ -166,7 +166,7 @@
+     EnterCriticalSection(&g_lock);
+ }
+ static void unlock(void) { LeaveCriticalSection(&g_lock); }
+-static uint64_t now_ms(void) { return GetTickCount64(); }
++static uint64_t now_ms(void) { return recomp_audio_output_game_time(GetTickCount64(),1); }
+ 
+ /* Name the first few call sites of a replaced stream method, once each: a
+  * title that waits on a status this file reports differently from the console
+@@ -581,6 +581,7 @@
+ 
+ void hle_dsound_stream_tick(uint64_t now)
+ {
++    now=recomp_audio_output_game_time(now,1);
+     static uint64_t last_report;
+     int i, any = 0;
+     lock();

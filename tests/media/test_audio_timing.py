@@ -42,7 +42,7 @@ def buffer_test(tmp_path_factory):
     return compile_audio('buffer', tmp_path_factory)
 
 
-@pytest.mark.parametrize('scenario', ['underrun', 'process', 'flush', 'fallback',
+@pytest.mark.parametrize('scenario', ['underrun', 'speed', 'process', 'flush', 'fallback',
                                      'snapshot', 'pause', 'completion', 'lost-device', 'bad-data',
                                      'diagnostics', 'adpcm', 'release-reuse', 'flush-ex', 'flush-ex-async', 'format-pcm', 'format-adpcm',
                                      'format-paused', 'frequency', 'recover-device', 'recover-early'])

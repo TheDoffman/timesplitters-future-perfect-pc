@@ -23,8 +23,8 @@ namespace TimeSplitters.Launcher
             return Map(profile["bindings"]).Keys.Where(k=>k.StartsWith("weapon_slot_",StringComparison.Ordinal))
                 .OrderBy(k=>Int32.Parse(k.Substring(12),CultureInfo.InvariantCulture)).ToArray();
         }
-        public static readonly string[] Actions=PadActions.Concat(WeaponActions()).Concat(new[]{"developer_tools"}).ToArray();
-        public static readonly string[] Labels=PadLabels.Concat(WeaponActions().Select(k=>"Weapon slot "+k.Substring(12))).Concat(new[]{"Developer Tools"}).ToArray();
+        public static readonly string[] Actions=PadActions.Concat(WeaponActions()).Concat(new[]{"developer_tools","developer_noclip","developer_freecam"}).ToArray();
+        public static readonly string[] Labels=PadLabels.Concat(WeaponActions().Select(k=>"Weapon slot "+k.Substring(12))).Concat(new[]{"Developer Tools","Toggle no-clip","Toggle free-cam"}).ToArray();
         readonly string root;
         readonly Dictionary<string, byte[]> originals = new Dictionary<string, byte[]>();
         Dictionary<string, object> document, controller, bindings;

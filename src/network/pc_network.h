@@ -15,7 +15,7 @@ int pc_network_latency(double *milliseconds, unsigned *peers);
 #include "pc_network_bots_state.h"
 typedef struct PcDeveloperPeer { uint32_t ip; int local,host; char name[65]; } PcDeveloperPeer;
 /* Self-reported availability for the admitted lobby roster; never enables cheats. */
-void pc_network_developer_lobby(const PcDeveloperPeer *roster,unsigned count,int enabled,char *names,size_t bytes);
+unsigned pc_network_developer_lobby(const PcDeveloperPeer *roster,unsigned count,int enabled,char *names,size_t bytes);
 /* Extension packets share the existing compatible LAN/Online transport. */
 void pc_network_bots_context(unsigned role,uint32_t host_ip,uint32_t match,unsigned humans,unsigned bots);
 void pc_network_bots_send(const PcNetworkBotState *state);

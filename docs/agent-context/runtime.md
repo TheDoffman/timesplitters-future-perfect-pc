@@ -1,7 +1,20 @@
+Patch2590 follows2580 and separates XMV audio speed from its video clock using
+PC_MOVIE_AUDIO_SPEED. Shared Tools supplies pc_developer_audio_speed; non-Tools
+builds retain their prior rate fallback. No guest wrappers/declarations change,
+so generation is unchanged and an incremental native build is sufficient.
+
+Further notes add patches2560/2570/2580 after2550. 2560 makes all gameplay
+voices pitch-enabled and updates their existing ratio through a registered overlay
+callback; movie voices keep their separate movie ratio. 2570 advances buffer and
+stream scheduling through two independent scaled media clocks (QPC/tick origins),
+including SDL fallback completion. 2580 wraps native353760 and existing41E30 for lobby name
+capture and a guarded wrench draw; guest regeneration is required. Shared native
+menu/body changes remain in source, not generated C.
+
 Patches2540/2550 follow2530. 2540 appends a host-only binding to runtime controls;
 it is skipped by Xbox pad synthesis. 2550 integrates movie time at current
 Developer Tools speed and enables movie-only XAudio frequency changes; SDL
-uses the same rate contract. Ordinary voices retain their existing pitch flags.
+uses the same rate contract. 2560 supersedes the original ordinary-voice pitch flags.
 2550 also wraps native98E50 to use its fractional cinematic position path,
 scoping the borrowed flag after99990 clamps debug seeking and rebasing its
 real-clock origin for a smooth Tools-disable transition. Regenerate guest C.

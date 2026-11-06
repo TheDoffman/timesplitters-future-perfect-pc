@@ -53,6 +53,7 @@ void sub_00041E30_gen(void)
     }
     g_esp=saved+4;
 }
+void pc_developer_lobby_text(void (*original)(void)){original();}
 /* PRODUCTION_OUTLINE_WRAPPER */
 #ifdef TEST_PANEL_SCOPE
 static unsigned measurements,placements;

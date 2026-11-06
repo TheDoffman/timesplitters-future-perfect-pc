@@ -33,6 +33,8 @@ static void sleep_ms(DWORD ms) { assert(ms==1);sleeps++;host_counter+=host_frequ
 #define TSFP_RHI_RENDERER 1
 #endif
 static double movie_test_speed=1.;
+static int movie_scale_audio=1;
+#define PC_MOVIE_AUDIO_SPEED() (movie_scale_audio?movie_test_speed:1.)
 #define PC_MOVIE_SPEED() movie_test_speed
 #define PC_MOVIE_ACTIVE(active) ((void)(active))
 #include "hle/hle_xmv_play.c"
@@ -81,6 +83,9 @@ static void test_speed_changes(void) {
     host_counter+=host_frequency;movie_test_speed=1.;assert(movie_clock(&m)==3500);
     feed_audio(&m);assert(movie_audio_speed==1.f);
     movie_test_speed=2.;feed_audio(&m);assert(movie_audio_speed==2.f);
+    movie_scale_audio=0;feed_audio(&m);assert(movie_audio_speed==1.f);
+    host_counter+=host_frequency;assert(movie_clock(&m)==5500);
+    movie_scale_audio=1;feed_audio(&m);assert(movie_audio_speed==2.f);
     host_counter=0;movie_test_speed=1.;
 }
 static void test_audio_recovery(void) {

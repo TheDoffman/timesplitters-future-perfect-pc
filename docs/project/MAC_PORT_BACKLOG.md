@@ -1,3 +1,20 @@
+Latest Developer Tools notes (uncommitted): one native multiline warning row and
+session audio-scaling toggle are shared source changes. Patch2590 routes XMV
+audio through the shared toggle; existing XAudio/SDL voice-rate paths are reused.
+Windows build, focused checks, native warning/audio-toggle UI and loopback lobby
+wrench acceptance pass; see [STATUS](STATUS.md). Native Mac/Linux UI and actual audio/video
+acceptance remain pending. No additional platform policy or preference reset.
+
+Further Developer Tools notes (uncommitted after a7271130): shared native submenu,
+37-action binding model, owned-body opaque draw, native lobby wrench and dormant
+footer are implemented in src/interface, src/input and src/network. Patches2560-
+2580 extend shared runtime voice rates/media clocks and lobby draw wrappers;
+src/native/audio_sdl.c supplies the same in-place SDL rate/clock contract. No new
+Mac feature policy is duplicated. Windows acceptance is tracked in [STATUS](STATUS.md).
+Status: implemented, native acceptance pending. Native Mac/Linux builds, submenu
+layout/input, physical audio timing, body opacity and actual lobby wrench acceptance
+remain unrun; existing settings/saves and unsupported preferences are preserved.
+
 Developer Tools revised notes (included in this revision after906a2c8e): shared opt-in,
 native Extras selector, assigned shortcut/warning, current-session named lobby
 metadata, native cinematic clock and near-eye fade scope are implemented once.

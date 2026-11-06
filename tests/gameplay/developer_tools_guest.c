@@ -49,7 +49,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...) {
     if(called==5){assert(argc==2&&arguments[1]==0);return arguments[0]<2?0x9000:0;}
     if(called==6){assert(argc==1&&arguments[0]<2);WORD_AT(0xb000)=arguments[0];WORD_AT(0xb004)|=1u<<arguments[0];captures++;}
     if(called==7){assert(argc==1&&arguments[0]==WORD_AT(0xb004));reloads++;}
-    if(called==9){assert(argc==2&&arguments[0]==0x6000&&arguments[1]==body_draws%3);assert(!(WORD_AT(0x6014)&1u));assert(!(WORD_AT(0xac6c)&2u));assert((WORD_AT(0x101f8)&0xffffff)==0x7fffff);body_draws++;}
+    if(called==9){assert(argc==2&&arguments[0]==0x6000&&arguments[1]==body_draws%3);assert(!(WORD_AT(0x6014)&1u));assert(!(WORD_AT(0xac6c)&2u));assert((WORD_AT(0x101f8)&0xffffff)==0x7fff00);body_draws++;}
     if(called==8){assert(argc==1&&arguments[0]==0&&(WORD_AT(0x7de45c)&0x8000));endings++;}
     return 0;
 }

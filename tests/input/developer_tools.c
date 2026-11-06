@@ -15,7 +15,7 @@ static PcDebugOptions debug;
 const char *const pc_action_labels[PC_ACTION_COUNT]={
     "Fire","Action","3","4","5","6","7","8","9","10","11","12",
     "13","14","15","16","17","18","19","20","21","22","23","24",
-    "25","26","27","28","29","30","31","32","33","34"};
+    "25","26","27","28","29","30","31","32","33","34","Developer Tools","Toggle no-clip","Toggle free-cam"};
 int pc_controls_developer_keys(unsigned char out[256]) {memcpy(out,test_keys,256);return focus;}
 void pc_controls_developer_release(void) {}
 void pc_settings_capture_end(void) {}
@@ -23,6 +23,7 @@ int pc_settings_capture_blocked(void) {return 0;}
 int pc_settings_developer_enabled(void) {return dev_enabled;}
 int pc_settings_developer_save(int enabled,char *e,size_t n) {(void)e;(void)n;dev_enabled=enabled;return 1;}
 void pc_settings_developer_keys(int keys[PC_BINDING_SLOTS]) {keys[0]=dev_key;keys[1]=0;}
+void pc_settings_action_keys(int action,int keys[PC_BINDING_SLOTS]) {keys[0]=action==PC_NOCLIP_ACTION?'B':action==PC_FREECAM_ACTION?'N':dev_key;keys[1]=0;}
 
 void pc_controls_text_mode(uint32_t owner) {(void)owner;}
 void pc_controls_menu_mode(int active) {menu_captured=active;}
@@ -46,19 +47,29 @@ void pc_debug_set(const PcDebugOptions *v) {debug=*v;}
 int pc_debug_config_save(const PcDebugOptions *v,char *error,size_t n) {(void)v;(void)error;(void)n;return 1;}
 void pc_debug_clear(void) {}
 void pc_debug_snapshot(PcDebugSnapshot *snapshot) {memset(snapshot,0,sizeof *snapshot);}
+static float observed_audio_speed;
+static void audio_speed(float value) {observed_audio_speed=value;}
 static void frame(void) {test_time+=16;pc_developer_frame();}
 static void key(int k) {test_keys[k]=1;frame();test_keys[k]=0;frame();}
 int main(void) {
     PcDeveloperState s;PcDeveloperLine lines[16];
+    pc_developer_audio_register(audio_speed);frame();assert(observed_audio_speed==1.f);
     pc_developer_toggle();assert(!pc_developer_open());frame();
     dev_key=0x72;assert(pc_developer_set_enabled(1));
-    assert(pc_developer_lines(840,620,lines,16)==5 && strstr(lines[3].text,"Key 114"));
-    key(13);assert(!pc_developer_open());
+    assert(!pc_developer_open() && pc_developer_lines(840,620,lines,16)==0);
+    char name[104];pc_developer_shortcut_name(name,sizeof name);assert(strstr(name,"Key 114"));
     key(0x70);assert(!pc_developer_open());key(0x72);assert(pc_developer_open());
     key(0x72);assert(!pc_developer_open());dev_key=0x70;
-    pc_developer_lobby_notice("Alice, Bob");assert(pc_developer_lines(840,620,lines,16)==2 && strstr(lines[1].text,"Alice"));
+    pc_developer_lobby_notice("Alice, Bob");assert(pc_developer_lines(840,620,lines,16)==0);
     test_time+=1001;assert(pc_developer_lines(840,620,lines,16)==0);
 
+    /* Configured host-only flight toggles obey focus, enablement and offline gates. */
+    pc_developer_publish(1,1,0);key('B');pc_developer_get(&s);assert(s.noclip);
+    key('N');pc_developer_get(&s);assert(s.freecam&&!s.noclip&&s.hide_hud);
+    key('N');pc_developer_get(&s);assert(!s.freecam&&!s.hide_hud);
+    focus=0;key('B');focus=1;pc_developer_get(&s);assert(!s.noclip);
+    pc_developer_publish(1,1,1);key('B');pc_developer_get(&s);assert(!s.noclip);
+    pc_developer_publish(0,0,0);
     float origin[3]={1,2,3},direction[3]={0,0,-1},position[3],forward[3];
     assert(pc_developer_flight_step(2,origin,direction,0,position,forward));
     assert(position[0]==1&&position[1]==2&&position[2]==3&&forward[2]<-.99f);
@@ -90,15 +101,19 @@ int main(void) {
     key(0x28);key(13);pc_developer_get(&s);assert(s.checkpoint==1);
     key(0x28);key(13);key('2');key(13);pc_developer_get(&s);assert(s.speed==2.);
     pc_developer_close();test_keys[0xdb]=1;frame();pc_developer_get(&s);assert(s.speed==2.); /* outside-menu disabled */
-    pc_developer_toggle();selected=9;key(13);pc_developer_close();frame();pc_developer_get(&s);assert(s.speed==.5&&s.manual_speed==2.);
+    pc_developer_toggle();selected=8;key(13);pc_developer_close();frame();pc_developer_get(&s);assert(s.speed==.5&&s.manual_speed==2.);
     test_keys[0xdd]=1;frame();pc_developer_get(&s);assert(s.speed==2.); /* ] wins ties */
     test_keys[0xdd]=test_keys[0xdb]=0;frame();pc_developer_get(&s);assert(s.speed==2.);
-    pc_developer_toggle();selected=10;key(13);key('0');key(0xbe);key('2');key('5');key(13);pc_developer_get(&s);assert(s.slow_speed==.25);
-    selected=11;key(13);key('3');key(13);pc_developer_get(&s);assert(s.fast_speed==3.);
-    selected=12;key(13);selected=13;key(13);pc_developer_get(&s);assert(s.god&&s.infinite_ammo);
-    pc_developer_close();test_keys[0xdd]=1;frame();pc_developer_get(&s);assert(s.speed==3.);
+    pc_developer_toggle();selected=9;key(13);key('0');key(0xbe);key('2');key('5');key(13);pc_developer_get(&s);assert(s.slow_speed==.25);
+    selected=10;key(13);key('3');key(13);pc_developer_get(&s);assert(s.fast_speed==3.);
+    selected=11;key(13);selected=12;key(13);pc_developer_get(&s);assert(s.god&&s.infinite_ammo);
+    pc_developer_close();test_keys[0xdd]=1;frame();pc_developer_get(&s);assert(s.speed==3.);assert(observed_audio_speed==3.f);
+    pc_developer_toggle();selected=13;key(13);frame();pc_developer_get(&s);
+    assert(!s.audio_speed && s.speed==3. && pc_developer_speed()==3. && observed_audio_speed==1.f);
+    key(13);frame();assert(pc_developer_audio_speed()==3. && observed_audio_speed==3.f);
+    pc_developer_close();
     focus=0;frame();pc_developer_get(&s);assert(s.speed==2.);focus=1;test_keys[0xdd]=0;
-    pc_developer_publish(1,1,1);pc_developer_get(&s);assert(s.speed==1.&&!s.freecam&&!s.noclip&&!s.god&&!s.infinite_ammo);
+    pc_developer_publish(1,1,1);pc_developer_get(&s);frame();assert(observed_audio_speed==1.f);assert(s.speed==1.&&!s.freecam&&!s.noclip&&!s.god&&!s.infinite_ammo);
     pc_developer_toggle();key(27); /* Home Escape closes */
     assert(!pc_developer_open());
     pc_developer_toggle();selected=0;key(13);assert(page==SETTINGS);

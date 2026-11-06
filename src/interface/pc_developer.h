@@ -11,6 +11,7 @@ typedef struct PcDeveloperState {
     unsigned checkpoint;
     int speed_keys, god, infinite_ammo;
     double manual_speed, slow_speed, fast_speed;
+    int audio_speed;
 } PcDeveloperState;
 typedef struct PcDeveloperLine {
     char text[160];
@@ -19,10 +20,13 @@ typedef struct PcDeveloperLine {
 int pc_developer_open(void);
 int pc_developer_enabled(void);
 int pc_developer_set_enabled(int enabled);
+void pc_developer_shortcut_name(char *out,size_t bytes);
+void pc_developer_audio_register(void (*set_speed)(float));
 int pc_developer_shortcut_key(int key);
 void pc_developer_lobby_notice(const char *names);
 void pc_developer_lobby_guest(void);
 double pc_developer_speed(void);
+double pc_developer_audio_speed(void);
 void pc_developer_movie(int active);
 void pc_developer_toggle(void);
 void pc_developer_close(void);

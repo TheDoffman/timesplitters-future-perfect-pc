@@ -1,11 +1,24 @@
+Latest notes: Extras warning is one native nonselectable multiline row (slot17),
+not three independent rows. The submenu now contains Status, warning, shortcut,
+and Back. Developer Tools appends Audio follows game speed (default On) at row13;
+its session state is independent of the selected/manual/held game speed.
+pc_developer_audio_speed applies the normal opt-in/offline/playback guards and
+returns1 when audio scaling is Off. Gameplay callbacks and XMV audio use this
+getter; movie/video clocks continue using pc_developer_speed.
+
 ## Developer Tools overlay
 
 Developer Tools is opt-in (`developer_tools_enabled`, absent=false, in controls
-JSON). Extras appends a native OFF/ON selector using its cached per-menu tick (menu+C, copied by native78E50);
-enabling shows a modal overlay warning with the assigned shortcut. Host action
+JSON). Extras opens a native Developer Tools submenu with Enable/Disable selector,
+nonselectable warning text and the assigned shortcut. Its owned descriptor uses
+the cached per-menu tick (menu+C, copied by native78E50). Descriptor+8/+12
+remain empty lifecycle slots; 75B70 and the Back row own navigation. A90-unit
+frame and short Status label prevent native selector/warning clipping. Host action
 `developer_tools` is appended after weapon slots (PC_DEVELOPER_ACTION); default
 F1 migrates only when absent and unclaimed. Native Keyboard & Mouse includes it
-under Menu actions; the Windows/Cocoa editors and overlay share PC_ACTION_COUNT.
+under Menu actions; the Windows/Cocoa editors and overlay share PC_ACTION_COUNT=37.
+Actions35/36 are configurable no-clip/freecam toggles, default unbound; rising
+edges run only while the overlay is closed and normal input owns capture.
 Input capture must bypass the shortcut during rebinding. Disabled tools reset
 active cheats/flight/HUD; F2/F12 remain available. Native cinematic98E50 uses
 its fractional game-delta branch while Tools is enabled offline; the borrowed
@@ -13,8 +26,12 @@ its fractional game-delta branch while Tools is enabled offline; the borrowed
 so disabling Tools preserves position. Original pause/end checks stay active.
 The native real-clock branch otherwise ignores scaled game delta. XMV time integrates the
 requested speed and both audio adapters change the existing movie voice rate,
-preserving queued PCM. Freecam's own-body draw temporarily bypasses native
-1265B0 near-eye fade bit 2, restores model draw style/effect flags afterward.
+preserving queued PCM. All other voices follow effective game speed in-place;
+separate QPC/tick media clocks keep buffer/stream deadlines aligned, including SDL
+fallback playback. Delayed worker timestamps cannot rewind the media clock. Freecam's own-body draw temporarily bypasses native
+1265B0 near-eye fade bit2 and explicitly selects opaque blend0/alpha127; blendFF
+inherits fade state. It marks the model header dirty on entry and restoration,
+then restores model draw style/effect flags afterward.
 `pc_developer_lobby_guest.inc` uses native 353760 roster names and peer IPs;
 compatibility-framed TSFDEV1 metadata announces availability, never cheat state.
 Only admitted roster IPs with the current host lobby session key enter the
@@ -24,7 +41,12 @@ nor receiver requires a per-guest XNADDR discovery entry. Retiring a host key
 clears cached notices, including when stale self-discovery still exists.
 LAN and Online bridge envelopes share validation; names are copied from the
 native roster. The timing boundary polls host/guest lobby states11/12, even
-when local Tools is disabled; the overlay renders the named notice independently.
+when local Tools is disabled. Native353760 return198FD6 captures each name slot;
+41E30 return199583 appends a vector wrench after the measured native name,
+only for marked slots in lobby states11/12. The painter restores its row index
+to EBX before this call; match it to the captured slot and measure the actual
+display label, including native decorated copies. The original name stays unchanged.
+The former named footer notice remains implemented but disabled for future reuse.
 
 `src/interface/pc_developer.c` owns F1 overlay navigation, nested PC Settings,
 flight state and value-only developer requests. Windows/SDL adapters own host

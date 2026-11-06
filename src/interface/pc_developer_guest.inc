@@ -126,10 +126,13 @@ void pc_developer_draw_body(void)
      * only the draw fields; keep the gameplay effect and all timers intact. */
     uint32_t effects=WORD_AT(actor+0xc6cu),style=WORD_AT(model+0x1f8u);
     WORD_AT(actor+0xc6cu)=effects&~2u;
-    WORD_AT(model+0x1f8u)=(style&0xff000000u)|0x007fffffu;
+    WORD_AT(model+0x1f8u)=(style&0xff000000u)|0x007fff00u;
+    uint32_t header=WORD_AT(model);
+    if(guest_writable(header,0x1cu))WORD_AT(header+0x18u)|=4u;
     for(unsigned pass=0;pass<3;pass++)guest_call(sub_000A2740,2,body,pass);
     if(developer_actor()==actor && WORD_AT(body+4u)==model) {
         WORD_AT(model+0x1f8u)=style;
+        if(guest_writable(header,0x1cu))WORD_AT(header+0x18u)|=4u;
         if(WORD_AT(actor+0xc6cu)==(effects&~2u))WORD_AT(actor+0xc6cu)=effects;
     }
 }

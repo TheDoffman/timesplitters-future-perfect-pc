@@ -197,9 +197,11 @@ When the optional pack is available, use **Game settings → Graphics & resoluti
 ## Developer Tools (local source build)
 
 Enable **Developer Tools** in **Main Menu > Extras** or the launcher's **General**
-settings. It defaults to OFF and displays a warning when enabled. Press **F1**
+settings. It defaults to disabled. The native **Extras > Developer Tools** submenu
+contains its Enable/Disable selector, warning and current shortcut. Press **F1**
 (default) to open or close the overlay; change its shortcut in the launcher's
-key bindings or in-game **Keyboard & Mouse > Menu actions**. Use the mouse
+key bindings or in-game **Keyboard & Mouse > Menu actions**. The same page can
+assign **Toggle no-clip** and **Toggle free-cam** shortcuts (unbound by default). Use the mouse
 or arrow keys and Enter; Escape goes back. **PC Settings** contains keyboard and
 mouse bindings, Debug, Enhanced Textures and Fullscreen. F2/F12 also remain
 available for the existing settings dialogs.
@@ -213,9 +215,9 @@ available. Flight follows configured movement/look controls, **Interact/Crouch**
 up/down and **Shift** for 4x speed. No-clip retains firing and weapon switching.
 Free-cam hides the HUD, crosshair and first-person weapon while keeping the
 world character visible. Turning it off restores HUD and player control/view.
-Game speed also controls native cutscenes and videos; video audio follows the
-selected speed. Multiplayer lobbies
-show a notice naming players with Developer Tools enabled. Gameplay tools are
+Game speed also controls native cutscenes, videos and audio. Turn **Audio follows
+game speed** off in Developer Tools to keep audio at normal speed. Multiplayer lobbies
+show a wrench beside each player who has Developer Tools enabled. Gameplay tools are
 available during offline gameplay.
 Native Mac/Linux acceptance is pending; see [validation](docs/project/STATUS.md).
 

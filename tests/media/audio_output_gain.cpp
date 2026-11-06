@@ -28,6 +28,17 @@ int main(int argc,char **argv)
         recomp_audio_output_movie_speed(2.f);assert(movie_voice->speed==2.f && movie_voice->queued==queued && voices[RECOMP_AUDIO_SLOT_MOVIE].source==movie_voice);
         recomp_audio_output_movie_speed(.5f);assert(movie_voice->speed==.5f && movie_voice->queued==queued);
         recomp_audio_output_movie_speed(1.f);
+        assert(recomp_audio_output_game_time(1000,0)==1000);
+        recomp_audio_output_game_speed(2.f);assert(voices[0].source->speed==2.f);
+        assert(recomp_audio_output_game_time(2000,0)==3000);
+        recomp_audio_output_game_speed(.5f);assert(voices[0].source->speed==.5f);
+        assert(recomp_audio_output_game_time(3000,0)==3500);
+        assert(recomp_audio_output_game_time(2999,0)==3500); /* Delayed worker sample. */
+        assert(recomp_audio_output_game_time(3002,0)==3501);
+        assert(recomp_audio_output_game_time(4000,1)==4000); /* Independent tick domain. */
+        assert(recomp_audio_output_game_time(5000,1)==4500);
+        recomp_audio_output_game_speed(1.f);assert(voices[0].source->speed==1.f);
+
         auto &source=*voices[0].source;
         recomp_audio_output_set_spatial(0,-1,1);
         assert(source.matrix[0]==1 && source.matrix[1]==0);

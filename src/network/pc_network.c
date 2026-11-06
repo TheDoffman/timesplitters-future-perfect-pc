@@ -248,10 +248,10 @@ static int developer_control(const struct sockaddr_in *address,const unsigned ch
     memcpy(developer_peers[slot].key,data+8,8);developer_peers[slot].at=net_milliseconds();
     return 1;
 }
-void pc_network_developer_lobby(const PcDeveloperPeer *roster,unsigned count,int enabled,char *names,size_t bytes)
+unsigned pc_network_developer_lobby(const PcDeveloperPeer *roster,unsigned count,int enabled,char *names,size_t bytes)
 {
-    if(!names || !bytes)return;names[0]=0;
-    if(count>16u || (count&&!roster))return;
+    if(!names || !bytes)return 0;names[0]=0;unsigned mask=0;
+    if(count>16u || (count&&!roster))return 0;
     net_lock(&network_lock);
     unsigned char key[8]={0};int key_valid=0;
     for(unsigned i=0;i<count;i++)if(roster[i].host) {
@@ -293,11 +293,12 @@ void pc_network_developer_lobby(const PcDeveloperPeer *roster,unsigned count,int
             developer_peers[j].enabled && now-developer_peers[j].at<=3000) {
             if(developer_key_valid && !memcmp(developer_key,developer_peers[j].key,8))active=1;
         }
+        if(active)mask|=1u<<i;
         if(active && roster[i].name[0]) {
             size_t used=strlen(names);snprintf(names+used,bytes-used,"%s%.64s",used?", ":"",roster[i].name);
         }
     }
-    net_unlock(&network_lock);
+    net_unlock(&network_lock);return mask;
 }
 
 typedef struct { unsigned role,humans,bots;uint32_t host_ip,match; } BotContext;

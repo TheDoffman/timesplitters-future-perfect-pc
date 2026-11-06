@@ -9,7 +9,9 @@ typedef void *HWND;
 #include "pc_weapon_slots.h"
 #define PC_PAD_ACTION_COUNT 24
 #define PC_DEVELOPER_ACTION (PC_PAD_ACTION_COUNT + PC_WEAPON_SLOT_COUNT)
-#define PC_ACTION_COUNT (PC_DEVELOPER_ACTION + 1)
+#define PC_NOCLIP_ACTION (PC_DEVELOPER_ACTION + 1)
+#define PC_FREECAM_ACTION (PC_DEVELOPER_ACTION + 2)
+#define PC_ACTION_COUNT (PC_DEVELOPER_ACTION + 3)
 #define PC_BINDING_SLOTS 2
 #define PC_SETTINGS_COMMAND 0x7e20
 #define PC_FULLSCREEN_COMMAND 0x7e22
@@ -39,6 +41,7 @@ int pc_settings_key_allowed(int key);
 int pc_settings_developer_enabled(void);
 int pc_settings_developer_save(int enabled,char *error,size_t bytes);
 void pc_settings_developer_keys(int keys[PC_BINDING_SLOTS]);
+void pc_settings_action_keys(int action,int keys[PC_BINDING_SLOTS]);
 /* 1 applied, 0 invalid, -1 conflict requiring explicit confirmation. */
 int pc_settings_assign(PcSettings *settings, int action, int slot, int key, int move);
 /* Per-input-profile Windows menu-bar preference; absent means hidden. */
