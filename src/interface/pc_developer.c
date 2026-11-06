@@ -17,7 +17,7 @@ static void (*audio_set_speed)(float);
 /* Retained for a possible return to the named lobby disclaimer. */
 static int lobby_disclaimer_enabled;
 static PcDeveloperState state={.speed=1.,.manual_speed=1.,.slow_speed=.5,.fast_speed=2.,.audio_speed=1};
-static int gameplay,story,network,movie_active;
+static int gameplay,story,network,movie_active,match_tools_allowed;
 /* Presentation-thread-owned navigation and settings drafts. */
 enum { HOME, SETTINGS, KEYBOARD, DEBUG, LOGS };
 static int page,selected,slot,capture_action=-1,edit_number,conflict_key;
@@ -54,6 +54,18 @@ unsigned pc_developer_video_request(int action,const PcVideoValues *desired) {
     unsigned serial=video_request.serial;ReleaseSRWLockExclusive(&dev_lock);return serial;
 }
 int pc_developer_enabled(void) {return pc_settings_developer_enabled();}
+int pc_developer_tools_allowed(void) {
+    AcquireSRWLockShared(&dev_lock);int allowed=!network||match_tools_allowed;ReleaseSRWLockShared(&dev_lock);return allowed;
+}
+void pc_developer_match_policy(int online,int allowed) {
+    AcquireSRWLockExclusive(&dev_lock);network=!!online;match_tools_allowed=!!allowed;
+    if(online&&!allowed) {
+        if(state.freecam)state.hide_hud=0;
+        state.noclip=state.freecam=0;
+        state.god=state.infinite_ammo=0;state.speed=1.;
+    }
+    ReleaseSRWLockExclusive(&dev_lock);
+}
 int pc_developer_shortcut_key(int key) {
     if(key<=0 || key>255 || !pc_developer_enabled() || pc_settings_capture_blocked() ||
        InterlockedCompareExchange(&shortcut_blocked,0,0))return 0;
@@ -122,8 +134,11 @@ void pc_developer_report(const char *message) {
 void pc_developer_publish(int play,int campaign,int online) {
     int enabled=pc_developer_enabled();
     AcquireSRWLockExclusive(&dev_lock);
+    if(online&&!network)match_tools_allowed=0;
     gameplay=play;story=campaign;network=online;
-    if(!play || online || !enabled) {if(state.freecam)state.hide_hud=0;state.noclip=state.freecam=0;state.speed=online||!enabled||!movie_active?1.:state.manual_speed;state.god=state.infinite_ammo=0;}
+    if(!play || (online&&!match_tools_allowed) || !enabled) {if(state.freecam)state.hide_hud=0;state.noclip=state.freecam=0;}
+    if(online||!enabled){state.speed=1.;state.god=state.infinite_ammo=0;}
+    else if(!play)state.speed=movie_active?state.manual_speed:1.;
     ReleaseSRWLockExclusive(&dev_lock);
 }
 int pc_developer_hud_visible(void) {PcDeveloperState s;pc_developer_get(&s);return !s.hide_hud;}
@@ -196,7 +211,7 @@ static void speed_adjust(double value) {
 }
 static void flight_toggle(int mode) {
     AcquireSRWLockExclusive(&dev_lock);
-    if(gameplay&&!network) {
+    if(gameplay&&(!network||match_tools_allowed)) {
         if(mode==1) {state.noclip=!state.noclip;if(state.freecam)state.hide_hud=0;state.freecam=0;}
         else {state.freecam=!state.freecam;state.noclip=0;state.hide_hud=state.freecam;}
     }
@@ -213,14 +228,13 @@ static int action_pressed(int action,const unsigned char keys[256]) {
 static void activate(int direction) {
     fprintf(stderr,"[DEVELOPER] action page=%d row=%d direction=%d\n",page,selected,direction);
     PcDeveloperState s;pc_developer_get(&s);
+    if(page==HOME&&(!pc_developer_tools_allowed()||(network&&((selected>=5&&selected<=10)||selected==11||selected==12||selected==13))))return;
     if(page==HOME) {
         if(selected==0){navigate(SETTINGS);return;}
         if(selected==2||selected==3){flight_toggle(selected-1);return;}
         if(selected==7){speed_adjust(1);return;}
         AcquireSRWLockExclusive(&dev_lock);
         switch(selected) {
-        case 1:state.hide_hud=!state.hide_hud;break;
-        case 4:state.hide_watermark=!state.hide_watermark;break;
         case 5:if(story&&gameplay&&!network)state.checkpoint++;break;
         case 6:break;
         case 8:state.speed_keys=!state.speed_keys;break;
@@ -248,6 +262,8 @@ static void activate(int direction) {
         case 1:navigate(DEBUG);break;
         case 2:tsfp_texture_toggle();break;
         case 3:pc_controls_developer_fullscreen();break;
+        case 4:AcquireSRWLockExclusive(&dev_lock);state.hide_hud=!state.hide_hud;ReleaseSRWLockExclusive(&dev_lock);break;
+        case 5:AcquireSRWLockExclusive(&dev_lock);state.hide_watermark=!state.hide_watermark;ReleaseSRWLockExclusive(&dev_lock);break;
         default:navigate(HOME);break;
         }
     } else if(page==KEYBOARD) {

@@ -1,3 +1,8 @@
+Developer Tools match policy (after cf14ea41) is implemented in shared source;
+existing guest-frame and2C78F0 Options builder wrappers are reused. No new runtime
+patch or generated guest edits are needed. Legacy name/text wrappers now pass
+through without a wrench; the native Extras builder retains its Tools opt-in entry without a warning.
+
 Patch2620 follows2610. Runtime input/d3d CMake owners link one shared
 `tsfp_developer_font` target, and the RHI canvas uses its bitmap callback.
 Legacy GL uses the same implementation. The older optional styled host callback
@@ -939,3 +944,9 @@ Sidebar Video Settings uses a shared-source guest-frame provider registered by
 `pc_display_camera`, called through `pc_developer_guest_frame`. It adds no
 generated guest edits or runtime patch; value-only mailbox contracts and tests
 are described in the Systems continuation.
+
+Match Tools selector placement: the existing79D60 wrapper inserts choice121
+before native Music at US caller2C8010, while compact22100 typography/spacing
+is active. The2C78F0 wrapper scopes menu ownership and the real host mode; it
+no longer appends after Go. The native Music builder then resumes its own
+selector context. No generated-code or patch edits are needed.

@@ -27,6 +27,8 @@ void sub_00067450(void) {called=8;}
 void pc_developer_report(const char *message) {snprintf(report,sizeof report,"%s",message);}
 void pc_developer_close(void) {}
 int pc_developer_enabled(void) {return 1;}
+static int multiplayer_tools;
+int pc_developer_tools_allowed(void) {return !(WORD_AT(0x76b0fc)&&WORD_AT(0x76b108))||multiplayer_tools;}
 void pc_developer_lobby_guest(void) {}
 void pc_developer_video_guest_tick(void) {}
 void pc_controls_apply_mouse(uint32_t player,uint32_t camera,ptrdiff_t offset)

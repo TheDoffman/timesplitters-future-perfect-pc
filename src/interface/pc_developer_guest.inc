@@ -9,16 +9,17 @@ extern void sub_0006BB90(void),sub_0025EF80(void),sub_000653B0(void),sub_0006745
  * respawn. Original 25F010/25F0C0 restore checkpoint-indexed scripts as well.
  * Keep capture/reload and mission-success transitions owned by those routines. */
 /* Fresh ownership checks also protect detached rendering and local cheats. */
-static uint32_t developer_actor(void)
+static uint32_t developer_owned_actor(int camera)
 {
     uint32_t phase=WORD_AT(0x7de30cu),context=WORD_AT(0x7b0c48u);
     if((phase!=1u&&phase!=7u)||WORD_AT(0x79094cu)>100u||
-       (WORD_AT(0x76b0fcu)&&WORD_AT(0x76b108u))||!guest_writable(context,0x1584u)||WORD_AT(context+4u)!=0u)return 0;
+       ((WORD_AT(0x76b0fcu)&&WORD_AT(0x76b108u))&&(!camera||!pc_developer_tools_allowed()))||!guest_writable(context,0x1584u)||WORD_AT(context+4u)!=0u)return 0;
     uint32_t body=WORD_AT(context+0x14u);
     if(!guest_writable(body,0x154u)||WORD_AT(body+0x150u)!=context)return 0;
     uint32_t actor=WORD_AT(body+0x7cu);
     return guest_writable(actor,0xea0u)&&WORD_AT(actor)==body?actor:0;
 }
+static uint32_t developer_actor(void) {return developer_owned_actor(0);}
 int pc_developer_damage_blocked(void)
 {
     PcDeveloperState state;pc_developer_get(&state);
@@ -84,7 +85,7 @@ static void developer_refill_ammo(void)
 void pc_developer_world_visibility(void)
 {
     PcDeveloperState state;pc_developer_get(&state);
-    uint32_t actor=state.freecam?developer_actor():0;
+    uint32_t actor=state.freecam?developer_owned_actor(1):0;
     if(!actor)return;
     uint32_t context=WORD_AT(0x7b0c48u),camera=WORD_AT(context+8u);
     if(!guest_writable(camera,0x218u)||WORD_AT(camera+0x214u)>=16u)return;
@@ -101,7 +102,7 @@ void pc_developer_world_visibility(void)
 void pc_developer_viewmodel_draw(void (*original)(void))
 {
     PcDeveloperState state;pc_developer_get(&state);
-    if(state.freecam&&developer_actor()&&WORD_AT(0x7b0c7cu)==WORD_AT(0x7b0c48u))g_esp+=4u;
+    if(state.freecam&&developer_owned_actor(1)&&WORD_AT(0x7b0c7cu)==WORD_AT(0x7b0c48u))g_esp+=4u;
     else original();
 }
 /* First-person ownership can omit the local actor from colour submission.
@@ -111,7 +112,7 @@ extern void sub_000A2740(void);
 void pc_developer_draw_body(void)
 {
     PcDeveloperState state;pc_developer_get(&state);
-    uint32_t actor=state.freecam?developer_actor():0;
+    uint32_t actor=state.freecam?developer_owned_actor(1):0;
     if(!actor||WORD_AT(0x7b0c7cu)!=WORD_AT(0x7b0c48u))return;
     uint32_t body=WORD_AT(actor),model=WORD_AT(body+4u);
     if(!guest_writable(model,0x200u))return;
@@ -130,7 +131,7 @@ void pc_developer_draw_body(void)
     uint32_t header=WORD_AT(model);
     if(guest_writable(header,0x1cu))WORD_AT(header+0x18u)|=4u;
     for(unsigned pass=0;pass<3;pass++)guest_call(sub_000A2740,2,body,pass);
-    if(developer_actor()==actor && WORD_AT(body+4u)==model) {
+    if(developer_owned_actor(1)==actor && WORD_AT(body+4u)==model) {
         WORD_AT(model+0x1f8u)=style;
         if(guest_writable(header,0x1cu))WORD_AT(header+0x18u)|=4u;
         if(WORD_AT(actor+0xc6cu)==(effects&~2u))WORD_AT(actor+0xc6cu)=effects;
@@ -139,8 +140,7 @@ void pc_developer_draw_body(void)
 void pc_developer_guest_frame(void)
 {
     pc_developer_video_guest_tick();
-    uint32_t lobby=WORD_AT(0x76b1a4u);
-    if(WORD_AT(0x76b108u) && (lobby==11u || lobby==12u))pc_developer_lobby_guest();
+    pc_developer_lobby_guest();
     developer_refill_ammo();
     static unsigned handled;
     PcDeveloperState state;pc_developer_get(&state);
@@ -200,7 +200,7 @@ void pc_developer_camera_guest(void (*original)(void))
     PcDeveloperState state;pc_developer_get(&state);
     uint32_t context=WORD_AT(0x7B0C7Cu),camera=WORD_AT(0x7B0CC0u),entity=0;
     int mode=state.freecam?2:state.noclip?1:0;
-    int valid=guest_writable(context,0x1584u) && WORD_AT(context+4u)==0u &&
+    int valid=pc_developer_tools_allowed()&&guest_writable(context,0x1584u) && WORD_AT(context+4u)==0u &&
         guest_writable(camera,0x3bcu) && (WORD_AT(0x7DE30Cu)==7u || WORD_AT(0x7DE30Cu)==1u) &&
         !(WORD_AT(0x7DE458u)&0x20000000u);
     if(valid) {

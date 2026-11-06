@@ -196,10 +196,8 @@ When the optional pack is available, use **Game settings → Graphics & resoluti
 
 ## Developer Tools (local source build)
 
-Enable **Developer Tools** in **Main Menu > Extras** or the launcher's **General**
-settings. It defaults to disabled. The native **Extras > Developer Tools** submenu
-contains its Enable/Disable selector and current shortcut. The warning is shown
-in the overlay footer. Press **F1**
+**Developer Tools** is opt-in: enable it in **Extras > Developer Tools** or
+the launcher. The warning appears in the sidebar footer, without an Extras warning. Press **F1**
 (default) to open or close the overlay; change its shortcut in the launcher's
 key bindings or in-game **Keyboard & Mouse > Menu actions**. The same page can
 assign **Toggle no-clip** and **Toggle free-cam** shortcuts (unbound by default). Use the mouse
@@ -208,7 +206,8 @@ mouse bindings and the full Video Settings controls. Debug options remain in the
 separate **Diagnostics** tab. F2/F12 also remain
 available for the existing settings dialogs.
 
-The tools toggle HUD/UI and the version watermark, enable no-clip or detached
+Settings > Video Settings > View & HUD contains **HUD & UI** and
+**Version watermark**, applied immediately. The tools enable no-clip or detached
 free-cam, advance Story checkpoints (or start the ending after the last one),
 and set manual game speed from 0.05x to 4x. Configure separate **[** and **]**
 held-speed values; release restores manual speed. Enable **Speed keys outside
@@ -218,9 +217,12 @@ up/down and **Shift** for 4x speed. No-clip retains firing and weapon switching.
 Free-cam hides the HUD, crosshair and first-person weapon while keeping the
 world character visible. Turning it off restores HUD and player control/view.
 Game speed also controls native cutscenes, videos and audio. Turn **Audio follows
-game speed** off in Developer Tools to keep audio at normal speed. Multiplayer lobbies
-show a wrench beside each player who has Developer Tools enabled. Gameplay tools are
-available during offline gameplay.
+game speed** off in Developer Tools to keep audio at normal speed. In multiplayer, the host controls **Options > Developer Tools** for the match
+(default **Off**). When Off, the **Tools** tab is disabled for everyone; **Settings**
+and **Diagnostics** remain available. When On, local camera/movement tools
+are available. **Time & audio** and **Player & progression** stay unavailable online.
+Multiplayer wrench indicators have been removed. Host permission applies in addition
+to each player's local opt-in.
 The overlay is a dockable sidebar with **Tools**, **Settings** and
 **Diagnostics** tabs. Search across categories, click a value to type, use **- / +**
 for precise steps, or drag the game-speed slider and use its presets. Scroll for

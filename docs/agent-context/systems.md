@@ -1,6 +1,22 @@
-Latest notes: Extras warning is one native nonselectable multiline row (slot17),
-not three independent rows. The submenu now contains Status, warning, shortcut,
-and Back. Developer Tools appends Audio follows game speed (default On) at row13;
+## Current Developer Tools access policy
+
+The overlay uses the persisted developer_tools_enabled local opt-in (default
+false), controlled by Extras > Developer Tools or the launcher. Extras contains
+Status, assigned shortcut and Back with no warning row or confirmation. The
+sidebar warning remains. Native roster names have no wrench decoration. Once
+locally enabled, Settings and Diagnostics stay available online. Only the host can set the native match
+Options > Developer Tools Off/On selector (default Off). The shared network
+adapter authenticates its session-key/IP-scoped, sequenced TSFTOOL1 heartbeat;
+guests fail closed while joining, on expiry, or when the host/session changes.
+When enabled, local camera/movement controls are available; Time & audio
+and Player & progression remain disabled online. Revocation resets active local
+flight state, and non-UI shortcuts follow the same policy.
+Visibility toggles moved to Settings > View & HUD; host Tools policy preserves them.
+See the Systems continuation for current contracts. The wrench
+paragraphs below describe superseded implementation history.
+
+Extras has no warning: slot17 remains empty and the submenu contains Status,
+shortcut and Back. Developer Tools appends Audio follows game speed (default On) at row13;
 its session state is independent of the selected/manual/held game speed.
 pc_developer_audio_speed applies the normal opt-in/offline/playback guards and
 returns1 when audio scaling is Off. Gameplay callbacks and XMV audio use this

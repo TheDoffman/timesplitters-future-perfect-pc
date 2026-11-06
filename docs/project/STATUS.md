@@ -1,3 +1,106 @@
+## 2026-11-06 - Shorter visibility labels
+
+Renamed visibility switches to HUD & UI and Version watermark in shared sidebar
+source and both private mockups. Wording only; behavior unchanged. Local and
+uncommitted after cf14ea41. Windows x64 supported Build, patch validation and
+linked checks pass; source/mockup wording, context and whitespace checks pass.
+No fresh gameplay or Mac/Linux validation for this label edit. Preserved personal
+settings, including preexisting untracked graphics/HUD configuration.
+
+## 2026-11-06 - Visibility switches in Settings
+
+Moved Show HUD & UI and Show version watermark to Settings > Video Settings >
+View & HUD. Removed the Tools HUD & interface category and updated both private
+mockups. Visibility remains immediate session state, separate from video Apply /
+Revert. Host Tools-Off polling preserves these choices; revoking active freecam
+still restores its automatically hidden HUD. Local opt-in remains unchanged.
+
+Local, uncommitted after cf14ea41, developer-tools-overlay; nothing pushed.
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11/SDL3.4.16: supported Build,
+complete patch validation and linked checks pass. Input/FOV tests:13 passed,
+2 native-Mac cases skipped. Actual sidebar widget tests toggle both settings
+under denied host policy, repeat policy/publish updates, verify retained values
+and no video draft changes, then restore visibility. Offline mockup structural
+checks confirm both rows belong to View & HUD and the Tools category is absent.
+Context/whitespace checks pass. No fresh gameplay/capture or Mac/Linux validation
+for this relocation; prior host menu evidence below applies to the prior build.
+Personal settings/saves were not edited.
+Executable SHA-256: `899f2f2ef1bf2195e802354d2f6766e984af5f403d0d34801fdd2c291cac34d6`.
+
+## 2026-11-06 - Compact match Developer Tools selector
+
+Local, uncommitted after cf14ea41 on developer-tools-overlay. Moved the native
+host Developer Tools Off/On selector into the smaller rules section, between
+Announcer and Music, above Weapon Set/Bot Set. It inherits the native compact
+font, alignment and spacing; Go remains the final large action. Host access and
+local opt-in behavior are unchanged. Shared existing builder hooks only.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11/SDL3.4.16: supported Build,
+patch validation and linked checks pass. Native menu fixture:4 passed,2 Mac
+cases skipped. Bounded isolated System Link host run63s visually confirms the
+compact placement and synthetic Off/On/Off operation, sidebar grant/revocation
+and Settings/Diagnostics access. Local opt-in was enabled in the disposable
+controls copy. Supported XBE hash checked; personal settings/fixture hashes
+unchanged; disposable disk images recycled. No new Mac/Linux or multi-device
+validation. Context/whitespace checks pass. No commit/push performed.
+Executable SHA-256: `e84d1d256c33da1f07b3d66637f947069f5bf3ccaefb5a29f64649bec2952d70`.
+
+## 2026-11-06 - Restore Developer Tools local opt-in
+
+User revision supersedes the always-on access behavior below. Local opt-in is
+restored through Extras > Developer Tools and the launcher checkbox, with the
+existing persisted developer_tools_enabled boolean/default false and configurable
+shortcut. Extras has only Status, shortcut and Back, with no warning; the sidebar
+warning remains. The launcher retains its enablement guidance (Use with caution).
+Disabling resets local tools and closes the overlay. Match host Off/On policy,
+removed wrench icons and online category restrictions remain unchanged. Once
+locally enabled, Settings/Diagnostics remain accessible regardless of host policy.
+
+Local, uncommitted after cf14ea41 on developer-tools-overlay; nothing pushed.
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11/SDL3.4.16: supported Build,
+patch validation and linked checks pass. Input/Extras/FOV tests:16 passed,
+2 native-Mac cases skipped. Full Windows launcher -Test passes, including opt-in
+Save state, configured-shortcut guidance and On/Off persistence. Context and
+whitespace checks pass. No fresh game launch for this restoration; prior live
+host-policy evidence below remains distinct from this build. Mac/Linux host
+validation remains pending. Personal settings and saves were not edited.
+Executable SHA-256: `25ffa1dcb3ba3c9e93c92de8defe2f2b0b244d5c61a4189e3dbbb72ac689f4fd`.
+
+## 2026-11-06 - Always-on Developer Tools and host match access
+
+Local, uncommitted on developer-tools-overlay after cf14ea41; nothing pushed.
+Removed the Extras entry, multiplayer wrench decoration and launcher opt-in.
+F1 remains available with legacy developer_tools_enabled=false. Native match
+Options has a host-only Developer Tools Off/On selector (default Off). Host
+policy gates Tools; Settings/Diagnostics remain available. Allowed matches expose
+camera/movement/HUD controls; time/audio and player/progression stay unavailable
+online. Policy resets on session change and expires without fresh heartbeats.
+Shared source reuses the existing native platform adapters.
+
+Windows x64, MSVC14.42.34433 / SDK10.0.22621.0, D3D11 / SDL3.4.16.
+Supported US Xbox executable hash validated before build and live tests.
+Supported Windows Build, complete patch validation, linked checks and symbols
+pass. Affected input/guest/unlock/network/FOV suite:18 passed,2 Mac cases skipped;
+additional network/launcher UI/native-HUD suite:18 passed. Final transport tests
+including actual host outbound frames:2 passed. Nested native Options fixture:
+4 passed,2 Mac cases skipped. Full Windows launcher -Test passes, including legacy
+false-field preservation. An initial concurrent launcher run correctly refused
+update fixtures while the game was open; the sequential rerun passed.
+
+Bounded 58-second isolated System Link host acceptance passed with synthetic
+input: old false preference still opens F1, lobby has no wrench, host selector
+Off/On/Off works, Tools unlocks/revokes immediately, Settings and Diagnostics
+remain accessible while locked, and online restricted groups render disabled.
+The live pass caught and repaired the nested Bot Set adapter's temporary Arcade
+mode masking the host context; the fixture now covers that nesting. Captures and
+result metadata remain in the ignored developer-tools test directory. Personal
+settings and canonical fixture hashes were unchanged; disposable disk images
+were recycled. This is host/menu evidence, not a two-device gameplay test.
+LAN/Online guest policy, stale/replayed/wrong-host/session rejection and expiry
+are covered by socket fixtures. Native Mac/Linux build, physical input and
+multi-device match/camera acceptance remain unrun. Context/whitespace checks pass.
+Executable SHA-256: `40a917f4ea7e6832ad487d7da6247a7684d1268d0112b70b8ba778da5c95e2ae`.
+
 ## 2026-11-06 - Settings tab label
 
 Local, uncommitted after45b1b7b8. Renamed the sidebar tab and bindings-editor

@@ -176,9 +176,19 @@ static void sidebar_held_speed(int id,const char *label,const char *key) {
     sidebar_widget(UI_STEP,id,1,0,374,sidebar_y+4,25,27,"Increase held speed");sidebar_box(374,sidebar_y+4,25,27,0x2c353effu,3);sidebar_text_style(374,sidebar_y+4,25,27,UI_TEXT,"+",15,400,1);
     sidebar_y+=35;
 }
+static void sidebar_disabled_group(const char *name,const char *reason) {
+    if(!sidebar_match(name)&&!sidebar_match(reason))return;
+    sidebar_box(17,sidebar_y,408,36,UI_EDGE,6);sidebar_box(18,sidebar_y+1,406,34,UI_CARD,5);
+    sidebar_text_style(31,sidebar_y+5,382,24,UI_MUTED,name,13,600,0);sidebar_y+=40;
+    sidebar_text_style(31,sidebar_y,382,22,UI_MUTED,reason,11,400,0);sidebar_y+=32;
+}
 static void sidebar_tools(void) {
     PcDeveloperState s;pc_developer_get(&s);
-    AcquireSRWLockShared(&dev_lock);int available=gameplay&&!network,campaign=story&&available;ReleaseSRWLockShared(&dev_lock);
+    AcquireSRWLockShared(&dev_lock);int online=network,available=gameplay&&(!network||match_tools_allowed),campaign=story&&available&&!network;ReleaseSRWLockShared(&dev_lock);
+    if(!pc_developer_tools_allowed()) {
+        sidebar_text_style(27,sidebar_y+9,392,24,UI_MUTED,"Tools are disabled by the host for this match.",12,400,0);sidebar_y+=42;
+        sidebar_text_style(27,sidebar_y,392,22,UI_MUTED,"Settings and Diagnostics remain available.",11,400,0);sidebar_y+=32;return;
+    }
     if(sidebar_group(0,"Camera & movement","free camera freecam no-clip noclip bindings shortcut flight","2 TOOLS")) {
         const char *names[]={"Free camera","No-clip"};
         for(int i=0;i<2;i++)if(sidebar_row_matches(names[i])||sidebar_match("bindings shortcut")) {
@@ -197,7 +207,8 @@ static void sidebar_tools(void) {
         sidebar_text_style(31+before_shift+shift_width,sidebar_y+3,385-before_shift-shift_width,17,UI_MUTED," boosts flight speed.",11,400,0);sidebar_y+=23;
         sidebar_group_end();
     } else sidebar_group_closed();
-    if(sidebar_group(1,"Time & audio","game speed time scale audio sound slow fast held shortcuts outside menu","LIVE VALUES")) {
+    if(online)sidebar_disabled_group("Time & audio","Unavailable in multiplayer.");
+    else if(sidebar_group(1,"Time & audio","game speed time scale audio sound slow fast held shortcuts outside menu","LIVE VALUES")) {
         int show=sidebar_row_matches("Game speed");
         sidebar_number("Game speed",1);
         if(show) {
@@ -221,7 +232,8 @@ static void sidebar_tools(void) {
         }
         sidebar_group_end();
     } else sidebar_group_closed();
-    if(sidebar_group(2,"Player & progression","god mode infinite ammo checkpoint story progress","3 TOOLS")) {
+    if(online)sidebar_disabled_group("Player & progression","Unavailable in multiplayer.");
+    else if(sidebar_group(2,"Player & progression","god mode infinite ammo checkpoint story progress","3 TOOLS")) {
         sidebar_toggle("God mode",NULL,s.god,available,HOME,11);
         sidebar_toggle("Infinite ammo",NULL,s.infinite_ammo,available,HOME,12);
         if(sidebar_row_matches("Advance to next checkpoint")) {
@@ -232,10 +244,7 @@ static void sidebar_tools(void) {
         }
         sidebar_group_end();
     } else sidebar_group_closed();
-    if(sidebar_group(3,"HUD & interface","show hide hud ui version watermark","2 TOOLS")) {
-        sidebar_toggle("Show HUD & UI",NULL,!s.hide_hud,1,HOME,1);
-        sidebar_toggle("Show version watermark",NULL,!s.hide_watermark,1,HOME,4);sidebar_group_end();
-    } else sidebar_group_closed();
+
 }
 static int sidebar_save(void) {
     if(!pc_settings_save(&draft,status,sizeof status))return 0;
@@ -330,8 +339,9 @@ static void sidebar_build(unsigned width,unsigned height,PcDeveloperLine *out,un
     float tab_x=17;
     for(int i=0;i<3;i++) {
         float tab_w=pc_developer_font_measure(tabs[i],13,600,PC_FONT_UI).advance+4;
-        sidebar_widget(UI_TAB,pages[i],0,0,tab_x,72,tab_w,46,tabs[i]);
-        sidebar_text_style(tab_x+2,72,tab_w-4,46,active==i?UI_ACCENT:UI_MUTED,tabs[i],13,600,0);
+        int tab_allowed=i!=0||pc_developer_tools_allowed();
+        if(tab_allowed)sidebar_widget(UI_TAB,pages[i],0,0,tab_x,72,tab_w,46,tabs[i]);
+        sidebar_text_style(tab_x+2,72,tab_w-4,46,!tab_allowed?0x626d77ffu:active==i?UI_ACCENT:UI_MUTED,tabs[i],13,600,0);
         if(active==i)sidebar_box(tab_x,117,tab_w,2,UI_ACCENT,0);
         tab_x+=tab_w+22;
     }
@@ -343,7 +353,7 @@ static void sidebar_build(unsigned width,unsigned height,PcDeveloperLine *out,un
     if(sidebar_search[0])sidebar_button(UI_CLEAR,0,0,0,400,133,28,27,"",0);
     AcquireSRWLockShared(&dev_lock);int net=network,playing=gameplay,campaign=story;ReleaseSRWLockShared(&dev_lock);
     sidebar_box(21,177,6,6,net?0xd9b36affu:UI_ACCENT,3);
-    sidebar_text_face(34,171,388,18,UI_MUTED,net?"Multiplayer - gameplay tools unavailable":playing?(campaign?"Offline Story":"Offline gameplay"):"Frontend - gameplay tools unavailable",11,400,0,PC_FONT_UI);
+    sidebar_text_face(34,171,388,18,UI_MUTED,net?(pc_developer_tools_allowed()?"Multiplayer - host allows camera & HUD tools":"Multiplayer - Tools disabled by host"):playing?(campaign?"Offline Story":"Offline gameplay"):"Frontend - gameplay tools unavailable",11,400,0,PC_FONT_UI);
     sidebar_video_sync();
     int video_bar=page==SETTINGS||sidebar_video_snapshot.preview||sidebar_video_wait||(sidebar_search[0]&&sidebar_video_dirty());
     sidebar_top=198;sidebar_bottom=fmaxf(sidebar_top+5,h-(show_status?122:96)-(video_bar?57:0));sidebar_y=sidebar_top-sidebar_scroll[page];sidebar_content=1;
@@ -402,6 +412,7 @@ static void sidebar_layout(unsigned width,unsigned height,PcDeveloperLine *out,u
     if(clamped!=sidebar_scroll[page]){sidebar_scroll[page]=clamped;sidebar_build(width,height,out,capacity);}
 }
 static void sidebar_set_value(int id,double value) {
+    if((id==1||id==3||id==4)&&network)return;
     if(id==5){sidebar_video_draft.value[VIDEO_FOV]=(int)fmin(100,fmax(40,round(value)));}
     else if(id==1)speed_adjust(value);
     else if(id==2){draft.sensitivity=fmin(10.,fmax(.001,value));if(page==KEYBOARD)sidebar_dirty=1;else sidebar_save();}
@@ -421,6 +432,7 @@ static void sidebar_go(int next) {
 static void sidebar_activate(const DeveloperWidget *v,int direction) {
     if(v->kind!=UI_NUMBER&&v->kind!=UI_SEARCH&&edit_number&&!sidebar_commit_number())return;
     sidebar_search_edit=0;
+    if(v->kind==UI_ACTION&&v->a==HOME&&!pc_developer_tools_allowed())return;
     switch(v->kind) {
     case UI_VIDEO:sidebar_video_activate(v->a,direction);break;
     case UI_VIDEO_OPTION:sidebar_video_choose(v->a,v->b);sidebar_video_dropdown=-1;break;

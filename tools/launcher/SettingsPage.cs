@@ -283,7 +283,7 @@ namespace TimeSplitters.Launcher
             developerTools=Check("Enable Developer Tools",model.DeveloperToolsEnabled);developerTools.Name="DeveloperToolsEnabled";developer.Children.Add(developerTools);
             developerTools.Checked+=(sender,args)=> {
                 var names=model.Binding(Array.IndexOf(GameSettings.Actions,"developer_tools")).Select(KeyName).Where(name=>name!="Unbound").ToArray();
-                var message=Prompt("Developer Tools","Warning: Usage of Developer Tools can cause instability and unintended behavior. Use at your discretion.\nPress "+(names.Length>0?String.Join(" / ",names):"the shortcut (currently unbound)")+" to open");
+                var message=Prompt("Developer Tools","Warning: Usage of Developer Tools can cause instability and unintended behavior. Use with caution.\nPress "+(names.Length>0?String.Join(" / ",names):"the shortcut (currently unbound)")+" to open");
                 var okay=Button("Continue");okay.Click+=(sender2,args2)=>DismissPrompt();message.Children.Add(okay);okay.Focus();
             };
             var startup=PageTheme.Section(general,"Startup","");

@@ -376,6 +376,13 @@ static void content(const char *expected)
     FILE *f=fopen(path,"rb");char text[128]={0};CHECK(f);fread(text,1,sizeof text-1,f);fclose(f);
     CHECK(!strcmp(text,expected));
 }
+static void nested_match_options(void) {
+    CHECK(WORD_AT(0x78ad2c)==9);
+    g_esp-=4;WORD_AT(g_esp+4)=0x300000;
+    pc_network_bots_menu(sub_002C78F0_gen);
+    CHECK(WORD_AT(0x78ad2c)==9);
+    g_esp+=4;
+}
 int main(int argc,char **argv)
 {
     CHECK(argc==2); CHECK(!_putenv_s("TSFP_DISPLAY_CONFIG",argv[1]));
@@ -1099,6 +1106,19 @@ int main(int argc,char **argv)
     pc_display_aim_primitive(original_highlight,0);CHECK(g_esp==0x30004);
     g_esp=0x30000;pc_display_aim_panel(original_highlight,0x137010u);CHECK(g_esp==0x30004);
     developer_hud_visible=1;
+    /* Real native match Options insertion: host only, regular left/right
+       selector, stable callback/ABI, no stale menu or guest-role writes. */
+    WORD_AT(0x78ad2c)=11;WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;
+    built_row_count=0;g_esp=0x700000;WORD_AT(g_esp+4)=0x300000;
+    pc_network_bots_menu(nested_match_options);
+    CHECK(g_esp==0x700004&&WORD_AT(0x78ad2c)==11&&built_row_count==1&&built_ids[0]==121);
+    CHECK(!WORD_AT(developer_match_row+0xc8));WORD_AT(developer_match_row+0xc8)=1;
+    call(DEVELOPER_MATCH_CHANGE,121,0);CHECK(developer_match_tools==1);
+    WORD_AT(0x76b140)=2;WORD_AT(developer_match_row+0xc8)=0;call(DEVELOPER_MATCH_CHANGE,121,0);CHECK(developer_match_tools==1);
+    WORD_AT(0x76b140)=1;WORD_AT(developer_match_owner+4)^=4;call(DEVELOPER_MATCH_CHANGE,121,0);CHECK(developer_match_tools==1);
+    WORD_AT(developer_match_owner+4)^=4;call(DEVELOPER_MATCH_CHANGE,121,0);CHECK(!developer_match_tools);
+    WORD_AT(0x76b140)=2;built_row_count=0;g_esp=0x700000;WORD_AT(g_esp+4)=0x300000;pc_network_bots_menu(sub_002C78F0_gen);CHECK(!built_row_count);
+    WORD_AT(0x76b108)=WORD_AT(0x76b140)=0;WORD_AT(0x78ad2c)=9;
     /* Real sidebar adapter: save on guest thread, confirm/revert previews,
        preserve existing settings on a failed batch, and use native subtitles. */
     sidebar_open=1;video_sample_at=video_modes_at=0;g_esp=0x700000;
@@ -1158,3 +1178,8 @@ unsigned pc_network_developer_lobby(const PcDeveloperPeer *roster,unsigned count
 {(void)roster;(void)count;(void)enabled;(void)bytes;names[0]=0;return 0;}
 
 void sub_00353760(void) {g_eax=0;g_esp+=4;}
+
+void sub_002C78F0_gen(void) {developer_match_button(0x002C8010u);g_esp+=4;}
+int pc_developer_tools_allowed(void) {return 1;}
+void pc_developer_match_policy(int online,int allowed) {(void)online;(void)allowed;}
+int pc_network_tools_policy(const PcDeveloperPeer *roster,unsigned count,int allowed) {(void)roster;(void)count;return allowed;}

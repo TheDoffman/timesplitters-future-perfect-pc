@@ -1,3 +1,10 @@
+Developer Tools retains the local opt-in checkbox and persisted
+developer_tools_enabled boolean (default false). Changing the checkbox alone
+enables Save; enabling displays assigned-shortcut guidance with "Use with caution."
+Extras uses the same setting without a warning. Multiplayer host Tools permission
+is an additional gate; it does not disable Settings/Diagnostics for opted-in users.
+Shared model/UI tests cover opt-in persistence and shortcut preservation.
+
 Flight shortcuts append developer_noclip/developer_freecam as actions35/36;
 PC_ACTION_COUNT is37. Both default unbound and use the existing two-slot conflict,
 move/unbind and persistence paths. The Tools shortcut remains action34/F1.

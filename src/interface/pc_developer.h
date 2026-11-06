@@ -29,6 +29,8 @@ enum { PC_DEVELOPER_TEXT, PC_DEVELOPER_BOX, PC_DEVELOPER_LABEL,
 enum { PC_DEV_CLOSE,PC_DEV_DOCK,PC_DEV_DOWN,PC_DEV_RIGHT,PC_DEV_SEARCH,PC_DEV_TOOLS,PC_DEV_WARNING,PC_DEV_RESET };
 int pc_developer_open(void);
 int pc_developer_enabled(void);
+int pc_developer_tools_allowed(void);
+void pc_developer_match_policy(int online,int allowed);
 int pc_developer_set_enabled(int enabled);
 void pc_developer_shortcut_name(char *out,size_t bytes);
 void pc_developer_audio_register(void (*set_speed)(float));

@@ -116,8 +116,7 @@ int main(void) {
     click(UI_ACTION,HOME,3);assert(pc_developer_hud_visible());
     click(UI_GROUP,2,0);click(UI_ACTION,HOME,11);click(UI_ACTION,HOME,12);click(UI_ACTION,HOME,5);
     pc_developer_get(&s);assert(s.god&&s.infinite_ammo&&s.checkpoint==1);
-    click(UI_GROUP,3,0);click(UI_ACTION,HOME,1);click(UI_ACTION,HOME,4);
-    assert(!pc_developer_hud_visible()&&!pc_developer_watermark_visible());
+    assert(!drawn("HUD & interface")&&!drawn("HUD & UI")&&!drawn("Version watermark"));
     click(UI_NUMBER,1,0);type("2");key(13);pc_developer_get(&s);assert(s.manual_speed==2&&!edit_number);
     click(UI_STEP,1,1);pc_developer_get(&s);assert(fabs(s.manual_speed-2.1)<.001);
     click(UI_PRESET,1,0); /* first preset is Reset */
@@ -140,7 +139,15 @@ int main(void) {
     pc_developer_close();focus=0;frame();assert(pc_developer_speed()==2.);focus=1;
     test_keys[0xdd]=test_keys[0xdb]=0;
     pc_developer_publish(1,1,1);frame();pc_developer_get(&s);assert(s.speed==1&&!s.god&&!s.infinite_ammo&&!s.freecam&&!s.noclip);
-    pc_developer_publish(1,1,0);pc_developer_toggle();
+    pc_developer_toggle();assert(pc_developer_open());paint();
+    assert(!pc_developer_tools_allowed()&&drawn("Tools are disabled by the host"));
+    click(UI_TAB,SETTINGS,0);assert(page==SETTINGS);click(UI_TAB,DEBUG,0);assert(page==DEBUG);
+    pc_developer_match_policy(1,1);click(UI_TAB,HOME,0);paint();
+    assert(drawn("Time & audio")&&drawn("Unavailable in multiplayer")&&!drawn("Game speed"));
+    pc_developer_publish(1,1,1);click(UI_ACTION,HOME,3);pc_developer_get(&s);assert(s.freecam);
+    pc_developer_publish(1,1,1);pc_developer_get(&s);assert(s.freecam&&s.speed==1&&!s.god&&!s.infinite_ammo);
+    pc_developer_match_policy(1,0);pc_developer_get(&s);assert(!s.freecam&&!s.hide_hud);
+    pc_developer_close();pc_developer_publish(1,1,0);pc_developer_toggle();
     pc_developer_lines(1920,1080,painted,PC_DEVELOPER_MAX_DRAW);assert(painted[0].width==452);
     pc_developer_lines(3840,2160,painted,PC_DEVELOPER_MAX_DRAW);assert(painted[0].width==452);
     test_ui_scale=1.5f;pc_developer_lines(3840,2160,painted,PC_DEVELOPER_MAX_DRAW);assert(painted[0].width==678);test_ui_scale=1;paint();
@@ -168,7 +175,16 @@ int main(void) {
     video.completed=request.serial;video.preview=1;video.seconds=15;pc_developer_video_publish(&video);paint();
     click(UI_VIDEO,VIDEO_REVERT_BUTTON,0);assert(pc_developer_video_take(&request)&&request.action==VIDEO_REVERT);
     video.completed=request.serial;video.preview=0;pc_developer_video_publish(&video);paint();assert(!sidebar_video_dirty());
-    key(27);click(UI_GROUP,15,0);click(UI_STEP,5,1);assert(sidebar_video_draft.value[VIDEO_FOV]==56);
+    key(27);click(UI_GROUP,15,0);
+    pc_developer_match_policy(1,0);
+    click(UI_ACTION,SETTINGS,4);click(UI_ACTION,SETTINGS,5);
+    pc_developer_match_policy(1,0);pc_developer_publish(1,0,1);
+    assert(!pc_developer_hud_visible()&&!pc_developer_watermark_visible()&&page==SETTINGS);
+    assert(!sidebar_video_dirty()); /* Session visibility applies immediately. */
+    click(UI_ACTION,SETTINGS,4);click(UI_ACTION,SETTINGS,5);
+    assert(pc_developer_hud_visible()&&pc_developer_watermark_visible());
+    pc_developer_match_policy(0,0);
+    click(UI_STEP,5,1);assert(sidebar_video_draft.value[VIDEO_FOV]==56);
     click(UI_NUMBER,5,0);type("85");key(13);assert(sidebar_video_draft.value[VIDEO_FOV]==85);
     click(UI_VIDEO,VIDEO_REVERT_BUTTON,0);assert(sidebar_video_draft.value[VIDEO_FOV]==55);
     click(UI_GROUP,12,0);assert(!drawn("Resolution"));click(UI_GROUP,12,0);

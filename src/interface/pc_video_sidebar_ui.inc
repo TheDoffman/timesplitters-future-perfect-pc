@@ -141,7 +141,7 @@ static void sidebar_video_toggle(const char *label,int field,int available) {
     if(available&&!sidebar_video_wait&&!sidebar_video_snapshot.preview)sidebar_widget(UI_VIDEO,field,0,0,24,sidebar_y+2,393,34,label);sidebar_y+=38;
 }
 static void sidebar_video_settings(void) {
-    if(!sidebar_category(12,"Video Settings","video display aspect resolution frame rate fullscreen graphics texture filtering ambient occlusion anti-aliasing fov field of view subtitles kill feed fps ping advanced msaa supersampling shader cache"))return;
+    if(!sidebar_category(12,"Video Settings","video display aspect resolution frame rate fullscreen graphics texture filtering ambient occlusion anti-aliasing fov field of view show hide hud ui version watermark subtitles kill feed fps ping advanced msaa supersampling shader cache"))return;
     if(!sidebar_video_ready){sidebar_text_style(31,sidebar_y,380,24,UI_MUTED,"Video settings will be available after startup.",11,400,0);sidebar_y+=34;return;}
     int effects=sidebar_video_snapshot.effects;
     if(sidebar_group(13,"Display","aspect resolution frame rate fullscreen",NULL)) {
@@ -154,7 +154,7 @@ static void sidebar_video_settings(void) {
         sidebar_video_toggle("Ambient occlusion",VIDEO_AO,effects);sidebar_video_choice("Post-process anti-aliasing",VIDEO_AA,0,effects);
         if(!effects){sidebar_text_style(31,sidebar_y,380,20,UI_MUTED,"These effects require Vulkan.",10,400,0);sidebar_y+=24;}sidebar_group_end();
     } else sidebar_group_closed();
-    if(sidebar_group(15,"View & HUD","vertical field of view fov subtitles kill feed fps ping",NULL)) {
+    if(sidebar_group(15,"View & HUD","vertical field of view fov show hide hud ui version watermark subtitles kill feed fps ping",NULL)) {
         if(sidebar_row_matches("Vertical field of view")) {
             sidebar_text_style(31,sidebar_y+5,260,21,UI_TEXT,"Vertical field of view",12,400,0);
             sidebar_text_style(280,sidebar_y+5,129,21,UI_MUTED,"40\xe2\x80\x93" "100\xc2\xb0",11,400,2);sidebar_y+=28;
@@ -173,6 +173,9 @@ static void sidebar_video_settings(void) {
             if(!sidebar_video_wait&&!sidebar_video_snapshot.preview)sidebar_widget(UI_SLIDER,5,0,0,31,sidebar_y,378,27,"Field of view slider");
             sidebar_text_style(31,sidebar_y+22,110,18,UI_MUTED,"Narrower",10,400,0);sidebar_text_style(309,sidebar_y+22,100,18,UI_MUTED,"Wider",10,400,2);sidebar_y+=44;
         }
+        PcDeveloperState visibility;pc_developer_get(&visibility);
+        sidebar_toggle("HUD & UI",NULL,!visibility.hide_hud,1,SETTINGS,4);
+        sidebar_toggle("Version watermark",NULL,!visibility.hide_watermark,1,SETTINGS,5);
         sidebar_video_toggle("Subtitles",VIDEO_SUBTITLES,1);sidebar_video_toggle("Kill Feed",VIDEO_FEED,1);sidebar_video_toggle("FPS / Ping",VIDEO_COUNTER,1);sidebar_group_end();
     } else sidebar_group_closed();
     if(sidebar_group(16,"Advanced","msaa supersampling shader cache clear",NULL)) {

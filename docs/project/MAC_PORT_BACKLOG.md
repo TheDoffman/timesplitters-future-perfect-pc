@@ -1,3 +1,12 @@
+Opt-in Developer Tools / match policy (uncommitted after cf14ea41): implemented,
+native acceptance pending. Shared developer access, native match Options row,
+LAN/Online TSFTOOL1 policy and launcher page/model require no duplicate host logic.
+The Cocoa help text describes enabling in Extras or the launcher and shortcut access. Existing
+native networking/input adapters are reused; no new OS service is needed.
+Windows results are in [STATUS](STATUS.md). Remaining Mac/Linux acceptance: build,
+host/guest policy across lobby/start/revocation, keyboard/camera input, renderer
+and launcher visual checks. Windows/socket fixtures do not prove native gameplay.
+
 Sidebar Video Settings (uncommitted after45b1b7b8): implemented, native acceptance
 pending. Shared pc_video_sidebar.h/.inc and pc_video_sidebar_ui.inc reuse the
 existing native display, graphics and settings adapters with a value-only
@@ -9912,3 +9921,10 @@ Complete-HLE/complete-adapter regression tests cover both hosts' adapters via
 host doubles; the SDL case fails without2306. Physical native Mac gameplay and
 listening remain pending. Windows FPS limits/residual underruns are in STATUS;
 release publication is pending. This does not change the Enhanced Audio beta.
+
+Visibility switches HUD & UI and Version watermark now live in
+Settings > Video Settings > View & HUD, with no Tools HUD category. These remain
+immediate session settings (not staged video drafts), usable while the host
+disables Tools. Host policy polling preserves explicit HUD/watermark choices;
+revoking an active free camera still restores its automatically hidden HUD.
+The input fixture checks placement and live updates under denied host policy.

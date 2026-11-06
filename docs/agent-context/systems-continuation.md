@@ -249,3 +249,53 @@ already registered in runtime-patches CI. Native Mac/Linux acceptance is separat
 Aspect groups reuse pc_display_modes.inc; frame-rate labels/values share the
 persistence-free pc_frame_rate_choices.h with the original Video Options.
 Changing aspect selects the nearest matching render mode as a draft.
+
+### Host-controlled Tools access
+
+pc_developer_enabled reads the persisted local opt-in, default false. Extras
+and launcher both edit it; Extras has no warning row. pc_developer_match_policy applies session policy and resets flight
+state on revocation; getters/shortcuts and sidebar widgets share that boundary.
+Offline tools still work normally. Cheats and time scaling retain independent
+offline guards; local camera ownership can be used online only with host access.
+
+pc_developer_match_menu.inc appends native choice121 to US2C78F0 through its
+existing pc_network_bots_menu wrapper, before the outer2D5E70 menu finalizes
+layout. Native71CF0 dispatches12390 on left/right changes. Only the current host
+and owning descriptor can change the session preference. No guest configuration
+padding or personal save is repurposed. The existing lobby-name hook wrappers
+now pass through, preserving original text with no decoration.
+
+pc_developer_lobby_guest polls both lobby and match rosters, passing only values
+to pc_network_tools_policy. TSFTOOL1 uses the existing LAN/Online compatibility
+envelope, host session key, authoritative host address and monotonically
+sequenced updates. Wrong sender/key, old/duplicate sequence, malformed values
+and missing host are ignored; clients expire the permission after3 seconds.
+For locally opted-in users, Settings/Diagnostics remain usable regardless of Tools permission. UI state
+and local saved JSON never grant match permission.
+
+Existing input/guest/FOV/Unlock and real-socket transport fixtures cover local opt-in
+access, restored warning-free Extras and removed icon entries, host-only choice callback, stale descriptor,
+online feature restrictions, revocation, sequence/session/host checks and LAN /
+Online framing. Shared launcher tests check opt-in Save state, persistence and preserved shortcut
+with assigned-key launcher guidance. Native host acceptance remains separate.
+
+The Bot Set adapter carries the real host mode through nested row construction;
+only the original builders see Arcade mode9. The Tools row is appended with the
+real host mode restored, then the enclosing adapter resumes its temporary mode.
+The native menu fixture covers this nested call and restores both contexts.
+
+Match Tools selector placement: the existing79D60 wrapper inserts choice121
+before native Music at US caller2C8010, while compact22100 typography/spacing
+is active. The2C78F0 wrapper scopes menu ownership and the real host mode; it
+no longer appends after Go. The native Music builder then resumes its own
+selector context. No generated-code or patch edits are needed.
+
+Visibility switches HUD & UI and Version watermark now live in
+Settings > Video Settings > View & HUD, with no Tools HUD category. These remain
+immediate session settings (not staged video drafts), usable while the host
+disables Tools. Host policy polling preserves explicit HUD/watermark choices;
+revoking an active free camera still restores its automatically hidden HUD.
+The input fixture checks placement and live updates under denied host policy.
+
+View & HUD visibility labels are HUD & UI and Version watermark (no Show prefix);
+this wording-only refinement leaves immediate session semantics unchanged.

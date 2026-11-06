@@ -233,11 +233,33 @@ static unsigned developer_count;
 static unsigned char developer_key[8];
 static int developer_key_valid;
 static uint64_t developer_sent;
+/* Match Tools policy is host-owned. Availability announcements above are
+ * retained only for older callers; the current UI never displays a wrench. */
+static uint32_t tools_host_ip,tools_sequence,tools_received_sequence;
+static unsigned char tools_key[8];
+static int tools_key_valid,tools_local_host,tools_allowed,tools_received;
+static uint64_t tools_sent,tools_at;
+static void tools_reset(void) {
+    tools_host_ip=tools_sequence=tools_received_sequence=0;
+    tools_key_valid=tools_local_host=tools_allowed=tools_received=0;
+    tools_sent=tools_at=0;memset(tools_key,0,sizeof tools_key);
+}
 static void developer_reset(void) {
     memset(developer_peers,0,sizeof developer_peers);developer_count=0;developer_sent=0;developer_key_valid=0;
+    tools_reset();
 }
 static int developer_control(const struct sockaddr_in *address,const unsigned char *data,int length)
 {
+    if(length>=8&&!memcmp(data,"TSFTOOL1",8)) {
+        if(length!=24||data[20]>1||data[21]||data[22]||data[23]||
+           !tools_key_valid||tools_local_host||address->sin_addr.s_addr!=tools_host_ip||memcmp(data+8,tools_key,8))return 1;
+        uint32_t sequence;memcpy(&sequence,data+16,4);sequence=ntohl(sequence);
+        if(!sequence||(tools_received&&(int32_t)(sequence-tools_received_sequence)<=0))return 1;
+        if(!tools_received||sequence!=tools_received_sequence) {
+            tools_received_sequence=sequence;tools_allowed=data[20];tools_received=1;
+        }
+        tools_at=net_milliseconds();return 1;
+    }
     if(length<8 || memcmp(data,"TSFDEV1",8))return 0;
     if(length!=20 || data[16]>1 || data[17] || data[18] || data[19])return 1;
     unsigned slot;
@@ -247,6 +269,38 @@ static int developer_control(const struct sockaddr_in *address,const unsigned ch
     developer_peers[slot].ip=address->sin_addr.s_addr;developer_peers[slot].enabled=data[16];
     memcpy(developer_peers[slot].key,data+8,8);developer_peers[slot].at=net_milliseconds();
     return 1;
+}
+int pc_network_tools_policy(const PcDeveloperPeer *roster,unsigned count,int host_allowed)
+{
+    if(count>16u||(count&&!roster))return 0;
+    net_lock(&network_lock);
+    unsigned char key[8]={0};uint32_t host_ip=0;int valid=0,local_host=0;
+    for(unsigned i=0;i<count;i++)if(roster[i].host) {
+        host_ip=roster[i].ip;local_host=!!roster[i].local;
+        if(local_host&&local_session_registered){memcpy(key,local_session_id,8);valid=1;}
+        else if(!local_host)for(unsigned j=0;j<peer_count;j++)if(peers[j].ip==host_ip){memcpy(key,peers[j].key,8);valid=1;break;}
+        break;
+    }
+    if(valid!=tools_key_valid||host_ip!=tools_host_ip||local_host!=tools_local_host||memcmp(key,tools_key,8)) {
+        tools_reset();tools_key_valid=valid;tools_local_host=local_host;tools_host_ip=host_ip;memcpy(tools_key,key,8);
+    }
+    uint64_t now=net_milliseconds();
+    if(local_host&&valid) {
+        int changed=tools_allowed!=!!host_allowed;tools_allowed=!!host_allowed;
+        if(initialized&&(changed||!tools_sent||now-tools_sent>=500)) {
+            tools_sent=now;if(!++tools_sequence)++tools_sequence;
+            unsigned char data[24]={0};memcpy(data,"TSFTOOL1",8);memcpy(data+8,key,8);
+            uint32_t sequence=htonl(tools_sequence);memcpy(data+16,&sequence,4);data[20]=(unsigned char)tools_allowed;
+            for(unsigned i=0;i<count;i++)if(!roster[i].local&&roster[i].ip&&roster[i].ip!=local_ip) {
+                struct sockaddr_in to={0};to.sin_family=AF_INET;to.sin_addr.s_addr=roster[i].ip;
+                for(unsigned j=0;j<MAX_SOCKETS;j++)if(sockets[j].socket!=INVALID_SOCKET&&sockets[j].port) {
+                    to.sin_port=htons((uint16_t)sockets[j].port);send_packet(&sockets[j],(const char *)data,sizeof data,0,&to);
+                }
+            }
+        }
+    }
+    int allowed=valid&&(local_host?tools_allowed:tools_received&&now-tools_at<=3000&&tools_allowed);
+    net_unlock(&network_lock);return allowed;
 }
 unsigned pc_network_developer_lobby(const PcDeveloperPeer *roster,unsigned count,int enabled,char *names,size_t bytes)
 {

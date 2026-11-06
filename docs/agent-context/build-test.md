@@ -960,3 +960,9 @@ profile save, batch rollback and resolution Keep/timeout/close behavior.
 
 The real-font fixture also evicts the full glyph cache and verifies that a
 tracked semibold title recreates identical pixels after video labels replace it.
+
+Local opt-in Tools / match policy extends existing developer, FOV, Unlock and real
+network transport suites. UDP checks cover LAN/Online envelopes, host key/address,
+sequence/replay, expiry and session reset; FOV's native-menu fixture checks host
+selector insertion and stale descriptor rejection. These are existing CI suites.
+Shared launcher -Test covers restored opt-in persistence, Save state and saved shortcut preservation.
