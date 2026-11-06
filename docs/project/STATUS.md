@@ -1,6 +1,23 @@
+## 2026-11-06 - Multiplayer branch integration with main
+
+Integrated main `5c5acf91` into `multiplayer-lobby-return` after the initial
+Windows acceptance below. Preserved upstream icon, compiler and native storage
+changes; resolved only overlapping validation/backlog notes. Complete runtime
+patch-stack revalidation passes. Combined menu/FOV/network checks:55 passed,
+2 native-Mac-only checks skipped. Repository context/patch tracking/Mac backlog:
+46 passed. Context freshness and whitespace checks pass. Shortened runtime
+navigation labels to keep its owning guide below the context size limit.
+
+A supported Windows build of the integrated source is running and regenerates
+all guest C because main changed compiler chunking; completion is pending.
+Its bounded output is logs/multiplayer-build-synced.log. The earlier successful
+build and paired gameplay below predate this integration; they do not establish
+acceptance of the new upstream icon/compiler/storage changes. No new physical
+System Link or native Mac/Linux gameplay acceptance was run during integration.
+
 ## 2026-11-06 - Multiplayer host Return to Lobby
 
-Local, uncommitted branch `multiplayer-lobby-return`, based on
+Initial validation on `multiplayer-lobby-return`, based on
 `337be3bc3e89a57563cee09facf39f79b5b40077`. Shared network patch2620 and
 `src/network/pc_multiplayer_exit.inc` retain the host's party when returning from
 pause or results; the host rows now read Return to Lobby (EC060 during play,

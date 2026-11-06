@@ -1,6 +1,6 @@
 ## Arcade host lobby return - MAC-013 validation pending
 
-Uncommitted on multiplayer-lobby-return (base337be3bc). Shared
+Implemented on multiplayer-lobby-return (initial validation base337be3bc). Shared
 src/network/pc_multiplayer_exit.inc and patch2620 implement host Return to Lobby
 with connected guests, including pause/results and explicit host-loss routing.
 The user's final scope keeps guests' own Leave Match/Quit and browser Back
