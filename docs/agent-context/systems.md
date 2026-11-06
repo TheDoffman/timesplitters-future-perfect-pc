@@ -1,5 +1,5 @@
 [Uplink](native-uplink.md);[2605](native-projectiles.md).
-[Input](controls-options.md).
+[Icons](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)

@@ -1,22 +1,23 @@
-/* Shared PNG-span renderer. Image data and attribution are generated separately. */
+/* Aspect-sized native icons; original artwork and fallback runs are compiled. */
+#include "pc_input_icon_layout.h"
 #ifndef TSFP_INPUT_ICON_SIZE
 #define TSFP_INPUT_ICON_SIZE 32
 #endif
 /* Only binding value cells opt in; captions and footer text retain their scale. */
 static RECOMP_TLS float input_icon_cell_height,input_icon_cell_width;
 #ifndef TSFP_KEYCAP_TEST
-extern int tsfp_input_icon_begin(const void *spans,unsigned count,unsigned size);
+extern int tsfp_input_icon_begin(const void *spans,unsigned count,unsigned size,unsigned pixels);
 extern void tsfp_input_icon_end(void);
 #endif
 static int input_icon_id(int key)
 {
     return key>=0 && key<256?input_icon_lookup[key]:-1;
 }
-static void input_icon_image(PcInputIconImage image,float x,float y,float w,float h,uint32_t tint)
+static void input_icon_image(PcInputIconImage image,float x,float y,float w,float h,uint32_t tint,unsigned pixels)
 {
     extern void sub_0001A2E0(void);
 #ifndef TSFP_KEYCAP_TEST
-    if(tsfp_input_icon_begin(input_icon_spans+image.first,image.count,TSFP_INPUT_ICON_SIZE)) {
+    if(tsfp_input_icon_begin(input_icon_spans+image.first,image.count,TSFP_INPUT_ICON_SIZE,pixels)) {
         extern void sub_0001B7B0(void);
         /* Native textured quad preserves the title's placement and scissor.
          * Flush it inside the texture scope, before another font draw. */
@@ -39,19 +40,22 @@ static void input_icon_paint(const PcKeycapCap *cap)
     /* The supplied PNGs include transparent margins; compensate so their
      * visible key faces remain legible beside the game's original lettering. */
     /* The profile picker reserves a shorter, fixed two-line clip. */
-    float h=(cap->b-cap->y)*(cap->controller?1.15f:menu_mouse_profile_icons?1.f:1.15f);
+    PcDisplayMode output=pc_display_effective();
+    unsigned width=output.width?output.width:640u,height=output.height?output.height:480u;
+    float base=(cap->b-cap->y)*(cap->controller?1.15f:menu_mouse_profile_icons?1.f:1.15f);
+    float limit=(cap->b-cap->y)*(menu_mouse_profile_icons?1.f:1.35f);
+    float available=fmaxf(base,(float)(cap->r-cap->x)+4.f),face_scale=1.f;
 #ifdef TSFP_INPUT_ICON_METRICS
-    /* Wide key faces (Space, Shift, Enter) use the label's existing advance
-     * rather than shrinking their lettering into a single square-key width. */
-    if(!cap->controller) {
-        float scale=input_icons[cap->icon*2+!!cap->pressed].scale;
-        h=fminf(h*scale,fmaxf(h,(float)(cap->r-cap->x)+4.f));
-    }
+    if(!cap->controller)face_scale=input_icons[cap->icon*2+!!cap->pressed].scale;
 #endif
     if(input_icon_cell_height>0.f && input_icon_cell_width>0.f) {
-        float scale=input_icons[cap->icon*2+!!cap->pressed].scale;
-        h=fminf(input_icon_cell_height*scale,input_icon_cell_width);
+        base=fminf(22.f,input_icon_cell_height);limit=input_icon_cell_height;
+        available=input_icon_cell_width;
     }
-    float x=(cap->x+cap->r-h)*.5f,y=(cap->y+cap->b-h)*.5f;
-    input_icon_image(input_icons[cap->icon*2+!!cap->pressed],x,y,h,h,cap->colour);
+    float h=pc_input_icon_canvas(width,height,base,limit,menu_mouse_profile_icons);
+    h=pc_input_icon_fit(h*face_scale,available,height);
+    if(!(h>0.f))return;
+    float x=pc_input_icon_align((cap->x+cap->r-h)*.5f,height);
+    float y=pc_input_icon_align((cap->y+cap->b-h)*.5f,height);
+    input_icon_image(input_icons[cap->icon*2+!!cap->pressed],x,y,h,h,cap->colour,(unsigned)floorf(h*pc_input_icon_pixels_per_unit(height)+.5f));
 }

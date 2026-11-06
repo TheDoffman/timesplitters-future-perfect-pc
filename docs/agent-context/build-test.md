@@ -1,5 +1,5 @@
 [Uplink](native-uplink.md); [2605](native-projectiles.md).
-[Input tests](controls-options.md).
+[Icon tests](controls-options.md).
 [HUD/MSAA tests](../development/graphics-options.md).
 [SDL startup/fullscreen](linux-game.md).
 `test_fov_settings.py` checks Video tabs, ownership, pointer bounds, keyboard

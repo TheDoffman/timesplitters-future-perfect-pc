@@ -64,9 +64,12 @@ Imported prompt artwork (local feature/julio-input-prompts): shared
 Rendrify art with Julio Cacko CC0 keyboard/mouse and Xbox-style controller icons.
 Native token/VK banks, glyph bounds, text advances and fade remain shared;
 no OS adapter is needed. Controller-family detection is unchanged.
-Quality follow-up (local, uncommitted) preserves128px pixels, uses shared native
+Quality follow-up (locald0be611e) preserves128px pixels, uses shared native
 textured quads and recorded immediate/deferred GPU state scopes (patch2610),
-Morton-ordered premultiplied mips and linear sampling. Binding icons grow inside
+Morton-ordered premultiplied mips. A local2026-11-06 follow-up replaces linear
+sampling with cached exact-size coverage bitmaps, point sampling without mips,
+and shared aspect-specific size/pixel-step policy
+(pc_input_icon_layout.h), preserving compact profile clips. Binding icons grow inside
 existing rows/columns. The same D3D8/RHI API is used on all hosts; no new OS
 adapter is identified. Mac/Linux builds and actual GPU acceptance remain pending,
 including legacy GL texture locks/state getters, pause scissor, footer fades,

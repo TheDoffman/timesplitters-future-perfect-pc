@@ -40,7 +40,7 @@ Keyboard, mouse and controller prompt artwork is Julio Cacko's FREE Input
 Prompts Pack 1.4: https://juliocacko.itch.io/free-input-prompts
 Assets are dedicated under CC0 1.0 Universal:
 https://creativecommons.org/publicdomain/zero/1.0/
-Original PNG pixels are compiled into filtered UI images with native tint/fade.
+Original PNG pixels are compiled into aspect-sized UI images with native tint/fade.
 Details: assets/ui/input-icons/ATTRIBUTION.md in the source.
 
 Original game material

@@ -1,3 +1,34 @@
+## 2026-11-06 - Aspect-selected input icon sizes (local)
+
+Local feature/julio-input-prompts after c9ae769b replaces continuous GPU
+smoothing with aspect-selected, pixel-aligned icon canvases. Shared policy
+covers4:3,16:10,16:9,21:9 and32:9; compact profile footers retain their existing
+clip. Source art remains Julio Cacko128px. Cached physical-size bitmaps bake
+premultiplied area coverage into small icons; the GPU uses point min/mag and
+no mip filter. This avoids the jagged small lettering seen in the initial
+nearest-mip prototype. Sizes above128 repeat source pixels and add no detail.
+Native text advances, bindings, tint/fades and input behavior are preserved.
+
+Windows focused input/import/display/menu tests:30passed,2native-Mac-only
+checks skipped (logs/aspect-exact-tests-final.log). Coverage includes arbitrary
+size coverage, transparent padding/UVs, cache hits/exhaustion with queued draws,
+device changes, failed upload/state reads and full immediate/deferred state
+restoration. Supported Windows Build and its built-in checks pass with the
+existing local /MP6 and seven /Od /Ob0 generated-unit exceptions; this does not
+establish default-flags Release acceptance. Build log:logs/aspect-exact-build.log.
+
+Fresh bounded Test Lab runs visually reviewed actual profile/footer and main
+Menu Actions at1440x1080,1920x1080 and2520x1080. Original source proportions and
+native row limits are retained; Space/Esc/Tab labels are readable. Evidence:
+logs/aspect-exactclassic-bindings-ready.png,
+logs/aspect-exactwide-bindings-ready.png,
+logs/aspect-exactultra-bindings-final.png and corresponding profile-ready.png.
+Disposable disks were recycled. The private desktop Input Preview uses this
+build, with independent saves/config; launcher --check passes. This follow-up
+has not repeated physical controller, pause/gameplay,4K or live-resize acceptance.
+16:10/32:9 are policy-fixture coverage only. Mac/Linux builds and visual
+acceptance remain pending. No publication or main merge is claimed.
+
 ## 2026-11-05 - Native-resolution icon readability review
 
 Follow-up to locald0be611e: earlier640x480 game captures and the24px controller

@@ -11,7 +11,7 @@ from native_compiler import native_compiler
 ROOT = Path(__file__).resolve().parents[2]
 
 
-@pytest.mark.parametrize('fixture', ['text_read_scope', 'prompt_guest_scope', 'keycaps', 'imported_keycaps', 'input_icon_gpu'])
+@pytest.mark.parametrize('fixture', ['text_read_scope', 'prompt_guest_scope', 'keycaps', 'imported_keycaps', 'input_icon_gpu', 'input_icon_layout'])
 def test_text_read_scope(tmp_path, fixture):
     compiler, env = native_compiler(tmp_path)
     exe = tmp_path / ('text-read-scope.exe' if os.name == 'nt' else 'text-read-scope')

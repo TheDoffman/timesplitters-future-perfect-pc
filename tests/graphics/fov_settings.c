@@ -9,7 +9,7 @@ static ULONGLONG ticks(void) { return clock_ms; }
 #define GetTickCount64 ticks
 #include "../src/interface/pc_display.c"
 #include "../src/interface/pc_display_menu.c"
-int tsfp_input_icon_begin(const void *spans,unsigned count,unsigned size) {(void)spans;(void)count;(void)size;return 0;}
+int tsfp_input_icon_begin(const void *spans,unsigned count,unsigned size,unsigned pixels) {(void)spans;(void)count;(void)size;(void)pixels;return 0;}
 void tsfp_input_icon_end(void) {}
 void sub_0001B7B0(void) {g_esp+=4;}
 const char *pc_build_version(void) { return "development"; }

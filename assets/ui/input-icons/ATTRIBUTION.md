@@ -14,8 +14,10 @@ The author's separate MIT code license does not apply to these texture assets.
 
 Modifications: the selected original128px PNG pixels are losslessly encoded
 into RGBA runs without reducing their resolution. The runtime uploads native
-textures with eight premultiplied mip levels, Morton ordering and linear
-filtering. Seven-bit native UI tint/fade, geometry and clipping are retained.
+size-matched premultiplied coverage bitmaps with Morton ordering and
+point sampling without mip filtering. Aspect-specific size families and resolution-aware pixel steps
+choose the canvas instead of bilinear/trilinear smoothing. Seven-bit native UI
+tint/fade, geometry and clipping are retained.
 Binding icons use a larger scoped canvas within their existing cells; wide key
 faces retain alpha-derived height compensation. No separate pressed artwork is
 provided, so idle art is reused. Manifest hashes make the import reproducible.

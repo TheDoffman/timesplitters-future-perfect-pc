@@ -13,6 +13,9 @@
 #define TSFP_KEYCAP_TEST 1
 #ifdef TSFP_TEST_INPUT_ICONS
 #define TSFP_INPUT_ICONS 1
+typedef struct PcDisplayMode {unsigned width,height;} PcDisplayMode;
+static PcDisplayMode icon_output={640,480};
+static PcDisplayMode pc_display_effective(void){return icon_output;}
 #define TSFP_CONTROLLER_ICONS 1
 #define TSFP_INPUT_ICON_METRICS 1
 static short input_controller_lookup[256];
@@ -99,6 +102,9 @@ int main(void)
     input_icon_lookup[0]=0;input_icon_lookup[32]=10;
     run("[E]");CHECK(!glyphs && lines==1 && seen_colour==0x5b5b5b55);
     int normal_width=max_x-min_x;
+    icon_output.width=1920;icon_output.height=1080;run("[E]");CHECK(max_x-min_x>=normal_width);
+    icon_output.width=2520;run("[E]");CHECK(max_x-min_x>=normal_width);
+    icon_output.width=640;icon_output.height=480;
     glyph_height=8.f;run("[E]");int small_width=max_x-min_x;
     input_icon_cell_height=22.f;input_icon_cell_width=48.f;run("[E]");CHECK(max_x-min_x>small_width && max_x-min_x<=48);
     input_icon_cell_height=input_icon_cell_width=0;glyph_height=20.f;
