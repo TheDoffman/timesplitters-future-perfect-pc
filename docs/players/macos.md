@@ -2,6 +2,48 @@
 
 [Back to the README](../../README.md)
 
+## Launcher storage
+
+The launcher defaults to `~/Library/Application Support/TimeSplitters` for the
+game runtime, imported Data, Saves, Settings, Textures, logs and update recovery.
+You can put **TimeSplitters Launcher.app** in `/Applications`, move it, or replace
+it without moving those files. A managed launcher in the game folder handles
+updates; opening an older downloaded app keeps a newer managed launcher.
+
+If you already have an installation beside the app, the first normal launch
+automatically copies it into Application Support. This includes your game data,
+saves, settings, textures, backups and installed runtime. The launcher verifies
+the copy before switching and keeps the original folder as a backup. No ISO
+reimport or manual Finder move is required. Allow enough free space for the copy.
+
+If you moved the app away from the existing installation, use **Choose existing
+game folder…** once and select the whole folder containing Data, Saves and
+Settings. The launcher copies and verifies it automatically. You can cancel a
+migration; your original stays usable and the copy can resume next launch.
+A failed copy or a conflicting destination leaves the original intact and
+does not overwrite either installation. Keep separate custom save drives
+connected; their existing locations stay unchanged. Custom save folders inside
+the old installation follow the migrated copy.
+
+To change or reconnect storage later, use **Home → Set up game data → Game
+storage…**, or start the app with `--choose-storage`. An unavailable selected
+drive opens this chooser instead of starting with empty saves.
+
+For a portable installation, choose **Keep portable (beside this app)**. It
+creates a `.tsfp-portable` marker beside the app. The existing `--root /path/to/folder`
+override and `--portable` command-line option also retain folder-local storage.
+Developer checkouts keep their existing `private/` and `config/` paths.
+
+Normal macOS installation only requires the `.app` at its Finder location.
+Keep the complete chosen game folder when upgrading or moving data. The
+`storage-root.txt` preference in Application Support remembers an explicitly
+chosen folder. An existing selection is respected; use **Game storage… → Use
+Application Support** to migrate it later. Portable mode and `--root` also skip
+automatic migration. The old backup is kept after successful migration; new
+progress goes to the migrated installation.
+
+## Building from source
+
 The Mac build produces an ARM64 Mach-O executable
 from the verified game data and the same pinned runtime and Python dependencies
 used on Windows. It executes the translated Xbox entry point, initializes the
