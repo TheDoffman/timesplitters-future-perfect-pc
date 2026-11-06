@@ -52,6 +52,8 @@ static void controls_tabs_flush(void);
 extern uint32_t xbox_HeapAlloc(uint32_t bytes, uint32_t alignment);
 #define WORD_AT(a) (*(uint32_t *)((uintptr_t)(uint32_t)(a) + g_xbox_mem_offset))
 static int pc_story_menu_button(void (*original)(void));
+static int multiplayer_exit_button(void (*original)(void));
+static void multiplayer_profiles_capture(void);
 #ifdef _WIN32
 static int pc_story_lobby_button(void (*original)(void));
 static int story_result_button(void (*original)(void));
@@ -288,6 +290,7 @@ void pc_display_menu_button(void (*original)(void))
     if(controls_native_button(original))return;
     pc_story_network_pause_style();
     if(pc_story_menu_button(original)) return;
+    if(multiplayer_exit_button(original)) return;
 
 
     if(callsite==0x0019440bu)sd_width();
@@ -1473,6 +1476,7 @@ static void system_link_enable(void)
 #else
     unsetenv("TSFP_ONLINE_CONFIG"); setenv("TSFP_NETWORK","1",1);
 #endif
+    multiplayer_profiles_capture();
     fprintf(stderr,"[PC-NET] System Link selected; enabling LAN transport\n");
 }
 static void system_link_select(void)
@@ -1494,10 +1498,11 @@ static void system_link_activate(void)
 static void online_activate(void)
 {
     GuestRegisters r; save_registers(&r);
-    if(pc_online_connect()) guest_call(sub_001A0A60,0);
+    if(pc_online_connect()) {multiplayer_profiles_capture();guest_call(sub_001A0A60,0);}
     restore_registers(&r); g_esp+=4;
 }
 #endif
+#include "pc_multiplayer_exit.inc"
 #include "pc_story_menu.inc"
 #include "pc_story_lobby.inc"
 #include "pc_story_browser.inc"
@@ -1515,6 +1520,8 @@ static void controls_players_back(void);
 
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
+    void (*multiplayer_handler)(void)=multiplayer_exit_lookup(address);
+    if(multiplayer_handler) return multiplayer_handler;
     if(address==0x000402D0u)return keycap_alternate_glyph;
     /* HUD callbacks stop on results/loading screens. Reset before a rematch
        reuses the same actor pool and level; pause keeps active phase seven. */

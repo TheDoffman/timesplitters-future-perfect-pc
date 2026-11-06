@@ -1,3 +1,53 @@
+## 2026-11-06 - Multiplayer host Return to Lobby
+
+Local, uncommitted branch `multiplayer-lobby-return`, based on
+`337be3bc3e89a57563cee09facf39f79b5b40077`. Shared network patch2620 and
+`src/network/pc_multiplayer_exit.inc` retain the host's party when returning from
+pause or results; the host rows now read Return to Lobby (EC060 during play,
+EC030 on Arcade results). Original reliable classB and the native16/17 handshake
+are reused. The returned lobby resets old match clocks/caches and retires the
+old advertised start intent. Explicit host loss routes to Online / System Link.
+The final user scope leaves a guest's own Leave Match/Quit and browser Back
+original, including its later phase18 teardown callback.
+
+`pc_network_profiles.inc` shares the existing Story profile identity mapping with
+these returns. The original save routine still owns metadata and checksums;
+only its synchronous profile view is remapped and restored. This removes the
+save-error screen that initially blocked a returning guest's lobby.
+
+Windows x64, MSVC14.42, game0.5.1, D3D11, Original60. The supported US XBE/title
+hash was verified before generation and each paired run. The complete patch
+stack and supported `tsfp.ps1 -Action Build` passed, including native built-in
+tests, isolated save cleanup, identity sealing and crash-symbol checks.
+Shared menu/Story/original-US/profile tests:53 passed;2 native-Mac-only checks
+skipped on Windows. Native UDP transport tests:2 passed on Windows loopback.
+Repository-context/index freshness and whitespace checks passed.
+
+Measured Online acceptance used the existing isolated paired runner with two
+local processes, Test Lab profile copies, file-driven keys and a temporary local
+directory. Host pause return reached usable host4E99C4/guest4E99D4 lobbies at
+phases11/12, retained directory membership and started another real match.
+The final results scenario completed five-point Deathmatch with2 humans/6 bots
+on level48; both peers had matching final score records. The host's results
+Return to Lobby then produced the same usable lobby descriptors and retained
+membership, and both peers started a fresh second round (phase15/state7).
+Selected host Options capture visibly reads Return to Lobby. Guest-owned leave
+callbacks and exact loss versus voluntary teardown routes are fixture-tested.
+
+Results run: `logs/multiplayer-paired-results-verified.log`, completed/cleanup
+true, 238.8s. Provenance and selected captures remain under
+`logs/online-bots-lobbyreturn`; disposable virtual disks were recycled.
+Paired executable SHA-256: `ac188eeb35bc021cc037bd0c5303004cc3d8c998278bf01f2576efefbd5010a3`.
+Final executable SHA-256: `edd00cc21987c46e6efe66a200a0fdd3b40ac4ed7544b8bbb9b4354c810ee7ef`. After the paired run, the only runtime
+change narrows host-loss admission to phases15/16, preserving the original
+voluntary phase18 retirement; its fixture and the final Windows build pass.
+Personal saves/settings and the canonical Test Lab fixture were preserved.
+
+Unrun: physical two-machine System Link, native Mac/Linux build/gameplay,
+real host outage during a paired game, Internet routing and physical-controller
+acceptance. CPU routing tests and same-machine Online do not establish those.
+See MAC-013 and `docs/agent-context/multiplayer-exit.md` for the shared contract.
+
 Icon PR strict-compiler follow-up: native Mac CI passed2866 tests but rejected
 an unused physical-size argument in the span-only imported-key fixture under
 -Werror. That test configuration now explicitly ignores the GPU-only argument.

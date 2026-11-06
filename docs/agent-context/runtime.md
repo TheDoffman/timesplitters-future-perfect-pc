@@ -1,6 +1,7 @@
 [Input](controls-options.md); [Kill feed](../development/arcade-kill-feed.md).
 [Effect depth](native-effect-depth.md).
 [Linux](linux-game.md); [MSAA](smaa.md).
+[MP](multiplayer-exit.md)
 2465 wraps356800 for rewards;
 profile mapper356870 stays original. See [contract](systems-details.md#four-player-rewards-context).
 

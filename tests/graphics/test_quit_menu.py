@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.mark.parametrize("native", [False, True])
-@pytest.mark.parametrize("fixture", ['quit_menu', 'story_menu', 'story_lobby', 'story_drop_state', 'story_browser'])
+@pytest.mark.parametrize("fixture", ['quit_menu', 'story_menu', 'story_lobby', 'story_drop_state', 'story_browser', 'multiplayer_exit'])
 def test_quit_menu(tmp_path, native, fixture):
     compiler, env = native_compiler(tmp_path)
     source = repo_file(ROOT, 'tests', fixture+'.c')
@@ -93,6 +93,12 @@ def test_story_original_us_entry_contract():
     assert struct.unpack('<I',read(0x524598,4))[0]==0x2d0be0
     assert struct.unpack('<I',read(0x4e99c4,4))[0]==0x1a8da0
     assert struct.unpack('<I',read(0x4e99d4,4))[0]==0x1a8fa0
+
+    # The unplanned multiplayer host-loss exit has this exact return address;
+    # voluntary guest Leave uses the separate 2EBDB0 path and stays original.
+    call=read(0x35c35b,5)
+    assert call[0]==0xe8 and 0x35c360+struct.unpack_from('<i',call,1)[0]==0x65420
+    assert struct.unpack('<I',read(0x4e92c4,4))[0]==0x1a2730
 
     # Browser selected-match arguments and the stock picture draw are separate
     # from the joined-lobby header. These exact returns scope the Story adapter.
@@ -525,7 +531,7 @@ def test_story_original_guest_rewards(tmp_path,context_mapping):
         vars(config).update(previous)
     source=(ROOT/'tests/network/story_rewards_guest.c').read_text(encoding='utf-8')
     production=(ROOT/'src/network/pc_story_restart.inc').read_text(encoding='utf-8')
-    adapters='static unsigned story_leave_destination;\nstatic int story_lobby_return_build;\nvoid pc_online_disconnect(void){assert(0);}\n'+production[production.index('extern void sub_002EB0A0('):production.index('static void story_rewards_continue(')]
+    adapters='#include "../src/network/pc_network_profiles.inc"\nstatic int multiplayer_profile_save(void (*fn)(void)){(void)fn;return 0;}\nstatic unsigned story_leave_destination;\nstatic int story_lobby_return_build;\nvoid pc_online_disconnect(void){assert(0);}\n'+production[production.index('extern void sub_002EB0A0('):production.index('static void story_rewards_continue(')]
     adapters+=production[production.index('void pc_story_network_rewards_context_slot('):production.index('void pc_story_network_result_action(void (*original)(void),unsigned action)\n{')]
     import re
     defined=set(re.findall(r'(?:void|uint32_t)\s+(sub_[0-9A-F]+(?:_gen)?)\s*\([^;]*?\)\s*\{',source+code))

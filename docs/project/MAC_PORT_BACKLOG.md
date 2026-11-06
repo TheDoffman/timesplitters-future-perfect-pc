@@ -1,3 +1,18 @@
+## Arcade host lobby return - MAC-013 validation pending
+
+Uncommitted on multiplayer-lobby-return (base337be3bc). Shared
+src/network/pc_multiplayer_exit.inc and patch2620 implement host Return to Lobby
+with connected guests, including pause/results and explicit host-loss routing.
+The user's final scope keeps guests' own Leave Match/Quit and browser Back
+original. Shared pc_network_profiles.inc reuses Story's persistent profile mapping
+so a returning guest reaches its usable lobby rather than a save-error screen.
+Existing native Online/socket adapters provide the same transport calls; no new
+OS adapter is needed. Shared CPU fixtures run via the existing Windows/macOS menu
+suite. Physical native Mac/Linux gameplay and two-machine System Link are pending:
+check host return during play/results, real host loss, original guest exits and
+another match after return. STATUS.md records measured Windows build/acceptance;
+Windows tests do not verify Mac.
+
 ## MAC-130 - macOS Application Support storage (#502) - Awaiting validation
 
 Mac-specific installation convention; Windows/Linux portable storage is unchanged.
