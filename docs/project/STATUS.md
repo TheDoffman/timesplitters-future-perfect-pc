@@ -1,3 +1,20 @@
+## 2026-11-06 - Revert PR #508 compiler-memory policy (local)
+
+On `revert/508-compiler-memory`, based on main `8a82f93f`, revert only the
+build-policy changes from PR #508. The shared pipeline and ordinary generated-C
+publisher restore count-only grouping with a 1,000-function default. Windows
+`tsfp.ps1` removes `-CompileJobs` and its `CL_MPCount` forwarding; CMake project
+parallelism remains four and normal Release optimization is unchanged. Explicit
+split overrides and the pre-existing continuation publisher byte limit remain.
+Later fullscreen, menu, and multiplayer changes are preserved.
+
+Validation: 54 focused pipeline, batch, CLI, continuation-context, and generation
+tests pass on Windows (`logs/revert508-tests.log`). PowerShell AST parsing and
+checks for the removed parameter/forwarding and retained project parallelism pass.
+No full game rebuild, new compiler-memory/timing measurement, native Mac/Linux
+execution, or gameplay check was performed for this build-policy revert. Existing
+playable binaries are unchanged. The prior PR #508 results below are historical.
+
 ## 2026-11-06 - Fullscreen verified on native Linux under WSL
 
 Built7a6fea3c in the separate /root/tsfp-linux-main-test checkout using the

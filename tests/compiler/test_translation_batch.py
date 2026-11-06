@@ -87,16 +87,14 @@ def test_loading_classification_discovery_title_and_filters(tmp_path):
     assert own.xbe_title(damaged,'fallback.xbe')=='fallback'
 
 
-@pytest.mark.parametrize('body_budget,expected_chunks', [(512 * 1024, 2), (1, 4)])
-def test_split_manual_kept_wrappers_stubs_and_stale_output_execute(tmp_path, monkeypatch, body_budget, expected_chunks):
-    monkeypatch.setattr(own, 'MAX_CHUNK_BODY_BYTES', body_budget)
+def test_split_manual_kept_wrappers_stubs_and_stale_output_execute(tmp_path):
     batch,_=fixture(tmp_path);out=tmp_path/'out'
     batch.translator.lifter.referenced_calls={0x9000:'guest_missing',0x1010:'guest_manual',0x1020:'guest_wrapper'}
     batch.translator.lifter.unimplemented={'bad':[0x1001]}
     kwargs=dict(chunk_size=2,manual={0x1010},keep_bodies={0x1010:'guest_kept'})
     stats=batch.translate_batch_split(list(batch.func_db.items()),out,**kwargs)
-    assert {k:stats[k] for k in ('total','translated','failed','manual_functions','unresolved_stubs','num_chunks')}==dict(total=4,translated=3,failed=1,manual_functions=1,unresolved_stubs=1,num_chunks=expected_chunks)
-    assert stats['unimplemented']=={'bad':[0x1001]} and len(stats['files'])==expected_chunks+3
+    assert {k:stats[k] for k in ('total','translated','failed','manual_functions','unresolved_stubs','num_chunks')}==dict(total=4,translated=3,failed=1,manual_functions=1,unresolved_stubs=1,num_chunks=2)
+    assert stats['unimplemented']=={'bad':[0x1001]} and len(stats['files'])==5
     assert all(manual=={0x1010} for _,_,manual in batch.translator.calls)
     dispatch=(out/'recomp_dispatch.c').read_text(encoding='utf-8')
     assert 'guest_kept' not in dispatch and '(recomp_func_t)guest_wrapper' in dispatch
@@ -131,18 +129,6 @@ guest_kept();return seen!=318;}
     batch.translate_batch_split([],out)
     assert 'updated ABI' in (out/'recomp_types.h').read_text()
     assert not list(out.glob('recomp_0*.c'))
-
-
-def test_chunk_byte_boundaries_count_and_oversized_body(monkeypatch):
-    monkeypatch.setattr(own, 'MAX_CHUNK_BODY_BYTES', 10)
-    bodies = ['é' * 3, 'abcd', 'x', 'z' * 11, 'y', 'q']
-    records = [(i, f'function_{i}', body) for i, body in enumerate(bodies)]
-    chunks = list(own._chunks(records, 2))
-    assert [[r[0] for r in group] for group in chunks] == [[0, 1], [2], [3], [4, 5]]
-    assert [r for group in chunks for r in group] == records
-    assert list(own._chunks([], 2)) == []
-    # UTF-8 byte length, rather than character count, forces the second body out.
-    assert len(list(own._chunks([(0, 'a', 'é' * 3), (1, 'b', '12345')], 2))) == 2
 
 
 def test_simple_batches_categories_and_invalid_output_preservation(tmp_path):

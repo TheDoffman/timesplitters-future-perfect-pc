@@ -59,7 +59,7 @@ Patch discovery/migration: [folder rules](../../patches/README.md).
 
 Standalone RHI/replay set `TSFP_SHARED_SOURCE`; see [maps](guest-host-mappings.md).
 
-[Guest services, compiler contracts and memory bounds](independent.md).
+[Guest services and compiler contracts](independent.md).
 Allocation/image/state/ABI tests use fatal warnings and bounded mismatch reports.
 Storage probes: [threads](thread-memory.md), [virtual-memory ABI/access](virtual-memory.md).
 
