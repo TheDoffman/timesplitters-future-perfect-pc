@@ -108,6 +108,7 @@ namespace TimeSplitters.Launcher
                 var buttons=panel.Children.OfType<Avalonia.Controls.StackPanel>().Single().Children.OfType<Avalonia.Controls.Button>().ToArray();
                 Need(buttons.Any(b=>Convert.ToString(b.Content)=="Use Application Support") &&
                      buttons.Any(b=>Convert.ToString(b.Content)=="Choose existing game folder…") &&
+                     buttons.Any(b=>Convert.ToString(b.Content)=="Copy existing folder to Application Support…") &&
                      buttons.Any(b=>Convert.ToString(b.Content)=="Keep portable (beside this app)"),"Storage choices missing");
                 Need(!Directory.Exists(storageRoot),"Storage UI wrote before a choice");
                 Console.WriteLine("PASS native UI: storage offers recommended, existing and portable choices before writes");

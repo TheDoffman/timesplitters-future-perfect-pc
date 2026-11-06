@@ -16,9 +16,11 @@ saves, settings, textures, backups and installed runtime. The launcher verifies
 the copy before switching and keeps the original folder as a backup. No ISO
 reimport or manual Finder move is required. Allow enough free space for the copy.
 
-If you moved the app away from the existing installation, use **Choose existing
-game folder…** once and select the whole folder containing Data, Saves and
-Settings. The launcher copies and verifies it automatically. You can cancel a
+If you moved the app away from the existing installation, use **Copy existing
+folder to Application Support…** once and select the whole folder containing
+Data, Saves and Settings. The launcher copies and verifies it automatically. To
+use a folder where it is, including an external drive or moved installation,
+use **Choose existing game folder…** instead. You can cancel a
 migration; your original stays usable and the copy can resume next launch.
 A failed copy or a conflicting destination leaves the original intact and
 does not overwrite either installation. Keep separate custom save drives

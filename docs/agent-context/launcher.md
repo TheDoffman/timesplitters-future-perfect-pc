@@ -21,7 +21,9 @@ explicit portable/root translocation retains the existing recovery chooser.
 `NativeStorageWindow` handles first use and Home's Game storage action. Normal
 unconfigured launches detect legacy files beside the bundle and automatically
 call `MacStorageMigration.Migrate` to copy them into Application Support. The
-folder picker imports installations stored elsewhere the same way. Explicit
+copy-folder picker imports installations stored elsewhere the same way; the
+separate Choose existing game folder picker prepares/remembers a folder in place,
+including external or moved installs even when Application Support has data. Explicit
 folder preferences, portable/root overrides and developer checkouts opt out.
 `Use existing files beside this app` is an explicit keep-in-place alternative.
 

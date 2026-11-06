@@ -31,11 +31,12 @@ namespace TimeSplitters.Launcher
             panel.Children.Add(NativeWindow.Text("Keep your game, saves, settings, textures and logs separate from the app. You can then move or replace the app without moving your progress.",15));
             panel.Children.Add(NativeWindow.Text("Recommended: "+MacStorage.DefaultRoot));
             if(!MacStorage.Same(selected,MacStorage.DefaultRoot))panel.Children.Add(NativeWindow.Text("Current: "+selected));
-            panel.Children.Add(NativeWindow.Text("Existing installations beside the app are copied to Application Support automatically. If your files are elsewhere, choose their folder below. Your game, saves and settings are verified before switching; the original folder is kept as a backup."));
+            panel.Children.Add(NativeWindow.Text("Existing installations beside the app are copied to Application Support automatically. For files elsewhere, choose their folder to use it in place, or copy it to Application Support. Copies are verified before switching; the original folder is kept as a backup."));
             status=NativeWindow.Text(error??"");panel.Children.Add(status);
             actions=new StackPanel { Spacing=10 };panel.Children.Add(actions);
             actions.Children.Add(NativeWindow.Button("Use Application Support",()=>_ = Use(MacStorage.DefaultRoot,true)));
-            actions.Children.Add(NativeWindow.Button("Choose existing game folder…",()=>_ = Choose()));
+            actions.Children.Add(NativeWindow.Button("Choose existing game folder…",()=>_ = Choose(false)));
+            actions.Children.Add(NativeWindow.Button("Copy existing folder to Application Support…",()=>_ = Choose(true)));
             if(MacStorage.HasInstallation(source))
                 actions.Children.Add(NativeWindow.Button("Use existing files beside this app",()=>_ = Use(source,true)));
             actions.Children.Add(NativeWindow.Button("Keep portable (beside this app)",()=>_ = Use(source,false,true)));
@@ -58,7 +59,7 @@ namespace TimeSplitters.Launcher
                 } catch(Exception ex) { status.Text=ex.Message; }
             }
         }
-        async Task Choose()
+        async Task Choose(bool import)
         {
             try {
                 var picked=await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions {
@@ -66,7 +67,7 @@ namespace TimeSplitters.Launcher
                 string folder=picked.FirstOrDefault()?.TryGetLocalPath();
                 if(folder!=null) {
                     folder=MacStorage.ExistingFolder(folder);
-                    if(MacStorage.Same(folder,MacStorage.DefaultRoot))await Use(folder,true);
+                    if(!import || MacStorage.Same(folder,MacStorage.DefaultRoot))await Use(folder,true);
                     else await Use(MacStorage.DefaultRoot,true,false,folder);
                 }
             } catch(Exception ex) { status.Text=ex.Message; }

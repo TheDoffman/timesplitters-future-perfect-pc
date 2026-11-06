@@ -6,7 +6,8 @@ main 9da83f36: `MacStorage.cs`, `NativeStorageWindow.cs` and native startup rout
 Finder launches to a writable game folder independent of the entry-point app.
 The default is ~/Library/Application Support/TimeSplitters. Legacy installations
 beside the app migrate automatically through MacStorageMigration.cs; a folder
-picker imports installations elsewhere. Originals remain as backups; verified
+copy-folder picker imports installations elsewhere; a separate chooser selects
+external/moved installations in place. Originals remain as backups; verified
 staging resumes and an atomic directory rename publishes only the completed copy.
 Existing destination data is never merged or overwritten. Internal custom save
 paths follow the copy; external paths remain unchanged. Explicit folder selections,

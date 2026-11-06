@@ -39,6 +39,10 @@ packaged helper/update/restart and read-only game prerequisites remain unrun on
 this Windows host. WSL filesystem contracts do not establish those behaviors.
 MAC-130 tracks native acceptance. Implementation is committed for integration;
 release publication and physical-device synchronization remain pending.
+PR510 review follow-up: keep-in-place selection and copy/import now have separate
+folder-picker actions, preserving external/moved installation selection even
+when Application Support is occupied. Both choices are covered by the native UI
+contract; existing storage fixtures cover remembered/moved folders and conflicts.
 
 ## 2026-11-06 - Windows compiler memory fix validation
 
