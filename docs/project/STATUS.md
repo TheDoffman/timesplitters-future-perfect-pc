@@ -159,6 +159,103 @@ and source artwork remain separate. No PR, push, merge or publication is claimed
 Selected screenshots, build logs, a private build receipt and bounded replay
 records remain local under logs/private.
 
+Weapon FOV slider (2026-11-06, local branch fix/weapon-fov-slider, base fb555912):
+shared main/pause menu bar replaces choices; 80-150% in 5% steps. Windows
+menu/FOV regression fixtures: 9 passed, 2 native-Mac checks skipped. Drag
+capture, limits, tab staging and Apply persistence checked. Game rebuild and
+visual validation not yet performed; Mac/Linux gameplay unverified.
+
+## 2026-11-06 — Antivirus blocking diagnostics (issue #476)
+
+Change on branch `fix/476-antivirus-errors`, based on main `fb555912`.
+Windows x64/.NET Framework launcher: Windows errors 225/226 and their IO HRESULTs
+now retain full paths through application/helper startup, helper and installed-file
+copies, hashing and game/launcher extraction. Copy failures list both paths.
+The startup recovery UI scrolls long messages; main-window failures show a dialog.
+Original exceptions remain in logs; helper result files retain antivirus details
+through aggregate recovery failures. Missing application files include their path
+and conditional quarantine guidance. No detection bypass or security-setting
+change is made; this is an error-reporting improvement, not a McAfee detection fix.
+
+Validation: `powershell -NoProfile -File tools/build/build-launcher.ps1 -Test`
+passed the complete Windows launcher suite, including 116 updater regressions,
+15 startup checks and 39 shared UI groups. Final validation used
+`-Output D:\CodexValidation\timesplitters-476-launcher`, with TEMP/TMP and the
+working directory on D:, because concurrent work exhausted C: free space;
+the unchanged backup-space guard correctly stopped the earlier C: rerun. Synthetic Win32 225/226 and HRESULT 0x800700E1/E2 cases cover
+paths, native diagnostics, retry, long-path layout and protected-file preservation;
+ordinary permission/lock/missing-file errors are not labeled antivirus blocks.
+The long-path startup render was inspected. Portable launcher compatibility,
+shared-layout and native Mac launcher Python checks passed 31 tests / 31 subtests.
+Native Mac/Linux binary/UI suites and actual McAfee quarantine/retest were not run
+on this Windows host. Release publication and other-device synchronization remain pending. The
+repository context check passes on the isolated publication snapshot; the
+build/test guide's near-limit text was condensed and kept as LF without dropping
+its contracts.
+
+## 2026-11-06 - Issue501 optional texture source checkout
+
+Local fix/501-source-only-clone based on main3fa4bc2b adds repository LFS fetch
+exclusion for assets/textures. The dedicated texture audit explicitly opts in;
+ordinary CI checkouts remain unhydrated. Build/contributor instructions and
+missing-pack diagnostics now distinguish optional asset work from normal builds.
+No DDS, LFS history, installed pack, personal setting or save is removed.
+Official publish-release already enforces texture-free game packages. The shared
+launcher SettingsPage only calls TextureDownload.Install after the user confirms
+Download / update; automatic checks fetch metadata, not texture archives.
+
+Real Git LFS fixture checks passed on Windows and Ubuntu24.04 WSL: ordinary clone
+retains pointers with no LFS object downloads; explicit pull and explicit clone
+override hydrate the tiny fixture; a later ordinary pull preserves those files.
+Windows packaging/texture checks:59 passed,1 skipped. CI selection/publication/
+texture checks:250 passed with one missing-xdist environment failure; installing
+the pinned xdist/execnet dependencies made that remaining test pass. No Mac clone
+was run locally, no game rebuild was needed, and issue501 remains open. Changes
+are awaiting publication.
+
+## 2026-11-05 - Weapon FOV implementation, validation pending
+
+The feature/weapon-fov change based on main3fa4bc2b adds a shared frontend/pause
+View & HUD choice, 80–150% aperture with Original100, staged Apply and V3 config
+persistence. Launcher settings preserve the value. Windows targeted graphics
+checks passed29 with2 skips;47 isolated launcher settings checks passed. Linux
+projection/letterbox checks passed21 with4 skips, and the native game build and
+protected-MMIO checks passed. Linux uses the separate local checkout with the
+scoped candidate files copied over its existing work; it is not a clean build
+of the Windows revision. Windows full game compilation failed with MSVC C1002
+heap exhaustion in generated recomp_0011.c, including reduced-worker retries.
+The maintained Windows build regenerated stale projectile wrappers, then passed
+with process-local /MP1 /Od /Ob0 for a manual test executable; normal optimized
+compilation still exhausts MSVC heap. Windows PowerShell is required by the
+icon build step on this computer. Build checks passed, and an isolated unlocked
+Test Lab session launched. This reduced-optimization build is not release
+performance evidence. Actual new-row visual verification and Mac runtime remain
+pending. Final Windows targeted checks on November 6 passed29 with2 skips.
+Publication remains pending.
+
+## 2026-11-05 - Issue497 native effect depth candidate
+
+Based on main772a38df; local fix/497-electricity-through-walls. Live HLE and
+replay effect targets were skipping shared-depth preparation outside Windows.
+Linux Ubuntu24.04 WSL x64, Mesa llvmpipe LLVM20.1.2/Vulkan1.4: original replay
+failed a color/depth size mismatch; corrected replay passed four aspect/scale
+cases with foreground occlusion, feedback refresh and retained depth writes.
+Shared Vulkan RHI suite passed. Windows adapter/readback/build-link tests:
+10 passed, including a failing old-guard mutation. Native Mac and the exact
+Electro Chimp/Russian Connection encounter remain unverified. No release or
+issue closure; the targeted renderer defect is proven, scene causality pending.
+Windows HLE/replay targets rebuilt, and all four replay cases passed on D3D11.
+Linux HLE compiled; integrated software-Vulkan renderer/replay validation passed.
+Linux adapter/readback tests:9 passed,1 Windows-only test skipped. Windows patch
+tracking/context/adapter checks:48 passed. Logs are under logs/issue497 on Windows
+and logs/issue497-* in the native Linux checkout.
+Full native Linux generation/build and protected-MMIO tests subsequently passed.
+An isolated older-build Electro Chimp run captured a real electrical beam.
+Replaying that frame with and without this correction produced identical pixels
+and no failed host calls. It did not reproduce the reported hidden glow; this
+is not visual confirmation of issue497. The temporary baseline replay mutation
+was restored and the corrected replay rebuilt. See native-effect-depth.md.
+
 ## 2026-11-05 - Projectile flight timing verified on Windows
 
 Shared patch2605 and numeric/projectile policy repair the remaining affected

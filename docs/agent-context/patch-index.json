@@ -2024,6 +2024,15 @@
       ]
     },
     {
+      "name": "2610-native-shared-effect-depth.patch",
+      "path": "patches/graphics/rendering/2610-native-shared-effect-depth.patch",
+      "sha256": "a13359ca61ec6eef69c52c95765e4eab2885fcb3ddfffc0f30c79dfe878bcecc",
+      "targets": [
+        "src/hle/hle_d3d8_record.c",
+        "src/replay/d3d8_replay.c"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",

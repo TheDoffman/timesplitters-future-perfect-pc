@@ -7,7 +7,7 @@ typedef struct MenuSliderTrack {
     unsigned sw,sh;
     uint64_t time;
 } MenuSliderTrack;
-enum { MENU_MUSIC, MENU_SOUND, MENU_SENSITIVITY, MENU_FOV, MENU_KEYBOARD_SENSITIVITY, MENU_SLIDER_COUNT };
+enum { MENU_MUSIC, MENU_SOUND, MENU_SENSITIVITY, MENU_FOV, MENU_KEYBOARD_SENSITIVITY, MENU_WEAPON_FOV, MENU_SLIDER_COUNT };
 static MenuSliderTrack menu_slider_tracks[MENU_SLIDER_COUNT];
 static uint32_t menu_slider_drag;
 static MenuSliderTrack menu_slider_owner;
@@ -73,12 +73,15 @@ void pc_display_menu_slider_bar(void (*original)(void))
     original();
 }
 static void menu_slider_fov_pointer(float x,float left,float width);
+static void menu_slider_weapon_fov_pointer(float x,float left,float width);
 static void menu_slider_keyboard_pointer(float x,float left,float width);
 extern void sub_00045390(void),sub_00045820(void);
 static void menu_slider_set(const MenuSliderTrack *track,unsigned kind,float x)
 {
     if(kind==MENU_KEYBOARD_SENSITIVITY) {
         menu_slider_keyboard_pointer(x,track->x,track->w);
+    } else if(kind==MENU_WEAPON_FOV) {
+        menu_slider_weapon_fov_pointer(x,track->x,track->w);
     } else if(kind==MENU_FOV) {
         menu_slider_fov_pointer(x,track->x,track->w);
     } else if(kind==MENU_SENSITIVITY) {
@@ -145,7 +148,7 @@ static int menu_slider_pointer(uint32_t menu,PcMenuPointer p,unsigned actions,
     WORD_AT(menu+0xc4)&=~0x001F001Fu;
     WORD_AT(menu+0xc8)&=~0x1Fu;
     if(WORD_AT(menu+0x198)!=track->item) guest_call(sub_00076EF0,2,menu,track->item);
-    if((actions&2) && track-menu_slider_tracks==MENU_FOV)
+    if((actions&2) && (track-menu_slider_tracks==MENU_FOV || track-menu_slider_tracks==MENU_WEAPON_FOV))
         menu_video_click_sound(menu,track->item);
     menu_slider_set(track,(unsigned)(track-menu_slider_tracks),x);
     return 1;

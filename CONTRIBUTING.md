@@ -17,6 +17,30 @@ Please follow the [code of conduct](CODE_OF_CONDUCT.md).
 Remove personal information, tokens and private join codes from screenshots
 and logs. Never upload game files, ISOs, generated game code or personal saves.
 
+## Clone without optional textures
+
+Enhanced textures are optional downloads for players, not a source-build dependency.
+Fresh clones keep their small Git LFS pointers by default through `.lfsconfig`.
+If your Git configuration overrides that default, skip hydration explicitly:
+
+```sh
+GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/TheDoffman/timesplitters-future-perfect-pc.git
+```
+
+In PowerShell, set `$env:GIT_LFS_SKIP_SMUDGE='1'` before `git clone`, then
+`Remove-Item Env:GIT_LFS_SKIP_SMUDGE` afterward. This changes only that shell.
+Ordinary builds and game packages work without downloading the texture pack.
+For texture editing or publishing, download it explicitly:
+
+```sh
+git lfs pull --include="assets/textures/**" --exclude=""
+```
+
+Git LFS keeps both downloaded files and a local object cache, so fetching the
+pack uses more disk space than its installed size. These defaults do not remove
+existing packs or caches. The launcher still offers the optional Enhanced pack
+separately from the game; no history rewrite or re-download is required.
+
 ## Send a change
 
 See the [repository layout](docs/development/repository-layout.md) for file locations,

@@ -35,7 +35,7 @@ static class LauncherStartupChecks
         var grid=(Grid)ui.Window.Content;
         grid.Background=ui.Window.Background;
         grid.Measure(new Size(544,350));grid.Arrange(new Rect(0,0,544,350));grid.UpdateLayout();
-        var status=(TextBlock)ui.Window.FindName("Status");
+        var status=(ScrollViewer)ui.Window.FindName("StatusScroll");
         var progress=(ProgressBar)ui.Window.FindName("Progress");
         Need(status.TranslatePoint(new Point(0,status.ActualHeight),grid).Y<=progress.TranslatePoint(new Point(0,0),grid).Y);
         foreach(string name in new[]{"Retry","Folder","Logs"}) {
@@ -64,6 +64,59 @@ static class LauncherStartupChecks
             File.WriteAllText(path,"preserved synthetic fixture: "+name);original[name]=Core.Hash(path);
         }
         try {
+            Test("antivirus blocks retain paths and native diagnostics for launch and file IO",()=> {
+                foreach(string name in new[]{Core.AppPath,".launcher/self-helper.exe",".launcher/update-helper.exe","Bin/futureperfect_recomp.exe"})
+                foreach(int code in new[]{225,226})
+                foreach(Exception originalError in new Exception[]{new Win32Exception(code,"localized detection"),new IOException("localized detection",unchecked((int)0x80070000)|code)}) {
+                    string path=Core.PathIn(root,name);
+                    try { AntivirusErrors.At(path,()=>{throw originalError;});throw new Exception("Expected antivirus block"); }
+                    catch(AntivirusBlockedException error) {
+                        Need(ReferenceEquals(error.InnerException,originalError));
+                        foreach(var recovery in new[]{RecoveryInfo.From(error,true),RecoveryInfo.LauncherStart(error,path),RecoveryInfo.From(new IOException("Recovery also failed",new AggregateException(error,new IOException("locked"))),false)})
+                            Need(recovery.Title=="Antivirus blocked a file" && recovery.Message.Contains(path) && recovery.Message.Contains(code.ToString()) && recovery.Message.Contains("security history") && recovery.RetryLabel=="Retry");
+                    }
+                }
+            });
+            Test("antivirus detection does not classify permissions, locks, missing files or text matches",()=> {
+                foreach(Exception error in new Exception[]{new Win32Exception(5),new Win32Exception(32),new Win32Exception(2),new UnauthorizedAccessException(),new IOException("virus McAfee antivirus"),new IOException("wrong facility",unchecked((int)0x800400e1))}) {
+                    try { AntivirusErrors.At("synthetic.exe",()=>{throw error;});throw new Exception("Expected failure"); }
+                    catch(Exception actual) { Need(ReferenceEquals(error,actual)); }
+                    Need(RecoveryInfo.From(error,true).Title!="Antivirus blocked a file");
+                }
+            });
+            Test("blocked application displays its full path and preserves retry and diagnostics",()=> {
+                string path=Core.PathIn(root,Core.AppPath);
+                int calls=0;
+                using(var f=new Fixture(()=>{calls++;AntivirusErrors.At(path,()=>{throw new Win32Exception(225);});})) {
+                    f.Click("Continue");Need(!f.Closed && f.Text("Heading")=="Antivirus blocked a file" && f.Text("Status").Contains(path));
+                    f.Click("Retry");Need(calls==2 && !f.Closed);
+                    string log=File.ReadAllText(Core.PathIn(root,".launcher/launcher.log"));
+                    Need(log.Contains(path) && log.Contains("Windows error 225") && log.Contains("Win32Exception"));
+                    foreach(string name in new[]{"Retry","Folder","Logs"})Need(f.Button(name).Visibility==Visibility.Visible);
+                }
+            });
+            Test("long antivirus paths remain scrollable without hiding recovery actions",()=> {
+                string path=Path.Combine(root,new string('a',220),".launcher","update-helper.exe");
+                using(var f=new Fixture(()=>{AntivirusErrors.At(path,()=>{throw new Win32Exception(226);});})) {
+                    f.Click("Continue");
+                    var grid=(Grid)f.UI.Window.Content;grid.Background=f.UI.Window.Background;
+                    grid.Measure(new Size(508,450));grid.Arrange(new Rect(0,0,508,450));grid.UpdateLayout();
+                    var scroll=(ScrollViewer)f.UI.Window.FindName("StatusScroll");
+                    Need(f.Text("Status").Contains(path) && scroll.ActualHeight<=240 && scroll.ViewportHeight>0);
+                    foreach(string name in new[]{"Retry","Folder","Logs"}) {
+                        var button=f.Button(name);var point=button.TranslatePoint(new Point(0,0),grid);
+                        Need(point.Y>=scroll.TranslatePoint(new Point(0,scroll.ActualHeight),grid).Y && point.Y+button.ActualHeight<=grid.ActualHeight+1);
+                    }
+                    var bitmap=new RenderTargetBitmap(508,450,96,96,PixelFormats.Pbgra32);bitmap.Render(grid);
+                    var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                    using(var stream=File.Create(Path.Combine(output,"antivirus-recovery-preview.png")))encoder.Save(stream);
+                }
+            });
+            Test("missing application reports its path without asserting an antivirus detection",()=> {
+                string path=Core.PathIn(root,"Bin/missing-app.exe");
+                var info=RecoveryInfo.LauncherStart(new FileNotFoundException(),path);
+                Need(info.Title=="Launcher files are missing" && info.Message.Contains(path) && info.Message.Contains("if the file disappeared"));
+            });
             Test("Windows cancellation uses its native code and explains possible prompts without blaming the user",()=> {
                 var info=RecoveryInfo.LauncherStart(new Win32Exception(1223,"localized message"));
                 Need(info.Message.Contains("SmartScreen") && info.RetryLabel=="Retry" && !info.Message.Contains("localized message") && !info.Message.Contains("cancelled by the user"));

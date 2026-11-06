@@ -7,6 +7,8 @@ Scope/gate/worker tests run in the plan; host suites remain unchanged.
 
 # Launcher and menu shortcuts
 
+GameSettings preserves [Weapon FOV](video-options.md#weapon-aperture) in display V3.
+
 Linux release packaging closes dependencies for all launcher/Python ELFs,
 not only the game. Provider/source and notice verification is described in
 [Linux release contracts](linux-game.md#experimental-release-preparation).
@@ -693,3 +695,26 @@ Viewbox keeps the shared 1000x720 layout reachable on small/scaled desktops.
 MessageDialog bounds its width and scroll body to its owner. --render-deck and
 --render-deck-settings preserve the fitted size for Xvfb visual checks. Shared
 UI tests cover 1280x800, 1024x640, 853x533 and desktop geometry.
+
+
+## Antivirus blocking diagnostics (issue #476)
+
+`AntivirusErrors` in DownloadTransfer.cs recognizes only Windows native errors
+225/226 and their HRESULT_FROM_WIN32 IO equivalents. Windows process starts,
+helper copies, installed-file copies/backups, hash reads and game/launcher
+extraction retain operation paths in AntivirusBlockedException; copy failures
+name both source and destination because Windows does not identify the side.
+The original exception stays in InnerException, including recovery aggregates.
+RecoveryInfo gives antivirus-specific retry/history guidance without calling
+access denial or missing files a confirmed detection. Missing startup files
+include the application path and conditional quarantine guidance. Bootstrap
+startup/update logs retain complete exceptions; helper result files preserve
+antivirus details even if transaction recovery also fails. Startup recovery
+scrolls long messages; the Windows main UI shows a blocking-error dialog.
+Security settings, update validation and transaction/recovery policy are unchanged.
+
+Windows `build-launcher.ps1 -Test` runs the synthetic native/IO error-code,
+negative-classification, retry/log/path, long-path layout and preservation checks
+in launcher_startup.cs. The existing shared UI suite also checks host scoping:
+MACOS/LINUX never interpret Windows numeric error codes as antivirus evidence.
+Native host execution and real McAfee detection remain separate acceptance work.

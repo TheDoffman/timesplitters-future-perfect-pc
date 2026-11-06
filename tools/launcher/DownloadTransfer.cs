@@ -40,11 +40,75 @@ namespace TimeSplitters.Launcher
         public void Report(TransferSnapshot value) { target.Report(value); }
         public void Report(double value) { target.Report(new TransferSnapshot {Bytes=(long)value,Total=100,Phase="Preparing"}); }
     }
+    // Keep the OS error and exact operation paths together before UI recovery
+    // replaces low-level exceptions with friendly text. Do not infer a detection
+    // from access denied, a missing file, or localized exception messages.
+    public sealed class AntivirusBlockedException : IOException
+    {
+        public AntivirusBlockedException(string paths, int code, Exception inner)
+            : base("Antivirus blocked access to a file (Windows error " + code + ").\n" + paths +
+                "\nCheck your antivirus quarantine/security history (including McAfee or Windows Security) for this path and detection name. If a file was removed, restore the complete official package after reviewing the detection, then retry. Keep .launcher for recovery.", inner) { }
+    }
+    public static class AntivirusErrors
+    {
+        public static int Code(Exception error)
+        {
+#if !MACOS && !LINUX
+            var native = error as System.ComponentModel.Win32Exception;
+            int code = native != null ? native.NativeErrorCode :
+                error is IOException && (error.HResult & unchecked((int)0xffff0000)) == unchecked((int)0x80070000) ? error.HResult & 65535 : 0;
+            if (code == 225 || code == 226) return code;
+#endif
+            return 0;
+        }
+        public static AntivirusBlockedException Find(Exception error)
+        {
+            if (error == null) return null;
+            var blocked = error as AntivirusBlockedException;
+            if (blocked != null) return blocked;
+            var aggregate = error as AggregateException;
+            if (aggregate != null) {
+                foreach (var inner in aggregate.InnerExceptions) { blocked = Find(inner); if (blocked != null) return blocked; }
+                return null;
+            }
+            return Find(error.InnerException);
+        }
+        public static void At(string path, Action operation)
+        {
+            try { operation(); }
+            catch (Exception error) {
+                int code = Code(error);
+                if (code != 0) throw new AntivirusBlockedException("Affected file: " + path, code, error);
+                throw;
+            }
+        }
+        public static void Copy(string source, string target, bool overwrite)
+        {
+            try { File.Copy(source, target, overwrite); }
+            catch (Exception error) {
+                int code = Code(error);
+                // CopyFile does not identify which side was rejected. Report both
+                // paths rather than claiming the destination was detected.
+                if (code != 0) throw new AntivirusBlockedException("Copy source: " + source + "\nCopy destination: " + target, code, error);
+                throw;
+            }
+        }
+        public static Process Start(ProcessStartInfo info)
+        {
+            Process process = null;
+            At(info.FileName, () => { process = Process.Start(info); });
+            return process;
+        }
+    }
     public sealed class RecoveryInfo
     {
         public string Title, Message, RetryLabel;
-        public static RecoveryInfo LauncherStart(Exception error)
+        public static RecoveryInfo LauncherStart(Exception error, string application = null)
         {
+            var blocked = AntivirusErrors.Find(error);
+            if (blocked != null) return From(blocked, false);
+            int code = AntivirusErrors.Code(error);
+            if (code != 0) return From(new AntivirusBlockedException("Affected file: " + (application ?? "Bin\\TimeSplitters.App.exe"), code, error), false);
             var native = error as System.ComponentModel.Win32Exception;
             if (native != null && native.NativeErrorCode == 1223)
                 return new RecoveryInfo { Title="Windows didn't open the launcher", RetryLabel="Retry",
@@ -56,12 +120,15 @@ namespace TimeSplitters.Launcher
                 (native != null && (native.NativeErrorCode == 2 || native.NativeErrorCode == 3)) ||
                 (error is InvalidDataException && error.Message.StartsWith("Launcher application files are missing",StringComparison.Ordinal)))
                 return new RecoveryInfo { Title="Launcher files are missing", RetryLabel="Retry",
-                    Message="Restore the complete official launcher package into this folder, keeping Bin and Support beside TimeSplitters Launcher.exe, then Retry. Open launcher folder to check the files, or View logs for details." };
+                    Message="Missing file: " + (application ?? "Bin\\TimeSplitters.App.exe") + "\nRestore the complete official launcher package into this folder, keeping Bin and Support beside TimeSplitters Launcher.exe, then Retry. Check antivirus quarantine/security history if the file disappeared. Open launcher folder to check the files, or View logs for details." };
             return new RecoveryInfo { Title="The launcher couldn't open", RetryLabel="Retry",
                 Message="Try again, or choose Open launcher folder to check the application. View logs for details about the startup failure." };
         }
         public static RecoveryInfo From(Exception error,bool download)
         {
+            var blocked = AntivirusErrors.Find(error);
+            if (blocked != null) return new RecoveryInfo {Title="Antivirus blocked a file", Message=blocked.Message +
+                (ReferenceEquals(error, blocked) ? "" : "\nRecovery details: " + error.Message), RetryLabel="Retry"};
             string title="Operation could not finish",message="Your installed files are kept. Retry, or open the logs for details.";
             if(error is OperationCanceledException) {title=download?"Download paused":"Operation cancelled";message=download?"Downloaded bytes are kept. Resume when you are ready; installed files have not changed.":"Installed files have not changed. You can retry when ready.";}
             else if(error.Message.StartsWith("Checksum mismatch",StringComparison.Ordinal)){title="Download verification failed";message="The damaged download was discarded. Retry to download a fresh verified copy. Installed files have not changed.";}

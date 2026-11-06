@@ -12,6 +12,7 @@
 #define TSFP_PC_CONTROLS
 static PcDisplayMode mode;
 static float fov_scale=1.f;
+float pc_display_weapon_fov_scale(void) { return 1.f; }
 float pc_display_fov_scale(void) { return fov_scale; }
 PcDisplayMode pc_display_effective(void) { return mode; }
 float pc_display_camera_factor(void)

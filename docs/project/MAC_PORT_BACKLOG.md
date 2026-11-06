@@ -958,6 +958,18 @@ for this Windows contention policy; existing entry acceptance remains separate.
 
 ### MAC-039 — Recoverable launcher startup security interruptions
 
+Issue #476 follow-up (`fix/476-antivirus-errors`, publication change): Windows
+antivirus codes 225/226 now identify affected startup/update file paths and
+preserve native diagnostics, retry actions and long-path readability. Shared
+hash/extraction/recovery code transports the failure context; classification is
+disabled on MACOS/LINUX. Existing native IO exceptions and adapters retain their
+behavior; no new Mac antivirus adapter is required. Windows build/regressions and
+portable compatibility checks pass (see STATUS). Native Mac/Linux shared-suite
+execution is pending; verify non-Windows errors remain unchanged there. Actual
+McAfee blocking/retest is unverified. This diagnostic change does not resolve the
+vendor detection or authorize closing the issue before publication.
+
+
 - **Status:** Not applicable
 - **Scope:** Windows bootstrap only.
 - **PC behavior:** A failed application handoff keeps startup open with Retry,

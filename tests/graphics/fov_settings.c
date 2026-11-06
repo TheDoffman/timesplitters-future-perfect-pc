@@ -343,7 +343,7 @@ static void button_probe(void)
 static void reload(const char *text)
 {
     FILE *f=fopen(path,"wb");CHECK(f);CHECK(fputs(text,f)>=0);CHECK(!fclose(f));
-    initialized=0;current=(PcDisplayMode){0,0};vertical_fov=PC_FOV_DEFAULT;
+    initialized=0;current=(PcDisplayMode){0,0};vertical_fov=PC_FOV_DEFAULT;weapon_fov=PC_WEAPON_FOV_DEFAULT;
     pc_display_current();
 }
 static void content(const char *expected)
@@ -398,6 +398,13 @@ int main(int argc,char **argv)
     }
     pc_display_current();reload("TSFP_DISPLAY_V1 1280 720\n");
     CHECK(pc_display_fov()==55 && pc_display_fov_scale()==1.f);
+    CHECK(pc_display_weapon_fov()==100 && pc_display_weapon_fov_scale()==1.f);
+    CHECK(!pc_display_set_weapon_fov(75) && !pc_display_set_weapon_fov(155) && !pc_display_set_weapon_fov(103));
+    CHECK(pc_display_set_weapon_fov(130) && pc_display_save());
+    content("TSFP_DISPLAY_V3 1280 720 55 130\n");
+    initialized=0;weapon_fov=100;CHECK(pc_display_weapon_fov()==130);
+    CHECK(pc_display_set_weapon_fov(100) && pc_display_save());
+
     CHECK(!pc_display_set_fov(39) && !pc_display_set_fov(101));
     CHECK(pc_display_set_fov(75) && pc_display_save());content("TSFP_DISPLAY_V2 1280 720 75\n");
     initialized=0;vertical_fov=55;CHECK(pc_display_fov()==75);
@@ -671,19 +678,43 @@ int main(int argc,char **argv)
     CHECK(requested_rate==120 && pc_frame_rate_read()==120);
     CHECK(!display_dirty() && (WORD_AT(apply_row+0x28)&1));
     content("TSFP_DISPLAY_V2 1280 720 70\n");
+    /* Weapon aperture is staged across tabs, applies live, and persists separately from world FOV. */
+    refresh(DISPLAY_VIEW,0);
+    for(int i=0;i<50;i++)call(TICK_CB,12,0x80000);CHECK(staged_weapon_fov==150);
+    for(int i=0;i<50;i++)call(TICK_CB,12,0x40000);CHECK(staged_weapon_fov==80);
+    slider_capture_enabled=1;
+    memset(menu_slider_tracks,0,sizeof menu_slider_tracks);
+    WORD_AT(0x700008)=weapon_fov_row;
+    call(FOV_DRAW_CB,12,0);CHECK(drawn==0.f);
+    CHECK(menu_slider_tracks[MENU_WEAPON_FOV].item==weapon_fov_row);
+    WORD_AT(0x300198)=weapon_fov_row;
+    pointer.left=1;
+    CHECK(menu_slider_pointer(0x300000,pointer,2,348,8,1920,1080));
+    CHECK(staged_weapon_fov==115 && staged_fov==70 && pc_display_weapon_fov()==100);
+    pointer.left=0;CHECK(!menu_slider_pointer(0x300000,pointer,0,348,8,1920,1080));
+    slider_capture_enabled=0;
+    menu_slider_weapon_fov_pointer(398,298,100);CHECK(staged_weapon_fov==150);
+    for(int i=0;i<4;i++)call(TICK_CB,12,0x40000);
+    CHECK(staged_weapon_fov==130 && pc_display_weapon_fov()==100 && display_dirty());
+    refresh(DISPLAY_HOME,0);refresh(DISPLAY_VIEW,0);
+    CHECK(staged_weapon_fov==130);
+    call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov()==130 && pc_display_fov()==70 && !display_dirty());
+    content("TSFP_DISPLAY_V3 1280 720 70 130\n");
+    for(int i=0;i<6;i++)call(TICK_CB,12,0x40000);call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov()==100);
     /* A failed SMAA save also rolls back every Apply-only graphics field. */
     TsfpGraphicsOptions before_failed_batch=pc_graphics_get();
     staged_anisotropy=4;staged_ao=!before_failed_batch.ambient_occlusion;staged_cache=!before_failed_batch.shader_cache;
-    staged_msaa=4;
+    staged_msaa=4;staged_weapon_fov=150;
     refresh(DISPLAY_HOME,0);staged_fov=75;WORD_AT(rate_row+0xc8)=2;read_choices();
     refresh(DISPLAY_GRAPHICS,0);WORD_AT(post_aa_row+0xc8)=2;smaa_save_ok=0;
     call(SELECT_CB,3,0);
+    CHECK(pc_display_weapon_fov()==100);
     CHECK(pc_display_fov()==70 && requested_rate==120 && pc_frame_rate_read()==120 && !pc_smaa_enabled() && graphics_options.msaa==1 && staged_msaa==4 && page!=DISPLAY_RESTART);
     content("TSFP_DISPLAY_V2 1280 720 70\n");
     CHECK(graphics_options.anisotropy==before_failed_batch.anisotropy &&
           graphics_options.ambient_occlusion==before_failed_batch.ambient_occlusion &&
           graphics_options.shader_cache==before_failed_batch.shader_cache);
-    smaa_save_ok=1;staged_fov=70;staged_rate=applied_rate;staged_aa=applied_aa;staged_msaa=graphics_options.msaa;
+    smaa_save_ok=1;staged_weapon_fov=100;staged_fov=70;staged_rate=applied_rate;staged_aa=applied_aa;staged_msaa=graphics_options.msaa;
     staged_anisotropy=graphics_options.anisotropy;staged_ao=graphics_options.ambient_occlusion;staged_cache=graphics_options.shader_cache;
     refresh(DISPLAY_GRAPHICS,0);call(TICK_CB,11,0);CHECK(!display_dirty());
     WORD_AT(post_aa_row+0xc8)=2;read_choices();refresh(DISPLAY_VIEW,0);

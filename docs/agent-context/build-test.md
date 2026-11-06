@@ -1,10 +1,10 @@
-[Uplink](native-uplink.md); [2605](native-projectiles.md).
-[Icon tests](controls-options.md).
+[Icons](controls-options.md).
+[Effect depth](native-effect-depth.md).
+[Weapon FOV](video-options.md#weapon-aperture).
 [HUD/MSAA tests](../development/graphics-options.md).
 [SDL startup/fullscreen](linux-game.md).
-`test_fov_settings.py` checks Video tabs, ownership, pointer bounds, keyboard
-cycling and staged-value retention.
-Ping expiry waits past GetTickCount64 quantization.
+`test_fov_settings.py`: staged Video tabs/input/FOV sliders.
+`test_lfs_checkout.py`: pointer clones, opt-in LFS pull, preserved packs.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build/tests ([MSAA](smaa.md))
 
@@ -27,11 +27,10 @@ Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh
 
 Minigun: [readiness/release/pause/input tests](native-minigun.md). CI selects test_native_timing.py; original-code tests require the private XBE. Historical stacks exclude minigun/player-trigger patches until full native timing applies.
 
-Linux: optimized host builds retain assertions/numeric policy. Runner presets
-60/120/180/240, frame profiles and synthetic Story input use isolated named
-fixtures; cleanup selects only the active save root. Upload-copy/sanitizer and
-GPU snapshot contracts run in CI. See [contracts](linux-game.md) and
-[launcher checks](launcher.md).
+Linux builds retain assertions/numeric policy. Isolated named runner/frame/Story
+fixtures cover 60/120/180/240; cleanup selects only the active save root.
+Upload-copy/sanitizer/GPU contracts run in CI; see [Linux](linux-game.md) and
+[launcher checks, including antivirus diagnostics](launcher.md#antivirus-blocking-diagnostics-issue-476).
 
 Windows builds pass `config/build/windows-game.manifest` as
 `TSFP_GAME_MANIFEST`; patch 2130 attaches it only to the game target. CMake
