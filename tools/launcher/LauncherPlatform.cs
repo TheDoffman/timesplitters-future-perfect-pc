@@ -144,7 +144,7 @@ namespace TimeSplitters.Launcher
         public static string Data(string root) { return "Data"; }
         public static string Saves(string root) { return "Saves"; }
         public static string Textures(string root) { return "Textures"; }
-        public static void CopyFile(string source,string target) { File.Copy(source,target,true); }
+        public static void CopyFile(string source,string target) { AntivirusErrors.Copy(source,target,true); }
         public static void Executable(string path) { }
 #endif
     }
