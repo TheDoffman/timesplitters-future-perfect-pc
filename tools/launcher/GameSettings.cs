@@ -60,6 +60,7 @@ namespace TimeSplitters.Launcher
         public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes;
         public const int FovDefault = 55, FovMin = 40, FovMax = 100;
         public int VerticalFov = FovDefault;
+        public int WeaponFov = 100; // Preserve the in-game weapon aperture preference.
         // Zero selects the original clock; 60 is not the experimental native-60 path.
         public int NativeFps;
         public static readonly int[] NativeFrameRates = { 0, 120, 180, 240 };
@@ -203,9 +204,10 @@ namespace TimeSplitters.Launcher
             string display = Text(model.originals[Files[1]]);
             if (display.Length > 0)
             {
-                var match = Regex.Match(display, @"^\s*TSFP_DISPLAY_V(?<version>[12])\s+(\d+)\s+(\d+)(?:\s+(?<fov>\d+))?\s*$");
-                Core.Require(match.Success && (match.Groups["version"].Value == "2") == match.Groups["fov"].Success, "The display settings file is invalid. No settings were changed.");
+                var match = Regex.Match(display, @"^\s*TSFP_DISPLAY_V(?<version>[123])\s+(\d+)\s+(\d+)(?:\s+(?<fov>\d+))?(?:\s+(?<weapon>\d+))?\s*$");
+                Core.Require(match.Success && (match.Groups["version"].Value != "1") == match.Groups["fov"].Success && (match.Groups["version"].Value == "3") == match.Groups["weapon"].Success, "The display settings file is invalid. No settings were changed.");
                 if(match.Groups["fov"].Success) model.VerticalFov = Int32.Parse(match.Groups["fov"].Value, CultureInfo.InvariantCulture);
+                if(match.Groups["weapon"].Success) model.WeaponFov = Int32.Parse(match.Groups["weapon"].Value, CultureInfo.InvariantCulture);
                 model.Width = Int32.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
                 model.Height = Int32.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
             }
@@ -369,6 +371,7 @@ namespace TimeSplitters.Launcher
                 "Enter the public numeric Discord Application ID (17–20 digits), or turn off Rich Presence and clear the ID.");
             Core.Require(!Double.IsNaN(Sensitivity) && !Double.IsInfinity(Sensitivity) && Sensitivity >= .001 && Sensitivity <= 10, "Mouse sensitivity must be between 0.001 and 10.");
             Core.Require(CanAdjustFov || VerticalFov == FovDefault, "Custom FOV requires a game release newer than v0.2.0-alpha.4. Reset FOV to 55 degrees before saving.");
+            Core.Require(WeaponFov >= 80 && WeaponFov <= 150 && WeaponFov % 5 == 0, "Weapon FOV must be 80–150 percent in steps of five.");
             Core.Require(VerticalFov >= FovMin && VerticalFov <= FovMax, "Vertical FOV must be between 40 and 100 degrees.");
             Core.Require(loading || Width!=1 || Height!=1 || CanAutoResolution, "Auto resolution requires a newer game build. Choose a manual resolution or update the game.");
             Core.Require((loading && Width==1 && Height==1) || SupportsResolution(Width,Height), "Choose a supported landscape resolution from 640×480, with an aspect ratio no wider than 4:1, or 0 × 0 for the console default. Maximum: " + (SupportsExtendedDisplay ? "7680×4320." : "7680×2160 for this game release."));
@@ -462,7 +465,7 @@ namespace TimeSplitters.Launcher
             var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"smaa",Smaa?"1":"0"}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
             graphics["frame_target"] = PresentationFps.ToString();
             graphics["refresh_rate"] = RefreshRate.ToString();
-            var payload = new[] { Json.Encode(document) + "\n", (VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),
+            var payload = new[] { Json.Encode(document) + "\n", (WeaponFov != 100 ? "TSFP_DISPLAY_V3 " + Width + " " + Height + " " + VerticalFov + " " + WeaponFov : VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),
                 "TSFP_DISCORD_V1 " + (DiscordEnabled ? "1" : "0") + " " + (DiscordApplicationId.Length == 0 ? "0" : DiscordApplicationId) + "\n",
                 "TSFP_FRAME_RATE_V1 " + NativeFps.ToString(CultureInfo.InvariantCulture) + "\n",
                 "TSFP_AUDIO_V1 " + (EnhancedAudio ? "1" : "0") + "\n",

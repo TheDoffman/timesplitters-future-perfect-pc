@@ -55,6 +55,7 @@ static PcDisplayMode detected_mode(void)
 }
 static int initialized;
 static int vertical_fov=PC_FOV_DEFAULT, preview_fov;
+static int weapon_fov=PC_WEAPON_FOV_DEFAULT;
 static int camera_frame;
 static int menu_filter_frame, menu_font_filter;
 void pc_display_menu_filter_begin(int frontend) { menu_filter_frame=!!frontend; }
@@ -85,7 +86,7 @@ int pc_display_valid(PcDisplayMode m)
 
 static void init(void)
 {
-    const char *p; FILE *f; unsigned w,h; int fov=PC_FOV_DEFAULT; char version[32], tail;
+    const char *p; FILE *f; unsigned w,h; int fov=PC_FOV_DEFAULT, weapon=PC_WEAPON_FOV_DEFAULT; char version[32], tail;
     if(initialized) return;
     initialized=1;
     p=getenv("TSFP_DISPLAY_CONFIG");
@@ -105,10 +106,11 @@ static void init(void)
     if(f) {
         if(fscanf(f,"%31s",version)==1 &&
            ((!strcmp(version,"TSFP_DISPLAY_V1") && fscanf(f," %u %u %c",&w,&h,&tail)==2) ||
-            (!strcmp(version,"TSFP_DISPLAY_V2") && fscanf(f," %u %u %d %c",&w,&h,&fov,&tail)==3)) &&
-           fov>=PC_FOV_MIN && fov<=PC_FOV_MAX) {
+            (!strcmp(version,"TSFP_DISPLAY_V2") && fscanf(f," %u %u %d %c",&w,&h,&fov,&tail)==3) ||
+            (!strcmp(version,"TSFP_DISPLAY_V3") && fscanf(f," %u %u %d %d %c",&w,&h,&fov,&weapon,&tail)==4)) &&
+           fov>=PC_FOV_MIN && fov<=PC_FOV_MAX && weapon>=PC_WEAPON_FOV_MIN && weapon<=PC_WEAPON_FOV_MAX && weapon%5==0) {
             PcDisplayMode m={w,h};
-            if(pc_display_valid(m)) { current=m; vertical_fov=fov; }
+            if(pc_display_valid(m)) { current=m; vertical_fov=fov; weapon_fov=weapon; }
         }
         fclose(f);
     }
@@ -128,10 +130,21 @@ float pc_display_fov_scale(void)
     return vertical_fov==PC_FOV_DEFAULT?1.f:
         tanf(vertical_fov*.00872664626f)/tanf(PC_FOV_DEFAULT*.00872664626f);
 }
+int pc_display_weapon_fov(void) { init(); return weapon_fov; }
+int pc_display_set_weapon_fov(int percent)
+{
+    init();
+    if(percent<PC_WEAPON_FOV_MIN || percent>PC_WEAPON_FOV_MAX || percent%5)return 0;
+    weapon_fov=percent;return 1;
+}
+/* Scale the authored weapon aperture, preserving weapon-specific zoom. */
+float pc_display_weapon_fov_scale(void) { return pc_display_weapon_fov()*.01f; }
 /* Keep legacy files readable when the new setting is at its default. */
 static void config_text(char *text,size_t size)
 {
-    if(vertical_fov==PC_FOV_DEFAULT)
+    if(weapon_fov!=PC_WEAPON_FOV_DEFAULT)
+        snprintf(text,size,"TSFP_DISPLAY_V3 %u %u %d %d\n",current.width,current.height,vertical_fov,weapon_fov);
+    else if(vertical_fov==PC_FOV_DEFAULT)
         snprintf(text,size,"TSFP_DISPLAY_V1 %u %u\n",current.width,current.height);
     else snprintf(text,size,"TSFP_DISPLAY_V2 %u %u %d\n",current.width,current.height,vertical_fov);
 }

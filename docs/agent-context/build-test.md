@@ -1,5 +1,5 @@
 [Effect depth](native-effect-depth.md).
-[Uplink](native-uplink.md); [2605](native-projectiles.md).
+[Weapon FOV](video-options.md#weapon-aperture).
 [HUD/MSAA tests](../development/graphics-options.md).
 [SDL startup/fullscreen](linux-game.md).
 `test_fov_settings.py` checks staged Video tabs/input.

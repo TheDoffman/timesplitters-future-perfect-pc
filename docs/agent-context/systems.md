@@ -1,4 +1,4 @@
-[Uplink](native-uplink.md);[2605](native-projectiles.md).
+[Weapon FOV](video-options.md#weapon-aperture).
 [Input](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
