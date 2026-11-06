@@ -122,7 +122,8 @@ def main(argv=None):
     parser.add_argument('--no-seeds', action='store_true')
     for flag in ('trace-all-entries', 'text-only', 'all', 'dry-run'):
         parser.add_argument('--' + flag, action='store_true')
-    parser.add_argument('--split', type=int, default=1000)
+    parser.add_argument('--split', type=int, default=100,
+                        help='Maximum functions per generated C file (default: 100; also bounded by body bytes)')
     for option in ('gen-dir', 'work-dir', 'project', 'game-name', 'json'):
         parser.add_argument('--' + option)
     parser.add_argument('--from', dest='start', choices=STAGES, default='parse')

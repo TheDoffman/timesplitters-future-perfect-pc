@@ -300,10 +300,15 @@ The full replacement order is retained, with main's source-layout routing patch
 last. Existing patch payloads and ledger basenames are unchanged. The grouped
 XBE bridge establishes the compiler import path for compatibility modules.
 
-For MSVC compiler heap exhaustion during generated-C compilation, a process-local
-`CL_MPCount=2` limits the existing /MP workers while keeping normal Release
-optimization and the standard build/test driver. CMake's project parallelism
-alone does not cap /MP. Record the failed attempt and successful retry separately.
+## Generated C compiler memory
+
+Ordinary generated C now uses both a 100-function default and a 512 KiB body-text
+budget, matching the continuation publisher's byte bound. An oversized function
+is emitted intact on its own; this does not guarantee that every individual
+function fits a compiler's optimizer. `tsfp.ps1 Build` supplies MSBuild
+`CL_MPCount=2` per project by default (`-CompileJobs` overrides it), retaining Release
+optimization. CMake's project parallelism alone does not cap /MP. Record failed
+attempts and successful retries separately; see the build/test guide and STATUS.
 
 Generation hashes cover own translation/diagnostic tools and bridges. Native
 integer/bit/product fixtures cover widths, carry, snapshots and division faults, with ML64 shift/rotate
