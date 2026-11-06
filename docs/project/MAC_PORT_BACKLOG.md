@@ -5,8 +5,10 @@ Arcade return/result/profile-save wrappers for TSFP_NATIVE_DISPLAY, as well as
 Windows controls. Native Mac/Linux compiled the adapters but bypassed them under
 Windows-only wrapper guards. Applied-wrapper CPU tests reproduce that omission
 and pass with the repair. No duplicate native policy or OS adapter is needed.
-Actual mixed-platform acceptance remains pending, and the user's Windows-host
-save warning is still under investigation; see STATUS.
+Windows-host/WSL-Linux-guest pause and real-results returns now pass with retained
+room membership and another round on e84135ad. Native Mac and physical three-peer
+acceptance remain pending. Windows duplicate fixture recovery is local storage
+maintenance, not a native adapter change; see STATUS.
 
 ## Retained multiplayer profile-save scope - MAC-013 validation pending
 

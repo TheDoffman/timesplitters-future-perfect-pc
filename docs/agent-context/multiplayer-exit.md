@@ -83,7 +83,16 @@ profiles on Windows/WSL and a missing Test Lab file on Mac. The Windows log ente
 4E8D40 before the lobby factory consumed its destination; the prior late-save
 scope fix is insufficient for that report. Native logs had no retained-return
 adapter events, matching the wrapper-gate omission above. Native gates are now
-repaired; the Windows failure remains under investigation until reproduced.
+repaired. Windows also had an unchanged fixture alias sharing the progressed local
+profile name with a different CRC. Original name-only lookup can read the alias
+and trigger error7 despite both files being healthy. An isolated original-code
+probe confirms this; do not bypass CRC checks or select arbitrary alias folders,
+because original263E0 writes to the canonical name-derived directory. The exact
+obsolete fixture was reversibly moved outside UserData with hash verification,
+preserving the progressed profile and both recovery files. This local repair is
+not a generic duplicate-save migration. Mixed Windows/WSL pause and actual-results
+returns pass on e84135ad; rebuilt Mac and physical three-peer acceptance remain
+pending. See STATUS for scope and provenance.
 Numeric PC-PROFILE-SAVE diagnostics log the first16 dirty admissions, captured
 metadata addresses/device/CRC/temp/body pointers, and original failure code/kind/
 slot plus a CRC of the original save frame's scratch read buffer. That scratch

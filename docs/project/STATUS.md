@@ -1,3 +1,48 @@
+## 2026-11-06 - Native lobby hooks repaired; Windows duplicate fixture isolated
+
+Repair e84135ad on multiplayer-lobby-return enables the thirteen existing shared
+return/result/save wrappers on native Mac/Linux (patch2625). Their Windows-only
+guards previously bypassed the compiled native adapters. Applied-wrapper dispatch
+regressions reproduce the omission and pass stock/Windows/native after repair.
+Windows menu suite54 passed; Linux targeted multiplayer checks7 passed. Supported
+Windows MSVC x64 and Ubuntu24.04 x64 Clang/Vulkan builds and MMIO checks pass.
+Both builds use compatibility e52bd9f001dc188b107f230b310565f61a16e9c31deb3fcf987458f96919fa58.
+
+Windows host plus WSL Linux guest now pass two mid-match returns, retained room
+membership and another round (175s functional run). A separate356s run reaches
+real five-point results twice, returns both players to usable lobbies11/12 each
+time and starts the intervening round. Linux guest has distinct signed progress;
+both peers report save_error0 throughout. Production test-key input, read-only
+memory observation, isolated saves/configs, Xvfb/Dozen native guest. Results receipt
+completed=true and cleanup_completed=true;43571 observations. Logs:
+multiplayer-win-linux.log, multiplayer-win-linux-results.log and corresponding
+online-bots-profile-win-linux[-results] provenance. The first run's cleanup used
+a Windows-only helper and failed after successful gameplay; its known six Linux
+test images were subsequently recycled with resolved-root/ownership checks. The
+results run uses the native recycler and finishes cleanup normally. No personal
+save was used for automated gameplay. Actual Mac, physical three-machine and
+System Link acceptance remain pending; software Vulkan does not establish Deck
+performance or physical-device support.
+
+The Windows host also had two healthy signed Test Lab profiles with different
+CRCs and directories. One was byte-identical to the unchanged canonical unlocked
+test fixture; the normal profile contained progress. Original name-only profile
+lookup can select the other same-name file before CRC validation, reproducing
+error7 in an isolated original-code probe with two healthy synthetic files. The
+Windows log fails on this initial save, before lobby construction, so the earlier
+late-save-scope repair alone could not solve this report. Do not bypass CRC errors
+or choose arbitrary duplicate folders: the original writer targets the canonical
+name-derived folder and could overwrite a distinct profile.
+
+With no game running, moved only the exact obsolete fixture directory out of
+UserData into private/saves/recovery/test-lab-fixture-20261106. Resolved paths,
+non-reparse directories, both exact source files and fixture hashes checked before
+moving; both moved files and the progressed normal profile verified unchanged
+afterwards. Recovery metadata retained there. Other saves/settings untouched.
+This is reversible local data recovery, not a general duplicate-profile migration.
+Mac's reported missing-profile panel remains for a rebuilt Mac rerun; its personal
+storage has not been inspected. Numeric diagnostics retain original errors.
+
 ## 2026-11-06 - Three-platform save warning remains under investigation
 
 The user reproduced dc642eb3/compatibility511dc174 with Windows hosting WSL and
