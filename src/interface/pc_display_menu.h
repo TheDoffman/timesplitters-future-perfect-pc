@@ -158,3 +158,9 @@ void pc_developer_cutscene_guest(void (*original)(void));
 
 void pc_developer_lobby_name(void (*original)(void));
 void pc_developer_lobby_text(void (*original)(void));
+
+void pc_multiplayer_exit_action(void (*original)(void),unsigned action);
+void pc_multiplayer_exit_menu(void (*original)(void));
+void pc_multiplayer_return_lobby(void (*original)(void));
+void pc_multiplayer_disconnect_exit(void (*original)(void));
+void pc_multiplayer_lobby_lost(void (*original)(void));

@@ -106,6 +106,86 @@ flight geometry and camera return/visibility, HUD/watermark recovery, Story
 checkpoint restoration/final ending, bracket repeats and pause. Windows CPU
 fixtures do not verify these hosts. Use isolated saves/settings for checks.
 
+## Fullscreen Video option — native acceptance pending
+
+Local feature/fullscreen-options after5c5acf91: shared pc_display_menu.c adds
+Window mode to frontend/pause Display, staged across tabs with Apply/Keep and
+15-second rollback. Existing runtime.conf fullscreen key is shared with launcher.
+pc_display.c marshals SDL queries/transitions to the main thread, reusing the
+same code for Mac/Linux and both native renderers. Windows patch2620 dispatches
+to its shadow-window thread. No separate Mac feature implementation is needed.
+Windows evidence and Linux verification at7a6fea3c are recorded in STATUS.
+Native Ubuntu/WSL source build, protected-MMIO, input/display fixtures, launcher
+UI tests and actual X11 frontend/pause fullscreen Apply/Keep/persistence and
+timeout restoration pass with software Vulkan. Wayland/WSLg self-tests pass on
+sequential retry after an initial transient failure; general compositor and
+physical Linux/Steam Deck acceptance remain pending. Native Mac build and live
+windowed/fullscreen, timeout, pause, hotkey and save/relaunch checks remain pending.
+The Linux result does not establish native Mac support.
+
+## Native multiplayer wrapper admission - MAC-013 validation pending
+
+Follow-up based on dc642eb3: patch2625 enables the thirteen existing shared
+Arcade return/result/profile-save wrappers for TSFP_NATIVE_DISPLAY, as well as
+Windows controls. Native Mac/Linux compiled the adapters but bypassed them under
+Windows-only wrapper guards. Applied-wrapper CPU tests reproduce that omission
+and pass with the repair. No duplicate native policy or OS adapter is needed.
+Windows-host/WSL-Linux-guest pause and real-results returns now pass with retained
+room membership and another round on e84135ad. Native Mac and physical three-peer
+acceptance remain pending. Windows duplicate fixture recovery is local storage
+maintenance, not a native adapter change; see STATUS.
+
+## Retained multiplayer profile-save scope - MAC-013 validation pending
+
+Uncommitted follow-up on multiplayer-lobby-return, base3ff65a51: shared Arcade
+profile mapping now follows the active host/member session after the lobby
+factory consumes the exit destination. Windows original-US CRC/save regression
+and shared menu checks pass; stock errors remain visible for actual corruption
+or failed writes. No new native adapter or transport change is required. Native
+Mac/Linux and physical System Link acceptance remain pending; see STATUS.
+
+## Arcade host lobby return - MAC-013 validation pending
+
+Implemented on multiplayer-lobby-return (initial validation base337be3bc). Shared
+src/network/pc_multiplayer_exit.inc and patch2620 implement host Return to Lobby
+with connected guests, including pause/results and explicit host-loss routing.
+The user's final scope keeps guests' own Leave Match/Quit and browser Back
+original. Shared pc_network_profiles.inc reuses Story's persistent profile mapping
+so a returning guest reaches its usable lobby rather than a save-error screen.
+Existing native Online/socket adapters provide the same transport calls; no new
+OS adapter is needed. Shared CPU fixtures run via the existing Windows/macOS menu
+suite. Physical native Mac/Linux gameplay and two-machine System Link are pending:
+check host return during play/results, real host loss, original guest exits and
+another match after return. STATUS.md records measured Windows build/acceptance;
+Windows tests do not verify Mac.
+
+## MAC-130 - macOS Application Support storage (#502) - Awaiting validation
+
+Mac-specific installation convention; Windows/Linux portable storage is unchanged.
+Implementation c1b53dc8 on `feature/macos-application-support`, integrated with
+main 9da83f36: `MacStorage.cs`, `NativeStorageWindow.cs` and native startup route
+Finder launches to a writable game folder independent of the entry-point app.
+The default is ~/Library/Application Support/TimeSplitters. Legacy installations
+beside the app migrate automatically through MacStorageMigration.cs; a folder
+copy-folder picker imports installations elsewhere; a separate chooser selects
+external/moved installations in place. Originals remain as backups; verified
+staging resumes and an atomic directory rename publishes only the completed copy.
+Existing destination data is never merged or overwritten. Internal custom save
+paths follow the copy; external paths remain unchanged. Explicit folder selections,
+root/portable overrides and developer checkouts skip automatic migration.
+The existing shared transactional launcher updater handles the managed copy.
+
+Windows MACOS cross-compilation, Windows launcher build, isolated WSL storage
+contracts and Python launcher checks pass; see STATUS. Native ARM64 build,
+`--test`, `--test-ui`, packaged signature/helper/restart checks and read-only
+`--check` still require a Mac host. Accept with fresh /Applications-only app,
+existing and moved game folders, disconnected/reconnected external storage,
+portable mode, custom save locations, newer/older entry apps, interrupted/canceled
+migration, low space/conflicting destinations and interrupted launcher/game updates.
+Confirm saves/settings/texture bytes survive app
+replacement and that Gatekeeper permits the managed signed bundle. No release
+has been published.
+
 ## Uplink native holding — validation pending
 
 Shared pc_native_numeric.h and pc_native_uplink.h admit Uplink physics
@@ -167,16 +247,25 @@ baselines and scoped icon state is restored. No OS adapter or controller
 layout change. Windows evidence is in STATUS; native Mac visual acceptance
 is pending (complete key faces, bottom margin and footer hover).
 
-Imported prompt artwork (local feature/fab-input-prompts): shared
-`pc_keycaps.inc`, `pc_input_icons.inc` and generated span data use Rendrify's
-CC BY4.0 keyboard/mouse artwork with native tint/fade and original text advances.
-Key-name lookup remains shared. The Adjust footer uses separate A/D icon labels
-through the same native measurement on both hosts. No new adapter is needed;
-Mac build and visual acceptance are pending (main/pause footer fit, binding and
-capture dialogs, device switch, remapped/missing keys and tutorial/HUD wrapping).
-Windows shared fixtures, supported Build and isolated menu review are recorded
-in [STATUS](STATUS.md). Source PNGs stay local; attributed compiled data travels
-with Git, so another host needs no Fab sign-in or image tooling to build.
+Imported prompt artwork (local feature/julio-input-prompts): shared
+`pc_keycaps.inc`, `pc_input_icons.inc` and generated data replace the prior
+Rendrify art with Julio Cacko CC0 keyboard/mouse and Xbox-style controller icons.
+Native token/VK banks, glyph bounds, text advances and fade remain shared;
+no OS adapter is needed. Controller-family detection is unchanged.
+Quality follow-up (locald0be611e) preserves128px pixels, uses shared native
+textured quads and recorded immediate/deferred GPU state scopes (patch2610),
+Morton-ordered premultiplied mips. A local2026-11-06 follow-up replaces linear
+sampling with cached exact-size coverage bitmaps, point sampling without mips,
+and shared aspect-specific size/pixel-step policy
+(pc_input_icon_layout.h), preserving compact profile clips. Binding icons grow inside
+existing rows/columns. The same D3D8/RHI API is used on all hosts; no new OS
+adapter is identified. Mac/Linux builds and actual GPU acceptance remain pending,
+including legacy GL texture locks/state getters, pause scissor, footer fades,
+controller prompts, resize/device reset and capture/replay parity. Windows
+fixtures/build and available visual evidence are recorded in STATUS. Mac and
+Linux builds and visual acceptance remain pending: profile/main/pause footer
+fit, binding dialogs, device switching and tutorial/HUD wrapping. Source PNGs
+stay private; compiled CC0 derivatives and complete credits travel through Git.
 
 Linux experimental release preparation (2026-11-04, local
 feature/linux-experimental-release): SDL key/pad exports fix the native link
@@ -1056,6 +1145,18 @@ for this Windows contention policy; existing entry acceptance remains separate.
   supersedes the initial cropped banner viewport.
 
 ### MAC-039 — Recoverable launcher startup security interruptions
+
+Issue #476 follow-up (`fix/476-antivirus-errors`, publication change): Windows
+antivirus codes 225/226 now identify affected startup/update file paths and
+preserve native diagnostics, retry actions and long-path readability. Shared
+hash/extraction/recovery code transports the failure context; classification is
+disabled on MACOS/LINUX. Existing native IO exceptions and adapters retain their
+behavior; no new Mac antivirus adapter is required. Windows build/regressions and
+portable compatibility checks pass (see STATUS). Native Mac/Linux shared-suite
+execution is pending; verify non-Windows errors remain unchanged there. Actual
+McAfee blocking/retest is unverified. This diagnostic change does not resolve the
+vendor detection or authorize closing the issue before publication.
+
 
 - **Status:** Not applicable
 - **Scope:** Windows bootstrap only.
@@ -9985,6 +10086,16 @@ revoking an active free camera still restores its automatically hidden HUD.
 The input fixture checks placement and live updates under denied host policy.
 
 Linux launcher icon/storage follow-up (fix/linux-launcher-icon, uncommitted): Linux windows use the existing embedded launcher icon; Mac bundle icon handling is unchanged. Shared destination-volume free-space checks replace filesystem-root checks in install/import and diagnostics. Native failure dialogs now also show on Home. Windows/Linux validation is recorded in STATUS; native Mac regression and physical Steam Deck acceptance remain pending.
+
+
+Compiler-memory PR #508 reverted locally (2026-11-06, revert/508-compiler-memory):
+The user requested restoring the prior policy. Ordinary generated files again
+use count-only grouping with a 1,000-function default; Windows no longer supplies
+CL_MPCount or exposes -CompileJobs. The pre-existing continuation byte limit and
+native Mac/Linux build worker settings are retained. This is shared Python policy;
+no separate Mac adapter is needed. Prior PR #508 measurements remain historical in
+STATUS. Focused compiler checks cover the revert; fresh native Mac/Linux full-build
+memory, timing and gameplay acceptance remain unmeasured.
 
 Developer Tools free-camera player input (uncommitted after819489f4): implemented,
 native gameplay acceptance pending. Shared patch2630 routes SDL keyboard sampling

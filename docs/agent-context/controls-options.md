@@ -3,26 +3,87 @@
 Imported PNG prompts can replace recognized single-key labels through
 `pc_input_icons.inc`, using generated `pc_input_icon_data.inc` lookup/span data.
 `tools/graphics/import-input-icons.py` reads an attributed asset manifest, validates
-128px source PNGs and virtual-key uniqueness, and packs 32px antialiased RGBA runs.
+128px source PNGs and virtual-key uniqueness, and preserves the original128px
+RGBA pixels as lossless runs. No thumbnail downsampling remains.
 Absent icon data or unmapped keys retain the original keycap renderer. Input
 lookup uses cached localized key names; held states require both raw and focused
-input. Imported images use square placement, native RGB tint/fade and the unclipped
-solid-quad emitter; original text advances remain authoritative.
-Rendrify's CC BY4.0 artwork supplies107 physical inputs plus generic Mouse;
-Escape/Space/side buttons and composites retain outlined fallbacks. Manifest
-slot0 is generic Mouse only, never Unbound. Source PNGs stay private; the importer
-accepts `--source-dir`, verifies manifest SHA-256 and deduplicates shared images.
-Attribution/modifications are in `assets/ui/input-icons/ATTRIBUTION.md` and NOTICE.
+input. Imported images use native textured quads, placement, tint/fade and scissor;
+original text advances remain authoritative.
+Julio Cacko's CC0 1.4 pack supplies dark keyboard/mouse and default Xbox-style
+controller art. The manifest has separate `keys` (VK) and `controller` (native
+ASCII token) banks; equal numbers never alias the two namespaces. Compiled images
+are shared between banks/states when source paths match. Missing keys/composites
+and unsupported controller tokens retain native fallback. There is no new
+controller-family detection. Slot0 is generic Mouse, never Unbound; F23/F24
+are the binding model's wheel pseudo-keys. The author's duplicate3 filename
+ending -1 is its4 key. Source PNGs stay private; --source-dir verifies hashes.
+Native40FA0 supplies state+40 icon markers and state+38 zero-based digit/letter
+indices. The glyph texture handle at state+3C identifies digit icons through table7E72A0;
+atlas letter indices resolve independently, so clipped earlier tokens cannot
+shift the selected image. This preserves
+measurement, native advances, binding actions and layout. B/A/Y/X, LB/RB, Start,
+triggers, sticks and directional tokens use the controller lookup. Unknown/null
+icons retain their original callbacks. The settings footer now emits native
+Black/White tokens instead of literal [LB]/[RB]. Both hosts use the same wrapper.
+Import-time alpha bounds provide a capped face-height scale for wide keyboard
+keys such as Space/Shift/Enter; the native label advance bounds their width.
+Dark PNG margins require1.15 glyph-height scaling, compact1.0 for the profile
+keyboard footer. Native controller bounds use1.15. No separate pressed art is
+provided, so idle images are reused. Credits and modifications are in
+`assets/ui/input-icons/ATTRIBUTION.md` and NOTICE.
 Windows release/playable, native Mac and Linux packagers retain the complete credit
 as `Licenses/Keyboard-mouse-icons.txt`.
 The Linux payload verifier requires that notice; its shared icon renderer needs
 no additional Linux adapter. Linux game visual acceptance is still pending.
 The compiled span include ships in source; builds need no artwork download.
+
+Patch2610 connects the shared host DrawPrimitiveUP boundary to
+`pc_input_icon_gpu.inc`. A bounded256-entry cache is keyed by source and chosen
+physical size (1..512 pixels). Premultiplied area coverage creates an exact-size
+bitmap from the128px original; sizes above128 use nearest source pixels, adding
+no detail. Each bitmap occupies the upper-left of a single-level power-of-two
+Xbox A8R8G8B8 texture, Morton ordered. UV extent excludes padding. Point min/mag
+sampling and no mip filter draw one bitmap texel per output pixel. No runtime
+bilinear/trilinear softening. Cache exhaustion flushes deferred operations before
+releasing their textures. Deferred draws retain their size-specific UV extent.
+The title's textured1B7B0 quad supplies native geometry and viewport/scissor.
+Its UV range is normalized in a copied vertex buffer; native RGBA7-bit white/
+opaque0x7f expands before premultiplication. Original vertices are untouched.
+The font batch flush stays inside begin/end. No font size or binding changes.
+All writes use recorded host wrappers. Native deferred draws queue the complete
+image/vertex operation so state queries/restoration run at execution time.
+Texture, pixel shader, blend/alpha test and sampler/stage states are restored;
+binding the previous texture precedes restoring COLOROP because SetTexture
+can enable it. Failed upload retains the rectangle fallback. A device change
+releases cached images; reuse avoids repeat upload. No OS-specific adapter.
+
+`pc_input_icon_layout.h` selects aspect families: narrow/4:3 (1.0),16:10
+(1.05),16:9 (1.10),21:9 (1.15) and superwide (1.20). Output height converts
+the logical size to four-physical-pixel steps. The final canvas and origin
+are pixel-aligned; width never stretches a square/circular input image.
+Compact profile footers omit the aspect enlargement and retain their clip.
+Binding-value cells start at22 units and grow only within row height minus4
+and the measured column width. Space/Shift/Enter retain their alpha-bound aspect
+compensation. Captions, key assignments, column metrics, original text advances,
+footer/profile sizing and hit targets stay unchanged. This removes the former
+extra shrink inherited from the small binding-caption font.
+`input_icon_layout.c` verifies aspect families, physical-pixel steps, limits and
+compact clipping at different resolutions. `input_icon_gpu.c`, in the existing
+text-read-scope test route, verifies native
+Morton coverage data, seven-bit tint, size-specific UVs/point sampling, cache/device/failure
+paths, native quad geometry and state restoration with immediate/deferred draws.
+The prediction-target replay fixture omits the adjacent icon GPU include; it
+exercises replay writes with its own host stubs, while input_icon_gpu.c owns
+texture upload/lifetime/state contracts. The span-only test configuration
+explicitly ignores the GPU-only physical-size argument for strict compilers.
+Importer tests retain a single original pixel at127,127. Keycap fixtures exercise
+binding-cell enlargement separately from caption/footer sizing.
+
 The profile picker has a fixed two-line text clip. `menu_mouse_profile_text`
-scopes compact imported key faces (1.2 instead of1.5 glyph-height multiplier),
+scopes compact imported key faces (1.0 instead of1.15 glyph-height multiplier),
 keeps Select/Back at native Y and moves Delete only2 layout pixels down. Normal/
 hover draws and cached hit regions use the same baselines; the icon scope and
-stack argument are restored. Controller layout remains native. Fixtures cover
+stack argument are restored. Controller text layout remains native; its icon images use the same glyph bounds. Fixtures cover
 compact image bounds, shifted hit regions, stack restoration and scope lifetime.
 Tests use synthetic image data, covering lossless packing, path bounds, duplicate
 keys, pressed/idle selection and original mouse/controller fallback; CI runs both
@@ -33,7 +94,7 @@ translated40FA0 draw and wraps its native40260 glyph callback, also routing
 alternate402D0 callbacks through the shared menu lookup. The renderer replaces
 recognized key-label brackets with rounded borders at actual glyph
 positions; native text measurement/advances, font, grey tint, fades, clipping and
-HUD placement remain authoritative. Controller glyphs and ordinary bracketed
+HUD placement remain authoritative. Unmapped controller glyphs and ordinary bracketed
 text are retained. Mouse/wheel names use softer corners. Key vocabulary caches
 all256 localized names, plus composite controls, without caching assignments.
 Left/Right labels compact to visual arrow markers during both measurement and
@@ -229,7 +290,7 @@ menu_settings_input_owner checks that root or its bounded descriptor history
 remain unchanged. Returning to main removes Settings from history, restoring
 normal P1 input even if the selected-profile value remains stale. Pause, gameplay
 and unrelated frontend menus are excluded. P1 retains mouse, text input, queued tab clicks and keyboard section shortcuts
-while a secondary player is selected; that player’s native controller shoulders
+while a secondary player is selected; that playerâ€™s native controller shoulders
 also switch sections. Selection chooses the edited profile, not exclusive control. menu_mouse.c
 covers P2/P3/P4, nonidentity controller mapping, submenu history, return to main,
 invalid selection and gameplay exclusion. Physical controller acceptance remains
@@ -241,8 +302,8 @@ alongside P2 controller shoulders. Outside Settings, native P1-only control rema
 
 README local split-screen instructions now distinguish Start-order joining,
 physical controller numbers versus player rows, shared Settings navigation with
-P1 retained, Automatic resolving a joined player’s device, and Apply validation.
-They identify this branch’s behavior as not yet published.
+P1 retained, Automatic resolving a joined playerâ€™s device, and Apply validation.
+They identify this branchâ€™s behavior as not yet published.
 
 The local-player sampler fixture uses external linkage for its reload stub to
 match pc_input.h on Clang as well as MSVC.

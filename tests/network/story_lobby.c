@@ -434,6 +434,9 @@ static const char *load_getenv(const char *name)
 #ifdef _WIN32
 int pc_network_bots_preserve_corpse(uint32_t body,uint32_t spawn){(void)body;(void)spawn;return 0;}
 #endif
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+static inline int multiplayer_profile_save(void (*original)(void)){(void)original;return 0;}
+#endif
 #include "pc_story_lobby.inc"
 #ifdef _WIN32
 #define getenv load_getenv

@@ -220,7 +220,15 @@ static void kb_binding_draw(uint32_t menu,uint32_t item,const float b[4])
     for(int slot=0;slot<PC_BINDING_SLOTS;slot++) {
         pc_settings_key_name(kb_settings.keys[action][slot],name,sizeof name);
         snprintf(cap,sizeof cap,"[%s]",name);
+#if TSFP_INPUT_ICONS
+        float saved_height=input_icon_cell_height,saved_width=input_icon_cell_width;
+        input_icon_cell_height=fmaxf(0.f,b[3]-y-4.f);
+        input_icon_cell_width=fmaxf(0.f,w*(slot?.21f:.24f)-8.f);
+#endif
         kb_label(b[0]+w*(slot?.79f:.55f),y,w*(slot?.21f:.24f)-4.f,b[3]-y-2.f,cap,53,color);
+#if TSFP_INPUT_ICONS
+        input_icon_cell_height=saved_height;input_icon_cell_width=saved_width;
+#endif
     }
 
 }

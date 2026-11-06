@@ -250,6 +250,17 @@ public static class LauncherSettingsChecks
                     Put(root,"Settings/pc-display.ini",invalid);Reject(()=>GameSettings.Load(root,null));
                 }
             });
+            Test("Weapon FOV survives launcher settings saves",()=>{
+                string root=Root("weapon-fov-settings");
+                Put(root,"Settings/pc-display.ini","TSFP_DISPLAY_V3 1920 1080 75 130\n");
+                var model=GameSettings.Load(root,null);
+                Require(model.VerticalFov==75 && model.WeaponFov==130);
+                model.VerticalFov=65;model.Save();
+                Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V3 1920 1080 65 130\n");
+                foreach(string invalid in new[]{"TSFP_DISPLAY_V3 1920 1080 75", "TSFP_DISPLAY_V2 1920 1080 75 130", "TSFP_DISPLAY_V3 1920 1080 75 151", "TSFP_DISPLAY_V3 1920 1080 75 103"}) {
+                    Put(root,"Settings/pc-display.ini",invalid);Reject(()=>GameSettings.Load(root,null));
+                }
+            });
             Test("FOV slider number, reset, cancel and save",()=>STA(()=>{
                 string root=Root("fov-slider");var owner=new System.Windows.Window();
                 var editor=new SettingsPage(owner.Resources,root,true);editor.SelectTab(1);

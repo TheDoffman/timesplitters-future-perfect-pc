@@ -61,6 +61,15 @@ Set its address and fingerprint on the **Directory settings** tab.
 *Joining: paste your friend's full invitation into Invitation / lobby code,
 then click Join by code. The lobby and invitation shown here are examples.*
 
+## Return to the lobby
+
+The host can choose **Return to Lobby** from the pause menu or the match-ending
+screen. Connected guests follow the host, keeping the party together for another
+match. This also applies to System Link.
+
+A guest's own **Leave Match** or **Quit** keeps its usual disconnect behavior.
+Losing the host connection returns the guest to the Online / System Link menu.
+
 ## If you cannot connect
 
 - **Different builds or game data:** everyone must use matching versions and

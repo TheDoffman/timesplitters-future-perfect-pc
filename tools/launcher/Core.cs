@@ -27,8 +27,12 @@ namespace TimeSplitters.Launcher
         public static void Require(bool value, string message) { if (!value) throw new InvalidDataException(message); }
         public static string Hash(string path)
         {
-            using (var input = File.OpenRead(path)) using (var sha = SHA256.Create())
-                return BitConverter.ToString(sha.ComputeHash(input)).Replace("-", "").ToLowerInvariant();
+            string hash = null;
+            AntivirusErrors.At(path, () => {
+                using (var input = File.OpenRead(path)) using (var sha = SHA256.Create())
+                    hash = BitConverter.ToString(sha.ComputeHash(input)).Replace("-", "").ToLowerInvariant();
+            });
+            return hash;
         }
         public static void Name(string name)
         {
@@ -226,11 +230,13 @@ namespace TimeSplitters.Launcher
                     token.ThrowIfCancellationRequested();
                     string output = PathIn(destination, pair.Item2);
                     Directory.CreateDirectory(Path.GetDirectoryName(output));
-                    using (var input = pair.Item1.Open()) using (var file = new FileStream(output, FileMode.CreateNew, FileAccess.Write)) {
-                        var buffer = new byte[65536]; int read;
-                        while ((read = input.Read(buffer,0,buffer.Length)) > 0) { token.ThrowIfCancellationRequested(); file.Write(buffer,0,read); }
-                    }
-                    if (pair.Item2 != "BUILD.json") Require(Hash(output).Equals(expected[pair.Item2], StringComparison.OrdinalIgnoreCase), "Package file checksum mismatch: " + pair.Item2);
+                    AntivirusErrors.At(output, () => {
+                        using (var input = pair.Item1.Open()) using (var file = new FileStream(output, FileMode.CreateNew, FileAccess.Write)) {
+                            var buffer = new byte[65536]; int read;
+                            while ((read = input.Read(buffer,0,buffer.Length)) > 0) { token.ThrowIfCancellationRequested(); file.Write(buffer,0,read); }
+                        }
+                        if (pair.Item2 != "BUILD.json") Require(Hash(output).Equals(expected[pair.Item2], StringComparison.OrdinalIgnoreCase), "Package file checksum mismatch: " + pair.Item2);
+                    });
                     changes.Add(new Change { Name = pair.Item2, Source = output });
                 }
                 return changes;
@@ -323,7 +329,7 @@ namespace TimeSplitters.Launcher
                     {
                         string backup = PathIn(transaction, "files/" + change.Name);
                         Directory.CreateDirectory(Path.GetDirectoryName(backup));
-                        File.Copy(target, backup, false);
+                        AntivirusErrors.Copy(target, backup, false);
                     }
                     journal.Add(new Original { Name = change.Name, Existed = exists, RetiredTextureHash = change.RetiredTextureHash });
                 }

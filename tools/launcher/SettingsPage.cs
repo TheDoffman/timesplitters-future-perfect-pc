@@ -228,7 +228,7 @@ namespace TimeSplitters.Launcher
             var camera=PageTheme.Section(viewHud,"Camera","");
             var cameraLeft=camera;
             Field(cameraLeft,"Vertical FOV · 40–100°",fieldOfView);
-            fullscreen=Check("Borderless fullscreen",model.Fullscreen);fullscreen.Name="BorderlessFullscreen";Field(displayLeft,"Window mode",fullscreen);
+            fullscreen=Check("Fullscreen",model.Fullscreen);fullscreen.Name="BorderlessFullscreen";Ui.Tip(fullscreen,"Fill the current monitor using borderless fullscreen. Turn off for a window. Save applies this choice on the next launch; the in-game Video Options can change it while playing.");Field(displayLeft,"Window mode",fullscreen);
             var resetFov=Button("Reset FOV to 55°"); resetFov.Name="ResetFovButton";
             resetFov.IsEnabled=model.CanAdjustFov;
             resetFov.HorizontalAlignment=HorizontalAlignment.Left; resetFov.Click+=(s,e)=>fov.Value=GameSettings.FovDefault;

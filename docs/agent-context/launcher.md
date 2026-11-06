@@ -14,6 +14,60 @@ Scope/gate/worker tests run in the plan; host suites remain unchanged.
 
 # Launcher and menu shortcuts
 
+## macOS storage (discussion #502)
+
+`Program.FindInstallRoot` discovers the entry-point bundle/checkouts;
+`MacStorage.Resolve` independently chooses the writable installation, defaulting
+to `~/Library/Application Support/TimeSplitters`. `storage-root.txt` there remembers
+an existing chosen folder. Missing/invalid selections stop with a chooser, never
+fall back to fresh saves. `--root`, `--portable`, `.tsfp-portable` and developer
+checkouts retain their original roots. `--check` remains read-only.
+Default translocated launches copy the read-only bundle into permanent storage;
+explicit portable/root translocation retains the existing recovery chooser.
+
+`NativeStorageWindow` handles first use and Home's Game storage action. Normal
+unconfigured launches detect legacy files beside the bundle and automatically
+call `MacStorageMigration.Migrate` to copy them into Application Support. The
+copy-folder picker imports installations stored elsewhere the same way; the
+separate Choose existing game folder picker prepares/remembers a folder in place,
+including external or moved installs even when Application Support has data. Explicit
+folder preferences, portable/root overrides and developer checkouts opt out.
+`Use existing files beside this app` is an explicit keep-in-place alternative.
+
+Migration copies Data/Saves/Settings/Textures, runtime/support, backups/logs and
+channel/texture preferences into a same-volume sibling `.TimeSplitters-migration`
+recovery folder. It acquires the source installation lock, rejects pending
+updates/restores and any destination with existing data, reserves regular-file
+allocation space, copies sparse saves with byte verification and rechecks the
+source snapshot. The complete managed install is published by directory rename;
+the original stays as a backup. Verified staged files resume after interruptions;
+source edits restart only the owned staging payload. A completion receipt prevents
+old saves being recopied over new progress. Preference-only destination metadata
+is retained in staging during promotion. A pending journal supplies the source
+even if the entry-point app moved. Cancel leaves the original usable.
+Internal absolute save-folder preferences follow the copy; separate external
+save paths retain their exact values and data. Completed migrations surface the
+backup path through the normal last-result status. `--check` never migrates.
+
+For an app opened from /Applications, `MacStorage.Prepare` installs a complete
+updateable launcher alongside the runtime in the writable folder, then opens it
+with `--root`. It copies the signed bundle bytes, reconstructs the existing
+launcher-manifest format and uses Core.ApplyLauncher's transaction under the normal
+installation lock. This lets Finder's entry-point app be moved/replaced independently
+and leaves its folder untouched. Complete newer managed launchers are never
+downgraded by an older entry point; corrupt newer installs require repair. Normal
+forwarding retains startup update checks. Windows/Linux routing is unchanged.
+
+`tests/launcher/mac_storage.cs` runs in native `--test` and independently through
+`--test-storage`; LocationUi checks storage choices before writes. Native Mac
+storage fixtures live beside the built `.app`, outside both its bundle and the
+macOS `/var` temp alias, so they exercise the normal destination-path checks.
+package verification also checks a signed app after automatic migration.
+Finder/Gatekeeper/signature/update/restart and prerequisite acceptance remain
+separate from Windows cross-compilation and WSL filesystem contracts (STATUS).
+
+GameSettings preserves [Weapon FOV](video-options.md#weapon-aperture) in display V3.
+
 Linux release packaging closes dependencies for all launcher/Python ELFs,
 not only the game. Provider/source and notice verification is described in
 [Linux release contracts](linux-game.md#experimental-release-preparation).
@@ -700,3 +754,33 @@ Viewbox keeps the shared 1000x720 layout reachable on small/scaled desktops.
 MessageDialog bounds its width and scroll body to its owner. --render-deck and
 --render-deck-settings preserve the fitted size for Xvfb visual checks. Shared
 UI tests cover 1280x800, 1024x640, 853x533 and desktop geometry.
+
+
+## Antivirus blocking diagnostics (issue #476)
+
+`AntivirusErrors` in DownloadTransfer.cs recognizes only Windows native errors
+225/226 and their HRESULT_FROM_WIN32 IO equivalents. Windows process starts,
+helper copies, installed-file copies/backups, hash reads and game/launcher
+extraction retain operation paths in AntivirusBlockedException; copy failures
+name both source and destination because Windows does not identify the side.
+The original exception stays in InnerException, including recovery aggregates.
+RecoveryInfo gives antivirus-specific retry/history guidance without calling
+access denial or missing files a confirmed detection. Missing startup files
+include the application path and conditional quarantine guidance. Bootstrap
+startup/update logs retain complete exceptions; helper result files preserve
+antivirus details even if transaction recovery also fails. Startup recovery
+scrolls long messages; the Windows main UI shows a blocking-error dialog.
+Security settings, update validation and transaction/recovery policy are unchanged.
+
+Windows `build-launcher.ps1 -Test` runs the synthetic native/IO error-code,
+negative-classification, retry/log/path, long-path layout and preservation checks
+in launcher_startup.cs. The existing shared UI suite also checks host scoping:
+MACOS/LINUX never interpret Windows numeric error codes as antivirus evidence.
+Native host execution and real McAfee detection remain separate acceptance work.
+
+Fullscreen control: SettingsPage retains BorderlessFullscreen's checkbox identity
+and staged Save behavior, labels it Fullscreen, and explains windowed/borderless
+and next-launch semantics in its tooltip. GameSettings keeps the existing
+runtime.conf fullscreen boolean; in-game Window mode Apply/Keep now saves this
+same key. No second launcher preference, OS-specific settings model or default
+change. See video-options.md for the shared live-window and rollback contract.

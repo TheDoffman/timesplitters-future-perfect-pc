@@ -300,10 +300,15 @@ The full replacement order is retained, with main's source-layout routing patch
 last. Existing patch payloads and ledger basenames are unchanged. The grouped
 XBE bridge establishes the compiler import path for compatibility modules.
 
-For MSVC compiler heap exhaustion during generated-C compilation, a process-local
-`CL_MPCount=2` limits the existing /MP workers while keeping normal Release
-optimization and the standard build/test driver. CMake's project parallelism
-alone does not cap /MP. Record the failed attempt and successful retry separately.
+## Generated C grouping
+
+PR #508's ordinary-publisher byte budget and Windows worker cap have been reverted.
+The shared pipeline and ordinary batch publisher default to 1,000 functions per
+file and split by function count only. Explicit `--split` values remain supported.
+The pre-existing continuation publisher's byte bound is unchanged. `tsfp.ps1`
+retains CMake project parallelism 4 and normal Release optimization, without
+`-CompileJobs` or a driver-supplied `CL_MPCount`. This restores the earlier compiler
+memory exposure; no new full-build memory or timing measurement is claimed.
 
 Generation hashes cover own translation/diagnostic tools and bridges. Native
 integer/bit/product fixtures cover widths, carry, snapshots and division faults, with ML64 shift/rotate

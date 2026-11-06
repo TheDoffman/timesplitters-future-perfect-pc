@@ -11,12 +11,12 @@
 typedef struct PcKeycapCap {
     int x,y,r,b,radius,arrow;uint32_t colour;
 #if TSFP_INPUT_ICONS
-    int styled,icon,pressed;
+    int styled,icon,pressed,controller;
 #endif
 } PcKeycapCap;
 typedef struct PcKeycapDraw {
     char text[2048];size_t next;
-    int enabled,open,mouse,arrow;
+    int enabled,open,mouse,arrow,keyboard;
     float left,top,bottom;
     PcKeycapCap caps[64];
 #if TSFP_INPUT_ICONS
@@ -35,7 +35,8 @@ void pc_display_keycap_text(void (*original)(void))
 {
     PcKeycapDraw saved=keycap_draw;memset(&keycap_draw,0,sizeof keycap_draw);
     uint32_t text=WORD_AT(g_esp+16);
-    if(pc_prompts_keyboard_active() && text) {
+    keycap_draw.keyboard=pc_prompts_keyboard_active();
+    if(text) {
         size_t n=0;
         while(n<sizeof keycap_draw.text-1) {
             uintptr_t host=g_xbox_mem_offset+(uintptr_t)text+n;
@@ -45,11 +46,11 @@ void pc_display_keycap_text(void (*original)(void))
             const char *end=memchr((void *)host,0,room);
             size_t count=end?(size_t)(end-(char *)host):room;
             memcpy(keycap_draw.text+n,(void *)host,count);n+=count;
-            if(end) {keycap_draw.enabled=strchr(keycap_draw.text,'[')!=NULL;break;}
+            if(end) {keycap_draw.enabled=strchr(keycap_draw.text,'[')!=NULL || strchr(keycap_draw.text,'\v')!=NULL;break;}
         }
     }
 #if TSFP_INPUT_ICONS
-    if(keycap_draw.enabled)pc_controls_binding_keys(keycap_draw.keys);
+    if(keycap_draw.enabled && keycap_draw.keyboard)pc_controls_binding_keys(keycap_draw.keys);
 #endif
     original();
     if(keycap_draw.count) {
@@ -105,11 +106,42 @@ static void keycap_line(int x,int y,int right,int bottom,uint32_t colour)
     if(right>x && bottom>y)guest_call(sub_0001A2E0,5,bits((float)x),bits((float)y),
                                      bits((float)right),bits((float)bottom),colour);
 }
+#if TSFP_INPUT_ICONS && defined(TSFP_CONTROLLER_ICONS)
+static int keycap_queue_icon(uint32_t state,int icon,int controller)
+{
+    float x=FLOAT_AT(state+0x18),y=FLOAT_AT(state+0x1c);
+    float r=FLOAT_AT(state+0x20),b=FLOAT_AT(state+0x24);
+    if(!isfinite(x) || !isfinite(y) || !isfinite(r) || !isfinite(b) ||
+       r<=x || b<=y || r-x>2048.f || fabsf(x)>8192.f || fabsf(y)>8192.f ||
+       fabsf(r)>8192.f || fabsf(b)>8192.f)return 0;
+    PcKeycapCap *cap=&keycap_draw.caps[keycap_draw.count++];
+    memset(cap,0,sizeof *cap);cap->x=(int)floorf(x);cap->y=(int)floorf(y);
+    cap->r=(int)ceilf(r);cap->b=(int)ceilf(b);cap->colour=WORD_AT(state);
+    cap->styled=1;cap->icon=icon;cap->controller=controller;return 1;
+}
+#endif
 void pc_display_keycap_glyph(void (*original)(void))
 {
     uint32_t state=WORD_AT(g_esp+4);
-    if(!keycap_draw.enabled || !guest_writable(state,0x44) || WORD_AT(state+0x40)) {original();return;}
+    if(!keycap_draw.enabled || !guest_writable(state,0x44)) {original();return;}
     unsigned c=*(unsigned char *)(g_xbox_mem_offset+(uintptr_t)state+0x38);
+#if TSFP_INPUT_ICONS && defined(TSFP_CONTROLLER_ICONS)
+    if(WORD_AT(state+0x40)) {
+        /* Native40FA0 has two icon banks with overlapping zero-based indices.
+         * Digit icons use the texture table7E72A0; letter icons use the atlas.
+         * Inspect the actual glyph bank, so clipped/wrapped earlier tokens
+         * cannot shift which button this glyph represents. */
+        uint32_t table=0x7e72a0u+c*4u;
+        int digit=c<12 && guest_writable(table,4) && WORD_AT(table) &&
+                  WORD_AT(state+0x3c)==WORD_AT(table);
+        unsigned token=c+(digit?'1':'A');
+        int icon=token<256?input_controller_lookup[token]:-1;
+        if(icon>=0 && keycap_draw.count<64 && keycap_queue_icon(state,icon,1)) {g_esp+=4;return;}
+        original();return;
+    }
+#endif
+    if(WORD_AT(state+0x40)) {original();return;}
+    if(!keycap_draw.keyboard) {original();return;}
     if(c=='[') {
         const char *start=strchr(keycap_draw.text+keycap_draw.next,'[');
         const char *end=start?strchr(start+1,']'):NULL;

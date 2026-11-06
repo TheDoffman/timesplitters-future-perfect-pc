@@ -1,0 +1,119 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -438,7 +438,7 @@
+ extern void sub_003592F0_gen(void);
+ void sub_003592F0(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     pc_multiplayer_return_lobby(sub_003592F0_gen);
+ #else
+     sub_003592F0_gen();
+@@ -448,7 +448,7 @@
+ extern void sub_00065420_gen(void);
+ void sub_00065420(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     pc_multiplayer_disconnect_exit(sub_00065420_gen);
+ #else
+     sub_00065420_gen();
+@@ -478,7 +478,7 @@
+ extern void sub_001AF950_gen(void);
+ void sub_001AF950(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     pc_multiplayer_lobby_lost(sub_001AF950_gen);
+ #else
+     sub_001AF950_gen();
+@@ -529,7 +529,7 @@
+ extern void sub_00079860_gen(void);
+ void sub_00079860(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     pc_multiplayer_exit_menu(sub_00079860_gen);
+ #else
+     sub_00079860_gen();
+@@ -539,7 +539,7 @@
+ extern void sub_001922D0_gen(void);
+ void sub_001922D0(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     pc_story_network_profile_save(sub_001922D0_gen);
+ #else
+     sub_001922D0_gen();
+@@ -609,7 +609,7 @@
+ extern void sub_002EAF60_gen(void);
+ void sub_002EAF60(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     pc_multiplayer_exit_action(sub_002EAF60_gen,0u);
+ #else
+     sub_002EAF60_gen();
+@@ -619,7 +619,7 @@
+ extern void sub_002EAFC0_gen(void);
+ void sub_002EAFC0(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     pc_multiplayer_exit_action(sub_002EAFC0_gen,0u);
+ #else
+     sub_002EAFC0_gen();
+@@ -629,7 +629,7 @@
+ extern void sub_002EB030_gen(void);
+ void sub_002EB030(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     pc_multiplayer_exit_action(sub_002EB030_gen,0u);
+ #else
+     sub_002EB030_gen();
+@@ -639,7 +639,7 @@
+ extern void sub_002EC090_gen(void);
+ void sub_002EC090(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     pc_multiplayer_exit_action(sub_002EC090_gen,0u);
+ #else
+     sub_002EC090_gen();
+@@ -649,7 +649,7 @@
+ extern void sub_002EC650_gen(void);
+ void sub_002EC650(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     pc_multiplayer_exit_action(sub_002EC650_gen,0u);
+ #else
+     sub_002EC650_gen();
+@@ -659,7 +659,7 @@
+ extern void sub_00065470_gen(void);
+ void sub_00065470(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     pc_multiplayer_exit_action(sub_00065470_gen,0u);
+ #else
+     sub_00065470_gen();
+@@ -669,7 +669,7 @@
+ extern void sub_002EB0C0_gen(void);
+ void sub_002EB0C0(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     pc_multiplayer_exit_action(sub_002EB0C0_gen,1u);
+ #else
+     sub_002EB0C0_gen();
+@@ -679,7 +679,7 @@
+ extern void sub_002EB290_gen(void);
+ void sub_002EB290(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     pc_multiplayer_exit_action(sub_002EB290_gen,2u);
+ #else
+     sub_002EB290_gen();

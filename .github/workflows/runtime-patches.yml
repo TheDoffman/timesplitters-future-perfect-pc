@@ -260,7 +260,7 @@ jobs:
           python tools/testing/test-rhi-mac.py --setup-sdk --driver moltenvk
       - name: Test release validation and disposable fixture cleanup
         if: needs.plan.outputs.release == 'true'
-        run: python -m pytest tests/launcher/test_publish_release.py tests/diagnostics/test_crash_symbols.py tests/launcher/test_native_mac_package.py tests/launcher/test_native_linux_package.py tests/launcher/test_linux_dependency_sources.py tests/launcher/test_linux_elf_closure.py tests/repository/test_linux_media.py tests/textures/test_build_textures.py tests/textures/test_texture_release.py -q --tb=short --durations=20 --suite-profile=ci-release
+        run: python -m pytest tests/launcher/test_publish_release.py tests/diagnostics/test_crash_symbols.py tests/launcher/test_native_mac_package.py tests/launcher/test_native_linux_package.py tests/launcher/test_linux_dependency_sources.py tests/launcher/test_linux_elf_closure.py tests/repository/test_linux_media.py tests/textures/test_build_textures.py tests/textures/test_lfs_checkout.py tests/textures/test_texture_release.py -q --tb=short --durations=20 --suite-profile=ci-release
 
       - name: Save suite timing history
         if: always() && hashFiles('build/test-performance/**/state.json') != ''

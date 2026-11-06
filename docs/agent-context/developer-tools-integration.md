@@ -275,3 +275,44 @@ Historical fixture inputs exclude Tools without its Linux/display prerequisites.
 Complete upgrades still install all patches. EOF wrapper matching uses -C1 for
 2520/2530/2550/2580 and rejects modified wrapper code; appended unrelated comments
 survive unwind/reapply. The patch-updates fixture exercises both outcomes.
+
+## Retained runtime contracts after main sync
+
+[Further contracts and validation notes](runtime-continuation.md).
+
+Sidebar Video Settings uses a shared-source guest-frame provider registered by
+`pc_display_camera`, called through `pc_developer_guest_frame`. It adds no
+generated guest edits or runtime patch; value-only mailbox contracts and tests
+are described in the Systems continuation.
+
+Match Tools selector placement: the existing79D60 wrapper inserts choice121
+before native Music at US caller2C8010, while compact22100 typography/spacing
+is active. The2C78F0 wrapper scopes menu ownership and the real host mode; it
+no longer appends after Go. The native Music builder then resumes its own
+selector context. No generated-code or patch edits are needed.
+
+Developer Tools migration integration: historical fixtures omit the Tools family
+when its Linux/display prerequisites are absent; complete upgrades still install
+the entire current stack. Additive manual-file wrappers2520/2530/2550/2580 use
+existing -C1 matching so appended local comments survive reverse application.
+Patched code must still match exactly; the small EOF fixture rejects a changed
+wrapper body without writing any files. Runtime patch bytes remain unchanged.
+
+## Native free-camera input sampling
+
+Additive input patch2630 follows2620 and routes native keyboard sampling through
+the existing guarded `pc_controls_key_down`, instead of the raw SDL key reader.
+The existing `pc_controls_accept_pad` gate now applies to both host samplers,
+including explicit pad assignments and automatic P1 fallback. The native build
+includes the shared controls declarations. No guest ABI/wrapper or generated
+code changes are needed. See Systems for free-camera input ownership.
+
+
+## November 6 main synchronization
+
+The rebase retains upstream multiplayer exit declarations, weapon FOV and input
+icon adapters. The Video Options fixture uses upstream network availability and
+adds the existing Tools stubs alongside native icon/profile helpers. Shared Tools
+behavior, Retina pointer mapping and native free-camera input guards are retained.
+Fresh patch application and repeated application, native lobby wrappers, settings
+mailbox and sidebar input remain the integration validation routes.

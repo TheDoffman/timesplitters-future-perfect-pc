@@ -37,6 +37,10 @@ void sub_0006BB90(void) {assert(!"unexpected checkpoint lookup");}
 void sub_00067450(void) {assert(!"unexpected mission ending");}
 void pc_controls_apply_mouse(uint32_t player,uint32_t camera,ptrdiff_t offset)
 {(void)player;(void)camera;(void)offset;assert(!"unexpected developer mouse update");}
+
+int tsfp_input_icon_begin(const void *spans,unsigned count,unsigned size,unsigned pixels) {(void)spans;(void)count;(void)size;(void)pixels;return 0;}
+void tsfp_input_icon_end(void) {}
+void sub_0001B7B0(void) {g_esp+=4;}
 const char *pc_build_version(void) { return "development"; }
 ptrdiff_t g_xbox_mem_offset;
 RECOMP_TLS uint32_t g_eax,g_ecx,g_edx,g_esp,g_ebx,g_esi,g_edi,g_ebp,g_seh_ebp;
@@ -75,7 +79,19 @@ int recomp_settings_path(uint32_t title,char *out,size_t size)
 { (void)title;return snprintf(out,size,"%s",runtime_path)>0; }
 static int slider_capture_enabled;
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL line %d: %s\n",__LINE__,#x); exit(1); } } while(0)
-HWND xbox_D3D8Window(void) { return NULL; }
+static HWND fixture_window;
+static int fullscreen_request_ok=1;
+int recomp_config_bool(const char *env,const char *key,int fallback)
+{ (void)env;(void)key;return fallback; }
+static LRESULT CALLBACK fullscreen_test_proc(HWND window,UINT message,WPARAM wp,LPARAM lp)
+{
+    if(message==PC_FULLSCREEN_SET_MESSAGE) {
+        if(!fullscreen_request_ok)return 0;
+        SetWindowLongPtrA(window,GWL_STYLE,wp?WS_POPUP:WS_OVERLAPPEDWINDOW);return 1;
+    }
+    return DefWindowProcA(window,message,wp,lp);
+}
+HWND xbox_D3D8Window(void) { return fixture_window; }
 int xbox_D3D8ChangeResolution(unsigned w,unsigned h) { (void)w;(void)h;return available; }
 int pc_online_connect(void) { return 0; }
 int pc_online_connect_mode(PcOnlineMode mode) { (void)mode;return 0; }
@@ -368,7 +384,7 @@ static void button_probe(void)
 static void reload(const char *text)
 {
     FILE *f=fopen(path,"wb");CHECK(f);CHECK(fputs(text,f)>=0);CHECK(!fclose(f));
-    initialized=0;current=(PcDisplayMode){0,0};vertical_fov=PC_FOV_DEFAULT;
+    initialized=0;current=(PcDisplayMode){0,0};vertical_fov=PC_FOV_DEFAULT;weapon_fov=PC_WEAPON_FOV_DEFAULT;
     pc_display_current();
 }
 static void content(const char *expected)
@@ -430,6 +446,13 @@ int main(int argc,char **argv)
     }
     pc_display_current();reload("TSFP_DISPLAY_V1 1280 720\n");
     CHECK(pc_display_fov()==55 && pc_display_fov_scale()==1.f);
+    CHECK(pc_display_weapon_fov()==100 && pc_display_weapon_fov_scale()==1.f);
+    CHECK(!pc_display_set_weapon_fov(75) && !pc_display_set_weapon_fov(155) && !pc_display_set_weapon_fov(103));
+    CHECK(pc_display_set_weapon_fov(130) && pc_display_save());
+    content("TSFP_DISPLAY_V3 1280 720 55 130\n");
+    initialized=0;weapon_fov=100;CHECK(pc_display_weapon_fov()==130);
+    CHECK(pc_display_set_weapon_fov(100) && pc_display_save());
+
     CHECK(!pc_display_set_fov(39) && !pc_display_set_fov(101));
     CHECK(pc_display_set_fov(75) && pc_display_save());content("TSFP_DISPLAY_V2 1280 720 75\n");
     initialized=0;vertical_fov=55;CHECK(pc_display_fov()==75);
@@ -440,7 +463,7 @@ int main(int argc,char **argv)
     reload("TSFP_DISPLAY_V1 1280 720\n");
     tsfp_texture_set_4k(0);
     call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
-    CHECK(page==DISPLAY_HOME && built_row_count==7 && separators==2 && separator_positions[0]==1 && separator_positions[1]==5 && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
+    CHECK(page==DISPLAY_HOME && built_row_count==8 && separators==2 && separator_positions[0]==1 && separator_positions[1]==6 && window_mode_row && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
     page=DISPLAY_GRAPHICS;built_rows=built_row_count=separators=0;labels();
     CHECK(!graphics_rows[0] && !graphics_rows[4] && texture_row && post_aa_row && !counter_row && !aspect_row);
     CHECK(built_ids[2]==102 && built_ids[3]==103 && built_ids[4]==7 && built_ids[5]==11 && built_ids[6]==UINT32_MAX && built_ids[7]==108 && built_ids[8]==3);
@@ -703,19 +726,43 @@ int main(int argc,char **argv)
     CHECK(requested_rate==120 && pc_frame_rate_read()==120);
     CHECK(!display_dirty() && (WORD_AT(apply_row+0x28)&1));
     content("TSFP_DISPLAY_V2 1280 720 70\n");
+    /* Weapon aperture is staged across tabs, applies live, and persists separately from world FOV. */
+    refresh(DISPLAY_VIEW,0);
+    for(int i=0;i<50;i++)call(TICK_CB,12,0x80000);CHECK(staged_weapon_fov==150);
+    for(int i=0;i<50;i++)call(TICK_CB,12,0x40000);CHECK(staged_weapon_fov==80);
+    slider_capture_enabled=1;
+    memset(menu_slider_tracks,0,sizeof menu_slider_tracks);
+    WORD_AT(0x700008)=weapon_fov_row;
+    call(FOV_DRAW_CB,12,0);CHECK(drawn==0.f);
+    CHECK(menu_slider_tracks[MENU_WEAPON_FOV].item==weapon_fov_row);
+    WORD_AT(0x300198)=weapon_fov_row;
+    pointer.left=1;
+    CHECK(menu_slider_pointer(0x300000,pointer,2,348,8,1920,1080));
+    CHECK(staged_weapon_fov==115 && staged_fov==70 && pc_display_weapon_fov()==100);
+    pointer.left=0;CHECK(!menu_slider_pointer(0x300000,pointer,0,348,8,1920,1080));
+    slider_capture_enabled=0;
+    menu_slider_weapon_fov_pointer(398,298,100);CHECK(staged_weapon_fov==150);
+    for(int i=0;i<4;i++)call(TICK_CB,12,0x40000);
+    CHECK(staged_weapon_fov==130 && pc_display_weapon_fov()==100 && display_dirty());
+    refresh(DISPLAY_HOME,0);refresh(DISPLAY_VIEW,0);
+    CHECK(staged_weapon_fov==130);
+    call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov()==130 && pc_display_fov()==70 && !display_dirty());
+    content("TSFP_DISPLAY_V3 1280 720 70 130\n");
+    for(int i=0;i<6;i++)call(TICK_CB,12,0x40000);call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov()==100);
     /* A failed SMAA save also rolls back every Apply-only graphics field. */
     TsfpGraphicsOptions before_failed_batch=pc_graphics_get();
     staged_anisotropy=4;staged_ao=!before_failed_batch.ambient_occlusion;staged_cache=!before_failed_batch.shader_cache;
-    staged_msaa=4;
+    staged_msaa=4;staged_weapon_fov=150;
     refresh(DISPLAY_HOME,0);staged_fov=75;WORD_AT(rate_row+0xc8)=2;read_choices();
     refresh(DISPLAY_GRAPHICS,0);WORD_AT(post_aa_row+0xc8)=2;smaa_save_ok=0;
     call(SELECT_CB,3,0);
+    CHECK(pc_display_weapon_fov()==100);
     CHECK(pc_display_fov()==70 && requested_rate==120 && pc_frame_rate_read()==120 && !pc_smaa_enabled() && graphics_options.msaa==1 && staged_msaa==4 && page!=DISPLAY_RESTART);
     content("TSFP_DISPLAY_V2 1280 720 70\n");
     CHECK(graphics_options.anisotropy==before_failed_batch.anisotropy &&
           graphics_options.ambient_occlusion==before_failed_batch.ambient_occlusion &&
           graphics_options.shader_cache==before_failed_batch.shader_cache);
-    smaa_save_ok=1;staged_fov=70;staged_rate=applied_rate;staged_aa=applied_aa;staged_msaa=graphics_options.msaa;
+    smaa_save_ok=1;staged_weapon_fov=100;staged_fov=70;staged_rate=applied_rate;staged_aa=applied_aa;staged_msaa=graphics_options.msaa;
     staged_anisotropy=graphics_options.anisotropy;staged_ao=graphics_options.ambient_occlusion;staged_cache=graphics_options.shader_cache;
     refresh(DISPLAY_GRAPHICS,0);call(TICK_CB,11,0);CHECK(!display_dirty());
     WORD_AT(post_aa_row+0xc8)=2;read_choices();refresh(DISPLAY_VIEW,0);
@@ -766,6 +813,32 @@ int main(int argc,char **argv)
         char text[256]={0};FILE *f=fopen(runtime_path,"rb");CHECK(f);
         fread(text,1,sizeof text-1,f);CHECK(!ferror(f) && feof(f));CHECK(!fclose(f));
         CHECK(!strcmp(text,"# preserve\nframe_interp = 3\nframe_cap = 30\nfuture_key = keep\n"));
+    }
+    /* Window mode stages across tabs, previews on Apply, and persists only
+     * after Keep. Timeout/Back/save failure restore the previous host mode. */
+    {
+        WNDCLASSA cls={0};cls.lpfnWndProc=fullscreen_test_proc;cls.hInstance=GetModuleHandleA(NULL);cls.lpszClassName="TsfpFullscreenTest";
+        CHECK(RegisterClassA(&cls));
+        fixture_window=CreateWindowExA(0,cls.lpszClassName,"",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,cls.hInstance,NULL);CHECK(fixture_window);
+        call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
+        CHECK(window_mode_row && !pc_display_fullscreen() && !display_dirty());
+        WORD_AT(window_mode_row+0xc8)=1;read_choices();CHECK(display_dirty() && !pc_display_fullscreen());
+        refresh(DISPLAY_VIEW,0);CHECK(staged_fullscreen==1 && !pc_display_fullscreen());
+        call(BACK_CB,0,0);call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);CHECK(!staged_fullscreen);
+        WORD_AT(window_mode_row+0xc8)=1;call(SELECT_CB,3,0);CHECK(page==DISPLAY_CONFIRM && pc_display_fullscreen());
+        call(BACK_CB,0,0);CHECK(page==DISPLAY_HOME && !pc_display_fullscreen());
+        WORD_AT(window_mode_row+0xc8)=1;call(SELECT_CB,3,0);clock_ms+=16000;call(TICK_CB,0,0);CHECK(!pc_display_fullscreen() && page==DISPLAY_HOME);
+        WORD_AT(window_mode_row+0xc8)=1;call(SELECT_CB,3,0);call(SELECT_CB,0,0);
+        CHECK(pc_display_fullscreen() && previous_fullscreen && !display_dirty() && page==DISPLAY_HOME);
+        char text[512]={0};FILE *file=fopen(runtime_path,"rb");CHECK(file);fread(text,1,sizeof text-1,file);fclose(file);
+        CHECK(strstr(text,"fullscreen = 1") && strstr(text,"future_key = keep") && strstr(text,"frame_cap = 30"));
+        WORD_AT(window_mode_row+0xc8)=0;call(SELECT_CB,3,0);CHECK(!pc_display_fullscreen());
+        CHECK(SetFileAttributesA(runtime_path,FILE_ATTRIBUTE_READONLY));call(SELECT_CB,0,0);
+        CHECK(pc_display_fullscreen() && display_dirty() && *status && page==DISPLAY_HOME);
+        CHECK(SetFileAttributesA(runtime_path,FILE_ATTRIBUTE_NORMAL));fullscreen_request_ok=0;
+        call(SELECT_CB,3,0);CHECK(page==DISPLAY_HOME && pc_display_fullscreen() && *status);
+        fullscreen_request_ok=1;call(SELECT_CB,3,0);call(SELECT_CB,0,0);CHECK(!pc_display_fullscreen() && !display_dirty());
+        CHECK(DestroyWindow(fixture_window));fixture_window=NULL;CHECK(UnregisterClassA(cls.lpszClassName,cls.hInstance));
     }
     /* Audio entry inherits layout before construction; the invisible native
      * subtitle record remains available to its original tick/save routines. */
@@ -1173,7 +1246,6 @@ int pc_developer_enabled(void) {return 0;}
 void pc_developer_shortcut_name(char *out,size_t bytes){snprintf(out,bytes,"F1");}
 int pc_developer_set_enabled(int enabled) {(void)enabled;assert(0);return 0;}
 void pc_developer_lobby_notice(const char *names) {(void)names;}
-int pc_network_enabled(void) {return 0;}
 unsigned pc_network_developer_lobby(const PcDeveloperPeer *roster,unsigned count,int enabled,char *names,size_t bytes)
 {(void)roster;(void)count;(void)enabled;(void)bytes;names[0]=0;return 0;}
 
@@ -1183,3 +1255,6 @@ void sub_002C78F0_gen(void) {developer_match_button(0x002C8010u);g_esp+=4;}
 int pc_developer_tools_allowed(void) {return 1;}
 void pc_developer_match_policy(int online,int allowed) {(void)online;(void)allowed;}
 int pc_network_tools_policy(const PcDeveloperPeer *roster,unsigned count,int allowed) {(void)roster;(void)count;return allowed;}
+
+int pc_network_enabled(void){return 1;}
+void sub_000668F0(void){}

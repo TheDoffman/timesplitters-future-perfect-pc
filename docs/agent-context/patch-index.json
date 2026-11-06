@@ -2016,12 +2016,44 @@
       ]
     },
     {
+      "name": "2610-filtered-input-icons.patch",
+      "path": "patches/graphics/interface/2610-filtered-input-icons.patch",
+      "sha256": "6ee09852f01250fc8b9590dab4d231608abaaa1a51cd1286a24c252da4e7d4a8",
+      "targets": [
+        "src/hle/hle_d3d8_record.c"
+      ]
+    },
+    {
       "name": "2610-native-shared-effect-depth.patch",
       "path": "patches/graphics/rendering/2610-native-shared-effect-depth.patch",
       "sha256": "a13359ca61ec6eef69c52c95765e4eab2885fcb3ddfffc0f30c79dfe878bcecc",
       "targets": [
         "src/hle/hle_d3d8_record.c",
         "src/replay/d3d8_replay.c"
+      ]
+    },
+    {
+      "name": "2620-fullscreen-menu.patch",
+      "path": "patches/graphics/interface/2620-fullscreen-menu.patch",
+      "sha256": "ace06ebef1ee06dfc21049d7de7e0454f3174d6e66fd5dcbd80aa84c022c619a",
+      "targets": [
+        "src/hle/hle_d3d8.c"
+      ]
+    },
+    {
+      "name": "2620-multiplayer-lobby-return.patch",
+      "path": "patches/network/2620-multiplayer-lobby-return.patch",
+      "sha256": "ac9c88169a843aea620ab52d2eaaa87d4b905a87ee231fad48460c48dee02376",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2625-native-multiplayer-save-wrappers.patch",
+      "path": "patches/network/2625-native-multiplayer-save-wrappers.patch",
+      "sha256": "6da5c7a67c82e6e30bf3f2ff968074758569e2cce9a5bdbd157f3cbb46e7e41c",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     },
     {

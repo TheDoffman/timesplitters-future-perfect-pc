@@ -60,7 +60,16 @@ Windows, Mac and Linux use the same installation steps:
 available offline. Use **Check updates → Update release** to install a newer game
 build when available. Launcher and game versions are separate.
 
+Source contributors: ordinary clones and builds do not require the Enhanced
+texture download. See [cloning without optional textures](CONTRIBUTING.md#clone-without-optional-textures).
+
 ### Launcher preview
+
+**Weapon view:** In builds containing the Weapon FOV option, open **Settings →
+Video Options → View & HUD → Weapon FOV** from the main or pause menu. Choose
+80–150% and select **Apply**; no restart is needed. **Original** is 100%.
+Higher values show more of the weapon, independently of the world FOV slider.
+These percentages adjust the weapon's original lens, rather than degrees.
 
 ![TimeSplitters launcher v1.4.0 with Stable selected, Play Game, updates and settings](docs/assets/launcher-preview.png)
 
@@ -82,6 +91,10 @@ Launcher v1.4.0 interface preview with illustrative installation data.
 - Keep the whole installation together, especially `Data`, `Settings`, `Saves`
   and the launcher's recovery files. Normal updates preserve existing data,
   settings and saves.
+- **Mac launcher storage:** defaults to `~/Library/Application Support/TimeSplitters`,
+  independently of the `.app` location. Existing installations beside the app
+  migrate automatically, retaining the original as a backup. Portable mode remains
+  available. See [storage and migration](docs/players/macos.md#launcher-storage).
 
 Published builds do not require Python, Git or developer tools. The Mac launcher
 includes .NET and does not need CrossOver or the .NET SDK.

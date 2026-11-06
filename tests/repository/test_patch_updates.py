@@ -104,7 +104,7 @@ def test_fresh_checkout_and_repeated_build(checkout):
     # under one C definition; generation alone does not reject duplicates.
     manual = (checkout / 'titles/futureperfect/src/recomp_manual.c').read_text()
     assert 'pc_story_network_dialogue(sub_00164C40_gen)' in manual
-    assert 'pc_story_network_result_action(sub_002EB0C0_gen,1u)' in manual
+    assert 'pc_multiplayer_exit_action(sub_002EB0C0_gen,1u)' in manual
     assert 'pc_story_network_world_remove(sub_000A9070_gen)' in manual
     assert 'pc_network_ammo_pickup(sub_001BA220_gen)' in manual
     assert 'pc_story_network_replica_clip(sub_000A2430_gen)' in manual
@@ -370,6 +370,8 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
             continue  # This historical Mac stack predates native timing and network wrappers.
         if patch.name not in ('0470-pc-network.patch', '0640-pc-online.patch',
                               '0890-pc-network-movement.patch',
+                                  '2620-multiplayer-lobby-return.patch',
+                                  '2625-native-multiplayer-save-wrappers.patch',
                                   '0900-pc-network-state-refresh.patch',
                                   '1010-pc-network-bots-test.patch',
                                   '1030-pc-network-bot-combat.patch',
