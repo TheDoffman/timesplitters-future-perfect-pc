@@ -51,7 +51,7 @@ namespace TimeSplitters.Launcher
         readonly TextBox sensitivity, width, height, discordId;
         readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, developerTools, discordEnabled, enhancedTextures, ambientOcclusion, shaderCache;
         readonly ComboBox device, resolution, aspect, scale, filtering, frameRate, languagePack, msaa, edgeSmoothing, supersampling;
-        readonly TextBlock performanceAdvice;
+        readonly TextBlock performanceAdvice,developerToolsShortcut;
         readonly StackPanel consoleScalePanel;
         readonly Button[,] bindingButtons = new Button[GameSettings.Actions.Length,GameSettings.BindingSlots];
         static readonly string[] Devices = { "keyboard", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "none" };
@@ -281,11 +281,9 @@ namespace TimeSplitters.Launcher
             var general=new StackPanel();
             var developer=PageTheme.Section(general,"Developer Tools","Enable the in-game overlay. Its shortcut can be changed in Key bindings.");
             developerTools=Check("Enable Developer Tools",model.DeveloperToolsEnabled);developerTools.Name="DeveloperToolsEnabled";developer.Children.Add(developerTools);
-            developerTools.Checked+=(sender,args)=> {
-                var names=model.Binding(Array.IndexOf(GameSettings.Actions,"developer_tools")).Select(KeyName).Where(name=>name!="Unbound").ToArray();
-                var message=Prompt("Developer Tools","Warning: Usage of Developer Tools can cause instability and unintended behavior. Use with caution.\nPress "+(names.Length>0?String.Join(" / ",names):"the shortcut (currently unbound)")+" to open");
-                var okay=Button("Continue");okay.Click+=(sender2,args2)=>DismissPrompt();message.Children.Add(okay);okay.Focus();
-            };
+            var developerWarning=Text("Warning: Usage of Developer Tools can cause instability and unintended behavior. Use with caution.",12);
+            developerWarning.Name="DeveloperToolsWarning";developerWarning.Foreground=PageTheme.Brush("#E8BE78");developerWarning.Margin=new Thickness(0,6,0,4);developer.Children.Add(developerWarning);
+            developerToolsShortcut=Text("",12);developerToolsShortcut.Name="DeveloperToolsShortcut";developerToolsShortcut.Foreground=Muted;developer.Children.Add(developerToolsShortcut);
             var startup=PageTheme.Section(general,"Startup","");
             skipSplashes=Check("Skip startup splash screens",model.SkipStartupSplashes);skipSplashes.Name="SkipStartupSplashes";startup.Children.Add(skipSplashes);
             var startupHint=Text("Story cutscenes still play.",12);startupHint.Foreground=Muted;startupHint.Margin=new Thickness(0,8,0,0);startup.Children.Add(startupHint);
@@ -340,7 +338,13 @@ namespace TimeSplitters.Launcher
             status.Text=save.IsEnabled?"Unsaved changes. Save to apply on your next launch.":"Settings saved. Changes apply on your next launch.";
         }
         static string KeyName(string token) { return GameSettings.BindingLabel(token); }
-        void RefreshBindings() { for(int i=0;i<GameSettings.Actions.Length;i++) { var keys=model.Binding(i); for(int j=0;j<GameSettings.BindingSlots;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } RefreshSaveState(); }
+        void RefreshBindings() { for(int i=0;i<GameSettings.Actions.Length;i++) { var keys=model.Binding(i); for(int j=0;j<GameSettings.BindingSlots;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } UpdateDeveloperToolsShortcut();RefreshSaveState(); }
+        void UpdateDeveloperToolsShortcut()
+        {
+            if(developerToolsShortcut==null)return;
+            var names=model.Binding(Array.IndexOf(GameSettings.Actions,"developer_tools")).Select(KeyName).Where(name=>name!="Unbound").ToArray();
+            developerToolsShortcut.Text="Press "+(names.Length>0?String.Join(" / ",names):"the shortcut (currently unbound)")+" to open";
+        }
         public void SelectTab(int index) { tabs.SelectedIndex=index; }
         void UpdateTextureDetails()
         {

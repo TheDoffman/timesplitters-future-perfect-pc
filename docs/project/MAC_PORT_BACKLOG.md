@@ -1,3 +1,9 @@
+Inline Developer Tools launcher warning (uncommitted after f8d3bae6): implemented,
+native acceptance pending. Shared SettingsPage uses the existing TextBlock/brush
+adapters for warning and assigned-shortcut guidance beneath the checkbox. No
+new host adapter or OS service is needed; WPF checks pass. Mac/Linux launcher
+build/visual validation and native interaction remain pending; see STATUS.md.
+
 Opt-in Developer Tools / match policy (committed aa81002d): implemented,
 native acceptance pending. Shared developer access, native match Options row,
 LAN/Online TSFTOOL1 policy and launcher page/model require no duplicate host logic.

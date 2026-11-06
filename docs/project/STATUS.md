@@ -1,3 +1,17 @@
+## 2026-11-06 - Inline launcher Developer Tools warning
+
+Local, uncommitted after f8d3bae6 on developer-tools-overlay. Shared SettingsPage
+places an amber warning directly beneath Enable Developer Tools and a separate
+muted assigned-shortcut hint. Enabling no longer opens a prompt or steals focus;
+warning remains visible while disabled. Binding edits refresh the hint. Saved
+opt-in/defaults and the game overlay warning are unchanged.
+
+Windows x64 launcher build and full -Test pass (40.72s). Shared UI regression
+requires warning/checkbox colocation, configured F3 hint, no Continue prompt and
+unchanged Save/On/Off persistence. Context/whitespace checks pass. WPF and Avalonia
+use the same controls/layout code; native Mac/Linux build/visual checks were not
+run. No game rebuild needed; no personal settings or saves edited.
+
 ## 2026-11-06 - Developer Tools branch synchronized with main
 
 Developer Tools changes committed aa81002d, then origin/main3fa4bc2b merged into
