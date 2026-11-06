@@ -2,9 +2,8 @@
 [Uplink](native-uplink.md); [2605](native-projectiles.md).
 [HUD/MSAA tests](../development/graphics-options.md).
 [SDL startup/fullscreen](linux-game.md).
-`test_fov_settings.py` checks Video tabs, ownership, pointer bounds, keyboard
-cycling and staged-value retention.
-Ping expiry waits past GetTickCount64 quantization.
+`test_fov_settings.py` checks staged Video tabs/input.
+`test_lfs_checkout.py`: pointer clones, opt-in LFS pull, preserved packs.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build/tests ([MSAA](smaa.md))
 

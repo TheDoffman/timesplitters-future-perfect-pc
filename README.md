@@ -60,6 +60,9 @@ Windows, Mac and Linux use the same installation steps:
 available offline. Use **Check updates → Update release** to install a newer game
 build when available. Launcher and game versions are separate.
 
+Source contributors: ordinary clones and builds do not require the Enhanced
+texture download. See [cloning without optional textures](CONTRIBUTING.md#clone-without-optional-textures).
+
 ### Launcher preview
 
 ![TimeSplitters launcher v1.4.0 with Stable selected, Play Game, updates and settings](docs/assets/launcher-preview.png)
