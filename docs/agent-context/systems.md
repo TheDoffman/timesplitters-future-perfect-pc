@@ -830,6 +830,13 @@ record in `docs/analysis/native-high-refresh-regressions.md` for capture details
 
 ## Developer Tools sidebar presentation
 
+Sidebar pointer hit testing converts the host pointer's window coordinates to
+the last painted drawable width/height before applying widget DPI and docking.
+SDL logical points and Retina framebuffer pixels are distinct; display scale
+controls widget size and must not substitute for either axis conversion.
+Input-only frames retain the painted extent. The shared path serves RHI and GL;
+native game menu pointer coordinates and gameplay mouse deltas are unchanged.
+
 `src/interface/pc_developer_sidebar.inc` owns the shared widget layout, measured
 text roles, filtering, pointer/keyboard navigation and draft binding edits.
 `src/graphics/pc_developer_canvas.h` draws512 bounded value-only commands, caches

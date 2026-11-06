@@ -9985,3 +9985,12 @@ revoking an active free camera still restores its automatically hidden HUD.
 The input fixture checks placement and live updates under denied host policy.
 
 Linux launcher icon/storage follow-up (fix/linux-launcher-icon, uncommitted): Linux windows use the existing embedded launcher icon; Mac bundle icon handling is unchanged. Shared destination-volume free-space checks replace filesystem-root checks in install/import and diagnostics. Native failure dialogs now also show on Home. Windows/Linux validation is recorded in STATUS; native Mac regression and physical Steam Deck acceptance remain pending.
+
+Developer Tools Retina pointer alignment (uncommitted after a8d2e47e): implemented,
+native acceptance pending. Shared `src/interface/pc_developer_sidebar.inc` maps
+window-space pointers to the painted drawable before DPI/docking hit testing;
+Windows' equal-size path remains unchanged. Mac SDL already provides logical
+pointer bounds; RHI/legacy GL provide physical canvas bounds. No additional
+adapter is needed. Synthetic Mac compilation/execution covers fractional/Retina
+ratios and both docks; see [STATUS](STATUS.md). Physical clicks, monitor changes
+and Windows/Linux host acceptance remain unverified.

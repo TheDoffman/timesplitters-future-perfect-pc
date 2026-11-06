@@ -12,6 +12,13 @@ Ping expiry waits past GetTickCount64 quantization.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build/tests ([MSAA](smaa.md))
 
+`tests/input/test_developer_tools.py` already runs in runtime-patches CI. Its
+sidebar fixture now clicks drawn tab/dock centers at 1x/1.5x/2x drawable ratios,
+both docks and independent vertical scaling, and checks input-only frames retain
+the painted extent. Non-Windows fixture-local lock/atomic boundaries permit
+standalone execution without linking the entire runtime. This is synthetic
+shared hit-testing coverage, not physical Retina mouse or scene acceptance.
+
 [Linux](linux-game.md); [LAN](system-link.md).
 
 Discord release webhooks target #release-updates; #announcements holds team posts.

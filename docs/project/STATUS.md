@@ -1,3 +1,35 @@
+## 2026-11-06 - Mac Developer Tools pointer alignment
+
+Local, uncommitted on fix/mac-developer-sidebar-pointer after a8d2e47e; depends
+on the existing unmerged developer-tools-overlay implementation. The sidebar
+previously rebuilt its hit-test layout using SDL logical window bounds while
+painting with framebuffer bounds. Shared hit testing now converts each pointer
+axis to the last painted drawable before applying UI scale and dock placement.
+No host-specific gameplay logic, settings or runtime patch changes are needed.
+
+macOS27.2/arm64, Apple clang21.0.0, Python3.13.17, SDL3.4.16,
+Vulkan SDK1.4.363.0/MoltenVK, Apple M5 Pro: the supported native build passes
+with the complete patch stack and verified US XBE. Executable SHA-256:
+`ed44014fb47676f55cbdbea9851b3861a3bdcfec5f51ffc7e1fbae33639f7795`.
+The standalone sidebar regression failed at a drawn tab center before the fix,
+then passed at1x/1.5x/2x, both docks, unequal axis ratios and UI scale independent
+of drawable density. Non-Windows lock/atomic fixture boundaries were missing;
+the single-threaded fixture now supplies them. Existing CI already selects it.
+Full Developer Tools suite:7 passed,2 failed in unchanged fixtures due to Clang
+warnings (signed/unsigned comparisons in developer_tools_guest.c; unused g_ebx
+in developer_lobby_guest.c). Final sidebar fixture rerun passes; repository
+context suite21 passed, context/base and whitespace checks pass.
+
+The optional unlocked fixture is absent, so that probe stopped before launch.
+Default isolated startup probe passes:15.42s, bounded shutdown exit0, at least
+600 guest frames and600 successful guest presents, zero recorded failed/skipped
+presents, native faults, shader failures or Vulkan validation errors. Six
+disposable partition images were recycled by the runner; personal settings,
+saves and game data were untouched. This is startup evidence, not physical
+Retina click, visual scene or gameplay acceptance. Physical pointer/monitor
+transitions, legacy GL, Windows and Linux host checks remain unrun. No commit,
+push or publication; other-device synchronization is unverified.
+
 ## 2026-11-06 - Inline launcher Developer Tools warning
 
 Local, uncommitted after f8d3bae6 on developer-tools-overlay. Shared SettingsPage

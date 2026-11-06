@@ -496,7 +496,13 @@ void pc_developer_frame(void) {
     if(!open||!focused){sidebar_video_dropdown=-1;capture_action=-1;edit_number=0;sidebar_search_edit=0;sidebar_drag=-1;}
     if(open&&focused) {
         PcMenuPointer p=pc_controls_developer_pointer();
-        float width=p.valid&&p.width>0?p.width:sidebar_width,height=p.valid&&p.height>0?p.height:sidebar_height;
+        /* Hit-test the last painted drawable layout. SDL window coordinates
+         * can differ from framebuffer pixels (Retina); DPI is a widget-size
+         * preference, not the window-to-drawable conversion factor. */
+        float width=sidebar_width,height=sidebar_height;
+        if(p.valid&&p.width>0&&p.height>0) {
+            p.x*=width/p.width;p.y*=height/p.height;
+        } else p.valid=0;
         float ui_scale=sidebar_ui_scale(width);
         sidebar_pointer_x=p.valid?(p.x-(sidebar_right?width-452*ui_scale:0))/ui_scale:-1;
         sidebar_pointer_y=p.valid?p.y/ui_scale:-1;

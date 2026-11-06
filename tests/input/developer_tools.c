@@ -4,6 +4,19 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+/* Deterministic single-threaded fixture, with no native runtime linkage. */
+#ifndef _WIN32
+void AcquireSRWLockShared(PSRWLOCK lock) {(void)lock;}
+void ReleaseSRWLockShared(PSRWLOCK lock) {(void)lock;}
+void AcquireSRWLockExclusive(PSRWLOCK lock) {(void)lock;}
+void ReleaseSRWLockExclusive(PSRWLOCK lock) {(void)lock;}
+LONG InterlockedExchange(volatile LONG *target,LONG value) {
+    LONG previous=*target;*target=value;return previous;
+}
+LONG InterlockedCompareExchange(volatile LONG *target,LONG value,LONG compare) {
+    LONG previous=*target;if(previous==compare)*target=value;return previous;
+}
+#endif
 static ULONGLONG test_time;
 #define GetTickCount64() test_time
 #include "pc_developer.c"
@@ -56,7 +69,9 @@ static void audio_speed(float value) {observed_audio_speed=value;}
 static void frame(void) {test_time+=16;pc_developer_frame();}
 static void key(int k) {test_keys[k]=1;frame();test_keys[k]=0;frame();}
 static PcDeveloperLine painted[PC_DEVELOPER_MAX_DRAW];
-static unsigned paint(void) {return pc_developer_lines(1280,830,painted,PC_DEVELOPER_MAX_DRAW);}
+static unsigned paint_width=1280,paint_height=830;
+static float pointer_width=1280,pointer_height=830;
+static unsigned paint(void) {return pc_developer_lines(paint_width,paint_height,painted,PC_DEVELOPER_MAX_DRAW);}
 static int drawn(const char *text) {unsigned n=paint();for(unsigned i=0;i<n;i++)if(strstr(painted[i].text,text))return 1;return 0;}
 static void click(int kind,int a,int b) {
     paint();int found=-1;
@@ -65,8 +80,9 @@ static void click(int kind,int a,int b) {
     if(v.content&&(v.y<sidebar_top||v.y+v.h>sidebar_bottom)) {
         sidebar_scroll[page]+=v.y-sidebar_top;paint();v=sidebar_widgets[found];
     }
-    pointer.valid=1;pointer.width=1280;pointer.height=830;
-    pointer.x=sidebar_left+(v.x+v.w*.5f)*sidebar_scale;pointer.y=(v.y+v.h*.5f)*sidebar_scale;
+    pointer.valid=1;pointer.width=pointer_width;pointer.height=pointer_height;
+    pointer.x=(sidebar_left+(v.x+v.w*.5f)*sidebar_scale)*pointer_width/paint_width;
+    pointer.y=(v.y+v.h*.5f)*sidebar_scale*pointer_height/paint_height;
     pointer.left=1;frame();pointer.left=0;frame();paint();
 }
 static void type(const char *s) {for(;*s;s++)key(*s=='.'?0xbe:*s>='a'&&*s<='z'?*s-32:*s);}
@@ -151,6 +167,27 @@ int main(void) {
     pc_developer_lines(1920,1080,painted,PC_DEVELOPER_MAX_DRAW);assert(painted[0].width==452);
     pc_developer_lines(3840,2160,painted,PC_DEVELOPER_MAX_DRAW);assert(painted[0].width==452);
     test_ui_scale=1.5f;pc_developer_lines(3840,2160,painted,PC_DEVELOPER_MAX_DRAW);assert(painted[0].width==678);test_ui_scale=1;paint();
+    /* SDL pointers use window coordinates; the canvas uses drawable pixels.
+     * Exercise visible control centers at 1x, fractional DPI and Retina 2x,
+     * on both docks, including an independent vertical drawable ratio. */
+    const float densities[]={1.f,1.5f,2.f,2.f};
+    const float ui_scales[]={1.f,1.5f,2.f,1.f};
+    for(unsigned density=0;density<4;density++)for(int dock=0;dock<2;dock++) {
+        test_ui_scale=ui_scales[density];
+        paint_width=(unsigned)(1280*densities[density]);
+        paint_height=(unsigned)(830*densities[density]);
+        sidebar_right=dock;
+        click(UI_TAB,SETTINGS,0);assert(page==SETTINGS);
+        click(UI_TAB,DEBUG,0);assert(page==DEBUG);
+        click(UI_DOCK,0,0);assert(sidebar_right==!dock);
+        click(UI_DOCK,0,0);assert(sidebar_right==dock);
+        click(UI_TAB,HOME,0);assert(page==HOME);
+        /* Input-only frames must retain the last painted drawable extent. */
+        frame();frame();assert(sidebar_width==paint_width&&sidebar_height==paint_height);
+        paint_height+=100;
+        click(UI_DOCK,0,0);assert(sidebar_right==!dock);
+    }
+    paint_width=1280;paint_height=830;test_ui_scale=1;sidebar_right=0;paint();
     click(UI_DOCK,0,0);assert(sidebar_right&&painted[0].x==828);click(UI_DOCK,0,0);
     click(UI_SEARCH,0,0);type("mouse");assert(drawn("Mouse sensitivity")&&!drawn("Game speed"));key(27);assert(!sidebar_search[0]);
     test_keys[0x11]=1;key('F');test_keys[0x11]=0;type("nomatchxyz");assert(drawn("No matching tools"));key(27);
