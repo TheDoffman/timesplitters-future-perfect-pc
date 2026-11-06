@@ -1,8 +1,8 @@
 ## MAC-130 - macOS Application Support storage (#502) - Awaiting validation
 
 Mac-specific installation convention; Windows/Linux portable storage is unchanged.
-Local uncommitted implementation on `feature/macos-application-support`, based on
-main c8ddc47f: `MacStorage.cs`, `NativeStorageWindow.cs` and native startup route
+Implementation c1b53dc8 on `feature/macos-application-support`, integrated with
+main 337be3bc: `MacStorage.cs`, `NativeStorageWindow.cs` and native startup route
 Finder launches to a writable game folder independent of the entry-point app.
 The default is ~/Library/Application Support/TimeSplitters. Legacy installations
 beside the app migrate automatically through MacStorageMigration.cs; a folder

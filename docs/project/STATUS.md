@@ -1,6 +1,7 @@
 ## 2026-11-06 — macOS Application Support storage (discussion #502)
 
-Local, uncommitted `feature/macos-application-support` based on main c8ddc47f.
+Implementation c1b53dc8 on `feature/macos-application-support`; integrated main
+337be3bc before publication. Only the macOS storage change is in this task.
 Finder entry-point apps now route to an independent writable installation;
 the default is ~/Library/Application Support/TimeSplitters. Legacy installations
 beside the app now migrate automatically. Other existing folders can be selected
@@ -36,8 +37,14 @@ game-dependent C# suites were not run against it. All fixtures are disposable.
 Native Mac build, Finder/Gatekeeper, code-signature verification, UI execution,
 packaged helper/update/restart and read-only game prerequisites remain unrun on
 this Windows host. WSL filesystem contracts do not establish those behaviors.
-MAC-130 tracks native acceptance. Local changes are not committed, pushed,
-published or synchronized to another device.
+MAC-130 tracks native acceptance. Implementation is committed for integration;
+release publication and physical-device synchronization remain pending.
+
+Weapon FOV slider (2026-11-06, local branch fix/weapon-fov-slider, base fb555912):
+shared main/pause menu bar replaces choices; 80-150% in 5% steps. Windows
+menu/FOV regression fixtures: 9 passed, 2 native-Mac checks skipped. Drag
+capture, limits, tab staging and Apply persistence checked. Game rebuild and
+visual validation not yet performed; Mac/Linux gameplay unverified.
 
 ## 2026-11-06 — Antivirus blocking diagnostics (issue #476)
 

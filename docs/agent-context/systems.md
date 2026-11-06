@@ -1,4 +1,4 @@
-[Weapon FOV](video-options.md#weapon-aperture).
+[FOV sliders](video-options.md#weapon-aperture).
 [Input](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)

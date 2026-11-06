@@ -676,13 +676,28 @@ int main(int argc,char **argv)
     CHECK(!display_dirty() && (WORD_AT(apply_row+0x28)&1));
     content("TSFP_DISPLAY_V2 1280 720 70\n");
     /* Weapon aperture is staged across tabs, applies live, and persists separately from world FOV. */
-    refresh(DISPLAY_VIEW,0);WORD_AT(weapon_fov_row+0xc8)=10;read_choices();
+    refresh(DISPLAY_VIEW,0);
+    for(int i=0;i<50;i++)call(TICK_CB,12,0x80000);CHECK(staged_weapon_fov==150);
+    for(int i=0;i<50;i++)call(TICK_CB,12,0x40000);CHECK(staged_weapon_fov==80);
+    slider_capture_enabled=1;
+    memset(menu_slider_tracks,0,sizeof menu_slider_tracks);
+    WORD_AT(0x700008)=weapon_fov_row;
+    call(FOV_DRAW_CB,12,0);CHECK(drawn==0.f);
+    CHECK(menu_slider_tracks[MENU_WEAPON_FOV].item==weapon_fov_row);
+    WORD_AT(0x300198)=weapon_fov_row;
+    pointer.left=1;
+    CHECK(menu_slider_pointer(0x300000,pointer,2,348,8,1920,1080));
+    CHECK(staged_weapon_fov==115 && staged_fov==70 && pc_display_weapon_fov()==100);
+    pointer.left=0;CHECK(!menu_slider_pointer(0x300000,pointer,0,348,8,1920,1080));
+    slider_capture_enabled=0;
+    menu_slider_weapon_fov_pointer(398,298,100);CHECK(staged_weapon_fov==150);
+    for(int i=0;i<4;i++)call(TICK_CB,12,0x40000);
     CHECK(staged_weapon_fov==130 && pc_display_weapon_fov()==100 && display_dirty());
     refresh(DISPLAY_HOME,0);refresh(DISPLAY_VIEW,0);
-    CHECK(staged_weapon_fov==130 && WORD_AT(weapon_fov_row+0xc8)==10);
+    CHECK(staged_weapon_fov==130);
     call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov()==130 && pc_display_fov()==70 && !display_dirty());
     content("TSFP_DISPLAY_V3 1280 720 70 130\n");
-    WORD_AT(weapon_fov_row+0xc8)=4;call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov()==100);
+    for(int i=0;i<6;i++)call(TICK_CB,12,0x40000);call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov()==100);
     /* A failed SMAA save also rolls back every Apply-only graphics field. */
     TsfpGraphicsOptions before_failed_batch=pc_graphics_get();
     staged_anisotropy=4;staged_ao=!before_failed_batch.ambient_occlusion;staged_cache=!before_failed_batch.shader_cache;
