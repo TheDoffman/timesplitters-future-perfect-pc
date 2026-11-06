@@ -1,16 +1,16 @@
 [Icons](controls-options.md).
-[FOV sliders](video-options.md#weapon-aperture).
+[FOV](video-options.md#weapon-aperture).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)
 
-[SDL windows](linux-game.md).
+[SDL](linux-game.md).
 
 PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
 [Clicks](interaction-input.md#fresh-weapon-clicks-434).
 
-[Story/Online](systems-details.md).
+[Story](systems-details.md). [Exit/save](multiplayer-exit.md).
 
 [Mech](mounted-mouse.md).
 

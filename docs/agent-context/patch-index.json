@@ -2033,6 +2033,22 @@
       ]
     },
     {
+      "name": "2620-multiplayer-lobby-return.patch",
+      "path": "patches/network/2620-multiplayer-lobby-return.patch",
+      "sha256": "ac9c88169a843aea620ab52d2eaaa87d4b905a87ee231fad48460c48dee02376",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2625-native-multiplayer-save-wrappers.patch",
+      "path": "patches/network/2625-native-multiplayer-save-wrappers.patch",
+      "sha256": "6da5c7a67c82e6e30bf3f2ff968074758569e2cce9a5bdbd157f3cbb46e7e41c",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",

@@ -143,3 +143,9 @@ void pc_kill_feed_allocate(void (*original)(void));
 void pc_graphics_world_finish(void (*original)(void));
 int pc_graphics_hud_begin(void);
 void pc_graphics_hud_end(void);
+
+void pc_multiplayer_exit_action(void (*original)(void),unsigned action);
+void pc_multiplayer_exit_menu(void (*original)(void));
+void pc_multiplayer_return_lobby(void (*original)(void));
+void pc_multiplayer_disconnect_exit(void (*original)(void));
+void pc_multiplayer_lobby_lost(void (*original)(void));

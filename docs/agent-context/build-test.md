@@ -1,3 +1,4 @@
+[Profile CRC/wrapper tests](multiplayer-exit.md#validation): stock save success, late lobby saves, real checksum/write errors.
 [Icons](controls-options.md).
 [Effect depth](native-effect-depth.md).
 Mac storage tests: see launcher.md.
@@ -10,6 +11,9 @@ Mac storage tests: see launcher.md.
 # Build/tests ([MSAA](smaa.md))
 
 [Linux](linux-game.md); [LAN](system-link.md).
+
+WSL driver patch direction/repeat/rejection checks use actual GNU patch in
+`test_linux_foundation.py`; see [driver setup](../development/wsl-vulkan.md).
 
 Discord release webhooks target #release-updates; #announcements holds team posts.
 
@@ -24,7 +28,7 @@ the [Linux video-startup fix](linux-game.md); [2595](smaa.md).
 
 Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh-weapon-clicks-434).
 
-[Build details](build-test-details.md); [Saves](save-locations.md), [storage](host-storage.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
+[Build](build-test-details.md); [Saves](save-locations.md), [storage](host-storage.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
 
 Minigun: [readiness/release/pause/input tests](native-minigun.md). CI selects test_native_timing.py; original-code tests require the private XBE. Historical stacks exclude minigun/player-trigger patches until full native timing applies.
 
@@ -1031,6 +1035,6 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
 
-2600 applies last; old seeds predate MSAA.
+Players: controls-options.md.
 
-Local-player tests: controls-options.md.
+Patch tests: Mac seeds omit2620/2625 until migration; Story stubs use production guards.
