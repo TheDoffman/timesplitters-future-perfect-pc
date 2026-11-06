@@ -1,0 +1,116 @@
+--- a/src/d3d/d3d8_overlay.c
++++ b/src/d3d/d3d8_overlay.c
+@@ -45,6 +45,9 @@
+ static OverlayState overlays[18];
+ static int developer_row;
+ static float developer_box[4];
++#include "graphics/pc_developer_canvas.h"
++static PcDeveloperCanvas developer_canvas;
++static unsigned canvas_texture_width,canvas_texture_height;
+ static int developer_late;
+ static unsigned developer_width,developer_height;
+ static char developer_version[128];
+@@ -84,6 +87,7 @@
+     "Texture2D<float4> tex : register(t8);\n"
+     "float4 ps_main(VSOut i) : SV_Target {\n"
+     "    int2 p = int2(i.uv);\n"
++    "    if (size.z > 0.5) return tex.Load(int3(p, 0));\n"
+     "    float a = tex.Load(int3(p, 0)).r;\n"
+     /* The glyphs are white on black, so the red channel is coverage. A dark
+      * panel under them keeps the text readable over a bright frame. */
+@@ -224,7 +228,7 @@
+ 
+     if (!text || !*text || !rtv || !width || !height)
+         return;
+-    if (!overlay_create() || !overlay_set_text(text))
++    if (!overlay_create() || (developer_row!=2 && !overlay_set_text(text)))
+         return;
+ 
+     rhi_output_save(&saved);
+@@ -247,6 +251,13 @@
+         c.tex_w=shown/scale;
+     }
+     c.pad0 = c.pad1 = 0.0f;
++    if(developer_row==2) {
++        c.x=-1.f+2.f*developer_canvas.x/width;
++        c.y=1.f-2.f*developer_canvas.y/height;
++        c.w=2.f*developer_canvas.width/width;c.h=2.f*developer_canvas.height/height;
++        c.tex_w=(float)developer_canvas.width;c.tex_h=(float)developer_canvas.height;
++        c.pad0=1.f;
++    }
+     memcpy(mapped, &c, sizeof c);
+     rhi_buffer_unmap(g.cb);
+ 
+@@ -311,16 +322,28 @@
+     active=&overlays[1];
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_PC_DISPLAY)
+     if(!developer_watermark || developer_watermark())overlay_draw(developer_version,1);
+-    PcDeveloperLine lines[16];
+-    unsigned count=developer_lines?developer_lines(width,height,lines,16):0;
+-    developer_row=1;
+-    for(unsigned i=0;i<count;i++) {
+-        active=&overlays[2+i];
+-        developer_box[0]=lines[i].x;developer_box[1]=lines[i].y;
+-        developer_box[2]=lines[i].width;developer_box[3]=lines[i].height;
+-        overlay_draw(lines[i].text,0);
+-    }
+-    developer_row=0;
++    PcDeveloperLine lines[PC_DEVELOPER_MAX_DRAW];
++    unsigned count=developer_lines?developer_lines(width,height,lines,PC_DEVELOPER_MAX_DRAW):0;
++    if(count) {
++        int changed=pc_developer_canvas_update(&developer_canvas,lines,count,rhi_text_bitmap);
++        active=&overlays[2];
++        if(changed>=0 && developer_canvas.pixels && overlay_create()) {
++            if(canvas_texture_width!=developer_canvas.width || canvas_texture_height!=developer_canvas.height) {
++                RhiImageDesc desc={0};
++                rhi_view_destroy(g.srv);g.srv=NULL;rhi_image_destroy(g.texture);g.texture=NULL;
++                desc.type=RHI_IMAGE_2D;desc.width=developer_canvas.width;desc.height=developer_canvas.height;
++                desc.depth=1;desc.mip_levels=1;desc.format=RHI_FORMAT_B8G8R8A8_UNORM;desc.samples=1;
++                desc.usage=RHI_USAGE_DYNAMIC;desc.bind=RHI_BIND_SAMPLED;desc.cpu_access=RHI_CPU_WRITE;
++                g.texture=rhi_image_create(&desc,NULL);
++                if(g.texture)g.srv=rhi_view_create(g.texture,RHI_VIEW_SAMPLED,NULL);
++                canvas_texture_width=g.srv?desc.width:0;canvas_texture_height=g.srv?desc.height:0;changed=1;
++            }
++            if(g.srv) {
++                if(changed)rhi_image_update(g.texture,0,NULL,developer_canvas.pixels,developer_canvas.width*4,0);
++                developer_row=2;overlay_draw("sidebar",0);developer_row=0;
++            }
++        }
++    }
+ #else
+     overlay_draw(developer_version,1);
+ #endif
+@@ -329,6 +352,7 @@
+ 
+ void d3d8_overlay_shutdown(void)
+ {
++    pc_developer_canvas_release(&developer_canvas);canvas_texture_width=canvas_texture_height=0;
+     unsigned i;
+     for(i=0;i<18;i++) { active=&overlays[i]; overlay_shutdown_current(); }
+     active=&overlays[0];
+--- a/src/d3d/rhi.c
++++ b/src/d3d/rhi.c
+@@ -72,9 +72,9 @@
+         bi.bmiHeader.biHeight=-(LONG)height;bi.bmiHeader.biPlanes=1;
+         bi.bmiHeader.biBitCount=32;bi.bmiHeader.biCompression=BI_RGB;
+         HBITMAP bitmap=CreateDIBSection(dc,&bi,DIB_RGB_COLORS,&bits,NULL,0);
+-        HFONT font=CreateFontW(-18,0,0,0,FW_SEMIBOLD,FALSE,FALSE,FALSE,
++        HFONT font=CreateFontW(height==32?-24:-18,0,0,0,height==32?FW_NORMAL:FW_SEMIBOLD,FALSE,FALSE,FALSE,
+             DEFAULT_CHARSET,OUT_TT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,
+-            FIXED_PITCH|FF_MODERN,L"Consolas");
++            height==32?(VARIABLE_PITCH|FF_SWISS):(FIXED_PITCH|FF_MODERN),height==32?L"Segoe UI":L"Consolas");
+         if(!bitmap || !font) {DeleteDC(dc);if(bitmap)DeleteObject(bitmap);if(font)DeleteObject(font);return 0;}
+         SelectObject(dc,bitmap);SelectObject(dc,font);
+         SetBkMode(dc,OPAQUE);SetBkColor(dc,RGB(0,0,0));SetTextColor(dc,RGB(255,255,255));
+@@ -83,9 +83,9 @@
+         RECT rect={0,0,(LONG)width,(LONG)height};SIZE extent={0};
+         memset(bits,0,(size_t)width*height*4);
+         int ok=GetTextExtentPoint32W(dc,wide,(int)count,&extent) &&
+-            ExtTextOutW(dc,6,4,ETO_OPAQUE,&rect,wide,(UINT)count,NULL);
++            ExtTextOutW(dc,height==32?2:6,height==32?2:4,ETO_OPAQUE,&rect,wide,(UINT)count,NULL);
+         GdiFlush();
+-        if(ok){memcpy(pixels,bits,(size_t)width*height*4);used=(uint32_t)extent.cx+12;if(used>width)used=width;}
++        if(ok){memcpy(pixels,bits,(size_t)width*height*4);used=(uint32_t)extent.cx+(height==32?4:12);if(used>width)used=width;}
+         DeleteDC(dc);DeleteObject(bitmap);DeleteObject(font);
+         if(!ok || !used)return 0;
+ #else

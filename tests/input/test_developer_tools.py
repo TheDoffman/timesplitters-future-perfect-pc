@@ -1,5 +1,7 @@
 """Compile the shared overlay with deterministic input and isolated settings boundaries."""
 import os
+import sys
+import shutil
 from pathlib import Path
 import subprocess
 import pytest
@@ -8,16 +10,26 @@ from native_compiler import native_compiler
 ROOT = Path(__file__).resolve().parents[2]
 
 
-@pytest.mark.parametrize('name', ['input/developer_tools.c', 'gameplay/developer_tools_guest.c', 'network/developer_lobby_guest.c'])
+@pytest.mark.parametrize('name', ['input/developer_tools.c', 'gameplay/developer_tools_guest.c', 'network/developer_lobby_guest.c', 'graphics/developer_canvas.c', 'graphics/developer_font.c'])
 def test_developer_tools_input(tmp_path, name):
     compiler, env = native_compiler(tmp_path)
     exe = tmp_path / ('developer-tools.exe' if os.name == 'nt' else 'developer-tools')
     source = ROOT / 'tests' / name
+    extra=[]
+    if name in ('input/developer_tools.c','graphics/developer_font.c'):
+        cmake=shutil.which('cmake',path=str(Path(sys.executable).parent)+os.pathsep+env.get('PATH',''))
+        assert cmake
+        generated=tmp_path/'font-data'
+        embedded=subprocess.run([cmake,'-DTSFP_UI_FONT_OUTPUT='+str(generated),'-P',str(ROOT/'src/graphics/embed-ui-fonts.cmake')],capture_output=True,text=True,timeout=60)
+        assert embedded.returncode==0,embedded.stdout+embedded.stderr
+        extra=[str(ROOT/'src/graphics/pc_developer_font.c')]
+        flag='INCLUDE' if os.name=='nt' else 'CPATH'
+        env[flag]=str(generated)+os.pathsep+env.get(flag,'')
     if os.name == 'nt':
-        args = [compiler, '/nologo', '/std:c11', '/W3', '/WX', str(source), str(ROOT / 'src/input/pc_input.c'), '/Fe:' + str(exe)]
+        args = [compiler, '/nologo', '/std:c11', '/W3', '/WX', str(source), *extra, str(ROOT / 'src/input/pc_input.c'), '/Fe:' + str(exe)]
     else:
         args = [compiler, '-std=c11', '-Wall', '-Wextra', '-Werror', '-Wno-unused-function',
-                '-I' + str(ROOT / 'external/ts3FPrecomp/src'), str(source), str(ROOT / 'src/input/pc_input.c'), '-lm', '-lpthread', '-o', str(exe)]
+                '-I' + str(ROOT / 'external/ts3FPrecomp/src'), str(source), *extra, str(ROOT / 'src/input/pc_input.c'), '-lm', '-lpthread', '-o', str(exe)]
     result = subprocess.run(args, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
     result = subprocess.run([str(exe)], cwd=tmp_path, capture_output=True, text=True, timeout=10)

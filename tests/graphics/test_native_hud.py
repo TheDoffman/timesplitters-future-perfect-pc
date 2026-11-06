@@ -169,6 +169,7 @@ def test_developer_overlay_is_above_completed_scene(replay,tmp_path,samples):
     def white_pixels(im):
         data=im.tobytes()
         return sum(data[i]>200 and data[i+1]>200 and data[i+2]>200 for i in range(0,len(data),3))
+    assert image.getpixel((44,12))==(128,191,255), 'Sidebar color or RGBA channel order changed'
     assert white_pixels(image)>8, 'Developer Tools glyphs lost during scene resolve\n'+log[-5000:]
     assert log.count('before present white=')==3, 'Every actual presentation must contain the overlay'
     assert scene.tobytes()==baseline.tobytes(), 'Host tools leaked into guest scene/captures'

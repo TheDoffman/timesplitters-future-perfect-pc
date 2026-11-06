@@ -1,0 +1,41 @@
+--- a/src/input/CMakeLists.txt
++++ b/src/input/CMakeLists.txt
+@@ -108,3 +108,12 @@
+ elseif(UNIX AND TSFP_NATIVE_DIR)
+     target_sources(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/../interface/pc_developer.c")
+ endif()
++
++# One embedded font/rasterizer implementation shared by UI layout and renderers.
++if(TSFP_PC_CONTROLS_DIR)
++    include("${TSFP_PC_CONTROLS_DIR}/graphics/pc_developer_font.cmake")
++    target_link_libraries(xbox_input PUBLIC tsfp_developer_font)
++elseif(TSFP_NATIVE_DIR)
++    include("${TSFP_NATIVE_DIR}/../graphics/pc_developer_font.cmake")
++    target_link_libraries(xbox_input PUBLIC tsfp_developer_font)
++endif()
+--- a/src/d3d/CMakeLists.txt
++++ b/src/d3d/CMakeLists.txt
+@@ -150,3 +150,12 @@
+ if(UNIX AND TSFP_NATIVE_DIR)
+     include("${TSFP_NATIVE_DIR}/vulkan_probe.cmake")
+ endif()
++
++# One embedded font/rasterizer implementation shared by UI layout and renderers.
++if(TSFP_PC_CONTROLS_DIR)
++    include("${TSFP_PC_CONTROLS_DIR}/graphics/pc_developer_font.cmake")
++    target_link_libraries(xbox_d3d8 PUBLIC tsfp_developer_font)
++elseif(TSFP_NATIVE_DIR)
++    include("${TSFP_NATIVE_DIR}/../graphics/pc_developer_font.cmake")
++    target_link_libraries(xbox_d3d8 PUBLIC tsfp_developer_font)
++endif()
+--- a/src/d3d/d3d8_overlay.c
++++ b/src/d3d/d3d8_overlay.c
+@@ -325,7 +325,7 @@
+     PcDeveloperLine lines[PC_DEVELOPER_MAX_DRAW];
+     unsigned count=developer_lines?developer_lines(width,height,lines,PC_DEVELOPER_MAX_DRAW):0;
+     if(count) {
+-        int changed=pc_developer_canvas_update(&developer_canvas,lines,count,rhi_text_bitmap_styled);
++        int changed=pc_developer_canvas_update(&developer_canvas,lines,count,pc_developer_font_bitmap);
+         active=&overlays[2];
+         if(changed>=0 && developer_canvas.pixels && overlay_create()) {
+             if(canvas_texture_width!=developer_canvas.width || canvas_texture_height!=developer_canvas.height) {

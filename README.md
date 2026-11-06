@@ -198,7 +198,8 @@ When the optional pack is available, use **Game settings → Graphics & resoluti
 
 Enable **Developer Tools** in **Main Menu > Extras** or the launcher's **General**
 settings. It defaults to disabled. The native **Extras > Developer Tools** submenu
-contains its Enable/Disable selector, warning and current shortcut. Press **F1**
+contains its Enable/Disable selector and current shortcut. The warning is shown
+in the overlay footer. Press **F1**
 (default) to open or close the overlay; change its shortcut in the launcher's
 key bindings or in-game **Keyboard & Mouse > Menu actions**. The same page can
 assign **Toggle no-clip** and **Toggle free-cam** shortcuts (unbound by default). Use the mouse
@@ -219,6 +220,12 @@ Game speed also controls native cutscenes, videos and audio. Turn **Audio follow
 game speed** off in Developer Tools to keep audio at normal speed. Multiplayer lobbies
 show a wrench beside each player who has Developer Tools enabled. Gameplay tools are
 available during offline gameplay.
+The overlay is a dockable sidebar with **Tools**, **PC Settings** and
+**Diagnostics** tabs. Search across categories, click a value to type, use **- / +**
+for precise steps, or drag the game-speed slider and use its presets. Scroll for
+more controls. The header moves the panel to either side. **Ctrl+F** searches,
+**Ctrl+Tab** changes tabs, and **Tab/arrows** navigate controls. Binding edits have
+an explicit **Save and apply** button; Escape returns without saving those edits.
 Native Mac/Linux acceptance is pending; see [validation](docs/project/STATUS.md).
 
 ## <img src="docs/assets/icon-support.svg" alt="" width="24" height="24"> Guides & support

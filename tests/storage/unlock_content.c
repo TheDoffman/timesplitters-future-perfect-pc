@@ -119,9 +119,8 @@ int main(void)
     call(uc_developer_open,0x2000);assert(transition==UC_DEVELOPER_DESCRIPTOR);
     assert(WORD_AT(UC_DEVELOPER_DESCRIPTOR+8)==0 && WORD_AT(UC_DEVELOPER_DESCRIPTOR+12)==0);
     WORD_AT(0x3004)=UC_DEVELOPER_DESCRIPTOR;WORD_AT(0x300c)=UC_DEVELOPER_TICK;
-    row_count=0;call(uc_developer_build,0x3000);assert(row_count==4);
-    assert(strchr((char *)(memory+UC_TEXT(17)),'\n') && strstr((char *)(memory+UC_TEXT(17)),"Use at your discretion."));
-    assert(strstr((char *)(memory+UC_TEXT(17)),"Warning:") && strstr((char *)(memory+UC_TEXT(21)),"F3"));
+    row_count=0;call(uc_developer_build,0x3000);assert(row_count==3);
+    assert(!memory[UC_TEXT(17)] && strstr((char *)(memory+UC_TEXT(21)),"F3"));
     WORD_AT(uc_developer_row+0xc8)=1;call(uc_developer_tick,0x3000);assert(developer_enabled && developer_enables==1);
     WORD_AT(uc_developer_row+0xc8)=0;call(uc_developer_tick,0x3000);assert(!developer_enabled && developer_enables==2);
     call(uc_developer_back,0x3000);assert(saves==1);saves=0;

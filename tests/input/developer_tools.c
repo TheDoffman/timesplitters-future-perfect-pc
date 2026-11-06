@@ -12,6 +12,8 @@ static int dev_enabled,dev_key=0x70;
 static int focus=1,menu_captured,fullscreen,texture,saves;
 static PcMenuPointer pointer;
 static PcDebugOptions debug;
+static float test_ui_scale=1.f;
+static PcSettings persisted;static int persisted_valid;
 const char *const pc_action_labels[PC_ACTION_COUNT]={
     "Fire","Action","3","4","5","6","7","8","9","10","11","12",
     "13","14","15","16","17","18","19","20","21","22","23","24",
@@ -29,11 +31,13 @@ void pc_controls_text_mode(uint32_t owner) {(void)owner;}
 void pc_controls_menu_mode(int active) {menu_captured=active;}
 PcMenuPointer pc_controls_developer_pointer(void) {return pointer;}
 void pc_controls_developer_fullscreen(void) {fullscreen++;}
+float pc_controls_developer_ui_scale(void) {return test_ui_scale;}
+int pc_controls_developer_is_fullscreen(void) {return fullscreen&1;}
 void pc_controls_developer_debug_action(int open_folder) {(void)open_folder;}
 void pc_controls_set_mouse(double s,int e,int i) {(void)s;(void)e;(void)i;}
 void pc_settings_defaults(PcSettings *s) {memset(s,0,sizeof *s);s->enabled=1;s->sensitivity=.1;s->keys[0][0]=0x20;s->keys[14][0]='I';s->keys[15][0]='K';s->keys[16][0]='J';s->keys[17][0]='L';s->keys[18][0]='C';}
-int pc_settings_read(PcSettings *s,char *error,size_t n) {pc_settings_defaults(s);(void)error;(void)n;return 1;}
-int pc_settings_save(const PcSettings *s,char *error,size_t n) {(void)s;(void)error;(void)n;saves++;return 1;}
+int pc_settings_read(PcSettings *s,char *error,size_t n) {if(persisted_valid)*s=persisted;else pc_settings_defaults(s);(void)error;(void)n;return 1;}
+int pc_settings_save(const PcSettings *s,char *error,size_t n) {persisted=*s;persisted_valid=1;(void)error;(void)n;saves++;return 1;}
 void pc_settings_key_name(int k,char *out,size_t n) {snprintf(out,n,"Key %d",k);}
 int pc_settings_assign(PcSettings *s,int action,int binding,int key,int move) {
     if(key==0x70||key==0x71)return 0;
@@ -51,17 +55,32 @@ static float observed_audio_speed;
 static void audio_speed(float value) {observed_audio_speed=value;}
 static void frame(void) {test_time+=16;pc_developer_frame();}
 static void key(int k) {test_keys[k]=1;frame();test_keys[k]=0;frame();}
+static PcDeveloperLine painted[PC_DEVELOPER_MAX_DRAW];
+static unsigned paint(void) {return pc_developer_lines(1280,830,painted,PC_DEVELOPER_MAX_DRAW);}
+static int drawn(const char *text) {unsigned n=paint();for(unsigned i=0;i<n;i++)if(strstr(painted[i].text,text))return 1;return 0;}
+static void click(int kind,int a,int b) {
+    paint();int found=-1;
+    for(unsigned i=0;i<sidebar_count;i++)if(sidebar_widgets[i].kind==kind&&sidebar_widgets[i].a==a&&sidebar_widgets[i].b==b){found=(int)i;break;}
+    assert(found>=0);DeveloperWidget v=sidebar_widgets[found];
+    if(v.content&&(v.y<sidebar_top||v.y+v.h>sidebar_bottom)) {
+        sidebar_scroll[page]+=v.y-sidebar_top;paint();v=sidebar_widgets[found];
+    }
+    pointer.valid=1;pointer.width=1280;pointer.height=830;
+    pointer.x=sidebar_left+(v.x+v.w*.5f)*sidebar_scale;pointer.y=(v.y+v.h*.5f)*sidebar_scale;
+    pointer.left=1;frame();pointer.left=0;frame();paint();
+}
+static void type(const char *s) {for(;*s;s++)key(*s=='.'?0xbe:*s>='a'&&*s<='z'?*s-32:*s);}
 int main(void) {
-    PcDeveloperState s;PcDeveloperLine lines[16];
+    PcDeveloperState s;PcDeveloperLine lines[PC_DEVELOPER_MAX_DRAW];
     pc_developer_audio_register(audio_speed);frame();assert(observed_audio_speed==1.f);
     pc_developer_toggle();assert(!pc_developer_open());frame();
     dev_key=0x72;assert(pc_developer_set_enabled(1));
-    assert(!pc_developer_open() && pc_developer_lines(840,620,lines,16)==0);
+    assert(!pc_developer_open() && pc_developer_lines(840,620,lines,PC_DEVELOPER_MAX_DRAW)==0);
     char name[104];pc_developer_shortcut_name(name,sizeof name);assert(strstr(name,"Key 114"));
     key(0x70);assert(!pc_developer_open());key(0x72);assert(pc_developer_open());
     key(0x72);assert(!pc_developer_open());dev_key=0x70;
-    pc_developer_lobby_notice("Alice, Bob");assert(pc_developer_lines(840,620,lines,16)==0);
-    test_time+=1001;assert(pc_developer_lines(840,620,lines,16)==0);
+    pc_developer_lobby_notice("Alice, Bob");assert(pc_developer_lines(840,620,lines,PC_DEVELOPER_MAX_DRAW)==0);
+    test_time+=1001;assert(pc_developer_lines(840,620,lines,PC_DEVELOPER_MAX_DRAW)==0);
 
     /* Configured host-only flight toggles obey focus, enablement and offline gates. */
     pc_developer_publish(1,1,0);key('B');pc_developer_get(&s);assert(s.noclip);
@@ -89,44 +108,63 @@ int main(void) {
     memset(test_keys,0,sizeof test_keys);
     pc_developer_flight_step(0,origin,direction,0,position,forward);
     frame();assert(!pc_developer_open());pc_developer_toggle();frame();assert(menu_captured);
-    assert(pc_developer_lines(1920,1080,lines,16)>8);
-    assert(strstr(lines[0].text,"Developer Tools"));
-    /* UI keyboard events exercise real navigation and value state. */
-    key(0x28);key(13);assert(!pc_developer_hud_visible());
-    key(0x28);key(13);pc_developer_get(&s);assert(!s.noclip); /* frontend guard */
-    pc_developer_publish(1,1,0);key(13);pc_developer_get(&s);assert(s.noclip&&!pc_developer_blocks_player());
-    key(0x28);key(13);pc_developer_get(&s);assert(s.freecam&&!s.noclip&&s.hide_hud&&pc_developer_blocks_player());
-    key(13);pc_developer_get(&s);assert(!s.freecam&&!s.hide_hud);
-    key(0x28);key(13);assert(!pc_developer_watermark_visible());
-    key(0x28);key(13);pc_developer_get(&s);assert(s.checkpoint==1);
-    key(0x28);key(13);key('2');key(13);pc_developer_get(&s);assert(s.speed==2.);
-    pc_developer_close();test_keys[0xdb]=1;frame();pc_developer_get(&s);assert(s.speed==2.); /* outside-menu disabled */
-    pc_developer_toggle();selected=8;key(13);pc_developer_close();frame();pc_developer_get(&s);assert(s.speed==.5&&s.manual_speed==2.);
-    test_keys[0xdd]=1;frame();pc_developer_get(&s);assert(s.speed==2.); /* ] wins ties */
-    test_keys[0xdd]=test_keys[0xdb]=0;frame();pc_developer_get(&s);assert(s.speed==2.);
-    pc_developer_toggle();selected=9;key(13);key('0');key(0xbe);key('2');key('5');key(13);pc_developer_get(&s);assert(s.slow_speed==.25);
-    selected=10;key(13);key('3');key(13);pc_developer_get(&s);assert(s.fast_speed==3.);
-    selected=11;key(13);selected=12;key(13);pc_developer_get(&s);assert(s.god&&s.infinite_ammo);
-    pc_developer_close();test_keys[0xdd]=1;frame();pc_developer_get(&s);assert(s.speed==3.);assert(observed_audio_speed==3.f);
-    pc_developer_toggle();selected=13;key(13);frame();pc_developer_get(&s);
-    assert(!s.audio_speed && s.speed==3. && pc_developer_speed()==3. && observed_audio_speed==1.f);
-    key(13);frame();assert(pc_developer_audio_speed()==3. && observed_audio_speed==3.f);
-    pc_developer_close();
-    focus=0;frame();pc_developer_get(&s);assert(s.speed==2.);focus=1;test_keys[0xdd]=0;
-    pc_developer_publish(1,1,1);pc_developer_get(&s);frame();assert(observed_audio_speed==1.f);assert(s.speed==1.&&!s.freecam&&!s.noclip&&!s.god&&!s.infinite_ammo);
-    pc_developer_toggle();key(27); /* Home Escape closes */
-    assert(!pc_developer_open());
-    pc_developer_toggle();selected=0;key(13);assert(page==SETTINGS);
-    key(13);assert(page==KEYBOARD);
-    key(13);key('X');assert(conflict_key=='X');key(13);assert(draft.keys[0][0]=='X');
-    key(0x27);key(13);key('Y');assert(draft.keys[0][1]=='Y');
-    key(13);key(0x71);assert(capture_action==0);key(27);assert(capture_action<0);
-    for(int i=0;i<PC_ACTION_COUNT+4;i++)key(0x28);
-    key(13);assert(saves==1);
-    assert(pc_developer_lines(640,480,lines,16)>0);assert(lines[0].x>=0&&lines[0].y>=0);
-    key(27);assert(page==SETTINGS);key(0x28);key(13);assert(page==DEBUG);
-    key(13);assert(pc_debug_option_value(&debug,0));
-    key(27);key(0x28);key(0x28);key(13);assert(texture);
-    key(0x28);key(13);assert(fullscreen==1);
-    puts("Developer Tools navigation, capture, focus, guarded requests and settings passed");return 0;
+    assert(paint()>40 && drawn("Developer Tools") && drawn("Use with caution."));
+    assert(painted[0].kind==PC_DEVELOPER_BOX && painted[0].width==452);
+    pc_developer_get(&s);assert(!s.freecam); /* unavailable in frontend */
+    pc_developer_publish(1,1,0);click(UI_ACTION,HOME,2);pc_developer_get(&s);assert(s.noclip);
+    click(UI_ACTION,HOME,3);pc_developer_get(&s);assert(s.freecam&&!s.noclip&&s.hide_hud);
+    click(UI_ACTION,HOME,3);assert(pc_developer_hud_visible());
+    click(UI_GROUP,2,0);click(UI_ACTION,HOME,11);click(UI_ACTION,HOME,12);click(UI_ACTION,HOME,5);
+    pc_developer_get(&s);assert(s.god&&s.infinite_ammo&&s.checkpoint==1);
+    click(UI_GROUP,3,0);click(UI_ACTION,HOME,1);click(UI_ACTION,HOME,4);
+    assert(!pc_developer_hud_visible()&&!pc_developer_watermark_visible());
+    click(UI_NUMBER,1,0);type("2");key(13);pc_developer_get(&s);assert(s.manual_speed==2&&!edit_number);
+    click(UI_STEP,1,1);pc_developer_get(&s);assert(fabs(s.manual_speed-2.1)<.001);
+    click(UI_PRESET,1,0); /* first preset is Reset */
+    pc_developer_get(&s);assert(s.manual_speed==1);
+    paint();
+    for(unsigned i=0;i<sidebar_count;i++)if(sidebar_widgets[i].kind==UI_SLIDER) {
+        DeveloperWidget v=sidebar_widgets[i];sidebar_scroll[page]+=v.y-sidebar_top;paint();v=sidebar_widgets[i];
+        pointer.x=v.x+v.w*.5f;pointer.y=v.y+v.h*.5f;pointer.left=1;frame();
+        pointer.x=v.x+v.w;frame();pointer.left=0;frame();
+        pc_developer_get(&s);assert(s.manual_speed==4);break;
+    }
+    click(UI_NUMBER,1,0);type("9");key(13);assert(edit_number==1&&strstr(status,"0.05"));key(27);assert(!edit_number&&pc_developer_open());
+    click(UI_NUMBER,1,0);type("2");key(13);
+    click(UI_GROUP,10,0);click(UI_NUMBER,3,0);type("0.25");key(13);
+    click(UI_NUMBER,4,0);type("3");key(13);click(UI_ACTION,HOME,8);
+    pc_developer_close();test_keys[0xdb]=1;frame();pc_developer_get(&s);assert(s.speed==.25);
+    test_keys[0xdd]=1;frame();assert(observed_audio_speed==3.f);
+    pc_developer_toggle();click(UI_ACTION,HOME,13);frame();assert(observed_audio_speed==1.f);
+    click(UI_ACTION,HOME,13);assert(observed_audio_speed==3.f);
+    pc_developer_close();focus=0;frame();assert(pc_developer_speed()==2.);focus=1;
+    test_keys[0xdd]=test_keys[0xdb]=0;
+    pc_developer_publish(1,1,1);frame();pc_developer_get(&s);assert(s.speed==1&&!s.god&&!s.infinite_ammo&&!s.freecam&&!s.noclip);
+    pc_developer_publish(1,1,0);pc_developer_toggle();
+    pc_developer_lines(1920,1080,painted,PC_DEVELOPER_MAX_DRAW);assert(painted[0].width==452);
+    pc_developer_lines(3840,2160,painted,PC_DEVELOPER_MAX_DRAW);assert(painted[0].width==452);
+    test_ui_scale=1.5f;pc_developer_lines(3840,2160,painted,PC_DEVELOPER_MAX_DRAW);assert(painted[0].width==678);test_ui_scale=1;paint();
+    click(UI_DOCK,0,0);assert(sidebar_right&&painted[0].x==828);click(UI_DOCK,0,0);
+    click(UI_SEARCH,0,0);type("mouse");assert(drawn("Mouse sensitivity")&&!drawn("Game speed"));key(27);assert(!sidebar_search[0]);
+    test_keys[0x11]=1;key('F');test_keys[0x11]=0;type("nomatchxyz");assert(drawn("No matching tools"));key(27);
+    click(UI_TAB,SETTINGS,0);assert(page==SETTINGS);
+    click(UI_NUMBER,2,0);type("0.35");key(13);assert(fabs(persisted.sensitivity-.35)<.0001);
+    click(UI_SETTING,0,0);assert(persisted.invert_y);
+    click(UI_ACTION,SETTINGS,2);assert(texture);
+    click(UI_ACTION,SETTINGS,3);assert(fullscreen==1);
+    click(UI_ACTION,SETTINGS,0);assert(page==KEYBOARD);
+    unsigned tall=pc_developer_lines(2160,3840,painted,PC_DEVELOPER_MAX_DRAW);
+    assert(tall<PC_DEVELOPER_MAX_DRAW&&strstr(painted[tall-1].text,"Changes apply live"));paint();
+    click(UI_BIND,0,0);key('X');assert(conflict_key=='X');key(13);assert(draft.keys[0][0]=='X'&&sidebar_dirty);
+    click(UI_BIND,0,1);key('Y');assert(draft.keys[0][1]=='Y');
+    click(UI_BIND,0,1);key(0x71);assert(capture_action==0);key(27);assert(capture_action<0);
+    int before=saves;click(UI_ACTION,KEYBOARD,PC_ACTION_COUNT+4);assert(saves==before+1&&!sidebar_dirty&&persisted.keys[0][0]=='X');
+    click(UI_BIND,0,1);key('Z');key(27);assert(page==SETTINGS);click(UI_ACTION,SETTINGS,0);assert(draft.keys[0][1]=='Y');key(27);
+    click(UI_TAB,DEBUG,0);click(UI_ACTION,DEBUG,0);assert(pc_debug_option_value(&debug,0));
+    click(UI_ACTION,DEBUG,PC_DEBUG_OPTION_COUNT+1);assert(page==LOGS);key(27);assert(page==DEBUG);
+    /* Narrow and ultrawide layouts keep panel/footer in bounds and repaint on dock. */
+    unsigned n=pc_developer_lines(640,480,painted,PC_DEVELOPER_MAX_DRAW);assert(n>20&&n<PC_DEVELOPER_MAX_DRAW);
+    for(unsigned i=0;i<n;i++)assert(painted[i].x>=0&&painted[i].y>=0&&painted[i].x+painted[i].width<=640.1f);
+    key(27);assert(!pc_developer_open());
+    puts("Developer sidebar pointer, search, numeric editing, bindings, focus and offline guards passed");return 0;
 }

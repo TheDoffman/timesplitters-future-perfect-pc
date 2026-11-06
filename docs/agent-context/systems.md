@@ -10,10 +10,10 @@ getter; movie/video clocks continue using pc_developer_speed.
 
 Developer Tools is opt-in (`developer_tools_enabled`, absent=false, in controls
 JSON). Extras opens a native Developer Tools submenu with Enable/Disable selector,
-nonselectable warning text and the assigned shortcut. Its owned descriptor uses
+the assigned shortcut and Back. The warning lives in the sidebar footer. Its owned descriptor uses
 the cached per-menu tick (menu+C, copied by native78E50). Descriptor+8/+12
 remain empty lifecycle slots; 75B70 and the Back row own navigation. A90-unit
-frame and short Status label prevent native selector/warning clipping. Host action
+frame and short Status label preserve native selector layout. Host action
 `developer_tools` is appended after weapon slots (PC_DEVELOPER_ACTION); default
 F1 migrates only when absent and unclaimed. Native Keyboard & Mouse includes it
 under Menu actions; the Windows/Cocoa editors and overlay share PC_ACTION_COUNT=37.
@@ -48,7 +48,7 @@ to EBX before this call; match it to the captured slot and measure the actual
 display label, including native decorated copies. The original name stays unchanged.
 The former named footer notice remains implemented but disabled for future reuse.
 
-`src/interface/pc_developer.c` owns F1 overlay navigation, nested PC Settings,
+`src/interface/pc_developer.c` and `pc_developer_sidebar.inc` own F1 sidebar navigation, nested PC Settings,
 flight state and value-only developer requests. Windows/SDL adapters own host
 input/capture/fullscreen/log-folder operations. The old Windows bar is hidden;
 its saved JSON is preserved. F2/F12 dialogs remain recovery routes.
@@ -899,3 +899,17 @@ RNG/events. The persistent gameplay owner is separate. See the coupled-operator
 record in `docs/analysis/native-high-refresh-regressions.md` for capture details/limits.
 
 [Further contracts and validation notes](systems-continuation.md).
+
+## Developer Tools sidebar presentation
+
+`src/interface/pc_developer_sidebar.inc` owns the shared widget layout, measured
+text roles, filtering, pointer/keyboard navigation and draft binding edits.
+`src/graphics/pc_developer_canvas.h` draws512 bounded value-only commands, caches
+glyphs by physical size/weight/face/tracking, and composites straight alpha.
+`pc_developer_font.c` measures and rasterizes the same embedded Selawik/Cousine
+faces through stb; no sidebar host-font lookup or browser is used. CMake verifies
+font bytes before embedding. Host adapters supply DPI/input and GPU upload only.
+Extras retains Status/shortcut/Back; the sidebar owns the warning footer.
+Reset points left from the top of its arc (counterclockwise); hold-speed ends share the grey stepper fill.
+See [sidebar contracts and history](systems-continuation.md#developer-tools-sidebar-presentation)
+for input/save boundaries, styles, clipping and native adapter details.

@@ -1,3 +1,19 @@
+The shared-font typography follow-up indexes2620 after2610 (tail89). Font
+provenance/hashes live with assets/ui/fonts; unmodified rasterizer source lives
+in vendor/stb, separate from the pristine runtime snapshot. Only the intended
+additive patch is indexed; generated font headers remain in build/test trees.
+
+Sidebar visual refinement appends indexed2610 after2600 (ordered tail88).
+The optional styled-font host callback is defined by the additive runtime patch;
+shared geometry/icons and glyph caching remain in tracked src/. No generated C
+or pristine runtime snapshot edits are involved.
+
+The sidebar task adds indexed patch2600 after2590 and updates the ordered-tail
+fixture to87. Its shared UI/canvas source is tracked under src/interface and
+src/graphics; private HTML concepts and live acceptance captures remain ignored.
+Refresh patch-index.json only after staging the intended additive patch; validate
+this task against f73c38e9. No changes to context retrieval policy or provenance.
+
 Latest notes append2590 after2580; the ordered-tail fixture expects86 patches.
 Only the intended additive patch is staged for context-index refresh. Native
 warning consolidation and audio-toggle acceptance are logged in STATUS.

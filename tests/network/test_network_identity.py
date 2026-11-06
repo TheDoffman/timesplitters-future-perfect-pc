@@ -198,3 +198,14 @@ def test_incomplete_or_replaced_build_is_not_accepted(tmp_path):
     executable.write_bytes(b'replaced executable')
     with pytest.raises(ValueError, match='completed multiplayer build'):
         module.verify_build(executable, manifest, stamp)
+
+
+def test_embedded_font_bytes_are_identity_inputs(tmp_path):
+    import hashlib
+    game=tmp_path/'game';game.mkdir();(game/'default.xbe').write_bytes(b'xbe')
+    fonts=tmp_path/'assets/ui/fonts';fonts.mkdir(parents=True)
+    path=fonts/'font.ttf';path.write_bytes(b'font\r\nbytes')
+    first,entries=module.identity(tmp_path,game)
+    assert dict(entries)['assets/ui/fonts/font.ttf']==hashlib.sha256(b'font\r\nbytes').hexdigest()
+    path.write_bytes(b'font\nbytes');second,_=module.identity(tmp_path,game)
+    assert first!=second, 'Binary font bytes must not undergo text normalization'

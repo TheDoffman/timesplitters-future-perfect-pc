@@ -1,3 +1,172 @@
+## 2026-11-05 - Correct reset arrow direction
+
+Local, uncommitted on developer-tools-overlay after f73c38e9. Corrected the
+previous arrowhead: pointing up at the left endpoint indicated clockwise;
+it now points left at the top endpoint, indicating counterclockwise. Shared
+canvas only; grey stepper fills and input/value contracts are unchanged.
+Windows x64 / D3D11: supported Build and linked checks pass, plus 11 focused
+sidebar input/font/canvas/GPU tests. The bounded isolated Test Lab capture
+visually confirms the direction at 150% DPI. Native Mac/Linux acceptance is
+still pending. Executable SHA-256:
+`a539a2c86d05659cc01b3c7471db1dcd95e1821ea9bc6d82356e939d77b0a389`.
+
+## 2026-11-05 - Sidebar reset and hold-speed button details
+
+Local, uncommitted on developer-tools-overlay after f73c38e9. The shared native
+reset icon now has an open counterclockwise arrow with a connected arrowhead;
+hold-key speed minus/plus buttons use the same grey fill as the main stepper.
+Input, values and saved settings are unchanged. Windows x64 / D3D11: supported
+Build, linked checks and 11 focused input/font/canvas/GPU tests pass. A bounded
+isolated Test Lab run captured and visually reviewed both corrections at 150%
+DPI; personal settings, saves and the canonical fixture were preserved and
+its disposable partitions recycled. Mac/Linux visual validation remains pending.
+Executable SHA-256: `f7749ba4a415f3bfdf7af089ad7d418b29413f01a2e9836eb09b2239b66ec1fb`.
+Evidence: private/test-saves/developer-tools/captures/refine-hold-rows.png.
+
+## 2026-11-05 - Shared native fonts and text layout
+
+Local, uncommitted on developer-tools-overlay after f73c38e9. No browser added.
+Patch2620 links one embedded native font library into the existing UI/renderers.
+The verified, unmodified font files total430532 bytes (420.4KiB): Selawik regular,
+semibold and bold, plus Cousine Bold for numeric fields. stb_truetype supplies one
+shared rasterizer. The executable is191104000 bytes,477696 bytes larger than the
+previous190626304-byte sidebar build (about0.48MB). This is a file-size comparison,
+not a measured whole-process RAM/FPS benchmark. Font provenance, SHA-256 pins and
+OFL/MIT notices are in assets/ui/fonts and vendor/stb; all three package scripts
+retain the notices. No font files or font installation are needed at runtime.
+
+Layout and rendering now share UTF-8 advance/kerning/ascent/descent measurement,
+real font weights, fractional DPI sizes and letter spacing. The title's20px
+semibold/-0.3px tracking advance agrees with the same-font browser comparison
+(144.836px). Tabs and binding chips derive widths from these measurements;
+long labels ellipsize on character boundaries. Bold emphasis is drawn in measured
+runs, not simulated. Explicit text roles replace height-based font guesses.
+Hold-key speeds has a separate right-aligned shortcut column and expanded bracket
+chips/compact steppers. Wording, multiplication/range punctuation, movement hint,
+warning emphasis/wrapping and footer follow the approved design. The original
+Segoe-based mockup remains unchanged; an ignored same-font reference was used
+for comparison. Different font outlines/antialiasing can still differ from that
+original browser render; exact browser-pixel identity is not claimed.
+
+Windows x64, MSVC14.42.34433 / SDK10.0.22621.0, D3D11, SDL3.4.16. Supported
+US XBE validated. Supported Build, linked checks, symbols and content seal pass.
+Final executable SHA-256: `33183aacaa9d6fad1ec872551ba98dcc27cf9ce26367c58ccfdc339205c09c2c`.
+Affected suite:114 passed,2 skipped (CoreText on macOS; POSIX executable/XDG paths
+on a POSIX host). After the final shortcut-chip width adjustment,11 focused
+input/font/canvas/GPU cases pass. Font tests exercise real regular/semibold glyphs,
+monospace advances, fractional metrics, browser-referenced tracking and UTF-8
+ellipsis. RHI final-target/MSAA, settings/bindings, native Extras, identity and
+asset-free Mac/Linux package checks also pass. Font/vendor bytes are now included
+in source compatibility identity; binary TTF bytes are not text-normalized.
+The context map/89-entry patch tail and bounded guide checks pass.
+
+Bounded isolated Test Lab visual checks cover1992x1245 at144 DPI (1328x830 logical
+reference viewport),1280x720 and1920x1080, plus expanded hold rows, tabs, number
+entry and docking. Selected local evidence:
+[sidebar](../../private/test-saves/developer-tools/captures/refine-mockup-size.png),
+[held speeds](../../private/test-saves/developer-tools/captures/refine-hold-rows.png).
+Personal settings and canonical fixture hashes are preserved; disposable partition
+images are recycled. These frontend checks do not establish campaign acceptance.
+Native Mac/Linux build, monitor-DPI/font rendering and physical GPU/input checks
+remain pending; see [handoff](MAC_PORT_BACKLOG.md).
+
+## 2026-11-05 - Developer Tools visual refinement
+
+Uncommitted on developer-tools-overlay after f73c38e9, continuing the existing
+sidebar change. The panel is now452 logical units scaled by host DPI, rather
+than screen height. Text is rasterized at its final physical pixel size/weight
+and copied1:1; tabs/buttons support appropriate alignment. Vector geometry
+replaces ASCII arrows/close/chevrons and adds the title wrench, search, warning
+and reset icons. Categories use continuous rounded cards with original-geometry
+clipping, eliminating the row/bottom-border hooks. Compact binding chips, joined
+number steppers, centered presets, slider captions, label-width tab indicators,
+conditional status space, transparency and a subtle dock shadow bring the
+layout closer to the approved HTML. Actual native font metrics remain distinct
+from browser text; this is not a claim of identical browser pixels.
+
+Patch2610 extends the optional host font callback with requested size/weight;
+Windows uses grayscale Segoe UI coverage with UTF-8 conversion. Cocoa/FreeType
+adapters share that contract. SDL supplies display scale; the legacy GL adapter
+now composites straight alpha with explicit state preservation. No guest C,
+gameplay rules or saved settings formats were changed. Native Mac/Linux build,
+fonts, monitor-DPI transitions and GL/Vulkan visual acceptance remain unrun;
+see [native handoff](MAC_PORT_BACKLOG.md).
+
+Windows x64, MSVC14.42.34433 / SDK10.0.22621.0, D3D11, SDL3.4.16. Supported
+US XBE hash validated. Supported Build passes linked checks, crash symbols and
+content seal. Executable SHA-256:
+`d83bc5db92ae48163d319ffd21db6a0bfd44c9a2f45658723fee393e70cebbcd`.
+The affected five-file pytest route passed62 tests with1 CoreText-only skip;
+final tab/caption/reset adjustments were then checked with10 input/canvas/GPU
+cases, all passing. Coverage includes DPI/height-independent width, styled font
+callback failure/output preservation, cache size/weight keys, icon coverage,
+settings/bindings/input, final target/MSAA and patch-index order (tail88).
+
+Final bounded live visual comparison:32.6s, disposable Test Lab copy,144 DPI
+(scale1.5), confirmed client sizes1992x1245 (HTML1328x830 logical viewport),
+1280x720 and1920x1080. Reviewed full-size captures show no tab clipping or border
+hooks, aligned controls and stable panel width across height changes. Tabs,
+numeric entry, F1 close/reopen and right docking were exercised. Smaller viewports
+scroll the content while retaining warning/footer. No campaign or new gameplay
+acceptance is inferred from this frontend test. Personal config and canonical
+fixture hashes remained unchanged; disposable partition images were recycled.
+Local evidence: [matched viewport](../../private/test-saves/developer-tools/captures/refine-mockup-size.png),
+[720p](../../private/test-saves/developer-tools/captures/refine-720p.png),
+[1080p](../../private/test-saves/developer-tools/captures/refine-1080p.png).
+
+## 2026-11-05 - Developer Tools blue palette
+
+Local, uncommitted follow-up: changed all green sidebar accents, selected/focused
+controls and enabled switch thumbs to blue in the shared UI and private HTML/PNG
+concept. Amber warning colors are retained. Windows supported Build and linked
+checks pass; both real D3D11 overlay fixtures pass, asserting exact blue RGB
+128/191/255 with MSAA1x/4x. No new gameplay test was needed for this palette edit.
+Executable SHA-256: `ece7f772cbc6b7b44e9d7a5aa5f89cfa16d3d5e88b01c7dac87af88a32341f69`.
+Native Mac/Linux visual checks remain pending; this shared color-only change
+requires no additional platform adapter or settings migration.
+
+## 2026-11-05 - Approved Developer Tools sidebar
+
+Local, uncommitted on developer-tools-overlay after f73c38e9. Implemented the
+approved side panel in shared game UI: Tools/PC Settings/Diagnostics tabs,
+collapsible categories, global search, numeric entry with validation, +/- steps,
+slider/presets/reset, binding draft/Save, dock-side control and keyboard navigation.
+The fixed footer owns the warning ending "Use with caution."; native Extras now
+has Status, assigned shortcut and Back. Existing tool/offline guards and personal
+settings are preserved. Additive patch2600 renders the shared BGRA canvas after
+scene completion; no generated guest C was changed. Native legacy GL and
+Cocoa/Linux font/input adapters share the layout/canvas policy.
+
+Windows x64, MSVC14.42.34433 / Windows SDK10.0.22621.0, D3D11, SDL3.4.16.
+Supported US Xbox title45410066 / required XBE SHA-256 verified by the supported
+Build. Final supported Windows Build passes linked native checks, crash-symbol
+creation and executable content sealing; sidebar/canvas compile without new
+warnings. Final executable SHA-256:
+`6630599671bd920eafd8c3d25e680af35c318fea2b602a0e98427237db693251`.
+
+Affected regression set:62 passed,1 skipped (CoreText requires macOS). Routes:
+input/test_developer_tools.py, storage/test_unlock_content.py,
+repository/test_repo_context.py, graphics/test_native_hud.py and
+ graphics/test_renderer_host.py. They verify actual pointer/search/value/binding
+behavior, slider dragging, portrait-screen footer capacity, cached canvas
+geometry/clipping/alpha, final D3D11 target colors/text at1x/4x MSAA, untouched
+guest captures, native Extras and host contracts. Context/index check against
+f73c38e9 passes.
+
+Bounded isolated live acceptance used disposable Test Lab copies, never personal
+saves/settings. Frontend run30.2s; Story run57.3s: F1, tabs, search, dock and close
+captured over real rendered scenes. Typing2.00 gave raw delta0.994878 / game
+delta1.989756 (exact2x); Reset gave1.0 /1.0. The canonical fixture and personal
+settings hashes stayed unchanged; disposable partition images were recycled.
+These scene captures precede final unsigned-color/focus/draw-capacity cleanup;
+that cleanup is covered by the final build and fixtures, not a second live run.
+Selected local evidence: [Story sidebar](../../private/test-saves/developer-tools/captures/sidebarworld-tools.png),
+[right dock](../../private/test-saves/developer-tools/captures/sidebarworld-right-docked.png).
+This establishes the menu and a bounded Story interaction, not a full campaign.
+Native Mac/Linux builds, fonts, DPI/pointer input and actual Vulkan/legacy GL
+visual acceptance remain unrun; WSL has only Docker Desktop, no Ubuntu test host.
+See [native handoff](MAC_PORT_BACKLOG.md).
+
 ## 2026-11-05 - Latest warning and optional audio-speed notes
 
 Uncommitted on developer-tools-overlay after a7271130 and the prior local changes.

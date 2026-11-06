@@ -16,7 +16,16 @@ typedef struct PcDeveloperState {
 typedef struct PcDeveloperLine {
     char text[160];
     float x,y,width,height;
+    unsigned kind;
+    uint32_t color;
+    float radius,clip_top,clip_bottom;
+    float font_px,letter_spacing;
+    unsigned font_weight,align,icon,font_face;
 } PcDeveloperLine;
+enum { PC_DEVELOPER_TEXT, PC_DEVELOPER_BOX, PC_DEVELOPER_LABEL,
+       PC_DEVELOPER_ICON,
+       PC_DEVELOPER_MAX_DRAW=512 };
+enum { PC_DEV_CLOSE,PC_DEV_DOCK,PC_DEV_DOWN,PC_DEV_RIGHT,PC_DEV_SEARCH,PC_DEV_TOOLS,PC_DEV_WARNING,PC_DEV_RESET };
 int pc_developer_open(void);
 int pc_developer_enabled(void);
 int pc_developer_set_enabled(int enabled);
@@ -45,6 +54,8 @@ int pc_developer_flight_step(int mode,const float origin[3],const float directio
                              float position[3],float forward[3]);
 /* Thin host adapters, called outside UI locks. */
 void pc_controls_developer_fullscreen(void);
+int pc_controls_developer_is_fullscreen(void);
+float pc_controls_developer_ui_scale(void);
 void pc_controls_developer_debug_action(int open_folder);
 int pc_controls_developer_keys(unsigned char keys[256]);
 PcMenuPointer pc_controls_developer_pointer(void);

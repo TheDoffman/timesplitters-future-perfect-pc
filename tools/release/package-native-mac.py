@@ -240,6 +240,8 @@ def main():
         copy(args.licenses/filename, 'Licenses/'+filename)
     copy(ROOT/'tools/launcher/GameMonogram.NOTICE.txt', 'Licenses/Game-icon-lettering.txt')
     copy(ROOT/'assets/ui/input-icons/ATTRIBUTION.md', 'Licenses/Keyboard-mouse-icons.txt')
+    for origin,name in [('assets/ui/fonts/Selawik-OFL.txt','Selawik-OFL.txt'),('assets/ui/fonts/Cousine-OFL.txt','Cousine-OFL.txt'),('vendor/stb/LICENSE','stb.txt')]:
+        copy(ROOT/origin,'Licenses/'+name)
     copy(ROOT/'vendor/smaa/LICENSE.txt', 'Licenses/SMAA.txt')
     (stage/'Launch.command').write_text('#!/bin/sh\nset -eu\nROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexec "$ROOT/TimeSplitters Launcher.app/Contents/MacOS/TimeSplitters.Launcher" --root "$ROOT" "$@"\n')
     (stage/'Launch.command').chmod(0o755)

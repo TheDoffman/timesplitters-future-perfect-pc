@@ -97,9 +97,6 @@ static int uc_prepare(void)
         WORD_AT(uc_storage)=UC_BUILD;WORD_AT(uc_storage+4)=UC_TICK;
         uc_text(0,"Unlock Content");uc_text(12,"Off");uc_text(13,"On");
         uc_text(14,"Developer Tools");uc_text(15,"Disable");uc_text(16,"Enable");
-        uc_text(17,"Warning: Usage of Developer Tools can\n"
-                   "cause instability and unintended behavior.\n"
-                   "Use at your discretion.");
         uc_text(22,"Status");uc_text(23,"Back");
         WORD_AT(UC_DEVELOPER_DESCRIPTOR)=UC_DEVELOPER_BUILD;
         WORD_AT(UC_DEVELOPER_DESCRIPTOR+4u)=UC_DEVELOPER_TICK;
@@ -154,7 +151,6 @@ static void uc_developer_build(void)
     guest_call(sub_000717D0,1,UC_TEXT(15));guest_call(sub_000717D0,1,UC_TEXT(16));
     guest_call(sub_00075430,2,uc_developer_row,(uint32_t)pc_developer_enabled());
     guest_call(sub_00071B10,4,1u,bits(2.f),1u,1u);guest_call(sub_00071C50,1,0x32200u);
-    guest_call(sub_00079D60_gen,6,UC_TEXT(17),UINT32_MAX,1u,0u,0u,0u);
     guest_call(sub_00079D60_gen,6,UC_TEXT(21),UINT32_MAX,1u,0u,0u,0u);
     guest_call(sub_00079D60_gen,6,UC_TEXT(23),UINT32_MAX,0u,0u,UC_DEVELOPER_BACK,0u);
     guest_call(sub_000771D0,1,menu);restore_registers(&r);g_esp+=4u;

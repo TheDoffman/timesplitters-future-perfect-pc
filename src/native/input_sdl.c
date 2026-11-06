@@ -431,13 +431,18 @@ void pc_controls_apply_mouse(uint32_t player,uint32_t fov_object,ptrdiff_t offse
     static unsigned samples;
     if(changed && samples++<12)fprintf(stderr,"[native-mouse] yaw %.3f -> %.3f pitch %.3f -> %.3f fov %.3f\n",old_yaw,*yaw,old_pitch,*pitch,fov);
 }
-static atomic_int developer_fullscreen_request;
+static atomic_int developer_fullscreen_request,developer_fullscreen_active;
+static atomic_int developer_ui_scale=1000;
+float pc_controls_developer_ui_scale(void) {return atomic_load(&developer_ui_scale)/1000.f;}
+int pc_controls_developer_is_fullscreen(void) {return atomic_load(&developer_fullscreen_active);}
 static atomic_int developer_debug_request;
 void pc_controls_developer_debug_action(int open_folder) {atomic_store(&developer_debug_request,open_folder?2:1);}
 void pc_controls_developer_fullscreen(void) {atomic_store(&developer_fullscreen_request,1);}
 void tsfp_native_input_frame(SDL_Window *window) {
     int developer_debug=atomic_exchange(&developer_debug_request,0);
     if(developer_debug==2)pc_debug_open_logs(NULL);else if(developer_debug==1)pc_debug_clear();
+    if(window)atomic_store(&developer_ui_scale,(int)(SDL_GetWindowDisplayScale(window)*1000.f));
+    if(window)atomic_store(&developer_fullscreen_active,!!(SDL_GetWindowFlags(window)&SDL_WINDOW_FULLSCREEN));
     if(window && atomic_exchange(&developer_fullscreen_request,0))
         SDL_SetWindowFullscreen(window,!(SDL_GetWindowFlags(window)&SDL_WINDOW_FULLSCREEN));
     tsfp_native_crash_frame();

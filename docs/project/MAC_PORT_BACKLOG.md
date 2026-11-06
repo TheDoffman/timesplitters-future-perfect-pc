@@ -1,3 +1,37 @@
+Developer Tools shared typography (uncommitted after f73c38e9): implemented,
+native acceptance pending. Shared src/graphics/pc_developer_font.c measures and
+rasterizes embedded Selawik/Cousine with one native C implementation. Patch2620
+links it into common RHI/input owners; legacy GL uses the same callback. Host
+font choice no longer changes sidebar baselines, weights or text measurement.
+All package scripts retain OFL/stb notices. No duplicated Mac/Linux layout or
+font logic is needed. Windows evidence is in [STATUS](STATUS.md). Remaining:
+native build/link, font embedding/package notices, Retina/fractional DPI, glyph
+coverage, layout/scroll and actual Vulkan/legacy GL captures. Shared source and
+Windows fixtures do not prove pixel parity on untested hosts.
+
+Sidebar visual refinement (uncommitted after f73c38e9): implemented, native
+acceptance pending. Shared layout/canvas now use host DPI, final-size styled glyphs,
+geometry icons and continuous cards. SDL supplies display scale; CoreText and
+FreeType provide sized/weighted font coverage through the optional styled RHI
+callback. Legacy GL adds a state-preserving straight-alpha canvas compositor so
+transparency/shadows have the same policy as RHI. No host gameplay logic is
+copied. Windows checks and visual evidence are in [STATUS](STATUS.md). Remaining
+native acceptance: build/link, font weight/baselines, Retina and monitor-DPI
+changes, alpha/shadow compositing plus GL state restoration and existing scene
+rendering. Windows checks cannot verify these native adapters.
+
+Developer Tools sidebar (uncommitted after f73c38e9): implemented, native acceptance
+pending. Shared src/interface/pc_developer_sidebar.inc and
+src/graphics/pc_developer_canvas.h own layout, input and compositing once for all
+hosts. Patch2600 uploads the canvas through common RHI; legacy GL and Cocoa/Linux
+font adapters are updated, and SDL supplies fullscreen status. Existing native
+capture/settings paths remain in use. No duplicated platform policy is needed.
+Windows build, input/canvas/native-Extras and real D3D11 presentation checks pass;
+see [STATUS](STATUS.md). Remaining native Mac/Linux acceptance: build/link, font
+legibility, pointer/DPI alignment, dock/scroll/search/value/binding input, warning
+footer and final-target presentation on Vulkan/legacy GL. This Windows validation
+does not establish native visual parity or physical input support.
+
 Latest Developer Tools notes (uncommitted): one native multiline warning row and
 session audio-scaling toggle are shared source changes. Patch2590 routes XMV
 audio through the shared toggle; existing XAudio/SDL voice-rate paths are reused.

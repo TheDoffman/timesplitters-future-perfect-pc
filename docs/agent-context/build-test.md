@@ -1,7 +1,33 @@
+Shared-font tests add real regular/semibold glyph coverage, fractional metrics,
+monospace digit advances and UTF-8-safe ellipsis. Standalone input/font fixtures
+run the same CMake embedding helper as the supported build, then link the shared
+font C source. Existing final-target/MSAA and layout fixtures remain applicable.
+Patch tail ends2620 (89 ordered entries). Package scripts retain both font OFLs
+and stb's MIT license on Windows, macOS and Linux; source checks do not establish
+native host packaging or rendering acceptance.
+
+Sidebar refinement checks add height-independent panel sizing,1.5x DPI,
+size/weight glyph-cache keys and geometry-icon coverage. The host-contract fixture
+checks styled callback forwarding, invalid size/failure and output preservation;
+CoreText coverage fixture adds requested-size semibold text (macOS only).
+Patch order ends2610, with an88-patch tail. Live visual comparisons use a bounded
+isolated Test Lab copy at the mockup's DPI-adjusted size and1280x720/1920x1080.
+
+Sidebar regression coverage supersedes the old flat-row navigation expectations.
+`tests/input/test_developer_tools.py` compiles real shared widgets against isolated
+settings/input boundaries: pointer actions, search, validated numeric values,
+binding draft/save/discard, focus and offline guards. Its developer_canvas fixture
+checks rounded boxes, clipping, BGRA colors/alpha, glyph reuse and invalid geometry.
+`tests/storage/test_unlock_content.py` requires three Extras rows and no warning.
+`tests/graphics/test_native_hud.py` checks actual D3D11 final-target text and sidebar
+blue accent RGB128/191/255 at1x/4x MSAA without leaking host UI into guest captures. These tests remain
+in the existing runtime-patches CI test routes. Patch order now ends2600 (87-tail).
+Native Mac/Linux build, font and visual acceptance remain separate unrun checks.
+
 Latest notes: input regression toggles audio scaling at held3x, requires normal
 sound with unchanged game speed, then restores scaled sound. Real XMV fixtures
 exercise an independent audio toggle while video advances2x. Native Extras
-fixture requires one multiline warning and four total rows. Patch order ends2590.
+fixture now requires three rows without the sidebar warning. Patch order ends2600.
 
 Further notes regression: audio output fixtures verify live gameplay ratios,
 unchanged movie queues and independent media-clock domains. Stream timing exercises
@@ -921,3 +947,8 @@ reads tsfp_texture_is_4k). Capture resumed gameplay in both modes separately fro
 frame-time measurements. The ineffective window command was removed.
 
 [Further contracts and validation notes](build-test-continuation.md).
+
+The source identity also hashes verified font assets and the vendored rasterizer;
+TTF inputs keep binary bytes while text files retain line-ending normalization.
+The font metrics fixture compares semibold tracking with an independent browser
+measurement, and package tests remain asset-free host-contract checks.

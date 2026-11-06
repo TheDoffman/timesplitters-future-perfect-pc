@@ -44,3 +44,10 @@ Existing notices in source files and patches must also be preserved.
 
 This inventory does not substitute for the full license texts supplied with
 dependencies, or for providing corresponding source when their terms require it.
+
+## Native Developer Tools typography
+
+[Bundled font provenance](../assets/ui/fonts/README.md) records the pinned Selawik
+and Cousine font files (SIL OFL1.1). Their complete licenses are retained beside
+the fonts and copied into game packages. The shared rasterizer is
+[stb_truetype](../vendor/stb/stb_truetype.h), under its [MIT license](../vendor/stb/LICENSE).

@@ -42,6 +42,10 @@ static HWND window_handle;
 void pc_controls_developer_debug_action(int open_folder) {
     if(window_handle)PostMessage(window_handle,PC_DEVELOPER_DEBUG_MESSAGE,open_folder,0);
 }
+float pc_controls_developer_ui_scale(void) {return window_handle?GetDpiForWindow(window_handle)/96.f:1.f;}
+int pc_controls_developer_is_fullscreen(void) {
+    return window_handle && !(GetWindowLongPtrW(window_handle,GWL_STYLE)&WS_OVERLAPPEDWINDOW);
+}
 void pc_controls_developer_fullscreen(void) {
     if(window_handle)PostMessage(window_handle,WM_COMMAND,PC_FULLSCREEN_COMMAND,0);
 }

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "4dd30acf2e1ddc3ecbba817b99c60e84b9fef7411ab3b998a2efb0a6a4e46ca3",
+  "loaderSha256": "76a35ad02ebc65fb7f394aca519239d09b5d3e0c0f1727be1ab10e19959a675b",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3591,6 +3591,35 @@
       "sha256": "55f094a7155fc5e8c5d8c128a373c7376358b2d68ae2f7170a769788efaaf4bb",
       "targets": [
         "src/hle/hle_xmv_play.c"
+      ]
+    },
+    {
+      "name": "2600-developer-tools-sidebar-renderer.patch",
+      "path": "patches/diagnostics/2600-developer-tools-sidebar-renderer.patch",
+      "sha256": "4f56be81f9fdf76904df4aec9c3e8cdda77b675badf2cbf1587e5474d3778613",
+      "targets": [
+        "src/d3d/d3d8_overlay.c",
+        "src/d3d/rhi.c"
+      ]
+    },
+    {
+      "name": "2610-developer-tools-sidebar-refinement.patch",
+      "path": "patches/diagnostics/2610-developer-tools-sidebar-refinement.patch",
+      "sha256": "ef7f501304f4d160289376af442b5cf75fbf5fcb75c1fb3650eca44fc4e1c07c",
+      "targets": [
+        "src/d3d/d3d8_overlay.c",
+        "src/d3d/rhi.c",
+        "src/d3d/rhi.h"
+      ]
+    },
+    {
+      "name": "2620-developer-tools-shared-font.patch",
+      "path": "patches/diagnostics/2620-developer-tools-shared-font.patch",
+      "sha256": "632758e9c5c8d776eda5aca9b2d8ac4d60e140e1169865c97a4435e6d48ce0ba",
+      "targets": [
+        "src/d3d/CMakeLists.txt",
+        "src/d3d/d3d8_overlay.c",
+        "src/input/CMakeLists.txt"
       ]
     }
   ]

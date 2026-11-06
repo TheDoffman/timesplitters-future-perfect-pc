@@ -156,3 +156,66 @@ Physics: [poses](systems-details.md#guest-ragdolls-and-physical-npc-drops).
 [RTL](guest-stack-trace.md), [host policy](execution-host.md).
 
 Local player assignment: controls-options.md.
+
+
+## Developer Tools sidebar presentation
+
+The approved sidebar replaces the flat row view. `pc_developer_sidebar.inc` builds
+one shared widget layout for painting and pointer/keyboard hit testing. Tools,
+PC Settings and Diagnostics tabs have collapsible categories, global search,
+editable numbers, +/- steps, speed slider/presets and dock-side controls. Key
+bindings use an explicit draft/Save boundary; quick binding chips and mouse
+settings save immediately through the existing atomic settings service. Invalid
+numbers retain edit focus; Escape cancels. Ctrl+F searches, Ctrl+Tab changes tabs,
+Tab/arrows move focus, Page Up/Down scroll. The fixed footer owns the warning
+ending "Use with caution."; Extras retains Status, shortcut and Back (three rows).
+
+`PcDeveloperLine` now carries value-only box/label/color/radius/vertical-clip
+commands, capped at512. `src/graphics/pc_developer_canvas.h` rasterizes a bounded,
+cached BGRA sidebar with shared geometry, clipping and alpha. Hosts supply only
+font coverage and texture upload; Windows Segoe UI, Cocoa system font and Linux
+sans-serif are used for32px sidebar glyph caches. Existing FPS/watermark fonts
+are unchanged. The RHI draws the canvas on the final host target; legacy GL uses
+the same canvas. No guest framebuffer or gameplay tool policy is duplicated.
+Fullscreen status is queried through the Windows/SDL adapter. Dock and category
+state are session-only; saves and unrelated preferences remain intact. Windows
+visual acceptance and remaining native-host checks are recorded in STATUS.
+
+Sidebar theme follow-up: accent, focused/selected controls and enabled switch
+thumbs now use a blue palette (accent RGBA80BFFFFF). Geometry, input contracts,
+warning colors and saved preferences are unchanged; the private HTML concept
+uses the same palette. The final-target GPU fixture asserts the blue accent.
+
+Sidebar refinement supersedes the height-based scale and fixed32px glyph path:
+`pc_controls_developer_ui_scale` supplies host DPI (GetDpiForWindow / SDL display
+scale), capped only to fit narrow windows. A452-unit panel keeps its size when
+only height changes. Styled glyph coverage is cached by text, physical pixel
+size and weight and copied1:1 into the canvas, with per-label alignment. Geometry
+icons replace font-dependent symbols. Each category owns one continuous rounded
+card underneath its header/rows; clipping retains its original corner geometry.
+Compact bindings, centered presets, a joined number stepper and label-width tabs
+follow the private reference. Status space is reserved only when needed. The
+panel/shadow use straight alpha; native legacy GL composites the same canvas
+with a state-preserving shader rather than an alpha-discarding framebuffer blit.
+No gameplay or settings persistence contract changed.
+
+The shared-font follow-up replaces per-OS sidebar text with an embedded native
+font library. Selawik regular/semibold/bold and Cousine Bold are verified against
+assets/ui/fonts/manifest.cmake and embedded by CMake; the unmodified stb rasterizer
+parses only these trusted bytes. `pc_developer_font.c` measures UTF-8 advances,
+kerning and ascent/descent using the same face/size as rasterization. Fractional
+DPI sizes are preserved; canvas cache keys include size, weight and font face.
+Text roles/weights are explicit at draw sites, numeric fields are monospaced,
+and labels ellipsize at UTF-8 boundaries instead of cutting glyphs. Bind chips
+use measured widths. The hold-speed header separates right-aligned shortcuts
+from its semibold label; expanded rows have bracket chips and compact steppers.
+Movement hints, units, punctuation and footer wording follow the reference;
+real focus/offline/network availability still comes from the game state.
+Counter/watermark host fonts and game text remain unchanged. No browser, runtime
+font lookup or font files beside installed executables are required.
+
+Sidebar control-detail follow-up: the shared canvas reset icon uses an open
+upper-left circular arc with its arrowhead pointing left at the top endpoint
+(counterclockwise), rather than up at the left endpoint (clockwise). Expanded
+hold-speed steppers draw the same light-grey end-button fill as the main speed
+stepper; their input/value contracts and platform adapters are unchanged.

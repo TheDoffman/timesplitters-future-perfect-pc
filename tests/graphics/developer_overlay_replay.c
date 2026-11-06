@@ -31,9 +31,12 @@ static unsigned overlay_rows(unsigned width,unsigned height,PcDeveloperLine *out
         fprintf(stderr,"[TEST-OVERLAY] output=%ux%u capacity=%u\n",width,height,count);
         backend=g_rhi;traced=*backend;traced.present=trace_present;g_rhi=&traced;
     }
-    if(!count||width<32||height<32)return 0;
-    memset(out,0,sizeof *out);snprintf(out->text,sizeof out->text,"UI");
-    out->x=2;out->y=2;out->width=(float)width-4;out->height=24;return 1;
+    if(count<3||width<32||height<32)return 0;
+    memset(out,0,3*sizeof *out);
+    out[0].kind=PC_DEVELOPER_BOX;out[0].x=2;out[0].y=2;out[0].width=(float)width-4;out[0].height=28;out[0].color=0x20262cffu;
+    out[1].kind=PC_DEVELOPER_LABEL;snprintf(out[1].text,sizeof out[1].text,"UI");
+    out[1].x=3;out[1].y=2;out[1].width=(float)width-6;out[1].height=24;out[1].color=0xffffffffu;
+    out[2].kind=PC_DEVELOPER_BOX;out[2].x=40;out[2].y=8;out[2].width=12;out[2].height=12;out[2].color=0x80bfffffu;out[2].radius=3;return 3;
 }
 static int watermark(void) {return 0;}
 static int hud(void) {return 1;}

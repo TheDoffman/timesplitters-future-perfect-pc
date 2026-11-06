@@ -1,3 +1,23 @@
+Patch2620 follows2610. Runtime input/d3d CMake owners link one shared
+`tsfp_developer_font` target, and the RHI canvas uses its bitmap callback.
+Legacy GL uses the same implementation. The older optional styled host callback
+remains available but is no longer the sidebar font source. Configure-time
+embedding verifies font hashes and runs without Python/network downloads.
+No original executable, wrapper signature or generated guest code is edited.
+
+Patch2610 follows2600. It adds optional RhiHost.text_bitmap_styled and
+rhi_text_bitmap_styled(size,weight) for final-size sidebar text. Windows uses
+UTF-8 GDI Segoe UI grayscale coverage; SDL forwards to Cocoa/FreeType adapters.
+Existing counter/watermark callbacks remain unchanged. The overlay canvas now
+uses the styled callback. No guest wrapper or generated C change is required.
+
+Patch2600 follows2590 and replaces per-row developer text textures with the shared
+BGRA sidebar canvas. The overlay shader's size.z selects full RGBA for this canvas;
+ordinary counter/watermark coverage compositing is unchanged. The canvas draws
+only after scene resolve/post-processing and stays outside guest captures. RHI
+Windows font coverage selects Segoe UI for32px sidebar glyphs. No guest wrappers
+or HLE declarations change; no generated C edit/regeneration is required.
+
 Patch2590 follows2580 and separates XMV audio speed from its video clock using
 PC_MOVIE_AUDIO_SPEED. Shared Tools supplies pc_developer_audio_speed; non-Tools
 builds retain their prior rate fallback. No guest wrappers/declarations change,
