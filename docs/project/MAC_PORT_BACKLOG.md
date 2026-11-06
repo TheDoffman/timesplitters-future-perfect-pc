@@ -2,7 +2,7 @@
 
 Mac-specific installation convention; Windows/Linux portable storage is unchanged.
 Implementation c1b53dc8 on `feature/macos-application-support`, integrated with
-main 337be3bc: `MacStorage.cs`, `NativeStorageWindow.cs` and native startup route
+main 9da83f36: `MacStorage.cs`, `NativeStorageWindow.cs` and native startup route
 Finder launches to a writable game folder independent of the entry-point app.
 The default is ~/Library/Application Support/TimeSplitters. Legacy installations
 beside the app migrate automatically through MacStorageMigration.cs; a folder
@@ -9908,3 +9908,15 @@ listening remain pending. Windows FPS limits/residual underruns are in STATUS;
 release publication is pending. This does not change the Enhanced Audio beta.
 
 Linux launcher icon/storage follow-up (fix/linux-launcher-icon, uncommitted): Linux windows use the existing embedded launcher icon; Mac bundle icon handling is unchanged. Shared destination-volume free-space checks replace filesystem-root checks in install/import and diagnostics. Native failure dialogs now also show on Home. Windows/Linux validation is recorded in STATUS; native Mac regression and physical Steam Deck acceptance remain pending.
+
+
+Windows compiler-memory follow-up (2026-11-06, fix/windows-compiler-memory-pr):
+The shared pipeline and ordinary batch publisher use a 100-function default and
+512 KiB body-text budget, retaining oversized functions intact. This extends the
+existing continuation publisher's bound without changing guest code semantics.
+The Windows-only tsfp.ps1 driver defaults per-project MSVC /MP workers to two through
+CL_MPCount, with -CompileJobs 1..64; native Mac/Linux build parallelism is unchanged.
+No new Mac adapter is required: tools/compiler/compile_pipeline.py and
+translation_batch.py are common Python source. Existing Windows/macOS CI routes
+include the changed compiler tests. Windows focused tests and Release build pass
+(see STATUS); native Mac execution and compiler-memory measurements remain pending.

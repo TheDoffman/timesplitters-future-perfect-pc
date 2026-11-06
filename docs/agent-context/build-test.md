@@ -32,14 +32,12 @@ fixtures cover 60/120/180/240; cleanup selects only the active save root.
 Upload-copy/sanitizer/GPU contracts run in CI; see [Linux](linux-game.md) and
 [launcher checks, including antivirus diagnostics](launcher.md#antivirus-blocking-diagnostics-issue-476).
 
-Windows builds pass `config/build/windows-game.manifest` as
-`TSFP_GAME_MANIFEST`; patch 2130 attaches it only to the game target. CMake
-merges system DPI awareness with UAC/common-controls before network identity
-sealing. `test_window_theme.py` builds isolated manifest/no-manifest probes,
-checks embedded XML and asks Windows for the actual process awareness. These
-tests already run in both-host runtime CI (Windows-only cases skip on Mac).
-The native CI dependency selection includes the shared `pefile` pin because
-these probes inspect the executable's PE resources before checking process DPI.
+Windows passes `config/build/windows-game.manifest` as `TSFP_GAME_MANIFEST`;
+patch 2130 attaches it only to the game. CMake merges system DPI awareness,
+UAC/common-controls before network sealing. `test_window_theme.py` uses isolated
+manifest/no-manifest probes to inspect embedded XML and actual process DPI.
+Both-host runtime CI runs these (Windows cases skip on Mac), with pinned
+`pefile` for PE-resource inspection.
 
 [Build/test speed and timing alerts](release-speed.md).
 
@@ -54,7 +52,7 @@ Patch discovery/migration: [folder rules](../../patches/README.md).
 
 Standalone RHI/replay set `TSFP_SHARED_SOURCE`; see [maps](guest-host-mappings.md).
 
-[Guest services, headers, compiler and execution contracts](independent.md).
+[Guest services, compiler contracts and memory bounds](independent.md).
 Allocation/image/state/ABI tests use fatal warnings and bounded mismatch reports.
 Storage probes: [threads](thread-memory.md), [virtual-memory ABI/access](virtual-memory.md).
 
@@ -92,28 +90,26 @@ They check acceptance/ABI rather than complete real geometry. See the
 [contact trace schema](native-player-contact.md) before interpreting live CSVs.
 
 <!-- packet:start -->
-Windows: `powershell -NoProfile -File tsfp.ps1 -Action Build` applies patches,
-checks fingerprints, regenerates, builds and tests MSVC x64. Output:
+Windows: `powershell -NoProfile -File tsfp.ps1 -Action Build` validates patches
+and fingerprints, regenerates, builds/tests MSVC x64. Output:
 `build/windows/Release/futureperfect_recomp.exe`. Never edit generated C.
-Mac: `tools/build/build-native-mac.py` (`--generate` for stale code, `--setup` for setup).
-Output: `build/macos/futureperfect_recomp`. Auto selects Vulkan on macOS26+,
-otherwise GL. SDK pin: `config/build/vulkan-sdk.json`; driver provenance:
+Mac: `tools/build/build-native-mac.py` (`--generate` if stale, `--setup` for setup).
+Output: `build/macos/futureperfect_recomp`. Auto uses Vulkan on macOS26+, GL
+otherwise. SDK pin: `config/build/vulkan-sdk.json`; driver:
 `tools/build/vulkan_sdk.py` and `BUILD.json`.
 Isolated gameplay: `tools/testing/testing_profile.py --play --seconds 120` (Windows),
 `tools/testing/test-native-mac.py --unlocked-profile --seconds 120` (Mac), with .venv.
 AGENTS owns isolation/storage. Build, startup and gameplay are
 different evidence; unavailable hardware/private data remain validation gaps.
-For movement input changes, sampler and guest-only fixtures do not prove
-gameplay speed. Use an isolated Story run and compare actual player-position
-displacement for straight and diagonal travel. Mouse capture checks should
-also cover focus loss, stale held buttons, menu return and a clip released by
-another component while the game remains foreground.
-`test_window_theme.py` runs `pc_mouse_capture.c` with Win32 API doubles for
-center bounds, repeated repair, negative origins, resize and foreground/errors.
-`tsfp_pc_prompts_test` checks OS confinement/hit-testing and Fire release across
-repair; it explicitly skips without foreground focus. `pc_debug_game.py` uses
-center bounds too. `test_mounted_mouse.py` covers split-screen mouse
-adapters; live gameplay remains unverified.
+Movement sampler/guest fixtures cannot prove gameplay speed. Compare straight
+and diagonal player displacement in isolated Story. Mouse capture checks cover
+focus loss, stale held buttons, menu return and externally released clips while
+the game stays foreground.
+`test_window_theme.py` runs `pc_mouse_capture.c` with Win32 doubles: center
+bounds, negative origins, repeated repair, resize, foreground/errors.
+`tsfp_pc_prompts_test` checks confinement/hit-testing and Fire release across
+repair (skips without foreground focus). `pc_debug_game.py` uses center bounds.
+`test_mounted_mouse.py`: split-screen mouse adapters; live gameplay unverified.
 <!-- packet:end -->
 
 SDL tests (`tools/build/build-native-mac.py --test`) cover the two-slot E/Space
