@@ -1,3 +1,31 @@
+## 2026-11-06 — Antivirus blocking diagnostics (issue #476)
+
+Change on branch `fix/476-antivirus-errors`, based on main `fb555912`.
+Windows x64/.NET Framework launcher: Windows errors 225/226 and their IO HRESULTs
+now retain full paths through application/helper startup, helper and installed-file
+copies, hashing and game/launcher extraction. Copy failures list both paths.
+The startup recovery UI scrolls long messages; main-window failures show a dialog.
+Original exceptions remain in logs; helper result files retain antivirus details
+through aggregate recovery failures. Missing application files include their path
+and conditional quarantine guidance. No detection bypass or security-setting
+change is made; this is an error-reporting improvement, not a McAfee detection fix.
+
+Validation: `powershell -NoProfile -File tools/build/build-launcher.ps1 -Test`
+passed the complete Windows launcher suite, including 116 updater regressions,
+15 startup checks and 39 shared UI groups. Final validation used
+`-Output D:\CodexValidation\timesplitters-476-launcher`, with TEMP/TMP and the
+working directory on D:, because concurrent work exhausted C: free space;
+the unchanged backup-space guard correctly stopped the earlier C: rerun. Synthetic Win32 225/226 and HRESULT 0x800700E1/E2 cases cover
+paths, native diagnostics, retry, long-path layout and protected-file preservation;
+ordinary permission/lock/missing-file errors are not labeled antivirus blocks.
+The long-path startup render was inspected. Portable launcher compatibility,
+shared-layout and native Mac launcher Python checks passed 31 tests / 31 subtests.
+Native Mac/Linux binary/UI suites and actual McAfee quarantine/retest were not run
+on this Windows host. Release publication and other-device synchronization remain pending. The
+repository context check passes on the isolated publication snapshot; the
+build/test guide's near-limit text was condensed and kept as LF without dropping
+its contracts.
+
 ## 2026-11-06 - Issue501 optional texture source checkout
 
 Local fix/501-source-only-clone based on main3fa4bc2b adds repository LFS fetch

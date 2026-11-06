@@ -78,10 +78,10 @@ namespace TimeSplitters.Launcher
             exitCode = 0;
             if (args.Length != 2 || (args[0] != "--render-preview" && args[0] != "--render-settings-preview" && args[0] != "--render-settings-graphics" && args[0] != "--render-repair-preview" && args[0] != "--render-diagnostics-preview" && args[0] != "--render-news-preview" && args[0] != "--render-versions-preview")) return false;
             string application = Core.PathIn(root, Core.AppPath);
-            Core.Require(File.Exists(application), "Launcher application files are missing. Extract the complete launcher ZIP into this folder and try again.");
+            Core.Require(File.Exists(application), "Launcher application files are missing: " + application + ". Extract the complete launcher ZIP into this folder and try again.");
             var info = new ProcessStartInfo(application, args[0] + " " + SelfUpdate.Quote(Path.GetFullPath(args[1]))) {
                 WorkingDirectory = root, UseShellExecute = false, CreateNoWindow = true };
-            using (var child = Process.Start(info)) {
+            using (var child = AntivirusErrors.Start(info)) {
                 if (!child.WaitForExit(30000)) {
                     child.Kill(); child.WaitForExit(5000);
                     throw new TimeoutException("Launcher preview did not finish within 30 seconds. Close the launcher and try again.");
@@ -110,14 +110,15 @@ namespace TimeSplitters.Launcher
                 catch (Exception ex)
                 {
                     LauncherLog.Write(root, ex.ToString());
-                    Core.Write(Core.PathIn(root, ".launcher/self-last-result.txt"), "Launcher update did not complete. See launcher.log for recovery details.");
+                    string detail = AntivirusErrors.Find(ex) == null ? ex.Message : RecoveryInfo.From(ex, false).Message;
+                    Core.Write(Core.PathIn(root, ".launcher/self-last-result.txt"), "Launcher update did not complete. " + detail + " See launcher.log for recovery details.");
                 }
                 finally { mutex.ReleaseMutex(); }
             }
             // Skip the network check once after a handoff, avoiding retry loops
             // when an update cannot be installed. Future normal starts check again.
             if (relaunch)
-                Process.Start(new ProcessStartInfo(Core.PathIn(root, Core.LauncherName), "--after-self-update") { WorkingDirectory = root, UseShellExecute = true });
+                AntivirusErrors.Start(new ProcessStartInfo(Core.PathIn(root, Core.LauncherName), "--after-self-update") { WorkingDirectory = root, UseShellExecute = true });
             return success ? 0 : 1;
         }
     }
@@ -164,7 +165,7 @@ namespace TimeSplitters.Launcher
                   <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='*'/></Grid.RowDefinitions>
                   <TextBlock Text='TIMESPLITTERS  /  FUTURE PERFECT' FontFamily='Bahnschrift' FontWeight='Bold' FontSize='14' Foreground='#86CDFF'/>
                   <TextBlock x:Name='Heading' Grid.Row='1' Text='Checking launcher updates…' FontSize='21' FontWeight='SemiBold' Margin='0,18,0,0'/>
-                  <TextBlock x:Name='Status' Grid.Row='2' Text='Checking GitHub Releases.' FontSize='12' Foreground='#A4B8CA' TextWrapping='Wrap' Margin='0,7,0,15'/>
+                  <ScrollViewer x:Name='StatusScroll' Grid.Row='2' MaxHeight='240' VerticalScrollBarVisibility='Auto' HorizontalScrollBarVisibility='Disabled' Margin='0,7,0,15'><TextBlock x:Name='Status' Text='Checking GitHub Releases.' FontSize='12' Foreground='#A4B8CA' TextWrapping='Wrap'/></ScrollViewer>
                   <ProgressBar x:Name='Progress' Grid.Row='3' Height='3' IsIndeterminate='True' Background='#30485F' Foreground='#86CDFF' BorderThickness='0'/>
                   <DockPanel Grid.Row='4' Margin='0,15,0,0' VerticalAlignment='Bottom' LastChildFill='False'>
                     <StackPanel DockPanel.Dock='Left' Orientation='Horizontal'><Button x:Name='Retry' Content='Retry update' Background='#1B2C3E' Foreground='#E4EDF5' BorderBrush='#506C86' Visibility='Collapsed' Padding='8,6' Margin='0,0,8,0'/><Button x:Name='Folder' Content='Open launcher folder' Visibility='Collapsed' Padding='8,6' Margin='0,0,8,0'/><Button x:Name='Logs' Content='View logs' Background='#1B2C3E' Foreground='#E4EDF5' BorderBrush='#506C86' Visibility='Collapsed' Padding='8,6'/></StackPanel>
@@ -223,8 +224,8 @@ namespace TimeSplitters.Launcher
                                 {
                                     stop.Token.ThrowIfCancellationRequested();
                                     string helper = Core.PathIn(root, ".launcher/self-helper.exe");
-                                    File.Copy(Assembly.GetExecutingAssembly().Location, helper, true);
-                                    Process.Start(new ProcessStartInfo(helper, "--apply-launcher " + SelfUpdate.Quote(root) + " " + Process.GetCurrentProcess().Id) { WorkingDirectory = root, UseShellExecute = true });
+                                    AntivirusErrors.Copy(Assembly.GetExecutingAssembly().Location, helper, true);
+                                    AntivirusErrors.Start(new ProcessStartInfo(helper, "--apply-launcher " + SelfUpdate.Quote(root) + " " + Process.GetCurrentProcess().Id) { WorkingDirectory = root, UseShellExecute = true });
                                     handedOff = true;
                                 }
                             }
@@ -233,9 +234,10 @@ namespace TimeSplitters.Launcher
                     }
                 }
                 catch (Exception ex) {
-                    LauncherLog.Write(root,"Startup update skipped: "+ex.Message);
+                    LauncherLog.Write(root,"Startup update skipped: "+ex);
                     if(attemptedDownload && !stop.IsCancellationRequested){
                         var info=RecoveryInfo.From(ex is OperationCanceledException?new TimeoutException("Launcher download timed out."):ex,true);
+                        Window.Height=490;
                         ((TextBlock)Window.FindName("Heading")).Text=info.Title;Status.Text=info.Message;
                         Progress.IsIndeterminate=false;Progress.Value=0;
                         ((TextBlock)Window.FindName("Version")).Visibility=Visibility.Collapsed;
@@ -254,9 +256,9 @@ namespace TimeSplitters.Launcher
                 catch (Exception ex) {
                     var native = ex as System.ComponentModel.Win32Exception;
                     LauncherLog.Write(root,"Startup application launch failed"+(native==null?"": " (Windows error "+native.NativeErrorCode+")")+": "+ex);
-                    var info=RecoveryInfo.LauncherStart(ex);
+                    var info=RecoveryInfo.LauncherStart(ex, Core.PathIn(root, Core.AppPath));
                     launchFailed=true;
-                    Window.Height=390;
+                    Window.Height=490;
                     ((TextBlock)Window.FindName("Heading")).Text=info.Title;Status.Text=info.Message;
                     Progress.IsIndeterminate=false;Progress.Value=0;
                     ((TextBlock)Window.FindName("Version")).Visibility=Visibility.Collapsed;

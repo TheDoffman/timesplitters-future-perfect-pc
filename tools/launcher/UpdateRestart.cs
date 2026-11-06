@@ -26,8 +26,9 @@ namespace TimeSplitters.Launcher
                 {
                     failure = ex;
                     LauncherLog.Write(root, ex.ToString());
+                    string detail = AntivirusErrors.Find(ex) == null ? ex.Message : RecoveryInfo.From(ex, false).Message;
                     Core.Write(Core.PathIn(root, ".launcher/last-result.txt"),
-                        "Update failed: " + ex.Message + " Check launcher.log before retrying.");
+                        "Update failed: " + detail + " Check launcher.log before retrying.");
                 }
             }
             if (failure != null && reportFailure != null) reportFailure(failure);
