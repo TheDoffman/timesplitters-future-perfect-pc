@@ -9973,13 +9973,11 @@ release publication is pending. This does not change the Enhanced Audio beta.
 Linux launcher icon/storage follow-up (fix/linux-launcher-icon, uncommitted): Linux windows use the existing embedded launcher icon; Mac bundle icon handling is unchanged. Shared destination-volume free-space checks replace filesystem-root checks in install/import and diagnostics. Native failure dialogs now also show on Home. Windows/Linux validation is recorded in STATUS; native Mac regression and physical Steam Deck acceptance remain pending.
 
 
-Windows compiler-memory follow-up (2026-11-06, fix/windows-compiler-memory-pr):
-The shared pipeline and ordinary batch publisher use a 100-function default and
-512 KiB body-text budget, retaining oversized functions intact. This extends the
-existing continuation publisher's bound without changing guest code semantics.
-The Windows-only tsfp.ps1 driver defaults per-project MSVC /MP workers to two through
-CL_MPCount, with -CompileJobs 1..64; native Mac/Linux build parallelism is unchanged.
-No new Mac adapter is required: tools/compiler/compile_pipeline.py and
-translation_batch.py are common Python source. Existing Windows/macOS CI routes
-include the changed compiler tests. Windows focused tests and Release build pass
-(see STATUS); native Mac execution and compiler-memory measurements remain pending.
+Compiler-memory PR #508 reverted locally (2026-11-06, revert/508-compiler-memory):
+The user requested restoring the prior policy. Ordinary generated files again
+use count-only grouping with a 1,000-function default; Windows no longer supplies
+CL_MPCount or exposes -CompileJobs. The pre-existing continuation byte limit and
+native Mac/Linux build worker settings are retained. This is shared Python policy;
+no separate Mac adapter is needed. Prior PR #508 measurements remain historical in
+STATUS. Focused compiler checks cover the revert; fresh native Mac/Linux full-build
+memory, timing and gameplay acceptance remain unmeasured.
