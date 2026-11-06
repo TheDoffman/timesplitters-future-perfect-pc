@@ -91,6 +91,10 @@ Launcher v1.4.0 interface preview with illustrative installation data.
 - Keep the whole installation together, especially `Data`, `Settings`, `Saves`
   and the launcher's recovery files. Normal updates preserve existing data,
   settings and saves.
+- **Mac launcher storage:** defaults to `~/Library/Application Support/TimeSplitters`,
+  independently of the `.app` location. Existing installations beside the app
+  migrate automatically, retaining the original as a backup. Portable mode remains
+  available. See [storage and migration](docs/players/macos.md#launcher-storage).
 
 Published builds do not require Python, Git or developer tools. The Mac launcher
 includes .NET and does not need CrossOver or the .NET SDK.
