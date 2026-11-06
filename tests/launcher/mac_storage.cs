@@ -13,9 +13,15 @@ namespace TimeSplitters.Launcher
         static void Write(string root,string name,string text) { Core.Write(Core.PathIn(root,name),text); }
         public static int Run()
         {
-            // macOS /var is a symlink; exercise the unchanged unlinked-path
-            // contract in the owned build output rather than the temp alias.
-            string sandbox=Path.Combine(OperatingSystem.IsMacOS()?AppContext.BaseDirectory:Path.GetTempPath(),"tsfp-storage-"+Guid.NewGuid().ToString("N"));
+            // macOS /var is a symlink and an installation cannot live inside an
+            // app bundle. Put native fixtures beside the built app, not in it.
+            string testBase=Path.GetTempPath();
+            if(OperatingSystem.IsMacOS()) {
+                var bundle=new DirectoryInfo(AppContext.BaseDirectory);
+                while(bundle!=null && !bundle.Name.EndsWith(".app",StringComparison.OrdinalIgnoreCase))bundle=bundle.Parent;
+                testBase=bundle?.Parent?.FullName??AppContext.BaseDirectory;
+            }
+            string sandbox=Path.Combine(testBase,"tsfp-storage-"+Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(sandbox);
             try {
                 string source=Path.Combine(sandbox,"Applications"),support=Path.Combine(sandbox,"Application Support Ω","TimeSplitters");

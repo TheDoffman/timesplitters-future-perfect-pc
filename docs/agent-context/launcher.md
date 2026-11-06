@@ -53,6 +53,8 @@ forwarding retains startup update checks. Windows/Linux routing is unchanged.
 
 `tests/launcher/mac_storage.cs` runs in native `--test` and independently through
 `--test-storage`; LocationUi checks storage choices before writes. Native Mac
+storage fixtures live beside the built `.app`, outside both its bundle and the
+macOS `/var` temp alias, so they exercise the normal destination-path checks.
 package verification also checks a signed app after automatic migration.
 Finder/Gatekeeper/signature/update/restart and prerequisite acceptance remain
 separate from Windows cross-compilation and WSL filesystem contracts (STATUS).

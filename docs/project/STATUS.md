@@ -43,6 +43,10 @@ PR510 review follow-up: keep-in-place selection and copy/import now have separat
 folder-picker actions, preserving external/moved installation selection even
 when Application Support is occupied. Both choices are covered by the native UI
 contract; existing storage fixtures cover remembered/moved folders and conflicts.
+PR510 Mac CI: attempt1 had no ARM64 runner capacity; retry reached native build
+and signature verification. Storage fixtures were incorrectly nested inside the
+built app, hitting the intended application-bundle destination rejection. The
+fixture root now lives beside the built app; production path checks are unchanged.
 
 ## 2026-11-06 - Windows compiler memory fix validation
 
