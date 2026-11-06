@@ -68,6 +68,19 @@ public static class LauncherSharedUiChecks
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
+            Test("antivirus error codes respect the host and preserve unrelated IO failures",()=>{
+                var native=new System.ComponentModel.Win32Exception(225,"localized detection");
+                var io=new IOException("localized detection",unchecked((int)0x800700e2));
+#if MACOS || LINUX
+                Need(AntivirusErrors.Code(native)==0 && AntivirusErrors.Code(io)==0,"Windows detection codes leaked into a native host");
+#else
+                Need(AntivirusErrors.Code(native)==225 && AntivirusErrors.Code(io)==226,"Windows detection codes were lost");
+#endif
+                var denied=new UnauthorizedAccessException("access denied");
+                try { AntivirusErrors.At("fixture",()=>{throw denied;}); }
+                catch(Exception actual) { Need(ReferenceEquals(actual,denied),"Unrelated access failure was replaced"); }
+                Need(RecoveryInfo.From(denied,false).Title!="Antivirus blocked a file","Permissions were diagnosed as antivirus");
+            });
 #if MACOS || LINUX
             Test("launcher fits small and scaled desktop work areas",()=>{
                 foreach(var desktop in new[]{new Size(1280,800),new Size(1024,640),new Size(853,533),new Size(1920,1080)}) {
