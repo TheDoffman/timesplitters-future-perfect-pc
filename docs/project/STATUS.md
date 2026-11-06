@@ -19,10 +19,17 @@ The shared targeted runtime writer preserves unrelated settings/comments and
 retains SMAA atomic live publication. The isolated menu fixture checks staged
 discard, tab retention, Apply/Keep, Back, timeout, readonly save rejection, failed
 host requests and successful retry. Patch2620 applies through the complete
-loader stack; repository context checks pass. Supported Windows game rebuild
-and real window transitions are still in progress. Native Mac/Linux build and
-live acceptance remain pending. No PR/main publication is authorized for this
-new feature.
+loader stack; repository context checks pass. Supported Windows Build and its built-in checks pass with repository defaults
+(logs/fullscreen-build.log). An isolated Test Lab run at1280x720 confirms
+staging leaves the window unchanged, Apply enters borderless1920x1080, Keep
+saves, and switching back restores the exact original[78,78,734,597] bounds.
+Its runtime.ini retains the original comment and saves fullscreen=0. Main menu
+layout is captured in logs/aspect-fullscreen-display.png; window style/bounds
+proof is in logs/fullscreen-{staged,preview,kept,windowed-kept}.json. A second isolated run verifies the actual pause Display layout and fullscreen
+Apply/Keep, with saved fullscreen=1 (logs/aspect-fullscreenpause-kept.png and
+logs/fullscreen-pause-kept.json). Both test runs have ended and their disposable
+disks were recycled. Native Mac/Linux build and live acceptance remain pending.
+No PR/main publication is authorized for this new feature.
 
 Icon PR strict-compiler follow-up: native Mac CI passed2866 tests but rejected
 an unused physical-size argument in the span-only imported-key fixture under
