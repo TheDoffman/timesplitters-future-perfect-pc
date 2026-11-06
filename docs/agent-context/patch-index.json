@@ -2016,6 +2016,14 @@
       ]
     },
     {
+      "name": "2610-filtered-input-icons.patch",
+      "path": "patches/graphics/interface/2610-filtered-input-icons.patch",
+      "sha256": "6ee09852f01250fc8b9590dab4d231608abaaa1a51cd1286a24c252da4e7d4a8",
+      "targets": [
+        "src/hle/hle_d3d8_record.c"
+      ]
+    },
+    {
       "name": "2610-native-shared-effect-depth.patch",
       "path": "patches/graphics/rendering/2610-native-shared-effect-depth.patch",
       "sha256": "a13359ca61ec6eef69c52c95765e4eab2885fcb3ddfffc0f30c79dfe878bcecc",

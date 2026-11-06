@@ -1,3 +1,177 @@
+Icon PR strict-compiler follow-up: native Mac CI passed2866 tests but rejected
+an unused physical-size argument in the span-only imported-key fixture under
+-Werror. That test configuration now explicitly ignores the GPU-only argument.
+Production rendering is unchanged. CI rerun pending.
+
+Icon PR integration follow-up (2026-11-06): Windows CI passed2964 tests but
+five prediction-target fixtures failed to link because extraction included the
+adjacent icon GPU helper without its host texture API. The replay fixture now
+omits that include; dedicated input_icon_gpu coverage remains authoritative for
+texture upload/state/lifetime. All five replay cases pass locally. No game implementation changes. CI native Mac
+job initially could not obtain a hosted runner; retry requested. Full checks
+will run again before merge.
+
+## 2026-11-06 - Aspect-selected input icon sizes (local)
+
+Local feature/julio-input-prompts after c9ae769b replaces continuous GPU
+smoothing with aspect-selected, pixel-aligned icon canvases. Shared policy
+covers4:3,16:10,16:9,21:9 and32:9; compact profile footers retain their existing
+clip. Source art remains Julio Cacko128px. Cached physical-size bitmaps bake
+premultiplied area coverage into small icons; the GPU uses point min/mag and
+no mip filter. This avoids the jagged small lettering seen in the initial
+nearest-mip prototype. Sizes above128 repeat source pixels and add no detail.
+Native text advances, bindings, tint/fades and input behavior are preserved.
+
+Windows focused input/import/display/menu tests:30passed,2native-Mac-only
+checks skipped (logs/aspect-exact-tests-final.log). Coverage includes arbitrary
+size coverage, transparent padding/UVs, cache hits/exhaustion with queued draws,
+device changes, failed upload/state reads and full immediate/deferred state
+restoration. Supported Windows Build and its built-in checks pass with the
+existing local /MP6 and seven /Od /Ob0 generated-unit exceptions; this does not
+establish default-flags Release acceptance. Build log:logs/aspect-exact-build.log.
+
+Fresh bounded Test Lab runs visually reviewed actual profile/footer and main
+Menu Actions at1440x1080,1920x1080 and2520x1080. Original source proportions and
+native row limits are retained; Space/Esc/Tab labels are readable. Evidence:
+logs/aspect-exactclassic-bindings-ready.png,
+logs/aspect-exactwide-bindings-ready.png,
+logs/aspect-exactultra-bindings-final.png and corresponding profile-ready.png.
+Disposable disks were recycled. The private desktop Input Preview uses this
+build, with independent saves/config; launcher --check passes. This follow-up
+has not repeated physical controller, pause/gameplay,4K or live-resize acceptance.
+16:10/32:9 are policy-fixture coverage only. Mac/Linux builds and visual
+acceptance remain pending. No publication or main merge is claimed.
+
+## 2026-11-05 - Native-resolution icon readability review
+
+Follow-up to locald0be611e: earlier640x480 game captures and the24px controller
+sample row understated icon readability. A separate bounded Test Lab run used
+1440x1080 and rendered actual profile/main Menu Actions with the existing binary.
+The128px icon source and native filtered GPU path were unchanged. Saved a1:1
+binding-column crop (no enlargement/resampling) and a native-renderer controller
+preview at48/96px; the latter replay had0 failed calls, malformed chunks,
+unmapped handles or unknown chunks. This is a renderer preview, not physical
+controller input acceptance. The actual HD game icons are clearer than the
+previous console-resolution captures; original low-resolution game fonts and
+backgrounds remain separate assets.
+
+The private desktop Input Preview launcher previously seeded a new profile at
+console640x480. Its local first-run default now selects1280x960; any existing
+preview preference/profile is retained. A separate bounded run verified a native
+1280x960 startup/captured frame. Personal launcher settings and saves
+are unchanged. This delivery-only script remains ignored under logs, with its
+private receipt; no game-code/default-settings change or publication is claimed.
+The supported binary and29 focused checks remain those recorded below. Native
+Mac/Linux and physical controller acceptance are still pending.
+
+## 2026-11-05 - Filtered original-resolution input icons
+
+Quality follow-up to9188b2c9 on local feature/julio-input-prompts keeps Julio's
+original128x128 pixels instead of the previous32px thumbnails. New shared
+patch2610 scopes filtered native textures around the existing guest textured
+quad. Each image is uploaded once with eight premultiplied mip levels and
+Morton lock ordering. Vertex RGBA uses the title's seven-bit white/opaque0x7f
+convention before premultiplication. A copied UV/color buffer preserves native
+positions, font placement and scissor; blend, shader, texture and stage states
+restore after immediate or deferred execution through the recorded host calls.
+The rectangle path remains an upload/unavailable-backend fallback. No new OS
+adapter or input/action/persistence rules are introduced.
+
+Binding-value images now have a22-unit canvas bounded by the native row and
+column; wide Space/Shift/Enter retain their aspect compensation. Captions,
+settings font size, navigation, footer geometry and profile baselines remain
+unchanged. Full-resolution pixels are stored losslessly as131519 source runs;
+normal rendering uses one native textured quad per displayed image, avoiding
+the former per-pixel rectangle draw load. No art download is required to build.
+
+Windows x64 validation, MSVC19.44.35207/SDK10.0.26100, common D3D11 frontend:
+
+- Supported Build and linked checks passed with the existing local /MP6 and
+  seven generated large-SSE /Od /Ob0 exceptions documented below. No generated
+  game C or compiler-default source policy was edited. Matching crash symbols
+  were produced. Artifact hashes and source receipt remain private.
+- 29 focused importer, glyph, binding, settings and pointer tests passed;2 native
+ Mac compile checks skipped on Windows. New GPU fixture covers Morton pixels,
+ premultiplied mip data, native RGBA/tint, quad/UV copies, cache reuse, device
+ changes, upload/read/draw failure and state restoration. It simulates queued
+ state changes so deferred execution must restore the later state, and catches
+ SetTexture enabling COLOROP. Import tests preserve a single pixel at127,127;
+ reimport reproduces the compiled include byte-for-byte.
+- Actual profile/main and paused Deathmatch menus were reviewed at640x480,
+ including Menu Actions E/Y/X/Z, Space/Esc/Tab, and footer Select/Back. Binding
+ images are larger/readable and the font/footer brightness agrees with the
+ native text. Main and pause screenshots are retained in logs as
+ review-quality-bindings.png and review-quality-pause-bindings.png, with the
+ prior pause image kept for comparison. This is menu/game-entry evidence, not
+ broad-resolution, full campaign or physical-controller acceptance.
+- A separate bounded run explicitly enabled deferred draws and recorded an
+ actual menu frame (5.1MB). Production d3d8_replay rendered it successfully:
+ 105 draw-up calls,0 failed host calls,0 malformed chunks,0 unmapped handles
+ and0 unknown chunks. The replayed menu/footer was visually reviewed. This
+ verifies recording/replay of the native icon texture path; exact whole-frame
+ pixel parity is not claimed.
+
+Native Mac/Linux builds and GPU/menu acceptance, physical controller use,
+resize/device-reset behavior and broad resolutions remain pending. Their shared
+implementation and acceptance checks are recorded in MAC_PORT_BACKLOG.md. The
+Desktop TSFP Input Preview launcher uses the rebuilt executable and a separate
+retained Test Lab profile; other running game sessions and personal data remain
+untouched. Changes are local and not published or merged.
+
+## 2026-11-05 - Julio keyboard and controller prompt artwork
+
+Local feature/julio-input-prompts, based on main772a38df: replaced the previous
+Rendrify spans with Julio Cacko FREE Input Prompts Pack1.4 under CC0. Shared
+source now supplies83 keyboard/mouse images and25 native controller tokens.
+Controller prompts retain the game's Xbox logical labels; automatic family
+selection is unchanged. Unmapped keys, composites and unknown native tokens
+retain their existing fallback. Private PNGs are hashed in the public manifest;
+reimport reproduces the generated include byte-for-byte without build-time art
+downloads. Packaging retains the complete updated credit through its existing
+Keyboard-mouse-icons.txt route on Windows, Mac and Linux.
+
+The actual native icon texture bank distinguishes digit and letter indices,
+including after clipped or wrapped text. Original text advances, actions,
+keyboard remapping, color/fade and profile baselines remain authoritative.
+Wide keyboard faces use alpha-derived height compensation bounded by the
+existing label advance. Settings bumper hints use native Black/White tokens.
+
+Validation on Windows x64, MSVC19.44.35207, SDK10.0.26100, common Xbox/D3D11
+frontend, supported US XBE3cfd001a…a41816bc:
+
+- 27 focused input/menu/import fixtures passed;2 native Mac compile contracts
+ skipped on Windows. Includes separate VK/controller banks, native atlas/token
+ decoding, idle/pressed fallback, native tint/alpha, wide-key sizing, profile
+ scopes and existing settings interactions. Deterministic reimport passed.
+- Full Generate completed15838/15863 functions,0 failed (6.6M lines). The
+ supported Windows Build and linked build checks passed, with matching crash
+ symbols. Initial unbounded /MP exhausted memory; limiting workers still hit
+ the known large-SSE optimizer failure. The successful local build used /MP6
+ and the existing seven /Od /Ob0 exceptions: regular0011 and context0752-0756,
+ 0774, imported through ignored logs/msvc-local.props. Other units retain/O2.
+ This is validation with a local compiler workaround, not default-flags Release
+ acceptance. Exe SHA256:
+ `261f09ed6fd70d30dd64b21e96ce53cc6c80874088b7ad46aeb2009632ecebea`.
+- An initial isolated UI relink reused byte-identical non-UI source objects for
+ early review. Final profile/main/pause evidence was repeated on the complete
+ supported build. A disposable Test Lab profile reached a Deathmatch game and
+ pause Controls/Keyboard/Menu actions. Profile footer, main and pause footers,
+ arrow/Adjust hints and binding prompts were reviewed at640x480. Wide Space,
+ Escape and Tab icons were visible. This is menu/entry evidence, not a campaign,
+ movement/firing or broad-resolution acceptance pass. Early timed replays
+ accidentally entered profile naming; corrected startup timing selected Test Lab.
+ The screenshot worker's rotating-file race was fixed locally; game code was
+ unchanged by that harness correction.
+- No XInput pad was connected. Controller art/mappings are covered by native
+ glyph fixtures; physical controller and hotplug visual acceptance remain open.
+ Native Mac/Linux builds and visual acceptance remain pending in the backlog.
+
+A private playable preview launcher uses its own retained Test Lab profile and
+settings. Existing game sessions, personal saves/settings, other checkout edits
+and source artwork remain separate. No PR, push, merge or publication is claimed.
+Selected screenshots, build logs, a private build receipt and bounded replay
+records remain local under logs/private.
+
 ## 2026-11-06 — macOS Application Support storage (discussion #502)
 
 Implementation c1b53dc8 on `feature/macos-application-support`; integrated main

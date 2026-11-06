@@ -45,3 +45,39 @@ def test_source_directory_and_integrity(tmp_path):
     assert icons.compile_pack(manifest,tmp_path/'data.inc',source)==1
     Image.new('RGBA',(128,128),(0,0,0,255)).save(png)
     with pytest.raises(ValueError,match='SHA-256'):icons.compile_pack(manifest,tmp_path/'data.inc',source)
+
+
+def test_controller_bank_is_separate_from_physical_keys(tmp_path):
+    Image.new('RGBA',(128,128),(255,255,255,255)).save(tmp_path/'a.png')
+    manifest=tmp_path/'manifest.json'
+    manifest.write_text(json.dumps({'keys':[{'key':50,'idle':'a.png'}],
+        'controller':[{'token':50,'idle':'a.png'}]}))
+    output=tmp_path/'data.inc'
+    assert icons.compile_pack(manifest,output)==1
+    data=output.read_text()
+    keys=data.split('input_icon_lookup[256]={\n')[1].split('\n')[0].split(',')
+    pads=data.split('input_controller_lookup[256]={\n')[1].split('\n')[0].split(',')
+    assert keys[50]=='0' and pads[50]=='1' and pads[51]=='-1'
+
+
+def test_wide_key_face_keeps_its_caption_height(tmp_path):
+    image=Image.new('RGBA',(128,128))
+    for y in range(32,100):
+        for x in range(128):image.putpixel((x,y),(255,255,255,255))
+    image.save(tmp_path/'space.png')
+    manifest=tmp_path/'manifest.json'
+    manifest.write_text(json.dumps({'keys':[{'key':32,'idle':'space.png'}]}))
+    output=tmp_path/'data.inc';icons.compile_pack(manifest,output)
+    assert ',1.529412f}' in output.read_text()
+
+
+def test_original_single_pixel_detail_is_preserved(tmp_path):
+    image=Image.new('RGBA',(128,128))
+    image.putpixel((127,127),(15,25,35,45))
+    image.save(tmp_path/'fine.png')
+    manifest=tmp_path/'manifest.json'
+    manifest.write_text(json.dumps({'keys':[{'key':69,'idle':'fine.png'}]}))
+    output=tmp_path/'data.inc';assert icons.compile_pack(manifest,output)==1
+    data=output.read_text()
+    assert '#define TSFP_INPUT_ICON_SIZE 128' in data
+    assert '{127,127,1,1,15,25,35,45}' in data

@@ -86,16 +86,25 @@ baselines and scoped icon state is restored. No OS adapter or controller
 layout change. Windows evidence is in STATUS; native Mac visual acceptance
 is pending (complete key faces, bottom margin and footer hover).
 
-Imported prompt artwork (local feature/fab-input-prompts): shared
-`pc_keycaps.inc`, `pc_input_icons.inc` and generated span data use Rendrify's
-CC BY4.0 keyboard/mouse artwork with native tint/fade and original text advances.
-Key-name lookup remains shared. The Adjust footer uses separate A/D icon labels
-through the same native measurement on both hosts. No new adapter is needed;
-Mac build and visual acceptance are pending (main/pause footer fit, binding and
-capture dialogs, device switch, remapped/missing keys and tutorial/HUD wrapping).
-Windows shared fixtures, supported Build and isolated menu review are recorded
-in [STATUS](STATUS.md). Source PNGs stay local; attributed compiled data travels
-with Git, so another host needs no Fab sign-in or image tooling to build.
+Imported prompt artwork (local feature/julio-input-prompts): shared
+`pc_keycaps.inc`, `pc_input_icons.inc` and generated data replace the prior
+Rendrify art with Julio Cacko CC0 keyboard/mouse and Xbox-style controller icons.
+Native token/VK banks, glyph bounds, text advances and fade remain shared;
+no OS adapter is needed. Controller-family detection is unchanged.
+Quality follow-up (locald0be611e) preserves128px pixels, uses shared native
+textured quads and recorded immediate/deferred GPU state scopes (patch2610),
+Morton-ordered premultiplied mips. A local2026-11-06 follow-up replaces linear
+sampling with cached exact-size coverage bitmaps, point sampling without mips,
+and shared aspect-specific size/pixel-step policy
+(pc_input_icon_layout.h), preserving compact profile clips. Binding icons grow inside
+existing rows/columns. The same D3D8/RHI API is used on all hosts; no new OS
+adapter is identified. Mac/Linux builds and actual GPU acceptance remain pending,
+including legacy GL texture locks/state getters, pause scissor, footer fades,
+controller prompts, resize/device reset and capture/replay parity. Windows
+fixtures/build and available visual evidence are recorded in STATUS. Mac and
+Linux builds and visual acceptance remain pending: profile/main/pause footer
+fit, binding dialogs, device switching and tutorial/HUD wrapping. Source PNGs
+stay private; compiled CC0 derivatives and complete credits travel through Git.
 
 Linux experimental release preparation (2026-11-04, local
 feature/linux-experimental-release): SDL key/pad exports fix the native link

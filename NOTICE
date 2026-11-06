@@ -34,15 +34,14 @@ XboxDev/nxdk, Copyright 2017 Stefan Schmidt, commit
 03acd1415f7ccc3127bcfb629224aacdd95d783c. The unchanged SPDX-credited data is
 in tools/xbe_kernel_exports.def; provenance is in docs/independent-runtime.md.
 
-Keyboard and mouse artwork
---------------------------
-Keyboard and mouse prompt artwork is Rendrify's PC Keyboard & Mouse Icon Pack:
-https://www.fab.com/listings/b07743bb-31ad-476b-a942-ae47c3a0f82c
-Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0):
-https://creativecommons.org/licenses/by/4.0/
-Images were exported, downsampled and encoded for the native UI, with runtime
-tint and opacity. Details: assets/ui/input-icons/ATTRIBUTION.md in the source.
-This artwork retains its CC BY 4.0 terms rather than the port code's GPL license.
+Input prompt artwork
+--------------------
+Keyboard, mouse and controller prompt artwork is Julio Cacko's FREE Input
+Prompts Pack 1.4: https://juliocacko.itch.io/free-input-prompts
+Assets are dedicated under CC0 1.0 Universal:
+https://creativecommons.org/publicdomain/zero/1.0/
+Original PNG pixels are compiled into aspect-sized UI images with native tint/fade.
+Details: assets/ui/input-icons/ATTRIBUTION.md in the source.
 
 Original game material
 ----------------------

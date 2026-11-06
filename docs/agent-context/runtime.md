@@ -1,5 +1,5 @@
+[Input](controls-options.md); [Kill feed](../development/arcade-kill-feed.md).
 [Effect depth](native-effect-depth.md).
-[2605](native-projectiles.md); [Uplink](native-uplink.md).
 [Linux](linux-game.md); [MSAA](smaa.md).
 2465 wraps356800 for rewards;
 profile mapper356870 stays original. See [contract](systems-details.md#four-player-rewards-context).
@@ -9,9 +9,9 @@ the native guest-lobby8D notification to main return, preserving transport reset
 and rebuilding main in its own layout context. See [contracts](systems-details.md).
 
 Rejoin view/weapon lifetime uses existing D4BE0 camera and A9070 world-remove
-wrappers. The accepted rejoin restores a missed camera-end transition once;
+wrappers. Rejoin restores a missed camera-end transition once;
 world identity excludes native first-person viewport models before cached-key
-lookup. No new wrapper or generated-code change is needed. See
+lookup. No wrapper or generated-code change is needed. See
 [contracts](systems-details.md).
 
 Story in-progress rejoin uses existing2D398D pending-copy,9A420 synthetic-pad

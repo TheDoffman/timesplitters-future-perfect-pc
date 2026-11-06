@@ -42,6 +42,10 @@ static IDirect3DDevice8 *hle_d3d8_shadow_device(void) { return NULL; }
         'indexed': section('typedef struct {\n    DWORD type;', 'HRESULT host_DrawPrimitiveUP('),
         'copy': section('typedef struct { IDirect3DTexture8 *dst, *source;', 'HRESULT host_CopyBackBufferToTexture('),
     }
+    # The icon scope sits between replay operations and the host entry point.
+    # This harness owns replay writes only; GPU textures have their own fixture.
+    icon_include = '#include "pc_input_icon_gpu.inc"'
+    parts['indexed'] = parts['indexed'].replace(icon_include, '/* Separate icon GPU fixture. */')
     for name, code in parts.items():
         if mutation == name:
             guard = ('if (hle_d3d8_interp_predicting) return;' if name == 'copy'
