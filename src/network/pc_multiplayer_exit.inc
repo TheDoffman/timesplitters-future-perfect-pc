@@ -186,7 +186,11 @@ static void multiplayer_profiles_capture(void)
 static int multiplayer_profile_save(void (*original)(void))
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
-    if(multiplayer_arcade() && multiplayer_destination) {
+    /* The lobby factory consumes the exit destination before subsequent stock
+       frontend saves. Profiles still occupy network slots while the party is
+       connected, so their persistent save view must outlive that route. */
+    if(multiplayer_arcade() && (multiplayer_destination ||
+       (WORD_AT(0x76b108u) && (WORD_AT(0x76b140u)==1u || WORD_AT(0x76b140u)==2u)))) {
         network_profiles_save(original,multiplayer_profiles,multiplayer_profile_count);return 1;
     }
 #else

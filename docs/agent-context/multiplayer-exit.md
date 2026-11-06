@@ -39,13 +39,21 @@ factory observations are capped at16 per return.
 Joining moves profile bodies into network player slots, while frontend1922D0
 saves by persistent local identities. `pc_network_profiles.inc` owns the capture
 and synchronous save mapping shared with Story. Capture before Online/System
-Link browser entry. For a pending return, temporarily present uniquely identified
-bodies in persistent slots for the original save call, then restore network order
+Link browser entry. For a pending exit or an active host/member session, temporarily
+present uniquely identified bodies in persistent slots for the original save call,
+then restore network order
 and propagate updated bodies back. Preserve aggregate pointers and original
 metadata/checksum/error handling. Missing/ambiguous identities use the original.
 Story retains its prior scope and consumes the same algorithm. Native Arcade
 uses this helper too. Network phase11/12 alone is insufficient: without this
 mapping, the live guest had an original save-error screen rather than its lobby.
+The lobby factory consumes `multiplayer_destination` while the retained party's
+profiles still occupy network slots. Do not use that short-lived destination as
+the save mapper's sole guard: later stock saves can compare a remote profile's
+CRC against a healthy local file and show the damaged-profile panel. Keep the
+original read/CRC/write failure workflow; never dismiss or bypass this panel.
+Story remains excluded from Arcade admission; disconnected sessions without a
+pending exit keep the original save scope.
 
 ## Validation
 
@@ -53,6 +61,11 @@ mapping, the live guest had an original save-error screen rather than its lobby.
 existing Windows/macOS `test_quit_menu.py` CI matrix. It checks host pause/results,
 remote return, original guest actions, exact loss callers, multiple levels,
 retained clocks/peers, captions, profile-body preservation and pointer restore.
+`test_multiplayer_original_profile_save` executes original1922D0, its profile
+helpers and original CRC routines against in-memory storage with different local
+and remote profile CRCs. It reproduces error7 with the old destination-only scope,
+checks repeated successful local saves with the fix, and preserves genuine CRC
+and write errors. The fixture is already in the shared menu CI selection.
 The original-US contract binds the host-loss call and Online menu constructor.
 Existing original guest-reward/config fixtures execute the save and reset paths.
 Keep CPU evidence distinct from paired gameplay and physical host acceptance;

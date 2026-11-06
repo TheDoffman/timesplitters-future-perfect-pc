@@ -1,3 +1,38 @@
+## 2026-11-06 - Retained lobby profile-save warning follow-up
+
+Local, uncommitted on multiplayer-lobby-return, base3ff65a51. The retained party's
+profile bodies remain in network slots after the lobby factory consumes its
+exit destination. Arcade save admission now follows the active host/member
+session as well as a pending exit, so later stock saves retain the persistent
+local profile view. Transport, host-loss and guests' voluntary exits are unchanged.
+Story admission and real save-error handling remain original.
+
+Windows x64, MSVC14.42, D3D11, Original60, game0.5.1. Supported US XBE/title hash
+verified. Original-US save/CRC fixture with distinct local and remote CRCs
+reproduces damaged-profile error7 under the previous destination-only scope.
+The fixed scope saves local progress repeatedly, restores the remote body and
+aggregate pointer, and still exposes genuine corrupted-read and write failures.
+Menu/FOV/Story suite:55 passed,2 native-Mac-only checks skipped. The new original
+save fixture also passes after its final host-buffer alignment cleanup.
+Supported Windows build passes, including complete patch validation, built-in
+checks, isolated test-disk recycling, identity sealing and matching crash symbols.
+Receipt: logs/multiplayer-profile-build.log. Context and whitespace checks pass.
+
+Paired Online loopback acceptance: two isolated Test Lab copies, two humans and
+six bots, two mid-match host returns with a fresh round between. Both processes
+reach usable lobby descriptors4E99C4/4E99D4 at11/12, retain directory membership,
+and report no save error. Completed152.4s; disposable disks recycled. No captures
+in this follow-up. Logs/provenance: logs/online-bots-profile-return-fixed;
+logs/multiplayer-profile-fixed.log. Executable SHA-256:
+`96bcae4765991038742156aef1dc3f2805c52dd0e3c5e2d43ebdb044e6018c49`.
+The identical-profile live baseline also passed: the intermittent report was
+reproduced by the controlled original-save fixture, not by that live baseline.
+
+No new native Mac/Linux build/gameplay or physical two-machine System Link
+acceptance; results-screen live acceptance was not repeated in this follow-up.
+No personal saves/settings or canonical fixture were changed. Prior Linux
+checkout synchronization does not include these uncommitted follow-up sources.
+
 ## 2026-11-06 - Linux setup on the RTX5090 Windows host
 
 Provisioned a fresh Ubuntu24.04 x64 WSL2 development environment. Updated WSL

@@ -746,3 +746,44 @@ def test_story_version_feature_flag(tmp_path, version, enabled, native):
     ran = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
     assert ran.returncode==0, ran.stdout+ran.stderr
     assert 'PASS:' in ran.stdout
+
+
+@pytest.mark.parametrize('short_scope', [False, True], ids=['fixed', 'short-scope-reproduction'])
+def test_multiplayer_original_profile_save(tmp_path, short_scope):
+    """Keep the stock CRC/write errors while saving the guest's persistent profile."""
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    xbe = ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image = xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous = dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions = {a: dict(name=f'sub_{a:08X}', end=b) for a,b in (
+            (0x1922d0,0x192578), (0x696f0,0x69716), (0x69750,0x69781),
+            (0x69790,0x697c1), (0x697d0,0x69811),
+            (0x1504f0,0x150522), (0x150560,0x15057c))}
+        translator = FunctionTranslator(image, functions)
+        code = '\n'.join(translator.translate_function(a, info) for a,info in functions.items())
+        table = '\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x}u;'
+                          for a in range(0x4e74b8,0x4e78b8,4))
+    finally:
+        vars(config).update(previous)
+    adapters = (ROOT/'src/network/pc_network_profiles.inc').read_text(encoding='utf-8')
+    production = (ROOT/'src/network/pc_multiplayer_exit.inc').read_text(encoding='utf-8')
+    adapters += production[production.index('static int multiplayer_profile_save(void (*original)(void))'):]
+    if short_scope:
+        adapters = adapters.replace('(multiplayer_destination ||\n       (WORD_AT(0x76b108u) && (WORD_AT(0x76b140u)==1u || WORD_AT(0x76b140u)==2u)))',
+                                    'multiplayer_destination')
+    source = (ROOT/'tests/network/multiplayer_profile_save.c').read_text(encoding='utf-8')
+    prototypes = '\n'.join(f'void {info["name"]}(void);' for info in functions.values())
+    source = source.replace('/* ORIGINAL_SAVE_PROTOTYPES */', prototypes)
+    source = source.replace('/* ORIGINAL_SAVE_FUNCTIONS */', code)
+    source = source.replace('/* ORIGINAL_CRC_TABLE */', table)
+    source = source.replace('/* PRODUCTION_NETWORK_PROFILE_SAVE */', adapters)
+    if short_scope:
+        source = '#define REPRODUCE_SHORT_SCOPE 1\n' + source
+    assert 'PASS:' in compile_and_run(tmp_path, source)

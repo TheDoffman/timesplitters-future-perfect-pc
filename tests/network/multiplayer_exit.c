@@ -127,5 +127,11 @@ int main(void){
  CHECK(WORD_AT(0x7bedc0)==0x7bca40 && WORD_AT(0x7bedc4)==77);
  CHECK(WORD_AT(0x7bedc0+0x1f54)==0x7bca00 && WORD_AT(0x7bedc4+0x1f54)==99);
  CHECK(WORD_AT(0x6f1e0c)==0x7bedc8+0x1f54);
+ /* Stock frontend saves may follow the lobby factory consuming the route. */
+ build(0x4e99d4);CHECK(!multiplayer_destination);
+ CHECK(multiplayer_profile_save(save_profile));
+ WORD_AT(0x76b108)=0;CHECK(!multiplayer_profile_save(save_profile));
+ WORD_AT(0x76b108)=1;mode=PC_ONLINE_STORY;
+ CHECK(!multiplayer_profile_save(save_profile));
  puts("PASS: party return, original guest exits, host loss, profile mapping and captions");return 0;
 }

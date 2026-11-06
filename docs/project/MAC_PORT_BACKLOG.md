@@ -1,3 +1,12 @@
+## Retained multiplayer profile-save scope - MAC-013 validation pending
+
+Uncommitted follow-up on multiplayer-lobby-return, base3ff65a51: shared Arcade
+profile mapping now follows the active host/member session after the lobby
+factory consumes the exit destination. Windows original-US CRC/save regression
+and shared menu checks pass; stock errors remain visible for actual corruption
+or failed writes. No new native adapter or transport change is required. Native
+Mac/Linux and physical System Link acceptance remain pending; see STATUS.
+
 ## Arcade host lobby return - MAC-013 validation pending
 
 Implemented on multiplayer-lobby-return (initial validation base337be3bc). Shared

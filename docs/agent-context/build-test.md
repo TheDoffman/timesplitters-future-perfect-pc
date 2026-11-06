@@ -1,3 +1,4 @@
+[Profile CRC tests](multiplayer-exit.md#validation): stock save success, late lobby saves, real checksum/write errors.
 [Icons](controls-options.md).
 [Effect depth](native-effect-depth.md).
 Mac storage tests: see launcher.md.
