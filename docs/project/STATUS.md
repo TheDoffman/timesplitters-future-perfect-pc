@@ -1,3 +1,44 @@
+## 2026-11-06 - Fullscreen verified on native Linux under WSL
+
+Built7a6fea3c in the separate /root/tsfp-linux-main-test checkout using the
+supported Linux builder, pinned SDK/dependencies, Clang18 and existing game data.
+Native protected-MMIO regression passes. Executable SHA256:
+fc70b1d61741579ac6fa7faca2491ee585a582edfc554ba8650c7ea3e8197384.
+No feature-code change was needed. The other Linux checkout's unrelated edits
+and existing build were preserved; the existing binary was read only for a
+Wayland baseline comparison. Dependency sources/SDK were reused without a new
+game-data copy.
+
+Linux display/input fixtures:15passed,1Windows-onlycase skipped. Linux launcher
+build/tests pass, including41 shared UI groups. Logs and the native build receipt
+are retained locally; logs/fullscreen-linux-verification.json summarizes exact
+source/binary identity and observed window-manager states.
+
+Actual game checks used Mesa lavapipe software Vulkan, Xvfb1280x720 and Openbox.
+Main Video Display: staging retains640x480 at[320,127]; Apply sets the X11
+_NET_WM_STATE_FULLSCREEN flag and1280x720 at[0,0]; Keep saves fullscreen=1,
+preserving the existing comment. Unconfirmed Windowed previews time out back to
+fullscreen without changing that saved value. Keeping Windowed restores exact
+original geometry and saves fullscreen=0. A fresh gameplay run verifies the
+pause Display layout, fullscreen Apply/Keep, actual fullscreen flag/geometry and
+saved fullscreen=1. Captures include logs/fullscreen-linux-kept.png and
+logs/fullscreen-linux-pause-kept.png. The first bounded run completed600s with
+at least4500 guest frames and0Vulkan validation errors. The final pause run
+observed at least6900 guest frames and0errors; it was deliberately terminated
+after acceptance, so its nonzero termination is not recorded as a successful
+natural exit. All owned runs ended and the runner recycled their test disks.
+An intermediate input schedule entered profile creation; it was stopped and
+replaced by an observed-navigation run, not counted as pause acceptance.
+
+Wayland/WSLg renderer self-tests with saved fullscreen=0/1 pass on sequential
+retry: startup flags,640x360 windowed present,1920x1080 fullscreen present and
+restoration. The existing Linux binary also passes both baseline cases. The
+initial concurrent startup run failed fullscreen/restore/startup-fullscreen;
+its cause is unestablished. Record this transient, rather than treating Wayland
+as clean first-run acceptance. No performance, physical Linux GPU, Steam Deck,
+gamescope or general desktop-compositor acceptance is claimed. Native Mac
+validation remains pending. Test evidence stays ignored; no publication.
+
 ## 2026-11-06 - Fullscreen selector in Video Options (local)
 
 Local feature/fullscreen-options after5c5acf91 adds Window mode to Display in

@@ -6,9 +6,14 @@ Window mode to frontend/pause Display, staged across tabs with Apply/Keep and
 pc_display.c marshals SDL queries/transitions to the main thread, reusing the
 same code for Mac/Linux and both native renderers. Windows patch2620 dispatches
 to its shadow-window thread. No separate Mac feature implementation is needed.
-Windows menu/launcher tests and SDL-header syntax checks are recorded in STATUS.
-Native Mac/Linux builds and live windowed/fullscreen, timeout, pause, hotkey and
-save/relaunch acceptance remain pending; do not infer them from Windows fixtures.
+Windows evidence and Linux verification at7a6fea3c are recorded in STATUS.
+Native Ubuntu/WSL source build, protected-MMIO, input/display fixtures, launcher
+UI tests and actual X11 frontend/pause fullscreen Apply/Keep/persistence and
+timeout restoration pass with software Vulkan. Wayland/WSLg self-tests pass on
+sequential retry after an initial transient failure; general compositor and
+physical Linux/Steam Deck acceptance remain pending. Native Mac build and live
+windowed/fullscreen, timeout, pause, hotkey and save/relaunch checks remain pending.
+The Linux result does not establish native Mac support.
 
 ## MAC-130 - macOS Application Support storage (#502) - Awaiting validation
 

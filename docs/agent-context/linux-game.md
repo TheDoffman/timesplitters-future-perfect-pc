@@ -1,3 +1,15 @@
+## Fullscreen option acceptance
+
+Shared fullscreen Video Options at7a6fea3c build and run on native Linux under
+Ubuntu/WSL with software Vulkan. Both frontend and pause Display use the same
+staged Window mode, Apply/Keep and rollback contract as Windows. Actual X11
+window-manager state/geometry and saved0/1 values were checked under isolated
+Openbox/Xvfb, including a live timeout restoration. The Linux launcher shared UI
+checks pass. See STATUS for source/binary identity and exact evidence.
+Wayland/WSLg startup/mode self-tests passed on sequential retry after an initial
+concurrent-run failure; no cause is established. Physical Linux GPU/Steam Deck,
+gamescope, and other compositor acceptance remain separate and unverified.
+
 # Native Linux game integration
 
 ## Experimental release preparation

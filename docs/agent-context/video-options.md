@@ -85,3 +85,9 @@ window: staging, tab retention, discard, Keep, Back, timeout, failed save, faile
 window request and recovery. test_pc_display_modes.py supplies the expanded SDL
 contract; test_smaa.py carries the shared writer into its isolated source fixture.
 Existing launcher settings/dirty-Save tests cover its fullscreen checkbox.
+
+Linux acceptance at7a6fea3c: native build and actual X11 frontend/pause window
+transitions, Keep persistence and timeout restoration pass under Ubuntu/WSL
+software Vulkan. Linux launcher UI checks pass. Wayland/WSLg self-tests pass on
+sequential retry after an initial transient; physical desktop/Deck and native
+Mac acceptance remain pending. See linux-game.md and STATUS for measured scope.
