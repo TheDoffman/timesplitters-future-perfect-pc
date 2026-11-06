@@ -1,4 +1,6 @@
-[Profile CRC/wrapper tests](multiplayer-exit.md#validation): stock save success, late lobby saves, real checksum/write errors.
+[Window mode](video-options.md).
+
+[Profile tests](multiplayer-exit.md#validation): saves, late lobby saves, checksum/write errors.
 [Icons](controls-options.md).
 [Effect depth](native-effect-depth.md).
 Mac storage tests: see launcher.md.

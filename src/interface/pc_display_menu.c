@@ -27,6 +27,9 @@ static void controls_tabs_flush(void);
 #endif
 #endif
 #include "pc_display.h"
+#include "pc_runtime_settings.h"
+int pc_display_save_fullscreen(int enabled)
+{ return pc_runtime_bool_save("fullscreen",enabled); }
 #include "pc_native_rate.h"
 #include "pc_frame_rate_settings.h"
 #include "pc_audio_settings.h"
@@ -387,7 +390,8 @@ static int all_mode_count, selected_aspect;
 enum { DISPLAY_HOME, DISPLAY_CONFIRM, DISPLAY_GRAPHICS, DISPLAY_VIEW, DISPLAY_RESTART, DISPLAY_ADVANCED };
 static int mode_count, selected_mode, page, staged_fov, previous_fov;
 static int staged_weapon_fov=PC_WEAPON_FOV_DEFAULT,previous_weapon_fov=PC_WEAPON_FOV_DEFAULT;
-static uint32_t weapon_fov_row;
+static uint32_t weapon_fov_row,window_mode_row;
+static int staged_fullscreen,previous_fullscreen;
 static int apply_page=DISPLAY_HOME;
 static int staged_rate, applied_rate;
 static unsigned applied_texture;
@@ -437,7 +441,7 @@ static void menu_video_click_sound(uint32_t menu,uint32_t item)
        WORD_AT(menu+4)!=storage || !guest_writable(item,0x8c) ||
        WORD_AT(item+0x88)!=menu || (WORD_AT(item+0x28)&5u))return;
     unsigned id=WORD_AT(item+0x14);
-    if(!(id<=2u || (id>=7u && id<=12u) || (id>=100u && id<=105u)))return;
+    if(!(id<=2u || (id>=7u && id<=13u) || (id>=100u && id<=105u)))return;
     uint32_t sounds=WORD_AT(0x007BA178u);
     if(WORD_AT(0x007BA16Cu) && guest_writable(sounds,12))
         guest_call(sub_00021780,1,WORD_AT(sounds+8));
@@ -1087,7 +1091,7 @@ static int mode_equal(PcDisplayMode a,PcDisplayMode b)
 { return a.width==b.width && a.height==b.height; }
 static int display_dirty(void)
 {
-    return !mode_equal(staged,previous) || staged_fov!=previous_fov || staged_weapon_fov!=previous_weapon_fov ||
+    return staged_fullscreen!=previous_fullscreen || !mode_equal(staged,previous) || staged_fov!=previous_fov || staged_weapon_fov!=previous_weapon_fov ||
         staged_rate!=applied_rate || texture_choice!=applied_texture || staged_subtitles!=applied_subtitles || staged_aa!=applied_aa || graphics_dirty();
 }
 static void update_apply(void)
@@ -1102,7 +1106,7 @@ static void update_apply(void)
 #include "pc_video_tabs.inc"
 static void labels(void)
 {
-    weapon_fov_row=resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=post_aa_row=apply_row=0;
+    window_mode_row=weapon_fov_row=resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=post_aa_row=apply_row=0;
     /* Section rebuilds keep the same tab strip; retain hits until repaint. */
     if(page==DISPLAY_CONFIRM || page==DISPLAY_RESTART) {video_tab_bounds_valid=0;video_pending_tab=-1;}
     extern void sub_00079710(void);
@@ -1112,6 +1116,11 @@ static void labels(void)
     }
     if(page==DISPLAY_HOME) {
         guest_call(sub_00071B10,4,1u,bits(3.f),1u,1u);
+        window_mode_row=guest_call(sub_00079D60_gen,6,text_at(5,"Window mode"),13u,0u,0u,0u,0u);
+        guest_call(sub_0007D480,2,0x8400u,0u);
+        guest_call(sub_000717D0,1,text_at(6,"Windowed"));
+        guest_call(sub_000717D0,1,text_at(20,"Fullscreen"));
+        guest_call(sub_00075430,2,window_mode_row,(uint32_t)staged_fullscreen);
         aspect_row=guest_call(sub_00079D60_gen,6,text_at(7,"Aspect ratio"),0u,0u,0u,0u,0u);
         guest_call(sub_0007D480,2,0x8400u,0u);
         for(int i=0;i<PC_DISPLAY_ASPECT_COUNT;i++)
@@ -1187,6 +1196,7 @@ static void read_choices(void)
     if(page==DISPLAY_CONFIRM || page==DISPLAY_RESTART)return;
     if(page==DISPLAY_GRAPHICS || page==DISPLAY_ADVANCED)graphics_read_choices();
     counter_read_choice();
+    if(window_mode_row && WORD_AT(window_mode_row+0xc8)<=1u)staged_fullscreen=(int)WORD_AT(window_mode_row+0xc8);
     if(resolution_row) {
         unsigned choice=WORD_AT(resolution_row+0xc8);
         if(choice<(unsigned)mode_count) { selected_mode=(int)choice;staged=modes[choice]; }
@@ -1248,8 +1258,8 @@ static void leave(void)
 }
 static void revert(void)
 {
-    if(pc_display_apply(previous)) {
-        pc_display_set_fov(previous_fov);staged=previous;deadline=0;
+    if((pc_display_fullscreen()==previous_fullscreen || pc_display_set_fullscreen(previous_fullscreen)) && pc_display_apply(previous)) {
+        pc_display_set_fov(previous_fov);staged=previous;staged_fullscreen=previous_fullscreen;deadline=0;
         selected_aspect=pc_display_aspect(previous);if(selected_aspect<0)selected_aspect=0;
         filter_modes();*status=0;
         refresh(apply_page,0);
@@ -1269,6 +1279,7 @@ static void apply_changes(void)
     int display_changed=!mode_equal(staged,previous) || staged_fov!=previous_fov || staged_weapon_fov!=previous_weapon_fov;
     int rate_changed=staged_rate!=applied_rate,display_saved=0,rate_saved=0;
     int restart_changed=graphics_restart_dirty(),graphics_saved=0;
+    int window_changed=staged_fullscreen!=previous_fullscreen,window_saved=0;
     TsfpGraphicsOptions previous_graphics=pc_graphics_get();
     /* Resolution is already previewed/confirmed. Persist before publishing
      * FPS/texture changes so a failed save leaves those running values alone. */
@@ -1287,6 +1298,8 @@ static void apply_changes(void)
         if(!pc_graphics_set(&next))goto failed;
         graphics_saved=1;
     }
+    if(window_changed && !pc_display_save_fullscreen(staged_fullscreen))goto failed;
+    window_saved=window_changed;
     if(staged_aa!=applied_aa && !pc_post_aa_set(staged_aa))goto failed;
     if(rate_changed)recomp_config_request_native_rate(pc_frame_rate_value(staged_rate));
     if(staged_subtitles!=applied_subtitles) {
@@ -1300,6 +1313,7 @@ static void apply_changes(void)
         applied_subtitles=staged_subtitles;
     }
     tsfp_texture_set_4k((int)texture_choice);
+    previous_fullscreen=staged_fullscreen;
     previous=staged;previous_fov=staged_fov;previous_weapon_fov=staged_weapon_fov;applied_rate=staged_rate;applied_texture=texture_choice;
     applied_aa=staged_aa;
     deadline=0;*status=0;filter_modes();
@@ -1318,7 +1332,9 @@ failed:
         undo.shader_cache=previous_graphics.shader_cache;
         graphics_restored=pc_graphics_set(&undo);
     }
-    int saved_back=(!display_saved || (restored && pc_display_save())) && rate_restored && graphics_restored;
+    restored=(pc_display_fullscreen()==previous_fullscreen || pc_display_set_fullscreen(previous_fullscreen)) && restored;
+    int window_restored=!window_saved || pc_display_save_fullscreen(previous_fullscreen);
+    int saved_back=window_restored && (!display_saved || (restored && pc_display_save())) && rate_restored && graphics_restored;
     snprintf(status,sizeof status,saved_back?"Could not save changes. Please try again.":"Could not restore saved display settings.");
     if(!restored) { deadline=GetTickCount64();return; }
     deadline=0;refresh(apply_page,0);
@@ -1343,11 +1359,13 @@ static void select_callback(void)
         read_choices();update_apply();
         if(display_dirty()) {
             apply_page=page;
-            if(!mode_equal(staged,previous)) {
-                if(pc_display_preview(staged)) {
+            if(!mode_equal(staged,previous) || staged_fullscreen!=previous_fullscreen) {
+                int window_ok=pc_display_fullscreen()==staged_fullscreen || pc_display_set_fullscreen(staged_fullscreen);
+                if(window_ok && (mode_equal(staged,previous) || pc_display_preview(staged))) {
                     deadline=GetTickCount64()+15000;refresh(DISPLAY_CONFIRM,1);
                 } else {
-                    snprintf(status,sizeof status,"Cannot apply resolution");refresh(apply_page,0);
+                    pc_display_set_fullscreen(previous_fullscreen);
+                    snprintf(status,sizeof status,"Cannot apply display mode");refresh(apply_page,0);
                 }
             } else apply_changes();
         }
@@ -1428,6 +1446,7 @@ static void activate(void)
         }
     }
     if(storage) {
+        staged_fullscreen=previous_fullscreen=pc_display_fullscreen();
         staged=previous=pc_display_current();staged_fov=previous_fov=pc_display_fov();
         staged_weapon_fov=previous_weapon_fov=pc_display_weapon_fov();
         staged_rate=applied_rate=pc_frame_rate_choice(pc_native_rate());

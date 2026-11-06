@@ -1,3 +1,20 @@
+## Fullscreen Video option — native acceptance pending
+
+Local feature/fullscreen-options after5c5acf91: shared pc_display_menu.c adds
+Window mode to frontend/pause Display, staged across tabs with Apply/Keep and
+15-second rollback. Existing runtime.conf fullscreen key is shared with launcher.
+pc_display.c marshals SDL queries/transitions to the main thread, reusing the
+same code for Mac/Linux and both native renderers. Windows patch2620 dispatches
+to its shadow-window thread. No separate Mac feature implementation is needed.
+Windows evidence and Linux verification at7a6fea3c are recorded in STATUS.
+Native Ubuntu/WSL source build, protected-MMIO, input/display fixtures, launcher
+UI tests and actual X11 frontend/pause fullscreen Apply/Keep/persistence and
+timeout restoration pass with software Vulkan. Wayland/WSLg self-tests pass on
+sequential retry after an initial transient failure; general compositor and
+physical Linux/Steam Deck acceptance remain pending. Native Mac build and live
+windowed/fullscreen, timeout, pause, hotkey and save/relaunch checks remain pending.
+The Linux result does not establish native Mac support.
+
 ## Native multiplayer wrapper admission - MAC-013 validation pending
 
 Follow-up based on dc642eb3: patch2625 enables the thirteen existing shared

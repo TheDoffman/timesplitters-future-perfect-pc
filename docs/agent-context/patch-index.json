@@ -2033,6 +2033,14 @@
       ]
     },
     {
+      "name": "2620-fullscreen-menu.patch",
+      "path": "patches/graphics/interface/2620-fullscreen-menu.patch",
+      "sha256": "ace06ebef1ee06dfc21049d7de7e0454f3174d6e66fd5dcbd80aa84c022c619a",
+      "targets": [
+        "src/hle/hle_d3d8.c"
+      ]
+    },
+    {
       "name": "2620-multiplayer-lobby-return.patch",
       "path": "patches/network/2620-multiplayer-lobby-return.patch",
       "sha256": "ac9c88169a843aea620ab52d2eaaa87d4b905a87ee231fad48460c48dee02376",

@@ -28,6 +28,8 @@ def test_reused_runtime_config_uses_active_source(tmp_path, source_variable):
     active=tmp_path/'current checkout/src'
     (active/'graphics').mkdir(parents=True)
     (active/'native').mkdir()
+    (active/'interface').mkdir()
+    shutil.copy2(ROOT/'src/interface/pc_runtime_settings.h',active/'interface/pc_runtime_settings.h')
     shutil.copy2(ROOT/'src/graphics/pc_smaa_settings.h',active/'graphics/pc_smaa_settings.h')
     stale=tmp_path/'src/graphics'
     stale.mkdir(parents=True)

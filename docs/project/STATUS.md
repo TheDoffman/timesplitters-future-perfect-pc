@@ -1,3 +1,77 @@
+## 2026-11-06 - Fullscreen verified on native Linux under WSL
+
+Built7a6fea3c in the separate /root/tsfp-linux-main-test checkout using the
+supported Linux builder, pinned SDK/dependencies, Clang18 and existing game data.
+Native protected-MMIO regression passes. Executable SHA256:
+fc70b1d61741579ac6fa7faca2491ee585a582edfc554ba8650c7ea3e8197384.
+No feature-code change was needed. The other Linux checkout's unrelated edits
+and existing build were preserved; the existing binary was read only for a
+Wayland baseline comparison. Dependency sources/SDK were reused without a new
+game-data copy.
+
+Linux display/input fixtures:15passed,1Windows-onlycase skipped. Linux launcher
+build/tests pass, including41 shared UI groups. Logs and the native build receipt
+are retained locally; logs/fullscreen-linux-verification.json summarizes exact
+source/binary identity and observed window-manager states.
+
+Actual game checks used Mesa lavapipe software Vulkan, Xvfb1280x720 and Openbox.
+Main Video Display: staging retains640x480 at[320,127]; Apply sets the X11
+_NET_WM_STATE_FULLSCREEN flag and1280x720 at[0,0]; Keep saves fullscreen=1,
+preserving the existing comment. Unconfirmed Windowed previews time out back to
+fullscreen without changing that saved value. Keeping Windowed restores exact
+original geometry and saves fullscreen=0. A fresh gameplay run verifies the
+pause Display layout, fullscreen Apply/Keep, actual fullscreen flag/geometry and
+saved fullscreen=1. Captures include logs/fullscreen-linux-kept.png and
+logs/fullscreen-linux-pause-kept.png. The first bounded run completed600s with
+at least4500 guest frames and0Vulkan validation errors. The final pause run
+observed at least6900 guest frames and0errors; it was deliberately terminated
+after acceptance, so its nonzero termination is not recorded as a successful
+natural exit. All owned runs ended and the runner recycled their test disks.
+An intermediate input schedule entered profile creation; it was stopped and
+replaced by an observed-navigation run, not counted as pause acceptance.
+
+Wayland/WSLg renderer self-tests with saved fullscreen=0/1 pass on sequential
+retry: startup flags,640x360 windowed present,1920x1080 fullscreen present and
+restoration. The existing Linux binary also passes both baseline cases. The
+initial concurrent startup run failed fullscreen/restore/startup-fullscreen;
+its cause is unestablished. Record this transient, rather than treating Wayland
+as clean first-run acceptance. No performance, physical Linux GPU, Steam Deck,
+gamescope or general desktop-compositor acceptance is claimed. Native Mac
+validation remains pending. Test evidence stays ignored; no publication.
+
+## 2026-11-06 - Fullscreen selector in Video Options (local)
+
+Local feature/fullscreen-options after5c5acf91 adds Window mode to Display in
+both main and pause Video Options. Choices stage until Apply, preview with the
+existing15-second Keep/Revert confirmation, and save the existing runtime.conf
+fullscreen key only after Keep. Failure/timeout/Back restore the original host
+mode. The launcher already persisted that setting; its checkbox is now labelled
+Fullscreen with a borderless/windowed and next-launch tooltip.
+
+Focused Windows menu/display/SMAA/pointer checks:16passed,2native-Mac-only
+compile checks skipped (logs/fullscreen-final-tests.log); expanded SDL query/set
+main-thread and failure fixture passes both cases (logs/fullscreen-sdl-tests.log).
+Actual SDL headers plus Linux GCC syntax checks pass for pc_display.c and the
+full native-display menu translation unit. These do not establish native GPU or
+window-manager acceptance. Windows launcher Build -Test passed all included
+regressions/settings/maintenance checks (logs/fullscreen-launcher-tests.log).
+
+The shared targeted runtime writer preserves unrelated settings/comments and
+retains SMAA atomic live publication. The isolated menu fixture checks staged
+discard, tab retention, Apply/Keep, Back, timeout, readonly save rejection, failed
+host requests and successful retry. Patch2620 applies through the complete
+loader stack; repository context checks pass. Supported Windows Build and its built-in checks pass with repository defaults
+(logs/fullscreen-build.log). An isolated Test Lab run at1280x720 confirms
+staging leaves the window unchanged, Apply enters borderless1920x1080, Keep
+saves, and switching back restores the exact original[78,78,734,597] bounds.
+Its runtime.ini retains the original comment and saves fullscreen=0. Main menu
+layout is captured in logs/aspect-fullscreen-display.png; window style/bounds
+proof is in logs/fullscreen-{staged,preview,kept,windowed-kept}.json. A second isolated run verifies the actual pause Display layout and fullscreen
+Apply/Keep, with saved fullscreen=1 (logs/aspect-fullscreenpause-kept.png and
+logs/fullscreen-pause-kept.json). Both test runs have ended and their disposable
+disks were recycled. Native Mac/Linux build and live acceptance remain pending.
+No PR/main publication is authorized for this new feature.
+
 ## 2026-11-06 - PR511 validation fixture corrections
 
 User confirmed the multiplayer fix and authorized PR/merge. PR511 initial CI

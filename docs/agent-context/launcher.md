@@ -770,3 +770,10 @@ negative-classification, retry/log/path, long-path layout and preservation check
 in launcher_startup.cs. The existing shared UI suite also checks host scoping:
 MACOS/LINUX never interpret Windows numeric error codes as antivirus evidence.
 Native host execution and real McAfee detection remain separate acceptance work.
+
+Fullscreen control: SettingsPage retains BorderlessFullscreen's checkbox identity
+and staged Save behavior, labels it Fullscreen, and explains windowed/borderless
+and next-launch semantics in its tooltip. GameSettings keeps the existing
+runtime.conf fullscreen boolean; in-game Window mode Apply/Keep now saves this
+same key. No second launcher preference, OS-specific settings model or default
+change. See video-options.md for the shared live-window and rollback contract.
