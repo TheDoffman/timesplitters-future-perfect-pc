@@ -101,6 +101,14 @@ def test_multiple_explicit_seeds_override_and_no_seeds_wins(tmp_path, monkeypatc
     assert '--seed-functions' not in calls[0][1]
 
 
+def test_default_split_bounds_function_count(tmp_path, monkeypatch):
+    calls = capture(monkeypatch)
+    assert pipeline.main([str(sample(tmp_path)), '--only', 'lift']) == 0
+    lift = calls[0][1]
+    assert lift[lift.index('--split') + 1] == '100'
+    assert '--context-continuations' in lift
+
+
 def test_all_functions_explicit_generation_dir_and_zero_split(tmp_path, monkeypatch):
     xbe = sample(tmp_path)
     calls = capture(monkeypatch)
