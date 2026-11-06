@@ -1,3 +1,12 @@
+Sidebar Video Settings (uncommitted after45b1b7b8): implemented, native acceptance
+pending. Shared pc_video_sidebar.h/.inc and pc_video_sidebar_ui.inc reuse the
+existing native display, graphics and settings adapters with a value-only
+guest-frame mailbox. Input/Video categories, selectors, staged FOV and Apply/
+Revert require no duplicate platform logic. Legacy GL retains unsupported
+preferences and disables effect controls. Windows checks are in [STATUS](STATUS.md).
+Remaining: Mac/Linux build/link, resolution enumeration/preview/restore, native
+profile subtitle save, fullscreen, Retina/DPI layout and Vulkan/legacy GL visuals.
+
 Developer Tools shared typography (uncommitted after f73c38e9): implemented,
 native acceptance pending. Shared src/graphics/pc_developer_font.c measures and
 rasterizes embedded Selawik/Cousine with one native C implementation. Patch2620

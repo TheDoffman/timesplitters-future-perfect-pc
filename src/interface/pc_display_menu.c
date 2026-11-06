@@ -172,8 +172,10 @@ static int discord_guest_read(void *context,uint32_t address,void *out,size_t by
 }
 #endif
 
+static void video_sidebar_tick(void);
 void pc_display_camera(void (*original)(void))
 {
+    pc_developer_video_register(video_sidebar_tick);
 #ifdef TSFP_PC_DISCORD
     /* Sample guest RAM on its own thread; publish only plain values to IPC. */
     static ULONGLONG discord_sampled;
@@ -1587,3 +1589,5 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
 #include "pc_developer_guest.inc"
 
 #include "pc_developer_lobby_guest.inc"
+
+#include "pc_video_sidebar.inc"

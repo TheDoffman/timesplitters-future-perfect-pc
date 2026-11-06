@@ -1,4 +1,5 @@
 #include "pc_developer_font.h"
+#include "pc_developer_canvas.h"
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -24,5 +25,13 @@ int main(void) {
     assert(strstr(fitted,"\xe2\x80\xa6")&&pc_developer_font_measure(fitted,12,400,PC_FONT_UI).advance<=45);
     pc_developer_font_fit("Fits",12,400,PC_FONT_UI,100,fitted,sizeof fitted);assert(!strcmp(fitted,"Fits"));
     printf("Shared fonts: regular %.3f / semibold %.3f; fractional metrics, real glyphs, numeric spacing and ellipsis passed\n",a.advance,b.advance);
+    PcDeveloperCanvas cache={0};
+    PcDeveloperGlyph *glyph=pc_developer_canvas_glyph(&cache,"Developer Tools",30,600,PC_FONT_UI,-.45f,pc_developer_font_bitmap);
+    assert(glyph);unsigned width=glyph->width,height=glyph->height;
+    unsigned char *saved=malloc((size_t)width*height);assert(saved);memcpy(saved,glyph->pixels,(size_t)width*height);
+    for(int i=0;i<160;i++){char label[80];snprintf(label,sizeof label,"Changing video option %d",i);assert(pc_developer_canvas_glyph(&cache,label,16.5f,400,PC_FONT_UI,0,pc_developer_font_bitmap));}
+    glyph=pc_developer_canvas_glyph(&cache,"Developer Tools",30,600,PC_FONT_UI,-.45f,pc_developer_font_bitmap);
+    assert(glyph&&glyph->width==width&&glyph->height==height&&!memcmp(saved,glyph->pixels,(size_t)width*height));
+    free(saved);pc_developer_canvas_release(&cache);
     return 0;
 }

@@ -934,3 +934,8 @@ empty string to clear the override. save_paths/native_paths cover UDATA aliases,
 unchanged other routes, rejection and override removal.
 
 [Further contracts and validation notes](runtime-continuation.md).
+
+Sidebar Video Settings uses a shared-source guest-frame provider registered by
+`pc_display_camera`, called through `pc_developer_guest_frame`. It adds no
+generated guest edits or runtime patch; value-only mailbox contracts and tests
+are described in the Systems continuation.

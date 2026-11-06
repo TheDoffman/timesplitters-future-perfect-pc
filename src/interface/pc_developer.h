@@ -2,6 +2,7 @@
 #define TSFP_PC_DEVELOPER_H
 #include <stddef.h>
 #include "pc_input.h"
+#include "pc_video_sidebar.h"
 #include "pc_menu_mouse.h"
 /* Host UI requests contain values only. Guest memory is touched exclusively by
  * the game-thread adapter; window/presentation threads never retain guest pointers. */

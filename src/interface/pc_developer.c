@@ -31,6 +31,28 @@ static char recent[24][144];
 static int recent_count;
 static struct {int mode;float position[3],yaw,pitch;} flight;
 
+static PcVideoSnapshot video_snapshot;
+static PcVideoRequest video_request;
+static unsigned video_serial;
+static void (*video_guest_tick)(void);
+void pc_developer_video_register(void (*tick)(void)) {video_guest_tick=tick;}
+void pc_developer_video_guest_tick(void) {if(video_guest_tick)video_guest_tick();}
+void pc_developer_video_publish(const PcVideoSnapshot *snapshot) {
+    AcquireSRWLockExclusive(&dev_lock);video_snapshot=*snapshot;ReleaseSRWLockExclusive(&dev_lock);
+}
+void pc_developer_video_snapshot(PcVideoSnapshot *snapshot) {
+    AcquireSRWLockShared(&dev_lock);*snapshot=video_snapshot;ReleaseSRWLockShared(&dev_lock);
+}
+int pc_developer_video_take(PcVideoRequest *request) {
+    AcquireSRWLockExclusive(&dev_lock);*request=video_request;video_request.serial=0;ReleaseSRWLockExclusive(&dev_lock);return request->serial!=0;
+}
+unsigned pc_developer_video_request(int action,const PcVideoValues *desired) {
+    AcquireSRWLockExclusive(&dev_lock);
+    if(video_request.serial){ReleaseSRWLockExclusive(&dev_lock);return 0;}
+    video_request.action=action;if(desired)video_request.desired=*desired;
+    video_request.serial=++video_serial;if(!video_request.serial)video_request.serial=++video_serial;
+    unsigned serial=video_request.serial;ReleaseSRWLockExclusive(&dev_lock);return serial;
+}
 int pc_developer_enabled(void) {return pc_settings_developer_enabled();}
 int pc_developer_shortcut_key(int key) {
     if(key<=0 || key>255 || !pc_developer_enabled() || pc_settings_capture_blocked() ||

@@ -952,3 +952,11 @@ The source identity also hashes verified font assets and the vendored rasterizer
 TTF inputs keep binary bytes while text files retain line-ending normalization.
 The font metrics fixture compares semibold tracking with an independent browser
 measurement, and package tests remain asset-free host-contract checks.
+
+Sidebar Video Settings extends the existing developer input and FOV fixtures:
+run `tests/input/test_developer_tools.py`, `tests/graphics/test_fov_settings.py`
+and final-target sidebar GPU cases. They check staged UI requests, native
+profile save, batch rollback and resolution Keep/timeout/close behavior.
+
+The real-font fixture also evicts the full glyph cache and verifies that a
+tracked semibold title recreates identical pixels after video labels replace it.

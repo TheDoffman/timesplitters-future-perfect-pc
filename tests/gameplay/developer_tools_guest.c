@@ -28,6 +28,7 @@ void pc_developer_report(const char *message) {snprintf(report,sizeof report,"%s
 void pc_developer_close(void) {}
 int pc_developer_enabled(void) {return 1;}
 void pc_developer_lobby_guest(void) {}
+void pc_developer_video_guest_tick(void) {}
 void pc_controls_apply_mouse(uint32_t player,uint32_t camera,ptrdiff_t offset)
 {assert(player==0x4000&&camera==0x2000&&offset==g_xbox_mem_offset);}
 static int guest_writable(uint32_t address,size_t bytes) {return address>=0x1000&&address<sizeof memory&&bytes<=sizeof memory-address;}

@@ -1,3 +1,56 @@
+## 2026-11-06 - Settings tab label
+
+Local, uncommitted after45b1b7b8. Renamed the sidebar tab and bindings-editor
+back button from PC Settings to Settings; updated both private mockups and
+current README wording. Layout still measures the label width. Existing
+sidebar input test, supported Windows Build/linked checks, context and whitespace
+checks pass. No fresh gameplay or native Mac/Linux validation for this label edit.
+Executable SHA-256: `2f2c2a1ad8bd6e2884570c0c917d937efd67c884a42183a7a9c338d3b7cc1e91`.
+
+## 2026-11-06 - Video Settings in Developer Tools
+
+Prior native sidebar/typography work committed locally as45b1b7b8. This follow-up
+is local and uncommitted on developer-tools-overlay; nothing pushed.
+PC Settings now has collapsible Input Settings above collapsible Video Settings,
+with Display, Graphics, View & HUD and Advanced subgroups. The redundant Debug /
+Diagnostics link is removed. Tools speed presets are0.50/1.00/2.00/4.00.
+
+The shared native UI supports render-mode/aspect and frame-rate selectors,
+fullscreen, Classic/Enhanced textures, AF/AO/post-AA, typed/stepped/sliding FOV,
+subtitles, Kill Feed, FPS/Ping, MSAA, supersampling, shader cache and cache clearing.
+A copied-value mailbox applies drafts on the guest thread through existing APIs;
+subtitle changes use the native profile save flag. Apply/Revert, resolution Keep /
+15-second timeout and close-to-revert, failed-save rollback, and restart-required
+MSAA/supersampling preserve existing settings semantics and files. Aspect/rate
+catalogs are shared with existing settings. Legacy GL preserves unsupported
+preferences and disables those effect controls. No browser or new OS dependency.
+
+Windows x64, MSVC14.42.34433 / SDK10.0.22621.0, D3D11 / SDL3.4.16. Supported US XBE
+validated. Supported Build, linked tests, patch-stack validation and symbols pass.
+Affected input/FOV/native-HUD suite:26 passed,2 native-Mac compile cases skipped.
+Frame-clock/display-mode/graphics preference suite:13 passed. The final UI fixture
+also passes after disabled Apply/Revert styling; a separate real-font cache
+eviction stress case passes. Repository context and diff
+whitespace checks pass. Existing CI suites cover the extended behavioral fixtures.
+Final executable SHA-256:
+`61c4c41ad3598c65d4763f9551e9099c4dd59be1a6a3b7e228758da0ad0b287d`.
+
+A45-second bounded isolated Test Lab run verified FOV75 stays unsaved until Apply,
+then writes the isolated display file; searchable resolution selection, preview
+and Revert preserve that saved file. Captures reviewed at150% DPI. Some captures after filtering / Original-resolution preview showed displaced
+header text; resolution selection/confirmation/revert still worked. A bounded
+CPU canvas capture and real-font cache eviction test render the header correctly;
+the corresponding slower instrumented GPU capture was also correct. This is
+retained as an intermittent presentation/capture-fidelity gap, not attributed to
+a specific cause or called pixel-perfect acceptance. Temporary instrumentation
+was removed from final source.
+Personal controls/display, saves and canonical fixture remain intact; disposable
+partitions recycled. Evidence: private/test-saves/developer-tools/video-result.json
+and captures/video-*.png. Final short visual capture separately records the final
+button styling. Native Mac/Linux build and real-host input/GPU/visual acceptance
+remain unrun; see MAC_PORT_BACKLOG.md. Automated input is synthetic, not a physical
+keyboard/controller test; full campaign gameplay is outside this check.
+
 ## 2026-11-05 - Correct reset arrow direction
 
 Local, uncommitted on developer-tools-overlay after f73c38e9. Corrected the

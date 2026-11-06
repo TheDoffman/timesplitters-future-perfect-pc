@@ -2,7 +2,7 @@
  * testing use this single value-only widget layout on all host renderers. */
 #include "graphics/pc_developer_font.h"
 enum { UI_ACTION,UI_GROUP,UI_TAB,UI_DOCK,UI_CLOSE,UI_SEARCH,UI_CLEAR,
-       UI_NUMBER,UI_STEP,UI_SLIDER,UI_PRESET,UI_BIND,UI_SETTING,UI_SCROLL };
+       UI_NUMBER,UI_STEP,UI_SLIDER,UI_PRESET,UI_BIND,UI_SETTING,UI_SCROLL,UI_VIDEO,UI_VIDEO_OPTION,UI_VIDEO_PAGE };
 typedef struct DeveloperWidget {
     int kind,a,b,content;double value;
     float x,y,w,h;
@@ -12,7 +12,7 @@ static DeveloperWidget sidebar_widgets[160];
 static unsigned sidebar_count;
 static int sidebar_focus=-1,sidebar_right,sidebar_search_edit,sidebar_quick_bind;
 static int sidebar_select_all,sidebar_drag=-1,sidebar_dirty;
-static int sidebar_expanded[11]={1,1,0,0,1,1,1,0,1,1,0};
+static int sidebar_expanded[18]={1,1,0,0,1,1,1,0,1,1,0,0,1,1,1,0,0,0};
 static char sidebar_search[64];
 static float sidebar_scroll[5],sidebar_max_scroll,sidebar_width=1280,sidebar_height=720;
 static float sidebar_scale,sidebar_left,sidebar_top,sidebar_bottom,sidebar_y;
@@ -139,9 +139,10 @@ static void sidebar_binding(int action,int binding,int quick,float x,float y,flo
     sidebar_button(UI_BIND,action,binding,quick,x,y,w,25,text,capture_action==action&&slot==binding);
     if(sidebar_count)snprintf(sidebar_widgets[sidebar_count-1].name,80,"%s",name);
 }
+static double sidebar_video_fov(void);
 static double sidebar_value(int id) {
     PcDeveloperState s;pc_developer_get(&s);
-    return id==1?s.manual_speed:id==2?draft.sensitivity:id==3?s.slow_speed:s.fast_speed;
+    return id==5?sidebar_video_fov():id==1?s.manual_speed:id==2?draft.sensitivity:id==3?s.slow_speed:s.fast_speed;
 }
 static void sidebar_number(const char *name,int id) {
     if(!sidebar_row_matches(name))return;
@@ -206,7 +207,7 @@ static void sidebar_tools(void) {
             sidebar_widget(UI_SLIDER,1,0,0,31,sidebar_y,378,27,"Game speed slider");
             sidebar_text_style(31,sidebar_y+22,110,18,UI_MUTED,"Slower",10,400,0);
             sidebar_text_style(309,sidebar_y+22,100,18,UI_MUTED,"Faster",10,400,2);
-            const double speeds[]={.25,.5,1,2};const char *presets[]={"0.25\xc3\x97","0.50\xc3\x97","1.00\xc3\x97","2.00\xc3\x97"};
+            const double speeds[]={.5,1,2,4};const char *presets[]={"0.50\xc3\x97","1.00\xc3\x97","2.00\xc3\x97","4.00\xc3\x97"};
             for(int i=0;i<4;i++)sidebar_button(UI_PRESET,1,0,speeds[i],29+i*96.f,sidebar_y+52,90,28,presets[i],fabs(s.manual_speed-speeds[i])<.001);
             sidebar_y+=95;
         }
@@ -241,8 +242,10 @@ static int sidebar_save(void) {
     pc_controls_set_mouse(draft.sensitivity,draft.enabled,draft.invert_y);sidebar_dirty=0;
     snprintf(status,sizeof status,"Keyboard and mouse settings saved.");return 1;
 }
+#include "pc_video_sidebar_ui.inc"
 static void sidebar_settings(void) {
     if(page!=KEYBOARD) {char error[160];if(!pc_settings_read(&draft,error,sizeof error))pc_settings_defaults(&draft);}
+    if(sidebar_category(11,"Input Settings","input keyboard mouse sensitivity bindings")) {
     if(sidebar_group(4,"Keyboard & mouse","mouse sensitivity invert look keyboard enabled key bindings developer tools shortcut",NULL)) {
         sidebar_number("Mouse sensitivity",2);
         const char *names[]={"Invert vertical look","Keyboard & mouse enabled"};
@@ -259,16 +262,11 @@ static void sidebar_settings(void) {
         }
         sidebar_group_end();
     } else sidebar_group_closed();
-    if(sidebar_group(5,"Display & textures","fullscreen enhanced textures classic display",NULL)) {
-        sidebar_toggle("Fullscreen",NULL,pc_controls_developer_is_fullscreen(),1,SETTINGS,3);
-        sidebar_toggle("Enhanced textures",NULL,tsfp_texture_is_4k(),1,SETTINGS,2);sidebar_group_end();
-    } else sidebar_group_closed();
-    if(sidebar_match("Debug settings & diagnostics")) {
-        sidebar_button(UI_TAB,DEBUG,0,0,17,sidebar_y,408,35,"Debug settings & diagnostics   >",0);sidebar_y+=45;
     }
+    sidebar_video_settings();
 }
 static void sidebar_keyboard(void) {
-    sidebar_button(UI_TAB,SETTINGS,0,0,17,sidebar_y,408,32,"<  PC Settings (discard unsaved bindings)",0);sidebar_y+=42;
+    sidebar_button(UI_TAB,SETTINGS,0,0,17,sidebar_y,408,32,"<  Settings (discard unsaved bindings)",0);sidebar_y+=42;
     sidebar_text_face(26,sidebar_y,382,18,UI_MUTED,"Click a slot, press a key. Delete clears. Save to apply.",11,400,0,PC_FONT_UI);sidebar_y+=28;
     int any=0;for(int i=0;i<PC_ACTION_COUNT;i++)if(sidebar_match(pc_action_labels[i]))any=1;
     if(any) {
@@ -327,7 +325,7 @@ static void sidebar_build(unsigned width,unsigned height,PcDeveloperLine *out,un
     sidebar_text_spaced(67,41,285,17,UI_MUTED,"TIMESPLITTERS \xc2\xb7 FUTURE PERFECT",11,400,0,PC_FONT_UI,.6f);
     sidebar_button(UI_DOCK,0,0,0,359,21,30,30,"",0);sidebar_button(UI_CLOSE,0,0,0,399,21,30,30,"",0);
     sidebar_box(0,71,452,1,UI_EDGE,0);
-    const char *tabs[]={"Tools","PC Settings","Diagnostics"};const int pages[]={HOME,SETTINGS,DEBUG};
+    const char *tabs[]={"Tools","Settings","Diagnostics"};const int pages[]={HOME,SETTINGS,DEBUG};
     int active=page==HOME?0:page==SETTINGS||page==KEYBOARD?1:2;
     float tab_x=17;
     for(int i=0;i<3;i++) {
@@ -346,7 +344,9 @@ static void sidebar_build(unsigned width,unsigned height,PcDeveloperLine *out,un
     AcquireSRWLockShared(&dev_lock);int net=network,playing=gameplay,campaign=story;ReleaseSRWLockShared(&dev_lock);
     sidebar_box(21,177,6,6,net?0xd9b36affu:UI_ACCENT,3);
     sidebar_text_face(34,171,388,18,UI_MUTED,net?"Multiplayer - gameplay tools unavailable":playing?(campaign?"Offline Story":"Offline gameplay"):"Frontend - gameplay tools unavailable",11,400,0,PC_FONT_UI);
-    sidebar_top=198;sidebar_bottom=fmaxf(sidebar_top+5,h-(show_status?122:96));sidebar_y=sidebar_top-sidebar_scroll[page];sidebar_content=1;
+    sidebar_video_sync();
+    int video_bar=page==SETTINGS||sidebar_video_snapshot.preview||sidebar_video_wait||(sidebar_search[0]&&sidebar_video_dirty());
+    sidebar_top=198;sidebar_bottom=fmaxf(sidebar_top+5,h-(show_status?122:96)-(video_bar?57:0));sidebar_y=sidebar_top-sidebar_scroll[page];sidebar_content=1;
     if(page==KEYBOARD)sidebar_keyboard();
     else if(sidebar_search[0]) {sidebar_tools();sidebar_settings();sidebar_diagnostics();}
     else if(page==HOME)sidebar_tools();else if(page==SETTINGS)sidebar_settings();
@@ -371,6 +371,7 @@ static void sidebar_build(unsigned width,unsigned height,PcDeveloperLine *out,un
         sidebar_box(444,sidebar_top+(view-thumb)*sidebar_scroll[page]/sidebar_max_scroll,4,thumb,0x62717effu,2);
         sidebar_widget(UI_SCROLL,0,0,0,438,sidebar_top,14,view,"Scroll tools");
     }
+    if(video_bar)sidebar_video_actions(h-151-(show_status?26:0));
     if(show_status)sidebar_box(0,h-120,452,26,UI_BG,0);
     if(show_status)sidebar_text_style(20,h-119,412,23,edit_number||capture_action>=0?UI_ACCENT:UI_MUTED,message[0]?message:sidebar_dirty?"Bindings changed - Save and apply to keep them.":"Click values to type. Use - / + for precise steps.",10,400,0);
     sidebar_box(0,h-94,452,54,0x2a2720ffu,0);sidebar_box(0,h-94,452,1,0x655333ffu,0);
@@ -391,7 +392,8 @@ static void sidebar_build(unsigned width,unsigned height,PcDeveloperLine *out,un
     sidebar_box(20,h-29,key_width,19,UI_EDGE,3);sidebar_box(21,h-28,key_width-2,17,0x1b2127ffu,2);
     sidebar_text_style(20,h-29,key_width,19,UI_TEXT,key,11,400,1);
     sidebar_text_style(28+key_width,h-36,190,32,UI_MUTED,"Close menu",11,400,0);
-    sidebar_text_style(262,h-36,168,32,UI_MUTED,"Changes apply live",11,400,2);
+    sidebar_text_style(262,h-36,168,32,UI_MUTED,page==SETTINGS?"Video changes use Apply":"Changes apply live",11,400,2);
+    sidebar_video_popup();
 
 }
 static void sidebar_layout(unsigned width,unsigned height,PcDeveloperLine *out,unsigned capacity) {
@@ -400,17 +402,19 @@ static void sidebar_layout(unsigned width,unsigned height,PcDeveloperLine *out,u
     if(clamped!=sidebar_scroll[page]){sidebar_scroll[page]=clamped;sidebar_build(width,height,out,capacity);}
 }
 static void sidebar_set_value(int id,double value) {
-    if(id==1)speed_adjust(value);
+    if(id==5){sidebar_video_draft.value[VIDEO_FOV]=(int)fmin(100,fmax(40,round(value)));}
+    else if(id==1)speed_adjust(value);
     else if(id==2){draft.sensitivity=fmin(10.,fmax(.001,value));if(page==KEYBOARD)sidebar_dirty=1;else sidebar_save();}
     else {AcquireSRWLockExclusive(&dev_lock);if(id==3)state.slow_speed=fmin(4.,fmax(.05,value));else state.fast_speed=fmin(4.,fmax(.05,value));ReleaseSRWLockExclusive(&dev_lock);}
 }
 static int sidebar_commit_number(void) {
     if(!edit_number)return 1;
     char *end;double v=strtod(number,&end);int id=edit_number;
-    if(!*number||*end||!isfinite(v)||v<(id==2?.001:.05)||v>(id==2?10.:4.)) {snprintf(status,sizeof status,"Enter a value from %s.",id==2?"0.001 to 10":"0.05 to 4");return 0;}
+    if(!*number||*end||!isfinite(v)||v<(id==5?40:id==2?.001:.05)||v>(id==5?100:id==2?10.:4.)) {snprintf(status,sizeof status,"Enter a value from %s.",id==5?"40 to 100":id==2?"0.001 to 10":"0.05 to 4");return 0;}
     sidebar_set_value(id,v);edit_number=0;status[0]=0;return 1;
 }
 static void sidebar_go(int next) {
+    sidebar_video_dropdown=-1;
     navigate(next);sidebar_focus=-1;sidebar_drag=-1;sidebar_search_edit=0;
     if(next!=KEYBOARD)sidebar_dirty=0;
 }
@@ -418,20 +422,23 @@ static void sidebar_activate(const DeveloperWidget *v,int direction) {
     if(v->kind!=UI_NUMBER&&v->kind!=UI_SEARCH&&edit_number&&!sidebar_commit_number())return;
     sidebar_search_edit=0;
     switch(v->kind) {
+    case UI_VIDEO:sidebar_video_activate(v->a,direction);break;
+    case UI_VIDEO_OPTION:sidebar_video_choose(v->a,v->b);sidebar_video_dropdown=-1;break;
+    case UI_VIDEO_PAGE:sidebar_video_option_start+=v->a;break;
     case UI_ACTION: {
         if(v->a==KEYBOARD&&v->b==PC_ACTION_COUNT+4){sidebar_save();break;}
         int before=page;page=v->a;selected=v->b;activate(direction);
         if(v->a==KEYBOARD&&v->b==PC_ACTION_COUNT+3)sidebar_dirty=1;
         if(page==v->a)page=before;else sidebar_focus=-1;
         break;}
-    case UI_GROUP:sidebar_expanded[v->a]=!sidebar_expanded[v->a];break;
+    case UI_GROUP:sidebar_video_dropdown=-1;sidebar_expanded[v->a]=!sidebar_expanded[v->a];break;
     case UI_TAB:sidebar_search[0]=0;sidebar_go(v->a);break;
     case UI_DOCK:sidebar_right=!sidebar_right;break;
     case UI_CLOSE:pc_developer_close();break;
     case UI_SEARCH:sidebar_search_edit=1;edit_number=0;capture_action=-1;sidebar_select_all=0;break;
     case UI_CLEAR:sidebar_search[0]=0;sidebar_search_edit=1;sidebar_scroll[page]=0;break;
     case UI_NUMBER:edit_number=v->a;capture_action=-1;sidebar_select_all=1;snprintf(number,sizeof number,v->a==2?"%.4g":"%.2f",sidebar_value(v->a));snprintf(status,sizeof status,"Type a value; Enter applies, Escape cancels.");break;
-    case UI_STEP:sidebar_set_value(v->a,sidebar_value(v->a)+(v->a==2?.01:.1)*(direction?direction:v->b));break;
+    case UI_STEP:sidebar_set_value(v->a,sidebar_value(v->a)+(v->a==5?1:v->a==2?.01:.1)*(direction?direction:v->b));break;
     case UI_PRESET:sidebar_set_value(v->a,v->value);break;
     case UI_BIND: {
         if(v->value){char error[160];if(!pc_settings_read(&draft,error,sizeof error))pc_settings_defaults(&draft);}
@@ -474,7 +481,7 @@ void pc_developer_frame(void) {
     for(int k=1;k<256;k++)if(focused&&sidebar_edge(keys,k)&&pc_developer_shortcut_key(k)){shortcut=1;break;}
     if(shortcut){pc_developer_toggle();memcpy(previous,keys,sizeof previous);return;}
     int open=pc_developer_open();
-    if(!open||!focused){capture_action=-1;edit_number=0;sidebar_search_edit=0;sidebar_drag=-1;}
+    if(!open||!focused){sidebar_video_dropdown=-1;capture_action=-1;edit_number=0;sidebar_search_edit=0;sidebar_drag=-1;}
     if(open&&focused) {
         PcMenuPointer p=pc_controls_developer_pointer();
         float width=p.valid&&p.width>0?p.width:sidebar_width,height=p.valid&&p.height>0?p.height:sidebar_height;
@@ -493,7 +500,9 @@ void pc_developer_frame(void) {
             }
         } else {
             if(escape) {
-                if(edit_number){edit_number=0;status[0]=0;}
+                if(sidebar_video_snapshot.preview)sidebar_video_send(VIDEO_REVERT);
+                else if(sidebar_video_dropdown>=0)sidebar_video_dropdown=-1;
+                else if(edit_number){edit_number=0;status[0]=0;}
                 else if(sidebar_search_edit||sidebar_search[0]){sidebar_search[0]=0;sidebar_search_edit=0;}
                 else if(page==KEYBOARD||page==LOGS)sidebar_go(page==KEYBOARD?SETTINGS:DEBUG);
                 else pc_developer_close();
@@ -517,17 +526,19 @@ void pc_developer_frame(void) {
                     DeveloperWidget v=sidebar_widgets[sidebar_focus];int dir=sidebar_edge(keys,0x27)?1:sidebar_edge(keys,0x25)?-1:0;
                     if(enter)sidebar_activate(&v,0);
                     else if(dir) {
-                        if(v.kind==UI_NUMBER||v.kind==UI_SLIDER)sidebar_set_value(v.a,sidebar_value(v.a)+dir*(v.a==2?.01:.1));
+                        if(v.kind==UI_NUMBER||v.kind==UI_SLIDER)sidebar_set_value(v.a,sidebar_value(v.a)+dir*(v.a==5?1:v.a==2?.01:.1));
                         else sidebar_activate(&v,dir);
                     }
                 }
             }
             if(p.valid&&sidebar_pointer_x>=0&&sidebar_pointer_x<=452) {
                 if(p.wheel&&sidebar_pointer_y>=sidebar_top&&sidebar_pointer_y<sidebar_bottom)sidebar_scroll[page]-=p.wheel*48;
-                if(p.left&&!previous_left)for(unsigned i=0;i<sidebar_count;i++) {
+                if(p.left&&!previous_left)for(unsigned remaining=sidebar_count;remaining>0;remaining--) {
+                    unsigned i=remaining-1;
                     DeveloperWidget v=sidebar_widgets[i];
                     if(sidebar_pointer_x<v.x||sidebar_pointer_x>=v.x+v.w||sidebar_pointer_y<v.y||sidebar_pointer_y>=v.y+v.h||
                        (v.content&&(sidebar_pointer_y<sidebar_top||sidebar_pointer_y>=sidebar_bottom)))continue;
+                    if(sidebar_video_dropdown>=0&&v.kind!=UI_VIDEO_OPTION&&v.kind!=UI_VIDEO_PAGE){sidebar_video_dropdown=-1;break;}
                     sidebar_focus=(int)i;
                     if(v.kind==UI_SLIDER||v.kind==UI_SCROLL)sidebar_drag=(int)i;
                     else sidebar_activate(&v,0);
@@ -536,7 +547,7 @@ void pc_developer_frame(void) {
             }
             if(p.valid&&p.left&&sidebar_drag>=0&&(unsigned)sidebar_drag<sidebar_count) {
                 DeveloperWidget v=sidebar_widgets[sidebar_drag];
-                if(v.kind==UI_SLIDER){float fraction=fmaxf(0,fminf(1,(sidebar_pointer_x-v.x)/v.w));sidebar_set_value(v.a,.05+round(fraction*79)*.05);}
+                if(v.kind==UI_SLIDER){float fraction=fmaxf(0,fminf(1,(sidebar_pointer_x-v.x)/v.w));sidebar_set_value(v.a,v.a==5?40+round(fraction*60):.05+round(fraction*79)*.05);}
                 else if(v.kind==UI_SCROLL)sidebar_scroll[page]=sidebar_max_scroll*fmaxf(0,fminf(1,(sidebar_pointer_y-v.y)/v.h));
             } else sidebar_drag=-1;
         }

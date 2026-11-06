@@ -913,3 +913,8 @@ Extras retains Status/shortcut/Back; the sidebar owns the warning footer.
 Reset points left from the top of its arc (counterclockwise); hold-speed ends share the grey stepper fill.
 See [sidebar contracts and history](systems-continuation.md#developer-tools-sidebar-presentation)
 for input/save boundaries, styles, clipping and native adapter details.
+
+The Settings tab now has independent Input Settings / Video Settings categories.
+`pc_video_sidebar_ui.inc` owns drafts/selectors; `pc_video_sidebar.inc` consumes
+value-only mailbox requests on the guest frame, using existing display/graphics
+setters and native subtitle persistence. See the continuation for contracts.

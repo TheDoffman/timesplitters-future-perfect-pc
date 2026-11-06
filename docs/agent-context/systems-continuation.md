@@ -219,3 +219,33 @@ upper-left circular arc with its arrowhead pointing left at the top endpoint
 (counterclockwise), rather than up at the left endpoint (clockwise). Expanded
 hold-speed steppers draw the same light-grey end-button fill as the main speed
 stepper; their input/value contracts and platform adapters are unchanged.
+
+### Video Settings inside the sidebar
+
+Input Settings precedes Video Settings; both categories and their child groups
+collapse independently. PC Settings no longer links Debug/Diagnostics. The Tools
+speed presets are 0.50/1.00/2.00/4.00. `pc_video_sidebar.h` defines only copied
+values, modes and request/result serials; the mailbox in `pc_developer.c` uses
+the existing lock. `pc_video_sidebar_ui.inc` owns staged video fields, keyboard/
+pointer selectors, typed FOV, slider, Apply/Revert and resolution Keep controls.
+Input edits retain their existing immediate/save-binding policy.
+
+`pc_display_camera` registers the game-thread video provider; the existing
+`pc_developer_guest_frame` invokes it between guest frames. The provider lives
+in `pc_video_sidebar.inc`, included by `pc_display_menu.c`, and uses the existing
+display preview/save, frame-rate, graphics/post-AA, feed/counter, texture and
+fullscreen APIs. Subtitle writes use the native profile and save flag. No guest
+pointers or persistence/GPU calls run in sidebar painting. Resolution changes
+need Keep within15 seconds; close or timeout restores the previous mode without
+saving it. A failed settings batch rolls back completed writes and reports any
+restoration failure. MSAA/supersampling retain restart requirements. Legacy GL
+keeps unsupported effect settings and disables those editing controls.
+
+Existing developer input and FOV fixtures cover category collapse, drafts,
+selectors, FOV typing, mailbox serials, profile updates, save-failure rollback,
+preview timeout/close/Keep and original guest Video Options. These suites are
+already registered in runtime-patches CI. Native Mac/Linux acceptance is separate.
+
+Aspect groups reuse pc_display_modes.inc; frame-rate labels/values share the
+persistence-free pc_frame_rate_choices.h with the original Video Options.
+Changing aspect selects the nearest matching render mode as a draft.

@@ -138,6 +138,7 @@ void pc_developer_draw_body(void)
 }
 void pc_developer_guest_frame(void)
 {
+    pc_developer_video_guest_tick();
     uint32_t lobby=WORD_AT(0x76b1a4u);
     if(WORD_AT(0x76b108u) && (lobby==11u || lobby==12u))pc_developer_lobby_guest();
     developer_refill_ammo();
