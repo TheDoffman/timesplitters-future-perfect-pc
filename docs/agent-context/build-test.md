@@ -1038,3 +1038,9 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 2600 applies last; old seeds predate MSAA.
 
 Local-player tests: controls-options.md.
+
+Patch upgrade fixtures expect shared multiplayer result dispatch. Historical
+Mac-only seeds omit2620/2625 with their absent network dependencies; the full
+migration must install them on the second pass.
+Story lobby fixture stubs follow the production Windows/native-network guard so
+Clang native-display-only checks do not compile an unused save stub.
