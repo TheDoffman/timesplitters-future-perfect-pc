@@ -1,3 +1,25 @@
+## 2026-11-05 - Native-resolution icon readability review
+
+Follow-up to locald0be611e: earlier640x480 game captures and the24px controller
+sample row understated icon readability. A separate bounded Test Lab run used
+1440x1080 and rendered actual profile/main Menu Actions with the existing binary.
+The128px icon source and native filtered GPU path were unchanged. Saved a1:1
+binding-column crop (no enlargement/resampling) and a native-renderer controller
+preview at48/96px; the latter replay had0 failed calls, malformed chunks,
+unmapped handles or unknown chunks. This is a renderer preview, not physical
+controller input acceptance. The actual HD game icons are clearer than the
+previous console-resolution captures; original low-resolution game fonts and
+backgrounds remain separate assets.
+
+The private desktop Input Preview launcher previously seeded a new profile at
+console640x480. Its local first-run default now selects1280x960; any existing
+preview preference/profile is retained. A separate bounded run verified a native
+1280x960 startup/captured frame. Personal launcher settings and saves
+are unchanged. This delivery-only script remains ignored under logs, with its
+private receipt; no game-code/default-settings change or publication is claimed.
+The supported binary and29 focused checks remain those recorded below. Native
+Mac/Linux and physical controller acceptance are still pending.
+
 ## 2026-11-05 - Filtered original-resolution input icons
 
 Quality follow-up to9188b2c9 on local feature/julio-input-prompts keeps Julio's
