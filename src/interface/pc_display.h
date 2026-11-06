@@ -13,6 +13,12 @@ int pc_game_restart(void);
 int pc_display_fov(void);
 int pc_display_set_fov(int degrees);
 float pc_display_fov_scale(void);
+#define PC_WEAPON_FOV_DEFAULT 100
+#define PC_WEAPON_FOV_MIN 80
+#define PC_WEAPON_FOV_MAX 150
+int pc_display_weapon_fov(void);
+int pc_display_set_weapon_fov(int percent);
+float pc_display_weapon_fov_scale(void);
 
 typedef struct PcDisplayMode { unsigned width, height; } PcDisplayMode;
 /* Selected mode: 0x0 retains console output; 1x1 selects Auto. */
