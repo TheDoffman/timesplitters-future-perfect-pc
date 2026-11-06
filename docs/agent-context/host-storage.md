@@ -100,3 +100,5 @@ formatting repair changes neither root synchronization nor storage behavior.
 
 The UTF-8 save-root copy also retains separate early snapshot/capacity guards
 before strlen/memcpy, so GCC strict builds check it without changing its bytes.
+
+Launcher install/import capacity uses TsfpDiskSpace.Available in tools/release/ImportGame.cs. Walk to an existing destination directory and query DriveInfo there, never Path.GetPathRoot on POSIX: /home and SD storage can be different from /. ISO/folder import, update staging and diagnostic free-space reporting share the helper. LinuxTests exercises a distinct /dev/shm mount through a symlink and rejects insufficient capacity without allocating game data.

@@ -79,7 +79,7 @@ public static class TsfpImport
         using(var s=File.OpenRead(iso)) {
             var files=Catalog(s); long total=0; foreach(var e in files) total+=e.Size;
             string parent=Path.GetDirectoryName(Path.GetFullPath(destination));
-            Require(new DriveInfo(Path.GetPathRoot(parent)).AvailableFreeSpace>total+128*1024*1024,"Not enough disk space for extracted game data.");
+            Require(TsfpDiskSpace.Available(parent)>total+128*1024*1024,"Not enough disk space for extracted game data.");
             string stage=Path.Combine(parent,"Data-import-"+Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(stage);
             try {
@@ -120,12 +120,29 @@ public static class TsfpImport
         var files=new List<string> { "default.xbe" };
         FolderFiles(source,"pak",0,files); FolderFiles(source,"xmv",0,files);
         long total=0; foreach(string p in files) total+=new FileInfo(Path.Combine(source,p)).Length;
-        Require(new DriveInfo(Path.GetPathRoot(destination)).AvailableFreeSpace>total+128*1024*1024,"Not enough disk space for game data.");
+        Require(TsfpDiskSpace.Available(destination)>total+128*1024*1024,"Not enough disk space for game data.");
         string stage=Path.Combine(Path.GetDirectoryName(destination),"Data-import-"+Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(stage);
         try {
             foreach(string p in files) { string output=Path.Combine(stage,p); Directory.CreateDirectory(Path.GetDirectoryName(output)); File.Copy(Path.Combine(source,p),output,false); }
             Directory.Move(stage,destination);
         } catch { Console.Error.WriteLine("Incomplete import retained at: "+stage); throw; }
+    }
+}
+
+// Query the destination filesystem, not / on Unix (home and SD cards can be
+// separate mounts). Walk to an existing parent for not-yet-created staging paths.
+public static class TsfpDiskSpace
+{
+    public static long Available(string destination)
+    {
+        string path=Path.GetFullPath(destination);
+        while(!Directory.Exists(path)) {
+            string parent=Path.GetDirectoryName(path);
+            if(String.IsNullOrEmpty(parent) || parent==path)
+                throw new DirectoryNotFoundException("Cannot find the destination filesystem.");
+            path=parent;
+        }
+        return new DriveInfo(path).AvailableFreeSpace;
     }
 }

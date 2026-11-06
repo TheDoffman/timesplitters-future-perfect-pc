@@ -1,0 +1,49 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -255,6 +255,35 @@
+     g_esp+=4;
+ }
+ 
++/* Shared projectile families keep flight time independent of render rate. */
++extern void sub_000E2F90_gen(void);
++extern void sub_000F1A90_gen(void);
++extern void sub_000F2B80_gen(void);
++extern void sub_000F39A0_gen(void);
++extern void sub_000ECB90_gen(void);
++void sub_000E2F90(void)
++{ pc_native_kind35_init_guest(sub_000E2F90_gen, *(const uint32_t *)((uintptr_t)g_esp+4+g_xbox_mem_offset)); }
++void sub_000F1A90(void)
++{ pc_native_kind35_update_guest(sub_000F1A90_gen, *(const uint32_t *)((uintptr_t)g_esp+4+g_xbox_mem_offset)); }
++void sub_000F2B80(void)
++{ pc_native_kind35_update_guest(sub_000F2B80_gen, *(const uint32_t *)((uintptr_t)g_esp+4+g_xbox_mem_offset)); }
++void sub_000F39A0(void)
++{ pc_native_kind35_update_guest(sub_000F39A0_gen, *(const uint32_t *)((uintptr_t)g_esp+4+g_xbox_mem_offset)); }
++void sub_000ECB90(void)
++{ pc_native_kind35_update_guest(sub_000ECB90_gen, *(const uint32_t *)((uintptr_t)g_esp+4+g_xbox_mem_offset)); }
++extern void sub_000EDBE0(void),sub_000E2520(void),sub_00152770(void),sub_00153BB0(void);
++void pc_native_ballistic_finish(void)
++{ pc_native_ballistic_finish_guest(sub_000EDBE0,g_esi); }
++void pc_native_scripted_steer(void)
++{ pc_native_scripted_steer_guest(sub_000E2520,&g_esp); }
++void pc_native_scripted_rotation(void)
++{ pc_native_scripted_rotation_guest(sub_00152770,g_esp); }
++void pc_native_projectile_smoke_choice(void)
++{
++    if(!pc_native_projectile_skip_smoke()) { sub_00153BB0();return; }
++    g_eax=1;g_esp+=4;
++}
++
+ /* Original rocking impulses/contact responses, with fractional free flight. */
+ #include "pc_native_rocking_guest.h"
+ extern void sub_000A84F0_gen(void);
+@@ -491,6 +515,10 @@
+ #else
+     sub_000DC4A0_gen();
+ #endif
++    /* Every allocation invalidates visual sidecar state, including types with
++     * no initializer and slot reuse while native timing is disabled. */
++    PcKind35Cache *cache=pc_kind35_slot(g_eax);
++    if(cache)pc_kind35_clear(cache);
+ }
+ 
+ extern void sub_00079860_gen(void);

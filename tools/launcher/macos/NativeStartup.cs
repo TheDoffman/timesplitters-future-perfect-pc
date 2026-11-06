@@ -16,6 +16,7 @@ namespace TimeSplitters.Launcher
         readonly string root;readonly string[] args;bool handedOff;
         public NativeStartup(string root,string[] args)
         {
+            NativeApplication.ApplyWindowIcon(this);
             this.root=root;this.args=args;Title="TimeSplitters · Future Perfect";Width=540;Height=300;CanResize=false;WindowStartupLocation=WindowStartupLocation.CenterScreen;Background=Brush.Parse("#0B1420");
             var panel=new StackPanel{Margin=new Thickness(28),Spacing=14};panel.Children.Add(NativeWindow.Text("TIMESPLITTERS",30));panel.Children.Add(NativeWindow.Text("FUTURE PERFECT",18));
             status=NativeWindow.Text("Checking for launcher updates…",13);panel.Children.Add(status);panel.Children.Add(NativeWindow.Button("Open installed launcher",()=>stop.Cancel()));Content=panel;

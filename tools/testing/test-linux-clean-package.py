@@ -3,7 +3,8 @@
 
 Use an isolated Xvfb display with access control disabled. Mounts are private to
 the child namespace; the package and original game data are bound read-only.
-The prepared root must contain libvulkan1, Mesa Vulkan drivers, fonts and CAs.
+The prepared root must contain libvulkan1, Mesa Vulkan drivers, fonts and CAs,
+plus libwayland-client0, libwayland-cursor0 and libwayland-egl1 (also for X11).
 This checks userspace relocation, not a physical Linux desktop or GPU driver.
 """
 import argparse
@@ -69,14 +70,24 @@ def main():
     # tmpfs keeps each clean-room profile disposable and isolated from past runs.
     home = rootfs/'tmp/tsfp-clean-home'
     home.mkdir(exist_ok=True)
-    run('mount', '-t', 'tmpfs', '-o', 'mode=1777,size=512m', 'tmpfs', home)
+    # Save-backup preflight reserves 512 MiB plus overhead. A 512 MiB test
+    # filesystem rejects that check even when the fixture stores tiny files.
+    run('mount', '-t', 'tmpfs', '-o', 'mode=1777,size=1024m', 'tmpfs', home)
     env = ['HOME=/tmp/tsfp-clean-home', 'PATH=/usr/bin:/bin', 'LANG=C.UTF-8',
            'DISPLAY='+os.environ['DISPLAY'], 'SDL_VIDEODRIVER=x11', 'SDL_AUDIODRIVER=dummy',
            'LIBGL_ALWAYS_SOFTWARE=1', 'LD_LIBRARY_PATH='+APP+'/Bin']
     prefix = ['chroot', '--userspec=65534:65534', str(rootfs), '/usr/bin/env', '-i', *env, '/bin/sh', '-c', 'cd "$HOME" && exec "$@"', 'tsfp-clean']
     results = {}
-    for option in ('settings', 'debug', 'input', 'renderer', 'online'):
-        command = [*prefix, APP+'/Launch.sh', '--game', '--data', DATA, '--'+option+'-self-test']
+    for option in ('settings', 'debug', 'input', 'renderer', 'renderer-fullscreen', 'online'):
+        # Exercise the saved setting the launcher writes, rather than merely
+        # toggling a test window after creation or overriding it via the env.
+        if option.startswith('renderer'):
+            preference=home/'.config/timesplitters-future-perfect/runtime.conf'
+            preference.parent.mkdir(parents=True,exist_ok=True)
+            preference.write_text('fullscreen = '+('1' if option=='renderer-fullscreen' else '0')+'\n')
+            preference.chmod(0o666)
+        check='renderer' if option=='renderer-fullscreen' else option
+        command = [*prefix, APP+'/Launch.sh', '--game', '--data', DATA, '--'+check+'-self-test']
         result = subprocess.run(command, capture_output=True, text=True, timeout=90)
         print(result.stdout+result.stderr, flush=True)
         results[option] = dict(exit_code=result.returncode, output=result.stdout+result.stderr)

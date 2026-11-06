@@ -20,6 +20,7 @@
 #include <SDL3/SDL.h>
 #include "input_sdl.h"
 #include "renderer_host_sdl.h"
+#include "window_startup_sdl.h"
 #include "rhi.h"
 #include "graphics/combiner_constants.h"
 #include "graphics/native_hud.h"
@@ -1307,7 +1308,7 @@ static HRESULT __stdcall d3d_CreateDevice(IDirect3D8 *s, UINT adapter, DWORD dev
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
     g.window = SDL_CreateWindow(g_window_title, g.backbuf_w, g.backbuf_h,
-                                SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY);
+                                tsfp_native_window_flags(SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY));
     if (!g.window) {
         fprintf(stderr, "[d3d8_gl] SDL_CreateWindow failed: %s\n", SDL_GetError());
         return D3DERR_INVALIDCALL;

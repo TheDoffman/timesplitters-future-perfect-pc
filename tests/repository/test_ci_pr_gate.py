@@ -35,3 +35,39 @@ def test_failure_or_unexpected_skip_cannot_pass(index, bad):
     args[index] = bad
     with pytest.raises(ValueError):
         gate_module.gate(*args)
+
+
+@pytest.mark.parametrize('name', ['LINUX', 'ISSUE_FORMS', 'ISSUE_RESOLUTION', 'TEXTURES'])
+@pytest.mark.parametrize('selected,result,passes', [
+    ('true', 'success', True), ('false', 'skipped', True),
+    ('true', 'failure', False), ('true', 'cancelled', False),
+    ('true', 'skipped', False), ('true', '', False),
+    ('false', 'failure', False), ('false', 'success', False),
+    ('', 'skipped', False), ('TRUE', 'success', False),
+])
+def test_extra_checks_fail_closed(name, selected, result, passes):
+    args = ('success', 'false', 'false', 'false', 'false',
+            'skipped', 'skipped', 'skipped')
+    checks = [(name, selected, result)]
+    if passes:
+        assert 'passed' in gate_module.gate(*args, checks=checks)
+    else:
+        with pytest.raises(ValueError):
+            gate_module.gate(*args, checks=checks)
+
+
+@pytest.mark.parametrize('missing', [None, 'LINUX', 'ISSUE_FORMS', 'ISSUE_RESOLUTION', 'TEXTURES'])
+def test_command_requires_all_repository_scope_outputs(missing):
+    import subprocess
+    import sys
+    env = dict(PLAN_RESULT='success', RUN_TRANSITIONS='false', RUN_NATIVE='false',
+               RUN_RELEASE='false', RUN_LAUNCHER='false', PATCHES_RESULT='skipped',
+               NATIVE_RESULT='skipped', LAUNCHER_RESULT='skipped')
+    for name in ('LINUX', 'ISSUE_FORMS', 'ISSUE_RESOLUTION', 'TEXTURES'):
+        env['RUN_' + name] = 'false'
+        env[name + '_RESULT'] = 'skipped'
+    if missing:
+        del env['RUN_' + missing]
+    result = subprocess.run([sys.executable, str(root / 'tools/ci/ci-pr-gate.py')],
+                            env=env, capture_output=True, text=True)
+    assert (result.returncode == 0) == (missing is None), result.stderr

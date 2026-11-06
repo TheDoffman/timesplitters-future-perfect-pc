@@ -1,100 +1,12 @@
-## Current Developer Tools access policy
+[Developer Tools integration](developer-tools-integration.md).
 
-The overlay uses the persisted developer_tools_enabled local opt-in (default
-false), controlled by Extras > Developer Tools or the launcher. Extras contains
-Status, assigned shortcut and Back with no warning row or confirmation. The
-sidebar warning remains. Native roster names have no wrench decoration. Once
-locally enabled, Settings and Diagnostics stay available online. Only the host can set the native match
-Options > Developer Tools Off/On selector (default Off). The shared network
-adapter authenticates its session-key/IP-scoped, sequenced TSFTOOL1 heartbeat;
-guests fail closed while joining, on expiry, or when the host/session changes.
-When enabled, local camera/movement controls are available; Time & audio
-and Player & progression remain disabled online. Revocation resets active local
-flight state, and non-UI shortcuts follow the same policy.
-Visibility toggles moved to Settings > View & HUD; host Tools policy preserves them.
-See the Systems continuation for current contracts. The wrench
-paragraphs below describe superseded implementation history.
-
-Extras has no warning: slot17 remains empty and the submenu contains Status,
-shortcut and Back. Developer Tools appends Audio follows game speed (default On) at row13;
-its session state is independent of the selected/manual/held game speed.
-pc_developer_audio_speed applies the normal opt-in/offline/playback guards and
-returns1 when audio scaling is Off. Gameplay callbacks and XMV audio use this
-getter; movie/video clocks continue using pc_developer_speed.
-
-## Developer Tools overlay
-
-Developer Tools is opt-in (`developer_tools_enabled`, absent=false, in controls
-JSON). Extras opens a native Developer Tools submenu with Enable/Disable selector,
-the assigned shortcut and Back. The warning lives in the sidebar footer. Its owned descriptor uses
-the cached per-menu tick (menu+C, copied by native78E50). Descriptor+8/+12
-remain empty lifecycle slots; 75B70 and the Back row own navigation. A90-unit
-frame and short Status label preserve native selector layout. Host action
-`developer_tools` is appended after weapon slots (PC_DEVELOPER_ACTION); default
-F1 migrates only when absent and unclaimed. Native Keyboard & Mouse includes it
-under Menu actions; the Windows/Cocoa editors and overlay share PC_ACTION_COUNT=37.
-Actions35/36 are configurable no-clip/freecam toggles, default unbound; rising
-edges run only while the overlay is closed and normal input owns capture.
-Input capture must bypass the shortcut during rebinding. Disabled tools reset
-active cheats/flight/HUD; F2/F12 remain available. Native cinematic98E50 uses
-its fractional game-delta branch while Tools is enabled offline; the borrowed
-6D60F0 flag is restored and the real-clock origin rebased before returning,
-so disabling Tools preserves position. Original pause/end checks stay active.
-The native real-clock branch otherwise ignores scaled game delta. XMV time integrates the
-requested speed and both audio adapters change the existing movie voice rate,
-preserving queued PCM. All other voices follow effective game speed in-place;
-separate QPC/tick media clocks keep buffer/stream deadlines aligned, including SDL
-fallback playback. Delayed worker timestamps cannot rewind the media clock. Freecam's own-body draw temporarily bypasses native
-1265B0 near-eye fade bit2 and explicitly selects opaque blend0/alpha127; blendFF
-inherits fade state. It marks the model header dirty on entry and restoration,
-then restores model draw style/effect flags afterward.
-`pc_developer_lobby_guest.inc` uses native 353760 roster names and peer IPs;
-compatibility-framed TSFDEV1 metadata announces availability, never cheat state.
-Only admitted roster IPs with the current host lobby session key enter the
-expiring cache. Native role/host index774040 identifies that session. Hosts use
-their owned registered key; guests resolve the joined host key. Neither sender
-nor receiver requires a per-guest XNADDR discovery entry. Retiring a host key
-clears cached notices, including when stale self-discovery still exists.
-LAN and Online bridge envelopes share validation; names are copied from the
-native roster. The timing boundary polls host/guest lobby states11/12, even
-when local Tools is disabled. Native353760 return198FD6 captures each name slot;
-41E30 return199583 appends a vector wrench after the measured native name,
-only for marked slots in lobby states11/12. The painter restores its row index
-to EBX before this call; match it to the captured slot and measure the actual
-display label, including native decorated copies. The original name stays unchanged.
-The former named footer notice remains implemented but disabled for future reuse.
-
-`src/interface/pc_developer.c` and `pc_developer_sidebar.inc` own F1 sidebar navigation, nested PC Settings,
-flight state and value-only developer requests. Windows/SDL adapters own host
-input/capture/fullscreen/log-folder operations. The old Windows bar is hidden;
-its saved JSON is preserved. F2/F12 dialogs remain recovery routes.
-`pc_developer_guest.inc` handles camera work at original CCAB0 and Story requests
-at the timing boundary. Noclip publishes feet/eye/history through D2DE0;
-both flight modes rebuild the final view after scripted cameras. Freecam
-starts at the player eye and consumes look without moving character angles. Flight uses
-configured movement and Interact/Crouch bindings, player yaw/pitch conventions,
-mouse sensitivity/inversion and Shift boost. No-clip permits native weapon input;
-free-cam alone blocks character input. Gameplay changes are offline-only.
-Manual speed is separate from held [/] targets; an opt-in permits them outside
-the overlay, release/focus loss restores manual speed. God mode rejects owned
-local BB6C0 damage; 1B66E0 preserves shot accounting with zero ammo consumption,
-1BC650 restores spent grenade reserve. A0130 retains native clip flags while
-including the owned actor/attachments in the detached view. Before HUD/AO,
-`pc_developer_draw_body` submits the owned world body through native A2740.
-It clears only this view's prepared bit so A1B80 rebuilds colour bone matrices:
-native first-person preparation can leave the bit set with a null colour pointer.
-Native animation, lighting, materials and depth testing remain in use. 1B9120
-omits the owned first-person viewport draw. Patch2530 follows2520.
-Game speed scales game intervals and carried ticks, retaining raw input,
-presentation and ISR clocks. HUD draw suppression retains original HUD logic.
-Windows bounded Story/menu acceptance and remaining native-host limits are in STATUS.
-
-[Settings input/layout](controls-options.md).
+[Uplink](native-uplink.md);[2605](native-projectiles.md).
+[Input](controls-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)
 
-[Linux input](linux-game.md).
+[SDL windows](linux-game.md).
 
 PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
@@ -102,11 +14,11 @@ PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
 [Story/Online](systems-details.md).
 
-Mech/cockpit: [mouse routing](mounted-mouse.md).
+[Mech](mounted-mouse.md).
 
 Minigun: [policy](native-minigun.md).
 
-Kernel: [objects and boot](kernel-objects.md).
+[Kernel](kernel-objects.md).
 
 Memory: [retired APIs](retired-memory-compatibility.md).
 

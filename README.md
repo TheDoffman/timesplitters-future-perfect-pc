@@ -1,4 +1,7 @@
-<a href="https://discord.gg/hFkfcCUm56"><img align="right" src="docs/assets/discord-community.svg" alt="Join the TimeSplitters: Future Perfect Recomp Discord community" title="Join our Discord community" width="32" height="32"></a>
+<p align="right">
+<a href="https://ko-fi.com/thedoffman"><img src="docs/assets/ko-fi.png" alt="Support the project on Ko-fi" title="Support us on Ko-fi" width="40" height="32"></a>
+<a href="https://discord.gg/hFkfcCUm56"><img src="docs/assets/discord-community.svg" alt="Join the TimeSplitters: Future Perfect Recomp Discord community" title="Join our Discord community" width="32" height="32"></a>
+</p>
 
 <div align="center">
 
@@ -11,14 +14,14 @@ Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer
 <p>
 <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip"><img src="docs/assets/download-windows-launcher.svg" alt="Download the latest Windows launcher (x64)" width="280" height="52"></a>
 <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip"><img src="docs/assets/download-mac-launcher.svg" alt="Download the latest Mac launcher (Apple Silicon)" width="280" height="52"></a>
-<img src="docs/assets/linux-coming-soon.svg" alt="Linux launcher — Coming soon 11/4" title="Linux launcher — Coming soon November 4, 2026" width="280" height="52">
+<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-linux-x64.zip"><img src="docs/assets/download-linux-launcher.svg" alt="Download the latest Linux launcher (x64)" width="280" height="52"></a>
 </p>
 
 <sub>Direct ZIP downloads of the latest stable launcher &middot; <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest">Release notes &amp; checksums</a></sub>
 
 **[Install & play](#start-playing)** · [Launcher guides](#guides--support) · [Multiplayer](docs/players/multiplayer.md) · [Build from source](docs/development/building.md)
 
-<sub>Windows 10/11 x64 · Native Apple Silicon Mac · Experimental port · Supported US Xbox game required</sub>
+<sub>Windows 10/11 x64 · Native Apple Silicon Mac · Linux x64 · Experimental port · Supported US Xbox game required</sub>
 
 </div>
 
@@ -37,18 +40,18 @@ Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer
 
 > [!IMPORTANT]
 > You need your own supported **US Xbox ISO or extracted game data**. Import it through the launcher.
-> Original game files are not included. Neither version needs an emulator.
+> Original game files are not included. No platform version needs an emulator.
 
 <a name="start-playing"></a>
 
 ## <img src="docs/assets/icon-play.svg" alt="" width="24" height="24"> Start playing
 
-Windows and Mac use the same installation steps:
+Windows, Mac and Linux use the same installation steps:
 
 | Step | Installation |
 | :---: | --- |
-| **01** | **Download the launcher:** [Windows x64](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip) or [Mac (Apple Silicon)](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip). The download starts directly; you can also use the buttons above. |
-| **02** | **Extract and open.** Extract the whole ZIP to a writable folder. On Windows, open **TimeSplitters Launcher.exe**, keeping `Bin` and `Support` with it. On Mac, open **TimeSplitters Launcher.app**, keeping its `Support` folder beside it. |
+| **01** | **Download the launcher:** [Windows x64](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip), [Mac (Apple Silicon)](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip), or [Linux x64](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-linux-x64.zip). The download starts directly; you can also use the buttons above. |
+| **02** | **Extract and open.** Extract the whole ZIP to a writable folder. On Windows, open **TimeSplitters Launcher.exe**, keeping `Bin` and `Support` with it. On Mac, open **TimeSplitters Launcher.app**, keeping its `Support` folder beside it. On Linux, preserve executable permissions and run **Launch.sh** or **TimeSplitters.Launcher**, keeping the full package together. |
 | **03** | **Install the game runtime.** Keep **Update channel → Stable**, then choose **Install release**. The launcher downloads and verifies the latest available game build for your platform. Choose a preview only when opting into testing. |
 | **04** | **Import your game once.** Choose **Locate ISO**, or **Use extracted files** for a folder containing `default.xbe`, `pak` and `xmv`. |
 | **05** | **Press Play Game.** The launcher minimizes while the game runs and returns when you finish. |
@@ -68,6 +71,7 @@ Launcher v1.4.0 interface preview with illustrative installation data.
 <summary><strong>System requirements, channels and keeping your saves</strong></summary>
 
 - **Windows:** Windows 10/11 x64 with .NET Framework 4.8.
+- **Linux:** x64, Ubuntu 24.04 / glibc 2.39 or newer, a desktop display and a working system Vulkan driver. Wayland needs XWayland. See the [Linux launcher guide](docs/players/linux-launcher.md).
 - **Mac:** Apple Silicon (M1 or newer). The launcher targets macOS 12+; the
   current shared Vulkan game renderer requires macOS 26+. See the
   [Mac guide](docs/players/macos.md) for the legacy OpenGL fallback on older systems.
@@ -93,7 +97,7 @@ and audio fidelity remain unverified. See [measured progress](docs/project/STATU
 | --- | --- |
 | **Windows 10/11 x64** | Keyboard and mouse, graphics settings and experimental Online/LAN multiplayer. See the [Windows launcher guide](docs/players/launcher.md), including [startup security prompts](docs/players/launcher.md#windows-security-prompts-at-startup). |
 | **Mac (Apple Silicon)** | Native launcher and game; Intel Macs are unsupported. The app is not notarized, so startup may require the [Mac installation and recovery guidance](docs/players/mac-launcher.md#shared-behavior-and-distribution). See [Mac controls and source builds](docs/players/macos.md) and [remaining Mac work](docs/project/MAC_PORT_BACKLOG.md). |
-| **Linux x64 (development)** | SDL and shared Vulkan source build, tested locally in Ubuntu/WSL through menus and first-level gameplay. Desktop settings/debug editors, movies and portable packaging remain pending. No published Linux launcher/package; see the [Linux build and test guide](docs/development/linux.md). |
+| **Linux x64 (experimental)** | Native launcher and portable SDL/Vulkan game package, validated on Ubuntu/WSL. Native desktop GPU, Wayland, controller and Steam Deck acceptance remain pending. See the [Linux launcher guide](docs/players/linux-launcher.md) and [acceptance limits](docs/development/linux-acceptance.md). |
 
 <a name="pc-features"></a>
 
@@ -183,8 +187,8 @@ Story co-op is not supported yet.
 
 ## Enhanced textures
 
-The partial texture overhaul is an optional launcher download for Windows and
-Mac.
+The partial texture overhaul is an optional launcher download for Windows, Mac
+and Linux.
 **Classic** textures remain the default.
 
 When the optional pack is available, use **Game settings → Graphics & resolution
@@ -258,12 +262,6 @@ To contribute, read the [contributing guide](CONTRIBUTING.md),
 [project rules](AGENTS.md) and [code of conduct](CODE_OF_CONDUCT.md).
 Report security vulnerabilities privately using the [security policy](SECURITY.md).
 
-## Support the project
-
-Enjoying the project? [Buy me a coffee on Ko-fi](https://ko-fi.com/thedoffman)
-to support continued work on TimeSplitters and the discoveries shared along the way.
-Thank you for being part of the project!
-
 ## Credits & license
 
 The project statically recompiles the Xbox executable into native code; it does
@@ -279,7 +277,6 @@ components retain their own [licenses and credits](LICENSES/README.md).
 You must supply your own supported game files. Original game data, generated
 game code, personal settings and saves are not included in this repository.
 
-The [Linux x64 launcher](docs/players/linux-launcher.md) is available as a source
-build using the shared desktop interface. Linux launcher packages and updater
-verification are implemented; published Linux game runtime availability remains
-separate.
+The [Linux x64 launcher](docs/players/linux-launcher.md) uses the shared desktop
+interface and installs the matching Linux game package. See the Linux guide for
+desktop prerequisites and the experimental port's remaining validation limits.

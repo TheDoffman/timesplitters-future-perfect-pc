@@ -12,6 +12,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#ifdef __linux__
+#include "video_startup_sdl.h"
+#endif
 #include <sys/ucontext.h>
 
 extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp, g_ebx, g_esi, g_edi, g_ebp;
@@ -37,6 +40,11 @@ int main(int argc, char **argv)
     extern int pc_game_restart_bootstrap(int,char **);
     if(!pc_game_restart_bootstrap(argc,argv))return 1;
     int helper_result=tsfp_native_crash_helper(argc,argv);if(helper_result>=0)return helper_result;
+#ifdef __linux__
+    /* Own video/events before Xbox initialization can start an audio worker.
+     * Keep crash-report helper processes independent of the desktop. */
+    if (!tsfp_native_video_startup()) return 1;
+#endif
     if(argc==2 && strcmp(argv[1],"--online-self-test")==0) {
         extern int pc_online_self_test(void);return pc_online_self_test();
     }

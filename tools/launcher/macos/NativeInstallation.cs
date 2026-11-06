@@ -76,6 +76,7 @@ namespace TimeSplitters.Launcher
         readonly Button choose;
         public NativeLocationWindow(string[] args)
         {
+            NativeApplication.ApplyWindowIcon(this);
             this.args = args;
             Title = "TimeSplitters · Choose installation folder";
             Width = 600; SizeToContent = SizeToContent.Height; CanResize = false;

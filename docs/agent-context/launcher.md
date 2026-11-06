@@ -1,25 +1,11 @@
-Developer Tools retains the local opt-in checkbox and persisted
-developer_tools_enabled boolean (default false). Changing the checkbox alone
-enables Save; enabling displays assigned-shortcut guidance with "Use with caution."
-Extras uses the same setting without a warning. Multiplayer host Tools permission
-is an additional gate; it does not disable Settings/Diagnostics for opted-in users.
-Shared model/UI tests cover opt-in persistence and shortcut preservation.
+[Developer Tools integration](developer-tools-integration.md).
 
-Flight shortcuts append developer_noclip/developer_freecam as actions35/36;
-PC_ACTION_COUNT is37. Both default unbound and use the existing two-slot conflict,
-move/unbind and persistence paths. The Tools shortcut remains action34/F1.
-
-Developer Tools opt-in participates in the shared settings draft and checked
-change notification, so changing only that switch enables Save. Shared UI
-regression covers the assigned F3 warning and ON/OFF persistence.
-
-Developer Tools: `GameSettings.DeveloperToolsEnabled` reads/writes the root
-`developer_tools_enabled` boolean in controls JSON, default false. The shared
-General page has an opt-in checkbox and assigned-shortcut warning. Its host
-binding follows weapon slots in Actions/Labels, defaults F1 only when missing,
-and participates in ordinary conflict/move/unbind/save behavior. Runtime and
-launcher preserve the same key; native Keyboard & Mouse exposes it in Menu
-actions. Enabling does not grant network gameplay cheats; lobbies show availability.
+PRs/main use one `PR validation` gate in `runtime-patches.yml`. Its plan
+selects runtime, launcher, Linux, issue forms/resolution and texture jobs;
+`ci-pr-gate.py` rejects failures, cancellation, missing outputs and
+unexpected skips. Launcher builds run once; standalone compatibility
+is manual-only. The repair worker requires this gate/workflow.
+Scope/gate/worker tests run in the plan; host suites remain unchanged.
 
 # Launcher and menu shortcuts
 
@@ -84,9 +70,11 @@ The README's local SVG button links to the same invite. Validate with the
 Windows launcher build/tests and shared-layout translation checks; native Mac
 browser dispatch and visual acceptance still need a Mac host.
 
-Launcher 1.4.2 prepares the merged launcher updates since 1.4.1 for the next
-Stable release. The version bump changes only version identities;
-publication still requires both host checks and all ten verified launcher assets.
+Launcher 1.5.0 accompanies game 0.5.0. Publication requires Windows, Mac and Linux
+host checks and all fifteen assets, including the three README download aliases.
+Native game-package checks create their disposable installations beside the
+archive, matching launcher-package checks. macOS's standard /var temp alias must
+not trigger the installer's unchanged rejection of linked installation paths.
 Mac Online formula notices now use the existing flat `.txt` license layout;
 notice bytes and the installer's protected-file rules stay unchanged.
 
@@ -693,3 +681,17 @@ that do not appear in ELF imports. See [Linux release checks](linux-game.md).
 Native game-package checks now install into fresh/upgrade paths containing
 spaces and Unicode. Linux additionally executes the installed GTK SVG query
 helper, checking its executable mode and relocated module closure.
+
+Linux launcher identity: LinuxLauncher.csproj embeds launcher.ico; NativeApplication.ApplyWindowIcon assigns it to startup/main/location windows. Release artwork validation requires the icon, and Linux shared UI tests decode each assigned icon.
+Destination free-space checks in Core and diagnostics use TsfpDiskSpace.Available from ImportGame.cs (also compiled into the Windows bootstrap). It probes an existing destination ancestor so POSIX home/SD mounts and symlinks use their own filesystem capacity. Native operation exceptions now open a dialog even on Home; status/log text remains.
+
+Launcher 1.5.1 packages these icon/storage/error-reporting fixes through the
+shared Windows/Mac/Linux release workflow; physical Steam Deck acceptance is
+still pending. Version and assembly attributes remain synchronized.
+
+NativeApplication.FitLauncher sizes the Mac/Linux main window to the current
+monitor working area in logical pixels, reserving decoration space. A uniform
+Viewbox keeps the shared 1000x720 layout reachable on small/scaled desktops.
+MessageDialog bounds its width and scroll body to its owner. --render-deck and
+--render-deck-settings preserve the fitted size for Xvfb visual checks. Shared
+UI tests cover 1280x800, 1024x640, 853x533 and desktop geometry.

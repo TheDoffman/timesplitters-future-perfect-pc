@@ -1,56 +1,9 @@
-Developer Tools match policy (after cf14ea41) is implemented in shared source;
-existing guest-frame and2C78F0 Options builder wrappers are reused. No new runtime
-patch or generated guest edits are needed. Legacy name/text wrappers now pass
-through without a wrench; the native Extras builder retains its Tools opt-in entry without a warning.
+[Developer Tools integration](developer-tools-integration.md).
 
-Patch2620 follows2610. Runtime input/d3d CMake owners link one shared
-`tsfp_developer_font` target, and the RHI canvas uses its bitmap callback.
-Legacy GL uses the same implementation. The older optional styled host callback
-remains available but is no longer the sidebar font source. Configure-time
-embedding verifies font hashes and runs without Python/network downloads.
-No original executable, wrapper signature or generated guest code is edited.
-
-Patch2610 follows2600. It adds optional RhiHost.text_bitmap_styled and
-rhi_text_bitmap_styled(size,weight) for final-size sidebar text. Windows uses
-UTF-8 GDI Segoe UI grayscale coverage; SDL forwards to Cocoa/FreeType adapters.
-Existing counter/watermark callbacks remain unchanged. The overlay canvas now
-uses the styled callback. No guest wrapper or generated C change is required.
-
-Patch2600 follows2590 and replaces per-row developer text textures with the shared
-BGRA sidebar canvas. The overlay shader's size.z selects full RGBA for this canvas;
-ordinary counter/watermark coverage compositing is unchanged. The canvas draws
-only after scene resolve/post-processing and stays outside guest captures. RHI
-Windows font coverage selects Segoe UI for32px sidebar glyphs. No guest wrappers
-or HLE declarations change; no generated C edit/regeneration is required.
-
-Patch2590 follows2580 and separates XMV audio speed from its video clock using
-PC_MOVIE_AUDIO_SPEED. Shared Tools supplies pc_developer_audio_speed; non-Tools
-builds retain their prior rate fallback. No guest wrappers/declarations change,
-so generation is unchanged and an incremental native build is sufficient.
-
-Further notes add patches2560/2570/2580 after2550. 2560 makes all gameplay
-voices pitch-enabled and updates their existing ratio through a registered overlay
-callback; movie voices keep their separate movie ratio. 2570 advances buffer and
-stream scheduling through two independent scaled media clocks (QPC/tick origins),
-including SDL fallback completion. 2580 wraps native353760 and existing41E30 for lobby name
-capture and a guarded wrench draw; guest regeneration is required. Shared native
-menu/body changes remain in source, not generated C.
-
-Patches2540/2550 follow2530. 2540 appends a host-only binding to runtime controls;
-it is skipped by Xbox pad synthesis. 2550 integrates movie time at current
-Developer Tools speed and enables movie-only XAudio frequency changes; SDL
-uses the same rate contract. 2560 supersedes the original ordinary-voice pitch flags.
-2550 also wraps native98E50 to use its fractional cinematic position path,
-scoping the borrowed flag after99990 clamps debug seeking and rebasing its
-real-clock origin for a smooth Tools-disable transition. Regenerate guest C.
-Patch2530 follows2520: local damage/ammo, detached world masks and viewport draw hooks.
-Patch2520 follows final Linux adapters: Developer Tools input/UI, CCAB0 wrapper,
-HUD draw scopes and HLE-owned renderer callbacks. See systems.md; regenerate guest code.
-
-[Linux](linux-game.md).
-Counter2490: overlay sizing.
-[Kill feed contracts](../development/arcade-kill-feed.md).
-Story rewards: additive2465 wraps356800 for the single frontend context;
+[Effect depth](native-effect-depth.md).
+[2605](native-projectiles.md); [Uplink](native-uplink.md).
+[Linux](linux-game.md); [MSAA](smaa.md).
+2465 wraps356800 for rewards;
 profile mapper356870 stays original. See [contract](systems-details.md#four-player-rewards-context).
 
 Story lobby host loss: additive2460 wraps1AF950. The shared menu adapter scopes
@@ -109,7 +62,7 @@ shared Story adapter so a guest's blocked movie advance does not release its
 still-rendered stream at99BB7. Real load teardown and other modes retain the
 original close. See [contracts](systems-details.md) and [fixture](build-test-details.md).
 
-# Runtime ([SMAA](smaa.md))
+# Runtime ([MSAA](smaa.md))
 
 Patch2180 wraps US1C2AF0 for an already-eligible fresh player trigger only;
 the patch loader orders it after native minigun/timing wrappers. It preserves
@@ -950,3 +903,10 @@ before native Music at US caller2C8010, while compact22100 typography/spacing
 is active. The2C78F0 wrapper scopes menu ownership and the real host mode; it
 no longer appends after Go. The native Music builder then resumes its own
 selector context. No generated-code or patch edits are needed.
+
+Developer Tools migration integration: historical fixtures omit the Tools family
+when its Linux/display prerequisites are absent; complete upgrades still install
+the entire current stack. Additive manual-file wrappers2520/2530/2550/2580 use
+existing -C1 matching so appended local comments survive reverse application.
+Patched code must still match exactly; the small EOF fixture rejects a changed
+wrapper body without writing any files. Runtime patch bytes remain unchanged.

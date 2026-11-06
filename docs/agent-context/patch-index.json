@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "76a35ad02ebc65fb7f394aca519239d09b5d3e0c0f1727be1ab10e19959a675b",
+  "loaderSha256": "0395a4c107b27b31cc4f52e25ab9eea5ea5f0165fd7486d9b01556a3aa07168a",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2016,6 +2016,15 @@
       ]
     },
     {
+      "name": "2610-native-shared-effect-depth.patch",
+      "path": "patches/graphics/rendering/2610-native-shared-effect-depth.patch",
+      "sha256": "a13359ca61ec6eef69c52c95765e4eab2885fcb3ddfffc0f30c79dfe878bcecc",
+      "targets": [
+        "src/hle/hle_d3d8_record.c",
+        "src/replay/d3d8_replay.c"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",
@@ -2246,6 +2255,22 @@
         "templates/runtime/recomp_types.h",
         "titles/futureperfect/src/recomp_manual.c",
         "tools/recomp/lifter.py"
+      ]
+    },
+    {
+      "name": "2596-native-rocket-projectile-timing.patch",
+      "path": "patches/gameplay/timing/2596-native-rocket-projectile-timing.patch",
+      "sha256": "b0c33335355075fa22506773105e768f827b662e5eadce8de7b4077572f41836",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2605-native-projectile-families.patch",
+      "path": "patches/gameplay/timing/2605-native-projectile-families.patch",
+      "sha256": "c3c6ce7290821faf113dc20f62b1317bd5cfc5c6c1ce1e3e90a8d31afd23fd9a",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     },
     {
@@ -3620,6 +3645,23 @@
         "src/d3d/CMakeLists.txt",
         "src/d3d/d3d8_overlay.c",
         "src/input/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2595-config-source-worktree.patch",
+      "path": "patches/platform/2595-config-source-worktree.patch",
+      "sha256": "7a830ed1842fd74284252ac1f958a1e0713b74b0e8cb44ef7f524676a3bfac92",
+      "targets": [
+        "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2600-msaa-scaled-shared-depth.patch",
+      "path": "patches/graphics/rendering/2600-msaa-scaled-shared-depth.patch",
+      "sha256": "34f3406ac0c11f6df6e477e3c2e0f8cfd79b14c99c39ece4c90079c623efb3b6",
+      "targets": [
+        "src/d3d/d3d8_resources.c",
+        "src/d3d/d3d8_xbox.h"
       ]
     }
   ]

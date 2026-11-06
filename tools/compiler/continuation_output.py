@@ -13,6 +13,9 @@ from translation_continuation import _decode,emit
 
 _OWNED=re.compile(r'recomp_context_(?:[0-9]{4,}|dispatch)\.c\Z')
 MANIFEST='recomp_context_manifest.json'
+# Count alone does not bound compiler work: a few decoded SIMD bodies can be
+# larger than hundreds of ordinary functions. Never split an individual body.
+MAX_CHUNK_BODY_BYTES=512*1024
 
 
 def _check_target(directory,name):
@@ -39,16 +42,18 @@ def publish(translator,functions,directory,*,chunk_size=100,kept=()):
     clone=copy(translator);clone.lifter=copy(translator.lifter)
     clone.lifter.manual_functions=manual-kept
     index=InstructionIndex();rejected=[];opaque=[];pending=[];chunks=[];count=lines=0
+    pending_bytes=0
     directory.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='.context-generation-',dir=directory) as temporary:
         staging=Path(temporary)
         def flush():
+            nonlocal pending_bytes
             if not pending:return
             name=f'recomp_context_{len(chunks):04d}.c'
             text='\n'.join(['/* Original decoded instruction continuations. */',
                 '#define RECOMP_GENERATED_CODE','#define RECOMP_GPR_REFS_SUPPORTED 1',
                 '#include "guest_context_execution.h"','#include "recomp_types.h"',*pending])
-            write_if_changed(staging/name,text);chunks.append(name);pending.clear()
+            write_if_changed(staging/name,text);chunks.append(name);pending.clear();pending_bytes=0
         for address,info in functions:
             if address in manual and address not in kept:
                 opaque.append(address);continue
@@ -60,8 +65,11 @@ def publish(translator,functions,directory,*,chunk_size=100,kept=()):
                 rejected.append({'address':address,'reason':str(error)});continue
             # Inconsistent ownership/bytes are fatal, not a per-function fallback.
             index.add(address,instructions)
+            body_bytes=len(text.encode('utf-8'))
+            if pending and pending_bytes+body_bytes>MAX_CHUNK_BODY_BYTES:flush()
             pending.append(text);count+=1;lines+=text.count('\n')
-            if len(pending)==chunk_size:flush()
+            pending_bytes+=body_bytes
+            if len(pending)==chunk_size or pending_bytes>=MAX_CHUNK_BODY_BYTES:flush()
         flush()
         if index.functions:
             dispatch=index.emit(run=True)

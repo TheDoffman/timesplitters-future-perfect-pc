@@ -1,6 +1,7 @@
 /* Native OS window adapter for the shared Xbox/RHI renderer. */
 #include <SDL3/SDL.h>
 #include "renderer_host_sdl.h"
+#include "window_startup_sdl.h"
 #include "settings_macos.h"
 #include "d3d8_xbox.h"
 #include "d3d8_overlay.h"
@@ -21,7 +22,7 @@ void *tsfp_native_renderer_window(unsigned width,unsigned height)
     }
     if(!SDL_WasInit(SDL_INIT_VIDEO) && !SDL_InitSubSystem(SDL_INIT_VIDEO))return NULL;
     native_window=SDL_CreateWindow("TimeSplitters: Future Perfect — Shared Native Renderer",
-        width?width:640,height?height:480,SDL_WINDOW_VULKAN|SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY);
+        width?width:640,height?height:480,tsfp_native_window_flags(SDL_WINDOW_VULKAN|SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY));
     if(!native_window){fprintf(stderr,"[native-rhi] window: %s\n",SDL_GetError());return NULL;}
     tsfp_renderer_host_bind(native_window,d3d8_overlay_shutdown);
     tsfp_native_settings_attach(native_window);
@@ -36,6 +37,29 @@ int tsfp_native_renderer_test(void)
     IDirect3D8 *api=xbox_Direct3DCreate8(0);IDirect3DDevice8 *dev=NULL;
     D3DPRESENT_PARAMETERS pp={0};pp.BackBufferWidth=pp.BackBufferHeight=64;pp.Windowed=TRUE;
     pp.hDeviceWindow=tsfp_native_renderer_window(64,64);
+    if(pp.hDeviceWindow) {
+        /* Wayland reports fullscreen only after the compositor acknowledges
+         * the creation request; do not mistake that pending state for failure. */
+        if(!SDL_SyncWindow(pp.hDeviceWindow))return 1;
+        int wanted=recomp_config_bool("RECOMP_FULLSCREEN","fullscreen",0);
+        int active=(SDL_GetWindowFlags(pp.hDeviceWindow)&SDL_WINDOW_FULLSCREEN)!=0;
+        fprintf(stderr,"[native-window-test] saved startup fullscreen %d: %s\n",wanted,active==wanted?"PASS":"FAIL");
+        if(active!=wanted)return 1;
+        /* The pixel/depth fixtures need a fresh 64x64 window. Some Wayland
+         * compositors retain the desktop size when a window was born fullscreen.
+         * Dispose only this test's startup window, without changing preferences;
+         * fullscreen drawing/present is tested again by the mode checks below. */
+        if(wanted) {
+            tsfp_renderer_host_bind(NULL,NULL);SDL_DestroyWindow(native_window);
+            native_window=SDL_CreateWindow("Native renderer regression",64,64,
+                SDL_WINDOW_VULKAN|SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY);
+            pp.hDeviceWindow=native_window;
+            if(!native_window)return 1;
+            tsfp_renderer_host_bind(native_window,d3d8_overlay_shutdown);
+            tsfp_native_settings_attach(native_window);
+            if(!SDL_SyncWindow(native_window))return 1;
+        }
+    }
     if(!pp.hDeviceWindow || FAILED(api->lpVtbl->CreateDevice(api,0,1,pp.hDeviceWindow,0,&pp,&dev)) || !dev)return 1;
     struct Vertex {float x,y,z,w;DWORD color;} vertices[3]={
         {0,0,0,1,0xFFFF0000},{64,0,0,1,0xFFFF0000},{0,64,0,1,0xFFFF0000}};

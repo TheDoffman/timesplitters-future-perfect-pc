@@ -21,7 +21,14 @@ def payload(root):
         p=root/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(b'fixture')
     (root/'BUILD.json').write_text('{}')
     (root/'Support/Runtime/dependency-audit.json').write_text(json.dumps(dict(components={},source_packages={},data_components={'Support/Desktop/share/mime/packages/freedesktop.org.xml':dict(sha256=package.digest(root/'Support/Desktop/share/mime/packages/freedesktop.org.xml'))})))
-    return dict(media=dict(archive='source.tar.gz',sha256=package.digest(root/'Source/FFmpeg/source.tar.gz')),files={name:package.digest(root/name) for name in names})
+    return dict(textures=dict(delivery='optional'),media=dict(archive='source.tar.gz',sha256=package.digest(root/'Source/FFmpeg/source.tar.gz')),files={name:package.digest(root/name) for name in names})
+
+
+def test_missing_optional_texture_policy_is_rejected(tmp_path):
+    manifest=payload(tmp_path)
+    del manifest['textures']
+    with pytest.raises(ValueError,match='optional texture policy'):
+        package.verify_payload(tmp_path,manifest)
 
 def test_launcher_sidecars_cannot_be_silently_rehashed(tmp_path):
     (tmp_path/'Support/Launcher').mkdir(parents=True)
@@ -37,6 +44,26 @@ def test_complete_payload_and_corruption(tmp_path):
     (tmp_path/'Bin/futureperfect_recomp').write_bytes(b'changed')
     with pytest.raises(ValueError,match='checksum'):package.verify_payload(tmp_path,manifest)
 
+
+@pytest.mark.parametrize('name', ['libwayland-client.so.0', 'libwayland-cursor.so.0',
+                                 'libwayland-egl.so.1', 'libwayland-client.so.0.22.0'])
+def test_bundled_wayland_is_rejected_even_with_valid_hash(tmp_path, name):
+    manifest=payload(tmp_path)
+    relative='Bin/'+name
+    (tmp_path/relative).write_bytes(b'old host library')
+    manifest['files'][relative]=package.digest(tmp_path/relative)
+    with pytest.raises(ValueError,match='Host Wayland library'):
+        package.verify_payload(tmp_path,manifest)
+    with pytest.raises(ValueError,match='Host Wayland library'):
+        package.bundle_libraries([],tmp_path)
+
+
+def test_wayland_host_boundary_keeps_application_libraries_bundled():
+    for name in ('libwayland-client.so.0','libwayland-cursor.so.0','libwayland-egl.so.1'):
+        assert package.HOST.fullmatch(name)
+    for name in ('libgtk-3.so.0','libavcodec.so.60','libstdc++.so.6','libxkbcommon.so.0'):
+        assert not package.HOST.fullmatch(name)
+
 def test_keyboard_icon_credit_is_required(tmp_path):
     manifest=payload(tmp_path)
     del manifest['files']['Licenses/Keyboard-mouse-icons.txt']
@@ -44,15 +71,18 @@ def test_keyboard_icon_credit_is_required(tmp_path):
     with pytest.raises(ValueError,match='Incomplete'):package.verify_payload(tmp_path,manifest)
 
 
-def test_release_assets_pin_actual_preview_and_launcher_without_publishing(tmp_path):
-    archive=tmp_path/'TimeSplitters-Future-Perfect-PC-v0.4.2-linux-experimental.1-linux-x64.zip'
+@pytest.mark.parametrize('version', ['v0.4.2-linux-experimental.1', 'v0.5.0'])
+def test_release_assets_pin_channel_and_launcher_without_publishing(tmp_path, version):
+    archive=tmp_path/f'TimeSplitters-Future-Perfect-PC-{version}-linux-x64.zip'
     archive.write_bytes(b'archive')
-    manifest=dict(version='v0.4.2-linux-experimental.1',packaging_commit='a'*40,
-        release_channel=dict(schema=1,channel='linux-experimental',name='Linux Experimental Preview',minimum_launcher='1.4.0'))
+    channel=package.release_identity(version,publishing=True)
+    channel['minimum_launcher']='1.5.0'
+    manifest=dict(version=version,packaging_commit='a'*40,release_channel=channel)
     package.write_release_assets(manifest,archive)
     notes=archive.with_suffix('.notes.md').read_text()
     metadata=json.loads(notes.split('<!-- tsfp-release ',1)[1].split(' -->',1)[0])
-    assert metadata['channel']=='linux-experimental' and metadata['minimum_launcher']=='1.4.0'
+    assert metadata['channel']==channel['channel'] and metadata['minimum_launcher']=='1.5.0'
+    assert 'experimental support' in notes and 'Steam Deck acceptance remain pending' in notes
     assert metadata['platforms']==['linux-x64'] and metadata['source_commit']=='a'*40
     assert json.loads(archive.with_suffix('.BUILD.json').read_text())==manifest
     assert archive.with_suffix('.zip.sha256').read_text()==package.digest(archive)+'  '+archive.name+'\n'

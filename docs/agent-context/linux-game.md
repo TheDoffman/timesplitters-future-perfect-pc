@@ -2,6 +2,38 @@
 
 ## Experimental release preparation
 
+Native SDL startup uses window_startup_sdl.h to read the existing
+RECOMP_FULLSCREEN/fullscreen runtime preference before window creation in
+both renderer_rhi_sdl.c and renderer_gl.c. It does not force fullscreen or
+persist session F11 toggles. The real renderer self-test checks the initial
+window flag before any test toggles; clean-package acceptance now runs saved
+fullscreen=0 and fullscreen=1 through Launch.sh under the isolated HOME.
+Steam Desktop Mode's desktop/gamepad controller layout is outside game mouse
+capture; see the player guide. We do not change users' Steam mappings or focus
+background windows on controller activity. Native Mac uses the same startup
+helper; native Mac build/visual checks remain pending.
+
+Linux package closure leaves libwayland-client.so.0, libwayland-cursor.so.0
+and libwayland-egl.so.1 on the host, with the graphics driver, for X11 and
+Wayland alike. Steam Deck's newer RADV requires symbols absent from Ubuntu
+24.04's bundled client. Both staging and payload verification reject copied
+Wayland runtimes, including versioned filenames. Minimal installs need the
+three distro runtime packages; no newer Wayland ABI is required by this change.
+The actual-ELF closure fixture executes older and newer simulated host/driver
+pairs without preload; its negative control reproduces the missing-symbol
+failure when the older bundled client is restored. See test_linux_elf_closure.py.
+
+The authorized 0.5.0 release uses Stable channel metadata for Linux as well as
+Windows/Mac. package-native-linux.py accepts the shared Stable/preview identities;
+both retain explicit experimental Linux limitations and the actual bundled
+launcher minimum. This does not establish native desktop or Steam Deck acceptance.
+The Linux BUILD receipt includes the same optional-texture/retired-icon policy
+as Windows/Mac and identifies its bundled launcher; no texture hydration is needed.
+Its source ZIP uses shared write_source_files to omit optional texture assets,
+matching Windows/Mac source bundles.
+An empty retirement list still emits delivery=optional on Linux; Windows/Mac's
+legacy null identity also means no bundled texture payload.
+
 `tools/build/build-linux-media.py` builds the pinned FFmpeg6.1.5 WMV2-only LGPL
 shared libraries in the private dependency tree. The source pin identifies the
 official signed tag/commit and archive SHA256; changed archives, extracted source
@@ -413,6 +445,9 @@ No tag, release, upload or network request is made by this preparation.
 The shared native game installer verifier uses spaces/Unicode in fresh and
 upgrade folders; Linux also executes the installed SVG module-query helper.
 Clean-userspace read-only mount paths include spaces/Unicode for game and data.
+Its disposable HOME has a 1 GiB tmpfs limit so the launcher's 512 MiB-plus-overhead
+save-backup preflight can run. This is a capacity bound, not preallocated RAM;
+the real free-space guard and all backup/preservation checks remain active.
 
 `linux-arcade-release.json` reuses the shared rocket-impact Arcade menu route
 through bounded SDL keys/mouse on a disposable Test Lab profile. Captures must
@@ -457,3 +492,5 @@ The stored pre-optimization indexed-draw reference enables its same shared
 shadow driver on Linux; otherwise it would compare Linux's production draw
 against the reference's non-native no-draw fallback. Its indexing/dispatch
 algorithm is unchanged, and all three negative mutations remain mandatory.
+
+Linux main initializes SDL video before guest/audio workers through video_startup_sdl.h. Otherwise audio-first SDL initialization on a worker can claim SDL main/event thread ownership, causing the renderer to reject window creation while audio continues. Initialization logs the selected X11/Wayland backend and exits before guest boot on failure. No Vulkan ICD is forced; RADV remains system-selected. Real SDL tests require Xvfb and headless Weston and reject an audio-first negative control.

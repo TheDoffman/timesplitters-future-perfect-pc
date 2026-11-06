@@ -1,4 +1,4 @@
-Opt-in Developer Tools / match policy (uncommitted after cf14ea41): implemented,
+Opt-in Developer Tools / match policy (committed aa81002d): implemented,
 native acceptance pending. Shared developer access, native match Options row,
 LAN/Online TSFTOOL1 policy and launcher page/model require no duplicate host logic.
 The Cocoa help text describes enabling in Extras or the launcher and shortcut access. Existing
@@ -99,6 +99,36 @@ settings/persistence, focus/fullscreen/pointer scaling, original/native rates,
 flight geometry and camera return/visibility, HUD/watermark recovery, Story
 checkpoint restoration/final ending, bracket repeats and pause. Windows CPU
 fixtures do not verify these hosts. Use isolated saves/settings for checks.
+
+## Uplink native holding — validation pending
+
+Shared pc_native_numeric.h and pc_native_uplink.h admit Uplink physics
+function1 holding on fractional intervals. Coreb3545910 on fix/discord-uplink
+requires no new host adapter. The original-US input/charge regression covers
+60/120/144/180/240; Windows live Russian Connection barrel pickup, floating
+and release pass at120/180. The supported Windows build passes with the
+recorded local MSVC workaround; native Mac/Linux builds and live acceptance
+remain pending. Check lift/hold/release, throw, pause, map mode and ordinary gun
+cadence at the native presets. See STATUS.md and native-uplink.md.
+
+## Shared MSAA texture resize — host acceptance pending
+
+Code ae271f20 on fix/discord-msaa-rendering after221c6b32: rendering2600 repairs
+the common offscreen color resize preceding MSAA companion creation. No new
+OS adapter is required. Windows WARP regression fails before/passes after;
+the isolated Windows Chinese8x scene passes with the documented CPU compiler
+workaround. Native Mac/Linux GPU and Chinese-map gameplay at2/4/8x remain pending.
+See STATUS for the compatibility baseline and full-build acceptance limits.
+
+## Saved native fullscreen startup — validation pending
+
+Local fix/linux-deck-desktop-input: window_startup_sdl.h applies the existing
+runtime fullscreen preference when creating shared SDL/Vulkan and legacy GL
+windows. No separate Mac adapter is needed. Windows already reads this setting
+through its existing window path. Linux saved-windowed/fullscreen startup and
+render/present checks are recorded in STATUS.md; native Mac builds and visual
+acceptance remain pending. Check both renderers with saved fullscreen=0/1,
+F11 transitions and unchanged personal settings on a native Mac host.
 
 ## Joined-player device settings — validation pending
 
@@ -5057,6 +5087,18 @@ Windows loopback evidence in `docs/project/STATUS.md` does not establish native 
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+2026-11-05 projectile follow-up (`fix/flare-projectile-timing`, patch2605,
+code3b9a4540): **Awaiting validation.** Shared numeric/projectile headers repair
+moving-family gates, flare step/look-ahead/velocity, vector drag, scripted
+steering and RNG cadence; the54-entry audit includes tank weapon59 / kind51.
+No host adapter or Windows guard is added. Windows original-code timing140 and
+patch/repository82 checks pass; paired live flare travel/impact now matches60 Hz
+at the180 target. The supported local build and its seven active compiler
+exceptions are recorded in STATUS. Shared Windows/Mac checks and patch upgrades,
+and Linux foundation CI pass. Live tank firing and native Mac/Linux private-game
+acceptance remain pending; check distance/speed, steering, gravity, impact/expiry,
+pause, trails and reused slots at the native presets.
+
 - Handheld minigun spin (2026-10-30, fix/handheld-minigun-native-fps): shared
   src/gameplay/pc_native_minigun_guest.h, pc_native_numeric.h and patch 2140
   preserve held-primary motor intent between firing ticks and scale release
@@ -9094,6 +9136,13 @@ regressions cover enabled/disabled/absent flags; native host CI remains the gate
 
 ### MAC-129 - Optional SMAA anti-aliasing
 
+Release 0.5.0 preparation (2026-11-04): a real native build with reused dependencies
+could not find the current SMAA settings header. Additive2595 gives xbox_config
+the active TSFP_SHARED_SOURCE before its legacy dependency-relative path. The
+relocated-source CMake regression includes a stale-header negative control for
+Windows/native routes. The shader/settings behavior is unchanged; native build
+and scene validation remain separate, with fresh release build checks pending.
+
 - **Status:** Awaiting validation
 - **Source:** [PR #469](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/469), initial implementation `fa75cb41`.
 
@@ -9928,3 +9977,5 @@ immediate session settings (not staged video drafts), usable while the host
 disables Tools. Host policy polling preserves explicit HUD/watermark choices;
 revoking an active free camera still restores its automatically hidden HUD.
 The input fixture checks placement and live updates under denied host policy.
+
+Linux launcher icon/storage follow-up (fix/linux-launcher-icon, uncommitted): Linux windows use the existing embedded launcher icon; Mac bundle icon handling is unchanged. Shared destination-volume free-space checks replace filesystem-root checks in install/import and diagnostics. Native failure dialogs now also show on Home. Windows/Linux validation is recorded in STATUS; native Mac regression and physical Steam Deck acceptance remain pending.

@@ -68,14 +68,30 @@ def test_cli_rejects_incompatible_modes_before_publication(tmp_path,flags):
 
 
 @pytest.mark.parametrize('refs',[False,True])
-def test_cli_exports_separately_compilable_exact_pc_execution(tmp_path,refs):
+@pytest.mark.parametrize('bounded',[False,True])
+def test_cli_exports_separately_compilable_exact_pc_execution(tmp_path,refs,bounded,monkeypatch):
     args,_=fixture(tmp_path)
     (tmp_path/'types.h').write_bytes((ROOT/'src/runtime/recomp_types.h').read_bytes())
+    if bounded:
+        # Compare real CLI output before/after byte-driven splitting. A body
+        # exceeding the budget must remain complete in its own translation unit.
+        assert cli.main(args+['--all','--split','2','--context-continuations'])==0
+        original=(tmp_path/'gen/recomp_context_0000.c').read_text(encoding='utf-8')
+        dispatch=(tmp_path/'gen/recomp_context_dispatch.c').read_bytes()
+        monkeypatch.setattr(output,'MAX_CHUNK_BODY_BYTES',1)
     assert cli.main(args+['--all','--split','2','--context-continuations'])==0
     directory=tmp_path/'gen'
     report=json.loads((directory/output.MANIFEST).read_text())
     assert report['functions']==6 and report['instruction_entries']==12
     assert not report['rejected'] and not report['opaque_entries']
+    if bounded:
+        chunks=[directory/f'recomp_context_{i:04d}.c' for i in range(report['chunks'])]
+        prefix='/* Original decoded instruction continuations. */\n#define RECOMP_GENERATED_CODE\n#define RECOMP_GPR_REFS_SUPPORTED 1\n#include "guest_context_execution.h"\n#include "recomp_types.h"\n'
+        assert report['chunks']==6
+        texts=[p.read_text(encoding='utf-8') for p in chunks]
+        assert all(text.startswith(prefix) for text in texts)
+        assert prefix+'\n'.join(text[len(prefix):] for text in texts)==original
+        assert (directory/'recomp_context_dispatch.c').read_bytes()==dispatch
     for name in ('guest_state.c','guest_status_flags.h'):
         (directory/name).write_bytes((ROOT/'src/runtime'/name).read_bytes())
     source=directory/'harness.c'

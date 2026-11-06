@@ -95,7 +95,7 @@ def patch_records(paths):
                    '-native-numeric-policy.patch', '-native-animation-scope.patch',
                    '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch',
                    '-native-camera-timing.patch', '-native-weapon-event-scope.patch',
-                   '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch', '-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-trace-quiet.patch', '-native-demo-timing.patch', '-texture-bind-scan.patch', '-keyboard-reload-buffer.patch', '-model-transform-entry.patch', '-zero-base-indices.patch', '-stable-gpr-refs.patch', '-native-wind-history.patch', '-native-minigun-intent.patch', '-native-player-trigger-event.patch', '-kill-feed-firing-scope.patch'):
+                   '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-rocket-projectile-timing.patch', '-native-projectile-families.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch', '-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-trace-quiet.patch', '-native-demo-timing.patch', '-texture-bind-scan.patch', '-keyboard-reload-buffer.patch', '-model-transform-entry.patch', '-zero-base-indices.patch', '-stable-gpr-refs.patch', '-native-wind-history.patch', '-native-minigun-intent.patch', '-native-player-trigger-event.patch', '-kill-feed-firing-scope.patch'):
         patch = next((p for p in paths if p.name.endswith(suffix)), None)
         if patch:
             paths.remove(patch)
@@ -284,6 +284,18 @@ def patch_records(paths):
         if followup:
             paths.remove(followup)
             paths.append(followup)
+
+    # Settings must use the active source after grouped/native target migrations.
+    config_source = by_name.get('2595-config-source-worktree.patch')
+    if config_source:
+        paths.remove(config_source)
+        paths.append(config_source)
+    # Shared-depth resize extends the final header after temporal map and
+    # Linux declaration migrations. Keep those historical hunks unchanged.
+    shared_depth_resize = by_name.get('2600-msaa-scaled-shared-depth.patch')
+    if shared_depth_resize:
+        paths.remove(shared_depth_resize)
+        paths.append(shared_depth_resize)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate
@@ -294,6 +306,14 @@ def patch_records(paths):
         # comment/function boundary. Removed/added code must still match.
         reduced_context = native_boot and (patch.name == '0700-pc-debug-latency-watermark.patch'
                                            or patch == native_boot and '0470-pc-network.patch' in by_name)
+        # These additive wrappers ended the manual file when authored. A local
+        # comment appended later must not make Git require an end-of-file match
+        # during reverse application; retain adjacent context and exact code.
+        reduced_context = reduced_context or patch.name in (
+            '2520-developer-tools-overlay.patch',
+            '2530-developer-tools-controls-and-cheats.patch',
+            '2550-developer-tools-cutscene-speed.patch',
+            '2580-developer-tools-lobby-wrench.patch')
         content = patch.read_bytes()
         records.append(dict(name=patch.name, content=content.decode('utf-8'),
                             sha256=hashlib.sha256(content).hexdigest(),

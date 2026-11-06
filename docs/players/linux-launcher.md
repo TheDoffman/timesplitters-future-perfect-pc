@@ -21,6 +21,12 @@ Install your distribution's desktop libraries if needed. On Ubuntu these include
 `libsm6` and `xdg-utils`. The game additionally needs its Linux Vulkan/runtime
 dependencies; see [Linux development](../development/linux.md).
 
+Linux game packages use your distribution's Wayland runtime alongside its
+graphics driver, including when using X11. On minimal Ubuntu installations,
+install `libwayland-client0`, `libwayland-cursor0` and `libwayland-egl1`.
+These are normal desktop runtime libraries; a Wayland desktop session is not
+required. This keeps newer Mesa drivers compatible with the package.
+
 The launcher offers only published `linux-x64` game packages on the selected
 channel. A launcher ZIP contains no game runtime or original game data. Until a
 matching Linux game release is published, the launcher reports that none is
@@ -33,6 +39,26 @@ saves and imported data remain in the installation folder across updates. Game
 startup uses the system Vulkan driver; inherited Mac/software-driver overrides
 are cleared. Desktop mode choices include common presets, Auto and any saved
 custom mode. Automatic desktop refresh switching is unavailable.
+
+## Steam Deck in Desktop Mode
+
+When opening the launcher directly from the desktop, switch the Deck controls
+to Gamepad mode by holding the Menu button (≡, beside Y) for about three
+seconds. Steam's desktop layout can otherwise move the mouse with the sticks
+and open its keyboard with X. Click the game once if the desktop has left
+another window focused. Changing the game's mouse-capture setting does not
+change Steam's desktop controller layout.
+
+For a per-game Steam Input layout, add `TimeSplitters.Launcher` to Steam as a
+non-Steam game, enable Steam Input for that entry, select a Gamepad layout,
+and start the Steam entry instead of opening the file directly. Steam must
+recognize the running game to apply that layout; if the desktop layout remains
+active, use the Menu-button switch above. Launcher/child-process tracking still
+needs Steam Deck acceptance. Do not enable Proton for this native Linux build.
+
+Fullscreen in the launcher's settings is applied when the game starts.
+F11 toggles fullscreen during play for the current session. Both the shared
+SDL/Vulkan and legacy native GL renderers read the saved startup preference.
 
 ## Source builds
 

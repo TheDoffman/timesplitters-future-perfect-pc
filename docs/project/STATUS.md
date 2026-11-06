@@ -1,3 +1,29 @@
+## 2026-11-06 - Developer Tools branch synchronized with main
+
+Developer Tools changes committed aa81002d, then origin/main3fa4bc2b merged into
+local developer-tools-overlay. Main remains unchanged and nothing is pushed.
+Preserved both additive patch families, regenerated the index and combined its
+exact-order fixture (91-entry tail). Existing Developer Tools guide history
+moved into linked developer-tools-integration.md to retain main's current guide
+content within bounded sizes. Personal graphics/HUD configuration stays untracked.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11/SDL3.4.16: supported full
+Build passes after normal shared patch validation and guest-code regeneration;
+linked checks and crash symbols pass (linked version0.5.1). Full launcher -Test
+passes, including restored opt-in UI and main's newer grouped channel/maintenance
+checks. Initial patch/regression suite:57 passed,2 skipped,16 migration failures.
+Historical fixture inputs had included Tools without their Linux/display
+prerequisites, and additive end-of-file wrappers rejected unrelated appended
+comments during rollback. Old inputs now omit that dependent family; complete
+upgrades still install all patches. Scoped -C1 matching for2520/2530/2550/2580
+preserves local comments while still rejecting changed wrapper code. Patch
+contents are unchanged. All16 failed cases pass on rerun (4 representative,
+12 remaining); the new local-comment/mutated-body regression passes. Final
+repository context suite:21 passed. Source/index/whitespace checks pass. The
+supported Build/linked checks pass again with the updated migration metadata.
+No new gameplay, Mac/Linux or cross-device acceptance for this merge. Other-device synchronization is unverified.
+Executable SHA-256: `9a89a7896a97e028731476b63c8a7f99d8201ef91bb1fa1b087e7d7dfe3e7923`.
+
 ## 2026-11-06 - Shorter visibility labels
 
 Renamed visibility switches to HUD & UI and Version watermark in shared sidebar
@@ -527,6 +553,327 @@ Evidence: logs/developer-tools-*.log; private/test-saves/developer-tools contain
 bounded JSON results, pose traces and selected own-window captures. Hashes of
 personal controls/display and the canonical Test Lab fixture were unchanged;
 six disposable partition images recycled after each run. No release/push claim.
+
+## 2026-11-05 - Issue497 native effect depth candidate
+
+Based on main772a38df; local fix/497-electricity-through-walls. Live HLE and
+replay effect targets were skipping shared-depth preparation outside Windows.
+Linux Ubuntu24.04 WSL x64, Mesa llvmpipe LLVM20.1.2/Vulkan1.4: original replay
+failed a color/depth size mismatch; corrected replay passed four aspect/scale
+cases with foreground occlusion, feedback refresh and retained depth writes.
+Shared Vulkan RHI suite passed. Windows adapter/readback/build-link tests:
+10 passed, including a failing old-guard mutation. Native Mac and the exact
+Electro Chimp/Russian Connection encounter remain unverified. No release or
+issue closure; the targeted renderer defect is proven, scene causality pending.
+Windows HLE/replay targets rebuilt, and all four replay cases passed on D3D11.
+Linux HLE compiled; integrated software-Vulkan renderer/replay validation passed.
+Linux adapter/readback tests:9 passed,1 Windows-only test skipped. Windows patch
+tracking/context/adapter checks:48 passed. Logs are under logs/issue497 on Windows
+and logs/issue497-* in the native Linux checkout.
+Full native Linux generation/build and protected-MMIO tests subsequently passed.
+An isolated older-build Electro Chimp run captured a real electrical beam.
+Replaying that frame with and without this correction produced identical pixels
+and no failed host calls. It did not reproduce the reported hidden glow; this
+is not visual confirmation of issue497. The temporary baseline replay mutation
+was restored and the corrected replay rebuilt. See native-effect-depth.md.
+
+## 2026-11-05 - Projectile flight timing verified on Windows
+
+Shared patch2605 and numeric/projectile policy repair the remaining affected
+weapon and vehicle flight families. The full54-entry US dispatch table is
+checked explicitly. Ordinary Flare Gun weapon4 uses kind38; Machine Wars
+scene5's loaded tracked vehicles expose weapon59 / kind51 as the main cannon
+and60 / kind45 as the secondary gun. That mapping was read from the isolated
+normal-menu Story scene. The table audit includes vehicle kinds51-53.
+
+The flare repair couples fractional movement, look-ahead and derived velocity,
+with whole-tick/interpolated jitter. The family audit also found fixed-frame
+vector drag; its three axes now use elapsed game time. Moving-family entry
+gates retain fractional flight intervals; scripted kind50 keeps authored
+spring steering cadence with continuous translation. Random steering, object
+spin and flight smoke preserve whole-tick RNG cadence. Allocation resets
+sidecars on slot reuse. Shared clocks and instant-hit/age-based paths are retained.
+
+Validation of code3b9a4540861289a37565bc36aa3fa9f31eadbcda:
+
+- Full original-US native timing suite:140 passed in149.57 seconds. Its26
+  projectile cases include60/120/144/180/240, normal/quarter speed, .5/1/1.5-second
+  flare paths, original speed envelopes, exact native60 state, pause, original
+  gravity/matrix helpers and guest ABI. Eight independent policy ablations
+  must fail behavior (six flare, tank entry gate, vector drag). Existing rocket
+  impact/expiry, random cadence and slot/nesting checks remain.
+- Complete patch-upgrade/tracking/context suite:82 passed in1231.68 seconds.
+  Historical snapshots omit2605 while they lack its allocator-wrapper dependency,
+  then apply it in the complete upgrade. A fresh-stack production-scanner check
+  also passed after requiring separate declarations for the five generated
+  originals; the production alias planner and actual generated bodies were checked.
+- Supported Windows Build completed with its linked build checks and matching
+  crash symbols. Exe SHA256 is
+  `934d3f9ef9caacfdc1078ccc3686bcf3de5a61888af9efee12cbf9b75337659a`;
+  compatibility is`125ce351b41b80107e6f798590089627a1dd1fcb4195eb9c503b02a0536e3e2f`.
+  BUILD.json records clean source3b9a4540 and PDB SHA256
+  `a95c7ac2cf10f2d1734b282bee90ae7b382389ff9544718bb489e5be0f39c62e`.
+- The generated VCXPROJ confirms seven active local /Od /Ob0 exceptions:
+  regular unit0011 and context0752-0756/0774. All other units retain /O2.
+  These are the existing large-SSE optimizer workaround mapped to this generator's
+  output; the obsolete regular0114 property is not an active compile item.
+  This is local validation-build evidence, not default-flags Release acceptance.
+- Runtime CI on3b9a4540 passed Windows/Mac native checks and patch upgrades,
+  Linux SDL/Vulkan foundation, and PR validation:
+  https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/42073066455.
+  This validation-record follow-up is documentation only.
+
+Paired live Spaceport tests used the same isolated Test Lab profile,0bots,
+weapon4, spawn and flat aim, with normal input and read-only shot observations.
+At .5 game seconds, original60 travelled15.02553 units; the old180 target travelled
+only5.85526. The rebuilt180 target travelled15.02183, with fitted forward speed
+30.03075 units/second against the60-Hz reference30.23966 (old180:11.31913).
+The rebuilt flare impacted atage.56086 versus reference.56667, within one
+original tick. It retained the normal impact/effect path. Local provenance,
+raw pool snapshots, shot records and screenshots remain ignored.
+
+The tank's actual kind51 updater passed the original-code flight comparisons;
+live Story navigation did not reach a fired tank shot, so live vehicle handling
+or cannon firing is not claimed. Controlled scene/effect boundaries do not prove
+every map collision or rendered trail. Native Mac/Linux private-game acceptance
+remains pending in MAC-060. No new Discord resolution comment is inferred for
+these reports made in this chat. Publication remains pending; issues stay open.
+
+## 2026-11-05 - Shared MSAA regression declaration
+
+PR495 Linux CI exposed a Windows-only declaration guard on the already-shared
+xbox_D3D8PrepareSharedDepthTarget implementation. Patch2600 now exposes that
+prototype on every RHI host. It applies after temporal-map/header migrations;
+historical pre-MSAA seeds omit this dependent repair until their full upgrade.
+The same scaled-target test exercises each host;
+no platform check is bypassed. Cross-host CI is being rerun before main merge.
+
+## 2026-11-05 - Verified Discord fix integration
+
+User authorized main integration of the confirmed MSAA and Uplink fixes.
+Combined latest main831c324a with branches c0c63c6f and2aff082b; code merged
+without conflicts. Retained all existing projectile/Deck documentation and
+both fixes' validation records while resolving overlapping guide/status edits.
+Unresolved report experiments and investigation branches are excluded.
+
+The complete runtime patch stack applied successfully. Combined Windows
+renderer/native-HUD/SMAA and selected native timing checks passed81 cases
+(53 unrelated original-routine cases deselected), including the WARP MSAA
+resize regression, original Uplink request/repeat negative controls, original
+player-trigger and projectile checks. Repository context tests passed21 cases;
+index/guide ownership validation and whitespace checks passed. One initial
+context run rejected a guide one byte over its size cap; compacting the merged
+links fixed it. Individual fixes' prior supported builds and actual gameplay
+acceptance remain recorded below; this integration did not rebuild/retest the
+entire combined game. Native Mac/Linux acceptance and release publication
+remain pending. Existing Discord resolution comments were not duplicated.
+
+## 2026-11-05 - Discord Uplink holding verified on Windows
+
+Branch fix/discord-uplink, base831c324a; core source b3545910. Uplink physics
+function1 now reaches the original holding updater on fractional native
+intervals at both audited request/repeat gates. The shared clock, integer
+cooldowns, other weapons and map/function0 retain their original behavior.
+
+The original-US regression derives function1 through1C2C00/1B7ED0 using the
+actual Uplink descriptor, then executes the request gate, repeat-gate block,
+weapon callback and charge updater. Both holding paths pass at60/120/144/180/
+240, four carried phases and normal/quarter speed. Separate old-gate mutations
+fail; first-press fractional clock restoration and scope guards pass. Targeting
+and the intervening weapon-state handoff remain controlled in this CPU fixture.
+Three selected Uplink/trigger tests and all32 common fixtures pass. The other85
+original-routine cases passed in the earlier full run.
+
+The supported Windows Build native checks pass. Executable SHA256:
+4b29fad154beb8ef1c7f5d474e70aaab6456f1c5b4e4b45393882a0a52a6b4c5.
+This uses supported split100 generation and the local MSVC C1002 workaround
+(/Od;/Ob0 on seven generated SSE units); default-flags Release is unverified.
+Rendering and remaining generated units retain Release optimization.
+
+Real Russian Connection tests use the unlocked disposable Test Lab fixture,
+normal synthetic input and read-only state observation. No entity/clock writes
+or teleports are used; original targeting, geometry and rigid-body physics run.
+The same barrel18C00095/body10067 starts atY0. In the120 baseline (99c408,
+whose erroneous function0 guard leaves the active function1 gates unchanged),
+four seconds of holding reaches only0.0423 strength andY0.262. The corrected
+120 run reaches strength1 andY1.585; the reporter's180 setting reaches
+strength1 andY1.433. Both visibly float the barrel in front of the player and
+release it: strength returns0 and height falls below0.53 within one second.
+Each hold has80 samples; occasional null current-player snapshots are retained
+as incomplete observations. These are gameplay/charge results, not scanout or
+GPU-completion measurements. Logs and selected before/after BMPs remain ignored
+under logs/uplink-{baseline,fixed,fixed-180}-*. Canonical fixture bytes remain
+protected. Resolution is verified; merge/publication are pending. Native Mac
+and Linux build/gameplay acceptance remain separate. See native-uplink.md.
+
+## 2026-11-05 - Chinese MSAA: Windows verified, publication pending
+
+Local fix/discord-msaa-rendering after221c6b32, not yet published. Existing
+Windows x64 game4edca1d2a9665d8d8785aa4ffa07463707087f84f81a16a6de290203d8efd257
+(displayed v0.4.2/5b57580e) reproduces the almost-black Chinese Deathmatch scene
+at8x MSAA,960x540,Original60,Classic textures, with accumulating target-binding
+failures. Supported US XBE checksum verified; synthetic input and disposable
+Test Lab profile/settings only. This executable is a compatibility baseline,
+not a build of the investigation HEAD. Private scene capture replayed through
+current source with zero failed host calls, but remains black because its
+recorded failed-target fallback already lost the intended offscreen pass.
+
+Patch2600 permits single-sample color resizing against MSAA depth before its
+coverage companion is created. New msaa_scaled_target GPU regression compiles
+and fails before the repair, passes afterward on Windows D3D11 WARP. It checks
+1/2/4/8 sample depth, exact resized color, unchanged logical texture dimensions,
+single-sample sampling and matching coverage. Existing shared RHI and eleven
+native-HUD regressions passed before the change. After-change renderer/HUD
+checks passed28 with1 platform skip; context/index validation and the supported
+Windows build's native tests passed.
+
+Code ae271f20 was built with MSVC14.44.35207,Windows SDK10.0.26100 and D3D11.
+Generated output used the supported --split100 setting. MSVC C1002 also required
+a local validation-only CMake include disabling optimization/inlining for
+recomp_0114.c and continuation chunks0752-0756/0774. Renderer and all other
+units retained Release optimization. This is not a passing default-flags game
+build; the compiler limitation remains separate from the rendering repair.
+FFmpeg headers/runtime use the existing local pinned installation.
+
+Validation game SHA256
+2cb51819358a5b4feb7b5e69e98ff1bc853df5d981c07fe842159d247a3f94c0:
+the same isolated Chinese Deathmatch route at8x MSAA,960x540,Classic,Original60
+now shows the world and weapon normally. Its log reaches8700 successful guest
+presents and66884 target sets with zero binding failures; these API counters
+are not measurements of GPU completion or scanout. Retained private before/
+after captures and provenance accompany the150-second bounded run. Native
+Mac/Linux GPU and gameplay acceptance remain unverified. Publication is pending.
+
+## 2026-11-05 - Native fullscreen startup and Steam Deck Desktop controls
+
+User launches directly from Desktop Mode. Holding Menu to select Steam's
+Gamepad layout resolved both stick-as-mouse behavior and X opening Steam's
+keyboard, confirmed by the user. No game input policy or global Steam mapping
+was changed. A non-Steam launcher entry with a Gamepad layout is documented as
+the Steam-managed route; automatic launcher/child tracking needs Deck testing.
+
+The launcher already saved fullscreen, but native SDL window creation ignored
+it. Shared window_startup_sdl.h now reads the existing fullscreen setting and
+RECOMP_FULLSCREEN override for both Vulkan and legacy GL creation. Windows's
+existing adapter remains unchanged. This work depends on the local unmerged
+Wayland package fix at a5080220 and retains it in the candidate.
+
+Ubuntu24.04 x64/WSL: supported release-media build and x64 MMIO test passed;
+58 selected Python startup/package/ELF/SDK/media checks passed. Actual packaged
+startup from saved fullscreen=0/1 and full render/readback/depth/present and
+window transitions passed in minimal Ubuntu under Xvfb/Openbox. Settings,
+debug, input, Python/Tk/TLS and all40 launcher UI groups passed; Online retains
+its77 clean-root skip. Both saved modes also passed actual shared-renderer
+checks under headless Weston/software Vulkan without preload.
+
+The expanded tests initially exposed fixed64x64 pixel/depth assumptions and
+Wayland's deferred fullscreen acknowledgement. The self-test now waits for
+the initial request and uses a fresh disposable64x64 window for fixed-size
+fixtures, without changing the saved preference. The failed unpublished .2
+candidate was recycled; diagnostic logs were retained. Native Mac and physical
+Deck fullscreen checks remain pending; CPU/software-GPU tests are not those
+hardware checks. An ancillary Windows Python run had48passes/1POSIXskip and
+3SDK-fixture failures because C: had less than the existing5GiB setup guard;
+the corresponding Linux tests passed without changing that guard.
+
+Local candidate v0.5.2-linux-experimental.3: runtime and packaging source
+1f351352, unchanged launcher1.5.1. ZIP SHA256
+b11397a698237ad38450e80cf5cc82dbac1b0175bf3947168ff59e69ea915873.
+Fresh/upgrade install, corruption rejection and personal preservation passed.
+Verified delivery copy is on D: in TimeSplitters Test Builds due low C: space.
+No publication, main merge or native Mac acceptance is claimed.
+
+## 2026-11-05 - Linux system Wayland package fix
+
+User's Steam Deck renderer log showed RADV failing to load with missing
+wl_display_dispatch_queue_timeout; preloading SteamOS's Wayland client made
+the game display. Linux closure now excludes the system Wayland client,
+cursor and EGL runtimes, and staging/payload verification reject copied
+versions. Other application libraries retain their existing bundling policy.
+Minimal desktop installs need the documented distro runtime packages, even
+on X11. No newer host Wayland version or Deck-specific library path is imposed.
+The launcher already prunes unchanged files owned by an older game manifest;
+use its normal upgrade flow or extract into a fresh directory, since manually
+overlaying a ZIP can leave old libraries behind.
+
+Validation on Windows x64 and Ubuntu24.04 x64/WSL: 51 Python checks passed,
+one POSIX-only skip on Windows; all 56 selected Linux checks passed. Real ELF
+fixtures cover both older and newer simulated driver ABIs without preload,
+with a negative control that reproduces the missing-symbol failure.
+The rebuilt candidate passed actual fresh/upgrade installation, corruption
+rejection and personal-file preservation. In the minimal Ubuntu24.04 root,
+read-only package tests passed settings/debug/input/renderer, Python/Tk/TLS
+and 40 shared launcher UI groups under Xvfb; Online returned its existing
+77 skip. Headless Weston plus software Vulkan also passed actual packaged
+clear/draw/readback/overlay/present and window/fullscreen/restore checks.
+The first Weston harness attempt named a nonexistent ICD file; correcting it
+to the host's actual Lavapipe manifest passed without product changes.
+These checks do not establish all-distro, physical-GPU or new Deck acceptance.
+
+Local candidate v0.5.2-linux-experimental.1 embeds unchanged game build
+47fc559c and launcher1.5.1, packaged from 1e715110. ZIP:805515880 bytes,
+SHA256 7d7c7682829fe38aaadc0c5e30058acb7f8a7c821b7f51a21ef0c4230f454fc4.
+It is a packaging fix, not a rebuild of the game runtime. No release publication
+or main merge performed; Windows/Mac packaging and runtime are unchanged.
+
+## 2026-11-05 - Rocket speed at high frame rates
+
+Shared projectile timing correction on fix/high-fps-projectile-speed, based on
+3ddc46e9. Windows x64 Release rebuild and standard build checks passed. Original
+US guest-code projectile fixtures passed on Windows and Ubuntu 24.04 WSL at
+60/120/144/180/240 FPS, including homing, smoke cadence, impact and expiry.
+Patch migration and tracking checks passed. The user tested the isolated rebuilt
+Windows Test Lab game and confirmed the reported projectile-speed issue resolved.
+Native Mac gameplay and physical Linux/Steam Deck gameplay are not verified.
+The fix uses shared source/patches and needs no new platform adapter.
+
+## 2026-11-04 - Small-screen launcher fitting
+
+Native Mac/Linux launcher fits the monitor working area and scales its shared
+layout uniformly below the original minimum. Dialog text scrolls within the
+available height. Ubuntu WSL build/package and all 40 shared UI groups passed;
+physical Steam Deck and native Mac acceptance remain pending.
+
+## 2026-11-04 - Launcher 1.5.1 release preparation
+
+User authorized main merge and publication. Source version/assembly attributes
+are 1.5.1; Linux icon/storage/error-dialog validation is recorded below.
+Three-platform PR and publication checks must pass before the release is live.
+Physical Steam Deck acceptance remains pending.
+
+## 2026-11-04 - Linux launcher icon and destination storage checks
+
+Local fix/linux-launcher-icon after main 03b8c4aa, uncommitted. Linux launcher
+now embeds the existing ICO and assigns it to startup/main/location windows;
+release artwork checks require it. Import/update capacity and diagnostics query
+the destination filesystem through TsfpDiskSpace, not the POSIX / filesystem.
+Native Home operation failures now show a dialog as well as the status/log.
+
+Ubuntu 24.04 x64 under WSL: pinned .NET 8.0.426 build --test --package passed,
+including 39 shared UI groups, required-icon decoding, separate /dev/shm mount
+and symlink capacity checks, hashed runtime install, self-package corruption,
+repair/helper restart/render and save/settings preservation. Logs:
+logs/linux-launcher-fixes.log. Windows launcher full regression suite passed
+(logs/linux-fixes-windows-tests.log). Packaging pytest: 3 passed, 2 subtests.
+Private minimal XISO fixture with the verified local US XBE plus tiny pak/xmv
+entries passed real Linux import, extracted-folder import, byte comparison and
+existing-Data refusal; not a complete disc/gameplay test. Temporary fixture was
+removed. Actual Steam Deck failure is not yet confirmed from logs or hardware;
+Mac native execution and physical Linux desktop icon appearance remain untested.
+
+## 2026-11-04 - Game 0.5.0 / launcher 1.5.0 release preparation
+
+The requested release targets Windows x64, Apple Silicon Mac and Linux x64.
+Version/README preparation passed83 tests and41 subtests on Windows. Actual Mac
+compilation then found a reused-runtime source-path error for the SMAA header;
+additive2595 selects the active shared source for xbox_config after target
+migrations. The real relocated-source CMake fixture passes both source routes
+and rejects its stale-header negative control. Linux packaging now accepts the
+shared Stable identity while retaining explicit experimental limitations and
+the optional-texture/retired-icon metadata. Focused delivery checks passed26
+tests with1 POSIX-only skip on Windows in7.76s. Full three-host builds, clean
+Linux package acceptance and publication remain pending. The stopped earlier
+Windows/Linux pipelines are not completed validation; personal data is preserved.
 
 ## 2026-11-04 - Local-player Settings integration validation
 
@@ -40560,3 +40907,52 @@ cap and its tests were removed; responsive mouse aiming is retained. Fast-turn
 clipping investigation continues; no model-follow fix has been claimed.
 
 Machine Wars minigun: cockpit-only right mouse secondary fire added. Windows Build, 19 mounted-input tests and context check passed. Shared Windows/SDL policy; Mac/Linux physical validation and live minigun acceptance pending. Fast-turn clipping remains unresolved; no turn cap applied.
+
+## Release 0.5.0 continuation compilation bound (2026-11-04)
+
+The actual Windows release build exposed MSVC C1002 in a generated continuation
+translation unit, both with two compiler workers and one. A private diagnostic
+compiled an unchanged failing body alone at `/O2 /Ob2`, while grouping 25 bodies
+still exhausted compiler memory. All nine groups capped at 512 KiB of body text
+compiled successfully with those same flags. The common continuation publisher
+now bounds both function count and body-text bytes, isolating oversized bodies
+intact; decoded instructions, function identity, dispatch and optimization flags
+are retained on Windows, Mac and Linux.
+
+The real CLI regression forces separate translation units, compares normalized
+body text and exact dispatch bytes, then executes the separately compiled outputs
+in both GPR modes. Focused export/index/receipt/launcher checks: 66 passed and
+10 subtests on Windows. Full regenerated release build/package acceptance is
+pending at this checkpoint; current results belong in the ignored release notes.
+This build fix does not establish live guest-context/SEH integration or broader
+gameplay, native desktop Linux or Steam Deck acceptance.
+
+## 2026-11-04 - Linux audio-first window investigation
+
+Reproduced with the pinned SDL: worker audio initialization before video makes SDL_IsMainThread false on the actual main thread. Early video initialization prevents it. Released 0.5.0 renderer passed windowed/fullscreen/restored presentation under isolated headless Weston with Mesa lavapipe. WSLg fullscreen alone failed, so that result is not evidence of a game fullscreen defect. Steam Deck/RADV hardware acceptance remains pending.
+
+Validation at 378552fd: Linux optimized release-media build and protected-MMIO
+check passed. Real SDL startup regressions passed under Xvfb/X11 and headless
+Weston/Wayland; both audio-first negative controls failed as expected. The rebuilt
+game passed renderer clear/draw/readback, fullscreen/restore and present tests on
+both desktops using Mesa lavapipe. Separate isolated 30-second boots each produced
+1,500 guest presents, zero failed presents and zero Vulkan validation errors.
+X11 capture was visually reviewed at player selection. Windows portable tests:
+114 passed, six POSIX-only skips. Evidence: WSL build/deck-display-check and
+build/deck-window-build.log; no RADV GPU/physical Deck acceptance claimed.
+
+
+## PR check consolidation - 2026-11-05
+
+Task base: fccce8a7; Windows x64, Python 3.12 virtual environment. Runtime CI
+owns PR/main events, scopes reusable issue-form/resolution/texture jobs, and
+reports one fail-closed PR validation gate including Linux. Launcher builds run
+once. Manual launcher checks remain available. The local repair worker now
+recognizes the consolidated workflow/gate. Host suite commands are preserved.
+
+Focused scope/gate/worker/launcher-policy/issue/Linux-policy validation passed:
+280 tests, 81 subtests; 3 existing host/tool skips. All five changed workflows
+passed checksum-verified actionlint 1.7.12; 23 Node context/evidence tests and
+repository context/whitespace checks passed. Windows/Mac/Linux hosted
+builds and LFS texture verification await the PR's GitHub Actions run. No game
+launch or visual/gameplay validation is claimed for this CI-only change.

@@ -25,7 +25,7 @@ namespace TimeSplitters.Launcher
         public NativeWindow(string root,string[] args)
         {
             this.root=root;this.args=args;render=args.Any(a=>a.StartsWith("--render-"));
-            AvaloniaXamlLoader.Load(this);Artwork();
+            AvaloniaXamlLoader.Load(this);NativeApplication.ApplyWindowIcon(this);NativeApplication.FitLauncher(this);Artwork();
             Find<ContentControl>("GameChannelPickerHost").Content=channelPicker.View;
             channelPicker.SetReleases(Array.Empty<Release>(),GameChannels.Read(root),GameChannels.ReadPreviewTrack(root));
             Label("LauncherVersionLabel","LAUNCHER "+LauncherVersion.Value+"  /  "+LauncherPlatform.HostName);
@@ -96,7 +96,7 @@ namespace TimeSplitters.Launcher
             Label("ChannelBadge", Preview?"\u25cf  PREVIEW CHANNEL":"\u25cf  STABLE CHANNEL");
             if(render){Label("ReleaseTitle",LauncherPlatform.HostName+" launcher");Label("ReleaseDescription","Preview layout · "+LauncherPlatform.HostName+" releases appear here when published.");Label("UpdateStateLabel",LauncherPlatform.HostName+" PREVIEW");Status("Preview only · no game launched, network requests or personal files changed.");}
         }
-        async void Run(Func<Task> action){try{await action();}catch(OperationCanceledException){Status("Download paused. Choose Install release to resume.");}catch(Exception e){Status(e.Message);if(!Find<Control>("CommandCenter").IsVisible)await MessageDialog("TimeSplitters",e.Message,false).ShowDialog(this);}}
+        async void Run(Func<Task> action){try{await action();}catch(OperationCanceledException){Status("Download paused. Choose Install release to resume.");}catch(Exception e){Status(e.Message);await MessageDialog("TimeSplitters",e.Message,false).ShowDialog(this);}}
         async Task Check()
         {
             if(busy)return;int revision=++checkRevision;string channel=SelectedGameChannel;Label("ReleaseTitle","Checking for updates…");
@@ -196,15 +196,16 @@ namespace TimeSplitters.Launcher
         public static Button Button(string label,Action action){var b=new Button{Content=label,Margin=new Thickness(0,4,0,8),Padding=new Thickness(16,10),HorizontalAlignment=HorizontalAlignment.Left};b.Click+=(s,e)=>action();return b;}
         public static StackPanel Heading(string eyebrow,string title,string description){var p=new StackPanel{Margin=new Thickness(30,24,30,18),Spacing=8};p.Children.Add(Text(eyebrow,11));p.Children.Add(Text(title,28));p.Children.Add(Text(description,13));return p;}
         public static ScrollViewer Scroll(Control content)=>new ScrollViewer{Content=content,HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled};
-        static Window MessageDialog(string title,string text,bool confirmation)
+        Window MessageDialog(string title,string text,bool confirmation)
         {
-            var dialog=new Window{Title=title,Width=480,SizeToContent=SizeToContent.Height,CanResize=false,
+            var dialog=new Window{Title=title,Width=Math.Min(480,Math.Max(280,ClientSize.Width-24)),SizeToContent=SizeToContent.Height,CanResize=false,
                 WindowStartupLocation=WindowStartupLocation.CenterOwner,Background=PageTheme.Brush("#102031"),FontFamily=new FontFamily("Arial")};
             // Owned windows have a separate style scope. Load the same translated
             // button templates used by the shared pages instead of Fluent defaults.
             Ui.Theme(dialog);
             var panel=new StackPanel{Margin=new Thickness(24),Spacing=24};
-            panel.Children.Add(new ScrollViewer{Content=PageTheme.Text(text,14),MaxHeight=360,
+            var message=PageTheme.Text(text,14);message.MaxWidth=dialog.Width-72;
+            panel.Children.Add(new ScrollViewer{Content=message,MaxHeight=Math.Min(360,Math.Max(80,ClientSize.Height-160)),
                 HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled});
             var actions=new StackPanel{Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Right,Spacing=12};
             if(confirmation){
@@ -241,7 +242,8 @@ namespace TimeSplitters.Launcher
                 Find<ProgressBar>("UpdateProgress").Value=snapshot.Percent;Find<Control>("UpdateProgress").IsVisible=true;
                 Find<Control>("PauseDownloadButton").IsVisible=true;Find<Control>("UpdateButton").IsVisible=false;Find<Control>("CheckButton").IsVisible=false;
             }
-            int width=mode.Contains("compact")?1000:1152,height=mode.Contains("compact")?720:772;
+            int width=mode.Contains("deck")?(int)Width:mode.Contains("compact")?1000:1152,
+                height=mode.Contains("deck")?(int)Height:mode.Contains("compact")?720:772;
             Width=width;Height=height;
             await Task.Delay(350);var visual=(Control)Content;visual.Measure(new Size(width,height));visual.Arrange(new Rect(0,0,width,height));
             if(mode.Contains("scrolled")){var scroll=Find<ScrollViewer>("HomeCardsScroll");scroll.Offset=new Vector(0,scroll.Extent.Height);await Task.Delay(100);}

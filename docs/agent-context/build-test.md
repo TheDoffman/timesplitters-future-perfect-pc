@@ -1,81 +1,14 @@
-Shared-font tests add real regular/semibold glyph coverage, fractional metrics,
-monospace digit advances and UTF-8-safe ellipsis. Standalone input/font fixtures
-run the same CMake embedding helper as the supported build, then link the shared
-font C source. Existing final-target/MSAA and layout fixtures remain applicable.
-Patch tail ends2620 (89 ordered entries). Package scripts retain both font OFLs
-and stb's MIT license on Windows, macOS and Linux; source checks do not establish
-native host packaging or rendering acceptance.
+[Developer Tools integration](developer-tools-integration.md).
 
-Sidebar refinement checks add height-independent panel sizing,1.5x DPI,
-size/weight glyph-cache keys and geometry-icon coverage. The host-contract fixture
-checks styled callback forwarding, invalid size/failure and output preservation;
-CoreText coverage fixture adds requested-size semibold text (macOS only).
-Patch order ends2610, with an88-patch tail. Live visual comparisons use a bounded
-isolated Test Lab copy at the mockup's DPI-adjusted size and1280x720/1920x1080.
-
-Sidebar regression coverage supersedes the old flat-row navigation expectations.
-`tests/input/test_developer_tools.py` compiles real shared widgets against isolated
-settings/input boundaries: pointer actions, search, validated numeric values,
-binding draft/save/discard, focus and offline guards. Its developer_canvas fixture
-checks rounded boxes, clipping, BGRA colors/alpha, glyph reuse and invalid geometry.
-`tests/storage/test_unlock_content.py` requires three Extras rows and no warning.
-`tests/graphics/test_native_hud.py` checks actual D3D11 final-target text and sidebar
-blue accent RGB128/191/255 at1x/4x MSAA without leaking host UI into guest captures. These tests remain
-in the existing runtime-patches CI test routes. Patch order now ends2600 (87-tail).
-Native Mac/Linux build, font and visual acceptance remain separate unrun checks.
-
-Latest notes: input regression toggles audio scaling at held3x, requires normal
-sound with unchanged game speed, then restores scaled sound. Real XMV fixtures
-exercise an independent audio toggle while video advances2x. Native Extras
-fixture now requires three rows without the sidebar warning. Patch order ends2600.
-
-Further notes regression: audio output fixtures verify live gameplay ratios,
-unchanged movie queues and independent media-clock domains. Stream timing exercises
-0.5x/2x completion through the public tick. Input checks flight hotkeys, network
-reset and the registered audio callback; native Extras fixture opens its own
-Enable/Disable submenu with warning and configurable shortcut. Lobby guest fixture
-checks the actual41E30 outlined-name caller, float coordinates, slot ownership
-and decorated-name measurement without modifying names. The submenu fixture
-requires empty lifecycle slots. Launcher checks unbound flight defaults and both persisted binding slots.
-
-Revised Developer Tools regression additions: original-XBE98E50 fixture proves
-that the fractional native cinematic branch follows game delta while the real
-clock branch ignores it; guest fixture checks scoped flag restoration/origin
-rebasing. Shared launcher UI tests change only Developer Tools ON/OFF and verify
-Save draft state, persistence and the F3 warning. Native host acceptance remains
-separate from Windows fixture/build evidence.
-
-Revised Developer Tools checks: input fixtures cover disabled defaults,
-reassigned shortcut/warning and closed-overlay lobby notices; unlock-content
-fixtures execute the actual Extras selector tick. Both UDP LAN and Online
-bridge fixtures deliver TSFDEV1 frames with native capacity=1, validate session
-keys, availability changes and roster removal. The real bridge also tests an
-admitted guest without an XNADDR entry and retirement with stale self-discovery. The native name getter adapter
-is exercised separately. Movie fixtures integrate rate changes without clock
-jumps and both real audio adapters preserve their queued voice/stream on rate
-changes. Windows launcher tests round-trip enablement and the shared binding.
-
-Developer Tools follow-up fixtures check remapped flight and native look signs,
-held-speed restoration/opt-in, hidden reticles, local damage/ammo and owned-body matrix preparation/renderer guards.
-Original A02F9 inclusion and A1BF1 alternate-mesh branches prevent reversed
-visibility-mask assumptions; original 1B66E0 tests retain shot accounting.
-Developer Tools: `tests/input/test_developer_tools.py` compiles deterministic
-input/settings and guest-camera/checkpoint fixtures. Its private-XBE case runs
-original US25EC30 to prove authored checkpoint-index destination lookup, rather
-than a recorded player position. Native timing fixtures cover speed changes
-and pause across 60/120/180/240 schedules. Windows settings integration checks
-overlay visibility and preserved legacy menu-bar JSON without attaching a bar.
-CPU fixtures do not establish geometry bypass, freecam visibility, authored
-Story restoration/ending movies, or native Mac/Linux gameplay; see STATUS.
-
-[Input tests](controls-options.md).
-[Tab queue](../development/graphics-options.md): HUD/SMAA order and texture-present fixtures.
-Auto-sizing fixtures test SDL policy; restart handoff is separate.
+[Effect depth](native-effect-depth.md).
+[Uplink](native-uplink.md); [2605](native-projectiles.md).
+[HUD/MSAA tests](../development/graphics-options.md).
+[SDL startup/fullscreen](linux-game.md).
 `test_fov_settings.py` checks Video tabs, ownership, pointer bounds, keyboard
 cycling and staged-value retention.
-Ping-expiry tests wait past GetTickCount64 quantization.
+Ping expiry waits past GetTickCount64 quantization.
 [Kill feed](../development/arcade-kill-feed.md)
-# Build/tests ([SMAA](smaa.md))
+# Build/tests ([MSAA](smaa.md))
 
 [Linux](linux-game.md); [LAN](system-link.md).
 
@@ -87,8 +20,8 @@ Native Online link/mode checks: `tests/graphics/test_quit_menu.py` and native
 `--test`/`--online-self-test`. Clang Story fixtures select the Windows guest
 adapter but use the real host trap; hexadecimal additions need token boundaries.
 
-Game 0.4.2: use one clean pushed revision for both publishers; installer,
-preservation and portable Online checks remain required.
+0.5.1/1.5.1: three-host install/preservation/Online/clean-package checks, including
+the [Linux video-startup fix](linux-game.md); [2595](smaa.md).
 
 Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh-weapon-clicks-434).
 
@@ -190,11 +123,10 @@ SDL tests (`tools/build/build-native-mac.py --test`) cover the two-slot E/Space
 cap, requested capture, release and frame-applied mouse disable. They preserve
 bindings; physical input remains unverified.
 
-CI: `runtime-patches.yml` selects work; `ci-pr-gate.py` requires both hosts.
-Native jobs allow 45 minutes on Windows and 30 on Mac; patch upgrades allow 30.
-Required check names remain.
-`test_ci_pr_gate.py` rejects missing/failed/skipped results;
-`test_ci_runtime_scope.py` checks wiring. Issue jobs select their sources.
+CI: `runtime-patches.yml` scopes runtime/launcher/Linux/issue/texture jobs.
+Only `PR validation` is required; `ci-pr-gate.py` fails closed. Launcher builds
+run once; standalone checks are manual-only. Worker uses this gate. Plan tests
+scope/gate/worker; host suites unchanged. Native Windows45m/Mac30m; upgrades30m.
 
 `test_push_gather.py`: full original-reference gathering, fresh bytes, failures,
 guard pages, large buffers and32-bit wrapping. Both native CI hosts run it.
@@ -621,7 +553,7 @@ instrumentation preserves libc copy macros; a redefinition mutation must fail.
 
 `tools/ci/compatibility-worker.py` runs on the designated Mac outside CI. Install
 with `--auto-merge` only for authorized repair follow-through. It publishes a
-repair PR against its original branch, waits for both host workflows/checks and
+repair PR against its original branch, waits for the consolidated workflow/checks and
 reviews, merges the exact repair SHA, then requires fresh parent CI before its
 SHA-conditional merge into protected main. It refuses missing effective gates,
 changed revisions and failed follow-up CI. Legacy state is not automatically
@@ -961,8 +893,135 @@ profile save, batch rollback and resolution Keep/timeout/close behavior.
 The real-font fixture also evicts the full glyph cache and verifies that a
 tracked semibold title recreates identical pixels after video labels replace it.
 
-Local opt-in Tools / match policy extends existing developer, FOV, Unlock and real
-network transport suites. UDP checks cover LAN/Online envelopes, host key/address,
-sequence/replay, expiry and session reset; FOV's native-menu fixture checks host
-selector insertion and stale descriptor rejection. These are existing CI suites.
-Shared launcher -Test covers restored opt-in persistence, Save state and saved shortcut preservation.
+[Developer Tools integration](developer-tools-integration.md).
+
+Grouped Preview UI: GameChannelPickerPage.cs uses both hosts' *Page.cs includes.
+tests/launcher/launcher_shared_ui.cs covers tracks, Save state and launcher_saves.cs
+(sparse backups, update protection, restore failures). Run
+tools/build/build-launcher.ps1 -Test. --render-preview uses synthetic tracks.
+No game build or publisher/tag-format change is required for this grouping.
+
+[Local launcher artwork selection](build-test-details.md#local-launcher-artwork-selection).
+
+Beta publication (2026-10-23): release_channels.identity defaults to history parsing;
+publishing=True rejects alpha/preview/rc/legacy suffixes. Version preparation,
+both package entry points and publisher preflight enforce that mode. Beta's
+canonical identity is beta/Beta; a custom Beta display name is rejected. Historical
+identities remain readable for baselines without joining Beta's series. Publisher
+fixtures now use beta.N, with explicit legacy rejection/history and independent
+Beta baseline tests. Existing generic semantic-version ordering tests still cover
+alpha/beta ordering separately from the new publication policy.
+
+## Temporal Uplink regression route
+
+`tests/support/rhi_screen_copy.h` exercises the production GPU screen-copy pass by
+copying a saved texture region after clearing the source scene. Run
+`python -m pytest tests/graphics/test_rhi_menu_sampling.py -q` on Windows. The shared
+runtime patch stack is checked by `tests/repository/test_patch_updates.py`; a native GL
+build and live Scotland the Brave Uplink view remain separate platform and
+visual validation routes. Replay captures alone cannot verify this effect
+because the host copies are not serialized into replay frames.
+
+## Water and impact-spark checks
+
+See [water tests](water-tests.md) for CPU/GPU validation and live limits; see
+[spark timing](native-impact-sparks.md) for the original guest regression route.
+
+CI discovers unittest in each owning test folder. Changes to project_paths.py
+or conftest.py select all runtime and launcher suites.
+
+[Request CI](kernel-objects.md).
+
+Stage0219 device/name source and contracts use maintained src/runtime and tests/compiler
+paths; see [device ownership](kernel-devices.md). Shared CI selects every new portable
+contract and actual-header probe. The Windows real-host binding fixture skips on Mac;
+that skip does not replace native Mac compilation or title gameplay.
+
+[Unlock migrations](unlock-content.md).
+
+Original sharing bridges and ordinal80 cleanup: [contracts and checks](kernel-sharing.md).
+
+Stage0220 migration models: native-checkpoint, old-controls and old-Mac fixtures
+omit0220 together with its0219 prerequisite while constructing historical inputs.
+Each complete upgrade explicitly asserts the original sharing include/provider
+and ordinal80/16byte cleanup. Full current stacks still include0220. No loader,
+patch bytes, runtime behavior, strict warnings or final upgrade checks are weakened.
+
+Online loopback CI synchronization: test_online.py's three-peer handshake waits
+for the host's two authenticated latency replies as well as each guest's first
+reply, matching its existing assertions. The same four-second deadline, nonce/
+credential/replay checks and relay assertions remain. A partial host roster must
+not end that wait. This test-only fix changes no transport or runtime behavior.
+
+Original request lifetime/callback prerequisites: [contracts and ABI boundary](request-lifetime.md).
+
+Stage0222: [original driver-call composition and opaque stack payload](driver-call.md).
+
+Driver fault controls must compile under Clang/Werror before runtime rejection:
+target expected-pointer weakening retains the expected operand; separate wrong
+rollback location/pointer controls retain put. See test_io_target/test_io_call;
+unused-mutant compiler errors are fixture failures, never passing fault evidence.
+
+Stage0223: [private request construction and completion delivery](transfer-completion.md).
+
+Stage0224: [host-owned FIFO request scheduling](transfer-completion.md#host-owned-request-queue).
+
+Stage0225: [StartIo callback composition and acceptance](transfer-completion.md#startio-callback-composition); maintained maps include the new provider.
+
+Stage0226: [exclusive waiting membership and device queue mirrors](transfer-completion.md#device-queue-mirrors).
+
+Stage0227: [persistent device queue lifetime and scoped scheduler APIs](transfer-completion.md#persistent-device-queue-lifetime).
+
+Stage0228: [read-only caller-owned request adoption and range lifetime](transfer-completion.md#caller-owned-request-adoption).
+
+Stages0229/0231: [events and targets](transfer-completion.md). Stage0232: [symbolic links](symbolic-links.md).
+
+Stages0233/0234: [routing](guest-paths.md), [original host storage](host-storage.md).
+
+Vehicle mouse coverage: `tests/gameplay/test_mounted_mouse.py` exercises shared
+mode `0x400` seat ownership and both host adapter bodies. Its optional supported-XBE
+fixture (`vehicle_mouse_guest.c`) runs original seat dispatch, gun update and camera
+math, and rejects the old mouse route. This is separate from live mission acceptance;
+see [mounted and vehicle mouse contracts](mounted-mouse.md).
+
+The mounted original-vehicle fixture additionally runs 1730E0 track output and
+link restoration across camera headings, forward/reverse and steering. Original
+CA040 camera coverage now includes nonzero driver pitch; its original custom
+ABI saves ESI, while the pitch branch uses other registers as scratch. Existing
+zero-pitch ABI expectations remain checked. See [tank controls](mounted-mouse.md).
+
+Stage0235: [original pool imports and native surface retirement](kernel-pool.md).
+
+Stage0236: [original absolute-time codec and guest calendar imports](kernel-time.md).
+
+The0236 upgrade source checker reads UTF-8 explicitly: Windows cp1252 cannot
+decode existing bridge box-drawing comments. CI4cb4697c found this fixture-only
+error; native calendar source and the accepted game binary do not change.
+
+[Native multiplayer and crossplay validation](multiplayer-ui.md).
+
+[Strings](kernel-strings.md), [RTL](kernel-rtl.md), [formatting](guest-printf.md), [numbers](guest-numbers.md).
+
+[Crash evidence and historical upgrades](build-test-details.md#crash-evidence-and-historical-upgrades).
+
+Crossplay: [acceptance](multiplayer-ui.md#physical-windowsmac-online-acceptance).
+
+Markers: test_ui_layout.py; test_patch_updates.py covers 2290/2291.
+
+Mech/cockpit: test_mounted_mouse.py; [scope](mounted-mouse.md).
+
+Physics: [checks](build-test-details.md#guest-physical-state-regression).
+
+[Story flag and Clang fixtures](build-test-details.md#story-release-flag-regression).
+
+[Languages](launcher.md#complete-game-language-packs-discussion-263).
+
+[2x tests](original-upscale.md).
+
+[Linux release/CI/POSIX](linux-game.md).
+
+[RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
+
+2600 applies last; old seeds predate MSAA.
+
+Local-player tests: controls-options.md.

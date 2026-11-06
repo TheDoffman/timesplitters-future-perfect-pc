@@ -116,6 +116,10 @@ def test_fresh_checkout_and_repeated_build(checkout):
     assert 'pc_story_network_blood_decal(sub_001128C0_gen)' in manual
     wrappers = Counter(re.findall(r'\bvoid\s+(sub_[0-9A-Fa-f]+)\s*\([^)]*\)\s*\{', manual))
     assert all(count == 1 for count in wrappers.values()), wrappers
+    # Production discovery must retain the bodies called by projectile wrappers.
+    from c_source_scan import scan
+    _, generated_originals, _ = scan(checkout/'titles/futureperfect/src/recomp_manual.c')
+    assert {0xe2f90,0xf1a90,0xf2b80,0xf39a0,0xecb90} <= generated_originals
     # Both common RHI and legacy GL link the same live mode policy.
     assert (checkout / 'src/d3d/CMakeLists.txt').read_text().count(
         '"${TSFP_NATIVE_DIR}/../textures/texture_mode.c"') == 2
@@ -151,9 +155,11 @@ def test_upgrade_native_checkpoint_preserves_fixed_default(checkout, tmp_path):
     prior=tmp_path/'native-prior-patches'
     prior.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
+        if '-developer-tools-' in patch.name:
+            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
         prefix = patch.name.split('-', 1)[0]
-        if prefix.isdigit() and 2495 <= int(prefix) <= 2518:
-            continue  # Historical stacks predate the graphics/display dependencies.
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch'):
+            continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
         if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
             continue  # These historical subsets predate SMAA and the optional feed/wrappers.
@@ -224,9 +230,11 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in installer.active_patch_paths(PATCHES):
+        if '-developer-tools-' in patch.name:
+            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
         prefix = patch.name.split('-', 1)[0]
-        if prefix.isdigit() and 2495 <= int(prefix) <= 2518:
-            continue  # Historical stacks predate the graphics/display dependencies.
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch'):
+            continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
         if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
             continue  # These historical subsets predate SMAA and the optional feed/wrappers.
@@ -289,7 +297,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
             continue  # Requires the display wrapper, absent in this historical state.
         if patch.name.endswith(('-keyboard-settings-menu.patch', '-keyboard-weapon-slots.patch', '-controller-profile-routing.patch', '-keyboard-reload-buffer.patch', '-radial-stick-deadzone.patch', '-keycap-prompts.patch', '-local-player-devices.patch', '-controller-reconnect-identity.patch')):
             continue  # Needs shared-input locks/display wrappers absent in the old snapshot.
-        if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-shared-presentation-integration.patch', '-fixed-60-fps.patch', '-late-frame-pacing.patch', '-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch', '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-demo-timing.patch', '-native-wind-history.patch', '-native-minigun-intent.patch', '-native-player-trigger-event.patch', '-native-trace-quiet.patch')):
+        if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-shared-presentation-integration.patch', '-fixed-60-fps.patch', '-late-frame-pacing.patch', '-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch', '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-rocket-projectile-timing.patch', '-native-projectile-families.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-demo-timing.patch', '-native-wind-history.patch', '-native-minigun-intent.patch', '-native-player-trigger-event.patch', '-native-trace-quiet.patch')):
             continue  # Depends on native/shared renderer context added by the full migration below.
         if patch.name not in ('0250-pc-display.patch', '0340-texture-pack.patch', '0350-texture-toggle.patch', '0400-mac-native-boot.patch', '0630-mac-renderer.patch', '0660-mac-input.patch', '0740-mac-high-refresh.patch', '0750-interpolation-layouts.patch', '0760-framebuffer-sampling-passes.patch', '0780-shared-input-model.patch', '0790-mac-feature-adapters.patch', '0800-shared-screen-space.patch', '0820-native-settings-init.patch', '0840-shared-linear-formats.patch', '0850-native-prompts.patch', '0860-native-camera.patch', '0870-native-debug.patch', '0880-cutscene-letterbox.patch', '0940-terminal-mouse-select.patch', '0930-story-objectives-health.patch'):
             apply(checkout, patch.name)
@@ -297,6 +305,11 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     manual.write_bytes(manual.read_bytes() + b'\r\n/* unrelated local edit */\r\n')
     assert installer.apply_patches(checkout, PATCHES)
     assert_current_calendar_installed(checkout)
+    # This historical snapshot predates shared effect depth; verify the full upgrade.
+    for name in ('src/hle/hle_d3d8_record.c', 'src/replay/d3d8_replay.c'):
+        text = (checkout / name).read_text()
+        assert '#if defined(_WIN32) || defined(TSFP_RHI_RENDERER)' in text
+        assert 'xbox_D3D8PrepareSharedDepthTarget' in text
     assert_current_sharing_installed(checkout)
     assert b'pc_display_aim_panel(sub_00137010_gen,0x00137010u);' in manual.read_bytes()
     assert b'pc_display_ui(sub_00142D10_gen,0x00142D10u);' in manual.read_bytes()
@@ -340,9 +353,11 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches = tmp_path / 'mac-only-patches'
     old_patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
+        if '-developer-tools-' in patch.name:
+            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
         prefix = patch.name.split('-', 1)[0]
-        if prefix.isdigit() and 2495 <= int(prefix) <= 2518:
-            continue  # Historical stacks predate the graphics/display dependencies.
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch'):
+            continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
         if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
             continue  # These historical subsets predate SMAA and the optional feed/wrappers.
@@ -351,7 +366,7 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
         if patch.name in ('0180-independent-translation-moves.patch', '0170-independent-translation-integer.patch', '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch', 'independent-translation-exchange.patch', 'independent-translation-compare.patch', 'independent-translation-strings.patch', 'independent-translation-conditions.patch', 'independent-translation-sse.patch', 'independent-translation-mmx.patch', 'independent-translation-x87.patch', 'independent-translation-control.patch', 'independent-translation-lifting.patch', 'independent-translation-context.patch', 'independent-translation-batch.patch', 'independent-translation-discovery.patch', 'independent-translation-function.patch', 'independent-translation-cli.patch', 'independent-guest-abi.patch', '0195-independent-guest-dispatch.patch', '0196-independent-call-frames.patch', '0197-independent-vector-support.patch', '0198-independent-scalar-support.patch', '0199-independent-runtime-header.patch', '0201-runtime-header-consumer-fixture.patch', '0202-independent-branch-feedback.patch', '0203-independent-nonlocal-jumps.patch', '0204-independent-guest-state.patch', '0205-independent-image-loader.patch', '0206-independent-guest-allocations.patch', '0207-independent-thread-memory.patch', '0208-independent-virtual-memory.patch', '0209-independent-native-memory.patch', '0211-independent-guest-memory-services.patch', '0212-independent-native-vm-host.patch', '0213-independent-guest-host-maps.patch', '0214-retire-compatibility-memory.patch', '0215-independent-kernel-objects.patch', '0216-independent-kernel-boot.patch', '0217-guest-next-packet-abi.patch', '0218-independent-kernel-requests.patch', '0219-independent-kernel-devices.patch', '0220-independent-kernel-sharing.patch', '0221-independent-request-lifetime.patch', '0222-original-driver-call-composer.patch', '0223-original-transfer-completion.patch', '0224-original-request-queue.patch', '0225-original-startio-callback.patch', '0226-original-device-queue-mirrors.patch', '0227-original-device-queue-lifetime.patch', '0229-original-guest-events.patch', '0231-original-completion-targets.patch', '0232-original-symbolic-links.patch', '0233-original-path-routing.patch', '0234-original-host-storage.patch', '0235-original-kernel-pool.patch', '0236-original-kernel-time.patch', '0237-original-counted-strings.patch', '0238-original-kernel-rtl.patch', '0239-original-guest-printf.patch', '0240-original-guest-numbers.patch', '0241-original-extended-product.patch', '0242-original-extended-division.patch', '0243-original-memory-operations.patch', '0244-original-counted-codec.patch', '0245-original-string-transform.patch', '0246-original-raw-codec.patch', '0247-original-stack-diagnostics.patch', '0248-original-status-flags.patch', '0249-status-header-template.patch', '0253-original-context-records.patch', '0258-original-exception-dispatch.patch', '0259-original-execution-ownership.patch', '0260-original-execution-host-policy.patch', '2140-model-tree-trace.patch', '2150-allocation-history.patch'):
             continue  # Added after the native timing hooks excluded below.
         if patch.name.endswith(('-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch',
-                                '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-demo-timing.patch', '-native-wind-history.patch', '-native-minigun-intent.patch', '-native-player-trigger-event.patch', '-native-trace-quiet.patch', '-model-transform-entry.patch', '-stable-gpr-refs.patch', '-zero-base-indices.patch')):
+                                '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-rocket-projectile-timing.patch', '-native-projectile-families.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-demo-timing.patch', '-native-wind-history.patch', '-native-minigun-intent.patch', '-native-player-trigger-event.patch', '-native-trace-quiet.patch', '-model-transform-entry.patch', '-stable-gpr-refs.patch', '-zero-base-indices.patch')):
             continue  # This historical Mac stack predates native timing and network wrappers.
         if patch.name not in ('0470-pc-network.patch', '0640-pc-online.patch',
                               '0890-pc-network-movement.patch',
@@ -398,9 +413,11 @@ def texture_branch_patches(tmp_path):
     patches = tmp_path / 'texture-patches'
     patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
+        if '-developer-tools-' in patch.name:
+            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
         prefix = patch.name.split('-', 1)[0]
-        if prefix.isdigit() and 2495 <= int(prefix) <= 2518:
-            continue  # Historical stacks predate the graphics/display dependencies.
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch'):
+            continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
         if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
             continue  # These historical subsets predate SMAA and the optional feed/wrappers.
@@ -417,9 +434,11 @@ def main_branch_patches(tmp_path):
     patches = tmp_path / 'main-patches'
     patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
+        if '-developer-tools-' in patch.name:
+            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
         prefix = patch.name.split('-', 1)[0]
-        if prefix.isdigit() and 2495 <= int(prefix) <= 2518:
-            continue  # Historical stacks predate the graphics/display dependencies.
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch'):
+            continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
         if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
             continue  # These historical subsets predate SMAA and the optional feed/wrappers.
@@ -509,6 +528,30 @@ def test_conflict_preserves_every_runtime_file(checkout):
     with pytest.raises(RuntimeError, match='0230-pc-controls.patch conflicts'):
         installer.apply_patches(checkout, PATCHES)
     assert snapshot(checkout) == before
+
+
+def test_developer_wrapper_unwind_preserves_appended_edit(tmp_path):
+    tree, patches, empty = tmp_path/'runtime', tmp_path/'patches', tmp_path/'empty'
+    target=tree/'titles/futureperfect/src/recomp_manual.c'
+    target.parent.mkdir(parents=True);patches.mkdir();empty.mkdir()
+    installer.git(tree,'init','-q')
+    target.write_text('void original(void) {\n    original_body();\n}\n',encoding='utf-8')
+    (patches/'2580-developer-tools-lobby-wrench.patch').write_text(
+        '--- a/titles/futureperfect/src/recomp_manual.c\n'
+        '+++ b/titles/futureperfect/src/recomp_manual.c\n'
+        '@@ -1,3 +1,7 @@\n void original(void) {\n     original_body();\n }\n'
+        '+\n+void wrapper(void) {\n+    wrapped_body();\n+}\n',encoding='utf-8')
+    installer.apply_patches(tree,patches)
+    with target.open('a',encoding='utf-8') as out:out.write('/* retained local comment */\n')
+    complete=target.read_bytes()
+    installer.apply_patches(tree,empty)
+    assert b'wrapper' not in target.read_bytes() and b'retained local comment' in target.read_bytes()
+    installer.apply_patches(tree,patches);assert target.read_bytes()==complete
+    target.write_bytes(complete.replace(b'wrapped_body();',b'changed_body();'))
+    before=target.read_bytes()
+    with pytest.raises(RuntimeError,match='conflicts with the runtime checkout'):
+        installer.apply_patches(tree,empty)
+    assert target.read_bytes()==before
 
 
 def test_windows_line_endings(checkout):
@@ -666,7 +709,11 @@ def test_graphics_branch_round_trip_preserves_local_edits(checkout, tmp_path, cr
     baseline = tmp_path / 'without-graphics'
     baseline.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
+        if '-developer-tools-' in patch.name:
+            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
         prefix = patch.name.split('-', 1)[0]
+        if patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch'):
+            continue  # This baseline predates shared MSAA/effect-depth dependencies.
         if not (prefix.isdigit() and 2495 <= int(prefix) <= 2517):
             shutil.copyfile(patch, baseline / patch.name)
     shutil.copytree(PATCHES / 'legacy', baseline / 'legacy')

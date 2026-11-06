@@ -1,3 +1,8 @@
+Developer Tools/main integration preserves both additive patch families. The
+ordered tail is91 entries: shared-font2620, then main config-source2595 and
+MSAA/shared-depth2600. The generated index and exact-order fixture use the
+resolved loader. Older patch-tail counts below describe earlier revisions.
+
 The shared-font typography follow-up indexes2620 after2610 (tail89). Font
 provenance/hashes live with assets/ui/fonts; unmodified rasterizer source lives
 in vendor/stb, separate from the pristine runtime snapshot. Only the intended
@@ -52,7 +57,9 @@ Graphics patch ordering is covered by the explicit tail-order regression in
 `tests/repository/test_repo_context.py`; patches2495/2514 must retain LF bytes so its
 indexed digest matches fresh Windows/Mac/Linux checkouts.
 SMAA2470 follows config/timing migrations; HUD2516/2517 then extend its final
-resolve. `test_repo_context.py` checks the resulting 64-patch tail. Historical migration
+resolve. Config-source2595 follows the final Linux target migrations;
+`test_repo_context.py` preserves the prior ordering in its explicit79-patch tail.
+Historical migration
 fixtures omit this feature until their full-stack upgrade. See [contracts](smaa.md).
 
 Root AGENTS.md and the PR template require a short user-facing Change and Cause
@@ -470,3 +477,14 @@ see [host scheduling and test routes](execution-host.md).
 PR466 integration with main623acff4 retains0260 and then applies SMAA2470.
 The complete maintained tail is59; merge resolution preserves both loader
 additions, all historical omission entries and regenerates the patch index.
+
+Shared MSAA resize2600 is last after the temporal-map and Linux/header
+migrations. The exact loader-order assertion includes it; five pre-MSAA seed
+sets omit it only until full upgrade. Full-stack migration still applies it.
+
+Developer Tools migration integration: historical fixtures omit the Tools family
+when its Linux/display prerequisites are absent; complete upgrades still install
+the entire current stack. Additive manual-file wrappers2520/2530/2550/2580 use
+existing -C1 matching so appended local comments survive reverse application.
+Patched code must still match exactly; the small EOF fixture rejects a changed
+wrapper body without writing any files. Runtime patch bytes remain unchanged.
