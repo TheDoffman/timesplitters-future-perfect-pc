@@ -2,6 +2,8 @@
 import importlib.util
 import io
 import json
+import shutil
+import subprocess
 from pathlib import Path
 import sys
 import tarfile
@@ -13,6 +15,37 @@ sys.path.insert(0, str(ROOT / 'tools'))
 from project_paths import configure
 configure()
 import linux_vulkan_sdk as sdk
+
+
+@pytest.mark.skipif(sys.platform != 'linux' or not shutil.which('patch'),
+                    reason='The Linux driver builder requires GNU patch')
+def test_wsl_driver_patch_applies_to_pristine_source_and_preserves_repeat(tmp_path):
+    spec = importlib.util.spec_from_file_location('wsl_driver_builder', ROOT / 'tools/build/build-wsl-vulkan.py')
+    builder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(builder)
+    target = tmp_path / 'src/microsoft/vulkan/dzn_device.c'
+    target.parent.mkdir(parents=True)
+    pristine = ''.join(
+        '                       VK_QUEUE_TRANSFER_BIT,\n'
+        f'         .queueCount = {count},\n'
+        '         .timestampValidBits = 64,\n'
+        '         .minImageTransferGranularity = { 0, 0, 0 },\n'
+        '      },\n'
+        '      .desc = {\n'
+        f'         .Type = D3D12_COMMAND_LIST_TYPE_{kind},\n'
+        for count, kind in ((4, 'DIRECT'), (8, 'COMPUTE')))
+    target.write_text(pristine)
+    patch = ROOT / 'tools/build/mesa-dzn-granularity.diff'
+    builder.apply_driver_patch(tmp_path, patch)
+    expected = pristine.replace('{ 0, 0, 0 }', '{ 1, 1, 1 }')
+    assert target.read_text() == expected
+    builder.apply_driver_patch(tmp_path, patch)
+    assert target.read_text() == expected
+    unknown = pristine.replace('{ 0, 0, 0 }', '{ 9, 9, 9 }')
+    target.write_text(unknown)
+    with pytest.raises(subprocess.CalledProcessError):
+        builder.apply_driver_patch(tmp_path, patch)
+    assert target.read_text() == unknown
 
 
 @pytest.mark.parametrize('driver,bridge_present', [('libvulkan_dzn.so',True),('libvulkan_dzn.so',False),('libvulkan_lvp.so',True)])

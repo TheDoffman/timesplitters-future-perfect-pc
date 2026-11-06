@@ -11,6 +11,9 @@ Mac storage tests: see launcher.md.
 
 [Linux](linux-game.md); [LAN](system-link.md).
 
+WSL driver patch direction/repeat/rejection checks use actual GNU patch in
+`test_linux_foundation.py`; see [driver setup](../development/wsl-vulkan.md).
+
 Discord release webhooks target #release-updates; #announcements holds team posts.
 
 PC Settings bar: [persistence checks](interaction-input.md#pc-settings-bar-visibility).

@@ -21,6 +21,17 @@ ARCHIVE_HASH = '794b3d1729075dae7ebd47c7283b7ca0cdb5dec668f7f11cc0a5d82f6138a0a5
 URL = f'https://archive.mesa3d.org/mesa-{VERSION}.tar.xz'
 
 
+def apply_driver_patch(source, patch):
+    # --batch can silently ignore -R and successfully dry-run the forward
+    # patch. Force the requested direction so pristine source is not mistaken
+    # for an already-patched tree.
+    reverse = subprocess.run(['patch', '-p1', '--dry-run', '--force', '--reverse', '-i', str(patch)],
+                             cwd=source, capture_output=True)
+    if reverse.returncode:
+        subprocess.run(['patch', '-p1', '--batch', '--forward', '-i', str(patch)],
+                       cwd=source, check=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--jobs', type=int, default=4)
@@ -50,10 +61,7 @@ def main():
     run = lambda *command, **kwargs: subprocess.run([str(c) for c in command], check=True, **kwargs)
     patch = ROOT / 'tools/build/mesa-dzn-granularity.diff'
     # Preserve an already-patched source; never reset unknown source changes.
-    reverse = subprocess.run(['patch', '-p1', '--dry-run', '--batch', '--reverse', '-i', str(patch)],
-                             cwd=source, capture_output=True)
-    if reverse.returncode:
-        run('patch', '-p1', '--batch', '--forward', '-i', patch, cwd=source)
+    apply_driver_patch(source, patch)
     venv = base / '.venv'
     if not (venv / 'bin/python').exists():
         run(sys.executable, '-m', 'venv', '--system-site-packages', venv)

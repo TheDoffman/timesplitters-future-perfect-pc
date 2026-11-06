@@ -1,3 +1,60 @@
+## 2026-11-06 - Linux setup on the RTX5090 Windows host
+
+Provisioned a fresh Ubuntu24.04 x64 WSL2 development environment. Updated WSL
+2.3.24 to3.0.3, kernel6.18.54.1 and WSLg1.0.79 without restarting Windows.
+The focused `linux-host-setup` branch depends on `multiplayer-lobby-return`
+`6a02dbc183281e38f4319009992c45b43c99a8cb`, the branch requested for testing.
+The separate native-filesystem Linux clone initially built that exact revision.
+Its Git remotes support fetching committed Windows edits and future upstream
+publication. One existing game extract is reused; the guarded runner has a
+verified23,402-byte fixture copy. Personal saves/settings remain untouched.
+
+Installed shared pinned Python requirements, Clang18.1.3, Vulkan SDK1.4.363.0,
+the pinned .NET launcher SDK, decoder-only FFmpeg6.1.5 and private Mesa26.2.5
+Dozen. The GPU is RTX5090 through the WSL D3D12 bridge, Windows driver621.01.
+System Mesa remains installed; the private experimental ICD is not shipped.
+This setup is local; no Git push, tag, release upload or other-device validation.
+
+Fresh provisioning exposed a real driver-builder bug: GNU patch's batch reverse
+dry run can ignore `-R` and return success on pristine source, skipping the
+existing transfer-granularity fix. The helper now forces the requested reverse
+direction. An actual-GNU-patch regression covers pristine/repeated/unknown source.
+This is WSL-only build tooling; no Mac adaptation is required, and native Mac
+build/game checks were not rerun.
+
+- Software Vulkan and RTX5090 Dozen renderer/replay checks pass with API validation.
+- The full Linux game build and protected MMIO/CRTC/AC97 checks pass, retaining
+  optimized host code, assertions and the title's numeric policy.
+- Direct WSLg Wayland Story run:120.26seconds, Original60, disposable Test Lab,
+  validation enabled, shader cache disabled,640x480;5100 guest presents,
+  zero failed/skipped/interpolated presents and zero Vulkan validation errors.
+  A first-person level/weapon/HUD capture was reviewed. The state-verified
+  gameplay window measured51.70 host presents/s, p95 23.08ms, p99 24.97ms.
+  These are host API intervals, not scanout or sustained60-FPS acceptance.
+- Linux launcher1.5.1 with exact existing embedded artwork/icon passes41 shared
+  UI groups and actual install/corrupt/repair/restart/render checks.
+- Linux host-memory/mapping contracts:58pass,2explicit skips on the requested
+  baseline; the repaired foundation suite separately passes13tests on Linux.
+  Linux package/media/source/ELF contracts:44pass. Windows foundation/context
+  checks:33pass,1Linux-only skip. Context freshness and whitespace checks pass.
+- Local `v0.5.1-linux-local.1` preview from6a02dbc:1551files verified for fresh
+  and upgrade installs, corruption rejected, personal-data preservation checked;
+  relocated Python/Tk/TLS pass. SHA256:
+  `dbcf8893c94220d3ac89d1cdb7f688cb890de50b03b31765c6d396456716c04d`.
+  Initial source auditing correctly rejected the fresh image's superseded SQLite;
+  updating Ubuntu allowed the exact authenticated dependency-source audit to pass.
+- A separate20-second packaged-executable run passed with its bundled decoder,
+  including all88 EA and81 FRD movie pictures reaching EOF. The ordinary package
+  has no development validation layer; this is distinct from validated RHI runs.
+
+Machine-local ignored helpers provide sync/build/play/test/launcher/package
+commands, require committed source, reject divergent Linux edits and stale build
+receipts, and never upload automatically. The runbook is under `private/linux-host`.
+Raw evidence is in Linux `logs/machine-*`; the selected capture and Story receipt
+are also retained in Windows ignored logs. Disposable test disks were recycled.
+Physical mouse/controller/audio, a real multiplayer match, native Linux desktop,
+Steam Deck and full-campaign acceptance remain unverified by this setup pass.
+
 ## 2026-11-06 - Multiplayer branch integration with main
 
 Integrated main `5c5acf91` into `multiplayer-lobby-return` after the initial
