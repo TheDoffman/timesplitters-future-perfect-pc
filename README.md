@@ -122,58 +122,18 @@ launcher's **Release notes**, [platform status](#platform-status) and
 
 ### Local split-screen
 
-These instructions describe the updated local-player controls in this branch;
-they are not yet included in a published release.
+1. Connect your controllers and choose the number
+   of players.
+2. Press **Start** on your controllers in the order you want to join.
+3. Select or create a profile, then continue.
 
-1. **Connect your controllers before choosing the player count.** The opening
-   screen detects available inputs, including slots previously saved as Disabled.
-   Choose **2, 3, or 4 Players** as appropriate.
-2. **Join at the game's profile screen.** Player 1 keeps their input. On each
-   **Press START to Join** panel, press **Start** on an unused controller. The
-   first controller to join becomes Player 2, the next becomes Player 3, then
-   Player 4. Connection order does not determine player order. No separate
-   auto-join setting is required, and one controller cannot join twice.
-3. **Select a profile for each player**, then enter a mode supporting that player
-   count. Player 1 can use keyboard/mouse or a controller; additional players
-   need their own controllers. Two or more controller players are supported.
+Join assignments last for the session. To configure the devices manually, use the launcher
+or the in-game **Controls > General > Local multiplayer**.
 
-#### Let each player configure their settings
-
-1. From the main menu, open **Settings**.
-2. Change the **Player** row to the player whose settings you want to edit.
-3. That player's controller can now navigate Settings and its submenus, including
-   **Controls**, and configure their options. **Player 1 always retains control**
-   and can also navigate using their assigned input. Both operate the same menu;
-   the Player row determines whose profile settings are being edited. Shared
-   video/display options still apply to the game as a whole.
-4. Return to the main menu when finished. Main-menu navigation returns to Player 1.
-
-For example, selecting **Player 2** lets Player 2 adjust their controller settings
-while Player 1 can still help with the mouse, keyboard, or their controller.
-
-#### Change which controller a player uses
-
-Open **Settings → Controls → General Controls → Local multiplayer**, choose the
-inputs, and select **Apply player devices**. The rows show the actual players
-assigned by Start to Join, even if their controller numbers differ from their
-player numbers. **Controller 1** means a detected device, not necessarily Player 1.
-You can also configure devices before launch in the launcher's settings.
-
-- **Press a button to assign** lets you choose a player and identify the intended
-  controller by pressing a button on it. Then select **Apply player devices**.
-- **Automatic** replaces the old Disabled option. For a player who has already
-  joined, it keeps their connected controller when available, or chooses an
-  available unassigned controller. Applying it stores the resolved controller,
-  and the row shows that controller's name/number afterward. It does not remove
-  the player from the session.
-- A change that would leave a joined player without a connected input is rejected
-  with a message. Connect the intended controller and try Apply again; the working
-  assignments are retained until a valid change is applied.
-- If a controller disconnects, reconnect it to resume its assigned player.
-
-Start-to-join assignments last for the session; applying manual device choices
-saves them. To change the number of participating players, return to the opening
-player-count/profile flow. Joining during an active match is not supported.
+**Automatic**
+lets the game use a connected controller without a fixed assignment. To change the player count, return to the main menu;
+joining during an active match is not supported. Only one keyboard/mouse player
+is supported; additional players need controllers.
 
 ### Online / LAN
 
@@ -196,48 +156,19 @@ When the optional pack is available, use **Game settings → Graphics & resoluti
 **Use enhanced textures (Beta)** to use it on future launches. See the
 [texture guide](docs/textures/textures.md) for availability, coverage and known issues.
 
+## Developer Tools
+
+Enable **Developer Tools** in **Extras > Developer Tools** or the launcher, then
+press **F1** to open the sidebar. It includes free camera, no-clip, game speed,
+input/video settings, and diagnostics. Change its shortcut in **Key bindings**.
+
+In multiplayer, the host controls the **Tools** tab through **Options > Developer
+Tools** (default **Off**). **Settings** and **Diagnostics** remain accessible;
+**Time & audio** and **Player & progression** are unavailable online.
+
+Native Mac/Linux validation is pending; see [validation](docs/project/STATUS.md).
+
 <a name="guides--support"></a>
-
-## Developer Tools (local source build)
-
-**Developer Tools** is opt-in: enable it in **Extras > Developer Tools** or
-the launcher. The warning appears in the sidebar footer, without an Extras warning. Press **F1**
-(default) to open or close the overlay; change its shortcut in the launcher's
-key bindings or in-game **Keyboard & Mouse > Menu actions**. The same page can
-assign **Toggle no-clip** and **Toggle free-cam** shortcuts (unbound by default). Use the mouse
-or arrow keys and Enter; Escape goes back. **Settings** contains keyboard and
-mouse bindings and the full Video Settings controls. Debug options remain in the
-separate **Diagnostics** tab. F2/F12 also remain
-available for the existing settings dialogs.
-
-Settings > Video Settings > View & HUD contains **HUD & UI** and
-**Version watermark**, applied immediately. The tools enable no-clip or detached
-free-cam, advance Story checkpoints (or start the ending after the last one),
-and set manual game speed from 0.05x to 4x. Configure separate **[** and **]**
-held-speed values; release restores manual speed. Enable **Speed keys outside
-menu** to use them with the overlay closed. God mode and infinite ammo are also
-available. Flight follows configured movement/look controls, **Interact/Crouch**
-up/down and **Shift** for 4x speed. No-clip retains firing and weapon switching.
-Free-cam hides the HUD, crosshair and first-person weapon while keeping the
-world character visible. Turning it off restores HUD and player control/view.
-Game speed also controls native cutscenes, videos and audio. Turn **Audio follows
-game speed** off in Developer Tools to keep audio at normal speed. In multiplayer, the host controls **Options > Developer Tools** for the match
-(default **Off**). When Off, the **Tools** tab is disabled for everyone; **Settings**
-and **Diagnostics** remain available. When On, local camera/movement tools
-are available. **Time & audio** and **Player & progression** stay unavailable online.
-Multiplayer wrench indicators have been removed. Host permission applies in addition
-to each player's local opt-in.
-The overlay is a dockable sidebar with **Tools**, **Settings** and
-**Diagnostics** tabs. Search across categories, click a value to type, use **- / +**
-for precise steps, or drag the game-speed slider and use its presets. Scroll for
-more controls. Game-speed presets are **0.50x / 1.00x / 2.00x / 4.00x**.
-**Settings** groups collapsible **Input Settings** above **Video Settings**;
-video edits use **Apply / Revert**. Resolution previews need **Keep** within
-15 seconds, and MSAA/supersampling changes require a restart. The header moves
-the panel to either side. **Ctrl+F** searches,
-**Ctrl+Tab** changes tabs, and **Tab/arrows** navigate controls. Binding edits have
-an explicit **Save and apply** button; Escape returns without saving those edits.
-Native Mac/Linux acceptance is pending; see [validation](docs/project/STATUS.md).
 
 ## <img src="docs/assets/icon-support.svg" alt="" width="24" height="24"> Guides & support
 
