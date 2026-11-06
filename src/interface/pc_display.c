@@ -13,6 +13,45 @@
 #define GetTickCount64 SDL_GetTicks
 #endif
 
+#ifndef _WIN32
+typedef struct PcWindowModeCall {SDL_Window *window;int enabled,result;} PcWindowModeCall;
+static void SDLCALL pc_display_window_mode_main(void *context)
+{
+    PcWindowModeCall *call=context;
+    if(call->enabled<0)call->result=(SDL_GetWindowFlags(call->window)&SDL_WINDOW_FULLSCREEN)!=0;
+    else call->result=SDL_SetWindowFullscreen(call->window,call->enabled!=0) && SDL_SyncWindow(call->window);
+}
+static int pc_display_window_mode(SDL_Window *window,int enabled)
+{
+    PcWindowModeCall call={window,enabled,0};
+    if(SDL_IsMainThread())pc_display_window_mode_main(&call);
+    else if(!SDL_RunOnMainThread(pc_display_window_mode_main,&call,true))return 0;
+    return call.result;
+}
+#endif
+int pc_display_fullscreen(void)
+{
+    HWND window=xbox_D3D8Window();
+    if(!window)return 0;
+#ifdef _WIN32
+    return (GetWindowLongPtrA(window,GWL_STYLE)&WS_POPUP)!=0;
+#else
+    return pc_display_window_mode((SDL_Window *)window,-1);
+#endif
+}
+int pc_display_set_fullscreen(int enabled)
+{
+    HWND window=xbox_D3D8Window();
+    if(!window || (enabled!=0 && enabled!=1))return 0;
+#ifdef _WIN32
+    DWORD_PTR result=0;
+    return SendMessageTimeoutA(window,PC_FULLSCREEN_SET_MESSAGE,(WPARAM)enabled,0,
+        SMTO_ABORTIFHUNG,3000,&result)!=0 && result!=0;
+#else
+    return pc_display_window_mode((SDL_Window *)window,enabled);
+#endif
+}
+
 static PcDisplayMode current={1,1};
 static PcDisplayMode automatic; /* Use guest output until a valid window is available. */
 static ULONGLONG automatic_checked;

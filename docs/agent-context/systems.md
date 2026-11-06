@@ -1,5 +1,5 @@
 [Icons](controls-options.md).
-[FOV sliders](video-options.md#weapon-aperture).
+[Display settings](video-options.md#weapon-aperture).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Systems](video-options.md)

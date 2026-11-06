@@ -50,7 +50,19 @@ int recomp_settings_path(uint32_t title,char *out,size_t size)
 { (void)title;return snprintf(out,size,"%s",runtime_path)>0; }
 static int slider_capture_enabled;
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL line %d: %s\n",__LINE__,#x); exit(1); } } while(0)
-HWND xbox_D3D8Window(void) { return NULL; }
+static HWND fixture_window;
+static int fullscreen_request_ok=1;
+int recomp_config_bool(const char *env,const char *key,int fallback)
+{ (void)env;(void)key;return fallback; }
+static LRESULT CALLBACK fullscreen_test_proc(HWND window,UINT message,WPARAM wp,LPARAM lp)
+{
+    if(message==PC_FULLSCREEN_SET_MESSAGE) {
+        if(!fullscreen_request_ok)return 0;
+        SetWindowLongPtrA(window,GWL_STYLE,wp?WS_POPUP:WS_OVERLAPPEDWINDOW);return 1;
+    }
+    return DefWindowProcA(window,message,wp,lp);
+}
+HWND xbox_D3D8Window(void) { return fixture_window; }
 int xbox_D3D8ChangeResolution(unsigned w,unsigned h) { (void)w;(void)h;return available; }
 int pc_online_connect(void) { return 0; }
 int pc_online_connect_mode(PcOnlineMode mode) { (void)mode;return 0; }
@@ -415,7 +427,7 @@ int main(int argc,char **argv)
     reload("TSFP_DISPLAY_V1 1280 720\n");
     tsfp_texture_set_4k(0);
     call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
-    CHECK(page==DISPLAY_HOME && built_row_count==7 && separators==2 && separator_positions[0]==1 && separator_positions[1]==5 && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
+    CHECK(page==DISPLAY_HOME && built_row_count==8 && separators==2 && separator_positions[0]==1 && separator_positions[1]==6 && window_mode_row && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
     page=DISPLAY_GRAPHICS;built_rows=built_row_count=separators=0;labels();
     CHECK(!graphics_rows[0] && !graphics_rows[4] && texture_row && post_aa_row && !counter_row && !aspect_row);
     CHECK(built_ids[2]==102 && built_ids[3]==103 && built_ids[4]==7 && built_ids[5]==11 && built_ids[6]==UINT32_MAX && built_ids[7]==108 && built_ids[8]==3);
@@ -765,6 +777,32 @@ int main(int argc,char **argv)
         char text[256]={0};FILE *f=fopen(runtime_path,"rb");CHECK(f);
         fread(text,1,sizeof text-1,f);CHECK(!ferror(f) && feof(f));CHECK(!fclose(f));
         CHECK(!strcmp(text,"# preserve\nframe_interp = 3\nframe_cap = 30\nfuture_key = keep\n"));
+    }
+    /* Window mode stages across tabs, previews on Apply, and persists only
+     * after Keep. Timeout/Back/save failure restore the previous host mode. */
+    {
+        WNDCLASSA cls={0};cls.lpfnWndProc=fullscreen_test_proc;cls.hInstance=GetModuleHandleA(NULL);cls.lpszClassName="TsfpFullscreenTest";
+        CHECK(RegisterClassA(&cls));
+        fixture_window=CreateWindowExA(0,cls.lpszClassName,"",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,cls.hInstance,NULL);CHECK(fixture_window);
+        call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
+        CHECK(window_mode_row && !pc_display_fullscreen() && !display_dirty());
+        WORD_AT(window_mode_row+0xc8)=1;read_choices();CHECK(display_dirty() && !pc_display_fullscreen());
+        refresh(DISPLAY_VIEW,0);CHECK(staged_fullscreen==1 && !pc_display_fullscreen());
+        call(BACK_CB,0,0);call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);CHECK(!staged_fullscreen);
+        WORD_AT(window_mode_row+0xc8)=1;call(SELECT_CB,3,0);CHECK(page==DISPLAY_CONFIRM && pc_display_fullscreen());
+        call(BACK_CB,0,0);CHECK(page==DISPLAY_HOME && !pc_display_fullscreen());
+        WORD_AT(window_mode_row+0xc8)=1;call(SELECT_CB,3,0);clock_ms+=16000;call(TICK_CB,0,0);CHECK(!pc_display_fullscreen() && page==DISPLAY_HOME);
+        WORD_AT(window_mode_row+0xc8)=1;call(SELECT_CB,3,0);call(SELECT_CB,0,0);
+        CHECK(pc_display_fullscreen() && previous_fullscreen && !display_dirty() && page==DISPLAY_HOME);
+        char text[512]={0};FILE *file=fopen(runtime_path,"rb");CHECK(file);fread(text,1,sizeof text-1,file);fclose(file);
+        CHECK(strstr(text,"fullscreen = 1") && strstr(text,"future_key = keep") && strstr(text,"frame_cap = 30"));
+        WORD_AT(window_mode_row+0xc8)=0;call(SELECT_CB,3,0);CHECK(!pc_display_fullscreen());
+        CHECK(SetFileAttributesA(runtime_path,FILE_ATTRIBUTE_READONLY));call(SELECT_CB,0,0);
+        CHECK(pc_display_fullscreen() && display_dirty() && *status && page==DISPLAY_HOME);
+        CHECK(SetFileAttributesA(runtime_path,FILE_ATTRIBUTE_NORMAL));fullscreen_request_ok=0;
+        call(SELECT_CB,3,0);CHECK(page==DISPLAY_HOME && pc_display_fullscreen() && *status);
+        fullscreen_request_ok=1;call(SELECT_CB,3,0);call(SELECT_CB,0,0);CHECK(!pc_display_fullscreen() && !display_dirty());
+        CHECK(DestroyWindow(fixture_window));fixture_window=NULL;CHECK(UnregisterClassA(cls.lpszClassName,cls.hInstance));
     }
     /* Audio entry inherits layout before construction; the invisible native
      * subtitle record remains available to its original tick/save routines. */

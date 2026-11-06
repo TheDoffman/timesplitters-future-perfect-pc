@@ -1,3 +1,4 @@
+[Window mode](video-options.md).
 [Icons](controls-options.md).
 [Effect depth](native-effect-depth.md).
 Mac storage tests: see launcher.md.

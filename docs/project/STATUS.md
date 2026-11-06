@@ -1,3 +1,29 @@
+## 2026-11-06 - Fullscreen selector in Video Options (local)
+
+Local feature/fullscreen-options after5c5acf91 adds Window mode to Display in
+both main and pause Video Options. Choices stage until Apply, preview with the
+existing15-second Keep/Revert confirmation, and save the existing runtime.conf
+fullscreen key only after Keep. Failure/timeout/Back restore the original host
+mode. The launcher already persisted that setting; its checkbox is now labelled
+Fullscreen with a borderless/windowed and next-launch tooltip.
+
+Focused Windows menu/display/SMAA/pointer checks:16passed,2native-Mac-only
+compile checks skipped (logs/fullscreen-final-tests.log); expanded SDL query/set
+main-thread and failure fixture passes both cases (logs/fullscreen-sdl-tests.log).
+Actual SDL headers plus Linux GCC syntax checks pass for pc_display.c and the
+full native-display menu translation unit. These do not establish native GPU or
+window-manager acceptance. Windows launcher Build -Test passed all included
+regressions/settings/maintenance checks (logs/fullscreen-launcher-tests.log).
+
+The shared targeted runtime writer preserves unrelated settings/comments and
+retains SMAA atomic live publication. The isolated menu fixture checks staged
+discard, tab retention, Apply/Keep, Back, timeout, readonly save rejection, failed
+host requests and successful retry. Patch2620 applies through the complete
+loader stack; repository context checks pass. Supported Windows game rebuild
+and real window transitions are still in progress. Native Mac/Linux build and
+live acceptance remain pending. No PR/main publication is authorized for this
+new feature.
+
 Icon PR strict-compiler follow-up: native Mac CI passed2866 tests but rejected
 an unused physical-size argument in the span-only imported-key fixture under
 -Werror. That test configuration now explicitly ignores the GPU-only argument.

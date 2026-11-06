@@ -1,3 +1,15 @@
+## Fullscreen Video option — native acceptance pending
+
+Local feature/fullscreen-options after5c5acf91: shared pc_display_menu.c adds
+Window mode to frontend/pause Display, staged across tabs with Apply/Keep and
+15-second rollback. Existing runtime.conf fullscreen key is shared with launcher.
+pc_display.c marshals SDL queries/transitions to the main thread, reusing the
+same code for Mac/Linux and both native renderers. Windows patch2620 dispatches
+to its shadow-window thread. No separate Mac feature implementation is needed.
+Windows menu/launcher tests and SDL-header syntax checks are recorded in STATUS.
+Native Mac/Linux builds and live windowed/fullscreen, timeout, pause, hotkey and
+save/relaunch acceptance remain pending; do not infer them from Windows fixtures.
+
 ## MAC-130 - macOS Application Support storage (#502) - Awaiting validation
 
 Mac-specific installation convention; Windows/Linux portable storage is unchanged.

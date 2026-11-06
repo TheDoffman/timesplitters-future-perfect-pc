@@ -57,6 +57,10 @@ int pc_display_modes(HWND window, PcDisplayMode *out, int capacity);
 int pc_display_apply(PcDisplayMode mode);
 int pc_display_preview(PcDisplayMode mode);
 int pc_display_save(void);
+#define PC_FULLSCREEN_SET_MESSAGE 0x8122u
+int pc_display_fullscreen(void);
+int pc_display_set_fullscreen(int enabled); /* Live host window only. */
+int pc_display_save_fullscreen(int enabled); /* Shared launcher runtime.conf key. */
 void pc_display_scene_size(unsigned guest_w, unsigned guest_h, unsigned *w, unsigned *h);
 void pc_display_shape(unsigned *w, unsigned *h);
 float pc_display_camera_factor(void);

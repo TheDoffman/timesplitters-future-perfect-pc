@@ -37,6 +37,17 @@ static Uint64 fake_ticks;
 static Uint64 SDL_GetTicks(void){return fake_ticks;}
 typedef unsigned SDL_DisplayID;
 typedef void SDL_Window;
+#include <stdbool.h>
+#define SDLCALL
+#define SDL_WINDOW_FULLSCREEN 1
+static int window_flags,main_calls;
+static bool main_thread=true,fullscreen_ok=true;
+static unsigned SDL_GetWindowFlags(SDL_Window *w){(void)w;return (unsigned)window_flags;}
+static bool SDL_SetWindowFullscreen(SDL_Window *w,bool on){(void)w;if(!fullscreen_ok)return false;window_flags=on;return true;}
+static bool SDL_SyncWindow(SDL_Window *w){(void)w;return true;}
+static bool SDL_IsMainThread(void){return main_thread;}
+static bool SDL_RunOnMainThread(void (*fn)(void *),void *ctx,bool wait){(void)wait;main_calls++;fn(ctx);return true;}
+
 typedef struct {int w,h;} SDL_DisplayMode;
 static SDL_DisplayID SDL_GetDisplayForWindow(SDL_Window *w){(void)w;return 1;}
 static SDL_DisplayID SDL_GetPrimaryDisplay(void){return 1;}

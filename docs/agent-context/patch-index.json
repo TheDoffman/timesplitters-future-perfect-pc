@@ -2033,6 +2033,14 @@
       ]
     },
     {
+      "name": "2620-fullscreen-menu.patch",
+      "path": "patches/graphics/interface/2620-fullscreen-menu.patch",
+      "sha256": "ace06ebef1ee06dfc21049d7de7e0454f3174d6e66fd5dcbd80aa84c022c619a",
+      "targets": [
+        "src/hle/hle_d3d8.c"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",
