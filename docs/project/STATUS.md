@@ -1,3 +1,23 @@
+## 2026-11-06 - Issue501 optional texture source checkout
+
+Local fix/501-source-only-clone based on main3fa4bc2b adds repository LFS fetch
+exclusion for assets/textures. The dedicated texture audit explicitly opts in;
+ordinary CI checkouts remain unhydrated. Build/contributor instructions and
+missing-pack diagnostics now distinguish optional asset work from normal builds.
+No DDS, LFS history, installed pack, personal setting or save is removed.
+Official publish-release already enforces texture-free game packages. The shared
+launcher SettingsPage only calls TextureDownload.Install after the user confirms
+Download / update; automatic checks fetch metadata, not texture archives.
+
+Real Git LFS fixture checks passed on Windows and Ubuntu24.04 WSL: ordinary clone
+retains pointers with no LFS object downloads; explicit pull and explicit clone
+override hydrate the tiny fixture; a later ordinary pull preserves those files.
+Windows packaging/texture checks:59 passed,1 skipped. CI selection/publication/
+texture checks:250 passed with one missing-xdist environment failure; installing
+the pinned xdist/execnet dependencies made that remaining test pass. No Mac clone
+was run locally, no game rebuild was needed, and issue501 remains open. Changes
+are awaiting publication.
+
 ## 2026-11-05 - Weapon FOV implementation, validation pending
 
 The feature/weapon-fov change based on main3fa4bc2b adds a shared frontend/pause

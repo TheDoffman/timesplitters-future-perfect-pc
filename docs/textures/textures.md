@@ -56,7 +56,7 @@ on later toggles. Requests already submitted can finish in Classic.
 
 Sanitized DDS/JSON remain in `assets/textures`, with DDS stored through Git LFS.
 Ordinary source builds and game packages do not hydrate or bundle them. For asset
-work run `git lfs pull`; optional publication audits DDS/mips, hashes, metadata
+work run `git lfs pull --include="assets/textures/**" --exclude=""`; optional publication audits DDS/mips, hashes, metadata
 and the 6 GiB budget. Explicit offline bundles use packager `--with-textures` or
 `--texture-pack PATH`; official publishing enforces texture-free game downloads.
 The nested source ZIP also omits compiled textures. Source launches can continue
@@ -287,7 +287,7 @@ git push
 
 The exporter audits the pack, strips private paths/prompts and creates Git LFS
 objects. Git push uploads them with the source revision. On the art workstation,
-`--pointers-only` avoids a second working copy; run `git lfs pull` before
+`--pointers-only` avoids a second working copy; run `git lfs pull --include="assets/textures/**" --exclude=""` before
 publishing optional assets, or package with an explicit artist-pack override.
 LFS retains an object cache as well as hydrated files. Avoid hydrating unrelated
 worktrees and never prune unpushed objects.
