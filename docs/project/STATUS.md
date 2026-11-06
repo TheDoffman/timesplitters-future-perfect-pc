@@ -1,3 +1,9 @@
+Weapon FOV slider (2026-11-06, local branch fix/weapon-fov-slider, base fb555912):
+shared main/pause menu bar replaces choices; 80-150% in 5% steps. Windows
+menu/FOV regression fixtures: 9 passed, 2 native-Mac checks skipped. Drag
+capture, limits, tab staging and Apply persistence checked. Game rebuild and
+visual validation not yet performed; Mac/Linux gameplay unverified.
+
 ## 2026-11-05 - Weapon FOV implementation, validation pending
 
 The feature/weapon-fov change based on main3fa4bc2b adds a shared frontend/pause
