@@ -1,0 +1,3 @@
+[lfs]
+	# Enhanced textures are optional; ordinary source clones retain pointers.
+	fetchexclude = assets/textures/**

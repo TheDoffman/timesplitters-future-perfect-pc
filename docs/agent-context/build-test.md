@@ -2,9 +2,8 @@
 [Weapon FOV](video-options.md#weapon-aperture).
 [HUD/MSAA tests](../development/graphics-options.md).
 [SDL startup/fullscreen](linux-game.md).
-`test_fov_settings.py` checks Video tabs, ownership, pointer bounds, keyboard
-cycling, FOV sliders and staged values.
-Ping expiry waits past GetTickCount64 quantization.
+`test_fov_settings.py`: staged Video tabs/input/FOV sliders.
+`test_lfs_checkout.py`: pointer clones, opt-in LFS pull, preserved packs.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build/tests ([MSAA](smaa.md))
 
