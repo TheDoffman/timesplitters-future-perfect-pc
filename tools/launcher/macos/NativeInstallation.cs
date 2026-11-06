@@ -120,7 +120,12 @@ namespace TimeSplitters.Launcher
                 if (!IsVisible) return;
                 Program.Root = root;
                 var desktop = (IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime;
+#if MACOS
+                Program.InstallRoot=root;Program.Root=MacStorage.Resolve(args,root);
+                var window=NativeApplication.StartupWindow(Program.Root,args);
+#else
                 var window = new NativeStartup(root, args);
+#endif
                 desktop.MainWindow = window; window.Show(); Close();
             } catch (Exception ex) {
                 status.Text = ex.Message;

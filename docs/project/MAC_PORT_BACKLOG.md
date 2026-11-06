@@ -1,3 +1,30 @@
+## MAC-130 - macOS Application Support storage (#502) - Awaiting validation
+
+Mac-specific installation convention; Windows/Linux portable storage is unchanged.
+Implementation c1b53dc8 on `feature/macos-application-support`, integrated with
+main 9da83f36: `MacStorage.cs`, `NativeStorageWindow.cs` and native startup route
+Finder launches to a writable game folder independent of the entry-point app.
+The default is ~/Library/Application Support/TimeSplitters. Legacy installations
+beside the app migrate automatically through MacStorageMigration.cs; a folder
+copy-folder picker imports installations elsewhere; a separate chooser selects
+external/moved installations in place. Originals remain as backups; verified
+staging resumes and an atomic directory rename publishes only the completed copy.
+Existing destination data is never merged or overwritten. Internal custom save
+paths follow the copy; external paths remain unchanged. Explicit folder selections,
+root/portable overrides and developer checkouts skip automatic migration.
+The existing shared transactional launcher updater handles the managed copy.
+
+Windows MACOS cross-compilation, Windows launcher build, isolated WSL storage
+contracts and Python launcher checks pass; see STATUS. Native ARM64 build,
+`--test`, `--test-ui`, packaged signature/helper/restart checks and read-only
+`--check` still require a Mac host. Accept with fresh /Applications-only app,
+existing and moved game folders, disconnected/reconnected external storage,
+portable mode, custom save locations, newer/older entry apps, interrupted/canceled
+migration, low space/conflicting destinations and interrupted launcher/game updates.
+Confirm saves/settings/texture bytes survive app
+replacement and that Gatekeeper permits the managed signed bundle. No release
+has been published.
+
 ## Uplink native holding — validation pending
 
 Shared pc_native_numeric.h and pc_native_uplink.h admit Uplink physics

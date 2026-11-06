@@ -21,9 +21,15 @@ namespace TimeSplitters.Launcher
     {
         public static string Root;
         public static string[] Arguments;
+#if MACOS
+        internal static string InstallRoot, StorageError;
+#endif
         [STAThread] public static int Main(string[] args)
         {
             Arguments=args;
+#if MACOS
+            if(args.Length==1 && args[0]=="--test-storage")return MacStorageTests.Run();
+#endif
             if(args.Length==3 && args[0]=="--test-self-helper")return NativeStartup.Apply(Path.GetFullPath(args[1]),Int32.Parse(args[2]),true);
             if(args.Length==3 && args[0]=="--apply-self")return NativeStartup.Apply(Path.GetFullPath(args[1]),Int32.Parse(args[2]));
             if(args.Length==3 && (args[0]=="--apply-game" || args[0]=="--rollback-game" || args[0]=="--test-game-helper"))
@@ -50,11 +56,30 @@ namespace TimeSplitters.Launcher
 NativeTests.LocationUi();
 #endif
 return LauncherSharedUiChecks.Run();}catch(Exception e){Console.Error.WriteLine(e);return 1;}}
+#if MACOS
+            InstallRoot=FindInstallRoot(args);
+            try { Root=FindRoot(args); }
+            catch(Exception ex) { StorageError=ex.Message;Root=MacStorage.DefaultRoot; }
+#else
             Root=FindRoot(args);
-            if(args.Contains("--check")){try{Core.Require(!NativeInstallation.Translocated(Root),NativeInstallation.Guidance);NativeHost.CheckData(Root);NativeHost.CheckBuild(Root);GameSettings.Load(Root,null);Console.WriteLine(LauncherPlatform.HostName+" launcher prerequisites passed.");return 0;}catch(Exception e){Console.Error.WriteLine(e.Message);return 1;}}
+#endif
+            if(args.Contains("--check")){try{
+#if MACOS
+Core.Require(StorageError==null,StorageError);
+#endif
+Core.Require(!NativeInstallation.Translocated(Root),NativeInstallation.Guidance);NativeHost.CheckData(Root);NativeHost.CheckBuild(Root);GameSettings.Load(Root,null);Console.WriteLine(LauncherPlatform.HostName+" launcher prerequisites passed.");return 0;}catch(Exception e){Console.Error.WriteLine(e.Message);return 1;}}
             return AppBuilder.Configure<NativeApplication>().UsePlatformDetect().StartWithClassicDesktopLifetime(args);
         }
         internal static string FindRoot(string[] args, string baseDirectory=null)
+        {
+            string source=FindInstallRoot(args,baseDirectory);
+#if MACOS
+            return MacStorage.Resolve(args,source);
+#else
+            return source;
+#endif
+        }
+        internal static string FindInstallRoot(string[] args, string baseDirectory=null)
         {
             int option=Array.IndexOf(args,"--root");if(option>=0){if(option+1>=args.Length)throw new ArgumentException("--root needs a path");return Path.GetFullPath(args[option+1]);}
             baseDirectory=baseDirectory??AppContext.BaseDirectory;
@@ -123,6 +148,12 @@ return LauncherSharedUiChecks.Run();}catch(Exception e){Console.Error.WriteLine(
         internal static Avalonia.Controls.Window StartupWindow(string root,string[] args)
         {
             if(NativeInstallation.Translocated(root)||args.Contains("--render-location-preview"))return new NativeLocationWindow(args);
+#if MACOS
+            if(Program.InstallRoot!=null && !LauncherPlatform.Checkout(Program.InstallRoot) &&
+               (args.Contains("--choose-storage") || Program.StorageError!=null ||
+                (!MacStorage.Portable(args,Program.InstallRoot) && !MacStorage.Same(root,Program.InstallRoot))))
+                return new NativeStorageWindow(Program.InstallRoot,root,args,Program.StorageError);
+#endif
             return args.Any(a=>a.StartsWith("--render-")||a=="--test-session")?(Avalonia.Controls.Window)new NativeWindow(root,args):new NativeStartup(root,args);
         }
         public override void OnFrameworkInitializationCompleted(){if(ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)desktop.MainWindow=StartupWindow(Program.Root,Program.Arguments);base.OnFrameworkInitializationCompleted();}

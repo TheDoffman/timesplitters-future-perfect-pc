@@ -35,6 +35,17 @@ namespace TimeSplitters.Launcher
             Click("JoinDiscordButton",()=>NativeHost.Open(ReleaseClient.DiscordInvite));
             Click("SavesNav",ShowSaves);Click("LogsButton",()=>OpenFolder("logs"));
             Click("OpenDataButton",()=>OpenFolder(LauncherPlatform.Data(root)));
+#if MACOS
+            if(!LauncherPlatform.Checkout(root)) {
+                var folders=Find<Button>("OpenDataButton").Parent as Panel;
+                if(folders!=null)folders.Children.Add(Button("Game storage…",()=>{
+                    if(busy||gameRunning){Status("Close the game and wait for the current operation before changing storage.");return;}
+                    var desktop=(Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime;
+                    var window=new NativeStorageWindow(Program.InstallRoot??root,root,new[]{"--choose-storage"});
+                    desktop.MainWindow=window;window.Show();Close();
+                }));
+            }
+#endif
             Click("CheckButton",()=>Run(Check));Click("UpdateButton",()=>Run(()=>Install(latest)));Click("PlayButton",()=>Run(Play));
             Click("ImportButton",()=>Run(()=>Import(false)));Click("FolderButton",()=>Run(()=>Import(true)));
             Click("ReleaseNotesButton",()=>Run(News));Click("GameVersionsButton",()=>Run(Versions));

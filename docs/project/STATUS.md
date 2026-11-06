@@ -1,3 +1,53 @@
+## 2026-11-06 — macOS Application Support storage (discussion #502)
+
+Implementation c1b53dc8 on `feature/macos-application-support`; integrated main
+9da83f36 before publication. Only the macOS storage change is in this task.
+Finder entry-point apps now route to an independent writable installation;
+the default is ~/Library/Application Support/TimeSplitters. Legacy installations
+beside the app now migrate automatically. Other existing folders can be selected
+once for automatic import. The original remains as a backup and verified staging
+is published atomically; incomplete copies never become the active installation.
+Explicit folder preferences and root/portable overrides are respected.
+The managed launcher uses shared Core transactions and never downgrades a complete
+newer copy when an older entry-point app opens. Only disposable fixtures were
+migrated during validation; no personal data was used.
+
+Windows x64: .NET SDK 9.0.312 cross-compiles the full MACOS/Avalonia 11.3.22 source
+for test execution (local Windows/Linux RIDs and lock files); two existing obsolete-toggle
+warnings, no errors. Windows .NET Framework launcher build passes using
+Windows PowerShell. The isolated storage contract suite executes under WSL
+Ubuntu 24.04 with the repository's SHA-512-verified SDK 8.0.426, covering default,
+explicit/portable roots, bundle copying/seal preservation, existing personal-file
+bytes, folder/app relocation, missing drives, downgrade prevention and locks.
+Automatic migration fixtures also pass original/copied byte preservation,
+sparse-image/empty-directory copying, verified-file resume, cancellation,
+source edits/retry, source locks/pending updates, disk-full and destination
+conflicts, unrelated staging and symlink rejection, repeat-launch progress
+preservation, internal custom save remapping and external save preservation.
+The native package check now verifies the signed app after automatic migration.
+The final storage suite passes on WSL's native temporary filesystem; one earlier
+fixture rename under /mnt/c hit transient Windows access denial, so disposable
+cross-host fixtures use native temporary storage (Mac retains the unlinked app
+output path). WSL/Xvfb executes the translocation and new storage-choice UI checks;
+the full MACOS UI suite then stops at the unavailable CoreGraphics framework,
+as expected for a Linux host. Python native-launcher/shared-layout/compatibility/
+release suites: 65 tests and 41 subtests pass. A Windows game in another checkout was left running; Windows
+game-dependent C# suites were not run against it. All fixtures are disposable.
+
+Native Mac build, Finder/Gatekeeper, code-signature verification, UI execution,
+packaged helper/update/restart and read-only game prerequisites remain unrun on
+this Windows host. WSL filesystem contracts do not establish those behaviors.
+MAC-130 tracks native acceptance. Implementation is committed for integration;
+release publication and physical-device synchronization remain pending.
+PR510 review follow-up: keep-in-place selection and copy/import now have separate
+folder-picker actions, preserving external/moved installation selection even
+when Application Support is occupied. Both choices are covered by the native UI
+contract; existing storage fixtures cover remembered/moved folders and conflicts.
+PR510 Mac CI: attempt1 had no ARM64 runner capacity; retry reached native build
+and signature verification. Storage fixtures were incorrectly nested inside the
+built app, hitting the intended application-bundle destination rejection. The
+fixture root now lives beside the built app; production path checks are unchanged.
+
 ## 2026-11-06 - Windows compiler memory fix validation
 
 PR branch fix/windows-compiler-memory-pr, based on main c8ddc47f; Windows x64,
