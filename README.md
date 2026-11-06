@@ -62,6 +62,12 @@ build when available. Launcher and game versions are separate.
 
 ### Launcher preview
 
+**Weapon view:** In builds containing the Weapon FOV option, open **Settings →
+Video Options → View & HUD → Weapon FOV** from the main or pause menu. Choose
+80–150% and select **Apply**; no restart is needed. **Original** is 100%.
+Higher values show more of the weapon, independently of the world FOV slider.
+These percentages adjust the weapon's original lens, rather than degrees.
+
 ![TimeSplitters launcher v1.4.0 with Stable selected, Play Game, updates and settings](docs/assets/launcher-preview.png)
 
 Launcher v1.4.0 interface preview with illustrative installation data.

@@ -1,3 +1,23 @@
+## 2026-11-05 - Weapon FOV implementation, validation pending
+
+The feature/weapon-fov change based on main3fa4bc2b adds a shared frontend/pause
+View & HUD choice, 80–150% aperture with Original100, staged Apply and V3 config
+persistence. Launcher settings preserve the value. Windows targeted graphics
+checks passed29 with2 skips;47 isolated launcher settings checks passed. Linux
+projection/letterbox checks passed21 with4 skips, and the native game build and
+protected-MMIO checks passed. Linux uses the separate local checkout with the
+scoped candidate files copied over its existing work; it is not a clean build
+of the Windows revision. Windows full game compilation failed with MSVC C1002
+heap exhaustion in generated recomp_0011.c, including reduced-worker retries.
+The maintained Windows build regenerated stale projectile wrappers, then passed
+with process-local /MP1 /Od /Ob0 for a manual test executable; normal optimized
+compilation still exhausts MSVC heap. Windows PowerShell is required by the
+icon build step on this computer. Build checks passed, and an isolated unlocked
+Test Lab session launched. This reduced-optimization build is not release
+performance evidence. Actual new-row visual verification and Mac runtime remain
+pending. Final Windows targeted checks on November 6 passed29 with2 skips.
+Publication remains pending.
+
 ## 2026-11-05 - Issue497 native effect depth candidate
 
 Based on main772a38df; local fix/497-electricity-through-walls. Live HLE and

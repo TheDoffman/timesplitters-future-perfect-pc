@@ -37,3 +37,21 @@ on a native Mac host.
 Combined graphics flash coverage includes SMAA Off/On alongside MSAA, AO
 and FXAA in `tests/graphics/graphics_transition.h`, using isolated runtime
 preferences and restoring SMAA Off at completion. Native validation is separate.
+
+## Weapon aperture
+
+Video Options > View & HUD includes Weapon FOV (row12), shared by frontend
+and pause menus. 80–150% in steps of5 scales both first-person projection axes;
+100% is labeled Original. Only caller US1B7482 in the existing perspective
+wrapper applies it. Character previews, world FOV/culling, scope artwork,
+cinematics, aiming input and projectile simulation retain their prior paths.
+The adjustment preserves each weapon's authored lens/zoom. It is an aperture
+percentage, not an absolute field angle. The value is staged across tabs,
+applies without restart via Apply, is discarded by Back, and rolls back if
+any batch save fails.
+
+pc_display.c reads legacy V1/V2 with weapon100 and V3 width height world-fov
+weapon-percent. Saving Original retains V1/V2 compatibility. Shared launcher
+GameSettings reads/preserves V3 when changing other settings on all hosts.
+Tests cover projection isolation/aspect/zoom inputs, persistence, staged menu
+changes, save rollback and launcher round trips. Host visual testing is separate.

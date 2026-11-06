@@ -7,6 +7,8 @@ Scope/gate/worker tests run in the plan; host suites remain unchanged.
 
 # Launcher and menu shortcuts
 
+GameSettings preserves [Weapon FOV](video-options.md#weapon-aperture) in display V3.
+
 Linux release packaging closes dependencies for all launcher/Python ELFs,
 not only the game. Provider/source and notice verification is described in
 [Linux release contracts](linux-game.md#experimental-release-preparation).
