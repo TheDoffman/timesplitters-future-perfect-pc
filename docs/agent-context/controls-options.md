@@ -72,6 +72,9 @@ compact clipping at different resolutions. `input_icon_gpu.c`, in the existing
 text-read-scope test route, verifies native
 Morton coverage data, seven-bit tint, size-specific UVs/point sampling, cache/device/failure
 paths, native quad geometry and state restoration with immediate/deferred draws.
+The prediction-target replay fixture omits the adjacent icon GPU include; it
+exercises replay writes with its own host stubs, while input_icon_gpu.c owns
+texture upload/lifetime/state contracts.
 Importer tests retain a single original pixel at127,127. Keycap fixtures exercise
 binding-cell enlargement separately from caption/footer sizing.
 

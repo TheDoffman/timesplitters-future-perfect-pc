@@ -1,3 +1,11 @@
+Icon PR integration follow-up (2026-11-06): Windows CI passed2964 tests but
+five prediction-target fixtures failed to link because extraction included the
+adjacent icon GPU helper without its host texture API. The replay fixture now
+omits that include; dedicated input_icon_gpu coverage remains authoritative for
+texture upload/state/lifetime. No game implementation changes. CI native Mac
+job initially could not obtain a hosted runner; retry requested. Full checks
+will run again before merge.
+
 ## 2026-11-06 - Aspect-selected input icon sizes (local)
 
 Local feature/julio-input-prompts after c9ae769b replaces continuous GPU
