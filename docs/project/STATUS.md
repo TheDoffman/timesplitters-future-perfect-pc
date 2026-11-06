@@ -38,6 +38,12 @@ Local ignored receipts: logs/compiler-memory-pr-tests.log,
 logs/compiler-memory-pr-build.log, logs/compiler-memory-build.log and
 logs/compiler-memory-generation.log in the development checkout.
 
+Weapon FOV slider (2026-11-06, local branch fix/weapon-fov-slider, base fb555912):
+shared main/pause menu bar replaces choices; 80-150% in 5% steps. Windows
+menu/FOV regression fixtures: 9 passed, 2 native-Mac checks skipped. Drag
+capture, limits, tab staging and Apply persistence checked. Game rebuild and
+visual validation not yet performed; Mac/Linux gameplay unverified.
+
 ## 2026-11-06 — Antivirus blocking diagnostics (issue #476)
 
 Change on branch `fix/476-antivirus-errors`, based on main `fb555912`.

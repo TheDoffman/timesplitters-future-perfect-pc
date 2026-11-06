@@ -42,7 +42,9 @@ preferences and restoring SMAA Off at completion. Native validation is separate.
 
 Video Options > View & HUD includes Weapon FOV (row12), shared by frontend
 and pause menus. 80–150% in steps of5 scales both first-person projection axes;
-100% is labeled Original. Only caller US1B7482 in the existing perspective
+100% is the original aperture. Both FOV rows use the native sensitivity-bar
+painter and pointer capture, with percentage text for Weapon FOV. Mouse drags
+and keyboard/controller adjustments use 5% steps, retaining Apply/Back staging. Only caller US1B7482 in the existing perspective
 wrapper applies it. Character previews, world FOV/culling, scope artwork,
 cinematics, aiming input and projectile simulation retain their prior paths.
 The adjustment preserves each weapon's authored lens/zoom. It is an aperture

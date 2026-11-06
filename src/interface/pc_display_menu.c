@@ -1014,8 +1014,15 @@ static void row(int id,const char *label)
 {
     guest_call(sub_00079D60_gen,6,text_at(id+1,"%s",label),(uint32_t)id,0u,0u,SELECT_CB,0u);
 }
-static void fov_label(void) { text_at(8,"Vertical FOV: %d",staged_fov); }
+static void fov_label(void) { text_at(8,"Vertical FOV: %d",staged_fov); text_at(85,"Weapon FOV: %d%%",staged_weapon_fov); }
 #if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY)
+static void menu_slider_weapon_fov_pointer(float x,float left,float width)
+{
+    if(page==DISPLAY_VIEW) {
+        staged_weapon_fov=PC_WEAPON_FOV_MIN+5*(int)pc_menu_slider_value(x,left,width,(PC_WEAPON_FOV_MAX-PC_WEAPON_FOV_MIN)/5);
+        fov_label();
+    }
+}
 static void menu_slider_fov_pointer(float x,float left,float width)
 {
     unsigned value=pc_menu_slider_value(x,left,width,PC_FOV_MAX-PC_FOV_MIN);
@@ -1029,6 +1036,8 @@ static void fov_draw(void)
 {
     GuestRegisters r;
     uint32_t menu=WORD_AT(g_esp+4), rect=WORD_AT(g_esp+12);
+    uint32_t item=WORD_AT(g_esp+8);
+    int weapon=guest_writable(item,0x18) && WORD_AT(item+0x14)==12;
     save_registers(&r);
     if(guest_writable(menu,0xf8) && guest_writable(rect,16)) {
         float bounds[4]; uint32_t dark,light;
@@ -1037,11 +1046,11 @@ static void fov_draw(void)
         light=guest_call(sub_00154FE0,2,0x69737f7fu,WORD_AT(menu+0xf4));
 #if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY)
         if(page==DISPLAY_VIEW)
-            menu_slider_capture(MENU_FOV,menu,WORD_AT(g_esp+8),
+            menu_slider_capture(weapon?MENU_WEAPON_FOV:MENU_FOV,menu,item,
                 (float)(int)(bounds[2]-102.f),(float)(int)((bounds[1]+bounds[3]-8.f)*.5f),100.f,8.f);
 #endif
         /* Original sensitivity-slider painter, in the menu's logical units. */
-        guest_call(sub_000814B0,9,bits((float)(staged_fov-PC_FOV_MIN)/(PC_FOV_MAX-PC_FOV_MIN)),
+        guest_call(sub_000814B0,9,bits(weapon?(float)(staged_weapon_fov-PC_WEAPON_FOV_MIN)/(PC_WEAPON_FOV_MAX-PC_WEAPON_FOV_MIN):(float)(staged_fov-PC_FOV_MIN)/(PC_FOV_MAX-PC_FOV_MIN)),
             (uint32_t)(int)(bounds[2]-102.f),(uint32_t)(int)((bounds[1]+bounds[3]-8.f)*.5f),
             100u,8u,dark,dark,light,0u);
     }
@@ -1134,14 +1143,7 @@ static void labels(void)
     } else if(page==DISPLAY_VIEW) {
         fov_label();
         guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(8),2u,0x400u,0u,0u,FOV_DRAW_CB);
-        weapon_fov_row=guest_call(sub_00079D60_gen,6,text_at(85,"Weapon FOV"),12u,0u,0u,0u,0u);
-        guest_call(sub_0007D480,2,0x8400u,0u);
-        for(int value=PC_WEAPON_FOV_MIN;value<=PC_WEAPON_FOV_MAX;value+=5) {
-            int slot=86+(value-PC_WEAPON_FOV_MIN)/5;
-            guest_call(sub_000717D0,1,value==PC_WEAPON_FOV_DEFAULT?text_at(slot,"Original"):
-                text_at(slot,"%d%%",value));
-        }
-        guest_call(sub_00075430,2,weapon_fov_row,(uint32_t)((staged_weapon_fov-PC_WEAPON_FOV_MIN)/5));
+        weapon_fov_row=guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(85),12u,0x400u,0u,0u,FOV_DRAW_CB);
         subtitle_row=guest_call(sub_00079D60_gen,6,text_at(12,"Subtitles"),9u,0u,0u,0u,0u);
         guest_call(sub_0007D480,2,0x8400u,0u);
         guest_call(sub_000717D0,1,text_at(13,"Off"));
@@ -1182,8 +1184,6 @@ static void read_choices(void)
     if(page==DISPLAY_CONFIRM || page==DISPLAY_RESTART)return;
     if(page==DISPLAY_GRAPHICS || page==DISPLAY_ADVANCED)graphics_read_choices();
     counter_read_choice();
-    if(weapon_fov_row && WORD_AT(weapon_fov_row+0xc8)<=(PC_WEAPON_FOV_MAX-PC_WEAPON_FOV_MIN)/5)
-        staged_weapon_fov=PC_WEAPON_FOV_MIN+5*(int)WORD_AT(weapon_fov_row+0xc8);
     if(resolution_row) {
         unsigned choice=WORD_AT(resolution_row+0xc8);
         if(choice<(unsigned)mode_count) { selected_mode=(int)choice;staged=modes[choice]; }
@@ -1227,7 +1227,6 @@ static void refresh(int next,int selected)
     /* Guest rebuild restores old choices by row ID. Reapply every staged value,
      * including the newly filtered resolution list, without committing it. */
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
-        if(weapon_fov_row)guest_call(sub_00075430,2,weapon_fov_row,(uint32_t)((staged_weapon_fov-PC_WEAPON_FOV_MIN)/5));
         if(aspect_row)guest_call(sub_00075430,2,aspect_row,(uint32_t)selected_aspect);
         if(resolution_row)guest_call(sub_00075430,2,resolution_row,(uint32_t)selected_mode);
         if(texture_row)guest_call(sub_00075430,2,texture_row,texture_choice);
@@ -1382,6 +1381,13 @@ static void tick_menu(void)
             if(aspect<PC_DISPLAY_ASPECT_COUNT && aspect!=(unsigned)selected_aspect) {
                 selected_aspect=(int)aspect;filter_modes();refresh(DISPLAY_HOME,0);
             }
+        }
+        if(page==DISPLAY_VIEW && WORD_AT(menu+0x18c)==12) {
+            uint32_t buttons=WORD_AT(menu+0xc4);
+            guest_call(sub_00074910,3,menu,0u,1u);
+            if((buttons&0x40000u) && staged_weapon_fov>PC_WEAPON_FOV_MIN)staged_weapon_fov-=5;
+            else if((buttons&0x80000u) && staged_weapon_fov<PC_WEAPON_FOV_MAX)staged_weapon_fov+=5;
+            fov_label();
         }
         if(page==DISPLAY_VIEW && WORD_AT(menu+0x18c)==2) {
             uint32_t buttons=WORD_AT(menu+0xc4);
