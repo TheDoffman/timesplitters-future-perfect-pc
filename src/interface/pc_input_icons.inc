@@ -16,6 +16,9 @@ static int input_icon_id(int key)
 static void input_icon_image(PcInputIconImage image,float x,float y,float w,float h,uint32_t tint,unsigned pixels)
 {
     extern void sub_0001A2E0(void);
+#ifdef TSFP_KEYCAP_TEST
+    (void)pixels; /* Span-only fixture has no GPU upload size. */
+#endif
 #ifndef TSFP_KEYCAP_TEST
     if(tsfp_input_icon_begin(input_icon_spans+image.first,image.count,TSFP_INPUT_ICON_SIZE,pixels)) {
         extern void sub_0001B7B0(void);

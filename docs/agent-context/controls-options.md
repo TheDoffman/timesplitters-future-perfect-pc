@@ -74,7 +74,8 @@ Morton coverage data, seven-bit tint, size-specific UVs/point sampling, cache/de
 paths, native quad geometry and state restoration with immediate/deferred draws.
 The prediction-target replay fixture omits the adjacent icon GPU include; it
 exercises replay writes with its own host stubs, while input_icon_gpu.c owns
-texture upload/lifetime/state contracts.
+texture upload/lifetime/state contracts. The span-only test configuration
+explicitly ignores the GPU-only physical-size argument for strict compilers.
 Importer tests retain a single original pixel at127,127. Keycap fixtures exercise
 binding-cell enlargement separately from caption/footer sizing.
 

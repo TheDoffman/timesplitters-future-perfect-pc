@@ -1,3 +1,8 @@
+Icon PR strict-compiler follow-up: native Mac CI passed2866 tests but rejected
+an unused physical-size argument in the span-only imported-key fixture under
+-Werror. That test configuration now explicitly ignores the GPU-only argument.
+Production rendering is unchanged. CI rerun pending.
+
 Icon PR integration follow-up (2026-11-06): Windows CI passed2964 tests but
 five prediction-target fixtures failed to link because extraction included the
 adjacent icon GPU helper without its host texture API. The replay fixture now
