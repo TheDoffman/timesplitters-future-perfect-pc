@@ -5,6 +5,11 @@ exits. `pc_display_menu.c` includes it before the Story adapters. Additive netwo
 patch2620 routes the existing result/65470,65420,3592F0,79860 and1AF950 wrappers
 through these adapters, retaining the existing Story fallback. No new packet or
 generated-code edit is used. Windows, native Mac and Linux share this policy.
+Patch2625 admits both TSFP_PC_CONTROLS and TSFP_NATIVE_DISPLAY at all thirteen
+exit/result/profile-save wrappers. The native target does not define the Windows
+controls flag: enabling shared adapter source alone leaves these wrappers taking
+their stock fallback. Keep this distinction covered by compiling the applied
+runtime wrappers under stock, Windows and native definitions.
 
 The final user scope (2026-11-06) keeps a guest's own Leave Match/Quit and browser
 Back behavior original. Only the host's EC060/EC030/EAF60/EB030 rows read Return to
@@ -70,3 +75,17 @@ The original-US contract binds the host-loss call and Online menu constructor.
 Existing original guest-reward/config fixtures execute the save and reset paths.
 Keep CPU evidence distinct from paired gameplay and physical host acceptance;
 STATUS.md records measured results and the native Mac/Linux/System Link gaps.
+
+## Remaining three-platform save investigation
+
+The user's Windows-host/WSL/Mac run at compatibility511dc174 still showed damaged
+profiles on Windows/WSL and a missing Test Lab file on Mac. The Windows log entered
+4E8D40 before the lobby factory consumed its destination; the prior late-save
+scope fix is insufficient for that report. Native logs had no retained-return
+adapter events, matching the wrapper-gate omission above. Native gates are now
+repaired; the Windows failure remains under investigation until reproduced.
+Numeric PC-PROFILE-SAVE diagnostics log the first16 dirty admissions, captured
+metadata addresses/device/CRC/temp/body pointers, and original failure code/kind/
+slot plus a CRC of the original save frame's scratch read buffer. That scratch
+CRC is not proof that the read completed. No profile bytes/names are logged, no
+error panel is hidden, and original signature/read/CRC/write behavior is retained.

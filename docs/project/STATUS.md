@@ -1,3 +1,29 @@
+## 2026-11-06 - Three-platform save warning remains under investigation
+
+The user reproduced dc642eb3/compatibility511dc174 with Windows hosting WSL and
+Mac guests: Windows/WSL damaged-profile panels, Mac missing-Test-Lab panel.
+The previous save-scope repair does not resolve this report. The real Windows
+log shows4E8D40 during the initial return save at phase16, before lobby creation.
+Read-only signature checks of the three existing Windows profile files pass;
+no personal save was modified or used for automated gameplay.
+
+Found a separate native admission omission: thirteen shared return/result/save
+runtime wrappers still required TSFP_PC_CONTROLS, absent on native builds.
+Additive patch2625 admits TSFP_NATIVE_DISPLAY too. The compiled applied-wrapper
+regression fails native dispatch before the patch and passes stock/Windows/native
+after it. Shared CPU-only adapter fixtures did not exercise this boundary.
+Bounded numeric save diagnostics retain all original storage errors and will
+identify the remaining failure without logging profile names or bodies.
+
+Two Windows peers with separately signed progress, then three Windows peers in
+the same native match, pass two mid-match returns and another round. Three-player
+run169.6s, three human actors verified, retained lobbies11/12/12 and no save error.
+These Windows-only runs do not reproduce the mixed-platform report. An initial
+three-instance probe had not joined its third native player and is excluded.
+Logs: multiplayer-profile-distinct.log, multiplayer-three-distinct.log and their
+online-bots directories. Fixture copies and test disks isolated/recycled.
+Cross-platform acceptance and the Windows-host warning remain outstanding.
+
 ## 2026-11-06 - Retained lobby profile-save warning follow-up
 
 Local, uncommitted on multiplayer-lobby-return, base3ff65a51. The retained party's

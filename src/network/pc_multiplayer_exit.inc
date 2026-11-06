@@ -191,7 +191,35 @@ static int multiplayer_profile_save(void (*original)(void))
        connected, so their persistent save view must outlive that route. */
     if(multiplayer_arcade() && (multiplayer_destination ||
        (WORD_AT(0x76b108u) && (WORD_AT(0x76b140u)==1u || WORD_AT(0x76b140u)==2u)))) {
-        network_profiles_save(original,multiplayer_profiles,multiplayer_profile_count);return 1;
+        const uint32_t frame=g_esp;
+        static unsigned observations;
+        const unsigned dirty=WORD_AT(0x78ad24u)&0x10000u;
+        if(dirty && observations++<16u) {
+            fprintf(stderr,"[PC-PROFILE-SAVE] begin role=%u phase=%u scene=%u profiles=%u captured=%u destination=%u\n",
+                WORD_AT(0x76b140u),WORD_AT(0x76b1a4u),WORD_AT(0x79094cu),WORD_AT(0x74e934u),multiplayer_profile_count,multiplayer_destination);
+            for(unsigned i=0;i<multiplayer_profile_count && i<16u;i++) {
+                const uint32_t metadata=multiplayer_profiles[i];
+                if(guest_writable(metadata,0x40u)) fprintf(stderr,
+                    "[PC-PROFILE-SAVE] local=%u metadata=%08X device=%u crc=%08X temporary=%u body=%08X\n",
+                    i,metadata,WORD_AT(metadata+0x24u),WORD_AT(metadata+0x28u),WORD_AT(metadata+0x34u),WORD_AT(metadata+0x3cu));
+            }
+        }
+        network_profiles_save(original,multiplayer_profiles,multiplayer_profile_count);
+        if(dirty && g_eax) {
+            const unsigned slot=WORD_AT(0x74f9dcu);
+            uint32_t crc=UINT32_MAX;
+            if(frame>=0x1f54u && guest_writable(frame-0x1f54u,0x1f54u)) {
+                const uint8_t *body=(const uint8_t *)(g_xbox_mem_offset+(uintptr_t)frame-0x1f54u);
+                for(unsigned i=0;i<0x1f54u;i++) {
+                    crc^=body[i];
+                    for(unsigned bit=0;bit<8u;bit++) crc=(crc>>1)^((0u-(crc&1u))&0xedb88320u);
+                }
+                crc=~crc;
+            }
+            fprintf(stderr,"[PC-PROFILE-SAVE] error=%u kind=%u slot=%u scratch_crc=%08X frame=%08X\n",
+                WORD_AT(0x74f9d8u),WORD_AT(0x74e948u),slot,crc,frame);
+        }
+        return 1;
     }
 #else
     (void)original;

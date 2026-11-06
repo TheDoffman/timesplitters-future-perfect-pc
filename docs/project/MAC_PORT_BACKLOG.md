@@ -1,3 +1,13 @@
+## Native multiplayer wrapper admission - MAC-013 validation pending
+
+Follow-up based on dc642eb3: patch2625 enables the thirteen existing shared
+Arcade return/result/profile-save wrappers for TSFP_NATIVE_DISPLAY, as well as
+Windows controls. Native Mac/Linux compiled the adapters but bypassed them under
+Windows-only wrapper guards. Applied-wrapper CPU tests reproduce that omission
+and pass with the repair. No duplicate native policy or OS adapter is needed.
+Actual mixed-platform acceptance remains pending, and the user's Windows-host
+save warning is still under investigation; see STATUS.
+
 ## Retained multiplayer profile-save scope - MAC-013 validation pending
 
 Uncommitted follow-up on multiplayer-lobby-return, base3ff65a51: shared Arcade

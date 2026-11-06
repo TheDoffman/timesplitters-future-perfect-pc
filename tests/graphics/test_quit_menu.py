@@ -787,3 +787,44 @@ def test_multiplayer_original_profile_save(tmp_path, short_scope):
     if short_scope:
         source = '#define REPRODUCE_SHORT_SCOPE 1\n' + source
     assert 'PASS:' in compile_and_run(tmp_path, source)
+
+
+@pytest.mark.parametrize('provider', ['stock', 'windows', 'native'])
+def test_multiplayer_runtime_wrapper_dispatch(tmp_path, provider):
+    """Compile the applied runtime wrappers, not just the shared adapter include."""
+    import re
+    manual = ROOT/'external/ts3FPrecomp/titles/futureperfect/src/recomp_manual.c'
+    if not manual.is_file():
+        pytest.skip('Prepared patched runtime required')
+    text = manual.read_text(encoding='utf-8')
+    addresses = ('003592F0', '00065420', '001AF950', '00079860', '001922D0',
+                 '002EAF60', '002EAFC0', '002EB030', '002EC090', '002EC650',
+                 '00065470', '002EB0C0', '002EB290')
+    wrappers = []
+    for address in addresses:
+        match = re.search(r'void sub_'+address+r'\(void\)\n\{\n.*?\n\}', text, re.S)
+        assert match, address
+        wrappers.append(match[0])
+    source = '#include <assert.h>\n#include <stdio.h>\nstatic unsigned adapters, originals;\n'
+    if provider != 'stock':
+        source += '#define '+('TSFP_PC_CONTROLS' if provider == 'windows' else 'TSFP_NATIVE_DISPLAY')+' 1\n'
+    for address in addresses:
+        source += f'void sub_{address}_gen(void){{++originals;}}\n'
+    callbacks = set(re.findall(r'\b(pc_[a-z_]+)\(', '\n'.join(wrappers)))
+    for callback in callbacks:
+        action = callback == 'pc_multiplayer_exit_action'
+        source += ('void '+callback+'(void (*fn)(void)'+(', unsigned action' if action else '')+'){'
+                   + ('(void)action;' if action else '')+'++adapters;fn();}\n')
+    source += '\n'.join(wrappers)
+    source += '\nint main(void){'+''.join(f'sub_{address}();' for address in addresses)
+    source += f'assert(originals=={len(addresses)} && adapters=={0 if provider=="stock" else len(addresses)});'
+    source += 'puts("PASS: native and Windows runtime wrapper dispatch");return 0;}\n'
+    compiler, env = native_compiler(tmp_path)
+    path = tmp_path/'wrapper.c';path.write_text(source, encoding='utf-8')
+    exe = tmp_path/('wrapper.exe' if os.name=='nt' else 'wrapper')
+    args = ([compiler, '/nologo', '/O2', str(path), '/Fe:'+str(exe)] if os.name=='nt' else
+            [compiler, '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', str(path), '-o', str(exe)])
+    built = subprocess.run(args, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=60)
+    assert built.returncode==0, built.stdout+built.stderr
+    result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
+    assert result.returncode==0, result.stdout+result.stderr
