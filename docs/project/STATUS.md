@@ -1,3 +1,15 @@
+## 2026-11-06 - PR511 validation fixture corrections
+
+User confirmed the multiplayer fix and authorized PR/merge. PR511 initial CI
+found two outdated patch-upgrade expectations and a Clang unused fixture stub.
+Fresh stacks now expect shared multiplayer result dispatch; historical Mac-only
+seeds omit2620/2625 alongside their absent network dependencies, then install the
+complete stack on migration. Story fixture save stub follows its production
+Windows/native-network guard. No game code or compatibility identity changes.
+Two affected patch-upgrade scenarios pass Windows Python3.14 (49.18s); both Story
+lobby variants pass Ubuntu24.04 Python3.12/Clang (4.52s). Full CI rerun pending.
+Supported Windows build and built-in tests pass immediately before PR creation.
+
 ## 2026-11-06 - Native lobby hooks repaired; Windows duplicate fixture isolated
 
 Repair e84135ad on multiplayer-lobby-return enables the thirteen existing shared

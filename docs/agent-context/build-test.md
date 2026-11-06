@@ -1035,12 +1035,6 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
 
-2600 applies last; old seeds predate MSAA.
+Players: controls-options.md.
 
-Local-player tests: controls-options.md.
-
-Patch upgrade fixtures expect shared multiplayer result dispatch. Historical
-Mac-only seeds omit2620/2625 with their absent network dependencies; the full
-migration must install them on the second pass.
-Story lobby fixture stubs follow the production Windows/native-network guard so
-Clang native-display-only checks do not compile an unused save stub.
+Patch tests: Mac seeds omit2620/2625 until migration; Story stubs use production guards.
