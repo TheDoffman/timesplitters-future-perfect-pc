@@ -830,6 +830,14 @@ record in `docs/analysis/native-high-refresh-regressions.md` for capture details
 
 ## Developer Tools sidebar presentation
 
+Free-camera player-input ownership: the runtime sampler uses guarded
+`pc_controls_key_down` on Windows and SDL hosts. Raw
+`pc_controls_developer_keys`/`tsfp_native_key_down` remain available for camera
+flight and binding capture. `pc_controls_accept_pad` suppresses physical Xbox
+input on both paths during freecam/overlay/modal/focus blocks; previously only
+the Windows sampler consumed it. Ordinary movement resumes when the gate clears;
+noclip retains character input. Camera mouse input remains on its existing path.
+
 Sidebar pointer hit testing converts the host pointer's window coordinates to
 the last painted drawable width/height before applying widget DPI and docking.
 SDL logical points and Retina framebuffer pixels are distinct; display scale

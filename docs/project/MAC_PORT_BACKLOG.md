@@ -9986,6 +9986,16 @@ The input fixture checks placement and live updates under denied host policy.
 
 Linux launcher icon/storage follow-up (fix/linux-launcher-icon, uncommitted): Linux windows use the existing embedded launcher icon; Mac bundle icon handling is unchanged. Shared destination-volume free-space checks replace filesystem-root checks in install/import and diagnostics. Native failure dialogs now also show on Home. Windows/Linux validation is recorded in STATUS; native Mac regression and physical Steam Deck acceptance remain pending.
 
+Developer Tools free-camera player input (uncommitted after819489f4): implemented,
+native gameplay acceptance pending. Shared patch2630 routes SDL keyboard sampling
+through the existing gameplay guard and extends the existing pad gate to native
+sampling; raw keys/mouse remain available to the camera. Windows already guards
+keyboard input and retains its pad policy; Mac/Linux reuse the same contracts.
+No new OS capability or guest-code regeneration is needed. Tests cover actual
+native keyboard dispatch and both host sampler branches; measured build/test
+evidence is in [STATUS](STATUS.md). Physical camera-only gameplay and native
+controller/Windows/Linux host checks remain pending.
+
 Developer Tools Retina pointer alignment (uncommitted after a8d2e47e): implemented,
 native acceptance pending. Shared `src/interface/pc_developer_sidebar.inc` maps
 window-space pointers to the painted drawable before DPI/docking hit testing;

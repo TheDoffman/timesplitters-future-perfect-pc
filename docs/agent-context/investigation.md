@@ -1,5 +1,5 @@
 Developer Tools/main integration preserves both additive patch families. The
-ordered tail is91 entries: shared-font2620, then main config-source2595 and
+ordered tail is92 entries: shared-font2620, native input2630, then config-source2595 and
 MSAA/shared-depth2600. The generated index and exact-order fixture use the
 resolved loader. Older patch-tail counts below describe earlier revisions.
 
@@ -488,3 +488,7 @@ the entire current stack. Additive manual-file wrappers2520/2530/2550/2580 use
 existing -C1 matching so appended local comments survive reverse application.
 Patched code must still match exactly; the small EOF fixture rejects a changed
 wrapper body without writing any files. Runtime patch bytes remain unchanged.
+Patch2630 extends the explicit Developer Tools tail after2620. The repository
+context exact-order fixture now retains a92-entry tail, including2630 before
+the source-worktree/shared-depth follow-ups. Index generation and discovery
+contracts are unchanged; stage this intended new patch before refreshing.

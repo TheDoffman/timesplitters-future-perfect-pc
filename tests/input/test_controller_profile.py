@@ -14,6 +14,26 @@ ROOT = Path(__file__).resolve().parents[2]
 RUNTIME = ROOT / "external/ts3FPrecomp/src"
 
 
+def test_native_developer_player_keys(tmp_path):
+    production = (RUNTIME / 'input/input_bindings.c').read_text()
+    native = (ROOT / 'src/native/input_sdl.c').read_text()
+    guards = '\n'.join(re.search(pattern, native, re.S).group() for pattern in (
+        r'int pc_controls_accept_pad\(.*?\n\}', r'int pc_controls_key_down\(.*?\n\}'))
+    dispatch = re.search(r'static int key_down\(.*?\n\}', production, re.S).group()
+    fixture = (ROOT / 'tests/input/developer_player_keys.c').read_text()
+    source = tmp_path / 'developer-keys.c'
+    source.write_text(fixture.replace('/* PRODUCTION_GUARDS */', guards+'\n'+dispatch))
+    compiler, env = native_compiler(tmp_path)
+    exe = tmp_path / ('developer-keys.exe' if os.name == 'nt' else 'developer-keys')
+    sources = [str(source), str(ROOT / 'src/input/pc_input.c')]
+    args = ([compiler, '/nologo', '/std:c11', *sources, '/Fe:'+str(exe)] if os.name == 'nt'
+            else [compiler, '-std=c11', '-Wall', '-Wextra', '-Werror', *sources, '-lm', '-o', str(exe)])
+    result = subprocess.run(args, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr
+    result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 @pytest.mark.parametrize("adapter", ["TSFP_PC_CONTROLS", "TSFP_NATIVE_INPUT"])
 @pytest.mark.parametrize("mutation", ["fixed", "steal-player-two"])
 def test_local_player_host_routing(tmp_path, adapter, mutation):

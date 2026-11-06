@@ -1,5 +1,12 @@
 [Developer Tools integration](developer-tools-integration.md).
 
+Additive input patch2630 follows2620 and routes native keyboard sampling through
+the existing guarded `pc_controls_key_down`, instead of the raw SDL key reader.
+The existing `pc_controls_accept_pad` gate now applies to both host samplers,
+including explicit pad assignments and automatic P1 fallback. The native build
+includes the shared controls declarations. No guest ABI/wrapper or generated
+code changes are needed. See Systems for free-camera input ownership.
+
 [Effect depth](native-effect-depth.md).
 [2605](native-projectiles.md); [Uplink](native-uplink.md).
 [Linux](linux-game.md); [MSAA](smaa.md).

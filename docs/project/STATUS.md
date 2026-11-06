@@ -1,3 +1,46 @@
+## 2026-11-06 - Mac free-camera input ownership
+
+Local, uncommitted on fix/mac-freecam-player-input after819489f4, depending on
+the unmerged Developer Tools implementation and local sidebar alignment fix.
+Native keyboard sampling called the raw SDL reader instead of the existing
+guarded gameplay API, letting camera flight keys steer the character too.
+The native controller sampler also omitted the existing pad admission gate.
+Additive input patch2630 follows2620, includes the shared controls declarations,
+routes native keys through pc_controls_key_down and applies pc_controls_accept_pad
+to both host samplers. Raw camera/binding keys and camera mouse input stay live;
+ordinary character input resumes when freecam ends. Windows retains its policy.
+No guest wrapper/ABI or generated-code change is required.
+
+macOS27.2/arm64, Apple clang21.0.0, Python3.13.17, SDL3.4.16,
+Vulkan SDK1.4.363.0/MoltenVK, Apple M5 Pro: complete patch validation/application
+and supported incremental native build pass. Rebuilt executable SHA-256:
+`de6f750806f86e67599a0de0d85d30481edf3c3046e0e3546bb14bf5f09e288a`.
+Native keyboard and native pad regressions failed before the fix, then pass.
+Focused controller/Developer Tools suites:46 passed,1 skipped,2 deselected
+(the two previously recorded Clang fixture failures: guest sign comparisons
+and lobby unused g_ebx). This includes actual native key dispatch/guards, raw
+key retention, resumed controls, both host sampler branches and existing remapped
+camera flight/mouse checks. Combined initial input/context/patch-tracking run:
+91 passed,1 skipped, those same2 unrelated failures. New cases run through the
+existing CI controller-profile route. Context/base/whitespace checks pass.
+Final context suite:21 passed. The initial transition run had11 passes and a
+historical controls failure:2630's first name missed the existing Developer
+Tools exclusion used by pre-Tools fixtures. The suite was interrupted to rename
+it to2630-developer-tools-native-player-input.patch; historical controls upgrade,
+native Mac upgrade and representative branch round trip then all pass (3 tests,
+77.91s). Full current-stack migration after the rename passes, and the final
+native build/manifest and startup summary use that patch name. The entire
+38-case transition suite was not rerun after the naming-only correction.
+
+Bounded isolated startup passes:15.33s, shutdown exit0, at least600 guest frames
+and600 successful guest presents, zero recorded failed/skipped presents, native
+faults, shader failures or Vulkan validation errors. The verified US XBE and
+isolated save/input/runtime/PC display/XDG paths were used; six disposable
+partition images were recycled by the runner. No personal settings/saves edited.
+This does not establish physical camera-only gameplay, controller-device input,
+legacy GL or Windows/Linux host acceptance. Other-device synchronization remains
+unverified. Nothing committed, pushed or published for this follow-up.
+
 ## 2026-11-06 - Mac Developer Tools pointer alignment
 
 Local, uncommitted on fix/mac-developer-sidebar-pointer after a8d2e47e; depends

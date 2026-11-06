@@ -279,7 +279,8 @@ def patch_records(paths):
                  '2590-developer-tools-optional-audio-speed.patch',
                  '2600-developer-tools-sidebar-renderer.patch',
                  '2610-developer-tools-sidebar-refinement.patch',
-                 '2620-developer-tools-shared-font.patch'):
+                 '2620-developer-tools-shared-font.patch',
+                 '2630-developer-tools-native-player-input.patch'):
         followup=by_name.get(name)
         if followup:
             paths.remove(followup)

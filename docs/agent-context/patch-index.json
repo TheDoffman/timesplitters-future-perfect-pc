@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "0395a4c107b27b31cc4f52e25ab9eea5ea5f0165fd7486d9b01556a3aa07168a",
+  "loaderSha256": "252731b3dec628c79d765691e96602f63b18d1e7bd35344666f02cb514028f1f",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3645,6 +3645,14 @@
         "src/d3d/CMakeLists.txt",
         "src/d3d/d3d8_overlay.c",
         "src/input/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2630-developer-tools-native-player-input.patch",
+      "path": "patches/input/2630-developer-tools-native-player-input.patch",
+      "sha256": "f2f7e2eae77df09d5c309158a19e2ccf9e62fa58f43dcd0f6a6f6c0ede1313f2",
+      "targets": [
+        "src/input/input_bindings.c"
       ]
     },
     {
