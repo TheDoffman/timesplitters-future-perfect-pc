@@ -1,3 +1,4 @@
+[Uplink throw tests and policy](native-uplink.md#throw-impulse).
 [Vietnam performance checks](network-performance.md).
 
 [Tools](developer-tools-integration.md).

@@ -1,3 +1,28 @@
+## 2026-11-07 - Uplink throw impulse at native FPS (Windows user verified)
+
+Base a24c3b60, branch fix/uplink-throw-rate, uncommitted. The original
+US350320 release block calls351AA0/16C8F0 with a one-frame force. The native
+solver consumes a shorter interval and clears the accumulator, reducing
+throw impulse. Numeric site3505D7 alone now divides the release force by the
+fractional raw interval; holding, other forces and game-speed scaling remain.
+
+The original-code rigid fixture reproduced speed21.0063 at60 and10.5031 at120
+before correction. Corrected speeds stay within .001 over60/120/144/180/240
+and quarter-speed; one-second positions stay within2% of original stepping.
+The regression checks nonzero force and an independent legacy-throw mutation.
+The isolated rigid fixture passed including mutations. The broader rerun passed
+all9 selected original vehicle/Uplink tests; a previous mutation timeout during
+concurrent compilation did not recur. Windows full Build passed with the host
+self-tests selecting RECOMP_PAD_API=xinput. The initial default-SDL input test
+failed its stale synthetic mouse event assertion after backend initialization;
+standalone XInput and the complete rerun pass, with no input-source changes.
+Executable SHA256 C5143EC0A7C865CA53AAD1F05B23C12AD0C3DCD5B5EE96FDC4E4E999937064FC.
+The user compared the same Uplink object at60 and240 FPS in the isolated
+unlocked Windows build and confirmed matching throw distance. This does not
+verify every object/map or native Mac/Linux execution. No merge or release
+is claimed. This diagnostic build still omits XMV movies because the
+available FFmpeg archive does not match the pin; no dependency pin was changed.
+
 ## 2026-11-06 - Vietnam CPU eligibility fix (Windows verified)
 
 Branch fix/vietnam-frame-performance, base816ae00a. Release v0.5.2 executable

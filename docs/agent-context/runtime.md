@@ -1,6 +1,6 @@
 [Tools](developer-tools-integration.md).
 
-[Full](video-options.md).
+[Full](video-options.md); [Uplink](native-uplink.md).
 [UI](controls-options.md); [Kill feed](../development/arcade-kill-feed.md).
 
 [Effect depth](native-effect-depth.md).
