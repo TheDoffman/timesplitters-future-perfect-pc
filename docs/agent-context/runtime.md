@@ -90,7 +90,7 @@ Unchanged patch stacks reuse content validation: [cache contract](release-speed.
 `0040-dsound-positional-stereo.patch` keeps XDK distance attenuation and adds
 shared stereo projection with XAudio2/SDL output adapters; see
 [positional audio](../development/positional-audio.md) for field provenance,
-cursor contracts, saved Audio Options toggle and host acceptance limits.
+cursors, Audio Options toggle and host limits.
 `0050-environmental-acoustics.patch` adds opt-in world-coordinate room/portal routing; see the audio guide for limits.
 
 `0045`: [range audit](../development/positional-audio.md#distance-falloff-audit).

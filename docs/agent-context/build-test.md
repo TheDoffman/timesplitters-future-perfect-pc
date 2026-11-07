@@ -19,7 +19,7 @@ Mac storage tests: see launcher.md.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build/tests ([MSAA](smaa.md))
 
-Audio: [acceptance gates](../development/audio-overhaul-acceptance.md).
+Audio: [acceptance](../development/audio-overhaul-acceptance.md).
 Media CI: audit/candidate/loop/measurement fixtures on all hosts;
 compatible headers do not establish identity.
 Scene/guest: cache/pan/split fallback; gain C++ includes initializer_list.
