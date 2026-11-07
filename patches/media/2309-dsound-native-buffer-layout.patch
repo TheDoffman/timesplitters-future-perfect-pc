@@ -1,0 +1,116 @@
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -235,6 +235,9 @@
+ /* Validate settings independently of Release: invalidation and format changes
+  * can also retire slots. Final Release is intercepted at the buffer object's
+  * method, before its caller can reuse the guest allocation. */
++static uint32_t buffer_setting_offset(uint32_t offset);
++static int call_stdcall(uint32_t va, uint32_t n, const uint32_t *args);
++
+ static uint32_t setting(uint32_t iface, uint32_t offset)
+ {
+     uint32_t holder = voice_field(offset) ? iface - 0x0Cu : iface;
+@@ -243,6 +246,7 @@
+     if (!guest_readable(holder, 4u))
+         return 0u;
+     object = HLE_MEM32(holder);
++    offset = buffer_setting_offset(offset);
+     if (!guest_readable(object + offset, 4u))
+         return 0u;
+     return HLE_MEM32(object + offset);
+@@ -290,6 +294,8 @@
+ HLE_IMPORT_VAR(CDirectSoundStream_SetVolume);
+ HLE_IMPORT_VAR(CDirectSound3DCalculator_Calculate3D);
+ HLE_IMPORT_VAR(CDirectSound3DCalculator_GetVoiceData);
++HLE_IMPORT_VAR(CDirectSoundBufferSettings_SetBufferData);
++HLE_IMPORT_VAR(CDirectSoundBuffer_SetLoopRegion);
+ 
+ /* CMcpxVoiceClient_Commit3dSettings_0: client+0x12 & 3 == 3, then
+  * Calculate3D(listener = [[client+8]+0xC]+0x30, params = [settings+0xB4]) and
+@@ -354,6 +360,38 @@
+ static uint32_t call_target(uint32_t call_va)
+ {
+     return call_va + 5u + HLE_MEM32(call_va + 1u);
++}
++
++/* Buffer-tail layout is verified independently of the voice/3D layout.
++ * XDK5849 adds one word before the data/size/play/loop fields. Original
++ * SetLoopRegion must see the same settings written by the replaced SetBufferData.
++ * Unknown code retains the established XDK5344 layout; no title-address guesses. */
++static const char k_buffer_data_code[]=
++    "558bec515356578bf133dbbf00000080857e08895dfc75108b86bc0000003bc3740c50e8........"
++    "899ebc0000008b450c3bc38986c000000074398b4d083bcb740b097e08898ebc000000eb2780660b"
++    "7f53506844536461e8........8986bc000000f7d81bc025f2fff87f050e0007808945fcffb6c000"
++    "00008bce53e8........8b45fc5f5e5bc9c20800";
++static const char k_buffer_loop_code[]=
++    "558bec57e8........833d........000fb6f8741685ff740b68........ff15........b8054000"
++    "80eb558b4d1085c98b55088b421c568b750c7414538d1c0e3b98c80000005b760fbe32007888eb1e"
++    "8b88c80000002bce89b0cc0000008988d00000008b4a20e8........8bf085ff740b68........ff"
++    "15........8bc65e5f5dc20c00";
++static const char k_buffer_play_code[]=
++    "8b44240483a1cc000000008981c40000008b4424088981c80000008981d0000000c20800";
++static int g_buffer_layout = -1;
++static uint32_t buffer_setting_offset(uint32_t offset)
++{
++    if(offset<SET_DATA)return offset; /* voice settings are unchanged */
++    if(g_buffer_layout<0) {
++        uint32_t data=hle_var_CDirectSoundBufferSettings_SetBufferData;
++        uint32_t loop=hle_var_CDirectSoundBuffer_SetLoopRegion;
++        g_buffer_layout=code_matches(data,k_buffer_data_code) &&
++            code_matches(loop,k_buffer_loop_code) &&
++            code_matches(call_target(data+0x7du),k_buffer_play_code);
++        if(g_buffer_layout)
++            fprintf(stderr,"[DSOUND] buffer settings: verified XDK5849 native data/loop layout\n");
++    }
++    return offset+(g_buffer_layout?4u:0u);
+ }
+ 
+ static int g_layout = -1;          /* the voice layout above: 1 yes, 0 no */
+@@ -1336,7 +1374,7 @@
+                       "IDirectSoundBuffer_SetBufferData");
+         return;
+     }
+-    if (!guest_readable(iface, 4u) || !guest_readable(HLE_MEM32(iface) + SET_LOOP_LEN, 4u))
++    if (!guest_readable(iface, 4u) || !guest_readable(HLE_MEM32(iface) + buffer_setting_offset(SET_LOOP_LEN), 4u))
+         HLE_RETURN(RECOMP_DSOUND_INVALID_PARAM);
+     if (said < 8) {
+         said++;
+@@ -1346,15 +1384,31 @@
+     stop(iface);
+     lock();
+     object = HLE_MEM32(iface);
+-    HLE_MEM32(object + SET_DATA) = data;
+-    HLE_MEM32(object + SET_SIZE) = bytes;
+-    HLE_MEM32(object + SET_PLAY_START) = 0u;
+-    HLE_MEM32(object + SET_PLAY_LEN) = 0u;
+-    HLE_MEM32(object + SET_LOOP_START) = 0u;
+-    HLE_MEM32(object + SET_LOOP_LEN) = 0u;
++    uint32_t result=RECOMP_DSOUND_OK;
++    if(buffer_setting_offset(SET_DATA)!=SET_DATA) {
++        /* The checked settings-only helper owns allocation/free, the external
++         * data bit and native region initialization. It never stops hardware.
++         * Calling the public original would enter the chip wait we replace. */
++        uint32_t saved_sp=g_esp,saved_cx=g_ecx,saved_dx=g_edx,args[2]={data,bytes};
++        int called=0;
++        if(guest_readable(saved_sp-12u,12u)) {
++            g_ecx=object;
++            called=call_stdcall(hle_var_CDirectSoundBufferSettings_SetBufferData,2,args);
++        }
++        result=called?g_eax:0x80004005u;
++        g_esp=saved_sp;g_ecx=saved_cx;g_edx=saved_dx;
++        if(!called) {unlock();HLE_RETURN(result);}
++    } else {
++        HLE_MEM32(object + SET_DATA) = data;
++        HLE_MEM32(object + SET_SIZE) = bytes;
++        HLE_MEM32(object + SET_PLAY_START) = 0u;
++        HLE_MEM32(object + SET_PLAY_LEN) = 0u;
++        HLE_MEM32(object + SET_LOOP_START) = 0u;
++        HLE_MEM32(object + SET_LOOP_LEN) = 0u;
++    }
+     (void)model_for(iface, now);
+     unlock();
+-    HLE_RETURN(RECOMP_DSOUND_OK);
++    HLE_RETURN(result);
+ }
+ 
+ /* Every five seconds while buffers play: what the output did, so latency and

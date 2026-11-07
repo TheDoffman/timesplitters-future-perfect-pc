@@ -15,6 +15,12 @@ const uint32_t hle_var_CDirectSoundVoice_SetVolume = 0;
 const uint32_t hle_var_CDirectSoundStream_SetVolume = 0;
 const uint32_t hle_var_CDirectSound3DCalculator_Calculate3D = 0;
 const uint32_t hle_var_CDirectSound3DCalculator_GetVoiceData = 0;
+#ifndef TSFP_AUDIO_BUFFER_DATA_ADDRESS
+#define TSFP_AUDIO_BUFFER_DATA_ADDRESS 0
+#define TSFP_AUDIO_BUFFER_LOOP_ADDRESS 0
+#endif
+const uint32_t hle_var_CDirectSoundBufferSettings_SetBufferData = TSFP_AUDIO_BUFFER_DATA_ADDRESS;
+const uint32_t hle_var_CDirectSoundBuffer_SetLoopRegion = TSFP_AUDIO_BUFFER_LOOP_ADDRESS;
 static void (*release_callback)(void);
 static void release_original(void) {
     if (release_callback) release_callback();
@@ -32,7 +38,12 @@ static void acoustic_ray_mock(void) {
     g_ebx=123;g_esi=456;g_edi=789;g_xmm7.f[0]=123;g_fp_top=4;g_fp_stack[0]=123;
     g_eax=0;g_esp+=4;
 }
-recomp_func_t recomp_lookup(uint32_t address) { return acoustic_mock && address==0x88950 ? acoustic_ray_mock : NULL; }
+static void (*native_buffer_data_callback)(void);
+recomp_func_t recomp_lookup(uint32_t address) {
+    if(native_buffer_data_callback && address==hle_var_CDirectSoundBufferSettings_SetBufferData)
+        return native_buffer_data_callback;
+    return acoustic_mock && address==0x88950 ? acoustic_ray_mock : NULL;
+}
 int xbox_EnvSwitch(const char *name, int value) { return value; }
 void hle_dsound_stream_tick(uint64_t now) { }
 int hle_dsound_stream_dialogue_active(void) {return 0;}

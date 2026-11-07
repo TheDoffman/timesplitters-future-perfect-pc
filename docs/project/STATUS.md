@@ -1,3 +1,18 @@
+## 2026-11-07 - Native buffer layout regression repaired
+
+Shared patch2309 recognizes native buffer settings from original function code,
+independently of the voice layout, and restores compatible SetBufferData fields
+and whole-region lengths. Original custom-loop setters can then accept valid
+nonzero starts. Unknown SDK layouts retain existing behavior. Two native HLE
+regressions fail before and pass after the patch. Ownership/clear tests require
+the native allocation-and-settings helper, avoiding duplicate ownership policy.
+The final media suite passes191 with one opt-in skip; regeneration, standard
+Windows Build and matching crash symbols pass. Actual32-second startup and
+112-second campaign checks reach the main menu and first-person scene with the
+native guard/helper active and clean capture-error flags. Shortened loop ends
+remain separate required
+model/pump work; this is not full loop-playback acceptance.
+
 ## 2026-11-07 - Pause validation and original loop metadata
 
 A bounded disposable campaign run verifies pause Audio/Mix/Listening layout at

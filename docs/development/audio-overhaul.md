@@ -498,3 +498,48 @@ crane region; initialization with the current HLE shadow fields returns
 layout. This verifies an integration mismatch to repair; it is not an audible
 live-crane regression or a completed fix. Keep legacy SDK layouts and original
 fallback intact when repairing the supported5849 layout and loop consumption.
+
+## Native buffer layout repair
+
+Patch2309 uses original function signatures to recognize the5849 buffer-tail ABI,
+independently of the existing3D voice guard. Two imported function addresses
+identify SetBufferData and SetLoopRegion; the SetBufferData call target must
+also match the play-region helper. Unknown code retains the established legacy
+layout. No title-specific address or asset-name workaround is used.
+
+Field translation serves reads. For recognized native buffers, SetBufferData
+calls the checked settings-only original helper. It handles allocation/free,
+external PCM ownership and region initialization without the public method's
+hardware-stop wait. It preserves the reserved word and writes data/size atBC/C0, play
+start/length atC4/C8 and loop start/length atCC/D0. Helper HRESULT and caller
+stack/CX/DX are preserved; missing lookup fails without partial field writes.
+Whole play/loop lengths match native initialization, allowing the original setter to accept a valid
+nonzero start. Voice format/rate/gain fields are unchanged. Fixture controls
+preserve the legacy layout and reject changed data/loop/helper signatures.
+
+Before the repair, two production-HLE native cases failed while four legacy/
+guard controls passed. Ownership/clear cases also failed against the initial
+layout-only draft, motivating reuse of the native settings helper. The expanded
+timing/recovery selection passes120 with the opt-in device test skipped. This establishes the layout
+and custom-start contract; full shortened-loop ends, pitch/rate transitions,
+source/output clocks and actual scene acceptance remain required work.
+
+Regeneration emits both nonzero native addresses and completes15,838 translated
+functions with zero failed. Unchanged generated files keep their timestamps;
+the standard Windows Build compiles the changed HLE/bindings, passes all checks
+and produces matching crash symbols. The final whole-media suite passes191,
+with only the separately opt-in endpoint test skipped, in48.64s. Fixtures cover
+external ownership/clear, native allocation/replacement, helper failure and
+missing lookup as well as caller stack/register restoration.
+
+Actual isolated startup confirms the buffer signature guard matches the loaded
+executable, reaches the native main menu at1680x720 and stays live through its
+32-second deadline. A further112-second Original campaign run reaches the
+cutscene and first-person scene with the helper active. The controller then
+terminates its own child (exit1); natural shutdown is not inferred. Both
+20-second campaign recordings have zero discontinuity/timestamp flags and no
+full-scale samples. Peaks are -17.78/-21.51dBFS, RMS -32.39/-38.87dBFS. These
+are individual recordings rather than sample-aligned A/B measurements. Native
+output reports zero engine glitches or submission/device/voice failures; the
+16 startup/transition starvation episodes remain explicit evidence to audit.
+No live crane-loop or full shortened-end acceptance is claimed yet.

@@ -17,7 +17,7 @@ def compile_audio(kind, tmp_path_factory):
     directory = tmp_path_factory.mktemp('audio-' + kind)
     compiler, environment = native_compiler(directory)
     exe = directory / (kind + ('.exe' if os.name == 'nt' else ''))
-    source = ROOT / (f'tests/media/audio_buffer_{kind}.c' if kind in ('load', 'lifecycle', 'format')
+    source = ROOT / (f'tests/media/audio_buffer_{kind}.c' if kind in ('load', 'lifecycle', 'format', 'layout')
                      else f'tests/media/audio_{kind}_timing.c')
     if kind=='scope':
         from c_source_scan import scan
@@ -152,3 +152,17 @@ def test_guest_audio_scope_wrappers(tmp_path_factory):
     result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
     assert result.returncode==0,result.stdout+result.stderr
     assert 'PASS: speech wrappers' in result.stdout
+
+
+@pytest.fixture(scope='module')
+def layout_test(tmp_path_factory):
+    return compile_audio('layout', tmp_path_factory)
+
+
+@pytest.mark.parametrize('scenario', ['native-data', 'native-start', 'native-clear', 'native-allocate',
+                                     'native-failure', 'native-missing', 'legacy',
+                                     'guard-data', 'guard-loop', 'guard-play'])
+def test_native_buffer_layout(layout_test, scenario):
+    result = subprocess.run([str(layout_test), scenario], capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert f'PASS: {scenario}' in result.stdout

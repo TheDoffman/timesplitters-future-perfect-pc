@@ -1728,6 +1728,14 @@
       ]
     },
     {
+      "name": "2309-dsound-native-buffer-layout.patch",
+      "path": "patches/media/2309-dsound-native-buffer-layout.patch",
+      "sha256": "ae8d2773c3d0fe77b7b9e1c1fc7684dac20175b970cc4257e09b0d8b991fc63a",
+      "targets": [
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
       "name": "2310-game-language.patch",
       "path": "patches/platform/2310-game-language.patch",
       "sha256": "6bb7a0a5e632b509b1e2a4c93163af160107701cddf523367716bad98a960f98",

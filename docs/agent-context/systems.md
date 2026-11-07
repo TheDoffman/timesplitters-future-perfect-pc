@@ -943,3 +943,13 @@ The positional-audio guide now reflects the current Mix/subpage menu structure.
 Loop audit: [original metadata, block conversion and verified pending ABI mismatch](../development/audio-overhaul.md#pause-menu-and-authored-loop-audit).
 The read-only audit distinguishes actual authored-region seams from full-file
 seams. It does not change runtime loop handling or replace assets.
+
+Patch2309 verifies buffer-tail ABI independently of voice layout, using imported
+CDirectSoundBufferSettings_SetBufferData/CDirectSoundBuffer_SetLoopRegion guest
+addresses and the native play-region helper. Matched5849 code adds four bytes to
+buffer data/size/play/loop offsets; voice fields and unknown legacy layouts stay
+unchanged. Matched SetBufferData calls the original settings-only helper for
+allocation/ownership and whole-region initialization, preserving its HRESULT
+and caller stack/CX/DX. Original loop setters then accept valid regions. `audio_buffer_layout.c` covers native start,
+reserved-word retention and three failed-signature legacy fallbacks. Short loop
+ends remain separate pending model/pump work; see the full audio plan.

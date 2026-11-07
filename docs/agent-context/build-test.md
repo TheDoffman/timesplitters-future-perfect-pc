@@ -21,7 +21,7 @@ Mac storage tests: see launcher.md.
 Audio census/meter/loops: [commands, mappings and evidence](../development/audio-overhaul.md).
 Media CI selects audio audit/loop/measurement fixtures on
 Windows/macOS/Linux; synthetic/decoder checks are separate from listening.
-Audio timing/gain fixtures also cover all32 persisted feature combinations,
+Audio timing/gain/layout fixtures also cover all32 persisted feature combinations,
 unknown-file preservation, speech ownership, ducking, impact reduction and queued gains.
 `test_audio_output_gain.py`: exact mute/queue retention; Windows capture preflight.
 [Capture and bounded build](../development/audio-overhaul.md#process-output-capture).

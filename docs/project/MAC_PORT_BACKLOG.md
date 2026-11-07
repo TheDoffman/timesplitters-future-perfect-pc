@@ -1,3 +1,9 @@
+Native buffer-layout repair2309: one shared signature-based field translation
+and reuse of native allocation/ownership/region initialization serves all hosts.
+Windows fixtures, generation/Build and bounded startup/campaign captures pass;
+physical Mac/Linux remain pending. Short loop
+end consumption remains separate pending shared model work. See STATUS.
+
 Audio loop audit: shared portable audio_loops.py and synthetic tests now map
 original named-loop regions with precise block conversion and hash guards.
 Windows pause keyboard/save/resume at21:9 is verified; native Mac/Linux and
