@@ -1,3 +1,74 @@
+## 2026-11-07 - Quiet menu music follow-up
+
+The user reports the movie-to-menu reference as quiet, then identifies the
+following menu music specifically. They have only headphones available; speaker
+acceptance is unavailable, not passed. Leave Movies gain unchanged.
+
+A fresh48-second isolated menu run verifies the original Music Volume below
+full and then full in reviewed images. The native Music stream level rises
+from-1737 to-1417 hundredths of dB (+3.2dB), while all new PC mix controls stay100.
+The before/after captures have zero capture errors; different song phases/UI
+sounds mean their RMS is not an isolated gain comparison. An unchanged-gain
+7.98-second after-reference is presented for feedback. The final image remains
+on Audio Options, so do not claim the original Accept/save action was observed.
+The source Test Lab fixture still matches its manifest. No personal settings,
+game-wide default, source asset or production code/binary is changed.
+
+Separately, independent FFmpeg PCM bytes match the production movie fixture's
+full audio hashes/counts. Matched FRD windows in the earlier recording correlate
+above0.9998 with fitted gain about0.106; that does not by itself locate the extra
+attenuation beyond the declared half-scale master. A new32-second no-replay
+movie capture queries only its owned game's Windows session: volume1, unmuted,
+endpoint scalar1/0dB at all three observations. A silent real-production-adapter
+query reports two-channel44100Hz, source gain1, master gain0.5 and identity
+stereo matrix. No automatic compensation or cause is asserted. The initial
+reference omitted most of EA's opening and mixed movie/menu material, so the
+two are also supplied separately without gain changes. Playback/capture route
+attribution remains a diagnostic limit, not a decoded-source repair.
+
+All410 original containers still match the census in the final-container check
+(3,985,345,856 bytes,2.83s). The subsequent menu-control test uses a separate
+owned profile. No original source/preview is rewritten by these investigations.
+
+## 2026-11-07 - Final media checks and isolated review launcher
+
+The final current Windows media coverage is230 distinct passing cases. The
+full run passes226 and skips four real-file movie cases because that invocation
+omitted the existing-data/FFmpeg environment; the explicit real-file follow-up
+passes all four in40.46s. The full run takes12.57s with the real XAudio endpoint
+check enabled. Independent Linux passes226 with four Windows-specific skips
+in16.23s, including the real-file controlled-clock movie cases. The two new
+callback refills are included. Production source/patches and the candidate
+executable remain unchanged; no rebuild is needed for analysis/tests/docs only.
+
+A local candidate review launcher is prepared with a fresh isolated Test Lab
+profile. It validates candidate/XBE hashes and confines save/input/display/audio
+sidecars and crash output to the review profile, with save-location lock enabled.
+Its CheckOnly route passes and leaves every review-profile file hash unchanged;
+the interactive game is not launched by that check. The first hash implementation
+depended on Get-FileHash module availability in a nested PowerShell environment;
+it now uses .NET SHA256 and passes in that same nested environment. Launches
+retain review saves/options/disks rather than reseeding them, and clear inherited
+replay overrides in the launcher process only. Movies are enabled and normal
+input remains manual. Physical device/controller checks remain unverified until
+actually performed; neither this launcher nor the silent endpoint test proves them.
+
+## 2026-11-07 - Room, loop and restoration listening feedback
+
+The user accepts the headphone room-crossing reference as smooth without obvious
+clicks/gaps, the corrected controlled crane loop as continuous without obvious
+new artifacts, and the four original source-effect previews as having no obvious
+unwanted defect. Keep the current room processing and loop repair; retain source
+assets with zero restoration replacements. This does not certify other rooms,
+physical device behavior or actual in-game firing of the crane event.
+
+The four already quarter-gain source previews are concatenated byte-for-byte
+with short zero separators for a5.87-second review, without additional gain,
+filtering, normalization or resampling. Original assets/previews remain intact;
+the private manifest preserves hashes and exact segment frame offsets. The
+movie-to-menu reference and speaker availability are the next listening checks.
+No production code/binary change is made.
+
 ## 2026-11-07 - Read-only host format and surround scope
 
 An independent Windows SDK query reports44100Hz/eight channels/float32/mask0x63F

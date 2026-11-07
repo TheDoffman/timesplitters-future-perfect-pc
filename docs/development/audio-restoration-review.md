@@ -56,6 +56,13 @@ crossfade is applied without evidence that it improves the intended sound.
 The source stays unchanged, and the private controlled before/after previews
 demonstrate consumption of the authored region rather than asset restoration.
 
+On2026-11-07 the user reviews that corrected controlled loop on headphones as
+continuous with no obvious new artifacts. They also report no obvious unwanted
+defect in the four original quarter-gain source-effect previews. Retain the
+original assets and region repair; these references justify no additional
+crossfade, mean removal or other restoration. This is not acceptance of every
+event mix or a physically observed in-game crane trigger.
+
 Coverage remains explicit:403 archives and six XMV files are indexed/hashed;
 27,193 known language/music payloads are decoded.11,115 known audio copies in
 other archives match their banks byte-for-byte. Of50,883 entries in those other
