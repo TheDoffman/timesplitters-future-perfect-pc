@@ -31,7 +31,9 @@ void (*const hle_original_IDirectSoundBuffer_SetFormat)(void) = NULL;
 void (*const hle_original_IDirectSoundBuffer_SetBufferData)(void) = NULL;
 void (*const hle_original_CMcpxVoiceClient_Commit3dSettings_0)(void) = NULL;
 static int acoustic_mock;
+static unsigned acoustic_ray_calls;
 static void acoustic_ray_mock(void) {
+    acoustic_ray_calls++;
     if(acoustic_mock==2){g_eax=1;g_esp+=4;return;}
     if(g_eax!=2 || HLE_MEM32(g_esp+4)!=0 || HLE_MEM32(g_esp+8)!=0)abort();
     float start[3],delta[3];memcpy(start,HLE_PTR(g_edi),12);memcpy(delta,HLE_PTR(g_esi),12);
@@ -241,7 +243,25 @@ int main(int argc, char **argv)
         HLE_MEM32(0x5836d0+0x64)=1;memcpy(HLE_PTR(0x5836d0+0x6c),source,12);
         CHECK(pc_acoustic_world(0x42000,wl,ws,wv) && ws[0]==20);
         HLE_MEM32(0x5836d0+0x64)=0;CHECK(!pc_acoustic_world(0x42000,wl,ws,wv));
-        HLE_MEM32(0x790950)=2;CHECK(!pc_acoustic_world(0x32000,wl,ws,wv));
+        /* Leaving single-player must bypass even a populated blocked cache.
+           Use different raw XDK coordinates to catch accidental world reuse. */
+        const unsigned players[]={0,2,3,4};
+        const float raw_listener[3]={5,0,2},raw_source[3]={-3,0,6};
+        unsigned calls=acoustic_ray_calls;acoustic_mock=2;
+        PcAudioOptions options={1,1,1,1,1};pc_audio_live=pc_audio_pack(options);
+        for(unsigned p=0;p<4;p++) {
+            HLE_MEM32(0x790950)=players[p];
+            CHECK(!pc_acoustic_world(0x32000,wl,ws,wv));
+            PcAcousticResult fallback=pc_acoustic_guest(0x32000,raw_listener,raw_source);
+            CHECK(fallback.obstruction==0 && fallback.room==0);
+            CHECK(fallback.direction[0]==-8 && fallback.direction[1]==0 && fallback.direction[2]==4);
+            unsigned untouched_room=999;
+            CHECK(pc_acoustic_background_enclosure(&untouched_room)==0 && untouched_room==999);
+            CHECK(acoustic_ray_calls==calls);
+        }
+        HLE_MEM32(0x790950)=1;
+        blocked=pc_acoustic_guest(0x32000,camera,source);
+        CHECK(blocked.obstruction==1 && blocked.direction[0]==10);acoustic_mock=0;
         puts("PASS: acoustic guest ABI/state preservation and bounded spatial-tree lookup");return 0;
     }
     if (argc == 2 && !strcmp(argv[1], "headroom")) {
