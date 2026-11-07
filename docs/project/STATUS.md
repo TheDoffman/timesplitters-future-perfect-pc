@@ -12,8 +12,10 @@ matrices are stereo; positioned SDL input is also constructed as stereo.
 The [optional multichannel evaluation](../development/positional-audio.md#host-format-and-optional-multichannel-evaluation)
 records the required shared direction/channel-map, adapter, fallback and
 listening work. No automatic channel-count switch or HRTF feature is added.
-Headphone combat positioning feedback remains pending; current range-reference
-acceptance does not cover spatial output. No production-source/binary change.
+The user subsequently compared Original/Enhanced combat on headphones and
+reported "Clear positioning without excessive muffling". Retain positioning and
+filtering. This accepts that reference, not all rooms/sources, speakers or device
+changes; those checks remain separate. No production-source/binary change.
 
 ## 2026-11-07 - Initial Night listening feedback
 
