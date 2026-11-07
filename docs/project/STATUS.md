@@ -1,3 +1,12 @@
+## 2026-11-06 - Developer Tools PR CI fixture correction
+
+PR514's Linux foundation run exposed missing sidebar registration and unity
+audio-speed hooks in isolated cinematic/movie fixtures. Added fixture spies only;
+production game code is unchanged. On Ubuntu WSL x64/Clang18, the complete
+cutscene-letterbox and native-timing suites pass148 tests (45.03s), including
+mutation checks and supported original-XBE cases. Context and whitespace checks
+pass. Windows rerun is still in progress; GitHub checks must pass before merge.
+
 ## 2026-11-06 - Physical WSL mouse capture fails outside game code
 
 Investigated the user's inability to mouse-look on the RTX5090 WSL host with
