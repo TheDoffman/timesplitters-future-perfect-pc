@@ -303,6 +303,10 @@ four initial64-byte PCM buffers finds shared all-zero data but does not attribut
 the later increase. Individual gaps may be masked by other voices. The loading
 silence, counter cause and listening acceptance remain distinct claims; no new
 buffering/gain repair is justified from this observation alone.
+The user subsequently reviewed the20-second excerpt on2026-11-07 and reported
+only the loading pause, otherwise clean. Retain current buffering. This clears
+that excerpt's listening concern, not the counter's per-voice cause or broader
+preset/headphone/speaker/device acceptance; their equipment was unspecified.
 
 ## SDL finite-tail drain (review correction)
 

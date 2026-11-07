@@ -19,9 +19,11 @@ does not prove an individual-source gap or its cause.
 
 A20-second unchanged-gain/source-rate excerpt (source seconds6..26) is verified
 byte-for-byte and presented for listening feedback. Private reports retain the
-controller/executable/analysis/WAV hashes and timing limitations. Listening is
-unanswered; no buffering or asset change is justified by these measurements
-alone. The controller/capture terminate normally at their limits; game exit1 is
+controller/executable/analysis/WAV hashes and timing limitations. On2026-11-07
+the user answered "Only the loading pause; otherwise clean" for this excerpt.
+That clears its perceptual concern; buffering remains unchanged. The equipment
+was not specified and broader preset/device acceptance remains open. The
+controller/capture terminate normally at their limits; game exit1 is
 the intentional owned-child termination. No production source/binary change.
 
 ## 2026-11-07 - Callback PCM provider and adapter coverage
