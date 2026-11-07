@@ -18,6 +18,10 @@ and Linux share this policy. See `tests/network/network_eligibility.c`.
 
 [SDL](linux-game.md).
 
+Native input self-tests use click/Escape capture after F1 became the optional
+Developer Tools shortcut. This changes only synthetic test events in
+src/native/input_sdl.c; Linux passes, native Mac execution remains pending.
+
 PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
 [Clicks](interaction-input.md#fresh-weapon-clicks-434).
