@@ -36,6 +36,22 @@ listening or hardware acceptance. The overall goal remains open.
 
 ## Next acceptance work
 
+The user explicitly retains full validation as the completion requirement.
+Completed implementation, automated checks and accepted headphone references
+stand. The goal is not complete. Required remaining physical acceptance includes:
+
+- Speaker listening for speech/effects balance, positioning and room transitions.
+- Actual output-device unplug/reconnect and default-device switching during playback.
+- Multiple-controller split-screen gameplay and listening.
+- Native Mac build, launcher/game UI, actual SDL output and listening.
+- Native Linux game/UI, actual output and listening.
+
+Record each on the actual host/device with revision, configuration and observed
+result. A failure should lead to a supported repair and focused revalidation;
+passing simulated recovery, WSL tests or headphone clips cannot close these gates.
+Only headphones are currently available, so no completion date is established
+for the remaining physical validation.
+
 The user accepts the adjusted menu reference as "Comfortable now" on headphones.
 The original Music Volume control at full raises the observed native Music stream
 from-1737 to-1417 hundredths of dB (+3.2dB). A separate native Accept run returns
@@ -53,8 +69,8 @@ Movies gain, production code/binary and game-wide defaults are unchanged.
 
 Only headphones are available. The remaining physical speaker/device/controller
 and native Mac/Linux checks are unverified; no simulated endpoint or dummy-driver
-result substitutes for them. Final disposition of these completion gates remains
-open. Unknown archive formats/provider identity also remain documented limits.
+result substitutes for them. On2026-11-07 the user explicitly chooses "Keep full validation open".
+These remain completion gates, rather than deferred follow-ups. Unknown archive formats/provider identity also remain documented limits.
 
 On2026-11-07 the user accepts the headphone room crossing as "Smooth transition;
 no obvious clicks or gaps", the controlled corrected crane loop as "Continuous;

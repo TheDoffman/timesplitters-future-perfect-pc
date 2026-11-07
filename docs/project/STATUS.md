@@ -1,3 +1,14 @@
+## 2026-11-07 - Full physical validation retained
+
+The user explicitly chooses "Keep full validation open". Speaker listening,
+physical output-device changes, multiple-controller split-screen, and native
+Mac/Linux checks remain completion gates. The implementation and accepted
+headphone references are retained; the overhaul is not marked complete. Only
+headphones are available here, and no ETA is established for unavailable hardware
+or hosts. The [acceptance ledger](../development/audio-overhaul-acceptance.md)
+records the remaining checks and required host/device evidence. No new repair,
+rebuild or repeated unchanged media suite is justified by this scope decision.
+
 ## 2026-11-07 - Menu listening accepted and preference reload verified
 
 The user reports the original Music Volume full-level menu reference as
@@ -13,8 +24,8 @@ lock, with the previous file backed up. The launcher CheckOnly route then passes
 and leaves all profile hashes unchanged. No personal settings, fixture, global
 default, source asset, Movies gain or production binary is changed. Reviewed
 headphone references have no remaining reported concern. Speakers are unavailable;
-physical device/controller and native Mac/Linux checks remain unverified, with
-completion-gate disposition pending. See the [current ledger](../development/audio-overhaul-acceptance.md).
+physical device/controller and native Mac/Linux checks remain unverified and
+are retained as completion gates by the subsequent user decision. See the [current ledger](../development/audio-overhaul-acceptance.md).
 
 ## 2026-11-07 - Quiet menu music follow-up
 
