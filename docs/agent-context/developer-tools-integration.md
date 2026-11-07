@@ -316,3 +316,8 @@ adds the existing Tools stubs alongside native icon/profile helpers. Shared Tool
 behavior, Retina pointer mapping and native free-camera input guards are retained.
 Fresh patch application and repeated application, native lobby wrappers, settings
 mailbox and sidebar input remain the integration validation routes.
+
+CI fixture integration: cinematic projection supplies an inert sidebar registration
+and tick, retaining the production camera path and its mutation checks. The native
+movie-update fixture explicitly selects unity audio speed alongside unity movie
+speed; these spies isolate rendering/pacing tests from the Tools UI/audio policy.

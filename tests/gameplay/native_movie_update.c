@@ -32,6 +32,7 @@ static void sleep_ms(DWORD ms) { assert(ms==1);sleeps++;host_counter+=host_frequ
 #define TSFP_PC_CONTROLS 1
 #include "gameplay/pc_movie_speed.h"
 #define PC_MOVIE_SPEED() 1.
+#define PC_MOVIE_AUDIO_SPEED() 1.f
 #define PC_MOVIE_ACTIVE(active) ((void)(active))
 #define MAX_MOVIES 4
 #define MAX_CATCH_UP 8u
