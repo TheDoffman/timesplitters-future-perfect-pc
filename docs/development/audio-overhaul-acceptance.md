@@ -29,19 +29,30 @@ listening or hardware acceptance. The overall goal remains open.
 
 | Host/path | What has actually run | What remains unverified |
 | --- | --- | --- |
-| Windows XAudio2.9 | Standard game build, owned campaign/combat/room/movie runs, process-only PCM capture; real default endpoint consumes silent PCM, invalidates on an injected callback and reopens successfully. | Physical unplug/default-device change, speakers and multi-controller play; representative headphone clips are accepted. |
+| Windows XAudio2.9 | Standard game build, owned campaign/combat/room/movie runs, process-only PCM capture; real default endpoint consumes silent PCM, invalidates on an injected callback and reopens successfully. | Physical G733 USB receiver reconnect is accepted from user feedback and the same live process/headset route before/after. Default-device switching, speakers and multi-controller play remain unverified. |
 | Linux/WSL shared media | Independent checkout/runtime, GCC/G++13.3, final media226 pass/four Windows-specific skips; controlled real-file XMV cadence using system FFmpeg. The standalone survey produces JSON identical to the Windows run on the same source data. | Native Linux game/UI/performance and hardware listening. |
 | Actual pinned SDL3 adapter/converter | Fresh independent Release static SDL build at `fa2c02bb6e21974a89ea9824bc53c9932abe5f9c`;16 standard dummy-driver cases through production `audio_sdl.c` cover22042/32000/44100/48000Hz, plus four160-frame8000Hz cases. Mono/stereo,8/16-bit, tail drain, queued exact mute, source immutability and reset/shutdown are covered. | These are converter/adapter checks with a paused dummy device, not physical playback or latency. The real PulseAudio attempt returned unavailable; `/mnt/wslg/PulseServer` is absent. |
 | Native Mac | Common policy/source and portable shared tests; no duplicate Mac mix/DSP/model was added. | Native compilation/execution, launcher/game UI, actual SDL endpoint and physical listening on Mac. See MAC backlog. |
 
 ## Next acceptance work
 
+On2026-11-07 the user performs the requested G733 USB receiver disconnect/reconnect
+check during the isolated interactive review and reports "Audio returns cleanly".
+The same game process remains responsive, and its active unmuted Windows session
+is routed directly to the G733 both before and after. The latest health row has
+zero device/voice/allocation failures and opens1/open_attempts1. This accepts the
+observed physical reconnect path; it does not prove engine invalidation/reopen.
+Startup/movie queue-full count254 remains unchanged across subsequent health
+rows and is not attributed to this action. The private receipt retains a bounded
+log snapshot, source/probe hashes and route observations. Default-device switching
+and the other physical/native-host gates remain open.
+
 The user explicitly retains full validation as the completion requirement.
 Completed implementation, automated checks and accepted headphone references
 stand. The goal is not complete. Required remaining physical acceptance includes:
 
 - Speaker listening for speech/effects balance, positioning and room transitions.
-- Actual output-device unplug/reconnect and default-device switching during playback.
+- Default-device switching during playback; physical G733 receiver unplug/reconnect is accepted for the reviewed Windows menu session.
 - Multiple-controller split-screen gameplay and listening.
 - Native Mac build, launcher/game UI, actual SDL output and listening.
 - Native Linux game/UI, actual output and listening.

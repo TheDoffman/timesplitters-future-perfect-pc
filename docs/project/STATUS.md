@@ -1,3 +1,16 @@
+## 2026-11-07 - Physical G733 reconnect accepted
+
+The user reports "Audio returns cleanly" after the requested USB receiver
+unplug/reconnect check in the isolated review game. The same Windows process
+remains responsive and its active unmuted session returns on the direct G733
+route. No game restart is observed. Backend health retains zero device/voice
+failures and opens1/open_attempts1, so an engine teardown/reopen is not claimed.
+The private evidence receipt includes a log snapshot and before/after session
+route queries. Actual default-device switching, speakers, multiple controllers
+and native Mac/Linux validation remain open in the
+[acceptance ledger](../development/audio-overhaul-acceptance.md). No production
+code, defaults or personal save settings change.
+
 ## 2026-11-07 - Full physical validation retained
 
 The user explicitly chooses "Keep full validation open". Speaker listening,
