@@ -1720,6 +1720,14 @@
       ]
     },
     {
+      "name": "2308-audio-gain-contract.patch",
+      "path": "patches/media/2308-audio-gain-contract.patch",
+      "sha256": "3783f438373e6d3cb607d94f5039312aa0ae4846f6c14b5917f660c2cdf9231d",
+      "targets": [
+        "src/hle/audio_output_xaudio2.cpp"
+      ]
+    },
+    {
       "name": "2310-game-language.patch",
       "path": "patches/platform/2310-game-language.patch",
       "sha256": "6bb7a0a5e632b509b1e2a4c93163af160107701cddf523367716bad98a960f98",

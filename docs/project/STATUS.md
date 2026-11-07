@@ -1,3 +1,12 @@
+## 2026-11-07 - Shared exact audio mute
+
+The SDL audit reproduced a nonzero gain at the mute floor in three host-gain
+cases. Shared `pc_audio_gain.h` and patch2308 unify SDL/XAudio conversion while
+preserving the Windows curve, queues and clocks. Initial/live effect, stream
+and movie mute/unmute are covered by production-adapter fixtures. This is a
+contract repair; no perceptible leakage or physical SDL acceptance is inferred.
+Full gameplay and cross-platform listening remain in the active audio goal.
+
 ## 2026-11-07 - First Windows audio candidate and real menu verification
 
 The game linked after a bounded single-worker retry of the initial C1002/C1060

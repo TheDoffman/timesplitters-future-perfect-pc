@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
+#include "gameplay/pc_audio_gain.h"
 /* Per-source impact control, before the common host filter/output path. It
  * only attenuates peaks; no makeup, resampling, lookahead or completion delay.
  * Stereo detection is linked, so channel balance is retained. */
@@ -15,7 +16,7 @@ static inline float pc_audio_pcm_sample(const uint8_t *p,unsigned bits)
 static inline int pc_audio_speech_pcm(const uint8_t *pcm,unsigned bytes,unsigned bits,int32_t level)
 {
     if(!pcm || (bits!=8 && bits!=16) || level<=-10000)return 0;
-    float scale=level<0?powf(10.f,level/2000.f):1.f;
+    float scale=pc_audio_db_gain(level);
     for(unsigned i=0;i+bits/8<=bytes;i+=bits/8)
         if(fabsf(pc_audio_pcm_sample(pcm+i,bits))*scale>.001f)return 1;
     return 0;
@@ -26,7 +27,7 @@ static inline void pc_audio_dynamics_pcm(PcAudioDynamics *d,uint8_t *pcm,unsigne
     if(!mode || mode>2 || level<=-10000) {memset(d,0,sizeof *d);return;}
     if(!pcm || !rate || (channels!=1 && channels!=2) || (bits!=8 && bits!=16))return;
     if(d->rate!=rate || d->mode!=mode){memset(d,0,sizeof *d);d->rate=rate;d->mode=mode;}
-    float scale=level<0?powf(10.f,level/2000.f):1.f;
+    float scale=pc_audio_db_gain(level);
     float threshold=mode==1?.35f:.125f,ratio=mode==1?2.f:4.f;
     float release=expf(-1.f/((mode==1?.12f:.25f)*rate));
     unsigned stride=bits/8,frames=bytes/(channels*stride);

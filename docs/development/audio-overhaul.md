@@ -368,3 +368,18 @@ and playback controls, then targeted listening and restoration decisions. The
 remaining estimate is2–4 working days to an integrated Windows candidate,
 with1–2 weeks for full listening/cross-platform acceptance, conditional on
 access to those devices and any defects discovered during gameplay.
+
+## Exact mute across output adapters
+
+The adapter audit found SDL interpreting -10000 hundredths-of-dB as 1e-5 gain,
+while XAudio explicitly used zero. This violated the common mute contract;
+it does not establish a perceptible leak in the signed16 loopback recordings.
+`pc_audio_gain.h` now defines one conversion: floor/below means exact silence,
+nonnegative means unity, interior levels retain the existing curve. Patch2308
+uses it in XAudio; SDL and the shared dynamics detector use the same helper.
+
+The regression fixture failed for all three nonzero SDL host gains before the
+repair, while XAudio preservation controls passed. Adapter tests cover initial
+and live mute for effect, stream and movie slots, unmute without voice reset or
+queue loss, and every interior attenuation value against the former Windows
+formula. Physical SDL host and gameplay listening acceptance remain pending.

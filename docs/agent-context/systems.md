@@ -928,3 +928,9 @@ The Settings tab now has independent Input Settings / Video Settings categories.
 `pc_video_sidebar_ui.inc` owns drafts/selectors; `pc_video_sidebar.inc` consumes
 value-only mailbox requests on the guest frame, using existing display/graphics
 setters and native subtitle persistence. See the continuation for contracts.
+
+Shared attenuation: `pc_audio_gain.h` owns the hundredths-of-dB curve for SDL,
+XAudio (patch2308), dynamics and speech detection. Floor -10000 and below is
+exact zero; positive values clamp to unity. Live mute/unmute retains the same
+voice, queued PCM and clocks. Adapter fixtures cover buffer/stream/movie slots;
+physical SDL output remains a separate native acceptance item.

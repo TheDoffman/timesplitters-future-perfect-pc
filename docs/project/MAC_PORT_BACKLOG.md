@@ -1,3 +1,8 @@
+Audio mute contract: shared pc_audio_gain.h and patch2308 use exact zero at
+-10000 dB hundredths on both adapters, preserving queued audio and unmute.
+Windows-hosted production SDL/device-double regression covers all slot kinds;
+physical Mac/Linux mute/unmute, latency and listening remain pending.
+
 Network eligibility CPU fix (uncommitted after816ae00a): implemented in shared
 transport and menu code for Windows/Mac/Linux. Host atomics use Windows intrinsics
 or compiler acquire/release operations; no duplicate gameplay policy. Windows

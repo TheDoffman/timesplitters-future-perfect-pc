@@ -23,7 +23,7 @@ Media CI selects `test_audio_audit.py` and `test_audio_measurements.py` on
 Windows/macOS/Linux; synthetic/decoder checks are separate from listening.
 Audio timing/gain fixtures also cover all32 persisted feature combinations,
 unknown-file preservation, speech ownership, ducking, impact reduction and queued gains.
-`test_audio_output_gain.py` also compiles Windows process-capture preflight.
+`test_audio_output_gain.py`: exact mute/queue retention; Windows capture preflight.
 [Capture and bounded build](../development/audio-overhaul.md#process-output-capture).
 
 `test_controller_profile.py` now executes the real native key/pad guards and
