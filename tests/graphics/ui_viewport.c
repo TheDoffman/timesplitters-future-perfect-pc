@@ -4,6 +4,8 @@
 #include <math.h>
 #include "pc_ui_layout.h"
 #include "graphics/native_hud.h"
+static int g_developer_hud_hidden;
+static int d3d8_developer_hud_visible(void) { return 1; }
 static int hud_begins;
 static void native_hud_begin(void){hud_begins++;}
 #define TSFP_PC_DISPLAY

@@ -9,7 +9,7 @@ static unsigned char memory[0x800000];
 static uintptr_t g_xbox_mem_offset=(uintptr_t)memory;
 #define WORD_AT(a) (*(uint32_t *)(memory+(a)))
 static int guest_writable(uint32_t a,size_t n){return a>0 && a<sizeof memory && n<=sizeof memory-a;}
-static uint32_t g_esp=0x7000,g_ebx,g_eax;
+static uint32_t g_esp=0x7000,g_eax;
 static unsigned queries,icon_rectangles,original_calls;static char notice[1152];
 static uint32_t bits(float value){uint32_t word;memcpy(&word,&value,4);return word;}
 uint32_t xbox_HeapAlloc(uint32_t n,uint32_t alignment){(void)n;(void)alignment;return 0x6000;}

@@ -28,6 +28,9 @@ static unsigned rebinds;
 static struct {void *image;} *g_cur_rt;
 static void rebind_stage_srvs(void *image) {(void)image;rebinds++;}
 #include "texture_binding_sync.inc"
+/* Texture presentation has no active Developer Tools overlay. */
+static struct { unsigned swap_width,swap_height; } g_device_state;
+static void d3d8_overlay_draw_developer(unsigned width,unsigned height) {(void)width;(void)height;}
 static unsigned frame_completions, host_presents;
 static BOOL g_skip_guest_present;
 static UINT g_present_interval=1;

@@ -22,7 +22,7 @@ def test_guest_dispatch_and_fallback(tmp_path,source_name,native_fallback):
     if source_name=='network_shot_present.c':
         production=(ROOT/'src/interface/pc_display_menu.c').read_text()
         start=production.index('void pc_network_bots_present_shot(')
-        end=production.index('void pc_network_bots_menu(',start)
+        end=production.index('\n}',start)+2
         (tmp_path/'network_shot_present_generated.inc').write_text(production[start:end])
     if msvc:
         command=[compiler,'/nologo','/W4','/I'+str(tmp_path),'/I'+str(ROOT/'src'),'/Fe:'+str(executable),'/Fo:'+str(tmp_path/'guest.obj')]

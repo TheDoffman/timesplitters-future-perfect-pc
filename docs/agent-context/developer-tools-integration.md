@@ -321,3 +321,8 @@ CI fixture integration: cinematic projection supplies an inert sidebar registrat
 and tick, retaining the production camera path and its mutation checks. The native
 movie-update fixture explicitly selects unity audio speed alongside unity movie
 speed; these spies isolate rendering/pacing tests from the Tools UI/audio policy.
+
+Remaining native CI harnesses explicitly retain visible HUD/no active sidebar
+for layout, viewport and texture-present isolation. The shot-present fixture
+extracts only its function, excluding adjacent host menu policy. Clang-strict
+guest fixtures use matching counter signedness and omit an unused register.

@@ -1,3 +1,16 @@
+## 2026-11-06 - Complete native CI fixture isolation
+
+PR514's native Windows/macOS suites exposed more isolated-fixture dependencies
+on newly added HUD and sidebar hooks. Keep visible HUD/no overlay in those
+layout, viewport and texture tests, bound shot-present extraction to its actual
+function, and fix Clang counter signedness/unused-register warnings. The guest
+camera fixture uses a deterministic clock; Linux texture fixtures select the
+shared RHI declarations. Production game code/binaries are unchanged.
+Affected layout, actor-overlay, Developer Tools, networking and texture suites:
+Windows MSVC59 passed (one unrelated pytest cache warning); Ubuntu WSL Clang18
+57 passed,2 platform skips. Original movie/cinematic suites previously passed148
+on both hosts. Context and whitespace checks pass; native Mac CI pending.
+
 ## 2026-11-06 - Developer Tools PR CI fixture correction
 
 PR514's Linux foundation run exposed missing sidebar registration and unity

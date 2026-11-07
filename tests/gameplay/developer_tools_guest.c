@@ -56,6 +56,8 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...) {
     if(called==8){assert(argc==1&&arguments[0]==0&&(WORD_AT(0x7de45c)&0x8000));endings++;}
     return 0;
 }
+static ULONGLONG developer_test_clock(void) { static ULONGLONG now;return ++now; }
+#define GetTickCount64 developer_test_clock
 #include "pc_developer_guest.inc"
 static unsigned ammo_calls;
 static uint32_t expected_amount;
@@ -117,7 +119,7 @@ int main(void) {
     WORD_AT(0xc004)=0x6000;pc_developer_grenade_guest(grenade_original);assert(*(int16_t *)(memory+0xa620)==24);g_esp=0xc000;
     options.freecam=1;WORD_AT(0x4008)=0x2000;WORD_AT(0x2214)=0;WORD_AT(0x6010)=0xe0000000;WORD_AT(0x60a0)=1;
     pc_developer_world_visibility();assert(WORD_AT(0x6010)==0xe0000001&&WORD_AT(0x60a0)==1&&WORD_AT(0xa02c)==0);
-    g_esp=0xc000;unsigned previous_calls=original_count;
+    g_esp=0xc000;int previous_calls=original_count;
     pc_developer_viewmodel_draw(original);assert(g_esp==0xc004&&original_count==previous_calls);
     WORD_AT(0x6004)=0x10000;WORD_AT(0x6014)=0xabcd0001;WORD_AT(0xac6c)=0x12;WORD_AT(0x101f8)=0x0010040f;
     pc_developer_draw_body();assert(body_draws==3&&WORD_AT(0x6014)==0xabcd0000&&WORD_AT(0xac6c)==0x12&&WORD_AT(0x101f8)==0x0010040f);

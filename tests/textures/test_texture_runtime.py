@@ -46,7 +46,7 @@ def texture_executables(tmp_path_factory):
                     *['/I' + str(p) for p in includes],
                     *map(str, sources), '/Fe:' + str(exe)]
         else:
-            args = [compiler, '-std=gnu11', '-DTSFP_TEXTURE_PACK', '-DTSFP_TEST_BINDING_SYNC', '-pthread',
+            args = [compiler, '-std=gnu11', '-DTSFP_TEXTURE_PACK', '-DTSFP_TEST_BINDING_SYNC', '-DTSFP_RHI_RENDERER', '-pthread',
                     *['-I' + str(p) for p in includes],
                     *map(str, sources), '-o', str(exe)]
         result = subprocess.run(args, cwd=folder, env=env, capture_output=True,
