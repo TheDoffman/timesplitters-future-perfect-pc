@@ -36,6 +36,12 @@ listening or hardware acceptance. The overall goal remains open.
 
 ## Next acceptance work
 
+After the accepted Windows reconnect/default-output checks, the user reports
+"No additional setup available yet" on2026-11-07. Speakers, multiple controllers
+and native Mac/Linux remain unavailable for the required acceptance. Retain these
+gates and the completed results. No completion ETA can be established until the
+required setup is available; repeating unchanged automated tests cannot close them.
+
 On2026-11-07 a read-only monitor records the actual Windows console/multimedia
 defaults and active game session moving G733->Steam Streaming Speakers->G733.
 After the observed alternate selection, the user switches back and reports
