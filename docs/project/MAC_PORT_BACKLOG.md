@@ -1519,6 +1519,16 @@ before checking release, matching the existing asynchronous settings contract.
   on the Apple M4/macOS 27 host with isolated settings. Gameplay code is unchanged;
   final clean release validation follows after integration.
 
+- **v0.5.2 input self-test (2026-11-06, uncommitted):** Implemented, native
+  Mac acceptance pending. The shared SDL self-test in `src/native/input_sdl.c`
+  exercises mouse capture with click/Escape after F1 became optional Developer
+  Tools access. Only synthetic self-test events change; production capture and
+  shortcut handling retain their existing shared behavior. Linux x64 input,
+  menu-pointer, focus and virtual-pad checks pass after the correction. Mac
+  uses the same test and needs no adapter change; run its native `--test`
+  input checks on the final release revision. Physical mouse capture and
+  gameplay remain separate acceptance. See [STATUS](STATUS.md).
+
 - **v0.3.3 input self-test (2026-10-25):** The shared keyboard profile parser
   deliberately keeps two bindings per action. The synthetic SDL test now checks
   E and Space as Confirm, with press/release assertions, and verifies that the

@@ -1,3 +1,21 @@
+## 2026-11-06 - Native input release self-test follows current capture controls
+
+The v0.5.2 Linux clean-userspace candidate passed settings/debug, both renderer
+modes, bundled Python/Tk/TLS and42 launcher UI groups; Online explicitly skips77.
+Input failed because its synthetic sequence still expected the retired F1
+capture toggle. Replace only those self-test events with click/Escape. The
+unchanged production event handler already uses click/Escape and optional F1
+Developer Tools access. Linux native input/menu/focus/virtual-pad checks pass
+with the corrected sequence. Native Mac execution remains pending.
+The second Windows full-suite run reached97percent with no reported failures
+before being stopped to include this verified native test-only correction.
+Final full Windows and exact-package Linux acceptance are rerun on the resulting
+clean committed revision; no game release/tag has been created yet.
+The preceding Linux package's300.16second Story observation reached gameplay,
+completed two pause/resume cycles and14400 guest presents with zero failed
+presents; its640x480 capture was reviewed. Software Vulkan with dummy audio and
+synthetic input does not establish hardware input, audio or native-GPU support.
+
 ## 2026-11-06 - Game 0.5.2 original crane release-gate repair
 
 Launcher1.5.2 is public from main816ae00a; all15 assets and Latest verified.

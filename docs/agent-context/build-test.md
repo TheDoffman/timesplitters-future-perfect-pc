@@ -2,8 +2,6 @@
 
 Developer Tools inline-warning coverage: [launcher](launcher.md).
 
-[Developer Tools integration](developer-tools-integration.md).
-
 [Window mode](video-options.md).
 
 [Profile tests](multiplayer-exit.md#validation): saves, late lobby saves, checksum/write errors.
@@ -48,7 +46,8 @@ adapter but use the real host trap; hexadecimal additions need token boundaries.
 
 0.5.2/1.5.2 retain publication gates; Windows/Linux draft, Mac separately.
 Crane original-XBE fixtures supply the visible-HUD hook; run
-tests/graphics/test_crane_overlay.py for both host defines. [Linux](linux-game.md).
+tests/graphics/test_crane_overlay.py for both host defines. Native input
+self-tests use click/Escape capture, replacing retired F1. [Linux](linux-game.md).
 
 Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh-weapon-clicks-434).
 
