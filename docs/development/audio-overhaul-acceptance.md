@@ -12,7 +12,7 @@ listening or hardware acceptance. The overall goal remains open.
 | Audit archives, metadata, codecs, rates, channels and duplicates | Private schema2 inventory:403 archive/six movie hashes; all five known language banks and163 music entries mapped through original loaders. Production metrics for27,193 payloads,14,093 unique content/channel layouts;11,115 copies match. The [standalone survey](audio-coverage-survey.md) checks all39,768 other entries and finds two identical compatible payloads without assigning audio identity. | Known-bank census verified. Other entries remain unidentified and `complete:false` is retained. Embedded/raw PCM/other formats and one callback-stream provider remain open. |
 | Loudness, peaks, loops and reference captures | Private loudness report27,253 base-rate rows/14,110 unique content/channel/rate inputs; original authored-loop lookup/rate conversion; controlled crane previews; owned campaign/combat/movie recordings. | Measurements/references exist. Source peaks/seams alone are not defects. Reviewed loop/source references are accepted; unreviewed events remain unverified. |
 | Repair verified playback defects | Shared patches2309/2310 repair original buffer layout/ownership and authored exclusive loop ends. `audio_buffer_layout.c`, `audio_buffer_regions.c`, timing/load/recovery fixtures use actual HLE/model/decoder. Original-code probes and game scenes corroborate the contracts. A fresh continuous loading-to-match capture covers reports increasing8->12, then stable through126s; a20s unchanged-gain excerpt supports review. | Verified repairs implemented. Original and enhanced modes both receive correctness fixes. Loading-to-match listening is accepted apart from the loading pause; starvation cause/per-voice attribution remains unresolved; counter/report times and loading silence alone do not prove an additional audible defect. |
-| Preserve clocks, queues and source bytes | Region fixtures cover fractional schedules, tiny/multiple wraps, one-shots, pause/seek/live updates, rates, refusal/hitch recovery and source immutability; native XMV cadence checks compare image/timestamp/audio hashes. Callback-stream fixtures also check32 reentrantly refilled8000Hz/320-byte packets through normal/manual dispatch with exact PCM, ordered completion and stack restoration. | Automated contracts pass. Callback content identity remains unresolved. Physical device changes and subjective lip/music synchronization need acceptance. |
+| Preserve clocks, queues and source bytes | Region fixtures cover fractional schedules, tiny/multiple wraps, one-shots, pause/seek/live updates, rates, refusal/hitch recovery and source immutability; native XMV cadence checks compare image/timestamp/audio hashes. Callback-stream fixtures also check32 reentrantly refilled8000Hz/320-byte packets through normal/manual dispatch with exact PCM, ordered completion and stack restoration. | Automated contracts pass. Callback content identity remains unresolved. The reviewed Windows reconnect/default-switch path is accepted; other device/host paths and subjective lip/music synchronization remain unverified. |
 | Separate enhancement choices and Original recovery | Shared `PcAudioOptions`, strict V1/V2 persistence and all32 feature combinations; default enhancement master OFF, children retained. Shared DSP exact bypass, default XAudio matrix restoration and SDL queue behavior are tested. | Implemented. OFF drains already queued PCM and smooths existing filter state; it does not undo unconditional playback repairs. Physical cross-host transitions remain unverified. |
 | Independent Master/Effects/Music/Dialogue/Ambience/Movies | Shared packed `PcAudioMixOptions`, source scopes before first submit, queue gains and strict save-before-live; C/C# persistence and native-menu fixtures. Actual Music/Dialogue isolation and movie output/mute checks have separate receipts. | Implemented. Known script/actor caller ownership verified; speech baked into movie/music premixes stays in that bus. No claim of automatic separation of baked speech. |
 | Dialogue focus and impact range | Shared activity/envelope logic, exact Original, partition invariance, linked stereo, authored attenuation, pause/drain/mute release and rejected-submit rollback; both adapters tested. Original/Reduced/Night campaign references now exist; Reduced and Night include Dialogue focus. | Implemented. The user accepts Night as clearer/comfortable and Reduced as clear/comfortable, identifying headphones for the comparison. Retain tuning; broader scenes and speakers remain open. Focus uses accepted source-level speech, not VAD within pauses. Per-source reduction is not a final summed limiter. |
@@ -29,12 +29,24 @@ listening or hardware acceptance. The overall goal remains open.
 
 | Host/path | What has actually run | What remains unverified |
 | --- | --- | --- |
-| Windows XAudio2.9 | Standard game build, owned campaign/combat/room/movie runs, process-only PCM capture; real default endpoint consumes silent PCM, invalidates on an injected callback and reopens successfully. | Physical G733 USB receiver reconnect is accepted from user feedback and the same live process/headset route before/after. Default-device switching, speakers and multi-controller play remain unverified. |
+| Windows XAudio2.9 | Standard game build, owned campaign/combat/room/movie runs, process-only PCM capture; real default endpoint consumes silent PCM, invalidates on an injected callback and reopens successfully. | Physical G733 USB receiver reconnect is accepted from user feedback and the same live process/headset route before/after. Default-output switching G733->Steam Streaming Speakers->G733 is also accepted with observed route changes and clean user feedback. Speakers and multi-controller play remain unverified. |
 | Linux/WSL shared media | Independent checkout/runtime, GCC/G++13.3, final media226 pass/four Windows-specific skips; controlled real-file XMV cadence using system FFmpeg. The standalone survey produces JSON identical to the Windows run on the same source data. | Native Linux game/UI/performance and hardware listening. |
 | Actual pinned SDL3 adapter/converter | Fresh independent Release static SDL build at `fa2c02bb6e21974a89ea9824bc53c9932abe5f9c`;16 standard dummy-driver cases through production `audio_sdl.c` cover22042/32000/44100/48000Hz, plus four160-frame8000Hz cases. Mono/stereo,8/16-bit, tail drain, queued exact mute, source immutability and reset/shutdown are covered. | These are converter/adapter checks with a paused dummy device, not physical playback or latency. The real PulseAudio attempt returned unavailable; `/mnt/wslg/PulseServer` is absent. |
 | Native Mac | Common policy/source and portable shared tests; no duplicate Mac mix/DSP/model was added. | Native compilation/execution, launcher/game UI, actual SDL endpoint and physical listening on Mac. See MAC backlog. |
 
 ## Next acceptance work
+
+On2026-11-07 a read-only monitor records the actual Windows console/multimedia
+defaults and active game session moving G733->Steam Streaming Speakers->G733.
+After the observed alternate selection, the user switches back and reports
+"Audio returns cleanly" without restarting the game. The game retains PID5292
+throughout and closes normally with exit0 afterward. The124-sample monitor then
+terminates when the owned game is gone; no live test remains. The private result
+retains endpoint transitions, source/probe/log hashes and final health. This
+accepts the selected Windows default-output path, including an alternate virtual
+endpoint, without claiming physical speaker listening or an XAudio engine reopen.
+The initial attempt's report is retained separately because its samples did not
+capture a change; it is not used as route-change evidence.
 
 On2026-11-07 the user performs the requested G733 USB receiver disconnect/reconnect
 check during the isolated interactive review and reports "Audio returns cleanly".
@@ -44,15 +56,14 @@ zero device/voice/allocation failures and opens1/open_attempts1. This accepts th
 observed physical reconnect path; it does not prove engine invalidation/reopen.
 Startup/movie queue-full count254 remains unchanged across subsequent health
 rows and is not attributed to this action. The private receipt retains a bounded
-log snapshot, source/probe hashes and route observations. Default-device switching
-and the other physical/native-host gates remain open.
+log snapshot, source/probe hashes and route observations. The subsequent observed default-device switch also passes as recorded below;
+the other physical/native-host gates remain open.
 
 The user explicitly retains full validation as the completion requirement.
 Completed implementation, automated checks and accepted headphone references
 stand. The goal is not complete. Required remaining physical acceptance includes:
 
 - Speaker listening for speech/effects balance, positioning and room transitions.
-- Default-device switching during playback; physical G733 receiver unplug/reconnect is accepted for the reviewed Windows menu session.
 - Multiple-controller split-screen gameplay and listening.
 - Native Mac build, launcher/game UI, actual SDL output and listening.
 - Native Linux game/UI, actual output and listening.

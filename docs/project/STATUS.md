@@ -1,3 +1,19 @@
+## 2026-11-07 - Windows default-output switch accepted
+
+The actual Windows defaults and running game's active session are observed
+moving G733->Steam Streaming Speakers->G733. After the monitored return, the user
+reports "Audio returns cleanly" without a game restart. The same candidate
+process remains responsive and then exits0 after a normal close request; the
+read-only124-sample route monitor also finishes. The private result retains
+transition rows, query provenance and final logs. The alternate endpoint is
+virtual, so this does not establish physical speaker playback. Backend counters
+do not show an engine reopen; none is claimed. The earlier unobserved attempt is
+retained separately and is superseded by this monitored switch.
+
+Windows headset reconnect and this default-output path are accepted. Speakers,
+multiple-controller split-screen and native Mac/Linux validation remain open;
+no overall completion is claimed. No production code or defaults changed.
+
 ## 2026-11-07 - Physical G733 reconnect accepted
 
 The user reports "Audio returns cleanly" after the requested USB receiver
