@@ -1,3 +1,39 @@
+## 2026-11-06 - Vietnam CPU eligibility fix (Windows verified)
+
+Branch fix/vietnam-frame-performance, base816ae00a. Release v0.5.2 executable
+FE30512C5F8C7C3564BC5191C17D705A0476AAC8F200B5EF642F0E8AE8141B90
+was copied into an isolated unlocked fixture. Vietnam scene48 and ten bots were
+observed. The initial route assertion used the wrong expected scene38; correcting
+the expectation does not retroactively make that run pass. Its captures remain
+scene evidence, and its CPU samples remain diagnostic rather than clean pacing.
+The cumulative 200Hz profile identified repeated environment searches reached
+from pc_network_enabled in indirect dispatch; native return RVAs were matched
+to the actual release image and its TSFP_NETWORK/TSFP_ONLINE_CONFIG string loads.
+
+The local shared correction caches startup configuration, publishes Online/LAN
+eligibility atomically, and explicitly activates LAN from the menu. Actual
+transport tests include a million repeated queries with only two environment
+reads, startup LAN/Online/missing config and disconnect before first query.
+Windows: 11 transport/dispatch, 4 menu and 2 multiplayer-exit checks pass;
+2 Mac compile cases are skipped. Fresh generation and the complete Windows Build
+(including its native checks) passed. The corrected executable SHA-256 is
+88B710F5094AD1FD4734D2F5FA0F60176ECFDAE8572A6C0F75CF54239CC8D7AC.
+The user tested the corrected game and reported that it looks fixed.
+
+The clean release baseline recorded 24.71 FPS over spawn+5s to combat-four,
+at actual 3440x1440, ten bots, 180 FPS target, FOV80, Classic and MSAA off.
+Corrected runs reached Vietnam and exercised movement/firing; window-size and
+foreground changes invalidated a controlled FPS comparison. Do not quote an
+exact speedup from these runs. The installed user's 8x MSAA was not used in the
+baseline. Captures/CPU sampling were separate attribution runs, not pacing proof.
+
+This isolated diagnostic build omits XMV movies because the available FFmpeg
+archive differs from the pinned checksum; the unverified archive was not used
+and the pin was not changed. The release installation, personal saves/settings
+and the separate controls worktree were preserved. WSL failed before compiling
+with CreateVm/ERROR_TIMEOUT; native Linux/Mac execution remains unverified.
+No release has been published for this correction.
+
 ## 2026-11-06 - Launcher 1.5.2 published; game 0.5.2 Windows/Linux draft
 
 [Launcher1.5.2](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/launcher-v1.5.2)
