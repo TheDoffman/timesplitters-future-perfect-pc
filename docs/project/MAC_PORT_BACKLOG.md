@@ -1,3 +1,8 @@
+Weapon FOV first-person shoulder filter (uncommitted after db029630): shared
+guest node policy and patch2720, no OS-specific rendering adapter or asset edit.
+Windows predicate/FOV/spirit fixtures pass. Native Mac/Linux build and gameplay
+acceptance remain pending; Windows visual validation is recorded in STATUS.
+
 Uplink throw impulse (uncommitted aftera24c3b60): shared numeric policy in
 pc_native_uplink.h/pc_native_numeric.h, no OS-specific gameplay adapter.
 Windows original-code physics fixture covers normal/quarter-speed throws;

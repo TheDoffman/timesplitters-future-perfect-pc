@@ -225,7 +225,7 @@ jobs:
             tests/graphics/test_vsh_constant_dirty.py tests/compiler/test_linux_map_query.py
             tests/gameplay/test_native_effect_trace.py tests/analysis/test_rocket_impact_stats.py tests/graphics/test_surface_shader_feedback.py tests/graphics/test_combiner_constants.py tests/graphics/test_surface_coefficients.py tests/graphics/test_surface_preservation.py
             tests/compiler/test_recomp_float_joins.py tests/compiler/test_recomp_vehicle_joins.py
-            tests/compiler/test_recomp_generation.py tests/graphics/test_framebuffer_sampling.py tests/gameplay/test_model_transform.py tests/compiler/test_gpr_refs.py tests/graphics/test_zero_base_indices.py tests/graphics/test_push_gather.py tests/graphics/test_vertex_expand.py tests/graphics/test_terminal_depth.py tests/graphics/test_ghost_rendering.py tests/graphics/test_ghost_targets.py
+            tests/compiler/test_recomp_generation.py tests/graphics/test_framebuffer_sampling.py tests/gameplay/test_model_transform.py tests/compiler/test_gpr_refs.py tests/graphics/test_zero_base_indices.py tests/graphics/test_push_gather.py tests/graphics/test_vertex_expand.py tests/graphics/test_terminal_depth.py tests/graphics/test_ghost_rendering.py tests/graphics/test_ghost_targets.py tests/graphics/test_viewmodel_visibility.py
             tests/media/test_xmv_stop.py tests/media/test_native_movie_file.py tests/network/test_discord_presence.py tests/network/test_discord_macos.py tests/gameplay/test_native_crash.py
             tests/diagnostics/test_crash_capture.py tests/diagnostics/test_guest_capture.py tests/diagnostics/test_allocation_observer.py
             tests/graphics/test_cutscene_letterbox.py tests/graphics/test_pc_display_modes.py tests/graphics/test_decal_projection.py

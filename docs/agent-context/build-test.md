@@ -1,3 +1,5 @@
+[First-person node ownership tests](video-options.md#first-person-shoulder-visibility).
+
 [Uplink throw tests and policy](native-uplink.md#throw-impulse).
 [Vietnam performance checks](network-performance.md).
 
