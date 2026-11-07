@@ -450,3 +450,51 @@ checks and matching crash-symbol validation with CL_MPCount=1. Invoking the
 script directly under PowerShell7 first failed in the existing icon helper's
 System.Drawing reference; using the documented Windows PowerShell host resolves
 that invocation issue without changing source or removing checks.
+
+## Pause menu and authored-loop audit
+
+A bounded230-second disposable campaign session verified the native pause Audio
+Options, Mix and Listening pages at1680x720 (21:9). The pause page lists Audio
+fourth, directly after Continue, Video and Controls. The first replay used the
+wrong menu route; it is not a UI regression or accepted page test. A subsequent
+observed run used only the owned child's input-state hook and saved selected
+images before renderer rotation removed them. Master99 then100, Dialogue focus
+ON and impactReduced saved MIX_V2; returning through the native pages resumed
+first-person gameplay. The owning controller terminated the child at its limit.
+This verifies that keyboard route and aspect, not all aspect ratios, mouse,
+controller or split-screen layouts. The raw `after-resume.wav` in the observed
+run was scheduled while paused; its filename is not scene evidence and it is
+excluded from resume-audio acceptance.
+
+`tools/analysis/audio_loops.py` reads the supported executable's eight original
+name/time definitions at4B90B0 (count4B9110). US26E80 resolves the name;
+US274A0/275AA multiplies the seconds by current frequency, truncates to complete
+64-sample/36-byte mono ADPCM blocks and calls the original loop-region setter.
+The tool reproduces single-precision multiplication before integer truncation.
+A separate native SSE probe agrees on24 original definition/rate conversions
+plus a boundary control where double precision would choose the wrong block.
+
+Run `python tools/analysis/audio_loops.py --game <existing-game-folder>
+--inventory <private-report-folder>/inventory.json
+--output <new-private-report-folder>/loops.json
+--decoder-library <production-probe-library>`. The optional decoder verifies
+encoded and decoded hashes against the census before measuring the actual
+region seam. Existing output and original game data cannot be overwritten.
+The new synthetic fixtures run in both shared runtime CI routes.
+
+One definition maps to the same common crane asset in all five language banks:
+at neutral22042Hz, intro19840 decoded frames and loop[19840,53440), corresponding
+to source bytes[11160,30060). Its region lasts1.52436 seconds. The boundary step
+is0.50708 full scale, which is a listening candidate, not proof of an unwanted
+click. The other seven definitions remain explicitly unmatched in the measured
+inventory; this does not prove they are unused or absent from every embedded
+format. Dynamic pitch and other runtime loop sources remain separate checks.
+
+The follow-up ABI probe executed the original x86 SetBufferData/SetLoopRegion
+functions in a private32-bit helper, with only the OS-lock and hardware callback
+stubbed and one global operand relocated. Native initialization accepts the
+crane region; initialization with the current HLE shadow fields returns
+0x88780032. Original buffer-tail fields are four bytes later than that shadow
+layout. This verifies an integration mismatch to repair; it is not an audible
+live-crane regression or a completed fix. Keep legacy SDK layouts and original
+fallback intact when repairing the supported5849 layout and loop consumption.

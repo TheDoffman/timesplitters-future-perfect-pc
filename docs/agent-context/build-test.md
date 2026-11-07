@@ -18,8 +18,8 @@ Mac storage tests: see launcher.md.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build/tests ([MSAA](smaa.md))
 
-Audio census/meter: [commands, mappings and evidence](../development/audio-overhaul.md).
-Media CI selects `test_audio_audit.py` and `test_audio_measurements.py` on
+Audio census/meter/loops: [commands, mappings and evidence](../development/audio-overhaul.md).
+Media CI selects audio audit/loop/measurement fixtures on
 Windows/macOS/Linux; synthetic/decoder checks are separate from listening.
 Audio timing/gain fixtures also cover all32 persisted feature combinations,
 unknown-file preservation, speech ownership, ducking, impact reduction and queued gains.

@@ -1,3 +1,22 @@
+## 2026-11-07 - Pause validation and original loop metadata
+
+A bounded disposable campaign run verifies pause Audio/Mix/Listening layout at
+1680x720, keyboard save of focus/impact choices, and return to gameplay. An
+incorrect initial replay route was corrected through observed menu navigation;
+mouse/controller and split-screen acceptance remain open.
+
+The new read-only audio_loops.py maps the original eight named-loop definitions,
+reproduces sample-block rounding, and verifies source/PCM hashes before seam
+measurement. One definition maps in all five banks; seven remain unclassified.
+A native SSE probe confirms conversion arithmetic. Fifty audit/decoder tests
+pass; the new loop fixtures are selected by both runtime CI routes.
+
+An isolated original-x86 ABI probe confirms that the current HLE buffer shadow
+initialization makes the original custom-loop setter reject the valid crane
+region. This integration mismatch remains to repair while preserving legacy SDK
+layouts. No assets or runtime fields were changed by this audit. See the
+[scope and evidence](../development/audio-overhaul.md#pause-menu-and-authored-loop-audit).
+
 ## 2026-11-07 - Campaign dialogue and busy audio validation
 
 The local exact-mute candidate passes the standard Windows Build/crash-symbol

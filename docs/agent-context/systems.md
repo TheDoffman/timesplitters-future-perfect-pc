@@ -125,7 +125,8 @@ display/input directory. 100% is exact neutral. `pc_audio_menu.inc` supplies
 separate Mix/Enhancements pages: six exact-percent selectors, five toggles,
 save-failure rollback and native back navigation. The original Audio Options
 keeps its profile rows and contains one compact Mix link. Native frontend pages
-were inspected at640x480; pause/split-screen/aspect/input acceptance remains open.
+pass at640x480 plus paused1680x720 keyboard navigation/save/resume. Other aspects,
+mouse/controller and split-screen acceptance remain open.
 
 Listening options: patch2307 applies shared `pc_audio_dynamics.h` to decoded
 buffer/stream/movie PCM, restoring history after refused submissions and keeping
@@ -938,3 +939,7 @@ physical SDL output remains a separate native acceptance item.
 Windows game acceptance now includes first-campaign separate-speech ownership
 and Original/Night ten-bot captures; see [measured scope and limits](../development/audio-overhaul.md#campaign-and-busy-match-output-checks).
 The positional-audio guide now reflects the current Mix/subpage menu structure.
+
+Loop audit: [original metadata, block conversion and verified pending ABI mismatch](../development/audio-overhaul.md#pause-menu-and-authored-loop-audit).
+The read-only audit distinguishes actual authored-region seams from full-file
+seams. It does not change runtime loop handling or replace assets.

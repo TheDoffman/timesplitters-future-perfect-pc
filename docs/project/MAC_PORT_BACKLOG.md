@@ -1,3 +1,9 @@
+Audio loop audit: shared portable audio_loops.py and synthetic tests now map
+original named-loop regions with precise block conversion and hash guards.
+Windows pause keyboard/save/resume at21:9 is verified; native Mac/Linux and
+mouse/controller/split-screen remain open. The discovered loop-setter ABI
+mismatch is pending a shared repair; no host-specific runtime fix was added.
+
 Audio candidate validation: Windows campaign separate-speech mute routing and
 Original/Night ten-bot output captures now run with the shared implementation.
 These do not establish native SDL hardware latency, spatial response or tuning;
