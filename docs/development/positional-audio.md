@@ -181,3 +181,46 @@ Launcher integration: `tools/build/build-launcher.ps1 -Test` passed on Windows,
 including the three new shared UI cases and the existing updater/settings
 checks. Portable launcher/shared-UI/Mac-adapter checks passed 31 tests and
 26 subtests. These are not native Mac launcher execution or listening results.
+
+## Acoustic cache correction
+
+The overhaul's moving-emitter regression failed against the prior guest adapter:
+a fully blocked ray retained its old direction until the next geometry query.
+`pc_acoustic_cache.h` now separates cached geometry from current direction.
+Blocked sources follow current world emitter/listener positions; indirect routes
+retain their first opening as a world anchor and subtract the current listener.
+The guest adapter then applies the current camera rotation and XDK Z conversion.
+Clear paths retain the original guest direction. Source/listener room changes
+invalidate cached obstruction immediately, including when no query budget remains;
+the existing PCM filter still smooths target changes.
+Scene identity compares both pointers and counts separately instead of XOR.
+
+The budget remains two geometry queries per10ms. Refresh requests become due
+after100ms and run in oldest-request order, so a stable voice iteration order
+cannot permanently starve later voices. Requests absent for100ms cannot hold
+the queue. Backlogged results may be reused for at most250ms; older or invalid
+results fail open to the authored direction without obstruction. Hash collisions
+probe for an entry before evicting the least
+recently requested voice when all256 entries are occupied. This preserves
+pending tickets for voices whose settings share low address bits. Geometry remains
+an approximation: door movement and within-room geometry changes still await a
+refresh, and an overloaded scene may temporarily fall back. It does not provide
+per-sample ray tracing or a unique generation identity for reused guest objects.
+Split-screen continues to bypass one-player geometry rather than guessing a
+shared listener. Shared source serves Windows/macOS/Linux.
+
+The real-HLE guest fixture proves moving emitter/listener pan and preserves its
+ray ABI/room-tree checks. Deterministic scene fixtures cover doorway anchors,
+maximum age, scene XOR collisions, room changes, slot reuse and inactive queue
+entries. A64-voice fixed-order/hash-collision test checks the two-query budget and at least
+three refreshes for every voice in1.2s. The focused timing/output suites pass123;
+game/build and physical headphone/speaker acceptance are recorded separately.
+
+The standard Windows Build/crash-symbol checks and219 media checks pass (one
+opt-in device skip). GCC13.3/Clang18.1 also compile/run this scene/cache/DSP
+fixture with warnings as errors in Ubuntu24.04/WSL, from isolated native-filesystem
+copies. A bounded enhanced Vietnam bot match reaches gameplay with zero host
+glitches/output failures and stable startup/loading counters. Its two process
+captures have no packet flags/full-scale samples. This does not measure a
+sustained frame rate or establish listening/device acceptance; see
+[measured status](../project/STATUS.md#2026-11-07---spatial-cache-audit-and-runtime-check).

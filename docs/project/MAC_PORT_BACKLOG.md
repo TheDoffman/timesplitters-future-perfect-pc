@@ -1,3 +1,9 @@
+Acoustic cache follow-up: common `pc_acoustic_cache.h` corrects moving-source
+pan, bounds stale obstruction and schedules refresh fairly. No new Mac adapter;
+shared fixtures pass on Windows and Linux/WSL (GCC/Clang). Native Mac execution
+and physical Linux/Mac game/listening acceptance remain pending.
+See [contracts](../development/positional-audio.md#acoustic-cache-correction).
+
 Authored loop ends2310: shared model/PCM pump now honor decoded endpoints from
 both native/legacy region fields. Exact PCM/production-ADPCM fixtures pass on
 Windows, with pause, seek, fractional clock and refusal checks. No duplicated

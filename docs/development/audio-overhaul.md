@@ -37,6 +37,10 @@ Merging and publication are outside this task's authorization.
 
 ## Initial evidence
 
+Spatial follow-up: [cache correction and bounded refresh contracts](positional-audio.md#acoustic-cache-correction)
+fixes reproduced moving-source pan and prevents indefinite stale obstruction.
+Geometry/host listening acceptance remains separate from those regressions.
+
 - Supported US `default.xbe` SHA-256 verified against the repository pin.
 - Existing local data contains 403 PAK archives. Five `sounds_<language>` banks
   each have 5,407 entries; `musicts.pak` has 163 entries. These are container

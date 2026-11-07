@@ -1,3 +1,32 @@
+## 2026-11-07 - Spatial cache audit and runtime check
+
+The production guest regression reproduces frozen blocked-source pan before the
+repair and passes afterward for moving emitter/listener positions. Shared cache
+logic uses current positions or a fixed doorway anchor, invalidates room/scene
+changes, schedules oldest active refreshes within two queries/10ms and stops
+reusing results after250ms. A64-voice fixed-order/hash-collision test verifies bounded work and
+progress for every voice. Overload can fall back to unfiltered authored direction.
+Windows focused checks pass123 and whole media passes219 with one opt-in device
+skip in49.50s, including the final age/count/collision cases; repository/backlog
+checks pass22. GCC13.3 and Clang18.1 compile/run that shared
+scene/cache/DSP fixture with warnings as errors in Ubuntu24.04/WSL; this does not
+establish Linux device or native Mac acceptance. Standard Windows Build and
+matching crash-symbol checks pass.
+
+The final collision-probing build repeats the isolated126-second enhanced
+Vietnam bot match, reaches visible gameplay and stays live until intentionally
+terminated. Final diagnostics:688 plays,66,445 submissions,328,095 3D commits,
+zero output failures/refusals/engine glitches and
+12 starvation episodes, unchanged from startup/loading. Two20-second process
+captures contain no discontinuity/timestamp flags or full-scale samples; peaks
+-13.53/-13.57dBFS, RMS -30.85/-30.33dBFS. Trace confirms original room/portal
+queries and ambience filtering active. These are functional/output checks, not
+headphone/speaker judgement or a sustained-FPS/performance benchmark. Local
+private receipts record binary/source/capture hashes and bounded child ownership.
+No personal settings/assets changed. No merge/publication. Full goal remains
+active; distance tuning, broader room/split-screen scenes and listening/device
+acceptance remain. See [cache contracts](../development/positional-audio.md#acoustic-cache-correction).
+
 ## 2026-11-07 - Authored loop-end consumption
 
 Shared patch2310 uses exclusive authored loop ends in both buffer clocks and

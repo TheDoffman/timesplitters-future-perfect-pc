@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "gameplay/pc_acoustic_scene.h"
+#include "gameplay/pc_acoustic_cache.h"
 #include "gameplay/pc_acoustic_dsp.h"
 static int door_closed,unavailable;
 static int roof,entrance;
@@ -56,8 +57,67 @@ static void finite_bypass(unsigned rate,unsigned channels,unsigned bits)
     pc_acoustic_target(&dsp,1,0);memset(pcm,42,bytes);
     pc_acoustic_pcm(&dsp,pcm,bytes,rate,channels,bits);assert(dsp.amount>.99f);
 }
+static void cache_contract(void)
+{
+    static PcAcousticCache cache;
+    const float listener[3]={0,0,0},source[3]={10,0,0};
+    float moved_listener[3]={2,0,0},moved_source[3]={12,0,0};
+    PcAcousticResult out,blocked={{10,0,0},1,0},routed={{5,0,5},.3f,.12f};
+    assert(pc_acoustic_cache_request(&cache,0x1000,1,2,3,1,1,2,10000,listener,source,&out));
+    pc_acoustic_cache_store(&cache,0x1000,10000,listener,blocked);
+    assert(!pc_acoustic_cache_request(&cache,0x1000,1,2,3,1,1,2,10001,moved_listener,moved_source,&out));
+    assert(out.obstruction==1 && out.direction[0]==10);
+    pc_acoustic_cache_store(&cache,0x1000,10001,listener,routed);
+    assert(!pc_acoustic_cache_request(&cache,0x1000,1,2,3,1,1,2,10002,moved_listener,moved_source,&out));
+    assert(out.direction[0]==3 && out.direction[2]==5); /* opening stays in world space */
+    cache.budget=2;cache.budget_time=120002;
+    assert(!pc_acoustic_cache_request(&cache,0x1000,1,2,3,1,1,2,120002,moved_listener,moved_source,&out));
+    assert(out.obstruction==.3f && out.direction[0]==3); /* bounded backlog reuse */
+    cache.budget=2;cache.budget_time=300002;
+    assert(!pc_acoustic_cache_request(&cache,0x1000,1,2,3,1,1,2,300002,listener,source,&out));
+    assert(out.obstruction==0 && out.direction[0]==10); /* never reuse indefinitely */
+    /* Separate pointers prevent XOR scene collisions; room changes and cache
+       slot reuse must not carry obstruction across an exhausted query budget. */
+    pc_acoustic_cache_store(&cache,0x1000,300002,listener,blocked);
+    assert(!pc_acoustic_cache_request(&cache,0x1000,5,6,3,1,1,2,300003,listener,source,&out));
+    assert(out.obstruction==0);
+    pc_acoustic_cache_store(&cache,0x1000,300003,listener,blocked);
+    assert(!pc_acoustic_cache_request(&cache,0x1000,5,6,4,1,1,2,300004,listener,source,&out));
+    assert(out.obstruction==0);
+    pc_acoustic_cache_store(&cache,0x1000,300004,listener,blocked);
+    assert(!pc_acoustic_cache_request(&cache,0x1000,5,6,4,1,2,2,300005,listener,source,&out));
+    assert(out.obstruction==0);
+    pc_acoustic_cache_store(&cache,0x1000,300005,listener,blocked);
+    assert(!pc_acoustic_cache_request(&cache,0x2000,5,6,4,1,2,2,300006,listener,source,&out));
+    assert(out.obstruction==0);
+    memset(&cache,0,sizeof cache);
+    unsigned refreshes[64]={0};
+    /* More voices than fit into one TTL, all sharing the same hash bucket,
+       always visited in identical order.
+       Every continuously requested voice must make progress within the budget. */
+    for(unsigned tick=1;tick<=120;tick++) {
+        unsigned queries=0;
+        for(unsigned i=0;i<64;i++) {
+            uint32_t key=0x1000+i*0x1000;uint64_t now=tick*10000u;
+            if(pc_acoustic_cache_request(&cache,key,1,2,3,1,1,2,now,listener,source,&out)) {
+                queries++;refreshes[i]++;pc_acoustic_cache_store(&cache,key,now,listener,blocked);
+            }
+        }
+        assert(queries<=2);
+    }
+    for(unsigned i=0;i<64;i++)assert(refreshes[i]>=3);
+    memset(&cache,0,sizeof cache);
+    for(unsigned i=0;i<2;i++) {
+        assert(pc_acoustic_cache_request(&cache,0x1000+i*16,1,2,3,1,1,2,10000,listener,source,&out));
+        pc_acoustic_cache_store(&cache,0x1000+i*16,10000,listener,blocked);
+    }
+    assert(!pc_acoustic_cache_request(&cache,0x1020,1,2,3,1,1,2,10000,listener,source,&out));
+    assert(!pc_acoustic_cache_request(&cache,0x1030,1,2,3,1,1,2,20000,listener,source,&out));
+    assert(pc_acoustic_cache_request(&cache,0x1030,1,2,3,1,1,2,110000,listener,source,&out));
+}
 int main(void)
 {
+    cache_contract();
     const float a[]={0,0,0},b[]={10,0,0};
     PcAcousticScene s={0};s.rooms=3;s.count=1;
     s.portals[0]=(PcAcousticPortal){1,2,{5,0,5}};

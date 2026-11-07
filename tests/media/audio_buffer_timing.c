@@ -32,6 +32,7 @@ void (*const hle_original_IDirectSoundBuffer_SetBufferData)(void) = NULL;
 void (*const hle_original_CMcpxVoiceClient_Commit3dSettings_0)(void) = NULL;
 static int acoustic_mock;
 static void acoustic_ray_mock(void) {
+    if(acoustic_mock==2){g_eax=1;g_esp+=4;return;}
     if(g_eax!=2 || HLE_MEM32(g_esp+4)!=0 || HLE_MEM32(g_esp+8)!=0)abort();
     float start[3],delta[3];memcpy(start,HLE_PTR(g_edi),12);memcpy(delta,HLE_PTR(g_esi),12);
     if(fabsf(start[0]-.015f)>.001f || fabsf(delta[0]-9.97f)>.001f)abort();
@@ -218,6 +219,19 @@ int main(int argc, char **argv)
         memcpy(HLE_PTR(0x30008),source,12);float wl[3],ws[3],wv[16];
         CHECK(pc_acoustic_world(0x32000,wl,ws,wv));
         CHECK(wl[0]==10 && ws[0]==20 && wv[10]==1);
+        /* A cached blocked ray must not freeze a moving emitter's direction. */
+        HLE_MEM32(0x708788)=0x12000;HLE_MEM32(0x70878c)=0x13000;
+        HLE_MEM32(0x7b975c)=2;HLE_MEM32(0x7b9754)=0;acoustic_mock=2;
+        PcAcousticResult blocked=pc_acoustic_guest(0x32000,camera,source);
+        CHECK(blocked.obstruction==1 && blocked.direction[0]==10);
+        source[0]=18;memcpy(HLE_PTR(0x30008),source,12);
+        blocked=pc_acoustic_guest(0x32000,camera,source);
+        CHECK(blocked.obstruction==1 && blocked.direction[0]==8);
+        camera[0]=12;memcpy(HLE_PTR(0x2027c),camera,12);
+        blocked=pc_acoustic_guest(0x32000,camera,source);
+        CHECK(blocked.obstruction==1 && blocked.direction[0]==6);
+        camera[0]=10;memcpy(HLE_PTR(0x2027c),camera,12);
+        source[0]=20;memcpy(HLE_PTR(0x30008),source,12);acoustic_mock=0;
         PcAcousticResult spatial={{1,2,3},.5f,0},neutral={{9,9,9},0,0};
         spatial=pc_acoustic_view(spatial,wv,neutral);
         CHECK(spatial.direction[0]==1 && spatial.direction[1]==2 && spatial.direction[2]==-3);

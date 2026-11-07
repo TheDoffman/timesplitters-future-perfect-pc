@@ -94,14 +94,11 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/development/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
-Audio overhaul: shared `pc_acoustic_dsp.h` now reaches exact PCM bypass when
-an OFF transition's amount/bed release falls below 1e-5 (about 346 ms at the
-30 ms time constant). It clears delay/filter history, including reflection-only
-voices; remaining bytes in the same packet are untouched. Both adapters retain
-their existing rejected-submit state rollback. The expanded `acoustic_scene.c`
-fixture checks 8 kHz mono/8-bit and 48 kHz stereo/16-bit byte preservation,
-finite release, re-enable and stale-echo rejection. Windows fixtures/build pass;
-acoustic listening and physical Mac/Linux acceptance remain pending.
+Audio overhaul: shared DSP reaches exact OFF bypass and clears old echo history;
+rejected submissions retain rollback. `pc_acoustic_cache.h` refreshes geometry
+fairly within two queries/10ms, caps reuse at250ms, invalidates room/scene changes
+and derives pan from current emitter/listener or a fixed opening anchor.
+[Contracts and limits](../development/positional-audio.md#acoustic-cache-correction).
 
 Independent audio choices: `pc_audio_settings.h` packs one atomic snapshot;
 `pc_audio_get_options`/`set_options` own strict V1/V2 parsing and save-before-live
