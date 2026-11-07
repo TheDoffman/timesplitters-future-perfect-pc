@@ -1,3 +1,139 @@
+## 2026-11-06 - Vietnam CPU eligibility fix (Windows verified)
+
+Branch fix/vietnam-frame-performance, base816ae00a. Release v0.5.2 executable
+FE30512C5F8C7C3564BC5191C17D705A0476AAC8F200B5EF642F0E8AE8141B90
+was copied into an isolated unlocked fixture. Vietnam scene48 and ten bots were
+observed. The initial route assertion used the wrong expected scene38; correcting
+the expectation does not retroactively make that run pass. Its captures remain
+scene evidence, and its CPU samples remain diagnostic rather than clean pacing.
+The cumulative 200Hz profile identified repeated environment searches reached
+from pc_network_enabled in indirect dispatch; native return RVAs were matched
+to the actual release image and its TSFP_NETWORK/TSFP_ONLINE_CONFIG string loads.
+
+The local shared correction caches startup configuration, publishes Online/LAN
+eligibility atomically, and explicitly activates LAN from the menu. Actual
+transport tests include a million repeated queries with only two environment
+reads, startup LAN/Online/missing config and disconnect before first query.
+Windows: 11 transport/dispatch, 4 menu and 2 multiplayer-exit checks pass;
+2 Mac compile cases are skipped. Fresh generation and the complete Windows Build
+(including its native checks) passed. The corrected executable SHA-256 is
+88B710F5094AD1FD4734D2F5FA0F60176ECFDAE8572A6C0F75CF54239CC8D7AC.
+The user tested the corrected game and reported that it looks fixed.
+
+The clean release baseline recorded 24.71 FPS over spawn+5s to combat-four,
+at actual 3440x1440, ten bots, 180 FPS target, FOV80, Classic and MSAA off.
+Corrected runs reached Vietnam and exercised movement/firing; window-size and
+foreground changes invalidated a controlled FPS comparison. Do not quote an
+exact speedup from these runs. The installed user's 8x MSAA was not used in the
+baseline. Captures/CPU sampling were separate attribution runs, not pacing proof.
+
+This isolated diagnostic build omits XMV movies because the available FFmpeg
+archive differs from the pinned checksum; the unverified archive was not used
+and the pin was not changed. The release installation, personal saves/settings
+and the separate controls worktree were preserved. WSL failed before compiling
+with CreateVm/ERROR_TIMEOUT; native Linux/Mac execution remains unverified.
+No release has been published for this correction.
+
+## 2026-11-06 - Launcher 1.5.2 published; game 0.5.2 Windows/Linux draft
+
+[Launcher1.5.2](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/launcher-v1.5.2)
+is public and Latest from main816ae00a. All15 assets passed the three-host
+workflow42326953956. PR515 merged with explicit authorization; its local task
+branch was removed after verifying the squash tree.
+
+Game tag **v0.5.2** is pinned to **9b6db3ee3d37cd181e0c160a8f7aa67f14038fe5**,
+release/game-0.5.2-validation. Windows uploaded first, Linux second. The game
+release remains **draft**, with exactly6 assets (ZIP/SHA256/BUILD per host).
+All uploaded GitHub SHA256 digests and sizes match the local verified assets.
+Combined metadata advertises only windows-x64/linux-x64, minimum launcher1.5.2;
+launcher remains Latest. Optional textures remain separate; saves/settings and
+existing packs were preserved. No game issue was closed as a published fix.
+
+| Package | Bytes | SHA256 |
+| --- | ---: | --- |
+| Windows x64 | 185341133 | `fe754dfe5af78b9adb364d06cbe0bc7d1c46c35c6ca548b705822ab8b71c2885` |
+| Linux x64 | 807256671 | `b396b05b4579dff1e605a4884b05334faafd7af699474d44918833dec31eb572` |
+
+Windows x64/MSVC Release/D3D11: full native build/tests and patch validation pass;
+full four-worker suite3850passed,77explicit skips,114subtests in869.63s.
+Exact1285-file installer fresh/upgrade preservation and portable Python/Tk/TLS,
+HTTPS certificates, directory/invitations/three-peer UDP relay pass. Complete
+preparation1025.63s. CI42329951076 passed Windows/macOS native regressions,
+Linux foundation and the PR gate at this exact source. These are the recorded
+host/fixture scopes, not native Mac game acceptance or external WAN play.
+
+Linux: Ubuntu24.04 x86_64/WSL2, Clang18.1.3, pinned Vulkan SDK1.4.363.0 and
+verified decoder-only FFmpeg6.1.5. Complete clean-source release-media build/MMIO,
+4 original-XBE crane checks, dependency-source/license audit,1554-file exact
+installer fresh/upgrade/corruption checks and relocated Python/Tk/TLS pass.
+Bundled Linux launcher uses the exact published1.5.2 bytes. Read-only package
+and original assets in minimal Ubuntu, as nobody under private Xvfb/Openbox:
+settings/debug/input, saved windowed/fullscreen renderers, Python/Tk/TLS and42
+launcher UI groups pass. Online is explicit skip77 there, separate from the
+local network checks. Input self-test now uses current click/Escape capture;
+only its synthetic events changed. The first Clang debug-assignment crash on
+continuation0574 compiled successfully on an unchanged retry; no compiler,
+optimization or dependency pin was changed.
+
+Final packaged Story:180.13seconds, original60 selection,640x480, software
+Vulkan/lavapipe, dummy audio and synthetic SDL schedule on a disposable Test Lab
+copy. Actual active Story and two pause/resume cycles observed; final capture
+reviewed;9000 guest presents,0failed presents. Separate20.17second movie pass:
+EA88/FRD81pictures reached EOF,900guest presents,0failures. Functional runs did
+not enable SDK validation. Counts measure successful API presents, not GPU
+completion/scanout, physical mouse capture or native-GPU performance. Native
+hardware, audible output, controllers/Steam Deck, full campaign and WAN checks
+remain incomplete. Known WSLg pointer confinement/relative-motion limits stay
+explicit in draft notes. Disposable partitions were recycled after each pass;
+the six files represented5243406848logical bytes but only122880allocated bytes.
+
+**Mac handoff:** fetch tagv0.5.2 and build/package from9b6db3ee, including launcher
+1.5.2. Add the Mac ZIP, checksum and BUILD receipt only after native validation;
+verify all9 assets, add macos-arm64 to metadata and replace the Mac-pending note
+before publishing. Keep launcher1.5.2 Latest. Mac device revision, synchronization
+and game acceptance remain unverified here. main816ae00a alone omits the two
+self-test repairs; PR517 contains them and these records and remains open.
+Original Linux fixture/status edits remain preserved in the named stash
+release-0.5.2-preserve-developer-tools-fixtures; personal settings/saves untouched.
+Disposable Linux release staging and the downloaded launcher-cache ZIP were
+removed after uploaded-digest verification. Game ZIPs/receipts, reusable test
+dependencies and selected captures remain; unrelated older releases were kept.
+Local evidence: logs/release-0.5.2-*, Linux logs/linux-clean-package.json and the
+selected private/captures/native-linux/frame000.bmp/frame001.bmp.
+
+## 2026-11-06 - Native input release self-test follows current capture controls
+
+The v0.5.2 Linux clean-userspace candidate passed settings/debug, both renderer
+modes, bundled Python/Tk/TLS and42 launcher UI groups; Online explicitly skips77.
+Input failed because its synthetic sequence still expected the retired F1
+capture toggle. Replace only those self-test events with click/Escape. The
+unchanged production event handler already uses click/Escape and optional F1
+Developer Tools access. Linux native input/menu/focus/virtual-pad checks pass
+with the corrected sequence. Native Mac execution remains pending.
+The second Windows full-suite run reached97percent with no reported failures
+before being stopped to include this verified native test-only correction.
+Final full Windows and exact-package Linux acceptance are rerun on the resulting
+clean committed revision; no game release/tag has been created yet.
+The preceding Linux package's300.16second Story observation reached gameplay,
+completed two pause/resume cycles and14400 guest presents with zero failed
+presents; its640x480 capture was reviewed. Software Vulkan with dummy audio and
+synthetic input does not establish hardware input, audio or native-GPU support.
+
+## 2026-11-06 - Game 0.5.2 original crane release-gate repair
+
+Launcher1.5.2 is public from main816ae00a; all15 assets and Latest verified.
+Windows game native build/tests pass, but the complete four-worker release suite
+reported2 crane fixture link failures,3848passes,77skips and114subtests in850.53s.
+The original-XBE fixture extracts pc_display_aim_panel, which now references the
+Developer Tools HUD hook. Add the fixture's visible-HUD stub, retaining all
+geometry, UV, alpha, ABI and placement assertions. All4 crane checks pass on
+Windows MSVC after the repair. This changes test isolation only; production
+runtime and launcher bytes are unchanged. Full release rerun remains required.
+Linux uses the same source/XBE/AGENTS as Windows; prior dirty fixture edits were
+preserved in stash release-0.5.2-preserve-developer-tools-fixtures. A Clang18
+assignment-tracking crash on continuation0574 compiled on an unchanged retry;
+Linux build and package/clean-userspace/gameplay acceptance remain in progress.
+
 ## 2026-11-06 - Launcher 1.5.2 / game 0.5.2 source preparation
 
 Prepared the shared launcher version/assembly attributes and game VERSION on

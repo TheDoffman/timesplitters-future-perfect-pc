@@ -1,3 +1,9 @@
+Network eligibility CPU fix (uncommitted after816ae00a): implemented in shared
+transport and menu code for Windows/Mac/Linux. Host atomics use Windows intrinsics
+or compiler acquire/release operations; no duplicate gameplay policy. Windows
+transport/startup/live-transition and menu fixtures pass. Native Mac/Linux
+execution and gameplay performance remain unverified. See STATUS.
+
 Inline Developer Tools launcher warning (uncommitted after f8d3bae6): implemented,
 native acceptance pending. Shared SettingsPage uses the existing TextBlock/brush
 adapters for warning and assigned-shortcut guidance beneath the checkbox. No
@@ -1518,6 +1524,16 @@ before checking release, matching the existing asynchronous settings contract.
   actual native renderer, input, Cocoa settings/debug checks and three CTests
   on the Apple M4/macOS 27 host with isolated settings. Gameplay code is unchanged;
   final clean release validation follows after integration.
+
+- **v0.5.2 input self-test (2026-11-06,9b6db3ee / PR517):** Implemented, native
+  Mac acceptance pending. The shared SDL self-test in `src/native/input_sdl.c`
+  exercises mouse capture with click/Escape after F1 became optional Developer
+  Tools access. Only synthetic self-test events change; production capture and
+  shortcut handling retain their existing shared behavior. Linux x64 input,
+  menu-pointer, focus and virtual-pad checks pass after the correction. Mac
+  uses the same test and needs no adapter change; run its native `--test`
+  input checks on the final release revision. Physical mouse capture and
+  gameplay remain separate acceptance. See [STATUS](STATUS.md).
 
 - **v0.3.3 input self-test (2026-10-25):** The shared keyboard profile parser
   deliberately keeps two bindings per action. The synthetic SDL test now checks

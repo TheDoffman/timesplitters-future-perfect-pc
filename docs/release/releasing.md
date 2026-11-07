@@ -5,12 +5,11 @@
 [Back to the README](../../README.md) | [Launcher releases](launcher-releases.md)
 
 Game and launcher versions are independent. The next Stable game source version
-is **0.5.2**, including Developer Tools, shared in-game fullscreen controls and
-native multiplayer lobby-return/save fixes, and bundling launcher **1.5.2**.
-Prepare Windows first and Linux second as a draft; native Mac assets are added
-from the maintainer's Mac at the same release revision before public release.
-This source change does not publish a release or establish full campaign/platform
-validation. Historical
+is **0.5.3**, including the Vietnam gameplay dispatch performance fix and
+bundling the already published launcher **1.5.2**. Build Windows, Apple Silicon
+Mac and Linux packages from the same clean source and verify all nine assets
+before publication. Version preparation does not establish full campaign or
+platform validation. Historical
 alpha and `-preview.N` releases remain available in Game versions; do not
 relabel their assets or offer them as Beta updates.
 

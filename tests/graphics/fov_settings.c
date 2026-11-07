@@ -96,7 +96,7 @@ int xbox_D3D8ChangeResolution(unsigned w,unsigned h) { (void)w;(void)h;return av
 int pc_online_connect(void) { return 0; }
 int pc_online_connect_mode(PcOnlineMode mode) { (void)mode;return 0; }
 PcOnlineMode pc_online_mode(void) { return PC_ONLINE_NONE; }
-static unsigned online_disconnects,lan_browser_entries;
+static unsigned online_disconnects,lan_browser_entries,lan_enables;
 void pc_online_disconnect(void) { online_disconnects++; }
 uint32_t xbox_HeapAlloc(uint32_t size,uint32_t alignment) {static uint32_t next=0x100000;next=(next+alignment-1)&~(alignment-1);uint32_t result=next;next+=size;CHECK(next<0x1f0000);return result;}
 #define STUB(name) void name(void) { g_esp+=4; }
@@ -420,12 +420,12 @@ int main(int argc,char **argv)
         CHECK(!_putenv_s("TSFP_NETWORK",""));
         CHECK(!_putenv_s("TSFP_ONLINE_CONFIG","keep-online"));
         call(0x001A2700u,0,0);call(0x001A2700u,7,0);
-        CHECK(!online_disconnects && !lan_browser_entries);
+        CHECK(!online_disconnects && !lan_browser_entries && !lan_enables);
         CHECK(!strcmp(getenv("TSFP_ONLINE_CONFIG"),"keep-online"));
         call(0x001A2700u,8,0);
-        CHECK(online_disconnects==1 && lan_browser_entries==1);
+        CHECK(online_disconnects==1 && lan_browser_entries==1 && lan_enables==1);
         call(0x001A2700u,8,0);
-        CHECK(online_disconnects==2 && lan_browser_entries==2);
+        CHECK(online_disconnects==2 && lan_browser_entries==2 && lan_enables==2);
     }
     { /* Descriptor +12 is a per-frame callback, not a destructor. */
         CHECK(kb_caption());kb_page=KB_CAPTURE;
@@ -1257,4 +1257,5 @@ void pc_developer_match_policy(int online,int allowed) {(void)online;(void)allow
 int pc_network_tools_policy(const PcDeveloperPeer *roster,unsigned count,int allowed) {(void)roster;(void)count;return allowed;}
 
 int pc_network_enabled(void){return 1;}
+void pc_network_enable_lan(void){lan_enables++;}
 void sub_000668F0(void){}

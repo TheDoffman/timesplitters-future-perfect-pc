@@ -697,8 +697,10 @@ int tsfp_native_input_test(void) {
         e.type=SDL_EVENT_MOUSE_MOTION;e.motion.xrel=50;e.motion.yrel=50;
         tsfp_native_input_event(&e,window);tsfp_native_input_frame(window);
         recomp_bindings_sample(0,&pad);ok &= !pad.sThumbRX && !pad.sThumbRY;
-        e.type=SDL_EVENT_KEY_DOWN;e.key.scancode=SDL_SCANCODE_F1;e.key.repeat=false;
+        /* Capture follows click/Escape; F1 belongs to optional Developer Tools. */
+        e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;e.button.button=SDL_BUTTON_LEFT;
         tsfp_native_input_event(&e,window);ok &= captured;
+        e.type=SDL_EVENT_KEY_DOWN;e.key.scancode=SDL_SCANCODE_ESCAPE;e.key.repeat=false;
         tsfp_native_input_event(&e,window);ok &= !captured;
         e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;e.button.button=SDL_BUTTON_LEFT;
         tsfp_native_input_event(&e,window);ok &= captured;

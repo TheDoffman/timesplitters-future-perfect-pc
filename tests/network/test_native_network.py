@@ -9,7 +9,7 @@ from native_compiler import native_compiler
 
 ROOT = Path(__file__).resolve().parents[2]
 
-@pytest.mark.parametrize('fixture', ['native_network_transport.c', 'pc_network.c'])
+@pytest.mark.parametrize('fixture', ['native_network_transport.c', 'pc_network.c', 'network_eligibility.c'])
 def test_transport(tmp_path, fixture):
     if fixture == 'pc_network.c' and sys.platform != 'win32':
         pytest.skip('Windows extended fixture uses multiple loopback aliases')
@@ -20,7 +20,7 @@ def test_transport(tmp_path, fixture):
         '#define TSFP_NETWORK_COMPATIBILITY_HEX "01' + '00'*31 + '"\n')
     compiler, environment = native_compiler(tmp_path)
     executable = tmp_path/('transport.exe' if os.name == 'nt' else 'transport')
-    sources = [ROOT/'src/network/pc_network.c', ROOT/'tests/network'/fixture]
+    sources = [ROOT/'tests/network'/fixture] if fixture == 'network_eligibility.c' else [ROOT/'src/network/pc_network.c', ROOT/'tests/network'/fixture]
     if os.name == 'nt':
         objects = []
         for i, source in enumerate(sources):
@@ -39,3 +39,9 @@ def test_transport(tmp_path, fixture):
     result = subprocess.run([str(executable)], capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout+result.stderr
     assert 'PASS:' in result.stdout
+    if fixture == 'network_eligibility.c':
+        for mode in ('lan', 'online', 'missing', 'disconnected'):
+            result = subprocess.run([str(executable), mode], cwd=tmp_path,
+                                    capture_output=True, text=True, timeout=30)
+            assert result.returncode == 0, result.stdout+result.stderr
+            assert 'PASS:' in result.stdout

@@ -19,13 +19,11 @@ static int controls_tabs_poll(uint32_t menu);
 static void controls_tabs_flush(void);
 #include "pc_display_memory.h"
 #include "pc_prompts.h"
+#include "pc_network.h"
 #ifdef TSFP_PC_DISCORD
 #include "pc_discord_guest.h"
 #include "pc_breadcrumbs.h"
 #include "pc_guest_memory.h"
-#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
-#include "pc_network.h"
-#endif
 #endif
 #include "pc_display.h"
 #include "pc_runtime_settings.h"
@@ -1519,6 +1517,7 @@ static void system_link_enable(void)
 #else
     unsetenv("TSFP_ONLINE_CONFIG"); setenv("TSFP_NETWORK","1",1);
 #endif
+    pc_network_enable_lan();
     multiplayer_profiles_capture();
     fprintf(stderr,"[PC-NET] System Link selected; enabling LAN transport\n");
 }

@@ -16,10 +16,10 @@ static uint32_t xbox_HeapAlloc(uint32_t n,uint32_t a){CHECK(n<128 && a==4);retur
 enum {PC_ONLINE_NONE,PC_ONLINE_ARCADE,PC_ONLINE_STORY};
 static int mode=PC_ONLINE_ARCADE,enabled=1,closed,reset,pumps,match_reset,menus,stock,fallback;
 static uint32_t target,caption;
-static unsigned recorded;
+static unsigned recorded,eligibility_checks;
 static void sub_000668F0(void){++recorded;}
 static int pc_online_mode(void){return mode;}
-static int pc_network_enabled(void){return enabled;}
+static int pc_network_enabled(void){++eligibility_checks;return enabled;}
 static void pc_online_disconnect(void){++closed;mode=PC_ONLINE_NONE;}
 static void sub_00079B70(void){++menus;}
 static void sub_001CC360(void){++reset;}
@@ -66,6 +66,8 @@ static void save_profile(void){
  WORD_AT(0x7bedc4)=99;
 }
 int main(void){
+ for(unsigned i=0;i<1000000;i++)CHECK(!multiplayer_exit_lookup(0x99990u));
+ CHECK(!eligibility_checks); /* No guest memory exists yet. */
  g_xbox_mem_offset=(uintptr_t)memory;
  for(unsigned results=0;results<4;++results){
   setup(1);WORD_AT(0x7de30c)=results?8:7;

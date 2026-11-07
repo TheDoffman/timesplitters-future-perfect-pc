@@ -116,7 +116,7 @@ def main():
     parser.add_argument('--trace-vehicle-contact',action='store_true',help='Trace up to 64 entries each for actor/vehicle contact, impulse selection and suspension response')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
-    parser.add_argument('--scenario',choices=['story-entry','story-host','story-host-controls','story-pair','story-local-load','rocket-impact','weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch','surface-native-long','crowd-venice','crowd-hotel','crowd-disco','crowd-temple'])
+    parser.add_argument('--scenario',choices=['story-entry','story-host','story-host-controls','story-pair','story-local-load','rocket-impact','weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch','surface-native-long','crowd-vietnam','crowd-venice','crowd-hotel','crowd-disco','crowd-temple'])
     args=parser.parse_args()
     if args.scenario=='rocket-impact' and not (args.watch_actors and args.watch_effects):
         parser.error('rocket-impact requires --watch-actors and --watch-effects for acceptance')
@@ -261,12 +261,12 @@ def main():
                 dict(keys=[82],label='story-progress',wait=4),
                 dict(keys=[70],label='story-progress-return',wait=4),dict(stop=True)]
         commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
-    if args.scenario in ('crowd-venice','crowd-hotel','crowd-disco','crowd-temple'):
+    if args.scenario in ('crowd-vietnam','crowd-venice','crowd-hotel','crowd-disco','crowd-temple'):
         route=json.loads((ROOT/'tests/fixtures/crowd-venice-commands.json').read_text())
-        if args.scenario in ('crowd-hotel','crowd-disco','crowd-temple'):
+        if args.scenario in ('crowd-vietnam','crowd-hotel','crowd-disco','crowd-temple'):
             # Verified list: Vietnam, Hotel, Venice, Temple, Disco.
             assert route[1]['label']=='match-setup'
-            moves={'crowd-hotel':1,'crowd-temple':3,'crowd-disco':4}[args.scenario]
+            moves={'crowd-vietnam':0,'crowd-hotel':1,'crowd-temple':3,'crowd-disco':4}[args.scenario]
             route[1]['keys']=[40,69,69,69]+[40]*moves+[69]
             assert route[7]['label']=='spawn'
             # Five-second idle waits usually observe a death camera. Keep
@@ -938,8 +938,8 @@ def main():
             not (item.get('flags',0)&0x20000000)]
         assert played,'Local Story gameplay not established; inspect local-*.png and report.json'
         (run/'story-load-baseline.json').write_text(json.dumps(played[-1],indent=2)+'\n')
-    if args.scenario in ('crowd-venice','crowd-hotel','crowd-disco','crowd-temple'):
-        scene={'crowd-hotel':39,'crowd-venice':46,'crowd-temple':49,'crowd-disco':56}[args.scenario]
+    if args.scenario in ('crowd-vietnam','crowd-venice','crowd-hotel','crowd-disco','crowd-temple'):
+        scene={'crowd-vietnam':48,'crowd-hotel':39,'crowd-venice':46,'crowd-temple':49,'crowd-disco':56}[args.scenario]
         checkpoints=[i for i in report if i.get('command',{}).get('label') in ('spawn','combat-one','combat-four','combat-six')]
         assert len(checkpoints)==4,'Incomplete crowd route'
         for item in checkpoints:

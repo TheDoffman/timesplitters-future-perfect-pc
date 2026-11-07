@@ -4,6 +4,16 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+/* Eligibility is queried by every guest indirect dispatch. Keep its steady
+ * state a load, not an environment scan or a host lock. */
+#ifdef _MSC_VER
+#include <intrin.h>
+static inline long net_flag_read(volatile long *p) { return _InterlockedCompareExchange(p,0,0); }
+static inline void net_flag_write(volatile long *p,long value) { _InterlockedExchange(p,value); }
+#else
+static inline long net_flag_read(volatile long *p) { return __atomic_load_n(p,__ATOMIC_ACQUIRE); }
+static inline void net_flag_write(volatile long *p,long value) { __atomic_store_n(p,value,__ATOMIC_RELEASE); }
+#endif
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
