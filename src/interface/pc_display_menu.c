@@ -449,61 +449,7 @@ static void menu_video_click_sound(uint32_t menu,uint32_t item)
     if(WORD_AT(0x007BA16Cu) && guest_writable(sounds,12))
         guest_call(sub_00021780,1,WORD_AT(sounds+8));
 }
-#define AUDIO_BETA_CHANGE 0x00012027u
-static uint32_t bits(float f);
-static uint32_t audio_beta_row,audio_beta_labels;
-static uint32_t audio_feature_rows[5];
-static void audio_beta_add(void (*original)(void))
-{
-    extern void sub_00071CF0(void);
-    if(!audio_beta_labels) {
-        audio_beta_labels=xbox_HeapAlloc(5u*128u,4);
-        if(audio_beta_labels) {
-            static const char *const captions[]={PC_AUDIO_BETA_LABEL,"Stereo positioning",
-                "Extended gunfire range","Environmental filtering","Background ambience"};
-            for(unsigned i=0;i<5;i++) {
-                char *slot=(char *)((uintptr_t)(audio_beta_labels+i*128u)+g_xbox_mem_offset);
-                memset(slot,0,128);snprintf(slot,112,"\vs75%s\vs100",captions[i]);
-                memcpy(slot+112,"Off\0On",7);
-            }
-        }
-    }
-    if(!audio_beta_labels)return;
-    /* Compact explicit extents fit the additional choices in frontend/pause.
-       Leave the original volume/profile rows and their Accept/Cancel intact. */
-    uint32_t flags=WORD_AT(g_esp+12)&~0x21u;
-    PcAudioOptions options=pc_audio_get_options();
-    int values[]={options.enhanced,options.spatial,options.weapon_range,options.environment,options.ambience};
-    memset(audio_feature_rows,0,sizeof audio_feature_rows);audio_beta_row=0;
-    for(unsigned i=0;i<5;i++) {
-        uint32_t text=audio_beta_labels+i*128u;
-        uint32_t item=guest_call(original,6,text,15u+i,flags,bits(32.f),0u,0u);
-        audio_feature_rows[i]=item;if(!i)audio_beta_row=item;
-        if(!item)continue;
-        if(guest_writable(item,0x2c))WORD_AT(item+0x28)&=~0x2000u;
-        guest_call(sub_0007D480,2,0xA000u,0u);
-        guest_call(sub_000717D0,1,text+112u);guest_call(sub_000717D0,1,text+116u);
-        guest_call(sub_00071CF0,2,item,AUDIO_BETA_CHANGE);
-        guest_call(sub_00075430,2,item,(uint32_t)values[i]);
-    }
-}
-static void audio_beta_change(void)
-{
-    GuestRegisters r;save_registers(&r);
-    PcAudioOptions options=pc_audio_get_options(),previous=options;
-    int *values[]={&options.enhanced,&options.spatial,&options.weapon_range,&options.environment,&options.ambience};
-    for(unsigned i=0;i<5;i++) {
-        uint32_t item=audio_feature_rows[i];
-        if(item && guest_writable(item,0xcc) && WORD_AT(item+0xc8)<2)*values[i]=(int)WORD_AT(item+0xc8);
-    }
-    if(!pc_audio_set_options(&options)) {
-        int old[]={previous.enhanced,previous.spatial,previous.weapon_range,previous.environment,previous.ambience};
-        for(unsigned i=0;i<5;i++)if(audio_feature_rows[i] && guest_writable(audio_feature_rows[i],0xcc))
-            WORD_AT(audio_feature_rows[i]+0xc8)=(uint32_t)old[i];
-        fprintf(stderr,"[AUDIO] Unable to save audio preferences\n");
-    }
-    restore_registers(&r);g_esp+=4;
-}
+#include "pc_audio_menu.inc"
 #include "pc_profile_accept.inc"
 #include "pc_weapon_slots_guest.inc"
 
@@ -1619,6 +1565,12 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     switch(address) {
     case DEVELOPER_MATCH_CHANGE:return developer_match_change;
     case AUDIO_BETA_CHANGE:return audio_beta_change;
+    case AUDIO_MIX_OPEN:return audio_mix_open;
+    case AUDIO_MIX_BUILD:return audio_mix_build;
+    case AUDIO_MIX_CHANGE:return audio_mix_change;
+    case AUDIO_MIX_BACK:return audio_mix_back;
+    case AUDIO_FEATURES_OPEN:return audio_features_open;
+    case AUDIO_MIX_TICK:return audio_mix_tick;
     case 0x002D08C0u:return uc_extras_build;
     case UC_OPEN:return uc_open;
     case UC_BUILD:return uc_build;

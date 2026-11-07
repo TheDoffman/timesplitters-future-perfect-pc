@@ -112,3 +112,43 @@ def test_beta_audio_preference(tmp_path):
         sidecar.write_text(invalid)
         run(0,1,0)  # unknown/malformed settings remain byte-for-byte untouched
         assert sidecar.read_text()==invalid
+
+
+def test_mix_gain_settings(tmp_path):
+    compiler,env=native_compiler(tmp_path)
+    exe=tmp_path/('mix.exe' if os.name=='nt' else 'mix')
+    source=ROOT/'tests/media/audio_mix_settings.c'
+    args=([compiler,'/nologo','/std:c11','/I'+str(ROOT/'src'),str(source),'/Fe:'+str(exe)] if os.name=='nt' else
+          [compiler,'-std=c11','-I'+str(ROOT/'src'),str(source),'-lm','-o',str(exe)])
+    built=subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
+    assert built.returncode==0,built.stdout+built.stderr
+    env={k:v for k,v in env.items() if not k.startswith(('RECOMP_','TSFP_'))}
+    env['TSFP_DISPLAY_CONFIG']=str(tmp_path/'display.ini')
+    def run(*args):
+        result=subprocess.run([str(exe),*map(str,args)],cwd=tmp_path,env=env,capture_output=True,text=True,timeout=10)
+        assert result.returncode==0,result.stdout+result.stderr
+    run(100,'policy')
+    run(100,70,1);run(70,'policy')
+    sidecar=tmp_path/'pc-audio-mix.ini'
+    assert sidecar.read_text()=='TSFP_AUDIO_MIX_V1 70 100 100 100 100 100\n'
+    for invalid in (b'TSFP_AUDIO_MIX_V99 1', b'TSFP_AUDIO_MIX_V1 100 100 100 100 100 100\x00', b'X'*255):
+        sidecar.write_bytes(invalid);run(100,50,0);assert sidecar.read_bytes()==invalid
+    sidecar.unlink()
+    env['TSFP_DISPLAY_CONFIG']=str(tmp_path/'missing/display.ini')
+    run(100,50,0)
+    env.pop('TSFP_DISPLAY_CONFIG');env['RECOMP_INPUT_CONFIG']=str(tmp_path/'input.ini')
+    run(100,25,1);run(25,'policy')
+
+
+def test_native_audio_subpages(tmp_path):
+    compiler,env=native_compiler(tmp_path)
+    exe=tmp_path/('audio-menu.exe' if os.name=='nt' else 'audio-menu')
+    source=ROOT/'tests/media/audio_menu.c'
+    args=([compiler,'/nologo','/std:c11','/I'+str(ROOT/'src'),str(source),'/Fe:'+str(exe)] if os.name=='nt' else
+          [compiler,'-std=c11','-I'+str(ROOT/'src'),str(source),'-lm','-o',str(exe)])
+    built=subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
+    assert built.returncode==0,built.stdout+built.stderr
+    env={k:v for k,v in env.items() if not k.startswith(('RECOMP_','TSFP_'))}
+    env['TSFP_DISPLAY_CONFIG']=str(tmp_path/'display.ini')
+    run=subprocess.run([str(exe)],cwd=tmp_path,env=env,capture_output=True,text=True,timeout=10)
+    assert run.returncode==0,run.stdout+run.stderr

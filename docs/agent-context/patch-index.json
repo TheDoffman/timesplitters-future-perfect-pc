@@ -126,6 +126,16 @@
       ]
     },
     {
+      "name": "0060-audio-bus-ownership.patch",
+      "path": "patches/media/0060-audio-bus-ownership.patch",
+      "sha256": "80e45bd25b003bbc90712658b368641e9f89598e907e5584189d0228ab1f380c",
+      "targets": [
+        "src/hle/hle_dsound.c\r",
+        "src/hle/hle_dsound_stream.c\r",
+        "titles/futureperfect/src/recomp_manual.c\r"
+      ]
+    },
+    {
       "name": "0060-independent-classification.patch",
       "path": "patches/compiler/0060-independent-classification.patch",
       "sha256": "f8db701d03791b2b6eb3794f6d4634d14deb018400b9c171acab4af5ab0bd1b6",
@@ -141,6 +151,16 @@
         "tools/func_id/rw_identifier.py",
         "tools/func_id/stub_classifier.py",
         "tools/func_id/vtable_scanner.py"
+      ]
+    },
+    {
+      "name": "0061-audio-mix-levels.patch",
+      "path": "patches/media/0061-audio-mix-levels.patch",
+      "sha256": "d62c89df2fb6e9f47f27d25ec6c9d9e148a6bc991c2af7a4247f4bb8ee82d76b",
+      "targets": [
+        "src/hle/hle_dsound.c",
+        "src/hle/hle_dsound_stream.c",
+        "src/hle/hle_xmv_play.c"
       ]
     },
     {

@@ -22,6 +22,7 @@ int pc_audio_set_enhanced(int enabled); /* save first; publish only on success *
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include "interface/pc_audio_config_path.h"
 #ifdef _WIN32
 #include <windows.h>
 #include <intrin.h>
@@ -38,15 +39,7 @@ static long pc_audio_load_state(void)
 }
 static int pc_audio_path(char *out,size_t bytes)
 {
-    const char *source=getenv("TSFP_DISPLAY_CONFIG");
-    if(!source || !*source)source=getenv("RECOMP_INPUT_CONFIG");
-    if(!source || !*source)source="config/pc-display.ini";
-    if(strlen(source)>=bytes)return 0;
-    strcpy(out,source);char *a=strrchr(out,'/'),*b=strrchr(out,'\\');
-    char *slash=a && b?(a>b?a:b):a?a:b;
-    size_t prefix=slash?(size_t)(slash+1-out):0;
-    if(prefix+strlen("pc-audio.ini")>=bytes)return 0;
-    strcpy(out+prefix,"pc-audio.ini");return 1;
+    return pc_audio_config_path(out,bytes,"pc-audio.ini");
 }
 static int pc_audio_pack(PcAudioOptions o)
 {return o.enhanced|(o.spatial<<1)|(o.weapon_range<<2)|(o.environment<<3)|(o.ambience<<4);}

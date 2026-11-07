@@ -23,6 +23,14 @@ the full Windows launcher suite passed. The offscreen
 `--render-settings-audio` preview selects tab3 and is forwarded by Bootstrap.
 See [audited scope and validation](../development/audio-overhaul.md).
 
+Six shared Audio sliders independently save master/effects/music/dialogue/
+ambience/movies to `pc-audio-mix.ini` (strict MIX_V1,0..100). This eighth settings
+file participates in conflict checks and the existing rollback transaction;
+the enhancement schema is unchanged. Sliders track draft state with enhancement
+OFF too. Shared UI tests cover category order, malformed bytes, external edits
+and failure at the final file. Windows suite passes; physical Mac/Linux pending.
+Both launcher preview routes select tab3 for `--render-settings-audio`.
+
 ## macOS storage (discussion #502)
 
 `Program.FindInstallRoot` discovers the entry-point bundle/checkouts;

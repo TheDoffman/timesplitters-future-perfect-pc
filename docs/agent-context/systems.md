@@ -113,6 +113,20 @@ uses neutral cover without a single valid listener, and leaves positioned stream
 filters alone. `pc_display_menu.c` exposes five compact choices in Audio Options,
 with rollback on save failure. See [acceptance](../development/audio-overhaul.md).
 
+Mix routing: `pc_audio_mix.h` owns bounded guest-thread scopes; manual wrappers
+for46D80/45820/299C0 establish speech and stereo-stream categories before the
+first submission (patch0060). Generated wrapper definitions must remain explicit
+in recomp_manual.c: the compiler does not scan included .inc files recursively.
+Patch0061 composes master/category attenuation with the original HLE level and
+updates queued voices without clock/PCM edits. `pc_audio_mix_settings.h` owns
+strict independent `pc-audio-mix.ini` persistence and an atomic six-value
+snapshot; `pc_audio_config_path.h` resolves both sidecars through the isolated
+display/input directory. 100% is exact neutral. `pc_audio_menu.inc` supplies
+separate Mix/Enhancements pages: six exact-percent selectors, five toggles,
+save-failure rollback and native back navigation. The original Audio Options
+keeps its profile rows and contains one compact Mix link. Guest rendering awaits
+acceptance; the production full-menu fixture and isolated subpage fixture pass.
+
 Split-screen mouse look (#112): `pc_camera_mouse_primary_in_region` reads the
 current player's local input slot at `player+4` from the fresh bounded camera
 mapping. Both the Win32 and SDL `pc_controls_apply_mouse` adapters skip slots

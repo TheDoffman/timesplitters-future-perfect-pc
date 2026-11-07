@@ -8678,7 +8678,14 @@ Mac title acceptance pending; retain MAC-118 Awaiting validation. See [contracts
   no Mac adapter implementation is deferred. Windows C/menu and portable
   launcher checks and full Windows launcher Save/UI suite pass; Mac UI/listening
   remain pending. Diffuse beds use neutral enclosure in split-screen; this is
-  not multi-listener positional acoustics validation.
+    not multi-listener positional acoustics validation.
+  - Mix follow-up (local feature/audio-overhaul): common patches0060/0061,
+    `pc_audio_mix.h` and `pc_audio_mix_settings.h` implement source ownership and
+    master/category attenuation for effects/music/dialogue/ambience/movies.
+    Shared C# sliders/persistence cover both hosts; no separate adapter is needed.
+    Windows production-C/media and launcher suites pass; native Mac/Linux
+    execution, physical output and guest mix-page acceptance remain pending.
+    Cinematic premixes cannot isolate their baked-in speech. See the audio plan.
 - Shared: patches 0040/0045/0050 and `pc_spatial_audio.h`, `pc_acoustic_*`
   provide directional buffers/streams, near-field centering, longer gunfire
   range, wall/portal filtering and metadata-driven ambience mixing. Both

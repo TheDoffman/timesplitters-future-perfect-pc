@@ -34,6 +34,9 @@ namespace TimeSplitters.Launcher
         public bool EnhancedTextures;
         public bool EnhancedAudio;
         public bool SpatialAudio=true, ExtendedGunfire=true, EnvironmentalAudio=true, AmbientAudio=true;
+        // Master, effects, music, dialogue, ambience, movies; percentages of the authored mix.
+        public readonly int[] AudioVolumes={100,100,100,100,100,100};
+        public static readonly string[] AudioVolumeLabels={"Master","Effects","Music","Dialogue","Ambience","Movies"};
         public bool ShowCounter;
         public int Msaa = 1, EdgeSmoothing, AmbientOcclusion;
         public int Supersampling;
@@ -233,6 +236,15 @@ namespace TimeSplitters.Launcher
                     model.SpatialAudio=match.Groups[2].Value=="1";model.ExtendedGunfire=match.Groups[3].Value=="1";
                     model.EnvironmentalAudio=match.Groups[4].Value=="1";model.AmbientAudio=match.Groups[5].Value=="1";
                 }
+            }
+            byte[] mixBytes=model.originals[Files[7]];
+            if(mixBytes!=null) {
+                string whitespace=@"[ \t\r\n\f\v]";
+                string number=@"(0|[1-9][0-9]?|100)";
+                var match=Regex.Match(Encoding.UTF8.GetString(mixBytes),@"\A"+whitespace+"*TSFP_AUDIO_MIX_V1"+
+                    String.Concat(Enumerable.Repeat(whitespace+"+"+number,6))+whitespace+@"*\z");
+                Core.Require(mixBytes.Length<255 && match.Success,"Audio volume settings are invalid. No settings were changed.");
+                for(int i=0;i<6;i++)model.AudioVolumes[i]=Int32.Parse(match.Groups[i+1].Value,CultureInfo.InvariantCulture);
             }
             model.runtime = Text(model.originals[Files[2]]);
             if (model.originals[Files[2]] == null && !String.IsNullOrEmpty(inheritedRuntime)) model.runtime = Text(Read(inheritedRuntime));
@@ -456,6 +468,7 @@ namespace TimeSplitters.Launcher
         }
         public void Save()
         {
+            Core.Require(AudioVolumes.All(percent=>percent>=0 && percent<=100),"Audio volumes must be between 0 and 100 percent. No settings were changed.");
             Core.Require(new[]{1,2,4,8}.Contains(Msaa) && (EdgeSmoothing==0 || EdgeSmoothing==1) &&
                 (Anisotropy>=1 && Anisotropy<=16) && (AmbientOcclusion==0 || AmbientOcclusion==1) && Supersampling>=0 && Supersampling<=3,
                 "Graphics settings are invalid. No settings were changed.");
@@ -487,6 +500,7 @@ namespace TimeSplitters.Launcher
                 "TSFP_FRAME_RATE_V1 " + NativeFps.ToString(CultureInfo.InvariantCulture) + "\n",
                 AudioPreference(),
                 (Supersampling==0?"TSFP_GRAPHICS_V1 ":"TSFP_GRAPHICS_V2 ") + Msaa.ToString(CultureInfo.InvariantCulture) + " " + EdgeSmoothing.ToString(CultureInfo.InvariantCulture) + " " + Anisotropy.ToString(CultureInfo.InvariantCulture) + " " + AmbientOcclusion.ToString(CultureInfo.InvariantCulture) + " " + (ShaderCache ? "1" : "0") + (Supersampling==0?"":" "+Supersampling.ToString(CultureInfo.InvariantCulture)) + "\n" };
+            payload=payload.Concat(new[]{"TSFP_AUDIO_MIX_V1 "+String.Join(" ",AudioVolumes.Select(percent=>percent.ToString(CultureInfo.InvariantCulture)).ToArray())+"\n"}).ToArray();
             int committed = 0;
             try { for (int i = 0; i < Files.Length; i++) { Replace(Core.PathIn(root, Files[i]), Encoding.UTF8.GetBytes(payload[i]), true); committed++; } }
             catch

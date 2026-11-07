@@ -65,6 +65,10 @@ int recomp_audio_output_engine_stats(RecompAudioEngineStats *stats) { memset(sta
 static int accept;
 static uint32_t accepted_bytes;
 static uint8_t first_byte;
+static int first_bus;
+static int32_t first_level,updated_level;static unsigned volume_updates;
+int recomp_audio_output_set_volume(uint32_t slot,int32_t level)
+{updated_level=level;volume_updates++;return 1;}
 int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes,
     uint32_t rate, uint32_t channels, uint32_t bits, int32_t level)
 {
@@ -73,6 +77,7 @@ int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes
         if (fake_until[slot] < fake_now) fake_until[slot] = fake_now;
         fake_until[slot] += (uint64_t)bytes * 1000 / (rate * channels * (bits / 8));
     }
+    if(!accepted_bytes){first_bus=g_buffers[slot].mix_bus;first_level=level;}
     accepted_bytes += bytes;
     first_byte = pcm[0];
     return 1;
@@ -87,6 +92,7 @@ int xbox_adpcm_decode_block(const uint8_t *block, size_t bytes, unsigned channel
 #ifndef TSFP_INTEGRATED_AUDIO
 int main(int argc, char **argv)
 {
+    PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;pc_audio_mix_live=pc_audio_mix_pack(mix);
     if(argc==2 && !strcmp(argv[1],"feature-gates")) {
         g_xbox_mem_offset=(ptrdiff_t)memory;g_esp=0x60000;
         uint32_t record=0x5836d0,object=0x40000,settings=0x41000;

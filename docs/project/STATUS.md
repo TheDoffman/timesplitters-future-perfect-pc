@@ -1,3 +1,29 @@
+## 2026-11-07 - Verified speech routing and independent audio mix
+
+Local feature/audio-overhaul; shared patches0060/0061 apply through the complete
+runtime stack. Actual supported-US script/actor speech call sites establish
+Dialogue before first buffer/stream submission; stereo source starts establish
+Music/Ambience ownership. Cinematic premixes retain Music. Six independent
+0..100% gains compose with original levels, update queued voices and preserve
+PCM/clocks. Strict pc-audio-mix.ini is independent of enhancement V1/V2.
+Shared launcher sliders participate in conflict/rollback handling. Native Audio
+Mix/Enhancements subpages retain original profile controls and save live with
+rollback. Details/evidence: [audio plan](../development/audio-overhaul.md).
+
+Windows media checks passed146/5 skips before the added native subpage fixture,
+which also passes. Actual movie checks passed4 cases with unchanged content and
+cadence. Full Windows launcher suite passed40.76s (43 shared UI groups);
+compact volume layout was then rebuilt and visually reviewed offscreen at
+1152x772. Full production menu/FOV checks pass2 with4 unrelated/data skips;
+56 portable launcher/menu checks pass with1 skip. All settings tests use
+isolated temporary directories. Game build, rendered guest pages/listening,
+physical Mac/Linux and broader spatial/restoration acceptance remain pending.
+Final combined media/full-menu/mouse/portable-launcher/repository-context run
+passed226 tests with10 explicit skips in19.41s. The full Windows launcher suite
+was repeated after compact slider layout changes and passed in42.63s. Both
+processes exited0; no test process remains running from this pass.
+Nothing merged, pushed or published.
+
 ## 2026-11-07 - Independent audio choices and completed loudness audit
 
 Local `feature/audio-overhaul`, base `a24c3b60`; Windows x64/Python3.12.14/MSVC,

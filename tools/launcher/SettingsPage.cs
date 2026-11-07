@@ -48,6 +48,7 @@ namespace TimeSplitters.Launcher
         readonly Button save;
         string savedDraft;
         readonly Slider fov;
+        readonly Slider[] audioVolumes=new Slider[6];
         readonly TextBox sensitivity, width, height, discordId;
         readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, developerTools, discordEnabled, enhancedTextures, ambientOcclusion, shaderCache;
         readonly ComboBox device, resolution, aspect, scale, filtering, frameRate, languagePack, msaa, edgeSmoothing, supersampling;
@@ -302,6 +303,22 @@ namespace TimeSplitters.Launcher
             PageTheme.Details(presence,"Set up Discord activity",discordHelp).Name="DiscordSetupDetails";
             tabs.Items.Add(new TabItem { Header="Discord",Content=Scroll(discord) });
             var audioPanel=new StackPanel();
+            var volumes=PageTheme.Section(audioPanel,"Volume","100% preserves the original mix. These controls work with Enhanced Audio on or off.");
+            for(int i=0;i<audioVolumes.Length;i++) {
+                var row=new DockPanel {Margin=new Thickness(0,3,0,3)};
+                var caption=Text(GameSettings.AudioVolumeLabels[i],12);caption.Width=90;caption.VerticalAlignment=VerticalAlignment.Center;
+                DockPanel.SetDock(caption,Dock.Left);row.Children.Add(caption);
+                var value=Text(model.AudioVolumes[i].ToString(CultureInfo.InvariantCulture)+"%",13);value.VerticalAlignment=VerticalAlignment.Center;
+                value.Width=48;value.TextAlignment=TextAlignment.Right;DockPanel.SetDock(value,Dock.Right);row.Children.Add(value);
+                var slider=new Slider {Name="Audio"+GameSettings.AudioVolumeLabels[i]+"Volume",Minimum=0,Maximum=100,
+                    Value=model.AudioVolumes[i],TickFrequency=1,IsSnapToTickEnabled=true,SmallChange=1,LargeChange=10,
+                    MinWidth=140,Margin=new Thickness(0,4,12,4),VerticalAlignment=VerticalAlignment.Center};
+                AutomationProperties.SetName(slider,GameSettings.AudioVolumeLabels[i]+" volume percent");
+                Ui.ValueChanged(slider,()=>{value.Text=((int)Math.Round(slider.Value)).ToString(CultureInfo.InvariantCulture)+"%";RefreshSaveState();});
+                AutomationProperties.SetLabeledBy(slider,caption);
+                audioVolumes[i]=slider;row.Children.Add(slider);volumes.Children.Add(row);
+            }
+            volumes.Children.Add(Text("Requires an audio-overhaul game build. Dialogue controls separately played speech; speech mixed into music or movies follows that track's volume.",12));
             var audio=PageTheme.Section(audioPanel,"Enhanced Audio","Optional positional audio and ambience improvements.");
             enhancedAudio=Check("Enhanced Audio (Beta)",model.EnhancedAudio);enhancedAudio.Name="EnhancedAudio";audio.Children.Add(enhancedAudio);
             spatialAudio=Check("Stereo positioning",model.SpatialAudio);spatialAudio.Name="SpatialAudio";audio.Children.Add(spatialAudio);
@@ -335,6 +352,7 @@ namespace TimeSplitters.Launcher
                 enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,ambientOcclusion.IsChecked,shaderCache.IsChecked,
                 skipSplashes.IsChecked,developerTools.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
                 spatialAudio.IsChecked,extendedGunfire.IsChecked,environmentalAudio.IsChecked,ambientAudio.IsChecked,
+                audioVolumes.Select(slider=>(int)Math.Round(slider.Value)).ToArray(),
                 device.SelectedIndex,localDevices.Select(x=>x.SelectedIndex).ToArray(),scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
                 (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
@@ -492,6 +510,7 @@ namespace TimeSplitters.Launcher
                 model.NativeFps=GameSettings.NativeFrameRates[frameRate.SelectedIndex];
                 model.EnhancedTextures=enhancedTextures.IsChecked==true;
                 model.EnhancedAudio=enhancedAudio.IsChecked==true;
+                for(int i=0;i<audioVolumes.Length;i++)model.AudioVolumes[i]=(int)Math.Round(audioVolumes[i].Value);
                 model.SpatialAudio=spatialAudio.IsChecked==true;model.ExtendedGunfire=extendedGunfire.IsChecked==true;
                 model.EnvironmentalAudio=environmentalAudio.IsChecked==true;model.AmbientAudio=ambientAudio.IsChecked==true;
                 model.LanguagePack=GameSettings.LanguagePacks[languagePack.SelectedIndex];

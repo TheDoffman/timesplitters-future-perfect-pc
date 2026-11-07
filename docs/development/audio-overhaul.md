@@ -163,6 +163,74 @@ Native game build, physical Mac/Linux and listening checks remain pending.
 Per-category gain sliders, ducking and
 dynamic-range controls are still in progress, not supplied by these switches.
 
+## Source ownership and mix controls (implemented; acceptance pending)
+
+Patch0060 establishes source ownership before initial PCM submission. The
+supported US executable's script-speech callers return to1643C2/164D20 from
+46D80, independently of the subtitle preference check. Actor speech returns to
+262700 from45820 and stores its opaque play handle at actor+E8C. The common
+46D80 helper's nested45820 call inherits the outer speech scope. These contexts
+have zero delay (45390 initialization); no deferred ownership is inferred.
+Manual wrappers preserve original calls and register/stack behavior. Their
+definitions and `_gen` declarations remain explicit in recomp_manual.c because
+the compiler's source scanner does not recursively scan included `.inc` files.
+Bounded TLS scopes require no host callback guest-memory access and discard
+stale entries after guest stack unwinds. No subtitle setting is changed.
+
+US299C0 starts sources on pre-created streams and calls SetFormat before their
+later packet pumping. The music/cinematic record64BD98 takes Music precedence;
+the ten effect records start5836D0 with stride14094. Established speech uses
+Dialogue; the already verified looping-stereo flags210 select Ambience;
+ordinary/unknown sources fall back to Effects. This does not isolate speech
+baked into cinematic music. BufferPlay assigns new-source ownership before
+the first submit; continuing playback retains it. Same-format stream reuse
+retags at source start; unscoped frequency/format adjustments retain ownership.
+Release/reallocation resets ownership. Scope/routing tests exercise actual
+manual wrappers and real buffer/stream code, not executed game dialogue.
+
+Patch0061 composes existing event/profile/headroom/distance levels with six
+independent 0..100% settings: master, effects, music, dialogue, ambience, movies.
+100% leaves the original level exactly unchanged. Master and category multiply
+once (50% = -602 hundredths dB; 50% ×50% = -1204); zero maps to the existing
+mute floor. The existing host output gain remains in place. Buffer/stream
+pumps and the common XMV path update queued voices through the host volume
+API, without rewriting PCM, queue counts or completion clocks.
+
+`pc_audio_mix_settings.h` owns `pc-audio-mix.ini`, a separate sidecar so existing
+enhancement V1/V2 preferences keep their format. Its strict ASCII form is
+`TSFP_AUDIO_MIX_V1 <master> <effects> <music> <dialogue> <ambience> <movies>`.
+Values are decimal0..100, without signs/leading zeros. Native reads are bounded
+to254 bytes; malformed, embedded-NUL, future and unreadable files refuse saves.
+Failed writes retain the live snapshot. Successful replacement publishes one
+atomic six-field snapshot. Both audio sidecars resolve next to the isolated
+display/input config via `pc_audio_config_path.h`.
+
+The shared launcher exposes six sliders with draft/conflict/transaction
+handling. The mix sidecar is the eighth tracked settings file; a failure there
+rolls back earlier files. Offscreen Windows rendering is readable at1152x772
+(`private/audio-overhaul/launcher-mix.png`). Native `pc_audio_menu.inc` replaces
+the five appended enhancement rows with one Audio Mix link; its subpages hold
+six exact-percent selectors and five enhancement toggles, respectively. This
+retains the original profile controls and Accept/Cancel records. Independent
+preferences save live; failed saves restore choices. Keyboard/controller/mouse
+rendering, narrow aspect ratios, frontend/pause and split-screen need actual
+game acceptance. Native volume selectors use arrows rather than a drawn bar.
+
+Verification:146 media tests passed with5 explicit skips before the native
+subpage addition; its production-code fixture subsequently passed. Real XMV
+controlled-clock and Windows-timer tests passed all4 cases using the supported
+game copy and pinned FFmpeg, preserving image/PCM hashes and cadence. The full
+Windows launcher suite passed in40.76s with43 shared UI groups; malformed bytes,
+external edits, exact category order and final-file rollback are covered. The
+full production menu/FOV fixture passed2 checks (4 unrelated/data skips), and
+56 portable launcher/menu checks passed with1 skip. These checks do not establish
+audible fidelity, game source-ownership coverage or physical Mac/Linux acceptance.
+Ducking, dynamic-range presets, further spatial work and selective restoration
+decisions remain in the active goal.
+The final combined media/full-menu/mouse/portable-launcher/context pass reports
+226 passed,10 skipped (19.41s). The full Windows launcher suite was repeated
+after the compact volume layout and passed in42.63s. Both exited successfully.
+
 ## Planning estimate
 
 Initial estimate, before codec/mapping and listening audit: 2–4 active hours for
@@ -172,3 +240,8 @@ not deadlines or a claim of continuous background execution. Asset restoration
 scope, unresolved runtime defects and access to physical devices may change them.
 Re-estimate after the audit with measured scope. Track implementation and each
 host's acceptance separately.
+The completed census does not justify a bulk asset rewrite: proceed with mix
+and playback controls, then targeted listening and restoration decisions. The
+remaining estimate is2–4 working days to an integrated Windows candidate,
+with1–2 weeks for full listening/cross-platform acceptance, conditional on
+access to those devices and any defects discovered during gameplay.

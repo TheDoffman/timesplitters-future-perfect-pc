@@ -8,6 +8,12 @@
 static uint64_t test_now;
 static uint64_t test_clock(void) { return test_now; }
 #define GetTickCount64 test_clock
+#define PC_AUDIO_MIX_IMPLEMENTATION
+#include "gameplay/pc_audio_mix.h"
+#undef PC_AUDIO_MIX_IMPLEMENTATION
+#define PC_AUDIO_MIX_SETTINGS_IMPLEMENTATION
+#include "interface/pc_audio_mix_settings.h"
+#undef PC_AUDIO_MIX_SETTINGS_IMPLEMENTATION
 #include "hle/hle_dsound_stream.c"
 #include "hle/xbox_adpcm.c"
 #undef GetTickCount64
@@ -29,6 +35,7 @@ void (*const hle_original_CDirectSoundStream_Release)(void) = original_release;
 void (*const hle_original_CDirectSoundStream_FlushEx)(void) = NULL;
 
 static int capture;
+static int32_t captured_level,updated_level;static unsigned volume_updates;
 static uint32_t event_signals,last_event,event_status,event_size;
 
 recomp_func_t recomp_lookup(uint32_t address) { (void)address; return NULL; }
@@ -59,6 +66,7 @@ int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes
     uint32_t rate, uint32_t channels, uint32_t bits, int32_t level)
 {
     if (refuse_output) return 0;
+    captured_level=level;
     host.available = 1;
     host.queued++;
     if (capture && captured_bytes + bytes <= sizeof captured) {
@@ -67,7 +75,7 @@ int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes
     }
     return 1;
 }
-int recomp_audio_output_set_volume(uint32_t slot, int32_t level) { return 1; }
+int recomp_audio_output_set_volume(uint32_t slot, int32_t level) { updated_level=level;volume_updates++;return 1; }
 void (*const hle_original_DirectSoundCreateStream)(void) = NULL;
 void (*const hle_original_CDirectSound_CreateSoundStream)(void) = NULL;
 void (*const hle_original_CDirectSoundStream_SetVolume)(void) = NULL;
@@ -80,6 +88,7 @@ void (*const hle_original_CDirectSoundStream_SetFrequency)(void) = NULL;
 static Stream *setup(void)
 {
     Stream *s = &g_streams[0];
+    PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;pc_audio_mix_live=pc_audio_mix_pack(mix);
     memset(g_streams, 0, sizeof g_streams);
     memset(memory, 0, sizeof memory);
     memset(&host, 0, sizeof host);
@@ -438,6 +447,36 @@ int main(int argc, char **argv)
 {
     int result;
     if (argc != 2) return 2;
+    if (!strcmp(argv[1],"mix-gain")) {
+        Stream *s=setup();s->mix_bus=PC_AUDIO_DIALOGUE;
+        PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;mix.volume[PC_AUDIO_DIALOGUE]=50;
+        pc_audio_mix_live=pc_audio_mix_pack(mix);
+        packet(s,0x12000,0x13000);CHECK(captured_level==-602 && captured_bytes==0);
+        uint64_t sent=s->sent;unsigned queued=host.queued;volume_updates=0;
+        mix.master=50;pc_audio_mix_live=pc_audio_mix_pack(mix);
+        hle_dsound_stream_tick(test_now);
+        CHECK(updated_level==-1204 && volume_updates>0 && s->sent==sent && host.queued==queued);
+        puts("PASS: mix-gain");return 0;
+    }
+    if (!strcmp(argv[1],"bus-ownership")) {
+        Stream *s=setup();uint32_t wfx=0x14000;
+        HLE_MEM32(wfx)=TAG_PCM|(1u<<16);HLE_MEM32(wfx+4)=48000;
+        HLE_MEM32(wfx+12)=2u|(16u<<16);
+        HLE_MEM32(g_esp+4)=s->object;HLE_MEM32(g_esp+8)=wfx;
+        unsigned token=pc_audio_scope_enter(PC_AUDIO_DIALOGUE,g_esp+256);
+        hle_CDirectSoundStream_SetFormat();pc_audio_scope_leave(token);
+        CHECK(s->mix_bus==PC_AUDIO_DIALOGUE);
+        hle_CDirectSoundStream_SetFormat();CHECK(s->mix_bus==PC_AUDIO_DIALOGUE);
+        /* Reusing the same stream/format still changes ownership at source start. */
+        token=pc_audio_scope_enter(PC_AUDIO_MUSIC,g_esp+256);
+        hle_CDirectSoundStream_SetFormat();pc_audio_scope_leave(token);CHECK(s->mix_bus==PC_AUDIO_MUSIC);
+        token=pc_audio_scope_enter(PC_AUDIO_BACKGROUND,g_esp+256);
+        HLE_MEM32(wfx+4)=32000;hle_CDirectSoundStream_SetFormat();pc_audio_scope_leave(token);
+        CHECK(s->mix_bus==PC_AUDIO_BACKGROUND && s->rate==32000);
+        token=pc_audio_scope_enter(PC_AUDIO_EFFECTS,g_esp+256);
+        hle_CDirectSoundStream_SetFormat();pc_audio_scope_leave(token);CHECK(s->mix_bus==PC_AUDIO_EFFECTS);
+        puts("PASS: bus-ownership");return 0;
+    }
     if (!strcmp(argv[1], "underrun")) result = underrun();
     else if (!strcmp(argv[1], "speed")) result=speed_changes();
     else if (!strcmp(argv[1], "process")) result = process_clock();

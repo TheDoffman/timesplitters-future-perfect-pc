@@ -55,6 +55,9 @@ int pc_audio_enhanced_enabled(void) {return enhanced_audio;}
 int pc_audio_set_enhanced(int enabled) {if(!audio_save_ok)return 0;enhanced_audio=!!enabled;return 1;}
 PcAudioOptions pc_audio_get_options(void) {audio_test_options.enhanced=enhanced_audio;return audio_test_options;}
 int pc_audio_set_options(const PcAudioOptions *o) {if(!audio_save_ok)return 0;audio_test_options=*o;enhanced_audio=o->enhanced;return 1;}
+static PcAudioMixOptions audio_mix_test_options=PC_AUDIO_MIX_DEFAULTS;
+PcAudioMixOptions pc_audio_mix_get(void){return audio_mix_test_options;}
+int pc_audio_mix_set(const PcAudioMixOptions *o){if(!audio_save_ok)return 0;audio_mix_test_options=*o;return 1;}
 #include "graphics/graphics_options.h"
 static TsfpGraphicsOptions graphics_options={1,0,1,0,1,0};
 static int graphics_save_ok=1;
@@ -895,7 +898,9 @@ int main(int argc,char **argv)
     pose.clip_channels[0]=NAN;pc_character_pose_present(entity,&pose);
     CHECK(pose_clip_bindings==1);
 
-    CHECK(audio_beta_row==0x510000 && observed_beta_height==bits(32.f));
+    CHECK(observed_beta_height==bits(32.f)); /* Original menu now contains one link. */
+    built_row_count=0;last_built_item=0;audio_features_page=1;call(AUDIO_MIX_BUILD,0,0);
+    uint32_t audio_beta_row=audio_feature_rows[0];CHECK(audio_beta_row && built_row_count==6);
     WORD_AT(audio_beta_row+0xc8)=1;call(AUDIO_BETA_CHANGE,0,0);CHECK(enhanced_audio==1);
     audio_save_ok=0;WORD_AT(audio_beta_row+0xc8)=0;call(AUDIO_BETA_CHANGE,0,0);
     CHECK(enhanced_audio==1 && WORD_AT(audio_beta_row+0xc8)==1);
