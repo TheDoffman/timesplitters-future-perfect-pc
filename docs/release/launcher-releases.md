@@ -1,9 +1,9 @@
 # One launcher release for Windows, Mac and Linux
 
-The next Stable launcher source version is **1.5.2**, including clearer Windows
-startup/update error reporting, the shared Fullscreen setting label and the
-Developer Tools shortcut warning. Source preparation does not publish packages;
-the workflow below must pass before release.
+Stable launcher **1.5.2** is published for Windows, Mac and Linux, including
+clearer Windows startup/update error reporting, the shared Fullscreen setting
+label and the Developer Tools shortcut warning. The three-host publication
+workflow passed and verified all fifteen assets before making it Latest.
 
 The **Launcher release (Windows + Mac + Linux)** workflow builds Windows x64,
 Apple Silicon Mac and Linux x64 launchers from the same source revision and shared version.

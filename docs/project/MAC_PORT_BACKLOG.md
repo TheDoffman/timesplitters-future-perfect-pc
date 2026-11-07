@@ -1519,7 +1519,7 @@ before checking release, matching the existing asynchronous settings contract.
   on the Apple M4/macOS 27 host with isolated settings. Gameplay code is unchanged;
   final clean release validation follows after integration.
 
-- **v0.5.2 input self-test (2026-11-06, uncommitted):** Implemented, native
+- **v0.5.2 input self-test (2026-11-06,9b6db3ee / PR517):** Implemented, native
   Mac acceptance pending. The shared SDL self-test in `src/native/input_sdl.c`
   exercises mouse capture with click/Escape after F1 became optional Developer
   Tools access. Only synthetic self-test events change; production capture and

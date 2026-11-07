@@ -1,3 +1,70 @@
+## 2026-11-06 - Launcher 1.5.2 published; game 0.5.2 Windows/Linux draft
+
+[Launcher1.5.2](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/launcher-v1.5.2)
+is public and Latest from main816ae00a. All15 assets passed the three-host
+workflow42326953956. PR515 merged with explicit authorization; its local task
+branch was removed after verifying the squash tree.
+
+Game tag **v0.5.2** is pinned to **9b6db3ee3d37cd181e0c160a8f7aa67f14038fe5**,
+release/game-0.5.2-validation. Windows uploaded first, Linux second. The game
+release remains **draft**, with exactly6 assets (ZIP/SHA256/BUILD per host).
+All uploaded GitHub SHA256 digests and sizes match the local verified assets.
+Combined metadata advertises only windows-x64/linux-x64, minimum launcher1.5.2;
+launcher remains Latest. Optional textures remain separate; saves/settings and
+existing packs were preserved. No game issue was closed as a published fix.
+
+| Package | Bytes | SHA256 |
+| --- | ---: | --- |
+| Windows x64 | 185341133 | `fe754dfe5af78b9adb364d06cbe0bc7d1c46c35c6ca548b705822ab8b71c2885` |
+| Linux x64 | 807256671 | `b396b05b4579dff1e605a4884b05334faafd7af699474d44918833dec31eb572` |
+
+Windows x64/MSVC Release/D3D11: full native build/tests and patch validation pass;
+full four-worker suite3850passed,77explicit skips,114subtests in869.63s.
+Exact1285-file installer fresh/upgrade preservation and portable Python/Tk/TLS,
+HTTPS certificates, directory/invitations/three-peer UDP relay pass. Complete
+preparation1025.63s. CI42329951076 passed Windows/macOS native regressions,
+Linux foundation and the PR gate at this exact source. These are the recorded
+host/fixture scopes, not native Mac game acceptance or external WAN play.
+
+Linux: Ubuntu24.04 x86_64/WSL2, Clang18.1.3, pinned Vulkan SDK1.4.363.0 and
+verified decoder-only FFmpeg6.1.5. Complete clean-source release-media build/MMIO,
+4 original-XBE crane checks, dependency-source/license audit,1554-file exact
+installer fresh/upgrade/corruption checks and relocated Python/Tk/TLS pass.
+Bundled Linux launcher uses the exact published1.5.2 bytes. Read-only package
+and original assets in minimal Ubuntu, as nobody under private Xvfb/Openbox:
+settings/debug/input, saved windowed/fullscreen renderers, Python/Tk/TLS and42
+launcher UI groups pass. Online is explicit skip77 there, separate from the
+local network checks. Input self-test now uses current click/Escape capture;
+only its synthetic events changed. The first Clang debug-assignment crash on
+continuation0574 compiled successfully on an unchanged retry; no compiler,
+optimization or dependency pin was changed.
+
+Final packaged Story:180.13seconds, original60 selection,640x480, software
+Vulkan/lavapipe, dummy audio and synthetic SDL schedule on a disposable Test Lab
+copy. Actual active Story and two pause/resume cycles observed; final capture
+reviewed;9000 guest presents,0failed presents. Separate20.17second movie pass:
+EA88/FRD81pictures reached EOF,900guest presents,0failures. Functional runs did
+not enable SDK validation. Counts measure successful API presents, not GPU
+completion/scanout, physical mouse capture or native-GPU performance. Native
+hardware, audible output, controllers/Steam Deck, full campaign and WAN checks
+remain incomplete. Known WSLg pointer confinement/relative-motion limits stay
+explicit in draft notes. Disposable partitions were recycled after each pass;
+the six files represented5243406848logical bytes but only122880allocated bytes.
+
+**Mac handoff:** fetch tagv0.5.2 and build/package from9b6db3ee, including launcher
+1.5.2. Add the Mac ZIP, checksum and BUILD receipt only after native validation;
+verify all9 assets, add macos-arm64 to metadata and replace the Mac-pending note
+before publishing. Keep launcher1.5.2 Latest. Mac device revision, synchronization
+and game acceptance remain unverified here. main816ae00a alone omits the two
+self-test repairs; PR517 contains them and these records and remains open.
+Original Linux fixture/status edits remain preserved in the named stash
+release-0.5.2-preserve-developer-tools-fixtures; personal settings/saves untouched.
+Disposable Linux release staging and the downloaded launcher-cache ZIP were
+removed after uploaded-digest verification. Game ZIPs/receipts, reusable test
+dependencies and selected captures remain; unrelated older releases were kept.
+Local evidence: logs/release-0.5.2-*, Linux logs/linux-clean-package.json and the
+selected private/captures/native-linux/frame000.bmp/frame001.bmp.
+
 ## 2026-11-06 - Native input release self-test follows current capture controls
 
 The v0.5.2 Linux clean-userspace candidate passed settings/debug, both renderer
