@@ -4,7 +4,8 @@ The user compared the verified20-second Original and Night campaign intro
 recordings inline and reported "Clearer speech and comfortable effects" for
 Night. Preserve the current tuning. These are separate live runs and Night
 also enables Dialogue focus; this does not isolate the compressor or establish
-all-scene acceptance. Equipment remains unconfirmed. The loading-to-match
+all-scene acceptance. The user subsequently identifies headphones for the
+comparison. The loading-to-match
 excerpt was separately accepted as clean apart from the loading pause.
 The goal is resumed; broader preset/spatial and physical-device checks remain.
 
@@ -19,7 +20,9 @@ shows first-person campaign gameplay. The child is intentionally terminated
 at its limit and both capture controllers exit0. A new three-track private
 Original/Reduced/Night playlist preserves source WAV bytes and candidate hash;
 Reduced and Night both enable Dialogue focus. Separate runs are not synchronized
-events or isolated compression comparisons. Reduced feedback remains pending.
+events or isolated compression comparisons. The user reviews Reduced as
+"Clear and comfortable"; retain its current tuning. Broader scenes and speaker
+acceptance remain open.
 No production source or executable change is made.
 
 ## 2026-11-07 - Starvation report and loading transition reference
