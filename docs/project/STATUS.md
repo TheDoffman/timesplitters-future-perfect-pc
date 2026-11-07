@@ -1,3 +1,21 @@
+## 2026-11-07 - Audio overhaul census (audit in progress)
+
+Branch `feature/audio-overhaul`, base `a24c3b60`; Windows x64, Python 3.12.14.
+The read-only census verified the supported US XBE SHA-256 and hashed/indexed
+403 P5CK archives (3,924,512,064 bytes), plus six XMV files (54,562,816 bytes).
+Candidate language/music banks contain 27,198 container entries, including
+metadata; this is not a count of unique audible sounds. The English bank has
+an observed 5,406-name list; payload mapping, codec/rate/channel/loop metadata,
+decoded measurements and listening remain unverified. Other archives remain
+unclassified rather than excluded. The 10,316,058-byte private inventory stays
+ignored; no original payloads were extracted, modified or duplicated.
+
+`tests/media/test_audio_audit.py`: 13 passed using synthetic malformed/bounded
+inputs. Registered alongside both native CI media selections; remote CI has
+not run. Repository-context refresh/check and whitespace checks passed.
+No runtime changes, game build or listening acceptance in this census step.
+See [scope, ordered acceptance and initial estimates](../development/audio-overhaul.md).
+
 ## 2026-11-06 - Vietnam CPU eligibility fix (Windows verified)
 
 Branch fix/vietnam-frame-performance, base816ae00a. Release v0.5.2 executable

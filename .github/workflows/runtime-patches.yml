@@ -218,7 +218,7 @@ jobs:
             tests/compiler/test_translation_layout.py tests/compiler/test_translation_hooks.py
             tests/compiler/test_c_source_scan.py tests/compiler/test_generation_output.py
             tests/compiler/test_function_evidence.py tests/compiler/test_function_categories.py tests/compiler/test_function_catalog.py
-            tests/support/test_native_compiler.py tests/support/test_guest_constants.py tests/support/test_parallel_groups.py tests/support/test_suite_timing.py tests/media/test_audio_timing.py tests/media/test_audio_output_gain.py tests/media/test_audio_device_recovery.py
+            tests/support/test_native_compiler.py tests/support/test_guest_constants.py tests/support/test_parallel_groups.py tests/support/test_suite_timing.py tests/media/test_audio_audit.py tests/media/test_audio_timing.py tests/media/test_audio_output_gain.py tests/media/test_audio_device_recovery.py
             tests/gameplay/test_native_linux.py tests/gameplay/test_frame_clock.py tests/gameplay/test_native_frame_stats.py tests/gameplay/test_native_timing.py tests/gameplay/test_native_wind.py tests/gameplay/test_native_vehicle_timing.py tests/gameplay/test_native_entity_trace.py tests/storage/test_profile_accept.py tests/storage/test_unlock_content.py
             tests/gameplay/test_native_demo_timing.py tests/gameplay/test_reload_keys.py
             tests/gameplay/test_native_local_trace.py tests/graphics/test_state_layout_slots.py
@@ -321,7 +321,7 @@ jobs:
             tests/graphics/test_kill_feed.py tests/graphics/test_fov_settings.py
             tests/graphics/test_cutscene_letterbox.py tests/graphics/test_menu_text.py tests/graphics/test_zero_base_indices.py
             tests/graphics/test_quit_menu.py tests/graphics/test_channel_clears.py
-            tests/media/test_audio_timing.py tests/media/test_audio_output_gain.py
+            tests/media/test_audio_audit.py tests/media/test_audio_timing.py tests/media/test_audio_output_gain.py
             tests/media/test_audio_device_recovery.py tests/media/test_native_movie_file.py
             tests/compiler/test_linux_desktop.py tests/compiler/test_linux_video_startup.py tests/compiler/test_guest_storage.py
             tests/compiler/test_guest_paths.py tests/compiler/test_io_lifetime.py
