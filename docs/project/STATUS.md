@@ -1,3 +1,21 @@
+## 2026-11-07 - Audio overhaul completed with user-deferred hardware checks
+
+The user says "Dont worry about checking the other stuff", superseding the prior
+requirement to keep unavailable speakers/controllers/native Mac/Linux as completion
+gates. These remain documented unverified follow-ups. The implemented overhaul,
+reviewed headphone references, saved original Music preference and actual Windows
+headset reconnect/default-output switching are accepted for the recorded scope.
+
+Final closure checks verify the current candidate and matching crash symbols,
+all410 original containers unchanged, reviewed reference hashes, Windows230 distinct
+passing checks, the independent Linux226-pass/four-skip receipt, physical recovery
+evidence and isolated launcher CheckOnly with no profile mutation. Production
+code/patches are unchanged since the tested candidate. No asset restoration was
+justified; originals are retained. Unknown formats/provider identity, all-scene
+coverage and unverified native/hardware behavior remain explicit limits in the
+[acceptance ledger](../development/audio-overhaul-acceptance.md). Changes remain
+local on feature/audio-overhaul; no push, merge or publication.
+
 ## 2026-11-07 - Windows default-output switch accepted
 
 The actual Windows defaults and running game's active session are observed

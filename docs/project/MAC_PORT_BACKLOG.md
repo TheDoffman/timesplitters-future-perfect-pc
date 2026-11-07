@@ -1,3 +1,12 @@
+Audio overhaul closure (2026-11-07): the user defers remaining speakers,
+multiple-controller and native Mac/Linux checks as unverified follow-ups. The
+implemented/common audio work and accepted Windows/headphone results are closed
+for that scope, not marked native Mac verified. Final media coverage is230
+distinct Windows passes and226 Linux/WSL passes with four platform skips. The
+[current ledger](../development/audio-overhaul-acceptance.md) supersedes earlier
+pending milestone notes below; native build/UI/SDL endpoint/listening remains
+unverified and tracked here. No Mac adapter or duplicated policy was added.
+
 Audio callback audit follow-up: the shared stream fixture now covers the observed
 8000Hz PCM16/320-byte callback refill contract through normal/manual dispatch.
 Windows and independent Linux each pass110 timing checks. Actual pinned SDL

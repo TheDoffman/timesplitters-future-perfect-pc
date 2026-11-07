@@ -1,9 +1,13 @@
 # Audio overhaul acceptance ledger
 
-This is the current gate list for the full objective. Older chronological notes
-in the [overhaul plan](audio-overhaul.md) record milestones and may describe
-states superseded later. A passing implementation/contract check does not imply
-listening or hardware acceptance. The overall goal remains open.
+The overhaul is complete for the user-approved scope on2026-11-07. After the
+accepted Windows headset reconnect and monitored default-output switch, the user
+says "Dont worry about checking the other stuff". This supersedes the earlier
+choice to keep unavailable physical validation as completion gates. Speakers,
+multiple controllers and native Mac/Linux checks remain explicitly unverified
+follow-ups; they are not marked passed. Unknown formats/provider identity and
+other measurement limits below also remain disclosed. No merge or publication
+is included. Older chronological notes retain earlier, superseded states.
 
 ## Ordered requirements
 
@@ -34,13 +38,14 @@ listening or hardware acceptance. The overall goal remains open.
 | Actual pinned SDL3 adapter/converter | Fresh independent Release static SDL build at `fa2c02bb6e21974a89ea9824bc53c9932abe5f9c`;16 standard dummy-driver cases through production `audio_sdl.c` cover22042/32000/44100/48000Hz, plus four160-frame8000Hz cases. Mono/stereo,8/16-bit, tail drain, queued exact mute, source immutability and reset/shutdown are covered. | These are converter/adapter checks with a paused dummy device, not physical playback or latency. The real PulseAudio attempt returned unavailable; `/mnt/wslg/PulseServer` is absent. |
 | Native Mac | Common policy/source and portable shared tests; no duplicate Mac mix/DSP/model was added. | Native compilation/execution, launcher/game UI, actual SDL endpoint and physical listening on Mac. See MAC backlog. |
 
-## Next acceptance work
+## Acceptance evidence and deferred checks
 
-After the accepted Windows reconnect/default-output checks, the user reports
-"No additional setup available yet" on2026-11-07. Speakers, multiple controllers
-and native Mac/Linux remain unavailable for the required acceptance. Retain these
-gates and the completed results. No completion ETA can be established until the
-required setup is available; repeating unchanged automated tests cannot close them.
+The final scope audit rechecks the current executable and matching symbols,
+all410 original container hashes, reviewed reference-track hashes, Windows test
+logs/Linux result receipt, Windows route evidence and isolated-launcher CheckOnly
+without profile mutation. Production source/patches remain unchanged since the
+validated candidate. The user defers the remaining hardware/native-host checks;
+no further test run or speculative tuning is required to close this scope.
 
 On2026-11-07 a read-only monitor records the actual Windows console/multimedia
 defaults and active game session moving G733->Steam Streaming Speakers->G733.
@@ -65,20 +70,17 @@ rows and is not attributed to this action. The private receipt retains a bounded
 log snapshot, source/probe hashes and route observations. The subsequent observed default-device switch also passes as recorded below;
 the other physical/native-host gates remain open.
 
-The user explicitly retains full validation as the completion requirement.
-Completed implementation, automated checks and accepted headphone references
-stand. The goal is not complete. Required remaining physical acceptance includes:
+The following checks are deferred at the user's latest instruction:
 
 - Speaker listening for speech/effects balance, positioning and room transitions.
 - Multiple-controller split-screen gameplay and listening.
 - Native Mac build, launcher/game UI, actual SDL output and listening.
 - Native Linux game/UI, actual output and listening.
 
-Record each on the actual host/device with revision, configuration and observed
-result. A failure should lead to a supported repair and focused revalidation;
-passing simulated recovery, WSL tests or headphone clips cannot close these gates.
-Only headphones are currently available, so no completion date is established
-for the remaining physical validation.
+If resumed separately, record actual host/device, revision, configuration and
+observed result. Simulated recovery, WSL tests and headphone clips do not prove
+these checks. Deferral does not change their unverified status or shared-code
+requirements.
 
 The user accepts the adjusted menu reference as "Comfortable now" on headphones.
 The original Music Volume control at full raises the observed native Music stream
@@ -95,10 +97,10 @@ without changing profile hashes. Private persistence/validation receipts retain
 both hashes and run provenance. Personal settings, source fixtures, PC mix100,
 Movies gain, production code/binary and game-wide defaults are unchanged.
 
-Only headphones are available. The remaining physical speaker/device/controller
-and native Mac/Linux checks are unverified; no simulated endpoint or dummy-driver
-result substitutes for them. On2026-11-07 the user explicitly chooses "Keep full validation open".
-These remain completion gates, rather than deferred follow-ups. Unknown archive formats/provider identity also remain documented limits.
+Only headphones were available. The remaining speaker/controller and native
+Mac/Linux checks stay unverified. The earlier "Keep full validation open" choice
+is superseded by the user's final deferral; existing acceptance is not broadened.
+Unknown archive formats/provider identity remain documented limits.
 
 On2026-11-07 the user accepts the headphone room crossing as "Smooth transition;
 no obvious clicks or gaps", the controlled corrected crane loop as "Continuous;
@@ -126,11 +128,7 @@ perceptual result and supports retaining the current buffering. Equipment was
 not specified, so it does not establish separate headphone/speaker acceptance,
 per-voice counter attribution, the full listening package or device transitions.
 
-Review the packaged current-candidate Original/listening presets and the
-high-refresh recordings, retaining honest target/performance labels. Continue
-provider/identity checks where evidence can resolve the remaining scope. Review
-audible artifacts and preset balance from those recordings, then
-change only a defect or tuning choice supported by that evidence. Retain the
-unidentified-source and unavailable-device gaps in all completion claims. Do not
-mark the full objective complete from build/test success or an unanswered
-listening question.
+Current listening feedback supports retaining the reviewed tuning and original
+assets. The final decision includes the user-approved deferral, not merely build
+success. Preserve the listed source-identity, scene, platform and hardware limits
+in any later release or port claims.

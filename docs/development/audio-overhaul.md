@@ -5,13 +5,13 @@ Goal started 2026-11-07. Work lives on `feature/audio-overhaul`, based on
 assets, settings and saves. Implement common policy once for Windows/macOS/Linux.
 Merging and publication are outside this task's authorization.
 
-Current gates and outstanding work are maintained in the
+Completed scope, acceptance evidence and deferred checks are maintained in the
 [acceptance ledger](audio-overhaul-acceptance.md). The sections below retain
 chronological evidence; later verified results supersede earlier pending notes.
 
 ## Sequence and acceptance
 
-1. **Audit (known-bank census complete; unidentified coverage/listening open).** Hash/index every game archive and movie without
+1. **Audit (known-bank census and survey complete; unidentified coverage disclosed).** Hash/index every game archive and movie without
    extracting another data copy. Identify sound-bank metadata and establish
    payload/codec mappings. Inventory rates, channels, durations and loop points
    only after verifying the format. Measure decoded peaks, loudness and seams;
@@ -21,7 +21,7 @@ chronological evidence; later verified results supersede earlier pending notes.
    remaining high-refresh underrun counters, decoder accuracy, loop/tail handling,
    pause/skip and music/movie timing. Change only verified defects with regression
    evidence; retain guest completion clocks and bounded queues.
-3. **Mix controls (implemented; game/listening acceptance pending).** Separate enhancements currently behind one beta switch;
+3. **Mix controls (implemented; reviewed game/headphone references accepted).** Separate enhancements currently behind one beta switch;
    provide shared persisted controls and original recovery. Identify trustworthy
    dialogue/effect/ambience/music ownership before adding independent gains,
    optional dialogue ducking and dynamic-range processing. Neutral settings must
@@ -34,10 +34,15 @@ chronological evidence; later verified results supersede earlier pending notes.
 5. **Selective asset restoration (originals retained after candidate review).** Process only catalogued defects, retaining
    originals, loop identity, hashes and reversible per-asset fallback. No global
    synthetic enhancement or sample-rate increase presented as recovered detail.
-6. **Integrated validation.** Build; run shared media/settings/recovery tests;
+6. **Integrated validation (completed for user-approved scope).** Build; run shared media/settings/recovery tests;
    consolidate campaign/combat/ambience/movie listening at supported frame rates.
    Check headphones/speakers, device changes and physical Windows/macOS/Linux
    behavior. Automated host doubles do not establish listening or device acceptance.
+
+The final user instruction defers unavailable speaker/controller/native Mac/Linux
+checks as unverified follow-ups, superseding earlier completion-gate requirements.
+Windows headset reconnect and actual default-output switching are accepted. The
+ledger records final evidence and limits; no native host result is inferred.
 
 ## Initial evidence
 
