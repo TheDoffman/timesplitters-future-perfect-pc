@@ -1,3 +1,5 @@
+Historical controls upgrade omits patch2720 with its absent spirit/display prerequisites, then asserts the viewmodel hook after full migration.
+
 [First-person node ownership tests](video-options.md#first-person-shoulder-visibility).
 
 [Uplink throw tests and policy](native-uplink.md#throw-impulse).
