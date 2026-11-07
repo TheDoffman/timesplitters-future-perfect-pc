@@ -139,6 +139,14 @@ It never holds buffer/stream locks together, flushes tails or changes clocks.
 output (excluding held resampler input). Both UIs expose the opt-ins; guest pages,
 perceptual tuning, final mix headroom and physical hardware remain unverified.
 
+Runtime audio layout correction: audio captions are plain text, not unsupported
+`\vs75` sequences. The link in the original profile page inherits its supplied
+native6/7.5-unit metric; zero collapses it and32 is oversized. The custom pages
+use automatic relative rows and the existing scoped0.65 glyph sizing by their
+unique descriptor (`audio_font_menu`), including measure/draw/selected values.
+Native640x480 checks now show profile controls/Accept/Cancel, Mix, Enhancements
+and Listening; keyboard edits persist MIX_V2 and retain independent choices.
+
 Split-screen mouse look (#112): `pc_camera_mouse_primary_in_region` reads the
 current player's local input slot at `player+4` from the fresh bounded camera
 mapping. Both the Win32 and SDL `pc_controls_apply_mouse` adapters skip slots

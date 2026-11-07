@@ -166,3 +166,22 @@ def test_shared_audio_dynamics(tmp_path):
     assert built.returncode==0,built.stdout+built.stderr
     run=subprocess.run([str(exe)],cwd=tmp_path,env=env,capture_output=True,text=True,timeout=10)
     assert run.returncode==0,run.stdout+run.stderr
+
+
+@pytest.mark.skipif(os.name!='nt',reason='Windows process-loopback instrumentation; shared DSP tests run on every host')
+def test_process_audio_capture_preflight(tmp_path):
+    compiler,env=native_compiler(tmp_path)
+    exe=tmp_path/'capture-game-audio.exe'
+    source=ROOT/'tools/testing/capture-game-audio.cpp'
+    built=subprocess.run([compiler,'/nologo','/std:c++17','/EHsc',str(source),'/Fe:'+str(exe)],
+                         cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
+    assert built.returncode==0,built.stdout+built.stderr
+    result=subprocess.run([str(exe),'--help'],capture_output=True,text=True,timeout=10)
+    assert result.returncode==0 and 'only that process tree' in result.stdout
+    for pid,seconds in [('0','1'),('-1','1'),('1','0'),('1','121'),('1','1.5'),('4294967296','1')]:
+        result=subprocess.run([str(exe),pid,str(tmp_path/'unused.wav'),seconds],capture_output=True,text=True,timeout=10)
+        assert result.returncode==2 and not (tmp_path/'unused.wav').exists()
+    evidence=tmp_path/'selected.wav';evidence.write_bytes(b'preserve listening evidence')
+    result=subprocess.run([str(exe),str(os.getpid()),str(evidence),'1'],capture_output=True,text=True,timeout=10)
+    assert result.returncode!=0 and 'new output file' in result.stderr
+    assert evidence.read_bytes()==b'preserve listening evidence'

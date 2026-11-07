@@ -1,3 +1,38 @@
+## 2026-11-07 - First Windows audio candidate and real menu verification
+
+The game linked after a bounded single-worker retry of the initial C1002/C1060
+compiler-memory failure. The standard tsfp.ps1 -Action Build then passed all
+checks and produced matching crash symbols. No optimization/check was removed;
+no other checkout's process was stopped. Final expanded media/menu/layout/
+profile/context checks pass210 with3 explicit skips in64.69s, including real
+movie data. The shared launcher suite previously passed44 UI groups in41.69s.
+
+Bounded disposable Test Lab runs reached the native main menu at Original60FPS
+and stayed live through32/66/56-second deadlines. The runner intentionally
+terminated its own games afterward (exit1); natural shutdown is not inferred.
+Windows process-only loopback captured valid48kHz/stereo/signed16 WAV files with
+zero discontinuity/timestamp-error flags. Native output reported zero engine
+glitches; startup voice-starvation counters remain an investigation item.
+Personal saves/settings and the original full game-data copy were not modified.
+Known disposable virtual disks were recycled after each pass.
+
+Actual640x480 review exposed unsupported scale markup and wrong absolute row
+metrics in the original Audio page. Plain captions, inherited6/7.5-unit profile
+rows and descriptor-scoped glyph sizing corrected the pages. Profile Audio Mix
+link, Accept/Cancel, six mix rows, Enhancements and Listening were inspected.
+Keyboard changes saved Music0, focusON, impactReduced and the enhancement master
+independently. Music-only mute reduced captured RMS from-47.47 to-96.71dBFS;
+this verifies runtime music gain, not full combat/dialogue fidelity or headroom.
+Private evidence and scope limits are in the
+[audio plan](../development/audio-overhaul.md#process-output-capture).
+
+The Windows-only capture utility is developer instrumentation, compiled against
+the installed SDK and tested without CI audio activation. Cross-platform product
+mix/DSP policy remains shared. Combat/dialogue, pause/split-screen/aspects,
+headphone/speaker listening, spatial refinements, selective restoration decisions
+and physical Mac/Linux acceptance remain in the active goal. No asset rewrite,
+merge, source push or publication was performed.
+
 ## 2026-11-07 - Shared listening controls and isolated build preparation
 
 Local feature/audio-overhaul adds common patch2307: opt-in Dialogue focus and

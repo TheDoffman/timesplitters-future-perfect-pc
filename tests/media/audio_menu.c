@@ -33,7 +33,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned n,...)
     uint32_t a[6]={0};assert(n<=6);va_list ap;va_start(ap,n);
     for(unsigned i=0;i<n;i++)a[i]=va_arg(ap,uint32_t);va_end(ap);
     if(fn==sub_00079D60_gen) {
-        assert(n==6 && a[3]==bits(32.f));
+        assert(n==6 && a[3]==(a[1]==15 && a[4]?bits(6.f):0u));
         uint32_t row=next_row;next_row+=0x110;assert(guest_writable(row,0x110));
         WORD_AT(row+0x14)=a[1];WORD_AT(row+0x28)=a[2];last_callback=a[4];rows++;return row;
     }
@@ -50,7 +50,7 @@ static void build(uint32_t menu)
 {g_esp=0x200;WORD_AT(g_esp+4)=menu;rows=choices=0;audio_mix_build();assert(g_esp==0x204);}
 int main(void)
 {
-    g_xbox_mem_offset=(ptrdiff_t)guest;g_esp=0x200;WORD_AT(g_esp+12)=0x21;
+    g_xbox_mem_offset=(ptrdiff_t)guest;g_esp=0x200;WORD_AT(g_esp+12)=0x21;WORD_AT(g_esp+16)=bits(6.f);
     audio_beta_add(sub_00079D60_gen);
     assert(rows==1 && last_callback==AUDIO_MIX_OPEN && WORD_AT(0x10000+0x28)==0 && g_esp==0x200);
     assert(WORD_AT(audio_menu_storage)==AUDIO_MIX_BUILD && WORD_AT(audio_menu_storage+4)==AUDIO_MIX_TICK);

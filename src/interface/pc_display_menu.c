@@ -912,6 +912,10 @@ static int video_font_menu(uint32_t menu)
     return current_menu && storage && menu==current_menu && guest_writable(menu,8) &&
            WORD_AT(menu+4u)==storage;
 }
+static int audio_font_menu(uint32_t menu)
+{
+    return audio_menu_storage && guest_writable(menu,8) && WORD_AT(menu+4u)==audio_menu_storage;
+}
 #include "pc_display_ui.inc"
 static uint32_t bits(float f) { uint32_t u; memcpy(&u,&f,4); return u; }
 #include "pc_kill_feed_guest.inc"

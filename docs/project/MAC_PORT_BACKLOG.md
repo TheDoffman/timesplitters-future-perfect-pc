@@ -8693,6 +8693,13 @@ Mac title acceptance pending; retain MAC-118 Awaiting validation. See [contracts
     Windows production media/menu and launcher tests pass, including SDL host
     doubles; native Mac/Linux execution/listening remains pending. No separate
     platform DSP implementation is deferred.
+  - First integrated Windows candidate now builds and passes standard checks.
+    Shared descriptor-scoped font sizing and native row metrics corrected the
+    audio pages after actual640x480 review; Mac/Linux visual checks are pending.
+    `tools/testing/capture-game-audio.cpp` is Windows-only developer instrumentation
+    using process-loopback WASAPI, not a product audio dependency. Equivalent
+    Mac/Linux capture/listening requires those hosts; this does not defer common
+    mix/DSP behavior. First Windows menu capture and Music mute verification pass.
 - Shared: patches 0040/0045/0050 and `pc_spatial_audio.h`, `pc_acoustic_*`
   provide directional buffers/streams, near-field centering, longer gunfire
   range, wall/portal filtering and metadata-driven ambience mixing. Both

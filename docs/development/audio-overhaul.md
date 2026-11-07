@@ -279,6 +279,81 @@ PCM/image hashes and cadence while also exercising synthetic movie DSP retries.
 Game build, rendered native pages, listening/tuning and physical Mac/Linux output
 remain unverified. No source audio asset has been rewritten.
 
+## Process output capture
+
+`tools/testing/capture-game-audio.cpp` is Windows developer instrumentation,
+separate from the product audio path. It uses the Windows SDK's
+[process-loopback activation](https://learn.microsoft.com/en-us/windows/win32/api/mmdeviceapi/nf-mmdeviceapi-activateaudiointerfaceasync)
+with an explicit target PID and INCLUDE_TARGET_PROCESS_TREE. It has no endpoint
+or microphone fallback. An agile completion object retains activation parameters
+through asynchronous completion, including the bounded activation wait.
+
+In an x64 MSVC developer shell, compile with
+`cl /nologo /std:c++17 /EHsc tools/testing/capture-game-audio.cpp
+/Fe:build/audio-tools/capture-game-audio.exe`. Run
+`capture-game-audio <owned-game-PID> <new-private-output.wav> <seconds>`.
+The allowed duration is1..120 seconds. Existing files are never overwritten;
+invalid arguments and file preflight run before audio activation. The utility
+writes stereo48kHz signed16 PCM WAV and reports frames, silent frames, packet
+discontinuities, timestamp errors, elapsed time and early target exit. A parent
+bounded runner must still check both game and recorder outcomes. A valid WAV
+alone does not establish the correct scene, timing, audible fidelity or stability.
+
+`test_audio_output_gain.py` compiles the actual utility on Windows and checks
+argument bounds, preservation of existing evidence and preflight. It does not
+activate audio in CI. Actual private menu captures succeeded at6/4/6-second
+limits, with zero discontinuity/timestamp-error flags. FFprobe and Python wave
+readers confirm the headers, PCM type and counts. These are game-only output
+captures, not hardware headphone/speaker recordings or Xbox reference audio.
+Mac/Linux need native capture and physical listening acceptance on those hosts.
+
+## First Windows build and frontend checks
+
+Generation completed:15,838/15,863 functions translated, zero failed,
+6,595,934 lines. The three new wrapper `_gen` declarations are present. The
+omitted/manual functions and existing unresolved stubs are not audio acceptance.
+The isolated checkout uses a small compiler-input XBE and local derived caches;
+the single complete game-data copy remains elsewhere. Runtime tests explicitly
+use that complete data folder and a verified disposable Test Lab fixture.
+
+The first normal compile stopped with C1002/C1060 heap exhaustion and an
+MSBuild OutOfMemoryException; even a concurrent small settings fixture could
+not compile its Windows headers. The x64 compiler/host were already selected.
+The retry kept the same Release code/optimization and used
+`cmake --build build/windows --config Release --target futureperfect_recomp
+--parallel 1 -- /p:CL_MPCount=1 /p:UseMultiToolTask=true
+/p:EnforceProcessCountAcrossBuilds=true`. One compiler process was observed at
+about3.86GB working set, with system commit20.3GB of44.2GB. The previously
+failing units then compiled and the game linked. The standard
+`tsfp.ps1 -Action Build` subsequently passed its full build checks with
+`CL_MPCount=1`, including matching crash symbols. No check or optimization was
+removed, and no other checkout's process was stopped.
+
+The first actual640x480 audio page exposed an oversized link and literal75
+text that host fixtures had not caught. Unsupported `\vs75` text was replaced
+with plain captions. Original profile rows use native absolute6/7.5-unit
+metrics; inheriting that incoming value keeps the link visible without pushing
+Accept/Cancel offscreen. The custom pages use automatic relative rows and the
+existing descriptor-scoped0.65 glyph-size wrapper during measuring and drawing.
+Native profile/Mix/Enhancements/Listening pages were subsequently inspected;
+the keyboard changed and saved Music0, Dialogue focusON, impactReduced and the
+enhancement master independently. Source font/geometry fixtures pass30 checks
+with2 unrelated skips. Frontend coverage is not pause, split-screen, ultrawide,
+mouse or full controller acceptance.
+
+In the menu test, changing only Music from100 to0 lowered captured RMS from
+-47.47 to-96.71dBFS, near the signed16 capture floor. The corresponding private
+clips are `menu-pages-fixed-02/mix-before.wav` and `music-after.wav`. This confirms
+runtime music ownership/gain; queued-update contracts are covered by timing
+fixtures. It does not prove
+every dialogue caller or final combat headroom. All menu sessions stayed live
+through their bounded deadlines and reported zero XAudio engine glitches.
+They were intentionally terminated by their owning runner (exit1), not claimed
+to have exited naturally. Startup voice-starvation counters remain evidence to
+investigate in combat; they are not automatically classified as audible loss.
+The runner recycles only its six known disposable disk images and preserves
+the test fixture, settings and selected evidence. No personal save was used.
+
 ## Planning estimate
 
 Initial estimate, before codec/mapping and listening audit: 2–4 active hours for

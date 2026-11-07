@@ -26,10 +26,10 @@ static int audio_menu_prepare(void)
         WORD_AT(audio_menu_storage)=AUDIO_MIX_BUILD;
         WORD_AT(audio_menu_storage+4)=AUDIO_MIX_TICK;
         static const char *const labels[]={"Audio Mix","Enhanced Audio","Master","Effects","Music",
-            "Dialogue","Ambience","Movies","Enhancements","Back","Listening options",
+            "Dialogue","Ambience","Movies","Enhancements","Back","Listening",
             "Dialogue focus","Impact range","Original","Reduced","Night","Off","On"};
         for(unsigned i=0;i<18;i++)
-            snprintf((char *)((uintptr_t)AUDIO_TEXT(i)+g_xbox_mem_offset),128,"\vs75%s\vs100",labels[i]);
+            snprintf((char *)((uintptr_t)AUDIO_TEXT(i)+g_xbox_mem_offset),128,"%s",labels[i]);
         for(unsigned i=0;i<=100;i++)
             snprintf((char *)((uintptr_t)AUDIO_PERCENT(i)+g_xbox_mem_offset),8,"%u%%",i);
     }
@@ -38,8 +38,9 @@ static int audio_menu_prepare(void)
 static void audio_beta_add(void (*original)(void))
 {
     if(!audio_menu_prepare())return;
-    /* One compact link replaces the former five appended rows. */
-    guest_call(original,6,AUDIO_TEXT(0),15u,WORD_AT(g_esp+12)&~0x21u,bits(32.f),AUDIO_MIX_OPEN,0u);
+    /* The original profile page uses absolute 6/7.5-unit rows. Inherit its
+     * metric: zero collapses this label, while pixel-like32 is oversized. */
+    guest_call(original,6,AUDIO_TEXT(0),15u,WORD_AT(g_esp+12)&~0x21u,WORD_AT(g_esp+16),AUDIO_MIX_OPEN,0u);
 }
 static void audio_feature_add(void)
 {
@@ -51,7 +52,7 @@ static void audio_feature_add(void)
                 "Extended gunfire range","Environmental filtering","Background ambience"};
             for(unsigned i=0;i<5;i++) {
                 char *slot=(char *)((uintptr_t)(audio_beta_labels+i*128u)+g_xbox_mem_offset);
-                memset(slot,0,128);snprintf(slot,112,"\vs75%s\vs100",captions[i]);
+                memset(slot,0,128);snprintf(slot,112,"%s",captions[i]);
                 memcpy(slot+112,"Off\0On",7);
             }
         }
@@ -61,7 +62,7 @@ static void audio_feature_add(void)
     int values[]={options.enhanced,options.spatial,options.weapon_range,options.environment,options.ambience};
     for(unsigned i=0;i<5;i++) {
         uint32_t text=audio_beta_labels+i*128u;
-        uint32_t item=guest_call(sub_00079D60_gen,6,text,15u+i,0u,bits(32.f),0u,0u);
+        uint32_t item=guest_call(sub_00079D60_gen,6,text,15u+i,0u,0u,0u,0u);
         audio_feature_rows[i]=item;
         if(!item)continue;
         if(guest_writable(item,0x2c))WORD_AT(item+0x28)&=~0x2000u;
@@ -125,7 +126,7 @@ static void audio_listening_add(void)
 {
     extern void sub_00071CF0(void);
     PcAudioMixOptions options=pc_audio_mix_get();
-    audio_focus_row=guest_call(sub_00079D60_gen,6,AUDIO_TEXT(11),39u,0u,bits(32.f),0u,0u);
+    audio_focus_row=guest_call(sub_00079D60_gen,6,AUDIO_TEXT(11),39u,0u,0u,0u,0u);
     if(audio_focus_row) {
         if(guest_writable(audio_focus_row,0x2c))WORD_AT(audio_focus_row+0x28)&=~0x2000u;
         guest_call(sub_0007D480,2,0xA000u,0u);
@@ -133,7 +134,7 @@ static void audio_listening_add(void)
         guest_call(sub_00071CF0,2,audio_focus_row,AUDIO_LISTENING_CHANGE);
         guest_call(sub_00075430,2,audio_focus_row,(uint32_t)options.ducking);
     }
-    audio_range_row=guest_call(sub_00079D60_gen,6,AUDIO_TEXT(12),40u,0u,bits(32.f),0u,0u);
+    audio_range_row=guest_call(sub_00079D60_gen,6,AUDIO_TEXT(12),40u,0u,0u,0u,0u);
     if(audio_range_row) {
         if(guest_writable(audio_range_row,0x2c))WORD_AT(audio_range_row+0x28)&=~0x2000u;
         guest_call(sub_0007D480,2,0xA000u,0u);
@@ -156,7 +157,7 @@ static void audio_mix_build(void)
     else {
         PcAudioMixOptions options=pc_audio_mix_get();
         for(unsigned i=0;i<6;i++) {
-            uint32_t item=guest_call(sub_00079D60_gen,6,AUDIO_TEXT(i+2),30u+i,0u,bits(32.f),0u,0u);
+            uint32_t item=guest_call(sub_00079D60_gen,6,AUDIO_TEXT(i+2),30u+i,0u,0u,0u,0u);
             audio_mix_rows[i]=item;if(!item)continue;
             if(guest_writable(item,0x2c))WORD_AT(item+0x28)&=~0x2000u;
             guest_call(sub_0007D480,2,0xA000u,0u);
@@ -164,10 +165,10 @@ static void audio_mix_build(void)
             guest_call(sub_00071CF0,2,item,AUDIO_MIX_CHANGE);
             guest_call(sub_00075430,2,item,(uint32_t)(i?options.volume[i-1]:options.master));
         }
-        guest_call(sub_00079D60_gen,6,AUDIO_TEXT(8),36u,0u,bits(32.f),AUDIO_FEATURES_OPEN,0u);
-        guest_call(sub_00079D60_gen,6,AUDIO_TEXT(10),38u,0u,bits(32.f),AUDIO_LISTENING_OPEN,0u);
+        guest_call(sub_00079D60_gen,6,AUDIO_TEXT(8),36u,0u,0u,AUDIO_FEATURES_OPEN,0u);
+        guest_call(sub_00079D60_gen,6,AUDIO_TEXT(10),38u,0u,0u,AUDIO_LISTENING_OPEN,0u);
     }
-    guest_call(sub_00079D60_gen,6,AUDIO_TEXT(9),37u,0u,bits(32.f),AUDIO_MIX_BACK,0u);
+    guest_call(sub_00079D60_gen,6,AUDIO_TEXT(9),37u,0u,0u,AUDIO_MIX_BACK,0u);
     guest_call(sub_000771D0,1,menu);
     restore_registers(&r);g_esp+=4;
 }
