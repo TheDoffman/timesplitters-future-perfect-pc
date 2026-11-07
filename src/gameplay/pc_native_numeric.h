@@ -397,6 +397,7 @@ static inline uint32_t pc_native_wind_global_load(uint32_t address,uint32_t valu
  * Do not rewrite the shared 0.5 constant or unrelated multiplications. */
 static inline float pc_native_multiply(uint32_t site, float left, float right)
 {
+    if(site==0x3505D7u)return pc_native_uplink_throw(left,right);
     /* Kind-42 boost follows the whole-tick speed multiplier in F08D0.
      * Applying it before fractional frames' next multiplier amplifies it.
      * Keep both speed changes at the original boundary; motion stays fractional. */

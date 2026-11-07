@@ -1,3 +1,9 @@
+Uplink throw impulse (uncommitted aftera24c3b60): shared numeric policy in
+pc_native_uplink.h/pc_native_numeric.h, no OS-specific gameplay adapter.
+Windows original-code physics fixture covers normal/quarter-speed throws;
+the user confirmed matching live throw distance at60/240. Mac/Linux native
+execution and live Uplink throws remain pending. See STATUS.
+
 Network eligibility CPU fix (uncommitted after816ae00a): implemented in shared
 transport and menu code for Windows/Mac/Linux. Host atomics use Windows intrinsics
 or compiler acquire/release operations; no duplicate gameplay policy. Windows

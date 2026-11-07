@@ -58,7 +58,7 @@ def test_physics_wrapper_retains_original_body():
                                (0x176530, 0x1766de)],
      ['legacy-gate', 'legacy-linear', 'legacy-rest']),
     ('native_rigid_clock.c', [(0x171fb0, 0x172161)], ['legacy-clock']),
-    ('native_rigid_motion.c', [(0x171fb0, 0x172161), (0x171560, 0x1719e0),
+    ('native_rigid_motion.c', [(0x3505cf, 0x35061a), (0x351aa0, 0x351aeb), (0x16c8f0, 0x16c97e), (0x171fb0, 0x172161), (0x171560, 0x1719e0),
                              (0x170e20, 0x170ed0), (0x16ca00, 0x16ccc9),
                              (0x150830, 0x150918), (0x150cc0, 0x150d62),
                              (0x1506b0, 0x15082c), (0x1530e0, 0x153187),
@@ -73,7 +73,7 @@ def test_physics_wrapper_retains_original_body():
                              (0x16e780, 0x16e867), (0x16da90, 0x16df5b)],
      ['legacy-clock', 'missing-contact', 'legacy-rng', 'legacy-secondary', 'legacy-body-sleep',
       'legacy-character-contact', 'missing-wall', 'missing-penetration',
-      'missing-other-mass', 'missing-other-torque']),
+      'missing-other-mass', 'missing-other-torque', 'legacy-uplink-throw']),
 ])
 def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
     from capstone import Cs, CS_ARCH_X86, CS_MODE_32
@@ -97,6 +97,7 @@ def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
         addresses.update(range(0x17df98, 0x17dfac, 4))
     if harness == 'native_rigid_motion.c':
         addresses.update(range(0x16e868, 0x16e87c, 4))
+        addresses.add(0x49fb2c)
     for start, end in ranges:
         offset = config.va_to_file_offset(start)
         for instruction in Cs(CS_ARCH_X86, CS_MODE_32).disasm(image[offset:offset + end - start], start):
@@ -119,7 +120,7 @@ def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
         result = subprocess.run([str(executable), mutation], capture_output=True, text=True, timeout=15)
         assert result.returncode != 0 and 'Assertion' in result.stderr, result.stdout + result.stderr
         assert 'UNEXPECTED' not in result.stderr
-        expected = {'legacy-camera-gate': 'camera fps=60 mode=1',
+        expected = {'legacy-uplink-throw': 'uplink_throw fps=120', 'legacy-camera-gate': 'camera fps=60 mode=1',
                     'legacy-camera-count': 'camera fps=60 mode=1',
                     'missing-contact': 'fps=60 forced=2',
                     'missing-wall': 'wall_contact fps=60',

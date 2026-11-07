@@ -30,3 +30,26 @@ at120. Guards cover Original, pause, map/function0, other guns and bad links.
 The separate live Windows Russian Connection route confirms actual barrel
 lift/hold/release at120/180 with original targeting and physics. Throwing,
 multiplayer, native Mac and Linux gameplay remain unverified.
+
+## Throw impulse
+
+US350320 release block3505CF..35061A calls351AA0, then16C8F0 to add a
+one-shot force/mass into body+110/+114/+118. The real body solver integrates
+and clears this force on the next frame. At native120 it therefore imparted
+half the original impulse. Only numeric multiplication3505D7 normalizes that
+release force by the positive fractional raw interval (4E7948), retaining
+the original game-speed multiplier and unchanged native60/Original behavior.
+No global force, clock, target, grab or cooldown is rewritten. Invalid/pause
+intervals and unrelated multiplication sites keep original behavior.
+
+The existing native_rigid_motion fixture lifts the original throw block,
+351AA0 and16C8F0 together with the original body clock/solver/integrator.
+Controlled target/direction and empty space exclude map collisions. It checks
+nonzero force, velocity and one-second travel at60/120/144/180/240 in normal
+and quarter-speed time. Speed matches within .001; position allows2% for
+original integration step size. Removing just the throw normalization must
+fail at120. This is simulated physics evidence, not live-map acceptance.
+
+Windows manual acceptance, 2026-11-07: the user confirmed matching throw
+distance at60 and240 FPS in the corrected isolated build. Other objects/maps,
+multiplayer and native Mac/Linux throws remain unverified.
