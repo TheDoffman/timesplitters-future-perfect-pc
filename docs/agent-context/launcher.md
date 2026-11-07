@@ -784,3 +784,12 @@ and next-launch semantics in its tooltip. GameSettings keeps the existing
 runtime.conf fullscreen boolean; in-game Window mode Apply/Keep now saves this
 same key. No second launcher preference, OS-specific settings model or default
 change. See video-options.md for the shared live-window and rollback contract.
+
+## Launcher 1.5.2 release preparation
+
+The shared version and numeric assembly/file attributes advance together to
+1.5.2 / 1.5.2.0. Publication still requires the existing Windows, Mac and Linux
+workflow checks and all fifteen verified assets. This version-only change
+retains update, installation, preservation and optional-texture contracts.
+Game 0.5.2 is prepared independently as a Windows/Linux draft, with native Mac
+game packaging deferred to the maintainer's Mac at the matching tag revision.

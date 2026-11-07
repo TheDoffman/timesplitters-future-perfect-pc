@@ -1,8 +1,8 @@
 # One launcher release for Windows, Mac and Linux
 
-The next Stable launcher source version is **1.5.1**, including Linux window
-icons, destination-volume space checks for installation/import, and visible
-operation error dialogs, plus small-screen fitting for Steam Deck desktops. Source preparation does not publish packages;
+The next Stable launcher source version is **1.5.2**, including clearer Windows
+startup/update error reporting, the shared Fullscreen setting label and the
+Developer Tools shortcut warning. Source preparation does not publish packages;
 the workflow below must pass before release.
 
 The **Launcher release (Windows + Mac + Linux)** workflow builds Windows x64,
