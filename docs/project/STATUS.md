@@ -1,3 +1,29 @@
+## 2026-11-07 - Starvation report and loading transition reference
+
+A fresh isolated126-second Original bot-match run captures continuously from
+the loading interval through gameplay. Health reports arrive with8 starvation
+episodes at65.594s and12 at70.969s, remaining12 through126s. Its67.98-second
+48kHz stereo process recording has zero capture flags/full-scale samples and
+peak/RMS-13.87/-31.17dBFS. Near-silent10ms windows span13.97..16.06s of the
+recording, around loading into the match; the reviewed frame at71.469s shows
+first-person countdown3 and a read-only position first becomes nonzero at71.172s.
+Report/capture alignment uses controller clocks, not shared hardware timestamps.
+
+The old replay log's numeric fields are scheduled offsets (`r->at`), not input
+execution timestamps. An initial inference that the old increase preceded its
+first capture is withdrawn; those logs alone cannot establish that. The fresh
+run records actual host-pipe report arrivals. Four initial64-byte buffers share
+all-zero PCM in one read-only snapshot, which does not attribute later events.
+No output failure/refusal or XAudio engine glitch is reported. Whole-mix silence
+does not prove an individual-source gap or its cause.
+
+A20-second unchanged-gain/source-rate excerpt (source seconds6..26) is verified
+byte-for-byte and presented for listening feedback. Private reports retain the
+controller/executable/analysis/WAV hashes and timing limitations. Listening is
+unanswered; no buffering or asset change is justified by these measurements
+alone. The controller/capture terminate normally at their limits; game exit1 is
+the intentional owned-child termination. No production source/binary change.
+
 ## 2026-11-07 - Callback PCM provider and adapter coverage
 
 Original-byte inspection confirms the additional stream's mono8000Hz PCM16

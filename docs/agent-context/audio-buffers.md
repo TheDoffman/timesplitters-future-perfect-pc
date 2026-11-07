@@ -286,6 +286,24 @@ the profiled render gaps did not exceed90ms in these residual cases. Counter
 events alone do not establish audible loss. Native Mac/network listening and
 other scenes remain separate acceptance work.
 
+### Loading-to-match reference
+
+A later126-second Original run records the whole loading-to-match interval,
+not just settled combat. Counter reports arrive with8 at65.594s and12 at70.969s,
+then remain12 through126s. A continuous67.98s process capture starts after the
+controller's55.016s launch request. Its near-silent10ms windows span13.97..16.06s
+of the recording, around loading/first-person countdown. Capture discontinuity,
+timestamp-error and full-scale counts are zero; XAudio reports zero engine
+glitches/refusals/failures. A gain-preserved20s excerpt is ready for listening.
+
+These are host-pipe report arrivals, not exact per-voice event timestamps. Input
+replay logs print the scheduled `r->at`, not actual execution time; they cannot
+time-bound the older counter increase against its capture. A single read of the
+four initial64-byte PCM buffers finds shared all-zero data but does not attribute
+the later increase. Individual gaps may be masked by other voices. The loading
+silence, counter cause and listening acceptance remain distinct claims; no new
+buffering/gain repair is justified from this observation alone.
+
 ## SDL finite-tail drain (review correction)
 
 The original completion change incorrectly assumed SDL's position stub exposed
