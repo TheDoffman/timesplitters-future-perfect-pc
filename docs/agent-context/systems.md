@@ -126,7 +126,7 @@ Patch0061 composes master/category attenuation with the original HLE level and
 updates queued voices without clock/PCM edits. `pc_audio_mix_settings.h` owns
 strict independent `pc-audio-mix.ini` persistence and an atomic options
 snapshot; `pc_audio_config_path.h` resolves both sidecars through the isolated
-display/input directory. 100% is exact neutral. [Audio sliders/dividers](audio-options.md)
+display/input directory. 100% is exact neutral. [Settings alignment/sliders/dividers](audio-options.md)
 now shares the Video/Controls tab layout in main and pause. Original profile
 Accept/Cancel and live sidecar saving remain separate; the guide records native
 record preservation, navigation, tests and current scene-acceptance limits.

@@ -124,7 +124,17 @@ void pc_prompts_layout_begin(void) {}
 void pc_prompts_layout_end(void) {}
 #define TUTORIAL_STUB(name) void name(void) { CHECK(0); }
 TUTORIAL_STUB(sub_00147080) TUTORIAL_STUB(sub_00042D10)
-TUTORIAL_STUB(sub_0003FA10) TUTORIAL_STUB(sub_0003FCF0) TUTORIAL_STUB(sub_0003F8D0)
+static int row_alignment_test;
+void sub_0003FA10(void) {
+    CHECK(row_alignment_test);g_eax=WORD_AT(0x6b93b4);WORD_AT(0x6b93b4)=WORD_AT(g_esp+4);g_esp+=4;
+}
+void sub_0003FCF0(void) {
+    CHECK(row_alignment_test);FLOAT_AT(WORD_AT(g_esp+4))=80.f;
+    FLOAT_AT(WORD_AT(g_esp+8))=WORD_AT(0x6b93b4)==2?14.f:10.f;g_esp+=4;
+}
+void sub_000718E0(void) {CHECK(row_alignment_test);g_eax=0x600400;g_esp+=4;}
+void sub_0003FB90(void) {CHECK(row_alignment_test);g_eax=WORD_AT(g_esp+4);g_esp+=4;}
+TUTORIAL_STUB(sub_0003F8D0)
 /* Kill-feed drawing is linked through the same menu unit, but must not
  * execute in this settings-only fixture. */
 TUTORIAL_STUB(sub_00041E30) TUTORIAL_STUB(sub_00021450)
@@ -945,6 +955,34 @@ int main(int argc,char **argv)
     CHECK(audio_test_options.environment && WORD_AT(audio_feature_rows[3]+0xc8)==1);audio_save_ok=1;
     /* The native profile descriptor survives every tab: hidden save/update
      * records stay accessible, visible links exclude them, and Y stays fixed. */
+    /* Caption and value are measured independently, including cell-origin
+     * differences. Restore bit-exact cached offsets after the paint scope. */
+    row_alignment_test=1;
+    uint32_t align_row=0x600500,align_rect=0x600700,align_menu=0x600900;
+    WORD_AT(align_row)=4;WORD_AT(align_row+0x88)=align_menu;WORD_AT(align_row+0x14)=30;
+    WORD_AT(align_row+0x20)=WORD_AT(0x600404)=0x600800;
+    WORD_AT(align_row+0x1c)=1;WORD_AT(align_row+0xbc)=2;WORD_AT(align_row+0xb4)=1;
+    FLOAT_AT(align_row+0x40)=-5.f;FLOAT_AT(align_row+0xe0)=99.f;
+    FLOAT_AT(align_row+0x68)=96.f;FLOAT_AT(align_row+0xe8)=100.f;
+    FLOAT_AT(align_rect+4)=40.f;FLOAT_AT(align_rect+12)=100.f;FLOAT_AT(0x7ba188)=3.f;
+    WORD_AT(0x6b93b4)=7;
+    SettingsRowPaint align_scope;settings_rows_begin(&align_scope,align_menu);
+    settings_row_center(align_menu,align_row,align_rect);
+    CHECK(fabsf(FLOAT_AT(align_row+0x40)*3.f+5.f-30.f)<.001f);
+    CHECK(fabsf((FLOAT_AT(align_row+0xe0)+4.f)*3.f+7.f-30.f)<.001f);
+    CHECK(WORD_AT(0x6b93b4)==7 && align_scope.count==1);
+    settings_row_center(align_menu,align_row,align_rect);CHECK(align_scope.count==1);
+    settings_rows_end(&align_scope);CHECK(FLOAT_AT(align_row+0x40)==-5.f && FLOAT_AT(align_row+0xe0)==99.f);
+    CHECK(!settings_row_paint);
+    WORD_AT(0x6b93b8)=0x601000;WORD_AT(0x601008)=0x601100;
+    WORD_AT(0x600800)='A';WORD_AT(0x601100+33*12+4)=2u<<16;
+    FLOAT_AT(0x601100+33*12+8)=3.f;FLOAT_AT(0x7e7290)=2.f;
+    CHECK(settings_row_text_top(0x600800)==6.f);
+    settings_rows_begin(&align_scope,align_menu);settings_row_center(align_menu,align_row,align_rect);
+    CHECK(fabsf(FLOAT_AT(align_row+0x40)*3.f+(6.f+10.f)*.5f-30.f)<.001f);
+    settings_rows_end(&align_scope);CHECK(FLOAT_AT(align_row+0x40)==-5.f);
+    WORD_AT(0x600800)=11;CHECK(settings_row_text_top(0x600800)==0.f); /* native escapes */
+    WORD_AT(0x6b93b8)=0;row_alignment_test=0;
     /* Native separator height is scoped, symmetric and never changes a skin permanently. */
     WORD_AT(0x600100+0x1c)=0x600200;FLOAT_AT(0x600230)=1.f;
     SettingsDividerStyle spacing=settings_divider_begin(0x600100);
@@ -964,7 +1002,7 @@ int main(int argc,char **argv)
         g_esp=0x700000;WORD_AT(g_esp+4)=audio_menu;WORD_AT(g_esp+8)=0x200000+id*0x200;
         WORD_AT(g_esp+12)=0x600000;audio_volume_draw();
         MenuSliderTrack *track=&menu_slider_tracks[id==1?MENU_MUSIC:MENU_SOUND];
-        CHECK(track->x==378.f && track->y==54.f && track->w==100.f && track->h==8.f);
+        CHECK(track->x==378.f && track->y==51.f && track->w==100.f && track->h==8.f);
         CHECK(track->item==0x200000+id*0x200 && drawn==(id==1?.5f:.75f) && g_esp==0x700004);
     }
     slider_capture_enabled=0;
@@ -980,7 +1018,7 @@ int main(int argc,char **argv)
                 g_esp=0x700000;WORD_AT(g_esp+4)=audio_menu;WORD_AT(g_esp+8)=audio_mix_rows[i];
                 WORD_AT(g_esp+12)=0x600000;audio_mix_draw();
                 CHECK(drawn==i*17.f/100.f && menu_slider_tracks[MENU_AUDIO_MIX+i].item==audio_mix_rows[i] &&
-                      menu_slider_tracks[MENU_AUDIO_MIX+i].y==47.f);
+                      menu_slider_tracks[MENU_AUDIO_MIX+i].y==51.f);
             }
             CHECK(pc_audio_mix_get().master==0 && pc_audio_mix_get().volume[4]==85);
             menu_slider_audio_mix_pointer(5,-100.f,0.f,100.f);CHECK(pc_audio_mix_get().volume[4]==0);

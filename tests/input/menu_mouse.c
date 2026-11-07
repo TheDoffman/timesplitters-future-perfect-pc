@@ -22,6 +22,8 @@ void sub_000746D0(void) {} void sub_0007CCA0(void) {}
 void sub_00071940(void) {}
 static PcMenuPointer cursor;
 static int active=1,mode,original_calls,selections;
+static int centered_controls;
+static int controls_font_menu(uint32_t menu){return centered_controls && menu==0x2000;}
 static uint32_t navigation;
 static void settings_tabs_footer(uint32_t menu) {(void)menu;}
 static void settings_tabs_footer_style(uint32_t menu,uint32_t sx,uint32_t sy,uint32_t colour) {(void)menu;(void)sx;(void)sy;(void)colour;}
@@ -370,6 +372,14 @@ static void setting_slider_tests(void)
     sensitivity_painter();CHECK(!menu_slider_tracks[MENU_SENSITIVITY].item);
     WORD_AT(0x7ba9e0)=4;setting_tracks(m,sensitivity,fov);
     CHECK(!menu_slider_tracks[MENU_SENSITIVITY].item); /* invalid player */
+    memset(memory,0,sizeof memory);WORD_AT(sensitivity+0x88)=m;WORD_AT(sensitivity+0x14)=9;
+    FLOAT_AT(0x7004)=100.f;FLOAT_AT(0x700c)=160.f;centered_controls=1;
+    g_esp=0x1800;WORD_AT(g_esp+4)=m;WORD_AT(g_esp+8)=sensitivity;WORD_AT(g_esp+12)=0x7000;
+    pc_display_menu_sensitivity_draw(sensitivity_painter);
+    CHECK(menu_slider_tracks[MENU_SENSITIVITY].y==123.f && menu_slider_tracks[MENU_SENSITIVITY].w==137.f);
+    CHECK(WORD_AT(0x190c)==157 && !menu_slider_draw_bounds_valid && !menu_slider_draw_menu);
+    centered_controls=0;
+
 }
 /* Feed the production wrappers the final native arrow draw rectangles. */
 static void choice_capture(uint32_t item,unsigned direction,float x)

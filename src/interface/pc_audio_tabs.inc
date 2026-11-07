@@ -84,7 +84,7 @@ static void audio_volume_draw(void)
         memcpy(bounds,(void *)(g_xbox_mem_offset+rect),sizeof bounds);
         if((id==1 || id==3) && isfinite(bounds[2]) && isfinite(bounds[1]) && isfinite(bounds[3])) {
             /* Match the native value-column inset and compact caption baseline. */
-            int x=(int)(bounds[2]-122.f),y=(int)((bounds[1]+bounds[3]-8.f)*.5f+3.f);
+            int x=(int)(bounds[2]-122.f),y=(int)((bounds[1]+bounds[3]-8.f)*.5f);
             uint32_t dark=guest_call(sub_00154FE0,2,0x11193c7fu,WORD_AT(menu+0xf4));
             uint32_t light=guest_call(sub_00154FE0,2,0x69737f7fu,WORD_AT(menu+0xf4));
             menu_slider_capture(id==1?MENU_MUSIC:MENU_SOUND,menu,item,(float)x,(float)y,100.f,8.f);
@@ -113,7 +113,7 @@ static void audio_mix_draw(void)
         memcpy(bounds,(void *)(g_xbox_mem_offset+rect),sizeof bounds);
         if(id>=30 && id<=35 && item==audio_mix_rows[id-30] && isfinite(bounds[2]) &&
            isfinite(bounds[1]) && isfinite(bounds[3])) {
-            int x=(int)(bounds[2]-122.f),y=(int)((bounds[1]+bounds[3]-8.f)*.5f-4.f);
+            int x=(int)(bounds[2]-122.f),y=(int)((bounds[1]+bounds[3]-8.f)*.5f);
             uint32_t dark=guest_call(sub_00154FE0,2,0x11193c7fu,WORD_AT(menu+0xf4));
             uint32_t light=guest_call(sub_00154FE0,2,0x69737f7fu,WORD_AT(menu+0xf4));
             menu_slider_capture(MENU_AUDIO_MIX+id-30,menu,item,(float)x,(float)y,100.f,8.f);

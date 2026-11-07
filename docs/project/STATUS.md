@@ -1,3 +1,18 @@
+Settings row vertical centring (2026-11-07, local after cdb16dbb):
+Video/Controls/Audio caption and choice offsets now use actual compact-font text
+bounds, including ordinary glyph top bearings. Offsets/font state restore after
+paint. Audio bars and Controller Turn Speed use row midpoint for paint/capture;
+row sizes, hit areas, setting actions and persistence remain unchanged.
+Windows focused35 passed/two platform skips; supported Release/builtin checks and
+matching crash symbols pass. Actual1280x960 main Audio Mix/Video Display/Controller
+and pause Audio Mix review confirm aligned captions, values and bars. Owned games
+stopped and disposable partition images recycled. Source/manifest/sealed-executable
+identity matches; executable SHA256
+b1cb6fc31f70083c338c7a9fddacd7bccff8961f9c9fff4f06e89cf8658807aa.
+Native Mac/Linux scenes, physical controller and split-screen remain unverified.
+Only disposable test saves/config were used. No push/merge. Local receipt:
+logs/settings-row-alignment-verification.json.
+
 Audio Mix sliders and divider spacing (2026-11-07, after974562fb, local):
 All six Mix controls use compact native gradient bars with exact percentage
 captions,1% keyboard/controller directional steps and captured mouse dragging.

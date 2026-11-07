@@ -1,3 +1,9 @@
+Settings row centring (local after cdb16dbb): shared pc_settings_row_alignment.inc,
+pc_display_ui.inc, pc_audio_tabs.inc and pc_menu_sliders.inc. Native glyph metrics,
+paint offsets and pointer geometry are common to all hosts; no OS adapter needed.
+Windows focused/build and actual main menu review pass; native Mac/Linux visual,
+physical controller and split-screen acceptance remain pending. See STATUS.
+
 Audio Mix sliders/divider spacing (after974562fb, local): implemented in shared
 pc_audio_menu.inc/pc_audio_tabs.inc, pc_menu_sliders.inc and pc_settings_spacing.inc.
 No OS adapter change: native814B0 bar, common input/persistence and scoped skin

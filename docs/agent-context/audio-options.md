@@ -56,3 +56,14 @@ including native Controller/Audio footers and keyboard pagination, without new
 rows, selectable IDs or altered button actions. Tests verify skin restoration,
 all six slider categories/endpoints, failed-save caption rollback, keyboard steps,
 and shared paint/pointer routing. Host scene evidence is recorded in STATUS.
+
+Vertical row alignment: pc_settings_row_alignment.inc scopes label+40 and choice+E0
+through the shared76810 compact-font paint. The76150 caption callback measures
+actual native fonts (3FA10/3FCF0); plain single-line glyph top bearings compensate
+for line-box padding. Choice rectangles account for E8 minus68. All offsets and
+font state are restored after the complete paint, including the later native
+choice/arrows pass. Header/hidden rows and native bounds/hit geometry stay intact.
+Audio Volume/Mix and Controller Turn Speed bars use the same row midpoint for
+painting and pointer capture. fov_settings verifies measured caption/value centres,
+bearing correction, repeated paints and exact restoration; menu_mouse checks
+scoped Controller bar centring with original width/height and stack restoration.
