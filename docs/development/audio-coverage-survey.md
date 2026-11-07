@@ -69,6 +69,25 @@ candidate merely because the format or size seems suggestive. Static direct
 xrefs do not establish that indirect calls or all runtime providers are covered.
 No microphone or network path is activated by this investigation.
 
+Further original-byte inspection traces the engine factory through2F350 and
+385DF9, its registered output objects and the callbacks' packet construction.
+Helper38880F constructs320-byte packets (20ms at8000Hz PCM16), with an index
+context and completion callback ret12. The callback can submit its replacement
+through Process before returning. The XBE library table lists XVOICE5849, but
+library presence alone does not identify this particular provider. Neither its
+content origin nor a relationship to the144-byte archive candidate is proven.
+The private original-byte receipt retains the checked instructions and pointers.
+
+The existing CI-selected stream fixture now exercises32 such packets with
+reentrant refill through both normal and manual callback dispatch. It checks
+ordered status/size completion, the last unheard frame, exact PCM, source
+immutability, restored stack and no event signalling for an index context.
+The callback is a synthetic provider, not the original title codec. Separately,
+the actual pinned SDL adapter/converter passes four160-frame8000Hz cases
+(mono/stereo,8/16-bit):882 output frames at44100Hz after tail flush, exact mute
+without queue replacement and preserved input. These are paused dummy-driver
+checks; the strict physical PulseAudio attempt still returns unavailable.
+
 The eight synthetic regressions cover complete/late/stereo headers, truncation,
 ambiguous zero data, bounded signatures, immutable sources, unknown CRC content
 matches, known-CRC content mismatch, changed archives, unsupported compression

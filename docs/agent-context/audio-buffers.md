@@ -1,5 +1,20 @@
 # Effects buffering under load
 
+## Callback-fed PCM acceptance
+
+`test_audio_timing.py` additionally runs `callback-pcm8k` and
+`callback-pcm8k-manual` through the production stream adapter. The supported
+executable's original388C7D descriptor uses mono8000Hz PCM16;38880F constructs
+320-byte packets with an index context. Completion callbacks return with ret12
+and can call Process to refill before returning. The synthetic provider retains
+two pending packets and completes32 in order, requiring exact output PCM,
+unchanged source bytes, status/size before callback, no early completion at the
+last unheard frame, restored guest stack and no context-index event signalling.
+The second case resolves through the manual dispatch fallback. The actual title
+codec/provider is not executed by this fixture and its content identity remains
+unresolved; linked XVOICE metadata is insufficient to label it as voice chat.
+These checks establish adapter behavior, not hardware playback or latency.
+
 `patches/media/0055-dsound-busy-buffer-recovery.patch` extends shared runtime
 `src/hle/hle_dsound.c`; the buffering contract is documented below.
 It is independent of native-high-refresh timing and of the music stream path.

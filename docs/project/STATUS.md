@@ -1,3 +1,25 @@
+## 2026-11-07 - Callback PCM provider and adapter coverage
+
+Original-byte inspection confirms the additional stream's mono8000Hz PCM16
+descriptor and320-byte/20ms packet construction, index contexts and callbacks
+that may refill through Process before returning with ret12. The engine factory
+and registered output objects are traced privately. XVOICE5849 is linked, but
+that alone does not prove this provider's content identity or voice-chat use.
+No microphone/network path is activated and no archive entry is reclassified.
+
+Two new CI-selected stream cases execute the production adapter with a synthetic
+provider:32 reentrant packet refills, ordered status/size before callbacks,
+exact PCM, unchanged sources, last-frame completion, restored guest stack and
+normal/manual dispatch. All110 Windows timing checks pass. Original title
+codec execution and physical playback are outside these fixtures.
+
+The production SDL adapter with the already freshly built pinned SDL library
+also passes four160-frame8000Hz converter cases: mono/stereo8/16-bit,882 output
+frames at44100Hz, tail drain, queue-preserving exact mute and immutable input.
+The paused dummy driver is not hardware acceptance; PulseAudio still returns
+unavailable with the socket absent. No production code/binary change is needed.
+Linux callback-fixture validation follows through the independent Git checkout.
+
 ## 2026-11-07 - High refresh audio and unidentified-resource survey
 
 Three isolated126-second Enhanced Vietnam combat runs target144/180/240 FPS.

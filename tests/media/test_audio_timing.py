@@ -58,7 +58,8 @@ def buffer_test(tmp_path_factory):
 
 
 @pytest.mark.parametrize('scenario', ['underrun', 'speed', 'process', 'flush', 'fallback',
-                                     'snapshot', 'pause', 'completion', 'lost-device', 'bad-data',
+                                     'snapshot', 'pause', 'completion', 'callback-pcm8k',
+                                     'callback-pcm8k-manual', 'lost-device', 'bad-data',
                                      'bus-ownership', 'mix-gain', 'speech-activity', 'impact-range',
                                      'diagnostics', 'adpcm', 'release-reuse', 'flush-ex', 'flush-ex-async', 'format-pcm', 'format-adpcm',
                                      'format-paused', 'frequency', 'recover-device', 'recover-early'])

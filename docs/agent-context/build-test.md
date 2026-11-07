@@ -22,8 +22,9 @@ Audio: [acceptance gates](../development/audio-overhaul-acceptance.md).
 Media CI selects audit/candidate/loop/measurement fixtures on
 Windows/macOS/Linux; compatible headers never establish asset identity.
 Scene/guest fixtures check cache/pan/split fallback; gain C++ includes initializer_list.
-Audio timing/gain/loop fixtures also cover all32 persisted feature combinations,
+Audio fixtures cover32 feature combinations,
 unknown-file preservation, speech ownership, ducking, impact reduction and queued gains.
+Stream fixture:8kHz/320-byte callback refill, completion order and dispatch fallback.
 `test_audio_output_gain.py`: exact mute/queue retention; Windows capture preflight.
 [Capture and bounded build](../development/audio-overhaul.md#process-output-capture).
 

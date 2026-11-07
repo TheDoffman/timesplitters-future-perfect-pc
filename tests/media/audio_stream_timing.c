@@ -38,8 +38,12 @@ static int capture;
 static int32_t captured_level,updated_level;static unsigned volume_updates;
 static uint32_t event_signals,last_event,event_status,event_size;
 
-recomp_func_t recomp_lookup(uint32_t address) { (void)address; return NULL; }
-recomp_func_t recomp_lookup_manual(uint32_t address) { (void)address; return NULL; }
+static void refill_callback(void);
+static int callback_manual;
+recomp_func_t recomp_lookup(uint32_t address)
+{ return address==0x388c4f && !callback_manual ? refill_callback : NULL; }
+recomp_func_t recomp_lookup_manual(uint32_t address)
+{ return address==0x388c4f && callback_manual ? refill_callback : NULL; }
 int xbox_bridge_signal_event(uint32_t token)
 {
     ++event_signals;last_event=token;
@@ -222,6 +226,63 @@ static int completion(void)
     CHECK(event_status==XMP_STATUS_SUCCESS && event_size==96000);
     tick(s,3020);
     CHECK(event_signals==1);
+    return 0;
+}
+
+/* Original helper38880F constructs320-byte packets for the callback stream's
+ * mono8000Hz PCM16 format. Exercise that format and callback ABI through the
+ * real adapter; this callback is a test provider, not the original codec. */
+static unsigned callback_count, callback_submitted, callback_error;
+static uint8_t callback_expected[32*320];
+static void submit_callback_packet(unsigned index)
+{
+    uint32_t p=0x12000+index*32, data=0x20000+index*320;
+    uint32_t ordinal=callback_submitted++;
+    for(unsigned i=0;i<160;i++) {
+        int16_t value=(int16_t)((int)((ordinal*251+i*7)%20001)-10000);
+        memcpy(memory+data+i*2,&value,2);
+        memcpy(callback_expected+ordinal*320+i*2,&value,2);
+    }
+    HLE_MEM32(p)=data;HLE_MEM32(p+4)=320;
+    HLE_MEM32(p+8)=0x13004+index*8;
+    HLE_MEM32(p+12)=0x13000+index*8;HLE_MEM32(p+16)=index;
+    HLE_MEM32(g_esp+4)=g_streams[0].object;HLE_MEM32(g_esp+8)=p;
+    hle_CDirectSoundStream_Process();
+    if(g_eax)callback_error=1;
+}
+static void refill_callback(void)
+{
+    uint32_t entry=g_esp,index=HLE_MEM32(entry+8);
+    if(HLE_MEM32(entry)!=0 || HLE_MEM32(entry+4)!=0x17000 ||
+       HLE_MEM32(entry+12)!=XMP_STATUS_SUCCESS || index!=callback_count%2 ||
+       HLE_MEM32(0x13000+index*8)!=XMP_STATUS_SUCCESS ||
+       HLE_MEM32(0x13004+index*8)!=320)callback_error=1;
+    callback_count++;
+    /* A guest callback may submit its replacement before returning. */
+    g_esp=0x18000;
+    if(callback_submitted<32)submit_callback_packet(index);
+    g_esp=entry+16; /* original callback's ret12 */
+}
+static int callback_pcm8k(int manual)
+{
+    Stream *s=setup();s->rate=8000;s->max_packets=2;
+    s->callback=0x388c4f;s->context=0x17000;
+    callback_manual=manual;callback_count=callback_submitted=callback_error=0;
+    capture=1;submit_callback_packet(0);submit_callback_packet(1);
+    CHECK(s->count==2 && captured_bytes==640 && callback_count==0);
+    for(unsigned i=1;i<=32;i++) {
+        host.played=i*320-2;host.queued=1;test_now=1000+i*20;
+        tick(s,test_now);CHECK(callback_count==i-1); /* last frame not heard */
+        host.played=i*320;host.queued=i<32?1:0;
+        tick(s,test_now);CHECK(callback_count==i && g_esp==0x10000);
+        CHECK(!callback_error && s->count<3);
+    }
+    CHECK(callback_submitted==32 && s->count==0 && captured_bytes==sizeof callback_expected);
+    CHECK(!memcmp(captured,callback_expected,sizeof callback_expected));
+    CHECK(!memcmp(memory+0x20000,callback_expected+30*320,320));
+    CHECK(!memcmp(memory+0x20140,callback_expected+31*320,320));
+    CHECK(event_signals==0); /* packet context is an index, not an event */
+    tick(s,test_now+20);CHECK(callback_count==32);
     return 0;
 }
 
@@ -514,6 +575,8 @@ int main(int argc, char **argv)
     else if (!strcmp(argv[1], "snapshot")) result = no_extrapolation();
     else if (!strcmp(argv[1], "pause")) result = pause_resume();
     else if (!strcmp(argv[1], "completion")) result = completion();
+    else if (!strcmp(argv[1], "callback-pcm8k")) result = callback_pcm8k(0);
+    else if (!strcmp(argv[1], "callback-pcm8k-manual")) result = callback_pcm8k(1);
     else if (!strcmp(argv[1], "lost-device")) result = lost_device();
     else if (!strcmp(argv[1], "bad-data")) result = bad_data_fallback();
     else if (!strcmp(argv[1], "diagnostics")) result = diagnostics();
