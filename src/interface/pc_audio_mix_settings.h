@@ -5,14 +5,19 @@
 #include "gameplay/pc_audio_mix.h"
 /* Independent of the enhancement master: ordinary volume controls work in
  * either mode. Percentages attenuate the authored mix; 100 preserves it. */
-typedef struct PcAudioMixOptions {int master,volume[PC_AUDIO_BUS_COUNT];} PcAudioMixOptions;
-#define PC_AUDIO_MIX_DEFAULTS {100,{100,100,100,100,100}}
+typedef struct PcAudioMixOptions {int master,volume[PC_AUDIO_BUS_COUNT],ducking,dynamics;} PcAudioMixOptions;
+#define PC_AUDIO_MIX_DEFAULTS {100,{100,100,100,100,100},0,0}
 #ifdef __cplusplus
 extern "C" {
 #endif
 PcAudioMixOptions pc_audio_mix_get(void);
 int pc_audio_mix_set(const PcAudioMixOptions *options);
 int32_t pc_audio_mix_level(int32_t original,int bus);
+unsigned pc_audio_mix_dynamics(int bus);
+/* A successful begin owns a nonblocking control guard until end. Read-only
+ * audible-queue sampling happens outside the settings writer/audio callbacks. */
+int pc_audio_mix_duck_begin(uint64_t now);
+void pc_audio_mix_duck_end(int speech_active,uint64_t now);
 #ifdef __cplusplus
 }
 #endif
@@ -41,31 +46,40 @@ static inline int32_t pc_audio_mix_apply(PcAudioMixOptions options,int32_t origi
 #endif
 static volatile int64_t pc_audio_mix_live=-1;
 static volatile long pc_audio_mix_writer;
+static volatile long pc_audio_duck_guard,pc_audio_duck_cut;
+static uint64_t pc_audio_duck_last;
+static float pc_audio_duck_amount;
+static int pc_audio_duck_ready;
 static int64_t pc_audio_mix_pack(PcAudioMixOptions o)
 {
     uint64_t value=(unsigned)o.master;
     for(unsigned i=0;i<PC_AUDIO_BUS_COUNT;i++)value|=(uint64_t)(unsigned)o.volume[i]<<(7u*(i+1));
+    value|=(uint64_t)(unsigned)o.ducking<<42;
+    value|=(uint64_t)(unsigned)o.dynamics<<43;
     return (int64_t)value;
 }
 static PcAudioMixOptions pc_audio_mix_unpack(int64_t value)
 {
     PcAudioMixOptions o;o.master=(int)(value&127);
     for(unsigned i=0;i<PC_AUDIO_BUS_COUNT;i++)o.volume[i]=(int)((value>>(7u*(i+1)))&127);
+    o.ducking=(int)((value>>42)&1);o.dynamics=(int)((value>>43)&3);
     return o;
 }
 static int pc_audio_mix_valid(PcAudioMixOptions o)
 {
     if(o.master<0 || o.master>100)return 0;
     for(unsigned i=0;i<PC_AUDIO_BUS_COUNT;i++)if(o.volume[i]<0 || o.volume[i]>100)return 0;
+    if(o.ducking<0 || o.ducking>1 || o.dynamics<0 || o.dynamics>2)return 0;
     return 1;
 }
 static int pc_audio_mix_parse(const char *text,PcAudioMixOptions *out)
 {
     const char *version="TSFP_AUDIO_MIX_V1";size_t prefix=strlen(version);
     while(isspace((unsigned char)*text))text++;
-    if(strncmp(text,version,prefix) || !isspace((unsigned char)text[prefix]))return 0;
+    int v2=!strncmp(text,"TSFP_AUDIO_MIX_V2",prefix);
+    if((strncmp(text,version,prefix) && !v2) || !isspace((unsigned char)text[prefix]))return 0;
     text+=prefix;PcAudioMixOptions options=PC_AUDIO_MIX_DEFAULTS;
-    for(unsigned i=0;i<=PC_AUDIO_BUS_COUNT;i++) {
+    for(unsigned i=0;i<(v2?8u:6u);i++) {
         while(isspace((unsigned char)*text))text++;
         if(*text<'0' || *text>'9' || (*text=='0' && text[1]>='0' && text[1]<='9'))return 0;
         unsigned value=0,count=0;
@@ -74,10 +88,13 @@ static int pc_audio_mix_parse(const char *text,PcAudioMixOptions *out)
             value=value*10u+(unsigned)(*text++-'0');
         }
         if(value>100 || (*text && !isspace((unsigned char)*text)))return 0;
-        if(!i)options.master=(int)value;else options.volume[i-1]=(int)value;
+        if(!i)options.master=(int)value;
+        else if(i<6)options.volume[i-1]=(int)value;
+        else if(i==6)options.ducking=(int)value;
+        else options.dynamics=(int)value;
     }
     while(isspace((unsigned char)*text))text++;
-    if(*text)return 0;*out=options;return 1;
+    if(*text || !pc_audio_mix_valid(options))return 0;*out=options;return 1;
 }
 static int pc_audio_mix_read(PcAudioMixOptions *out)
 {
@@ -120,9 +137,12 @@ int pc_audio_mix_set(const PcAudioMixOptions *options)
     if(pc_audio_mix_read(&old)<0)goto done;
     snprintf(temporary,sizeof temporary,"%s.tmp",path);
     FILE *file=fopen(temporary,"wb");if(!file)goto done;
-    ok=fprintf(file,"TSFP_AUDIO_MIX_V1 %d %d %d %d %d %d\n",options->master,
+    int v2=options->ducking || options->dynamics;
+    ok=fprintf(file,"TSFP_AUDIO_MIX_V%d %d %d %d %d %d %d",v2?2:1,options->master,
         options->volume[PC_AUDIO_EFFECTS],options->volume[PC_AUDIO_MUSIC],options->volume[PC_AUDIO_DIALOGUE],
         options->volume[PC_AUDIO_BACKGROUND],options->volume[PC_AUDIO_MOVIES])>0;
+    if(v2 && fprintf(file," %d %d",options->ducking,options->dynamics)<0)ok=0;
+    if(fputc('\n',file)==EOF)ok=0;
     if(fflush(file))ok=0;if(fclose(file))ok=0;
 #ifdef _WIN32
     if(ok)ok=MoveFileExA(temporary,path,MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)!=0;
@@ -141,6 +161,68 @@ done:
 #endif
     return ok;
 }
+static long pc_audio_duck_read(void)
+{
+#ifdef _WIN32
+    return _InterlockedCompareExchange(&pc_audio_duck_cut,0,0);
+#else
+    return __atomic_load_n(&pc_audio_duck_cut,__ATOMIC_ACQUIRE);
+#endif
+}
+static void pc_audio_duck_publish(long cut)
+{
+#ifdef _WIN32
+    _InterlockedExchange(&pc_audio_duck_cut,cut);
+#else
+    __atomic_store_n(&pc_audio_duck_cut,cut,__ATOMIC_RELEASE);
+#endif
+}
+static void pc_audio_duck_unlock(void)
+{
+#ifdef _WIN32
+    _InterlockedExchange(&pc_audio_duck_guard,0);
+#else
+    __atomic_store_n(&pc_audio_duck_guard,0,__ATOMIC_RELEASE);
+#endif
+}
+int pc_audio_mix_duck_begin(uint64_t now)
+{
+#ifdef _WIN32
+    if(_InterlockedCompareExchange(&pc_audio_duck_guard,1,0))return 0;
+#else
+    if(__atomic_exchange_n(&pc_audio_duck_guard,1,__ATOMIC_ACQUIRE))return 0;
+#endif
+    if(!pc_audio_mix_get().ducking) {
+        pc_audio_duck_amount=0;pc_audio_duck_ready=0;pc_audio_duck_publish(0);
+        pc_audio_duck_unlock();return 0;
+    }
+    if(pc_audio_duck_ready && now>=pc_audio_duck_last && now-pc_audio_duck_last<5) {
+        pc_audio_duck_unlock();return 0;
+    }
+    if(pc_audio_duck_ready && now<pc_audio_duck_last) {pc_audio_duck_ready=0;pc_audio_duck_amount=0;}
+    return 1;
+}
+void pc_audio_mix_duck_end(int active,uint64_t now)
+{
+    uint64_t elapsed=pc_audio_duck_ready && now>=pc_audio_duck_last?now-pc_audio_duck_last:5;
+    float target=active?1.f:0.f,tau=active?20.f:300.f;
+    pc_audio_duck_amount=target+(pc_audio_duck_amount-target)*expf(-(float)elapsed/tau);
+    if(pc_audio_duck_amount<.00001f)pc_audio_duck_amount=0;
+    if(pc_audio_duck_amount>.99999f)pc_audio_duck_amount=1;
+    pc_audio_duck_publish((long)lroundf(-600.f*pc_audio_duck_amount));
+    pc_audio_duck_last=now;pc_audio_duck_ready=1;pc_audio_duck_unlock();
+}
 int32_t pc_audio_mix_level(int32_t original,int bus)
-{return pc_audio_mix_apply(pc_audio_mix_get(),original,bus);}
+{
+    if(bus<0 || bus>=PC_AUDIO_BUS_COUNT)bus=PC_AUDIO_EFFECTS;
+    PcAudioMixOptions options=pc_audio_mix_get();
+    int32_t level=pc_audio_mix_apply(options,original,bus);
+    if(options.ducking && (bus==PC_AUDIO_EFFECTS || bus==PC_AUDIO_MUSIC || bus==PC_AUDIO_BACKGROUND)) {
+        int32_t cut=(int32_t)pc_audio_duck_read();
+        if(cut)return level<=-10000?-10000:(level+cut<-10000?-10000:level+cut);
+    }
+    return level;
+}
+unsigned pc_audio_mix_dynamics(int bus)
+{return bus==PC_AUDIO_DIALOGUE?0u:(unsigned)pc_audio_mix_get().dynamics;}
 #endif

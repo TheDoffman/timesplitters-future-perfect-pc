@@ -31,6 +31,12 @@ OFF too. Shared UI tests cover category order, malformed bytes, external edits
 and failure at the final file. Windows suite passes; physical Mac/Linux pending.
 Both launcher preview routes select tab3 for `--render-settings-audio`.
 
+Dialogue focus and Impact range share the mix sidecar: V2 adds ducking0/1 and
+Original/Reduced/Night0..2 after the six percentages. V1 loads both opt-ins OFF;
+neutral saves retain V1. Shared controls remain independent of Enhanced Audio.
+All six combinations, migration, unrelated-save retention and invalid tokens
+pass the Windows shared UI suite (44groups); source serves Mac/Linux too.
+
 ## macOS storage (discussion #502)
 
 `Program.FindInstallRoot` discovers the entry-point bundle/checkouts;

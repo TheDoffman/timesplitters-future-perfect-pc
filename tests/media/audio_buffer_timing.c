@@ -35,6 +35,7 @@ static void acoustic_ray_mock(void) {
 recomp_func_t recomp_lookup(uint32_t address) { return acoustic_mock && address==0x88950 ? acoustic_ray_mock : NULL; }
 int xbox_EnvSwitch(const char *name, int value) { return value; }
 void hle_dsound_stream_tick(uint64_t now) { }
+int hle_dsound_stream_dialogue_active(void) {return 0;}
 static unsigned acoustic_stream_calls;static uint32_t acoustic_stream_settings;
 static float acoustic_stream_obstruction;static int acoustic_stream_bed;
 void hle_dsound_stream_acoustics(uint32_t settings,float obstruction,float room,int ambience)
@@ -58,6 +59,8 @@ int recomp_audio_output_tail_pending(uint32_t slot, int finish)
     (void)finish;
     return recomp_audio_output_position(slot, NULL, &queued) && queued;
 }
+int recomp_audio_output_audible_pending(uint32_t slot)
+{return recomp_audio_output_tail_pending(slot,0);}
 void recomp_audio_output_set_ambience(uint32_t slot,int enabled) {}
 void recomp_audio_output_set_acoustics(uint32_t slot,float obstruction,float room) {}
 void recomp_audio_output_set_spatial(uint32_t slot,float pan,int enabled) { }

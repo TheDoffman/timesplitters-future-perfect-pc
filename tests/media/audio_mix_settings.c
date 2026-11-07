@@ -10,6 +10,16 @@ int main(int argc,char **argv)
     assert(argc==3 || argc==4);
     PcAudioMixOptions current=pc_audio_mix_get();
     assert(current.master==atoi(argv[1]));
+    if(!strcmp(argv[2],"listening")) {
+        for(int duck=0;duck<=1;duck++)for(int mode=0;mode<=2;mode++) {
+            PcAudioMixOptions wanted=current;wanted.ducking=duck;wanted.dynamics=mode;
+            assert(pc_audio_mix_set(&wanted));pc_audio_mix_live=-1;
+            PcAudioMixOptions loaded=pc_audio_mix_get();
+            assert(loaded.master==wanted.master && loaded.ducking==duck && loaded.dynamics==mode);
+            for(unsigned i=0;i<PC_AUDIO_BUS_COUNT;i++)assert(loaded.volume[i]==wanted.volume[i]);
+        }
+        return 0;
+    }
     if(argc==4) {
         PcAudioMixOptions wanted=PC_AUDIO_MIX_DEFAULTS;wanted.master=atoi(argv[2]);
         int ok=pc_audio_mix_set(&wanted);assert(ok==atoi(argv[3]));
@@ -46,5 +56,24 @@ int main(int argc,char **argv)
     PcAudioMixOptions roundtrip=pc_audio_mix_unpack(pc_audio_mix_pack(o));
     assert(roundtrip.master==o.master);
     for(int i=0;i<PC_AUDIO_BUS_COUNT;i++)assert(roundtrip.volume[i]==o.volume[i]);
+    assert(!o.ducking && !o.dynamics);
+    assert(pc_audio_mix_parse("TSFP_AUDIO_MIX_V2 100 90 80 70 60 50 1 2",&o));
+    roundtrip=pc_audio_mix_unpack(pc_audio_mix_pack(o));assert(roundtrip.ducking==1 && roundtrip.dynamics==2);
+    assert(!pc_audio_mix_parse("TSFP_AUDIO_MIX_V2 100 100 100 100 100 100 2 0",&o));
+    assert(!pc_audio_mix_parse("TSFP_AUDIO_MIX_V2 100 100 100 100 100 100 1 3",&o));
+    o=(PcAudioMixOptions)PC_AUDIO_MIX_DEFAULTS;o.ducking=1;pc_audio_mix_live=pc_audio_mix_pack(o);
+    pc_audio_duck_guard=1;assert(!pc_audio_mix_duck_begin(1000));pc_audio_duck_guard=0;
+    assert(pc_audio_mix_duck_begin(1000));pc_audio_mix_duck_end(1,1000);
+    assert(!pc_audio_mix_duck_begin(1004));
+    assert(pc_audio_mix_level(0,PC_AUDIO_MUSIC)<0 && pc_audio_mix_level(0,PC_AUDIO_DIALOGUE)==0);
+    for(uint64_t t=1005;t<=1400;t+=5){assert(pc_audio_mix_duck_begin(t));pc_audio_mix_duck_end(1,t);}
+    assert(pc_audio_mix_level(0,PC_AUDIO_MUSIC)==-600);
+    assert(pc_audio_mix_duck_begin(1300));pc_audio_mix_duck_end(0,1300); /* host clock reset */
+    assert(pc_audio_mix_level(0,PC_AUDIO_MUSIC)==0);
+    o.ducking=0;pc_audio_mix_live=pc_audio_mix_pack(o);
+    assert(!pc_audio_mix_duck_begin(1500));
+    assert(pc_audio_mix_level(-12345,PC_AUDIO_EFFECTS)==-12345); /* exact Original */
+    o.dynamics=2;pc_audio_mix_live=pc_audio_mix_pack(o);
+    assert(!pc_audio_mix_dynamics(PC_AUDIO_DIALOGUE) && pc_audio_mix_dynamics(PC_AUDIO_MUSIC)==2);
     return 0;
 }

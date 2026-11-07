@@ -62,6 +62,7 @@ int recomp_audio_output_position(uint32_t slot, uint64_t *played, uint32_t *queu
     if (queued) *queued = host.queued;
     return 1;
 }
+int recomp_audio_output_audible_pending(uint32_t slot) {return host.available && host.queued>0;}
 int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes,
     uint32_t rate, uint32_t channels, uint32_t bits, int32_t level)
 {
@@ -447,6 +448,34 @@ int main(int argc, char **argv)
 {
     int result;
     if (argc != 2) return 2;
+    if(!strcmp(argv[1],"speech-activity")) {
+        Stream *s=setup();s->mix_bus=PC_AUDIO_DIALOGUE;
+        for(unsigned i=0;i<96000;i+=2){int16_t v=10000;memcpy(memory+0x20000+i,&v,2);}
+        packet(s,0x12000,0x13000);CHECK(s->speech_audible && hle_dsound_stream_dialogue_active());
+        s->paused=1;CHECK(!hle_dsound_stream_dialogue_active());s->paused=0;
+        s->flush_pending=1;CHECK(!hle_dsound_stream_dialogue_active());s->flush_pending=0;
+        PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;mix.volume[PC_AUDIO_DIALOGUE]=0;
+        pc_audio_mix_live=pc_audio_mix_pack(mix);CHECK(!hle_dsound_stream_dialogue_active());
+        mix.volume[PC_AUDIO_DIALOGUE]=100;pc_audio_mix_live=pc_audio_mix_pack(mix);
+        host.available=0;CHECK(!hle_dsound_stream_dialogue_active());
+        s=setup();s->mix_bus=PC_AUDIO_DIALOGUE;packet(s,0x12000,0x13000);
+        CHECK(!s->speech_audible && !hle_dsound_stream_dialogue_active()); /* silent PCM */
+        puts("PASS: speech-activity");return 0;
+    }
+    if(!strcmp(argv[1],"impact-range")) {
+        Stream *s=setup();PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;mix.dynamics=2;
+        pc_audio_mix_live=pc_audio_mix_pack(mix);
+        for(unsigned i=0;i<96000;i+=2){int16_t v=30000;memcpy(memory+0x20000+i,&v,2);}
+        capture=1;packet(s,0x12000,0x13000);int16_t output;memcpy(&output,captured,2);
+        CHECK(captured_bytes>0 && output>0 && output<15000 && s->dynamics.envelope>.9f);
+        PcAudioDynamics before=s->dynamics;uint64_t sent=s->sent;
+        test_now+=50;host.played=4800;refuse_output=1;tick(s,test_now);
+        CHECK(!memcmp(&before,&s->dynamics,sizeof before) && s->sent==sent);
+        refuse_output=0;tick(s,test_now);CHECK(s->sent>sent);
+        int16_t input;memcpy(&input,memory+0x20000,2);CHECK(input==30000);
+        flush_stream(s);CHECK(!s->dynamics.rate && !s->speech_audible);
+        puts("PASS: impact-range");return 0;
+    }
     if (!strcmp(argv[1],"mix-gain")) {
         Stream *s=setup();s->mix_bus=PC_AUDIO_DIALOGUE;
         PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;mix.volume[PC_AUDIO_DIALOGUE]=50;

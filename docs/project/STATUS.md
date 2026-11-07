@@ -1,3 +1,31 @@
+## 2026-11-07 - Shared listening controls and isolated build preparation
+
+Local feature/audio-overhaul adds common patch2307: opt-in Dialogue focus and
+Original/Reduced/Night per-source impact reduction. MIX_V2 appends two choices
+to existing volume fields; neutral choices retain V1. Both UIs expose them.
+The shared DSP preserves Original bytes, links stereo, considers authored gain
+and restores state after refused submits. Movie pending input remains immutable.
+Ducking samples available output without flushing/resampling/clock changes;
+paused, muted, silent, missing and drained speech sources do not hold it active.
+Buffer and stream locks are never held together. See the
+[audio evidence/limits](../development/audio-overhaul.md).
+
+Windows production media/full-menu fixtures pass154 with9 explicit skips;
+full Windows launcher suite passes in41.69s with44 shared UI groups. Real XMV
+checks pass4 in40.32s, preserving Original content/cadence and checking synthetic
+movie DSP retries. Physical Mac/Linux, guest layout and listening/tuning remain
+unverified. Per-source impact reduction does not prove final summed headroom.
+No source audio assets have been rewritten.
+
+An isolated build is being generated. A proposed dependency-junction setup was
+rejected by automatic approval review; the accepted alternative leaves those
+directories in place. This checkout has its own small Python environment,
+read-only dependency search path, copied pinned SDL source and one compiler-input
+XBE (verified supported hash). The single full game-data copy remains in the
+original checkout. Symbol/analysis caches and generated code stay here; CLI and
+FFmpeg dependencies are reused by explicit paths. Game build/startup/listening
+are separate pending milestones. No user save/settings path is used.
+
 ## 2026-11-07 - Verified speech routing and independent audio mix
 
 Local feature/audio-overhaul; shared patches0060/0061 apply through the complete

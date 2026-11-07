@@ -523,6 +523,31 @@ public static class LauncherSharedUiChecks
                     Need(rejected && File.ReadAllBytes(file).SequenceEqual(System.Text.Encoding.UTF8.GetBytes(invalid)),"Malformed mix settings were changed or accepted: "+invalid);
                 }
             });
+            Test("dialogue focus and impact range migrate, retain volumes and remain optional",()=>{
+                string folder=Path.Combine(root,"audio-listening");Directory.CreateDirectory(folder);
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(3);
+                var focus=Find<CheckBox>(page.View,"DialogueFocus");var range=Find<ComboBox>(page.View,"ImpactRange");
+                var save=Find<Button>(page.View,"SettingsSaveButton");
+                Need(focus.IsChecked==false && range.SelectedIndex==0,"Listening changes must be opt-in");
+                for(int duck=0;duck<=1;duck++)for(int mode=0;mode<=2;mode++) {
+                    focus.IsChecked=duck!=0;range.SelectedIndex=mode;
+                    if(save.IsEnabled)Click(save);
+                    var model=GameSettings.Load(folder,null);
+                    Need(model.DialogueFocus==(duck!=0) && model.ImpactRange==mode,"Listening choices not saved");
+                    Need(model.AudioVolumes.All(v=>v==100) && !model.EnhancedAudio,"Listening changed gain or enhancements");
+                }
+                var retained=GameSettings.Load(folder,null);retained.Sensitivity=.2;retained.Save();
+                Need(GameSettings.Load(folder,null).DialogueFocus && GameSettings.Load(folder,null).ImpactRange==2,"Unrelated save lost listening choices");
+                string file=Core.PathIn(folder,LauncherPlatform.Settings(folder)[7]);
+                Need(File.ReadAllText(file)=="TSFP_AUDIO_MIX_V2 100 100 100 100 100 100 1 2\n","Native/launcher listening formats differ");
+                retained.DialogueFocus=false;retained.ImpactRange=0;retained.Save();
+                Need(File.ReadAllText(file)=="TSFP_AUDIO_MIX_V1 100 100 100 100 100 100\n","Original choices did not retain V1 compatibility");
+                foreach(string invalid in new[]{"TSFP_AUDIO_MIX_V2 100 100 100 100 100 100 2 0","TSFP_AUDIO_MIX_V2 100 100 100 100 100 100 1 3",
+                    "TSFP_AUDIO_MIX_V2 100 100 100 100 100 100 01 0", "TSFP_AUDIO_MIX_V2 100 100 100 100 100 100 1 2 extra"}) {
+                    File.WriteAllText(file,invalid);bool rejected=false;try{GameSettings.Load(folder,null);}catch{rejected=true;}
+                    Need(rejected && File.ReadAllText(file)==invalid,"Malformed listening settings accepted or changed");
+                }
+            });
             Test("late audio mix failure restores every earlier settings file",()=>{
                 string folder=Path.Combine(root,"audio-mix-rollback");Directory.CreateDirectory(folder);
                 var model=GameSettings.Load(folder,null);model.Save();

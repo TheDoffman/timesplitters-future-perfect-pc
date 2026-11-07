@@ -119,13 +119,25 @@ first submission (patch0060). Generated wrapper definitions must remain explicit
 in recomp_manual.c: the compiler does not scan included .inc files recursively.
 Patch0061 composes master/category attenuation with the original HLE level and
 updates queued voices without clock/PCM edits. `pc_audio_mix_settings.h` owns
-strict independent `pc-audio-mix.ini` persistence and an atomic six-value
+strict independent `pc-audio-mix.ini` persistence and an atomic options
 snapshot; `pc_audio_config_path.h` resolves both sidecars through the isolated
 display/input directory. 100% is exact neutral. `pc_audio_menu.inc` supplies
 separate Mix/Enhancements pages: six exact-percent selectors, five toggles,
 save-failure rollback and native back navigation. The original Audio Options
 keeps its profile rows and contains one compact Mix link. Guest rendering awaits
 acceptance; the production full-menu fixture and isolated subpage fixture pass.
+
+Listening options: patch2307 applies shared `pc_audio_dynamics.h` to decoded
+buffer/stream/movie PCM, restoring history after refused submissions and keeping
+movie input immutable. Original/OFF preserves bytes; Reduced/Night only reduce
+per-source peaks and exempt separately owned dialogue. `pc_audio_mix_settings.h`
+accepts MIX_V1 and V2 (six percentages, ducking0/1, impact0..2); neutral options
+serialize as V1. A guarded5ms wall-clock sampler checks accepted audible speech
+queues, then smooths a6dB duck of effects/music/ambience with20/300ms attack/release.
+It never holds buffer/stream locks together, flushes tails or changes clocks.
+`recomp_audio_output_audible_pending` reads XAudio queued voices or SDL available
+output (excluding held resampler input). Both UIs expose the opt-ins; guest pages,
+perceptual tuning, final mix headroom and physical hardware remain unverified.
 
 Split-screen mouse look (#112): `pc_camera_mouse_primary_in_region` reads the
 current player's local input slot at `player+4` from the fresh bounded camera

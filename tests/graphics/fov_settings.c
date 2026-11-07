@@ -899,7 +899,7 @@ int main(int argc,char **argv)
     CHECK(pose_clip_bindings==1);
 
     CHECK(observed_beta_height==bits(32.f)); /* Original menu now contains one link. */
-    built_row_count=0;last_built_item=0;audio_features_page=1;call(AUDIO_MIX_BUILD,0,0);
+    built_row_count=0;last_built_item=0;audio_page=1;call(AUDIO_MIX_BUILD,0,0);
     uint32_t audio_beta_row=audio_feature_rows[0];CHECK(audio_beta_row && built_row_count==6);
     WORD_AT(audio_beta_row+0xc8)=1;call(AUDIO_BETA_CHANGE,0,0);CHECK(enhanced_audio==1);
     audio_save_ok=0;WORD_AT(audio_beta_row+0xc8)=0;call(AUDIO_BETA_CHANGE,0,0);

@@ -22,7 +22,7 @@ Audio census/meter: [commands, mappings and evidence](../development/audio-overh
 Media CI selects `test_audio_audit.py` and `test_audio_measurements.py` on
 Windows/macOS/Linux; synthetic/decoder checks are separate from listening.
 Audio timing/gain fixtures also cover all32 persisted feature combinations,
-unknown-file preservation, speech ownership, queued gains and bed/environment routing.
+unknown-file preservation, speech ownership, ducking, impact reduction and queued gains.
 
 `test_controller_profile.py` now executes the real native key/pad guards and
 runtime key dispatcher, requiring neutral gameplay keys during freecam while

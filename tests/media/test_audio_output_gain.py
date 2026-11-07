@@ -138,6 +138,8 @@ def test_mix_gain_settings(tmp_path):
     run(100,50,0)
     env.pop('TSFP_DISPLAY_CONFIG');env['RECOMP_INPUT_CONFIG']=str(tmp_path/'input.ini')
     run(100,25,1);run(25,'policy')
+    run(25,'listening')
+    assert sidecar.read_text()=='TSFP_AUDIO_MIX_V2 25 100 100 100 100 100 1 2\n'
 
 
 def test_native_audio_subpages(tmp_path):
@@ -150,5 +152,17 @@ def test_native_audio_subpages(tmp_path):
     assert built.returncode==0,built.stdout+built.stderr
     env={k:v for k,v in env.items() if not k.startswith(('RECOMP_','TSFP_'))}
     env['TSFP_DISPLAY_CONFIG']=str(tmp_path/'display.ini')
+    run=subprocess.run([str(exe)],cwd=tmp_path,env=env,capture_output=True,text=True,timeout=10)
+    assert run.returncode==0,run.stdout+run.stderr
+
+
+def test_shared_audio_dynamics(tmp_path):
+    compiler,env=native_compiler(tmp_path)
+    exe=tmp_path/('dynamics.exe' if os.name=='nt' else 'dynamics')
+    source=ROOT/'tests/media/audio_dynamics.c'
+    args=([compiler,'/nologo','/std:c11','/I'+str(ROOT/'src'),str(source),'/Fe:'+str(exe)] if os.name=='nt' else
+          [compiler,'-std=c11','-I'+str(ROOT/'src'),str(source),'-lm','-o',str(exe)])
+    built=subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
+    assert built.returncode==0,built.stdout+built.stderr
     run=subprocess.run([str(exe)],cwd=tmp_path,env=env,capture_output=True,text=True,timeout=10)
     assert run.returncode==0,run.stdout+run.stderr

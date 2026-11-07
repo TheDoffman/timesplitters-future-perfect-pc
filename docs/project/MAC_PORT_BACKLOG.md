@@ -8686,6 +8686,13 @@ Mac title acceptance pending; retain MAC-118 Awaiting validation. See [contracts
     Windows production-C/media and launcher suites pass; native Mac/Linux
     execution, physical output and guest mix-page acceptance remain pending.
     Cinematic premixes cannot isolate their baked-in speech. See the audio plan.
+  - Listening options follow-up: common patch2307 and `pc_audio_dynamics.h`
+    implement opt-in dialogue ducking and per-source impact reduction, with
+    shared MIX_V2 persistence and both UIs. SDL's new available-output query
+    excludes held resampler input and does not invent a device clock or flush.
+    Windows production media/menu and launcher tests pass, including SDL host
+    doubles; native Mac/Linux execution/listening remains pending. No separate
+    platform DSP implementation is deferred.
 - Shared: patches 0040/0045/0050 and `pc_spatial_audio.h`, `pc_acoustic_*`
   provide directional buffers/streams, near-field centering, longer gunfire
   range, wall/portal filtering and metadata-driven ambience mixing. Both

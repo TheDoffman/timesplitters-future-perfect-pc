@@ -1708,6 +1708,18 @@
       ]
     },
     {
+      "name": "2307-audio-dynamics-and-ducking.patch",
+      "path": "patches/media/2307-audio-dynamics-and-ducking.patch",
+      "sha256": "d7aa125715068fc937951205571544810d9bf39b3872fdacf6f11bf268dff760",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_dsound.c",
+        "src/hle/hle_dsound_stream.c",
+        "src/hle/hle_xmv_play.c"
+      ]
+    },
+    {
       "name": "2310-game-language.patch",
       "path": "patches/platform/2310-game-language.patch",
       "sha256": "6bb7a0a5e632b509b1e2a4c93163af160107701cddf523367716bad98a960f98",

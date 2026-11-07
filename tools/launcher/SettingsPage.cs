@@ -49,6 +49,8 @@ namespace TimeSplitters.Launcher
         string savedDraft;
         readonly Slider fov;
         readonly Slider[] audioVolumes=new Slider[6];
+        readonly CheckBox dialogueFocus;
+        readonly ComboBox impactRange;
         readonly TextBox sensitivity, width, height, discordId;
         readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, developerTools, discordEnabled, enhancedTextures, ambientOcclusion, shaderCache;
         readonly ComboBox device, resolution, aspect, scale, filtering, frameRate, languagePack, msaa, edgeSmoothing, supersampling;
@@ -319,6 +321,13 @@ namespace TimeSplitters.Launcher
                 audioVolumes[i]=slider;row.Children.Add(slider);volumes.Children.Add(row);
             }
             volumes.Children.Add(Text("Requires an audio-overhaul game build. Dialogue controls separately played speech; speech mixed into music or movies follows that track's volume.",12));
+            var listening=PageTheme.Section(audioPanel,"Listening options","Optional controls for clearer speech and softer peaks. Both default to Original/OFF.");
+            dialogueFocus=Check("Dialogue focus",model.DialogueFocus);dialogueFocus.Name="DialogueFocus";
+            listening.Children.Add(dialogueFocus);
+            listening.Children.Add(Text("Lowers music, effects and ambience during separately played dialogue. Muted or paused dialogue does not trigger it.",12));
+            impactRange=Choices(GameSettings.ImpactRangeLabels,GameSettings.ImpactRangeLabels[model.ImpactRange]);impactRange.Name="ImpactRange";
+            Field(listening,"Impact range",impactRange);
+            listening.Children.Add(Text("Reduced and Night soften peaks in effects, ambience and premixed music/movies. Separate dialogue stays unchanged. Original preserves the authored range.",12));
             var audio=PageTheme.Section(audioPanel,"Enhanced Audio","Optional positional audio and ambience improvements.");
             enhancedAudio=Check("Enhanced Audio (Beta)",model.EnhancedAudio);enhancedAudio.Name="EnhancedAudio";audio.Children.Add(enhancedAudio);
             spatialAudio=Check("Stereo positioning",model.SpatialAudio);spatialAudio.Name="SpatialAudio";audio.Children.Add(spatialAudio);
@@ -341,8 +350,8 @@ namespace TimeSplitters.Launcher
             tabs.Items.Add(new TabItem { Header="View & HUD",Content=Scroll(viewHud) });
             tabs.Items.Add(new TabItem { Header="General",Content=Scroll(general) });
             foreach(var entry in new[]{sensitivity,width,height,discordId})Ui.TextChanged(entry,RefreshSaveState);
-            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,developerTools,discordEnabled,enhancedTextures,enhancedAudio,spatialAudio,extendedGunfire,environmentalAudio,ambientAudio,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
-            foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack,msaa,edgeSmoothing,supersampling})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
+            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,developerTools,discordEnabled,enhancedTextures,enhancedAudio,spatialAudio,extendedGunfire,environmentalAudio,ambientAudio,dialogueFocus,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
+            foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack,msaa,edgeSmoothing,supersampling,impactRange})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
             Ui.ValueChanged(fov,RefreshSaveState);
         }
         readonly ComboBox[] localDevices=new ComboBox[3];
@@ -353,6 +362,7 @@ namespace TimeSplitters.Launcher
                 skipSplashes.IsChecked,developerTools.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
                 spatialAudio.IsChecked,extendedGunfire.IsChecked,environmentalAudio.IsChecked,ambientAudio.IsChecked,
                 audioVolumes.Select(slider=>(int)Math.Round(slider.Value)).ToArray(),
+                dialogueFocus.IsChecked,impactRange.SelectedIndex,
                 device.SelectedIndex,localDevices.Select(x=>x.SelectedIndex).ToArray(),scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
                 (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
@@ -511,6 +521,7 @@ namespace TimeSplitters.Launcher
                 model.EnhancedTextures=enhancedTextures.IsChecked==true;
                 model.EnhancedAudio=enhancedAudio.IsChecked==true;
                 for(int i=0;i<audioVolumes.Length;i++)model.AudioVolumes[i]=(int)Math.Round(audioVolumes[i].Value);
+                model.DialogueFocus=dialogueFocus.IsChecked==true;model.ImpactRange=impactRange.SelectedIndex;
                 model.SpatialAudio=spatialAudio.IsChecked==true;model.ExtendedGunfire=extendedGunfire.IsChecked==true;
                 model.EnvironmentalAudio=environmentalAudio.IsChecked==true;model.AmbientAudio=ambientAudio.IsChecked==true;
                 model.LanguagePack=GameSettings.LanguagePacks[languagePack.SelectedIndex];

@@ -1571,6 +1571,8 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case AUDIO_MIX_BACK:return audio_mix_back;
     case AUDIO_FEATURES_OPEN:return audio_features_open;
     case AUDIO_MIX_TICK:return audio_mix_tick;
+    case AUDIO_LISTENING_OPEN:return audio_listening_open;
+    case AUDIO_LISTENING_CHANGE:return audio_listening_change;
     case 0x002D08C0u:return uc_extras_build;
     case UC_OPEN:return uc_open;
     case UC_BUILD:return uc_build;

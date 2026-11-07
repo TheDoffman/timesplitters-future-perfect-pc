@@ -7,7 +7,7 @@ Merging and publication are outside this task's authorization.
 
 ## Sequence and acceptance
 
-1. **Audit (in progress).** Hash/index every game archive and movie without
+1. **Audit (census complete; reference listening pending).** Hash/index every game archive and movie without
    extracting another data copy. Identify sound-bank metadata and establish
    payload/codec mappings. Inventory rates, channels, durations and loop points
    only after verifying the format. Measure decoded peaks, loudness and seams;
@@ -17,7 +17,7 @@ Merging and publication are outside this task's authorization.
    remaining high-refresh underrun counters, decoder accuracy, loop/tail handling,
    pause/skip and music/movie timing. Change only verified defects with regression
    evidence; retain guest completion clocks and bounded queues.
-3. **Mix controls.** Separate enhancements currently behind one beta switch;
+3. **Mix controls (implemented; game/listening acceptance pending).** Separate enhancements currently behind one beta switch;
    provide shared persisted controls and original recovery. Identify trustworthy
    dialogue/effect/ambience/music ownership before adding independent gains,
    optional dialogue ducking and dynamic-range processing. Neutral settings must
@@ -230,6 +230,54 @@ decisions remain in the active goal.
 The final combined media/full-menu/mouse/portable-launcher/context pass reports
 226 passed,10 skipped (19.41s). The full Windows launcher suite was repeated
 after the compact volume layout and passed in42.63s. Both exited successfully.
+
+## Listening controls (implemented; tuning/acceptance pending)
+
+Common patch2307 adds opt-in Dialogue focus and Original/Reduced/Night impact
+range. MIX_V2 appends `<ducking0/1> <impact0..2>` to the six V1 percentages.
+V1 loads both options neutral; saving neutral choices retains V1. Malformed or
+future files remain protected. One atomic options snapshot carries every field.
+The shared launcher and guest Listening subpage expose the same choices without
+depending on the Enhanced Audio switch. Shared UI tests cover all6 combinations,
+unrelated-save retention, V1 recovery and invalid values. Old builds preserve
+an unreadable V2 rather than overwrite it; these options require this overhaul.
+
+Dialogue focus samples accepted non-silent speech owned by the verified caller
+paths. Paused/flushing, muted, drained or missing output does not trigger it.
+The new host `audible_pending` query reads available SDL output without flushing
+resampler input; XAudio uses its existing queued-voice state. This query never
+selects a completion clock. A nonblocking guard limits sampling to once per5ms;
+buffer and stream locks are held separately. Existing queue pumping occurs
+before sampling. A20ms attack and300ms release approach6dB attenuation of Music,
+Effects and Ambience; Dialogue and Movies are exempt. Device/queue availability
+controls release even if the guest has not polled an old speech handle. Focus
+OFF bypasses the additional level change immediately; release reaches exact0.
+Speech already baked into a music/movie premix cannot trigger separate focus.
+
+`pc_audio_dynamics.h` supplies a linked-stereo peak envelope once in shared HLE
+code, before existing host acoustics. Reduced uses a0.35 linear threshold and
+2:1 slope with120ms release; Night uses0.125,4:1 and250ms. These are initial
+audition values, not perceptually accepted presets. The detector includes the
+authored/current HLE level so already quiet sources are not compressed again.
+There is no makeup, boost, lookahead, resampling or clock/queue change. Separate
+Dialogue is exempt; effects, ambience and music/movie premixes are processed.
+This is per-source impact reduction, not a limiter on the final sum of voices.
+Original preserves exact bytes; fresh below-threshold input passes unchanged.
+Speech activity is source-level, not VAD tracking within pauses in a recording.
+Any option change affects newly
+submitted PCM; existing queued processed PCM drains under the normal lead.
+
+Buffers/streams retain small envelope state and restore it after a refused
+submit. Existing source/reset/pause/format boundaries clear state. XMV copies
+one bounded chunk before processing, retaining immutable pending PCM for retry.
+The fixtures verify partition invariance, linked channels, signed16/unsigned8,
+exact Original, authored attenuation, no PCM/source mutation, mute/pause/drain
+duck release, resampler-held-input exclusion and rejected-submit rollback.
+Windows media/full-menu pass154 with9 skips; the full launcher suite passes
+44 shared UI groups in41.69s. Real XMV tests pass4 in40.32s, preserving Original
+PCM/image hashes and cadence while also exercising synthetic movie DSP retries.
+Game build, rendered native pages, listening/tuning and physical Mac/Linux output
+remain unverified. No source audio asset has been rewritten.
 
 ## Planning estimate
 

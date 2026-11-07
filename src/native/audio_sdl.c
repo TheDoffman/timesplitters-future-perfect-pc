@@ -227,6 +227,17 @@ int recomp_audio_output_set_volume(uint32_t slot, int32_t volume)
 }
 int recomp_audio_output_position(uint32_t slot, uint64_t *played, uint32_t *queued)
 { (void)slot; (void)played; (void)queued; return 0; }
+int recomp_audio_output_audible_pending(uint32_t slot)
+{
+    if(slot>=SLOT_COUNT)return 0;
+    pthread_mutex_lock(&lock);
+    int pending=0;SDL_AudioStream *stream=voices[slot].stream;
+    if(device && !stopped && stream) {
+        int available=SDL_GetAudioStreamAvailable(stream);
+        if(available<0)fail_voice(slot);else pending=available>0;
+    }
+    pthread_mutex_unlock(&lock);return pending;
+}
 int recomp_audio_output_tail_pending(uint32_t slot, int finish)
 {
     if (slot >= SLOT_COUNT) return 0;
