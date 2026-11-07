@@ -19,8 +19,8 @@ Mac storage tests: see launcher.md.
 # Build/tests ([MSAA](smaa.md))
 
 Audio: [acceptance gates](../development/audio-overhaul-acceptance.md).
-Media CI selects audio audit/loop/measurement fixtures on
-Windows/macOS/Linux; synthetic/decoder checks are separate from listening.
+Media CI selects audit/candidate/loop/measurement fixtures on
+Windows/macOS/Linux; compatible headers never establish asset identity.
 Scene/guest fixtures check cache/pan/split fallback; gain C++ includes initializer_list.
 Audio timing/gain/loop fixtures also cover all32 persisted feature combinations,
 unknown-file preservation, speech ownership, ducking, impact reduction and queued gains.

@@ -736,3 +736,26 @@ Existing source previews/assets are untouched. Different live matches are not
 synchronized event A/B, and no normalization is applied to game recordings.
 Listening feedback remains unanswered; file creation is not listening acceptance.
 The [acceptance ledger](audio-overhaul-acceptance.md) records all remaining gates.
+
+## High-refresh output and unidentified-entry survey
+
+Three isolated126-second enhanced Vietnam matches select144/180/240 native
+targets. Read-only game-update counters over the78..123-second capture window
+average143.00/177.26/205.39 updates/s. These are guest update cadences, not
+display-present FPS; sustained240 performance is not established. All three
+reach visually verified first-person gameplay, report12 starvation episodes
+and zero output failures/refusals/engine glitches. Six20-second process captures
+have no discontinuity/timestamp flags or full-scale samples. Individual frame
+traces cap at20,000 rows; read-only counter samples continue through the later
+capture window. A partial final CSV row from owned termination is excluded.
+Early numbered screenshots are retained separately from final rolling
+`frame_s...` images; scene48/player1 samples and those rolling captures establish
+gameplay. Target selection alone is not treated as performance evidence.
+
+The [unidentified-entry survey](audio-coverage-survey.md) revalidates403 archive
+hashes and11,115 known-copy hashes, then inspects all39,768 remaining uncompressed
+entries. Two identical144-byte payloads pass raw ADPCM header compatibility;
+neither is identified as audio. There are no detected container-signature or
+known-content matches. Embedded/raw PCM/other formats and an additional callback
+stream provider remain open. No original inventory entry is relabelled or removed
+from the denominator, and no asset restoration is selected from compatibility.
