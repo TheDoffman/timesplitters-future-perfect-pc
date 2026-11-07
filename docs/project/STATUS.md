@@ -1,3 +1,21 @@
+## 2026-11-07 - Menu listening accepted and preference reload verified
+
+The user reports the original Music Volume full-level menu reference as
+"Comfortable now" on headphones. A new isolated run activates native Accept and
+returns to Settings. A fresh process reloads that same profile without reseeding,
+shows full Music Volume and restores the observed-1417 hundredths-dB Music level
+(+3.2dB over the earlier reference). This original preference affects music
+generally after profile selection; it does not change pre-profile title defaults.
+
+The whole native-saved file is copied only into the unused isolated review
+profile after its hashes match initial preparation, under its exclusive launcher
+lock, with the previous file backed up. The launcher CheckOnly route then passes
+and leaves all profile hashes unchanged. No personal settings, fixture, global
+default, source asset, Movies gain or production binary is changed. Reviewed
+headphone references have no remaining reported concern. Speakers are unavailable;
+physical device/controller and native Mac/Linux checks remain unverified, with
+completion-gate disposition pending. See the [current ledger](../development/audio-overhaul-acceptance.md).
+
 ## 2026-11-07 - Quiet menu music follow-up
 
 The user reports the movie-to-menu reference as quiet, then identifies the
