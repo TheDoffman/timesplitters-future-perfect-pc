@@ -1,0 +1,202 @@
+--- a/src/hle/dsound_buffer_model.h
++++ b/src/hle/dsound_buffer_model.h
+@@ -27,6 +27,7 @@
+     uint32_t block_align;
+     uint32_t cursor_bytes;
+     uint32_t loop_start_bytes;
++    uint32_t loop_end_bytes; /* exclusive; zero retains the whole-source end */
+     uint32_t frame_remainder;
+     uint32_t play_flags;
+     uint32_t playing;
+@@ -38,8 +39,11 @@
+     uint32_t sample_rate, uint32_t block_align, uint64_t now_ms);
+ uint32_t recomp_dsound_buffer_cursor(
+     RecompDsoundBufferModel *model, uint64_t now_ms);
+-/* Consume elapsed PCM on a separate output clock; wrap at size_bytes to
+-   loop_start_bytes when looping. A span can cover multiple loop iterations. */
++/* Active exclusive boundary: authored loop end while looping, full source
++   otherwise. A zero loop_end_bytes retains the existing whole-source end. */
++uint32_t recomp_dsound_buffer_end(const RecompDsoundBufferModel *model);
++/* Consume elapsed PCM on a separate output clock; the intro is heard once,
++   followed by the authored loop. A span can cover multiple loop iterations. */
+ uint32_t recomp_dsound_buffer_consume(
+     RecompDsoundBufferModel *model, uint64_t now_ms, uint32_t *offset_bytes);
+ uint32_t recomp_dsound_buffer_play(
+--- a/src/hle/dsound_buffer_model.c
++++ b/src/hle/dsound_buffer_model.c
+@@ -4,4 +4,4 @@
+  * The buffer half of doaxbv-re's dsound_service_model.c
+  * (https://github.com/NoRain211/doaxbv-re, recomp-runtime/), GPL-3.0.
+- * Unchanged apart from this header and the dropped device-level functions.
++ * Adapted for authored loop bounds; device-level functions remain omitted.
+  */
+@@ -9,12 +9,21 @@
+ 
+ #include <stddef.h>
+ 
++uint32_t recomp_dsound_buffer_end(const RecompDsoundBufferModel *model)
++{
++    if(!model)return 0u;
++    return (model->play_flags & RECOMP_DSOUND_PLAY_LOOPING) && model->loop_end_bytes ?
++        model->loop_end_bytes : model->size_bytes;
++}
++
+ static int buffer_configured(const RecompDsoundBufferModel *model)
+ {
+-    return model != NULL && model->size_bytes != 0u &&
+-        model->sample_rate != 0u && model->block_align != 0u &&
+-        model->size_bytes % model->block_align == 0u &&
+-        model->loop_start_bytes < model->size_bytes &&
++    if(!model || !model->size_bytes || !model->sample_rate || !model->block_align)
++        return 0;
++    uint32_t end=model->loop_end_bytes?model->loop_end_bytes:model->size_bytes;
++    return model->size_bytes % model->block_align == 0u &&
++        end <= model->size_bytes && end % model->block_align == 0u &&
++        model->loop_start_bytes < end &&
+         model->loop_start_bytes % model->block_align == 0u;
+ }
+ 
+@@ -42,6 +51,11 @@
+     if (!buffer_configured(model)) {
+         return 0u;
+     }
++    /* A running cursor beyond a shortened region resumes at its loop start,
++       never reads the excluded tail. Paused/one-shot positions stay intact. */
++    if(model->playing && (model->play_flags & RECOMP_DSOUND_PLAY_LOOPING) &&
++       model->cursor_bytes >= recomp_dsound_buffer_end(model))
++        model->cursor_bytes=model->loop_start_bytes;
+     if (!model->playing || now_ms <= model->last_ms) {
+         return model->cursor_bytes;
+     }
+@@ -49,7 +63,7 @@
+     uint64_t seconds = elapsed / 1000u;
+     uint64_t fraction =
+         (elapsed % 1000u) * model->sample_rate + model->frame_remainder;
+-    uint64_t frames = model->size_bytes / model->block_align;
++    uint64_t frames = recomp_dsound_buffer_end(model) / model->block_align;
+     uint64_t position = model->cursor_bytes / model->block_align;
+     model->last_ms = now_ms;
+     model->frame_remainder = (uint32_t)(fraction % 1000u);
+@@ -85,6 +99,8 @@
+         !model->playing || now_ms <= model->last_ms) {
+         return 0u;
+     }
++    /* Normalize a seek or live region change before exposing the first span. */
++    recomp_dsound_buffer_cursor(model,model->last_ms);
+     uint64_t elapsed = now_ms - model->last_ms;
+     uint32_t position = model->cursor_bytes;
+     uint32_t remainder = model->frame_remainder;
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -561,6 +561,8 @@
+     }
+     if (b->data == 0u || bytes > sizeof pcm)
+         return;
++    uint32_t end=recomp_dsound_buffer_end(out);
++    if(!end || offset>=end)return;
+ 
+     if (adpcm) {
+         uint32_t block_bytes = XBOX_ADPCM_BLOCK_BYTES * channels;
+@@ -570,6 +572,7 @@
+             int16_t decoded[XBOX_ADPCM_BLOCK_SAMPLES * 2];
+             uint32_t within = offset % decoded_bytes;
+             uint32_t count = decoded_bytes - within;
++            if (count > end - offset) count = end - offset;
+             if (count > bytes - written) count = bytes - written;
+             if (!xbox_adpcm_decode_block(
+                     (const uint8_t *)HLE_PTR(b->data + offset / decoded_bytes * block_bytes),
+@@ -581,18 +584,18 @@
+             memcpy(pcm + written, (uint8_t *)decoded + within, count);
+             written += count;
+             offset += count;
+-            if (offset == out->size_bytes) offset = out->loop_start_bytes;
++            if (offset == end) offset = out->loop_start_bytes;
+         }
+         bits = 16u;
+     } else {
+         uint32_t written;
+         for (written = 0u; written < bytes;) {
+-            uint32_t count = out->size_bytes - offset;
++            uint32_t count = end - offset;
+             if (count > bytes - written) count = bytes - written;
+             memcpy(pcm + written, HLE_PTR(b->data + offset), count);
+             written += count;
+             offset += count;
+-            if (offset == out->size_bytes) offset = out->loop_start_bytes;
++            if (offset == end) offset = out->loop_start_bytes;
+         }
+     }
+     /* A voice that was fed and now holds nothing ran dry: an underrun, a gap
+@@ -701,8 +704,8 @@
+ static Buffer *model_for_known(Buffer *known, uint32_t iface, uint64_t now)
+ {
+     Buffer *b = known ? known : find(iface);
+-    uint32_t size, data, format, tag, channels, bits, align, rate, loop_start;
+-    uint32_t decoded_size, decoded_loop, block_align, raw_size;
++    uint32_t size, data, format, tag, channels, bits, align, rate, loop_start, loop_len, loop_end;
++    uint32_t decoded_size, decoded_loop, decoded_end, block_align, raw_size;
+     int output;
+     uint32_t i;
+ 
+@@ -720,6 +723,7 @@
+     align      = setting(iface, SET_ALIGN);
+     rate       = setting(iface, SET_RATE);
+     loop_start = setting(iface, SET_LOOP_START);
++    loop_len   = setting(iface, SET_LOOP_LEN);
+     tag        = format & 0xFFFFu;
+     channels   = (format >> 16) & 0xFFu;
+     bits       = format >> 24;
+@@ -745,11 +749,15 @@
+             if (b) retire(b);
+             return NULL;
+         }
+-        if (loop_start >= size)
+-            loop_start = 0u;
+-    }
+-    if (loop_start >= size || loop_start % align != 0u)
++    }
++    if (loop_start >= size || loop_start % align != 0u) {
+         loop_start = 0u;
++        loop_len = 0u;
++    }
++    /* Invalid lengths retain the old valid-start/full-tail fallback. Avoid
++       overflow and never expose partial source frames or ADPCM blocks. */
++    if(loop_len && (loop_len>size-loop_start || loop_len%align))loop_len=0u;
++    loop_end=loop_len?loop_start+loop_len:size;
+ 
+     output = channels >= 1u && channels <= 2u &&
+         ((tag == TAG_PCM && (bits == 8u || bits == 16u) &&
+@@ -766,19 +774,24 @@
+         }
+         decoded_size = (uint32_t)d;
+         decoded_loop = loop_start / align * XBOX_ADPCM_BLOCK_SAMPLES * channels * 2u;
++        decoded_end = loop_end / align * XBOX_ADPCM_BLOCK_SAMPLES * channels * 2u;
+         block_align = channels * 2u;
+     } else {
+         decoded_size = size;
+         decoded_loop = loop_start;
++        decoded_end = loop_end;
+         block_align = align;
+     }
++    if(decoded_end==decoded_size)decoded_end=0u; /* canonical whole-source end */
+ 
+     if (b) {
+-        if (b->model.loop_start_bytes != decoded_loop) {
++        if (b->model.loop_start_bytes != decoded_loop || b->model.loop_end_bytes != decoded_end) {
+             pump(b, now);
+             recomp_dsound_buffer_cursor(&b->model, now);
+             reset_output(b);
+             b->model.loop_start_bytes = decoded_loop;
++            b->model.loop_end_bytes = decoded_end;
++            recomp_dsound_buffer_cursor(&b->model,now);
+             b->output_model = b->model;
+         }
+         return b;
+@@ -798,6 +811,7 @@
+             b->align = align;
+             b->output = output;
+             b->model.loop_start_bytes = decoded_loop;
++            b->model.loop_end_bytes = decoded_end;
+             b->output_model = b->model;
+             return b;
+         }

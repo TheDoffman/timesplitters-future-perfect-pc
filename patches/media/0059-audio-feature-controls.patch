@@ -1,0 +1,28 @@
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -1605,11 +1605,12 @@
+     {
+         float relative[3],front[3],up[3],obstruction=0,room=0;
+         unsigned mode=HLE_MEM32(params+0x40u);
+-        int enhanced=pc_audio_enhanced_enabled();
++        int enhanced=pc_audio_feature_enabled(PC_AUDIO_SPATIAL);
++        int environment=pc_audio_feature_enabled(PC_AUDIO_ENVIRONMENT);
+         memcpy(relative,HLE_PTR(params+8u),sizeof relative);
+         if(mode!=1) {
+             float listener[3];memcpy(listener,HLE_PTR(ds+0x38u),sizeof listener);
+-            if(mode==0 && enhanced) {
++            if(mode==0 && environment) {
+                 PcAcousticResult acoustic=pc_acoustic_guest(settings,listener,relative);
+                 obstruction=acoustic.obstruction;room=acoustic.room;
+                 memcpy(relative,acoustic.direction,sizeof relative);
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -2255,7 +2255,7 @@
+ {
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     uint32_t caller=0,argument=g_esp+8u,original=0;memcpy(&caller,(const void *)((uintptr_t)g_esp+g_xbox_mem_offset),4);memcpy(&original,(const void *)((uintptr_t)argument+g_xbox_mem_offset),4);
+-    if(pc_audio_enhanced_enabled() && (caller==0x001B7216u || caller==0x001B71D6u)) {
++    if(pc_audio_feature_enabled(PC_AUDIO_WEAPON_RANGE) && (caller==0x001B7216u || caller==0x001B71D6u)) {
+         float range;memcpy(&range,&original,4);range=recomp_weapon_sound_range(range);memcpy((void *)((uintptr_t)argument+g_xbox_mem_offset),&range,4);
+         sub_00021FB0_gen();
+         memcpy((void *)((uintptr_t)argument+g_xbox_mem_offset),&original,4); /* preserve cdecl arguments */

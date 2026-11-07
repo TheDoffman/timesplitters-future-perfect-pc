@@ -241,7 +241,7 @@ namespace TimeSplitters.Launcher
                 using(var bitmap=new RenderTargetBitmap(PixelSize.FromSize(body.Bounds.Size,1),new Vector(96,96))){bitmap.Render(body);bitmap.Save(output);}
                 dialog.Close(false);await shown;Close();return;
             }
-            if(mode.Contains("settings")){ShowSettings();if(mode.Contains("graphics"))settings.SelectTab(1);if(mode.Contains("discord"))settings.SelectTab(2);}
+            if(mode.Contains("settings")){ShowSettings();if(mode.Contains("graphics"))settings.SelectTab(1);if(mode.Contains("discord"))settings.SelectTab(2);if(mode.Contains("audio"))settings.SelectTab(3);}
             if(mode.Contains("repair")||mode.Contains("diagnostics"))Maintenance(mode.Contains("diagnostics"));
             if(mode.Contains("versions")){versionsPage=new NativeVersions(root,client,()=>false,Install);Find<ContentControl>("VersionsHost").Content=versionsPage.View;Page("VersionsHost");}
             if(mode.Contains("news")){newsPage=new NativeNews(root,client,()=>SelectedGameChannel);Find<ContentControl>("NewsHost").Content=newsPage.View;Page("NewsHost");}

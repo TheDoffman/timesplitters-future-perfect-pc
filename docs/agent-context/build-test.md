@@ -1,9 +1,9 @@
-Historical controls upgrade omits patch2720 with its absent spirit/display prerequisites, then asserts the viewmodel hook after full migration.
+2720: historical fixture defers until full migration, then asserts its hook.
 
-[First-person node ownership tests](video-options.md#first-person-shoulder-visibility).
+[Arms tests](video-options.md).
 
-[Uplink throw tests and policy](native-uplink.md#throw-impulse).
-[Vietnam performance checks](network-performance.md).
+[Throw](native-uplink.md).
+[Vietnam](network-performance.md).
 
 [Tools](developer-tools-integration.md).
 
@@ -22,6 +22,15 @@ Mac storage tests: see launcher.md.
 `test_lfs_checkout.py`: pointer clones, opt-in LFS pull, preserved packs.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build/tests ([MSAA](smaa.md))
+
+Audio: [acceptance](../development/audio-overhaul-acceptance.md).
+Media CI: audit/candidates/loops/metrics; headers do not prove identity.
+Fixtures:32 combinations, unknown files, speech, ducking, dynamics, queued gains,
+cache/pan/split fallback; gain C++ needs initializer_list.
+Streams:8kHz/320-byte refill, ordered callbacks, manual dispatch.
+Movie updater: real DSP + neutral mix spies; speech-tail/gap PCM fixtures.
+`test_audio_output_gain.py`: mute/queue retention, Windows capture.
+[Capture and bounded build](../development/audio-overhaul.md#process-output-capture).
 
 `test_controller_profile.py` now executes the real native key/pad guards and
 runtime key dispatcher, requiring neutral gameplay keys during freecam while

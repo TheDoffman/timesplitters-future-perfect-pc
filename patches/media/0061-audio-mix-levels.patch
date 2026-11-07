@@ -1,0 +1,78 @@
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -57,6 +57,9 @@
+ #define PC_AUDIO_MIX_IMPLEMENTATION
+ #include "gameplay/pc_audio_mix.h"
+ #undef PC_AUDIO_MIX_IMPLEMENTATION
++#define PC_AUDIO_MIX_SETTINGS_IMPLEMENTATION
++#include "interface/pc_audio_mix_settings.h"
++#undef PC_AUDIO_MIX_SETTINGS_IMPLEMENTATION
+ 
+ void hle_dsound_stream_tick(uint64_t now);   /* hle_dsound_stream.c */
+ 
+@@ -448,7 +451,7 @@
+     int32_t volume = (int32_t)setting(b->iface, SET_VOLUME);
+     uint32_t settings = guest_readable(b->iface - 0x0Cu, 4u) ? HLE_MEM32(b->iface - 0x0Cu) : 0u;
+ 
+-    return volume + (settings ? voice_adjust(settings, is3d) : 0);
++    return pc_audio_mix_level(volume + (settings ? voice_adjust(settings, is3d) : 0), b->mix_bus);
+ }
+ 
+ /* Send what the output clock has consumed since the last pump: up to the
+@@ -464,6 +467,13 @@
+     int adpcm, is3d;
+     static uint8_t pcm[80000];
+ 
++    /* Include queued tails: they can outlive the source model's final frame. */
++    if (b->output && b->fed) {
++        int32_t level=buffer_level(b, NULL);
++        if (level!=b->level && recomp_audio_output_set_volume(slot_of(b),level))
++            b->level=level;
++    }
++
+     if (!b->output || !out->playing)
+         return;
+     /* A busy frame must not leave a permanently undersized queue. Learning
+--- a/src/hle/hle_dsound_stream.c
++++ b/src/hle/hle_dsound_stream.c
+@@ -53,6 +53,7 @@
+ #include "xbox_adpcm.h"
+ #include "audio_output.h"
+ #include "gameplay/pc_audio_mix.h"
++#include "interface/pc_audio_mix_settings.h"
+ 
+ /* kernel_bridge.c: the dispatch table, for the completion callback. */
+ typedef void (*recomp_func_t)(void);
+@@ -421,7 +422,7 @@
+ 
+ static int32_t stream_level(const Stream *s)
+ {
+-    return s->volume + (s->object ? hle_dsound_stream_adjust(s->object, NULL) : 0);
++    return pc_audio_mix_level(s->volume + (s->object ? hle_dsound_stream_adjust(s->object, NULL) : 0), s->mix_bus);
+ }
+ 
+ /* Feed the host from `sent` up to the clock plus the lead, in chunks. */
+--- a/src/hle/hle_xmv_play.c
++++ b/src/hle/hle_xmv_play.c
+@@ -16,4 +16,5 @@
+ #include "hle_xmv_play.h"
++#include "interface/pc_audio_mix_settings.h"
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -223,11 +224,14 @@
+             n = AUDIO_CHUNK;
+         n -= n % frame;
+         if (!n || !recomp_audio_output_submit(RECOMP_AUDIO_SLOT_MOVIE, m->pcm + m->pcm_off, n,
+-                                              m->rate, m->channels, 16, 0))
++                                              m->rate, m->channels, 16, pc_audio_mix_level(0, PC_AUDIO_MOVIES)))
+             return;                      /* offered again next poll */
+         m->audio_recovering = 0;
+         m->pcm_off += n;
+         m->pcm_submitted += n;
+     }
++    /* Update the existing voice too, including already queued movie PCM. */
++    (void)recomp_audio_output_set_volume(RECOMP_AUDIO_SLOT_MOVIE,
++        pc_audio_mix_level(0, PC_AUDIO_MOVIES));
+ }
+ 

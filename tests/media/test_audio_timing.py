@@ -4,6 +4,7 @@
 import os
 from pathlib import Path
 import subprocess
+import re
 
 import pytest
 from native_compiler import native_compiler
@@ -16,8 +17,22 @@ def compile_audio(kind, tmp_path_factory):
     directory = tmp_path_factory.mktemp('audio-' + kind)
     compiler, environment = native_compiler(directory)
     exe = directory / (kind + ('.exe' if os.name == 'nt' else ''))
-    source = ROOT / (f'tests/media/audio_buffer_{kind}.c' if kind in ('load', 'lifecycle', 'format')
+    source = ROOT / (f'tests/media/audio_buffer_{kind}.c' if kind in ('load', 'lifecycle', 'format', 'layout', 'regions')
                      else f'tests/media/audio_{kind}_timing.c')
+    if kind=='scope':
+        from c_source_scan import scan
+        manual=RUNTIME/'titles/futureperfect/src/recomp_manual.c'
+        defined,wrapped,_=scan(manual)
+        functions=[]
+        for name in ('00046D80','00045820','000299C0'):
+            assert int(name,16) in defined and int(name,16) in wrapped
+            match=re.search(r'void sub_'+name+r'\(void\)\n\{.*?\n\}',manual.read_text(),re.S)
+            assert match
+            functions.append(match.group())
+        (directory/'audio_scope_wrappers.inc').write_text('\n'.join(functions))
+        isolated=directory/'scope.c'
+        isolated.write_text(source.read_text().replace('#include "audio_scope_wrappers.inc"','\n'.join(functions)))
+        source=isolated
     if Path(compiler).stem.lower() == 'cl':
         command = [compiler, '/nologo', '/std:c11', '/O2', '/I' + str(RUNTIME / 'src'), '/I' + str(ROOT / 'src'),
                    str(source), '/Fe:' + str(exe), '/Fo:' + str(directory / 'audio.obj')]
@@ -43,7 +58,9 @@ def buffer_test(tmp_path_factory):
 
 
 @pytest.mark.parametrize('scenario', ['underrun', 'speed', 'process', 'flush', 'fallback',
-                                     'snapshot', 'pause', 'completion', 'lost-device', 'bad-data',
+                                     'snapshot', 'pause', 'completion', 'callback-pcm8k',
+                                     'callback-pcm8k-manual', 'lost-device', 'bad-data',
+                                     'bus-ownership', 'mix-gain', 'speech-activity', 'speech-tail', 'speech-tail-fallback', 'speech-gaps', 'impact-range',
                                      'diagnostics', 'adpcm', 'release-reuse', 'flush-ex', 'flush-ex-async', 'format-pcm', 'format-adpcm',
                                      'format-paused', 'frequency', 'recover-device', 'recover-early'])
 def test_stream_timing(stream_test, scenario):
@@ -114,7 +131,7 @@ def format_test(tmp_path_factory):
     return compile_audio('format', tmp_path_factory)
 
 
-@pytest.mark.parametrize('scenario', ['rate', 'align', 'frequency', 'tail-pcm', 'tail-adpcm'])
+@pytest.mark.parametrize('scenario', ['rate', 'align', 'frequency', 'tail-pcm', 'tail-adpcm', 'bus', 'mix-gain', 'ducking', 'speech-tail', 'impact-range'])
 def test_buffer_format(format_test, scenario):
     result = subprocess.run([str(format_test), scenario], capture_output=True,
                             text=True, timeout=10)
@@ -124,4 +141,45 @@ def test_buffer_format(format_test, scenario):
 def test_acoustic_guest_state(buffer_test):
     result=subprocess.run([str(buffer_test),'acoustics'],capture_output=True,text=True,timeout=10)
     assert result.returncode==0,result.stdout+result.stderr
+    assert 'PASS:' in result.stdout
+
+def test_independent_ambience_and_environment(buffer_test):
+    result=subprocess.run([str(buffer_test),'feature-gates'],capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stdout+result.stderr
+    assert 'PASS: feature-gates' in result.stdout
+
+def test_guest_audio_scope_wrappers(tmp_path_factory):
+    exe=compile_audio('scope',tmp_path_factory)
+    result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stdout+result.stderr
+    assert 'PASS: speech wrappers' in result.stdout
+
+
+@pytest.fixture(scope='module')
+def layout_test(tmp_path_factory):
+    return compile_audio('layout', tmp_path_factory)
+
+
+@pytest.mark.parametrize('scenario', ['native-data', 'native-start', 'native-end', 'native-clear', 'native-allocate',
+                                     'native-failure', 'native-missing', 'legacy',
+                                     'guard-data', 'guard-loop', 'guard-play'])
+def test_native_buffer_layout(layout_test, scenario):
+    result = subprocess.run([str(layout_test), scenario], capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert f'PASS: {scenario}' in result.stdout
+
+
+@pytest.fixture(scope='module')
+def regions_test(tmp_path_factory):
+    return compile_audio('regions', tmp_path_factory)
+
+
+@pytest.mark.parametrize('scenario', ['pcm16-mono', 'pcm16-stereo', 'pcm8-mono', 'pcm8-stereo',
+    'adpcm-mono', 'adpcm-stereo', 'tiny', 'tiny-one', 'whole', 'suffix', 'oneshot', 'refused', 'hitch',
+    'live', 'pause', 'seek', 'rate', 'clock', 'huge-clock', 'partial', 'invalid-length',
+    'unaligned-length', 'invalid-start', 'fractional10', 'fractional17', 'fractional-adpcm',
+    'fractional-refused'])
+def test_buffer_loop_regions(regions_test, scenario):
+    result = subprocess.run([str(regions_test), scenario], capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stdout + result.stderr
     assert 'PASS:' in result.stdout

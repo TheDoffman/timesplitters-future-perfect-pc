@@ -20,6 +20,686 @@ player died before reload validation; Harry90/reload is not verified.
 Repository context/backlog fixtures:22passed. Isolated profile signatures valid.
 No Mac/Linux native execution or physical-user acceptance claimed.
 
+## 2026-11-07 - PR523 dialogue silence-tail correction
+
+Automated review reproduces Dialogue focus remaining active after speech has
+played while silent PCM stays queued. Shared activity spans in patch2311 now
+follow accepted non-silent PCM against host-played bytes or a bounded host-time
+fallback. The existing ducking fade starts when speech ends. Metadata changes
+only after accepted submits and clears on reset/refeed/discontinuity. Original
+PCM, guest clocks, source completion and defaults are unchanged.
+
+Three buffer/stream/fallback tail cases fail before correction. Windows passes
+114 timing cases and229 media cases with five endpoint/real-file skips; leading
+silence/gaps/refusal and shared-format/saturation cases are included. These are
+source fixtures, not a newly listened game binary. Current-revision native CI
+must pass before the authorized merge to main.
+
+## 2026-11-07 - Audio overhaul completed with user-deferred hardware checks
+
+The user says "Dont worry about checking the other stuff", superseding the prior
+requirement to keep unavailable speakers/controllers/native Mac/Linux as completion
+gates. These remain documented unverified follow-ups. The implemented overhaul,
+reviewed headphone references, saved original Music preference and actual Windows
+headset reconnect/default-output switching are accepted for the recorded scope.
+
+Final closure checks verify the current candidate and matching crash symbols,
+all410 original containers unchanged, reviewed reference hashes, Windows230 distinct
+passing checks, the independent Linux226-pass/four-skip receipt, physical recovery
+evidence and isolated launcher CheckOnly with no profile mutation. Production
+code/patches are unchanged since the tested candidate. No asset restoration was
+justified; originals are retained. Unknown formats/provider identity, all-scene
+coverage and unverified native/hardware behavior remain explicit limits in the
+[acceptance ledger](../development/audio-overhaul-acceptance.md). Changes remain
+local on feature/audio-overhaul; no push, merge or publication.
+
+## 2026-11-07 - Windows default-output switch accepted
+
+The actual Windows defaults and running game's active session are observed
+moving G733->Steam Streaming Speakers->G733. After the monitored return, the user
+reports "Audio returns cleanly" without a game restart. The same candidate
+process remains responsive and then exits0 after a normal close request; the
+read-only124-sample route monitor also finishes. The private result retains
+transition rows, query provenance and final logs. The alternate endpoint is
+virtual, so this does not establish physical speaker playback. Backend counters
+do not show an engine reopen; none is claimed. The earlier unobserved attempt is
+retained separately and is superseded by this monitored switch.
+
+Windows headset reconnect and this default-output path are accepted. Speakers,
+multiple-controller split-screen and native Mac/Linux validation remain open;
+no overall completion is claimed. No production code or defaults changed.
+
+## 2026-11-07 - Physical G733 reconnect accepted
+
+The user reports "Audio returns cleanly" after the requested USB receiver
+unplug/reconnect check in the isolated review game. The same Windows process
+remains responsive and its active unmuted session returns on the direct G733
+route. No game restart is observed. Backend health retains zero device/voice
+failures and opens1/open_attempts1, so an engine teardown/reopen is not claimed.
+The private evidence receipt includes a log snapshot and before/after session
+route queries. Actual default-device switching, speakers, multiple controllers
+and native Mac/Linux validation remain open in the
+[acceptance ledger](../development/audio-overhaul-acceptance.md). No production
+code, defaults or personal save settings change.
+
+## 2026-11-07 - Full physical validation retained
+
+The user explicitly chooses "Keep full validation open". Speaker listening,
+physical output-device changes, multiple-controller split-screen, and native
+Mac/Linux checks remain completion gates. The implementation and accepted
+headphone references are retained; the overhaul is not marked complete. Only
+headphones are available here, and no ETA is established for unavailable hardware
+or hosts. The [acceptance ledger](../development/audio-overhaul-acceptance.md)
+records the remaining checks and required host/device evidence. No new repair,
+rebuild or repeated unchanged media suite is justified by this scope decision.
+
+## 2026-11-07 - Menu listening accepted and preference reload verified
+
+The user reports the original Music Volume full-level menu reference as
+"Comfortable now" on headphones. A new isolated run activates native Accept and
+returns to Settings. A fresh process reloads that same profile without reseeding,
+shows full Music Volume and restores the observed-1417 hundredths-dB Music level
+(+3.2dB over the earlier reference). This original preference affects music
+generally after profile selection; it does not change pre-profile title defaults.
+
+The whole native-saved file is copied only into the unused isolated review
+profile after its hashes match initial preparation, under its exclusive launcher
+lock, with the previous file backed up. The launcher CheckOnly route then passes
+and leaves all profile hashes unchanged. No personal settings, fixture, global
+default, source asset, Movies gain or production binary is changed. Reviewed
+headphone references have no remaining reported concern. Speakers are unavailable;
+physical device/controller and native Mac/Linux checks remain unverified and
+are retained as completion gates by the subsequent user decision. See the [current ledger](../development/audio-overhaul-acceptance.md).
+
+## 2026-11-07 - Quiet menu music follow-up
+
+The user reports the movie-to-menu reference as quiet, then identifies the
+following menu music specifically. They have only headphones available; speaker
+acceptance is unavailable, not passed. Leave Movies gain unchanged.
+
+A fresh48-second isolated menu run verifies the original Music Volume below
+full and then full in reviewed images. The native Music stream level rises
+from-1737 to-1417 hundredths of dB (+3.2dB), while all new PC mix controls stay100.
+The before/after captures have zero capture errors; different song phases/UI
+sounds mean their RMS is not an isolated gain comparison. An unchanged-gain
+7.98-second after-reference is presented for feedback. The final image remains
+on Audio Options, so do not claim the original Accept/save action was observed.
+The source Test Lab fixture still matches its manifest. No personal settings,
+game-wide default, source asset or production code/binary is changed.
+
+Separately, independent FFmpeg PCM bytes match the production movie fixture's
+full audio hashes/counts. Matched FRD windows in the earlier recording correlate
+above0.9998 with fitted gain about0.106; that does not by itself locate the extra
+attenuation beyond the declared half-scale master. A new32-second no-replay
+movie capture queries only its owned game's Windows session: volume1, unmuted,
+endpoint scalar1/0dB at all three observations. A silent real-production-adapter
+query reports two-channel44100Hz, source gain1, master gain0.5 and identity
+stereo matrix. No automatic compensation or cause is asserted. The initial
+reference omitted most of EA's opening and mixed movie/menu material, so the
+two are also supplied separately without gain changes. Playback/capture route
+attribution remains a diagnostic limit, not a decoded-source repair.
+
+All410 original containers still match the census in the final-container check
+(3,985,345,856 bytes,2.83s). The subsequent menu-control test uses a separate
+owned profile. No original source/preview is rewritten by these investigations.
+
+## 2026-11-07 - Final media checks and isolated review launcher
+
+The final current Windows media coverage is230 distinct passing cases. The
+full run passes226 and skips four real-file movie cases because that invocation
+omitted the existing-data/FFmpeg environment; the explicit real-file follow-up
+passes all four in40.46s. The full run takes12.57s with the real XAudio endpoint
+check enabled. Independent Linux passes226 with four Windows-specific skips
+in16.23s, including the real-file controlled-clock movie cases. The two new
+callback refills are included. Production source/patches and the candidate
+executable remain unchanged; no rebuild is needed for analysis/tests/docs only.
+
+A local candidate review launcher is prepared with a fresh isolated Test Lab
+profile. It validates candidate/XBE hashes and confines save/input/display/audio
+sidecars and crash output to the review profile, with save-location lock enabled.
+Its CheckOnly route passes and leaves every review-profile file hash unchanged;
+the interactive game is not launched by that check. The first hash implementation
+depended on Get-FileHash module availability in a nested PowerShell environment;
+it now uses .NET SHA256 and passes in that same nested environment. Launches
+retain review saves/options/disks rather than reseeding them, and clear inherited
+replay overrides in the launcher process only. Movies are enabled and normal
+input remains manual. Physical device/controller checks remain unverified until
+actually performed; neither this launcher nor the silent endpoint test proves them.
+
+## 2026-11-07 - Room, loop and restoration listening feedback
+
+The user accepts the headphone room-crossing reference as smooth without obvious
+clicks/gaps, the corrected controlled crane loop as continuous without obvious
+new artifacts, and the four original source-effect previews as having no obvious
+unwanted defect. Keep the current room processing and loop repair; retain source
+assets with zero restoration replacements. This does not certify other rooms,
+physical device behavior or actual in-game firing of the crane event.
+
+The four already quarter-gain source previews are concatenated byte-for-byte
+with short zero separators for a5.87-second review, without additional gain,
+filtering, normalization or resampling. Original assets/previews remain intact;
+the private manifest preserves hashes and exact segment frame offsets. The
+movie-to-menu reference and speaker availability are the next listening checks.
+No production code/binary change is made.
+
+## 2026-11-07 - Read-only host format and surround scope
+
+An independent Windows SDK query reports44100Hz/eight channels/float32/mask0x63F
+for each default render role, with441-frame shared engine periods. It never
+initializes/starts playback, submits samples or changes volume/device policy.
+The separately reported10ms default/3ms minimum device periods are capabilities,
+not measured game latency. No physical7.1 layout or headphone/per-app route is
+inferred from the report. Private receipts retain source/executable hashes.
+
+Source inspection confirms the production XAudio master and destination
+matrices are stereo; positioned SDL input is also constructed as stereo.
+The [optional multichannel evaluation](../development/positional-audio.md#host-format-and-optional-multichannel-evaluation)
+records the required shared direction/channel-map, adapter, fallback and
+listening work. No automatic channel-count switch or HRTF feature is added.
+The user subsequently compared Original/Enhanced combat on headphones and
+reported "Clear positioning without excessive muffling". Retain positioning and
+filtering. This accepts that reference, not all rooms/sources, speakers or device
+changes; those checks remain separate. No production-source/binary change.
+
+## 2026-11-07 - Initial Night listening feedback
+
+The user compared the verified20-second Original and Night campaign intro
+recordings inline and reported "Clearer speech and comfortable effects" for
+Night. Preserve the current tuning. These are separate live runs and Night
+also enables Dialogue focus; this does not isolate the compressor or establish
+all-scene acceptance. The user subsequently identifies headphones for the
+comparison. The loading-to-match
+excerpt was separately accepted as clean apart from the loading pause.
+The goal is resumed; broader preset/spatial and physical-device checks remain.
+
+A fresh112-second Reduced-range campaign run fills a missing listening choice.
+Its contemporaneous receipt records enhancement master OFF, all mix levels100,
+Dialogue focus ON and impact range Reduced (`MIX_V2 ... 1 1`). Two19.98-second
+48kHz stereo captures have zero capture discontinuities/timestamp errors and
+full-scale samples. Intro peak/RMS is-18.98/-33.13dBFS; settled is-23.71/-39.58.
+There are16 starvation episodes and zero output failures/refusals/engine
+glitches; these counters are not perceptual acceptance. Reviewed frame010
+shows first-person campaign gameplay. The child is intentionally terminated
+at its limit and both capture controllers exit0. A new three-track private
+Original/Reduced/Night playlist preserves source WAV bytes and candidate hash;
+Reduced and Night both enable Dialogue focus. Separate runs are not synchronized
+events or isolated compression comparisons. The user reviews Reduced as
+"Clear and comfortable"; retain its current tuning. Broader scenes and speaker
+acceptance remain open.
+No production source or executable change is made.
+
+## 2026-11-07 - Starvation report and loading transition reference
+
+A fresh isolated126-second Original bot-match run captures continuously from
+the loading interval through gameplay. Health reports arrive with8 starvation
+episodes at65.594s and12 at70.969s, remaining12 through126s. Its67.98-second
+48kHz stereo process recording has zero capture flags/full-scale samples and
+peak/RMS-13.87/-31.17dBFS. Near-silent10ms windows span13.97..16.06s of the
+recording, around loading into the match; the reviewed frame at71.469s shows
+first-person countdown3 and a read-only position first becomes nonzero at71.172s.
+Report/capture alignment uses controller clocks, not shared hardware timestamps.
+
+The old replay log's numeric fields are scheduled offsets (`r->at`), not input
+execution timestamps. An initial inference that the old increase preceded its
+first capture is withdrawn; those logs alone cannot establish that. The fresh
+run records actual host-pipe report arrivals. Four initial64-byte buffers share
+all-zero PCM in one read-only snapshot, which does not attribute later events.
+No output failure/refusal or XAudio engine glitch is reported. Whole-mix silence
+does not prove an individual-source gap or its cause.
+
+A20-second unchanged-gain/source-rate excerpt (source seconds6..26) is verified
+byte-for-byte and presented for listening feedback. Private reports retain the
+controller/executable/analysis/WAV hashes and timing limitations. On2026-11-07
+the user answered "Only the loading pause; otherwise clean" for this excerpt.
+That clears its perceptual concern; buffering remains unchanged. The equipment
+was not specified and broader preset/device acceptance remains open. The
+controller/capture terminate normally at their limits; game exit1 is
+the intentional owned-child termination. No production source/binary change.
+
+## 2026-11-07 - Callback PCM provider and adapter coverage
+
+Original-byte inspection confirms the additional stream's mono8000Hz PCM16
+descriptor and320-byte/20ms packet construction, index contexts and callbacks
+that may refill through Process before returning with ret12. The engine factory
+and registered output objects are traced privately. XVOICE5849 is linked, but
+that alone does not prove this provider's content identity or voice-chat use.
+No microphone/network path is activated and no archive entry is reclassified.
+
+Two new CI-selected stream cases execute the production adapter with a synthetic
+provider:32 reentrant packet refills, ordered status/size before callbacks,
+exact PCM, unchanged sources, last-frame completion, restored guest stack and
+normal/manual dispatch. All110 Windows timing checks pass. Original title
+codec execution and physical playback are outside these fixtures.
+
+The production SDL adapter with the already freshly built pinned SDL library
+also passes four160-frame8000Hz converter cases: mono/stereo8/16-bit,882 output
+frames at44100Hz, tail drain, queue-preserving exact mute and immutable input.
+The paused dummy driver is not hardware acceptance; PulseAudio still returns
+unavailable with the socket absent. No production code/binary change is needed.
+The independent Linux checkout also passes all110 timing checks. An initial
+invocation from the Windows working directory could not import the test helper;
+the corrected run uses the Linux repository root. No host dependency is changed.
+
+## 2026-11-07 - High refresh audio and unidentified-resource survey
+
+Three isolated126-second Enhanced Vietnam combat runs target144/180/240 FPS.
+Late gameplay images verify first-person combat. Read-only guest frame counters
+measure143.00/177.26/205.39 updates per second over the sampled window; these
+are not display-present rates and do not establish sustained240 FPS. Six20-second
+process-output captures have no discontinuity/timestamp flags or full-scale
+samples. All runs report zero output failures, refused packets and engine audio
+glitches, with12 starvation episodes each. Counters and captures do not replace
+human listening acceptance or prove a performance cause.
+
+The new read-only standalone-candidate tool rechecks all403 archive hashes and
+11,115 known-copy payload identities, then surveys39,768 unidentified entries.
+Only two entries sharing one144-byte payload pass complete raw-ADPCM header
+compatibility; both channel layouts remain possible and neither is identified
+as audio. No container signature is found. Embedded/raw PCM and callback
+providers remain open; the coverage denominator is unchanged. Windows and
+independent Linux survey JSON agree exactly. See the
+[coverage method and limits](../development/audio-coverage-survey.md).
+
+Windows media checks pass228 with no skips; Linux passes224 with four
+Windows-specific skips. Repository/context/backlog/CI-scope checks pass112.
+The eight new survey tests are selected by both media CI routes. Production
+source and the candidate executable remain unchanged. The goal remains open
+for provider identity review, consolidated listening and physical host/device
+acceptance. No merge, push or publication.
+
+## 2026-11-07 - Native SDL, restoration and listening review gates
+
+A fresh independent Release SDL build at the pinnedfa2c02bb revision reports
+`SDL-3.4.16-fa2c02b`. The production adapter passes16 real-SDL dummy/converter
+cases (four rates, mono/stereo,8/16-bit), including resampling tail drain, queued
+exact mute, immutable source input, reset/shutdown and output frame counts.
+Available output drains while14/28 input bytes remain held; audible-pending
+stays false and final flush drains the tail. The device is paused/dummy, so
+this is not physical playback or hardware latency. The strict PulseAudio
+attempt returns unavailable because `/mnt/wslg/PulseServer` is absent. No other
+checkout/runtime or reference SDK is modified; private source/library/probe
+hashes and native build receipts retain provenance.
+
+Five restoration candidates/four unique contents are redecoded with a freshly
+built production bridge and match the source/PCM census hashes. Constant mean
+subtraction would worsen both silence boundaries and push8..121 samples outside
+signed16. No replacement or mean-subtracted asset is saved. All410 original
+containers (3,985,345,856 bytes) match their census hashes after the tests. The
+39,768 unidentified other-archive entries remain in the coverage denominator.
+
+With real XMV playback explicitly enabled for the isolated test, Original and
+Movies0 each complete88/81 pictures. The first three captured seconds drop from
+-31.95 to -96.71dBFS RMS, while later menu audio stays approximately -48dBFS.
+An initial harness-default run skipped movies and is excluded from this evidence.
+Fresh112-second Original and Night/Dialogue-focus campaign runs reach visually
+verified Time to Split gameplay with clean capture flags, no full-scale samples
+or output failures/refusals/engine glitches. Both report16 starvation episodes.
+The Night music plateau includes the expected six dB attenuation and later
+returns to the Original plateau; perceptual tuning is still unaccepted.
+
+The private listening package contains14 tracks/170.80s, a local M3U8 playlist,
+WAVs, instructions and source/purpose/gain/hash manifest. All eight game-output
+tracks share the current candidate executable hash. Controlled loop tracks and
+uniform quarter-gain original-source previews are labelled separately. No user
+listening response is assumed. No production code/build change in this pass;
+existing Windows220/Linux216 contracts remain applicable. No merge/publication.
+The [acceptance ledger](../development/audio-overhaul-acceptance.md) now records
+every phase, evidence scope and remaining runtime/identity/listening/hardware gate;
+the overall goal is open.
+
+## 2026-11-07 - Original distance calculation and range decision
+
+The supported-US original distance routine409AEC and its original logarithm/
+conversion helpers execute in an isolated32-bit process, with nine constant
+operand relocations and no attenuation/OS stubs.6643 cases across three x87
+precision modes make19,929 calls. All effective outputs agree after the existing
+mute clamp;1295 raw differences occur below that floor. Normalized controls
+retain identical curve levels across50/70/200 and150/210/600 maxima. A separate
+bounded startup's22 read-only snapshots confirm the runtime function-table slot
+selects409AEC; stereo panning is the distinct409E28 routine.
+
+Two126-second Original/Enhanced Vietnam runs observe the same authored curve
+`[.5,.25,.125,0]` and minimum1. Enhanced has955 samples with maximum150; Original
+has none. Native/live effective comparison agrees in5964/5965 snapshots. The
+single remaining0.69dB discrepancy occurs during record/settings reuse with
+maximum150->65 while the previous distance/level remain visible; the next
+snapshot agrees. These are non-atomic observations, not synchronized post-commit
+state. No playback repair or new range number is justified by that sample.
+
+Both children reach visible gameplay and remain live until owned termination.
+Four20-second process captures have zero discontinuity/timestamp flags and no
+full-scale samples; both runs report zero output failures/refusals/engine glitches.
+Enhanced ends at12 starvation episodes; Original increases8->16 during the run.
+Those counts do not establish audible defects or a comparison between the
+different matches. Native controls/receipts and source/helper/capture hashes
+remain private. The initial probe's invalid assumption that raw component
+levels always clamp at -10000 was corrected in the audit, with no game change.
+
+Decision: retain the current independent optional3x weapon-range choice and
+authored fade, with no extra end fade or unmeasured per-weapon factor. No source
+assets, personal saves/settings or production code changed in this audit; the
+previous Windows/Linux build/contracts remain applicable. Listening, device/
+controller acceptance and the full overhaul remain open. No merge/publication.
+[Detailed method, numeric curve and limits](../development/audio-distance-audit.md).
+
+## 2026-11-07 - Linux media, room crossing and real endpoint validation
+
+Source `106c5bf0` passes the full media suite on Windows220/no skips (51.17s,
+real endpoint check enabled) and Ubuntu24.04/WSL216/four skips (16.35s). The
+Linux checkout/runtime/venv are separate from Windows and other Linux work.
+GCC/G++13.3, Python3.12.3, pytest9.1.1 and system FFmpeg codec60.31.102/util
+58.29.100 are recorded in the private receipt, with source and test-log hashes.
+Two real-file XMV cases verify decoded image/timestamp/audio equality across
+original/60/120/144/180/240 controlled polling. Linux skips Windows endpoint,
+loopback and two live-timer cases. The first GCC run exposed the gain fixture's
+missing C++ initializer-list include, corrected in `ae63471b`. No production
+audio change or new game build is needed for this fixture correction.
+
+The real default Windows XAudio2.9 endpoint accepts silent PCM, invalidates
+its clock/queue after an injected critical callback, then reopens and consumes
+new silence. Two attempts/two opens and one injected device failure are expected.
+This is a real endpoint/injected callback check, not physical unplug acceptance.
+The guest fixture now covers populated single-player cache ->0/2/3/4 players:
+original direction, zero obstruction/reflection/enclosure, no ray calls;1 player
+restores the world result. Both host suites execute these assertions. Actual
+multi-controller gameplay/listening remains open.
+
+A bounded126-second Vietnam keyboard/mouse walk records220 read-only,
+non-atomic room observations.185 classify in rooms5/6/13 and35 remain unknown.
+A continuous13->6 change at83.516s moves1.692 units in313ms; neighboring samples
+and frame008 show walking outside the bunker. Two large jumps are excluded;
+frame011 is a death view. Captures22s/20s have no packet flags/full-scale samples;
+walking peak/RMS -20.42/-39.71dBFS, settled -14.18/-34.86dBFS. Final531 plays,
+59,769 submissions and328,455 3D commits report zero output failures/refusals/
+engine glitches;12 startup/loading starvation episodes remain unchanged. The
+owned child stays live until intentionally terminated. Private hashes/receipts
+preserve the evidence; no personal saves/settings or source assets changed.
+
+Room audio was presented for user listening feedback; no response is assumed.
+Physical Mac/Linux endpoints, headphone/speaker judgement, actual split-screen
+and remaining distance/asset listening remain unverified. The goal stays active;
+no push/merge/publication. [Scope and reproduction notes](../development/audio-overhaul.md#linux-room-and-device-validation).
+
+## 2026-11-07 - Spatial cache audit and runtime check
+
+The production guest regression reproduces frozen blocked-source pan before the
+repair and passes afterward for moving emitter/listener positions. Shared cache
+logic uses current positions or a fixed doorway anchor, invalidates room/scene
+changes, schedules oldest active refreshes within two queries/10ms and stops
+reusing results after250ms. A64-voice fixed-order/hash-collision test verifies bounded work and
+progress for every voice. Overload can fall back to unfiltered authored direction.
+Windows focused checks pass123 and whole media passes219 with one opt-in device
+skip in49.50s, including the final age/count/collision cases; repository/backlog
+checks pass22. GCC13.3 and Clang18.1 compile/run that shared
+scene/cache/DSP fixture with warnings as errors in Ubuntu24.04/WSL; this does not
+establish Linux device or native Mac acceptance. Standard Windows Build and
+matching crash-symbol checks pass.
+
+The final collision-probing build repeats the isolated126-second enhanced
+Vietnam bot match, reaches visible gameplay and stays live until intentionally
+terminated. Final diagnostics:688 plays,66,445 submissions,328,095 3D commits,
+zero output failures/refusals/engine glitches and
+12 starvation episodes, unchanged from startup/loading. Two20-second process
+captures contain no discontinuity/timestamp flags or full-scale samples; peaks
+-13.53/-13.57dBFS, RMS -30.85/-30.33dBFS. Trace confirms original room/portal
+queries and ambience filtering active. These are functional/output checks, not
+headphone/speaker judgement or a sustained-FPS/performance benchmark. Local
+private receipts record binary/source/capture hashes and bounded child ownership.
+No personal settings/assets changed. No merge/publication. Full goal remains
+active; distance tuning, broader room/split-screen scenes and listening/device
+acceptance remain. See [cache contracts](../development/positional-audio.md#acoustic-cache-correction).
+
+## 2026-11-07 - Authored loop-end consumption
+
+Shared patch2310 uses exclusive authored loop ends in both buffer clocks and
+PCM/ADPCM output. The intro plays once, then[start,end) repeats; one-shots keep
+the full tail. Invalid lengths retain the existing valid-start/full-tail
+fallback. Tests use the production decoder and exact mono/stereo sample checks,
+including tiny loops, fractional clocks, refusal, pause/seek/live changes and
+native region fields. Seventeen cases fail before the repair;148 timing/
+recovery checks pass afterward with one opt-in skip. Standard Windows Build/
+crash-symbol checks and219 whole-media checks pass. Bounded Time to Split and
+Scotland runs reach gameplay with clean capture packet flags and no full-scale
+samples. A real-payload pitched before/after demonstration matches independent
+PCM index oracles exactly; actual crane activation, physical listening and
+native Mac/Linux remain open. See the [audio plan](../development/audio-overhaul.md#authored-loop-ends).
+
+## 2026-11-07 - Native buffer layout regression repaired
+
+Shared patch2309 recognizes native buffer settings from original function code,
+independently of the voice layout, and restores compatible SetBufferData fields
+and whole-region lengths. Original custom-loop setters can then accept valid
+nonzero starts. Unknown SDK layouts retain existing behavior. Two native HLE
+regressions fail before and pass after the patch. Ownership/clear tests require
+the native allocation-and-settings helper, avoiding duplicate ownership policy.
+The final media suite passes191 with one opt-in skip; regeneration, standard
+Windows Build and matching crash symbols pass. Actual32-second startup and
+112-second campaign checks reach the main menu and first-person scene with the
+native guard/helper active and clean capture-error flags. Shortened loop ends
+remain separate required
+model/pump work; this is not full loop-playback acceptance.
+
+## 2026-11-07 - Pause validation and original loop metadata
+
+A bounded disposable campaign run verifies pause Audio/Mix/Listening layout at
+1680x720, keyboard save of focus/impact choices, and return to gameplay. An
+incorrect initial replay route was corrected through observed menu navigation;
+mouse/controller and split-screen acceptance remain open.
+
+The new read-only audio_loops.py maps the original eight named-loop definitions,
+reproduces sample-block rounding, and verifies source/PCM hashes before seam
+measurement. One definition maps in all five banks; seven remain unclassified.
+A native SSE probe confirms conversion arithmetic. Fifty audit/decoder tests
+pass; the new loop fixtures are selected by both runtime CI routes.
+
+An isolated original-x86 ABI probe confirms that the current HLE buffer shadow
+initialization makes the original custom-loop setter reject the valid crane
+region. This integration mismatch remains to repair while preserving legacy SDK
+layouts. No assets or runtime fields were changed by this audit. See the
+[scope and evidence](../development/audio-overhaul.md#pause-menu-and-authored-loop-audit).
+
+## 2026-11-07 - Campaign dialogue and busy audio validation
+
+The local exact-mute candidate passes the standard Windows Build/crash-symbol
+checks,157 whole-media tests (one opt-in skip), the separately enabled real
+Windows endpoint reopen test, and22 repository checks. Disposable campaign and ten-bot Vietnam sessions stayed live
+through their112/126-second bounds. Process-only output captures have no
+full-scale samples or capture discontinuity/timestamp-error flags. A Dialogue-only
+campaign preset preserves the separate speech stream while other buses mute.
+Original and Night matches retain12 startup/loading starvation episodes through
+later combat; no new episodes appear in those combat summaries. This is bounded
+runtime evidence, not headphone/speaker tuning or universal dropout acceptance.
+
+A further enhanced run at the120FPS native target reached747 sound starts with
+the same stable12 starvation episodes and clean capture/output error counters.
+This confirms the selected target, not sustained frame-rate performance or
+perceptual spatial tuning.
+
+Five decoded DC-offset outliers form a private restoration review shortlist;
+variable offsets/near-zero tails rule out naive constant subtraction. Assets
+remain unchanged. Full evidence and remaining scope are in the
+[audio plan](../development/audio-overhaul.md#campaign-and-busy-match-output-checks).
+
+## 2026-11-07 - Shared exact audio mute
+
+The SDL audit reproduced a nonzero gain at the mute floor in three host-gain
+cases. Shared `pc_audio_gain.h` and patch2308 unify SDL/XAudio conversion while
+preserving the Windows curve, queues and clocks. Initial/live effect, stream
+and movie mute/unmute are covered by production-adapter fixtures. This is a
+contract repair; no perceptible leakage or physical SDL acceptance is inferred.
+Full gameplay and cross-platform listening remain in the active audio goal.
+
+## 2026-11-07 - First Windows audio candidate and real menu verification
+
+The game linked after a bounded single-worker retry of the initial C1002/C1060
+compiler-memory failure. The standard tsfp.ps1 -Action Build then passed all
+checks and produced matching crash symbols. No optimization/check was removed;
+no other checkout's process was stopped. Final expanded media/menu/layout/
+profile/context checks pass210 with3 explicit skips in64.69s, including real
+movie data. The shared launcher suite previously passed44 UI groups in41.69s.
+
+Bounded disposable Test Lab runs reached the native main menu at Original60FPS
+and stayed live through32/66/56-second deadlines. The runner intentionally
+terminated its own games afterward (exit1); natural shutdown is not inferred.
+Windows process-only loopback captured valid48kHz/stereo/signed16 WAV files with
+zero discontinuity/timestamp-error flags. Native output reported zero engine
+glitches; startup voice-starvation counters remain an investigation item.
+Personal saves/settings and the original full game-data copy were not modified.
+Known disposable virtual disks were recycled after each pass.
+
+Actual640x480 review exposed unsupported scale markup and wrong absolute row
+metrics in the original Audio page. Plain captions, inherited6/7.5-unit profile
+rows and descriptor-scoped glyph sizing corrected the pages. Profile Audio Mix
+link, Accept/Cancel, six mix rows, Enhancements and Listening were inspected.
+Keyboard changes saved Music0, focusON, impactReduced and the enhancement master
+independently. Music-only mute reduced captured RMS from-47.47 to-96.71dBFS;
+this verifies runtime music gain, not full combat/dialogue fidelity or headroom.
+Private evidence and scope limits are in the
+[audio plan](../development/audio-overhaul.md#process-output-capture).
+
+The Windows-only capture utility is developer instrumentation, compiled against
+the installed SDK and tested without CI audio activation. Cross-platform product
+mix/DSP policy remains shared. Combat/dialogue, pause/split-screen/aspects,
+headphone/speaker listening, spatial refinements, selective restoration decisions
+and physical Mac/Linux acceptance remain in the active goal. No asset rewrite,
+merge, source push or publication was performed.
+
+## 2026-11-07 - Shared listening controls and isolated build preparation
+
+Local feature/audio-overhaul adds common patch2307: opt-in Dialogue focus and
+Original/Reduced/Night per-source impact reduction. MIX_V2 appends two choices
+to existing volume fields; neutral choices retain V1. Both UIs expose them.
+The shared DSP preserves Original bytes, links stereo, considers authored gain
+and restores state after refused submits. Movie pending input remains immutable.
+Ducking samples available output without flushing/resampling/clock changes;
+paused, muted, silent, missing and drained speech sources do not hold it active.
+Buffer and stream locks are never held together. See the
+[audio evidence/limits](../development/audio-overhaul.md).
+
+Windows production media/full-menu fixtures pass154 with9 explicit skips;
+full Windows launcher suite passes in41.69s with44 shared UI groups. Real XMV
+checks pass4 in40.32s, preserving Original content/cadence and checking synthetic
+movie DSP retries. Physical Mac/Linux, guest layout and listening/tuning remain
+unverified. Per-source impact reduction does not prove final summed headroom.
+No source audio assets have been rewritten.
+
+An isolated build is being generated. A proposed dependency-junction setup was
+rejected by automatic approval review; the accepted alternative leaves those
+directories in place. This checkout has its own small Python environment,
+read-only dependency search path, copied pinned SDL source and one compiler-input
+XBE (verified supported hash). The single full game-data copy remains in the
+original checkout. Symbol/analysis caches and generated code stay here; CLI and
+FFmpeg dependencies are reused by explicit paths. Game build/startup/listening
+are separate pending milestones. No user save/settings path is used.
+
+## 2026-11-07 - Verified speech routing and independent audio mix
+
+Local feature/audio-overhaul; shared patches0060/0061 apply through the complete
+runtime stack. Actual supported-US script/actor speech call sites establish
+Dialogue before first buffer/stream submission; stereo source starts establish
+Music/Ambience ownership. Cinematic premixes retain Music. Six independent
+0..100% gains compose with original levels, update queued voices and preserve
+PCM/clocks. Strict pc-audio-mix.ini is independent of enhancement V1/V2.
+Shared launcher sliders participate in conflict/rollback handling. Native Audio
+Mix/Enhancements subpages retain original profile controls and save live with
+rollback. Details/evidence: [audio plan](../development/audio-overhaul.md).
+
+Windows media checks passed146/5 skips before the added native subpage fixture,
+which also passes. Actual movie checks passed4 cases with unchanged content and
+cadence. Full Windows launcher suite passed40.76s (43 shared UI groups);
+compact volume layout was then rebuilt and visually reviewed offscreen at
+1152x772. Full production menu/FOV checks pass2 with4 unrelated/data skips;
+56 portable launcher/menu checks pass with1 skip. All settings tests use
+isolated temporary directories. Game build, rendered guest pages/listening,
+physical Mac/Linux and broader spatial/restoration acceptance remain pending.
+Final combined media/full-menu/mouse/portable-launcher/repository-context run
+passed226 tests with10 explicit skips in19.41s. The full Windows launcher suite
+was repeated after compact slider layout changes and passed in42.63s. Both
+processes exited0; no test process remains running from this pass.
+Nothing merged, pushed or published.
+
+## 2026-11-07 - Independent audio choices and completed loudness audit
+
+Local `feature/audio-overhaul`, base `a24c3b60`; Windows x64/Python3.12.14/MSVC,
+same pinned runtime and FFmpeg as the mapping step below. New shared patch0059
+applied successfully after the existing full stack (two runtime files updated).
+The C preference snapshot and launcher model accept legacy V1 and strict V2
+individual choices, keep child choices while master is OFF, refuse malformed
+files, and publish only after a successful save. The shared native Audio Options
+builder adds compact choices; launcher Audio tab renders cleanly offscreen at
+1152x772 (private/audio-overhaul/launcher-audio.png). Actual guest scene layout,
+game execution/listening and native Mac/Linux acceptance remain unverified.
+
+Combined media/menu/portable-launcher checks pass170 tests,9 explicit skips and
+31 subtests. C tests exercise32 real disk round trips/feature combinations;
+an isolated C# production serializer/Load probe also passes32 combinations.
+Full Windows `build-launcher.ps1 -Test` subsequently passed in42.76 seconds,
+including41 shared UI groups,49 settings checks and the existing update,
+rollback, download, startup, crash/session and maintenance suites. Earlier
+attempts stopped at existing running-game guards while another checkout had an
+active game process; the rerun followed its observed exit. No other game was
+closed or modified, and guards were not weakened or bypassed.
+
+The all-bank FFmpeg meter completed with27,253 payload/base-frequency records,
+14,110 unique content/channel/rate keys:26,266 finite integrated-LUFS results,
+987 below-gate/short records. Unique finite median -10.81 LUFS; music median
+-9.145 LUFS. Highest source true peak +6.03 dBTP. These precede original event
+gains, distance/mix sliders and the existing -6 dB host gain; they do not prove
+live master clipping or justify flattening the authored mix. Private report:
+private/audio-overhaul/loudness.json (11,611,700 bytes). No source PCM was
+rewritten. Volume buses, ducking, dynamic range, further spatial work, selective
+restoration decisions and integrated validation remain in the full goal.
+
+## 2026-11-07 - Audio mapping, production measurements and finite bypass
+
+Local `feature/audio-overhaul`, base `a24c3b60`; Windows x64, Python 3.12.14,
+MSVC x64 fixture compiler and the pinned local FFmpeg 8.1. An independently
+prepared runtime at `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845` accepted the full
+patch stack (168 runtime files updated). Before the DSP edit, the existing media
+suite passed 126 tests with five explicit skips. After mapping/measurement
+tests and finite-bypass repair, 139 pass with the same five skips. A regression
+first failed on actual changed PCM bytes after OFF, then passed with the shared
+fix. It checks 8 kHz mono/8-bit, 48 kHz stereo/16-bit, re-enable and stale echoes.
+No game build/listening or physical Mac/Linux acceptance is established yet.
+
+Original-loader disassembly resolves all five language banks: 5,406 file names
+and 5,703 events per bank. Standard CRC32 of converted/localized paths maps every
+payload. The original music tables resolve all 163 music files. Production
+decoder measurements cover 27,193 payloads / 14,093 distinct content/channel
+layouts, without extracting PCM. All have complete blocks, valid step indices
+and zero reserved headers. The private inventory is 62,247,232 bytes before
+adding the level-copy summary. All 11,115 known audio copies in 74 level PAKs
+match complete bank-payload SHA-256 values; no alternate copies were found.
+Unknown paths/embedded audio remain unclassified. RMS/sample peaks and large
+loop seam steps do not establish audible defects or justify mass processing.
+
+All six XMV tracks probed/decoded successfully as stereo 44.1 kHz PCM using
+FFmpeg 8.1. Intro/attract RMS differences are recorded privately. FFmpeg and
+the production ADPCM decoder agree on synthetic block counts/channel order;
+their IMA rounding differs by up to 5 mono/8 stereo integer units in the selected
+four-block control. This is not treated as a verified defect. The all-bank
+gated-LUFS/true-peak meter is running; measurements are not yet accepted.
+Full scope, reproduction and remaining acceptance are in
+[the overhaul plan](../development/audio-overhaul.md).
+
+## 2026-11-07 - Audio overhaul census (audit in progress)
+
+Branch `feature/audio-overhaul`, base `a24c3b60`; Windows x64, Python 3.12.14.
+The read-only census verified the supported US XBE SHA-256 and hashed/indexed
+403 P5CK archives (3,924,512,064 bytes), plus six XMV files (54,562,816 bytes).
+Candidate language/music banks contain 27,198 container entries, including
+metadata; this is not a count of unique audible sounds. The English bank has
+an observed 5,406-name list; payload mapping, codec/rate/channel/loop metadata,
+decoded measurements and listening remain unverified. Other archives remain
+unclassified rather than excluded. The 10,316,058-byte private inventory stays
+ignored; no original payloads were extracted, modified or duplicated.
+
+`tests/media/test_audio_audit.py`: 13 passed using synthetic malformed/bounded
+inputs. Registered alongside both native CI media selections; remote CI has
+not run. Repository-context refresh/check and whitespace checks passed.
+No runtime changes, game build or listening acceptance in this census step.
+See [scope, ordered acceptance and initial estimates](../development/audio-overhaul.md).
+
 ## 2026-11-07 - Uplink throw impulse at native FPS (Windows user verified)
 
 Base a24c3b60, branch fix/uplink-throw-rate, uncommitted. The original

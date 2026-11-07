@@ -159,7 +159,7 @@ static class LauncherTests
     { return Json.Encode(new { schema = 1, version = version, size = size, sha256 = hash, asset_name = "TimeSplitters-Launcher-v" + version + "-windows-x64.zip" }); }
     public static int Main(string[] args)
     {
-        if (args.Length == 2 && (args[0] == "--render-preview" || args[0] == "--render-settings-preview" || args[0] == "--render-settings-graphics" || args[0] == "--render-repair-preview" || args[0] == "--render-diagnostics-preview" || args[0] == "--render-news-preview" || args[0] == "--render-versions-preview"))
+        if (args.Length == 2 && (args[0] == "--render-preview" || args[0] == "--render-settings-preview" || args[0] == "--render-settings-graphics" || args[0] == "--render-settings-audio" || args[0] == "--render-repair-preview" || args[0] == "--render-diagnostics-preview" || args[0] == "--render-news-preview" || args[0] == "--render-versions-preview"))
         { File.WriteAllText(args[1],args[0]);return 17; } // Synthetic preview child, not a UI/game launch.
         if (args.Length == 0 && Path.GetFileNameWithoutExtension(typeof(LauncherTests).Assembly.Location)=="futureperfect_recomp")
             return LauncherSettingsChecks.LaunchProbe();
@@ -289,7 +289,7 @@ static class LauncherTests
             Test("bootstrap forwards application previews and preserves spaced output paths and child status", () => {
                 string root=Path.Combine(temp,"preview launcher root");Directory.CreateDirectory(Path.Combine(root,"Bin"));
                 File.Copy(typeof(LauncherTests).Assembly.Location,Path.Combine(root,Core.AppPath));
-                foreach(string flag in new[]{"--render-preview","--render-settings-preview","--render-settings-graphics","--render-repair-preview","--render-diagnostics-preview","--render-news-preview","--render-versions-preview"}) {
+                foreach(string flag in new[]{"--render-preview","--render-settings-preview","--render-settings-graphics","--render-settings-audio","--render-repair-preview","--render-diagnostics-preview","--render-news-preview","--render-versions-preview"}) {
                     string output=Path.Combine(root,flag.Substring(2)+" image.png");int result;
                     Assert(Bootstrap.TryForwardPreview(root,new[]{flag,output},out result));
                     Assert(result==17 && File.ReadAllText(output)==flag);

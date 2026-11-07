@@ -1,21 +1,24 @@
 # Positional stereo audio
 
 Audio Options exposes **Enhanced Audio (Beta)** in the shared frontend/pause
-builder. It defaults OFF; one switch controls stereo projection, the gunfire
-range wrapper, environmental routing and the background ambience mix.
+builder. It defaults OFF; the master switch gates separate choices for stereo
+positioning, extended gunfire range, environmental filtering and background
+ambience. Individual choices default ON and persist when the master is OFF.
 General buffer, lifecycle, format and device-recovery fixes are always active,
 including when this toggle is OFF; see [audio recovery](../agent-context/audio-buffers.md).
 Changes apply live and save immediately, independently of the original
 volume-slider Accept/Cancel draft.
 
 The launcher exposes the same **Enhanced Audio (Beta)** preference under
-Settings -> Audio. Shared C# `GameSettings`/`SettingsPage` code serves both
-hosts and reads/writes the same sidecar. Reopen launcher Settings to reflect
+Settings -> Audio. Shared C# `GameSettings`/`SettingsPage` serves
+Windows/macOS/Linux and reads/writes the same sidecar. Reopen Settings to reflect
 in-game changes; an already-open draft rejects an external edit rather than
 overwriting it. Launcher Save retains its normal close-game requirement.
 
 `src/interface/pc_audio_settings.h` defines the shared setting and its HLE-owned
-implementation. It saves `TSFP_AUDIO_V1 0|1` atomically to `pc-audio.ini` beside
+implementation. All-default individual choices save `TSFP_AUDIO_V1 0|1`;
+custom choices save `TSFP_AUDIO_V2 master spatial range environment ambience`
+with strict 0/1 values, atomically to `pc-audio.ini` beside
 `TSFP_DISPLAY_CONFIG` (or `RECOMP_INPUT_CONFIG`; default `config/`). The atomic
 live value is published only after a successful save. A saved choice takes
 precedence over diagnostic `RECOMP_ENHANCED_AUDIO`/`RECOMP_ACOUSTICS` overrides.
@@ -23,10 +26,15 @@ OFF restores ordinary routing and clears stream filtering; future gunfire
 parameters retain the original range. Already queued PCM drains normally, so
 SDL changes retain its documented queue delay rather than flushing sound.
 
-The menu inserts a native OFF/ON choice before the hidden subtitle record,
-retaining that record for the original menu save logic. It inherits Audio
-Options' explicit row height and scales the long beta caption to 75% to avoid
-overlap. Failure to save restores the selector's previous value.
+The original Audio Options retains its four profile controls and hidden subtitle
+record, with a compact Audio Mix link before Accept/Cancel. Mix provides six
+percent controls plus Enhancements and Listening subpages. Enhancements exposes
+the master and four individual choices; Listening exposes Dialogue focus and
+Original/Reduced/Night impact range. Profile rows inherit the original absolute
+height; custom pages use automatic rows and descriptor-scoped glyph scaling.
+Failed saves restore the previous selector value. See the
+[shared mix and listening contracts](audio-overhaul.md) for persistence,
+ownership and acceptance limits.
 
 The shared HLE still asks the original XDK 5849 calculator for distance, cone,
 mix-bin and headroom attenuation. `0040-dsound-positional-stereo.patch` also
@@ -144,6 +152,17 @@ routed. There is no invented point source for a diffuse ambience bed.
 SDL refuses a packet without consuming its filter history; reset clears it.
 Existing gunfire range and near-field centering are unaffected.
 
+Audio overhaul correction (2026-11-07, local): when targets are disabled,
+the shared PCM filter clears its fading state below 1e-5 and leaves the remaining
+packet bytes untouched. This ends the otherwise asymptotic processing and
+requantization after an OFF transition. Bypass also clears reflection-only
+delay history so a later ON cannot replay stale sound. The existing adapter
+backups still restore history on refused submission. A new regression failed
+on changed PCM bytes before the correction and passes afterward at 8 kHz
+mono/8-bit and 48 kHz stereo/16-bit. The Windows build and native frontend pages
+now pass; acoustic listening and native host acceptance remain pending in
+[the overhaul plan](audio-overhaul.md).
+
 The 29 media contracts plus the guest-menu fixture include wall/opening direction, closed-route behavior,
 outside-room sources, filter frequency response, original ray ABI/register
 preservation, compact-tree lookup, world-record lookup and the XDK Z conversion.
@@ -162,3 +181,86 @@ Launcher integration: `tools/build/build-launcher.ps1 -Test` passed on Windows,
 including the three new shared UI cases and the existing updater/settings
 checks. Portable launcher/shared-UI/Mac-adapter checks passed 31 tests and
 26 subtests. These are not native Mac launcher execution or listening results.
+
+## Acoustic cache correction
+
+The overhaul's moving-emitter regression failed against the prior guest adapter:
+a fully blocked ray retained its old direction until the next geometry query.
+`pc_acoustic_cache.h` now separates cached geometry from current direction.
+Blocked sources follow current world emitter/listener positions; indirect routes
+retain their first opening as a world anchor and subtract the current listener.
+The guest adapter then applies the current camera rotation and XDK Z conversion.
+Clear paths retain the original guest direction. Source/listener room changes
+invalidate cached obstruction immediately, including when no query budget remains;
+the existing PCM filter still smooths target changes.
+Scene identity compares both pointers and counts separately instead of XOR.
+
+The budget remains two geometry queries per10ms. Refresh requests become due
+after100ms and run in oldest-request order, so a stable voice iteration order
+cannot permanently starve later voices. Requests absent for100ms cannot hold
+the queue. Backlogged results may be reused for at most250ms; older or invalid
+results fail open to the authored direction without obstruction. Hash collisions
+probe for an entry before evicting the least
+recently requested voice when all256 entries are occupied. This preserves
+pending tickets for voices whose settings share low address bits. Geometry remains
+an approximation: door movement and within-room geometry changes still await a
+refresh, and an overloaded scene may temporarily fall back. It does not provide
+per-sample ray tracing or a unique generation identity for reused guest objects.
+Split-screen continues to bypass one-player geometry rather than guessing a
+shared listener. Shared source serves Windows/macOS/Linux.
+
+The real-HLE guest fixture proves moving emitter/listener pan and preserves its
+ray ABI/room-tree checks. Deterministic scene fixtures cover doorway anchors,
+maximum age, scene XOR collisions, room changes, slot reuse and inactive queue
+entries. A64-voice fixed-order/hash-collision test checks the two-query budget and at least
+three refreshes for every voice in1.2s. The focused timing/output suites pass123;
+game/build and physical headphone/speaker acceptance are recorded separately.
+
+The standard Windows Build/crash-symbol checks and219 media checks pass (one
+opt-in device skip). GCC13.3/Clang18.1 also compile/run this scene/cache/DSP
+fixture with warnings as errors in Ubuntu24.04/WSL, from isolated native-filesystem
+copies. A bounded enhanced Vietnam bot match reaches gameplay with zero host
+glitches/output failures and stable startup/loading counters. Its two process
+captures have no packet flags/full-scale samples. This does not measure a
+sustained frame rate or establish listening/device acceptance; see
+[measured status](../project/STATUS.md#2026-11-07---spatial-cache-audit-and-runtime-check).
+
+## Distance falloff audit
+
+The overhaul's [native distance audit](audio-distance-audit.md) verifies the
+live four-point curve and original distance routine across6643 cases. It retains
+the current optional range extension; no additional fade or per-weapon factor
+is supported by the evidence. The table in that audit distinguishes distance
+attenuation from final output level and records remaining listening limits.
+
+## Host format and optional multichannel evaluation
+
+A read-only Windows query on2026-11-07 reports44100Hz, eight channels,
+32-bit floating-point mix format and mask0x63F for each default render role.
+IAudioClient3 reports441-frame default/minimum/maximum shared-engine periods
+(10ms); GetDevicePeriod separately reports10ms default/3ms minimum. These are
+OS capabilities, not measured game latency, physical7.1 acceptance or proof of
+the user's headphone/per-app route. The query never initializes/starts a client,
+submits samples, changes a device/volume or alters policy. Private receipts
+retain source/executable hashes and results.
+
+The production XAudio adapter explicitly creates a two-input-channel mastering
+voice and applies source matrices to two destinations. SDL constructs stereo
+input for positioned sources before its device conversion. Consequently the
+current shared positioning policy supplies a stereo mix, not independently
+positioned surround channels. Do not infer native surround or HRTF from an
+eight-channel OS format. Microsoft's [mastering-voice API](https://learn.microsoft.com/en-us/windows/win32/api/xaudio2/nf-xaudio2-ixaudio2-createmasteringvoice)
+distinguishes input channels from automatic speaker-configuration detection and
+describes default-device virtualization. Its [XAudio2.9 guide](https://learn.microsoft.com/en-us/windows/win32/xaudio2/xaudio2-redistributable)
+also documents conditional Windows spatial processing; its state has not been
+inspected or changed here.
+
+Optional multichannel work would need a shared source-direction/channel-map
+contract and matching XAudio/SDL adapters, including original matrix restoration,
+device changes, stereo content and split-screen fallback. A binaural path would
+add directional filtering and its own reference/listening validation; a pan
+value alone cannot recover front/back/elevation. Simply increasing master
+channels would leave the current two-destination matrices inconsistent and
+would not establish positional surround. Keep the current stereo baseline
+until its listening checks complete; no surround/HRTF support is claimed or
+enabled by this evaluation.

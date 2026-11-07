@@ -1,4 +1,37 @@
+## Accepted speech spans (PR523 review correction)
+
+Patch2311 and shared `src/gameplay/pc_audio_activity.h` replace whole-source
+speech latching for optional Dialogue focus with accepted non-silent PCM spans.
+Queries compare spans with decoded host-played bytes; SDL's no-cursor path uses
+a scaled host-time estimate clamped to accepted bytes, never a guest/device
+clock. Existing20/300ms envelopes remain. Leading silence, gaps and queued
+silent tails no longer keep speech active.
+
+Only successful submissions append metadata; refusal leaves it unchanged.
+Reset/refeed/flush/pause/reformat and discontinuity clear it. The fixed64-span
+queue merges sub-10ms holes; saturation conservatively merges oldest spans and
+still expires. No allocation, PCM edit, tail flush or speech recognizer is added.
+Original/OFF and guest completion retain their contracts. `audio_dynamics.c`
+covers stereo/U8 silence, immutable input, fractional fallback partitioning and
+saturation. Actual buffer/stream fixtures cover tails, gaps, refusal and resets.
+Three tail regressions fail before the patch; all114 timing checks pass after.
+
 # Effects buffering under load
+
+## Callback-fed PCM acceptance
+
+`test_audio_timing.py` additionally runs `callback-pcm8k` and
+`callback-pcm8k-manual` through the production stream adapter. The supported
+executable's original388C7D descriptor uses mono8000Hz PCM16;38880F constructs
+320-byte packets with an index context. Completion callbacks return with ret12
+and can call Process to refill before returning. The synthetic provider retains
+two pending packets and completes32 in order, requiring exact output PCM,
+unchanged source bytes, status/size before callback, no early completion at the
+last unheard frame, restored guest stack and no context-index event signalling.
+The second case resolves through the manual dispatch fallback. The actual title
+codec/provider is not executed by this fixture and its content identity remains
+unresolved; linked XVOICE metadata is insufficient to label it as voice chat.
+These checks establish adapter behavior, not hardware playback or latency.
 
 `patches/media/0055-dsound-busy-buffer-recovery.patch` extends shared runtime
 `src/hle/hle_dsound.c`; the buffering contract is documented below.
@@ -270,6 +303,28 @@ unexplained and must not be called fixed or attributed to long render hitches:
 the profiled render gaps did not exceed90ms in these residual cases. Counter
 events alone do not establish audible loss. Native Mac/network listening and
 other scenes remain separate acceptance work.
+
+### Loading-to-match reference
+
+A later126-second Original run records the whole loading-to-match interval,
+not just settled combat. Counter reports arrive with8 at65.594s and12 at70.969s,
+then remain12 through126s. A continuous67.98s process capture starts after the
+controller's55.016s launch request. Its near-silent10ms windows span13.97..16.06s
+of the recording, around loading/first-person countdown. Capture discontinuity,
+timestamp-error and full-scale counts are zero; XAudio reports zero engine
+glitches/refusals/failures. A gain-preserved20s excerpt is ready for listening.
+
+These are host-pipe report arrivals, not exact per-voice event timestamps. Input
+replay logs print the scheduled `r->at`, not actual execution time; they cannot
+time-bound the older counter increase against its capture. A single read of the
+four initial64-byte PCM buffers finds shared all-zero data but does not attribute
+the later increase. Individual gaps may be masked by other voices. The loading
+silence, counter cause and listening acceptance remain distinct claims; no new
+buffering/gain repair is justified from this observation alone.
+The user subsequently reviewed the20-second excerpt on2026-11-07 and reported
+only the loading pause, otherwise clean. Retain current buffering. This clears
+that excerpt's listening concern, not the counter's per-voice cause or broader
+preset/headphone/speaker/device acceptance; their equipment was unspecified.
 
 ## SDL finite-tail drain (review correction)
 

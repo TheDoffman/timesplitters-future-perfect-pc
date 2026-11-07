@@ -33,6 +33,13 @@ namespace TimeSplitters.Launcher
         public bool DiscordEnabled;
         public bool EnhancedTextures;
         public bool EnhancedAudio;
+        public bool SpatialAudio=true, ExtendedGunfire=true, EnvironmentalAudio=true, AmbientAudio=true;
+        // Master, effects, music, dialogue, ambience, movies; percentages of the authored mix.
+        public readonly int[] AudioVolumes={100,100,100,100,100,100};
+        public bool DialogueFocus;
+        public int ImpactRange;
+        public static readonly string[] ImpactRangeLabels={"Original","Reduced","Night"};
+        public static readonly string[] AudioVolumeLabels={"Master","Effects","Music","Dialogue","Ambience","Movies"};
         public bool ShowCounter;
         public int Msaa = 1, EdgeSmoothing, AmbientOcclusion;
         public int Supersampling;
@@ -224,9 +231,27 @@ namespace TimeSplitters.Launcher
             }
             string audio = Text(model.originals[Files[5]]);
             if(audio.Length>0) {
-                var match=Regex.Match(audio,@"\ATSFP_AUDIO_V1\s+([01])\s*\z");
+                bool version2=audio.TrimStart().StartsWith("TSFP_AUDIO_V2",StringComparison.Ordinal);
+                var match=Regex.Match(audio,version2?@"\A\s*TSFP_AUDIO_V2\s+([01])\s+([01])\s+([01])\s+([01])\s+([01])\s*\z":@"\A\s*TSFP_AUDIO_V1\s+([01])\s*\z");
                 Core.Require(match.Success,"Enhanced Audio settings are invalid. No settings were changed.");
                 model.EnhancedAudio=match.Groups[1].Value=="1";
+                if(version2) {
+                    model.SpatialAudio=match.Groups[2].Value=="1";model.ExtendedGunfire=match.Groups[3].Value=="1";
+                    model.EnvironmentalAudio=match.Groups[4].Value=="1";model.AmbientAudio=match.Groups[5].Value=="1";
+                }
+            }
+            byte[] mixBytes=model.originals[Files[7]];
+            if(mixBytes!=null) {
+                string whitespace=@"[ \t\r\n\f\v]";
+                string number=@"(0|[1-9][0-9]?|100)";
+                string mixText=Encoding.UTF8.GetString(mixBytes);
+                bool version2=mixText.TrimStart(' ','\t','\r','\n','\f','\v').StartsWith("TSFP_AUDIO_MIX_V2",StringComparison.Ordinal);
+                var match=Regex.Match(mixText,@"\A"+whitespace+"*TSFP_AUDIO_MIX_V"+(version2?"2":"1")+
+                    String.Concat(Enumerable.Repeat(whitespace+"+"+number,6))+
+                    (version2?whitespace+"+([01])"+whitespace+"+([012])":"")+whitespace+@"*\z");
+                Core.Require(mixBytes.Length<255 && match.Success,"Audio volume settings are invalid. No settings were changed.");
+                for(int i=0;i<6;i++)model.AudioVolumes[i]=Int32.Parse(match.Groups[i+1].Value,CultureInfo.InvariantCulture);
+                if(version2){model.DialogueFocus=match.Groups[7].Value=="1";model.ImpactRange=Int32.Parse(match.Groups[8].Value,CultureInfo.InvariantCulture);}
             }
             model.runtime = Text(model.originals[Files[2]]);
             if (model.originals[Files[2]] == null && !String.IsNullOrEmpty(inheritedRuntime)) model.runtime = Text(Read(inheritedRuntime));
@@ -442,8 +467,16 @@ namespace TimeSplitters.Launcher
             Core.Require(!failed,"Could not clear some shader cache files. Close other game instances and try again.");
             return removed;
         }
+        string AudioPreference()
+        {
+            if(SpatialAudio && ExtendedGunfire && EnvironmentalAudio && AmbientAudio)
+                return "TSFP_AUDIO_V1 " + (EnhancedAudio?"1":"0") + "\n";
+            return "TSFP_AUDIO_V2 " + String.Join(" ",new[]{EnhancedAudio,SpatialAudio,ExtendedGunfire,EnvironmentalAudio,AmbientAudio}.Select(value=>value?"1":"0").ToArray()) + "\n";
+        }
         public void Save()
         {
+            Core.Require(AudioVolumes.All(percent=>percent>=0 && percent<=100),"Audio volumes must be between 0 and 100 percent. No settings were changed.");
+            Core.Require(ImpactRange>=0 && ImpactRange<=2,"Choose Original, Reduced, or Night impact range. No settings were changed.");
             Core.Require(new[]{1,2,4,8}.Contains(Msaa) && (EdgeSmoothing==0 || EdgeSmoothing==1) &&
                 (Anisotropy>=1 && Anisotropy<=16) && (AmbientOcclusion==0 || AmbientOcclusion==1) && Supersampling>=0 && Supersampling<=3,
                 "Graphics settings are invalid. No settings were changed.");
@@ -473,8 +506,11 @@ namespace TimeSplitters.Launcher
             var payload = new[] { Json.Encode(document) + "\n", (WeaponFov != 100 ? "TSFP_DISPLAY_V3 " + Width + " " + Height + " " + VerticalFov + " " + WeaponFov : VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),
                 "TSFP_DISCORD_V1 " + (DiscordEnabled ? "1" : "0") + " " + (DiscordApplicationId.Length == 0 ? "0" : DiscordApplicationId) + "\n",
                 "TSFP_FRAME_RATE_V1 " + NativeFps.ToString(CultureInfo.InvariantCulture) + "\n",
-                "TSFP_AUDIO_V1 " + (EnhancedAudio ? "1" : "0") + "\n",
+                AudioPreference(),
                 (Supersampling==0?"TSFP_GRAPHICS_V1 ":"TSFP_GRAPHICS_V2 ") + Msaa.ToString(CultureInfo.InvariantCulture) + " " + EdgeSmoothing.ToString(CultureInfo.InvariantCulture) + " " + Anisotropy.ToString(CultureInfo.InvariantCulture) + " " + AmbientOcclusion.ToString(CultureInfo.InvariantCulture) + " " + (ShaderCache ? "1" : "0") + (Supersampling==0?"":" "+Supersampling.ToString(CultureInfo.InvariantCulture)) + "\n" };
+            bool mixV2=DialogueFocus || ImpactRange!=0;
+            payload=payload.Concat(new[]{"TSFP_AUDIO_MIX_V"+(mixV2?"2":"1")+" "+String.Join(" ",AudioVolumes.Select(percent=>percent.ToString(CultureInfo.InvariantCulture)).ToArray())+
+                (mixV2?" "+(DialogueFocus?"1":"0")+" "+ImpactRange.ToString(CultureInfo.InvariantCulture):"")+"\n"}).ToArray();
             int committed = 0;
             try { for (int i = 0; i < Files.Length; i++) { Replace(Core.PathIn(root, Files[i]), Encoding.UTF8.GetBytes(payload[i]), true); committed++; } }
             catch

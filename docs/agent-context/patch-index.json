@@ -117,6 +117,25 @@
       ]
     },
     {
+      "name": "0059-audio-feature-controls.patch",
+      "path": "patches/media/0059-audio-feature-controls.patch",
+      "sha256": "66faf49335edad024169c4447a60ecab7ed9ce947b6a393fc005645d0b45daaa",
+      "targets": [
+        "src/hle/hle_dsound.c",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "0060-audio-bus-ownership.patch",
+      "path": "patches/media/0060-audio-bus-ownership.patch",
+      "sha256": "5659cf71232d1c172a1d72786d9f18c1efdd8cb3621688a125351df0bf779bb6",
+      "targets": [
+        "src/hle/hle_dsound.c",
+        "src/hle/hle_dsound_stream.c",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "0060-independent-classification.patch",
       "path": "patches/compiler/0060-independent-classification.patch",
       "sha256": "f8db701d03791b2b6eb3794f6d4634d14deb018400b9c171acab4af5ab0bd1b6",
@@ -132,6 +151,16 @@
         "tools/func_id/rw_identifier.py",
         "tools/func_id/stub_classifier.py",
         "tools/func_id/vtable_scanner.py"
+      ]
+    },
+    {
+      "name": "0061-audio-mix-levels.patch",
+      "path": "patches/media/0061-audio-mix-levels.patch",
+      "sha256": "d62c89df2fb6e9f47f27d25ec6c9d9e148a6bc991c2af7a4247f4bb8ee82d76b",
+      "targets": [
+        "src/hle/hle_dsound.c",
+        "src/hle/hle_dsound_stream.c",
+        "src/hle/hle_xmv_play.c"
       ]
     },
     {
@@ -1679,6 +1708,44 @@
       ]
     },
     {
+      "name": "2307-audio-dynamics-and-ducking.patch",
+      "path": "patches/media/2307-audio-dynamics-and-ducking.patch",
+      "sha256": "d7aa125715068fc937951205571544810d9bf39b3872fdacf6f11bf268dff760",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_dsound.c",
+        "src/hle/hle_dsound_stream.c",
+        "src/hle/hle_xmv_play.c"
+      ]
+    },
+    {
+      "name": "2308-audio-gain-contract.patch",
+      "path": "patches/media/2308-audio-gain-contract.patch",
+      "sha256": "3783f438373e6d3cb607d94f5039312aa0ae4846f6c14b5917f660c2cdf9231d",
+      "targets": [
+        "src/hle/audio_output_xaudio2.cpp"
+      ]
+    },
+    {
+      "name": "2309-dsound-native-buffer-layout.patch",
+      "path": "patches/media/2309-dsound-native-buffer-layout.patch",
+      "sha256": "ae8d2773c3d0fe77b7b9e1c1fc7684dac20175b970cc4257e09b0d8b991fc63a",
+      "targets": [
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
+      "name": "2310-dsound-authored-loop-ends.patch",
+      "path": "patches/media/2310-dsound-authored-loop-ends.patch",
+      "sha256": "58375eb5679a3d4417067c2f507d5c45f862f62fdaee67ba06093fbef25a18c6",
+      "targets": [
+        "src/hle/dsound_buffer_model.c",
+        "src/hle/dsound_buffer_model.h",
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
       "name": "2310-game-language.patch",
       "path": "patches/platform/2310-game-language.patch",
       "sha256": "6bb7a0a5e632b509b1e2a4c93163af160107701cddf523367716bad98a960f98",
@@ -1692,6 +1759,15 @@
       "sha256": "30f83a04f4cc09cb725068818b982f19ada085452e7af55b0ac6f7fedd4ad32a",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2311-dialogue-activity-spans.patch",
+      "path": "patches/media/2311-dialogue-activity-spans.patch",
+      "sha256": "1175c2304f19b2b5f72c93b0c7008349f441e890081570d1bfebb14eb9cabf71",
+      "targets": [
+        "src/hle/hle_dsound.c",
+        "src/hle/hle_dsound_stream.c"
       ]
     },
     {
