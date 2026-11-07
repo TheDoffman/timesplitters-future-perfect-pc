@@ -50,6 +50,10 @@ Game0.5.3 bundles published launcher1.5.2 and retains the full publication gates
 exact clean source on Windows/Mac/Linux, native/package/preservation checks,
 matching multiplayer identities and all nine public asset hashes. Linux hardware
 and full-campaign acceptance remain separate from configured-host checks.
+The Mac packager derives ZIP names, member roots and BUILD sidecars from the
+versioned stage, independently of copied license names. The real archive regression
+in `test_native_mac_package.py` retains all three font/STB notices and the versioned
+ZIP root; native installation/preservation checks remain required on Mac.
 Crane original-XBE fixtures supply the visible-HUD hook; run
 tests/graphics/test_crane_overlay.py for both host defines. Native input
 self-tests use click/Escape capture, replacing retired F1. [Linux](linux-game.md).
