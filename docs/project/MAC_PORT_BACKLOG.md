@@ -10233,4 +10233,3 @@ pointer bounds; RHI/legacy GL provide physical canvas bounds. No additional
 adapter is needed. Synthetic Mac compilation/execution covers fractional/Retina
 ratios and both docks; see [STATUS](STATUS.md). Physical clicks, monitor changes
 and Windows/Linux host acceptance remain unverified.
-
