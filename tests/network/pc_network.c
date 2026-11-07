@@ -51,7 +51,7 @@ int main(void)
     raw=socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP); CHECK(raw!=INVALID_SOCKET);
     {
         struct sockaddr_in source={0}; DWORD timeout=1000;
-        source.sin_family=AF_INET; source.sin_addr.s_addr=htonl(0x7f000003);
+        source.sin_family=AF_INET;source.sin_port=htons(31001); source.sin_addr.s_addr=htonl(0x7f000003);
         CHECK(!bind(raw,(struct sockaddr *)&source,sizeof source));
         setsockopt(raw,SOL_SOCKET,SO_RCVTIMEO,(const char *)&timeout,sizeof timeout);
     }
@@ -91,6 +91,63 @@ int main(void)
         memset(memory+800,0,36);memcpy(memory+800,&host,4);
         a[0]=address(800);a[1]=address(150);a[2]=address(850);CHECK(!call(0x43172c));
         pc_network_bots_context(2,host,match,2,6);
+        {
+            PcDeveloperPeer roster[2]={{0}};char names[256];unsigned char notice[60]={0};
+            roster[0].local=1;strcpy(roster[0].name,"Test Lab");roster[1].ip=host;roster[1].host=1;strcpy(roster[1].name,"Alice");
+            pc_network_developer_lobby(roster,2,1,names,sizeof names);CHECK(!strcmp(names,"Test Lab"));
+            memcpy(notice,"TSFP\1\0\0\0",8);memcpy(notice+8,version,32);memcpy(notice+40,"TSFDEV1",8);memcpy(notice+48,memory+150,8);notice[56]=1;
+            CHECK(sendto(raw,(char *)notice,sizeof notice,0,(struct sockaddr *)&to,sizeof to)==sizeof notice);
+            Sleep(20);a[0]=receiver;a[1]=address(500);a[2]=1;a[3]=0;CHECK(call(0x43184c)==UINT32_MAX);
+            pc_network_developer_lobby(roster,2,1,names,sizeof names);CHECK(!strcmp(names,"Test Lab, Alice"));
+            notice[48]^=1;notice[56]=0;CHECK(sendto(raw,(char *)notice,sizeof notice,0,(struct sockaddr *)&to,sizeof to)==sizeof notice);
+            Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);pc_network_developer_lobby(roster,2,0,names,sizeof names);CHECK(!strcmp(names,"Alice"));
+            notice[48]^=1;CHECK(sendto(raw,(char *)notice,sizeof notice,0,(struct sockaddr *)&to,sizeof to)==sizeof notice);
+            Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);pc_network_developer_lobby(roster,2,0,names,sizeof names);CHECK(!names[0]);
+            notice[56]=1;CHECK(sendto(raw,(char *)notice,sizeof notice,0,(struct sockaddr *)&to,sizeof to)==sizeof notice);
+            Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);pc_network_developer_lobby(roster,1,0,names,sizeof names);CHECK(!names[0]);
+            pc_network_developer_lobby(roster,2,0,names,sizeof names);CHECK(!names[0]); /* Rejoin cannot inherit stale state. */
+        }
+
+        {
+            PcDeveloperPeer roster[2]={{0}};unsigned char policy[64]={0};uint32_t sequence;
+            roster[0].local=1;roster[0].ip=htonl(0x7f000002);roster[1].host=1;roster[1].ip=host;
+            CHECK(!pc_network_tools_policy(roster,2,1)); /* Guests cannot choose policy. */
+            memcpy(policy,"TSFP\1\0\0\0",8);memcpy(policy+8,version,32);memcpy(policy+40,"TSFTOOL1",8);memcpy(policy+48,memory+150,8);
+            sequence=htonl(10);memcpy(policy+56,&sequence,4);policy[60]=1;
+            CHECK(sendto(raw,(char *)policy,64,0,(struct sockaddr *)&to,sizeof to)==64);
+            Sleep(20);a[0]=receiver;a[1]=address(500);a[2]=1;a[3]=0;CHECK(call(0x43184c)==UINT32_MAX);
+            CHECK(pc_network_tools_policy(roster,2,0));
+            sequence=htonl(9);memcpy(policy+56,&sequence,4);policy[60]=0;
+            CHECK(sendto(raw,(char *)policy,64,0,(struct sockaddr *)&to,sizeof to)==64);Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);
+            CHECK(pc_network_tools_policy(roster,2,0)); /* Old host updates cannot overwrite current state. */
+            sequence=htonl(11);memcpy(policy+56,&sequence,4);policy[48]^=1;
+            CHECK(sendto(raw,(char *)policy,64,0,(struct sockaddr *)&to,sizeof to)==64);Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);
+            CHECK(pc_network_tools_policy(roster,2,0));policy[48]^=1;
+            CHECK(sendto(raw,(char *)policy,64,0,(struct sockaddr *)&to,sizeof to)==64);Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);
+            CHECK(!pc_network_tools_policy(roster,2,1)); /* Fresh host Off overrides local preference. */
+            sequence=htonl(12);memcpy(policy+56,&sequence,4);policy[60]=1;
+            CHECK(sendto(raw,(char *)policy,64,0,(struct sockaddr *)&to,sizeof to)==64);Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);CHECK(pc_network_tools_policy(roster,2,0));
+            /* Same session key from a non-host address must not grant tools. */
+            SOCKET rogue=socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP);CHECK(rogue!=INVALID_SOCKET);
+            struct sockaddr_in source={0};source.sin_family=AF_INET;source.sin_addr.s_addr=htonl(0x7f000004);CHECK(!bind(rogue,(struct sockaddr *)&source,sizeof source));
+            sequence=htonl(13);memcpy(policy+56,&sequence,4);policy[60]=0;
+            CHECK(sendto(rogue,(char *)policy,64,0,(struct sockaddr *)&to,sizeof to)==64);Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);CHECK(pc_network_tools_policy(roster,2,0));closesocket(rogue);
+            Sleep(3050);CHECK(!pc_network_tools_policy(roster,2,0));
+            sequence=htonl(12);memcpy(policy+56,&sequence,4);policy[60]=1;
+            CHECK(sendto(raw,(char *)policy,64,0,(struct sockaddr *)&to,sizeof to)==64);Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_tools_policy(roster,2,0)); /* Duplicate does not refresh expiry. */
+            sequence=htonl(14);memcpy(policy+56,&sequence,4);
+            CHECK(sendto(raw,(char *)policy,64,0,(struct sockaddr *)&to,sizeof to)==64);Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);CHECK(pc_network_tools_policy(roster,2,0));
+            pc_network_tools_policy(NULL,0,0);CHECK(!pc_network_tools_policy(roster,2,0));
+            roster[0].host=1;roster[1].host=0;
+            CHECK(pc_network_tools_policy(roster,2,1));
+            unsigned char outbound[128];int bytes=0,found=0;
+            for(int attempt=0;attempt<12;attempt++){bytes=recv(raw,(char *)outbound,sizeof outbound,0);if(bytes==64&&!memcmp(outbound+40,"TSFTOOL1",8)){found=1;break;}}
+            CHECK(found&&outbound[60]==1&&!memcmp(outbound+48,memory+150,8));
+            CHECK(!pc_network_tools_policy(roster,2,0));found=0;
+            for(int attempt=0;attempt<12;attempt++){bytes=recv(raw,(char *)outbound,sizeof outbound,0);if(bytes==64&&!memcmp(outbound+40,"TSFTOOL1",8)&&outbound[60]==0){found=1;break;}}
+            CHECK(found);pc_network_tools_policy(NULL,0,0);
+        }
+
         memcpy(packet,"TSFP\1\0\0\0",8);memcpy(packet+8,version,32);
         memcpy(packet+40,"TSFBAI2",8);memcpy(packet+48,memory+150,8);memcpy(packet+56,&match,4);
         bot.slot=2;bot.tick=10;bot.health=1.f;bot.position[0]=25.f;
@@ -191,6 +248,25 @@ int main(void)
             memset(memory+800,0,36);memcpy(memory+800,&host,4);
             a[0]=address(800);a[1]=address(150);a[2]=address(850);CHECK(!call(0x43172c));
             pc_network_bots_context(2,host,match,2,6);
+            {
+                PcDeveloperPeer roster[2]={{0}};char names[256];unsigned char notice[88],outbound[128];
+                roster[0].local=1;strcpy(roster[0].name,"Test Lab");roster[1].ip=host;roster[1].host=1;strcpy(roster[1].name,"Online Alice");
+                pc_network_developer_lobby(roster,2,1,names,sizeof names);CHECK(!strcmp(names,"Test Lab"));
+                CHECK(recv(raw,(char *)outbound,sizeof outbound,0)==88 && !memcmp(outbound+68,"TSFDEV1",8) && outbound[84]==1);
+                memcpy(notice,packet,68);memcpy(notice+68,"TSFDEV1",8);memcpy(notice+76,memory+150,8);memset(notice+84,0,4);notice[84]=1;
+                CHECK(sendto(raw,(char *)notice,sizeof notice,0,(struct sockaddr *)&native,sizeof native)==sizeof notice);
+                Sleep(20);a[0]=receiver;a[1]=address(500);a[2]=1;a[3]=0;CHECK(call(0x43184c)==UINT32_MAX);
+                pc_network_developer_lobby(roster,2,1,names,sizeof names);CHECK(!strcmp(names,"Test Lab, Online Alice"));
+                unsigned char rule[92]={0};uint32_t serial=htonl(1);
+                CHECK(!pc_network_tools_policy(roster,2,1));
+                memcpy(rule,packet,68);memcpy(rule+68,"TSFTOOL1",8);memcpy(rule+76,memory+150,8);memcpy(rule+84,&serial,4);rule[88]=1;
+                CHECK(sendto(raw,(char *)rule,sizeof rule,0,(struct sockaddr *)&native,sizeof native)==sizeof rule);
+                Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);CHECK(pc_network_tools_policy(roster,2,0));
+                serial=htonl(2);memcpy(rule+84,&serial,4);rule[88]=0;
+                CHECK(sendto(raw,(char *)rule,sizeof rule,0,(struct sockaddr *)&native,sizeof native)==sizeof rule);
+                Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_tools_policy(roster,2,1));
+            }
+
             memcpy(frame,packet,68);memcpy(frame+68,"TSFBAI2",8);
             memcpy(frame+76,memory+150,8);memcpy(frame+84,&match,4);
             bot.slot=2;bot.tick=10;bot.body_present=1;bot.health=1.f;bot.position[0]=25.f;
@@ -226,6 +302,27 @@ int main(void)
             CHECK(*(uint16_t *)(frame+64)==htons(1000) && *(uint16_t *)(frame+66)==htons(1000));
             CHECK(!memcmp(frame+68,"TSFBAI2",8) && !memcmp(frame+76,memory+150,8));
             memset(&received,0,sizeof received);memcpy(&received,frame+88,offsetof(PcNetworkBotState,ragdoll));CHECK(received.tick==11 && received.slot==2);
+            {
+                PcDeveloperPeer roster[2]={{0}};char names[256];
+                timeout=50;setsockopt(raw,SOL_SOCKET,SO_RCVTIMEO,(const char *)&timeout,sizeof timeout);
+                roster[0].local=1;roster[0].host=1;strcpy(roster[0].name,"Host");roster[1].ip=htonl(0x0afe0009);strcpy(roster[1].name,"Guest");
+                pc_network_developer_lobby(roster,1,1,names,sizeof names); /* Leave preceding guest roster. */
+                pc_network_developer_lobby(roster,2,1,names,sizeof names);
+                CHECK(!strcmp(names,"Host"));
+                CHECK(recv(raw,(char *)frame,sizeof frame,0)==88);
+                CHECK(!memcmp(frame+68,"TSFDEV1",8) && !memcmp(frame+76,memory+150,8));
+                CHECK(!memcmp(frame+60,&roster[1].ip,4)); /* No XNADDR registration for this admitted guest. */
+                unsigned char notice[88];memcpy(notice,packet,68);memcpy(notice+56,&roster[1].ip,4);
+                memcpy(notice+68,"TSFDEV1",8);memcpy(notice+76,memory+150,8);memset(notice+84,0,4);notice[84]=1;
+                CHECK(sendto(raw,(char *)notice,sizeof notice,0,(struct sockaddr *)&native,sizeof native)==sizeof notice);
+                Sleep(20);a[0]=receiver;a[1]=address(500);a[2]=1;a[3]=0;CHECK(call(0x43184c)==UINT32_MAX);
+                pc_network_developer_lobby(roster,2,0,names,sizeof names);CHECK(!strcmp(names,"Guest"));
+                a[0]=address(100);a[1]=address(150);a[2]=address(850);CHECK(!call(0x43172c));
+                a[0]=address(150);CHECK(!call(0x431721));
+                pc_network_developer_lobby(roster,2,0,names,sizeof names);CHECK(!names[0]);
+                CHECK(recv(raw,(char *)frame,sizeof frame,0)==SOCKET_ERROR); /* Stale self discovery cannot revive a retired session. */
+                a[1]=address(160);CHECK(!call(0x431716));
+            }
             /* A stale self-discovery cache must not keep an unregistered
                session alive. A new key must be registered before use. */
             timeout=50;setsockopt(raw,SOL_SOCKET,SO_RCVTIMEO,(const char *)&timeout,sizeof timeout);

@@ -4,11 +4,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 static ULONGLONG clock_ms;
 static ULONGLONG ticks(void) { return clock_ms; }
 #define GetTickCount64 ticks
 #include "../src/interface/pc_display.c"
 #include "../src/interface/pc_display_menu.c"
+/* Developer Tools is a separate guest-thread consumer. These menu fixtures
+ * retain normal HUD visibility and reject accidental flight/Story actions. */
+static PcVideoSnapshot sidebar_video_observed;
+static PcVideoRequest sidebar_video_queued;
+static int sidebar_open=1,sidebar_fullscreen;
+int pc_developer_open(void){return sidebar_open;}
+void pc_developer_video_register(void (*tick)(void)){(void)tick;}
+void pc_developer_video_guest_tick(void){}
+void pc_developer_video_publish(const PcVideoSnapshot *s){sidebar_video_observed=*s;}
+int pc_developer_video_take(PcVideoRequest *r){*r=sidebar_video_queued;sidebar_video_queued.serial=0;return r->serial!=0;}
+int pc_controls_developer_is_fullscreen(void){return sidebar_fullscreen;}
+void pc_controls_developer_fullscreen(void){sidebar_fullscreen=!sidebar_fullscreen;}
+void pc_developer_get(PcDeveloperState *out) {*out=(PcDeveloperState){0,0,0,0,1.,0};}
+static int developer_hud_visible=1;
+int pc_developer_hud_visible(void) {return developer_hud_visible;}
+void pc_developer_close(void) {assert(!"unexpected Developer Tools close");}
+void pc_developer_report(const char *message) {(void)message;assert(!"unexpected developer request");}
+int pc_developer_flight_step(int mode,const float origin[3],const float direction[3],double seconds,float position[3],float forward[3])
+{(void)mode;(void)origin;(void)direction;(void)seconds;(void)position;(void)forward;assert(!"unexpected flight");return 0;}
+void sub_0025EF80(void) {assert(!"unexpected checkpoint capture");}
+void sub_001519E0(void) {assert(!"unexpected camera view");}
+void sub_00153270(void) {assert(!"unexpected camera composition");}
+void sub_00152260(void) {assert(!"unexpected camera inverse");}
+void sub_0006BB90(void) {assert(!"unexpected checkpoint lookup");}
+void sub_00067450(void) {assert(!"unexpected mission ending");}
+void pc_controls_apply_mouse(uint32_t player,uint32_t camera,ptrdiff_t offset)
+{(void)player;(void)camera;(void)offset;assert(!"unexpected developer mouse update");}
+
 int tsfp_input_icon_begin(const void *spans,unsigned count,unsigned size,unsigned pixels) {(void)spans;(void)count;(void)size;(void)pixels;return 0;}
 void tsfp_input_icon_end(void) {}
 void sub_0001B7B0(void) {g_esp+=4;}
@@ -362,6 +391,13 @@ static void content(const char *expected)
 {
     FILE *f=fopen(path,"rb");char text[128]={0};CHECK(f);fread(text,1,sizeof text-1,f);fclose(f);
     CHECK(!strcmp(text,expected));
+}
+static void nested_match_options(void) {
+    CHECK(WORD_AT(0x78ad2c)==9);
+    g_esp-=4;WORD_AT(g_esp+4)=0x300000;
+    pc_network_bots_menu(sub_002C78F0_gen);
+    CHECK(WORD_AT(0x78ad2c)==9);
+    g_esp+=4;
 }
 int main(int argc,char **argv)
 {
@@ -1138,6 +1174,60 @@ int main(int argc,char **argv)
         WORD_AT(controls_menu+0xc4)=0x400;CHECK(settings_tabs_direction(controls_menu)==1);
         settings_keys[0x27]=0;settings_pad_allowed=0;WORD_AT(controls_menu+4)=descriptor;
     }
+    /* Known reticle paths must obey hidden HUD even without widescreen. */
+    developer_hud_visible=0;g_esp=0x30000;WORD_AT(g_esp)=0x0014CC10u;
+    pc_display_aim_primitive(original_highlight,0);CHECK(g_esp==0x30004);
+    g_esp=0x30000;pc_display_aim_panel(original_highlight,0x137010u);CHECK(g_esp==0x30004);
+    developer_hud_visible=1;
+    /* Real native match Options insertion: host only, regular left/right
+       selector, stable callback/ABI, no stale menu or guest-role writes. */
+    WORD_AT(0x78ad2c)=11;WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;
+    built_row_count=0;g_esp=0x700000;WORD_AT(g_esp+4)=0x300000;
+    pc_network_bots_menu(nested_match_options);
+    CHECK(g_esp==0x700004&&WORD_AT(0x78ad2c)==11&&built_row_count==1&&built_ids[0]==121);
+    CHECK(!WORD_AT(developer_match_row+0xc8));WORD_AT(developer_match_row+0xc8)=1;
+    call(DEVELOPER_MATCH_CHANGE,121,0);CHECK(developer_match_tools==1);
+    WORD_AT(0x76b140)=2;WORD_AT(developer_match_row+0xc8)=0;call(DEVELOPER_MATCH_CHANGE,121,0);CHECK(developer_match_tools==1);
+    WORD_AT(0x76b140)=1;WORD_AT(developer_match_owner+4)^=4;call(DEVELOPER_MATCH_CHANGE,121,0);CHECK(developer_match_tools==1);
+    WORD_AT(developer_match_owner+4)^=4;call(DEVELOPER_MATCH_CHANGE,121,0);CHECK(!developer_match_tools);
+    WORD_AT(0x76b140)=2;built_row_count=0;g_esp=0x700000;WORD_AT(g_esp+4)=0x300000;pc_network_bots_menu(sub_002C78F0_gen);CHECK(!built_row_count);
+    WORD_AT(0x76b108)=WORD_AT(0x76b140)=0;WORD_AT(0x78ad2c)=9;
+    /* Real sidebar adapter: save on guest thread, confirm/revert previews,
+       preserve existing settings on a failed batch, and use native subtitles. */
+    sidebar_open=1;video_sample_at=video_modes_at=0;g_esp=0x700000;
+    video_sidebar_tick();CHECK(sidebar_video_observed.available&&sidebar_video_observed.mode_count>1);
+    PcVideoValues saved=sidebar_video_observed.current,edit=saved;
+    edit.value[VIDEO_FOV]=73;edit.value[VIDEO_SUBTITLES]=!saved.value[VIDEO_SUBTITLES];
+    sidebar_video_queued=(PcVideoRequest){1,VIDEO_APPLY,edit};video_sidebar_tick();
+    CHECK(sidebar_video_observed.completed==1&&pc_display_fov()==73);
+    CHECK(WORD_AT(0x400130)==(unsigned)edit.value[VIDEO_SUBTITLES]&&(WORD_AT(0x78ad24)&0x10000));
+    saved=sidebar_video_observed.current;edit=saved;edit.value[VIDEO_FOV]=81;
+    edit.value[VIDEO_AF]=saved.value[VIDEO_AF]==16?8:16;graphics_save_ok=0;
+    sidebar_video_queued=(PcVideoRequest){2,VIDEO_APPLY,edit};video_sidebar_tick();graphics_save_ok=1;
+    CHECK(pc_display_fov()==73&&strstr(sidebar_video_observed.message,"Could not save"));
+    saved=sidebar_video_observed.current;edit=saved;edit.width=saved.width==1280?1920:1280;edit.height=edit.width==1280?720:1080;
+    sidebar_video_queued=(PcVideoRequest){3,VIDEO_APPLY,edit};video_sidebar_tick();
+    CHECK(sidebar_video_observed.preview&&pc_display_current().width==edit.width);
+    clock_ms+=15001;video_sidebar_tick();CHECK(!sidebar_video_observed.preview&&pc_display_current().width==saved.width);
+    sidebar_video_queued=(PcVideoRequest){4,VIDEO_APPLY,edit};video_sidebar_tick();CHECK(sidebar_video_observed.preview);
+    sidebar_open=0;clock_ms+=201;video_sidebar_tick();CHECK(pc_display_current().width==saved.width);
+    sidebar_open=1;sidebar_video_queued=(PcVideoRequest){5,VIDEO_APPLY,edit};video_sidebar_tick();
+    sidebar_video_queued=(PcVideoRequest){6,VIDEO_KEEP,edit};video_sidebar_tick();CHECK(!sidebar_video_observed.preview&&pc_display_current().width==edit.width);
+    edit=sidebar_video_observed.current;edit.value[VIDEO_FOV]=999;
+    sidebar_video_queued=(PcVideoRequest){7,VIDEO_APPLY,edit};video_sidebar_tick();CHECK(pc_display_fov()==73);
+    edit=sidebar_video_observed.current;edit.value[VIDEO_FOV]=65;
+    edit.value[VIDEO_AA]=edit.value[VIDEO_AA]==2?0:2;edit.value[VIDEO_AF]=2;
+    edit.value[VIDEO_AO]=1;edit.value[VIDEO_MSAA]=4;edit.value[VIDEO_SS]=1;
+    edit.value[VIDEO_CACHE]=0;edit.value[VIDEO_TEXTURE]=1;
+    edit.value[VIDEO_FEED]=!edit.value[VIDEO_FEED];edit.value[VIDEO_COUNTER]=!edit.value[VIDEO_COUNTER];
+    edit.value[VIDEO_RATE]=120;edit.value[VIDEO_FULLSCREEN]=1;
+    sidebar_video_queued=(PcVideoRequest){8,VIDEO_APPLY,edit};video_sidebar_tick();
+    CHECK(pc_display_fov()==65&&graphics_options.anisotropy==2&&graphics_options.ambient_occlusion);
+    CHECK(graphics_options.msaa==4&&graphics_options.supersampling==1&&!graphics_options.shader_cache);
+    CHECK(pc_post_aa_get()==(unsigned)edit.value[VIDEO_AA]&&tsfp_texture_is_4k());
+    CHECK(pc_feed_enabled()==edit.value[VIDEO_FEED]&&pc_counter_enabled()==edit.value[VIDEO_COUNTER]);
+    CHECK(requested_rate==120&&sidebar_fullscreen&&sidebar_video_observed.restart);
+    sidebar_video_queued=(PcVideoRequest){9,VIDEO_CLEAR_CACHE,edit};int old_clears=cache_clear_calls;video_sidebar_tick();CHECK(cache_clear_calls==old_clears+1);
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
     return 0;
@@ -1149,6 +1239,22 @@ STUB(sub_001CC360)
 
 void sub_000D2CE0(void){}
 void sub_0015BCC0_gen(void){}
+
+void sub_000A2740(void){}
+
+int pc_developer_enabled(void) {return 0;}
+void pc_developer_shortcut_name(char *out,size_t bytes){snprintf(out,bytes,"F1");}
+int pc_developer_set_enabled(int enabled) {(void)enabled;assert(0);return 0;}
+void pc_developer_lobby_notice(const char *names) {(void)names;}
+unsigned pc_network_developer_lobby(const PcDeveloperPeer *roster,unsigned count,int enabled,char *names,size_t bytes)
+{(void)roster;(void)count;(void)enabled;(void)bytes;names[0]=0;return 0;}
+
+void sub_00353760(void) {g_eax=0;g_esp+=4;}
+
+void sub_002C78F0_gen(void) {developer_match_button(0x002C8010u);g_esp+=4;}
+int pc_developer_tools_allowed(void) {return 1;}
+void pc_developer_match_policy(int online,int allowed) {(void)online;(void)allowed;}
+int pc_network_tools_policy(const PcDeveloperPeer *roster,unsigned count,int allowed) {(void)roster;(void)count;return allowed;}
 
 int pc_network_enabled(void){return 1;}
 void sub_000668F0(void){}

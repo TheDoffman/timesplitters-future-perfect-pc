@@ -5,7 +5,8 @@ static unsigned g_players_auto_ports;
 #include "controller_profile.c"
 #undef main
 #include "pc_input.h"
-static int test_focus=1, test_capture, mouse_samples;
+#include "pc_settings.h"
+static int test_focus=1, test_capture, test_blocked, mouse_samples;
 static long g_pc_auto_pad;
 #define PC_WEAPON_SLOT_COUNT 10
 #define AcquireSRWLockShared(p) ((void)0)
@@ -16,12 +17,12 @@ static long g_pc_auto_pad;
 #define InterlockedExchange(p,v) (*(p)=(v))
 #endif
 #define pc_weapon_keys_sample(...) ((void)0)
-static int pc_settings_capture_pump(void){return test_capture;}
-static int pc_controls_accept_pad(void){return test_focus;}
+int pc_settings_capture_pump(void){return test_capture;}
+static int pc_controls_accept_pad(void){return test_focus&&!test_blocked;}
 static int tsfp_native_input_focused(void){return test_focus;}
 static int pc_prompts_keyboard_active(void){return 1;}
 static void pc_prompts_controller(const RecompPadState *p,int live){(void)p;(void)live;}
-static int pc_controls_weapon_slots_active(void){return 0;}
+int pc_controls_weapon_slots_active(void){return 0;}
 static int pc_controls_terminal_click(void){return 0;}
 static int pc_controls_key_down(int key){(void)key;return 0;}
 static int tsfp_native_key_down(int key){(void)key;return 0;}
@@ -62,6 +63,12 @@ int main(void)
     test_sample(0,&one);test_sample(1,&two);
     assert(!one.sThumbLX && one.sThumbLY==-32767 && one.bAnalogButtons[XBOX_BUTTON_A]==255);
     assert(two.sThumbLX==32767 && !two.sThumbLY && !two.bAnalogButtons[XBOX_BUTTON_A]);
+    /* Freecam/overlay block both automatic P1 and explicitly assigned pads,
+     * without losing the held device state when ordinary control resumes. */
+    test_blocked=1;test_sample(0,&one);test_sample(1,&two);
+    assert(!memcmp(&one,&neutral,sizeof one) && !memcmp(&two,&neutral,sizeof two));
+    test_blocked=0;test_sample(0,&one);test_sample(1,&two);
+    assert(one.sThumbLY==-32767 && two.sThumbLX==32767);
     test_focus=0;test_sample(0,&one);test_sample(1,&two);
     assert(!memcmp(&one,&neutral,sizeof one) && !memcmp(&two,&neutral,sizeof two));
     test_focus=1;test_capture=1;test_sample(0,&one);

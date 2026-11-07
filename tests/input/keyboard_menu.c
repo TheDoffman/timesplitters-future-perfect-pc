@@ -26,12 +26,12 @@ int main(void) {
     assert(c.event=='U'+1 && !c.phase);
     pc_binding_capture_begin(&c,50000);pc_binding_capture_step(&c,keys,1,50001);
     pc_binding_capture_key(&c,0xa3);assert(c.event==0x12); /* Right Ctrl shares Ctrl. */
-    assert(sizeof pc_keyboard_action_labels/sizeof pc_keyboard_action_labels[0]==34);
-    int seen[34]={0};
+    assert(sizeof pc_keyboard_action_labels/sizeof pc_keyboard_action_labels[0]==PC_ACTION_COUNT);
+    int seen[PC_ACTION_COUNT]={0};
     for(int g=0;g<4;g++)for(int i=0;i<12;i++) {
-        int action=pc_keyboard_groups[g][i];if(action>=0){assert(action<34);seen[action]++;}
+        int action=pc_keyboard_groups[g][i];if(action>=0){assert(action<PC_ACTION_COUNT);seen[action]++;}
     }
-    for(int i=0;i<34;i++)assert(seen[i]==1);
+    for(int i=0;i<PC_ACTION_COUNT;i++)assert(seen[i]==1);
     assert(pc_keyboard_sensitivity_step(.1)==500);
     assert(fabs(pc_keyboard_sensitivity(0)-.001)<1e-9);
     assert(fabs(pc_keyboard_sensitivity(1000)-10)<1e-9);

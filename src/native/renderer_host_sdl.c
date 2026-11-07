@@ -79,6 +79,13 @@ static int text_bitmap(void *context,const char *text,unsigned char *pixels,
     *used_width=(uint32_t)used;return 1;
 }
 
+static int text_bitmap_styled(void *context,const char *text,unsigned char *pixels,
+    uint32_t width,uint32_t height,uint32_t *used_width,uint32_t font_px,uint32_t weight) {
+    (void)context;int used=0;
+    if(!tsfp_native_styled_bitmap(text,pixels,(int)width,(int)height,&used,font_px,weight))return 0;
+    *used_width=(uint32_t)used;return 1;
+}
+
 void tsfp_renderer_host_bind(SDL_Window *window, void (*on_quit)(void))
 {
     /* Binding/unbinding is outside the render-thread lifetime. */
@@ -86,7 +93,7 @@ void tsfp_renderer_host_bind(SDL_Window *window, void (*on_quit)(void))
     host.on_quit = on_quit;
     host.width = host.height = 0;
     if (window) {
-        RhiHost callbacks = {.pump_events=pump_events,.drawable_size=drawable_size,.text_bitmap=text_bitmap};
+        RhiHost callbacks = {.pump_events=pump_events,.drawable_size=drawable_size,.text_bitmap=text_bitmap,.text_bitmap_styled=text_bitmap_styled};
         refresh_size();
         rhi_set_host(&callbacks);
     } else {

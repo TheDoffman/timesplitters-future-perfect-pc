@@ -255,6 +255,37 @@ def patch_records(paths):
         if linux:
             paths.remove(linux)
             paths.append(linux)
+    # Developer Tools consumes the final shared Windows/SDL input layout and
+    # positioned RHI overlays, including Linux's last host-adapter extensions.
+    developer_tools = by_name.get('2520-developer-tools-overlay.patch')
+    if developer_tools:
+        paths.remove(developer_tools)
+        paths.append(developer_tools)
+    developer_changes=by_name.get('2530-developer-tools-controls-and-cheats.patch')
+    if developer_changes:
+        paths.remove(developer_changes)
+        paths.append(developer_changes)
+    developer_settings=by_name.get('2540-developer-tools-settings-and-shortcut.patch')
+    if developer_settings:
+        paths.remove(developer_settings)
+        paths.append(developer_settings)
+    developer_movies=by_name.get('2550-developer-tools-cutscene-speed.patch')
+    if developer_movies:
+        paths.remove(developer_movies)
+        paths.append(developer_movies)
+    for name in ('2560-developer-tools-ui-audio-and-bindings.patch',
+                 '2570-developer-tools-game-audio-clock.patch',
+                 '2580-developer-tools-lobby-wrench.patch',
+                 '2590-developer-tools-optional-audio-speed.patch',
+                 '2600-developer-tools-sidebar-renderer.patch',
+                 '2610-developer-tools-sidebar-refinement.patch',
+                 '2620-developer-tools-shared-font.patch',
+                 '2630-developer-tools-native-player-input.patch'):
+        followup=by_name.get(name)
+        if followup:
+            paths.remove(followup)
+            paths.append(followup)
+
     # Settings must use the active source after grouped/native target migrations.
     config_source = by_name.get('2595-config-source-worktree.patch')
     if config_source:
@@ -276,6 +307,14 @@ def patch_records(paths):
         # comment/function boundary. Removed/added code must still match.
         reduced_context = native_boot and (patch.name == '0700-pc-debug-latency-watermark.patch'
                                            or patch == native_boot and '0470-pc-network.patch' in by_name)
+        # These additive wrappers ended the manual file when authored. A local
+        # comment appended later must not make Git require an end-of-file match
+        # during reverse application; retain adjacent context and exact code.
+        reduced_context = reduced_context or patch.name in (
+            '2520-developer-tools-overlay.patch',
+            '2530-developer-tools-controls-and-cheats.patch',
+            '2550-developer-tools-cutscene-speed.patch',
+            '2580-developer-tools-lobby-wrench.patch')
         content = patch.read_bytes()
         records.append(dict(name=patch.name, content=content.decode('utf-8'),
                             sha256=hashlib.sha256(content).hexdigest(),

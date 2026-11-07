@@ -1059,3 +1059,13 @@ patches until upgrading to the full stack. Model instrumentation is inserted
 before a stable function, rather than at EOF, so reversing it preserves local
 trailing edits during historical branch round trips. These are tested in
 `tests/repository/test_patch_updates.py`.
+
+
+## Local launcher artwork selection
+
+Local Windows artwork selection: build-launcher.ps1 resolves explicit image
+arguments first, then validates each build/launcher-art PNG against the shared
+artwork pin, then uses the existing private legacy fallback if no cached file
+exists. fetch-launcher-art.ps1 recovers the pinned banner/backdrop/logo without
+executing downloaded code. -RequireArtwork checks the selected resources; normal
+local rebuilds now reuse the same verified art as release CI when cached.

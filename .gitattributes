@@ -26,3 +26,6 @@ vendor/smaa/SMAA.hlsl -text -filter -whitespace linguist-vendored
 vendor/smaa/AreaTex.h -text -filter -whitespace linguist-vendored
 vendor/smaa/SearchTex.h -text -filter -whitespace linguist-vendored
 vendor/smaa/LICENSE.txt -text -filter -whitespace linguist-vendored
+
+assets/ui/fonts/*.ttf -text -filter
+vendor/stb/** -text -filter -whitespace linguist-vendored

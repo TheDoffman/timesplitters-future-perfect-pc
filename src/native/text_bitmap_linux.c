@@ -7,11 +7,12 @@
 #include <string.h>
 static pthread_once_t font_once=PTHREAD_ONCE_INIT;
 static void init_fonts(void){FcInit();}
-static int bitmap(const char *text,unsigned char *pixels,int w,int h,int *used,int size,int pad) {
+static int bitmap(const char *text,unsigned char *pixels,int w,int h,int *used,int size,int pad,int styled,unsigned weight) {
     if(!text||!pixels||w<=0||h<=0||w>16384||h>4096)return 0;
     pthread_once(&font_once,init_fonts);
-    FcPattern *pattern=FcNameParse((const FcChar8 *)"monospace");
+    FcPattern *pattern=FcNameParse((const FcChar8 *)((styled||h==32)?"sans-serif":"monospace"));
     if(!pattern)return 0;
+    if(styled)FcPatternAddInteger(pattern,FC_WEIGHT,weight>=600?FC_WEIGHT_DEMIBOLD:FC_WEIGHT_REGULAR);
     FcConfigSubstitute(NULL,pattern,FcMatchPattern);FcDefaultSubstitute(pattern);
     FcResult result;FcPattern *match=FcFontMatch(NULL,pattern,&result);FcPatternDestroy(pattern);
     FcChar8 *path=NULL;FT_Library library=NULL;FT_Face face=NULL;
@@ -46,5 +47,9 @@ static int bitmap(const char *text,unsigned char *pixels,int w,int h,int *used,i
     if(face)FT_Done_Face(face);if(library)FT_Done_FreeType(library);
     return ok;
 }
-int tsfp_native_debug_bitmap(const char *t,unsigned char *p,int w,int h,int *used){return bitmap(t,p,w,h,used,22,8);}
-int tsfp_native_overlay_bitmap(const char *t,unsigned char *p,int w,int h,int *used){return bitmap(t,p,w,h,used,18,6);}
+int tsfp_native_debug_bitmap(const char *t,unsigned char *p,int w,int h,int *used){return bitmap(t,p,w,h,used,22,8,0,400);}
+int tsfp_native_overlay_bitmap(const char *t,unsigned char *p,int w,int h,int *used){return bitmap(t,p,w,h,used,h==32?24:18,h==32?2:6,0,400);}
+
+int tsfp_native_styled_bitmap(const char *t,unsigned char *p,int w,int h,int *used,unsigned size,unsigned weight) {
+    if(size<6||size>96)return 0;return bitmap(t,p,w,h,used,(int)size,2,1,weight);
+}

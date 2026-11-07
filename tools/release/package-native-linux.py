@@ -266,6 +266,8 @@ def main():
         if source.is_file():copy(source,stage,'Licenses/Vulkan-Headers-'+source.name)
     if (ROOT/'vendor/smaa/LICENSE.txt').is_file():copy(ROOT/'vendor/smaa/LICENSE.txt',stage,'Licenses/SMAA.txt')
     copy(ROOT/'assets/ui/input-icons/ATTRIBUTION.md',stage,'Licenses/Keyboard-mouse-icons.txt')
+    for origin,name in [('assets/ui/fonts/Selawik-OFL.txt','Selawik-OFL.txt'),('assets/ui/fonts/Cousine-OFL.txt','Cousine-OFL.txt'),('vendor/stb/LICENSE','stb.txt')]:
+        copy(ROOT/origin,stage,'Licenses/'+name)
     roots=[(executable,game),*python_pairs,*dynamic];known={p.resolve() for _,p in roots}
     for member in stage.rglob('*'):
         if member.is_file() and elf(member) and member.resolve() not in known:

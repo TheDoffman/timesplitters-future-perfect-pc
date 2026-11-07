@@ -1,0 +1,11 @@
+# Included by either runtime owner, with a single shared static font library.
+if(NOT TARGET tsfp_developer_font)
+    get_filename_component(_font_root "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
+    set(TSFP_UI_FONT_OUTPUT "${CMAKE_BINARY_DIR}/tsfp-ui-font")
+    include("${CMAKE_CURRENT_LIST_DIR}/embed-ui-fonts.cmake")
+    add_library(tsfp_developer_font STATIC "${CMAKE_CURRENT_LIST_DIR}/pc_developer_font.c")
+    target_include_directories(tsfp_developer_font PUBLIC "${_font_root}/src" PRIVATE "${TSFP_UI_FONT_OUTPUT}")
+    if(UNIX)
+        target_link_libraries(tsfp_developer_font PUBLIC m)
+    endif()
+endif()

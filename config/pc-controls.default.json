@@ -1,4 +1,5 @@
 {
+  "developer_tools_enabled": false,
   "mouse": { "enabled": true, "sensitivity": 0.10, "invert_y": false },
   "debug": { "show_fps": false, "show_frame_time": false, "show_issues": false, "log_performance": false },
   "controllers": [
@@ -24,7 +25,9 @@
         "weapon_slot_1": "key:1", "weapon_slot_2": "key:2", "weapon_slot_3": "key:3",
         "weapon_slot_4": "key:4", "weapon_slot_5": "key:5", "weapon_slot_6": "key:6",
         "weapon_slot_7": "key:7", "weapon_slot_8": "key:8", "weapon_slot_9": "key:9",
-        "weapon_slot_10": "key:0"
+        "weapon_slot_10": "key:0",
+        "developer_tools": "key:F1",
+        "developer_noclip": "none", "developer_freecam": "none"
       }
     },
     { "port": 2, "device": "none" },

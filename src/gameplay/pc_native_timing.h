@@ -1,6 +1,7 @@
 #ifndef TSFP_PC_NATIVE_TIMING_H
 #define TSFP_PC_NATIVE_TIMING_H
 #include <stdint.h>
+#include <math.h>
 /* The engine exposes two forms of delta: fractional ticks for continuous
  * motion and whole 60-Hz ticks for counters. Carry the remainder separately
  * for paused and unpaused time; rounding each 144-Hz frame to one speeds up
@@ -24,12 +25,13 @@ typedef struct PcNativeStep {
 /* Published by the shared guest timing hook before guest-local time overrides.
  * Consumers must still honor their resource lifecycle and guest time scopes. */
 extern PcNativeStep g_tsfp_native_step;
-static inline PcNativeStep pc_native_timing_step(PcNativeTiming *clock,
-    int64_t now, int64_t frequency, int rate, int paused)
+static inline PcNativeStep pc_native_timing_step_scaled(PcNativeTiming *clock,
+    int64_t now, int64_t frequency, int rate, int paused, double speed)
 {
     PcNativeStep step = {0};
     int64_t elapsed, scaled;
-    if (!clock || frequency <= 0 || frequency > INT64_MAX/4 || rate <= 0) return step;
+    if (!clock || frequency <= 0 || frequency > INT64_MAX/256 || rate <= 0 ||
+        !isfinite(speed) || speed<.05 || speed>4.) return step;
     step.units_per_tick = frequency;
     if (!clock->initialized || clock->frequency != frequency) {
         clock->initialized = 1;
@@ -52,12 +54,18 @@ static inline PcNativeStep pc_native_timing_step(PcNativeTiming *clock,
     step.raw_ticks = (uint32_t)(clock->raw_remainder / frequency);
     clock->raw_remainder %= frequency;
     if (!paused) {
-        step.game_units = scaled;
-        step.game_delta = step.raw_delta;
-        clock->game_remainder += scaled;
+        int64_t game_scaled=(int64_t)((double)scaled*speed+.5);
+        step.game_units = game_scaled;
+        step.game_delta = (float)((double)game_scaled/(double)frequency);
+        clock->game_remainder += game_scaled;
         step.game_ticks = (uint32_t)(clock->game_remainder / frequency);
         clock->game_remainder %= frequency;
     }
     return step;
+}
+static inline PcNativeStep pc_native_timing_step(PcNativeTiming *clock,
+    int64_t now,int64_t frequency,int rate,int paused)
+{
+    return pc_native_timing_step_scaled(clock,now,frequency,rate,paused,1.);
 }
 #endif

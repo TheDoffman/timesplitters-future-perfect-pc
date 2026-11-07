@@ -38,6 +38,7 @@ void hle_dsound_stream_tick(uint64_t now) { }
 void hle_dsound_stream_acoustics(uint32_t settings,float obstruction,float room,int ambience) {}
 void hle_dsound_stream_spatial(uint32_t settings,float pan,int enabled) { }
 #ifndef TSFP_INTEGRATED_AUDIO
+uint64_t recomp_audio_output_game_time(uint64_t now,unsigned domain){(void)domain;return now;}
 static unsigned reset_count[256];
 void recomp_audio_output_reset_voice(uint32_t slot) { reset_count[slot]++; }
 static int fake_device;

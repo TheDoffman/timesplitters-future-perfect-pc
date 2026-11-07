@@ -34,6 +34,7 @@ static int local_session_created,local_session_registered;
 static const unsigned char compatibility[32] = TSFP_NETWORK_COMPATIBILITY;
 static unsigned rejected;
 static void bot_reset(void);
+static void developer_reset(void);
 static unsigned sent_logs, received_logs;
 static int online;
 static uint32_t online_ip;
@@ -165,7 +166,7 @@ static int initialize(void)
 static void shutdown_locked(void)
 {
     unsigned i;
-    bot_reset();
+    bot_reset();developer_reset();
     memset(local_session_id,0,sizeof local_session_id);
     local_session_created=local_session_registered=0;
     memset(latency_peers,0,sizeof latency_peers);
@@ -224,6 +225,136 @@ static int send_packet(NetSocket *s,const char *payload,int length,int flags,con
     if(sent==SOCKET_ERROR) return (int)failure(net_error());
     return length;
 }
+/* Availability is session-scoped metadata, outside the guest packet decoder.
+ * Names come from the admitted game roster, never from an extension packet. */
+static struct {uint32_t ip;unsigned enabled;unsigned char key[8];uint64_t at;} developer_peers[16];
+static uint32_t developer_allowed[16];
+static unsigned developer_count;
+static unsigned char developer_key[8];
+static int developer_key_valid;
+static uint64_t developer_sent;
+/* Match Tools policy is host-owned. Availability announcements above are
+ * retained only for older callers; the current UI never displays a wrench. */
+static uint32_t tools_host_ip,tools_sequence,tools_received_sequence;
+static unsigned char tools_key[8];
+static int tools_key_valid,tools_local_host,tools_allowed,tools_received;
+static uint64_t tools_sent,tools_at;
+static void tools_reset(void) {
+    tools_host_ip=tools_sequence=tools_received_sequence=0;
+    tools_key_valid=tools_local_host=tools_allowed=tools_received=0;
+    tools_sent=tools_at=0;memset(tools_key,0,sizeof tools_key);
+}
+static void developer_reset(void) {
+    memset(developer_peers,0,sizeof developer_peers);developer_count=0;developer_sent=0;developer_key_valid=0;
+    tools_reset();
+}
+static int developer_control(const struct sockaddr_in *address,const unsigned char *data,int length)
+{
+    if(length>=8&&!memcmp(data,"TSFTOOL1",8)) {
+        if(length!=24||data[20]>1||data[21]||data[22]||data[23]||
+           !tools_key_valid||tools_local_host||address->sin_addr.s_addr!=tools_host_ip||memcmp(data+8,tools_key,8))return 1;
+        uint32_t sequence;memcpy(&sequence,data+16,4);sequence=ntohl(sequence);
+        if(!sequence||(tools_received&&(int32_t)(sequence-tools_received_sequence)<=0))return 1;
+        if(!tools_received||sequence!=tools_received_sequence) {
+            tools_received_sequence=sequence;tools_allowed=data[20];tools_received=1;
+        }
+        tools_at=net_milliseconds();return 1;
+    }
+    if(length<8 || memcmp(data,"TSFDEV1",8))return 0;
+    if(length!=20 || data[16]>1 || data[17] || data[18] || data[19])return 1;
+    unsigned slot;
+    if(!developer_key_valid || memcmp(developer_key,data+8,8))return 1;
+    for(slot=0;slot<developer_count;slot++)if(developer_allowed[slot]==address->sin_addr.s_addr)break;
+    if(slot==developer_count)return 1;
+    developer_peers[slot].ip=address->sin_addr.s_addr;developer_peers[slot].enabled=data[16];
+    memcpy(developer_peers[slot].key,data+8,8);developer_peers[slot].at=net_milliseconds();
+    return 1;
+}
+int pc_network_tools_policy(const PcDeveloperPeer *roster,unsigned count,int host_allowed)
+{
+    if(count>16u||(count&&!roster))return 0;
+    net_lock(&network_lock);
+    unsigned char key[8]={0};uint32_t host_ip=0;int valid=0,local_host=0;
+    for(unsigned i=0;i<count;i++)if(roster[i].host) {
+        host_ip=roster[i].ip;local_host=!!roster[i].local;
+        if(local_host&&local_session_registered){memcpy(key,local_session_id,8);valid=1;}
+        else if(!local_host)for(unsigned j=0;j<peer_count;j++)if(peers[j].ip==host_ip){memcpy(key,peers[j].key,8);valid=1;break;}
+        break;
+    }
+    if(valid!=tools_key_valid||host_ip!=tools_host_ip||local_host!=tools_local_host||memcmp(key,tools_key,8)) {
+        tools_reset();tools_key_valid=valid;tools_local_host=local_host;tools_host_ip=host_ip;memcpy(tools_key,key,8);
+    }
+    uint64_t now=net_milliseconds();
+    if(local_host&&valid) {
+        int changed=tools_allowed!=!!host_allowed;tools_allowed=!!host_allowed;
+        if(initialized&&(changed||!tools_sent||now-tools_sent>=500)) {
+            tools_sent=now;if(!++tools_sequence)++tools_sequence;
+            unsigned char data[24]={0};memcpy(data,"TSFTOOL1",8);memcpy(data+8,key,8);
+            uint32_t sequence=htonl(tools_sequence);memcpy(data+16,&sequence,4);data[20]=(unsigned char)tools_allowed;
+            for(unsigned i=0;i<count;i++)if(!roster[i].local&&roster[i].ip&&roster[i].ip!=local_ip) {
+                struct sockaddr_in to={0};to.sin_family=AF_INET;to.sin_addr.s_addr=roster[i].ip;
+                for(unsigned j=0;j<MAX_SOCKETS;j++)if(sockets[j].socket!=INVALID_SOCKET&&sockets[j].port) {
+                    to.sin_port=htons((uint16_t)sockets[j].port);send_packet(&sockets[j],(const char *)data,sizeof data,0,&to);
+                }
+            }
+        }
+    }
+    int allowed=valid&&(local_host?tools_allowed:tools_received&&now-tools_at<=3000&&tools_allowed);
+    net_unlock(&network_lock);return allowed;
+}
+unsigned pc_network_developer_lobby(const PcDeveloperPeer *roster,unsigned count,int enabled,char *names,size_t bytes)
+{
+    if(!names || !bytes)return 0;names[0]=0;unsigned mask=0;
+    if(count>16u || (count&&!roster))return 0;
+    net_lock(&network_lock);
+    unsigned char key[8]={0};int key_valid=0;
+    for(unsigned i=0;i<count;i++)if(roster[i].host) {
+        if(roster[i].local) {if(local_session_registered){memcpy(key,local_session_id,8);key_valid=1;}}
+        else for(unsigned peer=0;peer<peer_count;peer++)if(peers[peer].ip==roster[i].ip) {memcpy(key,peers[peer].key,8);key_valid=1;break;}
+        break;
+    }
+    if(key_valid!=developer_key_valid || memcmp(key,developer_key,8)) {
+        memset(developer_peers,0,sizeof developer_peers);developer_sent=0;
+        memcpy(developer_key,key,8);developer_key_valid=key_valid;
+    }
+    uint32_t allowed[16];unsigned total=0;
+    for(unsigned i=0;i<count;i++)if(!roster[i].local && roster[i].ip && roster[i].ip!=local_ip) {
+        unsigned j;for(j=0;j<total;j++)if(allowed[j]==roster[i].ip)break;
+        if(j==total)allowed[total++]=roster[i].ip;
+    }
+    if(total!=developer_count || memcmp(allowed,developer_allowed,total*sizeof *allowed)) {
+        /* Carry only still-admitted addresses; fresh session keys are checked below. */
+        memset(developer_peers,0,sizeof developer_peers);developer_sent=0;
+        memcpy(developer_allowed,allowed,total*sizeof *allowed);developer_count=total;
+    }
+    uint64_t now=net_milliseconds();
+    if(initialized && developer_key_valid && (!developer_sent || now-developer_sent>=500)) {
+        developer_sent=now;
+        /* Admission and the current host session are sufficient: the host
+         * need not have a discovery/XNADDR cache entry for joining guests. */
+        for(unsigned i=0;i<developer_count;i++) {
+            unsigned char data[20]={0};memcpy(data,"TSFDEV1",8);memcpy(data+8,developer_key,8);data[16]=!!enabled;
+            struct sockaddr_in to={0};to.sin_family=AF_INET;to.sin_addr.s_addr=developer_allowed[i];
+            for(unsigned j=0;j<MAX_SOCKETS;j++)if(sockets[j].socket!=INVALID_SOCKET && sockets[j].port) {
+                to.sin_port=htons((uint16_t)sockets[j].port);
+                send_packet(&sockets[j],(const char *)data,sizeof data,0,&to);
+            }
+        }
+    }
+    for(unsigned i=0;i<count;i++) {
+        int active=(roster[i].local || roster[i].ip==local_ip)?!!enabled:0;
+        for(unsigned j=0;!active && j<developer_count;j++)if(developer_peers[j].ip==roster[i].ip &&
+            developer_peers[j].enabled && now-developer_peers[j].at<=3000) {
+            if(developer_key_valid && !memcmp(developer_key,developer_peers[j].key,8))active=1;
+        }
+        if(active)mask|=1u<<i;
+        if(active && roster[i].name[0]) {
+            size_t used=strlen(names);snprintf(names+used,bytes-used,"%s%.64s",used?", ":"",roster[i].name);
+        }
+    }
+    net_unlock(&network_lock);return mask;
+}
+
 typedef struct { unsigned role,humans,bots;uint32_t host_ip,match; } BotContext;
 static BotContext bot_context;
 static PcNetworkBotState bot_pending[16];
@@ -344,7 +475,7 @@ static int receive_packet(NetSocket *s,char *payload,int capacity,int flags,stru
             }
             if(ntohs(destination)!=s->port) continue;
             memcpy(&address.sin_addr.s_addr,packet+56,4); memcpy(&address.sin_port,packet+64,2);
-            if(bot_control(&address,packet+BRIDGE_HEADER,n-BRIDGE_HEADER)) continue;
+            if(developer_control(&address,packet+BRIDGE_HEADER,n-BRIDGE_HEADER) || bot_control(&address,packet+BRIDGE_HEADER,n-BRIDGE_HEADER)) continue;
             if(n-BRIDGE_HEADER>capacity) return (int)failure(WSAEMSGSIZE);
             memcpy(&address.sin_addr.s_addr,packet+56,4); memcpy(&address.sin_port,packet+64,2);
             memcpy(payload,packet+BRIDGE_HEADER,n-BRIDGE_HEADER); if(from) *from=address;
@@ -355,7 +486,7 @@ static int receive_packet(NetSocket *s,char *payload,int capacity,int flags,stru
             if(!rejected++) fprintf(stderr,"[PC-NET] Dropped incompatible/unframed peer traffic\n");
             continue;
         }
-        if(bot_control(&address,packet+HEADER,n-HEADER)) continue;
+        if(developer_control(&address,packet+HEADER,n-HEADER) || bot_control(&address,packet+HEADER,n-HEADER)) continue;
         if(n-HEADER>capacity) return (int)failure(WSAEMSGSIZE);
         latency_probe(s,&address);
         if(received_logs++<12) fprintf(stderr,"[PC-NET] Receive %u <- %08x:%u, %d bytes\n",

@@ -1,3 +1,9 @@
+[Tools](developer-tools-integration.md).
+
+Developer Tools inline-warning coverage: [launcher](launcher.md).
+
+[Developer Tools integration](developer-tools-integration.md).
+
 [Window mode](video-options.md).
 
 [Profile tests](multiplayer-exit.md#validation): saves, late lobby saves, checksum/write errors.
@@ -11,6 +17,21 @@ Mac storage tests: see launcher.md.
 `test_lfs_checkout.py`: pointer clones, opt-in LFS pull, preserved packs.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build/tests ([MSAA](smaa.md))
+
+`test_controller_profile.py` now executes the real native key/pad guards and
+runtime key dispatcher, requiring neutral gameplay keys during freecam while
+raw camera keys remain held. Its shared sampler fixture tests blocked/resumed
+automatic and assigned pads for both host defines. Existing parser, ownership,
+disconnect and focus cases remain; its current shared settings action constants
+are included explicitly. The suite already runs in runtime-patches CI, alongside
+the Developer Tools flight/mouse fixture. Patch-order tail gains2630 after2620.
+
+`tests/input/test_developer_tools.py` already runs in runtime-patches CI. Its
+sidebar fixture now clicks drawn tab/dock centers at 1x/1.5x/2x drawable ratios,
+both docks and independent vertical scaling, and checks input-only frames retain
+the painted extent. Non-Windows fixture-local lock/atomic boundaries permit
+standalone execution without linking the entire runtime. This is synthetic
+shared hit-testing coverage, not physical Retina mouse or scene acceptance.
 
 [Linux](linux-game.md); [LAN](system-link.md).
 
@@ -878,32 +899,22 @@ disabled state, and the actual value after closing/reopening the page (which
 reads tsfp_texture_is_4k). Capture resumed gameplay in both modes separately from
 frame-time measurements. The ineffective window command was removed.
 
-## Game release channels and maintenance publication (2026-10-22)
+[Further contracts and validation notes](build-test-continuation.md).
 
-`tools/release/release_channels.py` owns canonical X.Y.Z[-channel.N] package identity and
-the minimum launcher 1.3.0. `tools/release/release-version.py` writes an explicitly chosen
-VERSION only; no automatic increment/tag/publication. The next Stable source
-version is 0.3.2. Both game packagers validate identity before staging and emit
-release_channel in BUILD.json. Official packages continue optional texture delivery.
+The source identity also hashes verified font assets and the vendored rasterizer;
+TTF inputs keep binary bytes while text files retain line-ending normalization.
+The font metrics fixture compares semibold tracking with an independent browser
+measurement, and package tests remain asset-free host-contract checks.
 
-`publish-release.py` defaults to exact origin/main; --branch permits pushed feature
-previews and Stable release/ or hotfix/ branches with a published Stable ancestor.
-It validates monotonic versions within stable major/minor lines or exact preview
-base/channel series. Notes choose an ancestor in that series, falling back to
-Stable; unrelated/nonancestor experiments never become a baseline. Channel JSON
-records exact source and included/latest published Stable; a missing latest
-Stable is disclosed. --notes-file supplies reviewed feature notes for unmerged
-branches. Prepared package reuse includes the channel metadata; publication
-retains latest=false and existing package/installer/hash/rollback checks.
+Sidebar Video Settings extends the existing developer input and FOV fixtures:
+run `tests/input/test_developer_tools.py`, `tests/graphics/test_fov_settings.py`
+and final-target sidebar GPU cases. They check staged UI requests, native
+profile save, batch rollback and resolution Keep/timeout/close behavior.
 
-The release CI scope selects release_channels.py and release-version.py and
-existing test_publish_release.py covers their identity, preparation, branch,
-hotfix, unrelated-baseline and prepared-retry contracts using fake GitHub.
-LauncherSharedUiChecks covers shared channel selection/preferences/metadata;
-launcher_versions.cs covers paginated discovery. Run the existing Windows launcher
-suite and both-host CI. See docs/project/STATUS.md for measured local results; no runtime game
-behavior or generated guest code changed, and no game build/publication is
-established by these asset-free checks.
+The real-font fixture also evicts the full glyph cache and verifies that a
+tracked semibold title recreates identical pixels after video labels replace it.
+
+[Developer Tools integration](developer-tools-integration.md).
 
 Grouped Preview UI: GameChannelPickerPage.cs uses both hosts' *Page.cs includes.
 tests/launcher/launcher_shared_ui.cs covers tracks, Save state and launcher_saves.cs
@@ -911,12 +922,7 @@ tests/launcher/launcher_shared_ui.cs covers tracks, Save state and launcher_save
 tools/build/build-launcher.ps1 -Test. --render-preview uses synthetic tracks.
 No game build or publisher/tag-format change is required for this grouping.
 
-Local Windows artwork selection: build-launcher.ps1 resolves explicit image
-arguments first, then validates each build/launcher-art PNG against the shared
-artwork pin, then uses the existing private legacy fallback if no cached file
-exists. fetch-launcher-art.ps1 recovers the pinned banner/backdrop/logo without
-executing downloaded code. -RequireArtwork checks the selected resources; normal
-local rebuilds now reuse the same verified art as release CI when cached.
+[Local launcher artwork selection](build-test-details.md#local-launcher-artwork-selection).
 
 Beta publication (2026-10-23): release_channels.identity defaults to history parsing;
 publishing=True rejects alpha/preview/rc/legacy suffixes. Version preparation,

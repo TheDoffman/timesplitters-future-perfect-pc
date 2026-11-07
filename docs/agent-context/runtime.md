@@ -1,5 +1,8 @@
+[Tools](developer-tools-integration.md).
+
 [Full](video-options.md).
 [UI](controls-options.md); [Kill feed](../development/arcade-kill-feed.md).
+
 [Effect depth](native-effect-depth.md).
 [Linux](linux-game.md); [MSAA](smaa.md).
 [MP hooks](multiplayer-exit.md)

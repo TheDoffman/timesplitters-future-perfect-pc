@@ -1,0 +1,72 @@
+--- a/src/d3d/rhi.h
++++ b/src/d3d/rhi.h
+@@ -321,11 +321,15 @@
+      * with padding included in used_width. No GPU/OS window access. */
+     int (*text_bitmap)(void *context, const char *text, unsigned char *pixels,
+                        uint32_t width, uint32_t height, uint32_t *used_width);
++    int (*text_bitmap_styled)(void *context,const char *text,unsigned char *pixels,
++        uint32_t width,uint32_t height,uint32_t *used_width,uint32_t font_px,uint32_t weight);
+ } RhiHost;
+ void rhi_set_host(const RhiHost *host);
+ void rhi_pump_events(void);
+ int rhi_text_bitmap(const char *text, unsigned char *pixels,
+                     uint32_t width, uint32_t height, uint32_t *used_width);
++int rhi_text_bitmap_styled(const char *text,unsigned char *pixels,uint32_t width,
++    uint32_t height,uint32_t *used_width,uint32_t font_px,uint32_t weight);
+ int rhi_drawable_size(void *window, uint32_t *width, uint32_t *height);
+ 
+ /* Chooses the backend before the device is created. NULL or "" means
+--- a/src/d3d/rhi.c
++++ b/src/d3d/rhi.c
+@@ -88,6 +88,40 @@
+         if(ok){memcpy(pixels,bits,(size_t)width*height*4);used=(uint32_t)extent.cx+(height==32?4:12);if(used>width)used=width;}
+         DeleteDC(dc);DeleteObject(bitmap);DeleteObject(font);
+         if(!ok || !used)return 0;
++#else
++        return 0;
++#endif
++    }
++    *used_width=used;return 1;
++}
++
++/* Sidebar fonts rasterize at the final physical size; ordinary HUD fonts keep
++ * the existing callback and metrics. Coverage is grayscale, not ClearType RGB. */
++int rhi_text_bitmap_styled(const char *text,unsigned char *pixels,uint32_t width,
++    uint32_t height,uint32_t *used_width,uint32_t font_px,uint32_t weight)
++{
++    uint32_t used=0;
++    if(!text||!pixels||!used_width||!width||width>16384||!height||height>4096||font_px<6||font_px>96||weight<100||weight>900)return 0;
++    if(g_host.text_bitmap_styled) {
++        if(!g_host.text_bitmap_styled(g_host.context,text,pixels,width,height,&used,font_px,weight)||!used||used>width)return 0;
++    } else {
++#if defined(_WIN32)
++        HDC dc=CreateCompatibleDC(NULL);BITMAPINFO bi={0};void *bits=NULL;
++        if(!dc)return 0;
++        bi.bmiHeader.biSize=sizeof bi.bmiHeader;bi.bmiHeader.biWidth=(LONG)width;
++        bi.bmiHeader.biHeight=-(LONG)height;bi.bmiHeader.biPlanes=1;bi.bmiHeader.biBitCount=32;bi.bmiHeader.biCompression=BI_RGB;
++        HBITMAP bitmap=CreateDIBSection(dc,&bi,DIB_RGB_COLORS,&bits,NULL,0);
++        HFONT font=CreateFontW(-(int)font_px,0,0,0,(int)weight,FALSE,FALSE,FALSE,
++            DEFAULT_CHARSET,OUT_TT_PRECIS,CLIP_DEFAULT_PRECIS,ANTIALIASED_QUALITY,VARIABLE_PITCH|FF_SWISS,L"Segoe UI");
++        if(!bitmap||!font){DeleteDC(dc);if(bitmap)DeleteObject(bitmap);if(font)DeleteObject(font);return 0;}
++        SelectObject(dc,bitmap);SelectObject(dc,font);
++        SetBkMode(dc,OPAQUE);SetBkColor(dc,RGB(0,0,0));SetTextColor(dc,RGB(255,255,255));
++        wchar_t wide[384];int count=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,text,-1,wide,384);
++        RECT rect={0,0,(LONG)width,(LONG)height};SIZE extent={0};memset(bits,0,(size_t)width*height*4);
++        int ok=count>0&&GetTextExtentPoint32W(dc,wide,count-1,&extent)&&ExtTextOutW(dc,2,2,ETO_OPAQUE,&rect,wide,(UINT)(count-1),NULL);
++        GdiFlush();
++        if(ok){memcpy(pixels,bits,(size_t)width*height*4);used=(uint32_t)extent.cx+4;if(used>width)used=width;}
++        DeleteDC(dc);DeleteObject(bitmap);DeleteObject(font);if(!ok||!used)return 0;
+ #else
+         return 0;
+ #endif
+--- a/src/d3d/d3d8_overlay.c
++++ b/src/d3d/d3d8_overlay.c
+@@ -325,7 +325,7 @@
+     PcDeveloperLine lines[PC_DEVELOPER_MAX_DRAW];
+     unsigned count=developer_lines?developer_lines(width,height,lines,PC_DEVELOPER_MAX_DRAW):0;
+     if(count) {
+-        int changed=pc_developer_canvas_update(&developer_canvas,lines,count,rhi_text_bitmap);
++        int changed=pc_developer_canvas_update(&developer_canvas,lines,count,rhi_text_bitmap_styled);
+         active=&overlays[2];
+         if(changed>=0 && developer_canvas.pixels && overlay_create()) {
+             if(canvas_texture_width!=developer_canvas.width || canvas_texture_height!=developer_canvas.height) {

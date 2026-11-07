@@ -141,8 +141,23 @@ void pc_kill_feed_allocate(void (*original)(void));
 #endif
 
 void pc_graphics_world_finish(void (*original)(void));
+void pc_developer_camera_guest(void (*original)(void));
 int pc_graphics_hud_begin(void);
 void pc_graphics_hud_end(void);
+
+int pc_developer_damage_blocked(void);
+void pc_developer_ammo_guest(void (*original)(void));
+void pc_developer_world_visibility(void);
+void pc_developer_viewmodel_draw(void (*original)(void));
+void pc_developer_grenade_guest(void (*original)(void));
+void pc_developer_draw_body(void);
+
+void pc_developer_lobby_guest(void);
+
+void pc_developer_cutscene_guest(void (*original)(void));
+
+void pc_developer_lobby_name(void (*original)(void));
+void pc_developer_lobby_text(void (*original)(void));
 
 void pc_multiplayer_exit_action(void (*original)(void),unsigned action);
 void pc_multiplayer_exit_menu(void (*original)(void));

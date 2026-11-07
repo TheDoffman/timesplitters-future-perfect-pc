@@ -49,9 +49,9 @@ namespace TimeSplitters.Launcher
         string savedDraft;
         readonly Slider fov;
         readonly TextBox sensitivity, width, height, discordId;
-        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled, enhancedTextures, ambientOcclusion, shaderCache;
+        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, developerTools, discordEnabled, enhancedTextures, ambientOcclusion, shaderCache;
         readonly ComboBox device, resolution, aspect, scale, filtering, frameRate, languagePack, msaa, edgeSmoothing, supersampling;
-        readonly TextBlock performanceAdvice;
+        readonly TextBlock performanceAdvice,developerToolsShortcut;
         readonly StackPanel consoleScalePanel;
         readonly Button[,] bindingButtons = new Button[GameSettings.Actions.Length,GameSettings.BindingSlots];
         static readonly string[] Devices = { "keyboard", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "none" };
@@ -279,6 +279,11 @@ namespace TimeSplitters.Launcher
                 Text("VRR also needs monitor and driver support. A fixed-refresh display may tear.",12));
             graphics.Children.Add(texturePanel);
             var general=new StackPanel();
+            var developer=PageTheme.Section(general,"Developer Tools","Enable the in-game overlay. Its shortcut can be changed in Key bindings.");
+            developerTools=Check("Enable Developer Tools",model.DeveloperToolsEnabled);developerTools.Name="DeveloperToolsEnabled";developer.Children.Add(developerTools);
+            var developerWarning=Text("Warning: Usage of Developer Tools can cause instability and unintended behavior. Use with caution.",12);
+            developerWarning.Name="DeveloperToolsWarning";developerWarning.Foreground=PageTheme.Brush("#E8BE78");developerWarning.Margin=new Thickness(0,6,0,4);developer.Children.Add(developerWarning);
+            developerToolsShortcut=Text("",12);developerToolsShortcut.Name="DeveloperToolsShortcut";developerToolsShortcut.Foreground=Muted;developer.Children.Add(developerToolsShortcut);
             var startup=PageTheme.Section(general,"Startup","");
             skipSplashes=Check("Skip startup splash screens",model.SkipStartupSplashes);skipSplashes.Name="SkipStartupSplashes";startup.Children.Add(skipSplashes);
             var startupHint=Text("Story cutscenes still play.",12);startupHint.Foreground=Muted;startupHint.Margin=new Thickness(0,8,0,0);startup.Children.Add(startupHint);
@@ -312,7 +317,7 @@ namespace TimeSplitters.Launcher
             tabs.Items.Add(new TabItem { Header="View & HUD",Content=Scroll(viewHud) });
             tabs.Items.Add(new TabItem { Header="General",Content=Scroll(general) });
             foreach(var entry in new[]{sensitivity,width,height,discordId})Ui.TextChanged(entry,RefreshSaveState);
-            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,discordEnabled,enhancedTextures,enhancedAudio,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
+            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,developerTools,discordEnabled,enhancedTextures,enhancedAudio,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
             foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack,msaa,edgeSmoothing,supersampling})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
             Ui.ValueChanged(fov,RefreshSaveState);
         }
@@ -321,7 +326,7 @@ namespace TimeSplitters.Launcher
         {
             return Json.Encode(new object[]{sensitivity.Text,width.Text,height.Text,discordId.Text,
                 enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,ambientOcclusion.IsChecked,shaderCache.IsChecked,
-                skipSplashes.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
+                skipSplashes.IsChecked,developerTools.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
                 device.SelectedIndex,localDevices.Select(x=>x.SelectedIndex).ToArray(),scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
                 (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
@@ -333,7 +338,13 @@ namespace TimeSplitters.Launcher
             status.Text=save.IsEnabled?"Unsaved changes. Save to apply on your next launch.":"Settings saved. Changes apply on your next launch.";
         }
         static string KeyName(string token) { return GameSettings.BindingLabel(token); }
-        void RefreshBindings() { for(int i=0;i<GameSettings.Actions.Length;i++) { var keys=model.Binding(i); for(int j=0;j<GameSettings.BindingSlots;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } RefreshSaveState(); }
+        void RefreshBindings() { for(int i=0;i<GameSettings.Actions.Length;i++) { var keys=model.Binding(i); for(int j=0;j<GameSettings.BindingSlots;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } UpdateDeveloperToolsShortcut();RefreshSaveState(); }
+        void UpdateDeveloperToolsShortcut()
+        {
+            if(developerToolsShortcut==null)return;
+            var names=model.Binding(Array.IndexOf(GameSettings.Actions,"developer_tools")).Select(KeyName).Where(name=>name!="Unbound").ToArray();
+            developerToolsShortcut.Text="Press "+(names.Length>0?String.Join(" / ",names):"the shortcut (currently unbound)")+" to open";
+        }
         public void SelectTab(int index) { tabs.SelectedIndex=index; }
         void UpdateTextureDetails()
         {
@@ -475,6 +486,7 @@ namespace TimeSplitters.Launcher
                 model.EnhancedAudio=enhancedAudio.IsChecked==true;
                 model.LanguagePack=GameSettings.LanguagePacks[languagePack.SelectedIndex];
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
+                model.DeveloperToolsEnabled=developerTools.IsChecked==true;
                 model.DiscordEnabled=discordEnabled.IsChecked==true;model.DiscordApplicationId=discordId.Text.Trim();
                 model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem);
                 model.Save();UpdateTextureDetails();savedDraft=Draft();RefreshSaveState();

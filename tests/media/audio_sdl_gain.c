@@ -42,6 +42,21 @@ int main(int argc,char **argv)
             assert(recomp_audio_output_set_volume(slots[i],0));
             assert(fabsf(streams[i].gain-expected)<0.00001f); /* no cumulative reduction */
         }
+        SDL_AudioStream *movie=voices[RECOMP_AUDIO_SLOT_MOVIE].stream;int queued=movie->queued;
+        recomp_audio_output_movie_speed(2.f);assert(movie->speed==2.f && movie->queued==queued && voices[RECOMP_AUDIO_SLOT_MOVIE].stream==movie);
+        recomp_audio_output_movie_speed(.5f);assert(movie->speed==.5f && movie->queued==queued);
+        recomp_audio_output_movie_speed(1.f);
+        assert(recomp_audio_output_game_time(1000,0)==1000);
+        recomp_audio_output_game_speed(2.f);assert(voices[0].stream->speed==2.f);
+        assert(recomp_audio_output_game_time(2000,0)==3000);
+        recomp_audio_output_game_speed(.5f);assert(voices[0].stream->speed==.5f);
+        assert(recomp_audio_output_game_time(3000,0)==3500);
+        assert(recomp_audio_output_game_time(2999,0)==3500); /* Delayed worker sample. */
+        assert(recomp_audio_output_game_time(3002,0)==3501);
+        assert(recomp_audio_output_game_time(4000,1)==4000); /* Independent tick domain. */
+        assert(recomp_audio_output_game_time(5000,1)==4500);
+        recomp_audio_output_game_speed(1.f);assert(voices[0].stream->speed==1.f);
+
         assert(opened==1);
         const int16_t tone[]={12000,-12000};int16_t heard[4];
         recomp_audio_output_set_spatial(3,-1,1);

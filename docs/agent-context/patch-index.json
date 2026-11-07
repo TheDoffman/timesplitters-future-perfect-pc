@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "f4c4f3fbbb85519a69374dbf61e5dc1a3f248a6556fdcf7ccae01c97f8e666f9",
+  "loaderSha256": "252731b3dec628c79d765691e96602f63b18d1e7bd35344666f02cb514028f1f",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3570,6 +3570,121 @@
         "src/hle/hle_xmv_play.c",
         "src/input/CMakeLists.txt",
         "src/video/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2520-developer-tools-overlay.patch",
+      "path": "patches/diagnostics/2520-developer-tools-overlay.patch",
+      "sha256": "fda0cf5fd032b02a1548c18ccc11a714ca7f2fc4c6b0007ff82557fbe61b876a",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_overlay.c",
+        "src/d3d/d3d8_overlay.h",
+        "src/hle/hle_d3d8.c",
+        "src/input/CMakeLists.txt",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2530-developer-tools-controls-and-cheats.patch",
+      "path": "patches/diagnostics/2530-developer-tools-controls-and-cheats.patch",
+      "sha256": "eac0b865580ae3f3620bb00ae242130e52f6a9ca58992fa36cdcc92a38fb3d95",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2540-developer-tools-settings-and-shortcut.patch",
+      "path": "patches/diagnostics/2540-developer-tools-settings-and-shortcut.patch",
+      "sha256": "47eb18ce894e500ab3b26e838b01a7568791def671aef045bbfb4be0f06e17ab",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2550-developer-tools-cutscene-speed.patch",
+      "path": "patches/diagnostics/2550-developer-tools-cutscene-speed.patch",
+      "sha256": "ca72f2b8e2bf2612c2ef8919d142eeb1a4ae8e634b23d1acdbe04f8d9f41a16d",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_xmv_play.c",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2560-developer-tools-ui-audio-and-bindings.patch",
+      "path": "patches/diagnostics/2560-developer-tools-ui-audio-and-bindings.patch",
+      "sha256": "f9e72ed64caf58484737ddb5a14ded20a48f3b6970798b5dee0208921f617e21",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_d3d8.c",
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2570-developer-tools-game-audio-clock.patch",
+      "path": "patches/diagnostics/2570-developer-tools-game-audio-clock.patch",
+      "sha256": "d48e54e0a2dd75c9f1b5a57d43bf852cd12b3aa345016d3940cd3693dd2ffe7f",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_dsound.c",
+        "src/hle/hle_dsound_stream.c"
+      ]
+    },
+    {
+      "name": "2580-developer-tools-lobby-wrench.patch",
+      "path": "patches/diagnostics/2580-developer-tools-lobby-wrench.patch",
+      "sha256": "c81237d3379b8c808f099fb4467d9357a7f8030d5f719c55b2df7c2846a18329",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "2590-developer-tools-optional-audio-speed.patch",
+      "path": "patches/diagnostics/2590-developer-tools-optional-audio-speed.patch",
+      "sha256": "55f094a7155fc5e8c5d8c128a373c7376358b2d68ae2f7170a769788efaaf4bb",
+      "targets": [
+        "src/hle/hle_xmv_play.c"
+      ]
+    },
+    {
+      "name": "2600-developer-tools-sidebar-renderer.patch",
+      "path": "patches/diagnostics/2600-developer-tools-sidebar-renderer.patch",
+      "sha256": "4f56be81f9fdf76904df4aec9c3e8cdda77b675badf2cbf1587e5474d3778613",
+      "targets": [
+        "src/d3d/d3d8_overlay.c",
+        "src/d3d/rhi.c"
+      ]
+    },
+    {
+      "name": "2610-developer-tools-sidebar-refinement.patch",
+      "path": "patches/diagnostics/2610-developer-tools-sidebar-refinement.patch",
+      "sha256": "ef7f501304f4d160289376af442b5cf75fbf5fcb75c1fb3650eca44fc4e1c07c",
+      "targets": [
+        "src/d3d/d3d8_overlay.c",
+        "src/d3d/rhi.c",
+        "src/d3d/rhi.h"
+      ]
+    },
+    {
+      "name": "2620-developer-tools-shared-font.patch",
+      "path": "patches/diagnostics/2620-developer-tools-shared-font.patch",
+      "sha256": "632758e9c5c8d776eda5aca9b2d8ac4d60e140e1169865c97a4435e6d48ce0ba",
+      "targets": [
+        "src/d3d/CMakeLists.txt",
+        "src/d3d/d3d8_overlay.c",
+        "src/input/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "2630-developer-tools-native-player-input.patch",
+      "path": "patches/input/2630-developer-tools-native-player-input.patch",
+      "sha256": "f2f7e2eae77df09d5c309158a19e2ccf9e62fa58f43dcd0f6a6f6c0ede1313f2",
+      "targets": [
+        "src/input/input_bindings.c"
       ]
     },
     {

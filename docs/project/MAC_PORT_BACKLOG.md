@@ -1,3 +1,111 @@
+Inline Developer Tools launcher warning (uncommitted after f8d3bae6): implemented,
+native acceptance pending. Shared SettingsPage uses the existing TextBlock/brush
+adapters for warning and assigned-shortcut guidance beneath the checkbox. No
+new host adapter or OS service is needed; WPF checks pass. Mac/Linux launcher
+build/visual validation and native interaction remain pending; see STATUS.md.
+
+Opt-in Developer Tools / match policy (committed aa81002d): implemented,
+native acceptance pending. Shared developer access, native match Options row,
+LAN/Online TSFTOOL1 policy and launcher page/model require no duplicate host logic.
+The Cocoa help text describes enabling in Extras or the launcher and shortcut access. Existing
+native networking/input adapters are reused; no new OS service is needed.
+Windows results are in [STATUS](STATUS.md). Remaining Mac/Linux acceptance: build,
+host/guest policy across lobby/start/revocation, keyboard/camera input, renderer
+and launcher visual checks. Windows/socket fixtures do not prove native gameplay.
+
+Sidebar Video Settings (uncommitted after45b1b7b8): implemented, native acceptance
+pending. Shared pc_video_sidebar.h/.inc and pc_video_sidebar_ui.inc reuse the
+existing native display, graphics and settings adapters with a value-only
+guest-frame mailbox. Input/Video categories, selectors, staged FOV and Apply/
+Revert require no duplicate platform logic. Legacy GL retains unsupported
+preferences and disables effect controls. Windows checks are in [STATUS](STATUS.md).
+Remaining: Mac/Linux build/link, resolution enumeration/preview/restore, native
+profile subtitle save, fullscreen, Retina/DPI layout and Vulkan/legacy GL visuals.
+
+Developer Tools shared typography (uncommitted after f73c38e9): implemented,
+native acceptance pending. Shared src/graphics/pc_developer_font.c measures and
+rasterizes embedded Selawik/Cousine with one native C implementation. Patch2620
+links it into common RHI/input owners; legacy GL uses the same callback. Host
+font choice no longer changes sidebar baselines, weights or text measurement.
+All package scripts retain OFL/stb notices. No duplicated Mac/Linux layout or
+font logic is needed. Windows evidence is in [STATUS](STATUS.md). Remaining:
+native build/link, font embedding/package notices, Retina/fractional DPI, glyph
+coverage, layout/scroll and actual Vulkan/legacy GL captures. Shared source and
+Windows fixtures do not prove pixel parity on untested hosts.
+
+Sidebar visual refinement (uncommitted after f73c38e9): implemented, native
+acceptance pending. Shared layout/canvas now use host DPI, final-size styled glyphs,
+geometry icons and continuous cards. SDL supplies display scale; CoreText and
+FreeType provide sized/weighted font coverage through the optional styled RHI
+callback. Legacy GL adds a state-preserving straight-alpha canvas compositor so
+transparency/shadows have the same policy as RHI. No host gameplay logic is
+copied. Windows checks and visual evidence are in [STATUS](STATUS.md). Remaining
+native acceptance: build/link, font weight/baselines, Retina and monitor-DPI
+changes, alpha/shadow compositing plus GL state restoration and existing scene
+rendering. Windows checks cannot verify these native adapters.
+
+Developer Tools sidebar (uncommitted after f73c38e9): implemented, native acceptance
+pending. Shared src/interface/pc_developer_sidebar.inc and
+src/graphics/pc_developer_canvas.h own layout, input and compositing once for all
+hosts. Patch2600 uploads the canvas through common RHI; legacy GL and Cocoa/Linux
+font adapters are updated, and SDL supplies fullscreen status. Existing native
+capture/settings paths remain in use. No duplicated platform policy is needed.
+Windows build, input/canvas/native-Extras and real D3D11 presentation checks pass;
+see [STATUS](STATUS.md). Remaining native Mac/Linux acceptance: build/link, font
+legibility, pointer/DPI alignment, dock/scroll/search/value/binding input, warning
+footer and final-target presentation on Vulkan/legacy GL. This Windows validation
+does not establish native visual parity or physical input support.
+
+Latest Developer Tools notes (uncommitted): one native multiline warning row and
+session audio-scaling toggle are shared source changes. Patch2590 routes XMV
+audio through the shared toggle; existing XAudio/SDL voice-rate paths are reused.
+Windows build, focused checks, native warning/audio-toggle UI and loopback lobby
+wrench acceptance pass; see [STATUS](STATUS.md). Native Mac/Linux UI and actual audio/video
+acceptance remain pending. No additional platform policy or preference reset.
+
+Further Developer Tools notes (uncommitted after a7271130): shared native submenu,
+37-action binding model, owned-body opaque draw, native lobby wrench and dormant
+footer are implemented in src/interface, src/input and src/network. Patches2560-
+2580 extend shared runtime voice rates/media clocks and lobby draw wrappers;
+src/native/audio_sdl.c supplies the same in-place SDL rate/clock contract. No new
+Mac feature policy is duplicated. Windows acceptance is tracked in [STATUS](STATUS.md).
+Status: implemented, native acceptance pending. Native Mac/Linux builds, submenu
+layout/input, physical audio timing, body opacity and actual lobby wrench acceptance
+remain unrun; existing settings/saves and unsupported preferences are preserved.
+
+Developer Tools revised notes (included in this revision after906a2c8e): shared opt-in,
+native Extras selector, assigned shortcut/warning, current-session named lobby
+metadata, native cinematic clock and near-eye fade scope are implemented once.
+Windows XAudio and SDL movie streams change rate without replacing queued
+voices. Cocoa uses the shared binding model. No new host policy is duplicated.
+Windows Build12, launcher and affected fixtures pass; bounded native movie rates
+and Online/System Link disabled-client notices are verified in [STATUS](STATUS.md).
+Native Mac/Linux build, UI, movie/voice timing, first-level body opacity and
+physical Online/System Link acceptance remain pending. Preserve settings/saves;
+run isolated native checks before marking those hosts verified.
+
+Developer Tools notes follow-up (committed906a2c8e after af616873): shared configured flight,
+weapon routing, HUD/viewport masks, held speed, God/ammo services and patch2530
+need no duplicated host gameplay implementation. Windows focused fixtures pass;
+Windows Build and bounded weapon/cheat/speed/flight acceptance pass; native
+Mac/Linux build and gameplay checks remain pending; see [STATUS](STATUS.md).
+
+## Developer Tools overlay - implemented, native acceptance pending
+
+Committed locally as af616873 on developer-tools-overlay, based on d2d2c8d5. Shared
+`src/interface/pc_developer.c`, `pc_developer_guest.inc` and clock policy provide
+F1 overlay, PC Settings, HUD/watermark toggles, flight, Story checkpoint advance
+and game speed. Windows/SDL adapters own capture, fullscreen and log operations.
+Common RHI and native legacy GL draw rows and suppress HUD draws while retaining
+guest logic. No separate Mac gameplay implementation is required; existing
+F2/F12 settings remain available. Windows Build, CPU/GPU checks and bounded Story/menu acceptance passed; see
+[STATUS](STATUS.md).
+Native Mac/Linux build and gameplay acceptance remain pending: F1 isolation,
+settings/persistence, focus/fullscreen/pointer scaling, original/native rates,
+flight geometry and camera return/visibility, HUD/watermark recovery, Story
+checkpoint restoration/final ending, bracket repeats and pause. Windows CPU
+fixtures do not verify these hosts. Use isolated saves/settings for checks.
+
 ## Fullscreen Video option — native acceptance pending
 
 Local feature/fullscreen-options after5c5acf91: shared pc_display_menu.c adds
@@ -9970,6 +10078,13 @@ host doubles; the SDL case fails without2306. Physical native Mac gameplay and
 listening remain pending. Windows FPS limits/residual underruns are in STATUS;
 release publication is pending. This does not change the Enhanced Audio beta.
 
+Visibility switches HUD & UI and Version watermark now live in
+Settings > Video Settings > View & HUD, with no Tools HUD category. These remain
+immediate session settings (not staged video drafts), usable while the host
+disables Tools. Host policy polling preserves explicit HUD/watermark choices;
+revoking an active free camera still restores its automatically hidden HUD.
+The input fixture checks placement and live updates under denied host policy.
+
 Linux launcher icon/storage follow-up (fix/linux-launcher-icon, uncommitted): Linux windows use the existing embedded launcher icon; Mac bundle icon handling is unchanged. Shared destination-volume free-space checks replace filesystem-root checks in install/import and diagnostics. Native failure dialogs now also show on Home. Windows/Linux validation is recorded in STATUS; native Mac regression and physical Steam Deck acceptance remain pending.
 
 
@@ -9981,3 +10096,22 @@ native Mac/Linux build worker settings are retained. This is shared Python polic
 no separate Mac adapter is needed. Prior PR #508 measurements remain historical in
 STATUS. Focused compiler checks cover the revert; fresh native Mac/Linux full-build
 memory, timing and gameplay acceptance remain unmeasured.
+
+Developer Tools free-camera player input (uncommitted after819489f4): implemented,
+native gameplay acceptance pending. Shared patch2630 routes SDL keyboard sampling
+through the existing gameplay guard and extends the existing pad gate to native
+sampling; raw keys/mouse remain available to the camera. Windows already guards
+keyboard input and retains its pad policy; Mac/Linux reuse the same contracts.
+No new OS capability or guest-code regeneration is needed. Tests cover actual
+native keyboard dispatch and both host sampler branches; measured build/test
+evidence is in [STATUS](STATUS.md). Physical camera-only gameplay and native
+controller/Windows/Linux host checks remain pending.
+
+Developer Tools Retina pointer alignment (uncommitted after a8d2e47e): implemented,
+native acceptance pending. Shared `src/interface/pc_developer_sidebar.inc` maps
+window-space pointers to the painted drawable before DPI/docking hit testing;
+Windows' equal-size path remains unchanged. Mac SDL already provides logical
+pointer bounds; RHI/legacy GL provide physical canvas bounds. No additional
+adapter is needed. Synthetic Mac compilation/execution covers fractional/Retina
+ratios and both docks; see [STATUS](STATUS.md). Physical clicks, monitor changes
+and Windows/Linux host acceptance remain unverified.

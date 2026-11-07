@@ -8,6 +8,7 @@
 #include "pc_ui_layout.h"
 #define RECOMP_TLS
 static uint32_t stack[32],g_esp,g_esi,scene=101;
+int pc_developer_hud_visible(void) { return 1; }
 static float hud_scale=.75f;
 static uint32_t font_xy[2],menu_data[0x240/4],item_data[0x90/4],descriptor=0x2d0be0;
 static uint32_t projection[16],effect_data[32];

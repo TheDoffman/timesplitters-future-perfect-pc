@@ -174,7 +174,7 @@ public static class LauncherSettingsChecks
                 var r=Root("weapon-slots");
                 Put(r,"Settings/pc-controls.json","{\"controllers\":[{\"port\":1,\"device\":\"keyboard\",\"bindings\":{\"white\":\"key:1\",\"black\":\"key:2\",\"x\":\"key:3\"}}]}");
                 var m=GameSettings.Load(r,null);
-                Require(GameSettings.Actions.Length==34 && GameSettings.Labels.Length==34);
+                Require(GameSettings.Actions.Length==37 && GameSettings.Labels.Length==37);
                 Require(GameSettings.KeyCode(m.Binding(4)[0])=='X' && GameSettings.KeyCode(m.Binding(5)[0])=='Z');
                 Require(GameSettings.KeyCode(m.Binding(24)[0])=='1' && GameSettings.KeyCode(m.Binding(25)[0])=='2');
                 Require(m.Binding(26)[0]=="none" && GameSettings.KeyCode(m.Binding(2)[0])=='3');
@@ -642,8 +642,24 @@ public static class LauncherSettingsChecks
                 var model=GameSettings.Load(Root("conflict"),null);Reject(()=>model.Assign(14,1,69,false));
                 model.Assign(14,1,69,true);Require(GameSettings.KeyCode(model.Binding(14)[1])==69);
                 Require(model.Binding(0).All(t=>GameSettings.KeyCode(t)!=69));Require(model.Binding(0).Contains("key:SPACE"));
-                Reject(()=>model.Assign(0,0,112,true));Reject(()=>model.Assign(0,0,122,true));
+                model.Assign(34,0,112,true);Require(GameSettings.KeyCode(model.Binding(34)[0])==112);Reject(()=>model.Assign(0,0,122,true));
                 model.Assign(14,1,0,true);Require(model.Binding(14)[1]=="none");
+            });
+            Test("Developer Tools are opt-in and share a preserved configurable shortcut",()=>{
+                string root=Root("developer-tools");var model=GameSettings.Load(root,null);
+                Require(!model.DeveloperToolsEnabled && GameSettings.KeyCode(model.Binding(34)[0])==112);
+                model.DeveloperToolsEnabled=true;model.Assign(34,0,114,true);model.Sensitivity=.27;model.Save();
+                var saved=GameSettings.Load(root,null);Require(saved.DeveloperToolsEnabled && saved.Sensitivity==.27 && GameSettings.KeyCode(saved.Binding(34)[0])==114);
+                saved.DeveloperToolsEnabled=false;saved.Save();saved=GameSettings.Load(root,null);
+                Require(!saved.DeveloperToolsEnabled && GameSettings.KeyCode(saved.Binding(34)[0])==114);
+            });
+            Test("flight shortcuts default unbound and persist both binding slots",()=>{
+                string root=Root("flight-shortcuts");var model=GameSettings.Load(root,null);
+                Require(model.Binding(35).All(t=>t=="none") && model.Binding(36).All(t=>t=="none"));
+                model.Assign(35,0,66,true);model.Assign(36,1,78,true);model.Save();
+                var saved=GameSettings.Load(root,null);
+                Require(GameSettings.KeyCode(saved.Binding(35)[0])==66 && GameSettings.KeyCode(saved.Binding(36)[1])==78);
+                Require(GameSettings.KeyCode(saved.Binding(34)[0])==112 && !saved.DeveloperToolsEnabled);
             });
             Test("invalid settings are rejected before any writes",()=>{
                 string root=Root("invalid");var model=GameSettings.Load(root,null);model.Sensitivity=Double.NaN;Reject(()=>model.Save());

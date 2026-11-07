@@ -85,12 +85,14 @@ def identity(root, game, runtime=None):
     entries = []
     if (root/'VERSION').is_file():
         entries.append(('VERSION', hashlib.sha256((root/'VERSION').read_bytes().replace(b'\r\n', b'\n')).hexdigest()))
-    for folder in ('src', 'patches'):
+    for folder in ('src', 'patches', 'assets/ui/fonts', 'vendor/stb'):
         for path in sorted((root / folder).rglob('*')):
             if path.is_file():
                 # Normalize text line endings so checkout configuration does not
                 # separate otherwise identical Windows/Linux source checkouts.
-                data = path.read_bytes().replace(b'\r\n', b'\n')
+                data = path.read_bytes()
+                if path.suffix.lower() != '.ttf':
+                    data = data.replace(b'\r\n', b'\n')
                 entries.append((path.relative_to(root).as_posix(), hashlib.sha256(data).hexdigest()))
     for name in ('online_transport.py', 'online_client.py', 'online.py', 'online_host.py', 'online_paths.py', 'online_theme.py', 'online_platform.py', 'lobby_server.py'):
         path = root / 'tools/network' / name

@@ -45,6 +45,8 @@ static PcGuestRegion pc_guest_query_span(uintptr_t address,size_t bytes)
 #include "pc_mounted.h"
 static int keyboard_player=1;
 static int pc_settings_keyboard_player(void) {return keyboard_player;}
+static int pc_developer_mouse(PcInput *state,uint64_t now,float sensitivity,int invert,float scale)
+{(void)state;(void)now;(void)sensitivity;(void)invert;(void)scale;return 0;}
 
 static PcInput input;
 static double sensitivity=.1;

@@ -155,8 +155,10 @@ def test_upgrade_native_checkpoint_preserves_fixed_default(checkout, tmp_path):
     prior=tmp_path/'native-prior-patches'
     prior.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
+        if '-developer-tools-' in patch.name:
+            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
         prefix = patch.name.split('-', 1)[0]
-        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch'):
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
         if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
@@ -228,6 +230,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in installer.active_patch_paths(PATCHES):
+        if '-developer-tools-' in patch.name:
+            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
@@ -349,8 +353,10 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches = tmp_path / 'mac-only-patches'
     old_patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
+        if '-developer-tools-' in patch.name:
+            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
         prefix = patch.name.split('-', 1)[0]
-        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch'):
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
         if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
@@ -409,8 +415,10 @@ def texture_branch_patches(tmp_path):
     patches = tmp_path / 'texture-patches'
     patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
+        if '-developer-tools-' in patch.name:
+            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
         prefix = patch.name.split('-', 1)[0]
-        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch'):
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
         if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
@@ -428,8 +436,10 @@ def main_branch_patches(tmp_path):
     patches = tmp_path / 'main-patches'
     patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
+        if '-developer-tools-' in patch.name:
+            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
         prefix = patch.name.split('-', 1)[0]
-        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch'):
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
         if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
@@ -520,6 +530,30 @@ def test_conflict_preserves_every_runtime_file(checkout):
     with pytest.raises(RuntimeError, match='0230-pc-controls.patch conflicts'):
         installer.apply_patches(checkout, PATCHES)
     assert snapshot(checkout) == before
+
+
+def test_developer_wrapper_unwind_preserves_appended_edit(tmp_path):
+    tree, patches, empty = tmp_path/'runtime', tmp_path/'patches', tmp_path/'empty'
+    target=tree/'titles/futureperfect/src/recomp_manual.c'
+    target.parent.mkdir(parents=True);patches.mkdir();empty.mkdir()
+    installer.git(tree,'init','-q')
+    target.write_text('void original(void) {\n    original_body();\n}\n',encoding='utf-8')
+    (patches/'2580-developer-tools-lobby-wrench.patch').write_text(
+        '--- a/titles/futureperfect/src/recomp_manual.c\n'
+        '+++ b/titles/futureperfect/src/recomp_manual.c\n'
+        '@@ -1,3 +1,7 @@\n void original(void) {\n     original_body();\n }\n'
+        '+\n+void wrapper(void) {\n+    wrapped_body();\n+}\n',encoding='utf-8')
+    installer.apply_patches(tree,patches)
+    with target.open('a',encoding='utf-8') as out:out.write('/* retained local comment */\n')
+    complete=target.read_bytes()
+    installer.apply_patches(tree,empty)
+    assert b'wrapper' not in target.read_bytes() and b'retained local comment' in target.read_bytes()
+    installer.apply_patches(tree,patches);assert target.read_bytes()==complete
+    target.write_bytes(complete.replace(b'wrapped_body();',b'changed_body();'))
+    before=target.read_bytes()
+    with pytest.raises(RuntimeError,match='conflicts with the runtime checkout'):
+        installer.apply_patches(tree,empty)
+    assert target.read_bytes()==before
 
 
 def test_windows_line_endings(checkout):
@@ -677,7 +711,11 @@ def test_graphics_branch_round_trip_preserves_local_edits(checkout, tmp_path, cr
     baseline = tmp_path / 'without-graphics'
     baseline.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
+        if '-developer-tools-' in patch.name:
+            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
         prefix = patch.name.split('-', 1)[0]
+        if patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch'):
+            continue  # This baseline predates shared MSAA/effect-depth dependencies.
         if not (prefix.isdigit() and 2495 <= int(prefix) <= 2517):
             shutil.copyfile(patch, baseline / patch.name)
     shutil.copytree(PATCHES / 'legacy', baseline / 'legacy')

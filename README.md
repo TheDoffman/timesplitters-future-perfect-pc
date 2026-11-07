@@ -135,58 +135,18 @@ launcher's **Release notes**, [platform status](#platform-status) and
 
 ### Local split-screen
 
-These instructions describe the updated local-player controls in this branch;
-they are not yet included in a published release.
+1. Connect your controllers and choose the number
+   of players.
+2. Press **Start** on your controllers in the order you want to join.
+3. Select or create a profile, then continue.
 
-1. **Connect your controllers before choosing the player count.** The opening
-   screen detects available inputs, including slots previously saved as Disabled.
-   Choose **2, 3, or 4 Players** as appropriate.
-2. **Join at the game's profile screen.** Player 1 keeps their input. On each
-   **Press START to Join** panel, press **Start** on an unused controller. The
-   first controller to join becomes Player 2, the next becomes Player 3, then
-   Player 4. Connection order does not determine player order. No separate
-   auto-join setting is required, and one controller cannot join twice.
-3. **Select a profile for each player**, then enter a mode supporting that player
-   count. Player 1 can use keyboard/mouse or a controller; additional players
-   need their own controllers. Two or more controller players are supported.
+Join assignments last for the session. To configure the devices manually, use the launcher
+or the in-game **Controls > General > Local multiplayer**.
 
-#### Let each player configure their settings
-
-1. From the main menu, open **Settings**.
-2. Change the **Player** row to the player whose settings you want to edit.
-3. That player's controller can now navigate Settings and its submenus, including
-   **Controls**, and configure their options. **Player 1 always retains control**
-   and can also navigate using their assigned input. Both operate the same menu;
-   the Player row determines whose profile settings are being edited. Shared
-   video/display options still apply to the game as a whole.
-4. Return to the main menu when finished. Main-menu navigation returns to Player 1.
-
-For example, selecting **Player 2** lets Player 2 adjust their controller settings
-while Player 1 can still help with the mouse, keyboard, or their controller.
-
-#### Change which controller a player uses
-
-Open **Settings → Controls → General Controls → Local multiplayer**, choose the
-inputs, and select **Apply player devices**. The rows show the actual players
-assigned by Start to Join, even if their controller numbers differ from their
-player numbers. **Controller 1** means a detected device, not necessarily Player 1.
-You can also configure devices before launch in the launcher's settings.
-
-- **Press a button to assign** lets you choose a player and identify the intended
-  controller by pressing a button on it. Then select **Apply player devices**.
-- **Automatic** replaces the old Disabled option. For a player who has already
-  joined, it keeps their connected controller when available, or chooses an
-  available unassigned controller. Applying it stores the resolved controller,
-  and the row shows that controller's name/number afterward. It does not remove
-  the player from the session.
-- A change that would leave a joined player without a connected input is rejected
-  with a message. Connect the intended controller and try Apply again; the working
-  assignments are retained until a valid change is applied.
-- If a controller disconnects, reconnect it to resume its assigned player.
-
-Start-to-join assignments last for the session; applying manual device choices
-saves them. To change the number of participating players, return to the opening
-player-count/profile flow. Joining during an active match is not supported.
+**Automatic**
+lets the game use a connected controller without a fixed assignment. To change the player count, return to the main menu;
+joining during an active match is not supported. Only one keyboard/mouse player
+is supported; additional players need controllers.
 
 ### Online / LAN
 
@@ -208,6 +168,18 @@ When the optional pack is available, use **Game settings → Graphics & resoluti
 → Check texture downloads**, then **Download / update textures**. Enable and save
 **Use enhanced textures (Beta)** to use it on future launches. See the
 [texture guide](docs/textures/textures.md) for availability, coverage and known issues.
+
+## Developer Tools
+
+Enable **Developer Tools** in **Extras > Developer Tools** or the launcher, then
+press **F1** to open the sidebar. It includes free camera, no-clip, game speed,
+input/video settings, and diagnostics. Change its shortcut in **Key bindings**.
+
+In multiplayer, the host controls the **Tools** tab through **Options > Developer
+Tools** (default **Off**). **Settings** and **Diagnostics** remain accessible;
+**Time & audio** and **Player & progression** are unavailable online.
+
+Native Mac/Linux validation is pending; see [validation](docs/project/STATUS.md).
 
 <a name="guides--support"></a>
 

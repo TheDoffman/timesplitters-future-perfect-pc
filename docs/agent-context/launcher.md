@@ -1,3 +1,10 @@
+Developer Tools enablement uses an inline amber warning and live assigned-shortcut
+hint directly beneath its checkbox; enabling never opens a prompt. RefreshBindings
+updates the hint after edits/unbinding. Shared UI checks preserve opt-in Save state
+and On/Off persistence, require colocated warning text and reject a Continue prompt.
+
+[Developer Tools integration](developer-tools-integration.md).
+
 PRs/main use one `PR validation` gate in `runtime-patches.yml`. Its plan
 selects runtime, launcher, Linux, issue forms/resolution and texture jobs;
 `ci-pr-gate.py` rejects failures, cancellation, missing outputs and

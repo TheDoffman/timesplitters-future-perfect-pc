@@ -1,3 +1,44 @@
+Developer Tools/main integration preserves both additive patch families. The
+ordered tail is92 entries: shared-font2620, native input2630, then config-source2595 and
+MSAA/shared-depth2600. The generated index and exact-order fixture use the
+resolved loader. Older patch-tail counts below describe earlier revisions.
+
+The shared-font typography follow-up indexes2620 after2610 (tail89). Font
+provenance/hashes live with assets/ui/fonts; unmodified rasterizer source lives
+in vendor/stb, separate from the pristine runtime snapshot. Only the intended
+additive patch is indexed; generated font headers remain in build/test trees.
+
+Sidebar visual refinement appends indexed2610 after2600 (ordered tail88).
+The optional styled-font host callback is defined by the additive runtime patch;
+shared geometry/icons and glyph caching remain in tracked src/. No generated C
+or pristine runtime snapshot edits are involved.
+
+The sidebar task adds indexed patch2600 after2590 and updates the ordered-tail
+fixture to87. Its shared UI/canvas source is tracked under src/interface and
+src/graphics; private HTML concepts and live acceptance captures remain ignored.
+Refresh patch-index.json only after staging the intended additive patch; validate
+this task against f73c38e9. No changes to context retrieval policy or provenance.
+
+Latest notes append2590 after2580; the ordered-tail fixture expects86 patches.
+Only the intended additive patch is staged for context-index refresh. Native
+warning consolidation and audio-toggle acceptance are logged in STATUS.
+
+Further Developer Tools notes append patches2560/2570/2580 after2550.
+The ordered-stack fixture now expects85 patches. Stage these intended patches
+before refreshing the generated context index. Current bounded investigation is
+logs/developer-tools-further-investigation.md; user screenshot disproved the prior
+freecam-opacity acceptance claim, so require a close-up capture before reasserting.
+
+Developer Tools revised notes: patches2540/2550 now follow2530; the generated
+index must include all four additions after the platform adapters. Body-opacity
+investigation confirmed native1265B0 effect bit2 is the first-person eye fade;
+borrow it only for the owned detached world draw and restore style/effect fields.
+
+Developer Tools patches2520 then2530 extend the final Windows/SDL/HLE layout
+and run after all Linux patches. Keep this order in the loader/order fixture.
+Task memory is `logs/developer-tools-investigation.md`; the pre-existing
+investigation file belongs to other tasks and remains preserved.
+
 # Investigation memory and handoffs
 
 Linux patches2402 through2412 follow2401; its duplicate2512 is omitted. Context
@@ -440,3 +481,14 @@ additions, all historical omission entries and regenerates the patch index.
 Shared MSAA resize2600 is last after the temporal-map and Linux/header
 migrations. The exact loader-order assertion includes it; five pre-MSAA seed
 sets omit it only until full upgrade. Full-stack migration still applies it.
+
+Developer Tools migration integration: historical fixtures omit the Tools family
+when its Linux/display prerequisites are absent; complete upgrades still install
+the entire current stack. Additive manual-file wrappers2520/2530/2550/2580 use
+existing -C1 matching so appended local comments survive reverse application.
+Patched code must still match exactly; the small EOF fixture rejects a changed
+wrapper body without writing any files. Runtime patch bytes remain unchanged.
+Patch2630 extends the explicit Developer Tools tail after2620. The repository
+context exact-order fixture now retains a92-entry tail, including2630 before
+the source-worktree/shared-depth follow-ups. Index generation and discovery
+contracts are unchanged; stage this intended new patch before refreshing.

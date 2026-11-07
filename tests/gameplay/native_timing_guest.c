@@ -58,6 +58,10 @@ static void original(void) {
     original_calls++;g_esp+=4;
     if(original_game_delta>=0.f)FLOAT(0x4E794C)=original_game_delta;
 }
+#include "pc_developer.h"
+void pc_developer_get(PcDeveloperState *out) {*out=(PcDeveloperState){0,0,0,0,1.,0};}
+void pc_developer_publish(int play,int story,int network) {(void)play;(void)story;(void)network;}
+void pc_developer_guest_frame(void) {}
 #include "../src/gameplay/pc_native_timing_guest.inc"
 /* Match the production manual TU: the clock include precedes ESI's definition. */
 RECOMP_MANUAL_TLS uint32_t g_esi;

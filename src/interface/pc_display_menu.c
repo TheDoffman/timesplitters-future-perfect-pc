@@ -4,6 +4,7 @@
    audio/video, layout, highlighting and navigation stay in the guest engine. */
 #include "pc_display_menu.h"
 #include "pc_settings.h"
+#include "pc_developer.h"
 #include "pc_debug.h"
 #include "graphics/graphics_settings.h"
 #define KB_OPEN 0x1200fu
@@ -176,8 +177,10 @@ static int discord_guest_read(void *context,uint32_t address,void *out,size_t by
 }
 #endif
 
+static void video_sidebar_tick(void);
 void pc_display_camera(void (*original)(void))
 {
+    pc_developer_video_register(video_sidebar_tick);
 #ifdef TSFP_PC_DISCORD
     /* Sample guest RAM on its own thread; publish only plain values to IPC. */
     static ULONGLONG discord_sampled;
@@ -282,6 +285,7 @@ static void sd_width(void);
 static void sd_buttons(void (*original)(void));
 static void sd_capacity(void (*original)(void));
 static void audio_beta_add(void (*original)(void));
+static void developer_match_button(uint32_t callsite);
 void pc_display_menu_button(void (*original)(void))
 {
     static uint32_t caption;
@@ -291,6 +295,7 @@ void pc_display_menu_button(void (*original)(void))
     const int paused=callsite==0x002F561Cu && callback==0x002EC1A0u;
     GuestRegisters r;
     if(controls_native_button(original))return;
+    developer_match_button(callsite);
     pc_story_network_pause_style();
     if(pc_story_menu_button(original)) return;
     if(multiplayer_exit_button(original)) return;
@@ -890,17 +895,34 @@ void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot)
     (void)entity;(void)shot;
 #endif
 }
+#include "pc_developer_match_menu.inc"
+static uint32_t network_bots_host_mode,developer_match_build_menu;
+static void developer_match_button(uint32_t callsite) {
+    /* Insert before Music while the native compact option style is active.
+       The original row then restores its own selector/builder context. */
+    if(callsite!=0x002C8010u||!developer_match_build_menu)return;
+    GuestRegisters r;save_registers(&r);
+    uint32_t mode=WORD_AT(0x78AD2Cu);WORD_AT(0x78AD2Cu)=network_bots_host_mode;
+    developer_match_add(developer_match_build_menu);WORD_AT(0x78AD2Cu)=mode;
+    restore_registers(&r);
+}
 void pc_network_bots_menu(void (*original)(void))
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    extern void sub_002C78F0_gen(void);
+    uint32_t menu=WORD_AT(g_esp+4u);
+    int add=original==sub_002C78F0_gen;
     const uint32_t mode=WORD_AT(0x0078AD2Cu);
+    uint32_t previous_host_mode=network_bots_host_mode,previous_build_menu=developer_match_build_menu;
+    uint32_t real_mode=network_bots_host_mode?network_bots_host_mode:mode;
     const int host=WORD_AT(0x0076B108u) && WORD_AT(0x0076B140u)==1u &&
-        mode>=11u && mode<=13u;
+        real_mode>=11u && real_mode<=13u;
     /* Only the synchronous menu construction sees Arcade's setup mode. This
        runs the title's own Bot Set row, dropdown, edit callback, positioning
        and footer layout; the transport and installed callbacks stay original.
        Restore the real mode before returning to the lobby or processing input. */
     if(host) {
+        network_bots_host_mode=real_mode;
         WORD_AT(0x0078AD2Cu)=9u;
 #ifdef _WIN32
         _putenv_s("TSFP_NETWORK_BOTS","1");
@@ -908,8 +930,10 @@ void pc_network_bots_menu(void (*original)(void))
         setenv("TSFP_NETWORK_BOTS","1",1);
 #endif
     }
+    if(add&&host)developer_match_build_menu=menu;
     original();
     if(host) WORD_AT(0x0078AD2Cu)=mode;
+    developer_match_build_menu=previous_build_menu;network_bots_host_mode=previous_host_mode;
 #else
     original();
 #endif
@@ -1574,11 +1598,16 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     if(address==0x002C3E20u)return audio_options_build;
     if(address==0x002CBFC0u)return settings_build;
     switch(address) {
+    case DEVELOPER_MATCH_CHANGE:return developer_match_change;
     case AUDIO_BETA_CHANGE:return audio_beta_change;
     case 0x002D08C0u:return uc_extras_build;
     case UC_OPEN:return uc_open;
     case UC_BUILD:return uc_build;
     case UC_TICK:return uc_tick;
+    case UC_DEVELOPER_TICK:return uc_developer_tick;
+    case UC_DEVELOPER_OPEN:return uc_developer_open;
+    case UC_DEVELOPER_BUILD:return uc_developer_build;
+    case UC_DEVELOPER_BACK:return uc_developer_back;
     case UC_BACK:return uc_back;
     case 0x00192770u:return sd_profile_tick;
     case SD_SELECT:return sd_select;
@@ -1631,3 +1660,8 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
 }
 
 #include "pc_graphics_world.inc"
+#include "pc_developer_guest.inc"
+
+#include "pc_developer_lobby_guest.inc"
+
+#include "pc_video_sidebar.inc"

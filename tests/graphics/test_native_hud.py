@@ -79,14 +79,26 @@ add_subdirectory("${TSFP_RUNTIME_DIR}/src/platform" platform)
 add_subdirectory("${TSFP_RUNTIME_DIR}/src/config" config)
 add_subdirectory("${TSFP_RUNTIME_DIR}/src/d3d" d3d)
 add_subdirectory("${TSFP_RUNTIME_DIR}/src/replay" replay)
+add_executable(developer_overlay_replay "${TSFP_OVERLAY_TEST}"
+    "${TSFP_RUNTIME_DIR}/src/hle/d3d8_capture.c"
+    "${TSFP_RUNTIME_DIR}/src/kernel/nv2a_vsh.c"
+    "${TSFP_SHARED_SOURCE}/textures/texture_mode.c")
+target_include_directories(developer_overlay_replay PRIVATE
+    "${TSFP_RUNTIME_DIR}/src/hle" "${TSFP_RUNTIME_DIR}/src/kernel"
+    "${TSFP_SHARED_SOURCE}/interface" "${TSFP_SHARED_SOURCE}/input"
+    "${TSFP_SHARED_SOURCE}/runtime")
+target_compile_definitions(developer_overlay_replay PRIVATE
+    TSFP_REPLAY_SOURCE="${TSFP_RUNTIME_DIR}/src/replay/d3d8_replay.c")
+target_link_libraries(developer_overlay_replay PRIVATE xbox_d3d8 user32)
 ''', encoding='utf-8')
     build = folder / 'build'
     for args in (
         [cmake, '-S', str(folder), '-B', str(build), '-G', 'Ninja', '-DCMAKE_BUILD_TYPE=Release',
          '-DTSFP_RUNTIME_DIR=' + (ROOT / 'external/ts3FPrecomp').as_posix(),
          '-DTSFP_SHARED_SOURCE=' + (ROOT / 'src').as_posix(),
+         '-DTSFP_OVERLAY_TEST=' + (ROOT / 'tests/graphics/developer_overlay_replay.c').as_posix(),
          '-DTSFP_PC_CONTROLS_DIR=' + (ROOT / 'src').as_posix()],
-        [cmake, '--build', str(build), '--target', 'd3d8_replay', '--parallel', '4'],
+        [cmake, '--build', str(build), '--target', 'd3d8_replay', 'developer_overlay_replay', '--parallel', '4'],
     ):
         result = subprocess.run(args, cwd=folder, env=env, capture_output=True, text=True, timeout=180)
         assert result.returncode == 0, result.stdout + result.stderr
@@ -143,3 +155,21 @@ def test_native_hud_stencil_history(replay,tmp_path,samples,stencil_value):
 def test_hint_free_capture_retains_supersampled_scene(replay, tmp_path):
     image, log = render(replay, tmp_path/'ordinary', 2, hint=False)
     assert image.size == (96,96) and '[NATIVE-HUD]' not in log
+
+
+@pytest.mark.parametrize('samples',[1,4])
+def test_developer_overlay_is_above_completed_scene(replay,tmp_path,samples):
+    executable,env=replay
+    overlay=(executable.parent.parent/'developer_overlay_replay.exe',env)
+    baseline,_=render(replay,tmp_path/'baseline',2,samples=samples)
+    scene,log=render(overlay,tmp_path/'developer',2,samples=samples)
+    # DXGI flip invalidates the just-presented page. Inspect the actual final
+    # target immediately BEFORE Present, rather than its next-buffer contents.
+    image=Image.open(tmp_path/'developer/developer-before-present.bmp').convert('RGB')
+    def white_pixels(im):
+        data=im.tobytes()
+        return sum(data[i]>200 and data[i+1]>200 and data[i+2]>200 for i in range(0,len(data),3))
+    assert image.getpixel((44,12))==(128,191,255), 'Sidebar color or RGBA channel order changed'
+    assert white_pixels(image)>8, 'Developer Tools glyphs lost during scene resolve\n'+log[-5000:]
+    assert log.count('before present white=')==3, 'Every actual presentation must contain the overlay'
+    assert scene.tobytes()==baseline.tobytes(), 'Host tools leaked into guest scene/captures'

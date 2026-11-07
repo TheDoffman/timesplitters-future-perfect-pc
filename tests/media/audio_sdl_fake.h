@@ -11,7 +11,7 @@ static void pthread_mutex_lock(pthread_mutex_t *p) {(void)p;}
 static void pthread_mutex_unlock(pthread_mutex_t *p) {(void)p;}
 typedef unsigned SDL_AudioDeviceID;
 typedef struct {int format,channels,freq;} SDL_AudioSpec;
-typedef struct {float gain; int queued,available,flushes;} SDL_AudioStream;
+typedef struct {float gain,speed; int queued,available,flushes;} SDL_AudioStream;
 enum {SDL_INIT_AUDIO=1,SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,SDL_AUDIO_U8,SDL_AUDIO_S16LE};
 static uint64_t sdl_now;
 static uint64_t SDL_GetTicks(void) { return sdl_now; }
@@ -35,6 +35,7 @@ static int SDL_FlushAudioStream(SDL_AudioStream *s) {
     if(fail_flush)return 0;
     s->flushes++;s->available+=s->queued;s->queued=0;return 1;
 }
+static int SDL_SetAudioStreamFrequencyRatio(SDL_AudioStream *s,float ratio){s->speed=ratio;return 1;}
 static int SDL_SetAudioStreamGain(SDL_AudioStream *s,float gain) {s->gain=gain;return !fail_gain;}
 static int SDL_PutAudioStreamData(SDL_AudioStream *s,const void *data,int bytes)
 {if(refuse || fail_put)return 0;if(track_queue)s->queued+=bytes;heard_bytes=bytes;assert(bytes<=sizeof heard_pcm);memcpy(heard_pcm,data,bytes);return 1;}

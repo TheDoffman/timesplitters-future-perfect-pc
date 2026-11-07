@@ -944,10 +944,13 @@ static void update_mvp(DWORD fvf)
     glUniform2f(glGetUniformLocation(g.prog,"u_size"),native_target_width,native_target_height);
 }
 
+#include "pc_developer.h"
+static int native_developer_hud_hidden;
 static HRESULT __stdcall dev_DrawPrimitiveUP(IDirect3DDevice8 *s, D3DPRIMITIVETYPE pt,
                                               UINT prim_count, const void *verts, UINT stride)
 { NATIVE_GL_SCOPE;
     (void)s;
+    if(native_developer_hud_hidden)return D3D_OK;
     if (!verts || prim_count == 0 || stride == 0) return D3D_OK;
     UINT vcount = 0;
     GLenum mode = gl_prim(pt, prim_count, &vcount);
@@ -989,6 +992,7 @@ static HRESULT __stdcall dev_DrawIndexedPrimitiveUP(IDirect3DDevice8 *s, D3DPRIM
         const void *verts, UINT stride)
 { NATIVE_GL_SCOPE;
     (void)s; (void)min_vi;
+    if(native_developer_hud_hidden)return D3D_OK;
     if (!verts || !idx || prim_count == 0) return D3D_OK;
     UINT icount = 0;
     GLenum mode = gl_prim(pt, prim_count, &icount);
@@ -1434,7 +1438,10 @@ void xbox_D3D8SetWideFrames(BOOL wide) { (void)wide; }
 /* The shared HLE records these tags during interpolation too. */
 void xbox_D3D8SetTwoDPlacement(int placement, uint32_t tag)
 {
-    if(tsfp_native_hud_hint(placement,tag))return;
+    if(tsfp_native_hud_hint(placement,tag)) {
+        native_developer_hud_hidden=placement==TSFP_NATIVE_HUD_BEGIN && !pc_developer_hud_visible();
+        return;
+    }
     native_placement=placement;native_placement_tag=tag;
     pc_ui_world_begin(&native_world_anchor,placement,tag);
 }

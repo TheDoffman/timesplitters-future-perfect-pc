@@ -1,3 +1,81 @@
+## 2026-11-06 - Complete native CI fixture isolation
+
+PR514's native Windows/macOS suites exposed more isolated-fixture dependencies
+on newly added HUD and sidebar hooks. Keep visible HUD/no overlay in those
+layout, viewport and texture tests, bound shot-present extraction to its actual
+function, and fix Clang counter signedness/unused-register warnings. The guest
+camera fixture uses a deterministic clock; Linux texture fixtures select the
+shared RHI declarations. Production game code/binaries are unchanged.
+Affected layout, actor-overlay, Developer Tools, networking and texture suites:
+Windows MSVC59 passed (one unrelated pytest cache warning); Ubuntu WSL Clang18
+57 passed,2 platform skips. Original movie/cinematic suites previously passed148
+on both hosts. Context and whitespace checks pass; native Mac CI pending.
+
+## 2026-11-06 - Developer Tools PR CI fixture correction
+
+PR514's Linux foundation run exposed missing sidebar registration and unity
+audio-speed hooks in isolated cinematic/movie fixtures. Added fixture spies only;
+production game code is unchanged. On Ubuntu WSL x64/Clang18, the complete
+cutscene-letterbox and native-timing suites pass148 tests (45.03s), including
+mutation checks and supported original-XBE cases. Context and whitespace checks
+pass. Windows rerun is still in progress; GitHub checks must pass before merge.
+
+## 2026-11-06 - Physical WSL mouse capture fails outside game code
+
+Investigated the user's inability to mouse-look on the RTX5090 WSL host with
+Developer Tools source/build `e302a4831cc8cd6f1985924e36d41ed9543e19f4`.
+Manual controls have mouse enabled/sensitivity0.10; the game reports capture
+enabled without an SDL failure, but the user reports the cursor can escape.
+Shooting and menu clicking work. Prior synthetic-input and rendered-Story checks
+did not establish physical pointer confinement on this host.
+
+A bounded standalone probe using the same pinned SDL3.4.16 source, with software
+drawing enabled only for the probe, reproduces the problem without any game or
+Developer Tools code. With physical focus/clicks, Wayland reports relative mode
+enabled but receives zero motion events in relative mode; the user confirms
+the pointer escapes. X11 receives8686 motion events while relative mode is
+enabled, but the user also confirms the pointer escapes. Neither backend earns
+physical capture acceptance. This isolates the observed failure to the SDL/WSLg
+input integration on this host; it does not establish native Linux/Deck behavior.
+No game code, personal settings, WSL system configuration or SDL pins changed.
+Evidence: Linux `logs/mouse-probe-wayland.log`, `logs/mouse-probe-x11.log` and
+the ignored Windows `logs/linux-input-probe` harness. The first non-drawing
+probe received no input and is excluded from these results. WSLg mouse-lock
+reports: https://github.com/microsoft/wslg/issues/240 .
+
+## 2026-11-06 - Developer Tools branch rebuilt on Linux
+
+Checked out developer-tools-overlay at e302a4831cc8cd6f1985924e36d41ed9543e19f4 in the existing
+Ubuntu WSL native-filesystem checkout. Verified the supported US XBE and shared
+AGENTS instructions; reused the existing game-data link, SDK and pinned release
+media. Complete patch application, guest regeneration and Linux Vulkan game build
+with two workers pass. Protected-MMIO regression passes (x64 decoder, protected
+writes, shared CRTC acknowledgement and AC97 reset). No gameplay acceptance run.
+Host: Linux-6.18.54.1-microsoft-standard-WSL2-x86_64-with-glibc2.39; compiler: Ubuntu clang version 18.1.3 (1ubuntu1); Vulkan SDK 1.4.363.0.
+Executable SHA-256: `27cebf3c936cf24267d9b8a16d553b8a1a9fdf317bd1e25825018b062a8f89ed`.
+Source checkout was clean during the build. Personal settings/saves preserved.
+Receipt: build/linux/game/BUILD.json; log: logs/developer-tools-linux-rebuild.log.
+
+## 2026-11-06 - Developer Tools sync retried without building
+
+Merged main at 261bdc2e into the original Developer Tools branch at f38d5e79,
+preserving its history and both Mac input fixes. Reused the previously resolved
+source tree for this same upstream revision. No compiler, full rebuild, runtime
+patch application, or game launch was started for this retry. Earlier validation
+below retains its original scope; installed/generated runtime files and binaries
+are not claimed to match this source revision. Personal settings remain untouched.
+
+## 2026-11-06 - Developer Tools synchronization completed
+
+Synced developer-tools-overlay with main at 261bdc2e, including fullscreen
+controls and the compiler-policy revert. Retained Developer Tools and both Mac
+input fixes. Windows fullscreen/FOV/SMAA fixtures pass (30 passed, 2 skipped);
+final context suite passes 21 tests and launcher -Test passes at 8a82f93f.
+The subsequent full game rebuild was canceled at the user's request. No rebuild
+or gameplay validation was performed after the final main update. Earlier full
+build results below apply only to a2c37cf3. History remains local and unpushed;
+personal settings and saves were preserved.
+
 ## 2026-11-06 - Revert PR #508 compiler-memory policy (local)
 
 On `revert/508-compiler-memory`, based on main `8a82f93f`, revert only the
@@ -14,6 +92,673 @@ checks for the removed parameter/forwarding and retained project parallelism pas
 No full game rebuild, new compiler-memory/timing measurement, native Mac/Linux
 execution, or gameplay check was performed for this build-policy revert. Existing
 playable binaries are unchanged. The prior PR #508 results below are historical.
+
+## 2026-11-06 - Developer Tools rebase onto current main
+
+Started from published f38d5e79; rebased with --rebase-merges onto origin/main
+at a2c37cf3. Prior merge-only migration fixes remain included. Retained both
+Retina pointer mapping and native free-camera input ownership fixes. Upstream
+multiplayer exit APIs, input icon helpers and weapon FOV behavior are preserved;
+the Video Options fixture uses upstream network availability alongside Tools
+stubs. Shared Tools/widget sources match the original branch tip. The retained
+native-input note moved into the linked integration guide to keep the runtime
+guide bounded. Rewritten history remains local; no push performed.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11/SDL3.4.16. Focused context,
+Tools, FOV and native lobby-return run:86 passed,2 skipped,2 context-size failures.
+After the documentation move, the complete context suite passes21 tests. Fresh
+runtime stack/repeated application and local-comment mutation tests:2 passed.
+Full Windows launcher -Test passes. Supported full game Build, linked checks
+and matching crash symbols pass after shared patch validation and regeneration.
+Executable SHA-256: `dfab21ad582b26e850b5f0cb57be18a0b7be16660c3ca24ab70c4797bd144651`.
+No fresh gameplay or native Mac/Linux acceptance for this synchronization.
+Personal graphics/HUD configs remain untracked and unchanged; other-device
+synchronization is unverified.
+
+## 2026-11-06 - Mac free-camera input ownership
+
+Local, uncommitted on fix/mac-freecam-player-input after819489f4, depending on
+the unmerged Developer Tools implementation and local sidebar alignment fix.
+Native keyboard sampling called the raw SDL reader instead of the existing
+guarded gameplay API, letting camera flight keys steer the character too.
+The native controller sampler also omitted the existing pad admission gate.
+Additive input patch2630 follows2620, includes the shared controls declarations,
+routes native keys through pc_controls_key_down and applies pc_controls_accept_pad
+to both host samplers. Raw camera/binding keys and camera mouse input stay live;
+ordinary character input resumes when freecam ends. Windows retains its policy.
+No guest wrapper/ABI or generated-code change is required.
+
+macOS27.2/arm64, Apple clang21.0.0, Python3.13.17, SDL3.4.16,
+Vulkan SDK1.4.363.0/MoltenVK, Apple M5 Pro: complete patch validation/application
+and supported incremental native build pass. Rebuilt executable SHA-256:
+`de6f750806f86e67599a0de0d85d30481edf3c3046e0e3546bb14bf5f09e288a`.
+Native keyboard and native pad regressions failed before the fix, then pass.
+Focused controller/Developer Tools suites:46 passed,1 skipped,2 deselected
+(the two previously recorded Clang fixture failures: guest sign comparisons
+and lobby unused g_ebx). This includes actual native key dispatch/guards, raw
+key retention, resumed controls, both host sampler branches and existing remapped
+camera flight/mouse checks. Combined initial input/context/patch-tracking run:
+91 passed,1 skipped, those same2 unrelated failures. New cases run through the
+existing CI controller-profile route. Context/base/whitespace checks pass.
+Final context suite:21 passed. The initial transition run had11 passes and a
+historical controls failure:2630's first name missed the existing Developer
+Tools exclusion used by pre-Tools fixtures. The suite was interrupted to rename
+it to2630-developer-tools-native-player-input.patch; historical controls upgrade,
+native Mac upgrade and representative branch round trip then all pass (3 tests,
+77.91s). Full current-stack migration after the rename passes, and the final
+native build/manifest and startup summary use that patch name. The entire
+38-case transition suite was not rerun after the naming-only correction.
+
+Bounded isolated startup passes:15.33s, shutdown exit0, at least600 guest frames
+and600 successful guest presents, zero recorded failed/skipped presents, native
+faults, shader failures or Vulkan validation errors. The verified US XBE and
+isolated save/input/runtime/PC display/XDG paths were used; six disposable
+partition images were recycled by the runner. No personal settings/saves edited.
+This does not establish physical camera-only gameplay, controller-device input,
+legacy GL or Windows/Linux host acceptance. Other-device synchronization remains
+unverified. Nothing committed, pushed or published for this follow-up.
+
+## 2026-11-06 - Mac Developer Tools pointer alignment
+
+Local, uncommitted on fix/mac-developer-sidebar-pointer after a8d2e47e; depends
+on the existing unmerged developer-tools-overlay implementation. The sidebar
+previously rebuilt its hit-test layout using SDL logical window bounds while
+painting with framebuffer bounds. Shared hit testing now converts each pointer
+axis to the last painted drawable before applying UI scale and dock placement.
+No host-specific gameplay logic, settings or runtime patch changes are needed.
+
+macOS27.2/arm64, Apple clang21.0.0, Python3.13.17, SDL3.4.16,
+Vulkan SDK1.4.363.0/MoltenVK, Apple M5 Pro: the supported native build passes
+with the complete patch stack and verified US XBE. Executable SHA-256:
+`ed44014fb47676f55cbdbea9851b3861a3bdcfec5f51ffc7e1fbae33639f7795`.
+The standalone sidebar regression failed at a drawn tab center before the fix,
+then passed at1x/1.5x/2x, both docks, unequal axis ratios and UI scale independent
+of drawable density. Non-Windows lock/atomic fixture boundaries were missing;
+the single-threaded fixture now supplies them. Existing CI already selects it.
+Full Developer Tools suite:7 passed,2 failed in unchanged fixtures due to Clang
+warnings (signed/unsigned comparisons in developer_tools_guest.c; unused g_ebx
+in developer_lobby_guest.c). Final sidebar fixture rerun passes; repository
+context suite21 passed, context/base and whitespace checks pass.
+
+The optional unlocked fixture is absent, so that probe stopped before launch.
+Default isolated startup probe passes:15.42s, bounded shutdown exit0, at least
+600 guest frames and600 successful guest presents, zero recorded failed/skipped
+presents, native faults, shader failures or Vulkan validation errors. Six
+disposable partition images were recycled by the runner; personal settings,
+saves and game data were untouched. This is startup evidence, not physical
+Retina click, visual scene or gameplay acceptance. Physical pointer/monitor
+transitions, legacy GL, Windows and Linux host checks remain unrun. No commit,
+push or publication; other-device synchronization is unverified.
+
+## 2026-11-06 - Inline launcher Developer Tools warning
+
+Local, uncommitted after f8d3bae6 on developer-tools-overlay. Shared SettingsPage
+places an amber warning directly beneath Enable Developer Tools and a separate
+muted assigned-shortcut hint. Enabling no longer opens a prompt or steals focus;
+warning remains visible while disabled. Binding edits refresh the hint. Saved
+opt-in/defaults and the game overlay warning are unchanged.
+
+Windows x64 launcher build and full -Test pass (40.72s). Shared UI regression
+requires warning/checkbox colocation, configured F3 hint, no Continue prompt and
+unchanged Save/On/Off persistence. Context/whitespace checks pass. WPF and Avalonia
+use the same controls/layout code; native Mac/Linux build/visual checks were not
+run. No game rebuild needed; no personal settings or saves edited.
+
+## 2026-11-06 - Developer Tools branch synchronized with main
+
+Developer Tools changes committed aa81002d, then origin/main3fa4bc2b merged into
+local developer-tools-overlay. Main remains unchanged and nothing is pushed.
+Preserved both additive patch families, regenerated the index and combined its
+exact-order fixture (91-entry tail). Existing Developer Tools guide history
+moved into linked developer-tools-integration.md to retain main's current guide
+content within bounded sizes. Personal graphics/HUD configuration stays untracked.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11/SDL3.4.16: supported full
+Build passes after normal shared patch validation and guest-code regeneration;
+linked checks and crash symbols pass (linked version0.5.1). Full launcher -Test
+passes, including restored opt-in UI and main's newer grouped channel/maintenance
+checks. Initial patch/regression suite:57 passed,2 skipped,16 migration failures.
+Historical fixture inputs had included Tools without their Linux/display
+prerequisites, and additive end-of-file wrappers rejected unrelated appended
+comments during rollback. Old inputs now omit that dependent family; complete
+upgrades still install all patches. Scoped -C1 matching for2520/2530/2550/2580
+preserves local comments while still rejecting changed wrapper code. Patch
+contents are unchanged. All16 failed cases pass on rerun (4 representative,
+12 remaining); the new local-comment/mutated-body regression passes. Final
+repository context suite:21 passed. Source/index/whitespace checks pass. The
+supported Build/linked checks pass again with the updated migration metadata.
+No new gameplay, Mac/Linux or cross-device acceptance for this merge. Other-device synchronization is unverified.
+Executable SHA-256: `9a89a7896a97e028731476b63c8a7f99d8201ef91bb1fa1b087e7d7dfe3e7923`.
+
+## 2026-11-06 - Shorter visibility labels
+
+Renamed visibility switches to HUD & UI and Version watermark in shared sidebar
+source and both private mockups. Wording only; behavior unchanged. Local and
+uncommitted after cf14ea41. Windows x64 supported Build, patch validation and
+linked checks pass; source/mockup wording, context and whitespace checks pass.
+No fresh gameplay or Mac/Linux validation for this label edit. Preserved personal
+settings, including preexisting untracked graphics/HUD configuration.
+
+## 2026-11-06 - Visibility switches in Settings
+
+Moved Show HUD & UI and Show version watermark to Settings > Video Settings >
+View & HUD. Removed the Tools HUD & interface category and updated both private
+mockups. Visibility remains immediate session state, separate from video Apply /
+Revert. Host Tools-Off polling preserves these choices; revoking active freecam
+still restores its automatically hidden HUD. Local opt-in remains unchanged.
+
+Local, uncommitted after cf14ea41, developer-tools-overlay; nothing pushed.
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11/SDL3.4.16: supported Build,
+complete patch validation and linked checks pass. Input/FOV tests:13 passed,
+2 native-Mac cases skipped. Actual sidebar widget tests toggle both settings
+under denied host policy, repeat policy/publish updates, verify retained values
+and no video draft changes, then restore visibility. Offline mockup structural
+checks confirm both rows belong to View & HUD and the Tools category is absent.
+Context/whitespace checks pass. No fresh gameplay/capture or Mac/Linux validation
+for this relocation; prior host menu evidence below applies to the prior build.
+Personal settings/saves were not edited.
+Executable SHA-256: `899f2f2ef1bf2195e802354d2f6766e984af5f403d0d34801fdd2c291cac34d6`.
+
+## 2026-11-06 - Compact match Developer Tools selector
+
+Local, uncommitted after cf14ea41 on developer-tools-overlay. Moved the native
+host Developer Tools Off/On selector into the smaller rules section, between
+Announcer and Music, above Weapon Set/Bot Set. It inherits the native compact
+font, alignment and spacing; Go remains the final large action. Host access and
+local opt-in behavior are unchanged. Shared existing builder hooks only.
+
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11/SDL3.4.16: supported Build,
+patch validation and linked checks pass. Native menu fixture:4 passed,2 Mac
+cases skipped. Bounded isolated System Link host run63s visually confirms the
+compact placement and synthetic Off/On/Off operation, sidebar grant/revocation
+and Settings/Diagnostics access. Local opt-in was enabled in the disposable
+controls copy. Supported XBE hash checked; personal settings/fixture hashes
+unchanged; disposable disk images recycled. No new Mac/Linux or multi-device
+validation. Context/whitespace checks pass. No commit/push performed.
+Executable SHA-256: `e84d1d256c33da1f07b3d66637f947069f5bf3ccaefb5a29f64649bec2952d70`.
+
+## 2026-11-06 - Restore Developer Tools local opt-in
+
+User revision supersedes the always-on access behavior below. Local opt-in is
+restored through Extras > Developer Tools and the launcher checkbox, with the
+existing persisted developer_tools_enabled boolean/default false and configurable
+shortcut. Extras has only Status, shortcut and Back, with no warning; the sidebar
+warning remains. The launcher retains its enablement guidance (Use with caution).
+Disabling resets local tools and closes the overlay. Match host Off/On policy,
+removed wrench icons and online category restrictions remain unchanged. Once
+locally enabled, Settings/Diagnostics remain accessible regardless of host policy.
+
+Local, uncommitted after cf14ea41 on developer-tools-overlay; nothing pushed.
+Windows x64/MSVC14.42.34433/SDK10.0.22621.0, D3D11/SDL3.4.16: supported Build,
+patch validation and linked checks pass. Input/Extras/FOV tests:16 passed,
+2 native-Mac cases skipped. Full Windows launcher -Test passes, including opt-in
+Save state, configured-shortcut guidance and On/Off persistence. Context and
+whitespace checks pass. No fresh game launch for this restoration; prior live
+host-policy evidence below remains distinct from this build. Mac/Linux host
+validation remains pending. Personal settings and saves were not edited.
+Executable SHA-256: `25ffa1dcb3ba3c9e93c92de8defe2f2b0b244d5c61a4189e3dbbb72ac689f4fd`.
+
+## 2026-11-06 - Always-on Developer Tools and host match access
+
+Local, uncommitted on developer-tools-overlay after cf14ea41; nothing pushed.
+Removed the Extras entry, multiplayer wrench decoration and launcher opt-in.
+F1 remains available with legacy developer_tools_enabled=false. Native match
+Options has a host-only Developer Tools Off/On selector (default Off). Host
+policy gates Tools; Settings/Diagnostics remain available. Allowed matches expose
+camera/movement/HUD controls; time/audio and player/progression stay unavailable
+online. Policy resets on session change and expires without fresh heartbeats.
+Shared source reuses the existing native platform adapters.
+
+Windows x64, MSVC14.42.34433 / SDK10.0.22621.0, D3D11 / SDL3.4.16.
+Supported US Xbox executable hash validated before build and live tests.
+Supported Windows Build, complete patch validation, linked checks and symbols
+pass. Affected input/guest/unlock/network/FOV suite:18 passed,2 Mac cases skipped;
+additional network/launcher UI/native-HUD suite:18 passed. Final transport tests
+including actual host outbound frames:2 passed. Nested native Options fixture:
+4 passed,2 Mac cases skipped. Full Windows launcher -Test passes, including legacy
+false-field preservation. An initial concurrent launcher run correctly refused
+update fixtures while the game was open; the sequential rerun passed.
+
+Bounded 58-second isolated System Link host acceptance passed with synthetic
+input: old false preference still opens F1, lobby has no wrench, host selector
+Off/On/Off works, Tools unlocks/revokes immediately, Settings and Diagnostics
+remain accessible while locked, and online restricted groups render disabled.
+The live pass caught and repaired the nested Bot Set adapter's temporary Arcade
+mode masking the host context; the fixture now covers that nesting. Captures and
+result metadata remain in the ignored developer-tools test directory. Personal
+settings and canonical fixture hashes were unchanged; disposable disk images
+were recycled. This is host/menu evidence, not a two-device gameplay test.
+LAN/Online guest policy, stale/replayed/wrong-host/session rejection and expiry
+are covered by socket fixtures. Native Mac/Linux build, physical input and
+multi-device match/camera acceptance remain unrun. Context/whitespace checks pass.
+Executable SHA-256: `40a917f4ea7e6832ad487d7da6247a7684d1268d0112b70b8ba778da5c95e2ae`.
+
+## 2026-11-06 - Settings tab label
+
+Local, uncommitted after45b1b7b8. Renamed the sidebar tab and bindings-editor
+back button from PC Settings to Settings; updated both private mockups and
+current README wording. Layout still measures the label width. Existing
+sidebar input test, supported Windows Build/linked checks, context and whitespace
+checks pass. No fresh gameplay or native Mac/Linux validation for this label edit.
+Executable SHA-256: `2f2c2a1ad8bd6e2884570c0c917d937efd67c884a42183a7a9c338d3b7cc1e91`.
+
+## 2026-11-06 - Video Settings in Developer Tools
+
+Prior native sidebar/typography work committed locally as45b1b7b8. This follow-up
+is local and uncommitted on developer-tools-overlay; nothing pushed.
+PC Settings now has collapsible Input Settings above collapsible Video Settings,
+with Display, Graphics, View & HUD and Advanced subgroups. The redundant Debug /
+Diagnostics link is removed. Tools speed presets are0.50/1.00/2.00/4.00.
+
+The shared native UI supports render-mode/aspect and frame-rate selectors,
+fullscreen, Classic/Enhanced textures, AF/AO/post-AA, typed/stepped/sliding FOV,
+subtitles, Kill Feed, FPS/Ping, MSAA, supersampling, shader cache and cache clearing.
+A copied-value mailbox applies drafts on the guest thread through existing APIs;
+subtitle changes use the native profile save flag. Apply/Revert, resolution Keep /
+15-second timeout and close-to-revert, failed-save rollback, and restart-required
+MSAA/supersampling preserve existing settings semantics and files. Aspect/rate
+catalogs are shared with existing settings. Legacy GL preserves unsupported
+preferences and disables those effect controls. No browser or new OS dependency.
+
+Windows x64, MSVC14.42.34433 / SDK10.0.22621.0, D3D11 / SDL3.4.16. Supported US XBE
+validated. Supported Build, linked tests, patch-stack validation and symbols pass.
+Affected input/FOV/native-HUD suite:26 passed,2 native-Mac compile cases skipped.
+Frame-clock/display-mode/graphics preference suite:13 passed. The final UI fixture
+also passes after disabled Apply/Revert styling; a separate real-font cache
+eviction stress case passes. Repository context and diff
+whitespace checks pass. Existing CI suites cover the extended behavioral fixtures.
+Final executable SHA-256:
+`61c4c41ad3598c65d4763f9551e9099c4dd59be1a6a3b7e228758da0ad0b287d`.
+
+A45-second bounded isolated Test Lab run verified FOV75 stays unsaved until Apply,
+then writes the isolated display file; searchable resolution selection, preview
+and Revert preserve that saved file. Captures reviewed at150% DPI. Some captures after filtering / Original-resolution preview showed displaced
+header text; resolution selection/confirmation/revert still worked. A bounded
+CPU canvas capture and real-font cache eviction test render the header correctly;
+the corresponding slower instrumented GPU capture was also correct. This is
+retained as an intermittent presentation/capture-fidelity gap, not attributed to
+a specific cause or called pixel-perfect acceptance. Temporary instrumentation
+was removed from final source.
+Personal controls/display, saves and canonical fixture remain intact; disposable
+partitions recycled. Evidence: private/test-saves/developer-tools/video-result.json
+and captures/video-*.png. Final short visual capture separately records the final
+button styling. Native Mac/Linux build and real-host input/GPU/visual acceptance
+remain unrun; see MAC_PORT_BACKLOG.md. Automated input is synthetic, not a physical
+keyboard/controller test; full campaign gameplay is outside this check.
+
+## 2026-11-05 - Correct reset arrow direction
+
+Local, uncommitted on developer-tools-overlay after f73c38e9. Corrected the
+previous arrowhead: pointing up at the left endpoint indicated clockwise;
+it now points left at the top endpoint, indicating counterclockwise. Shared
+canvas only; grey stepper fills and input/value contracts are unchanged.
+Windows x64 / D3D11: supported Build and linked checks pass, plus 11 focused
+sidebar input/font/canvas/GPU tests. The bounded isolated Test Lab capture
+visually confirms the direction at 150% DPI. Native Mac/Linux acceptance is
+still pending. Executable SHA-256:
+`a539a2c86d05659cc01b3c7471db1dcd95e1821ea9bc6d82356e939d77b0a389`.
+
+## 2026-11-05 - Sidebar reset and hold-speed button details
+
+Local, uncommitted on developer-tools-overlay after f73c38e9. The shared native
+reset icon now has an open counterclockwise arrow with a connected arrowhead;
+hold-key speed minus/plus buttons use the same grey fill as the main stepper.
+Input, values and saved settings are unchanged. Windows x64 / D3D11: supported
+Build, linked checks and 11 focused input/font/canvas/GPU tests pass. A bounded
+isolated Test Lab run captured and visually reviewed both corrections at 150%
+DPI; personal settings, saves and the canonical fixture were preserved and
+its disposable partitions recycled. Mac/Linux visual validation remains pending.
+Executable SHA-256: `f7749ba4a415f3bfdf7af089ad7d418b29413f01a2e9836eb09b2239b66ec1fb`.
+Evidence: private/test-saves/developer-tools/captures/refine-hold-rows.png.
+
+## 2026-11-05 - Shared native fonts and text layout
+
+Local, uncommitted on developer-tools-overlay after f73c38e9. No browser added.
+Patch2620 links one embedded native font library into the existing UI/renderers.
+The verified, unmodified font files total430532 bytes (420.4KiB): Selawik regular,
+semibold and bold, plus Cousine Bold for numeric fields. stb_truetype supplies one
+shared rasterizer. The executable is191104000 bytes,477696 bytes larger than the
+previous190626304-byte sidebar build (about0.48MB). This is a file-size comparison,
+not a measured whole-process RAM/FPS benchmark. Font provenance, SHA-256 pins and
+OFL/MIT notices are in assets/ui/fonts and vendor/stb; all three package scripts
+retain the notices. No font files or font installation are needed at runtime.
+
+Layout and rendering now share UTF-8 advance/kerning/ascent/descent measurement,
+real font weights, fractional DPI sizes and letter spacing. The title's20px
+semibold/-0.3px tracking advance agrees with the same-font browser comparison
+(144.836px). Tabs and binding chips derive widths from these measurements;
+long labels ellipsize on character boundaries. Bold emphasis is drawn in measured
+runs, not simulated. Explicit text roles replace height-based font guesses.
+Hold-key speeds has a separate right-aligned shortcut column and expanded bracket
+chips/compact steppers. Wording, multiplication/range punctuation, movement hint,
+warning emphasis/wrapping and footer follow the approved design. The original
+Segoe-based mockup remains unchanged; an ignored same-font reference was used
+for comparison. Different font outlines/antialiasing can still differ from that
+original browser render; exact browser-pixel identity is not claimed.
+
+Windows x64, MSVC14.42.34433 / SDK10.0.22621.0, D3D11, SDL3.4.16. Supported
+US XBE validated. Supported Build, linked checks, symbols and content seal pass.
+Final executable SHA-256: `33183aacaa9d6fad1ec872551ba98dcc27cf9ce26367c58ccfdc339205c09c2c`.
+Affected suite:114 passed,2 skipped (CoreText on macOS; POSIX executable/XDG paths
+on a POSIX host). After the final shortcut-chip width adjustment,11 focused
+input/font/canvas/GPU cases pass. Font tests exercise real regular/semibold glyphs,
+monospace advances, fractional metrics, browser-referenced tracking and UTF-8
+ellipsis. RHI final-target/MSAA, settings/bindings, native Extras, identity and
+asset-free Mac/Linux package checks also pass. Font/vendor bytes are now included
+in source compatibility identity; binary TTF bytes are not text-normalized.
+The context map/89-entry patch tail and bounded guide checks pass.
+
+Bounded isolated Test Lab visual checks cover1992x1245 at144 DPI (1328x830 logical
+reference viewport),1280x720 and1920x1080, plus expanded hold rows, tabs, number
+entry and docking. Selected local evidence:
+[sidebar](../../private/test-saves/developer-tools/captures/refine-mockup-size.png),
+[held speeds](../../private/test-saves/developer-tools/captures/refine-hold-rows.png).
+Personal settings and canonical fixture hashes are preserved; disposable partition
+images are recycled. These frontend checks do not establish campaign acceptance.
+Native Mac/Linux build, monitor-DPI/font rendering and physical GPU/input checks
+remain pending; see [handoff](MAC_PORT_BACKLOG.md).
+
+## 2026-11-05 - Developer Tools visual refinement
+
+Uncommitted on developer-tools-overlay after f73c38e9, continuing the existing
+sidebar change. The panel is now452 logical units scaled by host DPI, rather
+than screen height. Text is rasterized at its final physical pixel size/weight
+and copied1:1; tabs/buttons support appropriate alignment. Vector geometry
+replaces ASCII arrows/close/chevrons and adds the title wrench, search, warning
+and reset icons. Categories use continuous rounded cards with original-geometry
+clipping, eliminating the row/bottom-border hooks. Compact binding chips, joined
+number steppers, centered presets, slider captions, label-width tab indicators,
+conditional status space, transparency and a subtle dock shadow bring the
+layout closer to the approved HTML. Actual native font metrics remain distinct
+from browser text; this is not a claim of identical browser pixels.
+
+Patch2610 extends the optional host font callback with requested size/weight;
+Windows uses grayscale Segoe UI coverage with UTF-8 conversion. Cocoa/FreeType
+adapters share that contract. SDL supplies display scale; the legacy GL adapter
+now composites straight alpha with explicit state preservation. No guest C,
+gameplay rules or saved settings formats were changed. Native Mac/Linux build,
+fonts, monitor-DPI transitions and GL/Vulkan visual acceptance remain unrun;
+see [native handoff](MAC_PORT_BACKLOG.md).
+
+Windows x64, MSVC14.42.34433 / SDK10.0.22621.0, D3D11, SDL3.4.16. Supported
+US XBE hash validated. Supported Build passes linked checks, crash symbols and
+content seal. Executable SHA-256:
+`d83bc5db92ae48163d319ffd21db6a0bfd44c9a2f45658723fee393e70cebbcd`.
+The affected five-file pytest route passed62 tests with1 CoreText-only skip;
+final tab/caption/reset adjustments were then checked with10 input/canvas/GPU
+cases, all passing. Coverage includes DPI/height-independent width, styled font
+callback failure/output preservation, cache size/weight keys, icon coverage,
+settings/bindings/input, final target/MSAA and patch-index order (tail88).
+
+Final bounded live visual comparison:32.6s, disposable Test Lab copy,144 DPI
+(scale1.5), confirmed client sizes1992x1245 (HTML1328x830 logical viewport),
+1280x720 and1920x1080. Reviewed full-size captures show no tab clipping or border
+hooks, aligned controls and stable panel width across height changes. Tabs,
+numeric entry, F1 close/reopen and right docking were exercised. Smaller viewports
+scroll the content while retaining warning/footer. No campaign or new gameplay
+acceptance is inferred from this frontend test. Personal config and canonical
+fixture hashes remained unchanged; disposable partition images were recycled.
+Local evidence: [matched viewport](../../private/test-saves/developer-tools/captures/refine-mockup-size.png),
+[720p](../../private/test-saves/developer-tools/captures/refine-720p.png),
+[1080p](../../private/test-saves/developer-tools/captures/refine-1080p.png).
+
+## 2026-11-05 - Developer Tools blue palette
+
+Local, uncommitted follow-up: changed all green sidebar accents, selected/focused
+controls and enabled switch thumbs to blue in the shared UI and private HTML/PNG
+concept. Amber warning colors are retained. Windows supported Build and linked
+checks pass; both real D3D11 overlay fixtures pass, asserting exact blue RGB
+128/191/255 with MSAA1x/4x. No new gameplay test was needed for this palette edit.
+Executable SHA-256: `ece7f772cbc6b7b44e9d7a5aa5f89cfa16d3d5e88b01c7dac87af88a32341f69`.
+Native Mac/Linux visual checks remain pending; this shared color-only change
+requires no additional platform adapter or settings migration.
+
+## 2026-11-05 - Approved Developer Tools sidebar
+
+Local, uncommitted on developer-tools-overlay after f73c38e9. Implemented the
+approved side panel in shared game UI: Tools/PC Settings/Diagnostics tabs,
+collapsible categories, global search, numeric entry with validation, +/- steps,
+slider/presets/reset, binding draft/Save, dock-side control and keyboard navigation.
+The fixed footer owns the warning ending "Use with caution."; native Extras now
+has Status, assigned shortcut and Back. Existing tool/offline guards and personal
+settings are preserved. Additive patch2600 renders the shared BGRA canvas after
+scene completion; no generated guest C was changed. Native legacy GL and
+Cocoa/Linux font/input adapters share the layout/canvas policy.
+
+Windows x64, MSVC14.42.34433 / Windows SDK10.0.22621.0, D3D11, SDL3.4.16.
+Supported US Xbox title45410066 / required XBE SHA-256 verified by the supported
+Build. Final supported Windows Build passes linked native checks, crash-symbol
+creation and executable content sealing; sidebar/canvas compile without new
+warnings. Final executable SHA-256:
+`6630599671bd920eafd8c3d25e680af35c318fea2b602a0e98427237db693251`.
+
+Affected regression set:62 passed,1 skipped (CoreText requires macOS). Routes:
+input/test_developer_tools.py, storage/test_unlock_content.py,
+repository/test_repo_context.py, graphics/test_native_hud.py and
+ graphics/test_renderer_host.py. They verify actual pointer/search/value/binding
+behavior, slider dragging, portrait-screen footer capacity, cached canvas
+geometry/clipping/alpha, final D3D11 target colors/text at1x/4x MSAA, untouched
+guest captures, native Extras and host contracts. Context/index check against
+f73c38e9 passes.
+
+Bounded isolated live acceptance used disposable Test Lab copies, never personal
+saves/settings. Frontend run30.2s; Story run57.3s: F1, tabs, search, dock and close
+captured over real rendered scenes. Typing2.00 gave raw delta0.994878 / game
+delta1.989756 (exact2x); Reset gave1.0 /1.0. The canonical fixture and personal
+settings hashes stayed unchanged; disposable partition images were recycled.
+These scene captures precede final unsigned-color/focus/draw-capacity cleanup;
+that cleanup is covered by the final build and fixtures, not a second live run.
+Selected local evidence: [Story sidebar](../../private/test-saves/developer-tools/captures/sidebarworld-tools.png),
+[right dock](../../private/test-saves/developer-tools/captures/sidebarworld-right-docked.png).
+This establishes the menu and a bounded Story interaction, not a full campaign.
+Native Mac/Linux builds, fonts, DPI/pointer input and actual Vulkan/legacy GL
+visual acceptance remain unrun; WSL has only Docker Desktop, no Ubuntu test host.
+See [native handoff](MAC_PORT_BACKLOG.md).
+
+## 2026-11-05 - Latest warning and optional audio-speed notes
+
+Uncommitted on developer-tools-overlay after a7271130 and the prior local changes.
+Extras now uses one nonselectable multiline warning entry; the native Status
+selector, configured shortcut and Back remain separate. Developer Tools adds
+Audio follows game speed (On by default, session only). Off restores1x audio
+without changing manual/held game speed or native/video clock speed. Both
+shared gameplay and XMV voice paths use pc_developer_audio_speed. Patch2590
+is additive after2580; no generated guest code or personal config was edited.
+
+Windows x64, MSVC supported Build passed linked checks, crash-symbol creation
+and content seal. Verified supported US XBE; D3D11 host. Executable SHA-256:
+6cdc922940ddeb7476349e420aae5990f4c99d6700af326f7839b4ae80eaf0c8.
+Fourteen focused input/native-menu/real-XMV checks passed;92 audio/repository
+contract checks passed. The movie test keeps video at2x while audio is1x,
+then restores2x audio; overlay input fixture exercises the same toggle at3x.
+Repository context/link/index validation passes against a7271130.
+
+Reviewed native capture confirms all three warning lines in a single entry,
+no clipping, working Enable/Disable saves and F3 shortcut round trip. Actual
+System Link pair reached host11/guest12 with two humans; the disabled guest
+shows a wrench beside only the enabled host, with no footer notice. This
+finishes the previously locked-session LAN visual check. The first menu replay
+used long key holds retained from the locked desktop and triggered native key
+repeat/Quit; it was corrected to normal holds and the rerun passed. No product
+failure was inferred from that automation issue. Reviewed overlay captures confirm the new audio row toggles On/Off/On. A separate
+actual Online pair used a local directory and independent authenticated bridges;
+host11/guest12 had two humans and the disabled guest displayed the enabled host's
+wrench. These finish the prior pending lobby visual checks. All test children
+stopped, disposable partition images recycled, and personal/canonical hashes
+unchanged. Mac/Linux native builds, physical input/audio,
+every scene and physical remote multiplayer acceptance remain unrun.
+
+## 2026-11-05 - Further Developer Tools notes
+
+Uncommitted after a7271130, branch developer-tools-overlay, Windows x64. All six
+updated notes implemented: game audio speed with scaled playback clocks; explicit
+opaque owned-body draw; native Extras submenu with Enable/Disable, warning and
+assigned shortcut; per-player lobby wrench with footer retained dormant; removed
+Return to game row; configurable no-clip/freecam shortcuts, default unbound.
+Complete additive patches2560/2570/2580 follow2550. Implementation is shared by
+Windows, Mac and Linux; host acceptance below is Windows only.
+
+Focused input/native menu/audio checks:82 passes. Expanded input/render/network/
+audio run:196 passes,14 host/data skips, four stale-API fixture compile failures;
+all four corrected renderer fixtures pass (two native-host skips). Windows
+launcher rebuild/test:48 isolated settings checks and existing shared UI suites
+passed. Supported Windows Build4 completed all linked checks, sealed content verification
+and matching crash symbols (MSVC x64, D3D11, verified US XBE). Final executable
+SHA-256: d638eb80a41fa4848bdfd126d6b3a69e6d62d724b6dbea0764e489b102633c23.
+Final audio regressions:71 passes; native label/outline/menu:22 passes, followed
+by the decorated-name/slot guard fixture passing. Repository context/link/index
+validation passed against a7271130.
+
+Live acceptance before the Windows session locked: close-up first-level freecam
+shows opaque torso/legs with terrain occluded; configured N/B flight toggles and
+return to player view work. Native submenu stays open after removing an erroneous
+lifecycle Back callback; Enable/Disable saves and assigned F3 opens/closes Tools.
+The initial System Link pair reached native host11/guest12 with two humans and
+preserved disabled-client operation, but caught a missing wrench:39010 is the
+conditional dimming draw. The final implementation uses the actual outlined-name
+41E30 caller199583, preserves prompt outline scopes and matches the painter's
+EBX roster slot to353760 capture. Decorated display labels are measured directly.
+
+Final wider-menu and corrected-wrench captures are pending. Windows LogonUI was
+active during the last replay; D3D11 host Present blocked214-263ms/frame. Those
+attempts missed profile/menu input and are not accepted as feature evidence.
+Native Mac/Linux build, physical input/audio, every scene and remote multiplayer
+acceptance remain unrun. Personal saves/settings and canonical fixture preserved.
+All test children stopped and disposable partitions recycled. Nine compiler
+fixture directories recycled (1319.7 MiB summed lengths, not physical allocation);
+selected captures and bounded logs retained. Changes are local and uncommitted.
+
+## 2026-11-05 - Revised Developer Tools notes
+
+Previous work committed first as 906a2c8e on developer-tools-overlay. Revised
+work is included in this revision. Tools defaults OFF; native Main Menu > Extras
+and launcher General enable it, with the requested warning and assigned
+shortcut. The binding is shared by the launcher, overlay and native editors.
+Freecam borrows only the local body's near-eye fade/style during its world draw.
+Native cinematics use their fractional clock; XMV movie time and movie voices
+scale together. Current host-session metadata names enabled lobby players,
+including on a Tools-disabled client. Admitted peers need no discovery-cache
+entry; expired/retired sessions and roster changes discard old announcements.
+
+Windows x64, supported US XBE hash verified, complete patches2540/2550 after2530,
+MSVC supported Build12 and all linked checks passed. Final executable SHA-256:
+`54ca3a6aace4cbee0c0020ba541541fc7d33b144ece7d4aec30f3c043ccba0a8`.
+Sealed game-content/executable verification passed. Affected regression set:
+412 unique passes, 3 host/data skips. Four socket/timer cases failed inside the
+restricted process sandbox; all passed in the actual-host rerun (6 cases).
+The subsequent session/admission changes passed nine affected fixtures, then
+two final UDP/Online bridge tests including no-discovery guests and stale
+self-discovery retirement. Windows launcher tests passed:47 isolated settings
+checks and existing shared UI/install/restart suites, with a new ON/OFF-only
+Save draft/warning regression. Final launcher resource build also passed.
+
+Isolated native movie acceptance: Welcome Home position advanced .99779 seconds
+per second at1x and1.98880 at2x, with cinematic flags verified. The native raw
+clock branch had ignored the scaled game delta; original-XBE98E50 and scoped
+wrapper fixtures now cover that distinction and origin rebasing. Earlier XMV
+real-file cadence/image/PCM checks and XAudio/SDL queued-voice fixtures passed.
+Extras ON/OFF saved successfully, the F3 warning matched the assigned binding,
+OFF blocked the shortcut, and F3 opened/closed the enabled overlay. The prior first-level freecam capture established body visibility only;
+the user's subsequent close-up disproved the claimed opacity fix. Actual two-instance System Link host/guest reached states11/12 and
+both displayed the enabled host's name while the guest's Tools remained OFF.
+A separate actual Online pair used a local directory and independent authenticated
+bridge ports. Native browser discovery, host11/guest12 membership and the enabled
+host notice on the disabled guest were verified in its reviewed capture. These are bounded replay/loopback checks, not
+physical multiplayer, every cutscene or every scene. Native Mac/Linux builds,
+audio/UI/physical input and multiplayer acceptance remain unrun.
+
+Tests preserved personal controls/display and canonical fixture hashes, recycled
+their disposable partitions and retained selected captures. Fourteen compiler
+scratch directories were recycled (5647.7 MiB summed file lengths, not physical
+allocation). Source/patches/defaults travel through Git; no push or publication.
+
+## 2026-11-05 - Developer Tools notes follow-up
+
+Original overlay committed locally as af616873 before applying the Changes
+section of the user's notes. Follow-up committed locally as906a2c8e on
+developer-tools-overlay, Windows x64. Shared flight reads configured bindings,
+sensitivity/inversion and native player direction; no-clip retains firing and
+weapon selection. HUD/UI hiding includes known crosshair/aim primitives.
+Freecam omits first-person viewport rendering and draws the owned world body
+through native A2740 before HUD/AO, rebuilding its missing colour bone matrices.
+The camera remains detached from the character. Held bracket speed targets are
+separate from manual speed; the outside-menu toggle defaults off, and release
+or focus loss restores manual speed. God mode and infinite ammo are local,
+offline services; native shot accounting, weapon transactions and grenade
+creation remain active. Personal settings, saves and the fixture are preserved.
+
+Supported US XBE hash verified, complete patch stack applied, supported Windows
+MSVC x64 Build and linked settings/debug checks passed. Executable SHA-256:
+`0ca4ba18bfa5427dbbf621981b6e0f1c5571aa2c75f23d1481ec66887db0a40a`;
+sealed executable/game-content identity verification passed. Final affected
+regression set: **180 passed, 2 Mac compiler skips** (115.97 seconds). This
+includes real original-XBE ammo/visibility branches and host-boundary fixtures.
+The final minimal-body build passed a 64.61-second isolated Arcade run with a
+reviewed full-body capture; no node masks, alternate headers or actor flags are
+overridden. Native Mac/Linux build/physical input/gameplay checks remain pending;
+Windows tests do not establish those.
+
+Bounded isolated acceptance: remapped IJKL movement, sensitivity 0.13 and invert-Y
+produced the expected native/flight direction and 13-degree look response.
+Held ] outside the closed menu produced game_delta approximately 2.019, release
+returned to 1.00. Armed Arcade accepted no-clip firing and weapon switching,
+logged preserved ammunition on actual shots, and rejected incoming local damage
+with God mode enabled. A detached camera capture confirmed the full player body
+in-world with first-person arms/gun, HUD and crosshair absent. These are bounded
+Story/Arcade replay checks, not every weapon, every scene or physical input.
+Each run stayed below 120 seconds and recycled its six disposable partitions;
+protected personal/canonical fixture hashes were unchanged.
+Final armed acceptance on the same minimal build completed in 86.24 seconds:
+actual no-clip shots preserved ammunition, switching reached fists, incoming
+hits were rejected, and disabling freecam restored the first-person hands/HUD.
+The clear full-body capture is retained from the 64.61-second run; the later
+armed body capture includes an occluding explosion. Compiler scratch directories
+were recycled after checks (1899.3 MiB total file lengths, not physical allocation).
+
+## 2026-11-04 - Developer Tools overlay
+
+Committed locally as af616873 on developer-tools-overlay, base d2d2c8d5, Windows x64.
+F1 opens an in-game overlay with the existing PC Settings (bindings/mouse,
+debug options/statistics/logs, textures and fullscreen) and all six requested
+tools. The old Windows toolbar stays hidden. Flight/checkpoint/game-speed
+changes are offline only; game speed accepts 0.05?4.0, held brackets repeat
+0.1 steps. Flight uses WASD/mouse, Space/Ctrl and Shift (4x). Shared policy,
+Windows/SDL adapters, common RHI and legacy GL implementation are present.
+
+Supported US XBE SHA-256 verified against the pinned 3cfd001a?41816bc.
+Final supported MSVC x64 Build and linked settings/debug checks passed (exit 0).
+Executable SHA-256: `6ee75ba59a074d09857b5073bdb25b8ed1444a4c285e72b9725a7478b8e30565`;
+sealed game-content/executable identity verification passed. Final combined
+regression set: **167 passed, 2 Mac compiler skips**. Earlier CPU suites:
+123 timing/menu/tools checks passed; 43 repository/debug/mounted-input checks
+passed; latest flight/FOV/input follow-up 26 passed with two Mac compiler skips.
+Real D3D11 GPU replay: 13 passed, including final-output overlay glyphs at
+MSAA 1/4 and unchanged guest scene pixels. The latter read back the completed
+swapchain before Present; reading after DXGI flip was rejected as evidence.
+Temporary test-only _CL_=/Z7 avoids this host's standalone PDB manager mismatch;
+normal supported builds use the project flags.
+
+Bounded isolated Windows acceptance: menu mouse/keyboard navigation, binding
+settings save (sensitivity 0.2), debug, texture and fullscreen round trips,
+watermark toggle and F1 reopen passed. Story run (96 seconds) verified noclip
+camera follows player while floating, detached flight and mouse look with
+unchanged character x/z and facing, HUD hiding/restoration, camera/control
+return, speed 0.5 and held ] increase (~1.2), and native checkpoint reloads.
+Three successive authored positions were (52.67,0.45,16.12),
+(-87.88,-10.73,-113.76), (-85.07,-4.82,-162.81); the next advance entered the
+native Cortez elevator ending cinematic. This is one Story level, not an
+all-level checkpoint audit or a complete campaign playthrough. Shift's 4x
+movement and offline guards have deterministic fixtures. A final 63-second
+Story run also verified stationary floating and Ctrl flight through the ground
+(camera still attached), then measured Shift: 426 ordinary-motion samples
+averaged 7.48 units/sec, 73 boosted samples 29.99 units/sec (4.01x). These are
+automated host input replays; physical-device and native Mac/Linux gameplay
+checks remain unrun.
+
+Evidence: logs/developer-tools-*.log; private/test-saves/developer-tools contains
+bounded JSON results, pose traces and selected own-window captures. Hashes of
+personal controls/display and the canonical Test Lab fixture were unchanged;
+six disposable partition images recycled after each run. No release/push claim.
 
 ## 2026-11-06 - Fullscreen verified on native Linux under WSL
 

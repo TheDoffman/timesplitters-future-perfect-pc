@@ -77,6 +77,20 @@ int main(void)
     assert(reversed.raw_ticks == 0 && reversed.raw_delta == 0);
     assert(reversed.raw_units==0 && reversed.raw_phase==clock.raw_remainder);
     assert(pc_native_timing_step(&clock, 100, 0, 144, 0).raw_delta == 0);
-    puts("Native fractional timing: movement, timers, pause, stalls and counter precision passed");
+    for(int rate=60;rate<=240;rate+=60) {
+        PcNativeTiming scaled={0};unsigned raw_sum=0,game_sum=0;
+        int64_t freq=(int64_t)rate*10000;
+        pc_native_timing_step_scaled(&scaled,0,freq,rate,0,.25);
+        for(int i=1;i<=rate*4;i++) {
+            double speed=i<=rate?.25:i<=rate*2?2.:1.;
+            int pause=i>rate*2&&i<=rate*3;
+            PcNativeStep step=pc_native_timing_step_scaled(&scaled,(int64_t)i*10000,freq,rate,pause,speed);
+            raw_sum+=step.raw_ticks;game_sum+=step.game_ticks;
+            assert(step.raw_units==600000);assert(step.raw_delta>0);
+            if(pause)assert(!step.game_units&&!step.game_ticks&&!step.game_delta);
+        }
+        assert(raw_sum==240&&game_sum==195);
+    }
+    puts("Native fractional timing: movement, timers, pause, speed changes, stalls and counter precision passed");
     return 0;
 }

@@ -30,6 +30,10 @@ static void sleep_ms(DWORD ms) { assert(ms==1);sleeps++;host_counter+=host_frequ
 #include <stdlib.h>
 
 #define TSFP_PC_CONTROLS 1
+#include "gameplay/pc_movie_speed.h"
+#define PC_MOVIE_SPEED() 1.
+#define PC_MOVIE_AUDIO_SPEED() 1.f
+#define PC_MOVIE_ACTIVE(active) ((void)(active))
 #define MAX_MOVIES 4
 #define MAX_CATCH_UP 8u
 #define AUDIO_CHUNK 8192u
@@ -64,6 +68,7 @@ static int host_discontinuity;
 static int recomp_audio_output_take_discontinuity(int slot) {
     assert(slot==1); int lost=host_discontinuity; host_discontinuity=0; return lost;
 }
+static void recomp_audio_output_movie_speed(float ratio){assert(ratio==1.f);}
 static void recomp_audio_output_reset_voice(int slot) { assert(slot==1);resets++; }
 static int recomp_audio_output_position(int slot,uint64_t *played,uint32_t *queued)
 { assert(slot==1);*played=submitted;*queued=0;return 1; }

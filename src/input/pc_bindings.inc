@@ -13,6 +13,7 @@ _Static_assert(CONTROL_COUNT == PC_ACTION_COUNT, "PC settings action order must 
 static SRWLOCK g_pc_weapon_lock=SRWLOCK_INIT;
 static PcWeaponKeys g_pc_weapon_keys;
 static unsigned long long now_ms(void);
+static int g_pc_developer_enabled;
 int pc_weapon_slot_take(void)
 {
     int active=pc_controls_weapon_slots_active(),slot;
@@ -68,6 +69,7 @@ const char *const pc_action_labels[PC_ACTION_COUNT] = {
 #define PC_WEAPON_SLOT(n,key) "Weapon slot " #n,
 #include "pc_weapon_slots.def"
 #undef PC_WEAPON_SLOT
+    "Developer Tools", "Toggle no-clip", "Toggle free-cam",
 };
 
 void pc_settings_defaults(PcSettings *s)
@@ -80,6 +82,7 @@ void pc_settings_defaults(PcSettings *s)
 #define PC_WEAPON_SLOT(n,key) {key},
 #include "pc_weapon_slots.def"
 #undef PC_WEAPON_SLOT
+        {VK_F1}, {0}, {0},
     };
     memset(s, 0, sizeof *s);
     memcpy(s->keys, keys, sizeof keys);
@@ -120,7 +123,7 @@ int pc_settings_conflict(const PcSettings *s, int action, int key)
 
 int pc_settings_key_allowed(int key)
 {
-    return key>=0 && key<=255 && key!=VK_F1 && key!=VK_F2 &&
+    return key>=0 && key<=255 && key!=VK_F2 &&
         key!=VK_F9 && key!=VK_F10 && key!=VK_F11 && key!=VK_F12 &&
         key!=VK_LWIN && key!=VK_RWIN;
 }
@@ -260,6 +263,35 @@ static int pc_write_config(const char *text)
     }
     return 1;
 #endif
+}
+
+int pc_settings_developer_enabled(void)
+{
+    recomp_bindings_init();
+    AcquireSRWLockShared(&g_pc_bindings_lock);int enabled=g_pc_developer_enabled;
+    ReleaseSRWLockShared(&g_pc_bindings_lock);return enabled;
+}
+void pc_settings_developer_keys(int keys[PC_BINDING_SLOTS])
+{ pc_settings_action_keys(PC_DEVELOPER_ACTION,keys); }
+void pc_settings_action_keys(int action,int keys[PC_BINDING_SLOTS])
+{
+    recomp_bindings_init();memset(keys,0,PC_BINDING_SLOTS*sizeof *keys);
+    AcquireSRWLockShared(&g_pc_bindings_lock);
+    if(action<0 || action>=PC_ACTION_COUNT){ReleaseSRWLockShared(&g_pc_bindings_lock);return;}
+    const Binding *binding=&g_ctl[0].bind[action];
+    for(int i=0;i<binding->count && i<PC_BINDING_SLOTS;i++)
+        if(binding->src[i].kind==SRC_KEY)keys[i]=binding->src[i].arg;
+    ReleaseSRWLockShared(&g_pc_bindings_lock);
+}
+int pc_settings_developer_save(int enabled,char *error,size_t bytes)
+{
+    recomp_bindings_init();
+    char *text=g_have_path?read_file(g_path):NULL;
+    int ok=text && pc_replace_member(&text,ws(text),"developer_tools_enabled",enabled?"true":"false") && pc_write_config(text);
+    free(text);
+    if(!ok){snprintf(error,bytes,"Could not save Developer Tools. Your previous setting was kept.");return 0;}
+    AcquireSRWLockExclusive(&g_pc_bindings_lock);g_pc_developer_enabled=!!enabled;
+    ReleaseSRWLockExclusive(&g_pc_bindings_lock);return 1;
 }
 
 /* Public local-player assignments: -2 keyboard, -1 disabled, 0..3 pad. */
@@ -496,7 +528,7 @@ int pc_settings_save(const PcSettings *s, char *error, size_t bytes)
         for (j=0;j<PC_BINDING_SLOTS;j++) {
             int key=s->keys[i][j];
             if (!pc_settings_key_allowed(key)) {
-                snprintf(error,bytes,"A binding uses an invalid key, a system key, or a reserved function key (F1, F2, F9, F10, F11, F12)."); return 0;
+                snprintf(error,bytes,"A binding uses an invalid key, a system key, or a reserved function key (F2, F9, F10, F11, F12)."); return 0;
             }
             if (key) used += (size_t)snprintf(bindings+used,sizeof bindings-used,"%s\"key:#%d\"",j?",":"",key);
             else used += (size_t)snprintf(bindings+used,sizeof bindings-used,"%s\"none\"",j?",":"");
@@ -546,6 +578,15 @@ static void pc_weapon_bindings_migrate(const char *text)
     const char *controller=pc_controller(text);
     const char *bindings=controller?pc_member(controller,"bindings",NULL):NULL;
     Controller *c=&g_ctl[0];
+    const char *enabled=pc_member(text,"developer_tools_enabled",NULL);
+    g_pc_developer_enabled=enabled && !strncmp(enabled,"true",4);
+    if(!bindings || !pc_member(bindings,"developer_tools",NULL)) {
+        Binding *binding=&c->bind[PC_DEVELOPER_ACTION];memset(binding,0,sizeof *binding);
+        int used=0;
+        for(int i=0;i<PC_DEVELOPER_ACTION;i++)for(int j=0;j<c->bind[i].count;j++)
+            if(c->bind[i].src[j].kind==SRC_KEY && c->bind[i].src[j].arg==VK_F1)used=1;
+        if(!used){binding->count=1;binding->src[0].kind=SRC_KEY;binding->src[0].arg=VK_F1;}
+    }
     if(!bindings || c->device!=DEV_KEYBOARD)return;
     if(!pc_member(bindings,"weapon_slot_1",NULL)) {
         const int actions[2]={5,4},keys[2]={'1','2'};

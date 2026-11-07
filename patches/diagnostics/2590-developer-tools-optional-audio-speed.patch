@@ -1,0 +1,27 @@
+--- a/src/hle/hle_xmv_play.c
++++ b/src/hle/hle_xmv_play.c
+@@ -38,6 +38,15 @@
+ #endif
+ #endif
+ 
++#ifndef PC_MOVIE_AUDIO_SPEED
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++#include "pc_developer.h"
++#define PC_MOVIE_AUDIO_SPEED() pc_developer_audio_speed()
++#else
++#define PC_MOVIE_AUDIO_SPEED() PC_MOVIE_SPEED()
++#endif
++#endif
++
+ #include "xbox_adpcm.h"
+ #include "xmv_demux.h"
+ #include "xmv_decode.h"
+@@ -196,7 +205,7 @@
+ static void feed_audio(movie *m)
+ {
+     uint32_t frame = m->channels * 2u;
+-    recomp_audio_output_movie_speed((float)PC_MOVIE_SPEED());
++    recomp_audio_output_movie_speed((float)PC_MOVIE_AUDIO_SPEED());
+ 
+     if (recomp_audio_output_take_discontinuity(RECOMP_AUDIO_SLOT_MOVIE))
+         m->audio_recovering = 1;
