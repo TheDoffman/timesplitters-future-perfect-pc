@@ -1,3 +1,10 @@
+Audio follow-up: portable candidate-survey regressions are selected in both
+media CI routes; actual Windows/Linux survey JSON agrees. Full suites pass228
+on Windows and224/four skips on Linux. The144/180/240-target Windows audio sweep
+reaches gameplay with clean captures, at observed143/177/205 guest updates/s;
+display-present240 performance and native Mac hardware remain unverified.
+See [current acceptance](../development/audio-overhaul-acceptance.md).
+
 Audio acceptance: a fresh pinned SDL build passes16 production-adapter
 dummy/converter checks on Linux/WSL. Actual PulseAudio output is unavailable
 (missing WSLg socket), and native Mac/device listening remains unverified.

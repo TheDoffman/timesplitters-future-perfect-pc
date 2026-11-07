@@ -1,3 +1,30 @@
+## 2026-11-07 - High refresh audio and unidentified-resource survey
+
+Three isolated126-second Enhanced Vietnam combat runs target144/180/240 FPS.
+Late gameplay images verify first-person combat. Read-only guest frame counters
+measure143.00/177.26/205.39 updates per second over the sampled window; these
+are not display-present rates and do not establish sustained240 FPS. Six20-second
+process-output captures have no discontinuity/timestamp flags or full-scale
+samples. All runs report zero output failures, refused packets and engine audio
+glitches, with12 starvation episodes each. Counters and captures do not replace
+human listening acceptance or prove a performance cause.
+
+The new read-only standalone-candidate tool rechecks all403 archive hashes and
+11,115 known-copy payload identities, then surveys39,768 unidentified entries.
+Only two entries sharing one144-byte payload pass complete raw-ADPCM header
+compatibility; both channel layouts remain possible and neither is identified
+as audio. No container signature is found. Embedded/raw PCM and callback
+providers remain open; the coverage denominator is unchanged. Windows and
+independent Linux survey JSON agree exactly. See the
+[coverage method and limits](../development/audio-coverage-survey.md).
+
+Windows media checks pass228 with no skips; Linux passes224 with four
+Windows-specific skips. Repository/context/backlog/CI-scope checks pass112.
+The eight new survey tests are selected by both media CI routes. Production
+source and the candidate executable remain unchanged. The goal remains open
+for provider identity review, consolidated listening and physical host/device
+acceptance. No merge, push or publication.
+
 ## 2026-11-07 - Native SDL, restoration and listening review gates
 
 A fresh independent Release SDL build at the pinnedfa2c02bb revision reports

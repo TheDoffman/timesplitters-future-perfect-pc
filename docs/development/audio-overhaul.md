@@ -759,3 +759,6 @@ neither is identified as audio. There are no detected container-signature or
 known-content matches. Embedded/raw PCM/other formats and an additional callback
 stream provider remain open. No original inventory entry is relabelled or removed
 from the denominator, and no asset restoration is selected from compatibility.
+The survey's eight new regressions bring full media validation to228 Windows
+passes (no skips with the endpoint check enabled) and224 Linux passes/four skips.
+Both hosts also run the actual survey command and produce identical JSON.

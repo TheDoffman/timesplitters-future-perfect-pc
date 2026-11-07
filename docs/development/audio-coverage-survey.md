@@ -53,6 +53,10 @@ This narrows standalone-format review to one distinct compatible payload. It
 does not rename or remove the39,768 unidentified entries from the denominator.
 The private survey retains every candidate's archive/index/offset/hash and all
 limits. The initial known-bank census remains unchanged.
+The actual command produces identical JSON on Windows and the independent
+Linux/WSL checkout against the same original data. The full media suites pass
+228 on Windows (real endpoint check enabled) and224 on Linux with four
+Windows-specific skips, including all eight new survey regressions.
 
 ## Loader coverage remains open
 
