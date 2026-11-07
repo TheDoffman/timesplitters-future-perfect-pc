@@ -610,3 +610,70 @@ remain unchanged.
 Live bounds are observed through the existing model refresh/polling path; the
 original SDK setter remains in place. The fixtures verify the refreshed state,
 not a new immediate host notification or measured setter-to-speaker latency.
+
+## Linux, room and device validation
+
+The independent Ubuntu24.04/WSL checkout uses the committed audio branch, its
+own Linux venv and an offline-reconstructed/patched runtime. Windows runtime,
+other Linux checkouts and personal game state are untouched. A Windows linked
+worktree's `.git` pointer contains a Windows path; Linux cloning instead reads
+the common Git repository, without rewriting the Windows pointer. No game-data
+copy or dependency download is needed for these checks. Create the ignored
+`logs` parent before using a nested pytest `--basetemp` on a fresh checkout.
+
+After the normal Linux venv/FFmpeg development setup, reproduce from the
+committed source in an independent Linux checkout (choose a fresh temp name):
+
+```sh
+.venv-linux/bin/python tools/build/prepare-runtime.py
+.venv-linux/bin/python tools/build/apply-patches.py external/ts3FPrecomp patches
+mkdir -p logs
+TSFP_TEST_GAME_DIR="/path/to/existing/game" .venv-linux/bin/python -m pytest \
+  tests/media -q -ra --basetemp=logs/audio-review-new
+```
+
+The Windows endpoint check is explicitly enabled with `TSFP_TEST_AUDIO_DEVICE=1`
+when running `tests/media/test_audio_device_recovery.py::test_real_xaudio_reopen`.
+It submits silence only. The default media route leaves that local check skipped.
+
+At `106c5bf0`, the Linux media suite passes216 with four skips. The first real
+run exposed a missing `<initializer_list>` include in the XAudio gain fixture;
+the explicit include corrects that C++ portability defect. An earlier invocation
+failed because its new `logs` parent was absent; that was test setup, not audio
+behavior. Linux executes the real HLE/model and shared SDL adapter against host
+doubles, plus two local XMV cadence checks (`eag_e.xmv`, `frd.xmv`) using system
+FFmpeg codec60.31.102/util58.29.100. Original/60/120/144/180/240 polling retains
+matching decoded image, timestamp and audio hashes. The skipped checks are the
+Windows endpoint test, process-loopback instrumentation and two Windows live
+timer cases. This is Linux contract/controlled-file validation, not a Linux game
+build, SDL endpoint/unplug test or physical listening acceptance.
+
+Windows's opt-in `test_real_xaudio_reopen` passes on the real default XAudio2.9
+endpoint with silent PCM. Injecting the critical-device callback invalidates its
+clock/queue, then the adapter reopens and consumes the new silent packet. Health
+records two open attempts/two successes and the single injected device failure.
+No physical device is disconnected and no personal settings are changed.
+
+An isolated126-second enhanced Vietnam match replays a keyboard/mouse walk.
+Read-only, non-atomic snapshots classify the original compact room tree:220
+observations,35 unknown and185 in rooms5/6/13. The room13->6 change at83.516s
+has a1.692-unit step over313ms; neighboring samples show continuous movement,
+and frame008 visually shows the player outside the bunker. The23.53/104.65-unit
+jumps are excluded from walking-transition evidence; the final frame is a death
+view. The sampler never writes guest state or forces a player count.
+
+Two process captures (22s walking,20s settled) have zero packet flags/full-scale
+samples. Walking peak/RMS are -20.42/-39.71dBFS; settled -14.18/-34.86dBFS.
+Diagnostics end at531 plays,59,769 submissions,328,455 3D commits, zero output
+failures/refusals/engine glitches and12 unchanged startup/loading starvation
+episodes. These are scene/output observations, not a subjective pop/muffle test.
+Private run/tool/capture hashes and raw samples remain local.
+
+`106c5bf0` extends the real guest fixture beyond a failed world lookup: with a
+populated blocked cache, player counts0/2/3/4 return the original XDK direction,
+zero obstruction/reflection, no enclosure and no collision calls. Returning to
+one player restores the valid world result. The full suites include this
+extension: Windows220 pass with the endpoint test enabled (no skips,51.17s),
+Linux216 pass/four skips (16.35s). This proves the shared fallback contract; actual multi-controller
+split-screen play/listening remains unverified. No new controller injection or
+game-state write is added solely to make that acceptance appear complete.

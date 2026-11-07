@@ -1,3 +1,41 @@
+## 2026-11-07 - Linux media, room crossing and real endpoint validation
+
+Source `106c5bf0` passes the full media suite on Windows220/no skips (51.17s,
+real endpoint check enabled) and Ubuntu24.04/WSL216/four skips (16.35s). The
+Linux checkout/runtime/venv are separate from Windows and other Linux work.
+GCC/G++13.3, Python3.12.3, pytest9.1.1 and system FFmpeg codec60.31.102/util
+58.29.100 are recorded in the private receipt, with source and test-log hashes.
+Two real-file XMV cases verify decoded image/timestamp/audio equality across
+original/60/120/144/180/240 controlled polling. Linux skips Windows endpoint,
+loopback and two live-timer cases. The first GCC run exposed the gain fixture's
+missing C++ initializer-list include, corrected in `ae63471b`. No production
+audio change or new game build is needed for this fixture correction.
+
+The real default Windows XAudio2.9 endpoint accepts silent PCM, invalidates
+its clock/queue after an injected critical callback, then reopens and consumes
+new silence. Two attempts/two opens and one injected device failure are expected.
+This is a real endpoint/injected callback check, not physical unplug acceptance.
+The guest fixture now covers populated single-player cache ->0/2/3/4 players:
+original direction, zero obstruction/reflection/enclosure, no ray calls;1 player
+restores the world result. Both host suites execute these assertions. Actual
+multi-controller gameplay/listening remains open.
+
+A bounded126-second Vietnam keyboard/mouse walk records220 read-only,
+non-atomic room observations.185 classify in rooms5/6/13 and35 remain unknown.
+A continuous13->6 change at83.516s moves1.692 units in313ms; neighboring samples
+and frame008 show walking outside the bunker. Two large jumps are excluded;
+frame011 is a death view. Captures22s/20s have no packet flags/full-scale samples;
+walking peak/RMS -20.42/-39.71dBFS, settled -14.18/-34.86dBFS. Final531 plays,
+59,769 submissions and328,455 3D commits report zero output failures/refusals/
+engine glitches;12 startup/loading starvation episodes remain unchanged. The
+owned child stays live until intentionally terminated. Private hashes/receipts
+preserve the evidence; no personal saves/settings or source assets changed.
+
+Room audio was presented for user listening feedback; no response is assumed.
+Physical Mac/Linux endpoints, headphone/speaker judgement, actual split-screen
+and remaining distance/asset listening remain unverified. The goal stays active;
+no push/merge/publication. [Scope and reproduction notes](../development/audio-overhaul.md#linux-room-and-device-validation).
+
 ## 2026-11-07 - Spatial cache audit and runtime check
 
 The production guest regression reproduces frozen blocked-source pan before the

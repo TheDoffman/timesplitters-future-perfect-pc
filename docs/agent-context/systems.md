@@ -99,6 +99,8 @@ rejected submissions retain rollback. `pc_acoustic_cache.h` refreshes geometry
 fairly within two queries/10ms, caps reuse at250ms, invalidates room/scene changes
 and derives pan from current emitter/listener or a fixed opening anchor.
 [Contracts and limits](../development/positional-audio.md#acoustic-cache-correction).
+Linux/WSL media contracts, Windows real endpoint reopen and observed room walking:
+[evidence and gaps](../development/audio-overhaul.md#linux-room-and-device-validation).
 
 Independent audio choices: `pc_audio_settings.h` packs one atomic snapshot;
 `pc_audio_get_options`/`set_options` own strict V1/V2 parsing and save-before-live
