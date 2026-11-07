@@ -1,3 +1,10 @@
+Audio callback audit follow-up: the shared stream fixture now covers the observed
+8000Hz PCM16/320-byte callback refill contract through normal/manual dispatch.
+Windows and independent Linux each pass110 timing checks. Actual pinned SDL
+also passes four20ms8000Hz dummy/converter cases; this is not physical output.
+No duplicate platform policy or production-source change; native Mac execution
+and the provider's content identity remain unverified.
+
 Audio follow-up: portable candidate-survey regressions are selected in both
 media CI routes; actual Windows/Linux survey JSON agrees. Full suites pass228
 on Windows and224/four skips on Linux. The144/180/240-target Windows audio sweep
@@ -10226,3 +10233,4 @@ pointer bounds; RHI/legacy GL provide physical canvas bounds. No additional
 adapter is needed. Synthetic Mac compilation/execution covers fractional/Retina
 ratios and both docks; see [STATUS](STATUS.md). Physical clicks, monitor changes
 and Windows/Linux host acceptance remain unverified.
+

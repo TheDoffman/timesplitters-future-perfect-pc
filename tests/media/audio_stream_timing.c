@@ -248,7 +248,7 @@ static void submit_callback_packet(unsigned index)
     HLE_MEM32(p+12)=0x13000+index*8;HLE_MEM32(p+16)=index;
     HLE_MEM32(g_esp+4)=g_streams[0].object;HLE_MEM32(g_esp+8)=p;
     hle_CDirectSoundStream_Process();
-    if(g_eax)callback_error=1;
+    if(g_eax || memcmp(memory+data,callback_expected+ordinal*320,320))callback_error=1;
 }
 static void refill_callback(void)
 {

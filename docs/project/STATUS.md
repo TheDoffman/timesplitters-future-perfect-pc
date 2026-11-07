@@ -18,7 +18,9 @@ also passes four160-frame8000Hz converter cases: mono/stereo8/16-bit,882 output
 frames at44100Hz, tail drain, queue-preserving exact mute and immutable input.
 The paused dummy driver is not hardware acceptance; PulseAudio still returns
 unavailable with the socket absent. No production code/binary change is needed.
-Linux callback-fixture validation follows through the independent Git checkout.
+The independent Linux checkout also passes all110 timing checks. An initial
+invocation from the Windows working directory could not import the test helper;
+the corrected run uses the Linux repository root. No host dependency is changed.
 
 ## 2026-11-07 - High refresh audio and unidentified-resource survey
 
