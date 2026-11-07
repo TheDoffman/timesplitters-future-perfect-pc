@@ -40,6 +40,9 @@ Merging and publication are outside this task's authorization.
 Spatial follow-up: [cache correction and bounded refresh contracts](positional-audio.md#acoustic-cache-correction)
 fixes reproduced moving-source pan and prevents indefinite stale obstruction.
 Geometry/host listening acceptance remains separate from those regressions.
+The [distance audit](audio-distance-audit.md) retains the existing optional range
+after native-code controls and live parameter comparisons; no further tuning is
+made without listening evidence.
 
 - Supported US `default.xbe` SHA-256 verified against the repository pin.
 - Existing local data contains 403 PAK archives. Five `sounds_<language>` banks

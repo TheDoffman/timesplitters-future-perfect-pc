@@ -1,3 +1,38 @@
+## 2026-11-07 - Original distance calculation and range decision
+
+The supported-US original distance routine409AEC and its original logarithm/
+conversion helpers execute in an isolated32-bit process, with nine constant
+operand relocations and no attenuation/OS stubs.6643 cases across three x87
+precision modes make19,929 calls. All effective outputs agree after the existing
+mute clamp;1295 raw differences occur below that floor. Normalized controls
+retain identical curve levels across50/70/200 and150/210/600 maxima. A separate
+bounded startup's22 read-only snapshots confirm the runtime function-table slot
+selects409AEC; stereo panning is the distinct409E28 routine.
+
+Two126-second Original/Enhanced Vietnam runs observe the same authored curve
+`[.5,.25,.125,0]` and minimum1. Enhanced has955 samples with maximum150; Original
+has none. Native/live effective comparison agrees in5964/5965 snapshots. The
+single remaining0.69dB discrepancy occurs during record/settings reuse with
+maximum150->65 while the previous distance/level remain visible; the next
+snapshot agrees. These are non-atomic observations, not synchronized post-commit
+state. No playback repair or new range number is justified by that sample.
+
+Both children reach visible gameplay and remain live until owned termination.
+Four20-second process captures have zero discontinuity/timestamp flags and no
+full-scale samples; both runs report zero output failures/refusals/engine glitches.
+Enhanced ends at12 starvation episodes; Original increases8->16 during the run.
+Those counts do not establish audible defects or a comparison between the
+different matches. Native controls/receipts and source/helper/capture hashes
+remain private. The initial probe's invalid assumption that raw component
+levels always clamp at -10000 was corrected in the audit, with no game change.
+
+Decision: retain the current independent optional3x weapon-range choice and
+authored fade, with no extra end fade or unmeasured per-weapon factor. No source
+assets, personal saves/settings or production code changed in this audit; the
+previous Windows/Linux build/contracts remain applicable. Listening, device/
+controller acceptance and the full overhaul remain open. No merge/publication.
+[Detailed method, numeric curve and limits](../development/audio-distance-audit.md).
+
 ## 2026-11-07 - Linux media, room crossing and real endpoint validation
 
 Source `106c5bf0` passes the full media suite on Windows220/no skips (51.17s,

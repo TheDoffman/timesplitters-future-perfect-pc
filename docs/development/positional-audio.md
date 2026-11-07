@@ -224,3 +224,11 @@ glitches/output failures and stable startup/loading counters. Its two process
 captures have no packet flags/full-scale samples. This does not measure a
 sustained frame rate or establish listening/device acceptance; see
 [measured status](../project/STATUS.md#2026-11-07---spatial-cache-audit-and-runtime-check).
+
+## Distance falloff audit
+
+The overhaul's [native distance audit](audio-distance-audit.md) verifies the
+live four-point curve and original distance routine across6643 cases. It retains
+the current optional range extension; no additional fade or per-weapon factor
+is supported by the evidence. The table in that audit distinguishes distance
+attenuation from final output level and records remaining listening limits.

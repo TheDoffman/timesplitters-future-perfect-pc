@@ -1,3 +1,8 @@
+Distance audit: live custom-curve/native-code comparison retains the existing
+shared range option; no gameplay/host adapter change. The private original-x86
+probe runs on Windows only. Physical Mac/Linux balance/listening remains pending;
+see [evidence](../development/audio-distance-audit.md).
+
 Audio host validation: Linux/WSL media216 pass/four Windows-only skips, including
 controlled local XMV cadence; real SDL endpoint/game acceptance remains open.
 Windows real endpoint reopens after an injected critical callback (silent PCM,
