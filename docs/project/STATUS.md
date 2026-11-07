@@ -1,3 +1,39 @@
+## 2026-11-06 - Physical WSL mouse capture fails outside game code
+
+Investigated the user's inability to mouse-look on the RTX5090 WSL host with
+Developer Tools source/build `e302a4831cc8cd6f1985924e36d41ed9543e19f4`.
+Manual controls have mouse enabled/sensitivity0.10; the game reports capture
+enabled without an SDL failure, but the user reports the cursor can escape.
+Shooting and menu clicking work. Prior synthetic-input and rendered-Story checks
+did not establish physical pointer confinement on this host.
+
+A bounded standalone probe using the same pinned SDL3.4.16 source, with software
+drawing enabled only for the probe, reproduces the problem without any game or
+Developer Tools code. With physical focus/clicks, Wayland reports relative mode
+enabled but receives zero motion events in relative mode; the user confirms
+the pointer escapes. X11 receives8686 motion events while relative mode is
+enabled, but the user also confirms the pointer escapes. Neither backend earns
+physical capture acceptance. This isolates the observed failure to the SDL/WSLg
+input integration on this host; it does not establish native Linux/Deck behavior.
+No game code, personal settings, WSL system configuration or SDL pins changed.
+Evidence: Linux `logs/mouse-probe-wayland.log`, `logs/mouse-probe-x11.log` and
+the ignored Windows `logs/linux-input-probe` harness. The first non-drawing
+probe received no input and is excluded from these results. WSLg mouse-lock
+reports: https://github.com/microsoft/wslg/issues/240 .
+
+## 2026-11-06 - Developer Tools branch rebuilt on Linux
+
+Checked out developer-tools-overlay at e302a4831cc8cd6f1985924e36d41ed9543e19f4 in the existing
+Ubuntu WSL native-filesystem checkout. Verified the supported US XBE and shared
+AGENTS instructions; reused the existing game-data link, SDK and pinned release
+media. Complete patch application, guest regeneration and Linux Vulkan game build
+with two workers pass. Protected-MMIO regression passes (x64 decoder, protected
+writes, shared CRTC acknowledgement and AC97 reset). No gameplay acceptance run.
+Host: Linux-6.18.54.1-microsoft-standard-WSL2-x86_64-with-glibc2.39; compiler: Ubuntu clang version 18.1.3 (1ubuntu1); Vulkan SDK 1.4.363.0.
+Executable SHA-256: `27cebf3c936cf24267d9b8a16d553b8a1a9fdf317bd1e25825018b062a8f89ed`.
+Source checkout was clean during the build. Personal settings/saves preserved.
+Receipt: build/linux/game/BUILD.json; log: logs/developer-tools-linux-rebuild.log.
+
 ## 2026-11-06 - Developer Tools sync retried without building
 
 Merged main at 261bdc2e into the original Developer Tools branch at f38d5e79,
