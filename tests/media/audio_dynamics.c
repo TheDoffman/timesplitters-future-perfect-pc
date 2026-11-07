@@ -2,8 +2,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "gameplay/pc_audio_dynamics.h"
+#include "gameplay/pc_audio_activity.h"
 int main(void)
 {
+    /* Non-silent spans follow played PCM, including stereo/U8 silence and
+     * a fractional-rate fallback; saturation remains bounded and expires. */
+    uint8_t speech[]={128,128,255,128,128,128},saved[6];memcpy(saved,speech,6);
+    PcAudioActivity activity={0};
+    pc_audio_activity_submit(&activity,speech,6,8000,2,8,0,1000);
+    assert(!memcmp(saved,speech,6));
+    assert(!pc_audio_activity_pending(&activity,1000,0,1,1));
+    assert(pc_audio_activity_pending(&activity,1000,2,1,1));
+    assert(!pc_audio_activity_pending(&activity,1000,4,1,1));
+    PcAudioActivity one={0},many={0};one.bps=many.bps=44084;
+    one.submitted=many.submitted=44084;
+    pc_audio_activity_step(&one,999);
+    for(unsigned ms=1;ms<=999;ms++)pc_audio_activity_step(&many,ms);
+    assert(one.fallback==many.fallback && one.remainder==many.remainder);
+    pc_audio_activity_step(&many,1000);assert(many.fallback==many.submitted);
+    memset(&activity,0,sizeof activity);activity.bps=1000;activity.submitted=10000;
+    for(unsigned i=0;i<100;i++)pc_audio_activity_span(&activity,i*100,i*100+10);
+    assert(activity.count<=PC_AUDIO_ACTIVITY_SPANS);
+    assert(pc_audio_activity_pending(&activity,0,9900,1,1));
+    assert(!pc_audio_activity_pending(&activity,0,9910,1,1) && !activity.count);
     int16_t original[4096],large[4096],chunks[4096];
     for(unsigned i=0;i<4096;i+=2){original[i]=i%14?30000:-32768;original[i+1]=original[i]/2;}
     for(unsigned mode=1;mode<=2;mode++) {

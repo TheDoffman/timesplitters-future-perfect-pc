@@ -57,13 +57,15 @@ void hle_dsound_stream_acoustics(uint32_t settings,float obstruction,float room,
 void hle_dsound_stream_spatial(uint32_t settings,float pan,int enabled) { }
 #ifndef TSFP_INTEGRATED_AUDIO
 uint64_t recomp_audio_output_game_time(uint64_t now,unsigned domain){(void)domain;return now;}
+int recomp_audio_output_take_discontinuity(uint32_t slot){(void)slot;return 0;}
 static unsigned reset_count[256];
 void recomp_audio_output_reset_voice(uint32_t slot) { reset_count[slot]++; }
 static int fake_device;
-static uint64_t fake_now, fake_until[256];
+static uint64_t fake_now, fake_until[256],fake_played[256];
 int recomp_audio_output_position(uint32_t slot, uint64_t *played, uint32_t *queued)
 {
     if (!fake_device) return 0;
+    if (played) *played=fake_played[slot];
     if (queued) *queued = fake_until[slot] > fake_now;
     return 1;
 }

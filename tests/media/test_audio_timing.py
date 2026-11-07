@@ -60,7 +60,7 @@ def buffer_test(tmp_path_factory):
 @pytest.mark.parametrize('scenario', ['underrun', 'speed', 'process', 'flush', 'fallback',
                                      'snapshot', 'pause', 'completion', 'callback-pcm8k',
                                      'callback-pcm8k-manual', 'lost-device', 'bad-data',
-                                     'bus-ownership', 'mix-gain', 'speech-activity', 'impact-range',
+                                     'bus-ownership', 'mix-gain', 'speech-activity', 'speech-tail', 'speech-tail-fallback', 'speech-gaps', 'impact-range',
                                      'diagnostics', 'adpcm', 'release-reuse', 'flush-ex', 'flush-ex-async', 'format-pcm', 'format-adpcm',
                                      'format-paused', 'frequency', 'recover-device', 'recover-early'])
 def test_stream_timing(stream_test, scenario):
@@ -131,7 +131,7 @@ def format_test(tmp_path_factory):
     return compile_audio('format', tmp_path_factory)
 
 
-@pytest.mark.parametrize('scenario', ['rate', 'align', 'frequency', 'tail-pcm', 'tail-adpcm', 'bus', 'mix-gain', 'ducking', 'impact-range'])
+@pytest.mark.parametrize('scenario', ['rate', 'align', 'frequency', 'tail-pcm', 'tail-adpcm', 'bus', 'mix-gain', 'ducking', 'speech-tail', 'impact-range'])
 def test_buffer_format(format_test, scenario):
     result = subprocess.run([str(format_test), scenario], capture_output=True,
                             text=True, timeout=10)

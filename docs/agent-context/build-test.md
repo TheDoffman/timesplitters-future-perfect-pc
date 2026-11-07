@@ -24,7 +24,7 @@ Media CI: audit/candidates/loops/metrics; headers do not prove identity.
 Fixtures:32 combinations, unknown files, speech, ducking, dynamics, queued gains,
 cache/pan/split fallback; gain C++ needs initializer_list.
 Streams:8kHz/320-byte refill, ordered callbacks, manual dispatch.
-Movie updater: real dynamics header; neutral Movies gain/volume spies.
+Movie updater: real DSP + neutral mix spies; speech-tail/gap PCM fixtures.
 `test_audio_output_gain.py`: mute/queue retention, Windows capture.
 [Capture and bounded build](../development/audio-overhaul.md#process-output-capture).
 

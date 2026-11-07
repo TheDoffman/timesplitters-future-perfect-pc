@@ -1,3 +1,21 @@
+## Accepted speech spans (PR523 review correction)
+
+Patch2311 and shared `src/gameplay/pc_audio_activity.h` replace whole-source
+speech latching for optional Dialogue focus with accepted non-silent PCM spans.
+Queries compare spans with decoded host-played bytes; SDL's no-cursor path uses
+a scaled host-time estimate clamped to accepted bytes, never a guest/device
+clock. Existing20/300ms envelopes remain. Leading silence, gaps and queued
+silent tails no longer keep speech active.
+
+Only successful submissions append metadata; refusal leaves it unchanged.
+Reset/refeed/flush/pause/reformat and discontinuity clear it. The fixed64-span
+queue merges sub-10ms holes; saturation conservatively merges oldest spans and
+still expires. No allocation, PCM edit, tail flush or speech recognizer is added.
+Original/OFF and guest completion retain their contracts. `audio_dynamics.c`
+covers stereo/U8 silence, immutable input, fractional fallback partitioning and
+saturation. Actual buffer/stream fixtures cover tails, gaps, refusal and resets.
+Three tail regressions fail before the patch; all114 timing checks pass after.
+
 # Effects buffering under load
 
 ## Callback-fed PCM acceptance

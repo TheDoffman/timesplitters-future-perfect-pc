@@ -59,9 +59,10 @@ void recomp_audio_output_set_ambience(uint32_t slot,int enabled) {}
 void recomp_audio_output_set_acoustics(uint32_t slot,float obstruction,float room) {}
 void recomp_audio_output_set_spatial(uint32_t slot,float pan,int enabled) { }
 void recomp_audio_output_reset_voice(uint32_t slot) { memset(&host, 0, sizeof host); }
+static int force_no_position;
 int recomp_audio_output_position(uint32_t slot, uint64_t *played, uint32_t *queued)
 {
-    if (!host.available) return 0;
+    if (!host.available || force_no_position) return 0;
     if (played) *played = host.played;
     if (queued) *queued = host.queued;
     return 1;
@@ -509,6 +510,35 @@ int main(int argc, char **argv)
 {
     int result;
     if (argc != 2) return 2;
+    if(!strcmp(argv[1],"speech-tail") || !strcmp(argv[1],"speech-tail-fallback")) {
+        Stream *s=setup();s->mix_bus=PC_AUDIO_DIALOGUE;
+        force_no_position=strstr(argv[1],"fallback")!=NULL;
+        for(unsigned i=0;i<9600;i+=2){int16_t v=10000;memcpy(memory+0x20000+i,&v,2);}
+        packet(s,0x12000,0x13000);CHECK(hle_dsound_stream_dialogue_active());
+        host.played=38400;host.queued=1;test_now+=400;tick(s,test_now);
+        CHECK(host.queued && s->sent>s->consumed_base);
+        CHECK(!hle_dsound_stream_dialogue_active()); /* queued remainder is silent */
+        flush_stream(s);CHECK(!hle_dsound_stream_dialogue_active());
+        printf("PASS: %s\n",argv[1]);return 0;
+    }
+    if(!strcmp(argv[1],"speech-gaps")) {
+        Stream *s=setup();s->mix_bus=PC_AUDIO_DIALOGUE;
+        for(unsigned i=4800;i<9600;i+=2){int16_t v=10000;memcpy(memory+0x20000+i,&v,2);}
+        for(unsigned i=19200;i<24000;i+=2){int16_t v=10000;memcpy(memory+0x20000+i,&v,2);}
+        packet(s,0x12000,0x13000);CHECK(!hle_dsound_stream_dialogue_active());
+        host.played=4800;CHECK(hle_dsound_stream_dialogue_active());
+        host.played=9600;CHECK(!hle_dsound_stream_dialogue_active());
+        host.played=19200;CHECK(hle_dsound_stream_dialogue_active());
+        host.played=24000;CHECK(!hle_dsound_stream_dialogue_active());
+        PcAudioActivity before=s->speech_activity;refuse_output=1;
+        host.played=38400;test_now+=400;tick(s,test_now);
+        CHECK(!memcmp(&before,&s->speech_activity,sizeof before));
+        refuse_output=0;tick(s,test_now);CHECK(s->speech_activity.submitted>before.submitted);
+        host_discontinuity=1;test_now+=400;tick(s,test_now);
+        CHECK(!hle_dsound_stream_dialogue_active());
+        flush_stream(s);CHECK(!s->speech_activity.count && !s->speech_activity.submitted);
+        puts("PASS: speech-gaps");return 0;
+    }
     if(!strcmp(argv[1],"speech-activity")) {
         Stream *s=setup();s->mix_bus=PC_AUDIO_DIALOGUE;
         for(unsigned i=0;i<96000;i+=2){int16_t v=10000;memcpy(memory+0x20000+i,&v,2);}

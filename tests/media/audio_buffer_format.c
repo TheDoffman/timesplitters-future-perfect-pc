@@ -18,10 +18,26 @@ static uint32_t setup_buffer(uint32_t size, int adpcm) {
 int main(int argc, char **argv) {
     CHECK(argc==2);
     int tail=!strncmp(argv[1],"tail",4), adpcm=strstr(argv[1],"adpcm")!=NULL;
-    uint32_t raw=tail?(adpcm?361:9601):9600;
+    uint32_t raw=!strcmp(argv[1],"speech-tail")?96000:tail?(adpcm?361:9601):9600;
     uint32_t iface = setup_buffer(raw,adpcm);
     Buffer *b = model_for(iface, 1000);
     CHECK(b);
+    if(!strcmp(argv[1],"speech-tail")) {
+        fake_device=1;g_lead_ms=40;fake_now=0;
+        PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;mix.ducking=1;
+        pc_audio_mix_live=pc_audio_mix_pack(mix);
+        for(unsigned i=0;i<960;i+=2){int16_t v=10000;memcpy(memory+0x20000+i,&v,2);}
+        HLE_MEM32(g_esp+4)=iface;HLE_MEM32(g_esp+16)=RECOMP_DSOUND_PLAY_FROMSTART;
+        unsigned token=pc_audio_scope_enter(PC_AUDIO_DIALOGUE,g_esp+256);
+        hle_IDirectSoundBuffer_Play();pc_audio_scope_leave(token);
+        CHECK(b->fed && accepted_bytes>=3840);
+        pc_audio_mix_tick(1000);CHECK(pc_audio_mix_level(0,PC_AUDIO_MUSIC)<0);
+        fake_played[slot_of(b)]=2880;
+        CHECK(recomp_audio_output_audible_pending(slot_of(b)));
+        pc_audio_mix_tick(1400);pc_audio_mix_tick(6000);
+        CHECK(pc_audio_mix_level(0,PC_AUDIO_MUSIC)==0);
+        puts("PASS: speech-tail");return 0;
+    }
     if(!strcmp(argv[1],"ducking")) {
         fake_device=1;fake_now=0;PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;mix.ducking=1;
         pc_audio_mix_live=pc_audio_mix_pack(mix);

@@ -1762,6 +1762,15 @@
       ]
     },
     {
+      "name": "2311-dialogue-activity-spans.patch",
+      "path": "patches/media/2311-dialogue-activity-spans.patch",
+      "sha256": "1175c2304f19b2b5f72c93b0c7008349f441e890081570d1bfebb14eb9cabf71",
+      "targets": [
+        "src/hle/hle_dsound.c",
+        "src/hle/hle_dsound_stream.c"
+      ]
+    },
+    {
       "name": "2320-story-team-initialization.patch",
       "path": "patches/network/2320-story-team-initialization.patch",
       "sha256": "a6a3b2d9c0ef0c5d0c06d288a12a19ecbaa2775a38579c3a02e88e1ef2b5bf68",

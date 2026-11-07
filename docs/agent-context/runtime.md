@@ -94,7 +94,7 @@ cursors, Audio Options toggle and host limits.
 `0050-environmental-acoustics.patch` adds opt-in world-coordinate room/portal routing; see the audio guide for limits.
 
 `0045`: [range audit](../development/positional-audio.md#distance-falloff-audit).
-`0059/60/61/2307/08/09/10`: [audio feature/bus/mix/DSP/gain contracts](../development/audio-overhaul.md).
+`0059/60/61/2307/08/09/10`: [audio feature/bus/mix/DSP/gain/activity contracts](../development/audio-overhaul.md).
 
 Kernel: [objects, threads and boot](kernel-objects.md), [devices and names](kernel-devices.md).
 

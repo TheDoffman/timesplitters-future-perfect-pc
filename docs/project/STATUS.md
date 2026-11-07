@@ -1,3 +1,18 @@
+## 2026-11-07 - PR523 dialogue silence-tail correction
+
+Automated review reproduces Dialogue focus remaining active after speech has
+played while silent PCM stays queued. Shared activity spans in patch2311 now
+follow accepted non-silent PCM against host-played bytes or a bounded host-time
+fallback. The existing ducking fade starts when speech ends. Metadata changes
+only after accepted submits and clears on reset/refeed/discontinuity. Original
+PCM, guest clocks, source completion and defaults are unchanged.
+
+Three buffer/stream/fallback tail cases fail before correction. Windows passes
+114 timing cases and229 media cases with five endpoint/real-file skips; leading
+silence/gaps/refusal and shared-format/saturation cases are included. These are
+source fixtures, not a newly listened game binary. Current-revision native CI
+must pass before the authorized merge to main.
+
 ## 2026-11-07 - Audio overhaul completed with user-deferred hardware checks
 
 The user says "Dont worry about checking the other stuff", superseding the prior
