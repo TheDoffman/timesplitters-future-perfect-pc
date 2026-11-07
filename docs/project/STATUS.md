@@ -1,3 +1,26 @@
+Audio Mix sliders and divider spacing (2026-11-07, after974562fb, local):
+All six Mix controls use compact native gradient bars with exact percentage
+captions,1% keyboard/controller directional steps and captured mouse dragging.
+Immediate sidecar saving/failure rollback remains; Volume keeps its native draft.
+Video/Controls/Audio reserve equal modest space around silver lines, including
+native footers, using scoped style height with restoration and no extra rows.
+Windows focused35 pass/two platform skips; Linux/WSL portable audio1 pass/14
+deselected. Normal Windows Release/builtin/matching-crash-symbol checks pass
+(MSVC19.44.35224 x64, SDK10.0.26100, D3D8/RTX4070SUPER). Current source/manifest/
+sealed-exe identity matches; executable SHA256
+b1a9f71009a29f7254a7fcca92501796380a0ba872c8795520c4e6b8c153dd27.
+Actual4:3 main Audio/Video/Controls spacing reviewed; final1680x720 main and
+pause Mix sliders align and fit, with readable captions, padded dividers/footer.
+Native-key replay changes Master100->99->100. Real project pointer clicks save50,
+and held dragging clamps/saves0 and100 independently of other categories in the
+final pause build. The first4:3 pointer attempt used framebuffer instead of the
+640x480 window client; corrected client coordinates pass. The initial Mix bars
+sat below captions; the custom row baseline was aligned and re-reviewed.
+Only disposable Test Lab state was used; owned games stop and partition images
+are recycled. Native Mac/Linux game UI, physical pad and split-screen acceptance
+remain unverified; no new OS adapter. Receipt:logs/audio-mix-sliders-verification.json.
+No push or merge.
+
 Audio Options tabs (2026-11-07, local feature/audio-options-tabs after95aca21b):
 Volume/Mix/Enhancements/Listening share Video/Controls layout in frontend and
 pause, preserving native profile Accept/Cancel and immediate sidecar saves.

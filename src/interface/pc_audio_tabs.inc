@@ -12,6 +12,7 @@ static int audio_building,audio_bounds_valid,audio_left=1,audio_pending=-1,audio
 static uint32_t audio_pending_menu;
 static ULONGLONG audio_pending_at;
 static float audio_bounds[4],audio_anchor_y;
+static SettingsDividerStyle audio_divider_style;
 static uint32_t audio_rows[32],audio_next[32],audio_sibling[32];
 static unsigned audio_row_count,audio_native_count,audio_native_selectable;
 static uint32_t audio_text(unsigned i) {return audio_menu_storage+32u+i*128u;}
@@ -47,6 +48,7 @@ static int audio_native_button(void (*original)(void))
     if(!audio_building)return 0;
     uint32_t frame=g_esp,id=WORD_AT(frame+8),flags=WORD_AT(frame+12),height=WORD_AT(frame+16);
     if(id==0) {
+        audio_divider_style=settings_divider_begin(audio_menu);
         /* Same width/title and leading as the other tabbed settings roots. */
         uint32_t builder=WORD_AT(0x7bb1e0);
         if(guest_writable(builder,0x38))WORD_AT(builder+0x34)=bits(78.f);
@@ -93,6 +95,35 @@ static void audio_volume_draw(void)
     }
     restore_registers(&saved);g_esp+=4;
 }
+static void audio_mix_set_value(unsigned index,unsigned value)
+{
+    if(index>=6 || value>100 || audio_page!=1 || !audio_font_menu(audio_menu))return;
+    uint32_t row=audio_mix_rows[index];
+    if(!guest_writable(row,0xcc) || WORD_AT(row+0x14)!=30u+index || WORD_AT(row+0xc8)==value)return;
+    WORD_AT(row+0xc8)=value;guest_call(audio_mix_change,0);
+}
+static void menu_slider_audio_mix_pointer(unsigned index,float x,float left,float width)
+{audio_mix_set_value(index,pc_menu_slider_value(x,left,width,100));}
+static void audio_mix_draw(void)
+{
+    GuestRegisters saved;save_registers(&saved);
+    uint32_t menu=WORD_AT(g_esp+4),item=WORD_AT(g_esp+8),rect=WORD_AT(g_esp+12);
+    if(audio_font_menu(menu) && audio_page==1 && guest_writable(item,0xcc) && guest_writable(rect,16)) {
+        unsigned id=WORD_AT(item+0x14);float bounds[4];
+        memcpy(bounds,(void *)(g_xbox_mem_offset+rect),sizeof bounds);
+        if(id>=30 && id<=35 && item==audio_mix_rows[id-30] && isfinite(bounds[2]) &&
+           isfinite(bounds[1]) && isfinite(bounds[3])) {
+            int x=(int)(bounds[2]-122.f),y=(int)((bounds[1]+bounds[3]-8.f)*.5f-4.f);
+            uint32_t dark=guest_call(sub_00154FE0,2,0x11193c7fu,WORD_AT(menu+0xf4));
+            uint32_t light=guest_call(sub_00154FE0,2,0x69737f7fu,WORD_AT(menu+0xf4));
+            menu_slider_capture(MENU_AUDIO_MIX+id-30,menu,item,(float)x,(float)y,100.f,8.f);
+            unsigned value=WORD_AT(item+0xc8);if(value>100)value=100;
+            guest_call(sub_000814B0,9,bits((float)value/100.f),(uint32_t)x,(uint32_t)y,
+                       100u,8u,dark,dark,light,0u);
+        }
+    }
+    restore_registers(&saved);g_esp+=4;
+}
 static void audio_options_build(void)
 {
     GuestRegisters saved;save_registers(&saved);audio_menu=WORD_AT(g_esp+4);
@@ -100,7 +131,9 @@ static void audio_options_build(void)
     memset(audio_mix_rows,0,sizeof audio_mix_rows);memset(audio_feature_rows,0,sizeof audio_feature_rows);
     audio_focus_row=audio_range_row=0;
     if(audio_menu_prepare()) {
+        audio_divider_style=(SettingsDividerStyle){0,0};
         audio_building=1;guest_call(sub_002C3E20,1,audio_menu);audio_building=0;
+        settings_divider_end(audio_divider_style);
         audio_collect_rows();guest_call(sub_000771D0,1,audio_menu);
         if(!audio_anchor_ready){audio_anchor_y=FLOAT_AT(audio_menu+0x64);audio_anchor_ready=1;}
         WORD_AT(audio_menu+0x64)=bits(audio_anchor_y);
@@ -147,6 +180,15 @@ static void audio_options_tick(void)
     if(WORD_AT(menu+0x18c)==AUDIO_TABS_ID && (WORD_AT(menu+0xc4)&0xc0000u)) {
         if(!direction)direction=(WORD_AT(menu+0xc4)&0x40000u)?-1:1;
         guest_call(sub_00074910,3,menu,0u,1u);
+    }
+    unsigned selected=WORD_AT(menu+0x18c),buttons=WORD_AT(menu+0xc4);
+    if(!direction && audio_page==1 && selected>=30 && selected<=35 && (buttons&0xc0000u)) {
+        guest_call(sub_00074910,3,menu,0u,1u);
+        unsigned index=selected-30,value=WORD_AT(audio_mix_rows[index]+0xc8),before=value;
+        if((buttons&0x40000u) && value)value--;
+        else if((buttons&0x80000u) && value<100)value++;
+        audio_mix_set_value(index,value);
+        if(WORD_AT(audio_mix_rows[index]+0xc8)!=before)settings_tabs_sound(8);
     }
     /* Native tick reads IDs0/2/5 even while their records are hidden. */
     audio_link_rows(1);guest_call(sub_002C3720,1,menu);audio_link_rows(0);

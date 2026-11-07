@@ -38,6 +38,9 @@ static unsigned slider_fov;
 static void menu_slider_weapon_fov_pointer(float x,float left,float width) { (void)x;(void)left;(void)width; }
 static void menu_slider_fov_pointer(float x,float left,float width)
 { slider_fov=40+pc_menu_slider_value(x,left,width,60); }
+static unsigned slider_mix_index,slider_mix_value;
+static void menu_slider_audio_mix_pointer(unsigned i,float x,float left,float width)
+{slider_mix_index=i;slider_mix_value=pc_menu_slider_value(x,left,width,100);}
 static unsigned slider_keyboard;
 static void menu_slider_keyboard_pointer(float x,float left,float width)
 { slider_keyboard=pc_menu_slider_value(x,left,width,1000); }
@@ -231,6 +234,11 @@ static void audio_tests(void)
     const uint32_t m=0x2000,music=0x3000,sound=0x3400;
     memset(memory,0,sizeof memory);memset(&menu_mouse,0,sizeof menu_mouse);
     memset(menu_mouse_footer,0,sizeof menu_mouse_footer);menu_slider_drag=0;
+    MenuSliderTrack mix_track={0};mix_track.x=100.f;mix_track.w=100.f;
+    for(unsigned i=0;i<6;i++) {
+        menu_slider_set(&mix_track,MENU_AUDIO_MIX+i,125.f);
+        CHECK(slider_mix_index==i && slider_mix_value==25);
+    }
     active=1;navigation=0;WORD_AT(0x79094c)=101;
     WORD_AT(0x4e8cf0)=640;WORD_AT(0x4e8cf4)=480;
     WORD_AT(m+0x1b0)=3;WORD_AT(m+0x178)=music;WORD_AT(music+4)=sound;

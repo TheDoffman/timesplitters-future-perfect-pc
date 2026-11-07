@@ -39,3 +39,20 @@ record preservation/filtering, fixed anchor, native actions, same-tab and rapid
 click queue in frontend/pause. `test_audio_output_gain.py` executes exact choice
 population, live persistence and failed-save rollback. These are shared policy
 checks, not physical controller or native Mac/Linux scene acceptance.
+
+Mix now uses six native custom slider rows (AUDIO_MIX_DRAW), not choice lists.
+Each label retains its exact percentage; native A/D/controller directional edges
+change one percent. Physical Left/Right and LB/RB still change tabs. Six distinct
+MENU_AUDIO_MIX slots feed the common drag ownership path; pointer values clamp
+to0..100 and paint/capture use the same100x8 value-column bar. Existing atomic
+sidecar saving and failed-save rollback run through audio_mix_change, which also
+restores the caption after a failed save. Volume draft behavior stays separate.
+
+`pc_settings_spacing.inc` scopes a modest extra native separator height through
+style+30 for Video/Controls/Audio construction. Original79710 passes that height
+to79680;73110 centres the line within it. The shared skin is restored after
+construction. This reserves equal room on both sides of every silver divider,
+including native Controller/Audio footers and keyboard pagination, without new
+rows, selectable IDs or altered button actions. Tests verify skin restoration,
+all six slider categories/endpoints, failed-save caption rollback, keyboard steps,
+and shared paint/pointer routing. Host scene evidence is recorded in STATUS.

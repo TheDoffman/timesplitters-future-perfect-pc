@@ -51,7 +51,7 @@ static void build(uint32_t menu)
 int main(void)
 {
     g_xbox_mem_offset=(ptrdiff_t)guest;
-    build(0x2000);assert(rows==6 && choices==606);
+    build(0x2000);assert(rows==6 && choices==0);
     assert(WORD_AT(audio_mix_rows[0]+0xc8)==100 && WORD_AT(audio_mix_rows[5]+0xc8)==100);
     for(unsigned i=0;i<6;i++)WORD_AT(audio_mix_rows[i]+0xc8)=i*17;
     g_esp=0x200;audio_mix_change();assert(g_esp==0x204);

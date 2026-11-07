@@ -1,3 +1,10 @@
+Audio Mix sliders/divider spacing (after974562fb, local): implemented in shared
+pc_audio_menu.inc/pc_audio_tabs.inc, pc_menu_sliders.inc and pc_settings_spacing.inc.
+No OS adapter change: native814B0 bar, common input/persistence and scoped skin
+height serve all hosts. Windows Release/main4:3/ultrawide pause and pointer/keyboard
+checks pass; native Mac/Linux game UI and physical pad/split-screen remain pending.
+Portable Linux audio persistence fixture passes. See STATUS for measured scope.
+
 Audio Options tabs (uncommitted after95aca21b): shared implementation in
 src/interface/pc_audio_tabs.inc and pc_audio_menu.inc; Volume/Mix/Enhancements/
 Listening reuse the existing guest menu painter and host-neutral input/persistence.

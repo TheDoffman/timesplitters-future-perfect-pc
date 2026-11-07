@@ -30,7 +30,7 @@ Audio Options uses the same flat top tabs as Video and Controls in the main
 menu and pause menu: **Volume**, **Mix**, **Enhancements**, and **Listening**.
 Volume retains the original four profile controls and hidden subtitle record;
 Accept/Cancel still save/discard the profile draft. Mix provides six percentage
-controls, Enhancements the master and four individual choices, and Listening
+sliders with1% steps and mouse dragging, Enhancements the master and four individual choices, and Listening
 Dialogue focus and Original/Reduced/Night impact range. These newer controls
 still apply and save live; switching tabs preserves the profile draft.
 The common compact font, silver dividers, rounded hover highlight, tab sounds,

@@ -918,6 +918,7 @@ static int audio_font_menu(uint32_t menu)
 }
 #include "pc_display_ui.inc"
 static uint32_t bits(float f) { uint32_t u; memcpy(&u,&f,4); return u; }
+#include "pc_settings_spacing.inc"
 #include "pc_kill_feed_guest.inc"
 #include "pc_tutorial_ui.inc"
 #include "pc_keycaps.inc"
@@ -1209,7 +1210,8 @@ static void build_menu(void)
         bits(page==DISPLAY_CONFIRM?55.f:78.f),0u,BACK_CB);
     guest_call(sub_00071B10,4,1u,bits(1.2f),1u,1u);
     guest_call(sub_00071C50,1,0x26200u);
-    labels();guest_call(sub_000771D0,1,menu);
+    SettingsDividerStyle divider=settings_divider_begin(menu);
+    labels();guest_call(sub_000771D0,1,menu);settings_divider_end(divider);
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
         float y=FLOAT_AT(menu+0x64);
         if(isfinite(y)) {
@@ -1572,6 +1574,7 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case AUDIO_TABS_DRAW:return audio_tabs_draw;
     case AUDIO_TABS_SELECT:return audio_tabs_select;
     case AUDIO_BETA_CHANGE:return audio_beta_change;
+    case AUDIO_MIX_DRAW:return audio_mix_draw;
     case AUDIO_MIX_CHANGE:return audio_mix_change;
     case AUDIO_LISTENING_CHANGE:return audio_listening_change;
     case 0x002D08C0u:return uc_extras_build;
