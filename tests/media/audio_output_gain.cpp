@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdint>
+#include <initializer_list>
 #include "hle/audio_output.h"
 #include "audio_xaudio_fake.h"
 #include "hle/audio_output_xaudio2.cpp"

@@ -21,7 +21,7 @@ Mac storage tests: see launcher.md.
 Audio census/meter/loops: [commands, mappings and evidence](../development/audio-overhaul.md).
 Media CI selects audio audit/loop/measurement fixtures on
 Windows/macOS/Linux; synthetic/decoder checks are separate from listening.
-Scene/guest fixtures check bounded, fair cache refresh and moving-source pan.
+Scene/guest fixtures check cache refresh/pan; gain C++ includes initializer_list.
 Audio timing/gain/loop fixtures also cover all32 persisted feature combinations,
 unknown-file preservation, speech ownership, ducking, impact reduction and queued gains.
 `test_audio_output_gain.py`: exact mute/queue retention; Windows capture preflight.
