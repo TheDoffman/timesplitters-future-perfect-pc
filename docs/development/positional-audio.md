@@ -232,3 +232,35 @@ live four-point curve and original distance routine across6643 cases. It retains
 the current optional range extension; no additional fade or per-weapon factor
 is supported by the evidence. The table in that audit distinguishes distance
 attenuation from final output level and records remaining listening limits.
+
+## Host format and optional multichannel evaluation
+
+A read-only Windows query on2026-11-07 reports44100Hz, eight channels,
+32-bit floating-point mix format and mask0x63F for each default render role.
+IAudioClient3 reports441-frame default/minimum/maximum shared-engine periods
+(10ms); GetDevicePeriod separately reports10ms default/3ms minimum. These are
+OS capabilities, not measured game latency, physical7.1 acceptance or proof of
+the user's headphone/per-app route. The query never initializes/starts a client,
+submits samples, changes a device/volume or alters policy. Private receipts
+retain source/executable hashes and results.
+
+The production XAudio adapter explicitly creates a two-input-channel mastering
+voice and applies source matrices to two destinations. SDL constructs stereo
+input for positioned sources before its device conversion. Consequently the
+current shared positioning policy supplies a stereo mix, not independently
+positioned surround channels. Do not infer native surround or HRTF from an
+eight-channel OS format. Microsoft's [mastering-voice API](https://learn.microsoft.com/en-us/windows/win32/api/xaudio2/nf-xaudio2-ixaudio2-createmasteringvoice)
+distinguishes input channels from automatic speaker-configuration detection and
+describes default-device virtualization. Its [XAudio2.9 guide](https://learn.microsoft.com/en-us/windows/win32/xaudio2/xaudio2-redistributable)
+also documents conditional Windows spatial processing; its state has not been
+inspected or changed here.
+
+Optional multichannel work would need a shared source-direction/channel-map
+contract and matching XAudio/SDL adapters, including original matrix restoration,
+device changes, stereo content and split-screen fallback. A binaural path would
+add directional filtering and its own reference/listening validation; a pan
+value alone cannot recover front/back/elevation. Simply increasing master
+channels would leave the current two-destination matrices inconsistent and
+would not establish positional surround. Keep the current stereo baseline
+until its listening checks complete; no surround/HRTF support is claimed or
+enabled by this evaluation.

@@ -1,3 +1,20 @@
+## 2026-11-07 - Read-only host format and surround scope
+
+An independent Windows SDK query reports44100Hz/eight channels/float32/mask0x63F
+for each default render role, with441-frame shared engine periods. It never
+initializes/starts playback, submits samples or changes volume/device policy.
+The separately reported10ms default/3ms minimum device periods are capabilities,
+not measured game latency. No physical7.1 layout or headphone/per-app route is
+inferred from the report. Private receipts retain source/executable hashes.
+
+Source inspection confirms the production XAudio master and destination
+matrices are stereo; positioned SDL input is also constructed as stereo.
+The [optional multichannel evaluation](../development/positional-audio.md#host-format-and-optional-multichannel-evaluation)
+records the required shared direction/channel-map, adapter, fallback and
+listening work. No automatic channel-count switch or HRTF feature is added.
+Headphone combat positioning feedback remains pending; current range-reference
+acceptance does not cover spatial output. No production-source/binary change.
+
 ## 2026-11-07 - Initial Night listening feedback
 
 The user compared the verified20-second Original and Night campaign intro
