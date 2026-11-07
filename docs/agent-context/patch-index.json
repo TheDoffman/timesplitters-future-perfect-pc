@@ -119,20 +119,20 @@
     {
       "name": "0059-audio-feature-controls.patch",
       "path": "patches/media/0059-audio-feature-controls.patch",
-      "sha256": "4cb4ba103a59c3ed822f3b7ca502777e69993ce62284365820c2441e23d7394e",
+      "sha256": "66faf49335edad024169c4447a60ecab7ed9ce947b6a393fc005645d0b45daaa",
       "targets": [
-        "src/hle/hle_dsound.c\r",
-        "titles/futureperfect/src/recomp_manual.c\r"
+        "src/hle/hle_dsound.c",
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     },
     {
       "name": "0060-audio-bus-ownership.patch",
       "path": "patches/media/0060-audio-bus-ownership.patch",
-      "sha256": "80e45bd25b003bbc90712658b368641e9f89598e907e5584189d0228ab1f380c",
+      "sha256": "5659cf71232d1c172a1d72786d9f18c1efdd8cb3621688a125351df0bf779bb6",
       "targets": [
-        "src/hle/hle_dsound.c\r",
-        "src/hle/hle_dsound_stream.c\r",
-        "titles/futureperfect/src/recomp_manual.c\r"
+        "src/hle/hle_dsound.c",
+        "src/hle/hle_dsound_stream.c",
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     },
     {

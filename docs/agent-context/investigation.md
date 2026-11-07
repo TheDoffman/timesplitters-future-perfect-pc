@@ -1,3 +1,7 @@
+Audio0059/0060 index hashes and target paths use committed LF bytes; an older
+Windows worktree retained CRLF and generated a stale fresh-checkout index.
+Normalize those local patch files before refresh; patch logic is unchanged.
+
 Developer Tools/main integration preserves both additive patch families. The
 ordered tail is92 entries: shared-font2620, native input2630, then config-source2595 and
 MSAA/shared-depth2600. The generated index and exact-order fixture use the
