@@ -365,9 +365,10 @@ Re-estimate after the audit with measured scope. Track implementation and each
 host's acceptance separately.
 The completed census does not justify a bulk asset rewrite: proceed with mix
 and playback controls, then targeted listening and restoration decisions. The
-remaining estimate is2–4 working days to an integrated Windows candidate,
-with1–2 weeks for full listening/cross-platform acceptance, conditional on
-access to those devices and any defects discovered during gameplay.
+integrated Windows candidate now builds and passes campaign/busy-match checks.
+Remaining Windows refinement/validation is estimated at1–2 working days; full
+listening/cross-platform acceptance remains1–2 weeks, conditional on access to
+those devices and any defects discovered during gameplay.
 
 ## Exact mute across output adapters
 
@@ -383,3 +384,69 @@ repair, while XAudio preservation controls passed. Adapter tests cover initial
 and live mute for effect, stream and movie slots, unmute without voice reset or
 queue loss, and every interior attenuation value against the former Windows
 formula. Physical SDL host and gameplay listening acceptance remain pending.
+
+## Campaign and busy-match output checks
+
+The exact-mute candidate linked in Release; 85 production-adapter/timing tests
+and 22 repository checks pass. The game binaries used for the following runs
+were compiled from 5e6d1827 plus the exact-mute implementation committed as
+057f18f7. Private receipts retain the executable hash, current source revision
+and dirty paths; the embedded build identity can predate that commit.
+
+Disposable Test Lab runs entered the first campaign scene and an ordinary
+Vietnam match with ten bots, using only the owned game's replay hook. Selected
+renderer captures establish the campaign cutscene, first-person gameplay and
+active combat. The original campaign and Dialogue-only runs each stayed live
+for112 seconds; the Original and Night bot matches each stayed live for126.
+The owning runner then intentionally terminated each child (exit1).
+
+Dialogue-only uses Master100, Effects0, Music0, Dialogue100, Ambience0, Movies0.
+Its campaign capture retains nonzero speech output; the separate speech stream
+reports ordinary authored levels while the other streams/effects are -10000.
+This verifies that caller's real ownership, not every dialogue path or speech
+already mixed into music. No source asset was changed.
+
+Each run captured two20-second, process-only48kHz stereo signed16 clips with
+zero discontinuity/timestamp-error flags. None contains full-scale samples.
+Campaign full-mix peaks are -17.48/-21.26dBFS; Dialogue-only -20.14/-24.31.
+Original combat peaks are -13.61/-13.29dBFS and RMS -29.69/-25.99dBFS;
+Night combat peaks -15.40/-14.01 and RMS -35.11/-32.71. Match executions differ,
+so these are individual output observations, not controlled perceptual tuning
+or a measured compressor transfer curve. The source fixtures cover that curve.
+
+Both bot runs reached12 buffer starvation episodes during startup/loading and
+retained12 through the later combat summaries (601 and690 sound starts).
+They report zero engine glitches, submission refusals or device/voice failures.
+This narrows the observed counter issue to transitions in these runs; it does
+not establish that all loading gaps or future combat stalls are inaudible.
+The adaptive queue remains bounded and cannot cover arbitrary host stalls.
+
+Selective restoration review decoded the five highest English DC-offset
+candidates with the production decoder and verified both encoded/PCM hashes
+against the census. Their100ms means vary substantially and tails approach
+zero. Subtracting each full-file mean would introduce a new tail offset.
+These measurements justify a listening shortlist, not replacement assets or
+blanket normalization. Loop-seam candidates still require actual loop-region
+verification. Original data remains intact.
+
+An additional126-second enhanced-audio bot run used the120FPS native timing
+target (confirmed by the timing startup record, not a measured sustained frame
+rate). Selected images show active Vietnam combat. It reached747 sound starts
+and70,717 submissions with the startup/loading starvation count still12, zero
+engine glitches and zero output failures. Both20-second captures have zero
+capture-error flags/full-scale samples; peaks -13.64/-13.40dBFS, RMS
+-30.19/-29.52dBFS. Different bot executions prevent a strict A/B comparison.
+Spatial/acoustic perceptual acceptance, all higher frame-rate targets, pause,
+split-screen, device changes and physical Mac/Linux remain open.
+
+Final whole-media validation passes157 with one opt-in device check skipped
+in47.86s, including real movie data. Enabling that check separately passes:
+the actual Windows endpoint consumes silent PCM, the fixture injects a critical
+device-invalidated callback, and the adapter reopens and consumes the new PCM.
+The expected one device failure/two opens is evidence of that deliberate test,
+not an unexpected run failure. This does not simulate physical unplugging or
+endpoint switching. The documented Windows PowerShell standard Build passes all
+checks and matching crash-symbol validation with CL_MPCount=1. Invoking the
+script directly under PowerShell7 first failed in the existing icon helper's
+System.Drawing reference; using the documented Windows PowerShell host resolves
+that invocation issue without changing source or removing checks.

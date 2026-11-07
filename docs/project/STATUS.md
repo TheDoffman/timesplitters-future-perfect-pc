@@ -1,3 +1,25 @@
+## 2026-11-07 - Campaign dialogue and busy audio validation
+
+The local exact-mute candidate passes the standard Windows Build/crash-symbol
+checks,157 whole-media tests (one opt-in skip), the separately enabled real
+Windows endpoint reopen test, and22 repository checks. Disposable campaign and ten-bot Vietnam sessions stayed live
+through their112/126-second bounds. Process-only output captures have no
+full-scale samples or capture discontinuity/timestamp-error flags. A Dialogue-only
+campaign preset preserves the separate speech stream while other buses mute.
+Original and Night matches retain12 startup/loading starvation episodes through
+later combat; no new episodes appear in those combat summaries. This is bounded
+runtime evidence, not headphone/speaker tuning or universal dropout acceptance.
+
+A further enhanced run at the120FPS native target reached747 sound starts with
+the same stable12 starvation episodes and clean capture/output error counters.
+This confirms the selected target, not sustained frame-rate performance or
+perceptual spatial tuning.
+
+Five decoded DC-offset outliers form a private restoration review shortlist;
+variable offsets/near-zero tails rule out naive constant subtraction. Assets
+remain unchanged. Full evidence and remaining scope are in the
+[audio plan](../development/audio-overhaul.md#campaign-and-busy-match-output-checks).
+
 ## 2026-11-07 - Shared exact audio mute
 
 The SDL audit reproduced a nonzero gain at the mute floor in three host-gain

@@ -100,8 +100,8 @@ an OFF transition's amount/bed release falls below 1e-5 (about 346 ms at the
 voices; remaining bytes in the same packet are untouched. Both adapters retain
 their existing rejected-submit state rollback. The expanded `acoustic_scene.c`
 fixture checks 8 kHz mono/8-bit and 48 kHz stereo/16-bit byte preservation,
-finite release, re-enable and stale-echo rejection. Windows fixtures passed;
-game build, listening and physical Mac/Linux acceptance remain pending.
+finite release, re-enable and stale-echo rejection. Windows fixtures/build pass;
+acoustic listening and physical Mac/Linux acceptance remain pending.
 
 Independent audio choices: `pc_audio_settings.h` packs one atomic snapshot;
 `pc_audio_get_options`/`set_options` own strict V1/V2 parsing and save-before-live
@@ -124,8 +124,8 @@ snapshot; `pc_audio_config_path.h` resolves both sidecars through the isolated
 display/input directory. 100% is exact neutral. `pc_audio_menu.inc` supplies
 separate Mix/Enhancements pages: six exact-percent selectors, five toggles,
 save-failure rollback and native back navigation. The original Audio Options
-keeps its profile rows and contains one compact Mix link. Guest rendering awaits
-acceptance; the production full-menu fixture and isolated subpage fixture pass.
+keeps its profile rows and contains one compact Mix link. Native frontend pages
+were inspected at640x480; pause/split-screen/aspect/input acceptance remains open.
 
 Listening options: patch2307 applies shared `pc_audio_dynamics.h` to decoded
 buffer/stream/movie PCM, restoring history after refused submissions and keeping
@@ -136,8 +136,8 @@ serialize as V1. A guarded5ms wall-clock sampler checks accepted audible speech
 queues, then smooths a6dB duck of effects/music/ambience with20/300ms attack/release.
 It never holds buffer/stream locks together, flushes tails or changes clocks.
 `recomp_audio_output_audible_pending` reads XAudio queued voices or SDL available
-output (excluding held resampler input). Both UIs expose the opt-ins; guest pages,
-perceptual tuning, final mix headroom and physical hardware remain unverified.
+output (excluding held resampler input). Both UIs expose the opt-ins; frontend pages
+pass, while perceptual tuning, broad final-mix and hardware acceptance remain open.
 
 Runtime audio layout correction: audio captions are plain text, not unsupported
 `\vs75` sequences. The link in the original profile page inherits its supplied
@@ -934,3 +934,7 @@ XAudio (patch2308), dynamics and speech detection. Floor -10000 and below is
 exact zero; positive values clamp to unity. Live mute/unmute retains the same
 voice, queued PCM and clocks. Adapter fixtures cover buffer/stream/movie slots;
 physical SDL output remains a separate native acceptance item.
+
+Windows game acceptance now includes first-campaign separate-speech ownership
+and Original/Night ten-bot captures; see [measured scope and limits](../development/audio-overhaul.md#campaign-and-busy-match-output-checks).
+The positional-audio guide now reflects the current Mix/subpage menu structure.

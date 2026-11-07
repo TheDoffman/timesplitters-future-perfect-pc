@@ -10,8 +10,8 @@ Changes apply live and save immediately, independently of the original
 volume-slider Accept/Cancel draft.
 
 The launcher exposes the same **Enhanced Audio (Beta)** preference under
-Settings -> Audio. Shared C# `GameSettings`/`SettingsPage` code serves both
-hosts and reads/writes the same sidecar. Reopen launcher Settings to reflect
+Settings -> Audio. Shared C# `GameSettings`/`SettingsPage` serves
+Windows/macOS/Linux and reads/writes the same sidecar. Reopen Settings to reflect
 in-game changes; an already-open draft rejects an external edit rather than
 overwriting it. Launcher Save retains its normal close-game requirement.
 
@@ -26,10 +26,15 @@ OFF restores ordinary routing and clears stream filtering; future gunfire
 parameters retain the original range. Already queued PCM drains normally, so
 SDL changes retain its documented queue delay rather than flushing sound.
 
-The menu inserts a native OFF/ON choice before the hidden subtitle record,
-retaining that record for the original menu save logic. It inherits Audio
-Options' explicit row height and scales the long beta caption to 75% to avoid
-overlap. Failure to save restores the selector's previous value.
+The original Audio Options retains its four profile controls and hidden subtitle
+record, with a compact Audio Mix link before Accept/Cancel. Mix provides six
+percent controls plus Enhancements and Listening subpages. Enhancements exposes
+the master and four individual choices; Listening exposes Dialogue focus and
+Original/Reduced/Night impact range. Profile rows inherit the original absolute
+height; custom pages use automatic rows and descriptor-scoped glyph scaling.
+Failed saves restore the previous selector value. See the
+[shared mix and listening contracts](audio-overhaul.md) for persistence,
+ownership and acceptance limits.
 
 The shared HLE still asks the original XDK 5849 calculator for distance, cone,
 mix-bin and headroom attenuation. `0040-dsound-positional-stereo.patch` also
@@ -154,8 +159,9 @@ requantization after an OFF transition. Bypass also clears reflection-only
 delay history so a later ON cannot replay stale sound. The existing adapter
 backups still restore history on refused submission. A new regression failed
 on changed PCM bytes before the correction and passes afterward at 8 kHz
-mono/8-bit and 48 kHz stereo/16-bit. Game build/listening and native host
-acceptance remain pending; see [the overhaul plan](audio-overhaul.md).
+mono/8-bit and 48 kHz stereo/16-bit. The Windows build and native frontend pages
+now pass; acoustic listening and native host acceptance remain pending in
+[the overhaul plan](audio-overhaul.md).
 
 The 29 media contracts plus the guest-menu fixture include wall/opening direction, closed-route behavior,
 outside-room sources, filter frequency response, original ray ABI/register

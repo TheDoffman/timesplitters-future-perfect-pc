@@ -1,3 +1,8 @@
+Audio candidate validation: Windows campaign separate-speech mute routing and
+Original/Night ten-bot output captures now run with the shared implementation.
+These do not establish native SDL hardware latency, spatial response or tuning;
+Mac/Linux build, menu and listening acceptance remain pending. See STATUS.
+
 Audio mute contract: shared pc_audio_gain.h and patch2308 use exact zero at
 -10000 dB hundredths on both adapters, preserving queued audio and unmute.
 Windows-hosted production SDL/device-double regression covers all slot kinds;
