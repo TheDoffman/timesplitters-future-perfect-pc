@@ -1,3 +1,18 @@
+## 2026-11-06 - Game 0.5.2 original crane release-gate repair
+
+Launcher1.5.2 is public from main816ae00a; all15 assets and Latest verified.
+Windows game native build/tests pass, but the complete four-worker release suite
+reported2 crane fixture link failures,3848passes,77skips and114subtests in850.53s.
+The original-XBE fixture extracts pc_display_aim_panel, which now references the
+Developer Tools HUD hook. Add the fixture's visible-HUD stub, retaining all
+geometry, UV, alpha, ABI and placement assertions. All4 crane checks pass on
+Windows MSVC after the repair. This changes test isolation only; production
+runtime and launcher bytes are unchanged. Full release rerun remains required.
+Linux uses the same source/XBE/AGENTS as Windows; prior dirty fixture edits were
+preserved in stash release-0.5.2-preserve-developer-tools-fixtures. A Clang18
+assignment-tracking crash on continuation0574 compiled on an unchanged retry;
+Linux build and package/clean-userspace/gameplay acceptance remain in progress.
+
 ## 2026-11-06 - Launcher 1.5.2 / game 0.5.2 source preparation
 
 Prepared the shared launcher version/assembly attributes and game VERSION on

@@ -20,6 +20,8 @@ static int placements[8];
 static int guest_writable(uint32_t a,size_t n){return a==0x3000 && n<=0x24;}
 static int pc_display_wide_now(void){return wide;}
 static float pc_display_hud_scale(void){return scale;}
+/* Keep the HUD visible; Developer Tools policy has its own fixture. */
+int pc_developer_hud_visible(void){return 1;}
 static void sub_001CDAE0(void){}
 static void sub_00022FF0(void){pending=0;flushes++;}
 static uint32_t guest_call(void(*f)(void),unsigned n){(void)n;if(f==sub_001CDAE0)return players;f();return 0;}
