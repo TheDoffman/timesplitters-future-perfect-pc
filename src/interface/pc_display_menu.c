@@ -450,37 +450,57 @@ static void menu_video_click_sound(uint32_t menu,uint32_t item)
         guest_call(sub_00021780,1,WORD_AT(sounds+8));
 }
 #define AUDIO_BETA_CHANGE 0x00012027u
+static uint32_t bits(float f);
 static uint32_t audio_beta_row,audio_beta_labels;
+static uint32_t audio_feature_rows[5];
 static void audio_beta_add(void (*original)(void))
 {
     extern void sub_00071CF0(void);
     if(!audio_beta_labels) {
-        static const char labels[]="\vs75" PC_AUDIO_BETA_LABEL "\vs100\0Off\0On";
-        audio_beta_labels=xbox_HeapAlloc(sizeof labels,4);
-        if(audio_beta_labels)memcpy((void *)((uintptr_t)audio_beta_labels+g_xbox_mem_offset),labels,sizeof labels);
+        audio_beta_labels=xbox_HeapAlloc(5u*128u,4);
+        if(audio_beta_labels) {
+            static const char *const captions[]={PC_AUDIO_BETA_LABEL,"Stereo positioning",
+                "Extended gunfire range","Environmental filtering","Background ambience"};
+            for(unsigned i=0;i<5;i++) {
+                char *slot=(char *)((uintptr_t)(audio_beta_labels+i*128u)+g_xbox_mem_offset);
+                memset(slot,0,128);snprintf(slot,112,"\vs75%s\vs100",captions[i]);
+                memcpy(slot+112,"Off\0On",7);
+            }
+        }
     }
     if(!audio_beta_labels)return;
-    /* Audio supplies an explicit row extent; a zero extent is invisible here.
-       Retain both frontend and pause geometry, with a smaller long label. */
-    uint32_t flags=WORD_AT(g_esp+12)&~0x21u,height=WORD_AT(g_esp+16);
-    audio_beta_row=guest_call(original,6,audio_beta_labels,15u,flags,height,0u,0u);
-    if(!audio_beta_row)return;
-    if(guest_writable(audio_beta_row,0x2c))WORD_AT(audio_beta_row+0x28)&=~0x2000u;
-    guest_call(sub_0007D480,2,0xA000u,0u);
-    guest_call(sub_000717D0,1,audio_beta_labels+(uint32_t)sizeof("\vs75" PC_AUDIO_BETA_LABEL "\vs100"));
-    guest_call(sub_000717D0,1,audio_beta_labels+(uint32_t)sizeof("\vs75" PC_AUDIO_BETA_LABEL "\vs100")+4u);
-    guest_call(sub_00071CF0,2,audio_beta_row,AUDIO_BETA_CHANGE);
-    guest_call(sub_00075430,2,audio_beta_row,(uint32_t)pc_audio_enhanced_enabled());
+    /* Compact explicit extents fit the additional choices in frontend/pause.
+       Leave the original volume/profile rows and their Accept/Cancel intact. */
+    uint32_t flags=WORD_AT(g_esp+12)&~0x21u;
+    PcAudioOptions options=pc_audio_get_options();
+    int values[]={options.enhanced,options.spatial,options.weapon_range,options.environment,options.ambience};
+    memset(audio_feature_rows,0,sizeof audio_feature_rows);audio_beta_row=0;
+    for(unsigned i=0;i<5;i++) {
+        uint32_t text=audio_beta_labels+i*128u;
+        uint32_t item=guest_call(original,6,text,15u+i,flags,bits(32.f),0u,0u);
+        audio_feature_rows[i]=item;if(!i)audio_beta_row=item;
+        if(!item)continue;
+        if(guest_writable(item,0x2c))WORD_AT(item+0x28)&=~0x2000u;
+        guest_call(sub_0007D480,2,0xA000u,0u);
+        guest_call(sub_000717D0,1,text+112u);guest_call(sub_000717D0,1,text+116u);
+        guest_call(sub_00071CF0,2,item,AUDIO_BETA_CHANGE);
+        guest_call(sub_00075430,2,item,(uint32_t)values[i]);
+    }
 }
 static void audio_beta_change(void)
 {
     GuestRegisters r;save_registers(&r);
-    if(audio_beta_row && guest_writable(audio_beta_row,0xcc)) {
-        unsigned selected=WORD_AT(audio_beta_row+0xc8);
-        if(selected<2 && !pc_audio_set_enhanced((int)selected)) {
-            WORD_AT(audio_beta_row+0xc8)=(uint32_t)pc_audio_enhanced_enabled();
-            fprintf(stderr,"[AUDIO] Unable to save Enhanced Audio preference\n");
-        }
+    PcAudioOptions options=pc_audio_get_options(),previous=options;
+    int *values[]={&options.enhanced,&options.spatial,&options.weapon_range,&options.environment,&options.ambience};
+    for(unsigned i=0;i<5;i++) {
+        uint32_t item=audio_feature_rows[i];
+        if(item && guest_writable(item,0xcc) && WORD_AT(item+0xc8)<2)*values[i]=(int)WORD_AT(item+0xc8);
+    }
+    if(!pc_audio_set_options(&options)) {
+        int old[]={previous.enhanced,previous.spatial,previous.weapon_range,previous.environment,previous.ambience};
+        for(unsigned i=0;i<5;i++)if(audio_feature_rows[i] && guest_writable(audio_feature_rows[i],0xcc))
+            WORD_AT(audio_feature_rows[i]+0xc8)=(uint32_t)old[i];
+        fprintf(stderr,"[AUDIO] Unable to save audio preferences\n");
     }
     restore_registers(&r);g_esp+=4;
 }

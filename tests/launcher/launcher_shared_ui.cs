@@ -454,6 +454,25 @@ public static class LauncherSharedUiChecks
                 var model=GameSettings.Load(folder,null);model.Sensitivity=.2;model.Save();
                 Need(GameSettings.Load(folder,null).EnhancedAudio,"Unrelated save reset the audio choice");
             });
+            Test("individual audio controls retain their choices across the master switch",()=>{
+                string folder=Path.Combine(root,"audio-features");Directory.CreateDirectory(folder);
+                string sidecar=Path.Combine(folder,"Settings/pc-audio.ini");
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(3);
+                var master=Find<CheckBox>(page.View,"EnhancedAudio");
+                var range=Find<CheckBox>(page.View,"ExtendedGunfire");
+                var environment=Find<CheckBox>(page.View,"EnvironmentalAudio");
+                Need(!range.IsEnabled && range.IsChecked==true,"Default child preference was lost while OFF");
+                master.IsChecked=true;range.IsChecked=false;environment.IsChecked=false;
+                Click(Find<Button>(page.View,"SettingsSaveButton"));
+                Need(File.ReadAllText(sidecar)=="TSFP_AUDIO_V2 1 1 0 0 1\n","Custom audio format differs from game");
+                master.IsChecked=false;Click(Find<Button>(page.View,"SettingsSaveButton"));
+                Need(File.ReadAllText(sidecar)=="TSFP_AUDIO_V2 0 1 0 0 1\n" && !range.IsEnabled,"Master OFF reset children");
+                var model=GameSettings.Load(folder,null);model.Sensitivity=.2;model.Save();
+                Need(!model.ExtendedGunfire && !model.EnvironmentalAudio && model.SpatialAudio && model.AmbientAudio,"Unrelated save lost custom choices");
+                File.WriteAllText(sidecar,"TSFP_AUDIO_V2 1 0 1 1 0\n");
+                var reopened=new SettingsPage(new ResourceDictionary(),folder,true);reopened.SelectTab(3);
+                Need(Find<CheckBox>(reopened.View,"SpatialAudio").IsChecked==false && Find<CheckBox>(reopened.View,"AmbientAudio").IsChecked==false,"Game-side custom settings were not loaded");
+            });
             Test("beta audio invalid and concurrent preferences are preserved",()=>{
                 string folder=Path.Combine(root,"enhanced-audio-conflict");Directory.CreateDirectory(folder);
                 var model=GameSettings.Load(folder,null);model.Save();
@@ -461,7 +480,7 @@ public static class LauncherSharedUiChecks
                 File.WriteAllText(sidecar,"TSFP_AUDIO_V1 1\n");
                 bool rejected=false;try{model.Save();}catch{rejected=true;}
                 Need(rejected && File.ReadAllText(sidecar)=="TSFP_AUDIO_V1 1\n","Concurrent in-game change was overwritten");
-                foreach(string invalid in new[]{"TSFP_AUDIO_V1 2","TSFP_AUDIO_V2 1","TSFP_AUDIO_V1 1 extra"}) {
+                foreach(string invalid in new[]{"TSFP_AUDIO_V1 2","TSFP_AUDIO_V2 1","TSFP_AUDIO_V1 1 extra", "TSFP_AUDIO_V2 1 0 1 0 2","TSFP_AUDIO_V2 1 0 1 0 1 extra"}) {
                     File.WriteAllText(sidecar,invalid);rejected=false;try{GameSettings.Load(folder,null);}catch{rejected=true;}
                     Need(rejected && File.ReadAllText(sidecar)==invalid,"Invalid audio preference was accepted or rewritten");
                 }

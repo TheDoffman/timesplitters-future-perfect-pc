@@ -1,8 +1,9 @@
 # Positional stereo audio
 
 Audio Options exposes **Enhanced Audio (Beta)** in the shared frontend/pause
-builder. It defaults OFF; one switch controls stereo projection, the gunfire
-range wrapper, environmental routing and the background ambience mix.
+builder. It defaults OFF; the master switch gates separate choices for stereo
+positioning, extended gunfire range, environmental filtering and background
+ambience. Individual choices default ON and persist when the master is OFF.
 General buffer, lifecycle, format and device-recovery fixes are always active,
 including when this toggle is OFF; see [audio recovery](../agent-context/audio-buffers.md).
 Changes apply live and save immediately, independently of the original
@@ -15,7 +16,9 @@ in-game changes; an already-open draft rejects an external edit rather than
 overwriting it. Launcher Save retains its normal close-game requirement.
 
 `src/interface/pc_audio_settings.h` defines the shared setting and its HLE-owned
-implementation. It saves `TSFP_AUDIO_V1 0|1` atomically to `pc-audio.ini` beside
+implementation. All-default individual choices save `TSFP_AUDIO_V1 0|1`;
+custom choices save `TSFP_AUDIO_V2 master spatial range environment ambience`
+with strict 0/1 values, atomically to `pc-audio.ini` beside
 `TSFP_DISPLAY_CONFIG` (or `RECOMP_INPUT_CONFIG`; default `config/`). The atomic
 live value is published only after a successful save. A saved choice takes
 precedence over diagnostic `RECOMP_ENHANCED_AUDIO`/`RECOMP_ACOUSTICS` overrides.

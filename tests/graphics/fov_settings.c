@@ -50,8 +50,11 @@ RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
 RECOMP_TLS uint16_t g_fp_cc,g_fp_control_word;
 static int available=1,returned;
 static int enhanced_audio,audio_save_ok=1;
+static PcAudioOptions audio_test_options={0,1,1,1,1};
 int pc_audio_enhanced_enabled(void) {return enhanced_audio;}
 int pc_audio_set_enhanced(int enabled) {if(!audio_save_ok)return 0;enhanced_audio=!!enabled;return 1;}
+PcAudioOptions pc_audio_get_options(void) {audio_test_options.enhanced=enhanced_audio;return audio_test_options;}
+int pc_audio_set_options(const PcAudioOptions *o) {if(!audio_save_ok)return 0;audio_test_options=*o;enhanced_audio=o->enhanced;return 1;}
 #include "graphics/graphics_options.h"
 static TsfpGraphicsOptions graphics_options={1,0,1,0,1,0};
 static int graphics_save_ok=1;
@@ -379,7 +382,8 @@ static void button_probe(void)
     if(WORD_AT(g_esp+8)==15)observed_beta_height=WORD_AT(g_esp+16);
     observed_builder_flags=WORD_AT(0x500028);
     observed_row_flags=WORD_AT(g_esp+12);
-    g_eax=0x510000;g_esp+=4;
+    uint32_t audio_id=WORD_AT(g_esp+8);
+    g_eax=audio_id>=15 && audio_id<=19?0x510000+(audio_id-15)*0x200:0x510000;g_esp+=4;
 }
 static void reload(const char *text)
 {
@@ -891,11 +895,17 @@ int main(int argc,char **argv)
     pose.clip_channels[0]=NAN;pc_character_pose_present(entity,&pose);
     CHECK(pose_clip_bindings==1);
 
-    CHECK(audio_beta_row==0x510000 && observed_beta_height==bits(54.f));
+    CHECK(audio_beta_row==0x510000 && observed_beta_height==bits(32.f));
     WORD_AT(audio_beta_row+0xc8)=1;call(AUDIO_BETA_CHANGE,0,0);CHECK(enhanced_audio==1);
     audio_save_ok=0;WORD_AT(audio_beta_row+0xc8)=0;call(AUDIO_BETA_CHANGE,0,0);
     CHECK(enhanced_audio==1 && WORD_AT(audio_beta_row+0xc8)==1);
     audio_save_ok=1;WORD_AT(audio_beta_row+0xc8)=0;call(AUDIO_BETA_CHANGE,0,0);CHECK(enhanced_audio==0);
+    WORD_AT(audio_feature_rows[2]+0xc8)=0;call(AUDIO_BETA_CHANGE,0,0);
+    CHECK(!audio_test_options.weapon_range && audio_test_options.spatial && audio_test_options.environment && audio_test_options.ambience);
+    WORD_AT(audio_beta_row+0xc8)=1;call(AUDIO_BETA_CHANGE,0,0);
+    CHECK(enhanced_audio && !audio_test_options.weapon_range);
+    audio_save_ok=0;WORD_AT(audio_feature_rows[3]+0xc8)=0;call(AUDIO_BETA_CHANGE,0,0);
+    CHECK(audio_test_options.environment && WORD_AT(audio_feature_rows[3]+0xc8)==1);audio_save_ok=1;
     /* The actual native waiting panel adopts an unconfigured pad's input port,
      * advances only the first waiting player, and preserves P1's controller. */
     WORD_AT(0x5236c4)=3;WORD_AT(0x74f9ec)=3;

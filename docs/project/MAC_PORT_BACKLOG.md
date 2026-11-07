@@ -8672,6 +8672,13 @@ Mac title acceptance pending; retain MAC-118 Awaiting validation. See [contracts
   Native Mac/Linux game execution and listening remain unverified. The broader
   overhaul's split-screen/reverb acceptance remains tracked in
   [its plan](../development/audio-overhaul.md), beyond this prior beta's scope.
+- Independent choices follow-up: shared patch0059, `pc_audio_settings.h`, guest
+  menu and C# launcher expose spatial/range/environment/ambience controls with
+  V1/V2 migration and master-OFF retention. Common code supplies both hosts;
+  no Mac adapter implementation is deferred. Windows C/menu and portable
+  launcher checks and full Windows launcher Save/UI suite pass; Mac UI/listening
+  remain pending. Diffuse beds use neutral enclosure in split-screen; this is
+  not multi-listener positional acoustics validation.
 - Shared: patches 0040/0045/0050 and `pc_spatial_audio.h`, `pc_acoustic_*`
   provide directional buffers/streams, near-field centering, longer gunfire
   range, wall/portal filtering and metadata-driven ambience mixing. Both

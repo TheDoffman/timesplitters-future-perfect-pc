@@ -158,24 +158,15 @@ static PcAcousticResult pc_acoustic_guest(uint32_t key,const float *raw_listener
     cache[slot].key=key;cache[slot].scene=scene;cache[slot].time=now;cache[slot].result=result;
     return pc_acoustic_view(result,view,neutral);
 }
-static void pc_acoustic_ambient_tick(uint64_t now)
+/* Diffuse-bed mixing is independent of one listener's geometry. Unknown
+ * rooms and split-screen retain authored stereo with no invented enclosure. */
+static float pc_acoustic_background_enclosure(unsigned *listener_room)
 {
-    static RECOMP_TLS uint64_t last;
-    if(now-last<150)return;
-    last=now;
-    if(!pc_audio_enhanced_enabled()) {
-        extern void hle_dsound_stream_acoustics(uint32_t,float,float,int);
-        for(unsigned i=0;i<10;i++) {
-            uint32_t object=pc_acoustic_word(0x5836d0u+i*0x14094u+4);
-            if(object)hle_dsound_stream_acoustics(pc_acoustic_word(object+0x14),0,0,0);
-        }
-        return;
-    }
-    if(pc_acoustic_word(0x790950u)!=1)return;
+    if(!pc_audio_feature_enabled(PC_AUDIO_ENVIRONMENT) || pc_acoustic_word(0x790950u)!=1)return 0;
     uint32_t camera=pc_acoustic_word(0x7b0cc0u),table=pc_acoustic_word(0x708788u);
     unsigned rooms=pc_acoustic_word(0x7b975cu)+1;
-    if(!camera || !table || rooms<2 || rooms>PC_ACOUSTIC_ROOMS)return;
-    float listener[3];if(!pc_acoustic_read(camera+0x27c,listener,12))return;
+    if(!camera || !table || rooms<2 || rooms>PC_ACOUSTIC_ROOMS)return 0;
+    float listener[3];if(!pc_acoustic_read(camera+0x27c,listener,12))return 0;
     unsigned room=pc_acoustic_room(listener,rooms,table);
     PcAcousticScene scene;memset(&scene,0,sizeof scene);scene.rooms=rooms;
     /* Nearby openings are enough for the ambient-bed enclosure response. */
@@ -190,7 +181,26 @@ static void pc_acoustic_ambient_tick(uint64_t now)
         int valid=1;for(unsigned j=0;j<n*3;j++){if(!isfinite(vertices[j])){valid=0;break;}v->center[j%3]+=vertices[j]/n;}
         if(valid)scene.count++;else memset(v,0,sizeof *v);
     }
-    float enclosure=pc_acoustic_enclosure(&scene,room,listener,pc_acoustic_ray,NULL);
+    *listener_room=room;
+    return pc_acoustic_enclosure(&scene,room,listener,pc_acoustic_ray,NULL);
+}
+static void pc_acoustic_ambient_tick(uint64_t now)
+{
+    static RECOMP_TLS uint64_t last;
+    if(now-last<150)return;
+    last=now;
+    if(!pc_audio_feature_enabled(PC_AUDIO_AMBIENCE)) {
+        extern void hle_dsound_stream_acoustics(uint32_t,float,float,int);
+        for(unsigned i=0;i<10;i++) {
+            uint32_t object=pc_acoustic_word(0x5836d0u+i*0x14094u+4);
+            /* Positioned streams keep the independently selected world filter. */
+            int positioned=pc_acoustic_word(0x5836d0u+i*0x14094u+0x50) &&
+                pc_acoustic_word(0x5836d0u+i*0x14094u+0x64);
+            if(object && !positioned)hle_dsound_stream_acoustics(pc_acoustic_word(object+0x14),0,0,0);
+        }
+        return;
+    }
+    unsigned room=0;float enclosure=pc_acoustic_background_enclosure(&room);
     extern void hle_dsound_stream_acoustics(uint32_t,float,float,int);
     for(unsigned i=0;i<10;i++) {
         uint32_t record=0x5836d0u+i*0x14094u,object=pc_acoustic_word(record+4);

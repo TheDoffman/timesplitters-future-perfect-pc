@@ -102,3 +102,13 @@ def test_beta_audio_preference(tmp_path):
     run(0)  # saved OFF overrides the diagnostic launch override
     env['TSFP_DISPLAY_CONFIG']=str(tmp_path/'missing'/'display.ini')
     run(1,0,0)  # failed save leaves the current live setting unchanged
+    env['TSFP_DISPLAY_CONFIG']=str(tmp_path/'display.ini')
+    features=subprocess.run([str(exe),'features'],env=env,capture_output=True,text=True,timeout=10)
+    assert features.returncode==0,features.stdout+features.stderr
+    sidecar=tmp_path/'pc-audio.ini'
+    for invalid in ('TSFP_AUDIO_V2 1 0 1 0','TSFP_AUDIO_V2 1 0 1 0 2',
+                    'TSFP_AUDIO_V2 1 0 1 0 1 extra','TSFP_AUDIO_V99 1',
+                    'TSFP_AUDIO_V2 9999999999999999999999999999 0 1 0 1'):
+        sidecar.write_text(invalid)
+        run(0,1,0)  # unknown/malformed settings remain byte-for-byte untouched
+        assert sidecar.read_text()==invalid

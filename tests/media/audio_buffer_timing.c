@@ -35,7 +35,10 @@ static void acoustic_ray_mock(void) {
 recomp_func_t recomp_lookup(uint32_t address) { return acoustic_mock && address==0x88950 ? acoustic_ray_mock : NULL; }
 int xbox_EnvSwitch(const char *name, int value) { return value; }
 void hle_dsound_stream_tick(uint64_t now) { }
-void hle_dsound_stream_acoustics(uint32_t settings,float obstruction,float room,int ambience) {}
+static unsigned acoustic_stream_calls;static uint32_t acoustic_stream_settings;
+static float acoustic_stream_obstruction;static int acoustic_stream_bed;
+void hle_dsound_stream_acoustics(uint32_t settings,float obstruction,float room,int ambience)
+{acoustic_stream_calls++;acoustic_stream_settings=settings;acoustic_stream_obstruction=obstruction;acoustic_stream_bed=ambience;}
 void hle_dsound_stream_spatial(uint32_t settings,float pan,int enabled) { }
 #ifndef TSFP_INTEGRATED_AUDIO
 uint64_t recomp_audio_output_game_time(uint64_t now,unsigned domain){(void)domain;return now;}
@@ -84,6 +87,30 @@ int xbox_adpcm_decode_block(const uint8_t *block, size_t bytes, unsigned channel
 #ifndef TSFP_INTEGRATED_AUDIO
 int main(int argc, char **argv)
 {
+    if(argc==2 && !strcmp(argv[1],"feature-gates")) {
+        g_xbox_mem_offset=(ptrdiff_t)memory;g_esp=0x60000;
+        uint32_t record=0x5836d0,object=0x40000,settings=0x41000;
+        HLE_MEM32(record+4)=object;HLE_MEM32(object+0x14)=settings;
+        HLE_MEM32(record+0x28)=2;HLE_MEM32(record+0x4c)=0;
+        HLE_MEM32(0x4ca9b4)=0x50000;HLE_MEM32(0x50008)=0x210;
+        HLE_MEM32(0x565b4c)=0x80000;memcpy(HLE_PTR(0x80000),"outside_ambience.MIB",21);
+        /* Diffuse mix still works without room geometry, with environment OFF. */
+        PcAudioOptions o={1,0,0,0,1};pc_audio_live=pc_audio_pack(o);
+        pc_acoustic_ambient_tick(1000);
+        CHECK(acoustic_stream_calls==1 && acoustic_stream_settings==settings && acoustic_stream_bed==1);
+        CHECK(acoustic_stream_obstruction==0);
+        o.environment=1;o.ambience=0;pc_audio_live=pc_audio_pack(o);
+        pc_acoustic_ambient_tick(1200);CHECK(acoustic_stream_calls==2 && acoustic_stream_bed==0);
+        /* Turning beds off cannot clear the separate positioned-stream filter. */
+        HLE_MEM32(record+0x50)=HLE_MEM32(record+0x64)=1;
+        pc_acoustic_ambient_tick(1400);CHECK(acoustic_stream_calls==2);
+        HLE_MEM32(record+0x50)=HLE_MEM32(record+0x64)=0;
+        o.ambience=1;pc_audio_live=pc_audio_pack(o);HLE_MEM32(0x790950)=2;
+        pc_acoustic_ambient_tick(1600);CHECK(acoustic_stream_calls==3 && acoustic_stream_bed==1 && acoustic_stream_obstruction==0);
+        o.enhanced=0;pc_audio_live=pc_audio_pack(o);
+        pc_acoustic_ambient_tick(1800);CHECK(acoustic_stream_calls==4 && acoustic_stream_bed==0);
+        puts("PASS: feature-gates, independent bed/environment targets and split-screen neutral cover");return 0;
+    }
     if (argc == 2 && !strcmp(argv[1], "completion")) {
         Buffer *b = &g_buffers[0];
         g_xbox_mem_offset = (ptrdiff_t)memory;

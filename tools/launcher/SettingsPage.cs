@@ -38,7 +38,7 @@ namespace TimeSplitters.Launcher
         TextBlock textureStatus, textureDetails;
         Border textureBadge;
         Button textureCheck, textureInstall, textureVerify;
-        CheckBox textureUpdates, enhancedAudio;
+        CheckBox textureUpdates, enhancedAudio, spatialAudio, extendedGunfire, environmentalAudio, ambientAudio;
         TextureRelease textureAvailable;
         long textureDownloadBytes;
         bool textureBusy;
@@ -304,8 +304,15 @@ namespace TimeSplitters.Launcher
             var audioPanel=new StackPanel();
             var audio=PageTheme.Section(audioPanel,"Enhanced Audio","Optional positional audio and ambience improvements.");
             enhancedAudio=Check("Enhanced Audio (Beta)",model.EnhancedAudio);enhancedAudio.Name="EnhancedAudio";audio.Children.Add(enhancedAudio);
+            spatialAudio=Check("Stereo positioning",model.SpatialAudio);spatialAudio.Name="SpatialAudio";audio.Children.Add(spatialAudio);
+            extendedGunfire=Check("Extended gunfire range",model.ExtendedGunfire);extendedGunfire.Name="ExtendedGunfire";audio.Children.Add(extendedGunfire);
+            environmentalAudio=Check("Environmental filtering",model.EnvironmentalAudio);environmentalAudio.Name="EnvironmentalAudio";audio.Children.Add(environmentalAudio);
+            ambientAudio=Check("Background ambience processing",model.AmbientAudio);ambientAudio.Name="AmbientAudio";audio.Children.Add(ambientAudio);
             var audioHint=Text("Beta: directional world effects, wall filtering and a softer background ambience mix. Requires a game build with Enhanced Audio support.",12);
             audioHint.Name="EnhancedAudioBetaNote";audioHint.Foreground=Muted;audio.Children.Add(audioHint);
+            audio.Children.Add(Text("Individual controls require an audio-overhaul game build. Switching Enhanced Audio OFF keeps your individual choices.",12));
+            Action audioEnabled=()=>{foreach(var child in new[]{spatialAudio,extendedGunfire,environmentalAudio,ambientAudio})child.IsEnabled=enhancedAudio.IsChecked==true;};
+            Ui.CheckedChanged(enhancedAudio,audioEnabled);audioEnabled();
             audio.Children.Add(Text("Defaults OFF. Shares the in-game Audio Options preference. Save before launch; you can also switch it live from the game's audio menu.",12));
             var language=PageTheme.Section(audioPanel,"Game language","Select one complete language pack for your next launch.");
             languagePack=Choices(GameSettings.LanguagePackLabels,GameSettings.LanguagePackLabels[Array.IndexOf(GameSettings.LanguagePacks,model.LanguagePack)]);
@@ -317,7 +324,7 @@ namespace TimeSplitters.Launcher
             tabs.Items.Add(new TabItem { Header="View & HUD",Content=Scroll(viewHud) });
             tabs.Items.Add(new TabItem { Header="General",Content=Scroll(general) });
             foreach(var entry in new[]{sensitivity,width,height,discordId})Ui.TextChanged(entry,RefreshSaveState);
-            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,developerTools,discordEnabled,enhancedTextures,enhancedAudio,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
+            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,developerTools,discordEnabled,enhancedTextures,enhancedAudio,spatialAudio,extendedGunfire,environmentalAudio,ambientAudio,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
             foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack,msaa,edgeSmoothing,supersampling})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
             Ui.ValueChanged(fov,RefreshSaveState);
         }
@@ -327,6 +334,7 @@ namespace TimeSplitters.Launcher
             return Json.Encode(new object[]{sensitivity.Text,width.Text,height.Text,discordId.Text,
                 enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,ambientOcclusion.IsChecked,shaderCache.IsChecked,
                 skipSplashes.IsChecked,developerTools.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
+                spatialAudio.IsChecked,extendedGunfire.IsChecked,environmentalAudio.IsChecked,ambientAudio.IsChecked,
                 device.SelectedIndex,localDevices.Select(x=>x.SelectedIndex).ToArray(),scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
                 (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
@@ -484,6 +492,8 @@ namespace TimeSplitters.Launcher
                 model.NativeFps=GameSettings.NativeFrameRates[frameRate.SelectedIndex];
                 model.EnhancedTextures=enhancedTextures.IsChecked==true;
                 model.EnhancedAudio=enhancedAudio.IsChecked==true;
+                model.SpatialAudio=spatialAudio.IsChecked==true;model.ExtendedGunfire=extendedGunfire.IsChecked==true;
+                model.EnvironmentalAudio=environmentalAudio.IsChecked==true;model.AmbientAudio=ambientAudio.IsChecked==true;
                 model.LanguagePack=GameSettings.LanguagePacks[languagePack.SelectedIndex];
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
                 model.DeveloperToolsEnabled=developerTools.IsChecked==true;

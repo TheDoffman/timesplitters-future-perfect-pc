@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "gameplay/pc_spatial_audio.h"
+#include "interface/pc_audio_settings.h"
 #define TSFP_PC_CONTROLS
 static uint8_t memory[1024];
 static ptrdiff_t g_xbox_mem_offset;
@@ -15,6 +16,7 @@ static uint32_t MEM32(uint32_t a) {uint32_t v;memcpy(&v,memory+a,4);return v;}
 static float MEMF(uint32_t a) {float v;memcpy(&v,memory+a,4);return v;}
 static int enabled=1;
 int pc_audio_enhanced_enabled(void) {return enabled;}
+int pc_audio_feature_enabled(PcAudioFeature feature) {assert(feature==PC_AUDIO_WEAPON_RANGE);return enabled;}
 static float observed;
 void sub_00021FB0_gen(void)
 {observed=MEMF(g_esp+8);g_eax=17;g_esp+=4;}

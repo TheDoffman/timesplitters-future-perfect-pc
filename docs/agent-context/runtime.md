@@ -93,8 +93,8 @@ shared stereo projection with XAudio2/SDL output adapters; see
 cursor contracts, the saved Audio Options beta toggle and host acceptance boundaries.
 `0050-environmental-acoustics.patch` adds opt-in world-coordinate room/portal routing; see the audio guide for limits.
 
-`0045-weapon-sound-range.patch` scopes longer gunfire range to the two weapon
-dispatcher calls into `00021FB0`; its cdecl wrapper restores the range argument.
+`0045` wraps two weapon calls to `00021FB0`, restoring their cdecl arguments.
+`0059` gates stereo/range/acoustics independently; see the positional audio guide.
 
 Kernel: [objects, threads and boot](kernel-objects.md), [devices and names](kernel-devices.md).
 

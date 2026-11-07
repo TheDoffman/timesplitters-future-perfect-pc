@@ -117,6 +117,15 @@
       ]
     },
     {
+      "name": "0059-audio-feature-controls.patch",
+      "path": "patches/media/0059-audio-feature-controls.patch",
+      "sha256": "4cb4ba103a59c3ed822f3b7ca502777e69993ce62284365820c2441e23d7394e",
+      "targets": [
+        "src/hle/hle_dsound.c\r",
+        "titles/futureperfect/src/recomp_manual.c\r"
+      ]
+    },
+    {
       "name": "0060-independent-classification.patch",
       "path": "patches/compiler/0060-independent-classification.patch",
       "sha256": "f8db701d03791b2b6eb3794f6d4634d14deb018400b9c171acab4af5ab0bd1b6",

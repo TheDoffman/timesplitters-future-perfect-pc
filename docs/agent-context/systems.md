@@ -103,6 +103,16 @@ fixture checks 8 kHz mono/8-bit and 48 kHz stereo/16-bit byte preservation,
 finite release, re-enable and stale-echo rejection. Windows fixtures passed;
 game build, listening and physical Mac/Linux acceptance remain pending.
 
+Independent audio choices: `pc_audio_settings.h` packs one atomic snapshot;
+`pc_audio_get_options`/`set_options` own strict V1/V2 parsing and save-before-live
+publication. `pc_audio_feature_enabled` applies master AND individual selection.
+All-default children keep V1; custom spatial/range/environment/ambience choices
+use V2 and survive master OFF. Unknown files refuse saves. Shared patch0059
+connects routing/range; the ambience guest poll owns only non-positioned beds,
+uses neutral cover without a single valid listener, and leaves positioned stream
+filters alone. `pc_display_menu.c` exposes five compact choices in Audio Options,
+with rollback on save failure. See [acceptance](../development/audio-overhaul.md).
+
 Split-screen mouse look (#112): `pc_camera_mouse_primary_in_region` reads the
 current player's local input slot at `player+4` from the fresh bounded camera
 mapping. Both the Win32 and SDL `pc_controls_apply_mouse` adapters skip slots

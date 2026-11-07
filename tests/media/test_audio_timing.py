@@ -125,3 +125,8 @@ def test_acoustic_guest_state(buffer_test):
     result=subprocess.run([str(buffer_test),'acoustics'],capture_output=True,text=True,timeout=10)
     assert result.returncode==0,result.stdout+result.stderr
     assert 'PASS:' in result.stdout
+
+def test_independent_ambience_and_environment(buffer_test):
+    result=subprocess.run([str(buffer_test),'feature-gates'],capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stdout+result.stderr
+    assert 'PASS: feature-gates' in result.stdout

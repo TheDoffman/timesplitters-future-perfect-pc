@@ -1,3 +1,35 @@
+## 2026-11-07 - Independent audio choices and completed loudness audit
+
+Local `feature/audio-overhaul`, base `a24c3b60`; Windows x64/Python3.12.14/MSVC,
+same pinned runtime and FFmpeg as the mapping step below. New shared patch0059
+applied successfully after the existing full stack (two runtime files updated).
+The C preference snapshot and launcher model accept legacy V1 and strict V2
+individual choices, keep child choices while master is OFF, refuse malformed
+files, and publish only after a successful save. The shared native Audio Options
+builder adds compact choices; launcher Audio tab renders cleanly offscreen at
+1152x772 (private/audio-overhaul/launcher-audio.png). Actual guest scene layout,
+game execution/listening and native Mac/Linux acceptance remain unverified.
+
+Combined media/menu/portable-launcher checks pass170 tests,9 explicit skips and
+31 subtests. C tests exercise32 real disk round trips/feature combinations;
+an isolated C# production serializer/Load probe also passes32 combinations.
+Full Windows `build-launcher.ps1 -Test` subsequently passed in42.76 seconds,
+including41 shared UI groups,49 settings checks and the existing update,
+rollback, download, startup, crash/session and maintenance suites. Earlier
+attempts stopped at existing running-game guards while another checkout had an
+active game process; the rerun followed its observed exit. No other game was
+closed or modified, and guards were not weakened or bypassed.
+
+The all-bank FFmpeg meter completed with27,253 payload/base-frequency records,
+14,110 unique content/channel/rate keys:26,266 finite integrated-LUFS results,
+987 below-gate/short records. Unique finite median -10.81 LUFS; music median
+-9.145 LUFS. Highest source true peak +6.03 dBTP. These precede original event
+gains, distance/mix sliders and the existing -6 dB host gain; they do not prove
+live master clipping or justify flattening the authored mix. Private report:
+private/audio-overhaul/loudness.json (11,611,700 bytes). No source PCM was
+rewritten. Volume buses, ducking, dynamic range, further spatial work, selective
+restoration decisions and integrated validation remain in the full goal.
+
 ## 2026-11-07 - Audio mapping, production measurements and finite bypass
 
 Local `feature/audio-overhaul`, base `a24c3b60`; Windows x64, Python 3.12.14,

@@ -108,7 +108,17 @@ Run `python tools/analysis/audio_loudness.py --game <existing-game-folder>
 --scope all --output <private-report-folder>/loudness.json` for gated LUFS,
 true peak and loudness range. It meters original input; processed output is
 discarded. Short/quiet sounds can legitimately have no integrated LUFS.
-The first all-bank pass is running; results are not yet accepted.
+The all-bank pass completed successfully: 27,253 payload/base-rate records,
+14,110 distinct content/channel/rate combinations. There are 26,266 finite
+integrated-loudness results and 987 below-gate/short records. The unique-source
+median is -10.81 LUFS; finite values span -32 to -1.81 LUFS. Music's finite
+median is -9.145 LUFS, spanning -15.1 to -6.13 LUFS; cinematic recordings are
+included in this music pool. The highest measured source true peak is +6.03 dBTP.
+These are source measurements before original event levels, music/effects
+sliders, distance attenuation and the existing -6 dB output gain. They support
+headroom/mix investigation, not global normalization or a claim of in-game
+clipping. The decoded-sample and loudness inventories deliberately use different
+deduplication keys: the latter includes base frequency.
 
 FFmpeg's IMA rounding differs slightly from the production decoder: synthetic
 four-block comparisons gave equal sample counts/channel order but up to 5 mono
@@ -116,6 +126,42 @@ or 8 stereo integer sample units of difference. Both use 64-frame Xbox blocks.
 This does not establish a port defect: the production shift/add arithmetic
 matches the pinned runtime's LLE arithmetic. Keep the production decoder intact
 pending hardware/reference evidence; FFmpeg metering is not bit-exact proof.
+
+## Independent enhancement controls (implemented; acceptance pending)
+
+The shared preference now represents the master switch plus Stereo positioning,
+Extended gunfire range, Environmental filtering and Background ambience.
+V1 choices load with all four individual options selected, preserving existing
+ON/OFF behavior. Custom choices serialize as
+`TSFP_AUDIO_V2 <master> <spatial> <range> <environment> <ambience>`; all-default
+children retain the legacy V1 representation. Values are strict 0/1 tokens.
+An unknown/malformed file is preserved and cannot be overwritten by an in-game
+save. Atomic publication follows successful file replacement; a competing save
+is refused rather than spinning the reader. Master OFF preserves child choices.
+
+Both the shared launcher page and native frontend/pause builder expose the
+four choices. Launcher draft/conflict/transaction handling is retained; the
+game saves live and restores selectors after failure. Native added choices use
+32-unit row extents and scaled captions; actual in-game layout review is pending.
+Windows offscreen Audio-tab rendering passed visual inspection at 1152x772.
+Old game builds do not understand custom V2 preferences; the UI explicitly
+requires an updated build. Publication/installation is not part of this step.
+
+Shared patch0059 gates stereo, environmental routing and gunfire separately.
+The ambience poll clears only non-positioned bed targets, leaving independent
+positioned filters intact. Diffuse background mixing works without room geometry
+and in split-screen; enclosure filtering remains neutral without one verified
+listener. This is not multi-listener positional acoustics acceptance.
+
+All32 combinations passed C disk round trips/master retention and production
+C# serializer/Load round trips. Combined media/menu/portable launcher checks
+passed170 tests,9 skips and31 subtests. Full Windows launcher build/tests then
+passed in42.76 seconds, including41 shared UI groups and49 settings checks.
+Earlier attempts stopped at the existing running-game guard; they were rerun
+after that external session ended. No other game was closed or modified.
+Native game build, physical Mac/Linux and listening checks remain pending.
+Per-category gain sliders, ducking and
+dynamic-range controls are still in progress, not supplied by these switches.
 
 ## Planning estimate
 

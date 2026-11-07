@@ -14,6 +14,15 @@ Scope/gate/worker tests run in the plan; host suites remain unchanged.
 
 # Launcher and menu shortcuts
 
+Audio overhaul controls share the same C#/guest V1/V2 format. `GameSettings`
+retains independent spatial/range/environment/ambience preferences; all-default
+children serialize as V1, custom choices as V2. `SettingsPage` includes each in
+dirty-state tracking and preserves them while the master switch is OFF. Shared
+UI tests cover custom round trips, external edits and unrelated-save retention;
+the full Windows launcher suite passed. The offscreen
+`--render-settings-audio` preview selects tab3 and is forwarded by Bootstrap.
+See [audited scope and validation](../development/audio-overhaul.md).
+
 ## macOS storage (discussion #502)
 
 `Program.FindInstallRoot` discovers the entry-point bundle/checkouts;
