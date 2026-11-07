@@ -46,8 +46,9 @@ Native Online link/mode checks: `tests/graphics/test_quit_menu.py` and native
 `--test`/`--online-self-test`. Clang Story fixtures select the Windows guest
 adapter but use the real host trap; hexadecimal additions need token boundaries.
 
-0.5.1/1.5.1: three-host install/preservation/Online/clean-package checks, including
-the [Linux video-startup fix](linux-game.md); [2595](smaa.md).
+0.5.2/1.5.2 version bump retains all three-host launcher and full game publisher
+gates. Windows then Linux draft; Mac game built separately at the same revision.
+[Linux checks](linux-game.md); [2595](smaa.md).
 
 Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh-weapon-clicks-434).
 

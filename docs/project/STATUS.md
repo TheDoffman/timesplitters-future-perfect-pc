@@ -1,3 +1,17 @@
+## 2026-11-06 - Launcher 1.5.2 / game 0.5.2 source preparation
+
+Prepared the shared launcher version/assembly attributes and game VERSION on
+release/launcher-1.5.2-game-0.5.2, based on main7ad583b3. Windows x64,
+.NET Framework4.8: pinned-artwork launcher build and all isolated launcher
+regressions pass (41.78s). Release-policy suites:175 passed,9 explicit skips,
+10 subtests passed. Context freshness and whitespace checks pass.
+The first sandboxed test attempt failed on temporary-directory permissions;
+the normal-host rerun above passed. No release has been published at this step.
+Three-host launcher release CI, full Windows game publication checks and Linux
+build/package acceptance remain required. Native Mac game release is reserved
+for the maintainer's Mac. Existing Linux checkout contains uncommitted fixture
+work and must be preserved before synchronizing; no Linux source was modified.
+
 ## 2026-11-06 - Complete native CI fixture isolation
 
 PR514's native Windows/macOS suites exposed more isolated-fixture dependencies
