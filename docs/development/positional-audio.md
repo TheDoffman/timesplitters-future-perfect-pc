@@ -144,6 +144,16 @@ routed. There is no invented point source for a diffuse ambience bed.
 SDL refuses a packet without consuming its filter history; reset clears it.
 Existing gunfire range and near-field centering are unaffected.
 
+Audio overhaul correction (2026-11-07, local): when targets are disabled,
+the shared PCM filter clears its fading state below 1e-5 and leaves the remaining
+packet bytes untouched. This ends the otherwise asymptotic processing and
+requantization after an OFF transition. Bypass also clears reflection-only
+delay history so a later ON cannot replay stale sound. The existing adapter
+backups still restore history on refused submission. A new regression failed
+on changed PCM bytes before the correction and passes afterward at 8 kHz
+mono/8-bit and 48 kHz stereo/16-bit. Game build/listening and native host
+acceptance remain pending; see [the overhaul plan](audio-overhaul.md).
+
 The 29 media contracts plus the guest-menu fixture include wall/opening direction, closed-route behavior,
 outside-room sources, filter frequency response, original ray ABI/register
 preservation, compact-tree lookup, world-record lookup and the XDK Z conversion.

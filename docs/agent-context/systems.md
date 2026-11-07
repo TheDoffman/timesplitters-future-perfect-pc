@@ -94,6 +94,15 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/development/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
+Audio overhaul: shared `pc_acoustic_dsp.h` now reaches exact PCM bypass when
+an OFF transition's amount/bed release falls below 1e-5 (about 346 ms at the
+30 ms time constant). It clears delay/filter history, including reflection-only
+voices; remaining bytes in the same packet are untouched. Both adapters retain
+their existing rejected-submit state rollback. The expanded `acoustic_scene.c`
+fixture checks 8 kHz mono/8-bit and 48 kHz stereo/16-bit byte preservation,
+finite release, re-enable and stale-echo rejection. Windows fixtures passed;
+game build, listening and physical Mac/Linux acceptance remain pending.
+
 Split-screen mouse look (#112): `pc_camera_mouse_primary_in_region` reads the
 current player's local input slot at `player+4` from the fresh bounded camera
 mapping. Both the Win32 and SDL `pc_controls_apply_mouse` adapters skip slots

@@ -1,3 +1,35 @@
+## 2026-11-07 - Audio mapping, production measurements and finite bypass
+
+Local `feature/audio-overhaul`, base `a24c3b60`; Windows x64, Python 3.12.14,
+MSVC x64 fixture compiler and the pinned local FFmpeg 8.1. An independently
+prepared runtime at `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845` accepted the full
+patch stack (168 runtime files updated). Before the DSP edit, the existing media
+suite passed 126 tests with five explicit skips. After mapping/measurement
+tests and finite-bypass repair, 139 pass with the same five skips. A regression
+first failed on actual changed PCM bytes after OFF, then passed with the shared
+fix. It checks 8 kHz mono/8-bit, 48 kHz stereo/16-bit, re-enable and stale echoes.
+No game build/listening or physical Mac/Linux acceptance is established yet.
+
+Original-loader disassembly resolves all five language banks: 5,406 file names
+and 5,703 events per bank. Standard CRC32 of converted/localized paths maps every
+payload. The original music tables resolve all 163 music files. Production
+decoder measurements cover 27,193 payloads / 14,093 distinct content/channel
+layouts, without extracting PCM. All have complete blocks, valid step indices
+and zero reserved headers. The private inventory is 62,247,232 bytes before
+adding the level-copy summary. All 11,115 known audio copies in 74 level PAKs
+match complete bank-payload SHA-256 values; no alternate copies were found.
+Unknown paths/embedded audio remain unclassified. RMS/sample peaks and large
+loop seam steps do not establish audible defects or justify mass processing.
+
+All six XMV tracks probed/decoded successfully as stereo 44.1 kHz PCM using
+FFmpeg 8.1. Intro/attract RMS differences are recorded privately. FFmpeg and
+the production ADPCM decoder agree on synthetic block counts/channel order;
+their IMA rounding differs by up to 5 mono/8 stereo integer units in the selected
+four-block control. This is not treated as a verified defect. The all-bank
+gated-LUFS/true-peak meter is running; measurements are not yet accepted.
+Full scope, reproduction and remaining acceptance are in
+[the overhaul plan](../development/audio-overhaul.md).
+
 ## 2026-11-07 - Audio overhaul census (audit in progress)
 
 Branch `feature/audio-overhaul`, base `a24c3b60`; Windows x64, Python 3.12.14.

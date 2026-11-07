@@ -18,14 +18,9 @@ Mac storage tests: see launcher.md.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build/tests ([MSAA](smaa.md))
 
-Audio overhaul census: `tools/analysis/audio_audit.py` validates the supported XBE,
-hashes/indexes all P5CK archives and inventories candidate audio-bank prefixes
-and observed filename lists without extraction. Reports stay under ignored
-`private/audio-overhaul`; unknown archives/codecs remain explicit gaps.
-`tests/media/test_audio_audit.py` tests malformed extents/compression bounds,
-filename-list bounds and unclassified scope with synthetic inputs, selected
-alongside the media checks on both native CI hosts. See
-[audio overhaul scope and acceptance](../development/audio-overhaul.md).
+Audio census/meter: [commands, mappings and evidence](../development/audio-overhaul.md).
+Media CI selects `test_audio_audit.py` and `test_audio_measurements.py` on
+Windows/macOS/Linux; synthetic/decoder checks are separate from listening.
 
 `test_controller_profile.py` now executes the real native key/pad guards and
 runtime key dispatcher, requiring neutral gameplay keys during freecam while

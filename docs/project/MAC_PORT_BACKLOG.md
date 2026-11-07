@@ -8665,6 +8665,13 @@ Mac title acceptance pending; retain MAC-118 Awaiting validation. See [contracts
 - **Status:** Awaiting validation
 - **Source/PR:** `32a5774`, PR #397.
 - **Mac support present:** Shared code is implemented; native Mac execution/listening is pending.
+- Audio overhaul follow-up (2026-11-07, local `feature/audio-overhaul`): finite
+  OFF release and delay-history clearing are implemented once in shared
+  `pc_acoustic_dsp.h`; no Mac adapter change is needed. Windows media fixtures
+  verify byte-identical bypass after fading and no stale echo on re-enable.
+  Native Mac/Linux game execution and listening remain unverified. The broader
+  overhaul's split-screen/reverb acceptance remains tracked in
+  [its plan](../development/audio-overhaul.md), beyond this prior beta's scope.
 - Shared: patches 0040/0045/0050 and `pc_spatial_audio.h`, `pc_acoustic_*`
   provide directional buffers/streams, near-field centering, longer gunfire
   range, wall/portal filtering and metadata-driven ambience mixing. Both

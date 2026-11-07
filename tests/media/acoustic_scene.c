@@ -34,6 +34,28 @@ static float bed_level(float level,int bed,int channel)
     pc_acoustic_pcm(&d,(uint8_t*)pcm,sizeof pcm,48000,2,16);
     return pcm[19198+channel]/32768.f;
 }
+static void finite_bypass(unsigned rate,unsigned channels,unsigned bits)
+{
+    static PcAcousticDsp dsp;static uint8_t pcm[384000];memset(&dsp,0,sizeof dsp);
+    unsigned bytes=rate*channels*(bits/8);
+    memset(pcm,bits==8?160:42,bytes);
+    pc_acoustic_target(&dsp,1,.1f);pc_acoustic_ambience_target(&dsp,1);
+    pc_acoustic_pcm(&dsp,pcm,bytes,rate,channels,bits);
+    assert(dsp.amount>.99f && dsp.bed_amount>.99f);
+    pc_acoustic_target(&dsp,0,0);pc_acoustic_ambience_target(&dsp,0);
+    /* A one-second release packet must reach exact bypass within that packet,
+       not leave an asymptotic state processing (and requantizing) every voice. */
+    memset(pcm,42,bytes);pc_acoustic_pcm(&dsp,pcm,bytes,rate,channels,bits);
+    for(unsigned i=bytes/2;i<bytes;i++)assert(pcm[i]==42);
+    assert(dsp.amount==0 && dsp.bed_amount==0 && dsp.rate==0);
+    uint8_t endpoints[]={0,128,255,0,255,127,1,128};
+    uint8_t copy[sizeof endpoints];memcpy(copy,endpoints,sizeof copy);
+    pc_acoustic_pcm(&dsp,endpoints,sizeof endpoints,rate,channels,bits);
+    assert(!memcmp(copy,endpoints,sizeof copy));
+    /* Re-enabling must still rebuild useful filtering after history is cleared. */
+    pc_acoustic_target(&dsp,1,0);memset(pcm,42,bytes);
+    pc_acoustic_pcm(&dsp,pcm,bytes,rate,channels,bits);assert(dsp.amount>.99f);
+}
 int main(void)
 {
     const float a[]={0,0,0},b[]={10,0,0};
@@ -75,5 +97,17 @@ int main(void)
     uint8_t data[]={0,128,255};uint8_t copy[3];memcpy(copy,data,3);
     pc_acoustic_pcm(&clean,data,3,48000,1,8);assert(!memcmp(copy,data,3));
     pc_acoustic_target(&blocked,NAN,NAN);assert(blocked.target==0 && blocked.wet==0);
+    finite_bypass(8000,1,8);finite_bypass(48000,2,16);
+    /* A reflection-only voice also clears its old echo on bypass. Otherwise
+       re-enabling the room send can replay sound from its previous use. */
+    static PcAcousticDsp reflection;static int16_t echo_pcm[8000];
+    for(unsigned i=0;i<8000;i++)echo_pcm[i]=10000;
+    pc_acoustic_target(&reflection,0,.1f);
+    pc_acoustic_pcm(&reflection,(uint8_t*)echo_pcm,sizeof echo_pcm,8000,1,16);
+    pc_acoustic_target(&reflection,0,0);memset(echo_pcm,0,sizeof echo_pcm);
+    pc_acoustic_pcm(&reflection,(uint8_t*)echo_pcm,160,8000,1,16);
+    pc_acoustic_target(&reflection,0,.1f);
+    pc_acoustic_pcm(&reflection,(uint8_t*)echo_pcm,160,8000,1,16);
+    for(unsigned i=0;i<80;i++)assert(echo_pcm[i]==0);
     puts("PASS: walls, opening direction, closed doors, safe fallback and low-pass response");
 }

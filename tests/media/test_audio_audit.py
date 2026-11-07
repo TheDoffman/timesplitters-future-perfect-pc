@@ -52,3 +52,19 @@ def test_other_archives_stay_unclassified(tmp_path):
     assert result['entries'] == 1
     assert result['audio_status'].startswith('not_classified')
     assert 'payloads' not in result
+
+
+def test_archive_copies_require_matching_payload_hash(tmp_path):
+    import hashlib
+    path = tmp_path / 'level.pak'
+    path.write_bytes(b'P5CK' + struct.pack('<II', 16, 16) + b'RIFF' + struct.pack('<4I', 1, 12, 4, 0))
+    original = dict(payloads=[dict(crc='00000001', measurement=dict(
+        source_sha256=hashlib.sha256(b'RIFF').hexdigest()))])
+    other = dict(path='level.pak', bytes=path.stat().st_size)
+    report = audit.known_audio_copies(tmp_path, [original, other])
+    assert report['counts']['identical_to_bank'] == 1
+    assert not report['unresolved']
+    original['payloads'][0]['measurement']['source_sha256'] = hashlib.sha256(b'other').hexdigest()
+    report = audit.known_audio_copies(tmp_path, [original, other])
+    assert report['counts'].get('identical_to_bank', 0) == 0
+    assert len(report['unresolved']) == 1

@@ -13,6 +13,8 @@ import json
 from pathlib import Path
 import struct
 
+from audio_bank import map_bank, map_music, xbe_metadata
+
 SUPPORTED_XBE = '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
 MAX_INDEX = 16 * 1024 * 1024
 MAX_BANK = 4 * 1024 * 1024
@@ -105,30 +107,92 @@ def audit_archive(path, game, include_payloads):
     return result
 
 
-def audit(game, progress=None):
+def known_audio_copies(game, archives):
+    """Verify level/other copies of mapped audio by CRC plus complete SHA-256."""
+    from collections import defaultdict
+    known = defaultdict(set)
+    for bank in archives:
+        for row in bank.get('payloads', []):
+            if 'measurement' in row and 'source_sha256' in row['measurement']:
+                known[row['crc']].add(row['measurement']['source_sha256'])
+    if not known:
+        return dict(status='not_measured; requires production decode inventory')
+    counts, matches, unresolved = Counter(), [], []
+    for bank in archives:
+        if 'payloads' in bank:
+            continue
+        found = 0
+        with (game / bank['path']).open('rb') as stream:
+            rows = entries(stream, bank['bytes'])
+            counts['other_entries'] += len(rows)
+            for crc, offset, length, compressed in rows:
+                key = f'{crc:08x}'
+                if key not in known:
+                    continue
+                found += 1
+                counts['known_audio_entries'] += 1
+                stream.seek(offset)
+                raw = stream.read(compressed or length)
+                if not compressed and hashlib.sha256(raw).hexdigest() in known[key]:
+                    counts['identical_to_bank'] += 1
+                else:
+                    unresolved.append(dict(archive=bank['path'], crc=key,
+                                           status='compressed_or_different_copy'))
+        if found:
+            matches.append(dict(archive=bank['path'], known_audio_entries=found))
+    return dict(status='verified_known_audio_copies', counts=dict(counts), archives=matches,
+                unresolved=unresolved, limits='Unknown paths/embedded audio remain unclassified.')
+
+
+def audit(game, progress=None, decoder_library=None):
     game = game.resolve()
     xbe = game / 'default.xbe'
     xbe_hash = digest(xbe)
     if xbe_hash != SUPPORTED_XBE:
         raise ValueError('Unsupported default.xbe SHA-256; expected the US Xbox release')
+    frequencies, music = xbe_metadata(xbe)
+    decoder, cache = None, {}
+    if decoder_library:
+        from audio_measurements import Decoder
+        decoder = Decoder(decoder_library)
     paths = sorted((game / 'pak').rglob('*.pak'))
     if not paths:
         raise ValueError('No P5CK archives found')
     archives = []
     for index, path in enumerate(paths):
         candidate = path.stem.lower().startswith('sounds_') or path.stem.lower() == 'musicts'
-        archives.append(audit_archive(path, game, candidate))
+        bank = audit_archive(path, game, candidate)
+        if candidate:
+            with path.open('rb') as stream:
+                if path.stem.lower() == 'musicts':
+                    map_music(bank, music)
+                else:
+                    metadata = bank['payloads'][0]
+                    if metadata['compressed'] or metadata['stored_bytes'] > MAX_BANK:
+                        raise ValueError('Unverified sound metadata encoding')
+                    stream.seek(metadata['offset'])
+                    map_bank(bank, stream.read(metadata['stored_bytes']), frequencies)
+                if decoder:
+                    from audio_measurements import measure_payload
+                    for row in bank['payloads']:
+                        if 'channels' in row:
+                            row['measurement'] = measure_payload(stream, row, decoder, cache)
+        archives.append(bank)
         if progress and ((index + 1) % 25 == 0 or index + 1 == len(paths)):
             progress(f'Indexed and hashed {index + 1}/{len(paths)} archives', flush=True)
     movies = [dict(path=p.relative_to(game).as_posix(), bytes=p.stat().st_size,
                    sha256=digest(p), audio_status='not_decoded')
               for p in sorted((game / 'xmv').glob('*.xmv'))]
-    return dict(schema=1, xbe_sha256=xbe_hash, complete=False,
-                method='Full P5CK index/bounds and SHA-256 census; candidate bank prefixes and filename lists; no extraction.',
+    return dict(schema=2, xbe_sha256=xbe_hash, complete=False,
+                decoder_library_sha256=digest(decoder_library) if decoder_library else None,
+                unique_decoded_payload_layouts=len(cache),
+                known_audio_copies=known_audio_copies(game, archives),
+                method='Full P5CK index/bounds and SHA-256 census; original-loader sound/music mappings; optional production decode metrics; no extraction.',
                 archive_count=len(archives), archives=archives, movies=movies,
                 limits=['Other archives remain unclassified, not excluded from audio scope.',
-                        'Names are not mapped to payloads; codec, rates, channels, loop points and durations remain unverified.',
-                        'No decoded loudness, clipping, waveform or listening conclusions.'])
+                        'Sound frequency is original base playback frequency; dynamic pitch/randomization and explicit loop subregions remain outside this census.',
+                        'Sample RMS is not perceptual/integrated loudness. Full-scale samples and seam steps require listening review.',
+                        'Movies are hashed, not decoded here; host-output listening and rendered reference captures remain pending.'])
 
 
 def main():
@@ -136,11 +200,13 @@ def main():
     parser.add_argument('--game', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path,
                         help='Private JSON destination outside the original game-data folder')
+    parser.add_argument('--decoder-library', type=Path,
+                        help='Locally built audio_decode_probe linked with the production Xbox decoder')
     args = parser.parse_args()
     game, output = args.game.resolve(), args.output.resolve()
     if output.is_relative_to(game):
         parser.error('Output must be outside original game data')
-    report = audit(game, print)
+    report = audit(game, print, args.decoder_library)
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_suffix(output.suffix + '.tmp')
     temporary.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
