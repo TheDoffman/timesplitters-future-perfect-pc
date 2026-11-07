@@ -37,6 +37,8 @@ static void bot_reset(void);
 static void developer_reset(void);
 static unsigned sent_logs, received_logs;
 static int online;
+static volatile long launch_lan = -1, online_enabled, startup_online_consumed;
+static NetHostLock configuration_lock = NET_HOST_LOCK_INIT;
 static uint32_t online_ip;
 static unsigned char online_token[16];
 static struct sockaddr_in bridge_address;
@@ -122,12 +124,27 @@ static int latency_control(NetSocket *s, const struct sockaddr_in *address,
 
 int pc_network_enabled(void)
 {
-    const char *v=getenv("TSFP_NETWORK"), *config=getenv("TSFP_ONLINE_CONFIG");
-    if(!online && config && *config) {
-        char line[128]; FILE *file=fopen(config,"r");
-        if(file) { if(fgets(line,sizeof line,file)) pc_network_set_online(line); fclose(file); }
+    if(net_flag_read(&launch_lan)<0) {
+        net_lock(&configuration_lock);
+        if(net_flag_read(&launch_lan)<0) {
+            const char *v=getenv("TSFP_NETWORK");
+            const int lan=v && !strcmp(v,"1");
+            const char *config=getenv("TSFP_ONLINE_CONFIG");
+            if(!net_flag_read(&startup_online_consumed) && config && *config) {
+                char line[128]; FILE *file=fopen(config,"r");
+                if(file) { if(fgets(line,sizeof line,file)) pc_network_set_online(line); fclose(file); }
+            }
+            net_flag_write(&launch_lan,lan);
+        }
+        net_unlock(&configuration_lock);
     }
-    return online || (v && !strcmp(v,"1"));
+    return net_flag_read(&online_enabled) || net_flag_read(&launch_lan)>0;
+}
+void pc_network_enable_lan(void)
+{
+    net_lock(&configuration_lock);
+    net_flag_write(&launch_lan,1);
+    net_unlock(&configuration_lock);
 }
 static uint32_t failure(int error) { last_error=error; return UINT32_MAX; }
 static void *pointer(uint32_t a, size_t n, ptrdiff_t offset, int write)
@@ -181,7 +198,9 @@ int pc_network_set_online(const char *configuration)
 {
     unsigned port,i,value; char token[33],ip[32],extra; uint32_t address;
     if(!configuration) {
-        net_lock(&network_lock); shutdown_locked(); online=0; net_unlock(&network_lock);
+        net_lock(&network_lock); shutdown_locked(); online=0;
+        net_flag_write(&startup_online_consumed,1); net_flag_write(&online_enabled,0);
+        net_unlock(&network_lock);
         return 1;
     }
     if(sscanf(configuration,"%u %32s %31s %c",&port,token,ip,&extra)!=3 ||
@@ -195,6 +214,8 @@ int pc_network_set_online(const char *configuration)
     bridge_address.sin_family=AF_INET; bridge_address.sin_port=htons((uint16_t)port);
     bridge_address.sin_addr.s_addr=htonl(INADDR_LOOPBACK);
     online_ip=address; online=1;
+    net_flag_write(&startup_online_consumed,1);
+    net_flag_write(&online_enabled,1);
     net_unlock(&network_lock);
     return 1;
 }

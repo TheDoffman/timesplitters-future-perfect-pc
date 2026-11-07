@@ -1,3 +1,10 @@
+Networking eligibility: `pc_network_enabled()` reads launch environment/config once,
+then uses shared atomic flags in the indirect-dispatch hot path. The System Link
+menu explicitly calls `pc_network_enable_lan()`; Online connect/disconnect publishes
+its own flag. Missing launch files are not retried on every guest call, and an
+explicit disconnect does not re-import stale startup credentials. Windows, Mac
+and Linux share this policy. See `tests/network/network_eligibility.c`.
+
 [Developer Tools integration](developer-tools-integration.md).
 
 [Uplink](native-uplink.md);[2605](native-projectiles.md).

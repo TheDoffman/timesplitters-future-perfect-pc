@@ -69,6 +69,9 @@ static void multiplayer_guest_tick(void){multiplayer_lobby_tick(sub_001A8F30);}
 static void (*multiplayer_exit_lookup(uint32_t address))(void)
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    /* This resolver sees every indirect game call. Unrelated addresses must
+     * not inspect networking or guest lobby state. */
+    if(address!=0x2ebe60u && address!=0x1a8d30u && address!=0x1a8f30u)return NULL;
     if(multiplayer_match() && WORD_AT(0x76b140u)==1u && address==0x2ebe60u) return multiplayer_leave_confirm;
     if(multiplayer_arcade() && WORD_AT(0x79094cu)==101u) {
         if(multiplayer_lobby_pending && address==0x1a8d30u) return multiplayer_host_tick;

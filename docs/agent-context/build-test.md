@@ -1,3 +1,5 @@
+[Vietnam performance checks](network-performance.md).
+
 [Tools](developer-tools-integration.md).
 
 Developer Tools inline-warning coverage: [launcher](launcher.md).
@@ -413,24 +415,7 @@ QPC/CLOCK_MONOTONIC share the host presentation clock domain. These spans measur
 CPU work/waits, not GPU completion, and tracing perturbs timing. STATUS records
 partial slow-frame attribution; native Mac gameplay remains separate acceptance.
 
-`stability_transitions_game.py --scenario crowd-venice --native-fps 144
---display-size 3440 1440 --fov 73 --no-native-trace --profile-presents
---no-captures --seconds 180` replays the tracked unlimited-score ten-bot route.
-Use `--native-fps 0` for Original60. It requires active Venice checkpoints and
-ten configured bots; it does not prove every bot is simultaneously visible.
-`crowd-hotel` (scene39), `crowd-temple` (scene49) and `crowd-disco` (scene56)
-use frequent move/fire/respawn input. `--crowd-weapons rockets` selects the normal
-Rockets preset; use spawn+5..35s to fit the recorder cap. Routes focus at startup.
-`--fullscreen` starts borderless via isolated settings and records the request.
-Check actual client size/foreground state. `--watch-actors` reads position/health
-with pool rechecks; proximity is not visibility.
-Use complete spawn+5..55s windows (Disco/Temple end50s), clock neighbors and
-scene/pause evidence. `--profile-delay-seconds 0..600` delays CSV rows, retaining
-the 20,000-row cap; record it in provenance and verify endpoint coverage.
-The present-metrics fixture checks parsing, delayed intervals and cap/disable behavior.
-Disable images/tracing for pacing. `--profile-cpu` enables 200Hz diagnostic
-snapshots; concurrent rewrites may be partial. `--trace-textures` records bounded
-upload-stage timing. Check completeness before differencing either diagnostic.
+Crowd routes, CPU sampling and pacing: [performance checks](network-performance.md).
 `test_menu_text.py` covers scan-local VM reuse/expiry, invalid rows and unchanged
 original text editing; eager-query/stale-cache mutations must fail. Both hosts'
 existing runtime CI includes it. STATUS retains measured performance and limits.

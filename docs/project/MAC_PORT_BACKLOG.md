@@ -1,3 +1,9 @@
+Network eligibility CPU fix (uncommitted after816ae00a): implemented in shared
+transport and menu code for Windows/Mac/Linux. Host atomics use Windows intrinsics
+or compiler acquire/release operations; no duplicate gameplay policy. Windows
+transport/startup/live-transition and menu fixtures pass. Native Mac/Linux
+execution and gameplay performance remain unverified. See STATUS.
+
 Inline Developer Tools launcher warning (uncommitted after f8d3bae6): implemented,
 native acceptance pending. Shared SettingsPage uses the existing TextBlock/brush
 adapters for warning and assigned-shortcut guidance beneath the checkbox. No
