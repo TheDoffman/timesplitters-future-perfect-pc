@@ -1,3 +1,43 @@
+## 2026-11-07 - Native SDL, restoration and listening review gates
+
+A fresh independent Release SDL build at the pinnedfa2c02bb revision reports
+`SDL-3.4.16-fa2c02b`. The production adapter passes16 real-SDL dummy/converter
+cases (four rates, mono/stereo,8/16-bit), including resampling tail drain, queued
+exact mute, immutable source input, reset/shutdown and output frame counts.
+Available output drains while14/28 input bytes remain held; audible-pending
+stays false and final flush drains the tail. The device is paused/dummy, so
+this is not physical playback or hardware latency. The strict PulseAudio
+attempt returns unavailable because `/mnt/wslg/PulseServer` is absent. No other
+checkout/runtime or reference SDK is modified; private source/library/probe
+hashes and native build receipts retain provenance.
+
+Five restoration candidates/four unique contents are redecoded with a freshly
+built production bridge and match the source/PCM census hashes. Constant mean
+subtraction would worsen both silence boundaries and push8..121 samples outside
+signed16. No replacement or mean-subtracted asset is saved. All410 original
+containers (3,985,345,856 bytes) match their census hashes after the tests. The
+39,768 unidentified other-archive entries remain in the coverage denominator.
+
+With real XMV playback explicitly enabled for the isolated test, Original and
+Movies0 each complete88/81 pictures. The first three captured seconds drop from
+-31.95 to -96.71dBFS RMS, while later menu audio stays approximately -48dBFS.
+An initial harness-default run skipped movies and is excluded from this evidence.
+Fresh112-second Original and Night/Dialogue-focus campaign runs reach visually
+verified Time to Split gameplay with clean capture flags, no full-scale samples
+or output failures/refusals/engine glitches. Both report16 starvation episodes.
+The Night music plateau includes the expected six dB attenuation and later
+returns to the Original plateau; perceptual tuning is still unaccepted.
+
+The private listening package contains14 tracks/170.80s, a local M3U8 playlist,
+WAVs, instructions and source/purpose/gain/hash manifest. All eight game-output
+tracks share the current candidate executable hash. Controlled loop tracks and
+uniform quarter-gain original-source previews are labelled separately. No user
+listening response is assumed. No production code/build change in this pass;
+existing Windows220/Linux216 contracts remain applicable. No merge/publication.
+The [acceptance ledger](../development/audio-overhaul-acceptance.md) now records
+every phase, evidence scope and remaining runtime/identity/listening/hardware gate;
+the overall goal is open.
+
 ## 2026-11-07 - Original distance calculation and range decision
 
 The supported-US original distance routine409AEC and its original logarithm/

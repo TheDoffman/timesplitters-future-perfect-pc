@@ -5,9 +5,13 @@ Goal started 2026-11-07. Work lives on `feature/audio-overhaul`, based on
 assets, settings and saves. Implement common policy once for Windows/macOS/Linux.
 Merging and publication are outside this task's authorization.
 
+Current gates and outstanding work are maintained in the
+[acceptance ledger](audio-overhaul-acceptance.md). The sections below retain
+chronological evidence; later verified results supersede earlier pending notes.
+
 ## Sequence and acceptance
 
-1. **Audit (census complete; reference listening pending).** Hash/index every game archive and movie without
+1. **Audit (known-bank census complete; unidentified coverage/listening open).** Hash/index every game archive and movie without
    extracting another data copy. Identify sound-bank metadata and establish
    payload/codec mappings. Inventory rates, channels, durations and loop points
    only after verifying the format. Measure decoded peaks, loudness and seams;
@@ -27,7 +31,7 @@ Merging and publication are outside this task's authorization.
    rather than a blanket multiplier. Review ambience individually, room reverb
    and transitions, split-screen policy and SDL routing latency. Evaluate optional
    binaural/surround output after the stereo baseline is accepted.
-5. **Selective asset restoration.** Process only catalogued defects, retaining
+5. **Selective asset restoration (originals retained after candidate review).** Process only catalogued defects, retaining
    originals, loop identity, hashes and reversible per-asset fallback. No global
    synthetic enhancement or sample-rate increase presented as recovered detail.
 6. **Integrated validation.** Build; run shared media/settings/recovery tests;
@@ -680,3 +684,55 @@ extension: Windows220 pass with the endpoint test enabled (no skips,51.17s),
 Linux216 pass/four skips (16.35s). This proves the shared fallback contract; actual multi-controller
 split-screen play/listening remains unverified. No new controller injection or
 game-state write is added solely to make that acceptance appear complete.
+
+## Native SDL, restoration and consolidated review
+
+A fresh independent Release static SDL build uses the pinned commit
+`fa2c02bb6e21974a89ea9824bc53c9932abe5f9c`; its runtime revision reports
+`SDL-3.4.16-fa2c02b`. The actual production SDL adapter passes16 converter cases
+using the dummy driver, with its device paused and converted output pulled
+through real SDL APIs. Cases cover22042/32000/44100/48000Hz, mono/stereo and
+8/16-bit input. Resampling retains14/28 input bytes (seven stereo frames) after
+available output drains; the audible query correctly returns false. Final-tail
+flush releases the remaining samples. Queued exact mute, source immutability,
+reset/shutdown and converted frame counts pass. This does not measure physical
+output, hardware latency or audible quality. A separate strict PulseAudio
+attempt returns unavailable: the configured `/mnt/wslg/PulseServer` is absent.
+No replacement server or fallback device is presented as physical acceptance.
+Private library/source/probe hashes and build/run receipts preserve provenance.
+
+The [restoration review](audio-restoration-review.md) selects no replacements.
+Fresh production decoding revalidates five candidate entries/four unique contents
+against both source and PCM hashes. Mean subtraction would worsen silence
+boundaries and put8..121 samples outside signed16 range. All403 archives, six
+movies and the supported XBE are also rehashed after the runs:410 files,
+3,985,345,856 bytes, all match the original census. This preservation check does
+not identify the39,768 other archive entries that remain unknown.
+
+Real movie output checks explicitly override the test profile's default
+`RECOMP_XMV_PLAY=0`. With playback enabled, both Original and Movies0 runs
+complete the same88/81 pictures for the EA/Free Radical files. The first three
+captured seconds change from -31.95 to -96.71dBFS RMS; the following menu segment
+stays approximately -48dBFS in both runs, retaining the other bus levels.
+The initial profile-default capture skipped the movies and is excluded from
+movie acceptance and the listening package. All captures are process-only,
+and the children are bounded/owned with disposable game state.
+
+Fresh112-second Original and Night/Dialogue-focus campaign runs reach visually
+verified first-person Time to Split gameplay, using the same current candidate
+executable as the other selected recordings. Four20-second captures have no
+packet flags or full-scale samples. Original peak/RMS is -17.79/-32.43 and
+-22.61/-38.96dBFS; Night is -19.19/-33.81 and -23.63/-41.75dBFS. Night's music
+level includes the expected -2597 versus Original -1997 plateau (six dB), and
+both later return to -1562. These are diagnostic observations, not an isolated
+compressor comparison or perceptually accepted tuning. Both runs report zero
+output failures/refusals/engine glitches and16 starvation episodes.
+
+The private `listening-review-01` folder now contains a14-track M3U8 playlist,
+individual WAVs, review instructions and a hash/purpose/source manifest:170.80s
+in total. Eight tracks are current game output; two are the controlled crane
+pump pair; four are original-source candidate previews at uniform quarter gain.
+Existing source previews/assets are untouched. Different live matches are not
+synchronized event A/B, and no normalization is applied to game recordings.
+Listening feedback remains unanswered; file creation is not listening acceptance.
+The [acceptance ledger](audio-overhaul-acceptance.md) records all remaining gates.

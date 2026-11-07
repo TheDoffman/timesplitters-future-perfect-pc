@@ -1,3 +1,9 @@
+Audio acceptance: a fresh pinned SDL build passes16 production-adapter
+dummy/converter checks on Linux/WSL. Actual PulseAudio output is unavailable
+(missing WSLg socket), and native Mac/device listening remains unverified.
+Current Windows movie mute/playback and campaign listening references are ready;
+no product/adapter change in this pass. [Full gates](../development/audio-overhaul-acceptance.md).
+
 Distance audit: live custom-curve/native-code comparison retains the existing
 shared range option; no gameplay/host adapter change. The private original-x86
 probe runs on Windows only. Physical Mac/Linux balance/listening remains pending;

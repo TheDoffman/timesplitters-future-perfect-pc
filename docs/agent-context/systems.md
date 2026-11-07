@@ -102,6 +102,8 @@ and derives pan from current emitter/listener or a fixed opening anchor.
 Linux/WSL media contracts, Windows real endpoint reopen and observed room walking:
 [evidence and gaps](../development/audio-overhaul.md#linux-room-and-device-validation).
 Distance: [original helper/live curve audit](../development/audio-distance-audit.md).
+Audio: [current acceptance ledger](../development/audio-overhaul-acceptance.md)
+and [asset decisions](../development/audio-restoration-review.md).
 
 Independent audio choices: `pc_audio_settings.h` packs one atomic snapshot;
 `pc_audio_get_options`/`set_options` own strict V1/V2 parsing and save-before-live

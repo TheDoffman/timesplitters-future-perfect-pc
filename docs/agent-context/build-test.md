@@ -18,7 +18,7 @@ Mac storage tests: see launcher.md.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build/tests ([MSAA](smaa.md))
 
-Audio: [audit and host/room/device evidence](../development/audio-overhaul.md#linux-room-and-device-validation).
+Audio: [acceptance gates](../development/audio-overhaul-acceptance.md).
 Media CI selects audio audit/loop/measurement fixtures on
 Windows/macOS/Linux; synthetic/decoder checks are separate from listening.
 Scene/guest fixtures check cache/pan/split fallback; gain C++ includes initializer_list.
