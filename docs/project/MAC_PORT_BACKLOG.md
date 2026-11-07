@@ -1,3 +1,10 @@
+Authored loop ends2310: shared model/PCM pump now honor decoded endpoints from
+both native/legacy region fields. Exact PCM/production-ADPCM fixtures pass on
+Windows, with pause, seek, fractional clock and refusal checks. No duplicated
+host implementation is added. Windows Build/crash-symbol/media checks and two
+campaign scenes pass; native Mac/Linux and listening acceptance remain pending.
+Controlled real-payload loop previews are private diagnostics. See STATUS.
+
 Native buffer-layout repair2309: one shared signature-based field translation
 and reuse of native allocation/ownership/region initialization serves all hosts.
 Windows fixtures, generation/Build and bounded startup/campaign captures pass;

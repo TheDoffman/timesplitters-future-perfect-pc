@@ -930,26 +930,28 @@ The Settings tab now has independent Input Settings / Video Settings categories.
 value-only mailbox requests on the guest frame, using existing display/graphics
 setters and native subtitle persistence. See the continuation for contracts.
 
-Shared attenuation: `pc_audio_gain.h` owns the hundredths-of-dB curve for SDL,
-XAudio (patch2308), dynamics and speech detection. Floor -10000 and below is
-exact zero; positive values clamp to unity. Live mute/unmute retains the same
-voice, queued PCM and clocks. Adapter fixtures cover buffer/stream/movie slots;
-physical SDL output remains a separate native acceptance item.
+## Audio playback updates
 
-Windows game acceptance now includes first-campaign separate-speech ownership
-and Original/Night ten-bot captures; see [measured scope and limits](../development/audio-overhaul.md#campaign-and-busy-match-output-checks).
-The positional-audio guide now reflects the current Mix/subpage menu structure.
+`pc_audio_gain.h` shares attenuation across SDL/XAudio (2308) and dynamics:
+floor -10000 means exact silence; positive values clamp to unity. Live gain
+updates preserve queued PCM/voices/clocks. Physical SDL acceptance remains open.
+[Windows scene evidence](../development/audio-overhaul.md#campaign-and-busy-match-output-checks)
+and [named-loop audit](../development/audio-overhaul.md#pause-menu-and-authored-loop-audit)
+retain the listening limits, source hashes and unmatched definitions.
 
-Loop audit: [original metadata, block conversion and verified pending ABI mismatch](../development/audio-overhaul.md#pause-menu-and-authored-loop-audit).
-The read-only audit distinguishes actual authored-region seams from full-file
-seams. It does not change runtime loop handling or replace assets.
+Patch2309 imports CDirectSoundBufferSettings_SetBufferData/SetLoopRegion and
+checks their code plus the native play-region helper independently of voice
+layout. Matched5849 buffer offsets gain four bytes; legacy/voice fields stay
+unchanged. The original settings-only helper owns allocation/free/regions;
+caller SP/CX/DX and HRESULT survive. `audio_buffer_layout.c` covers ownership,
+native starts/ends and altered-signature fallbacks.
 
-Patch2309 verifies buffer-tail ABI independently of voice layout, using imported
-CDirectSoundBufferSettings_SetBufferData/CDirectSoundBuffer_SetLoopRegion guest
-addresses and the native play-region helper. Matched5849 code adds four bytes to
-buffer data/size/play/loop offsets; voice fields and unknown legacy layouts stay
-unchanged. Matched SetBufferData calls the original settings-only helper for
-allocation/ownership and whole-region initialization, preserving its HRESULT
-and caller stack/CX/DX. Original loop setters then accept valid regions. `audio_buffer_layout.c` covers native start,
-reserved-word retention and three failed-signature legacy fallbacks. Short loop
-ends remain separate pending model/pump work; see the full audio plan.
+Patch2310 adds an exclusive `loop_end_bytes` (zero=whole source) and
+`recomp_dsound_buffer_end` shared by the buffer clock and PCM pump. Valid native
+or legacy lengths convert from encoded blocks to decoded frames; bad lengths
+retain the existing valid-start/full-tail fallback. Looping uses intro then
+[start,end); one-shots retain the whole source. Live bounds advance old guest
+time on model refresh, reset queued output, then normalize in the new region. Paused positions
+stay intact until resume; a running seek beyond the loop end resumes at start.
+`audio_buffer_regions.c` checks production-decoded PCM, fractional clocks/refusal,
+tiny/multiple wraps, pause/live/rate/seek and unchanged source bytes.

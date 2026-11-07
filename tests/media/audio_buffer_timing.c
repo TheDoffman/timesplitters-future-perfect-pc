@@ -81,12 +81,14 @@ static uint32_t accepted_bytes;
 static uint8_t first_byte;
 static int first_bus;
 static int32_t first_level,updated_level;static unsigned volume_updates;
+static void (*accepted_pcm_callback)(const uint8_t *,uint32_t,uint32_t,uint32_t);
 int recomp_audio_output_set_volume(uint32_t slot,int32_t level)
 {updated_level=level;volume_updates++;return 1;}
 int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes,
     uint32_t rate, uint32_t channels, uint32_t bits, int32_t level)
 {
     if (!accept) return 0;
+    if(accepted_pcm_callback)accepted_pcm_callback(pcm,bytes,channels,bits);
     if (fake_device) {
         if (fake_until[slot] < fake_now) fake_until[slot] = fake_now;
         fake_until[slot] += (uint64_t)bytes * 1000 / (rate * channels * (bits / 8));
@@ -97,9 +99,11 @@ int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes
     return 1;
 }
 #endif
+#ifndef TSFP_REAL_ADPCM
 int xbox_adpcm_decode_block(const uint8_t *block, size_t bytes, unsigned channels,
                             int16_t *pcm, size_t samples)
 { memset(pcm, 0, samples * sizeof *pcm); return 1; }
+#endif
 #define CHECK(condition) do { if (!(condition)) { \
     fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #condition); return 1; } } while (0)
 

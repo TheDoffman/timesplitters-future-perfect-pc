@@ -17,7 +17,7 @@ def compile_audio(kind, tmp_path_factory):
     directory = tmp_path_factory.mktemp('audio-' + kind)
     compiler, environment = native_compiler(directory)
     exe = directory / (kind + ('.exe' if os.name == 'nt' else ''))
-    source = ROOT / (f'tests/media/audio_buffer_{kind}.c' if kind in ('load', 'lifecycle', 'format', 'layout')
+    source = ROOT / (f'tests/media/audio_buffer_{kind}.c' if kind in ('load', 'lifecycle', 'format', 'layout', 'regions')
                      else f'tests/media/audio_{kind}_timing.c')
     if kind=='scope':
         from c_source_scan import scan
@@ -159,10 +159,26 @@ def layout_test(tmp_path_factory):
     return compile_audio('layout', tmp_path_factory)
 
 
-@pytest.mark.parametrize('scenario', ['native-data', 'native-start', 'native-clear', 'native-allocate',
+@pytest.mark.parametrize('scenario', ['native-data', 'native-start', 'native-end', 'native-clear', 'native-allocate',
                                      'native-failure', 'native-missing', 'legacy',
                                      'guard-data', 'guard-loop', 'guard-play'])
 def test_native_buffer_layout(layout_test, scenario):
     result = subprocess.run([str(layout_test), scenario], capture_output=True, text=True, timeout=10)
     assert result.returncode == 0, result.stdout + result.stderr
     assert f'PASS: {scenario}' in result.stdout
+
+
+@pytest.fixture(scope='module')
+def regions_test(tmp_path_factory):
+    return compile_audio('regions', tmp_path_factory)
+
+
+@pytest.mark.parametrize('scenario', ['pcm16-mono', 'pcm16-stereo', 'pcm8-mono', 'pcm8-stereo',
+    'adpcm-mono', 'adpcm-stereo', 'tiny', 'tiny-one', 'whole', 'suffix', 'oneshot', 'refused', 'hitch',
+    'live', 'pause', 'seek', 'rate', 'clock', 'huge-clock', 'partial', 'invalid-length',
+    'unaligned-length', 'invalid-start', 'fractional10', 'fractional17', 'fractional-adpcm',
+    'fractional-refused'])
+def test_buffer_loop_regions(regions_test, scenario):
+    result = subprocess.run([str(regions_test), scenario], capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert 'PASS:' in result.stdout

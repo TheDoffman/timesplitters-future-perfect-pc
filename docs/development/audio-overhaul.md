@@ -543,3 +543,66 @@ are individual recordings rather than sample-aligned A/B measurements. Native
 output reports zero engine glitches or submission/device/voice failures; the
 16 startup/transition starvation episodes remain explicit evidence to audit.
 No live crane-loop or full shortened-end acceptance is claimed yet.
+
+## Authored loop ends
+
+The original US40DEE2 programmer reads loop start/length fromCC/D0 when looping,
+converts their sum to samples, decrements the count at40DF79 and writes EBO at
+40DFD7. This independently establishes an exclusive region end. The previous
+host model kept the start but always wrapped at the complete source end.
+
+Patch2310 adds a shared exclusive `loop_end_bytes`; zero preserves the full
+source boundary. Both the logical buffer clock and actual PCM/ADPCM pump use
+`recomp_dsound_buffer_end`. The intro is heard once, then only[start,end) repeats.
+Non-looping playback retains the complete source, including its tail. Both
+native and legacy field layouts feed the same conversion: whole encoded frames
+or ADPCM blocks become exact decoded-frame endpoints. Overflow, unaligned or
+out-of-source lengths retain the previous valid-start/full-tail fallback.
+
+A live bounds change first advances old logical time, clears queued output by
+the existing region-change policy, and normalizes within the new region.
+Paused positions remain unchanged until resume. A running seek beyond an active
+loop end resumes at its start instead of reading the excluded tail; this also
+agrees with the behavior of the external
+[xemu voice reader](https://github.com/xemu-project/xemu/blob/master/hw/xbox/mcpx/apu/vp/vp.c).
+That emulator is supporting evidence, not physical hardware acceptance; its
+inclusive-end implementation is not copied. The original SDK count decrement
+is the evidence for the exclusive endpoint used here.
+
+Before the patch,17 production-HLE cases fail while whole-file/default-suffix,
+one-shot and invalid-length preservation controls pass. After the full stack
+applies,148 timing/recovery checks pass with one opt-in device skip. The added
+region fixture uses the production decoder and checks exact submitted bytes for
+PCM8/PCM16 and Xbox ADPCM in mono/stereo, intro/tiny/one-sample/multiple wraps,
+source immutability, native setter fields, refused packets, hitch recovery,
+live bounds, pause, seek, rate and maximum64-bit clock values. A1297Hz control
+produces the same1348 frames across10/17ms packet schedules and refused retries.
+Game build, runtime validation and broader listening remain pending for this
+patch until recorded below.
+
+The standard Windows Build and crash-symbol checks pass after the functional
+change. Whole-media validation passes219 with one opt-in endpoint test skipped
+in48.93s. Bounded112-second campaign runs reach first-person gameplay in Time to
+Split and Scotland the Brave; four20-second process-output captures have zero
+discontinuity/timestamp flags and no full-scale samples. The first intended
+Scotland replay selected difficulty instead of chapter; its receipt records the
+observed Time to Split scene. The corrected route is visually verified as
+Scotland. Its capture peaks are -17.00/-21.31dBFS, RMS -33.75/-37.39dBFS.
+Both children stayed live to their limits and were intentionally terminated by
+their owner. Scotland reports zero engine glitches/output failures and20
+starvation episodes; these counters are not automatically audible defects.
+
+The crane payload maps to `storymem/l_4_stm.pak`, but actual firing of that cue
+was not observed in the opening scene. A separate controlled demonstration
+compiles the real pump/model/decoder from before and after2310, with a mocked
+output device, and feeds the verified crane payload at17625Hz. Its authored
+region becomes frames[15872,42688). Both105,750-frame outputs match independent
+decoded-source index oracles exactly and first differ at42688, the correct
+exclusive boundary. Six-second private preview WAVs apply the same quarter
+gain. These are pitched asset demonstrations, not game-mix recordings or
+headphone/speaker acceptance. The original asset and submitted source data
+remain unchanged.
+
+Live bounds are observed through the existing model refresh/polling path; the
+original SDK setter remains in place. The fixtures verify the refreshed state,
+not a new immediate host notification or measured setter-to-speaker latency.

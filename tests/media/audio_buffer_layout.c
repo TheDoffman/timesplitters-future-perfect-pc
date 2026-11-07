@@ -115,5 +115,11 @@ int main(int argc,char **argv) {
         CHECK(native_loop(settings,0,0)==0);
         b=model_for(iface,1100);CHECK(b && b->model.loop_start_bytes==0);
     }
+    if(!strcmp(mode,"native-end")) {
+        CHECK(native_loop(settings,36,72)==0);
+        b=model_for(iface,1000);CHECK(b);
+        CHECK(recomp_dsound_buffer_play(&b->model,RECOMP_DSOUND_PLAY_LOOPING,1000)==0);
+        CHECK(recomp_dsound_buffer_cursor(&b->model,1060)==48); /* loop18..53; source24 */
+    }
     printf("PASS: %s\n",mode);return 0;
 }

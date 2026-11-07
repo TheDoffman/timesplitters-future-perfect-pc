@@ -1,3 +1,18 @@
+## 2026-11-07 - Authored loop-end consumption
+
+Shared patch2310 uses exclusive authored loop ends in both buffer clocks and
+PCM/ADPCM output. The intro plays once, then[start,end) repeats; one-shots keep
+the full tail. Invalid lengths retain the existing valid-start/full-tail
+fallback. Tests use the production decoder and exact mono/stereo sample checks,
+including tiny loops, fractional clocks, refusal, pause/seek/live changes and
+native region fields. Seventeen cases fail before the repair;148 timing/
+recovery checks pass afterward with one opt-in skip. Standard Windows Build/
+crash-symbol checks and219 whole-media checks pass. Bounded Time to Split and
+Scotland runs reach gameplay with clean capture packet flags and no full-scale
+samples. A real-payload pitched before/after demonstration matches independent
+PCM index oracles exactly; actual crane activation, physical listening and
+native Mac/Linux remain open. See the [audio plan](../development/audio-overhaul.md#authored-loop-ends).
+
 ## 2026-11-07 - Native buffer layout regression repaired
 
 Shared patch2309 recognizes native buffer settings from original function code,

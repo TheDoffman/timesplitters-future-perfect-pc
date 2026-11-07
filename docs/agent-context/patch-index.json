@@ -1736,6 +1736,16 @@
       ]
     },
     {
+      "name": "2310-dsound-authored-loop-ends.patch",
+      "path": "patches/media/2310-dsound-authored-loop-ends.patch",
+      "sha256": "58375eb5679a3d4417067c2f507d5c45f862f62fdaee67ba06093fbef25a18c6",
+      "targets": [
+        "src/hle/dsound_buffer_model.c",
+        "src/hle/dsound_buffer_model.h",
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
       "name": "2310-game-language.patch",
       "path": "patches/platform/2310-game-language.patch",
       "sha256": "6bb7a0a5e632b509b1e2a4c93163af160107701cddf523367716bad98a960f98",
