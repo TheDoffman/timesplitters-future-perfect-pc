@@ -15,10 +15,13 @@ int main(int argc, char **argv) {
         assert(played==123 && queued==456); /* no invented SDL device clock */
         s->queued=4;
         assert(recomp_audio_output_tail_pending(0,0) && !s->flushes);
+        assert(!recomp_audio_output_audible_pending(0) && !s->flushes && s->queued==4);
         assert(recomp_audio_output_tail_pending(0,1));
         assert(s->flushes==1 && !s->queued && s->available==4);
+        assert(recomp_audio_output_audible_pending(0) && s->flushes==1);
         assert(recomp_audio_output_tail_pending(0,1) && s->flushes==1);
         s->available=0;assert(!recomp_audio_output_tail_pending(0,1));
+        assert(!recomp_audio_output_audible_pending(0));
         recomp_audio_output_reset_voice(0);
         assert(!recomp_audio_output_tail_pending(0,1));
         assert(submit(0));s=voices[0].stream;assert(!voices[0].flushed);
@@ -31,6 +34,7 @@ int main(int argc, char **argv) {
         fail_available=0;recomp_audio_output_shutdown();
         assert(!recomp_audio_output_tail_pending(1,1));
         assert(!recomp_audio_output_tail_pending(SLOT_COUNT,1));
+        assert(!recomp_audio_output_audible_pending(1) && !recomp_audio_output_audible_pending(SLOT_COUNT));
         return 0;
     }
     if(!strcmp(argv[1],"exit-failure")) {

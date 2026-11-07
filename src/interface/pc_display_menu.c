@@ -449,41 +449,7 @@ static void menu_video_click_sound(uint32_t menu,uint32_t item)
     if(WORD_AT(0x007BA16Cu) && guest_writable(sounds,12))
         guest_call(sub_00021780,1,WORD_AT(sounds+8));
 }
-#define AUDIO_BETA_CHANGE 0x00012027u
-static uint32_t audio_beta_row,audio_beta_labels;
-static void audio_beta_add(void (*original)(void))
-{
-    extern void sub_00071CF0(void);
-    if(!audio_beta_labels) {
-        static const char labels[]="\vs75" PC_AUDIO_BETA_LABEL "\vs100\0Off\0On";
-        audio_beta_labels=xbox_HeapAlloc(sizeof labels,4);
-        if(audio_beta_labels)memcpy((void *)((uintptr_t)audio_beta_labels+g_xbox_mem_offset),labels,sizeof labels);
-    }
-    if(!audio_beta_labels)return;
-    /* Audio supplies an explicit row extent; a zero extent is invisible here.
-       Retain both frontend and pause geometry, with a smaller long label. */
-    uint32_t flags=WORD_AT(g_esp+12)&~0x21u,height=WORD_AT(g_esp+16);
-    audio_beta_row=guest_call(original,6,audio_beta_labels,15u,flags,height,0u,0u);
-    if(!audio_beta_row)return;
-    if(guest_writable(audio_beta_row,0x2c))WORD_AT(audio_beta_row+0x28)&=~0x2000u;
-    guest_call(sub_0007D480,2,0xA000u,0u);
-    guest_call(sub_000717D0,1,audio_beta_labels+(uint32_t)sizeof("\vs75" PC_AUDIO_BETA_LABEL "\vs100"));
-    guest_call(sub_000717D0,1,audio_beta_labels+(uint32_t)sizeof("\vs75" PC_AUDIO_BETA_LABEL "\vs100")+4u);
-    guest_call(sub_00071CF0,2,audio_beta_row,AUDIO_BETA_CHANGE);
-    guest_call(sub_00075430,2,audio_beta_row,(uint32_t)pc_audio_enhanced_enabled());
-}
-static void audio_beta_change(void)
-{
-    GuestRegisters r;save_registers(&r);
-    if(audio_beta_row && guest_writable(audio_beta_row,0xcc)) {
-        unsigned selected=WORD_AT(audio_beta_row+0xc8);
-        if(selected<2 && !pc_audio_set_enhanced((int)selected)) {
-            WORD_AT(audio_beta_row+0xc8)=(uint32_t)pc_audio_enhanced_enabled();
-            fprintf(stderr,"[AUDIO] Unable to save Enhanced Audio preference\n");
-        }
-    }
-    restore_registers(&r);g_esp+=4;
-}
+#include "pc_audio_menu.inc"
 #include "pc_profile_accept.inc"
 #include "pc_weapon_slots_guest.inc"
 
@@ -945,6 +911,10 @@ static int video_font_menu(uint32_t menu)
 {
     return current_menu && storage && menu==current_menu && guest_writable(menu,8) &&
            WORD_AT(menu+4u)==storage;
+}
+static int audio_font_menu(uint32_t menu)
+{
+    return audio_menu_storage && guest_writable(menu,8) && WORD_AT(menu+4u)==audio_menu_storage;
 }
 #include "pc_display_ui.inc"
 static uint32_t bits(float f) { uint32_t u; memcpy(&u,&f,4); return u; }
@@ -1599,6 +1569,14 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     switch(address) {
     case DEVELOPER_MATCH_CHANGE:return developer_match_change;
     case AUDIO_BETA_CHANGE:return audio_beta_change;
+    case AUDIO_MIX_OPEN:return audio_mix_open;
+    case AUDIO_MIX_BUILD:return audio_mix_build;
+    case AUDIO_MIX_CHANGE:return audio_mix_change;
+    case AUDIO_MIX_BACK:return audio_mix_back;
+    case AUDIO_FEATURES_OPEN:return audio_features_open;
+    case AUDIO_MIX_TICK:return audio_mix_tick;
+    case AUDIO_LISTENING_OPEN:return audio_listening_open;
+    case AUDIO_LISTENING_CHANGE:return audio_listening_change;
     case 0x002D08C0u:return uc_extras_build;
     case UC_OPEN:return uc_open;
     case UC_BUILD:return uc_build;

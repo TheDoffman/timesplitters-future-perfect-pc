@@ -95,6 +95,62 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/development/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
+Audio overhaul: shared DSP reaches exact OFF bypass and clears old echo history;
+rejected submissions retain rollback. `pc_acoustic_cache.h` refreshes geometry
+fairly within two queries/10ms, caps reuse at250ms, invalidates room/scene changes
+and derives pan from current emitter/listener or a fixed opening anchor.
+[Contracts and limits](../development/positional-audio.md#acoustic-cache-correction).
+Linux/WSL media contracts, Windows real endpoint reopen and observed room walking:
+[evidence and gaps](../development/audio-overhaul.md#linux-room-and-device-validation).
+Distance: [original helper/live curve audit](../development/audio-distance-audit.md).
+Audio: [current acceptance ledger](../development/audio-overhaul-acceptance.md)
+and [asset decisions](../development/audio-restoration-review.md).
+
+Independent audio choices: `pc_audio_settings.h` packs one atomic snapshot;
+`pc_audio_get_options`/`set_options` own strict V1/V2 parsing and save-before-live
+publication. `pc_audio_feature_enabled` applies master AND individual selection.
+All-default children keep V1; custom spatial/range/environment/ambience choices
+use V2 and survive master OFF. Unknown files refuse saves. Shared patch0059
+connects routing/range; the ambience guest poll owns only non-positioned beds,
+uses neutral cover without a single valid listener, and leaves positioned stream
+filters alone. `pc_display_menu.c` exposes five compact choices in Audio Options,
+with rollback on save failure. See [acceptance](../development/audio-overhaul.md).
+
+Mix routing: `pc_audio_mix.h` owns bounded guest-thread scopes; manual wrappers
+for46D80/45820/299C0 establish speech and stereo-stream categories before the
+first submission (patch0060). Generated wrapper definitions must remain explicit
+in recomp_manual.c: the compiler does not scan included .inc files recursively.
+Patch0061 composes master/category attenuation with the original HLE level and
+updates queued voices without clock/PCM edits. `pc_audio_mix_settings.h` owns
+strict independent `pc-audio-mix.ini` persistence and an atomic options
+snapshot; `pc_audio_config_path.h` resolves both sidecars through the isolated
+display/input directory. 100% is exact neutral. `pc_audio_menu.inc` supplies
+separate Mix/Enhancements pages: six exact-percent selectors, five toggles,
+save-failure rollback and native back navigation. The original Audio Options
+keeps its profile rows and contains one compact Mix link. Native frontend pages
+pass at640x480 plus paused1680x720 keyboard navigation/save/resume. Other aspects,
+mouse/controller and split-screen acceptance remain open.
+
+Listening options: patch2307 applies shared `pc_audio_dynamics.h` to decoded
+buffer/stream/movie PCM, restoring history after refused submissions and keeping
+movie input immutable. Original/OFF preserves bytes; Reduced/Night only reduce
+per-source peaks and exempt separately owned dialogue. `pc_audio_mix_settings.h`
+accepts MIX_V1 and V2 (six percentages, ducking0/1, impact0..2); neutral options
+serialize as V1. A5ms sampler smooths6dB ducking with20/300ms attack/release.
+Shared `pc_audio_activity.h`/2311 expires accepted PCM spans, including silence.
+See [cursor/fallback/reset bounds](audio-buffers.md); no queue/guest-clock edits.
+`recomp_audio_output_audible_pending` reads XAudio queued voices or SDL available
+output (excluding held resampler input). Both UIs expose the opt-ins; frontend pages
+pass, while perceptual tuning, broad final-mix and hardware acceptance remain open.
+
+Runtime audio layout correction: audio captions are plain text, not unsupported
+`\vs75` sequences. The link in the original profile page inherits its supplied
+native6/7.5-unit metric; zero collapses it and32 is oversized. The custom pages
+use automatic relative rows and the existing scoped0.65 glyph sizing by their
+unique descriptor (`audio_font_menu`), including measure/draw/selected values.
+Native640x480 checks now show profile controls/Accept/Cancel, Mix, Enhancements
+and Listening; keyboard edits persist MIX_V2 and retain independent choices.
+
 Split-screen mouse look (#112): `pc_camera_mouse_primary_in_region` reads the
 current player's local input slot at `player+4` from the fresh bounded camera
 mapping. Both the Win32 and SDL `pc_controls_apply_mouse` adapters skip slots
@@ -876,3 +932,29 @@ The Settings tab now has independent Input Settings / Video Settings categories.
 `pc_video_sidebar_ui.inc` owns drafts/selectors; `pc_video_sidebar.inc` consumes
 value-only mailbox requests on the guest frame, using existing display/graphics
 setters and native subtitle persistence. See the continuation for contracts.
+
+## Audio playback updates
+
+`pc_audio_gain.h` shares attenuation across SDL/XAudio (2308) and dynamics:
+floor -10000 means exact silence; positive values clamp to unity. Live gain
+updates preserve queued PCM/voices/clocks. Physical SDL acceptance remains open.
+[Windows scene evidence](../development/audio-overhaul.md#campaign-and-busy-match-output-checks)
+and [named-loop audit](../development/audio-overhaul.md#pause-menu-and-authored-loop-audit)
+retain the listening limits, source hashes and unmatched definitions.
+
+Patch2309 imports CDirectSoundBufferSettings_SetBufferData/SetLoopRegion and
+checks their code plus the native play-region helper independently of voice
+layout. Matched5849 buffer offsets gain four bytes; legacy/voice fields stay
+unchanged. The original settings-only helper owns allocation/free/regions;
+caller SP/CX/DX and HRESULT survive. `audio_buffer_layout.c` covers ownership,
+native starts/ends and altered-signature fallbacks.
+
+Patch2310 adds an exclusive `loop_end_bytes` (zero=whole source) and
+`recomp_dsound_buffer_end` shared by the buffer clock and PCM pump. Valid native
+or legacy lengths convert from encoded blocks to decoded frames; bad lengths
+retain the existing valid-start/full-tail fallback. Looping uses intro then
+[start,end); one-shots retain the whole source. Live bounds advance old guest
+time on model refresh, reset queued output, then normalize in the new region. Paused positions
+stay intact until resume; a running seek beyond the loop end resumes at start.
+`audio_buffer_regions.c` checks production-decoded PCM, fractional clocks/refusal,
+tiny/multiple wraps, pause/live/rate/seek and unchanged source bytes.

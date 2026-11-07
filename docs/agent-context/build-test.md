@@ -19,6 +19,15 @@ Mac storage tests: see launcher.md.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build/tests ([MSAA](smaa.md))
 
+Audio: [acceptance](../development/audio-overhaul-acceptance.md).
+Media CI: audit/candidates/loops/metrics; headers do not prove identity.
+Fixtures:32 combinations, unknown files, speech, ducking, dynamics, queued gains,
+cache/pan/split fallback; gain C++ needs initializer_list.
+Streams:8kHz/320-byte refill, ordered callbacks, manual dispatch.
+Movie updater: real DSP + neutral mix spies; speech-tail/gap PCM fixtures.
+`test_audio_output_gain.py`: mute/queue retention, Windows capture.
+[Capture and bounded build](../development/audio-overhaul.md#process-output-capture).
+
 `test_controller_profile.py` now executes the real native key/pad guards and
 runtime key dispatcher, requiring neutral gameplay keys during freecam while
 raw camera keys remain held. Its shared sampler fixture tests blocked/resumed

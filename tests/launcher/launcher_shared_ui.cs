@@ -454,6 +454,25 @@ public static class LauncherSharedUiChecks
                 var model=GameSettings.Load(folder,null);model.Sensitivity=.2;model.Save();
                 Need(GameSettings.Load(folder,null).EnhancedAudio,"Unrelated save reset the audio choice");
             });
+            Test("individual audio controls retain their choices across the master switch",()=>{
+                string folder=Path.Combine(root,"audio-features");Directory.CreateDirectory(folder);
+                string sidecar=Path.Combine(folder,"Settings/pc-audio.ini");
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(3);
+                var master=Find<CheckBox>(page.View,"EnhancedAudio");
+                var range=Find<CheckBox>(page.View,"ExtendedGunfire");
+                var environment=Find<CheckBox>(page.View,"EnvironmentalAudio");
+                Need(!range.IsEnabled && range.IsChecked==true,"Default child preference was lost while OFF");
+                master.IsChecked=true;range.IsChecked=false;environment.IsChecked=false;
+                Click(Find<Button>(page.View,"SettingsSaveButton"));
+                Need(File.ReadAllText(sidecar)=="TSFP_AUDIO_V2 1 1 0 0 1\n","Custom audio format differs from game");
+                master.IsChecked=false;Click(Find<Button>(page.View,"SettingsSaveButton"));
+                Need(File.ReadAllText(sidecar)=="TSFP_AUDIO_V2 0 1 0 0 1\n" && !range.IsEnabled,"Master OFF reset children");
+                var model=GameSettings.Load(folder,null);model.Sensitivity=.2;model.Save();
+                Need(!model.ExtendedGunfire && !model.EnvironmentalAudio && model.SpatialAudio && model.AmbientAudio,"Unrelated save lost custom choices");
+                File.WriteAllText(sidecar,"TSFP_AUDIO_V2 1 0 1 1 0\n");
+                var reopened=new SettingsPage(new ResourceDictionary(),folder,true);reopened.SelectTab(3);
+                Need(Find<CheckBox>(reopened.View,"SpatialAudio").IsChecked==false && Find<CheckBox>(reopened.View,"AmbientAudio").IsChecked==false,"Game-side custom settings were not loaded");
+            });
             Test("beta audio invalid and concurrent preferences are preserved",()=>{
                 string folder=Path.Combine(root,"enhanced-audio-conflict");Directory.CreateDirectory(folder);
                 var model=GameSettings.Load(folder,null);model.Save();
@@ -461,7 +480,7 @@ public static class LauncherSharedUiChecks
                 File.WriteAllText(sidecar,"TSFP_AUDIO_V1 1\n");
                 bool rejected=false;try{model.Save();}catch{rejected=true;}
                 Need(rejected && File.ReadAllText(sidecar)=="TSFP_AUDIO_V1 1\n","Concurrent in-game change was overwritten");
-                foreach(string invalid in new[]{"TSFP_AUDIO_V1 2","TSFP_AUDIO_V2 1","TSFP_AUDIO_V1 1 extra"}) {
+                foreach(string invalid in new[]{"TSFP_AUDIO_V1 2","TSFP_AUDIO_V2 1","TSFP_AUDIO_V1 1 extra", "TSFP_AUDIO_V2 1 0 1 0 2","TSFP_AUDIO_V2 1 0 1 0 1 extra"}) {
                     File.WriteAllText(sidecar,invalid);rejected=false;try{GameSettings.Load(folder,null);}catch{rejected=true;}
                     Need(rejected && File.ReadAllText(sidecar)==invalid,"Invalid audio preference was accepted or rewritten");
                 }
@@ -475,6 +494,68 @@ public static class LauncherSharedUiChecks
                 bool rejected=false;try{model.Save();}catch{rejected=true;}
                 Need(rejected,"Blocked audio backup should reject Save");
                 for(int i=0;i<files.Length;i++)Need(File.ReadAllBytes(files[i]).SequenceEqual(before[i]),"Partial settings commit survived audio failure");
+            });
+            Test("audio volume sliders, category round trips and unchanged enhancement preference",()=>{
+                string folder=Path.Combine(root,"audio-mix");Directory.CreateDirectory(folder);
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(3);
+                var save=Find<Button>(page.View,"SettingsSaveButton");
+                for(int i=0;i<6;i++) {
+                    var slider=Find<Slider>(page.View,"Audio"+GameSettings.AudioVolumeLabels[i]+"Volume");
+                    Need(slider.Value==100 && slider.IsEnabled,"Volume must default to 100 and work with enhancement OFF");
+                    slider.Value=i*17;Need(save.IsEnabled,"Volume edit was not tracked");
+                }
+                Click(save);Need(!save.IsEnabled,"Saved volume draft is dirty");
+                var model=GameSettings.Load(folder,null);
+                Need(!model.EnhancedAudio,"Volumes enabled the enhancement master");
+                Need(model.AudioVolumes.SequenceEqual(new[]{0,17,34,51,68,85}),"Volume order/values lost");
+                string file=Core.PathIn(folder,LauncherPlatform.Settings(folder)[7]);
+                Need(File.ReadAllText(file)=="TSFP_AUDIO_MIX_V1 0 17 34 51 68 85\n","Game/launcher mix format mismatch");
+                model.Sensitivity=.2;model.Save();
+                Need(GameSettings.Load(folder,null).AudioVolumes.SequenceEqual(new[]{0,17,34,51,68,85}),"Unrelated save reset volume");
+                model.AudioVolumes[0]=101;bool rejected=false;try{model.Save();}catch{rejected=true;}
+                Need(rejected,"Out-of-range gain was saved");
+                model=GameSettings.Load(folder,null);File.WriteAllText(file,"TSFP_AUDIO_MIX_V1 100 100 100 100 100 100\n");
+                rejected=false;try{model.Save();}catch{rejected=true;}Need(rejected,"External mix edit was overwritten");
+                foreach(string invalid in new[]{"", "TSFP_AUDIO_MIX_V2 1 1 1 1 1 1", "TSFP_AUDIO_MIX_V1 01 1 1 1 1 1",
+                    "TSFP_AUDIO_MIX_V1 101 1 1 1 1 1", "TSFP_AUDIO_MIX_V1 1 1 1 1 1 1 extra",
+                    "TSFP_AUDIO_MIX_V1 1 1 1 1 1", "TSFP_AUDIO_MIX_V1 1 1 1 1 1 1\0", "\ufeffTSFP_AUDIO_MIX_V1 1 1 1 1 1 1"}) {
+                    File.WriteAllText(file,invalid);rejected=false;try{GameSettings.Load(folder,null);}catch{rejected=true;}
+                    Need(rejected && File.ReadAllBytes(file).SequenceEqual(System.Text.Encoding.UTF8.GetBytes(invalid)),"Malformed mix settings were changed or accepted: "+invalid);
+                }
+            });
+            Test("dialogue focus and impact range migrate, retain volumes and remain optional",()=>{
+                string folder=Path.Combine(root,"audio-listening");Directory.CreateDirectory(folder);
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(3);
+                var focus=Find<CheckBox>(page.View,"DialogueFocus");var range=Find<ComboBox>(page.View,"ImpactRange");
+                var save=Find<Button>(page.View,"SettingsSaveButton");
+                Need(focus.IsChecked==false && range.SelectedIndex==0,"Listening changes must be opt-in");
+                for(int duck=0;duck<=1;duck++)for(int mode=0;mode<=2;mode++) {
+                    focus.IsChecked=duck!=0;range.SelectedIndex=mode;
+                    if(save.IsEnabled)Click(save);
+                    var model=GameSettings.Load(folder,null);
+                    Need(model.DialogueFocus==(duck!=0) && model.ImpactRange==mode,"Listening choices not saved");
+                    Need(model.AudioVolumes.All(v=>v==100) && !model.EnhancedAudio,"Listening changed gain or enhancements");
+                }
+                var retained=GameSettings.Load(folder,null);retained.Sensitivity=.2;retained.Save();
+                Need(GameSettings.Load(folder,null).DialogueFocus && GameSettings.Load(folder,null).ImpactRange==2,"Unrelated save lost listening choices");
+                string file=Core.PathIn(folder,LauncherPlatform.Settings(folder)[7]);
+                Need(File.ReadAllText(file)=="TSFP_AUDIO_MIX_V2 100 100 100 100 100 100 1 2\n","Native/launcher listening formats differ");
+                retained.DialogueFocus=false;retained.ImpactRange=0;retained.Save();
+                Need(File.ReadAllText(file)=="TSFP_AUDIO_MIX_V1 100 100 100 100 100 100\n","Original choices did not retain V1 compatibility");
+                foreach(string invalid in new[]{"TSFP_AUDIO_MIX_V2 100 100 100 100 100 100 2 0","TSFP_AUDIO_MIX_V2 100 100 100 100 100 100 1 3",
+                    "TSFP_AUDIO_MIX_V2 100 100 100 100 100 100 01 0", "TSFP_AUDIO_MIX_V2 100 100 100 100 100 100 1 2 extra"}) {
+                    File.WriteAllText(file,invalid);bool rejected=false;try{GameSettings.Load(folder,null);}catch{rejected=true;}
+                    Need(rejected && File.ReadAllText(file)==invalid,"Malformed listening settings accepted or changed");
+                }
+            });
+            Test("late audio mix failure restores every earlier settings file",()=>{
+                string folder=Path.Combine(root,"audio-mix-rollback");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);model.Save();
+                var files=LauncherPlatform.Settings(folder).Select(p=>Core.PathIn(folder,p)).ToArray();
+                var before=files.Select(File.ReadAllBytes).ToArray();
+                Directory.CreateDirectory(files[7]+".bak");model.AudioVolumes[3]=40;model.VerticalFov=75;
+                bool rejected=false;try{model.Save();}catch{rejected=true;}Need(rejected,"Mix backup failure was ignored");
+                for(int i=0;i<files.Length;i++)Need(File.ReadAllBytes(files[i]).SequenceEqual(before[i]),"Mix failure left a partial save");
             });
             Test("native frame-rate defaults, beta selection and game-menu synchronization",()=>{
                 string folder=Path.Combine(root,"native-fps");Directory.CreateDirectory(Path.Combine(folder,"Settings"));

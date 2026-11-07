@@ -1,5 +1,6 @@
 /* Included by the checked US/XDK HLE commit, on its guest thread. */
 #include "gameplay/pc_acoustic_scene.h"
+#include "gameplay/pc_acoustic_cache.h"
 extern RECOMP_TLS uint32_t g_ebx,g_esi,g_edi,g_ebp;
 extern RECOMP_TLS RecompXmm g_xmm0,g_xmm1,g_xmm2,g_xmm3,g_xmm4,g_xmm5,g_xmm6,g_xmm7;
 extern RECOMP_TLS double g_fp_stack[8];
@@ -123,21 +124,17 @@ static PcAcousticResult pc_acoustic_guest(uint32_t key,const float *raw_listener
     PcAcousticResult neutral={{raw_source[0]-raw_listener[0],raw_source[1]-raw_listener[1],raw_source[2]-raw_listener[2]},0,0};
     float listener[3],source[3],view[16];
     if(!pc_acoustic_world(key,listener,source,view))return neutral;
-    static RECOMP_TLS struct {uint32_t key,scene;uint64_t time;PcAcousticResult result;} cache[256];
-    static RECOMP_TLS uint64_t budget_time;static RECOMP_TLS unsigned budget;
+    static RECOMP_TLS PcAcousticCache cache;
     uint64_t now=qpc_us();uint32_t table=pc_acoustic_word(0x708788u);
     unsigned rooms=pc_acoustic_word(0x7b975cu)+1,count=pc_acoustic_word(0x7b9754u)+1;
     uint32_t portals=pc_acoustic_word(0x70878cu);
     if(!table || rooms<2 || rooms>PC_ACOUSTIC_ROOMS || count>PC_ACOUSTIC_PORTALS ||
        !guest_readable(table,rooms*0xb4u) || !guest_readable(portals,count*4u) ||
        pc_acoustic_distance(listener,source)<2)return neutral;
-    unsigned slot=(key>>4)&255;uint32_t scene=table^portals;
-    if(cache[slot].key==key && cache[slot].scene==scene && now-cache[slot].time<100000) {
-        return pc_acoustic_view(cache[slot].result,view,neutral);
-    }
-    if(now-budget_time>=10000){budget_time=now;budget=0;}
-    if(budget>=2)return cache[slot].key==key && cache[slot].scene==scene ? pc_acoustic_view(cache[slot].result,view,neutral) : neutral;
-    ++budget;
+    unsigned lr=pc_acoustic_room(listener,rooms,table),sr=pc_acoustic_room(source,rooms,table);
+    PcAcousticResult cached;
+    if(!pc_acoustic_cache_request(&cache,key,table,portals,rooms,count,lr,sr,now,listener,source,&cached))
+        return pc_acoustic_view(cached,view,neutral);
     PcAcousticScene s;memset(&s,0,sizeof s);s.rooms=rooms;
     for(unsigned p=0;p<count;p++) {
         uint32_t address=pc_acoustic_word(portals+p*4),ends[2];int16_t n=0;
@@ -148,34 +145,24 @@ static PcAcousticResult pc_acoustic_guest(uint32_t key,const float *raw_listener
         for(int i=0;i<n*3;i++){if(!isfinite(vertices[i])){valid=0;break;}v->center[i%3]+=vertices[i]/n;}
         if(valid)s.count++;
     }
-    unsigned lr=pc_acoustic_room(listener,rooms,table),sr=pc_acoustic_room(source,rooms,table);
     PcAcousticResult result=pc_acoustic_route(&s,lr,sr,listener,source,pc_acoustic_ray,NULL);
     if(xbox_EnvSwitch("RECOMP_ACOUSTICS_TRACE",0)) {
         static RECOMP_TLS unsigned rows;
         if(lr && rows++<64)fprintf(stderr,"[ACOUSTICS] voice=%08X rooms=%u/%u portals=%u source=%.2f,%.2f,%.2f listener=%.2f,%.2f,%.2f obstruction=%.2f\n",
             key,lr,sr,s.count,source[0],source[1],source[2],listener[0],listener[1],listener[2],result.obstruction);
     }
-    cache[slot].key=key;cache[slot].scene=scene;cache[slot].time=now;cache[slot].result=result;
+    pc_acoustic_cache_store(&cache,key,now,listener,result);
     return pc_acoustic_view(result,view,neutral);
 }
-static void pc_acoustic_ambient_tick(uint64_t now)
+/* Diffuse-bed mixing is independent of one listener's geometry. Unknown
+ * rooms and split-screen retain authored stereo with no invented enclosure. */
+static float pc_acoustic_background_enclosure(unsigned *listener_room)
 {
-    static RECOMP_TLS uint64_t last;
-    if(now-last<150)return;
-    last=now;
-    if(!pc_audio_enhanced_enabled()) {
-        extern void hle_dsound_stream_acoustics(uint32_t,float,float,int);
-        for(unsigned i=0;i<10;i++) {
-            uint32_t object=pc_acoustic_word(0x5836d0u+i*0x14094u+4);
-            if(object)hle_dsound_stream_acoustics(pc_acoustic_word(object+0x14),0,0,0);
-        }
-        return;
-    }
-    if(pc_acoustic_word(0x790950u)!=1)return;
+    if(!pc_audio_feature_enabled(PC_AUDIO_ENVIRONMENT) || pc_acoustic_word(0x790950u)!=1)return 0;
     uint32_t camera=pc_acoustic_word(0x7b0cc0u),table=pc_acoustic_word(0x708788u);
     unsigned rooms=pc_acoustic_word(0x7b975cu)+1;
-    if(!camera || !table || rooms<2 || rooms>PC_ACOUSTIC_ROOMS)return;
-    float listener[3];if(!pc_acoustic_read(camera+0x27c,listener,12))return;
+    if(!camera || !table || rooms<2 || rooms>PC_ACOUSTIC_ROOMS)return 0;
+    float listener[3];if(!pc_acoustic_read(camera+0x27c,listener,12))return 0;
     unsigned room=pc_acoustic_room(listener,rooms,table);
     PcAcousticScene scene;memset(&scene,0,sizeof scene);scene.rooms=rooms;
     /* Nearby openings are enough for the ambient-bed enclosure response. */
@@ -190,7 +177,26 @@ static void pc_acoustic_ambient_tick(uint64_t now)
         int valid=1;for(unsigned j=0;j<n*3;j++){if(!isfinite(vertices[j])){valid=0;break;}v->center[j%3]+=vertices[j]/n;}
         if(valid)scene.count++;else memset(v,0,sizeof *v);
     }
-    float enclosure=pc_acoustic_enclosure(&scene,room,listener,pc_acoustic_ray,NULL);
+    *listener_room=room;
+    return pc_acoustic_enclosure(&scene,room,listener,pc_acoustic_ray,NULL);
+}
+static void pc_acoustic_ambient_tick(uint64_t now)
+{
+    static RECOMP_TLS uint64_t last;
+    if(now-last<150)return;
+    last=now;
+    if(!pc_audio_feature_enabled(PC_AUDIO_AMBIENCE)) {
+        extern void hle_dsound_stream_acoustics(uint32_t,float,float,int);
+        for(unsigned i=0;i<10;i++) {
+            uint32_t object=pc_acoustic_word(0x5836d0u+i*0x14094u+4);
+            /* Positioned streams keep the independently selected world filter. */
+            int positioned=pc_acoustic_word(0x5836d0u+i*0x14094u+0x50) &&
+                pc_acoustic_word(0x5836d0u+i*0x14094u+0x64);
+            if(object && !positioned)hle_dsound_stream_acoustics(pc_acoustic_word(object+0x14),0,0,0);
+        }
+        return;
+    }
+    unsigned room=0;float enclosure=pc_acoustic_background_enclosure(&room);
     extern void hle_dsound_stream_acoustics(uint32_t,float,float,int);
     for(unsigned i=0;i<10;i++) {
         uint32_t record=0x5836d0u+i*0x14094u,object=pc_acoustic_word(record+4);

@@ -15,6 +15,12 @@ const uint32_t hle_var_CDirectSoundVoice_SetVolume = 0;
 const uint32_t hle_var_CDirectSoundStream_SetVolume = 0;
 const uint32_t hle_var_CDirectSound3DCalculator_Calculate3D = 0;
 const uint32_t hle_var_CDirectSound3DCalculator_GetVoiceData = 0;
+#ifndef TSFP_AUDIO_BUFFER_DATA_ADDRESS
+#define TSFP_AUDIO_BUFFER_DATA_ADDRESS 0
+#define TSFP_AUDIO_BUFFER_LOOP_ADDRESS 0
+#endif
+const uint32_t hle_var_CDirectSoundBufferSettings_SetBufferData = TSFP_AUDIO_BUFFER_DATA_ADDRESS;
+const uint32_t hle_var_CDirectSoundBuffer_SetLoopRegion = TSFP_AUDIO_BUFFER_LOOP_ADDRESS;
 static void (*release_callback)(void);
 static void release_original(void) {
     if (release_callback) release_callback();
@@ -25,27 +31,41 @@ void (*const hle_original_IDirectSoundBuffer_SetFormat)(void) = NULL;
 void (*const hle_original_IDirectSoundBuffer_SetBufferData)(void) = NULL;
 void (*const hle_original_CMcpxVoiceClient_Commit3dSettings_0)(void) = NULL;
 static int acoustic_mock;
+static unsigned acoustic_ray_calls;
 static void acoustic_ray_mock(void) {
+    acoustic_ray_calls++;
+    if(acoustic_mock==2){g_eax=1;g_esp+=4;return;}
     if(g_eax!=2 || HLE_MEM32(g_esp+4)!=0 || HLE_MEM32(g_esp+8)!=0)abort();
     float start[3],delta[3];memcpy(start,HLE_PTR(g_edi),12);memcpy(delta,HLE_PTR(g_esi),12);
     if(fabsf(start[0]-.015f)>.001f || fabsf(delta[0]-9.97f)>.001f)abort();
     g_ebx=123;g_esi=456;g_edi=789;g_xmm7.f[0]=123;g_fp_top=4;g_fp_stack[0]=123;
     g_eax=0;g_esp+=4;
 }
-recomp_func_t recomp_lookup(uint32_t address) { return acoustic_mock && address==0x88950 ? acoustic_ray_mock : NULL; }
+static void (*native_buffer_data_callback)(void);
+recomp_func_t recomp_lookup(uint32_t address) {
+    if(native_buffer_data_callback && address==hle_var_CDirectSoundBufferSettings_SetBufferData)
+        return native_buffer_data_callback;
+    return acoustic_mock && address==0x88950 ? acoustic_ray_mock : NULL;
+}
 int xbox_EnvSwitch(const char *name, int value) { return value; }
 void hle_dsound_stream_tick(uint64_t now) { }
-void hle_dsound_stream_acoustics(uint32_t settings,float obstruction,float room,int ambience) {}
+int hle_dsound_stream_dialogue_active(void) {return 0;}
+static unsigned acoustic_stream_calls;static uint32_t acoustic_stream_settings;
+static float acoustic_stream_obstruction;static int acoustic_stream_bed;
+void hle_dsound_stream_acoustics(uint32_t settings,float obstruction,float room,int ambience)
+{acoustic_stream_calls++;acoustic_stream_settings=settings;acoustic_stream_obstruction=obstruction;acoustic_stream_bed=ambience;}
 void hle_dsound_stream_spatial(uint32_t settings,float pan,int enabled) { }
 #ifndef TSFP_INTEGRATED_AUDIO
 uint64_t recomp_audio_output_game_time(uint64_t now,unsigned domain){(void)domain;return now;}
+int recomp_audio_output_take_discontinuity(uint32_t slot){(void)slot;return 0;}
 static unsigned reset_count[256];
 void recomp_audio_output_reset_voice(uint32_t slot) { reset_count[slot]++; }
 static int fake_device;
-static uint64_t fake_now, fake_until[256];
+static uint64_t fake_now, fake_until[256],fake_played[256];
 int recomp_audio_output_position(uint32_t slot, uint64_t *played, uint32_t *queued)
 {
     if (!fake_device) return 0;
+    if (played) *played=fake_played[slot];
     if (queued) *queued = fake_until[slot] > fake_now;
     return 1;
 }
@@ -55,6 +75,8 @@ int recomp_audio_output_tail_pending(uint32_t slot, int finish)
     (void)finish;
     return recomp_audio_output_position(slot, NULL, &queued) && queued;
 }
+int recomp_audio_output_audible_pending(uint32_t slot)
+{return recomp_audio_output_tail_pending(slot,0);}
 void recomp_audio_output_set_ambience(uint32_t slot,int enabled) {}
 void recomp_audio_output_set_acoustics(uint32_t slot,float obstruction,float room) {}
 void recomp_audio_output_set_spatial(uint32_t slot,float pan,int enabled) { }
@@ -62,28 +84,62 @@ int recomp_audio_output_engine_stats(RecompAudioEngineStats *stats) { memset(sta
 static int accept;
 static uint32_t accepted_bytes;
 static uint8_t first_byte;
+static int first_bus;
+static int32_t first_level,updated_level;static unsigned volume_updates;
+static void (*accepted_pcm_callback)(const uint8_t *,uint32_t,uint32_t,uint32_t);
+int recomp_audio_output_set_volume(uint32_t slot,int32_t level)
+{updated_level=level;volume_updates++;return 1;}
 int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes,
     uint32_t rate, uint32_t channels, uint32_t bits, int32_t level)
 {
     if (!accept) return 0;
+    if(accepted_pcm_callback)accepted_pcm_callback(pcm,bytes,channels,bits);
     if (fake_device) {
         if (fake_until[slot] < fake_now) fake_until[slot] = fake_now;
         fake_until[slot] += (uint64_t)bytes * 1000 / (rate * channels * (bits / 8));
     }
+    if(!accepted_bytes){first_bus=g_buffers[slot].mix_bus;first_level=level;}
     accepted_bytes += bytes;
     first_byte = pcm[0];
     return 1;
 }
 #endif
+#ifndef TSFP_REAL_ADPCM
 int xbox_adpcm_decode_block(const uint8_t *block, size_t bytes, unsigned channels,
                             int16_t *pcm, size_t samples)
 { memset(pcm, 0, samples * sizeof *pcm); return 1; }
+#endif
 #define CHECK(condition) do { if (!(condition)) { \
     fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #condition); return 1; } } while (0)
 
 #ifndef TSFP_INTEGRATED_AUDIO
 int main(int argc, char **argv)
 {
+    PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;pc_audio_mix_live=pc_audio_mix_pack(mix);
+    if(argc==2 && !strcmp(argv[1],"feature-gates")) {
+        g_xbox_mem_offset=(ptrdiff_t)memory;g_esp=0x60000;
+        uint32_t record=0x5836d0,object=0x40000,settings=0x41000;
+        HLE_MEM32(record+4)=object;HLE_MEM32(object+0x14)=settings;
+        HLE_MEM32(record+0x28)=2;HLE_MEM32(record+0x4c)=0;
+        HLE_MEM32(0x4ca9b4)=0x50000;HLE_MEM32(0x50008)=0x210;
+        HLE_MEM32(0x565b4c)=0x80000;memcpy(HLE_PTR(0x80000),"outside_ambience.MIB",21);
+        /* Diffuse mix still works without room geometry, with environment OFF. */
+        PcAudioOptions o={1,0,0,0,1};pc_audio_live=pc_audio_pack(o);
+        pc_acoustic_ambient_tick(1000);
+        CHECK(acoustic_stream_calls==1 && acoustic_stream_settings==settings && acoustic_stream_bed==1);
+        CHECK(acoustic_stream_obstruction==0);
+        o.environment=1;o.ambience=0;pc_audio_live=pc_audio_pack(o);
+        pc_acoustic_ambient_tick(1200);CHECK(acoustic_stream_calls==2 && acoustic_stream_bed==0);
+        /* Turning beds off cannot clear the separate positioned-stream filter. */
+        HLE_MEM32(record+0x50)=HLE_MEM32(record+0x64)=1;
+        pc_acoustic_ambient_tick(1400);CHECK(acoustic_stream_calls==2);
+        HLE_MEM32(record+0x50)=HLE_MEM32(record+0x64)=0;
+        o.ambience=1;pc_audio_live=pc_audio_pack(o);HLE_MEM32(0x790950)=2;
+        pc_acoustic_ambient_tick(1600);CHECK(acoustic_stream_calls==3 && acoustic_stream_bed==1 && acoustic_stream_obstruction==0);
+        o.enhanced=0;pc_audio_live=pc_audio_pack(o);
+        pc_acoustic_ambient_tick(1800);CHECK(acoustic_stream_calls==4 && acoustic_stream_bed==0);
+        puts("PASS: feature-gates, independent bed/environment targets and split-screen neutral cover");return 0;
+    }
     if (argc == 2 && !strcmp(argv[1], "completion")) {
         Buffer *b = &g_buffers[0];
         g_xbox_mem_offset = (ptrdiff_t)memory;
@@ -167,6 +223,19 @@ int main(int argc, char **argv)
         memcpy(HLE_PTR(0x30008),source,12);float wl[3],ws[3],wv[16];
         CHECK(pc_acoustic_world(0x32000,wl,ws,wv));
         CHECK(wl[0]==10 && ws[0]==20 && wv[10]==1);
+        /* A cached blocked ray must not freeze a moving emitter's direction. */
+        HLE_MEM32(0x708788)=0x12000;HLE_MEM32(0x70878c)=0x13000;
+        HLE_MEM32(0x7b975c)=2;HLE_MEM32(0x7b9754)=0;acoustic_mock=2;
+        PcAcousticResult blocked=pc_acoustic_guest(0x32000,camera,source);
+        CHECK(blocked.obstruction==1 && blocked.direction[0]==10);
+        source[0]=18;memcpy(HLE_PTR(0x30008),source,12);
+        blocked=pc_acoustic_guest(0x32000,camera,source);
+        CHECK(blocked.obstruction==1 && blocked.direction[0]==8);
+        camera[0]=12;memcpy(HLE_PTR(0x2027c),camera,12);
+        blocked=pc_acoustic_guest(0x32000,camera,source);
+        CHECK(blocked.obstruction==1 && blocked.direction[0]==6);
+        camera[0]=10;memcpy(HLE_PTR(0x2027c),camera,12);
+        source[0]=20;memcpy(HLE_PTR(0x30008),source,12);acoustic_mock=0;
         PcAcousticResult spatial={{1,2,3},.5f,0},neutral={{9,9,9},0,0};
         spatial=pc_acoustic_view(spatial,wv,neutral);
         CHECK(spatial.direction[0]==1 && spatial.direction[1]==2 && spatial.direction[2]==-3);
@@ -176,7 +245,25 @@ int main(int argc, char **argv)
         HLE_MEM32(0x5836d0+0x64)=1;memcpy(HLE_PTR(0x5836d0+0x6c),source,12);
         CHECK(pc_acoustic_world(0x42000,wl,ws,wv) && ws[0]==20);
         HLE_MEM32(0x5836d0+0x64)=0;CHECK(!pc_acoustic_world(0x42000,wl,ws,wv));
-        HLE_MEM32(0x790950)=2;CHECK(!pc_acoustic_world(0x32000,wl,ws,wv));
+        /* Leaving single-player must bypass even a populated blocked cache.
+           Use different raw XDK coordinates to catch accidental world reuse. */
+        const unsigned players[]={0,2,3,4};
+        const float raw_listener[3]={5,0,2},raw_source[3]={-3,0,6};
+        unsigned calls=acoustic_ray_calls;acoustic_mock=2;
+        PcAudioOptions options={1,1,1,1,1};pc_audio_live=pc_audio_pack(options);
+        for(unsigned p=0;p<4;p++) {
+            HLE_MEM32(0x790950)=players[p];
+            CHECK(!pc_acoustic_world(0x32000,wl,ws,wv));
+            PcAcousticResult fallback=pc_acoustic_guest(0x32000,raw_listener,raw_source);
+            CHECK(fallback.obstruction==0 && fallback.room==0);
+            CHECK(fallback.direction[0]==-8 && fallback.direction[1]==0 && fallback.direction[2]==4);
+            unsigned untouched_room=999;
+            CHECK(pc_acoustic_background_enclosure(&untouched_room)==0 && untouched_room==999);
+            CHECK(acoustic_ray_calls==calls);
+        }
+        HLE_MEM32(0x790950)=1;
+        blocked=pc_acoustic_guest(0x32000,camera,source);
+        CHECK(blocked.obstruction==1 && blocked.direction[0]==10);acoustic_mock=0;
         puts("PASS: acoustic guest ABI/state preservation and bounded spatial-tree lookup");return 0;
     }
     if (argc == 2 && !strcmp(argv[1], "headroom")) {

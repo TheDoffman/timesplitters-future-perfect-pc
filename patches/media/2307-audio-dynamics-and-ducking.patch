@@ -1,0 +1,287 @@
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -60,7 +60,9 @@
+ #define PC_AUDIO_MIX_SETTINGS_IMPLEMENTATION
+ #include "interface/pc_audio_mix_settings.h"
+ #undef PC_AUDIO_MIX_SETTINGS_IMPLEMENTATION
+-
++#include "gameplay/pc_audio_dynamics.h"
++
++int hle_dsound_stream_dialogue_active(void);
+ void hle_dsound_stream_tick(uint64_t now);   /* hle_dsound_stream.c */
+ 
+ /* Reads a RECOMP_* switch; see xbox_memory_layout.h. Declared here rather
+@@ -106,6 +108,8 @@
+     float pan;
+     int spatial;
+     int mix_bus;
++    int speech_audible;
++    PcAudioDynamics dynamics;
+     float obstruction,room;
+ } Buffer;
+ 
+@@ -250,7 +254,8 @@
+ static void reset_output(Buffer *b)
+ {
+     recomp_audio_output_reset_voice(slot_of(b));
+-    b->fed = b->dry = 0;
++    b->fed = b->dry = b->speech_audible = 0;
++    memset(&b->dynamics,0,sizeof b->dynamics);
+     g_stat.resets++;
+ }
+ 
+@@ -561,12 +566,18 @@
+     b->level = buffer_level(b, &is3d);
+     recomp_audio_output_set_spatial(slot_of(b),b->pan,b->spatial);
+     recomp_audio_output_set_acoustics(slot_of(b),b->obstruction,b->room);
++    PcAudioDynamics dynamics_before=b->dynamics;
++    pc_audio_dynamics_pcm(&b->dynamics,pcm,bytes,out->sample_rate,channels,bits,b->level,
++        pc_audio_mix_dynamics(b->mix_bus));
+     if (!recomp_audio_output_submit(slot_of(b), pcm, bytes, out->sample_rate,
+                                     channels, bits, b->level)) {
++        b->dynamics=dynamics_before;
+         g_stat.refused++;
+         return;
+     }
+     b->dry = 0;
++    if(b->mix_bus==PC_AUDIO_DIALOGUE && !b->speech_audible)
++        b->speech_audible=pc_audio_speech_pcm(pcm,bytes,bits,b->level);
+     /* Commit only accepted PCM. A full queue must not discard these samples,
+      * including the final chunk of a non-looping sound. */
+     *out = next;
+@@ -1431,6 +1442,7 @@
+  * own version services the emulated chip's deferred commands, which the
+  * replaced buffers no longer need; here it feeds the host output. */
+ static void pc_acoustic_ambient_tick(uint64_t now);
++static void pc_audio_mix_tick(uint64_t wall);
+ HLE_EXPORT(DirectSoundDoWork)
+ {
+     g_ds_calls[DS_CALL_DIRECTSOUNDDOWORK]++;
+@@ -1477,6 +1489,7 @@
+      * tick count every other stream entry point reads), not this file's. */
+     pc_acoustic_ambient_tick(now);
+     hle_dsound_stream_tick(GetTickCount64());
++    pc_audio_mix_tick(GetTickCount64());
+     HLE_RETURN(0);
+ }
+ 
+@@ -1575,6 +1588,24 @@
+ }
+ 
+ #include "gameplay/pc_acoustic_guest.inc"
++
++/* Never hold buffer/stream locks together. Rate-limited host-only sampling
++ * neither advances a guest clock nor flushes a resampler tail. */
++static void pc_audio_mix_tick(uint64_t wall)
++{
++    if(!pc_audio_mix_duck_begin(wall))return;
++    int active=0;
++    lock();
++    for(unsigned i=0;i<SLOTS && !active;i++) {
++        Buffer *b=&g_buffers[i];
++        if(b->iface && b->output && b->fed && !b->paused && b->speech_audible &&
++           b->mix_bus==PC_AUDIO_DIALOGUE && buffer_level(b,NULL)>-10000)
++            active=recomp_audio_output_audible_pending(slot_of(b));
++    }
++    unlock();
++    if(!active)active=hle_dsound_stream_dialogue_active();
++    pc_audio_mix_duck_end(active,wall);
++}
+ 
+ /* US299C0 starts one source on a pre-created stream. Own this classification
+  * on the guest thread before SetFormat/Process, never in a host callback. */
+--- a/src/hle/hle_dsound_stream.c
++++ b/src/hle/hle_dsound_stream.c
+@@ -54,6 +54,7 @@
+ #include "audio_output.h"
+ #include "gameplay/pc_audio_mix.h"
+ #include "interface/pc_audio_mix_settings.h"
++#include "gameplay/pc_audio_dynamics.h"
+ 
+ /* kernel_bridge.c: the dispatch table, for the completion callback. */
+ typedef void (*recomp_func_t)(void);
+@@ -110,6 +111,8 @@
+     float pan;
+     int spatial;
+     int mix_bus;
++    int speech_audible;
++    PcAudioDynamics dynamics;
+     float obstruction,room;
+     int ambience;
+     int      paused;
+@@ -459,6 +462,7 @@
+              * stream. Start it again from here, or its played-sample count
+              * would read as a position it is not at. */
+             recomp_audio_output_reset_voice(slot_of(s));
++            memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
+             s->sent = target;
+             s->play_origin = target;
+             s->play_anchored = 0;
+@@ -493,6 +497,7 @@
+                     s->host_clock = 0;
+                     s->output = 0;   /* bad data: keep the clock, drop the sound */
+                     recomp_audio_output_reset_voice(slot_of(s));
++                    memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
+                     return;
+                 }
+                 /* A device cursor or pause can land inside a decoded block.
+@@ -506,6 +511,7 @@
+                 s->host_clock = 0;
+                 s->output = 0;
+                 recomp_audio_output_reset_voice(slot_of(s));
++                memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
+                 return;
+             }
+             memcpy(pcm, HLE_PTR(p->data + (uint32_t)within), bytes);
+@@ -518,9 +524,16 @@
+         recomp_audio_output_set_spatial(slot_of(s),s->pan,s->spatial);
+         recomp_audio_output_set_acoustics(slot_of(s),s->obstruction,s->room);
+         recomp_audio_output_set_ambience(slot_of(s),s->ambience);
++        PcAudioDynamics dynamics_before=s->dynamics;
++        pc_audio_dynamics_pcm(&s->dynamics,pcm,bytes,play_rate(s),s->channels,out_bits(s),s->level,
++            pc_audio_mix_dynamics(s->mix_bus));
+         if (!recomp_audio_output_submit(slot_of(s), pcm, bytes, play_rate(s), s->channels,
+-                                        out_bits(s), s->level))
++                                        out_bits(s), s->level)) {
++            s->dynamics=dynamics_before;
+             break;
++        }
++        if(s->mix_bus==PC_AUDIO_DIALOGUE && !s->speech_audible)
++            s->speech_audible=pc_audio_speech_pcm(pcm,bytes,out_bits(s),s->level);
+         s->output_lost = 0;
+         s->sent += bytes;
+     }
+@@ -530,6 +543,7 @@
+ static void refeed(Stream *s, uint64_t now)
+ {
+     recomp_audio_output_reset_voice(slot_of(s));
++    memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
+     s->sent = consumed(s, now);
+     s->play_origin = s->sent;
+     s->play_anchored = 0;
+@@ -580,6 +594,19 @@
+         }
+     }
+     unlock();
++}
++
++int hle_dsound_stream_dialogue_active(void)
++{
++    int active=0;
++    lock();
++    for(unsigned i=0;i<MAX_STREAMS && !active;i++) {
++        Stream *s=&g_streams[i];
++        if(s->iface && s->output && !s->paused && !s->flush_pending && s->speech_audible &&
++           s->mix_bus==PC_AUDIO_DIALOGUE && stream_level(s)>-10000)
++            active=recomp_audio_output_audible_pending(slot_of(s));
++    }
++    unlock();return active;
+ }
+ 
+ void hle_dsound_stream_tick(uint64_t now)
+@@ -654,6 +681,7 @@
+     complete_passed(s, now);
+     c = consumed(s, now);
+     recomp_audio_output_reset_voice(slot_of(s));
++    memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
+     if (wfx)
+         read_format(s, wfx);
+     s->freq = new_freq;
+@@ -865,6 +893,7 @@
+     s->dry = 0;
+     s->flush_pending = 0;
+     recomp_audio_output_reset_voice(slot_of(s));
++    memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
+     for (i = 0; i < n; i++)
+         complete(s, &flushed[i], XMP_STATUS_FLUSHED, 0u);
+ }
+@@ -907,6 +936,7 @@
+         if (flags) {
+             s->flush_pending = 1;
+             recomp_audio_output_reset_voice(slot_of(s));
++            memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
+         } else {
+             flush_stream(s);
+         }
+@@ -934,6 +964,7 @@
+         Stream released = *s;
+         int i;
+         recomp_audio_output_reset_voice(slot_of(s));
++        memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
+         memset(s, 0, sizeof *s);
+         /* Clear the slot before callbacks, which may create another stream. */
+         for (i = 0; i < released.count; i++)
+@@ -1002,6 +1033,7 @@
+                 s->paused = 1;
+                 s->resumed_ms = 0u;
+                 recomp_audio_output_reset_voice(slot_of(s));
++                memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
+                 s->sent = s->consumed_base;
+             }
+         }
+--- a/src/hle/hle_xmv_play.c
++++ b/src/hle/hle_xmv_play.c
+@@ -15,6 +15,7 @@
+  */
+ #include "hle_xmv_play.h"
+ #include "interface/pc_audio_mix_settings.h"
++#include "gameplay/pc_audio_dynamics.h"
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -103,6 +104,7 @@
+     uint8_t  adpcm_rest[72];
+     uint32_t adpcm_rest_len;
+     uint64_t pcm_submitted;
++    PcAudioDynamics dynamics;
+     int      audio_recovering;
+     int      logged_surface;
+     uint32_t polls;
+@@ -223,9 +225,17 @@
+         if (n > AUDIO_CHUNK)
+             n = AUDIO_CHUNK;
+         n -= n % frame;
+-        if (!n || !recomp_audio_output_submit(RECOMP_AUDIO_SLOT_MOVIE, m->pcm + m->pcm_off, n,
+-                                              m->rate, m->channels, 16, pc_audio_mix_level(0, PC_AUDIO_MOVIES)))
++        if(!n)return;
++        /* Keep undecoded/pending input immutable across refused submissions. */
++        uint8_t mixed[AUDIO_CHUNK];memcpy(mixed,m->pcm+m->pcm_off,n);
++        int32_t level=pc_audio_mix_level(0,PC_AUDIO_MOVIES);
++        PcAudioDynamics dynamics_before=m->dynamics;
++        pc_audio_dynamics_pcm(&m->dynamics,mixed,n,m->rate,m->channels,16,level,
++            pc_audio_mix_dynamics(PC_AUDIO_MOVIES));
++        if (!recomp_audio_output_submit(RECOMP_AUDIO_SLOT_MOVIE,mixed,n,m->rate,m->channels,16,level)) {
++            m->dynamics=dynamics_before;
+             return;                      /* offered again next poll */
++        }
+         m->audio_recovering = 0;
+         m->pcm_off += n;
+         m->pcm_submitted += n;
+--- a/src/hle/audio_output.h
++++ b/src/hle/audio_output.h
+@@ -82,6 +82,10 @@
+    clock selection still uses position() and is unaffected by this query. */
+ int recomp_audio_output_tail_pending(uint32_t slot, int finish);
+ 
++/* Already accepted frames available for audible output. Does not flush held
++ * resampler input or select a clock; used only for optional dialogue ducking. */
++int recomp_audio_output_audible_pending(uint32_t slot);
++
+ /* The slot's volume, now, for everything it has queued: a voice whose level
+    changes while it plays (a 3D sound moving) follows without waiting for its
+    next submission. 0 when there is no voice. */
+--- a/src/hle/audio_output_xaudio2.cpp
++++ b/src/hle/audio_output_xaudio2.cpp
+@@ -321,6 +321,12 @@
+         *played_bytes = static_cast<uint64_t>(state.SamplesPlayed) * block_align;
+     if (queued_buffers) *queued_buffers = state.BuffersQueued;
+     return 1;
++}
++
++extern "C" int recomp_audio_output_audible_pending(uint32_t slot)
++{
++    uint32_t queued=0;
++    return recomp_audio_output_position(slot,nullptr,&queued) && queued!=0;
+ }
+ 
+ extern "C" int recomp_audio_output_tail_pending(uint32_t slot, int finish)

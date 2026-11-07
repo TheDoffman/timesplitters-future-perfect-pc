@@ -1,3 +1,79 @@
+Audio overhaul closure (2026-11-07): the user defers remaining speakers,
+multiple-controller and native Mac/Linux checks as unverified follow-ups. The
+implemented/common audio work and accepted Windows/headphone results are closed
+for that scope, not marked native Mac verified. Final media coverage is230
+distinct Windows passes and226 Linux/WSL passes with four platform skips. The
+[current ledger](../development/audio-overhaul-acceptance.md) supersedes earlier
+pending milestone notes below; native build/UI/SDL endpoint/listening remains
+unverified and tracked here. No Mac adapter or duplicated policy was added.
+
+Audio callback audit follow-up: the shared stream fixture now covers the observed
+8000Hz PCM16/320-byte callback refill contract through normal/manual dispatch.
+Windows and independent Linux each pass110 timing checks. Actual pinned SDL
+also passes four20ms8000Hz dummy/converter cases; this is not physical output.
+No duplicate platform policy or production-source change; native Mac execution
+and the provider's content identity remain unverified.
+
+Audio follow-up: portable candidate-survey regressions are selected in both
+media CI routes; actual Windows/Linux survey JSON agrees. Full suites pass228
+on Windows and224/four skips on Linux. The144/180/240-target Windows audio sweep
+reaches gameplay with clean captures, at observed143/177/205 guest updates/s;
+display-present240 performance and native Mac hardware remain unverified.
+See [current acceptance](../development/audio-overhaul-acceptance.md).
+
+Audio acceptance: a fresh pinned SDL build passes16 production-adapter
+dummy/converter checks on Linux/WSL. Actual PulseAudio output is unavailable
+(missing WSLg socket), and native Mac/device listening remains unverified.
+Current Windows movie mute/playback and campaign listening references are ready;
+no product/adapter change in this pass. [Full gates](../development/audio-overhaul-acceptance.md).
+
+Distance audit: live custom-curve/native-code comparison retains the existing
+shared range option; no gameplay/host adapter change. The private original-x86
+probe runs on Windows only. Physical Mac/Linux balance/listening remains pending;
+see [evidence](../development/audio-distance-audit.md).
+
+Audio host validation: Linux/WSL media216 pass/four Windows-only skips, including
+controlled local XMV cadence; real SDL endpoint/game acceptance remains open.
+Windows real endpoint reopens after an injected critical callback (silent PCM,
+no physical unplug). Shared split fallback tests now cover cached obstruction
+across0/2/3/4 players. Actual multi-controller and native Mac listening remain
+pending. See [measured scope](../development/audio-overhaul.md#linux-room-and-device-validation).
+
+Acoustic cache follow-up: common `pc_acoustic_cache.h` corrects moving-source
+pan, bounds stale obstruction and schedules refresh fairly. No new Mac adapter;
+shared fixtures pass on Windows and Linux/WSL (GCC/Clang). Native Mac execution
+and physical Linux/Mac game/listening acceptance remain pending.
+See [contracts](../development/positional-audio.md#acoustic-cache-correction).
+
+Authored loop ends2310: shared model/PCM pump now honor decoded endpoints from
+both native/legacy region fields. Exact PCM/production-ADPCM fixtures pass on
+Windows, with pause, seek, fractional clock and refusal checks. No duplicated
+host implementation is added. Windows Build/crash-symbol/media checks and two
+campaign scenes pass; native Mac/Linux and listening acceptance remain pending.
+Controlled real-payload loop previews are private diagnostics. See STATUS.
+
+Native buffer-layout repair2309: one shared signature-based field translation
+and reuse of native allocation/ownership/region initialization serves all hosts.
+Windows fixtures, generation/Build and bounded startup/campaign captures pass;
+physical Mac/Linux remain pending. Short loop
+end consumption remains separate pending shared model work. See STATUS.
+
+Audio loop audit: shared portable audio_loops.py and synthetic tests now map
+original named-loop regions with precise block conversion and hash guards.
+Windows pause keyboard/save/resume at21:9 is verified; native Mac/Linux and
+mouse/controller/split-screen remain open. The discovered loop-setter ABI
+mismatch is pending a shared repair; no host-specific runtime fix was added.
+
+Audio candidate validation: Windows campaign separate-speech mute routing and
+Original/Night ten-bot output captures now run with the shared implementation.
+These do not establish native SDL hardware latency, spatial response or tuning;
+Mac/Linux build, menu and listening acceptance remain pending. See STATUS.
+
+Audio mute contract: shared pc_audio_gain.h and patch2308 use exact zero at
+-10000 dB hundredths on both adapters, preserving queued audio and unmute.
+Windows-hosted production SDL/device-double regression covers all slot kinds;
+physical Mac/Linux mute/unmute, latency and listening remain pending.
+
 Uplink throw impulse (uncommitted aftera24c3b60): shared numeric policy in
 pc_native_uplink.h/pc_native_numeric.h, no OS-specific gameplay adapter.
 Windows original-code physics fixture covers normal/quarter-speed throws;
@@ -8671,6 +8747,41 @@ Mac title acceptance pending; retain MAC-118 Awaiting validation. See [contracts
 - **Status:** Awaiting validation
 - **Source/PR:** `32a5774`, PR #397.
 - **Mac support present:** Shared code is implemented; native Mac execution/listening is pending.
+- Audio overhaul follow-up (2026-11-07, local `feature/audio-overhaul`): finite
+  OFF release and delay-history clearing are implemented once in shared
+  `pc_acoustic_dsp.h`; no Mac adapter change is needed. Windows media fixtures
+  verify byte-identical bypass after fading and no stale echo on re-enable.
+  Native Mac/Linux game execution and listening remain unverified. The broader
+  overhaul's split-screen/reverb acceptance remains tracked in
+  [its plan](../development/audio-overhaul.md), beyond this prior beta's scope.
+- Independent choices follow-up: shared patch0059, `pc_audio_settings.h`, guest
+  menu and C# launcher expose spatial/range/environment/ambience controls with
+  V1/V2 migration and master-OFF retention. Common code supplies both hosts;
+  no Mac adapter implementation is deferred. Windows C/menu and portable
+  launcher checks and full Windows launcher Save/UI suite pass; Mac UI/listening
+  remain pending. Diffuse beds use neutral enclosure in split-screen; this is
+    not multi-listener positional acoustics validation.
+  - Mix follow-up (local feature/audio-overhaul): common patches0060/0061,
+    `pc_audio_mix.h` and `pc_audio_mix_settings.h` implement source ownership and
+    master/category attenuation for effects/music/dialogue/ambience/movies.
+    Shared C# sliders/persistence cover both hosts; no separate adapter is needed.
+    Windows production-C/media and launcher suites pass; native Mac/Linux
+    execution, physical output and guest mix-page acceptance remain pending.
+    Cinematic premixes cannot isolate their baked-in speech. See the audio plan.
+  - Listening options follow-up: common patch2307 and `pc_audio_dynamics.h`
+    implement opt-in dialogue ducking and per-source impact reduction, with
+    shared MIX_V2 persistence and both UIs. SDL's new available-output query
+    excludes held resampler input and does not invent a device clock or flush.
+    Windows production media/menu and launcher tests pass, including SDL host
+    doubles; native Mac/Linux execution/listening remains pending. No separate
+    platform DSP implementation is deferred.
+  - First integrated Windows candidate now builds and passes standard checks.
+    Shared descriptor-scoped font sizing and native row metrics corrected the
+    audio pages after actual640x480 review; Mac/Linux visual checks are pending.
+    `tools/testing/capture-game-audio.cpp` is Windows-only developer instrumentation
+    using process-loopback WASAPI, not a product audio dependency. Equivalent
+    Mac/Linux capture/listening requires those hosts; this does not defer common
+    mix/DSP behavior. First Windows menu capture and Music mute verification pass.
 - Shared: patches 0040/0045/0050 and `pc_spatial_audio.h`, `pc_acoustic_*`
   provide directional buffers/streams, near-field centering, longer gunfire
   range, wall/portal filtering and metadata-driven ambience mixing. Both

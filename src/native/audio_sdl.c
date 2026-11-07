@@ -4,6 +4,7 @@
 #include "gameplay/pc_audio_clock.h"
 #include "gameplay/pc_spatial_audio.h"
 #include "gameplay/pc_acoustic_dsp.h"
+#include "gameplay/pc_audio_gain.h"
 #include <SDL3/SDL.h>
 #include <pthread.h>
 #include <math.h>
@@ -205,7 +206,7 @@ int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes
         pc_acoustic_pcm(&acoustics[slot],acoustic_pcm,bytes,rate,channels,bits);
         pcm=acoustic_pcm;
     }
-    ok = SDL_SetAudioStreamGain(s, master_gain * powf(10.0f, fminf(0, (float)volume) / 2000.0f)) &&
+    ok = SDL_SetAudioStreamGain(s, master_gain * pc_audio_db_gain(volume)) &&
         SDL_PutAudioStreamData(s, pcm, (int)bytes);
     if(!ok && filtered)acoustics[slot]=acoustic_backup;
     if (ok) voices[slot].flushed = 0;
@@ -220,13 +221,24 @@ int recomp_audio_output_set_volume(uint32_t slot, int32_t volume)
     if (slot >= SLOT_COUNT) return 0;
     pthread_mutex_lock(&lock);
     int ok = voices[slot].stream && SDL_SetAudioStreamGain(voices[slot].stream,
-        master_gain * powf(10.0f, fminf(0, (float)volume) / 2000.0f));
+        master_gain * pc_audio_db_gain(volume));
     if (!ok && voices[slot].stream) fail_voice(slot);
     pthread_mutex_unlock(&lock);
     return ok;
 }
 int recomp_audio_output_position(uint32_t slot, uint64_t *played, uint32_t *queued)
 { (void)slot; (void)played; (void)queued; return 0; }
+int recomp_audio_output_audible_pending(uint32_t slot)
+{
+    if(slot>=SLOT_COUNT)return 0;
+    pthread_mutex_lock(&lock);
+    int pending=0;SDL_AudioStream *stream=voices[slot].stream;
+    if(device && !stopped && stream) {
+        int available=SDL_GetAudioStreamAvailable(stream);
+        if(available<0)fail_voice(slot);else pending=available>0;
+    }
+    pthread_mutex_unlock(&lock);return pending;
+}
 int recomp_audio_output_tail_pending(uint32_t slot, int finish)
 {
     if (slot >= SLOT_COUNT) return 0;

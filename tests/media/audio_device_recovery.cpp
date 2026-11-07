@@ -18,10 +18,12 @@ int main(int argc, char **argv) {
         assert(!recomp_audio_output_engine_stats(&stats));
         assert(stats.open_attempts==1 && stats.device_failed==1 && stats.unavailable==1 && !stats.opens);
         fail_operation=nullptr; fake_ms=1000; assert(submit());
+        assert(recomp_audio_output_audible_pending(0) && !recomp_audio_output_audible_pending(UINT32_MAX));
         for(unsigned i=1;i<12;i++) assert(submit());
         assert(!submit());
         assert(!recomp_audio_output_submit(0,pcm,3,48000,2,16,0));
         voices[0].source->queued=0;
+        assert(!recomp_audio_output_audible_pending(0));
         fail_operation="submit"; assert(!submit());
         fail_operation=nullptr; assert(!submit());
         assert(recomp_audio_output_engine_stats(&stats));

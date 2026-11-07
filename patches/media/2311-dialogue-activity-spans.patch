@@ -1,0 +1,190 @@
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -61,6 +61,7 @@
+ #include "interface/pc_audio_mix_settings.h"
+ #undef PC_AUDIO_MIX_SETTINGS_IMPLEMENTATION
+ #include "gameplay/pc_audio_dynamics.h"
++#include "gameplay/pc_audio_activity.h"
+ 
+ int hle_dsound_stream_dialogue_active(void);
+ void hle_dsound_stream_tick(uint64_t now);   /* hle_dsound_stream.c */
+@@ -109,6 +110,7 @@
+     int spatial;
+     int mix_bus;
+     int speech_audible;
++    PcAudioActivity speech_activity;
+     PcAudioDynamics dynamics;
+     float obstruction,room;
+ } Buffer;
+@@ -259,6 +261,7 @@
+ {
+     recomp_audio_output_reset_voice(slot_of(b));
+     b->fed = b->dry = b->speech_audible = 0;
++    memset(&b->speech_activity,0,sizeof b->speech_activity);
+     memset(&b->dynamics,0,sizeof b->dynamics);
+     g_stat.resets++;
+ }
+@@ -509,6 +512,9 @@
+     int adpcm, is3d;
+     static uint8_t pcm[80000];
+ 
++    if(b->mix_bus==PC_AUDIO_DIALOGUE && recomp_audio_output_take_discontinuity(slot_of(b))) {
++        memset(&b->speech_activity,0,sizeof b->speech_activity);b->speech_audible=0;
++    }
+     /* Include queued tails: they can outlive the source model's final frame. */
+     if (b->output && b->fed) {
+         int32_t level=buffer_level(b, NULL);
+@@ -617,8 +623,11 @@
+         return;
+     }
+     b->dry = 0;
+-    if(b->mix_bus==PC_AUDIO_DIALOGUE && !b->speech_audible)
+-        b->speech_audible=pc_audio_speech_pcm(pcm,bytes,bits,b->level);
++    if(b->mix_bus==PC_AUDIO_DIALOGUE) {
++        b->speech_audible|=pc_audio_speech_pcm(pcm,bytes,bits,b->level);
++        pc_audio_activity_submit(&b->speech_activity,pcm,bytes,out->sample_rate,
++            channels,bits,b->level,now_ms());
++    }
+     /* Commit only accepted PCM. A full queue must not discard these samples,
+      * including the final chunk of a non-looping sound. */
+     *out = next;
+@@ -1668,7 +1677,12 @@
+         Buffer *b=&g_buffers[i];
+         if(b->iface && b->output && b->fed && !b->paused && b->speech_audible &&
+            b->mix_bus==PC_AUDIO_DIALOGUE && buffer_level(b,NULL)>-10000)
+-            active=recomp_audio_output_audible_pending(slot_of(b));
++        {
++            uint64_t played=0;
++            int known=recomp_audio_output_position(slot_of(b),&played,NULL);
++            active=pc_audio_activity_pending(&b->speech_activity,now_ms(),played,known,
++                recomp_audio_output_audible_pending(slot_of(b)));
++        }
+     }
+     unlock();
+     if(!active)active=hle_dsound_stream_dialogue_active();
+--- a/src/hle/hle_dsound_stream.c
++++ b/src/hle/hle_dsound_stream.c
+@@ -55,6 +55,7 @@
+ #include "gameplay/pc_audio_mix.h"
+ #include "interface/pc_audio_mix_settings.h"
+ #include "gameplay/pc_audio_dynamics.h"
++#include "gameplay/pc_audio_activity.h"
+ 
+ /* kernel_bridge.c: the dispatch table, for the completion callback. */
+ typedef void (*recomp_func_t)(void);
+@@ -112,6 +113,7 @@
+     int spatial;
+     int mix_bus;
+     int speech_audible;
++    PcAudioActivity speech_activity;
+     PcAudioDynamics dynamics;
+     float obstruction,room;
+     int ambience;
+@@ -438,6 +440,7 @@
+     if (!s->output || s->paused || s->flush_pending || !s->resumed_ms)
+         return;
+     if (s->output_lost) {
++        memset(&s->speech_activity,0,sizeof s->speech_activity);s->speech_audible=0;
+         /* Discard elapsed audio while disconnected. Refused retries do not
+          * pin a stale source offset or reuse the vanished device's origin. */
+         s->sent = consumed(s, now);
+@@ -463,6 +466,7 @@
+              * would read as a position it is not at. */
+             recomp_audio_output_reset_voice(slot_of(s));
+             memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
++            memset(&s->speech_activity,0,sizeof s->speech_activity);
+             s->sent = target;
+             s->play_origin = target;
+             s->play_anchored = 0;
+@@ -498,6 +502,7 @@
+                     s->output = 0;   /* bad data: keep the clock, drop the sound */
+                     recomp_audio_output_reset_voice(slot_of(s));
+                     memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
++                    memset(&s->speech_activity,0,sizeof s->speech_activity);
+                     return;
+                 }
+                 /* A device cursor or pause can land inside a decoded block.
+@@ -512,6 +517,7 @@
+                 s->output = 0;
+                 recomp_audio_output_reset_voice(slot_of(s));
+                 memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
++                memset(&s->speech_activity,0,sizeof s->speech_activity);
+                 return;
+             }
+             memcpy(pcm, HLE_PTR(p->data + (uint32_t)within), bytes);
+@@ -532,8 +538,11 @@
+             s->dynamics=dynamics_before;
+             break;
+         }
+-        if(s->mix_bus==PC_AUDIO_DIALOGUE && !s->speech_audible)
+-            s->speech_audible=pc_audio_speech_pcm(pcm,bytes,out_bits(s),s->level);
++        if(s->mix_bus==PC_AUDIO_DIALOGUE) {
++            s->speech_audible|=pc_audio_speech_pcm(pcm,bytes,out_bits(s),s->level);
++            pc_audio_activity_submit(&s->speech_activity,pcm,bytes,play_rate(s),
++                s->channels,out_bits(s),s->level,now_ms());
++        }
+         s->output_lost = 0;
+         s->sent += bytes;
+     }
+@@ -544,6 +553,7 @@
+ {
+     recomp_audio_output_reset_voice(slot_of(s));
+     memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
++    memset(&s->speech_activity,0,sizeof s->speech_activity);
+     s->sent = consumed(s, now);
+     s->play_origin = s->sent;
+     s->play_anchored = 0;
+@@ -604,7 +614,12 @@
+         Stream *s=&g_streams[i];
+         if(s->iface && s->output && !s->paused && !s->flush_pending && s->speech_audible &&
+            s->mix_bus==PC_AUDIO_DIALOGUE && stream_level(s)>-10000)
+-            active=recomp_audio_output_audible_pending(slot_of(s));
++        {
++            uint64_t played=0;
++            int known=recomp_audio_output_position(slot_of(s),&played,NULL);
++            active=pc_audio_activity_pending(&s->speech_activity,now_ms(),played,known,
++                recomp_audio_output_audible_pending(slot_of(s)));
++        }
+     }
+     unlock();return active;
+ }
+@@ -682,6 +697,7 @@
+     c = consumed(s, now);
+     recomp_audio_output_reset_voice(slot_of(s));
+     memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
++    memset(&s->speech_activity,0,sizeof s->speech_activity);
+     if (wfx)
+         read_format(s, wfx);
+     s->freq = new_freq;
+@@ -894,6 +910,7 @@
+     s->flush_pending = 0;
+     recomp_audio_output_reset_voice(slot_of(s));
+     memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
++    memset(&s->speech_activity,0,sizeof s->speech_activity);
+     for (i = 0; i < n; i++)
+         complete(s, &flushed[i], XMP_STATUS_FLUSHED, 0u);
+ }
+@@ -937,6 +954,7 @@
+             s->flush_pending = 1;
+             recomp_audio_output_reset_voice(slot_of(s));
+             memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
++            memset(&s->speech_activity,0,sizeof s->speech_activity);
+         } else {
+             flush_stream(s);
+         }
+@@ -965,6 +983,7 @@
+         int i;
+         recomp_audio_output_reset_voice(slot_of(s));
+         memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
++        memset(&s->speech_activity,0,sizeof s->speech_activity);
+         memset(s, 0, sizeof *s);
+         /* Clear the slot before callbacks, which may create another stream. */
+         for (i = 0; i < released.count; i++)
+@@ -1034,6 +1053,7 @@
+                 s->resumed_ms = 0u;
+                 recomp_audio_output_reset_voice(slot_of(s));
+                 memset(&s->dynamics,0,sizeof s->dynamics);s->speech_audible=0;
++                memset(&s->speech_activity,0,sizeof s->speech_activity);
+                 s->sent = s->consumed_base;
+             }
+         }
