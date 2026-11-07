@@ -47,17 +47,11 @@ static uint32_t guest_call(void (*fn)(void),unsigned n,...)
 }
 #include "interface/pc_audio_menu.inc"
 static void build(uint32_t menu)
-{g_esp=0x200;WORD_AT(g_esp+4)=menu;rows=choices=0;audio_mix_build();assert(g_esp==0x204);}
+{g_esp=0x200;WORD_AT(g_esp+4)=menu;rows=choices=0;assert(audio_menu_prepare());audio_mix_add();g_esp+=4;assert(g_esp==0x204);}
 int main(void)
 {
-    g_xbox_mem_offset=(ptrdiff_t)guest;g_esp=0x200;WORD_AT(g_esp+12)=0x21;WORD_AT(g_esp+16)=bits(6.f);
-    audio_beta_add(sub_00079D60_gen);
-    assert(rows==1 && last_callback==AUDIO_MIX_OPEN && WORD_AT(0x10000+0x28)==0 && g_esp==0x200);
-    assert(WORD_AT(audio_menu_storage)==AUDIO_MIX_BUILD && WORD_AT(audio_menu_storage+4)==AUDIO_MIX_TICK);
-    uint32_t source=0x1000;WORD_AT(source+0x2c)=0x222;WORD_AT(source+4)=0x333;
-    WORD_AT(g_esp+4)=source;audio_mix_open();
-    assert(g_esp==0x204 && navigation_parent==0x222 && navigation_descriptor==audio_menu_storage);
-    build(0x2000);assert(rows==9 && choices==606 && layout_calls==1);
+    g_xbox_mem_offset=(ptrdiff_t)guest;
+    build(0x2000);assert(rows==6 && choices==606);
     assert(WORD_AT(audio_mix_rows[0]+0xc8)==100 && WORD_AT(audio_mix_rows[5]+0xc8)==100);
     for(unsigned i=0;i<6;i++)WORD_AT(audio_mix_rows[i]+0xc8)=i*17;
     g_esp=0x200;audio_mix_change();assert(g_esp==0x204);
@@ -70,21 +64,15 @@ int main(void)
     assert(WORD_AT(audio_mix_rows[3]+0xc8)==51 && pc_audio_mix_get().volume[2]==51);
     file=fopen(path,"rb");char text[80]={0};assert(file);fread(text,1,79,file);fclose(file);
     assert(!strcmp(text,"TSFP_AUDIO_MIX_V99 future"));remove(path);
-    g_esp=0x200;audio_features_open();assert(audio_page==1 && rebuilds==1 && selection==0);
-    build(0x2000);assert(rows==6 && choices==10 && layout_calls==2 && !audio_mix_rows[0]);
+    rows=choices=0;audio_feature_add();assert(rows==5 && choices==10);
     WORD_AT(audio_feature_rows[0]+0xc8)=1;WORD_AT(audio_feature_rows[2]+0xc8)=0;
     g_esp=0x200;audio_beta_change();assert(pc_audio_enhanced_enabled() && !pc_audio_get_options().weapon_range);
-    g_esp=0x200;audio_mix_back();assert(!audio_page && rebuilds==2 && selection==6);
-    build(0x2000);assert(!audio_feature_rows[0] && WORD_AT(audio_mix_rows[3]+0xc8)==51);
-    g_esp=0x200;audio_listening_open();assert(audio_page==2 && rebuilds==3);
-    build(0x2000);assert(rows==3 && choices==5 && !audio_mix_rows[0] && !audio_feature_rows[0]);
+    build(0x2000);assert(WORD_AT(audio_mix_rows[3]+0xc8)==51);
+    rows=choices=0;audio_listening_add();assert(rows==2 && choices==5);
     WORD_AT(audio_focus_row+0xc8)=1;WORD_AT(audio_range_row+0xc8)=2;
     g_esp=0x200;audio_listening_change();mix=pc_audio_mix_get();
     assert(mix.ducking==1 && mix.dynamics==2 && mix.master==0 && mix.volume[2]==51);
     file=fopen(path,"rb");memset(text,0,sizeof text);assert(file);fread(text,1,79,file);fclose(file);
     assert(!strcmp(text,"TSFP_AUDIO_MIX_V2 0 17 34 51 68 85 1 2\n"));
-    g_esp=0x200;audio_mix_back();assert(audio_page==0 && selection==7);
-    g_esp=0x200;audio_mix_back();assert(navigation_parent==0x222 && navigation_descriptor==0x333 && !audio_mix_rows[0]);
-    g_esp=0x200;audio_mix_tick();assert(g_esp==0x204);
-    puts("PASS: native audio subpages, exact percent choices, saved mix, failure rollback and original-menu return");
+    puts("PASS: native audio choices, exact percentages, live persistence and failed-save rollback");
 }

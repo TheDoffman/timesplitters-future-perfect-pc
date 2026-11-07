@@ -26,15 +26,18 @@ OFF restores ordinary routing and clears stream filtering; future gunfire
 parameters retain the original range. Already queued PCM drains normally, so
 SDL changes retain its documented queue delay rather than flushing sound.
 
-The original Audio Options retains its four profile controls and hidden subtitle
-record, with a compact Audio Mix link before Accept/Cancel. Mix provides six
-percent controls plus Enhancements and Listening subpages. Enhancements exposes
-the master and four individual choices; Listening exposes Dialogue focus and
-Original/Reduced/Night impact range. Profile rows inherit the original absolute
-height; custom pages use automatic rows and descriptor-scoped glyph scaling.
-Failed saves restore the previous selector value. See the
-[shared mix and listening contracts](audio-overhaul.md) for persistence,
-ownership and acceptance limits.
+Audio Options uses the same flat top tabs as Video and Controls in the main
+menu and pause menu: **Volume**, **Mix**, **Enhancements**, and **Listening**.
+Volume retains the original four profile controls and hidden subtitle record;
+Accept/Cancel still save/discard the profile draft. Mix provides six percentage
+controls, Enhancements the master and four individual choices, and Listening
+Dialogue focus and Original/Reduced/Night impact range. These newer controls
+still apply and save live; switching tabs preserves the profile draft.
+The common compact font, silver dividers, rounded hover highlight, tab sounds,
+Left/Right arrows, controller LB/RB and footer hints match the other settings.
+Failed sidecar saves restore the previous selector. See the
+[shared mix and listening contracts](audio-overhaul.md) and
+[menu architecture](../agent-context/audio-options.md) for persistence and validation.
 
 The shared HLE still asks the original XDK 5849 calculator for distance, cone,
 mix-bin and headroom attenuation. `0040-dsound-positional-stereo.patch` also

@@ -43,7 +43,7 @@ static void settings_tabs_paint(uint32_t menu,const float bounds[4],
             hovered=(int)((px-bounds[0])/width);
     }
     int focused=guest_writable(menu,0x190) &&
-        (WORD_AT(menu+0x18c)==120u || WORD_AT(menu+0x18c)==130u);
+        (WORD_AT(menu+0x18c)==120u || WORD_AT(menu+0x18c)==130u || WORD_AT(menu+0x18c)==140u);
     int highlighted=hovered>=0?hovered:focused?active_index:-1;
     for(int i=0;i<count;i++) {
         float x=bounds[0]+width*i;

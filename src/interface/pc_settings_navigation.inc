@@ -4,7 +4,7 @@ static uint32_t settings_tabs_font(uint32_t menu,uint32_t fallback)
     uint32_t row=guest_writable(menu,0x17c)?WORD_AT(menu+0x178):0;
     for(unsigned n=0;row && n<64 && guest_writable(row,0x2c);n++,row=WORD_AT(row+4)) {
         uint32_t type=WORD_AT(row),id=WORD_AT(row+0x14);
-        if(id!=120u && id!=130u && !(WORD_AT(row+0x28)&0x20u) &&
+        if(id!=120u && id!=130u && id!=140u && !(WORD_AT(row+0x28)&0x20u) &&
            (type==4 || type==7 || type==8))return WORD_AT(row+0x1c);
     }
     return fallback;
@@ -71,7 +71,7 @@ static void settings_tabs_footer(uint32_t menu)
 {
     if(settings_footer_menu!=menu)return;
     if(!((video_font_menu(menu) && page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) ||
-         (controls_font_menu(menu) && controls_tabs_visible())))return;
+         (controls_font_menu(menu) && controls_tabs_visible()) || audio_font_menu(menu)))return;
     extern void sub_00041DC0(void),sub_0003FCF0(void),sub_0003F8D0(void);
     static uint32_t scratch;if(!scratch)scratch=xbox_HeapAlloc(256,4);if(!scratch)return;
     snprintf((char *)(g_xbox_mem_offset+scratch+8),248,"%s",pc_prompts_keyboard_active()?

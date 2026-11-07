@@ -1,3 +1,26 @@
+Audio Options tabs (2026-11-07, local feature/audio-options-tabs after95aca21b):
+Volume/Mix/Enhancements/Listening share Video/Controls layout in frontend and
+pause, preserving native profile Accept/Cancel and immediate sidecar saves.
+Windows x64 focused suites:35 passed/two platform skips; portable audio choice/
+persistence fixture on Ubuntu24.04/WSL:one passed/14 deselected. Normal Windows
+Release, builtin checks and matching crash-symbol checks pass with MSVC19.44.35224
+x64/SDK10.0.26100. Final executable SHA256
+3874db4350d9f9d72a7ae15d890743951ae9e2c5a5704e7770865a033ee77108.
+Actual D3D8/RTX4070SUPER review: all four frontend1280x960 and paused1680x720
+tabs fit; shared font/dividers/footer, native16-step compact bars and keyboard
+Left/Right work. A volume draft survives tab changes, Accept/reopen retains it,
+and a later edit is discarded through Cancel/reopen; header Back returns to
+pause. Dialogue focus saves immediately and persists into a fresh process.
+Disposable checked Test Lab saves/config only; personal data and canonical fixture
+are untouched, owned sessions stop and disposable partition images are recycled.
+The initial live review caught duplicate header/native value alignment and a
+too-low Mix anchor; blank header/native row mode and largest-page anchoring fix
+those. Full-width console bars were replaced by the existing compact settings
+bar and matching mouse capture; original draft/preview/input policy remains.
+Source/manifest/sealed-executable identity matches; ignored receipt is
+logs/audio-tabs-verification.json. Physical controller/split-screen and native
+Mac/Linux menu scenes remain unverified. No remote push or merge.
+
 ## Weapon FOV exposed shoulder geometry (uncommitted after db029630)
 
 Reproduced on Windows: Arcade Cortez at weapon150/base100 shows a large right-edge
