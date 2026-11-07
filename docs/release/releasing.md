@@ -7,9 +7,9 @@
 Game and launcher versions are independent. The next Stable game source version
 is **0.5.2**, including Developer Tools, shared in-game fullscreen controls and
 native multiplayer lobby-return/save fixes, and bundling launcher **1.5.2**.
-Prepare Windows first and Linux second as a draft; native Mac assets are added
-from the maintainer's Mac at the same release revision before public release.
-This source change does not publish a release or establish full campaign/platform
+Windows and Linux packages are uploaded as a draft at tag **v0.5.2**, source
+**9b6db3ee**. Native Mac assets must be built/validated from that exact tag before
+public release. Draft preparation does not establish full campaign/platform
 validation. Historical
 alpha and `-preview.N` releases remain available in Game versions; do not
 relabel their assets or offer them as Beta updates.
