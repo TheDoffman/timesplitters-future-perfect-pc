@@ -1,3 +1,4 @@
+[Uplink throw tests and policy](native-uplink.md#throw-impulse).
 [Vietnam performance checks](network-performance.md).
 
 [Tools](developer-tools-integration.md).
@@ -19,11 +20,11 @@ Mac storage tests: see launcher.md.
 # Build/tests ([MSAA](smaa.md))
 
 Audio: [acceptance gates](../development/audio-overhaul-acceptance.md).
-Media CI selects audit/candidate/loop/measurement fixtures on
-Windows/macOS/Linux; compatible headers never establish asset identity.
-Scene/guest fixtures check cache/pan/split fallback; gain C++ includes initializer_list.
-Audio fixtures cover32 feature combinations,
-unknown-file preservation, speech ownership, ducking, impact reduction and queued gains.
+Media CI: audit/candidate/loop/measurement fixtures on all hosts;
+compatible headers do not establish identity.
+Scene/guest: cache/pan/split fallback; gain C++ includes initializer_list.
+Audio fixtures:32 feature combinations, unknown-file preservation,
+speech ownership, ducking, impact reduction, queued gains.
 Stream fixture:8kHz/320-byte callback refill, completion order and dispatch fallback.
 `test_audio_output_gain.py`: exact mute/queue retention; Windows capture preflight.
 [Capture and bounded build](../development/audio-overhaul.md#process-output-capture).

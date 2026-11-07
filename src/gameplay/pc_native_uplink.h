@@ -20,4 +20,18 @@ static inline uint32_t pc_native_uplink_gate(uint32_t hand,uint32_t value)
     return state && state<=UINT32_MAX-0x34u &&
            *(const uint32_t *)(s+0x30)==36 ? 1u : value;
 }
+/* US350320 releases a single force through 351AA0/16C8F0. The body solver
+ * integrates and clears it on the next native interval. Preserve its authored
+ * one-60-Hz-frame impulse, including original slow-motion scaling; continuous
+ * pull forces and unrelated rigid-body forces must not receive this multiplier. */
+static inline float pc_native_uplink_throw(float strength,float scale)
+{
+    if(g_tsfp_native_timing_active) {
+        float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
+        float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        if(raw>0.f && raw<1.f && game>0.f && isfinite(game))
+            return (strength*scale)/raw;
+    }
+    return strength*scale;
+}
 #endif
