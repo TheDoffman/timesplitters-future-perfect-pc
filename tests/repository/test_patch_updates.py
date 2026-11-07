@@ -280,6 +280,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
                           '0990-story-caption.patch',
                           '1000-objectives-ui-integration.patch',
                           '1090-spirit-rendering.patch',
+                          '2720-viewmodel-shoulder-visibility.patch',
                           '1100-menu-mouse.patch',
                           '1130-ghost-target-feedback.patch',
                           '1140-menu-mouse-source.patch',
@@ -323,6 +324,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     assert 'pc_input_radial_axis_magnitude' in bindings
     assert 'use_pad_defaults = have_pad && (auto_pad >= 0 || c->pad_fallback)' in bindings
     assert b'pc_display_weapon_slots();' in manual.read_bytes()
+    assert b'pc_viewmodel_node_hidden()' in manual.read_bytes()
     assert b'pc_display_keycap_text(sub_00040FA0_gen);' in manual.read_bytes()
     assert b'pc_display_keycap_glyph(sub_00040260_gen);' in manual.read_bytes()
     device = (checkout / 'src/d3d/d3d8_device.c').read_bytes()

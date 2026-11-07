@@ -1,3 +1,5 @@
+[Arms](video-options.md).
+
 [Uplink throw tests and policy](native-uplink.md#throw-impulse).
 Networking eligibility: `pc_network_enabled()` reads launch environment/config once,
 then uses shared atomic flags in the indirect-dispatch hot path. The System Link

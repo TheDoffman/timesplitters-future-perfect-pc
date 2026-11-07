@@ -1,5 +1,9 @@
-[Uplink throw tests and policy](native-uplink.md#throw-impulse).
-[Vietnam performance checks](network-performance.md).
+2720: historical fixture defers until full migration, then asserts its hook.
+
+[Arms tests](video-options.md).
+
+[Throw](native-uplink.md).
+[Vietnam](network-performance.md).
 
 [Tools](developer-tools-integration.md).
 

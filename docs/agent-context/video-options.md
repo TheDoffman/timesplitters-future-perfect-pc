@@ -91,3 +91,20 @@ transitions, Keep persistence and timeout restoration pass under Ubuntu/WSL
 software Vulkan. Linux launcher UI checks pass. Wayland/WSLg self-tests pass on
 sequential retry after an initial transient; physical desktop/Deck and native
 Mac acceptance remain pending. See linux-game.md and STATUS for measured scope.
+
+## First-person shoulder visibility
+
+Additive patch2720 extends the existing US18EA90 node-submission wrapper.
+`src/graphics/pc_viewmodel_visibility_guest.inc` matches the submitted instance
+against the active player's separate first-person arms entity (context+E84,
+created by US D35B6/D35C0). At Weapon FOV above100, it omits rigid shoulder
+roots: parent0, bone1/10, type0, with a validated root and bounded node table.
+It does not alter asset data, transforms, animation, projection or world actors.
+US8F5E0 still traverses child nodes, so skinned upper arms, elbows, wrists and
+fingers remain submitted. Default/reduced Weapon FOV retains original behavior.
+Other players' arms are selected through the active viewport context, not P1.
+
+`tests/graphics/test_viewmodel_visibility.py` exercises the production predicate
+with captured rig topology, unrelated ownership, retained child/skinned nodes,
+original FOV and invalid pointers/counts. It is registered in runtime-patches CI;
+visual acceptance and native-platform execution are separate checks.

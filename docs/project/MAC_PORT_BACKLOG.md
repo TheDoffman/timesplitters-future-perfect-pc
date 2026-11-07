@@ -1,3 +1,8 @@
+Weapon FOV first-person shoulder filter (uncommitted after db029630): shared
+guest node policy and patch2720, no OS-specific rendering adapter or asset edit.
+Windows predicate/FOV/spirit fixtures pass. Native Mac/Linux build and gameplay
+acceptance remain pending; Windows visual validation is recorded in STATUS.
+
 Audio overhaul closure (2026-11-07): the user defers remaining speakers,
 multiple-controller and native Mac/Linux checks as unverified follow-ups. The
 implemented/common audio work and accepted Windows/headphone results are closed

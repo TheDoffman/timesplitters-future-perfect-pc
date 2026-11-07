@@ -1,3 +1,25 @@
+## Weapon FOV exposed shoulder geometry (uncommitted after db029630)
+
+Reproduced on Windows: Arcade Cortez at weapon150/base100 shows a large right-edge
+shoulder with the automatic starting weapon. Reporter additionally supplied
+Cortez bat/brick captures on Disco at150/100 and reported150/90; Harry Tipper was
+also named. Original100 behavior is preserved by the candidate filter.
+The shared18EA90 hook skips only owned first-person rigid shoulder-root geometry;
+its original child traversal and animation remain intact. No launcher change.
+Targeted Windows fixtures: viewmodel visibility1passed; FOV/spirit6passed,
+2native-Mac-only compile checks skipped. Full Windows tsfp Build passed with test-only RECOMP_PAD_API=xinput.
+Same-position before/after Cortez automatic-weapon captures at150/100 show the
+right-edge shoulder removed, with hands/gun and firing intact. The crowd runner
+was deliberately stopped after these captures; its four-checkpoint completion
+assertion therefore failed, and this is not a completed crowd benchmark.
+Corrected Disco captures at150/100 also verify Cortez bat and brick views,
+brick release (ammo20 to19), and Harry Tipper brick views without the large
+shoulder obstruction. A final150/90 dual-pistol capture is clean, but its
+automated route selected a different match/character than intended and the
+player died before reload validation; Harry90/reload is not verified.
+Repository context/backlog fixtures:22passed. Isolated profile signatures valid.
+No Mac/Linux native execution or physical-user acceptance claimed.
+
 ## 2026-11-07 - PR523 dialogue silence-tail correction
 
 Automated review reproduces Dialogue focus remaining active after speech has
