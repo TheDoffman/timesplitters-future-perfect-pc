@@ -71,6 +71,18 @@ availability and partition balance. Measure the first new CI runs before
 claiming a wall-clock improvement; splitting jobs increases runner concurrency
 and repeats per-job setup.
 
+## Measured hosted result
+
+[PR533's first full run](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/42525494549)
+reached the required gate in **7m53s**, compared with **17m12s** for the
+[matching main baseline](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/42508588658):
+**54.2% less elapsed time**, including setup and runner queues. All22 selected
+jobs passed on the first attempt. Per-host downloaded inventories confirmed no
+missing/overlapping cases or newly non-passing baseline cases; Windows and Mac
+each gained23 native scheduling/reporting regressions. Full measurements and
+scope are recorded in [STATUS](../project/STATUS.md). This is an observed run,
+not a guaranteed service time; runner availability and CPU/image differences vary.
+
 ## Merging and repository automation
 
 If `main` advances, use **Update branch** or merge `main` into the PR branch,

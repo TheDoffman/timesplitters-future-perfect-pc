@@ -1,3 +1,35 @@
+## Hosted PR feedback verification (2026-11-08)
+
+Draft PR533, source d7fc345d570e6378eb6f249a7ed41af0738f3cd3, tested merge
+1cd2fd695fe212478d11a19f3ddff383c8323636 against base
+dfd6573122d9c9c967ceda558313ae07ccb4c613. GitHub Actions run
+[42525494549](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/42525494549)
+passed all22 selected jobs, including Windows/Mac patch/native/release, Mac
+MoltenVK GPU contracts, Linux software-Vulkan foundation, all three launcher
+hosts and PR validation. Three unrelated repository suites skipped as planned.
+This establishes CI contracts on those hosts, not private-game or gameplay parity.
+
+Measured workflow creation to required-gate completion, including setup/queue:
+main baseline run42508588658 took1,032s (17m12s); PR run42525494549 took473s
+(7m53s),559s/54.2% less waiting. The median of six recent successful main runs
+was910.5s, so this PR was48.1% below that median. This is an observed hosted run,
+not a guaranteed duration; runner availability and image/CPU differences remain.
+
+Downloaded per-host case inventories verify zero omissions, overlap, or newly
+non-passing baseline cases. Patch collections retain76 cases on each host;
+release retains235. Native Windows3,460->3,483 and Mac3,450->3,473 include23 new
+scheduling/reporting regressions each. Existing skip outcomes are preserved.
+Slowest parallel pytest elapsed times: Windows patches375s vs960s baseline;
+Windows native293s vs661s; Mac patches114s vs356s; Mac native378s vs498s.
+Mac GPU finished2m37s after starting, ahead of the long native groups. Release
+jobs finished in20s(Mac)/40s(Windows), rather than waiting behind native work.
+
+The Windows patch/native matrices and independent GPU/release jobs required no
+repair push to pass their first hosted run. The draft PR remains unmerged and
+branch protection is unchanged. A documentation-only evidence commit follows
+this source run; final PR checks are repeated on that revision. Timing reports
+cache measurements only; test outcomes and compiled fixtures were not reused.
+
 ## Faster PR feedback (2026-11-08; local, uncommitted)
 
 Base main: dfd6573122d9c9c967ceda558313ae07ccb4c613; task branch
