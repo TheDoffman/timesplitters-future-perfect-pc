@@ -3,8 +3,8 @@ Windows worktree retained CRLF and generated a stale fresh-checkout index.
 Normalize those local patch files before refresh; patch logic is unchanged.
 
 Developer Tools/main integration preserves both additive patch families. The
-ordered tail is92 entries: shared-font2620, native input2630, then config-source2595 and
-MSAA/shared-depth2600. The generated index and exact-order fixture use the
+ordered tail is93 entries: shared-font2620, native input2630, config-source2595,
+MSAA/shared-depth2600, then inclusive portal scissors2725. The generated index and exact-order fixture use the
 resolved loader. Older patch-tail counts below describe earlier revisions.
 
 The shared-font typography follow-up indexes2620 after2610 (tail89). Font

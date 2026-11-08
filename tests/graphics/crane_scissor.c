@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "pc_ui_layout.h"
+#include "graphics/guest_scissor.h"
 #define CHECK(x) do{if(!(x)){fprintf(stderr,"FAIL: %d %s\n",__LINE__,#x);exit(1);}}while(0)
 #define GL_SCISSOR_TEST 1
 static struct {unsigned backbuf_w,backbuf_h;} g={640,480};

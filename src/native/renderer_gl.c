@@ -24,6 +24,7 @@
 #include "rhi.h"
 #include "graphics/combiner_constants.h"
 #include "graphics/native_hud.h"
+#include "graphics/guest_scissor.h"
 static PcCombinerConstants native_float_constants;
 #include "graphics/present_metrics.h"
 #include "settings_macos.h"
@@ -1407,14 +1408,12 @@ static void native_apply_scissor(void) {
     double sy=native_scene_active?(double)native_scene_h/g.backbuf_h:1;
     int32_t clip[4]={g_scissor_rect.x1,g_scissor_rect.y1,g_scissor_rect.x2,g_scissor_rect.y2};
     pc_ui_vignette_clip(native_placement_tag,native_placement,clip);
-    double left=clip[0]*sx,right=clip[2]*sx;
-    if(native_scene_active){double anchor=native_scene_w*native_hud_anchor;
-        left=anchor+(left-anchor)*native_hud_k;right=anchor+(right-anchor)*native_hud_k;}
-    double top_y=clip[1]*sy,bottom_y=clip[3]*sy;
-    if(native_scene_active){double cy=native_scene_h*.5;
-        top_y=cy+(top_y-cy)*native_hud_ky;bottom_y=cy+(bottom_y-cy)*native_hud_ky;}
-    int top=(int)top_y,bottom=(int)bottom_y;
-    int x=(int)left,r=(int)right,height=(int)(native_target_height*sy);
+    int32_t bounds[4];
+    pc_guest_scissor(clip,sx,sy,native_scene_active?native_hud_k:1,
+        native_scene_active?native_hud_ky:1,native_scene_w*native_hud_anchor,
+        native_scene_h*.5,bounds);
+    int x=bounds[0],top=bounds[1],r=bounds[2],bottom=bounds[3];
+    int height=(int)(native_target_height*sy);
     glEnable(GL_SCISSOR_TEST);glScissor(x,height-bottom,r>x?r-x:0,bottom>top?bottom-top:0);
 }
 void xbox_D3D8SetScissors(UINT count,BOOL exclusive,const D3DRECT *rects) {

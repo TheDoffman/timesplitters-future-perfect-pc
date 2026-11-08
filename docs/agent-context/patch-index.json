@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "252731b3dec628c79d765691e96602f63b18d1e7bd35344666f02cb514028f1f",
+  "loaderSha256": "9cf3c9acb92ccac0de2e2b772252d570b80c1f359791b067795e68ad4fadf7df",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3786,6 +3786,14 @@
       "targets": [
         "src/d3d/d3d8_resources.c",
         "src/d3d/d3d8_xbox.h"
+      ]
+    },
+    {
+      "name": "2725-inclusive-portal-scissors.patch",
+      "path": "patches/graphics/rendering/2725-inclusive-portal-scissors.patch",
+      "sha256": "9a69229c350c4478444fcffb6b21d56967743f967a1d75ec84da98b7b86010b0",
+      "targets": [
+        "src/d3d/d3d8_device.c\r"
       ]
     }
   ]

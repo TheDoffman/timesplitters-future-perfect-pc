@@ -1,4 +1,5 @@
-2720: historical fixture defers until full migration, then asserts its hook.
+[Clips](portal-scissors.md).
+2720: defer fixture until migration.
 
 [Arms tests](video-options.md).
 

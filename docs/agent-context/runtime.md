@@ -1,3 +1,4 @@
+[Portal clips](portal-scissors.md).
 [Tools](developer-tools-integration.md).
 
 [FOV node filter](video-options.md); [Uplink](native-uplink.md).
@@ -13,8 +14,7 @@ Story lobby host loss: additive2460 wraps1AF950. The shared menu adapter scopes
 the native guest-lobby8D notification to main return, preserving transport reset
 and rebuilding main in its own layout context. See [contracts](systems-details.md).
 
-Rejoin view/weapon lifetime uses existing D4BE0 camera and A9070 world-remove
-wrappers. Rejoin restores a missed camera-end transition once;
+Rejoin uses the D4BE0/A9070 camera/world wrappers. Rejoin restores a missed camera-end transition once;
 world identity excludes native first-person viewport models before cached-key
 lookup. No wrapper or generated-code change is needed. See
 [contracts](systems-details.md).
