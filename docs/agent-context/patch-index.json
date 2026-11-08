@@ -3799,9 +3799,9 @@
     {
       "name": "2940-modern-control-presets.patch",
       "path": "patches/input/2940-modern-control-presets.patch",
-      "sha256": "7296de91cb4f27e59de79e868a5b2d2503fd87d402d05646b4256878022b4012",
+      "sha256": "543c5e0871e4e9080aa334aa770ee22b115a1f2fee2a2e5d7e8cb4231b8d2347",
       "targets": [
-        "src/input/input_bindings.c\r"
+        "src/input/input_bindings.c"
       ]
     }
   ]

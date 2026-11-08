@@ -1,3 +1,7 @@
+PR #528 publication: Modern control presets committed on feature/modern-control-presets.
+Windows Release/full launcher checks pass; initial CI index line-ending mismatch
+corrected to committed LF. PR/main CI confirmation pending. Private files excluded.
+
 Modern-seeded Custom for new players (local follow-up): fresh host settings
 seed Modern PC raw bindings and custom_binding_semantics=1; existing files never
 receive this marker. Editable Custom keyboard inputs/prompts follow native action
