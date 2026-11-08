@@ -1,3 +1,36 @@
+Settings formatted-caption repair/matrix (local after e7d6fb07): shared
+pc_settings_row_alignment.inc preserves native case flags for scale escapes;
+plain Audio captions retain consistent uppercase. No OS adapter change. Windows
+focused/build checks and nine main/pause render-resolution captures pass; see
+STATUS for exact scope. Native Mac/Linux scene, physical pad and split-screen
+acceptance remain pending; Windows evidence does not establish those hosts.
+
+Settings font consistency (local after6ac74150): common skin option-font policy
+in pc_settings_row_alignment.inc and shared tab fitting/navigation, no OS adapter.
+Windows fixtures/build/main scene checks pass. Native Mac/Linux visual acceptance,
+physical controller and split-screen remain pending; see STATUS for measured scope.
+
+Settings row centring (local after cdb16dbb): shared pc_settings_row_alignment.inc,
+pc_display_ui.inc, pc_audio_tabs.inc and pc_menu_sliders.inc. Native glyph metrics,
+paint offsets and pointer geometry are common to all hosts; no OS adapter needed.
+Windows focused/build and actual main menu review pass; native Mac/Linux visual,
+physical controller and split-screen acceptance remain pending. See STATUS.
+
+Audio Mix sliders/divider spacing (after974562fb, local): implemented in shared
+pc_audio_menu.inc/pc_audio_tabs.inc, pc_menu_sliders.inc and pc_settings_spacing.inc.
+No OS adapter change: native814B0 bar, common input/persistence and scoped skin
+height serve all hosts. Windows Release/main4:3/ultrawide pause and pointer/keyboard
+checks pass; native Mac/Linux game UI and physical pad/split-screen remain pending.
+Portable Linux audio persistence fixture passes. See STATUS for measured scope.
+
+Audio Options tabs (uncommitted after95aca21b): shared implementation in
+src/interface/pc_audio_tabs.inc and pc_audio_menu.inc; Volume/Mix/Enhancements/
+Listening reuse the existing guest menu painter and host-neutral input/persistence.
+No new Mac adapter is needed. Windows Release and actual frontend4:3/pause
+ultrawide tabs, profile Accept/Cancel and live sidecar saves pass. Native-widget
+tests cover ownership/actions/queued input. Native Mac/Linux game build and visual
+acceptance remain pending; see STATUS for evidence.
+
 Weapon FOV first-person shoulder filter (uncommitted after db029630): shared
 guest node policy and patch2720, no OS-specific rendering adapter or asset edit.
 Windows predicate/FOV/spirit fixtures pass. Native Mac/Linux build and gameplay

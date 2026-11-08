@@ -7,7 +7,7 @@ typedef struct MenuSliderTrack {
     unsigned sw,sh;
     uint64_t time;
 } MenuSliderTrack;
-enum { MENU_MUSIC, MENU_SOUND, MENU_SENSITIVITY, MENU_FOV, MENU_KEYBOARD_SENSITIVITY, MENU_WEAPON_FOV, MENU_SLIDER_COUNT };
+enum { MENU_MUSIC, MENU_SOUND, MENU_SENSITIVITY, MENU_FOV, MENU_KEYBOARD_SENSITIVITY, MENU_WEAPON_FOV, MENU_AUDIO_MIX, MENU_SLIDER_COUNT=MENU_AUDIO_MIX+6 };
 static MenuSliderTrack menu_slider_tracks[MENU_SLIDER_COUNT];
 static uint32_t menu_slider_drag;
 static MenuSliderTrack menu_slider_owner;
@@ -54,31 +54,48 @@ void pc_display_menu_audio_draw(void (*original)(void),int compact)
  * actual call to the shared bar painter within this narrowly scoped wrapper.
  * Other callers (including the MapMaker capacity meter) stay display-only. */
 static uint32_t menu_slider_draw_menu,menu_slider_draw_item;
+static float menu_slider_draw_bounds[4];
+static int menu_slider_draw_bounds_valid;
 void pc_display_menu_sensitivity_draw(void (*original)(void))
 {
     uint32_t previous_menu=menu_slider_draw_menu,previous_item=menu_slider_draw_item;
+    float previous_bounds[4];memcpy(previous_bounds,menu_slider_draw_bounds,sizeof previous_bounds);
+    int previous_valid=menu_slider_draw_bounds_valid;
+    uint32_t rect=WORD_AT(g_esp+12);menu_slider_draw_bounds_valid=guest_writable(rect,16);
+    if(menu_slider_draw_bounds_valid)memcpy(menu_slider_draw_bounds,(void *)(g_xbox_mem_offset+rect),sizeof menu_slider_draw_bounds);
     menu_slider_draw_menu=WORD_AT(g_esp+4);menu_slider_draw_item=WORD_AT(g_esp+8);
     memset(&menu_slider_tracks[MENU_SENSITIVITY],0,sizeof(MenuSliderTrack));
     original();
     menu_slider_draw_menu=previous_menu;menu_slider_draw_item=previous_item;
+    memcpy(menu_slider_draw_bounds,previous_bounds,sizeof previous_bounds);menu_slider_draw_bounds_valid=previous_valid;
 }
 void pc_display_menu_slider_bar(void (*original)(void))
 {
+    uint32_t frame=g_esp,saved_y=WORD_AT(frame+12);int centered=0;
     if(menu_slider_draw_menu && WORD_AT(g_esp)==0x002EA3E0u &&
        guest_writable(menu_slider_draw_item,0x10c) &&
-       WORD_AT(menu_slider_draw_item+0x14)==9 && WORD_AT(0x007BA9E0u)<4)
+       WORD_AT(menu_slider_draw_item+0x14)==9 && WORD_AT(0x007BA9E0u)<4) {
+        if(controls_font_menu(menu_slider_draw_menu) && menu_slider_draw_bounds_valid &&
+           isfinite(menu_slider_draw_bounds[1]) && isfinite(menu_slider_draw_bounds[3])) {
+            centered=1;WORD_AT(frame+12)=(uint32_t)(int)((menu_slider_draw_bounds[1]+menu_slider_draw_bounds[3]-
+                                            (float)(int32_t)WORD_AT(frame+20))*.5f);
+        }
         menu_slider_capture(MENU_SENSITIVITY,menu_slider_draw_menu,menu_slider_draw_item,
             (float)(int32_t)WORD_AT(g_esp+8),(float)(int32_t)WORD_AT(g_esp+12),
             (float)(int32_t)WORD_AT(g_esp+16),(float)(int32_t)WORD_AT(g_esp+20));
-    original();
+    }
+    original();if(centered)WORD_AT(frame+12)=saved_y;
 }
 static void menu_slider_fov_pointer(float x,float left,float width);
 static void menu_slider_weapon_fov_pointer(float x,float left,float width);
 static void menu_slider_keyboard_pointer(float x,float left,float width);
+static void menu_slider_audio_mix_pointer(unsigned index,float x,float left,float width);
 extern void sub_00045390(void),sub_00045820(void);
 static void menu_slider_set(const MenuSliderTrack *track,unsigned kind,float x)
 {
-    if(kind==MENU_KEYBOARD_SENSITIVITY) {
+    if(kind>=MENU_AUDIO_MIX && kind<MENU_AUDIO_MIX+6) {
+        menu_slider_audio_mix_pointer(kind-MENU_AUDIO_MIX,x,track->x,track->w);
+    } else if(kind==MENU_KEYBOARD_SENSITIVITY) {
         menu_slider_keyboard_pointer(x,track->x,track->w);
     } else if(kind==MENU_WEAPON_FOV) {
         menu_slider_weapon_fov_pointer(x,track->x,track->w);

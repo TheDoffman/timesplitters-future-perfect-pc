@@ -56,7 +56,7 @@ static int video_clicked_tab(void)
  * cooldown. Rebuild only after the outer dispatcher releases its row pointers. */
 static int menu_video_tabs_poll(uint32_t menu)
 {
-    if(controls_tabs_poll(menu))return 1;
+    if(controls_tabs_poll(menu) || audio_tabs_poll(menu))return 1;
     if(!video_font_menu(menu) || page==DISPLAY_CONFIRM || page==DISPLAY_RESTART ||
        !menu_mouse_context())return 0;
     PcMenuPointer pointer=pc_controls_menu_hover_pointer();
@@ -81,6 +81,7 @@ static void read_choices(void);
 static void menu_video_tabs_flush(void)
 {
     controls_tabs_flush();
+    audio_tabs_flush();
     if(video_pending_tab<0)return;
     if(!menu_mouse_context() || !video_font_menu(video_pending_menu) || page==DISPLAY_CONFIRM || page==DISPLAY_RESTART ||
        GetTickCount64()-video_pending_at>1000) {video_pending_tab=-1;return;}

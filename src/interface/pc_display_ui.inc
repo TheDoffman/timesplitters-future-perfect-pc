@@ -256,6 +256,7 @@ void pc_display_menu_backdrop(void (*original)(void))
 /* Scope actual glyph scale during main-menu construction/measurement and
  * row drawing. The spacing setter alone does not change the letters. */
 extern void sub_0003F8D0(void);
+#include "pc_settings_row_alignment.inc"
 static RECOMP_TLS int video_font_depth;
 /* The whole menu painter also owns selected values, which are drawn outside
  * the label-row routine. Scale the complete owned menu once. */
@@ -268,7 +269,8 @@ void pc_display_video_menu_font(void (*original)(void))
     memcpy(&WORD_AT(0x007E7270u),&x,4);memcpy(&WORD_AT(0x007E7280u),&y,4);
     guest_call(sub_0003F8D0,0);
     int previous_filter=pc_display_menu_font_filter(1);video_font_depth++;
-    original();
+    SettingsRowPaint rows;settings_rows_begin(&rows,WORD_AT(g_esp+4));
+    original();settings_rows_end(&rows);
     guest_call(sub_00022FF0,0);video_font_depth--;
     pc_display_menu_font_filter(previous_filter);
     WORD_AT(0x007E7270u)=saved_x;WORD_AT(0x007E7280u)=saved_y;
@@ -281,7 +283,10 @@ void pc_display_main_menu_font(void (*original)(void),int building)
     pc_prompts_layout_begin();
     uint32_t menu=WORD_AT(g_esp+4u),item=WORD_AT(g_esp+8u);
     int own_video=video_font_menu(menu) || controls_font_menu(menu) || audio_font_menu(menu);
-    if(own_video && video_font_depth) {original();pc_prompts_layout_end();return;}
+    if(own_video && video_font_depth) {
+        settings_row_center(menu,item,WORD_AT(g_esp+12));
+        original();pc_prompts_layout_end();return;
+    }
     int paused_video=(int32_t)WORD_AT(0x0079094Cu)<=100 && own_video;
     if((int32_t)WORD_AT(0x0079094Cu)<=100 && !paused_video) {original();pc_prompts_layout_end();return;}
     if(!building) {

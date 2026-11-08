@@ -1,3 +1,106 @@
+Settings resolution/aspect matrix (2026-11-07, local after e7d6fb07):
+Actual Windows Release/D3D8/RTX4070SUPER captures at640x480,1280x960,1280x1024,
+1280x720,1920x1080,1920x1200,3440x1440,3840x1080 and3840x2160. Each configuration
+covers all three settings menus in frontend and a paused live Story level:
+four Audio tabs; Video Display/Graphics/View & HUD/Advanced; Controls General,
+Controller/Keyboard & Mouse, Mouse options and both movement binding pages.
+252 actual PNGs have exact requested dimensions and native page-identity evidence;
+visible native row bounds remain within the canvas. Representative reviewed
+captions/values/bars, tab labels, dividers and footers fit with proportional centring.
+The first640 pass caught native scale escapes being uppercased into visible digits
+in Keyboard subpages. Shared plain-ASCII caption gating preserves original case
+flags for formatted text; the focused regression verifies both paths and restoration.
+Windows focused35 pass/two platform skips; supported Release/builtins and matching
+crash symbols pass. Source/manifest/sealed executable identity matches SHA256
+6ab01f96eeb9a3825cf916c8e90e75b7f306fa7745a471a54d3221435c75fbbd.
+High-resolution periodic frame dumping interfered with synthetic short holds;
+state-identified/fresh-frame capture and separate capture-disabled interaction
+runs distinguish screenshot overhead from ordinary menu input. No input policy edit.
+Main/pause Audio Mix midpoint clicks (integer-client rounding49..50%), held drags
+to0/100 and tab pointer/rapid-click routing are checked separately from captures.
+Only disposable per-case Test Lab configs/saves; personal data/canonical fixture
+preserved. Owned games stopped, locks cleared and disposable partition images recycled.
+Evidence and filterable gallery:logs/settings-resolution-matrix/index.html,
+observations.json per mode, build.json and summary.json. These are windowed Windows
+render-resolution checks, not every monitor/DPI/fullscreen combination. Native
+Mac/Linux scenes, physical controllers and split-screen remain unverified. No push.
+
+Settings font consistency (2026-11-07, local after6ac74150):
+Video/Controls/Audio rows and values use the skin ordinary option font,
+scoped/restored alongside alignment. Native size flags selected inconsistent
+presets; Audio sidecar captions now share native uppercase lettering. All tab
+strips fit against the same four-cell width, so three-tab sections no longer
+have larger text than Audio. Geometry, actions and save policy stay unchanged.
+Windows focused35 pass/two skips; supported Release/builtins/crash symbols pass.
+Actual1280x960 main Audio Mix, Video Display and Controller reviewed: consistent
+fonts and readable fitting labels. Pause Audio Mix/Video Display/Graphics also
+and Controller reviewed with matching row/tab sizes. Owned test game stopped,
+disposable partition images recycled. Source/manifest/sealed executable matches:
+b015dbe56aff34e95a7d47e886cca388eda6ba0c30d87ea42dbd776c6c9cc3e8.
+Native Mac/Linux scenes, physical controller and split-screen unverified. No push.
+Receipt:logs/settings-font-unison-verification.json.
+
+Settings row vertical centring (2026-11-07, local after cdb16dbb):
+Video/Controls/Audio caption and choice offsets now use actual compact-font text
+bounds, including ordinary glyph top bearings. Offsets/font state restore after
+paint. Audio bars and Controller Turn Speed use row midpoint for paint/capture;
+row sizes, hit areas, setting actions and persistence remain unchanged.
+Windows focused35 passed/two platform skips; supported Release/builtin checks and
+matching crash symbols pass. Actual1280x960 main Audio Mix/Video Display/Controller
+and pause Audio Mix review confirm aligned captions, values and bars. Owned games
+stopped and disposable partition images recycled. Source/manifest/sealed-executable
+identity matches; executable SHA256
+b1cb6fc31f70083c338c7a9fddacd7bccff8961f9c9fff4f06e89cf8658807aa.
+Native Mac/Linux scenes, physical controller and split-screen remain unverified.
+Only disposable test saves/config were used. No push/merge. Local receipt:
+logs/settings-row-alignment-verification.json.
+
+Audio Mix sliders and divider spacing (2026-11-07, after974562fb, local):
+All six Mix controls use compact native gradient bars with exact percentage
+captions,1% keyboard/controller directional steps and captured mouse dragging.
+Immediate sidecar saving/failure rollback remains; Volume keeps its native draft.
+Video/Controls/Audio reserve equal modest space around silver lines, including
+native footers, using scoped style height with restoration and no extra rows.
+Windows focused35 pass/two platform skips; Linux/WSL portable audio1 pass/14
+deselected. Normal Windows Release/builtin/matching-crash-symbol checks pass
+(MSVC19.44.35224 x64, SDK10.0.26100, D3D8/RTX4070SUPER). Current source/manifest/
+sealed-exe identity matches; executable SHA256
+b1a9f71009a29f7254a7fcca92501796380a0ba872c8795520c4e6b8c153dd27.
+Actual4:3 main Audio/Video/Controls spacing reviewed; final1680x720 main and
+pause Mix sliders align and fit, with readable captions, padded dividers/footer.
+Native-key replay changes Master100->99->100. Real project pointer clicks save50,
+and held dragging clamps/saves0 and100 independently of other categories in the
+final pause build. The first4:3 pointer attempt used framebuffer instead of the
+640x480 window client; corrected client coordinates pass. The initial Mix bars
+sat below captions; the custom row baseline was aligned and re-reviewed.
+Only disposable Test Lab state was used; owned games stop and partition images
+are recycled. Native Mac/Linux game UI, physical pad and split-screen acceptance
+remain unverified; no new OS adapter. Receipt:logs/audio-mix-sliders-verification.json.
+No push or merge.
+
+Audio Options tabs (2026-11-07, local feature/audio-options-tabs after95aca21b):
+Volume/Mix/Enhancements/Listening share Video/Controls layout in frontend and
+pause, preserving native profile Accept/Cancel and immediate sidecar saves.
+Windows x64 focused suites:35 passed/two platform skips; portable audio choice/
+persistence fixture on Ubuntu24.04/WSL:one passed/14 deselected. Normal Windows
+Release, builtin checks and matching crash-symbol checks pass with MSVC19.44.35224
+x64/SDK10.0.26100. Final executable SHA256
+3874db4350d9f9d72a7ae15d890743951ae9e2c5a5704e7770865a033ee77108.
+Actual D3D8/RTX4070SUPER review: all four frontend1280x960 and paused1680x720
+tabs fit; shared font/dividers/footer, native16-step compact bars and keyboard
+Left/Right work. A volume draft survives tab changes, Accept/reopen retains it,
+and a later edit is discarded through Cancel/reopen; header Back returns to
+pause. Dialogue focus saves immediately and persists into a fresh process.
+Disposable checked Test Lab saves/config only; personal data and canonical fixture
+are untouched, owned sessions stop and disposable partition images are recycled.
+The initial live review caught duplicate header/native value alignment and a
+too-low Mix anchor; blank header/native row mode and largest-page anchoring fix
+those. Full-width console bars were replaced by the existing compact settings
+bar and matching mouse capture; original draft/preview/input policy remains.
+Source/manifest/sealed-executable identity matches; ignored receipt is
+logs/audio-tabs-verification.json. Physical controller/split-screen and native
+Mac/Linux menu scenes remain unverified. No remote push or merge.
+
 ## Weapon FOV exposed shoulder geometry (uncommitted after db029630)
 
 Reproduced on Windows: Arcade Cortez at weapon150/base100 shows a large right-edge
