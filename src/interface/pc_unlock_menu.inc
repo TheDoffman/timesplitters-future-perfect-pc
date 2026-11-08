@@ -80,8 +80,10 @@ void pc_unlock_profile_init(void (*original)(void))
      * extension at that same boundary so reused guest slots cannot inherit it.
      * Loading/copying an existing profile retains its signed extension. */
     if(guest_writable(profile,PC_UNLOCK_PROFILE_SIZE) &&
-       guest_writable(identity=WORD_AT(profile),0x40) && WORD_AT(identity+0x24)==UINT32_MAX)
+       guest_writable(identity=WORD_AT(profile),0x40) && WORD_AT(identity+0x24)==UINT32_MAX) {
+        controls_new_profile(profile+4);
         memset((void *)((uintptr_t)(profile+PC_UNLOCK_OFFSET)+g_xbox_mem_offset),0,16);
+    }
 }
 static uint32_t uc_text(unsigned slot,const char *text)
 {

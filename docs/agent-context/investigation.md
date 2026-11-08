@@ -1,10 +1,10 @@
-Audio0059/0060 index hashes and target paths use committed LF bytes; an older
-Windows worktree retained CRLF and generated a stale fresh-checkout index.
-Normalize those local patch files before refresh; patch logic is unchanged.
+[Preset routing/order evidence](control-presets.md).
+PR528: normalize patch2940 to committed LF before index refresh; CRLF worktree
+bytes produced a stale hash/target on CI. Gameplay patch logic is unchanged.
 
 Developer Tools/main integration preserves both additive patch families. The
-ordered tail is93 entries: shared-font2620, native input2630, config-source2595,
-MSAA/shared-depth2600, then inclusive portal scissors2725. The generated index and exact-order fixture use the
+ordered tail is94 entries: shared-font2620, native input2630, config-source2595,
+MSAA/shared-depth2600, inclusive portal scissors2725, then control presets2940. The generated index and exact-order fixture use the
 resolved loader. Older patch-tail counts below describe earlier revisions.
 
 The shared-font typography follow-up indexes2620 after2610 (tail89). Font

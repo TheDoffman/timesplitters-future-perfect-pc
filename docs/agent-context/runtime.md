@@ -1,4 +1,4 @@
-[Portal clips](portal-scissors.md).
+[Custom seeds](control-presets.md).
 [Tools](developer-tools-integration.md).
 
 [FOV node filter](video-options.md); [Uplink](native-uplink.md).

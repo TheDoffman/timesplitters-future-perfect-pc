@@ -4,6 +4,7 @@
    audio/video, layout, highlighting and navigation stay in the guest engine. */
 #include "pc_display_menu.h"
 #include "pc_settings.h"
+#include "pc_controls.h"
 #include "pc_developer.h"
 #include "pc_debug.h"
 #include "graphics/graphics_settings.h"
@@ -114,6 +115,41 @@ static int guest_writable(uint32_t address,size_t bytes)
     return pc_display_writable(&region,g_xbox_mem_offset,address,bytes);
 }
 
+/* Context +0 is the global/network slot; +4 is local ownership (-1 remote). */
+static unsigned controls_context_port(uint32_t player)
+{
+    if(!guest_writable(player,8))return 4;
+    unsigned local=WORD_AT(player+4);
+    if(local>=4)return 4;
+    unsigned port=WORD_AT(0x6b93c0+local*4);return port<4?port:4;
+}
+
+/* Read each local player's live native action masks; never rewrite their saved
+ * profile. Native input polling calls this on the guest thread before sampling. */
+static int controls_gameplay_masks(unsigned port,unsigned masks[24],int *mounted)
+{
+    *mounted=0;
+    if(port>=4 || pc_controls_in_menu() || (int32_t)WORD_AT(0x79094c)>100 || WORD_AT(0x6b98a4)==2)return 0;
+    unsigned count=WORD_AT(0x790950),base=WORD_AT(0x7b0c48);
+    if(count>4 || !guest_writable(base,count*0x1584u))return 0;
+    for(unsigned i=0;i<count;i++) {
+        uint32_t player=base+i*0x1584u;
+        if(controls_context_port(player)!=port)continue;
+        uint32_t pause=WORD_AT(0x761c48);
+        if(guest_writable(pause,4) && (WORD_AT(pause)&1u))return 0;
+        masks[0]=WORD_AT(player+0x20);masks[1]=WORD_AT(player+0x4c);masks[2]=WORD_AT(player+0x24);
+        masks[8]=WORD_AT(player+0x1c);masks[9]=WORD_AT(player+0x18);
+        masks[10]=WORD_AT(player+0x30)|WORD_AT(player+0x44);
+        masks[11]=WORD_AT(player+0x34)|WORD_AT(player+0x48);
+        masks[12]=WORD_AT(player+0x38);masks[13]=WORD_AT(player+0x3c);
+        masks[18]=WORD_AT(player+0x2c);masks[23]=WORD_AT(player+0x28);
+        *mounted=WORD_AT(player+0x114)==0x80u;
+        if(*mounted)masks[0]=WORD_AT(player+0x24); /* Use also leaves fixed weapons. */
+        return 1;
+    }
+    return 0;
+}
+
 static float cutscene_camera_zoom(void)
 {
     PcDisplayMode mode = pc_display_effective();
@@ -181,6 +217,7 @@ static int discord_guest_read(void *context,uint32_t address,void *out,size_t by
 static void video_sidebar_tick(void);
 void pc_display_camera(void (*original)(void))
 {
+    pc_settings_gameplay_reader(controls_gameplay_masks);
     pc_developer_video_register(video_sidebar_tick);
 #ifdef TSFP_PC_DISCORD
     /* Sample guest RAM on its own thread; publish only plain values to IPC. */
@@ -1266,7 +1303,7 @@ static void apply_changes(void)
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART)apply_page=page;
     int display_changed=!mode_equal(staged,previous) || staged_fov!=previous_fov || staged_weapon_fov!=previous_weapon_fov;
     int rate_changed=staged_rate!=applied_rate,display_saved=0,rate_saved=0;
-    int restart_changed=graphics_restart_dirty(),graphics_saved=0;
+    int restart_changed=graphics_restart_dirty(),graphics_saved=0,aa_saved=0;
     int window_changed=staged_fullscreen!=previous_fullscreen,window_saved=0;
     TsfpGraphicsOptions previous_graphics=pc_graphics_get();
     /* Resolution is already previewed/confirmed. Persist before publishing
@@ -1288,7 +1325,11 @@ static void apply_changes(void)
     }
     if(window_changed && !pc_display_save_fullscreen(staged_fullscreen))goto failed;
     window_saved=window_changed;
-    if(staged_aa!=applied_aa && !pc_post_aa_set(staged_aa))goto failed;
+    if(staged_aa!=applied_aa) {
+        if(!pc_post_aa_set(staged_aa))goto failed;
+        aa_saved=1;
+    }
+    if(texture_choice!=applied_texture && !tsfp_texture_save_4k((int)texture_choice))goto failed;
     if(rate_changed)recomp_config_request_native_rate(pc_frame_rate_value(staged_rate));
     if(staged_subtitles!=applied_subtitles) {
         extern void sub_00069640(void);
@@ -1300,7 +1341,6 @@ static void apply_changes(void)
         }
         applied_subtitles=staged_subtitles;
     }
-    tsfp_texture_set_4k((int)texture_choice);
     previous_fullscreen=staged_fullscreen;
     previous=staged;previous_fov=staged_fov;previous_weapon_fov=staged_weapon_fov;applied_rate=staged_rate;applied_texture=texture_choice;
     applied_aa=staged_aa;
@@ -1322,7 +1362,8 @@ failed:
     }
     restored=(pc_display_fullscreen()==previous_fullscreen || pc_display_set_fullscreen(previous_fullscreen)) && restored;
     int window_restored=!window_saved || pc_display_save_fullscreen(previous_fullscreen);
-    int saved_back=window_restored && (!display_saved || (restored && pc_display_save())) && rate_restored && graphics_restored;
+    int aa_restored=!aa_saved || pc_post_aa_set(applied_aa);
+    int saved_back=aa_restored && window_restored && (!display_saved || (restored && pc_display_save())) && rate_restored && graphics_restored;
     snprintf(status,sizeof status,saved_back?"Could not save changes. Please try again.":"Could not restore saved display settings.");
     if(!restored) { deadline=GetTickCount64();return; }
     deadline=0;refresh(apply_page,0);

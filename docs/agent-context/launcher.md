@@ -1,3 +1,12 @@
+[Custom seeds](control-presets.md).
+
+Enhanced textures now round-trip the game's `pc-textures.ini` sidecar.
+GameSettings loads its value ahead of legacy launcher.enhanced_textures JSON;
+missing files retain the legacy preference. LauncherPlatform appends the file
+at settings index8 on all hosts. Save writes both formats in the existing
+transaction; stale models detect game edits before writing. Shared UI checks
+cover game-written ON/OFF, unrelated saves and concurrent edit rejection.
+
 Developer Tools enablement uses an inline amber warning and live assigned-shortcut
 hint directly beneath its checkbox; enabling never opens a prompt. RefreshBindings
 updates the hint after edits/unbinding. Shared UI checks preserve opt-in Save state

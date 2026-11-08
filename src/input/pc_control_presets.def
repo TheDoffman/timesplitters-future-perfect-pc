@@ -1,0 +1,7 @@
+/* Shared Modern PC overrides: action, first VK, second VK. Other keys retain factory defaults. */
+PC_MODERN_KEY(0, 69, 0)
+PC_MODERN_KEY(1, 70, 5)
+PC_MODERN_KEY(10, 66, 33)
+PC_MODERN_KEY(11, 86, 34)
+PC_MODERN_KEY(12, 81, 134)
+PC_MODERN_KEY(13, 39, 135)

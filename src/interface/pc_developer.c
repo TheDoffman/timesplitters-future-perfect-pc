@@ -268,6 +268,9 @@ static void activate(int direction) {
         }
     } else if(page==KEYBOARD) {
         if(selected<PC_ACTION_COUNT) {
+            if(!pc_settings_action_editable(draft.preset,selected)) {
+                snprintf(status,sizeof status,"Choose Custom in Controls to edit preset gameplay bindings.");return;
+            }
             if(direction){slot=!slot;return;}
             capture_action=selected;conflict_key=0;
             snprintf(status,sizeof status,"Press a binding; Delete unbinds, Escape cancels. Editing %s slot.",slot?"alternate":"primary");

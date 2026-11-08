@@ -593,6 +593,8 @@ int pc_controls_key_down(int key)
     return down;
 }
 
+int pc_controls_in_menu(void) {AcquireSRWLockShared(&lock);int value=menu_mode;ReleaseSRWLockShared(&lock);return value;}
+
 void pc_controls_menu_mode(int active)
 {
     int changed;

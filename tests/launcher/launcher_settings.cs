@@ -375,6 +375,7 @@ public static class LauncherSettingsChecks
                     var ui=new LauncherWindow(root,true);
                     try {
                         ui.ShowSettings();var host=(System.Windows.Controls.ContentControl)ui.Window.FindName("SettingsHost");
+                        Descendants(host).OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="KeyboardPreset").SelectedIndex=0;
                         Func<string,System.Windows.Controls.Button> button=label=>Descendants(host).OfType<System.Windows.Controls.Button>().Single(b=>b.IsEnabled && Convert.ToString(b.Content)==label);
                         var binding=Descendants(host).OfType<System.Windows.Controls.Button>().First(b=>Convert.ToString(b.ToolTip)==GameSettings.Labels[0]+", binding 1");
                         Click(binding);Require(Descendants(host).OfType<System.Windows.Controls.Border>().Any(b=>b.Name=="BindingCaptureArea"));
@@ -636,12 +637,12 @@ public static class LauncherSettingsChecks
                 Require(GameSettings.KeyCode(model.Binding(0)[0])==69 && GameSettings.KeyCode(model.Binding(0)[1])==32);
                 Reject(()=>model.Assign(0,2,'K',true));
                 model.Save();model=GameSettings.Load(root,null);
-                Require(model.Binding(0).Length==2 && !Read(root,"Settings/pc-controls.json").Contains("key:J"));
+                Require(model.Binding(0).Length==2 && Read(root,"Settings/pc-controls.json").Contains("key:J"));
             });
             Test("conflicting key requires move and removes only that key",()=>{
-                var model=GameSettings.Load(Root("conflict"),null);Reject(()=>model.Assign(14,1,69,false));
+                var model=GameSettings.Load(Root("conflict"),null);model.Assign(0,1,74,false);Reject(()=>model.Assign(14,1,69,false));
                 model.Assign(14,1,69,true);Require(GameSettings.KeyCode(model.Binding(14)[1])==69);
-                Require(model.Binding(0).All(t=>GameSettings.KeyCode(t)!=69));Require(model.Binding(0).Contains("key:SPACE"));
+                Require(model.Binding(0).All(t=>GameSettings.KeyCode(t)!=69));Require(model.Binding(0).Any(t=>GameSettings.KeyCode(t)==74));
                 model.Assign(34,0,112,true);Require(GameSettings.KeyCode(model.Binding(34)[0])==112);Reject(()=>model.Assign(0,0,122,true));
                 model.Assign(14,1,0,true);Require(model.Binding(14)[1]=="none");
             });

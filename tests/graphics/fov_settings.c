@@ -144,6 +144,9 @@ TUTORIAL_STUB(sub_0001ED50) TUTORIAL_STUB(sub_0001F090)
  * linked here, but fail if this settings-only fixture enters those paths. */
 void pc_controls_text_mode(uint32_t owner) {(void)owner;CHECK(0);}
 unsigned pc_controls_text_event(uint32_t owner) {(void)owner;CHECK(0);return 0;}
+void pc_settings_gameplay_reader(PcGameplayMasks reader) {(void)reader;}
+static int controls_test_menu_active=1;
+int pc_controls_in_menu(void) {return controls_test_menu_active;}
 void pc_controls_menu_mode(int active) { (void)active; CHECK(0); }
 PcMenuPointer pc_controls_menu_pointer(void) { CHECK(0); return (PcMenuPointer){0}; }
 static int tab_pointer_enabled;
@@ -238,6 +241,13 @@ static unsigned controls_test_saves,controls_test_previews;
 static PcSettings controls_test_settings;
 void pc_settings_defaults(PcSettings *s) {CHECK(controls_test_enabled);*s=controls_test_settings;s->sensitivity=.1;s->enabled=1;s->invert_y=0;}
 int pc_settings_read(PcSettings *s,char *e,size_t n) { (void)e;(void)n;CHECK(controls_test_enabled);*s=controls_test_settings;return 1; }
+void pc_settings_modern(PcSettings *s) {pc_settings_defaults(s);s->preset=1;}
+int pc_settings_custom_read(PcSettings *s,char *e,size_t n) {return pc_settings_read(s,e,n);}
+static int test_custom_semantics;
+int pc_settings_custom_semantics(void) {return test_custom_semantics;}
+static int test_controller_presets[4];
+int pc_settings_controller_preset(unsigned port) {CHECK(port<4);return test_controller_presets[port];}
+int pc_settings_controller_preset_save(unsigned port,int value,char *e,size_t n) {(void)e;(void)n;CHECK(port<4);test_controller_presets[port]=value;return 1;}
 static int test_player_devices[4]={-2,-1,-1,-1},test_player_saves;
 void pc_settings_players_read(int d[4]) {memcpy(d,test_player_devices,sizeof test_player_devices);}
 int pc_settings_players_save(const int d[4],char *e,size_t n) {(void)e;(void)n;memcpy(test_player_devices,d,sizeof test_player_devices);test_player_saves++;return 1;}
@@ -449,6 +459,7 @@ static void nested_match_options(void) {
     CHECK(WORD_AT(0x78ad2c)==9);
     g_esp+=4;
 }
+static void fixture_profile_initialized(void) {g_esp+=4;}
 int main(int argc,char **argv)
 {
     CHECK(argc==2); CHECK(!_putenv_s("TSFP_DISPLAY_CONFIG",argv[1]));
@@ -466,6 +477,71 @@ int main(int argc,char **argv)
     CHECK(pc_post_aa_set(0) && !smaa_preference && !graphics_options.edge_smoothing);
     void *mem=VirtualAlloc(NULL,0x800000,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE);CHECK(mem);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)mem;
+    { /* New native profiles seed editable Modern; existing profiles stay byte-identical. */
+        uint32_t profile=0x44000,identity=0x48000;unsigned char retained[0x7c];
+        WORD_AT(profile)=identity;WORD_AT(identity+0x24)=0;WORD_AT(profile+4)=1;
+        const unsigned stock[14]={0x800,0x2000,0x80,0x40,0x400,0x10,4,8,1,2,0,4,8,0x1000};
+        for(unsigned i=0;i<22;i++)WORD_AT(profile+8+i*4)=i<14?stock[i]:0xdead0000u+i;
+        memcpy(retained,(void *)(g_xbox_mem_offset+profile+4),sizeof retained);
+        test_custom_semantics=1;g_eax=profile;pc_unlock_profile_init(fixture_profile_initialized);
+        CHECK(!memcmp(retained,(void *)(g_xbox_mem_offset+profile+4),sizeof retained));
+        WORD_AT(identity+0x24)=UINT32_MAX;test_custom_semantics=0;g_eax=profile;pc_unlock_profile_init(fixture_profile_initialized);
+        CHECK(!memcmp(retained,(void *)(g_xbox_mem_offset+profile+4),sizeof retained));
+        test_custom_semantics=1;g_eax=profile;pc_unlock_profile_init(fixture_profile_initialized);
+        CHECK(!(WORD_AT(profile+4)&0xffffu));
+        const unsigned modern_masks[14]={0x800,0x8000,0x80,0x10,0x400,0x1020,0x4004,8,1,0x42,0,0x4004,8,0x2000};
+        for(unsigned i=0;i<14;i++)CHECK(WORD_AT(profile+8+i*4)==modern_masks[i]);
+        CHECK(WORD_AT(profile+8+10*4)==0); /* Unused native field stays unused. */
+        CHECK(WORD_AT(profile+8+4*4)==0x400u); /* aim: LT */
+        CHECK(WORD_AT(profile+8+3*4)==0x10u); /* reload: X */
+        CHECK(WORD_AT(profile+8+13*4)==0x2000u); /* melee: RS */
+        CHECK(WORD_AT(profile+8+1*4)==0x8000u); /* grenade: RB */
+        CHECK(WORD_AT(profile+8+5*4)==(0x20u|0x1000u)); /* crouch: B/LS */
+        for(unsigned i=14;i<22;i++)CHECK(WORD_AT(profile+8+i*4)==0xdead0000u+i);
+        test_custom_semantics=0;
+    }
+    { /* Only the local port owning this native player receives its action masks. */
+        unsigned masks[24]={0};int mounted=0;uint32_t player=0x500000;
+        WORD_AT(0x790950)=1;WORD_AT(0x7b0c48)=player;WORD_AT(player)=2;WORD_AT(player+4)=2;WORD_AT(0x6b93c8)=3;
+        WORD_AT(player+0x18)=0x10;WORD_AT(player+0x1c)=0x400;WORD_AT(player+0x20)=0x80;
+        WORD_AT(player+0x24)=0x4000;WORD_AT(player+0x28)=0x8000;WORD_AT(player+0x2c)=0x40;WORD_AT(player+0x4c)=0x20;
+        CHECK(!controls_gameplay_masks(3,masks,&mounted));controls_test_menu_active=0;
+        CHECK(!controls_gameplay_masks(0,masks,&mounted));
+        CHECK(controls_gameplay_masks(3,masks,&mounted) && masks[9]==0x10 && masks[23]==0x8000 && masks[18]==0x40);
+        CHECK(masks[2]==0x4000 && masks[1]==0x20 && masks[8]==0x400 && !mounted && masks[0]==0x80);
+        WORD_AT(player+0x114)=0x80;CHECK(controls_gameplay_masks(3,masks,&mounted) && mounted && masks[0]==0x4000);
+        WORD_AT(0x79094c)=101;CHECK(!controls_gameplay_masks(3,masks,&mounted));WORD_AT(0x79094c)=0;
+        WORD_AT(0x6b98a4)=2;CHECK(!controls_gameplay_masks(3,masks,&mounted));WORD_AT(0x6b98a4)=0;
+        CHECK(WORD_AT(player+0x20)==0x80); /* Reading a preset never rewrites the native profile. */
+        WORD_AT(0x790950)=WORD_AT(0x7b0c48)=WORD_AT(0x6b93c8)=0;memset((char *)mem+player,0,0x1584);
+        controls_test_menu_active=1;
+    }
+
+    { /* Guest global slot1 is local input0; the remote host has no local owner. */
+        uint32_t host=0x500000,guest=host+0x1584;unsigned masks[24]={0};int mounted;
+        WORD_AT(0x790950)=2;WORD_AT(0x7b0c48)=host;controls_test_menu_active=0;
+        WORD_AT(host)=0;WORD_AT(host+4)=UINT32_MAX;WORD_AT(host+0x18)=0x20;WORD_AT(host+0x114)=0x80;
+        WORD_AT(guest)=1;WORD_AT(guest+4)=0;WORD_AT(guest+0x18)=0x10;
+        WORD_AT(guest+0x24)=0x4000;WORD_AT(guest+0x28)=0x8000;
+        WORD_AT(0x6b93c0)=0;WORD_AT(0x6b93c4)=1;
+        WORD_AT(0x7b0c7c)=guest;
+        CHECK(controls_context_port(WORD_AT(0x7b0c7c))==0 && controls_context_port(host)==4);
+        CHECK(controls_context_port(0)==4);
+
+        CHECK(controls_gameplay_masks(0,masks,&mounted) && masks[9]==0x10 && masks[2]==0x4000 && masks[23]==0x8000 && !mounted);
+        CHECK(!controls_gameplay_masks(1,masks,&mounted));
+        /* Reassigned input ports and split-screen owners also use +4, not +0. */
+        WORD_AT(0x6b93c0)=3;WORD_AT(0x6b93c4)=2;WORD_AT(host+4)=1;
+        CHECK(controls_context_port(WORD_AT(0x7b0c7c))==3 && controls_context_port(host)==2);
+        CHECK(controls_gameplay_masks(3,masks,&mounted) && masks[9]==0x10 && !mounted);
+        CHECK(controls_gameplay_masks(2,masks,&mounted) && masks[9]==0x20 && mounted);
+        WORD_AT(host+4)=UINT32_MAX;WORD_AT(guest+4)=4;
+        CHECK(!controls_gameplay_masks(2,masks,&mounted) && !controls_gameplay_masks(3,masks,&mounted));
+        memset((char *)mem+host,0,2*0x1584);
+        WORD_AT(0x790950)=WORD_AT(0x7b0c48)=WORD_AT(0x7b0c7c)=WORD_AT(0x6b93c0)=WORD_AT(0x6b93c4)=0;
+        controls_test_menu_active=1;
+    }
+
     { /* No startup network overrides: the real row callback must enable LAN. */
         CHECK(!_putenv_s("TSFP_NETWORK",""));
         CHECK(!_putenv_s("TSFP_ONLINE_CONFIG","keep-online"));
@@ -836,7 +912,17 @@ int main(int argc,char **argv)
     CHECK(SetFileAttributesA(rate_path,FILE_ATTRIBUTE_READONLY));call(SELECT_CB,3,0);
     CHECK(pc_display_fov()==70 && requested_rate==120 && tsfp_texture_is_4k() && WORD_AT(0x400130)==1);
     content("TSFP_DISPLAY_V2 1280 720 70\n");CHECK(pc_frame_rate_read()==120);
-    CHECK(SetFileAttributesA(rate_path,FILE_ATTRIBUTE_NORMAL));call(SELECT_CB,3,0);
+    CHECK(SetFileAttributesA(rate_path,FILE_ATTRIBUTE_NORMAL));
+    /* A final texture-save failure rolls back the earlier display/rate/AA saves. */
+    char texture_path[32768];strcpy(texture_path,rate_path);
+    char *texture_name=strrchr(texture_path,'\\');
+    if(!texture_name)texture_name=strrchr(texture_path,'/');
+    CHECK(texture_name);strcpy(texture_name+1,"pc-textures.ini");
+    CHECK(SetFileAttributesA(texture_path,FILE_ATTRIBUTE_READONLY));
+    staged_aa=1;call(SELECT_CB,3,0);
+    CHECK(pc_display_fov()==70 && requested_rate==120 && tsfp_texture_is_4k() && WORD_AT(0x400130)==1);
+    CHECK(display_dirty() && *status && staged_aa==1 && applied_aa==0 && pc_post_aa_get()==0);
+    CHECK(SetFileAttributesA(texture_path,FILE_ATTRIBUTE_NORMAL));staged_aa=0;call(SELECT_CB,3,0);
     CHECK(pc_display_fov()==75 && requested_rate==180 && !tsfp_texture_is_4k() && !WORD_AT(0x400130));
     CHECK(!display_dirty() && (WORD_AT(apply_row+0x28)&1));
     /* Resolution preview defers the complete batch until Keep. */
@@ -1157,12 +1243,25 @@ int main(int argc,char **argv)
     CHECK(controls_dirty() && !(WORD_AT(0x201400+0x28)&1));
     call(0x2ea210,0,0);CHECK(native_control_actions==3 && fixture_native_rows()==controller);
     call(0x2eab30,3,0);CHECK(native_control_ticks==2 && fixture_native_rows()==controller);
+    CHECK(kb_controller_preset_row && WORD_AT(kb_controller_preset_row+0xc8)==0);
+    WORD_AT(kb_controller_preset_row+0xc8)=1;kb_preset_poll();
+    CHECK(kb_controller_choice==1 && pc_settings_controller_preset(kb_controller_port)==0);
+    WORD_AT(kb_controller_preset_row+0xc8)=0;kb_preset_poll();CHECK(kb_controller_choice==0);
     /* Header navigation and keyboard IDs do not save or inherit native values. */
     call(0x2eab30,CONTROLS_TABS_ID,0x80000);
     CHECK(controls_tab==2 && kb_page==KB_HOME && controls_test_saves==0);
     CHECK(built_ids[0]==CONTROLS_TABS_ID && kb_widget_id(0)==200);
     CHECK(kb_local_id(200)==0 && kb_local_id(205)==5);
-    CHECK(built_ids[built_row_count-1]==205); /* No on-screen Back. */
+    CHECK(built_ids[built_row_count-1]==213); /* Apply below the existing footer divider; no Back row. */
+    /* Inline presets use native choices, stay staged, and do not resize Apply. */
+    CHECK(kb_keyboard_preset_row && kb_keyboard_apply_row);
+    CHECK(!strcmp((char *)(g_xbox_mem_offset+KB_TEXT(13)),"\vs100CONTROL PRESET\vs100"));
+    CHECK(WORD_AT(kb_keyboard_preset_row+0xc8)==0 && (WORD_AT(kb_keyboard_apply_row+0x28)&1u));
+    WORD_AT(kb_keyboard_preset_row+0xc8)=1;call(0x2eab30,212,0);
+    CHECK(kb_keyboard_choice==1 && !kb_settings.preset && !controls_test_saves);
+    CHECK(!(WORD_AT(kb_keyboard_apply_row+0x28)&1u));
+    WORD_AT(kb_keyboard_preset_row+0xc8)=0;call(0x2eab30,212,0);
+    CHECK(kb_keyboard_choice==0 && (WORD_AT(kb_keyboard_apply_row+0x28)&1u));
     kb_group=0;kb_refresh(KB_LIST,0);
     CHECK(separators==1 && built_ids[built_row_count-1]==208);
     CHECK(separator_positions[0]==built_row_count-2); /* Next below divider. */

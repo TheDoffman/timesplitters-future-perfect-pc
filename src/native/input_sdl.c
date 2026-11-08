@@ -98,6 +98,8 @@ unsigned pc_controls_text_event(uint32_t owner) {
     return event;
 }
 
+int pc_controls_in_menu(void) {return atomic_load(&menu_active);}
+
 void pc_controls_menu_mode(int active) {
     active=active || pc_developer_open();
     pthread_mutex_lock(&camera_lock);

@@ -155,8 +155,8 @@ def test_upgrade_native_checkpoint_preserves_fixed_default(checkout, tmp_path):
     prior=tmp_path/'native-prior-patches'
     prior.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name:
-            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
+        if '-developer-tools-' in patch.name or patch.name=='2940-modern-control-presets.patch':
+            continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
@@ -230,8 +230,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name:
-            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
+        if '-developer-tools-' in patch.name or patch.name=='2940-modern-control-presets.patch':
+            continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
@@ -322,7 +322,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     assert 'pc_weapon_keys_sample' in bindings
     assert 'pc_controls_reload_sample(reload_roles' in bindings
     assert 'pc_input_radial_axis_magnitude' in bindings
-    assert 'use_pad_defaults = have_pad && (auto_pad >= 0 || c->pad_fallback)' in bindings
+    assert 'use_pad_defaults = have_pad && (auto_pad >= 0 || c->pad_fallback' in bindings
+    assert '|| modern_controller' in bindings and 'pc_preset_accumulate' in bindings
     assert b'pc_display_weapon_slots();' in manual.read_bytes()
     assert b'pc_viewmodel_node_hidden()' in manual.read_bytes()
     assert b'pc_display_keycap_text(sub_00040FA0_gen);' in manual.read_bytes()
@@ -355,8 +356,8 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches = tmp_path / 'mac-only-patches'
     old_patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name:
-            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
+        if '-developer-tools-' in patch.name or patch.name=='2940-modern-control-presets.patch':
+            continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
@@ -417,8 +418,8 @@ def texture_branch_patches(tmp_path):
     patches = tmp_path / 'texture-patches'
     patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name:
-            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
+        if '-developer-tools-' in patch.name or patch.name=='2940-modern-control-presets.patch':
+            continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
@@ -438,8 +439,8 @@ def main_branch_patches(tmp_path):
     patches = tmp_path / 'main-patches'
     patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name:
-            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
+        if '-developer-tools-' in patch.name or patch.name=='2940-modern-control-presets.patch':
+            continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
@@ -713,8 +714,8 @@ def test_graphics_branch_round_trip_preserves_local_edits(checkout, tmp_path, cr
     baseline = tmp_path / 'without-graphics'
     baseline.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name:
-            continue  # Historical inputs predate shared Linux/display dependencies; full upgrades still include Tools.
+        if '-developer-tools-' in patch.name or patch.name=='2940-modern-control-presets.patch':
+            continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
         if patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch'):
             continue  # This baseline predates shared MSAA/effect-depth dependencies.
