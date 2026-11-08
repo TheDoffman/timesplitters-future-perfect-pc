@@ -1,3 +1,5 @@
+[Custom seeds](control-presets.md).
+
 Enhanced textures now round-trip the game's `pc-textures.ini` sidecar.
 GameSettings loads its value ahead of legacy launcher.enhanced_textures JSON;
 missing files retain the legacy preference. LauncherPlatform appends the file

@@ -14,3 +14,9 @@ Registered for Windows/Linux CI; it also supports native Mac. FOV callback
 fixtures check texture-save failure rollback including AA; loader toggle tests
 use isolated settings paths. Shared launcher UI tests verify sidecar migration,
 game/launcher synchronization and stale-save rejection.
+
+The standalone texture_toggle.c fixture overrides inherited display paths with
+its disposable argv[1] directory, clears only its own prior test preference and
+cleans it afterward. This isolates supported CMake builds as well as pytest.
+The loader test supplies an opposite saved caller preference and verifies those
+bytes remain unchanged; tests never consume runtime/personal preferences.

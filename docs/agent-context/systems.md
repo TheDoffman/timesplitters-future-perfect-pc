@@ -1,6 +1,4 @@
-[Texture persistence](texture-preference.md).
-
-[Clips](portal-scissors.md).
+[Keys](control-presets.md); [Tex](texture-preference.md).
 [Arms](video-options.md).
 
 [Uplink throw tests and policy](native-uplink.md#throw-impulse).

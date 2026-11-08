@@ -1,3 +1,5 @@
+[Custom seeds](control-presets.md).
+
 # Unified Controls options
 
 Imported PNG prompts can replace recognized single-key labels through

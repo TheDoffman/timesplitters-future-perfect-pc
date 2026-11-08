@@ -334,6 +334,29 @@ namespace TimeSplitters.Launcher
             while (list.Count < BindingSlots) list.Add("none");
             return list.ToArray();
         }
+        public int KeyboardPreset {
+            get {object value;return controller.TryGetValue("keyboard_preset",out value) && Convert.ToString(value)=="1"?1:0;}
+            set {Core.Require(value==0 || value==1,"Choose Custom or Modern PC.");controller["keyboard_preset"]=value;}
+        }
+        public int ControllerPreset(int player) {var profile=PlayerProfile(player,false);object value;
+            return profile!=null && profile.TryGetValue("controller_preset",out value) && Convert.ToString(value)=="1"?1:0;}
+        public void SetControllerPreset(int player,int preset) {Core.Require(preset==0 || preset==1,"Choose Custom or Modern Controller.");PlayerProfile(player,true)["controller_preset"]=preset;}
+        static readonly Dictionary<int,string[]> ModernKeys=ReadModernKeys();
+        static Dictionary<int,string[]> ReadModernKeys() {
+            var result=new Dictionary<int,string[]>();
+            using(var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("control-presets.def"))
+            using(var reader=new StreamReader(stream)) foreach(Match m in Regex.Matches(reader.ReadToEnd(),@"PC_MODERN_KEY\((\d+), (\d+), (\d+)\)"))
+                result.Add(Int32.Parse(m.Groups[1].Value),new[]{"key:#"+m.Groups[2].Value,m.Groups[3].Value=="0"?"none":"key:#"+m.Groups[3].Value});
+            return result;
+        }
+        public string[] DisplayBinding(int action) {
+            if(KeyboardPreset==0 || (action>=19 && action<=22) || action>=34)return Binding(action);
+            string[] keys;if(ModernKeys.TryGetValue(action,out keys))return (string[])keys.Clone();
+            var defaults=Map(((IEnumerable)Json.Object(DefaultControls())["controllers"]).Cast<object>().First());
+            object value=Map(defaults["bindings"])[Actions[action]];
+            var list=value is string?new[]{(string)value}:((IEnumerable)value).Cast<string>().ToArray();
+            return list.Concat(Enumerable.Repeat("none",BindingSlots)).Take(BindingSlots).ToArray();
+        }
         public const int WheelUpKey = 134, WheelDownKey = 135;
         public static int CaptureKey(int key) { return key==160||key==161?16:key==162||key==163?17:key==164||key==165?18:key; }
         public static string BindingLabel(string token)
@@ -380,6 +403,7 @@ namespace TimeSplitters.Launcher
         }
         public void ResetControls()
         {
+            KeyboardPreset=0;
             var defaults = Json.Object(DefaultControls());
             var profiles = (IEnumerable)defaults["controllers"];
             foreach (object profile in profiles) { bindings = Map(Map(profile)["bindings"]); break; }
@@ -495,7 +519,8 @@ namespace TimeSplitters.Launcher
                 Core.Require((now == null && old == null) || (now != null && old != null && now.SequenceEqual(old)), "Settings changed outside the launcher. Close and reopen Settings before saving.");
                 Core.Require(!File.Exists(path) || (File.GetAttributes(path) & FileAttributes.ReadOnly) == 0, "A settings file is read-only. No settings were saved.");
             }
-            if (Device == "keyboard") foreach (int action in Enumerable.Range(0, Actions.Length)) bindings[Actions[action]] = Binding(action);
+            // Preserve all custom sources, including slots not exposed by this UI.
+
             document["developer_tools_enabled"]=DeveloperToolsEnabled;
             object value;
             if (!document.TryGetValue("mouse", out value)) document["mouse"] = value = new Dictionary<string, object>();

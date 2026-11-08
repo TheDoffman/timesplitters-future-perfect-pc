@@ -70,7 +70,8 @@ def wait_window(pid, prefix, timeout=12):
 
 def main():
     exe = ROOT / "build/windows/Release/futureperfect_recomp.exe"
-    config = ROOT / "config/pc-controls.default.json"
+    # Exercise the editable legacy/custom profile; fresh Modern defaults have separate load checks.
+    config = ROOT / "tests/fixtures/pc-controls.json"
     original = config.read_bytes()
     controls = json.loads(original)
     env = dict(os.environ)

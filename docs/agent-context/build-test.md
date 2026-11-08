@@ -1,7 +1,4 @@
-[Textures](texture-preference.md).
-
-[Clips](portal-scissors.md).
-2720: defer fixture until migration.
+[Keys](control-presets.md); [Tex](texture-preference.md).
 
 [Arms tests](video-options.md).
 

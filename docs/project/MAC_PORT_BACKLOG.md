@@ -1,3 +1,88 @@
+PR #528 prompt ownership follow-up: controls_context_port centralizes validated
+local ownership for action masks and active-player controller glyphs. Remote/invalid
+contexts cannot select another local port's preset.89 focused checks passed/2 Mac
+skips, plus Windows Release/built-ins/crash symbols. Final-head CI pending.
+
+PR #528 network ownership review: gameplay-mask lookup now uses context+4 local
+input ownership before the6B93C0 port map; remote/invalid owners are excluded.
+The global network slot at+0 no longer selects a remote host layout for guests.
+82 focused checks passed/2 Mac skips, plus supported Windows Release/built-ins.
+Regression covers distinct host/guest masks, remapped/split ports and mounted
+state isolation. Native online hardware/gameplay acceptance remains separate.
+
+PR #528 review correction: Modern PC now saves optional-look/developer shortcut
+edits and updates their live bindings. Saves replace only changed editable action
+members, preserving unrelated legacy source arrays. Sidebar gameplay bindings are
+muted/noninteractive under Modern; stale activation and conflict moves are guarded.
+Preset activation retains shortcut keys.75 focused checks passed/2 Mac skips,
+plus supported Windows Release/built-ins/crash symbols. Final-head CI pending.
+
+PR #528 integration: merged main1a66ee17 texture-preference fix. Focused combined
+checks87 passed/2 Mac skips/31 subtests; full Windows launcher suite passed.
+Standalone texture-toggle fixture now isolates its own preference directory;
+46 texture/repository checks pass and retain conflicting caller settings bytes.
+Supported Windows build and final PR/main CI are being verified.
+
+PR #528 CI follow-up: Windows/Mac/Linux launcher release checks pass. Historical
+partial-stack fixtures now defer2940 with its absent input dependencies; full
+upgrades still exercise presets. Extracted camera fixture supplies input-reader
+registration boundary;29 local camera/repository cases pass. Current PR CI pending.
+
+PR #528 publication: Modern control presets committed on feature/modern-control-presets.
+Windows Release/full launcher checks pass; initial CI index line-ending mismatch
+corrected to committed LF. PR/main CI confirmation pending. Private files excluded.
+
+Modern-seeded Custom for new players (local follow-up): fresh host settings
+seed Modern PC raw bindings and custom_binding_semantics=1; existing files never
+receive this marker. Editable Custom keyboard inputs/prompts follow native action
+masks without a fixed preset overlay. Native69D90 known-new profile initialization
+seeds an editable Modern Controller action table from the shared mapping, preserving
+the unused word and all8 axis/options words. Loaded/copied profiles and legacy
+host configs retain their saved layouts. Custom edits survive preset round trips.
+Shared implementation applies across Windows/Mac/Linux; native Mac/Linux UI and
+physical-controller acceptance remain pending. Windows measured results below.
+
+Windows validation: supported Release build, built-in checks and matching crash
+symbols pass. Focused suites78 passed,2 Mac-only skips,31 subtests; full launcher
+-Test completed successfully (including fresh/upgrade preservation, shared UI and
+49 settings checks). Earlier attempts encountered other chats' running-game guards;
+no external games were stopped. Final tests also verify edited semantic Custom
+keyboard input through both sampler adapters, exact native Modern action masks,
+unused/axis-word retention, and existing-profile no-op guards. Playable preview
+refreshed; existing Settings hashes remain identical. Launcher paths, sealed game
+content, repository context and whitespace checks pass. No new physical-controller,
+native Mac/Linux or live gameplay acceptance claim; no main push.
+
+Modern defaults for new setups (local follow-up): the shared factory JSON now
+selects Modern PC and Modern Controller for all four ports. Existing configuration
+files are never replaced during updates; absent preset metadata still means the
+legacy/custom layout. Saved Custom/Modern choices, four-source binding arrays,
+explicit Unbound values, devices and unknown fields remain intact.
+Windows Release/built-ins and separate-process fresh/legacy no-write checks pass.
+Focused checks:73 passed,31 subtests. Launcher116 core checks, shared UI (including
+fresh install/three upgrade cases) and49 settings checks pass. The later crash
+export test stopped at its expected running-game guard because unrelated games
+were active; subsequent full-suite groups were not rerun. Native Mac/Linux UI
+and physical-controller acceptance remain pending. Preview refreshed without
+replacing existing Settings or Saves. No main push.
+
+Inline preset selectors (local follow-up): shared native guest choice rows now
+match Aspect Ratio on Controller and Keyboard & Mouse tabs; no separate preset
+page. Existing shared choice/input/paint helpers need no additional OS adapter.
+Windows build/contracts and actual main/pause UI Apply/Cancel checks pass.
+Native Mac/Linux UI and physical-controller acceptance remain pending; see STATUS.
+
+Modern control presets/typography (local, uncommitted after c511f1e9): implemented
+in shared pc_bindings.inc, pc_control_presets.def/.h, patch2940, guest Controls/
+keyboard/keycap menus and shared launcher GameSettings/SettingsPage. Windows,
+AppKit and GTK F2 adapters preserve the preset field/read-only binding behavior;
+all native launcher projects embed the same PC override table. No second preset
+policy or new OS input mechanism is needed. Windows Release, both portable sampler
+adapter modes, launcher regressions and real main/pause/gameplay checks pass.
+Native Mac/Linux builds, rendered game/F2 UI and physical controller/split-screen
+acceptance remain pending; other-device synchronization is unverified. See STATUS
+and agent-context/control-presets.md for exact measured scope and contracts.
+
 Enhanced texture persistence (local on fix/persist-enhanced-textures):
 shared texture_mode.c and Video Apply now save pc-textures.ini; shared launcher
 GameSettings reads/writes it on Windows/macOS/Linux with legacy JSON fallback.
