@@ -253,6 +253,12 @@ namespace TimeSplitters.Launcher
                 for(int i=0;i<6;i++)model.AudioVolumes[i]=Int32.Parse(match.Groups[i+1].Value,CultureInfo.InvariantCulture);
                 if(version2){model.DialogueFocus=match.Groups[7].Value=="1";model.ImpactRange=Int32.Parse(match.Groups[8].Value,CultureInfo.InvariantCulture);}
             }
+            string textures = Text(model.originals[Files[8]]);
+            if(textures.Length>0) {
+                var match=Regex.Match(textures,@"\ATSFP_TEXTURES_V1\s+([01])\s*\z");
+                Core.Require(match.Success,"Enhanced textures settings are invalid. No settings were changed.");
+                model.EnhancedTextures=match.Groups[1].Value=="1";
+            }
             model.runtime = Text(model.originals[Files[2]]);
             if (model.originals[Files[2]] == null && !String.IsNullOrEmpty(inheritedRuntime)) model.runtime = Text(Read(inheritedRuntime));
             var settings = ParseRuntime(model.runtime);
@@ -536,6 +542,7 @@ namespace TimeSplitters.Launcher
             bool mixV2=DialogueFocus || ImpactRange!=0;
             payload=payload.Concat(new[]{"TSFP_AUDIO_MIX_V"+(mixV2?"2":"1")+" "+String.Join(" ",AudioVolumes.Select(percent=>percent.ToString(CultureInfo.InvariantCulture)).ToArray())+
                 (mixV2?" "+(DialogueFocus?"1":"0")+" "+ImpactRange.ToString(CultureInfo.InvariantCulture):"")+"\n"}).ToArray();
+            payload=payload.Concat(new[]{"TSFP_TEXTURES_V1 " + (EnhancedTextures ? "1" : "0") + "\n"}).ToArray();
             int committed = 0;
             try { for (int i = 0; i < Files.Length; i++) { Replace(Core.PathIn(root, Files[i]), Encoding.UTF8.GetBytes(payload[i]), true); committed++; } }
             catch

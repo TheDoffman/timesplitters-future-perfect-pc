@@ -1,5 +1,4 @@
-[Custom seeds](control-presets.md).
-2720: defer fixture until migration.
+[Keys](control-presets.md); [Tex](texture-preference.md).
 
 [Arms tests](video-options.md).
 

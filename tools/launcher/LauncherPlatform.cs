@@ -69,7 +69,7 @@ namespace TimeSplitters.Launcher
         public static string GamePath(string root) { return Checkout(root)?"build/macos/futureperfect_recomp":GameBinary; }
         public static string ManifestPath(string root) { return Checkout(root)?"build/macos/BUILD.json":"BUILD.json"; }
 #endif
-        public static string[] Settings(string root) { return Checkout(root)?new[]{"config/pc-controls.json","config/pc-display.ini","private/native-settings/runtime.conf","config/pc-discord.ini","config/pc-frame-rate.ini","config/pc-audio.ini","config/pc-graphics.ini","config/pc-audio-mix.ini"}:new[]{"Settings/pc-controls.json","Settings/pc-display.ini","Settings/runtime.conf","Settings/pc-discord.ini","Settings/pc-frame-rate.ini","Settings/pc-audio.ini","Settings/pc-graphics.ini","Settings/pc-audio-mix.ini"}; }
+        public static string[] Settings(string root) { return Checkout(root)?new[]{"config/pc-controls.json","config/pc-display.ini","private/native-settings/runtime.conf","config/pc-discord.ini","config/pc-frame-rate.ini","config/pc-audio.ini","config/pc-graphics.ini","config/pc-audio-mix.ini","config/pc-textures.ini"}:new[]{"Settings/pc-controls.json","Settings/pc-display.ini","Settings/runtime.conf","Settings/pc-discord.ini","Settings/pc-frame-rate.ini","Settings/pc-audio.ini","Settings/pc-graphics.ini","Settings/pc-audio-mix.ini","Settings/pc-textures.ini"}; }
         public static string Data(string root) { return Checkout(root)?"private/game":"Data"; }
         public static string Saves(string root) { return Checkout(root)?"private/saves":"Saves"; }
         public static string Textures(string root) { return Checkout(root)?(Directory.Exists(Path.Combine(root,"assets","textures"))?"assets/textures":"private/texture-remaster/pack"):"Textures"; }
@@ -140,7 +140,7 @@ namespace TimeSplitters.Launcher
         public static bool Checkout(string root) { return false; }
         public static string GamePath(string root) { return GameBinary; }
         public static string ManifestPath(string root) { return "BUILD.json"; }
-        public static string[] Settings(string root) { return new[]{"Settings/pc-controls.json","Settings/pc-display.ini","Settings/runtime.conf","Settings/pc-discord.ini","Settings/pc-frame-rate.ini","Settings/pc-audio.ini","Settings/pc-graphics.ini","Settings/pc-audio-mix.ini"}; }
+        public static string[] Settings(string root) { return new[]{"Settings/pc-controls.json","Settings/pc-display.ini","Settings/runtime.conf","Settings/pc-discord.ini","Settings/pc-frame-rate.ini","Settings/pc-audio.ini","Settings/pc-graphics.ini","Settings/pc-audio-mix.ini","Settings/pc-textures.ini"}; }
         public static string Data(string root) { return "Data"; }
         public static string Saves(string root) { return "Saves"; }
         public static string Textures(string root) { return "Textures"; }
