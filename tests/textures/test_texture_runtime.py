@@ -105,7 +105,7 @@ def test_legacy_gl_background_textures(texture_executables, tmp_path, streaming,
 @pytest.mark.parametrize('mode', ['classic', '4k', 'missing', 'implicit'])
 @pytest.mark.parametrize('streaming', ['0', '1'])
 def test_cached_texture_switch(texture_executables, tmp_path, mode, streaming):
-    environment = dict(os.environ, TSFP_TEXTURE_STREAMING=streaming)
+    environment = dict(os.environ, TSFP_TEXTURE_STREAMING=streaming, TSFP_DISPLAY_CONFIG=str(tmp_path/"display.ini"))
     result = subprocess.run([str(texture_executables['toggle']), str(tmp_path), mode],
                             cwd=tmp_path, env=environment, capture_output=True, text=True, timeout=15)
     assert result.returncode == 0, result.stdout + result.stderr
@@ -134,7 +134,7 @@ def test_texture_trace_bounds(texture_executables, tmp_path, mode):
 @pytest.mark.parametrize('streaming', ['0', '1'])
 def test_texture_upload_stages(texture_executables, tmp_path, mode, streaming):
     path = tmp_path / 'uploads.csv'
-    env = dict(os.environ, TSFP_TEXTURE_UPLOAD_TRACE=str(path), TSFP_TEXTURE_STREAMING=streaming)
+    env = dict(os.environ, TSFP_TEXTURE_UPLOAD_TRACE=str(path), TSFP_TEXTURE_STREAMING=streaming, TSFP_DISPLAY_CONFIG=str(tmp_path/"display.ini"))
     result = subprocess.run([str(texture_executables['toggle']), str(tmp_path), mode],
                             env=env, cwd=tmp_path, capture_output=True, text=True, timeout=15)
     assert result.returncode == 0, result.stdout + result.stderr

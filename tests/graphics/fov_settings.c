@@ -836,7 +836,17 @@ int main(int argc,char **argv)
     CHECK(SetFileAttributesA(rate_path,FILE_ATTRIBUTE_READONLY));call(SELECT_CB,3,0);
     CHECK(pc_display_fov()==70 && requested_rate==120 && tsfp_texture_is_4k() && WORD_AT(0x400130)==1);
     content("TSFP_DISPLAY_V2 1280 720 70\n");CHECK(pc_frame_rate_read()==120);
-    CHECK(SetFileAttributesA(rate_path,FILE_ATTRIBUTE_NORMAL));call(SELECT_CB,3,0);
+    CHECK(SetFileAttributesA(rate_path,FILE_ATTRIBUTE_NORMAL));
+    /* A final texture-save failure rolls back the earlier display/rate/AA saves. */
+    char texture_path[32768];strcpy(texture_path,rate_path);
+    char *texture_name=strrchr(texture_path,'\\');
+    if(!texture_name)texture_name=strrchr(texture_path,'/');
+    CHECK(texture_name);strcpy(texture_name+1,"pc-textures.ini");
+    CHECK(SetFileAttributesA(texture_path,FILE_ATTRIBUTE_READONLY));
+    staged_aa=1;call(SELECT_CB,3,0);
+    CHECK(pc_display_fov()==70 && requested_rate==120 && tsfp_texture_is_4k() && WORD_AT(0x400130)==1);
+    CHECK(display_dirty() && *status && staged_aa==1 && applied_aa==0 && pc_post_aa_get()==0);
+    CHECK(SetFileAttributesA(texture_path,FILE_ATTRIBUTE_NORMAL));staged_aa=0;call(SELECT_CB,3,0);
     CHECK(pc_display_fov()==75 && requested_rate==180 && !tsfp_texture_is_4k() && !WORD_AT(0x400130));
     CHECK(!display_dirty() && (WORD_AT(apply_row+0x28)&1));
     /* Resolution preview defers the complete batch until Keep. */

@@ -1,3 +1,11 @@
+Enhanced texture persistence (local on fix/persist-enhanced-textures):
+shared texture_mode.c and Video Apply now save pc-textures.ini; shared launcher
+GameSettings reads/writes it on Windows/macOS/Linux with legacy JSON fallback.
+The existing stdio/rename POSIX adapter supplies Mac/Linux storage; no new
+host-specific UI or adapter is required. Native Mac build/game acceptance is
+unverified on this Windows device. Windows and Linux production persistence
+fixtures pass; see STATUS for measured validation.
+
 Settings formatted-caption repair/matrix (local after e7d6fb07): shared
 pc_settings_row_alignment.inc preserves native case flags for scale escapes;
 plain Audio captions retain consistent uppercase. No OS adapter change. Windows

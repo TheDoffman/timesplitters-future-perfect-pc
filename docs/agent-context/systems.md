@@ -1,3 +1,5 @@
+[Texture persistence](texture-preference.md).
+
 [Clips](portal-scissors.md).
 [Arms](video-options.md).
 
