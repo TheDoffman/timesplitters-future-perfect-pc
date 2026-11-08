@@ -1,4 +1,5 @@
 /* Original US pad decoder and real wrapper; only XInput devices are controlled. */
+/* STICK_INPUT */
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +18,7 @@ static unsigned polls[4],feedback[4];
 static uint16_t buttons;
 static uint8_t triggers;
 static int sign=1;
+static int sweep_mode,sweep_value;
 static uint32_t feedback_value[4];
 static unsigned feedback_seen[4];
 void sub_0046E36D(void)
@@ -25,7 +27,7 @@ void sub_0046E36D(void)
     MEM32(out)=++polls[port];MEM16(out+4)=buttons;
     for(unsigned i=0;i<8;i++)MEM8(out+6+i)=0;
     MEM8(out+12)=MEM8(out+13)=triggers;
-    for(unsigned i=0;i<4;i++)MEM16(out+14+i*2)=(uint16_t)(int16_t)(sign*(18000+1000*i+port*500));
+    for(unsigned i=0;i<4;i++)MEM16(out+14+i*2)=(uint16_t)(int16_t)(sweep_mode?sweep_value:sign*(18000+1000*i+port*500));
     g_eax=0;g_esp+=12;
 }
 void sub_0046E3E0(void)
@@ -106,5 +108,22 @@ int main(void)
     /* Disabled/native-off path retains the original zero-tick button behavior. */
     MEM32(0x74d0fc)=15;g_tsfp_native_timing_active=0;buttons=(uint16_t)MEM32(0x47df00);
     sample(0,0);assert(MEM32(RECORD+16)==MEM32(0x47df04));
+    /* Verify the host's explicit deadzone compensation against the original
+     * US decoder, including its real10% constant and signed axis quantization. */
+    sweep_mode=1;buttons=triggers=0;MEM32(0x74d0fc)=15;
+    for(int deadzone=0;deadzone<=3277;deadzone+=1638) {
+        for(int raw=0;raw<=32767;raw+=257)for(int polarity=-1;polarity<=1;polarity+=2) {
+            int magnitude=pc_input_radial_axis_magnitude((int16_t)raw,0,1,deadzone);
+            int transport=pc_input_compensate_stick_deadzone(magnitude);
+            sweep_value=polarity*transport*32767/255;sample(0,1);
+            int decoded=(int)MEM32(RECORD+0x24)-128;
+            int expected=polarity*magnitude*127/255;
+            assert(abs(decoded-expected)<=2);
+            if(raw<=deadzone)assert(decoded==0);
+        }
+    }
+    sweep_value=pc_input_radial_axis_magnitude(9830,0,1,7849)*32767/255;
+    sample(0,1);assert(MEM32(RECORD+0x24)==128);
+    puts("PASS: explicit stick tuning cancels original10% decoder threshold; legacy30% travel remains neutral");
     free(memory);puts("PASS: original analogue decoding is fresh at native cadence with one-shot digital edges");return 0;
 }

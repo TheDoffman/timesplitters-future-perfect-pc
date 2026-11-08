@@ -560,6 +560,29 @@ failure:
     return ok;
 }
 
+int pc_settings_deadzone(unsigned port,int aim)
+{
+    recomp_bindings_init();if(port>=4)return 7849;
+    AcquireSRWLockShared(&g_pc_bindings_lock);
+    int value=aim?g_ctl[port].aim_deadzone:g_ctl[port].move_deadzone;
+    if(value<0)value=g_ctl[port].deadzone;
+    ReleaseSRWLockShared(&g_pc_bindings_lock);
+    return value<0?0:value>32767?32767:value;
+}
+int pc_settings_deadzone_save(unsigned port,int aim,int value,char *error,size_t bytes)
+{
+    recomp_bindings_init();if(port>=4 || value<0 || value>32767)return 0;
+    char number[16];snprintf(number,sizeof number,"%d",value);
+    char *text=g_have_path?read_file(g_path):NULL;
+    const char *profile=text?pc_controller_port(text,(int)port):NULL;
+    if(!profile || !pc_replace_member(&text,profile,aim?"aim_deadzone":"move_deadzone",number) || !pc_write_config(text)) {
+        free(text);snprintf(error,bytes,"Could not save deadzone. Active controls were kept.");return 0;
+    }
+    free(text);AcquireSRWLockExclusive(&g_pc_bindings_lock);
+    if(aim)g_ctl[port].aim_deadzone=value;else g_ctl[port].move_deadzone=value;
+    ReleaseSRWLockExclusive(&g_pc_bindings_lock);return 1;
+}
+
 int pc_settings_controller_preset_save(unsigned port,int modern,char *error,size_t bytes)
 {
     recomp_bindings_init();if(port>=4 || (modern!=0 && modern!=1))return 0;

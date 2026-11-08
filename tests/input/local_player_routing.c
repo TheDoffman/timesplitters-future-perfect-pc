@@ -1,9 +1,11 @@
 static unsigned g_players_auto_ports;
 /* Headless sampler integration. OS focus is an explicit test input; no desktop
  * events or personal settings are touched. Parser and sampler are production. */
+#define control_magnitude legacy_control_magnitude
 #define main profile_fixture_main
 #include "controller_profile.c"
 #undef main
+#undef control_magnitude
 #include "pc_input.h"
 #include "pc_settings.h"
 #include "input/pc_control_presets.h"
@@ -43,6 +45,19 @@ int main(void)
     for(int i=0;i<4;i++)defaults_for(&g_ctl[i],i);
     assert(parse_config(config));g_ready=1;connected=1;selected_slot=0;
     state.lx=32767;state.right_trigger=255;
+    /* Low-range aim tuning leaves movement and other local players intact.
+     * Exercise actual sampler routing on both Windows and native SDL builds. */
+    state.lx=state.rx=3277;state.right_trigger=0;
+    test_sample(1,&two);assert(two.sThumbLX==0 && two.sThumbRX==0);
+    g_ctl[1].aim_deadzone=1638;
+    test_sample(1,&two);assert(two.sThumbLX==0 && two.sThumbRX>4500 && two.sThumbRX<5200);
+    g_ctl[1].move_deadzone=0;test_sample(1,&two);assert(two.sThumbLX>3000);
+    state.rx=-3277;test_sample(1,&two);assert(two.sThumbRX<-4500);
+    state.rx=1638;test_sample(1,&two);assert(two.sThumbRX==0);
+    g_ctl[1].aim_deadzone=32767;state.rx=32767;test_sample(1,&two);assert(two.sThumbRX==0);
+    assert(g_ctl[0].aim_deadzone==-1 && g_ctl[0].move_deadzone==-1);
+    g_ctl[1].aim_deadzone=g_ctl[1].move_deadzone=-1;
+    memset(&state,0,sizeof state);state.lx=32767;state.right_trigger=255;
     /* Detection exposes spare ports without stealing P1's automatic pad. */
     g_players_auto_ports=2u;
     assert(test_sample(0,&one));assert(one.sThumbLX==32767);

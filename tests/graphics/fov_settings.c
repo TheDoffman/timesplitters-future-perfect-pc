@@ -246,6 +246,9 @@ int pc_settings_custom_read(PcSettings *s,char *e,size_t n) {return pc_settings_
 static int test_custom_semantics;
 int pc_settings_custom_semantics(void) {return test_custom_semantics;}
 static int test_controller_presets[4];
+static int test_deadzones[4][2]={{7849,7849},{7849,7849},{7849,7849},{7849,7849}};
+int pc_settings_deadzone(unsigned p,int a) {CHECK(p<4);return test_deadzones[p][!!a];}
+int pc_settings_deadzone_save(unsigned p,int a,int v,char *e,size_t n) {(void)e;(void)n;CHECK(p<4);test_deadzones[p][!!a]=v;return 1;}
 int pc_settings_controller_preset(unsigned port) {CHECK(port<4);return test_controller_presets[port];}
 int pc_settings_controller_preset_save(unsigned port,int value,char *e,size_t n) {(void)e;(void)n;CHECK(port<4);test_controller_presets[port]=value;return 1;}
 static int test_player_devices[4]={-2,-1,-1,-1},test_player_saves;
@@ -1243,6 +1246,11 @@ int main(int argc,char **argv)
     CHECK(controls_dirty() && !(WORD_AT(0x201400+0x28)&1));
     call(0x2ea210,0,0);CHECK(native_control_actions==3 && fixture_native_rows()==controller);
     call(0x2eab30,3,0);CHECK(native_control_ticks==2 && fixture_native_rows()==controller);
+    CHECK(controls_deadzone_rows[0] && controls_deadzone_rows[1]);
+    CHECK(WORD_AT(controls_deadzone_rows[1]+0xc8)==24);
+    WORD_AT(controls_deadzone_rows[1]+0xc8)=5;controls_deadzone_poll();
+    CHECK(test_deadzones[kb_controller_port][1]==1638);
+    CHECK(test_deadzones[kb_controller_port][0]==7849);
     CHECK(kb_controller_preset_row && WORD_AT(kb_controller_preset_row+0xc8)==0);
     WORD_AT(kb_controller_preset_row+0xc8)=1;kb_preset_poll();
     CHECK(kb_controller_choice==1 && pc_settings_controller_preset(kb_controller_port)==0);

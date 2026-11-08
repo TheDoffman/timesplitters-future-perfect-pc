@@ -71,4 +71,9 @@ void pc_settings_attach(HWND game);
 void pc_settings_toggle_menu(HWND game);
 void pc_settings_detach(HWND game);
 void pc_settings_show(HWND game);
+
+/* Raw Xbox stick range; legacy deadzone is inherited until edited. */
+int pc_settings_deadzone(unsigned port,int aim);
+int pc_settings_deadzone_save(unsigned port,int aim,int value,char *error,size_t bytes);
+
 #endif
