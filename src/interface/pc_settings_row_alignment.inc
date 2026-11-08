@@ -2,7 +2,7 @@
  * Re-centre them for the compact draw font, scoped to one menu paint. Native
  * bounds, focus/hit rectangles, horizontal alignment and callbacks stay native. */
 extern void sub_0003FA10(void),sub_0003FCF0(void),sub_000718E0(void),sub_0003FB90(void);
-typedef struct SettingsRowOffset {uint32_t row,label,value;} SettingsRowOffset;
+typedef struct SettingsRowOffset {uint32_t row,label,value,font,choice_font,flags;} SettingsRowOffset;
 typedef struct SettingsRowPaint {
     uint32_t menu;unsigned count;struct SettingsRowPaint *previous;
     SettingsRowOffset rows[64];
@@ -13,6 +13,13 @@ static float settings_row_float(uint32_t address)
 {float value;uint32_t raw=WORD_AT(address);memcpy(&value,&raw,4);return value;}
 static void settings_row_store(uint32_t address,float value)
 {uint32_t raw;memcpy(&raw,&value,4);WORD_AT(address)=raw;}
+/* Native option rows with different size flags inherit different font presets.
+ * Use the skin's ordinary option font for every owned settings row. */
+static uint32_t settings_row_font(uint32_t menu,uint32_t fallback)
+{
+    uint32_t skin=guest_writable(menu,0x20)?WORD_AT(menu+0x1c):0;
+    return skin && guest_writable(skin,0x4c)?WORD_AT(skin+0x48):fallback;
+}
 static void settings_rows_begin(SettingsRowPaint *scope,uint32_t menu)
 {scope->menu=menu;scope->count=0;scope->previous=settings_row_paint;settings_row_paint=scope;}
 static void settings_rows_end(SettingsRowPaint *scope)
@@ -21,6 +28,8 @@ static void settings_rows_end(SettingsRowPaint *scope)
         SettingsRowOffset *saved=&scope->rows[i];
         if(guest_writable(saved->row,0xe4) && WORD_AT(saved->row+0x88)==scope->menu) {
             WORD_AT(saved->row+0x40)=saved->label;WORD_AT(saved->row+0xe0)=saved->value;
+            WORD_AT(saved->row+0x1c)=saved->font;WORD_AT(saved->row+0xbc)=saved->choice_font;
+            WORD_AT(saved->row+0x28)=saved->flags;
         }
     }
     settings_row_paint=scope->previous;
@@ -83,8 +92,12 @@ static void settings_row_center(uint32_t menu,uint32_t row,uint32_t rect)
     unsigned slot=0;for(;slot<scope->count;slot++)if(scope->rows[slot].row==row)break;
     if(slot==scope->count) {
         if(scope->count==64)return;
-        scope->rows[scope->count++]=(SettingsRowOffset){row,WORD_AT(row+0x40),WORD_AT(row+0xe0)};
+        scope->rows[scope->count++]=(SettingsRowOffset){row,WORD_AT(row+0x40),WORD_AT(row+0xe0),WORD_AT(row+0x1c),WORD_AT(row+0xbc),WORD_AT(row+0x28)};
     }
+    WORD_AT(row+0x1c)=settings_row_font(menu,WORD_AT(row+0x1c));
+    WORD_AT(row+0xbc)=settings_row_font(menu,WORD_AT(row+0xbc));
+    /* Match the native Video/Controls option lettering in Audio sidecar rows. */
+    WORD_AT(row+0x28)|=0x2000u;
     uint32_t font=WORD_AT(0x6b93b4),sx=WORD_AT(0x7e7270),sy=WORD_AT(0x7e7280),align=WORD_AT(0x7e7260);
     guest_call(sub_00022FF0,0);
     float top_bearing=0.f;

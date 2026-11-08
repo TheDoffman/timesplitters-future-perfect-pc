@@ -5,6 +5,7 @@ static void settings_tabs_paint(uint32_t menu,const float bounds[4],
     extern void sub_00041DC0(void),sub_0003FCF0(void),sub_0001EFB0(void),sub_0003F8D0(void),sub_0003FA10(void);
     float width=(bounds[2]-bounds[0])/(float)count;
     float top=bounds[1],height=bounds[3]-top;
+    float fit_width=(bounds[2]-bounds[0])/4.f;
     /* Custom header callbacks inherit a different frontend font. Native label
      * painter76150 selects row+1c through3FA10; use the first visible setting's
      * font for both measuring and drawing, then restore the enclosing font. */
@@ -23,7 +24,7 @@ static void settings_tabs_paint(uint32_t menu,const float bounds[4],
         guest_call(sub_0003FCF0,4,video_tab_measure,video_tab_measure+4,caption,0u);
         float tw,th;memcpy(&tw,(void *)((uintptr_t)video_tab_measure+g_xbox_mem_offset),4);
         memcpy(&th,(void *)((uintptr_t)video_tab_measure+4+g_xbox_mem_offset),4);
-        scale=fminf(scale,pc_ui_caption_fit(width-12.f,height-4.f,tw,th));
+        scale=fminf(scale,pc_ui_caption_fit(fit_width-12.f,height-4.f,tw,th));
     }
     uint32_t saved_x=WORD_AT(0x007E7270u),saved_y=WORD_AT(0x007E7280u);
     if(scale<1.f) {

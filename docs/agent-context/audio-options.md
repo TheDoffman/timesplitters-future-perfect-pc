@@ -67,3 +67,12 @@ Audio Volume/Mix and Controller Turn Speed bars use the same row midpoint for
 painting and pointer capture. fov_settings verifies measured caption/value centres,
 bearing correction, repeated paints and exact restoration; menu_mouse checks
 scoped Controller bar centring with original width/height and stack restoration.
+
+Font consistency: settings_row_font uses each owned menu skin's ordinary option
+preset (+48), overriding row+1C and choice+BC only for the complete paint scope;
+original fonts/flags restore alongside the alignment offsets. Captions use the
+native uppercase flag consistently, including Audio sidecar labels. Tabs use the
+same preset and fit against four equal-width cells plus KEYBOARD & MOUSE on every
+screen; three-tab Video/Controls cannot grow larger than four-tab Audio. Actual
+hit rectangles and per-tab placement still use their real tab count. The shared
+font test verifies normalization and exact restoration, including tab selection.

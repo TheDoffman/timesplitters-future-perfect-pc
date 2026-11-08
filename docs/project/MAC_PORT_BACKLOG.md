@@ -1,3 +1,8 @@
+Settings font consistency (local after6ac74150): common skin option-font policy
+in pc_settings_row_alignment.inc and shared tab fitting/navigation, no OS adapter.
+Windows fixtures/build/main scene checks pass. Native Mac/Linux visual acceptance,
+physical controller and split-screen remain pending; see STATUS for measured scope.
+
 Settings row centring (local after cdb16dbb): shared pc_settings_row_alignment.inc,
 pc_display_ui.inc, pc_audio_tabs.inc and pc_menu_sliders.inc. Native glyph metrics,
 paint offsets and pointer geometry are common to all hosts; no OS adapter needed.

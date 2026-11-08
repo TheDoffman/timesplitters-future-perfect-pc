@@ -5,9 +5,9 @@ static uint32_t settings_tabs_font(uint32_t menu,uint32_t fallback)
     for(unsigned n=0;row && n<64 && guest_writable(row,0x2c);n++,row=WORD_AT(row+4)) {
         uint32_t type=WORD_AT(row),id=WORD_AT(row+0x14);
         if(id!=120u && id!=130u && id!=140u && !(WORD_AT(row+0x28)&0x20u) &&
-           (type==4 || type==7 || type==8))return WORD_AT(row+0x1c);
+           (type==4 || type==7 || type==8))return settings_row_font(menu,WORD_AT(row+0x1c));
     }
-    return fallback;
+    return settings_row_font(menu,fallback);
 }
 static void settings_tabs_sound(unsigned slot)
 {

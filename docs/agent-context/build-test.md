@@ -18,7 +18,7 @@ Mac storage tests: see launcher.md.
 [Weapon FOV](video-options.md#weapon-aperture).
 [HUD/MSAA tests](../development/graphics-options.md).
 [SDL startup/fullscreen](linux-game.md).
-[Row alignment tests](audio-options.md).
+[Row/font tests](audio-options.md).
 `test_lfs_checkout.py`: pointer clones, opt-in LFS pull, preserved packs.
 [Kill feed](../development/arcade-kill-feed.md)
 # Build/tests ([MSAA](smaa.md))

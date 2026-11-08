@@ -1,3 +1,18 @@
+Settings font consistency (2026-11-07, local after6ac74150):
+Video/Controls/Audio rows and values use the skin ordinary option font,
+scoped/restored alongside alignment. Native size flags selected inconsistent
+presets; Audio sidecar captions now share native uppercase lettering. All tab
+strips fit against the same four-cell width, so three-tab sections no longer
+have larger text than Audio. Geometry, actions and save policy stay unchanged.
+Windows focused35 pass/two skips; supported Release/builtins/crash symbols pass.
+Actual1280x960 main Audio Mix, Video Display and Controller reviewed: consistent
+fonts and readable fitting labels. Pause Audio Mix/Video Display/Graphics also
+and Controller reviewed with matching row/tab sizes. Owned test game stopped,
+disposable partition images recycled. Source/manifest/sealed executable matches:
+b015dbe56aff34e95a7d47e886cca388eda6ba0c30d87ea42dbd776c6c9cc3e8.
+Native Mac/Linux scenes, physical controller and split-screen unverified. No push.
+Receipt:logs/settings-font-unison-verification.json.
+
 Settings row vertical centring (2026-11-07, local after cdb16dbb):
 Video/Controls/Audio caption and choice offsets now use actual compact-font text
 bounds, including ordinary glyph top bearings. Offsets/font state restore after
