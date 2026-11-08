@@ -983,6 +983,7 @@ int main(int argc,char **argv)
     settings_rows_end(&align_scope);CHECK(FLOAT_AT(align_row+0x40)==-5.f);
     WORD_AT(0x600800)=11;CHECK(settings_row_text_top(0x600800)==0.f); /* native escapes */
     WORD_AT(align_menu+0x1c)=0x601800;WORD_AT(0x601848)=2;
+    WORD_AT(0x600800)='A';
     uint32_t prior_flags=WORD_AT(align_row+0x28);
     settings_rows_begin(&align_scope,align_menu);settings_row_center(align_menu,align_row,align_rect);
     CHECK(WORD_AT(align_row+0x1c)==2 && WORD_AT(align_row+0xbc)==2);
@@ -991,6 +992,10 @@ int main(int argc,char **argv)
     settings_rows_end(&align_scope);
     CHECK(WORD_AT(align_row+0x1c)==1 && WORD_AT(align_row+0xbc)==2);
     CHECK(WORD_AT(align_row+0x28)==prior_flags);
+    WORD_AT(0x600800)=11; /* Native scale escape: uppercase must not alter its command. */
+    settings_rows_begin(&align_scope,align_menu);settings_row_center(align_menu,align_row,align_rect);
+    CHECK(WORD_AT(align_row+0x28)==prior_flags);
+    settings_rows_end(&align_scope);
     WORD_AT(align_menu+0x1c)=0;
     WORD_AT(0x6b93b8)=0;row_alignment_test=0;
     /* Native separator height is scoped, symmetric and never changes a skin permanently. */

@@ -38,6 +38,16 @@ static void settings_rows_end(SettingsRowPaint *scope)
  * glyph records also carry a top bearing (float+8, height u16+6). Include
  * that top when centring ordinary single-line captions; complex native
  * formatting retains the native line box rather than duplicating its parser. */
+static int settings_row_plain_caption(uint32_t caption)
+{
+    if(!guest_writable(caption,256))return 0;
+    for(unsigned i=0;i<256;i++) {
+        unsigned c=(WORD_AT(caption+(i&~3u))>>((i&3u)*8u))&255u;
+        if(!c)return 1;
+        if(c<32 || c>126)return 0;
+    }
+    return 0;
+}
 static float settings_row_text_top(uint32_t caption)
 {
     if(!guest_writable(caption,256))return 0.f;
@@ -97,7 +107,7 @@ static void settings_row_center(uint32_t menu,uint32_t row,uint32_t rect)
     WORD_AT(row+0x1c)=settings_row_font(menu,WORD_AT(row+0x1c));
     WORD_AT(row+0xbc)=settings_row_font(menu,WORD_AT(row+0xbc));
     /* Match the native Video/Controls option lettering in Audio sidecar rows. */
-    WORD_AT(row+0x28)|=0x2000u;
+    if(settings_row_plain_caption(caption))WORD_AT(row+0x28)|=0x2000u;
     uint32_t font=WORD_AT(0x6b93b4),sx=WORD_AT(0x7e7270),sy=WORD_AT(0x7e7280),align=WORD_AT(0x7e7260);
     guest_call(sub_00022FF0,0);
     float top_bearing=0.f;

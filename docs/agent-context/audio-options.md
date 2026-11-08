@@ -76,3 +76,8 @@ same preset and fit against four equal-width cells plus KEYBOARD & MOUSE on ever
 screen; three-tab Video/Controls cannot grow larger than four-tab Audio. Actual
 hit rectangles and per-tab placement still use their real tab count. The shared
 font test verifies normalization and exact restoration, including tab selection.
+
+Native formatted captions (including keyboard scale escapes) retain their original
+case flags. Uppercasing the escape command exposes its digits as visible text;
+settings_row_plain_caption limits the shared uppercase treatment to plain ASCII
+captions. The row/font fixture covers both plain normalization and escape retention.

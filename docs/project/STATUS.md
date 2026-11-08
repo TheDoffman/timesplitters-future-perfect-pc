@@ -1,3 +1,30 @@
+Settings resolution/aspect matrix (2026-11-07, local after e7d6fb07):
+Actual Windows Release/D3D8/RTX4070SUPER captures at640x480,1280x960,1280x1024,
+1280x720,1920x1080,1920x1200,3440x1440,3840x1080 and3840x2160. Each configuration
+covers all three settings menus in frontend and a paused live Story level:
+four Audio tabs; Video Display/Graphics/View & HUD/Advanced; Controls General,
+Controller/Keyboard & Mouse, Mouse options and both movement binding pages.
+252 actual PNGs have exact requested dimensions and native page-identity evidence;
+visible native row bounds remain within the canvas. Representative reviewed
+captions/values/bars, tab labels, dividers and footers fit with proportional centring.
+The first640 pass caught native scale escapes being uppercased into visible digits
+in Keyboard subpages. Shared plain-ASCII caption gating preserves original case
+flags for formatted text; the focused regression verifies both paths and restoration.
+Windows focused35 pass/two platform skips; supported Release/builtins and matching
+crash symbols pass. Source/manifest/sealed executable identity matches SHA256
+6ab01f96eeb9a3825cf916c8e90e75b7f306fa7745a471a54d3221435c75fbbd.
+High-resolution periodic frame dumping interfered with synthetic short holds;
+state-identified/fresh-frame capture and separate capture-disabled interaction
+runs distinguish screenshot overhead from ordinary menu input. No input policy edit.
+Main/pause Audio Mix midpoint clicks (integer-client rounding49..50%), held drags
+to0/100 and tab pointer/rapid-click routing are checked separately from captures.
+Only disposable per-case Test Lab configs/saves; personal data/canonical fixture
+preserved. Owned games stopped, locks cleared and disposable partition images recycled.
+Evidence and filterable gallery:logs/settings-resolution-matrix/index.html,
+observations.json per mode, build.json and summary.json. These are windowed Windows
+render-resolution checks, not every monitor/DPI/fullscreen combination. Native
+Mac/Linux scenes, physical controllers and split-screen remain unverified. No push.
+
 Settings font consistency (2026-11-07, local after6ac74150):
 Video/Controls/Audio rows and values use the skin ordinary option font,
 scoped/restored alongside alignment. Native size flags selected inconsistent

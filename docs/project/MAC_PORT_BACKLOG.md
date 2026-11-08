@@ -1,3 +1,10 @@
+Settings formatted-caption repair/matrix (local after e7d6fb07): shared
+pc_settings_row_alignment.inc preserves native case flags for scale escapes;
+plain Audio captions retain consistent uppercase. No OS adapter change. Windows
+focused/build checks and nine main/pause render-resolution captures pass; see
+STATUS for exact scope. Native Mac/Linux scene, physical pad and split-screen
+acceptance remain pending; Windows evidence does not establish those hosts.
+
 Settings font consistency (local after6ac74150): common skin option-font policy
 in pc_settings_row_alignment.inc and shared tab fitting/navigation, no OS adapter.
 Windows fixtures/build/main scene checks pass. Native Mac/Linux visual acceptance,
