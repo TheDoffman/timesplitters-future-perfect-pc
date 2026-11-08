@@ -1,3 +1,5 @@
+[Textures](texture-preference.md).
+
 [Clips](portal-scissors.md).
 2720: defer fixture until migration.
 

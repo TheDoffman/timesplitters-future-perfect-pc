@@ -1,3 +1,30 @@
+## Enhanced texture preference persistence — November 8, 2026
+
+Local branch `fix/persist-enhanced-textures`, based on `c511f1e9`.
+Video Options Apply and F10/menu-bar switches now save Classic/Enhanced in
+`pc-textures.ini`. The launcher reads this shared preference ahead of its legacy
+JSON default and updates both during its existing settings transaction. Missing
+sidecars retain legacy behavior; save failures preserve the live texture mode.
+A final texture-save failure also restores earlier AA/display/rate/graphics/window
+changes, preserving staged choices and the existing visible error.
+
+Validation: production restart/failure fixture passes with MSVC on Windows and
+GCC with fatal warnings under WSL Linux. Windows loader/cache and FOV callback
+fixtures pass (26 passed, 4 Mac-only/skipped checks); the extended FOV fixture
+also passes texture-file read-only failure and AA rollback (2 passed, 4 skipped).
+Final focused regression run: 39 passed, 4 platform-specific skips and
+31 subtests passed. Repository context/links/index and diff whitespace checks pass.
+The full Windows launcher build and regression command
+`powershell -NoProfile -File tools/build/build-launcher.ps1 -Test` passes, including
+116 base checks, the shared UI game/launcher synchronization regression and
+49 settings checks. An earlier attempt was blocked by the existing global
+running-game guard; a later retry passed without changing or stopping that game.
+The runtime fixture headers came from the existing patched runtime via a local
+junction; no runtime patches, generated game code or personal settings were edited.
+The full game executable was not rebuilt or installed, and actual quit/relaunch
+in-game visual acceptance and native Mac execution remain unverified. No release
+was published. Linux persistence is validated; Linux game/launcher UI is not.
+
 Settings resolution/aspect matrix (2026-11-07, local after e7d6fb07):
 Actual Windows Release/D3D8/RTX4070SUPER captures at640x480,1280x960,1280x1024,
 1280x720,1920x1080,1920x1200,3440x1440,3840x1080 and3840x2160. Each configuration

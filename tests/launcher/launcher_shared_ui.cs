@@ -68,6 +68,25 @@ public static class LauncherSharedUiChecks
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
+            Test("game texture preference survives launcher reload and detects concurrent edits",()=>{
+                string folder=Path.Combine(root,"textures-game-save");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);model.Save();
+                string preference=Core.PathIn(folder,LauncherPlatform.Settings(folder)[8]);
+                File.WriteAllText(preference,"TSFP_TEXTURES_V1 1\n");
+                Need(GameSettings.Load(folder,null).EnhancedTextures,"Game-saved ON did not reach launcher");
+                Need(GameSettings.StartInfo(folder).EnvironmentVariables["TSFP_TEXTURE_MODE"]=="4k","Game-saved choice lost at launch");
+                bool rejected=false;try {model.Save();}catch{rejected=true;}
+                Need(rejected && File.ReadAllText(preference)=="TSFP_TEXTURES_V1 1\n","Stale launcher overwrote game preference");
+                model=GameSettings.Load(folder,null);model.VerticalFov=70;model.Save();
+                Need(GameSettings.Load(folder,null).EnhancedTextures,"Unrelated launcher save reset game choice");
+                File.WriteAllText(preference,"TSFP_TEXTURES_V1 0\n");
+                Need(!GameSettings.Load(folder,null).EnhancedTextures,"Game-saved OFF did not override legacy JSON");
+                model=GameSettings.Load(folder,null);model.EnhancedTextures=true;model.Save();
+                Need(File.ReadAllText(preference)=="TSFP_TEXTURES_V1 1\n","Launcher could not update shared preference");
+                File.WriteAllText(preference,"TSFP_TEXTURES_V1 1 trailing");
+                rejected=false;try {GameSettings.Load(folder,null);}catch{rejected=true;}
+                Need(rejected && File.ReadAllText(preference).EndsWith("trailing"),"Malformed shared preference was rewritten");
+            });
             Test("antivirus error codes respect the host and preserve unrelated IO failures",()=>{
                 var native=new System.ComponentModel.Win32Exception(225,"localized detection");
                 var io=new IOException("localized detection",unchecked((int)0x800700e2));
