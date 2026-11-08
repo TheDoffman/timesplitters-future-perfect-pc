@@ -1,3 +1,9 @@
+PR #528 integration: merged main1a66ee17 texture-preference fix. Focused combined
+checks87 passed/2 Mac skips/31 subtests; full Windows launcher suite passed.
+Standalone texture-toggle fixture now isolates its own preference directory;
+46 texture/repository checks pass and retain conflicting caller settings bytes.
+Supported Windows build and final PR/main CI are being verified.
+
 PR #528 CI follow-up: Windows/Mac/Linux launcher release checks pass. Historical
 partial-stack fixtures now defer2940 with its absent input dependencies; full
 upgrades still exercise presets. Extracted camera fixture supplies input-reader
