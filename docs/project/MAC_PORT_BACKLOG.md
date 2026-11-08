@@ -10286,3 +10286,13 @@ pointer bounds; RHI/legacy GL provide physical canvas bounds. No additional
 adapter is needed. Synthetic Mac compilation/execution covers fractional/Retina
 ratios and both docks; see [STATUS](STATUS.md). Physical clicks, monitor changes
 and Windows/Linux host acceptance remain unverified.
+
+## Issue521 inclusive portal clipping (implemented; native Mac validation pending)
+
+Commit41ef41ba: shared patch2725 and src/graphics/guest_scissor.h correct scaled
+room edges on Windows/Linux/Mac RHI; src/native/renderer_gl.c uses the same policy
+for legacy GL. No remaining OS adaptation is identified. Windows live/user
+acceptance and Linux software-Vulkan replay pass; native Mac gameplay/renderer
+and physical Steam Deck checks remain unverified. Test doorway/floor seams at
+4:3,16:9 and ultrawide, partial clipping and full-screen crane coverage.
+See [evidence](STATUS.md#2026-11-07---issue521-portal-seams).

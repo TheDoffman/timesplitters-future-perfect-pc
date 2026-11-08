@@ -42796,3 +42796,18 @@ passed checksum-verified actionlint 1.7.12; 23 Node context/evidence tests and
 repository context/whitespace checks passed. Windows/Mac/Linux hosted
 builds and LFS texture verification await the PR's GitHub Actions run. No game
 launch or visual/gameplay validation is claimed for this CI-only change.
+
+## 2026-11-07 - Issue521 portal seams
+
+Commit41ef41ba: patch2725 and guest_scissor.h preserve inclusive Xbox clipping
+edges before resolution scaling; common RHI and legacy GL use the same policy.
+Vietnam floor seams exposed sky through a missing clipped row, not depth fighting.
+Windows Build/checks and isolated ten-bot Vietnam route passed all four checkpoints,
+with clean exit and unchanged profiles. User confirmed the test build looks fixed.
+Windows D3D11 and Linux software Vulkan pass twelve coverage cases and remove the
+real captured seam. Windows regression selection passed100, with one stale
+patch-order expectation corrected; context/tracking rerun passed45. Linux source
+tests passed16 with two absent-original-asset skips. Native Mac and physical
+Steam Deck validation remain pending. No new platform adapter is needed.
+See [contract](../agent-context/portal-scissors.md). Refs #521; keep open until
+a downloadable release includes the fix.

@@ -1,7 +1,8 @@
+[Clips](portal-scissors.md).
 [Arms](video-options.md).
 
 [Uplink throw tests and policy](native-uplink.md#throw-impulse).
-Networking eligibility: `pc_network_enabled()` reads launch environment/config once,
+Networking: `pc_network_enabled()` reads startup config once,
 then uses shared atomic flags in the indirect-dispatch hot path. The System Link
 menu explicitly calls `pc_network_enable_lan()`; Online connect/disconnect publishes
 its own flag. Missing launch files are not retried on every guest call, and an

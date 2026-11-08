@@ -1,0 +1,88 @@
+--- a/src/d3d/d3d8_device.c
++++ b/src/d3d/d3d8_device.c
+@@ -23,6 +23,7 @@
+ #include "d3d8_display.h"
+ #include "graphics/interpolation_depth.h"
+ #include "graphics/msaa_targets.h"
++#include "graphics/guest_scissor.h"
+ #include "graphics/graphics_settings.h"
+ #ifdef TSFP_PC_DISPLAY
+ #include "pc_display.h"
+@@ -254,26 +255,26 @@
+  * Full-frame colour targets sharing scene depth can have a larger host
+  * image than their logical size. Viewports and scissors must scale with it,
+  * just as they do on the scene target. */
+-static float rt_scale_x(void)
++static double rt_scale_x(void)
+ {
+     if (g_cur_rt) {
+         RhiImageDesc desc;
+         rhi_image_get_desc(g_cur_rt->image, &desc);
+-        return (float)(desc.width >> (g_cur_rt->subresource % desc.mip_levels)) / g_cur_rt->width;
++        return (double)(desc.width >> (g_cur_rt->subresource % desc.mip_levels)) / g_cur_rt->width;
+     }
+     if (!g_device_state.present_width) return 1.0f;
+-    return (float)g_device_state.width / (float)g_device_state.present_width;
+-}
+-
+-static float rt_scale_y(void)
++    return (double)g_device_state.width / g_device_state.present_width;
++}
++
++static double rt_scale_y(void)
+ {
+     if (g_cur_rt) {
+         RhiImageDesc desc;
+         rhi_image_get_desc(g_cur_rt->image, &desc);
+-        return (float)(desc.height >> (g_cur_rt->subresource % desc.mip_levels)) / g_cur_rt->height;
++        return (double)(desc.height >> (g_cur_rt->subresource % desc.mip_levels)) / g_cur_rt->height;
+     }
+     if (!g_device_state.present_height) return 1.0f;
+-    return (float)g_device_state.height / (float)g_device_state.present_height;
++    return (double)g_device_state.height / g_device_state.present_height;
+ }
+ 
+ /* xbox_D3D8KeepPresented: the frame as it reaches the swap chain. */
+@@ -514,25 +515,18 @@
+ BOOL d3d8_GetScissor(RhiRect *out)
+ {
+     if (out) {
+-        float sx = rt_scale_x(), sy = rt_scale_y();
++        double sx = rt_scale_x(), sy = rt_scale_y();
+         int32_t clip[4]={g_scissor.left,g_scissor.top,g_scissor.right,g_scissor.bottom};
+ #ifdef TSFP_PC_DISPLAY
+         pc_ui_vignette_clip(g_2d_tag,g_2d_placement,clip);
+ #endif
+-        float left = clip[0] * sx, right = clip[2] * sx;
+-        float k, cx, ky=two_d_vertical_scale(), cy=g_device_state.height*.5f;
+-
+-        /* Stored as the title gave them, converted here, so the stored
+-         * rectangle stays comparable with anything else in guest pixels
+-         * and GetScissors keeps answering in the title's own units. */
+-        if (two_d_squeeze(&k, &cx)) {
+-            left  = cx + (left  - cx) * k;
+-            right = cx + (right - cx) * k;
+-        }
+-        out->left   = (int32_t)left;
+-        out->top    = (int32_t)(cy+(clip[1]*sy-cy)*ky);
+-        out->right  = (int32_t)right;
+-        out->bottom = (int32_t)(cy+(clip[3]*sy-cy)*ky);
++        float k=1.f,cx=0.f;
++        int32_t bounds[4];
++        two_d_squeeze(&k,&cx);
++        pc_guest_scissor(clip,sx,sy,k,two_d_vertical_scale(),cx,
++                         g_device_state.height*.5,bounds);
++        out->left=bounds[0];out->top=bounds[1];
++        out->right=bounds[2];out->bottom=bounds[3];
+     }
+     return g_scissor_enabled;
+ }
+@@ -1805,7 +1799,7 @@
+ static void apply_host_viewport(void)
+ {
+     const D3DVIEWPORT8 *vp = &g_device_state.viewport;
+-    float sx = rt_scale_x(), sy = rt_scale_y();
++    double sx = rt_scale_x(), sy = rt_scale_y();
+     float k, cx;
+     RhiViewport hv;
+ 

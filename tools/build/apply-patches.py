@@ -297,6 +297,11 @@ def patch_records(paths):
     if shared_depth_resize:
         paths.remove(shared_depth_resize)
         paths.append(shared_depth_resize)
+    # Inclusive portal clips extend the final shared renderer/scaled-target code.
+    portal_scissors = by_name.get('2725-inclusive-portal-scissors.patch')
+    if portal_scissors:
+        paths.remove(portal_scissors)
+        paths.append(portal_scissors)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

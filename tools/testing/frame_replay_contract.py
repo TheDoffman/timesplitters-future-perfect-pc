@@ -94,4 +94,9 @@ def run(executable, directory, environment, backend='vulkan'):
     shared_depth = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(shared_depth)
     shared_depth.main(executable, environment=environment)
+    spec = importlib.util.spec_from_file_location(
+        "portal_scissors", _layout_root / "tests/graphics/portal_scissors.py")
+    portal = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(portal)
+    portal.main(executable, environment=environment)
     return output
