@@ -3,7 +3,7 @@
 
 [Arms tests](video-options.md).
 
-[Throw](native-uplink.md).
+[Throw](native-uplink.md); [beam tests](native-projectiles.md).
 [Vietnam](network-performance.md).
 
 [Tools](developer-tools-integration.md).

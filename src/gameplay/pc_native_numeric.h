@@ -19,9 +19,21 @@
 #endif
 /* Entry callbacks precede this audited US affine-transform fast path. */
 extern int pc_model_transform_entry(void);
-#define RECOMP_FAST_ENTRY(site) ((site)==0x151E80u && pc_model_transform_entry())
+#define RECOMP_FAST_ENTRY(site) \
+    (((site)==0x151E80u && pc_model_transform_entry()) || \
+     ((site)==0x28F560u && pc_native_skip_boss_mines() ? (g_esp+=4,1) : 0))
 extern ptrdiff_t g_xbox_mem_offset;
 extern int g_tsfp_native_timing_active;
+/* Crow's eight-slot mine pool uses authored fixed steps (2AA6A0), including
+ * arming, launch, four-direction effects and retirement. Keep its containing
+ * collision/damage update at the same cadence, without gating boss movement.
+ * Original and catch-up calls retain their original single-update behavior. */
+static inline int pc_native_skip_boss_mines(void)
+{
+    return g_tsfp_native_timing_active &&
+        (!*(const uint32_t *)((uintptr_t)0x4E7944u+g_xbox_mem_offset) ||
+         !(*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset)>0.f));
+}
 #include "pc_native_uplink.h"
 #include "pc_native_material.h"
 #include "pc_native_statistics_guest.h"
@@ -34,6 +46,24 @@ extern int g_tsfp_native_timing_active;
 extern void sub_000D1FD0(void);
 static inline void pc_native_player_statistics(void)
 { pc_native_statistics_guest(sub_000D1FD0); }
+/* Terminal text/password callbacks run inside 3700D0's whole-game-tick
+ * gate. Their x87 float clocks must cover that same interval, not only the
+ * latest rendered frame. Scope the clock to these text routines; gameplay,
+ * puzzle deadlines, UI dispatch and RNG cadence retain their original clocks. */
+static inline void pc_native_terminal_text_guest(void (*original)(void))
+{
+    float *clock=(float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+    float saved=*clock;
+    if(g_tsfp_native_timing_active && saved>0.f)
+        *clock=(float)*(const uint32_t *)((uintptr_t)0x4E7944u+g_xbox_mem_offset);
+    original();
+    if(g_tsfp_native_timing_active)*clock=saved;
+}
+extern void sub_0036D000(void),sub_0036D3C0(void);
+static inline void pc_native_terminal_lines(void)
+{ pc_native_terminal_text_guest(sub_0036D000); }
+static inline void pc_native_terminal_password(void)
+{ pc_native_terminal_text_guest(sub_0036D3C0); }
 /* Only these audited US127500 multiplications receive the material pointer
  * and its already-clamped/scaled forcing register. All original loads/stores,
  * force sampling, wrapping and procedural resource/event order still execute. */
@@ -398,6 +428,12 @@ static inline uint32_t pc_native_wind_global_load(uint32_t address,uint32_t valu
 static inline float pc_native_multiply(uint32_t site, float left, float right)
 {
     if(site==0x3505D7u)return pc_native_uplink_throw(left,right);
+    /* Spawner 164010 is dispatched by the whole-tick scheduler 15E830.
+     * Its countdown must consume that tick, not the latest render fraction.
+     * Keep callback rotation, spawn admission and NPC scheduling at 60 Hz. */
+    if(site==0x164116u && g_tsfp_native_timing_active && right>0.f)
+        right=(float)*(const uint32_t *)((uintptr_t)0x4E7944u+g_xbox_mem_offset);
+
     /* Kind-42 boost follows the whole-tick speed multiplier in F08D0.
      * Applying it before fractional frames' next multiplier amplifies it.
      * Keep both speed changes at the original boundary; motion stays fractional. */
@@ -480,8 +516,37 @@ static inline float pc_native_multiply(uint32_t site, float left, float right)
 /* Smooth only the final visual sway value passed to weapon updates. Keep the
  * integer sine crossing and its random-amplitude event unchanged. */
 extern float pc_native_demo_timer_multiply(uint32_t site,float left,float right);
+/* Fixed-length beams (25/26) trace on whole game ticks in EC120/EBB00.
+ * Their continuous damage must cover that same interval, not only the last
+ * fractional render frame. Other projectile kinds retain fractional damage.
+ * B9901 has three saved registers; B99B4 has one local on the guest stack. */
+static inline float pc_native_beam_damage(uint32_t site,float left,float right,uint32_t stack)
+{
+    if(g_tsfp_native_timing_active && right>0.f) {
+        uint32_t kind=*(const uint32_t *)((uintptr_t)stack+
+            (site==0xB9901u?0x18u:0xCu)+g_xbox_mem_offset);
+        if(kind==25u || kind==26u)
+            right=(float)*(const uint32_t *)((uintptr_t)0x4E7944u+g_xbox_mem_offset);
+    }
+    return left*right;
+}
+/* Attached tranquilizer release E0300/E03D0 writes a new downward velocity,
+ * rather than integrating acceleration. A subtick must not weaken that kick.
+ * Preserve original mode, zero/catch-up intervals and other projectile kinds. */
+static inline float pc_native_dart_release(float left,float right,uint32_t shot)
+{
+    if(g_tsfp_native_timing_active && right>0.f && right<1.f) {
+        uint32_t kind=*(const uint32_t *)((uintptr_t)shot+g_xbox_mem_offset);
+        if(kind==32u || kind==33u)right=1.f;
+    }
+    return left*right;
+}
 #define RECOMP_F32_MUL_AT(site, left, right) \
-    (((site)==0x12765Bu || (site)==0x1276FDu || (site)==0x127705u || \
+    (((site)==0xE036Bu || (site)==0xE04E7u) ? \
+     pc_native_dart_release((float)(left),(float)(right),g_esi) : \
+     ((site)==0xB9901u || (site)==0xB99B4u) ? \
+     pc_native_beam_damage((uint32_t)(site),(float)(left),(float)(right),g_esp) : \
+     ((site)==0x12765Bu || (site)==0x1276FDu || (site)==0x127705u || \
       (site)==0x12773Bu || (site)==0x127791u) ? \
      pc_native_material_multiply((uint32_t)(site),(float)(left),(float)(right),g_edi,g_xmm4.f[0]) : \
      ((site)==0x433E2u || (site)==0x43473u) ? \
@@ -608,7 +673,9 @@ extern void pc_native_walk_collision(void),pc_native_walk_sweep(void);
     ((site)==0x172114u ? pc_native_physics_solver : \
     ((site)==0x1715A0u || (site)==0x170E51u) ? pc_native_physics_random : (function))
 #define RECOMP_DIRECT_CALLEE_AT(site,function) \
-    ((site)==0xF28F4u ? pc_native_ballistic_finish : \
+    ((site)==0x370424u ? pc_native_terminal_lines : \
+    ((site)==0x3721EEu || (site)==0x3766B0u) ? pc_native_terminal_password : \
+    (site)==0xF28F4u ? pc_native_ballistic_finish : \
     (site)==0xF0C9Au ? pc_native_scripted_steer : \
     (site)==0xE280Au ? pc_native_scripted_rotation : \
     (site)==0xF4739u ? pc_native_projectile_smoke_choice : \
