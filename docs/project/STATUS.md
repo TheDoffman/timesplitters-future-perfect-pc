@@ -1,3 +1,44 @@
+## Faster PR feedback (2026-11-08; local, uncommitted)
+
+Base main: dfd6573122d9c9c967ceda558313ae07ccb4c613; task branch
+ci-faster-feedback in an isolated worktree. Concurrent staged/unstaged changes
+in the original checkout are preserved. CI tooling/workflow/docs only; no game,
+save or settings behavior changed. The verified Base ruleset still requires
+PR validation and an up-to-date branch; repository settings were not changed.
+
+The shared runtime-suites.json manifest retains every old CI test file. Patch
+and native CPU collections partition into three fixture-preserving jobs per
+Windows/Mac host. Mac GPU and dual-host release jobs depend only on the plan.
+The required gate rejects failed/cancelled/missing/unexpectedly skipped work.
+Local preflight uses the same complete lists and can run prior failures first;
+no cached pass or last-failed-only run substitutes for acceptance. JUnit/job
+summaries group compiler/setup diagnostics. Timing/caches/artifacts are separate
+by host/shard; measurement/artifact outages remain advisory.
+
+Windows11 x64 (10.0.26300), Python3.14.2, MSVC19.42.34435,
+pytest9.1.1/xdist3.8.0, two workers/shard: all76 patch cases passed (34/24/18).
+All three native groups passed:3,130 passed,352 private-data/host skips from
+3,482 collected (1,124/1,167/1,191). Final release execution:221 passed,14 host
+skips,3 subtests. Final scheduling/scope/gate/guide/launcher contract suite:
+270 passed,1 Linux-host skip,31 subtests, including final report grouping/cache
+isolation. Serial/xdist fixture tests and real collection unions verify no
+omitted/duplicated cases. Node context/evidence23 passed. actionlint1.7.12
+syntax/expression validation and context/index/whitespace checks passed.
+No game, original XBE, GPU or gameplay validation was performed.
+
+Initial sandbox runs hit loopback/link/MSVC-helper/Git restrictions; normal-host
+reruns passed without product assertion changes. One stalled sandbox patch
+process tree was stopped before its successful host rerun. Disposable test roots
+are cleaned after child shutdown; bounded reports remain in task-local logs/
+and build/test-results/.
+
+Baseline GitHub run42508588658 took17m13s (Windows patch pytest16m; native11m).
+Local patch groups took225/256/319s; native groups128/173/165s. Hosts/access and
+concurrency differ, so this is not a before/after hosted-speed benchmark. Fresh
+GitHub timings, Mac GPU/macOS and Linux-host acceptance remain unrun. No Mac
+runtime adapter is needed for these shared CI scheduling changes. Work remains
+local and uncommitted; nothing pushed or verified on another device.
+
 #529 controller deadzones (local, based on main2dff17e7): per-player movement/aim
 selectors in Controller and shared launcher. Untouched raw legacy values retain
 behavior. Edited axes invert the original decoder's measured10% threshold after

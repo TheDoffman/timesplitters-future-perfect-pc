@@ -32,9 +32,9 @@ launcher = load('launcher_scope', 'launcher-compatibility.py')
 
 
 def gate(plan, transitions, native, release, run_launcher,
-         patches_result, native_result, launcher_result, *, checks=()):
+         patches_result, native_result, launcher_result, *, release_result, checks=()):
     runtime.gate(plan, transitions, native, release,
-                 patches_result, native_result)
+                 patches_result, native_result, release_result)
     launcher.gate(plan, run_launcher, launcher_result)
     for name, selected, result in checks:
         if selected not in ('true', 'false'):
@@ -50,5 +50,6 @@ if __name__ == '__main__':
              'RUN_LAUNCHER', 'PATCHES_RESULT', 'NATIVE_RESULT', 'LAUNCHER_RESULT')
     checks = [(name, os.environ.get('RUN_' + name, ''),
                os.environ.get(name + '_RESULT', ''))
-              for name in ('LINUX', 'ISSUE_FORMS', 'ISSUE_RESOLUTION', 'TEXTURES')]
-    print(gate(*(os.environ.get(name, '') for name in names), checks=checks))
+              for name in ('MAC_GPU', 'LINUX', 'ISSUE_FORMS', 'ISSUE_RESOLUTION', 'TEXTURES')]
+    print(gate(*(os.environ.get(name, '') for name in names),
+               release_result=os.environ.get('RELEASE_RESULT', ''), checks=checks))

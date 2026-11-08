@@ -16,10 +16,10 @@ spec.loader.exec_module(gate_module)
 @pytest.mark.parametrize('flags,results', [
     (('false', 'false', 'false', 'false'), ('skipped', 'skipped', 'skipped')),
     (('true', 'true', 'false', 'true'), ('success', 'success', 'success')),
-    (('false', 'false', 'true', 'true'), ('skipped', 'success', 'success')),
+    (('false', 'false', 'true', 'true'), ('skipped', 'skipped', 'success')),
 ])
 def test_selected_work_passes(flags, results):
-    assert 'passed' in gate_module.gate('success', *flags, *results)
+    assert 'passed' in gate_module.gate('success', *flags, *results, release_result='success' if flags[2] == 'true' else 'skipped')
 
 
 @pytest.mark.parametrize('index,bad', [
@@ -34,10 +34,10 @@ def test_failure_or_unexpected_skip_cannot_pass(index, bad):
         args[index - 4] = 'true'
     args[index] = bad
     with pytest.raises(ValueError):
-        gate_module.gate(*args)
+        gate_module.gate(*args, release_result='skipped')
 
 
-@pytest.mark.parametrize('name', ['LINUX', 'ISSUE_FORMS', 'ISSUE_RESOLUTION', 'TEXTURES'])
+@pytest.mark.parametrize('name', ['MAC_GPU', 'LINUX', 'ISSUE_FORMS', 'ISSUE_RESOLUTION', 'TEXTURES'])
 @pytest.mark.parametrize('selected,result,passes', [
     ('true', 'success', True), ('false', 'skipped', True),
     ('true', 'failure', False), ('true', 'cancelled', False),
@@ -50,24 +50,40 @@ def test_extra_checks_fail_closed(name, selected, result, passes):
             'skipped', 'skipped', 'skipped')
     checks = [(name, selected, result)]
     if passes:
-        assert 'passed' in gate_module.gate(*args, checks=checks)
+        assert 'passed' in gate_module.gate(*args, release_result='skipped', checks=checks)
     else:
         with pytest.raises(ValueError):
-            gate_module.gate(*args, checks=checks)
+            gate_module.gate(*args, release_result='skipped', checks=checks)
 
 
-@pytest.mark.parametrize('missing', [None, 'LINUX', 'ISSUE_FORMS', 'ISSUE_RESOLUTION', 'TEXTURES'])
+@pytest.mark.parametrize('selected,result,passes', [
+    ('true', 'success', True), ('false', 'skipped', True),
+    ('true', 'failure', False), ('true', 'cancelled', False),
+    ('true', 'skipped', False), ('true', '', False),
+    ('false', 'success', False), ('false', 'failure', False),
+])
+def test_independent_release_result_is_required(selected, result, passes):
+    args = ('success', 'false', 'false', selected, 'false',
+            'skipped', 'skipped', 'skipped')
+    if passes:
+        assert 'passed' in gate_module.gate(*args, release_result=result)
+    else:
+        with pytest.raises(ValueError):
+            gate_module.gate(*args, release_result=result)
+
+
+@pytest.mark.parametrize('missing', [None, 'MAC_GPU', 'LINUX', 'ISSUE_FORMS', 'ISSUE_RESOLUTION', 'TEXTURES', 'RELEASE_RESULT'])
 def test_command_requires_all_repository_scope_outputs(missing):
     import subprocess
     import sys
     env = dict(PLAN_RESULT='success', RUN_TRANSITIONS='false', RUN_NATIVE='false',
                RUN_RELEASE='false', RUN_LAUNCHER='false', PATCHES_RESULT='skipped',
-               NATIVE_RESULT='skipped', LAUNCHER_RESULT='skipped')
-    for name in ('LINUX', 'ISSUE_FORMS', 'ISSUE_RESOLUTION', 'TEXTURES'):
+               NATIVE_RESULT='skipped', LAUNCHER_RESULT='skipped', RELEASE_RESULT='skipped')
+    for name in ('MAC_GPU', 'LINUX', 'ISSUE_FORMS', 'ISSUE_RESOLUTION', 'TEXTURES'):
         env['RUN_' + name] = 'false'
         env[name + '_RESULT'] = 'skipped'
     if missing:
-        del env['RUN_' + missing]
+        del env[missing if missing == 'RELEASE_RESULT' else 'RUN_' + missing]
     result = subprocess.run([sys.executable, str(root / 'tools/ci/ci-pr-gate.py')],
                             env=env, capture_output=True, text=True)
     assert (result.returncode == 0) == (missing is None), result.stderr

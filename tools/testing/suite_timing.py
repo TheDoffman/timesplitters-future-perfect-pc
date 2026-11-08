@@ -42,7 +42,8 @@ def environment(config):
                 python=platform.python_version(), pytest=package('pytest'),
                 xdist=package('pytest-xdist'),
                 workers=config.getoption('numprocesses', default=0) or 1,
-                distribution=config.getoption('dist', default='no'))
+                distribution=config.getoption('dist', default='no'),
+                runtime_shard=config.getoption('runtime_shard', default=None))
 
 
 def coverage(reference, current):

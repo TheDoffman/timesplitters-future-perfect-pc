@@ -16,6 +16,8 @@ spec.loader.exec_module(scope)
 @pytest.mark.parametrize('path', ['vendor/ts3FPrecomp/snapshot.json',
                                  'tools/project_paths.py', 'tests/conftest.py',
                                  'tools/testing/suite_timing.py', 'tests/support/test_suite_timing.py',
+                                 'tools/ci/runtime-suites.json', 'tools/ci/run-runtime-checks.py',
+                                 'tests/support/runtime_shards.py', 'tests/repository/test_runtime_checks.py',
                                  'vendor/ts3FPrecomp/source/src/kernel/kernel_bridge.c',
                                  'tools/build/prepare-runtime.py', 'tests/repository/test_runtime_snapshot.py'])
 def test_bundled_runtime_changes_select_every_runtime_suite(path):
@@ -156,20 +158,20 @@ def test_manual_and_new_branch_runs_cover_everything():
     ('true', 'true', 'true', 'success', 'success'),
     ('true', 'false', 'false', 'success', 'skipped'),
     ('false', 'true', 'false', 'skipped', 'success'),
-    ('false', 'false', 'true', 'skipped', 'success'),
+    ('false', 'false', 'true', 'skipped', 'skipped'),
 ])
 def test_gate_accepts_only_selected_work(transitions, native, release, patches, result):
-    assert 'passed' in scope.gate('success', transitions, native, release, patches, result)
+    assert 'passed' in scope.gate('success', transitions, native, release, patches, result, 'success' if release == 'true' else 'skipped')
 
 
 @pytest.mark.parametrize('bad', ['failure', 'cancelled', 'skipped', '', 'in_progress'])
 def test_required_gate_rejects_unsuccessful_selected_work(bad):
     with pytest.raises(ValueError):
-        scope.gate(bad, 'true', 'true', 'false', 'success', 'success')
+        scope.gate(bad, 'true', 'true', 'false', 'success', 'success', 'skipped')
     with pytest.raises(ValueError):
-        scope.gate('success', 'true', 'true', 'false', bad, 'success')
+        scope.gate('success', 'true', 'true', 'false', bad, 'success', 'skipped')
     with pytest.raises(ValueError):
-        scope.gate('success', 'true', 'true', 'false', 'success', bad)
+        scope.gate('success', 'true', 'true', 'false', 'success', bad, 'skipped')
 
 
 @pytest.mark.parametrize('bad', ['', 'yes', 'TRUE', 'null'])
@@ -178,12 +180,12 @@ def test_gate_rejects_missing_scope_outputs(bad):
         flags = ['false', 'false', 'false']
         flags[index] = bad
         with pytest.raises(ValueError):
-            scope.gate('success', *flags, 'skipped', 'skipped')
+            scope.gate('success', *flags, 'skipped', 'skipped', 'skipped')
 
 
 def test_unselected_work_cannot_hide_an_unexpected_failure():
     with pytest.raises(ValueError):
-        scope.gate('success', 'false', 'false', 'false', 'failure', 'skipped')
+        scope.gate('success', 'false', 'false', 'false', 'failure', 'skipped', 'skipped')
 
 
 def test_parallel_workers_preserve_required_check_contract():
@@ -195,7 +197,8 @@ def test_parallel_workers_preserve_required_check_contract():
     for worker in (patches, native):
         assert '    needs: plan\n' in worker
         assert 'os: [windows-latest, macos-latest]' in worker
-        assert '-n 2 --dist=loadgroup --max-worker-restart=0' in worker
+        assert 'shard: [1, 2, 3]' in worker
+        assert '--shard ${{ matrix.shard }}/3 --profile-prefix ci' in worker
         assert "('pytest==', 'pytest-xdist==', 'execnet==')" in worker
     assert 'needs: patches' not in native
     assert 'python tools/build/apply-patches.py external/ts3FPrecomp patches' in native
@@ -203,7 +206,10 @@ def test_parallel_workers_preserve_required_check_contract():
     assert "if: needs.plan.outputs.native == 'true'" in online
     assert 'runner.os' not in online  # Online now runs on both desktop hosts.
     assert 'python -m pip install -r requirements-release.txt' in native
-    assert "needs.plan.outputs.gpu == 'true' && runner.os == 'macOS'" in native
+    gpu = workflow.split('\n  mac-gpu:\n')[1].split('\n  release:\n')[0]
+    assert "if: needs.plan.outputs.gpu == 'true'" in gpu
+    assert 'runs-on: macos-latest' in gpu and 'needs: plan' in gpu
+    assert 'test-rhi-mac.py --setup-sdk --driver moltenvk' in gpu
     assert 'name: PR validation' in gate and 'if: always()' in gate
     assert 'python tools/ci/ci-pr-gate.py' in gate
     assert 'test_compatibility_worker.py' in workflow
@@ -224,7 +230,7 @@ def test_single_gate_covers_all_selected_work():
     assert 'uses: ./.github/workflows/launcher-build.yml' in launcher
     assert 'source_ref: ${{ needs.plan.outputs.head }}' in launcher
     assert 'name: PR validation' in gate
-    assert 'needs: [plan, patches, native, launcher, linux-foundation, issue_forms, issue_resolution, textures]' in gate
+    assert 'needs: [plan, patches, native, mac-gpu, release, launcher, linux-foundation, issue_forms, issue_resolution, textures]' in gate
     assert '\n  patch-transitions:' not in workflow
     assert 'needs.linux-foundation.result' in gate
     assert 'if: always()' in gate

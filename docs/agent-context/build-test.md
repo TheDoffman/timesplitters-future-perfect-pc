@@ -25,20 +25,16 @@ Streams:8kHz/320-byte refill, ordered callbacks, manual dispatch.
 Movie updater: real DSP + neutral mix spies; speech-tail/gap PCM fixtures.
 `test_audio_output_gain.py`: mute/queue retention, Windows capture.
 [Capture and bounded build](../development/audio-overhaul.md#process-output-capture).
-`test_controller_profile.py` now executes the real native key/pad guards and
-runtime key dispatcher, requiring neutral gameplay keys during freecam while
-raw camera keys remain held. Its shared sampler fixture tests blocked/resumed
-automatic and assigned pads for both host defines. Existing parser, ownership,
-disconnect and focus cases remain; its current shared settings action constants
-are included explicitly. The suite already runs in runtime-patches CI, alongside
-the Developer Tools flight/mouse fixture. Patch-order tail gains2630 after2620.
+`test_controller_profile.py` executes native key/pad guards and the runtime key
+dispatcher: freecam neutralizes gameplay while retaining raw camera keys. Both
+host defines cover automatic/assigned pad blocking/resume and existing ownership,
+disconnect/focus/parser cases. It runs alongside Developer Tools flight/mouse
+coverage in runtime CI. Patch2630 follows2620.
 
-`tests/input/test_developer_tools.py` already runs in runtime-patches CI. Its
-sidebar fixture now clicks drawn tab/dock centers at 1x/1.5x/2x drawable ratios,
-both docks and independent vertical scaling, and checks input-only frames retain
-the painted extent. Non-Windows fixture-local lock/atomic boundaries permit
-standalone execution without linking the entire runtime. This is synthetic
-shared hit-testing coverage, not physical Retina mouse or scene acceptance.
+`test_developer_tools.py` runs in runtime CI: sidebar tab/dock centers at
+1x/1.5x/2x, both docks, independent vertical scaling and retained painted extents
+on input-only frames. Fixture-local locks/atomics support standalone non-Windows
+execution. This is synthetic hit-testing, not physical Retina/scene acceptance.
 
 [Linux](linux-game.md); [LAN](system-link.md).
 
@@ -160,10 +156,13 @@ SDL tests (`tools/build/build-native-mac.py --test`) cover the two-slot E/Space
 cap, requested capture, release and frame-applied mouse disable. They preserve
 bindings; physical input remains unverified.
 
-CI: `runtime-patches.yml` scopes runtime/launcher/Linux/issue/texture jobs.
-Only `PR validation` is required; `ci-pr-gate.py` fails closed. Launcher builds
-run once; standalone checks are manual-only. Worker uses this gate. Plan tests
-scope/gate/worker; host suites unchanged. Native Windows45m/Mac30m; upgrades30m.
+CI: `runtime-patches.yml` keeps `PR validation` required and fail-closed.
+Patch/native suites use three fixture-preserving shards per Windows/Mac host;
+Mac GPU and release jobs depend only on plan. `tools/ci/runtime-suites.json`
+feeds CI and local `run-runtime-checks.py all --prepare --failed-first` (complete
+host CPU suites, no GPU/launcher acceptance). XML/job summaries retain failures.
+See [preflight, shard coverage and timing](../development/ci.md). Launcher/Linux/
+issue/texture ownership is unchanged. Native45m/30m; patch30m timeouts remain.
 
 `test_push_gather.py`: full original-reference gathering, fresh bytes, failures,
 guard pages, large buffers and32-bit wrapping. Both native CI hosts run it.
