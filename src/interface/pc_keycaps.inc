@@ -138,8 +138,7 @@ void pc_display_keycap_glyph(void (*original)(void))
         unsigned token=c+(digit?'1':'A');
 #ifndef TSFP_KEYCAP_TEST
         if(!pc_controls_in_menu()) {
-            unsigned player=WORD_AT(0x7b0c7c),logical=guest_writable(player,4)?WORD_AT(player):4;
-            unsigned port=logical<4?WORD_AT(0x6b93c0+logical*4):4;
+            unsigned port=controls_context_port(WORD_AT(0x7b0c7c));
             if(port<4 && pc_settings_controller_preset(port)) {
                 unsigned masks[24];int mounted;memcpy(masks,pc_preset_masks,sizeof masks);
                 if(controls_gameplay_masks(port,masks,&mounted))token=pc_preset_controller_token(token,masks);

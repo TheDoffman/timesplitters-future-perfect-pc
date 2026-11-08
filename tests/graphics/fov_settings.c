@@ -524,16 +524,21 @@ int main(int argc,char **argv)
         WORD_AT(guest)=1;WORD_AT(guest+4)=0;WORD_AT(guest+0x18)=0x10;
         WORD_AT(guest+0x24)=0x4000;WORD_AT(guest+0x28)=0x8000;
         WORD_AT(0x6b93c0)=0;WORD_AT(0x6b93c4)=1;
+        WORD_AT(0x7b0c7c)=guest;
+        CHECK(controls_context_port(WORD_AT(0x7b0c7c))==0 && controls_context_port(host)==4);
+        CHECK(controls_context_port(0)==4);
+
         CHECK(controls_gameplay_masks(0,masks,&mounted) && masks[9]==0x10 && masks[2]==0x4000 && masks[23]==0x8000 && !mounted);
         CHECK(!controls_gameplay_masks(1,masks,&mounted));
         /* Reassigned input ports and split-screen owners also use +4, not +0. */
         WORD_AT(0x6b93c0)=3;WORD_AT(0x6b93c4)=2;WORD_AT(host+4)=1;
+        CHECK(controls_context_port(WORD_AT(0x7b0c7c))==3 && controls_context_port(host)==2);
         CHECK(controls_gameplay_masks(3,masks,&mounted) && masks[9]==0x10 && !mounted);
         CHECK(controls_gameplay_masks(2,masks,&mounted) && masks[9]==0x20 && mounted);
         WORD_AT(host+4)=UINT32_MAX;WORD_AT(guest+4)=4;
         CHECK(!controls_gameplay_masks(2,masks,&mounted) && !controls_gameplay_masks(3,masks,&mounted));
         memset((char *)mem+host,0,2*0x1584);
-        WORD_AT(0x790950)=WORD_AT(0x7b0c48)=WORD_AT(0x6b93c0)=WORD_AT(0x6b93c4)=0;
+        WORD_AT(0x790950)=WORD_AT(0x7b0c48)=WORD_AT(0x7b0c7c)=WORD_AT(0x6b93c0)=WORD_AT(0x6b93c4)=0;
         controls_test_menu_active=1;
     }
 

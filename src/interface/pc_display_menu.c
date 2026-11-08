@@ -115,6 +115,15 @@ static int guest_writable(uint32_t address,size_t bytes)
     return pc_display_writable(&region,g_xbox_mem_offset,address,bytes);
 }
 
+/* Context +0 is the global/network slot; +4 is local ownership (-1 remote). */
+static unsigned controls_context_port(uint32_t player)
+{
+    if(!guest_writable(player,8))return 4;
+    unsigned local=WORD_AT(player+4);
+    if(local>=4)return 4;
+    unsigned port=WORD_AT(0x6b93c0+local*4);return port<4?port:4;
+}
+
 /* Read each local player's live native action masks; never rewrite their saved
  * profile. Native input polling calls this on the guest thread before sampling. */
 static int controls_gameplay_masks(unsigned port,unsigned masks[24],int *mounted)
@@ -125,9 +134,7 @@ static int controls_gameplay_masks(unsigned port,unsigned masks[24],int *mounted
     if(count>4 || !guest_writable(base,count*0x1584u))return 0;
     for(unsigned i=0;i<count;i++) {
         uint32_t player=base+i*0x1584u;
-        /* +0 is the global/network slot; +4 is the local input owner (-1 remote). */
-        unsigned local=WORD_AT(player+4);
-        if(local>=4 || WORD_AT(0x6b93c0+local*4)!=port)continue;
+        if(controls_context_port(player)!=port)continue;
         uint32_t pause=WORD_AT(0x761c48);
         if(guest_writable(pause,4) && (WORD_AT(pause)&1u))return 0;
         masks[0]=WORD_AT(player+0x20);masks[1]=WORD_AT(player+0x4c);masks[2]=WORD_AT(player+0x24);

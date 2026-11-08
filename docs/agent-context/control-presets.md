@@ -135,3 +135,7 @@ input owner (UINT32_MAX for remote). controls_gameplay_masks validates +4 before
 mapping through6B93C0, matching story_cine_local_context. The FOV fixture uses a
 remote host(global0/local-1) and guest(global1/local0) with distinct fire/reload/aim
 masks, plus remapped/split local ports, invalid owners and mounted-state isolation.
+
+controls_context_port centralizes the +4 owner/6B93C0 map for gameplay masks and
+active-context controller glyphs (7B0C7C), with invalid/remote owners returning4.
+The guest/split fixture verifies both readers share the same local port policy.

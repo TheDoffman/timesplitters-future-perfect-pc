@@ -1,3 +1,8 @@
+PR #528 prompt ownership follow-up: controls_context_port centralizes validated
+local ownership for action masks and active-player controller glyphs. Remote/invalid
+contexts cannot select another local port's preset.89 focused checks passed/2 Mac
+skips, plus Windows Release/built-ins/crash symbols. Final-head CI pending.
+
 PR #528 network ownership review: gameplay-mask lookup now uses context+4 local
 input ownership before the6B93C0 port map; remote/invalid owners are excluded.
 The global network slot at+0 no longer selects a remote host layout for guests.
