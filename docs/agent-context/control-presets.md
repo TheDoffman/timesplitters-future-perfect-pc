@@ -112,3 +112,10 @@ host config. Controller Customize and native Accept/save keep their original flo
 Tests cover new Custom key parity and edits across preset round trips, old update
 byte preservation, both sampler adapter modes with an edited semantic Custom key,
 and new/existing native profile guards, physical action masks and axis retention.
+
+Historical upgrade fixtures exclude patch2940 alongside its absent Tools/input
+dependencies. Each complete-stack upgrade still installs2940; the previous-controls
+fixture verifies Modern pad fallback and semantic accumulation after migration.
+
+The extracted cinematic-camera fixture stubs input-reader registration (like its
+existing sidebar registration boundary); full FOV/input fixtures test routing.

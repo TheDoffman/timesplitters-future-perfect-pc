@@ -1,3 +1,8 @@
+PR #528 CI follow-up: Windows/Mac/Linux launcher release checks pass. Historical
+partial-stack fixtures now defer2940 with its absent input dependencies; full
+upgrades still exercise presets. Extracted camera fixture supplies input-reader
+registration boundary;29 local camera/repository cases pass. Current PR CI pending.
+
 PR #528 publication: Modern control presets committed on feature/modern-control-presets.
 Windows Release/full launcher checks pass; initial CI index line-ending mismatch
 corrected to committed LF. PR/main CI confirmation pending. Private files excluded.
