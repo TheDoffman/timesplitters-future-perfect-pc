@@ -119,3 +119,13 @@ fixture verifies Modern pad fallback and semantic accumulation after migration.
 
 The extracted cinematic-camera fixture stubs input-reader registration (like its
 existing sidebar registration boundary); full FOV/input fixtures test routing.
+
+Modern active saves preserve editable optional-look and developer shortcut actions.
+pc_settings_action_editable is the shared predicate. pc_settings_save replaces
+only changed editable action members, retaining unrelated raw/legacy source arrays;
+active bindings update only after a successful write. Preset activation keeps the
+retained shortcut keys. The developer sidebar draws gameplay chips muted without
+capture targets and guards stale/keyboard activation; shortcut chips remain editable.
+pc_settings_assign rejects moves from fixed preset actions. Windows built-in
+pc_settings tests cover shortcut persistence/live lookup, immutable preset keys,
+conflict rejection and legacy multi-source retention; developer_tools covers chips.

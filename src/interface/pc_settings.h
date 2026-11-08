@@ -24,6 +24,10 @@ typedef struct PcSettings {
     int preset; /* 0 retains custom bindings, 1 overlays Modern PC. */
 } PcSettings;
 extern const char *const pc_action_labels[PC_ACTION_COUNT];
+/* Optional look keys and developer shortcuts stay editable outside Modern PC. */
+static inline int pc_settings_action_editable(int preset,int action)
+{ return !preset || (action>=19 && action<=22) || action>=PC_DEVELOPER_ACTION; }
+
 /* Shared in-game binding capture; raw keys never pass through menu aliases. */
 int pc_controls_binding_keys(unsigned char keys[256]);
 void pc_settings_capture_begin(void);

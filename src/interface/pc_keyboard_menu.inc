@@ -450,7 +450,11 @@ static void kb_select(void)
     } else if(kb_page==KB_HOME) {
         if(id==13 && kb_keyboard_choice!=kb_settings.preset) {
             double sensitivity=kb_settings.sensitivity;int enabled=kb_settings.enabled,invert=kb_settings.invert_y;
-            if(kb_keyboard_choice)pc_settings_modern(&kb_settings);
+            if(kb_keyboard_choice) {
+                PcSettings retained=kb_settings;pc_settings_modern(&kb_settings);
+                for(int action=0;action<PC_ACTION_COUNT;action++)if(pc_settings_action_editable(1,action))
+                    memcpy(kb_settings.keys[action],retained.keys[action],sizeof retained.keys[action]);
+            }
             else if(!pc_settings_custom_read(&kb_settings,kb_status,sizeof kb_status)) {
                 kb_refresh(KB_HOME,12);restore_registers(&r);g_esp+=4;return;
             }

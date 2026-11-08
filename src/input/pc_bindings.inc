@@ -150,7 +150,9 @@ int pc_settings_assign(PcSettings *s,int action,int slot,int key,int move)
 {
     int i,j;
     if(!s || action<0 || action>=PC_ACTION_COUNT || slot<0 || slot>=PC_BINDING_SLOTS ||
-       !pc_settings_key_allowed(key))return 0;
+       !pc_settings_action_editable(s->preset,action) || !pc_settings_key_allowed(key))return 0;
+    int conflict=pc_settings_conflict(s,action,key);
+    if(conflict>=0 && !pc_settings_action_editable(s->preset,conflict))return 0;
     if(!move && pc_settings_conflict(s,action,key)>=0)return -1;
     if(key)for(i=0;i<PC_ACTION_COUNT;i++)for(j=0;j<PC_BINDING_SLOTS;j++)
         if(s->keys[i][j]==key)s->keys[i][j]=0;
@@ -570,50 +572,58 @@ int pc_settings_controller_preset_save(unsigned port,int modern,char *error,size
 
 int pc_settings_save(const PcSettings *s, char *error, size_t bytes)
 {
-    char bindings[16384]="{", value[128];
-    char *text = NULL;
-    const char *controller, *mouse;
-    size_t used=1;
-    int i,j;
+    char value[128],*text=NULL;
+    const char *controller,*mouse;
+    int changed[PC_ACTION_COUNT]={0};
     PcSettings current;
     if (!pc_settings_custom_read(&current,error,bytes)) return 0;
     if (!isfinite(s->sensitivity) || s->sensitivity < .001 || s->sensitivity > 10) {
         snprintf(error,bytes,"Mouse sensitivity must be between 0.001 and 10."); return 0;
     }
-    for (i=0;i<PC_ACTION_COUNT;i++) {
-        used += (size_t)snprintf(bindings+used,sizeof bindings-used,"%s\"%s\":[",i?",":"",CONTROLS[i].name);
-        for (j=0;j<PC_BINDING_SLOTS;j++) {
-            int key=s->keys[i][j];
-            if (!pc_settings_key_allowed(key)) {
-                snprintf(error,bytes,"A binding uses an invalid key, a system key, or a reserved function key (F2, F9, F10, F11, F12)."); return 0;
-            }
-            if (key) used += (size_t)snprintf(bindings+used,sizeof bindings-used,"%s\"key:#%d\"",j?",":"",key);
-            else used += (size_t)snprintf(bindings+used,sizeof bindings-used,"%s\"none\"",j?",":"");
-        }
-        used += (size_t)snprintf(bindings+used,sizeof bindings-used,"]");
+    if(s->preset!=0 && s->preset!=1) {
+        snprintf(error,bytes,"Choose Custom or Modern PC.");return 0;
     }
-    snprintf(bindings+used,sizeof bindings-used,"}");
+    for(int i=0;i<PC_ACTION_COUNT;i++) {
+        for(int j=0;j<PC_BINDING_SLOTS;j++)if(!pc_settings_key_allowed(s->keys[i][j])) {
+            snprintf(error,bytes,"A binding uses an invalid key, a system key, or a reserved function key (F2, F9, F10, F11, F12).");return 0;
+        }
+        changed[i]=pc_settings_action_editable(s->preset,i) &&
+            memcmp(s->keys[i],current.keys[i],sizeof s->keys[i])!=0;
+    }
     text=read_file(g_path);
-    if (!text || !(controller=pc_controller(text)) ||
-        (!s->preset && memcmp(s->keys,current.keys,sizeof s->keys)!=0 &&
-         !pc_replace_member(&text,controller,"bindings",bindings))) goto failure;
-    if((s->preset!=0 && s->preset!=1) || !pc_replace_member(&text,pc_controller(text),"keyboard_preset",s->preset?"1":"0"))goto failure;
+    if(!text || !(controller=pc_controller(text)))goto failure;
+    for(int i=0;i<PC_ACTION_COUNT;i++)if(changed[i]) {
+        /* Replace only the edited action; preserve other legacy sources and fields. */
+        const char *bindings=pc_member(controller,"bindings",NULL);
+        if(!bindings || *bindings!='{') {
+            if(!pc_replace_member(&text,controller,"bindings","{}"))goto failure;
+        }
+        size_t used=1;value[0]='[';
+        for(int j=0;j<PC_BINDING_SLOTS;j++) {
+            int key=s->keys[i][j];
+            if(key)used+=(size_t)snprintf(value+used,sizeof value-used,"%s\"key:#%d\"",j?",":"",key);
+            else used+=(size_t)snprintf(value+used,sizeof value-used,"%s\"none\"",j?",":"");
+        }
+        snprintf(value+used,sizeof value-used,"]");
+        if(!pc_replace_member(&text,pc_member(pc_controller(text),"bindings",NULL),CONTROLS[i].name,value))goto failure;
+        controller=pc_controller(text);
+    }
+    if(!pc_replace_member(&text,pc_controller(text),"keyboard_preset",s->preset?"1":"0"))goto failure;
     mouse=pc_member(text,"mouse",NULL);
-    if (!mouse || *mouse != '{') {
-        if (!pc_replace_member(&text,ws(text),"mouse","{}")) goto failure;
+    if(!mouse || *mouse!='{') {
+        if(!pc_replace_member(&text,ws(text),"mouse","{}"))goto failure;
     }
     snprintf(value,sizeof value,"%.9g",s->sensitivity);
-    if (!pc_replace_member(&text,pc_member(text,"mouse",NULL),"sensitivity",value) ||
-        !pc_replace_member(&text,pc_member(text,"mouse",NULL),"enabled",s->enabled?"true":"false") ||
-        !pc_replace_member(&text,pc_member(text,"mouse",NULL),"invert_y",s->invert_y?"true":"false")) goto failure;
-    if (!pc_write_config(text)) goto failure;
+    if(!pc_replace_member(&text,pc_member(text,"mouse",NULL),"sensitivity",value) ||
+       !pc_replace_member(&text,pc_member(text,"mouse",NULL),"enabled",s->enabled?"true":"false") ||
+       !pc_replace_member(&text,pc_member(text,"mouse",NULL),"invert_y",s->invert_y?"true":"false"))goto failure;
+    if(!pc_write_config(text))goto failure;
     AcquireSRWLockExclusive(&g_pc_bindings_lock);
-    if(!s->preset && memcmp(s->keys,current.keys,sizeof s->keys)!=0) for (i=0;i<CONTROL_COUNT;i++) {
-        Binding *b=&g_ctl[0].bind[i];
-        memset(b,0,sizeof *b);
-        b->count=PC_BINDING_SLOTS;
-        for (j=0;j<PC_BINDING_SLOTS;j++) if (s->keys[i][j]) {
-            b->src[j].kind=SRC_KEY; b->src[j].arg=(short)s->keys[i][j];
+    for(int i=0;i<CONTROL_COUNT;i++)if(changed[i]) {
+        Binding *binding=&g_ctl[0].bind[i];memset(binding,0,sizeof *binding);
+        binding->count=PC_BINDING_SLOTS;
+        for(int j=0;j<PC_BINDING_SLOTS;j++)if(s->keys[i][j]) {
+            binding->src[j].kind=SRC_KEY;binding->src[j].arg=(short)s->keys[i][j];
         }
     }
     g_pc_keyboard_preset=s->preset;
@@ -623,7 +633,7 @@ int pc_settings_save(const PcSettings *s, char *error, size_t bytes)
     ReleaseSRWLockExclusive(&g_pc_weapon_lock);
     pc_controls_set_mouse(s->sensitivity,s->enabled,s->invert_y);
     fprintf(stderr,"[PC-SETTINGS] Saved and applied keyboard/mouse settings to %s\n",g_path);
-    free(text); return 1;
+    free(text);return 1;
 failure:
     free(text);
     snprintf(error,bytes,"Could not safely save the controls file (system error %lu). Your active bindings were kept.",(unsigned long)GetLastError());

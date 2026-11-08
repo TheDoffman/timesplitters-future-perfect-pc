@@ -1,3 +1,10 @@
+PR #528 review correction: Modern PC now saves optional-look/developer shortcut
+edits and updates their live bindings. Saves replace only changed editable action
+members, preserving unrelated legacy source arrays. Sidebar gameplay bindings are
+muted/noninteractive under Modern; stale activation and conflict moves are guarded.
+Preset activation retains shortcut keys.75 focused checks passed/2 Mac skips,
+plus supported Windows Release/built-ins/crash symbols. Final-head CI pending.
+
 PR #528 integration: merged main1a66ee17 texture-preference fix. Focused combined
 checks87 passed/2 Mac skips/31 subtests; full Windows launcher suite passed.
 Standalone texture-toggle fixture now isolates its own preference directory;

@@ -192,6 +192,20 @@ int main(int argc,char **argv)
         CHECK(pc_settings_save(&modern,error,sizeof error));
         CHECK(pc_settings_read(&current,error,sizeof error) && current.preset==1 && current.keys[1][1]==5 && current.keys[10][0]=='B');
         CHECK(pc_settings_custom_read(&current,error,sizeof error) && !memcmp(current.keys,custom.keys,sizeof custom.keys));
+        /* Non-preset shortcut edits must persist while Modern remains selected. */
+        CHECK(pc_settings_read(&current,error,sizeof error) && current.preset==1);
+        CHECK(pc_settings_assign(&current,19,1,'J',1)==1);
+        CHECK(pc_settings_assign(&current,PC_DEVELOPER_ACTION,0,VK_F3,1)==1);
+        CHECK(pc_settings_save(&current,error,sizeof error));
+        CHECK(pc_settings_read(&current,error,sizeof error) && current.preset==1 && current.keys[19][1]=='J' && current.keys[PC_DEVELOPER_ACTION][0]==VK_F3);
+        int shortcut[PC_BINDING_SLOTS];pc_settings_action_keys(PC_DEVELOPER_ACTION,shortcut);CHECK(shortcut[0]==VK_F3);
+        CHECK(pc_settings_custom_read(&current,error,sizeof error) && current.keys[14][0]=='I' && current.keys[2][0]=='T' && current.keys[19][1]=='J');
+        saved=load(path);CHECK(saved && strstr(saved,"key:BACK") && strstr(saved,"key:RETURN"));free(saved);
+        CHECK(pc_settings_read(&current,error,sizeof error));PcSettings unchanged=current;
+        CHECK(!pc_settings_assign(&current,0,0,'H',1));
+        CHECK(!pc_settings_assign(&current,PC_DEVELOPER_ACTION,0,'B',1));
+        CHECK(!memcmp(&current,&unchanged,sizeof current));
+
         CHECK(pc_settings_controller_preset_save(0,1,error,sizeof error));
         CHECK(pc_settings_controller_preset(0)==1 && pc_settings_controller_preset(1)==0);
         CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));

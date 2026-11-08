@@ -136,6 +136,10 @@ static void sidebar_binding(int action,int binding,int quick,float x,float y,flo
     if(capture_action==action&&slot==binding)snprintf(text,sizeof text,conflict_key?"Conflict":"Press key");
     else if(key)pc_settings_key_name(key,text,sizeof text);else snprintf(text,sizeof text,"Unbound");
     if(quick){float chip=fminf(w,fmaxf(24.f,pc_developer_font_measure(text,11,400,PC_FONT_UI).advance+16));x+=w-chip;w=chip;}
+    if(!pc_settings_action_editable(current.preset,action)) {
+        sidebar_box(x,y,w,25,UI_FIELD,5);
+        sidebar_text_style(x+5,y,w-10,25,UI_MUTED,text,11.f,400,1);return;
+    }
     sidebar_button(UI_BIND,action,binding,quick,x,y,w,25,text,capture_action==action&&slot==binding);
     if(sidebar_count)snprintf(sidebar_widgets[sidebar_count-1].name,80,"%s",name);
 }
@@ -276,7 +280,7 @@ static void sidebar_settings(void) {
 }
 static void sidebar_keyboard(void) {
     sidebar_button(UI_TAB,SETTINGS,0,0,17,sidebar_y,408,32,"<  Settings (discard unsaved bindings)",0);sidebar_y+=42;
-    sidebar_text_face(26,sidebar_y,382,18,UI_MUTED,"Click a slot, press a key. Delete clears. Save to apply.",11,400,0,PC_FONT_UI);sidebar_y+=28;
+    sidebar_text_face(26,sidebar_y,382,18,UI_MUTED,draft.preset?"Modern PC: choose Custom in Controls to edit gameplay.":"Click a slot, press a key. Delete clears. Save to apply.",11,400,0,PC_FONT_UI);sidebar_y+=28;
     int any=0;for(int i=0;i<PC_ACTION_COUNT;i++)if(sidebar_match(pc_action_labels[i]))any=1;
     if(any) {
         sidebar_group_match=0;
@@ -454,6 +458,9 @@ static void sidebar_activate(const DeveloperWidget *v,int direction) {
     case UI_PRESET:sidebar_set_value(v->a,v->value);break;
     case UI_BIND: {
         if(v->value){char error[160];if(!pc_settings_read(&draft,error,sizeof error))pc_settings_defaults(&draft);}
+        if(!pc_settings_action_editable(draft.preset,v->a)) {
+            snprintf(status,sizeof status,"Choose Custom in Controls to edit preset gameplay bindings.");break;
+        }
         capture_action=v->a;slot=v->b;sidebar_quick_bind=(int)v->value;conflict_key=0;edit_number=0;
         snprintf(status,sizeof status,"Press a key. Delete clears; Escape cancels.");break;}
     case UI_SETTING:if(v->a)draft.enabled=!draft.enabled;else draft.invert_y=!draft.invert_y;sidebar_save();break;
@@ -514,7 +521,7 @@ void pc_developer_frame(void) {
             else if(!conflict_key)for(int k=1;k<256;k++)if(sidebar_edge(keys,k)) {
                 int key=k==0x2e?0:k,result=pc_settings_assign(&draft,capture_action,slot,key,0);
                 if(result<0){conflict_key=key;snprintf(status,sizeof status,"Already bound. Enter moves it; Escape cancels.");}
-                else if(result)sidebar_capture_done();else snprintf(status,sizeof status,"That key is reserved. Choose another.");break;
+                else if(result)sidebar_capture_done();else snprintf(status,sizeof status,"That key is reserved or used by the active preset. Choose another.");break;
             }
         } else {
             if(escape) {
