@@ -124,8 +124,10 @@ static int controls_gameplay_masks(unsigned port,unsigned masks[24],int *mounted
     unsigned count=WORD_AT(0x790950),base=WORD_AT(0x7b0c48);
     if(count>4 || !guest_writable(base,count*0x1584u))return 0;
     for(unsigned i=0;i<count;i++) {
-        uint32_t player=base+i*0x1584u;unsigned logical=WORD_AT(player);
-        if(logical>=4 || WORD_AT(0x6b93c0+logical*4)!=port)continue;
+        uint32_t player=base+i*0x1584u;
+        /* +0 is the global/network slot; +4 is the local input owner (-1 remote). */
+        unsigned local=WORD_AT(player+4);
+        if(local>=4 || WORD_AT(0x6b93c0+local*4)!=port)continue;
         uint32_t pause=WORD_AT(0x761c48);
         if(guest_writable(pause,4) && (WORD_AT(pause)&1u))return 0;
         masks[0]=WORD_AT(player+0x20);masks[1]=WORD_AT(player+0x4c);masks[2]=WORD_AT(player+0x24);

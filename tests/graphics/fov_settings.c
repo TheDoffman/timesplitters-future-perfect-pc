@@ -502,7 +502,7 @@ int main(int argc,char **argv)
     }
     { /* Only the local port owning this native player receives its action masks. */
         unsigned masks[24]={0};int mounted=0;uint32_t player=0x500000;
-        WORD_AT(0x790950)=1;WORD_AT(0x7b0c48)=player;WORD_AT(player)=2;WORD_AT(0x6b93c8)=3;
+        WORD_AT(0x790950)=1;WORD_AT(0x7b0c48)=player;WORD_AT(player)=2;WORD_AT(player+4)=2;WORD_AT(0x6b93c8)=3;
         WORD_AT(player+0x18)=0x10;WORD_AT(player+0x1c)=0x400;WORD_AT(player+0x20)=0x80;
         WORD_AT(player+0x24)=0x4000;WORD_AT(player+0x28)=0x8000;WORD_AT(player+0x2c)=0x40;WORD_AT(player+0x4c)=0x20;
         CHECK(!controls_gameplay_masks(3,masks,&mounted));controls_test_menu_active=0;
@@ -514,6 +514,26 @@ int main(int argc,char **argv)
         WORD_AT(0x6b98a4)=2;CHECK(!controls_gameplay_masks(3,masks,&mounted));WORD_AT(0x6b98a4)=0;
         CHECK(WORD_AT(player+0x20)==0x80); /* Reading a preset never rewrites the native profile. */
         WORD_AT(0x790950)=WORD_AT(0x7b0c48)=WORD_AT(0x6b93c8)=0;memset((char *)mem+player,0,0x1584);
+        controls_test_menu_active=1;
+    }
+
+    { /* Guest global slot1 is local input0; the remote host has no local owner. */
+        uint32_t host=0x500000,guest=host+0x1584;unsigned masks[24]={0};int mounted;
+        WORD_AT(0x790950)=2;WORD_AT(0x7b0c48)=host;controls_test_menu_active=0;
+        WORD_AT(host)=0;WORD_AT(host+4)=UINT32_MAX;WORD_AT(host+0x18)=0x20;WORD_AT(host+0x114)=0x80;
+        WORD_AT(guest)=1;WORD_AT(guest+4)=0;WORD_AT(guest+0x18)=0x10;
+        WORD_AT(guest+0x24)=0x4000;WORD_AT(guest+0x28)=0x8000;
+        WORD_AT(0x6b93c0)=0;WORD_AT(0x6b93c4)=1;
+        CHECK(controls_gameplay_masks(0,masks,&mounted) && masks[9]==0x10 && masks[2]==0x4000 && masks[23]==0x8000 && !mounted);
+        CHECK(!controls_gameplay_masks(1,masks,&mounted));
+        /* Reassigned input ports and split-screen owners also use +4, not +0. */
+        WORD_AT(0x6b93c0)=3;WORD_AT(0x6b93c4)=2;WORD_AT(host+4)=1;
+        CHECK(controls_gameplay_masks(3,masks,&mounted) && masks[9]==0x10 && !mounted);
+        CHECK(controls_gameplay_masks(2,masks,&mounted) && masks[9]==0x20 && mounted);
+        WORD_AT(host+4)=UINT32_MAX;WORD_AT(guest+4)=4;
+        CHECK(!controls_gameplay_masks(2,masks,&mounted) && !controls_gameplay_masks(3,masks,&mounted));
+        memset((char *)mem+host,0,2*0x1584);
+        WORD_AT(0x790950)=WORD_AT(0x7b0c48)=WORD_AT(0x6b93c0)=WORD_AT(0x6b93c4)=0;
         controls_test_menu_active=1;
     }
 

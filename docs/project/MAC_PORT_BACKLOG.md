@@ -1,3 +1,10 @@
+PR #528 network ownership review: gameplay-mask lookup now uses context+4 local
+input ownership before the6B93C0 port map; remote/invalid owners are excluded.
+The global network slot at+0 no longer selects a remote host layout for guests.
+82 focused checks passed/2 Mac skips, plus supported Windows Release/built-ins.
+Regression covers distinct host/guest masks, remapped/split ports and mounted
+state isolation. Native online hardware/gameplay acceptance remains separate.
+
 PR #528 review correction: Modern PC now saves optional-look/developer shortcut
 edits and updates their live bindings. Saves replace only changed editable action
 members, preserving unrelated legacy source arrays. Sidebar gameplay bindings are

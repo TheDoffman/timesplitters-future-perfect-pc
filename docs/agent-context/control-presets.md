@@ -40,7 +40,7 @@ Shared controller glyph conversion reflects the changed gameplay roles.
 
 The title's US18FFF0/190010 mask tables are at47DF00/47DF40. Native CF2D0 copies
 22 control words from profile+4 to player+18. The guest reader in
-pc_display_menu.c registers from pc_display_camera, resolves local ownership
+pc_display_menu.c registers from pc_display_camera, resolves context+4 local input ownership
 through6B93C0, and reads the live player's masks (base7B0C48, stride1584).
 Native semantic fields are Fire18, Grenade1C, Use20, Reload24, Aim28,
 Crouch2C, Zoom30/34, weapon cycle38/3C, weapon mode40/44, grenade type48,
@@ -129,3 +129,9 @@ capture targets and guards stale/keyboard activation; shortcut chips remain edit
 pc_settings_assign rejects moves from fixed preset actions. Windows built-in
 pc_settings tests cover shortcut persistence/live lookup, immutable preset keys,
 conflict rejection and legacy multi-source retention; developer_tools covers chips.
+
+Network/split-screen ownership: context+0 is the global slot, context+4 the local
+input owner (UINT32_MAX for remote). controls_gameplay_masks validates +4 before
+mapping through6B93C0, matching story_cine_local_context. The FOV fixture uses a
+remote host(global0/local-1) and guest(global1/local0) with distinct fire/reload/aim
+masks, plus remapped/split local ports, invalid owners and mounted-state isolation.
