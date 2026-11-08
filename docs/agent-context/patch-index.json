@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "9cf3c9acb92ccac0de2e2b772252d570b80c1f359791b067795e68ad4fadf7df",
+  "loaderSha256": "2d2fb5bf30d87f2b53baa426de779a132bd39e94b76bd4afd9f341b8dc95c904",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3794,6 +3794,14 @@
       "sha256": "6b7f2752e9f59261425463ab41eb96e40f5d12c0544c4ef2f9ff41f563f6c775",
       "targets": [
         "src/d3d/d3d8_device.c"
+      ]
+    },
+    {
+      "name": "2940-modern-control-presets.patch",
+      "path": "patches/input/2940-modern-control-presets.patch",
+      "sha256": "7296de91cb4f27e59de79e868a5b2d2503fd87d402d05646b4256878022b4012",
+      "targets": [
+        "src/input/input_bindings.c\r"
       ]
     }
   ]

@@ -21,6 +21,7 @@ typedef struct PcSettings {
     int keys[PC_ACTION_COUNT][PC_BINDING_SLOTS];
     double sensitivity;
     int enabled, invert_y;
+    int preset; /* 0 retains custom bindings, 1 overlays Modern PC. */
 } PcSettings;
 extern const char *const pc_action_labels[PC_ACTION_COUNT];
 /* Shared in-game binding capture; raw keys never pass through menu aliases. */
@@ -32,6 +33,16 @@ int pc_settings_capture_event(void);
 int pc_settings_capture_blocked(void);
 int pc_settings_capture_pump(void);
 void pc_settings_defaults(PcSettings *settings);
+void pc_settings_modern(PcSettings *settings);
+int pc_settings_custom_read(PcSettings *settings,char *error,size_t bytes);
+int pc_settings_controller_preset(unsigned port);
+/* New-setup semantic Custom bindings; absent in existing configurations. */
+int pc_settings_custom_semantics(void);
+int pc_settings_controller_preset_save(unsigned port,int modern,char *error,size_t bytes);
+/* Native gameplay roles for this local port; identity outside gameplay. */
+typedef int (*PcGameplayMasks)(unsigned port,unsigned masks[24],int *mounted);
+void pc_settings_gameplay_reader(PcGameplayMasks reader);
+int pc_settings_gameplay_masks(unsigned port,unsigned masks[24],int *mounted);
 int pc_settings_prompt_keys(int keys[PC_ACTION_COUNT]);
 int pc_settings_read(PcSettings *settings, char *error, size_t bytes);
 int pc_settings_save(const PcSettings *settings, char *error, size_t bytes);

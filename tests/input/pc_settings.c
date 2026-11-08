@@ -117,6 +117,19 @@ int main(int argc,char **argv)
     HWND owner;
     UINT_PTR timer;
     LRESULT result;
+    if(argc==4 && !strcmp(argv[1],"--verify-presets")) {
+        int expected=atoi(argv[3]);original=load(argv[2]);CHECK(original);
+        _putenv_s("RECOMP_INPUT_CONFIG",argv[2]);pc_controls_attach(NULL);
+        CHECK(pc_settings_read(&current,error,sizeof error) && current.preset==expected);
+        for(unsigned port=0;port<4;port++)CHECK(pc_settings_controller_preset(port)==expected);
+        if(expected) {
+            PcSettings custom;CHECK(pc_settings_custom_read(&custom,error,sizeof error));
+            CHECK(pc_settings_custom_semantics() && custom.preset==0);
+            for(int action=0;action<PC_ACTION_COUNT;action++)for(int slot=0;slot<PC_BINDING_SLOTS;slot++)CHECK(custom.keys[action][slot]==current.keys[action][slot]);
+        } else CHECK(!pc_settings_custom_semantics());
+        saved=load(argv[2]);CHECK(saved && !strcmp(saved,original));free(saved);free(original);
+        puts("PASS: fresh/legacy preset loading preserves file bytes");return 0;
+    }
     if(argc==3 && !strcmp(argv[1],"--verify")) {
         _putenv_s("RECOMP_INPUT_CONFIG",argv[2]);
         pc_controls_attach(NULL);
@@ -172,6 +185,24 @@ int main(int argc,char **argv)
     CHECK(pc_settings_read(&current,error,sizeof error) && current.keys[14][0]=='I' && fabs(current.sensitivity-.25)<.0001 && current.invert_y);
     saved=load(path); CHECK(saved && strstr(saved,"escaped \\\" brace } [") && strstr(saved,"\"port\": 4") && strstr(saved,"retained_mouse")); free(saved);
     saved=load(backup); CHECK(saved && strstr(saved,"key:W")); free(saved);
+    /* Presets are overlays: select/apply/restore never replace custom keys. */
+    {
+        PcSettings custom,modern;CHECK(pc_settings_custom_read(&custom,error,sizeof error));
+        pc_settings_modern(&modern);modern.sensitivity=custom.sensitivity;modern.invert_y=custom.invert_y;
+        CHECK(pc_settings_save(&modern,error,sizeof error));
+        CHECK(pc_settings_read(&current,error,sizeof error) && current.preset==1 && current.keys[1][1]==5 && current.keys[10][0]=='B');
+        CHECK(pc_settings_custom_read(&current,error,sizeof error) && !memcmp(current.keys,custom.keys,sizeof custom.keys));
+        CHECK(pc_settings_controller_preset_save(0,1,error,sizeof error));
+        CHECK(pc_settings_controller_preset(0)==1 && pc_settings_controller_preset(1)==0);
+        CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
+        CHECK(!pc_settings_controller_preset_save(0,0,error,sizeof error) && pc_settings_controller_preset(0)==1);
+        CHECK(!pc_settings_save(&custom,error,sizeof error));
+        CHECK(pc_settings_read(&current,error,sizeof error) && current.preset==1);
+        CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
+        CHECK(pc_settings_save(&custom,error,sizeof error));
+        CHECK(pc_settings_controller_preset_save(0,0,error,sizeof error));
+        CHECK(pc_settings_read(&current,error,sizeof error) && !current.preset && !memcmp(current.keys,custom.keys,sizeof custom.keys));
+    }
     current=settings; current.sensitivity=NAN; CHECK(!pc_settings_save(&current,error,sizeof error));
     current=settings; current.keys[0][0]=VK_F2; CHECK(!pc_settings_save(&current,error,sizeof error));
     current=settings; current.keys[0][0]=VK_F12; CHECK(!pc_settings_save(&current,error,sizeof error));

@@ -1,4 +1,4 @@
-[Clips](portal-scissors.md).
+[Custom seeds](control-presets.md).
 [Arms](video-options.md).
 
 [Uplink throw tests and policy](native-uplink.md#throw-impulse).

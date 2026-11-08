@@ -1,4 +1,4 @@
-[Clips](portal-scissors.md).
+[Custom seeds](control-presets.md).
 2720: defer fixture until migration.
 
 [Arms tests](video-options.md).

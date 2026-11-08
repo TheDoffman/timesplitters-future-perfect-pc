@@ -1,3 +1,54 @@
+Modern-seeded Custom for new players (local follow-up): fresh host settings
+seed Modern PC raw bindings and custom_binding_semantics=1; existing files never
+receive this marker. Editable Custom keyboard inputs/prompts follow native action
+masks without a fixed preset overlay. Native69D90 known-new profile initialization
+seeds an editable Modern Controller action table from the shared mapping, preserving
+the unused word and all8 axis/options words. Loaded/copied profiles and legacy
+host configs retain their saved layouts. Custom edits survive preset round trips.
+Shared implementation applies across Windows/Mac/Linux; native Mac/Linux UI and
+physical-controller acceptance remain pending. Windows measured results below.
+
+Windows validation: supported Release build, built-in checks and matching crash
+symbols pass. Focused suites78 passed,2 Mac-only skips,31 subtests; full launcher
+-Test completed successfully (including fresh/upgrade preservation, shared UI and
+49 settings checks). Earlier attempts encountered other chats' running-game guards;
+no external games were stopped. Final tests also verify edited semantic Custom
+keyboard input through both sampler adapters, exact native Modern action masks,
+unused/axis-word retention, and existing-profile no-op guards. Playable preview
+refreshed; existing Settings hashes remain identical. Launcher paths, sealed game
+content, repository context and whitespace checks pass. No new physical-controller,
+native Mac/Linux or live gameplay acceptance claim; no main push.
+
+Modern defaults for new setups (local follow-up): the shared factory JSON now
+selects Modern PC and Modern Controller for all four ports. Existing configuration
+files are never replaced during updates; absent preset metadata still means the
+legacy/custom layout. Saved Custom/Modern choices, four-source binding arrays,
+explicit Unbound values, devices and unknown fields remain intact.
+Windows Release/built-ins and separate-process fresh/legacy no-write checks pass.
+Focused checks:73 passed,31 subtests. Launcher116 core checks, shared UI (including
+fresh install/three upgrade cases) and49 settings checks pass. The later crash
+export test stopped at its expected running-game guard because unrelated games
+were active; subsequent full-suite groups were not rerun. Native Mac/Linux UI
+and physical-controller acceptance remain pending. Preview refreshed without
+replacing existing Settings or Saves. No main push.
+
+Inline preset selectors (local follow-up): shared native guest choice rows now
+match Aspect Ratio on Controller and Keyboard & Mouse tabs; no separate preset
+page. Existing shared choice/input/paint helpers need no additional OS adapter.
+Windows build/contracts and actual main/pause UI Apply/Cancel checks pass.
+Native Mac/Linux UI and physical-controller acceptance remain pending; see STATUS.
+
+Modern control presets/typography (local, uncommitted after c511f1e9): implemented
+in shared pc_bindings.inc, pc_control_presets.def/.h, patch2940, guest Controls/
+keyboard/keycap menus and shared launcher GameSettings/SettingsPage. Windows,
+AppKit and GTK F2 adapters preserve the preset field/read-only binding behavior;
+all native launcher projects embed the same PC override table. No second preset
+policy or new OS input mechanism is needed. Windows Release, both portable sampler
+adapter modes, launcher regressions and real main/pause/gameplay checks pass.
+Native Mac/Linux builds, rendered game/F2 UI and physical controller/split-screen
+acceptance remain pending; other-device synchronization is unverified. See STATUS
+and agent-context/control-presets.md for exact measured scope and contracts.
+
 Settings formatted-caption repair/matrix (local after e7d6fb07): shared
 pc_settings_row_alignment.inc preserves native case flags for scale escapes;
 plain Audio captions retain consistent uppercase. No OS adapter change. Windows

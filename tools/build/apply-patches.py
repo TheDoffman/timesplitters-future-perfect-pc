@@ -302,6 +302,12 @@ def patch_records(paths):
     if portal_scissors:
         paths.remove(portal_scissors)
         paths.append(portal_scissors)
+    # Presets extend the final local-device/reload sampler without replacing it.
+    presets = by_name.get('2940-modern-control-presets.patch')
+    if presets:
+        paths.remove(presets)
+        paths.append(presets)
+
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

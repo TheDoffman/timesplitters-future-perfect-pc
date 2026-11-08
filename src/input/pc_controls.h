@@ -15,6 +15,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
 int pc_controls_key_down(int key);
 int pc_controls_terminal_click(void);
 void pc_controls_menu_mode(int active);
+int pc_controls_in_menu(void);
 PcMenuPointer pc_controls_menu_pointer(void);
 PcMenuPointer pc_controls_menu_hover_pointer(void);
 int pc_controls_accept_pad(void);

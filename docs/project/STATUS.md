@@ -1,3 +1,98 @@
+Modern-seeded Custom for new players (local follow-up): fresh host settings
+seed Modern PC raw bindings and custom_binding_semantics=1; existing files never
+receive this marker. Editable Custom keyboard inputs/prompts follow native action
+masks without a fixed preset overlay. Native69D90 known-new profile initialization
+seeds an editable Modern Controller action table from the shared mapping, preserving
+the unused word and all8 axis/options words. Loaded/copied profiles and legacy
+host configs retain their saved layouts. Custom edits survive preset round trips.
+Shared implementation applies across Windows/Mac/Linux; native Mac/Linux UI and
+physical-controller acceptance remain pending. Windows measured results below.
+
+Windows validation: supported Release build, built-in checks and matching crash
+symbols pass. Focused suites78 passed,2 Mac-only skips,31 subtests; full launcher
+-Test completed successfully (including fresh/upgrade preservation, shared UI and
+49 settings checks). Earlier attempts encountered other chats' running-game guards;
+no external games were stopped. Final tests also verify edited semantic Custom
+keyboard input through both sampler adapters, exact native Modern action masks,
+unused/axis-word retention, and existing-profile no-op guards. Playable preview
+refreshed; existing Settings hashes remain identical. Launcher paths, sealed game
+content, repository context and whitespace checks pass. No new physical-controller,
+native Mac/Linux or live gameplay acceptance claim; no main push.
+
+Modern defaults for new setups (local follow-up): the shared factory JSON now
+selects Modern PC and Modern Controller for all four ports. Existing configuration
+files are never replaced during updates; absent preset metadata still means the
+legacy/custom layout. Saved Custom/Modern choices, four-source binding arrays,
+explicit Unbound values, devices and unknown fields remain intact.
+Windows Release/built-ins and separate-process fresh/legacy no-write checks pass.
+Focused checks:73 passed,31 subtests. Launcher116 core checks, shared UI (including
+fresh install/three upgrade cases) and49 settings checks pass. The later crash
+export test stopped at its expected running-game guard because unrelated games
+were active; subsequent full-suite groups were not rerun. Native Mac/Linux UI
+and physical-controller acceptance remain pending. Preview refreshed without
+replacing existing Settings or Saves. No main push.
+
+Inline preset selectors (local follow-up after c511f1e9): removed the separate
+preset pages. Controller251 and Keyboard212 now use Video Aspect Ratio's native
+cycling choice builder directly on their tabs. Controller Accept and keyboard
+footer Apply213 commit staged choices; reverting disables the action again.
+Applied keyboard settings remain separate from pending preset choices, so mouse
+and binding autosaves do not publish a pending preset. Tab switches retain drafts.
+Windows Release/built-ins/crash symbols passed; focused menu/keyboard/pointer
+contracts10 passed,2 Mac skips. Actual1280x960 main and Story-pause captures show
+both inline selectors, uniform text and fitting bounds. A/D cycling leaves config
+bytes unchanged; cross-tab retention, controller Accept, keyboard Apply (stays on
+the tab), keyboard Custom restoration and controller Cancel are verified against
+actual saved JSON. Custom binding objects remain identical. Generic native mouse
+arrow behavior is covered by the pointer contracts; live cycling used A/D.
+The revised playable preview and desktop shortcut are updated; launcher remains
+its already verified shared preset UI. Native Mac/Linux rendering/physical pads
+remain pending. Evidence:logs/inline-presets-*.log and
+logs/settings-resolution-matrix/1280x960-inline-presets/. Source stays local.
+Executable SHA256:ad76d27089363a7fd010db3d63f1a6d00fbb258fe40f601d1def0d1b2a3d84f3
+
+Modern controls + preset typography (2026-11-07, local after c511f1e9):
+Modern PC/Modern Controller are opt-in overlays in shared runtime/menu source and
+launcher SettingsPage; custom source arrays and native profile layouts remain
+stored unchanged across preset Apply/Custom restoration. Four local controller
+ports, independent keyboard/pad routing, editor/menu isolation, native semantic
+masks and matching prompt conversion are covered. Native Win32/AppKit/GTK F2
+adapters keep preset bindings read-only and retain independent mouse editing.
+Preset choices, descriptions and Apply now share the existing Controls body size
+in frontend and pause; a clean Apply is gray without changing font/row geometry.
+
+Supported Windows Release/built-in checks and matching crash symbols passed.
+Final affected input/menu suites:49 passed,2 Mac compile skips; repository/order
+contracts:21 passed. Broader input/menu suite previously121 passed/2 skips;
+updated loader-order snapshot failure was repaired and its whole21-case suite
+rerun. Windows launcher:116 core regressions, shared UI (including new preset
+round trips),49 settings cases and all remaining build-launcher -Test groups pass.
+Both sampler host-adapter modes run in the portable fixture on this Windows host;
+these are not native Mac/Linux game or physical-controller acceptance claims.
+
+Actual 1280x960 main and live Story pause pages captured/reviewed with uniform
+preset text and fitting bounds. Staging then Back leaves config bytes unchanged;
+Apply persists the selected preset while exact custom binding objects are retained.
+Live Modern PC checks observe native held input for fire800, aim2000, use80,
+reload10, crouch1000, melee20 and grenade400, after verifying native role offsets.
+Initial field assumptions were corrected using original native request routines
+and this actual-game/manual-layout evidence. Font fixes include disabled/enabled
+Apply sizing and bounded extended-row caption storage. A final Windows forced
+Test Lab process stop exceeded10s; that owned process was then stopped, verified
+absent, its disks recycled and lock cleared. No input/exit policy was changed for
+this harness cleanup delay. Personal saves/config and canonical fixture preserved.
+
+Playable preview:private/playable-modern-controls with the updated launcher,
+verified game data, separate copied Test Lab saves, retained custom config and
+both Modern presets enabled only in that preview. Launcher StartInfo validates
+the exact preview executable/data/config/save paths. Desktop shortcut:
+TimeSplitters FP - Modern Controls.lnk. Latest Menus still uses the rebuilt source
+executable with its existing private preview preferences. Source remains local on
+feature/modern-control-presets; no push/merge of this change has been requested.
+Executable SHA256:63086eb5b43368c89693c637167e5400b314647182660a69ad98bb15cf39db1a
+Evidence:logs/modern-presets-*.log, logs/modern-controls-launcher-start-info.json,
+logs/settings-resolution-matrix/1280x960-modern-presets/ and launcher PNG.
+
 Settings resolution/aspect matrix (2026-11-07, local after e7d6fb07):
 Actual Windows Release/D3D8/RTX4070SUPER captures at640x480,1280x960,1280x1024,
 1280x720,1920x1080,1920x1200,3440x1440,3840x1080 and3840x2160. Each configuration

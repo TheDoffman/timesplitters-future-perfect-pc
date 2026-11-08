@@ -1,4 +1,4 @@
-Audio0059/0060 index hashes and target paths use committed LF bytes; an older
+[Preset routing/order evidence](control-presets.md).
 Windows worktree retained CRLF and generated a stale fresh-checkout index.
 Normalize those local patch files before refresh; patch logic is unchanged.
 

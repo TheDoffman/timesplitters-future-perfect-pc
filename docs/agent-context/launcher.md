@@ -1,3 +1,5 @@
+[Custom seeds](control-presets.md).
+
 Developer Tools enablement uses an inline amber warning and live assigned-shortcut
 hint directly beneath its checkbox; enabling never opens a prompt. RefreshBindings
 updates the hint after edits/unbinding. Shared UI checks preserve opt-in Save state
