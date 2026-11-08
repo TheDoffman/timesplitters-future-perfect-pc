@@ -17,6 +17,9 @@ static void settings_tabs_footer(uint32_t menu);
 static void settings_tabs_footer_style(uint32_t menu,uint32_t sx,uint32_t sy,uint32_t colour);
 static int controls_tabs_poll(uint32_t menu);
 static void controls_tabs_flush(void);
+static int audio_font_menu(uint32_t menu);
+static int audio_tabs_poll(uint32_t menu);
+static void audio_tabs_flush(void);
 #include "pc_display_memory.h"
 #include "pc_prompts.h"
 #include "pc_network.h"
@@ -282,7 +285,7 @@ static uint32_t audio_options_caption(void)
 static void sd_width(void);
 static void sd_buttons(void (*original)(void));
 static void sd_capacity(void (*original)(void));
-static void audio_beta_add(void (*original)(void));
+static int audio_native_button(void (*original)(void));
 static void developer_match_button(uint32_t callsite);
 void pc_display_menu_button(void (*original)(void))
 {
@@ -292,7 +295,7 @@ void pc_display_menu_button(void (*original)(void))
     const int frontend=callsite==0x002CC116u && callback==0x002CBE50u;
     const int paused=callsite==0x002F561Cu && callback==0x002EC1A0u;
     GuestRegisters r;
-    if(controls_native_button(original))return;
+    if(controls_native_button(original) || audio_native_button(original))return;
     developer_match_button(callsite);
     pc_story_network_pause_style();
     if(pc_story_menu_button(original)) return;
@@ -316,9 +319,6 @@ void pc_display_menu_button(void (*original)(void))
         return;
     }
     if(callsite==0x002C4042u) {
-        /* Both frontend and Pause use this builder. Keep the original hidden
-           subtitle record for native save logic, and insert our own selector. */
-        audio_beta_add(original);
         /* Keep the native update/save record, but remove its visual row and
          * navigation target; Video Options now owns subtitle changes. */
         uint32_t frame=g_esp,flags=WORD_AT(frame+12);
@@ -914,10 +914,11 @@ static int video_font_menu(uint32_t menu)
 }
 static int audio_font_menu(uint32_t menu)
 {
-    return audio_menu_storage && guest_writable(menu,8) && WORD_AT(menu+4u)==audio_menu_storage;
+    return audio_menu && menu==audio_menu && guest_writable(menu,8) && WORD_AT(menu+4u)==0x0052377cu;
 }
 #include "pc_display_ui.inc"
 static uint32_t bits(float f) { uint32_t u; memcpy(&u,&f,4); return u; }
+#include "pc_settings_spacing.inc"
 #include "pc_kill_feed_guest.inc"
 #include "pc_tutorial_ui.inc"
 #include "pc_keycaps.inc"
@@ -934,8 +935,9 @@ void pc_display_menu_highlight(void (*original)(void))
        page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART && guest_writable(item,0x18) && WORD_AT(item+0x14)==120u) {
         g_esp+=4;return;
     }
-    /* The Controls header paints its own individual tabs, like Video. */
-    if(controls_font_menu(menu) && guest_writable(item,0x18) && WORD_AT(item+0x14)==130u) {
+    /* Controls and Audio headers paint their individual tabs, like Video. */
+    if((controls_font_menu(menu) || audio_font_menu(menu)) && guest_writable(item,0x18) &&
+       WORD_AT(item+0x14)==(audio_font_menu(menu)?140u:130u)) {
         g_esp+=4;return;
     }
     float bounds[4],fade;
@@ -952,7 +954,7 @@ void pc_display_menu_highlight(void (*original)(void))
     if(right-left<12 || bottom-top<12){original();return;}
     if(original!=sub_002D9390)guest_call(sub_00072510,2,menu,(uint32_t)(int)(127.f*fade));
     guest_call(sub_00019D70,1,original==sub_002D9390?2u:8u);
-    int settings=video_font_menu(menu) || controls_font_menu(menu);
+    int settings=video_font_menu(menu) || controls_font_menu(menu) || audio_font_menu(menu);
     color=guest_call(sub_00154FE0,2,settings?0x354b6448u:original==sub_002D9390?0x2f3c503cu:WORD_AT(style+0x74),bits(fade));
     /* Circular six-unit corners; disjoint strips avoid alpha accumulation. */
     for(int y=0;y<bottom-top;y++) {
@@ -969,14 +971,6 @@ void pc_display_menu_highlight(void (*original)(void))
 /* Frontend style dispatches its focus painter indirectly; paused menus may
  * use the generic painter instead. Both use the same rounded geometry. */
 static void display_highlight_draw(void) { pc_display_menu_highlight(sub_002D9390); }
-static void audio_options_build(void)
-{
-    extern void sub_002C3E20(void);
-    uint32_t menu=WORD_AT(g_esp+4);
-    sub_002C3E20();
-    uint32_t caption=audio_options_caption();
-    if(caption && guest_writable(menu,0x208))WORD_AT(menu+0x204)=caption;
-}
 /* Reuse the title's Settings actions and profile selector. Cheats lives in
  * Extras alongside Unlock Content. The native back/save flow is unchanged. */
 static void settings_build(void)
@@ -1096,6 +1090,7 @@ static void update_apply(void)
 }
 #include "pc_graphics_menu.inc"
 #include "pc_video_tabs.inc"
+#include "pc_audio_tabs.inc"
 static void labels(void)
 {
     window_mode_row=weapon_fov_row=resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=post_aa_row=apply_row=0;
@@ -1215,7 +1210,8 @@ static void build_menu(void)
         bits(page==DISPLAY_CONFIRM?55.f:78.f),0u,BACK_CB);
     guest_call(sub_00071B10,4,1u,bits(1.2f),1u,1u);
     guest_call(sub_00071C50,1,0x26200u);
-    labels();guest_call(sub_000771D0,1,menu);
+    SettingsDividerStyle divider=settings_divider_begin(menu);
+    labels();guest_call(sub_000771D0,1,menu);settings_divider_end(divider);
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
         float y=FLOAT_AT(menu+0x64);
         if(isfinite(y)) {
@@ -1568,14 +1564,18 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     if(address==0x002CBFC0u)return settings_build;
     switch(address) {
     case DEVELOPER_MATCH_CHANGE:return developer_match_change;
+    case 0x002CBE10u:return audio_frontend_open;
+    case 0x002EC1F0u:return audio_pause_open;
+    case 0x002C3720u:return audio_font_menu(WORD_AT(g_esp+4))?audio_options_tick:NULL;
+    case 0x002C3D30u:return audio_font_menu(WORD_AT(g_esp+4))?audio_options_back:NULL;
+    case 0x002C3AC0u:return audio_font_menu(WORD_AT(g_esp+4))?audio_options_accept:NULL;
+    case 0x002C3BF0u:return audio_font_menu(WORD_AT(g_esp+4))?audio_options_cancel:NULL;
+    case AUDIO_VOLUME_DRAW:return audio_volume_draw;
+    case AUDIO_TABS_DRAW:return audio_tabs_draw;
+    case AUDIO_TABS_SELECT:return audio_tabs_select;
     case AUDIO_BETA_CHANGE:return audio_beta_change;
-    case AUDIO_MIX_OPEN:return audio_mix_open;
-    case AUDIO_MIX_BUILD:return audio_mix_build;
+    case AUDIO_MIX_DRAW:return audio_mix_draw;
     case AUDIO_MIX_CHANGE:return audio_mix_change;
-    case AUDIO_MIX_BACK:return audio_mix_back;
-    case AUDIO_FEATURES_OPEN:return audio_features_open;
-    case AUDIO_MIX_TICK:return audio_mix_tick;
-    case AUDIO_LISTENING_OPEN:return audio_listening_open;
     case AUDIO_LISTENING_CHANGE:return audio_listening_change;
     case 0x002D08C0u:return uc_extras_build;
     case UC_OPEN:return uc_open;

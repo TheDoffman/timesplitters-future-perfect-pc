@@ -22,6 +22,8 @@ void sub_000746D0(void) {} void sub_0007CCA0(void) {}
 void sub_00071940(void) {}
 static PcMenuPointer cursor;
 static int active=1,mode,original_calls,selections;
+static int centered_controls;
+static int controls_font_menu(uint32_t menu){return centered_controls && menu==0x2000;}
 static uint32_t navigation;
 static void settings_tabs_footer(uint32_t menu) {(void)menu;}
 static void settings_tabs_footer_style(uint32_t menu,uint32_t sx,uint32_t sy,uint32_t colour) {(void)menu;(void)sx;(void)sy;(void)colour;}
@@ -38,6 +40,9 @@ static unsigned slider_fov;
 static void menu_slider_weapon_fov_pointer(float x,float left,float width) { (void)x;(void)left;(void)width; }
 static void menu_slider_fov_pointer(float x,float left,float width)
 { slider_fov=40+pc_menu_slider_value(x,left,width,60); }
+static unsigned slider_mix_index,slider_mix_value;
+static void menu_slider_audio_mix_pointer(unsigned i,float x,float left,float width)
+{slider_mix_index=i;slider_mix_value=pc_menu_slider_value(x,left,width,100);}
 static unsigned slider_keyboard;
 static void menu_slider_keyboard_pointer(float x,float left,float width)
 { slider_keyboard=pc_menu_slider_value(x,left,width,1000); }
@@ -231,6 +236,11 @@ static void audio_tests(void)
     const uint32_t m=0x2000,music=0x3000,sound=0x3400;
     memset(memory,0,sizeof memory);memset(&menu_mouse,0,sizeof menu_mouse);
     memset(menu_mouse_footer,0,sizeof menu_mouse_footer);menu_slider_drag=0;
+    MenuSliderTrack mix_track={0};mix_track.x=100.f;mix_track.w=100.f;
+    for(unsigned i=0;i<6;i++) {
+        menu_slider_set(&mix_track,MENU_AUDIO_MIX+i,125.f);
+        CHECK(slider_mix_index==i && slider_mix_value==25);
+    }
     active=1;navigation=0;WORD_AT(0x79094c)=101;
     WORD_AT(0x4e8cf0)=640;WORD_AT(0x4e8cf4)=480;
     WORD_AT(m+0x1b0)=3;WORD_AT(m+0x178)=music;WORD_AT(music+4)=sound;
@@ -362,6 +372,14 @@ static void setting_slider_tests(void)
     sensitivity_painter();CHECK(!menu_slider_tracks[MENU_SENSITIVITY].item);
     WORD_AT(0x7ba9e0)=4;setting_tracks(m,sensitivity,fov);
     CHECK(!menu_slider_tracks[MENU_SENSITIVITY].item); /* invalid player */
+    memset(memory,0,sizeof memory);WORD_AT(sensitivity+0x88)=m;WORD_AT(sensitivity+0x14)=9;
+    FLOAT_AT(0x7004)=100.f;FLOAT_AT(0x700c)=160.f;centered_controls=1;
+    g_esp=0x1800;WORD_AT(g_esp+4)=m;WORD_AT(g_esp+8)=sensitivity;WORD_AT(g_esp+12)=0x7000;
+    pc_display_menu_sensitivity_draw(sensitivity_painter);
+    CHECK(menu_slider_tracks[MENU_SENSITIVITY].y==123.f && menu_slider_tracks[MENU_SENSITIVITY].w==137.f);
+    CHECK(WORD_AT(0x190c)==157 && !menu_slider_draw_bounds_valid && !menu_slider_draw_menu);
+    centered_controls=0;
+
 }
 /* Feed the production wrappers the final native arrow draw rectangles. */
 static void choice_capture(uint32_t item,unsigned direction,float x)

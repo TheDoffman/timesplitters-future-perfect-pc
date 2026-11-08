@@ -13,6 +13,7 @@ static uint32_t controls_rows[48],controls_next[48],controls_sibling[48];
 static unsigned controls_row_count,controls_native_count,controls_native_selectable;
 static int controls_anchor_ready;
 static float controls_anchor_y;
+static SettingsDividerStyle controls_divider_style;
 /* Native readers still see every original record; layout/input see this tab. */
 static void controls_link_rows(int all)
 {
@@ -111,6 +112,7 @@ static int controls_frame(uint32_t menu,const char *subtitle)
     int tabs=controls_tabs_visible();
     guest_call(sub_00075B70,5,0xa000u,controls_text(0,tabs?"Controls":subtitle),
         bits(tabs || kb_page==KB_LIST?78.f:60.f),0u,0x002E9FC0u);
+    controls_divider_style=settings_divider_begin(menu);
     guest_call(sub_00071B10,4,1u,bits(1.2f),1u,1u);
     guest_call(sub_00071C50,1,0x26200u);
     if(tabs) {
@@ -201,9 +203,10 @@ static void controls_anchor(void)
 static void controls_build(void)
 {
     GuestRegisters r;save_registers(&r);controls_menu=WORD_AT(g_esp+4);controls_row_count=0;
+    controls_divider_style=(SettingsDividerStyle){0,0};
     if(controls_tab==2) {kb_menu=controls_menu;guest_call(kb_build,1,controls_menu);}
     else controls_controller_build();
-    controls_anchor();
+    settings_divider_end(controls_divider_style);controls_anchor();
     restore_registers(&r);g_esp+=4;
 }
 static void controls_change_tab(int tab)

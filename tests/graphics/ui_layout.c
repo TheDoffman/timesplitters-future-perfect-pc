@@ -33,6 +33,11 @@ static uint32_t *word(uint32_t a) {
 }
 #define WORD_AT(a) (*word(a))
 static int guest_writable(uint32_t a,size_t n){return (a>=0x4000 && a<0x4080 && n<=0x4080-a) || (a==0x1000 && n<=sizeof menu_data) || (a==0x2000 && n<=sizeof item_data) || (a==0x3000 && n<=4) || (a==0x100 && n<=sizeof view) || (a==0x55fa40 && n<=sizeof projection);}
+uint32_t xbox_HeapAlloc(uint32_t n,uint32_t align) {(void)n;(void)align;return 0;}
+void sub_0003FA10(void){abort();}
+void sub_0003FCF0(void){abort();}
+void sub_000718E0(void){abort();}
+void sub_0003FB90(void){abort();}
 static int wide=1,players=1,placement,pending=-1,draw_count;
 static int drawn[1024],selected[1024],selection_count;
 static uint32_t tag;

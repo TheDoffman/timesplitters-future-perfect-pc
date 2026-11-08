@@ -124,7 +124,17 @@ void pc_prompts_layout_begin(void) {}
 void pc_prompts_layout_end(void) {}
 #define TUTORIAL_STUB(name) void name(void) { CHECK(0); }
 TUTORIAL_STUB(sub_00147080) TUTORIAL_STUB(sub_00042D10)
-TUTORIAL_STUB(sub_0003FA10) TUTORIAL_STUB(sub_0003FCF0) TUTORIAL_STUB(sub_0003F8D0)
+static int row_alignment_test;
+void sub_0003FA10(void) {
+    CHECK(row_alignment_test);g_eax=WORD_AT(0x6b93b4);WORD_AT(0x6b93b4)=WORD_AT(g_esp+4);g_esp+=4;
+}
+void sub_0003FCF0(void) {
+    CHECK(row_alignment_test);FLOAT_AT(WORD_AT(g_esp+4))=80.f;
+    FLOAT_AT(WORD_AT(g_esp+8))=WORD_AT(0x6b93b4)==2?14.f:10.f;g_esp+=4;
+}
+void sub_000718E0(void) {CHECK(row_alignment_test);g_eax=0x600400;g_esp+=4;}
+void sub_0003FB90(void) {CHECK(row_alignment_test);g_eax=WORD_AT(g_esp+4);g_esp+=4;}
+TUTORIAL_STUB(sub_0003F8D0)
 /* Kill-feed drawing is linked through the same menu unit, but must not
  * execute in this settings-only fixture. */
 TUTORIAL_STUB(sub_00041E30) TUTORIAL_STUB(sub_00021450)
@@ -288,7 +298,7 @@ STUB(sub_000771D0)
 void sub_000770E0(void) {
     unsigned index=WORD_AT(g_esp+8);CHECK(index<built_row_count);
     uint32_t menu=WORD_AT(g_esp+4),id=built_ids[index];
-    if(controls_font_menu(menu)) {
+    if(controls_font_menu(menu) || audio_font_menu(menu)) {
         uint32_t row=WORD_AT(menu+0x178);
         for(;row;row=WORD_AT(row+8)) {
             uint32_t type=WORD_AT(row);
@@ -302,7 +312,8 @@ void sub_000770E0(void) {
 void sub_00078980(void) {
     unsigned first=WORD_AT(0x200000+0xc8),second=WORD_AT(0x200200+0xc8),
         textures=WORD_AT(0x200e00+0xc8);
-    if(controls_font_menu(WORD_AT(g_esp+4)))controls_build();else build_menu();
+    if(controls_font_menu(WORD_AT(g_esp+4)))controls_build();
+    else if(audio_font_menu(WORD_AT(g_esp+4)))audio_options_build();else build_menu();
     /* Native refresh restores choices by row ID, even across different pages. */
     WORD_AT(0x200000+0xc8)=first;WORD_AT(0x200200+0xc8)=second;
     WORD_AT(0x200e00+0xc8)=textures;
@@ -310,7 +321,37 @@ void sub_00078980(void) {
 STUB(sub_0007D480) STUB(sub_000717D0)
 void sub_00075430(void) { WORD_AT(WORD_AT(g_esp+4)+0xc8)=WORD_AT(g_esp+8);g_esp+=4; }
 STUB(sub_0003D7B0) STUB(sub_001CD120) STUB(sub_00069720) STUB(sub_00071CF0)
-STUB(sub_002C3E20) STUB(sub_002D9390) STUB(sub_00072510) STUB(sub_00022FF0) STUB(sub_0001C5D0) STUB(sub_00019650) STUB(sub_00019D70)
+static unsigned audio_native_ticks,audio_native_actions,audio_native_opens;
+static unsigned fixture_audio_rows(void) {
+    unsigned mask=0;
+    for(uint32_t row=WORD_AT(0x300178);row;row=WORD_AT(row+4)) {
+        unsigned id=WORD_AT(row+0x14);if(id<8)mask|=1u<<id;
+    }
+    return mask;
+}
+void sub_002C3720(void) {CHECK((fixture_audio_rows()&0xefu)==0xefu);audio_native_ticks++;g_esp+=4;}
+static void fixture_audio_action(void){CHECK((fixture_audio_rows()&0xefu)==0xefu);audio_native_actions++;g_esp+=4;}
+void sub_002C3D30(void){fixture_audio_action();}
+void sub_002C3AC0(void){fixture_audio_action();}
+void sub_002C3BF0(void){fixture_audio_action();}
+static void fixture_audio_open(void) {
+    audio_native_opens++;WORD_AT(0x300004)=0x52377cu;
+    guest_call(audio_options_build,1,0x300000u);g_esp+=4;
+}
+void sub_002CBE10(void){fixture_audio_open();}
+void sub_002EC1F0(void){fixture_audio_open();}
+static void fixture_audio_button(void){CHECK(audio_native_button(sub_00079D60_gen));}
+void sub_002C3E20(void) {
+    guest_call(sub_00075B70,5,0xa000u,audio_options_caption(),bits(54.f),0u,0x002C3D30u);
+    WORD_AT(0x30017c)=WORD_AT(0x300180)=0;
+    for(unsigned id=0;id<8;id++) {
+        if(id==4)continue;
+        if(id==6)guest_call(sub_00079710,1,0u);
+        guest_call(fixture_audio_button,6,audio_options_caption(),id,0u,bits(6.f),0u,0u);
+    }
+    WORD_AT(0x300064)=bits(100.f-audio_page*10.f);g_esp+=4;
+}
+ STUB(sub_002D9390) STUB(sub_00072510) STUB(sub_00022FF0) STUB(sub_0001C5D0) STUB(sub_00019650) STUB(sub_00019D70)
 static unsigned highlight_rects,highlight_fallback;
 static int highlight_bottom;
 void sub_0001EFB0(void) {
@@ -366,6 +407,8 @@ void sub_00079B70(void) { returned++;g_esp+=4; }
 void sub_00079D60_gen(void) {
     unsigned id=WORD_AT(g_esp+8);CHECK(id<256);
     if(page==DISPLAY_HOME && id>=20 && id<=21)CHECK(!strncmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+4)),"\vs75",4));
+    if(audio_building && (id==1 || id==3))CHECK(WORD_AT(g_esp+24)==AUDIO_VOLUME_DRAW);
+    if(audio_building && id==AUDIO_TABS_ID)CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+4))," "));
     if(id<32)built_rows|=1u<<id;CHECK(built_row_count<32);built_ids[built_row_count++]=id;
     g_eax=0x200000+id*0x200;WORD_AT(g_eax)=4;WORD_AT(g_eax+0xb0)=1;WORD_AT(g_eax+0x14)=id;fixture_link(g_eax);WORD_AT(g_eax+0x28)=WORD_AT(g_esp+12)|0x2000u;WORD_AT(g_eax+0x88)=current_menu;g_esp+=4;
 }
@@ -898,9 +941,8 @@ int main(int argc,char **argv)
     pose.clip_channels[0]=NAN;pc_character_pose_present(entity,&pose);
     CHECK(pose_clip_bindings==1);
 
-    CHECK(observed_beta_height==bits(54.f)); /* Link inherits the incoming native metric. */
-    built_row_count=0;last_built_item=0;audio_page=1;call(AUDIO_MIX_BUILD,0,0);
-    uint32_t audio_beta_row=audio_feature_rows[0];CHECK(audio_beta_row && built_row_count==6);
+    built_row_count=0;last_built_item=0;CHECK(audio_menu_prepare());audio_feature_add();
+    uint32_t audio_beta_row=audio_feature_rows[0];CHECK(audio_beta_row && built_row_count==5);
     WORD_AT(audio_beta_row+0xc8)=1;call(AUDIO_BETA_CHANGE,0,0);CHECK(enhanced_audio==1);
     audio_save_ok=0;WORD_AT(audio_beta_row+0xc8)=0;call(AUDIO_BETA_CHANGE,0,0);
     CHECK(enhanced_audio==1 && WORD_AT(audio_beta_row+0xc8)==1);
@@ -911,6 +953,132 @@ int main(int argc,char **argv)
     CHECK(enhanced_audio && !audio_test_options.weapon_range);
     audio_save_ok=0;WORD_AT(audio_feature_rows[3]+0xc8)=0;call(AUDIO_BETA_CHANGE,0,0);
     CHECK(audio_test_options.environment && WORD_AT(audio_feature_rows[3]+0xc8)==1);audio_save_ok=1;
+    /* The native profile descriptor survives every tab: hidden save/update
+     * records stay accessible, visible links exclude them, and Y stays fixed. */
+    /* Caption and value are measured independently, including cell-origin
+     * differences. Restore bit-exact cached offsets after the paint scope. */
+    row_alignment_test=1;
+    uint32_t align_row=0x600500,align_rect=0x600700,align_menu=0x600900;
+    WORD_AT(align_row)=4;WORD_AT(align_row+0x88)=align_menu;WORD_AT(align_row+0x14)=30;
+    WORD_AT(align_row+0x20)=WORD_AT(0x600404)=0x600800;
+    WORD_AT(align_row+0x1c)=1;WORD_AT(align_row+0xbc)=2;WORD_AT(align_row+0xb4)=1;
+    FLOAT_AT(align_row+0x40)=-5.f;FLOAT_AT(align_row+0xe0)=99.f;
+    FLOAT_AT(align_row+0x68)=96.f;FLOAT_AT(align_row+0xe8)=100.f;
+    FLOAT_AT(align_rect+4)=40.f;FLOAT_AT(align_rect+12)=100.f;FLOAT_AT(0x7ba188)=3.f;
+    WORD_AT(0x6b93b4)=7;
+    SettingsRowPaint align_scope;settings_rows_begin(&align_scope,align_menu);
+    settings_row_center(align_menu,align_row,align_rect);
+    CHECK(fabsf(FLOAT_AT(align_row+0x40)*3.f+5.f-30.f)<.001f);
+    CHECK(fabsf((FLOAT_AT(align_row+0xe0)+4.f)*3.f+7.f-30.f)<.001f);
+    CHECK(WORD_AT(0x6b93b4)==7 && align_scope.count==1);
+    settings_row_center(align_menu,align_row,align_rect);CHECK(align_scope.count==1);
+    settings_rows_end(&align_scope);CHECK(FLOAT_AT(align_row+0x40)==-5.f && FLOAT_AT(align_row+0xe0)==99.f);
+    CHECK(!settings_row_paint);
+    WORD_AT(0x6b93b8)=0x601000;WORD_AT(0x601008)=0x601100;
+    WORD_AT(0x600800)='A';WORD_AT(0x601100+33*12+4)=2u<<16;
+    FLOAT_AT(0x601100+33*12+8)=3.f;FLOAT_AT(0x7e7290)=2.f;
+    CHECK(settings_row_text_top(0x600800)==6.f);
+    settings_rows_begin(&align_scope,align_menu);settings_row_center(align_menu,align_row,align_rect);
+    CHECK(fabsf(FLOAT_AT(align_row+0x40)*3.f+(6.f+10.f)*.5f-30.f)<.001f);
+    settings_rows_end(&align_scope);CHECK(FLOAT_AT(align_row+0x40)==-5.f);
+    WORD_AT(0x600800)=11;CHECK(settings_row_text_top(0x600800)==0.f); /* native escapes */
+    WORD_AT(align_menu+0x1c)=0x601800;WORD_AT(0x601848)=2;
+    WORD_AT(0x600800)='A';
+    uint32_t prior_flags=WORD_AT(align_row+0x28);
+    settings_rows_begin(&align_scope,align_menu);settings_row_center(align_menu,align_row,align_rect);
+    CHECK(WORD_AT(align_row+0x1c)==2 && WORD_AT(align_row+0xbc)==2);
+    CHECK(WORD_AT(align_row+0x28)&0x2000u);
+    CHECK(settings_tabs_font(align_menu,9)==2);
+    settings_rows_end(&align_scope);
+    CHECK(WORD_AT(align_row+0x1c)==1 && WORD_AT(align_row+0xbc)==2);
+    CHECK(WORD_AT(align_row+0x28)==prior_flags);
+    WORD_AT(0x600800)=11; /* Native scale escape: uppercase must not alter its command. */
+    settings_rows_begin(&align_scope,align_menu);settings_row_center(align_menu,align_row,align_rect);
+    CHECK(WORD_AT(align_row+0x28)==prior_flags);
+    settings_rows_end(&align_scope);
+    WORD_AT(align_menu+0x1c)=0;
+    WORD_AT(0x6b93b8)=0;row_alignment_test=0;
+    /* Native separator height is scoped, symmetric and never changes a skin permanently. */
+    WORD_AT(0x600100+0x1c)=0x600200;FLOAT_AT(0x600230)=1.f;
+    SettingsDividerStyle spacing=settings_divider_begin(0x600100);
+    CHECK(fabsf(FLOAT_AT(0x600230)-2.2f)<.0001f);settings_divider_end(spacing);
+    CHECK(FLOAT_AT(0x600230)==1.f && !settings_divider_begin(0).address);
+    uint32_t before_audio_descriptor=WORD_AT(0x300004);
+    WORD_AT(0x300004)=0x52377cu;WORD_AT(0x7bb1e0)=0x500000;
+    call(0x002CBE10u,0,0);CHECK(audio_page==0 && audio_native_opens==1);
+    CHECK(audio_font_menu(audio_menu) && audio_row_count==10 && fixture_audio_rows()==0xcfu);
+    CHECK(WORD_AT(audio_menu+0x50)==bits(78.f) && separators==2);
+    /* Compact bars occupy the value column, and mouse capture matches paint. */
+    float audio_bar_bounds[]={100.f,40.f,500.f,70.f};
+    memcpy((void *)(g_xbox_mem_offset+0x600000),audio_bar_bounds,sizeof audio_bar_bounds);
+    slider_capture_enabled=1;
+    for(unsigned id=1;id<=3;id+=2) {
+        WORD_AT(id==1?0x5236bc:0x5236c0)=id==1?8u:12u;
+        g_esp=0x700000;WORD_AT(g_esp+4)=audio_menu;WORD_AT(g_esp+8)=0x200000+id*0x200;
+        WORD_AT(g_esp+12)=0x600000;audio_volume_draw();
+        MenuSliderTrack *track=&menu_slider_tracks[id==1?MENU_MUSIC:MENU_SOUND];
+        CHECK(track->x==378.f && track->y==51.f && track->w==100.f && track->h==8.f);
+        CHECK(track->item==0x200000+id*0x200 && drawn==(id==1?.5f:.75f) && g_esp==0x700004);
+    }
+    slider_capture_enabled=0;
+    for(int tab=1;tab<4;tab++) {
+        audio_change_tab(tab);CHECK(audio_page==tab && audio_native_opens==1);
+        CHECK(WORD_AT(audio_menu+0x64)==bits(90.f) && fixture_audio_rows()==0xc0u);
+        CHECK(WORD_AT(audio_menu+0x18c)==AUDIO_TABS_ID && separators==2);
+        if(tab==1) {
+            slider_capture_enabled=1;
+            for(unsigned i=0;i<6;i++) {
+                menu_slider_audio_mix_pointer(i,378.f+i*17.f,378.f,100.f);
+                CHECK(WORD_AT(audio_mix_rows[i]+0xc8)==i*17);
+                g_esp=0x700000;WORD_AT(g_esp+4)=audio_menu;WORD_AT(g_esp+8)=audio_mix_rows[i];
+                WORD_AT(g_esp+12)=0x600000;audio_mix_draw();
+                CHECK(drawn==i*17.f/100.f && menu_slider_tracks[MENU_AUDIO_MIX+i].item==audio_mix_rows[i] &&
+                      menu_slider_tracks[MENU_AUDIO_MIX+i].y==51.f);
+            }
+            CHECK(pc_audio_mix_get().master==0 && pc_audio_mix_get().volume[4]==85);
+            menu_slider_audio_mix_pointer(5,-100.f,0.f,100.f);CHECK(pc_audio_mix_get().volume[4]==0);
+            menu_slider_audio_mix_pointer(5,200.f,0.f,100.f);CHECK(pc_audio_mix_get().volume[4]==100);
+            audio_save_ok=0;menu_slider_audio_mix_pointer(5,25.f,0.f,100.f);
+            CHECK(WORD_AT(audio_mix_rows[5]+0xc8)==100 && strstr((char *)(g_xbox_mem_offset+audio_text(7)),"100%"));
+            audio_save_ok=1;call(0x002C3720u,35,0x40000u);CHECK(pc_audio_mix_get().volume[4]==99);
+            slider_capture_enabled=0;
+        }
+        audio_link_rows(1);CHECK(fixture_audio_rows()==0xefu);audio_link_rows(0);
+        call(0x002C3720u,AUDIO_TABS_ID,0);CHECK(audio_page==tab);
+    }
+    unsigned sounds_before=video_sounds;audio_change_tab(3);CHECK(video_sounds==sounds_before);
+    audio_change_tab(0);CHECK(fixture_audio_rows()==0xcfu && audio_native_ticks==4);
+    call(0x002C3AC0u,6,0);CHECK(audio_native_actions==1 && fixture_audio_rows()==0xefu);
+    g_esp=0x700000;WORD_AT(g_esp+4)=audio_menu;audio_options_build();
+    call(0x002C3BF0u,7,0);
+    g_esp=0x700000;WORD_AT(g_esp+4)=audio_menu;audio_options_build();
+    call(0x002C3D30u,AUDIO_TABS_ID,0);CHECK(audio_native_actions==3);
+    /* Fast mouse clicks retain the latest target through native cooldown;
+     * repeated clicks on the active tab stay there in frontend and pause. */
+    tab_pointer_enabled=slider_capture_enabled=1;
+    WORD_AT(0x761c48)=0x410000;WORD_AT(0x410000)=1;
+    WORD_AT(0x4e8cf0)=640;WORD_AT(0x4e8cf4)=480;
+    for(unsigned paused=0;paused<2;paused++) {
+        WORD_AT(0x79094c)=paused?1:101;audio_page=0;
+        audio_bounds[0]=20;audio_bounds[1]=30;audio_bounds[2]=320;audio_bounds[3]=54;
+        audio_bounds_valid=1;audio_left=1;audio_pending=-1;
+        WORD_AT(0x300038)=0;WORD_AT(0x3001b0)=1;
+        tab_pointer=(PcMenuPointer){397.5f,90,1920,1080,1,0,0,0};
+        CHECK(!menu_video_tabs_poll(audio_menu));tab_pointer.left=1;
+        CHECK(menu_video_tabs_poll(audio_menu) && audio_pending==0);
+        menu_video_tabs_flush();CHECK(audio_page==0 && audio_pending==0);
+        tab_pointer.left=0;menu_video_tabs_poll(audio_menu);
+        tab_pointer.x=847.5f;tab_pointer.left=1;
+        CHECK(menu_video_tabs_poll(audio_menu) && audio_pending==3);
+        WORD_AT(0x3001b0)=3;menu_video_tabs_flush();CHECK(audio_page==3 && audio_pending==-1 && audio_bounds_valid);
+        tab_pointer.left=0;menu_video_tabs_poll(audio_menu);tab_pointer.left=1;
+        CHECK(menu_video_tabs_poll(audio_menu));menu_video_tabs_flush();CHECK(audio_page==3);
+        tab_pointer.left=0;menu_video_tabs_poll(audio_menu);tab_pointer.x=397.5f;tab_pointer.left=1;
+        CHECK(menu_video_tabs_poll(audio_menu));clock_ms+=1001;menu_video_tabs_flush();
+        CHECK(audio_page==3 && audio_pending==-1);
+    }
+    menu_mouse_dispatch=0;tab_pointer_enabled=slider_capture_enabled=0;
+    WORD_AT(0x300004)=before_audio_descriptor;audio_menu=0;audio_row_count=0;
     /* The actual native waiting panel adopts an unconfigured pad's input port,
      * advances only the first waiting player, and preserves P1's controller. */
     WORD_AT(0x5236c4)=3;WORD_AT(0x74f9ec)=3;

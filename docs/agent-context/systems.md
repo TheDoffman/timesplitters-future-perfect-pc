@@ -127,12 +127,10 @@ Patch0061 composes master/category attenuation with the original HLE level and
 updates queued voices without clock/PCM edits. `pc_audio_mix_settings.h` owns
 strict independent `pc-audio-mix.ini` persistence and an atomic options
 snapshot; `pc_audio_config_path.h` resolves both sidecars through the isolated
-display/input directory. 100% is exact neutral. `pc_audio_menu.inc` supplies
-separate Mix/Enhancements pages: six exact-percent selectors, five toggles,
-save-failure rollback and native back navigation. The original Audio Options
-keeps its profile rows and contains one compact Mix link. Native frontend pages
-pass at640x480 plus paused1680x720 keyboard navigation/save/resume. Other aspects,
-mouse/controller and split-screen acceptance remain open.
+display/input directory. 100% is exact neutral. [Settings font/escape rules](audio-options.md)
+now shares the Video/Controls tab layout in main and pause. Original profile
+Accept/Cancel and live sidecar saving remain separate; the guide records native
+record preservation, navigation, tests and current scene-acceptance limits.
 
 Listening options: patch2307 applies shared `pc_audio_dynamics.h` to decoded
 buffer/stream/movie PCM, restoring history after refused submissions and keeping
