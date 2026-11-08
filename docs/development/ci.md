@@ -98,3 +98,11 @@ relevant release/main events; resolution notes run after merges using trusted
 default-branch code. The known-issues discussion follows maintainer guidance.
 No private game files, personal saves, new credentials or paid model calls are
 needed for this CI workflow.
+
+## Reading PR checks
+
+Short check names identify the suite, platform and shard. `PR validation` remains
+the required result. Its job summary groups the parallel shards into one row per
+suite/platform, showing passed-job counts, elapsed execution span and failed-job
+log links. Skipped checks appear in a collapsed section. This display reads the
+current run attempt only; API/reporting errors cannot change acceptance.

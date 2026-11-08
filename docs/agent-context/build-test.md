@@ -1044,3 +1044,5 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 Players: controls-options.md.
 
 Patch tests: Mac seeds omit2620/2625 until migration; Story stubs use production guards.
+
+[PR check names and advisory summary](release-speed.md#pr-feedback-scheduling).

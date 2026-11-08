@@ -154,3 +154,11 @@ new job results and rejects missing/cancelled/skipped selected work. Tests cover
 real serial/xdist partition unions, fixture counts, explicit groups, runner
 failure propagation and missing gate inputs. Native test file coverage is
 unchanged except for the added scheduling regressions.
+
+PR check names use suite/platform/shard labels. `pr-check-summary.py` groups
+shards by suite/platform in the required gate's job summary, with execution-span
+durations and direct failed-job links. It reads only the current run attempt
+through the jobs API (read-only actions permission); skipped suites are collapsed.
+The summary step always runs and is advisory, including API/reporting failures.
+The unchanged `ci-pr-gate.py` alone decides acceptance; `PR validation` keeps its
+required-check name. Summary regression cases run in `test_ci_pr_gate.py`.

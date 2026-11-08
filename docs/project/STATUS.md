@@ -1,3 +1,17 @@
+## PR checks presentation (2026-11-08)
+
+PR533 follow-up uses shorter suite/platform/shard names and an advisory summary
+inside the unchanged required PR validation check. The summary combines shard
+results, displays execution spans rather than summed parallel times, links failed
+jobs, and collapses skipped checks. GitHub still lists individual parallel jobs.
+Read-only current-attempt job metadata supplies the display; the existing strict
+gate alone determines acceptance. No test coverage or scheduling changed.
+
+Windows x64, Python3.14.2: 192 targeted runner/scope/gate checks passed, including
+summary grouping, failure/cancellation handling, safe labels and paginated
+current-attempt API reads. actionlint1.7.12 (official checksum verified), context
+freshness and whitespace checks passed. Hosted checks run before merging.
+
 ## Hosted PR feedback verification (2026-11-08)
 
 Draft PR533, source d7fc345d570e6378eb6f249a7ed41af0738f3cd3, tested merge

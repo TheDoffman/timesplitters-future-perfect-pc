@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   plan:
-    name: Select runtime checks
+    name: Scope
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -77,7 +77,7 @@ jobs:
         run: node --test tests/repository/repository-context.test.mjs tests/repository/repository-evidence.test.mjs
 
   patches:
-    name: Patch upgrades (${{ matrix.os }}, ${{ matrix.shard }}/3)
+    name: Patches · ${{ matrix.os == 'windows-latest' && 'Windows' || 'Mac' }} · ${{ matrix.shard }}/3
     needs: plan
     if: needs.plan.outputs.transitions == 'true'
     runs-on: ${{ matrix.os }}
@@ -153,7 +153,7 @@ jobs:
           retention-days: 30
 
   native:
-    name: Native runtime (${{ matrix.os }}, ${{ matrix.shard }}/3)
+    name: Runtime · ${{ matrix.os == 'windows-latest' && 'Windows' || 'Mac' }} · ${{ matrix.shard }}/3
     needs: plan
     if: needs.plan.outputs.native == 'true'
     runs-on: ${{ matrix.os }}
@@ -246,7 +246,7 @@ jobs:
           retention-days: 30
 
   mac-gpu:
-    name: Native Mac GPU contracts
+    name: GPU · Mac
     needs: plan
     if: needs.plan.outputs.gpu == 'true'
     runs-on: macos-latest
@@ -275,7 +275,7 @@ jobs:
         run: python tools/testing/test-rhi-mac.py --setup-sdk --driver moltenvk
 
   release:
-    name: Release contracts (${{ matrix.os }})
+    name: Release · ${{ matrix.os == 'windows-latest' && 'Windows' || 'Mac' }}
     needs: plan
     if: needs.plan.outputs.release == 'true'
     runs-on: ${{ matrix.os }}
@@ -338,7 +338,7 @@ jobs:
           retention-days: 30
 
   linux-foundation:
-    name: Linux x64 SDL Vulkan foundation
+    name: Vulkan · Linux
     needs: plan
     if: needs.plan.outputs.gpu == 'true'
     runs-on: ubuntu-24.04
@@ -425,6 +425,9 @@ jobs:
   # Always report one result; selected work must pass, unselected work must skip.
   pr-validation:
     name: PR validation
+    permissions:
+      contents: read
+      actions: read
     needs: [plan, patches, native, mac-gpu, release, launcher, linux-foundation, issue_forms, issue_resolution, textures]
     if: always()
     runs-on: ubuntu-latest
@@ -455,3 +458,9 @@ jobs:
           RUN_TEXTURES: ${{ needs.plan.outputs.textures }}
           TEXTURES_RESULT: ${{ needs.textures.result }}
         run: python tools/ci/ci-pr-gate.py
+      - name: Summarize check results and durations
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/ci/pr-check-summary.py

@@ -35,6 +35,7 @@ FULL_INPUTS = {
     'tools/testing/suite_timing.py', 'tests/support/test_suite_timing.py',
     'tools/ci/runtime-suites.json', 'tools/ci/run-runtime-checks.py',
     'tools/ci/ci-pr-gate.py', 'tests/repository/test_ci_pr_gate.py',
+    'tools/ci/pr-check-summary.py',
     'tests/support/runtime_shards.py', 'tests/support/test_runtime_shards.py',
     'tests/repository/test_runtime_checks.py',
     '.gitattributes',
