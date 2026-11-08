@@ -250,3 +250,43 @@ contact normalization are independent failing controls. The asset-free clock
 fixture covers coupled force/travel/contact and GPU-store composition; existing
 `test_gpu_flush_ack.py` retains actual-store/guard/fallback coverage. See
 [script clocks](native-script-clocks.md) for numerical and live-acceptance limits.
+
+## Challenge spawn countdown (#482)
+
+The original NPC scheduler15E830 retains its whole-tick entry gate15E841
+and rotates descriptor+6C callbacks via74C38C. Spawner164010 is one of those
+callbacks. Its164116 countdown product formerly used only the latest fractional
+frame, discarding time at high FPS. That exact product now uses the whole game
+tick count in native mode. Callback cadence, rotation, eligibility, challenge
+admission228D90, allocation and original mode remain unchanged. Do not open the
+entire scheduler gate: it also contains discrete NPC bookkeeping.
+
+`native_challenge_spawns.c` executes the original scheduler, spawner and challenge
+admission with allocation/world services controlled. It verifies five-second
+initial and two-second repeat delays at60/120/144/180/240, normal/quarter speed,
+pause, callback rotation, catch-up and register/stack preservation. Reverting
+only the product fails. This is CPU-path evidence; live challenge acceptance is
+recorded separately. Before the change, isolated Rare or Well Done tests showed
+the third NPC near10 game seconds at60 versus20 seconds at240.
+
+Final isolated Windows runs place the third enemy at ticks610/606 for60/240
+(~10.1 seconds). This verifies initial Rare or Well Done spawns, not challenge
+completion or Behead the Undead; the stationary test player subsequently died.
+
+## Terminal password timing (#482)
+
+3700D0 dispatches terminal callbacks only on whole game ticks. Its intro
+36D000 and password36D3C0 previously consumed only the latest fractional
+frame, making terminal entry progressively slower above60. The direct call
+sites370424,3721EE and3766B0 now scope4E794C to the accumulated game tick
+count, restoring it immediately afterward. Zero local time and Original mode
+are preserved; terminal dispatch, RNG cadence and puzzle deadlines are unchanged.
+
+`native_terminal_text.c` executes original370490/3700D0, intro and password
+routines, plus generic372190 and U-Genix376640 (both TOSS/TOS2 transitions).
+Typing completion ticks/RNG calls match Original60 through240, including quarter
+speed. Disabling just the call-site wrappers fails. Rendering, text lookup and
+state-transition services are controlled. This proves password pacing, not a
+live final-puzzle deadline/mission completion; that acceptance remains separate.
+Asset-free `native_timing_guest.c` covers boss entry admission and terminal clock
+restoration across original/native, paused/subtick/whole/catch-up inputs.

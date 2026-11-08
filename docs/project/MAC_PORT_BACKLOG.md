@@ -1,3 +1,10 @@
+#482 beam damage (local after c511f1e9): portable pc_native_numeric.h policy;
+no OS adapter/fork. Both damage paths retain original whole-tick hit/RNG cadence
+and correct only kinds25/26's continuous-damage interval. Windows original-code
+and asset-free focused checks pass. Native Mac/Linux build and encounter checks
+remain pending; Windows is not proof of those hosts. Original-XBE tests skip
+without the supported private image. Other #482 reports remain investigations.
+
 PR #528 prompt ownership follow-up: controls_context_port centralizes validated
 local ownership for action masks and active-player controller glyphs. Remote/invalid
 contexts cannot select another local port's preset.89 focused checks passed/2 Mac
@@ -10389,3 +10396,20 @@ acceptance and Linux software-Vulkan replay pass; native Mac gameplay/renderer
 and physical Steam Deck checks remain unverified. Test doorway/floor seams at
 4:3,16:9 and ultrawide, partial clipping and full-screen crane coverage.
 See [evidence](STATUS.md#2026-11-07---issue521-portal-seams).
+
+- #482 follow-up (local): original spawn scheduler/admission regression now
+  covers60/120/144/180/240 and slow motion. Fix only the spawn countdown's
+  fractional/whole-clock mismatch; retain NPC scheduling cadence. Live Windows
+  post-fix challenge verification pending; no native Mac/Linux acceptance claim.
+
+- #482 detached-dart follow-up (local): normalize only the one-time release
+  velocity for tranquilizer kinds32/33. Original Story/Arcade detach and falling
+  routines pass60–240 FPS/slow-motion tests; live collision and native Mac/Linux
+  verification remain outstanding. No global projectile speed adjustment.
+
+- #482 boss/terminal follow-up (local, implemented; native validation pending):
+  shared pc_native_numeric.h gates only Crow's fixed-step mine update and
+  scopes terminal typing to its dispatch clock. No host adapter required.
+  Original-XBE Windows CPU fixtures cover60-240/slow/pause; native Mac/Linux
+  builds and live boss/U-Genix acceptance remain unverified. See STATUS and
+  native-projectiles/native-script-clocks guides for scope and test boundaries.

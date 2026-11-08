@@ -92,3 +92,71 @@ kind50 now executes the original E2520/matrix helpers as well. Tank-gate and
 vector-drag ablations must fail. These establish guest behavior, not full
 live-map collision, vehicle handling or rendered trails. Keep separate live
 and host-build evidence in STATUS.md.
+
+## Fixed-length beam damage (#482 investigation)
+
+EBB00/EC120 (kinds26/25) retain their whole-game-tick trace gates. Their
+BD0F0 dispatch reaches B9960 object damage or B9790 character damage; continuous
+profiles previously multiplied by only the latest fractional tick at B99B4/B9901.
+That loses damage on frames between traces: the controlled kind26/object case
+measured6,3,2,1.5 damage per game second at60/120/180/240 respectively.
+`pc_native_beam_damage` replaces that multiplier with the whole game tick count
+only at those two sites and only for kinds25/26 with native timing active.
+The guest stack offsets are C (B99B4) and18 (B9901); no clock, trace, RNG,
+profile value or other projectile kind is modified.
+
+`test_original_beam_damage` lifts both complete beam updaters and their original
+hit-info/falloff/object/character damage routines. Collision target, hit effects,
+character classification and damage application are controlled service boundaries.
+At60/120/144/180/240, normal/quarter speed, totals match Original60 with60 traces
+and240 RNG calls per game second; pause changes neither. The legacy multiplier
+negative control fails the damage comparison. `native_timing_guest.c` also checks
+both stack offsets, all54 kinds, original/native and0/1/2 whole ticks without
+private assets. These tests do not establish shield-door overload or live mission
+acceptance; #482's other reported timing paths need independent investigation.
+
+`test_original_projectile_fuses` additionally executes DC7B0's full85-slot
+pool dispatch/age integration and F39A0's stationary kind17/19 fuse logic,
+plus F04B0's kind18 proximity arming and delayed explosion.
+It verifies original table targets and checks six-/two-second detonations at
+60/120/144/180/240 within one60Hz tick, with fuse audio and explosion consumers
+controlled. A nearby target and clear launch space also preserve the proximity
+mine's approximately two-second arm/launch/explode sequence. This passes without
+a new mine timing change; it does not identify
+or validate the Crow boss's scripted bombs, collision-triggered detonation or
+arming behavior. Do not treat it as closure evidence for that report.
+
+## Detached darts (#482)
+
+E0520 selects E0300 (Story) or E03D0 (Arcade) when an entity releases attached
+projectiles. The one-time downward velocity at E036B/E04E7 was multiplied by
+the latest fractional frame. `pc_native_dart_release` normalizes positive
+subtick intervals to one authored tick for kinds32/33 only. Zero intervals,
+whole/catch-up values, original mode and other kinds retain their inputs.
+Ownership clearing, collision selection and retirement remain original.
+
+`native_dart_release.c` executes both original detach paths, then EAD10 and its
+matrix helpers. Release velocity matches exactly at60/120/144/180/240, normal
+and quarter speed; half-second falling distance stays within0.03 world units
+of Original60. The legacy product fails. Scene collision queries are controlled;
+this does not establish a live corpse/player collision result. The asset-free
+fixture checks all54 kinds, zero/subtick/whole/catch-up and native-off selection.
+
+Beam and spawn countdown fixes retain zero-float pauses even with a stale whole count.
+
+## Crow boss mines (#482)
+
+Crow's custom eight-slot pool at75F5E8+11A0 is separate from F04B0 proximity
+mines. The boss update28FE30 calls28F560 at290BDC; this executes2AA6A0's
+fixed-step arming, four-direction effect emission, rise/fall and retirement,
+followed by player interaction. RECOMP_FAST_ENTRY now skips28F560 on native
+frames without an accumulated game tick or with zero local game time. It pops
+only the guest return address. Boss movement and the separate draw28D710 remain
+unrestricted. Original mode and whole/catch-up calls keep original behavior.
+
+`native_boss_mines.c` lifts28F560 and2AA6A0 from the pinned US image, copies
+constants through4A0000 (including the double rotation constant), and compares
+arming/explosion/retirement ticks and four-way effect counts at60/120/144/180/240
+and quarter speed. Near/far target cases, pause and ABI are checked. Removing
+only the entry gate fails. Effects and collision consumers are controlled;
+this is original CPU state-machine evidence, not a completed live boss fight.

@@ -1,3 +1,29 @@
+#482 high-FPS investigation (2026-11-08, local after c511f1e9):
+Shared pc_native_numeric.h corrections cover fixed-length beam damage,
+challenge spawn countdowns and detached tranquilizer initial velocity. Exact
+sites/kinds preserve Original60, whole-tick callback/RNG cadence and pause.
+Original-code regressions cover60/120/144/180/240, normal/quarter speed, with
+negative controls reproducing each defect. Full Windows timing suite144 passed;
+final five focused checks passed after the beam zero-delta guard. Expanded
+original proximity-mine arming/fuse test also passed; generic timed/proximity
+results do not establish Crow boss-specific behavior.
+
+Final Windows Release and standard Build checks passed, matching crash symbols.
+EXE SHA256:2e2b91e2177f335782222cd88790194acad166176a00df0cd43a9bd2cd2e6d9c.
+Isolated Rare or Well Done runs used the same final executable and normal menu
+input. Third enemy appeared at game tick610 (Original60) and606 (native240),
+about10.1 game seconds; pre-fix native240 took1200 ticks. Sampled actor arrivals
+validate the initial spawn sequence, not challenge completion: the stationary
+player subsequently died. Profiles remained unchanged. Captures and provenance
+are local under private/test-saves/issue482-reviewed-wave60 and wave240.
+
+Live Crow shield-door and detached-corpse collision acceptance, Behead challenge,
+Crow boss mines and U-Genix final puzzle timing remain outstanding. A private
+original-code probe reproduces terminal text progressing slower at high FPS;
+no terminal change or puzzle-cause claim is included. Native Mac/Linux builds
+and physical gameplay are unverified. Changes are local/uncommitted; issue stays
+open until a published fix and remaining reports are addressed.
+
 PR #528 prompt ownership follow-up: controls_context_port centralizes validated
 local ownership for action masks and active-player controller glyphs. Remote/invalid
 contexts cannot select another local port's preset.89 focused checks passed/2 Mac
@@ -42967,3 +42993,28 @@ tests passed16 with two absent-original-asset skips. Native Mac and physical
 Steam Deck validation remain pending. No new platform adapter is needed.
 See [contract](../agent-context/portal-scissors.md). Refs #521; keep open until
 a downloadable release includes the fix.
+
+- #482 follow-up (local): original spawn scheduler/admission regression now
+  covers60/120/144/180/240 and slow motion. Fix only the spawn countdown's
+  fractional/whole-clock mismatch; retain NPC scheduling cadence. Live Windows
+  Rare or Well Done initial spawns now match60/240 in isolated live runs;
+  Behead and native Mac/Linux acceptance remain unverified.
+
+- #482 detached-dart follow-up (local): normalize only the one-time release
+  velocity for tranquilizer kinds32/33. Original Story/Arcade detach and falling
+  routines pass60–240 FPS/slow-motion tests; live collision and native Mac/Linux
+  verification remain outstanding. No global projectile speed adjustment.
+
+## 2026-11-08 - #482 boss mine and terminal follow-up (local)
+
+Base c511f1e9; uncommitted shared numeric policy corrections restore Crow's
+custom mine-pool cadence and terminal intro/password timing. Original-code
+regressions cover60/120/144/180/240, slow motion, pause, register/stack and
+negative controls. U-Genix TOSS/TOS2 callbacks are included. Effects/collision
+and puzzle transition services are controlled; no completed live boss fight
+or final U-Genix puzzle acceptance is claimed. Full Windows timing suite passed146 tests (287.70s), with final focused
+original-code and asset-free checks also passing. Windows Release build and standard tsfp.ps1 Build checks passed, including
+matching crash symbols. Executable SHA256:
+`f65884f4451049d5e2c1ac0e9452ffda2721189a8f0df52323814d3118d24a79`.
+The isolated Story launch was blocked by three unrelated Dedicated Server games;
+none was stopped. Evidence is in logs/issue482-boss-terminal-*.log. Keep #482 open; no release or push.
