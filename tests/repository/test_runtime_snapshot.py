@@ -163,7 +163,8 @@ def test_build_and_ci_entry_points_use_bundled_source():
         assert 'prepare-runtime.py' in text
         assert 'https://github.com/nemonicicon/ts3FPrecomp.git' not in text
         assert 'repository: nemonicicon/ts3FPrecomp' not in text
-    assert 'tests/repository/test_runtime_snapshot.py' in ci
+    assert 'run-runtime-checks.py patches' in ci
+    assert 'tests/repository/test_runtime_snapshot.py' in (ROOT/'tools/ci/runtime-suites.json').read_text()
 
 
 def test_release_source_writer_includes_snapshot_and_preserves_bytes(tmp_path):

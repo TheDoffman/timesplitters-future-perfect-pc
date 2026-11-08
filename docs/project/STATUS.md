@@ -1,3 +1,90 @@
+## PR checks presentation (2026-11-08)
+
+PR533 follow-up uses shorter suite/platform/shard names and an advisory summary
+inside the unchanged required PR validation check. The summary combines shard
+results, displays execution spans rather than summed parallel times, links failed
+jobs, and collapses skipped checks. GitHub still lists individual parallel jobs.
+Read-only current-attempt job metadata supplies the display; the existing strict
+gate alone determines acceptance. No test coverage or scheduling changed.
+
+Windows x64, Python3.14.2: 192 targeted runner/scope/gate checks passed, including
+summary grouping, failure/cancellation handling, safe labels and paginated
+current-attempt API reads. actionlint1.7.12 (official checksum verified), context
+freshness and whitespace checks passed. Hosted checks run before merging.
+
+## Hosted PR feedback verification (2026-11-08)
+
+Draft PR533, source d7fc345d570e6378eb6f249a7ed41af0738f3cd3, tested merge
+1cd2fd695fe212478d11a19f3ddff383c8323636 against base
+dfd6573122d9c9c967ceda558313ae07ccb4c613. GitHub Actions run
+[42525494549](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/42525494549)
+passed all22 selected jobs, including Windows/Mac patch/native/release, Mac
+MoltenVK GPU contracts, Linux software-Vulkan foundation, all three launcher
+hosts and PR validation. Three unrelated repository suites skipped as planned.
+This establishes CI contracts on those hosts, not private-game or gameplay parity.
+
+Measured workflow creation to required-gate completion, including setup/queue:
+main baseline run42508588658 took1,032s (17m12s); PR run42525494549 took473s
+(7m53s),559s/54.2% less waiting. The median of six recent successful main runs
+was910.5s, so this PR was48.1% below that median. This is an observed hosted run,
+not a guaranteed duration; runner availability and image/CPU differences remain.
+
+Downloaded per-host case inventories verify zero omissions, overlap, or newly
+non-passing baseline cases. Patch collections retain76 cases on each host;
+release retains235. Native Windows3,460->3,483 and Mac3,450->3,473 include23 new
+scheduling/reporting regressions each. Existing skip outcomes are preserved.
+Slowest parallel pytest elapsed times: Windows patches375s vs960s baseline;
+Windows native293s vs661s; Mac patches114s vs356s; Mac native378s vs498s.
+Mac GPU finished2m37s after starting, ahead of the long native groups. Release
+jobs finished in20s(Mac)/40s(Windows), rather than waiting behind native work.
+
+The Windows patch/native matrices and independent GPU/release jobs required no
+repair push to pass their first hosted run. The draft PR remains unmerged and
+branch protection is unchanged. A documentation-only evidence commit follows
+this source run; final PR checks are repeated on that revision. Timing reports
+cache measurements only; test outcomes and compiled fixtures were not reused.
+
+## Faster PR feedback (2026-11-08; local, uncommitted)
+
+Base main: dfd6573122d9c9c967ceda558313ae07ccb4c613; task branch
+ci-faster-feedback in an isolated worktree. Concurrent staged/unstaged changes
+in the original checkout are preserved. CI tooling/workflow/docs only; no game,
+save or settings behavior changed. The verified Base ruleset still requires
+PR validation and an up-to-date branch; repository settings were not changed.
+
+The shared runtime-suites.json manifest retains every old CI test file. Patch
+and native CPU collections partition into three fixture-preserving jobs per
+Windows/Mac host. Mac GPU and dual-host release jobs depend only on the plan.
+The required gate rejects failed/cancelled/missing/unexpectedly skipped work.
+Local preflight uses the same complete lists and can run prior failures first;
+no cached pass or last-failed-only run substitutes for acceptance. JUnit/job
+summaries group compiler/setup diagnostics. Timing/caches/artifacts are separate
+by host/shard; measurement/artifact outages remain advisory.
+
+Windows11 x64 (10.0.26300), Python3.14.2, MSVC19.42.34435,
+pytest9.1.1/xdist3.8.0, two workers/shard: all76 patch cases passed (34/24/18).
+All three native groups passed:3,130 passed,352 private-data/host skips from
+3,482 collected (1,124/1,167/1,191). Final release execution:221 passed,14 host
+skips,3 subtests. Final scheduling/scope/gate/guide/launcher contract suite:
+270 passed,1 Linux-host skip,31 subtests, including final report grouping/cache
+isolation. Serial/xdist fixture tests and real collection unions verify no
+omitted/duplicated cases. Node context/evidence23 passed. actionlint1.7.12
+syntax/expression validation and context/index/whitespace checks passed.
+No game, original XBE, GPU or gameplay validation was performed.
+
+Initial sandbox runs hit loopback/link/MSVC-helper/Git restrictions; normal-host
+reruns passed without product assertion changes. One stalled sandbox patch
+process tree was stopped before its successful host rerun. Disposable test roots
+are cleaned after child shutdown; bounded reports remain in task-local logs/
+and build/test-results/.
+
+Baseline GitHub run42508588658 took17m13s (Windows patch pytest16m; native11m).
+Local patch groups took225/256/319s; native groups128/173/165s. Hosts/access and
+concurrency differ, so this is not a before/after hosted-speed benchmark. Fresh
+GitHub timings, Mac GPU/macOS and Linux-host acceptance remain unrun. No Mac
+runtime adapter is needed for these shared CI scheduling changes. Work remains
+local and uncommitted; nothing pushed or verified on another device.
+
 #529 controller deadzones (local, based on main2dff17e7): per-player movement/aim
 selectors in Controller and shared launcher. Untouched raw legacy values retain
 behavior. Edited axes invert the original decoder's measured10% threshold after

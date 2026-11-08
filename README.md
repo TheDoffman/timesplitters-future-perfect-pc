@@ -211,7 +211,8 @@ with your installed versions, platform and steps to reproduce. The launcher's
 Keep personal saves and game data private.
 
 Suggest improvements in **[Ideas](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/categories/ideas)**.
-To contribute, read the [contributing guide](CONTRIBUTING.md),
+To contribute, run the [local CI preflight](docs/development/ci.md#run-runtime-checks-before-pushing)
+for runtime changes and read the [contributing guide](CONTRIBUTING.md),
 [project rules](AGENTS.md) and [code of conduct](CODE_OF_CONDUCT.md).
 Report security vulnerabilities privately using the [security policy](SECURITY.md).
 

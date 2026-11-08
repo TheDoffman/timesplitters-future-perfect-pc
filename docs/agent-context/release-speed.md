@@ -128,3 +128,37 @@ failure, subtests, and real serial/two-worker pytest invocations. Existing group
 compiler-cache and release-failure tests remain. Monitoring changes select every
 runtime CI suite. No performance warning bypasses a failing acceptance gate or
 aborts an otherwise passing release.
+
+## PR feedback scheduling
+
+`tools/ci/runtime-suites.json` owns the unchanged patch/native/release file lists,
+including Windows-only native cases. `tools/ci/run-runtime-checks.py` consumes
+that manifest locally and in CI. `all --prepare --failed-first` prepares the
+bundled runtime, runs previous failures first, then every remaining case, and
+continues independent suites after failures. It never substitutes cached passes
+or a last-failed-only run for acceptance. GPU/launcher/Linux host checks remain
+separate; see [CI usage](../development/ci.md).
+
+`tests/support/runtime_shards.py` partitions patch/native collections into three
+jobs per host using the existing file/independent-case identities and explicit
+xdist groups. All cases are retained exactly once across the matrix. The
+partition is deterministic and requires no timing download. Timing profiles,
+cache keys, XML and artifact names are separate per shard; declared shard
+collections can calibrate their own baselines, while ad-hoc filters cannot.
+Changing partitions creates distinct profile/environment identities. No compiled
+fixtures or test results are reused across commits.
+
+Mac GPU and dual-host release checks now depend only on the plan, allowing their
+failures to be discovered alongside CPU failures. The required gate checks both
+new job results and rejects missing/cancelled/skipped selected work. Tests cover
+real serial/xdist partition unions, fixture counts, explicit groups, runner
+failure propagation and missing gate inputs. Native test file coverage is
+unchanged except for the added scheduling regressions.
+
+PR check names use suite/platform/shard labels. `pr-check-summary.py` groups
+shards by suite/platform in the required gate's job summary, with execution-span
+durations and direct failed-job links. It reads only the current run attempt
+through the jobs API (read-only actions permission); skipped suites are collapsed.
+The summary step always runs and is advisory, including API/reporting failures.
+The unchanged `ci-pr-gate.py` alone decides acceptance; `PR validation` keeps its
+required-check name. Summary regression cases run in `test_ci_pr_gate.py`.

@@ -1,60 +1,108 @@
 # CI and branch protection
 
-The live `Base` ruleset currently requires these three GitHub Actions checks
-on every pull request (verified 2026-10-25):
+The active `Base` ruleset requires **PR validation** on every pull request and
+requires the branch to include the latest `main` (verified 2026-11-08). The
+workflow keeps that required name. This change does not alter repository rules,
+merge policy or reviewer requirements.
 
-- **Patch transitions (windows-latest)**
-- **Patch transitions (macos-latest)**
-- **Launcher compatibility**
+## Run runtime checks before pushing
 
-**Issue form tests** and **Issue resolution tests** run only when their source,
-templates, or workflow files change. They are not required branch checks.
-Event automation runs in separate workflows:
+Activate the checkout's host-local Python environment and install the pinned
+`requirements.txt` and `requirements-release.txt` dependencies. From the checkout
+root, run:
 
-- **Automatic issue labels** runs when issues are opened, edited or reopened.
-- **Issue form versions** validates and proposes reference updates after release
-  changes, relevant pushes to `main`, or a manual dispatch.
-- **Issue resolution notes** comments on linked issues only after a PR into
-  `main` is merged, using trusted default-branch code.
-- **Known issues Discussion** keeps the pinned known-issues post synchronized
-  with open bug reports and maintainer workaround notes. It also runs after
-  automatic labeling. See [maintainer instructions](../players/known-issues.md).
+```sh
+python tools/ci/run-runtime-checks.py all --prepare --failed-first
+```
 
-`PR validation` is a candidate single required check. It uses the same runtime
-scope and original Windows/Mac workers, selects launcher builds from the same
-revision, and fails if any selected worker fails or is unexpectedly skipped.
-The old required checks continue reporting during the rollout. After the new
-gate has passed on a PR, replace the three existing required contexts with
-`PR validation` in the `Base` ruleset. Only then remove the old reporting jobs
-and the separate PR trigger in `launcher-compatibility.yml`. This staged change
-avoids a window where protected PRs wait for a check that does not exist.
+This prepares the bundled runtime and applies the complete patch stack, then
+runs the same patch, native CPU and release test lists used by CI for your host.
+It runs previous failures first and still executes all remaining cases. Failure
+in one suite does not hide the next suite. The command exits nonzero if any
+suite fails. It does not build or launch the game or touch personal saves/settings.
 
-The runtime plan always tests suite selection. It runs affected patch, native,
-release and launcher tests when relevant files change. A documentation edit
-still gets a completed gate without full game or launcher builds. No
-private game files or personal saves are needed in CI.
+For a narrower implementation loop, choose `native`, `patches` or `release`
+instead of `all`. Use `--workers 1` for serial diagnosis, `--list` to inspect
+selected files, or `--collect-only` to check collection. Listing/collection is
+not a passing execution. After targeted repairs, run the complete relevant
+suite before pushing, rather than stopping after the first fixed test.
 
-The `Base` branch ruleset targets `main` with active enforcement. It requires a
-pull request, the three checks listed above, and an up-to-date branch.
-Deletion and force pushes remain blocked. There are no bypass actors or required
-reviewer approvals, so a solo maintainer can merge once checks pass.
+`tools/ci/runtime-suites.json` is the single source of these file lists; register
+new regressions there. Native Windows-only cases remain explicitly listed.
+This CPU preflight does not replace the other host's checks, launcher tests,
+Linux foundation checks, Mac GPU contracts, private-XBE tests or gameplay
+acceptance. Missing private game data keeps the existing explicit skips.
 
-If `main` advances, use **Update branch** or merge `main` into the PR branch and
-wait for fresh checks. Repository-level **Allow auto-merge** makes the option
-available; it does not automatically select every PR for merging. Choose
-**Enable auto-merge** on the individual PRs you want to merge after checks pass.
+## Find failures in one CI run
 
-Published version references are updated through a PR on
-`automation/issue-form-versions`, rather than a direct push to `main`. Updating
-that branch preserves its previous tip and the current default branch as
-ancestors; it never force-pushes or replaces unrelated edits. The workflow needs
-`contents: write`, `pull-requests: write` and the repository's **Allow GitHub
-Actions to create and approve pull requests** setting. It does not approve PRs.
+The runtime plan always checks scope and guide maintenance. It selects affected
+patch, native, GPU, release and launcher checks conservatively; unknown runtime
+inputs still receive broad coverage. Documentation edits still get a completed
+required gate without full game/launcher work.
 
-GitHub may require a maintainer to select **Approve workflows to run** on a
-token-created PR before its checks start. After approval, the same required
-checks and up-to-date rule apply. Enable auto-merge on the version PR if desired.
-No personal access token, new secret or branch-protection bypass is needed.
+Patch and native CPU suites each run in three independent jobs on Windows and
+Mac, with two pytest workers per job and matrix fail-fast disabled. The shared
+sharding plugin keeps module fixtures and explicit xdist groups together; only
+the existing independently isolated migration/timing cases can split within a
+file. Every original case belongs to exactly one shard. The local command can
+reproduce a CI partition with `native --shard 2/3` (or `patches --shard 2/3`).
+Omit `--shard` locally to execute the entire suite.
 
-If renaming a required job or changing its matrix, update the ruleset's check
-names as part of the same rollout so PRs are not left waiting for a missing check.
+Mac GPU validation and release contracts have independent jobs that depend on
+the plan, so CPU failures cannot skip them. Release contracts run on both
+required desktop hosts. Existing launcher, Linux, issue and texture job scope
+is retained. **PR validation** rejects failed, cancelled, missing or unexpectedly
+skipped selected work, including the new independent jobs. No automatic test
+retry, successful-result cache or weakened assertion is introduced.
+
+Each CPU job groups repeated compiler/setup errors by diagnostic and uploads JUnit XML under
+`test-results-*`, including setup/compilation errors. Timing reports remain
+advisory, with separate profiles/cache/artifact identities for each shard and
+host. Local reports live in `build/test-results`; timing history is in
+`build/test-performance`. Existing unsharded timing baselines are not comparable
+to the new partitions. See [performance history](release-performance.md).
+
+The baseline Windows workflow at source `dfd6573122d9c9c967ceda558313ae07ccb4c613`
+([run 42508588658](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/42508588658))
+took about 17 minutes: Windows patch tests took 16 minutes and native CPU tests
+11 minutes; Mac GPU work followed its CPU suite. Sharding and independent GPU
+jobs shorten the critical path, but actual hosted speed depends on runner
+availability and partition balance. Measure the first new CI runs before
+claiming a wall-clock improvement; splitting jobs increases runner concurrency
+and repeats per-job setup.
+
+## Measured hosted result
+
+[PR533's first full run](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/42525494549)
+reached the required gate in **7m53s**, compared with **17m12s** for the
+[matching main baseline](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/42508588658):
+**54.2% less elapsed time**, including setup and runner queues. All22 selected
+jobs passed on the first attempt. Per-host downloaded inventories confirmed no
+missing/overlapping cases or newly non-passing baseline cases; Windows and Mac
+each gained23 native scheduling/reporting regressions. Full measurements and
+scope are recorded in [STATUS](../project/STATUS.md). This is an observed run,
+not a guaranteed service time; runner availability and CPU/image differences vary.
+
+## Merging and repository automation
+
+If `main` advances, use **Update branch** or merge `main` into the PR branch,
+then wait for checks on that candidate. Maintainers may enable auto-merge on an
+individual PR. This change neither enables it globally nor merges any PR.
+For a transient infrastructure failure, rerun the failed jobs on the same
+candidate; code changes still require fresh validation of the new candidate.
+
+Issue form/resolution tests run only when relevant files change. Their event
+automation remains separate from PR validation. Issue labels run on issue
+changes; issue form versions propose reference updates through a PR after
+relevant release/main events; resolution notes run after merges using trusted
+default-branch code. The known-issues discussion follows maintainer guidance.
+No private game files, personal saves, new credentials or paid model calls are
+needed for this CI workflow.
+
+## Reading PR checks
+
+Short check names identify the suite, platform and shard. `PR validation` remains
+the required result. Its job summary groups the parallel shards into one row per
+suite/platform, showing passed-job counts, elapsed execution span and failed-job
+log links. Skipped checks appear in a collapsed section. This display reads the
+current run attempt only; API/reporting errors cannot change acceptance.

@@ -7,7 +7,7 @@ from project_paths import configure
 
 configure()
 
-pytest_plugins = ['suite_timing']
+pytest_plugins = ['suite_timing', 'runtime_shards']
 
 # Parameterized fixtures share helpers across responsibility groups.
 for folder in sorted(Path(__file__).parent.iterdir()):
