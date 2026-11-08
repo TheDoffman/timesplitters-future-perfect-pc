@@ -3791,9 +3791,9 @@
     {
       "name": "2725-inclusive-portal-scissors.patch",
       "path": "patches/graphics/rendering/2725-inclusive-portal-scissors.patch",
-      "sha256": "9a69229c350c4478444fcffb6b21d56967743f967a1d75ec84da98b7b86010b0",
+      "sha256": "6b7f2752e9f59261425463ab41eb96e40f5d12c0544c4ef2f9ff41f563f6c775",
       "targets": [
-        "src/d3d/d3d8_device.c\r"
+        "src/d3d/d3d8_device.c"
       ]
     }
   ]
