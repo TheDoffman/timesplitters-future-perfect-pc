@@ -223,6 +223,19 @@ int main(int argc,char **argv)
     current=settings; current.keys[0][0]=VK_F11; CHECK(!pc_settings_save(&current,error,sizeof error));
     current=settings; current.keys[0][0]=VK_F3; CHECK(pc_settings_save(&current,error,sizeof error));
     CHECK(pc_settings_save(&settings,error,sizeof error));
+    /* Deadzone persistence is independent of native profile Accept/Cancel,
+     * and failed saves must never publish a new live threshold. */
+    int original_move=pc_settings_deadzone(0,0);
+    CHECK(pc_settings_deadzone_save(0,1,1638,error,sizeof error));
+    CHECK(pc_settings_deadzone(0,1)==1638 && pc_settings_deadzone(0,0)==original_move);
+    CHECK(!pc_settings_deadzone_save(0,1,-1,error,sizeof error));
+    CHECK(!pc_settings_deadzone_save(4,1,100,error,sizeof error));
+    CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
+    CHECK(!pc_settings_deadzone_save(0,1,3277,error,sizeof error));
+    CHECK(pc_settings_deadzone(0,1)==1638);
+    CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
+    CHECK(pc_settings_save(&settings,error,sizeof error));
+    saved=load(path);CHECK(saved && strstr(saved,"\"aim_deadzone\":1638"));free(saved);
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
     current=settings; current.keys[14][0]='U'; CHECK(!pc_settings_save(&current,error,sizeof error));
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));

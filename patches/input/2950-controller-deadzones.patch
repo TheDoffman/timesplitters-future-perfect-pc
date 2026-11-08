@@ -1,0 +1,89 @@
+diff --git a/src/input/input_bindings.c b/src/input/input_bindings.c
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -169,6 +169,7 @@
+     int device;
+     int pad;                /* recomp_pad slot when device == DEV_PAD */
+     int deadzone;
++    int move_deadzone, aim_deadzone; /* -1 inherits legacy deadzone. */
+     int has_key;            /* any key: source, so the port works with no pad */
+     int pad_fallback;       /* launcher switched a keyboard-only map to a pad */
+     Binding bind[CONTROL_COUNT];
+@@ -309,6 +310,7 @@
+     c->device = DEV_PAD;
+     c->pad = port;
+     c->deadzone = DEADZONE_DEFAULT;
++    c->move_deadzone = c->aim_deadzone = -1;
+     for (i = 0; i < (int)(sizeof DEFAULTS / sizeof DEFAULTS[0]); i++) {
+         int k = control_index(DEFAULTS[i].control);
+         if (k < 0)
+@@ -504,6 +506,14 @@
+                 return NULL;
+             set_device(&tmp, value);
+             seen_device = 1;
++        } else if (strcmp(key, "move_deadzone") == 0 || strcmp(key, "aim_deadzone") == 0) {
++            char *end; long value = strtol(p, &end, 10);
++            if (end != p && value >= 0 && value <= 32767 &&
++                (*ws(end) == ',' || *ws(end) == '}')) {
++                if (key[0] == 'm') tmp.move_deadzone = (int)value;
++                else tmp.aim_deadzone = (int)value;
++            }
++            p = jskip(p);
+         } else if (strcmp(key, "deadzone") == 0) {
+             tmp.deadzone = (int)strtol(p, NULL, 10);
+             p = jskip(p);
+@@ -925,14 +935,22 @@
+ /* A movement/look axis needs a circular deadzone. Keep the original
+  * per-source threshold for buttons bound to a stick half. */
+ static int control_magnitude(int control, const Source *source, KeyCache *kc,
+-                             const RecompPadState *pad, int have_pad, int deadzone)
+-{
+-#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+-    if (CONTROLS[control].kind == K_AXIS && source->kind == SRC_PAD_AXIS && have_pad)
+-        return pc_input_radial_axis_magnitude(
++                             const RecompPadState *pad, int have_pad, const Controller *controller)
++{
++    int deadzone = controller->deadzone;
++    if (CONTROLS[control].kind == K_AXIS) {
++        int custom = CONTROLS[control].arg >= AXIS_RX ? controller->aim_deadzone : controller->move_deadzone;
++        if (custom >= 0) deadzone = custom;
++    }
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
++    if (CONTROLS[control].kind == K_AXIS && source->kind == SRC_PAD_AXIS && have_pad) {
++        int magnitude = pc_input_radial_axis_magnitude(
+             (int16_t)axis_value(pad, source->arg),
+             (int16_t)axis_value(pad, source->arg ^ 1),
+             source->sign, deadzone);
++        int custom = CONTROLS[control].arg >= AXIS_RX ? controller->aim_deadzone : controller->move_deadzone;
++        return custom >= 0 ? pc_input_compensate_stick_deadzone(magnitude) : magnitude;
++    }
+ #else
+     (void)control;
+ #endif
+@@ -1147,7 +1165,7 @@
+ #endif
+         if (use_pad_defaults) {
+             for (s=0;s<pad_defaults.bind[i].count;s++) {
+-                int m=control_magnitude(i,&pad_defaults.bind[i].src[s],&kc,&pad,1,c->deadzone);
++                int m=control_magnitude(i,&pad_defaults.bind[i].src[s],&kc,&pad,1,c);
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+                 if(m>pad_mag)pad_mag=m;
+ #else
+@@ -1169,7 +1187,7 @@
+             if(port==0 && action>=0 && c->bind[i].src[s].kind==SRC_KEY)continue;
+ #endif
+             int m = control_magnitude(i, &c->bind[i].src[s], &kc, &pad,
+-                                  have_pad, c->deadzone);
++                                  have_pad, c);
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+             if(c->bind[i].src[s].kind!=SRC_KEY) {if(m>pad_mag)pad_mag=m;}
+             else
+@@ -1181,7 +1199,7 @@
+             for(int n=0;n<preset_original.bind[i].count;n++) {
+                 const Source *source=&preset_original.bind[i].src[n];
+                 if(source->kind==SRC_KEY)continue;
+-                int magnitude=control_magnitude(i,source,&kc,&pad,have_pad,c->deadzone);
++                int magnitude=control_magnitude(i,source,&kc,&pad,have_pad,c);
+                 if(magnitude>pad_mag)pad_mag=magnitude;
+             }
+         }

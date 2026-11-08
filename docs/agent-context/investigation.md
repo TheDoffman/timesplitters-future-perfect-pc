@@ -1,3 +1,5 @@
+Controller response investigations: [raw-input and original-decoder tests](controller-deadzones.md); distinguish host deadzone from the guest threshold. Patch2950 follows2940 in the maintained map.
+
 [Preset routing/order evidence](control-presets.md).
 PR528: normalize patch2940 to committed LF before index refresh; CRLF worktree
 bytes produced a stale hash/target on CI. Gameplay patch logic is unchanged.

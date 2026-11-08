@@ -148,6 +148,15 @@ lets the game use a connected controller without a fixed assignment. To change t
 joining during an active match is not supported. Only one keyboard/mouse player
 is supported; additional players need controllers.
 
+### Controller stick response
+
+In **Settings → Controls → Controller** (also available while paused), adjust
+**Movement deadzone** and **Aim deadzone** for the selected player. Changes save
+and apply immediately. Lower values respond sooner; raise them if a stick drifts.
+Existing settings stay unchanged until edited. The original aiming curve remains.
+The launcher offers the same per-player controls under **Game settings → Keyboard
+& mouse → Controller deadzones**; select **Save settings** before launching.
+
 ### Online / LAN
 
 Choose **Online / System Link → Online** to host or join a match,

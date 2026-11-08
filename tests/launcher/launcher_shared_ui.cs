@@ -465,6 +465,21 @@ public static class LauncherSharedUiChecks
                 model=GameSettings.Load(folder,null);Need(model.KeyboardPreset==1 && model.ControllerPreset(2)==1,"UI preset save failed");
                 keyboard.SelectedIndex=0;controller.SelectedIndex=0;Click(save);Need(!save.IsEnabled,"Saving Custom stayed dirty");
             });
+            Test("controller deadzones preserve legacy and tune each player",()=>{
+                string folder=Path.Combine(root,"deadzone-settings");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);
+                Need(model.ControllerDeadzone(0,false)==7849 && model.ControllerDeadzone(0,true)==7849,"Default deadzone changed");
+                model.SetControllerDeadzone(1,true,1638);model.SetControllerDeadzone(2,false,0);model.Save();
+                model=GameSettings.Load(folder,null);
+                Need(model.ControllerDeadzone(1,true)==1638 && model.ControllerDeadzone(1,false)==7849 && model.ControllerDeadzone(2,false)==0,"Independent deadzones did not persist");
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);
+                var aim=Find<ComboBox>(page.View,"Player2AimDeadzone");var save=Find<Button>(page.View,"SettingsSaveButton");
+                Need(aim.SelectedIndex==5,"Aim percentage incorrect");
+                aim.SelectedIndex=8;Need(save.IsEnabled,"Deadzone edit not dirty");Click(save);
+                model=GameSettings.Load(folder,null);Need(model.ControllerDeadzone(1,true)==2621 && model.ControllerDeadzone(1,false)==7849,"UI deadzone save failed");
+                model.Sensitivity=.15;model.Save();model=GameSettings.Load(folder,null);
+                Need(model.ControllerDeadzone(1,true)==2621 && model.ControllerDeadzone(2,false)==0,"Unrelated save lost deadzones");
+            });
             Test("settings drafts, FOV reset, cancel and save",()=>{
                 var page=new SettingsPage(new ResourceDictionary(),root,true);page.SelectTab(1);
                 var fov=Find<Slider>(page.View,"VerticalFovSlider");var number=Find<TextBlock>(page.View,"VerticalFovValue");

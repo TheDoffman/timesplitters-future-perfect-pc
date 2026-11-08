@@ -1,3 +1,5 @@
+[Controller deadzones](controller-deadzones.md).
+
 [Custom seeds](control-presets.md).
 
 Enhanced textures now round-trip the game's `pc-textures.ini` sidecar.

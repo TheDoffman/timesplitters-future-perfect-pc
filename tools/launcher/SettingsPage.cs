@@ -136,6 +136,17 @@ namespace TimeSplitters.Launcher
                 choice.SelectionChanged+=(s,e)=>{model.SetControllerPreset(index,choice.SelectedIndex);RefreshSaveState();};
             }
             presets.Children.Add(Text("Modern Controller: LT Aim / RT Fire / RB Grenade / RS Melee / B Crouch / X Reload / A Use / Y Next weapon / LB Weapon mode. Menu controls stay the same.",12));
+            var stickSettings=PageTheme.Section(controls,"Controller deadzones","Tune movement and aiming independently. Lower values respond sooner; increase them if a stick drifts. Game changes apply immediately; launcher changes apply on the next launch.");
+            for(int player=0;player<4;player++)for(int axis=0;axis<2;axis++) {
+                int index=player;bool aim=axis==1;
+                int percent=(model.ControllerDeadzone(player,aim)*100+16383)/32767;
+                var labels=Enumerable.Range(0,101).Select(x=>x+"%").ToArray();
+                var choice=Choices(labels,labels[percent]);
+                choice.Name="Player"+(player+1)+(aim?"AimDeadzone":"MovementDeadzone");
+                controllerDeadzones[player*2+axis]=choice;
+                Field(stickSettings,"Player "+(player+1)+(aim?" aim":" movement"),choice);
+                choice.SelectionChanged+=(s,e)=>{if(choice.SelectedIndex>=0)model.SetControllerDeadzone(index,aim,(choice.SelectedIndex*32767+50)/100);RefreshSaveState();};
+            }
             var bindings=PageTheme.Section(controls,"Key bindings","Select a slot, then press a key or mouse button. Mouse wheel is supported.");
             var bindingHead=new Grid { Margin=new Thickness(0,0,0,6) };bindingHead.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(200)});
             var actionHeading=PageTheme.Text("ACTION",11,"#B4C7D8");actionHeading.Margin=new Thickness(4,6,0,6);bindingHead.Children.Add(actionHeading);
@@ -368,6 +379,7 @@ namespace TimeSplitters.Launcher
         }
         readonly ComboBox[] localDevices=new ComboBox[3];
         readonly ComboBox[] controllerPresets=new ComboBox[4];
+        readonly ComboBox[] controllerDeadzones=new ComboBox[8];
         readonly ComboBox keyboardPreset;
         string Draft()
         {
@@ -377,7 +389,7 @@ namespace TimeSplitters.Launcher
                 spatialAudio.IsChecked,extendedGunfire.IsChecked,environmentalAudio.IsChecked,ambientAudio.IsChecked,
                 audioVolumes.Select(slider=>(int)Math.Round(slider.Value)).ToArray(),
                 dialogueFocus.IsChecked,impactRange.SelectedIndex,
-                keyboardPreset.SelectedIndex,controllerPresets.Select(x=>x.SelectedIndex).ToArray(),device.SelectedIndex,localDevices.Select(x=>x.SelectedIndex).ToArray(),scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
+                controllerDeadzones.Select(x=>x.SelectedIndex).ToArray(),keyboardPreset.SelectedIndex,controllerPresets.Select(x=>x.SelectedIndex).ToArray(),device.SelectedIndex,localDevices.Select(x=>x.SelectedIndex).ToArray(),scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
                 (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
         void RefreshSaveState()

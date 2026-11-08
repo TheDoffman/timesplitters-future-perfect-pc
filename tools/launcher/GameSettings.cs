@@ -341,6 +341,18 @@ namespace TimeSplitters.Launcher
         public int ControllerPreset(int player) {var profile=PlayerProfile(player,false);object value;
             return profile!=null && profile.TryGetValue("controller_preset",out value) && Convert.ToString(value)=="1"?1:0;}
         public void SetControllerPreset(int player,int preset) {Core.Require(preset==0 || preset==1,"Choose Custom or Modern Controller.");PlayerProfile(player,true)["controller_preset"]=preset;}
+        public int ControllerDeadzone(int player,bool aim) {
+            var profile=PlayerProfile(player,false);object value;int raw;
+            if(profile!=null && profile.TryGetValue(aim?"aim_deadzone":"move_deadzone",out value) &&
+                Int32.TryParse(Convert.ToString(value,CultureInfo.InvariantCulture),out raw) && raw>=0 && raw<=32767)return raw;
+            if(profile!=null && profile.TryGetValue("deadzone",out value) &&
+                Int32.TryParse(Convert.ToString(value,CultureInfo.InvariantCulture),out raw))return Math.Max(0,Math.Min(32767,raw));
+            return 7849;
+        }
+        public void SetControllerDeadzone(int player,bool aim,int raw) {
+            Core.Require(raw>=0 && raw<=32767,"Deadzone must be between 0% and 100%.");
+            PlayerProfile(player,true)[aim?"aim_deadzone":"move_deadzone"]=raw;
+        }
         static readonly Dictionary<int,string[]> ModernKeys=ReadModernKeys();
         static Dictionary<int,string[]> ReadModernKeys() {
             var result=new Dictionary<int,string[]>();

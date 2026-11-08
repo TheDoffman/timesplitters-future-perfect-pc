@@ -1,3 +1,18 @@
+#529 controller deadzones (local, based on main2dff17e7): per-player movement/aim
+selectors in Controller and shared launcher. Untouched raw legacy values retain
+behavior. Edited axes invert the original decoder's measured10% threshold after
+radial processing; keyboard/buttons/triggers retain their routes. Windows original
+US18FF70 sweep passed signed/full-range/neutral checks and existing60..240Hz checks.
+Final input/menu suite:53 passed,2 platform-specific skips. Windows Release build,
+built-in checks (including failed-save/live-value preservation) and crash symbols
+passed. Full Windows launcher suite passed with48 shared UI groups, including
+per-player deadzones and persistence. Its long-path session fixture needs a shorter
+output than this deeply nested checkout; temporary tsfp-529-launcher passed.
+Repository patch/context suite:59 passed; final standalone context suite21 passed.
+Final divider-layout rebuild and built-in checks passed; menu suite4 passed,2 skips.
+Windows EXE SHA256:07af2f1d28bc335f5b502081eb6094bff8bee97cdccf17759b44a72beaa20394.
+No physical Steam Deck/Mac/Linux controller validation or publication claimed.
+
 #482 high-FPS investigation (2026-11-08, local after c511f1e9):
 Shared pc_native_numeric.h corrections cover fixed-length beam damage,
 challenge spawn countdowns and detached tranquilizer initial velocity. Exact

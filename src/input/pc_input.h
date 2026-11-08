@@ -57,6 +57,9 @@ void pc_input_normalize_movement(int16_t *x, int16_t *y);
 /* Remap one stick axis after a circular deadzone, preserving its direction. */
 int pc_input_radial_axis_magnitude(int16_t axis, int16_t other,
                                    int sign, int deadzone);
+/* Undo the original decoder's 10% per-axis threshold for an explicitly tuned
+ * stick. Zero stays zero; the guest retains its own sensitivity/aim curve. */
+int pc_input_compensate_stick_deadzone(int magnitude);
 int pc_input_look(PcInput *s, uint64_t now, float sensitivity, int invert_y,
                   float fov_scale, float *yaw, float *pitch);
 #endif

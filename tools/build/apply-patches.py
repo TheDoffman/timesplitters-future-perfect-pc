@@ -308,6 +308,12 @@ def patch_records(paths):
         paths.remove(presets)
         paths.append(presets)
 
+    # Deadzone controls extend the completed preset/local-player sampler.
+    deadzones = by_name.get('2950-controller-deadzones.patch')
+    if deadzones:
+        paths.remove(deadzones)
+        paths.append(deadzones)
+
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

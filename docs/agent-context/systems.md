@@ -1,3 +1,5 @@
+[Controller deadzones](controller-deadzones.md).
+
 [Keys](control-presets.md); [Tex](texture-preference.md).
 [Arms](video-options.md).
 

@@ -45,7 +45,8 @@ def test_local_player_host_routing(tmp_path, adapter, mutation):
         sampler, changed = re.subn(r'!\(reserved_pads\s*&\s*\(1u\s*<<\s*slot\)\)', '1', sampler)
         assert changed == 2, 'Exercise both real host fallback loops'
     fixture = (ROOT / "tests/input/local_player_routing.c").read_text()
-    fixture = fixture.replace('/* PRODUCTION_SAMPLER */', '#define '+adapter+'\n'+reload_helper+'\n'+sampler)
+    axis_helper = re.search(r'static int control_magnitude\(.*?\n\}', production, re.S).group()
+    fixture = fixture.replace('/* PRODUCTION_SAMPLER */', '#define '+adapter+'\n'+axis_helper+'\n'+reload_helper+'\n'+sampler)
     source = tmp_path / "routing.c"; source.write_text(fixture)
     compiler, env = native_compiler(tmp_path)
     exe = tmp_path / ("routing.exe" if os.name == "nt" else "routing")
@@ -303,3 +304,11 @@ def test_real_sdl_controller_reconnect(tmp_path):
     if "SKIP:" in result.stdout:pytest.skip(result.stdout.strip())
     assert result.returncode==0,result.stdout+result.stderr
     assert "six real SDL detach/reattach cycles" in result.stdout
+
+
+@pytest.mark.parametrize("value,expected", [(0,0),(1638,1638),(32767,32767),(-1,-1),(32768,-1),(0.5,-1),("5",-1),(True,-1),(10**40,-1)])
+def test_deadzone_configuration(controller_exe,tmp_path,value,expected):
+    path=tmp_path/"deadzones.json"
+    path.write_text(json.dumps({"controllers":[{"port":1,"device":"gamepad:0","deadzone":4321,"move_deadzone":value,"aim_deadzone":value}]}))
+    result=subprocess.run([str(controller_exe),str(path),str(expected),"deadzone-config"],capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stdout+result.stderr

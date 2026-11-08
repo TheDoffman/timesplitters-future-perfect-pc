@@ -133,6 +133,43 @@ static int controls_frame(uint32_t menu,const char *subtitle)
     } else {controls_bounds_valid=0;controls_pending=-1;}
     return 1;
 }
+/* These host settings save immediately and remain independent of native
+ * profile Accept/Cancel. Each choice owns persistent guest text storage. */
+static uint32_t controls_deadzone_storage,controls_deadzone_rows[2];
+static int controls_deadzone_values[2];
+static void controls_deadzone_build(void)
+{
+    if(!controls_deadzone_storage)controls_deadzone_storage=xbox_HeapAlloc(104u*32u,4);
+    if(!controls_deadzone_storage)return;
+    for(unsigned i=0;i<101;i++)snprintf((char *)(g_xbox_mem_offset+controls_deadzone_storage+i*32),32,"%u%%",i);
+    for(unsigned aim=0;aim<2;aim++) {
+        uint32_t caption=controls_deadzone_storage+(101+aim)*32;
+        snprintf((char *)(g_xbox_mem_offset+caption),32,"%s deadzone",aim?"Aim":"Movement");
+        uint32_t row=guest_call(sub_00079D60_gen,6,caption,252u+aim,0u,0u,0u,0u);
+        controls_deadzone_rows[aim]=row;
+        guest_call(sub_0007D480,2,0x8400u,0u);
+        for(unsigned i=0;i<101;i++)guest_call(sub_000717D0,1,controls_deadzone_storage+i*32);
+        int value=(pc_settings_deadzone(kb_controller_port,(int)aim)*100+16383)/32767;
+        controls_deadzone_values[aim]=value;
+        guest_call(sub_00075430,2,row,(uint32_t)value);
+    }
+}
+static void controls_deadzone_poll(void)
+{
+    for(unsigned aim=0;aim<2;aim++) {
+        uint32_t row=controls_deadzone_rows[aim];
+        if(!guest_writable(row,0xcc) || WORD_AT(row+0x88)!=controls_menu || WORD_AT(row+0x14)!=252u+aim)continue;
+        unsigned value=WORD_AT(row+0xc8);
+        if(value>100 || (int)value==controls_deadzone_values[aim])continue;
+        if(pc_settings_deadzone_save(kb_controller_port,(int)aim,(int)((value*32767u+50)/100),kb_status,sizeof kb_status)) {
+            controls_deadzone_values[aim]=(int)value;
+            *kb_status=0;
+        } else {
+            guest_call(sub_00075430,2,row,(uint32_t)controls_deadzone_values[aim]);
+            guest_call(sub_00078980,1,controls_menu);return;
+        }
+    }
+}
 static int controls_native_button(void (*original)(void))
 {
     if(!controls_building)return 0;
@@ -146,7 +183,9 @@ static int controls_native_button(void (*original)(void))
     }
     /* Spread the shorter section evenly over the General section's height;
      * retain the compact footer instead of inserting empty rows above it. */
-    guest_call(sub_00071B10,4,1u,bits(id<10 && controls_tab==1?2.4f:1.2f),1u,1u);
+    guest_call(sub_00071B10,4,1u,bits(1.2f),1u,1u);
+    /* Add stick choices before Turn Speed, ahead of the native footer divider. */
+    if(id==9 && controls_tab==1)controls_deadzone_build();
     if(id==10 && *kb_status)kb_row(15,kb_status,1);
     if(id==10 && controls_tab==0)
         guest_call(sub_00079D60_gen,6,controls_text(5,"Local multiplayer"),250u,0u,0u,KB_SELECT,0u);
@@ -227,6 +266,7 @@ static void controls_build(void)
 {
     GuestRegisters r;save_registers(&r);controls_menu=WORD_AT(g_esp+4);controls_row_count=0;
     kb_keyboard_preset_row=kb_controller_preset_row=kb_keyboard_apply_row=0;
+    controls_deadzone_rows[0]=controls_deadzone_rows[1]=0;
     controls_divider_style=(SettingsDividerStyle){0,0};
     if(controls_tab==2) {kb_menu=controls_menu;guest_call(kb_build,1,controls_menu);}
     else controls_controller_build();
@@ -235,7 +275,7 @@ static void controls_build(void)
 }
 static void controls_change_tab(int tab)
 {
-    kb_preset_poll();
+    kb_preset_poll();controls_deadzone_poll();
     if(tab==controls_tab)return;
     if(controls_tab==2)kb_flush_mouse();
     controls_link_rows(1);
@@ -278,7 +318,7 @@ static void controls_customize(void) {controls_native_action(sub_002EA210);}
 static void controls_tick(void)
 {
     GuestRegisters r;save_registers(&r);uint32_t menu=WORD_AT(g_esp+4);
-    kb_preset_poll();
+    kb_preset_poll();controls_deadzone_poll();
     if(controls_tabs_visible()) {
         int direction=settings_tabs_direction(menu);
         if(direction) {

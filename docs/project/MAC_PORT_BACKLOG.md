@@ -1,3 +1,9 @@
+#529 controller deadzones (local after2dff17e7): shared input patch2950,
+pc_input.c policy, game menu and C# launcher serve Windows/Mac/Linux. No new OS
+adapter is needed. Windows original decoder and menu tests pass; native Mac/Linux
+build and physical controller/Steam Deck feel checks remain pending. See STATUS
+and controller-deadzones.md for precise scope. Preserve legacy configuration.
+
 #482 beam damage (local after c511f1e9): portable pc_native_numeric.h policy;
 no OS adapter/fork. Both damage paths retain original whole-tick hit/RNG cadence
 and correct only kinds25/26's continuous-damage interval. Windows original-code

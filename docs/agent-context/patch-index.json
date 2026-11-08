@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "2d2fb5bf30d87f2b53baa426de779a132bd39e94b76bd4afd9f341b8dc95c904",
+  "loaderSha256": "1c03dc56c4d57848dd399c613d85eb5123adfe020d25f24ceafe106f2d971376",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3800,6 +3800,14 @@
       "name": "2940-modern-control-presets.patch",
       "path": "patches/input/2940-modern-control-presets.patch",
       "sha256": "543c5e0871e4e9080aa334aa770ee22b115a1f2fee2a2e5d7e8cb4231b8d2347",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2950-controller-deadzones.patch",
+      "path": "patches/input/2950-controller-deadzones.patch",
+      "sha256": "4bf6ffd987c15d08586d439cbcd7332e7c68f43ff5682615cb1628962ea8e194",
       "targets": [
         "src/input/input_bindings.c"
       ]

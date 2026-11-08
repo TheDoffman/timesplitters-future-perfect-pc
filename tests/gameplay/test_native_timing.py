@@ -924,6 +924,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     finally:
         vars(config).update(previous)
     harness=(repo_file(ROOT, 'tests', harness_name)).read_text()
+    harness=harness.replace('/* STICK_INPUT */', f'#include "{(ROOT / "src/input/pc_input.c").as_posix()}"')
     if harness_name in ('native_analog_input.c','native_reload_input.c','native_interaction_input.c'):
         wrapper=(ROOT/'src/gameplay/pc_native_timing_guest.inc').read_text(encoding='utf-8')
         start=wrapper.index('static void pc_native_input_guest(')

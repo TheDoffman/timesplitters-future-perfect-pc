@@ -35,6 +35,11 @@ int main(int argc,char **argv)
     text=read_file(argv[1]); assert(text);
     for(int i=0;i<PORTS;i++) defaults_for(&g_ctl[i],i);
     assert(parse_config(text)); free(text); g_ready=1;
+    if(!strcmp(argv[3],"deadzone-config")) {
+        assert(g_ctl[0].move_deadzone==selected_slot && g_ctl[0].aim_deadzone==selected_slot);
+        assert(g_ctl[0].deadzone==4321);
+        return 0;
+    }
     if(!strcmp(argv[3],"two")) {
         multi=connected=1;selected_slot=0;
         state.lx=32767;state.right_trigger=255;
