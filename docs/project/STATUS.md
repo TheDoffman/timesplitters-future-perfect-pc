@@ -1,3 +1,12 @@
+Online browser startup (local, based on main cd6e4690): the strict game-data
+hash scan previously ran before Tk window creation; measured3.642s on this
+Windows computer. Shared Python/Tk startup now paints a cancellable progress
+panel and checks content on a worker before enabling host/join. No compatibility
+checks were removed. Companion/identity tests19 passed,3 packaged-Linux skips;
+real Tk slow-read cases verify responsiveness, rejection and prompt cancellation.
+Online theme suite12 passed. Physical Mac/Linux desktop acceptance remains
+pending; no publication claimed.
+
 ## PR checks presentation (2026-11-08)
 
 PR533 follow-up uses shorter suite/platform/shard names and an advisory summary
