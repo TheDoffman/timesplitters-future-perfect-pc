@@ -201,3 +201,20 @@ The event-loop probe avoids waiting for an empty native redraw queue. Geometry,
 focus, button and timeout assertions remain enforced. Windows (12 tests) and
 physical Mac Tk9.1 (11 plus one Windows-only skip) pass; hosted Tk acceptance
 is recorded separately in STATUS. Product layout is unchanged.
+
+## Responsive Online startup
+
+`online.wait_for_content` creates a themed loading panel before the strict
+`network-identity.verify_content` scan. A daemon worker does disk hashing only;
+Tk updates stay on the main thread through a queue polled every100ms. The browser
+and all host/join callbacks are constructed only after verification succeeds.
+Failures remain visible with Return/Cancel; closing the window, parent exit or
+the stop handshake returns immediately even if a disk read remains blocked.
+No verification cache or compatibility bypass was introduced. Scan timing is
+printed as `[ONLINE] Content verification ...` for diagnostics. This Python/Tk
+path is shared by Windows, Mac and Linux packages.
+
+`test_online_companion.py` uses separate real-Tk processes to hold verification
+behind a test event, assert the window paints/responds, and check success,
+file mismatch, cancellation, parent exit and stop requests. Existing complete
+browser host/join/cancel tests still exercise actual content checking and bridges.
