@@ -84,6 +84,12 @@ private mount namespace and prepared minimal Ubuntu userspace, on a dedicated
 Xvfb display with its own Openbox window manager (verified Xvfb only). It checks native settings/debug/input/renderer/online self-tests,
 bundled Python/Tk/TLS and the actual launcher shared UI checks. It uses temporary
 state/cwd under its disposable home and software Vulkan; this is not physical desktop/GPU acceptance.
+The native input regression asserts legacy E/Space/Return slot bindings, so the
+clean runner explicitly seeds `tests/fixtures/pc-controls.json` immediately before
+that case, matching the Mac native checks. Fresh Modern defaults otherwise have
+different intended bindings. Parser/sampler and launcher UI tests cover Modern
+controls separately. The fixture touches only the disposable HOME controls file;
+tests reject linked destinations and preserve unrelated configuration bytes.
 
 The SDL host now exports the shared `pc_controls_key_down` and
 `pc_controls_accept_pad` contracts used by settings-tab navigation. Windows and

@@ -11,7 +11,7 @@ Developer warnings: [launcher](launcher.md).
 [Update tests](main-menu-update.md).
 [Weapon FOV](video-options.md#weapon-aperture).
 [HUD/MSAA tests](../development/graphics-options.md).
-[SDL startup/fullscreen](linux-game.md).
+[SDL/input fixtures](linux-game.md).
 [Font/escape tests](audio-options.md).
 `test_lfs_checkout.py`: pointer clones, opt-in LFS pull, preserved packs.
 [Kill feed](../development/arcade-kill-feed.md)
@@ -50,7 +50,7 @@ Native Online link/mode checks: `tests/graphics/test_quit_menu.py` and native
 `--test`/`--online-self-test`. Clang Story fixtures select the Windows guest
 adapter but use the real host trap; hexadecimal additions need token boundaries.
 
-Game0.5.3 bundles published launcher1.5.2 and retains the full publication gates:
+Game0.6.0 bundles launcher1.6.0; publish the launcher first. Keep release gates:
 exact clean source on Windows/Mac/Linux, native/package/preservation checks,
 matching multiplayer identities and all nine public asset hashes. Linux hardware
 and full-campaign acceptance remain separate from configured-host checks.
