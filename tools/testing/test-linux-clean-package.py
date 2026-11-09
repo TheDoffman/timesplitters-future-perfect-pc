@@ -11,6 +11,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import time
 from pathlib import Path
 import subprocess
@@ -19,6 +20,18 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 APP = '/app test Ω'
 DATA = '/game data Ω'
+
+
+def seed_input_fixture(home):
+    """The native regression asserts legacy E/Space/Return slot semantics."""
+    home = Path(home)
+    config = home/'.config/timesplitters-future-perfect/pc-controls.json'
+    if any(p.is_symlink() for p in (home, home/'.config', config.parent, config)):
+        raise ValueError('Linked input self-test fixture path')
+    config.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(ROOT/'tests/fixtures/pc-controls.json', config)
+    config.chmod(0o666)
+    return config
 
 
 def main():
@@ -79,6 +92,8 @@ def main():
     prefix = ['chroot', '--userspec=65534:65534', str(rootfs), '/usr/bin/env', '-i', *env, '/bin/sh', '-c', 'cd "$HOME" && exec "$@"', 'tsfp-clean']
     results = {}
     for option in ('settings', 'debug', 'input', 'renderer', 'renderer-fullscreen', 'online'):
+        if option == 'input':
+            seed_input_fixture(home)
         # Exercise the saved setting the launcher writes, rather than merely
         # toggling a test window after creation or overriding it via the env.
         if option.startswith('renderer'):
