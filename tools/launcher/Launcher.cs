@@ -743,6 +743,7 @@ namespace TimeSplitters.Launcher
         {
             if (busy || checking) return;
             ClearRecovery();checking = true; available = null;
+            GameUpdateNotice.Publish(root,null,SelectedGameChannel);
             Refresh();
             ShowUpdateState(UpdatePresentationState.Checking);
             Text("ReleaseTitle", "Checking for updates…");
@@ -756,6 +757,7 @@ namespace TimeSplitters.Launcher
                     string selected=SelectedGameChannel;
                     var catalog=await client.ReadGameCatalog(timeout.Token);
                     SetChannels(catalog,selected);available=GameChannels.Select(catalog,selected);
+                    GameUpdateNotice.Publish(root,available,selected);
                     if (available == null)
                     {
                         ShowUpdateState(UpdatePresentationState.Empty);

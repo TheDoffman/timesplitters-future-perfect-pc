@@ -5,11 +5,10 @@
 [Vietnam](network-performance.md).
 [Tools](developer-tools-integration.md).
 Developer warnings: [launcher](launcher.md).
-[Window mode](video-options.md).
 [Profile tests](multiplayer-exit.md#validation): saves, late lobby saves, checksum/write errors.
 [Icons](controls-options.md).
 [Effect depth](native-effect-depth.md).
-Mac storage tests: see launcher.md.
+[Update tests](main-menu-update.md).
 [Weapon FOV](video-options.md#weapon-aperture).
 [HUD/MSAA tests](../development/graphics-options.md).
 [SDL startup/fullscreen](linux-game.md).

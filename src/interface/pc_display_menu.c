@@ -15,6 +15,8 @@ static int controls_native_button(void (*original)(void));
 static int controls_font_menu(uint32_t menu);
 static int controls_tabs_visible(void);
 static void settings_tabs_footer(uint32_t menu);
+static void main_update_notice_open(uint32_t menu);
+static void main_update_notice_draw(uint32_t menu);
 static void settings_tabs_footer_style(uint32_t menu,uint32_t sx,uint32_t sy,uint32_t colour);
 static int controls_tabs_poll(uint32_t menu);
 static void controls_tabs_flush(void);
@@ -1127,6 +1129,7 @@ static void update_apply(void)
 }
 #include "pc_graphics_menu.inc"
 #include "pc_video_tabs.inc"
+#include "pc_update_notice.inc"
 #include "pc_audio_tabs.inc"
 static void labels(void)
 {

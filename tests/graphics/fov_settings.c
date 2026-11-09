@@ -124,17 +124,17 @@ void pc_prompts_layout_begin(void) {}
 void pc_prompts_layout_end(void) {}
 #define TUTORIAL_STUB(name) void name(void) { CHECK(0); }
 TUTORIAL_STUB(sub_00147080) TUTORIAL_STUB(sub_00042D10)
-static int row_alignment_test;
+static int row_alignment_test,update_notice_test,update_notice_draws;
 void sub_0003FA10(void) {
     CHECK(row_alignment_test);g_eax=WORD_AT(0x6b93b4);WORD_AT(0x6b93b4)=WORD_AT(g_esp+4);g_esp+=4;
 }
 void sub_0003FCF0(void) {
-    CHECK(row_alignment_test);FLOAT_AT(WORD_AT(g_esp+4))=80.f;
+    CHECK(row_alignment_test || update_notice_test);FLOAT_AT(WORD_AT(g_esp+4))=80.f;
     FLOAT_AT(WORD_AT(g_esp+8))=WORD_AT(0x6b93b4)==2?14.f:10.f;g_esp+=4;
 }
 void sub_000718E0(void) {CHECK(row_alignment_test);g_eax=0x600400;g_esp+=4;}
 void sub_0003FB90(void) {CHECK(row_alignment_test);g_eax=WORD_AT(g_esp+4);g_esp+=4;}
-TUTORIAL_STUB(sub_0003F8D0)
+void sub_0003F8D0(void) {CHECK(update_notice_test);g_esp+=4;}
 /* Kill-feed drawing is linked through the same menu unit, but must not
  * execute in this settings-only fixture. */
 TUTORIAL_STUB(sub_00041E30) TUTORIAL_STUB(sub_00021450)
@@ -410,7 +410,7 @@ STUB(sub_000D7550) STUB(sub_000A9070) STUB(sub_0015BCA0) STUB(sub_0015BCC0)
 STUB(sub_002402B0) STUB(sub_00353A90)
 STUB(sub_0025EAD0) STUB(sub_0025EC70) STUB(sub_000C6100) STUB(sub_000D4B00) STUB(sub_000D4BE0) STUB(sub_000D1EC0) STUB(sub_000D2DE0) STUB(sub_000A6F90)
 STUB(sub_001A8D30) STUB(sub_001A8F30) STUB(sub_002CB090) STUB(sub_002CAFE0) STUB(sub_002D62F0)
-STUB(sub_00197890) STUB(sub_002CA9F0) STUB(sub_003535C0) STUB(sub_003544B0) STUB(sub_00359EB0) STUB(sub_00198E20) STUB(sub_00040F00) STUB(sub_00041DC0)
+STUB(sub_00197890) STUB(sub_002CA9F0) STUB(sub_003535C0) STUB(sub_003544B0) STUB(sub_00359EB0) STUB(sub_00198E20) STUB(sub_00040F00)
 STUB(sub_00080F20)
 STUB(sub_002CAD80)
 static float drawn;
@@ -424,6 +424,12 @@ void sub_00079D60_gen(void) {
     if(audio_building && id==AUDIO_TABS_ID)CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+4))," "));
     if(id<32)built_rows|=1u<<id;CHECK(built_row_count<32);built_ids[built_row_count++]=id;
     g_eax=0x200000+id*0x200;WORD_AT(g_eax)=4;WORD_AT(g_eax+0xb0)=1;WORD_AT(g_eax+0x14)=id;fixture_link(g_eax);WORD_AT(g_eax+0x28)=WORD_AT(g_esp+12)|0x2000u;WORD_AT(g_eax+0x88)=current_menu;g_esp+=4;
+}
+void sub_00041DC0(void) {
+    CHECK(update_notice_test);
+    CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+12)),"UPDATE AVAILABLE - OPEN THE LAUNCHER"));
+    CHECK(FLOAT_AT(g_esp+4)==280.f && FLOAT_AT(g_esp+8)==398.f);
+    update_notice_draws++;g_esp+=4;
 }
 static void call(uint32_t address,int selected,unsigned buttons)
 {
@@ -480,6 +486,29 @@ int main(int argc,char **argv)
     CHECK(pc_post_aa_set(0) && !smaa_preference && !graphics_options.edge_smoothing);
     void *mem=VirtualAlloc(NULL,0x800000,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE);CHECK(mem);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)mem;
+    { /* Main-only visibility; late update checks, expiry and font/register restoration. */
+        char path[1024];snprintf(path,sizeof path,"%s.update",argv[1]);
+        CHECK(!_putenv_s("TSFP_GAME_UPDATE_NOTICE",path));CHECK(!_putenv_s("TSFP_GAME_INSTALLED_VERSION","1.2.3"));
+        FILE *f=fopen(path,"wb");CHECK(f);fprintf(f,"TSFP_GAME_UPDATE_V1 %lld v1.2.3 v1.2.4\n",(long long)time(NULL));fclose(f);
+        uint32_t menu=0x43000;WORD_AT(menu+4)=0x1234;WORD_AT(menu+0x1b0)=3;
+        settings_footer_menu=menu;settings_footer_x=bits(1.f);settings_footer_y=bits(1.f);
+        WORD_AT(0x4e8cf0)=640;WORD_AT(0x4e8cf4)=480;
+        WORD_AT(0x7e7270)=bits(2.f);WORD_AT(0x7e7280)=bits(3.f);WORD_AT(0x7e7260)=4;
+        g_esp=0x700000;update_notice_test=1;main_update_notice_open(menu);
+        main_update_notice_draw(menu);CHECK(update_notice_draws==1);
+        CHECK(g_esp==0x700000 && FLOAT_AT(0x7e7270)==2.f && FLOAT_AT(0x7e7280)==3.f && WORD_AT(0x7e7260)==4);
+        WORD_AT(menu+0x170)=0x44000;main_update_notice_draw(menu);CHECK(update_notice_draws==1);
+        WORD_AT(menu+0x170)=0;WORD_AT(menu+4)=0x5678;main_update_notice_draw(menu);CHECK(update_notice_draws==1);
+        WORD_AT(menu+4)=0x1234;WORD_AT(menu+0x38)=1;main_update_notice_draw(menu);CHECK(update_notice_draws==1);
+        WORD_AT(menu+0x38)=0;WORD_AT(menu+0x1b0)=2;main_update_notice_draw(menu);CHECK(update_notice_draws==1);
+        WORD_AT(menu+0x1b0)=3;main_update_notice_draw(menu+0x1000);CHECK(update_notice_draws==1);
+        f=fopen(path,"wb");CHECK(f);fclose(f);update_notice_polled=0;
+        main_update_notice_draw(menu);CHECK(update_notice_draws==1 && !update_notice_available);
+        f=fopen(path,"wb");CHECK(f);fprintf(f,"TSFP_GAME_UPDATE_V1 %lld v1.2.3 v1.2.4\n",(long long)time(NULL));fclose(f);
+        update_notice_polled=0;main_update_notice_draw(menu);CHECK(update_notice_draws==2);
+        update_notice_test=0;settings_footer_menu=0;update_notice_menu=0;
+        CHECK(!_putenv_s("TSFP_GAME_UPDATE_NOTICE",""));CHECK(!_putenv_s("TSFP_GAME_INSTALLED_VERSION",""));remove(path);
+    }
     { /* New native profiles seed editable Modern; existing profiles stay byte-identical. */
         uint32_t profile=0x44000,identity=0x48000;unsigned char retained[0x7c];
         WORD_AT(profile)=identity;WORD_AT(identity+0x24)=0;WORD_AT(profile+4)=1;

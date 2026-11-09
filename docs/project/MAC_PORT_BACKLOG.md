@@ -1,3 +1,9 @@
+Main-menu update notice (local after a688d697): shared C# version/channel result
+and native guest-font drawing serve Windows/Mac/Linux, with publication in both
+WPF and Avalonia Check methods. Portable parser and full native-menu fixtures are
+registered in runtime CI; Windows launcher/focused tests pass. Native Mac/Linux
+builds and desktop menu placement remain unverified. See main-menu-update.md.
+
 #529 controller deadzones (local after2dff17e7): shared input patch2950,
 pc_input.c policy, game menu and C# launcher serve Windows/Mac/Linux. No new OS
 adapter is needed. Windows original decoder and menu tests pass; native Mac/Linux

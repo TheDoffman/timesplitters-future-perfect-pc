@@ -585,6 +585,8 @@ namespace TimeSplitters.Launcher
                 if (key.StartsWith("RECOMP_", StringComparison.OrdinalIgnoreCase) || key.StartsWith("TSFP_", StringComparison.OrdinalIgnoreCase)) info.EnvironmentVariables.Remove(key);
             foreach (var pair in new Dictionary<string, string> {
                 {"TSFP_CRASH_DIR","Logs/Crashes"}, {"RECOMP_GAME_DIR",LauncherPlatform.Data(root)}, {"RECOMP_SAVE_DIR",LauncherPlatform.Saves(root)}, {"RECOMP_INPUT_CONFIG",Files[0]}, {"RECOMP_FFMPEG_DIR","Bin"}, {"RECOMP_DISPLAY_CONFIG",Files[2]}, {"TSFP_DISPLAY_CONFIG",Files[1]}, {"TSFP_TEXTURE_PACK_DIR",LauncherPlatform.Textures(root)}, {"TSFP_ONLINE_SETTINGS","Settings/pc-online.json"} }) info.EnvironmentVariables[pair.Key] = Core.PathIn(root, pair.Value);
+            info.EnvironmentVariables["TSFP_GAME_UPDATE_NOTICE"] = GameUpdateNotice.Path(root);
+            info.EnvironmentVariables["TSFP_GAME_INSTALLED_VERSION"] = Core.InstalledVersion(root);
             info.EnvironmentVariables["TSFP_CRASH_EXTENDED"] = CrashReports.ExtendedForNextLaunch ? "1" : "0";
             // Explicit zero also overrides an old native_fps runtime preference.
             info.EnvironmentVariables["TSFP_NATIVE_FPS"] = model.NativeFps.ToString(CultureInfo.InvariantCulture);
@@ -608,4 +610,27 @@ namespace TimeSplitters.Launcher
             return info;
         }
     }
+    // The game consumes this bounded, short-lived result; it never checks HTTP on
+    // its menu/render thread. Release discovery/channel policy stays shared here.
+    public static class GameUpdateNotice
+    {
+        public static string Path(string root) { return Core.PathIn(root,".launcher/game-update-notice.txt"); }
+        public static string Encode(string installed,Release release,string channel,long utcSeconds)
+        {
+            if(release==null || String.IsNullOrEmpty(installed) || installed.Length>95 ||
+               String.IsNullOrEmpty(release.Tag) || release.Tag.Length>95 || release.Channel!=GameChannels.Preference(channel))return "";
+            try {
+                if(GameVersion.Parse(release.Tag).CompareTo(GameVersion.Parse(installed))<=0)return "";
+            } catch(InvalidDataException) {return "";}
+            return "TSFP_GAME_UPDATE_V1 "+utcSeconds.ToString(CultureInfo.InvariantCulture)+" "+installed+" "+release.Tag+"\n";
+        }
+        public static void Publish(string root,Release release,string channel)
+        {
+            try {
+                long now=(long)(DateTime.UtcNow-new DateTime(1970,1,1,0,0,0,DateTimeKind.Utc)).TotalSeconds;
+                Core.Write(Path(root),Encode(Core.InstalledVersion(root),release,channel,now));
+            } catch(Exception error) {LauncherLog.Write(root,"Game update notice: "+error.Message);}
+        }
+    }
+
 }
