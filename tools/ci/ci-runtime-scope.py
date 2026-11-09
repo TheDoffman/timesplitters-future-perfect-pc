@@ -16,6 +16,7 @@ else:
         return _LayoutPath(root) / area / name
 
 import importlib.util
+from fnmatch import fnmatchcase
 import json
 import os
 from pathlib import Path
@@ -32,6 +33,11 @@ FULL_INPUTS = {
     'tools/project_paths.py', 'tests/conftest.py',
     'tests/support/parallel_groups.py', 'tests/support/test_parallel_groups.py',
     'tools/testing/suite_timing.py', 'tests/support/test_suite_timing.py',
+    'tools/ci/runtime-suites.json', 'tools/ci/run-runtime-checks.py',
+    'tools/ci/ci-pr-gate.py', 'tests/repository/test_ci_pr_gate.py',
+    'tools/ci/pr-check-summary.py',
+    'tests/support/runtime_shards.py', 'tests/support/test_runtime_shards.py',
+    'tests/repository/test_runtime_checks.py',
     '.gitattributes',
     '.github/workflows/runtime-patches.yml', 'requirements.txt', 'tsfp.ps1',
     'tools/ci/ci-runtime-scope.py', 'tests/repository/test_ci_runtime_scope.py',
@@ -41,6 +47,7 @@ FULL_INPUTS = {
     'tests/fixtures/renderer-patch-stacks.json',
 }
 RELEASE_INPUTS = {
+    '.lfsconfig', 'tests/textures/test_lfs_checkout.py',
     'tools/build/benchmark-patches.py', 'tools/release/benchmark-verification.py',
     'tools/release/publish-release.py', 'tests/launcher/test_publish_release.py',
     'tools/release/release_channels.py', 'tools/release/release-version.py',
@@ -125,6 +132,47 @@ CPU_TOOLS = {
 }
 
 
+REPOSITORY_INPUTS = {
+    'issue_forms': (
+        '.github/ISSUE_TEMPLATE/**',
+        '.github/workflows/issue-forms.yml',
+        '.github/workflows/issue-labels.yml',
+        '.github/workflows/issue-form-versions.yml',
+        '.github/workflows/known-issues.yml',
+        '.github/known-issues.json',
+        'tools/ci/issue-forms.py',
+        'tools/ci/known-issues.py',
+        'tests/repository/test_issue_forms.py',
+        'tests/repository/test_known_issues.py',
+        'VERSION',
+        'tools/launcher/LauncherVersion.cs',
+    ),
+    'issue_resolution': (
+        '.github/workflows/issue-resolution.yml',
+        '.github/workflows/issue-resolution-comments.yml',
+        'tools/ci/issue-resolution.py',
+        'tests/repository/test_issue_resolution.py',
+    ),
+    'textures': (
+        '.lfsconfig',
+        'assets/textures/**',
+        '.gitattributes',
+        'config/textures/texture-pack.json',
+        'tools/textures/build_textures.py',
+        'tools/textures/texture-repository.py',
+        'tools/textures/texture-release.py',
+        'tests/textures/test_build_textures.py',
+        '.github/workflows/texture-pack.yml',
+    ),
+}
+
+
+def repository_checks(paths, *, full=False):
+    return {suite: full or any(fnmatchcase(path, pattern) for path in paths
+                              for pattern in patterns)
+            for suite, patterns in REPOSITORY_INPUTS.items()}
+
+
 def affected(paths, *, full=False):
     selected = set(SUITES) if full else set()
     for path in paths:
@@ -149,7 +197,7 @@ def affected(paths, *, full=False):
             continue  # launcher-build.yml owns these, including packaging/icons.
         elif path.startswith(('tools/ci/issue-', 'tools/ci/known-issues',
                               'tests/repository/test_issue_', 'tests/repository/test_known_issues')):
-            continue  # Path-scoped issue workflows own these tests.
+            continue  # Scoped reusable issue jobs own these tests.
         elif path in ('tools/ci/compatibility-worker.py', 'tests/repository/test_compatibility_worker.py',
                       'tests/repository/test_mac_backlog.py', 'tools/repo-context.py',
                       'tests/repository/test_repo_context.py', 'tools/router/repository-context.mjs',
@@ -161,14 +209,15 @@ def affected(paths, *, full=False):
     return {suite: suite in selected for suite in SUITES}
 
 
-def gate(plan, transitions, native, release, patches_result, native_result):
+def gate(plan, transitions, native, release, patches_result, native_result, release_result):
     """Preserve required names without passing failed or unexpectedly skipped work."""
     if plan != 'success' or any(v not in ('true', 'false')
                                 for v in (transitions, native, release)):
         raise ValueError('Runtime scope failed or produced missing/invalid outputs.')
     for name, selected, result in (
         ('patch upgrades', transitions == 'true', patches_result),
-        ('native/release', native == 'true' or release == 'true', native_result),
+        ('native', native == 'true', native_result),
+        ('release', release == 'true', release_result),
     ):
         expected = 'success' if selected else 'skipped'
         if result != expected:
@@ -180,7 +229,7 @@ def main():
     if '--gate' in sys.argv:
         print(gate(*(os.environ.get(name, '') for name in (
             'PLAN_RESULT', 'RUN_TRANSITIONS', 'RUN_NATIVE', 'RUN_RELEASE',
-            'PATCHES_RESULT', 'NATIVE_RESULT'))))
+            'PATCHES_RESULT', 'NATIVE_RESULT', 'RELEASE_RESULT'))))
         return
     event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text(encoding='utf-8'))
     kind = os.environ['GITHUB_EVENT_NAME']
@@ -193,6 +242,7 @@ def main():
         changes = subprocess.check_output(['git', 'diff', '--no-renames', '--name-only', '-z', base, 'HEAD'])
         paths = changes.decode('utf-8').rstrip('\0').split('\0') if changes else []
     suites = affected(paths, full=full)
+    suites.update(repository_checks(paths, full=full))
     with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
         for suite, enabled in suites.items():
             output.write(f'{suite}={str(enabled).lower()}\n')

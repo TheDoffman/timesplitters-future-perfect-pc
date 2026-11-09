@@ -1,0 +1,23 @@
+--- a/src/d3d/d3d8_resources.c
++++ b/src/d3d/d3d8_resources.c
+@@ -1406,7 +1406,8 @@
+ 
+     memset(&vd, 0, sizeof(vd));
+     vd.format = host;
+-    vd.dim = is_array ? RHI_VIEW_DIM_2D_ARRAY : RHI_VIEW_DIM_2D;
++    vd.dim = id.samples > 1 && !is_array ? RHI_VIEW_DIM_2D_MS :
++        (is_array ? RHI_VIEW_DIM_2D_ARRAY : RHI_VIEW_DIM_2D);
+     vd.base_mip = mip_slice;
+     vd.base_layer = array_slice;
+     vd.layer_count = 1;
+--- a/src/d3d/rhi_d3d11.c
++++ b/src/d3d/rhi_d3d11.c
+@@ -791,7 +791,7 @@
+     if (typeless && !d) {
+         memset(&whole, 0, sizeof whole);
+         whole.format = img->desc.format;
+-        whole.dim = RHI_VIEW_DIM_2D;
++        whole.dim = img->desc.samples > 1 ? RHI_VIEW_DIM_2D_MS : RHI_VIEW_DIM_2D;
+         whole.mip_count = img->desc.mip_levels ? img->desc.mip_levels : 1;
+         whole.layer_count = 1;
+         d = &whole;

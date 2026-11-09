@@ -68,7 +68,11 @@ providers, perform handoffs or limit themselves to advisory work.
   PR while it remains open; verify the remote merge state before starting its
   successor. This does not waive required checks or authorize unrelated merges.
 - Working root: the `timesplitters-future-perfect-pc` folder on that device's
-  Desktop, not the old Documents location. Resolve project paths relative to
+  Desktop, not the old Documents location.
+  For WSL builds, use a separate checkout inside Ubuntu's native filesystem
+  as documented in `docs/development/linux.md`; synchronize it with the Windows
+  editing checkout through Git. Keep ignored Linux dependencies/builds there,
+  and retain the existing game-data copy. Resolve project paths relative to
   the checkout or script; do not bake in a user's home directory, Windows drive
   letter, or platform-specific drive mapping.
 - At the start of work, inspect the branch, commit, and working-tree changes.
@@ -87,14 +91,23 @@ providers, perform handoffs or limit themselves to advisory work.
 ## Shared features and platform exceptions
 
 - Implement ordinary new gameplay, input rules, rendering policy, settings and
-  fixes once in shared source or the shared patch stack, for both Windows and
-  native Mac. Build on the shared interfaces documented in
+  fixes once in shared source or the shared patch stack, for Windows,
+  native Mac and Linux. Build on the shared interfaces documented in
   `docs/development/shared-platform.md`; extend their host adapters when needed. Do not copy
   feature logic into a second Mac implementation or guard portable behavior
   behind `_WIN32` merely because it was first developed on PC.
 - Keep OS events/windows, graphics resource access and file-system operations in
   thin platform adapters. Shared shader algorithms belong in `src/graphics`;
   shader-language adapters map syntax/intrinsics rather than duplicate policy.
+  Linux x64 bring-up uses SDL and the common Vulkan frontend; follow
+  `docs/development/linux.md`. Track Linux adapter/acceptance gaps there rather
+  than duplicating gameplay logic. Linux source/build, GPU contracts and actual
+  gameplay are distinct milestones. Use `build/linux` and a host-local Python
+  environment (`.venv-linux` on a shared Windows checkout). Never build or apply
+  runtime patches concurrently from Windows and WSL against the same runtime.
+  WSL is the primary local Linux development environment; Steam Deck is a
+  secondary hardware acceptance target. Do not infer Deck performance/input
+  support from WSL or software Vulkan. No automatic host restart.
   Shared debug setting fields, labels, keys and capability requirements belong
   in `src/diagnostics/pc_debug_options.def`, consumed by both dialogs and JSON persistence.
 - Genuine platform dependencies or an explicitly PC-only task may be deferred.
@@ -300,6 +313,15 @@ providers, perform handoffs or limit themselves to advisory work.
 
 ## Project storage and texture work
 
+- Save/storage changes must support both NTFS and exFAT and relocation between
+  internal and external drives. Treat sparse files as an optional capability;
+  check available space for regular allocation and preserve existing save bytes.
+  Moving an installation must not silently reset, recreate or overwrite saves.
+  Account for configured absolute save paths after relocation: retain separately
+  stored saves, and let users explicitly select a moved save folder. Test existing
+  images and nonsparse fallback/failure paths with isolated data; distinguish
+  injected coverage from physical-filesystem and native Mac verification.
+
 - Preserve enhanced texture loading, Classic/Enhanced controls and installed packs
   across game and launcher updates. The user's 2026-10-22 instruction replaces
   the earlier default-bundling policy: enhanced textures are an optional download
@@ -370,10 +392,24 @@ this preference on all further work, including texture remastering and testing.
 
 ## Active texture issue branch
 
-- The user requests original character selection/profile icons (2026-10-22).
-  Keep the keys in `config/textures/texture-originals.json` out of generation and installed
-  packs unless the user changes this preference. Character model materials and
-  full-size scene artwork remain separate and in scope.
+- Current original-based upscale task (user request, 2026-11-01): use original
+  game textures as inputs and make the resulting pack the active Enhanced pack.
+  Preserve the previous authored artwork and pack for recovery. The hybrid
+  redesign instructions below describe prior production; do not substitute
+  redesigned artwork for originals in this upscale task. Storage caps and
+  validation requirements continue to apply.
+  The user subsequently authorized pushing this complete approved pack and
+  publishing it as the next optional Enhanced texture version. Publish only
+  compiled keyed DDS and sanitized metadata through the existing bounded release
+  workflow; keep original game archives, private provenance, settings and saves
+  out of Git/downloads. Preserve the prior immutable release.
+
+- The user's 2026-11-01 approval supersedes the earlier original-icon preference:
+  all 164 reviewed faithful Real-ESRGAN 2x character icons are now part of the
+  active/installed original-based 2x Enhanced pack. Preserve original archives
+  and Classic fallback. `config/textures/texture-originals.json` records these
+  approved keys separately from its now-empty retained/retired lists. Do not
+  substitute the illustrative image-generation previews for the approved files.
 
 - The user approved hybrid production: individually redesign prominent assets;
   enhance simpler materials in bounded batches grouped by material family.

@@ -1,0 +1,241 @@
+--- a/src/input/CMakeLists.txt
++++ b/src/input/CMakeLists.txt
+@@ -101,3 +101,10 @@
+     endif()
+ endif()
+ 
++
++# Shared Developer Tools overlay; host adapters only own events/capture.
++if(WIN32 AND TSFP_PC_CONTROLS_DIR)
++    target_sources(xbox_input PRIVATE "${TSFP_PC_CONTROLS_DIR}/interface/pc_developer.c")
++elseif(UNIX AND TSFP_NATIVE_DIR)
++    target_sources(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/../interface/pc_developer.c")
++endif()
+--- a/src/d3d/d3d8_overlay.c
++++ b/src/d3d/d3d8_overlay.c
+@@ -20,6 +20,7 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
++#include <math.h>
+ 
+ #define OVERLAY_W   1024
+ #define OVERLAY_H     28
+@@ -41,7 +42,21 @@
+     char            text[128];
+ } OverlayState;
+ /* Each line has its own cached texture, avoiding repeated host rasterization. */
+-static OverlayState overlays[2];
++static OverlayState overlays[18];
++static int developer_row;
++static float developer_box[4];
++static int developer_late;
++static unsigned developer_width,developer_height;
++static char developer_version[128];
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_PC_DISPLAY)
++#include "pc_developer.h"
++static void (*developer_frame)(void);
++static unsigned (*developer_lines)(unsigned,unsigned,PcDeveloperLine *,unsigned);
++static int (*developer_watermark)(void),(*developer_hud)(void);
++void d3d8_overlay_developer_register(void (*frame)(void),
++    unsigned (*lines)(unsigned,unsigned,PcDeveloperLine *,unsigned),int (*watermark)(void),int (*hud)(void))
++{ developer_frame=frame;developer_lines=lines;developer_watermark=watermark;developer_hud=hud; }
++#endif
+ static OverlayState *active = &overlays[0];
+ #define g (*active)
+ static void overlay_shutdown_current(void);
+@@ -199,10 +214,11 @@
+ static void overlay_draw(const char *text, int lower_right)
+ {
+     RhiOutputState saved;
+-    RhiView *rtv = d3d8_GetDefaultTargetView();
++    RhiView *rtv = developer_late?rhi_swapchain_view():d3d8_GetDefaultTargetView();
+     RhiViewport vp;
+     OverlayConstants c;
+-    UINT width = d3d8_GetBackBufferWidth(), height = d3d8_GetBackBufferHeight();
++    UINT width=developer_late?developer_width:d3d8_GetBackBufferWidth();
++    UINT height=developer_late?developer_height:d3d8_GetBackBufferHeight();
+     float blend_factor[4] = { 1, 1, 1, 1 };
+     void *mapped;
+ 
+@@ -222,6 +238,14 @@
+     c.h =  2.0f * (float)OVERLAY_H * scale / (float)height;
+     c.tex_w = (float)g.text_w;
+     c.tex_h = (float)OVERLAY_H;
++    if(developer_row) {
++        float scale=developer_box[3]/OVERLAY_H;
++        float shown=fminf((float)g.text_w*scale,developer_box[2]);
++        c.x=-1.f+2.f*developer_box[0]/width;
++        c.y=1.f-2.f*developer_box[1]/height;
++        c.w=2.f*shown/width;c.h=2.f*developer_box[3]/height;
++        c.tex_w=shown/scale;
++    }
+     c.pad0 = c.pad1 = 0.0f;
+     memcpy(mapped, &c, sizeof c);
+     rhi_buffer_unmap(g.cb);
+@@ -272,16 +296,48 @@
+     overlay_draw(text, 0);
+ }
+ 
++/* Input belongs to the guest frame boundary. Pixels belong to the completed
++ * swap-chain composition, after world/HUD scaling and post-processing. */
+ void d3d8_overlay_draw_watermark(const char *text)
+ {
+-    active = &overlays[1];
+-    overlay_draw(text, 1);
+-    active = &overlays[0];
++    snprintf(developer_version,sizeof developer_version,"%s",text?text:"");
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_PC_DISPLAY)
++    if(developer_frame)developer_frame();
++#endif
++}
++void d3d8_overlay_draw_developer(unsigned width,unsigned height)
++{
++    developer_late=1;developer_width=width;developer_height=height;
++    active=&overlays[1];
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_PC_DISPLAY)
++    if(!developer_watermark || developer_watermark())overlay_draw(developer_version,1);
++    PcDeveloperLine lines[16];
++    unsigned count=developer_lines?developer_lines(width,height,lines,16):0;
++    developer_row=1;
++    for(unsigned i=0;i<count;i++) {
++        active=&overlays[2+i];
++        developer_box[0]=lines[i].x;developer_box[1]=lines[i].y;
++        developer_box[2]=lines[i].width;developer_box[3]=lines[i].height;
++        overlay_draw(lines[i].text,0);
++    }
++    developer_row=0;
++#else
++    overlay_draw(developer_version,1);
++#endif
++    developer_late=0;active=&overlays[0];
+ }
+ 
+ void d3d8_overlay_shutdown(void)
+ {
+     unsigned i;
+-    for(i=0;i<2;i++) { active=&overlays[i]; overlay_shutdown_current(); }
++    for(i=0;i<18;i++) { active=&overlays[i]; overlay_shutdown_current(); }
+     active=&overlays[0];
+ }
++
++int d3d8_developer_hud_visible(void) {
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_PC_DISPLAY)
++    return !developer_hud || developer_hud();
++#else
++    return 1;
++#endif
++}
+--- a/src/d3d/d3d8_device.c
++++ b/src/d3d/d3d8_device.c
+@@ -184,6 +184,10 @@
+ static void native_hud_restore(void);
+ static void native_hud_shutdown(void);
+ #include "d3d8_overlay.h"
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_PC_DISPLAY)
++extern int d3d8_developer_hud_visible(void);
++#endif
++static int g_developer_hud_hidden;
+ #include "d3d8_movie.h"
+ 
+ /* ================================================================
+@@ -320,6 +324,7 @@
+     follow_vrr();
+     two_d_tag_frame();
+     present_scene();
++    d3d8_overlay_draw_developer(g_device_state.swap_width,g_device_state.swap_height);
+     native_hud_restore();
+     d3d8_display_frame_done();
+ }
+@@ -1269,6 +1274,7 @@
+ 
+ static HRESULT __stdcall dev_DrawPrimitive(IDirect3DDevice8 *self, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount)
+ {
++    if(g_developer_hud_hidden)return S_OK;
+     (void)self;
+     g_d3d_draw_count++;
+     uint32_t topology;
+@@ -1290,6 +1296,7 @@
+ 
+ static HRESULT __stdcall dev_DrawIndexedPrimitive(IDirect3DDevice8 *self, D3DPRIMITIVETYPE PrimitiveType, UINT MinVertexIndex, UINT NumVertices, UINT StartIndex, UINT PrimitiveCount)
+ {
++    if(g_developer_hud_hidden)return S_OK;
+     (void)self; (void)MinVertexIndex; (void)NumVertices;
+     g_d3d_draw_count++;
+     uint32_t topology;
+@@ -1336,6 +1343,7 @@
+ 
+ static HRESULT __stdcall dev_DrawPrimitiveUP(IDirect3DDevice8 *self, D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, const void *pVertexData, UINT VertexStreamZeroStride)
+ {
++    if(g_developer_hud_hidden)return S_OK;
+     (void)self;
+     g_d3d_draw_count++;
+     uint32_t topology;
+@@ -1397,6 +1405,7 @@
+ 
+ static HRESULT __stdcall dev_DrawIndexedPrimitiveUP(IDirect3DDevice8 *self, D3DPRIMITIVETYPE PrimitiveType, UINT MinVertexIndex, UINT NumVertices, UINT PrimitiveCount, const void *pIndexData, D3DFORMAT IndexDataFormat, const void *pVertexData, UINT VertexStreamZeroStride)
+ {
++    if(g_developer_hud_hidden)return S_OK;
+     (void)self; (void)MinVertexIndex;
+     g_d3d_draw_count++;
+     uint32_t topology;
+@@ -2115,6 +2124,9 @@
+ void xbox_D3D8SetTwoDPlacement(int placement, uint32_t tag)
+ {
+     if(tsfp_native_hud_hint(placement,tag)) {
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_PC_DISPLAY)
++        g_developer_hud_hidden=placement==TSFP_NATIVE_HUD_BEGIN && !d3d8_developer_hud_visible();
++#endif
+         if(placement==TSFP_NATIVE_HUD_BEGIN)native_hud_begin();
+         return;
+     }
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -70,6 +70,9 @@
+ #include "pc_native_rate.h"
+ #ifdef TSFP_PC_CONTROLS
+ #include "pc_controls.h"
++#include "pc_developer.h"
++extern void d3d8_overlay_developer_register(void (*)(void),
++    unsigned (*)(unsigned,unsigned,PcDeveloperLine *,unsigned),int (*)(void),int (*)(void));
+ #ifdef _WIN32
+ #include "pc_refresh.h"
+ #endif
+@@ -2045,6 +2048,9 @@
+ 
+ static void overlay_frame(void)
+ {
++#ifdef TSFP_PC_CONTROLS
++    d3d8_overlay_developer_register(pc_developer_frame,pc_developer_lines,pc_developer_watermark_visible,pc_developer_hud_visible);
++#endif
+     static int configured, f9_was_down, f10_was_down, f11_was_down;
+     static LARGE_INTEGER qpf, window_start;
+     static unsigned window_frames;
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -2502,3 +2502,14 @@
+     fflush(stderr);
+ }
+ 
++
++/* Shared Developer Tools owns the optional detached/player-flight view. */
++extern void sub_000CCAB0_gen(void);
++void sub_000CCAB0(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_developer_camera_guest(sub_000CCAB0_gen);
++#else
++    sub_000CCAB0_gen();
++#endif
++}
+--- a/src/d3d/d3d8_overlay.h
++++ b/src/d3d/d3d8_overlay.h
+@@ -36,6 +36,8 @@
+  * stops drawing. */
+ void d3d8_overlay_set_counter(int enabled);
+ void d3d8_overlay_draw(const char *text);
++/* Host UI over the completed output, in actual window pixels. */
++void d3d8_overlay_draw_developer(unsigned width,unsigned height);
+ 
+ /* Releases everything. Called from the device teardown. */
+ void d3d8_overlay_shutdown(void);

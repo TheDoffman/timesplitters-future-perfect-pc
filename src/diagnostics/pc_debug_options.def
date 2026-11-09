@@ -6,3 +6,4 @@ PC_DEBUG_OPTION(FRAME_TIME, show_frame_time, "Show average guest frame interval"
 PC_DEBUG_OPTION(ISSUES, show_issues, "Show error / warning counters (E / W)", 0)
 PC_DEBUG_OPTION(LOG, log_performance, "Log performance samples (up to twice per second)", 0)
 PC_DEBUG_OPTION(LATENCY, show_latency, "Show network latency (round-trip time)", PC_DEBUG_CAP_NETWORK)
+PC_DEBUG_OPTION(COUNTER, show_counter, "FPS and online ping counter", 0)

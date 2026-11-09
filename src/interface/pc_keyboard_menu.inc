@@ -2,6 +2,7 @@
  * All callbacks occupy verified unused INT3 bytes in the supported US XBE. */
 #include "pc_settings.h"
 #include "pc_keyboard_menu_model.h"
+#include "../input/pc_local_join.h"
 #define KB_BUILD 0x1201cu
 #define KB_TICK 0x1201du
 #define KB_SELECT 0x1201eu
@@ -9,13 +10,71 @@
 #define KB_DRAW 0x12017u
 #define KB_TEXT_BYTES 192u
 #define KB_TEXT(i) (kb_storage+32u+(uint32_t)(i)*KB_TEXT_BYTES)
-enum { KB_HOME,KB_MOUSE,KB_LIST,KB_ACTION,KB_CAPTURE,KB_CONFLICT,KB_CLEAR,KB_ESCAPE,KB_RESET,KB_ERROR };
+enum { KB_HOME,KB_MOUSE,KB_LIST,KB_ACTION,KB_CAPTURE,KB_CONFLICT,KB_CLEAR,KB_ESCAPE,KB_RESET,KB_ERROR,KB_PLAYERS,KB_PLAYER_PICK,KB_PLAYER_WAIT };
 static uint32_t kb_storage,kb_parent,kb_previous,kb_menu,kb_enabled_row,kb_invert_row;
 static int kb_page,kb_group,kb_offset,kb_action,kb_slot,kb_key,kb_conflict,kb_capture_pending;
 static PcSettings kb_settings,kb_saved;
+static int kb_keyboard_choice,kb_controller_choice,kb_controller_preset;
+static uint32_t kb_keyboard_preset_row,kb_controller_preset_row,kb_keyboard_apply_row;
+static unsigned kb_controller_port;
+static int kb_devices[4];
+static unsigned kb_player_ports[4]={0,1,2,3},kb_player_count;
+static uint32_t kb_device_rows[4];
+static int kb_player_target;
+static unsigned kb_player_blocked;
+static uint64_t kb_player_deadline;
 static uint64_t kb_mouse_changed;
 static char kb_status[192];
 static void kb_refresh(int page,int selected);
+/* Native Start-to-join assigns players to ports in press order, which may
+ * differ from persisted port order. Keep the remaining rows a full permutation. */
+static void kb_players_read(void)
+{
+    int devices[4];unsigned used=0;
+    pc_settings_players_read(devices);
+    kb_player_count=WORD_AT(0x5236c4);
+    if(kb_player_count>4)kb_player_count=0;
+    for(unsigned i=0;i<4;i++)kb_player_ports[i]=4;
+    for(unsigned i=0;i<kb_player_count;i++) {
+        unsigned port=WORD_AT(0x6b93c0+i*4);
+        if(port<4 && !(used&(1u<<port))) {kb_player_ports[i]=port;used|=1u<<port;}
+    }
+    for(unsigned i=0;i<4;i++)if(kb_player_ports[i]==4) {
+        unsigned port=0;while(used&(1u<<port))port++;
+        kb_player_ports[i]=port;used|=1u<<port;
+    }
+    for(unsigned i=0;i<4;i++)kb_devices[i]=devices[kb_player_ports[i]];
+}
+static void kb_players_apply(void)
+{
+    int previous[4],draft[4],resolved[4];unsigned connected=0;
+    pc_settings_players_read(previous);
+    for(unsigned i=0;i<4;i++)draft[kb_player_ports[i]]=kb_devices[i];
+    for(int pad=0;pad<4;pad++) {
+        char name[120];int pressed;
+        if(pc_settings_pad_status(pad,name,sizeof name,&pressed))connected|=1u<<pad;
+    }
+    memcpy(resolved,draft,sizeof resolved);
+    pc_local_detect(resolved,previous,connected);
+    for(unsigned i=0;i<4;i++) {
+        unsigned port=kb_player_ports[i];int d=resolved[port];
+        /* Existing offline assignments for unused ports need not block a
+         * change. Joined players and newly selected pads must be available. */
+        if((i<kb_player_count || draft[port]!=previous[port]) &&
+           ((d>=0 && !(connected&(1u<<d))) || (i<kb_player_count && d==-1))) {
+            snprintf(kb_status,sizeof kb_status,"Player %u needs a connected controller. Assignments kept.",i+1);
+            return;
+        }
+        /* Automatic for a joined player retains an actual usable device.
+         * Do not publish DEV_NONE even briefly: native removal closes the
+         * port and opens a modal which prevents undoing this change. */
+        if(i<kb_player_count && draft[port]==-1)draft[port]=d;
+    }
+    if(pc_settings_players_save(draft,kb_status,sizeof kb_status)) {
+        kb_players_read();
+        snprintf(kb_status,sizeof kb_status,"Player devices applied.");
+    }
+}
 static uint32_t kb_text(unsigned slot,const char *format,...)
 {
     va_list args;va_start(args,format);
@@ -34,12 +93,50 @@ static uint32_t kb_caption(void)
     }
     return kb_storage?KB_TEXT(31):0;
 }
+/* Separate native Controller IDs from keyboard IDs during menu rebuilds. */
+static uint32_t kb_widget_id(int id) {return (uint32_t)(id+(controls_font_menu(kb_menu)?200:0));}
+static int kb_local_id(uint32_t id) {return (int)id-(controls_font_menu(kb_menu)?200:0);}
+static const char *kb_display_label(const char *label,char out[192])
+{
+    if(!controls_font_menu(kb_menu))return label;
+    unsigned i;
+    for(i=0;i<191 && label[i];i++)out[i]=label[i]>='a' && label[i]<='z'?label[i]-'a'+'A':label[i];
+    out[i]=0;return out;
+}
 static uint32_t kb_row(int id,const char *label,int note)
 {
-    uint32_t item=guest_call(sub_00079D60_gen,6,kb_text((unsigned)id+1,"\vs%d%s\vs100",note?65:80,label),
-        (uint32_t)id,note?4u:0u,0u,note?0u:KB_SELECT,0u);
+    char caption[192];label=kb_display_label(label,caption);
+    uint32_t item=guest_call(sub_00079D60_gen,6,kb_text(id>=30?30u:(unsigned)id+1,"\vs%d%s\vs100",note?65:controls_font_menu(kb_menu)?100:80,label),
+        kb_widget_id(id),note?4u:0u,0u,note?0u:KB_SELECT,0u);
     if(guest_writable(item,0x2c))WORD_AT(item+0x28)&=~0x2000u;
     return item;
+}
+/* The same native cycling choice used by Video / Aspect ratio. */
+static uint32_t kb_preset_selector(int controller)
+{
+    int id=controller?51:12;
+    uint32_t row=guest_call(sub_00079D60_gen,6,kb_text(controller?30:13,"\vs100CONTROL PRESET\vs100"),
+        kb_widget_id(id),0u,0u,0u,0u);
+    if(guest_writable(row,0x2c))WORD_AT(row+0x28)&=~0x2000u;
+    guest_call(sub_0007D480,2,0x8400u,0u);
+    guest_call(sub_000717D0,1,kb_text(20,"Custom"));
+    guest_call(sub_000717D0,1,kb_text(21,controller?"Modern Controller":"Modern PC"));
+    guest_call(sub_00075430,2,row,(uint32_t)(controller?kb_controller_choice:kb_keyboard_choice));
+    if(controller)kb_controller_preset_row=row;else kb_keyboard_preset_row=row;
+    return row;
+}
+static void kb_preset_poll(void)
+{
+    uint32_t rows[2]={kb_keyboard_preset_row,kb_controller_preset_row};
+    for(unsigned i=0;i<2;i++)if(guest_writable(rows[i],0xcc) && WORD_AT(rows[i]+0x88)==kb_menu &&
+        WORD_AT(rows[i]+0x14)==(i?251u:kb_widget_id(12))) {
+        unsigned choice=WORD_AT(rows[i]+0xc8);
+        if(choice<2) {if(i)kb_controller_choice=(int)choice;else kb_keyboard_choice=(int)choice;}
+    }
+    if(guest_writable(kb_keyboard_apply_row,0x2c)) {
+        if(kb_keyboard_choice==kb_settings.preset)WORD_AT(kb_keyboard_apply_row+0x28)|=1u;
+        else WORD_AT(kb_keyboard_apply_row+0x28)&=~1u;
+    }
 }
 static int kb_save(void)
 {
@@ -56,12 +153,15 @@ static void kb_flush_mouse(void) { if(kb_mouse_changed)kb_save(); }
 static void kb_leave(void)
 {
     kb_flush_mouse();pc_settings_capture_end();
-    guest_call(sub_00079B70,2,kb_parent,kb_previous);
+    if(controls_font_menu(kb_menu))controls_leave();
+    else guest_call(sub_00079B70,2,kb_parent,kb_previous);
 }
 static void kb_back_action(void)
 {
     kb_capture_pending=0;pc_settings_capture_end();kb_flush_mouse();
     switch(kb_page) {
+    case KB_PLAYERS:controls_players_back();break;
+    case KB_PLAYER_PICK:case KB_PLAYER_WAIT:kb_refresh(KB_PLAYERS,5);break;
     case KB_HOME:case KB_ERROR:kb_leave();break;
     case KB_LIST:case KB_MOUSE:case KB_RESET:kb_refresh(KB_HOME,0);break;
     case KB_ACTION:kb_refresh(KB_LIST,0);break;
@@ -72,7 +172,7 @@ static void kb_mouse_preview(void)
 {
     pc_controls_set_mouse(kb_settings.sensitivity,kb_settings.enabled,kb_settings.invert_y);
     kb_mouse_changed=GetTickCount64();
-    kb_text(2,"\vs80Sensitivity: %.3f\vs100",kb_settings.sensitivity);
+    kb_text(2,"\vs%dSENSITIVITY: %.3f\vs100",controls_font_menu(kb_menu)?100:80,kb_settings.sensitivity);
 }
 static void menu_slider_keyboard_pointer(float x,float left,float width)
 {
@@ -82,10 +182,30 @@ static void menu_slider_keyboard_pointer(float x,float left,float width)
     if(fabs(value-kb_settings.sensitivity)>1e-8) {kb_settings.sensitivity=value;kb_mouse_preview();}
 }
 extern void sub_00071B60(void),sub_00041DC0(void);
-static void kb_label(float x,float y,const char *text,int scale,uint32_t color)
+static uint32_t kb_label_measure;
+static void kb_label(float x,float y,float width,float height,const char *text,int scale,uint32_t color)
 {
+    extern void sub_0003FCF0(void),sub_0003F8D0(void);
+    char caption[192];text=kb_display_label(text,caption);
     uint32_t align=WORD_AT(0x007E7260u);WORD_AT(0x007E7260u)=0;
-    guest_call(sub_00041DC0,4,bits(x),bits(y),kb_text(30,"\vs%d%s\vs100",scale,text),color);
+    if(controls_font_menu(kb_menu))scale=(scale*100+32)/65;
+    uint32_t label=kb_text(30,"%s",text);
+    uint32_t saved_x=WORD_AT(0x7e7270),saved_y=WORD_AT(0x7e7280);
+    float fx=FLOAT_AT(0x7e7270)*scale*.01f,fy=FLOAT_AT(0x7e7280)*scale*.01f;
+    guest_call(sub_00022FF0,0);WORD_AT(0x7e7270)=bits(fx);WORD_AT(0x7e7280)=bits(fy);
+    guest_call(sub_0003F8D0,0);
+    if(!kb_label_measure)kb_label_measure=xbox_HeapAlloc(8,4);
+    if(kb_label_measure) {
+        guest_call(sub_0003FCF0,4,kb_label_measure,kb_label_measure+4,label,0u);
+        float fit=pc_ui_caption_fit(width,height,FLOAT_AT(kb_label_measure),FLOAT_AT(kb_label_measure+4));
+        if(fit<1.f) {
+            guest_call(sub_00022FF0,0);WORD_AT(0x7e7270)=bits(fx*fit);WORD_AT(0x7e7280)=bits(fy*fit);
+            guest_call(sub_0003F8D0,0);
+        }
+    }
+    guest_call(sub_00041DC0,4,bits(x),bits(y),label,color);
+    guest_call(sub_00022FF0,0);WORD_AT(0x7e7270)=saved_x;WORD_AT(0x7e7280)=saved_y;
+    guest_call(sub_0003F8D0,0);
     WORD_AT(0x007E7260u)=align;
 }
 static void kb_box(float x,float y,float w,float h,uint32_t color)
@@ -98,9 +218,9 @@ static void kb_device(float x,float y,float scale,uint32_t menu)
     uint32_t dim=guest_call(sub_00154FE0,2,0x2637497fu,WORD_AT(menu+0xf4));
     uint32_t edge=guest_call(sub_00154FE0,2,0x61778b7fu,WORD_AT(menu+0xf4));
     uint32_t light=guest_call(sub_00154FE0,2,0x8cabc97fu,WORD_AT(menu+0xf4));
-    int id=(int)WORD_AT(menu+0x18c),action=id>=0 && id<6?pc_keyboard_groups[kb_group][kb_offset+id]:-1;
+    int id=kb_local_id(WORD_AT(menu+0x18c)),action=id>=0 && id<6?pc_keyboard_groups[kb_group][kb_offset+id]:-1;
     int a=action>=0?kb_settings.keys[action][0]:0,b=action>=0?kb_settings.keys[action][1]:0;
-    kb_label(x,y-19*scale,"KEYBOARD + MOUSE",50,light);
+    kb_label(x,y-19*scale,144*scale,14*scale,"KEYBOARD + MOUSE",50,light);
     kb_box(x-3*scale,y-3*scale,144*scale,69*scale,edge);
     kb_box(x-2*scale,y-2*scale,142*scale,67*scale,dim);
     static const char *rows[]={"1234567890","QWERTYUIOP","ASDFGHJKL","ZXCVBNM"};
@@ -108,7 +228,7 @@ static void kb_device(float x,float y,float scale,uint32_t menu)
         char key[2]={rows[row][col],0};float kx=x+(col*13+row*3)*scale,ky=y+row*13*scale;
         int on=a==key[0] || b==key[0];
         kb_box(kx,ky,12*scale,12*scale,on?light:edge);
-        kb_label(kx+2*scale,ky+scale,key,32,on?dim:light);
+        kb_label(kx+2*scale,ky+scale,8*scale,9*scale,key,32,on?dim:light);
     }
     kb_box(x+35*scale,y+53*scale,70*scale,9*scale,(a==32 || b==32)?light:edge);
     float mx=x+49*scale,my=y+83*scale;
@@ -116,20 +236,29 @@ static void kb_device(float x,float y,float scale,uint32_t menu)
     kb_box(mx+3*scale,my+3*scale,15*scale,19*scale,(a==1 || b==1)?light:edge);
     kb_box(mx+21*scale,my+3*scale,15*scale,19*scale,(a==2 || b==2)?light:edge);
     kb_box(mx+18*scale,my+6*scale,3*scale,11*scale,(a==4 || b==4 || a==134 || b==134 || a==135 || b==135)?light:edge);
-    kb_label(x,y+144*scale,"Select a binding to change it",42,light);
+    kb_label(x,y+144*scale,144*scale,12*scale,"Select a binding to change it",42,light);
 }
 static void kb_binding_draw(uint32_t menu,uint32_t item,const float b[4])
 {
-    int id=(int)WORD_AT(item+0x14);
+    int id=kb_local_id(WORD_AT(item+0x14));
     if(id<0 || id>=6)return;
     int action=pc_keyboard_groups[kb_group][kb_offset+id];if(action<0)return;
     uint32_t color=guest_call(sub_00154FE0,2,0xc7d6e57fu,WORD_AT(menu+0xf4));
-    float w=b[2]-b[0],y=b[1];char name[80];
+    float w=b[2]-b[0],y=b[1];char name[80],cap[84];
     /* The row uses the same native panel/highlight as controller Customize. */
-    kb_label(b[0],y,pc_keyboard_action_labels[action],58,color);
+    kb_label(b[0],y,w*.52f-4.f,b[3]-y-2.f,pc_keyboard_action_labels[action],58,color);
     for(int slot=0;slot<PC_BINDING_SLOTS;slot++) {
         pc_settings_key_name(kb_settings.keys[action][slot],name,sizeof name);
-        kb_label(b[0]+w*(slot?.79f:.55f),y,name,53,color);
+        snprintf(cap,sizeof cap,"[%s]",name);
+#if TSFP_INPUT_ICONS
+        float saved_height=input_icon_cell_height,saved_width=input_icon_cell_width;
+        input_icon_cell_height=fmaxf(0.f,b[3]-y-4.f);
+        input_icon_cell_width=fmaxf(0.f,w*(slot?.21f:.24f)-8.f);
+#endif
+        kb_label(b[0]+w*(slot?.79f:.55f),y,w*(slot?.21f:.24f)-4.f,b[3]-y-2.f,cap,53,color);
+#if TSFP_INPUT_ICONS
+        input_icon_cell_height=saved_height;input_icon_cell_width=saved_width;
+#endif
     }
 
 }
@@ -140,14 +269,14 @@ static void kb_draw(void)
     if(WORD_AT(g_esp)==0x00076B50u) {
         if(kb_page==KB_LIST && guest_writable(menu,0x23c)) {
             uint32_t item=WORD_AT(menu+0x178);
-            for(unsigned n=0;n<64 && item && guest_writable(item,0x10c) && WORD_AT(item+0x14)!=0;n++)item=WORD_AT(item+4);
+            for(unsigned n=0;n<64 && item && guest_writable(item,0x10c) && WORD_AT(item+0x14)!=kb_widget_id(0);n++)item=WORD_AT(item+4);
             if(item && guest_writable(item,0x10c)) {
                 float left=FLOAT_AT(item+0x78),right=FLOAT_AT(item+0x80),top=FLOAT_AT(item+0x7c);
                 float x=FLOAT_AT(menu+0xe4)+10.f;
                 kb_device(x,top+12.f,(left-x-14.f)/144.f,menu);
                 uint32_t color=guest_call(sub_00154FE0,2,0x8cabc97fu,WORD_AT(menu+0xf4));
-                kb_label(left+(right-left)*.55f,top-17.f,"PRIMARY",45,color);
-                kb_label(left+(right-left)*.79f,top-17.f,"ALTERNATE",45,color);
+                kb_label(left+(right-left)*.55f,top-17.f,(right-left)*.24f-4.f,12.f,"PRIMARY",45,color);
+                kb_label(left+(right-left)*.79f,top-17.f,(right-left)*.21f-4.f,12.f,"ALTERNATE",45,color);
             }
         }
         restore_registers(&r);g_esp+=4;return;
@@ -169,33 +298,62 @@ static void kb_draw(void)
 static void kb_build(void)
 {
     GuestRegisters r;save_registers(&r);kb_menu=WORD_AT(g_esp+4);
+    kb_keyboard_preset_row=kb_keyboard_apply_row=0;
     const char *title="Keyboard and Mouse";char line[192],name[80];
+    if(kb_page==KB_PLAYERS || kb_page==KB_PLAYER_PICK)title="Local multiplayer";
+    if(kb_page==KB_PLAYER_WAIT)title="Assign controller";
     if(kb_page==KB_MOUSE)title="Mouse options";
     if(kb_page==KB_LIST)title=pc_keyboard_group_names[kb_group];
     if(kb_page==KB_ACTION || kb_page==KB_CLEAR || kb_page==KB_ESCAPE)title=pc_action_labels[kb_action];
     if(kb_page==KB_CAPTURE)title="Choose a binding";
     if(kb_page==KB_CONFLICT)title="Key already assigned";
     if(kb_page==KB_RESET)title="Restore default controls?";
-    guest_call(sub_00075B70,5,0xa000u,kb_text(0,"%s",title),bits(85.f),0u,KB_BACK);
-    guest_call(sub_00071B10,4,1u,bits(2.f),1u,1u);guest_call(sub_00071C50,1,0x26200u);
+    int unified=controls_frame(kb_menu,title);
+    if(!unified) {
+        guest_call(sub_00075B70,5,0xa000u,kb_text(0,"%s",title),bits(85.f),0u,KB_BACK);
+        guest_call(sub_00071B10,4,1u,bits(2.f),1u,1u);guest_call(sub_00071C50,1,0x26200u);
+    } else if(kb_page==KB_MOUSE)kb_row(16,title,1);
     kb_enabled_row=kb_invert_row=0;
     WORD_AT(kb_menu+0x10)=kb_page==KB_LIST?KB_DRAW:0;
-    if(kb_page==KB_HOME) {
+    if(kb_page==KB_PLAYERS) {
+        const char *devices[]={"Keyboard & Mouse","Automatic","Controller 1","Controller 2","Controller 3","Controller 4"};
+        for(int i=0;i<4;i++) {
+            snprintf(line,sizeof line,"Player %d",i+1);kb_device_rows[i]=kb_row(i,line,0);
+            guest_call(sub_0007D480,2,0x8400u,0u);
+            for(int j=i?1:0;j<6;j++)guest_call(sub_000717D0,1,kb_text(20+j,"%s",devices[j]));
+            guest_call(sub_00075430,2,kb_device_rows[i],(uint32_t)(kb_devices[i]+(i?1:2)));
+        }
+        guest_call(sub_00079710,1,0u);kb_row(4,"Apply player devices",0);kb_row(5,"Press a button to assign",0);kb_row(6,"Back",0);
+        kb_row(7,"One controller per player. Keyboard & mouse: Player 1.",1);
+    } else if(kb_page==KB_PLAYER_PICK) {
+        for(int i=0;i<4;i++){snprintf(line,sizeof line,"Assign controller to Player %d",i+1);kb_row(i,line,0);}
+        kb_row(6,"Back",0);
+    } else if(kb_page==KB_PLAYER_WAIT) {
+        snprintf(line,sizeof line,"Press a controller button for Player %d",kb_player_target+1);kb_row(0,line,1);
+        kb_row(1,"Release held buttons first. Escape cancels.",1);kb_row(6,"Cancel",0);
+    } else if(kb_page==KB_HOME) {
+        if(unified)guest_call(sub_00071B10,4,1u,bits(1.44f),1u,1u);
+        kb_preset_selector(0);
         kb_row(0,"Mouse options",0);
         for(int i=0;i<4;i++)kb_row(i+1,pc_keyboard_group_names[i],0);
-        kb_row(5,"Restore defaults",0);kb_row(6,"Back",0);
+        if(unified){guest_call(sub_00071B10,4,1u,bits(1.2f),1u,1u);guest_call(sub_00079710,1,0u);}
+        kb_row(5,"Restore defaults",0);
+        kb_keyboard_apply_row=kb_row(13,"Apply preset",0);kb_preset_poll();
+        if(!unified)kb_row(6,"Back",0);
     } else if(kb_page==KB_MOUSE) {
+        if(unified)guest_call(sub_00071B10,4,1u,bits(3.34f),1u,1u);
         kb_enabled_row=kb_row(0,"Mouse look",0);
         guest_call(sub_0007D480,2,0x8400u,0u);
         guest_call(sub_000717D0,1,kb_text(20,"Off"));guest_call(sub_000717D0,1,kb_text(21,"On"));
         guest_call(sub_00075430,2,kb_enabled_row,(uint32_t)kb_settings.enabled);
-        uint32_t slider=guest_call(sub_00079D60_gen,6,kb_text(2,"\vs80Sensitivity: %.3f\vs100",kb_settings.sensitivity),1u,0x400u,0u,0u,KB_DRAW);
+        uint32_t slider=guest_call(sub_00079D60_gen,6,kb_text(2,"\vs%dSENSITIVITY: %.3f\vs100",controls_font_menu(kb_menu)?100:80,kb_settings.sensitivity),kb_widget_id(1),0x400u,0u,0u,KB_DRAW);
         if(guest_writable(slider,0x2c))WORD_AT(slider+0x28)&=~0x2000u;
         kb_invert_row=kb_row(2,"Invert vertical look",0);
         guest_call(sub_0007D480,2,0x8400u,0u);
         guest_call(sub_000717D0,1,KB_TEXT(20));guest_call(sub_000717D0,1,KB_TEXT(21));
         guest_call(sub_00075430,2,kb_invert_row,(uint32_t)kb_settings.invert_y);
-        kb_row(3,"Reset mouse options",0);kb_row(6,"Back",0);
+        if(unified){guest_call(sub_00071B10,4,1u,bits(1.2f),1u,1u);guest_call(sub_00079710,1,0u);}
+        kb_row(3,"Reset mouse options",0);if(!unified)kb_row(6,"Back",0);
     } else if(kb_page==KB_LIST) {
         kb_row(10," ",1);
         for(int i=kb_offset;i<kb_offset+6 && i<12;i++) {
@@ -203,35 +361,36 @@ static void kb_build(void)
             if(action<0){kb_row(i-kb_offset," ",1);continue;}
             guest_call(sub_00071B60,3,1u,bits(30.f),bits(85.f));
             uint32_t item=guest_call(sub_00079D60_gen,6,kb_text((unsigned)(i-kb_offset)+1,"\vs90 \vs100"),
-                (uint32_t)(i-kb_offset),0x400u,0u,KB_SELECT,KB_DRAW);
+                kb_widget_id(i-kb_offset),0x400u,0u,KB_SELECT,KB_DRAW);
             if(guest_writable(item,0x2c))WORD_AT(item+0x28)&=~0x2000u;
         }
         guest_call(sub_00071B60,3,1u,bits(30.f),bits(85.f));
+        if(unified && (kb_offset || pc_keyboard_groups[kb_group][6]>=0))guest_call(sub_00079710,1,0u);
         if(kb_offset)kb_row(7,"Previous page",0);
         if(!kb_offset && pc_keyboard_groups[kb_group][6]>=0)kb_row(8,"Next page",0);
-        kb_row(9,"Back",0);
+        if(!unified)kb_row(9,"Back",0);
     } else if(kb_page==KB_ACTION || kb_page==KB_CLEAR || kb_page==KB_ESCAPE) {
         for(int i=0;i<PC_BINDING_SLOTS;i++) {
             pc_settings_key_name(kb_settings.keys[kb_action][i],name,sizeof name);
-            snprintf(line,sizeof line,"%s%s: %s",kb_page==KB_CLEAR?"Clear ":kb_page==KB_ESCAPE?"Assign Escape to ":"",i?"Alternate":"Primary",name);
+            snprintf(line,sizeof line,"%s%s: [%s]",kb_page==KB_CLEAR?"Clear ":kb_page==KB_ESCAPE?"Assign Escape to ":"",i?"Alternate":"Primary",name);
             kb_row(i,line,0);
         }
         if(kb_page==KB_ACTION) {kb_row(4,"Clear a binding",0);kb_row(5,"Bind Escape",0);}
-        kb_row(6,"Back",0);
+        if(!unified)kb_row(6,"Back",0);
     } else if(kb_page==KB_CAPTURE) {
         /* Native update callbacks require a selectable row. Capture consumes
          * its input before the ordinary Select handler. */
         kb_row(0,"Press a key, mouse button or mouse wheel",0);
-        kb_row(1,"Escape cancels. Release any held keys first.",1);
+        kb_row(1,"[Esc] cancels. Release any held keys first.",1);
     } else if(kb_page==KB_CONFLICT) {
         pc_settings_key_name(kb_key,name,sizeof name);
-        snprintf(line,sizeof line,"%s is assigned to %s",name,pc_action_labels[kb_conflict]);kb_row(0,line,1);
+        snprintf(line,sizeof line,"[%s] is assigned to %s",name,pc_action_labels[kb_conflict]);kb_row(0,line,1);
         kb_row(1,"Move this binding",0);kb_row(2,"Choose another key",0);kb_row(6,"Cancel",0);
     } else if(kb_page==KB_RESET) {
         kb_row(0,"Cancel",0);kb_row(1,"Restore all keyboard and mouse defaults",0);
     }
     if(*kb_status)kb_row(15,kb_status,1);
-    if(kb_page==KB_ERROR)kb_row(6,"Back",0);
+    if(kb_page==KB_ERROR && !unified)kb_row(6,"Back",0);
     guest_call(sub_000771D0,1,kb_menu);
     restore_registers(&r);g_esp+=4;
 }
@@ -243,8 +402,11 @@ static void kb_refresh(int page,int selected)
         if(kb_invert_row)guest_call(sub_00075430,2,kb_invert_row,(uint32_t)kb_settings.invert_y);
     }
     uint32_t item=WORD_AT(kb_menu+0x178),index=0,chosen=0;
-    for(;item && index<64 && guest_writable(item,0x10c);index++,item=WORD_AT(item+4))
-        if((int)WORD_AT(item+0x14)==selected){chosen=index;break;}
+    for(unsigned n=0;item && n<64 && guest_writable(item,0x10c);n++,item=WORD_AT(item+4)) {
+        if(WORD_AT(item+0x14)==kb_widget_id(selected)){chosen=index;break;}
+        uint32_t type=WORD_AT(item);
+        if(type==4 || type==7 || type==8)index++;
+    }
     guest_call(sub_000770E0,2,kb_menu,chosen);
 }
 static void kb_begin_capture(void)
@@ -256,6 +418,7 @@ static void kb_begin_capture(void)
 static void kb_assign(int key,int move)
 {
     char error[320];
+    if(kb_settings.preset) {snprintf(kb_status,sizeof kb_status,"Choose Custom to edit your retained bindings.");kb_refresh(KB_ACTION,0);return;}
     if(!pc_settings_read(&kb_settings,error,sizeof error)) {
         snprintf(kb_status,sizeof kb_status,"Controls unavailable. Reopen this menu.");kb_refresh(KB_ERROR,6);return;
     }
@@ -269,9 +432,37 @@ static void kb_assign(int key,int move)
 static void kb_select(void)
 {
     GuestRegisters r;save_registers(&r);uint32_t menu=WORD_AT(g_esp+4);
-    int id=guest_writable(menu,0x190)?(int)WORD_AT(menu+0x18c):-1;
-    if(kb_page==KB_HOME) {
-        if(id==0)kb_refresh(KB_MOUSE,0);
+    if(controls_font_menu(menu))kb_menu=menu;
+    int id=guest_writable(menu,0x190)?kb_local_id(WORD_AT(menu+0x18c)):-1;
+    if(id==50) {controls_players_open(menu);}
+    else if(kb_page==KB_PLAYERS) {
+        if(id==4) {
+            kb_players_apply();
+            kb_refresh(KB_PLAYERS,4);
+        } else if(id==5)kb_refresh(KB_PLAYER_PICK,0);
+        else if(id==6)kb_back_action();
+    } else if(kb_page==KB_PLAYER_PICK) {
+        if(id>=0 && id<4) {
+            kb_player_target=id;kb_player_blocked=15;kb_player_deadline=GetTickCount64()+20000;
+            pc_settings_capture_begin();kb_refresh(KB_PLAYER_WAIT,6);
+        } else if(id==6)kb_back_action();
+    } else if(kb_page==KB_PLAYER_WAIT) {if(id==6)kb_back_action();
+    } else if(kb_page==KB_HOME) {
+        if(id==13 && kb_keyboard_choice!=kb_settings.preset) {
+            double sensitivity=kb_settings.sensitivity;int enabled=kb_settings.enabled,invert=kb_settings.invert_y;
+            if(kb_keyboard_choice) {
+                PcSettings retained=kb_settings;pc_settings_modern(&kb_settings);
+                for(int action=0;action<PC_ACTION_COUNT;action++)if(pc_settings_action_editable(1,action))
+                    memcpy(kb_settings.keys[action],retained.keys[action],sizeof retained.keys[action]);
+            }
+            else if(!pc_settings_custom_read(&kb_settings,kb_status,sizeof kb_status)) {
+                kb_refresh(KB_HOME,12);restore_registers(&r);g_esp+=4;return;
+            }
+            kb_settings.sensitivity=sensitivity;kb_settings.enabled=enabled;kb_settings.invert_y=invert;
+            if(kb_save()) {char error[320];pc_settings_read(&kb_settings,error,sizeof error);kb_saved=kb_settings;}
+            kb_refresh(KB_HOME,12);
+        }
+        else if(id==0)kb_refresh(KB_MOUSE,0);
         else if(id>=1 && id<=4){kb_group=id-1;kb_offset=0;kb_refresh(KB_LIST,0);}
         else if(id==5)kb_refresh(KB_RESET,0);else if(id==6)kb_leave();
     } else if(kb_page==KB_LIST) {
@@ -296,7 +487,7 @@ static void kb_select(void)
     } else if(kb_page==KB_CONFLICT) {
         if(id==1)kb_assign(kb_key,1);else if(id==2)kb_begin_capture();else if(id==6)kb_back_action();
     } else if(kb_page==KB_RESET) {
-        if(id==1){pc_settings_defaults(&kb_settings);kb_save();}kb_refresh(KB_HOME,0);
+        if(id==1){pc_settings_defaults(&kb_settings);kb_save();kb_keyboard_choice=kb_settings.preset;}kb_refresh(KB_HOME,0);
     } else if(kb_page==KB_MOUSE) {
         if(id==3){kb_settings.sensitivity=.1;kb_settings.enabled=1;kb_settings.invert_y=0;kb_save();kb_refresh(KB_MOUSE,0);}
         else if(id==6)kb_back_action();
@@ -306,7 +497,25 @@ static void kb_select(void)
 static void kb_tick(void)
 {
     GuestRegisters r;save_registers(&r);uint32_t menu=WORD_AT(g_esp+4);
-    if(kb_page==KB_CAPTURE) {
+    kb_preset_poll();
+    if(kb_page==KB_PLAYERS) {
+        for(int i=0;i<4;i++)if(guest_writable(kb_device_rows[i],0xcc)) {
+            unsigned choice=WORD_AT(kb_device_rows[i]+0xc8);
+            if(choice<(i?5u:6u))kb_devices[i]=(int)choice-(i?1:2);
+        }
+    } else if(kb_page==KB_PLAYER_WAIT) {
+        if(pc_settings_capture_event()<0 || GetTickCount64()>=kb_player_deadline)kb_back_action();
+        else for(int slot=0;slot<4;slot++) {
+            char name[120];int down=0;pc_settings_pad_status(slot,name,sizeof name,&down);
+            if(!down){kb_player_blocked&=~(1u<<slot);continue;}
+            if(kb_player_blocked&(1u<<slot))continue;
+            kb_player_blocked|=1u<<slot;int owner=-1;
+            for(int i=0;i<4;i++)if(i!=kb_player_target && kb_devices[i]==slot)owner=i;
+            if(owner>=0)snprintf(kb_status,sizeof kb_status,"Controller already assigned to Player %d.",owner+1);
+            else {kb_devices[kb_player_target]=slot;snprintf(kb_status,sizeof kb_status,"Player %d: %.100s. Select Apply to save.",kb_player_target+1,name);}
+            pc_settings_capture_end();kb_refresh(KB_PLAYERS,kb_player_target);break;
+        }
+    } else if(kb_page==KB_CAPTURE) {
         if(kb_capture_pending){pc_settings_capture_begin();kb_capture_pending=0;}
         int event=pc_settings_capture_event();
         if(event<0)kb_back_action();
@@ -321,7 +530,7 @@ static void kb_tick(void)
             {kb_settings.enabled=(int)WORD_AT(kb_enabled_row+0xc8);changed=1;}
         if(guest_writable(kb_invert_row,0xcc) && WORD_AT(kb_invert_row+0xc8)<=1 && (int)WORD_AT(kb_invert_row+0xc8)!=kb_settings.invert_y)
             {kb_settings.invert_y=(int)WORD_AT(kb_invert_row+0xc8);changed=1;}
-        if(guest_writable(menu,0x190) && WORD_AT(menu+0x18c)==1) {
+        if(guest_writable(menu,0x190) && WORD_AT(menu+0x18c)==kb_widget_id(1)) {
             unsigned buttons=WORD_AT(menu+0xc4),step=pc_keyboard_sensitivity_step(kb_settings.sensitivity);
             guest_call(sub_00074910,3,menu,0u,1u);
             if((buttons&0x40000u) && step){step=step<5?0:step-5;changed=1;}
@@ -345,7 +554,7 @@ static void kb_open(void)
         if(!pc_settings_read(&kb_settings,error,sizeof error)) {
             kb_page=KB_ERROR;snprintf(kb_status,sizeof kb_status,"Select a keyboard profile in PC Settings first.");
         }
-        kb_saved=kb_settings;kb_parent=WORD_AT(source+0x2c);kb_previous=WORD_AT(source+4);
+        kb_saved=kb_settings;kb_keyboard_choice=kb_settings.preset;kb_parent=WORD_AT(source+0x2c);kb_previous=WORD_AT(source+4);
         guest_call(sub_00079B70,2,kb_parent,kb_storage);
         fprintf(stderr,"[PC-KEYBOARD-MENU] Opened themed live settings\n");
     }

@@ -74,6 +74,8 @@ void pc_debug_init(HWND window);
 void pc_debug_shutdown(void);
 void pc_debug_get(PcDebugOptions *options);
 void pc_debug_set(const PcDebugOptions *options);
+int pc_counter_enabled(void);
+int pc_counter_set_enabled(int enabled);
 void pc_debug_toggle_fps(void);
 void pc_debug_frame(void);
 void pc_debug_sample(double fps, double shown_fps);

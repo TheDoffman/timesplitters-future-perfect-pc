@@ -20,9 +20,13 @@ static inline void pc_acoustic_pcm(PcAcousticDsp *d,uint8_t *pcm,unsigned bytes,
                                   unsigned rate,unsigned channels,unsigned bits)
 {
     if(!rate || (channels!=1 && channels!=2) || (bits!=8 && bits!=16))return;
-    if(d->target==0 && d->amount==0 && d->wet==0 && d->bed==0 && d->bed_amount==0)return;
+    if(d->target==0 && d->amount==0 && d->wet==0 && d->bed==0 && d->bed_amount==0) {
+        if(d->rate)memset(d,0,sizeof *d);
+        return;
+    }
     if(d->rate!=rate){memset(d->low,0,sizeof d->low);memset(d->delay,0,sizeof d->delay);d->cursor=0;d->rate=rate;d->gain=1;d->alpha=1-expf(-6.2831853f*18000/rate);}
     unsigned frames=bytes/(channels*(bits/8));
+    int releasing=d->target==0 && d->wet==0 && d->bed==0;
     float smooth=1-expf(-1.f/(.03f*rate));
     float cutoff=18000.f*powf(1000.f/18000.f,d->target);
     if(d->bed)cutoff=fminf(cutoff,4000.f);
@@ -31,6 +35,14 @@ static inline void pc_acoustic_pcm(PcAcousticDsp *d,uint8_t *pcm,unsigned bytes,
     float release=expf(-1.f/(.12f*rate));
     unsigned tap=(unsigned)(rate*.037f);if(tap>4095)tap=4095;if(!tap)tap=1;
     for(unsigned f=0;f<frames;f++) {
+        /* A float exponential never reliably reaches zero. After the 30 ms
+           release falls below -100 dB, stop requantizing neutral PCM and clear
+           stale filter/delay history. Return inside the packet so large chunks
+           reach the same finite bypass as small ones. Rejected submissions
+           restore this state through the adapters' existing DSP backup. */
+        if(releasing && d->amount<=.00001f && d->bed_amount<=.00001f) {
+            memset(d,0,sizeof *d);return;
+        }
         d->amount+=(d->target-d->amount)*smooth;
         d->bed_amount+=(d->bed-d->bed_amount)*smooth;
         d->alpha+=(target_alpha-d->alpha)*smooth;

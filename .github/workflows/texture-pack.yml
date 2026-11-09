@@ -1,26 +1,7 @@
 name: Repository texture pack
 
 on:
-  pull_request:
-    paths:
-      - 'assets/textures/**'
-      - '.gitattributes'
-      - 'config/textures/texture-pack.json'
-      - 'tools/textures/build_textures.py'
-      - 'tools/textures/texture-repository.py'
-      - 'tools/textures/texture-release.py'
-      - 'tests/textures/test_build_textures.py'
-      - '.github/workflows/texture-pack.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'assets/textures/**'
-      - 'config/textures/texture-pack.json'
-      - 'tools/textures/build_textures.py'
-      - 'tools/textures/texture-repository.py'
-      - 'tools/textures/texture-release.py'
-      - '.gitattributes'
-      - '.github/workflows/texture-pack.yml'
+  workflow_call:
   workflow_dispatch:
 
 permissions:
@@ -34,7 +15,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          lfs: true
+          lfs: false
+      - name: Download optional textures for this audit only
+        run: git lfs pull --include="assets/textures/**" --exclude=""
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'

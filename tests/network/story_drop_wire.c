@@ -49,7 +49,7 @@ void sub_000C2090(void)
     assert(MEM32(g_esp)==0x35b51c && MEM32(0x541e9c)==0);
     assert(MEM32(actor+8)==2 && MEM32(actor+0x94)==25);
     assert(MEM32(actor+0xbf0)==0); /* wire actor lacks Story NPC resource */
-    assert(MEM32(hand+0x30)==14 && SMEM16(actor+0x61e+18*2)==112);
+    assert(MEM32(hand+0x30)==14 && SMEM16(actor+0x61e + 18*2)==112);
     ++drops;if(real_drop)pc_story_network_drop_replay(sub_000C2090_gen);else g_esp+=4;
 }
 static unsigned original_calls;

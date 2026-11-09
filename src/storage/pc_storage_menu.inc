@@ -5,7 +5,7 @@
 #define SD_SELECT 0x12379u
 #define SD_DRAW 0x1237au
 extern void sub_00192E60(void),sub_00192770(void),sub_00191470(void);
-extern void sub_00024EC0(void);
+extern void sub_00024EC0(void),sub_00042D00(void),sub_00042870(void);
 static uint32_t sd_storage;
 static PcStorageDrive sd_drives[PC_STORAGE_DRIVES];
 static int sd_count,sd_selected;
@@ -105,6 +105,39 @@ static void sd_draw(void)
 static void sd_profile_tick(void)
 {
     uint32_t menu=WORD_AT(g_esp+4),player=guest_writable(menu,0x190)?WORD_AT(menu+0x38):4;
+    /* US native 192770 state 1 is the existing "Press START to Join" panel.
+     * 1927DB excludes ports already owned in 74E914; 1927F5 binds the port,
+     * clears input and advances to profile selection (state 2). Keep that
+     * transition, but read physical Start even for currently disabled ports. */
+    unsigned count=WORD_AT(0x5236c4);
+    unsigned waiting=0;
+    if(count<=4)for(unsigned i=0;i<count;i++)waiting|=WORD_AT(0x74f9ec+i*4)==1;
+    if(!waiting || count<2)pc_settings_players_join(16u); /* discard stale joins */
+    if(count>=2 && count<=4 && player<count && WORD_AT(0x74f9ec+player*4)==1) {
+        float elapsed,threshold;
+        memcpy(&elapsed,&WORD_AT(menu+0x1b8),4);
+        memcpy(&threshold,&WORD_AT(0x475cd4),4);
+        unsigned first=0;
+        while(first<count && WORD_AT(0x74f9ec+first*4)!=1)first++;
+        if(player!=first || !(elapsed>=threshold)) {g_esp+=4;return;}
+        unsigned used=0;
+        for(unsigned i=0;i<count;i++)if(WORD_AT(0x74f9ec+i*4)!=1) {
+            unsigned port=WORD_AT(0x74e914+i*4);
+            if(port<4)used|=1u<<port;
+        }
+        int port=pc_settings_players_join(used);
+        if(port>=0) {
+            WORD_AT(0x74e914+player*4)=(unsigned)port;
+            guest_call(sub_00042D00,2,player,(unsigned)port);
+            guest_call(sub_00042870,1,player);
+            WORD_AT(0x74f9ec+player*4)=2;
+            WORD_AT(0x74e938)=1;
+            g_esp+=4;return;
+        }
+        /* Do not also run the native port scan: it would bypass physical
+         * edge ordering and let a later panel consume the same Start. */
+        g_esp+=4;return;
+    }
     int active=player<4&&WORD_AT(0x74f9ec+player*4)==6;
     /* Other profile menus also tick. They must not drain this owner's result. */
     if(sd_picker_menu && sd_picker_menu==menu) {

@@ -1,9 +1,10 @@
 """Project string-instruction lowering for the existing mapped-memory ABI.
 
 Each slow-path iteration completes one element before moving the indices.
-Comparisons publish ZF/CF for repeat consumers; the surrounding translator
-retains responsibility for incoming flags when the count is zero. Complete
-EFLAGS, segmented protection and resumable guest faults remain runtime work.
+Comparisons publish arithmetic status after each completed element; zero-repeat
+counts and non-comparison strings preserve incoming state. Legacy ZF/CF
+snapshots remain available. Control flags, segmented protection and resumable
+guest faults remain execution-model work.
 """
 
 _BASES = frozenset(stem + suffix for stem in ('movs', 'stos', 'lods', 'cmps', 'scas')
@@ -28,6 +29,13 @@ def operation(instruction, mnemonic=None):
 def is_compare(instruction):
     try:
         return operation(instruction)[1][:4] in ('cmps', 'scas')
+    except ValueError:
+        return False
+
+
+def preserves_flags(instruction):
+    try:
+        return operation(instruction)[1][:4] not in ('cmps', 'scas')
     except ValueError:
         return False
 
@@ -100,6 +108,9 @@ def emit(context, instruction, mnemonic=None):
                   '_flags = (_str_value == _str_other);']
         if getattr(context, 'needs_cf', False):
             lines.append('_cf = (_str_value < _str_other);')
+        if getattr(context,'track_status_flags',False):
+            from translation_integer import _status
+            lines += _status(context,[f'tsfp_status_alu(&g_status_flags,{bits},_str_value,_str_other,0,_str_value - _str_other,1,TSFP_STATUS_FLAGS);'])
         if not prefix:
             lines += ['_fa = _str_value;', '_fb = _str_other;',
                       f'_fas = (int32_t)(int{bits}_t)_str_value;',

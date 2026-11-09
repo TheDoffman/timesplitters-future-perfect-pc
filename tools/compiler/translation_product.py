@@ -20,7 +20,7 @@ else:
     def repo_file(root, area, name):
         return _LayoutPath(root) / area / name
 
-from translation_integer import _width
+from translation_integer import _width, _status
 from translation_operands import _fmt_operand_read, _fmt_operand_write
 
 
@@ -68,7 +68,8 @@ def _multiply(context, operands, signed):
         lines.extend(_pair_write(bits, '_product_wide'))
     else:
         lines.append(_fmt_operand_write(operands[0], '(uint32_t)_product_wide'))
-    return [*lines, '}']
+    flags='TSFP_FLAG_CF | TSFP_FLAG_OF'
+    return [*lines, *_status(context,[f'tsfp_status_write(&g_status_flags,{flags},(uint32_t){carry} * ({flags}),TSFP_STATUS_FLAGS & ~({flags}));']), '}']
 
 
 def imul(context, instruction, operands):

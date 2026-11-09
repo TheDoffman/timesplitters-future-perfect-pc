@@ -23,8 +23,8 @@ namespace TimeSplitters.Launcher
             return Map(profile["bindings"]).Keys.Where(k=>k.StartsWith("weapon_slot_",StringComparison.Ordinal))
                 .OrderBy(k=>Int32.Parse(k.Substring(12),CultureInfo.InvariantCulture)).ToArray();
         }
-        public static readonly string[] Actions=PadActions.Concat(WeaponActions()).ToArray();
-        public static readonly string[] Labels=PadLabels.Concat(WeaponActions().Select(k=>"Weapon slot "+k.Substring(12))).ToArray();
+        public static readonly string[] Actions=PadActions.Concat(WeaponActions()).Concat(new[]{"developer_tools","developer_noclip","developer_freecam"}).ToArray();
+        public static readonly string[] Labels=PadLabels.Concat(WeaponActions().Select(k=>"Weapon slot "+k.Substring(12))).Concat(new[]{"Developer Tools","Toggle no-clip","Toggle free-cam"}).ToArray();
         readonly string root;
         readonly Dictionary<string, byte[]> originals = new Dictionary<string, byte[]>();
         Dictionary<string, object> document, controller, bindings;
@@ -33,6 +33,24 @@ namespace TimeSplitters.Launcher
         public bool DiscordEnabled;
         public bool EnhancedTextures;
         public bool EnhancedAudio;
+        public bool SpatialAudio=true, ExtendedGunfire=true, EnvironmentalAudio=true, AmbientAudio=true;
+        // Master, effects, music, dialogue, ambience, movies; percentages of the authored mix.
+        public readonly int[] AudioVolumes={100,100,100,100,100,100};
+        public bool DialogueFocus;
+        public int ImpactRange;
+        public static readonly string[] ImpactRangeLabels={"Original","Reduced","Night"};
+        public static readonly string[] AudioVolumeLabels={"Master","Effects","Music","Dialogue","Ambience","Movies"};
+        public bool ShowCounter;
+        public int Msaa = 1, EdgeSmoothing, AmbientOcclusion;
+        public int Supersampling;
+        public int PostAntiAliasing {
+            get { return Smaa ? 2 : EdgeSmoothing; }
+            set {
+                Core.Require(value>=0 && value<=2,"Choose Off, FXAA, or SMAA.");
+                Smaa=value==2;EdgeSmoothing=value==1?1:0;
+            }
+        }
+        public bool ShaderCache = true;
         public string LanguagePack = "en";
         public static readonly string[] LanguagePacks = { "en", "fr", "de", "it", "es" };
         public static readonly string[] LanguagePackLabels = { "English", "Français", "Deutsch", "Italiano", "Español" };
@@ -46,9 +64,10 @@ namespace TimeSplitters.Launcher
             }
         }
         public string DiscordApplicationId = "1561627743353962566";
-        public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes;
+        public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes, DeveloperToolsEnabled;
         public const int FovDefault = 55, FovMin = 40, FovMax = 100;
         public int VerticalFov = FovDefault;
+        public int WeaponFov = 100; // Preserve the in-game weapon aperture preference.
         // Zero selects the original clock; 60 is not the experimental native-60 path.
         public int NativeFps;
         public static readonly int[] NativeFrameRates = { 0, 120, 180, 240 };
@@ -79,12 +98,57 @@ namespace TimeSplitters.Launcher
         public bool SupportsResolution(int width, int height)
         { return (!(width==1 && height==1) || CanAutoResolution) && DisplayMode.Valid(width,height) && (SupportsExtendedDisplay || height <= 2160); }
         public int Width, Height, Scale = 1, Anisotropy = 1;
+        public bool Smaa;
         // Retained keys migrate old installations; they are no longer user options.
         public int Interpolation { get { return 1; } }
         public int PresentationFps { get { return 0; } }
         public int RefreshRate { get { return 0; } }
         public string FrameCap { get { return "60"; } }
         public string Device { get { return Convert.ToString(controller["device"], CultureInfo.InvariantCulture); } set { controller["device"] = value; } }
+        public string PlayerDevice(int player)
+        {
+            Core.Require(player>=0 && player<4,"Invalid local player.");
+            var profile=PlayerProfile(player,false);object value;
+            var device=profile!=null && profile.TryGetValue("device",out value)
+                ? Convert.ToString(value,CultureInfo.InvariantCulture).Replace("xinput:","gamepad:") : "gamepad:"+player;
+            Core.Require(device=="none" || (player==0 && device=="keyboard") ||
+                new[]{"gamepad:0","gamepad:1","gamepad:2","gamepad:3"}.Contains(device),
+                "Player "+(player+1)+" has an unsupported input device. No settings were changed.");
+            return device;
+        }
+        Dictionary<string,object> PlayerProfile(int player,bool create)
+        {
+            var profiles=((IEnumerable)document["controllers"]).Cast<object>().ToList();
+            Dictionary<string,object> found=null;int index=0;
+            foreach(var item in profiles) {
+                var profile=Map(item);object port;
+                int slot=profile.TryGetValue("port",out port)?Convert.ToInt32(port)-1:index;
+                Core.Require(slot>=0 && slot<4,"Local player ports must be between 1 and 4.");
+                if(slot==player) { Core.Require(found==null,"Duplicate local player profiles.");found=profile; }
+                index++;
+            }
+            if(found==null && create) {
+                found=new Dictionary<string,object>{{"port",player+1},{"device","none"}};
+                profiles.Add(found);document["controllers"]=profiles.ToArray();
+            }
+            return found;
+        }
+        public void SetPlayerDevices(string[] devices)
+        {
+            Core.Require(devices!=null && devices.Length==4,"Choose devices for all four players.");
+            var used=new HashSet<string>(StringComparer.Ordinal);
+            for(int i=0;i<4;i++) {
+                string value=devices[i];
+                Core.Require(value=="none" || (i==0 && value=="keyboard") ||
+                    new[]{"gamepad:0","gamepad:1","gamepad:2","gamepad:3"}.Contains(value),"Choose a supported player device.");
+                Core.Require(value=="none" || used.Add(value),"Each controller can be assigned to only one player.");
+            }
+            Core.Require(devices[0]!="none","Player 1 needs an input device.");
+            // Validate the whole draft before changing any profile. Preserve its
+            // bindings and unknown fields when only the device changes.
+            for(int i=0;i<4;i++)PlayerProfile(i,false);
+            for(int i=0;i<4;i++)PlayerProfile(i,true)["device"]=devices[i];
+        }
         readonly string[] Files;
         static Dictionary<string, object> Map(object value)
         { var map = value as Dictionary<string, object>; Core.Require(map != null, "Settings contain an invalid object."); return map; }
@@ -108,6 +172,10 @@ namespace TimeSplitters.Launcher
                 model.DiscordApplicationId = presence.Groups[2].Value == "0" ? "" : presence.Groups[2].Value;
             }
             object value;
+            if(model.document.TryGetValue("developer_tools_enabled",out value)) {
+                Core.Require(value is bool,"Developer Tools enabled must be true or false. No settings were changed.");
+                model.DeveloperToolsEnabled=(bool)value;
+            }
             if (model.document.TryGetValue("launcher", out value))
             {
                 var launcher = Map(value);
@@ -127,6 +195,15 @@ namespace TimeSplitters.Launcher
                     model.SkipStartupSplashes = (bool)value;
                 }
             }
+            if (model.document.TryGetValue("debug", out value))
+            {
+                object counter;
+                if (Map(value).TryGetValue("show_counter", out counter))
+                {
+                    Core.Require(counter is bool, "FPS / Ping must be true or false. No settings were changed.");
+                    model.ShowCounter = (bool)counter;
+                }
+            }
             if (model.document.TryGetValue("mouse", out value))
             {
                 var mouse = Map(value);
@@ -138,9 +215,10 @@ namespace TimeSplitters.Launcher
             string display = Text(model.originals[Files[1]]);
             if (display.Length > 0)
             {
-                var match = Regex.Match(display, @"^\s*TSFP_DISPLAY_V(?<version>[12])\s+(\d+)\s+(\d+)(?:\s+(?<fov>\d+))?\s*$");
-                Core.Require(match.Success && (match.Groups["version"].Value == "2") == match.Groups["fov"].Success, "The display settings file is invalid. No settings were changed.");
+                var match = Regex.Match(display, @"^\s*TSFP_DISPLAY_V(?<version>[123])\s+(\d+)\s+(\d+)(?:\s+(?<fov>\d+))?(?:\s+(?<weapon>\d+))?\s*$");
+                Core.Require(match.Success && (match.Groups["version"].Value != "1") == match.Groups["fov"].Success && (match.Groups["version"].Value == "3") == match.Groups["weapon"].Success, "The display settings file is invalid. No settings were changed.");
                 if(match.Groups["fov"].Success) model.VerticalFov = Int32.Parse(match.Groups["fov"].Value, CultureInfo.InvariantCulture);
+                if(match.Groups["weapon"].Success) model.WeaponFov = Int32.Parse(match.Groups["weapon"].Value, CultureInfo.InvariantCulture);
                 model.Width = Int32.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
                 model.Height = Int32.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
             }
@@ -153,18 +231,55 @@ namespace TimeSplitters.Launcher
             }
             string audio = Text(model.originals[Files[5]]);
             if(audio.Length>0) {
-                var match=Regex.Match(audio,@"\ATSFP_AUDIO_V1\s+([01])\s*\z");
+                bool version2=audio.TrimStart().StartsWith("TSFP_AUDIO_V2",StringComparison.Ordinal);
+                var match=Regex.Match(audio,version2?@"\A\s*TSFP_AUDIO_V2\s+([01])\s+([01])\s+([01])\s+([01])\s+([01])\s*\z":@"\A\s*TSFP_AUDIO_V1\s+([01])\s*\z");
                 Core.Require(match.Success,"Enhanced Audio settings are invalid. No settings were changed.");
                 model.EnhancedAudio=match.Groups[1].Value=="1";
+                if(version2) {
+                    model.SpatialAudio=match.Groups[2].Value=="1";model.ExtendedGunfire=match.Groups[3].Value=="1";
+                    model.EnvironmentalAudio=match.Groups[4].Value=="1";model.AmbientAudio=match.Groups[5].Value=="1";
+                }
+            }
+            byte[] mixBytes=model.originals[Files[7]];
+            if(mixBytes!=null) {
+                string whitespace=@"[ \t\r\n\f\v]";
+                string number=@"(0|[1-9][0-9]?|100)";
+                string mixText=Encoding.UTF8.GetString(mixBytes);
+                bool version2=mixText.TrimStart(' ','\t','\r','\n','\f','\v').StartsWith("TSFP_AUDIO_MIX_V2",StringComparison.Ordinal);
+                var match=Regex.Match(mixText,@"\A"+whitespace+"*TSFP_AUDIO_MIX_V"+(version2?"2":"1")+
+                    String.Concat(Enumerable.Repeat(whitespace+"+"+number,6))+
+                    (version2?whitespace+"+([01])"+whitespace+"+([012])":"")+whitespace+@"*\z");
+                Core.Require(mixBytes.Length<255 && match.Success,"Audio volume settings are invalid. No settings were changed.");
+                for(int i=0;i<6;i++)model.AudioVolumes[i]=Int32.Parse(match.Groups[i+1].Value,CultureInfo.InvariantCulture);
+                if(version2){model.DialogueFocus=match.Groups[7].Value=="1";model.ImpactRange=Int32.Parse(match.Groups[8].Value,CultureInfo.InvariantCulture);}
+            }
+            string textures = Text(model.originals[Files[8]]);
+            if(textures.Length>0) {
+                var match=Regex.Match(textures,@"\ATSFP_TEXTURES_V1\s+([01])\s*\z");
+                Core.Require(match.Success,"Enhanced textures settings are invalid. No settings were changed.");
+                model.EnhancedTextures=match.Groups[1].Value=="1";
             }
             model.runtime = Text(model.originals[Files[2]]);
             if (model.originals[Files[2]] == null && !String.IsNullOrEmpty(inheritedRuntime)) model.runtime = Text(Read(inheritedRuntime));
             var settings = ParseRuntime(model.runtime);
             model.Scale = Number(settings, "resolution_scale", 1);
             model.Anisotropy = Number(settings, "anisotropy", 1);
+            model.Smaa = Number(settings, "smaa", 0) != 0;
             model.Fullscreen = Number(settings, "fullscreen", 0) != 0;
             model.Vrr = Number(settings, "vrr", 1) != 0;
             model.FpsOverlay = Number(settings, "fps_overlay", 0) != 0;
+            string graphicsOptions = Text(model.originals[Files[6]]);
+            if (graphicsOptions.Length > 0) {
+                bool version2=graphicsOptions.StartsWith("TSFP_GRAPHICS_V2",StringComparison.Ordinal);
+                var match = Regex.Match(graphicsOptions, @"\ATSFP_GRAPHICS_V"+(version2?"2":"1")+@"\s+(1|2|4|8)\s+([01])\s+([1-9]|1[0-6])\s+([01])\s+([01])"+(version2?@"\s+([0-3])":"")+@"\s*\z");
+                Core.Require(match.Success, "Graphics settings are invalid. No settings were changed.");
+                model.Msaa = Int32.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+                model.EdgeSmoothing = Int32.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
+                model.Anisotropy = Int32.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
+                model.AmbientOcclusion = Int32.Parse(match.Groups[4].Value, CultureInfo.InvariantCulture);
+                model.ShaderCache = match.Groups[5].Value == "1";
+                model.Supersampling = version2?Int32.Parse(match.Groups[6].Value,CultureInfo.InvariantCulture):0;
+            }
             model.Validate(true);
             return model;
         }
@@ -201,7 +316,7 @@ namespace TimeSplitters.Launcher
             }
             for(int action=PadActions.Length;action<Actions.Length;action++) {
                 if(bindings.ContainsKey(Actions[action]))continue;
-                int slot=action-PadActions.Length, key=slot<9?'1'+slot:slot==9?'0':0;
+                int slot=action-PadActions.Length, key=Actions[action]=="developer_tools"?112:slot<9?'1'+slot:slot==9?'0':0;
                 bindings[Actions[action]]=key!=0 && Conflict(action,key)<0?"key:#"+key:"none";
             }
         }
@@ -219,6 +334,41 @@ namespace TimeSplitters.Launcher
             while (list.Count < BindingSlots) list.Add("none");
             return list.ToArray();
         }
+        public int KeyboardPreset {
+            get {object value;return controller.TryGetValue("keyboard_preset",out value) && Convert.ToString(value)=="1"?1:0;}
+            set {Core.Require(value==0 || value==1,"Choose Custom or Modern PC.");controller["keyboard_preset"]=value;}
+        }
+        public int ControllerPreset(int player) {var profile=PlayerProfile(player,false);object value;
+            return profile!=null && profile.TryGetValue("controller_preset",out value) && Convert.ToString(value)=="1"?1:0;}
+        public void SetControllerPreset(int player,int preset) {Core.Require(preset==0 || preset==1,"Choose Custom or Modern Controller.");PlayerProfile(player,true)["controller_preset"]=preset;}
+        public int ControllerDeadzone(int player,bool aim) {
+            var profile=PlayerProfile(player,false);object value;int raw;
+            if(profile!=null && profile.TryGetValue(aim?"aim_deadzone":"move_deadzone",out value) &&
+                Int32.TryParse(Convert.ToString(value,CultureInfo.InvariantCulture),out raw) && raw>=0 && raw<=32767)return raw;
+            if(profile!=null && profile.TryGetValue("deadzone",out value) &&
+                Int32.TryParse(Convert.ToString(value,CultureInfo.InvariantCulture),out raw))return Math.Max(0,Math.Min(32767,raw));
+            return 7849;
+        }
+        public void SetControllerDeadzone(int player,bool aim,int raw) {
+            Core.Require(raw>=0 && raw<=32767,"Deadzone must be between 0% and 100%.");
+            PlayerProfile(player,true)[aim?"aim_deadzone":"move_deadzone"]=raw;
+        }
+        static readonly Dictionary<int,string[]> ModernKeys=ReadModernKeys();
+        static Dictionary<int,string[]> ReadModernKeys() {
+            var result=new Dictionary<int,string[]>();
+            using(var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("control-presets.def"))
+            using(var reader=new StreamReader(stream)) foreach(Match m in Regex.Matches(reader.ReadToEnd(),@"PC_MODERN_KEY\((\d+), (\d+), (\d+)\)"))
+                result.Add(Int32.Parse(m.Groups[1].Value),new[]{"key:#"+m.Groups[2].Value,m.Groups[3].Value=="0"?"none":"key:#"+m.Groups[3].Value});
+            return result;
+        }
+        public string[] DisplayBinding(int action) {
+            if(KeyboardPreset==0 || (action>=19 && action<=22) || action>=34)return Binding(action);
+            string[] keys;if(ModernKeys.TryGetValue(action,out keys))return (string[])keys.Clone();
+            var defaults=Map(((IEnumerable)Json.Object(DefaultControls())["controllers"]).Cast<object>().First());
+            object value=Map(defaults["bindings"])[Actions[action]];
+            var list=value is string?new[]{(string)value}:((IEnumerable)value).Cast<string>().ToArray();
+            return list.Concat(Enumerable.Repeat("none",BindingSlots)).Take(BindingSlots).ToArray();
+        }
         public const int WheelUpKey = 134, WheelDownKey = 135;
         public static int CaptureKey(int key) { return key==160||key==161?16:key==162||key==163?17:key==164||key==165?18:key; }
         public static string BindingLabel(string token)
@@ -231,7 +381,7 @@ namespace TimeSplitters.Launcher
             return token.StartsWith("key:",StringComparison.OrdinalIgnoreCase)?token.Substring(4):token;
         }
         public static bool KeyAllowed(int key)
-        { return key >= 0 && key <= 255 && key != 112 && key != 113 && !(key >= 120 && key <= 123) && key != 91 && key != 92; }
+        { return key >= 0 && key <= 255 && key != 113 && !(key >= 120 && key <= 123) && key != 91 && key != 92; }
         public static int KeyCode(string token)
         {
             if (!token.StartsWith("key:", StringComparison.OrdinalIgnoreCase)) return 0;
@@ -265,6 +415,7 @@ namespace TimeSplitters.Launcher
         }
         public void ResetControls()
         {
+            KeyboardPreset=0;
             var defaults = Json.Object(DefaultControls());
             var profiles = (IEnumerable)defaults["controllers"];
             foreach (object profile in profiles) { bindings = Map(Map(profile)["bindings"]); break; }
@@ -291,6 +442,7 @@ namespace TimeSplitters.Launcher
                 "Enter the public numeric Discord Application ID (17–20 digits), or turn off Rich Presence and clear the ID.");
             Core.Require(!Double.IsNaN(Sensitivity) && !Double.IsInfinity(Sensitivity) && Sensitivity >= .001 && Sensitivity <= 10, "Mouse sensitivity must be between 0.001 and 10.");
             Core.Require(CanAdjustFov || VerticalFov == FovDefault, "Custom FOV requires a game release newer than v0.2.0-alpha.4. Reset FOV to 55 degrees before saving.");
+            Core.Require(WeaponFov >= 80 && WeaponFov <= 150 && WeaponFov % 5 == 0, "Weapon FOV must be 80–150 percent in steps of five.");
             Core.Require(VerticalFov >= FovMin && VerticalFov <= FovMax, "Vertical FOV must be between 40 and 100 degrees.");
             Core.Require(loading || Width!=1 || Height!=1 || CanAutoResolution, "Auto resolution requires a newer game build. Choose a manual resolution or update the game.");
             Core.Require((loading && Width==1 && Height==1) || SupportsResolution(Width,Height), "Choose a supported landscape resolution from 640×480, with an aspect ratio no wider than 4:1, or 0 × 0 for the console default. Maximum: " + (SupportsExtendedDisplay ? "7680×4320." : "7680×2160 for this game release."));
@@ -327,8 +479,49 @@ namespace TimeSplitters.Launcher
             }
             finally { if (File.Exists(temp)) File.Delete(temp); }
         }
+        public int ClearShaderCache()
+        {
+            Core.Require(!Running(root), "Close the game before clearing the shader cache from the launcher.");
+            string directory;
+            if(Environment.OSVersion.Platform==PlatformID.Win32NT)
+                directory=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"xboxrecomp","shadercache","45410066");
+            else {
+                string config=Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
+                if(String.IsNullOrEmpty(config))config=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),".config");
+                directory=Path.Combine(config,"xboxrecomp","shadercache","45410066");
+            }
+            return ClearShaderCacheDirectory(directory);
+        }
+        internal static int ClearShaderCacheDirectory(string directory)
+        {
+            if(!Directory.Exists(directory))return 0;
+            Core.Require((File.GetAttributes(directory)&FileAttributes.ReparsePoint)==0,"Shader cache is a linked folder; it was not cleared.");
+            int removed=0;bool failed=false;
+            foreach(string backend in Directory.GetDirectories(directory)) {
+                if((File.GetAttributes(backend)&FileAttributes.ReparsePoint)!=0)continue;
+                foreach(string file in Directory.GetFiles(backend)) {
+                    string name=Path.GetFileName(file);
+                    if(name!="pipelines.bin" && !Regex.IsMatch(name,@"\A[0-9A-Fa-f]{16}\.bin\z"))continue;
+                    if((File.GetAttributes(file)&FileAttributes.ReparsePoint)!=0)continue;
+                    try { File.Delete(file);removed++; } catch(IOException) { failed=true; } catch(UnauthorizedAccessException) { failed=true; }
+                }
+            }
+            Core.Require(!failed,"Could not clear some shader cache files. Close other game instances and try again.");
+            return removed;
+        }
+        string AudioPreference()
+        {
+            if(SpatialAudio && ExtendedGunfire && EnvironmentalAudio && AmbientAudio)
+                return "TSFP_AUDIO_V1 " + (EnhancedAudio?"1":"0") + "\n";
+            return "TSFP_AUDIO_V2 " + String.Join(" ",new[]{EnhancedAudio,SpatialAudio,ExtendedGunfire,EnvironmentalAudio,AmbientAudio}.Select(value=>value?"1":"0").ToArray()) + "\n";
+        }
         public void Save()
         {
+            Core.Require(AudioVolumes.All(percent=>percent>=0 && percent<=100),"Audio volumes must be between 0 and 100 percent. No settings were changed.");
+            Core.Require(ImpactRange>=0 && ImpactRange<=2,"Choose Original, Reduced, or Night impact range. No settings were changed.");
+            Core.Require(new[]{1,2,4,8}.Contains(Msaa) && (EdgeSmoothing==0 || EdgeSmoothing==1) &&
+                (Anisotropy>=1 && Anisotropy<=16) && (AmbientOcclusion==0 || AmbientOcclusion==1) && Supersampling>=0 && Supersampling<=3,
+                "Graphics settings are invalid. No settings were changed.");
             Validate(); Core.Require(!Running(root), "Close the game before saving settings.");
             foreach (string file in Files)
             {
@@ -338,7 +531,9 @@ namespace TimeSplitters.Launcher
                 Core.Require((now == null && old == null) || (now != null && old != null && now.SequenceEqual(old)), "Settings changed outside the launcher. Close and reopen Settings before saving.");
                 Core.Require(!File.Exists(path) || (File.GetAttributes(path) & FileAttributes.ReadOnly) == 0, "A settings file is read-only. No settings were saved.");
             }
-            if (Device == "keyboard") foreach (int action in Enumerable.Range(0, Actions.Length)) bindings[Actions[action]] = Binding(action);
+            // Preserve all custom sources, including slots not exposed by this UI.
+
+            document["developer_tools_enabled"]=DeveloperToolsEnabled;
             object value;
             if (!document.TryGetValue("mouse", out value)) document["mouse"] = value = new Dictionary<string, object>();
             var mouse = Map(value); mouse["sensitivity"] = Sensitivity; mouse["enabled"] = MouseEnabled; mouse["invert_y"] = InvertY;
@@ -346,13 +541,20 @@ namespace TimeSplitters.Launcher
             Map(value)["skip_startup_splashes"] = SkipStartupSplashes;
             Map(value)["enhanced_textures"] = EnhancedTextures;
             Map(value)["language_pack"] = LanguagePack;
-            var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
+            if (!document.TryGetValue("debug", out value)) document["debug"] = value = new Dictionary<string, object>();
+            Map(value)["show_counter"] = ShowCounter;
+            var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"smaa",Smaa?"1":"0"}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
             graphics["frame_target"] = PresentationFps.ToString();
             graphics["refresh_rate"] = RefreshRate.ToString();
-            var payload = new[] { Json.Encode(document) + "\n", (VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),
+            var payload = new[] { Json.Encode(document) + "\n", (WeaponFov != 100 ? "TSFP_DISPLAY_V3 " + Width + " " + Height + " " + VerticalFov + " " + WeaponFov : VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),
                 "TSFP_DISCORD_V1 " + (DiscordEnabled ? "1" : "0") + " " + (DiscordApplicationId.Length == 0 ? "0" : DiscordApplicationId) + "\n",
                 "TSFP_FRAME_RATE_V1 " + NativeFps.ToString(CultureInfo.InvariantCulture) + "\n",
-                "TSFP_AUDIO_V1 " + (EnhancedAudio ? "1" : "0") + "\n" };
+                AudioPreference(),
+                (Supersampling==0?"TSFP_GRAPHICS_V1 ":"TSFP_GRAPHICS_V2 ") + Msaa.ToString(CultureInfo.InvariantCulture) + " " + EdgeSmoothing.ToString(CultureInfo.InvariantCulture) + " " + Anisotropy.ToString(CultureInfo.InvariantCulture) + " " + AmbientOcclusion.ToString(CultureInfo.InvariantCulture) + " " + (ShaderCache ? "1" : "0") + (Supersampling==0?"":" "+Supersampling.ToString(CultureInfo.InvariantCulture)) + "\n" };
+            bool mixV2=DialogueFocus || ImpactRange!=0;
+            payload=payload.Concat(new[]{"TSFP_AUDIO_MIX_V"+(mixV2?"2":"1")+" "+String.Join(" ",AudioVolumes.Select(percent=>percent.ToString(CultureInfo.InvariantCulture)).ToArray())+
+                (mixV2?" "+(DialogueFocus?"1":"0")+" "+ImpactRange.ToString(CultureInfo.InvariantCulture):"")+"\n"}).ToArray();
+            payload=payload.Concat(new[]{"TSFP_TEXTURES_V1 " + (EnhancedTextures ? "1" : "0") + "\n"}).ToArray();
             int committed = 0;
             try { for (int i = 0; i < Files.Length; i++) { Replace(Core.PathIn(root, Files[i]), Encoding.UTF8.GetBytes(payload[i]), true); committed++; } }
             catch
@@ -383,6 +585,8 @@ namespace TimeSplitters.Launcher
                 if (key.StartsWith("RECOMP_", StringComparison.OrdinalIgnoreCase) || key.StartsWith("TSFP_", StringComparison.OrdinalIgnoreCase)) info.EnvironmentVariables.Remove(key);
             foreach (var pair in new Dictionary<string, string> {
                 {"TSFP_CRASH_DIR","Logs/Crashes"}, {"RECOMP_GAME_DIR",LauncherPlatform.Data(root)}, {"RECOMP_SAVE_DIR",LauncherPlatform.Saves(root)}, {"RECOMP_INPUT_CONFIG",Files[0]}, {"RECOMP_FFMPEG_DIR","Bin"}, {"RECOMP_DISPLAY_CONFIG",Files[2]}, {"TSFP_DISPLAY_CONFIG",Files[1]}, {"TSFP_TEXTURE_PACK_DIR",LauncherPlatform.Textures(root)}, {"TSFP_ONLINE_SETTINGS","Settings/pc-online.json"} }) info.EnvironmentVariables[pair.Key] = Core.PathIn(root, pair.Value);
+            info.EnvironmentVariables["TSFP_GAME_UPDATE_NOTICE"] = GameUpdateNotice.Path(root);
+            info.EnvironmentVariables["TSFP_GAME_INSTALLED_VERSION"] = Core.InstalledVersion(root);
             info.EnvironmentVariables["TSFP_CRASH_EXTENDED"] = CrashReports.ExtendedForNextLaunch ? "1" : "0";
             // Explicit zero also overrides an old native_fps runtime preference.
             info.EnvironmentVariables["TSFP_NATIVE_FPS"] = model.NativeFps.ToString(CultureInfo.InvariantCulture);
@@ -400,10 +604,33 @@ namespace TimeSplitters.Launcher
             info.EnvironmentVariables["RECOMP_MOUSE_INVERT_Y"] = model.InvertY ? "1" : "0";
             info.EnvironmentVariables["RECOMP_MOUSE_SENSITIVITY"] = model.Sensitivity.ToString("R", CultureInfo.InvariantCulture);
             info.EnvironmentVariables["TSFP_TEXTURE_MODE"] = model.EnhancedTextures ? "4k" : "classic";
-            #if MACOS
+            #if MACOS || LINUX
             NativeHost.Configure(info,root);
 #endif
             return info;
         }
     }
+    // The game consumes this bounded, short-lived result; it never checks HTTP on
+    // its menu/render thread. Release discovery/channel policy stays shared here.
+    public static class GameUpdateNotice
+    {
+        public static string Path(string root) { return Core.PathIn(root,".launcher/game-update-notice.txt"); }
+        public static string Encode(string installed,Release release,string channel,long utcSeconds)
+        {
+            if(release==null || String.IsNullOrEmpty(installed) || installed.Length>95 ||
+               String.IsNullOrEmpty(release.Tag) || release.Tag.Length>95 || release.Channel!=GameChannels.Preference(channel))return "";
+            try {
+                if(GameVersion.Parse(release.Tag).CompareTo(GameVersion.Parse(installed))<=0)return "";
+            } catch(InvalidDataException) {return "";}
+            return "TSFP_GAME_UPDATE_V1 "+utcSeconds.ToString(CultureInfo.InvariantCulture)+" "+installed+" "+release.Tag+"\n";
+        }
+        public static void Publish(string root,Release release,string channel)
+        {
+            try {
+                long now=(long)(DateTime.UtcNow-new DateTime(1970,1,1,0,0,0,DateTimeKind.Utc)).TotalSeconds;
+                Core.Write(Path(root),Encode(Core.InstalledVersion(root),release,channel,now));
+            } catch(Exception error) {LauncherLog.Write(root,"Game update notice: "+error.Message);}
+        }
+    }
+
 }

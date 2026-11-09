@@ -2,6 +2,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include "pc_settings.h"
+#include "pc_developer.h"
 #include "pc_prompts.h"
 #include "pc_controls.h"
 #include "input_bindings.h"
@@ -116,13 +117,30 @@ int main(int argc,char **argv)
     HWND owner;
     UINT_PTR timer;
     LRESULT result;
+    if(argc==4 && !strcmp(argv[1],"--verify-presets")) {
+        int expected=atoi(argv[3]);original=load(argv[2]);CHECK(original);
+        _putenv_s("RECOMP_INPUT_CONFIG",argv[2]);pc_controls_attach(NULL);
+        CHECK(pc_settings_read(&current,error,sizeof error) && current.preset==expected);
+        for(unsigned port=0;port<4;port++)CHECK(pc_settings_controller_preset(port)==expected);
+        if(expected) {
+            PcSettings custom;CHECK(pc_settings_custom_read(&custom,error,sizeof error));
+            CHECK(pc_settings_custom_semantics() && custom.preset==0);
+            for(int action=0;action<PC_ACTION_COUNT;action++)for(int slot=0;slot<PC_BINDING_SLOTS;slot++)CHECK(custom.keys[action][slot]==current.keys[action][slot]);
+        } else CHECK(!pc_settings_custom_semantics());
+        saved=load(argv[2]);CHECK(saved && !strcmp(saved,original));free(saved);free(original);
+        puts("PASS: fresh/legacy preset loading preserves file bytes");return 0;
+    }
     if(argc==3 && !strcmp(argv[1],"--verify")) {
         _putenv_s("RECOMP_INPUT_CONFIG",argv[2]);
         pc_controls_attach(NULL);
         CHECK(pc_settings_read(&current,error,sizeof error));
         CHECK(current.keys[14][0]=='J' && current.keys[9][0]==VK_F23 && !current.keys[13][1]);
         CHECK(!current.keys[19][0] && current.keys[19][1]=='K');
-        puts("PASS: bindings reload in a fresh process"); return 0;
+        CHECK(pc_settings_menu_visible());
+        owner=CreateWindowExA(0,"STATIC","Restored menu",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
+        CHECK(owner); pc_settings_attach(owner); CHECK(!GetMenu(owner));
+        pc_settings_detach(owner); DestroyWindow(owner);
+        puts("PASS: bindings and menu visibility reload in a fresh process"); return 0;
     }
     CHECK(argc==3);
     snprintf(path,sizeof path,"%s\\settings-test.json",argv[2]);
@@ -167,12 +185,57 @@ int main(int argc,char **argv)
     CHECK(pc_settings_read(&current,error,sizeof error) && current.keys[14][0]=='I' && fabs(current.sensitivity-.25)<.0001 && current.invert_y);
     saved=load(path); CHECK(saved && strstr(saved,"escaped \\\" brace } [") && strstr(saved,"\"port\": 4") && strstr(saved,"retained_mouse")); free(saved);
     saved=load(backup); CHECK(saved && strstr(saved,"key:W")); free(saved);
+    /* Presets are overlays: select/apply/restore never replace custom keys. */
+    {
+        PcSettings custom,modern;CHECK(pc_settings_custom_read(&custom,error,sizeof error));
+        pc_settings_modern(&modern);modern.sensitivity=custom.sensitivity;modern.invert_y=custom.invert_y;
+        CHECK(pc_settings_save(&modern,error,sizeof error));
+        CHECK(pc_settings_read(&current,error,sizeof error) && current.preset==1 && current.keys[1][1]==5 && current.keys[10][0]=='B');
+        CHECK(pc_settings_custom_read(&current,error,sizeof error) && !memcmp(current.keys,custom.keys,sizeof custom.keys));
+        /* Non-preset shortcut edits must persist while Modern remains selected. */
+        CHECK(pc_settings_read(&current,error,sizeof error) && current.preset==1);
+        CHECK(pc_settings_assign(&current,19,1,'J',1)==1);
+        CHECK(pc_settings_assign(&current,PC_DEVELOPER_ACTION,0,VK_F3,1)==1);
+        CHECK(pc_settings_save(&current,error,sizeof error));
+        CHECK(pc_settings_read(&current,error,sizeof error) && current.preset==1 && current.keys[19][1]=='J' && current.keys[PC_DEVELOPER_ACTION][0]==VK_F3);
+        int shortcut[PC_BINDING_SLOTS];pc_settings_action_keys(PC_DEVELOPER_ACTION,shortcut);CHECK(shortcut[0]==VK_F3);
+        CHECK(pc_settings_custom_read(&current,error,sizeof error) && current.keys[14][0]=='I' && current.keys[2][0]=='T' && current.keys[19][1]=='J');
+        saved=load(path);CHECK(saved && strstr(saved,"key:BACK") && strstr(saved,"key:RETURN"));free(saved);
+        CHECK(pc_settings_read(&current,error,sizeof error));PcSettings unchanged=current;
+        CHECK(!pc_settings_assign(&current,0,0,'H',1));
+        CHECK(!pc_settings_assign(&current,PC_DEVELOPER_ACTION,0,'B',1));
+        CHECK(!memcmp(&current,&unchanged,sizeof current));
+
+        CHECK(pc_settings_controller_preset_save(0,1,error,sizeof error));
+        CHECK(pc_settings_controller_preset(0)==1 && pc_settings_controller_preset(1)==0);
+        CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
+        CHECK(!pc_settings_controller_preset_save(0,0,error,sizeof error) && pc_settings_controller_preset(0)==1);
+        CHECK(!pc_settings_save(&custom,error,sizeof error));
+        CHECK(pc_settings_read(&current,error,sizeof error) && current.preset==1);
+        CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
+        CHECK(pc_settings_save(&custom,error,sizeof error));
+        CHECK(pc_settings_controller_preset_save(0,0,error,sizeof error));
+        CHECK(pc_settings_read(&current,error,sizeof error) && !current.preset && !memcmp(current.keys,custom.keys,sizeof custom.keys));
+    }
     current=settings; current.sensitivity=NAN; CHECK(!pc_settings_save(&current,error,sizeof error));
     current=settings; current.keys[0][0]=VK_F2; CHECK(!pc_settings_save(&current,error,sizeof error));
     current=settings; current.keys[0][0]=VK_F12; CHECK(!pc_settings_save(&current,error,sizeof error));
     current=settings; current.keys[0][0]=VK_F11; CHECK(!pc_settings_save(&current,error,sizeof error));
     current=settings; current.keys[0][0]=VK_F3; CHECK(pc_settings_save(&current,error,sizeof error));
     CHECK(pc_settings_save(&settings,error,sizeof error));
+    /* Deadzone persistence is independent of native profile Accept/Cancel,
+     * and failed saves must never publish a new live threshold. */
+    int original_move=pc_settings_deadzone(0,0);
+    CHECK(pc_settings_deadzone_save(0,1,1638,error,sizeof error));
+    CHECK(pc_settings_deadzone(0,1)==1638 && pc_settings_deadzone(0,0)==original_move);
+    CHECK(!pc_settings_deadzone_save(0,1,-1,error,sizeof error));
+    CHECK(!pc_settings_deadzone_save(4,1,100,error,sizeof error));
+    CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
+    CHECK(!pc_settings_deadzone_save(0,1,3277,error,sizeof error));
+    CHECK(pc_settings_deadzone(0,1)==1638);
+    CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
+    CHECK(pc_settings_save(&settings,error,sizeof error));
+    saved=load(path);CHECK(saved && strstr(saved,"\"aim_deadzone\":1638"));free(saved);
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
     current=settings; current.keys[14][0]='U'; CHECK(!pc_settings_save(&current,error,sizeof error));
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
@@ -180,7 +243,25 @@ int main(int argc,char **argv)
 
     owner=CreateWindowExA(0,"STATIC","PC settings integration test",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
     CHECK(owner);
-    pc_settings_attach(owner); CHECK(GetMenu(owner) && GetMenuItemCount(GetMenu(owner))==1);
+    CHECK(!pc_settings_menu_visible());
+    CHECK(pc_settings_developer_save(1,error,sizeof error));
+    pc_settings_attach(owner); CHECK(!GetMenu(owner));
+    pc_settings_toggle_menu(owner);
+    CHECK(pc_developer_open() && !GetMenu(owner));
+    CHECK(!pc_settings_menu_visible());
+    pc_settings_toggle_menu(owner); CHECK(!GetMenu(owner));
+    CHECK(!pc_developer_open());
+    CHECK(!pc_settings_menu_visible());
+    pc_settings_detach(owner); DestroyWindow(owner);
+    owner=CreateWindowExA(0,"STATIC","PC settings restart test",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
+    CHECK(owner); pc_settings_attach(owner); CHECK(!GetMenu(owner));
+    pc_settings_toggle_menu(owner); CHECK(pc_developer_open() && !GetMenu(owner));
+    pc_developer_close();
+    CHECK(pc_settings_save_menu_visible(1)); /* Preserve legacy JSON, never attach a bar. */
+    CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
+    CHECK(!pc_settings_save_menu_visible(0));
+    CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
+    CHECK(pc_settings_menu_visible());
     deadline=GetTickCount()+10000; timer=SetTimer(NULL,0,70,drive); CHECK(timer);
     pc_settings_show(owner); KillTimer(NULL,timer);
     CHECK(!failed && phase==1);
@@ -209,15 +290,34 @@ int main(int argc,char **argv)
     }
     pc_settings_defaults(&current); CHECK(current.keys[14][0]=='W' && fabs(current.sensitivity-.1)<.0001);
     {
-        HMENU bar=GetMenu(owner);
-        pc_settings_toggle_menu(owner); CHECK(!GetMenu(owner) && IsMenu(bar));
+        HMENU bar=(HMENU)GetPropA(owner,"TSFP.PcSettingsMenu");
+        pc_settings_toggle_menu(owner); CHECK(pc_developer_open() && !GetMenu(owner) && IsMenu(bar));
         pc_settings_detach(owner); CHECK(!IsMenu(bar));
+        pc_developer_close();
     }
     CHECK(pc_settings_read(&settings,error,sizeof error));
     CHECK(pc_settings_assign(&settings,33,0,'1',1)==1 && !settings.keys[24][0]);
     { int ok=pc_settings_save(&settings,error,sizeof error); if(!ok)fprintf(stderr,"Final settings save: %s\n",error); CHECK(ok); }
     CHECK(pc_settings_read(&current,error,sizeof error) && current.keys[33][0]=='1' && !current.keys[24][0]);
     DestroyWindow(owner);
+    {
+        int devices[4]={-2,0,1,-1},actual[4];
+        CHECK(pc_settings_players_save(devices,error,sizeof error));
+        pc_settings_players_read(actual);CHECK(!memcmp(devices,actual,sizeof devices));
+        CHECK(pc_settings_keyboard_player());
+        saved=load(path);CHECK(saved && strstr(saved,"retained_mouse") && strstr(saved,"key:#74"));free(saved);
+        devices[2]=0;CHECK(!pc_settings_players_save(devices,error,sizeof error));
+        pc_settings_players_read(actual);CHECK(actual[2]==1);
+        devices[0]=2;devices[2]=1;
+        CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
+        CHECK(!pc_settings_players_save(devices,error,sizeof error));
+        CHECK(pc_settings_keyboard_player());
+        CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
+        CHECK(pc_settings_players_save(devices,error,sizeof error));
+        CHECK(!pc_settings_keyboard_player());
+        devices[0]=-2;CHECK(pc_settings_players_save(devices,error,sizeof error));
+        CHECK(pc_settings_keyboard_player());
+    }
     /* Replay mode leaves desktop messages alone. */
     CHECK(pc_controls_message(NULL,WM_MOUSEACTIVATE,0,0,&result)==0); /* replay does not consume native messages */
     puts("PASS: live rebind sampling, atomic persistence/backup, unrelated JSON retention, validation, defaults, menu creation, Cancel, keyboard/wheel capture, conflict reassignment, and dialog save");

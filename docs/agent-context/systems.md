@@ -1,12 +1,42 @@
-# Subsystem entry points
+[Sticks](controller-deadzones.md), [keys](control-presets.md), [updates](main-menu-update.md).
+[Tex](texture-preference.md); [arms](video-options.md).
 
-Story/Online integration and callback precedence: [contracts](systems-details.md).
+[Uplink throw tests and policy](native-uplink.md#throw-impulse).
+Networking: `pc_network_enabled()` reads startup config once,
+then uses shared atomic flags in the indirect-dispatch hot path. The System Link
+menu explicitly calls `pc_network_enable_lan()`; Online connect/disconnect publishes
+its own flag. Missing launch files are not retried on every guest call, and an
+explicit disconnect does not re-import stale startup credentials. Windows, Mac
+and Linux share this policy. See `tests/network/network_eligibility.c`.
 
-Battle Mech mouse: [shared routing and guards](mounted-mouse.md#battle-mech-mouse-425).
+[Developer Tools integration](developer-tools-integration.md).
 
-Minigun motor intent and release damping: [shared policy](native-minigun.md).
+[Uplink](native-uplink.md);[projectile motion/beam damage](native-projectiles.md).
+[Input](controls-options.md).
 
-Kernel: [objects and boot](kernel-objects.md).
+[Icons](controls-options.md).
+[Display](video-options.md).
+[Tabs](../development/graphics-options.md).
+[exFAT](host-storage.md)
+# [Systems](video-options.md)
+
+[SDL](linux-game.md).
+
+Native input self-tests use click/Escape capture after F1 became the optional
+Developer Tools shortcut. This changes only synthetic test events in
+src/native/input_sdl.c; Linux passes, native Mac execution remains pending.
+
+PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
+
+[Clicks](interaction-input.md#fresh-weapon-clicks-434).
+
+[Story dispatch](systems-details.md). [Exit/save](multiplayer-exit.md).
+
+[Mech](mounted-mouse.md).
+
+Minigun: [policy](native-minigun.md).
+
+[Kernel](kernel-objects.md).
 
 Memory: [retired APIs](retired-memory-compatibility.md).
 
@@ -14,15 +44,14 @@ Guest storage: [allocation](independent.md#guest-allocation-ownership), [threads
 
 Image/state/ABI: [image](independent.md#native-image-loading), [execution](independent.md#guest-state-and-abi-reports).
 
-Procedural wind: [ownership/time scopes](native-wind.md).
+Wind: [time scopes](native-wind.md).
 
-Local completed aim/animation diagnostics: [scope and limits](native-local-trace.md).
+Aim/animation: [diagnostic limits](native-local-trace.md).
 
-GPU state-cache acceptance: shared Vulkan/WARP pixel fixture and frontend
-header configuration are in [runtime](runtime.md).
+GPU cache fixture/config: [runtime](runtime.md).
 
 Native player contact: [clear-slide policy/trace](native-player-contact.md).
-Live integer/vector register references: [four-site policy and tests](gpr-refs.md).
+Registers: [policy/tests](gpr-refs.md).
 Script/audio clocks: [contracts](native-script-clocks.md).
 
 <!-- packet:start -->
@@ -31,7 +60,7 @@ Tracked policy: `src/input/` owns controls, bindings and prompts;
 `src/gameplay/` owns simulation and camera policy;
 `src/diagnostics/` owns shared debug fields, crashes and hang reporting;
 `src/graphics/` for common shader/math policy; `src/native/` for host adapters.
-For movement regressions, compare player-position displacement in game as well
+Compare player displacement for movement regressions as well
 as sampled stick values: the title attenuates diagonals after the binding
 sampler. Windows mouse confinement is owned by `pc_controls.c`; native SDL
 relative mode is owned by `src/native/input_sdl.c` and should recover from
@@ -50,7 +79,7 @@ Textures: `src/textures/`, runtime `src/d3d/` and HLE
 texture hooks; offline tooling `tools/textures/`. Sanitized replacements now live
 in `assets/textures` (DDS via Git LFS), audited by `tools/textures/build_textures.py` for optional delivery;
 Private art stays local. Networking: `src/network/`, HLE/kernel patches and
-`tools/network/online.py`; [Online UI](multiplayer-ui.md). Crash capture:
+`tools/network/online.py`; [LAN](system-link.md), [Online](multiplayer-ui.md). Crash capture:
 `src/diagnostics/`, runtime crash hooks and launcher diagnostics.
 Audio: `src/hle/hle_dsound*`, `hle_xmv*`. [Beta audio](../development/positional-audio.md).
 General buffering, lifecycle, format and device recovery are unconditional;
@@ -59,7 +88,7 @@ lead from 40 to 90 ms and refill immediately after skipping stale hitch data.
 Explicit lead overrides stay fixed. Final buffer Release also reclaims host
 slots; XAudio/SDL expose lifetime failure-category counters in the periodic
 DSOUND health report and an idempotent normal-exit summary. Windows WM_QUIT
-runs registered cleanup, matching the SDL close path. See [contracts](audio-buffers.md).
+runs registered cleanup, matching the SDL close path. Tail drain: [contracts](audio-buffers.md).
 `audio_output.h` owns `RECOMP_AUDIO_DEFAULT_GAIN` (0.5, about -6 dB).
 XAudio applies it once to the master; SDL applies it once per stream. This
 quiets the output at 100% without changing saved Music/Sound sliders, their
@@ -68,6 +97,60 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 
 Consult `docs/development/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
+
+Audio overhaul: shared DSP reaches exact OFF bypass and clears old echo history;
+rejected submissions retain rollback. `pc_acoustic_cache.h` refreshes geometry
+fairly within two queries/10ms, caps reuse at250ms, invalidates room/scene changes
+and derives pan from current emitter/listener or a fixed opening anchor.
+[Contracts and limits](../development/positional-audio.md#acoustic-cache-correction).
+Linux/WSL media contracts, Windows real endpoint reopen and observed room walking:
+[evidence and gaps](../development/audio-overhaul.md#linux-room-and-device-validation).
+Distance: [original helper/live curve audit](../development/audio-distance-audit.md).
+Audio: [current acceptance ledger](../development/audio-overhaul-acceptance.md)
+and [asset decisions](../development/audio-restoration-review.md).
+
+Independent audio choices: `pc_audio_settings.h` packs one atomic snapshot;
+`pc_audio_get_options`/`set_options` own strict V1/V2 parsing and save-before-live
+publication. `pc_audio_feature_enabled` applies master AND individual selection.
+All-default children keep V1; custom spatial/range/environment/ambience choices
+use V2 and survive master OFF. Unknown files refuse saves. Shared patch0059
+connects routing/range; the ambience guest poll owns only non-positioned beds,
+uses neutral cover without a single valid listener, and leaves positioned stream
+filters alone. `pc_display_menu.c` exposes five compact choices in Audio Options,
+with rollback on save failure. See [acceptance](../development/audio-overhaul.md).
+
+Mix routing: `pc_audio_mix.h` owns bounded guest-thread scopes; manual wrappers
+for46D80/45820/299C0 establish speech and stereo-stream categories before the
+first submission (patch0060). Generated wrapper definitions must remain explicit
+in recomp_manual.c: the compiler does not scan included .inc files recursively.
+Patch0061 composes master/category attenuation with the original HLE level and
+updates queued voices without clock/PCM edits. `pc_audio_mix_settings.h` owns
+strict independent `pc-audio-mix.ini` persistence and an atomic options
+snapshot; `pc_audio_config_path.h` resolves both sidecars through the isolated
+display/input directory. 100% is exact neutral. [Settings font/escape rules](audio-options.md)
+now shares the Video/Controls tab layout in main and pause. Original profile
+Accept/Cancel and live sidecar saving remain separate; the guide records native
+record preservation, navigation, tests and current scene-acceptance limits.
+
+Listening options: patch2307 applies shared `pc_audio_dynamics.h` to decoded
+buffer/stream/movie PCM, restoring history after refused submissions and keeping
+movie input immutable. Original/OFF preserves bytes; Reduced/Night only reduce
+per-source peaks and exempt separately owned dialogue. `pc_audio_mix_settings.h`
+accepts MIX_V1 and V2 (six percentages, ducking0/1, impact0..2); neutral options
+serialize as V1. A5ms sampler smooths6dB ducking with20/300ms attack/release.
+Shared `pc_audio_activity.h`/2311 expires accepted PCM spans, including silence.
+See [cursor/fallback/reset bounds](audio-buffers.md); no queue/guest-clock edits.
+`recomp_audio_output_audible_pending` reads XAudio queued voices or SDL available
+output (excluding held resampler input). Both UIs expose the opt-ins; frontend pages
+pass, while perceptual tuning, broad final-mix and hardware acceptance remain open.
+
+Runtime audio layout correction: audio captions are plain text, not unsupported
+`\vs75` sequences. The link in the original profile page inherits its supplied
+native6/7.5-unit metric; zero collapses it and32 is oversized. The custom pages
+use automatic relative rows and the existing scoped0.65 glyph sizing by their
+unique descriptor (`audio_font_menu`), including measure/draw/selected values.
+Native640x480 checks now show profile controls/Accept/Cancel, Mix, Enhancements
+and Listening; keyboard edits persist MIX_V2 and retain independent choices.
 
 Split-screen mouse look (#112): `pc_camera_mouse_primary_in_region` reads the
 current player's local input slot at `player+4` from the fresh bounded camera
@@ -78,8 +161,7 @@ ID and is not a local slot. The shared `tests/graphics/mouse_region.c` fixture,
 run by `tests/gameplay/test_mounted_mouse.py`, checks both adapters and verifies
 the deferred packet reaches player one. Mac gameplay remains unverified.
 
-The #74 material continuation and validation limits are recorded in
-[material validation](../textures/material-validation.md).
+[#74 material validation](../textures/material-validation.md).
 
 Hybrid production separates fixed macro layout from repainted microtexture.
 Failed drafts stay held for specific UV, hardware, motif, tone or pattern defects.
@@ -135,7 +217,6 @@ Fire presses use the shared key-edge path and a
 Fire pulses; later presses can interrupt. Context resets discard pulses.
 Pad input stays separate.
 
-
 `pc_model_transform_guest.inc` implements the US151E80 affine point fast path.
 It checks disjoint/wrap-safe buffers and magnitudes at most2^33, then uses local
 binary32 intermediates with explicit rounding, preserving final GPR/SSE state.
@@ -159,7 +240,6 @@ not a reconstructed call stack or guaranteed checkpoint/load-event history.
 heartbeat JSON. Each helper atomically replaces `capture-health.json` every two
 seconds in its safe report directory. No valid token means no health file.
 Windows packet schema is now3; a mismatched older helper cannot claim readiness.
-
 
 Windows `pc_menu_theme.h` snapshots each native menu item's caption, tab-separated
 shortcut and separator type before owner drawing. Command IDs stay untouched;
@@ -660,7 +740,7 @@ variant filter `sub_001BAA70`, usability `sub_001BA410` and selection
 `sub_001BA130`, then refreshes the weapon HUD with `sub_00142820`. It deduplicates
 weapon groups, checks local input slot zero rather than network player ID, and
 never grants inventory. Empty slots do nothing. Settings expose exactly ten bindable
-slots, defaulting to 1Ã¢â‚¬â€œ9/0. The separate 70-entry internal table bound covers
+slots, defaulting to 1ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“9/0. The separate 70-entry internal table bound covers
 weapon IDs and variants; it does not add settings rows.
 
 ## Themed live keyboard and mouse editor
@@ -818,154 +898,64 @@ and readback are diagnostic; they do not replace visible water or alter guest
 RNG/events. The persistent gameplay owner is separate. See the coupled-operator
 record in `docs/analysis/native-high-refresh-regressions.md` for capture details/limits.
 
-## Background replacement texture reads
+[Further contracts and validation notes](systems-continuation.md).
 
-`texture_pack_stream.h` owns a shared single-reader queue for common RHI and
-legacy GL. The worker reads/validates DDS data without touching texture owners or
-GPU resources. Submit/cancel/pump run on the renderer thread; release and content
-changes cancel pending owners before reuse. A full 64-slot queue retries when the
-texture is next bound. Two completed payloads and one read bound CPU staging to
-72 MiB; the existing 512-MiB GPU budget and DDS/alpha rules still apply.
+## Developer Tools sidebar presentation
 
-Original views remain usable during loading. Each Present pumps at most one
-nonempty payload into GPU resources; F10 switches cached views immediately. The
-GL adapter restores the previous texture binding after upload. Shutdown joins
-the reader; normal cancellation never waits for disk. `TSFP_TEXTURE_STREAMING=0`
-selects the synchronous diagnostic fallback. Per-texture messages now require
-`TSFP_TEXTURE_PACK_TRACE=1`; explicit original dumping remains synchronous.
+Free-camera player-input ownership: the runtime sampler uses guarded
+`pc_controls_key_down` on Windows and SDL hosts. Raw
+`pc_controls_developer_keys`/`tsfp_native_key_down` remain available for camera
+flight and binding capture. `pc_controls_accept_pad` suppresses physical Xbox
+input on both paths during freecam/overlay/modal/focus blocks; previously only
+the Windows sampler consumed it. Ordinary movement resumes when the gate clears;
+noclip retains character input. Camera mouse input remains on its existing path.
 
-Classic now defers new replacement requests in both adapters (`pack_checked=3`).
-Binding in Enhanced starts the deferred request; until completion the original
-remains visible. Returning to Classic retains cached replacements and permits
-already submitted requests to finish. Hash/content invalidation, cancellation
-and explicit original dumps still run. Deferred bindings in Classic perform no
-replacement I/O, GPU allocation or repeated trace writes. A `deferred` trace
-records the initial hash only; late activation has zero hash/source-byte fields.
+Sidebar pointer hit testing converts the host pointer's window coordinates to
+the last painted drawable width/height before applying widget DPI and docking.
+SDL logical points and Retina framebuffer pixels are distinct; display scale
+controls widget size and must not substitute for either axis conversion.
+Input-only frames retain the painted extent. The shared path serves RHI and GL;
+native game menu pointer coordinates and gameplay mouse deltas are unchanged.
 
-The common renderer pumps from present_resolve, shared by Swap and Present.
-The initial Present-only prototype never delivered replacements in this title;
-its apparent pacing gains are invalid evidence. Actual DDS upload records and
-rendered Enhanced scenes are required alongside queue unit tests.
+`src/interface/pc_developer_sidebar.inc` owns the shared widget layout, measured
+text roles, filtering, pointer/keyboard navigation and draft binding edits.
+`src/graphics/pc_developer_canvas.h` draws512 bounded value-only commands, caches
+glyphs by physical size/weight/face/tracking, and composites straight alpha.
+`pc_developer_font.c` measures and rasterizes the same embedded Selawik/Cousine
+faces through stb; no sidebar host-font lookup or browser is used. CMake verifies
+font bytes before embedding. Host adapters supply DPI/input and GPU upload only.
+Extras retains Status/shortcut/Back; the sidebar owns the warning footer.
+Reset points left from the top of its arc (counterclockwise); hold-speed ends share the grey stepper fill.
+See [sidebar contracts and history](systems-continuation.md#developer-tools-sidebar-presentation)
+for input/save boundaries, styles, clipping and native adapter details.
 
-The in-game Video Options Apply path calls the explicit tsfp_texture_set_4k
-setter. Unlike the host toggle, that setter does not emit a mode log line.
-Reopening Video Options reads the effective mode; a pending row label alone is
-not evidence that the change was applied. Texture selection is session-only.
+The Settings tab now has independent Input Settings / Video Settings categories.
+`pc_video_sidebar_ui.inc` owns drafts/selectors; `pc_video_sidebar.inc` consumes
+value-only mailbox requests on the guest frame, using existing display/graphics
+setters and native subtitle persistence. See the continuation for contracts.
 
-Integration #308/#311: upload timing follows the queued request by value. Only
-the renderer opens/writes/closes the bounded CSV; the worker stamps read times
-in its exclusively owned record and publishes it under the queue lock. Completed
-records measure hash, worker read/validation and renderer image/view creation.
-Total duration includes queue/frame scheduling waits, not GPU completion.
-Cancellation discards the record with the payload; a full queue logs its failed
-attempt and starts a new record on retry. Disabled timing takes no clocks/files.
+## Audio playback updates
 
-`pc_surface_native.h` schedules the persistent cosmetic field from exact native
-clock metadata. It begins from post-event/smoothing byte input on authored updates,
-then evolves the remainder and intervening fractional frames. This places the
-cosmetic field one authored tick behind the original completed feedback, retaining
-original event/RNG ordering. It does not add input latency to gameplay. Duplicate
-frames do not advance; missing intervals, changed scopes and new identities wait
-for an authored update. Pause preserves phase. Original60 suspends the clocks and invalidates field
-readiness while retaining bounded GPU owners; constructor/device reset releases
-them. Returning to native waits for an authored boundary before reusing an owner. `pc_surface_native_hle.inc` resolves copied full texture identities,
-uses the five-entry retained-image cache, packs alpha-height through
-`pc_surface_gpu_pack`, and borrows that view only during the original final shader.
-No per-frame readback or queue flush belongs to this path. Older fractional/float/
-live experiments are mutually exclusive. Native Mac common-RHI execution remains
-unverified and legacy GL uses original output. Bounded Windows Scotland captures at 120/144 produce fresh final images on
-partial frames; sustained pacing, broader visual acceptance and Mac remain open.
+`pc_audio_gain.h` shares attenuation across SDL/XAudio (2308) and dynamics:
+floor -10000 means exact silence; positive values clamp to unity. Live gain
+updates preserve queued PCM/voices/clocks. Physical SDL acceptance remains open.
+[Windows scene evidence](../development/audio-overhaul.md#campaign-and-busy-match-output-checks)
+and [named-loop audit](../development/audio-overhaul.md#pause-menu-and-authored-loop-audit)
+retain the listening limits, source hashes and unmatched definitions.
 
-`pc_surface_gpu_cache_suspend` invalidates every output without freeing images,
-shaders or retained identities. The deferred `hle_d3d8_surface_native_suspend`
-clears the borrowed view and clocks, avoiding shader/resource recreation across
-an Original60 round trip. Original60 still performs no coupled updates. Full
-scene/device cleanup remains distinct. The creation log identifies actual
-new owners; unchanged identity reuse emits no allocation notice.
+Patch2309 imports CDirectSoundBufferSettings_SetBufferData/SetLoopRegion and
+checks their code plus the native play-region helper independently of voice
+layout. Matched5849 buffer offsets gain four bytes; legacy/voice fields stay
+unchanged. The original settings-only helper owns allocation/free/regions;
+caller SP/CX/DX and HRESULT survive. `audio_buffer_layout.c` covers ownership,
+native starts/ends and altered-signature fallbacks.
 
-Native water defaults on for common-RHI 120/144 beta presets; Original60 and
-legacy GL remain original. `pc_surface_native_policy` accepts an explicit
-`TSFP_SURFACE_NATIVE_TEST=0` recovery override and excludes old experiments.
-The HLE adapter latches allocation/shader failure until constructor/device reset,
-so fallback does not retry expensive setup each frame. Cleanup is registered
-before first allocation; empty resets do not alter RHI texture bindings.
-
-## Character status-effect model growth
-
-`pc_native_character_guest.h` normalizes only scale-constructor call120BBF:
-subdivide the one-raw-tick factor at current game speed. Original rotation,
-composition, cleanup and whole/catch-up arithmetic remain intact. The original
-helper fixture covers60..240, slow time, pause, jitter and live switches.
-
-`TSFP_CHARACTER_TRACE` selects126029->120AB0: matrices/deltas/identity/removal,
-validated mappings, cross-frame/scene rejection,8192rows/8MiB cap. Mapping caches
-never span guest execution. Disabled/failed/capped traces keep original callee.
-CPU evidence only; rendering/pacing and physical Mac remain unverified.
-
-## Temporal Uplink map display
-
-The shared HLE hook copies the preclear map into the handheld texture. Native
-GL uses src/native/gl_screen_copy.inc and preserves framebuffer/scissor state.
-Guest geometry and controls remain unchanged.
-
-Temporary UV matrices: [render epoch and arena lifetime](render-matrix-cache.md).
-
-## Forced and damped material scrolling
-
-`pc_native_material.h` splits127500 velocity/travel in raw game time:
-12765Bforce,1276FD/127705drag,12773B/127791UV. Weak drag uses stable limits;
-Original/whole/catch-up/unsupported bases keep old math. Force/clamp, wrapping,
-resources/events, layout and pause stay original. Varying-force/rendered/Mac
-parity remain open; see surface/cache tests and STATUS.
-
-## Scripted object clocks
-
-TREE1D88B0 admits fractional time at its gate; EAX is overwritten before use.
-Original phase/pose, events, terminal clamp, layout and whole updates remain.
-TRAP1D8AB0 now couples fractional kicks/travel and carried-tick contact lifetime.
-Original whole/catch-up and pause remain exact. See [script clocks](native-script-clocks.md)
-for the map, hook composition, rejected candidates and live/Mac acceptance limits.
-
-Statistics: D2CB7 scopes D1FD0 to carried ticks. Time totals keep Original
-cadence; distance stays per-frame. D2079 blocks paused stale ticks.
-Impact sparks: see [native spark timing](native-impact-sparks.md).
-
-
-[Devices](kernel-devices.md).
-
-
-Project-owned I/O contracts: [sharing](kernel-sharing.md),
-[request lifetime](request-lifetime.md), [driver calls](driver-call.md),
-[transfer/queues/events/targets](transfer-completion.md),
-[symbolic links](symbolic-links.md), [path routing](guest-paths.md) and
-[host storage](host-storage.md).
-
-Vehicle gunner mouse uses shared `src/input/pc_mounted.h` for mode `0x400`,
-resolving the occupied seat and its gun on every update. Driver/passenger seats
-retain their existing route. Vehicle limits and locked states differ from mode
-`0x80`; see [mounted and vehicle mouse contracts](mounted-mouse.md). Both Windows
-and SDL adapters consume this helper. Exact mission validation remains separate.
-
-Tank keyboard/mouse policy shares `pc_tank.h` and the
-1730E0 guest wrapper. See [tank scope and original aim route](mounted-mouse.md).
-
-Kernel: [pool](kernel-pool.md), [time](kernel-time.md), [RTL](kernel-rtl.md), [numbers](guest-numbers.md), [crashes](crash-evidence.md).
-
-Online uses the build interpreter: [paths](multiplayer-ui.md).
-
-Assault objective brackets (US142D10) use a tagged proportional placement.
-`PcUiWorldAnchor` takes the complete first outline draw's horizontal midpoint;
-all following labels retain that anchor until the next placement boundary.
-The common renderer and legacy GL fit uniformly around this projected target,
-not screen centre. This preserves both alignment and glyph/box proportions.
-Guest flush boundaries isolate markers and restore the parent HUD. The existing
-wide/single-player guards preserve 4:3 and split-screen. `test_ui_layout.py`
-checks actual viewport scaling, target position, reset and seven display shapes.
-
-Bot corpses: [contracts](systems-details.md#online-bot-corpses).
-
-[Shared Story version provider](systems-details.md#story-co-op-release-flag).
-
-Physics: [poses](systems-details.md#guest-ragdolls-and-physical-npc-drops).
-
-[Language startup](language-packs.md).
+Patch2310 adds an exclusive `loop_end_bytes` (zero=whole source) and
+`recomp_dsound_buffer_end` shared by the buffer clock and PCM pump. Valid native
+or legacy lengths convert from encoded blocks to decoded frames; bad lengths
+retain the existing valid-start/full-tail fallback. Looping uses intro then
+[start,end); one-shots retain the whole source. Live bounds advance old guest
+time on model refresh, reset queued output, then normalize in the new region. Paused positions
+stay intact until resume; a running seek beyond the loop end resumes at start.
+`audio_buffer_regions.c` checks production-decoded PCM, fractional clocks/refusal,
+tiny/multiple wraps, pause/live/rate/seek and unchanged source bytes.

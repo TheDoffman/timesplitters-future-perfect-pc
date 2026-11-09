@@ -10,7 +10,8 @@
 #include "../src/interface/pc_display.c"
 static int available=1;
 static unsigned applied_w,applied_h;
-HWND xbox_D3D8Window(void) { return NULL; }
+static int has_window;
+HWND xbox_D3D8Window(void) { return has_window?(HWND)1:NULL; }
 int xbox_D3D8ChangeResolution(unsigned w,unsigned h) { applied_w=w;applied_h=h;return available; }
 int tsfp_config_write(const char *name,const char *text,int backup) {
     (void)backup;FILE *f=fopen(name,"wb");if(!f)return 0;int ok=fputs(text,f)>=0;return fclose(f)==0 && ok;
@@ -18,6 +19,11 @@ int tsfp_config_write(const char *name,const char *text,int backup) {
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x);return 1;}}while(0)
 int main(void) {
     unsigned w,h;PcDisplayMode modes[128],filtered[128];int selected;
+    CHECK(!pc_display_fullscreen() && !pc_display_set_fullscreen(1));
+    has_window=1;CHECK(pc_display_set_fullscreen(1) && pc_display_fullscreen());
+    main_thread=false;CHECK(pc_display_set_fullscreen(0) && !pc_display_fullscreen() && main_calls==2);
+    fullscreen_ok=false;CHECK(!pc_display_set_fullscreen(1) && !pc_display_fullscreen());
+    CHECK(!pc_display_set_fullscreen(2));fullscreen_ok=true;main_thread=true;has_window=0;
     CHECK(pc_display_is_auto(pc_display_current()));
     pc_display_scene_size(640,480,&w,&h);CHECK(w==640 && h==480);
     pc_display_host_size(3440,1440);pc_display_scene_size(640,480,&w,&h);

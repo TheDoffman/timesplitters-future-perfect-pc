@@ -13,6 +13,9 @@ static void seed(unsigned n) {
     g_mm0.q=n;g_mm1=g_mm2=g_mm3=g_mm4=g_mm5=g_mm6=g_mm7=g_mm0;
     for(i=0;i<8;++i)g_fp_stack[i]=(double)n+(double)i+0.25;
     g_fp_top=(int)n;g_fp_cmp=-(int)n;g_df=(int)n;g_fp_control_word=(uint16_t)(n+1);g_fp_cc=(uint16_t)(n+2);
+#ifdef RECOMP_STATUS_FLAGS_SUPPORTED
+    g_status_flags.value=n+0x800;g_status_flags.known=n+0x40;
+#endif
 }
 static void check_seed(void) {
     unsigned i;CHECK(g_eax==4 && g_ebx==5 && g_ecx==6 && g_edx==7 && g_esi==8 && g_edi==9);
@@ -24,6 +27,9 @@ static void check_seed(void) {
     CHECK(g_mm0.q==3 && g_mm1.q==3 && g_mm2.q==3 && g_mm3.q==3 && g_mm4.q==3 && g_mm5.q==3 && g_mm6.q==3 && g_mm7.q==3);
     for(i=0;i<8;++i)CHECK(g_fp_stack[i]==3.25+(double)i);
     CHECK(g_fp_top==3 && g_fp_cmp==-3 && g_df==3 && g_fp_control_word==4 && g_fp_cc==5);
+#ifdef RECOMP_STATUS_FLAGS_SUPPORTED
+    CHECK(g_status_flags.value==0x803 && g_status_flags.known==0x43);
+#endif
 }
 static void callback(void) {
     uint32_t stack=g_esp;CHECK(stack==0xfff && MEM32(stack)==0 && MEM32(stack+4)==0x2468);
@@ -42,7 +48,8 @@ int main(void) {
     CHECK(!tsfp_guest_callback_one(&ops,0,0x2468));
     CHECK(!tsfp_guest_callback_one(&ops,0x9999,0x2468));
     resolve_fail=1;CHECK(!tsfp_guest_callback_one(&ops,0x4444,0x2468));resolve_fail=0;
-    for(i=0;i<sizeof(ram);++i)CHECK(ram[i]==0xa7);check_seed();CHECK(!called && g_esp==0x1007);
+    for(i=0;i<sizeof(ram);++i)CHECK(ram[i]==0xa7);
+    check_seed();CHECK(!called && g_esp==0x1007);
     CHECK(tsfp_guest_callback_one(&ops,0x4444,0x2468));check_seed();CHECK(called==1 && g_esp==0x1007);
     CHECK(ram[0xffe]==0xa7 && ram[0x1007]==0xa7);
     malformed=1;CHECK(!tsfp_guest_callback_one(&ops,0x4444,0x2468));check_seed();CHECK(called==2 && g_esp==0x1007);
@@ -56,5 +63,8 @@ int main(void) {
     default:CHECK(0);
     }
     CHECK(called==3 && g_ebp==0x1122 && g_ebx==0x3344 && g_edi==0x5566 && g_esi==0x7788 && g_esp==0x9904);
+#ifdef RECOMP_STATUS_FLAGS_SUPPORTED
+    CHECK(!(g_status_flags.known&TSFP_STATUS_FLAGS));
+#endif
     puts("PASS: bounded callback frame, complete project register preservation, malformed cleanup and native guest jump");return 0;
 }

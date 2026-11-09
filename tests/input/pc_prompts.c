@@ -1,5 +1,7 @@
 #include "pc_prompts.h"
 #include "pc_controls.h"
+#include "pc_developer.h"
+#include "pc_settings.h"
 #include "texture_mode.h"
 #include "input_bindings.h"
 #include <SDL3/SDL.h>
@@ -54,23 +56,24 @@ static int virtual_pad_test(void)
     CHECK(RegisterClassA(&wc));
     window=CreateWindowA(wc.lpszClassName,"Input prompt test",WS_OVERLAPPEDWINDOW,0,0,320,200,NULL,NULL,wc.hInstance,NULL);
     CHECK(window); pc_controls_attach(window);
+    {char error[160];CHECK(pc_settings_developer_save(1,error,sizeof error));}
     {
-        HMENU menu=GetSubMenu(GetMenu(window),0);
+        CHECK(!GetMenu(window) && !pc_developer_open());
+        SendMessage(window,WM_KEYDOWN,VK_F1,0);
+        CHECK(pc_developer_open() && !GetMenu(window));
+        SendMessage(window,WM_KEYDOWN,VK_F1,(LPARAM)1<<30);
+        CHECK(pc_developer_open()); /* Held F1 cannot oscillate the overlay. */
         int before=tsfp_texture_is_4k();
         SendMessage(window,WM_SYSKEYDOWN,VK_F10,0);
         CHECK(tsfp_texture_is_4k()!=before);
-        CHECK((GetMenuState(menu,PC_TEXTURE_MODE_COMMAND,MF_BYCOMMAND)&MF_CHECKED)==
-              (tsfp_texture_is_4k()?MF_CHECKED:0));
         SendMessage(window,WM_SYSKEYDOWN,VK_F10,(LPARAM)1<<30);
         CHECK(tsfp_texture_is_4k()!=before);
         SendMessage(window,WM_SYSKEYUP,VK_F10,0);
-        pc_settings_toggle_menu(window); CHECK(!GetMenu(window));
+        SendMessage(window,WM_KEYUP,VK_F1,0);
+        SendMessage(window,WM_KEYDOWN,VK_F1,0);
+        CHECK(!pc_developer_open() && !GetMenu(window));
         SendMessage(window,WM_KEYDOWN,VK_F10,0);
         CHECK(tsfp_texture_is_4k()==before);
-        pc_settings_toggle_menu(window);
-        SendMessage(window,WM_INITMENUPOPUP,(WPARAM)menu,0);
-        CHECK((GetMenuState(menu,PC_TEXTURE_MODE_COMMAND,MF_BYCOMMAND)&MF_CHECKED)==
-              (before?MF_CHECKED:0));
         SendMessage(window,WM_COMMAND,PC_TEXTURE_MODE_COMMAND,0);
         CHECK(tsfp_texture_is_4k()!=before);
         SendMessage(window,WM_COMMAND,PC_TEXTURE_MODE_COMMAND,0);
@@ -187,15 +190,21 @@ int main(int argc,char **argv)
     RecompPadState pad={0};
     PcSettings settings;
     int keys[PC_ACTION_COUNT];
-    char text[512];
+    char text[512],temp_dir[MAX_PATH],config[MAX_PATH],backup[MAX_PATH+5];
     CHECK(argc==2 || argc==3);
-    _putenv_s("RECOMP_INPUT_CONFIG",argv[1]);
+    CHECK(GetTempPathA(sizeof temp_dir,temp_dir));
+    CHECK(GetTempFileNameA(temp_dir,"tsp",0,config));
+    CHECK(CopyFileA(argv[1],config,FALSE));
+    snprintf(backup,sizeof backup,"%s.bak",config);
+    _putenv_s("RECOMP_INPUT_CONFIG",config);
     _putenv_s("RECOMP_PAD_API","sdl");
     _putenv_s("TSFP_PC_INPUT_REPLAY","");
     if(argc==3) {
         CHECK(!strcmp(argv[2],"controller-profile"));
         pc_prompts_reset();
-        return virtual_pad_test();
+        int result=virtual_pad_test();
+        DeleteFileA(config); DeleteFileA(backup);
+        return result;
     }
     pc_settings_defaults(&settings);
     for(int i=0;i<PC_ACTION_COUNT;i++) keys[i]=settings.keys[i][0];
@@ -385,7 +394,22 @@ int main(int argc,char **argv)
         }
         VirtualFree(memory,0,MEM_RELEASE);
     }
+    CHECK(pc_prompts_keycap_label("E",1));
+    CHECK(pc_prompts_keycap_label("Mouse 1",7));
+    CHECK(pc_prompts_keycap_label("Wheel up",8));
+    CHECK(pc_prompts_keycap_label("Left/Right",10));
+    CHECK(pc_prompts_keycap_label("<",1));
+    CHECK(pc_prompts_keycap_key("E",1)=='E');
+    CHECK(pc_prompts_keycap_key("<",1)==VK_LEFT);
+    CHECK(pc_prompts_keycap_key("Not a key",9)==-1);
+    pc_prompts_keyboard();
+    CHECK(pc_prompts_rewrite("[Left] Previous tab [Right] Next tab",text,sizeof text));
+    CHECK(!strcmp(text,"[<] Previous tab [>] Next tab"));
+    CHECK(!pc_prompts_keycap_label("Not a key",9));
+    CHECK(!pc_prompts_keycap_label("E/",2));
+    CHECK(!pc_prompts_keycap_label("",0));
     CHECK(!virtual_pad_test());
+    DeleteFileA(config); DeleteFileA(backup);
     puts("PASS: input switching, drift/held-button suppression, disconnect, assigned labels, mouse/sticks, trigger labels, unbound keys, formatting, and bounds");
     return 0;
 }

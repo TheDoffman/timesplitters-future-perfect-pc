@@ -168,9 +168,12 @@ def test_real_pytest_records_once_and_preserves_result(tmp_path, mode):
 
 def test_ci_persists_separate_advisory_history_and_reports():
     workflow = (Path(__file__).resolve().parents[2]/'.github/workflows/runtime-patches.yml').read_text()
-    for profile in ('ci-patches', 'ci-native', 'ci-release'):
-        assert '--suite-profile='+profile in workflow
-    assert workflow.count('name: Restore suite timing history') == 2
-    assert workflow.count('name: Save suite timing history') == 2
-    assert workflow.count('name: Upload suite timing reports') == 2
-    assert 'tests/support/test_suite_timing.py' in workflow
+    runner = (Path(__file__).resolve().parents[2]/'tools/ci/run-runtime-checks.py').read_text()
+    assert '--suite-profile=' in runner
+    for suite in ('patches', 'native', 'release'):
+        assert f'run-runtime-checks.py {suite} ' in workflow
+    assert workflow.count('name: Restore suite timing history') == 3
+    assert workflow.count('name: Save suite timing history') == 3
+    assert workflow.count('name: Upload suite timing reports') == 3
+    manifest = (Path(__file__).resolve().parents[2]/'tools/ci/runtime-suites.json').read_text()
+    assert 'tests/support/test_suite_timing.py' in manifest

@@ -172,11 +172,13 @@ namespace TimeSplitters.Launcher
                     token.ThrowIfCancellationRequested();
                     string target = Core.PathIn(destination, entry.FullName);
                     Directory.CreateDirectory(Path.GetDirectoryName(target));
-                    using (var input = entry.Open()) using (var output = new FileStream(target, FileMode.CreateNew)) {
-                        var buffer = new byte[65536]; int read;
-                        while ((read = input.Read(buffer,0,buffer.Length)) > 0) { token.ThrowIfCancellationRequested(); output.Write(buffer,0,read); }
-                    }
-                    if (entry.FullName != Core.SelfManifest) Core.Require(Core.Hash(target).Equals(hashes[entry.FullName], StringComparison.OrdinalIgnoreCase), "Launcher file checksum mismatch.");
+                    AntivirusErrors.At(target, () => {
+                        using (var input = entry.Open()) using (var output = new FileStream(target, FileMode.CreateNew)) {
+                            var buffer = new byte[65536]; int read;
+                            while ((read = input.Read(buffer,0,buffer.Length)) > 0) { token.ThrowIfCancellationRequested(); output.Write(buffer,0,read); }
+                        }
+                        if (entry.FullName != Core.SelfManifest) Core.Require(Core.Hash(target).Equals(hashes[entry.FullName], StringComparison.OrdinalIgnoreCase), "Launcher file checksum mismatch.");
+                    });
                 }
                 return ValidatePayload(destination, expected);
             }
@@ -247,8 +249,8 @@ namespace TimeSplitters.Launcher
         public static void StartApplication(string root, int parent)
         {
             string application = Core.PathIn(root, Core.AppPath);
-            Core.Require(File.Exists(application), "Launcher application files are missing. Extract the complete launcher ZIP into this folder and try again.");
-            Process.Start(new ProcessStartInfo(application, "--from-bootstrap " + parent) { WorkingDirectory = root, UseShellExecute = true });
+            Core.Require(File.Exists(application), "Launcher application files are missing: " + application + ". Extract the complete launcher ZIP into this folder and try again. Check antivirus quarantine/security history if the file disappeared.");
+            AntivirusErrors.Start(new ProcessStartInfo(application, "--from-bootstrap " + parent) { WorkingDirectory = root, UseShellExecute = true });
         }
     }
 }

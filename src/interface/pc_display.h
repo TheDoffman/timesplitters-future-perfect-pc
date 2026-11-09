@@ -5,12 +5,20 @@
 #else
 typedef void *HWND;
 #endif
+int pc_game_restart_bootstrap(int argc,char **argv);
+int pc_game_restart(void);
 #define PC_FOV_DEFAULT 55
 #define PC_FOV_MIN 40
 #define PC_FOV_MAX 100
 int pc_display_fov(void);
 int pc_display_set_fov(int degrees);
 float pc_display_fov_scale(void);
+#define PC_WEAPON_FOV_DEFAULT 100
+#define PC_WEAPON_FOV_MIN 80
+#define PC_WEAPON_FOV_MAX 150
+int pc_display_weapon_fov(void);
+int pc_display_set_weapon_fov(int percent);
+float pc_display_weapon_fov_scale(void);
 
 typedef struct PcDisplayMode { unsigned width, height; } PcDisplayMode;
 /* Selected mode: 0x0 retains console output; 1x1 selects Auto. */
@@ -49,6 +57,10 @@ int pc_display_modes(HWND window, PcDisplayMode *out, int capacity);
 int pc_display_apply(PcDisplayMode mode);
 int pc_display_preview(PcDisplayMode mode);
 int pc_display_save(void);
+#define PC_FULLSCREEN_SET_MESSAGE 0x8122u
+int pc_display_fullscreen(void);
+int pc_display_set_fullscreen(int enabled); /* Live host window only. */
+int pc_display_save_fullscreen(int enabled); /* Shared launcher runtime.conf key. */
 void pc_display_scene_size(unsigned guest_w, unsigned guest_h, unsigned *w, unsigned *h);
 void pc_display_shape(unsigned *w, unsigned *h);
 float pc_display_camera_factor(void);

@@ -1,3 +1,4 @@
+#define RECOMP_TLS _Thread_local
 #define TSFP_MENU_MOUSE_TEST
 #include "pc_menu_mouse.h"
 #include <stdio.h>
@@ -21,17 +22,27 @@ void sub_000746D0(void) {} void sub_0007CCA0(void) {}
 void sub_00071940(void) {}
 static PcMenuPointer cursor;
 static int active=1,mode,original_calls,selections;
+static int centered_controls;
+static int controls_font_menu(uint32_t menu){return centered_controls && menu==0x2000;}
 static uint32_t navigation;
+static void settings_tabs_footer(uint32_t menu) {(void)menu;}
+static void settings_tabs_footer_style(uint32_t menu,uint32_t sx,uint32_t sy,uint32_t colour) {(void)menu;(void)sx;(void)sy;(void)colour;}
 static int closed_pause,in_dispatch,changed_tab;
 static unsigned long long tick=1000;
 static unsigned long long GetTickCount64(void) {return tick;}
 static int footer_enabled=1,measure_profile;
+static int profile_keyboard=1;
+static int pc_prompts_keyboard_active(void) {return profile_keyboard;}
 static uint32_t early_action,early_held,early_source;
 static unsigned shape_w=16,shape_h=9;
 static unsigned music_previews,sound_previews,sensitivity_previews;
 static unsigned slider_fov;
+static void menu_slider_weapon_fov_pointer(float x,float left,float width) { (void)x;(void)left;(void)width; }
 static void menu_slider_fov_pointer(float x,float left,float width)
 { slider_fov=40+pc_menu_slider_value(x,left,width,60); }
+static unsigned slider_mix_index,slider_mix_value;
+static void menu_slider_audio_mix_pointer(unsigned i,float x,float left,float width)
+{slider_mix_index=i;slider_mix_value=pc_menu_slider_value(x,left,width,100);}
 static unsigned slider_keyboard;
 static void menu_slider_keyboard_pointer(float x,float left,float width)
 { slider_keyboard=pc_menu_slider_value(x,left,width,1000); }
@@ -92,8 +103,56 @@ static uint32_t guest_call(void (*fn)(void),unsigned n,...)
     WORD_AT(menu+0x198)=item; ++selections; return 0;
 }
 #include "menu_guest_region.h"
+static unsigned video_click_sounds;
+static void menu_video_click_sound(uint32_t menu,uint32_t item)
+{(void)menu;(void)item;++video_click_sounds;}
+static unsigned video_tab_polls,video_tab_flushes;
+static int menu_video_tabs_poll(uint32_t menu) {(void)menu;video_tab_polls++;return 0;}
+static void menu_video_tabs_flush(void) {CHECK(!in_dispatch);video_tab_flushes++;}
 #include "pc_menu_mouse_guest.inc"
 static void original(void) { ++original_calls;WORD_AT(WORD_AT(g_esp+4)+0xc4)|=navigation;g_esp+=4; }
+static unsigned settings_sample_mask;
+static void settings_sample(void)
+{
+    uint32_t menu=WORD_AT(g_esp+4);settings_sample_mask=WORD_AT(menu+0x3c);
+    /* Native 73870 iterates logical-player bits; 42760 maps through 6B93C0. */
+    WORD_AT(menu+0xc4)=0;
+    for(unsigned p=0;p<4;p++)if(settings_sample_mask&(1u<<p))
+        WORD_AT(menu+0xc4)|=WORD_AT(0x6b93e0+WORD_AT(0x6b93c0+p*4)*0x3c);
+    g_esp+=4;
+}
+static void settings_owner_tests(void)
+{
+    uint32_t menu=0x7000,history=0x9000;
+    WORD_AT(0x79094c)=101;WORD_AT(0x5236c4)=2;WORD_AT(0x78ad34)=1;
+    WORD_AT(0x6b93c0)=0;WORD_AT(0x6b93c4)=2;
+    WORD_AT(menu+4)=0x523910;WORD_AT(menu+0x38)=0;WORD_AT(menu+0x3c)=1;
+    WORD_AT(0x6b93e0)=1;WORD_AT(0x6b93e0+2*0x3c)=2;
+    g_esp=0x1000;WORD_AT(g_esp+4)=menu;pc_display_menu_mouse_input(settings_sample);
+    CHECK(settings_sample_mask==3 && WORD_AT(menu+0xc4)==3 && WORD_AT(menu+0x3c)==1);
+    CHECK(WORD_AT(menu+0x38)==0); /* never move native menu/profile ownership */
+    /* Arbitrary settings descendants inherit the selected player's input. */
+    WORD_AT(menu+4)=0x524a40;WORD_AT(0x7ba264)=history;
+    WORD_AT(history)=2;WORD_AT(history+4)=0x5236dc;WORD_AT(history+8)=0x523910;
+    g_esp=0x1000;pc_display_menu_mouse_input(settings_sample);
+    CHECK(settings_sample_mask==3 && WORD_AT(menu+0xc4)==3);
+    /* Returning to main restores P1 despite a stale selected-profile value. */
+    WORD_AT(menu+4)=0x5236dc;WORD_AT(history)=0;
+    g_esp=0x1000;pc_display_menu_mouse_input(settings_sample);
+    CHECK(settings_sample_mask==1 && WORD_AT(menu+0xc4)==1);
+    /* The same route covers P3/P4, independent of physical port order. */
+    WORD_AT(menu+4)=0x523910;WORD_AT(0x5236c4)=4;
+    for(unsigned player=2;player<4;player++) {
+        WORD_AT(0x78ad34)=player;WORD_AT(0x6b93c0+player*4)=1;
+        WORD_AT(0x6b93e0+0x3c)=4;
+        g_esp=0x1000;pc_display_menu_mouse_input(settings_sample);
+        CHECK(settings_sample_mask==(1u|(1u<<player)) && WORD_AT(menu+0xc4)==5);
+    }
+    WORD_AT(menu+4)=0x523910;WORD_AT(0x79094c)=50;
+    g_esp=0x1000;pc_display_menu_mouse_input(settings_sample);CHECK(settings_sample_mask==1);
+    WORD_AT(0x79094c)=101;WORD_AT(0x78ad34)=4;
+    g_esp=0x1000;pc_display_menu_mouse_input(settings_sample);CHECK(settings_sample_mask==1);
+}
 static void dispatch(void)
 {
     uint32_t menu=WORD_AT(g_esp+4);
@@ -112,9 +171,11 @@ static void dispatch(void)
 static void run(uint32_t menu)
 {
     uint32_t pressed=WORD_AT(0x6b93e0),network_pressed=WORD_AT(0x6b94d8);
+    unsigned polls=video_tab_polls,flushes=video_tab_flushes;
     WORD_AT(menu+0xc4)=WORD_AT(menu+0xc8)=0;
     g_esp=0x1000;WORD_AT(g_esp+4)=menu;
     pc_display_menu_mouse_dispatch(dispatch);CHECK(g_esp==0x1004);
+    CHECK(video_tab_polls==polls+1 && video_tab_flushes==flushes+1);
     CHECK(WORD_AT(0x6b94d8)==network_pressed);
     CHECK(WORD_AT(0x6b93e0)==pressed); /* source edge never escapes dispatch */
 }
@@ -146,13 +207,15 @@ static void capture_footer(uint32_t menu)
 }
 static unsigned profile_draws;
 static uint32_t profile_colors[4];
-static float profile_x[4];
+static float profile_x[4],profile_y[4];
 static char profile_labels[4][100];
 static void profile_draw(void)
 {
     CHECK(profile_draws<4);
+    CHECK(menu_mouse_profile_icons);
     profile_colors[profile_draws]=WORD_AT(g_esp+16);
     profile_x[profile_draws]=FLOAT_AT(g_esp+4);
+    profile_y[profile_draws]=FLOAT_AT(g_esp+8);
     snprintf(profile_labels[profile_draws],100,"%s",(char *)&WORD_AT(WORD_AT(g_esp+12)));
     ++profile_draws;g_esp+=4;
 }
@@ -173,6 +236,11 @@ static void audio_tests(void)
     const uint32_t m=0x2000,music=0x3000,sound=0x3400;
     memset(memory,0,sizeof memory);memset(&menu_mouse,0,sizeof menu_mouse);
     memset(menu_mouse_footer,0,sizeof menu_mouse_footer);menu_slider_drag=0;
+    MenuSliderTrack mix_track={0};mix_track.x=100.f;mix_track.w=100.f;
+    for(unsigned i=0;i<6;i++) {
+        menu_slider_set(&mix_track,MENU_AUDIO_MIX+i,125.f);
+        CHECK(slider_mix_index==i && slider_mix_value==25);
+    }
     active=1;navigation=0;WORD_AT(0x79094c)=101;
     WORD_AT(0x4e8cf0)=640;WORD_AT(0x4e8cf4)=480;
     WORD_AT(m+0x1b0)=3;WORD_AT(m+0x178)=music;WORD_AT(music+4)=sound;
@@ -283,8 +351,9 @@ static void setting_slider_tests(void)
         CHECK(!menu_slider_drag && FLOAT_AT(0x7ba3dc+((player+1)%4)*0x1e0)==0);
         WORD_AT(0x7ba9e0)=player;setting_tracks(m,sensitivity,fov);
         cursor.left=0;run(m);cursor.x=ox+335*scale;cursor.y=oy+213*scale;
-        run(m);cursor.left=1;run(m);CHECK(slider_fov==55 && menu_slider_drag==fov);
-        cursor.x=ox+410*scale;run(m);CHECK(slider_fov==100);
+        run(m);unsigned clicks=video_click_sounds;
+        cursor.left=1;run(m);CHECK(slider_fov==55 && menu_slider_drag==fov && video_click_sounds==clicks+1);
+        cursor.x=ox+410*scale;run(m);CHECK(slider_fov==100 && video_click_sounds==clicks+1);
         cursor.x=ox+300*scale;run(m);CHECK(slider_fov==40);
         cursor.valid=0;run(m);cursor.valid=1;cursor.x=ox+360*scale;run(m);
         CHECK(slider_fov==40 && !menu_slider_drag); /* focus loss */
@@ -303,6 +372,14 @@ static void setting_slider_tests(void)
     sensitivity_painter();CHECK(!menu_slider_tracks[MENU_SENSITIVITY].item);
     WORD_AT(0x7ba9e0)=4;setting_tracks(m,sensitivity,fov);
     CHECK(!menu_slider_tracks[MENU_SENSITIVITY].item); /* invalid player */
+    memset(memory,0,sizeof memory);WORD_AT(sensitivity+0x88)=m;WORD_AT(sensitivity+0x14)=9;
+    FLOAT_AT(0x7004)=100.f;FLOAT_AT(0x700c)=160.f;centered_controls=1;
+    g_esp=0x1800;WORD_AT(g_esp+4)=m;WORD_AT(g_esp+8)=sensitivity;WORD_AT(g_esp+12)=0x7000;
+    pc_display_menu_sensitivity_draw(sensitivity_painter);
+    CHECK(menu_slider_tracks[MENU_SENSITIVITY].y==123.f && menu_slider_tracks[MENU_SENSITIVITY].w==137.f);
+    CHECK(WORD_AT(0x190c)==157 && !menu_slider_draw_bounds_valid && !menu_slider_draw_menu);
+    centered_controls=0;
+
 }
 /* Feed the production wrappers the final native arrow draw rectangles. */
 static void choice_capture(uint32_t item,unsigned direction,float x)
@@ -354,12 +431,19 @@ static void choice_tests(void)
         float left=120.f+100*align,right=left+120.f;
         choice_capture(item,4,left);choice_capture(item,8,right);
         cursor=(PcMenuPointer){ox+(left+3)*scale,oy+116*scale,(float)shape_w,(float)shape_h,1,0,0,0};
+        unsigned clicks=video_click_sounds;
         run(m);cursor.left=1;run(m);
         CHECK(WORD_AT(m+0x198)==item && WORD_AT(m+0xc4)==0x40000);
+        CHECK(video_click_sounds==clicks); /* native arrow path already owns its sound */
         CHECK(!(WORD_AT(m+0xc8)&0x1f));
         run(m);CHECK(!WORD_AT(m+0xc4)); /* no repeating while held */
         cursor.left=0;run(m);cursor.x=ox+(right+3)*scale;cursor.left=1;run(m);
         CHECK(WORD_AT(m+0xc4)==0x80000);
+        CHECK(video_click_sounds==clicks);
+        cursor.left=0;run(m);cursor.x=ox+110*scale;run(m);
+        CHECK(video_click_sounds==clicks); /* hovering is silent */
+        cursor.left=1;run(m);CHECK(video_click_sounds==clicks+1);
+        run(m);CHECK(video_click_sounds==clicks+1); /* held click never repeats */
         for(custom_painter=0;custom_painter<2;custom_painter++) {
             memset(menu_choice_arrows,0,sizeof menu_choice_arrows);
             custom_choice_painter();CHECK(!menu_choice_arrows[0].item);
@@ -570,12 +654,15 @@ int main(void)
     WORD_AT(m+0x1b0)=3;WORD_AT(m+0x178)=item;WORD_AT(item)=4;
     FLOAT_AT(m+0xe4)=100;FLOAT_AT(m+0xe8)=70;FLOAT_AT(m+0xec)=540;FLOAT_AT(m+0xf0)=400;
     FLOAT_AT(item+0x78)=200;FLOAT_AT(item+0x7c)=100;FLOAT_AT(item+0x80)=440;FLOAT_AT(item+0x84)=160;
+    /* P1 mouse remains usable while Settings is editing P2. */
+    WORD_AT(m+4)=0x523910;WORD_AT(0x5236c4)=2;WORD_AT(0x78ad34)=1;
     cursor=(PcMenuPointer){640,180,1280,720,1,0,0,0};
     run(m);CHECK(!selections && mode);
     cursor.y=181;run(m);CHECK(selections==1 && WORD_AT(m+0x198)==item);
     WORD_AT(m+0x198)=0;run(m);CHECK(!WORD_AT(m+0x198)); /* keyboard keeps selection */
     cursor.left=1;run(m);CHECK(WORD_AT(m+0xc4)==0x100010 && selections==2);
     run(m);CHECK(!WORD_AT(m+0xc4)); /* held click does not repeat */
+    WORD_AT(m+4)=0;WORD_AT(0x78ad34)=0;
     cursor.left=0;run(m);
     WORD_AT(0x6b93e0)=0x180;cursor.left=1;run(m); /* preserve real pad edges */
     CHECK(WORD_AT(0x6b93e0)==0x180);
@@ -772,15 +859,31 @@ int main(void)
     FLOAT_AT(g_esp+4)=320;FLOAT_AT(g_esp+8)=330;
     WORD_AT(g_esp+12)=0x6000;WORD_AT(g_esp+16)=0x7f7f7f55;
     CHECK(menu_mouse_profile_text(profile_draw));
+    CHECK(profile_y[0]==330 && profile_y[1]==330 && !menu_mouse_profile_icons);
     CHECK(profile_draws==2 && profile_colors[0]==0x405a7f55 && profile_colors[1]==0x7f7f7f55);
     CHECK(!strcmp(profile_labels[0],"\v2 Select") && !strcmp(profile_labels[1],"\v1 Back"));
     CHECK(profile_x[1]>profile_x[0]+40 && WORD_AT(0x7e7260)==1 && g_esp==0x1804);
     cursor.left=1;run(m);CHECK(early_action==0x10);
     cursor.left=0;cursor.x=670;run(m);cursor.left=1;run(m);CHECK(early_action==0x20);
     cursor.left=0;run(m);WORD_AT(item+0x28)|=1;cursor.left=1;run(m);CHECK(!early_action);
-    g_esp=0x1800;CHECK(!menu_mouse_profile_text(profile_draw)); /* disabled label */
+    g_esp=0x1800;CHECK(menu_mouse_profile_text(profile_draw)); /* disabled label still draws at its fitted baseline */
     WORD_AT(item+0x28)&=~1u;cursor.left=0;run(m);tick+=101;
     cursor.left=1;run(m);CHECK(!early_action); /* stale profile footer */
+    /* The Delete hint and its hit area move together, without changing the
+       native call frame or the controller layout. */
+    strcpy((char *)&WORD_AT(0x6000),"\v3 Delete Profile");
+    cursor=(PcMenuPointer){0};profile_draws=0;
+    g_esp=0x1800;g_edi=m;g_esi=item;WORD_AT(g_esp)=0x763c3;
+    FLOAT_AT(g_esp+4)=320;FLOAT_AT(g_esp+8)=330;
+    WORD_AT(g_esp+12)=0x6000;WORD_AT(g_esp+16)=0x7f7f7f55;
+    CHECK(menu_mouse_profile_text(profile_draw));
+    CHECK(profile_draws==1 && profile_y[0]==332 && FLOAT_AT(0x1808)==330 && g_esp==0x1804);
+    MenuMouseProfilePrompt *deletion=&menu_mouse_profile[3];
+    CHECK(!menu_mouse_profile_contains(deletion,m,deletion->x+1,331,deletion->sw,deletion->sh));
+    CHECK(menu_mouse_profile_contains(deletion,m,deletion->x+1,332,deletion->sw,deletion->sh));
+    profile_keyboard=0;g_esp=0x1800;
+    CHECK(!menu_mouse_profile_text(profile_draw) && menu_mouse_profile[3].y==330);
+    profile_keyboard=1;
     cursor.left=0;run(m);WORD_AT(m+4)=0;cursor.left=1;run(m);CHECK(!early_action);
     CHECK(original_calls>10);
     audio_tests();
@@ -788,6 +891,7 @@ int main(void)
     choice_tests();
     team_tests();
     character_tests();
+    settings_owner_tests();
     puts("PASS: menu pointer mapping, selection, click lifetime and gameplay isolation");
     return 0;
 }

@@ -1,0 +1,19 @@
+--- a/src/hle/audio_output_xaudio2.cpp
++++ b/src/hle/audio_output_xaudio2.cpp
+@@ -23,3 +23,4 @@
+ #include <mutex>
++#include "gameplay/pc_audio_gain.h"
+ 
+ namespace {
+@@ -338,10 +339,7 @@
+ 
+ static float gainOf(int32_t volume_hundredth_db)
+ {
+-    if (volume_hundredth_db < -10000) volume_hundredth_db = -10000;
+-    if (volume_hundredth_db > 0) volume_hundredth_db = 0;
+-    return volume_hundredth_db == -10000 ? 0.0f :
+-        std::pow(10.0f, volume_hundredth_db / 2000.0f);
++    return pc_audio_db_gain(volume_hundredth_db);
+ }
+ 
+ extern "C" int recomp_audio_output_set_volume(uint32_t slot, int32_t volume_hundredth_db)

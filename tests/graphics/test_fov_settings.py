@@ -27,12 +27,42 @@ def test_native_menu_callbacks_compile(tmp_path, source):
     assert result.returncode == 0, result.stdout + result.stderr
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows settings persistence adapter')
-@pytest.mark.parametrize("mutation", ["fixed", "drain-other-menu", "story-before-lobby"])
+@pytest.mark.parametrize("mutation", ["fixed", "drain-other-menu", "original-system-link", "missing-lan-activation", "story-before-lobby"])
 def test_fov_settings(tmp_path, mutation):
     compiler, environment = native_compiler(tmp_path)
     exe = tmp_path / 'fov.exe'
     source = ROOT / 'tests/graphics/fov_settings.c'
-    if mutation != 'fixed':
+    if mutation in ('original-system-link', 'missing-lan-activation'):
+        # Compile the real six-instruction row callback. Its direct tail call
+        # bypassed the browser lookup, while the old test pre-enabled networking.
+        import hashlib
+        xbe = ROOT / 'private/game/default.xbe'
+        if not xbe.is_file():
+            pytest.skip('Supported local US executable required')
+        image = xbe.read_bytes()
+        assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+        sys.path.insert(0, str(RUNTIME))
+        from tools.recomp import config
+        from tools.recomp.translator import FunctionTranslator
+        previous = dict(vars(config))
+        try:
+            config.configure_from_xbe(str(xbe))
+            info = dict(name='sub_001A2700', end=0x1a2717)
+            code = FunctionTranslator(image, {0x1a2700: info}).translate_function(0x1a2700, info)
+        finally:
+            vars(config).update(previous)
+        (tmp_path / 'system_link_original.inc').write_text(code, encoding='utf-8')
+        menu = tmp_path / 'pc_display_menu.c'
+        production = (ROOT / 'src/interface/pc_display_menu.c').read_text(encoding='utf-8')
+        if mutation == 'missing-lan-activation':
+            needle = 'case 0x001A2700u: return system_link_select;'
+            assert needle in production
+            production = production.replace(needle, 'case 0x001A2700u: return sub_001A2700;')
+        menu.write_text(production, encoding='utf-8')
+        fixture = source.read_text(encoding='utf-8').replace('../src/interface/pc_display.c', (ROOT / 'src/interface/pc_display.c').as_posix()).replace('../src/interface/pc_display_menu.c', menu.as_posix())
+        source = tmp_path / 'fov_settings.c'
+        source.write_text('#define TSFP_TEST_ORIGINAL_SYSTEM_LINK\n' + fixture, encoding='utf-8')
+    if mutation in ('drain-other-menu', 'story-before-lobby'):
         if mutation == 'drain-other-menu':
             adapter = (ROOT / 'src/storage/pc_storage_menu.inc').read_text(encoding='utf-8')
             guard = 'if(sd_picker_menu && sd_picker_menu==menu)'
@@ -53,6 +83,7 @@ def test_fov_settings(tmp_path, mutation):
         source.write_text(fixture, encoding='utf-8')
     result = subprocess.run([compiler, '/nologo', '/std:c11', '/O2', '/W3',
         '/I' + str(ROOT / 'src'), '/I' + str(RUNTIME / 'templates/runtime'),
+        '/I' + str(tmp_path),
         '/I' + str(RUNTIME / 'src/input'), '/I' + str(RUNTIME / 'src/config'),
         str(source), str(ROOT / 'src/textures/texture_mode.c'),
         '/Fe:' + str(exe), '/link', 'user32.lib'],
@@ -60,7 +91,10 @@ def test_fov_settings(tmp_path, mutation):
     assert result.returncode == 0, result.stdout + result.stderr
     result = subprocess.run([str(exe), str(tmp_path / 'display.ini')],
         capture_output=True, text=True, timeout=15)
-    if mutation == 'drain-other-menu':
+    if mutation == 'missing-lan-activation':
+        assert result.returncode != 0
+        assert 'getenv("TSFP_NETWORK")' in result.stderr
+    elif mutation == 'drain-other-menu':
         assert result.returncode != 0
         assert 'picker_result==1' in result.stderr
     elif mutation == 'story-before-lobby':

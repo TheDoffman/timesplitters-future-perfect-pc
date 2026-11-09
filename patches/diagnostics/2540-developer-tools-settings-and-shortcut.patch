@@ -1,0 +1,18 @@
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -94,6 +94,7 @@
+ #define PC_WEAPON_SLOT(n,key) { "weapon_slot_" #n, K_WEAPON_SLOT, n-1, 0 },
+ #include "pc_weapon_slots.def"
+ #undef PC_WEAPON_SLOT
++    { "developer_tools", K_DIGITAL, 0, 0 },
+ #endif
+ };
+ #define CONTROL_COUNT ((int)(sizeof CONTROLS / sizeof CONTROLS[0]))
+@@ -1090,6 +1091,7 @@
+     for (i = 0; i < CONTROL_COUNT; i++) {
+         int mag = 0, s;
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
++        if(i==PC_DEVELOPER_ACTION)continue; /* Host shortcut never enters the Xbox pad. */
+         if(CONTROLS[i].kind==K_WEAPON_SLOT) {
+             if(port==0 && c->device==DEV_KEYBOARD)
+                 for(s=0;s<c->bind[i].count;s++)

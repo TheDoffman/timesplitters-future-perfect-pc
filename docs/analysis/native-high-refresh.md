@@ -40,7 +40,7 @@ one control row, and Apply has no silver divider above it. Settings lists Audio
 Options, Video Options, Controls and Copy Profile, with Cheats last when unlocked.
 Shared menu focus bars use rounded blue corners throughout the frontend and pause menus. Back remains available through
 the normal key/footer. **Audio Options** retains the audio controls; Subtitles
-now uses Video Options and the native profile save mechanism. Texture style stays session-only, like F10. The same
+now uses Video Options and the native profile save mechanism. Texture style and F10 now persist through the shared pc-textures.ini preference. The same
 guest menu serves Windows and Mac; native Mac visual validation is pending.
 This is a development checkout entry point, not an installed release update.
 

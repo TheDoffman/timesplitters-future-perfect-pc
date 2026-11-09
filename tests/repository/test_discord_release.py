@@ -40,11 +40,40 @@ class DiscordReleaseTests(unittest.TestCase):
                 path.write_text(json.dumps({'inputs': {'channel': selected}}), encoding='utf-8')
                 env = {'GITHUB_EVENT_PATH': str(path), 'GITHUB_EVENT_NAME': 'workflow_dispatch',
                        'DISCORD_STABLE_RELEASE_WEBHOOK': 'https://discord.com/api/webhooks/123/stable',
-                       'DISCORD_PREVIEW_RELEASE_WEBHOOK': 'https://discord.com/api/webhooks/456/preview'}
+                       'DISCORD_PREVIEW_RELEASE_WEBHOOK': 'https://discord.com/api/webhooks/456/preview',
+                       'DISCORD_STABLE_RELEASE_ROLE_ID': '1566334829791027310',
+                       'DISCORD_PREVIEW_RELEASE_ROLE_ID': '1566334962834087997'}
                 with patch.dict(os.environ, env, clear=True), patch.object(MODULE, 'send') as send:
                     MODULE.main()
                     expected = ['stable']
                     self.assertEqual([call.args[0].rsplit('/', 1)[1] for call in send.call_args_list], expected)
+                    self.assertNotIn('content', send.call_args.args[1])
+                    self.assertEqual(send.call_args.args[1]['allowed_mentions'], {'parse': []})
+
+    def test_real_release_mentions_only_the_matching_opt_in_role(self):
+        roles = {'DISCORD_STABLE_RELEASE_ROLE_ID': '1566334829791027310',
+                 'DISCORD_PREVIEW_RELEASE_ROLE_ID': '1566334962834087997'}
+        for tag, preview, selected in [('v0.4.1', False, 'stable'),
+                                       ('v0.5.0-beta.1', True, 'preview')]:
+            data = event(tag, preview, body='@everyone <@123> <@&999>')
+            with tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / 'event.json'
+                path.write_text(json.dumps(data), encoding='utf-8')
+                env = {**roles, 'GITHUB_EVENT_PATH': str(path), 'GITHUB_EVENT_NAME': 'release',
+                       'DISCORD_STABLE_RELEASE_WEBHOOK': 'https://discord.com/api/webhooks/123/stable'}
+                with patch.dict(os.environ, env, clear=True), patch.object(MODULE, 'send') as send:
+                    MODULE.main()
+                    payload = send.call_args.args[1]
+                    role = roles[f'DISCORD_{selected.upper()}_RELEASE_ROLE_ID']
+                    self.assertEqual(payload['content'], f'<@&{role}>')
+                    self.assertEqual(payload['allowed_mentions'], {'parse': [], 'roles': [role]})
+
+    def test_invalid_or_absent_role_configuration(self):
+        payload = MODULE.announcement(event())[1]
+        self.assertEqual(MODULE.notification_role('stable', payload, {}), payload)
+        for invalid in ('@everyone', '123', '1566334829791027310 <@&999>'):
+            with self.assertRaisesRegex(ValueError, 'Invalid Discord notification role'):
+                MODULE.notification_role('stable', payload, {'DISCORD_STABLE_RELEASE_ROLE_ID': invalid})
 
     def test_published_release_delivery_reaches_the_correct_channels(self):
         secrets = {'DISCORD_STABLE_RELEASE_WEBHOOK': 'https://discord.com/api/webhooks/123/stable',

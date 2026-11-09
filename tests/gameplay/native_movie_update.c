@@ -28,8 +28,19 @@ static void sleep_ms(DWORD ms) { assert(ms==1);sleeps++;host_counter+=host_frequ
 #define Sleep sleep_ms
 #include "../src/gameplay/pc_native_movie_pacing.h"
 #include <stdlib.h>
+#include "gameplay/pc_audio_dynamics.h"
+#include "interface/pc_audio_mix_settings.h"
+/* Keep the real movie DSP in Original mode while these spies verify routing. */
+int32_t pc_audio_mix_level(int32_t original,int bus)
+{ assert(bus==PC_AUDIO_MOVIES);return original; }
+unsigned pc_audio_mix_dynamics(int bus)
+{ assert(bus==PC_AUDIO_MOVIES);return 0; }
 
 #define TSFP_PC_CONTROLS 1
+#include "gameplay/pc_movie_speed.h"
+#define PC_MOVIE_SPEED() 1.
+#define PC_MOVIE_AUDIO_SPEED() 1.f
+#define PC_MOVIE_ACTIVE(active) ((void)(active))
 #define MAX_MOVIES 4
 #define MAX_CATCH_UP 8u
 #define AUDIO_CHUNK 8192u
@@ -64,6 +75,10 @@ static int host_discontinuity;
 static int recomp_audio_output_take_discontinuity(int slot) {
     assert(slot==1); int lost=host_discontinuity; host_discontinuity=0; return lost;
 }
+static unsigned volume_updates;
+static int recomp_audio_output_set_volume(int slot,int32_t level)
+{ assert(slot==RECOMP_AUDIO_SLOT_MOVIE && level==0);volume_updates++;return 1; }
+static void recomp_audio_output_movie_speed(float ratio){assert(ratio==1.f);}
 static void recomp_audio_output_reset_voice(int slot) { assert(slot==1);resets++; }
 static int recomp_audio_output_position(int slot,uint64_t *played,uint32_t *queued)
 { assert(slot==1);*played=submitted;*queued=0;return 1; }
@@ -121,7 +136,7 @@ int main(void) {
         assert(xmv_play_update(1,0x1000,&pts)==2 && host_counter==stopped);
         xmv_play_close(1);assert(resets==2);
     }
-    assert(counts[1]>counts[0]*10);
+    assert(counts[1]>counts[0]*10 && volume_updates>0);
     puts("PASS: actual movie updater retains decoded timestamps/audio/EOF while bounding native polling; close releases timer");
     return 0;
 }

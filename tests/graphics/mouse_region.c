@@ -43,6 +43,11 @@ static PcGuestRegion pc_guest_query_span(uintptr_t address,size_t bytes)
 #include "pc_reload_guest.h"
 #include "pc_terminal.h"
 #include "pc_mounted.h"
+static int keyboard_player=1;
+static int pc_settings_keyboard_player(void) {return keyboard_player;}
+static int pc_developer_mouse(PcInput *state,uint64_t now,float sensitivity,int invert,float scale)
+{(void)state;(void)now;(void)sensitivity;(void)invert;(void)scale;return 0;}
+
 static PcInput input;
 static double sensitivity=.1;
 static int invert_y,rate=144;
@@ -81,6 +86,10 @@ int main(void)
     MOVE();APPLY();
     CHECK(queries==1 && fabs(F(0x10100)+1)<.001 && fabs(F(0x10104)+.5)<.001);
     CHECK(input.reload.eligible && input.reload.player==player_address);
+    /* A controller-owned first viewport must never receive raw mouse aim. */
+    keyboard_player=0;MOVE();APPLY();
+    CHECK(fabs(F(0x10100)+1)<.001 && fabs(F(0x10104)+.5)<.001 && !input.dx && !input.dy);
+    keyboard_player=1;
     /* Updating a second local player must preserve port 1's pending request. */
     pc_input_key_at(&input,'R',1,1001);
     U(0x10004)=1;APPLY();U(0x10004)=0;

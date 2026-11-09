@@ -29,7 +29,8 @@ static uint32_t expected_sprite=957,expected_name=321,expected_bitmap;
 static unsigned texture_loads,names_drawn;
 static uint32_t guest_call(void (*fn)(void),unsigned count,...){
     uint32_t args[5];va_list ap;va_start(ap,count);CHECK(count<=5);
-    for(unsigned i=0;i<count;i++)args[i]=va_arg(ap,uint32_t);va_end(ap);
+    for(unsigned i=0;i<count;i++)args[i]=va_arg(ap,uint32_t);
+    va_end(ap);
     if(fn==sub_00080F20){CHECK(count==1 && args[0]==expected_sprite);++texture_loads;return 777;}
     if(fn==sub_0003D7B0){CHECK(count==1 && args[0]==expected_name);return 0x7000;}
     if(fn==sub_0003FA10){CHECK(count==1 && (args[0]==3 || args[0]==9));return 9;}

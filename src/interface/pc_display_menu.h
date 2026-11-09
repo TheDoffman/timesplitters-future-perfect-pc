@@ -100,12 +100,15 @@ void pc_display_footer_background(void (*original)(void));
 void pc_display_title_matte(void (*original)(void));
 void pc_display_menu_backdrop(void (*original)(void));
 void pc_display_main_menu_font(void (*original)(void),int building);
+void pc_display_video_menu_font(void (*original)(void));
 void pc_display_radar_begin(void);
 void pc_display_health(void (*original)(void));
 void pc_display_health_side(void);
 void pc_display_tutorial(void (*original)(void));
 void pc_display_tutorial_wrap(void (*original)(void));
 void pc_display_tutorial_text(void (*original)(void));
+void pc_display_keycap_text(void (*original)(void));
+void pc_display_keycap_glyph(void (*original)(void));
 void pc_display_perspective_projection(void (*original)(void));
 void pc_story_failure_trace(void (*original)(void),uint32_t address);
 void pc_story_network_frame(void (*original)(void));
@@ -129,4 +132,35 @@ void pc_story_network_lobby_lost(void (*original)(void));
 void (*pc_display_menu_lookup(uint32_t address))(void);
 void pc_story_network_return_lobby(void (*original)(void));
 void pc_story_network_disconnect_exit(void (*original)(void));
+void pc_kill_feed_hud(void (*original)(void));
+void pc_kill_feed_projectile(void (*original)(void));
+void pc_kill_feed_hit_record(void (*original)(void));
+void pc_kill_feed_death(void (*original)(void));
+void pc_kill_feed_fire(void (*original)(void),int npc);
+void pc_kill_feed_allocate(void (*original)(void));
 #endif
+
+void pc_graphics_world_finish(void (*original)(void));
+void pc_developer_camera_guest(void (*original)(void));
+int pc_graphics_hud_begin(void);
+void pc_graphics_hud_end(void);
+
+int pc_developer_damage_blocked(void);
+void pc_developer_ammo_guest(void (*original)(void));
+void pc_developer_world_visibility(void);
+void pc_developer_viewmodel_draw(void (*original)(void));
+void pc_developer_grenade_guest(void (*original)(void));
+void pc_developer_draw_body(void);
+
+void pc_developer_lobby_guest(void);
+
+void pc_developer_cutscene_guest(void (*original)(void));
+
+void pc_developer_lobby_name(void (*original)(void));
+void pc_developer_lobby_text(void (*original)(void));
+
+void pc_multiplayer_exit_action(void (*original)(void),unsigned action);
+void pc_multiplayer_exit_menu(void (*original)(void));
+void pc_multiplayer_return_lobby(void (*original)(void));
+void pc_multiplayer_disconnect_exit(void (*original)(void));
+void pc_multiplayer_lobby_lost(void (*original)(void));

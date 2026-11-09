@@ -39,7 +39,8 @@ int tsfp_storage_profile(tsfp_storage_state *s,const char *root) {
     enter(s);memcpy(s->paths.profile,root,n+1);leave(s);return 1;
 }
 int tsfp_storage_read(tsfp_storage_state *s,tsfp_storage_snapshot *out) {
-    if(!s || !out)return 0;enter(s);if(!s->ready) {leave(s);return 0;}
+    if(!s || !out)return 0;
+    enter(s);if(!s->ready) {leave(s);return 0;}
     *out=s->paths;leave(s);return 1;
 }
 int tsfp_storage_image_bytes(unsigned part,uint64_t *out) {

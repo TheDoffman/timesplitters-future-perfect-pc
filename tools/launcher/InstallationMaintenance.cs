@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-#if !MACOS
+#if !MACOS && !LINUX
 using System.Management;
 #endif
 using System.Reflection;
@@ -128,7 +128,7 @@ namespace TimeSplitters.Launcher
         }
         public static string Graphics()
         {
-#if MACOS
+#if MACOS || LINUX
             return NativeHost.Graphics();
 #else
             try {
@@ -173,7 +173,7 @@ namespace TimeSplitters.Launcher
             text.AppendLine("Graphics: "+graphics);
             var resources=Assembly.GetExecutingAssembly().GetManifestResourceNames();
             text.AppendLine("Embedded artwork: banner "+(resources.Contains("launcher-banner.png")?"present":"fallback")+", logo "+(resources.Contains("launcher-logo.png")?"present":"fallback"));
-            try { text.AppendLine("Installation volume free: "+(new DriveInfo(Path.GetPathRoot(root)).AvailableFreeSpace/1073741824.0).ToString("0.0",CultureInfo.InvariantCulture)+" GiB"); } catch { text.AppendLine("Free space: unavailable"); }
+            try { text.AppendLine("Installation volume free: "+(TsfpDiskSpace.Available(root)/1073741824.0).ToString("0.0",CultureInfo.InvariantCulture)+" GiB"); } catch { text.AppendLine("Free space: unavailable"); }
             try {
                 var settings=GameSettings.Load(root,null);
                 text.AppendLine("Saved graphics: "+settings.Width+"x"+settings.Height+", render scale "+settings.Scale+", vertical FOV "+settings.VerticalFov+", fullscreen "+settings.Fullscreen+", frame cap "+(new[]{"adaptive","30","60","0"}.Contains(settings.FrameCap)?settings.FrameCap:"unknown"));

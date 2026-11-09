@@ -1,0 +1,9 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -155,3 +155,6 @@
+ #include "pc_native_weapon_guest.h"
++extern void sub_001C2AF0_gen(void);
++void sub_001C2AF0(void)
++{ pc_native_player_trigger_guest(sub_001C2AF0_gen,g_esp); }
+ #include "pc_native_minigun_guest.h"
+ extern void sub_001C74D0_gen(void);

@@ -33,7 +33,7 @@ def test_auto_look_regions(tmp_path, mutation):
     compile_and_run(tmp_path, source, fails=mutation!='none')
 
 
-@pytest.mark.skipif(sys.platform not in ('win32', 'darwin'), reason='Host guest-memory guards require Windows or macOS')
+@pytest.mark.skipif(sys.platform not in ('win32', 'darwin', 'linux'), reason='Host guest-memory guards require Windows, macOS or Linux')
 @pytest.mark.parametrize('fixture', ['auto_look', 'auto_look_span'])
 def test_auto_look(tmp_path, fixture):
     compiler, environment = native_compiler(tmp_path)

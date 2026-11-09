@@ -14,6 +14,11 @@ static void sample(void)
     assert(sp==104);
 }
 static void noop(void) {}
+static void rocket_policy(void) {
+    assert(pc_native_kind35_gate(0)==1 && pc_native_kind35_turn(8)==2);
+    assert(pc_native_projectile_skip_smoke());
+}
+
 static void original_policy(void)
 {
     assert(pc_native_kind35_gate(0)==0 && pc_native_kind35_gate(6)==6);
@@ -67,6 +72,21 @@ int main(void)
     *pc_kind35_word(0x737BD4)=SECOND; /* new pool address clears old values */
     pc_native_kind35_update_guest(sample,SECOND);
     assert(result==0x80000000u && draws==8);
+    const unsigned kinds[]={8,9,10,11,39,42};
+    for(unsigned i=0;i<6;i++) {
+        *pc_kind35_word(SECOND)=kinds[i];
+        pc_native_kind35_init_guest(noop,SECOND);
+        pc_native_kind35_update_guest(rocket_policy,SECOND);
+        assert(!pc_native_projectile_skip_smoke());
+    }
+    *pc_kind35_word(SECOND)=50;
+    pc_native_kind35_update_guest(rocket_policy,SECOND);
+    *pc_kind35_word(0x4E7944)=1;
+    pc_native_kind35_update_guest(sample,SECOND);
+    unsigned before_pause=draws;
+    *(float *)pc_kind35_word(0x4E794C)=0;
+    pc_native_kind35_update_guest(sample,SECOND);
+    assert(draws==before_pause); /* A stale whole count cannot advance RNG. */
     free(memory);
     return 0;
 }

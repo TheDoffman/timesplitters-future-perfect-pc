@@ -142,6 +142,9 @@ def main():
             user.SetForegroundWindow(game)
             time.sleep(.5)
             screenshot(game, work / 'debug-overlay.png')
+            if not user.GetMenu(game):
+                user.SendMessageW(game, 0x100, 0x70, 0)  # F1 restores saved-hidden bar
+                user.SendMessageW(game, 0x101, 0x70, 0)
             menu = user.GetSubMenu(user.GetMenu(game), 0)
 
             def fullscreen():

@@ -6,6 +6,8 @@ static void clear_transient(PcInput *s)
 {
     memset(s->keys, 0, sizeof s->keys);
     pc_reload_reset(&s->reload);
+    s->cockpit_active=s->cockpit_blocked=0;
+    s->cockpit_at=0;
     s->dx = s->dy = 0;
     s->motion_at = 0;
     s->wheel_queue = s->wheel_key = 0;
@@ -105,6 +107,16 @@ int pc_input_radial_axis_magnitude(int16_t axis, int16_t other,
        deadzone from each component separately slows diagonal movement/aim. */
     gain = (fmin(length, 32767.0) - deadzone) / (32767.0 - deadzone);
     return (int)(255.0 * gain * value / length + 0.5);
+}
+
+int pc_input_compensate_stick_deadzone(int magnitude)
+{
+    if(magnitude<=0)return 0;
+    if(magnitude>=255)return 255;
+    /* US decoder18FF70 reads0.1 at475D24, then rescales the remaining90%.
+     * Round upward through the host's8-bit axis transport. This compensation
+     * applies to pad stick axes only, never keyboard, triggers or buttons. */
+    return (magnitude*9+255+9)/10;
 }
 
 uint64_t pc_input_consume_motion(PcInput *s, uint64_t now, double *dx, double *dy)

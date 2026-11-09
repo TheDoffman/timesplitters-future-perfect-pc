@@ -25,6 +25,7 @@ void pc_native_physics_random(void) {pc_native_physics_random_guest(sub_00153B40
 enum { BODY=0x5000, TABLE=0x6000, MATERIAL=0x7000, FORCE=0x8000,
        CONTACT=0x9000, PROP=0x9100, STATIC_PROP=0x9300, IMPACTS=0x9500,
        VEHICLE=0xa000, PARAMETERS=0xb000, CAPS=0xc000, CHARACTER=0xd000 };
+static int legacy_throw;
 static int legacy,contact_mode,missing_contact,legacy_rng,legacy_secondary,legacy_sleep;
 static unsigned allocations,integrations,changed,contacts,impulses;
 static unsigned random_calls;
@@ -54,7 +55,8 @@ static double seconds;
      (value) : pc_native_global_load(site,address,value))
 #undef RECOMP_F32_MUL_AT
 #define RECOMP_F32_MUL_AT(site,left,right) \
-    ((site)==0x1689ACu && penetration_contact && missing_penetration ? 0.f : \
+    ((site)==0x3505D7u && legacy_throw ? (left)*(right) : \
+    (site)==0x1689ACu && penetration_contact && missing_penetration ? 0.f : \
     missing_other_mass && ((site)==0x16FD23u || (site)==0x16FD3Cu || (site)==0x16FD53u) ? 0.f : \
     missing_other_torque && ((site)==0x1703A6u || (site)==0x1703BFu || (site)==0x1703D8u) ? 0.f : \
     (site)==0x172099 && legacy ? (left)*(right) : pc_native_multiply(site,left,right))
@@ -136,6 +138,7 @@ static void impact_callback(void) {
     }
     g_eax=0;g_esp+=4;
 }
+void sub_0035061A(void) {} /* End of isolated original throw block. */
 /* UNREACHED */
 /* ROUTINES */
 static void reset(int forced)
@@ -300,8 +303,57 @@ static void two_body_contacts(void)
     }
     printf("two_body_summary cases=%u max_impulse_error=%.9f\n",cases,max_error);
 }
+/* Original Uplink release-force block -> body force accumulator -> real solver.
+ * Target/direction are controlled; this is not a map collision test. */
+static void uplink_throw_check(void)
+{
+    float baseline_speed[2]={0},baseline_distance[2]={0};
+    g_tsfp_native_timing_active=1;
+    float invalid[]={0,-1,NAN,INFINITY};
+    MEMF(0x4e794c)=1;
+    for(unsigned i=0;i<4;i++) {
+        MEMF(0x4e7948)=invalid[i];assert(pc_native_uplink_throw(2,3)==6);
+    }
+    MEMF(0x4e7948)=.25f;
+    for(unsigned i=0;i<4;i++) {
+        MEMF(0x4e794c)=invalid[i];assert(pc_native_uplink_throw(2,3)==6);
+    }
+    MEMF(0x4e794c)=.25f;g_tsfp_native_timing_active=0;
+    assert(pc_native_uplink_throw(2,3)==6);
+    g_tsfp_native_timing_active=1;
+    assert(pc_native_multiply(0x3505D8,2,3)==6); /* unrelated site */
+    for(unsigned slow=0;slow<2;slow++)for(unsigned rate=0;rate<5;rate++) {
+        unsigned fps=test_rates[rate];float raw=60.f/fps,game=raw/(slow?4:1);
+        g_tsfp_native_timing_active=rate!=0;reset(0);
+        for(unsigned i=0;i<15;i++)MEMF(0x74c414+4*i)=game;
+        for(unsigned i=0;i<3;i++)MEMF(BODY+0x14c+4*i)=0;
+        MEMF(BODY+0x12c)=MEMF(BODY+0x138)=0;
+        MEM32(0x53fa58)=1;MEM32(0x20004)=0;MEM32(0x20008)=PROP;
+        MEM32(PROP+0x80)=0x10000; /* nonzero handle, low index zero */
+        MEMF(0x21000+0x2dc)=.97f;
+        MEM32(0x4e7940)=MEM32(0x4e7944)=1;
+        MEMF(0x4e7948)=raw;MEMF(0x4e794c)=game;
+        g_ebx=0x21000;g_esp=0x18000;
+        MEM32(g_esp+0x54)=0x22000;MEM32(0x22000)=0x20000;
+        MEMF(g_esp+0x2c)=1;MEMF(g_esp+0x30)=MEMF(g_esp+0x34)=0;
+        sub_003505CF();
+        MEMF(FORCE)=MEMF(BODY+0x110);assert(MEMF(FORCE)>100);
+        for(unsigned frame=0;frame<fps;frame++) {
+            unsigned whole=(frame+1)*60/fps-frame*60/fps;
+            step_clocks(whole,whole,raw,game);
+            MEMF(FORCE)=0; /* release is one event, not continuous thrust */
+        }
+        float speed=MEMF(BODY+0x14c),distance=MEMF(BODY+0x140);
+        printf("uplink_throw fps=%u slow=%u speed=%g distance=%g\n",fps,slow,speed,distance);
+        assert(speed>1 && distance>0);
+        if(!rate){baseline_speed[slow]=speed;baseline_distance[slow]=distance;}
+        assert(fabsf(speed-baseline_speed[slow])<.001f && "Uplink throw impulse depends on FPS");
+        assert(fabsf(distance-baseline_distance[slow])<baseline_distance[slow]*.02f && "Uplink throw range depends on FPS");
+    }
+}
 int main(int argc,char **argv)
 {
+    legacy_throw=argc>1 && !strcmp(argv[1],"legacy-uplink-throw");
     legacy=argc>1 && !strcmp(argv[1],"legacy-clock");
     legacy_rng=argc>1 && !strcmp(argv[1],"legacy-rng");
     legacy_secondary=argc>1 && !strcmp(argv[1],"legacy-secondary");
@@ -555,5 +607,6 @@ int main(int argc,char **argv)
     printf("penetration_summary cases=%u max_linear_error=%.9f max_angular_error=%.9f\n",
            overlap_cases,overlap_linear_error,overlap_angular_error);
     two_body_contacts();
+    uplink_throw_check();
     free(memory);puts("PASS: original rigid motion, force, drag, quaternion/matrix pipeline, support/contact impulse, fresh steps and pause");return 0;
 }

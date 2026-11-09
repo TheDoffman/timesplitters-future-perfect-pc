@@ -40,12 +40,12 @@ def ensure_pack(root=ROOT, pack=None):
     for parent in (pack, *pack.parents):
         regular(parent)
     if not pack.is_dir():
-        raise ValueError('Repository texture pack is missing. Run git lfs install and git lfs pull, or explicitly select --without-textures / -SkipTextures.')
+        raise ValueError('Optional texture pack is missing. For texture work, run git lfs pull --include="assets/textures/**" --exclude="". Ordinary builds need no texture pack.')
     for path in pack.glob('*.dds'):
         regular(path)
         with path.open('rb') as stream:
             if stream.read(43).startswith(b'version https://git-lfs.github.com/spec/v1'):
-                raise ValueError('Texture files are Git LFS pointers. Run git lfs pull before building or packaging.')
+                raise ValueError('Optional textures are Git LFS pointers. For texture work, run git lfs pull --include="assets/textures/**" --exclude="". Ordinary builds need no texture pack.')
     records, size = RELEASE.audit(pack)
     identity = {'source': 'repository' if pack == Path(root)/'assets/textures' else 'local',
                 'texture_count': len(records), 'installed_bytes': size}

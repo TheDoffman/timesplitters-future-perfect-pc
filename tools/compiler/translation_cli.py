@@ -125,6 +125,7 @@ def _parser():
         mode.add_argument('--'+flag, action='store_true')
     parser.add_argument('-n', '--max-funcs', type=int)
     parser.add_argument('--split', type=int, default=0)
+    parser.add_argument('--context-continuations',action='store_true',help='Also generate exact-PC continuation blocks for the native context adapter')
     parser.add_argument('--hle-impl', action='append')
     parser.add_argument('--exclude-manual', nargs='?', const='')
     parser.add_argument('--force-return', action='append', default=[])
@@ -233,6 +234,8 @@ def _refresh(translator, directory, replacements, variables, wanted, manual_name
 
 
 def _run(args):
+    if args.context_continuations and (args.split<=0 or args.only_hle_thunks or args.function or args.header or args.list_categories):
+        raise ValueError('Context continuations require ordinary split generation')
     if args.split < 0 or (args.max_funcs is not None and args.max_funcs < 0):
         raise ValueError('Split size and maximum function count cannot be negative')
     runtime = Path(args.runtime or DEFAULT_RUNTIME or Path.cwd()).resolve()
@@ -287,6 +290,12 @@ def _run(args):
         stats = translator.translate_batch_split(functions, str(directory), chunk_size=args.split,
             verbose=args.verbose, manual=manual | set(replacements), keep_bodies=kept)
         write_if_changed(directory / 'recomp_hle.c', hooks.render_thunks(replacements, variables, originals))
+        if args.context_continuations:
+            from continuation_output import publish
+            report=publish(translator.translator,functions,directory,kept=kept)
+            stats['context_continuations']=report
+            print(f'context: {report["functions"]} bodies, {report["instruction_entries"]} decoded entries, '
+                  f'{len(report["rejected"])} rejected, {len(report["opaque_entries"])} opaque',file=sys.stderr)
     else:
         stats = translator.translate_batch(functions, max_funcs=args.max_funcs, verbose=args.verbose)
     print_stats(stats)

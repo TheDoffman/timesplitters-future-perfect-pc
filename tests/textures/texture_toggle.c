@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <errno.h>
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -28,6 +29,9 @@ static unsigned rebinds;
 static struct {void *image;} *g_cur_rt;
 static void rebind_stage_srvs(void *image) {(void)image;rebinds++;}
 #include "texture_binding_sync.inc"
+/* Texture presentation has no active Developer Tools overlay. */
+static struct { unsigned swap_width,swap_height; } g_device_state;
+static void d3d8_overlay_draw_developer(unsigned width,unsigned height) {(void)width;(void)height;}
 static unsigned frame_completions, host_presents;
 static BOOL g_skip_guest_present;
 static UINT g_present_interval=1;
@@ -36,6 +40,8 @@ static DWORD g_d3d_settransform_count,g_d3d_setrs_count,g_d3d_settexture_count;
 static void follow_vrr(void) {}
 static void two_d_tag_frame(void) {}
 static void present_scene(void) {}
+/* This texture-only fixture has no alternate HUD targets. */
+static void native_hud_restore(void) {}
 static void d3d8_display_frame_done(void) {}
 void rhi_pump_events(void) {}
 int32_t rhi_present_kind(uint32_t interval,uint32_t kind)
@@ -97,9 +103,15 @@ int main(int argc,char **argv)
 {
     unsigned char data[8]={0,1,2,3,4,5,6,7}, changed[8]={9,1,2,3,4,5,6,7};
     D3D8Texture texture={0}, missing={0}, bad={0};
-    char path[4096]; int initial, cached_allocations;
+    char path[4096],preference[4096]; int initial, cached_allocations;
     RhiView *cached;
     CHECK(argc==3);
+    /* Both CMake and pytest run this fixture. Never inherit product settings
+     * from the working directory or the caller's input/display paths. */
+    snprintf(path,sizeof path,"%s/texture-test-display.ini",argv[1]);
+    CHECK(!_putenv_s("TSFP_DISPLAY_CONFIG",path));
+    snprintf(preference,sizeof preference,"%s/pc-textures.ini",argv[1]);
+    CHECK(remove(preference)==0 || errno==ENOENT);
 #ifdef TSFP_TEST_BINDING_SYNC
     CHECK(dev_Swap(NULL,0)==S_OK && frame_completions==1 && host_presents==1);
     g_skip_guest_present=TRUE;
@@ -128,6 +140,7 @@ int main(int argc,char **argv)
         CHECK(tsfp_texture_toggle());
         CHECK(tsfp_texture_view(&texture)==texture.srv);
         CHECK(remove(path)==0);
+        CHECK(remove(preference)==0);
         puts("PASS: absent pack falls back to Classic in both modes"); return 0;
     }
     if(!initial) {
@@ -201,6 +214,7 @@ int main(int argc,char **argv)
     CHECK(!texture.pack_srv && !images && !views);
     tsfp_texture_release(&texture);
     CHECK(!images && !views);CHECK(remove(path)==0);
+    CHECK(remove(preference)==0 || errno==ENOENT);
     puts("PASS: live cached view switches, original preservation, missing/invalid pack fallback, screen-copy exclusion, content changes and cleanup");
     return 0;
 }

@@ -36,7 +36,8 @@ static unsigned char memory[0x800000];
 static uintptr_t g_xbox_mem_offset;
 static uint32_t g_esp, g_eax;
 #include "display_memory_mock.h"
-static float factor=1.f;
+static float factor=1.f,weapon_scale=1.f;
+static float pc_display_weapon_fov_scale(void) { return weapon_scale; }
 static float pc_display_camera_factor(void) { return factor; }
 #define WORD_AT(a) (*(uint32_t *)(memory+(uint32_t)(a)))
 static int guest_writable(uint32_t a,size_t n)
@@ -88,6 +89,7 @@ int main(void)
         for(i=0;i<sizeof factors/sizeof factors[0];i++) {
             factor=factors[i];
             for(j=0;j<2;j++)for(size_t frame=0;frame<48;frame++) {
+                weapon_scale=frame%3==0?1.f:frame%3==1?.8f:1.5f;
                 uint32_t destination=0x6000+(frame%2)*0x100;
                 float *model=(float *)(memory+destination);
                 g_esp=0x10000;WORD_AT(g_esp)=models[j];WORD_AT(g_esp+4)=destination;
@@ -95,7 +97,11 @@ int main(void)
                 sub_00151CF0();
                 CHECK(display_region_queries-before==0);
                 CHECK(g_esp==0x10004 && g_eax==0x12345678);
-                for(k=0;k<16;k++)CHECK(model[k]==(k==0?original[k]/factor:original[k]));
+                for(k=0;k<16;k++) {
+                    float expected=k==0?original[k]/factor:original[k];
+                    if(j==0 && (k==0 || k==5))expected/=weapon_scale;
+                    CHECK(model[k]==expected);
+                }
             }
         }
     }

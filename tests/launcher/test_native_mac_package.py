@@ -6,6 +6,7 @@ import importlib.util
 import json
 from pathlib import Path
 import sys
+import zipfile
 
 import pytest
 
@@ -40,6 +41,21 @@ def test_complete_payload_and_unlisted_file_rejection(tmp_path):
     (tmp_path/'unlisted.txt').write_text('unexpected')
     with pytest.raises(ValueError, match='Unlisted'):
         package.verify_payload(tmp_path, manifest)
+
+
+def test_public_archive_keeps_versioned_name_after_license_copy(tmp_path):
+    stage = tmp_path/'TimeSplitters-Future-Perfect-PC-v0.5.3-macos-arm64'
+    notices = stage/'Licenses'
+    notices.mkdir(parents=True)
+    for name in ('Selawik-OFL.txt', 'Cousine-OFL.txt', 'stb.txt'):
+        (notices/name).write_text('Required notice: '+name)
+    archive_path = package.write_game_archive(stage, [])
+    assert archive_path.name == stage.name+'.zip'
+    with zipfile.ZipFile(archive_path) as archive:
+        assert set(archive.namelist()) == {
+            stage.name+'/Licenses/'+name
+            for name in ('Selawik-OFL.txt', 'Cousine-OFL.txt', 'stb.txt')}
+        assert archive.read(stage.name+'/Licenses/stb.txt') == b'Required notice: stb.txt'
 
 
 @pytest.mark.parametrize('name', ['Data/default.xbe', 'Saves/profile', 'Settings/runtime.conf',
@@ -201,4 +217,6 @@ def test_installed_package_keeps_language_capability(tmp_path, monkeypatch, supp
     assert manifest['language_packs'] is (supported is True)
     assert manifest['auto_display_resolution'] is True
     assert manifest['native_build'] == native
+    assert 'Licenses/SMAA.txt' in manifest['files']
+    assert 'Licenses/Keyboard-mouse-icons.txt' in manifest['files']
     package.verify_payload(stage, manifest)

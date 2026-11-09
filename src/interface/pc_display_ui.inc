@@ -256,25 +256,52 @@ void pc_display_menu_backdrop(void (*original)(void))
 /* Scope actual glyph scale during main-menu construction/measurement and
  * row drawing. The spacing setter alone does not change the letters. */
 extern void sub_0003F8D0(void);
+#include "pc_settings_row_alignment.inc"
+static RECOMP_TLS int video_font_depth;
+/* The whole menu painter also owns selected values, which are drawn outside
+ * the label-row routine. Scale the complete owned menu once. */
+void pc_display_video_menu_font(void (*original)(void))
+{
+    if(!(video_font_menu(WORD_AT(g_esp+4u)) || controls_font_menu(WORD_AT(g_esp+4u)) || audio_font_menu(WORD_AT(g_esp+4u))) || video_font_depth) {original();return;}
+    uint32_t saved_x=WORD_AT(0x007E7270u),saved_y=WORD_AT(0x007E7280u);
+    float x,y;memcpy(&x,&saved_x,4);memcpy(&y,&saved_y,4);
+    x*=.65f;y*=.65f;guest_call(sub_00022FF0,0);
+    memcpy(&WORD_AT(0x007E7270u),&x,4);memcpy(&WORD_AT(0x007E7280u),&y,4);
+    guest_call(sub_0003F8D0,0);
+    int previous_filter=pc_display_menu_font_filter(1);video_font_depth++;
+    SettingsRowPaint rows;settings_rows_begin(&rows,WORD_AT(g_esp+4));
+    original();settings_rows_end(&rows);
+    guest_call(sub_00022FF0,0);video_font_depth--;
+    pc_display_menu_font_filter(previous_filter);
+    WORD_AT(0x007E7270u)=saved_x;WORD_AT(0x007E7280u)=saved_y;
+    guest_call(sub_0003F8D0,0);
+}
 void pc_display_main_menu_font(void (*original)(void),int building)
 {
     /* One menu label can invoke several wrapping and drawing passes. Keep
        their read spans together, then discard them before menu input/ticks. */
     pc_prompts_layout_begin();
     uint32_t menu=WORD_AT(g_esp+4u),item=WORD_AT(g_esp+8u);
-    if((int32_t)WORD_AT(0x0079094Cu)<=100) {original();pc_prompts_layout_end();return;}
+    int own_video=video_font_menu(menu) || controls_font_menu(menu) || audio_font_menu(menu);
+    if(own_video && video_font_depth) {
+        settings_row_center(menu,item,WORD_AT(g_esp+12));
+        original();pc_prompts_layout_end();return;
+    }
+    int paused_video=(int32_t)WORD_AT(0x0079094Cu)<=100 && own_video;
+    if((int32_t)WORD_AT(0x0079094Cu)<=100 && !paused_video) {original();pc_prompts_layout_end();return;}
     if(!building) {
         if(!guest_writable(menu,0x23c) || !guest_writable(item,0x8c) ||
-           WORD_AT(item)!=7 || WORD_AT(item+0x88u)!=menu) {original();pc_prompts_layout_end();return;}
+           (!own_video && WORD_AT(item)!=7) || WORD_AT(item+0x88u)!=menu) {original();pc_prompts_layout_end();return;}
         uint32_t descriptor=WORD_AT(menu+4u);
-        if(!guest_writable(descriptor,4) || WORD_AT(descriptor)!=0x002D0BE0u) {
+        if(!own_video && (!guest_writable(descriptor,4) || WORD_AT(descriptor)!=0x002D0BE0u)) {
             original();pc_prompts_layout_end();return;
         }
     }
     uint32_t saved_x=WORD_AT(0x007E7270u),saved_y=WORD_AT(0x007E7280u);
     float x,y;memcpy(&x,&saved_x,4);memcpy(&y,&saved_y,4);
     guest_call(sub_00022FF0,0);
-    x*=.75f;y*=.75f;
+    float scale=own_video?.65f:.75f;
+    x*=scale;y*=scale;
     memcpy(&WORD_AT(0x007E7270u),&x,4);memcpy(&WORD_AT(0x007E7280u),&y,4);
     guest_call(sub_0003F8D0,0);
     int previous_font_filter=pc_display_menu_font_filter(!building);
@@ -398,6 +425,7 @@ void pc_display_aim_primitive(void (*original)(void),unsigned kind)
         case 0x00135CF6u:case 0x00135D58u:case 0x00135D95u:anchor=4;matched=1;break;
         }
     }
+    if(matched && !pc_developer_hud_visible()){g_esp+=4u;return;}
     if(!matched || !aim_full_view()){original();return;}
     uint32_t saved[8],old_tag=ui_tag;int old=ui_placement;
     float xy[8];
@@ -412,6 +440,7 @@ void pc_display_aim_primitive(void (*original)(void),unsigned kind)
 }
 void pc_display_aim_panel(void (*original)(void),uint32_t tag)
 {
+    if(!pc_developer_hud_visible()){g_esp+=4u;return;}
     if(!aim_full_view()){original();return;}
     uint32_t old_tag=ui_tag;int old=ui_placement;
     ui_place(1,tag);original();ui_place(old,old_tag);

@@ -3,6 +3,7 @@
 #include "audio_buffer_timing.c"
 #undef main
 static uint32_t setup_buffer(uint32_t size, int adpcm) {
+    PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;pc_audio_mix_live=pc_audio_mix_pack(mix);
     uint32_t iface = 0x11020;
     g_xbox_mem_offset=(ptrdiff_t)memory; g_esp=0x48000;
     g_lead_ms=40; g_layout=0; accept=1;
@@ -17,10 +18,104 @@ static uint32_t setup_buffer(uint32_t size, int adpcm) {
 int main(int argc, char **argv) {
     CHECK(argc==2);
     int tail=!strncmp(argv[1],"tail",4), adpcm=strstr(argv[1],"adpcm")!=NULL;
-    uint32_t raw=tail?(adpcm?361:9601):9600;
+    uint32_t raw=!strcmp(argv[1],"speech-tail")?96000:tail?(adpcm?361:9601):9600;
     uint32_t iface = setup_buffer(raw,adpcm);
     Buffer *b = model_for(iface, 1000);
     CHECK(b);
+    if(!strcmp(argv[1],"speech-tail")) {
+        fake_device=1;g_lead_ms=40;fake_now=0;
+        PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;mix.ducking=1;
+        pc_audio_mix_live=pc_audio_mix_pack(mix);
+        for(unsigned i=0;i<960;i+=2){int16_t v=10000;memcpy(memory+0x20000+i,&v,2);}
+        HLE_MEM32(g_esp+4)=iface;HLE_MEM32(g_esp+16)=RECOMP_DSOUND_PLAY_FROMSTART;
+        unsigned token=pc_audio_scope_enter(PC_AUDIO_DIALOGUE,g_esp+256);
+        hle_IDirectSoundBuffer_Play();pc_audio_scope_leave(token);
+        CHECK(b->fed && accepted_bytes>=3840);
+        pc_audio_mix_tick(1000);CHECK(pc_audio_mix_level(0,PC_AUDIO_MUSIC)<0);
+        fake_played[slot_of(b)]=2880;
+        CHECK(recomp_audio_output_audible_pending(slot_of(b)));
+        pc_audio_mix_tick(1400);pc_audio_mix_tick(6000);
+        CHECK(pc_audio_mix_level(0,PC_AUDIO_MUSIC)==0);
+        puts("PASS: speech-tail");return 0;
+    }
+    if(!strcmp(argv[1],"ducking")) {
+        fake_device=1;fake_now=0;PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;mix.ducking=1;
+        pc_audio_mix_live=pc_audio_mix_pack(mix);
+        for(unsigned i=0;i<raw;i+=2){int16_t v=10000;memcpy(memory+0x20000+i,&v,2);}
+        HLE_MEM32(g_esp+4)=iface;HLE_MEM32(g_esp+16)=RECOMP_DSOUND_PLAY_FROMSTART;
+        unsigned token=pc_audio_scope_enter(PC_AUDIO_DIALOGUE,g_esp+256);
+        hle_IDirectSoundBuffer_Play();pc_audio_scope_leave(token);
+        CHECK(b->fed && b->speech_audible);
+        pc_audio_mix_tick(1000);CHECK(pc_audio_mix_level(0,PC_AUDIO_MUSIC)<0);
+        for(uint64_t wall=1005;wall<=1300;wall+=5)pc_audio_mix_tick(wall);
+        CHECK(pc_audio_mix_level(0,PC_AUDIO_EFFECTS)==-600 && pc_audio_mix_level(0,PC_AUDIO_BACKGROUND)==-600);
+        CHECK(pc_audio_mix_level(0,PC_AUDIO_DIALOGUE)==0 && pc_audio_mix_level(0,PC_AUDIO_MOVIES)==0);
+        b->paused=1;pc_audio_mix_tick(1600);
+        CHECK(pc_audio_mix_level(0,PC_AUDIO_MUSIC)>-600 && pc_audio_mix_level(0,PC_AUDIO_MUSIC)<0);
+        pc_audio_mix_tick(6000);CHECK(pc_audio_mix_level(0,PC_AUDIO_MUSIC)==0);
+        b->paused=0;pc_audio_mix_tick(7000);CHECK(pc_audio_mix_level(0,PC_AUDIO_MUSIC)==-600);
+        mix.volume[PC_AUDIO_DIALOGUE]=0;pc_audio_mix_live=pc_audio_mix_pack(mix);
+        pc_audio_mix_tick(12000);CHECK(pc_audio_mix_level(0,PC_AUDIO_MUSIC)==0);
+        mix.volume[PC_AUDIO_DIALOGUE]=100;pc_audio_mix_live=pc_audio_mix_pack(mix);
+        pc_audio_mix_tick(13000);CHECK(pc_audio_mix_level(0,PC_AUDIO_MUSIC)==-600);
+        fake_now=10000;pc_audio_mix_tick(18000);CHECK(pc_audio_mix_level(0,PC_AUDIO_MUSIC)==0); /* drained */
+        mix.ducking=0;pc_audio_mix_live=pc_audio_mix_pack(mix);
+        CHECK(pc_audio_mix_level(-123,PC_AUDIO_MUSIC)==-123);
+        puts("PASS: ducking");return 0;
+    }
+    if(!strcmp(argv[1],"impact-range")) {
+        PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;mix.dynamics=2;pc_audio_mix_live=pc_audio_mix_pack(mix);
+        for(unsigned i=0;i<raw;i+=2){int16_t v=30000;memcpy(memory+0x20000+i,&v,2);}
+        HLE_MEM32(g_esp+4)=iface;HLE_MEM32(g_esp+16)=RECOMP_DSOUND_PLAY_FROMSTART;
+        hle_IDirectSoundBuffer_Play();CHECK(b->dynamics.envelope>.9f);
+        PcAudioDynamics before=b->dynamics;RecompDsoundBufferModel timeline=b->output_model;
+        uint64_t now=timeline.last_ms+20;accept=0;pump(b,now);
+        CHECK(!memcmp(&before,&b->dynamics,sizeof before) && !memcmp(&timeline,&b->output_model,sizeof timeline));
+        accept=1;pump(b,now);CHECK(b->output_model.last_ms>timeline.last_ms);
+        int16_t input;memcpy(&input,memory+0x20000,2);CHECK(input==30000);
+        reset_output(b);CHECK(!b->dynamics.rate && !b->speech_audible);
+        puts("PASS: impact-range");return 0;
+    }
+    if(!strcmp(argv[1],"mix-gain")) {
+        PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;mix.volume[PC_AUDIO_DIALOGUE]=50;
+        pc_audio_mix_live=pc_audio_mix_pack(mix);
+        HLE_MEM32(g_esp+4)=iface;HLE_MEM32(g_esp+16)=RECOMP_DSOUND_PLAY_FROMSTART;
+        unsigned token=pc_audio_scope_enter(PC_AUDIO_DIALOGUE,g_esp+256);
+        hle_IDirectSoundBuffer_Play();pc_audio_scope_leave(token);
+        CHECK(first_level==-602 && b->mix_bus==PC_AUDIO_DIALOGUE && b->fed);
+        /* Volume changes apply even after the last PCM chunk was queued. */
+        b->output_model.playing=0;uint32_t bytes=accepted_bytes;volume_updates=0;
+        mix.master=50;pc_audio_mix_live=pc_audio_mix_pack(mix);pump(b,1000);
+        CHECK(updated_level==-1204 && volume_updates==1 && accepted_bytes==bytes);
+        puts("PASS: mix-gain");return 0;
+    }
+    if(!strcmp(argv[1],"bus")) {
+        HLE_MEM32(g_esp+4)=iface;HLE_MEM32(g_esp+16)=RECOMP_DSOUND_PLAY_FROMSTART;
+        unsigned token=pc_audio_scope_enter(PC_AUDIO_DIALOGUE,g_esp+256);
+        hle_IDirectSoundBuffer_Play();pc_audio_scope_leave(token);
+        CHECK(g_eax==0 && b->mix_bus==PC_AUDIO_DIALOGUE && accepted_bytes>0 && first_bus==PC_AUDIO_DIALOGUE);
+        HLE_MEM32(g_esp+16)=0;hle_IDirectSoundBuffer_Play();
+        CHECK(b->mix_bus==PC_AUDIO_DIALOGUE); /* ordinary continuation keeps the source */
+        accepted_bytes=0;HLE_MEM32(g_esp+16)=RECOMP_DSOUND_PLAY_FROMSTART;
+        hle_IDirectSoundBuffer_Play();CHECK(b->mix_bus==PC_AUDIO_EFFECTS && first_bus==PC_AUDIO_EFFECTS);
+        HLE_MEM32(0x4ca9b4)=0x50000;HLE_MEM32(0x50008)=0x210;
+        token=pc_audio_stream_scope(0x5836d0,0,g_esp);
+        CHECK(pc_audio_scope_bus(g_esp)==PC_AUDIO_BACKGROUND);pc_audio_scope_leave(token);
+        unsigned outer=pc_audio_scope_enter(PC_AUDIO_DIALOGUE,g_esp+256);
+        token=pc_audio_stream_scope(0x5836d0,0,g_esp);
+        CHECK(pc_audio_scope_bus(g_esp)==PC_AUDIO_DIALOGUE);pc_audio_scope_leave(token);
+        token=pc_audio_stream_scope(0x64bd98,UINT32_MAX,g_esp);
+        CHECK(pc_audio_scope_bus(g_esp)==PC_AUDIO_MUSIC);pc_audio_scope_leave(token);pc_audio_scope_leave(outer);
+        HLE_MEM32(0x50000+5703*20+8)=0x210;
+        token=pc_audio_stream_scope(0x5836d0,5703,g_esp);
+        CHECK(pc_audio_scope_bus(g_esp)==PC_AUDIO_EFFECTS);pc_audio_scope_leave(token);
+        HLE_MEM32(0x4ca9b4)=0xfffffffcu;
+        token=pc_audio_stream_scope(0x5836d0,0,g_esp);
+        CHECK(pc_audio_scope_bus(g_esp)==PC_AUDIO_EFFECTS);pc_audio_scope_leave(token);
+        token=pc_audio_stream_scope(0x123456,0,g_esp);
+        CHECK(pc_audio_scope_bus(g_esp)==PC_AUDIO_EFFECTS);pc_audio_scope_leave(token);
+        printf("PASS: bus\n");return 0;
+    }
     if (tail) {
         CHECK(b->size==raw);
         CHECK(b->model.size_bytes==(adpcm?1280:9600));

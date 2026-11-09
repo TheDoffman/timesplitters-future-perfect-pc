@@ -8,11 +8,20 @@
 static uint64_t test_now;
 static uint64_t test_clock(void) { return test_now; }
 #define GetTickCount64 test_clock
+#define PC_AUDIO_MIX_IMPLEMENTATION
+#include "gameplay/pc_audio_mix.h"
+#undef PC_AUDIO_MIX_IMPLEMENTATION
+#define PC_AUDIO_MIX_SETTINGS_IMPLEMENTATION
+#include "interface/pc_audio_mix_settings.h"
+#undef PC_AUDIO_MIX_SETTINGS_IMPLEMENTATION
 #include "hle/hle_dsound_stream.c"
 #include "hle/xbox_adpcm.c"
 #undef GetTickCount64
 
 RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp;
+#include "gameplay/pc_audio_clock.h"
+static float test_speed=1.f;static PcAudioClock test_media_clock;
+uint64_t recomp_audio_output_game_time(uint64_t now,unsigned domain){(void)domain;return pc_audio_clock_step(&test_media_clock,now,test_speed);}
 static uint8_t memory[1024 * 1024];
 ptrdiff_t g_xbox_mem_offset;
 size_t g_xbox_total_ram = sizeof memory;
@@ -26,10 +35,15 @@ void (*const hle_original_CDirectSoundStream_Release)(void) = original_release;
 void (*const hle_original_CDirectSoundStream_FlushEx)(void) = NULL;
 
 static int capture;
+static int32_t captured_level,updated_level;static unsigned volume_updates;
 static uint32_t event_signals,last_event,event_status,event_size;
 
-recomp_func_t recomp_lookup(uint32_t address) { (void)address; return NULL; }
-recomp_func_t recomp_lookup_manual(uint32_t address) { (void)address; return NULL; }
+static void refill_callback(void);
+static int callback_manual;
+recomp_func_t recomp_lookup(uint32_t address)
+{ return address==0x388c4f && !callback_manual ? refill_callback : NULL; }
+recomp_func_t recomp_lookup_manual(uint32_t address)
+{ return address==0x388c4f && callback_manual ? refill_callback : NULL; }
 int xbox_bridge_signal_event(uint32_t token)
 {
     ++event_signals;last_event=token;
@@ -45,17 +59,20 @@ void recomp_audio_output_set_ambience(uint32_t slot,int enabled) {}
 void recomp_audio_output_set_acoustics(uint32_t slot,float obstruction,float room) {}
 void recomp_audio_output_set_spatial(uint32_t slot,float pan,int enabled) { }
 void recomp_audio_output_reset_voice(uint32_t slot) { memset(&host, 0, sizeof host); }
+static int force_no_position;
 int recomp_audio_output_position(uint32_t slot, uint64_t *played, uint32_t *queued)
 {
-    if (!host.available) return 0;
+    if (!host.available || force_no_position) return 0;
     if (played) *played = host.played;
     if (queued) *queued = host.queued;
     return 1;
 }
+int recomp_audio_output_audible_pending(uint32_t slot) {return host.available && host.queued>0;}
 int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes,
     uint32_t rate, uint32_t channels, uint32_t bits, int32_t level)
 {
     if (refuse_output) return 0;
+    captured_level=level;
     host.available = 1;
     host.queued++;
     if (capture && captured_bytes + bytes <= sizeof captured) {
@@ -64,7 +81,7 @@ int recomp_audio_output_submit(uint32_t slot, const uint8_t *pcm, uint32_t bytes
     }
     return 1;
 }
-int recomp_audio_output_set_volume(uint32_t slot, int32_t level) { return 1; }
+int recomp_audio_output_set_volume(uint32_t slot, int32_t level) { updated_level=level;volume_updates++;return 1; }
 void (*const hle_original_DirectSoundCreateStream)(void) = NULL;
 void (*const hle_original_CDirectSound_CreateSoundStream)(void) = NULL;
 void (*const hle_original_CDirectSoundStream_SetVolume)(void) = NULL;
@@ -77,6 +94,7 @@ void (*const hle_original_CDirectSoundStream_SetFrequency)(void) = NULL;
 static Stream *setup(void)
 {
     Stream *s = &g_streams[0];
+    PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;pc_audio_mix_live=pc_audio_mix_pack(mix);
     memset(g_streams, 0, sizeof g_streams);
     memset(memory, 0, sizeof memory);
     memset(&host, 0, sizeof host);
@@ -209,6 +227,63 @@ static int completion(void)
     CHECK(event_status==XMP_STATUS_SUCCESS && event_size==96000);
     tick(s,3020);
     CHECK(event_signals==1);
+    return 0;
+}
+
+/* Original helper38880F constructs320-byte packets for the callback stream's
+ * mono8000Hz PCM16 format. Exercise that format and callback ABI through the
+ * real adapter; this callback is a test provider, not the original codec. */
+static unsigned callback_count, callback_submitted, callback_error;
+static uint8_t callback_expected[32*320];
+static void submit_callback_packet(unsigned index)
+{
+    uint32_t p=0x12000+index*32, data=0x20000+index*320;
+    uint32_t ordinal=callback_submitted++;
+    for(unsigned i=0;i<160;i++) {
+        int16_t value=(int16_t)((int)((ordinal*251+i*7)%20001)-10000);
+        memcpy(memory+data+i*2,&value,2);
+        memcpy(callback_expected+ordinal*320+i*2,&value,2);
+    }
+    HLE_MEM32(p)=data;HLE_MEM32(p+4)=320;
+    HLE_MEM32(p+8)=0x13004+index*8;
+    HLE_MEM32(p+12)=0x13000+index*8;HLE_MEM32(p+16)=index;
+    HLE_MEM32(g_esp+4)=g_streams[0].object;HLE_MEM32(g_esp+8)=p;
+    hle_CDirectSoundStream_Process();
+    if(g_eax || memcmp(memory+data,callback_expected+ordinal*320,320))callback_error=1;
+}
+static void refill_callback(void)
+{
+    uint32_t entry=g_esp,index=HLE_MEM32(entry+8);
+    if(HLE_MEM32(entry)!=0 || HLE_MEM32(entry+4)!=0x17000 ||
+       HLE_MEM32(entry+12)!=XMP_STATUS_SUCCESS || index!=callback_count%2 ||
+       HLE_MEM32(0x13000+index*8)!=XMP_STATUS_SUCCESS ||
+       HLE_MEM32(0x13004+index*8)!=320)callback_error=1;
+    callback_count++;
+    /* A guest callback may submit its replacement before returning. */
+    g_esp=0x18000;
+    if(callback_submitted<32)submit_callback_packet(index);
+    g_esp=entry+16; /* original callback's ret12 */
+}
+static int callback_pcm8k(int manual)
+{
+    Stream *s=setup();s->rate=8000;s->max_packets=2;
+    s->callback=0x388c4f;s->context=0x17000;
+    callback_manual=manual;callback_count=callback_submitted=callback_error=0;
+    capture=1;submit_callback_packet(0);submit_callback_packet(1);
+    CHECK(s->count==2 && captured_bytes==640 && callback_count==0);
+    for(unsigned i=1;i<=32;i++) {
+        host.played=i*320-2;host.queued=1;test_now=1000+i*20;
+        tick(s,test_now);CHECK(callback_count==i-1); /* last frame not heard */
+        host.played=i*320;host.queued=i<32?1:0;
+        tick(s,test_now);CHECK(callback_count==i && g_esp==0x10000);
+        CHECK(!callback_error && s->count<3);
+    }
+    CHECK(callback_submitted==32 && s->count==0 && captured_bytes==sizeof callback_expected);
+    CHECK(!memcmp(captured,callback_expected,sizeof callback_expected));
+    CHECK(!memcmp(memory+0x20000,callback_expected+30*320,320));
+    CHECK(!memcmp(memory+0x20140,callback_expected+31*320,320));
+    CHECK(event_signals==0); /* packet context is an index, not an event */
+    tick(s,test_now+20);CHECK(callback_count==32);
     return 0;
 }
 
@@ -421,17 +496,117 @@ static int device_recovery(int early)
     return 0;
 }
 
+static int speed_changes(void)
+{
+    Stream *s=setup();s->output=0;packet(s,0x12000,0x13000);
+    test_speed=.5f;hle_dsound_stream_tick(1500);CHECK(s->count==1);
+    CHECK(HLE_MEM32(0x13000)==XMP_STATUS_PENDING);
+    test_speed=2.f;hle_dsound_stream_tick(1800);CHECK(s->count==1);
+    hle_dsound_stream_tick(1900);CHECK(s->count==0);
+    CHECK(HLE_MEM32(0x13000)==XMP_STATUS_SUCCESS);return 0;
+}
+
 int main(int argc, char **argv)
 {
     int result;
     if (argc != 2) return 2;
+    if(!strcmp(argv[1],"speech-tail") || !strcmp(argv[1],"speech-tail-fallback")) {
+        Stream *s=setup();s->mix_bus=PC_AUDIO_DIALOGUE;
+        force_no_position=strstr(argv[1],"fallback")!=NULL;
+        for(unsigned i=0;i<9600;i+=2){int16_t v=10000;memcpy(memory+0x20000+i,&v,2);}
+        packet(s,0x12000,0x13000);CHECK(hle_dsound_stream_dialogue_active());
+        host.played=38400;host.queued=1;test_now+=400;tick(s,test_now);
+        CHECK(host.queued && s->sent>s->consumed_base);
+        CHECK(!hle_dsound_stream_dialogue_active()); /* queued remainder is silent */
+        flush_stream(s);CHECK(!hle_dsound_stream_dialogue_active());
+        printf("PASS: %s\n",argv[1]);return 0;
+    }
+    if(!strcmp(argv[1],"speech-gaps")) {
+        Stream *s=setup();s->mix_bus=PC_AUDIO_DIALOGUE;
+        for(unsigned i=4800;i<9600;i+=2){int16_t v=10000;memcpy(memory+0x20000+i,&v,2);}
+        for(unsigned i=19200;i<24000;i+=2){int16_t v=10000;memcpy(memory+0x20000+i,&v,2);}
+        packet(s,0x12000,0x13000);CHECK(!hle_dsound_stream_dialogue_active());
+        host.played=4800;CHECK(hle_dsound_stream_dialogue_active());
+        host.played=9600;CHECK(!hle_dsound_stream_dialogue_active());
+        host.played=19200;CHECK(hle_dsound_stream_dialogue_active());
+        host.played=24000;CHECK(!hle_dsound_stream_dialogue_active());
+        PcAudioActivity before=s->speech_activity;refuse_output=1;
+        host.played=38400;test_now+=400;tick(s,test_now);
+        CHECK(!memcmp(&before,&s->speech_activity,sizeof before));
+        refuse_output=0;tick(s,test_now);CHECK(s->speech_activity.submitted>before.submitted);
+        host_discontinuity=1;test_now+=400;tick(s,test_now);
+        CHECK(!hle_dsound_stream_dialogue_active());
+        flush_stream(s);CHECK(!s->speech_activity.count && !s->speech_activity.submitted);
+        puts("PASS: speech-gaps");return 0;
+    }
+    if(!strcmp(argv[1],"speech-activity")) {
+        Stream *s=setup();s->mix_bus=PC_AUDIO_DIALOGUE;
+        for(unsigned i=0;i<96000;i+=2){int16_t v=10000;memcpy(memory+0x20000+i,&v,2);}
+        packet(s,0x12000,0x13000);CHECK(s->speech_audible && hle_dsound_stream_dialogue_active());
+        s->paused=1;CHECK(!hle_dsound_stream_dialogue_active());s->paused=0;
+        s->flush_pending=1;CHECK(!hle_dsound_stream_dialogue_active());s->flush_pending=0;
+        PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;mix.volume[PC_AUDIO_DIALOGUE]=0;
+        pc_audio_mix_live=pc_audio_mix_pack(mix);CHECK(!hle_dsound_stream_dialogue_active());
+        mix.volume[PC_AUDIO_DIALOGUE]=100;pc_audio_mix_live=pc_audio_mix_pack(mix);
+        host.available=0;CHECK(!hle_dsound_stream_dialogue_active());
+        s=setup();s->mix_bus=PC_AUDIO_DIALOGUE;packet(s,0x12000,0x13000);
+        CHECK(!s->speech_audible && !hle_dsound_stream_dialogue_active()); /* silent PCM */
+        puts("PASS: speech-activity");return 0;
+    }
+    if(!strcmp(argv[1],"impact-range")) {
+        Stream *s=setup();PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;mix.dynamics=2;
+        pc_audio_mix_live=pc_audio_mix_pack(mix);
+        for(unsigned i=0;i<96000;i+=2){int16_t v=30000;memcpy(memory+0x20000+i,&v,2);}
+        capture=1;packet(s,0x12000,0x13000);int16_t output;memcpy(&output,captured,2);
+        CHECK(captured_bytes>0 && output>0 && output<15000 && s->dynamics.envelope>.9f);
+        PcAudioDynamics before=s->dynamics;uint64_t sent=s->sent;
+        test_now+=50;host.played=4800;refuse_output=1;tick(s,test_now);
+        CHECK(!memcmp(&before,&s->dynamics,sizeof before) && s->sent==sent);
+        refuse_output=0;tick(s,test_now);CHECK(s->sent>sent);
+        int16_t input;memcpy(&input,memory+0x20000,2);CHECK(input==30000);
+        flush_stream(s);CHECK(!s->dynamics.rate && !s->speech_audible);
+        puts("PASS: impact-range");return 0;
+    }
+    if (!strcmp(argv[1],"mix-gain")) {
+        Stream *s=setup();s->mix_bus=PC_AUDIO_DIALOGUE;
+        PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;mix.volume[PC_AUDIO_DIALOGUE]=50;
+        pc_audio_mix_live=pc_audio_mix_pack(mix);
+        packet(s,0x12000,0x13000);CHECK(captured_level==-602 && captured_bytes==0);
+        uint64_t sent=s->sent;unsigned queued=host.queued;volume_updates=0;
+        mix.master=50;pc_audio_mix_live=pc_audio_mix_pack(mix);
+        hle_dsound_stream_tick(test_now);
+        CHECK(updated_level==-1204 && volume_updates>0 && s->sent==sent && host.queued==queued);
+        puts("PASS: mix-gain");return 0;
+    }
+    if (!strcmp(argv[1],"bus-ownership")) {
+        Stream *s=setup();uint32_t wfx=0x14000;
+        HLE_MEM32(wfx)=TAG_PCM|(1u<<16);HLE_MEM32(wfx+4)=48000;
+        HLE_MEM32(wfx+12)=2u|(16u<<16);
+        HLE_MEM32(g_esp+4)=s->object;HLE_MEM32(g_esp+8)=wfx;
+        unsigned token=pc_audio_scope_enter(PC_AUDIO_DIALOGUE,g_esp+256);
+        hle_CDirectSoundStream_SetFormat();pc_audio_scope_leave(token);
+        CHECK(s->mix_bus==PC_AUDIO_DIALOGUE);
+        hle_CDirectSoundStream_SetFormat();CHECK(s->mix_bus==PC_AUDIO_DIALOGUE);
+        /* Reusing the same stream/format still changes ownership at source start. */
+        token=pc_audio_scope_enter(PC_AUDIO_MUSIC,g_esp+256);
+        hle_CDirectSoundStream_SetFormat();pc_audio_scope_leave(token);CHECK(s->mix_bus==PC_AUDIO_MUSIC);
+        token=pc_audio_scope_enter(PC_AUDIO_BACKGROUND,g_esp+256);
+        HLE_MEM32(wfx+4)=32000;hle_CDirectSoundStream_SetFormat();pc_audio_scope_leave(token);
+        CHECK(s->mix_bus==PC_AUDIO_BACKGROUND && s->rate==32000);
+        token=pc_audio_scope_enter(PC_AUDIO_EFFECTS,g_esp+256);
+        hle_CDirectSoundStream_SetFormat();pc_audio_scope_leave(token);CHECK(s->mix_bus==PC_AUDIO_EFFECTS);
+        puts("PASS: bus-ownership");return 0;
+    }
     if (!strcmp(argv[1], "underrun")) result = underrun();
+    else if (!strcmp(argv[1], "speed")) result=speed_changes();
     else if (!strcmp(argv[1], "process")) result = process_clock();
     else if (!strcmp(argv[1], "flush")) result = flush_origin();
     else if (!strcmp(argv[1], "fallback")) result = fallback();
     else if (!strcmp(argv[1], "snapshot")) result = no_extrapolation();
     else if (!strcmp(argv[1], "pause")) result = pause_resume();
     else if (!strcmp(argv[1], "completion")) result = completion();
+    else if (!strcmp(argv[1], "callback-pcm8k")) result = callback_pcm8k(0);
+    else if (!strcmp(argv[1], "callback-pcm8k-manual")) result = callback_pcm8k(1);
     else if (!strcmp(argv[1], "lost-device")) result = lost_device();
     else if (!strcmp(argv[1], "bad-data")) result = bad_data_fallback();
     else if (!strcmp(argv[1], "diagnostics")) result = diagnostics();

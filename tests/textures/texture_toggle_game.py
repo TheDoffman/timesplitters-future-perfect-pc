@@ -71,12 +71,14 @@ def main():
     folder.mkdir(parents=True,exist_ok=True)
     config=folder/'texture-toggle-display.ini'
     config.write_text('TSFP_DISPLAY_V1 0 0\n')
+    controls=folder/'texture-toggle-controls.json'
+    controls.write_bytes((ROOT/'config/pc-controls.default.json').read_bytes())
     protected=[ROOT/'config/pc-controls.json',ROOT/'config/pc-display.ini']
     before={p:p.read_bytes() for p in protected if p.exists()}
     env={k:v for k,v in os.environ.items() if not k.startswith(('RECOMP_','TSFP_'))}
     env.update(RECOMP_GAME_DIR=str(ROOT/'private/game'),
         RECOMP_SAVE_DIR=str(folder/'saves'),
-        RECOMP_INPUT_CONFIG=str(ROOT/'tests/fixtures/pc-controls.json'),
+        RECOMP_INPUT_CONFIG=str(controls),
         TSFP_DISPLAY_CONFIG=str(config),RECOMP_TRACE_BUDGET='0',
         RECOMP_PC_MOUSE='0',RECOMP_WINDOW_BACKGROUND='1',
         TSFP_TEXTURE_PACK_DIR=str(ROOT/'private/texture-remaster/pack'),
@@ -88,6 +90,9 @@ def main():
                            creationflags=subprocess.CREATE_NO_WINDOW)
         try:
             game=ui.wait_window(p.pid,'TimeSplitters FP',timeout=30)
+            if not user.GetMenu(game):
+                user.SendMessageW(game, 0x100, 0x70, 0)  # F1 restores saved-hidden bar
+                user.SendMessageW(game, 0x101, 0x70, 0)
             wait_for(lambda:user.GetMenu(game),'PC menu missing')
             menu=user.GetSubMenu(user.GetMenu(game),0)
             def checked():

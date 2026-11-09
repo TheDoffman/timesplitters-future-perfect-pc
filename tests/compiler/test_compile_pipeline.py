@@ -73,6 +73,7 @@ def test_title_seeds_custom_metadata_and_output_routing(tmp_path, monkeypatch):
     assert '--trace-all-entries' in lift and '--game-only' in lift
     assert lift[lift.index('--game-name') + 1] == 'Example Title'
     assert lift[lift.index('--split') + 1] == '33'
+    assert '--context-continuations' in lift
 
 
 @pytest.mark.parametrize('flags,stages', [(['--only', 'lift'], ['lift']),
@@ -98,6 +99,14 @@ def test_multiple_explicit_seeds_override_and_no_seeds_wins(tmp_path, monkeypatc
     calls.clear()
     assert pipeline.main(flags + ['--no-seeds']) == 0
     assert '--seed-functions' not in calls[0][1]
+
+
+def test_default_split_restores_thousand_function_chunks(tmp_path, monkeypatch):
+    calls = capture(monkeypatch)
+    assert pipeline.main([str(sample(tmp_path)), '--only', 'lift']) == 0
+    lift = calls[0][1]
+    assert lift[lift.index('--split') + 1] == '1000'
+    assert '--context-continuations' in lift
 
 
 def test_all_functions_explicit_generation_dir_and_zero_split(tmp_path, monkeypatch):

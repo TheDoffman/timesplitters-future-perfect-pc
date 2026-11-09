@@ -40,7 +40,8 @@ static StoryDropState sent[64];static unsigned sent_reliable[64],sends,creates,r
 static uint32_t guest_call(void (*fn)(void),unsigned count,...)
 {
  uint32_t a[10];va_list ap;va_start(ap,count);assert(count<=10);
- for(unsigned i=0;i<count;i++)a[i]=va_arg(ap,uint32_t);va_end(ap);
+ for(unsigned i=0;i<count;i++)a[i]=va_arg(ap,uint32_t);
+ va_end(ap);
  if(fn==sub_00353A90){assert(count==5 && a[1]==0x1e && a[3]==sizeof(StoryDropState)+4 && sends<64);memcpy(&sent[sends],(void *)(g_xbox_mem_offset+a[2]+4),sizeof(StoryDropState));sent_reliable[sends++]=a[4];return 1;}
  if(fn==sub_000C1950){assert(count==10 && a[0]==1 && a[1]==2 && a[2]==25 && a[5]==0x4db9a8 && a[6]==18 && a[7]==126 && !a[8] && !a[9]);
   if(fail_create)return 0;

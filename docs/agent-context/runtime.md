@@ -1,14 +1,23 @@
-Story rewards: additive2465 wraps356800 for the single frontend context;
+[Sticks](controller-deadzones.md).
+[Keys](control-presets.md).
+[Tools](developer-tools-integration.md).
+
+[FOV node filter](video-options.md); [Uplink](native-uplink.md).
+[UI](controls-options.md); [Kill feed](../development/arcade-kill-feed.md).
+
+[Effect depth](native-effect-depth.md).
+[Linux](linux-game.md); [MSAA](smaa.md).
+[MP hooks](multiplayer-exit.md)
+2465 wraps356800 for rewards;
 profile mapper356870 stays original. See [contract](systems-details.md#four-player-rewards-context).
 
-Story lobby host loss: additive2460 wraps1AF950. The shared menu adapter scopes
+Story host loss:2460 wraps1AF950. The menu adapter scopes
 the native guest-lobby8D notification to main return, preserving transport reset
 and rebuilding main in its own layout context. See [contracts](systems-details.md).
 
-Rejoin view/weapon lifetime uses existing D4BE0 camera and A9070 world-remove
-wrappers. The accepted rejoin restores a missed camera-end transition once;
+Rejoin uses the D4BE0/A9070 camera/world wrappers. Rejoin restores a missed camera-end transition once;
 world identity excludes native first-person viewport models before cached-key
-lookup. No new wrapper or generated-code change is needed. See
+lookup. No wrapper or generated-code change is needed. See
 [contracts](systems-details.md).
 
 Story in-progress rejoin uses existing2D398D pending-copy,9A420 synthetic-pad
@@ -57,12 +66,16 @@ shared Story adapter so a guest's blocked movie advance does not release its
 still-rendered stream at99BB7. Real load teardown and other modes retain the
 original close. See [contracts](systems-details.md) and [fixture](build-test-details.md).
 
-# Runtime and patch navigation
+# Runtime ([MSAA](smaa.md))
+
+Patch2180 wraps US1C2AF0 for an already-eligible fresh player trigger only;
+the patch loader orders it after native minigun/timing wrappers. It preserves
+held-fire and continuation calls. See [input contract](interaction-input.md#fresh-weapon-clicks-434).
 
 Story co-op integration: [contracts](systems-details.md).
 
 Audio recovery patches0055-0058: [buffering, lifecycle, format and device contracts](audio-buffers.md).
-Audio release/normal-exit patches2300-2303: [contracts and diagnostics](audio-buffers.md).
+Audio release/exit/completion patches2300-2306: [contracts and diagnostics](audio-buffers.md).
 
 
 Patch 2140-native-minigun-intent follows the native weapon wrappers in loader dependency order. It scopes held-primary intent around original US 1C74D0 event 1. Generic shots remain on whole ticks; numeric site 1C7600 normalizes release damping. See native-minigun.md.
@@ -78,11 +91,11 @@ Unchanged patch stacks reuse content validation: [cache contract](release-speed.
 `0040-dsound-positional-stereo.patch` keeps XDK distance attenuation and adds
 shared stereo projection with XAudio2/SDL output adapters; see
 [positional audio](../development/positional-audio.md) for field provenance,
-cursor contracts, the saved Audio Options beta toggle and host acceptance boundaries.
+cursors, Audio Options toggle and host limits.
 `0050-environmental-acoustics.patch` adds opt-in world-coordinate room/portal routing; see the audio guide for limits.
 
-`0045-weapon-sound-range.patch` scopes longer gunfire range to the two weapon
-dispatcher calls into `00021FB0`; its cdecl wrapper restores the range argument.
+`0045`: [range audit](../development/positional-audio.md#distance-falloff-audit).
+`0059/60/61/2307/08/09/10`: [audio feature/bus/mix/DSP/gain/activity contracts](../development/audio-overhaul.md).
 
 Kernel: [objects, threads and boot](kernel-objects.md), [devices and names](kernel-devices.md).
 
@@ -999,6 +1012,13 @@ anchor for labels and resets at placement boundaries; viewport/scissor share it.
 Both common backends and legacy GL consume the helper. Original world projection,
 visibility and objective logic remain guest-owned (Refs #338).
 
-## Console language and included packs
+## Languages
 
-[Language policy, US startup gate, original-routine tests and host validation](language-packs.md).
+[Language contracts](language-packs.md).
+
+
+0241: [product/ABI](guest-integer-product.md).
+
+RTL: [arithmetic/memory](guest-memory-ops.md), [strings](guest-stack-trace.md); [host policy](execution-host.md).
+
+2350: controls-options.md.

@@ -1,0 +1,136 @@
+--- a/src/hle/audio_output.h
++++ b/src/hle/audio_output.h
+@@ -50,6 +50,9 @@
+    stream must not treat 0 as delivered: the sound it describes will never be
+    heard, so it has to be offered again rather than stepped over, or the
+    stream slips behind by exactly what was dropped. */
++/* Movie playback rate; changes the existing voice without discarding queued PCM. */
++void recomp_audio_output_movie_speed(float ratio);
++
+ int recomp_audio_output_submit(
+     uint32_t slot, const uint8_t *pcm, uint32_t bytes,
+     uint32_t sample_rate, uint32_t channels, uint32_t bits_per_sample,
+--- a/src/hle/audio_output_xaudio2.cpp
++++ b/src/hle/audio_output_xaudio2.cpp
+@@ -63,6 +63,7 @@
+ IXAudio2 *engine;
+ IXAudio2MasteringVoice *master;
+ OutputVoice voices[kVoiceCount];
++float movie_speed=1.f;
+ PcAcousticDsp acoustics[kVoiceCount];
+ PcAcousticDsp acoustic_backup; /* serialized by output_lock */
+ struct Spatial { float pan; int enabled; } spatial[kVoiceCount];
+@@ -372,6 +373,15 @@
+     return 1;
+ }
+ 
++extern "C" void recomp_audio_output_movie_speed(float ratio)
++{
++    if(!(ratio>=.05f && ratio<=4.f))return;
++    std::lock_guard<std::recursive_mutex> guard(output_lock);
++    movie_speed=ratio;
++    auto *source=voices[RECOMP_AUDIO_SLOT_MOVIE].source;
++    if(source)source->SetFrequencyRatio(ratio);
++}
++
+ extern "C" int recomp_audio_output_submit(
+     uint32_t slot, const uint8_t *pcm, uint32_t bytes,
+     uint32_t sample_rate, uint32_t channels, uint32_t bits_per_sample,
+@@ -414,7 +424,7 @@
+         format.wBitsPerSample = static_cast<WORD>(bits_per_sample);
+         const double t0 = nowMs();
+         HRESULT error = engine->CreateSourceVoice(
+-            &voice.source, &format, XAUDIO2_VOICE_NOPITCH, 1.0f);
++            &voice.source, &format, slot==RECOMP_AUDIO_SLOT_MOVIE?0:XAUDIO2_VOICE_NOPITCH, slot==RECOMP_AUDIO_SLOT_MOVIE?4.f:1.f);
+         {
+             const double ms = nowMs() - t0;
+             ++voices_created;
+@@ -426,6 +436,7 @@
+             failVoice(slot, "CreateSourceVoice", error);
+             return 0;
+         }
++        if(slot==RECOMP_AUDIO_SLOT_MOVIE)voice.source->SetFrequencyRatio(movie_speed);
+         voice.sample_rate = sample_rate;
+         voice.channels = channels;
+         voice.bits_per_sample = bits_per_sample;
+--- a/src/hle/hle_xmv_play.c
++++ b/src/hle/hle_xmv_play.c
+@@ -26,6 +26,18 @@
+ #include "platform/xbox_winnt.h"
+ 
+ #include "audio_output.h"
++#include "gameplay/pc_movie_speed.h"
++#ifndef PC_MOVIE_SPEED
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++#include "pc_developer.h"
++#define PC_MOVIE_SPEED() pc_developer_speed()
++#define PC_MOVIE_ACTIVE(active) pc_developer_movie(active)
++#else
++#define PC_MOVIE_SPEED() 1.
++#define PC_MOVIE_ACTIVE(active) ((void)(active))
++#endif
++#endif
++
+ #include "xbox_adpcm.h"
+ #include "xmv_demux.h"
+ #include "xmv_decode.h"
+@@ -73,6 +85,7 @@
+ 
+     /* Sound: PCM waiting to be accepted by the voice, and ADPCM bytes that
+      * do not yet make a whole block. */
++    PcMovieSpeed speed_clock;
+     int      audio;               /* track 0 is played */
+     uint32_t rate, channels, codec;
+     uint8_t *pcm;
+@@ -183,6 +196,7 @@
+ static void feed_audio(movie *m)
+ {
+     uint32_t frame = m->channels * 2u;
++    recomp_audio_output_movie_speed((float)PC_MOVIE_SPEED());
+ 
+     if (recomp_audio_output_take_discontinuity(RECOMP_AUDIO_SLOT_MOVIE))
+         m->audio_recovering = 1;
+@@ -221,7 +235,7 @@
+     LARGE_INTEGER now;
+ 
+     QueryPerformanceCounter(&now);
+-    return (uint32_t)((now.QuadPart - m->start.QuadPart) * 1000 / g_qpf.QuadPart);
++    return pc_movie_speed_time(&m->speed_clock,now.QuadPart,g_qpf.QuadPart,PC_MOVIE_SPEED());
+ }
+ 
+ int xmv_play_open(uint32_t source_va, uint32_t *width, uint32_t *height)
+@@ -314,6 +328,8 @@
+     m->started = 1;
+     recomp_audio_output_reset_voice(RECOMP_AUDIO_SLOT_MOVIE);
+     QueryPerformanceCounter(&m->start);
++    pc_movie_speed_reset(&m->speed_clock,m->start.QuadPart);
++    PC_MOVIE_ACTIVE(1);
+ }
+ 
+ /* The next picture into m->next, if there is one. */
+@@ -494,6 +510,8 @@
+     pc_native_movie_pacing_close(&m->pacing);
+ #endif
+     recomp_audio_output_reset_voice(RECOMP_AUDIO_SLOT_MOVIE);
++    recomp_audio_output_movie_speed(1.f);
++    PC_MOVIE_ACTIVE(0);
+     hle_d3d8_movie_surface(0, 0);
+     d3d8_movie_clear();
+     xmv_decoder_destroy(m->dec);
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -2552,3 +2552,14 @@
+     sub_001B9120_gen();
+ #endif
+ }
++
++/* Shared Developer Tools: native cinematic position clock. */
++extern void sub_00098E50_gen(void);
++void sub_00098E50(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_developer_cutscene_guest(sub_00098E50_gen);
++#else
++    sub_00098E50_gen();
++#endif
++}

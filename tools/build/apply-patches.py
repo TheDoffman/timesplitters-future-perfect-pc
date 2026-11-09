@@ -25,6 +25,7 @@ else:
 
 from pathlib import Path
 import argparse
+import difflib
 import hashlib
 import json
 import os
@@ -94,7 +95,7 @@ def patch_records(paths):
                    '-native-numeric-policy.patch', '-native-animation-scope.patch',
                    '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch',
                    '-native-camera-timing.patch', '-native-weapon-event-scope.patch',
-                   '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch', '-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-trace-quiet.patch', '-native-demo-timing.patch', '-texture-bind-scan.patch', '-keyboard-reload-buffer.patch', '-model-transform-entry.patch', '-zero-base-indices.patch', '-stable-gpr-refs.patch', '-native-wind-history.patch', '-native-minigun-intent.patch'):
+                   '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-rocket-projectile-timing.patch', '-native-projectile-families.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch', '-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-trace-quiet.patch', '-native-demo-timing.patch', '-texture-bind-scan.patch', '-keyboard-reload-buffer.patch', '-model-transform-entry.patch', '-zero-base-indices.patch', '-stable-gpr-refs.patch', '-native-wind-history.patch', '-native-minigun-intent.patch', '-native-player-trigger-event.patch', '-kill-feed-firing-scope.patch'):
         patch = next((p for p in paths if p.name.endswith(suffix)), None)
         if patch:
             paths.remove(patch)
@@ -109,10 +110,20 @@ def patch_records(paths):
     if radial:
         paths.remove(radial)
         paths.append(radial)
+    # Player device isolation extends both the late reload sampler and pad routing.
+    players = by_name.get('2350-local-player-devices.patch')
+    if players:
+        paths.remove(players)
+        paths.append(players)
+    reconnect = by_name.get('2360-controller-reconnect-identity.patch')
+    if reconnect:
+        paths.remove(reconnect)
+        paths.append(reconnect)
+
     # Own instruction bodies replace the final title-instrumented handlers.
     # Replay all historical instrumentation first so older stacks still unwind.
     for name in ('0180-independent-translation-moves.patch', '0170-independent-translation-integer.patch',
-                 '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch', 'independent-translation-exchange.patch', 'independent-translation-compare.patch', 'independent-translation-strings.patch', 'independent-translation-conditions.patch', 'independent-translation-sse.patch', 'independent-translation-mmx.patch', 'independent-translation-x87.patch', 'independent-translation-control.patch', 'independent-translation-lifting.patch', 'independent-translation-context.patch', 'independent-translation-batch.patch', 'independent-translation-discovery.patch', 'independent-translation-function.patch', 'independent-translation-cli.patch', 'independent-guest-abi.patch', '0195-independent-guest-dispatch.patch', '0196-independent-call-frames.patch', '0197-independent-vector-support.patch', '0198-independent-scalar-support.patch', '0199-independent-runtime-header.patch', '0201-runtime-header-consumer-fixture.patch', '0202-independent-branch-feedback.patch', '0203-independent-nonlocal-jumps.patch', '0204-independent-guest-state.patch', '0205-independent-image-loader.patch', '0206-independent-guest-allocations.patch', '0207-independent-thread-memory.patch', '0208-independent-virtual-memory.patch', '0209-independent-native-memory.patch', '0211-independent-guest-memory-services.patch', '0212-independent-native-vm-host.patch', '0213-independent-guest-host-maps.patch', '0214-retire-compatibility-memory.patch', '0215-independent-kernel-objects.patch', '0216-independent-kernel-boot.patch', '0217-guest-next-packet-abi.patch', '0218-independent-kernel-requests.patch', '0219-independent-kernel-devices.patch', '0220-independent-kernel-sharing.patch', '0221-independent-request-lifetime.patch', '0222-original-driver-call-composer.patch', '0223-original-transfer-completion.patch', '0224-original-request-queue.patch', '0225-original-startio-callback.patch', '0226-original-device-queue-mirrors.patch', '0227-original-device-queue-lifetime.patch', '0229-original-guest-events.patch', '0231-original-completion-targets.patch', '0232-original-symbolic-links.patch', '0233-original-path-routing.patch', '0234-original-host-storage.patch', '0235-original-kernel-pool.patch', '0236-original-kernel-time.patch', '0237-original-counted-strings.patch', '0238-original-kernel-rtl.patch', '0239-original-guest-printf.patch', '0240-original-guest-numbers.patch'):
+                 '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch', 'independent-translation-exchange.patch', 'independent-translation-compare.patch', 'independent-translation-strings.patch', 'independent-translation-conditions.patch', 'independent-translation-sse.patch', 'independent-translation-mmx.patch', 'independent-translation-x87.patch', 'independent-translation-control.patch', 'independent-translation-lifting.patch', 'independent-translation-context.patch', 'independent-translation-batch.patch', 'independent-translation-discovery.patch', 'independent-translation-function.patch', 'independent-translation-cli.patch', 'independent-guest-abi.patch', '0195-independent-guest-dispatch.patch', '0196-independent-call-frames.patch', '0197-independent-vector-support.patch', '0198-independent-scalar-support.patch', '0199-independent-runtime-header.patch', '0201-runtime-header-consumer-fixture.patch', '0202-independent-branch-feedback.patch', '0203-independent-nonlocal-jumps.patch', '0204-independent-guest-state.patch', '0205-independent-image-loader.patch', '0206-independent-guest-allocations.patch', '0207-independent-thread-memory.patch', '0208-independent-virtual-memory.patch', '0209-independent-native-memory.patch', '0211-independent-guest-memory-services.patch', '0212-independent-native-vm-host.patch', '0213-independent-guest-host-maps.patch', '0214-retire-compatibility-memory.patch', '0215-independent-kernel-objects.patch', '0216-independent-kernel-boot.patch', '0217-guest-next-packet-abi.patch', '0218-independent-kernel-requests.patch', '0219-independent-kernel-devices.patch', '0220-independent-kernel-sharing.patch', '0221-independent-request-lifetime.patch', '0222-original-driver-call-composer.patch', '0223-original-transfer-completion.patch', '0224-original-request-queue.patch', '0225-original-startio-callback.patch', '0226-original-device-queue-mirrors.patch', '0227-original-device-queue-lifetime.patch', '0229-original-guest-events.patch', '0231-original-completion-targets.patch', '0232-original-symbolic-links.patch', '0233-original-path-routing.patch', '0234-original-host-storage.patch', '0235-original-kernel-pool.patch', '0236-original-kernel-time.patch', '0237-original-counted-strings.patch', '0238-original-kernel-rtl.patch', '0239-original-guest-printf.patch', '0240-original-guest-numbers.patch', '0241-original-extended-product.patch'):
         replacement = by_name.get(name)
         if replacement:
             paths.remove(replacement)
@@ -137,6 +148,172 @@ def patch_records(paths):
     if online:
         paths.remove(online)
         paths.append(online)
+    # AO capture version 10 extends the version-9 surface-constant chunks.
+    ao_capture = by_name.get('2502-ambient-occlusion-capture.patch')
+    if ao_capture:
+        paths.remove(ao_capture)
+        paths.append(ao_capture)
+    # Scene ownership extends the final presentation/interpolation lifecycle.
+    scene_targets = by_name.get('2504-scene-target-lifecycle.patch')
+    if scene_targets:
+        paths.remove(scene_targets)
+        paths.append(scene_targets)
+    # Offscreen binding extends the final scene/interpolation target lifecycle.
+    msaa_bindings = by_name.get('2507-msaa-offscreen-bindings.patch')
+    if msaa_bindings:
+        paths.remove(msaa_bindings)
+        paths.append(msaa_bindings)
+    primary_msaa = by_name.get('2508-msaa-primary-scene.patch')
+    if primary_msaa:
+        paths.remove(primary_msaa)
+        paths.append(primary_msaa)
+    # Alias synchronization uses the final surface draw-view helper (2507).
+    aliases = by_name.get('2510-msaa-surface-aliases.patch')
+    if aliases:
+        paths.remove(aliases)
+        paths.append(aliases)
+    copy_sync = by_name.get('2511-msaa-screen-copy-sync.patch')
+    if copy_sync:
+        paths.remove(copy_sync)
+        paths.append(copy_sync)
+
+    # Kernel arithmetic now shares the original fault boundary with utility
+    # consumers. Move its source ownership after the historical path migration.
+    division = by_name.get('0242-original-extended-division.patch')
+    if division:
+        paths.remove(division)
+        paths.append(division)
+    memory_ops = by_name.get('0243-original-memory-operations.patch')
+    if memory_ops:
+        paths.remove(memory_ops)
+        paths.append(memory_ops)
+    codec = by_name.get('0244-original-counted-codec.patch')
+    if codec:
+        paths.remove(codec)
+        paths.append(codec)
+    transform = by_name.get('0245-original-string-transform.patch')
+    if transform:
+        paths.remove(transform)
+        paths.append(transform)
+    raw_codec = by_name.get('0246-original-raw-codec.patch')
+    if raw_codec:
+        paths.remove(raw_codec)
+        paths.append(raw_codec)
+    stack_diagnostics = by_name.get('0247-original-stack-diagnostics.patch')
+    if stack_diagnostics:
+        paths.remove(stack_diagnostics)
+        paths.append(stack_diagnostics)
+    status_flags = by_name.get('0248-original-status-flags.patch')
+    if status_flags:
+        paths.remove(status_flags)
+        paths.append(status_flags)
+    status_header = by_name.get('0249-status-header-template.patch')
+    if status_header:
+        paths.remove(status_header)
+        paths.append(status_header)
+    context_records = by_name.get('0253-original-context-records.patch')
+    if context_records:
+        paths.remove(context_records)
+        paths.append(context_records)
+    exception_dispatch = by_name.get('0258-original-exception-dispatch.patch')
+    if exception_dispatch:
+        paths.remove(exception_dispatch)
+        paths.append(exception_dispatch)
+    execution_ownership = by_name.get('0259-original-execution-ownership.patch')
+    if execution_ownership:
+        paths.remove(execution_ownership)
+        paths.append(execution_ownership)
+    execution_host = by_name.get('0260-original-execution-host-policy.patch')
+    if execution_host:
+        paths.remove(execution_host)
+        paths.append(execution_host)
+    # SMAA extends the final config writer after native timing migrations.
+    smaa = by_name.get('2470-smaa-antialiasing.patch')
+    if smaa:
+        paths.remove(smaa)
+        paths.append(smaa)
+    # Native HUD switches the final scene/depth ownership introduced by MSAA.
+    native_hud = by_name.get('2516-native-resolution-hud.patch')
+    if native_hud:
+        paths.remove(native_hud)
+        paths.append(native_hud)
+    hud_stencil = by_name.get('2517-native-hud-stencil-plane.patch')
+    if hud_stencil:
+        paths.remove(hud_stencil)
+        paths.append(hud_stencil)
+
+    # 2401 already contains the exact portable declaration guard added by 2512.
+    # Retain 2512 for stacks without Linux; applying that same hunk twice fails.
+    if '2401-linux-vulkan-foundation.patch' in by_name:
+        duplicate_guard = by_name.get('2512-portable-renderer-declarations.patch')
+        if duplicate_guard:
+            paths.remove(duplicate_guard)
+    # Linux extends the final grouped SDL/RHI adapters. Keep every historical
+    # Windows/Mac patch intact and replay this after their source-layout work.
+    for name in ('2401-linux-vulkan-foundation.patch', '2402-linux-native-game.patch', '2403-linux-native-crypto.patch', '2404-linux-hle-renderer.patch', '2405-linux-runtime-link.patch', '2406-native-vblank-alias.patch', '2407-vulkan12-compatibility.patch', '2408-vulkan-descriptor-capacity.patch', '2409-linux-late-frame-pacing.patch', '2411-vulkan-upload-efficiency.patch', '2412-native-desktop-media.patch'):
+        linux = by_name.get(name)
+        if linux:
+            paths.remove(linux)
+            paths.append(linux)
+    # Developer Tools consumes the final shared Windows/SDL input layout and
+    # positioned RHI overlays, including Linux's last host-adapter extensions.
+    developer_tools = by_name.get('2520-developer-tools-overlay.patch')
+    if developer_tools:
+        paths.remove(developer_tools)
+        paths.append(developer_tools)
+    developer_changes=by_name.get('2530-developer-tools-controls-and-cheats.patch')
+    if developer_changes:
+        paths.remove(developer_changes)
+        paths.append(developer_changes)
+    developer_settings=by_name.get('2540-developer-tools-settings-and-shortcut.patch')
+    if developer_settings:
+        paths.remove(developer_settings)
+        paths.append(developer_settings)
+    developer_movies=by_name.get('2550-developer-tools-cutscene-speed.patch')
+    if developer_movies:
+        paths.remove(developer_movies)
+        paths.append(developer_movies)
+    for name in ('2560-developer-tools-ui-audio-and-bindings.patch',
+                 '2570-developer-tools-game-audio-clock.patch',
+                 '2580-developer-tools-lobby-wrench.patch',
+                 '2590-developer-tools-optional-audio-speed.patch',
+                 '2600-developer-tools-sidebar-renderer.patch',
+                 '2610-developer-tools-sidebar-refinement.patch',
+                 '2620-developer-tools-shared-font.patch',
+                 '2630-developer-tools-native-player-input.patch'):
+        followup=by_name.get(name)
+        if followup:
+            paths.remove(followup)
+            paths.append(followup)
+
+    # Settings must use the active source after grouped/native target migrations.
+    config_source = by_name.get('2595-config-source-worktree.patch')
+    if config_source:
+        paths.remove(config_source)
+        paths.append(config_source)
+    # Shared-depth resize extends the final header after temporal map and
+    # Linux declaration migrations. Keep those historical hunks unchanged.
+    shared_depth_resize = by_name.get('2600-msaa-scaled-shared-depth.patch')
+    if shared_depth_resize:
+        paths.remove(shared_depth_resize)
+        paths.append(shared_depth_resize)
+    # Inclusive portal clips extend the final shared renderer/scaled-target code.
+    portal_scissors = by_name.get('2725-inclusive-portal-scissors.patch')
+    if portal_scissors:
+        paths.remove(portal_scissors)
+        paths.append(portal_scissors)
+    # Presets extend the final local-device/reload sampler without replacing it.
+    presets = by_name.get('2940-modern-control-presets.patch')
+    if presets:
+        paths.remove(presets)
+        paths.append(presets)
+
+    # Deadzone controls extend the completed preset/local-player sampler.
+    deadzones = by_name.get('2950-controller-deadzones.patch')
+    if deadzones:
+        paths.remove(deadzones)
+        paths.append(deadzones)
+
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate
@@ -147,6 +324,14 @@ def patch_records(paths):
         # comment/function boundary. Removed/added code must still match.
         reduced_context = native_boot and (patch.name == '0700-pc-debug-latency-watermark.patch'
                                            or patch == native_boot and '0470-pc-network.patch' in by_name)
+        # These additive wrappers ended the manual file when authored. A local
+        # comment appended later must not make Git require an end-of-file match
+        # during reverse application; retain adjacent context and exact code.
+        reduced_context = reduced_context or patch.name in (
+            '2520-developer-tools-overlay.patch',
+            '2530-developer-tools-controls-and-cheats.patch',
+            '2550-developer-tools-cutscene-speed.patch',
+            '2580-developer-tools-lobby-wrench.patch')
         content = patch.read_bytes()
         records.append(dict(name=patch.name, content=content.decode('utf-8'),
                             sha256=hashlib.sha256(content).hexdigest(),
@@ -176,6 +361,50 @@ def read_state(path):
     except (ValueError, KeyError, TypeError, AttributeError) as error:
         raise RuntimeError(f'Invalid runtime patch record {path}: {error}. No runtime files were changed.') from error
     return raw, state['patches']
+
+
+def preserve_line_endings(before, after):
+    """Keep existing source formatting independently of Git's host EOL setting.
+
+    Git can restore removed CRLF lines as LF when reversing a normalized patch.
+    Keep exact endings on unchanged lines; new/replaced lines inherit the replaced
+    region's style, or adjacent source for a pure insertion. Content and final-
+    newline presence come from the validated patch result. Never alter binary data.
+    """
+    if before == after or b'\0' in before or b'\0' in after:
+        return after
+
+    def split(data):
+        rows = data.split(b'\n')
+        result = [(row[:-1], b'\r\n') if row.endswith(b'\r') else (row, b'\n')
+                  for row in rows[:-1]]
+        if rows[-1]:
+            result.append((rows[-1], b''))
+        return result
+
+    old, new = split(before), split(after)
+    old_text = [body for body, _ in old]
+    new_text = [body for body, _ in new]
+    if old_text == new_text:
+        return b''.join(body + (old[i][1] if ending and old[i][1] else ending)
+                        for i, (body, ending) in enumerate(new))
+
+    def style(rows, fallback):
+        crlf = sum(ending == b'\r\n' for _, ending in rows)
+        lf = sum(ending == b'\n' for _, ending in rows)
+        return (b'\r\n' if crlf >= lf else b'\n') if crlf + lf else fallback
+
+    default = style(old, b'\n')
+    output = []
+    for action, a, b, c, d in difflib.SequenceMatcher(None, old_text, new_text).get_opcodes():
+        if action == 'equal':
+            output.extend(body + (old[a + i][1] if ending and old[a + i][1] else ending)
+                          for i, (body, ending) in enumerate(new[c:d]))
+        else:
+            nearby = old[max(0, a - 1):min(len(old), b + 1)]
+            ending = style(old[a:b], style(nearby, default))
+            output.extend(body + (ending if present else b'') for body, present in new[c:d])
+    return b''.join(output)
 
 
 def validation_key(record, patches, originals, git_version):
@@ -274,6 +503,14 @@ def apply_patches(runtime, patch_dir, *, force=False):
                         f'{patch["name"]} conflicts with the runtime checkout during {phase}. '
                         f'No runtime files were changed.\n{result.stderr}'
                     )
+        # Preserve author-owned source formatting after the whole semantic
+        # migration, before its transactional validation/publication boundary.
+        for name in names:
+            target = stage / name
+            patched = target.read_bytes()
+            preserved = preserve_line_endings(originals[name], patched)
+            if preserved != patched:
+                target.write_bytes(preserved)
         changed = [name for name in sorted(names)
                    if (stage / name).read_bytes() != originals[name]]
         # Do not overwrite an edit made while the stack was being validated.

@@ -1,4 +1,72 @@
+Controller response investigations: [raw-input and original-decoder tests](controller-deadzones.md); distinguish host deadzone from the guest threshold. Patch2950 follows2940 in the maintained map.
+
+[Preset routing/order evidence](control-presets.md).
+PR528: normalize patch2940 to committed LF before index refresh; CRLF worktree
+bytes produced a stale hash/target on CI. Gameplay patch logic is unchanged.
+
+Developer Tools/main integration preserves both additive patch families. The
+ordered tail is94 entries: shared-font2620, native input2630, config-source2595,
+MSAA/shared-depth2600, inclusive portal scissors2725, then control presets2940. The generated index and exact-order fixture use the
+resolved loader. Older patch-tail counts below describe earlier revisions.
+
+The shared-font typography follow-up indexes2620 after2610 (tail89). Font
+provenance/hashes live with assets/ui/fonts; unmodified rasterizer source lives
+in vendor/stb, separate from the pristine runtime snapshot. Only the intended
+additive patch is indexed; generated font headers remain in build/test trees.
+
+Sidebar visual refinement appends indexed2610 after2600 (ordered tail88).
+The optional styled-font host callback is defined by the additive runtime patch;
+shared geometry/icons and glyph caching remain in tracked src/. No generated C
+or pristine runtime snapshot edits are involved.
+
+The sidebar task adds indexed patch2600 after2590 and updates the ordered-tail
+fixture to87. Its shared UI/canvas source is tracked under src/interface and
+src/graphics; private HTML concepts and live acceptance captures remain ignored.
+Refresh patch-index.json only after staging the intended additive patch; validate
+this task against f73c38e9. No changes to context retrieval policy or provenance.
+
+Latest notes append2590 after2580; the ordered-tail fixture expects86 patches.
+Only the intended additive patch is staged for context-index refresh. Native
+warning consolidation and audio-toggle acceptance are logged in STATUS.
+
+Further Developer Tools notes append patches2560/2570/2580 after2550.
+The ordered-stack fixture now expects85 patches. Stage these intended patches
+before refreshing the generated context index. Current bounded investigation is
+logs/developer-tools-further-investigation.md; user screenshot disproved the prior
+freecam-opacity acceptance claim, so require a close-up capture before reasserting.
+
+Developer Tools revised notes: patches2540/2550 now follow2530; the generated
+index must include all four additions after the platform adapters. Body-opacity
+investigation confirmed native1265B0 effect bit2 is the first-person eye fade;
+borrow it only for the owned detached world draw and restore style/effect fields.
+
+Developer Tools patches2520 then2530 extend the final Windows/SDL/HLE layout
+and run after all Linux patches. Keep this order in the loader/order fixture.
+Task memory is `logs/developer-tools-investigation.md`; the pre-existing
+investigation file belongs to other tasks and remains preserved.
+
 # Investigation memory and handoffs
+
+Linux patches2402 through2412 follow2401; its duplicate2512 is omitted. Context
+order assertions and historical subset exclusions track both dependencies;
+complete-stack transitions must still apply them. See [game adapters](linux-game.md).
+
+Linux bring-up follows the user's shared Windows/macOS/Linux rule. Root AGENTS
+allows a native-filesystem WSL working checkout synchronized from the Windows
+editing checkout through Git; ignored Linux dependencies stay inside Ubuntu.
+It also names `build/linux`, a separate Linux Python environment, no concurrent
+Windows/WSL mutation of one runtime tree, WSL primary development and Steam Deck
+secondary validation. Preserve [Linux acceptance scope](../development/linux.md)
+in handoffs; renderer contracts do not establish game support.
+
+Graphics patch ordering is covered by the explicit tail-order regression in
+`tests/repository/test_repo_context.py`; patches2495/2514 must retain LF bytes so its
+indexed digest matches fresh Windows/Mac/Linux checkouts.
+SMAA2470 follows config/timing migrations; HUD2516/2517 then extend its final
+resolve. Config-source2595 follows the final Linux target migrations;
+`test_repo_context.py` preserves the prior ordering in its explicit79-patch tail.
+Historical migration
+fixtures omit this feature until their full-stack upgrade. See [contracts](smaa.md).
 
 Root AGENTS.md and the PR template require a short user-facing Change and Cause
 and fix description. Keep technical evidence in the existing project records;
@@ -8,6 +76,10 @@ Keep fixed issues open until a published version includes the fix. Use non-closi
 PR references (`Refs #123`), mark publication pending, and verify/link the release
 before closing. The 2026-10-29 root AGENTS rule overrides older template closing
 instructions; merge-time resolution comments do not establish publication.
+
+Save/storage changes must consider NTFS/exFAT portability, existing-file
+preservation and moved save paths per AGENTS.md; see [host storage](host-storage.md).
+Keep simulated capability tests distinct from physical-drive acceptance.
 
 Kernel stages: [object ownership, boot and validation](kernel-objects.md).
 Generate the patch index from LF patch bytes matching Git; CRLF working copies
@@ -355,3 +427,74 @@ Crash diagnostics adds the allocation-history patch after allocator dependencies
 the repository-order fixture includes this final observer hook before source
 layout. Normalize new patches to LF before refreshing the index: local CRLF
 bytes hash differently from Git-normalized checkout bytes on CI hosts.
+
+The root texture rules record the user's 2026-11-01 original-based upscale
+request and active-pack choice. For that task, preserve prior hybrid artwork
+and recovery packs, use verified originals as inputs, and follow the
+[original upscale workflow](original-upscale.md). Historical hybrid batch
+instructions do not override this task's newer user direction.
+
+Stage0241 extends the maintained effective-tail assertion and historical upgrade exclusions; see [product evidence](guest-integer-product.md).
+
+Stage0242: [division providers, ABI and oracle](guest-integer-division.md).
+
+
+For patch-switch byte drift, inspect changed source lines rather than dumping a
+whole pytest snapshot. Stage0242 exposed reverse-added LF lines in a CRLF source
+on Mac. apply-patches.py preserve_line_endings keeps exact unchanged endings and
+uses replaced/adjacent source style for new lines, preserving patch text and
+final-newline presence before transactional publication. Test both Git
+core.autocrlf settings explicitly; a host's global Git config can mask the bug.
+See [division migration evidence](guest-integer-division.md).
+
+Stage0243 extends the effective tail and historical exclusions; [memory/bit contracts](guest-memory-ops.md) include native stack-probe and public fastcall ABI evidence.
+
+Stage0244: [counted codec/ownership](guest-text-codec.md); native pointer records are separate from guest records, and fresh heap rollback zeroing is not an all-RAM transaction claim.
+
+Stage0245: [creation/case](guest-string-transform.md); native case strings do not append NUL; libc mapping is not NT NLS equivalence.
+
+Stage0246: [raw codec](guest-text-raw.md); native uppercase truncation returned80000005 despite documentation; keep raw32-bit/no-NUL policy separate from counted conversion.
+
+Stage0247: [stack diagnostics](guest-stack-trace.md); native x86 proves parent ordering/hash and4-argument capture, public Xbox Assert has4 arguments. Full EFLAGS/guest continuation work is still required for real context/SEH.
+
+Stage0248 extends the effective tail to53 original stages; historical exclusions
+and the installed shared title feature definition are checked by repository tests.
+See [status tracking](guest-status-flags.md) for contracts and pending acceptance.
+
+Stage0249 extends the original effective tail to54 and checks canonical installed
+header text; [shift/rotate status](guest-shift-flags.md) records CI repair and tests.
+
+The exact loader-tail assertion now includes0253 context records after0249;
+keep all55 entries ordered. [Context/handler contracts](context-records.md).
+
+Stage0258 extends the verified patch-order tail from55to56 with the original
+exception dispatcher after0253. test_repo_context and five historical omission
+sets in test_patch_updates now include that dependency; old patch bytes remain
+unchanged. See [exception contracts](guest-exceptions.md).
+
+Stage0259 extends the patch tail56to57 for execution ownership after0258.
+The ordering assertion and five historical omission sets follow that dependency;
+see [ownership and test routes](execution-ownership.md).
+
+Stage0260 extends the patch tail57to58 for original host policies after0259.
+The ordering assertion and five historical omission sets follow this dependency;
+see [host scheduling and test routes](execution-host.md).
+
+PR466 integration with main623acff4 retains0260 and then applies SMAA2470.
+The complete maintained tail is59; merge resolution preserves both loader
+additions, all historical omission entries and regenerates the patch index.
+
+Shared MSAA resize2600 is last after the temporal-map and Linux/header
+migrations. The exact loader-order assertion includes it; five pre-MSAA seed
+sets omit it only until full upgrade. Full-stack migration still applies it.
+
+Developer Tools migration integration: historical fixtures omit the Tools family
+when its Linux/display prerequisites are absent; complete upgrades still install
+the entire current stack. Additive manual-file wrappers2520/2530/2550/2580 use
+existing -C1 matching so appended local comments survive reverse application.
+Patched code must still match exactly; the small EOF fixture rejects a changed
+wrapper body without writing any files. Runtime patch bytes remain unchanged.
+Patch2630 extends the explicit Developer Tools tail after2620. The repository
+context exact-order fixture now retains a92-entry tail, including2630 before
+the source-worktree/shared-depth follow-ups. Index generation and discovery
+contracts are unchanged; stage this intended new patch before refreshing.

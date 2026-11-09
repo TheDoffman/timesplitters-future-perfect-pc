@@ -77,6 +77,10 @@ def main():
     parser.add_argument('--native-fps',type=int,choices=(0,60,120,144,180,240),
         help='0 selects Original60; positive rates select the native fractional clock')
     parser.add_argument('--manual-start',action='store_true')
+    parser.add_argument('--guest-lock',action='store_true',help='Enable serialized guest execution in this isolated session')
+    parser.add_argument('--dispatch-lock',action='store_true',help='Enable bounded dispatch parking in this isolated session')
+    parser.add_argument('--guest-one-cpu',type=int,choices=range(66),default=0,help='Windows guest affinity: 0 off, 1 automatic, 2-65 processor index plus two')
+    parser.add_argument('--watch-guest-execution',action='store_true',help='Enable guest thread concurrency diagnostics in this isolated session')
     parser.add_argument('--fullscreen',action='store_true',help='Start this isolated session borderless on its monitor; actual client size is reported separately')
     parser.add_argument('--display-size',type=int,nargs=2,default=(1280,720),metavar=('WIDTH','HEIGHT'),help='Isolated render resolution; actual window state is reported separately')
     parser.add_argument('--fov',type=int,choices=range(40,101),default=55)
@@ -112,7 +116,7 @@ def main():
     parser.add_argument('--trace-vehicle-contact',action='store_true',help='Trace up to 64 entries each for actor/vehicle contact, impulse selection and suspension response')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
-    parser.add_argument('--scenario',choices=['story-entry','story-host','story-host-controls','story-pair','story-local-load','rocket-impact','weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch','surface-native-long','crowd-venice','crowd-hotel','crowd-disco','crowd-temple'])
+    parser.add_argument('--scenario',choices=['story-entry','story-host','story-host-controls','story-pair','story-local-load','rocket-impact','weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch','surface-native-long','crowd-vietnam','crowd-venice','crowd-hotel','crowd-disco','crowd-temple'])
     args=parser.parse_args()
     if args.scenario=='rocket-impact' and not (args.watch_actors and args.watch_effects):
         parser.error('rocket-impact requires --watch-actors and --watch-effects for acceptance')
@@ -166,6 +170,8 @@ def main():
         subprocess.run([sys.executable,str(ROOT/'tools/build/network-identity.py'),'--verify',
                         '--executable',str(ROOT/'build/windows/Release/futureperfect_recomp.exe')],check=True)
     run=ROOT/'private/test-saves'/args.run_name;env=prepare_run(ROOT,run)
+    env.update(RECOMP_GUEST_LOCK=str(int(args.guest_lock)),RECOMP_GUEST_CONCURRENCY=str(int(args.watch_guest_execution)),
+               RECOMP_DISPATCH_LOCK=str(int(args.dispatch_lock)),RECOMP_GUEST_ONE_CPU=str(args.guest_one_cpu))
     stop_request=run/'stop-request'
     assert not stop_request.is_symlink()
     stop_request.unlink(missing_ok=True)
@@ -255,12 +261,12 @@ def main():
                 dict(keys=[82],label='story-progress',wait=4),
                 dict(keys=[70],label='story-progress-return',wait=4),dict(stop=True)]
         commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
-    if args.scenario in ('crowd-venice','crowd-hotel','crowd-disco','crowd-temple'):
+    if args.scenario in ('crowd-vietnam','crowd-venice','crowd-hotel','crowd-disco','crowd-temple'):
         route=json.loads((ROOT/'tests/fixtures/crowd-venice-commands.json').read_text())
-        if args.scenario in ('crowd-hotel','crowd-disco','crowd-temple'):
+        if args.scenario in ('crowd-vietnam','crowd-hotel','crowd-disco','crowd-temple'):
             # Verified list: Vietnam, Hotel, Venice, Temple, Disco.
             assert route[1]['label']=='match-setup'
-            moves={'crowd-hotel':1,'crowd-temple':3,'crowd-disco':4}[args.scenario]
+            moves={'crowd-vietnam':0,'crowd-hotel':1,'crowd-temple':3,'crowd-disco':4}[args.scenario]
             route[1]['keys']=[40,69,69,69]+[40]*moves+[69]
             assert route[7]['label']=='spawn'
             # Five-second idle waits usually observe a death camera. Keep
@@ -806,7 +812,7 @@ def main():
         native_surface_mode="default" if args.native_surfaces is None else ("enabled" if args.native_surfaces else "disabled"),
         profile_delay_seconds=args.profile_delay_seconds,
         profile_pc_symbol=args.profile_pc_symbol,
-        native_fps=args.native_fps or 0,native_surfaces=args.native_surfaces,scenario=args.scenario,seconds=args.seconds,captures=not args.no_captures,watch_effects=args.watch_effects,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
+        guest_lock=args.guest_lock,dispatch_lock=args.dispatch_lock,guest_one_cpu=args.guest_one_cpu,guest_concurrency=args.watch_guest_execution,native_fps=args.native_fps or 0,native_surfaces=args.native_surfaces,scenario=args.scenario,seconds=args.seconds,captures=not args.no_captures,watch_effects=args.watch_effects,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:
         launch(index)
@@ -932,8 +938,8 @@ def main():
             not (item.get('flags',0)&0x20000000)]
         assert played,'Local Story gameplay not established; inspect local-*.png and report.json'
         (run/'story-load-baseline.json').write_text(json.dumps(played[-1],indent=2)+'\n')
-    if args.scenario in ('crowd-venice','crowd-hotel','crowd-disco','crowd-temple'):
-        scene={'crowd-hotel':39,'crowd-venice':46,'crowd-temple':49,'crowd-disco':56}[args.scenario]
+    if args.scenario in ('crowd-vietnam','crowd-venice','crowd-hotel','crowd-disco','crowd-temple'):
+        scene={'crowd-vietnam':48,'crowd-hotel':39,'crowd-venice':46,'crowd-temple':49,'crowd-disco':56}[args.scenario]
         checkpoints=[i for i in report if i.get('command',{}).get('label') in ('spawn','combat-one','combat-four','combat-six')]
         assert len(checkpoints)==4,'Incomplete crowd route'
         for item in checkpoints:

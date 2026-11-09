@@ -1,4 +1,7 @@
-<a href="https://discord.gg/hFkfcCUm56"><img align="right" src="docs/assets/discord-community.svg" alt="Join the TimeSplitters: Future Perfect Recomp Discord community" title="Join our Discord community" width="32" height="32"></a>
+<p align="right">
+<a href="https://ko-fi.com/thedoffman"><img src="docs/assets/ko-fi.png" alt="Support the project on Ko-fi" title="Support us on Ko-fi" width="40" height="32"></a>
+<a href="https://discord.gg/hFkfcCUm56"><img src="docs/assets/discord-community.svg" alt="Join the TimeSplitters: Future Perfect Recomp Discord community" title="Join our Discord community" width="32" height="32"></a>
+</p>
 
 <div align="center">
 
@@ -11,13 +14,14 @@ Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer
 <p>
 <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip"><img src="docs/assets/download-windows-launcher.svg" alt="Download the latest Windows launcher (x64)" width="280" height="52"></a>
 <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip"><img src="docs/assets/download-mac-launcher.svg" alt="Download the latest Mac launcher (Apple Silicon)" width="280" height="52"></a>
+<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-linux-x64.zip"><img src="docs/assets/download-linux-launcher.svg" alt="Download the latest Linux launcher (x64)" width="280" height="52"></a>
 </p>
 
 <sub>Direct ZIP downloads of the latest stable launcher &middot; <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest">Release notes &amp; checksums</a></sub>
 
 **[Install & play](#start-playing)** · [Launcher guides](#guides--support) · [Multiplayer](docs/players/multiplayer.md) · [Build from source](docs/development/building.md)
 
-<sub>Windows 10/11 x64 · Native Apple Silicon Mac · Experimental port · Supported US Xbox game required</sub>
+<sub>Windows 10/11 x64 · Native Apple Silicon Mac · Linux x64 · Experimental port · Supported US Xbox game required</sub>
 
 </div>
 
@@ -36,18 +40,18 @@ Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer
 
 > [!IMPORTANT]
 > You need your own supported **US Xbox ISO or extracted game data**. Import it through the launcher.
-> Original game files are not included. Neither version needs an emulator.
+> Original game files are not included. No platform version needs an emulator.
 
 <a name="start-playing"></a>
 
 ## <img src="docs/assets/icon-play.svg" alt="" width="24" height="24"> Start playing
 
-Windows and Mac use the same installation steps:
+Windows, Mac and Linux use the same installation steps:
 
 | Step | Installation |
 | :---: | --- |
-| **01** | **Download the launcher:** [Windows x64](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip) or [Mac (Apple Silicon)](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip). The download starts directly; you can also use the buttons above. |
-| **02** | **Extract and open.** Extract the whole ZIP to a writable folder. On Windows, open **TimeSplitters Launcher.exe**, keeping `Bin` and `Support` with it. On Mac, open **TimeSplitters Launcher.app**, keeping its `Support` folder beside it. |
+| **01** | **Download the launcher:** [Windows x64](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip), [Mac (Apple Silicon)](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip), or [Linux x64](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-linux-x64.zip). The download starts directly; you can also use the buttons above. |
+| **02** | **Extract and open.** Extract the whole ZIP to a writable folder. On Windows, open **TimeSplitters Launcher.exe**, keeping `Bin` and `Support` with it. On Mac, open **TimeSplitters Launcher.app**, keeping its `Support` folder beside it. On Linux, preserve executable permissions and run **Launch.sh** or **TimeSplitters.Launcher**, keeping the full package together. |
 | **03** | **Install the game runtime.** Keep **Update channel → Stable**, then choose **Install release**. The launcher downloads and verifies the latest available game build for your platform. Choose a preview only when opting into testing. |
 | **04** | **Import your game once.** Choose **Locate ISO**, or **Use extracted files** for a folder containing `default.xbe`, `pak` and `xmv`. |
 | **05** | **Press Play Game.** The launcher minimizes while the game runs and returns when you finish. |
@@ -56,7 +60,16 @@ Windows and Mac use the same installation steps:
 available offline. Use **Check updates → Update release** to install a newer game
 build when available. Launcher and game versions are separate.
 
+Source contributors: ordinary clones and builds do not require the Enhanced
+texture download. See [cloning without optional textures](CONTRIBUTING.md#clone-without-optional-textures).
+
 ### Launcher preview
+
+**Weapon view:** In builds containing the Weapon FOV option, open **Settings →
+Video Options → View & HUD → Weapon FOV** from the main or pause menu. Choose
+80–150% and select **Apply**; no restart is needed. **Original** is 100%.
+Higher values show more of the weapon, independently of the world FOV slider.
+These percentages adjust the weapon's original lens, rather than degrees.
 
 ![TimeSplitters launcher v1.4.0 with Stable selected, Play Game, updates and settings](docs/assets/launcher-preview.png)
 
@@ -67,6 +80,7 @@ Launcher v1.4.0 interface preview with illustrative installation data.
 <summary><strong>System requirements, channels and keeping your saves</strong></summary>
 
 - **Windows:** Windows 10/11 x64 with .NET Framework 4.8.
+- **Linux:** x64, Ubuntu 24.04 / glibc 2.39 or newer, a desktop display and a working system Vulkan driver. Wayland needs XWayland. See the [Linux launcher guide](docs/players/linux-launcher.md).
 - **Mac:** Apple Silicon (M1 or newer). The launcher targets macOS 12+; the
   current shared Vulkan game renderer requires macOS 26+. See the
   [Mac guide](docs/players/macos.md) for the legacy OpenGL fallback on older systems.
@@ -77,6 +91,10 @@ Launcher v1.4.0 interface preview with illustrative installation data.
 - Keep the whole installation together, especially `Data`, `Settings`, `Saves`
   and the launcher's recovery files. Normal updates preserve existing data,
   settings and saves.
+- **Mac launcher storage:** defaults to `~/Library/Application Support/TimeSplitters`,
+  independently of the `.app` location. Existing installations beside the app
+  migrate automatically, retaining the original as a backup. Portable mode remains
+  available. See [storage and migration](docs/players/macos.md#launcher-storage).
 
 Published builds do not require Python, Git or developer tools. The Mac launcher
 includes .NET and does not need CrossOver or the .NET SDK.
@@ -91,7 +109,8 @@ and audio fidelity remain unverified. See [measured progress](docs/project/STATU
 | Platform | Support and known limits |
 | --- | --- |
 | **Windows 10/11 x64** | Keyboard and mouse, graphics settings and experimental Online/LAN multiplayer. See the [Windows launcher guide](docs/players/launcher.md), including [startup security prompts](docs/players/launcher.md#windows-security-prompts-at-startup). |
-| **Mac (Apple Silicon)** | Native launcher and game; Intel Macs are unsupported. Save/load remains unverified; movie playback and multiplayer remain unfinished. The app is not notarized, so startup may require the [Mac installation and recovery guidance](docs/players/mac-launcher.md#shared-behavior-and-distribution). See [Mac controls and source builds](docs/players/macos.md) and [remaining Mac work](docs/project/MAC_PORT_BACKLOG.md). |
+| **Mac (Apple Silicon)** | Native launcher and game; Intel Macs are unsupported. The app is not notarized, so startup may require the [Mac installation and recovery guidance](docs/players/mac-launcher.md#shared-behavior-and-distribution). See [Mac controls and source builds](docs/players/macos.md) and [remaining Mac work](docs/project/MAC_PORT_BACKLOG.md). |
+| **Linux x64 (experimental)** | Native launcher and portable SDL/Vulkan game package, validated on Ubuntu/WSL. Native desktop GPU, Wayland, controller and Steam Deck acceptance remain pending. See the [Linux launcher guide](docs/players/linux-launcher.md) and [acceptance limits](docs/development/linux-acceptance.md). |
 
 <a name="pc-features"></a>
 
@@ -101,8 +120,10 @@ and audio fidelity remain unverified. See [measured progress](docs/project/STATU
 | --- | --- |
 | **Keyboard and mouse** | Direct aiming, customizable bindings, mouse-driven menus and input prompts that follow your controls. |
 | **Widescreen** | 1080p, 1440p, 4K and ultrawide support, with adjustable field of view. |
+| **Anti-aliasing** | Optional [SMAA 1x High](docs/players/smaa.md) smooths jagged edges on compatible Direct3D 11/Vulkan builds. |
 | **High frame rate** | Original 60 FPS by default; compatible game builds offer opt-in [120/180/240 FPS beta settings](docs/analysis/native-high-refresh.md). |
 | **Launcher** | Game installation, updates, repair, rollback and settings. |
+| **Local split-screen** | Play with multiple players on the same screen using controllers. |
 | **Online multiplayer** | Player-hosted Online and LAN matches with bot support. Windows only. |
 | **Extras** | Optional [Discord Rich Presence](docs/players/discord-presence.md), FPS overlays and local crash diagnostics. |
 
@@ -112,24 +133,62 @@ launcher's **Release notes**, [platform status](#platform-status) and
 
 ## Multiplayer
 
-On Windows, choose **Online / System Link → Online** to host or join a match,
+### Local split-screen
+
+1. Connect your controllers and choose the number
+   of players.
+2. Press **Start** on your controllers in the order you want to join.
+3. Select or create a profile, then continue.
+
+Join assignments last for the session. To configure the devices manually, use the launcher
+or the in-game **Controls > General > Local multiplayer**.
+
+**Automatic**
+lets the game use a connected controller without a fixed assignment. To change the player count, return to the main menu;
+joining during an active match is not supported. Only one keyboard/mouse player
+is supported; additional players need controllers.
+
+### Controller stick response
+
+In **Settings → Controls → Controller** (also available while paused), adjust
+**Movement deadzone** and **Aim deadzone** for the selected player. Changes save
+and apply immediately. Lower values respond sooner; raise them if a stick drifts.
+Existing settings stay unchanged until edited. The original aiming curve remains.
+The launcher offers the same per-player controls under **Game settings → Keyboard
+& mouse → Controller deadzones**; select **Save settings** before launching.
+
+### Online / LAN
+
+Choose **Online / System Link → Online** to host or join a match,
 or **System Link** for LAN play. Everyone needs matching game builds and data.
 Online hosts need port forwarding; guests join using the host's invitation.
 Follow the [multiplayer guide](docs/players/multiplayer.md) for setup, ports and bots.
 
 Online is experimental;
-Story co-op and native Mac multiplayer are not supported yet.
+Story co-op is not supported yet.
 
 ## Enhanced textures
 
-The partial texture overhaul is an optional launcher download for Windows and
-Mac.
+The partial texture overhaul is an optional launcher download for Windows, Mac
+and Linux.
 **Classic** textures remain the default.
 
 When the optional pack is available, use **Game settings → Graphics & resolution
 → Check texture downloads**, then **Download / update textures**. Enable and save
 **Use enhanced textures (Beta)** to use it on future launches. See the
 [texture guide](docs/textures/textures.md) for availability, coverage and known issues.
+
+## Developer Tools
+
+Enable **Developer Tools** in **Extras > Developer Tools** or the launcher, then
+press **F1** to open the sidebar. It includes free camera, no-clip, game speed,
+input/video settings, and diagnostics. Change its shortcut in **Key bindings**.
+
+In multiplayer, the host controls the **Tools** tab through **Options > Developer
+Tools** (default **Off**). **Settings** and **Diagnostics** remain accessible;
+**Time & audio** and **Player & progression** are unavailable online.
+
+Native Mac/Linux validation is pending; see [validation](docs/project/STATUS.md).
 
 <a name="guides--support"></a>
 
@@ -152,15 +211,10 @@ with your installed versions, platform and steps to reproduce. The launcher's
 Keep personal saves and game data private.
 
 Suggest improvements in **[Ideas](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/categories/ideas)**.
-To contribute, read the [contributing guide](CONTRIBUTING.md),
+To contribute, run the [local CI preflight](docs/development/ci.md#run-runtime-checks-before-pushing)
+for runtime changes and read the [contributing guide](CONTRIBUTING.md),
 [project rules](AGENTS.md) and [code of conduct](CODE_OF_CONDUCT.md).
 Report security vulnerabilities privately using the [security policy](SECURITY.md).
-
-## Support the project
-
-Enjoying the project? [Buy me a coffee on Ko-fi](https://ko-fi.com/thedoffman)
-to support continued work on TimeSplitters and the discoveries shared along the way.
-Thank you for being part of the project!
 
 ## Credits & license
 
@@ -176,3 +230,7 @@ components retain their own [licenses and credits](LICENSES/README.md).
 **This license does not cover the original TimeSplitters game or its assets.**
 You must supply your own supported game files. Original game data, generated
 game code, personal settings and saves are not included in this repository.
+
+The [Linux x64 launcher](docs/players/linux-launcher.md) uses the shared desktop
+interface and installs the matching Linux game package. See the Linux guide for
+desktop prerequisites and the experimental port's remaining validation limits.

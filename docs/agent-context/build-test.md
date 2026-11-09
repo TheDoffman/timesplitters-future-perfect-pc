@@ -1,24 +1,84 @@
-# Build, run and validation map
+[Sticks](controller-deadzones.md). [Online](multiplayer-ui.md).
+[Keys](control-presets.md); [Tex](texture-preference.md).
+[Arms](video-options.md).
+[Throw](native-uplink.md); [Beams](native-projectiles.md).
+[Vietnam](network-performance.md).
+[Tools](developer-tools-integration.md).
+Developer warnings: [launcher](launcher.md).
+[Profile tests](multiplayer-exit.md#validation): saves, late lobby saves, checksum/write errors.
+[Icons](controls-options.md).
+[Effect depth](native-effect-depth.md).
+[Update tests](main-menu-update.md).
+[Weapon FOV](video-options.md#weapon-aperture).
+[HUD/MSAA tests](../development/graphics-options.md).
+[SDL startup/fullscreen](linux-game.md).
+[Font/escape tests](audio-options.md).
+`test_lfs_checkout.py`: pointer clones, opt-in LFS pull, preserved packs.
+[Kill feed](../development/arcade-kill-feed.md)
+# Build/tests ([MSAA](smaa.md))
+Audio: [acceptance](../development/audio-overhaul-acceptance.md).
+Media CI: audit/candidates/loops/metrics; headers do not prove identity.
+Fixtures:32 combinations, unknown files, speech, ducking, dynamics, queued gains,
+cache/pan/split fallback; gain C++ needs initializer_list.
+Streams:8kHz/320-byte refill, ordered callbacks, manual dispatch.
+Movie updater: real DSP + neutral mix spies; speech-tail/gap PCM fixtures.
+`test_audio_output_gain.py`: mute/queue retention, Windows capture.
+[Capture and bounded build](../development/audio-overhaul.md#process-output-capture).
+`test_controller_profile.py` executes native key/pad guards and the runtime key
+dispatcher: freecam neutralizes gameplay while retaining raw camera keys. Both
+host defines cover automatic/assigned pad blocking/resume and existing ownership,
+disconnect/focus/parser cases. It runs alongside Developer Tools flight/mouse
+coverage in runtime CI. Patch2630 follows2620.
 
-[NPC/cinematics, Story dispatch/navigation, version and repair checks](build-test-details.md); [Saves](save-locations.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
+[Story](build-test-details.md).
 
+`test_developer_tools.py` runs in runtime CI: sidebar tab/dock centers at
+1x/1.5x/2x, both docks, independent vertical scaling and retained painted extents
+on input-only frames. Fixture-local locks/atomics support standalone non-Windows
+execution. This is synthetic hit-testing, not physical Retina/scene acceptance.
 
-test_native_timing.py::test_original_minigun_spin runs the complete supported-US callback with fake services. It reproduces the old high-FPS failure and checks readiness, release, pause and input guards at 60/120/144/180/240 FPS. Existing CI selects this suite; private-XBE absence skips it. Historical fixtures exclude minigun intent until the native stack is applied. See native-minigun.md.
+[Linux](linux-game.md); [LAN](system-link.md).
 
-Release 0.4.0 / launcher 1.4.1 tests cover aliases and upload recovery; Mac
-Online notices follow [installer paths](multiplayer-ui.md).
-Run `python -m unittest discover -s tests/launcher -p test_launcher_release.py -v`.
-Launcher 1.4.2 uses the same dual-host workflow and ten-asset verification gates;
-the version-only preparation does not change build, install or preservation paths.
+WSL driver patch direction/repeat/rejection checks use actual GNU patch in
+`test_linux_foundation.py`; see [driver setup](../development/wsl-vulkan.md).
 
-Windows builds pass `config/build/windows-game.manifest` as
-`TSFP_GAME_MANIFEST`; patch 2130 attaches it only to the game target. CMake
-merges system DPI awareness with UAC/common-controls before network identity
-sealing. `test_window_theme.py` builds isolated manifest/no-manifest probes,
-checks embedded XML and asks Windows for the actual process awareness. These
-tests already run in both-host runtime CI (Windows-only cases skip on Mac).
-The native CI dependency selection includes the shared `pefile` pin because
-these probes inspect the executable's PE resources before checking process DPI.
+Discord release webhooks target #release-updates; #announcements holds team posts.
+
+PC Settings bar: [persistence checks](interaction-input.md#pc-settings-bar-visibility).
+
+Native Online link/mode checks: `tests/graphics/test_quit_menu.py` and native
+`--test`/`--online-self-test`. Clang Story fixtures select the Windows guest
+adapter but use the real host trap; hexadecimal additions need token boundaries.
+
+Game0.5.3 bundles published launcher1.5.2 and retains the full publication gates:
+exact clean source on Windows/Mac/Linux, native/package/preservation checks,
+matching multiplayer identities and all nine public asset hashes. Linux hardware
+and full-campaign acceptance remain separate from configured-host checks.
+The Mac packager derives ZIP names, member roots and BUILD sidecars from the
+versioned stage, independently of copied license names. The real archive regression
+in `test_native_mac_package.py` retains all three font/STB notices and the versioned
+ZIP root; native installation/preservation checks remain required on Mac.
+Crane original-XBE fixtures supply the visible-HUD hook; run
+tests/graphics/test_crane_overlay.py for both host defines. Native input
+self-tests use click/Escape capture, replacing retired F1. [Linux](linux-game.md).
+
+Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh-weapon-clicks-434).
+
+[Build](build-test-details.md); [Saves](save-locations.md), [storage](host-storage.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
+
+Minigun: [readiness/release/pause/input tests](native-minigun.md). CI selects test_native_timing.py; original-code tests require the private XBE. Historical stacks exclude minigun/player-trigger patches until full native timing applies.
+
+Linux builds retain assertions/numeric policy. Isolated named runner/frame/Story
+fixtures cover 60/120/180/240; cleanup selects only the active save root.
+Upload-copy/sanitizer/GPU contracts run in CI; see [Linux](linux-game.md) and
+[launcher checks, including antivirus diagnostics](launcher.md#antivirus-blocking-diagnostics-issue-476).
+
+Windows passes `config/build/windows-game.manifest` as `TSFP_GAME_MANIFEST`;
+patch 2130 attaches it only to the game. CMake merges system DPI awareness,
+UAC/common-controls before network sealing. `test_window_theme.py` uses isolated
+manifest/no-manifest probes to inspect embedded XML and actual process DPI.
+Both-host runtime CI runs these (Windows cases skip on Mac), with pinned
+`pefile` for PE-resource inspection.
 
 [Build/test speed and timing alerts](release-speed.md).
 
@@ -33,7 +93,7 @@ Patch discovery/migration: [folder rules](../../patches/README.md).
 
 Standalone RHI/replay set `TSFP_SHARED_SOURCE`; see [maps](guest-host-mappings.md).
 
-[Guest services, headers, compiler and execution contracts](independent.md).
+[Guest services and compiler contracts](independent.md).
 Allocation/image/state/ABI tests use fatal warnings and bounded mismatch reports.
 Storage probes: [threads](thread-memory.md), [virtual-memory ABI/access](virtual-memory.md).
 
@@ -56,7 +116,7 @@ Windows Reload fixture: [clock-domain expiry check](vertex-expand.md#controls-fi
 Windows diagnostics and `test_sample_pc_locations.py`: see [runtime](runtime.md).
 Broken variants must compile before their runtime checks reject them.
 
-State-cache binding/failure and WARP/Vulkan pixel fixtures:
+[GPU buffer contract](linux-game.md#cross-platform-buffer-contract).
 [runtime](runtime.md). Vulkan defines `TSFP_RHI_RENDERER`.
 
 `test_gpr_refs.py` covers four-site selection, integer/vector live-cell references, callbacks, aliasing,
@@ -71,50 +131,50 @@ They check acceptance/ABI rather than complete real geometry. See the
 [contact trace schema](native-player-contact.md) before interpreting live CSVs.
 
 <!-- packet:start -->
-Windows: `powershell -NoProfile -File tsfp.ps1 -Action Build` applies patches,
-checks fingerprints, regenerates, builds and tests MSVC x64. Output:
+Windows: `powershell -NoProfile -File tsfp.ps1 -Action Build` validates patches
+and fingerprints, regenerates, builds/tests MSVC x64. Output:
 `build/windows/Release/futureperfect_recomp.exe`. Never edit generated C.
-Mac: `tools/build/build-native-mac.py` (`--generate` for stale code, `--setup` for setup).
-Output: `build/macos/futureperfect_recomp`. Auto selects Vulkan on macOS26+,
-otherwise GL. SDK pin: `config/build/vulkan-sdk.json`; driver provenance:
+Mac: `tools/build/build-native-mac.py` (`--generate` if stale, `--setup` for setup).
+Output: `build/macos/futureperfect_recomp`. Auto uses Vulkan on macOS26+, GL
+otherwise. SDK pin: `config/build/vulkan-sdk.json`; driver:
 `tools/build/vulkan_sdk.py` and `BUILD.json`.
 Isolated gameplay: `tools/testing/testing_profile.py --play --seconds 120` (Windows),
 `tools/testing/test-native-mac.py --unlocked-profile --seconds 120` (Mac), with .venv.
-Root AGENTS owns assets/isolation/storage. Build, startup and gameplay are
+AGENTS owns isolation/storage. Build, startup and gameplay are
 different evidence; unavailable hardware/private data remain validation gaps.
-For movement input changes, sampler and guest-only fixtures do not prove
-gameplay speed. Use an isolated Story run and compare actual player-position
-displacement for straight and diagonal travel. Mouse capture checks should
-also cover focus loss, stale held buttons, menu return and a clip released by
-another component while the game remains foreground.
-`test_window_theme.py` runs `pc_mouse_capture.c` with Win32 API doubles for
-center bounds, repeated repair, negative origins, resize and foreground/errors.
-`tsfp_pc_prompts_test` checks OS confinement/hit-testing and Fire release across
-repair; it explicitly skips without foreground focus. `pc_debug_game.py` uses
-center bounds too. `test_mounted_mouse.py` covers split-screen mouse
-adapters; live gameplay remains unverified.
+Movement sampler/guest fixtures cannot prove gameplay speed. Compare straight
+and diagonal player displacement in isolated Story. Mouse capture checks cover
+focus loss, stale held buttons, menu return and externally released clips while
+the game stays foreground.
+`test_window_theme.py` runs `pc_mouse_capture.c` with Win32 doubles: center
+bounds, negative origins, repeated repair, resize, foreground/errors.
+`tsfp_pc_prompts_test` checks confinement/hit-testing and Fire release across
+repair (skips without foreground focus). `pc_debug_game.py` uses center bounds.
+`test_mounted_mouse.py`: split-screen mouse adapters; live gameplay unverified.
 <!-- packet:end -->
 
 SDL tests (`tools/build/build-native-mac.py --test`) cover the two-slot E/Space
 cap, requested capture, release and frame-applied mouse disable. They preserve
 bindings; physical input remains unverified.
 
-CI: `runtime-patches.yml` selects work; `ci-pr-gate.py` requires both hosts.
-Native jobs allow 45 minutes on Windows and 30 on Mac; patch upgrades allow 30.
-Required check names remain.
-`test_ci_pr_gate.py` rejects missing/failed/skipped results;
-`test_ci_runtime_scope.py` checks wiring. Issue jobs select their sources.
+CI: `runtime-patches.yml` keeps `PR validation` required and fail-closed.
+Patch/native suites use three fixture-preserving shards per Windows/Mac host;
+Mac GPU and release jobs depend only on plan. `tools/ci/runtime-suites.json`
+feeds CI and local `run-runtime-checks.py all --prepare --failed-first` (complete
+host CPU suites, no GPU/launcher acceptance). XML/job summaries retain failures.
+See [preflight, shard coverage and timing](../development/ci.md). Launcher/Linux/
+issue/texture ownership is unchanged. Native45m/30m; patch30m timeouts remain.
 
 `test_push_gather.py`: full original-reference gathering, fresh bytes, failures,
 guard pages, large buffers and32-bit wrapping. Both native CI hosts run it.
 See [pushed-array checks and timing scope](vertex-expand.md#pushed-array-gathering).
 
 `test_zero_base_indices.py`: old/new HLE parity, fresh indices, failures, stream
-dispatch and copy/rebase/leak mutations. Both hosts; mocked draws.
+dispatch and copy/rebase/leak mutations. Windows/Mac/Linux; mocked draws.
 
 Reload/Fire #337: `test_native_timing.py` covers the US decoder;
 `reload_phase_sweep.h` covers 864 schedules/1,728 presses. `test_reload_keys.py`
-covers 1,360 Reload and 680 Fire schedules at 60ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ240, priority, remaps and
+covers 1,360 Reload and 680 Fire schedules at 60-240, priority, remaps and
 lifecycle. `native_reload_input.c` adds 425 original-decoder Fire schedules
 (X surrogate). Windows `pc_controls.c` checks the event bridge.
 `native_refresh_game.py --native --fps 180 --short-fire --seconds 116` checks
@@ -131,7 +191,6 @@ Camera/mothership/spawn/rigid fixtures include the shared helper.
 
 Crash capture/heartbeat and bounded Windows sharing retries: `test_crash_capture.py`.
 Darwin: `test_native_crash.py`. Both hosts run shared UI identity/failure/ZIP tests.
-
 
 `stability_transitions_game.py --scenario rocket-impact --native-fps 240
 --watch-actors --watch-effects --no-captures --no-native-trace --seconds 180`: Temple floor rocket, cleanup,
@@ -187,7 +246,7 @@ presence semantics, decoding/reporting, and repeated-lookup/executor mutations.
 
 `test_window_theme.py`: menu drawing, mnemonics, inserted/reordered rows (#333).
 
-[Audio tests](audio-buffers.md): timing/gain, Release/recovery stress, exit reports,
+[Audio tests](audio-buffers.md): rates/gain/drain/bursts, Release/recovery stress, exits,
 beta ON/OFF. RHI tests cover WM_QUIT/HostExit cleanup.
 
 `test_controller_profile.py`: devices/maps/disconnect and SDL virtual input;
@@ -369,24 +428,7 @@ QPC/CLOCK_MONOTONIC share the host presentation clock domain. These spans measur
 CPU work/waits, not GPU completion, and tracing perturbs timing. STATUS records
 partial slow-frame attribution; native Mac gameplay remains separate acceptance.
 
-`stability_transitions_game.py --scenario crowd-venice --native-fps 144
---display-size 3440 1440 --fov 73 --no-native-trace --profile-presents
---no-captures --seconds 180` replays the tracked unlimited-score ten-bot route.
-Use `--native-fps 0` for Original60. It requires active Venice checkpoints and
-ten configured bots; it does not prove every bot is simultaneously visible.
-`crowd-hotel` (scene39), `crowd-temple` (scene49) and `crowd-disco` (scene56)
-use frequent move/fire/respawn input. `--crowd-weapons rockets` selects the normal
-Rockets preset; use spawn+5..35s to fit the recorder cap. Routes focus at startup.
-`--fullscreen` starts borderless via isolated settings and records the request.
-Check actual client size/foreground state. `--watch-actors` reads position/health
-with pool rechecks; proximity is not visibility.
-Use complete spawn+5..55s windows (Disco/Temple end50s), clock neighbors and
-scene/pause evidence. `--profile-delay-seconds 0..600` delays CSV rows, retaining
-the 20,000-row cap; record it in provenance and verify endpoint coverage.
-The present-metrics fixture checks parsing, delayed intervals and cap/disable behavior.
-Disable images/tracing for pacing. `--profile-cpu` enables 200Hz diagnostic
-snapshots; concurrent rewrites may be partial. `--trace-textures` records bounded
-upload-stage timing. Check completeness before differencing either diagnostic.
+Crowd routes, CPU sampling and pacing: [performance checks](network-performance.md).
 `test_menu_text.py` covers scan-local VM reuse/expiry, invalid rows and unchanged
 original text editing; eager-query/stale-cache mutations must fail. Both hosts'
 existing runtime CI includes it. STATUS retains measured performance and limits.
@@ -531,7 +573,7 @@ instrumentation preserves libc copy macros; a redefinition mutation must fail.
 
 `tools/ci/compatibility-worker.py` runs on the designated Mac outside CI. Install
 with `--auto-merge` only for authorized repair follow-through. It publishes a
-repair PR against its original branch, waits for both host workflows/checks and
+repair PR against its original branch, waits for the consolidated workflow/checks and
 reviews, merges the exact repair SHA, then requires fresh parent CI before its
 SHA-conditional merge into protected main. It refuses missing effective gates,
 changed revisions and failed follow-up CI. Legacy state is not automatically
@@ -645,17 +687,17 @@ clean command reads stdin without a destination filename: an existing pointer
 filename can supply the wrong size and truncate the streamed DDS. Exact pointer
 hash/size comparison remains mandatory. `tests/textures/test_build_textures.py` covers
 first export and updating an existing pointer with a DDS larger than 1 KiB.
-Use `tests/textures/test_texture_release.py` for format/hash/privacy and package limits.
+`test_texture_release.py` checks format/hash/privacy and package limits.
 No game launch is required for this export-only change.
 
 ## Original character icon policy
 
-`config/textures/texture-originals.json` excludes user-retained original icons from
-`texture-worklist.py` and `texture-hybrid-plan.py`. Offline regression coverage
-is in `tests/textures/texture_pack_tools.py` (including rejection of accidental reinstall)
-and `tests/textures/test_texture_hybrid_plan.py`. These tests are already registered in CI.
-Asset removal also requires pack count/size audit and unchanged-file hashes;
-no game rebuild is needed.
+`texture-originals.json` supports retained-key exclusion; its current policy
+approves 164 reviewed icons for 2x Enhanced. `test_texture_upscale_originals.py`
+checks explicit neural approval, overlap/unknown/data refusal and default UI
+routing. `texture_pack_tools.py` and `test_texture_hybrid_plan.py` retain exclusion
+coverage. Tests run in CI. Pack updates require count/size and unchanged-file
+hash audits; no game rebuild is needed.
 
 Retired-icon upgrade coverage also runs through `tests/launcher/launcher_textures.cs`
 in Windows and native Mac launcher checks. `tests/textures/test_build_textures.py` verifies
@@ -856,33 +898,22 @@ disabled state, and the actual value after closing/reopening the page (which
 reads tsfp_texture_is_4k). Capture resumed gameplay in both modes separately from
 frame-time measurements. The ineffective window command was removed.
 
-## Game release channels and maintenance publication (2026-10-22)
+[Further contracts and validation notes](build-test-continuation.md).
 
-`tools/release/release_channels.py` owns canonical X.Y.Z[-channel.N] package identity and
-the minimum launcher 1.3.0. `tools/release/release-version.py` writes an explicitly chosen
-VERSION only; no automatic increment/tag/publication. The next Stable source
-version is 0.3.2. Both game packagers validate identity before staging and emit
-release_channel in BUILD.json. Official packages continue optional texture delivery.
+The source identity also hashes verified font assets and the vendored rasterizer;
+TTF inputs keep binary bytes while text files retain line-ending normalization.
+The font metrics fixture compares semibold tracking with an independent browser
+measurement, and package tests remain asset-free host-contract checks.
 
-`publish-release.py` defaults to exact origin/main; --branch permits pushed feature
-previews and Stable release/ or hotfix/ branches with a published Stable ancestor.
-It validates monotonic versions within stable major/minor lines or exact preview
-base/channel series. Notes choose an ancestor in that series, falling back to
-Stable; unrelated/nonancestor experiments never become a baseline. Channel JSON
-records exact source and included/latest published Stable; a missing latest
-Stable is disclosed. --notes-file supplies reviewed feature notes for unmerged
-branches. Prepared package reuse includes the channel metadata; publication
-retains latest=false and existing package/installer/hash/rollback checks.
+Sidebar Video Settings extends the existing developer input and FOV fixtures:
+run `tests/input/test_developer_tools.py`, `tests/graphics/test_fov_settings.py`
+and final-target sidebar GPU cases. They check staged UI requests, native
+profile save, batch rollback and resolution Keep/timeout/close behavior.
 
-The release CI scope selects release_channels.py and release-version.py and
-existing test_publish_release.py covers their identity, preparation, branch,
-hotfix, unrelated-baseline and prepared-retry contracts using fake GitHub.
-LauncherSharedUiChecks covers shared channel selection/preferences/metadata;
-launcher_versions.cs covers paginated discovery. Run the existing Windows launcher
-suite and both-host CI. See docs/project/STATUS.md for measured local results; no runtime game
-behavior or generated guest code changed, and no game build/publication is
-established by these asset-free checks.
+The real-font fixture also evicts the full glyph cache and verifies that a
+tracked semibold title recreates identical pixels after video labels replace it.
 
+[Developer Tools integration](developer-tools-integration.md).
 
 Grouped Preview UI: GameChannelPickerPage.cs uses both hosts' *Page.cs includes.
 tests/launcher/launcher_shared_ui.cs covers tracks, Save state and launcher_saves.cs
@@ -890,14 +921,7 @@ tests/launcher/launcher_shared_ui.cs covers tracks, Save state and launcher_save
 tools/build/build-launcher.ps1 -Test. --render-preview uses synthetic tracks.
 No game build or publisher/tag-format change is required for this grouping.
 
-
-Local Windows artwork selection: build-launcher.ps1 resolves explicit image
-arguments first, then validates each build/launcher-art PNG against the shared
-artwork pin, then uses the existing private legacy fallback if no cached file
-exists. fetch-launcher-art.ps1 recovers the pinned banner/backdrop/logo without
-executing downloaded code. -RequireArtwork checks the selected resources; normal
-local rebuilds now reuse the same verified art as release CI when cached.
-
+[Local launcher artwork selection](build-test-details.md#local-launcher-artwork-selection).
 
 Beta publication (2026-10-23): release_channels.identity defaults to history parsing;
 publishing=True rejects alpha/preview/rc/legacy suffixes. Version preparation,
@@ -926,9 +950,7 @@ See [water tests](water-tests.md) for CPU/GPU validation and live limits; see
 CI discovers unittest in each owning test folder. Changes to project_paths.py
 or conftest.py select all runtime and launcher suites.
 
-
 [Request CI](kernel-objects.md).
-
 
 Stage0219 device/name source and contracts use maintained src/runtime and tests/compiler
 paths; see [device ownership](kernel-devices.md). Shared CI selects every new portable
@@ -937,9 +959,7 @@ that skip does not replace native Mac compilation or title gameplay.
 
 [Unlock migrations](unlock-content.md).
 
-
 Original sharing bridges and ordinal80 cleanup: [contracts and checks](kernel-sharing.md).
-
 
 Stage0220 migration models: native-checkpoint, old-controls and old-Mac fixtures
 omit0220 together with its0219 prerequisite while constructing historical inputs.
@@ -947,25 +967,20 @@ Each complete upgrade explicitly asserts the original sharing include/provider
 and ordinal80/16byte cleanup. Full current stacks still include0220. No loader,
 patch bytes, runtime behavior, strict warnings or final upgrade checks are weakened.
 
-
 Online loopback CI synchronization: test_online.py's three-peer handshake waits
 for the host's two authenticated latency replies as well as each guest's first
 reply, matching its existing assertions. The same four-second deadline, nonce/
 credential/replay checks and relay assertions remain. A partial host roster must
 not end that wait. This test-only fix changes no transport or runtime behavior.
 
-
 Original request lifetime/callback prerequisites: [contracts and ABI boundary](request-lifetime.md).
 
-
 Stage0222: [original driver-call composition and opaque stack payload](driver-call.md).
-
 
 Driver fault controls must compile under Clang/Werror before runtime rejection:
 target expected-pointer weakening retains the expected operand; separate wrong
 rollback location/pointer controls retain put. See test_io_target/test_io_call;
 unused-mutant compiler errors are fixture failures, never passing fault evidence.
-
 
 Stage0223: [private request construction and completion delivery](transfer-completion.md).
 
@@ -1007,19 +1022,28 @@ error; native calendar source and the accepted game binary do not change.
 
 [Strings](kernel-strings.md), [RTL](kernel-rtl.md), [formatting](guest-printf.md), [numbers](guest-numbers.md).
 
-
 [Crash evidence and historical upgrades](build-test-details.md#crash-evidence-and-historical-upgrades).
 
 Crossplay: [acceptance](multiplayer-ui.md#physical-windowsmac-online-acceptance).
 
-Crossplay tests: see multiplayer-ui.md.
-
 Markers: test_ui_layout.py; test_patch_updates.py covers 2290/2291.
 
-Mech input: test_mounted_mouse.py; [scope](mounted-mouse.md#battle-mech-mouse-425).
+Mech/cockpit: test_mounted_mouse.py; [scope](mounted-mouse.md).
 
 Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [Story flag and Clang fixtures](build-test-details.md#story-release-flag-regression).
 
 [Languages](launcher.md#complete-game-language-packs-discussion-263).
+
+[2x tests](original-upscale.md).
+
+[Linux release/CI/POSIX](linux-game.md).
+
+[RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
+
+Players: controls-options.md.
+
+Patch tests: Mac seeds omit2620/2625 until migration; Story stubs use production guards.
+
+[PR check names and advisory summary](release-speed.md#pr-feedback-scheduling).

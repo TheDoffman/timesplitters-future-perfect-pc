@@ -15,9 +15,17 @@ tools/compiler/translation_host_symbols.json text eol=lf
 # Preserve literal CRLF context for the upstream overlay source in this patch.
 patches/diagnostics/0700-pc-debug-latency-watermark.patch -text
 
-# Compiled replacements are part of source checkouts; large bytes use Git LFS.
+# Optional replacement payloads use LFS; .lfsconfig keeps clones pointer-only.
 assets/textures/*.dds filter=lfs diff=lfs merge=lfs -text
 assets/textures/*.json text eol=lf
 
 # Pristine runtime snapshot: preserve upstream bytes for exact Git identity.
 vendor/ts3FPrecomp/source/** -text -filter -whitespace linguist-vendored
+# Pinned SMAA reference files retain upstream bytes for provenance verification.
+vendor/smaa/SMAA.hlsl -text -filter -whitespace linguist-vendored
+vendor/smaa/AreaTex.h -text -filter -whitespace linguist-vendored
+vendor/smaa/SearchTex.h -text -filter -whitespace linguist-vendored
+vendor/smaa/LICENSE.txt -text -filter -whitespace linguist-vendored
+
+assets/ui/fonts/*.ttf -text -filter
+vendor/stb/** -text -filter -whitespace linguist-vendored

@@ -21,11 +21,15 @@ namespace TimeSplitters.Launcher
 
         public static bool Translocated(string path)
         {
+#if LINUX
+            return false;
+#else
             var parts = Path.GetFullPath(path).Split(Path.DirectorySeparatorChar);
             for (int i = 0; i + 2 < parts.Length; i++)
                 if (parts[i] == "AppTranslocation" && Guid.TryParse(parts[i + 1], out _) && parts[i + 2] == "d")
                     return true;
             return false;
+#endif
         }
 
         public static string ValidateFolder(string folder, string runningExecutable)
@@ -72,6 +76,7 @@ namespace TimeSplitters.Launcher
         readonly Button choose;
         public NativeLocationWindow(string[] args)
         {
+            NativeApplication.ApplyWindowIcon(this);
             this.args = args;
             Title = "TimeSplitters · Choose installation folder";
             Width = 600; SizeToContent = SizeToContent.Height; CanResize = false;
@@ -115,7 +120,12 @@ namespace TimeSplitters.Launcher
                 if (!IsVisible) return;
                 Program.Root = root;
                 var desktop = (IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime;
+#if MACOS
+                Program.InstallRoot=root;Program.Root=MacStorage.Resolve(args,root);
+                var window=NativeApplication.StartupWindow(Program.Root,args);
+#else
                 var window = new NativeStartup(root, args);
+#endif
                 desktop.MainWindow = window; window.Show(); Close();
             } catch (Exception ex) {
                 status.Text = ex.Message;

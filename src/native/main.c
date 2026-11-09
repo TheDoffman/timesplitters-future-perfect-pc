@@ -1,4 +1,4 @@
-/* Native macOS bring-up entry point. No Win32 executable or compatibility layer. */
+/* Shared native POSIX entry point; OS faults and desktop services are adapters. */
 #include <xbox/xboxrecomp.h>
 #include "xbox_watchpoint.h"
 #include "recomp_config.h"
@@ -12,6 +12,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#ifdef __linux__
+#include "video_startup_sdl.h"
+#endif
 #include <sys/ucontext.h>
 
 extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp, g_ebx, g_esi, g_edi, g_ebp;
@@ -34,7 +37,14 @@ static void capture_guest(uint32_t r[8]){r[0]=g_eax;r[1]=g_ecx;r[2]=g_edx;r[3]=g
 
 int main(int argc, char **argv)
 {
+    extern int pc_game_restart_bootstrap(int,char **);
+    if(!pc_game_restart_bootstrap(argc,argv))return 1;
     int helper_result=tsfp_native_crash_helper(argc,argv);if(helper_result>=0)return helper_result;
+#ifdef __linux__
+    /* Own video/events before Xbox initialization can start an audio worker.
+     * Keep crash-report helper processes independent of the desktop. */
+    if (!tsfp_native_video_startup()) return 1;
+#endif
     if(argc==2 && strcmp(argv[1],"--online-self-test")==0) {
         extern int pc_online_self_test(void);return pc_online_self_test();
     }
@@ -91,7 +101,11 @@ int main(int argc, char **argv)
         fclose(f); free(data); return 2;
     }
     fclose(f);
+#ifdef __linux__
+    printf("[NATIVE-BOOT] TimeSplitters: Future Perfect — Linux x64\n");
+#else
     printf("[NATIVE-BOOT] TimeSplitters: Future Perfect — macOS ARM64\n");
+#endif
     printf("[NATIVE-BOOT] XBE loaded: %ld bytes; saves: %s\n", size, saves);
     if (!xbox_MemoryLayoutInit(data, (size_t)size)) {
         fprintf(stderr, "[NATIVE-BOOT] Xbox memory initialization failed\n");

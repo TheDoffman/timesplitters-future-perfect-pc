@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="280" height="52" viewBox="0 0 280 52" role="img" aria-labelledby="title desc">
+  <title id="title">Download Linux launcher</title>
+  <desc id="desc">Linux x64. Ubuntu 24.04 or newer. Experimental desktop support.</desc>
+  <rect x=".5" y=".5" width="279" height="51" rx="3" fill="#A7D9FA" stroke="#3B5268"/>
+  <path d="M26 15v14m-5-5 5 5 5-5M19 32v5h14v-5" fill="none" stroke="#112A40" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="155" y="23" text-anchor="middle" fill="#112A40" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="600" letter-spacing=".4">DOWNLOAD LINUX</text>
+  <text x="155" y="39" text-anchor="middle" fill="#24435C" font-family="Segoe UI,Arial,sans-serif" font-size="10">x64 · Ubuntu 24.04 or newer</text>
+</svg>

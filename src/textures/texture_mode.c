@@ -11,12 +11,6 @@ static INIT_ONCE once = INIT_ONCE_STATIC_INIT;
 static volatile LONG enabled;
 static void mode_store(int value) { InterlockedExchange(&enabled,value); }
 static int mode_load(void) { return (int)InterlockedCompareExchange(&enabled,0,0); }
-static int mode_flip(void) {
-    LONG before;
-    do { before=InterlockedCompareExchange(&enabled,0,0); }
-    while(InterlockedCompareExchange(&enabled,!before,before)!=before);
-    return !before;
-}
 #define mode_equal _stricmp
 #else
 #include <pthread.h>
@@ -26,16 +20,40 @@ static pthread_once_t once = PTHREAD_ONCE_INIT;
 static atomic_int enabled;
 static void mode_store(int value) { atomic_store(&enabled,value); }
 static int mode_load(void) { return atomic_load(&enabled); }
-static int mode_flip(void) { return !atomic_fetch_xor(&enabled,1); }
 #define mode_equal strcasecmp
 #endif
+
+/* Keep the preference beside the launcher's other shared product settings. */
+static int preference_path(char *out,size_t bytes)
+{
+    const char *source=getenv("TSFP_DISPLAY_CONFIG");
+    if(!source || !*source)source=getenv("RECOMP_INPUT_CONFIG");
+    if(!source || !*source)source="config/pc-display.ini";
+    if(strlen(source)>=bytes)return 0;
+    strcpy(out,source);
+    char *a=strrchr(out,'/'),*b=strrchr(out,'\\');
+    char *slash=a && b?(a>b?a:b):a?a:b;
+    size_t prefix=slash?(size_t)(slash+1-out):0;
+    if(prefix+strlen("pc-textures.ini")>=bytes)return 0;
+    strcpy(out+prefix,"pc-textures.ini");return 1;
+}
+static int read_preference(void)
+{
+    char path[32768],version[32],tail;int value=-1;
+    if(!preference_path(path,sizeof path))return -1;
+    FILE *file=fopen(path,"rb");if(!file)return -1;
+    if(fscanf(file,"%31s %d %c",version,&value,&tail)!=2 ||
+       strcmp(version,"TSFP_TEXTURES_V1") || (value!=0 && value!=1))value=-1;
+    fclose(file);return value;
+}
 
 static void configure(void)
 {
     const char *mode = getenv("TSFP_TEXTURE_MODE");
-    /* Preserve explicit pack-preview launches; ordinary launchers request classic. */
+    /* Preserve legacy launch defaults until a choice has been saved. */
     const char *pack = getenv("TSFP_TEXTURE_PACK_DIR");
-    mode_store(mode ? !mode_equal(mode,"4k") : (pack && *pack));
+    int preference=read_preference();
+    mode_store(preference>=0 ? preference : mode ? !mode_equal(mode,"4k") : (pack && *pack));
     fprintf(stderr,"[TEXTURE-MODE] %s; missing replacements use Classic.\n",
             mode_load() ? "4K" : "Classic");
 }
@@ -65,11 +83,35 @@ void tsfp_texture_set_4k(int value)
     mode_store(!!value);
 }
 
+int tsfp_texture_save_4k(int value)
+{
+    char path[32768],temporary[32768];value=!!value;
+    if(!preference_path(path,sizeof path) || strlen(path)+5>=sizeof temporary)return 0;
+    strcpy(temporary,path);strcat(temporary,".tmp");
+    FILE *file=fopen(temporary,"wb");if(!file)return 0;
+    int ok=fprintf(file,"TSFP_TEXTURES_V1 %d\n",value)>0;
+    if(fflush(file))ok=0;
+    if(fclose(file))ok=0;
+#ifdef _WIN32
+    if(ok)ok=MoveFileExA(temporary,path,MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)!=0;
+    if(!ok)DeleteFileA(temporary);
+#else
+    if(ok)ok=rename(temporary,path)==0;
+    if(!ok)remove(temporary);
+#endif
+    if(ok)tsfp_texture_set_4k(value);
+    return ok;
+}
+
 int tsfp_texture_toggle(void)
 {
     int after;
     tsfp_texture_is_4k();
-    after=mode_flip();
+    after=!mode_load();
+    if(!tsfp_texture_save_4k(after)) {
+        fprintf(stderr,"[TEXTURE-MODE] Could not save texture preference; mode unchanged.\n");
+        return mode_load();
+    }
     fprintf(stderr,"[TEXTURE-MODE] %s; missing replacements use Classic.\n",after ? "4K" : "Classic");
     return after;
 }

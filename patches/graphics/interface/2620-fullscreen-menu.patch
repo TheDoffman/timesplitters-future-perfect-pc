@@ -1,0 +1,24 @@
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -62,6 +62,9 @@
+  */
+ #include "platform/xbox_winnt.h"
+ #include <stdio.h>
++#ifdef TSFP_PC_CONTROLS
++#include "pc_display.h"
++#endif
+ #include <stdlib.h>
+ #include <string.h>
+ #include "hle.h"
+@@ -268,6 +269,11 @@
+     if (pc_controls_message(hwnd, msg, wp, lp, &pc_result)) return pc_result;
+ #endif
+     switch (msg) {
++#ifdef TSFP_PC_CONTROLS
++    case PC_FULLSCREEN_SET_MESSAGE:
++        shadow_set_fullscreen(hwnd,wp!=0);
++        return g_shadow_fullscreen==(wp!=0);
++#endif
+     case WM_SYSKEYDOWN:
+         /* Alt+Enter, the usual Windows key for it: fullscreen and back. */
+         if (wp == VK_RETURN && (lp & (1 << 29)) && !(lp & (1 << 30))) {

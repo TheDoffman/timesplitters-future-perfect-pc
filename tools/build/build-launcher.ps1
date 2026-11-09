@@ -89,7 +89,7 @@ $cachedFiles = @('TimeSplitters Launcher.exe', 'Bin/TimeSplitters.App.exe', 'Sup
     'launcher-tests.exe', 'launcher.ico', 'icon-preview.png', 'launcher-update.json', $assetName, ($assetName + '.sha256'))
 $cacheInputs = @($PSCommandPath, (Join-Path $PSScriptRoot 'launcher-cache.ps1'),
     (Join-Path $project 'tools/release/ImportGame.cs'), (Join-Path $project 'config/pc-controls.default.json'),
-    (Join-Path $project 'src/interface/pc_display_modes.inc'), (Join-Path $project 'config/build/launcher-artwork.json'))
+    (Join-Path $project 'src/interface/pc_display_modes.inc'), (Join-Path $project 'src/input/pc_control_presets.def'), (Join-Path $project 'config/build/launcher-artwork.json'))
 $cacheInputs += @(Get-ChildItem -LiteralPath $source -File | ForEach-Object { $_.FullName })
 $cacheInputs += @(Get-ChildItem -LiteralPath (Join-Path $project 'tests/launcher') -Filter '*.cs' -File | ForEach-Object { $_.FullName })
 foreach ($name in ($references + @('csc.exe', 'csc.exe.config', 'clr.dll', 'mscorlib.dll', 'System.Drawing.dll', 'System.Xml.dll', 'System.Configuration.dll',
@@ -126,7 +126,7 @@ foreach ($reference in @('PresentationCore.dll','PresentationFramework.dll','Win
 $commonSources = @((Join-Path $source 'SaveLocations.cs'), (Join-Path $source 'SaveBackups.cs'), (Join-Path $source 'Core.cs'), (Join-Path $source 'LauncherPlatform.cs'), (Join-Path $source 'DownloadTransfer.cs'), (Join-Path $source 'ReleaseNews.cs'), (Join-Path $source 'ReleaseClient.cs'),
     (Join-Path $source 'SelfUpdate.cs'), (Join-Path $source 'UpdateRestart.cs'), (Join-Path $source 'TexturePack.cs'), (Join-Path $source 'TextureDownload.cs'), (Join-Path $source 'LauncherVersion.cs'), (Join-Path $source 'WindowTheme.cs'))
 $arguments = $commonArguments + @('/main:TimeSplitters.Launcher.Bootstrap',
-    ('/out:' + (Join-Path $Output 'TimeSplitters Launcher.exe'))) + $commonSources + @((Join-Path $source 'Bootstrap.cs'))
+    ('/out:' + (Join-Path $Output 'TimeSplitters Launcher.exe'))) + $commonSources + @((Join-Path $source 'Bootstrap.cs'), (Join-Path (Split-Path -Parent $PSScriptRoot) 'release\ImportGame.cs'))
 & $compiler @arguments
 if ($LASTEXITCODE -ne 0) { throw 'Bootstrap compilation failed.' }
 $arguments = $commonArguments + @('/main:TimeSplitters.Launcher.Program',
@@ -138,7 +138,7 @@ $settingsSources = @((Join-Path $source 'Ui.cs'), (Join-Path $source 'GameSessio
 # Every shared page is compiled for both hosts; add new pages beside these sources.
 $settingsSources += @(Get-ChildItem -LiteralPath $source -Filter '*Page.cs' | ForEach-Object { $_.FullName })
 $defaultControls = @(('/resource:' + (Join-Path $source 'PageTheme.xaml') + ',PageTheme.xaml'),
-    ('/resource:' + (Join-Path $source 'TabsTheme.xaml') + ',TabsTheme.xaml'), ('/resource:' + (Join-Path $project 'config\pc-controls.default.json') + ',launcher-controls-default.json'),
+    ('/resource:' + (Join-Path $source 'TabsTheme.xaml') + ',TabsTheme.xaml'), ('/resource:' + (Join-Path $project 'config\pc-controls.default.json') + ',launcher-controls-default.json'), ('/resource:' + (Join-Path $project 'src\input\pc_control_presets.def') + ',control-presets.def'),
     ('/resource:' + (Join-Path $project 'src\interface\pc_display_modes.inc') + ',display-modes.inc'))
 $arguments += $settingsSources + @($defaultControls)
 & $compiler @arguments

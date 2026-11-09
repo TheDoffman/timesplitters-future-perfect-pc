@@ -3,6 +3,7 @@
 from project_paths import source_file as repo_file
 
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -87,11 +88,17 @@ def test_original_actor_voice_clock(tmp_path):
         # Mutations disable only the original generation checks, never production.
         for target in ('00164EC6','00164F52'):
             branches = list(re.finditer(r'if \(([^\n]+)\) goto loc_'+target+r'; /\* jne:', code))
-            assert len(branches)==1
-            condition = branches[0][1]
-            assert '_fa' in condition and '_fb' in condition and '_flags' not in condition
-            needle = f'if ({condition}) goto loc_{target};'
-            code = code.replace(needle,f'if (!ignore_generation && ({condition})) goto loc_{target};')
+            # Status-aware lowering retains the legacy expression in its else
+            # path. Mutate both routes of this one guest instruction.
+            legacy=[branch for branch in branches if 'tsfp_status_condition' not in branch[1]]
+            status=[branch for branch in branches if 'tsfp_status_condition(&g_status_flags,' in branch[1]]
+            assert len(legacy)==1 and len(status)<=1 and len(branches)==len(legacy)+len(status)
+            for branch in branches:
+                condition=branch[1]
+                assert '_fa' in condition and '_fb' in condition
+                needle=f'if ({condition}) goto loc_{target};'
+                assert code.count(needle)==1
+                code=code.replace(needle,f'if (!ignore_generation && ({condition})) goto loc_{target};')
         source = (ROOT/'tests/gameplay/native_actor_voice_clock.c').read_text()
         defined = set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',source+code))
         parent = pieces[0x1ce2e0]
@@ -178,7 +185,7 @@ def test_original_scripted_yaw_callback(tmp_path):
 
 @pytest.mark.parametrize('source,mutation', [
     (name, None) for name in (
-        'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',
+        'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c', 'native_player_trigger_scope.c',
         'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c', 'native_material_motion.c', 'native_character_trace.c', 'native_walk_trace.c', 'native_walk_policy.c', 'native_surface_interval.c', 'native_surface_mode.c', 'native_surface_native.c', 'native_surface_render_guest.c', 'native_surface_runtime.c', 'native_surface_gpu_owner.c', 'native_surface_gpu_cache.c',
         'native_render_cache.c', 'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_contact_trace.c', 'native_surface_trace.c', 'native_surface_capture.c', 'native_surface_precision.c', 'native_surface_coupled.c', 'native_surface_basis.c')
 ] + [('native_network_cadence.c', 'render-pump'),
@@ -250,7 +257,7 @@ def test_native_timing(source, mutation, tmp_path):
                    *['/I' + str(path) for path in includes], str(source_path),
                    '/Fe:' + str(output), '/Fo:' + str(tmp_path / 'timing.obj')]
     else:
-        command = [compiler, '-std=c11', '-Wall', '-Wextra',
+        command = [compiler, '-std=c11', '-D_DEFAULT_SOURCE', '-Wall', '-Wextra',
                    *['-I' + str(path) for path in includes], str(source_path),
                    '-lm', '-o', str(output)]
     subprocess.run(command, env=environment, cwd=tmp_path, check=True)
@@ -639,6 +646,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                                     (0xb9920,0xb995a),(0xb9720,0xb9789)]),
     ('native_projectile_coupled.c', [(0xf08d0,0xf1a4b),
                  (0xe78f0,0xe799a),(0xe1fa0,0xe2370),(0xe2370,0xe2514),
+                 (0xe2520,0xe28b0),(0x152770,0x15289f),(0x152090,0x15211f),
                  (0xdcef0,0xdcf85),(0xb9920,0xb995a),(0xb9720,0xb9789)]),
     ('native_npc_aim.c', [(0x2b93d5,0x2b9793),(0x2b9381,0x2b938a),
                                      (0x2b9389,0x2b938a),(0x2b938d,0x2b938e),
@@ -721,9 +729,9 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             if harness_name=='native_character_scale.c':
                 addresses.update(range(0x12609c,0x1260b4,4))
             if harness_name in ('native_projectile_motion.c','native_projectile_coupled.c'):
-                # Captured projectile kinds and damage profiles. These are
-                # original table entries, not made-up falloff coefficients.
-                addresses.update(0x4deb54+kind*64 for kind in (24,28,31,35,45,46))
+                # Audited projectile kinds and damage profiles: original table
+                # entries, not made-up falloff coefficients.
+                addresses.update(0x4deb54+kind*64 for kind in (8,9,10,11,24,28,31,35,39,42,45,46))
                 for profile in (2,8,9,11,12):
                     addresses.update((0x4dad4c+profile*60,0x4dad78+profile*60))
             if harness_name=='native_player_dispatch.c':
@@ -739,6 +747,9 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                 f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
                 for address in sorted(addresses))
         if harness_name=='native_projectile_coupled.c':
+            for kind in (8,9,10,11,39,42):
+                offset=config.va_to_file_offset(0x4deb28+64*kind+0x30)
+                assert struct.unpack_from('<II',image,offset)==(0xe28d0,0xf08d0)
             # Original CRT pow adapter marshals ST(1) base and ST(0) exponent.
             offset=config.va_to_file_offset(0x3c8c64)
             expected=bytes.fromhex('eb0083ec14d9c9dd1c24dd5424088b44240ce80d00000083c414c3')
@@ -913,6 +924,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     finally:
         vars(config).update(previous)
     harness=(repo_file(ROOT, 'tests', harness_name)).read_text()
+    harness=harness.replace('/* STICK_INPUT */', f'#include "{(ROOT / "src/input/pc_input.c").as_posix()}"')
     if harness_name in ('native_analog_input.c','native_reload_input.c','native_interaction_input.c'):
         wrapper=(ROOT/'src/gameplay/pc_native_timing_guest.inc').read_text(encoding='utf-8')
         start=wrapper.index('static void pc_native_input_guest(')
@@ -953,7 +965,13 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             ('if(candidate)RECOMP_DIRECT_CALLEE_AT(0xc5ad6u,sub_000C54A0)();',
              'if(candidate)sub_000C54A0();'),
         ):
-            assert source.count(needle)==1,needle
+            count=source.count(needle)
+            if needle.startswith('RECOMP_FLOAT_BRANCH_AT('):
+                assert count in (1,2),needle
+                if count==2:
+                    assert sum('tsfp_status_condition(&g_status_flags,' in line
+                               for line in source.splitlines() if needle in line)==1
+            else:assert count==1,needle
             with pytest.raises(AssertionError,match='distance>.001f'):
                 compile_and_run(tmp_path,source.replace(needle,replacement))
         print(output)
@@ -1077,6 +1095,25 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                         r['rng']!=reference['rng'] or r['scans']!=reference['scans'] or
                         int(r['fx'])!=4*int(r['frames'])):
                         raise AssertionError(output)
+        rockets=[dict(field.split('=',1) for field in line.split()[1:])
+                 for line in output.splitlines() if line.startswith('rocket ')]
+        assert len(rockets)==154,output
+        for row in rockets:
+            reference=next(r for r in rockets if r['kind']==row['kind'] and
+                           r['homing']==row['homing'] and r['native']=='0')
+            # Original whole-tick acceleration/homing has at most one 60-Hz
+            # integration step of phase error; quarter-speed travel is equal.
+            assert math.hypot(float(row['x'])-float(reference['x']),
+                              float(row['y'])-float(reference['y']))<float(reference['speed'])/60+.1, row
+            assert abs(float(row['speed'])-float(reference['speed']))<.01,row
+            if row['fps']=='60' and row['slow']=='1.00':
+                assert all(row[k]==reference[k] for k in ('x','y','speed','scans','rng','smoke')),row
+            assert row['scans']==reference['scans'],row
+            assert row['rng']==reference['rng'] and row['smoke']==reference['smoke'],row
+        needle='RECOMP_LOAD_GLOBAL_U32(0xF08D0, 0x4E7944, MEM32(0x4E7944))'
+        assert source.count(needle)==1
+        with pytest.raises(AssertionError):
+            compile_and_run(tmp_path,source.replace(needle,'MEM32(0x4E7944)'))
     if harness_name=='native_npc_aim.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('npc_aim ')]
@@ -1162,5 +1199,461 @@ def test_original_minigun_spin(tmp_path):
         source=source.replace('/* MINIGUN_POLICY */',f'#include "{(ROOT/"src/gameplay/pc_native_minigun_guest.h").as_posix()}"')
         source=source.replace('/* GENERATED_ROUTINES */',code).replace('/* UNREACHED */',stubs).replace('/* CONSTANTS */',constants)
         print(compile_and_run(tmp_path,source))
+    finally:
+        vars(config).update(previous)
+
+
+def test_original_player_trigger(tmp_path):
+    import hashlib, struct
+    from test_recomp_float_joins import config, FunctionTranslator, compile_and_run
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported US XBE required for original player trigger')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        ranges=[(0x1c2c00,0x1c2e7b),(0x1b7ed0,0x1b8160),
+                (0x1c2af0,0x1c2bfd),(0x18ff70,0x190334),(0x426e0,0x4270d)]
+        functions={a:dict(name=f'sub_{a:08X}',end=b) for a,b in ranges}
+        translator=FunctionTranslator(image,functions)
+        code='\n'.join('void '+f['name']+'(void);' for f in functions.values())
+        code+='\n'+'\n'.join(translator.translate_function(a,f) for a,f in functions.items())
+        code=code.replace('void sub_001C2AF0(void)','void sub_001C2AF0_gen(void)')
+        addresses=[0x475d24,0x4783a8,*range(0x47df00,0x47df80,4)]
+        constants='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:x};' for a in addresses)
+        wrapper=(ROOT/'src/gameplay/pc_native_timing_guest.inc').read_text()
+        wrapper=wrapper[wrapper.index('static void pc_native_input_guest'):wrapper.index('static float pc_native_save_animation_delta')]
+        source=(ROOT/'tests/gameplay/native_player_trigger.c').read_text()
+        source=source.replace('/* CODE */',code+'\n#define NT_WORD(a) MEM32(a)\n'+wrapper)
+        source=source.replace('/* CONSTANTS */',constants)
+        print(compile_and_run(tmp_path,source))
+        executable=tmp_path/('float_join.exe' if os.name=='nt' else 'float_join')
+        for mode,message in [('legacy','fresh trigger phase lost'),
+                             ('legacy-host','buffered eligible clicks lost')]:
+            broken=subprocess.run([str(executable),mode],capture_output=True,text=True,timeout=15)
+            assert broken.returncode != 0 and message in broken.stderr
+    finally:
+        vars(config).update(previous)
+
+def test_original_projectile_dispatch_table():
+    """Audit every US projectile table entry, including vehicle-only kinds."""
+    import hashlib
+    import struct
+    from test_recomp_float_joins import config
+    xbe = ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported US XBE required for projectile dispatch audit')
+    image = xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous = dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        def word(address):
+            return struct.unpack_from('<I',image,config.va_to_file_offset(address))[0]
+        families = {
+            0: [0,1,2,36], 0xf4a50: [3,4,5,6,7,27,28,29,30,31,40,45,46,49],
+            0xf08d0: [8,9,10,11,35,39,42,50], 0xf2b80: [12,13,15],
+            0xf39a0: [14,16,17,18,19], 0xf51f0: [20], 0xf5920: [21,22],
+            0xeff90: [23], 0xf5ff0: [24,47], 0xec120: [25], 0xebb00: [26],
+            0xead10: [32,33], 0x389b0: [34], 0xf61e0: [37],
+            0xf1a90: [38,41], 0xecb90: [43], 0xe4800: [44], 0xe8490: [48],
+            0xf6600: [51], 0xed7c0: [52,53],
+        }
+        assert sorted(k for kinds in families.values() for k in kinds)==list(range(54))
+        for updater,kinds in families.items():
+            for kind in kinds:assert word(0x4deb28+kind*64+0x34)==updater
+        assert word(0x4deb28+38*64+0x30)==0xe2f90
+        weapons=word(0x4f9bac)
+        assert word(weapons+4*0x29c+0x6c)==38  # Flare gun, observed through normal menus.
+        assert word(weapons+59*0x29c+0x6c)==51 # Loaded Machine Wars tank main gun.
+    finally:
+        vars(config).update(previous)
+
+
+def _projectile_policies(tmp_path, mutation):
+    """Ablate a production policy; assertions must detect the missing repair."""
+    numeric = ROOT / 'src/gameplay/pc_native_numeric.h'
+    projectile = ROOT / 'src/gameplay/pc_native_projectile_guest.h'
+    if not mutation:
+        return numeric, projectile
+    n, p = numeric.read_text(), projectile.read_text()
+    replacements = {
+        'entry-gate': ('(site)==0xF1A96u', '(site)==0xFFFFFFFFu'),
+        'initial-step': ('(site)==0xF1AF0u', '(site)==0xFFFFFFFFu'),
+        'tank-gate': ('site == 0xF6600u', 'site == 0xFFFFFFFFu'),
+        'vector-drag': ('site == 0xEBA4Au', 'site == 0xFFFFFFFFu'),
+        'smoke-cadence': ('(site)==0xF28D1u', '(site)==0xFFFFFFFFu'),
+    }
+    if mutation in replacements:
+        old, new = replacements[mutation]
+        assert n.count(old) == 1
+        n = n.replace(old,new)
+    elif mutation == 'look-ahead':
+        for site in ('F25D0','F25E4','F25F4'):
+            assert n.count(f'(site)==0x{site}u') == 1
+            n = n.replace(f'(site)==0x{site}u','(site)==0xFFFFFFFFu')
+    elif mutation == 'velocity':
+        assert p.count('*speed/=delta;') == 1
+        p = p.replace('*speed/=delta;','/* Missing velocity normalization. */')
+    elif mutation == 'random-cadence':
+        assert p.count('} else *esp+=4;') == 1
+        p = p.replace('} else *esp+=4;','} else original();')
+    else:
+        raise AssertionError(mutation)
+    # Keep local dependencies authoritative while substituting only this policy.
+    def include_path(match):
+        choices = list((ROOT/'src').rglob(match[1]))
+        return '#include "' + choices[0].as_posix() + '"' if len(choices)==1 else match[0]
+    n = re.sub(r'#include "([^"\n]+)"', include_path, n)
+    numeric_copy, projectile_copy = tmp_path/'numeric-policy.h', tmp_path/'projectile-policy.h'
+    numeric_copy.write_text(n)
+    projectile_copy.write_text(p)
+    return numeric_copy, projectile_copy
+
+
+def _projectile_failure_control(source):
+    return source.replace('#include "recomp_types.h"', '#include "recomp_types.h"\n' +
+        '#undef assert\n#define assert(value) do { if(!(value)) { '
+        'fprintf(stderr,"FAIL: sensitivity projectile %s\\n",#value);exit(2); } } while(0)')
+
+
+@pytest.mark.parametrize('mutation', [None,'entry-gate','initial-step','look-ahead',
+                                     'velocity','random-cadence','smoke-cadence'])
+def test_original_projectile_ballistics(tmp_path,mutation):
+    """Execute the supported original flare/vehicle ballistic path."""
+    import hashlib
+    import struct
+    from guest_constants import absolute_data_words
+    from test_recomp_float_joins import config, FunctionTranslator, compile_and_run
+    xbe = ROOT / 'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported US XBE required for ballistic projectile regression')
+    image = xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous = dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        ranges = [(0xe0f30, 0xe10dd), (0xe2f90, 0xe316a), (0xf1a90, 0xf2907),
+                  (0xdcef0, 0xdcf85)]
+        functions = {a: dict(name=f'sub_{a:08X}', end=b) for a, b in ranges}
+        for a in (0xe2f90, 0xf1a90):
+            functions[a]['name'] += '_gen'
+        translator = FunctionTranslator(image, functions)
+        code = '\n'.join('void ' + f['name'] + '(void);' for f in functions.values())
+        code += '\n' + '\n'.join(translator.translate_function(a, f) for a, f in functions.items())
+        source = (ROOT / 'tests/gameplay/native_projectile_ballistic.c').read_text()
+        defined = set(re.findall(r'void (sub_[0-9A-F]+(?:_gen)?)\(void\)', source + code))
+        calls = set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)', code))
+        calls.update(re.findall(r'\b(sub_[0-9A-F]+)\(\);', code))
+        services = '\n'.join(f'void {n}(void){{fprintf(stderr,"UNEXPECTED {n}\\n");abort();}}'
+                             for n in sorted(calls - defined))
+        addresses = absolute_data_words(image, ranges, config.va_to_file_offset)
+        addresses = sorted(set(addresses) | {0x47d3c0, 0x47d3c4})
+        constants = '\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};'
+                              for a in addresses)
+        numeric,projectile = _projectile_policies(tmp_path,mutation)
+        source = source.replace('/* NUMERIC_POLICY */', f'#define RECOMP_NUMERIC_POLICY_HEADER "{numeric.as_posix()}"')
+        source = source.replace('/* PROJECTILE_POLICY */', f'#include "{projectile.as_posix()}"')
+        source = source.replace('/* GENERATED_ROUTINES */', code).replace('/* UNREACHED_SERVICES */', services)
+        source = source.replace('/* ORIGINAL_CONSTANTS */', constants)
+        if mutation:source = _projectile_failure_control(source)
+        print(compile_and_run(tmp_path, source,expect_success=not mutation))
+    finally:
+        vars(config).update(previous)
+
+
+@pytest.mark.parametrize('updater,end,kinds', [
+    (0xf2b80,0xf3950,[12,13,15]), (0xf39a0,0xf4830,[14,16,17,18,19]),
+    (0xf51f0,0xf5920,[20]), (0xf5920,0xf5d30,[21,22]),
+    (0xec120,0xec880,[25]), (0xebb00,0xec120,[26]),
+    (0xead10,0xebb00,[32,33]), (0xf61e0,0xf6600,[37]),
+    (0xe4800,0xe4ea0,[44]), (0xf6600,0xf6b70,[51]),
+    (0xed7c0,0xedbe0,[52,53]),
+    (0xf4a50,0xf51b0,[3,4,5,6,7,27,28,29,30,31,40,45,46,49]),
+    (0xecb90,0xed7c0,[43]),
+])
+def test_original_projectile_families(tmp_path,updater,end,kinds,mutation=None,release=False):
+    """Execute the supported original flare/vehicle ballistic path."""
+    import hashlib
+    import struct
+    from guest_constants import absolute_data_words
+    from test_recomp_float_joins import config, FunctionTranslator, compile_and_run
+    xbe = ROOT / 'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported US XBE required for ballistic projectile regression')
+    image = xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous = dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        ranges = [(updater,end-1),(0xdcef0,0xdcf85),(0xdc6f0,0xdc7a5),(0xe17c0,0xe1d6b),
+                  (0x151650,0x15178f),(0x151790,0x1518ef),
+                  (0x151e80,0x151f1f),(0x152260,0x15253f),
+                  (0x1531d0,0x1531ff),(0x153440,0x15348f),
+                  (0x1534e0,0x15354f),(0x152770,0x15289f)]
+        if release:
+            ranges += [(0xe0300,0xe03ca),(0xe03d0,0xe051f),(0xe0520,0xe0533)]
+        functions = {a: dict(name=f'sub_{a:08X}', end=b) for a,b in ranges}
+        translator = FunctionTranslator(image, functions)
+        code = '\n'.join('void ' + f['name'] + '(void);' for f in functions.values())
+        code += '\n' + '\n'.join(translator.translate_function(a, f) for a, f in functions.items())
+        source = (ROOT / ('tests/gameplay/native_dart_release.c' if release else 'tests/gameplay/native_projectile_families.c')).read_text(encoding='utf-8')
+        defined = set(re.findall(r'void (sub_[0-9A-F]+(?:_gen)?)\(void\)', source + code))
+        calls = set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)', code))
+        calls.update(re.findall(r'\b(sub_[0-9A-F]+)\(\);', code))
+        services = '\n'.join(f'void {n}(void){{fprintf(stderr,"UNEXPECTED {n}\\n");abort();}}'
+                             for n in sorted(calls - defined))
+        addresses = absolute_data_words(image, ranges, config.va_to_file_offset)
+        addresses = sorted(set(addresses) | {0x47d3c0, 0x47d3c4})
+        constants = '\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};'
+                              for a in addresses)
+        numeric,projectile = _projectile_policies(tmp_path,mutation)
+        source = source.replace('/* NUMERIC_POLICY */', f'#define RECOMP_NUMERIC_POLICY_HEADER "{numeric.as_posix()}"')
+        source = source.replace('/* PROJECTILE_POLICY */', f'#include "{projectile.as_posix()}"')
+        source = source.replace('/* GENERATED_ROUTINES */', code).replace('/* UNREACHED_SERVICES */', services)
+        source = source.replace('/* ORIGINAL_CONSTANTS */', constants)
+        source = source.replace('UPDATER',f'sub_{updater:08X}').replace('KINDS',','.join(map(str,kinds)))
+        if mutation:source = _projectile_failure_control(source)
+        print(compile_and_run(tmp_path, source,expect_success=not mutation))
+        if release:
+            executable=tmp_path/('float_join.exe' if os.name=='nt' else 'float_join')
+            broken=subprocess.run([str(executable),'legacy'],capture_output=True,text=True,timeout=15)
+            assert broken.returncode==1 and 'FAIL: dart release depends on frame rate' in broken.stderr
+    finally:
+        vars(config).update(previous)
+
+
+@pytest.mark.parametrize('updater,end,kinds,mutation', [
+    (0xf6600,0xf6b70,[51],'tank-gate'),
+    (0xead10,0xebb00,[32,33],'vector-drag'),
+])
+def test_projectile_family_negative_controls(tmp_path,updater,end,kinds,mutation):
+    test_original_projectile_families(tmp_path,updater,end,kinds,mutation)
+
+
+def test_original_uplink_hold_gates(tmp_path):
+    """Execute the US request/repeat gates, Uplink callback and charge routine.
+
+    Target selection and the intervening weapon-state handoff are controlled;
+    this fixture does not claim rigid-body motion or live-map acceptance.
+    """
+    import hashlib
+    import struct
+    from test_recomp_float_joins import config, FunctionTranslator, compile_and_run
+    xbe = ROOT / 'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported US XBE required for Uplink holding regression')
+    image = xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous = dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        # 1C395B..1C399C is an isolated instruction block from 1C3100.
+        # Its skipped-work continuation is an explicit non-RET test boundary.
+        ranges = [(0x1c2c00, 0x1c2e7b), (0x1b7ed0, 0x1b8160), (0x1c395b, 0x1c399c), (0x1c2af0, 0x1c2bfd),
+                  (0x1c55f0, 0x1c5d4d), (0x3508b0, 0x350be9)]
+        functions = {a: dict(name=f'sub_{a:08X}', end=b) for a, b in ranges}
+        translator = FunctionTranslator(image, functions)
+        code = '\n'.join('void ' + f['name'] + '(void);' for f in functions.values())
+        code += '\n' + '\n'.join(translator.translate_function(a, f) for a, f in functions.items())
+        code=code.replace('void sub_001C2AF0(void)','void sub_001C2AF0_gen(void)')
+        source = (ROOT / 'tests/gameplay/native_uplink_trigger.c').read_text()
+        defined = set(re.findall(r'void (sub_[0-9A-F]+)\(void\)', source + code))
+        calls = set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)', code))
+        calls.update(re.findall(r'\b(sub_[0-9A-F]+)\(\);', code))
+        services = '\n'.join(f'void {n}(void){{fprintf(stderr,"UNEXPECTED {n}\\n");abort();}}'
+                             for n in sorted(calls - defined))
+        addresses = [0x475c78, 0x475cd8, 0x475d24,
+                     *range(0x1c5d50, 0x1c5dac, 4), *range(0x350bec, 0x350c40, 4)]
+        constants = '\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I", image, config.va_to_file_offset(a))[0]:08x};'
+                              for a in addresses)
+        source = source.replace('/* POLICY */', f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/gameplay/pc_native_numeric.h").as_posix()}"')
+        source = source.replace('../src/gameplay/pc_native_weapon_guest.h', (ROOT / 'src/gameplay/pc_native_weapon_guest.h').as_posix())
+        descriptor = '\n'.join(f'MEM32(T+0x{off:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(0x4f4d64)+off)[0]:08x};' for off in range(0,0x29c,4))
+        source=source.replace('/* UPLINK_DESCRIPTOR */',descriptor)
+        source = source.replace('/* CODE */', code).replace('/* SERVICES */', services).replace('/* CONSTANTS */', constants)
+        print(compile_and_run(tmp_path, source))
+        executable = tmp_path / ('float_join.exe' if os.name == 'nt' else 'float_join')
+        for mutation, route in [('legacy-request', 0), ('legacy-shot', 1)]:
+            broken = subprocess.run([str(executable), mutation], capture_output=True, text=True, timeout=15)
+            assert broken.returncode != 0 and 'Uplink fractional holding requests lost' in broken.stderr
+            assert 'UNEXPECTED' not in broken.stderr
+            assert f'route={route} fps=120 slow=1 phase=0 requests=60' in broken.stdout
+    finally:
+        vars(config).update(previous)
+
+
+def test_original_beam_damage(tmp_path):
+    """Original beam traces, object/actor damage and controlled collision targets."""
+    import struct
+    import hashlib
+    from test_recomp_float_joins import config, FunctionTranslator, compile_and_run
+    from guest_constants import absolute_data_words
+    root=ROOT
+    if not (root/'private/game/default.xbe').is_file():
+        pytest.skip('Supported US XBE required for original beam damage')
+    previous=dict(vars(config))
+    try:
+        image=(root/'private/game/default.xbe').read_bytes()
+        assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+        config.configure_from_xbe(str(root/'private/game/default.xbe'))
+        ranges=[(0xebb00,0xec11e),(0xec120,0xec870),(0xb9790,0xb991c),(0xbd0f0,0xbd18c),(0xb9960,0xb99ca),(0xb9720,0xb9788),(0xb91f0,0xb921f),(0xb9220,0xb9263)]
+        functions={a:dict(name=f'sub_{a:08X}',end=b+1) for a,b in ranges}
+        t=FunctionTranslator(image,functions)
+        code='\n'.join('void '+f['name']+'(void);' for f in functions.values())+'\n'+'\n'.join(t.translate_function(a,f) for a,f in functions.items())
+        source=(root/'tests/gameplay/native_beam_damage.c').read_text()
+        defined=set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',source+code))
+        calls=set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)',code));calls.update(re.findall(r'\b(sub_[0-9A-F]+)\(\);',code))
+        services='\n'.join(f'void {n}(void){{fprintf(stderr,"UNEXPECTED {n}\\n");abort();}}' for n in sorted(calls-defined))
+        addresses=set(absolute_data_words(image,ranges,config.va_to_file_offset))|set(range(0x4dad48,0x4dad48+40*0x3c,4))
+        constants='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};' for a in sorted(addresses))
+        source=source.replace('/* NUMERIC_POLICY */',f'#define RECOMP_NUMERIC_POLICY_HEADER "{(root/"src/gameplay/pc_native_numeric.h").as_posix()}"').replace('/* CODE */',code).replace('/* SERVICES */',services).replace('/* CONSTANTS */',constants)
+        out=tmp_path
+        print(compile_and_run(out,source))
+        executable=out/('float_join.exe' if os.name=='nt' else 'float_join')
+        broken=subprocess.run([str(executable),'legacy'],capture_output=True,text=True,timeout=15)
+        assert broken.returncode==1 and 'FAIL: beam damage depends on frame rate' in broken.stderr
+    finally:
+        vars(config).update(previous)
+
+
+def test_original_projectile_fuses(tmp_path):
+    """Original pool dispatch, timed fuses and proximity arming/detonation."""
+    import struct
+    import hashlib
+    from test_recomp_float_joins import config, FunctionTranslator, compile_and_run
+    from guest_constants import absolute_data_words
+    root=ROOT
+    if not (root/'private/game/default.xbe').is_file():
+        pytest.skip('Supported US XBE required for original projectile fuses')
+    previous=dict(vars(config))
+    try:
+        image=(root/'private/game/default.xbe').read_bytes()
+        assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+        config.configure_from_xbe(str(root/'private/game/default.xbe'))
+        ranges=[(0xdc7b0,0xdc95e),(0xf39a0,0xf482d),(0xf04b0,0xf08bb)]
+        for kind in (17,18,19):
+            assert struct.unpack_from('<I',image,config.va_to_file_offset(0x4deb28+kind*64+0x34))[0]==0xf39a0
+        functions={a:dict(name=f'sub_{a:08X}',end=b+1) for a,b in ranges}
+        t=FunctionTranslator(image,functions)
+        code='\n'.join('void '+f['name']+'(void);' for f in functions.values())+'\n'+'\n'.join(t.translate_function(a,f) for a,f in functions.items())
+        source=(root/'tests/gameplay/native_projectile_fuses.c').read_text()
+        defined=set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',source+code))
+        calls=set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)',code));calls.update(re.findall(r'\b(sub_[0-9A-F]+)\(\);',code))
+        services='\n'.join(f'void {n}(void){{fprintf(stderr,"UNEXPECTED {n}\\n");abort();}}' for n in sorted(calls-defined))
+        addresses=set(absolute_data_words(image,ranges,config.va_to_file_offset)) | set(range(0xf08bc,0xf08d0,4))
+        constants='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};' for a in sorted(addresses))
+        source=source.replace('/* NUMERIC_POLICY */',f'#define RECOMP_NUMERIC_POLICY_HEADER "{(root/"src/gameplay/pc_native_numeric.h").as_posix()}"').replace('/* CODE */',code).replace('/* SERVICES */',services).replace('/* CONSTANTS */',constants)
+        out=tmp_path
+        print(compile_and_run(out,source))
+    finally:
+        vars(config).update(previous)
+
+
+def test_original_challenge_spawns(tmp_path):
+    """Original whole-tick scheduler, spawner and challenge admission."""
+    import struct
+    import hashlib
+    from test_recomp_float_joins import config, FunctionTranslator, compile_and_run
+    from guest_constants import absolute_data_words
+    root=ROOT
+    if not (root/'private/game/default.xbe').is_file():
+        pytest.skip('Supported US XBE required for original challenge spawns')
+    previous=dict(vars(config))
+    try:
+        image=(root/'private/game/default.xbe').read_bytes()
+        assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+        config.configure_from_xbe(str(root/'private/game/default.xbe'))
+        ranges=[(0x15e830,0x15ead6),(0x164010,0x1642be),(0x228d90,0x228e70),(0x25f220,0x25f240)]
+        functions={a:dict(name=f'sub_{a:08X}',end=b+1) for a,b in ranges}
+        t=FunctionTranslator(image,functions)
+        code='\n'.join('void '+f['name']+'(void);' for f in functions.values())+'\n'+'\n'.join(t.translate_function(a,f) for a,f in functions.items())
+        source=(root/'tests/gameplay/native_challenge_spawns.c').read_text()
+        defined=set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',source+code))
+        calls=set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)',code));calls.update(re.findall(r'\b(sub_[0-9A-F]+)\(\);',code))
+        services='\n'.join(f'void {n}(void){{fprintf(stderr,"UNEXPECTED {n}\\n");abort();}}' for n in sorted(calls-defined))
+        addresses=set(absolute_data_words(image,ranges,config.va_to_file_offset)) | set(range(0x228e74,0x228e84,4))
+        constants='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};' for a in sorted(addresses))
+        source=source.replace('/* NUMERIC_POLICY */',f'#define RECOMP_NUMERIC_POLICY_HEADER "{(root/"src/gameplay/pc_native_numeric.h").as_posix()}"').replace('/* CODE */',code).replace('/* SERVICES */',services).replace('/* CONSTANTS */',constants)
+        out=tmp_path
+        print(compile_and_run(out,source))
+        executable=out/('float_join.exe' if os.name=='nt' else 'float_join')
+        broken=subprocess.run([str(executable),'legacy'],capture_output=True,text=True,timeout=15)
+        assert broken.returncode == 1 and 'FAIL: spawn delay depends on frame rate' in broken.stderr
+    finally:
+        vars(config).update(previous)
+
+
+def test_original_dart_release(tmp_path):
+    """Actual detach dispatch for Story/Arcade, followed by original falling update."""
+    test_original_projectile_families(tmp_path,0xead10,0xebb00,[32,33],release=True)
+
+
+def test_original_terminal_text(tmp_path):
+    """Original terminal whole-tick dispatcher, intro and password callbacks."""
+    import struct
+    import hashlib
+    from test_recomp_float_joins import config, FunctionTranslator, compile_and_run
+    from guest_constants import absolute_data_words
+    root=ROOT
+    if not (root/'private/game/default.xbe').is_file():
+        pytest.skip('Supported US XBE required for original terminal text')
+    previous=dict(vars(config))
+    try:
+        image=(root/'private/game/default.xbe').read_bytes()
+        assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+        config.configure_from_xbe(str(root/'private/game/default.xbe'))
+        ranges=[(0x370490,0x370528),(0x3700d0,0x370489),(0x36d000,0x36d09f),(0x36d3c0,0x36d51a),(0x372190,0x372208),(0x376640,0x376709)]
+        functions={a:dict(name=f'sub_{a:08X}',end=b+1) for a,b in ranges}
+        t=FunctionTranslator(image,functions)
+        code='\n'.join('void '+f['name']+'(void);' for f in functions.values())+'\n'+'\n'.join(t.translate_function(a,f) for a,f in functions.items())
+        source=(root/'tests/gameplay/native_terminal_text.c').read_text()
+        defined=set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',source+code))
+        calls=set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)',code));calls.update(re.findall(r'\b(sub_[0-9A-F]+)\(\);',code))
+        services='\n'.join(f'void {n}(void){{fprintf(stderr,"UNEXPECTED {n}\\n");abort();}}' for n in sorted(calls-defined))
+        addresses=set(absolute_data_words(image,ranges,config.va_to_file_offset))
+        constants='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};' for a in sorted(addresses))
+        source=source.replace('/* NUMERIC_POLICY */',f'#define RECOMP_NUMERIC_POLICY_HEADER "{(root/"src/gameplay/pc_native_numeric.h").as_posix()}"').replace('/* CODE */',code).replace('/* SERVICES */',services).replace('/* CONSTANTS */',constants)
+        out=tmp_path
+        print(compile_and_run(out,source))
+        executable=out/('float_join.exe' if os.name=='nt' else 'float_join')
+        broken=subprocess.run([str(executable),'legacy'],capture_output=True,text=True,timeout=15)
+        assert broken.returncode == 1 and 'FAIL: terminal entry depends on frame rate' in broken.stderr
+    finally:
+        vars(config).update(previous)
+
+
+def test_original_boss_mines(tmp_path):
+    """Original Crow mine pool lifecycle and containing damage update."""
+    import struct
+    import hashlib
+    from test_recomp_float_joins import config, FunctionTranslator, compile_and_run
+    from guest_constants import absolute_data_words
+    root=ROOT
+    if not (root/'private/game/default.xbe').is_file():
+        pytest.skip('Supported US XBE required for original boss mines')
+    previous=dict(vars(config))
+    try:
+        image=(root/'private/game/default.xbe').read_bytes()
+        assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+        config.configure_from_xbe(str(root/'private/game/default.xbe'))
+        ranges=[(0x28f560,0x28f722),(0x2aa6a0,0x2ab192)]
+        functions={a:dict(name=f'sub_{a:08X}',end=b+1) for a,b in ranges}
+        t=FunctionTranslator(image,functions)
+        code='\n'.join('void '+f['name']+'(void);' for f in functions.values())+'\n'+'\n'.join(t.translate_function(a,f) for a,f in functions.items())
+        source=(root/'tests/gameplay/native_boss_mines.c').read_text()
+        defined=set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',source+code))
+        calls=set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)',code));calls.update(re.findall(r'\b(sub_[0-9A-F]+)\(\);',code))
+        services='\n'.join(f'void {n}(void){{fprintf(stderr,"UNEXPECTED {n}\\n");abort();}}' for n in sorted(calls-defined))
+        addresses=set(absolute_data_words(image,ranges,config.va_to_file_offset,high=0x4a0000)) | set(range(0x2ab194,0x2ab1a8,4))
+        constants='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};' for a in sorted(addresses))
+        source=source.replace('/* NUMERIC_POLICY */',f'#define RECOMP_NUMERIC_POLICY_HEADER "{(root/"src/gameplay/pc_native_numeric.h").as_posix()}"').replace('/* CODE */',code).replace('/* SERVICES */',services).replace('/* CONSTANTS */',constants)
+        out=tmp_path
+        print(compile_and_run(out,source))
+        executable=out/('float_join.exe' if os.name=='nt' else 'float_join')
+        broken=subprocess.run([str(executable),'legacy'],capture_output=True,text=True,timeout=15)
+        assert broken.returncode == 1 and 'FAIL: boss mine arming depends on frame rate' in broken.stderr
     finally:
         vars(config).update(previous)

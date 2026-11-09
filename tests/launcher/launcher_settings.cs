@@ -149,11 +149,32 @@ public static class LauncherSettingsChecks
         Directory.CreateDirectory(temp);
         try
         {
+            Test("local player assignments are exclusive and preserve bindings",()=>{
+                var r=Root("local-players");var m=GameSettings.Load(r,null);
+                m.Assign(2,0,'T',true);
+                m.SetPlayerDevices(new[]{"keyboard","gamepad:0","gamepad:1","none"});m.Save();
+                m=GameSettings.Load(r,null);
+                Require(m.PlayerDevice(1)=="gamepad:0" && m.PlayerDevice(2)=="gamepad:1");
+                Require(GameSettings.KeyCode(m.Binding(2)[0])=='T');
+                Reject(()=>m.SetPlayerDevices(new[]{"keyboard","gamepad:0","gamepad:0","none"}));
+                Require(m.PlayerDevice(2)=="gamepad:1");
+                Reject(()=>m.SetPlayerDevices(new[]{"none","gamepad:0","gamepad:1","none"}));
+                Reject(()=>m.SetPlayerDevices(new[]{"gamepad:0","keyboard","none","none"}));
+            });
+            Test("local player legacy defaults and reordered profiles preserve their ports",()=>{
+                var r=Root("legacy-local-players");
+                Put(r,"Settings/pc-controls.json","{\"controllers\":[{\"port\":3},{\"port\":1,\"device\":\"keyboard\"},{\"port\":2,\"device\":\"xinput:0\",\"retained\":true}]}");
+                var m=GameSettings.Load(r,null);
+                Require(m.PlayerDevice(1)=="gamepad:0" && m.PlayerDevice(2)=="gamepad:2" && m.PlayerDevice(3)=="gamepad:3");
+                m.SetPlayerDevices(new[]{"keyboard","gamepad:0","gamepad:2","none"});m.Save();
+                m=GameSettings.Load(r,null);Require(m.PlayerDevice(1)=="gamepad:0" && m.PlayerDevice(2)=="gamepad:2" && m.PlayerDevice(3)=="none");
+                Require(File.ReadAllText(Path.Combine(r,"Settings/pc-controls.json")).Contains("retained"));
+            });
             Test("weapon slots migrate stock keys, preserve custom keys and round trip",()=>{
                 var r=Root("weapon-slots");
                 Put(r,"Settings/pc-controls.json","{\"controllers\":[{\"port\":1,\"device\":\"keyboard\",\"bindings\":{\"white\":\"key:1\",\"black\":\"key:2\",\"x\":\"key:3\"}}]}");
                 var m=GameSettings.Load(r,null);
-                Require(GameSettings.Actions.Length==34 && GameSettings.Labels.Length==34);
+                Require(GameSettings.Actions.Length==37 && GameSettings.Labels.Length==37);
                 Require(GameSettings.KeyCode(m.Binding(4)[0])=='X' && GameSettings.KeyCode(m.Binding(5)[0])=='Z');
                 Require(GameSettings.KeyCode(m.Binding(24)[0])=='1' && GameSettings.KeyCode(m.Binding(25)[0])=='2');
                 Require(m.Binding(26)[0]=="none" && GameSettings.KeyCode(m.Binding(2)[0])=='3');
@@ -226,6 +247,17 @@ public static class LauncherSettingsChecks
                 Require(GameSettings.Load(root,null).VerticalFov==75);
                 loaded.VerticalFov=55;loaded.Save();Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V1 1920 1080\n");
                 foreach(string invalid in new[]{"TSFP_DISPLAY_V2 1920 1080", "TSFP_DISPLAY_V1 1920 1080 75", "TSFP_DISPLAY_V2 1920 1080 999", "TSFP_DISPLAY_V2 1920 1080 NaN"}) {
+                    Put(root,"Settings/pc-display.ini",invalid);Reject(()=>GameSettings.Load(root,null));
+                }
+            });
+            Test("Weapon FOV survives launcher settings saves",()=>{
+                string root=Root("weapon-fov-settings");
+                Put(root,"Settings/pc-display.ini","TSFP_DISPLAY_V3 1920 1080 75 130\n");
+                var model=GameSettings.Load(root,null);
+                Require(model.VerticalFov==75 && model.WeaponFov==130);
+                model.VerticalFov=65;model.Save();
+                Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V3 1920 1080 65 130\n");
+                foreach(string invalid in new[]{"TSFP_DISPLAY_V3 1920 1080 75", "TSFP_DISPLAY_V2 1920 1080 75 130", "TSFP_DISPLAY_V3 1920 1080 75 151", "TSFP_DISPLAY_V3 1920 1080 75 103"}) {
                     Put(root,"Settings/pc-display.ini",invalid);Reject(()=>GameSettings.Load(root,null));
                 }
             });
@@ -343,6 +375,7 @@ public static class LauncherSettingsChecks
                     var ui=new LauncherWindow(root,true);
                     try {
                         ui.ShowSettings();var host=(System.Windows.Controls.ContentControl)ui.Window.FindName("SettingsHost");
+                        Descendants(host).OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="KeyboardPreset").SelectedIndex=0;
                         Func<string,System.Windows.Controls.Button> button=label=>Descendants(host).OfType<System.Windows.Controls.Button>().Single(b=>b.IsEnabled && Convert.ToString(b.Content)==label);
                         var binding=Descendants(host).OfType<System.Windows.Controls.Button>().First(b=>Convert.ToString(b.ToolTip)==GameSettings.Labels[0]+", binding 1");
                         Click(binding);Require(Descendants(host).OfType<System.Windows.Controls.Border>().Any(b=>b.Name=="BindingCaptureArea"));
@@ -376,6 +409,28 @@ public static class LauncherSettingsChecks
                 Require(model.Sensitivity==.10 && model.Binding(14)[0]=="key:W" && !model.SkipStartupSplashes);
                 Require(Directory.GetFiles(root,"*",SearchOption.AllDirectories).Length==0);
             });
+            Test("SMAA defaults off, saves both ways and preserves other graphics",()=>{
+                string root=Root("smaa");var model=GameSettings.Load(root,null);
+                Require(!model.Smaa);
+                Put(root,"Settings/runtime.conf","# custom graphics\nanisotropy = 16\nfuture_graphics = keep\n");
+                model=GameSettings.Load(root,null);model.Smaa=true;model.Save();
+                var saved=GameSettings.Load(root,null);Require(saved.Smaa && saved.Anisotropy==16);
+                Require(Read(root,"Settings/runtime.conf").Contains("future_graphics = keep"));
+                saved.Smaa=false;saved.Save();Require(!GameSettings.Load(root,null).Smaa);
+            });
+            Test("Post-process AA participates in settings drafts, cancel and save",()=>STA(()=>{
+                string root=Root("smaa-ui");var owner=new System.Windows.Window();
+                var editor=new SettingsPage(owner.Resources,root,true);owner.Content=editor.View;
+                var nodes=Descendants(editor.View).ToList();
+                var smaa=nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="PostAntiAliasing");
+                var save=nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton");
+                Require(smaa.SelectedIndex==0);
+                smaa.SelectedIndex=2;Require(save.IsEnabled);
+                Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsCancelButton"));
+                Require(Directory.GetFiles(root,"*",SearchOption.AllDirectories).Length==0);
+                Click(save);Require(GameSettings.Load(root,null).Smaa && !save.IsEnabled);
+                owner.Close();
+            }));
             Test("Discord defaults, validation, persistence, launch routing and concurrent edits",()=>{
                 string root=Root("discord");var model=GameSettings.Load(root,null);
                 Require(!model.DiscordEnabled && model.DiscordApplicationId=="1561627743353962566");
@@ -451,6 +506,50 @@ public static class LauncherSettingsChecks
                 Require(Read(root,"Settings/runtime.conf").Contains("# Keep this comment") && Read(root,"Settings/runtime.conf").Contains("future_graphics = keep"));
                 Require(File.Exists(Path.Combine(root,"Settings/pc-controls.json.bak")));
             });
+            Test("shader cache clearing preserves unrelated and nested files",()=>{
+                string root=Root("clear-shader-cache"),cache=Path.Combine(root,"shadercache","45410066"),backend=Path.Combine(cache,"d3d11-fxc-1");
+                Directory.CreateDirectory(Path.Combine(backend,"nested"));
+                File.WriteAllText(Path.Combine(backend,"0123456789ABCDEF.bin"),"cache");
+                File.WriteAllText(Path.Combine(backend,"pipelines.bin"),"pipeline");
+                File.WriteAllText(Path.Combine(backend,"save.bin"),"keep");
+                File.WriteAllText(Path.Combine(backend,"nested","0123456789ABCDEF.bin"),"keep nested");
+                Require(GameSettings.ClearShaderCacheDirectory(cache)==2);
+                Require(File.Exists(Path.Combine(backend,"save.bin")) && File.Exists(Path.Combine(backend,"nested","0123456789ABCDEF.bin")));
+                Require(GameSettings.ClearShaderCacheDirectory(cache)==0);
+            });
+            Test("graphics settings preserve user choices and reject unsupported wire values",()=>{
+                string root=Root("graphics-options");var model=GameSettings.Load(root,null);
+                Require(model.Msaa==1 && model.EdgeSmoothing==0 && model.AmbientOcclusion==0 && model.ShaderCache);
+                model.Msaa=8;model.EdgeSmoothing=1;model.Anisotropy=16;model.AmbientOcclusion=1;model.ShaderCache=false;model.Save();
+                Require(Read(root,"Settings/pc-graphics.ini")=="TSFP_GRAPHICS_V1 8 1 16 1 0\n");
+                model=GameSettings.Load(root,null);
+                Require(model.Msaa==8 && model.EdgeSmoothing==1 && model.Anisotropy==16 && model.AmbientOcclusion==1 && !model.ShaderCache);
+                Require(model.Supersampling==0);
+                for(int scale=1;scale<=3;scale++) {
+                    model.Supersampling=scale;model.Save();
+                    Require(Read(root,"Settings/pc-graphics.ini")=="TSFP_GRAPHICS_V2 8 1 16 1 0 "+scale+"\n");
+                    model=GameSettings.Load(root,null);Require(model.Supersampling==scale);
+                }
+                model.Supersampling=4;Reject(()=>model.Save());
+                Require(GameSettings.Load(root,null).Supersampling==3);
+                model.Supersampling=0;model.Save();
+                Require(Read(root,"Settings/pc-graphics.ini")=="TSFP_GRAPHICS_V1 8 1 16 1 0\n");
+                Put(root,"Settings/pc-graphics.ini","TSFP_GRAPHICS_V1 3 1 16 1 1\n");
+                bool rejected=false;try { GameSettings.Load(root,null); } catch { rejected=true; }
+                Require(rejected);
+            });
+            Test("FPS counter shares game debug preference and preserves diagnostic fields",()=>{
+                string root=Root("fps-ping");var model=GameSettings.Load(root,null);
+                Require(!model.ShowCounter);model.Save();
+                var json=Json.Object(Read(root,"Settings/pc-controls.json"));
+                json["debug"]=new System.Collections.Generic.Dictionary<string,object>{{"show_counter",true},{"show_fps",true},{"future_debug","keep"}};
+                Put(root,"Settings/pc-controls.json",Json.Encode(json));
+                model=GameSettings.Load(root,null);Require(model.ShowCounter);
+                model.ShowCounter=false;model.Save();
+                var debug=(System.Collections.Generic.Dictionary<string,object>)Json.Object(Read(root,"Settings/pc-controls.json"))["debug"];
+                Require(!(bool)debug["show_counter"] && (bool)debug["show_fps"] && (string)debug["future_debug"]=="keep");
+                Require(!GameSettings.Load(root,null).ShowCounter);
+            });
             Test("legacy timing settings migrate to 60 FPS without losing unrelated preferences",()=>{
                 foreach(int target in new[]{0,120,144}) {
                     string root=Root("retired-fps-"+target);
@@ -465,6 +564,26 @@ public static class LauncherSettingsChecks
                     Require(values["future_graphics"]=="keep" && model.Fullscreen);
                 }
             });
+            Test("graphics UI saves every shared graphics and counter choice",()=>STA(()=>{
+                string root=Root("graphics-ui-roundtrip");
+                var page=new SettingsPage(new System.Windows.Window().Resources,root,true);page.SelectTab(1);
+                var nodes=Descendants(page.View).ToList();
+                foreach(var choice in new[]{new[]{"MultisampleAntialiasing","8x"},new[]{"PostAntiAliasing","FXAA"},new[]{"AnisotropicFiltering","16"},new[]{"Supersampling","150%"}})
+                    nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name==choice[0]).SelectedItem=choice[1];
+                nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="AmbientOcclusion").IsChecked=true;
+                nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="ShaderCache").IsChecked=false;
+                nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="FpsPingCounter").IsChecked=true;
+                Require(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="ClearShaderCache").IsEnabled);
+                var save=nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton");
+                Require(save.IsEnabled);save.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+                var model=GameSettings.Load(root,null);
+                Require(model.Msaa==8 && model.EdgeSmoothing==1 && model.Anisotropy==16 && model.AmbientOcclusion==1 && !model.ShaderCache && model.ShowCounter && model.Supersampling==2);
+                var reopened=new SettingsPage(new System.Windows.Window().Resources,root,true);reopened.SelectTab(1);
+                var again=Descendants(reopened.View).ToList();
+                Require(Convert.ToString(again.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="MultisampleAntialiasing").SelectedItem)=="8x");
+                Require(Convert.ToString(again.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="Supersampling").SelectedItem)=="150%");
+                Require(again.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="AmbientOcclusion").IsChecked==true);
+            }));
             Test("graphics page keeps retired interpolation and presentation controls removed",()=>STA(()=>{
                 var page=new SettingsPage(new System.Windows.Window().Resources,Root("fixed-fps-ui"),true);page.SelectTab(1);
                 var names=Descendants(page.View).OfType<System.Windows.FrameworkElement>().Select(n=>n.Name).ToList();
@@ -482,11 +601,24 @@ public static class LauncherSettingsChecks
                 resolution.SelectedItem=resolution.Items.OfType<DisplayMode>().First(m=>m.Width==1920 && m.Height==1080);
                 Require(!scale.IsEnabled && advice.Text.Contains("console scale is inactive"));
                 Require(Convert.ToString(scale.SelectedItem)=="4");
+                var supersampling=nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="Supersampling");
+                Require(supersampling.IsEnabled && advice.Text.Contains("Supersampling is off"));
+                supersampling.SelectedItem="200%";
+                Require(advice.Text.Contains("200% on each axis (4× scene pixels)"));
                 Require(advice.Text.Contains("60 FPS"));
                 string preview=Environment.GetEnvironmentVariable("TSFP_PERFORMANCE_PREVIEW");
                 if(!String.IsNullOrEmpty(preview)) {
                     page.View.Measure(new System.Windows.Size(1000,900));
                     page.View.Arrange(new System.Windows.Rect(0,0,1000,900));page.View.UpdateLayout();
+                    if(Environment.GetEnvironmentVariable("TSFP_GRAPHICS_PREVIEW")=="1") {
+                        Descendants(page.View).OfType<System.Windows.Controls.Expander>().Single(c=>c.Name=="AdvancedGraphics").IsExpanded=true;
+                        page.View.UpdateLayout();
+                        var graphicsScroll=Descendants(page.View).OfType<System.Windows.Controls.ScrollViewer>()
+                            .First(v=>Descendants(v).OfType<System.Windows.Controls.ComboBox>().Any(c=>c.Name=="MultisampleAntialiasing"));
+                        var qualityStart=Descendants(page.View).OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="PostAntiAliasing");
+                        double qualityY=qualityStart.TransformToAncestor(graphicsScroll).Transform(new System.Windows.Point(0,0)).Y;
+                        graphicsScroll.ScrollToVerticalOffset(graphicsScroll.VerticalOffset+qualityY-90);page.View.UpdateLayout();
+                    }
                     var bitmap=new System.Windows.Media.Imaging.RenderTargetBitmap(1000,900,96,96,System.Windows.Media.PixelFormats.Pbgra32);bitmap.Render(page.View);
                     var encoder=new System.Windows.Media.Imaging.PngBitmapEncoder();encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
                     using(var stream=File.Create(preview))encoder.Save(stream);
@@ -505,14 +637,30 @@ public static class LauncherSettingsChecks
                 Require(GameSettings.KeyCode(model.Binding(0)[0])==69 && GameSettings.KeyCode(model.Binding(0)[1])==32);
                 Reject(()=>model.Assign(0,2,'K',true));
                 model.Save();model=GameSettings.Load(root,null);
-                Require(model.Binding(0).Length==2 && !Read(root,"Settings/pc-controls.json").Contains("key:J"));
+                Require(model.Binding(0).Length==2 && Read(root,"Settings/pc-controls.json").Contains("key:J"));
             });
             Test("conflicting key requires move and removes only that key",()=>{
-                var model=GameSettings.Load(Root("conflict"),null);Reject(()=>model.Assign(14,1,69,false));
+                var model=GameSettings.Load(Root("conflict"),null);model.Assign(0,1,74,false);Reject(()=>model.Assign(14,1,69,false));
                 model.Assign(14,1,69,true);Require(GameSettings.KeyCode(model.Binding(14)[1])==69);
-                Require(model.Binding(0).All(t=>GameSettings.KeyCode(t)!=69));Require(model.Binding(0).Contains("key:SPACE"));
-                Reject(()=>model.Assign(0,0,112,true));Reject(()=>model.Assign(0,0,122,true));
+                Require(model.Binding(0).All(t=>GameSettings.KeyCode(t)!=69));Require(model.Binding(0).Any(t=>GameSettings.KeyCode(t)==74));
+                model.Assign(34,0,112,true);Require(GameSettings.KeyCode(model.Binding(34)[0])==112);Reject(()=>model.Assign(0,0,122,true));
                 model.Assign(14,1,0,true);Require(model.Binding(14)[1]=="none");
+            });
+            Test("Developer Tools are opt-in and share a preserved configurable shortcut",()=>{
+                string root=Root("developer-tools");var model=GameSettings.Load(root,null);
+                Require(!model.DeveloperToolsEnabled && GameSettings.KeyCode(model.Binding(34)[0])==112);
+                model.DeveloperToolsEnabled=true;model.Assign(34,0,114,true);model.Sensitivity=.27;model.Save();
+                var saved=GameSettings.Load(root,null);Require(saved.DeveloperToolsEnabled && saved.Sensitivity==.27 && GameSettings.KeyCode(saved.Binding(34)[0])==114);
+                saved.DeveloperToolsEnabled=false;saved.Save();saved=GameSettings.Load(root,null);
+                Require(!saved.DeveloperToolsEnabled && GameSettings.KeyCode(saved.Binding(34)[0])==114);
+            });
+            Test("flight shortcuts default unbound and persist both binding slots",()=>{
+                string root=Root("flight-shortcuts");var model=GameSettings.Load(root,null);
+                Require(model.Binding(35).All(t=>t=="none") && model.Binding(36).All(t=>t=="none"));
+                model.Assign(35,0,66,true);model.Assign(36,1,78,true);model.Save();
+                var saved=GameSettings.Load(root,null);
+                Require(GameSettings.KeyCode(saved.Binding(35)[0])==66 && GameSettings.KeyCode(saved.Binding(36)[1])==78);
+                Require(GameSettings.KeyCode(saved.Binding(34)[0])==112 && !saved.DeveloperToolsEnabled);
             });
             Test("invalid settings are rejected before any writes",()=>{
                 string root=Root("invalid");var model=GameSettings.Load(root,null);model.Sensitivity=Double.NaN;Reject(()=>model.Save());

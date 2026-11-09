@@ -24,6 +24,11 @@ Existing notices in source files and patches must also be preserved.
 
 ## Other dependencies and artwork
 
+- Keyboard/mouse and controller prompt images are Julio Cacko's FREE Input
+  Prompts Pack 1.4, under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
+  [Attribution and modifications](../assets/ui/input-icons/ATTRIBUTION.md)
+  accompany the generated native UI data; public game packages retain the full
+  credit as `Licenses/Keyboard-mouse-icons.txt`. Root NOTICE also credits it.
 - SDL and FFmpeg keep the licenses supplied in their pinned dependency folders.
   Public game ZIPs retain these in `Licenses/SDL.txt` and
   `Licenses/FFmpeg-LGPL-3.0.txt`.
@@ -39,3 +44,10 @@ Existing notices in source files and patches must also be preserved.
 
 This inventory does not substitute for the full license texts supplied with
 dependencies, or for providing corresponding source when their terms require it.
+
+## Native Developer Tools typography
+
+[Bundled font provenance](../assets/ui/fonts/README.md) records the pinned Selawik
+and Cousine font files (SIL OFL1.1). Their complete licenses are retained beside
+the fonts and copied into game packages. The shared rasterizer is
+[stb_truetype](../vendor/stb/stb_truetype.h), under its [MIT license](../vendor/stb/LICENSE).

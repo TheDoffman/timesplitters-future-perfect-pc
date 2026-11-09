@@ -1,5 +1,11 @@
 # Story co-op release flag
 
+Native Arcade Online now reports its accepted mode and clears it on disconnect;
+unsupported Story transport is rejected. The native Story lobby exports safe
+inactive entry points so shared guest dispatch links without enabling MAC-013.
+The existing fallback fixture calls both exports without guest RAM, and the real
+Mac supervisor self-test checks mode transitions and unsupported-mode rejection.
+
 `src/interface/pc_feature_flags.h` derives `pc_story_coop_enabled()` from
 `pc_build_version()`: only the literal substring `story-coop`
 enables the unfinished Story chooser. This shared policy is compiled by both

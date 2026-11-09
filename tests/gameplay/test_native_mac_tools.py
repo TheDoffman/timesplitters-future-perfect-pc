@@ -196,6 +196,19 @@ def test_cleanup_preserves_metadata_and_recycles_images(tmp_path, monkeypatch):
     assert (Path(result['recycled_to']) / 'Partition0.img').read_bytes() == b'disposable'
 
 
+@pytest.mark.skipif(os.name=='nt',reason='POSIX sparse allocation metadata')
+def test_cleanup_only_active_linux_save_root_preserves_manual_and_other_runs(tmp_path,monkeypatch):
+    test=tmp_path/'private/test-saves/native-linux'
+    active=test/'benchmark/saves';manual=test/'manual/saves';other=test/'unlocked/saves'
+    for folder in (active,manual,other):
+        folder.mkdir(parents=True);(folder/'Partition0.img').write_bytes(b'keep')
+    monkeypatch.setattr(Path,'home',classmethod(lambda cls:tmp_path/'home'))
+    result=common.recycle_test_disks(tmp_path,test,save_directory=active)
+    assert result['files']==1 and not (active/'Partition0.img').exists()
+    assert (manual/'Partition0.img').read_bytes()==(other/'Partition0.img').read_bytes()==b'keep'
+    with pytest.raises(RuntimeError):common.recycle_test_disks(tmp_path,test,save_directory=tmp_path/'private/saves')
+
+
 def test_capture_is_bounded_and_refuses_symlinks(tmp_path):
     env = probe.capture_environment(tmp_path)
     assert env['RECOMP_HLE_D3D8_DUMP_KEEP_LAST'] == '2'

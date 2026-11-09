@@ -37,6 +37,17 @@ static Uint64 fake_ticks;
 static Uint64 SDL_GetTicks(void){return fake_ticks;}
 typedef unsigned SDL_DisplayID;
 typedef void SDL_Window;
+#include <stdbool.h>
+#define SDLCALL
+#define SDL_WINDOW_FULLSCREEN 1
+static int window_flags,main_calls;
+static bool main_thread=true,fullscreen_ok=true;
+static unsigned SDL_GetWindowFlags(SDL_Window *w){(void)w;return (unsigned)window_flags;}
+static bool SDL_SetWindowFullscreen(SDL_Window *w,bool on){(void)w;if(!fullscreen_ok)return false;window_flags=on;return true;}
+static bool SDL_SyncWindow(SDL_Window *w){(void)w;return true;}
+static bool SDL_IsMainThread(void){return main_thread;}
+static bool SDL_RunOnMainThread(void (*fn)(void *),void *ctx,bool wait){(void)wait;main_calls++;fn(ctx);return true;}
+
 typedef struct {int w,h;} SDL_DisplayMode;
 static SDL_DisplayID SDL_GetDisplayForWindow(SDL_Window *w){(void)w;return 1;}
 static SDL_DisplayID SDL_GetPrimaryDisplay(void){return 1;}
@@ -45,8 +56,19 @@ static SDL_DisplayMode **SDL_GetFullscreenDisplayModes(SDL_DisplayID d,int *n){(
 #define SDL_free free
 ''')
     executable = tmp_path / ('auto.exe' if sys.platform == 'win32' else 'auto')
-    source = ROOT / 'tests/graphics/pc_display_auto.c'
-    includes = [tmp_path, ROOT / 'src/native']
+    # This fixture deliberately uses the SDL sizing adapter even under MSVC.
+    # The independent restart fixture compiles/runs the real host process code;
+    # do not pull POSIX process headers into the mocked SDL-on-Windows build.
+    policy = (ROOT / 'src/interface/pc_display.c').read_text(encoding='utf-8')
+    restart_include = '#include "pc_game_restart.inc"'
+    assert policy.count(restart_include) == 1
+    (tmp_path / 'pc_display_policy.c').write_text(
+        policy.replace(restart_include, ''), encoding='utf-8')
+    fixture = (ROOT / 'tests/graphics/pc_display_auto.c').read_text(encoding='utf-8')
+    source = tmp_path / 'auto.c'
+    source.write_text(fixture.replace('../src/interface/pc_display.c', 'pc_display_policy.c'),
+                      encoding='utf-8')
+    includes = [tmp_path, ROOT / 'src/native', ROOT / 'src/interface']
     if sys.platform == 'win32':
         command = [compiler, '/nologo', '/std:c11', '/O2', '/MD',
                    *['/I'+str(p) for p in includes], str(source),

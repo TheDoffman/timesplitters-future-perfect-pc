@@ -41,4 +41,21 @@ static void pc_native_npc_weapon_fire_guest(void (*original)(void),
     pc_native_weapon_fire_guest(original);
     if (event) *ticks=0;
 }
+/* US 1C2C00 has already checked the fresh-press cooldown before this call.
+ * Input edges follow raw ticks; a pause can offset them from game ticks.
+ * Rejecting this request on a fractional frame consumes the edge, so its
+ * buffered remainder becomes held fire and inherits the slower repeat delay.
+ * Admit only this fresh request, not held fire or 1C3100's continuation calls.
+ * Restore the clock before the next weapon/world update. */
+static void pc_native_player_trigger_guest(void (*original)(void),uint32_t stack)
+{
+    uint32_t *ticks=(uint32_t *)((uintptr_t)0x4E7944u+g_xbox_mem_offset);
+    const float *delta=(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+    const uint32_t *args=(const uint32_t *)((uintptr_t)stack+g_xbox_mem_offset);
+    int fresh=g_tsfp_native_timing_active && *ticks==0 && *delta>0 &&
+              args[0]==0x1C2E6Du && args[4]==0;
+    if(fresh)*ticks=1;
+    original();
+    if(fresh)*ticks=0;
+}
 #endif

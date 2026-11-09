@@ -119,6 +119,9 @@ def main():
         try:
             window = ui.wait_window(process.pid, 'TimeSplitters FP')
             time.sleep(2)
+            if not user.GetMenu(window):
+                user.SendMessageW(window, 0x100, 0x70, 0)  # F1 restores saved-hidden bar
+                user.SendMessageW(window, 0x101, 0x70, 0)
             check_motion(window, work, 'windowed')
             for name, message, key, flags in (
                 ('menu', 0x111, 0x7e22, 0),

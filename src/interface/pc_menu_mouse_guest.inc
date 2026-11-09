@@ -2,6 +2,7 @@
  * before sub_0007A7B0 consumes menu actions. Keep callbacks, transitions,
  * sound and disabled-item behavior owned by that original dispatcher. */
 #include "pc_menu_mouse.h"
+static RECOMP_TLS int menu_mouse_profile_icons;
 #if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY) || defined(TSFP_MENU_MOUSE_TEST)
 #ifndef TSFP_MENU_MOUSE_TEST
 #include "pc_controls.h"
@@ -43,6 +44,23 @@ static void menu_mouse_press(MenuMouseDispatch *s,uint32_t buttons)
 #include "pc_menu_sliders.inc"
 static void menu_team_arrow(unsigned direction);
 #include "pc_menu_choices.inc"
+
+/* US Settings root 523910 uses 78AD34 for its selected profile. Native
+ * menu history at 7BA264 retains that descriptor while a submenu is open.
+ * Accept P1 plus the selected logical player; keep menu/profile ownership. */
+static int menu_settings_input_owner(uint32_t menu)
+{
+    if((int32_t)WORD_AT(0x79094c)<=100 || !guest_writable(menu,0x40) || WORD_AT(menu+0x38)!=0)return -1;
+    int in_settings=WORD_AT(menu+4)==0x523910u;
+    uint32_t history=WORD_AT(0x7ba264);
+    if(!in_settings && guest_writable(history,4)) {
+        unsigned count=WORD_AT(history);
+        if(count<=60 && guest_writable(history,4+count*4))
+            for(unsigned i=0;i<count;i++)if(WORD_AT(history+4+i*4)==0x523910u)in_settings=1;
+    }
+    unsigned player=WORD_AT(0x78ad34),count=WORD_AT(0x5236c4);
+    return in_settings && count>=1 && count<=4 && player<count?(int)player:-1;
+}
 
 /* The player-1 pause/status flags cover both Start and Back/Tab menus.
  * Scene alone cannot distinguish them from gameplay. */
@@ -114,8 +132,8 @@ static int menu_mouse_tab_contains(const MenuMouseTab *t,uint32_t menu,
 }
 static int menu_mouse_tab_text(void)
 {
-    /* sub_002E4FF0's EBP is a generated local, not g_ebp. Its saved
-       one-based loop index is at +0x2c at this exact text call site. */
+    /* The saved one-based loop index is at +0x2c at this exact text call
+       site in sub_002E4FF0, independent of EBP publication by the generator. */
     uint32_t index=WORD_AT(g_esp+0x2c);
     if(index<1 || index>12) return 0;
     --index;
@@ -233,7 +251,12 @@ static int menu_mouse_profile_text(void (*original)(void))
     }
     if(!count) return 0;
     float height,width=menu_mouse_measure_prefix(text,length,&height);
-    float origin=FLOAT_AT(frame+4),y=FLOAT_AT(frame+8),positions[4];
+    /* This footer has a fixed native text clip. Keep Select/Back at its
+     * authored baseline and use compact key faces; only Delete needs a
+     * two-unit nudge. Hit regions follow the same visible baselines. */
+    int keyboard=pc_prompts_keyboard_active();
+    float offset=keyboard && count==1 && buttons[0]==3?2.f:0.f;
+    float origin=FLOAT_AT(frame+4),y=FLOAT_AT(frame+8)+offset,positions[4];
     uint32_t alignment=WORD_AT(0x007E7260u);
     if(alignment==1)origin-=width*.5f;else if(alignment==2)origin-=width;
     unsigned sw,sh;d3d8_display_output_shape(WORD_AT(0x004E8CF0u),WORD_AT(0x004E8CF4u),&sw,&sh);
@@ -254,9 +277,17 @@ static int menu_mouse_profile_text(void (*original)(void))
         f->sw=sw;f->sh=sh;f->time=GetTickCount64();
         if(valid && menu_mouse_profile_contains(f,menu,x,py,sw,sh)) hover=(int)i;
     }
-    if(hover<0) return 0;
+    if(hover<0) {
+        if(!keyboard)return 0;
+        uint32_t baseline=WORD_AT(frame+8);
+        int prior_icons=menu_mouse_profile_icons;menu_mouse_profile_icons=1;
+        FLOAT_AT(frame+8)=y;original();WORD_AT(frame+8)=baseline;
+        menu_mouse_profile_icons=prior_icons;
+        return 1;
+    }
     GuestRegisters before;save_registers(&before);
     uint32_t color=WORD_AT(frame+16);
+    int prior_icons=menu_mouse_profile_icons;menu_mouse_profile_icons=keyboard;
     /* Render disjoint spans once each, preserving alpha and exact advances.
        Keep strings above their scratch call frame, clear of nested callees. */
     for(unsigned i=0;i<count;i++) {
@@ -265,9 +296,11 @@ static int menu_mouse_profile_text(void (*original)(void))
         memcpy(&WORD_AT(frame-512),str+starts[i],stops[i]-starts[i]);
         ((char *)&WORD_AT(frame-512))[stops[i]-starts[i]]=0;
         WORD_AT(g_esp+12)=frame-512;FLOAT_AT(g_esp+4)=positions[i];
+        FLOAT_AT(g_esp+8)=y;
         WORD_AT(g_esp+16)=(int)i==hover?0x405a7f00u|(color&0xffu):color;
         WORD_AT(0x007E7260u)=0;original();
     }
+    menu_mouse_profile_icons=prior_icons;
     WORD_AT(0x007E7260u)=alignment;restore_registers(&before);g_esp=frame+4;
     return 1;
 }
@@ -295,8 +328,13 @@ void pc_display_menu_mouse_footer(void (*original)(void))
         memset(menu_mouse_footer,0,sizeof menu_mouse_footer);
         menu_mouse_footer_drawing=menu;
     } else menu_mouse_footer_drawing=0;
+    settings_tabs_footer_style(0,0,0,0);
     original();
     menu_mouse_footer_drawing=previous;
+    settings_tabs_footer(menu);
+#ifndef TSFP_MENU_MOUSE_TEST
+    main_update_notice_draw(menu);
+#endif
 }
 /* Share the visible, enabled hit area between clicks and hover feedback. */
 static int menu_mouse_footer_contains(const MenuMouseFooter *f,uint32_t menu,
@@ -335,6 +373,7 @@ static int menu_mouse_footer_text(void)
         index=slot;
     }
     MenuMouseFooter *f=&menu_mouse_footer[index];
+    settings_tabs_footer_style(menu,WORD_AT(0x7e7270),WORD_AT(0x7e7280),WORD_AT(g_esp+16));
     f->menu=menu;
     memcpy(f->descriptor,&WORD_AT(menu+0x128+index*16),16);
     f->x=FLOAT_AT(g_esp+4);f->y=FLOAT_AT(g_esp+8);
@@ -378,7 +417,11 @@ void pc_display_menu_mouse_input(void (*original)(void))
     GuestRegisters r;
     float x,y,gw,gh;
     unsigned sw,sh;
+    int settings_owner=menu_settings_input_owner(menu);
+    uint32_t mask=settings_owner>=0?WORD_AT(menu+0x3c):0;
+    if(settings_owner>=0)WORD_AT(menu+0x3c)=1u | (1u<<(unsigned)settings_owner);
     original();
+    if(settings_owner>=0)WORD_AT(menu+0x3c)=mask;
     menu_text_input(menu);
     if(!s || s->sampled || s->menu!=menu || !menu_mouse_context() || !guest_writable(menu,0x23c) ||
        WORD_AT(menu+0x38)!=0 || WORD_AT(menu+0x1b0)!=3) return;
@@ -424,6 +467,9 @@ void pc_display_menu_mouse_dispatch(void (*original)(void))
     pc_display_menu_mouse_mode();
     MenuMouseDispatch *previous=menu_mouse_dispatch;
     menu_mouse_dispatch=&state;
+    /* Video tabs are direct targets, not native Confirm repeats. Capture
+     * their edges even while the guest temporarily gates row navigation. */
+    if(menu_video_tabs_poll(state.menu))state.sampled=1;
     menu_character_input(&state);
     menu_text_focus(state.menu);
     original();
@@ -444,6 +490,7 @@ void pc_display_menu_mouse_dispatch(void (*original)(void))
     } else if(state.tab_target && !state.close_pause) {
         menu_mouse_change_tab(state.tab_menu,state.tab_target);
     }
+    if(!previous)menu_video_tabs_flush();
     pc_display_menu_mouse_mode();
     if(menu_mouse_context())menu_text_events(state.menu);
 }
@@ -516,6 +563,7 @@ void pc_display_menu_mouse(void (*original)(void))
     if(hit && (actions&3)) {
         if(WORD_AT(menu+0x198)!=hit) guest_call(sub_00076EF0,2,menu,hit);
         if(actions&2) {
+            if(!choice_direction)menu_video_click_sound(menu,hit);
             if(choice_direction) {
                 /* Exactly one native Previous/Next edge, not Confirm. Native
                  * callbacks retain wrapping, disabled choices and saving. */

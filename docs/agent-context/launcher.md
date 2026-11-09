@@ -1,4 +1,156 @@
-# Launcher internals
+[Game update notice](main-menu-update.md).
+
+[Controller deadzones](controller-deadzones.md).
+
+[Custom seeds](control-presets.md).
+
+Enhanced textures now round-trip the game's `pc-textures.ini` sidecar.
+GameSettings loads its value ahead of legacy launcher.enhanced_textures JSON;
+missing files retain the legacy preference. LauncherPlatform appends the file
+at settings index8 on all hosts. Save writes both formats in the existing
+transaction; stale models detect game edits before writing. Shared UI checks
+cover game-written ON/OFF, unrelated saves and concurrent edit rejection.
+
+Developer Tools enablement uses an inline amber warning and live assigned-shortcut
+hint directly beneath its checkbox; enabling never opens a prompt. RefreshBindings
+updates the hint after edits/unbinding. Shared UI checks preserve opt-in Save state
+and On/Off persistence, require colocated warning text and reject a Continue prompt.
+
+[Developer Tools integration](developer-tools-integration.md).
+
+PRs/main use one `PR validation` gate in `runtime-patches.yml`. Its plan
+selects runtime, launcher, Linux, issue forms/resolution and texture jobs;
+`ci-pr-gate.py` rejects failures, cancellation, missing outputs and
+unexpected skips. Launcher builds run once; standalone compatibility
+is manual-only. The repair worker requires this gate/workflow.
+Scope/gate/worker tests run in the plan; host suites remain unchanged.
+
+# Launcher and menu shortcuts
+
+Audio overhaul controls share the same C#/guest V1/V2 format. `GameSettings`
+retains independent spatial/range/environment/ambience preferences; all-default
+children serialize as V1, custom choices as V2. `SettingsPage` includes each in
+dirty-state tracking and preserves them while the master switch is OFF. Shared
+UI tests cover custom round trips, external edits and unrelated-save retention;
+the full Windows launcher suite passed. The offscreen
+`--render-settings-audio` preview selects tab3 and is forwarded by Bootstrap.
+See [audited scope and validation](../development/audio-overhaul.md).
+
+Six shared Audio sliders independently save master/effects/music/dialogue/
+ambience/movies to `pc-audio-mix.ini` (strict MIX_V1,0..100). This eighth settings
+file participates in conflict checks and the existing rollback transaction;
+the enhancement schema is unchanged. Sliders track draft state with enhancement
+OFF too. Shared UI tests cover category order, malformed bytes, external edits
+and failure at the final file. Windows suite passes; physical Mac/Linux pending.
+Both launcher preview routes select tab3 for `--render-settings-audio`.
+
+Dialogue focus and Impact range share the mix sidecar: V2 adds ducking0/1 and
+Original/Reduced/Night0..2 after the six percentages. V1 loads both opt-ins OFF;
+neutral saves retain V1. Shared controls remain independent of Enhanced Audio.
+All six combinations, migration, unrelated-save retention and invalid tokens
+pass the Windows shared UI suite (44groups); source serves Mac/Linux too.
+
+## macOS storage (discussion #502)
+
+`Program.FindInstallRoot` discovers the entry-point bundle/checkouts;
+`MacStorage.Resolve` independently chooses the writable installation, defaulting
+to `~/Library/Application Support/TimeSplitters`. `storage-root.txt` there remembers
+an existing chosen folder. Missing/invalid selections stop with a chooser, never
+fall back to fresh saves. `--root`, `--portable`, `.tsfp-portable` and developer
+checkouts retain their original roots. `--check` remains read-only.
+Default translocated launches copy the read-only bundle into permanent storage;
+explicit portable/root translocation retains the existing recovery chooser.
+
+`NativeStorageWindow` handles first use and Home's Game storage action. Normal
+unconfigured launches detect legacy files beside the bundle and automatically
+call `MacStorageMigration.Migrate` to copy them into Application Support. The
+copy-folder picker imports installations stored elsewhere the same way; the
+separate Choose existing game folder picker prepares/remembers a folder in place,
+including external or moved installs even when Application Support has data. Explicit
+folder preferences, portable/root overrides and developer checkouts opt out.
+`Use existing files beside this app` is an explicit keep-in-place alternative.
+
+Migration copies Data/Saves/Settings/Textures, runtime/support, backups/logs and
+channel/texture preferences into a same-volume sibling `.TimeSplitters-migration`
+recovery folder. It acquires the source installation lock, rejects pending
+updates/restores and any destination with existing data, reserves regular-file
+allocation space, copies sparse saves with byte verification and rechecks the
+source snapshot. The complete managed install is published by directory rename;
+the original stays as a backup. Verified staged files resume after interruptions;
+source edits restart only the owned staging payload. A completion receipt prevents
+old saves being recopied over new progress. Preference-only destination metadata
+is retained in staging during promotion. A pending journal supplies the source
+even if the entry-point app moved. Cancel leaves the original usable.
+Internal absolute save-folder preferences follow the copy; separate external
+save paths retain their exact values and data. Completed migrations surface the
+backup path through the normal last-result status. `--check` never migrates.
+
+For an app opened from /Applications, `MacStorage.Prepare` installs a complete
+updateable launcher alongside the runtime in the writable folder, then opens it
+with `--root`. It copies the signed bundle bytes, reconstructs the existing
+launcher-manifest format and uses Core.ApplyLauncher's transaction under the normal
+installation lock. This lets Finder's entry-point app be moved/replaced independently
+and leaves its folder untouched. Complete newer managed launchers are never
+downgraded by an older entry point; corrupt newer installs require repair. Normal
+forwarding retains startup update checks. Windows/Linux routing is unchanged.
+
+`tests/launcher/mac_storage.cs` runs in native `--test` and independently through
+`--test-storage`; LocationUi checks storage choices before writes. Native Mac
+storage fixtures live beside the built `.app`, outside both its bundle and the
+macOS `/var` temp alias, so they exercise the normal destination-path checks.
+package verification also checks a signed app after automatic migration.
+Finder/Gatekeeper/signature/update/restart and prerequisite acceptance remain
+separate from Windows cross-compilation and WSL filesystem contracts (STATUS).
+
+GameSettings preserves [Weapon FOV](video-options.md#weapon-aperture) in display V3.
+
+Linux release packaging closes dependencies for all launcher/Python ELFs,
+not only the game. Provider/source and notice verification is described in
+[Linux release contracts](linux-game.md#experimental-release-preparation).
+
+[Settings shortcuts](controls-options.md); [graphics contract](../development/graphics-options.md).
+Launcher graphics UI regression changes all shared controls, saves, reloads
+the model and reopens the page; AnisotropicFiltering names the AF selector.
+The shared WPF/Avalonia UI suite also exercises graphics ON/OFF saving and
+reopening. Native execution remains a separate host check.
+
+FPS / Ping uses `GameSettings.ShowCounter` and the game-owned
+`debug.show_counter` boolean in controls JSON. Both launcher UI hosts share
+this control. Legacy runtime FPS diagnostics and other debug keys are preserved.
+The settings regression covers game-written values and launcher persistence.
+Post-process AA: `GameSettings.PostAntiAliasing` maps Off/FXAA/SMAA to the
+existing `EdgeSmoothing` and `Smaa` keys. `SettingsPage.PostAntiAliasing` replaces
+the separate controls; saving normalizes them within the existing transaction.
+Legacy dual-enabled choices display SMAA. Advanced holds MSAA/supersampling/cache/console scale;
+scale appears only at Original resolution. View & HUD holds FOV/FPS, General holds startup.
+Both WPF and Avalonia consume this page/model; native Mac execution is unverified.
+
+Linux x64 now links the existing Avalonia host/pages through
+`tools/launcher/linux/LinuxLauncher.csproj` (`LINUX`); Windows WPF and Mac
+`MACOS` retain their adapters. `build-linux-launcher.py` uses a SHA-512-pinned
+8.0.426 Linux SDK and the same locked Avalonia 11.3.22 graph. Layout/theme
+translation is shared; Linux generated XAML stays under its build output.
+`LauncherPlatform` selects linux-x64 release names, ELF game paths in
+`build/linux/game`, POSIX locks, executable permissions and direct restart.
+`NativeHost` validates ELF x64 instead of Mach-O, uses the system Vulkan ICD,
+clears inherited driver overrides, isolates XDG storage and opens with xdg-open.
+Mac CoreGraphics/open and Windows WPF/system calls retain their branches.
+Linux display enumeration uses shared presets/Auto/saved custom resolutions;
+window observation is unavailable (Wayland), so post-play rollback cleanup is
+conservatively deferred. Do not equate process startup with visual acceptance.
+
+Linux build `--test --package` runs adapter/install contracts, shared restart/texture
+checks, the same 37 UI groups and actual package corruption/repair/helper restart
+with rendered output, all under Xvfb and disposable roots. The reusable launcher
+workflow requires Windows, Mac and Linux before verifying all 15 release assets
+(including stable ZIP aliases). No publication is performed by local builds.
+Linux game runtime publication remains separate; no compatible release is
+offered until a matching runtime ZIP is published. See
+[Linux launcher](../players/linux-launcher.md) for usage and STATUS for host evidence.
+
+Game 0.4.2 preparation retains Stable channel selection, optional texture delivery
+and the existing install/preservation contracts. Its packages embed launcher 1.4.2;
+game and launcher publication remain independent.
 
 ## Discord community link
 
@@ -13,9 +165,11 @@ The README's local SVG button links to the same invite. Validate with the
 Windows launcher build/tests and shared-layout translation checks; native Mac
 browser dispatch and visual acceptance still need a Mac host.
 
-Launcher 1.4.2 prepares the merged launcher updates since 1.4.1 for the next
-Stable release. The version bump changes only version identities;
-publication still requires both host checks and all ten verified launcher assets.
+Launcher 1.5.0 accompanies game 0.5.0. Publication requires Windows, Mac and Linux
+host checks and all fifteen assets, including the three README download aliases.
+Native game-package checks create their disposable installations beside the
+archive, matching launcher-package checks. macOS's standard /var temp alias must
+not trigger the installer's unchanged rejection of linked installation paths.
 Mac Online formula notices now use the existing flat `.txt` license layout;
 notice bytes and the installer's protected-file rules stay unchanged.
 
@@ -572,3 +726,106 @@ Absent capabilities remain false for older native builds. The portable Mac
 package suite exercises the real manifest/archive writer for true/false/missing
 flags, with only host binary tools replaced by fixtures. Native loading still
 requires Mac execution.
+
+Linux packaged NativeHost verifies all listed Bin hashes before play and sets
+relocatable FFmpeg/Online interpreter/script/manifest/handshake paths. Checkout
+routing and Mac GPU/runtime selection remain unchanged. Runtime dependency
+packaging is separate from the launcher self-contained build.
+
+NativeGamePackageChecks is the shared Mac/Linux fresh/upgrade package verifier.
+It exercises the real installer, native hashes, launcher completeness, executable
+corruption rejection and personal-file preservation. Mac retains its signature
+callback; Linux handles --verify-game-package without opening an interactive UI.
+
+POSIX installation marks exactly Support/Python/bin/python3 and python-real as
+executables. The native game-package verifier now starts the installed bundled
+interpreter and checks Tk/TLS/crypto imports and certificate trust, catching mode
+loss during unpack/install rather than only checking the original staging tree.
+
+Graphics controls passed shared Avalonia UI and Linux adapter tests in an isolated integration with feature/linux-launcher at 80239186; see the graphics guide.
+
+## Supersampling preference
+
+GameSettings and shared SettingsPage expose restart-required 100/125/150/200%
+supersampling independently of output resolution and legacy console scale.
+pc-graphics.ini reads V1 (100%) or V2 with a sixth index0..3; defaults write V1,
+non-defaults V2. Existing settings transactions/concurrent-edit rejection remain.
+Model and WPF/Avalonia UI fixtures cover saving/reopening and 200% pixel-cost
+guidance. Older games/launchers cannot consume non-default V2 graphics files.
+
+Local multiplayer: GameSettings.PlayerDevice/SetPlayerDevices expose all four
+profiles without discarding bindings or unknown fields. Shared SettingsPage
+adds Players 2–4 beside the existing Player 1 selector. Validation rejects
+reused controllers and a disabled Player 1 before mutating the draft. Settings
+still use the existing transaction/concurrent-edit checks. Player 1 alone can
+use keyboard/mouse. Native launcher visual validation remains pending.
+
+For legacy non-primary profiles, absent device/profile entries display the runtime's numbered-pad default. Explicit port ordering and xinput aliases are preserved; invalid local-device values fail with an explanatory error before indexing selector labels.
+
+Local multiplayer explains the native profile screen's automatic Start-to-join.
+There is no auto-join checkbox or setting; legacy auto_assign_players is ignored.
+Manual device assignments remain available. README documents the player-count,
+Start-order and profile-selection sequence.
+
+Unassigned device choices are labeled Automatic (legacy JSON none). Presence detection makes these available for joining; this is not a separate opt-in setting.
+
+Linux installed executable modes also preserve the bundled GTK module-query
+tool; clean-userspace launcher UI acceptance detects dynamic session libraries
+that do not appear in ELF imports. See [Linux release checks](linux-game.md).
+
+Native game-package checks now install into fresh/upgrade paths containing
+spaces and Unicode. Linux additionally executes the installed GTK SVG query
+helper, checking its executable mode and relocated module closure.
+
+Linux launcher identity: LinuxLauncher.csproj embeds launcher.ico; NativeApplication.ApplyWindowIcon assigns it to startup/main/location windows. Release artwork validation requires the icon, and Linux shared UI tests decode each assigned icon.
+Destination free-space checks in Core and diagnostics use TsfpDiskSpace.Available from ImportGame.cs (also compiled into the Windows bootstrap). It probes an existing destination ancestor so POSIX home/SD mounts and symlinks use their own filesystem capacity. Native operation exceptions now open a dialog even on Home; status/log text remains.
+
+Launcher 1.5.1 packages these icon/storage/error-reporting fixes through the
+shared Windows/Mac/Linux release workflow; physical Steam Deck acceptance is
+still pending. Version and assembly attributes remain synchronized.
+
+NativeApplication.FitLauncher sizes the Mac/Linux main window to the current
+monitor working area in logical pixels, reserving decoration space. A uniform
+Viewbox keeps the shared 1000x720 layout reachable on small/scaled desktops.
+MessageDialog bounds its width and scroll body to its owner. --render-deck and
+--render-deck-settings preserve the fitted size for Xvfb visual checks. Shared
+UI tests cover 1280x800, 1024x640, 853x533 and desktop geometry.
+
+
+## Antivirus blocking diagnostics (issue #476)
+
+`AntivirusErrors` in DownloadTransfer.cs recognizes only Windows native errors
+225/226 and their HRESULT_FROM_WIN32 IO equivalents. Windows process starts,
+helper copies, installed-file copies/backups, hash reads and game/launcher
+extraction retain operation paths in AntivirusBlockedException; copy failures
+name both source and destination because Windows does not identify the side.
+The original exception stays in InnerException, including recovery aggregates.
+RecoveryInfo gives antivirus-specific retry/history guidance without calling
+access denial or missing files a confirmed detection. Missing startup files
+include the application path and conditional quarantine guidance. Bootstrap
+startup/update logs retain complete exceptions; helper result files preserve
+antivirus details even if transaction recovery also fails. Startup recovery
+scrolls long messages; the Windows main UI shows a blocking-error dialog.
+Security settings, update validation and transaction/recovery policy are unchanged.
+
+Windows `build-launcher.ps1 -Test` runs the synthetic native/IO error-code,
+negative-classification, retry/log/path, long-path layout and preservation checks
+in launcher_startup.cs. The existing shared UI suite also checks host scoping:
+MACOS/LINUX never interpret Windows numeric error codes as antivirus evidence.
+Native host execution and real McAfee detection remain separate acceptance work.
+
+Fullscreen control: SettingsPage retains BorderlessFullscreen's checkbox identity
+and staged Save behavior, labels it Fullscreen, and explains windowed/borderless
+and next-launch semantics in its tooltip. GameSettings keeps the existing
+runtime.conf fullscreen boolean; in-game Window mode Apply/Keep now saves this
+same key. No second launcher preference, OS-specific settings model or default
+change. See video-options.md for the shared live-window and rollback contract.
+
+## Launcher 1.5.2 release preparation
+
+The shared version and numeric assembly/file attributes advance together to
+1.5.2 / 1.5.2.0. Publication still requires the existing Windows, Mac and Linux
+workflow checks and all fifteen verified assets. This version-only change
+retains update, installation, preservation and optional-texture contracts.
+Game 0.5.2 is prepared independently as a Windows/Linux draft, with native Mac
+game packaging deferred to the maintainer's Mac at the matching tag revision.

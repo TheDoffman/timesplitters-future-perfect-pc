@@ -17,6 +17,12 @@ int main(void) {
     assert(!tsfp_native_overlay_bitmap("text",pixels,0,28,&used));
     assert(tsfp_native_debug_bitmap("Existing GL debug text",pixels,512,48,&used));
     assert(used>16 && used<=512);
+    assert(tsfp_native_overlay_bitmap("Developer Tools",pixels,512,32,&used));
+    assert(used>16 && used<512);lit=0;
+    for(int y=0;y<32;y++)for(int x=0;x<used;x++)lit+=pixels[(y*512+x)*4]>128;
+    assert(lit>30);
+    assert(tsfp_native_styled_bitmap("Developer Tools",pixels,512,26,&used,20,600));assert(used>50&&used<512);
+    assert(!tsfp_native_styled_bitmap("bad",pixels,512,26,&used,0,600));
     puts("PASS: native text glyph coverage, dimensions and invalid UTF-8 preservation");
     return 0;
 }

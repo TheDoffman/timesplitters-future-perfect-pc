@@ -481,4 +481,9 @@ static void (*story_lobby_lookup(uint32_t address))(void)
     }
     return NULL;
 }
+#else
+/* Native Story transport is not implemented yet (MAC-013). Shared guest
+ * dispatch still links these entry points for ordinary Arcade/Local games. */
+unsigned pc_story_network_player_limit(void) { return 0u; }
+void pc_story_network_lobby_config(void) {}
 #endif

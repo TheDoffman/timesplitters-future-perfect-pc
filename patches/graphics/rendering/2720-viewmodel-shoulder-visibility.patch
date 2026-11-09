@@ -1,0 +1,23 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -2179,7 +2179,19 @@
+ extern void sub_0024A1A0_gen(void);
+ void sub_0024A1A0(void) { pc_ghost_render(sub_0024A1A0_gen); }
+ extern void sub_0018EA90_gen(void);
+-void sub_0018EA90(void) { pc_ghost_model_node(sub_0018EA90_gen); }
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++#include "graphics/pc_viewmodel_visibility_guest.inc"
++#endif
++void sub_0018EA90(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    if(pc_viewmodel_node_hidden()) {
++        g_esp+=4u;
++        return;
++    }
++#endif
++    pc_ghost_model_node(sub_0018EA90_gen);
++}
+ extern void sub_0001D3E0_gen(void);
+ void sub_0001D3E0(void) { pc_ghost_billboard_begin(sub_0001D3E0_gen); }
+ extern void sub_0001D380_gen(void);

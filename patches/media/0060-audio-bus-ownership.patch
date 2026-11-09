@@ -1,0 +1,107 @@
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -54,6 +54,9 @@
+ #define PC_AUDIO_SETTINGS_IMPLEMENTATION
+ #include "interface/pc_audio_settings.h"
+ #undef PC_AUDIO_SETTINGS_IMPLEMENTATION
++#define PC_AUDIO_MIX_IMPLEMENTATION
++#include "gameplay/pc_audio_mix.h"
++#undef PC_AUDIO_MIX_IMPLEMENTATION
+ 
+ void hle_dsound_stream_tick(uint64_t now);   /* hle_dsound_stream.c */
+ 
+@@ -99,6 +102,7 @@
+     int32_t  level;              /* the volume last sent, hundredths of a dB */
+     float pan;
+     int spatial;
++    int mix_bus;
+     float obstruction,room;
+ } Buffer;
+ 
+@@ -950,6 +954,10 @@
+                  !(flags & RECOMP_DSOUND_PLAY_FROMSTART);
+     result = recomp_dsound_buffer_play(&b->model, flags, now);
+     if (result == RECOMP_DSOUND_OK) {
++        if (!continuing) {
++            int bus=pc_audio_scope_bus(g_esp);
++            b->mix_bus=bus<0?PC_AUDIO_EFFECTS:bus;
++        }
+         b->paused = 0;
+         if (!continuing && b->output) {
+             g_stat.plays++;
+@@ -1558,6 +1566,21 @@
+ 
+ #include "gameplay/pc_acoustic_guest.inc"
+ 
++/* US299C0 starts one source on a pre-created stream. Own this classification
++ * on the guest thread before SetFormat/Process, never in a host callback. */
++unsigned pc_audio_stream_scope(uint32_t record,uint32_t sound,uint32_t guest_sp)
++{
++    uint32_t flags=0;
++    if(sound<5703u && guest_readable(0x004ca9b4u,4)) {
++        uint32_t table=HLE_MEM32(0x004ca9b4u),offset=sound*20u+8u;
++        if(table && table<=UINT32_MAX-offset-4u && guest_readable(table+offset,4))
++            flags=HLE_MEM32(table+offset);
++    }
++    return pc_audio_scope_enter(pc_audio_stream_category(record,flags,
++        pc_audio_scope_bus(guest_sp)),guest_sp);
++}
++
++
+ HLE_ORIGINAL(CMcpxVoiceClient_Commit3dSettings_0);
+ HLE_EXPORT(CMcpxVoiceClient_Commit3dSettings_0)
+ {
+--- a/src/hle/hle_dsound_stream.c
++++ b/src/hle/hle_dsound_stream.c
+@@ -52,6 +52,7 @@
+ #include "hle.h"
+ #include "xbox_adpcm.h"
+ #include "audio_output.h"
++#include "gameplay/pc_audio_mix.h"
+ 
+ /* kernel_bridge.c: the dispatch table, for the completion callback. */
+ typedef void (*recomp_func_t)(void);
+@@ -107,6 +108,7 @@
+     int32_t  volume;
+     float pan;
+     int spatial;
++    int mix_bus;
+     float obstruction,room;
+     int ambience;
+     int      paused;
+@@ -1094,6 +1096,8 @@
+             relayout(s, now, 0u, wfx);
+             note_format(s, "SetFormat", ot, oc, orate, of);
+         }
++        int bus=pc_audio_scope_bus(g_esp);
++        if(bus>=0)s->mix_bus=bus;
+     }
+     unlock();
+ }
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -2250,6 +2250,24 @@
+ #include "gameplay/pc_spatial_audio.h"
+ #include "interface/pc_audio_settings.h"
+ #endif
++#include "gameplay/pc_audio_mix_guest.inc"
++
++extern void sub_00046D80_gen(void);
++void sub_00046D80(void)
++{
++    pc_audio_mix_script(sub_00046D80_gen);
++}
++extern void sub_00045820_gen(void);
++void sub_00045820(void)
++{
++    pc_audio_mix_actor(sub_00045820_gen);
++}
++extern void sub_000299C0_gen(void);
++void sub_000299C0(void)
++{
++    pc_audio_mix_stream(sub_000299C0_gen);
++}
++
+ extern void sub_00021FB0_gen(void);
+ void sub_00021FB0(void)
+ {

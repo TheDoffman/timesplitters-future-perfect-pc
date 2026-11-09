@@ -1,4 +1,37 @@
+## Accepted speech spans (PR523 review correction)
+
+Patch2311 and shared `src/gameplay/pc_audio_activity.h` replace whole-source
+speech latching for optional Dialogue focus with accepted non-silent PCM spans.
+Queries compare spans with decoded host-played bytes; SDL's no-cursor path uses
+a scaled host-time estimate clamped to accepted bytes, never a guest/device
+clock. Existing20/300ms envelopes remain. Leading silence, gaps and queued
+silent tails no longer keep speech active.
+
+Only successful submissions append metadata; refusal leaves it unchanged.
+Reset/refeed/flush/pause/reformat and discontinuity clear it. The fixed64-span
+queue merges sub-10ms holes; saturation conservatively merges oldest spans and
+still expires. No allocation, PCM edit, tail flush or speech recognizer is added.
+Original/OFF and guest completion retain their contracts. `audio_dynamics.c`
+covers stereo/U8 silence, immutable input, fractional fallback partitioning and
+saturation. Actual buffer/stream fixtures cover tails, gaps, refusal and resets.
+Three tail regressions fail before the patch; all114 timing checks pass after.
+
 # Effects buffering under load
+
+## Callback-fed PCM acceptance
+
+`test_audio_timing.py` additionally runs `callback-pcm8k` and
+`callback-pcm8k-manual` through the production stream adapter. The supported
+executable's original388C7D descriptor uses mono8000Hz PCM16;38880F constructs
+320-byte packets with an index context. Completion callbacks return with ret12
+and can call Process to refill before returning. The synthetic provider retains
+two pending packets and completes32 in order, requiring exact output PCM,
+unchanged source bytes, status/size before callback, no early completion at the
+last unheard frame, restored guest stack and no context-index event signalling.
+The second case resolves through the manual dispatch fallback. The actual title
+codec/provider is not executed by this fixture and its content identity remains
+unresolved; linked XVOICE metadata is insufficient to label it as voice chat.
+These checks establish adapter behavior, not hardware playback or latency.
 
 `patches/media/0055-dsound-busy-buffer-recovery.patch` extends shared runtime
 `src/hle/hle_dsound.c`; the buffering contract is documented below.
@@ -119,8 +152,9 @@ physical Mac acceptance.
 ## Runtime contracts
 
 Effects buffering: `media/0055-dsound-busy-buffer-recovery.patch` extends the
-shared `hle_dsound.c` pump. Its default 40 ms lead grows per buffer to the
-observed active service interval plus 10 ms, capped at 90 ms. Explicit
+shared `hle_dsound.c` pump. Its default 40 ms lead grows to the
+observed active service interval plus 10 ms, capped at 90 ms; patch2305 shares
+that measured headroom across fresh effect slots. Explicit
 `RECOMP_DSOUND_LEAD_MS` values stay fixed, including legacy zero. Play still
 submits immediately; pause/stop resets prevent learning inactive intervals.
 After a >100 ms output-model interval, stale data is skipped only up to now,
@@ -210,3 +244,110 @@ failed-start/muted exit and repeated explicit shutdown. The real RHI host
 fixture posts WM_QUIT; a separate test compiles the real xbox_HostExit body
 and checks diagnostics and exit handlers. These
 are controlled lifecycle checks, not a real level transition or listening test.
+
+## One-shot completion follows queued output
+
+`media/2304-dsound-buffer-completion.patch` extends GetStatus after natural
+wall-clock completion of a non-looping buffer. If that buffer has accepted
+PCM and its host voice still has queued buffers, status remains PLAYING.
+This prevents a status-driven Stop/reuse from discarding the last samples
+after an underrun. The guest cursor clock, lead, stale-data policy and explicit
+Stop/Release semantics are unchanged. Explicit reset clears `fed`; paused
+buffers retain PAUSED; unavailable output retains wall-clock completion.
+XAudio supplies queue depth. Patch2306 adds an explicit SDL finite-tail drain
+without claiming a device cursor. Physical listening remains a separate check.
+
+`test_audio_timing.py::test_buffer_audible_completion` executes the real pump
+and GetStatus with a 100ms PCM one-shot and a 60ms service interval. The initial
+40ms queue runs dry for 20ms; all 9600 source bytes are submitted but the last
+20ms remains queued at guest completion. Status now waits for that tail, then
+finishes. Stop/reset, pause and device-unavailable controls retain their status.
+
+## Fresh effects inherit busy-service headroom
+
+`media/2305-dsound-burst-headroom.patch` shares observed active effects service
+headroom across buffer lifetimes under the existing HLE lock. Previously each
+fresh slot started at 40ms even after other voices had learned 70-90ms was
+needed. Repeated short effects could therefore suffer their own initial
+underrun before adapting. The shared value only grows from an active, fed
+buffer's service gap, remains capped at 90ms, and never overrides explicit
+fixed/zero lead. Play still submits immediately. Guest clocks, sound priority,
+slot capacity, stream buffering and explicit stops are unchanged. No audio
+thread or host adapter change is introduced. The higher learned lead persists
+for the process, including across scenes; queued SDL routing changes can take
+up to that bounded lead to reach playback.
+
+The existing `test_effects_under_load` route adds `burst`: an active voice
+learns a 60ms service interval, then eight rounds replace 63 simultaneous
+non-looping voices. Each fresh voice must start with 70ms of PCM, retain its
+own queue, and avoid another underrun at the next 60ms service. This regression
+fails before patch2305. Existing fixed/zero, steady, long-hitch, refused-output,
+finite-tail and expiry cases retain their previous behavior.
+
+## FPS validation and remaining runtime limits
+
+The load fixture additionally runs 64 independent voices at millisecond-
+quantized 60/120/144/180/240 service cadences, with repeated 37ms delays. It
+requires zero steady-service underruns, bounded queues, and no recurring
+starvation after the first delayed service teaches the lead. These CPU/device-
+double tests cover requested cadences independently of physical render speed.
+They do not establish audible whole-game acceptance.
+
+The 2026-11-03 Windows ten-bot Hotel matrix exercised all four current presets
+and the legacy diagnostic144 rate. Windowed60/120/180/240 had no increase in
+combat underruns; windowed144 added8. Verified fullscreen/VRR repeats added0
+at180,12 at240,0 at144. All runs had zero effects submission refusals and zero
+slot-exhaustion failures. The live machine did not sustain180/240 rendering;
+see STATUS for measured present rates. Additional counter events remain
+unexplained and must not be called fixed or attributed to long render hitches:
+the profiled render gaps did not exceed90ms in these residual cases. Counter
+events alone do not establish audible loss. Native Mac/network listening and
+other scenes remain separate acceptance work.
+
+### Loading-to-match reference
+
+A later126-second Original run records the whole loading-to-match interval,
+not just settled combat. Counter reports arrive with8 at65.594s and12 at70.969s,
+then remain12 through126s. A continuous67.98s process capture starts after the
+controller's55.016s launch request. Its near-silent10ms windows span13.97..16.06s
+of the recording, around loading/first-person countdown. Capture discontinuity,
+timestamp-error and full-scale counts are zero; XAudio reports zero engine
+glitches/refusals/failures. A gain-preserved20s excerpt is ready for listening.
+
+These are host-pipe report arrivals, not exact per-voice event timestamps. Input
+replay logs print the scheduled `r->at`, not actual execution time; they cannot
+time-bound the older counter increase against its capture. A single read of the
+four initial64-byte PCM buffers finds shared all-zero data but does not attribute
+the later increase. Individual gaps may be masked by other voices. The loading
+silence, counter cause and listening acceptance remain distinct claims; no new
+buffering/gain repair is justified from this observation alone.
+The user subsequently reviewed the20-second excerpt on2026-11-07 and reported
+only the loading pause, otherwise clean. Retain current buffering. This clears
+that excerpt's listening concern, not the counter's per-voice cause or broader
+preset/headphone/speaker/device acceptance; their equipment was unspecified.
+
+## SDL finite-tail drain (review correction)
+
+The original completion change incorrectly assumed SDL's position stub exposed
+queue depth. Patch2306 introduces `recomp_audio_output_tail_pending(slot,finish)`
+in the shared output contract and uses it for natural one-shot completion.
+XAudio delegates to its existing queue snapshot. SDL retains position()==0,
+so streams and movies still use their existing wall-clock fallback. Its new
+drain operation checks both queued input and available converted output;
+once the producer has accepted the entire tail, it flushes the resampling
+remainder once. Successful new input/reset clears the flush marker. Ordinary
+chunks, looping sounds, pause and explicit Stop do not flush through this path.
+Query/flush failure retires only that voice and uses existing retry/discontinuity
+handling; absent/reset/shutdown output reports no pending tail.
+
+The complete shared HLE/model is now linked to each complete XAudio/SDL adapter
+in a tail regression, with only host APIs doubled. A late natural completion
+must retain PLAYING across pending input and converted output, then finish on
+drain. The SDL case fails before2306 and passes afterward. Direct SDL tests
+also verify no invented device cursor, one flush, reset/reuse, unavailable
+output, query/flush failures and preservation of unrelated voices. These tests
+are in the existing dual-host `test_audio_device_recovery.py` CI selection.
+
+API semantics: [SDL queued input](https://wiki.libsdl.org/SDL3/SDL_GetAudioStreamQueued),
+[available output](https://wiki.libsdl.org/SDL3/SDL_GetAudioStreamAvailable),
+[end-of-input flush](https://wiki.libsdl.org/SDL3/SDL_FlushAudioStream).

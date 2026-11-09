@@ -10,8 +10,19 @@
 #include "pc_cutscene.h"
 #include "d3d8_movie.h"
 #define TSFP_PC_CONTROLS
+/* Sidebar registration is outside the cinematic projection contract. */
+static void video_sidebar_tick(void) {}
+void pc_developer_video_register(void (*tick)(void)) { (void)tick; }
+/* Input-reader registration is another boundary of the camera wrapper. Its
+ * routing contract is covered by the full menu/input fixtures. */
+static int controls_gameplay_masks(unsigned port,unsigned masks[24],int *mounted)
+{ (void)port;(void)masks;(void)mounted;return 0; }
+static void pc_settings_gameplay_reader(int (*reader)(unsigned,unsigned[24],int *))
+{ (void)reader; }
+
 static PcDisplayMode mode;
 static float fov_scale=1.f;
+float pc_display_weapon_fov_scale(void) { return 1.f; }
 float pc_display_fov_scale(void) { return fov_scale; }
 PcDisplayMode pc_display_effective(void) { return mode; }
 float pc_display_camera_factor(void)

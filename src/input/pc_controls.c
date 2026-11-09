@@ -12,6 +12,7 @@
 #include "pc_terminal.h"
 #include "pc_native_rate.h"
 #include "pc_settings.h"
+#include "pc_developer.h"
 #include "pc_prompts.h"
 #include "texture_mode.h"
 #include "pc_window_theme.h"
@@ -29,7 +30,25 @@
 
 static SRWLOCK lock = SRWLOCK_INIT;
 static PcInput input;
+static unsigned char developer_blocked[256];
+void pc_controls_developer_release(void) {
+    AcquireSRWLockExclusive(&lock);
+    memcpy(developer_blocked,input.keys,sizeof developer_blocked);
+    pc_reload_reset(&input.reload);input.dx=input.dy=0;
+    ReleaseSRWLockExclusive(&lock);
+}
 static HWND window_handle;
+#define PC_DEVELOPER_DEBUG_MESSAGE (WM_APP+0x188)
+void pc_controls_developer_debug_action(int open_folder) {
+    if(window_handle)PostMessage(window_handle,PC_DEVELOPER_DEBUG_MESSAGE,open_folder,0);
+}
+float pc_controls_developer_ui_scale(void) {return window_handle?GetDpiForWindow(window_handle)/96.f:1.f;}
+int pc_controls_developer_is_fullscreen(void) {
+    return window_handle && !(GetWindowLongPtrW(window_handle,GWL_STYLE)&WS_OVERLAPPEDWINDOW);
+}
+void pc_controls_developer_fullscreen(void) {
+    if(window_handle)PostMessage(window_handle,WM_COMMAND,PC_FULLSCREEN_COMMAND,0);
+}
 static int enabled = 1, want_capture = 1, replaying;
 static float sensitivity = 0.10f;
 static int invert_y;
@@ -40,6 +59,7 @@ static int menu_mode, menu_button_block;
 static PcTextInput text_input;
 
 void pc_controls_text_mode(uint32_t owner) {
+    if(pc_developer_open())owner=0;
     AcquireSRWLockExclusive(&lock);
     if(text_input.owner!=owner) {
         pc_text_session(&text_input,owner);
@@ -169,10 +189,12 @@ static void replay_tick(void)
 static void capture(HWND window, int on)
 {
     AcquireSRWLockExclusive(&lock);
-    pc_input_capture(&input, enabled && on && !replaying && !menu_mode);
+    pc_input_capture(&input, enabled && on && !menu_mode);
     wheel_remainder = 0;
     menu_wheel = 0;
-    on = input.captured;
+    /* Replays need the same logical capture/motion state, without confining
+     * the desktop cursor or hiding it during an automated background run. */
+    on = input.captured && !replaying;
     ReleaseSRWLockExclusive(&lock);
     if (on) { clip_to_window(window); SetCursor(NULL); }
     else { ClipCursor(NULL); SetCursor(LoadCursor(NULL, IDC_ARROW)); }
@@ -216,7 +238,7 @@ void pc_controls_attach(HWND window)
     if(test_state_path && *test_state_path) {
         replaying=1; pc_input_focus(&input,1); pc_input_capture(&input,1);
     } else test_state_path=NULL;
-    fprintf(stderr, "[PC-INPUT] WASD/mouse controls ready; %.3f degrees/count, invert Y %s. F1 shows/hides the menu bar; F2 opens settings; F10 switches Classic/4K textures; F12 opens Debug; Alt+Enter toggles fullscreen; Escape releases mouse.\n",
+    fprintf(stderr, "[PC-INPUT] WASD/mouse controls ready; %.3f degrees/count, invert Y %s. Configured shortcut opens enabled Developer Tools; F2 opens settings; F10 switches Classic/4K textures; F12 opens Debug; Alt+Enter toggles fullscreen; Escape releases mouse.\n",
             sensitivity, invert_y ? "on" : "off");
     if (window) { pc_settings_attach(window); SetTimer(window, PC_MOUSE_CAPTURE_TIMER, 250, NULL); }
     pc_debug_init(window);
@@ -275,6 +297,10 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
     int captured, frontend;
     *result = 0;
     if (window != window_handle) return 0;
+    if((message==WM_KEYDOWN || message==WM_SYSKEYDOWN) && !InterlockedCompareExchange(&editing,0,0) && pc_developer_shortcut_key((int)wp)) {
+        if(!(lp&((LPARAM)1<<30)))pc_developer_toggle();return 1;
+    }
+    if((message==WM_KEYUP || message==WM_SYSKEYUP) && !InterlockedCompareExchange(&editing,0,0) && pc_developer_shortcut_key((int)wp))return 1;
     if(message==PC_SAVE_FOLDER_MESSAGE){choose_save_folder(window);return 1;}
     if (pc_menu_theme_message(window,message,wp,lp,result)) return 1;
     if (message == WM_SETTINGCHANGE || message == WM_THEMECHANGED) pc_window_theme_apply(window);
@@ -324,6 +350,8 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         if(typing) { if(message==WM_KEYDOWN)pc_prompts_keyboard();return 1; }
     }
     switch (message) {
+    case PC_DEVELOPER_DEBUG_MESSAGE:
+        if(wp)pc_debug_open_logs(window);else pc_debug_clear();return 1;
     case WM_COMMAND:
         if (LOWORD(wp) == PC_TEXTURE_MODE_COMMAND) {
             tsfp_texture_toggle(); update_fullscreen_menu(window); return 1;
@@ -363,6 +391,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
             capture(window, 0);
             AcquireSRWLockExclusive(&lock);
             pc_input_focus(&input, 0);
+            memset(developer_blocked,0,sizeof developer_blocked);
             ReleaseSRWLockExclusive(&lock);
         } else if (GetForegroundWindow() == window) {
             AcquireSRWLockExclusive(&lock);
@@ -381,6 +410,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         capture(window, 0);
         AcquireSRWLockExclusive(&lock);
         pc_input_focus(&input, 0);
+        memset(developer_blocked,0,sizeof developer_blocked);
         text_input.head=text_input.count=0;
         ReleaseSRWLockExclusive(&lock);
         break;
@@ -408,13 +438,6 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
             return 1;
         }
         if (message == WM_SYSKEYDOWN && wp == VK_RETURN && (lp & (1LL << 29))) break;
-        if (wp == VK_F1) {
-            if (!(lp & (1LL << 30))) {
-                pc_settings_toggle_menu(window);
-                update_fullscreen_menu(window);
-            }
-            return 1;
-        }
         if (wp == VK_ESCAPE && !(lp & (1LL << 30))) {
             want_capture = 0;
             capture(window, 0);
@@ -424,9 +447,10 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         ReleaseSRWLockExclusive(&lock);
         break;
     case WM_KEYUP: case WM_SYSKEYUP:
-        if (wp == VK_F1 || wp == VK_F2 || wp == VK_F12 || wp == VK_F11 || wp == VK_F10) return 1;
+        if (wp == VK_F2 || wp == VK_F12 || wp == VK_F11 || wp == VK_F10) return 1;
         AcquireSRWLockExclusive(&lock);
         pc_input_key_at(&input, (unsigned)wp, 0,GetTickCount64());
+        if(wp<256)developer_blocked[wp]=0;
         ReleaseSRWLockExclusive(&lock);
         break;
     case WM_LBUTTONDOWN: case WM_RBUTTONDOWN: case WM_MBUTTONDOWN:
@@ -443,6 +467,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         }
         AcquireSRWLockExclusive(&lock);
         pc_input_key_at(&input, key, down && (captured || menu_mode),GetTickCount64());
+        if(!down)developer_blocked[key]=0;
         if(down && input.focused)pc_settings_capture_key((int)key);
         ReleaseSRWLockExclusive(&lock);
         break;
@@ -452,6 +477,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         AcquireSRWLockExclusive(&lock);
         pc_input_key_at(&input, HIWORD(wp) == XBUTTON1 ? VK_XBUTTON1 : VK_XBUTTON2,
                      message == WM_XBUTTONDOWN && (input.captured || menu_mode),GetTickCount64());
+        if(message==WM_XBUTTONUP)developer_blocked[HIWORD(wp)==XBUTTON1?VK_XBUTTON1:VK_XBUTTON2]=0;
         if(message==WM_XBUTTONDOWN && input.focused)pc_settings_capture_key(HIWORD(wp)==XBUTTON1?VK_XBUTTON1:VK_XBUTTON2);
         ReleaseSRWLockExclusive(&lock);
         *result = TRUE;
@@ -495,7 +521,7 @@ int pc_controls_weapon_slots_active(void)
 {
     int active;
     AcquireSRWLockShared(&lock);
-    active=!InterlockedCompareExchange(&editing,0,0) && !menu_mode && !text_input.owner &&
+    active=!pc_developer_blocks_player() && !InterlockedCompareExchange(&editing,0,0) && !menu_mode && !text_input.owner &&
         input.focused && input.captured && (replaying || GetForegroundWindow()==window_handle);
     ReleaseSRWLockShared(&lock);
     return active;
@@ -506,25 +532,31 @@ void pc_controls_reload_sample(const unsigned char roles[256],int active,
 {
     AcquireSRWLockExclusive(&lock);
     replay_tick();
-    active=active && !InterlockedCompareExchange(&editing,0,0) && !menu_mode && !text_input.owner &&
+    active=active && !pc_developer_blocks_player() && !InterlockedCompareExchange(&editing,0,0) && !menu_mode && !text_input.owner &&
         input.focused && input.captured && (replaying || GetForegroundWindow()==window_handle);
     pc_reload_sample(&input.reload,roles,active,GetTickCount64(),reload,fire,secondary);
+    pc_input_cockpit_fire(&input,active,GetTickCount64(),secondary);
     ReleaseSRWLockExclusive(&lock);
 }
 
 int pc_controls_accept_pad(void)
 {
-    return !replaying && !InterlockedCompareExchange(&editing,0,0) &&
+    return !pc_developer_open() && !pc_developer_blocks_player() && !replaying && !InterlockedCompareExchange(&editing,0,0) &&
            window_handle && GetForegroundWindow()==window_handle;
 }
 
-int pc_controls_binding_keys(unsigned char keys[256])
+int pc_controls_developer_keys(unsigned char keys[256])
 {
     AcquireSRWLockExclusive(&lock);
+    replay_tick(); /* The overlay owns polling while guest input is suppressed. */
     int focused=input.focused && (replaying || GetForegroundWindow()==window_handle);
     memset(keys,0,256);
     if(focused) {
-        for(unsigned i=1;i<256;i++)keys[i]=(unsigned char)pc_input_down(&input,i,GetTickCount64());
+        for(unsigned i=1;i<256;i++) {
+            int held=pc_input_down(&input,i,GetTickCount64());
+            if(!held)developer_blocked[i]=0;
+            keys[i]=(unsigned char)(held && (pc_developer_open() || !developer_blocked[i]));
+        }
         if(menu_mode && GetTickCount64()-menu_wheel_at<250) {
             keys[0x86]|=menu_wheel>0;keys[0x87]|=menu_wheel<0;
         }
@@ -532,18 +564,23 @@ int pc_controls_binding_keys(unsigned char keys[256])
     ReleaseSRWLockExclusive(&lock);return focused;
 }
 
+int pc_controls_binding_keys(unsigned char keys[256]) {
+    if(pc_developer_open()){memset(keys,0,256);return 0;}
+    return pc_controls_developer_keys(keys);
+}
 int pc_controls_key_down(int key)
 {
     int down;
+    if(pc_developer_open() || pc_developer_blocks_player())return 0;
     if (InterlockedCompareExchange(&editing, 0, 0)) return 0;
     AcquireSRWLockExclusive(&lock);
     replay_tick();
     down = pc_input_down(&input, (unsigned)key, GetTickCount64());
+    if(key>0 && key<256 && developer_blocked[key])down=0;
     /* Custom menus may read D-pad edges instead of the WASD analogue stick. */
     if(menu_mode) {
-        unsigned alias=key==VK_LEFT?'A':key==VK_RIGHT?'D':
-                       key==VK_UP?'W':key==VK_DOWN?'S':0;
-        if(alias) down|=pc_input_down(&input,alias,GetTickCount64());
+        unsigned alias=pc_input_menu_alias((unsigned)key);
+        if(alias && !developer_blocked[alias]) down|=pc_input_down(&input,alias,GetTickCount64());
     }
     if(text_input.owner && pc_text_key((unsigned)key))down=0;
     down=down && (replaying || GetForegroundWindow()==window_handle);
@@ -556,9 +593,12 @@ int pc_controls_key_down(int key)
     return down;
 }
 
+int pc_controls_in_menu(void) {AcquireSRWLockShared(&lock);int value=menu_mode;ReleaseSRWLockShared(&lock);return value;}
+
 void pc_controls_menu_mode(int active)
 {
     int changed;
+    active=active || pc_developer_open();
     AcquireSRWLockExclusive(&lock);
     changed=menu_mode!=!!active;
     if(changed) {
@@ -591,17 +631,19 @@ static PcMenuPointer menu_pointer(int consume)
     }
     if(consume) menu_wheel=0;
     ReleaseSRWLockExclusive(&lock);
-    if(pc_settings_capture_blocked())p.valid=p.left=p.right=p.wheel=0;
+    if(pc_settings_capture_blocked()&&!pc_developer_open())p.valid=p.left=p.right=p.wheel=0;
     return p;
 }
 
-PcMenuPointer pc_controls_menu_pointer(void) { return menu_pointer(1); }
+PcMenuPointer pc_controls_developer_pointer(void) {return menu_pointer(1);}
+PcMenuPointer pc_controls_menu_pointer(void) {PcMenuPointer empty={0};return pc_developer_open()?empty:menu_pointer(1);}
 /* Drawing must not consume wheel packets or advance the input replay. */
-PcMenuPointer pc_controls_menu_hover_pointer(void) { return menu_pointer(0); }
+PcMenuPointer pc_controls_menu_hover_pointer(void) {PcMenuPointer empty={0};return pc_developer_open()?empty:menu_pointer(0);}
 
 int pc_controls_terminal_click(void)
 {
     int down;
+    if(pc_developer_open())return 0;
     if (InterlockedCompareExchange(&editing, 0, 0)) return 0;
     AcquireSRWLockExclusive(&lock);
     replay_tick();
@@ -628,7 +670,14 @@ void pc_controls_apply_mouse(uint32_t player, uint32_t fov_object, ptrdiff_t mem
         ReleaseSRWLockExclusive(&lock);
         return;
     }
+    if(!pc_settings_keyboard_player()) {
+        input.dx=input.dy=0;input.cockpit_active=0;
+        ReleaseSRWLockExclusive(&lock);return;
+    }
     pc_reload_guest_context(&input.reload,player,memory_offset,GetTickCount64(),&region);
+    if(pc_developer_mouse(&input,GetTickCount64(),sensitivity,invert_y,1.f)) {
+        ReleaseSRWLockExclusive(&lock);return;
+    }
     terminal = pc_terminal_mouse_in_region(&input, GetTickCount64(), sensitivity, player, memory_offset, pc_native_rate()!=0,&region);
     pc_input_terminal_context(&input, terminal >= 0, input.keys[VK_LBUTTON]);
     if (terminal >= 0 || pc_mounted_mouse_in_region(&input, GetTickCount64(), sensitivity, invert_y,

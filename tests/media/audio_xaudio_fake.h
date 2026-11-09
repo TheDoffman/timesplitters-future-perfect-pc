@@ -39,6 +39,9 @@ static IXAudio2EngineCallback *registered;
 struct IXAudio2MasteringVoice;
 struct IXAudio2SourceVoice {
     float matrix[4]={1,0,0,1};
+    float speed=1.f;
+    float gain=1.f;
+    HRESULT SetFrequencyRatio(float ratio){speed=ratio;return S_OK;}
     void GetOutputMatrix(IXAudio2MasteringVoice *,unsigned src,unsigned dst,float *m) { assert(dst==2); if(src==1){m[0]=1;m[1]=1;}else memcpy(m,matrix,4*sizeof(float)); }
     HRESULT SetOutputMatrix(IXAudio2MasteringVoice *,unsigned src,unsigned dst,const float *m) { assert(dst==2);memcpy(matrix,m,src*dst*sizeof(float));return S_OK; }
     uint32_t queued = 0;
@@ -46,7 +49,7 @@ struct IXAudio2SourceVoice {
     const uint8_t *last_pcm = nullptr;
     void DestroyVoice() { ++source_destroyed; delete this; }
     HRESULT Start() { return result("start"); }
-    HRESULT SetVolume(float) { return result("volume"); }
+    HRESULT SetVolume(float value) { HRESULT hr=result("volume");if(SUCCEEDED(hr))gain=value;return hr; }
     void GetState(XAUDIO2_VOICE_STATE *s, unsigned) { s->SamplesPlayed=played; s->BuffersQueued=queued; }
     HRESULT SubmitSourceBuffer(const XAUDIO2_BUFFER *b) {
         if (FAILED(result("submit"))) return result("submit");

@@ -5,6 +5,14 @@
 #include <stdint.h>
 #include <math.h>
 #include <string.h>
+/* Fit a custom caption inside its painted cell using the guest's measured
+ * glyph bounds. Never enlarge text; invalid measurements keep native scale. */
+static float pc_ui_caption_fit(float width,float height,float text_width,float text_height)
+{
+    if(!(width>0 && height>0 && text_width>0 && text_height>0) ||
+       !isfinite(width) || !isfinite(height) || !isfinite(text_width) || !isfinite(text_height))return 1.f;
+    return fminf(1.f,fminf(width/text_width,height/text_height));
+}
 /* One projected marker consists of an outline followed by separate labels.
  * Its first draw contains the complete outline. Fit every subsequent draw
  * around that same world-screen centre, never each label's own centre. */
@@ -27,13 +35,13 @@ static int pc_ui_world_draw(PcUiWorldAnchor *a,const void *vertices,unsigned str
     a->x=(lo*.5f+hi*.5f)/width;a->ready=1;return 1;
 }
 /* The crane vignette's full-canvas Xbox clip uses inclusive last pixels.
- * Convert only this tagged effect to host-exclusive bounds, before scaling.
+ * Normalize its alternate full-canvas spelling to inclusive guest bounds.
  * Keep partial clips, other widgets and the stored guest scissor unchanged. */
 static void pc_ui_vignette_clip(uint32_t tag,int placement,int32_t rect[4])
 {
     if(tag!=0x00137010u || placement!=1 || rect[0]!=0 || rect[1]!=0 ||
        (rect[2]!=639 && rect[2]!=640) || (rect[3]!=479 && rect[3]!=480))return;
-    rect[2]=640;rect[3]=480;
+    rect[2]=639;rect[3]=479;
 }
 /* US menu health draw: state 8 is the completed-match/results phase.
  * Keep Story objectives and the ordinary pause HUD unchanged. */

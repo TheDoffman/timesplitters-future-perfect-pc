@@ -71,19 +71,8 @@ def minimum_macos(paths):
 
 
 def prepare_licenses(directory):
-    pins = json.loads((ROOT/'config/build/native-mac-runtime-licenses.json').read_text())
-    directory.mkdir(parents=True, exist_ok=True)
-    for name, pin in pins.items():
-        path = directory/name
-        if not path.exists():
-            with urllib.request.urlopen(pin['url'], timeout=30) as response:
-                data = response.read()
-            if hashlib.sha256(data).hexdigest() != pin['sha256']:
-                raise ValueError('Downloaded license differs from its pin: '+name)
-            with path.open('xb') as output:
-                output.write(data)
-        if path.is_symlink() or digest(path) != pin['sha256']:
-            raise ValueError('Runtime license differs from its pin: '+name)
+    from runtime_licenses import prepare
+    prepare(ROOT, directory)
 
 
 def bundle_libraries(executable, stage, sdk):
@@ -172,6 +161,17 @@ def verify_payload(stage, manifest, texture_rows=()):
         raise ValueError('Unlisted files in Mac runtime package')
 
 
+def write_game_archive(stage, texture_rows):
+    """Keep the public filename and ZIP root tied to the versioned stage."""
+    archive_path = stage.with_name(stage.name+'.zip')
+    with zipfile.ZipFile(archive_path, 'x', zipfile.ZIP_DEFLATED, compresslevel=1) as archive:
+        for path in sorted(stage.rglob('*')):
+            if path.is_file():
+                archive.write(path, stage.name+'/'+path.relative_to(stage).as_posix())
+        write_zip(archive, stage.name+'/', texture_rows)
+    return archive_path
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--version', required=True)
@@ -250,6 +250,10 @@ def main():
                      'SPIRV-Tools.txt', 'DXC.txt', 'DXC-ThirdParty.txt'):
         copy(args.licenses/filename, 'Licenses/'+filename)
     copy(ROOT/'tools/launcher/GameMonogram.NOTICE.txt', 'Licenses/Game-icon-lettering.txt')
+    copy(ROOT/'assets/ui/input-icons/ATTRIBUTION.md', 'Licenses/Keyboard-mouse-icons.txt')
+    for origin,license_name in [('assets/ui/fonts/Selawik-OFL.txt','Selawik-OFL.txt'),('assets/ui/fonts/Cousine-OFL.txt','Cousine-OFL.txt'),('vendor/stb/LICENSE','stb.txt')]:
+        copy(ROOT/origin,'Licenses/'+license_name)
+    copy(ROOT/'vendor/smaa/LICENSE.txt', 'Licenses/SMAA.txt')
     (stage/'Launch.command').write_text('#!/bin/sh\nset -eu\nROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexec "$ROOT/TimeSplitters Launcher.app/Contents/MacOS/TimeSplitters.Launcher" --root "$ROOT" "$@"\n')
     (stage/'Launch.command').chmod(0o755)
     (stage/GAME).chmod(0o755)
@@ -309,19 +313,14 @@ Source and third-party notices: Source and Licenses.
     (stage/'BUILD.json').write_text(json.dumps(manifest, indent=2)+'\n')
     verify_payload(stage, manifest, texture_rows)
     launcher = stage/APP/'Contents/MacOS/TimeSplitters.Launcher'
-    archive_path = stage.with_name(name+'.zip')
-    with zipfile.ZipFile(archive_path, 'x', zipfile.ZIP_DEFLATED, compresslevel=1) as archive:
-        for path in sorted(stage.rglob('*')):
-            if path.is_file():
-                archive.write(path, name+'/'+path.relative_to(stage).as_posix())
-        write_zip(archive, name+'/', texture_rows)
+    archive_path = write_game_archive(stage, texture_rows)
     with zipfile.ZipFile(archive_path) as archive:
         if archive.testzip() is not None:
             raise ValueError('Corrupt release archive')
     subprocess.run([str(launcher), '--verify-game-package', str(archive_path), args.version], check=True, cwd=ROOT)
     checksum = digest(archive_path)
     archive_path.with_suffix('.zip.sha256').write_text(f'{checksum}  {archive_path.name}\n')
-    shutil.copy2(stage/'BUILD.json', stage.with_name(name+'.BUILD.json'))
+    shutil.copy2(stage/'BUILD.json', stage.with_name(stage.name+'.BUILD.json'))
     print(json.dumps(dict(archive=str(archive_path), size=archive_path.stat().st_size, sha256=checksum), indent=2))
 
 

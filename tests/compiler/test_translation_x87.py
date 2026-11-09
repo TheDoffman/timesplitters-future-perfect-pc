@@ -199,6 +199,48 @@ fp_top()=NAN;op_ftst();CHECK(g_fp_cmp==2&&g_fp_cc==0x4500);fp_top()=-1.;op_ftst(
     execute(tmp_path,code)
 
 
+@pytest.mark.skipif(os.name!='nt',reason='Actual x87 completed reduction and quotient status')
+@pytest.mark.parametrize('broken_completion',[False,True])
+def test_native_remainder_quotient_and_completion_flags(tmp_path,broken_completion):
+    code=PRELUDE+function('mine_fprem','fprem')+function('mine_fprem1','fprem1')
+    if broken_completion:
+        assert code.count('g_fp_cc & ~0x4700u')==2
+        code=code.replace('g_fp_cc & ~0x4700u','g_fp_cc & ~0x4300u')
+    asm=['.code']
+    for name in ('fprem','fprem1'):
+        asm += [f'public hw_{name}',f'hw_{name} proc','fnclex',
+                'fld qword ptr [r9]','fld qword ptr [rdx]','mov r10d,128',
+                f'again_{name}:',name,'fnstsw ax','test ah,4',f'jz done_{name}',
+                'dec r10d',f'jnz again_{name}',f'done_{name}:',
+                'mov word ptr [r8],ax','fstp qword ptr [rcx]','fstp st(0)',
+                'fnclex','ret',f'hw_{name} endp']
+        code+=f'extern void hw_{name}(double*,const double*,uint16_t*,const double*);\n'
+    asm+=['end'];compiler,env=native_compiler(tmp_path);source=tmp_path/'remainder.asm';obj=tmp_path/'native_remainder.obj';source.write_bytes(('\n'.join(asm)+'\n').encode())
+    run=subprocess.run([str(Path(compiler).with_name('ml64.exe')),'/nologo','/c',f'/Fo{obj}',str(source)],cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
+    assert run.returncode==0,run.stdout+run.stderr
+    code+=r'''
+int main(void) {
+ double values[]={-0x1p1023,-0x1p65,-0x1p53,-257.5,-17.,-9.,-7.,-5.,-3.,-1.,-0.,0.,0x1p-1074,0x1p-1022,.5,1.,2.,3.,5.,7.,9.,17.,257.5,0x1p53,0x1p65,0x1p1023};
+ void(*mine[])(void)={mine_fprem,mine_fprem1};
+ void(*hw[])(double*,const double*,uint16_t*,const double*)={hw_fprem,hw_fprem1};
+ for(unsigned op=0;op<2;++op)for(unsigned i=0;i<sizeof values/sizeof values[0];++i)for(unsigned j=0;j<sizeof values/sizeof values[0];++j) {
+  double x=values[i],y=values[j],want;uint16_t status=0;
+  if(y==0.)continue;
+  hw[op](&want,&x,&status,&y);
+  g_fp_top=3;fp_top()=x;fp_st1()=y;g_fp_cc=0xc7ff;
+  mine[op]();
+  CHECK(same(fp_top(),want));CHECK(same(fp_st1(),y)&&g_fp_top==3);
+  CHECK((g_fp_cc&0x4700)==(status&0x4700));CHECK((g_fp_cc&~0x4700)==(0xc7ff&~0x4700));
+ }
+ return 0;
+}
+'''
+    path=tmp_path/'remainder.c';path.write_bytes(code.encode());exe=_compile(tmp_path,path,objects=[str(obj)])
+    result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=30)
+    if broken_completion:assert result.returncode!=0,'Stale C2 passed native status comparison'
+    else:assert result.returncode==0,result.stdout+result.stderr
+
+
 def test_decoded_production_x87_execute(tmp_path):
     import json
     cases={'stack_sequence':'d9c0d9c2dec1dddac3',

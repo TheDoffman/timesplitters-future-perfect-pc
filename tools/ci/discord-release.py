@@ -1,4 +1,4 @@
-"""Announce a published game release through the Discord announcements webhook."""
+"""Announce a published game release through the Discord release-updates webhook."""
 
 import importlib.util
 import json
@@ -105,10 +105,21 @@ def send(webhook, payload):
 
 
 def deliver(route, payload, secrets):
-    # Both release types use the existing announcements webhook.
+    # Both release types use the existing release-updates webhook.
     webhook = secrets.get('DISCORD_STABLE_RELEASE_WEBHOOK', '')
     send(webhook, payload)
-    print(f'Discord {route} delivery confirmed for announcements.')
+    print(f'Discord {route} delivery confirmed for release-updates.')
+
+
+def notification_role(route, payload, settings):
+    """Allow exactly the selected opt-in role, never mentions from release notes."""
+    role = settings.get(f'DISCORD_{route.upper()}_RELEASE_ROLE_ID', '')
+    if not role:
+        return payload
+    if not re.fullmatch(r'[0-9]{17,20}', role):
+        raise ValueError('Invalid Discord notification role ID; no announcement sent.')
+    return {**payload, 'content': f'<@&{role}>',
+            'allowed_mentions': {'parse': [], 'roles': [role]}}
 
 
 def main():
@@ -119,6 +130,8 @@ def main():
         print('No published game release to announce.')
         return
     route, payload = result
+    if not testing:
+        payload = notification_role(route, payload, os.environ)
     deliver(route, payload, os.environ)
     kind = 'connection test' if testing else 'game release announcement'
     print(f'Published {route} {kind}.')

@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using TimeSplitters.Launcher;
-#if MACOS
+#if MACOS || LINUX
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -24,7 +24,7 @@ public static class LauncherSharedUiChecks
     static void Click(Button button){button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));}
     static IEnumerable<Element> All(Element root)
     {
-#if MACOS
+#if MACOS || LINUX
         return root.GetLogicalDescendants().OfType<Element>();
 #else
         return LogicalTreeHelper.GetChildren(root).OfType<Element>().SelectMany(c=>new[]{c}.Concat(All(c)));
@@ -33,7 +33,7 @@ public static class LauncherSharedUiChecks
     static T Find<T>(Element root,string name) where T:Element { return All(root).OfType<T>().Single(c=>c.Name==name); }
     public static int Run()
     {
-#if MACOS
+#if MACOS || LINUX
         return RunCore();
 #else
         Exception failure=null;var thread=new System.Threading.Thread(()=>{try{RunCore();}catch(Exception e){failure=e;}});
@@ -43,7 +43,7 @@ public static class LauncherSharedUiChecks
     }
     static string Tip(Button button)
     {
-#if MACOS
+#if MACOS || LINUX
         return Convert.ToString(ToolTip.GetTip(button));
 #else
         return Convert.ToString(button.ToolTip);
@@ -51,7 +51,7 @@ public static class LauncherSharedUiChecks
     }
     static string TestBase()
     {
-#if MACOS
+#if MACOS || LINUX
         // macOS's /var temp alias is a symlink; production intentionally rejects it.
         return Path.GetFullPath(".");
 #else
@@ -68,6 +68,112 @@ public static class LauncherSharedUiChecks
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
+            Test("main menu update notice follows version and selected channel",()=>{
+                var release=new Release {Tag="v1.2.4",Channel="stable"};
+                Need(GameUpdateNotice.Encode("v1.2.3",release,"stable",123)=="TSFP_GAME_UPDATE_V1 123 v1.2.3 v1.2.4\n","Newer release missing");
+                Need(GameUpdateNotice.Encode("v1.2.4",release,"stable",123)=="","Current release advertised");
+                Need(GameUpdateNotice.Encode("v1.3.0",release,"stable",123)=="","Downgrade advertised");
+                Need(GameUpdateNotice.Encode("development",release,"stable",123)=="","Unknown local version advertised");
+                Need(GameUpdateNotice.Encode("v1.2.3",release,"beta",123)=="","Wrong channel advertised");
+                Need(GameUpdateNotice.Encode("v1.2.3",null,"stable",123)=="","Failed check advertised");
+                release.Tag="v1.2.4-beta.1";release.Channel="beta";
+                Need(GameUpdateNotice.Encode("v1.2.4-beta.0",release,"beta",123)!="","Preview upgrade missing");
+                string installation=Path.Combine(root,"notice-install");Directory.CreateDirectory(installation);
+                Core.Write(Core.PathIn(installation,LauncherPlatform.ManifestPath(installation)),Json.Encode(new {version="v1.2.3"}));
+                release.Tag="v1.2.4";release.Channel="stable";GameUpdateNotice.Publish(installation,release,"stable");
+                string published=File.ReadAllText(GameUpdateNotice.Path(installation));
+                Need(published.StartsWith("TSFP_GAME_UPDATE_V1 ") && published.EndsWith(" v1.2.3 v1.2.4\n"),"Verified result not published");
+                GameUpdateNotice.Publish(installation,null,"stable");
+                Need(File.ReadAllText(GameUpdateNotice.Path(installation))=="","Failed check retained notice");
+                string unwritable=Path.Combine(root,"notice-blocked");Directory.CreateDirectory(unwritable);
+                File.WriteAllText(Path.Combine(unwritable,".launcher"),"Not a directory");
+                GameUpdateNotice.Publish(unwritable,release,"stable"); // Optional notice failure must not block launch.
+                GameUpdateNotice.Publish(root,null,"stable");
+                Need(File.ReadAllText(GameUpdateNotice.Path(root))=="","Empty result did not clear old notice");
+                var info=GameSettings.StartInfo(root);
+                Need(info.EnvironmentVariables["TSFP_GAME_UPDATE_NOTICE"]==GameUpdateNotice.Path(root),"Notice path missing from launch");
+                Need(info.EnvironmentVariables["TSFP_GAME_INSTALLED_VERSION"]==Core.InstalledVersion(root),"Installed version missing from launch");
+            });
+            Test("game texture preference survives launcher reload and detects concurrent edits",()=>{
+                string folder=Path.Combine(root,"textures-game-save");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);model.Save();
+                string preference=Core.PathIn(folder,LauncherPlatform.Settings(folder)[8]);
+                File.WriteAllText(preference,"TSFP_TEXTURES_V1 1\n");
+                Need(GameSettings.Load(folder,null).EnhancedTextures,"Game-saved ON did not reach launcher");
+                Need(GameSettings.StartInfo(folder).EnvironmentVariables["TSFP_TEXTURE_MODE"]=="4k","Game-saved choice lost at launch");
+                bool rejected=false;try {model.Save();}catch{rejected=true;}
+                Need(rejected && File.ReadAllText(preference)=="TSFP_TEXTURES_V1 1\n","Stale launcher overwrote game preference");
+                model=GameSettings.Load(folder,null);model.VerticalFov=70;model.Save();
+                Need(GameSettings.Load(folder,null).EnhancedTextures,"Unrelated launcher save reset game choice");
+                File.WriteAllText(preference,"TSFP_TEXTURES_V1 0\n");
+                Need(!GameSettings.Load(folder,null).EnhancedTextures,"Game-saved OFF did not override legacy JSON");
+                model=GameSettings.Load(folder,null);model.EnhancedTextures=true;model.Save();
+                Need(File.ReadAllText(preference)=="TSFP_TEXTURES_V1 1\n","Launcher could not update shared preference");
+                File.WriteAllText(preference,"TSFP_TEXTURES_V1 1 trailing");
+                rejected=false;try {GameSettings.Load(folder,null);}catch{rejected=true;}
+                Need(rejected && File.ReadAllText(preference).EndsWith("trailing"),"Malformed shared preference was rewritten");
+            });
+            Test("antivirus error codes respect the host and preserve unrelated IO failures",()=>{
+                var native=new System.ComponentModel.Win32Exception(225,"localized detection");
+                var io=new IOException("localized detection",unchecked((int)0x800700e2));
+#if MACOS || LINUX
+                Need(AntivirusErrors.Code(native)==0 && AntivirusErrors.Code(io)==0,"Windows detection codes leaked into a native host");
+#else
+                Need(AntivirusErrors.Code(native)==225 && AntivirusErrors.Code(io)==226,"Windows detection codes were lost");
+#endif
+                var denied=new UnauthorizedAccessException("access denied");
+                try { AntivirusErrors.At("fixture",()=>{throw denied;}); }
+                catch(Exception actual) { Need(ReferenceEquals(actual,denied),"Unrelated access failure was replaced"); }
+                Need(RecoveryInfo.From(denied,false).Title!="Antivirus blocked a file","Permissions were diagnosed as antivirus");
+            });
+#if MACOS || LINUX
+            Test("launcher fits small and scaled desktop work areas",()=>{
+                foreach(var desktop in new[]{new Size(1280,800),new Size(1024,640),new Size(853,533),new Size(1920,1080)}) {
+                    var client=NativeApplication.LauncherClientArea(desktop);
+                    Need(client.Width+32<=desktop.Width&&client.Height+64<=desktop.Height,"Window exceeds desktop work area");
+                    var layout=NativeApplication.LauncherLayoutArea(client);
+                    Need(layout.Width>=999.9&&layout.Height>=719.9,"Layout fell below supported content size");
+                    Need(Math.Abs(layout.Width/layout.Height-client.Width/client.Height)<0.001,"Layout would clip instead of scaling uniformly");
+                }
+            });
+#endif
+#if LINUX
+            Test("launcher windows retain embedded icons",()=>{
+                using(var resource=typeof(NativeApplication).Assembly.GetManifestResourceStream("launcher.ico")) {
+                    if(resource==null) { Need(Environment.GetEnvironmentVariable("TSFP_TEST_REQUIRE_ICON")!="1","Required launcher icon was not embedded"); Console.WriteLine("Developer build without optional icon artwork."); return; }
+                }
+                foreach(var window in new Window[]{new NativeStartup(root,Array.Empty<string>()),
+                    new NativeWindow(root,new[]{"--render-preview"}),new NativeLocationWindow(Array.Empty<string>())}) {
+                    Need(window.Icon!=null,"Launcher window has no application icon");
+                    using(var bytes=new MemoryStream()){window.Icon.Save(bytes);Need(bytes.Length>0,"Empty window icon");}
+                    window.Close();
+                }
+            });
+#endif
+            Test("graphics controls persist across shared launcher hosts",()=>{
+                string install=Path.Combine(root,"graphics-controls");Directory.CreateDirectory(install);
+                foreach(int aa in new[]{2,1,0}) {
+                    bool enabled=aa!=0;
+                    var page=new SettingsPage(new ResourceDictionary(),install,true);page.SelectTab(1);
+                    Find<ComboBox>(page.View,"MultisampleAntialiasing").SelectedItem=enabled?"8x":"Off";
+                    Find<ComboBox>(page.View,"PostAntiAliasing").SelectedIndex=aa;
+                    Find<ComboBox>(page.View,"Supersampling").SelectedItem=enabled?"200%":"100% (Off)";
+                    Find<ComboBox>(page.View,"AnisotropicFiltering").SelectedItem=enabled?"16":"1";
+                    Find<CheckBox>(page.View,"AmbientOcclusion").IsChecked=enabled;
+                    Find<CheckBox>(page.View,"ShaderCache").IsChecked=enabled;
+                    Find<CheckBox>(page.View,"FpsPingCounter").IsChecked=enabled;
+                    Need(Find<Button>(page.View,"ClearShaderCache").IsEnabled,"Cache clear is unavailable");
+                    Click(Find<Button>(page.View,"SettingsSaveButton"));
+                    var saved=GameSettings.Load(install,null);
+                    Need(saved.Msaa==(enabled?8:1) && saved.PostAntiAliasing==aa && saved.Smaa==(aa==2) && saved.EdgeSmoothing==(aa==1?1:0) && saved.Anisotropy==(enabled?16:1),"Graphics selection not saved");
+                    Need(saved.Supersampling==(enabled?3:0),"Supersampling not saved");
+                    Need(saved.AmbientOcclusion==(enabled?1:0) && saved.ShaderCache==enabled && saved.ShowCounter==enabled,"Graphics toggles not saved");
+                    var reopened=new SettingsPage(new ResourceDictionary(),install,true);reopened.SelectTab(1);
+                    Need(Convert.ToString(Find<ComboBox>(reopened.View,"MultisampleAntialiasing").SelectedItem)==(enabled?"8x":"Off"),"MSAA choice not restored");
+                    Need(Convert.ToString(Find<ComboBox>(reopened.View,"Supersampling").SelectedItem)==(enabled?"200%":"100% (Off)"),"Supersampling choice not restored");
+                    Need(Find<CheckBox>(reopened.View,"AmbientOcclusion").IsChecked==enabled && Find<CheckBox>(reopened.View,"FpsPingCounter").IsChecked==enabled,"Toggles not restored");
+                }
+            });
             SaveBackupChecks.Run(root,Test);
             Test("complete language packs save, cancel, launch and restore English",()=>{
                 string folder=Path.Combine(root,"languages");Directory.CreateDirectory(folder);
@@ -308,7 +414,7 @@ public static class LauncherSharedUiChecks
                 inputSensitivity.Text="invalid";Click(save);
                 Need(save.IsEnabled && saves==1,"Failed validation disabled Save or reported success");
                 inputSensitivity.Text=valid;Need(!save.IsEnabled,"Restored saved input remained dirty");
-                page.SelectTab(0);var binding=All(page.View).OfType<Button>().First(b=>Tip(b)==GameSettings.Labels[0]+", binding 1");
+                page.SelectTab(0);Find<ComboBox>(page.View,"KeyboardPreset").SelectedIndex=0;var binding=All(page.View).OfType<Button>().First(b=>Tip(b)==GameSettings.Labels[0]+", binding 1");
                 Click(binding);Click(All(page.View).OfType<Button>().Single(b=>Convert.ToString(b.Content)=="Clear binding"));
                 Need(save.IsEnabled,"Binding change did not enable Save");Click(save);
                 Need(!save.IsEnabled && saves==2 && GameSettings.Load(folder,null).Binding(0)[0]=="none","Binding save did not disable Save or persist");
@@ -321,6 +427,85 @@ public static class LauncherSharedUiChecks
                 fov.Value=original+2;Click(save);
                 Need(save.IsEnabled && saves==3 && File.ReadAllText(controls)==external,"Conflicting save disabled retry or overwrote external settings");
             });
+            Test("new setups use Modern presets while updates keep every existing layout",()=>{
+                string fresh=Path.Combine(root,"modern-defaults");Directory.CreateDirectory(fresh);
+                var model=GameSettings.Load(fresh,null);
+                Need(model.KeyboardPreset==1,"A new keyboard setup did not choose Modern PC");
+                for(int i=0;i<4;i++)Need(model.ControllerPreset(i)==1,"A new controller setup did not choose Modern Controller");
+                Need(!Directory.Exists(Path.Combine(fresh,"Settings")),"Reading new defaults wrote settings");
+                foreach(int action in new[]{0,1,10,11,12,13})
+                    Need(model.Binding(action).Select(GameSettings.KeyCode).SequenceEqual(model.DisplayBinding(action).Select(GameSettings.KeyCode)),"Fresh Custom differs from Modern action "+action);
+                model.Save();string source=Core.PathIn(fresh,LauncherPlatform.Settings(fresh)[0]);
+                var changes=new List<Change>{new Change{Name="Settings/pc-controls.json",Source=source}};
+                string installed=Path.Combine(root,"fresh-install-defaults");Directory.CreateDirectory(installed);
+                Core.Apply(installed,changes,null);var seeded=GameSettings.Load(installed,null);
+                Need(seeded.KeyboardPreset==1 && Enumerable.Range(0,4).All(i=>seeded.ControllerPreset(i)==1),"Fresh install did not seed Modern defaults");
+                seeded.KeyboardPreset=0;seeded.Assign(1,0,'H',true);seeded.Save();
+                seeded=GameSettings.Load(installed,null);Need(seeded.KeyboardPreset==0 && GameSettings.KeyCode(seeded.Binding(1)[0])=='H' && GameSettings.KeyCode(seeded.Binding(1)[1])==5,"Fresh Custom edits did not persist");
+                seeded.KeyboardPreset=1;seeded.Save();seeded.KeyboardPreset=0;seeded.Save();
+                Need(GameSettings.KeyCode(GameSettings.Load(installed,null).Binding(1)[0])=='H',"Preset cycling erased Custom edits");
+                foreach(string kind in new[]{"legacy","custom","mixed"}) {
+                    string folder=Path.Combine(root,"upgrade-"+kind);Directory.CreateDirectory(folder);
+                    var doc=Json.Object(File.ReadAllText(source));
+                    doc.Remove("custom_binding_semantics");
+                    var profiles=((System.Collections.IEnumerable)doc["controllers"]).Cast<Dictionary<string,object>>().ToArray();
+                    for(int i=0;i<4;i++) {
+                        if(kind=="legacy") {profiles[i].Remove("keyboard_preset");profiles[i].Remove("controller_preset");}
+                        else {if(i==0)profiles[i]["keyboard_preset"]=kind=="mixed"?1:0;profiles[i]["controller_preset"]=kind=="mixed"?i%2:0;}
+                    }
+                    var bindings=(Dictionary<string,object>)profiles[0]["bindings"];
+                    bindings["a"]=new[]{"key:E","key:SPACE","key:RETURN","key:J"};bindings["lstick_up"]="key:I";bindings["rstick_up"]="none";
+                    profiles[1]["device"]="gamepad:3";doc["retained_upgrade_field"]="keep";
+                    string path=Core.PathIn(folder,LauncherPlatform.Settings(folder)[0]);Directory.CreateDirectory(Path.GetDirectoryName(path));
+                    string original=Json.Encode(doc);File.WriteAllText(path,original);string originalBindings=Json.Encode(bindings);
+                    Core.Apply(folder,changes,null);Need(File.ReadAllText(path)==original,"Updating replaced existing controls: "+kind);
+                    var loaded=GameSettings.Load(folder,null);Need(File.ReadAllText(path)==original,"Loading migrated existing controls: "+kind);
+                    Need(loaded.KeyboardPreset==(kind=="mixed"?1:0),"Updating changed the keyboard layout: "+kind);
+                    for(int i=0;i<4;i++)Need(loaded.ControllerPreset(i)==(kind=="mixed"?i%2:0),"Updating changed a controller layout: "+kind);
+                    loaded.Sensitivity=.23;loaded.Save();loaded=GameSettings.Load(folder,null);
+                    var saved=Json.Object(File.ReadAllText(path));var savedProfiles=((System.Collections.IEnumerable)saved["controllers"]).Cast<Dictionary<string,object>>().ToArray();
+                    Need(Json.Encode(savedProfiles[0]["bindings"])==originalBindings && loaded.PlayerDevice(1)=="gamepad:3","Unrelated Save lost custom bindings/devices: "+kind);
+                    Need(loaded.KeyboardPreset==(kind=="mixed"?1:0) && Enumerable.Range(0,4).All(i=>loaded.ControllerPreset(i)==(kind=="mixed"?i%2:0)),"Unrelated Save changed existing presets: "+kind);
+                    Need(Json.String(saved,"retained_upgrade_field")=="keep","Upgrade lost unrelated controls fields");
+                }
+            });
+            Test("modern presets retain custom sources and round trip all controller slots",()=>{
+                string folder=Path.Combine(root,"modern-presets");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);model.Assign(14,0,'I',true);model.Save();
+                string path=Core.PathIn(folder,LauncherPlatform.Settings(folder)[0]);
+                var doc=Json.Object(File.ReadAllText(path));var profile=((System.Collections.IEnumerable)doc["controllers"]).Cast<object>().First() as Dictionary<string,object>;
+                var bindings=(Dictionary<string,object>)profile["bindings"];bindings["a"]=new[]{"key:E","key:SPACE","key:RETURN","key:J"};
+                File.WriteAllText(path,Json.Encode(doc));string custom=Json.Encode(bindings);
+                model=GameSettings.Load(folder,null);model.KeyboardPreset=1;for(int i=0;i<4;i++)model.SetControllerPreset(i,1);model.Save();
+                model=GameSettings.Load(folder,null);Need(model.KeyboardPreset==1,"Modern PC did not persist");
+                Need(model.DisplayBinding(1)[1]=="key:#5" && model.DisplayBinding(10)[0]=="key:#66","Modern overrides drifted");
+                Need(GameSettings.KeyCode(model.Binding(14)[0])=='I',"Custom keys were replaced");
+                for(int i=0;i<4;i++)Need(model.ControllerPreset(i)==1,"Controller preset did not persist");
+                model.KeyboardPreset=0;for(int i=0;i<4;i++)model.SetControllerPreset(i,0);model.Save();
+                doc=Json.Object(File.ReadAllText(path));profile=((System.Collections.IEnumerable)doc["controllers"]).Cast<object>().First() as Dictionary<string,object>;
+                Need(Json.Encode(profile["bindings"])==custom,"Custom sources changed across preset applications");
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);
+                var keyboard=Find<ComboBox>(page.View,"KeyboardPreset");var controller=Find<ComboBox>(page.View,"ControllerPreset3");
+                var save=Find<Button>(page.View,"SettingsSaveButton");Click(save);Need(!save.IsEnabled,"Saving the initial draft stayed dirty");
+                keyboard.SelectedIndex=1;controller.SelectedIndex=1;Need(save.IsEnabled,"Preset choices did not enable Save");Click(save);
+                model=GameSettings.Load(folder,null);Need(model.KeyboardPreset==1 && model.ControllerPreset(2)==1,"UI preset save failed");
+                keyboard.SelectedIndex=0;controller.SelectedIndex=0;Click(save);Need(!save.IsEnabled,"Saving Custom stayed dirty");
+            });
+            Test("controller deadzones preserve legacy and tune each player",()=>{
+                string folder=Path.Combine(root,"deadzone-settings");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);
+                Need(model.ControllerDeadzone(0,false)==7849 && model.ControllerDeadzone(0,true)==7849,"Default deadzone changed");
+                model.SetControllerDeadzone(1,true,1638);model.SetControllerDeadzone(2,false,0);model.Save();
+                model=GameSettings.Load(folder,null);
+                Need(model.ControllerDeadzone(1,true)==1638 && model.ControllerDeadzone(1,false)==7849 && model.ControllerDeadzone(2,false)==0,"Independent deadzones did not persist");
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);
+                var aim=Find<ComboBox>(page.View,"Player2AimDeadzone");var save=Find<Button>(page.View,"SettingsSaveButton");
+                Need(aim.SelectedIndex==5,"Aim percentage incorrect");
+                aim.SelectedIndex=8;Need(save.IsEnabled,"Deadzone edit not dirty");Click(save);
+                model=GameSettings.Load(folder,null);Need(model.ControllerDeadzone(1,true)==2621 && model.ControllerDeadzone(1,false)==7849,"UI deadzone save failed");
+                model.Sensitivity=.15;model.Save();model=GameSettings.Load(folder,null);
+                Need(model.ControllerDeadzone(1,true)==2621 && model.ControllerDeadzone(2,false)==0,"Unrelated save lost deadzones");
+            });
             Test("settings drafts, FOV reset, cancel and save",()=>{
                 var page=new SettingsPage(new ResourceDictionary(),root,true);page.SelectTab(1);
                 var fov=Find<Slider>(page.View,"VerticalFovSlider");var number=Find<TextBlock>(page.View,"VerticalFovValue");
@@ -332,6 +517,7 @@ public static class LauncherSharedUiChecks
             });
             Test("binding capture, conflict cancel, reassignment and clear",()=>{
                 var page=new SettingsPage(new ResourceDictionary(),root,true);
+                Find<ComboBox>(page.View,"KeyboardPreset").SelectedIndex=0;
                 var binding=All(page.View).OfType<Button>().First(b=>Tip(b)==GameSettings.Labels[0]+", binding 1");
                 Func<string,Button> action=label=>All(page.View).OfType<Button>().Single(b=>b.Name!="SettingsCancelButton"&&Convert.ToString(b.Content)==label);
                 string original=Convert.ToString(binding.Content);Click(binding);Need(Find<Border>(page.View,"BindingCaptureArea")!=null,"No capture prompt");
@@ -355,6 +541,25 @@ public static class LauncherSharedUiChecks
                 Click(Find<Button>(page.View,"SettingsSaveButton"));var saved=GameSettings.Load(shared,null);
                 Need(saved.VerticalFov==70 && saved.PresentationFps==0 && saved.RefreshRate==0 && saved.Interpolation==1 && saved.FrameCap=="60","Retired timing settings survived migration");
             });
+            Test("Developer Tools opt-in saves with an inline warning and configured shortcut",()=>{
+                string folder=Path.Combine(root,"developer-tools");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);model.Assign(34,0,114,true);model.Save();
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(3);
+                var toggle=Find<CheckBox>(page.View,"DeveloperToolsEnabled");
+                var save=Find<Button>(page.View,"SettingsSaveButton");
+                Click(save);Need(toggle.IsChecked==false && !save.IsEnabled,"Tools must default OFF with a clean saved draft");
+                var warning=Find<TextBlock>(page.View,"DeveloperToolsWarning");
+                var section=All(page.View).OfType<StackPanel>().Single(p=>p.Children.Contains(toggle));
+                Need(section.Children.Contains(warning)&&warning.Text.Contains("Use with caution."),"Warning must be inline beside the setting before opt-in");
+                Need(Find<TextBlock>(page.View,"DeveloperToolsShortcut").Text.Contains("Press F3 to open"),"Inline shortcut ignores configured binding");
+                toggle.IsChecked=true;
+                Need(!All(page.View).OfType<Button>().Any(b=>String.Equals(b.Content,"Continue")),"Developer Tools still opens a warning prompt");
+                Need(toggle.IsEnabled&&save.IsEnabled,"Inline opt-in must leave settings available and enable Save");Click(save);
+                Need(GameSettings.Load(folder,null).DeveloperToolsEnabled && !save.IsEnabled,"Tools ON not saved");
+                toggle.IsChecked=false;Need(save.IsEnabled,"Tools OFF did not enable Save");Click(save);
+                var saved=GameSettings.Load(folder,null);
+                Need(!saved.DeveloperToolsEnabled && GameSettings.KeyCode(saved.Binding(34)[0])==114,"Tools OFF lost shortcut");
+            });
             Test("beta audio opt-in, draft state and game-menu synchronization",()=>{
                 string folder=Path.Combine(root,"enhanced-audio");Directory.CreateDirectory(folder);
                 string sidecar=Path.Combine(folder,"Settings/pc-audio.ini");
@@ -374,6 +579,25 @@ public static class LauncherSharedUiChecks
                 var model=GameSettings.Load(folder,null);model.Sensitivity=.2;model.Save();
                 Need(GameSettings.Load(folder,null).EnhancedAudio,"Unrelated save reset the audio choice");
             });
+            Test("individual audio controls retain their choices across the master switch",()=>{
+                string folder=Path.Combine(root,"audio-features");Directory.CreateDirectory(folder);
+                string sidecar=Path.Combine(folder,"Settings/pc-audio.ini");
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(3);
+                var master=Find<CheckBox>(page.View,"EnhancedAudio");
+                var range=Find<CheckBox>(page.View,"ExtendedGunfire");
+                var environment=Find<CheckBox>(page.View,"EnvironmentalAudio");
+                Need(!range.IsEnabled && range.IsChecked==true,"Default child preference was lost while OFF");
+                master.IsChecked=true;range.IsChecked=false;environment.IsChecked=false;
+                Click(Find<Button>(page.View,"SettingsSaveButton"));
+                Need(File.ReadAllText(sidecar)=="TSFP_AUDIO_V2 1 1 0 0 1\n","Custom audio format differs from game");
+                master.IsChecked=false;Click(Find<Button>(page.View,"SettingsSaveButton"));
+                Need(File.ReadAllText(sidecar)=="TSFP_AUDIO_V2 0 1 0 0 1\n" && !range.IsEnabled,"Master OFF reset children");
+                var model=GameSettings.Load(folder,null);model.Sensitivity=.2;model.Save();
+                Need(!model.ExtendedGunfire && !model.EnvironmentalAudio && model.SpatialAudio && model.AmbientAudio,"Unrelated save lost custom choices");
+                File.WriteAllText(sidecar,"TSFP_AUDIO_V2 1 0 1 1 0\n");
+                var reopened=new SettingsPage(new ResourceDictionary(),folder,true);reopened.SelectTab(3);
+                Need(Find<CheckBox>(reopened.View,"SpatialAudio").IsChecked==false && Find<CheckBox>(reopened.View,"AmbientAudio").IsChecked==false,"Game-side custom settings were not loaded");
+            });
             Test("beta audio invalid and concurrent preferences are preserved",()=>{
                 string folder=Path.Combine(root,"enhanced-audio-conflict");Directory.CreateDirectory(folder);
                 var model=GameSettings.Load(folder,null);model.Save();
@@ -381,7 +605,7 @@ public static class LauncherSharedUiChecks
                 File.WriteAllText(sidecar,"TSFP_AUDIO_V1 1\n");
                 bool rejected=false;try{model.Save();}catch{rejected=true;}
                 Need(rejected && File.ReadAllText(sidecar)=="TSFP_AUDIO_V1 1\n","Concurrent in-game change was overwritten");
-                foreach(string invalid in new[]{"TSFP_AUDIO_V1 2","TSFP_AUDIO_V2 1","TSFP_AUDIO_V1 1 extra"}) {
+                foreach(string invalid in new[]{"TSFP_AUDIO_V1 2","TSFP_AUDIO_V2 1","TSFP_AUDIO_V1 1 extra", "TSFP_AUDIO_V2 1 0 1 0 2","TSFP_AUDIO_V2 1 0 1 0 1 extra"}) {
                     File.WriteAllText(sidecar,invalid);rejected=false;try{GameSettings.Load(folder,null);}catch{rejected=true;}
                     Need(rejected && File.ReadAllText(sidecar)==invalid,"Invalid audio preference was accepted or rewritten");
                 }
@@ -395,6 +619,68 @@ public static class LauncherSharedUiChecks
                 bool rejected=false;try{model.Save();}catch{rejected=true;}
                 Need(rejected,"Blocked audio backup should reject Save");
                 for(int i=0;i<files.Length;i++)Need(File.ReadAllBytes(files[i]).SequenceEqual(before[i]),"Partial settings commit survived audio failure");
+            });
+            Test("audio volume sliders, category round trips and unchanged enhancement preference",()=>{
+                string folder=Path.Combine(root,"audio-mix");Directory.CreateDirectory(folder);
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(3);
+                var save=Find<Button>(page.View,"SettingsSaveButton");
+                for(int i=0;i<6;i++) {
+                    var slider=Find<Slider>(page.View,"Audio"+GameSettings.AudioVolumeLabels[i]+"Volume");
+                    Need(slider.Value==100 && slider.IsEnabled,"Volume must default to 100 and work with enhancement OFF");
+                    slider.Value=i*17;Need(save.IsEnabled,"Volume edit was not tracked");
+                }
+                Click(save);Need(!save.IsEnabled,"Saved volume draft is dirty");
+                var model=GameSettings.Load(folder,null);
+                Need(!model.EnhancedAudio,"Volumes enabled the enhancement master");
+                Need(model.AudioVolumes.SequenceEqual(new[]{0,17,34,51,68,85}),"Volume order/values lost");
+                string file=Core.PathIn(folder,LauncherPlatform.Settings(folder)[7]);
+                Need(File.ReadAllText(file)=="TSFP_AUDIO_MIX_V1 0 17 34 51 68 85\n","Game/launcher mix format mismatch");
+                model.Sensitivity=.2;model.Save();
+                Need(GameSettings.Load(folder,null).AudioVolumes.SequenceEqual(new[]{0,17,34,51,68,85}),"Unrelated save reset volume");
+                model.AudioVolumes[0]=101;bool rejected=false;try{model.Save();}catch{rejected=true;}
+                Need(rejected,"Out-of-range gain was saved");
+                model=GameSettings.Load(folder,null);File.WriteAllText(file,"TSFP_AUDIO_MIX_V1 100 100 100 100 100 100\n");
+                rejected=false;try{model.Save();}catch{rejected=true;}Need(rejected,"External mix edit was overwritten");
+                foreach(string invalid in new[]{"", "TSFP_AUDIO_MIX_V2 1 1 1 1 1 1", "TSFP_AUDIO_MIX_V1 01 1 1 1 1 1",
+                    "TSFP_AUDIO_MIX_V1 101 1 1 1 1 1", "TSFP_AUDIO_MIX_V1 1 1 1 1 1 1 extra",
+                    "TSFP_AUDIO_MIX_V1 1 1 1 1 1", "TSFP_AUDIO_MIX_V1 1 1 1 1 1 1\0", "\ufeffTSFP_AUDIO_MIX_V1 1 1 1 1 1 1"}) {
+                    File.WriteAllText(file,invalid);rejected=false;try{GameSettings.Load(folder,null);}catch{rejected=true;}
+                    Need(rejected && File.ReadAllBytes(file).SequenceEqual(System.Text.Encoding.UTF8.GetBytes(invalid)),"Malformed mix settings were changed or accepted: "+invalid);
+                }
+            });
+            Test("dialogue focus and impact range migrate, retain volumes and remain optional",()=>{
+                string folder=Path.Combine(root,"audio-listening");Directory.CreateDirectory(folder);
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(3);
+                var focus=Find<CheckBox>(page.View,"DialogueFocus");var range=Find<ComboBox>(page.View,"ImpactRange");
+                var save=Find<Button>(page.View,"SettingsSaveButton");
+                Need(focus.IsChecked==false && range.SelectedIndex==0,"Listening changes must be opt-in");
+                for(int duck=0;duck<=1;duck++)for(int mode=0;mode<=2;mode++) {
+                    focus.IsChecked=duck!=0;range.SelectedIndex=mode;
+                    if(save.IsEnabled)Click(save);
+                    var model=GameSettings.Load(folder,null);
+                    Need(model.DialogueFocus==(duck!=0) && model.ImpactRange==mode,"Listening choices not saved");
+                    Need(model.AudioVolumes.All(v=>v==100) && !model.EnhancedAudio,"Listening changed gain or enhancements");
+                }
+                var retained=GameSettings.Load(folder,null);retained.Sensitivity=.2;retained.Save();
+                Need(GameSettings.Load(folder,null).DialogueFocus && GameSettings.Load(folder,null).ImpactRange==2,"Unrelated save lost listening choices");
+                string file=Core.PathIn(folder,LauncherPlatform.Settings(folder)[7]);
+                Need(File.ReadAllText(file)=="TSFP_AUDIO_MIX_V2 100 100 100 100 100 100 1 2\n","Native/launcher listening formats differ");
+                retained.DialogueFocus=false;retained.ImpactRange=0;retained.Save();
+                Need(File.ReadAllText(file)=="TSFP_AUDIO_MIX_V1 100 100 100 100 100 100\n","Original choices did not retain V1 compatibility");
+                foreach(string invalid in new[]{"TSFP_AUDIO_MIX_V2 100 100 100 100 100 100 2 0","TSFP_AUDIO_MIX_V2 100 100 100 100 100 100 1 3",
+                    "TSFP_AUDIO_MIX_V2 100 100 100 100 100 100 01 0", "TSFP_AUDIO_MIX_V2 100 100 100 100 100 100 1 2 extra"}) {
+                    File.WriteAllText(file,invalid);bool rejected=false;try{GameSettings.Load(folder,null);}catch{rejected=true;}
+                    Need(rejected && File.ReadAllText(file)==invalid,"Malformed listening settings accepted or changed");
+                }
+            });
+            Test("late audio mix failure restores every earlier settings file",()=>{
+                string folder=Path.Combine(root,"audio-mix-rollback");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);model.Save();
+                var files=LauncherPlatform.Settings(folder).Select(p=>Core.PathIn(folder,p)).ToArray();
+                var before=files.Select(File.ReadAllBytes).ToArray();
+                Directory.CreateDirectory(files[7]+".bak");model.AudioVolumes[3]=40;model.VerticalFov=75;
+                bool rejected=false;try{model.Save();}catch{rejected=true;}Need(rejected,"Mix backup failure was ignored");
+                for(int i=0;i<files.Length;i++)Need(File.ReadAllBytes(files[i]).SequenceEqual(before[i]),"Mix failure left a partial save");
             });
             Test("native frame-rate defaults, beta selection and game-menu synchronization",()=>{
                 string folder=Path.Combine(root,"native-fps");Directory.CreateDirectory(Path.Combine(folder,"Settings"));
@@ -482,7 +768,7 @@ public static class LauncherSharedUiChecks
                 string folder=Path.Combine(root,"capture-health");Directory.CreateDirectory(folder);
                 Need(CrashReports.CaptureHealth(folder).Contains("Game not installed"),"Missing game claimed support");
                 string game=Core.PathIn(folder,LauncherPlatform.GamePath(folder));Directory.CreateDirectory(Path.GetDirectoryName(game));File.WriteAllText(game,"fixture");
-#if !MACOS
+#if !MACOS && !LINUX
                 Need(CrashReports.CaptureHealth(folder).Contains("helper missing"),"Missing helper claimed support");
                 File.WriteAllText(Path.Combine(Path.GetDirectoryName(game),"tsfp_crash_helper.exe"),"fixture");
 #endif

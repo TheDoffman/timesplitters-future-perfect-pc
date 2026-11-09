@@ -3,6 +3,12 @@
 #include <stdlib.h>
 #include <math.h>
 #include "pc_ui_layout.h"
+#include "graphics/guest_scissor.h"
+#include "graphics/native_hud.h"
+static int g_developer_hud_hidden;
+static int d3d8_developer_hud_visible(void) { return 1; }
+static int hud_begins;
+static void native_hud_begin(void){hud_begins++;}
 #define TSFP_PC_DISPLAY
 #define TRUE 1
 #define FALSE 0
@@ -21,8 +27,8 @@ static RhiViewport actual;
 typedef struct {unsigned width,height;} Mode;
 static Mode pc_display_effective(void){Mode m={g_device_state.width,g_device_state.height};return m;}
 static float pc_display_hud_scale(void){return 4.f*g_device_state.height/(3.f*g_device_state.width);}
-static float rt_scale_x(void){return g_device_state.width/640.f;}
-static float rt_scale_y(void){return g_device_state.height/480.f;}
+static double rt_scale_x(void){return g_device_state.width/640.;}
+static double rt_scale_y(void){return g_device_state.height/480.;}
 static int rhi_device_ready(void){return 1;}
 static void rhi_set_viewports(int n,const RhiViewport *v){actual=*v;}
 static PcUiWorldAnchor g_2d_world_anchor;
@@ -38,9 +44,9 @@ int main(void){
   CHECK(fabsf(actual.width/640-actual.height/480)<.001f);
   CHECK(fabsf(actual.width/640-scale)<.001f);
   CHECK(fabsf(clip.left-actual.x-20*scale)<1.1f);
-  CHECK(fabsf(clip.right-actual.x-620*scale)<1.1f);
+  CHECK(fabsf(clip.right-actual.x-621*scale)<1.1f);
   CHECK(fabsf(clip.top-actual.y-20*scale)<1.1f);
-  CHECK(fabsf(clip.bottom-actual.y-460*scale)<1.1f);
+  CHECK(fabsf(clip.bottom-actual.y-461*scale)<1.1f);
   if(anchor==3)CHECK(actual.x==0);
   if(anchor==4)CHECK(fabsf(actual.x+actual.width-w)<.001f);
   g_2d_squeeze=0;apply_host_viewport();CHECK(actual.x==0 && actual.y==0 && actual.width==w && actual.height==h);
@@ -55,10 +61,10 @@ int main(void){
   CHECK(clip.left==0 && clip.top==0 && clip.right==sizes[i][0] && clip.bottom==sizes[i][1]);
   CHECK(!memcmp(&stored,&g_scissor,sizeof stored));
   g_2d_tag=0;d3d8_GetScissor(&clip);
-  CHECK(clip.right==(int)(stored.right*rt_scale_x()));
-  CHECK(clip.bottom==(int)(stored.bottom*rt_scale_y()));g_2d_tag=0x137010;
+  CHECK(clip.right==(int)ceil((stored.right+1.)*rt_scale_x()));
+  CHECK(clip.bottom==(int)ceil((stored.bottom+1.)*rt_scale_y()));g_2d_tag=0x137010;
   g_scissor.left=1;d3d8_GetScissor(&clip);
-  CHECK(clip.right==(int)(stored.right*rt_scale_x()));
+  CHECK(clip.right==(int)ceil((stored.right+1.)*rt_scale_x()));
  }
  /* The marker centre stays at its world-projected pixel while both axes
     use the same pixel scale. Labels retain the outline anchor. */
@@ -92,5 +98,11 @@ int main(void){
  float invalid[]={NAN,10};
  CHECK(!pc_ui_world_draw(&g_2d_world_anchor,invalid,4,2,0,640));
  CHECK(!g_2d_world_anchor.ready);
+ {
+  int placement=g_2d_placement,anchor=g_2d_anchor;uint32_t tag=g_2d_tag;
+  xbox_D3D8SetTwoDPlacement(TSFP_NATIVE_HUD_BEGIN,TSFP_NATIVE_HUD_TAG);
+  xbox_D3D8SetTwoDPlacement(TSFP_NATIVE_HUD_END,TSFP_NATIVE_HUD_TAG);
+  CHECK(hud_begins==1 && g_2d_placement==placement && g_2d_anchor==anchor && g_2d_tag==tag);
+ }
  puts("PASS: production viewport/scissor agreement at seven ratios and every anchor");return 0;
 }

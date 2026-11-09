@@ -434,6 +434,9 @@ static const char *load_getenv(const char *name)
 #ifdef _WIN32
 int pc_network_bots_preserve_corpse(uint32_t body,uint32_t spawn){(void)body;(void)spawn;return 0;}
 #endif
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+static inline int multiplayer_profile_save(void (*original)(void)){(void)original;return 0;}
+#endif
 #include "pc_story_lobby.inc"
 #ifdef _WIN32
 #define getenv load_getenv
@@ -586,6 +589,10 @@ static void effect_decision_original(void)
 #endif
 int main(void)
 {
+#ifndef _WIN32
+    CHECK(pc_story_network_player_limit()==0u);
+    pc_story_network_lobby_config(); /* Must link and remain safe without guest RAM. */
+#endif
 #ifdef _WIN32
     (void)pc_network_bot_state_valid; /* This fixture exercises Story state instead. */
     (void)story_rewards_profiles_capture; /* The menu owns this included entry point. */

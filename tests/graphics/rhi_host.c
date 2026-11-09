@@ -18,6 +18,11 @@ static int bitmap(void *context,const char *text,unsigned char *pixels,uint32_t 
     assert(context==&pumps && text && pixels && w==32 && h==28);
     ++bitmap_calls; *used=bitmap_width; pixels[0]=255; return accept;
 }
+static int styled_calls;
+static int styled(void *context,const char *text,unsigned char *pixels,uint32_t w,uint32_t h,uint32_t *used,uint32_t px,uint32_t weight) {
+    assert(context==&pumps&&text&&pixels&&w==32&&h==28&&px==13&&weight==600);
+    styled_calls++;*used=bitmap_width;return accept;
+}
 static uint32_t requested_width = 1920, requested_height = 1080;
 static void pump(void *context) { assert(context == &pumps); ++pumps; }
 static int size(void *context, void *window, uint32_t *width, uint32_t *height)
@@ -47,7 +52,7 @@ int main(int argc, char **argv)
     }
 #endif
     uint32_t width = 3, height = 7;
-    RhiHost host = {.context=&pumps,.pump_events=pump,.drawable_size=size,.text_bitmap=bitmap};
+    RhiHost host = {.context=&pumps,.pump_events=pump,.drawable_size=size,.text_bitmap=bitmap,.text_bitmap_styled=styled};
     rhi_set_host(&host);
     host.pump_events = NULL; /* registration owns a copy */
     rhi_pump_events(); assert(pumps == 1);
@@ -68,6 +73,9 @@ int main(int argc, char **argv)
     assert(!rhi_text_bitmap(NULL,pixels,32,28,&used));
     assert(!rhi_text_bitmap("sample",pixels,0,28,&used));
     assert(bitmap_calls==3);
+    bitmap_width=12;assert(rhi_text_bitmap_styled("sample",pixels,32,28,&used,13,600)&&used==12);
+    accept=0;assert(!rhi_text_bitmap_styled("sample",pixels,32,28,&used,13,600)&&used==12);accept=1;
+    assert(!rhi_text_bitmap_styled("sample",pixels,32,28,&used,0,600));assert(styled_calls==2);
     rhi_set_host(NULL);
     assert(!rhi_drawable_size(NULL, &width, &height));
     assert(width == 1920 && height == 1080);

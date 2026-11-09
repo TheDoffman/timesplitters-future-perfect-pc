@@ -1,0 +1,97 @@
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -95,6 +95,8 @@
+ #include "pc_weapon_slots.def"
+ #undef PC_WEAPON_SLOT
+     { "developer_tools", K_DIGITAL, 0, 0 },
++    { "developer_noclip", K_DIGITAL, 0, 0 },
++    { "developer_freecam", K_DIGITAL, 0, 0 },
+ #endif
+ };
+ #define CONTROL_COUNT ((int)(sizeof CONTROLS / sizeof CONTROLS[0]))
+@@ -1091,7 +1093,7 @@
+     for (i = 0; i < CONTROL_COUNT; i++) {
+         int mag = 0, s;
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+-        if(i==PC_DEVELOPER_ACTION)continue; /* Host shortcut never enters the Xbox pad. */
++        if(i>=PC_DEVELOPER_ACTION)continue; /* Host shortcut never enters the Xbox pad. */
+         if(CONTROLS[i].kind==K_WEAPON_SLOT) {
+             if(port==0 && c->device==DEV_KEYBOARD)
+                 for(s=0;s<c->bind[i].count;s++)
+--- a/src/hle/audio_output.h
++++ b/src/hle/audio_output.h
+@@ -52,6 +52,8 @@
+    stream slips behind by exactly what was dropped. */
+ /* Movie playback rate; changes the existing voice without discarding queued PCM. */
+ void recomp_audio_output_movie_speed(float ratio);
++/* Changes existing gameplay voices in place; the video voice has its own clock. */
++void recomp_audio_output_game_speed(float ratio);
+ 
+ int recomp_audio_output_submit(
+     uint32_t slot, const uint8_t *pcm, uint32_t bytes,
+--- a/src/hle/audio_output_xaudio2.cpp
++++ b/src/hle/audio_output_xaudio2.cpp
+@@ -63,7 +63,7 @@
+ IXAudio2 *engine;
+ IXAudio2MasteringVoice *master;
+ OutputVoice voices[kVoiceCount];
+-float movie_speed=1.f;
++float movie_speed=1.f,game_speed=1.f;
+ PcAcousticDsp acoustics[kVoiceCount];
+ PcAcousticDsp acoustic_backup; /* serialized by output_lock */
+ struct Spatial { float pan; int enabled; } spatial[kVoiceCount];
+@@ -373,6 +373,18 @@
+     return 1;
+ }
+ 
++extern "C" void recomp_audio_output_game_speed(float ratio)
++{
++    if(!(ratio>=.05f && ratio<=4.f))return;
++    std::lock_guard<std::recursive_mutex> guard(output_lock);
++    if(ratio==game_speed)return;
++    game_speed=ratio;
++    for(uint32_t slot=0;slot<kVoiceCount;++slot)if(slot!=RECOMP_AUDIO_SLOT_MOVIE && voices[slot].source) {
++        HRESULT error=voices[slot].source->SetFrequencyRatio(ratio);
++        if(FAILED(error))failVoice(slot,"SetFrequencyRatio",error);
++    }
++}
++
+ extern "C" void recomp_audio_output_movie_speed(float ratio)
+ {
+     if(!(ratio>=.05f && ratio<=4.f))return;
+@@ -424,7 +436,7 @@
+         format.wBitsPerSample = static_cast<WORD>(bits_per_sample);
+         const double t0 = nowMs();
+         HRESULT error = engine->CreateSourceVoice(
+-            &voice.source, &format, slot==RECOMP_AUDIO_SLOT_MOVIE?0:XAUDIO2_VOICE_NOPITCH, slot==RECOMP_AUDIO_SLOT_MOVIE?4.f:1.f);
++            &voice.source, &format, 0, 4.f);
+         {
+             const double ms = nowMs() - t0;
+             ++voices_created;
+@@ -436,7 +448,7 @@
+             failVoice(slot, "CreateSourceVoice", error);
+             return 0;
+         }
+-        if(slot==RECOMP_AUDIO_SLOT_MOVIE)voice.source->SetFrequencyRatio(movie_speed);
++        voice.source->SetFrequencyRatio(slot==RECOMP_AUDIO_SLOT_MOVIE?movie_speed:game_speed);
+         voice.sample_rate = sample_rate;
+         voice.channels = channels;
+         voice.bits_per_sample = bits_per_sample;
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -71,6 +71,7 @@
+ #ifdef TSFP_PC_CONTROLS
+ #include "pc_controls.h"
+ #include "pc_developer.h"
++#include "audio_output.h"
+ extern void d3d8_overlay_developer_register(void (*)(void),
+     unsigned (*)(unsigned,unsigned,PcDeveloperLine *,unsigned),int (*)(void),int (*)(void));
+ #ifdef _WIN32
+@@ -2050,6 +2051,7 @@
+ {
+ #ifdef TSFP_PC_CONTROLS
+     d3d8_overlay_developer_register(pc_developer_frame,pc_developer_lines,pc_developer_watermark_visible,pc_developer_hud_visible);
++    pc_developer_audio_register(recomp_audio_output_game_speed);
+ #endif
+     static int configured, f9_was_down, f10_was_down, f11_was_down;
+     static LARGE_INTEGER qpf, window_start;

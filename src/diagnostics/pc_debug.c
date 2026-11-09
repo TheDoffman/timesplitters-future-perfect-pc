@@ -4,7 +4,7 @@
 #include "pc_debug.h"
 #include "pc_debug_output.h"
 #include "pc_native_rate.h"
-#ifdef __APPLE__
+#ifndef _WIN32
 #include "platform/win32_compat.h"
 #include <sys/stat.h>
 #include <unistd.h>
@@ -29,7 +29,7 @@ static char history[12][384];
 static unsigned history_count, history_next;
 static LARGE_INTEGER frequency, previous_frame;
 static HWND debug_window;
-#ifdef __APPLE__
+#ifndef _WIN32
 static FILE *log_file;
 static char log_path[4096];
 static dev_t log_device;static ino_t log_inode;
@@ -70,6 +70,18 @@ void pc_debug_set(const PcDebugOptions *value)
     AcquireSRWLockExclusive(&debug_lock); options = *value; ReleaseSRWLockExclusive(&debug_lock);
 }
 
+int pc_counter_enabled(void)
+{
+    PcDebugOptions value;pc_debug_get(&value);return value.show_counter!=0;
+}
+
+int pc_counter_set_enabled(int enabled)
+{
+    PcDebugOptions value;char error[512];pc_debug_get(&value);
+    value.show_counter=!!enabled;
+    return pc_debug_config_save(&value,error,sizeof error);
+}
+
 void pc_debug_toggle_fps(void)
 {
     AcquireSRWLockExclusive(&debug_lock); options.show_fps = !options.show_fps; ReleaseSRWLockExclusive(&debug_lock);
@@ -78,7 +90,7 @@ void pc_debug_toggle_fps(void)
 void pc_debug_init(HWND window)
 {
     PcDebugOptions value;
-#ifndef __APPLE__
+#ifdef _WIN32
     DWORD length;
 #endif
     pc_debug_shutdown();
@@ -86,7 +98,7 @@ void pc_debug_init(HWND window)
     pc_debug_set(&value);
     QueryPerformanceFrequency(&frequency);
     previous_frame.QuadPart = 0;
-#ifdef __APPLE__
+#ifndef _WIN32
     const char *path=getenv("RECOMP_LOG_FILE");
     log_path[0]=0;
     if(path && strlen(path)<sizeof log_path)snprintf(log_path,sizeof log_path,"%s",path);
@@ -102,7 +114,7 @@ void pc_debug_init(HWND window)
 
 void pc_debug_shutdown(void)
 {
-#ifdef __APPLE__
+#ifndef _WIN32
     if(log_file)fclose(log_file);log_file=NULL;
 #else
     if (debug_window) KillTimer(debug_window, PC_DEBUG_TIMER);
@@ -119,7 +131,7 @@ void pc_debug_shutdown(void)
 
 void pc_debug_frame(void)
 {
-#ifndef __APPLE__
+#ifdef _WIN32
     pc_crash_frame();
 #endif
     LARGE_INTEGER now;
@@ -152,6 +164,18 @@ int pc_debug_overlay(char *text, size_t bytes, const char *cap)
     char fps[48] = "", ms[32] = "", issues[64] = "", cap_text[24] = "", latency[64]="";
     int shown;
     AcquireSRWLockShared(&debug_lock);
+    if(options.show_counter) {
+        char rate[32],ping[48]="";
+        if(stats.shown_fps>0)snprintf(rate,sizeof rate,"%.0f FPS",stats.shown_fps);
+        else snprintf(rate,sizeof rate,"-- FPS");
+        if(stats.network_mode==2) {
+            if(GetTickCount64()-latency_updated>5000 || stats.latency_ms<0 || !stats.latency_peers)
+                snprintf(ping,sizeof ping," | Ping --");
+            else snprintf(ping,sizeof ping," | Ping %.0f ms",stats.latency_ms);
+        }
+        snprintf(text,bytes,"%s%s",rate,ping);
+        ReleaseSRWLockShared(&debug_lock);return 1;
+    }
     shown = options.show_fps || options.show_frame_time || options.show_issues ||
             (options.show_latency && stats.network_mode);
     if (options.show_fps) {
@@ -207,7 +231,7 @@ static void record_line(const char *line)
 void pc_debug_poll(void)
 {
     if (pc_debug_output_quiet()) return;
-#ifdef __APPLE__
+#ifndef _WIN32
     char buffer[4096];size_t budget=65536;int available=0;
     struct stat current,opened;
     if(log_file && (stat(log_path,&current) || current.st_dev!=log_device || current.st_ino!=log_inode)) {
@@ -294,7 +318,7 @@ void pc_debug_snapshot(PcDebugSnapshot *out)
 
 void pc_debug_clear(void)
 {
-#ifdef __APPLE__
+#ifndef _WIN32
     if(log_file){clearerr(log_file);fseeko(log_file,0,SEEK_END);}
 #else
     LARGE_INTEGER zero = {0};
@@ -307,7 +331,7 @@ void pc_debug_clear(void)
     ReleaseSRWLockExclusive(&debug_lock);
 }
 
-#ifndef __APPLE__
+#ifdef _WIN32
 int pc_debug_open_logs(HWND owner)
 {
     WCHAR folder[1024], *slash;

@@ -24,7 +24,6 @@ static DWORD WINAPI bridge_thread_main(LPVOID parameter) {
     xbox_GuestLockEnter();xbox_GuestLiftedEnter();
     xbox_NameCurrentThread(L"guest worker");
     bridge_run_thread_inline(entry,first,second);
-    xbox_GuestLiftedExit();
     bridge_object_thread_exit();
     xbox_FreeThreadStack(g_thread_stack_top);g_thread_stack_top=0;
     return 0;

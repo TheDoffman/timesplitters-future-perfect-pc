@@ -11,14 +11,14 @@ from native_compiler import native_compiler
 ROOT = Path(__file__).resolve().parents[2]
 
 
-@pytest.mark.parametrize('fixture', ['text_read_scope', 'prompt_guest_scope'])
+@pytest.mark.parametrize('fixture', ['text_read_scope', 'prompt_guest_scope', 'keycaps', 'imported_keycaps', 'input_icon_gpu', 'input_icon_layout'])
 def test_text_read_scope(tmp_path, fixture):
     compiler, env = native_compiler(tmp_path)
     exe = tmp_path / ('text-read-scope.exe' if os.name == 'nt' else 'text-read-scope')
     source = str(repo_file(ROOT, 'tests', fixture+'.c'))
     args = ([compiler, '/nologo', '/std:c11', '/W4', '/I'+str(ROOT/'src'), source, '/Fe:'+str(exe)]
             if os.name == 'nt' else
-            [compiler, '-std=c11', '-Wall', '-Wextra', '-Werror', '-I'+str(ROOT/'src'), source, '-o', str(exe)])
+            [compiler, '-std=c11', '-Wall', '-Wextra', '-Werror', '-I'+str(ROOT/'src'), source, '-o', str(exe), '-lm'])
     subprocess.run(args, cwd=tmp_path, env=env, check=True, timeout=60)
     subprocess.run([str(exe)], check=True, timeout=10)
 

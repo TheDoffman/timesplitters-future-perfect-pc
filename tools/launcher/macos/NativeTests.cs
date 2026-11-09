@@ -101,19 +101,31 @@ namespace TimeSplitters.Launcher
                 Need(!Directory.Exists(translocated), "Recovery created a temporary installation");
                 Console.WriteLine("PASS native UI: translocated startup offers recovery before any installation writes");
             } finally { window.Close(); }
+            var storageRoot=Path.Combine(AppContext.BaseDirectory,"storage-ui-"+Guid.NewGuid().ToString("N"));
+            var storage=new NativeStorageWindow(storageRoot,storageRoot,Array.Empty<string>());
+            try {
+                var panel=(Avalonia.Controls.StackPanel)((Avalonia.Controls.ScrollViewer)((Avalonia.Controls.Border)storage.Content).Child).Content;
+                var buttons=panel.Children.OfType<Avalonia.Controls.StackPanel>().Single().Children.OfType<Avalonia.Controls.Button>().ToArray();
+                Need(buttons.Any(b=>Convert.ToString(b.Content)=="Use Application Support") &&
+                     buttons.Any(b=>Convert.ToString(b.Content)=="Choose existing game folder…") &&
+                     buttons.Any(b=>Convert.ToString(b.Content)=="Copy existing folder to Application Support…") &&
+                     buttons.Any(b=>Convert.ToString(b.Content)=="Keep portable (beside this app)"),"Storage choices missing");
+                Need(!Directory.Exists(storageRoot),"Storage UI wrote before a choice");
+                Console.WriteLine("PASS native UI: storage offers recommended, existing and portable choices before writes");
+            } finally { storage.Close(); }
         }
         static void LocationTests()
         {
             string translocated = "/private/var/folders/k1/test/T/AppTranslocation/" + Guid.NewGuid() + "/d";
             string bundle = Path.Combine(translocated, "TimeSplitters Launcher.app/Contents/MacOS");
-            Need(Program.FindRoot(Array.Empty<string>(), bundle) == translocated, "Wrong translocated root");
+            Need(Program.FindInstallRoot(Array.Empty<string>(), bundle) == translocated, "Wrong translocated bundle root");
             Need(NativeInstallation.Translocated(translocated) && NativeInstallation.Translocated(bundle), "Translocation not detected");
             Need(!NativeInstallation.Translocated("/Users/example/AppTranslocation/ordinary/d"), "Ordinary folder rejected");
             var portable = NewRoot("portable-location");
             Need(!NativeInstallation.Translocated(portable), "Portable root rejected");
             Need(Program.FindRoot(new[] { "--root", portable }, bundle) == portable, "Explicit root ignored");
             const string standalone = "/Users/example/TimeSplitters";
-            Need(Program.FindRoot(Array.Empty<string>(), Path.Combine(standalone, "TimeSplitters Launcher.app/Contents/MacOS")) == standalone,
+            Need(Program.FindRoot(new[]{"--portable"}, Path.Combine(standalone, "TimeSplitters Launcher.app/Contents/MacOS")) == standalone,
                 "Portable package root changed");
             var checkout = NewRoot("checkout-location"); Write(checkout, "tools/play-native-mac.py", "fixture");
             Need(Program.FindRoot(Array.Empty<string>(), Path.Combine(checkout, "build/launcher/Test.app/Contents/MacOS")) == checkout,
@@ -163,6 +175,10 @@ namespace TimeSplitters.Launcher
                 var changes=SelfUpdate.Unpack(archive,Path.Combine(test,"payload"),version);string install=Path.Combine(test,"install");Directory.CreateDirectory(install);Write(install,"BUILD.json","preserved game metadata");Write(install,"Saves/keep","preserved save");Core.ApplyLauncher(install,changes,null);Need(SelfUpdate.Complete(install),"Packaged app did not verify after installation");
                 Need(NativeInstallation.ValidateFolder(install, Environment.ProcessPath) == install, "Packaged installation cannot be selected from translocation recovery");
                 Need(BundleSignatureValid(install),"Installed app bundle signature is invalid");
+                string managed=Path.Combine(test,"Application Support Ω","TimeSplitters");
+                MacStorage.Prepare(install,managed);
+                Need(SelfUpdate.Complete(managed)&&BundleSignatureValid(managed),"Managed copy lost its manifest or code signature");
+                Need(!Directory.Exists(Core.PathIn(managed,"Saves")) && File.ReadAllText(Core.PathIn(install,"Saves/keep"))=="preserved save","Managed bootstrap copied or changed personal saves");
                 string seal=Core.PathIn(install,"TimeSplitters Launcher.app/Contents/_CodeSignature/CodeResources");
                 byte[] sealBytes=File.ReadAllBytes(seal);File.Delete(seal);
                 Need(!BundleSignatureValid(install),"Bundle signature accepted a missing resource seal");
@@ -204,35 +220,25 @@ namespace TimeSplitters.Launcher
                 Need(File.Exists(Core.PathIn(install,"game-update-preview.png")),"Game update did not reopen the installed app");
                 Need(!Directory.Exists(Core.PathIn(install,".launcher/pending")),"Game update retained completed staging");
                 Need(File.ReadAllText(Core.PathIn(install,"Settings/pc-controls.json"))=="personal bindings"&&File.ReadAllText(Core.PathIn(install,"Data/keep"))=="personal data"&&File.ReadAllText(Core.PathIn(install,"Saves/keep"))=="preserved save","Game update changed personal files");
+                string migrated=Path.Combine(test,"Automatically migrated Ω");
+                MacStorageMigration.Migrate(install,migrated);
+                Need(SelfUpdate.Complete(migrated)&&BundleSignatureValid(migrated),"Automatic migration lost the packaged app signature");
+                Need(File.ReadAllText(Core.PathIn(migrated,"Saves/keep"))=="preserved save" &&
+                    File.ReadAllText(Core.PathIn(migrated,"Settings/pc-controls.json"))=="personal bindings" &&
+                    File.ReadAllText(Core.PathIn(install,"Saves/keep"))=="preserved save","Automatic migration changed original or copied personal files");
                 Console.WriteLine("Packaged Mac game update waited for the parent, replaced the bundled launcher, restarted and rendered with personal files preserved.");return 0;
             }
             catch(Exception e){Console.Error.WriteLine(e);return 1;}
             finally{Directory.Delete(test,true);}
         }
         public static int VerifyGamePackage(string archive,string version)
-        {
-            string test=Path.Combine(Path.GetDirectoryName(Path.GetFullPath(archive)),"game-package-check-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(test);
-            try {
-                foreach(bool preserve in new[]{false,true}){
-                    string root=Path.Combine(test,preserve?"existing":"fresh"),pending=Path.Combine(root,".launcher/pending");Directory.CreateDirectory(pending);
-                    if(preserve){Write(root,"Data/keep","game data");Write(root,"Saves/keep","save");Write(root,"Settings/pc-controls.json","personal controls");Write(root,"Settings/pc-display.ini","personal display");}
-                    Core.Unpack(archive,Path.Combine(pending,"payload"),version);Write(pending,"release.json",Json.Encode(new{version=version}));
-                    Core.InstallPending(root);
-                    var manifest=NativeHost.CheckBuild(root);var files=(Dictionary<string,object>)manifest["files"];
-                    foreach(var pair in files){if(preserve&&pair.Key=="Settings/pc-controls.json")continue;Need(Core.Hash(Core.PathIn(root,pair.Key))==(string)pair.Value,"Installed package file changed: "+pair.Key);}
-                    Need(SelfUpdate.Complete(root)&&BundleSignatureValid(root),"Bundled launcher failed installation/signature checks");
-                    if(preserve)Need(File.ReadAllText(Core.PathIn(root,"Data/keep"))=="game data"&&File.ReadAllText(Core.PathIn(root,"Saves/keep"))=="save"&&File.ReadAllText(Core.PathIn(root,"Settings/pc-controls.json"))=="personal controls"&&File.ReadAllText(Core.PathIn(root,"Settings/pc-display.ini"))=="personal display","Personal files changed");
-                    Console.WriteLine("Mac game package installed and verified "+files.Count+" files (preserve personal files: "+preserve+").");
-                }
-                return 0;
-            }catch(Exception e){Console.Error.WriteLine(e);return 1;}
-            finally{Directory.Delete(test,true);}
-        }
+        { return NativeGamePackageChecks.Verify(archive,version,BundleSignatureValid); }
         public static int Run()
         {
             sandbox=Path.Combine(AppContext.BaseDirectory,"tsfp-mac-launcher-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(sandbox);
             try{
                 Test("shared update restart and failure recovery", LauncherRestartChecks.Run);
+                Test("Mac Application Support and existing-folder storage",()=>Need(MacStorageTests.Run()==0,"Storage tests failed"));
                 LauncherTextureChecks.Run();
                 Test("bundled game textures install and preserve existing replacements",BundledTexturesTest);
                 Test("translocation recovery validates the real writable installation and preserves personal files", LocationTests);

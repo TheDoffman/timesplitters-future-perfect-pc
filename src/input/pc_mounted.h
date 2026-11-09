@@ -86,9 +86,25 @@ static inline int pc_mounted_mouse_in_region(PcInput *input,uint64_t now,float s
     int vehicle_binding=-1;
     double dx,dy,scale;
     float pitch,yaw,pmin,pmax,ymin,ymax,fov;
+    int cockpit=0;
+    if(p && *(const int32_t*)(p+4)==0 && *(const uint32_t*)(p+0x114)==0x100 &&
+       pc_guest_memory_in_span(region,p+0x157c,4,0) &&
+       *(const uint32_t*)(p+0x157c)==0x0021c900) {
+        uintptr_t o=pc_mounted_read(0x0078d02c,offset,4,region);
+        uintptr_t c=pc_mounted_read(fov_object,offset,0x270,region);
+        cockpit=o && c && *(const uint32_t*)o==player &&
+            *(const uint32_t*)(p+8)==fov_object && *(const uint32_t*)(c+0x26c)==0x0078cf40;
+    }
+    pc_input_cockpit_context(input,cockpit,now);
     if(!p)return -1;
     mode=*(const uint32_t*)(p+0x114);
-    if(mode!=0x80 && mode!=0x400 && mode!=0x8000)return -1;
+    if(mode!=0x80 && mode!=0x400 && mode!=0x8000 && mode!=0x100)return -1;
+    if(mode==0x100) {
+        /* Scripted cameras share this mode. Only Machine Wars' final cockpit
+         * callback (US 21C900, installed by 2206DC) owns these global angles. */
+        if(!pc_guest_memory_in_span(region,p+0x157c,4,0) ||
+           *(const uint32_t*)(p+0x157c)!=0x0021c900)return -1;
+    }
     data=0;
     if(mode==0x400) {
         vehicle_binding=pc_vehicle_gun(p,offset,region,&data,&gun_address);
@@ -108,6 +124,28 @@ static inline int pc_mounted_mouse_in_region(PcInput *input,uint64_t now,float s
         float delta=*(const float*)ticks;
         if(!isfinite(delta) || delta<=0)return 0;
     } else if(!*(const uint32_t*)ticks)return 0;
+    if(mode==0x100) {
+        uintptr_t cockpit_owner=pc_mounted_read(0x0078d02c,offset,4,region);
+        data=pc_mounted_read(0x0075c0fc,offset,8,region);
+        f=pc_mounted_read(fov_object,offset,0x388,region);
+        if(!cockpit_owner || *(const uint32_t*)cockpit_owner!=player ||
+           !data || !f || *(const uint32_t*)(p+8)!=fov_object ||
+           *(const uint32_t*)(f+0x26c)!=0x0078cf40 ||
+           !pc_guest_memory_in_span(region,data,8,1))return 0;
+        yaw=*(const float*)data;pitch=*(const float*)(data+4);
+        fov=*(const float*)(f+0x384);
+        if(!isfinite(yaw) || !isfinite(pitch) || !isfinite(fov) || fov<1 || fov>120)return 0;
+        scale=sensitivity*(fov<55?fov/55:1);
+        if(!isfinite(dx*scale) || !isfinite(dy*scale))return 0;
+        /* 21C900 wraps these angles; 21C7B0 builds the actual camera direction.
+         * Positive elevation looks up. Preserve the authored +/-60 limits,
+         * clamping before wrapping so a large packet cannot cross the rear arc. */
+        double next_pitch=fmax(-60,fmin(60,remainder(pitch,360.0)-dy*scale*(invert?-1:1)));
+        double next_yaw=fmod(yaw-dx*scale,360.0);
+        *(float*)data=(float)(next_yaw<0?next_yaw+360:next_yaw);
+        *(float*)(data+4)=(float)(next_pitch<0?next_pitch+360:next_pitch);
+        return 1;
+    }
     if(mode==0x8000) {
         /* US 37AA70 resolves the Battle Mech through C9F50 -> scene+2AC,
          * actor+7C -> extra+AA0. 37A730 records the controlling local slot

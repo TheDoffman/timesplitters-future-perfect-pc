@@ -1,0 +1,29 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -1212,7 +1212,11 @@
+ {
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_PROMPTS)
+     pc_prompts_layout_begin();
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_developer_lobby_text(sub_00041E30_gen);
++#else
+     sub_00041E30_gen();
++#endif
+     pc_prompts_layout_end();
+ #else
+     sub_00041E30_gen();
+@@ -2563,3 +2567,14 @@
+     sub_00098E50_gen();
+ #endif
+ }
++
++/* Capture the slot belonging to a native lobby username. */
++extern void sub_00353760_gen(void);
++void sub_00353760(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_developer_lobby_name(sub_00353760_gen);
++#else
++    sub_00353760_gen();
++#endif
++}

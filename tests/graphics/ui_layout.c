@@ -8,6 +8,7 @@
 #include "pc_ui_layout.h"
 #define RECOMP_TLS
 static uint32_t stack[32],g_esp,g_esi,scene=101;
+int pc_developer_hud_visible(void) { return 1; }
 static float hud_scale=.75f;
 static uint32_t font_xy[2],menu_data[0x240/4],item_data[0x90/4],descriptor=0x2d0be0;
 static uint32_t projection[16],effect_data[32];
@@ -32,11 +33,20 @@ static uint32_t *word(uint32_t a) {
 }
 #define WORD_AT(a) (*word(a))
 static int guest_writable(uint32_t a,size_t n){return (a>=0x4000 && a<0x4080 && n<=0x4080-a) || (a==0x1000 && n<=sizeof menu_data) || (a==0x2000 && n<=sizeof item_data) || (a==0x3000 && n<=4) || (a==0x100 && n<=sizeof view) || (a==0x55fa40 && n<=sizeof projection);}
+uint32_t xbox_HeapAlloc(uint32_t n,uint32_t align) {(void)n;(void)align;return 0;}
+void sub_0003FA10(void){abort();}
+void sub_0003FCF0(void){abort();}
+void sub_000718E0(void){abort();}
+void sub_0003FB90(void){abort();}
 static int wide=1,players=1,placement,pending=-1,draw_count;
 static int drawn[1024],selected[1024],selection_count;
 static uint32_t tag;
 #define CHECK(x) do { if(!(x)){fprintf(stderr,"FAIL: %s line %d\n",#x,__LINE__);exit(1);} } while(0)
 float pc_display_hud_scale(void) { return hud_scale; }
+static int owned_video,owned_controls,owned_audio;
+static int controls_font_menu(uint32_t menu) {return owned_controls && menu==0x1000;}
+static int video_font_menu(uint32_t menu) {return owned_video && menu==0x1000;}
+static int audio_font_menu(uint32_t menu) {return owned_audio && menu==0x1000;}
 static int menu_filter_frontend;
 void pc_display_menu_filter_begin(int frontend) { menu_filter_frontend=frontend; }
 static int menu_font_filter;
@@ -178,21 +188,47 @@ static void test_aim_overlays(void)
     }
     ui_place(0,0);
 }
+static void nested_video_text(void)
+{
+    float x;memcpy(&x,&font_xy[0],4);CHECK(fabsf(x-.65f)<.00001f);
+    pc_display_main_menu_font(font_draw,0);
+    memcpy(&x,&font_xy[0],4);CHECK(fabsf(x-.65f)<.00001f);
+}
 int main(void)
 {
     test_aim_overlays();
+    {
+        float initial[2]={1,1};memcpy(font_xy,initial,sizeof initial);
+        owned_video=1;g_esp=0;stack[1]=0x1000;stack[2]=0x2000;
+        pc_display_video_menu_font(nested_video_text);
+        CHECK(!video_font_depth && !memcmp(font_xy,initial,sizeof initial) && !menu_font_filter);
+        owned_video=0;owned_controls=1;g_esp=0;
+        pc_display_video_menu_font(nested_video_text);
+        CHECK(!video_font_depth && !memcmp(font_xy,initial,sizeof initial) && !menu_font_filter);
+        owned_controls=0;owned_audio=1;g_esp=0;
+        pc_display_video_menu_font(nested_video_text);
+        CHECK(!video_font_depth && !memcmp(font_xy,initial,sizeof initial) && !menu_font_filter);
+        owned_audio=0;g_esp=0;
+        pc_display_video_menu_font(font_draw);
+        CHECK(font_seen[0]==1.f && font_seen[1]==1.f && !menu_font_filter);
+    }
+
+    CHECK(fabsf(pc_ui_caption_fit(90,30,120,20)-.75f)<.00001f);
+    CHECK(fabsf(pc_ui_caption_fit(200,10,120,20)-.5f)<.00001f);
+    CHECK(pc_ui_caption_fit(200,40,120,20)==1.f);
+    CHECK(pc_ui_caption_fit(0,40,120,20)==1.f && pc_ui_caption_fit(90,40,NAN,20)==1.f);
     /* Measurement and glyph rendering must see the same two-axis scale.
        Other menu rows, descriptions and gameplay retain their original size. */
-    for(unsigned mode=0;mode<5;mode++) {
+    for(unsigned mode=0;mode<8;mode++) {
         float initial[2]={1.2f,.8f};memcpy(font_xy,initial,sizeof initial);
         g_esp=0;stack[1]=0x1000;stack[2]=0x2000;
         menu_data[1]=0x3000;item_data[0]=7;item_data[0x88/4]=0x1000;
         descriptor=mode==2?0x1234:0x2d0be0;
-        if(mode==3)item_data[0]=9;
-        scene=mode==4?1:101;
+        if(mode==3 || mode==7)item_data[0]=9;
+        scene=mode==4 || mode==5 || mode==7?1:101;owned_video=mode>=5;
         pc_display_main_menu_font(font_draw,mode==0);
-        CHECK(font_filter_seen==(mode==1) && menu_font_filter==0);
-        float scale=mode<2?.75f:1.f;
+        CHECK(font_filter_seen==(mode==1 || mode>=5) && menu_font_filter==0);
+        float scale=mode>=5?.65f:mode<2?.75f:1.f;
         CHECK(fabsf(font_seen[0]-initial[0]*scale)<.00001f);
         CHECK(fabsf(font_seen[1]-initial[1]*scale)<.00001f);
         CHECK(!memcmp(font_xy,initial,sizeof initial) && g_esp==4);

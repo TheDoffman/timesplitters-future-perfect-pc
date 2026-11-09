@@ -17,7 +17,8 @@ class Compatibility(unittest.TestCase):
     def test_shared_pages_platform_adapters_and_build_inputs_select_both_hosts(self):
         for path in ('tools/launcher/SettingsPage.cs', 'tools/launcher/macos/NativeHost.cs',
                      'tools/launcher/LauncherPlatform.cs', 'tools/build/build-launcher.ps1',
-                     'tools/build/build-mac-launcher.py', 'tests/launcher/launcher_shared_ui.cs',
+                     'tools/build/build-mac-launcher.py', 'tools/build/build-linux-launcher.py',
+                     'config/build/linux-launcher-sdk.json', 'tests/launcher/launcher_shared_ui.cs',
                      'config/build/mac-launcher-sdk.json', 'src/interface/pc_display_modes.inc',
                      '.github/workflows/launcher-build.yml'):
             with self.subTest(path=path):
@@ -40,7 +41,7 @@ class Compatibility(unittest.TestCase):
                 self.assertTrue(compatibility.relevant(path))
 
     def test_main_push_keeps_launcher_validation_after_runtime_deduplication(self):
-        workflow = (ROOT/'.github/workflows/launcher-compatibility.yml').read_text()
+        workflow = (ROOT/'.github/workflows/runtime-patches.yml').read_text()
         self.assertIn('  push:\n    branches: [main]\n', workflow)
         self.assertIn('github.event.pull_request.base.sha || github.event.before', workflow)
         self.assertIn('0000000000000000000000000000000000000000', workflow)
@@ -84,6 +85,9 @@ class Compatibility(unittest.TestCase):
         workflow=(ROOT/'.github/workflows/launcher-compatibility.yml').read_text()
         for forbidden in ('openai/', 'secrets.', 'write', 'pull_request_target', 'OPENAI_API_KEY'):
             self.assertNotIn(forbidden,workflow)
+        self.assertNotIn('  pull_request:',workflow)
+        self.assertNotIn('  push:',workflow)
+        self.assertIn('  workflow_dispatch:',workflow)
         self.assertIn('name: Launcher compatibility\n',workflow)
         self.assertIn('needs: [scope, build]',workflow)
         self.assertIn('source_ref: ${{ needs.scope.outputs.head }}',workflow)

@@ -53,7 +53,8 @@
   Typeface source: [Future TimeSplitters by Chequered Ink](https://www.dafont.com/future-timesplitters.font).
   This is fan-made lettering, not the official game logo. No raw game artwork
   or font file is included. The launcher preview in the README is always visible.
-- `download-windows-launcher.svg` and `download-mac-launcher.svg`: flat pale-blue
+- `download-windows-launcher.svg`, `download-mac-launcher.svg` and
+  `download-linux-launcher.svg`: flat pale-blue
   platform buttons with the launcher's three-pixel corners, thin border and
   line-icon weight. Links and accessible labels live in the README.
 - `icon-play.svg`, `icon-settings.svg` and `icon-support.svg`: small section

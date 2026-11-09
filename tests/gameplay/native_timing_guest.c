@@ -11,6 +11,8 @@ static uint8_t memory[0x800000];
 static ptrdiff_t g_xbox_mem_offset;
 static uint32_t g_esp;
 static uint32_t g_eax;
+/* Numeric Uplink gates read the live hand register only at their audited sites. */
+static uint32_t g_ebp;
 void sub_000C54A0(void) { assert(!"unexpected walk collision in clock fixture"); }
 void sub_000C4700(void) { assert(!"unexpected walk sweep in clock fixture"); }
 #if defined(_MSC_VER)
@@ -56,6 +58,10 @@ static void original(void) {
     original_calls++;g_esp+=4;
     if(original_game_delta>=0.f)FLOAT(0x4E794C)=original_game_delta;
 }
+#include "pc_developer.h"
+void pc_developer_get(PcDeveloperState *out) {*out=(PcDeveloperState){0,0,0,0,1.,0};}
+void pc_developer_publish(int play,int story,int network) {(void)play;(void)story;(void)network;}
+void pc_developer_guest_frame(void) {}
 #include "../src/gameplay/pc_native_timing_guest.inc"
 /* Match the production manual TU: the clock include precedes ESI's definition. */
 RECOMP_MANUAL_TLS uint32_t g_esi;
@@ -338,6 +344,39 @@ static void tree_phase_clock(void)
     g_tsfp_native_timing_active=0;FLOAT(0x4e794c)=.25f;
     assert(!pc_native_global_load(0xd2079,0x4e7944,0));
 }
+static void beam_damage_clock(void)
+{
+    const unsigned sites[]={0xB9901u,0xB99B4u};
+    for(unsigned s=0;s<2;s++)for(unsigned kind=0;kind<54;kind++) {
+        uint32_t stack=0x2000,offset=s==0?0x18:0xc;
+        WORD(stack+offset)=kind;
+        FLOAT(0x4E794C)=.25f;
+        for(unsigned native=0;native<2;native++)for(unsigned whole=0;whole<3;whole++) {
+            g_tsfp_native_timing_active=native;WORD(0x4E7944)=whole;
+            float expected=native && (kind==25 || kind==26)?(float)whole:.25f;
+            assert(pc_native_beam_damage(sites[s],2,.25f,stack)==2*expected);
+            assert(pc_native_beam_damage(sites[s],2,0.f,stack)==0.f);
+            assert(FLOAT(0x4E794C)==.25f && WORD(0x4E7944)==whole);
+        }
+    }
+}
+
+static float terminal_observed;
+static void terminal_clock_spy(void){terminal_observed=FLOAT(0x4E794C);}
+static void boss_terminal_clocks(void)
+{
+    const float deltas[]={0.f,.25f,.5f,1.f,2.f};
+    for(int native=0;native<2;native++)for(unsigned whole=0;whole<3;whole++)
+    for(unsigned i=0;i<5;i++){
+        float delta=deltas[i];g_tsfp_native_timing_active=native;
+        WORD(0x4E7944)=whole;FLOAT(0x4E794C)=delta;
+        assert(pc_native_skip_boss_mines()==(native && (!whole || !(delta>0))));
+        pc_native_terminal_text_guest(terminal_clock_spy);
+        assert(terminal_observed==(native && delta>0?(float)whole:delta));
+        assert(FLOAT(0x4E794C)==delta && WORD(0x4E7944)==whole);
+    }
+}
+
 int main(void)
 {
     /* Exercise the actual production macro composition at both timing modes. */
@@ -362,6 +401,22 @@ int main(void)
     assert(RECOMP_LOAD_GLOBAL_U32(0x70360,0x74cf60,1)==1);
     g_tsfp_native_timing_active=0;
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
+    /* Dart release is a scoped, one-time velocity, not frame acceleration. */
+    for(unsigned native=0;native<2;native++)for(unsigned kind=0;kind<54;kind++) {
+        g_tsfp_native_timing_active=native;WORD(0x1000)=kind;
+        const float spans[]={0.f,.25f,1.f,2.f};
+        for(unsigned i=0;i<4;i++) {
+            float expected=native && (kind==32 || kind==33) && i==1 ? 2.f : 2.f*spans[i];
+            assert(pc_native_dart_release(2.f,spans[i],0x1000)==expected);
+        }
+    }
+    /* Spawner countdown follows its original whole-tick scheduler. */
+    for(unsigned native=0;native<2;native++)for(unsigned whole=0;whole<3;whole++) {
+        g_tsfp_native_timing_active=native;WORD(0x4e7944)=whole;FLOAT(0x4e794c)=.25f;
+        assert(pc_native_multiply(0x164116,2.f,.25f)==2.f*(native?(float)whole:.25f));
+        assert(pc_native_multiply(0x164117,2.f,.25f)==.5f);
+        assert(pc_native_multiply(0x164116,2.f,0.f)==0.f);
+    }
     /* Asset-free scope/pause contract for the fractional level callback gates. */
     const uint32_t callback_sites[]={0x222b60,0x21af90,0x224170,0x164e00};
     g_tsfp_native_timing_active=1;
@@ -434,6 +489,8 @@ int main(void)
     boost_resource_clock();
     tree_phase_clock();
     trap_fractional_clock();
+    beam_damage_clock();
+    boss_terminal_clocks();
     puts("Native guest timing: original fallback, 144 distinct steps, ABI, pause and console clock passed");
     return 0;
 }

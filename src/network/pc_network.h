@@ -6,6 +6,8 @@ double pc_network_bots_time(void);
 #include <stddef.h>
 /* US executable's public XNet entry points. Guest pointers stay 32-bit. */
 int pc_network_enabled(void);
+/* Startup environment is read once; the menu enables LAN explicitly. */
+void pc_network_enable_lan(void);
 unsigned pc_network_arguments(uint32_t address);
 uint32_t pc_network_call(uint32_t address, const uint32_t *args, ptrdiff_t memory_offset);
 void pc_network_shutdown(void);
@@ -13,6 +15,10 @@ int pc_network_set_online(const char *configuration);
 /* 0 offline, 1 LAN, 2 Online; RTT is negative when no fresh peer replied. */
 int pc_network_latency(double *milliseconds, unsigned *peers);
 #include "pc_network_bots_state.h"
+typedef struct PcDeveloperPeer { uint32_t ip; int local,host; char name[65]; } PcDeveloperPeer;
+/* Self-reported availability for the admitted lobby roster; never enables cheats. */
+unsigned pc_network_developer_lobby(const PcDeveloperPeer *roster,unsigned count,int enabled,char *names,size_t bytes);
+int pc_network_tools_policy(const PcDeveloperPeer *roster,unsigned count,int host_allowed);
 /* Extension packets share the existing compatible LAN/Online transport. */
 void pc_network_bots_context(unsigned role,uint32_t host_ip,uint32_t match,unsigned humans,unsigned bots);
 void pc_network_bots_send(const PcNetworkBotState *state);

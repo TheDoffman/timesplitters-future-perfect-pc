@@ -24,6 +24,12 @@ int tsfp_guest_callback_one(const tsfp_guest_callback_ops *,uint32_t routine,uin
  * Caller owns callback/device/request scopes across nonlocal guest transfer. */
 int tsfp_guest_callback_stdcall(const tsfp_guest_callback_ops *,uint32_t routine,
     const uint32_t *arguments,unsigned count,uint32_t *result);
+/* Original cdecl variant for exception/other caller-cleaned handlers. Only the
+ * return address is consumed by the callee; arguments remain until this scope
+ * restores its incoming architecture. Same bounds, result publication and
+ * nonlocal-transfer ownership as stdcall. This does not dispatch exceptions. */
+int tsfp_guest_callback_cdecl(const tsfp_guest_callback_ops *,uint32_t routine,
+    const uint32_t *arguments,unsigned count,uint32_t *result);
 /* Host-only, noncopyable prepared frame; all mappings/entry remain valid until
  * invocation. Prepare changes no guest bytes/state and preserves output on
  * failure. Invocation consumes the plan before admission, even if rejected.
@@ -33,7 +39,7 @@ int tsfp_guest_callback_stdcall(const tsfp_guest_callback_ops *,uint32_t routine
  * may be constructed from untrusted plan bytes. */
 typedef struct {
     tsfp_guest_entry_t entry;unsigned char *frame;
-    uint32_t esp,address,bytes,words[4];unsigned count;
+    uint32_t r_esp,address,bytes,words[4];unsigned count;
 } tsfp_guest_callback_plan;
 int tsfp_guest_callback_prepare(const tsfp_guest_callback_ops *,uint32_t,const uint32_t *,unsigned,tsfp_guest_callback_plan *);
 int tsfp_guest_callback_invoke(tsfp_guest_callback_plan *,int (*admit)(void *),void *,uint32_t *result);

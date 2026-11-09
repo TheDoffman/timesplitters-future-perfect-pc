@@ -3,6 +3,7 @@
 #endif
 #define _WIN32_WINNT 0x0601
 #include "pc_settings.h"
+#include "pc_developer.h"
 #include "texture_mode.h"
 #include "pc_debug.h"
 #include "pc_menu_theme.h"
@@ -95,6 +96,11 @@ static int selected(Editor *e)
 static void fill(HWND d, Editor *e)
 {
     int i,j;
+    EnableWindow(GetDlgItem(d,ID_CHANGE),!e->settings.preset);
+    EnableWindow(GetDlgItem(d,ID_CLEAR),!e->settings.preset);
+    SetDlgItemTextA(d,ID_HELP,e->settings.preset?
+        "Modern PC preset active. Choose Custom in Controls or the launcher to edit your retained bindings. Mouse options remain editable.":
+        "Double-click a binding to change it. F2 opens settings. Developer Tools has a configurable shortcut.\nEscape releases the mouse. Pause a mission before opening PC settings.");
     char name[80],number[40];
     for(i=0;i<PC_ACTION_COUNT;i++) for(j=0;j<PC_BINDING_SLOTS;j++) {
         pc_settings_key_name(e->settings.keys[i][j],name,sizeof name);
@@ -165,6 +171,7 @@ static INT_PTR CALLBACK capture_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
 
 static void change_binding(HWND d,Editor *e)
 {
+    if(e->settings.preset)return;
     int row=selected(e), conflict,i,j;
     Capture capture={0};
     char title[256];
@@ -215,7 +222,7 @@ static INT_PTR CALLBACK settings_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
         LVCOLUMNA column={0};
         const char *headers[]={"Action","Primary","Alternate"};
         e=(Editor *)lp; SetWindowLongPtr(d,DWLP_USER,lp);
-        control(d,"STATIC","Double-click a binding to change it. F2 opens settings; F1 shows/hides the menu bar.\nEscape releases the mouse. Pause a mission before opening PC settings.",0,ID_HELP);
+        control(d,"STATIC","Double-click a binding to change it. F2 opens settings. Developer Tools has a configurable shortcut.\nEscape releases the mouse. Pause a mission before opening PC settings.",0,ID_HELP);
         e->list=control(d,WC_LISTVIEWA,"",WS_TABSTOP|LVS_REPORT|LVS_SINGLESEL|LVS_SHOWSELALWAYS|WS_BORDER,ID_ACTIONS);
         ListView_SetExtendedListViewStyle(e->list,LVS_EX_FULLROWSELECT|LVS_EX_GRIDLINES|LVS_EX_DOUBLEBUFFER);
         for(i=0;i<=PC_BINDING_SLOTS;i++) { column.mask=LVCF_TEXT|LVCF_WIDTH; column.pszText=(char *)headers[i]; column.cx=i?105:225; ListView_InsertColumn(e->list,i,&column); }
@@ -258,6 +265,7 @@ static INT_PTR CALLBACK settings_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
             return TRUE;
         case ID_CHANGE: change_binding(d,e); return TRUE;
         case ID_CLEAR: {
+            if(e->settings.preset)return TRUE;
             int row=selected(e); char name[32];
             if(row>=0) { e->settings.keys[row][e->slot]=0; pc_settings_key_name(0,name,sizeof name); ListView_SetItemText(e->list,row,e->slot+1,name); }
             return TRUE;
@@ -293,13 +301,7 @@ static const char menu_property[]="TSFP.PcSettingsMenu";
 
 void pc_settings_toggle_menu(HWND game)
 {
-    HMENU bar=(HMENU)GetPropA(game,menu_property);
-    if(!bar || !SetMenu(game,GetMenu(game) ? NULL : bar)) return;
-    if(GetMenu(game)) pc_menu_theme_refresh(game,pc_window_theme_dark());
-    /* Keep the outer window bounds, including borderless fullscreen. The
-       renderer follows the new client size and WM_SIZE updates mouse clipping. */
-    SetWindowPos(game,NULL,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE|SWP_FRAMECHANGED);
-    DrawMenuBar(game);
+    (void)game;pc_developer_toggle();
 }
 
 void pc_settings_detach(HWND game)
@@ -326,10 +328,10 @@ void pc_settings_attach(HWND game)
     AppendMenuA(settings,MF_STRING,PC_MENU_BAR_COMMAND,"&Hide Menu Bar\tF1");
     AppendMenuA(bar,MF_POPUP,(UINT_PTR)settings,"&PC Settings");
     if(!SetPropA(game,menu_property,(HANDLE)bar)) { DestroyMenu(bar); return; }
-    SetMenu(game,bar);
+    /* The menu is now drawn in the game. Keep old saved visibility data intact. */
     pc_menu_theme_attach(game);
     rect=client;
-    AdjustWindowRectEx(&rect,(DWORD)GetWindowLongPtr(game,GWL_STYLE),TRUE,(DWORD)GetWindowLongPtr(game,GWL_EXSTYLE));
+    AdjustWindowRectEx(&rect,(DWORD)GetWindowLongPtr(game,GWL_STYLE),GetMenu(game)!=NULL,(DWORD)GetWindowLongPtr(game,GWL_EXSTYLE));
     SetWindowPos(game,NULL,0,0,rect.right-rect.left,rect.bottom-rect.top,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
     DrawMenuBar(game);
 }
