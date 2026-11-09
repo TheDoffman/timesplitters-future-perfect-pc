@@ -68,6 +68,32 @@ public static class LauncherSharedUiChecks
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
+            Test("main menu update notice follows version and selected channel",()=>{
+                var release=new Release {Tag="v1.2.4",Channel="stable"};
+                Need(GameUpdateNotice.Encode("v1.2.3",release,"stable",123)=="TSFP_GAME_UPDATE_V1 123 v1.2.3 v1.2.4\n","Newer release missing");
+                Need(GameUpdateNotice.Encode("v1.2.4",release,"stable",123)=="","Current release advertised");
+                Need(GameUpdateNotice.Encode("v1.3.0",release,"stable",123)=="","Downgrade advertised");
+                Need(GameUpdateNotice.Encode("development",release,"stable",123)=="","Unknown local version advertised");
+                Need(GameUpdateNotice.Encode("v1.2.3",release,"beta",123)=="","Wrong channel advertised");
+                Need(GameUpdateNotice.Encode("v1.2.3",null,"stable",123)=="","Failed check advertised");
+                release.Tag="v1.2.4-beta.1";release.Channel="beta";
+                Need(GameUpdateNotice.Encode("v1.2.4-beta.0",release,"beta",123)!="","Preview upgrade missing");
+                string installation=Path.Combine(root,"notice-install");Directory.CreateDirectory(installation);
+                Core.Write(Core.PathIn(installation,LauncherPlatform.ManifestPath(installation)),Json.Encode(new {version="v1.2.3"}));
+                release.Tag="v1.2.4";release.Channel="stable";GameUpdateNotice.Publish(installation,release,"stable");
+                string published=File.ReadAllText(GameUpdateNotice.Path(installation));
+                Need(published.StartsWith("TSFP_GAME_UPDATE_V1 ") && published.EndsWith(" v1.2.3 v1.2.4\n"),"Verified result not published");
+                GameUpdateNotice.Publish(installation,null,"stable");
+                Need(File.ReadAllText(GameUpdateNotice.Path(installation))=="","Failed check retained notice");
+                string unwritable=Path.Combine(root,"notice-blocked");Directory.CreateDirectory(unwritable);
+                File.WriteAllText(Path.Combine(unwritable,".launcher"),"Not a directory");
+                GameUpdateNotice.Publish(unwritable,release,"stable"); // Optional notice failure must not block launch.
+                GameUpdateNotice.Publish(root,null,"stable");
+                Need(File.ReadAllText(GameUpdateNotice.Path(root))=="","Empty result did not clear old notice");
+                var info=GameSettings.StartInfo(root);
+                Need(info.EnvironmentVariables["TSFP_GAME_UPDATE_NOTICE"]==GameUpdateNotice.Path(root),"Notice path missing from launch");
+                Need(info.EnvironmentVariables["TSFP_GAME_INSTALLED_VERSION"]==Core.InstalledVersion(root),"Installed version missing from launch");
+            });
             Test("game texture preference survives launcher reload and detects concurrent edits",()=>{
                 string folder=Path.Combine(root,"textures-game-save");Directory.CreateDirectory(folder);
                 var model=GameSettings.Load(folder,null);model.Save();

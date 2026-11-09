@@ -332,6 +332,9 @@ void pc_display_menu_mouse_footer(void (*original)(void))
     original();
     menu_mouse_footer_drawing=previous;
     settings_tabs_footer(menu);
+#ifndef TSFP_MENU_MOUSE_TEST
+    main_update_notice_draw(menu);
+#endif
 }
 /* Share the visible, enabled hit area between clicks and hover feedback. */
 static int menu_mouse_footer_contains(const MenuMouseFooter *f,uint32_t menu,

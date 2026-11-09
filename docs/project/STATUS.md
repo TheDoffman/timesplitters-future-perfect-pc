@@ -1,3 +1,13 @@
+Main-menu update notice (local, based on main a688d697): the shared launcher
+publishes a selected-channel newer-release result and the game displays native
+`UPDATE AVAILABLE - OPEN THE LAUNCHER` text only on its frontend main menu.
+No game-thread HTTP, settings or save changes. Windows launcher build/full tests
+and focused parser/menu/input suites pass. Supported Windows game build/tests
+pass; actual640x480 and1920x1080 captures verify main-only visibility and clear
+spacing above the bottom silver line. Local playable preview updated, preserving
+Settings/Saves. Native Mac/Linux desktop acceptance remains pending. See
+[update notice](../agent-context/main-menu-update.md). No publication claimed.
+
 Online browser startup (local, based on main cd6e4690): the strict game-data
 hash scan previously ran before Tk window creation; measured3.642s on this
 Windows computer. Shared Python/Tk startup now paints a cancellable progress

@@ -111,8 +111,10 @@ namespace TimeSplitters.Launcher
         async Task Check()
         {
             if(busy)return;int revision=++checkRevision;string channel=SelectedGameChannel;Label("ReleaseTitle","Checking for updates…");
+            GameUpdateNotice.Publish(root,null,channel);
             using(var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(8))){try{
                 var catalog=await client.ReadGameCatalog(timeout.Token);if(revision!=checkRevision)return;SetChannels(catalog,channel);latest=GameChannels.Select(catalog,channel);
+                GameUpdateNotice.Publish(root,latest,channel);
                 Label("ReleaseTitle",latest==null?"No "+LauncherPlatform.HostName+" release available":"Available: "+latest.Tag);
                 Label("ReleaseDescription",latest==null?"No compatible "+LauncherPlatform.HostName+" package is published on this channel. Your local build remains available.":ReleaseNews.Availability(Core.InstalledVersion(root),latest,false));
                 bool newer=GameChannels.CanInstall(latest,Core.InstalledVersion(root));

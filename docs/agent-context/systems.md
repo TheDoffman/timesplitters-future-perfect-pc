@@ -1,7 +1,5 @@
-[Controller deadzones](controller-deadzones.md).
-
-[Keys](control-presets.md); [Tex](texture-preference.md).
-[Arms](video-options.md).
+[Sticks](controller-deadzones.md), [keys](control-presets.md), [updates](main-menu-update.md).
+[Tex](texture-preference.md); [arms](video-options.md).
 
 [Uplink throw tests and policy](native-uplink.md#throw-impulse).
 Networking: `pc_network_enabled()` reads startup config once,

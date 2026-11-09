@@ -220,6 +220,7 @@
     "tests/graphics/test_channel_clears.py",
     "tests/graphics/test_objectives_health.py",
     "tests/graphics/test_fov_settings.py",
+    "tests/graphics/test_update_notice.py",
     "tests/graphics/test_game_restart.py",
     "tests/storage/test_storage_menu.py",
     "tests/input/test_text_read_scope.py",

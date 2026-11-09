@@ -1,3 +1,5 @@
+[Game update notice](main-menu-update.md).
+
 [Controller deadzones](controller-deadzones.md).
 
 [Custom seeds](control-presets.md).
