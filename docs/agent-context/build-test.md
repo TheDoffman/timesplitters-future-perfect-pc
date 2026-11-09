@@ -11,7 +11,7 @@ Developer warnings: [launcher](launcher.md).
 [Update tests](main-menu-update.md).
 [Weapon FOV](video-options.md#weapon-aperture).
 [HUD/MSAA tests](../development/graphics-options.md).
-[SDL startup/fullscreen](linux-game.md).
+[SDL/input fixtures](linux-game.md).
 [Font/escape tests](audio-options.md).
 `test_lfs_checkout.py`: pointer clones, opt-in LFS pull, preserved packs.
 [Kill feed](../development/arcade-kill-feed.md)
