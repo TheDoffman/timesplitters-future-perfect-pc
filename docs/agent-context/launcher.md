@@ -1,3 +1,9 @@
+Launcher1.6.0 prepares the shared audio, Modern controls/deadzones, texture
+preference and game update-notice additions for Windows/Mac/Linux. The official
+three-host release workflow remains required after the version change reaches
+main: fifteen assets, alias parity, exact source receipts and Stable Latest.
+Version preparation itself does not publish or establish hardware acceptance.
+
 [Game update notice](main-menu-update.md).
 
 [Controller deadzones](controller-deadzones.md).

@@ -5,8 +5,11 @@
 [Back to the README](../../README.md) | [Launcher releases](launcher-releases.md)
 
 Game and launcher versions are independent. The next Stable game source version
-is **0.5.3**, including the Vietnam gameplay dispatch performance fix and
-bundling the already published launcher **1.5.2**. Build Windows, Apple Silicon
+is **0.6.0**, including the audio overhaul, Modern control presets, independent
+controller deadzones, high-FPS timing and rendering fixes, persistent texture
+preferences, responsive Online startup and main-menu update notices. It bundles
+launcher **1.6.0**, which must be published through its workflow first. These
+new features justify a minor version bump. Build Windows, Apple Silicon
 Mac and Linux packages from the same clean source and verify all nine assets
 before publication. Version preparation does not establish full campaign or
 platform validation. Historical
