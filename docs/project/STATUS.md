@@ -43361,7 +43361,28 @@ Windows x64: real pinned HTTPS + three UDP bridges passed for Arcade and Story,
 including an occupied legacy host port, outbound-only sends, peer traffic through
 the player host, discovery, RTT and invalid credentials/replays. Direct Online,
 host certificate/invitation and directory regression checks passed (27 tests).
-Installer isolated-command tests also passed. Remaining consolidated Windows/Mac
-results and actual Mac service deployment are recorded below after execution.
+Installer isolated-command tests also passed. Consolidated Windows tests: 62
+passed, 4 skipped in the final full run (57.31s).
+Physical Mac arm64/Python3.12.12/OpenSSL3.6.3: 61 passed, 5 skipped; one missing
+archived portable-probe fixture was copied and that test rerun successfully.
+These include actual Tk browser lifecycle/layout and relayed host/join/cancel.
+
+Installed from committed `efc26a35` archive (matching SHA256 verified) as the
+per-user `com.timesplitters.online` launch agent, using a five-file 96 KiB service
+outside the game checkout. Both hosts' AGENTS hashes match; the existing Mac
+checkout remains at 5c5acf91. Windows-host/Mac-guest and Mac-host/Windows-guest
+probes passed through the installed service with bidirectional payloads. Server
+stderr is empty, and listeners are active. The service starts at user login and
+needs the Mac awake; it does not change power settings.
+
+The router refused automatic mapping on 30820 (718 conflict); its existing rules
+were preserved. Free TCP 41820 and UDP 41821 were mapped by UPnP to the Mac, verified
+with GetSpecificPortMappingEntry. The installed service uses these alternate
+ports. Pinned public-address HTTPS and bidirectional authenticated public-UDP
+probes pass from the LAN, explicitly forcing the public relay address instead of
+the LAN override. An outside-network connection has not been tested. Public
+endpoint/pin now ship in `online-service.json`; no private key enters Git.
+UPnP rules and public IP need verification after router reboot/address changes.
+
 No real game rebuild, complete WAN match, load/capacity result or published-client
 compatibility is claimed by these transport fixtures.

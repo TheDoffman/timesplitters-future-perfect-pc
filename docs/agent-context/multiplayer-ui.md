@@ -14,7 +14,7 @@ the actual player's authenticated ACK. Lost relay replies stop the session.
 
 The browser defaults new installations to a shared service, refreshes listings
 on opening and retains saved legacy automatic hosting choices. Public defaults
-come from bundled/identity-hashed `online-service.json` (initially empty) or env;
+come from bundled/identity-hashed `online-service.json` (deployed Mac mini) or env;
 saved user choices win. `install_online_service.py` prepares the five-file
 standalone service and a per-user Mac launch agent without game assets. Optional
 LAN advertisement avoids hairpin routing. See [setup](../development/online-relay.md)

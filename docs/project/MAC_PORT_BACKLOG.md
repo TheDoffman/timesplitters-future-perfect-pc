@@ -10469,10 +10469,14 @@ See [evidence](STATUS.md#2026-11-07---issue521-portal-seams).
   Original-XBE Windows CPU fixtures cover60-240/slow/pause; native Mac/Linux
   builds and live boss/U-Genix acceptance remain unverified. See STATUS and
   native-projectiles/native-script-clocks guides for scope and test boundaries.
-Shared Online relay (feature/shared-online-relay, uncommitted): Implemented in
+
+Shared Online relay (feature/shared-online-relay, implementation efc26a35): Implemented in
 shared Python transport/directory/client code plus a thin Mac launch-agent
 installer. No duplicated game simulation or native networking adapter is needed;
 the existing loopback bridge contract is retained on Windows/Mac/Linux. Windows
-socket/HTTPS acceptance passes; physical Mac service and cross-device transport
-validation pending below/STATUS. Full game WAN matches, public reachability and
-matching published client packages remain separate acceptance.
+socket/HTTPS acceptance passes (62 tests; 4 skips). Physical Mac Python3.12 tests
+pass (61; 5 skips), with a live per-user launch agent and both-direction Windows/Mac
+host/guest packet probes through the installed relay. Public-address TCP 41820/
+UDP 41821 probes pass via router hairpin with server-only UPnP mapping. No new
+native adapter is needed. Full outside-network game matches and matching rebuilt/
+published clients remain separate acceptance. See STATUS and the relay setup guide.
