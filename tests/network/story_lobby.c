@@ -149,6 +149,8 @@ void sub_00071C50(void){marker=3;} void sub_00079D60_gen(void){marker=4;}
 void sub_000771D0(void){marker=5;} void sub_000770E0(void){marker=6;}
 void sub_00079B70(void){CHECK(0);}
 void sub_000DAC30(void){marker=20;}void sub_000D7550(void){marker=21;}
+static unsigned human_pose_updates;
+void sub_0005FEB0(void){}
 void sub_000C1950(void){marker=54;}
 void sub_000B3630(void){marker=53;}
 void sub_000A9070(void){marker=22;}void sub_0015BCA0(void){marker=23;}
@@ -330,6 +332,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
         WORD_AT(actor+0x48)=12u|(12u<<16);++npc_ctor_calls;return 0x72000;
     }
     if(fn==sub_000D7550){CHECK(count==2);WORD_AT(args[0]+0x84)=args[1];return 0;}
+    if(fn==sub_0005FEB0){CHECK(count==1 && !WORD_AT(args[0]+0x15c));++human_pose_updates;return 0;}
     if(fn==sub_002402B0){CHECK(count==2);WORD_AT(args[1]+0x60)=args[0];return 0;}
     if(fn==sub_0015BCA0) {
         CHECK(count==1);const unsigned n=WORD_AT(0x74c37c);
@@ -2346,6 +2349,7 @@ int main(void)
 #ifdef _WIN32
     campaign_lifecycle_matrix();
     campaign_tools_matrix();
+    campaign_human_animation_matrix();
 #endif
     puts("PASS: Story host controls and campaign lifecycle for thirteen missions with two, three and four players");
     return 0;

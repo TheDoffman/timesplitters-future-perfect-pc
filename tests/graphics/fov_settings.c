@@ -30,6 +30,7 @@ void pc_developer_report(const char *message) {(void)message;assert(!"unexpected
 int pc_developer_flight_step(int mode,const float origin[3],const float direction[3],double seconds,float position[3],float forward[3])
 {(void)mode;(void)origin;(void)direction;(void)seconds;(void)position;(void)forward;assert(!"unexpected flight");return 0;}
 void sub_0025EF80(void) {assert(!"unexpected checkpoint capture");}
+void sub_0005FEB0(void) {assert(!"unexpected human animation advance");}
 void sub_001519E0(void) {assert(!"unexpected camera view");}
 void sub_00153270(void) {assert(!"unexpected camera composition");}
 void sub_00152260(void) {assert(!"unexpected camera inverse");}

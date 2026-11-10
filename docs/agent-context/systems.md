@@ -30,7 +30,7 @@ PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
 [Clicks](interaction-input.md#fresh-weapon-clicks-434).
 
-[Story](story-campaign-lifecycle.md). [Exit/save](multiplayer-exit.md).
+[Co-op](story-campaign-lifecycle.md). [Exit/save](multiplayer-exit.md).
 
 [Mech](mounted-mouse.md).
 

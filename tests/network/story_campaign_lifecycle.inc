@@ -203,4 +203,38 @@ static void campaign_tools_matrix(void)
         online_mode=PC_ONLINE_ARCADE;story_tools_frame();CHECK(!story_tools_pending.serial&&!story_tools_host.serial);
     }
 }
+static void campaign_human_animation_matrix(void)
+{
+    const uint32_t scenes[13]={2,4,18,11,1,17,6,22,5,14,9,26,81};
+    for(unsigned mission=0;mission<13;mission++)for(unsigned count=2;count<=4;count++)for(unsigned role=1;role<=2;role++) {
+        online_mode=PC_ONLINE_STORY;story_lobby_mission=mission;story_pending_stage=1;
+        WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=role;WORD_AT(0x76b1a4)=15;WORD_AT(0x7de30c)=7;
+        WORD_AT(0x79094c)=scenes[mission];WORD_AT(0x7de458)=0x80008;WORD_AT(0x7de45c)=0;
+        WORD_AT(0x790950)=count;((uint8_t *)memory)[0x7de400]=(uint8_t)count;
+        WORD_AT(0x7b0c48)=0x6000;WORD_AT(0x7356d8)=0x50000;
+        for(unsigned slot=0;slot<count;slot++) {
+            const uint32_t context=0x6000+slot*0x1584,actor=0x50000+slot*0xea0,body=0x74000+slot*0x800;
+            WORD_AT(context)=slot;WORD_AT(context+0x14)=body;WORD_AT(context+0x114)=2;WORD_AT(context+0xc)=0;
+            WORD_AT(actor)=body;WORD_AT(actor+8)=slot;WORD_AT(actor+0x10)=2;WORD_AT(actor+0x84)=1;
+            WORD_AT(body+0x150)=context;WORD_AT(body+0x7c)=actor;WORD_AT(body+0x28)=0;
+            WORD_AT(body+4)=0x100000+slot*0x400;WORD_AT(body+0x15c)=0;
+        }
+        story_cine_state.active=0;WORD_AT(0x7497b4)=0;
+        const unsigned before=human_pose_updates;g_esp=0x1800;
+        story_human_pose_frame();CHECK(human_pose_updates==before+count && g_esp==0x1800);
+        for(unsigned slot=0;slot<count;slot++) {
+            CHECK(!WORD_AT(0x74000+slot*0x800+0x15c));
+            WORD_AT(0x74000+slot*0x800+0x15c)=0x379ae0;
+        }
+        story_human_pose_frame();CHECK(human_pose_updates==before+count);
+        WORD_AT(0x7415c)=0x379ae0;WORD_AT(0x7495c)=0;WORD_AT(0x7698)=256;
+        story_human_pose_frame();CHECK(WORD_AT(0x7415c)==0x379ae0 && human_pose_updates==before+count);
+        WORD_AT(0x7698)=2;WORD_AT(0x7de45c)=0x02000000;
+        story_human_pose_frame();CHECK(human_pose_updates==before+count);
+        WORD_AT(0x7de45c)=0;WORD_AT(0x50000+0xea0+0x2c)=4;
+        story_human_pose_frame();CHECK(human_pose_updates==before+count);
+        WORD_AT(0x50000+0xea0+0x2c)=0;online_mode=PC_ONLINE_ARCADE;
+        story_human_pose_frame();CHECK(human_pose_updates==before+count);
+    }
+}
 #endif

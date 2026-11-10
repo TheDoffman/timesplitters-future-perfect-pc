@@ -43,6 +43,24 @@ rules apply throughout the campaign. Guest rewards precede the waiting page.
 
 ## Authored starts and cameras
 
+Human model animation advancement is repaired in `story_human_pose_frame`.
+The paired Scotland recording showed moving player contexts with stationary
+model clocks; the isolated observer confirmed normal game delta/playback rate
+but empty body model callbacks on both peers. Registering a render callback
+alone did not advance their clocks. For fully linked live humans in ordinary
+state2 without an authored callback, advance the model once after the original
+game update and cinematic adapter. Use5FEB0, the original advancing wrapper
+through5FDC0, so authored freeze flags retain their existing path. No callback,
+clip selection or native controller is replaced.
+Existing callbacks, scripted/cinematic contexts, frozen/dead actors, departed
+players and non-Story sessions remain untouched. A fresh/restarted/rejoined
+body receives the same update without recreating its actor or inventory.
+
+The campaign CPU matrix covers all13 mission scenes,2/3/4 humans and both roles,
+preserved authored callbacks and frozen/cinematic exclusions.
+The original-US contract verifies the advancing wrapper and native freeze gate.
+STATUS records bounded live evidence separately from full mission acceptance.
+
 Extra slots use the mission's original primary-start selector only when its
 authored start list is exhausted. Peer-local private pad IDs7F01..7F03 carry
 distinct numeric starts, with matching record/tag/index hooks. They never index

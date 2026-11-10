@@ -61,6 +61,7 @@ static void story_world_reset(void);
 static void story_world_frame(void);
 static int story_world_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
 static int story_tools_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
+static void story_human_pose_frame(void);
 uint32_t pc_story_network_world_key(uint32_t entity);
 uint32_t pc_story_network_world_entity(uint32_t key);
 static int story_network_session(void)
@@ -707,6 +708,7 @@ void pc_story_network_frame(void (*original)(void))
     pc_story_failure_trace(original,0x000681C0u);
 #ifdef _WIN32
     story_cine_frame();
+    story_human_pose_frame();
 #endif
 }
 
@@ -980,3 +982,33 @@ void pc_story_network_character_remove(void (*original)(void))
 #include "pc_story_world.inc"
 #include "pc_network_ammo.inc"
 #include "pc_story_tools.inc"
+#ifdef _WIN32
+extern void sub_0005FEB0(void);
+static void story_human_pose_frame(void)
+{
+    if(!story_campaign_gameplay() || WORD_AT(0x7de30cu)!=7u ||
+       story_cine_state.active || (WORD_AT(0x7de45cu)&0x02000000u) ||
+       (int32_t)WORD_AT(0x7497b4u)>0)return;
+    const unsigned count=WORD_AT(0x790950u);
+    const uint32_t contexts=WORD_AT(0x7b0c48u),actors=WORD_AT(0x7356d8u);
+    if(count<2u || count>4u || count!=story_npc_humans() || !contexts || !actors ||
+       !guest_writable(contexts,count*0x1584u))return;
+    GuestRegisters saved;save_registers(&saved);
+    for(unsigned slot=0;slot<count;slot++) {
+        const uint32_t context=contexts+slot*0x1584u,actor=actors+slot*0xea0u;
+        const uint32_t body=WORD_AT(context+0x14u);
+        if(!guest_writable(actor,0xea0u) || WORD_AT(actor+8u)!=slot || WORD_AT(actor)!=body ||
+           WORD_AT(context)!=slot || WORD_AT(context+0x114u)!=2u || (WORD_AT(context+0xcu)&0x8000u) ||
+           WORD_AT(actor+0x10u)!=2u || (WORD_AT(actor+0x2cu)&4u) ||
+           !guest_writable(body,0x160u) || WORD_AT(body+0x7cu)!=actor || WORD_AT(body+0x150u)!=context ||
+           (WORD_AT(body+0x28u)&0x80000000u) || WORD_AT(body+0x15cu))continue;
+        const uint32_t model=WORD_AT(body+4u);
+        if(!model || !guest_writable(model,0x200u))continue;
+        /* Render-time evaluation is frozen. Supply the missing simulation
+           advance once per game update, retaining native clips/locomotion and
+           the original freeze/cinematic adapter; no callback is replaced. */
+        guest_call(sub_0005FEB0,1,body);
+    }
+    restore_registers(&saved);
+}
+#endif

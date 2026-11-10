@@ -3082,6 +3082,15 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Story human animation initialization (2026-11-09, uncommitted on online-story-coop):**
+  Shared campaign source invokes the original advancing/freeze-aware model
+  routine for fully initialized live Story humans without an authored callback. Both peer roles,
+  all13 scenes and2/3/4 players use the same rule; existing authored callbacks
+  and cinematic/frozen states are preserved. The original guest API needs no
+  OS adapter. Native Mac/Linux Story transport remains the existing gap;
+  Windows CPU/build evidence does not establish native gameplay acceptance.
+  See STATUS and the shared campaign guide for the actual live validation.
+
 - **Story Coop Developer Tools (2026-11-09, uncommitted on online-story-coop):**
   Shared developer policy enables local guest camera/movement and host-owned
   time/audio, god/ammo and checkpoint advance. Shared Story reliable messages

@@ -1,3 +1,35 @@
+## Story player animation advance - 2026-11-09 (local validation)
+
+On online-story-coop atb2c71e10 plus uncommitted changes, the post-simulation
+Story adapter advances live human models lacking an authored model callback
+through original5FEB0/5FDC0. It preserves native animation selection, freeze
+flags, callbacks, inventory and movement ownership. Script/cinematic, paused,
+dead/departed and non-Story paths are excluded; two to four humans use one policy.
+
+User evidence is private/captures/story-player-animation-20261109-225009:
+1237 video frames and1273 numeric samples from host/guest Scotland. The user
+corrected the initial workaround report: restart did not restore animations.
+Both peers' model clocks stayed at zero during movement. An isolated paired
+load confirmed normal delta/playback rate and absent model callbacks. Native
+callback registration alone was tested and rejected: it did not advance the
+clocks. Temporary pose tracing and that intermediate implementation were removed.
+Final source supplies the missing original animation advance after simulation.
+
+Windows11 x64, Python3.14.2, MSVC14.42.34433, default Windows renderer (Vulkan
+off): official Build and built-in checks pass. Final affected menu/FOV suite:
+59 passed, two native-host skips. Campaign matrix covers all13 scene IDs,
+two/three/four humans and host/guest roles, preserved callbacks and script/freeze
+exclusions. The supported US original callback/flag contract passes; repository
+context and whitespace checks pass. Version0.6.0-story-coop-beta.1, EXE SHA-256:
+7301587dd9bcca56c284857cec926e75664ecb313ca1e4c5927319b4dc89d1ae.
+
+Baseline and intermediate paired loading/movement/fire probes passed but retained
+the animation fault. Final live verification stopped before launch because the
+runner found another game instance (PID35244); it was left untouched and the
+user was asked to close it or test manually. Final live animation/bone-matrix
+acceptance is therefore pending. Mac/Linux Story retains the MAC-013 transport
+gap. No commit, push or publication for this change.
+
 ## Story Coop Developer Tools - 2026-11-09 (local validation)
 
 On online-story-coop at7c56b85b plus uncommitted shared-source changes, locally

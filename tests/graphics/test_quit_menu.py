@@ -51,6 +51,12 @@ def test_story_original_us_entry_contract():
                 return image[offset+address-start:offset+address-start+size]
         raise AssertionError('Unmapped bounded US contract read')
     assert read(0x123c9, 4) == b'\xcc'*4
+    # Story human animation registers the original advancing callback, whose
+    # FDC0 route retains authored actor freeze flags and cinematic adapters.
+    assert read(0x5feb4,2)==bytes.fromhex('6a01')
+    call=read(0x5feb7,5)
+    assert call[0]==0xe8 and 0x5febc+struct.unpack_from('<i',call,1)[0]==0x5fdc0
+    assert read(0x5fde4,4)==bytes.fromhex('f6412c04')
     # Native first-person models use synthetic viewport rooms and a local-model
     # flag; these must never enter persistent Story world-prop identity.
     assert read(0x1be1a9,11)==bytes.fromhex('8b4e5405ca000000894134')
