@@ -82,6 +82,10 @@ int main(void){
  CHECK(migration_requests==2 && !stock && !multiplayer_destination && g_esp==0x1804);
  pc_multiplayer_migration_leave();
  CHECK(multiplayer_destination==3 && recorded==1 && menus==1 && unloads==1);
+ /* Directory status can lag behind the engine's Results transition. Never
+    wait for an active-match final frame after the match has already ended. */
+ setup(1);WORD_AT(0x7de30c)=8;pc_multiplayer_exit_action(sub_002EAF60_gen,0);
+ CHECK(migration_requests==2 && multiplayer_destination==1 && !recorded);
  migration_requested=0;
  for(unsigned results=0;results<4;++results){
   setup(1);WORD_AT(0x7de30c)=results?8:7;

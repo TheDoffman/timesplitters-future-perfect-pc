@@ -26,7 +26,9 @@ normal-exit deadline falls back to the freshest viable backup so a broken client
 cannot indefinitely prevent departure; a lone owner can leave without a backup.
 Crash migration chooses the
 freshest acknowledged checkpoint and may roll back to that frame. No viable backup
-closes the room. The server keeps the latest two checkpoints in memory.
+closes the room. The server keeps the latest two checkpoints in memory. End-of-round
+lobby metadata retains the last nonce until the next round advances the epoch;
+transport cleanup never rewinds the native progress counter.
 
 `pc_arcade_checkpoint.h` defines a pointer-free schema (magic/schema/size, round
 nonce, epoch, sequence, level, tick, rules, sixteen score rows/totals/timestamps,
@@ -45,7 +47,9 @@ actor pool and local node instead of calling stock host creation, which resets
 the match. The shared network-frame hook pauses stock processing during handoff;
 `pc_native_timing_guest.inc` holds game delta while render/wall clocks continue.
 `pc_multiplayer_exit.inc` defers a normal host exit until the final checkpoint is
-acknowledged and the service has fenced that owner.
+acknowledged and the service has fenced that owner. Results callbacks require
+actual active-match engine phases before deferring, because directory metadata
+can briefly lag behind the engine transition.
 
 `3000-arcade-migration-build.patch` enables the same adapter for Windows, Mac and
 Linux game builds. Online shared Arcade uses v3; Story remains v2. Isolated browser
@@ -68,9 +72,9 @@ include all new modules. Matching native rebuilds are required.
   companion crash or engine stall with live HTTP heartbeats) restore
   the expected bytes and keeps real gameplay datagrams flowing between survivors.
 - `tools/testing/test-online-bot-motion.py --migration crash --tag UNIQUE`: isolated
-  two-game native acceptance, requiring checkpoint publication/engine ACK before
-  host termination, native promotion, advancing clock and bot motion/combat after
-  migration. Normal build identity/seal and test-save isolation are enforced.
+  two-game native acceptance (`crash` or `leave`), requiring checkpoint
+  publication/engine ACK before departure, native promotion, surviving score rows,
+  the selected backup tick and bot motion/combat after migration. Normal build identity/seal and test-save isolation are enforced.
 
 Fixture and socket tests do not demonstrate that original AI decisions, weapon
 inventory, pickups, objectives or every Arcade mode survive a live handoff.

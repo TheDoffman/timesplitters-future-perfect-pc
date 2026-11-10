@@ -83,7 +83,10 @@ class ArcadeService:
         result = dict(self.public(room, remote), peer_id=peer, peer_token=member['token'],
                       peer_key=member['wire_key'], relay_key=member['relay_key'])
         migration = room['migration']
-        result['match_id'] = migration.match_id if migration else room['room']
+        # Ending a round does not change authority. Keep its nonce until the
+        # next round advances the epoch; native control rejects same-epoch
+        # identity changes as delayed/foreign control packets.
+        result['match_id'] = migration.match_id if migration else room.get('match_id', room['room'])
         result['candidate'] = migration.candidate if migration else None
         result['previous_host'] = room['previous_host']
         result['backup_ready'] = False
@@ -116,6 +119,7 @@ class ArcadeService:
         for peer, member in room['members'].items():
             migration.members[peer].seen = member['native_at']
         room['migration'] = migration
+        room['match_id'] = migration.match_id
         self.sync(room)
 
     def update_native(self, room, peer, body):
