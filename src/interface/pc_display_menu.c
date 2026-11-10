@@ -4,6 +4,7 @@
    audio/video, layout, highlighting and navigation stay in the guest engine. */
 #include "pc_display_menu.h"
 #include "pc_settings.h"
+#include "input/pc_control_presets.h"
 #include "pc_controls.h"
 #include "pc_developer.h"
 #include "pc_debug.h"
@@ -149,6 +150,9 @@ static int controls_gameplay_masks(unsigned port,unsigned masks[24],int *mounted
         masks[11]=WORD_AT(player+0x34)|WORD_AT(player+0x48);
         masks[12]=WORD_AT(player+0x38);masks[13]=WORD_AT(player+0x3c);
         masks[18]=WORD_AT(player+0x2c);masks[23]=WORD_AT(player+0x28);
+        unsigned axes[4];
+        for(unsigned axis=0;axis<4;axis++)axes[axis]=WORD_AT(player+0x50+axis*4);
+        pc_preset_axis_masks(masks,axes);
         *mounted=WORD_AT(player+0x114)==0x80u;
         if(*mounted)masks[0]=WORD_AT(player+0x24); /* Use also leaves fixed weapons. */
         return 1;
@@ -1650,6 +1654,7 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case 0x002CBE50u:return controls_open;
     case 0x002EC1A0u:return controls_open;
     case 0x002EA8E0u:return controls_build;
+    case 0x002E97C0u:return controls_diagram_draw;
     case 0x002EAB30u:return controls_tick;
     case 0x002E9FC0u:return controls_font_menu(WORD_AT(g_esp+4u))?controls_back:NULL;
     case 0x002CBE00u:case 0x002E9E50u:return controls_font_menu(WORD_AT(g_esp+4u))?controls_accept:NULL;

@@ -8,8 +8,10 @@
 
 #ifdef _MSC_VER
 static __declspec(thread) PcTextReadScope text_read_scope;
+static __declspec(thread) unsigned controller_layout_depth;
 #else
 static _Thread_local PcTextReadScope text_read_scope;
+static _Thread_local unsigned controller_layout_depth;
 #endif
 void pc_prompts_layout_begin(void) { pc_text_read_begin(&text_read_scope); }
 void pc_prompts_layout_end(void) { pc_text_read_end(&text_read_scope); }
@@ -80,8 +82,11 @@ void pc_prompts_controller(const RecompPadState *pad, int connected)
     ReleaseSRWLockExclusive(&prompt_lock);
 }
 
+void pc_prompts_controller_layout_begin(void) { ++controller_layout_depth; }
+void pc_prompts_controller_layout_end(void) { if(controller_layout_depth)--controller_layout_depth; }
 int pc_prompts_keyboard_active(void)
 {
+    if(controller_layout_depth)return 0;
     int value;
     AcquireSRWLockShared(&prompt_lock);
     value=keyboard_active;

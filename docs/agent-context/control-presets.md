@@ -106,12 +106,22 @@ The existing 69D90 profile-init hook (pc_unlock_profile_init) calls
 controls_new_profile only for the same known-new identity.device==-1 boundary
 that initializes controls/progress. With the new-setup marker, it selects native
 editable layout0 and seeds the named actions in its first14 words using the inverse
-shared Modern Controller table. The unused action word and remaining8 axis/options words stay unchanged.
+shared Modern Controller table, retaining one physical button per native action
+(the lowest set bit). Native Customize cannot represent combined masks; Modern
+sampling still routes its additional sources through each action. The unused
+action word stays unchanged. New Custom profiles also seed the8
+axis words to native Default selectors2,1,4,3 (and their runtime copies).
+Leaving the backing axis words empty while selecting layout0 disabled movement.
+Existing profiles repair only when their layout0, complete Modern action seed and
+eight zero or native Default axis words match the old combined-mask seed exactly.
+Repair seeds empty axes and canonicalizes those button masks; other configured
+axis sets and layouts/actions remain untouched. Repair is in memory during profile
+initialization and persists through the normal native profile save flow.
 Loaded/copied profiles bypass the seed, including existing saves used with a new
 host config. Controller Customize and native Accept/save keep their original flow.
 Tests cover new Custom key parity and edits across preset round trips, old update
 byte preservation, both sampler adapter modes with an edited semantic Custom key,
-and new/existing native profile guards, physical action masks and axis retention.
+and new/existing native profile guards, physical masks, seeded axes and repair guards.
 
 Historical upgrade fixtures exclude patch2940 alongside its absent Tools/input
 dependencies. Each complete-stack upgrade still installs2940; the previous-controls
@@ -139,3 +149,16 @@ masks, plus remapped/split local ports, invalid owners and mounted-state isolati
 controls_context_port centralizes the +4 owner/6B93C0 map for gameplay masks and
 active-context controller glyphs (7B0C7C), with invalid/remote owners returning4.
 The guest/split fixture verifies both readers share the same local port policy.
+
+Controller diagram glyphs are physical even when opened with KBM; the scoped
+prompt override does not change gameplay bindings or the remembered device.
+
+Keyboard axis independence: controls_gameplay_masks reads native per-player
+Move/Strafe/Look selectors at +50/+54/+58/+5c. pc_preset_axis_masks exports their
+physical directions separately from button masks. Semantic Custom/Modern PC
+sources route movement and optional look keys through those selectors before
+combining with pad input. Swapping controller Move/Look therefore preserves the
+keyboard action labels and behavior; Custom physical pad sources are unchanged.
+Mouse look already writes camera angles directly, independently of stick layout.
+Sampler tests cover swapped sticks, optional keyboard look, edited Forward and
+unchanged Custom pad input on both host adapters; FOV fixture covers live selectors.

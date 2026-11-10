@@ -210,6 +210,12 @@ int main(int argc,char **argv)
     for(int i=0;i<PC_ACTION_COUNT;i++) keys[i]=settings.keys[i][0];
     pc_prompts_reset();
     CHECK(pc_prompts_keyboard_active());
+    pc_prompts_controller_layout_begin();
+    CHECK(!pc_prompts_keyboard_active());
+    CHECK(!pc_prompts_rewrite("\v2",text,sizeof text));
+    pc_prompts_controller_layout_begin();pc_prompts_controller_layout_end();
+    CHECK(!pc_prompts_keyboard_active());
+    pc_prompts_controller_layout_end();CHECK(pc_prompts_keyboard_active());
     CHECK(pc_prompts_rewrite("XBOX LIVE / SYSTEM LINK",text,sizeof text));
     CHECK(!strcmp(text,"ONLINE / SYSTEM LINK"));
     CHECK(pc_prompts_rewrite("Play with friends on Xbox Live",text,sizeof text));

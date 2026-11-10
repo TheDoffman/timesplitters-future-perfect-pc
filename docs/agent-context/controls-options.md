@@ -1,3 +1,9 @@
+Controller layout diagram: US524A00 draw callback2E97C0 is wrapped by
+`controls_diagram_draw`. A thread-local nested prompt scope forces physical
+controller labels for its measurements/text/glyph draws, restoring the remembered
+input device afterward. Normal menu/KBM prompts still follow last input. Scope
+changes display only; native action configuration remains authoritative.
+
 [Custom seeds](control-presets.md).
 
 # Unified Controls options

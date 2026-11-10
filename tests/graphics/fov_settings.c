@@ -112,7 +112,11 @@ uint32_t xbox_HeapAlloc(uint32_t size,uint32_t alignment) {static uint32_t next=
  * during the FOV/settings test. */
 static int settings_keyboard=1,settings_pad_allowed;
 static unsigned char settings_keys[256];
-int pc_prompts_keyboard_active(void) { return settings_keyboard; }
+static unsigned physical_diagram_depth,physical_diagram_draws;
+void pc_prompts_controller_layout_begin(void) {++physical_diagram_depth;}
+void pc_prompts_controller_layout_end(void) {--physical_diagram_depth;}
+void sub_002E97C0(void) {CHECK(physical_diagram_depth==1);++physical_diagram_draws;g_esp+=4;}
+int pc_prompts_keyboard_active(void) { return settings_keyboard && !physical_diagram_depth; }
 void sub_000402D0(void) {CHECK(0);}
 void sub_0001A2E0(void) {CHECK(0);}
 int pc_prompts_keycap_label(const char *label,size_t length) {(void)label;(void)length;CHECK(0);return 0;}
@@ -510,6 +514,8 @@ int main(int argc,char **argv)
         update_notice_test=0;settings_footer_menu=0;update_notice_menu=0;
         CHECK(!_putenv_s("TSFP_GAME_UPDATE_NOTICE",""));CHECK(!_putenv_s("TSFP_GAME_INSTALLED_VERSION",""));remove(path);
     }
+    g_esp=0x700000;pc_display_menu_lookup(0x002E97C0u)();
+    CHECK(physical_diagram_draws==1 && !physical_diagram_depth && g_esp==0x700004);
     { /* New native profiles seed editable Modern; existing profiles stay byte-identical. */
         uint32_t profile=0x44000,identity=0x48000;unsigned char retained[0x7c];
         WORD_AT(profile)=identity;WORD_AT(identity+0x24)=0;WORD_AT(profile+4)=1;
@@ -522,15 +528,26 @@ int main(int argc,char **argv)
         CHECK(!memcmp(retained,(void *)(g_xbox_mem_offset+profile+4),sizeof retained));
         test_custom_semantics=1;g_eax=profile;pc_unlock_profile_init(fixture_profile_initialized);
         CHECK(!(WORD_AT(profile+4)&0xffffu));
-        const unsigned modern_masks[14]={0x800,0x8000,0x80,0x10,0x400,0x1020,0x4004,8,1,0x42,0,0x4004,8,0x2000};
+        const unsigned modern_masks[14]={0x800,0x8000,0x80,0x10,0x400,0x20,4,8,1,2,0,4,8,0x2000};
         for(unsigned i=0;i<14;i++)CHECK(WORD_AT(profile+8+i*4)==modern_masks[i]);
         CHECK(WORD_AT(profile+8+10*4)==0); /* Unused native field stays unused. */
         CHECK(WORD_AT(profile+8+4*4)==0x400u); /* aim: LT */
         CHECK(WORD_AT(profile+8+3*4)==0x10u); /* reload: X */
         CHECK(WORD_AT(profile+8+13*4)==0x2000u); /* melee: RS */
         CHECK(WORD_AT(profile+8+1*4)==0x8000u); /* grenade: RB */
-        CHECK(WORD_AT(profile+8+5*4)==(0x20u|0x1000u)); /* crouch: B/LS */
-        for(unsigned i=14;i<22;i++)CHECK(WORD_AT(profile+8+i*4)==0xdead0000u+i);
+        CHECK(WORD_AT(profile+8+5*4)==0x20u); /* Native editor: one B token; modern LS routes to it. */
+        const unsigned axes[8]={2,1,4,3,2,1,4,3};
+        for(unsigned i=0;i<8;i++)CHECK(WORD_AT(profile+8+(14+i)*4)==axes[i]);
+        /* An existing broken fresh seed repairs; configured/custom axes survive. */
+        WORD_AT(identity+0x24)=0;
+        WORD_AT(profile+8+5*4)=0x1020u;
+        WORD_AT(profile+8+6*4)=WORD_AT(profile+8+11*4)=0x4004u;
+        WORD_AT(profile+8+9*4)=0x42u;
+        for(unsigned i=0;i<8;i++)WORD_AT(profile+8+(14+i)*4)=0;
+        g_eax=profile;pc_unlock_profile_init(fixture_profile_initialized);
+        for(unsigned i=0;i<8;i++)CHECK(WORD_AT(profile+8+(14+i)*4)==axes[i]);
+        WORD_AT(profile+8+14*4)=3;g_eax=profile;pc_unlock_profile_init(fixture_profile_initialized);
+        CHECK(WORD_AT(profile+8+14*4)==3);
         test_custom_semantics=0;
     }
     { /* Only the local port owning this native player receives its action masks. */
@@ -541,6 +558,11 @@ int main(int argc,char **argv)
         CHECK(!controls_gameplay_masks(3,masks,&mounted));controls_test_menu_active=0;
         CHECK(!controls_gameplay_masks(0,masks,&mounted));
         CHECK(controls_gameplay_masks(3,masks,&mounted) && masks[9]==0x10 && masks[23]==0x8000 && masks[18]==0x40);
+        WORD_AT(player+0x50)=4;WORD_AT(player+0x54)=3;
+        WORD_AT(player+0x58)=2;WORD_AT(player+0x5c)=1;
+        CHECK(controls_gameplay_masks(3,masks,&mounted));
+        CHECK(masks[14]==(1u<<19) && masks[17]==(1u<<22));
+        CHECK(masks[19]==(1u<<14) && masks[22]==(1u<<17));
         CHECK(masks[2]==0x4000 && masks[1]==0x20 && masks[8]==0x400 && !mounted && masks[0]==0x80);
         WORD_AT(player+0x114)=0x80;CHECK(controls_gameplay_masks(3,masks,&mounted) && mounted && masks[0]==0x4000);
         WORD_AT(0x79094c)=101;CHECK(!controls_gameplay_masks(3,masks,&mounted));WORD_AT(0x79094c)=0;
