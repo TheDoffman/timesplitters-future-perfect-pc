@@ -69,15 +69,19 @@ def destination(ip):
 
 class Bridge:
     def __init__(self, compatibility, room, peer_id=1, key=None, host=None,
-                 bind=('0.0.0.0', 0), clock=time.monotonic, relay=None, relay_key=None):
+                 bind=('0.0.0.0', 0), clock=time.monotonic, relay=None, relay_key=None, host_peer=1):
         self.compatibility = bytes.fromhex(compatibility)
         self.room = bytes.fromhex(room)
         if len(self.compatibility) != 32 or len(self.room) != 16:
             raise ValueError('Invalid room identity')
         self.peer_id, self.clock = peer_id, clock
+        self.host_peer = host_peer
+        virtual_ip(host_peer)
+        self.arcade = None
+        self.migration_frozen = False
         virtual_ip(peer_id)
         self.key = bytes.fromhex(key) if key else None
-        if peer_id != 1 and (not self.key or len(self.key) != 32 or not host):
+        if peer_id != host_peer and (not self.key or len(self.key) != 32 or not host):
             raise ValueError('Guest requires host and peer credential')
         self.host = host
         self.relay = relay
@@ -91,6 +95,7 @@ class Bridge:
         self.relay_seen = self.clock()
         self.local_token = secrets.token_bytes(16)
         self.local = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.local.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 262144)
         self.local.bind(('127.0.0.1', 0))
         self.wan = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.wan.bind(bind)
@@ -102,7 +107,7 @@ class Bridge:
         self.ports, self.peers = {}, {}
         self.lock = threading.Lock()
         self.ready = threading.Event()
-        if peer_id == 1 and not relay:
+        if peer_id == host_peer and not relay:
             self.ready.set()
         self.stopped = threading.Event()
         self.sequence = 0
@@ -146,7 +151,7 @@ class Bridge:
                     self.latencies.pop(i, None)
                     self.pending_pings.pop(i, None)
             for i, key in wanted.items():
-                if not 2 <= i <= 254 or len(key) != 32:
+                if not 1 <= i <= 254 or i == self.peer_id or len(key) != 32:
                     raise ValueError('Invalid directory roster')
                 if i not in self.peers or self.peers[i]['key'] != key:
                     self.peers[i] = dict(key=key, endpoint=None, sequence=-1, seen=0)
@@ -176,7 +181,7 @@ class Bridge:
             self.local.sendto(body, endpoint)
 
     def route(self, source, target, sport, dport, payload):
-        if target in (0, 1) and source != 1:
+        if target in (0, self.peer_id) and source != self.peer_id:
             self.deliver(source, sport, dport, payload)
         with self.lock:
             for peer_id, peer in self.peers.items():
@@ -190,6 +195,9 @@ class Bridge:
         if (magic != LOCAL_MAGIC or version != self.compatibility or
             not hmac.compare_digest(token, self.local_token) or source != virtual_ip(self.peer_id)):
             self.dropped += 1
+            return
+        if sport == 0 and dport == 0 and self.arcade is not None:
+            self.arcade.from_native(packet[LOCAL.size:], endpoint)
             return
         # Registration is a zero-destination-port packet; only game sockets
         # bound to the known System Link ports can register or send data.
@@ -205,8 +213,10 @@ class Bridge:
         except ValueError:
             return
         payload = packet[LOCAL.size:]
-        if self.peer_id == 1:
-            self.route(1, target, sport, dport, payload)
+        if self.migration_frozen:
+            return
+        if self.peer_id == self.host_peer:
+            self.route(self.peer_id, target, sport, dport, payload)
         else:
             self.send_wire(self.host, self.key, DATA, self.peer_id, target, sport, dport, payload)
 
@@ -229,9 +239,9 @@ class Bridge:
             self.relay_received_sequence = sequence
             self.relay_seen = self.clock()
             self.relay_ready.set()
-            if self.peer_id == 1:
+            if self.peer_id == self.host_peer:
                 self.ready.set()
-        elif kind == FORWARD and 1 <= source <= 254 and (source == 1 or self.peer_id == 1):
+        elif kind == FORWARD and 1 <= source <= 254 and (source == self.host_peer or self.peer_id == self.host_peer):
             self.relay_received_sequence = sequence
             self.relay_seen = self.clock()
             self.from_wire(packet[RELAY.size:-32], relay_endpoint(source))
@@ -243,6 +253,8 @@ class Bridge:
             self.from_wire(packet, endpoint)
 
     def from_wire(self, packet, endpoint):
+        if self.migration_frozen:
+            return
         if not WIRE.size+33 <= len(packet) <= WIRE.size+33+MAX_PAYLOAD:
             return
         magic, version, room, sequence, source, target, sport, dport = WIRE.unpack_from(packet)
@@ -251,7 +263,7 @@ class Bridge:
             return
         body, signature = packet[:-32], packet[-32:]
         kind = packet[WIRE.size]
-        if self.peer_id == 1:
+        if self.peer_id == self.host_peer:
             with self.lock:
                 peer = self.peers.get(source)
                 if (not peer or sequence <= peer['sequence'] or
@@ -263,7 +275,7 @@ class Bridge:
                 peer.update(sequence=sequence, seen=self.clock())
                 if kind == HELLO:
                     peer['endpoint'] = endpoint
-                    self.send_wire(endpoint, peer['key'], ACK, 1, source)
+                    self.send_wire(endpoint, peer['key'], ACK, self.peer_id, source)
                     return
                 if self.latency_control(kind, source, target, packet[WIRE.size+1:-32], endpoint, peer['key']):
                     return
@@ -273,10 +285,10 @@ class Bridge:
                 self.dropped += 1
                 return
             self.host_sequence = sequence
-            if kind == ACK and target == self.peer_id:
+            if kind == ACK and source == self.host_peer and target == self.peer_id:
                 self.ready.set()
                 return
-            if source == 1 and self.latency_control(kind, source, target, packet[WIRE.size+1:-32], endpoint, self.key):
+            if source == self.host_peer and self.latency_control(kind, source, target, packet[WIRE.size+1:-32], endpoint, self.key):
                 return
         if kind != DATA or dport not in (1000, 3000, 9999) or sport not in (1000, 3000, 9999):
             return
@@ -284,27 +296,29 @@ class Bridge:
             return
         self.received += 1
         payload = packet[WIRE.size+1:-32]
-        if self.peer_id == 1:
+        if self.peer_id == self.host_peer:
             self.route(source, target, sport, dport, payload)
         elif target in (0, self.peer_id):
             self.deliver(source, sport, dport, payload)
 
     def poll(self, timeout=.05):
         now = self.clock()
+        if self.arcade is not None:
+            self.arcade.poll()
         if self.relay and now-self.last_registration >= 1:
             try:
                 self.send_relay(REGISTER)
             except OSError:
                 self.dropped += 1
             self.last_registration = now
-        if self.peer_id != 1 and now-self.last_hello >= 1:
-            self.send_wire(self.host, self.key, HELLO, self.peer_id, 1)
+        if not self.migration_frozen and self.peer_id != self.host_peer and now-self.last_hello >= 1:
+            self.send_wire(self.host, self.key, HELLO, self.peer_id, self.host_peer)
             self.last_hello = now
-        if now-self.last_ping >= 1:
+        if not self.migration_frozen and now-self.last_ping >= 1:
             with self.lock:
                 targets = [(i, peer['endpoint'], peer['key']) for i, peer in self.peers.items()
-                           if peer['endpoint'] and now-peer['seen'] <= 5] if self.peer_id == 1 else (
-                               [(1, self.host, self.key)] if self.ready.is_set() else [])
+                           if peer['endpoint'] and now-peer['seen'] <= 5] if self.peer_id == self.host_peer else (
+                               [(self.host_peer, self.host, self.key)] if self.ready.is_set() else [])
                 for peer, endpoint, key in targets:
                     pending = self.pending_pings.get(peer)
                     if pending and now-pending[1] <= 5:

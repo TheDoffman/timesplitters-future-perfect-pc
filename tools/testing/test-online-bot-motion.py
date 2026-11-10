@@ -112,6 +112,7 @@ def main():
                         help='0 uses Original60; other values select native beta timing')
     parser.add_argument('--guest-fps', type=int, choices=(0,120,180,240), default=0)
     parser.add_argument('--no-captures', action='store_true')
+    parser.add_argument('--migration', choices=('crash',), help='Terminate the host and verify native Arcade continuation')
     parser.add_argument('--require-results', action='store_true',
                         help='Wait up to --seconds for both peers to finish and publish score rows')
     parser.add_argument('--post-results-seconds', type=int, default=0,
@@ -127,6 +128,8 @@ def main():
     parser.add_argument('--short-match', action='store_true',
                         help='Select five-point Deathmatch through the stock setup menu')
     args = parser.parse_args()
+    if args.migration and (args.mac_host or args.require_results or args.inspect_setup):
+        parser.error('--migration currently uses two local games without results/setup-only modes')
     if args.mac_host and not (args.mac_root and args.lan_address):
         parser.error('--mac-host needs --mac-root and --lan-address')
     if args.mac_host and args.guest_fps:
@@ -172,8 +175,16 @@ def main():
     mac_peer=0 if args.mac_role=='host' else 1
     address = args.lan_address if args.mac_host else '127.0.0.1'
     server = Server((address, 0), Directory(public_address=None if args.mac_host else address))
+    relay = None
+    relay_thread = None
+    if args.migration:
+        from lobby_server import RelayServer
+        relay = RelayServer(server.directory)
+        server.directory.relay_address = relay.socket.getsockname()
+        relay_thread = threading.Thread(target=relay.run, daemon=True)
+        relay_thread.start()
     fingerprint=''
-    if args.mac_host:
+    if args.mac_host or args.migration:
         import ssl
         from online_host import certificate
         cert,private_key,fingerprint=certificate(automation/'directory')
@@ -183,7 +194,7 @@ def main():
         server.socket=tls.wrap_socket(server.socket,server_side=True,do_handshake_on_connect=False)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    url = ('https://' if args.mac_host else 'http://')+address+':'+str(server.server_port)
+    url = ('https://' if args.mac_host or args.migration else 'http://')+address+':'+str(server.server_port)
     with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as available:
         available.bind((address,0))
         host_port=available.getsockname()[1]
@@ -196,6 +207,7 @@ def main():
     checkpoints = []
     menu_inputs = []
     completed=False
+    retired = set()
     started = time.monotonic()
     def read(peer, address, size):
         if peer==mac_peer and remote is not None:
@@ -263,7 +275,7 @@ def main():
     def wait(seconds):
         until = time.monotonic()+seconds
         while time.monotonic() < until:
-            if any(p.poll() is not None for p in children):
+            if any(p.poll() is not None for i,p in enumerate(children) if i not in retired):
                 raise RuntimeError('A game exited early')
             observe()
             time.sleep(.008)
@@ -404,7 +416,8 @@ def main():
                 for at,key in initial for d,value in ((0,1),(180,0)))+'\n')
             command = automation/f'{peer}.json'
             command.write_text(json.dumps(dict(action='host' if peer == 0 else 'join',
-                directory=url, fingerprint=fingerprint, port=host_port, automatic_host=False, detect_public_address=False)))
+                directory=url, fingerprint=fingerprint, port=host_port, automatic_host=False,
+                detect_public_address=False, migration=bool(args.migration), transport='relay' if args.migration else 'direct')))
             env.update(TSFP_PC_INPUT_STATE=str(input_path), TSFP_NETWORK_BOTS='1',
                 TSFP_PC_INPUT_REPLAY=str(replay),
                 TSFP_NATIVE_FPS=str((args.host_fps,args.guest_fps)[peer]),
@@ -435,14 +448,14 @@ def main():
         codes=[]
         while time.monotonic()<deadline:
             with server.directory.lock:
-                codes = list(server.directory.online)
+                codes = list(server.directory.arcade.rooms if args.migration else server.directory.online)
             if codes:break
             wait(.1)
         if not codes:
             report('no-online-lobby')
             raise RuntimeError('Online browser did not create a lobby')
         command = automation/'1.json'
-        command.write_text(json.dumps(dict(action='join', directory=url, fingerprint=fingerprint, code=codes[0])))
+        command.write_text(json.dumps(dict(action='join', directory=url, fingerprint=fingerprint, code=codes[0], migration=bool(args.migration))))
         if remote is not None and mac_peer==1:remote.call('command',command=json.loads(command.read_text()))
         key(1, 69)
         wait(8)
@@ -504,6 +517,38 @@ def main():
         key(0, 69)
         wait(18)
         report('match')
+        if args.migration:
+            deadline=time.monotonic()+20
+            while time.monotonic()<deadline:
+                with server.directory.lock:
+                    room=server.directory.arcade.rooms.get(codes[0])
+                    migration=room['migration'] if room else None
+                    ready=bool(migration and migration.checkpoints and any(
+                        p!=migration.host_peer and member.acknowledged for p,member in migration.members.items()))
+                if ready:break
+                wait(.1)
+            assert ready, 'Native engines did not publish/acknowledge a checkpoint'
+            report('before-host-loss')
+            old_tick=word(1,0x7de318)
+            retired.add(0);children[0].terminate();children[0].wait(timeout=10)
+            deadline=time.monotonic()+15
+            while time.monotonic()<deadline:
+                if word(1,0x76b140)==1 and word(1,0x76b1a4)==15 and word(1,0x7de30c)==7:break
+                wait(.1)
+            report('after-host-loss')
+            assert word(1,0x76b140)==1 and word(1,0x76b1a4)==15 and word(1,0x7de30c)==7, 'Native promotion failed'
+            assert abs(word(1,0x7de318)-old_tick)<1200, 'Match clock restarted'
+            marker=time.monotonic()-started
+            wait(args.seconds)
+            report('migration-finished')
+            rows=[s for s in samples if s['peer']==1 and s['seconds']>marker and s['match_state']==7]
+            assert rows and rows[-1]['tick']>rows[0]['tick']+120, 'Match clock did not resume'
+            assert any(len({tuple(s['actors'][i]['position']) for s in rows if s['actors'][i]})>3
+                       for i in range(rows[0]['humans'],rows[0]['humans']+rows[0]['bots'])), 'Bots did not resume moving'
+            assert any(len({(s['actors'][i]['spawn'],s['actors'][i]['health']) for s in rows if s['actors'][i]})>1
+                       for i in range(rows[0]['humans'],rows[0]['humans']+rows[0]['bots'])), 'Bots did not resume combat/respawning'
+            completed=True
+            return
         if args.short_match:
             assert all(word(peer,0x7de464)==5 for peer in (0,1)), 'Menu replay did not select five points'
         # Movement of each human remains independently observable.
@@ -575,6 +620,7 @@ def main():
             require_rematch_results=args.require_rematch_results,
             inspect_setup=args.inspect_setup,
             short_match=args.short_match,
+            migration=args.migration,
             compatibility=identity['compatibility'], remote=remote_provenance,
             observation='asynchronous ReadProcessMemory / native read-only probe' if remote else 'asynchronous ReadProcessMemory',
             pids=[child.pid for child in children], guest_memory_offsets=offsets,
@@ -598,6 +644,8 @@ def main():
             (run/'run.lock').unlink(missing_ok=True)
             recycle_disks(ROOT, run)
         server.shutdown(); server.server_close(); thread.join()
+        if relay:
+            relay.close();relay_thread.join(timeout=3)
         provenance['cleanup_completed']=True
         provenance['seconds']=time.monotonic()-started
         (out/'provenance.json').write_text(json.dumps(provenance,indent=2))

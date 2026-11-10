@@ -5,6 +5,8 @@
     "tests/repository/test_patch_updates.py"
   ],
   "native": [
+    "tests/network/test_arcade_checkpoint.py",
+    "tests/network/test_arcade_service.py",
     "tests/textures/test_texture_preference.py",
     "tests/textures/test_texture_runtime.py",
     "tests/textures/texture_pack_tools.py",

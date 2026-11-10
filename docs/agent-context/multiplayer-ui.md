@@ -1,17 +1,16 @@
 # Multiplayer companion presentation
 
-## Arcade host migration groundwork
+## Arcade host migration
 
-`online_migration.ArcadeMigration` is a separately tested coordinator prototype,
-not imported by the directory, relay, companion or native game. It selects a
-successor only from engine-acknowledged checkpoints, fences the old authority
-with a new epoch, waits for native restore readiness, and excludes failed
-successors/unresponsive members before resuming. Player IDs stay stable across
-repeated elections. Checkpoint payloads are opaque here; native serialization,
-restore and semantic validation are not implemented. Never acknowledge native
-readiness from a transport/HTTP response or advertise active-match migration from
-these tests. Production still ends the match when the host leaves. See the
-[native handoff investigation](../development/arcade-host-migration.md).
+Shared Arcade uses authenticated v3 rooms through `ArcadeSession`; Story and
+legacy direct tests retain v2. Native control uses a separate authenticated
+loopback socket, pointer-free checkpoints, engine progress/restore ACKs, dynamic
+host routing and per-epoch key rotation. The native game-thread adapter preserves
+scores, game tick and bot numeric state before committing mapped native peer IDs.
+`3000-arcade-migration-build.patch` enables the shared game adapter. Production
+readiness still requires live AI/combat/respawn and match-continuation acceptance;
+compiled memory fixtures and three-companion socket tests alone are insufficient.
+See [implementation and validation](../development/arcade-host-migration.md).
 
 ## Shared relay
 

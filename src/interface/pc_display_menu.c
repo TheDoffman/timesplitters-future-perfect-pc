@@ -1573,6 +1573,7 @@ static void online_opening_tick(void)
 static void online_opening_tick(void) {}
 #endif
 #include "pc_multiplayer_exit.inc"
+#include "pc_arcade_migration_guest.inc"
 #include "pc_story_menu.inc"
 #include "pc_story_lobby.inc"
 #include "pc_story_browser.inc"

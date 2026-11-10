@@ -1,107 +1,72 @@
-# Arcade host migration groundwork
+# Arcade host migration
 
-Status: **coordinator prototype only; active-match host migration is not usable.**
-The user selected Arcade first on 2026-11-10; Story is excluded. Branch
-`feature/online-host-migration` depends on the unmerged shared relay branch at
-`a2d81939`. Neither the running Mac mini service nor the friend-test relay branch
-has been changed by this work.
+Status: native checkpoint/authority adapters and authenticated v3 relay integration
+are implemented on `feature/online-host-migration`, dependent on the unmerged relay
+branch at `a2d81939`. Live game continuation acceptance is still pending. The live
+Mac mini service and published friend-test binaries have not been updated.
 
-## What is implemented
+## Shared implementation
 
-`tools/network/online_migration.py` implements an isolated, clock-injected
-coordinator for the future authenticated directory/relay integration:
+`online_arcade_service.ArcadeService` owns separate v3 Arcade rooms under the
+existing directory lock. Stable member bearer credentials authorize HTTPS updates;
+wire and relay keys rotate on every authority epoch. During preparation the relay
+forwards no game traffic. It resumes only after surviving native engines restore
+and acknowledge the selected checkpoint. Native progress counters, rather than
+companion HTTP heartbeats, renew four-second engine leases. Retired peers cannot
+rejoin the active round or regain authority. v2 Story and direct sessions retain
+their existing behavior.
 
-- Per-match identities, stable participant IDs and monotonically increasing
-  authority epochs prevent an old host from regaining authority after a handoff.
-- The host publishes bounded checkpoints. The server retains only the latest two
-  and binds each digest to the match, epoch, sequence, tick and payload. A client
-  is a candidate only after its **native game** acknowledges a fresh checkpoint.
-- The freshest acknowledged checkpoint wins, with stable peer ID breaking ties.
-  A graceful host departure or four-second loss of its lease starts preparation.
-- No player has host authority during preparation. All surviving native games
-  must restore the selected checkpoint and acknowledge the new epoch and digest.
-  Bridge heartbeats do not count as engine readiness.
-- A failed successor is retired and another eligible player is selected under a
-  new epoch. A ready successor excludes a stalled nonhost after the preparation
-  deadline. No viable backup closes the coordinator instead of faking success.
-- Story, legacy schemas, stale acknowledgements, ID reuse, oversized checkpoints
-  and unauthorized checkpoint publication are refused.
+`online_arcade_client.ArcadeSession` supervises the dynamic host bridge and a separate
+authenticated loopback control socket. It verifies SHA-256 checkpoint identities,
+retries bounded CRC-checked fragments, and sends native acknowledgements to the
+service. Graceful departure waits for a backup to acknowledge the final frozen
+checkpoint; a lone owner can leave without a backup. Crash migration chooses the
+freshest acknowledged checkpoint and may roll back to that frame. No viable backup
+closes the room. The server keeps the latest two checkpoints in memory.
 
-The caller must authenticate every operation and hold its directory room lock.
-The coordinator does not own sockets or credentials. Its opaque checkpoint bytes
-are not yet a native game-state format. It is intentionally not bundled or
-enabled: importing it into the server without the remaining steps would not
-implement the requested feature.
+`pc_arcade_checkpoint.h` defines a pointer-free schema (magic/schema/size, round
+nonce, epoch, sequence, level, tick, rules, sixteen score rows/totals/timestamps,
+and up to ten bot snapshots). Capture requires active Arcade phase15/play7 and
+matching bot ticks. Restore preflights all destination spans and bot objects before
+writing scores, bot numeric state and the game clock. Player/controller pointers,
+profiles, rendering resources and local inputs remain local.
 
-## Confirmed native constraints
+`pc_arcade_control.h`, `pc_network_arcade.inc` and `pc_arcade_migration_guest.inc`
+implement bounded native reassembly, restore/ready, XNet session-key adoption and
+authority commit. Companion virtual IPs are mapped through the original network
+peer table; they are not native player slot IDs. Promotion preserves the existing
+actor pool and local node instead of calling stock host creation, which resets
+the match. The shared network-frame hook pauses stock processing during handoff;
+`pc_native_timing_guest.inc` holds game delta while render/wall clocks continue.
+`pc_multiplayer_exit.inc` defers a normal host exit until the final checkpoint is
+acknowledged and the service has fenced that owner.
 
-The supported US XBE was verified against the repository SHA-256 before read-only
-inspection. No generated C or game data was edited.
-
-The current Arcade host-loss path in original `35BEF0` reaches `65420` at return
-site `35C360` during phases15/16. The existing
-`pc_multiplayer_disconnect_exit` adapter routes that loss back to the network
-menu and closes the companion. `pc_multiplayer_exit.inc` also makes deliberate
-host Return to Lobby unload the match for the party. Both paths must distinguish
-a completed migration from an ordinary exit.
-
-Original host creation `3569D0` clears session state, recreates the local node,
-rebuilds profile/controller membership and assigns the host role. Calling it in
-the middle of a match is not a supported continuation path. A role-word change
-alone does not reconstruct that initialization or transfer game state.
-
-Current game host/member role is stored at `76B140`, the local node pointer at
-`774028`, and the host peer ID at `774040`. These original game IDs are distinct
-from the companion's virtual-address peer IDs. Never assume the next companion
-peer is the next native player slot, renumber existing players or overwrite
-personal profile/configuration memory.
-
-The bridge and relay currently assume peer1 is the host. Guest credentials are
-distributed to that owner, and guest-to-guest traffic passes through it. Changing
-only the directory owner would leave data, authentication and guest host pointers
-addressed to the departed machine.
-
-`PcNetworkBotState` transports presentation/combat state and selected score
-fields. It is not a complete serialized host checkpoint or AI execution state.
-The original engine also owns game-mode objectives, pickups, RNG state and
-reliable peer/channel state. These need explicit investigation and portable
-serialization/restoration; copying arbitrary guest memory between native
-processes/platforms is not an acceptable substitute.
-
-## Required integration before enabling
-
-1. Define and verify the Arcade checkpoint schema using actual game state,
-   including scores/clock/rules, mode objectives, actors/bots and world state.
-   Keep local inputs, cameras, profiles, native resources and pointers local.
-2. Add shared native capture/restore/readiness hooks at safe game-thread points,
-   including how a guest becomes authoritative and how old-host departures are
-   retired without the stock full-party teardown. Validate original functions
-   rather than assuming that a role flag is sufficient.
-3. Bind the coordinator to authenticated directory membership and native progress;
-   rotate/revoke owner and host-to-peer credentials under each epoch. Route only
-   the selected active host and reject packets from old epochs before delivery.
-   Stable virtual IPs and native peer identities must survive the handoff.
-4. Add bounded reliable checkpoint transfer over the existing authenticated path.
-   Treat missing fragments and late checkpoints as failures. Pause/resume the
-   match consistently during preparation and show migration status to players.
-5. Exercise three actual game instances: graceful quit, terminated host process,
-   failed replacement, repeated migration and old-host reconnection. Verify the
-   current map/mode, scores, remaining time, actor ownership, bots and ability to
-   finish/rematch. Repeat on physical Windows/Mac and outside the home network.
-
-Until then the correct user-facing statement remains: the first host leaving
-ends the active match. The prototype is not a testable host-migration release.
+`3000-arcade-migration-build.patch` enables the same adapter for Windows, Mac and
+Linux game builds. Online shared Arcade uses v3; Story remains v2. Isolated browser
+automation opts in with `migration: true` so legacy/direct regressions remain
+meaningful. Companion bundles, server installation and compatibility identities
+include all new modules. Matching native rebuilds are required.
 
 ## Validation
 
-`tests/network/test_online_migration.py` has 18 coordinator contracts. They cover
-both departure types, engine readiness versus heartbeat, checkpoint selection,
-stale/mismatched/cross-match ACKs, candidate failure and disconnect, survivor
-timeouts, repeated migrations, admission/size bounds and unrecoverable shutdown.
-The module is registered in the native runtime CI suite. All18 pass on Windows
-and physical Mac arm64/Python3.12; repository/context/shard checks also pass on
-Windows (50 tests including the18 policy tests). These are deterministic policy
-tests, not live relay integration or game-continuation acceptance.
+- `tests/network/test_online_migration.py`: deterministic election, freshness,
+  failed candidates, stalled survivors, repeated migration and old-epoch fencing.
+- `tests/network/test_arcade_checkpoint.py`: compiles production checkpoint,
+  control codec, transport and game-thread adapter against isolated guest-memory
+  fixtures. Includes six bots, score/tick restore, missing/stale/invalid state,
+  authenticated control, fragmented transfer and native peer-ID promotion.
+- `tests/network/test_arcade_service.py`: three real TLS/UDP companions, using the
+  exact C fixture ABI. Normal departure followed by replacement-host loss restores
+  the expected bytes and keeps real gameplay datagrams flowing between survivors.
+- `tools/testing/test-online-bot-motion.py --migration crash --tag UNIQUE`: isolated
+  two-game native acceptance, requiring checkpoint publication/engine ACK before
+  host termination, native promotion, advancing clock and bot motion/combat after
+  migration. Normal build identity/seal and test-save isolation are enforced.
 
-Existing relay validation is documented in
-[the shared relay guide](online-relay.md#protocol-and-validation).
+Fixture and socket tests do not demonstrate that original AI decisions, weapon
+inventory, pickups, objectives or every Arcade mode survive a live handoff.
+Bot snapshots restore presentation/combat fields but do not serialize opaque AI
+pointers. Live Deathmatch continuation, graceful menu exit, repeated actual-game
+handoffs, completion/rematch, physical Windows/Mac crossplay and outside-network
+play remain acceptance requirements. Do not call this a finished migration release
+until that evidence exists. See [shared relay validation](online-relay.md).

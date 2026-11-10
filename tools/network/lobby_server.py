@@ -36,6 +36,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from online_transport import (RELAY, RELAY_MAGIC, REGISTER, REGISTERED, FORWARD,
                               MAX_RELAY_PACKET, relay_packet)
+from online_arcade_service import ArcadeService, ArcadeServiceError
 
 VERSION = re.compile(r'[0-9a-f]{64}\Z')
 TTL = 90
@@ -58,6 +59,7 @@ class Directory:
         self.relay_address = relay_address
         self.relay_lan_address = relay_lan_address
         self.rooms = {}
+        self.arcade = ArcadeService(self)
 
     def expire(self):
         now = self.clock()
@@ -196,6 +198,11 @@ class Directory:
     def request(self, method, path, query, body, remote, owner):
         with self.lock:
             self.expire()
+            if path.startswith('/v3/'):
+                try:
+                    return self.arcade.request(method, path, query, body, remote, owner)
+                except ArcadeServiceError as error:
+                    raise LobbyError(error.status, error.message) from error
             if path.startswith('/v2/'):
                 return self.online_request(method, path, query, body, remote, owner)
             if path == '/v1/lobbies' and method == 'GET':
@@ -286,13 +293,24 @@ class RelayServer:
             return
         with self.directory.lock:
             now = self.directory.clock()
+            arcade = self.directory.arcade.relay_room(room)
             lobby = self.directory.rooms.get(room.hex())
-            if (not lobby or self.directory.online.get(lobby['code']) is not lobby or
+            if arcade:
+                member = arcade['members'].get(source)
+                # Preparation has no gameplay authority. Only authenticated
+                # registration/status/checkpoint traffic can proceed then.
+                active_host = arcade['host_peer']
+                if kind == FORWARD and active_host is None:
+                    self.dropped += 1
+                    return
+            elif (not lobby or self.directory.online.get(lobby['code']) is not lobby or
                 lobby['expires'] <= now):
                 self.dropped += 1
                 return
-            member = lobby['relay_host'] if source == 1 else lobby['peers'].get(source)
-            if not member or (source != 1 and member['expires'] <= now):
+            else:
+                member = lobby['relay_host'] if source == 1 else lobby['peers'].get(source)
+                active_host = 1
+            if not member or member.get('expires', now+1) <= now:
                 self.dropped += 1
                 return
             key = bytes.fromhex(member['relay_key'])
@@ -309,12 +327,14 @@ class RelayServer:
                 reply_source = 0
             elif kind == FORWARD:
                 if (endpoint != member['endpoint'] or now-member['seen'] > 5 or not payload or
-                    not 1 <= target <= 254 or source == target or (source != 1 and target != 1)):
+                    not 1 <= target <= 254 or source == target or
+                    (source != active_host and target != active_host)):
                     self.dropped += 1
                     return
-                recipient = lobby['relay_host'] if target == 1 else lobby['peers'].get(target)
+                recipient = (arcade['members'].get(target) if arcade else
+                             lobby['relay_host'] if target == 1 else lobby['peers'].get(target))
                 if (not recipient or not recipient['endpoint'] or now-recipient['seen'] > 5 or
-                    (target != 1 and recipient['expires'] <= now)):
+                    recipient.get('expires', now+1) <= now):
                     self.dropped += 1
                     return
                 recipient_id, reply_kind, reply_source = target, FORWARD, source
@@ -380,7 +400,8 @@ class Handler(BaseHTTPRequestHandler):
             if len(self.path) > 2048 or self.headers.get('Transfer-Encoding'):
                 raise LobbyError(400, 'Invalid request')
             length = int(self.headers.get('Content-Length', '0'))
-            if not 0 <= length <= 4096:
+            limit = 131072 if url.path.startswith('/v3/') else 4096
+            if not 0 <= length <= limit:
                 raise LobbyError(413, 'Request too large')
             body = json.loads(self.rfile.read(length)) if length else {}
             if not isinstance(body, dict):
