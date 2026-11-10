@@ -98,8 +98,10 @@ ends the active match. The prototype is not a testable host-migration release.
 both departure types, engine readiness versus heartbeat, checkpoint selection,
 stale/mismatched/cross-match ACKs, candidate failure and disconnect, survivor
 timeouts, repeated migrations, admission/size bounds and unrecoverable shutdown.
-The module is registered in the native runtime CI suite. These are deterministic
-policy tests, not live relay integration or game-continuation acceptance.
+The module is registered in the native runtime CI suite. All18 pass on Windows
+and physical Mac arm64/Python3.12; repository/context/shard checks also pass on
+Windows (50 tests including the18 policy tests). These are deterministic policy
+tests, not live relay integration or game-continuation acceptance.
 
 Existing relay validation is documented in
 [the shared relay guide](online-relay.md#protocol-and-validation).
