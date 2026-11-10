@@ -501,3 +501,5 @@ contracts are unchanged; stage this intended new patch before refreshing.
 
 Patch-index order fixtures now include2955 native explicit-controller prompts;
 historical partial stacks defer it with their omitted late-input dependencies.
+
+Patch-order/historical upgrade fixtures include2960 after the late preset sampler.

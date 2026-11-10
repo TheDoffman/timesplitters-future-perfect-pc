@@ -1,3 +1,11 @@
+Legacy keyboard/controller isolation (local after0692efdf): patch2960 and shared
+pc_bindings.inc route markerless Custom keyboard actions/prompts semantically.
+No OS adapter is needed; native event handling is unchanged. Production sampler
+fixture now injects headless keys on every host; Windows51 and WSL/Clang6 checks
+pass. Windows live markerless Custom remap/movement/fire/reload/rebinding passed;
+this is synthetic input through the real game, not physical Mac/Deck acceptance.
+No platform fork or saved-config migration. See STATUS.
+
 #540 native explicit-controller prompts (local): patch2955 corrects shared
 TSFP_NATIVE_INPUT sampler notification for explicit P1 pads, covering Linux/Mac;
 Windows keeps its working path. No new OS adapter is needed. Headless Windows

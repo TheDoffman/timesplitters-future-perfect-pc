@@ -214,7 +214,7 @@ int pc_settings_prompt_keys(int keys[PC_ACTION_COUNT])
         }
     }
     ReleaseSRWLockShared(&g_pc_bindings_lock);
-    AcquireSRWLockShared(&g_pc_bindings_lock);int modern=g_pc_keyboard_preset,semantic=g_pc_custom_semantics;ReleaseSRWLockShared(&g_pc_bindings_lock);
+    AcquireSRWLockShared(&g_pc_bindings_lock);int modern=g_pc_keyboard_preset,semantic=g_ctl[0].device==DEV_KEYBOARD;ReleaseSRWLockShared(&g_pc_bindings_lock);
     if(modern || semantic) {int custom_keys[PC_ACTION_COUNT];memcpy(custom_keys,keys,sizeof custom_keys);PcSettings preset;pc_settings_modern(&preset);for(i=0;i<PC_ACTION_COUNT;i++)if(modern && !(i>=19 && i<=22) && i<PC_DEVELOPER_ACTION)keys[i]=preset.keys[i][0];available=1;
         if(pc_controls_in_menu()) {if(modern) {keys[0]=13;keys[1]=27;keys[10]=38;keys[11]=40;keys[12]=37;keys[13]=39;}}
         else {unsigned masks[24];int mounted,semantic_keys[PC_ACTION_COUNT];memcpy(masks,pc_preset_masks,sizeof masks);

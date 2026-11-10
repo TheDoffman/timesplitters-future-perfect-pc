@@ -1,4 +1,4 @@
-[Prompts](controls-options.md), [axes/axes](control-presets.md), [updates](main-menu-update.md).
+[Input](control-presets.md), [axes/axes](control-presets.md), [updates](main-menu-update.md).
 [Tex](texture-preference.md); [arms](video-options.md).
 
 [Uplink throw tests and policy](native-uplink.md#throw-impulse).

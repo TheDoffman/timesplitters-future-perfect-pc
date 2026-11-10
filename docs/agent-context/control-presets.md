@@ -11,9 +11,10 @@ fresh defaults only when the controls file is missing. This distinguishes new
 setups from existing users even when their old bindings match factory values.
 Selecting Apply/launcher Save changes preset metadata; choosing Custom restores
 the same backing bindings, including legacy four-source arrays. New configurations seed the Modern key table into their editable Custom bindings,
-with custom_binding_semantics=1. Existing files without that marker retain the
-legacy physical routing and all saved source arrays. Existing native saved
-controller layouts remain unchanged.
+with custom_binding_semantics=1 for new-profile initialization. Keyboard gameplay
+routing and prompts are semantic for all keyboard profiles, including existing
+files without that marker; retained keys/presets/source arrays are not rewritten.
+Existing native saved controller layouts remain unchanged.
 
 `src/input/pc_control_presets.def` supplies the six Modern PC overrides to C and
 an embedded launcher resource: E use without Space, F/Mouse4 melee, B/PageUp mode,
@@ -25,7 +26,7 @@ arrows/WASD navigation, physical Left/Right tabs and A/D value adjustment.
 
 `pc_bindings.inc` keeps custom state in g_ctl. The sampler takes a private snapshot
 for Modern PC, accumulates keyboard and pad sources separately, then routes only
-Modern gameplay sources through native semantic masks. Patch2940 follows2630 and
+keyboard gameplay sources through native semantic masks. Patch2940 follows2630 and
 all late reload/local-player/reconnect patches; apply-patches.py records this
 ordering. Legacy/custom paths retain their magnitudes, per-port ownership,
 focus/modal/capture guards and keyboard reload buffering. Preset activation
@@ -98,10 +99,10 @@ binding UI cases explicitly choose Custom. pc_settings_game uses the legacy fixt
 for its capture workflow; fresh Modern read-only behavior is separate.
 
 New-player editable Custom seed: factory JSON carries Modern PC keys plus
-custom_binding_semantics=1. This marker makes editable keyboard sources and
-prompts follow native semantic masks in gameplay without the fixed Modern overlay;
-menus and old files keep their existing routing. It is never inferred or added
-to an existing configuration. Modern/Custom switching only changes preset metadata.
+custom_binding_semantics=1. This marker authorizes the known-new native profile
+seed/targeted seed repair; it no longer gates gameplay keyboard routing or prompts.
+It is never inferred or added to an existing configuration. Menus retain their
+existing routing; all keyboard gameplay uses named actions without a Modern overlay. Modern/Custom switching only changes preset metadata.
 The existing 69D90 profile-init hook (pc_unlock_profile_init) calls
 controls_new_profile only for the same known-new identity.device==-1 boundary
 that initializes controls/progress. With the new-setup marker, it selects native
@@ -162,3 +163,13 @@ keyboard action labels and behavior; Custom physical pad sources are unchanged.
 Mouse look already writes camera angles directly, independently of stick layout.
 Sampler tests cover swapped sticks, optional keyboard look, edited Forward and
 unchanged Custom pad input on both host adapters; FOV fixture covers live selectors.
+
+Legacy keyboard isolation follow-up: patch2960 removes the new-profile marker gate
+from gameplay routing. pc_settings_prompt_keys uses keyboard-device ownership for
+semantic label lookup too. Markerless Custom keys therefore follow Move/Strafe/Look,
+Fire/Reload/etc. after native controller remaps, just like new profiles. Explicit
+key edits, presets and raw JSON bytes remain preserved; physical Custom pad sources
+still follow their own configured/native layout. The production sampler fixture
+injects OS key states on every host and checks markerless remaps on both adapter
+modes, plus a negative control reinstating the old gate. Profile seed policy is
+unchanged. This does not supply keyboard actions for native actions left unbound.

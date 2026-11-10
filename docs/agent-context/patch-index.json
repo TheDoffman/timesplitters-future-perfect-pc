@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "c4f0c93d5f8aa938fa31d20623bb9b4b0a81590d7c6e0cecb5bd9cd6819410d9",
+  "loaderSha256": "d2bfad7a43da052228d1f08313bad11e656066cfb041a0b80ddd2089b9a92295",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3816,6 +3816,14 @@
       "name": "2955-native-explicit-controller-prompts.patch",
       "path": "patches/input/2955-native-explicit-controller-prompts.patch",
       "sha256": "a4b9ef1355cde2f56e868b78c3984758b1e982e6143a83f22c755a932c8efc2f",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2960-keyboard-gameplay-independence.patch",
+      "path": "patches/input/2960-keyboard-gameplay-independence.patch",
+      "sha256": "794eec93a7763050a2ebc29b3dc29a4a672d642fb3459bbe1b67d0b206f31f37",
       "targets": [
         "src/input/input_bindings.c"
       ]
