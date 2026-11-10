@@ -92,7 +92,7 @@ int main(int argc,char **argv)
     REQUIRE(snapshot->sequence==99 && snapshot->epoch==4 && snapshot->tick==3600u);
     REQUIRE(snapshot->bot_mask==63u && snapshot->bots[5].body_present==0);
     PcArcadeControl *control=(PcArcadeControl *)calloc(1,sizeof *control);REQUIRE(control);
-    uint8_t status[84]={0};memcpy(status,"AMST",4);pc_arcade_store32(status+4,1);
+    uint8_t status[PC_ARCADE_STATE_BYTES]={0};memcpy(status,"AMST",4);pc_arcade_store32(status+4,1);
     pc_arcade_store32(status+8,5);pc_arcade_store32(status+12,2);pc_arcade_store32(status+16,99);
     pc_arcade_store32(status+32,sizeof *snapshot);memset(status+36,0x33,32);memcpy(status+68,room,16);
     REQUIRE(pc_arcade_control_receive(control,status,sizeof status));
@@ -180,6 +180,27 @@ int main(int argc,char **argv)
     /* Companion peer2 resolves to native peer9, not player/controller slot2. */
     setword(&target,0x774028u,0x70000u);setword(&target,0x70000u,5u);
     const uint32_t local_ip=0x0300fe0au,host_ip=0x0200fe0au;
+    PcArcadeControlState routes={0};routes.candidate_ip=host_ip;routes.native_count=2;
+    routes.native_peers[0]=(PcArcadeNativePeer){5u,local_ip};
+    routes.native_peers[1]=(PcArcadeNativePeer){9u,host_ip};
+    setword(&target,0x774040u,0);
+    target.memory[0x666488u]=2;target.memory[0x66648bu]=1;
+    setword(&target,0x774180u+9u*0x30cu,9u);
+    setword(&target,0x7741b4u+9u*0x30cu,1u);
+    setword(&target,0x666040u+9u*4u,1u);
+    const unsigned route_writes=target.writes;
+    target.readonly=0x666488u+9u*16u;
+    REQUIRE(!pc_arcade_prepare_peer_routes(&target,read_guest,write_guest,local_ip,&routes));
+    REQUIRE(target.writes==route_writes);
+    target.readonly=0;
+    REQUIRE(pc_arcade_prepare_peer_routes(&target,read_guest,write_guest,local_ip,&routes));
+    REQUIRE(word(&target,0x66648cu+9u*16u)==host_ip);
+    REQUIRE(!memcmp(target.memory+0x666488u,target.memory+0x666488u+9u*16u,4));
+    routes.native_peers[1].native_id=8u;
+    REQUIRE(!pc_arcade_prepare_peer_routes(&target,read_guest,write_guest,local_ip,&routes));
+    routes.native_peers[1].native_id=9u;
+    setword(&target,0x66648cu+9u*16u,0x9900fe0au);
+    REQUIRE(!pc_arcade_prepare_peer_routes(&target,read_guest,write_guest,local_ip,&routes));
     setword(&target,0x666040u+9u*4u,1u);setword(&target,0x66648cu+9u*16u,host_ip);
     unsigned adopted_role=0;
     REQUIRE(pc_arcade_adopt_authority(&target,read_guest,write_guest,local_ip,host_ip,&adopted_role,0));

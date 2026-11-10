@@ -4,6 +4,9 @@
 #ifdef TSFP_ARCADE_MIGRATION
 extern int g_tsfp_arcade_migrating;
 int pc_network_arcade_progress(int active,PcArcadeControlState *out);
+int pc_network_arcade_enabled(void);
+void pc_network_arcade_native_peer(unsigned native_peer);
+int pc_network_arcade_bind_peer(uint32_t ip,uint32_t previous_host);
 int pc_network_arcade_snapshot(PcArcadeCheckpoint *out);
 int pc_network_arcade_publish(const PcArcadeCheckpoint *snapshot);
 void pc_network_arcade_ack(int ready);

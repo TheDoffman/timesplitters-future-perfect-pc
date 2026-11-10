@@ -13,13 +13,14 @@ typedef struct GuestRegisters {uint32_t sp,a;} GuestRegisters;
 static void save_registers(GuestRegisters *r){r->sp=g_esp;r->a=g_eax;}
 static void restore_registers(const GuestRegisters *r){g_esp=r->sp;g_eax=r->a;}
 static int guest_writable(uint32_t p,size_t n){return p>=0x1000 && p<sizeof memory && n<=sizeof memory-p;}
-static uint32_t xbox_HeapAlloc(uint32_t n,uint32_t a){CHECK(n<128 && a==4);return 0x6000;}
+static uint32_t xbox_HeapAlloc(uint32_t n,uint32_t a){static uint32_t next=0x6000;CHECK(n<128 && a==4);uint32_t result=next;next=(next+n+3u)&~3u;CHECK(next<=0x6080);return result;}
 enum {PC_ONLINE_NONE,PC_ONLINE_ARCADE,PC_ONLINE_STORY};
 static int mode=PC_ONLINE_ARCADE,enabled=1,closed,reset,pumps,match_reset,menus,stock,fallback;
 static uint32_t target,caption;
 static unsigned recorded,eligibility_checks;
 static int migration_requested,migration_requests,unloads;
 int pc_network_arcade_request_leave(void){++migration_requests;return migration_requested;}
+int pc_network_arcade_enabled(void){return migration_requested;}
 static void sub_00065420(void){++unloads;}
 static void sub_000668F0(void){++recorded;}
 static int pc_online_mode(void){return mode;}
@@ -76,6 +77,12 @@ int main(void){
  /* A migrating owner must keep the native match alive until service fencing.
     Its final departure then unloads only its own game through the menu route. */
  setup(1);WORD_AT(0x7de30c)=7;migration_requested=1;
+ CHECK(pc_multiplayer_migration_prompt("Leaving the match will end the session.")!=0);
+ CHECK(!pc_multiplayer_migration_prompt("Unrelated text"));
+ WORD_AT(g_esp+20)=0x2ec060;
+ CHECK(multiplayer_exit_button(button));
+ CHECK(!strcmp((char *)(g_xbox_mem_offset+caption),"Leave Match"));
+ g_esp=0x1800;
  multiplayer_leave_confirm();
  CHECK(migration_requests==1 && !recorded && !menus && !multiplayer_destination && g_esp==0x1804);
  g_esp=0x1800;pc_multiplayer_exit_action(sub_002EAF60_gen,0);

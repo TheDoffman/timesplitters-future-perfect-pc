@@ -7,6 +7,7 @@ static NetHostSocket arcade_socket=INVALID_SOCKET;
 static PcArcadeControl arcade_control;
 static uint32_t arcade_counter;
 static uint32_t arcade_uploaded_sequence;
+static uint32_t arcade_native_id=UINT32_MAX;
 static uint64_t arcade_last_send,arcade_last_state;
 static int arcade_leave_pending;
 static void arcade_reset(void)
@@ -17,6 +18,7 @@ static void arcade_reset(void)
     /* Stock transport cleanup can occur between rounds while the companion
        membership survives. Its engine-progress counter must never rewind. */
     arcade_uploaded_sequence=0;arcade_last_send=arcade_last_state=0;
+    arcade_native_id=UINT32_MAX;
     arcade_leave_pending=0;g_tsfp_arcade_migrating=0;
 }
 static int arcade_send(const void *data,int bytes)
@@ -44,8 +46,9 @@ int pc_network_arcade_progress(int active,PcArcadeControlState *out)
     const uint64_t now=net_milliseconds();
     ++arcade_counter;
     if(!arcade_last_send || now-arcade_last_send>=200u) {
-        uint8_t pulse[12];memcpy(pulse,"AMPG",4);
+        uint8_t pulse[16];memcpy(pulse,"AMPG",4);
         pc_arcade_store32(pulse+4,arcade_counter);pc_arcade_store32(pulse+8,!!active);
+        pc_arcade_store32(pulse+12,arcade_native_id);
         arcade_send(pulse,sizeof pulse);arcade_last_send=now;
     }
     for(unsigned attempt=0;attempt<64u;attempt++) {
@@ -65,6 +68,26 @@ int pc_network_arcade_progress(int active,PcArcadeControlState *out)
         g_tsfp_arcade_migrating=arcade_leave_pending || arcade_control.state.phase==2u;
         if(out)*out=arcade_control.state;result=1;
     }
+done:net_unlock(&network_lock);return result;
+}
+void pc_network_arcade_native_peer(unsigned native_peer)
+{net_lock(&network_lock);arcade_native_id=native_peer<16u?native_peer:UINT32_MAX;net_unlock(&network_lock);}
+int pc_network_arcade_enabled(void)
+{int enabled;net_lock(&network_lock);enabled=online && arcade_control.enabled && arcade_control.state.phase<3u;net_unlock(&network_lock);return enabled;}
+int pc_network_arcade_bind_peer(uint32_t ip,uint32_t previous_host)
+{
+    int result=0;unsigned source,target;net_lock(&network_lock);
+    if(!online || (ntohl(ip)&0xffffff00u)!=0x0afe0000u || !(ntohl(ip)&255u) || (ntohl(ip)&255u)==255u)goto done;
+    if(ip==online_ip || ip==previous_host){result=1;goto done;}
+    for(source=0;source<peer_count;source++)if(peers[source].ip==previous_host)break;
+    if(source==peer_count)goto done;
+    for(target=0;target<peer_count;target++)if(peers[target].ip==ip)break;
+    if(target==peer_count) {
+        if(peer_count==MAX_PEERS)goto done;
+        memset(&peers[target],0,sizeof peers[target]);peers[target].ip=ip;
+        memcpy(peers[target].xnaddr,&ip,4);peer_count++;
+    }
+    memcpy(peers[target].key,peers[source].key,8);result=1;
 done:net_unlock(&network_lock);return result;
 }
 int pc_network_arcade_snapshot(PcArcadeCheckpoint *out)

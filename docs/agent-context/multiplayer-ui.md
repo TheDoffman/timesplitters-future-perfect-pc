@@ -8,8 +8,11 @@ loopback socket, pointer-free checkpoints, engine progress/restore ACKs, dynamic
 host routing and per-epoch key rotation. The native game-thread adapter preserves
 scores, game tick and bot numeric state before committing mapped native peer IDs.
 `3000-arcade-migration-build.patch` enables the shared game adapter. Production
-readiness still requires live AI/combat/respawn and match-continuation acceptance;
-compiled memory fixtures and three-companion socket tests alone are insufficient.
+native Windows Deathmatch tests retain scores/countdown and six fighting,
+respawning bots after two-player normal exit/crash and three-player crash.
+Authenticated native-ID routes let every survivor follow the new host. Pause
+caption/confirmation describe leaving and transferring the match. Physical Mac
+game/crossplay and other modes still require separate acceptance.
 See [implementation and validation](../development/arcade-host-migration.md).
 
 ## Shared relay
