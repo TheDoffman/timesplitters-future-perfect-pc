@@ -42,6 +42,14 @@ static void bridge_reply(NetHostSocket socket,const struct sockaddr_in *destinat
     REQUIRE(sendto(socket,(const char *)frame,(int)(68+bytes),0,
             (const struct sockaddr *)destination,sizeof *destination)==(int)(68+bytes));
 }
+static int await_state(PcArcadeControlState *state,uint32_t epoch,uint32_t phase)
+{
+    const uint64_t deadline=net_milliseconds()+2000u;
+    do {
+        if(pc_network_arcade_progress(1,state) && state->epoch==epoch && state->phase==phase)return 1;
+    } while(net_milliseconds()<deadline);
+    return 0;
+}
 int main(void)
 {
     REQUIRE(net_start());
@@ -64,7 +72,7 @@ int main(void)
     bridge_reply(bridge,&native,status,sizeof status,0);
     REQUIRE(!pc_network_arcade_progress(1,&observed));
     bridge_reply(bridge,&native,status,sizeof status,1);
-    REQUIRE(pc_network_arcade_progress(1,&observed));REQUIRE(observed.epoch==1 && observed.phase==0);
+    REQUIRE(await_state(&observed,1,0));
     Fixture source,target;init(&source,0x10000u);init(&target,0x50000u);
     const uint8_t room[16]={1,2,3,4,5,6};
     g_xbox_mem_offset=(ptrdiff_t)target.memory;
@@ -81,7 +89,7 @@ int main(void)
     pc_arcade_store32(status+32,sizeof *snapshot);memset(status+36,0x33,32);memcpy(status+68,room,16);
     memcpy(status+24,local_ip,4);memcpy(status+28,&previous_ip,4);
     bridge_reply(bridge,&native,status,sizeof status,1);
-    REQUIRE(pc_network_arcade_progress(1,&observed) && g_tsfp_arcade_migrating);
+    REQUIRE(await_state(&observed,5,2) && g_tsfp_arcade_migrating);
     uint8_t part[52+PC_ARCADE_FRAGMENT];memcpy(part,"AMFR",4);pc_arcade_store32(part+4,99);
     pc_arcade_store32(part+8,sizeof *snapshot);pc_arcade_store32(part+16,pc_arcade_crc32(snapshot,sizeof *snapshot));
     memset(part+20,0x33,32);
@@ -90,7 +98,9 @@ int main(void)
         pc_arcade_store32(part+12,offset);memcpy(part+52,(const uint8_t *)snapshot+offset,count);
         bridge_reply(bridge,&native,part,52u+count,1);
     }
-    REQUIRE(pc_network_arcade_progress(1,&observed));
+    const uint64_t download_deadline=net_milliseconds()+2000u;
+    while(!pc_network_arcade_snapshot(download) && net_milliseconds()<download_deadline)
+        pc_network_arcade_progress(1,&observed);
     REQUIRE(pc_network_arcade_snapshot(download) && !memcmp(snapshot,download,sizeof *snapshot));
     REQUIRE(pc_arcade_migration_frame(0)==1); /* Apply checkpoint while frozen. */
     REQUIRE(WORD_AT(0x76b140u)==2u && WORD_AT(0x7de318u)==3600u && rebases==1u);
@@ -105,6 +115,7 @@ int main(void)
     REQUIRE(pc_arcade_load32(frame+72)==99 && pc_arcade_load32(frame+108)==1);
     REQUIRE(!pc_network_arcade_request_leave()); /* Cannot depart as host during preparation. */
     pc_arcade_store32(status+12,1);bridge_reply(bridge,&native,status,sizeof status,1);
+    REQUIRE(await_state(&observed,5,1));
     REQUIRE(pc_arcade_migration_frame(0)==0);
     REQUIRE(!g_tsfp_arcade_migrating && WORD_AT(0x76b140u)==1u && WORD_AT(0x774040u)==5u);
     REQUIRE(WORD_AT(0x774028u)==0x70000u); /* Original local controller node survives. */
