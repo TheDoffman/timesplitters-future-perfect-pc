@@ -29,7 +29,7 @@ class ArcadeService:
         return dict(token=secrets.token_urlsafe(32), wire_key=secrets.token_hex(32),
                     relay_key=secrets.token_hex(32), endpoint=None, sequence=-1,
                     seen=0, budget=None, budget_at=0, expires=now+90,
-                    native_counter=-1, native_at=now, active=False)
+                    native_counter=-1, native_at=now, active=False, native_peer=None)
 
     def poll(self, room):
         migration = room['migration']
@@ -90,6 +90,9 @@ class ArcadeService:
         result['candidate'] = migration.candidate if migration else None
         result['previous_host'] = room['previous_host']
         result['backup_ready'] = False
+        result['native_peers'] = [dict(peer_id=other, native_peer=value['native_peer'])
+            for other, value in room['members'].items()
+            if value['active'] and value['native_peer'] is not None]
         if peer == room['host_peer'] or migration and peer == migration.candidate:
             result['peers'] = {str(other): value['wire_key'] for other, value in room['members'].items()
                                if other != peer}
@@ -118,6 +121,7 @@ class ArcadeService:
                 migration.join(peer, schema=SCHEMA)
         for peer, member in room['members'].items():
             migration.members[peer].seen = member['native_at']
+            migration.members[peer].can_host = member['active'] and member['native_peer'] is not None
         room['migration'] = migration
         room['match_id'] = migration.match_id
         self.sync(room)
@@ -125,11 +129,17 @@ class ArcadeService:
     def update_native(self, room, peer, body):
         member = room['members'][peer]
         counter, active = body.get('native_counter', -1), body.get('active', False)
+        native_peer = body.get('native_peer')
         if type(counter) is not int or counter < -1 or type(active) is not bool:
             raise ArcadeServiceError(400, 'Invalid native progress')
+        if native_peer is not None and (type(native_peer) is not int or not 0 <= native_peer < 16):
+            raise ArcadeServiceError(400, 'Invalid native peer')
+        if active and native_peer is not None and any(other != peer and value['active'] and
+                value['native_peer'] == native_peer for other, value in room['members'].items()):
+            raise ArcadeServiceError(409, 'Native peer is already in use')
         fresh = counter > member['native_counter']
         if fresh:
-            member.update(native_counter=counter, native_at=self.directory.clock(), active=active)
+            member.update(native_counter=counter, native_at=self.directory.clock(), active=active, native_peer=native_peer)
         if not room['migration'] and peer == room['host_peer'] and fresh and active:
             self.start_match(room)
         migration = room['migration']
@@ -137,6 +147,7 @@ class ArcadeService:
             return
         if fresh:
             migration.heartbeat(peer, migration.epoch)
+            migration.members[peer].can_host = active and native_peer is not None
         if peer == room['host_peer'] and fresh and not active and migration.phase == 'active':
             room['migration'] = None
             return

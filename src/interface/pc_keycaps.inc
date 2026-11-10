@@ -35,6 +35,7 @@ static void keycap_line(int x,int y,int right,int bottom,uint32_t colour);
 void pc_display_keycap_text(void (*original)(void))
 {
     PcKeycapDraw saved=keycap_draw;memset(&keycap_draw,0,sizeof keycap_draw);
+    const uint32_t frame=g_esp;
     uint32_t text=WORD_AT(g_esp+16);
     keycap_draw.keyboard=pc_prompts_keyboard_active();
     if(text) {
@@ -50,10 +51,20 @@ void pc_display_keycap_text(void (*original)(void))
             if(end) {keycap_draw.enabled=strchr(keycap_draw.text,'[')!=NULL || strchr(keycap_draw.text,'\v')!=NULL;break;}
         }
     }
+#ifdef TSFP_ARCADE_MIGRATION
+    extern uint32_t pc_multiplayer_migration_prompt(const char *text);
+    const uint32_t replacement=pc_multiplayer_migration_prompt(keycap_draw.text);
+    if(replacement)WORD_AT(frame+16)=replacement;
+#endif
 #if TSFP_INPUT_ICONS
     if(keycap_draw.enabled && keycap_draw.keyboard)pc_controls_binding_keys(keycap_draw.keys);
 #endif
     original();
+#ifdef TSFP_ARCADE_MIGRATION
+    if(replacement)WORD_AT(frame+16)=text;
+#else
+    (void)frame;
+#endif
     if(keycap_draw.count) {
         GuestRegisters registers;save_registers(&registers);
         keycap_flush();restore_registers(&registers);

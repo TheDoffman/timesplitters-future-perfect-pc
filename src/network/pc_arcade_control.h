@@ -2,10 +2,14 @@
 #define TSFP_PC_ARCADE_CONTROL_H
 #include "pc_arcade_checkpoint.h"
 #define PC_ARCADE_FRAGMENT 1200u
-#define PC_ARCADE_STATE_BYTES 84u
+#define PC_ARCADE_STATE_BYTES 216u
+
+typedef struct PcArcadeNativePeer {uint32_t native_id,ip;} PcArcadeNativePeer;
 typedef struct PcArcadeControlState {
     uint32_t epoch,phase,sequence,host_ip,candidate_ip,previous_ip,bytes;
     uint8_t digest[32],room[16];
+    uint32_t native_count;
+    PcArcadeNativePeer native_peers[16];
 } PcArcadeControlState;
 typedef struct PcArcadeControl {
     PcArcadeControlState state;
@@ -32,6 +36,16 @@ static inline int pc_arcade_control_receive(PcArcadeControl *c,const uint8_t *da
         s.sequence=pc_arcade_load32(data+16);memcpy(&s.host_ip,data+20,4);
         memcpy(&s.candidate_ip,data+24,4);memcpy(&s.previous_ip,data+28,4);
         s.bytes=pc_arcade_load32(data+32);memcpy(s.digest,data+36,32);memcpy(s.room,data+68,16);
+        s.native_count=pc_arcade_load32(data+84);
+        if(s.native_count>16u)return 0;
+        memset(s.native_peers,0,sizeof s.native_peers);
+        for(unsigned i=0;i<s.native_count;i++) {
+            const uint8_t *p=data+88u+i*8u;
+            s.native_peers[i].native_id=pc_arcade_load32(p);memcpy(&s.native_peers[i].ip,p+4,4);
+            if(s.native_peers[i].native_id>=16u || p[4]!=10u || p[5]!=254u || p[6] || !p[7] || p[7]==255u)return 0;
+            for(unsigned j=0;j<i;j++)if(s.native_peers[j].native_id==s.native_peers[i].native_id ||
+                s.native_peers[j].ip==s.native_peers[i].ip)return 0;
+        }
         if(!s.epoch || s.phase>4u || (s.bytes && s.bytes!=sizeof(PcArcadeCheckpoint)) ||
            (!!s.sequence != !!s.bytes) || (c->enabled && s.epoch<c->state.epoch))return 0;
         if(c->enabled && s.epoch==c->state.epoch) {
@@ -74,6 +88,36 @@ static inline int pc_arcade_control_receive(PcArcadeControl *c,const uint8_t *da
         return 1;
     }
     return 0;
+}
+/* Stock clients allocate records for other guests but leave their destinations
+ * zero: traffic previously went through the host. Populate only authenticated
+ * native-ID routes, preserving the channel queues and every local controller. */
+static inline int pc_arcade_prepare_peer_routes(void *ctx,PcArcadeRead read,PcArcadeWrite write,
+    uint32_t local_ip,const PcArcadeControlState *state)
+{
+    uint32_t node,local_id,old_host;uint8_t base[8],plan[16][8];
+    int self_seen=0,host_seen=0;
+    if(!state || !state->native_count || state->native_count>16u ||
+       !read(ctx,0x774028u,&node,4) || !node || !read(ctx,node,&local_id,4) || local_id>=16u ||
+       !read(ctx,0x774040u,&old_host,4) || old_host>=16u ||
+       !read(ctx,0x666488u+old_host*16u,base,sizeof base) || base[0]!=2u || base[1] || (!base[2] && !base[3]))return 0;
+    for(unsigned i=0;i<state->native_count;i++) {
+        const PcArcadeNativePeer *peer=&state->native_peers[i];uint32_t id,flags,connected,ip;
+        if(peer->native_id>=16u)return 0;
+        if(peer->ip==state->candidate_ip)host_seen=1;
+        if(peer->ip==local_ip) {if(peer->native_id!=local_id)return 0;self_seen=1;continue;}
+        if(peer->native_id==local_id ||
+           !read(ctx,0x774180u+peer->native_id*0x30cu,&id,4) || id!=peer->native_id ||
+           !read(ctx,0x7741b4u+peer->native_id*0x30cu,&flags,4) || !(flags&1u) ||
+           !read(ctx,0x666040u+peer->native_id*4u,&connected,4) || !connected ||
+           !read(ctx,0x66648cu+peer->native_id*16u,&ip,4) || (ip && ip!=peer->ip))return 0;
+        memcpy(plan[i],base,4);memcpy(plan[i]+4,&peer->ip,4);
+        if(!write(ctx,0x666488u+peer->native_id*16u,plan[i],8,0))return 0;
+    }
+    if(!self_seen || !host_seen)return 0;
+    for(unsigned i=0;i<state->native_count;i++)if(state->native_peers[i].ip!=local_ip &&
+       !write(ctx,0x666488u+state->native_peers[i].native_id*16u,plan[i],8,1))return 0;
+    return 1;
 }
 /* Capture/restore preflight uses this helper for the original native peer table.
  * Companion virtual-IP IDs never become original player/controller indices.

@@ -16,7 +16,7 @@ CHUNK = 1200
 FRAGMENT = struct.Struct('<4sIIII')
 DOWNLOAD = struct.Struct('<4sIIII32s')
 ACK = struct.Struct('<4sI32sI')
-PROGRESS = struct.Struct('<4sII')
+PROGRESS = struct.Struct('<4sIII')
 STATE = struct.Struct('<4sIIII4s4s4sI32s16s')
 NATIVE_HEADER = struct.Struct('<4I16s4I')
 PHASE = {'lobby': 0, 'active': 1, 'preparing': 2, 'closed': 3}
@@ -53,6 +53,7 @@ class NativeArcade:
         self.status = None
         self.counter = -1
         self.active = False
+        self.native_peer = None
         self.offer = None
         self.ack = None
         self.leaving = self.departed = False
@@ -107,13 +108,14 @@ class NativeArcade:
     def from_native(self, payload, endpoint):
         with self.lock:
             if len(payload) == PROGRESS.size and payload[:4] == b'AMPG':
-                _, counter, active = PROGRESS.unpack(payload)
-                if active > 1:
+                _, counter, active, native_peer = PROGRESS.unpack(payload)
+                if active > 1 or native_peer not in (*range(16), 0xffffffff):
                     return
                 # The game sends this from its own dedicated authenticated socket.
                 self.endpoint = endpoint
                 if counter > self.counter:
                     self.counter, self.active = counter, bool(active)
+                    self.native_peer = native_peer if native_peer < 16 else None
                 return
             if endpoint != self.endpoint:
                 return
@@ -156,7 +158,7 @@ class NativeArcade:
         with self.lock:
             status = self.status
             body = dict(compatibility=compatibility, epoch=status['epoch'],
-                        native_counter=self.counter, active=self.active)
+                        native_counter=self.counter, active=self.active, native_peer=self.native_peer)
             if self.offer and status['host_peer'] == self.bridge.peer_id and status['phase'] == 'active':
                 body['checkpoint'] = base64.b64encode(self.offer).decode('ascii')
             if self.ack:
@@ -180,6 +182,12 @@ class NativeArcade:
             state = STATE.pack(b'AMST', 1, status['epoch'], 4 if self.departed else PHASE[status['phase']],
                 snapshot['sequence'] if snapshot else 0, host, candidate, previous,
                 len(snapshot['bytes']) if snapshot else 0, digest, bytes.fromhex(status['match_id']))
+            peers = status.get('native_peers', [])
+            if len(peers) > 16:
+                raise ValueError('Too many native peers')
+            state += struct.pack('<I', len(peers))
+            state += b''.join(struct.pack('<I4s', peer['native_peer'], virtual_ip(peer['peer_id'])) for peer in peers)
+            state += bytes((16-len(peers))*8)
             self.send(state)
             # At most eight datagrams per poll, with a complete retry after the
             # final fragment. Native ACKs, not UDP delivery, finish the transfer.

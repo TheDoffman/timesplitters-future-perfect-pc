@@ -59,6 +59,9 @@ int pc_arcade_migration_frame(int after)
         WORD_AT(0x76b1a4u)==15u && WORD_AT(0x79094cu)<=100u && WORD_AT(0x7de30cu)==7u;
     PcArcadeControlState state={0};
     if(!after) {
+        uint32_t native_peer=UINT32_MAX,node=WORD_AT(0x774028u);
+        if(node && !pc_network_arcade_read(&g_xbox_mem_offset,node,&native_peer,4))native_peer=UINT32_MAX;
+        pc_network_arcade_native_peer(native_peer);
         const int control=pc_network_arcade_progress(active,&state);
         if(getenv("TSFP_ARCADE_TRACE") && pc_network_bots_time()-arcade_trace_at>=2.) {
             arcade_trace_at=pc_network_bots_time();
@@ -104,7 +107,11 @@ int pc_arcade_migration_frame(int after)
             if(bots_ok && state.phase==2u && arcade_restored_epoch!=state.epoch) {
                 unsigned role;
                 const uint32_t local=pc_network_arcade_local_ip();
-                if(pc_arcade_adopt_authority(&g_xbox_mem_offset,pc_network_arcade_read,pc_network_arcade_write,
+                int routes=pc_arcade_prepare_peer_routes(&g_xbox_mem_offset,pc_network_arcade_read,
+                    pc_network_arcade_write,local,&state);
+                for(unsigned i=0;routes && i<state.native_count;i++)
+                    routes=pc_network_arcade_bind_peer(state.native_peers[i].ip,state.previous_ip);
+                if(routes && pc_arcade_adopt_authority(&g_xbox_mem_offset,pc_network_arcade_read,pc_network_arcade_write,
                        local,state.candidate_ip,&role,0) &&
                    (role!=1u || pc_network_arcade_adopt_key(state.previous_ip)) &&
                    pc_arcade_checkpoint_restore(s,&g_xbox_mem_offset,pc_network_arcade_read,

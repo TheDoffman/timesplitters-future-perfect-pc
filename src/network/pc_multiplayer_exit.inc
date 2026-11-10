@@ -25,6 +25,26 @@ static int multiplayer_match(void)
     return multiplayer_arcade() && WORD_AT(0x79094cu)<=100u &&
         WORD_AT(0x76b108u) && (WORD_AT(0x76b140u)==1u || WORD_AT(0x76b140u)==2u);
 }
+#ifdef TSFP_ARCADE_MIGRATION
+static int multiplayer_migrating_match(void)
+{
+    return multiplayer_match() && pc_online_mode()==PC_ONLINE_ARCADE &&
+        WORD_AT(0x76b140u)==1u && WORD_AT(0x76b1a4u)==15u && WORD_AT(0x7de30cu)==7u &&
+        pc_network_arcade_enabled();
+}
+uint32_t pc_multiplayer_migration_prompt(const char *text)
+{
+    if(!text || !(strstr(text,"END THE SESSION") || strstr(text,"end the session")) ||
+       !(strstr(text,"LEAV") || strstr(text,"leav") || strstr(text,"Leav")) || !multiplayer_migrating_match())return 0;
+    static uint32_t prompt;
+    if(!prompt) {
+        const char message[]="Leave this match?\nHosting will transfer to an available player.";
+        prompt=xbox_HeapAlloc(sizeof message,4u);
+        if(prompt)memcpy((void *)((uintptr_t)prompt+g_xbox_mem_offset),message,sizeof message);
+    }
+    return prompt;
+}
+#endif
 static void multiplayer_leave(unsigned destination,int close_menu)
 {
     multiplayer_destination=destination;multiplayer_factory_observations=0;
@@ -95,12 +115,16 @@ static int multiplayer_exit_button(void (*original)(void))
     if(multiplayer_match() && WORD_AT(0x76b140u)==1u && guest_writable(g_esp,28u)) {
         const uint32_t callback=WORD_AT(g_esp+20u);
         if(callback==0x2ec060u || callback==0x2ec030u || callback==0x2eaf60u || callback==0x2eb030u) {
-            static uint32_t caption;
-            if(!caption) {
-                const char text[]="Return to Lobby";
-                caption=xbox_HeapAlloc(sizeof text,4u);
-                if(caption) memcpy((void *)((uintptr_t)caption+g_xbox_mem_offset),text,sizeof text);
+            static uint32_t captions[2];unsigned migration=0;
+#ifdef TSFP_ARCADE_MIGRATION
+            migration=multiplayer_migrating_match();
+#endif
+            if(!captions[migration]) {
+                const char *text=migration?"Leave Match":"Return to Lobby";
+                captions[migration]=xbox_HeapAlloc((uint32_t)strlen(text)+1u,4u);
+                if(captions[migration]) memcpy((void *)((uintptr_t)captions[migration]+g_xbox_mem_offset),text,strlen(text)+1u);
             }
+            const uint32_t caption=captions[migration];
             const uint32_t frame=g_esp,old=WORD_AT(frame+4u);
             if(caption) WORD_AT(frame+4u)=caption;
             original();WORD_AT(frame+4u)=old;return 1;

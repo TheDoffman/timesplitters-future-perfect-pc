@@ -2,7 +2,8 @@
 
 Status: native checkpoint/authority adapters and authenticated v3 relay integration
 are implemented on `feature/online-host-migration`, dependent on the unmerged relay
-branch at `a2d81939`. Live game continuation acceptance is still pending. The live
+branch at `a2d81939`. Native Windows Deathmatch continuation passes for two-player
+normal departure/crash and three-player crash, with six bots. The live
 Mac mini service and published friend-test binaries have not been updated.
 
 ## Shared implementation
@@ -45,7 +46,12 @@ profiles, rendering resources and local inputs remain local.
 `pc_arcade_control.h`, `pc_network_arcade.inc` and `pc_arcade_migration_guest.inc`
 implement bounded native reassembly, restore/ready, XNet session-key adoption and
 authority commit. Companion virtual IPs are mapped through the original network
-peer table; they are not native player slot IDs. Promotion preserves the existing
+peer table; they are not native player slot IDs. Authenticated native progress
+also advertises the original native ID. Preparation maps surviving IDs to relay
+IPs, fills stock guest-to-guest destinations from the existing host sockaddr,
+and inherits the shared native session key. It preserves existing channel queues
+and refuses mismatched/occupied routes. This is required for a third player to
+follow the elected host. Promotion preserves the existing
 actor pool and local node instead of calling stock host creation, which resets
 the match. The shared network-frame hook pauses stock processing during handoff;
 `pc_native_timing_guest.inc` holds game delta while render/wall clocks continue.
@@ -53,6 +59,8 @@ the match. The shared network-frame hook pauses stock processing during handoff;
 acknowledged and the service has fenced that owner. Results callbacks require
 actual active-match engine phases before deferring, because directory metadata
 can briefly lag behind the engine transition.
+The migrating owner's pause button says Leave Match; its confirmation describes
+the transfer instead of warning that every player's session will end.
 
 `3000-arcade-migration-build.patch` enables the same adapter for Windows, Mac and
 Linux game builds. Online shared Arcade uses v3; Story remains v2. The browser also lists/joins
@@ -78,17 +86,22 @@ include all new modules. Matching native rebuilds are required.
   companion crash or engine stall with live HTTP heartbeats) restore
   the expected bytes and keeps real gameplay datagrams flowing between survivors.
 - `tools/testing/test-online-bot-motion.py --migration crash --tag UNIQUE`: isolated
-  two-game native acceptance (`crash` or `leave`), requiring checkpoint
+  two- or three-game native acceptance (`crash` or `leave`, `--players 3`), requiring checkpoint
   publication/engine ACK before departure, native promotion, surviving score rows,
-  the selected backup tick and bot motion/combat after migration. Normal build identity/seal and test-save isolation are enforced.
+  the selected backup tick/countdown and bot motion/combat on every survivor.
+  `--repeat-migration` also kills the replacement host. Normal build identity/seal
+  and test-save isolation are enforced.
 
 Fixture and socket tests do not demonstrate that original AI decisions, weapon
 inventory, pickups, objectives or every Arcade mode survive a live handoff.
 Bot snapshots restore presentation/combat fields but do not serialize opaque AI
-pointers. Live Deathmatch continuation, graceful menu exit, repeated actual-game
-handoffs, completion/rematch, physical Windows/Mac crossplay and outside-network
-play remain acceptance requirements. Do not call this a finished migration release
-until that evidence exists. See [shared relay validation](online-relay.md).
+pointers. Actual Windows acceptance logs `migration-crash-timera`,
+`migration-leave-8a6019e` and `migration-three-routesa` demonstrate native promotion,
+score rows and both clocks retained, then 30 seconds of live movement, combat and
+bot respawning. Three-player crash promotes in about five seconds and retains
+both surviving players. Repeated actual-game handoffs, completion/rematch,
+physical Windows/Mac crossplay, other Arcade modes and outside-network play
+remain separate acceptance. See [shared relay validation](online-relay.md).
 
 `TSFP_ARCADE_TRACE=1` enables bounded stderr capture/control diagnostics in the
 native adapter; the isolated migration runner enables it and records sanitized

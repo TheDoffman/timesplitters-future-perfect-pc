@@ -47,7 +47,7 @@ class NativeDriver:
 
     def step(self):
         self.counter += 1
-        self.send(PROGRESS.pack(b'AMPG', self.counter, self.playing))
+        self.send(PROGRESS.pack(b'AMPG', self.counter, self.playing, self.active.bridge.peer_id-1))
         for _ in range(128):
             try:
                 packet = self.socket.recv(4096)
@@ -55,7 +55,7 @@ class NativeDriver:
                 break
             payload = packet[LOCAL.size:]
             if payload[:4] == b'AMST':
-                state = STATE.unpack(payload)
+                state = STATE.unpack_from(payload)
                 if self.state and state[2] < self.state[2]:
                     continue
                 self.state = state

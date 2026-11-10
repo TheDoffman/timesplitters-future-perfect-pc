@@ -71,10 +71,10 @@ int main(void)
         "%u 11111111111111111111111111111111 10.254.0.3",(unsigned)ntohs(address.sin_port));
     REQUIRE(pc_network_set_online(configuration));
     PcArcadeControlState observed;REQUIRE(!pc_network_arcade_progress(0,&observed));
-    uint8_t frame[4096];REQUIRE(receive_control(bridge,"AMPG",frame,&native)==80);
+    uint8_t frame[4096];REQUIRE(receive_control(bridge,"AMPG",frame,&native)==84);
     const uint32_t first_progress=pc_arcade_load32(frame+72);
     REQUIRE(pc_arcade_load32(frame+76)==0u);
-    uint8_t status[84]={0};memcpy(status,"AMST",4);pc_arcade_store32(status+4,1);
+    uint8_t status[PC_ARCADE_STATE_BYTES]={0};memcpy(status,"AMST",4);pc_arcade_store32(status+4,1);
     pc_arcade_store32(status+8,1);const uint8_t local_ip[4]={10,254,0,3};
     memcpy(status+20,local_ip,4);
     bridge_reply(bridge,&native,status,sizeof status,0);
@@ -86,6 +86,8 @@ int main(void)
     g_xbox_mem_offset=(ptrdiff_t)target.memory;
     setword(&target,0x76b140u,2u);setword(&target,0x774028u,0x70000u);
     setword(&target,0x70000u,5u);setword(&target,0x774040u,0u);
+    target.memory[0x666488u]=2;target.memory[0x66648bu]=1;
+    pc_arcade_store32(status+84,1);pc_arcade_store32(status+88,5);memcpy(status+92,local_ip,4);
     setword(&target,0x50000u+3u*0xea0u,0); /* Client already removed this body. */
     setword(&target,0x7de460u,31234u);target.memory[0x7de424u]=1;
     const uint32_t previous_ip=0x0100fe0au;
@@ -151,7 +153,7 @@ int main(void)
     while(recvfrom(bridge,(char *)frame,sizeof frame,0,NULL,NULL)>0) {}
     REQUIRE(pc_network_set_online(configuration));
     REQUIRE(!pc_network_arcade_progress(0,&observed));
-    REQUIRE(receive_control(bridge,"AMPG",frame,&native)==80);
+    REQUIRE(receive_control(bridge,"AMPG",frame,&native)==84);
     REQUIRE(pc_arcade_load32(frame+72)>first_progress); /* Cleanup/rematch cannot rewind the lease pulse. */
     pc_network_set_online(NULL);
     net_close(bridge);net_stop();free(snapshot);free(download);free(source.memory);free(target.memory);
