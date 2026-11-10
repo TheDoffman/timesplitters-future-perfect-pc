@@ -11,6 +11,7 @@ static uint32_t arcade_restored_epoch,arcade_authority_epoch,arcade_published_se
 static uint32_t arcade_ack_sequence,arcade_ack_epoch;
 static int arcade_final_sent,arcade_exit_sent;
 static double arcade_last_capture,arcade_last_ack;
+static double arcade_trace_at,arcade_capture_trace_at;
 
 static int arcade_bot_apply(void *ctx,const PcNetworkBotState *s,int apply)
 {
@@ -56,9 +57,16 @@ int pc_arcade_migration_frame(int after)
 {
     const int active=pc_online_mode()==PC_ONLINE_ARCADE && WORD_AT(0x76b108u) &&
         WORD_AT(0x76b1a4u)==15u && WORD_AT(0x79094cu)<=100u && WORD_AT(0x7de30cu)==7u;
-    PcArcadeControlState state;
+    PcArcadeControlState state={0};
     if(!after) {
-        if(!pc_network_arcade_progress(active,&state))return 0;
+        const int control=pc_network_arcade_progress(active,&state);
+        if(getenv("TSFP_ARCADE_TRACE") && pc_network_bots_time()-arcade_trace_at>=2.) {
+            arcade_trace_at=pc_network_bots_time();
+            fprintf(stderr,"[PC-ARCADE-MIGRATION] control=%d active=%d mode=%u role=%u network=%u game=%u epoch=%u phase=%u checkpoint=%u\n",
+                control,active,(unsigned)pc_online_mode(),WORD_AT(0x76b140u),WORD_AT(0x76b1a4u),
+                WORD_AT(0x7de30cu),state.epoch,state.phase,state.sequence);
+        }
+        if(!control)return 0;
         arcade_guest_control=state;
         if(memcmp(state.room,arcade_guest_room,16)) {
             memcpy(arcade_guest_room,state.room,16);
@@ -75,7 +83,7 @@ int pc_arcade_migration_frame(int after)
         if(pc_network_arcade_snapshot(&arcade_guest_checkpoint)) {
             const PcArcadeCheckpoint *s=&arcade_guest_checkpoint;
             const int target_ok=s->level==WORD_AT(0x79094cu) &&
-                !memcmp(s->config,(void *)((uintptr_t)0x7de400u+g_xbox_mem_offset),sizeof s->config);
+                pc_arcade_config_matches(s->config,(const uint8_t *)((uintptr_t)0x7de400u+g_xbox_mem_offset));
             int bots_ok=target_ok;
             /* A client may already have removed a corpse which is alive in the
                selected backup. Recreate missing LOCAL bodies with the same
@@ -142,8 +150,20 @@ int pc_arcade_migration_frame(int after)
     if(!leaving && now-arcade_last_capture<.5)return 0;
     if(arcade_published_sequence<state.sequence)arcade_published_sequence=state.sequence;
     if(arcade_published_sequence==UINT32_MAX)return 0;
-    if(pc_arcade_checkpoint_capture(&arcade_guest_checkpoint,&g_xbox_mem_offset,
-       pc_network_arcade_read,pc_network_arcade_bot_read,state.room,state.epoch,arcade_published_sequence+1u) &&
+    const int captured=pc_arcade_checkpoint_capture(&arcade_guest_checkpoint,&g_xbox_mem_offset,
+       pc_network_arcade_read,pc_network_arcade_bot_read,state.room,state.epoch,arcade_published_sequence+1u);
+    if(!captured && getenv("TSFP_ARCADE_TRACE") && now-arcade_capture_trace_at>=2.) {
+        arcade_capture_trace_at=now;
+        fprintf(stderr,"[PC-ARCADE-MIGRATION] capture refused tick=%u session=%u level=%u\n",
+            WORD_AT(0x7de318u),WORD_AT(0x76b108u),WORD_AT(0x79094cu));
+        const uint8_t *config=(const uint8_t *)((uintptr_t)0x7de400u+g_xbox_mem_offset);
+        for(unsigned i=config[0];i<config[0]+config[2] && i<16u;i++) {
+            PcNetworkBotState b;const int available=pc_network_arcade_bot_read(NULL,i,&b);
+            fprintf(stderr,"[PC-ARCADE-MIGRATION] bot=%u available=%d tick=%u valid=%d\n",
+                i,available,available?b.tick:0u,available?pc_network_bot_state_valid(&b,config[0],config[2]):0);
+        }
+    }
+    if(captured &&
        pc_network_arcade_publish(&arcade_guest_checkpoint)) {
         arcade_published_sequence++;arcade_last_capture=now;
         if(leaving){arcade_final_checkpoint=arcade_guest_checkpoint;arcade_final_sent=1;pc_network_arcade_send_leave();}

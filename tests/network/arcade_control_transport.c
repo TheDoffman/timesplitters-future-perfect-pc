@@ -87,6 +87,7 @@ int main(void)
     setword(&target,0x76b140u,2u);setword(&target,0x774028u,0x70000u);
     setword(&target,0x70000u,5u);setword(&target,0x774040u,0u);
     setword(&target,0x50000u+3u*0xea0u,0); /* Client already removed this body. */
+    setword(&target,0x7de460u,31234u);target.memory[0x7de424u]=1;
     const uint32_t previous_ip=0x0100fe0au;
     memcpy(target.memory+0x8000u,&previous_ip,4);memset(target.memory+0x8100u,0x55,8);
     uint32_t convert[3]={0x8000u,0x8100u,0x8200u};
@@ -113,6 +114,7 @@ int main(void)
     REQUIRE(pc_network_arcade_snapshot(download) && !memcmp(snapshot,download,sizeof *snapshot));
     REQUIRE(pc_arcade_migration_frame(0)==1); /* Apply checkpoint while frozen. */
     REQUIRE(WORD_AT(0x76b140u)==2u && WORD_AT(0x7de318u)==3600u && rebases==1u);
+    REQUIRE(WORD_AT(0x7de460u)==32400u && target.memory[0x7de424u]==1u);
     REQUIRE((int32_t)WORD_AT(0x50000u+0xa6cu)==snapshot->totals[0]);
     REQUIRE(presents==6u && refreshes==5u); /* Five live bots, one absent/dead. */
     REQUIRE(revives==1u);

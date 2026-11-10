@@ -50,6 +50,7 @@ static void init(Fixture *f,uint32_t pool)
     setword(f,0x7356d8u,pool);
     f->memory[0x7de400u]=3;f->memory[0x7de401u]=1;f->memory[0x7de402u]=6;
     f->memory[0x7de455u]=11;
+    setword(f,0x7de460u,32400u);
     for(unsigned actor=0;actor<9u;actor++) {
         setword(f,pool+actor*0xea0u,0x30000u+actor*0x1000u);
         setword(f,pool+actor*0xea0u+0x18u,actor==8u?2u:1u);
@@ -115,9 +116,13 @@ int main(int argc,char **argv)
     free(control);
     memset(target.memory+0x50000,0x55,9u*0xea0u);
     setword(&target,0x76b140u,2);setword(&target,0x7de318u,7200);
+    setword(&target,0x7de460u,31234u);
+    target.memory[0x7de401u]=2;target.memory[0x7de424u]=1;
     const uint32_t pointer_before=word(&target,0x50000u);
     REQUIRE(pc_arcade_checkpoint_restore(snapshot,&target,read_guest,write_guest,bot_apply,room));
     REQUIRE(word(&target,0x7de318u)==3600u && target.bot_writes==6u);
+    REQUIRE(word(&target,0x7de460u)==32400u);
+    REQUIRE(target.memory[0x7de401u]==2u && target.memory[0x7de424u]==1u);
     REQUIRE(word(&target,0x50000u)==pointer_before); /* Keep local actor pointers. */
     REQUIRE(word(&target,0x76b140u)==2); /* Restore never guesses/promotes authority. */
     for(unsigned actor=0;actor<9u;actor++) {
@@ -131,6 +136,9 @@ int main(int argc,char **argv)
     target.readonly=0x50000u+8u*0xea0u+0xa6cu; /* Last row fails before first write. */
     REQUIRE(!pc_arcade_checkpoint_restore(snapshot,&target,read_guest,write_guest,bot_apply,room));
     REQUIRE(target.writes==writes && target.bot_writes==bot_writes);
+    target.readonly=0x7de460u;
+    REQUIRE(!pc_arcade_checkpoint_restore(snapshot,&target,read_guest,write_guest,bot_apply,room));
+    REQUIRE(target.writes==writes && target.bot_writes==bot_writes);
     target.readonly=0;target.invalid_destination=1;
     REQUIRE(!pc_arcade_checkpoint_restore(snapshot,&target,read_guest,write_guest,bot_apply,room));
     REQUIRE(target.writes==writes && target.bot_writes==bot_writes);
@@ -141,6 +149,13 @@ int main(int argc,char **argv)
     target.memory[0x7de402u]=5;
     REQUIRE(!pc_arcade_checkpoint_restore(snapshot,&target,read_guest,write_guest,bot_apply,room));
     target.memory[0x7de402u]=6;
+    target.memory[0x7de455u]^=1u;
+    REQUIRE(!pc_arcade_checkpoint_restore(snapshot,&target,read_guest,write_guest,bot_apply,room));
+    target.memory[0x7de455u]^=1u;
+    uint8_t team_rules[PC_ARCADE_CHECKPOINT_CONFIG_BYTES];memcpy(team_rules,snapshot->config,sizeof team_rules);
+    team_rules[0x58u]|=1u;target.memory[0x7de458u]|=1u;
+    REQUIRE(!pc_arcade_config_matches(team_rules,target.memory+0x7de400u));
+    target.memory[0x7de458u]&=~1u;
     for(unsigned mutation=0;mutation<8u;mutation++) {
         *broken=*snapshot;
         switch(mutation) {

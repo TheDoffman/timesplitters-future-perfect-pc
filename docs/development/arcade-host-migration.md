@@ -34,7 +34,10 @@ transport cleanup never rewinds the native progress counter.
 nonce, epoch, sequence, level, tick, rules, sixteen score rows/totals/timestamps,
 and up to ten bot snapshots). Capture requires active Arcade phase15/play7 and
 matching bot ticks. Restore preflights all destination spans and bot objects before
-writing scores, bot numeric state and the game clock. If a selected backup needs
+writing scores, bot numeric state, elapsed ticks and the separate remaining
+match countdown at config+60. Compatibility compares shared rules while allowing
+local player counts, non-team human placeholders and the live countdown to
+differ between healthy peers; local fields are preserved. If a selected backup needs
 a body already removed locally, preparation first uses the existing stock bot
 revival allocator to create a local body; full restore preflight still follows. Player/controller pointers,
 profiles, rendering resources and local inputs remain local.
@@ -86,3 +89,9 @@ pointers. Live Deathmatch continuation, graceful menu exit, repeated actual-game
 handoffs, completion/rematch, physical Windows/Mac crossplay and outside-network
 play remain acceptance requirements. Do not call this a finished migration release
 until that evidence exists. See [shared relay validation](online-relay.md).
+
+`TSFP_ARCADE_TRACE=1` enables bounded stderr capture/control diagnostics in the
+native adapter; the isolated migration runner enables it and records sanitized
+service counters/phase alongside score and timer evidence. Generated Windows
+acceptance code uses the supported `--split 32` generator option and `_CL_=/MP4`
+to stay within the local compiler memory limit. No generated guest C is edited.

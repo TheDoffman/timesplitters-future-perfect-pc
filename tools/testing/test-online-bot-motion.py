@@ -430,6 +430,8 @@ def main():
                 TSFP_NATIVE_FPS=str((args.host_fps,args.guest_fps)[peer]),
                 TSFP_ONLINE_TEST_COMMAND=str(command), TSFP_ONLINE_SETTINGS=str(run/'online.json'),
                 RECOMP_WINDOW_BACKGROUND='1', TSFP_DISCORD_ENABLED='0')
+            if args.migration:
+                env['TSFP_ARCADE_TRACE']='1'
             (run/'run.lock').write_text(str(os.getpid()))
             children.append(subprocess.Popen([str(exe)], cwd=ROOT, env=env,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, creationflags=subprocess.CREATE_NO_WINDOW))
@@ -534,6 +536,13 @@ def main():
                         p!=migration.host_peer and member.acknowledged for p,member in migration.members.items()))
                 if ready:break
                 wait(.1)
+            with server.directory.lock:
+                service_state=[dict(code=room['code'],epoch=room['epoch'],host=room['host_peer'],
+                    migration=room['migration'].status() if room['migration'] else None,
+                    native={peer:dict(counter=member['native_counter'],active=member['active'])
+                            for peer,member in room['members'].items()})
+                    for room in server.directory.arcade.rooms.values()]
+            (out/'migration-service.json').write_text(json.dumps(service_state,indent=2))
             assert ready, 'Native engines did not publish/acknowledge a checkpoint'
             report('before-host-loss')
             old_tick=word(1,0x7de318)
@@ -568,6 +577,10 @@ def main():
             expected_tick=struct.unpack_from('<I',restored.payload,40)[0]
             actual_tick=word(1,0x7de318)
             assert expected_tick<=actual_tick<=expected_tick+120, 'Match clock did not resume from the selected backup'
+            expected_remaining=struct.unpack_from('<i',restored.payload,48+0x60)[0]
+            actual_remaining=struct.unpack('<i',read(1,0x7de460,4))[0]
+            assert (expected_remaining-120<=actual_remaining<=expected_remaining if expected_remaining>0
+                    else actual_remaining==expected_remaining), 'Remaining match timer did not resume from the backup'
             config=read(1,0x7de400,3);pool=word(1,0x7356d8)
             expected_scores=[struct.unpack_from('<16h',restored.payload,48+160+i*84)
                              for i in range(config[0]+config[2])]
@@ -581,6 +594,7 @@ def main():
             (out/'migration-state.json').write_text(json.dumps(dict(
                 sequence=restored.sequence,digest=restored.digest,old_tick=old_tick,
                 expected_tick=expected_tick,actual_tick=actual_tick,
+                expected_remaining=expected_remaining,actual_remaining=actual_remaining,
                 expected_scores=expected_scores,actual_scores=actual_scores),indent=2))
             marker=time.monotonic()-started
             wait(args.seconds)
