@@ -52,7 +52,10 @@ actual active-match engine phases before deferring, because directory metadata
 can briefly lag behind the engine transition.
 
 `3000-arcade-migration-build.patch` enables the same adapter for Windows, Mac and
-Linux game builds. Online shared Arcade uses v3; Story remains v2. Isolated browser
+Linux game builds. Online shared Arcade uses v3; Story remains v2. The browser also lists/joins
+explicit legacy Arcade rooms via typed directory-status fallback, preserving
+automatic self-hosting. Authentication, certificate and active-match errors never
+trigger that fallback. Isolated browser
 automation opts in with `migration: true` so legacy/direct regressions remain
 meaningful. Companion bundles, server installation and compatibility identities
 include all new modules. Matching native rebuilds are required.

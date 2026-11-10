@@ -30,7 +30,7 @@ from tkinter import messagebox
 
 from online_platform import GameProcess, show_error
 from online_client import Client, Session
-from online_arcade_client import ArcadeSession
+from online_arcade_client import ArcadeSession, list_arcade, join_arcade
 from online_host import fetch_public_ipv4, invitation, parse_invitation, start_match
 from online_paths import ROOT, HANDSHAKES, SETTINGS, MANIFEST, TOOLS, service_defaults
 from online_theme import OnlineTheme, build_browser, build_invitation
@@ -161,8 +161,8 @@ def main():
     def refresh():
         try:
             directory = client()
-            work(lambda: directory.request('GET', ('/v3' if migrating[0] else '/v2')+
-                 '/lobbies?compatibility='+args.compatibility+'&mode='+args.mode), refreshed)
+            work(lambda: list_arcade(directory, args.compatibility) if migrating[0] else directory.request('GET',
+                 '/v2/lobbies?compatibility='+args.compatibility+'&mode='+args.mode), refreshed)
         except Exception as error:
             status.set(str(error))
 
@@ -173,7 +173,7 @@ def main():
                 address.set(directory_address)
                 pin.set(fingerprint)
             directory = client()
-            work(lambda: ArcadeSession.open(directory, args.compatibility, code=join_code) if migrating[0]
+            work(lambda: join_arcade(directory, args.compatibility, join_code) if migrating[0]
                  else Session.join(directory, args.compatibility, join_code, mode=args.mode), connected)
         except Exception as error:
             status.set(str(error))
@@ -268,8 +268,8 @@ def main():
                 browser.selection_set(command['code'])
                 window.after(300, join_selected)
             directory = client()
-            window.after(300, lambda: work(lambda: directory.request(
-                'GET', ('/v3' if migrating[0] else '/v2')+'/lobbies?compatibility='+args.compatibility), choose))
+            window.after(300, lambda: work(lambda: list_arcade(directory, args.compatibility) if migrating[0] else
+                directory.request('GET', '/v2/lobbies?compatibility='+args.compatibility), choose))
         elif command['action'] == 'cancel':
             window.after(300, window.destroy)
         else:
