@@ -143,6 +143,15 @@ Completion/rematch after native migration and other Arcade modes also remain
 separate acceptance; the implemented fixture scenario checks round identity and
 rematch epochs but does not replace those native-game checks.
 
+Migration overlay acceptance (`370b51f5`): seven focused native control/UI/font/
+canvas cases pass on Windows and physical Mac arm64. Isolated Windows run
+`migration-overlay-three-a` shows the status card on both surviving games during
+an actual host process-tree crash, removes it after promotion, and continues
+scores/countdown/six bots for30 seconds. Screenshot burst frames2 show the card
+on both peers; `migration-finished-1/2.png` show resumed gameplay without it.
+The run completed with isolated-save cleanup. Native Mac GL presentation remains
+unverified; it consumes the same tested line provider, canvas and embedded fonts.
+
 `TSFP_ARCADE_TRACE=1` enables bounded stderr capture/control diagnostics in the
 native adapter; the isolated migration runner enables it and records sanitized
 service counters/phase alongside score and timer evidence. Generated Windows

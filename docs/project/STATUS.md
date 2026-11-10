@@ -43415,3 +43415,11 @@ traffic. Matching native rebuilds are required; no client release was published.
 Native completion/rematch after migration, other modes, native Mac crossplay and
 full outside-network games remain separate acceptance. See
 docs/development/arcade-host-migration.md for exact evidence and boundaries.
+
+Arcade migration overlay (`370b51f5`): shared final-frame status card displays
+Migrating host / Please wait while the native handoff is preparing, including
+when Tools/HUD are disabled, and clears immediately on resume/exit. Seven
+focused control/UI/font/canvas checks pass on Windows and physical Mac arm64.
+Actual three-player Windows host-crash run `migration-overlay-three-a` shows
+the card on both survivors, then no card and continued scores/timer/six bots
+for30 seconds. Native Mac rendering is not claimed from the shared tests.

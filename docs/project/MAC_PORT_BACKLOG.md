@@ -10493,3 +10493,10 @@ player Deathmatch now continues scores/countdown and six fighting/respawning bot
 through normal exit, crash and repeated handoff. Full native Mac game continuation
 and Windows/Mac crossplay remain unverified; client rebuilds are required. See
 STATUS and docs/development/arcade-host-migration.md for acceptance boundaries.
+
+Migration status overlay (`370b51f5`): no Mac-specific adaptation needed. The
+existing native GL compositor consumes the same `pc_developer_lines` provider,
+`pc_match_overlay.inc` layout and shared embedded font/canvas as Windows. Seven
+native control/UI/font/canvas checks pass on physical Mac arm64. Windows actual
+three-player host-crash screenshots verify display/removal and continued play;
+full native Mac rendering remains a separate acceptance check. Rebuild required.
