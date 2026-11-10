@@ -109,6 +109,7 @@ static void menu_video_click_sound(uint32_t menu,uint32_t item)
 static unsigned video_tab_polls,video_tab_flushes;
 static int menu_video_tabs_poll(uint32_t menu) {(void)menu;video_tab_polls++;return 0;}
 static void menu_video_tabs_flush(void) {CHECK(!in_dispatch);video_tab_flushes++;}
+static void online_opening_tick(void) {} /* Lifecycle is covered by fov_settings.c. */
 #include "pc_menu_mouse_guest.inc"
 static void original(void) { ++original_calls;WORD_AT(WORD_AT(g_esp+4)+0xc4)|=navigation;g_esp+=4; }
 static unsigned settings_sample_mask;

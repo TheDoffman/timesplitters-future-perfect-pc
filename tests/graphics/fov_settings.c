@@ -99,7 +99,8 @@ static LRESULT CALLBACK fullscreen_test_proc(HWND window,UINT message,WPARAM wp,
 }
 HWND xbox_D3D8Window(void) { return fixture_window; }
 int xbox_D3D8ChangeResolution(unsigned w,unsigned h) { (void)w;(void)h;return available; }
-int pc_online_connect(void) { return 0; }
+static unsigned online_connect_calls;
+int pc_online_connect(void) { ++online_connect_calls;return 0; }
 int pc_online_connect_mode(PcOnlineMode mode) { (void)mode;return 0; }
 PcOnlineMode pc_online_mode(void) { return PC_ONLINE_NONE; }
 static unsigned online_disconnects,lan_browser_entries,lan_enables;
@@ -1195,6 +1196,14 @@ int main(int argc,char **argv)
         CHECK(menu_video_tabs_poll(audio_menu));clock_ms+=1001;menu_video_tabs_flush();
         CHECK(audio_page==3 && audio_pending==-1);
     }
+    /* Online selection must return before launching, allowing a notice frame.
+     * The next input tick after two draws launches once; cancel restores idle. */
+    g_esp=0x700000;online_activate();
+    CHECK(online_opening_pending && online_connect_calls==0 && g_esp==0x700004);
+    online_opening_tick();CHECK(online_connect_calls==0);
+    online_opening_frames=2;online_opening_tick();
+    CHECK(online_connect_calls==1 && !online_opening_pending && g_esp==0x700004);
+    online_opening_tick();CHECK(online_connect_calls==1);
     menu_mouse_dispatch=0;tab_pointer_enabled=slider_capture_enabled=0;
     WORD_AT(0x300004)=before_audio_descriptor;audio_menu=0;audio_row_count=0;
     /* The actual native waiting panel adopts an unconfigured pad's input port,

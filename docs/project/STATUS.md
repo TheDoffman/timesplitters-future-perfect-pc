@@ -1,3 +1,13 @@
+Online notice CI follow-up: standalone menu-input fixture supplies the Online
+handoff hook; real lifecycle coverage remains in fov_settings.c.
+
+Online opening correction: PR534 loading panel removed; shared native menu
+shows opening/setup feedback before the original blocking Online handoff.
+Local menu/companion checks8 passed,5 platform skips; final handoff suite4 passed,
+2 skips. Windows0.6.0 build and built-in checks passed. Actual Windows menu capture confirmed the opening message remains visible during
+the companion handoff (online-opening-message.png).
+Native Mac/Linux visual acceptance pending.
+
 Main-menu update notice (local, based on main a688d697): the shared launcher
 publishes a selected-channel newer-release result and the game displays native
 `UPDATE AVAILABLE - OPEN THE LAUNCHER` text only on its frontend main menu.
