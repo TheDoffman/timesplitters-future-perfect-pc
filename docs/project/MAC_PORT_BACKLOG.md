@@ -3082,6 +3082,15 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Story Coop Developer Tools (2026-11-09, uncommitted on online-story-coop):**
+  Shared developer policy enables local guest camera/movement and host-owned
+  time/audio, god/ammo and checkpoint advance. Shared Story reliable messages
+  carry bounded values; native checkpoint/restart paths retain engine ownership.
+  This requires no new OS API. The existing Windows Story adapter supplies its
+  transport; native Mac/Linux Story remains unsupported until the same adapter
+  is wired there. CPU policy coverage does not establish native/live multiplayer
+  speed, audio, camera or checkpoint acceptance. See STATUS and the Tools guide.
+
 - **Shared campaign lifecycle (2026-11-09, 4d00f4e0 on online-story-coop):**
   Shared campaign policy now applies checkpoint capture/extra-player bookmarks,
   host-only restarts, cinematic cues, intro/ending/reward transitions, departures

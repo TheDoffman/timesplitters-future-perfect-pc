@@ -60,6 +60,7 @@ static int story_drop_receive(uint32_t peer,uint32_t payload,uint32_t type,uint3
 static void story_world_reset(void);
 static void story_world_frame(void);
 static int story_world_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
+static int story_tools_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
 uint32_t pc_story_network_world_key(uint32_t entity);
 uint32_t pc_story_network_world_entity(uint32_t key);
 static int story_network_session(void)
@@ -978,3 +979,4 @@ void pc_story_network_character_remove(void (*original)(void))
 #include "pc_story_dialogue.inc"
 #include "pc_story_world.inc"
 #include "pc_network_ammo.inc"
+#include "pc_story_tools.inc"

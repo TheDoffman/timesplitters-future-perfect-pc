@@ -172,4 +172,35 @@ static void campaign_lifecycle_matrix(void)
     }
     CHECK(story_campaign_scene(13)==UINT32_MAX);
 }
+static void campaign_tools_matrix(void)
+{
+    for(unsigned count=2;count<=4;count++) {
+        online_mode=PC_ONLINE_STORY;WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;WORD_AT(0x76b1a4)=15;
+        WORD_AT(0x774028)=0x30000;WORD_AT(0x774040)=7;WORD_AT(0x31000)=7;WORD_AT(0x32000)=8;
+        ((uint8_t *)memory)[0x7de400]=(uint8_t)count;story_reload_epoch=0;
+        memset(&story_tools_host,0,sizeof story_tools_host);memset(&story_tools_pending,0,sizeof story_tools_pending);
+        story_tools_sent=0;story_tools_applied=story_tools_match=0;
+        developer_shared=(PcDeveloperShared){500u,0u,1u,1u};g_esp=0x4000;story_tools_frame();
+        StoryTools message;memcpy(&message,npc_sent+4,sizeof message);
+        CHECK(message.magic==STORY_TOOLS_MAGIC && message.values.speed_milli==500 && message.values.god && g_esp==0x4000);
+        WORD_AT(0x76b140)=2;memcpy((uint8_t *)memory+0x90000,&message,sizeof message);
+        CHECK(story_tools_receive(0x32000,0x90000,0x1e,sizeof message)&&!story_tools_pending.serial);
+        CHECK(story_tools_receive(0x31000,0x90000,0x1e,sizeof message));story_tools_frame();
+        CHECK(developer_applied.speed_milli==500 && developer_applied.god && developer_applied.infinite_ammo && !developer_applied.audio_speed);
+        unsigned applications=developer_applications;
+        story_tools_receive(0x31000,0x90000,0x1e,sizeof message);story_tools_frame();CHECK(applications==developer_applications);
+        StoryTools invalid=message;++invalid.serial;invalid.values.speed_milli=0;
+        memcpy((uint8_t *)memory+0x90000,&invalid,sizeof invalid);story_tools_receive(0x31000,0x90000,0x1e,sizeof invalid);
+        CHECK(story_tools_pending.serial==message.serial);
+        invalid=message;++invalid.serial;invalid.match^=1;
+        memcpy((uint8_t *)memory+0x90000,&invalid,sizeof invalid);story_tools_receive(0x31000,0x90000,0x1e,sizeof invalid);
+        CHECK(story_tools_pending.serial==message.serial);
+        WORD_AT(0x76b140)=1;developer_shared=(PcDeveloperShared){1000u,1u,0u,0u};story_tools_frame();
+        memcpy(&message,npc_sent+4,sizeof message);CHECK(message.values.speed_milli==1000&&!message.values.god);
+        WORD_AT(0x76b140)=2;memcpy((uint8_t *)memory+0x90000,&message,sizeof message);
+        story_tools_receive(0x31000,0x90000,0x1e,sizeof message);story_tools_frame();CHECK(!developer_applied.god);
+        ++story_reload_epoch;story_tools_frame();CHECK(developer_applied.speed_milli==1000&&!developer_applied.infinite_ammo);
+        online_mode=PC_ONLINE_ARCADE;story_tools_frame();CHECK(!story_tools_pending.serial&&!story_tools_host.serial);
+    }
+}
 #endif

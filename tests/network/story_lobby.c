@@ -5,6 +5,11 @@
 #include <string.h>
 #include <stdarg.h>
 #include "pc_online.h"
+#include "pc_developer.h"
+static PcDeveloperShared developer_shared={1000u,1u,0u,0u},developer_applied;
+static unsigned developer_applications;
+void pc_developer_shared_get(PcDeveloperShared *out){*out=developer_shared;}
+void pc_developer_shared_apply(const PcDeveloperShared *v){developer_applied=*v;++developer_applications;}
 #include "pc_character_pose.h"
 #ifdef TSFP_NATIVE_DISPLAY
 #undef _WIN32
@@ -2340,6 +2345,7 @@ int main(void)
 #endif
 #ifdef _WIN32
     campaign_lifecycle_matrix();
+    campaign_tools_matrix();
 #endif
     puts("PASS: Story host controls and campaign lifecycle for thirteen missions with two, three and four players");
     return 0;

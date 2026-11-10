@@ -14,6 +14,12 @@ typedef struct PcDeveloperState {
     double manual_speed, slow_speed, fast_speed;
     int audio_speed;
 } PcDeveloperState;
+/* Host-owned Story values; camera/movement and UI preferences stay local. */
+typedef struct PcDeveloperShared { uint32_t speed_milli,audio_speed,god,infinite_ammo; } PcDeveloperShared;
+unsigned pc_developer_story_role(void);
+void pc_developer_story_policy(unsigned role);
+void pc_developer_shared_get(PcDeveloperShared *out);
+void pc_developer_shared_apply(const PcDeveloperShared *values);
 typedef struct PcDeveloperLine {
     char text[160];
     float x,y,width,height;

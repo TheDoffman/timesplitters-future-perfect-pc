@@ -9,11 +9,19 @@ extern void sub_0006BB90(void),sub_0025EF80(void),sub_000653B0(void),sub_0006745
  * respawn. Original 25F010/25F0C0 restore checkpoint-indexed scripts as well.
  * Keep capture/reload and mission-success transitions owned by those routines. */
 /* Fresh ownership checks also protect detached rendering and local cheats. */
+static uint32_t developer_local_context(void)
+{
+    const uint32_t pool=WORD_AT(0x7b0c48u);
+    unsigned count=WORD_AT(0x790950u);if(!count||count>4u)count=1u;
+    if(!pool || !guest_writable(pool,count*0x1584u))return 0;
+    for(unsigned i=0;i<count;i++)if(WORD_AT(pool+i*0x1584u+4u)==0u)return pool+i*0x1584u;
+    return 0;
+}
 static uint32_t developer_owned_actor(int camera)
 {
-    uint32_t phase=WORD_AT(0x7de30cu),context=WORD_AT(0x7b0c48u);
+    uint32_t phase=WORD_AT(0x7de30cu),context=developer_local_context();
     if((phase!=1u&&phase!=7u)||WORD_AT(0x79094cu)>100u||
-       ((WORD_AT(0x76b0fcu)&&WORD_AT(0x76b108u))&&(!camera||!pc_developer_tools_allowed()))||!guest_writable(context,0x1584u)||WORD_AT(context+4u)!=0u)return 0;
+       ((WORD_AT(0x76b0fcu)&&WORD_AT(0x76b108u))&&(!pc_developer_tools_allowed()||(!camera&&!pc_developer_story_role())))||!guest_writable(context,0x1584u)||WORD_AT(context+4u)!=0u)return 0;
     uint32_t body=WORD_AT(context+0x14u);
     if(!guest_writable(body,0x154u)||WORD_AT(body+0x150u)!=context)return 0;
     uint32_t actor=WORD_AT(body+0x7cu);
@@ -27,6 +35,14 @@ int pc_developer_damage_blocked(void)
     if(!actor||!guest_writable(g_esp,8u))return 0;
     uint32_t damage=WORD_AT(g_esp+4u);
     int blocked=guest_writable(damage,0x58u)&&WORD_AT(damage)==WORD_AT(actor);
+    if(!blocked && pc_developer_story_role()==1u && guest_writable(damage,0x58u)) {
+        const uint32_t pool=WORD_AT(0x7b0c48u);const unsigned count=WORD_AT(0x790950u);
+        if(count>=2u && count<=4u && guest_writable(pool,count*0x1584u))
+            for(unsigned i=0;i<count;i++) {
+                const uint32_t context=pool+i*0x1584u,body=WORD_AT(context+0x14u);
+                if(guest_writable(body,0x154u) && WORD_AT(body+0x150u)==context && WORD_AT(damage)==body)blocked=1;
+            }
+    }
     static unsigned reports;
     if(blocked&&reports++<16u)fprintf(stderr,"[DEVELOPER] God mode blocked local damage\n");
     return blocked;
@@ -87,7 +103,7 @@ void pc_developer_world_visibility(void)
     PcDeveloperState state;pc_developer_get(&state);
     uint32_t actor=state.freecam?developer_owned_actor(1):0;
     if(!actor)return;
-    uint32_t context=WORD_AT(0x7b0c48u),camera=WORD_AT(context+8u);
+    uint32_t context=developer_local_context(),camera=WORD_AT(context+8u);
     if(!guest_writable(camera,0x218u)||WORD_AT(camera+0x214u)>=16u)return;
     uint32_t bit=1u<<WORD_AT(camera+0x214u),body=WORD_AT(actor);
     WORD_AT(body+0x10u)|=bit;
@@ -102,7 +118,7 @@ void pc_developer_world_visibility(void)
 void pc_developer_viewmodel_draw(void (*original)(void))
 {
     PcDeveloperState state;pc_developer_get(&state);
-    if(state.freecam&&developer_owned_actor(1)&&WORD_AT(0x7b0c7cu)==WORD_AT(0x7b0c48u))g_esp+=4u;
+    if(state.freecam&&developer_owned_actor(1)&&WORD_AT(0x7b0c7cu)==developer_local_context())g_esp+=4u;
     else original();
 }
 /* First-person ownership can omit the local actor from colour submission.
@@ -113,7 +129,7 @@ void pc_developer_draw_body(void)
 {
     PcDeveloperState state;pc_developer_get(&state);
     uint32_t actor=state.freecam?developer_owned_actor(1):0;
-    if(!actor||WORD_AT(0x7b0c7cu)!=WORD_AT(0x7b0c48u))return;
+    if(!actor||WORD_AT(0x7b0c7cu)!=developer_local_context())return;
     uint32_t body=WORD_AT(actor),model=WORD_AT(body+4u);
     if(!guest_writable(model,0x200u))return;
     uint32_t camera=WORD_AT(0x7b0cc0u);
@@ -141,6 +157,9 @@ void pc_developer_guest_frame(void)
 {
     pc_developer_video_guest_tick();
     pc_developer_lobby_guest();
+#ifdef _WIN32
+    story_tools_frame();
+#endif
     developer_refill_ammo();
     static unsigned handled;
     PcDeveloperState state;pc_developer_get(&state);
@@ -149,11 +168,13 @@ void pc_developer_guest_frame(void)
     const int32_t scene=(int32_t)WORD_AT(0x79094Cu);
     uint32_t mode=WORD_AT(0x78AD20u),count=WORD_AT(0x790950u);
     uint32_t contexts=WORD_AT(0x7B0C48u),bookmarks=WORD_AT(0x75F5D0u);
-    if(scene<0 || scene>100 || (mode!=4u&&mode!=14u) || WORD_AT(0x7DE30Cu)!=7u ||
-       (WORD_AT(0x76B0FCu)&&WORD_AT(0x76B108u)) ||
-       !count || count>2u || !guest_writable(contexts,count*0x1584u) ||
+    const unsigned story_role=pc_developer_story_role();
+    const int online=WORD_AT(0x76B0FCu)&&WORD_AT(0x76B108u);
+    if(scene<0 || scene>100 || (mode!=4u&&mode!=14u&&story_role!=1u) || WORD_AT(0x7DE30Cu)!=7u ||
+       (online&&story_role!=1u) ||
+       !count || count>(story_role==1u?4u:2u) || !guest_writable(contexts,count*0x1584u) ||
        !guest_writable(bookmarks,count*0x238u)) {
-        pc_developer_report("Checkpoint advance is available during offline Story gameplay.");return;
+        pc_developer_report("Checkpoint advance requires Story gameplay and host control online.");return;
     }
     for(unsigned i=0;i<count;i++) {
         uint32_t context=contexts+i*0x1584u,body=WORD_AT(context+0x14u);

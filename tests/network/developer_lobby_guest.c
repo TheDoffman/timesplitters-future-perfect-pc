@@ -5,6 +5,11 @@
 #include <math.h>
 #include <stdarg.h>
 #include "pc_network.h"
+#include "pc_online.h"
+static PcOnlineMode online_mode;
+PcOnlineMode pc_online_mode(void){return online_mode;}
+static unsigned story_role;
+void pc_developer_story_policy(unsigned role){story_role=role;}
 static unsigned char memory[0x800000];
 static uintptr_t g_xbox_mem_offset=(uintptr_t)memory;
 #define WORD_AT(a) (*(uint32_t *)(memory+(a)))
@@ -50,12 +55,15 @@ int main(void)
     memcpy(memory+0x777248,"Alice",6);memcpy(memory+0x777248+0x124,"Bob\n",5);
     pc_developer_lobby_guest();assert(queries==1 && match_online&&!match_allowed);
     developer_match_tools=1;pc_developer_lobby_guest();assert(queries==2&&match_allowed);
+    online_mode=PC_ONLINE_STORY;developer_match_tools=0;
+    pc_developer_lobby_guest();assert(queries==3&&match_allowed&&story_role==1);
+    online_mode=PC_ONLINE_ARCADE;pc_developer_lobby_guest();assert(queries==4&&!match_allowed&&!story_role);
     WORD_AT(g_esp)=0x198fd6;WORD_AT(g_esp+4)=0;
     pc_developer_lobby_name(original_name);assert(g_esp==0x7004&&g_eax==0x777248);
     g_esp=0x7000;WORD_AT(g_esp)=0x199583;WORD_AT(g_esp+4)=bits(100.f);WORD_AT(g_esp+8)=bits(50.f);WORD_AT(g_esp+12)=0x777248;WORD_AT(g_esp+16)=0xffffff7f;
     WORD_AT(0x76b1a4)=12;pc_developer_lobby_text(original_text);assert(g_esp==0x7004&&icon_rectangles==0&&original_calls==1);
     assert(icon_rectangles==0&&original_calls==1); /* No wrench, unchanged names. */
     assert(!strcmp((char *)(memory+0x777248),"Alice"));
-    WORD_AT(0x76b108)=0;pc_developer_lobby_guest();assert(queries==2 && !match_online&&!match_allowed);
+    WORD_AT(0x76b108)=0;pc_developer_lobby_guest();assert(queries==4 && !match_online&&!match_allowed&&!story_role);
     puts("PASS: native lobby roster names, peer IP/local ownership and offline clearing");return 0;
 }

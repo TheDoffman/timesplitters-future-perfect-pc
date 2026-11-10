@@ -1,5 +1,40 @@
 # Developer Tools integration notes
 
+## Story Coop host-owned tools (2026-11-09)
+
+Story Coop is an exception to the general multiplayer restriction below.
+The typed Story session sets `pc_developer_story_policy` to host/member role;
+local Tools opt-in is still required to open the sidebar. Both roles may use
+local Camera & movement. Time & audio and Player & progression expose controls
+only to the host. Direct/stale actions and numeric/held-speed inputs enforce
+the same ownership gate as the visible widgets. Settings/Diagnostics and
+ordinary Arcade/System Link permission behavior are unchanged.
+
+`PcDeveloperShared` contains bounded speed in thousandths, audio-scaling, god
+and infinite-ammo values. The host exports neutral values when locally disabled;
+the guest applies host values even without its own opt-in. The shared timing
+and audio adapters consume those values, including guest speed-key rejection.
+Role/disconnect changes reset replicated effects. `pc_story_tools.inc` sends
+version1 STD1 records through the existing reliable Story class1E channel on
+change and periodically for late joins. Receive validates host identity, match
+and reload epoch, monotonic serial, size and values; remote clients cannot
+change the host state. Camera poses and UI preferences never travel with it.
+
+Developer guest-memory helpers find the owned context among up to four humans.
+Host god mode protects all validated human bodies; guests preserve their own
+ammo through the original ammo/grenade routines. Host checkpoint advance admits
+four contexts and calls the existing native capture/reload or success path.
+The restart adapter flushes checkpoint capture before reload on the same reliable
+channel so guests can restore it during one receive drain. See the
+[campaign guide](story-campaign-lifecycle.md).
+
+Existing developer-input, developer-guest, lobby and Story campaign fixtures
+cover ownership, guest opt-in independence, invalid/replayed/wrong-host messages,
+neutral reset and two/three/four-player delivery. They remain in existing CI
+routes. Physical multiplayer timing/audio and authored checkpoint acceptance
+remain distinct from these CPU contracts. Native Story transport remains the
+existing MAC-013 gap; this change adds no OS-specific developer policy.
+
 Current widget, video and host-policy contracts continue in [systems continuation](systems-continuation.md).
 The sections below retain the Developer Tools branch history while the owning
 guides also track newer main work. Older patch counts describe their revisions.

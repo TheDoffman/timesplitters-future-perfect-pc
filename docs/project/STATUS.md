@@ -1,3 +1,35 @@
+## Story Coop Developer Tools - 2026-11-09 (local validation)
+
+On online-story-coop at7c56b85b plus uncommitted shared-source changes, locally
+enabled Tools now allows both roles to use Camera & movement. Only the host
+can edit Time & audio or Player & progression. Host speed/audio-scaling,
+god mode and infinite ammo apply across the party, including guests whose own
+Tools opt-in is off. Host checkpoint advance uses native capture plus the
+existing coordinated reload/success transition. Capture is flushed reliably
+before restart. Later guest ownership slots are found explicitly; host god
+mode protects validated human bodies without protecting NPCs. Arcade/System
+Link retain their existing host permission and restricted categories.
+
+The new28-byte version1 Story Tools message carries numeric values, match/epoch
+and serial through the existing reliable channel. Tests cover wrong-host,
+wrong-match, invalid-value and duplicate rejection, neutral reset and delivery
+for two/three/four players. Shared UI tests reject guest edits and held-speed
+controls, retain guest-applied effects without local opt-in, and fail closed
+during a transient network-publication boundary. Existing developer-guest
+fixtures exercise four-player checkpoint admission and later-slot ownership.
+
+Windows11 x64, Python3.14.2, MSVC14.42.34433:68 affected menu/developer/FOV tests
+passed with two native-host skips; final authority-guard rerun9 passed. Official
+Windows Build and all built-in checks passed, with the complete runtime patch
+stack verified and the supported US XBE hash unchanged. Version is
+0.6.0-story-coop-beta.1, default Windows renderer (Vulkan off); GPU driver was
+not queried for these CPU/build checks. EXE SHA-256:
+a5b027e195ee4a5b8bb2f1a6d8ca5101e2e2604a59b55137cbff733a782ef8b7.
+Context and whitespace checks pass. No game was launched for this task;
+physical multiplayer speed/audio, camera movement and authored checkpoint
+acceptance remain pending. Native Mac/Linux Story transport remains the
+existing MAC-013 adapter gap. No commit, push or publication for these changes.
+
 ## Story Coop branch handoff - 2026-11-09
 
 Committed the shared campaign work and host pause-menu changes as4d00f4e0,

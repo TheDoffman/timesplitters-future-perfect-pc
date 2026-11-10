@@ -2,11 +2,15 @@
  * The peer handle is +4; its numeric ID indexes the native XNet sockaddr table. */
 #include "pc_network.h"
 #include "pc_developer.h"
+#include "pc_online.h"
 extern void sub_00353760(void);
 void pc_developer_lobby_guest(void)
 {
     PcDeveloperPeer roster[16];unsigned count=0;
-    if(!WORD_AT(0x76b108u) || !pc_network_enabled()) {pc_network_tools_policy(NULL,0,0);pc_developer_match_policy(0,0);return;}
+    if(!WORD_AT(0x76b108u) || !pc_network_enabled()) {pc_network_tools_policy(NULL,0,0);pc_developer_story_policy(0);pc_developer_match_policy(0,0);return;}
+    const unsigned role=WORD_AT(0x76b140u);
+    const int campaign=pc_online_mode()==PC_ONLINE_STORY && (role==1u||role==2u);
+    pc_developer_story_policy(campaign?role:0u);
     uint32_t local=WORD_AT(0x774028u);
     for(unsigned slot=0;slot<16;slot++) {
         uint32_t record=0x777240u+slot*0x124u;
@@ -24,7 +28,8 @@ void pc_developer_lobby_guest(void)
         for(unsigned n=0;n<64u && name[n];n++)entry->name[n]=name[n]>=32 && name[n]<127?(char)name[n]:'?';
         if(!entry->name[0])snprintf(entry->name,sizeof entry->name,"Player %u",slot+1);
     }
-    int allowed=pc_network_tools_policy(roster,count,developer_match_tools);
+    int allowed=pc_network_tools_policy(roster,count,campaign?1:developer_match_tools);
+    if(campaign)allowed=1;
     pc_developer_match_policy(1,allowed);
 }
 /* Compatibility wrappers for the existing patch hooks. Never decorate names. */

@@ -188,7 +188,7 @@ static void sidebar_disabled_group(const char *name,const char *reason) {
 }
 static void sidebar_tools(void) {
     PcDeveloperState s;pc_developer_get(&s);
-    AcquireSRWLockShared(&dev_lock);int online=network,available=gameplay&&(!network||match_tools_allowed),campaign=story&&available&&!network;ReleaseSRWLockShared(&dev_lock);
+    AcquireSRWLockShared(&dev_lock);int online=network&&!developer_shared_edit(),available=gameplay&&(!network||match_tools_allowed),campaign=(story||story_tools_role==1u)&&available&&developer_shared_edit();ReleaseSRWLockShared(&dev_lock);
     if(!pc_developer_tools_allowed()) {
         sidebar_text_style(27,sidebar_y+9,392,24,UI_MUTED,"Tools are disabled by the host for this match.",12,400,0);sidebar_y+=42;
         sidebar_text_style(27,sidebar_y,392,22,UI_MUTED,"Settings and Diagnostics remain available.",11,400,0);sidebar_y+=32;return;
@@ -211,7 +211,7 @@ static void sidebar_tools(void) {
         sidebar_text_style(31+before_shift+shift_width,sidebar_y+3,385-before_shift-shift_width,17,UI_MUTED," boosts flight speed.",11,400,0);sidebar_y+=23;
         sidebar_group_end();
     } else sidebar_group_closed();
-    if(online)sidebar_disabled_group("Time & audio","Unavailable in multiplayer.");
+    if(online)sidebar_disabled_group("Time & audio",story_tools_role?"Controlled by the Story host.":"Unavailable in multiplayer.");
     else if(sidebar_group(1,"Time & audio","game speed time scale audio sound slow fast held shortcuts outside menu","LIVE VALUES")) {
         int show=sidebar_row_matches("Game speed");
         sidebar_number("Game speed",1);
@@ -236,7 +236,7 @@ static void sidebar_tools(void) {
         }
         sidebar_group_end();
     } else sidebar_group_closed();
-    if(online)sidebar_disabled_group("Player & progression","Unavailable in multiplayer.");
+    if(online)sidebar_disabled_group("Player & progression",story_tools_role?"Controlled by the Story host.":"Unavailable in multiplayer.");
     else if(sidebar_group(2,"Player & progression","god mode infinite ammo checkpoint story progress","3 TOOLS")) {
         sidebar_toggle("God mode",NULL,s.god,available,HOME,11);
         sidebar_toggle("Infinite ammo",NULL,s.infinite_ammo,available,HOME,12);
@@ -357,7 +357,8 @@ static void sidebar_build(unsigned width,unsigned height,PcDeveloperLine *out,un
     if(sidebar_search[0])sidebar_button(UI_CLEAR,0,0,0,400,133,28,27,"",0);
     AcquireSRWLockShared(&dev_lock);int net=network,playing=gameplay,campaign=story;ReleaseSRWLockShared(&dev_lock);
     sidebar_box(21,177,6,6,net?0xd9b36affu:UI_ACCENT,3);
-    sidebar_text_face(34,171,388,18,UI_MUTED,net?(pc_developer_tools_allowed()?"Multiplayer - host allows camera & HUD tools":"Multiplayer - Tools disabled by host"):playing?(campaign?"Offline Story":"Offline gameplay"):"Frontend - gameplay tools unavailable",11,400,0,PC_FONT_UI);
+    const unsigned story_role=pc_developer_story_role();
+    sidebar_text_face(34,171,388,18,UI_MUTED,net?(story_role==1u?"Story Coop - host controls shared tools":story_role==2u?"Story Coop - camera & movement are local":pc_developer_tools_allowed()?"Multiplayer - host allows camera & HUD tools":"Multiplayer - Tools disabled by host"):playing?(campaign?"Offline Story":"Offline gameplay"):"Frontend - gameplay tools unavailable",11,400,0,PC_FONT_UI);
     sidebar_video_sync();
     int video_bar=page==SETTINGS||sidebar_video_snapshot.preview||sidebar_video_wait||(sidebar_search[0]&&sidebar_video_dirty());
     sidebar_top=198;sidebar_bottom=fmaxf(sidebar_top+5,h-(show_status?122:96)-(video_bar?57:0));sidebar_y=sidebar_top-sidebar_scroll[page];sidebar_content=1;
@@ -416,7 +417,7 @@ static void sidebar_layout(unsigned width,unsigned height,PcDeveloperLine *out,u
     if(clamped!=sidebar_scroll[page]){sidebar_scroll[page]=clamped;sidebar_build(width,height,out,capacity);}
 }
 static void sidebar_set_value(int id,double value) {
-    if((id==1||id==3||id==4)&&network)return;
+    if((id==1||id==3||id==4)&&!developer_shared_edit())return;
     if(id==5){sidebar_video_draft.value[VIDEO_FOV]=(int)fmin(100,fmax(40,round(value)));}
     else if(id==1)speed_adjust(value);
     else if(id==2){draft.sensitivity=fmin(10.,fmax(.001,value));if(page==KEYBOARD)sidebar_dirty=1;else sidebar_save();}
@@ -578,8 +579,9 @@ void pc_developer_frame(void) {
         }
         previous_left=p.left;
     } else previous_left=0;
-    AcquireSRWLockExclusive(&dev_lock);state.speed=network?1.:state.manual_speed;
-    if(focused&&(gameplay||movie_active)&&!network&&(open||state.speed_keys)&&capture_action<0&&!edit_number&&!sidebar_search_edit) {
+    AcquireSRWLockExclusive(&dev_lock);
+    if(story_tools_role!=2u)state.speed=developer_shared_edit()?state.manual_speed:1.;
+    if(focused&&(gameplay||movie_active)&&developer_shared_edit()&&(open||state.speed_keys)&&capture_action<0&&!edit_number&&!sidebar_search_edit) {
         if(keys[0xdd])state.speed=state.fast_speed;else if(keys[0xdb])state.speed=state.slow_speed;
     }
     ReleaseSRWLockExclusive(&dev_lock);

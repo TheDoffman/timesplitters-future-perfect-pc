@@ -28,6 +28,9 @@ void pc_developer_report(const char *message) {snprintf(report,sizeof report,"%s
 void pc_developer_close(void) {}
 int pc_developer_enabled(void) {return 1;}
 static int multiplayer_tools;
+static unsigned story_role;
+unsigned pc_developer_story_role(void){return story_role;}
+static void story_tools_frame(void){}
 int pc_developer_tools_allowed(void) {return !(WORD_AT(0x76b0fc)&&WORD_AT(0x76b108))||multiplayer_tools;}
 void pc_developer_lobby_guest(void) {}
 void pc_developer_video_guest_tick(void) {}
@@ -103,7 +106,7 @@ int main(void) {
     options.checkpoint=2;pc_developer_guest_frame();assert(captures==2&&reloads==2&&WORD_AT(0xb000)==1);
     options.checkpoint=3;pc_developer_guest_frame();assert(endings==1&&captures==2);
     WORD_AT(0x78ad20)=5;options.checkpoint=4;pc_developer_guest_frame();assert(endings==1&&captures==2);
-    assert(strstr(report,"offline Story"));
+    assert(strstr(report,"host control online"));
     WORD_AT(0xa000)=0x6000;
     WORD_AT(0xc004)=0xd000;WORD_AT(0xd000)=0x6000;
     options.god=1;assert(pc_developer_damage_blocked());
@@ -134,5 +137,25 @@ int main(void) {
     assert(g_esp==0xc004&&WORD_AT(0x6d60f0)==0&&WORD_AT(0x12004)==880);
     g_esp=0xc000;WORD_AT(0x7de458)=0;
     previous_calls=original_count;pc_developer_cutscene_guest(original);assert(original_count==previous_calls+1);
+    /* A Story guest owns a later network slot, never the host's slot zero. */
+    story_role=2;multiplayer_tools=1;WORD_AT(0x76b0fc)=WORD_AT(0x76b108)=1;
+    WORD_AT(0x790950)=4;WORD_AT(0x4004)=UINT32_MAX;
+    const uint32_t local=0x4000+3*0x1584;
+    for(unsigned i=1;i<4;i++)WORD_AT(0x4004+i*0x1584)=UINT32_MAX;
+    WORD_AT(local+4)=0;WORD_AT(local+0x14)=0x6000;WORD_AT(0x6150)=local;
+    assert(developer_owned_actor(1)==0xa000 && developer_actor()==0xa000);
+    options.god=1;WORD_AT(g_esp+4)=0x12000;WORD_AT(0x12000)=0x16000;
+    WORD_AT(0x4014)=0x16000;WORD_AT(0x16150)=0x4000;
+    assert(!pc_developer_damage_blocked());story_role=1;assert(pc_developer_damage_blocked());
+    WORD_AT(0x12000)=0x17000;assert(!pc_developer_damage_blocked());
+    /* Host checkpoint advance admits all four validated contexts. */
+    for(unsigned i=0;i<4;i++) {
+        const uint32_t context=0x4000+i*0x1584,body=0x20000+i*0x800;
+        WORD_AT(context+0x14)=body;WORD_AT(body+0x150)=context;WORD_AT(body+0x7c)=0xa000;
+    }
+    WORD_AT(0x78ad20)=13;WORD_AT(0xb000)=WORD_AT(0xb004)=0;
+    unsigned before_captures=captures,before_reloads=reloads;++options.checkpoint;
+    pc_developer_guest_frame();assert(captures==before_captures+1&&reloads==before_reloads+1);
+    story_role=2;++options.checkpoint;pc_developer_guest_frame();assert(captures==before_captures+1&&reloads==before_reloads+1);
     puts("Developer camera: ordinary fallback, detached view ABI, player position, pause and mapping guards passed");return 0;
 }

@@ -1619,6 +1619,11 @@ void sub_00353760(void) {g_eax=0;g_esp+=4;}
 void sub_002C78F0_gen(void) {developer_match_button(0x002C8010u);g_esp+=4;}
 int pc_developer_tools_allowed(void) {return 1;}
 void pc_developer_match_policy(int online,int allowed) {(void)online;(void)allowed;}
+static unsigned developer_story_role;
+unsigned pc_developer_story_role(void){return developer_story_role;}
+void pc_developer_story_policy(unsigned role){developer_story_role=role;}
+void pc_developer_shared_get(PcDeveloperShared *out){*out=(PcDeveloperShared){1000u,1u,0u,0u};}
+void pc_developer_shared_apply(const PcDeveloperShared *v){(void)v;}
 int pc_network_tools_policy(const PcDeveloperPeer *roster,unsigned count,int allowed) {(void)roster;(void)count;return allowed;}
 
 int pc_network_enabled(void){return 1;}

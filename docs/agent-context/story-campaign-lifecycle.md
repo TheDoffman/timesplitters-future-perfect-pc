@@ -19,6 +19,12 @@ Arcade, System Link and Local Story retain their original paths.
 
 ## Loading, completion and ownership
 
+Story Coop Developer Tools use host-owned speed/audio/god/ammo values over
+the reliable class1E channel (`pc_story_tools.inc`). Guests retain only local
+camera/movement controls. Host checkpoint advance uses native capture followed
+by the synchronized restart, flushing capture before reload; it never sends
+bookmark pointers or snapshots. See [Tools policy](developer-tools-integration.md).
+
 `pc_story_network_prepare` preserves the joined ownership header through every
 intro, ending, reward page and next-mission GO. Late-join bootstrap applies to
 any recognized gameplay mission. `pc_story_network_stage_builder` uses the

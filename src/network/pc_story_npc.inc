@@ -511,6 +511,7 @@ void pc_story_network_npc_receive(void (*original)(void))
     if(story_network_session() && WORD_AT(0x0076B108u) && guest_writable(g_esp,20u)) {
         const uint32_t frame=g_esp,peer=WORD_AT(frame+4u),payload=WORD_AT(frame+8u);
         const uint32_t type=WORD_AT(frame+12u),length=WORD_AT(frame+16u);
+        if(story_tools_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
         if(story_shots_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
         if(story_dialogue_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
         if(story_drop_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}

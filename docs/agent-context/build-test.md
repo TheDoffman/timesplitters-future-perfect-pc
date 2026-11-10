@@ -3,9 +3,9 @@
 [Arms](video-options.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).
-[Tools](developer-tools-integration.md).
+[Coop Tools](developer-tools-integration.md).
 Developer warnings: [launcher](launcher.md).
-[Profile tests](multiplayer-exit.md#validation): saves, late lobby saves, checksum/write errors.
+[Profiles](multiplayer-exit.md#validation): saves, late lobby saves, checksum/write errors.
 [Icons](controls-options.md).
 [Effect depth](native-effect-depth.md).
 [Update tests](main-menu-update.md).

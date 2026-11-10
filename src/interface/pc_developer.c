@@ -18,6 +18,40 @@ static void (*audio_set_speed)(float);
 static int lobby_disclaimer_enabled;
 static PcDeveloperState state={.speed=1.,.manual_speed=1.,.slow_speed=.5,.fast_speed=2.,.audio_speed=1};
 static int gameplay,story,network,movie_active,match_tools_allowed;
+static unsigned story_tools_role;
+static int story_tools_received;
+static int developer_shared_edit(void) {return story_tools_role==1u || (!network&&!story_tools_role);}
+unsigned pc_developer_story_role(void) {
+    AcquireSRWLockShared(&dev_lock);unsigned role=story_tools_role;ReleaseSRWLockShared(&dev_lock);return role;
+}
+void pc_developer_story_policy(unsigned role) {
+    if(role>2u)role=0;
+    AcquireSRWLockExclusive(&dev_lock);
+    if(role!=story_tools_role) {
+        story_tools_received=0;state.speed=1.;state.god=state.infinite_ammo=0;
+    }
+    story_tools_role=role;
+    ReleaseSRWLockExclusive(&dev_lock);
+}
+void pc_developer_shared_get(PcDeveloperShared *out) {
+    int enabled=pc_developer_enabled();
+    AcquireSRWLockShared(&dev_lock);
+    *out=(PcDeveloperShared){1000u,1u,0u,0u};
+    if(enabled && story_tools_role==1u) {
+        out->speed_milli=(uint32_t)lround(state.speed*1000.);
+        out->audio_speed=!!state.audio_speed;out->god=!!state.god;out->infinite_ammo=!!state.infinite_ammo;
+    }
+    ReleaseSRWLockShared(&dev_lock);
+}
+void pc_developer_shared_apply(const PcDeveloperShared *v) {
+    if(!v || v->speed_milli<50u || v->speed_milli>4000u || v->audio_speed>1u || v->god>1u || v->infinite_ammo>1u)return;
+    AcquireSRWLockExclusive(&dev_lock);
+    if(story_tools_role==2u) {
+        state.speed=v->speed_milli*.001;state.audio_speed=(int)v->audio_speed;
+        state.god=(int)v->god;state.infinite_ammo=(int)v->infinite_ammo;story_tools_received=1;
+    }
+    ReleaseSRWLockExclusive(&dev_lock);
+}
 /* Presentation-thread-owned navigation and settings drafts. */
 enum { HOME, SETTINGS, KEYBOARD, DEBUG, LOGS };
 static int page,selected,slot,capture_action=-1,edit_number,conflict_key;
@@ -112,18 +146,18 @@ void pc_developer_get(PcDeveloperState *out) {
 }
 double pc_developer_speed(void) {
     int enabled=pc_developer_enabled();double speed;
-    AcquireSRWLockShared(&dev_lock);speed=enabled&&!network&&(gameplay||movie_active)?state.speed:1.;ReleaseSRWLockShared(&dev_lock);
+    AcquireSRWLockShared(&dev_lock);speed=((enabled&&developer_shared_edit())||(story_tools_role==2u&&story_tools_received))&&(gameplay||movie_active)?state.speed:1.;ReleaseSRWLockShared(&dev_lock);
     return speed;
 }
 double pc_developer_audio_speed(void) {
     int enabled=pc_developer_enabled();double speed;
     AcquireSRWLockShared(&dev_lock);
-    speed=enabled&&state.audio_speed&&!network&&(gameplay||movie_active)?state.speed:1.;
+    speed=((enabled&&developer_shared_edit())||(story_tools_role==2u&&story_tools_received))&&state.audio_speed&&(gameplay||movie_active)?state.speed:1.;
     ReleaseSRWLockShared(&dev_lock);return speed;
 }
 void pc_developer_movie(int active) {
     AcquireSRWLockExclusive(&dev_lock);movie_active=!!active;
-    state.speed=network?1.:state.manual_speed;ReleaseSRWLockExclusive(&dev_lock);
+    if(story_tools_role!=2u)state.speed=developer_shared_edit()?state.manual_speed:1.;ReleaseSRWLockExclusive(&dev_lock);
 }
 void pc_developer_report(const char *message) {
     AcquireSRWLockExclusive(&dev_lock);snprintf(result_message,sizeof result_message,"%s",message);
@@ -135,10 +169,10 @@ void pc_developer_publish(int play,int campaign,int online) {
     int enabled=pc_developer_enabled();
     AcquireSRWLockExclusive(&dev_lock);
     if(online&&!network)match_tools_allowed=0;
-    gameplay=play;story=campaign;network=online;
+    gameplay=play;story=campaign||story_tools_role!=0u;network=online;
     if(!play || (online&&!match_tools_allowed) || !enabled) {if(state.freecam)state.hide_hud=0;state.noclip=state.freecam=0;}
-    if(online||!enabled){state.speed=1.;state.god=state.infinite_ammo=0;}
-    else if(!play)state.speed=movie_active?state.manual_speed:1.;
+    if((online&&!story_tools_role)||(!enabled&&story_tools_role!=2u)){state.speed=1.;state.god=state.infinite_ammo=0;}
+    else if(!play&&story_tools_role!=2u)state.speed=movie_active?state.manual_speed:1.;
     ReleaseSRWLockExclusive(&dev_lock);
 }
 int pc_developer_hud_visible(void) {PcDeveloperState s;pc_developer_get(&s);return !s.hide_hud;}
@@ -206,7 +240,7 @@ static void navigate(int next) {
 static void speed_adjust(double value) {
     if(!isfinite(value))return;
     AcquireSRWLockExclusive(&dev_lock);
-    if(!network)state.speed=state.manual_speed=fmax(.05,fmin(4.,value));
+    if(developer_shared_edit())state.speed=state.manual_speed=fmax(.05,fmin(4.,value));
     ReleaseSRWLockExclusive(&dev_lock);
 }
 static void flight_toggle(int mode) {
@@ -228,19 +262,19 @@ static int action_pressed(int action,const unsigned char keys[256]) {
 static void activate(int direction) {
     fprintf(stderr,"[DEVELOPER] action page=%d row=%d direction=%d\n",page,selected,direction);
     PcDeveloperState s;pc_developer_get(&s);
-    if(page==HOME&&(!pc_developer_tools_allowed()||(network&&((selected>=5&&selected<=10)||selected==11||selected==12||selected==13))))return;
+    if(page==HOME&&(!pc_developer_tools_allowed()||(!developer_shared_edit()&&selected>=5&&selected<=13)))return;
     if(page==HOME) {
         if(selected==0){navigate(SETTINGS);return;}
         if(selected==2||selected==3){flight_toggle(selected-1);return;}
         if(selected==7){speed_adjust(1);return;}
         AcquireSRWLockExclusive(&dev_lock);
         switch(selected) {
-        case 5:if(story&&gameplay&&!network)state.checkpoint++;break;
+        case 5:if(story&&gameplay&&developer_shared_edit())state.checkpoint++;break;
         case 6:break;
         case 8:state.speed_keys=!state.speed_keys;break;
         case 9:case 10:break;
-        case 11:if(gameplay&&!network)state.god=!state.god;break;
-        case 12:if(gameplay&&!network)state.infinite_ammo=!state.infinite_ammo;break;
+        case 11:if(gameplay&&developer_shared_edit())state.god=!state.god;break;
+        case 12:if(gameplay&&developer_shared_edit())state.infinite_ammo=!state.infinite_ammo;break;
         case 13:state.audio_speed=!state.audio_speed;break;
         }
         ReleaseSRWLockExclusive(&dev_lock);

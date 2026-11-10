@@ -163,6 +163,26 @@ int main(void) {
     pc_developer_publish(1,1,1);click(UI_ACTION,HOME,3);pc_developer_get(&s);assert(s.freecam);
     pc_developer_publish(1,1,1);pc_developer_get(&s);assert(s.freecam&&s.speed==1&&!s.god&&!s.infinite_ammo);
     pc_developer_match_policy(1,0);pc_developer_get(&s);assert(!s.freecam&&!s.hide_hud);
+    /* Shared Story values are editable only by the host. */
+    pc_developer_story_policy(1);pc_developer_match_policy(1,1);pc_developer_publish(1,0,1);
+    page=HOME;speed_adjust(.5);selected=11;activate(0);selected=12;activate(0);
+    selected=5;pc_developer_get(&s);unsigned checkpoint=s.checkpoint;activate(0);frame();
+    PcDeveloperShared shared;pc_developer_shared_get(&shared);
+    assert(shared.speed_milli==500&&shared.god&&shared.infinite_ammo);
+    pc_developer_get(&s);assert(s.checkpoint==checkpoint+1);
+    assert(drawn("Game speed"));
+    pc_developer_story_policy(2);shared.speed_milli=250;shared.audio_speed=0;
+    pc_developer_shared_apply(&shared);dev_enabled=0;frame();
+    assert(pc_developer_speed()==.25&&pc_developer_audio_speed()==1.);
+    pc_developer_get(&s);assert(s.god&&s.infinite_ammo);
+    selected=11;activate(0);sidebar_set_value(1,4.);frame();
+    pc_developer_get(&s);assert(s.god&&s.speed==.25);
+    pc_developer_publish(1,1,0);speed_adjust(4.);pc_developer_get(&s);assert(s.speed==.25);
+    pc_developer_match_policy(1,1);
+    shared.speed_milli=5001;pc_developer_shared_apply(&shared);assert(pc_developer_speed()==.25);
+    dev_enabled=1;assert(drawn("Controlled by the Story host")&&!drawn("Game speed"));
+    pc_developer_story_policy(0);pc_developer_match_policy(1,0);pc_developer_get(&s);
+    assert(s.speed==1.&&!s.god&&!s.infinite_ammo);
     pc_developer_close();pc_developer_publish(1,1,0);pc_developer_toggle();
     pc_developer_lines(1920,1080,painted,PC_DEVELOPER_MAX_DRAW);assert(painted[0].width==452);
     pc_developer_lines(3840,2160,painted,PC_DEVELOPER_MAX_DRAW);assert(painted[0].width==452);

@@ -176,6 +176,9 @@ void pc_story_network_restart(void (*original)(void))
            frame<2048u || !guest_writable(frame-2048u,2048u) || !guest_writable(node,0x35u)) {
             g_esp+=4u;return;
         }
+        /* Developer checkpoint advance captures and reloads in one call.
+           Queue its capture first on the same reliable channel. */
+        if(WORD_AT(frame+4u)) {story_checkpoint_sent=0;story_checkpoint_frame();}
         const StoryRestart message={STORY_RESTART_MAGIC,story_npc_match(),story_reload_epoch+1u,WORD_AT(frame+4u)};
         const uint32_t buffer=frame-256u;
         WORD_AT(buffer)=0;
