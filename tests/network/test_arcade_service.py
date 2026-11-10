@@ -34,6 +34,7 @@ class NativeDriver:
         self.snapshot = None
         self.digest = None
         self.ready = True
+        self.backup = True
         self.restored = None
 
     def send(self, payload):
@@ -70,6 +71,8 @@ class NativeDriver:
                     self.snapshot = bytes(self.data)
         if self.state and self.digest and self.snapshot and self.digest[0] == self.state[4]:
             preparing = self.state[3] == 2
+            if not preparing and not self.backup:
+                return
             if preparing and self.ready:
                 self.restored = self.snapshot
             self.send(ACK.pack(b'AMAK', self.digest[0], self.digest[3], preparing and self.ready))
@@ -119,7 +122,8 @@ def native_checkpoint(tmp_path):
     return output.read_bytes()
 
 
-def test_graceful_then_crash_migration_preserves_checkpoint_and_relays_between_survivors(tmp_path, native_checkpoint):
+@pytest.mark.parametrize('host_loss', ['companion_crash', 'engine_stall'])
+def test_graceful_then_crash_migration_preserves_checkpoint_and_relays_between_survivors(tmp_path, native_checkpoint, host_loss):
     with shared_service(tmp_path/'directory') as (client, directory, relay):
         sessions, natives, games = [], [], []
         try:
@@ -128,6 +132,10 @@ def test_graceful_then_crash_migration_preserves_checkpoint_and_relays_between_s
             for _ in range(2):
                 sessions.append(ArcadeSession.open(client, VERSION, code=host.lobby['code']))
             natives = [NativeDriver(active) for active in sessions]
+            # Make peer 2 the sole initial backup so network scheduling cannot
+            # change this test's chosen successor. Peer 3 still restores/ACKs
+            # preparation, then becomes a backup for the second migration.
+            natives[2].backup = False
             games = [game_socket(active.bridge, 1000) for active in sessions]
             until(natives, lambda: all(driver.state is not None for driver in natives))
             for driver in natives:
@@ -138,12 +146,18 @@ def test_graceful_then_crash_migration_preserves_checkpoint_and_relays_between_s
             until(natives, lambda: all(driver.snapshot == expected for driver in natives) and
                   host.native.status.get('backup_ready'))
             # A final, frozen capture is acknowledged before the host departs.
+            # Reorder leave before the upload: an older backed-up frame must
+            # never be mistaken for the requested final sequence.
+            natives[0].send(struct.pack('<4sI', b'AMLV', 2))
+            pause = time.monotonic()+.5
+            until(natives, lambda: time.monotonic() >= pause)
+            assert not host.native.departed
             expected = natives[0].offer(native_checkpoint, 2, 3601, score=45)
-            natives[0].send(b'AMLV')
             until(natives, lambda: host.native.departed and all(active.native.status['phase'] == 'active' and
                 active.native.status['host_peer'] == 2 for active in sessions[1:]) and sessions[1].host)
             assert all(driver.restored == expected for driver in natives[1:])
             assert sessions[1].host and not sessions[2].host
+            natives[2].backup = True
             room = directory.arcade.rooms[host.lobby['code']]
             assert set(room['members']) == {2, 3} and room['epoch'] == 3
             until(natives[1:], lambda: all(active.bridge.ready.is_set() and
@@ -156,10 +170,12 @@ def test_graceful_then_crash_migration_preserves_checkpoint_and_relays_between_s
             expected = natives[1].offer(native_checkpoint, 3, 3660, score=46)
             until(survivors, lambda: all(driver.snapshot == expected for driver in survivors) and
                 sessions[1].native.status.get('backup_ready'))
-            # Abrupt loss: stop the companion without sending DELETE.
+            # Either the entire host disappears, or its engine stops making
+            # progress while its companion still sends authenticated HTTPS.
             crashed = sessions[1]
-            crashed.closed.set();crashed.bridge.stopped.set()
-            crashed.worker.join(timeout=6);crashed.thread.join(timeout=2);crashed.bridge.close()
+            if host_loss == 'companion_crash':
+                crashed.closed.set();crashed.bridge.stopped.set()
+                crashed.worker.join(timeout=6);crashed.thread.join(timeout=2);crashed.bridge.close()
             until(natives[2:], lambda: sessions[2].native.status['host_peer'] == 3 and
                 sessions[2].native.status['phase'] == 'active', seconds=12)
             assert natives[2].restored == expected

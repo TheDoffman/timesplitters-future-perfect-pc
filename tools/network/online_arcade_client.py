@@ -33,6 +33,8 @@ class NativeArcade:
         self.offer = None
         self.ack = None
         self.leaving = self.departed = False
+        self.leave_sequence = None
+        self.leaving_at = None
         self.assembly = None
         self.last_control = -10
         self.download_offset = 0
@@ -92,8 +94,13 @@ class NativeArcade:
                 return
             if endpoint != self.endpoint:
                 return
-            if payload == b'AMLV':
-                self.leaving = True
+            if len(payload) == 8 and payload[:4] == b'AMLV':
+                sequence = struct.unpack_from('<I', payload, 4)[0]
+                if sequence and (self.leave_sequence is None or sequence == self.leave_sequence):
+                    self.leaving = True
+                    self.leave_sequence = sequence
+                    if self.leaving_at is None:
+                        self.leaving_at = self.bridge.clock()
             elif len(payload) == ACK.size and payload[:4] == b'AMAK':
                 _, sequence, digest, ready = ACK.unpack(payload)
                 snapshot = self.status.get('checkpoint') if self.status else None
@@ -231,10 +238,10 @@ class ArcadeSession(Session):
                     reply = self.client.request('PUT', path, body, token)
                     self.native.install(reply)
                     with self.native.lock:
-                        final = self.native.offer
-                    wanted = NATIVE_HEADER.unpack_from(final)[3] if final else None
+                        wanted = self.native.leave_sequence
+                        expired = self.bridge.clock()-self.native.leaving_at >= 6
                     snapshot = reply.get('checkpoint')
-                    if reply['players'] == 1 or (snapshot and snapshot['sequence'] == wanted and reply.get('backup_ready')):
+                    if reply['players'] == 1 or expired or (snapshot and snapshot['sequence'] == wanted and reply.get('backup_ready')):
                         self.client.request('DELETE', path, token=token)
                         self.native.departed = True
                         return  # Bridge remains alive to deliver departure ACK.
