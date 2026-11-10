@@ -33,6 +33,21 @@ typedef int (*PcArcadeWrite)(void *context,uint32_t address,const void *value,si
 typedef int (*PcArcadeBotRead)(void *context,unsigned slot,PcNetworkBotState *out);
 typedef int (*PcArcadeBotApply)(void *context,const PcNetworkBotState *state,int apply);
 
+/* The US config block mixes shared rules with local player count, unused
+ * Deathmatch human-team placeholders and a LIVE countdown at +60. Those may
+ * differ on healthy peers. Validate shared rules; preserve local fields. */
+static inline int pc_arcade_config_matches(const uint8_t *a,const uint8_t *b)
+{
+    if(!a || !b || !a[0] || a[0]>16u || a[0]!=b[0] ||
+       !b[1] || b[1]>4u || b[1]>b[0])return 0;
+    for(unsigned i=0;i<PC_ARCADE_CHECKPOINT_CONFIG_BYTES;i++) {
+        if(i==1u || (i>=0x60u && i<0x64u))continue;
+        if(!(a[0x58u]&1u) && i>=0x24u && i<0x24u+a[0])continue;
+        if(a[i]!=b[i])return 0;
+    }
+    return 1;
+}
+
 static inline uint32_t pc_arcade_crc32(const void *payload,size_t bytes)
 {
     const uint8_t *p=(const uint8_t *)payload;uint32_t crc=UINT32_MAX;
@@ -108,7 +123,7 @@ static inline int pc_arcade_checkpoint_restore(const PcArcadeCheckpoint *s,void 
     if(!read(ctx,0x76b108u,&session,4) || !session ||
        !read(ctx,0x79094cu,&level,4) || level!=s->level ||
        !read(ctx,0x76b1a4u,&phase,4) || phase!=15u ||
-       !read(ctx,0x7de400u,config,sizeof config) || memcmp(config,s->config,sizeof config) ||
+       !read(ctx,0x7de400u,config,sizeof config) || !pc_arcade_config_matches(s->config,config) ||
        !read(ctx,0x7356d8u,&pool,4) || !pool || pool>UINT32_MAX-16u*0xea0u)return 0;
     const unsigned actors=s->config[0]+s->config[2],bots=s->config[2];
     for(unsigned i=0;i<actors;i++) {
@@ -119,7 +134,7 @@ static inline int pc_arcade_checkpoint_restore(const PcArcadeCheckpoint *s,void 
            !write(ctx,actor+0xa6cu,&s->totals[i],4,0) ||
            !write(ctx,actor+0xa64u,&s->score_ticks[i],4,0))return 0;
     }
-    if(!write(ctx,0x7de318u,&s->tick,4,0))return 0;
+    if(!write(ctx,0x7de318u,&s->tick,4,0) || !write(ctx,0x7de460u,s->config+0x60u,4,0))return 0;
     for(unsigned i=0;i<bots;i++)if(!bot_apply(ctx,&s->bots[i],0))return 0;
     for(unsigned i=0;i<actors;i++) {
         const uint32_t actor=pool+i*0xea0u;
@@ -128,9 +143,9 @@ static inline int pc_arcade_checkpoint_restore(const PcArcadeCheckpoint *s,void 
            !write(ctx,actor+0xa64u,&s->score_ticks[i],4,1))return 0;
     }
     for(unsigned i=0;i<bots;i++)if(!bot_apply(ctx,&s->bots[i],1))return 0;
-    /* The original level clock drives the countdown and bot snapshot epochs.
+    /* Restore both elapsed level time and the separate remaining match timer.
      * Do not copy ISR, rendering, wall-clock or network retransmission counters.
      */
-    return write(ctx,0x7de318u,&s->tick,4,1);
+    return write(ctx,0x7de460u,s->config+0x60u,4,1) && write(ctx,0x7de318u,&s->tick,4,1);
 }
 #endif
