@@ -7,6 +7,7 @@ static PcArcadeControlState arcade_guest_control;
 static PcArcadeCheckpoint arcade_guest_checkpoint;
 static uint8_t arcade_guest_room[16];
 static uint32_t arcade_restored_epoch,arcade_authority_epoch,arcade_published_sequence;
+static uint32_t arcade_ack_sequence,arcade_ack_epoch;
 static int arcade_final_sent,arcade_exit_sent;
 static double arcade_last_capture,arcade_last_ack;
 
@@ -61,6 +62,7 @@ int pc_arcade_migration_frame(int after)
         if(memcmp(state.room,arcade_guest_room,16)) {
             memcpy(arcade_guest_room,state.room,16);
             arcade_restored_epoch=arcade_authority_epoch=arcade_published_sequence=0;
+            arcade_ack_sequence=arcade_ack_epoch=0;
             arcade_final_sent=arcade_exit_sent=0;arcade_last_capture=arcade_last_ack=0;
         }
         if(state.phase==3u || state.phase==4u) {
@@ -88,9 +90,10 @@ int pc_arcade_migration_frame(int after)
                     arcade_restored_epoch=state.epoch;
                 }
             }
-            if(bots_ok && now-arcade_last_ack>=.2) {
+            if(bots_ok && (state.sequence!=arcade_ack_sequence || state.epoch!=arcade_ack_epoch ||
+                           now-arcade_last_ack>=.2)) {
                 pc_network_arcade_ack(state.phase==2u && arcade_restored_epoch==state.epoch);
-                arcade_last_ack=now;
+                arcade_last_ack=now;arcade_ack_sequence=state.sequence;arcade_ack_epoch=state.epoch;
             }
         }
         if(state.phase==2u)return 1;
@@ -113,7 +116,9 @@ int pc_arcade_migration_frame(int after)
     const int leaving=pc_network_arcade_departing();
     if(leaving && arcade_final_sent){pc_network_arcade_send_leave();return 0;}
     const double now=pc_network_bots_time();
-    if(!leaving && now-arcade_last_capture<.25)return 0;
+    /* Leave time for WAN transfer and an engine ACK before the retained pair
+       ages out. A graceful leave still captures its final frame immediately. */
+    if(!leaving && now-arcade_last_capture<.5)return 0;
     if(arcade_published_sequence<state.sequence)arcade_published_sequence=state.sequence;
     if(arcade_published_sequence==UINT32_MAX)return 0;
     if(pc_arcade_checkpoint_capture(&arcade_guest_checkpoint,&g_xbox_mem_offset,

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdarg.h>
 #define TSFP_NATIVE_NETWORK 1
+#define TSFP_ARCADE_MIGRATION 1
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x);exit(1);}}while(0)
 static uint32_t memory[0x800000/4],g_esp,g_eax;
 static uintptr_t g_xbox_mem_offset;
@@ -17,6 +18,9 @@ enum {PC_ONLINE_NONE,PC_ONLINE_ARCADE,PC_ONLINE_STORY};
 static int mode=PC_ONLINE_ARCADE,enabled=1,closed,reset,pumps,match_reset,menus,stock,fallback;
 static uint32_t target,caption;
 static unsigned recorded,eligibility_checks;
+static int migration_requested,migration_requests,unloads;
+int pc_network_arcade_request_leave(void){++migration_requests;return migration_requested;}
+static void sub_00065420(void){++unloads;}
 static void sub_000668F0(void){++recorded;}
 static int pc_online_mode(void){return mode;}
 static int pc_network_enabled(void){++eligibility_checks;return enabled;}
@@ -69,6 +73,16 @@ int main(void){
  for(unsigned i=0;i<1000000;i++)CHECK(!multiplayer_exit_lookup(0x99990u));
  CHECK(!eligibility_checks); /* No guest memory exists yet. */
  g_xbox_mem_offset=(uintptr_t)memory;
+ /* A migrating owner must keep the native match alive until service fencing.
+    Its final departure then unloads only its own game through the menu route. */
+ setup(1);WORD_AT(0x7de30c)=7;migration_requested=1;
+ multiplayer_leave_confirm();
+ CHECK(migration_requests==1 && !recorded && !menus && !multiplayer_destination && g_esp==0x1804);
+ g_esp=0x1800;pc_multiplayer_exit_action(sub_002EAF60_gen,0);
+ CHECK(migration_requests==2 && !stock && !multiplayer_destination && g_esp==0x1804);
+ pc_multiplayer_migration_leave();
+ CHECK(multiplayer_destination==3 && recorded==1 && menus==1 && unloads==1);
+ migration_requested=0;
  for(unsigned results=0;results<4;++results){
   setup(1);WORD_AT(0x7de30c)=results?8:7;
   if(!results || results==3) {void (*fn)(void)=multiplayer_exit_lookup(0x2ebe60);CHECK(fn);fn();}

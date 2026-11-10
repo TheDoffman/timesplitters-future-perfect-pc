@@ -43387,17 +43387,20 @@ UPnP rules and public IP need verification after router reboot/address changes.
 No real game rebuild, complete WAN match, load/capacity result or published-client
 compatibility is claimed by these transport fixtures.
 
-## Arcade host migration coordinator prototype — 2026-11-10
+## Arcade host migration implementation — 2026-11-10
 
 User scope is Arcade first. `feature/online-host-migration` depends on relay
-`a2d81939`. New isolated `ArcadeMigration` policy has 18 passing Windows tests
-and the same18 passing on physical Mac arm64/Python3.12 (prototype40a5a3b1):
-stable IDs, authority fencing, engine-acknowledged bounded checkpoints, native
-restore barrier, graceful/crash election, failed successor, survivor expiry,
-repeated handoff and safe shutdown. It is registered in runtime CI but has no
-production imports. Actual checkpoint capture/restore, directory/relay credential
-and epoch integration, native authority change and full-game continuation are
-not implemented; host migration must not be described as usable or deployed.
-The running Mac service and pushed friend-test relay branch remain unchanged.
-Supported-US original-code inspection confirms full teardown on host loss and
-destructive host creation; see docs/development/arcade-host-migration.md.
+`a2d81939`. Shared native checkpoint/control/authority adapters, game-clock hold,
+graceful exit deferral, authenticated v3 service, dynamic relay routing and
+companion checkpoint/ready transfer are implemented. Windows network suite:
+150 passed,12 platform skips. Physical Mac arm64/Python3.12 native/control,
+coordinator and three-companion migration tests:21 passed at7bf557f3. The socket
+scenario migrates twice and verifies exact score/tick checkpoint bytes and real
+post-handoff datagrams. These are fixture/transport tests, not live AI proof.
+
+An isolated Windows native build and actual-game crash-migration runner are in
+progress. Live match continuation, bot decisions/combat/respawning, graceful menu
+exit, completion/rematch, physical crossplay and outside-network acceptance are
+still required. Running Mac service and published friend-test binaries remain
+unchanged. See docs/development/arcade-host-migration.md for entry points and
+validation boundaries. Do not advertise a completed migration release yet.

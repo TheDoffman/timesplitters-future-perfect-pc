@@ -530,7 +530,13 @@ def main():
             assert ready, 'Native engines did not publish/acknowledge a checkpoint'
             report('before-host-loss')
             old_tick=word(1,0x7de318)
-            retired.add(0);children[0].terminate();children[0].wait(timeout=10)
+            retired.add(0)
+            # Terminate its bridge too: a surviving companion would observe
+            # parent exit and send an orderly DELETE instead of lease expiry.
+            assert children[0].poll() is None
+            subprocess.run(['taskkill', '/PID', str(children[0].pid), '/T', '/F'],
+                           check=True, capture_output=True, timeout=10)
+            children[0].wait(timeout=10)
             deadline=time.monotonic()+15
             while time.monotonic()<deadline:
                 if word(1,0x76b140)==1 and word(1,0x76b1a4)==15 and word(1,0x7de30c)==7:break
