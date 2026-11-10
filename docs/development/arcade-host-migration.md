@@ -2,9 +2,10 @@
 
 Status: native checkpoint/authority adapters and authenticated v3 relay integration
 are implemented on `feature/online-host-migration`, dependent on the unmerged relay
-branch at `a2d81939`. Native Windows Deathmatch continuation passes for two-player
-normal departure/crash and three-player crash, with six bots. The live
-Mac mini service and published friend-test binaries have not been updated.
+branch at `a2d81939`. Native Windows Deathmatch continuation passes for two- and
+three-player departure/crash, with six bots, including a second host loss in the
+same game. The Mac mini service was updated from committed source `603a6bd3`;
+matching client binaries must be rebuilt. No published client release was made.
 
 ## Shared implementation
 
@@ -99,9 +100,36 @@ pointers. Actual Windows acceptance logs `migration-crash-timera`,
 `migration-leave-8a6019e` and `migration-three-routesa` demonstrate native promotion,
 score rows and both clocks retained, then 30 seconds of live movement, combat and
 bot respawning. Three-player crash promotes in about five seconds and retains
-both surviving players. Repeated actual-game handoffs, completion/rematch,
+both surviving players. Completion/rematch,
 physical Windows/Mac crossplay, other Arcade modes and outside-network play
-remain separate acceptance. See [shared relay validation](online-relay.md).
+have separate acceptance boundaries below. See [shared relay validation](online-relay.md).
+
+`migration-three-leave-finala` passes normal three-player menu departure and
+30 seconds of continuation on both guests. `migration-three-repeat-finala`
+passes normal departure, 30 seconds of play, replacement-host process-tree crash,
+and another 30 seconds of play on the third player. Its first restore keeps
+tick1021/countdown17163 (observed1023/17161 and1038/17146); the second keeps
+tick2798/countdown15386 (observed2799/15385). Score rows remain, bots continue
+moving/fighting/respawning, and the departing host returns to the menu. Both
+updated pause/confirmation captions were checked in screenshots. Test saves are
+isolated; provenance records executable/runner hashes and completed cleanup.
+
+Windows network suite:156 passed/12 platform skips. Physical Mac arm64 Python3.12:
+29 capture/control, coordinator, service and exit-hook cases passed. Four Windows
+exit/keycap cases pass. The existing full patch/repository scope gate passed134
+checks; the patch stack did not change during the later native routing fix.
+
+The installed Mac mini service retains HTTPS41820/UDP41821, its existing pinned
+certificate and launch-agent startup. Previous server/config/launch-agent files
+were backed up locally before installation; private keys were not copied into
+the validation archive or repository. Pinned public-address HTTPS plus forced
+public UDP checks passed final-frame transfer, bidirectional relayed traffic and
+replacement-host crash to epoch4. Legacy v2 Arcade/Story remain supported.
+These public-address checks use router hairpin and fixture checkpoints; they
+do not establish a full outside-network game or native Mac game/crossplay result.
+Completion/rematch after native migration and other Arcade modes also remain
+separate acceptance; the implemented fixture scenario checks round identity and
+rematch epochs but does not replace those native-game checks.
 
 `TSFP_ARCADE_TRACE=1` enables bounded stderr capture/control diagnostics in the
 native adapter; the isolated migration runner enables it and records sanitized

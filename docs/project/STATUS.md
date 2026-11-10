@@ -43398,9 +43398,20 @@ coordinator and three-companion migration tests:21 passed at7bf557f3. The socket
 scenario migrates twice and verifies exact score/tick checkpoint bytes and real
 post-handoff datagrams. These are fixture/transport tests, not live AI proof.
 
-An isolated Windows native build and actual-game crash-migration runner are in
-progress. Live match continuation, bot decisions/combat/respawning, graceful menu
-exit, completion/rematch, physical crossplay and outside-network acceptance are
-still required. Running Mac service and published friend-test binaries remain
-unchanged. See docs/development/arcade-host-migration.md for entry points and
-validation boundaries. Do not advertise a completed migration release yet.
+Native Windows Deathmatch acceptance now passes with two and three players and
+six bots: normal menu exit, entire-host/companion crash, and normal departure
+followed by replacement-host crash in the same game. Every survivor restores
+score rows, elapsed ticks and remaining countdown, then continues for30 seconds
+per handoff with live bot movement/combat/respawning. Guest-to-guest native routes
+and the shared XNet key are transferred without recreating/resetting the match.
+Pause/confirmation wording now describes leaving and transferring hosting.
+
+Final Windows network checks:156 passed/12 skips; exit/keycap checks:4 passed.
+Physical Mac29 checks pass from committed603a6bd3. Earlier full patch/repository
+gate134 passed. The Mac mini service is now installed from603a6bd3, preserving
+the certificate, permanent service ports and launch-agent startup. Public-address
+pinned HTTPS/forced UDP fixture probes pass two handoffs and bidirectional relay
+traffic. Matching native rebuilds are required; no client release was published.
+Native completion/rematch after migration, other modes, native Mac crossplay and
+full outside-network games remain separate acceptance. See
+docs/development/arcade-host-migration.md for exact evidence and boundaries.
