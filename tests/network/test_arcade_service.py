@@ -17,6 +17,8 @@ from online_transport import LOCAL, LOCAL_MAGIC, virtual_ip
 from test_online import VERSION, game_socket, send_game, receive_game
 from test_online_relay import shared_service
 from test_arcade_checkpoint import compile_arcade_fixture
+from online_client import Session, DirectoryError
+from online_arcade_client import list_arcade, join_arcade
 
 
 class NativeDriver:
@@ -120,6 +122,41 @@ def native_checkpoint(tmp_path):
     output = tmp_path/'native-checkpoint.bin'
     subprocess.run([str(executable), str(output)], check=True, capture_output=True, timeout=10)
     return output.read_bytes()
+
+
+@pytest.mark.parametrize('with_relay', [False, True])
+def test_browser_can_list_and_join_explicit_legacy_arcade_rooms(tmp_path, with_relay):
+    with shared_service(tmp_path/'legacy-directory') as (client, directory, relay):
+        if not with_relay:
+            directory.relay_address = None
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as available:
+            available.bind(('127.0.0.1', 0))
+            port = available.getsockname()[1]
+        host = Session.create(client, VERSION, 'Explicit legacy room', port, True)
+        guest = None
+        try:
+            assert [room['code'] for room in list_arcade(client, VERSION)['lobbies']] == [host.lobby['code']]
+            guest = join_arcade(client, VERSION, host.lobby['code'])
+            assert not isinstance(guest, ArcadeSession)
+            assert not guest.bridge.relay and guest.bridge.ready.is_set()
+        finally:
+            if guest:
+                guest.close()
+            host.close()
+
+
+@pytest.mark.parametrize('failure', [DirectoryError(403, 'denied'), DirectoryError(409, 'match in progress'),
+                                   ValueError('certificate mismatch')])
+def test_arcade_join_never_downgrades_authentication_or_match_errors(failure):
+    class RejectedDirectory:
+        calls = 0
+        def request(self, *args, **kwargs):
+            self.calls += 1
+            raise failure
+    directory = RejectedDirectory()
+    with pytest.raises(ValueError, match=str(failure)):
+        join_arcade(directory, VERSION, 'A'*16)
+    assert directory.calls == 1
 
 
 @pytest.mark.parametrize('host_loss', ['companion_crash', 'engine_stall'])

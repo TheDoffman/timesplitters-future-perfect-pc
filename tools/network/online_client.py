@@ -27,6 +27,12 @@ from urllib.parse import urlsplit
 from online_transport import Bridge, relay_endpoint
 
 
+class DirectoryError(ValueError):
+    def __init__(self, status, message):
+        super().__init__(message)
+        self.status = status
+
+
 class Client:
     def __init__(self, address, fingerprint=''):
         self.url = urlsplit(address.rstrip('/'))
@@ -66,7 +72,7 @@ class Client:
                 raise ValueError('Directory response too large')
             result = json.loads(data)
             if not 200 <= response.status < 300:
-                raise ValueError(result.get('error', f'Directory error {response.status}'))
+                raise DirectoryError(response.status, result.get('error', f'Directory error {response.status}'))
             return result
         finally:
             connection.close()

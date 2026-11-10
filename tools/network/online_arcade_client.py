@@ -8,7 +8,7 @@ import threading
 import time
 import zlib
 
-from online_client import Session
+from online_client import Session, DirectoryError
 from online_migration import SCHEMA
 from online_transport import Bridge, LOCAL, LOCAL_MAGIC, virtual_ip, relay_endpoint
 
@@ -20,6 +20,29 @@ PROGRESS = struct.Struct('<4sII')
 STATE = struct.Struct('<4sIIII4s4s4sI32s16s')
 NATIVE_HEADER = struct.Struct('<4I16s4I')
 PHASE = {'lobby': 0, 'active': 1, 'preparing': 2, 'closed': 3}
+
+
+def list_arcade(client, compatibility):
+    """Browse migrating and explicitly self-hosted legacy Arcade rooms."""
+    try:
+        current = client.request('GET', '/v3/lobbies?compatibility='+compatibility)['lobbies']
+    except DirectoryError as error:
+        if error.status not in (404, 503):
+            raise
+        current = []
+    legacy = client.request('GET', '/v2/lobbies?compatibility='+compatibility+'&mode=arcade')['lobbies']
+    return dict(lobbies=current+legacy)
+
+
+def join_arcade(client, compatibility, code):
+    try:
+        return ArcadeSession.open(client, compatibility, code=code)
+    except DirectoryError as error:
+        if error.status not in (404, 410, 503):
+            raise
+    # Automatic/self-hosted directories keep their original direct transport.
+    # TLS, schema, authentication and active-match errors never trigger fallback.
+    return Session.join(client, compatibility, code, mode='arcade')
 
 
 class NativeArcade:
