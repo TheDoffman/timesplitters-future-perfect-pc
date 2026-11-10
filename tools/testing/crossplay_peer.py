@@ -202,6 +202,7 @@ def serve():
                     # Only a successfully acquired lock grants cleanup ownership.
                     # Keep it even when later setup fails, and reject another start.
                     run = candidate
+                    (run/'online.json').write_text(json.dumps(dict(name=request.get('lobby_name','Validation '+tag))))
                     out = ROOT/'logs'/('online-bots-'+tag)
                     out.mkdir(parents=True, exist_ok=True)
                     commands=ROOT/'private/network-validation'/tag
