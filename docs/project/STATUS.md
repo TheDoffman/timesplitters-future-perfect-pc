@@ -1,3 +1,6 @@
+Online notice CI follow-up: standalone menu-input fixture supplies the Online
+handoff hook; real lifecycle coverage remains in fov_settings.c.
+
 Online opening correction: PR534 loading panel removed; shared native menu
 shows opening/setup feedback before the original blocking Online handoff.
 Local menu/companion checks8 passed,5 platform skips; final handoff suite4 passed,
