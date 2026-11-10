@@ -152,3 +152,13 @@ The guest/split fixture verifies both readers share the same local port policy.
 
 Controller diagram glyphs are physical even when opened with KBM; the scoped
 prompt override does not change gameplay bindings or the remembered device.
+
+Keyboard axis independence: controls_gameplay_masks reads native per-player
+Move/Strafe/Look selectors at +50/+54/+58/+5c. pc_preset_axis_masks exports their
+physical directions separately from button masks. Semantic Custom/Modern PC
+sources route movement and optional look keys through those selectors before
+combining with pad input. Swapping controller Move/Look therefore preserves the
+keyboard action labels and behavior; Custom physical pad sources are unchanged.
+Mouse look already writes camera angles directly, independently of stick layout.
+Sampler tests cover swapped sticks, optional keyboard look, edited Forward and
+unchanged Custom pad input on both host adapters; FOV fixture covers live selectors.

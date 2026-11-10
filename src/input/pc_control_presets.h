@@ -42,9 +42,26 @@ static inline unsigned pc_preset_controller_token(unsigned token,const unsigned 
     default:return token;
     }
 }
+/* Native axis selectors: 1=LX, 2=LY, 3=RX, 4=RY. Entries here are
+ * direction-bit sets, separate from the physical button masks above. */
+static inline void pc_preset_axis_masks(unsigned masks[24],const unsigned axes[4])
+{
+    static const unsigned positive[4]={17,14,22,19};
+    static const unsigned negative[4]={16,15,21,20};
+    static const unsigned roles[8]={14,15,17,16,19,20,22,21};
+    for(unsigned i=0;i<8;i++) {
+        unsigned axis=axes[i/2];
+        masks[roles[i]]=axis>=1 && axis<=4 ? 1u<<((i&1)?negative[axis-1]:positive[axis-1]):0;
+    }
+}
 static inline void pc_preset_accumulate(int values[24],unsigned action,int magnitude,int modern,const unsigned masks[24])
 {
     if(!magnitude || action>=24)return;
+    if(modern && ((action>=14 && action<=17) || (action>=19 && action<=22))) {
+        for(unsigned target=14;target<=22;target++)
+            if(target!=18 && (masks[action]&(1u<<target)) && magnitude>values[target])values[target]=magnitude;
+        return;
+    }
     if(!modern || !pc_preset_masks[action]) {if(magnitude>values[action])values[action]=magnitude;return;}
     for(unsigned target=0;target<24;target++)
         if(pc_preset_masks[target] && (masks[action]&pc_preset_masks[target]) && magnitude>values[target])values[target]=magnitude;

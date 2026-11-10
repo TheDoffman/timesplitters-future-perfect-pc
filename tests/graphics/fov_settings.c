@@ -558,6 +558,11 @@ int main(int argc,char **argv)
         CHECK(!controls_gameplay_masks(3,masks,&mounted));controls_test_menu_active=0;
         CHECK(!controls_gameplay_masks(0,masks,&mounted));
         CHECK(controls_gameplay_masks(3,masks,&mounted) && masks[9]==0x10 && masks[23]==0x8000 && masks[18]==0x40);
+        WORD_AT(player+0x50)=4;WORD_AT(player+0x54)=3;
+        WORD_AT(player+0x58)=2;WORD_AT(player+0x5c)=1;
+        CHECK(controls_gameplay_masks(3,masks,&mounted));
+        CHECK(masks[14]==(1u<<19) && masks[17]==(1u<<22));
+        CHECK(masks[19]==(1u<<14) && masks[22]==(1u<<17));
         CHECK(masks[2]==0x4000 && masks[1]==0x20 && masks[8]==0x400 && !mounted && masks[0]==0x80);
         WORD_AT(player+0x114)=0x80;CHECK(controls_gameplay_masks(3,masks,&mounted) && mounted && masks[0]==0x4000);
         WORD_AT(0x79094c)=101;CHECK(!controls_gameplay_masks(3,masks,&mounted));WORD_AT(0x79094c)=0;

@@ -1,3 +1,11 @@
+Fresh profile/controller routing repair (fix/fresh-profile-movement): portable
+profile initialization/targeted repair and scoped controller glyphs, plus shared
+semantic keyboard axis routing through native per-player Move/Look selectors.
+No OS adapter is needed: Windows and SDL samplers consume the same helper.
+Windows Release and53 sampler/FOV checks pass (2 host skips); live fresh-profile
+WASD/rebinding and swapped-stick Story movement pass. Mac/Linux physical input
+and native UI/gameplay acceptance remain pending. See STATUS for evidence.
+
 Main-menu update notice (local after a688d697): shared C# version/channel result
 and native guest-font drawing serve Windows/Mac/Linux, with publication in both
 WPF and Avalonia Check methods. Portable parser and full native-menu fixtures are

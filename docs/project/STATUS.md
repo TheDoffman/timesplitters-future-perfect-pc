@@ -1,3 +1,18 @@
+Controller/keyboard coupling follow-up (local, base2617f4a3): the earlier live
+check covered default axes, missing swapped Move/Look. Shared semantic routing
+now reads per-player axis selectors and routes keyboard movement/optional look
+through them, alongside button routing. Custom pad sources and saved bindings
+are unchanged. Mouse input bypasses native stick selectors. Windows build passes;
+53 sampler/FOV checks passed,2 platform skips. Actual Windows Story test with
+isolated Custom layout0 Move/Look swapped (4,3,2,1 selectors) passed: W/D/S/A
+one-second holds moved6.266/3.643/6.112/5.676 units with identical yaw/pitch in
+all cases. Initial holds during the scripted control lock were excluded; the
+later active samples have gameplay enabled. Evidence logs/axis-independent-live-
+verification.json and private/test-saves/axis-independent-final/report.json.
+The sampler checks optional look keys, edited Forward and unchanged Custom pad
+sources on Windows/SDL adapters; no physical Mac/Linux test claimed. Personal
+settings/saves untouched. Changes local and uncommitted.
+
 Fresh-install live acceptance (Windows, local): empty isolated save directory plus
 factory pc-controls.default.json; created Player1 through the native UI and entered
 Story. New Custom layout0 saved valid single-button action fields and eight Default

@@ -11,8 +11,9 @@ static unsigned g_players_auto_ports;
 #include "input/pc_control_presets.h"
 static int g_pc_keyboard_preset,g_pc_controller_presets[4],g_pc_custom_semantics;
 static int test_gameplay;
+static unsigned test_axes[4]={2,1,4,3};
 int pc_controls_in_menu(void) {return !test_gameplay;}
-int pc_settings_gameplay_masks(unsigned port,unsigned masks[24],int *mounted) {(void)port;(void)mounted;if(test_gameplay)masks[9]=0x10;return test_gameplay;}
+int pc_settings_gameplay_masks(unsigned port,unsigned masks[24],int *mounted) {(void)port;(void)mounted;if(test_gameplay){masks[9]=0x10;pc_preset_axis_masks(masks,test_axes);}return test_gameplay;}
 void pc_settings_modern(PcSettings *s) {memset(s,0,sizeof *s);}
 static int test_focus=1, test_capture, test_blocked, mouse_samples;
 static long g_pc_auto_pad;
@@ -134,7 +135,32 @@ int main(void)
     assert(one.bAnalogButtons[XBOX_BUTTON_X]==255 && !one.bAnalogButtons[XBOX_BUTTON_RTRIGGER]);
     g_pc_custom_semantics=0;test_sample(0,&one);
     assert(one.bAnalogButtons[XBOX_BUTTON_RTRIGGER]==255 && !one.bAnalogButtons[XBOX_BUTTON_X]);
-    held_key=0;
+    /* The controller swaps Move/Look; semantic keyboard actions must be
+     * sent to the physical axes now selected for movement, not fixed LY/LX.
+     * Feeding the output through those native selectors still means Move. */
+    g_pc_custom_semantics=1;
+    test_axes[0]=4;test_axes[1]=3;test_axes[2]=2;test_axes[3]=1;
+    held_key='W';memset(g_key_state,0,sizeof g_key_state);test_sample(0,&one);
+    assert(one.sThumbRY>0 && !one.sThumbLY && !one.sThumbRX && !one.sThumbLX);
+    /* Bind the optional look keys explicitly and exercise the reverse route. */
+    g_ctl[0].bind[19].count=1;assert(parse_source("key:I",&g_ctl[0].bind[19].src[0]));
+    g_ctl[0].bind[22].count=1;assert(parse_source("key:L",&g_ctl[0].bind[22].src[0]));
+    held_key='I';memset(g_key_state,0,sizeof g_key_state);test_sample(0,&one);
+    assert(one.sThumbLY>0 && !one.sThumbRY && !one.sThumbLX && !one.sThumbRX);
+    held_key='L';memset(g_key_state,0,sizeof g_key_state);test_sample(0,&one);
+    assert(one.sThumbLX>0 && !one.sThumbLY && !one.sThumbRY && !one.sThumbRX);
+    /* An edited Forward binding uses the same independent semantic route. */
+    memset(&g_ctl[0].bind[14],0,sizeof(Binding));g_ctl[0].bind[14].count=1;
+    assert(parse_source("key:H",&g_ctl[0].bind[14].src[0]));
+    held_key='H';memset(g_key_state,0,sizeof g_key_state);test_sample(0,&one);
+    assert(one.sThumbRY>0 && !one.sThumbLY);
+    held_key='W';memset(g_key_state,0,sizeof g_key_state);test_sample(0,&one);
+    assert(!one.sThumbLX && !one.sThumbLY && !one.sThumbRX && !one.sThumbRY);
+    /* Controller-only Custom keeps its physical sticks unchanged. */
+    held_key=0;connected=1;state.ly=32767;state.right_trigger=0;
+    g_ctl[1].bind[14].count=1;assert(parse_source("pad:ly+",&g_ctl[1].bind[14].src[0]));
+    test_sample(1,&two);assert(two.sThumbLY>0 && !two.sThumbRY);
+    connected=0;held_key=0;
 #endif
     puts("PASS: assigned P2 pad cannot steer P1; free-pad fallback, disconnect and focus gating");
     return 0;
