@@ -120,7 +120,11 @@ class ArcadeService:
             if peer != host:
                 migration.join(peer, schema=SCHEMA)
         for peer, member in room['members'].items():
-            migration.members[peer].seen = member['native_at']
+            # Membership begins now, after the host finishes loading. Reusing
+            # a pre-load timestamp can retire guests before their first RPC in
+            # this round. This grants one normal lease, not a native heartbeat;
+            # unchanged counters cannot renew it or make an inactive engine host.
+            migration.members[peer].seen = self.directory.clock()
             migration.members[peer].can_host = member['active'] and member['native_peer'] is not None
         room['migration'] = migration
         room['match_id'] = migration.match_id

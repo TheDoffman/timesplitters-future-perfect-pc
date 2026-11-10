@@ -175,6 +175,13 @@ team-mode runs confirm the native Select Team screen before sampling gameplay.
 `--rpc-trace` adds a test-only `sitecustomize` exception observer to companion
 Python threads (32 records maximum, no local-variable/request-body inspection).
 It preserves native compatibility and logs RPC failure classes/status/messages.
+The observer chains the environment's existing Python bootstrap, retaining Mac
+Tk support; enabled/disabled subprocess fixtures check bootstrap preservation,
+the record limit and exclusion of local credentials.
+New-round native leases begin when the host starts that round; pre-load progress
+timestamps cannot immediately retire a guest awaiting its first post-load RPC.
+This grants one ordinary lease only: unchanged counters do not renew it, and
+inactive guests remain ineligible to host. Service tests cover resumed/stalled peers.
 
 ## Native multiplayer build and validation (2026-10-30)
 
