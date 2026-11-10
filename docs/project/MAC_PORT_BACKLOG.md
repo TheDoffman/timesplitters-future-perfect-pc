@@ -10451,3 +10451,10 @@ host/guest packet probes through the installed relay. Public-address TCP 41820/
 UDP 41821 probes pass via router hairpin with server-only UPnP mapping. No new
 native adapter is needed. Full outside-network game matches and matching rebuilt/
 published clients remain separate acceptance. See STATUS and the relay setup guide.
+
+Arcade migration coordinator prototype (feature/online-host-migration): shared
+Python policy only, not connected to any native platform or running service.
+Windows deterministic policy tests18 pass. Native checkpoint capture/restore,
+authority adoption and actual three-game host migration are not implemented on
+Windows/Mac/Linux. No host-specific policy fork is required. See STATUS and
+docs/development/arcade-host-migration.md before enabling or advertising support.

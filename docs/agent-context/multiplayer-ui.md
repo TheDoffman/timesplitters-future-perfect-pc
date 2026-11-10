@@ -1,5 +1,18 @@
 # Multiplayer companion presentation
 
+## Arcade host migration groundwork
+
+`online_migration.ArcadeMigration` is a separately tested coordinator prototype,
+not imported by the directory, relay, companion or native game. It selects a
+successor only from engine-acknowledged checkpoints, fences the old authority
+with a new epoch, waits for native restore readiness, and excludes failed
+successors/unresponsive members before resuming. Player IDs stay stable across
+repeated elections. Checkpoint payloads are opaque here; native serialization,
+restore and semantic validation are not implemented. Never acknowledge native
+readiness from a transport/HTTP response or advertise active-match migration from
+these tests. Production still ends the match when the host leaves. See the
+[native handoff investigation](../development/arcade-host-migration.md).
+
 ## Shared relay
 
 `lobby_server.RelayServer` authenticates TSFR envelopes against the live directory
