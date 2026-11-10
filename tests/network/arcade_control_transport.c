@@ -10,6 +10,8 @@ ptrdiff_t g_xbox_mem_offset;
 #define WORD_AT(a) (*(uint32_t *)((uintptr_t)(uint32_t)(a)+g_xbox_mem_offset))
 #define FLOAT_AT(a) (*(float *)((uintptr_t)(uint32_t)(a)+g_xbox_mem_offset))
 static unsigned presents,refreshes,departures,rebases,revives;
+static int overlay_migrating;
+void pc_match_overlay_migration(int active){overlay_migrating=active;}
 PcOnlineMode pc_online_mode(void){return PC_ONLINE_ARCADE;}
 void pc_character_ragdoll_release(uint32_t entity){(void)entity;}
 void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *s)
@@ -115,6 +117,7 @@ int main(void)
         pc_network_arcade_progress(1,&observed);
     REQUIRE(pc_network_arcade_snapshot(download) && !memcmp(snapshot,download,sizeof *snapshot));
     REQUIRE(pc_arcade_migration_frame(0)==1); /* Apply checkpoint while frozen. */
+    REQUIRE(overlay_migrating);
     REQUIRE(WORD_AT(0x76b140u)==2u && WORD_AT(0x7de318u)==3600u && rebases==1u);
     REQUIRE(WORD_AT(0x7de460u)==32400u && target.memory[0x7de424u]==1u);
     REQUIRE((int32_t)WORD_AT(0x50000u+0xa6cu)==snapshot->totals[0]);
@@ -131,6 +134,7 @@ int main(void)
     pc_arcade_store32(status+12,1);bridge_reply(bridge,&native,status,sizeof status,1);
     REQUIRE(await_state(&observed,5,1));
     REQUIRE(pc_arcade_migration_frame(0)==0);
+    REQUIRE(!overlay_migrating);
     REQUIRE(!g_tsfp_arcade_migrating && WORD_AT(0x76b140u)==1u && WORD_AT(0x774040u)==5u);
     REQUIRE(WORD_AT(0x774028u)==0x70000u); /* Original local controller node survives. */
     REQUIRE(pc_network_arcade_request_leave() && g_tsfp_arcade_migrating);

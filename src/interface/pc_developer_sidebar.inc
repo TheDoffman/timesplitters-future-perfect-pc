@@ -589,7 +589,7 @@ void pc_developer_frame(void) {
     }
     InterlockedExchange(&shortcut_blocked,capture_action>=0||edit_number);memcpy(previous,keys,sizeof previous);
 }
-unsigned pc_developer_lines(unsigned width,unsigned height,PcDeveloperLine *out,unsigned capacity) {
+static unsigned developer_sidebar_lines(unsigned width,unsigned height,PcDeveloperLine *out,unsigned capacity) {
     if(!out||!capacity||width<100||height<100)return 0;
     if(!pc_developer_open()) {
         /* Preserve the dormant named disclaimer without putting it back in the

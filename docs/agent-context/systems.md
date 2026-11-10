@@ -9,7 +9,7 @@ its own flag. Missing launch files are not retried on every guest call, and an
 explicit disconnect does not re-import stale startup credentials. Windows, Mac
 and Linux share this policy. See `tests/network/network_eligibility.c`.
 
-[Developer Tools integration](developer-tools-integration.md).
+[Tools and match overlays](developer-tools-integration.md).
 
 [Uplink](native-uplink.md);[projectile motion/beam damage](native-projectiles.md).
 [Input](controls-options.md).

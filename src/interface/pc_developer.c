@@ -304,3 +304,4 @@ static void activate(int direction) {
     }
 }
 #include "pc_developer_sidebar.inc"
+#include "pc_match_overlay.inc"
