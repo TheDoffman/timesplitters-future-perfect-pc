@@ -16,6 +16,25 @@ peer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(peer)
 
 
+@pytest.mark.parametrize('running,owns_group', [(False, True), (True, False), (True, True)])
+def test_crash_is_limited_to_a_running_owned_process_group(monkeypatch, running, owns_group):
+    from unittest.mock import Mock
+    child = Mock(pid=4321)
+    child.poll.return_value = None if running else 0
+    monkeypatch.setattr(peer.os, 'getpgid', lambda pid: pid if owns_group else 1, raising=False)
+    kill = Mock()
+    monkeypatch.setattr(peer.os, 'killpg', kill, raising=False)
+    monkeypatch.setattr(peer.signal, 'SIGKILL', 9, raising=False)
+    if running and owns_group:
+        peer.crash_child(child)
+        kill.assert_called_once_with(4321, 9)
+        child.wait.assert_called_once_with(timeout=10)
+    else:
+        with pytest.raises(ValueError):
+            peer.crash_child(child)
+        kill.assert_not_called()
+
+
 @pytest.mark.parametrize('failure', ['prepare', 'lock', 'after-lock', 'recycle'])
 def test_controller_only_cleans_up_its_owned_run(tmp_path, monkeypatch, capsys, failure):
     import io
