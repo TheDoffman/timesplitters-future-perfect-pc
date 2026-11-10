@@ -43300,3 +43300,10 @@ focused control/UI/font/canvas checks pass on Windows and physical Mac arm64.
 Actual three-player Windows host-crash run `migration-overlay-three-a` shows
 the card on both survivors, then no card and continued scores/timer/six bots
 for30 seconds. Native Mac rendering is not claimed from the shared tests.
+
+Migration overlay theme (`879526fa`): now follows the original pause dialogs
+with a black panel, pale rounded frame, blue light bars, separator and bold
+uppercase labels. Five shared UI/font/canvas cases pass on Windows and physical
+Mac. Native Windows `migration-theme-three-a` verifies appearance/removal and
+three-player continuation for30 seconds after a host crash. Uses existing
+embedded UI fonts; no game-font extraction or new host renderer is needed.

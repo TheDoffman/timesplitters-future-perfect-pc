@@ -10471,3 +10471,8 @@ existing native GL compositor consumes the same `pc_developer_lines` provider,
 native control/UI/font/canvas checks pass on physical Mac arm64. Windows actual
 three-player host-crash screenshots verify display/removal and continued play;
 full native Mac rendering remains a separate acceptance check. Rebuild required.
+
+Theme follow-up (`879526fa`) retains that shared compositor and embedded font
+path. Five UI/font/canvas checks pass on physical Mac; the updated native-style
+panel is visually verified in Windows gameplay. Native Mac appearance remains
+unverified. No Mac-specific adaptation or service update is required.
