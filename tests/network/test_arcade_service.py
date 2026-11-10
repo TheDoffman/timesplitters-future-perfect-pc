@@ -21,6 +21,33 @@ from online_client import Session, DirectoryError
 from online_arcade_client import list_arcade, join_arcade
 
 
+@pytest.mark.parametrize('resumes', [False, True])
+def test_round_start_gives_loading_guest_a_lease_without_faking_native_progress(resumes):
+    from lobby_server import Directory
+    now=[100.]
+    service=Directory(clock=lambda:now[0]).arcade
+    members={peer:service.member() for peer in (1,2)}
+    members[1].update(native_counter=20,active=True,native_peer=0)
+    members[2].update(native_counter=10,active=False,native_peer=1)
+    room=dict(host_peer=1,members=members,epoch=1,migration=None,closed=False,previous_host=None)
+    now[0]=120.  # Neither native engine pumps its frame during level loading.
+    members[1]['native_at']=now[0]  # Host's first post-load pulse starts the round.
+    service.start_match(room)
+    migration=room['migration']
+    migration.poll()  # A relayed packet can poll before the guest's next HTTPS RPC.
+    assert set(migration.members)=={1,2}
+    assert not migration.members[2].can_host
+    assert members[2]['native_at']==100. and members[2]['native_counter']==10
+    now[0]=120.5
+    service.update_native(room,2,dict(native_counter=11 if resumes else 10,
+        active=resumes,native_peer=1,epoch=room['epoch']))
+    assert migration.members[2].can_host is resumes
+    now[0]=124.25
+    migration.heartbeat(1,migration.epoch)
+    migration.poll()
+    assert (2 in migration.members) is resumes
+
+
 class NativeDriver:
     def __init__(self, active):
         self.active = active

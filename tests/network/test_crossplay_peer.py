@@ -7,6 +7,7 @@ import socket
 import struct
 import subprocess
 import time
+import sys
 
 import pytest
 
@@ -14,6 +15,20 @@ ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location('crossplay_peer', ROOT/'tools/testing/crossplay_peer.py')
 peer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(peer)
+
+
+@pytest.mark.parametrize('enabled', ['0', '1'])
+def test_rpc_observer_preserves_bootstrap_bounds_output_and_omits_locals(tmp_path, enabled):
+    bootstrap=tmp_path/'bootstrap';bootstrap.mkdir()
+    (bootstrap/'sitecustomize.py').write_text('import builtins; builtins.bootstrap_preserved=True\n')
+    env=dict(os.environ,PYTHONPATH=os.pathsep.join((str(ROOT/'tools/testing/online_rpc_trace'),str(bootstrap))),
+             TSFP_ONLINE_RPC_TRACE=enabled)
+    function="def request():\n private_token='never-disclose-this-local'\n for i in range(50):\n  try: raise ValueError('probe')\n  except ValueError: pass\n"
+    command="import builtins,threading; assert builtins.bootstrap_preserved; scope={}; exec(compile("+repr(function)+",'/observer/online_client.py','exec'),scope); worker=threading.Thread(target=scope['request']); worker.start(); worker.join()"
+    result=subprocess.run([sys.executable,'-c',command],env=env,capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stderr
+    assert result.stderr.count('[ONLINE-RPC]')==(32 if enabled=='1' else 0)
+    assert 'never-disclose-this-local' not in result.stderr
 
 
 def test_completed_frame_capture_is_bounded_and_rotates(tmp_path):

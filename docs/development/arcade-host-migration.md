@@ -236,3 +236,12 @@ state, opaque AI decisions and every other Arcade mode remain separate checks.
 The public-address retry `mac-public-results-repeat-a` reproduces that native
 disconnect. `--rpc-trace` enables bounded test-only Python exception diagnostics
 without modifying production networking or changing the native compatibility ID.
+
+Public-route investigation: `mac-public-rpc-trace-b` records HTTP403/Invalid
+Arcade member credential after native gameplay begins. New-round creation was
+seeding migration leases with pre-load native timestamps, allowing the relay's
+next poll to retire a guest before its first post-load RPC. New-round leases now
+start at round creation, granting exactly the normal lease duration. Native
+counters/timestamps are not fabricated; unchanged counters cannot renew leases,
+and inactive engines cannot host. Deterministic tests cover both a resumed guest
+and an unchanged-counter guest that still expires. Native revalidation follows.
