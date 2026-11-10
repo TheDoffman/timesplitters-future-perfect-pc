@@ -48,7 +48,8 @@ static void multiplayer_leave_confirm(void)
     const uint32_t menu=WORD_AT(g_esp+4u);
     if(multiplayer_match() && WORD_AT(0x76b140u)==1u && guest_writable(menu,0x190u) && WORD_AT(menu+0x18cu)==0x40u) {
 #ifdef TSFP_ARCADE_MIGRATION
-        if(pc_network_arcade_request_leave()) {WORD_AT(0x789640u)=0;g_eax=0;g_esp+=4u;return;}
+        if(WORD_AT(0x7de30cu)==7u && WORD_AT(0x76b1a4u)==15u &&
+           pc_network_arcade_request_leave()) {WORD_AT(0x789640u)=0;g_eax=0;g_esp+=4u;return;}
 #endif
         multiplayer_leave(1u,1);
         WORD_AT(0x789640u)=0;g_eax=0;g_esp+=4u;return;
@@ -116,7 +117,8 @@ void pc_multiplayer_exit_action(void (*original)(void),unsigned action)
     if(!action && multiplayer_match() && WORD_AT(0x76b140u)==1u &&
        (original==sub_002EAF60_gen || original==sub_002EB030_gen)) {
 #ifdef TSFP_ARCADE_MIGRATION
-        if(pc_network_arcade_request_leave()) {g_eax=0;g_esp+=4u;return;}
+        if(WORD_AT(0x7de30cu)==7u && WORD_AT(0x76b1a4u)==15u &&
+           pc_network_arcade_request_leave()) {g_eax=0;g_esp+=4u;return;}
 #endif
         multiplayer_leave(1u,1);
         g_eax=0;g_esp+=4u;return;

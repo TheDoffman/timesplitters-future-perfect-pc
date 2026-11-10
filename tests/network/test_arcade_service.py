@@ -190,6 +190,18 @@ def test_graceful_then_crash_migration_preserves_checkpoint_and_relays_between_s
             listing = client.request('GET', '/v3/lobbies?compatibility='+VERSION)['lobbies']
             assert len(listing) == 1 and listing[0]['players'] == 1
             assert not {'peer_key', 'peer_token', 'relay_key', 'checkpoint', 'peers'} & listing[0].keys()
+            # Finish/rematch preserves the elected owner and member identity.
+            # Idle lobby metadata cannot replace a nonce under the same epoch.
+            previous_match = sessions[2].native.status['match_id']
+            natives[2].playing = False
+            until(natives[2:], lambda: sessions[2].native.status['phase'] == 'lobby')
+            assert sessions[2].native.status['epoch'] == 4
+            assert sessions[2].native.status['match_id'] == previous_match
+            natives[2].playing = True
+            until(natives[2:], lambda: sessions[2].native.status['phase'] == 'active' and
+                  sessions[2].native.status['epoch'] == 5)
+            assert sessions[2].native.status['host_peer'] == 3
+            assert sessions[2].native.status['match_id'] != previous_match
         finally:
             for driver in natives:
                 driver.close()

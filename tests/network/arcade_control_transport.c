@@ -72,6 +72,7 @@ int main(void)
     REQUIRE(pc_network_set_online(configuration));
     PcArcadeControlState observed;REQUIRE(!pc_network_arcade_progress(0,&observed));
     uint8_t frame[4096];REQUIRE(receive_control(bridge,"AMPG",frame,&native)==80);
+    const uint32_t first_progress=pc_arcade_load32(frame+72);
     REQUIRE(pc_arcade_load32(frame+76)==0u);
     uint8_t status[84]={0};memcpy(status,"AMST",4);pc_arcade_store32(status+4,1);
     pc_arcade_store32(status+8,1);const uint8_t local_ip[4]={10,254,0,3};
@@ -145,6 +146,12 @@ int main(void)
     REQUIRE(!pc_network_arcade_adopt_key(0x9900fe0au));
     pc_network_set_online(NULL);REQUIRE(!g_tsfp_arcade_migrating);
     REQUIRE(!pc_network_arcade_progress(1,&observed));
+    while(recvfrom(bridge,(char *)frame,sizeof frame,0,NULL,NULL)>0) {}
+    REQUIRE(pc_network_set_online(configuration));
+    REQUIRE(!pc_network_arcade_progress(0,&observed));
+    REQUIRE(receive_control(bridge,"AMPG",frame,&native)==80);
+    REQUIRE(pc_arcade_load32(frame+72)>first_progress); /* Cleanup/rematch cannot rewind the lease pulse. */
+    pc_network_set_online(NULL);
     net_close(bridge);net_stop();free(snapshot);free(download);free(source.memory);free(target.memory);
     puts("PASS: Arcade checkpoint control socket; authenticated progress, fragments, ACK and departure");return 0;
 }

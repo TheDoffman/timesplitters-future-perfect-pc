@@ -112,7 +112,7 @@ def main():
                         help='0 uses Original60; other values select native beta timing')
     parser.add_argument('--guest-fps', type=int, choices=(0,120,180,240), default=0)
     parser.add_argument('--no-captures', action='store_true')
-    parser.add_argument('--migration', choices=('crash',), help='Terminate the host and verify native Arcade continuation')
+    parser.add_argument('--migration', choices=('crash','leave'), help='Verify native Arcade continuation after host loss or normal menu departure')
     parser.add_argument('--require-results', action='store_true',
                         help='Wait up to --seconds for both peers to finish and publish score rows')
     parser.add_argument('--post-results-seconds', type=int, default=0,
@@ -208,6 +208,7 @@ def main():
     menu_inputs = []
     completed=False
     retired = set()
+    migration_selected = {}
     started = time.monotonic()
     def read(peer, address, size):
         if peer==mac_peer and remote is not None:
@@ -223,10 +224,10 @@ def main():
         return data.raw
     def word(peer, address):
         return struct.unpack('<I', read(peer, address, 4))[0]
-    def menu_state(peer):
+    def menu_state(peer, root=0x7ba26c):
         # US77470 follows persistent view-root children; callback context
         # 7BB1E8 and transition target7BA270 are normally zero between calls.
-        menu=word(peer,0x7ba26c)
+        menu=word(peer,root)
         for _ in range(16):
             child=word(peer,menu+0x170) if menu else 0
             if not child:break
@@ -246,6 +247,12 @@ def main():
             rows.append(row);node=word(peer,node+4)
         return dict(address=menu,selected=word(peer,menu+0x18c),rows=rows)
     def observe():
+        if args.migration:
+            with server.directory.lock:
+                for room in server.directory.arcade.rooms.values():
+                    migration=room['migration']
+                    if migration and migration.selected:
+                        migration_selected['snapshot']=migration.selected
         if remote is not None:
             try:remote.refresh()
             except OSError:remote.pages.clear()
@@ -530,20 +537,51 @@ def main():
             assert ready, 'Native engines did not publish/acknowledge a checkpoint'
             report('before-host-loss')
             old_tick=word(1,0x7de318)
-            retired.add(0)
-            # Terminate its bridge too: a surviving companion would observe
-            # parent exit and send an orderly DELETE instead of lease expiry.
-            assert children[0].poll() is None
-            subprocess.run(['taskkill', '/PID', str(children[0].pid), '/T', '/F'],
-                           check=True, capture_output=True, timeout=10)
-            children[0].wait(timeout=10)
+            if args.migration == 'crash':
+                retired.add(0)
+                # Terminate its bridge too: a surviving companion would observe
+                # parent exit and send an orderly DELETE instead of lease expiry.
+                assert children[0].poll() is None
+                subprocess.run(['taskkill', '/PID', str(children[0].pid), '/T', '/F'],
+                               check=True, capture_output=True, timeout=10)
+                children[0].wait(timeout=10)
+            else:
+                key(0,27)
+                for _ in range(32):
+                    pause=menu_state(0,0x761bbc)
+                    assert any(row['id']==0x40 for row in pause['rows']), 'No native host leave row'
+                    if pause['selected']==0x40:break
+                    key(0,40)
+                else:raise AssertionError('Could not select native host leave row')
+                key(0,69)
             deadline=time.monotonic()+15
             while time.monotonic()<deadline:
                 if word(1,0x76b140)==1 and word(1,0x76b1a4)==15 and word(1,0x7de30c)==7:break
                 wait(.1)
             report('after-host-loss')
             assert word(1,0x76b140)==1 and word(1,0x76b1a4)==15 and word(1,0x7de30c)==7, 'Native promotion failed'
-            assert abs(word(1,0x7de318)-old_tick)<1200, 'Match clock restarted'
+            with server.directory.lock:
+                migration=server.directory.arcade.rooms[codes[0]]['migration']
+                restored=migration_selected.get('snapshot') or next(
+                    (entry for entry in migration.checkpoints if entry.epoch<migration.epoch), None)
+            assert restored, 'Did not retain the selected migration checkpoint'
+            expected_tick=struct.unpack_from('<I',restored.payload,40)[0]
+            actual_tick=word(1,0x7de318)
+            assert expected_tick<=actual_tick<=expected_tick+120, 'Match clock did not resume from the selected backup'
+            config=read(1,0x7de400,3);pool=word(1,0x7356d8)
+            expected_scores=[struct.unpack_from('<16h',restored.payload,48+160+i*84)
+                             for i in range(config[0]+config[2])]
+            actual_scores=[struct.unpack('<16h',read(1,pool+i*0xea0+0xa10,32))
+                           for i in range(config[0]+config[2])]
+            assert any(value>0 for row in expected_scores[1:] for value in row), 'Score continuity needs a scored backup'
+            # The departed human may be retired from the native roster. Every
+            # surviving human/bot must retain its kills, including that victim.
+            assert all(actual>=expected for before,after in zip(expected_scores[1:],actual_scores[1:])
+                       for expected,actual in zip(before,after)), 'A kill score was lost during migration'
+            (out/'migration-state.json').write_text(json.dumps(dict(
+                sequence=restored.sequence,digest=restored.digest,old_tick=old_tick,
+                expected_tick=expected_tick,actual_tick=actual_tick,
+                expected_scores=expected_scores,actual_scores=actual_scores),indent=2))
             marker=time.monotonic()-started
             wait(args.seconds)
             report('migration-finished')

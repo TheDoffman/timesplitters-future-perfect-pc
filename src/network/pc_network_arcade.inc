@@ -14,7 +14,9 @@ static void arcade_reset(void)
     if(arcade_socket!=INVALID_SOCKET)net_close(arcade_socket);
     arcade_socket=INVALID_SOCKET;
     memset(&arcade_control,0,sizeof arcade_control);
-    arcade_counter=arcade_uploaded_sequence=0;arcade_last_send=arcade_last_state=0;
+    /* Stock transport cleanup can occur between rounds while the companion
+       membership survives. Its engine-progress counter must never rewind. */
+    arcade_uploaded_sequence=0;arcade_last_send=arcade_last_state=0;
     arcade_leave_pending=0;g_tsfp_arcade_migrating=0;
 }
 static int arcade_send(const void *data,int bytes)
