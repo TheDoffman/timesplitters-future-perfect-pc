@@ -10505,3 +10505,24 @@ Theme follow-up (`879526fa`) retains that shared compositor and embedded font
 path. Five UI/font/canvas checks pass on physical Mac; the updated native-style
 panel is visually verified in Windows gameplay. Native Mac appearance remains
 unverified. No Mac-specific adaptation or service update is required.
+
+Physical Arcade follow-up (`5b98bae3`, 2026-11-10): **Verified** for native arm64
+Vulkan/MoltenVK Deathmatch crossplay on matching Windows/Mac builds. Normal Mac
+host leave, Mac game/companion crash, Windows-to-Mac promotion and repeated
+Windows/Mac/Windows handoff retain scored backups, countdown/elapsed clocks and
+six fighting/respawning bots. The replacement Mac host completes the migrated
+match and starts a fresh rematch; both survivors complete it with matching final
+records. Actual composed Mac frames verify the themed overlay appears/clears and
+normal-leave confirmation. No separate Mac gameplay adapter was needed. The
+installed service via LAN also completed two rounds. These results supersede
+the native-Mac/results/appearance gaps above; full outside-network play, legacy
+GL presentation and objective carry/capture continuity remain unverified. The
+first public-address native baseline disconnected the Mac guest and remains a
+separate route investigation. See [STATUS](STATUS.md) and the migration guide.
+Team Deathmatch continuation also passes (`mac-team-migration-d`): Mac host
+process-group crash promotes Windows, retaining scored backup/clocks and six
+live bots for30 seconds. This is continuation evidence, not team-results or
+every-objective serialization acceptance.
+Capture the Bag continuation passes as well (`mac-bag-migration-a`): Windows
+normal leave promotes Mac and retains scored backup/clocks and six bots for30
+seconds. Carry/capture state was not asserted and remains a separate check.

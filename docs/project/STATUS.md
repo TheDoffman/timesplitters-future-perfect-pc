@@ -43430,3 +43430,50 @@ uppercase labels. Five shared UI/font/canvas cases pass on Windows and physical
 Mac. Native Windows `migration-theme-three-a` verifies appearance/removal and
 three-player continuation for30 seconds after a host crash. Uses existing
 embedded UI fonts; no game-font extraction or new host renderer is needed.
+
+## Physical Windows–Mac Arcade gameplay acceptance — 2026-11-10
+
+The following supersedes the native-Mac and migrated-results gaps above for
+Deathmatch. Native Windows x64 and physical Mac arm64 Vulkan/MoltenVK builds
+match compatibility `cbf89bed868bc189912e8ceab1bd643ded4c7e2fc4caa20ec6025a9b3d6ef8a9`
+at `5b98bae3`. Both use supported split32 generation; native binaries are sealed.
+No personal saves/settings were used. Every passing run records completed
+disposable-disk cleanup and provenance under ignored `logs/online-bots-*`.
+
+- `mac-full-baseline-lan-a`: installed Mac service via LAN URL; full Deathmatch,
+  matching final results, fresh rematch and matching completed rematch. This used
+  the previous matching `7b41408e` native build, before the capture-only patch.
+- `mac-host-normal-a` / `mac-host-crash-a`: Mac host normal Pause/Leave/Yes and
+  whole game/companion crash respectively; Windows promotes and keeps real scored
+  backups, elapsed/countdown clocks and six fighting/respawning bots for30 seconds.
+- `mac-mixed-repeat-a`: three players, Windows normal departure promotes Mac,
+  then Mac process-group crash promotes the third player. Both survivors continue
+  for30 seconds after the first handoff; the last survivor continues another30.
+- `mac-migration-results-b`: three players, Windows crash promotes Mac. Both
+  survivors finish with matching9 final rows, then elected Mac host starts a fresh
+  rematch with reset scores/clock and new round identity. Both finish that rematch
+  with matching8 live rows. Disconnected player rows are excluded when blank.
+- Composed native Mac screenshots verify the themed migration card and removal
+  (`mac-mixed-repeat-a/mac/migration-overlay-3-3-1.png` and
+  `migration-finished-1.png`), plus the updated normal-leave confirmation.
+- `mac-team-migration-d`: Team Deathmatch50 points, Mac whole-group crash;
+  Windows promotes in4.4 seconds, retains scored backup and clocks, and continues
+  six bots' movement/combat/respawning for30 seconds. Earlier mode attempts only
+  reached Select Team; the runner now readies and confirms Go on each controller.
+- `mac-bag-migration-a`: Capture the Bag, normal Windows departure promotes Mac;
+  scored backup, elapsed/countdown clocks and six moving/fighting/respawning bots
+  continue30 seconds. Actual Mac composed frame shows the resumed bag-mode HUD.
+  Objective carry/capture state was not asserted by this continuation check.
+
+This task also passed Windows crossplay helper12 checks/1 Darwin skip, physical
+Mac13 checks, repository/CI scope115 checks, and fresh/repeated/full native patch
+stack2 checks. Full native builds succeeded on both hosts. The new opt-in final
+RHI-frame capture is bounded/rotating and disabled during ordinary play; raw
+shadow captures precede host overlays and cannot verify their appearance.
+
+The initial installed-service public-address native run
+`mac-full-baseline-live-a` disconnected the Mac guest after gameplay started;
+the same service via LAN completed both rounds. No router cause is established
+by that comparison. Full outside-network play, legacy Mac GL rendering, objective
+carry/capture continuity and all other Arcade modes are separate acceptance.
+See `docs/development/arcade-host-migration.md` for the precise matrix.

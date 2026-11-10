@@ -236,6 +236,9 @@ def serve():
                         env.update(TSFP_PRESENT_CAPTURE=str(captures/'frame'),TSFP_PRESENT_CAPTURE_EVERY='6')
                     if request['command'].get('migration'):
                         env['TSFP_ARCADE_TRACE']='1'
+                    if request.get('rpc_trace'):
+                        env['TSFP_ONLINE_RPC_TRACE']='1'
+                        env['PYTHONPATH']=str(ROOT/'tools/testing/online_rpc_trace')+os.pathsep+env.get('PYTHONPATH','')
                     exe = ROOT/'build/macos/futureperfect_recomp'
                     identity=json.loads((ROOT/'build/macos/generated/network-identity.json').read_text())
                     if identity['compatibility']!=request['compatibility']:raise ValueError('Windows/Mac build identities differ')

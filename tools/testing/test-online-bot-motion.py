@@ -118,8 +118,10 @@ def main():
     parser.add_argument('--arcade-relay', action='store_true', help='Use the migrating v3 relay without removing the host')
     parser.add_argument('--shared-service', action='store_true', help='Run normal play/results against the installed default service')
     parser.add_argument('--service-address', help='Override only the installed service address, retaining its certificate pin')
+    parser.add_argument('--rpc-trace', action='store_true', help='Observe bounded companion RPC exceptions in isolated tests')
     parser.add_argument('--game-mode', choices=('deathmatch','team-deathmatch','capture-bag'), default='deathmatch')
     parser.add_argument('--repeat-migration', action='store_true', help='Lose the replacement host too; requires three migration players')
+    parser.add_argument('--migration-results', action='store_true', help='Finish the migrated match, rematch, and compare final records again')
     parser.add_argument('--require-results', action='store_true',
                         help='Wait up to --seconds for both peers to finish and publish score rows')
     parser.add_argument('--post-results-seconds', type=int, default=0,
@@ -134,8 +136,11 @@ def main():
                         help='Capture the normal setup screens, then stop before gameplay')
     parser.add_argument('--short-match', action='store_true',
                         help='Select five-point Deathmatch through the stock setup menu')
+    parser.add_argument('--points', type=int, choices=(10,15,20,50,100), help='Select a bounded point limit through the stock setup menu')
     args = parser.parse_args()
     use_migration = bool(args.migration or args.arcade_relay)
+    if args.short_match and args.points:parser.error('Choose --short-match or --points')
+    point_limit=5 if args.short_match else args.points
     if args.shared_service and (not args.arcade_relay or args.migration):
         parser.error('--shared-service requires --arcade-relay without controlled host removal')
     if args.service_address and not args.shared_service:
@@ -145,6 +150,8 @@ def main():
         parser.error('--migration cannot be combined with results/setup-only modes')
     if args.repeat_migration and (not args.migration or args.players!=3):
         parser.error('--repeat-migration requires --migration and --players 3')
+    if args.migration_results and (not args.migration or args.repeat_migration):
+        parser.error('--migration-results requires a single controlled migration')
     if args.players!=2 and not args.migration:
         parser.error('--players 3 currently requires --migration')
     if args.mac_host and not (args.mac_root and args.lan_address):
@@ -410,7 +417,8 @@ def main():
         # Online browser. Capture only running frontend/gameplay boundaries.
         if not args.no_captures and label in ('frontend','no-online-lobby','match','results','post-results','migration-finished','second-migration-finished',
                                               'scores-tab','options-tab','rematch','rematch-results','finished',
-                                              'options-root','options-mode','options-settings','options-settings-initial','short-match-settings','rematch-timeout','rematch-selection'):
+                                              'options-root','options-mode','options-settings','options-settings-initial','short-match-settings','rematch-timeout','rematch-selection',
+                                              'migration-results','migration-options','migration-rematch','migration-rematch-results'):
             for peer, child in enumerate(children):
                 if peer in retired:continue
                 if peer==mac_peer and remote is not None:
@@ -431,12 +439,12 @@ def main():
             subprocess.run(['taskkill','/PID',str(children[peer].pid),'/T','/F'],
                            check=True,capture_output=True,timeout=10)
         children[peer].wait(timeout=10)
-    def await_results(label):
+    def await_results(label,peers=(0,1),wait_seconds=None):
         # Called only after active gameplay; rematches additionally require the
         # existing reset checks for clock, result-ready state, roster and scores.
-        deadline=time.monotonic()+args.seconds
+        deadline=time.monotonic()+(wait_seconds or args.seconds)
         while time.monotonic()<deadline:
-            if all(word(peer,0x7de30c)==8 and word(peer,0x6f1188)==1 for peer in (0,1)):
+            if all(word(peer,0x7de30c)==8 and word(peer,0x6f1188)==1 for peer in peers):
                 break
             wait(.1)
         else:
@@ -445,9 +453,11 @@ def main():
         wait(2)  # Let the existing reliable final packet settle.
         report(label)
         results=[]
-        for peer in (0,1):
+        config=read(peers[0],0x7de400,3)
+        actor_count=config[0]+config[2]
+        for peer in peers:
             rows=[]
-            for index in range(8):
+            for index in range(actor_count):
                 row=read(peer,0x6f0b08+index*0x68,0x68)
                 rows.append(dict(index=index,slot=row[0],
                     name=row[0x24:0x44].split(b'\0',1)[0].decode('ascii',errors='replace'),
@@ -458,14 +468,22 @@ def main():
                     character=struct.unpack_from('<h',row,0x64)[0],raw=row.hex()))
             results.append(dict(peer=peer,match_state=word(peer,0x7de30c),
                                 ready=word(peer,0x6f1188),rows=rows))
+        if args.migration_results:
+            required=set(range(config[0],actor_count))
+            required.update(word(peer,word(peer,0x774028)) for peer in peers)
+            for result in results:
+                result['rows']=[row for row in result['rows'] if row['name']]
+                slots=[row['slot'] for row in result['rows']]
+                assert len(set(slots))==len(slots) and required<=set(slots), 'Missing or duplicate surviving result slots'
         (out/(label+'.json')).write_text(json.dumps(results,indent=2))
         for result in results:
-            assert sorted(r['slot'] for r in result['rows'])==list(range(8)), 'Missing results slots'
+            if not args.migration_results:
+                assert sorted(r['slot'] for r in result['rows'])==list(range(actor_count)), 'Missing results slots'
             assert all(r['name'] for r in result['rows']), 'Missing results names'
         def records(result):
             return sorted([{k:v for k,v in row.items() if k not in ('index','raw')}
                            for row in result['rows']],key=lambda row:row['slot'])
-        assert records(results[0])==records(results[1]), 'Host/client final results differ'
+        assert all(records(result)==records(results[0]) for result in results), 'Host/client final results differ'
         if args.short_match:
             assert max(r['score'] for r in results[0]['rows'])>=5, 'Five-point limit not reached'
 
@@ -475,7 +493,7 @@ def main():
                 from crossplay_peer import RemotePeer
                 remote=RemotePeer(args.mac_host,args.mac_root,out/'mac-controller.err')
                 remote_provenance=remote.call('start',tag=args.tag,peer=peer,compatibility=identity['compatibility'],
-                    lobby_name=lobby_name,
+                    lobby_name=lobby_name,rpc_trace=args.rpc_trace,
                     command=dict(action='host' if peer==0 else 'join',directory=url,fingerprint=fingerprint,port=host_port,automatic_host=False,
                                  detect_public_address=False,migration=use_migration,
                                  transport='relay' if use_migration else 'direct'))
@@ -509,6 +527,9 @@ def main():
                 RECOMP_WINDOW_BACKGROUND='1', TSFP_DISCORD_ENABLED='0')
             if use_migration:
                 env['TSFP_ARCADE_TRACE']='1'
+            if args.rpc_trace:
+                env['TSFP_ONLINE_RPC_TRACE']='1'
+                env['PYTHONPATH']=str(ROOT/'tools/testing/online_rpc_trace')+os.pathsep+env.get('PYTHONPATH','')
             (run/'run.lock').write_text(str(os.getpid()))
             children.append(subprocess.Popen([str(exe)], cwd=ROOT, env=env,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, creationflags=subprocess.CREATE_NO_WINDOW))
@@ -563,12 +584,12 @@ def main():
         for _ in range(('deathmatch','team-deathmatch','capture-bag').index(args.game_mode)):key(0,40)
         key(0, 69)
         wait(2)
-        if args.short_match:
+        if point_limit is not None:
             report('options-settings-initial')
             initial=menu_state(0)
             score=next(r for r in initial['rows'] if r['id']==7)
-            targets=[i for i,label in enumerate(score['labels']) if re.fullmatch(r'\s*5\s+points?\s*',label,re.I)]
-            assert len(targets)==1, 'Could not identify the five-point menu choice'
+            targets=[i for i,label in enumerate(score['labels']) if re.fullmatch(rf'\s*{point_limit}\s+points?\s*',label,re.I)]
+            assert len(targets)==1, 'Could not identify the requested point-limit choice'
             def menu_key(value):
                 before=menu_state(0)
                 key(0,value)
@@ -585,7 +606,7 @@ def main():
                 choice=next(r['choice'] for r in current['rows'] if r['id']==7)
                 if choice==targets[0]:break
                 menu_key(37 if choice>targets[0] else 39)
-            else:raise RuntimeError('Five-point menu choice did not become selected')
+            else:raise RuntimeError('Requested point limit did not become selected')
             for _ in range(32):
                 if menu_state(0)['selected']==19:break
                 menu_key(40)
@@ -608,15 +629,32 @@ def main():
         report('paired-lobby')
         key(0, 69)
         wait(18)
+        if args.game_mode != 'deathmatch':
+            # Team modes stop at the native SELECT TEAM screen (phase 6).
+            # Confirm each controller through its normal input before sampling.
+            for peer in range(args.players):
+                capture_peer(peer, 'select-team')
+                key(peer,69)
+            capture_peer(0, 'teams-ready')
+            for peer in range(args.players):key(peer,69)
+            wait(5)
         report('match')
+        if point_limit is not None:
+            assert all(word(peer,0x7de464)==point_limit for peer in range(args.players)), 'Menu replay did not select the requested point limit'
         if args.migration:
-            deadline=time.monotonic()+20
+            def scored(snapshot):
+                payload=snapshot.payload
+                actors=payload[48]+payload[50]
+                return any(value>0 for actor in range(1,actors)
+                           for value in struct.unpack_from('<16h',payload,48+160+actor*84))
+            deadline=time.monotonic()+30
             while time.monotonic()<deadline:
                 with server.directory.lock:
                     room=server.directory.arcade.rooms.get(codes[0])
                     migration=room['migration'] if room else None
-                    ready=bool(migration and migration.checkpoints and any(
-                        p!=migration.host_peer and member.acknowledged for p,member in migration.members.items()))
+                    ready=bool(migration and migration.phase=='active' and any(
+                        scored(snapshot) and any(p!=migration.host_peer and snapshot.digest in member.acknowledged
+                            for p,member in migration.members.items()) for snapshot in migration.checkpoints))
                 if ready:break
                 wait(.1)
             with server.directory.lock:
@@ -693,7 +731,8 @@ def main():
                 wait(args.seconds)
                 report(label+'-finished')
                 for peer in survivors:
-                    assert word(peer,0x76b1a4)==15 and word(peer,0x7de30c)==7, 'A surviving guest lost the migrated game'
+                    assert word(peer,0x76b1a4)==15 and (word(peer,0x7de30c)==7 or
+                        args.migration_results and word(peer,0x7de30c)==8 and word(peer,0x6f1188)==1), 'A surviving guest lost the migrated game'
                     rows=[s for s in samples if s['peer']==peer and s['seconds']>marker and s['match_state']==7]
                     assert rows and rows[-1]['tick']>rows[0]['tick']+120, 'Match clock did not resume'
                     assert any(len({tuple(s['actors'][i]['position']) for s in rows if s['actors'][i]})>3
@@ -718,10 +757,42 @@ def main():
                 report('after-second-host-loss')
                 assert elected and elected-1 in survivors and word(successor,0x76b140)==1, 'Second native promotion failed'
                 verify_continuation(survivors, successor, old_tick, 'second-migration')
+            if args.migration_results:
+                await_results('migration-results',survivors,180)
+                with server.directory.lock:
+                    room=server.directory.arcade.rooms[codes[0]]
+                    previous_match=room.get('match_id');previous_epoch=room['epoch']
+                previous_ticks={peer:word(peer,0x7de318) for peer in survivors}
+                for _ in range(2):
+                    for peer in survivors:key(peer,69)
+                    wait(2)
+                report('migration-options')
+                for peer in survivors:
+                    if peer!=successor:key(peer,69)
+                key(successor,40,69)
+                deadline=time.monotonic()+40
+                while time.monotonic()<deadline:
+                    if all(word(peer,0x76b1a4)==15 and word(peer,0x7de30c)==7 and
+                           word(peer,0x6f1188)==0 and word(peer,0x7de318)<previous_ticks[peer] for peer in survivors):break
+                    wait(.1)
+                else:raise RuntimeError('Migrated host could not start a fresh rematch')
+                report('migration-rematch')
+                for peer in survivors:
+                    config=read(peer,0x7de400,3);pool=word(peer,0x7356d8)
+                    node=word(peer,0x774028)
+                    assert config[1:]==bytes((1,6)) and word(peer,node)<config[0], 'Rematch roster lost a live controller or bots'
+                    assert all(word(peer,pool+slot*0xea0+0xa6c)==0 for slot in range(config[0]+config[2])), 'Rematch retained previous scores'
+                deadline=time.monotonic()+5
+                while time.monotonic()<deadline:
+                    with server.directory.lock:
+                        room=server.directory.arcade.rooms[codes[0]]
+                        fresh=room['epoch']>previous_epoch and room.get('match_id')!=previous_match
+                    if fresh:break
+                    wait(.1)
+                assert fresh and room['host_peer']==successor+1, 'Rematch did not retain the elected owner with a new round identity'
+                await_results('migration-rematch-results',survivors,180)
             completed=True
             return
-        if args.short_match:
-            assert all(word(peer,0x7de464)==5 for peer in (0,1)), 'Menu replay did not select five points'
         # Movement of each human remains independently observable.
         for peer in range(2):
             if args.require_results and all(word(p,0x7de30c)==8 for p in (0,1)):break
@@ -793,7 +864,9 @@ def main():
             require_rematch_results=args.require_rematch_results,
             inspect_setup=args.inspect_setup,
             short_match=args.short_match,
+            point_limit=point_limit,
             migration=args.migration, migration_room=use_migration, game_mode=args.game_mode, repeat_migration=args.repeat_migration,
+            migration_results=args.migration_results,
             shared_service=args.shared_service,
             service_address=url if args.shared_service else None,
             compatibility=identity['compatibility'], remote=remote_provenance,
