@@ -19,7 +19,8 @@ their existing behavior.
 `online_arcade_client.ArcadeSession` supervises the dynamic host bridge and a separate
 authenticated loopback control socket. It verifies SHA-256 checkpoint identities,
 retries bounded CRC-checked fragments, and sends native acknowledgements to the
-service. Graceful departure waits for a backup to acknowledge the final frozen
+service. Native hosts capture twice per second; each newly validated checkpoint
+is acknowledged immediately, with bounded ACK retries. Graceful departure waits for a backup to acknowledge the final frozen
 checkpoint; a lone owner can leave without a backup. Crash migration chooses the
 freshest acknowledged checkpoint and may roll back to that frame. No viable backup
 closes the room. The server keeps the latest two checkpoints in memory.
@@ -55,6 +56,8 @@ include all new modules. Matching native rebuilds are required.
   control codec, transport and game-thread adapter against isolated guest-memory
   fixtures. Includes six bots, score/tick restore, missing/stale/invalid state,
   authenticated control, fragmented transfer and native peer-ID promotion.
+- `tests/network/multiplayer_exit.c`: production pause/results leave hooks defer
+  host unload until fencing, then unload only the departing game.
 - `tests/network/test_arcade_service.py`: three real TLS/UDP companions, using the
   exact C fixture ABI. Normal departure followed by replacement-host loss restores
   the expected bytes and keeps real gameplay datagrams flowing between survivors.

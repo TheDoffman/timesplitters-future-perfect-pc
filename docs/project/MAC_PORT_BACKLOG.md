@@ -10452,9 +10452,10 @@ UDP 41821 probes pass via router hairpin with server-only UPnP mapping. No new
 native adapter is needed. Full outside-network game matches and matching rebuilt/
 published clients remain separate acceptance. See STATUS and the relay setup guide.
 
-Arcade migration coordinator prototype (feature/online-host-migration): shared
-Python policy only, not connected to any native platform or running service.
-Windows and physical Mac deterministic policy tests18 each pass. Native checkpoint capture/restore,
-authority adoption and actual three-game host migration are not implemented on
-Windows/Mac/Linux. No host-specific policy fork is required. See STATUS and
-docs/development/arcade-host-migration.md before enabling or advertising support.
+Arcade host migration (feature/online-host-migration): shared native adapter and
+v3 service/companion are implemented. Physical Mac arm64/Python3.12 compiles the
+production native capture/control/authority adapter fixture and passes it plus
+the coordinator/three-companion handoff tests (21 total,7bf557f3). Existing Mac
+service has not been updated. Full native Mac game continuation and Windows/Mac
+crossplay remain unverified; fixtures do not prove AI decisions/combat/respawn.
+See STATUS and docs/development/arcade-host-migration.md before deployment.
