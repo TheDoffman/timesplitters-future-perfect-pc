@@ -1,4 +1,4 @@
-[Sticks](controller-deadzones.md). [Online](multiplayer-ui.md).
+[Sticks](controller-deadzones.md). [Online UI](multiplayer-ui.md).
 [Keys](control-presets.md); [Tex](texture-preference.md).
 [Arms](video-options.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).

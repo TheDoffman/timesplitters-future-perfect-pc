@@ -202,19 +202,19 @@ focus, button and timeout assertions remain enforced. Windows (12 tests) and
 physical Mac Tk9.1 (11 plus one Windows-only skip) pass; hosted Tk acceptance
 is recorded separately in STATUS. Product layout is unchanged.
 
-## Responsive Online startup
+## Online opening feedback
 
-`online.wait_for_content` creates a themed loading panel before the strict
-`network-identity.verify_content` scan. A daemon worker does disk hashing only;
-Tk updates stay on the main thread through a queue polled every100ms. The browser
-and all host/join callbacks are constructed only after verification succeeds.
-Failures remain visible with Return/Cancel; closing the window, parent exit or
-the stop handshake returns immediately even if a disk read remains blocked.
-No verification cache or compatibility bypass was introduced. Scan timing is
-printed as `[ONLINE] Content verification ...` for diagnostics. This Python/Tk
-path is shared by Windows, Mac and Linux packages.
+PR534's extra Python loading panel was removed: it delayed the Multiplayer
+options and did not explain the game's intentional wait. Original strict
+pre-browser compatibility verification and browser lifecycle are restored.
+The shared native Online callback returns immediately with a pending flag.
+`pc_online_notice.inc` draws a native-font opening/setup instruction; after
+two draws the next menu input tick enters the original blocking companion call.
+The presented notice remains on the game while setup owns input.
+Completion or cancellation clears the pending state. Windows/Mac/Linux use the
+same guest menu path with their existing process/window adapters.
+`fov_settings.c` checks deferred launch, one-shot dispatch and cancellation;
+existing companion tests retain actual host/join/cancel coverage.
 
-`test_online_companion.py` uses separate real-Tk processes to hold verification
-behind a test event, assert the window paints/responds, and check success,
-file mismatch, cancellation, parent exit and stop requests. Existing complete
-browser host/join/cancel tests still exercise actual content checking and bridges.
+Builds without a desktop networking adapter provide a no-op handoff tick; the
+native syntax-only regression covers this disabled-feature path.

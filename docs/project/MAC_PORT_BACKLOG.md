@@ -3082,7 +3082,7 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
-- **Shared campaign lifecycle (2026-11-09, uncommitted on story-coop-shared-lifecycle):**
+- **Shared campaign lifecycle (2026-11-09, 4d00f4e0 on online-story-coop):**
   Shared campaign policy now applies checkpoint capture/extra-player bookmarks,
   host-only restarts, cinematic cues, intro/ending/reward transitions, departures
   and rejoin to all13 missions. Extra starts use each mission's authored pad

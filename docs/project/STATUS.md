@@ -1,3 +1,28 @@
+## Story Coop branch handoff - 2026-11-09
+
+Committed the shared campaign work and host pause-menu changes as4d00f4e0,
+then fast-forwarded online-story-coop to that commit at the user's request.
+Merged origin/mainc2555147's Online-opening notice work; the only conflict was
+this validation log, resolved by retaining both histories. Windows CPU checks:
+54 menu and five menu-input cases pass. Companion lifetime checks pass4 with
+three Linux-package skips when run with desktop access; the restricted sandbox
+could not complete its three browser cases. Both merge-parent context checks
+pass. Windows x64/MSVC14.42 build and all built-in checks pass with version
+0.6.0-story-coop-beta.1. The first run compiled the game but failed the existing
+mouse-camera yaw assertion; an unchanged incremental rerun passed all checks.
+No push or publication.
+Continue Story changes on online-story-coop.
+
+Online notice CI follow-up: standalone menu-input fixture supplies the Online
+handoff hook; real lifecycle coverage remains in fov_settings.c.
+
+Online opening correction: PR534 loading panel removed; shared native menu
+shows opening/setup feedback before the original blocking Online handoff.
+Local menu/companion checks8 passed,5 platform skips; final handoff suite4 passed,
+2 skips. Windows0.6.0 build and built-in checks passed. Actual Windows menu capture confirmed the opening message remains visible during
+the companion handoff (online-opening-message.png).
+Native Mac/Linux visual acceptance pending.
+
 ## Host lobby caption - 2026-11-09 (local validation)
 
 On story-coop-shared-lifecycle at2055379b plus local changes, Story hosts now

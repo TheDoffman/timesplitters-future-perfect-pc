@@ -26,7 +26,7 @@ import queue
 import threading
 import time
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import messagebox
 
 from online_platform import GameProcess, show_error
 from online_client import Client, Session
@@ -34,72 +34,6 @@ from online_host import fetch_public_ipv4, invitation, parse_invitation, start_m
 from online_paths import ROOT, HANDSHAKES, SETTINGS, MANIFEST, TOOLS
 from online_theme import OnlineTheme, build_browser, build_invitation
 
-
-
-
-def wait_for_content(window, parent, stop_path, verify):
-    """Keep the desktop responsive while strict content verification reads disk.
-
-    The worker never touches Tk or publishes a bridge. Cancellation may abandon
-    a disk read; a daemon worker cannot keep the companion/game disabled.
-    """
-    panel = ttk.Frame(window, padding=28)
-    panel.pack(fill='both', expand=True)
-    ttk.Label(panel, text='Preparing Online', style='Title.TLabel').pack(anchor='w')
-    status = tk.StringVar(value='Checking game files for multiplayer compatibility...')
-    label = ttk.Label(panel, textvariable=status, wraplength=680)
-    label.pack(anchor='w', fill='x', pady=18)
-    panel.bind('<Configure>', lambda event: label.configure(wraplength=max(120, event.width-56)))
-    progress = ttk.Progressbar(panel, mode='indeterminate')
-    progress.pack(fill='x', pady=12)
-    progress.start(20)
-    ttk.Label(panel, text='Large game files or slower drives can take longer. You can cancel and return to the game.',
-              wraplength=680).pack(anchor='w', pady=12)
-    ttk.Button(panel, text='Cancel / return to game', command=window.destroy).pack(anchor='e', pady=12)
-    results = queue.Queue()
-    accepted = [False]
-    started = time.monotonic()
-
-    def run():
-        try:
-            verify()
-            results.put(None)
-        except Exception as error:
-            results.put(str(error) or type(error).__name__)
-
-    def poll():
-        if parent.exited() or stop_path.exists():
-            window.destroy()
-            return
-        try:
-            error = results.get_nowait()
-        except queue.Empty:
-            window.after(100, poll)
-            return
-        progress.stop()
-        print(f'[ONLINE] Content verification {"failed" if error else "passed"} in '
-              f'{time.monotonic()-started:.2f}s', flush=True)
-        if error:
-            status.set('Unable to open Online.\n\n'+error)
-            # Keep monitoring game exit even while the error is visible.
-            window.after(100, monitor)
-        else:
-            accepted[0] = True
-            window.quit()
-
-    def monitor():
-        if parent.exited() or stop_path.exists():
-            window.destroy()
-        else:
-            window.after(100, monitor)
-
-    # Paint the loading window before starting any game-file reads.
-    window.after_idle(lambda: threading.Thread(target=run, daemon=True).start())
-    window.after(100, poll)
-    window.mainloop()
-    if accepted[0]:
-        panel.destroy()
-    return accepted[0]
 
 
 def main():
@@ -113,35 +47,28 @@ def main():
     private = HANDSHAKES.resolve()
     if result.parent != private or result.name != f'{args.pid}.ready':
         raise ValueError('Unexpected Online handshake path')
+    identity_path = TOOLS/'network-identity.py'
+    if not identity_path.is_file():
+        identity_path = repo_file(ROOT, 'tools', 'network-identity.py')
+    spec = importlib.util.spec_from_file_location('network_identity', identity_path)
+    identity = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(identity)
+    manifest = json.loads(MANIFEST.read_text())
+    identity.verify_content(Path(os.environ['RECOMP_GAME_DIR']), manifest)
+    if manifest['compatibility'] != args.compatibility:
+        raise ValueError('Online tools and executable have different build identities; rebuild first')
+
     parent = GameProcess(args.pid)
-    window = tk.Tk()
-    window.title(('Online Story' if args.mode == 'story' else 'Online')+' - TimeSplitters Future Perfect')
-    window.geometry('820x750')
-    window.minsize(760, 720)
-    theme = OnlineTheme(window)
-
-    def verify():
-        identity_path = TOOLS/'network-identity.py'
-        if not identity_path.is_file():
-            identity_path = repo_file(ROOT, 'tools', 'network-identity.py')
-        spec = importlib.util.spec_from_file_location('network_identity', identity_path)
-        identity = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(identity)
-        manifest = json.loads(MANIFEST.read_text())
-        identity.verify_content(Path(os.environ['RECOMP_GAME_DIR']), manifest)
-        if manifest['compatibility'] != args.compatibility:
-            raise ValueError('Online tools and executable have different build identities; rebuild first')
-
-    if not wait_for_content(window, parent, result.with_suffix('.stop'), verify):
-        parent.close()
-        for path in (result, result.with_suffix('.stop')):
-            path.unlink(missing_ok=True)
-        return
     state = Path(os.environ.get('TSFP_ONLINE_SETTINGS', SETTINGS))
     try:
         saved = json.loads(state.read_text())
     except (OSError, ValueError):
         saved = {}
+    window = tk.Tk()
+    window.title(('Online Story' if args.mode == 'story' else 'Online')+' - TimeSplitters Future Perfect')
+    window.geometry('820x750')
+    window.minsize(760, 720)
+    theme = OnlineTheme(window)
     address = tk.StringVar(value=saved.get('directory', 'https://127.0.0.1:30820'))
     pin = tk.StringVar(value=saved.get('fingerprint', ''))
     name = tk.StringVar(value=saved.get('name', 'TimeSplitters lobby'))

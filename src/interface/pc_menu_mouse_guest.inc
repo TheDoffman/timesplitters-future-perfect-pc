@@ -334,6 +334,7 @@ void pc_display_menu_mouse_footer(void (*original)(void))
     settings_tabs_footer(menu);
 #ifndef TSFP_MENU_MOUSE_TEST
     main_update_notice_draw(menu);
+    online_opening_draw(menu);
 #endif
 }
 /* Share the visible, enabled hit area between clicks and hover feedback. */
@@ -412,6 +413,7 @@ static int menu_mouse_footer_hit(uint32_t menu,float x,float y,unsigned sw,unsig
  * navigation. Supply their edges just after original pad input is gathered. */
 void pc_display_menu_mouse_input(void (*original)(void))
 {
+    online_opening_tick();
     uint32_t menu=WORD_AT(g_esp+4);
     MenuMouseDispatch *s=menu_mouse_dispatch;
     GuestRegisters r;

@@ -4,6 +4,10 @@ The user confirmed on 2026-11-09 that Time to Split is playable from start to
 finish with two, three and four players. This is human acceptance of mission
 one, not agent verification of the remaining campaign.
 
+The shared lifecycle and host pause-menu changes were committed as4d00f4e0
+and integrated into online-story-coop on2026-11-09. Continue Story work there;
+the temporary lifecycle branch is no longer the active development branch.
+
 `pc_story_load.inc` includes `pc_story_campaign.inc` before the shared adapters.
 It owns campaign eligibility and the original US mission-table scene lookup:
 13 records at4D1AC0/stride44h, gameplay scene at+6, intro/outro at+20h/+24h.
