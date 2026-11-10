@@ -255,6 +255,7 @@
     "tests/network/test_online_theme.py",
     "tests/network/test_online.py",
     "tests/network/test_online_relay.py",
+    "tests/network/test_online_migration.py",
     "tests/network/test_online_host.py",
     "tests/network/test_network_identity.py",
     "tests/network/test_network_guest_dispatch.py",

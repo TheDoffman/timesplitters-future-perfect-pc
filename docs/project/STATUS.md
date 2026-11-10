@@ -43386,3 +43386,17 @@ UPnP rules and public IP need verification after router reboot/address changes.
 
 No real game rebuild, complete WAN match, load/capacity result or published-client
 compatibility is claimed by these transport fixtures.
+
+## Arcade host migration coordinator prototype — 2026-11-10
+
+User scope is Arcade first. `feature/online-host-migration` depends on relay
+`a2d81939`. New isolated `ArcadeMigration` policy has 18 passing Windows tests:
+stable IDs, authority fencing, engine-acknowledged bounded checkpoints, native
+restore barrier, graceful/crash election, failed successor, survivor expiry,
+repeated handoff and safe shutdown. It is registered in runtime CI but has no
+production imports. Actual checkpoint capture/restore, directory/relay credential
+and epoch integration, native authority change and full-game continuation are
+not implemented; host migration must not be described as usable or deployed.
+The running Mac service and pushed friend-test relay branch remain unchanged.
+Supported-US original-code inspection confirms full teardown on host loss and
+destructive host creation; see docs/development/arcade-host-migration.md.
