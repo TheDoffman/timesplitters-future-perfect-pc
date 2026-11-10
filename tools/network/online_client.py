@@ -60,8 +60,9 @@ class Client:
                 headers['Authorization'] = 'Bearer '+token
             connection.request(method, path, json.dumps(body).encode() if body is not None else None, headers)
             response = connection.getresponse()
-            data = response.read(65537)
-            if len(data) > 65536:
+            limit = 131072 if path.startswith('/v3/') else 65536
+            data = response.read(limit+1)
+            if len(data) > limit:
                 raise ValueError('Directory response too large')
             result = json.loads(data)
             if not 200 <= response.status < 300:

@@ -27,6 +27,7 @@ import zipfile
 COMPANION = ('online.py', 'online_client.py', 'online_transport.py', 'online_host.py',
              'online_paths.py', 'online_theme.py', 'online_platform.py', 'lobby_server.py',
              'online-service.json', 'network-identity.py')
+COMPANION += ('online_migration.py', 'online_arcade_service.py', 'online_arcade_client.py')
 
 
 def bundle_standard_library(base, runtime, version):

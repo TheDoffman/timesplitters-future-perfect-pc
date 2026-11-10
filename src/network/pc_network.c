@@ -34,6 +34,9 @@ static int local_session_created,local_session_registered;
 static const unsigned char compatibility[32] = TSFP_NETWORK_COMPATIBILITY;
 static unsigned rejected;
 static void bot_reset(void);
+#ifdef TSFP_ARCADE_MIGRATION
+static void arcade_reset(void);
+#endif
 static void developer_reset(void);
 static unsigned sent_logs, received_logs;
 static int online;
@@ -183,6 +186,9 @@ static int initialize(void)
 static void shutdown_locked(void)
 {
     unsigned i;
+#ifdef TSFP_ARCADE_MIGRATION
+    arcade_reset();
+#endif
     bot_reset();developer_reset();
     memset(local_session_id,0,sizeof local_session_id);
     local_session_created=local_session_registered=0;
@@ -437,6 +443,11 @@ void pc_network_bots_send(const PcNetworkBotState *state)
 {
     unsigned i,j;unsigned char data[20+sizeof *state];
     net_lock(&network_lock);
+#ifdef TSFP_ARCADE_MIGRATION
+    if(bot_context.role==1 && pc_network_bot_state_valid(state,bot_context.humans,bot_context.bots)) {
+        bot_pending[state->slot]=*state;bot_seen[state->slot]=1;
+    }
+#endif
     if(!initialized || !local_session_registered || bot_context.role!=1 ||
        !pc_network_bot_state_valid(state,bot_context.humans,bot_context.bots)) goto done;
     const size_t bytes=state->ragdoll.count?sizeof *state:offsetof(PcNetworkBotState,ragdoll);
@@ -678,3 +689,4 @@ uint32_t pc_network_call(uint32_t va,const uint32_t *a,ptrdiff_t offset)
     net_unlock(&network_lock);
     return result;
 }
+#include "pc_network_arcade.inc"

@@ -30,6 +30,7 @@ from tkinter import messagebox
 
 from online_platform import GameProcess, show_error
 from online_client import Client, Session
+from online_arcade_client import ArcadeSession
 from online_host import fetch_public_ipv4, invitation, parse_invitation, start_match
 from online_paths import ROOT, HANDSHAKES, SETTINGS, MANIFEST, TOOLS, service_defaults
 from online_theme import OnlineTheme, build_browser, build_invitation
@@ -91,6 +92,7 @@ def main():
     session = [None]
     automation = os.environ.get('TSFP_ONLINE_TEST_COMMAND')
     requested_transport = ['relay']
+    migrating = [args.mode == 'arcade']
     busy = [False]
     stopping = threading.Event()
     replies = queue.Queue()
@@ -159,7 +161,8 @@ def main():
     def refresh():
         try:
             directory = client()
-            work(lambda: directory.request('GET', '/v2/lobbies?compatibility='+args.compatibility+'&mode='+args.mode), refreshed)
+            work(lambda: directory.request('GET', ('/v3' if migrating[0] else '/v2')+
+                 '/lobbies?compatibility='+args.compatibility+'&mode='+args.mode), refreshed)
         except Exception as error:
             status.set(str(error))
 
@@ -170,7 +173,8 @@ def main():
                 address.set(directory_address)
                 pin.set(fingerprint)
             directory = client()
-            work(lambda: Session.join(directory, args.compatibility, join_code, mode=args.mode), connected)
+            work(lambda: ArcadeSession.open(directory, args.compatibility, code=join_code) if migrating[0]
+                 else Session.join(directory, args.compatibility, join_code, mode=args.mode), connected)
         except Exception as error:
             status.set(str(error))
 
@@ -193,7 +197,8 @@ def main():
                            'Starting the directory...')
             else:
                 directory = client()
-                work(lambda: Session.create(directory, args.compatibility, host_name, host_port, public,
+                work(lambda: ArcadeSession.open(directory, args.compatibility, name=host_name, public=public)
+                     if migrating[0] else Session.create(directory, args.compatibility, host_name, host_port, public,
                      mode=args.mode, transport=requested_transport[0]), connected)
         except Exception as error:
             status.set(str(error))
@@ -246,6 +251,7 @@ def main():
             raise ValueError('Online test command must be inside the isolated network-validation directory')
         command = json.loads(test_path.read_text())
         requested_transport[0] = command.get('transport', 'direct')
+        migrating[0] = args.mode == 'arcade' and command.get('migration', False)
         address.set(command['directory'])
         pin.set(command.get('fingerprint', ''))
         if command['action'] == 'host':
@@ -263,7 +269,7 @@ def main():
                 window.after(300, join_selected)
             directory = client()
             window.after(300, lambda: work(lambda: directory.request(
-                'GET', '/v2/lobbies?compatibility='+args.compatibility), choose))
+                'GET', ('/v3' if migrating[0] else '/v2')+'/lobbies?compatibility='+args.compatibility), choose))
         elif command['action'] == 'cancel':
             window.after(300, window.destroy)
         else:

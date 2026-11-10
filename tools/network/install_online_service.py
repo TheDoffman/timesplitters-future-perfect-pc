@@ -14,7 +14,7 @@ from online_host import certificate
 
 LABEL = 'com.timesplitters.online'
 SERVER_FILES = ('lobby_server.py', 'online_transport.py', 'online_client.py',
-                'online_host.py', 'online_paths.py')
+                'online_host.py', 'online_paths.py', 'online_migration.py', 'online_arcade_service.py')
 
 
 def prepare(root, address, *, python=None, directory_port=30820, relay_port=30821, lan_address=None):

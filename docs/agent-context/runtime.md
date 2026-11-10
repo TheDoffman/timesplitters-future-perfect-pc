@@ -1,6 +1,7 @@
 [Sticks](controller-deadzones.md).
 [2970](control-presets.md).
 [Tools](developer-tools-integration.md).
+[Migration](multiplayer-ui.md).
 
 [FOV node filter](video-options.md); [Uplink](native-uplink.md).
 [UI](controls-options.md); [Kill feed](../development/arcade-kill-feed.md).

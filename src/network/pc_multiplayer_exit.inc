@@ -1,4 +1,7 @@
 #include "pc_network_profiles.inc"
+#ifdef TSFP_ARCADE_MIGRATION
+#include "pc_arcade_api.h"
+#endif
 /* Shared Arcade Online/System Link exit routing. Keep directory membership
  * separate from the original guest match transport. Story retains its adapter. */
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
@@ -44,6 +47,9 @@ static void multiplayer_leave_confirm(void)
 {
     const uint32_t menu=WORD_AT(g_esp+4u);
     if(multiplayer_match() && WORD_AT(0x76b140u)==1u && guest_writable(menu,0x190u) && WORD_AT(menu+0x18cu)==0x40u) {
+#ifdef TSFP_ARCADE_MIGRATION
+        if(pc_network_arcade_request_leave()) {WORD_AT(0x789640u)=0;g_eax=0;g_esp+=4u;return;}
+#endif
         multiplayer_leave(1u,1);
         WORD_AT(0x789640u)=0;g_eax=0;g_esp+=4u;return;
     }
@@ -109,12 +115,24 @@ void pc_multiplayer_exit_action(void (*original)(void),unsigned action)
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     if(!action && multiplayer_match() && WORD_AT(0x76b140u)==1u &&
        (original==sub_002EAF60_gen || original==sub_002EB030_gen)) {
+#ifdef TSFP_ARCADE_MIGRATION
+        if(pc_network_arcade_request_leave()) {g_eax=0;g_esp+=4u;return;}
+#endif
         multiplayer_leave(1u,1);
         g_eax=0;g_esp+=4u;return;
     }
 #endif
     pc_story_network_result_action(original,action);
 }
+#ifdef TSFP_ARCADE_MIGRATION
+void pc_multiplayer_migration_leave(void)
+{
+    if(!multiplayer_match())return;
+    multiplayer_leave(3u,1);
+    GuestRegisters saved;save_registers(&saved);
+    guest_call(sub_00065420,0);restore_registers(&saved);
+}
+#endif
 void pc_multiplayer_return_lobby(void (*original)(void))
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)

@@ -336,7 +336,7 @@ static void pc_network_bots_guest_decode(void (*original)(void))
     original();
 }
 
-static void pc_network_bots_guest_frame(void (*original)(void))
+static void pc_network_bots_guest_frame_body(void (*original)(void))
 {
     original();
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
@@ -538,6 +538,21 @@ static void pc_network_bots_guest_frame(void (*original)(void))
 #endif
 }
 
+#ifdef TSFP_ARCADE_MIGRATION
+#include "pc_arcade_api.h"
+#endif
+static void pc_network_bots_guest_frame(void (*original)(void))
+{
+#ifdef TSFP_ARCADE_MIGRATION
+    if(pc_arcade_migration_frame(0)) {
+        pc_arcade_migration_frame(1);g_esp+=4u;return;
+    }
+#endif
+    pc_network_bots_guest_frame_body(original);
+#ifdef TSFP_ARCADE_MIGRATION
+    pc_arcade_migration_frame(1);
+#endif
+}
 /* Opt-in bounded diagnostic: record actual hit delivery, not health settings.
  * Tests route this file into their disposable run directory. */
 static void pc_network_bots_guest_damage(void (*original)(void))

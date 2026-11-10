@@ -2141,6 +2141,14 @@
       ]
     },
     {
+      "name": "3000-arcade-migration-build.patch",
+      "path": "patches/network/3000-arcade-migration-build.patch",
+      "sha256": "8c6479f6b5010dfa7e67f2af754bab0ce927ccd8d38ccc73894c73a71ab676e7",
+      "targets": [
+        "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",
