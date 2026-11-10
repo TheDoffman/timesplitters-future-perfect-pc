@@ -1,4 +1,4 @@
-[Sticks](controller-deadzones.md).
+[Prompts](controls-options.md).
 [Keys](control-presets.md).
 [Tools](developer-tools-integration.md).
 

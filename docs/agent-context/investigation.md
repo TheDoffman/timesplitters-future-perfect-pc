@@ -498,3 +498,6 @@ Patch2630 extends the explicit Developer Tools tail after2620. The repository
 context exact-order fixture now retains a92-entry tail, including2630 before
 the source-worktree/shared-depth follow-ups. Index generation and discovery
 contracts are unchanged; stage this intended new patch before refreshing.
+
+Patch-index order fixtures now include2955 native explicit-controller prompts;
+historical partial stacks defer it with their omitted late-input dependencies.

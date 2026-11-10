@@ -29,8 +29,9 @@ static long g_pc_auto_pad;
 int pc_settings_capture_pump(void){return test_capture;}
 static int pc_controls_accept_pad(void){return test_focus&&!test_blocked;}
 static int tsfp_native_input_focused(void){return test_focus;}
-static int pc_prompts_keyboard_active(void){return 1;}
-static void pc_prompts_controller(const RecompPadState *p,int live){(void)p;(void)live;}
+static int test_keyboard_prompts=1,prompt_samples;
+static int pc_prompts_keyboard_active(void){return test_keyboard_prompts;}
+static void pc_prompts_controller(const RecompPadState *p,int live){prompt_samples++;if(live && (p->buttons || p->lx || p->ly || p->rx || p->ry || p->left_trigger || p->right_trigger))test_keyboard_prompts=0;}
 int pc_controls_weapon_slots_active(void){return 0;}
 static int pc_controls_terminal_click(void){return 0;}
 static int pc_controls_key_down(int key){(void)key;return 0;}
@@ -162,6 +163,18 @@ int main(void)
     test_sample(1,&two);assert(two.sThumbLY>0 && !two.sThumbRY);
     connected=0;held_key=0;
 #endif
+    /* Explicit P1 controller must notify the prompt selector on every host,
+     * just as the keyboard profile's automatic controller fallback does. */
+    test_gameplay=0;test_focus=1;test_capture=test_blocked=0;
+    connected=1;multi=0;selected_slot=2;memset(&state,0,sizeof state);state.buttons=RECOMP_PAD_A;
+    g_ctl[0].device=DEV_PAD;g_ctl[0].pad=2;
+    int previous_samples=prompt_samples;test_keyboard_prompts=1;
+    test_sample(0,&one);
+    assert(one.bAnalogButtons[XBOX_BUTTON_A]==255);
+    assert(prompt_samples==previous_samples+1 && !test_keyboard_prompts);
+    /* A different player's pad sample cannot reset P1's device prompt. */
+    previous_samples=prompt_samples;test_sample(1,&two);
+    assert(prompt_samples==previous_samples && !test_keyboard_prompts);
     puts("PASS: assigned P2 pad cannot steer P1; free-pad fallback, disconnect and focus gating");
     return 0;
 }

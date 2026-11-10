@@ -314,6 +314,12 @@ def patch_records(paths):
         paths.remove(deadzones)
         paths.append(deadzones)
 
+    # Prompt activity includes explicit native P1 controller assignments.
+    prompts = by_name.get('2955-native-explicit-controller-prompts.patch')
+    if prompts:
+        paths.remove(prompts)
+        paths.append(prompts)
+
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

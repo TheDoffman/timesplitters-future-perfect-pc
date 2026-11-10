@@ -315,3 +315,13 @@ They identify this branchâ€™s behavior as not yet published.
 
 The local-player sampler fixture uses external linkage for its reload stub to
 match pc_input.h on Clang as well as MSVC.
+
+#540 native prompt activity: patch2955 extends the native sampler's existing
+keyboard-player automatic pad detection to explicit Player1 DEV_PAD assignments.
+Only P1 updates the shared prompt state; focus/modal gates are respected. Button,
+stick and trigger activity still use pc_prompts.c's existing thresholds and last-
+input tracking; controller selection does not require disabling keyboard/mouse.
+The headless production sampler fixture fails on the old native path and passes
+on Windows and SDL after the patch. Native SDL self-test also exercises an explicit
+P1 virtual-pad assignment, physical controller tokens, then restores its isolated
+controls configuration. This is synthetic input, not physical Steam Deck acceptance.

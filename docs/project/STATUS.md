@@ -1,3 +1,18 @@
+#540 controller prompts (local, main77b57432): report describes Linux0.6.0 with
+controller-only input; no issue comments or diagnostics. Production sampler
+regression reproduces explicit P1 DEV_PAD omission: Windows passes, native SDL
+fails to notify prompts. New patch2955 supplies that activity notification while
+preserving P1 ownership, focus/modal gates and existing activity thresholds.
+49 sampler tests pass on Windows, including compiled SDL-path regression.
+Ubuntu/WSL runs the four production sampler ownership/prompt cases successfully
+with Clang (both adapter modes and negative controls); this is headless synthetic
+pad input, not physical Steam Deck delivery. Supported Windows Release build,
+built-in checks and crash symbols pass. Native SDL virtual-pad self-test extended;
+59 repository/patch-upgrade checks pass (1425.61s), including fresh/repeated
+application, historical controls/Mac upgrades and branch/line-ending preservation.
+Context and whitespace checks pass. Full native SDL virtual-pad self-test and
+physical Steam Deck/Mac acceptance remain pending; no hardware claim. No personal settings/saves edited. Keep #540 open until published.
+
 Controller/keyboard coupling follow-up (local, base2617f4a3): the earlier live
 check covered default axes, missing swapped Move/Look. Shared semantic routing
 now reads per-player axis selectors and routes keyboard movement/optional look
