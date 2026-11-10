@@ -94,7 +94,7 @@ int main(void)
     REQUIRE(pc_network_arcade_snapshot(download) && !memcmp(snapshot,download,sizeof *snapshot));
     REQUIRE(pc_arcade_migration_frame(0)==1); /* Apply checkpoint while frozen. */
     REQUIRE(WORD_AT(0x76b140u)==2u && WORD_AT(0x7de318u)==3600u && rebases==1u);
-    REQUIRE(WORD_AT(0x50000u+0xa6cu)==snapshot->totals[0]);
+    REQUIRE((int32_t)WORD_AT(0x50000u+0xa6cu)==snapshot->totals[0]);
     REQUIRE(presents==6u && refreshes==5u); /* Five live bots, one absent/dead. */
     for(unsigned i=0;i<5u;i++) {
         const uint32_t entity=word(&target,0x50000u+(3u+i)*0xea0u);
