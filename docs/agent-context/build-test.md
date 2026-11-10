@@ -1,4 +1,4 @@
-[Prompts](controls-options.md). [Online UI](multiplayer-ui.md).
+[Input](control-presets.md). [Online UI](multiplayer-ui.md).
 [Axes/axes](control-presets.md); [Tex](texture-preference.md).
 [Arms](video-options.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).

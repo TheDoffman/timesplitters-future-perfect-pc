@@ -1,4 +1,4 @@
-[Prompts](controls-options.md).
+[Input](control-presets.md).
 [Keys](control-presets.md).
 [Tools](developer-tools-integration.md).
 

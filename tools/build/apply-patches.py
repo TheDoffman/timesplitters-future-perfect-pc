@@ -320,6 +320,12 @@ def patch_records(paths):
         paths.remove(prompts)
         paths.append(prompts)
 
+    # Keyboard actions stay semantic for legacy as well as newly seeded files.
+    keyboard = by_name.get('2960-keyboard-gameplay-independence.patch')
+    if keyboard:
+        paths.remove(keyboard)
+        paths.append(keyboard)
+
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate
