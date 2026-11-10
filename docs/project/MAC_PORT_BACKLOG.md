@@ -10483,7 +10483,7 @@ published clients remain separate acceptance. See STATUS and the relay setup gui
 
 Arcade migration coordinator prototype (feature/online-host-migration): shared
 Python policy only, not connected to any native platform or running service.
-Windows deterministic policy tests18 pass. Native checkpoint capture/restore,
+Windows and physical Mac deterministic policy tests18 each pass. Native checkpoint capture/restore,
 authority adoption and actual three-game host migration are not implemented on
 Windows/Mac/Linux. No host-specific policy fork is required. See STATUS and
 docs/development/arcade-host-migration.md before enabling or advertising support.

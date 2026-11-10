@@ -43390,7 +43390,8 @@ compatibility is claimed by these transport fixtures.
 ## Arcade host migration coordinator prototype — 2026-11-10
 
 User scope is Arcade first. `feature/online-host-migration` depends on relay
-`a2d81939`. New isolated `ArcadeMigration` policy has 18 passing Windows tests:
+`a2d81939`. New isolated `ArcadeMigration` policy has 18 passing Windows tests
+and the same18 passing on physical Mac arm64/Python3.12 (prototype40a5a3b1):
 stable IDs, authority fencing, engine-acknowledged bounded checkpoints, native
 restore barrier, graceful/crash election, failed successor, survivor expiry,
 repeated handoff and safe shutdown. It is registered in runtime CI but has no
