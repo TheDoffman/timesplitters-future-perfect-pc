@@ -66,6 +66,7 @@ static int story_network_session(void)
 {
     return pc_online_mode()==PC_ONLINE_STORY;
 }
+#include "pc_story_campaign.inc"
 #endif
 
 int pc_story_network_prepare(uint32_t address)
@@ -82,7 +83,7 @@ int pc_story_network_prepare(uint32_t address)
        results callbacks. Its stock Online factory has just rebuilt16 Arcade
        slots and the old intro. Rebuild the next campaign config before that
        existing GO sender serializes it; GO already owns the generation bump. */
-    const int reward_go=role==1u && story_lobby_mission==0u && story_pending_stage==3u &&
+    const int reward_go=role==1u && story_lobby_mission<STORY_CAMPAIGN_MISSIONS && story_pending_stage==3u &&
         WORD_AT(0x79094cu)==106u && address==0x78ad58u && caller==0x2d3980u &&
         (phase==10u || phase==14u || phase==15u);
     const int advance=role==1u && (phase==10u || phase==14u || phase==15u) &&
@@ -164,7 +165,7 @@ int pc_story_network_prepare(uint32_t address)
     story_rewards_record(selected,stage);
     story_lobby_mission=selected;story_lobby_difficulty=config[0x57u];
     story_pending_stage=stage;
-    if(role==2u) story_rejoin_pending=received_join && selected==0u && stage==1u;
+    if(role==2u) story_rejoin_pending=received_join && stage==1u;
     memcpy(story_load_header,config,sizeof story_load_header);
     if(advance) {
         GuestRegisters saved;save_registers(&saved);
@@ -218,7 +219,7 @@ void pc_story_network_activate(void)
 #endif
 }
 
-/* Preserve the original movie/reward builders while ordering first-mission
+/* Preserve the original movie/reward builders while ordering campaign
    completion as ending movie, rewards, then the host's next-mission action. */
 void pc_story_network_stage_builder(void (*original)(void))
 {
@@ -230,21 +231,25 @@ void pc_story_network_stage_builder(void (*original)(void))
         WORD_AT(0x78ad48u),WORD_AT(0x78ad50u),story_pending_stage);
     /* Rewards own frontend globals, not the campaign selection. At the actual
        host next-load boundary let original65940 advance the completed mission
-       once, instead of rebuilding mission0's intro from a reset stage. */
+       once, instead of rebuilding the completed mission's intro. */
     if(story_network_session() && WORD_AT(0x0076b108u) &&
-       WORD_AT(0x0076b140u)==1u && story_lobby_mission==0u &&
+       WORD_AT(0x0076b140u)==1u && story_lobby_mission<STORY_CAMPAIGN_MISSIONS &&
        story_pending_stage==3u && WORD_AT(0x0079094cu)==106u && caller==0x00065ccfu) {
         WORD_AT(0x0078ad48u)=story_lobby_mission;
         WORD_AT(0x0078ad50u)=3u;
         WORD_AT(0x0078ad54u)=story_lobby_difficulty;
     }
+    const uint32_t campaign_scene=story_campaign_scene(story_lobby_mission);
     const int scope=story_network_session() && WORD_AT(0x0076b108u) &&
-        WORD_AT(0x0076b140u)==1u && story_lobby_mission==0u &&
+        WORD_AT(0x0076b140u)==1u && campaign_scene!=UINT32_MAX &&
         ((caller==0x00069518u && story_pending_stage==1u && (WORD_AT(0x007de45cu)&0x8000u)) ||
          (caller==0x00065ccfu && story_pending_stage==2u));
     const uint32_t scene=WORD_AT(0x0079094cu),flags=WORD_AT(0x007de458u),result=WORD_AT(0x007de45cu);
     if(scope) {
-        WORD_AT(0x0079094cu)=story_pending_stage==1u?106u:2u;
+        /* Some missions have no ending movie. Pretending rewards are already
+           open there makes original65940 skip directly to the next mission. */
+        const int ending=WORD_AT(0x004d1ae4u+story_lobby_mission*0x44u)!=UINT32_MAX;
+        WORD_AT(0x0079094cu)=story_pending_stage==1u && ending?106u:campaign_scene;
         WORD_AT(0x007de458u)=0x00080008u;WORD_AT(0x007de45cu)=result|0x8000u;
         WORD_AT(0x0078ad48u)=story_lobby_mission;WORD_AT(0x0078ad50u)=2u;
     }
@@ -389,7 +394,8 @@ void pc_story_network_ready(void (*original)(void))
 #ifdef _WIN32
     const uint32_t flags=WORD_AT(0x007DE458u),players=WORD_AT(0x00790950u);
     const uint32_t scene=WORD_AT(0x0079094cu);
-    const int rewards=story_lobby_mission==0u && story_pending_stage==3u && scene==106u;
+    const uint32_t campaign_scene=story_campaign_scene(story_lobby_mission);
+    const int rewards=campaign_scene!=UINT32_MAX && story_pending_stage==3u && scene==106u;
     const unsigned role=WORD_AT(0x0076B140u);
     if(story_network_session() && WORD_AT(0x0076B108u) && (role==1u || role==2u) &&
        guest_writable(WORD_AT(0x00774028u),0x35u) &&
@@ -401,7 +407,7 @@ void pc_story_network_ready(void (*original)(void))
         /* Original64CE0 rejects frontend scene106 even after movie flags are
            cleared. Rewards have zero bodies, but must finish the same ready
            exchange before a changed-generation host start can reach guests. */
-        if(rewards) WORD_AT(0x0079094cu)=2u;
+        if(rewards) WORD_AT(0x0079094cu)=campaign_scene;
         original(); /* stock ready packet/peer state, with no actor-loop work */
         WORD_AT(0x0079094cu)=scene;
         WORD_AT(0x00790950u)=players;WORD_AT(0x007DE458u)=flags;
@@ -487,19 +493,37 @@ static int story_opening_starts(void)
         ((const uint8_t *)((uintptr_t)0x007DE455u+g_xbox_mem_offset))[0]==10u &&
         count>=1u && count<=4u;
 }
+static uint32_t story_start_template(void)
+{
+    const uint32_t primary=WORD_AT(0x007b0c48u);
+    if(!story_campaign_gameplay() || !guest_writable(primary,0x1508u)) return UINT32_MAX;
+    /* Ask this mission's original Story selector for its primary authored
+       start. Do not reuse Time to Split's pad8000 in another mission. */
+    GuestRegisters saved;save_registers(&saved);
+    if(story_opening_starts() && !guest_call(sub_0025EE60,1,0u)) {
+        restore_registers(&saved);return 0x1f40u;
+    }
+    const uint32_t slot=WORD_AT(primary),cached=WORD_AT(primary+0x1504u);
+    WORD_AT(primary)=0u;WORD_AT(primary+0x1504u)=0x7fffffffu;
+    const uint32_t pad=guest_call(sub_000CF060_gen,1,primary);
+    WORD_AT(primary)=slot;WORD_AT(primary+0x1504u)=cached;
+    restore_registers(&saved);
+    return pad<0x7f00u?pad:UINT32_MAX;
+}
 #endif
 
 /* The stock spawn packet carries a signed16 pad index. These three positive
-   indices are reserved only in the first Online Story scene; no level records
+   indices identify peer-local extra-player starts in Online Story; no level records
    or ordinary pad tables are modified. Every peer resolves them locally. */
 void pc_story_network_start_record(void (*original)(void))
 {
 #ifdef _WIN32
     const uint32_t frame=g_esp;
     const unsigned pad=guest_writable(frame,8u)?WORD_AT(frame+4u):0u;
-    if(story_opening_starts() && pad>=0x7f01u && pad<=0x7f03u) {
+    if(story_campaign_gameplay() && pad>=0x7f01u && pad<=0x7f03u) {
         GuestRegisters saved;save_registers(&saved);
-        const uint32_t source=guest_call(sub_0009A420_gen,1,0x1f40u);
+        const uint32_t source_pad=story_start_template();
+        const uint32_t source=source_pad!=UINT32_MAX?guest_call(sub_0009A420_gen,1,source_pad):0u;
         if(!story_extra_pad_storage) story_extra_pad_storage=xbox_HeapAlloc(96u,4u);
         const uint32_t target=story_extra_pad_storage+(pad-0x7f01u)*32u;
         if(story_extra_pad_storage && guest_writable(source,32u) && guest_writable(target,32u)) {
@@ -528,8 +552,10 @@ void pc_story_network_start_tag(void (*original)(void))
 #ifdef _WIN32
     const uint32_t frame=g_esp;
     const unsigned pad=guest_writable(frame,8u)?WORD_AT(frame+4u):0u;
-    if(story_opening_starts() && pad>=0x7f01u && pad<=0x7f03u) {
-        WORD_AT(frame+4u)=0x1f40u;original();WORD_AT(frame+4u)=pad;return;
+    if(story_campaign_gameplay() && pad>=0x7f01u && pad<=0x7f03u) {
+        const uint32_t source=story_start_template();
+        if(source==UINT32_MAX) {g_eax=0;g_esp+=4u;return;}
+        WORD_AT(frame+4u)=source;original();WORD_AT(frame+4u)=pad;return;
     }
 #endif
     original();
@@ -539,7 +565,7 @@ void pc_story_network_start_index(void (*original)(void))
 #ifdef _WIN32
     const uint32_t frame=g_esp;
     const uint32_t record=guest_writable(frame,8u)?WORD_AT(frame+4u):0u;
-    if(story_opening_starts() && story_extra_pad_storage &&
+    if(story_campaign_gameplay() && story_extra_pad_storage &&
        (record==story_extra_pad_storage || record==story_extra_pad_storage+32u ||
         record==story_extra_pad_storage+64u)) {
         g_eax=0x7f01u+(record-story_extra_pad_storage)/32u;g_esp=frame+4u;return;
@@ -598,18 +624,23 @@ void pc_story_network_spawn_pad(void (*original)(void))
        local co-op can exhaust that list for online slots2/3 and return -1.
        Reuse the original first-player lookup only after that explicit failure;
        do not change ownership, body construction or any valid network pad. */
-    if(g_eax!=UINT32_MAX || !story_network_session() ||
+    const int rejoin=story_rejoin_pose_valid && guest_writable(context,0x1508u) &&
+        WORD_AT(context+4u)==0u && WORD_AT(context)>0u;
+    if((g_eax!=UINT32_MAX && !rejoin) || !story_network_session() ||
        !WORD_AT(0x0076B108u) || WORD_AT(0x0076B1A4u)!=15u ||
        ((uint8_t *)((uintptr_t)0x007DE455u+g_xbox_mem_offset))[0]!=10u ||
        !context || !guest_writable(context,0x1508u)) return;
     const uint32_t count=WORD_AT(0x00790950u),pool=WORD_AT(0x007B0C48u);
     const uint32_t slot=WORD_AT(context);
-    if(count<3u || count>4u || slot<2u || slot>=count || !pool ||
+    if(count<2u || count>4u || (!rejoin && slot<2u) || slot>=count || !pool ||
        context!=pool+slot*0x1584u) return;
-    WORD_AT(context)=0u;
-    const uint32_t pad=guest_call(sub_000CF060_gen,1,context);
-    WORD_AT(context)=slot;
+    const uint32_t pad=story_start_template();
     g_eax=pad;
+    if(pad!=UINT32_MAX) {
+        if(!story_extra_pad_storage) story_extra_pad_storage=xbox_HeapAlloc(96u,4u);
+        if(story_extra_pad_storage && guest_writable(story_extra_pad_storage,96u))
+            g_eax=0x7f00u+slot;
+    }
     if(getenv("TSFP_STORY_TRACE")) {
         static unsigned observations;
         if(observations++<8u)
@@ -688,8 +719,7 @@ void pc_story_failure_trace(void (*original)(void),uint32_t address)
     if(address==0x000D50E0u && guest_writable(g_esp,8u) && story_departed_context(WORD_AT(g_esp+4u))) {
         g_eax=0;g_esp+=4u;return;
     }
-    if(address==0x00066fc0u && story_network_session() && WORD_AT(0x0076b108u) &&
-       story_lobby_mission==0u && story_pending_stage==1u && WORD_AT(0x0079094cu)==2u &&
+    if(address==0x00066fc0u && story_campaign_gameplay() &&
        (WORD_AT(0x007de45cu)&0x8000u)) {
         if(WORD_AT(0x0076b140u)==1u) {
             original(); /* Original score/reward recording runs exactly once. */
@@ -853,9 +883,8 @@ void pc_story_network_team(void (*original)(void))
 static int story_departed_context(uint32_t context)
 {
     const unsigned role=WORD_AT(0x76b140u),phase=WORD_AT(0x76b1a4u);
-    if(!story_network_session() || story_lobby_mission!=0u || story_pending_stage!=1u ||
+    if(!story_campaign_scene_active() ||
        !WORD_AT(0x76b108u) || (role!=1u && role!=2u) || (phase!=14u && phase!=15u) ||
-       WORD_AT(0x79094cu)!=2u || WORD_AT(0x7de458u)!=0x80008u ||
        !guest_writable(context,0x1584u)) return 0;
     const uint32_t pool=WORD_AT(0x7b0c48u);
     const unsigned slot=WORD_AT(context),count=*(const uint8_t *)((uintptr_t)0x7de400u+g_xbox_mem_offset);
@@ -894,9 +923,7 @@ void pc_story_network_departure_death(void (*original)(void))
 {
 #ifdef _WIN32
     const uint32_t frame=g_esp;
-    if(story_network_session() && story_lobby_mission==0u && story_pending_stage==1u &&
-       WORD_AT(0x76b108u) && WORD_AT(0x76b1a4u)==15u && WORD_AT(0x79094cu)==2u &&
-       WORD_AT(0x7de458u)==0x80008u && guest_writable(frame,8u) &&
+    if(story_campaign_gameplay() && guest_writable(frame,8u) &&
        WORD_AT(frame)==0x35c199u) {
         const uint32_t hit=WORD_AT(frame+4u);
         const uint32_t entity=guest_writable(hit,4u)?WORD_AT(hit):0u;

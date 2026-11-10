@@ -82,8 +82,8 @@ def configure(root, run, directory, role):
 def play(root, players=2, seconds=0):
     if os.name != 'nt':
         raise ValueError('Local Online Story testing currently requires Windows.')
-    if players not in (2, 4) or seconds < 0:
-        raise ValueError('Choose 2 or 4 players and a nonnegative duration.')
+    if players not in (2, 3, 4) or seconds < 0:
+        raise ValueError('Choose 2, 3 or 4 players and a nonnegative duration.')
     exe = verify_build(root)
     session_lock = contained(root, root / 'private/test-saves/story-manual.lock', 'private/test-saves')
     session_lock.parent.mkdir(parents=True, exist_ok=True)
@@ -101,7 +101,7 @@ def play(root, players=2, seconds=0):
         directory = f'http://127.0.0.1:{server.server_port}'
         server_thread = threading.Thread(target=server.serve_forever, daemon=True)
         server_thread.start()
-        roles = ['host', 'guest'] + (['guest2', 'guest3'] if players == 4 else [])
+        roles = ['host', 'guest'] + ['guest2', 'guest3'][:players-2]
         for role in roles:
             run = contained(root, root / f'private/test-saves/story-manual-{role}', 'private/test-saves')
             env = configure(root, run, directory, role)
@@ -161,7 +161,7 @@ def play(root, players=2, seconds=0):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--players', type=int, choices=(2, 4), default=2)
+    parser.add_argument('--players', type=int, choices=(2, 3, 4), default=2)
     parser.add_argument('--seconds', type=int, default=0,
                         help='Optional startup smoke-test limit; 0 waits until you close the games')
     args = parser.parse_args()

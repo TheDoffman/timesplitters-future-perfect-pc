@@ -416,7 +416,7 @@ static void story_npc_pending_frame(void)
         /* Frozen guest skeletons cannot fill the five missing frames of the
            old 10 Hz stream. Publish once per actual simulation tick; never
            duplicate a snapshot when the frame adapter is called twice. */
-        const unsigned cadence=WORD_AT(0x0079094cu)==2u?1u:6u;
+        const unsigned cadence=1u;
         if(story_npc_published && (uint32_t)(tick-story_npc_publish_tick)<cadence) return;
         story_npc_published=1;story_npc_publish_tick=tick;
         if(pool) for(unsigned slot=story_npc_humans();slot<32u;slot++)

@@ -1,6 +1,6 @@
 """Bounded Story lobby precondition, or explicit experimental --load-probe.
 
-Uses the production Story entry and companion on two disposable Test Lab copies,
+Uses the production Story entry and companion on disposable Test Lab copies,
 one loopback directory, and independent bridge ports/settings/logs. Review the
 two pair-wait.png captures as well as the numeric roster/role evidence. Only
 --load-probe sends GO and movement; its success still requires visual review and
@@ -49,8 +49,8 @@ def main():
     parser.add_argument('--difficulty',type=int,choices=range(3),default=1,help='0 Easy, 1 Normal, 2 Hard')
     parser.add_argument('--lobby-only',action='store_true',help='Stop after changed lobby controls; no GO/load/movement')
     parser.add_argument('--menu-navigation-probe',action='store_true',help='With --lobby-only, capture difficulty Back, lobby exit, host-loss main return and Story reentry for visual review')
-    parser.add_argument('--players',type=int,choices=[2,4],default=2,help='Actual instances/players admitted to the isolated lobby')
-    parser.add_argument('--fire-probe',action='store_true',help='Check first-level firearm and ammunition consumption; save captures for interaction review')
+    parser.add_argument('--players',type=int,choices=[2,3,4],default=2,help='Actual instances/players admitted to the isolated lobby')
+    parser.add_argument('--fire-probe',action='store_true',help='Check owned firearms and ammunition consumption; save captures for interaction review')
     parser.add_argument('--combat-probe',action='store_true',help='After firearm checks, walk an added guest forward and test host acceptance of a hit on a live enemy')
     parser.add_argument('--restart-probe',action='store_true',help='After opening/fire checks, test host-only level restart and fresh handoff on every peer')
     parser.add_argument('--checkpoint-probe',action='store_true',help='Walk ordinary inputs toward the first checkpoint; stop after checkpoint reload, never complete the level')
@@ -65,13 +65,13 @@ def main():
     assert not args.menu_navigation_probe or args.lobby_only
     assert not args.fire_probe or (args.load_probe and not args.lobby_only)
     assert not args.checkpoint_probe or (args.fire_probe and args.mission==0 and not args.restart_probe)
-    assert not args.restart_probe or (args.fire_probe and args.mission==0 and not args.lobby_only)
+    assert not args.restart_probe or (args.fire_probe and not args.lobby_only)
     assert not args.combat_probe or (args.fire_probe and args.mission==0)
     assert not args.npc_observe_seconds or (args.load_probe and not args.lobby_only)
     assert not args.script_observe_seconds or (args.load_probe and not args.lobby_only)
-    assert not args.skip_intro or (args.load_probe and args.mission==0 and not args.lobby_only)
+    assert not args.skip_intro or (args.load_probe and not args.lobby_only)
     assert args.players==2 or args.load_probe
-    roles=['host','guest']+(['guest2','guest3'] if args.players==4 else [])
+    roles=['host','guest']+['guest2','guest3'][:args.players-2]
     if args.receipt_id:
         assert len(args.receipt_id)==32 and all(c in '0123456789abcdef' for c in args.receipt_id)
     assert os.name=='nt','Windows native transport required'
@@ -93,7 +93,7 @@ def main():
         build=seal,parent_pid=os.getpid(),processes={},admitted_players=args.players,
         requested_mission=args.mission,requested_difficulty=args.difficulty)
     if args.receipt_id:result['receipt_id']=args.receipt_id
-    if args.load_probe:result['scope']='Experimental Story synchronized load and two actor movement; not full goal acceptance'
+    if args.load_probe:result['scope']=f'Experimental Story synchronized load and {args.players} actor movement; not full goal acceptance'
     if args.lobby_only:result['scope']='Story lobby controls and visual layout only; no GO or gameplay'
     if args.load_probe:
         # A later build may replace the regular executable/PDB archive. Retain
@@ -270,6 +270,16 @@ def main():
                         assert ready or time.monotonic()<opening_deadline,('Original opening firearm/control handoff did not complete in 60 seconds',states)
                         return states if ready else None
                     result['opening_ready_states']=wait_for(opening_ready,'Original Story opening did not become playable')
+                else:
+                    if args.skip_intro and read_json(runs['host']/'current.json',{}).get('flags',0)&0x20000000:
+                        append('host',keys=[69],label='intro-host-handoff',wait=10)
+                        wait_for(lambda:captured('host','intro-host-handoff'),'Host intro skip did not complete')
+                    def campaign_ready():
+                        states={role:read_json(run/'current.json',{}) for role,run in runs.items()}
+                        return states if all(s.get('scene',101)<100 and not s.get('flags',0)&0x20000000 and
+                            s.get('network_phase')==15 and s.get('context_states')==[2]*args.players and
+                            s.get('result_flags')==0 for s in states.values()) else None
+                    result['first_gameplay_states']=wait_for(campaign_ready,'Campaign intro/load did not activate every player')
                 for role in runs:append(role,label='load-before',wait=8,world_probe=True)
                 before=wait_for(lambda:{role:captured(role,'load-before') for role in runs}
                     if all(captured(role,'load-before') for role in runs) else None,'Missing pre-movement captures')
@@ -341,11 +351,10 @@ def main():
                     fired=wait_for(lambda:{role:captured(role,'fire-own-player') for role in runs}
                         if all(captured(role,'fire-own-player') for role in runs) else None,'Firing captures missing')
                     result['after_fire_input']=fired
-                    result['fire_scope']='First-level owned firearm and ammunition consumption checked; hits and world synchronization need separate evidence'
+                    result['fire_scope']='Owned firearm and ammunition consumption checked; hits and world synchronization need separate evidence'
                     for role,s in fired.items():
-                        if args.mission==0:
-                            remaining=ammo_total(s.get('local_player'))
-                            assert remaining is not None and remaining<ammo_total(after[role].get('local_player')),(role,'No firing ammunition consumed',s.get('local_player'))
+                        remaining=ammo_total(s.get('local_player'));initial=ammo_total(after[role].get('local_player'))
+                        assert initial is not None and remaining is not None and remaining<initial,(role,'No firing ammunition consumed',s.get('local_player'))
                         assert s['scene']==before[role]['scene'] and s['network_phase']==15 and not s['paused'],(role,'Lost live Story during firing input',s)
                 if args.npc_observe_seconds:
                     time.sleep(args.npc_observe_seconds)
@@ -369,10 +378,10 @@ def main():
                     prior_ticks={role:s['game_tick'] for role,s in fired.items()}
                     def restarted():
                         states={role:read_json(run/'current.json',{}) for role,run in runs.items()}
-                        ready=all(s.get('scene')==2 and s.get('network_phase')==15 and
+                        ready=all(s.get('scene')==before['host']['scene'] and s.get('network_phase')==15 and
                             s.get('game_state')==7 and s.get('context_states')==[2]*args.players and
                             s.get('result_flags')==0 and s.get('game_tick',2**32)<prior_ticks[role] and
-                            (s.get('local_player') or {}).get('equipped',[None,None])[1]==14 and
+                            (s.get('local_player') or {}).get('equipped')==before[role].get('local_player',{}).get('equipped') and
                             '[PC-STORY-RESTART]' in (runs[role]/'run0.err').read_text(errors='replace')
                             for role,s in states.items())
                         assert ready or time.monotonic()<restart_deadline,('Coordinated Story level restart did not become playable',states)
@@ -380,7 +389,7 @@ def main():
                     result['restart_ready_states']=wait_for(restarted,'Story reload did not finish')
                     result['restart_after']={role:restart_capture(role,'restart-after',wait=2) for role in roles}
                     for role,s in result['restart_after'].items():
-                        assert ammo_total(s.get('local_player'))==ammo_total(before['host'].get('local_player')),(role,'Reload lost or duplicated opening ammo',s)
+                        assert ammo_total(s.get('local_player'))==ammo_total(before[role].get('local_player')),(role,'Reload lost or duplicated opening ammo',s)
                 if args.combat_probe:
                     # Inputs only: do not manufacture targets, teleport actors or
                     # write health. Preserve a failed search as missing evidence.

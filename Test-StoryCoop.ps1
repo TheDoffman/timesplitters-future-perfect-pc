@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet(2, 4)]
+    [ValidateSet(2, 3, 4)]
     [int]$Players = 2
 )
 

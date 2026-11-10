@@ -467,6 +467,15 @@ def test_story_original_config_stages(tmp_path):
         next_scene=image[config.va_to_file_offset(0x51fc30+next_movie*36)]
         constants+='\n'+'\n'.join(f'MEM8(0x{0x4d1b04+i:x})={value};' for i,value in enumerate(next_row))
         constants+=f'\nMEM8(0x{0x51fc30+next_movie*36:x})={next_scene};'
+        # Seed the complete original mission table, including missing intros
+        # and endings, for the campaign-wide stage transition matrix.
+        campaign=image[config.va_to_file_offset(0x4d1ac0):config.va_to_file_offset(0x4d1ac0)+13*0x44]
+        constants+='\n'+'\n'.join(f'MEM8(0x{0x4d1ac0+i:x})={value};' for i,value in enumerate(campaign))
+        movies={struct.unpack_from('<i',campaign,i*0x44+offset)[0] for i in range(13) for offset in (0x20,0x24)}
+        for entry in movies:
+            if entry<0:continue
+            value=image[config.va_to_file_offset(0x51fc30+entry*36)]
+            constants+=f'\nMEM8(0x{0x51fc30+entry*36:x})={value};'
         table=image[config.va_to_file_offset(0x6b284):config.va_to_file_offset(0x6b284)+40]
         constants+='\n'+'\n'.join(f'MEM8(0x{0x6b284+i:x})={value};' for i,value in enumerate(table))
     finally:
@@ -478,6 +487,7 @@ def test_story_original_config_stages(tmp_path):
     adapters+=production[production.index('void pc_story_network_movie_release('):production.index('void pc_story_failure_trace(',production.index('void pc_story_network_movie_release('))]
     scores=(ROOT/'src/network/pc_network_guest.inc').read_text(encoding='utf-8')
     adapters+=scores[scores.index('static void pc_network_guest_scores('):]
+    adapters=(ROOT/'src/network/pc_story_campaign.inc').read_text(encoding='utf-8')+'\n'+adapters
     source=source.replace('/* PRODUCTION_TRANSITION_ADAPTERS */',adapters)
     output=compile_and_run(tmp_path,source.replace('/* ORIGINAL_STAGE_BUILDER */',code)
         .replace('/* ORIGINAL_MISSION_DATA */',constants)
@@ -531,7 +541,7 @@ def test_story_original_guest_rewards(tmp_path,context_mapping):
         vars(config).update(previous)
     source=(ROOT/'tests/network/story_rewards_guest.c').read_text(encoding='utf-8')
     production=(ROOT/'src/network/pc_story_restart.inc').read_text(encoding='utf-8')
-    adapters='#include "../src/network/pc_network_profiles.inc"\nstatic int multiplayer_profile_save(void (*fn)(void)){(void)fn;return 0;}\nstatic unsigned story_leave_destination;\nstatic int story_lobby_return_build;\nvoid pc_online_disconnect(void){assert(0);}\n'+production[production.index('extern void sub_002EB0A0('):production.index('static void story_rewards_continue(')]
+    adapters=(ROOT/'src/network/pc_story_campaign.inc').read_text(encoding='utf-8')+'\n#include "../src/network/pc_network_profiles.inc"\nstatic int multiplayer_profile_save(void (*fn)(void)){(void)fn;return 0;}\nstatic unsigned story_leave_destination;\nstatic int story_lobby_return_build;\nvoid pc_online_disconnect(void){assert(0);}\n'+production[production.index('extern void sub_002EB0A0('):production.index('static void story_rewards_continue(')]
     adapters+=production[production.index('void pc_story_network_rewards_context_slot('):production.index('void pc_story_network_result_action(void (*original)(void),unsigned action)\n{')]
     import re
     defined=set(re.findall(r'(?:void|uint32_t)\s+(sub_[0-9A-F]+(?:_gen)?)\s*\([^;]*?\)\s*\{',source+code))

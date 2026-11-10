@@ -4,7 +4,8 @@ For manual **Windows Online Story co-op** testing on one PC, run:
 
 ```powershell
 .\Test-StoryCoop.ps1
-# Optional: four separate game windows
+# Optional: three or four separate game windows
+.\Test-StoryCoop.ps1 -Players 3
 .\Test-StoryCoop.ps1 -Players 4
 ```
 
@@ -15,8 +16,9 @@ Online browser click **Start New Match**, return to that game and select
 **Start New Match** there too. In the other browsers click **Refresh**, select
 the host's lobby, then **Join selected**. The host chooses **Time to Split**
 and starts once everyone is present. Use Alt+Tab to switch games; E/Space confirms
-and F goes back. Online Story remains experimental and only the first mission is
-currently in scope; checkpoint restoration and Game Over handling remain incomplete.
+and F goes back. The first mission has human start-to-finish acceptance with
+2–4 players. Shared loading, checkpoint, restart and cinematic handling now
+extends across the campaign; later missions still need gameplay acceptance.
 
 Keep the terminal open until all game windows close. There is no manual time
 limit; Ctrl+C in the terminal ends the launched games. The helper resets isolated

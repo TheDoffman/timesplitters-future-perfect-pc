@@ -61,6 +61,7 @@ extern uint32_t xbox_HeapAlloc(uint32_t bytes, uint32_t alignment);
 #define WORD_AT(a) (*(uint32_t *)((uintptr_t)(uint32_t)(a) + g_xbox_mem_offset))
 static int pc_story_menu_button(void (*original)(void));
 static int multiplayer_exit_button(void (*original)(void));
+static void multiplayer_exit_pause_rows(uint32_t menu);
 static void multiplayer_profiles_capture(void);
 #ifdef _WIN32
 static int pc_story_lobby_button(void (*original)(void));

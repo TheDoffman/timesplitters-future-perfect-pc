@@ -1,3 +1,92 @@
+## Host lobby caption - 2026-11-09 (local validation)
+
+On story-coop-shared-lifecycle at2055379b plus local changes, Story hosts now
+see Return to Lobby in place of Leave Match during gameplay. This extends only
+the shared caption override; existing exit callbacks and guest labels remain.
+Windows x64/MSVC14.42 build and built-in checks pass with version
+0.6.0-story-coop-beta.1. Four compiled Story/multiplayer menu cases pass under
+Windows and native fixture definitions. Context checks pass. No interactive
+gameplay or native Mac/Linux host run was needed/performed for this label edit.
+Follow-up: Story host pause construction now defers the original return row
+until after both restart rows and before Quit to Desktop, retaining all six
+original arguments and flushing once for the captured menu instance. All54
+menu checks pass, including deferred caption/callback/stack preservation.
+The rebuilt Windows game and built-in checks completed successfully (the
+redirecting PowerShell process reported1 despite the final build-success lines).
+Interactive layout acceptance remains pending.
+
+## Shared Story campaign lifecycle - 2026-11-09 (local validation)
+
+The user confirms Time to Split is playable from start to finish with two,
+three and four players. That is human acceptance of mission one; subsequent
+missions still require gameplay acceptance. Work continues on the focused
+story-coop-shared-lifecycle branch, based on the preview's menu repair and
+synchronized with origin/main9554e8d0 by merge2055379b (following f524ca29).
+The merge retains the Story preview version suffix for its menu policy.
+Campaign implementation changes remain local and uncommitted; no publication
+or merge into main was performed.
+
+Shared campaign eligibility now replaces mission-one-only gates for checkpoint
+capture/restore, host restart, camera synchronization, dialogue, objectives,
+world objects, drops and effects. Loading, departure/rejoin, completion and
+guest rewards use the selected mission. Extra-player fallback starts derive
+from that mission's authored primary start. First-mission content hooks remain
+specific to their scripts. Missions without an ending movie enter rewards
+directly, rather than advancing early to the next mission.
+
+Windows x64:70 affected CPU tests passed, two Mac-only tests skipped. The matrix
+executes checkpoint/restart authority, epochs, extra bookmarks, late join,
+camera scope and rewards for all13 missions with2/3/4 players. A second matrix
+executes the original supported US executable's mission transition builder
+with all13 authored mission/movie records and all three party sizes. These
+controlled tests do not prove collision, authored checkpoint triggers or full
+missions. Official Windows Build/native checks passed;21 repository-context
+tests passed. Main's new Linux package fixture test passed with one host skip.
+
+Live Scotland investigation exposed the missing authored firearm and ammo
+handoff: native script grantC0407 and preceding ammo callsC03A5/C03BD now reach
+remote owners through the original APIs in a version3 message. Native ammo caps
+remain authoritative. Grant-before-equip delivery and cutscene restoration of
+an older unarmed view are covered separately: delayed equip applies once, and
+later cameras preserve the owned actor's inventory selection across their
+active boundary. Neither path awards duplicate ammo or overrides an intervening
+guest weapon choice. Restart clears stale dropped-item replica handles too.
+All later scenes/party sizes exercise these boundaries in the campaign fixture.
+
+The final three-player Easy Scotland probe passed lobby selection/replication,
+intro/opening camera release, distinct owned actors, independent movement,
+consistent peer positions, firing and a host-controlled whole-level restart.
+Every player started with eight loaded/52 reserve pistol rounds, consumed two
+rounds, then returned to eight/52 after reload. All three child runners exited0.
+Reviewed fresh guest load-after and all three restart-after captures: first-
+person gameplay, firearms and matching HUD ammo. This is bounded synthetic
+input over loopback, not physical-controller/Internet or full-level acceptance.
+Evidence: private/network-validation/story-load-pair and its disposable saves.
+Pre-sync EXE1cb1b786f1d1088d3f72dc47b753163a932082b07ff1cfa5bc16a504336a3724;
+compatibility f26515dea18f963d4e250694eb5b1c85fd14822348ebc025a2d0a91cff0f145c.
+The exact campaign source/tests were verified unchanged across the later main
+merge. The rebuilt four-player Easy Scotland probe on2055379b passed the same
+lobby/load, camera release, independent movement, firing and whole-level restart
+checks. All four started at eight/52, fired to six/52, then restored eight/52;
+all child runners exited0 and no run locks remain. Reviewed all four fresh
+restart-after captures showing first-person gameplay, visible firearms and
+matching HUD ammo. Its first attempt stopped at the runner's48-PNG budget;
+144 older generated captures were preserved in story-four/pre-campaign-captures
+(115335463 bytes, recorded moves/hashes) before the successful rerun. No runtime
+fix was needed for that test-harness limit. Four-player evidence is under
+private/network-validation/story-four and its disposable saves.
+Final EXE60f506fc18628008b98c06970cc6eb51e679f852c75f313f3e0572453265a443;
+the compatibility identity above is unchanged. Final sealed-content verification
+and the canonical fixture check passed. Subsequent authored checkpoint triggers,
+later camera sequences and full missions remain human acceptance work.
+
+Host: Windows11 x64, Python3.14.2, MSVC14.42.34433; default Windows renderer
+(XBOXRECOMP_VULKAN=OFF), GPU driver version not recorded. Supported US XBE hash
+was verified; the canonical unlocked fixture verifies unchanged. Mac/Linux live
+Story transport remains unavailable;
+shared code does not establish host acceptance. See MAC-013 and the
+[campaign lifecycle guide](../agent-context/story-campaign-lifecycle.md).
+
 ## Story beta menu repair published in place - 2026-11-01
 
 At the user's explicit request, republished the existing mutable

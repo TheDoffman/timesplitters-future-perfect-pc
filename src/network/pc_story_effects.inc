@@ -25,7 +25,7 @@ typedef struct StoryLocalBlood {float position[3];uint32_t tick,mode;} StoryLoca
 static StoryLocalBlood story_local_blood[32];
 static unsigned story_local_blood_next,story_local_blood_count;
 static int story_effect_session(void)
-{ return story_npc_session() && WORD_AT(0x0079094cu)==2u && WORD_AT(0x0076b1a4u)==15u; }
+{ return story_npc_session() && story_campaign_gameplay(); }
 static void story_effect_reset(void)
 {
     story_effect_read=story_effect_count=story_effect_ground_count=story_effect_depth=0;

@@ -11,7 +11,7 @@ static uint32_t story_world_seen[256],story_world_serial,story_world_high;
 static unsigned story_world_read,story_world_count;
 static int story_world_replay;
 static int story_world_session(void)
-{return story_npc_session() && WORD_AT(0x0079094cu)==2u && WORD_AT(0x0076b1a4u)==15u;}
+{return story_npc_session() && story_campaign_gameplay();}
 static void story_world_reset(void)
 {
     memset(story_world_ids,0,sizeof story_world_ids);memset(story_world_seen,0,sizeof story_world_seen);
@@ -100,7 +100,7 @@ extern void sub_000A6F90(void);
    tag47525442 broken mesh. A9070 alone removes collision but cannot create that mesh. */
 static void story_world_barricade(uint32_t entity)
 {
-    if(WORD_AT(entity+0x20u)!=1u || (WORD_AT(entity+0x94u)&65535u)!=1344u ||
+    if(story_lobby_mission!=0u || WORD_AT(entity+0x20u)!=1u || (WORD_AT(entity+0x94u)&65535u)!=1344u ||
        WORD_AT(entity+0x60u)!=0x47525452u) return;
     const uint32_t pool=WORD_AT(0x0072f5e8u),count=WORD_AT(0x007b4facu);
     if(!pool || count>16384u || !guest_writable(pool,count*0x2e8u)) return;

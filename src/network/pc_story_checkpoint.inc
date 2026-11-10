@@ -9,7 +9,7 @@ static uint32_t story_checkpoint_serial,story_checkpoint_tick;
 static int story_checkpoint_replay,story_checkpoint_sent;
 static uint32_t story_checkpoint_restore_pending;
 static int story_checkpoint_scope(void)
-{ return story_npc_session() && WORD_AT(0x0079094cu)==2u && WORD_AT(0x0076b1a4u)==15u; }
+{ return story_npc_session() && story_campaign_gameplay(); }
 static int story_checkpoint_players(void)
 {
     const unsigned count=story_npc_humans();

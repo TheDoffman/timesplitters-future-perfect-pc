@@ -13,6 +13,8 @@ static unsigned multiplayer_factory_observations;
 static int multiplayer_lobby_pending;
 static uint32_t multiplayer_profiles[16];
 static unsigned multiplayer_profile_count;
+static uint32_t multiplayer_pause_menu,multiplayer_pause_row[6];
+static void (*multiplayer_pause_button)(void);
 static int multiplayer_arcade(void)
 {
     return pc_network_enabled() && pc_online_mode()!=PC_ONLINE_STORY;
@@ -85,7 +87,10 @@ static void (*multiplayer_exit_lookup(uint32_t address))(void)
 static int multiplayer_exit_button(void (*original)(void))
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
-    if(multiplayer_match() && WORD_AT(0x76b140u)==1u && guest_writable(g_esp,28u)) {
+    /* Caption only: Story hosts also retain their party on Leave Match.
+       Keep the actual Story/Arcade exit routing in their existing adapters. */
+    if(pc_network_enabled() && WORD_AT(0x76b108u) && WORD_AT(0x79094cu)<=100u &&
+       WORD_AT(0x76b140u)==1u && guest_writable(g_esp,28u)) {
         const uint32_t callback=WORD_AT(g_esp+20u);
         if(callback==0x2ec060u || callback==0x2ec030u || callback==0x2eaf60u || callback==0x2eb030u) {
             static uint32_t caption;
@@ -96,6 +101,16 @@ static int multiplayer_exit_button(void (*original)(void))
             }
             const uint32_t frame=g_esp,old=WORD_AT(frame+4u);
             if(caption) WORD_AT(frame+4u)=caption;
+            const uint32_t menu=WORD_AT(0x7bb1e8u);
+            if(pc_online_mode()==PC_ONLINE_STORY && guest_writable(menu,8u) &&
+               guest_writable(WORD_AT(menu+4u),4u) && WORD_AT(WORD_AT(menu+4u))==0x2f5520u &&
+               (callback==0x2ec060u || callback==0x2ec030u)) {
+                /* Append after the host restart rows, before desktop Quit.
+                   Preserve every original row argument and callback. */
+                multiplayer_pause_menu=menu;multiplayer_pause_button=original;
+                for(unsigned i=0;i<6u;++i)multiplayer_pause_row[i]=WORD_AT(frame+4u+i*4u);
+                WORD_AT(frame+4u)=old;g_eax=0;g_esp+=4u;return 1;
+            }
             original();WORD_AT(frame+4u)=old;return 1;
         }
     }
@@ -103,6 +118,20 @@ static int multiplayer_exit_button(void (*original)(void))
     (void)original;
 #endif
     return 0;
+}
+static void multiplayer_exit_pause_rows(uint32_t menu)
+{
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    void (*original)(void)=multiplayer_pause_button;
+    multiplayer_pause_button=NULL;
+    if(!original || multiplayer_pause_menu!=menu)return;
+    GuestRegisters saved;save_registers(&saved);
+    guest_call(original,6,multiplayer_pause_row[0],multiplayer_pause_row[1],
+        multiplayer_pause_row[2],multiplayer_pause_row[3],multiplayer_pause_row[4],multiplayer_pause_row[5]);
+    restore_registers(&saved);
+#else
+    (void)menu;
+#endif
 }
 void pc_multiplayer_exit_action(void (*original)(void),unsigned action)
 {

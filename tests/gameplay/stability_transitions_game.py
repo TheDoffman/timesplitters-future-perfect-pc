@@ -390,6 +390,8 @@ def main():
             health=floats(entity+0x1cc,1)
             if health is not None:result['health']=health[0]
         if actor is None or not 0x80000000<=actor<0x84000000:return result
+        result['inventory_weapon']=word(actor+0x94)
+        result['inventory_weapons']=[index for index,owned in enumerate(read_bytes(actor+0x54c,70) or b'') if owned]
         loadout=word(actor+0x98);table=word(0x4f9bac)
         if loadout is None or not 0<=loadout<256 or not table:return result
         for base,record in [(0x4fa134,0xa4),(0x4fa138,0x1d4)]:

@@ -13,7 +13,13 @@ runtime wrappers under stock, Windows and native definitions.
 
 The final user scope (2026-11-06) keeps a guest's own Leave Match/Quit and browser
 Back behavior original. Only the host's EC060/EC030/EAF60/EB030 rows read Return to
-Lobby. Host pause Yes40h and results exits use the retained return. Do not
+Lobby. The caption override also includes Story hosts during gameplay, using
+their existing Story return action; guest captions remain original. Story host pause
+rows from descriptor2F5520 defer that host row with its original six arguments
+until `pc_display_menu_finish` has appended the Story restart options; flush it
+once before desktop Quit. Match the captured menu instance and preserve the
+original callback, flags and row ID. Arcade and guest row construction stays
+immediate. Host pause Yes40h and results exits use the retained return. Do not
 reintroduce the abandoned guest-to-browser/directory-retention change.
 
 Admission requires transport enabled, non-Story mode, an active network session,

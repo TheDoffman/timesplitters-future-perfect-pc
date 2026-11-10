@@ -3082,6 +3082,20 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Shared campaign lifecycle (2026-11-09, uncommitted on story-coop-shared-lifecycle):**
+  Shared campaign policy now applies checkpoint capture/extra-player bookmarks,
+  host-only restarts, cinematic cues, intro/ending/reward transitions, departures
+  and rejoin to all13 missions. Extra starts use each mission's authored pad
+  selector. Mission-one opening/sniper/weapon/barricade data stays scoped.
+  Later authored weapon/ammo grants and camera-bound selection restoration use
+  the same guest inventory APIs; the version3 loadout record is44 bytes.
+  The numeric protocol and guest APIs introduce no new OS operations; reuse
+  these same helpers when wiring native Story transport. Native Story remains
+  unsupported by the existing transport adapter, not enabled by these fixes.
+  The13-mission by2/3/4-player engine fixture and original stage-builder matrix
+  cover shared policy; physical Mac/Linux Story, authored checkpoints and full
+  later-mission acceptance remain pending. See STATUS for actual Windows checks.
+
 - **Story callback precedence repair (2026-11-01, 5d23fcd9 on online-story-coop):**
   The shared menu dispatcher again gives contextual Story lobby callbacks
   priority over the version-gated chooser fallback. No new Mac adapter is

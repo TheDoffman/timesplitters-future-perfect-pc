@@ -89,7 +89,10 @@ void pc_display_menu_finish(void (*original)(void))
     if(frontend && guest_writable(menu,8))main_update_notice_open(menu);
 #endif
 #if defined(_WIN32) && !defined(TSFP_QUIT_MENU_TEST)
-    if(paused) pc_story_network_pause_rows();
+    if(paused) {
+        pc_story_network_pause_rows();
+        multiplayer_exit_pause_rows(menu);
+    }
 #endif
     if((frontend || paused) && guest_writable(menu,0x3c) &&
        WORD_AT(menu+0x38)==0 && quit_prepare()) {

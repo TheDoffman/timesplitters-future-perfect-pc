@@ -12,10 +12,10 @@ void pc_story_network_drop_replay(void (*original)(void))
         if(guest_writable(actor,0xea0u) && guest_writable(hand,0x130u) &&
            WORD_AT(actor+8u)<32u && WORD_AT(actor+0x94u)>0u && WORD_AT(actor+0x94u)<70u &&
            WORD_AT(hand+0x30u)<66u && !WORD_AT(actor+0xbf0u)) {
-            /* First-mission NPC drops are authoritative item snapshots below.
+            /* Campaign NPC drops are authoritative item snapshots below.
                Stock Story throws can return before sending0x16; accepting its
                occasional late copy would duplicate the same pickup. */
-            if(WORD_AT(0x0079094cu)==2u && WORD_AT(actor+8u)>=story_npc_humans()) {
+            if(WORD_AT(actor+8u)>=story_npc_humans()) {
                 g_esp+=4u;return;
             }
             uint8_t *rule=(uint8_t *)((uintptr_t)0x007de455u+g_xbox_mem_offset);
@@ -51,7 +51,7 @@ static uint32_t story_drop_tick;static int story_drop_ticked;
 static unsigned story_drop_traces;
 extern void sub_000C1950(void);
 static int story_drop_session(void)
-{return story_npc_session() && WORD_AT(0x0079094cu)==2u && WORD_AT(0x0076b1a4u)==15u;}
+{return story_npc_session() && story_campaign_gameplay();}
 static void story_drop_reset(void)
 {
     memset(story_drop_host,0,sizeof story_drop_host);memset(story_drop_pending,0,sizeof story_drop_pending);

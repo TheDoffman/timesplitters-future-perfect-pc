@@ -25,6 +25,7 @@ static void save_registers(GuestRegisters *r){*r=(GuestRegisters){g_esp,g_eax,g_
 static void restore_registers(const GuestRegisters *r){g_esp=r->sp;g_eax=r->ax;g_ebx=r->bx;g_ecx=r->cx;g_edx=r->dx;}
 static int guest_writable(uint32_t p,size_t n){return p>=0x1000 && p<sizeof memory && n<=sizeof memory-p;}
 static PcOnlineMode online_mode=PC_ONLINE_STORY;
+static uint32_t story_lobby_mission;
 PcOnlineMode pc_online_mode(void){return online_mode;}
 static int allocation_ok=1;
 static uint32_t xbox_HeapAlloc(uint32_t n,uint32_t align)
@@ -150,7 +151,9 @@ void sub_0015BCC0(void){marker=24;}void sub_002402B0(void){marker=25;}
 void sub_00353A90(void){marker=26;}
 void sub_001BA2B0(void){marker=28;}void sub_001BFCA0(void){marker=29;}
 void sub_001BA130(void){marker=30;}
+void sub_001BA220(void){marker=9931;}
 static unsigned loadout_ammo,loadout_grants,loadout_selections;
+static unsigned loadout_round_awards;
 static unsigned npc_ctor_calls,npc_refreshes,npc_removed,npc_sent_size,npc_send_calls,npc_weapons_removed;
 static unsigned char npc_sent[512],npc_sent_base[256],npc_sent_pose[256];
 static unsigned npc_base_size,npc_pose_size;
@@ -201,7 +204,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     if(fn==sub_002CB210) {CHECK(!count);return 0;}
     if(fn==sub_002CB550) {CHECK(!count);return reward_count;}
     if(fn==sub_00356870) {CHECK(count==1 && !args[0]);return 1;}
-    if(fn==sub_000668F0) {CHECK(!count && (WORD_AT(0x7de45c)&0x8000));++reward_records;return 0;}
+    if(fn==sub_000668F0) {CHECK(!count && (WORD_AT(0x7de45c)&0x8000) && WORD_AT(0x78ad48)==story_lobby_mission);++reward_records;return 0;}
     if(fn==sub_00080F20) {CHECK(count==1 && args[0]==957);return 777;}
     if(fn==sub_001128C0) {
         CHECK(count==9 && args[0]==777 && args[1]==1 && args[2]==0x7f1e1e32 && args[3]==4 &&
@@ -209,7 +212,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
         CHECK(WORD_AT(args[7])==0x3f800000 && WORD_AT(args[8]+4)==0xbf800000);
         ++blood_decals;return 1;
     }
-    if(fn==sub_001B67E0) {CHECK(count==2 && args[0]==0x50000 && args[1]==3);return ammo_loaded;}
+    if(fn==sub_001B67E0) {CHECK(count==2 && args[0]==0x50000 && (args[1]==2 || args[1]==3));return ammo_loaded;}
     if(fn==sub_000D2DE0) {
         CHECK(count==1);const uint32_t context=args[0],body=WORD_AT(context+0x14);
         memcpy((uint8_t *)memory+body+0x64,(uint8_t *)memory+context+0xa8,12);
@@ -287,14 +290,20 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     if(fn==sub_001BA2B0) {
         CHECK(count==3 && ((args[1]==25 && args[2]==8) || (args[1]==32 && args[2]==6)));loadout_ammo+=args[2];return 8;
     }
+    if(fn==sub_001BA220) {
+        CHECK(count==3 && ((args[1]==2 && args[2]==60) || (args[1]==3 && args[2]==5)));
+        int16_t before;memcpy(&before,(uint8_t *)memory+args[0]+0x61e+args[1]*2,2);
+        const int16_t after=(int16_t)(before+args[2]);memcpy((uint8_t *)memory+args[0]+0x61e+args[1]*2,&after,2);
+        ++loadout_round_awards;return args[2];
+    }
     if(fn==sub_001BFCA0) {
-        CHECK(count==2 && (args[1]==25 || args[1]==32));((uint8_t *)memory)[args[0]+0x54c+args[1]]=1;
+        CHECK(count==2 && (args[1]==25 || args[1]==32 || args[1]==5 || args[1]==56));((uint8_t *)memory)[args[0]+0x54c+args[1]]=1;
         ++loadout_grants;return 0;
     }
-    if(fn==sub_001BA130) {CHECK(count==2 && (args[1]==25 || args[1]==32));++loadout_selections;return 0;}
+    if(fn==sub_001BA130) {CHECK(count==2 && (args[1]==25 || args[1]==32 || args[1]==5 || args[1]==56 || args[1]==1));WORD_AT(args[0]+0x94)=args[1];++loadout_selections;return 0;}
     if(fn==sub_00353A90) {
         CHECK(count==5 && args[0]==0x30000 && args[1]==0x1e && args[3]<=256u);
-        CHECK(args[4]==1 || WORD_AT(args[2]+4)==0x37504e53u || WORD_AT(args[2]+4)==0x37505053u);
+        CHECK(args[4]==1 || WORD_AT(args[2]+4)==0x37504e53u || WORD_AT(args[2]+4)==0x37505053u || WORD_AT(args[2]+4)==0x37594353u);
         ++npc_send_calls;npc_sent_size=args[3];memcpy(npc_sent,(uint8_t *)memory+args[2],args[3]);
         if(WORD_AT(args[2]+4)==0x37504e53u){npc_base_size=args[3];memcpy(npc_sent_base,npc_sent,args[3]);}
         if(WORD_AT(args[2]+4)==0x37505053u){npc_pose_size=args[3];memcpy(npc_sent_pose,npc_sent,args[3]);}
@@ -587,6 +596,7 @@ static void effect_decision_original(void)
     WORD_AT(0x150098)=0x7f123456;g_esp=outer+4;g_eax=99;
 }
 #endif
+#include "story_campaign_lifecycle.inc"
 int main(void)
 {
 #ifndef _WIN32
@@ -597,6 +607,7 @@ int main(void)
     (void)pc_network_bot_state_valid; /* This fixture exercises Story state instead. */
     (void)story_rewards_profiles_capture; /* The menu owns this included entry point. */
     g_xbox_mem_offset=(uintptr_t)memory;
+    WORD_AT(0x4d1ac6)=2; /* Authored mission-one gameplay scene for transition adapters. */
     WORD_AT(0x76b140)=1;WORD_AT(0x76b1a4)=11;
     WORD_AT(0x2004)=0x4e99c4;WORD_AT(0x202c)=0x3000;
     WORD_AT(0x2148)=1;WORD_AT(0x2158)=2;
@@ -732,7 +743,7 @@ int main(void)
         WORD_AT(extra)=3;WORD_AT(extra+4)=0x55;
         g_esp=0x1800;WORD_AT(g_esp+4)=extra;
         pc_story_network_spawn_pad(pad_original);
-        CHECK(g_eax==77 && g_esp==0x1804 && pad_fallbacks==1);
+        CHECK(g_eax==0x7f03 && g_esp==0x1804 && pad_fallbacks==1);
         CHECK(WORD_AT(extra)==3 && WORD_AT(extra+4)==0x55);
         pad_original_result=88;g_esp=0x1800;pc_story_network_spawn_pad(pad_original);
         CHECK(g_eax==88 && pad_fallbacks==1);
@@ -993,7 +1004,7 @@ int main(void)
         pc_story_network_spawn_pad(pad_original);CHECK(g_eax==88); /* checkpoint owns selection */
         const unsigned checkpoint_fallbacks=pad_fallbacks;
         pad_original_result=UINT32_MAX;g_esp=0x1800;pc_story_network_spawn_pad(pad_original);
-        CHECK(g_eax==77 && pad_fallbacks==checkpoint_fallbacks+1 && WORD_AT(extra)==2);
+        CHECK(g_eax==0x7f02 && pad_fallbacks==checkpoint_fallbacks+1 && WORD_AT(extra)==2);
         pad_original_result=88;story_checkpoint=0;
         g_esp=0x1800;WORD_AT(g_esp+4)=0x7f02;pc_story_network_start_record(frame_original);
         CHECK(g_eax==0xa020);
@@ -1230,7 +1241,7 @@ int main(void)
         uint8_t *config=(uint8_t *)memory+0x7de400;
         config[0]=4;config[0x54]=2;config[0x55]=10;config[0x56]=2;config[0x99]=8;
         WORD_AT(0x7356d8)=0x50000;WORD_AT(0x50008)=0;
-        story_loadout_reset();WORD_AT(0x774028)=0x30000;
+        story_lobby_mission=0;story_pending_stage=1;story_loadout_reset();WORD_AT(0x774028)=0x30000;
         g_esp=0x1800;WORD_AT(g_esp)=0x218967;WORD_AT(g_esp+4)=0x50000;
         WORD_AT(g_esp+8)=25;WORD_AT(g_esp+12)=8;
         pc_story_network_loadout_ammo(loadout_ammo_original);
@@ -1430,7 +1441,7 @@ int main(void)
         online_mode=PC_ONLINE_ARCADE;g_esp=0x1800;pc_story_network_restart(restart_original);
         CHECK(restart_calls==3 && g_esp==0x1804 && g_eax==73);
         online_mode=PC_ONLINE_STORY;WORD_AT(0x79094c)=4;g_esp=0x1800;
-        pc_story_network_restart(restart_original);CHECK(restart_calls==4 && g_esp==0x1804);
+        pc_story_network_restart(restart_original);CHECK(restart_calls==3 && g_esp==0x1804); /* guests cannot reload later missions either */
     }
 #endif
 #ifdef _WIN32
@@ -1760,6 +1771,7 @@ int main(void)
         CHECK(WORD_AT(own+0x114)==2 && !story_cine_control_held && cine_ends==before_leadin);
         story_cine_state.control_lock=2;CHECK(!story_cine_valid(&story_cine_state,0));
         story_cine_reset();
+        story_lobby_mission=0; /* This preparation guard is authored by mission one. */
         StoryCinematic guarded={0};WORD_AT(0x600c)=0x8080;
         story_cine_control_prepare(&guarded,0x6000);CHECK(guarded.control_lock);
         guarded.active=1;story_cine_control_prepare(&guarded,0x6000);CHECK(guarded.control_lock);
@@ -2326,6 +2338,9 @@ int main(void)
         CHECK(!story_lobby_return_pending && g_esp==0x1804);
     }
 #endif
-    puts("PASS: Story host controls, network-mode preservation and difficulty return");
+#ifdef _WIN32
+    campaign_lifecycle_matrix();
+#endif
+    puts("PASS: Story host controls and campaign lifecycle for thirteen missions with two, three and four players");
     return 0;
 }

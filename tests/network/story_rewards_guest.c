@@ -32,7 +32,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...){
 }
 static int guest_writable(uint32_t a,size_t n){return a>=0x1000 && a<0x800000 && n<=0x800000-a;}
 static int story_mode=1,story_rewards_tracking;
-static unsigned story_lobby_mission,story_pending_stage=1;
+static unsigned story_lobby_mission,story_lobby_difficulty,story_pending_stage=1;
 static int story_network_session(void){return story_mode;}
 static uint32_t xbox_HeapAlloc(uint32_t n,uint32_t align){assert(n==128 && align==4);return 0x100000;}
 #define OWN_PROFILE (0x7c0050u+0x1f54u)

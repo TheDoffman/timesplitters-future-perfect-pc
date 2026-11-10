@@ -59,7 +59,8 @@ def test_logs_remain_capped_and_pipe_is_drained(tmp_path):
 
 
 @pytest.mark.parametrize('fail_second', [False, True])
-def test_session_closes_only_owned_games_and_recycles_after_exit(tmp_path, monkeypatch, fail_second):
+@pytest.mark.parametrize('players', [2, 3, 4])
+def test_session_closes_only_owned_games_and_recycles_after_exit(tmp_path, monkeypatch, fail_second, players):
     events = []
     games = []
     class Game:
@@ -112,11 +113,11 @@ def test_session_closes_only_owned_games_and_recycles_after_exit(tmp_path, monke
     monkeypatch.setattr(launcher.time, 'monotonic', lambda: next(clock))
     if fail_second:
         with pytest.raises(OSError, match='second game failed'):
-            launcher.play(tmp_path, seconds=1)
+            launcher.play(tmp_path, players=players, seconds=1)
     else:
-        assert launcher.play(tmp_path, seconds=1) == 0
+        assert launcher.play(tmp_path, players=players, seconds=1) == 0
     assert events.count('wait') == len(games)
-    assert events.count('recycle') == 2
+    assert events.count('recycle') == (2 if fail_second else players)
     assert 'server_close' in events
     assert not list((tmp_path / 'private/test-saves').rglob('*.lock'))
 

@@ -17,7 +17,7 @@ static void story_dialogue_reset(void)
     memset(story_dialogue_seen,0,sizeof story_dialogue_seen);story_dialogue_replay=0;
 }
 static int story_dialogue_session(void)
-{return story_npc_session() && WORD_AT(0x0079094cu)==2u && WORD_AT(0x0076b1a4u)==15u;}
+{return story_npc_session() && story_campaign_gameplay();}
 static int story_dialogue_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length)
 {
     if(type!=0x1eu || !guest_writable(payload,4u) || WORD_AT(payload)!=STORY_DIALOGUE_MAGIC) return 0;

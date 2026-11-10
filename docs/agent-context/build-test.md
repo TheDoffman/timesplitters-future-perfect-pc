@@ -30,7 +30,7 @@ host defines cover automatic/assigned pad blocking/resume and existing ownership
 disconnect/focus/parser cases. It runs alongside Developer Tools flight/mouse
 coverage in runtime CI. Patch2630 follows2620.
 
-[Story](build-test-details.md).
+[Coop](story-campaign-lifecycle.md)
 
 `test_developer_tools.py` runs in runtime CI: sidebar tab/dock centers at
 1x/1.5x/2x, both docks, independent vertical scaling and retained painted extents

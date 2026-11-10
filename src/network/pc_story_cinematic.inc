@@ -28,8 +28,9 @@ static uint32_t story_cine_feed_applied,story_cine_control_held;
 static unsigned story_cine_parts;
 static uint32_t story_cine_rally_applied[4];
 static int story_cine_published,story_cine_replay,story_cine_was_active,story_cine_guard_saw_scene,story_cine_sniper_complete;
+static uint32_t story_cine_inventory_context,story_cine_inventory_actor,story_cine_inventory_weapon;
 static int story_cine_session(void)
-{ return story_npc_session() && WORD_AT(0x0079094cu)==2u && WORD_AT(0x0076b1a4u)==15u; }
+{ return story_npc_session() && story_campaign_gameplay(); }
 static void story_cine_reset(void)
 {
     memset(&story_cine_state,0,sizeof story_cine_state);memset(&story_cine_pending,0,sizeof story_cine_pending);
@@ -38,6 +39,29 @@ static void story_cine_reset(void)
     story_cine_cue_applied=story_cine_anchor=0;story_cine_published=story_cine_replay=story_cine_was_active=0;
     story_cine_feed_applied=story_cine_control_held=0;story_cine_guard_saw_scene=story_cine_sniper_complete=0;story_rejoin_view_pending=0;
     memset(story_cine_rally_applied,0,sizeof story_cine_rally_applied);
+    story_cine_inventory_context=story_cine_inventory_actor=story_cine_inventory_weapon=0;
+}
+static void story_cine_inventory(uint32_t context,int begin)
+{
+    if(!story_lobby_mission || WORD_AT(0x76b140u)!=2u || !guest_writable(context,0x1584u) || WORD_AT(context+4u)!=0u) return;
+    const uint32_t body=WORD_AT(context+0x14u);
+    if(!guest_writable(body,0x154u) || WORD_AT(body+0x150u)!=context) return;
+    const uint32_t actor=WORD_AT(body+0x7cu);
+    if(!guest_writable(actor,0xea0u) || WORD_AT(actor)!=body) return;
+    if(begin) {
+        const uint32_t weapon=WORD_AT(actor+0x94u);
+        if(weapon<70u && *(const uint8_t *)((uintptr_t)(actor+0x54cu+weapon)+g_xbox_mem_offset)) {
+            story_cine_inventory_context=context;story_cine_inventory_actor=actor;story_cine_inventory_weapon=weapon;
+        }
+    } else if(story_cine_inventory_context==context && WORD_AT(context+0x114u)==2u) {
+        if(story_cine_inventory_actor==actor &&
+           *(const uint8_t *)((uintptr_t)(actor+0x54cu+story_cine_inventory_weapon)+g_xbox_mem_offset)) {
+            GuestRegisters saved;save_registers(&saved);
+            guest_call(sub_001BA130,2,actor,story_cine_inventory_weapon);
+            restore_registers(&saved);
+        }
+        story_cine_inventory_context=0;
+    }
 }
 static uint32_t story_cine_checksum(const StoryCinematic *s)
 {
@@ -241,6 +265,12 @@ static void story_cine_rally_apply(const StoryCinematic *s)
 }
 static void story_cine_control_prepare(StoryCinematic *s,uint32_t context)
 {
+    if(story_lobby_mission!=0u) {
+        /* Later missions use their authored camera lifetime. The hanging
+           opening and sniper preparation guard belong only to mission one. */
+        s->control_lock=s->active;
+        return;
+    }
     const int guard=!!(WORD_AT(context+0xcu)&0x8000u);
     if(!guard) story_cine_guard_saw_scene=0;
     else if(s->active) story_cine_guard_saw_scene=1;
@@ -279,7 +309,7 @@ static void story_cine_frame(void)
         s.serial=story_cine_serial;
         /* Mode3 remains selected during ordinary gameplay until another cue.
            It cannot own the lifetime of the opening's frozen pose replay. */
-        s.opening=!story_loadout_host[0].equipped &&
+        s.opening=story_lobby_mission==0u && !story_loadout_host[0].equipped &&
             !(bookmarks && guest_writable(bookmarks,8u) && story_checkpoint_available(WORD_AT(bookmarks+4u)));
         s.active=(uint32_t)story_cine_host_active((int)s.opening,context);
         /* The first mission's script preparation guard begins before SCAM.
@@ -342,6 +372,7 @@ static void story_cine_frame(void)
     if(role!=2u || !story_cine_state.serial || story_cine_state.match!=story_npc_match()) return;
     const uint32_t context=story_cine_local_context();if(!context) return;
     const StoryCinematic *s=&story_cine_state;
+    if(s->active && !story_cine_was_active) story_cine_inventory(context,1);
     story_cine_rally_apply(s);
     /* A late join has not observed the host's earlier camera-end transition.
        Rebind its locally created opening/shared Story camera to the owned body
@@ -418,6 +449,7 @@ static void story_cine_frame(void)
         if(!s->control_lock) story_cine_control_held=0u;
         restore_registers(&saved);
     }
+    if(!s->active) story_cine_inventory(context,0);
     story_cine_was_active=(int)s->active;
 }
 #endif

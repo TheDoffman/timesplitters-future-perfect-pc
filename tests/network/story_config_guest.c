@@ -20,7 +20,7 @@ void sub_0035DE70(void){g_eax=0;g_esp+=4;}
 void sub_00355EC0(void){g_eax=MEM32(0x76b140)==1;g_esp+=4;}
 void sub_00064D10(void){g_eax=MEM8(0x7de455)==10 && MEM32(0x79094c)!=100 && MEM32(0x79094c)!=56;g_esp+=4;}
 void sub_000389B0(void){assert(!"unexpected movie completion path");}
-void sub_001CD590(void){assert(MEM32(g_esp+4)==MEM32(0x4d1ae0) || MEM32(g_esp+4)==MEM32(0x4d1ae4) || MEM32(g_esp+4)==MEM32(0x4d1ae0+0x44));++prepared;g_esp+=4;}
+void sub_001CD590(void){assert(MEM32(g_esp+4)<=19);++prepared;g_esp+=4;}
 void sub_00064DD0(void){g_eax=12;g_esp+=4;}
 static unsigned ready_packets,lobby_returns;
 static unsigned pending_loads;
@@ -251,5 +251,26 @@ int main(void){
     g_esp=0x20000;pc_network_guest_scores(sub_003578A0);
     assert(g_esp==0x20004 && MEM32(0x7de530)==0x44000 && MEM32(0x7de318)==123);
     assert(MEM32(0x7a2958)==30); /* preserve authored NPC membership */
-    puts("PASS: original Story stages, rewards ready packets, next-mission selection, movie stream lifetime and guest ABI");free(memory);return 0;
+    for(unsigned mission=0;mission<13;mission++) for(unsigned humans=2;humans<=4;humans++) {
+        story_mode=1;story_lobby_mission=mission;story_pending_stage=1;
+        MEM32(0x76b108)=1;MEM32(0x76b140)=1;MEM32(0x76b1a4)=15;
+        const uint32_t scene=MEM16(0x4d1ac6+mission*0x44),ending=MEM32(0x4d1ae4+mission*0x44);
+        MEM32(0x79094c)=scene;MEM32(0x790950)=humans;MEM32(0x7de458)=0x80008;MEM32(0x7de45c)=0x8000;
+        MEM8(0x7de455)=10;MEM32(0x78ad48)=mission;MEM32(0x78ad50)=2;MEM32(0x78ad54)=1;
+        g_esp=0x20000;MEM32(g_esp)=0x69518;MEM32(g_esp+4)=0x10000;
+        sub_00065940();assert(g_esp==0x20004 && MEM32(0x79094c)==scene);
+        if(ending!=0xffffffffu) {
+            assert(MEM32(0x10058)==0x20000000 && MEM8(0x1009b)==ending);
+            assert(MEM8(0x10054)==MEM8(0x51fc30+ending*36));
+            story_pending_stage=2;MEM32(0x79094c)=MEM8(0x10054);MEM32(0x7de458)=0x20000000;
+            MEM32(0x78ad48)=mission;MEM32(0x78ad50)=2;
+            g_esp=0x20000;MEM32(g_esp)=0x65ccf;MEM32(g_esp+4)=0x10000;
+            sub_00065940();assert(g_esp==0x20004);
+        }
+        if(MEM8(0x10054)!=106 || MEM8(0x10055)!=9 || MEM32(0x10058))
+            fprintf(stderr,"mission=%u humans=%u ending=%u scene=%u rule=%u flags=%08x stage=%u\n",mission,humans,ending,MEM8(0x10054),MEM8(0x10055),MEM32(0x10058),MEM32(0x78ad50));
+        assert(MEM8(0x10054)==106 && MEM8(0x10055)==9 && !MEM32(0x10058));
+        assert(MEM32(0x790950)==humans);
+    }
+    puts("PASS: original Story stages, thirteen-mission completion matrix, rewards readiness, next-mission selection and guest ABI");free(memory);return 0;
 }

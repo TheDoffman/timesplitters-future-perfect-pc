@@ -15,7 +15,7 @@ static int guest_writable(uint32_t p,size_t n){return p>=0x1000 && p<sizeof memo
 static uint32_t xbox_HeapAlloc(uint32_t n,uint32_t a){CHECK(n<128 && a==4);return 0x6000;}
 enum {PC_ONLINE_NONE,PC_ONLINE_ARCADE,PC_ONLINE_STORY};
 static int mode=PC_ONLINE_ARCADE,enabled=1,closed,reset,pumps,match_reset,menus,stock,fallback;
-static uint32_t target,caption;
+static uint32_t target,caption,button_calls,button_callback;
 static unsigned recorded,eligibility_checks;
 static void sub_000668F0(void){++recorded;}
 static int pc_online_mode(void){return mode;}
@@ -32,7 +32,15 @@ static void sub_002EB030_gen(void){++stock;}
 static void sub_002EBE60(void){++stock;g_esp+=4;}
 static void sub_00065470_gen(void){WORD_AT(0x6f11b4)=1;g_esp+=4;}
 static void sub_002EC650_gen(void);
-static uint32_t guest_call(void (*fn)(void),unsigned n,...){(void)n;fn();return 0;}
+static uint32_t guest_call(void (*fn)(void),unsigned n,...){
+ if(n==6){
+  const uint32_t frame=g_esp;g_esp-=28;
+  va_list ap;va_start(ap,n);
+  for(unsigned i=0;i<n;++i)WORD_AT(g_esp+4+i*4)=va_arg(ap,uint32_t);
+  va_end(ap);fn();g_esp=frame;
+ }else fn();
+ return 0;
+}
 static void pc_story_network_result_action(void (*fn)(void),unsigned a){(void)a;++fallback;fn();}
 static void pc_story_network_return_lobby(void (*fn)(void)){++fallback;fn();}
 static void pc_story_network_disconnect_exit(void (*fn)(void)){++fallback;fn();}
@@ -42,7 +50,7 @@ static void pc_story_network_rewards_menu(void (*fn)(void)){++fallback;fn();}
 static void disconnect_original(void){WORD_AT(0x6f11b4)=2;g_esp+=4;}
 static void sub_002EC650_gen(void){pc_multiplayer_exit_action(sub_00065470_gen,0);}
 static void factory(void){target=WORD_AT(g_esp+8);g_esp+=4;}
-static void button(void){caption=WORD_AT(g_esp+4);g_esp+=4;}
+static void button(void){++button_calls;caption=WORD_AT(g_esp+4);button_callback=WORD_AT(g_esp+20);g_esp+=4;}
 static void setup(unsigned role){
  uint8_t heap[128];memcpy(heap,(void *)(g_xbox_mem_offset+0x6000),sizeof heap);
  memset(memory,0,sizeof memory);memcpy((void *)(g_xbox_mem_offset+0x6000),heap,sizeof heap);
@@ -109,11 +117,21 @@ int main(void){
  pc_multiplayer_lobby_lost(disconnect_original);CHECK(multiplayer_destination==3);
  build(0x4e92c4);CHECK(closed==1);
  setup(1);WORD_AT(0x418c)=0x41;multiplayer_leave_confirm();CHECK(stock==1 && !multiplayer_destination);
- for(unsigned role=1;role<=2;++role)for(unsigned ended=0;ended<2;++ended){
-  setup(role);WORD_AT(g_esp+20)=ended?0x2ec030:0x2ec060;WORD_AT(g_esp+4)=0x5000;
+ for(unsigned story=0;story<2;++story)for(unsigned role=1;role<=2;++role)for(unsigned ended=0;ended<2;++ended){
+  setup(role);mode=story?PC_ONLINE_STORY:PC_ONLINE_ARCADE;
+  WORD_AT(g_esp+20)=ended?0x2ec030:0x2ec060;WORD_AT(g_esp+4)=0x5000;
   CHECK(multiplayer_exit_button(button)==(role==1));
   if(role==1)CHECK(!strcmp((char *)(g_xbox_mem_offset+caption),"Return to Lobby") && WORD_AT(0x1804)==0x5000);
  }
+ setup(1);mode=PC_ONLINE_STORY;
+ WORD_AT(0x7bb1e8)=0x7000;WORD_AT(0x7004)=0x7100;WORD_AT(0x7100)=0x2f5520;
+ WORD_AT(g_esp+4)=0x5000;WORD_AT(g_esp+20)=0x2ec060;button_calls=0;
+ CHECK(multiplayer_exit_button(button) && !button_calls && g_esp==0x1804);
+ CHECK(WORD_AT(0x1804)==0x5000);
+ multiplayer_exit_pause_rows(0x7000);
+ CHECK(button_calls==1 && button_callback==0x2ec060 && g_esp==0x1804);
+ CHECK(!strcmp((char *)(g_xbox_mem_offset+caption),"Return to Lobby"));
+ multiplayer_exit_pause_rows(0x7000);CHECK(button_calls==1);
  setup(1);mode=PC_ONLINE_NONE;CHECK(multiplayer_match()); /* System Link */
  mode=PC_ONLINE_STORY;CHECK(!multiplayer_exit_lookup(0x2ebe60));
  pc_multiplayer_exit_action(sub_002EAF60_gen,0);CHECK(fallback==1 && !multiplayer_destination);

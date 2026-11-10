@@ -5,6 +5,7 @@ void pc_network_ammo_pickup(void (*original)(void))
 #ifdef _WIN32
     extern void sub_001B67E0(void);
     const uint32_t frame=g_esp;
+    story_loadout_rounds(frame);
     if(WORD_AT(0x0076b108u) && guest_writable(frame,16u)) {
         const uint32_t actor=WORD_AT(frame+4u),kind=WORD_AT(frame+8u);
         const int32_t amount=(int32_t)WORD_AT(frame+12u);

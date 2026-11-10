@@ -21,7 +21,7 @@ static void story_objectives_reset(void)
     story_objectives_match=0;story_objectives_serial=0;story_objectives_published=0;
 }
 static int story_objectives_session(void)
-{ return story_npc_session() && WORD_AT(0x0079094cu)==2u && WORD_AT(0x0076b1a4u)==15u; }
+{ return story_npc_session() && story_campaign_gameplay(); }
 static unsigned story_objectives_records(uint32_t *table)
 {
     const unsigned count=WORD_AT(0x0078cec8u);

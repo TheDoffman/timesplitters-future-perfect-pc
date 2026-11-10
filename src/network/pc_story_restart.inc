@@ -1,7 +1,7 @@
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 #include "pc_network_profiles.inc"
 #endif
-/* First-mission level reload: retain the original engine reload path on every
+/* Campaign level reload: retain the original engine reload path on every
  * peer. No checkpoint buffers, guest pointers or saved profiles cross the wire. */
 #ifdef _WIN32
 extern void sub_000653B0(void);
@@ -58,8 +58,7 @@ typedef struct StoryRestart {uint32_t magic,match,epoch,checkpoint;} StoryRestar
 static int story_restart_replay;
 static int story_restart_session(void)
 {
-    return story_npc_session() && WORD_AT(0x0079094Cu)==2u &&
-        WORD_AT(0x0076B1A4u)==15u && story_pending_stage==1u;
+    return story_npc_session() && story_campaign_gameplay();
 }
 /* A late join loads the same native config but has not observed earlier
  * Story reload epochs. Bind its bootstrap to this connection, config and
@@ -128,6 +127,7 @@ static void story_restart_reset(unsigned epoch)
     story_cine_reset();
     story_dialogue_reset();
     story_world_reset();
+    story_drop_reset();
     /* A reload reuses the active config rather than the pending-copy hook. */
     memset(story_npc_fresh,0,sizeof story_npc_fresh);
     story_shots_reset();
@@ -167,7 +167,7 @@ void pc_story_network_restart(void (*original)(void))
 {
 #ifdef _WIN32
     if(story_restart_replay) {original();return;}
-    if(story_npc_session() && WORD_AT(0x0079094Cu)==2u) {
+    if(story_npc_session() && story_campaign_scene_active()) {
         const uint32_t frame=g_esp,node=WORD_AT(0x00774028u);
         /* Guests cannot initiate reloads. A checkpoint reload requires a
            locally captured bookmark matching the host's checkpoint mask. */
@@ -246,8 +246,7 @@ static void story_rewards_begin(void)
 {
     if(story_rewards_tracking || !story_network_session() || !WORD_AT(0x76b108u) ||
        WORD_AT(0x76b140u)!=2u || WORD_AT(0x76b1a4u)!=15u ||
-       story_lobby_mission!=0u || story_pending_stage!=1u ||
-       WORD_AT(0x79094cu)!=2u || WORD_AT(0x7de458u)!=0x80008u) return;
+       !story_campaign_gameplay()) return;
     const unsigned count=WORD_AT(0x790950u);
     const uint32_t contexts=WORD_AT(0x7b0c48u);
     if(count<2u || count>4u || !guest_writable(contexts,count*0x1584u)) return;
@@ -264,8 +263,9 @@ static void story_rewards_record(unsigned mission,unsigned stage)
     const unsigned count=WORD_AT(0x790950u);
     const uint32_t contexts=WORD_AT(0x7b0c48u),actors=WORD_AT(0x7356d8u);
     if(!story_network_session() || !WORD_AT(0x76b108u) || WORD_AT(0x76b140u)!=2u ||
-       mission!=0u || stage!=2u || story_lobby_mission!=0u || story_pending_stage!=1u ||
-       WORD_AT(0x79094cu)!=2u || WORD_AT(0x7de458u)!=0x80008u ||
+       mission!=story_lobby_mission || mission>=STORY_CAMPAIGN_MISSIONS ||
+       (stage!=2u && (stage!=3u || WORD_AT(0x004d1ae4u+mission*0x44u)!=UINT32_MAX)) ||
+       !story_campaign_gameplay() ||
        count<2u || count>4u || !guest_writable(contexts,count*0x1584u) ||
        !guest_writable(actors,count*0xea0u)) return;
     story_rewards_begin();
@@ -274,9 +274,12 @@ static void story_rewards_record(unsigned mission,unsigned stage)
     const uint32_t local=guest_call(sub_00356870,1,0u);
     if(local<count && WORD_AT(0x7bedc0u+local*0x1f54u)) {
         const uint32_t result=WORD_AT(0x7de45cu);
+        const uint32_t previous_mission=WORD_AT(0x78ad48u),previous_difficulty=WORD_AT(0x78ad54u);
+        WORD_AT(0x78ad48u)=mission;WORD_AT(0x78ad54u)=story_lobby_difficulty;
         WORD_AT(0x7de45cu)=result|0x8000u;
         guest_call(sub_000668F0,0);
         WORD_AT(0x7de45cu)=result;
+        WORD_AT(0x78ad48u)=previous_mission;WORD_AT(0x78ad54u)=previous_difficulty;
         if(getenv("TSFP_STORY_TRACE")) fprintf(stderr,
             "[PC-STORY-REWARDS] recorded guest mission=%u local=%u humans=%u\n",mission,local,count);
     }
@@ -292,7 +295,7 @@ static uint32_t story_reward_text;
 static int story_rewards_guest(void)
 {
     return story_network_session() && WORD_AT(0x76b108u) && WORD_AT(0x76b140u)==2u &&
-        story_lobby_mission==0u && story_pending_stage==3u && WORD_AT(0x79094cu)==106u;
+        story_lobby_mission<STORY_CAMPAIGN_MISSIONS && story_pending_stage==3u && WORD_AT(0x79094cu)==106u;
 }
 static void story_rewards_build(void)
 {
@@ -336,7 +339,7 @@ static int story_result_button(void (*original)(void))
 {
     if(WORD_AT(0x0076b140u)!=2u || !guest_writable(g_esp,24u)) return 0;
     const uint32_t callback=WORD_AT(g_esp+20u);
-    if(story_network_session() && WORD_AT(0x0076b108u) && story_lobby_mission==0u &&
+    if(story_network_session() && WORD_AT(0x0076b108u) && story_lobby_mission<STORY_CAMPAIGN_MISSIONS &&
        story_pending_stage==3u && WORD_AT(0x0079094cu)==106u && callback==0x002eb0a0u) {
         const uint32_t frame=g_esp,flags=WORD_AT(frame+12u);
         WORD_AT(frame+12u)=flags|1u;
@@ -479,7 +482,7 @@ void pc_story_network_result_action(void (*original)(void),unsigned action)
         "[PC-STORY-RESULT] caller=%08X role=%u phase=%u scene=%u pending=%u action=%u rewards_depth=%u exit=%u\n",
         guest_writable(g_esp,4u)?WORD_AT(g_esp):0u,WORD_AT(0x76b140u),WORD_AT(0x76b1a4u),
         WORD_AT(0x79094cu),story_pending_stage,action,story_rewards_exit_depth,original==sub_00065470_gen);
-    if(story_network_session() && WORD_AT(0x0076b108u) && story_lobby_mission==0u &&
+    if(story_network_session() && WORD_AT(0x0076b108u) && story_lobby_mission<STORY_CAMPAIGN_MISSIONS &&
        (WORD_AT(0x0076b140u)==1u || WORD_AT(0x0076b140u)==2u)) {
         if(!action && story_pending_stage>=2u && WORD_AT(0x0076b140u)==2u) {g_eax=0;g_esp+=4u;return;}
         if(!action && story_rewards_exit_depth && original==sub_00065470_gen && story_pending_stage==3u &&

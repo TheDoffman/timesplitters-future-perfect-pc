@@ -20,6 +20,9 @@ static void save_registers(GuestRegisters *r){*r=(GuestRegisters){g_esp,g_eax};}
 static void restore_registers(const GuestRegisters *r){g_esp=r->sp;g_eax=r->ax;}
 static int active=1;static uint32_t match=0x10203040;
 static int story_npc_session(void){return active;}
+static unsigned story_lobby_mission,story_pending_stage=1;
+static int story_network_session(void){return active;}
+#include "pc_story_campaign.inc"
 static unsigned story_npc_humans(void){return 2;}
 static uint32_t story_npc_match(void){return match;}
 static volatile unsigned marker;
@@ -56,7 +59,9 @@ static void receive(const StoryDropState *s)
 {memcpy((void *)(g_xbox_mem_offset+0x90000),s,sizeof *s);assert(story_drop_receive(0x31000,0x90000,0x1e,sizeof *s));}
 int main(void)
 {
+ (void)story_campaign_scene;
  g_xbox_mem_offset=(uintptr_t)memory;g_esp=0x20000;WORD_AT(0x79094c)=2;WORD_AT(0x76b1a4)=15;
+ WORD_AT(0x76b108)=1;WORD_AT(0x7de458)=0x80008;
  WORD_AT(0x76b140)=1;WORD_AT(0x774028)=0x32000;WORD_AT(0x774040)=0;WORD_AT(0x31000)=0;
  const uint32_t owner=0x7b0d20+28*0xd8,entity=0x70000;
  WORD_AT(owner)=entity;WORD_AT(owner+0xc)=2;WORD_AT(owner+0x10)=9;WORD_AT(owner+0x14)=25;
