@@ -16,6 +16,12 @@ game/crossplay and other modes still require separate acceptance. The Mac relay
 service is deployed; client executables require matching rebuilds.
 See [implementation and validation](../development/arcade-host-migration.md).
 
+`pc_arcade_migration_guest.inc` publishes active preparation/graceful-departure
+status through `pc_match_overlay_migration`. The shared final-frame canvas paints
+a centred Migrating host card, independent of HUD/Tools preferences, and clears
+it on commit, closure or leaving gameplay. It does not retain guest pointers,
+capture input, or add a network message. Windows and native GL use the same layout.
+
 ## Shared relay
 
 `lobby_server.RelayServer` authenticates TSFR envelopes against the live directory

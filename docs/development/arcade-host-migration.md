@@ -62,6 +62,13 @@ actual active-match engine phases before deferring, because directory metadata
 can briefly lag behind the engine transition.
 The migrating owner's pause button says Leave Match; its confirmation describes
 the transfer instead of warning that every player's session will end.
+During preparation (and the owner's final-frame departure wait), the game-thread
+adapter publishes value-only status to `pc_match_overlay_migration`. A centred
+"Migrating host..." card asks players to wait. It uses the existing shared
+final-frame canvas on Windows/Mac/Linux, independently of Tools/HUD preferences,
+then clears on commit, closure or leaving active gameplay. It adds no input gate
+or artificial handoff delay. `pc_match_overlay.inc` reserves three draw slots and
+paints last, preserving the existing sidebar layout when migration is inactive.
 
 `3000-arcade-migration-build.patch` enables the same adapter for Windows, Mac and
 Linux game builds. Online shared Arcade uses v3; Story remains v2. The browser also lists/joins
@@ -82,6 +89,9 @@ include all new modules. Matching native rebuilds are required.
   authenticated control, fragmented transfer and native peer-ID promotion.
 - `tests/network/multiplayer_exit.c`: production pause/results leave hooks defer
   host unload until fencing, then unload only the departing game.
+- `tests/input/developer_tools.c`: migration card visibility with Tools disabled,
+  centring at640/3440 widths, capacity guards and immediate removal on resume.
+  Native control/adapter fixtures check actual prepare/resume publication.
 - `tests/network/test_arcade_service.py`: three real TLS/UDP companions, using the
   exact C fixture ABI. Reordered final-upload/leave, normal departure and replacement-host loss (either
   companion crash or engine stall with live HTTP heartbeats) restore
@@ -92,6 +102,8 @@ include all new modules. Matching native rebuilds are required.
   the selected backup tick/countdown and bot motion/combat on every survivor.
   `--repeat-migration` also kills the replacement host. Normal build identity/seal
   and test-save isolation are enforced.
+  Preparation captures a short asynchronous screenshot burst for every survivor;
+  `migration-finished` also captures the resumed game to check overlay removal.
 
 Fixture and socket tests do not demonstrate that original AI decisions, weapon
 inventory, pickups, objectives or every Arcade mode survive a live handoff.

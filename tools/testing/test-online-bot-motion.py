@@ -216,6 +216,7 @@ def main():
     completed=False
     retired = set()
     migration_selected = {}
+    migration_captures = set()
     started = time.monotonic()
     def read(peer, address, size):
         if peer==mac_peer and remote is not None:
@@ -254,12 +255,28 @@ def main():
             rows.append(row);node=word(peer,node+4)
         return dict(address=menu,selected=word(peer,menu+0x18c),rows=rows)
     def observe():
+        capture_peers=[]
         if args.migration:
             with server.directory.lock:
                 for room in server.directory.arcade.rooms.values():
                     migration=room['migration']
                     if migration and migration.selected:
                         migration_selected['snapshot']=migration.selected
+                        if not args.no_captures:
+                            for member in migration.members:
+                                identity=(migration.epoch,member-1)
+                                if identity not in migration_captures:
+                                    migration_captures.add(identity);capture_peers.append(identity)
+        # Capture a short burst around the actual preparation barrier. The
+        # first service response can precede the native draw by a frame; never
+        # block the observation/lease loop on PrintWindow.
+        for epoch,peer in capture_peers:
+            def migration_burst(epoch=epoch,peer=peer):
+                for attempt in range(6):
+                    if children[peer].poll() is not None:break
+                    capture(children[peer].pid,out/f'migration-overlay-{epoch}-{peer}-{attempt}.png')
+                    time.sleep(.1)
+            threading.Thread(target=migration_burst,daemon=True).start()
         if remote is not None:
             try:remote.refresh()
             except OSError:remote.pages.clear()
@@ -364,7 +381,7 @@ def main():
                                          for peer in range(len(handles))]))
         # PrintWindow can block while the game is synchronously awaiting its
         # Online browser. Capture only running frontend/gameplay boundaries.
-        if not args.no_captures and label in ('frontend','no-online-lobby','match','results','post-results',
+        if not args.no_captures and label in ('frontend','no-online-lobby','match','results','post-results','migration-finished','second-migration-finished',
                                               'scores-tab','options-tab','rematch','rematch-results','finished',
                                               'options-root','options-mode','options-settings','options-settings-initial','short-match-settings','rematch-timeout','rematch-selection'):
             for peer, child in enumerate(children):

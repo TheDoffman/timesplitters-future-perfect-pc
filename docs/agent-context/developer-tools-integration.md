@@ -246,6 +246,14 @@ The former named footer notice remains implemented but disabled for future reuse
 flight state and value-only developer requests. Windows/SDL adapters own host
 input/capture/fullscreen/log-folder operations. The old Windows bar is hidden;
 its saved JSON is preserved. F2/F12 dialogs remain recovery routes.
+`pc_match_overlay.inc` wraps the sidebar line provider with a value-only atomic
+match-migration status (`pc_match_overlay.h`). It reserves three draw slots and
+appends a centred panel/title/help line last, so it renders over the finished
+frame even with Tools disabled or HUD hidden. Both D3D and native GL reuse the
+existing shared font/canvas; there is no second host-specific overlay. The
+native migration frame clears status when inactive, disconnected or committed.
+`tests/input/developer_tools.c` covers disabled Tools, centring, bounded capacity
+and clearing; the production native control fixture checks prepare/resume state.
 `pc_developer_guest.inc` handles camera work at original CCAB0 and Story requests
 at the timing boundary. Noclip publishes feet/eye/history through D2DE0;
 both flight modes rebuild the final view after scripted cameras. Freecam

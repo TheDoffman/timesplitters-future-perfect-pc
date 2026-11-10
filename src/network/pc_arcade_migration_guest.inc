@@ -2,6 +2,7 @@
  * capture and restoration operate only on the bounded pointer-free schema. */
 #ifdef TSFP_ARCADE_MIGRATION
 #include "pc_arcade_api.h"
+#include "pc_match_overlay.h"
 extern void pc_native_visual_rebase(uint32_t tick,double fraction);
 static PcArcadeControlState arcade_guest_control;
 static PcArcadeCheckpoint arcade_guest_checkpoint;
@@ -63,6 +64,8 @@ int pc_arcade_migration_frame(int after)
         if(node && !pc_network_arcade_read(&g_xbox_mem_offset,node,&native_peer,4))native_peer=UINT32_MAX;
         pc_network_arcade_native_peer(native_peer);
         const int control=pc_network_arcade_progress(active,&state);
+        pc_match_overlay_migration(active && control && (state.phase==2u ||
+            (state.phase==1u && pc_network_arcade_departing())));
         if(getenv("TSFP_ARCADE_TRACE") && pc_network_bots_time()-arcade_trace_at>=2.) {
             arcade_trace_at=pc_network_bots_time();
             fprintf(stderr,"[PC-ARCADE-MIGRATION] control=%d active=%d mode=%u role=%u network=%u game=%u epoch=%u phase=%u checkpoint=%u\n",
