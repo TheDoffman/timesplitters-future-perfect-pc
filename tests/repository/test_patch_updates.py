@@ -155,7 +155,7 @@ def test_upgrade_native_checkpoint_preserves_fixed_default(checkout, tmp_path):
     prior=tmp_path/'native-prior-patches'
     prior.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch'):
+        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch'):
             continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch'):
@@ -230,7 +230,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch'):
+        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch'):
             continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch'):
@@ -356,7 +356,7 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches = tmp_path / 'mac-only-patches'
     old_patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch'):
+        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch'):
             continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch'):
@@ -418,7 +418,7 @@ def texture_branch_patches(tmp_path):
     patches = tmp_path / 'texture-patches'
     patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch'):
+        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch'):
             continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch'):
@@ -439,7 +439,7 @@ def main_branch_patches(tmp_path):
     patches = tmp_path / 'main-patches'
     patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch'):
+        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch'):
             continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch'):
@@ -714,7 +714,7 @@ def test_graphics_branch_round_trip_preserves_local_edits(checkout, tmp_path, cr
     baseline = tmp_path / 'without-graphics'
     baseline.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch'):
+        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch'):
             continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
         if patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch'):

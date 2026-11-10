@@ -751,6 +751,22 @@ int tsfp_native_input_test(void) {
         SDL_SetJoystickVirtualButton(joy,SDL_GAMEPAD_BUTTON_SOUTH,false);
         SDL_Delay(3);recomp_bindings_sample(0,&pad);
         ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==0;
+        /* #540: explicit P1 assignment must select controller glyphs too.
+         * This self-test runs only with its isolated controls file. */
+        int saved_devices[4],explicit_devices[4]={0,-1,-1,-1};char device_error[160];
+        pc_settings_players_read(saved_devices);
+        int assigned=pc_settings_players_save(explicit_devices,device_error,sizeof device_error);
+        ok &= assigned;
+        if(assigned) {
+            pc_prompts_reset();
+            SDL_SetJoystickVirtualButton(joy,SDL_GAMEPAD_BUTTON_SOUTH,true);
+            SDL_Delay(3);recomp_bindings_sample(0,&pad);
+            ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==255 && !pc_prompts_keyboard_active();
+            char explicit_prompt[64];
+            ok &= !pc_prompts_rewrite("\v2 Select",explicit_prompt,sizeof explicit_prompt);
+            ok &= pc_settings_players_save(saved_devices,device_error,sizeof device_error);
+            SDL_SetJoystickVirtualButton(joy,SDL_GAMEPAD_BUTTON_SOUTH,false);
+        }
         SDL_CloseJoystick(joy);SDL_DetachVirtualJoystick(id);
         SDL_Delay(300);recomp_bindings_sample(0,&pad);
         ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==0;

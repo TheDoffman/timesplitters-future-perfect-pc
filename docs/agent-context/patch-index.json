@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "1c03dc56c4d57848dd399c613d85eb5123adfe020d25f24ceafe106f2d971376",
+  "loaderSha256": "c4f0c93d5f8aa938fa31d20623bb9b4b0a81590d7c6e0cecb5bd9cd6819410d9",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3808,6 +3808,14 @@
       "name": "2950-controller-deadzones.patch",
       "path": "patches/input/2950-controller-deadzones.patch",
       "sha256": "4bf6ffd987c15d08586d439cbcd7332e7c68f43ff5682615cb1628962ea8e194",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2955-native-explicit-controller-prompts.patch",
+      "path": "patches/input/2955-native-explicit-controller-prompts.patch",
+      "sha256": "a4b9ef1355cde2f56e868b78c3984758b1e982e6143a83f22c755a932c8efc2f",
       "targets": [
         "src/input/input_bindings.c"
       ]

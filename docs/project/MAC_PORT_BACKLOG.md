@@ -1,3 +1,10 @@
+#540 native explicit-controller prompts (local): patch2955 corrects shared
+TSFP_NATIVE_INPUT sampler notification for explicit P1 pads, covering Linux/Mac;
+Windows keeps its working path. No new OS adapter is needed. Headless Windows
+and Ubuntu/Clang sampler tests pass; native SDL virtual-pad self-test expanded but
+native desktop/hardware execution pending. See STATUS. No Steam Deck acceptance
+or publication claimed.
+
 Fresh profile/controller routing repair (fix/fresh-profile-movement): portable
 profile initialization/targeted repair and scoped controller glyphs, plus shared
 semantic keyboard axis routing through native per-player Move/Look selectors.

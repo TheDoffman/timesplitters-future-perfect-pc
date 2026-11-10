@@ -1,0 +1,17 @@
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -1062,10 +1062,14 @@
+         for(int slot=0;slot<RECOMP_PAD_SLOTS;slot++)
+             if(!(reserved_pads & (1u<<slot)) && recomp_pad_read(slot,&pad)) {
+                 have_pad=1;auto_pad=slot;break;
+             }
+         pc_prompts_controller(&pad,have_pad);
++    } else if(port==0 && c->device==DEV_PAD && pc_controls_accept_pad()) {
++        /* Explicit P1 pad assignments use the same prompt activity path as
++         * the keyboard profile's automatic pad fallback. */
++        pc_prompts_controller(&pad,have_pad);
+     }
+ #endif
+ 
+ #ifdef TSFP_PC_CONTROLS
+     if (port == 0 && pc_controls_accept_pad()) {
