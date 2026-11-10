@@ -1,7 +1,7 @@
 """System Link overlay: virtual game addresses, one host UDP port, authenticated relay.
 
-Every guest opens an outbound path to the host. The reachable player hosting the
-game relays guest-to-guest traffic; no third-party gameplay service is involved.
+Guests use a direct host connection or an outbound-only shared relay. The first
+player remains the game host and routes guest-to-guest traffic in either case.
 """
 
 # Direct-command imports share the repository's grouped helper paths.
@@ -35,6 +35,22 @@ WIRE_MAGIC = b'TSFO\x01\0\0\0'
 MAX_PAYLOAD = 4096
 HELLO, ACK, DATA, PING, PONG = 1, 2, 3, 4, 5
 METRICS = struct.Struct('!4sIH')
+# The relay authenticates this outer envelope separately from the existing
+# host/guest packet. It never needs to change or interpret the game payload.
+RELAY = struct.Struct('!8s16sQBBB')
+RELAY_MAGIC = b'TSFR\x01\0\0\0'
+REGISTER, REGISTERED, FORWARD = 1, 2, 3
+MAX_RELAY_PACKET = RELAY.size + WIRE.size + 65 + MAX_PAYLOAD
+
+
+def relay_packet(room, sequence, source, target, kind, key, payload=b''):
+    body = RELAY.pack(RELAY_MAGIC, room, sequence, source, target, kind) + payload
+    return body + hmac.digest(key, body, 'sha256')
+
+
+def relay_endpoint(peer):
+    # Internal addresses used only after authenticated relay decapsulation.
+    return (str(ipaddress.IPv4Address(virtual_ip(peer))), 0)
 
 
 def virtual_ip(peer):
@@ -53,7 +69,7 @@ def destination(ip):
 
 class Bridge:
     def __init__(self, compatibility, room, peer_id=1, key=None, host=None,
-                 bind=('0.0.0.0', 0), clock=time.monotonic):
+                 bind=('0.0.0.0', 0), clock=time.monotonic, relay=None, relay_key=None):
         self.compatibility = bytes.fromhex(compatibility)
         self.room = bytes.fromhex(room)
         if len(self.compatibility) != 32 or len(self.room) != 16:
@@ -64,6 +80,15 @@ class Bridge:
         if peer_id != 1 and (not self.key or len(self.key) != 32 or not host):
             raise ValueError('Guest requires host and peer credential')
         self.host = host
+        self.relay = relay
+        self.relay_key = bytes.fromhex(relay_key) if relay_key else None
+        if relay and (not self.relay_key or len(self.relay_key) != 32):
+            raise ValueError('Relay requires a private peer credential')
+        self.relay_sequence = 0
+        self.relay_received_sequence = -1
+        self.last_registration = -10
+        self.relay_ready = threading.Event()
+        self.relay_seen = self.clock()
         self.local_token = secrets.token_bytes(16)
         self.local = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.local.bind(('127.0.0.1', 0))
@@ -77,7 +102,7 @@ class Bridge:
         self.ports, self.peers = {}, {}
         self.lock = threading.Lock()
         self.ready = threading.Event()
-        if peer_id == 1:
+        if peer_id == 1 and not relay:
             self.ready.set()
         self.stopped = threading.Event()
         self.sequence = 0
@@ -133,7 +158,12 @@ class Bridge:
         body = WIRE.pack(WIRE_MAGIC, self.compatibility, self.room, self.sequence,
                          source, target, sport, dport) + bytes((kind,)) + payload
         try:
-            self.wan.sendto(body + hmac.digest(key, body, 'sha256'), endpoint)
+            packet = body + hmac.digest(key, body, 'sha256')
+            if self.relay:
+                peer = destination(ipaddress.IPv4Address(endpoint[0]).packed)
+                self.send_relay(FORWARD, peer, packet)
+            else:
+                self.wan.sendto(packet, endpoint)
             self.sent += 1
         except OSError:
             self.dropped += 1
@@ -180,7 +210,39 @@ class Bridge:
         else:
             self.send_wire(self.host, self.key, DATA, self.peer_id, target, sport, dport, payload)
 
+    def send_relay(self, kind, target=0, payload=b''):
+        self.relay_sequence += 1
+        self.wan.sendto(relay_packet(self.room, self.relay_sequence, self.peer_id,
+                                    target, kind, self.relay_key, payload), self.relay)
+
+    def from_relay(self, packet, endpoint):
+        if endpoint != self.relay or not RELAY.size+32 <= len(packet) <= MAX_RELAY_PACKET:
+            self.dropped += 1
+            return
+        magic, room, sequence, source, target, kind = RELAY.unpack_from(packet)
+        if (magic != RELAY_MAGIC or room != self.room or target != self.peer_id or
+            sequence <= self.relay_received_sequence or
+            not hmac.compare_digest(hmac.digest(self.relay_key, packet[:-32], 'sha256'), packet[-32:])):
+            self.dropped += 1
+            return
+        if kind == REGISTERED and source == 0 and len(packet) == RELAY.size+32:
+            self.relay_received_sequence = sequence
+            self.relay_seen = self.clock()
+            self.relay_ready.set()
+            if self.peer_id == 1:
+                self.ready.set()
+        elif kind == FORWARD and 1 <= source <= 254 and (source == 1 or self.peer_id == 1):
+            self.relay_received_sequence = sequence
+            self.relay_seen = self.clock()
+            self.from_wire(packet[RELAY.size:-32], relay_endpoint(source))
+
     def from_network(self, packet, endpoint):
+        if self.relay:
+            self.from_relay(packet, endpoint)
+        else:
+            self.from_wire(packet, endpoint)
+
+    def from_wire(self, packet, endpoint):
         if not WIRE.size+33 <= len(packet) <= WIRE.size+33+MAX_PAYLOAD:
             return
         magic, version, room, sequence, source, target, sport, dport = WIRE.unpack_from(packet)
@@ -229,6 +291,12 @@ class Bridge:
 
     def poll(self, timeout=.05):
         now = self.clock()
+        if self.relay and now-self.last_registration >= 1:
+            try:
+                self.send_relay(REGISTER)
+            except OSError:
+                self.dropped += 1
+            self.last_registration = now
         if self.peer_id != 1 and now-self.last_hello >= 1:
             self.send_wire(self.host, self.key, HELLO, self.peer_id, 1)
             self.last_hello = now

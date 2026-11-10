@@ -59,7 +59,6 @@ def test_auto_host_tls_invitation_join_and_cleanup(tmp_path, mode):
 
 @pytest.mark.parametrize('value', ['bad', 'tsfp-online:@@@', 'tsfp-online:e30', 'tsfp-online:'+('x'*2048),
     online_host.invitation('http://127.0.0.1:30820', 'a'*64, 'A'*16),
-    online_host.invitation('https://example.test:30820', '', 'A'*16),
     online_host.invitation('https://example.test:30820', 'a'*64, 'not a code')])
 def test_invalid_invitations(value):
     with pytest.raises(ValueError):

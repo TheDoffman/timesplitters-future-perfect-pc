@@ -1,5 +1,6 @@
 """Run the real browser, supervisor and UDP bridge with isolated content/settings."""
 import hashlib
+from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
@@ -12,7 +13,7 @@ import time
 
 import pytest
 from bundle_online import COMPANION, repo_file
-from lobby_server import Directory, Server
+from lobby_server import Directory, Server, RelayServer
 from online_client import Client, Session
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -50,11 +51,30 @@ def test_game_process_detects_parent_exit(tmp_path):
                     (sys.platform=='linux' and not os.environ.get('DISPLAY')),
                     reason='Desktop Tk runtime/display required')
 @pytest.mark.parametrize('action', ['host', 'join', 'cancel'])
-def test_browser_lifetime(tmp_path, action):
-    run_browser_lifetime(tmp_path, action)
+@pytest.mark.parametrize('transport', ['direct', 'relay'])
+def test_browser_lifetime(tmp_path, action, transport):
+    run_browser_lifetime(tmp_path, action, transport=transport)
 
 
-def run_browser_lifetime(tmp_path, action, package=None):
+@contextmanager
+def transport_directory(transport):
+    directory = Directory()
+    relay = RelayServer(directory) if transport == 'relay' else None
+    thread = None
+    try:
+        if relay:
+            directory.relay_address = relay.socket.getsockname()
+            thread = threading.Thread(target=relay.run, daemon=True)
+            thread.start()
+        yield directory
+    finally:
+        if relay:
+            relay.close()
+            thread.join(timeout=3)
+            assert not thread.is_alive()
+
+
+def run_browser_lifetime(tmp_path, action, package=None, *, transport='direct'):
     compatibility = VERSION if package is None else json.loads(
         (package/'Support/Online/network-identity.json').read_text())['compatibility']
     support = tmp_path/'Support/Online'; support.mkdir(parents=True)
@@ -66,16 +86,17 @@ def run_browser_lifetime(tmp_path, action, package=None):
     (support/'network-identity.json').write_text(json.dumps(manifest))
     handshakes = tmp_path/'Logs/Online'; handshakes.mkdir(parents=True)
     result = handshakes/f'{os.getpid()}.ready'
-    with Server(('127.0.0.1', 0), Directory()) as server:
+    with transport_directory(transport) as directory, Server(('127.0.0.1', 0), directory) as server:
         thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
         address = f'http://127.0.0.1:{server.server_port}'
         client = Client(address)
         # UI validates the advertised UDP port. Reserve a free unprivileged port.
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.bind(('127.0.0.1', 0)); port = sock.getsockname()[1]
-        host = Session.create(client, compatibility, 'fixture', port, True) if action == 'join' else None
+        host = Session.create(client, compatibility, 'fixture', port, True,
+                              transport=transport) if action == 'join' else None
         command = tmp_path/'private/network-validation/command.json'; command.parent.mkdir(parents=True)
-        command.write_text(json.dumps(dict(action=action, directory=address, port=port,
+        command.write_text(json.dumps(dict(action=action, directory=address, port=port, transport=transport,
                                           code=host.lobby['code'] if host else '')))
         environment = dict(os.environ, RECOMP_GAME_DIR=str(game),
             TSFP_ONLINE_HANDSHAKES=str(handshakes), TSFP_ONLINE_MANIFEST=str(support/'network-identity.json'),

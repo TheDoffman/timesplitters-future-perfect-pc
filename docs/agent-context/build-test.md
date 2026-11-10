@@ -1,12 +1,12 @@
 [Sticks](controller-deadzones.md). [Online UI](multiplayer-ui.md).
 [2970 pads](control-presets.md); [Tex](texture-preference.md).
+[Relay checks](../development/online-relay.md#protocol-and-validation).
 [Arms](video-options.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).
 [Tools](developer-tools-integration.md).
 Developer warnings: [launcher](launcher.md).
 [Profile tests](multiplayer-exit.md#validation): saves, late lobby saves, checksum/write errors.
-[Icons](controls-options.md).
 [Effect depth](native-effect-depth.md).
 [Update tests](main-menu-update.md).
 [Weapon FOV](video-options.md#weapon-aperture).
@@ -1040,7 +1040,6 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
 
-Players: controls-options.md.
 
 Patch tests: Mac seeds omit2620/2625 until migration; Story stubs use production guards.
 

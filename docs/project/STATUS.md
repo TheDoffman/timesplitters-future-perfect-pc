@@ -43346,3 +43346,22 @@ PR546 first integrated CI exposed a duplicate POSIX SRWLOCK fixture declaration
 and native .NET JSON Unicode-escaping '+' in inherited pad axis tokens. Removed
 the redundant typedef and matched native JSON data encoding to Framework literal
 axis tokens; retain the failing shared UI regression. Host rerun pending.
+# Shared Online lobby/relay implementation — 2026-11-10
+
+Branch `feature/shared-online-relay`, based on `0692efdf`; implementation pending
+publication. The existing creating player retains match simulation/authority;
+the standalone directory can now authenticate and relay outbound-only host/guest
+UDP. Relayed hosting ignores the legacy host port, waits for service registration,
+and fails explicitly against directories without relay support. Shared browser
+defaults, automatic listing, relayed invitations, packaged service configuration,
+bandwidth/replay/membership controls and a Mac launch-agent installer are included.
+See `docs/development/online-relay.md` for operation and protocol boundaries.
+
+Windows x64: real pinned HTTPS + three UDP bridges passed for Arcade and Story,
+including an occupied legacy host port, outbound-only sends, peer traffic through
+the player host, discovery, RTT and invalid credentials/replays. Direct Online,
+host certificate/invitation and directory regression checks passed (27 tests).
+Installer isolated-command tests also passed. Remaining consolidated Windows/Mac
+results and actual Mac service deployment are recorded below after execution.
+No real game rebuild, complete WAN match, load/capacity result or published-client
+compatibility is claimed by these transport fixtures.

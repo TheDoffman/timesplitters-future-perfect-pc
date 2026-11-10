@@ -113,6 +113,7 @@ def game_release_path(path):
                 'tools/network/online_client.py',
                 'tools/network/online_host.py',
                 'tools/network/online_paths.py',
+                'tools/network/online-service.json',
                 'tools/network/online_transport.py',
                 'tools/play-native-mac.py',
                 'tools/play.py',

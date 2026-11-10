@@ -1,5 +1,26 @@
 # Multiplayer companion presentation
 
+## Shared relay
+
+`lobby_server.RelayServer` authenticates TSFR envelopes against the live directory
+roster, learns endpoints only on registration and forwards host/guest pairs with
+replay, expiry and token-bucket limits. Separate relay keys never enter public
+listings or owner rosters. `online_transport.Bridge` encapsulates the unchanged
+TSFO game transport and retains player1 routing/authority. Both roles use outbound
+ephemeral sockets; the native loopback handshake is unchanged. `Session.create`
+accepts explicit `transport='relay'`, refuses unsupported directories and waits
+for relay registration before publishing a game handshake. Guests still require
+the actual player's authenticated ACK. Lost relay replies stop the session.
+
+The browser defaults new installations to a shared service, refreshes listings
+on opening and retains saved legacy automatic hosting choices. Public defaults
+come from bundled/identity-hashed `online-service.json` (initially empty) or env;
+saved user choices win. `install_online_service.py` prepares the five-file
+standalone service and a per-user Mac launch agent without game assets. Optional
+LAN advertisement avoids hairpin routing. See [setup](../development/online-relay.md)
+and `test_online_relay.py` for actual HTTPS/UDP, authorization, isolated installer
+and outbound-only validation. Real-game WAN/release acceptance is separate.
+
 `tools/network/online_theme.py` owns the launcher-colored Tk browser and invitation
 view (`build_browser`, `build_invitation`). `online.py` supplies its existing
 variables and callbacks; identity verification, session/bridge lifetime, port
