@@ -79,7 +79,7 @@ Textures: `src/textures/`, runtime `src/d3d/` and HLE
 texture hooks; offline tooling `tools/textures/`. Sanitized replacements now live
 in `assets/textures` (DDS via Git LFS), audited by `tools/textures/build_textures.py` for optional delivery;
 Private art stays local. Networking: `src/network/`, HLE/kernel patches and
-`tools/network/online.py`; [LAN](system-link.md), [Online](multiplayer-ui.md). Crash capture:
+`tools/network/online.py`; [LAN](system-link.md), [Online UI](multiplayer-ui.md). Crash capture:
 `src/diagnostics/`, runtime crash hooks and launcher diagnostics.
 Audio: `src/hle/hle_dsound*`, `hle_xmv*`. [Beta audio](../development/positional-audio.md).
 General buffering, lifecycle, format and device recovery are unconditional;
@@ -436,7 +436,7 @@ bounds and matching clip times every frame over50ms, retargeting from the curren
 display pose. Vitals, scores, shots, absence and spawn transitions stay atomic;
 there is no guest AI or extrapolation. Gaps over250ms snap; match/host/pool/inactive
 changes clear history. Windows QPC supplies monotonic time. Native networking
-shares the policy through TSFP_NATIVE_NETWORK; see [Online](multiplayer-ui.md).
+shares the policy through TSFP_NATIVE_NETWORK; see [Online UI](multiplayer-ui.md).
 Only clip-block+8 (model DC/134) is interpolated within one clip/cycle. Other
 animation channels stay atomic: US5CEF0 can promote the secondary clip during
 zero-advance evaluation, so mixing crossfade state can select an invalid clip.

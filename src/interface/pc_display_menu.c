@@ -17,6 +17,10 @@ static int controls_tabs_visible(void);
 static void settings_tabs_footer(uint32_t menu);
 static void main_update_notice_open(uint32_t menu);
 static void main_update_notice_draw(uint32_t menu);
+static unsigned online_opening_frames;
+static int online_opening_pending;
+static void online_opening_draw(uint32_t menu);
+static void online_opening_tick(void);
 static void settings_tabs_footer_style(uint32_t menu,uint32_t sx,uint32_t sy,uint32_t colour);
 static int controls_tabs_poll(uint32_t menu);
 static void controls_tabs_flush(void);
@@ -1130,6 +1134,7 @@ static void update_apply(void)
 #include "pc_graphics_menu.inc"
 #include "pc_video_tabs.inc"
 #include "pc_update_notice.inc"
+#include "pc_online_notice.inc"
 #include "pc_audio_tabs.inc"
 static void labels(void)
 {
@@ -1549,9 +1554,16 @@ static void system_link_activate(void)
 }
 static void online_activate(void)
 {
-    GuestRegisters r; save_registers(&r);
+    /* Let the title present the notice before entering the companion wait. */
+    online_opening_pending=1;online_opening_frames=0;g_esp+=4;
+}
+static void online_opening_tick(void)
+{
+    if(!online_opening_pending || online_opening_frames<2)return;
+    online_opening_pending=0;
+    GuestRegisters r;save_registers(&r);
     if(pc_online_connect()) {multiplayer_profiles_capture();guest_call(sub_001A0A60,0);}
-    restore_registers(&r); g_esp+=4;
+    restore_registers(&r);
 }
 #endif
 #include "pc_multiplayer_exit.inc"
