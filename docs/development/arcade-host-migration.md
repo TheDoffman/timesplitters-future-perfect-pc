@@ -102,6 +102,14 @@ that path, discovering only the uniquely named validation lobby. Controlled
 crash/leave runs retain the private test coordinator to inspect selected backup
 bytes. `--game-mode team-deathmatch|capture-bag` selects the reviewed stock game
 mode rows; Deathmatch remains the default. Record each mode's actual outcome.
+Team modes require normal confirmation of each player's Select Team screen.
+`--points` chooses a bounded stock point limit; the migration precondition waits
+for a naturally scored backup acknowledged by a survivor. `--migration-results
+--short-match` additionally finishes the migrated round, compares survivor results,
+starts a fresh rematch through the elected host, checks score/clock reset and new
+round identity, then compares the completed rematch results. Disconnected player
+rows may persist in the original results; required live native IDs and bots must
+be unique and present, and blank retired rows are excluded on the next round.
 `--service-address` retains the installed certificate pin while testing its LAN
 endpoint; this separates a server-self public-address route from gameplay.
 Private coordinator runs record sanitized native-counter/phase audits at0.5s.
@@ -196,3 +204,35 @@ native adapter; the isolated migration runner enables it and records sanitized
 service counters/phase alongside score and timer evidence. Generated Windows
 acceptance code uses the supported `--split 32` generator option and `_CL_=/MP4`
 to stay within the local compiler memory limit. No generated guest C is edited.
+
+### Physical Windows–Mac gameplay acceptance — 2026-11-10
+
+Matching sealed Windows x64 and Mac arm64 Vulkan/MoltenVK builds at `5b98bae3`
+use compatibility `cbf89bed868bc189912e8ceab1bd643ded4c7e2fc4caa20ec6025a9b3d6ef8a9`.
+These are actual native games with controller input, six bots and read-only
+observations, rather than protocol fixtures. Ignored `logs/online-bots-*` retain
+provenance, checkpoints, captures and completed isolated-save cleanup:
+
+| Run | Observed result |
+| --- | --- |
+| `mac-full-baseline-lan-a` | Installed Mac service via its LAN address: full Deathmatch, matching final records, fresh rematch and matching completed rematch results. Earlier matching `7b41408e` build, before the capture-only patch. |
+| `mac-host-normal-a` | Mac host leaves through Pause/confirmation; Windows retains scores/countdown and six fighting/respawning bots for30 seconds. Mac returns to frontend. |
+| `mac-host-crash-a` | Entire Mac game/companion process group crashes; Windows promotes and continues for30 seconds. |
+| `mac-mixed-repeat-a` | Three players: Windows normal leave promotes Mac, then Mac crash promotes the other Windows player. All survivors continue30 seconds per handoff with score/timer/bot checks. |
+| `mac-migration-results-b` | Three players: Windows crash promotes Mac; both survivors finish with matching results. Elected Mac host starts a fresh rematch with zero scores/new round identity; both finish with matching results again. |
+| `mac-team-migration-d` | Team Deathmatch,50-point limit: Mac game/companion crash promotes Windows in4.4 seconds. Scored backup, elapsed/countdown clocks and six moving/fighting/respawning bots continue30 seconds. |
+| `mac-bag-migration-a` | Capture the Bag: Windows normal departure promotes Mac. Scored backup, elapsed/countdown clocks and six moving/fighting/respawning bots continue30 seconds. Objective carry/capture state was not asserted. |
+
+`mac-mixed-repeat-a/mac/migration-overlay-3-3-1.png` shows the actual themed card
+on the Mac's composed frame; `migration-finished-1.png` verifies removal. The
+normal-leave confirmation is also captured on the native Mac. Common Vulkan
+presentation is verified; legacy native GL remains unverified.
+
+The first public-address native baseline (`mac-full-baseline-live-a`) disconnected
+the Mac guest shortly after gameplay began. The same installed service via its
+LAN URL completed two rounds. Public fixture probes alone do not close this
+native-game discrepancy. Full outside-network matches, objective carry/capture
+state, opaque AI decisions and every other Arcade mode remain separate checks.
+The public-address retry `mac-public-results-repeat-a` reproduces that native
+disconnect. `--rpc-trace` enables bounded test-only Python exception diagnostics
+without modifying production networking or changing the native compatibility ID.

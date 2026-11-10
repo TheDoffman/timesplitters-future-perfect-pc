@@ -12,7 +12,8 @@ native Windows Deathmatch tests retain scores/countdown and six fighting,
 respawning bots after two/three-player normal exit/crash and repeated handoff.
 Authenticated native-ID routes let every survivor follow the new host. Pause
 caption/confirmation describe leaving and transferring the match. Physical Mac
-game/crossplay and other modes still require separate acceptance. The Mac relay
+Vulkan crossplay now passes normal/crash/repeated handoffs, results and rematch;
+other modes require their own acceptance. The Mac relay
 service is deployed; client executables require matching rebuilds.
 See [implementation and validation](../development/arcade-host-migration.md).
 
@@ -165,6 +166,15 @@ same resolved six-partition boundary as Windows. No personal save is recycled.
 scenario. Native observations are batched locally into read-only pages to avoid
 per-field SSH delays. Menu snapshots/captures distinguish input failures from
 protocol failures, and match evidence is saved before disposable-disk cleanup.
+Migration tests wait for a naturally scored checkpoint acknowledged by a survivor.
+`--migration-results --short-match` checks matching final records, an elected-host
+rematch with reset scores/clock and a new round identity, then matching results
+again. Retired player rows may remain in the first result; live native IDs and
+bot rows must be present and unique. `--points` selects a stock point limit;
+team-mode runs confirm the native Select Team screen before sampling gameplay.
+`--rpc-trace` adds a test-only `sitecustomize` exception observer to companion
+Python threads (32 records maximum, no local-variable/request-body inspection).
+It preserves native compatibility and logs RPC failure classes/status/messages.
 
 ## Native multiplayer build and validation (2026-10-30)
 
