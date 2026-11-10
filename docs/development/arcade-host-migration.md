@@ -96,6 +96,12 @@ never the SSH observer or unrelated applications. Retired peers cannot return
 cached memory as live observations. Process-group ownership refusals are tested
 in `test_crossplay_peer.py`; Mac overlay capture temporarily samples at10Hz.
 This enables native crossplay acceptance; implementation alone is not a pass.
+`--arcade-relay` exercises the v3 room through ordinary results/rematches without
+removing its host. `--shared-service` uses the installed pinned Mac service for
+that path, discovering only the uniquely named validation lobby. Controlled
+crash/leave runs retain the private test coordinator to inspect selected backup
+bytes. `--game-mode team-deathmatch|capture-bag` selects the reviewed stock game
+mode rows; Deathmatch remains the default. Record each mode's actual outcome.
 
 - `tests/network/test_online_migration.py`: deterministic election, freshness,
   failed candidates, stalled survivors, repeated migration and old-epoch fencing.

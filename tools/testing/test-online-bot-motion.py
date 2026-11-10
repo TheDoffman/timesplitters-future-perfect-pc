@@ -115,6 +115,9 @@ def main():
     parser.add_argument('--no-captures', action='store_true')
     parser.add_argument('--migration', choices=('crash','leave'), help='Verify native Arcade continuation after host loss or normal menu departure')
     parser.add_argument('--players', type=int, choices=(2,3), default=2)
+    parser.add_argument('--arcade-relay', action='store_true', help='Use the migrating v3 relay without removing the host')
+    parser.add_argument('--shared-service', action='store_true', help='Run normal play/results against the installed default service')
+    parser.add_argument('--game-mode', choices=('deathmatch','team-deathmatch','capture-bag'), default='deathmatch')
     parser.add_argument('--repeat-migration', action='store_true', help='Lose the replacement host too; requires three migration players')
     parser.add_argument('--require-results', action='store_true',
                         help='Wait up to --seconds for both peers to finish and publish score rows')
@@ -131,6 +134,10 @@ def main():
     parser.add_argument('--short-match', action='store_true',
                         help='Select five-point Deathmatch through the stock setup menu')
     args = parser.parse_args()
+    use_migration = bool(args.migration or args.arcade_relay)
+    if args.shared_service and (not args.arcade_relay or args.migration):
+        parser.error('--shared-service requires --arcade-relay without controlled host removal')
+    lobby_name=('Validation '+args.tag)[:48]
     if args.migration and (args.require_results or args.inspect_setup):
         parser.error('--migration cannot be combined with results/setup-only modes')
     if args.repeat_migration and (not args.migration or args.players!=3):
@@ -184,14 +191,14 @@ def main():
     server = Server((address, 0), Directory(public_address=None if args.mac_host else address))
     relay = None
     relay_thread = None
-    if args.migration:
+    if use_migration:
         from lobby_server import RelayServer
         relay = RelayServer(server.directory,bind=(address,0))
         server.directory.relay_address = relay.socket.getsockname()
         relay_thread = threading.Thread(target=relay.run, daemon=True)
         relay_thread.start()
     fingerprint=''
-    if args.mac_host or args.migration:
+    if args.mac_host or use_migration:
         import ssl
         from online_host import certificate
         cert,private_key,fingerprint=certificate(automation/'directory')
@@ -201,7 +208,13 @@ def main():
         server.socket=tls.wrap_socket(server.socket,server_side=True,do_handshake_on_connect=False)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    url = ('https://' if args.mac_host or args.migration else 'http://')+address+':'+str(server.server_port)
+    url = ('https://' if args.mac_host or use_migration else 'http://')+address+':'+str(server.server_port)
+    shared_client=None
+    if args.shared_service:
+        from online_client import Client
+        service=json.loads((ROOT/'tools/network/online-service.json').read_text())
+        url,fingerprint=service['directory'],service['fingerprint']
+        shared_client=Client(url,fingerprint)
     with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as available:
         available.bind((address,0))
         host_port=available.getsockname()[1]
@@ -257,7 +270,7 @@ def main():
         return dict(address=menu,selected=word(peer,menu+0x18c),rows=rows)
     def observe():
         capture_peers=[]
-        if args.migration:
+        if use_migration:
             with server.directory.lock:
                 for room in server.directory.arcade.rooms.values():
                     migration=room['migration']
@@ -453,14 +466,16 @@ def main():
                 from crossplay_peer import RemotePeer
                 remote=RemotePeer(args.mac_host,args.mac_root,out/'mac-controller.err')
                 remote_provenance=remote.call('start',tag=args.tag,peer=peer,compatibility=identity['compatibility'],
+                    lobby_name=lobby_name,
                     command=dict(action='host' if peer==0 else 'join',directory=url,fingerprint=fingerprint,port=host_port,automatic_host=False,
-                                 detect_public_address=False,migration=bool(args.migration),
-                                 transport='relay' if args.migration else 'direct'))
+                                 detect_public_address=False,migration=use_migration,
+                                 transport='relay' if use_migration else 'direct'))
                 remote.pid=remote_provenance['pid']
                 children.append(remote);handles.append(None);inputs.append(None)
                 continue
             run = ROOT/'private/test-saves'/('online-bots-'+args.tag)/str(peer)
             env = prepare_run(ROOT, run)
+            (run/'online.json').write_text(json.dumps(dict(name=lobby_name)))
             runs.append(run)
             if (run/'pc-frame-rate.ini').exists():
                 raise ValueError('Saved FPS preference could override this test; use a fresh tag')
@@ -477,13 +492,13 @@ def main():
             command = automation/f'{peer}.json'
             command.write_text(json.dumps(dict(action='host' if peer == 0 else 'join',
                 directory=url, fingerprint=fingerprint, port=host_port, automatic_host=False,
-                detect_public_address=False, migration=bool(args.migration), transport='relay' if args.migration else 'direct')))
+                detect_public_address=False, migration=use_migration, transport='relay' if use_migration else 'direct')))
             env.update(TSFP_PC_INPUT_STATE=str(input_path), TSFP_NETWORK_BOTS='1',
                 TSFP_PC_INPUT_REPLAY=str(replay),
                 TSFP_NATIVE_FPS=str(args.host_fps if peer==0 else args.guest_fps),
                 TSFP_ONLINE_TEST_COMMAND=str(command), TSFP_ONLINE_SETTINGS=str(run/'online.json'),
                 RECOMP_WINDOW_BACKGROUND='1', TSFP_DISCORD_ENABLED='0')
-            if args.migration:
+            if use_migration:
                 env['TSFP_ARCADE_TRACE']='1'
             (run/'run.lock').write_text(str(os.getpid()))
             children.append(subprocess.Popen([str(exe)], cwd=ROOT, env=env,
@@ -509,8 +524,12 @@ def main():
         deadline=time.monotonic()+45
         codes=[]
         while time.monotonic()<deadline:
-            with server.directory.lock:
-                codes = list(server.directory.arcade.rooms if args.migration else server.directory.online)
+            if shared_client:
+                codes=[room['code'] for room in shared_client.request('GET','/v3/lobbies?compatibility='+identity['compatibility'])['lobbies']
+                       if room['name']==lobby_name]
+            else:
+                with server.directory.lock:
+                    codes = list(server.directory.arcade.rooms if use_migration else server.directory.online)
             if codes:break
             wait(.1)
         if not codes:
@@ -518,7 +537,7 @@ def main():
             raise RuntimeError('Online browser did not create a lobby')
         for peer in range(1,args.players):
             command = automation/f'{peer}.json'
-            command.write_text(json.dumps(dict(action='join', directory=url, fingerprint=fingerprint, code=codes[0], migration=bool(args.migration))))
+            command.write_text(json.dumps(dict(action='join', directory=url, fingerprint=fingerprint, code=codes[0], migration=use_migration)))
             if remote is not None and mac_peer==peer:remote.call('command',command=json.loads(command.read_text()))
             key(peer,69)
             wait(8)
@@ -532,6 +551,7 @@ def main():
         key(0, 69)
         wait(2)
         if args.inspect_setup:report('options-mode')
+        for _ in range(('deathmatch','team-deathmatch','capture-bag').index(args.game_mode)):key(0,40)
         key(0, 69)
         wait(2)
         if args.short_match:
@@ -762,7 +782,8 @@ def main():
             require_rematch_results=args.require_rematch_results,
             inspect_setup=args.inspect_setup,
             short_match=args.short_match,
-            migration=args.migration, repeat_migration=args.repeat_migration,
+            migration=args.migration, migration_room=use_migration, game_mode=args.game_mode, repeat_migration=args.repeat_migration,
+            shared_service=args.shared_service,
             compatibility=identity['compatibility'], remote=remote_provenance,
             observation='asynchronous ReadProcessMemory / native read-only probe' if remote else 'asynchronous ReadProcessMemory',
             pids=[child.pid for child in children], guest_memory_offsets=offsets,
