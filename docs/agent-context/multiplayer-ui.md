@@ -9,10 +9,11 @@ host routing and per-epoch key rotation. The native game-thread adapter preserve
 scores, game tick and bot numeric state before committing mapped native peer IDs.
 `3000-arcade-migration-build.patch` enables the shared game adapter. Production
 native Windows Deathmatch tests retain scores/countdown and six fighting,
-respawning bots after two-player normal exit/crash and three-player crash.
+respawning bots after two/three-player normal exit/crash and repeated handoff.
 Authenticated native-ID routes let every survivor follow the new host. Pause
 caption/confirmation describe leaving and transferring the match. Physical Mac
-game/crossplay and other modes still require separate acceptance.
+game/crossplay and other modes still require separate acceptance. The Mac relay
+service is deployed; client executables require matching rebuilds.
 See [implementation and validation](../development/arcade-host-migration.md).
 
 ## Shared relay

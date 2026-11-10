@@ -34,8 +34,8 @@ static int multiplayer_migrating_match(void)
 }
 uint32_t pc_multiplayer_migration_prompt(const char *text)
 {
-    if(!text || !(strstr(text,"END THE SESSION") || strstr(text,"end the session")) ||
-       !(strstr(text,"LEAV") || strstr(text,"leav") || strstr(text,"Leav")) || !multiplayer_migrating_match())return 0;
+    if(!text || !(strstr(text,"LEAVING THE MATCH") || strstr(text,"Leaving the match")) ||
+       !multiplayer_migrating_match())return 0;
     static uint32_t prompt;
     if(!prompt) {
         const char message[]="Leave this match?\nHosting will transfer to an available player.";

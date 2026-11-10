@@ -10455,7 +10455,12 @@ published clients remain separate acceptance. See STATUS and the relay setup gui
 Arcade host migration (feature/online-host-migration): shared native adapter and
 v3 service/companion are implemented. Physical Mac arm64/Python3.12 compiles the
 production native capture/control/authority adapter fixture and passes it plus
-the coordinator/three-companion handoff tests (21 total,7bf557f3). Existing Mac
-service has not been updated. Full native Mac game continuation and Windows/Mac
-crossplay remain unverified; fixtures do not prove AI decisions/combat/respawn.
-See STATUS and docs/development/arcade-host-migration.md before deployment.
+the coordinator/three-companion handoff tests (29 cases at603a6bd3). The Mac
+service was updated from603a6bd3 after those checks passed. It retains
+the existing certificate/ports and launch-agent startup, with a local rollback
+backup. Public-address pinned HTTPS/forced UDP fixture checks pass final transfer,
+replacement-host loss and bidirectional relay traffic. Native Windows two/three-
+player Deathmatch now continues scores/countdown and six fighting/respawning bots
+through normal exit, crash and repeated handoff. Full native Mac game continuation
+and Windows/Mac crossplay remain unverified; client rebuilds are required. See
+STATUS and docs/development/arcade-host-migration.md for acceptance boundaries.
