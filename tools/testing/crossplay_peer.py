@@ -228,8 +228,14 @@ def serve():
                         RECOMP_TRACE_BUDGET='0',RECOMP_HLE_D3D8_DUMP=str(captures/'frame'),
                         RECOMP_HLE_D3D8_DUMP_EVERY='60',RECOMP_HLE_D3D8_DUMP_KEEP_LAST='2',
                         RECOMP_LOG_FILE=str(out/(str(peer_index)+'.err')))
+                    # Raw shadow dumps precede the late host-overlay pass.
+                    # Capture the actual common-renderer output instead.
+                    if manifest.get('renderer')=='vulkan':
+                        for key in ('RECOMP_HLE_D3D8_DUMP','RECOMP_HLE_D3D8_DUMP_EVERY','RECOMP_HLE_D3D8_DUMP_KEEP_LAST'):
+                            env.pop(key,None)
+                        env.update(TSFP_PRESENT_CAPTURE=str(captures/'frame'),TSFP_PRESENT_CAPTURE_EVERY='6')
                     if request['command'].get('migration'):
-                        env.update(TSFP_ARCADE_TRACE='1',RECOMP_HLE_D3D8_DUMP_EVERY='6')
+                        env['TSFP_ARCADE_TRACE']='1'
                     exe = ROOT/'build/macos/futureperfect_recomp'
                     identity=json.loads((ROOT/'build/macos/generated/network-identity.json').read_text())
                     if identity['compatibility']!=request['compatibility']:raise ValueError('Windows/Mac build identities differ')
