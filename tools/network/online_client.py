@@ -24,7 +24,7 @@ import threading
 import time
 from urllib.parse import urlsplit
 
-from online_transport import Bridge
+from online_transport import Bridge, relay_endpoint
 
 
 class Client:
@@ -97,17 +97,31 @@ class Session:
             raise ValueError('Directory does not support the requested Online mode')
 
     @classmethod
-    def create(cls, client, compatibility, name, port, public, mode='arcade'):
+    def create(cls, client, compatibility, name, port, public, mode='arcade', *, transport='direct'):
         cls.validate_mode(mode)
+        if transport not in ('direct', 'relay'):
+            raise ValueError('Unknown Online transport')
         # Bind before advertising: a failed port bind must not leave a ghost lobby.
-        bridge = Bridge(compatibility, '00'*16, bind=('0.0.0.0', port))
+        bridge = Bridge(compatibility, '00'*16, bind=('0.0.0.0', port if transport == 'direct' else 0))
         lobby = None
         try:
             lobby = client.request('POST', '/v2/lobbies', dict(
-                compatibility=compatibility, name=name, port=port, public=public, mode=mode))
+                compatibility=compatibility, name=name, port=port, public=public, mode=mode, transport=transport))
             cls.validate_lobby(lobby, mode)
-            bridge.room = bytes.fromhex(lobby['room'])
-            return cls(client, compatibility, lobby, True, bridge, mode)
+            if transport == 'relay':
+                if lobby.get('transport') != 'relay':
+                    raise ValueError('Directory does not support the shared relay. Update the server first.')
+                address = str(ipaddress.IPv4Address(lobby['address']))
+                bridge.close()
+                bridge = Bridge(compatibility, lobby['room'], relay=(address, lobby['port']),
+                                relay_key=lobby['relay_key'])
+            else:
+                bridge.room = bytes.fromhex(lobby['room'])
+            active = cls(client, compatibility, lobby, True, bridge, mode)
+            if transport == 'relay' and not bridge.ready.wait(12):
+                active.close()
+                raise ValueError('Shared relay did not answer. Check the server UDP port and firewall.')
+            return active
         except Exception:
             bridge.close()
             if lobby:
@@ -128,8 +142,11 @@ class Session:
         try:
             cls.validate_lobby(lobby, mode)
             address = str(ipaddress.IPv4Address(lobby['address']))
+            relayed = lobby.get('transport', 'direct') == 'relay'
             bridge = Bridge(compatibility, lobby['room'], lobby['peer_id'], lobby['peer_key'],
-                            host=(address, lobby['port']))
+                            host=relay_endpoint(1) if relayed else (address, lobby['port']),
+                            relay=(address, lobby['port']) if relayed else None,
+                            relay_key=lobby.get('relay_key') if relayed else None)
             session = cls(client, compatibility, lobby, False, bridge, mode)
         except Exception:
             if bridge:
@@ -141,7 +158,8 @@ class Session:
             raise
         if not bridge.ready.wait(12):
             session.close()
-            raise ValueError('Host did not answer. Check the host UDP port forwarding and firewall.')
+            raise ValueError('Host did not answer through the shared relay. The host may have left.' if relayed else
+                             'Host did not answer. Check the host UDP port forwarding and firewall.')
         return session
 
     def endpoint(self):
@@ -153,6 +171,11 @@ class Session:
     def heartbeat(self):
         last_success = time.monotonic()
         while not self.closed.is_set():
+            if self.bridge.relay and time.monotonic()-self.bridge.relay_seen > 10:
+                self.error = 'The shared relay stopped responding. Reconnect to Online.'
+                self.closed.set()
+                self.bridge.stopped.set()
+                break
             try:
                 path, token = self.endpoint()
                 reply = self.client.request('PUT', path, dict(compatibility=self.compatibility, mode=self.mode), token)
@@ -167,7 +190,7 @@ class Session:
                     self.closed.set()
                     self.bridge.stopped.set()
                     break
-            self.closed.wait(2 if self.host else 20)
+            self.closed.wait(2 if self.host or self.bridge.relay else 20)
 
     def close(self):
         self.closed.set()

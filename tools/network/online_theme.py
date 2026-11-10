@@ -469,7 +469,7 @@ def build_browser(window, values, actions):
     ttk.Label(options, text='UDP port', style='Card.TLabel').pack(side='left', padx=(0, 8))
     ttk.Entry(options, textvariable=values['port'], width=7, style='Card.TEntry').pack(side='left')
     ttk.Checkbutton(options, text='List publicly', variable=values['listed']).pack(side='right')
-    ttk.Checkbutton(host, text='Start directory automatically', variable=values['automatic']).grid(
+    ttk.Checkbutton(host, text='Host directory on this PC (advanced)', variable=values['automatic']).grid(
         row=5, column=0, sticky='w', pady=(12, 0))
     ttk.Checkbutton(host, text='Detect public IPv4 automatically', variable=values['detect_ip']).grid(
         row=6, column=0, sticky='w')
@@ -480,7 +480,8 @@ def build_browser(window, values, actions):
     ip_row.columnconfigure(0, weight=1)
     ttk.Entry(ip_row, textvariable=values['public_ip'], width=14, style='Card.TEntry').grid(row=0, column=0, sticky='ew')
     ttk.Button(ip_row, text='Detect', style='Card.TButton', command=actions['detect']).grid(row=0, column=1, padx=(8, 0))
-    wrapped_label(host, 'First time hosting? Forward TCP 30820 and your UDP port to this PC. Guests need no port forwarding.',
+    wrapped_label(host, 'The shared server relays connections. You host the match; players need no port forwarding. '
+                  'Hosting a directory on this PC instead requires router setup.',
                   style='CardMuted.TLabel').grid(row=9, column=0, sticky='ew', pady=(10, 8))
     host.rowconfigure(10, weight=1)
     ttk.Button(host, text='Start New Match', style='Card.Primary.TButton', command=actions['host']).grid(
@@ -489,13 +490,13 @@ def build_browser(window, values, actions):
     directory.columnconfigure(0, weight=1)
     ttk.Label(directory, text='Shared directory', style='Title.TLabel').grid(row=0, column=0, sticky='w')
     wrapped_label(directory, 'Advanced connection settings for public browsing or a separately hosted directory. '
-        'Full invitations fill these in automatically; automatic hosting configures its own directory.').grid(
+        'Use the community server to browse and host without port forwarding. Invitations fill these in automatically.').grid(
         row=1, column=0, sticky='ew', pady=(8, 24))
     for row, label, key in [(2, 'Directory address', 'address'), (4, 'Certificate SHA-256', 'pin')]:
         ttk.Label(directory, text=label).grid(row=row, column=0, sticky='w')
         ttk.Entry(directory, textvariable=values[key]).grid(row=row+1, column=0, sticky='ew', pady=(8, 20))
     wrapped_label(directory, 'For a self-signed certificate, paste the fingerprint shared by the directory owner. '
-        'To host using this directory, turn off “Start directory automatically” on the Play online tab.').grid(
+        'Leave “Host directory on this PC” off to use the shared server and relay.').grid(
         row=6, column=0, sticky='ew')
 
     footer = ttk.Frame(shell)
@@ -509,7 +510,7 @@ def build_browser(window, values, actions):
     return browser
 
 
-def build_invitation(window, invitation_text, code, port):
+def build_invitation(window, invitation_text, code, port, *, relayed=False):
     fit_window(window, 720, 400)
     viewport, content = scrollable_panel(window, window, 24, 500)
     viewport.pack(fill='both', expand=True)
@@ -527,7 +528,9 @@ def build_invitation(window, invitation_text, code, port):
         copied.set('Invitation copied. Send it to your friends.')
     ttk.Button(content, text='Copy invitation', style='Primary.TButton', command=copy).pack(anchor='w')
     ttk.Label(content, textvariable=copied, style='Eyebrow.TLabel').pack(anchor='w', pady=(12, 8))
-    wrapped_label(content, f'Router forwarding: TCP 30820 and UDP {port} to this PC.\n'
+    connection = ('Connected through the shared relay. No router forwarding needed.\n' if relayed else
+                  f'Router forwarding: TCP 30820 and UDP {port} to this PC.\n')
+    wrapped_label(content, connection +
         'Return to the game and select Start New Match to choose your map and mode.').pack(fill='x')
     ttk.Button(content, text='Return to game', command=window.destroy).pack(side='bottom', anchor='e', pady=(12, 0))
 

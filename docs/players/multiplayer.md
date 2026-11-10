@@ -1,5 +1,19 @@
 # Online multiplayer
 
+## Shared server development
+
+The next shared-server implementation lets the creating player host the match
+while a Mac mini lists lobbies and relays connections. Players need no router
+forwarding when using that service. Choose its address in **Directory settings**
+and leave **Host directory on this PC** off, then refresh to browse, join a lobby,
+or select **Start New Match**. The host still chooses the map/mode and starts the
+game; leaving the host ends the session. Invitations also select the shared server.
+
+This needs matching rebuilt clients and a reachable deployed relay; it is not yet
+a published game update. The instructions below describe the older direct-host
+workflow, whose host still needs router forwarding. Server operators can use the
+[Mac mini setup guide](../development/online-relay.md).
+
 Everyone needs the same game build and matching US Xbox game files. Start the
 game from the launcher or **Play.cmd**, then choose **Online / System Link → Online**.
 You do not need an account or a paid service.

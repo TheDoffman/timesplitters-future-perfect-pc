@@ -179,7 +179,7 @@ def parse_invitation(value):
         data = json.loads(base64.b64decode(encoded + '='*(-len(encoded) % 4), altchars=b'-_', validate=True))
         directory = Client(data['directory'], data['fingerprint'])
         code = data['code']
-        if (directory.url.scheme != 'https' or not directory.fingerprint or
+        if (directory.url.scheme != 'https' or
             len(code) != 16 or any(c not in '0123456789abcdefABCDEF' for c in code)):
             raise ValueError('Invalid invitation')
         return data['directory'], directory.fingerprint, code.upper()

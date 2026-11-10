@@ -31,7 +31,7 @@ from tkinter import messagebox
 from online_platform import GameProcess, show_error
 from online_client import Client, Session
 from online_host import fetch_public_ipv4, invitation, parse_invitation, start_match
-from online_paths import ROOT, HANDSHAKES, SETTINGS, MANIFEST, TOOLS
+from online_paths import ROOT, HANDSHAKES, SETTINGS, MANIFEST, TOOLS, service_defaults
 from online_theme import OnlineTheme, build_browser, build_invitation
 
 
@@ -69,13 +69,14 @@ def main():
     window.geometry('820x750')
     window.minsize(760, 720)
     theme = OnlineTheme(window)
-    address = tk.StringVar(value=saved.get('directory', 'https://127.0.0.1:30820'))
-    pin = tk.StringVar(value=saved.get('fingerprint', ''))
+    service = service_defaults()
+    address = tk.StringVar(value=saved.get('directory', service['directory']))
+    pin = tk.StringVar(value=saved.get('fingerprint', service['fingerprint']))
     name = tk.StringVar(value=saved.get('name', 'TimeSplitters lobby'))
     port = tk.StringVar(value=str(saved.get('port', 30821)))
     code = tk.StringVar()
     listed = tk.BooleanVar(value=True)
-    automatic = tk.BooleanVar(value=saved.get('automatic_host', True))
+    automatic = tk.BooleanVar(value=saved.get('automatic_host', False))
     detect_ip = tk.BooleanVar(value=saved.get('detect_public_address', True))
     inferred_public = ''
     try:
@@ -85,9 +86,11 @@ def main():
     except ValueError:
         pass
     public_ip = tk.StringVar(value=saved.get('public_address', inferred_public))
-    status = tk.StringVar(value='Ready when you are. Paste an invitation or start a new match.')
+    status = tk.StringVar(value='Ready. Browse lobbies or start a match.' if address.get() else
+        'Enter the shared server address in Directory settings, or paste an invitation.')
     session = [None]
     automation = os.environ.get('TSFP_ONLINE_TEST_COMMAND')
+    requested_transport = ['relay']
     busy = [False]
     stopping = threading.Event()
     replies = queue.Queue()
@@ -190,7 +193,8 @@ def main():
                            'Starting the directory...')
             else:
                 directory = client()
-                work(lambda: Session.create(directory, args.compatibility, host_name, host_port, public, mode=args.mode), connected)
+                work(lambda: Session.create(directory, args.compatibility, host_name, host_port, public,
+                     mode=args.mode, transport=requested_transport[0]), connected)
         except Exception as error:
             status.set(str(error))
 
@@ -199,7 +203,8 @@ def main():
         theme.track(share)
         share.title('Online match hosted')
         value = getattr(active, 'invitation', invitation(address.get().strip(), pin.get().strip(), active.lobby['code']))
-        build_invitation(share, value, active.lobby['code'], active.lobby['port'])
+        build_invitation(share, value, active.lobby['code'], active.lobby['port'],
+                         relayed=active.lobby.get('transport') == 'relay')
 
     def detected(value):
         public_ip.set(value)
@@ -240,6 +245,7 @@ def main():
         if not test_path.is_relative_to(test_root):
             raise ValueError('Online test command must be inside the isolated network-validation directory')
         command = json.loads(test_path.read_text())
+        requested_transport[0] = command.get('transport', 'direct')
         address.set(command['directory'])
         pin.set(command.get('fingerprint', ''))
         if command['action'] == 'host':
@@ -262,6 +268,8 @@ def main():
             window.after(300, window.destroy)
         else:
             raise ValueError('Unknown online test action')
+    elif address.get():
+        window.after(300, refresh)
     try:
         window.mainloop()
     finally:

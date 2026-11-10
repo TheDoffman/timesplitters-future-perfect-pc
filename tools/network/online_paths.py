@@ -16,6 +16,7 @@ else:
         return _LayoutPath(root) / area / name
 
 import os
+import json
 import sys
 from pathlib import Path
 
@@ -24,6 +25,16 @@ PORTABLE = TOOLS.name == 'Online' and TOOLS.parent.name == 'Support'
 ROOT = TOOLS.parents[1] if PORTABLE else _layout_root
 HANDSHAKES = Path(os.environ.get('TSFP_ONLINE_HANDSHAKES', ROOT / ('Logs/Online' if PORTABLE else 'private/online')))
 SETTINGS = ROOT / ('Settings/pc-online.json' if PORTABLE else 'config/pc-online.json')
+
+
+def service_defaults():
+    """Public service address shipped with releases; never includes credentials."""
+    path = TOOLS / 'online-service.json'
+    defaults = json.loads(path.read_text(encoding='utf-8')) if path.is_file() else {}
+    return dict(directory=os.environ.get('TSFP_ONLINE_DIRECTORY', defaults.get('directory', '')),
+                fingerprint=os.environ.get('TSFP_ONLINE_FINGERPRINT', defaults.get('fingerprint', '')))
+
+
 MANIFEST = Path(os.environ.get('TSFP_ONLINE_MANIFEST', TOOLS / 'network-identity.json' if PORTABLE else ROOT / ('build/macos/generated/network-identity.json' if sys.platform == 'darwin' else 'build/windows/generated/network-identity.json')))
 
 
