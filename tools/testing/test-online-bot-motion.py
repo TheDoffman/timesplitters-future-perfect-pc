@@ -131,7 +131,7 @@ def main():
     parser.add_argument('--short-match', action='store_true',
                         help='Select five-point Deathmatch through the stock setup menu')
     args = parser.parse_args()
-    if args.migration and (args.mac_host or args.require_results or args.inspect_setup):
+    if args.migration and (args.require_results or args.inspect_setup):
         parser.error('--migration cannot be combined with results/setup-only modes')
     if args.repeat_migration and (not args.migration or args.players!=3):
         parser.error('--repeat-migration requires --migration and --players 3')
@@ -186,7 +186,7 @@ def main():
     relay_thread = None
     if args.migration:
         from lobby_server import RelayServer
-        relay = RelayServer(server.directory)
+        relay = RelayServer(server.directory,bind=(address,0))
         server.directory.relay_address = relay.socket.getsockname()
         relay_thread = threading.Thread(target=relay.run, daemon=True)
         relay_thread.start()
@@ -219,6 +219,7 @@ def main():
     migration_captures = set()
     started = time.monotonic()
     def read(peer, address, size):
+        if peer in retired:raise OSError('Test peer was retired')
         if peer==mac_peer and remote is not None:
             return remote.read(address,size)
         data = C.create_string_buffer(size)
@@ -274,10 +275,13 @@ def main():
             def migration_burst(epoch=epoch,peer=peer):
                 for attempt in range(6):
                     if children[peer].poll() is not None:break
-                    capture(children[peer].pid,out/f'migration-overlay-{epoch}-{peer}-{attempt}.png')
+                    if peer==mac_peer and remote is not None:
+                        remote.call('capture',label=f'migration-overlay-{epoch}-{attempt}')
+                    else:
+                        capture(children[peer].pid,out/f'migration-overlay-{epoch}-{peer}-{attempt}.png')
                     time.sleep(.1)
             threading.Thread(target=migration_burst,daemon=True).start()
-        if remote is not None:
+        if remote is not None and mac_peer not in retired:
             try:remote.refresh()
             except OSError:remote.pages.clear()
         for peer in range(len(handles)):
@@ -327,10 +331,11 @@ def main():
             actors=[]
             try:
                 for peer in range(args.players):
+                    if peer in retired:continue
                     entity=word(peer,word(peer,0x7356d8)+slot*0xea0)
                     actors.append((word(peer,entity+0x258),
                                    struct.unpack('<f',read(peer,entity+0x1cc,4))[0]))
-                if actors[0][0]==actors[1][0] and all(a[1]>0 for a in actors):
+                if actors and len({a[0] for a in actors})==1 and all(a[1]>0 for a in actors):
                     return
             except OSError:
                 pass
@@ -385,11 +390,25 @@ def main():
                                               'scores-tab','options-tab','rematch','rematch-results','finished',
                                               'options-root','options-mode','options-settings','options-settings-initial','short-match-settings','rematch-timeout','rematch-selection'):
             for peer, child in enumerate(children):
+                if peer in retired:continue
                 if peer==mac_peer and remote is not None:
                     remote.call('capture',label=label)
                     continue
                 worker=threading.Thread(target=capture,args=(child.pid,out/f'{label}-{peer}.png'),daemon=True)
                 worker.start();worker.join(timeout=2)
+
+    def capture_peer(peer,label):
+        if peer==mac_peer and remote is not None:remote.call('capture',label=label)
+        else:capture(children[peer].pid,out/(label+'.png'))
+
+    def crash_peer(peer):
+        retired.add(peer)
+        assert children[peer].poll() is None
+        if peer==mac_peer and remote is not None:remote.crash()
+        else:
+            subprocess.run(['taskkill','/PID',str(children[peer].pid),'/T','/F'],
+                           check=True,capture_output=True,timeout=10)
+        children[peer].wait(timeout=10)
     def await_results(label):
         # Called only after active gameplay; rematches additionally require the
         # existing reset checks for clock, result-ready state, roster and scores.
@@ -435,7 +454,8 @@ def main():
                 remote=RemotePeer(args.mac_host,args.mac_root,out/'mac-controller.err')
                 remote_provenance=remote.call('start',tag=args.tag,peer=peer,compatibility=identity['compatibility'],
                     command=dict(action='host' if peer==0 else 'join',directory=url,fingerprint=fingerprint,port=host_port,automatic_host=False,
-                                 detect_public_address=False))
+                                 detect_public_address=False,migration=bool(args.migration),
+                                 transport='relay' if args.migration else 'direct'))
                 remote.pid=remote_provenance['pid']
                 children.append(remote);handles.append(None);inputs.append(None)
                 continue
@@ -581,23 +601,19 @@ def main():
             report('before-host-loss')
             old_tick=word(1,0x7de318)
             if args.migration == 'crash':
-                retired.add(0)
                 # Terminate its bridge too: a surviving companion would observe
                 # parent exit and send an orderly DELETE instead of lease expiry.
-                assert children[0].poll() is None
-                subprocess.run(['taskkill', '/PID', str(children[0].pid), '/T', '/F'],
-                               check=True, capture_output=True, timeout=10)
-                children[0].wait(timeout=10)
+                crash_peer(0)
             else:
                 wait_alive(0)
                 key(0,27)
-                capture(children[0].pid,out/'host-pause.png')
+                capture_peer(0,'host-pause')
                 # Reviewed native Options menu: Continue, Video, Controls,
                 # Audio, Return to Lobby, Quit to Desktop.
                 key(0,40,40,40,40)
-                capture(children[0].pid,out/'host-leave-selected.png')
+                capture_peer(0,'host-leave-selected')
                 key(0,69)
-                capture(children[0].pid,out/'host-leave-confirm.png')
+                capture_peer(0,'host-leave-confirm')
                 # Native confirmation defaults to No; Yes is the row above.
                 key(0,38,69)
             deadline=time.monotonic()+15
@@ -659,10 +675,7 @@ def main():
             if args.repeat_migration:
                 old_tick=word(successor,0x7de318)
                 migration_selected.clear()
-                retired.add(successor)
-                subprocess.run(['taskkill','/PID',str(children[successor].pid),'/T','/F'],
-                               check=True,capture_output=True,timeout=10)
-                children[successor].wait(timeout=10)
+                crash_peer(successor)
                 survivors.remove(successor)
                 deadline=time.monotonic()+15
                 while time.monotonic()<deadline:

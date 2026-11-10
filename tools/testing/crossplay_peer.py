@@ -33,8 +33,13 @@ class RemotePeer:
         self.pages = {}
         self.last_poll = 0
         self.returncode = None
+        self.rpc_lock = threading.Lock()
 
     def call(self, action, **values):
+        with self.rpc_lock:
+            return self._call(action, **values)
+
+    def _call(self, action, **values):
         self.transport.stdin.write(json.dumps(dict(action=action, **values))+'\n')
         self.transport.stdin.flush()
         line = self.transport.stdout.readline()
@@ -72,6 +77,10 @@ class RemotePeer:
     def terminate(self):
         self.call('stop')
 
+    def crash(self):
+        self.call('crash')
+        self.last_poll = 0
+
     def wait(self, timeout=10):
         return self.call('poll')['returncode']
 
@@ -96,6 +105,16 @@ def receive(sock, count):
             raise OSError('Native observation socket closed')
         data.extend(part)
     return bytes(data)
+
+
+def crash_child(child):
+    """Kill only this test's dedicated game/companion process group."""
+    if child is None or child.poll() is not None:
+        raise ValueError('No running test game to crash')
+    if os.getpgid(child.pid) != child.pid:
+        raise ValueError('Test game does not own its process group')
+    os.killpg(child.pid, signal.SIGKILL)
+    child.wait(timeout=10)
 
 
 def capture_frame(captures, destination):
@@ -175,7 +194,7 @@ def serve():
                     xbe = ROOT/'private/game/default.xbe'
                     if hashlib.sha256(xbe.read_bytes()).hexdigest()!=XBE_SHA256:raise ValueError('Unsupported XBE')
                     peer_index=int(request.get('peer',1))
-                    if peer_index not in (0,1):raise ValueError('Invalid peer')
+                    if peer_index not in (0,1,2):raise ValueError('Invalid peer')
                     candidate = ROOT/'private/test-saves'/('online-bots-'+tag)/str(peer_index)
                     env = prepare_run(ROOT, candidate)
                     with (candidate/'run.lock').open('x') as lock:
@@ -208,10 +227,12 @@ def serve():
                         RECOMP_TRACE_BUDGET='0',RECOMP_HLE_D3D8_DUMP=str(captures/'frame'),
                         RECOMP_HLE_D3D8_DUMP_EVERY='60',RECOMP_HLE_D3D8_DUMP_KEEP_LAST='2',
                         RECOMP_LOG_FILE=str(out/(str(peer_index)+'.err')))
+                    if request['command'].get('migration'):
+                        env.update(TSFP_ARCADE_TRACE='1',RECOMP_HLE_D3D8_DUMP_EVERY='6')
                     exe = ROOT/'build/macos/futureperfect_recomp'
                     identity=json.loads((ROOT/'build/macos/generated/network-identity.json').read_text())
                     if identity['compatibility']!=request['compatibility']:raise ValueError('Windows/Mac build identities differ')
-                    child=subprocess.Popen([str(exe)],cwd=ROOT,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+                    child=subprocess.Popen([str(exe)],cwd=ROOT,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=True)
                     started=time.monotonic()
                     def drain(pipe,path):
                         with path.open('wb') as stream:
@@ -272,6 +293,7 @@ def serve():
                     capture_frame(captures,out/(label+f'-{peer_index}.png'))
                 elif action == 'poll':reply={'returncode':child.poll() if child else None}
                 elif action == 'stop':stop()
+                elif action == 'crash':crash_child(child)
                 elif action == 'shutdown':
                     print(json.dumps(reply),flush=True)
                     break

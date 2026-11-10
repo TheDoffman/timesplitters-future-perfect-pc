@@ -85,6 +85,18 @@ include all new modules. Matching native rebuilds are required.
 
 ## Validation
 
+Cross-device runner: `--mac-host SSH --mac-root CHECKOUT --lan-address WINDOWS_IP`
+now combines with `--migration crash|leave`, either `--mac-role host|guest`, and
+three-player repeated migration. The temporary relay binds the reachable LAN
+address. Mac start commands explicitly select v3/relay, with read-only guest
+observations and isolated fixture saves. Remote RPCs are serialized so capture
+workers cannot consume another request's reply. The Mac test child owns a
+dedicated process group; crash testing kills that group (game and companion),
+never the SSH observer or unrelated applications. Retired peers cannot return
+cached memory as live observations. Process-group ownership refusals are tested
+in `test_crossplay_peer.py`; Mac overlay capture temporarily samples at10Hz.
+This enables native crossplay acceptance; implementation alone is not a pass.
+
 - `tests/network/test_online_migration.py`: deterministic election, freshness,
   failed candidates, stalled survivors, repeated migration and old-epoch fencing.
 - `tests/network/test_arcade_checkpoint.py`: compiles production checkpoint,
