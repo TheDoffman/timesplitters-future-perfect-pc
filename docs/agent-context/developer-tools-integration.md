@@ -257,6 +257,12 @@ interior, uppercase white bold text, separator and blue light bars. Existing
 embedded fonts are retained; UI scale is bounded by the viewport and capped at2.
 `tests/input/developer_tools.c` covers disabled Tools, centring, bounded capacity
 and clearing; the production native control fixture checks prepare/resume state.
+Completed-frame diagnostic capture is separate from the guest scene dump:
+`3010-present-frame-capture.patch` calls the shared `pc_present_capture.h` before
+RHI present, after late overlays. `TSFP_PRESENT_CAPTURE` supplies a caller-owned
+output prefix; two BMPs rotate at `TSFP_PRESENT_CAPTURE_EVERY` (default6). No
+setting enables it automatically. Readback dimensions/allocation are bounded,
+and the portable fixture checks BMP colors/orientation and output rotation.
 `pc_developer_guest.inc` handles camera work at original CCAB0 and Story requests
 at the timing boundary. Noclip publishes feet/eye/history through D2DE0;
 both flight modes rebuild the final view after scripted cameras. Freecam

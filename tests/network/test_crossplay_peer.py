@@ -16,6 +16,21 @@ peer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(peer)
 
 
+def test_completed_frame_capture_is_bounded_and_rotates(tmp_path):
+    from native_compiler import native_compiler
+    compiler,env=native_compiler(tmp_path)
+    exe=tmp_path/('capture.exe' if os.name=='nt' else 'capture')
+    source=ROOT/'tests/graphics/present_capture.c'
+    if os.name=='nt':
+        command=[compiler,'/nologo','/std:c11','/W3','/WX','/D_CRT_SECURE_NO_WARNINGS',str(source),'/Fe:'+str(exe)]
+    else:
+        command=[compiler,'-std=c11','-Wall','-Wextra','-Werror',str(source),'-o',str(exe)]
+    compiled=subprocess.run(command,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
+    assert compiled.returncode==0,compiled.stdout+compiled.stderr
+    result=subprocess.run([str(exe)],cwd=tmp_path,capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stdout+result.stderr
+
+
 @pytest.mark.parametrize('running,owns_group', [(False, True), (True, False), (True, True)])
 def test_crash_is_limited_to_a_running_owned_process_group(monkeypatch, running, owns_group):
     from unittest.mock import Mock

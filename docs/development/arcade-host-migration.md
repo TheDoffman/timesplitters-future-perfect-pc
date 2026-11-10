@@ -102,6 +102,16 @@ that path, discovering only the uniquely named validation lobby. Controlled
 crash/leave runs retain the private test coordinator to inspect selected backup
 bytes. `--game-mode team-deathmatch|capture-bag` selects the reviewed stock game
 mode rows; Deathmatch remains the default. Record each mode's actual outcome.
+`--service-address` retains the installed certificate pin while testing its LAN
+endpoint; this separates a server-self public-address route from gameplay.
+Private coordinator runs record sanitized native-counter/phase audits at0.5s.
+The Mac common-renderer controller uses `TSFP_PRESENT_CAPTURE`, backed by patch
+3010 and `pc_present_capture.h`, to capture the actual swap-chain composition
+with the late host overlay. The old shadow dump only shows guest scene pixels.
+The diagnostic is disabled by default, writes two rotating BMPs under the test's
+output prefix and bounds readback allocation to16M pixels. The controller's
+legacy GL path retains its existing capture; this RHI diagnostic targets common
+Windows/Mac/Linux renderers. The portable fixture is in `test_crossplay_peer.py`.
 
 - `tests/network/test_online_migration.py`: deterministic election, freshness,
   failed candidates, stalled survivors, repeated migration and old-epoch fencing.

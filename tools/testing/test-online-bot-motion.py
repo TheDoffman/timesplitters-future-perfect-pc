@@ -117,6 +117,7 @@ def main():
     parser.add_argument('--players', type=int, choices=(2,3), default=2)
     parser.add_argument('--arcade-relay', action='store_true', help='Use the migrating v3 relay without removing the host')
     parser.add_argument('--shared-service', action='store_true', help='Run normal play/results against the installed default service')
+    parser.add_argument('--service-address', help='Override only the installed service address, retaining its certificate pin')
     parser.add_argument('--game-mode', choices=('deathmatch','team-deathmatch','capture-bag'), default='deathmatch')
     parser.add_argument('--repeat-migration', action='store_true', help='Lose the replacement host too; requires three migration players')
     parser.add_argument('--require-results', action='store_true',
@@ -137,6 +138,8 @@ def main():
     use_migration = bool(args.migration or args.arcade_relay)
     if args.shared_service and (not args.arcade_relay or args.migration):
         parser.error('--shared-service requires --arcade-relay without controlled host removal')
+    if args.service_address and not args.shared_service:
+        parser.error('--service-address requires --shared-service')
     lobby_name=('Validation '+args.tag)[:48]
     if args.migration and (args.require_results or args.inspect_setup):
         parser.error('--migration cannot be combined with results/setup-only modes')
@@ -213,7 +216,7 @@ def main():
     if args.shared_service:
         from online_client import Client
         service=json.loads((ROOT/'tools/network/online-service.json').read_text())
-        url,fingerprint=service['directory'],service['fingerprint']
+        url,fingerprint=args.service_address or service['directory'],service['fingerprint']
         shared_client=Client(url,fingerprint)
     with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as available:
         available.bind((address,0))
@@ -230,6 +233,7 @@ def main():
     retired = set()
     migration_selected = {}
     migration_captures = set()
+    migration_audit = []
     started = time.monotonic()
     def read(peer, address, size):
         if peer in retired:raise OSError('Test peer was retired')
@@ -274,6 +278,11 @@ def main():
             with server.directory.lock:
                 for room in server.directory.arcade.rooms.values():
                     migration=room['migration']
+                    if not migration_audit or time.monotonic()-started-migration_audit[-1]['seconds']>=.5:
+                        migration_audit.append(dict(seconds=time.monotonic()-started,
+                            state=migration.status() if migration else None,
+                            native={peer:dict(counter=m['native_counter'],active=m['active'],native_peer=m['native_peer'],
+                                age=server.directory.clock()-m['native_at']) for peer,m in room['members'].items()}))
                     if migration and migration.selected:
                         migration_selected['snapshot']=migration.selected
                         if not args.no_captures:
@@ -715,6 +724,7 @@ def main():
             assert all(word(peer,0x7de464)==5 for peer in (0,1)), 'Menu replay did not select five points'
         # Movement of each human remains independently observable.
         for peer in range(2):
+            if args.require_results and all(word(p,0x7de30c)==8 for p in (0,1)):break
             wait_alive(peer)
             report(f'move-{peer}-start')
             set_input(peer, '87 1\n')
@@ -768,6 +778,7 @@ def main():
         completed=True
     finally:
         (out/'observations.json').write_text(json.dumps(samples))
+        (out/'migration-audit.json').write_text(json.dumps(migration_audit,indent=2))
         (out/'checkpoints.json').write_text(json.dumps(checkpoints, indent=2))
         (out/'menu-inputs.json').write_text(json.dumps(menu_inputs, indent=2))
         exit_codes=[child.poll() for child in children]
@@ -784,6 +795,7 @@ def main():
             short_match=args.short_match,
             migration=args.migration, migration_room=use_migration, game_mode=args.game_mode, repeat_migration=args.repeat_migration,
             shared_service=args.shared_service,
+            service_address=url if args.shared_service else None,
             compatibility=identity['compatibility'], remote=remote_provenance,
             observation='asynchronous ReadProcessMemory / native read-only probe' if remote else 'asynchronous ReadProcessMemory',
             pids=[child.pid for child in children], guest_memory_offsets=offsets,

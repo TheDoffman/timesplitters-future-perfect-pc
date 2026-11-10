@@ -24,6 +24,11 @@ capture input, or add a network message. Windows and native GL use the same layo
 Its visual theme follows the native pause confirmations: black panel, pale
 rounded frame, blue light bars and bold uppercase lettering. Ten draw slots
 include the border, interior, separator, bars and three labels.
+For native common-renderer visual tests, `3010-present-frame-capture.patch`
+captures the swap-chain image immediately before presentation, including late
+host overlays. Raw HLE shadow dumps precede that composition and cannot verify
+the migration card. `pc_present_capture.h` is opt-in, render-thread-only and
+writes two rotating BMPs; the crossplay observer selects it for Vulkan builds.
 
 ## Shared relay
 
