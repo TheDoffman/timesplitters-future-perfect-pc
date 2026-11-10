@@ -1,3 +1,46 @@
+Fresh-install live acceptance (Windows, local): empty isolated save directory plus
+factory pc-controls.default.json; created Player1 through the native UI and entered
+Story. New Custom layout0 saved valid single-button action fields and eight Default
+axis selectors; native signature verified. W/A/D/S moved1.779/1.793/4.836/5.655
+units in bounded one-second holds (initial S was blocked by scenery; repeated in
+clear space). Changed keyboard preset to Custom and Forward W→H through pause
+KBM editor, resumed without restarting: H moved6.263434 units, W moved0.
+Native Custom diagram displayed physical controller glyphs and exited without an
+unassigned-Crouch warning. The live check caught combined-mask seed incompatibility;
+new seeds and exact legacy seed repair now canonicalize to one physical button.
+Evidence logs/fresh-controls-final-verification.json and isolated
+private/test-saves/fresh-controls-final/report.json; screenshot
+fresh-custom-controller-final.png. Full supported Windows Release build passed; final profile/sampler/unlock suites
+passed56 tests with2 platform skips. Context and whitespace checks passed.
+Personal saves/settings untouched. Mac/Linux live acceptance remains unverified;
+changes local and uncommitted on fix/fresh-profile-movement, base c2555147.
+
+Windows live confirmation: controller diagram opened with keyboard/mouse showed
+physical LT/RT, A/B/X/Y and sticks (controller-diagram-fixed.png). Forward changed
+W→H through the in-game KBM editor and persisted in isolated controls.json.
+Bounded gameplay test held H1s: player moved6.161566 units; old W1s:0 movement.
+Actual menu edit/save plus real game sampler verified, using existing Test Lab
+profile/Default native layout. This does not establish every fresh/custom layout
+or Mac/Linux device acceptance. Evidence logs/binding-confirm-verification.json
+and private/test-saves/binding-confirm/report.json; tests recycled disposable disks.
+
+Controller diagram label repair (local, alongside fresh-profile movement):
+physical glyph scope around original2E97C0 callback; input preference preserved.
+FOV/controller-profile suite53 passed,2 skips, including semantic Custom H-key
+sampling through native Fire masks. Real keyboard save publishes edited sources
+under the input lock; reported KBM edit failure not independently reproduced.
+Windows Release build, nested prompt-scope checks and built-in tests passed.
+Live diagram acceptance passed; see the fresh-install check above.
+
+Fresh-profile movement regression (local, main c2555147): new Custom seed
+initialized buttons while retaining empty backing axes. Original US2586C0/2588B0
+inspection confirms Default axis selectors2,1,4,3 plus their copies. New seeds
+now initialize axes; existing exact broken Modern seeds with8 zero axes repair
+in memory during profile init. Other layouts/actions/configured axes preserved.
+Menu/unlock regressions7 passed,2 platform skips. Windows Release build and
+built-in checks passed. Fresh-install Windows gameplay passed above; native Mac/Linux
+acceptance pending. Changes uncommitted on fix/fresh-profile-movement.
+
 Online notice CI follow-up: standalone menu-input fixture supplies the Online
 handoff hook; real lifecycle coverage remains in fov_settings.c.
 

@@ -1650,6 +1650,7 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case 0x002CBE50u:return controls_open;
     case 0x002EC1A0u:return controls_open;
     case 0x002EA8E0u:return controls_build;
+    case 0x002E97C0u:return controls_diagram_draw;
     case 0x002EAB30u:return controls_tick;
     case 0x002E9FC0u:return controls_font_menu(WORD_AT(g_esp+4u))?controls_back:NULL;
     case 0x002CBE00u:case 0x002E9E50u:return controls_font_menu(WORD_AT(g_esp+4u))?controls_accept:NULL;

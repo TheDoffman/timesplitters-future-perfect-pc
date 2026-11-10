@@ -30,6 +30,7 @@ static uint32_t row_count,callbacks[32],row_ids[32],last_row,saves,transition;
 static uint32_t expected_parent=0x2000,expected_previous=0x524578;
 static uint32_t guest_call(void (*fn)(void),unsigned count,...);
 static unsigned new_control_profiles;
+static void controls_repair_profile(uint32_t profile) {(void)profile;}
 static void controls_new_profile(uint32_t profile) {(void)profile;new_control_profiles++;}
 #include "pc_unlock_menu.inc"
 static uint32_t guest_call(void (*fn)(void),unsigned count,...)

@@ -9,6 +9,9 @@
 void pc_prompts_keyboard(void);
 void pc_prompts_controller(const RecompPadState *pad, int connected);
 int pc_prompts_keyboard_active(void);
+/* Physical controller diagram only; preserve last-input selection outside it. */
+void pc_prompts_controller_layout_begin(void);
+void pc_prompts_controller_layout_end(void);
 void pc_prompts_reset(void);
 int pc_prompts_format(const char *source, char *out, size_t capacity,
                       const int keys[PC_ACTION_COUNT], int mouse);

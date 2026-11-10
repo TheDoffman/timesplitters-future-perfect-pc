@@ -8,15 +8,48 @@ extern void sub_00079710(void);
 extern void sub_002EA3F0(void),sub_002EAB30(void),sub_002E9FC0(void);
 extern void sub_002CBE50(void),sub_002EC1A0(void),sub_002EA8E0(void);
 extern void sub_002CBE00(void),sub_002E9E50(void),sub_002D0970(void),sub_002E9EA0(void),sub_002EA210(void);
+/* Native Default layout: left Y/X and right Y/X axis selectors. */
+static void controls_default_axes(uint32_t profile)
+{
+    static const unsigned axes[8]={2,1,4,3,2,1,4,3};
+    for(unsigned i=0;i<8;i++)WORD_AT(profile+0x3c+i*4)=axes[i];
+}
+static void controls_repair_profile(uint32_t profile)
+{
+    if(!pc_settings_custom_semantics() || !guest_writable(profile,0x7c) ||
+       (WORD_AT(profile)&0xffffu))return;
+    static const int roles[14]={9,8,0,2,23,18,10,11,12,13,-1,10,11,1};
+    for(unsigned i=0;i<14;i++)
+        if(WORD_AT(profile+4+i*4)!=(roles[i]<0?0u:pc_preset_custom_pad_mask((unsigned)roles[i])))return;
+    /* Only the exact shipped seed, with empty or default axes, is eligible. */
+    static const unsigned axes[8]={2,1,4,3,2,1,4,3};
+    int empty=1,defaults=1;
+    for(unsigned i=0;i<8;i++) {
+        unsigned value=WORD_AT(profile+0x3c+i*4);
+        if(value)empty=0;if(value!=axes[i])defaults=0;
+    }
+    if(!empty && !defaults)return;
+    if(empty)controls_default_axes(profile);
+    for(unsigned i=0;i<14;i++)if(roles[i]>=0) {
+        unsigned mask=pc_preset_custom_pad_mask((unsigned)roles[i]);
+        WORD_AT(profile+4+i*4)=mask&(~mask+1u);
+    }
+}
 /* Called only by 69D90's known-new profile branch, after native initialization. */
 static void controls_new_profile(uint32_t profile)
 {
     if(!pc_settings_custom_semantics() || !guest_writable(profile,0x7c))return;
+    controls_default_axes(profile);
     WORD_AT(profile)&=0xffff0000u; /* Native layout 0 owns the editable mask table. */
     /* First14 words are native actions; +0x2c is an unused native field.
      * Seed by semantic field, independent of the original factory scheme. */
     static const int roles[14]={9,8,0,2,23,18,10,11,12,13,-1,10,11,1};
-    for(unsigned i=0;i<14;i++)if(roles[i]>=0)WORD_AT(profile+4+i*4)=pc_preset_custom_pad_mask((unsigned)roles[i]);
+    for(unsigned i=0;i<14;i++)if(roles[i]>=0) {
+        unsigned mask=pc_preset_custom_pad_mask((unsigned)roles[i]);
+        /* Native Customize stores one physical button per action. Modern's
+         * additional sources still route through this action at sample time. */
+        WORD_AT(profile+4+i*4)=mask&(~mask+1u);
+    }
 }
 static uint32_t controls_menu;
 static uint32_t controls_rows[48],controls_next[48],controls_sibling[48];
@@ -381,4 +414,13 @@ static void controls_tabs_flush(void)
         int target=controls_pending;controls_pending=-1;controls_change_tab(target);
     }
     restore_registers(&r);
+}
+
+/* US524A00's diagram paint callback; include nested measurement and glyph draws. */
+extern void sub_002E97C0(void);
+static void controls_diagram_draw(void)
+{
+    pc_prompts_controller_layout_begin();
+    sub_002E97C0();
+    pc_prompts_controller_layout_end();
 }
