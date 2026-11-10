@@ -1,5 +1,16 @@
 # Shared Online lobby and relay
 
+Deployment on 2026-11-10: the Mac mini service uses HTTPS TCP **41820** and UDP
+**41821**. `online-service.json` contains its public endpoint and certificate pin.
+The router's UPnP service accepted permanent mappings for these two free ports to
+the Mac; the original 30820/30821 rules were preserved. A public-address pinned
+HTTPS query and bidirectional authenticated UDP probe passed from the home LAN.
+This proves that route including router hairpinning, not an outside-network game
+match. After router restart/IP changes verify the mappings, reserve the Mac LAN
+address, and rerun installation/update public defaults as needed. UPnP rules may
+need recreation after router reboot. The commands below use the generic default
+ports; pass `--directory-port 41820 --relay-port 41821` for this deployment.
+
 The Mac mini runs the HTTPS lobby directory and a UDP packet relay. The first
 player still hosts the game's simulation, bots, rules and match start. All players,
 including that host, open outbound UDP connections to the relay. Player routers
@@ -68,8 +79,7 @@ Copy the **public** `client-service.json` values into
 `tools/network/online-service.json` before building matching Windows/Mac/Linux game
 packages. The address and certificate fingerprint then ship with the companion;
 new users see the common lobby list automatically. The file participates in build
-compatibility hashing. It starts empty in source until the actual public endpoint
-is verified; do not ship a LAN address as the internet default.
+compatibility hashing. Do not ship a LAN address as the internet default.
 
 For source testing without editing defaults, use `TSFP_ONLINE_DIRECTORY` and
 `TSFP_ONLINE_FINGERPRINT`. Saved directory choices take precedence; isolated tests
