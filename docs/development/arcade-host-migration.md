@@ -67,8 +67,12 @@ adapter publishes value-only status to `pc_match_overlay_migration`. A centred
 "Migrating host..." card asks players to wait. It uses the existing shared
 final-frame canvas on Windows/Mac/Linux, independently of Tools/HUD preferences,
 then clears on commit, closure or leaving active gameplay. It adds no input gate
-or artificial handoff delay. `pc_match_overlay.inc` reserves three draw slots and
+or artificial handoff delay. `pc_match_overlay.inc` reserves ten draw slots and
 paints last, preserving the existing sidebar layout when migration is inactive.
+The themed panel echoes native pause confirmations with a black interior,
+pale rounded frame, blue light bars, separator and bold white uppercase labels.
+It reuses the embedded UI font; it does not bundle or extract the game's font.
+Viewport fitting and a maximum2x scale keep the full panel and bars on screen.
 
 `3000-arcade-migration-build.patch` enables the same adapter for Windows, Mac and
 Linux game builds. Online shared Arcade uses v3; Story remains v2. The browser also lists/joins

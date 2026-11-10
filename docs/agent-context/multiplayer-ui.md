@@ -21,6 +21,9 @@ status through `pc_match_overlay_migration`. The shared final-frame canvas paint
 a centred Migrating host card, independent of HUD/Tools preferences, and clears
 it on commit, closure or leaving gameplay. It does not retain guest pointers,
 capture input, or add a network message. Windows and native GL use the same layout.
+Its visual theme follows the native pause confirmations: black panel, pale
+rounded frame, blue light bars and bold uppercase lettering. Ten draw slots
+include the border, interior, separator, bars and three labels.
 
 ## Shared relay
 
