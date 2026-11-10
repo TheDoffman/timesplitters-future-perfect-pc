@@ -5,6 +5,7 @@
 extern void pc_native_visual_rebase(uint32_t tick,double fraction);
 static PcArcadeControlState arcade_guest_control;
 static PcArcadeCheckpoint arcade_guest_checkpoint;
+static PcArcadeCheckpoint arcade_final_checkpoint;
 static uint8_t arcade_guest_room[16];
 static uint32_t arcade_restored_epoch,arcade_authority_epoch,arcade_published_sequence;
 static uint32_t arcade_ack_sequence,arcade_ack_epoch;
@@ -76,6 +77,20 @@ int pc_arcade_migration_frame(int after)
             const int target_ok=s->level==WORD_AT(0x79094cu) &&
                 !memcmp(s->config,(void *)((uintptr_t)0x7de400u+g_xbox_mem_offset),sizeof s->config);
             int bots_ok=target_ok;
+            /* A client may already have removed a corpse which is alive in the
+               selected backup. Recreate missing LOCAL bodies with the same
+               stock allocator used by ordinary bot replication, then preflight
+               the entire restore. No remote pointer crosses this boundary. */
+            if(target_ok && state.phase==2u && arcade_restored_epoch!=state.epoch) {
+                uint32_t pool;
+                if(!pc_network_arcade_read(&g_xbox_mem_offset,0x7356d8u,&pool,4) ||
+                   !pool || pool>UINT32_MAX-16u*0xea0u)bots_ok=0;
+                for(unsigned i=0;bots_ok && i<s->config[2];i++) {
+                    uint32_t entity;
+                    if(!pc_network_arcade_read(&g_xbox_mem_offset,pool+s->bots[i].slot*0xea0u,&entity,4))bots_ok=0;
+                    else if(s->bots[i].body_present && !entity && !pc_network_bots_revive(s->bots[i].slot))bots_ok=0;
+                }
+            }
             for(unsigned i=0;bots_ok && i<s->config[2];i++)
                 bots_ok=arcade_bot_apply(&g_xbox_mem_offset,&s->bots[i],0);
             if(bots_ok && state.phase==2u && arcade_restored_epoch!=state.epoch) {
@@ -114,8 +129,14 @@ int pc_arcade_migration_frame(int after)
     state=arcade_guest_control;
     if(!active || state.phase!=1u || WORD_AT(0x76b140u)!=1u || !state.epoch)return 0;
     const int leaving=pc_network_arcade_departing();
-    if(leaving && arcade_final_sent){pc_network_arcade_send_leave();return 0;}
     const double now=pc_network_bots_time();
+    if(leaving && arcade_final_sent) {
+        if(now-arcade_last_capture>=.2) {
+            pc_network_arcade_publish(&arcade_final_checkpoint);
+            pc_network_arcade_send_leave();arcade_last_capture=now;
+        }
+        return 0;
+    }
     /* Leave time for WAN transfer and an engine ACK before the retained pair
        ages out. A graceful leave still captures its final frame immediately. */
     if(!leaving && now-arcade_last_capture<.5)return 0;
@@ -125,7 +146,7 @@ int pc_arcade_migration_frame(int after)
        pc_network_arcade_read,pc_network_arcade_bot_read,state.room,state.epoch,arcade_published_sequence+1u) &&
        pc_network_arcade_publish(&arcade_guest_checkpoint)) {
         arcade_published_sequence++;arcade_last_capture=now;
-        if(leaving){arcade_final_sent=1;pc_network_arcade_send_leave();}
+        if(leaving){arcade_final_checkpoint=arcade_guest_checkpoint;arcade_final_sent=1;pc_network_arcade_send_leave();}
     }
     return 0;
 }

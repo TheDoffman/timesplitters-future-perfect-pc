@@ -6,6 +6,7 @@ int g_tsfp_arcade_migrating;
 static NetHostSocket arcade_socket=INVALID_SOCKET;
 static PcArcadeControl arcade_control;
 static uint32_t arcade_counter;
+static uint32_t arcade_uploaded_sequence;
 static uint64_t arcade_last_send,arcade_last_state;
 static int arcade_leave_pending;
 static void arcade_reset(void)
@@ -13,7 +14,7 @@ static void arcade_reset(void)
     if(arcade_socket!=INVALID_SOCKET)net_close(arcade_socket);
     arcade_socket=INVALID_SOCKET;
     memset(&arcade_control,0,sizeof arcade_control);
-    arcade_counter=0;arcade_last_send=arcade_last_state=0;
+    arcade_counter=arcade_uploaded_sequence=0;arcade_last_send=arcade_last_state=0;
     arcade_leave_pending=0;g_tsfp_arcade_migrating=0;
 }
 static int arcade_send(const void *data,int bytes)
@@ -88,6 +89,7 @@ int pc_network_arcade_publish(const PcArcadeCheckpoint *snapshot)
         pc_arcade_store32(packet+12,offset);memcpy(packet+20,bytes+offset,n);
         if(!arcade_send(packet,(int)(20u+n)))result=0;
     }
+    if(result)arcade_uploaded_sequence=snapshot->sequence;
 done:net_unlock(&network_lock);return result;
 }
 void pc_network_arcade_ack(int ready)
@@ -112,7 +114,14 @@ int pc_network_arcade_request_leave(void)
     net_unlock(&network_lock);return result;
 }
 void pc_network_arcade_send_leave(void)
-{net_lock(&network_lock);if(arcade_leave_pending)arcade_send("AMLV",4);net_unlock(&network_lock);}
+{
+    net_lock(&network_lock);
+    if(arcade_leave_pending && arcade_uploaded_sequence) {
+        uint8_t leave[8];memcpy(leave,"AMLV",4);
+        pc_arcade_store32(leave+4,arcade_uploaded_sequence);arcade_send(leave,sizeof leave);
+    }
+    net_unlock(&network_lock);
+}
 int pc_network_arcade_departing(void)
 {int result;net_lock(&network_lock);result=arcade_leave_pending;net_unlock(&network_lock);return result;}
 uint32_t pc_network_arcade_local_ip(void)

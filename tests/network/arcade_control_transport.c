@@ -9,7 +9,7 @@
 ptrdiff_t g_xbox_mem_offset;
 #define WORD_AT(a) (*(uint32_t *)((uintptr_t)(uint32_t)(a)+g_xbox_mem_offset))
 #define FLOAT_AT(a) (*(float *)((uintptr_t)(uint32_t)(a)+g_xbox_mem_offset))
-static unsigned presents,refreshes,departures,rebases;
+static unsigned presents,refreshes,departures,rebases,revives;
 PcOnlineMode pc_online_mode(void){return PC_ONLINE_ARCADE;}
 void pc_character_ragdoll_release(uint32_t entity){(void)entity;}
 void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *s)
@@ -19,6 +19,13 @@ void pc_network_bots_entity_room(uint32_t entity,uint32_t room){(void)entity;(vo
 void pc_native_visual_rebase(uint32_t tick,double fraction)
 {REQUIRE(tick==3600u && fraction==0.);rebases++;}
 void pc_multiplayer_migration_leave(void){departures++;}
+uint32_t pc_network_bots_revive(unsigned slot)
+{
+    REQUIRE(slot==3u && WORD_AT(0x76b140u)==2u);
+    const uint32_t actor=WORD_AT(0x7356d8u)+slot*0xea0u,entity=0x63000u;
+    REQUIRE(!WORD_AT(actor));WORD_AT(actor)=entity;WORD_AT(entity+0x7cu)=actor;
+    revives++;return entity;
+}
 #include "../src/network/pc_arcade_migration_guest.inc"
 
 static int receive_control(NetHostSocket socket,const char *magic,uint8_t *out,
@@ -78,6 +85,7 @@ int main(void)
     g_xbox_mem_offset=(ptrdiff_t)target.memory;
     setword(&target,0x76b140u,2u);setword(&target,0x774028u,0x70000u);
     setword(&target,0x70000u,5u);setword(&target,0x774040u,0u);
+    setword(&target,0x50000u+3u*0xea0u,0); /* Client already removed this body. */
     const uint32_t previous_ip=0x0100fe0au;
     memcpy(target.memory+0x8000u,&previous_ip,4);memset(target.memory+0x8100u,0x55,8);
     uint32_t convert[3]={0x8000u,0x8100u,0x8200u};
@@ -106,6 +114,7 @@ int main(void)
     REQUIRE(WORD_AT(0x76b140u)==2u && WORD_AT(0x7de318u)==3600u && rebases==1u);
     REQUIRE((int32_t)WORD_AT(0x50000u+0xa6cu)==snapshot->totals[0]);
     REQUIRE(presents==6u && refreshes==5u); /* Five live bots, one absent/dead. */
+    REQUIRE(revives==1u);
     for(unsigned i=0;i<5u;i++) {
         const uint32_t entity=word(&target,0x50000u+(3u+i)*0xea0u);
         REQUIRE(FLOAT_AT(entity+0x1ccu)==snapshot->bots[i].health);
@@ -120,8 +129,10 @@ int main(void)
     REQUIRE(!g_tsfp_arcade_migrating && WORD_AT(0x76b140u)==1u && WORD_AT(0x774040u)==5u);
     REQUIRE(WORD_AT(0x774028u)==0x70000u); /* Original local controller node survives. */
     REQUIRE(pc_network_arcade_request_leave() && g_tsfp_arcade_migrating);
+    REQUIRE(pc_network_arcade_publish(snapshot));
     REQUIRE(pc_network_arcade_departing());pc_network_arcade_send_leave();
-    REQUIRE(receive_control(bridge,"AMLV",frame,&native)==72);
+    REQUIRE(receive_control(bridge,"AMLV",frame,&native)==76);
+    REQUIRE(pc_arcade_load32(frame+72)==99u);
     REQUIRE(pc_network_arcade_publish(snapshot));
     REQUIRE(receive_control(bridge,"AMCP",frame,&native)>88);
     REQUIRE(pc_arcade_load32(frame+72)==99 && pc_arcade_load32(frame+76)==sizeof *snapshot);
