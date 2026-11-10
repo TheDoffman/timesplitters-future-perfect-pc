@@ -215,3 +215,6 @@ Completion or cancellation clears the pending state. Windows/Mac/Linux use the
 same guest menu path with their existing process/window adapters.
 `fov_settings.c` checks deferred launch, one-shot dispatch and cancellation;
 existing companion tests retain actual host/join/cancel coverage.
+
+Builds without a desktop networking adapter provide a no-op handoff tick; the
+native syntax-only regression covers this disabled-feature path.

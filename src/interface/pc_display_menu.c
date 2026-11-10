@@ -1565,6 +1565,8 @@ static void online_opening_tick(void)
     if(pc_online_connect()) {multiplayer_profiles_capture();guest_call(sub_001A0A60,0);}
     restore_registers(&r);
 }
+#else
+static void online_opening_tick(void) {}
 #endif
 #include "pc_multiplayer_exit.inc"
 #include "pc_story_menu.inc"
