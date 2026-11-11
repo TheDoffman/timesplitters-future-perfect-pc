@@ -39,6 +39,12 @@ Then open `http://127.0.0.1:41822` on that computer. Replace the SSH alias with 
 mini's configured SSH name/address when using another setup. The dashboard's
 access panel can generate a command for a different SSH name.
 
+The current mini's build key is marked `restrict` in `~/.ssh/authorized_keys`,
+which denies TCP forwarding. It must not be silently broadened. Use separately
+approved dashboard-only SSH access for PC viewing; until then, the dashboard
+remains available directly on the mini. An SSH “administratively prohibited”
+message means forwarding permission was denied, rather than a dashboard outage.
+
 ## Enable it on the service
 
 The dashboard is an optional separate loopback listener. For this deployment,

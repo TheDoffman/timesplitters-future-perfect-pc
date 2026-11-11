@@ -48,7 +48,9 @@ def main():
                     if not isinstance(state.get('rooms'),list):raise ValueError('Unexpected dashboard reply')
                 break
             except OSError:
-                if time.monotonic()>deadline:raise RuntimeError('Dashboard did not answer. Check that it is enabled on the mini.')
+                if time.monotonic()>deadline:
+                    detail='; '.join(list(errors)[-3:])
+                    raise RuntimeError('Dashboard did not answer. '+(detail or 'Check that it is enabled on the mini.'))
                 time.sleep(.1)
         print(f'Dashboard: {url}\nKeep this process open; Ctrl+C closes its SSH tunnel.',flush=True)
         if not args.no_browser:webbrowser.open(url)
@@ -65,4 +67,6 @@ def main():
         process.stderr.close()
 
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    try:main()
+    except (RuntimeError,OSError) as error:raise SystemExit(str(error))
