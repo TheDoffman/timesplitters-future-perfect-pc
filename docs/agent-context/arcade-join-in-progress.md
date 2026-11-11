@@ -38,6 +38,8 @@ replacement passes the three-player Windows Deathmatch probe. Tests alone are
 not gameplay proof for other admission cases.
 
 Unused saved character choices can name meshes absent from the running world.
+Resource indices alone do not prove loading: original `A6880` consumes the
+resource entry's actual model pointer at `+4`, which must be present/readable.
 At initial allocation, unused slots with unloaded meshes adopt the first human's
 loaded character/variant in all four round configurations, before a late peer
 receives them. Already-loaded choices and live bots remain unchanged; no profile
