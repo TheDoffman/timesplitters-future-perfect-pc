@@ -87,7 +87,7 @@ int pc_arcade_migration_frame(int after)
             if(!arcade_exit_sent){arcade_exit_sent=1;pc_multiplayer_migration_leave();}
             return 1;
         }
-        if(state.phase==1u || state.phase==5u)pc_arcade_join_frame();
+        if(state.phase==1u || state.phase==5u)pc_arcade_join_frame(&state);
         if(!active)return 0;
         if(state.phase==5u)g_tsfp_arcade_migrating=1;
         const double now=pc_network_bots_time();

@@ -3,7 +3,9 @@ Shared native storage/constructor hooks, checkpoint catchup and client slot repo
 use existing Windows/Mac/Linux interfaces; no new OS adapter is required.
 Windows native Deathmatch bot takeover passes with three active players, preserved
 clock/countdown and five fighting bots; other admission/migration cases remain
-pending. Mac/Linux builds and physical gameplay have not been validated. The mini's
+pending. Native Mac focused tests (21), the full native build and built-in checks
+passed at `3e8d9210`; later empty-slot fixes need a matching rebuild and gameplay.
+Linux and physical Mac gameplay have not been validated for this feature. The mini's
 private service has not been updated. See STATUS and
 [the focused guide](../agent-context/arcade-join-in-progress.md).
 

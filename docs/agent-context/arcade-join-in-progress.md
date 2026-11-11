@@ -16,8 +16,8 @@ arrays using that count. A late player would access uninitialized storage.
 storage arrays. Its `D2FD0` wrapper restores actual population counts before the
 original player constructor runs; no hidden player bodies are created up front.
 It is gated by `TSFP_ARCADE_JOIN_IN_PROGRESS=1` and Arcade mode. Local actor
-pointers never enter a checkpoint or the service. This allocation and bot-body
-conversion still need native gameplay acceptance.
+pointers never enter a checkpoint or the service. Native Windows Deathmatch
+bot replacement passes; empty-slot and team-mode acceptance remain separate.
 
 The function emitter supplies an audited alternate entry at `D3143` and an early
 tail at `D3AD5` inside original `D2FD0`. A requested remote context uses the
@@ -29,10 +29,29 @@ Bot conversion runs original `15DDA0` retirement under the old population to
 release navigation reservations, inventory and mode-object ownership. It retains
 the registered actor row and compacts the original bot body table without moving
 remaining actor IDs. Single-player construction preserves the running context
-and camera globals. Empty rows use `15BCA0`.
+and camera globals. Only actual bot slots run retirement: unused actor rows can
+contain nonzero sentinels. `15BCA0` registers an absent replacement actor once,
+retaining human-before-bot registry order without moving actor IDs.
 The compiled fixture checks the stack, registry, bot table, score and team rules.
 An earlier eager-body prototype stalled in initial bot pathfinding; the lazy
-replacement still requires native acceptance. Tests alone are not gameplay proof.
+replacement passes the three-player Windows Deathmatch probe. Tests alone are
+not gameplay proof for other admission cases.
+
+Unused saved character choices can name meshes absent from the running world.
+At initial allocation, unused slots with unloaded meshes adopt the first human's
+loaded character/variant in all four round configurations, before a late peer
+receives them. Already-loaded choices and live bots remain unchanged; no profile
+is written. Empty-slot newcomers may therefore share an existing player's avatar
+for that round. The compiled fixture checks both replacement and preservation.
+
+Owner tracking uses authenticated virtual IP identity as well as native records:
+record relocation during migration retains scores; record reuse by a different
+member resets the personal row. Only initial human-prefix owners start cached.
+The host retries original targeted `357B80` GO for new initialized contexts at
+half-second intervals (maximum 180), stopping when authenticated native progress
+reports the matching native ID and IP active. Existing members retain their
+ordinary handshake. Crossplay's private observer request `arcade_join: true`
+enables the same experimental flag for its isolated native child only.
 
 `pc_arcade_join.h` preflights live/pending population writes. Existing human IDs
 remain fixed; a new high human slot consumes the first bot slot, leaving all

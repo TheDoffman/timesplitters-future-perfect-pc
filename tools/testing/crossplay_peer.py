@@ -236,6 +236,8 @@ def serve():
                         env.update(TSFP_PRESENT_CAPTURE=str(captures/'frame'),TSFP_PRESENT_CAPTURE_EVERY='6')
                     if request['command'].get('migration'):
                         env['TSFP_ARCADE_TRACE']='1'
+                    if request.get('arcade_join') is True:
+                        env['TSFP_ARCADE_JOIN_IN_PROGRESS']='1'
                     if request.get('rpc_trace'):
                         env['TSFP_ONLINE_RPC_TRACE']='1'
                         env['TSFP_ONLINE_RPC_LOG']=str(out/('companion-rpc-'+str(peer_index)+'.jsonl'))
