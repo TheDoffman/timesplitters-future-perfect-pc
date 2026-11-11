@@ -26,6 +26,7 @@ static void native_multiplayer_tick(void);
 static void native_multiplayer_open(uint32_t source);
 static const char *native_multiplayer_notice(uint32_t menu);
 static int native_multiplayer_lobby_notice(uint32_t menu);
+static int native_multiplayer_browser_notice(uint32_t menu);
 static void native_multiplayer_notice_bounds(uint32_t menu,float x,float y,float w,float h);
 #ifdef _WIN32
 static void native_multiplayer_story_open(uint32_t menu);

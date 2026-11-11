@@ -57,7 +57,7 @@ executes the original local socket/session/library cleanup; gameplay, migration
 and live-session shutdown retain their existing paths.
 Return to Lobby retains the party through the original round-return path,
 distinct from migration departure. Lobby code copy uses a native footer target,
-keyboard F2 or the original Xbox right-stick press.
+keyboard C or the original Xbox right-stick press.
 
 Validation in progress: two Windows games use only native menus and ordinary
 input to create, browse and join a lobby. Probe `native-ui-pair-h` then closes
@@ -94,3 +94,11 @@ shutdown cannot interrupt an unrelated community/private connection.
 LAN retains native discovery/gameplay; its browser/lobby Back resets that native
 transport and returns to the shared network chooser. Reopening Multiplayer
 cannot remain stuck in the passthrough state after leaving LAN.
+
+Native guest-dispatch fixtures use C11 on MSVC, matching production and the
+compile-time IPC layout assertions exposed through `pc_online.h`.
+
+Copy uses C/R3: F2 remains the reserved game Settings shortcut. Browser action
+rows use the original normal font; measured card titles fit before thumbnails,
+with full lobby/map/mode details in the selected-row footer. Rebuilds select a
+surviving button ID through native `77110`, avoiding orphaned focus after paging.

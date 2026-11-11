@@ -23,7 +23,7 @@ static int mp_native_passthrough;
 extern void sub_001A2730(void),sub_001A2720(void),sub_001A4350(void);
 extern void sub_001A8CE0(void),sub_001A8EE0(void),sub_001CBA50(void),sub_001CBD40(void);
 extern void sub_001A8D30(void),sub_001A8F30(void);
-extern void sub_001A4510(void),sub_001CBDA0(void),sub_00064E20(void),sub_0003D7B0(void);
+extern void sub_001A4510(void),sub_001CBDA0(void),sub_00064E20(void),sub_0003D7B0(void),sub_00077110(void),sub_0003FA10(void);
 static void (*multiplayer_exit_lookup(uint32_t address))(void);
 static void multiplayer_lobby_tick(void (*original)(void));
 extern void sub_001CC360(void);
@@ -42,9 +42,20 @@ static int mp_prepare(void)
     mp_ui.port=41830;
     snprintf(mp_ui.name,sizeof mp_ui.name,"My Lobby");return 1;
 }
+static void mp_focus(uint32_t menu)
+{
+    uint32_t selected=WORD_AT(menu+0x18cu),cursor=WORD_AT(menu+0x178u);int found=0;
+    for(unsigned i=0;i<64u && guest_writable(cursor,0x18u);i++,cursor=WORD_AT(cursor+4u))
+        if(WORD_AT(cursor+0x14u)==selected){found=1;break;}
+    guest_call(sub_00077110,2,menu,found?selected:1u);
+}
 static void mp_rebuild(void)
 {
-    if(guest_writable(mp_ui.menu,0x23cu))guest_call(sub_00078980,1,mp_ui.menu);
+    if(guest_writable(mp_ui.menu,0x23cu)) {
+        guest_call(sub_00078980,1,mp_ui.menu);
+        /* 78980 restores its saved selection AFTER calling our builder. */
+        mp_focus(mp_ui.menu);
+    }
 }
 static void mp_show(unsigned page)
 {
@@ -91,7 +102,7 @@ static void mp_build(void)
     const char *titles[]={"Multiplayer - Online / LAN","Private Server","Host Server","Join Server","Match Browser","Start New Match","Join Match"};
     guest_call(sub_00075B70,5,0xa000u,mp_text(0,titles[mp_ui.page]),bits(55.f),0u,MP_BACK);
     guest_call(sub_00071B10,4,1u,bits(2.f),1u,1u);
-    guest_call(sub_00071C50,1,0x32200u);
+    guest_call(sub_00071C50,1,mp_ui.page==MP_BROWSER?0x32000u:0x32200u);
     char label[256];unsigned row=1;
     switch(mp_ui.page) {
     case MP_NETWORK:
@@ -125,7 +136,7 @@ static void mp_build(void)
                 lobby->mode==PC_ONLINE_STORY?"Story":"Arcade",lobby->joinable?"":" - FULL");
             if(lobby->mode==PC_ONLINE_ARCADE && lobby->game_type_id<32u &&
                (int32_t)guest_call(sub_00064E20,1,lobby->map_scene)>=0)
-                guest_call(sub_00079D60_gen,6,0u,100u+i,0x20000u,bits(20.f),MP_SELECT,MP_MATCH_DRAW);
+                guest_call(sub_00079D60_gen,6,0u,100u+i,0x20000u,bits(16.f),MP_SELECT,MP_MATCH_DRAW);
             else mp_row(row++,100u+i,label);
         }
         if(mp_ui.list_page)mp_row(row++,4,"Previous Matches");
@@ -133,7 +144,8 @@ static void mp_build(void)
         if(mp_ui.state.code[0])mp_row(row++,6,"Copy Lobby Invitation");
         break;
     }}
-    guest_call(sub_000771D0,1,menu);guest_call(sub_000770E0,2,menu,0u);
+    guest_call(sub_000771D0,1,menu);
+    mp_focus(menu);
     restore_registers(&saved);g_esp+=4u;
 }
 static void mp_match_draw(void)
@@ -150,7 +162,16 @@ static void mp_match_draw(void)
     memcpy(saved_ad,ad,sizeof saved_ad);memset(ad,0,sizeof saved_ad);
     WORD_AT(0x790968u)=row->capacity>row->players?row->capacity-row->players:0u;
     WORD_AT(0x7909b4u)=row->players;WORD_AT(0x790974u)=row->map_scene;WORD_AT(0x790978u)=row->game_type_id;
-    snprintf((char *)ad+0x96u,54,"%.19s / %.19s%s",row->map,row->name,!strcmp(row->phase,"active")?" [IN PLAY]":"");
+    char *title=(char *)ad+0x96u;snprintf(title,54,"%.53s",row->name);
+    const uint32_t measure=mp_ui.storage+16u+29u*256u;
+    /* Match the original title font and the actual thumbnail boundary. */
+    guest_call(sub_0003FA10,1,0x15u);
+    const float available=FLOAT_AT(rect+8u)-FLOAT_AT(rect)-FLOAT_AT(0x47d67cu)-FLOAT_AT(0x47862cu)-6.f;
+    for(unsigned length=(unsigned)strlen(title);length>3u;length--) {
+        guest_call(sub_0003FCF0,4,measure,measure+4u,0x7909f6u,0u);
+        if(FLOAT_AT(measure)<=available)break;
+        title[length-4u]='.';title[length-3u]='.';title[length-2u]='.';title[length-1u]=0;
+    }
     const uint32_t id=WORD_AT(item+0x14u);WORD_AT(item+0x14u)=0;
     guest_call(sub_001CBDA0,3,menu,item,rect);
     WORD_AT(item+0x14u)=id;memcpy(ad,saved_ad,sizeof saved_ad);g_esp+=4u;
@@ -188,13 +209,21 @@ static void mp_root_build(void)
 }
 static const char *native_multiplayer_notice(uint32_t menu)
 {
-    static char lobby[160];
+    static char lobby[256];
     if(native_multiplayer_lobby_notice(menu)) {
-        snprintf(lobby,sizeof lobby,"%s %s | COPY F2 / R3",
+        snprintf(lobby,sizeof lobby,"%s %s | COPY C / R3",
             GetTickCount64()<mp_ui.copied_until?"COPIED":"LOBBY CODE",mp_ui.state.code);return lobby;
     }
     if(!mp_ui.storage || mp_ui.menu!=menu || mp_native_passthrough)return NULL;
     if(*mp_ui.return_notice)return mp_ui.return_notice;
+    if(mp_ui.page==MP_BROWSER && guest_writable(menu,0x190u) &&
+       !strcmp(mp_ui.notice,mp_ui.state.message)) {
+        const uint32_t id=WORD_AT(menu+0x18cu);
+        if(id>=100u && id-100u<mp_ui.state.count) {
+            const PcOnlineMenuLobby *row=&mp_ui.state.lobbies[id-100u];
+            snprintf(lobby,sizeof lobby,"%s | %s | %s%s",row->name,row->map,row->game_type,!strcmp(row->phase,"active")?" | IN PLAY":"");return lobby;
+        }
+    }
     if(*mp_ui.notice)return mp_ui.notice;
     const char *help[]={"Browse community matches, connect to a private server, or play on your local network.",
         "Host a separate private server or connect with its server invitation.",
@@ -202,6 +231,10 @@ static const char *native_multiplayer_notice(uint32_t menu)
         "Paste the server invitation supplied by its owner.","Choose an open lobby or create a new match.",
         "Choose your lobby name, game type and privacy.","Enter the lobby code supplied by the host."};
     return help[mp_ui.page];
+}
+static int native_multiplayer_browser_notice(uint32_t menu)
+{
+    return mp_ui.storage && mp_ui.menu==menu && !mp_native_passthrough && mp_ui.page==MP_BROWSER;
 }
 static int native_multiplayer_lobby_notice(uint32_t menu)
 {
@@ -348,7 +381,7 @@ static void native_multiplayer_tick(void)
     }
     uint32_t leaf=mp_leaf();
     if(native_multiplayer_lobby_notice(leaf)) {
-        unsigned down=!!pc_controls_key_down(0x71);
+        unsigned down=!!pc_controls_key_down(0x43);
         uint32_t pressed=WORD_AT(0x76b0fcu)?0x6b94d8u:0x6b93e0u;
         if(WORD_AT(pressed)&0x80u)down=1; /* Original Xbox right-stick press. */
         PcMenuPointer pointer=pc_controls_menu_hover_pointer();
@@ -502,6 +535,7 @@ static void native_multiplayer_tick(void){}
 static void native_multiplayer_open(uint32_t source){(void)source;}
 static const char *native_multiplayer_notice(uint32_t menu){(void)menu;return NULL;}
 static int native_multiplayer_lobby_notice(uint32_t menu){(void)menu;return 0;}
+static int native_multiplayer_browser_notice(uint32_t menu){(void)menu;return 0;}
 static void native_multiplayer_notice_bounds(uint32_t menu,float x,float y,float w,float h){(void)menu;(void)x;(void)y;(void)w;(void)h;}
 static int native_multiplayer_return_menu(void (*original)(void)){(void)original;return 0;}
 static void (*native_multiplayer_lookup(uint32_t address))(void){(void)address;return NULL;}
