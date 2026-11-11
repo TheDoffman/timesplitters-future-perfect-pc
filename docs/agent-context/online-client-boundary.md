@@ -31,3 +31,12 @@ for their recorded revisions; this separation is not a new gameplay test.
 The private copy retains the previously deployed source and test versions.
 Earlier Git revisions already contained server code; removing it from the current
 tree does not rewrite published history. Future changes must respect this split.
+
+Validation (2026-11-10): Windows network, Story launcher and release-tool checks
+passed 266 tests with 9 skips; 13 focused client tests passed again after import
+cleanup. On the physical Mac the same selection passed 261 with 13 skips and one
+missing-xdist failure; installing the test dependency and rerunning that check
+passed. The isolated companion imports without private server modules. Private
+archive hashes and all 11 installed service files matched before/after source
+checkout synchronization, and the live loopback dashboard remained healthy.
+No new native build or gameplay run was performed for this repository split.
