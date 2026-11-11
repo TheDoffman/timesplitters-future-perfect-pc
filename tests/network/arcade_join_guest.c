@@ -92,6 +92,10 @@ int main(void){
     world.memory[0x7de414u+9u]=103;WORD_AT(0x53a3d0u+103u*48u)=8192;
     world.memory[0x7de414u+10u]=115;world.memory[0x7de444u+10u]=5;
     WORD_AT(0x53a3d0u+115u*48u)=8;WORD_AT(0x78b860u+8u*2u)=1;
+    WORD_AT(0x300000u+4u)=0x310000u;WORD_AT(0x300000u+48u+4u)=0x320000u;
+    /* A mapped resource index alone is not a loaded model. */
+    world.memory[0x7de414u+11u]=116;WORD_AT(0x53a3d0u+116u*48u)=9;
+    WORD_AT(0x78b860u+9u*2u)=2;
     const uint32_t configs[]={0x7de340u,0x774044u,0x78ad58u};
     for(unsigned i=0;i<3;i++)memcpy(world.memory+configs[i],world.memory+0x7de400u,0xa0u);
     /* A future owner's pointer can exist before its controller becomes active. */
@@ -104,6 +108,7 @@ int main(void){
         const uint32_t address=i?configs[i-1u]:0x7de400u;
         REQUIRE(world.memory[address+0x14u+9u]==12 && world.memory[address+0x44u+9u]==2);
         REQUIRE(world.memory[address+0x14u+10u]==115 && world.memory[address+0x44u+10u]==5);
+        REQUIRE(world.memory[address+0x14u+11u]==12);
     }
     for(unsigned slot=3;slot<16;slot++){
         REQUIRE(!memcmp(before[slot-3],world.memory+0x10000u+slot*0xea0u,0xea0u));

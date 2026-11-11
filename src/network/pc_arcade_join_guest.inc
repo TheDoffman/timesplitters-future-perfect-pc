@@ -31,8 +31,12 @@ static int arcade_join_character_loaded(unsigned kind)
     const uint32_t mesh=WORD_AT(0x53a3d0u+kind*48u),resources=WORD_AT(0x791d4cu);
     if(mesh>=8192u || !resources)return 0;
     int16_t index;memcpy(&index,(const void *)((uintptr_t)(0x78b860u+mesh*2u)+g_xbox_mem_offset),2u);
-    return index>=0 && resources<=UINT32_MAX-((uint32_t)index+1u)*48u &&
-        guest_writable(resources+(uint32_t)index*48u,48u);
+    if(index<0 || resources>UINT32_MAX-((uint32_t)index+1u)*48u ||
+       !guest_writable(resources+(uint32_t)index*48u,48u))return 0;
+    /* The index can exist for every archive entry, including unloaded meshes.
+       Original A6880 uses resource+4 as the actual constructed model pointer. */
+    const uint32_t model=WORD_AT(resources+(uint32_t)index*48u+4u);
+    return model && guest_writable(model,4u);
 }
 int pc_arcade_join_initial_construct(void (*original)(void))
 {
