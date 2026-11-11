@@ -54,3 +54,14 @@ xbox_kernel.log
 /config/pc-audio.ini.bak
 /config/pc-audio-mix.ini
 /config/pc-audio-mix.ini.tmp
+/tools/network/lobby_server.py
+/tools/network/install_online_service.py
+/tools/network/online_migration.py
+/tools/network/online_arcade_service.py
+/tools/network/online_dashboard.*
+/Start-OnlineDirectory.ps1
+/tests/network/test_lobby_server.py
+/tests/network/test_online_relay.py
+/tests/network/test_online_migration.py
+/tests/network/test_arcade_service.py
+/tests/network/test_online_dashboard.py

@@ -1,6 +1,6 @@
 # Multiplayer companion presentation
 
-Private service dashboard: [monitoring, privacy, deployment and tests](mini-server-dashboard.md).
+Server source stays private. See the [client/server boundary](online-client-boundary.md).
 
 ## Arcade host migration
 

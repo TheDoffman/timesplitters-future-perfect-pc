@@ -469,19 +469,7 @@ def build_browser(window, values, actions):
     ttk.Label(options, text='UDP port', style='Card.TLabel').pack(side='left', padx=(0, 8))
     ttk.Entry(options, textvariable=values['port'], width=7, style='Card.TEntry').pack(side='left')
     ttk.Checkbutton(options, text='List publicly', variable=values['listed']).pack(side='right')
-    ttk.Checkbutton(host, text='Host directory on this PC (advanced)', variable=values['automatic']).grid(
-        row=5, column=0, sticky='w', pady=(12, 0))
-    ttk.Checkbutton(host, text='Detect public IPv4 automatically', variable=values['detect_ip']).grid(
-        row=6, column=0, sticky='w')
-    ttk.Label(host, text='Public IPv4 (via ipify)', style='CardMuted.TLabel').grid(
-        row=7, column=0, sticky='w', pady=(10, 6))
-    ip_row = ttk.Frame(host, style='Surface.TFrame')
-    ip_row.grid(row=8, column=0, sticky='ew')
-    ip_row.columnconfigure(0, weight=1)
-    ttk.Entry(ip_row, textvariable=values['public_ip'], width=14, style='Card.TEntry').grid(row=0, column=0, sticky='ew')
-    ttk.Button(ip_row, text='Detect', style='Card.TButton', command=actions['detect']).grid(row=0, column=1, padx=(8, 0))
-    wrapped_label(host, 'The shared server relays connections. You host the match; players need no port forwarding. '
-                  'Hosting a directory on this PC instead requires router setup.',
+    wrapped_label(host, 'The shared server relays connections. You host the match; players need no port forwarding.',
                   style='CardMuted.TLabel').grid(row=9, column=0, sticky='ew', pady=(10, 8))
     host.rowconfigure(10, weight=1)
     ttk.Button(host, text='Start New Match', style='Card.Primary.TButton', command=actions['host']).grid(

@@ -24,7 +24,12 @@ ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools'))
 from project_paths import configure
 configure()
-from lobby_server import Server
+def Server(*args, **kwargs):
+    try:
+        from lobby_server import Server as fixture
+    except ImportError as error:
+        raise RuntimeError('Local integration testing requires the private server fixture on PYTHONPATH.') from error
+    return fixture(*args, **kwargs)
 from online_client import Client
 
 
