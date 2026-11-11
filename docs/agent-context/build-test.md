@@ -1,5 +1,5 @@
-[Prompts](controls-options.md). [Online UI](multiplayer-ui.md).
-[Crossplay checks](../development/arcade-host-migration.md#validation).
+[Input](controls-options.md); [Online](multiplayer-ui.md); [Mini](mini-server-dashboard.md).
+[Crossplay](../development/arcade-host-migration.md#validation).
 [Axes/axes](control-presets.md); [Tex](texture-preference.md).
 [Arms](video-options.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
