@@ -43548,3 +43548,18 @@ PC access is blocked by restrict on the existing build SSH key in the mini's
 prohibited. No SSH permission was broadened. A separate dashboard-only key has
 been proposed for explicit approval. Dashboard already works locally on the mini.
 See docs/development/mini-dashboard.md for access and service setup.
+
+Private mini dashboard PC access — 2026-11-10 follow-up: user explicitly approved
+separate dashboard-only SSH authentication. New PC-owned Ed25519 key is outside
+Git with user-only ACL; only the public key was appended to the mini after an
+authorized_keys backup. Original restricted build key remains byte-for-byte intact.
+New alias timesplitters-dashboard uses the existing pinned host-key file with
+strict verification. Key options restrict forwarding destinations/listeners to
+127.0.0.1:41822 and force /usr/bin/false for shell commands. Windows SSH config
+was backed up and prior content preserved; no system sshd changes were made.
+Actual PC tunnel/API and browser now show Darwin/mini.local live telemetry.
+Shell execution, forwarding to41820 and another remote listening port were tested
+and denied; original build SSH still succeeds. Approved live IAB tab is retained
+as the deliverable. Connection is owned by viewer session57409; reconnect command
+is in docs/development/mini-dashboard.md. Existing public game ports/certificates
+and the unresolved public-address gameplay issue remain unchanged.

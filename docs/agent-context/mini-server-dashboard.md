@@ -36,10 +36,13 @@ the browser. It uses existing SSH authentication and validates readiness without
 HTTP proxies. Ctrl+C closes only its SSH child. `--no-browser` supports a hidden
 operator session; nondefault local/remote ports are supported. No router mapping
 or public dashboard listener is required.
-The existing build SSH key on this mini has `restrict`, so it cannot forward.
-Do not remove that restriction automatically. PC access requires separately
-approved dashboard-only SSH authentication; the dashboard already works locally
-on the mini without changing SSH permissions. Viewer errors include SSH denials.
+The build SSH key retains `restrict`. After explicit user approval, a separate
+`timesplitters-dashboard` alias/key enables PC access with strict existing host
+pinning. The new public key has restrict/port-forwarding, permitopen and
+permitlisten limited to127.0.0.1:41822, and forced /usr/bin/false for commands.
+Real tests verify shell denial, off-target destination/listener denial and the
+original build login. Private key/config backups remain outside Git; no system
+sshd configuration or public listener changes. Viewer errors include SSH denials.
 
 Validation: `tests/network/test_online_dashboard.py` is registered in the native
 runtime suite. It covers credential exclusion, read-only leases, host transitions,
