@@ -156,6 +156,11 @@ int main(int argc,char **argv)
     team_rules[0x58u]|=1u;target.memory[0x7de458u]|=1u;
     REQUIRE(!pc_arcade_config_matches(team_rules,target.memory+0x7de400u));
     target.memory[0x7de458u]&=~1u;
+    target.memory[0x7de45du]^=0x40u;
+    REQUIRE(pc_arcade_config_matches(snapshot->config,target.memory+0x7de400u));
+    target.memory[0x7de45du]^=0x80u;
+    REQUIRE(!pc_arcade_config_matches(snapshot->config,target.memory+0x7de400u));
+    target.memory[0x7de45du]^=0xc0u;
     for(unsigned mutation=0;mutation<8u;mutation++) {
         *broken=*snapshot;
         switch(mutation) {

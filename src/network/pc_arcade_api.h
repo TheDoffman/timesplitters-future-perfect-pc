@@ -6,6 +6,7 @@ extern int g_tsfp_arcade_migrating;
 int pc_network_arcade_progress(int active,PcArcadeControlState *out);
 int pc_network_arcade_enabled(void);
 void pc_network_arcade_native_peer(unsigned native_peer);
+void pc_network_arcade_slots(const uint32_t slots[4]);
 int pc_network_arcade_bind_peer(uint32_t ip,uint32_t previous_host);
 int pc_network_arcade_snapshot(PcArcadeCheckpoint *out);
 int pc_network_arcade_publish(const PcArcadeCheckpoint *snapshot);
@@ -20,5 +21,10 @@ int pc_network_arcade_write(void *context,uint32_t address,const void *value,siz
 int pc_network_arcade_bot_read(void *context,unsigned slot,PcNetworkBotState *out);
 void pc_multiplayer_migration_leave(void);
 int pc_arcade_migration_frame(int after);
+void pc_arcade_join_allocate(void (*original)(void));
+int pc_arcade_join_initial_construct(void (*original)(void));
+int pc_arcade_join_context_entry(void);
+int pc_arcade_join_context_tail(void);
+void pc_arcade_join_frame(void);
 #endif
 #endif

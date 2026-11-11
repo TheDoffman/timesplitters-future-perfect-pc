@@ -12,6 +12,7 @@ ptrdiff_t g_xbox_mem_offset;
 static unsigned presents,refreshes,departures,rebases,revives;
 static int overlay_migrating;
 void pc_match_overlay_migration(int active){overlay_migrating=active;}
+void pc_arcade_join_frame(void){}
 PcOnlineMode pc_online_mode(void){return PC_ONLINE_ARCADE;}
 void pc_character_ragdoll_release(uint32_t entity){(void)entity;}
 void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *s)
@@ -73,7 +74,7 @@ int main(void)
         "%u 11111111111111111111111111111111 10.254.0.3",(unsigned)ntohs(address.sin_port));
     REQUIRE(pc_network_set_online(configuration));
     PcArcadeControlState observed;REQUIRE(!pc_network_arcade_progress(0,&observed));
-    uint8_t frame[4096];REQUIRE(receive_control(bridge,"AMPG",frame,&native)==84);
+    uint8_t frame[4096];REQUIRE(receive_control(bridge,"AMPG",frame,&native)==100);
     const uint32_t first_progress=pc_arcade_load32(frame+72);
     REQUIRE(pc_arcade_load32(frame+76)==0u);
     uint8_t status[PC_ARCADE_STATE_BYTES]={0};memcpy(status,"AMST",4);pc_arcade_store32(status+4,1);
@@ -99,11 +100,11 @@ int main(void)
     PcArcadeCheckpoint *snapshot=(PcArcadeCheckpoint *)malloc(sizeof *snapshot);
     PcArcadeCheckpoint *download=(PcArcadeCheckpoint *)malloc(sizeof *download);REQUIRE(snapshot && download);
     REQUIRE(pc_arcade_checkpoint_capture(snapshot,&source,read_guest,bot_read,room,4,99));
-    pc_arcade_store32(status+8,5);pc_arcade_store32(status+12,2);pc_arcade_store32(status+16,99);
+    pc_arcade_store32(status+8,4);pc_arcade_store32(status+12,5);pc_arcade_store32(status+16,99);
     pc_arcade_store32(status+32,sizeof *snapshot);memset(status+36,0x33,32);memcpy(status+68,room,16);
-    memcpy(status+24,local_ip,4);memcpy(status+28,&previous_ip,4);
+    memcpy(status+20,&previous_ip,4);
     bridge_reply(bridge,&native,status,sizeof status,1);
-    REQUIRE(await_state(&observed,5,2) && g_tsfp_arcade_migrating);
+    REQUIRE(await_state(&observed,4,5) && pc_network_arcade_enabled());
     uint8_t part[52+PC_ARCADE_FRAGMENT];memcpy(part,"AMFR",4);pc_arcade_store32(part+4,99);
     pc_arcade_store32(part+8,sizeof *snapshot);pc_arcade_store32(part+16,pc_arcade_crc32(snapshot,sizeof *snapshot));
     memset(part+20,0x33,32);
@@ -116,6 +117,24 @@ int main(void)
     while(!pc_network_arcade_snapshot(download) && net_milliseconds()<download_deadline)
         pc_network_arcade_progress(1,&observed);
     REQUIRE(pc_network_arcade_snapshot(download) && !memcmp(snapshot,download,sizeof *snapshot));
+    REQUIRE(pc_arcade_migration_frame(0)==1); /* Only the new guest catches up. */
+    REQUIRE(!overlay_migrating && g_tsfp_arcade_migrating);
+    REQUIRE(WORD_AT(0x76b140u)==2u && WORD_AT(0x7de318u)==3600u && rebases==1u);
+    REQUIRE(receive_control(bridge,"AMAK",frame,&native)==112 && pc_arcade_load32(frame+108)==1);
+    pc_arcade_store32(status+12,1);bridge_reply(bridge,&native,status,sizeof status,1);
+    REQUIRE(await_state(&observed,4,1) && pc_arcade_migration_frame(0)==0);
+    REQUIRE(WORD_AT(0x76b140u)==2u && !g_tsfp_arcade_migrating);
+    pc_arcade_store32(status+12,5);bridge_reply(bridge,&native,status,sizeof status,1);
+    REQUIRE(pc_network_arcade_progress(1,&observed) && observed.phase==1u);
+    /* The same initialized guest can subsequently migrate, independently of
+       its earlier catch-up. Its selected checkpoint may predate the new epoch. */
+    presents=refreshes=rebases=revives=0;
+    setword(&target,0x50000u+3u*0xea0u,0);
+    setword(&target,0x7de460u,31234u);
+    pc_arcade_store32(status+8,5);pc_arcade_store32(status+12,2);
+    memcpy(status+20,local_ip,4);memcpy(status+24,local_ip,4);memcpy(status+28,&previous_ip,4);
+    bridge_reply(bridge,&native,status,sizeof status,1);
+    REQUIRE(await_state(&observed,5,2) && g_tsfp_arcade_migrating);
     REQUIRE(pc_arcade_migration_frame(0)==1); /* Apply checkpoint while frozen. */
     REQUIRE(overlay_migrating);
     REQUIRE(WORD_AT(0x76b140u)==2u && WORD_AT(0x7de318u)==3600u && rebases==1u);
@@ -157,7 +176,7 @@ int main(void)
     while(recvfrom(bridge,(char *)frame,sizeof frame,0,NULL,NULL)>0) {}
     REQUIRE(pc_network_set_online(configuration));
     REQUIRE(!pc_network_arcade_progress(0,&observed));
-    REQUIRE(receive_control(bridge,"AMPG",frame,&native)==84);
+    REQUIRE(receive_control(bridge,"AMPG",frame,&native)==100);
     REQUIRE(pc_arcade_load32(frame+72)>first_progress); /* Cleanup/rematch cannot rewind the lease pulse. */
     pc_network_set_online(NULL);
     net_close(bridge);net_stop();free(snapshot);free(download);free(source.memory);free(target.memory);

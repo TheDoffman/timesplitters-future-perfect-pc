@@ -1,6 +1,6 @@
 [Prompts](controls-options.md).
 [Keys](control-presets.md).
-[MP/capture](multiplayer-ui.md).
+[MP](arcade-join-in-progress.md).
 
 [FOV node filter](video-options.md); [Uplink](native-uplink.md).
 [UI](controls-options.md); [Kill feed](../development/arcade-kill-feed.md).

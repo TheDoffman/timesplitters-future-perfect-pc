@@ -18,6 +18,7 @@ FRAGMENT = struct.Struct('<4sIIII')
 DOWNLOAD = struct.Struct('<4sIIII32s')
 ACK = struct.Struct('<4sI32sI')
 PROGRESS = struct.Struct('<4sIII')
+SLOT_PROGRESS = struct.Struct('<4s7I')
 STATE = struct.Struct('<4sIIII4s4s4sI32s16s')
 NATIVE_HEADER = struct.Struct('<4I16s4I')
 PHASE = {'lobby': 0, 'active': 1, 'preparing': 2, 'closed': 3}
@@ -55,6 +56,7 @@ class NativeArcade:
         self.counter = -1
         self.active = False
         self.native_peer = None
+        self.native_slots = None
         self.offer = None
         self.ack = None
         self.leaving = self.departed = False
@@ -108,15 +110,24 @@ class NativeArcade:
 
     def from_native(self, payload, endpoint):
         with self.lock:
-            if len(payload) == PROGRESS.size and payload[:4] == b'AMPG':
-                _, counter, active, native_peer = PROGRESS.unpack(payload)
+            if len(payload) in (PROGRESS.size, SLOT_PROGRESS.size) and payload[:4] == b'AMPG':
+                _, counter, active, native_peer = PROGRESS.unpack_from(payload)
                 if active > 1 or native_peer not in (*range(16), 0xffffffff):
                     return
+                native_slots = None
+                if len(payload) == SLOT_PROGRESS.size:
+                    limit, humans, bots, slot = struct.unpack_from('<4I', payload, PROGRESS.size)
+                    if limit:
+                        if (not 1 <= limit <= 16 or humans & bots or (humans | bots) >> limit or
+                            not 0 <= slot < limit or not humans & (1 << slot)):
+                            return
+                        native_slots = dict(limit=limit, human_mask=humans, bot_mask=bots, local_slot=slot)
                 # The game sends this from its own dedicated authenticated socket.
                 self.endpoint = endpoint
                 if counter > self.counter:
                     self.counter, self.active = counter, bool(active)
                     self.native_peer = native_peer if native_peer < 16 else None
+                    self.native_slots = native_slots
                 return
             if endpoint != self.endpoint:
                 return
@@ -160,6 +171,8 @@ class NativeArcade:
             status = self.status
             body = dict(compatibility=compatibility, epoch=status['epoch'],
                         native_counter=self.counter, active=self.active, native_peer=self.native_peer)
+            if self.native_slots is not None:
+                body['native_slots'] = self.native_slots
             if recover:
                 body['epoch']=-1
                 return body
@@ -170,6 +183,8 @@ class NativeArcade:
                 body['checkpoint_ack'] = dict(sequence=sequence, digest=digest)
                 if ready and status['phase'] == 'preparing':
                     body['ready'] = digest
+                elif ready and status.get('joining'):
+                    body['join_ready'] = digest
             return body
 
     def poll(self):
@@ -183,7 +198,8 @@ class NativeArcade:
             candidate = virtual_ip(status['candidate']) if status.get('candidate') else bytes(4)
             previous = virtual_ip(status['previous_host']) if status.get('previous_host') else bytes(4)
             digest = bytes.fromhex(snapshot['digest']) if snapshot else bytes(32)
-            state = STATE.pack(b'AMST', 1, status['epoch'], 4 if self.departed else PHASE[status['phase']],
+            phase = 5 if status.get('joining') and status['phase'] == 'active' else PHASE[status['phase']]
+            state = STATE.pack(b'AMST', 1, status['epoch'], 4 if self.departed else phase,
                 snapshot['sequence'] if snapshot else 0, host, candidate, previous,
                 len(snapshot['bytes']) if snapshot else 0, digest, bytes.fromhex(status['match_id']))
             peers = status.get('native_peers', [])

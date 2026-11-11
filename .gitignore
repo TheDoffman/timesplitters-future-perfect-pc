@@ -58,6 +58,7 @@ xbox_kernel.log
 /tools/network/install_online_service.py
 /tools/network/online_migration.py
 /tools/network/online_arcade_service.py
+/tools/network/online_join.py
 /tools/network/online_dashboard.*
 /Start-OnlineDirectory.ps1
 /tests/network/test_lobby_server.py

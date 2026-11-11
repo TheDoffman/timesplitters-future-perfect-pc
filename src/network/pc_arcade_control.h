@@ -46,12 +46,14 @@ static inline int pc_arcade_control_receive(PcArcadeControl *c,const uint8_t *da
             for(unsigned j=0;j<i;j++)if(s.native_peers[j].native_id==s.native_peers[i].native_id ||
                 s.native_peers[j].ip==s.native_peers[i].ip)return 0;
         }
-        if(!s.epoch || s.phase>4u || (s.bytes && s.bytes!=sizeof(PcArcadeCheckpoint)) ||
+        if(!s.epoch || s.phase>5u || (s.bytes && s.bytes!=sizeof(PcArcadeCheckpoint)) ||
            (!!s.sequence != !!s.bytes) || (c->enabled && s.epoch<c->state.epoch))return 0;
         if(c->enabled && s.epoch==c->state.epoch) {
             if(memcmp(s.room,c->state.room,16) ||
                (c->state.phase==1u && s.phase==2u) ||
-               (c->state.phase>=3u && s.phase!=c->state.phase) ||
+               ((c->state.phase==3u || c->state.phase==4u) && s.phase!=c->state.phase) ||
+               (c->state.phase==1u && s.phase==5u) ||
+               (c->state.phase==5u && s.phase==5u && s.sequence<c->state.sequence) ||
                (c->state.phase==1u && s.phase==1u && s.sequence<c->state.sequence))return 0;
         }
         if(c->enabled && memcmp(s.room,c->state.room,16)) {

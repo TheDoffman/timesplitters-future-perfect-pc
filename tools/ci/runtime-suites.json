@@ -254,6 +254,7 @@
     "tests/network/test_crossplay_peer.py",
     "tests/network/test_online_companion.py",
     "tests/network/test_client_package.py",
+    "tests/network/test_arcade_join_client.py",
     "tests/network/test_online_theme.py",
     "tests/network/test_online.py",
     "tests/network/test_online_host.py",

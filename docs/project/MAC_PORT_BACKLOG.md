@@ -1,3 +1,12 @@
+Arcade join in progress (`feature/arcade-join-in-progress`): **In development**.
+Shared native storage/constructor hooks, checkpoint catchup and client slot reports
+use existing Windows/Mac/Linux interfaces; no new OS adapter is required.
+Windows native Deathmatch bot takeover passes with three active players, preserved
+clock/countdown and five fighting bots; other admission/migration cases remain
+pending. Mac/Linux builds and physical gameplay have not been validated. The mini's
+private service has not been updated. See STATUS and
+[the focused guide](../agent-context/arcade-join-in-progress.md).
+
 #540 native explicit-controller prompts (local): patch2955 corrects shared
 TSFP_NATIVE_INPUT sampler notification for explicit P1 pads, covering Linux/Mac;
 Windows keeps its working path. No new OS adapter is needed. Headless Windows
