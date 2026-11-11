@@ -8,11 +8,13 @@
 #define MP_BACK 0x123f5u
 #define MP_TEXT_DONE 0x123f6u
 #define MP_TEXT_CANCEL 0x123f7u
+#define MP_MATCH_DRAW 0x123f8u
+#define MP_PER_PAGE 3u
 enum {MP_NETWORK,MP_PRIVATE,MP_HOST_SERVER,MP_JOIN_SERVER,MP_BROWSER,MP_CREATE,MP_JOIN_CODE};
 static struct {
     unsigned page,source,mode,public_lobby,list_page,editing,pending,action,autojoin,host,pasting,paste_page,port,copy_down;
     uint32_t storage,menu,parent,request_sequence;
-    uint64_t poll_at,connect_at,copy_at,copied_until;
+    uint64_t poll_at,connect_at,copy_at,copied_until,metadata_at;
     float copy_bounds[4];
     char name[64],code[2048],address[256],notice[256],return_notice[256];
     PcOnlineMenuState state;
@@ -20,6 +22,10 @@ static struct {
 static int mp_native_passthrough;
 extern void sub_001A2730(void),sub_001A2720(void),sub_001A4350(void);
 extern void sub_001A8CE0(void),sub_001A8EE0(void),sub_001CBA50(void),sub_001CBD40(void);
+extern void sub_001A8D30(void),sub_001A8F30(void);
+extern void sub_001A4510(void),sub_001CBDA0(void),sub_00064E20(void);
+static void (*multiplayer_exit_lookup(uint32_t address))(void);
+static void multiplayer_lobby_tick(void (*original)(void));
 extern void sub_001CC360(void);
 extern void sub_00352980(void),sub_00352990(void),sub_0007D090(void);
 static uint32_t mp_text(unsigned index,const char *value)
@@ -112,20 +118,69 @@ static void mp_build(void)
         mp_row(row++,2,"Paste Lobby Code");mp_row(row++,3,"Join");break;
     case MP_BROWSER: {
         mp_row(row++,1,"Start New Match");mp_row(row++,2,"Join by Lobby Code");mp_row(row++,3,"Refresh");
-        const unsigned start=mp_ui.list_page*5u;
-        for(unsigned i=start;i<mp_ui.state.count && i<start+5u;i++) {
+        const unsigned start=mp_ui.list_page*MP_PER_PAGE;
+        for(unsigned i=start;i<mp_ui.state.count && i<start+MP_PER_PAGE;i++) {
             const PcOnlineMenuLobby *lobby=&mp_ui.state.lobbies[i];
             snprintf(label,sizeof label,"%.42s   %u/%u   %s%s",lobby->name,lobby->players,lobby->capacity,
                 lobby->mode==PC_ONLINE_STORY?"Story":"Arcade",lobby->joinable?"":" - FULL");
-            mp_row(row++,100u+i,label);
+            if(lobby->mode==PC_ONLINE_ARCADE && lobby->game_type_id<32u &&
+               (int32_t)guest_call(sub_00064E20,1,lobby->map_scene)>=0)
+                guest_call(sub_00079D60_gen,6,mp_text(row++,label),100u+i,0x20000u,bits(20.f),MP_SELECT,MP_MATCH_DRAW);
+            else mp_row(row++,100u+i,label);
         }
         if(mp_ui.list_page)mp_row(row++,4,"Previous Matches");
-        if(start+5u<mp_ui.state.count)mp_row(row++,5,"More Matches");
+        if(start+MP_PER_PAGE<mp_ui.state.count)mp_row(row++,5,"More Matches");
         if(mp_ui.state.code[0])mp_row(row++,6,"Copy Lobby Invitation");
         break;
     }}
     guest_call(sub_000771D0,1,menu);guest_call(sub_000770E0,2,menu,0u);
     restore_registers(&saved);g_esp+=4u;
+}
+static void mp_match_draw(void)
+{
+    const uint32_t menu=WORD_AT(g_esp+4u),item=WORD_AT(g_esp+8u),rect=WORD_AT(g_esp+12u);
+    if(!guest_writable(item,0x18u) || WORD_AT(item+0x14u)<100u){g_esp+=4u;return;}
+    const unsigned index=WORD_AT(item+0x14u)-100u;
+    if(index>=mp_ui.state.count){g_esp+=4u;return;}
+    const PcOnlineMenuLobby *row=&mp_ui.state.lobbies[index];
+    /* The original row painter supplies the game's map thumbnail, mode icon,
+       fonts and population caption. Its scratch advertisement exists only
+       for this draw and is restored before any discovery/selection runs. */
+    uint8_t saved_ad[0xcc];void *ad=(void *)((uintptr_t)0x790960u+g_xbox_mem_offset);
+    memcpy(saved_ad,ad,sizeof saved_ad);memset(ad,0,sizeof saved_ad);
+    WORD_AT(0x790968u)=row->capacity>row->players?row->capacity-row->players:0u;
+    WORD_AT(0x7909b4u)=row->players;WORD_AT(0x790974u)=row->map_scene;WORD_AT(0x790978u)=row->game_type_id;
+    snprintf((char *)ad+0x96u,54,"%.23s / %.23s",row->map,row->name);
+    const uint32_t id=WORD_AT(item+0x14u);WORD_AT(item+0x14u)=0;
+    guest_call(sub_001CBDA0,3,menu,item,rect);
+    WORD_AT(item+0x14u)=id;memcpy(ad,saved_ad,sizeof saved_ad);g_esp+=4u;
+}
+static void mp_publish_metadata(void)
+{
+    if(GetTickCount64()<mp_ui.metadata_at || !WORD_AT(0x76b108u) || WORD_AT(0x76b140u)!=1u || mp_ui.source==2u)return;
+    mp_ui.metadata_at=GetTickCount64()+1000u;
+    const uint32_t scene=WORD_AT(0x79094cu),config=0x7de400u; /* Stock353400 advertises this live selection, including the lobby. */
+    const uint8_t *settings=(const uint8_t *)((uintptr_t)config+g_xbox_mem_offset);
+    const unsigned map=settings[0x54u],type=settings[0x56u];
+    if(type>=32u || map>100u)return;
+    uint32_t name_id=0;
+    if(mp_ui.mode==PC_ONLINE_ARCADE) {
+        const int index=(int32_t)guest_call(sub_00064E20,1,map);
+        if(index<0 || index>=17)return;name_id=WORD_AT(0x4d2388u+(unsigned)index*0x3cu);
+    } else {
+        for(unsigned i=0;i<13u;i++)if(*(const int16_t *)((uintptr_t)(0x4d1ac6u+i*0x44u)+g_xbox_mem_offset)==(int)map)name_id=WORD_AT(0x4d1ad0u+i*0x44u);
+        if(!name_id)return;
+    }
+    const uint32_t name=guest_call(sub_0003D7B0,1,name_id);
+    const int16_t rules_id=*(const int16_t *)((uintptr_t)(0x4d1f90u+type*32u)+g_xbox_mem_offset);
+    if(rules_id<0 || !guest_writable(name,64u))return;
+    PcOnlineMatchInfo info={0};info.mode=mp_ui.mode;info.map_scene=map;info.game_type_id=type;
+    info.in_progress=scene<=100u && WORD_AT(0x76b1a4u)==15u;
+    snprintf(info.map_name,sizeof info.map_name,"%.63s",(const char *)((uintptr_t)name+g_xbox_mem_offset));
+    const uint32_t rules=guest_call(sub_0003D7B0,1,(uint32_t)rules_id);
+    if(!guest_writable(rules,32u))return;
+    snprintf(info.game_type,sizeof info.game_type,"%.31s",(const char *)((uintptr_t)rules+g_xbox_mem_offset));
+    pc_online_menu_publish(&info);
 }
 static void mp_root_build(void)
 {
@@ -135,7 +190,7 @@ static const char *native_multiplayer_notice(uint32_t menu)
 {
     static char lobby[160];
     if(native_multiplayer_lobby_notice(menu)) {
-        snprintf(lobby,sizeof lobby,"%s %s  |  COPY CODE: F2 / RIGHT STICK",
+        snprintf(lobby,sizeof lobby,"%s %s | COPY F2 / R3",
             GetTickCount64()<mp_ui.copied_until?"COPIED":"LOBBY CODE",mp_ui.state.code);return lobby;
     }
     if(!mp_ui.storage || mp_ui.menu!=menu || mp_native_passthrough)return NULL;
@@ -285,6 +340,12 @@ static void mp_connection_ended(const char *reason)
 static void native_multiplayer_tick(void)
 {
     if(!mp_ui.storage)return;
+    static uint64_t trace_at;
+    if(getenv("TSFP_NATIVE_MENU_TRACE") && GetTickCount64()>=trace_at) {
+        trace_at=GetTickCount64()+1000u;
+        fprintf(stderr,"[PC-ONLINE-UI] scene=%u phase=%u pass=%d pending=%u auto=%u process=%d\n",
+            WORD_AT(0x79094cu),WORD_AT(0x76b1a4u),mp_native_passthrough,mp_ui.pending,mp_ui.autojoin,pc_online_menu_active());
+    }
     uint32_t leaf=mp_leaf();
     if(native_multiplayer_lobby_notice(leaf)) {
         unsigned down=!!pc_controls_key_down(0x71);
@@ -303,6 +364,7 @@ static void native_multiplayer_tick(void)
     mp_ui.poll_at=GetTickCount64()+100u;
     GuestRegisters saved;save_registers(&saved);
     if(mp_ui.pasting)mp_paste();
+    if(mp_native_passthrough)mp_publish_metadata();
     if(!pc_online_menu_active()) {
         if(mp_native_passthrough && mp_ui.source!=2u && WORD_AT(0x79094cu)==101u)
             mp_connection_ended("The online connection stopped. You have returned to the match browser.");
@@ -310,12 +372,14 @@ static void native_multiplayer_tick(void)
         restore_registers(&saved);return;
     }
     const PcOnlineMenuState *state=pc_online_menu_poll();
+    if(getenv("TSFP_NATIVE_MENU_TRACE") && state->status==PC_OM_ERROR)
+        fprintf(stderr,"[PC-ONLINE-UI] error seq=%u expected=%u pending=%u\n",state->sequence,mp_ui.request_sequence,mp_ui.pending);
     if(!mp_ui.pending && mp_native_passthrough && state->status==PC_OM_ERROR && WORD_AT(0x79094cu)==101u) {
         mp_connection_ended(state->message);restore_registers(&saved);return;
     }
     if(mp_ui.pending && state->sequence==mp_ui.request_sequence && state->status!=PC_OM_BUSY) {
         mp_ui.state=*state;mp_ui.pending=0;snprintf(mp_ui.notice,sizeof mp_ui.notice,"%s",state->message);
-        if(state->status==PC_OM_LIST && mp_ui.list_page*5u>=state->count)mp_ui.list_page=0;
+        if(state->status==PC_OM_LIST && mp_ui.list_page*MP_PER_PAGE>=state->count)mp_ui.list_page=0;
         if(state->status==PC_OM_IDLE && mp_ui.action==PC_OM_LEAVE){mp_show(MP_BROWSER);mp_request(PC_OM_BROWSE);}
         else if(state->status==PC_OM_PRIVATE_READY && mp_ui.action==PC_OM_PRIVATE_CONNECT){mp_show(MP_BROWSER);mp_request(PC_OM_BROWSE);}
         else if(state->status==PC_OM_CONNECTED && pc_online_menu_accept()) {
@@ -361,6 +425,21 @@ static void mp_native_back(void)
     if(pc_online_menu_active()){pc_online_menu_leave();mp_ui.pending=0;mp_show(MP_BROWSER);mp_request(PC_OM_LEAVE);}
     restore_registers(&saved);g_esp+=4u;
 }
+static void mp_lobby_tick(void (*original)(void),uint32_t address)
+{
+    GuestRegisters saved;save_registers(&saved);native_multiplayer_tick();restore_registers(&saved);
+    if(!mp_native_passthrough){g_esp+=4u;return;}
+    void (*retained)(void)=multiplayer_exit_lookup(address);
+    if(retained)retained();else original();
+}
+static void mp_host_tick(void){mp_lobby_tick(sub_001A8D30,0x1a8d30u);}
+static void mp_guest_tick(void){mp_lobby_tick(sub_001A8F30,0x1a8f30u);}
+static void mp_shared_tick(void)
+{
+    GuestRegisters saved;save_registers(&saved);native_multiplayer_tick();restore_registers(&saved);
+    if(!mp_native_passthrough){g_esp+=4u;return;}
+    multiplayer_lobby_tick(sub_001A4510);
+}
 static int native_multiplayer_return_menu(void (*original)(void))
 {
     const uint32_t frame=g_esp;
@@ -380,12 +459,38 @@ static int native_multiplayer_return_menu(void (*original)(void))
     restore_registers(&saved);WORD_AT(frame+8u)=mp_ui.storage;original();WORD_AT(frame+8u)=descriptor;
     save_registers(&saved);mp_request(PC_OM_LEAVE);restore_registers(&saved);return 1;
 }
+extern void sub_000318A0(void),sub_003800D1(void);
+static void mp_transport_close(void)
+{
+    /* 318A0 unregisters the old system-link session and waits forever for
+       callback31680. A removed relay room cannot deliver that reply. Once
+       our owned controller confirms terminal closure, take the original
+       already-detached branch; its ordinary tail still destroys the local
+       session/library, closes its socket and resets all session flags.
+       This is frontend teardown only, never gameplay/migration recovery. */
+    if(WORD_AT(0x76b140u)==2u && WORD_AT(0x76b1a4u)==18u) {
+        const uint64_t deadline=GetTickCount64()+2500u;
+        while(pc_online_menu_active() && pc_online_menu_poll()->status!=PC_OM_ERROR && GetTickCount64()<deadline)
+            guest_call(sub_003800D1,1,50u);
+        if(!pc_online_menu_active() || pc_online_menu_poll()->status==PC_OM_ERROR) {
+            WORD_AT(0x687ee0u)=WORD_AT(0x687edcu)=0;
+            if(getenv("TSFP_NATIVE_MENU_TRACE"))fprintf(stderr,"[PC-ONLINE-UI] closed room: detach legacy session before local cleanup\n");
+        }
+    }
+    sub_000318A0();
+}
 static void (*native_multiplayer_lookup(uint32_t address))(void)
 {
     switch(address) {
+    case 0x318a0u:if(mp_ui.storage && mp_native_passthrough && mp_ui.source!=2u && WORD_AT(0x79094cu)==101u)return mp_transport_close;break;
+    case MP_MATCH_DRAW:return mp_match_draw;
     case MP_BUILD:return mp_build;case MP_SELECT:return mp_select;case MP_BACK:return mp_back;
     case MP_TEXT_DONE:return mp_text_done;case MP_TEXT_CANCEL:return mp_text_cancel;
     case 0x1a2730u:if(!mp_native_passthrough && !getenv("TSFP_ONLINE_TEST_COMMAND"))return mp_root_build;break;
+    case 0x1a8d30u:case 0x1a8f30u:
+        if(mp_ui.storage && mp_native_passthrough && WORD_AT(0x79094cu)==101u)return address==0x1a8d30u?mp_host_tick:mp_guest_tick;break;
+    case 0x1a4510u:
+        if(mp_ui.storage && mp_native_passthrough && WORD_AT(0x79094cu)==101u)return mp_shared_tick;break;
     case 0x1a4350u:case 0x1a8ce0u:case 0x1a8ee0u:
         if(mp_native_passthrough && pc_online_menu_active() && WORD_AT(0x79094cu)==101u)return mp_native_back;break;
     }

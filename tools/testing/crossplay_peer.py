@@ -228,6 +228,13 @@ def serve():
                         RECOMP_TRACE_BUDGET='0',RECOMP_HLE_D3D8_DUMP=str(captures/'frame'),
                         RECOMP_HLE_D3D8_DUMP_EVERY='60',RECOMP_HLE_D3D8_DUMP_KEEP_LAST='2',
                         RECOMP_LOG_FILE=str(out/(str(peer_index)+'.err')))
+                    if request.get('native_ui') is True:
+                        # Exercise actual game navigation; no desktop companion automation.
+                        env.pop('TSFP_ONLINE_TEST_COMMAND',None)
+                        env['TSFP_NATIVE_MENU_TRACE']='1'
+                        if request.get('directory'):
+                            env['TSFP_ONLINE_DIRECTORY']=request['directory']
+                            env['TSFP_ONLINE_FINGERPRINT']=request['fingerprint']
                     # Raw shadow dumps precede the late host-overlay pass.
                     # Capture the actual common-renderer output instead.
                     if manifest.get('renderer')=='vulkan':

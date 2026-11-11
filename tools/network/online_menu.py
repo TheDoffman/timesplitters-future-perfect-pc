@@ -14,11 +14,12 @@ from online_host import invitation, parse_invitation
 from online_paths import ROOT, service_defaults
 
 MAGIC=0x314d4f54
-VERSION=1
+VERSION=2
 LIMIT=20
 REQUEST=struct.Struct('<8I64s2048s256s68s')
 STATE=struct.Struct('<8I256s32s2048s256s256s68s')
-LOBBY=struct.Struct('<4I32s64s64s32s24s')
+LOBBY=struct.Struct('<6I32s64s64s32s24s')
+MATCH=struct.Struct('<6I64s32s')
 IDLE,BUSY,LIST,CONNECTED,PRIVATE_READY,ERROR=range(6)
 BROWSE,CREATE,JOIN,LEAVE,PRIVATE_HOST,PRIVATE_CONNECT,CANCEL=range(1,8)
 
@@ -38,6 +39,16 @@ def decode_request(data):
         raise ValueError('Invalid native menu request')
     return dict(sequence=seq,action=action,mode=mode,source=source,public=bool(public),
                 port=port,name=text(name),code=text(code).strip(),address=text(address),fingerprint=text(pin))
+
+def decode_match(data):
+    if len(data)!=MATCH.size:raise ValueError('Invalid match details size')
+    magic,version,mode,scene,game_type,active,name,rules=MATCH.unpack(data)
+    if magic!=MAGIC or version!=VERSION or mode not in (1,2) or scene>100 or game_type>=32 or active>1:
+        raise ValueError('Invalid match details')
+    name,rules=text(name),text(rules)
+    if not name or not rules or any(ord(c)<32 or ord(c)==127 for c in name+rules):
+        raise ValueError('Invalid match labels')
+    return mode,dict(map_scene=scene,game_type_id=game_type,in_progress=bool(active),map_name=name,game_type=rules)
 
 def server_invitation(address,pin):
     directory=Client(address,pin)
@@ -174,6 +185,16 @@ class Controller:
                 if not self.closed and generation==self.generation:
                     self.status=ERROR;self.message=str(error)
 
+    def update_metadata(self,data):
+        mode,info=decode_match(data)
+        with self.lock:
+            active=self.session
+            if not active or not active.host or mode!=self.mode:return
+            native=getattr(active,'native',None)
+            if native:
+                with native.lock:native.match_info=info
+            else:active.match_info=info
+
     def snapshot(self):
         with self.lock:
             active=self.session
@@ -195,7 +216,7 @@ class Controller:
                 field(pair[0],256),field(pair[1],68))
             for row in self.lobbies:
                 raw+=LOBBY.pack(int(row.get('players',0)),int(row.get('capacity',16)),int(row.get('joinable',True)),
-                    2 if row.get('mode')=='story' else 1,field(row['code'],32),field(row.get('name','Lobby'),64),
+                    2 if row.get('mode')=='story' else 1,int(row.get('map_scene',0xffffffff)),int(row.get('game_type_id',0xffffffff)),field(row['code'],32),field(row.get('name','Lobby'),64),
                     field(row.get('map_name',''),64),field(row.get('game_type',row.get('mode','arcade')),32),field(row.get('phase','lobby'),24))
             return raw+bytes((LIMIT-len(self.lobbies))*LOBBY.size)
 
@@ -256,6 +277,8 @@ def run(args,parent):
             except FileNotFoundError:pass
             except (OSError,ValueError) as error:
                 with controller.lock:controller.status=ERROR;controller.message=str(error)
+            try:controller.update_metadata(Path(str(result)+'.match').read_bytes())
+            except (OSError,ValueError):pass # Invalid display details cannot interrupt a session.
             data=controller.snapshot()
             if data!=previous_state:
                 temporary=Path(str(state_path)+'.tmp');temporary.write_bytes(data)
@@ -265,6 +288,6 @@ def run(args,parent):
             time.sleep(.05)
     finally:
         controller.close()
-        for path in (result,result.with_suffix('.stop'),request_path,state_path,Path(str(state_path)+'.tmp'),Path(str(result)+'.server')):
+        for path in (result,result.with_suffix('.stop'),request_path,state_path,Path(str(state_path)+'.tmp'),Path(str(result)+'.server'),Path(str(result)+'.match'),Path(str(result)+'.match.tmp')):
             path.unlink(missing_ok=True)
         parent.close()

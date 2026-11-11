@@ -1,5 +1,14 @@
 /* Shared file IPC. Platform adapters supply process lifetime and atomic rename. */
 int pc_online_menu_active(void){return online_menu_started && PC_ONLINE_MENU_RUNNING();}
+static int online_menu_write(const char *suffix,const void *data,size_t bytes)
+{
+    char path[sizeof ready_path+16],temporary[sizeof ready_path+20];
+    snprintf(path,sizeof path,"%s%s",ready_path,suffix);snprintf(temporary,sizeof temporary,"%s.tmp",path);
+    FILE *file=fopen(temporary,"wb");if(!file)return 0;
+    int ok=fwrite(data,1,bytes,file)==bytes;if(fclose(file))ok=0;
+    if(ok)ok=PC_ONLINE_MENU_REPLACE(temporary,path);
+    if(!ok)remove(temporary);return ok;
+}
 int pc_online_menu_start(void)
 {
     if(pc_online_menu_active())return 1;
@@ -10,18 +19,10 @@ int pc_online_menu_start(void)
 }
 int pc_online_menu_send(PcOnlineMenuRequest *request)
 {
-    char path[sizeof ready_path+16],temporary[sizeof ready_path+20];
     if(!request || !pc_online_menu_active())return 0;
     request->magic=PC_ONLINE_MENU_MAGIC;request->version=PC_ONLINE_MENU_VERSION;
     request->sequence=++online_menu_sequence;
-    snprintf(path,sizeof path,"%s.request",ready_path);
-    snprintf(temporary,sizeof temporary,"%s.tmp",path);
-    FILE *file=fopen(temporary,"wb");if(!file)return 0;
-    int ok=fwrite(request,1,sizeof *request,file)==sizeof *request;
-    if(fclose(file))ok=0;
-    if(ok)ok=PC_ONLINE_MENU_REPLACE(temporary,path);
-    if(!ok)remove(temporary);
-    return ok;
+    return online_menu_write(".request",request,sizeof *request);
 }
 const PcOnlineMenuState *pc_online_menu_poll(void)
 {
@@ -43,7 +44,9 @@ const PcOnlineMenuState *pc_online_menu_poll(void)
     for(unsigned i=0;i<next.count;i++) {
         PcOnlineMenuLobby *row=&next.lobbies[i];
         if(row->players>256u || !row->capacity || row->capacity>16u || row->joinable>1u ||
-           row->mode<PC_ONLINE_ARCADE || row->mode>PC_ONLINE_STORY)return &online_menu_state;
+           row->mode<PC_ONLINE_ARCADE || row->mode>PC_ONLINE_STORY ||
+           (row->map_scene>100u && row->map_scene!=UINT32_MAX) ||
+           (row->game_type_id>=32u && row->game_type_id!=UINT32_MAX))return &online_menu_state;
         row->code[31]=row->name[63]=row->map[63]=row->game_type[31]=row->phase[23]=0;
     }
     online_menu_state=next;return &online_menu_state;
@@ -60,4 +63,10 @@ void pc_online_menu_leave(void)
     active_mode=PC_ONLINE_NONE;pc_network_set_online(NULL);
     PcOnlineMenuRequest request={0};request.action=PC_OM_LEAVE;request.mode=PC_ONLINE_ARCADE;request.port=41820;
     pc_online_menu_send(&request);
+}
+int pc_online_menu_publish(PcOnlineMatchInfo *info)
+{
+    if(!info || !pc_online_menu_active() || active_mode==PC_ONLINE_NONE)return 0;
+    info->magic=PC_ONLINE_MENU_MAGIC;info->version=PC_ONLINE_MENU_VERSION;
+    return online_menu_write(".match",info,sizeof *info);
 }

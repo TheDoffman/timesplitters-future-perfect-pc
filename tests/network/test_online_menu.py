@@ -23,20 +23,20 @@ def wait(controller):
     assert controller.status!=menu.BUSY
 
 def test_binary_abi_is_fixed_and_names_follow_native_font():
-    data=menu.REQUEST.pack(menu.MAGIC,1,7,menu.CREATE,1,0,1,41820,
+    data=menu.REQUEST.pack(menu.MAGIC,menu.VERSION,7,menu.CREATE,1,0,1,41820,
         menu.field('Caf\xe9',64),menu.field('',2048),menu.field('',256),menu.field('',68))
     assert len(data)==2468 and menu.decode_request(data)['name']=='Caf\xe9'
     c=menu.Controller(VERSION)
-    assert len(c.snapshot())==7588 and menu.LOBBY.size==232
+    assert len(c.snapshot())==7748 and menu.LOBBY.size==240
 
-@pytest.mark.parametrize('field,value',[(0,0),(1,2),(2,0),(3,99),(4,0),(5,2),(6,2),(7,80)])
+@pytest.mark.parametrize('field,value',[(0,0),(1,99),(2,0),(3,99),(4,0),(5,2),(6,2),(7,80)])
 def test_invalid_abi_never_dispatches(field,value):
-    header=[menu.MAGIC,1,1,menu.BROWSE,1,0,1,41820];header[field]=value
+    header=[menu.MAGIC,menu.VERSION,1,menu.BROWSE,1,0,1,41820];header[field]=value
     data=menu.REQUEST.pack(*header,*[menu.field('',n) for n in (64,2048,256,68)])
     with pytest.raises(ValueError):menu.decode_request(data)
 
 def test_unterminated_field_and_trailing_data_rejected():
-    data=menu.REQUEST.pack(menu.MAGIC,1,1,menu.BROWSE,1,0,1,41820,b'x'*64,*[bytes(n) for n in (2048,256,68)])
+    data=menu.REQUEST.pack(menu.MAGIC,menu.VERSION,1,menu.BROWSE,1,0,1,41820,b'x'*64,*[bytes(n) for n in (2048,256,68)])
     with pytest.raises(ValueError):menu.decode_request(data)
     with pytest.raises(ValueError):menu.decode_request(data+b'x')
 
@@ -113,3 +113,24 @@ def test_production_native_ipc_and_retained_return(tmp_path,fixture):
     assert build.returncode==0,build.stdout+build.stderr
     result=subprocess.run([str(exe),str(tmp_path/'1.ready')],capture_output=True,text=True,timeout=10)
     assert result.returncode==0,result.stdout+result.stderr
+
+
+def test_match_details_are_validated_and_only_published_by_current_host():
+    from online_arcade_client import NativeArcade
+    bridge=SimpleNamespace(peer_id=7)
+    native=NativeArcade(bridge);native.status=dict(epoch=1,host_peer=7,phase='lobby')
+    active=SimpleNamespace(host=True,native=native)
+    c=menu.Controller(VERSION);c.session=active;c.mode=1
+    data=menu.MATCH.pack(menu.MAGIC,menu.VERSION,1,48,2,1,menu.field('Temple',64),menu.field('Deathmatch',32))
+    c.update_metadata(data)
+    assert native.body(VERSION)['match_info']['map_scene']==48
+    native.status['host_peer']=9
+    assert 'match_info' not in native.body(VERSION)
+    active.host=False;native.match_info=None;c.update_metadata(data)
+    assert native.match_info is None
+    c.mode=2;active.host=True;c.update_metadata(data)
+    assert native.match_info is None
+    for changed in (data+b'x',data[:12]+struct.pack('<I',101)+data[16:],
+                    data[:20]+struct.pack('<I',2)+data[24:]):
+        with pytest.raises(ValueError):c.update_metadata(changed)
+    c.session=None;c.close()

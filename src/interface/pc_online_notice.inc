@@ -18,10 +18,11 @@ static void online_opening_draw(uint32_t menu)
     guest_call(sub_0003F8D0,0);
     guest_call(sub_0003FCF0,4,scratch,scratch+4,scratch+8,0u);
     float width=(float)WORD_AT(0x4e8cf0),height=(float)WORD_AT(0x4e8cf4);
-    float fit=fminf(1.f,(width-32.f)/fmaxf(1.f,FLOAT_AT(scratch)));
+    int lobby=native_multiplayer_lobby_notice(menu);
+    float fit=fminf(1.f,(lobby?width*.52f:width-32.f)/fmaxf(1.f,FLOAT_AT(scratch)));
     WORD_AT(0x7e7270)=bits(FLOAT_AT(0x7e7270)*fit);WORD_AT(0x7e7280)=bits(FLOAT_AT(0x7e7280)*fit);
     guest_call(sub_0003F8D0,0);guest_call(sub_0003FCF0,4,scratch,scratch+4,scratch+8,0u);
-    float x=(width-FLOAT_AT(scratch))*.5f,y=height-(native_multiplayer_lobby_notice(menu)?29.f:105.f);
+    float x=lobby?12.f:(width-FLOAT_AT(scratch))*.5f,y=height-(lobby?29.f:105.f);
     native_multiplayer_notice_bounds(menu,x,y,FLOAT_AT(scratch),FLOAT_AT(scratch+4));
     guest_call(sub_00041DC0,4,bits(x),bits(y),scratch+8,settings_footer_colour);
     guest_call(sub_00022FF0,0);WORD_AT(0x7e7270)=sx;WORD_AT(0x7e7280)=sy;WORD_AT(0x7e7260)=align;

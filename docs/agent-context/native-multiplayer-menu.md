@@ -10,7 +10,7 @@ See the [existing online system](multiplayer-ui.md) and [late joins](arcade-join
 network chooser, private hosting/connection, match browser, new-match options
 and lobby-code join. It replaces the network chooser's `1A2730` builder only in
 the new flow. LAN and final lobby/option screens retain original constructors.
-`123F3..123F7` callbacks occupy verified INT3 padding. Original
+`123F3..123F8` callbacks occupy verified INT3 padding. Original
 `7D090(parent,buffer,byte-limit,width,changed-pointer,flags,done,cancel)` supplies
 the on-screen keyboard and existing keyboard/mouse editor. Its limit is 255;
 Paste handles a complete invitation separately.
@@ -47,17 +47,41 @@ no forwarding.
 After bridge acceptance, host creation uses original `1CBA50`; guest discovery
 and selection use `352980`, `352990` and `1CBD40`. Native lobby Back retires its
 native session, waits for the directory leave ACK and opens the same browser.
-Closed connections need native feedback because no desktop dialog remains.
+Closed connections return to the same native browser with a reason. Shared
+online lobby descriptor `4E9594` ticks through `1A4510`, in addition to the
+System Link `1A8D30/1A8F30` ticks. The stock transport `318A0` can wait forever
+for callback `31680` after the directory has removed the room. The new frontend
+only takes its already-detached cleanup branch when its owned controller
+confirms terminal closure (guest role, teardown phase18, scene101). It still
+executes the original local socket/session/library cleanup; gameplay, migration
+and live-session shutdown retain their existing paths.
 Return to Lobby retains the party through the original round-return path,
 distinct from migration departure. Lobby code copy uses a native footer target,
 keyboard F2 or the original Xbox right-stick press.
 
-Validation in progress: Windows builds/captures verify network choices,
-browsing, new-match settings, original text entry and host lobby creation. Two
-Windows games discover/join the same lobby. First closure probe exposed a guest
-still showing its old lobby after hidden-worker closure; explicit error-return
-and native reset need rerunning. Controller/IPC/retained-return/FOV checks pass
-24 tests (2 platform skips). Installed private hosting passes HTTPS/UDP creation,
-lobby leave with retained directory and owner shutdown releasing both listeners.
-Latest copy/paste, Story integration, gameplay return, detailed browser rendering
-and physical Mac acceptance remain pending. No release/completion is claimed.
+Validation in progress: two Windows games use only native menus and ordinary
+input to create, browse and join a lobby. Probe `native-ui-pair-h` then closes
+the host lobby and asserts both native menu constructors, closed engine sessions
+and removed directory room; captures show the guest's closure reason in Match
+Browser. Earlier probes reproduced the indefinitely waiting guest teardown;
+these are failures, not acceptance. Footer capture confirms code/copy controls
+do not overlap the build version. Controller/IPC tests pass19. Installed private
+hosting passes HTTPS/UDP creation, lobby leave with retained directory and owner
+shutdown releasing both listeners. Windows probe `native-ui-pair-i` enters actual gameplay on both clients, checks
+advancing timers, uses the native Return to Lobby confirmation and verifies the
+retained two-player party, then closes back to both browsers. Detailed browser
+rendering, copy/paste, private native navigation and physical Mac acceptance are
+pending.
+No release/completion is claimed.
+
+IPC version2 adds bounded native scene/mode identifiers and a separate `.match`
+message; metadata publishing never consumes a UI request sequence. The host
+publishes localized map/rules from the same live `7DE400` selection used by the
+stock `353400` advertisement, in lobby and gameplay. The hidden client validates
+all fields and sends details only as current authenticated host. Backend display
+support remains private. Details never control admission, epochs or restoration.
+Three rows/page use the original `1CBDA0` painter for verified Arcade map/mode
+pairs, briefly restoring a scratch advertisement after painting; unknown details
+retain a text fallback. Native thumbnails never use remote resource pointers.
+`crossplay_peer.py` accepts `native_ui=true` to omit legacy desktop automation
+while keeping isolated saves, read-only probes and ordinary SDL input.

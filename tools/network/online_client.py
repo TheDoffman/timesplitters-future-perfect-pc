@@ -203,7 +203,9 @@ class Session:
                 break
             try:
                 path, token = self.endpoint()
-                reply = self.client.request('PUT', path, dict(compatibility=self.compatibility, mode=self.mode), token)
+                body=dict(compatibility=self.compatibility, mode=self.mode)
+                if self.host and getattr(self,'match_info',None):body['match_info']=dict(self.match_info)
+                reply = self.client.request('PUT', path, body, token)
                 self.validate_lobby(reply, self.mode)
                 if self.host:
                     self.bridge.update_peers(reply['peers'])
