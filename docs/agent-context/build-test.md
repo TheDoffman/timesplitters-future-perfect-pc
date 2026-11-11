@@ -1,6 +1,6 @@
 [Sticks](controller-deadzones.md). [Online UI](multiplayer-ui.md).
 [2970 pads](control-presets.md); [Tex](texture-preference.md).
-[Relay/migration checks](../development/arcade-host-migration.md#validation).
+[Crossplay/JIP](arcade-join-in-progress.md); [Client](online-client-boundary.md).
 [Arms](video-options.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).

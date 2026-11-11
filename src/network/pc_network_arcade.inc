@@ -8,6 +8,7 @@ static PcArcadeControl arcade_control;
 static uint32_t arcade_counter;
 static uint32_t arcade_uploaded_sequence;
 static uint32_t arcade_native_id=UINT32_MAX;
+static uint32_t arcade_slots[4];
 static uint64_t arcade_last_send,arcade_last_state;
 static int arcade_leave_pending;
 static void arcade_reset(void)
@@ -19,6 +20,7 @@ static void arcade_reset(void)
        membership survives. Its engine-progress counter must never rewind. */
     arcade_uploaded_sequence=0;arcade_last_send=arcade_last_state=0;
     arcade_native_id=UINT32_MAX;
+    memset(arcade_slots,0,sizeof arcade_slots);
     arcade_leave_pending=0;g_tsfp_arcade_migrating=0;
 }
 static int arcade_send(const void *data,int bytes)
@@ -46,9 +48,10 @@ int pc_network_arcade_progress(int active,PcArcadeControlState *out)
     const uint64_t now=net_milliseconds();
     ++arcade_counter;
     if(!arcade_last_send || now-arcade_last_send>=200u) {
-        uint8_t pulse[16];memcpy(pulse,"AMPG",4);
+        uint8_t pulse[32];memcpy(pulse,"AMPG",4);
         pc_arcade_store32(pulse+4,arcade_counter);pc_arcade_store32(pulse+8,!!active);
         pc_arcade_store32(pulse+12,arcade_native_id);
+        for(unsigned i=0;i<4u;i++)pc_arcade_store32(pulse+16u+i*4u,arcade_slots[i]);
         arcade_send(pulse,sizeof pulse);arcade_last_send=now;
     }
     for(unsigned attempt=0;attempt<64u;attempt++) {
@@ -72,8 +75,10 @@ done:net_unlock(&network_lock);return result;
 }
 void pc_network_arcade_native_peer(unsigned native_peer)
 {net_lock(&network_lock);arcade_native_id=native_peer<16u?native_peer:UINT32_MAX;net_unlock(&network_lock);}
+void pc_network_arcade_slots(const uint32_t slots[4])
+{net_lock(&network_lock);if(slots)memcpy(arcade_slots,slots,sizeof arcade_slots);else memset(arcade_slots,0,sizeof arcade_slots);net_unlock(&network_lock);}
 int pc_network_arcade_enabled(void)
-{int enabled;net_lock(&network_lock);enabled=online && arcade_control.enabled && arcade_control.state.phase<3u;net_unlock(&network_lock);return enabled;}
+{int enabled;net_lock(&network_lock);enabled=online && arcade_control.enabled && (arcade_control.state.phase<3u || arcade_control.state.phase==5u);net_unlock(&network_lock);return enabled;}
 int pc_network_arcade_bind_peer(uint32_t ip,uint32_t previous_host)
 {
     int result=0;unsigned source,target;net_lock(&network_lock);

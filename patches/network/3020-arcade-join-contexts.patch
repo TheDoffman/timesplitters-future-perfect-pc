@@ -1,0 +1,24 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -1047,6 +1047,21 @@
+ extern void sub_000D2FD0_gen(void);
++extern void sub_000D3B00_gen(void);
++void sub_000D3B00(void)
++{
++#ifdef TSFP_ARCADE_MIGRATION
++    extern void pc_arcade_join_allocate(void (*original)(void));
++    pc_arcade_join_allocate(sub_000D3B00_gen);
++#else
++    sub_000D3B00_gen();
++#endif
++}
++
+ void sub_000D2FD0(void)
+ {
++#ifdef TSFP_ARCADE_MIGRATION
++    extern int pc_arcade_join_initial_construct(void (*original)(void));
++    if (pc_arcade_join_initial_construct(sub_000D2FD0_gen)) return;
++#endif
+ #ifdef TSFP_PC_CONTROLS
+     pc_story_failure_trace(sub_000D2FD0_gen,0x000D2FD0u);
+ #else

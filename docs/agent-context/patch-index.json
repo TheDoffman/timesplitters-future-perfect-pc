@@ -2157,6 +2157,14 @@
       ]
     },
     {
+      "name": "3020-arcade-join-contexts.patch",
+      "path": "patches/network/3020-arcade-join-contexts.patch",
+      "sha256": "450d8c5cb6e1c865d32a8fb5a58106694a0a9edbfc8ff2a99cd34d5c84a9b88d",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c\r"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",

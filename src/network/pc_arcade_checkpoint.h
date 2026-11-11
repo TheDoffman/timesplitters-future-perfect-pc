@@ -34,7 +34,7 @@ typedef int (*PcArcadeBotRead)(void *context,unsigned slot,PcNetworkBotState *ou
 typedef int (*PcArcadeBotApply)(void *context,const PcNetworkBotState *state,int apply);
 
 /* The US config block mixes shared rules with local player count, unused
- * Deathmatch human-team placeholders and a LIVE countdown at +60. Those may
+ * Deathmatch human-team placeholders, the mode-state reset latch and a LIVE countdown at +60. Those may
  * differ on healthy peers. Validate shared rules; preserve local fields. */
 static inline int pc_arcade_config_matches(const uint8_t *a,const uint8_t *b)
 {
@@ -42,6 +42,10 @@ static inline int pc_arcade_config_matches(const uint8_t *a,const uint8_t *b)
        !b[1] || b[1]>4u || b[1]>b[0])return 0;
     for(unsigned i=0;i<PC_ARCADE_CHECKPOINT_CONFIG_BYTES;i++) {
         if(i==1u || (i>=0x60u && i<0x64u))continue;
+        /* Original22CEB0 sets flags+5C bit14 while resetting mode runtime
+           state. A late loader has not necessarily run that transition yet.
+           Preserve its local latch; every other flag bit must still match. */
+        if(i==0x5du) {if((a[i]^b[i])&~0x40u)return 0;continue;}
         if(!(a[0x58u]&1u) && i>=0x24u && i<0x24u+a[0])continue;
         if(a[i]!=b[i])return 0;
     }

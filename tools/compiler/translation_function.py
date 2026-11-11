@@ -229,6 +229,10 @@ class FunctionTranslator(FunctionDiscovery):
         lines = []
         for block in blocks:
             if block.start in labels: lines.append(f'loc_{block.start:08X}: ;')
+            if start == 0xD2FD0 and block.start == 0xD3AD5:
+                lines += ['#ifdef TSFP_ARCADE_MIGRATION',
+                          '    extern int pc_arcade_join_context_tail(void);',
+                          '    if (pc_arcade_join_context_tail()) return;', '#endif']
             statements,outgoing[block.start] = lift_basic_block(self.lifter,block,flag_state=incoming(block,settled))
             if block.start in need_zero:
                 zero = zf_expression(outgoing[block.start])
@@ -295,6 +299,13 @@ class FunctionTranslator(FunctionDiscovery):
             lines += ['    int _cf = 0; /* captured carry */','#ifdef RECOMP_STATUS_FLAGS_SUPPORTED',
                       '    _cf = (int)RECOMP_STATUS_CARRY(_cf);','#endif']
         if floating: lines.extend(FP_STACK_MACROS)
+        if start == 0xD2FD0 and {0xD3143, 0xD3AD5} <= {b.start for b in blocks}:
+            # Audited single-remote-player loop entry in the supported title.
+            # The adapter supplies its original stack frame; ordinary entry
+            # still executes every original instruction.
+            lines += ['#ifdef TSFP_ARCADE_MIGRATION',
+                      '    extern int pc_arcade_join_context_entry(void);',
+                      '    if (pc_arcade_join_context_entry()) goto loc_000D3143;', '#endif']
         lines += ['']+self._emit_blocks(blocks,instructions,start,end,conditional)
         if fallthrough is not None:
             target = lifter._call_target_name(fallthrough)

@@ -35,9 +35,10 @@ def compile_arcade_fixture(tmp_path, fixture='arcade_checkpoint.c'):
     return executable
 
 
-@pytest.mark.parametrize('fixture', ['arcade_checkpoint.c', 'arcade_control_transport.c'])
+@pytest.mark.parametrize('fixture', ['arcade_checkpoint.c', 'arcade_control_transport.c', 'arcade_join.c', 'arcade_join_guest.c'])
 def test_native_arcade_checkpoint(tmp_path, fixture):
     executable = compile_arcade_fixture(tmp_path, fixture)
-    result = subprocess.run([str(executable)], text=True, capture_output=True, timeout=10)
+    environment = dict(os.environ, TSFP_ARCADE_JOIN_IN_PROGRESS='1') if fixture=='arcade_join_guest.c' else None
+    result = subprocess.run([str(executable)], text=True, capture_output=True, timeout=10, env=environment)
     assert result.returncode == 0, result.stdout+result.stderr
     assert 'PASS: Arcade checkpoint' in result.stdout

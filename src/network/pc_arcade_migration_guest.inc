@@ -3,6 +3,7 @@
 #ifdef TSFP_ARCADE_MIGRATION
 #include "pc_arcade_api.h"
 #include "pc_match_overlay.h"
+#include "pc_arcade_join.h"
 extern void pc_native_visual_rebase(uint32_t tick,double fraction);
 static PcArcadeControlState arcade_guest_control;
 static PcArcadeCheckpoint arcade_guest_checkpoint;
@@ -10,6 +11,7 @@ static PcArcadeCheckpoint arcade_final_checkpoint;
 static uint8_t arcade_guest_room[16];
 static uint32_t arcade_restored_epoch,arcade_authority_epoch,arcade_published_sequence;
 static uint32_t arcade_ack_sequence,arcade_ack_epoch;
+static uint32_t arcade_join_restored_sequence;
 static int arcade_final_sent,arcade_exit_sent;
 static double arcade_last_capture,arcade_last_ack;
 static double arcade_trace_at,arcade_capture_trace_at;
@@ -78,24 +80,30 @@ int pc_arcade_migration_frame(int after)
             memcpy(arcade_guest_room,state.room,16);
             arcade_restored_epoch=arcade_authority_epoch=arcade_published_sequence=0;
             arcade_ack_sequence=arcade_ack_epoch=0;
+            arcade_join_restored_sequence=0;
             arcade_final_sent=arcade_exit_sent=0;arcade_last_capture=arcade_last_ack=0;
         }
         if(state.phase==3u || state.phase==4u) {
             if(!arcade_exit_sent){arcade_exit_sent=1;pc_multiplayer_migration_leave();}
             return 1;
         }
+        if(state.phase==1u || state.phase==5u)pc_arcade_join_frame();
         if(!active)return 0;
+        if(state.phase==5u)g_tsfp_arcade_migrating=1;
         const double now=pc_network_bots_time();
         if(pc_network_arcade_snapshot(&arcade_guest_checkpoint)) {
             const PcArcadeCheckpoint *s=&arcade_guest_checkpoint;
-            const int target_ok=s->level==WORD_AT(0x79094cu) &&
+            const int team_ok=state.phase!=5u || pc_arcade_join_team(&g_xbox_mem_offset,
+                pc_network_arcade_read,pc_network_arcade_write,s);
+            const int target_ok=team_ok && s->level==WORD_AT(0x79094cu) &&
                 pc_arcade_config_matches(s->config,(const uint8_t *)((uintptr_t)0x7de400u+g_xbox_mem_offset));
             int bots_ok=target_ok;
             /* A client may already have removed a corpse which is alive in the
                selected backup. Recreate missing LOCAL bodies with the same
                stock allocator used by ordinary bot replication, then preflight
                the entire restore. No remote pointer crosses this boundary. */
-            if(target_ok && state.phase==2u && arcade_restored_epoch!=state.epoch) {
+            if(target_ok && (state.phase==2u || state.phase==5u) &&
+               (arcade_restored_epoch!=state.epoch || (state.phase==5u && arcade_join_restored_sequence!=s->sequence))) {
                 uint32_t pool;
                 if(!pc_network_arcade_read(&g_xbox_mem_offset,0x7356d8u,&pool,4) ||
                    !pool || pool>UINT32_MAX-16u*0xea0u)bots_ok=0;
@@ -107,6 +115,14 @@ int pc_arcade_migration_frame(int after)
             }
             for(unsigned i=0;bots_ok && i<s->config[2];i++)
                 bots_ok=arcade_bot_apply(&g_xbox_mem_offset,&s->bots[i],0);
+            if(bots_ok && state.phase==5u &&
+               (arcade_restored_epoch!=state.epoch || arcade_join_restored_sequence!=s->sequence) &&
+               pc_arcade_checkpoint_restore(s,&g_xbox_mem_offset,pc_network_arcade_read,
+                   pc_network_arcade_write,arcade_bot_apply,state.room)) {
+                pc_native_visual_rebase(s->tick,0.);
+                arcade_restored_epoch=arcade_authority_epoch=state.epoch;
+                arcade_join_restored_sequence=s->sequence;
+            }
             if(bots_ok && state.phase==2u && arcade_restored_epoch!=state.epoch) {
                 unsigned role;
                 const uint32_t local=pc_network_arcade_local_ip();
@@ -125,11 +141,21 @@ int pc_arcade_migration_frame(int after)
             }
             if(bots_ok && (state.sequence!=arcade_ack_sequence || state.epoch!=arcade_ack_epoch ||
                            now-arcade_last_ack>=.2)) {
-                pc_network_arcade_ack(state.phase==2u && arcade_restored_epoch==state.epoch);
+                pc_network_arcade_ack(arcade_restored_epoch==state.epoch &&
+                    (state.phase==2u || (state.phase==5u && arcade_join_restored_sequence==s->sequence)));
                 arcade_last_ack=now;arcade_ack_sequence=state.sequence;arcade_ack_epoch=state.epoch;
             }
+            if(state.phase==5u && getenv("TSFP_ARCADE_TRACE") && now-arcade_capture_trace_at>=2.) {
+                const uint8_t *local=(const uint8_t *)((uintptr_t)0x7de400u+g_xbox_mem_offset);
+                unsigned mismatch=0;
+                while(mismatch<PC_ARCADE_CHECKPOINT_CONFIG_BYTES && s->config[mismatch]==local[mismatch])mismatch++;
+                fprintf(stderr,"[PC-ARCADE-JOIN] catchup sequence=%u team=%d target=%d bots=%d restored=%u valid=%d mismatch=%u\n",
+                    s->sequence,team_ok,target_ok,bots_ok,arcade_join_restored_sequence,
+                    pc_arcade_checkpoint_valid(s,state.room),mismatch);
+                arcade_capture_trace_at=now;
+            }
         }
-        if(state.phase==2u)return 1;
+        if(state.phase==2u || state.phase==5u)return 1;
         if(state.phase==1u && state.previous_ip && arcade_authority_epoch!=state.epoch) {
             unsigned role;
             if(arcade_restored_epoch!=state.epoch ||

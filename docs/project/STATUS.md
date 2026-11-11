@@ -117,6 +117,23 @@ closed and recycled only disposable disks. Personal saves/settings unchanged.
 No physical Mac/Steam Deck acceptance claimed. Prepared for PR on
 fix/legacy-keyboard-controller-independence.
 
+Arcade join in progress (`feature/arcade-join-in-progress`, base `e97ee97a`):
+The user's rule is keep a replaced bot's team and start the newcomer at zero.
+Four compiled native fixtures, seven client tests, fourteen private policy/service
+tests and ten function-emitter tests pass on Windows. The wider network/client
+regression passed 275 tests (9 skips) before the lazy-constructor revision.
+Windows Release and built-in checks pass. Native Deathmatch `latejoin-lazy-f`
+(identity `efcc1925`) starts two humans/six bots, admits a third during play and
+retains three humans/five bots for 70 seconds. The newcomer moves twice and starts
+at zero on all three games; all five remaining bots move and fight. Every clock
+advances 300 ticks in the final five seconds; the countdown keeps decreasing.
+The original host remains authoritative. Earlier window-only success was rejected
+because its host stopped ticking; the private probe now rejects unexpected host
+migration and frozen clocks. Native empty-slot, team retention, post-join migration,
+Mac/crossplay and public-WAN acceptance remain pending. Feature activation still
+requires the experimental environment flag. Production mini service is unchanged;
+server sources stay private. No publication is claimed.
+
 #540 controller prompts (local, main77b57432): report describes Linux0.6.0 with
 controller-only input; no issue comments or diagnostics. Production sampler
 regression reproduces explicit P1 DEV_PAD omission: Windows passes, native SDL
