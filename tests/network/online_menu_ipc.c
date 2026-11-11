@@ -25,6 +25,8 @@ int main(int argc,char **argv){
     PcOnlineMenuState state={0};state.magic=PC_ONLINE_MENU_MAGIC;state.version=PC_ONLINE_MENU_VERSION;
     state.sequence=1;state.mode=PC_ONLINE_ARCADE;state.status=PC_OM_CONNECTED;strcpy(state.bridge,"fixture");
     publish(&state);REQUIRE(pc_online_menu_accept() && connected && active_mode==PC_ONLINE_ARCADE);
+    PcOnlineMatchInfo info={0};info.mode=PC_ONLINE_ARCADE;info.map_scene=48;
+    REQUIRE(pc_online_menu_publish(&info) && info.version==PC_ONLINE_MENU_VERSION);
     state.count=21;publish(&state);REQUIRE(pc_online_menu_poll()->count==0);
     state.count=0;state.sequence=2;state.status=PC_OM_ERROR;publish(&state);
     REQUIRE(pc_online_menu_poll()->sequence==1); /* unsolicited future state */

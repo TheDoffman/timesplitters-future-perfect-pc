@@ -57,6 +57,7 @@ class NativeArcade:
         self.active = False
         self.native_peer = None
         self.native_slots = None
+        self.match_info = None
         self.offer = None
         self.ack = None
         self.leaving = self.departed = False
@@ -171,6 +172,8 @@ class NativeArcade:
             status = self.status
             body = dict(compatibility=compatibility, epoch=status['epoch'],
                         native_counter=self.counter, active=self.active, native_peer=self.native_peer)
+            if self.match_info and status['host_peer'] == self.bridge.peer_id:
+                body['match_info'] = dict(self.match_info)
             if self.native_slots is not None:
                 body['native_slots'] = self.native_slots
             if recover:
