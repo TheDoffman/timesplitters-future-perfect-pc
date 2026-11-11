@@ -132,3 +132,19 @@ The gray-field native Windows probe uses ordinary window focus/text/key events
 (no replay masking or guest writes): entry opens, sixteen characters are accepted,
 and the resulting full code fits in the field. Empty and populated captures verify
 the original gray bevel, placeholder, spacing and restored font scale.
+
+The same native gray field (`123F9`/`72560`) now paints lobby name and private
+server invitation rows; raw names/invitations retain their existing limits and
+paste behavior. These pages initially focus their editable field. Page switches
+reuse one descriptor, so an already-open page re-enters stock phase2 through
+`75980`, restoring the original opening animation/cue; initial phase1/2 opens
+and same-page refreshes do not restart it. Activation/Back use native table slot0
+(as stock `1A4350` does), and creation choices use slot8, via the existing guarded
+sound helper. Muted/missing sound tables stay silent; keyboard-editor sounds
+remain owned by the original dialog. The compiled fixture covers transition
+restart versus initial-open/same-page suppression.
+Windows `fields-sounds-c` captures verify both fields, creation/privacy navigation,
+Back, and opening the original lobby-name editor. Menu/FOV fixture checks pass
+(4 passed,2 platform skips), including actual activation and Back dispatch,
+blocked/muted activation, and transition restart suppression. Tests a/b of the
+foreground-only driver stopped on a focus guard; they are not product failures.

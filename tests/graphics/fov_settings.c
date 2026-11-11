@@ -185,6 +185,8 @@ MOUSE_STUB(sub_0007C390) MOUSE_STUB(sub_0007C4F0) MOUSE_STUB(sub_0007CDE0)
 MOUSE_STUB(sub_000746D0) MOUSE_STUB(sub_0007CCA0) MOUSE_STUB(sub_00071940)
 MOUSE_STUB(sub_001A2720) MOUSE_STUB(sub_001CBA50) MOUSE_STUB(sub_001CBD40)
 MOUSE_STUB(sub_00352980) MOUSE_STUB(sub_00352990) MOUSE_STUB(sub_0007D090)
+static unsigned native_menu_transitions;
+void sub_00075980(void){CHECK(WORD_AT(g_esp+8)==2u);native_menu_transitions++;g_esp+=4;}
 MOUSE_STUB(sub_001A4510) MOUSE_STUB(sub_000318A0) MOUSE_STUB(sub_003800D1)
 MOUSE_STUB(sub_001CBDA0) MOUSE_STUB(sub_00064E20) MOUSE_STUB(sub_00077110)
 #undef MOUSE_STUB
@@ -1593,6 +1595,23 @@ int main(int argc,char **argv)
     CHECK(pc_feed_enabled()==edit.value[VIDEO_FEED]&&pc_counter_enabled()==edit.value[VIDEO_COUNTER]);
     CHECK(requested_rate==120&&sidebar_fullscreen&&sidebar_video_observed.restart);
     sidebar_video_queued=(PcVideoRequest){9,VIDEO_CLEAR_CACHE,edit};int old_clears=cache_clear_calls;video_sidebar_tick();CHECK(cache_clear_calls==old_clears+1);
+    {
+        const uint32_t menu=0x200000u;
+        WORD_AT(menu+0x1b0u)=3u;mp_transition(menu,0);CHECK(native_menu_transitions==0);
+        mp_transition(menu,1);CHECK(native_menu_transitions==1);
+        WORD_AT(menu+0x1b0u)=1u;mp_transition(menu,1);CHECK(native_menu_transitions==1);
+        WORD_AT(menu+0x1b0u)=2u;mp_transition(menu,1);CHECK(native_menu_transitions==1);
+        WORD_AT(0x7ba16cu)=1u;WORD_AT(0x7ba178u)=0x380000u;
+        WORD_AT(0x380000u)=0x4321u;WORD_AT(0x380008u)=0x1234u;
+        mp_ui.page=MP_CREATE;mp_ui.menu=0;mp_ui.pending=mp_ui.pasting=0;
+        WORD_AT(menu+0x18cu)=3u;const unsigned clicks=video_sounds;
+        guest_call(mp_select,1,menu);CHECK(video_sounds==clicks+1);
+        mp_ui.pending=1;guest_call(mp_select,1,menu);CHECK(video_sounds==clicks+1);
+        mp_ui.pending=0;WORD_AT(0x7ba16cu)=0;guest_call(mp_select,1,menu);CHECK(video_sounds==clicks+1);
+        WORD_AT(0x7ba16cu)=1;mp_ui.storage=0x280000u;mp_ui.parent=0;
+        const unsigned backs=highlight_sounds;guest_call(mp_back,1,menu);CHECK(highlight_sounds==backs+1);
+
+    }
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
     return 0;

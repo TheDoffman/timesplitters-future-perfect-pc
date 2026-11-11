@@ -24,7 +24,7 @@ static int mp_native_passthrough;
 extern void sub_001A2730(void),sub_001A2720(void),sub_001A4350(void);
 extern void sub_001A8CE0(void),sub_001A8EE0(void),sub_001CBA50(void),sub_001CBD40(void);
 extern void sub_001A8D30(void),sub_001A8F30(void);
-extern void sub_001A4510(void),sub_001CBDA0(void),sub_00064E20(void),sub_0003D7B0(void),sub_00077110(void),sub_0003FA10(void),sub_00072560(void);
+extern void sub_001A4510(void),sub_001CBDA0(void),sub_00064E20(void),sub_0003D7B0(void),sub_00077110(void),sub_0003FA10(void),sub_00072560(void),sub_00075980(void);
 static void (*multiplayer_exit_lookup(uint32_t address))(void);
 static void multiplayer_lobby_tick(void (*original)(void));
 extern void sub_001CC360(void);
@@ -58,6 +58,14 @@ static void mp_rebuild(void)
         mp_focus(mp_ui.menu);
     }
 }
+static void mp_transition(uint32_t menu,int changed)
+{
+    /* Pages share a descriptor. Restart the stock opening phase only when
+       replacing an already-open page; the engine owns its fade and sound.
+       Initial opens already in phase1/2 and ordinary rebuilds stay untouched. */
+    if(changed && guest_writable(menu,0x1b4u) && WORD_AT(menu+0x1b0u)==3u)
+        guest_call(sub_00075980,2,menu,2u);
+}
 static void mp_show(unsigned page)
 {
     if(!mp_prepare() || !mp_ui.parent)return;
@@ -66,7 +74,8 @@ static void mp_show(unsigned page)
     mp_ui.page=page;guest_call(sub_00079B70,2,mp_ui.parent,mp_ui.storage);
     const uint32_t child=WORD_AT(mp_ui.parent+0x170u);
     if(guest_writable(child,0x23cu)){mp_ui.menu=child;mp_rebuild();
-        if(changed && page==MP_JOIN_CODE)guest_call(sub_00077110,2,child,1u);}
+        if(changed && (page==MP_JOIN_CODE || page==MP_JOIN_SERVER || page==MP_CREATE))guest_call(sub_00077110,2,child,1u);
+        mp_transition(child,changed);}
 }
 static int mp_story_available(void)
 {
@@ -119,11 +128,10 @@ static void mp_build(void)
         if(mp_ui.state.private_owner){snprintf(label,sizeof label,"Invite: %.36s...",mp_ui.state.invitation);mp_row(row++,5,label);}
         mp_row(row++,4,"Next - Match Browser");break;
     case MP_JOIN_SERVER:
-        snprintf(label,sizeof label,"Invitation: %.32s%s",mp_ui.code,strlen(mp_ui.code)>32u?"...":"");
-        mp_row(row++,1,*mp_ui.code?label:"Enter Server Invitation");
+        guest_call(sub_00079D60_gen,6,0u,1u,0x20000u,bits(7.f),MP_SELECT,MP_CODE_DRAW);
         mp_row(row++,2,"Paste Invitation");mp_row(row++,3,"Join Server");break;
     case MP_CREATE:
-        snprintf(label,sizeof label,"Lobby name: %.64s",mp_ui.name);mp_row(row++,1,label);
+        guest_call(sub_00079D60_gen,6,0u,1u,0x20000u,bits(7.f),MP_SELECT,MP_CODE_DRAW);
         snprintf(label,sizeof label,"Game type: < %s >",mp_ui.mode==PC_ONLINE_STORY?"Story":"Arcade");mp_row(row++,2,label);
         snprintf(label,sizeof label,"Privacy: < %s >",mp_ui.public_lobby?"Open":"Invite Only");mp_row(row++,3,label);
         mp_row(row++,4,"Create Lobby");break;
@@ -168,8 +176,12 @@ static void mp_code_draw(void)
     const uint32_t sx=WORD_AT(0x7e7270u),sy=WORD_AT(0x7e7280u);
     WORD_AT(0x7e7270u)=bits(FLOAT_AT(0x7e7270u)*.8f);WORD_AT(0x7e7280u)=bits(FLOAT_AT(0x7e7280u)*.8f);
     guest_call(sub_0003F8D0,0);
-    char value[33];snprintf(value,sizeof value,"%.32s",mp_ui.code);
-    const uint32_t text=mp_text(28,*mp_ui.code?value:"Enter code...");
+    const int name_field=mp_ui.page==MP_CREATE,server_field=mp_ui.page==MP_JOIN_SERVER;
+    const char *input=name_field?mp_ui.name:mp_ui.code;
+    const char *caption=name_field?"LOBBY NAME":server_field?"SERVER CODE":"LOBBY CODE";
+    const char *placeholder=name_field?"Enter name...":server_field?"Enter invite...":"Enter code...";
+    char value[33];snprintf(value,sizeof value,"%.32s",input);
+    const uint32_t text=mp_text(28,*input?value:placeholder);
     const uint32_t measure=mp_ui.storage+16u+27u*256u;
     guest_call(sub_0003FCF0,4,measure,measure+4u,text,0u);
     char *display=(char *)((uintptr_t)text+g_xbox_mem_offset);
@@ -178,8 +190,8 @@ static void mp_code_draw(void)
         guest_call(sub_0003FCF0,4,measure,measure+4u,text,0u);
     }
     const float y=top+fmaxf(0.f,(bottom-top-FLOAT_AT(measure+4u))*.5f);
-    guest_call(sub_00041DC0,4,bits(left),bits(y),mp_text(27,"LOBBY CODE"),0xe0e8f0ffu);
-    guest_call(sub_00041DC0,4,bits(field+6.f),bits(y),text,*mp_ui.code?0xffffffffu:0xa9b9caffu);
+    guest_call(sub_00041DC0,4,bits(left),bits(y),mp_text(27,caption),0xe0e8f0ffu);
+    guest_call(sub_00041DC0,4,bits(field+6.f),bits(y),text,*input?0xffffffffu:0xa9b9caffu);
     guest_call(sub_00022FF0,0);
     WORD_AT(0x7e7270u)=sx;WORD_AT(0x7e7280u)=sy;guest_call(sub_0003F8D0,0);g_esp+=4u;
 }
@@ -331,6 +343,7 @@ static void mp_select(void)
     GuestRegisters saved;save_registers(&saved);const uint32_t menu=WORD_AT(g_esp+4u);
     if(!guest_writable(menu,0x190u)){restore_registers(&saved);g_esp+=4u;return;}
     unsigned id=WORD_AT(menu+0x18cu);if(mp_ui.pending || mp_ui.pasting){restore_registers(&saved);g_esp+=4u;return;}
+    settings_tabs_sound(mp_ui.page==MP_CREATE && (id==2u || id==3u)?8u:0u);
     mp_ui.return_notice[0]=0;
     switch(mp_ui.page) {
     case MP_NETWORK:
@@ -381,6 +394,7 @@ static void mp_select(void)
 static void mp_back(void)
 {
     GuestRegisters saved;save_registers(&saved);uint32_t menu=WORD_AT(g_esp+4u);
+    settings_tabs_sound(0);
     if(mp_ui.pending){mp_request(PC_OM_CANCEL);mp_ui.pending=0;snprintf(mp_ui.notice,sizeof mp_ui.notice,"Cancelled");}
     if(mp_ui.page==MP_NETWORK){pc_online_disconnect();guest_call(sub_001A2720,1,menu);}
     else if(mp_ui.page==MP_PRIVATE || mp_ui.page==MP_BROWSER)mp_show(MP_NETWORK);
@@ -485,6 +499,7 @@ static void native_multiplayer_tick(void)
 static void mp_native_back(void)
 {
     GuestRegisters saved;save_registers(&saved);
+    settings_tabs_sound(0);
     mp_native_passthrough=0;mp_ui.autojoin=0;
     /* The stock Back callbacks open a modal before committing native leave.
        This action already leaves our owned lobby: retire its native session,
