@@ -245,3 +245,13 @@ start at round creation, granting exactly the normal lease duration. Native
 counters/timestamps are not fabricated; unchanged counters cannot renew leases,
 and inactive engines cannot host. Deterministic tests cover both a resumed guest
 and an unchanged-counter guest that still expires. Native revalidation follows.
+The first round-start-fixed full run then lost the Windows host later in play.
+File diagnostics (`mac-public-rpc-final-a`) identify actual five-second TLS
+connect/handshake timeouts followed by member retirement. Arcade heartbeat RPCs
+now use one-second socket deadlines and bounded retries; epoch recovery includes
+the latest real native progress, without offering/acknowledging stale checkpoints.
+Deterministic tests cover single-timeout recovery, persistent timeout closure and
+credential rejection. Other directory operations retain their five-second default.
+The old normal-play runner could label a window completed after one peer left;
+it now requires both peers still playing at the end. That run's completed flag
+is therefore invalid as acceptance; its captured disconnect remains failure evidence.

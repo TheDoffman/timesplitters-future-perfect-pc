@@ -184,6 +184,11 @@ New-round native leases begin when the host starts that round; pre-load progress
 timestamps cannot immediately retire a guest awaiting its first post-load RPC.
 This grants one ordinary lease only: unchanged counters do not renew it, and
 inactive guests remain ineligible to host. Service tests cover resumed/stalled peers.
+Arcade heartbeat RPCs use one-second socket deadlines, so one failed TLS handshake
+can retry inside the four-second engine lease. Recovery sends current native
+progress while omitting stale checkpoint/ACK authority; repeated transport failure
+closes after a bounded3.5-second failure window. Other directory calls retain5s.
+Normal-play acceptance now requires both peers still playing at the window end.
 
 ## Native multiplayer build and validation (2026-10-30)
 

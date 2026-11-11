@@ -845,6 +845,8 @@ def main():
         else:
             wait(args.seconds)
         report('finished')
+        if not args.require_results:
+            assert all(word(peer,0x76b1a4)==15 and word(peer,0x7de30c)==7 for peer in (0,1)), 'A peer disconnected before the observation window finished'
         assert all(any(s['peer']==peer and s['humans']==2 and s['bots']>0 for s in samples)
                    for peer in (0,1)), 'No paired bot gameplay'
         completed=True
