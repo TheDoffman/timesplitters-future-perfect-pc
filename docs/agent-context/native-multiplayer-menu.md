@@ -10,7 +10,7 @@ See the [existing online system](multiplayer-ui.md) and [late joins](arcade-join
 network chooser, private hosting/connection, match browser, new-match options
 and lobby-code join. It replaces the network chooser's `1A2730` builder only in
 the new flow. LAN and final lobby/option screens retain original constructors.
-`123F3..123F8` callbacks occupy verified INT3 padding. Original
+`123F3..123F9` callbacks occupy verified INT3 padding. Original
 `7D090(parent,buffer,byte-limit,width,changed-pointer,flags,done,cancel)` supplies
 the on-screen keyboard and existing keyboard/mouse editor. Its limit is 255;
 Paste handles a complete invitation separately.
@@ -117,3 +117,12 @@ Copy uses C/R3: F2 remains the reserved game Settings shortcut. Browser action
 rows use the original normal font; measured card titles fit before thumbnails,
 with full lobby/map/mode details in the selected-row footer. After the original `78980` rebuild restores selection, the adapter selects a
 surviving button ID through native `77110`, avoiding orphaned focus after paging.
+
+Join Match paints a bordered lobby-code field beside its label (`123F9`), with
+an Enter code placeholder and focus tint. The whole native row remains clickable
+and opens the existing text editor; accepted/pasted values appear in the field.
+Native rectangle/font primitives retain the game theme and original hit testing.
+The field receives initial focus on Join Match, and smaller native text keeps
+the label separate from the box while fitting a complete 16-character code.
+Windows menu compilation/FOV checks pass (4 passed,2 platform skips); the native
+empty-field capture confirms spacing, placeholder and focus appearance.
