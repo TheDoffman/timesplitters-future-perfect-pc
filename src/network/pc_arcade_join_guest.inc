@@ -16,10 +16,10 @@ static uint8_t arcade_join_teams[16];
 static unsigned arcade_join_initial_humans,arcade_join_initial_bots;
 static int arcade_join_allocating,arcade_join_construct_slot=-1,arcade_join_construct_active;
 
-static int arcade_join_experimental(void)
+static int arcade_join_enabled(void)
 {
     const char *value=getenv("TSFP_ARCADE_JOIN_IN_PROGRESS");
-    return value && !strcmp(value,"1") && pc_online_mode()==PC_ONLINE_ARCADE;
+    return (!value || !strcmp(value,"1")) && pc_online_mode()==PC_ONLINE_ARCADE;
 }
 static uint32_t arcade_join_owner_ip(uint32_t owner)
 {
@@ -52,7 +52,7 @@ void pc_arcade_join_allocate(void (*original)(void))
 {
     const unsigned humans=WORD_AT(0x790950u),bots=WORD_AT(0x7a2958u);
     uint8_t *config=(uint8_t *)((uintptr_t)0x7de400u+g_xbox_mem_offset);
-    const int scope=arcade_join_experimental() && WORD_AT(0x76b108u) &&
+    const int scope=arcade_join_enabled() && WORD_AT(0x76b108u) &&
         humans && humans+bots<=16u && WORD_AT(0x79094cu)<=100u;
     arcade_join_context_pool=arcade_join_actor_pool=0;
     arcade_join_team_mask=0;memset(arcade_join_owners,0,sizeof arcade_join_owners);
@@ -160,7 +160,7 @@ static void arcade_join_register_actor(uint32_t actor,uint32_t body)
 void pc_arcade_join_frame(const PcArcadeControlState *control)
 {
     pc_network_arcade_slots(NULL);
-    if(!arcade_join_experimental() || !arcade_join_context_pool ||
+    if(!arcade_join_enabled() || !arcade_join_context_pool ||
        WORD_AT(0x7b0c48u)!=arcade_join_context_pool || WORD_AT(0x7356d8u)!=arcade_join_actor_pool)return;
     const unsigned old=((const uint8_t *)((uintptr_t)0x7de400u+g_xbox_mem_offset))[0];
     const unsigned old_bots=((const uint8_t *)((uintptr_t)0x7de400u+g_xbox_mem_offset))[2];

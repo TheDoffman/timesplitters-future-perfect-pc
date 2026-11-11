@@ -1,21 +1,23 @@
 Arcade join in progress (`feature/arcade-join-in-progress`, base `e97ee97a`):
 The user's rule is keep a replaced bot's team and start the newcomer at zero.
-Four compiled native fixtures, seven client tests, fourteen private policy/service
-tests and ten function-emitter tests pass on Windows. The wider network/client
-regression passed 275 tests (9 skips) before the lazy-constructor revision.
-Windows Release and built-in checks pass. Native Deathmatch `latejoin-lazy-f`
-(identity `efcc1925`) starts two humans/six bots, admits a third during play and
-retains three humans/five bots for 70 seconds. The newcomer moves twice and starts
-at zero on all three games; all five remaining bots move and fight. Every clock
-advances 300 ticks in the final five seconds; the countdown keeps decreasing.
-The original host remains authoritative. Earlier window-only success was rejected
-because its host stopped ticking; the private probe now rejects unexpected host
-migration and frozen clocks. Native empty-slot, team retention, post-join migration,
-Mac/crossplay and public-WAN acceptance remain pending. Native Mac focused tests
-(21), the full native build and built-in checks passed at `3e8d9210`/`efcc1925`;
-subsequent empty-slot fixes require rebuilding. Feature activation still
-requires the experimental environment flag. Production mini service is unchanged;
-server sources stay private. No publication is claimed.
+Windows Deathmatch bot takeover (`latejoin-lazy-f`, identity `efcc1925`) passes
+with three humans/five fighting bots and advancing clocks/countdown. Empty-slot
+admission (`latejoin-open-i`, identity `c1e9f9cc`) passes with three moving players;
+final five-second clock deltas are 300/300/301 ticks and the original host remains.
+Windows/Mac Team Deathmatch (`latejoin-team-mac-b`, same identity) passes with the
+Mac joining late: the first observed personal score is zero on all three games,
+the replaced bot's team is retained, all players move and clocks remain synchronized.
+Combat continues during loading; zero must be checked at promotion, not several
+seconds later after new scoring events. The native probe now records actor scores
+and teams. Mac full native build/built-in checks and 21 focused tests pass. Windows
+four compiled fixtures and 31 compiler/client/observer tests pass (one skip).
+Private admission/service tests pass 15 cases, including rejecting old-population
+migration backups after promotion. The wider 275-test regression (9 skips) predates
+the lazy constructor and needs a final rerun. Source now enables online Arcade by
+default, with explicit environment `0` as rollback; default/explicit `1` compiled
+fixtures pass. Matching final rebuilds, post-join host migration, installed mini
+acceptance and public-WAN acceptance remain pending. Production mini service is
+unchanged; server sources stay private. No publication is claimed.
 
 #540 controller prompts (local, main77b57432): report describes Linux0.6.0 with
 controller-only input; no issue comments or diagnostics. Production sampler

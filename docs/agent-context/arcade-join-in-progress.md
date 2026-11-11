@@ -1,8 +1,9 @@
 # Arcade join in progress
 
 Development branch: `feature/arcade-join-in-progress`, based on the unmerged
-client/server split at `e97ee97a`. This is experimental until native acceptance;
-the installed mini service has not enabled late joins. Keep all service policy,
+client/server split at `e97ee97a`. Online Arcade enables the shared join adapter
+by default; `TSFP_ARCADE_JOIN_IN_PROGRESS=0` disables it for rollback. The installed
+mini service has not yet enabled late joins. Keep all service policy,
 deployment sources and server tests private as required by
 [the client/server boundary](online-client-boundary.md).
 
@@ -15,9 +16,10 @@ arrays using that count. A late player would access uninitialized storage.
 `pc_arcade_join_guest.inc` reserves sixteen entries in the original three human
 storage arrays. Its `D2FD0` wrapper restores actual population counts before the
 original player constructor runs; no hidden player bodies are created up front.
-It is gated by `TSFP_ARCADE_JOIN_IN_PROGRESS=1` and Arcade mode. Local actor
+It is restricted to online Arcade mode. Local actor
 pointers never enter a checkpoint or the service. Native Windows Deathmatch
-bot replacement passes; empty-slot and team-mode acceptance remain separate.
+bot replacement and empty-slot admission pass. Native Mac late-join Team
+Deathmatch also passes with the bot's team and an initial personal score of zero.
 
 The function emitter supplies an audited alternate entry at `D3143` and an early
 tail at `D3AD5` inside original `D2FD0`. A requested remote context uses the
@@ -53,7 +55,8 @@ The host retries original targeted `357B80` GO for new initialized contexts at
 half-second intervals (maximum 180), stopping when authenticated native progress
 reports the matching native ID and IP active. Existing members retain their
 ordinary handshake. Crossplay's private observer request `arcade_join: true`
-enables the same experimental flag for its isolated native child only.
+explicitly enables the same adapter for its isolated native child only. The
+compiled guest fixture runs both with the default environment and explicit `1`.
 
 `pc_arcade_join.h` preflights live/pending population writes. Existing human IDs
 remain fixed; a new high human slot consumes the first bot slot, leaving all
