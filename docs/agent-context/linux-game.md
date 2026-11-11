@@ -1,3 +1,15 @@
+## v0.6.1 draft acceptance
+
+The Linux package at07bc98c0 uses the same exact source as the Windows draft and
+published launcher1.6.1. Native build/input, relocation/installer preservation,
+read-only minimal-userspace settings/input/renderer and52 shared launcher UI
+checks pass; Online self-test is a77 skip. A120-second software-Vulkan Story
+observer reaches gameplay with isolated Test Lab data and synthetic inputs.
+Run launcher UI acceptance after gameplay exits: the launcher inspects visible
+running-game processes, which can be inaccessible from the nobody/chroot test.
+Keep this execution-order issue separate from package-byte/source changes.
+See STATUS for hashes, evidence and pending physical-host/Steam Deck acceptance.
+
 ## Fullscreen option acceptance
 
 Shared fullscreen Video Options at7a6fea3c build and run on native Linux under
