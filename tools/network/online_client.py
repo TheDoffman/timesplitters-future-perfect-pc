@@ -45,23 +45,32 @@ class Client:
         self.fingerprint = fingerprint.replace(':', '').replace(' ', '').lower()
         if self.fingerprint and (len(self.fingerprint) != 64 or any(c not in '0123456789abcdef' for c in self.fingerprint)):
             raise ValueError('Certificate fingerprint must be 64 hexadecimal digits')
+        self.connections=threading.local()
 
-    def request(self, method, path, body=None, token=None, *, timeout=5):
-        if self.url.scheme == 'https':
+    def close_persistent(self):
+        connection=getattr(self.connections,'current',None)
+        self.connections.current=None
+        if connection is not None:connection.close()
+
+    def request(self, method, path, body=None, token=None, *, timeout=5, persistent=False):
+        connection=getattr(self.connections,'current',None) if persistent else None
+        reused=connection is not None and connection.sock is not None
+        if not reused and self.url.scheme == 'https':
             context = ssl.create_default_context()
             if self.fingerprint:
                 # Verify the pinned certificate before sending any credentials.
                 context.check_hostname = False
                 context.verify_mode = ssl.CERT_NONE
             connection = http.client.HTTPSConnection(self.url.hostname, self.url.port or 443, timeout=timeout, context=context)
-        else:
+        elif not reused:
             connection = http.client.HTTPConnection(self.url.hostname, self.url.port or 80, timeout=timeout)
         try:
-            connection.connect()
-            if self.fingerprint and (self.url.scheme != 'https' or
+            if not reused:connection.connect()
+            else:connection.sock.settimeout(timeout)
+            if not reused and self.fingerprint and (self.url.scheme != 'https' or
                 hashlib.sha256(connection.sock.getpeercert(binary_form=True)).hexdigest() != self.fingerprint):
                 raise ValueError('Directory certificate does not match the supplied fingerprint')
-            headers = {'Content-Type': 'application/json'}
+            headers = {'Content-Type': 'application/json','Connection':'keep-alive' if persistent else 'close'}
             if token:
                 headers['Authorization'] = 'Bearer '+token
             connection.request(method, path, json.dumps(body).encode() if body is not None else None, headers)
@@ -73,9 +82,18 @@ class Client:
             result = json.loads(data)
             if not 200 <= response.status < 300:
                 raise DirectoryError(response.status, result.get('error', f'Directory error {response.status}'))
+            if persistent and not response.will_close:
+                self.connections.current=connection
+            else:
+                connection.close()
+                if persistent:self.connections.current=None
             return result
-        finally:
+        except BaseException:
             connection.close()
+            if persistent:self.connections.current=None
+            raise
+        finally:
+            if not persistent:connection.close()
 
 
 class Session:

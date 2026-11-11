@@ -263,6 +263,12 @@ class ArcadeSession(Session):
         return '/v3/lobbies/'+self.lobby['code']+'/members/'+str(self.bridge.peer_id), self.lobby['peer_token']
 
     def heartbeat(self):
+        try:
+            ArcadeSession._heartbeat(self)
+        finally:
+            self.client.close_persistent()
+
+    def _heartbeat(self):
         last_success=self.bridge.clock()
         while not self.closed.is_set():
             try:
@@ -271,7 +277,7 @@ class ArcadeSession(Session):
                     # Publish the final frozen native frame before choosing a
                     # successor. Wait for an engine ACK of that exact frame.
                     body = self.native.body(self.compatibility)
-                    reply = self.client.request('PUT', path, body, token, timeout=1)
+                    reply = self.client.request('PUT', path, body, token, timeout=1, persistent=True)
                     self.native.install(reply)
                     last_success=self.bridge.clock()
                     with self.native.lock:
@@ -279,12 +285,12 @@ class ArcadeSession(Session):
                         expired = self.bridge.clock()-self.native.leaving_at >= 6
                     snapshot = reply.get('checkpoint')
                     if reply['players'] == 1 or expired or (snapshot and snapshot['sequence'] == wanted and reply.get('backup_ready')):
-                        self.client.request('DELETE', path, token=token, timeout=1)
+                        self.client.request('DELETE', path, token=token, timeout=1, persistent=True)
                         self.native.departed = True
                         return  # Bridge remains alive to deliver departure ACK.
                     self.closed.wait(.1)
                     continue
-                reply = self.client.request('PUT', path, self.native.body(self.compatibility), token, timeout=1)
+                reply = self.client.request('PUT', path, self.native.body(self.compatibility), token, timeout=1, persistent=True)
                 self.native.install(reply)
                 last_success=self.bridge.clock()
                 self.host = reply['host_peer'] == self.bridge.peer_id
@@ -296,7 +302,7 @@ class ArcadeSession(Session):
                     # prevent recovering the newly fenced epoch and credentials.
                     path, token = self.endpoint()
                     reply = self.client.request('PUT', path,
-                        self.native.body(self.compatibility,recover=True), token, timeout=1)
+                        self.native.body(self.compatibility,recover=True), token, timeout=1, persistent=True)
                     self.native.install(reply)
                     last_success=self.bridge.clock()
                     with self.native.lock:

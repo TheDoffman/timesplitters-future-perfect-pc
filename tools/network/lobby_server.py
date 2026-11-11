@@ -384,6 +384,7 @@ class RelayServer:
 
 class Handler(BaseHTTPRequestHandler):
     server_version = 'TSFPLobbies/1'
+    protocol_version = 'HTTP/1.1'
 
     def setup(self):
         super().setup()
@@ -421,7 +422,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Content-Type', 'application/json')
         self.send_header('Content-Length', str(len(data)))
         self.send_header('Cache-Control', 'no-store')
-        self.send_header('Connection', 'close')
+        self.close_connection=self.headers.get('Connection','').lower()!='keep-alive'
+        self.send_header('Connection', 'close' if self.close_connection else 'keep-alive')
         self.end_headers()
         self.wfile.write(data)
 

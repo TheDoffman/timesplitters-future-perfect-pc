@@ -36,21 +36,40 @@ def test_heartbeat_retries_inside_native_lease_with_current_progress(failure):
     session=SimpleNamespace(bridge=bridge,native=native,closed=threading.Event(),
         compatibility=VERSION,endpoint=lambda:('/member','private'),error='')
     calls=[]
-    def request(method,path,body,token,*,timeout):
-        calls.append(dict(body));assert timeout==1
+    def request(method,path,body,token,*,timeout,persistent):
+        calls.append(dict(body));assert timeout==1 and persistent
         now[0]+=timeout
         if len(calls)==1:native.counter=180
         if failure=='forbidden':raise DirectoryError(403,'denied')
         if failure=='persistent' or len(calls)==1:raise TimeoutError('TLS timeout')
         session.closed.set()
         return dict(host_peer=1)
-    session.client=SimpleNamespace(request=request)
+    closed=[]
+    session.client=SimpleNamespace(request=request,close_persistent=lambda:closed.append(True))
     ArcadeSession.heartbeat(session)
     assert calls[0]['epoch']==2 and 'checkpoint' in calls[0]
     assert calls[1]==dict(compatibility=VERSION,epoch=-1,native_counter=180,
                           active=True,native_peer=0)
     assert bridge.stopped.is_set() is (failure!='once')
     assert len(calls)==(4 if failure=='persistent' else 2)
+    assert closed==[True]
+
+
+def test_real_tls_heartbeat_connection_is_reused_and_error_forces_reauthentication(tmp_path):
+    with shared_service(tmp_path/'keepalive') as (client,directory,relay):
+        path='/v3/lobbies?compatibility='+VERSION
+        assert client.request('GET',path,timeout=1,persistent=True)==dict(lobbies=[])
+        connection=client.connections.current
+        for _ in range(12):
+            assert client.request('GET',path,timeout=1,persistent=True)==dict(lobbies=[])
+            assert client.connections.current is connection
+        with pytest.raises(DirectoryError):
+            client.request('GET','/v3/unknown',timeout=1,persistent=True)
+        assert client.connections.current is None
+        client.request('GET',path,timeout=1,persistent=True)
+        assert client.connections.current is not connection
+        client.close_persistent()
+        assert client.connections.current is None
 
 
 @pytest.mark.parametrize('resumes', [False, True])
