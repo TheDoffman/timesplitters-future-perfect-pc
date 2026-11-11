@@ -2,6 +2,9 @@
 
 Server source stays private. See the [client/server boundary](online-client-boundary.md).
 
+Arcade game-frame metadata continues while native menus are inactive; see
+[identity capture and checks](online-player-identities.md).
+
 ## Arcade host migration
 
 Shared Arcade uses authenticated v3 rooms through `ArcadeSession`; Story and

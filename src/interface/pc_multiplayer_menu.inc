@@ -322,6 +322,14 @@ static void native_multiplayer_notice_bounds(uint32_t menu,float x,float y,float
     mp_ui.copy_bounds[0]=x;mp_ui.copy_bounds[1]=y;mp_ui.copy_bounds[2]=x+w;mp_ui.copy_bounds[3]=y+h;
     mp_ui.copy_at=GetTickCount64();
 }
+/* Menu ticks stop during gameplay. The Arcade frame hook keeps display
+ * metadata fresh without opening menus or altering native engine progress. */
+static void native_multiplayer_match_metadata(void)
+{
+    if(!mp_ui.storage || !mp_native_passthrough || !pc_online_menu_active())return;
+    GuestRegisters saved;save_registers(&saved);
+    mp_publish_metadata();restore_registers(&saved);
+}
 static void native_multiplayer_open(uint32_t source)
 {
     if(!guest_writable(source,0x3cu) || !mp_prepare())return;
@@ -609,6 +617,7 @@ static void (*native_multiplayer_lookup(uint32_t address))(void)
 }
 #else
 static void native_multiplayer_tick(void){}
+static void native_multiplayer_match_metadata(void){}
 static void native_multiplayer_open(uint32_t source){(void)source;}
 static const char *native_multiplayer_notice(uint32_t menu){(void)menu;return NULL;}
 static int native_multiplayer_lobby_notice(uint32_t menu){(void)menu;return 0;}

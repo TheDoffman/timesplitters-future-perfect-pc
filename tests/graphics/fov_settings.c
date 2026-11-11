@@ -106,12 +106,13 @@ int pc_online_menu_start(void){return 0;}
 int pc_online_menu_send(PcOnlineMenuRequest *request){(void)request;CHECK(0);return 0;}
 const PcOnlineMenuState *pc_online_menu_poll(void){CHECK(0);return NULL;}
 int pc_online_menu_accept(void){CHECK(0);return 0;}
-int pc_online_menu_active(void){return 0;}
+static int roster_fixture;static unsigned roster_publications;
+int pc_online_menu_active(void){return roster_fixture;}
 void pc_online_menu_leave(void){CHECK(0);}
 int pc_online_menu_copy(const char *text){(void)text;CHECK(0);return 0;}
 int pc_online_menu_paste(char *text,size_t bytes){(void)text;(void)bytes;CHECK(0);return 0;}
 int pc_online_menu_publish(PcOnlineMatchInfo *info){(void)info;CHECK(0);return 0;}
-int pc_online_menu_publish_roster(struct PcOnlineRoster *info){(void)info;CHECK(0);return 0;}
+int pc_online_menu_publish_roster(struct PcOnlineRoster *info){CHECK(roster_fixture && info->count==1 && !strcmp(info->people[0].name,"Fixture player"));roster_publications++;return 1;}
 PcOnlineMode pc_online_mode(void) { return PC_ONLINE_NONE; }
 static unsigned online_disconnects,lan_browser_entries,lan_enables;
 void pc_online_disconnect(void) { online_disconnects++; }
@@ -1613,6 +1614,23 @@ int main(int argc,char **argv)
         WORD_AT(0x7ba16cu)=1;mp_ui.storage=0x280000u;mp_ui.parent=0;
         const unsigned backs=highlight_sounds;guest_call(mp_back,1,menu);CHECK(highlight_sounds==backs+1);
 
+    }
+    { /* Gameplay metadata continues when the menu loop is not running. */
+        WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;WORD_AT(0x76b1a4)=15;
+        WORD_AT(0x7de30c)=7;WORD_AT(0x79094c)=48;WORD_AT(0x7356d8)=0x300000;
+        WORD_AT(0x7de400)=0x101;*((uint8_t*)mem+0x7de456)=255;
+        WORD_AT(0x777244)=1;WORD_AT(0x77728c)=1;
+        WORD_AT(0x300048)=0xffff;WORD_AT(0x300070)=0x310000;
+        strcpy((char*)mem+0x310000,"Fixture player");
+        roster_fixture=1;mp_ui.storage=0x280000;mp_ui.mode=PC_ONLINE_ARCADE;
+        mp_ui.source=0;mp_native_passthrough=1;mp_ui.metadata_at=0;
+        const uint32_t before_sp=g_esp,before_a=g_eax;
+        native_multiplayer_match_metadata();CHECK(roster_publications==1);
+        CHECK(g_esp==before_sp && g_eax==before_a);
+        native_multiplayer_match_metadata();CHECK(roster_publications==1);
+        clock_ms+=1001;native_multiplayer_match_metadata();CHECK(roster_publications==2);
+        clock_ms+=1001;mp_ui.source=2;native_multiplayer_match_metadata();CHECK(roster_publications==2);
+        roster_fixture=0;
     }
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
