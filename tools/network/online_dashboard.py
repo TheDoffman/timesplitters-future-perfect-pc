@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import socket
 import threading
 import time
@@ -180,8 +181,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
     def log_message(self, *args):pass
 
     def do_GET(self):
-        allowed={f'127.0.0.1:{self.server.server_port}', f'localhost:{self.server.server_port}'}
-        if self.headers.get('Host') not in allowed or self.headers.get('Sec-Fetch-Site') == 'cross-site':
+        # SSH can forward a different local port. Trust loopback names only,
+        # rather than the remote listener's port or arbitrary rebinding hosts.
+        host=re.fullmatch(r'(?:127\.0\.0\.1|localhost)(?::([0-9]{1,5}))?',self.headers.get('Host','').lower())
+        if (not host or not 1<=int(host.group(1) or 80)<=65535 or
+                self.headers.get('Sec-Fetch-Site') == 'cross-site'):
             self.send_error(403);return
         path=urlsplit(self.path).path
         if path == '/api/status':
