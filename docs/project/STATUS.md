@@ -43354,3 +43354,42 @@ the same service via LAN completed both rounds. No router cause is established
 by that comparison. Full outside-network play, legacy Mac GL rendering, objective
 carry/capture continuity and all other Arcade modes are separate acceptance.
 See `docs/development/arcade-host-migration.md` for the precise matrix.
+
+Public-path follow-up (`45a2b34e`, fixtures corrected at `886e7495`): new rounds
+grant an initial ordinary lease instead of importing a pre-load native timestamp.
+Arcade RPC recovery carries actual current engine progress and omits stale
+checkpoint authority. Heartbeats use short socket deadlines, bounded retries and
+one per-thread pinned HTTPS keep-alive connection; errors/reconnect/worker exit
+close/reverify it. Default directory calls still close their connections.
+
+Full Windows network suite:168 passed/12 platform skips,124.00s. Full physical Mac
+network suite after fixture repair:167 passed/13 skips,109.15s. Initial Mac failures
+were two original score-limit fixtures forcing Win32 and then including windows.h
+in the appended divide-error helper; they now select TSFP_NATIVE_NETWORK on the
+actual compiler OS. Windows rerun of all four original result/limit cases passes.
+New real-TLS reuse/reconnect and timeout/auth-rejection regressions pass on both.
+Both sealed native builds match compatibility
+`60f73aecd321fa171f0aa12db4847ecd15f49ac39ca9289369dcd9940d6f1b6c`.
+All seven installed Mac service source hashes match this production code, with
+local rollback backups and unchanged client certificate/settings/launch-agent ports.
+
+Native public-address acceptance is **still failing**. Diagnostic runs record TLS
+connect/handshake/read timeouts followed by native lease retirement/disconnection;
+`mac-public-results-persistent-a` fails even with connection reuse. No internal
+service exception or definitive router cause has been established. These are
+home-network public-address/reflection tests, not an outside-network game.
+The old normal-play runner could accept earlier paired samples after a peer left;
+`mac-public-rpc-final-a` is explicitly invalidated by its manual review, and the
+runner now requires both peers still playing at the window end. No public/WAN
+readiness claim follows from the passing unit or LAN results.
+Latest native LAN revalidation `mac-final-lan-results-a` passes on the60f73aec
+Windows/Mac builds: full match, matching final records, reset rematch and matching
+completed rematch records,256.328s with cleanup completed. Both controller paths
+move and six bots remain live. This confirms LAN behavior after the connection
+changes; it does not supersede the public-address failure.
+Final60f73aec native three-player regression `mac-final-repeat-a` passes189.890s
+with cleanup complete: Windows0 normal departure elects Windows2, its whole
+game/companion crash elects Mac1, with30 seconds of score/timer/six-bot continuation
+per handoff. First tick/countdown1017/35167 resumes1018/35166 on Mac and1020/35164
+on Windows; second2822/33362 resumes2829/33355 on Mac. All owned game/controller
+processes exit after testing; installed HTTPS41820/UDP41821 listeners remain live.

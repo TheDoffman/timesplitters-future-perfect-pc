@@ -10497,3 +10497,19 @@ every-objective serialization acceptance.
 Capture the Bag continuation passes as well (`mac-bag-migration-a`): Windows
 normal leave promotes Mac and retains scored backup/clocks and six bots for30
 seconds. Carry/capture state was not asserted and remains a separate check.
+
+Connection follow-up (`45a2b34e`, fixtures `886e7495`): full native Mac network
+suite167 passed/13 skips after correcting two fixtures' forced-Win32 macro.
+Windows suite168 passed/12 skips; matching sealed builds use compatibility60f73aec.
+Initial round leases, current-progress recovery and pinned HTTPS connection reuse
+are shared Python code; no separate Mac adapter is needed. Installed service
+sources match, with rollback backup and existing certificate/ports retained.
+Public-address native runs still disconnect on this home network, with captured
+TLS timeouts and member retirement. Router cause/outside-network behavior remain
+unestablished; public readiness is not verified by the LAN or fixture passes.
+Latest60f73aec native LAN full match/rematch also passes with matching records
+and completed cleanup (`mac-final-lan-results-a`,256.328s), confirming the new
+connection behavior on physical Mac Vulkan rather than relying on fixture passes.
+Final60f73aec three-player normal departure/replacement-host crash regression
+also passes (`mac-final-repeat-a`,189.890s): Windows0 to Windows2 to Mac1, scored
+backup/clocks and six bots continue30 seconds per handoff, cleanup completed.
