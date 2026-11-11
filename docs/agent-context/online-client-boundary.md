@@ -38,6 +38,16 @@ checkpoint schema string is defined in `online_arcade_client.py` without importi
 the private coordinator. Windows/Mac companion lists and network identities cover
 client files only. Existing binaries need rebuilding to match this source change.
 
+`Bridge.quality_snapshot()` reports authenticated host/guest round-trip times and
+completed latency-probe outcomes over 60 seconds. RTT expires after five seconds;
+the missed-probe fraction is not gameplay packet loss. `NativeArcade.body()` adds
+this optional display-only `connection_quality` field to authenticated member
+updates. Migration/key/roster changes reset affected samples. These values never
+renew native engine progress, alter migration eligibility or route traffic.
+Older servers can ignore the extra field. Server validation, checkpoint display
+decoding and dashboard UI remain private. See `tests/network/test_online.py` for
+authenticated nonce, timeout, expiry, reset and RPC-report regression coverage.
+
 Client tests cover invitations, certificate validation, UDP authentication,
 native lifecycle and native Arcade checkpoint/adapter contracts without a local
 server. Server-backed acceptance drivers and tests are preserved with private

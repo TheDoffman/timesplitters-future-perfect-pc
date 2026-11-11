@@ -77,6 +77,7 @@ class NativeArcade:
                 bridge.ready.clear()
                 bridge.host_sequence = -1
                 bridge.pending_pings.clear();bridge.latencies.clear()
+                bridge.quality_reset()
                 with bridge.lock:
                     bridge.peers.clear()
                 self.offer = self.ack = self.assembly = None
@@ -172,6 +173,8 @@ class NativeArcade:
             status = self.status
             body = dict(compatibility=compatibility, epoch=status['epoch'],
                         native_counter=self.counter, active=self.active, native_peer=self.native_peer)
+            if hasattr(self.bridge, 'quality_snapshot'):
+                body['connection_quality'] = self.bridge.quality_snapshot()
             if self.match_info and status['host_peer'] == self.bridge.peer_id:
                 body['match_info'] = dict(self.match_info)
             if self.native_slots is not None:

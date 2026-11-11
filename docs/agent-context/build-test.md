@@ -1,4 +1,4 @@
-[Input](controls-options.md); [Menus](native-multiplayer-menu.md); [Shortcut](online-client-boundary.md).
+[Input](controls-options.md); [Menus](native-multiplayer-menu.md); [Quality](online-client-boundary.md).
 [Crossplay/JIP](arcade-join-in-progress.md).
 [Axes](control-presets.md); [Tex](texture-preference.md).
 [Arms](video-options.md).

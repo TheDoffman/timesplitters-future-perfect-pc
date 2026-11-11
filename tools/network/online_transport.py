@@ -20,6 +20,7 @@ else:
         return _LayoutPath(root) / area / name
 
 import hmac
+from collections import deque
 import ipaddress
 import secrets
 import selectors
@@ -116,6 +117,38 @@ class Bridge:
         self.received = self.sent = self.dropped = 0
         self.last_ping = self.last_metrics = -10
         self.pending_pings, self.latencies = {}, {}
+        self.quality_lock = threading.Lock()
+        self.quality = {}
+
+    def quality_record(self, peer, milliseconds=None):
+        now = self.clock()
+        with self.quality_lock:
+            sample = self.quality.setdefault(peer, dict(events=deque(maxlen=128), rtt=None, at=None))
+            sample['events'].append((now, milliseconds is None))
+            if milliseconds is not None:
+                sample.update(rtt=round(milliseconds, 2), at=now)
+
+    def quality_snapshot(self):
+        """Authenticated host/guest RTT and completed probe outcomes, not game loss."""
+        now = self.clock()
+        peers = []
+        with self.quality_lock:
+            for peer, sample in self.quality.items():
+                events = [lost for at, lost in sample['events'] if now-at <= 60]
+                age = now-sample['at'] if sample['at'] is not None else None
+                if not events:
+                    continue
+                peers.append(dict(peer=peer, rtt_ms=sample['rtt'] if age is not None and age <= 5 else None,
+                                  rtt_age=round(age, 2) if age is not None else None,
+                                  samples=len(events), missed=sum(events)))
+        return dict(schema=1, window_seconds=60, peers=peers)
+
+    def quality_reset(self, peer=None):
+        with self.quality_lock:
+            if peer is None:
+                self.quality.clear()
+            else:
+                self.quality.pop(peer, None)
 
     def latency_snapshot(self):
         now = self.clock()
@@ -132,7 +165,9 @@ class Bridge:
         else:
             pending = self.pending_pings.get(source)
             if pending and hmac.compare_digest(payload, pending[0]):
-                self.latencies[source] = ((self.clock()-pending[1])*1000, self.clock())
+                milliseconds = (self.clock()-pending[1])*1000
+                self.latencies[source] = (milliseconds, self.clock())
+                self.quality_record(source, milliseconds)
                 del self.pending_pings[source]
         return True
 
@@ -150,6 +185,7 @@ class Bridge:
                     del self.peers[i]
                     self.latencies.pop(i, None)
                     self.pending_pings.pop(i, None)
+                    self.quality_reset(i)
             for i, key in wanted.items():
                 if not 1 <= i <= 254 or i == self.peer_id or len(key) != 32:
                     raise ValueError('Invalid directory roster')
@@ -157,6 +193,7 @@ class Bridge:
                     self.peers[i] = dict(key=key, endpoint=None, sequence=-1, seen=0)
                     self.latencies.pop(i, None)
                     self.pending_pings.pop(i, None)
+                    self.quality_reset(i)
 
     def send_wire(self, endpoint, key, kind, source=0, target=0, sport=0, dport=0, payload=b''):
         self.sequence += 1
@@ -323,6 +360,8 @@ class Bridge:
                     pending = self.pending_pings.get(peer)
                     if pending and now-pending[1] <= 5:
                         continue
+                    if pending:
+                        self.quality_record(peer)
                     nonce = secrets.token_bytes(8)
                     self.pending_pings[peer] = (nonce, now)
                     self.send_wire(endpoint, key, PING, self.peer_id, peer, payload=nonce)
