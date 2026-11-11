@@ -24,7 +24,7 @@ static int mp_native_passthrough;
 extern void sub_001A2730(void),sub_001A2720(void),sub_001A4350(void);
 extern void sub_001A8CE0(void),sub_001A8EE0(void),sub_001CBA50(void),sub_001CBD40(void);
 extern void sub_001A8D30(void),sub_001A8F30(void);
-extern void sub_001A4510(void),sub_001CBDA0(void),sub_00064E20(void),sub_0003D7B0(void),sub_00077110(void),sub_0003FA10(void);
+extern void sub_001A4510(void),sub_001CBDA0(void),sub_00064E20(void),sub_0003D7B0(void),sub_00077110(void),sub_0003FA10(void),sub_00072560(void);
 static void (*multiplayer_exit_lookup(uint32_t address))(void);
 static void multiplayer_lobby_tick(void (*original)(void));
 extern void sub_001CC360(void);
@@ -158,14 +158,12 @@ static void mp_code_draw(void)
     const float left=FLOAT_AT(rect)+10.f,right=FLOAT_AT(rect+8u)-10.f;
     const float top=FLOAT_AT(rect+4u)+3.f,bottom=FLOAT_AT(rect+12u)-3.f;
     const float field=left+(right-left)*.40f;
-    const int focused=WORD_AT(menu+0x18cu)==1u;
-    const uint32_t border=focused?0xa5d9ffffu:0x7e98b5ffu;
+    const uint32_t bounds=mp_ui.storage+16u+26u*256u;
+    FLOAT_AT(bounds)=field;FLOAT_AT(bounds+4u)=top;FLOAT_AT(bounds+8u)=right;FLOAT_AT(bounds+12u)=bottom;
     guest_call(sub_00022FF0,0);
-    keycap_line((int)field,(int)top,(int)right,(int)bottom,0x101820d0u);
-    keycap_line((int)field,(int)top,(int)right,(int)top+1,border);
-    keycap_line((int)field,(int)bottom-1,(int)right,(int)bottom,border);
-    keycap_line((int)field,(int)top,(int)field+1,(int)bottom,border);
-    keycap_line((int)right-1,(int)top,(int)right,(int)bottom,border);
+    /* Reuse the gray entry background/bevel painted by the original keyboard
+       text field (7C6D0 -> 72560), including its native palette and fade. */
+    guest_call(sub_00072560,2,menu,bounds);
     guest_call(sub_0003FA10,1,0x12u);
     const uint32_t sx=WORD_AT(0x7e7270u),sy=WORD_AT(0x7e7280u);
     WORD_AT(0x7e7270u)=bits(FLOAT_AT(0x7e7270u)*.8f);WORD_AT(0x7e7280u)=bits(FLOAT_AT(0x7e7280u)*.8f);

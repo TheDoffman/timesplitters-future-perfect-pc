@@ -1,7 +1,7 @@
 [Prompts](controls-options.md), [axes/axes](control-presets.md), [updates](main-menu-update.md).
 [Tex](texture-preference.md); [arms](video-options.md).
 
-[Uplink](native-uplink.md#throw-impulse); [UI](native-multiplayer-menu.md).
+[Uplink](native-uplink.md#throw-impulse); [Join UI](native-multiplayer-menu.md).
 Networking: `pc_network_enabled()` reads startup config once,
 then uses shared atomic flags in the indirect-dispatch hot path. The System Link
 menu explicitly calls `pc_network_enable_lan()`; Online connect/disconnect publishes
