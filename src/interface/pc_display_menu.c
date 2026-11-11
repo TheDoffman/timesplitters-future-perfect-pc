@@ -22,6 +22,16 @@ static unsigned online_opening_frames;
 static int online_opening_pending;
 static void online_opening_draw(uint32_t menu);
 static void online_opening_tick(void);
+static void native_multiplayer_tick(void);
+static void native_multiplayer_open(uint32_t source);
+static const char *native_multiplayer_notice(uint32_t menu);
+static int native_multiplayer_lobby_notice(uint32_t menu);
+static void native_multiplayer_notice_bounds(uint32_t menu,float x,float y,float w,float h);
+#ifdef _WIN32
+static void native_multiplayer_story_open(uint32_t menu);
+static void story_rewards_profiles_capture(void);
+#endif
+static void (*native_multiplayer_lookup(uint32_t address))(void);
 static void settings_tabs_footer_style(uint32_t menu,uint32_t sx,uint32_t sy,uint32_t colour);
 static int controls_tabs_poll(uint32_t menu);
 static void controls_tabs_flush(void);
@@ -1582,11 +1592,16 @@ static void system_link_activate(void)
 }
 static void online_activate(void)
 {
+    if(!getenv("TSFP_ONLINE_TEST_COMMAND")) {
+        GuestRegisters saved;save_registers(&saved);
+        native_multiplayer_open(WORD_AT(g_esp+4u));restore_registers(&saved);g_esp+=4u;return;
+    }
     /* Let the title present the notice before entering the companion wait. */
     online_opening_pending=1;online_opening_frames=0;g_esp+=4;
 }
 static void online_opening_tick(void)
 {
+    native_multiplayer_tick();
     if(!online_opening_pending || online_opening_frames<2)return;
     online_opening_pending=0;
     GuestRegisters r;save_registers(&r);
@@ -1596,6 +1611,7 @@ static void online_opening_tick(void)
 #else
 static void online_opening_tick(void) {}
 #endif
+#include "pc_multiplayer_menu.inc"
 #include "pc_multiplayer_exit.inc"
 #include "pc_arcade_join_guest.inc"
 #include "pc_arcade_migration_guest.inc"
@@ -1616,6 +1632,8 @@ static void controls_players_back(void);
 
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
+    void (*native_online_handler)(void)=native_multiplayer_lookup(address);
+    if(native_online_handler)return native_online_handler;
     void (*multiplayer_handler)(void)=multiplayer_exit_lookup(address);
     if(multiplayer_handler) return multiplayer_handler;
     if(address==0x000402D0u)return keycap_alternate_glyph;

@@ -102,6 +102,14 @@ int xbox_D3D8ChangeResolution(unsigned w,unsigned h) { (void)w;(void)h;return av
 static unsigned online_connect_calls;
 int pc_online_connect(void) { ++online_connect_calls;return 0; }
 int pc_online_connect_mode(PcOnlineMode mode) { (void)mode;return 0; }
+int pc_online_menu_start(void){return 0;}
+int pc_online_menu_send(PcOnlineMenuRequest *request){(void)request;CHECK(0);return 0;}
+const PcOnlineMenuState *pc_online_menu_poll(void){CHECK(0);return NULL;}
+int pc_online_menu_accept(void){CHECK(0);return 0;}
+int pc_online_menu_active(void){return 0;}
+void pc_online_menu_leave(void){CHECK(0);}
+int pc_online_menu_copy(const char *text){(void)text;CHECK(0);return 0;}
+int pc_online_menu_paste(char *text,size_t bytes){(void)text;(void)bytes;CHECK(0);return 0;}
 PcOnlineMode pc_online_mode(void) { return PC_ONLINE_NONE; }
 static unsigned online_disconnects,lan_browser_entries,lan_enables;
 void pc_online_disconnect(void) { online_disconnects++; }
@@ -175,6 +183,8 @@ MOUSE_STUB(sub_00045390) MOUSE_STUB(sub_00045820)
 MOUSE_STUB(sub_0007DB20) MOUSE_STUB(sub_0007C410) MOUSE_STUB(sub_0007C300)
 MOUSE_STUB(sub_0007C390) MOUSE_STUB(sub_0007C4F0) MOUSE_STUB(sub_0007CDE0)
 MOUSE_STUB(sub_000746D0) MOUSE_STUB(sub_0007CCA0) MOUSE_STUB(sub_00071940)
+MOUSE_STUB(sub_001A2720) MOUSE_STUB(sub_001CBA50) MOUSE_STUB(sub_001CBD40)
+MOUSE_STUB(sub_00352980) MOUSE_STUB(sub_00352990) MOUSE_STUB(sub_0007D090)
 #undef MOUSE_STUB
 /* Bot helpers share the menu translation unit, but must never execute in
  * this isolated FOV fixture. Bot behavior has its own network regressions. */
@@ -1235,12 +1245,14 @@ int main(int argc,char **argv)
     }
     /* Online selection must return before launching, allowing a notice frame.
      * The next input tick after two draws launches once; cancel restores idle. */
+    _putenv_s("TSFP_ONLINE_TEST_COMMAND","legacy-fixture");
     g_esp=0x700000;online_activate();
     CHECK(online_opening_pending && online_connect_calls==0 && g_esp==0x700004);
     online_opening_tick();CHECK(online_connect_calls==0);
     online_opening_frames=2;online_opening_tick();
     CHECK(online_connect_calls==1 && !online_opening_pending && g_esp==0x700004);
     online_opening_tick();CHECK(online_connect_calls==1);
+    _putenv_s("TSFP_ONLINE_TEST_COMMAND","");
     menu_mouse_dispatch=0;tab_pointer_enabled=slider_capture_enabled=0;
     WORD_AT(0x300004)=before_audio_descriptor;audio_menu=0;audio_row_count=0;
     /* The actual native waiting panel adopts an unconfigured pad's input port,
