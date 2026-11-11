@@ -1,3 +1,28 @@
+Built-in private directory restoration (2026-11-11, local): **Awaiting validation**
+on Mac/Linux. Shared Python player-hosting capability restores the old window's
+LocalDirectory through native Host a Server, without an installer. Existing
+native process/IPC and shared certificate/HTTPS/direct-UDP interfaces suffice;
+no OS-specific hosting policy was added. Windows Build/built-ins,45 hosting/client
+checks and191 release/package/context checks pass (10 platform skips). Native
+Windows verifies empty directory, create/leave with directory retained and owned
+listener cleanup at exit. Common companion lists and identity include the module;
+physical Mac/Linux builds/gameplay remain unrun. Private direct mode has the old
+host-departure behavior, not community migration. Invite Only listing/admission
+remains unfinished. See [current evidence](STATUS.md) and
+[contracts](../agent-context/native-multiplayer-menu.md).
+
+Online notes follow-up (2026-11-11, local after rebased a40c8e7a):
+**Awaiting validation** on Mac/Linux. Common menu source now gives all three
+browser types the same fixed native frame and separate outer/inner titles.
+LAN retains original match enumeration, creation/join callbacks and footer
+behavior. Windows Build/built-ins and101 focused checks pass (2 platform skips);
+native Windows capture verifies Community/LAN frame parity, main/chooser/create
+titles and LAN lobby open/Back. No new OS adapter is required. Physical Mac/Linux
+build/input and remote join remain unverified. Invite Only listing/admission and
+private component installation need the separate private backend/source; no
+server code was added to normal client packages. See [current evidence](STATUS.md)
+and [owning guide](../agent-context/native-multiplayer-menu.md).
+
 Device switching/menu glyph follow-up (local, base a7762fce): shared patch2970
 and shared prompt state reserve controllers by actual joined-player ownership,
 allow late-connected unjoined controllers to share P1, and track menu activity

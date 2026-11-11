@@ -31,7 +31,7 @@ static void multiplayer_lobby_tick(void (*original)(void));
 extern void sub_001CC360(void);
 extern void sub_00352980(void),sub_00352990(void),sub_0007D090(void);
 extern void sub_00071CF0(void),sub_00074A00(void),sub_00071730(void);
-extern void sub_00075400(void),sub_00077140(void),sub_00077190(void),sub_00075E70(void),sub_000780E0(void),sub_000781A0(void);
+extern void sub_00075400(void),sub_00077140(void),sub_00077190(void),sub_00075E70(void),sub_000780E0(void),sub_000781A0(void),sub_00079710(void);
 static uint32_t mp_text(unsigned index,const char *value)
 {
     uint32_t address=mp_ui.storage+16u+index*256u;
@@ -51,7 +51,7 @@ static void mp_focus(uint32_t menu)
     uint32_t selected=WORD_AT(menu+0x18cu),cursor=WORD_AT(menu+0x178u);int found=0;
     for(unsigned i=0;i<64u && guest_writable(cursor,0x18u);i++,cursor=WORD_AT(cursor+4u))
         if(WORD_AT(cursor+0x14u)==selected){found=1;break;}
-    guest_call(sub_00077110,2,menu,found?selected:1u);
+    guest_call(sub_00077110,2,menu,found?selected:(mp_native_passthrough && mp_ui.source==2u?UINT32_MAX:1u));
 }
 static void mp_rebuild(void)
 {
@@ -162,12 +162,17 @@ static void mp_build(void)
     GuestRegisters saved;save_registers(&saved);const uint32_t menu=WORD_AT(g_esp+4u);
     if(!mp_prepare()){restore_registers(&saved);g_esp+=4u;return;}
     mp_ui.menu=menu;mp_ui.parent=WORD_AT(menu+0x2cu);
-    const char *titles[]={"Online / LAN","Private Server","Host Server","Join Server","Matches Available","Lobby Options","Join Match"};
+    const char *titles[]={"Multiplayer","Private Server","Host Server","Join Server","Match Browser","Start New Match","Join Match"};
     const int browser=mp_ui.page==MP_BROWSER;
-    guest_call(sub_00075B70,5,browser?0x2000u:0xa000u,mp_text(0,titles[mp_ui.page]),bits(browser?60.f:55.f),0u,MP_BACK);
+    guest_call(sub_00075B70,5,browser?0x2000u:0xa000u,mp_text(0,titles[mp_ui.page]),bits(browser?80.f:55.f),0u,MP_BACK);
     guest_call(sub_00071B10,4,1u,bits(browser?2.5f:2.f),1u,1u);
     guest_call(sub_00071C50,1,mp_ui.page==MP_BROWSER?0x32000u:0x32200u);
     char label[256];unsigned row=1;
+    const char *subtitle=mp_ui.page==MP_NETWORK?"Online / LAN":browser?"Matches Available":mp_ui.page==MP_CREATE?"Lobby Options":NULL;
+    if(subtitle) {
+        guest_call(sub_00079D60_gen,6,mp_text(30,subtitle),250u,0x32204u,bits(5.f),0u,0u);
+        guest_call(sub_00079710,1,0u);
+    }
     switch(mp_ui.page) {
     case MP_NETWORK:
         mp_row(row++,1,"Community Browser");mp_row(row++,2,"Private Server");mp_row(row++,3,"LAN");break;
@@ -189,23 +194,30 @@ static void mp_build(void)
         mp_row(row++,3,"Join");break;
     case MP_BROWSER: {
         WORD_AT(menu+0x40u)|=0x100u;
-        guest_call(sub_000780E0,2,bits(35.f),0u);
+        guest_call(sub_000780E0,2,bits(50.f),0u);
         /* Stock 1CC0B0 uses a 7-unit action followed by 20-unit 1CBDA0
            advertisements. Let the original list own clipping and scrolling. */
-        guest_call(sub_00079D60_gen,6,mp_text(row++,"Start New Match"),1u,0x32200u,bits(7.f),MP_SELECT,0u);
-        for(unsigned i=0;i<mp_ui.state.count;i++) {
-            const PcOnlineMenuLobby *lobby=&mp_ui.state.lobbies[i];
-            snprintf(label,sizeof label,"%.42s   %u/%u   %s%s",lobby->name,lobby->players,lobby->capacity,
-                lobby->mode==PC_ONLINE_STORY?"Story":"Arcade",lobby->joinable?"":" - FULL");
-            if((lobby->mode==PC_ONLINE_ARCADE && lobby->game_type_id<32u &&
-               (int32_t)guest_call(sub_00064E20,1,lobby->map_scene)>=0) ||
-               (lobby->mode==PC_ONLINE_STORY && mp_story_mission(lobby->map_scene)<13u))
-                guest_call(sub_00079D60_gen,6,0u,100u+i,0x20000u,bits(20.f),MP_SELECT,MP_MATCH_DRAW);
-            else mp_row(row++,100u+i,label);
+        const int lan=mp_native_passthrough && mp_ui.source==2u;
+        guest_call(sub_00079D60_gen,6,mp_text(row++,"Start New Match"),lan?UINT32_MAX:1u,0x32200u,bits(7.f),lan?0x1cba50u:MP_SELECT,0u);
+        if(lan) {
+            const int count=WORD_AT(menu+0x1b0u)==3u?(int)guest_call(sub_00352990,1,0x790960u):0;
+            for(int i=0;i<count && i<20;i++)
+                guest_call(sub_00079D60_gen,6,0u,i,0x20000u,bits(20.f),0x1cbd40u,0x1cbda0u);
+        } else {
+            for(unsigned i=0;i<mp_ui.state.count;i++) {
+                const PcOnlineMenuLobby *lobby=&mp_ui.state.lobbies[i];
+                snprintf(label,sizeof label,"%.42s   %u/%u   %s%s",lobby->name,lobby->players,lobby->capacity,
+                    lobby->mode==PC_ONLINE_STORY?"Story":"Arcade",lobby->joinable?"":" - FULL");
+                if((lobby->mode==PC_ONLINE_ARCADE && lobby->game_type_id<32u &&
+                   (int32_t)guest_call(sub_00064E20,1,lobby->map_scene)>=0) ||
+                   (lobby->mode==PC_ONLINE_STORY && mp_story_mission(lobby->map_scene)<13u))
+                    guest_call(sub_00079D60_gen,6,0u,100u+i,0x20000u,bits(20.f),MP_SELECT,MP_MATCH_DRAW);
+                else mp_row(row++,100u+i,label);
+            }
         }
         guest_call(sub_000781A0,0);
-        guest_call(sub_00074A00,4,0u,mp_text(21,"Select"),0u,0u);
-        guest_call(sub_00074A00,4,1u,mp_text(22,"Back"),0u,0u);
+        guest_call(sub_00074A00,4,0u,mp_text(23,"Select"),0u,0u);
+        guest_call(sub_00074A00,4,1u,mp_text(24,"Back"),0u,0u);
         guest_call(sub_00074A00,4,2u,mp_text(25,"Refresh"),0u,0u);
         break;
     }}
@@ -213,7 +225,7 @@ static void mp_build(void)
         /* Finalize the native list and publish its bounds. Stock1A42E0 also
            hides its network-dialog parent with70F30; our menu is the list. */
         guest_call(sub_00075400,1,menu);
-        WORD_AT(menu+0x68u)=WORD_AT(0x47dac4u); /* Stock1A4780 panel height. */
+        WORD_AT(menu+0x68u)=bits(60.f); /* Fixed frame, including its inner title. */
         guest_call(sub_00077140,1,menu);guest_call(sub_00077190,1,menu);
         guest_call(sub_00075E70,0);
     } else guest_call(sub_000771D0,1,menu);
@@ -318,6 +330,10 @@ static void mp_publish_metadata(void)
     if(!guest_writable(rules,32u))return;
     snprintf(info.game_type,sizeof info.game_type,"%.31s",(const char *)((uintptr_t)rules+g_xbox_mem_offset));
     pc_online_menu_publish(&info);
+}
+static void mp_lan_browser_build(void)
+{
+    mp_ui.page=MP_BROWSER;mp_build();
 }
 static void mp_root_build(void)
 {
@@ -627,6 +643,8 @@ static void (*native_multiplayer_lookup(uint32_t address))(void)
 {
     switch(address) {
     case 0x318a0u:if(mp_ui.storage && mp_native_passthrough && mp_ui.source!=2u && WORD_AT(0x79094cu)==101u)return mp_transport_close;break;
+    case 0x1a43e0u:case 0x1a4780u:
+        if(mp_native_passthrough && mp_ui.source==2u)return mp_lan_browser_build;break;
     case MP_CODE_DRAW:return mp_code_draw;
     case MP_CHOICE_CHANGE:return mp_choice_change;
     case MP_MATCH_DRAW:return mp_match_draw;

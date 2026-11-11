@@ -412,6 +412,17 @@ void pc_display_menu_button(void (*original)(void))
     if(pc_story_lobby_button(original)) return;
 #endif
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    if(callsite==0x002D0DAFu && WORD_AT(g_esp+8u)==3u) {
+        static uint32_t multiplayer_caption;
+        if(!multiplayer_caption) {
+            const char label[]="Multiplayer";
+            multiplayer_caption=xbox_HeapAlloc(sizeof label,4);
+            if(multiplayer_caption)memcpy((void *)((uintptr_t)multiplayer_caption+g_xbox_mem_offset),label,sizeof label);
+        }
+        const uint32_t frame=g_esp,previous=WORD_AT(frame+4u);
+        if(multiplayer_caption)WORD_AT(frame+4u)=multiplayer_caption;
+        original();WORD_AT(frame+4u)=previous;return;
+    }
     if(callsite==0x001CC0A3u && callback==0x001CC050u) {
         static uint32_t online_caption;
         const uint32_t frame=g_esp, previous_caption=WORD_AT(frame+4);

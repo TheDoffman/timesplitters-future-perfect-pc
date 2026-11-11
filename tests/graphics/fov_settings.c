@@ -185,7 +185,9 @@ MOUSE_STUB(sub_0007DB20) MOUSE_STUB(sub_0007C410) MOUSE_STUB(sub_0007C300)
 MOUSE_STUB(sub_0007C390) MOUSE_STUB(sub_0007C4F0) MOUSE_STUB(sub_0007CDE0)
 MOUSE_STUB(sub_000746D0) MOUSE_STUB(sub_0007CCA0) MOUSE_STUB(sub_00071940)
 MOUSE_STUB(sub_001A2720) MOUSE_STUB(sub_001CBA50) MOUSE_STUB(sub_001CBD40)
-MOUSE_STUB(sub_00352980) MOUSE_STUB(sub_00352990) MOUSE_STUB(sub_0007D090)
+MOUSE_STUB(sub_00352980) MOUSE_STUB(sub_0007D090)
+static unsigned fixture_lan_matches;
+void sub_00352990(void){g_eax=fixture_lan_matches;g_esp+=4;}
 static unsigned native_menu_transitions;
 void sub_00075980(void){CHECK(WORD_AT(g_esp+8)==2u);native_menu_transitions++;g_esp+=4;}
 MOUSE_STUB(sub_001A4510) MOUSE_STUB(sub_000318A0) MOUSE_STUB(sub_003800D1)
@@ -292,7 +294,11 @@ int pc_settings_assign(PcSettings *s,int a,int slot,int k,int move) { (void)s;(v
 void pc_controls_set_mouse(double s,int enabled,int invert) { (void)s;(void)enabled;(void)invert;CHECK(controls_test_enabled);controls_test_previews++; }
 /* Native builder/centring contract: width is a percentage, not pixels.
  * An out-of-range width renders a panel with its rows outside the canvas. */
+static char fixture_heading[64];
+static float fixture_width;
 void sub_00075B70(void) {
+    snprintf(fixture_heading,sizeof fixture_heading,"%s",(const char *)(g_xbox_mem_offset+WORD_AT(g_esp+8u)));
+    fixture_width=FLOAT_AT(g_esp+12u);
     built_rows=built_row_count=separators=0;last_built_item=0;WORD_AT(0x300178)=0;
     uint32_t word=WORD_AT(g_esp+12);float width;memcpy(&width,&word,4);
     float left=(100.f-width)*.5f;
@@ -335,7 +341,7 @@ static unsigned online_footer_mask;
 void sub_00074A00(void){const unsigned slot=WORD_AT(g_esp+4u);const char *labels[]={"Select","Back","Refresh"};CHECK(slot<3u);CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+8u)),labels[slot]));online_footer_mask|=1u<<slot;if(slot==2u)online_refresh_footers++;g_esp+=4;}
 void sub_00071730(void){WORD_AT(WORD_AT(g_esp+4u)+0x24u)=WORD_AT(g_esp+8u);g_esp+=4;}
 static unsigned online_layout_steps;
-void sub_000780E0(void){CHECK(!online_layout_steps);CHECK(FLOAT_AT(g_esp+4u)==35.f);online_layout_steps=1u;g_esp+=4;}
+void sub_000780E0(void){CHECK(!online_layout_steps);CHECK(FLOAT_AT(g_esp+4u)==50.f);online_layout_steps=1u;g_esp+=4;}
 void sub_000781A0(void){CHECK(online_layout_steps==1u);online_layout_steps=6u;g_esp+=4;}
 void sub_00075400(void){CHECK(online_layout_steps==6u);online_layout_steps=2u;g_esp+=4;}
 void sub_00077140(void){CHECK(online_layout_steps==2u);online_layout_steps=3u;g_esp+=4;}
@@ -451,12 +457,12 @@ void sub_000814B0(void) { uint32_t b=WORD_AT(g_esp+4);memcpy(&drawn,&b,4);g_esp+
 void sub_00154FE0(void) { g_eax=WORD_AT(g_esp+4);g_esp+=4; }
 void sub_00079B70(void) { returned++;g_esp+=4; }
 void sub_00079D60_gen(void) {
-    unsigned id=WORD_AT(g_esp+8);CHECK(id<256);
+    unsigned id=WORD_AT(g_esp+8);CHECK(id<256 || id==UINT32_MAX);
     if(page==DISPLAY_HOME && id>=20 && id<=21)CHECK(!strncmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+4)),"\vs75",4));
     if(audio_building && (id==1 || id==3))CHECK(WORD_AT(g_esp+24)==AUDIO_VOLUME_DRAW);
     if(audio_building && id==AUDIO_TABS_ID)CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+4))," "));
     if(id<32)built_rows|=1u<<id;CHECK(built_row_count<32);built_ids[built_row_count++]=id;
-    g_eax=0x200000+id*0x200;WORD_AT(g_eax)=4;WORD_AT(g_eax+0xb0)=1;WORD_AT(g_eax+0x14)=id;fixture_link(g_eax);WORD_AT(g_eax+0x28)=WORD_AT(g_esp+12)|0x2000u;WORD_AT(g_eax+0x88)=current_menu;g_esp+=4;
+    g_eax=0x200000+(id==UINT32_MAX?255u:id)*0x200;WORD_AT(g_eax)=4;WORD_AT(g_eax+0xb0)=1;WORD_AT(g_eax+0x14)=id;fixture_link(g_eax);WORD_AT(g_eax+0x28)=WORD_AT(g_esp+12)|0x2000u;WORD_AT(g_eax+0x88)=current_menu;WORD_AT(g_eax+0x20)=WORD_AT(g_esp+4u);WORD_AT(g_eax+0x50)=WORD_AT(g_esp+20u);g_esp+=4;
 }
 void sub_00041DC0(void) {
     CHECK(update_notice_test);
@@ -1648,9 +1654,28 @@ int main(int argc,char **argv)
             strcpy(mp_ui.state.lobbies[i].name,"Story Lobby");
         }
         guest_call(mp_build,1,current_menu);
-        CHECK(built_row_count==21u && built_ids[0]==1u && online_refresh_footers==1u && online_footer_mask==7u);
+        CHECK(built_row_count==23u && built_ids[0]==250u && built_ids[2]==1u && online_refresh_footers==1u && online_footer_mask==7u);
         CHECK(online_layout_steps==5u);
-        for(unsigned i=0;i<20u;i++)CHECK(built_ids[i+1u]==100u+i);
+        CHECK(!strcmp(fixture_heading,"Match Browser") && fixture_width==80.f);
+        CHECK(FLOAT_AT(current_menu+0x68u)==60.f);
+        CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(0x21f400u+0x20u)),"Matches Available"));
+        for(unsigned i=0;i<20u;i++)CHECK(built_ids[i+3u]==100u+i);
+        /* Empty and populated lists keep the same native frame. LAN retains
+           original advertisement selection and match-creation callbacks. */
+        mp_ui.state.count=0;online_layout_steps=0;guest_call(mp_build,1,current_menu);
+        CHECK(built_row_count==3u && fixture_width==80.f && FLOAT_AT(current_menu+0x68u)==60.f);
+        mp_ui.source=1;mp_ui.state.count=20u;
+        for(unsigned i=0;i<20u;i++)mp_ui.state.lobbies[i].map_scene=UINT32_MAX;
+        online_layout_steps=0;guest_call(mp_build,1,current_menu);
+        CHECK(built_row_count==23u && fixture_width==80.f && FLOAT_AT(current_menu+0x68u)==60.f);
+        CHECK(strstr((char *)(g_xbox_mem_offset+WORD_AT(0x20ee00u+0x20u)),"Story Lobby"));
+        mp_native_passthrough=1;mp_ui.source=2;fixture_lan_matches=2;
+        WORD_AT(current_menu+0x1b0u)=3u;online_layout_steps=0;guest_call(mp_lan_browser_build,1,current_menu);
+        CHECK(built_row_count==5u && built_ids[2]==UINT32_MAX && built_ids[3]==0u && built_ids[4]==1u);
+        CHECK(WORD_AT(0x21fe00u+0x50u)==0x1cba50u && WORD_AT(0x200000u+0x50u)==0x1cbd40u);
+        fixture_lan_matches=UINT32_MAX;online_layout_steps=0;guest_call(mp_lan_browser_build,1,current_menu);
+        CHECK(built_row_count==3u); /* Native enumeration errors never become advertisements. */
+        mp_native_passthrough=0;mp_ui.source=0;
         /* Selection-sensitive descriptions belong to the header strip. */
         mp_native_passthrough=0;mp_ui.page=MP_NETWORK;guest_call(mp_build,1,current_menu);
         CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(0x200200u+0x24u)),"Browse matches on the community server"));
@@ -1661,7 +1686,7 @@ int main(int argc,char **argv)
         /* The real type-1 widget's selected values drive host requests;
            changing privacy never destroys the staged lobby name. */
         mp_ui.page=MP_CREATE;guest_call(mp_build,1,current_menu);
-        CHECK(built_row_count==4u && mp_ui.choices[0] && mp_ui.choices[1]);
+        CHECK(built_row_count==6u && mp_ui.choices[0] && mp_ui.choices[1]);
         strcpy(mp_ui.name,"Staged lobby");
         WORD_AT(mp_ui.choices[0]+0xc8u)=0u;WORD_AT(mp_ui.choices[1]+0xc8u)=1u;
         guest_call(mp_choice_change,1,current_menu);

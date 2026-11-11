@@ -1,7 +1,7 @@
 [Sticks](controller-deadzones.md), [2970 pads](control-presets.md), [updates](main-menu-update.md).
 [Tex](texture-preference.md); [arms](video-options.md).
 
-[Uplink](native-uplink.md#throw-impulse); [Menu flow](native-multiplayer-menu.md).
+[Uplink](native-uplink.md#throw-impulse); [Menus](native-multiplayer-menu.md).
 Networking: `pc_network_enabled()` reads startup config once,
 then uses shared atomic flags in the indirect-dispatch hot path. The System Link
 menu explicitly calls `pc_network_enable_lan()`; Online connect/disconnect publishes

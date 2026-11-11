@@ -85,6 +85,7 @@ class Controller:
         defaults=service_defaults()
         self.community=(defaults['directory'],defaults['fingerprint'])
         self.private=None
+        self.private_direct=False
         self.private_local=None
         self.private_hosted=None
         self.source=0
@@ -140,21 +141,24 @@ class Controller:
             elif action==PRIVATE_CONNECT:
                 pair=parse_server_invitation(request['code'])
                 probe=Client(*pair)
-                probe.request('GET','/v2/lobbies?compatibility='+self.compatibility+'&mode='+mode)
+                reply=probe.request('GET','/v2/lobbies?compatibility='+self.compatibility+'&mode='+mode)
                 with self.lock:
-                    if generation==self.generation:self.private=pair
+                    if generation==self.generation:
+                        self.private=pair;self.private_direct=reply.get('private_directory') is True
                 result=(PRIVATE_READY,'Connected to private server',[])
             elif action==PRIVATE_HOST:
                 with self.lock:
                     existing=self.private_process if self.private_process and self.private_process.poll() is None else None
-                    if existing:self.private=self.private_hosted
+                    if existing:
+                        self.private=self.private_hosted;self.private_direct=bool(getattr(existing,'direct',False))
                 if not existing:
-                    if not self.private_launcher:raise ValueError('Private server hosting component is not installed')
+                    if not self.private_launcher:raise ValueError('Private directory could not start')
                     process,pair,local=self.private_launcher(request)
                     with self.lock:
                         if generation!=self.generation or self.closed:
                             stop_private(process);return
                         self.private_process=process;self.private=self.private_hosted=pair;self.private_local=local
+                        self.private_direct=bool(getattr(process,'direct',False))
                 result=(PRIVATE_READY,'Private server ready. Forward its TCP and UDP ports for Internet guests.',[])
             elif action==BROWSE:
                 with self.lock:self.close_session()
@@ -173,6 +177,8 @@ class Controller:
                         address,pin,code=parse_invitation(code);directory=Client(address,pin)
                     active=(join_arcade(directory,self.compatibility,code) if mode=='arcade' else
                             Session.join(directory,self.compatibility,code,mode=mode))
+                elif request['source'] and self.private_direct:
+                    active=Session.create(directory,self.compatibility,request['name'] or 'My Lobby',request['port'],request['public'],mode=mode,transport='direct')
                 elif mode=='arcade':
                     active=ArcadeSession.open(directory,self.compatibility,name=request['name'] or 'My Lobby',public=request['public'])
                 else:
@@ -234,21 +240,14 @@ class Controller:
 def private_launcher(result,parent):
     def launch(request):
         command=os.environ.get('TSFP_PRIVATE_SERVER_COMMAND')
+        if not command:
+            from online_private import start_directory
+            directory=start_directory(ROOT,request)
+            return directory,(directory.public_url,directory.fingerprint),(directory.address,directory.fingerprint)
         if command:
             argv=json.loads(command)
             if not isinstance(argv,list) or not argv or not all(isinstance(v,str) and v for v in argv):
                 raise ValueError('Invalid private hosting component command')
-        else:
-            entry=ROOT/'Support/PrivateServer/host_server.py'
-            if not entry.is_file():
-                import sys
-                if os.name=='nt':base=Path(os.environ.get('LOCALAPPDATA',Path.home()/'AppData/Local'))
-                elif sys.platform=='darwin':base=Path.home()/'Library/Application Support'
-                else:base=Path(os.environ.get('XDG_DATA_HOME',Path.home()/'.local/share'))
-                entry=base/'TimeSplitters Online/private-server/host_server.py'
-            if not entry.is_file():raise ValueError('Install the separate private server hosting component first')
-            import sys
-            argv=[sys.executable,'-B',str(entry)]
         target=Path(str(result)+'.server-'+str(request['sequence']))
         target.unlink(missing_ok=True)
         stop=Path(str(target)+'.stop');stop.unlink(missing_ok=True)

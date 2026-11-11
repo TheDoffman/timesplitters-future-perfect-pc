@@ -94,7 +94,7 @@ def identity(root, game, runtime=None):
                 if path.suffix.lower() != '.ttf':
                     data = data.replace(b'\r\n', b'\n')
                 entries.append((path.relative_to(root).as_posix(), hashlib.sha256(data).hexdigest()))
-    for name in ('online_transport.py', 'online_client.py', 'online.py', 'online_host.py', 'online_paths.py', 'online_theme.py', 'online_platform.py', 'online-service.json', 'online_arcade_client.py','online_menu.py'):
+    for name in ('online_transport.py', 'online_client.py', 'online.py', 'online_host.py', 'online_paths.py', 'online_theme.py', 'online_platform.py', 'online-service.json', 'online_arcade_client.py','online_menu.py','online_private.py'):
         path = root / 'tools/network' / name
         if path.is_file():
             entries.append(('tools/' + name, hashlib.sha256(path.read_bytes().replace(b'\r\n', b'\n')).hexdigest()))

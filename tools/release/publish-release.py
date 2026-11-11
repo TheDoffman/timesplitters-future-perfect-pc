@@ -111,6 +111,8 @@ def game_release_path(path):
                 'tools/network/online.py',
                 'tools/network/online_client.py',
                 'tools/network/online_host.py',
+                'tools/network/online_menu.py',
+                'tools/network/online_private.py',
                 'tools/network/online_paths.py',
                 'tools/network/online-service.json',
                 'tools/network/online_transport.py',

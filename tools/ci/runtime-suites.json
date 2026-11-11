@@ -7,6 +7,7 @@
   "native": [
     "tests/network/test_arcade_checkpoint.py",
     "tests/network/test_online_menu.py",
+    "tests/network/test_online_private.py",
     "tests/textures/test_texture_preference.py",
     "tests/textures/test_texture_runtime.py",
     "tests/textures/texture_pack_tools.py",

@@ -43592,3 +43592,69 @@ clipboard and real multiplayer/lobby-return acceptance have not been revalidated
 for this change. Mac/Linux host builds/device acceptance remain unrun; shared UI
 changes do not enable unsupported native Story gameplay. No commit, push, merge
 or publication. Goal is blocked awaiting the private backend source/API.
+
+
+## Online notes and main sync (2026-11-11)
+
+User-requested main sync: prior menu work preserved in bc1e8b70, then52 feature
+commits rebased onto origin/main e7cb1016. Replayed checkpoint a40c8e7a; main is
+an ancestor. Conflicts were documentation links/validation records; upstream
+control changes and release history retained. No push or main merge.
+
+Local follow-up corrects the main Multiplayer label, separate outer/inner
+Multiplayer / Online-LAN and Start New Match / Lobby Options titles. All three
+browser sources use Match Browser / Matches Available and one fixed80x60 native
+frame with50-high scrolling region. Native LAN keeps original advertisement,
+create and join callbacks. Empty, populated and20-result fixtures keep dimensions;
+negative LAN enumeration results never draw invalid advertisements. Fallback
+captions no longer share storage with footer labels.
+
+Windows x64 supported Release Build, complete patch stack,0.6.1 linked version
+and built-ins pass (logs/online-notes-build.log). Focused menu/Story/controller,
+client-package boundary and repository-context run:101 passed,2 platform skips
+(logs/online-notes-tests.log). Final browser checks passed4 with2 skips; final supported Build/built-ins passed
+(logs/online-notes-build-final.log). Native isolated screenshots in private/network-validation/native-online-flow
+(notes-*): main label, chooser, Community browser, creation menu and empty LAN
+browser reviewed; their frame bounds match. LAN Start New Match opens the original
+host lobby and Back returns to the chooser. This is UI/local-lobby evidence;
+no remote join, real community/private admission or gameplay claim. Canonical
+fixture, personal settings/saves and game data preserved; probe cleanup complete.
+
+Online notes remain incomplete for visible Invite Only rooms and the missing
+private hosting component. Current private backend/source or installer is not in
+the client checkout or standard installed locations; requested from the user.
+Public listing IDs must be separate from secret codes before locked rooms can be
+listed safely. No server source was restored to client Git/packages. Mac/Linux
+build/device acceptance remains unrun. New fixes are local and uncommitted.
+
+
+## Built-in private directory restored (2026-11-11, local)
+
+The user clarified that private hosting starts the former window's directory,
+with the same flow in native menus. The former separate-component requirement
+was incorrect for this action. online_private.py restores bounded v2 player
+hosting from pre267a53f4 LocalDirectory; no community service, migration
+coordinator or dashboard source was restored. The companion package/identity
+includes this player capability and uses direct UDP for its matches. Community
+v3 relay/migration behavior is unchanged. Private direct matches retain their
+old host-departure behavior and forwarding requirements; private migration is
+not implemented or claimed.
+
+Windows x640.6.1 supported Build/built-ins pass, logs/private-directory-build-final.log.
+Hosting/client/identity checks45 pass: real pinned HTTPS and direct UDP, two
+independent Arcade/Story hosts, guest authentication, retained directory/other
+room after lobby leave, owner shutdown, bounds/expiry/credentials/metadata and
+certificate reuse/state isolation. Release/package/context checks191 pass with10
+platform skips. Initial sandbox failures were OpenSSL DLL startup and PowerShell
+authorization; normal-host reruns pass without policy or source-test changes.
+
+Native isolated input verified Host Server -> generated invitation -> Next ->
+empty Match Browser -> Create Lobby -> original match lobby -> Leave -> retained
+browser. The owned companion31412 kept its41830 TCP listener across lobby leave;
+after game39288 exited, both companion and listener were absent. Build identity
+8f208ead; evidence private/network-validation/native-online-flow/private-directory-*.png.
+Certificates were routed to private/test-saves/native-online-flow/private-directory
+via TSFP_PRIVATE_DIRECTORY_STATE; canonical fixture, existing directory certificate,
+personal saves/settings and game assets were preserved. Probe cleanup complete.
+No remote Internet gameplay or Mac/Linux device acceptance claim. Changes local
+and uncommitted; no publication. Visible Invite Only admission remains unfinished.

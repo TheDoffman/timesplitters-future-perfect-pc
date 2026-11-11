@@ -2,7 +2,7 @@
 
 Work branch `feature/native-multiplayer-ui` depends on the unmerged online-system
 branch at `5c4df06a`. The user's layout reference is the supplied online flow
-diagram. Private Server explicitly means a separately hosted directory/relay,
+diagram. Private Server explicitly means a player-hosted directory,
 not an invite-only community room. Preserve the [client/server boundary](online-client-boundary.md).
 See the [existing online system](multiplayer-ui.md) and [late joins](arcade-join-in-progress.md).
 
@@ -35,14 +35,20 @@ frame. Menus poll paste completion. Upstream contracts:
 [clipboard reads](https://wiki.libsdl.org/SDL3/SDL_GetClipboardText),
 [dispatch](https://wiki.libsdl.org/SDL3/SDL_RunOnMainThread).
 
-Optional private hosting is discovered in `Support/PrivateServer` or the user's
-application-data `TimeSplitters Online/private-server` folder. Its implementation
-and installer stay private, outside Git and normal client packages. The client
-supervises public invitation/ready and stop handshakes, using loopback locally
-while sharing the public endpoint. Stop files handle Windows venv launcher
-children. Lobby leave keeps this directory alive; owner closure stops it.
-The host screen shows Invite Code / Copy / Next; component configuration owns
-its ports. Community relay players need no forwarding.
+Explicit private hosting uses `online_private.LocalDirectory` in the hidden
+companion, restoring the former window's HTTPS directory startup. It reuses the
+existing certificate/key without replacing either, detects the public IPv4 and
+returns a pinned server invitation plus a separate loopback URL for its owner.
+The directory begins empty. Connected players create independent v2 direct-UDP
+Arcade/Story matches, with16/4 limits; its256-room and32-worker limits are separate.
+Leaving a match keeps the directory alive. Closing its owner stops it. Public
+community rooms retain their v3 relay/migration implementation; private matches
+use the old direct path and its host-UDP forwarding requirement. A private lobby
+host's departure ends that match; there is no newly claimed private migration.
+Metadata publishes through the existing Session heartbeat. Normal hosting needs
+no external component. Explicit TSFP_PRIVATE_SERVER_COMMAND remains test-only
+integration support. The native Host Server page is still Invite Code / Copy /
+Next, without additional setup screens or labels.
 
 After bridge acceptance, host creation uses original `1CBA50`; guest discovery
 and selection use `352980`, `352990` and `1CBD40`. Native lobby Back retires its
@@ -58,6 +64,57 @@ and live-session shutdown retain their existing paths.
 Return to Lobby retains the party through the original round-return path,
 distinct from migration departure. Lobby code copy uses a native footer target,
 keyboard C or the original Xbox right-stick press.
+
+## Private directory restoration (2026-11-11, local)
+
+The user's clarification supersedes the separate-component assumption in the
+historical notes below. Default Host a Server invokes the built-in former
+LocalDirectory flow, not a service installer. `online_private.py` derives the
+bounded v2 registry/TLS certificate handling from the pre267a53f4 implementation;
+community service modules remain excluded. The native controller remembers the
+selected directory's explicit direct capability, including after joining by
+invitation and switching back to its owned directory. Only that private path
+creates Session direct matches. New code is in the shared companion tuple and
+network identity; private service source is not needed to host a player directory.
+
+Isolated Windows hosting/client/identity checks45 pass with real pinned HTTPS and direct UDP:
+empty directory before creation, two independent Arcade/Story hosts, guest ACK,
+lobby leave retaining the directory/other room, owner shutdown, certificate reuse,
+credential rejection, limits, expiry and metadata. The initial sandbox run could
+not load Git OpenSSL DLLs; the normal-host rerun passes. Supported Windows Build
+and built-ins pass with identity8f208ead. Native input verified Host Server, a
+generated invitation, Next to empty browser, Create Lobby to the original match
+lobby, and Leave to the retained browser. The same owned41830 TCP listener
+survived lobby leave and disappeared on game/companion exit; isolated certificate
+state and disposable saves were used. Release/package/context checks191 pass
+with10 platform skips; other host build/device acceptance remains unrun.
+Invite Only public-ID/secret admission
+remains a separate unfinished requirement; restored v2 privacy is historical.
+
+## Online notes follow-up (2026-11-11, local)
+
+Rebased onto main e7cb1016; upstream controls, release records and code are
+retained. The local checkpoint commit was replayed as a40c8e7a. Header/link
+conflicts were adapted without changing upstream behavior. Context guide byte
+limits required compact references after combining their newer headers.
+
+Main row3 at verified builder callsite2D0DAF now says Multiplayer; its original
+ID, selection dispatch and descriptions remain. The chooser's outer heading is
+Multiplayer and its nonselectable inner title is Online / LAN. Creation uses
+Start New Match outside and Lobby Options inside. Browser headings are Match
+Browser / Matches Available, with one shared fixed80-wide/60-high native frame
+and50-high scrolling region for community, private and LAN. Title and separator
+sit outside the scrolling region. LAN builders1A43E0/1A4780 retain stock352990
+advertisements and1CBA50/1CBD40 creation/join callbacks. Empty and populated lists
+use identical frame dimensions. Footer text has separate storage from fallback
+match captions. Tests exercise two headings, fixed dimensions, retained LAN
+callbacks and all20 rows. Windows Build/built-ins pass on rebased version0.6.1.
+101 focused/client-boundary/context checks passed with2 platform skips. Native
+captures confirm the main label, separate titles and equal populated Community /
+empty LAN frame bounds. LAN Start New Match opens the original lobby; Back returns
+to the chooser. The isolated probe cleaned its processes and disposable disks.
+Invite Only listing/admission remains unfinished. The later private-directory
+restoration above removes the separate hosting-component dependency.
 
 ## Flow alignment in progress (2026-11-11, uncommitted)
 

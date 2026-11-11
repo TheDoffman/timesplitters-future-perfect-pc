@@ -1,4 +1,4 @@
-"""A standalone player companion must work without private service sources."""
+"""The companion includes player hosting without private community service sources."""
 from pathlib import Path
 import shutil
 import subprocess
@@ -14,7 +14,7 @@ def test_standalone_client_imports_and_invitation_roundtrip(tmp_path):
     check = '''
 import sys
 sys.path.insert(0, sys.argv[1])
-import online, online_client, online_arcade_client, online_transport
+import online, online_client, online_arcade_client, online_transport, online_private
 from online_host import invitation, parse_invitation
 value = ('https://example.test:41820', 'ab'*32, 'A'*16)
 assert parse_invitation(invitation(*value)) == value

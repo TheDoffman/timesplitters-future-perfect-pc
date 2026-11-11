@@ -1,10 +1,17 @@
 # Online client/server boundary
 
-The user requires this game repository to contain only player-side online code.
-The mini's directory, UDP relay, Arcade migration coordinator, dashboard, service
-installer and their server integration tests are maintained privately outside
-Git. Do not reintroduce them in packages, CI, build identities or source lists.
-The deployed service is independent of the game source checkout.
+The community mini's directory, UDP relay, Arcade migration coordinator,
+dashboard and service installer remain private, outside this client repository.
+Do not copy that deployed service into client packages or CI. The service is
+independent of the game checkout.
+
+The user clarified on2026-11-11 that Host a Server must start the former local
+player directory directly, through in-game menus. `online_private.py` restores
+that bounded v2 HTTPS/direct-UDP player-hosting capability from the former
+LocalDirectory path. It ships with the companion and needs no separate hosting
+component. It does not implement the community relay/coordinator/dashboard.
+The default native private launcher imports it only on an explicit host action;
+old saved automatic_host values still cannot silently start a directory.
 
 Keep `online-service.json`: its public service URL and TLS certificate fingerprint
 are connection information, not server administration credentials. Keep the
@@ -29,8 +36,8 @@ normal game play does not. Historical gameplay acceptance results remain evidenc
 for their recorded revisions; this separation is not a new gameplay test.
 
 The [native multiplayer flow](native-multiplayer-menu.md) uses a headless client.
-Optional separate private hosting is an externally installed, supervised component;
-its backend source remains private too.
+Explicit private hosting starts a supervised local directory in the hidden
+companion. Lobby departure preserves it; owner/companion shutdown closes it.
 
 The private copy retains the previously deployed source and test versions.
 Earlier Git revisions already contained server code; removing it from the current
