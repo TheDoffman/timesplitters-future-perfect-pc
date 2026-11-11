@@ -58,6 +58,8 @@ class NativeArcade:
         self.native_peer = None
         self.native_slots = None
         self.match_info = None
+        self.roster_info = None
+        self.roster_at = -10
         self.offer = None
         self.ack = None
         self.leaving = self.departed = False
@@ -81,6 +83,7 @@ class NativeArcade:
                 with bridge.lock:
                     bridge.peers.clear()
                 self.offer = self.ack = self.assembly = None
+                self.roster_info = None
             bridge.host_peer = reply['host_peer'] or reply.get('candidate') or bridge.host_peer
             bridge.host = relay_endpoint(bridge.host_peer)
             bridge.key = bytes.fromhex(reply['peer_key'])
@@ -177,6 +180,9 @@ class NativeArcade:
                 body['connection_quality'] = self.bridge.quality_snapshot()
             if self.match_info and status['host_peer'] == self.bridge.peer_id:
                 body['match_info'] = dict(self.match_info)
+            if (self.roster_info and status['host_peer']==self.bridge.peer_id
+                    and self.bridge.clock()-self.roster_at<=5):
+                body['player_info'] = self.roster_info
             if self.native_slots is not None:
                 body['native_slots'] = self.native_slots
             if recover:

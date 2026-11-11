@@ -1,4 +1,5 @@
 /* Shared file IPC. Platform adapters supply process lifetime and atomic rename. */
+#include "pc_online_roster.h"
 int pc_online_menu_active(void){return online_menu_started && PC_ONLINE_MENU_RUNNING();}
 static int online_menu_write(const char *suffix,const void *data,size_t bytes)
 {
@@ -69,4 +70,11 @@ int pc_online_menu_publish(PcOnlineMatchInfo *info)
     if(!info || !pc_online_menu_active() || active_mode==PC_ONLINE_NONE)return 0;
     info->magic=PC_ONLINE_MENU_MAGIC;info->version=PC_ONLINE_MENU_VERSION;
     return online_menu_write(".match",info,sizeof *info);
+}
+int pc_online_menu_publish_roster(struct PcOnlineRoster *info)
+{
+    static uint32_t serial;
+    if(!info || !pc_online_menu_active() || active_mode!=PC_ONLINE_ARCADE)return 0;
+    info->serial=++serial;
+    return online_menu_write(".players",info,sizeof *info);
 }

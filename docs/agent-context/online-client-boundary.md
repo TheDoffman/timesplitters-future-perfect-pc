@@ -47,6 +47,7 @@ renew native engine progress, alter migration eligibility or route traffic.
 Older servers can ignore the extra field. Server validation, checkpoint display
 decoding and dashboard UI remain private. See `tests/network/test_online.py` for
 authenticated nonce, timeout, expiry, reset and RPC-report regression coverage.
+Read-only name/character reporting: [identity contract](online-player-identities.md).
 
 Client tests cover invitations, certificate validation, UDP authentication,
 native lifecycle and native Arcade checkpoint/adapter contracts without a local

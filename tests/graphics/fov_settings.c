@@ -111,6 +111,7 @@ void pc_online_menu_leave(void){CHECK(0);}
 int pc_online_menu_copy(const char *text){(void)text;CHECK(0);return 0;}
 int pc_online_menu_paste(char *text,size_t bytes){(void)text;(void)bytes;CHECK(0);return 0;}
 int pc_online_menu_publish(PcOnlineMatchInfo *info){(void)info;CHECK(0);return 0;}
+int pc_online_menu_publish_roster(struct PcOnlineRoster *info){(void)info;CHECK(0);return 0;}
 PcOnlineMode pc_online_mode(void) { return PC_ONLINE_NONE; }
 static unsigned online_disconnects,lan_browser_entries,lan_enables;
 void pc_online_disconnect(void) { online_disconnects++; }
@@ -189,6 +190,7 @@ static unsigned native_menu_transitions;
 void sub_00075980(void){CHECK(WORD_AT(g_esp+8)==2u);native_menu_transitions++;g_esp+=4;}
 MOUSE_STUB(sub_001A4510) MOUSE_STUB(sub_000318A0) MOUSE_STUB(sub_003800D1)
 MOUSE_STUB(sub_001CBDA0) MOUSE_STUB(sub_00064E20) MOUSE_STUB(sub_00077110)
+MOUSE_STUB(sub_002BE690)
 #undef MOUSE_STUB
 /* Bot helpers share the menu translation unit, but must never execute in
  * this isolated FOV fixture. Bot behavior has its own network regressions. */

@@ -10,7 +10,7 @@ static void online_menu_clear(void)
 }
 static void online_menu_files_clear(const char *ready)
 {
-    const char *suffix[]={".request",".request.tmp",".state",".state.tmp",".match",".match.tmp",".server"};
+    const char *suffix[]={".request",".request.tmp",".state",".state.tmp",".match",".match.tmp",".players",".players.tmp",".server"};
     char path[4096];
     for(unsigned i=0;i<sizeof suffix/sizeof suffix[0];i++) {
         int size=snprintf(path,sizeof path,"%s%s",ready,suffix[i]);

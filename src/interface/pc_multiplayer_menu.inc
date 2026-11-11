@@ -2,6 +2,7 @@
  * 123F3..123FA are verified unused INT3 padding in US 45410066. */
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 #include "network/pc_online_menu.h"
+#include "network/pc_online_roster.h"
 #include "pc_feature_flags.h"
 #define MP_BUILD 0x123f3u
 #define MP_SELECT 0x123f4u
@@ -223,11 +224,35 @@ static void mp_match_draw(void)
     guest_call(sub_001CBDA0,3,menu,item,rect);
     WORD_AT(item+0x14u)=id;memcpy(ad,saved_ad,sizeof saved_ad);g_esp+=4u;
 }
+extern void sub_002BE690(void);
+static int mp_roster_read(void *ctx,uint32_t address,void *out,size_t bytes)
+{
+    (void)ctx;
+    if(!guest_writable(address,bytes))return 0;
+    memcpy(out,(const void *)((uintptr_t)address+g_xbox_mem_offset),bytes);return 1;
+}
+static void mp_roster_portrait(void *ctx,int character,int skin,int32_t *portrait,char *label,size_t size)
+{
+    *portrait=(int32_t)guest_call(sub_002BE690,2,(uint32_t)character,(uint32_t)skin);
+    if(*portrait<0 || *portrait>=1024){*portrait=-1;return;}
+    for(unsigned i=0;i<150u;i++) {
+        const uint32_t entry=0x521a14u+i*48u;
+        if(WORD_AT(entry+8u)!=(uint32_t)character || WORD_AT(entry+16u)!=(uint32_t)*portrait)continue;
+        const int16_t id=*(const int16_t *)((uintptr_t)entry+12u+g_xbox_mem_offset);
+        if(id>=0)pc_roster_text(ctx,mp_roster_read,guest_call(sub_0003D7B0,1,(uint32_t)id),label,size);
+        return;
+    }
+}
 static void mp_publish_metadata(void)
 {
     if(GetTickCount64()<mp_ui.metadata_at || !WORD_AT(0x76b108u) || WORD_AT(0x76b140u)!=1u || mp_ui.source==2u)return;
     mp_ui.metadata_at=GetTickCount64()+1000u;
     const uint32_t scene=WORD_AT(0x79094cu),config=scene<=100u?0x7de400u:0x78ad58u;
+    if(mp_ui.mode==PC_ONLINE_ARCADE && scene<=100u) {
+        PcOnlineRoster roster;
+        if(pc_online_roster_capture(&roster,NULL,mp_roster_read,mp_roster_portrait))
+            pc_online_menu_publish_roster(&roster);
+    }
     const uint8_t *settings=(const uint8_t *)((uintptr_t)config+g_xbox_mem_offset);
     const unsigned map=settings[0x54u],type=settings[0x56u];
     if(type>=32u || map>100u)return;
