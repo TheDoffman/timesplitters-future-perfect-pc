@@ -383,7 +383,7 @@ void sub_002C3E20(void) {
     }
     WORD_AT(0x300064)=bits(100.f-audio_page*10.f);g_esp+=4;
 }
- STUB(sub_002D9390) STUB(sub_00072510) STUB(sub_00022FF0) STUB(sub_0001C5D0) STUB(sub_00019650) STUB(sub_00019D70)
+ STUB(sub_002D9390) STUB(sub_00072560) STUB(sub_00072510) STUB(sub_00022FF0) STUB(sub_0001C5D0) STUB(sub_00019650) STUB(sub_00019D70)
 static unsigned highlight_rects,highlight_fallback;
 static int highlight_bottom;
 void sub_0001EFB0(void) {

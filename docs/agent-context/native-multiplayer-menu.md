@@ -118,11 +118,17 @@ rows use the original normal font; measured card titles fit before thumbnails,
 with full lobby/map/mode details in the selected-row footer. After the original `78980` rebuild restores selection, the adapter selects a
 surviving button ID through native `77110`, avoiding orphaned focus after paging.
 
-Join Match paints a bordered lobby-code field beside its label (`123F9`), with
-an Enter code placeholder and focus tint. The whole native row remains clickable
+Join Match paints a lobby-code field beside its label (`123F9`), with
+an Enter code placeholder. It reuses the original gray keyboard-field background
+and bevel through `72560` (the stock `7C6D0` painter calls it), including native
+palette and fade; no custom border/fill is drawn. The whole native row remains clickable
 and opens the existing text editor; accepted/pasted values appear in the field.
 Native rectangle/font primitives retain the game theme and original hit testing.
 The field receives initial focus on Join Match, and smaller native text keeps
 the label separate from the box while fitting a complete 16-character code.
 Windows menu compilation/FOV checks pass (4 passed,2 platform skips); the native
 empty-field capture confirms spacing, placeholder and focus appearance.
+The gray-field native Windows probe uses ordinary window focus/text/key events
+(no replay masking or guest writes): entry opens, sixteen characters are accepted,
+and the resulting full code fits in the field. Empty and populated captures verify
+the original gray bevel, placeholder, spacing and restored font scale.
