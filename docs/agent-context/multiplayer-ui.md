@@ -193,6 +193,8 @@ Arcade heartbeats reuse a per-thread pinned HTTPS connection (HTTP/1.1 opt-in
 keep-alive), avoiding a new handshake for every pulse. Ordinary calls still close.
 Errors discard the connection; reconnects verify the pin before credentials.
 Heartbeat exit closes its cached socket; server idle deadlines/32-worker cap stay.
+Original bot-result/limit CPU fixtures enable TSFP_NATIVE_NETWORK, retaining the
+real compiler OS for the appended divide-error helper rather than forcing Win32.
 
 ## Native multiplayer build and validation (2026-10-30)
 
