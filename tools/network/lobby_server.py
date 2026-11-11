@@ -272,6 +272,7 @@ class RelayServer:
         self.budget, self.budget_at = total_bytes_per_second, directory.clock()
         self.sequence = 0
         self.forwarded = self.dropped = 0
+        self.received_bytes = self.sent_bytes = 0
         self.stopped = threading.Event()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
@@ -284,6 +285,7 @@ class RelayServer:
             raise
 
     def handle(self, packet, endpoint):
+        self.received_bytes += len(packet)
         if not RELAY.size+32 <= len(packet) <= MAX_RELAY_PACKET:
             self.dropped += 1
             return
@@ -361,6 +363,7 @@ class RelayServer:
                                  bytes.fromhex(recipient['relay_key']), payload)
             try:
                 self.socket.sendto(reply, recipient['endpoint'])
+                self.sent_bytes += len(reply)
                 if kind == FORWARD:
                     self.forwarded += 1
             except OSError:
@@ -396,6 +399,8 @@ class Handler(BaseHTTPRequestHandler):
         pass  # Do not log private lobby codes or credentials.
 
     def handle_request(self):
+        started = time.monotonic()
+        monitor = self.server.monitor
         try:
             url = urlsplit(self.path)
             if len(self.path) > 2048 or self.headers.get('Transfer-Encoding'):
@@ -418,6 +423,8 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, UnicodeError):
             status, result = 400, {'error': 'Invalid request body'}
         data = json.dumps(result, separators=(',', ':')).encode()
+        if monitor:
+            monitor.http(self.command, status, time.monotonic()-started)
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Content-Length', str(len(data)))
@@ -444,14 +451,17 @@ class Server(ThreadingHTTPServer):
         super().__init__(address, Handler)
         self.directory = directory or Directory()
         self.slots = threading.BoundedSemaphore(32)
+        self.monitor = None
 
     def process_request(self, request, client_address):
         if not self.slots.acquire(blocking=False):
             self.shutdown_request(request)
             return
         try:
+            if self.monitor:self.monitor.worker(1)
             super().process_request(request, client_address)
         except Exception:
+            if self.monitor:self.monitor.worker(-1)
             self.slots.release()
             raise
 
@@ -459,13 +469,15 @@ class Server(ThreadingHTTPServer):
         try:
             try:
                 self.finish_request(request, client_address)
-            except (ConnectionError, TimeoutError, ssl.SSLError):
-                pass  # Disconnected clients and failed TLS handshakes are routine.
+            except (ConnectionError, TimeoutError, ssl.SSLError) as error:
+                if self.monitor:self.monitor.failure('timeout' if isinstance(error,TimeoutError) else 'tls' if isinstance(error,ssl.SSLError) else 'disconnect')
             except Exception:
+                if self.monitor:self.monitor.failure('internal')
                 self.handle_error(request, client_address)
             finally:
                 self.shutdown_request(request)
         finally:
+            if self.monitor:self.monitor.worker(-1)
             self.slots.release()
 
 
@@ -479,11 +491,14 @@ def main():
     parser.add_argument('--relay-port', type=int, help='Enable the shared UDP relay on this port (usually 30821)')
     parser.add_argument('--relay-address', help='Public numeric IPv4 clients use to reach the relay')
     parser.add_argument('--relay-lan-address', help='Optional numeric LAN IPv4 for clients on this server network')
+    parser.add_argument('--dashboard-port', type=int, help='Private read-only dashboard, bound only to 127.0.0.1')
     parser.add_argument('--relay-bytes-per-second', type=int, default=2*1024*1024,
                         help='Per-player relay bandwidth cap; default 2 MiB/s')
     parser.add_argument('--relay-total-bytes-per-second', type=int, default=16*1024*1024,
                         help='Total relay bandwidth cap; default 16 MiB/s')
     args = parser.parse_args()
+    if args.dashboard_port is not None and (not 1 <= args.dashboard_port <= 65535 or args.dashboard_port == args.port):
+        parser.error('--dashboard-port must be a different TCP port from 1 to 65535')
     if bool(args.cert) != bool(args.key):
         parser.error('--cert and --key must be supplied together')
     try:
@@ -526,6 +541,7 @@ def main():
         print(f'Lobby directory listening on {scheme}://{args.bind}:{server.server_port}; Ctrl+C to stop', flush=True)
         relay = None
         relay_thread = None
+        dashboard = None
         try:
             if args.relay_port:
                 relay = RelayServer(server.directory, (args.bind, args.relay_port),
@@ -536,10 +552,18 @@ def main():
                 relay_thread = threading.Thread(target=relay.run, daemon=True)
                 relay_thread.start()
                 print(f'Player-hosted relay listening on UDP {args.bind}:{args.relay_port}', flush=True)
+            if args.dashboard_port is not None:
+                from online_dashboard import Dashboard
+                dashboard = Dashboard(server.directory, relay, port=args.dashboard_port, directory_port=server.server_port)
+                server.monitor = dashboard.monitor
+                dashboard.start()
+                print(f'Private dashboard: http://127.0.0.1:{dashboard.server.server_port}', flush=True)
             server.serve_forever()
         except KeyboardInterrupt:
             pass
         finally:
+            if dashboard:dashboard.close()
+            server.monitor = None
             if relay:
                 relay.close()
             if relay_thread:

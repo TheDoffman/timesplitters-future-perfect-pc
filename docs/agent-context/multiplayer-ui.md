@@ -1,5 +1,7 @@
 # Multiplayer companion presentation
 
+Private service dashboard: [monitoring, privacy, deployment and tests](mini-server-dashboard.md).
+
 ## Arcade host migration
 
 Shared Arcade uses authenticated v3 rooms through `ArcadeSession`; Story and

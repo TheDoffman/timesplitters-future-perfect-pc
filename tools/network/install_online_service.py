@@ -14,10 +14,11 @@ from online_host import certificate
 
 LABEL = 'com.timesplitters.online'
 SERVER_FILES = ('lobby_server.py', 'online_transport.py', 'online_client.py',
-                'online_host.py', 'online_paths.py', 'online_migration.py', 'online_arcade_service.py')
+                'online_host.py', 'online_paths.py', 'online_migration.py', 'online_arcade_service.py',
+                'online_dashboard.py', 'online_dashboard.html', 'online_dashboard.css', 'online_dashboard.js')
 
 
-def prepare(root, address, *, python=None, directory_port=30820, relay_port=30821, lan_address=None):
+def prepare(root, address, *, python=None, directory_port=30820, relay_port=30821, lan_address=None, dashboard_port=None):
     """Prepare a reviewable installation; registration with launchd is separate."""
     root = Path(root).expanduser().resolve()
     ip = ipaddress.IPv4Address(address)
@@ -25,6 +26,8 @@ def prepare(root, address, *, python=None, directory_port=30820, relay_port=3082
         raise ValueError('Use the IPv4 address players can reach')
     if not all(1 <= port <= 65535 for port in (directory_port, relay_port)):
         raise ValueError('Service ports must be between 1 and 65535')
+    if dashboard_port is not None and (not 1 <= dashboard_port <= 65535 or dashboard_port == directory_port):
+        raise ValueError('Dashboard needs a distinct TCP port from 1 to 65535')
     if lan_address:
         lan_ip = ipaddress.IPv4Address(lan_address)
         if not lan_ip.is_private or lan_ip.is_unspecified or lan_ip.is_multicast:
@@ -37,6 +40,12 @@ def prepare(root, address, *, python=None, directory_port=30820, relay_port=3082
         raise ValueError('Destination is not an existing TimeSplitters service or an empty folder')
     if marker.is_file() and json.loads(marker.read_text()).get('label') != LABEL:
         raise ValueError('Destination belongs to another service')
+    if dashboard_port is None and (root/'service.plist').is_file():
+        previous=plistlib.loads((root/'service.plist').read_bytes()).get('ProgramArguments',[])
+        if '--dashboard-port' in previous:
+            dashboard_port=int(previous[previous.index('--dashboard-port')+1])
+            if not 1 <= dashboard_port <= 65535 or dashboard_port == directory_port:
+                raise ValueError('Existing dashboard port is invalid')
     root.mkdir(parents=True, exist_ok=True)
     server = root/'server'
     server.mkdir(exist_ok=True)
@@ -64,6 +73,8 @@ def prepare(root, address, *, python=None, directory_port=30820, relay_port=3082
         'runpy.run_module("lobby_server",run_name="__main__")', str(server), *plist['ProgramArguments'][4:]]
     if lan_address:
         plist['ProgramArguments'] += ['--relay-lan-address', str(lan_ip)]
+    if dashboard_port is not None:
+        plist['ProgramArguments'] += ['--dashboard-port', str(dashboard_port)]
     with (root/'service.plist').open('wb') as stream:
         plistlib.dump(plist, stream)
     (root/'client-service.json').write_text(json.dumps(dict(
@@ -95,10 +106,11 @@ def main():
     parser.add_argument('--directory-port', type=int, default=30820)
     parser.add_argument('--relay-port', type=int, default=30821)
     parser.add_argument('--lan-address', help='Optional private IPv4 for clients on the Mac mini LAN')
+    parser.add_argument('--dashboard-port', type=int, help='Optional private dashboard TCP port; access remotely through SSH')
     parser.add_argument('--install', action='store_true', help='Register and start the per-user launch agent')
     args = parser.parse_args()
     root, plist = prepare(args.root, args.address, directory_port=args.directory_port,
-                          relay_port=args.relay_port, lan_address=args.lan_address)
+                          relay_port=args.relay_port, lan_address=args.lan_address, dashboard_port=args.dashboard_port)
     if args.install:
         print(f'Started {register(root, plist)}')
     print(f'Service configuration: {root / "service.plist"}')
