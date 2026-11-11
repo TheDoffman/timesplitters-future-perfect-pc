@@ -1,3 +1,27 @@
+Linux v0.6.1 draft package (2026-11-11): built from the exact release/tag
+revision07bc98c006260b1dea3c6d42fbebbac98559ebbe in the clean Ubuntu24.04 WSL
+checkout, using the pinned Vulkan SDK/release-media decoder and verified US XBE.
+The published Linux launcher1.6.1 archive, manifest/file hashes and source receipt
+were verified before bundling. Native build/MMIO checks pass; Linux parser/input
+suite51 pass1 host skip. Package fresh install, upgrade/personal-file preservation,
+corruption rejection and relocated Python/Tk/TLS checks pass. Minimal Ubuntu
+read-only package acceptance as nobody on private Xvfb/Openbox passes settings,
+debug, input, windowed/fullscreen renderer, Python and all52 shared launcher UI
+groups; Online self-test returns77 (unsupported/skipped), not a network pass.
+An initial concurrent clean-room run hit the launcher's Running-process lookup
+while the Story child was active; sequential rerun passes without source changes.
+The packaged120-second isolated Test Lab Story run reaches active scene2 with
+synthetic movement/fire/pause inputs;6600 successful guest presents, no failed
+presents. Timing uses software Vulkan under Linux6.18.54.1 WSL2/glibc2.39 and is
+not physical GPU/controller, Steam Deck, scanout or full-campaign acceptance.
+ZIP SHA256: b2276918c6232402589407d7017704b9f8426de6e0c94348d0a335ba38cce1f7.
+Three Linux assets uploaded to the existing v0.6.1 draft; GitHub digests match.
+Combined notes/metadata list Windows+Linux and launcher minimum1.6.1. Mac package
+remains pending; draft stays unpublished. No personal settings/saves changed.
+Evidence: logs/linux-061-build.log, linux-061-input-tests.log, linux-061-package.log,
+linux-061-clean-final.log, linux-061-story-report.json and linux-061-upload.log
+in the Windows checkout; Linux build/releases retains ZIP/checksum/BUILD receipt.
+
 Hotfix integrated validation (2026-11-10): Windows x64 supported MSVC Release
 Build/built-ins and full launcher1.6.1 build/test pass. Integrated input/menu/FOV
 suite70 pass,2 host skips, retaining upstream negative controls and explicit-P1
