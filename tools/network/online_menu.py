@@ -86,6 +86,8 @@ class Controller:
         self.community=(defaults['directory'],defaults['fingerprint'])
         self.private=None
         self.private_local=None
+        self.private_hosted=None
+        self.source=0
         self.active_public=None
         self.private_launcher=private_launcher
         self.private_process=None
@@ -115,12 +117,12 @@ class Controller:
     def directory(self,source):
         pair=self.private if source else self.community
         if not pair:raise ValueError('Connect to a private server first')
-        return Client(*(self.private_local if source and self.private_process and self.private_local else pair))
+        return Client(*(self.private_local if source and self.private_process and self.private==self.private_hosted and self.private_local else pair))
 
     def begin(self,request):
         with self.lock:
             if request['sequence']<=self.sequence:return
-            self.sequence=request['sequence'];self.mode=request['mode']
+            self.sequence=request['sequence'];self.mode=request['mode'];self.source=request['source']
             self.generation+=1;generation=self.generation
             self.status=BUSY;self.message='Connecting...' if request['action']!=BROWSE else 'Refreshing matches...'
         worker=threading.Thread(target=self.perform,args=(request,generation),daemon=True)
@@ -129,6 +131,8 @@ class Controller:
     def perform(self,request,generation):
         active=None
         try:
+            with self.lock:
+                if self.closed or generation!=self.generation:return
             action=request['action'];mode='arcade' if request['mode']==1 else 'story'
             if action in (CANCEL,LEAVE):
                 with self.lock:self.close_session()
@@ -141,12 +145,16 @@ class Controller:
                     if generation==self.generation:self.private=pair
                 result=(PRIVATE_READY,'Connected to private server',[])
             elif action==PRIVATE_HOST:
-                if not self.private_launcher:raise ValueError('Private server hosting component is not installed')
-                process,pair,local=self.private_launcher(request)
                 with self.lock:
-                    if generation!=self.generation or self.closed:
-                        stop_private(process);return
-                    self.private_process=process;self.private=pair;self.private_local=local
+                    existing=self.private_process if self.private_process and self.private_process.poll() is None else None
+                    if existing:self.private=self.private_hosted
+                if not existing:
+                    if not self.private_launcher:raise ValueError('Private server hosting component is not installed')
+                    process,pair,local=self.private_launcher(request)
+                    with self.lock:
+                        if generation!=self.generation or self.closed:
+                            stop_private(process);return
+                        self.private_process=process;self.private=self.private_hosted=pair;self.private_local=local
                 result=(PRIVATE_READY,'Private server ready. Forward its TCP and UDP ports for Internet guests.',[])
             elif action==BROWSE:
                 with self.lock:self.close_session()
@@ -199,8 +207,11 @@ class Controller:
         with self.lock:
             active=self.session
             if self.private_process and self.private_process.poll() is not None:
-                self.private_process=None;self.private_local=None;self.private=None
-                self.status=ERROR;self.message='Your private server stopped'
+                selected=self.private==self.private_hosted
+                self.private_process=None;self.private_local=None;self.private_hosted=None
+                if selected:self.private=None
+                if selected and self.source:
+                    self.status=ERROR;self.message='Your private server stopped'
             if active and active.closed.is_set():
                 self.message=active.error or 'The host closed the lobby'
                 self.status=ERROR;self.close_session();active=None
@@ -211,7 +222,7 @@ class Controller:
                 directory,pin=self.active_public or (active.client.url.geturl(),active.client.fingerprint)
                 invite=invitation(directory,pin,code)
             raw=STATE.pack(MAGIC,VERSION,self.sequence,self.status,self.mode,len(self.lobbies),
-                int(bool(active and active.host)),int(self.private_process is not None),
+                int(bool(active and active.host)),int(self.private_process is not None and self.private==self.private_hosted),
                 field(self.message,256),field(code,32),field(invite,2048),field(active.bridge.config if active else '',256),
                 field(pair[0],256),field(pair[1],68))
             for row in self.lobbies:

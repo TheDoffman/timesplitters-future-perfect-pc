@@ -169,7 +169,7 @@ def serve():
     def keys(text):
         desired = {int(line.split()[0]) for line in text.splitlines()
                    if len(line.split()) == 2 and int(line.split()[1]) and int(line.split()[0])}
-        names = {37:'Left',38:'Up',39:'Right',40:'Down',27:'Escape',32:'Space'}
+        names = {37:'Left',38:'Up',39:'Right',40:'Down',27:'Escape',32:'Space',113:'F2'}
         def name(key):
             return names.get(key, chr(key))
         with (run/'test-keys.txt').open('a', encoding='utf-8') as stream:

@@ -134,3 +134,16 @@ def test_match_details_are_validated_and_only_published_by_current_host():
                     data[:20]+struct.pack('<I',2)+data[24:]):
         with pytest.raises(ValueError):c.update_metadata(changed)
     c.session=None;c.close()
+
+
+def test_switching_private_servers_does_not_redirect_to_owned_loopback(monkeypatch):
+    calls=[]
+    monkeypatch.setattr(menu,'Client',lambda *pair:calls.append(pair) or pair)
+    c=menu.Controller(VERSION);c.private_process=SimpleNamespace(poll=lambda:None)
+    c.private_hosted=('https://mine.example',PIN);c.private_local=('https://127.0.0.1:41830',PIN)
+    c.private=c.private_hosted;c.directory(1)
+    c.private=('https://friend.example',PIN);c.directory(1)
+    assert calls==[c.private_local,c.private]
+    c.begin(request(menu.PRIVATE_HOST));wait(c)
+    assert c.private==c.private_hosted and c.status==menu.PRIVATE_READY
+    c.private_process=None;c.close()
