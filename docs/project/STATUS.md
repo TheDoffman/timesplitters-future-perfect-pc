@@ -43565,3 +43565,30 @@ game/companion crash elects Mac1, with30 seconds of score/timer/six-bot continua
 per handoff. First tick/countdown1017/35167 resumes1018/35166 on Mac and1020/35164
 on Windows; second2822/33362 resumes2829/33355 on Mac. All owned game/controller
 processes exit after testing; installed HTTPS41820/UDP41821 listeners remain live.
+## Native Online flow alignment (2026-11-11, in progress)
+
+Windows x64, branch `feature/native-multiplayer-ui`, base
+`77198a02201597c66eeafd298ca262a0c5dcdd23`; local uncommitted changes.
+The supported US XBE hash and callback123FA padding were verified.
+Supported Windows Release Build, complete patch application, linked-version
+and built-in checks pass (`logs/native-online-flow-build-final-columns.log`).
+Version remains0.6.0 with its existing Story creation eligibility policy.
+Focused menu/Story/controller fixtures:79 passed,2 Mac-only skips.
+Repository-context fixtures:21 passed; context/index and whitespace checks pass.
+
+Bounded isolated native-game captures using local HTTP display metadata confirm
+the chooser ticker, original35-unit scrolling browser region, Select/Back/Refresh
+footer, mixed Arcade/Story rows with Story chapter/thumbnail and left/right Privacy
+changes. Final option columns fit without the earlier Game Type overlap.
+Evidence: ignored `private/network-validation/native-online-flow`. These are
+rendering/input checks, not live network or physical controller acceptance.
+A command-file sharing race in the disposable probe was corrected; its exception
+path cleaned owned processes/save images. Canonical fixture/settings preserved.
+
+Unfinished: visible Invite Only rooms require separate public listing IDs and
+secret admission in the private backend; its current unlisted behavior is not
+the agreed model. Editable private source/API has been requested. Private hosting,
+clipboard and real multiplayer/lobby-return acceptance have not been revalidated
+for this change. Mac/Linux host builds/device acceptance remain unrun; shared UI
+changes do not enable unsupported native Story gameplay. No commit, push, merge
+or publication. Goal is blocked awaiting the private backend source/API.

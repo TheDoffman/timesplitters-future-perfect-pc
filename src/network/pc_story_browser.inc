@@ -1,6 +1,12 @@
 /* Selected-match presentation. Read the advertised scene, never this peer's
  * lobby selection: the browser has not joined that host yet. */
-#ifdef _WIN32
+static unsigned story_browser_preview_mission=UINT32_MAX;
+static unsigned story_browser_preview(unsigned mission)
+{
+    const unsigned previous=story_browser_preview_mission;
+    story_browser_preview_mission=mission;return previous;
+}
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 extern void sub_00080F20(void);
 typedef struct StoryBrowserDraw {
     unsigned active,mission;
@@ -53,14 +59,17 @@ static void story_browser_level_name(uint32_t frame,uint32_t picture)
 
 void pc_story_browser_match(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     const uint32_t frame=g_esp;
     const StoryBrowserDraw previous=story_browser_draw;
     story_browser_draw.active=0;
     /* System Link list draw1CBDA0 receives (menu,item,rectangle). Each
        item's advertised-match index selects a CC-byte record at790960. */
     const uint32_t menu=WORD_AT(frame+4u),item=WORD_AT(frame+8u);
-    if(pc_online_mode()==PC_ONLINE_STORY && WORD_AT(0x79094cu)==101u &&
+    if(story_browser_preview_mission<13u && guest_writable(frame,16u) &&
+       guest_writable(menu,0xf8u) && guest_writable(WORD_AT(frame+12u),16u)) {
+        story_browser_draw=(StoryBrowserDraw){1u,story_browser_preview_mission,WORD_AT(frame+12u),WORD_AT(menu+0xf4u)};
+    } else if(pc_online_mode()==PC_ONLINE_STORY && WORD_AT(0x79094cu)==101u &&
        guest_writable(frame,16u) && guest_writable(menu,0xf8u) &&
        guest_writable(item,0x18u) && WORD_AT(item+0x14u)<20u &&
        guest_writable(WORD_AT(frame+12u),16u)) {
@@ -85,7 +94,7 @@ void pc_story_browser_match(void (*original)(void))
 
 void pc_story_browser_thumbnail(void (*original)(void))
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     const uint32_t frame=g_esp;
     if(story_browser_draw.active && guest_writable(frame,20u) &&
        WORD_AT(frame)==0x1cbfc4u && guest_writable(WORD_AT(frame+12u),16u)) {

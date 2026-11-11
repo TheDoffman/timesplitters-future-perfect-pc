@@ -27,7 +27,23 @@ pass. Windows live markerless Custom remap/movement/fire/reload/rebinding passed
 this is synthetic input through the real game, not physical Mac/Deck acceptance.
 No platform fork or saved-config migration. See STATUS.
 
-Native multiplayer menus (`feature/native-multiplayer-ui`, base `5c4df06a`):
+Native multiplayer flow alignment (2026-11-11, uncommitted on
+`feature/native-multiplayer-ui` after77198a02): **Awaiting validation**.
+Shared PC/native menu source now uses the original continuous browser layout,
+footer Refresh, native Game Type/Privacy choices and header descriptions.
+This is common interface policy, requiring no second Mac UI implementation.
+Windows Build/built-ins and79 focused checks pass (2 Mac-only skips); isolated
+native captures verify contained scrolling, Story previews and Privacy choices.
+Mac/Linux compilation, physical input, browser scrolling/refresh, separate
+private-directory lifecycle, mixed Arcade/Story browsing and retained-party
+return require host acceptance. Existing native Story transport/eligibility
+gaps remain under MAC-013. Visible Invite Only admission additionally requires
+the private directory backend; current unlisted rooms do not satisfy it.
+Source files: `src/interface/pc_multiplayer_menu.inc`, `pc_display_menu.c`,
+`src/network/pc_story_browser.inc` and shared runtime patch3030. See [current validation](STATUS.md) and
+[menu contracts](../agent-context/native-multiplayer-menu.md).
+
+Earlier native multiplayer menus (`feature/native-multiplayer-ui`, base `5c4df06a`):
 **Implemented and tested in development builds**. Community Browser, separate
 Private Server, LAN, match creation and code joining use the game's own menus.
 Original map thumbnails/mode icons, paged listings, native text entry and C/R3

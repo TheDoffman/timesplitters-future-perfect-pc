@@ -1,0 +1,20 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -418,7 +418,7 @@
+ extern void sub_001CBDA0_gen(void);
+ void sub_001CBDA0(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     pc_story_browser_match(sub_001CBDA0_gen);
+ #else
+     sub_001CBDA0_gen();
+@@ -428,7 +428,7 @@
+ extern void sub_002BECE0_gen(void);
+ void sub_002BECE0(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     pc_story_browser_thumbnail(sub_002BECE0_gen);
+ #else
+     sub_002BECE0_gen();

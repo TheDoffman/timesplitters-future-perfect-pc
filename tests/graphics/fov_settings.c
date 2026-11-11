@@ -189,7 +189,8 @@ MOUSE_STUB(sub_00352980) MOUSE_STUB(sub_00352990) MOUSE_STUB(sub_0007D090)
 static unsigned native_menu_transitions;
 void sub_00075980(void){CHECK(WORD_AT(g_esp+8)==2u);native_menu_transitions++;g_esp+=4;}
 MOUSE_STUB(sub_001A4510) MOUSE_STUB(sub_000318A0) MOUSE_STUB(sub_003800D1)
-MOUSE_STUB(sub_001CBDA0) MOUSE_STUB(sub_00064E20) MOUSE_STUB(sub_00077110)
+MOUSE_STUB(sub_001CBDA0) MOUSE_STUB(sub_00064E20)
+void sub_00077110(void){WORD_AT(WORD_AT(g_esp+4u)+0x18cu)=WORD_AT(g_esp+8u);g_esp+=4;}
 #undef MOUSE_STUB
 /* Bot helpers share the menu translation unit, but must never execute in
  * this isolated FOV fixture. Bot behavior has its own network regressions. */
@@ -219,7 +220,7 @@ void sub_000966E0(void)
  * must link those dependencies without accidentally entering their paths. */
 #define UNLOCK_STUB(name) void name(void) { CHECK(0); }
 UNLOCK_STUB(sub_00356870) UNLOCK_STUB(sub_000696F0)
-UNLOCK_STUB(sub_001CD040) UNLOCK_STUB(sub_00075E70)
+UNLOCK_STUB(sub_001CD040)
 #undef UNLOCK_STUB
 /* Other shared translation-unit hooks must not run in this display fixture. */
 int pc_weapon_slot_take(void) { CHECK(0);return 0; }
@@ -329,6 +330,17 @@ void sub_002CBE50(void) {native_control_opens[0]++;g_esp+=4;}
 void sub_002EC1A0(void) {native_control_opens[1]++;g_esp+=4;}
 STUB(sub_00071B10) STUB(sub_00071C50) STUB(sub_00071BE0)
 STUB(sub_000771D0)
+static unsigned online_refresh_footers;
+static unsigned online_footer_mask;
+void sub_00074A00(void){const unsigned slot=WORD_AT(g_esp+4u);const char *labels[]={"Select","Back","Refresh"};CHECK(slot<3u);CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+8u)),labels[slot]));online_footer_mask|=1u<<slot;if(slot==2u)online_refresh_footers++;g_esp+=4;}
+void sub_00071730(void){WORD_AT(WORD_AT(g_esp+4u)+0x24u)=WORD_AT(g_esp+8u);g_esp+=4;}
+static unsigned online_layout_steps;
+void sub_000780E0(void){CHECK(!online_layout_steps);CHECK(FLOAT_AT(g_esp+4u)==35.f);online_layout_steps=1u;g_esp+=4;}
+void sub_000781A0(void){CHECK(online_layout_steps==1u);online_layout_steps=6u;g_esp+=4;}
+void sub_00075400(void){CHECK(online_layout_steps==6u);online_layout_steps=2u;g_esp+=4;}
+void sub_00077140(void){CHECK(online_layout_steps==2u);online_layout_steps=3u;g_esp+=4;}
+void sub_00077190(void){CHECK(online_layout_steps==3u);online_layout_steps=4u;g_esp+=4;}
+void sub_00075E70(void){if(online_layout_steps==4u)online_layout_steps=5u;g_esp+=4;}
 void sub_000770E0(void) {
     unsigned index=WORD_AT(g_esp+8);CHECK(index<built_row_count);
     uint32_t menu=WORD_AT(g_esp+4),id=built_ids[index];
@@ -1625,7 +1637,37 @@ int main(int argc,char **argv)
         mp_ui.pending=0;WORD_AT(0x7ba16cu)=0;guest_call(mp_select,1,menu);CHECK(video_sounds==clicks+1);
         WORD_AT(0x7ba16cu)=1;mp_ui.storage=0x280000u;mp_ui.parent=0;
         const unsigned backs=highlight_sounds;guest_call(mp_back,1,menu);CHECK(highlight_sounds==backs+1);
-
+        /* The native browser owns a single continuous list, not paged cards
+           with connection/debug actions mixed into the match choices. */
+        mp_ui.parent=0;mp_ui.menu=0x300000u;mp_ui.page=MP_BROWSER;mp_ui.state.count=20u;
+        current_menu=0x300000u;
+        for(unsigned i=0;i<20u;i++) {
+            mp_ui.state.lobbies[i].mode=PC_ONLINE_STORY;
+            mp_ui.state.lobbies[i].players=1;mp_ui.state.lobbies[i].capacity=4;
+            mp_ui.state.lobbies[i].joinable=1;
+            strcpy(mp_ui.state.lobbies[i].name,"Story Lobby");
+        }
+        guest_call(mp_build,1,current_menu);
+        CHECK(built_row_count==21u && built_ids[0]==1u && online_refresh_footers==1u && online_footer_mask==7u);
+        CHECK(online_layout_steps==5u);
+        for(unsigned i=0;i<20u;i++)CHECK(built_ids[i+1u]==100u+i);
+        /* Selection-sensitive descriptions belong to the header strip. */
+        mp_native_passthrough=0;mp_ui.page=MP_NETWORK;guest_call(mp_build,1,current_menu);
+        CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(0x200200u+0x24u)),"Browse matches on the community server"));
+        CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(0x200400u+0x24u)),"Connect to a private server"));
+        CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(0x200600u+0x24u)),"Browse matches on your local network"));
+        mp_ui.page=MP_PRIVATE;guest_call(mp_build,1,current_menu);
+        CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(0x200400u+0x24u)),"Join a server using an invite code"));
+        /* The real type-1 widget's selected values drive host requests;
+           changing privacy never destroys the staged lobby name. */
+        mp_ui.page=MP_CREATE;guest_call(mp_build,1,current_menu);
+        CHECK(built_row_count==4u && mp_ui.choices[0] && mp_ui.choices[1]);
+        strcpy(mp_ui.name,"Staged lobby");
+        WORD_AT(mp_ui.choices[0]+0xc8u)=0u;WORD_AT(mp_ui.choices[1]+0xc8u)=1u;
+        guest_call(mp_choice_change,1,current_menu);
+        CHECK(mp_ui.mode==PC_ONLINE_ARCADE && !mp_ui.public_lobby && !strcmp(mp_ui.name,"Staged lobby"));
+        WORD_AT(mp_ui.choices[1]+0xc8u)=0u;guest_call(mp_choice_change,1,current_menu);
+        CHECK(mp_ui.public_lobby);
     }
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");

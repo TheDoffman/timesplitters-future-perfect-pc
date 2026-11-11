@@ -77,7 +77,18 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     else CHECK(fn==sub_00071B10 || fn==sub_00071C50);
     return 0;
 }
+#ifdef _WIN32
+static unsigned native_story_opens;
+static int fixture_legacy_online;
+static void native_multiplayer_story_open(uint32_t menu){CHECK(menu==0x2000u);native_story_opens++;}
+static char *story_fixture_getenv(const char *name)
+{return !strcmp(name,"TSFP_ONLINE_TEST_COMMAND")?(fixture_legacy_online?"fixture":NULL):getenv(name);}
+#define getenv story_fixture_getenv
+#endif
 #include "pc_story_menu.inc"
+#ifdef _WIN32
+#undef getenv
+#endif
 #ifdef _WIN32
 static unsigned cleanups,factories;
 static void menu_factory(void){++factories;next_menu=WORD_AT(g_esp+8);g_esp+=4;}
@@ -126,7 +137,12 @@ int main(void)
     WORD_AT(0x5004)=0x4001;callback(story_back);CHECK(rebuilt==1);
     WORD_AT(0x3170)=0;callback(story_back);CHECK(rebuilt==1);
     WORD_AT(0x218c)=0;callback(story_select);CHECK(next_parent==0x3000 && next_menu==0x5238e0);
-    next_menu=0;WORD_AT(0x218c)=1;callback(story_select);CHECK(!next_menu && !launches);
+    next_menu=0;WORD_AT(0x218c)=1;
+#ifdef _WIN32
+    callback(story_select);CHECK(native_story_opens==1u && !connects && !launches);
+    fixture_legacy_online=1;
+#endif
+    callback(story_select);CHECK(!next_menu && !launches);
 #ifdef _WIN32
     CHECK(connects==1 && disconnects==1);
     connection_ok=1;callback(story_select);CHECK(connects==2 && launches==1 && profile_captures==1);

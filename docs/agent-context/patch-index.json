@@ -2159,9 +2159,17 @@
     {
       "name": "3020-arcade-join-contexts.patch",
       "path": "patches/network/3020-arcade-join-contexts.patch",
-      "sha256": "450d8c5cb6e1c865d32a8fb5a58106694a0a9edbfc8ff2a99cd34d5c84a9b88d",
+      "sha256": "8a8b5130c9456cc176c4c439674907a413edd83fbed592e35cf768f651375685",
       "targets": [
-        "titles/futureperfect/src/recomp_manual.c\r"
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "3030-native-story-browser-preview.patch",
+      "path": "patches/network/3030-native-story-browser-preview.patch",
+      "sha256": "5461ad8ef364754d86281264689d21211ad65649a776847c70056a85eb013ab4",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     },
     {

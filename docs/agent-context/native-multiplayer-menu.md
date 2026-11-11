@@ -10,7 +10,7 @@ See the [existing online system](multiplayer-ui.md) and [late joins](arcade-join
 network chooser, private hosting/connection, match browser, new-match options
 and lobby-code join. It replaces the network chooser's `1A2730` builder only in
 the new flow. LAN and final lobby/option screens retain original constructors.
-`123F3..123F9` callbacks occupy verified INT3 padding. Original
+`123F3..123FA` callbacks occupy verified INT3 padding. Original
 `7D090(parent,buffer,byte-limit,width,changed-pointer,flags,done,cancel)` supplies
 the on-screen keyboard and existing keyboard/mouse editor. Its limit is 255;
 Paste handles a complete invitation separately.
@@ -41,8 +41,8 @@ and installer stay private, outside Git and normal client packages. The client
 supervises public invitation/ready and stop handshakes, using loopback locally
 while sharing the public endpoint. Stop files handle Windows venv launcher
 children. Lobby leave keeps this directory alive; owner closure stops it.
-The host screen shows configurable TCP/UDP ports; community relay players need
-no forwarding.
+The host screen shows Invite Code / Copy / Next; component configuration owns
+its ports. Community relay players need no forwarding.
 
 After bridge acceptance, host creation uses original `1CBA50`; guest discovery
 and selection use `352980`, `352990` and `1CBD40`. Native lobby Back retires its
@@ -59,7 +59,58 @@ Return to Lobby retains the party through the original round-return path,
 distinct from migration departure. Lobby code copy uses a native footer target,
 keyboard C or the original Xbox right-stick press.
 
-Validation (2026-11-11), development branch only:
+## Flow alignment in progress (2026-11-11, uncommitted)
+
+The current task follows the user's diagram and ignored interactive mockup.
+Browser layout follows stock `1A4780`: flags2000/width60/spacing2.5,
+7-unit Start New Match and20-unit `1CBDA0` advertisements inside its35-unit
+`780E0`/`781A0` scrolling region, menu flag100 and stock panel-height constant
+47DAC4. All20 bounded results remain in one list. Refresh is footer action2
+(keyboard R/native X and existing footer mouse handling); Select/Back are also
+explicit. No paging, refresh or code-entry action rows are inserted.
+`75400`/`77140`/`77190` finish geometry and `75E70` publishes bounds. Do not copy
+`1A42E0`'s `70F30`: it hides a different network-dialog parent; applying it to
+this list makes the browser disappear. Native captures caught both missing
+scroll containment and that incorrect finalization assumption.
+Verified Arcade metadata uses the original painter; unknown metadata keeps a
+safe text fallback.
+
+Story previews use a scoped verified mission index in `pc_story_browser.inc`,
+independent of the active connection's mode. A valid local Arcade-map placeholder
+keeps the stock painter's initial lookup bounded; the existing Story adapter
+replaces its thumbnail and chapter caption. Scratch advertisements, preview
+scope and fonts are restored after each row. Additive patch3030 admits the two
+existing Story painter wrappers on native-display builds. This is shared UI
+adaptation, not native Story gameplay support or a guest/network-mode change.
+
+Game Type and Privacy are actual native type1 choices using the common
+`7D480`/`717D0`/`71CF0`/`75430` interfaces and callback123FA, rather than text
+containing angle brackets. Their values survive changes to another field.
+Selection-specific chooser/private descriptions attach through the original
+`71730(item,text)` API, so the game's ticker clips them beneath its header/logo.
+The initial custom strip overpainted the logo and was replaced after native
+capture review. Successful controller replies no longer add generic prose.
+Host a Server starts the separate component before its Invite Code / Copy / Next
+page; Join Server and Join Match retain field / Join without extra Paste rows.
+The Story Online entry returns to the same Community / Private / LAN chooser.
+
+The present backend still implements unlisted rooms and returns join codes as
+listing identifiers. Do not describe that as the agreed visible Invite Only
+model or expose an unlisted code in a public listing. Completing public IDs,
+secret admission and the locked-row prompt depends on its private source/API;
+the user has been asked for that source location. This repository remains
+player-side only. Native Story release/platform eligibility stays intact.
+
+Focused controller/menu/Story checks passed79 with2 Mac-only skips; repository
+context fixtures passed21. Subsequent browser-region checks passed4 with2 skips.
+Supported Windows Build/built-in checks pass. Isolated native captures confirm
+contained list scrolling, mixed Story thumbnail/chapter rendering and privacy
+left/right changes. Choice labels use native left alignment (4100), with
+right-aligned native value widgets (8400), keeping Invite Only clear. This is
+display/input acceptance using local HTTP metadata, not live multiplayer or
+private hosting acceptance. Earlier branch evidence below is historical.
+
+## Earlier branch validation (2026-11-11), development branch only
 
 - Windows build-t and physical Mac build-g/built-in checks pass with matching
   identity `ee1c8b0d51132305b9770715d57a94c2ad2e3a7a1562469a0f84a79515905d57`.

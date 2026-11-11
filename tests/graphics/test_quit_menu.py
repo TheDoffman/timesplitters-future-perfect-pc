@@ -14,8 +14,9 @@ from native_compiler import native_compiler
 ROOT = Path(__file__).resolve().parents[2]
 
 
-@pytest.mark.parametrize("native", [False, True])
-@pytest.mark.parametrize("fixture", ['quit_menu', 'story_menu', 'story_lobby', 'story_drop_state', 'story_browser', 'multiplayer_exit'])
+@pytest.mark.parametrize("fixture,native", [
+    (fixture,native) for fixture in ('quit_menu','story_menu','story_lobby','story_drop_state','story_browser','multiplayer_exit')
+    for native in (False,True)] + [('story_browser','network')])
 def test_quit_menu(tmp_path, native, fixture):
     compiler, env = native_compiler(tmp_path)
     source = repo_file(ROOT, 'tests', fixture+'.c')
@@ -28,6 +29,8 @@ def test_quit_menu(tmp_path, native, fixture):
                 '-I' + str(tmp_path), '-I' + str(ROOT / 'src'), str(source), '-lm', '-o', str(exe)]
     if native:
         args.insert(1, "/DTSFP_NATIVE_DISPLAY" if os.name == "nt" else "-DTSFP_NATIVE_DISPLAY")
+    if native=='network':
+        args.insert(1, "/DTSFP_NATIVE_NETWORK" if os.name == "nt" else "-DTSFP_NATIVE_NETWORK")
     result = subprocess.run(args, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
     result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
