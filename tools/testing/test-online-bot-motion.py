@@ -529,6 +529,7 @@ def main():
                 env['TSFP_ARCADE_TRACE']='1'
             if args.rpc_trace:
                 env['TSFP_ONLINE_RPC_TRACE']='1'
+                env['TSFP_ONLINE_RPC_LOG']=str(out/('companion-rpc-'+str(peer)+'.jsonl'))
                 env['PYTHONPATH']=str(ROOT/'tools/testing/online_rpc_trace')+os.pathsep+env.get('PYTHONPATH','')
             (run/'run.lock').write_text(str(os.getpid()))
             children.append(subprocess.Popen([str(exe)], cwd=ROOT, env=env,
