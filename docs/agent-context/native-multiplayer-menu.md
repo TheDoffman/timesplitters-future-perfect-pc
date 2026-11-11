@@ -85,3 +85,8 @@ pairs, briefly restoring a scratch advertisement after painting; unknown details
 retain a text fallback. Native thumbnails never use remote resource pointers.
 `crossplay_peer.py` accepts `native_ui=true` to omit legacy desktop automation
 while keeping isolated saves, read-only probes and ordinary SDL input.
+
+Private browsing tracks the selected server independently of an owned background
+directory. Switching to a friend's invitation never reuses the owner's loopback
+route; Host Server reconnects the existing owned directory. Background owner
+shutdown cannot interrupt an unrelated community/private connection.
