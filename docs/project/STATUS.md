@@ -43516,3 +43516,35 @@ game/companion crash elects Mac1, with30 seconds of score/timer/six-bot continua
 per handoff. First tick/countdown1017/35167 resumes1018/35166 on Mac and1020/35164
 on Windows; second2822/33362 resumes2829/33355 on Mac. All owned game/controller
 processes exit after testing; installed HTTPS41820/UDP41821 listeners remain live.
+
+## Private mini dashboard — 2026-11-10
+
+feature/mini-server-dashboard depends on unmerged host-migration48477567.
+Shared observer/UI bde52201, forwarded-port correction979498f4: separate loopback
+HTTP dashboard shows lobby/player roles, native progress/lease age, backup ACKs,
+relay traffic/drop counters, HTTP/TLS/timeouts, worker use, uptime, service CPU and
+peak process memory. History is bounded; snapshots never poll/renew/expire rooms
+and omit credentials, raw snapshots and player endpoints. Public HTTPS exposes
+no dashboard routes or new administration controls.
+
+Windows full network175 passed/12 skips128.28s. Physical Mac174 passed/13 skips
+111.73s. Seven focused dashboard tests rerun successfully on both after the
+forwarded-port correction. Tests include installed startup, certificate/port
+preservation, real HTTP counters, read-only leases, credential exclusion, legacy
+labels, history bounds and loopback/Host/CSP/path/method boundaries. Browser
+fixture checks verify desktop/narrow390px layout without page overflow, lobby
+filter/selection, chart units, SSH command generation and no console errors.
+
+Installed on physical mini from979498f4 with11 source/assets hashes verified,
+backup before-dashboard-20261110-201516, unchanged public certificate/client
+configuration and existing HTTPS41820/UDP41821. Launch-agent settings retained;
+only --dashboard-port 41822 added. Actual private listener127.0.0.1:41822.
+Two private synthetic validation members/lobby were observed by the live API,
+then removed; close event and credential exclusion confirmed. This is dashboard
+acceptance, not another native gameplay/WAN result. No game rebuild was required.
+
+PC access is blocked by restrict on the existing build SSH key in the mini's
+~/.ssh/authorized_keys line1. Real tunnel attempts return administratively
+prohibited. No SSH permission was broadened. A separate dashboard-only key has
+been proposed for explicit approval. Dashboard already works locally on the mini.
+See docs/development/mini-dashboard.md for access and service setup.

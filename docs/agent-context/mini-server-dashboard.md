@@ -36,6 +36,10 @@ the browser. It uses existing SSH authentication and validates readiness without
 HTTP proxies. Ctrl+C closes only its SSH child. `--no-browser` supports a hidden
 operator session; nondefault local/remote ports are supported. No router mapping
 or public dashboard listener is required.
+The existing build SSH key on this mini has `restrict`, so it cannot forward.
+Do not remove that restriction automatically. PC access requires separately
+approved dashboard-only SSH authentication; the dashboard already works locally
+on the mini without changing SSH permissions. Viewer errors include SSH denials.
 
 Validation: `tests/network/test_online_dashboard.py` is registered in the native
 runtime suite. It covers credential exclusion, read-only leases, host transitions,

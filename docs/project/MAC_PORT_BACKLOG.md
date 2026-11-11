@@ -10542,3 +10542,16 @@ connection behavior on physical Mac Vulkan rather than relying on fixture passes
 Final60f73aec three-player normal departure/replacement-host crash regression
 also passes (`mac-final-repeat-a`,189.890s): Windows0 to Windows2 to Mac1, scored
 backup/clocks and six bots continue30 seconds per handoff, cleanup completed.
+
+Private mini dashboard (feature/mini-server-dashboard, bde52201/979498f4):
+Implemented; physical Mac service verified, PC tunnel access awaiting approval.
+Shared tools/network/online_dashboard.py and static HTML/CSS/JS observe the
+existing directory/relay read-only. lobby_server.py records bounded counters and
+fixed-label connection failures; installer/view helper provide loopback/SSH access.
+No separate game/native Mac adapter, game assets or native rebuild are needed.
+CPU/peak memory use host stdlib; unavailable Windows peak RAM is labelled rather
+than invented. Full Mac network174 passed/13 skips; Windows175/12. Browser layout/
+controls and physical Mac private-lobby observation/cleanup pass. Service is live
+only on127.0.0.1:41822, with public ports/certificate retained and rollback backup.
+Existing build SSH key stays restricted. Separately approved dashboard-only
+access is required for PC viewing. Evidence is recorded in STATUS.
