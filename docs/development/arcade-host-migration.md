@@ -262,3 +262,30 @@ the pin again before credentials; errors/worker exit close cached sockets.
 Ordinary requests retain connection-close behavior, and server idle deadlines
 and the32-worker bound remain. A real TLS regression verifies repeated reuse,
 error invalidation and reconnection. Full network/native acceptance follows.
+
+Latest connection build: `45a2b34e`, compatibility
+`60f73aecd321fa171f0aa12db4847ecd15f49ac39ca9289369dcd9940d6f1b6c`.
+Full Windows network suite168 passed/12 skips; physical Mac167 passed/13 skips
+after the original bot-limit fixture stopped forcing the Win32 OS macro
+(`886e7495`). `mac-final-lan-results-a` completes a full native match and rematch
+against the installed service's LAN URL, with matching final records and isolated
+cleanup (256.328 seconds). Both controller movement paths and six bots are live.
+
+Public-address native acceptance remains **failed**: even with connection reuse,
+`mac-public-results-persistent-a` captures TLS read/handshake timeouts and a lost
+player. The service has no logged internal exception; a router cause has not
+been established. The protocol hardening passes regressions but does not resolve
+this native public-route discrepancy. Actual outside-network games, objective
+carry/capture continuity, legacy Mac GL and all other Arcade modes remain unverified.
+An active keep-alive client occupies one bounded server worker; capacity/load
+acceptance beyond the tested small sessions has not been measured.
+
+Final current-build handoff regression `mac-final-repeat-a` also passes
+(189.890 seconds, cleanup complete). Three native players: Windows0 leaves,
+Windows2 is elected, then its whole game/companion crashes and Mac1 is elected.
+Both survivors continue30 seconds after the first handoff; Mac continues another
+30 seconds after the second. The first selected tick/countdown1017/35167 resumes
+at1018/35166 on Mac and1020/35164 on Windows; the second2822/33362 resumes on Mac
+at2829/33355. Scored backups and six bots' movement/combat/respawning pass throughout.
+This validates current connection code on the controlled LAN coordinator, while
+the separate installed-service public-address failure remains open.
