@@ -1,0 +1,115 @@
+"""Native controller ABI, real asynchronous cancellation and service routing."""
+import struct
+import threading
+import time
+from types import SimpleNamespace
+import pytest
+import online_menu as menu
+import os
+from pathlib import Path
+import subprocess
+from native_compiler import native_compiler
+
+VERSION='a'*64
+PIN='b'*64
+
+def request(action,sequence=1,**values):
+    return dict(sequence=sequence,action=action,mode=1,source=0,public=True,port=41820,
+                name='My Lobby',code='',address='',fingerprint='',**values)
+
+def wait(controller):
+    deadline=time.monotonic()+2
+    while controller.status==menu.BUSY and time.monotonic()<deadline:time.sleep(.005)
+    assert controller.status!=menu.BUSY
+
+def test_binary_abi_is_fixed_and_names_follow_native_font():
+    data=menu.REQUEST.pack(menu.MAGIC,1,7,menu.CREATE,1,0,1,41820,
+        menu.field('Caf\xe9',64),menu.field('',2048),menu.field('',256),menu.field('',68))
+    assert len(data)==2468 and menu.decode_request(data)['name']=='Caf\xe9'
+    c=menu.Controller(VERSION)
+    assert len(c.snapshot())==7588 and menu.LOBBY.size==232
+
+@pytest.mark.parametrize('field,value',[(0,0),(1,2),(2,0),(3,99),(4,0),(5,2),(6,2),(7,80)])
+def test_invalid_abi_never_dispatches(field,value):
+    header=[menu.MAGIC,1,1,menu.BROWSE,1,0,1,41820];header[field]=value
+    data=menu.REQUEST.pack(*header,*[menu.field('',n) for n in (64,2048,256,68)])
+    with pytest.raises(ValueError):menu.decode_request(data)
+
+def test_unterminated_field_and_trailing_data_rejected():
+    data=menu.REQUEST.pack(menu.MAGIC,1,1,menu.BROWSE,1,0,1,41820,b'x'*64,*[bytes(n) for n in (2048,256,68)])
+    with pytest.raises(ValueError):menu.decode_request(data)
+    with pytest.raises(ValueError):menu.decode_request(data+b'x')
+
+def test_private_invitation_is_a_server_not_a_lobby():
+    value=menu.server_invitation('https://private.example:41820',PIN)
+    assert menu.parse_server_invitation(value)==('https://private.example:41820',PIN)
+    for bad in ('',value+'!',menu.invitation('https://private.example',PIN,'A'*16)):
+        with pytest.raises(ValueError):menu.parse_server_invitation(bad)
+    with pytest.raises(ValueError):menu.server_invitation('http://127.0.0.1','')
+
+def test_browser_lists_arcade_and_story_without_changing_community(monkeypatch):
+    calls=[]
+    def client(address,pin):
+        def rpc(method,path):
+            calls.append((address,path))
+            return {'lobbies':[dict(code='2'*16,compatibility=VERSION,mode='story',players=1,capacity=4)]}
+        return SimpleNamespace(request=rpc,url=SimpleNamespace(scheme='https'),fingerprint=pin)
+    monkeypatch.setattr(menu,'Client',client)
+    monkeypatch.setattr(menu,'list_arcade',lambda c,v:{'lobbies':[dict(code='1'*16,compatibility=v,mode='arcade',players=2,capacity=8)]})
+    c=menu.Controller(VERSION);c.community=('https://community.example',PIN)
+    c.private=('https://private.example',PIN)
+    r=request(menu.BROWSE);r['source']=1;c.begin(r);wait(c)
+    assert c.status==menu.LIST and len(c.lobbies)==2
+    assert calls[0][0]=='https://private.example' and c.community[0]=='https://community.example'
+    raw=c.snapshot();assert struct.unpack_from('<I',raw,20)[0]==2
+    assert menu.LOBBY.unpack_from(raw,menu.STATE.size+menu.LOBBY.size)[3]==2
+    c.close()
+
+def test_cancelled_connection_is_closed_and_never_published(monkeypatch):
+    entered=threading.Event();release=threading.Event();closed=threading.Event()
+    active=SimpleNamespace(close=closed.set)
+    def connect(*args,**kwargs):entered.set();assert release.wait(2);return active
+    monkeypatch.setattr(menu.ArcadeSession,'open',connect)
+    c=menu.Controller(VERSION);c.community=('https://community.example',PIN)
+    c.begin(request(menu.CREATE));assert entered.wait(1)
+    c.begin(request(menu.CANCEL,2));wait(c);release.set()
+    assert closed.wait(1) and c.session is None and c.status==menu.IDLE
+    assert menu.STATE.unpack_from(c.snapshot())[3]==menu.IDLE
+    c.close()
+
+def test_failed_request_returns_to_native_menu_with_a_reason(monkeypatch):
+    def connect(*args,**kwargs):raise ValueError('The match is full')
+    monkeypatch.setattr(menu,'join_arcade',connect)
+    c=menu.Controller(VERSION);c.community=('https://community.example',PIN)
+    r=request(menu.JOIN);r['code']='A'*16;c.begin(r);wait(c)
+    assert c.status==menu.ERROR and c.message=='The match is full' and c.session is None
+    c.close()
+
+def test_lobby_leave_keeps_owned_private_directory_running():
+    events=[]
+    process=SimpleNamespace(terminate=lambda:events.append('stop server'),wait=lambda **kw:None,poll=lambda:None)
+    c=menu.Controller(VERSION);c.private_process=process;c.private=('https://private.example',PIN)
+    c.session=SimpleNamespace(close=lambda:events.append('leave lobby'))
+    c.begin(request(menu.LEAVE));wait(c)
+    assert events==['leave lobby'] and c.private_process is process
+    c.close();assert events==['leave lobby','stop server']
+
+def test_stale_native_requests_do_not_repeat_actions():
+    c=menu.Controller(VERSION);c.begin(request(menu.CANCEL,2));wait(c)
+    generation=c.generation;c.begin(request(menu.CREATE,1))
+    assert c.generation==generation and c.sequence==2 and c.status==menu.IDLE
+    c.close()
+
+@pytest.mark.parametrize('fixture',['online_menu_ipc.c','multiplayer_exit.c'])
+def test_production_native_ipc_and_retained_return(tmp_path,fixture):
+    compiler,environment=native_compiler(tmp_path)
+    root=Path(__file__).resolve().parents[2]
+    exe=tmp_path/('online-ipc.exe' if os.name=='nt' else 'online-ipc')
+    source=root/'tests/network'/fixture
+    if Path(compiler).name.lower() in ('cl','cl.exe'):
+        argv=[compiler,'/nologo','/std:c11','/W4','/I'+str(root/'src'),str(source),'/Fe:'+str(exe)]
+    else:argv=[compiler,'-std=c11','-Wall','-Wextra','-Werror','-I'+str(root/'src'),str(source),'-o',str(exe)]
+    build=subprocess.run(argv,cwd=tmp_path,env=environment,capture_output=True,text=True,timeout=60)
+    assert build.returncode==0,build.stdout+build.stderr
+    result=subprocess.run([str(exe),str(tmp_path/'1.ready')],capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stdout+result.stderr

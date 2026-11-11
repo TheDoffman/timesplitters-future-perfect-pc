@@ -1,5 +1,6 @@
 #ifndef TSFP_PC_ONLINE_H
 #define TSFP_PC_ONLINE_H
+#include "pc_online_menu.h"
 typedef enum PcOnlineMode {
     PC_ONLINE_NONE = 0,
     PC_ONLINE_ARCADE,

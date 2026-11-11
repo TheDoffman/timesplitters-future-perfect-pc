@@ -1,3 +1,16 @@
+Native multiplayer menus (`feature/native-multiplayer-ui`, base `5c4df06a`): **In development**.
+Shared native chooser/browser/creation/join screens replace the desktop browser
+with a hidden client worker. Private Server is a separate directory/relay,
+maintained outside Git. Windows captures verify the chooser, browser, settings,
+original keyboard and host lobby; two real games discover/join through native
+menus. Closure feedback, copy/paste, gameplay return and flow acceptance remain
+in progress. Controller/IPC/retained-return/FOV checks pass 24 tests (2 skips).
+Installed private hosting passes HTTPS/UDP create/leave, retained directory and
+owner shutdown/listener cleanup. Mac/Linux share the flow/process IPC with an
+asynchronous SDL main-thread clipboard adapter; physical Mac build/gameplay are
+pending. Existing Story release/platform limits remain. See
+[the focused guide](../agent-context/native-multiplayer-menu.md).
+
 Arcade join in progress (`feature/arcade-join-in-progress`): **Verified** for
 native Mac Deathmatch/Team Deathmatch late joins.
 Shared storage/constructor hooks, checkpoint catchup and client slot reports use

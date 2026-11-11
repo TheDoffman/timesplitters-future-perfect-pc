@@ -28,6 +28,10 @@ source. Legacy manual integration tools require that external fixture explicitly
 normal game play does not. Historical gameplay acceptance results remain evidence
 for their recorded revisions; this separation is not a new gameplay test.
 
+The [native multiplayer flow](native-multiplayer-menu.md) uses a headless client.
+Optional separate private hosting is an externally installed, supervised component;
+its backend source remains private too.
+
 The private copy retains the previously deployed source and test versions.
 Earlier Git revisions already contained server code; removing it from the current
 tree does not rewrite published history. Future changes must respect this split.

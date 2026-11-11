@@ -13,12 +13,15 @@ typedef struct GuestRegisters {uint32_t sp,a;} GuestRegisters;
 static void save_registers(GuestRegisters *r){r->sp=g_esp;r->a=g_eax;}
 static void restore_registers(const GuestRegisters *r){g_esp=r->sp;g_eax=r->a;}
 static int guest_writable(uint32_t p,size_t n){return p>=0x1000 && p<sizeof memory && n<=sizeof memory-p;}
-static uint32_t xbox_HeapAlloc(uint32_t n,uint32_t a){static uint32_t next=0x6000;CHECK(n<128 && a==4);uint32_t result=next;next=(next+n+3u)&~3u;CHECK(next<=0x6080);return result;}
+static uint32_t xbox_HeapAlloc(uint32_t n,uint32_t a){static uint32_t next=0x6000;CHECK(n<128 && a==4);uint32_t result=next;next=(next+n+3u)&~3u;CHECK(next<=0x6200);return result;}
 enum {PC_ONLINE_NONE,PC_ONLINE_ARCADE,PC_ONLINE_STORY};
 static int mode=PC_ONLINE_ARCADE,enabled=1,closed,reset,pumps,match_reset,menus,stock,fallback;
 static uint32_t target,caption;
 static unsigned recorded,eligibility_checks;
 static int migration_requested,migration_requests,unloads;
+static int native_ui_active;
+static int pc_online_menu_active(void){return native_ui_active;}
+static int native_multiplayer_return_menu(void (*original)(void)){(void)original;return 0;}
 int pc_network_arcade_request_leave(void){++migration_requests;return migration_requested;}
 int pc_network_arcade_enabled(void){return migration_requested;}
 static void sub_00065420(void){++unloads;}
@@ -49,9 +52,9 @@ static void sub_002EC650_gen(void){pc_multiplayer_exit_action(sub_00065470_gen,0
 static void factory(void){target=WORD_AT(g_esp+8);g_esp+=4;}
 static void button(void){caption=WORD_AT(g_esp+4);g_esp+=4;}
 static void setup(unsigned role){
- uint8_t heap[128];memcpy(heap,(void *)(g_xbox_mem_offset+0x6000),sizeof heap);
+ uint8_t heap[512];memcpy(heap,(void *)(g_xbox_mem_offset+0x6000),sizeof heap);
  memset(memory,0,sizeof memory);memcpy((void *)(g_xbox_mem_offset+0x6000),heap,sizeof heap);
- mode=PC_ONLINE_ARCADE;enabled=1;
+ mode=PC_ONLINE_ARCADE;enabled=1;native_ui_active=0;
  multiplayer_destination=0;multiplayer_lobby_pending=0;multiplayer_exit_depth=0;
  closed=reset=pumps=match_reset=menus=stock=fallback=0;recorded=0;
  g_esp=0x1800;WORD_AT(0x79094c)=44;WORD_AT(0x76b108)=1;
@@ -93,7 +96,15 @@ int main(void){
     wait for an active-match final frame after the match has already ended. */
  setup(1);WORD_AT(0x7de30c)=8;pc_multiplayer_exit_action(sub_002EAF60_gen,0);
  CHECK(migration_requests==2 && multiplayer_destination==1 && !recorded);
- migration_requested=0;
+ /* Native Return to Lobby retains the party rather than departing/migrating. */
+ setup(1);WORD_AT(0x7de30c)=7;native_ui_active=1;migration_requested=1;
+ uint32_t native_prompt=pc_multiplayer_migration_prompt("Leaving the match will end the session.");
+ CHECK(strstr((const char *)(g_xbox_mem_offset+native_prompt),"everyone"));
+ WORD_AT(g_esp+20)=0x2ec060;CHECK(multiplayer_exit_button(button));
+ CHECK(!strcmp((const char *)(g_xbox_mem_offset+caption),"Return to Lobby"));
+ g_esp=0x1800;pc_multiplayer_exit_action(sub_002EAF60_gen,0);
+ CHECK(migration_requests==2 && multiplayer_destination==1 && recorded==1 && !closed);
+ native_ui_active=0;migration_requested=0;
  for(unsigned results=0;results<4;++results){
   setup(1);WORD_AT(0x7de30c)=results?8:7;
   if(!results || results==3) {void (*fn)(void)=multiplayer_exit_lookup(0x2ebe60);CHECK(fn);fn();}

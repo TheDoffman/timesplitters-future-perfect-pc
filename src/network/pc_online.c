@@ -10,16 +10,18 @@
 static HANDLE companion;
 static PcOnlineMode active_mode;
 static char ready_path[MAX_PATH],stop_path[MAX_PATH];
+#include "pc_online_menu_process.h"
 extern HWND xbox_D3D8Window(void);
 
 void pc_online_disconnect(void)
 {
+    online_menu_clear();
     active_mode=PC_ONLINE_NONE;
     if(companion) {
         FILE *file=fopen(stop_path,"w"); if(file) fclose(file);
         /* Browser supervisor observes the stop request and deletes its lobby.
            It exits by itself when the game process exits, including crashes. */
-        WaitForSingleObject(companion,8000);
+        if(WaitForSingleObject(companion,8000)==WAIT_TIMEOUT){TerminateProcess(companion,0);WaitForSingleObject(companion,2000);}
         CloseHandle(companion); companion=NULL;
     }
     pc_network_set_online(NULL);
@@ -62,12 +64,14 @@ int pc_online_connect_mode(PcOnlineMode mode)
     snprintf(ready_path,sizeof ready_path,"%s\\%lu.ready",folder,pid);
     snprintf(stop_path,sizeof stop_path,"%s\\%lu.stop",folder,pid);
     DeleteFileA(ready_path); DeleteFileA(stop_path);
-    snprintf(command,sizeof command,"\"%s\" -B \"%s\" --pid %lu --result \"%s\" --compatibility %s --mode %s",
-        python,script,pid,ready_path,TSFP_NETWORK_COMPATIBILITY_HEX,kind);
+    online_menu_files_clear(ready_path);
+    snprintf(command,sizeof command,"\"%s\" -B \"%s\" --pid %lu --result \"%s\" --compatibility %s --mode %s%s",
+        python,script,pid,ready_path,TSFP_NETWORK_COMPATIBILITY_HEX,kind,online_menu_launching?" --native":"");
     if(!CreateProcessA(python,command,NULL,NULL,FALSE,CREATE_NO_WINDOW,NULL,root,&startup,&process)) {
         MessageBoxA(NULL,"Could not start the Online browser.","Online",MB_OK|MB_ICONERROR); return 0;
     }
     CloseHandle(process.hThread); companion=process.hProcess;
+    if(online_menu_launching){online_menu_started=1;return 1;}
     EnableWindow(owner,FALSE);
     while(WaitForSingleObject(companion,100)==WAIT_TIMEOUT) {
         MSG message;
@@ -82,4 +86,23 @@ int pc_online_connect_mode(PcOnlineMode mode)
     CloseHandle(companion); companion=NULL;
     EnableWindow(owner,TRUE);
     return 0;
+}
+#define PC_ONLINE_MENU_RUNNING() (companion && WaitForSingleObject(companion,0)==WAIT_TIMEOUT)
+#define PC_ONLINE_MENU_REPLACE(a,b) MoveFileExA(a,b,MOVEFILE_REPLACE_EXISTING)
+#include "pc_online_menu_host.inc"
+int pc_online_menu_copy(const char *text)
+{
+    if(!text || !OpenClipboard(xbox_D3D8Window()))return 0;
+    size_t length=strlen(text)+1;HGLOBAL memory=GlobalAlloc(GMEM_MOVEABLE,length);
+    int ok=0;
+    if(memory){void *data=GlobalLock(memory);if(data){memcpy(data,text,length);GlobalUnlock(memory);
+        if(EmptyClipboard() && SetClipboardData(CF_TEXT,memory)){ok=1;memory=NULL;}}}
+    if(memory)GlobalFree(memory);CloseClipboard();return ok;
+}
+int pc_online_menu_paste(char *text,size_t capacity)
+{
+    if(!text || capacity<2 || !OpenClipboard(xbox_D3D8Window()))return 0;
+    HANDLE memory=GetClipboardData(CF_TEXT);const char *value=memory?GlobalLock(memory):NULL;int ok=0;
+    if(value){size_t length=strnlen(value,capacity);if(length<capacity){memcpy(text,value,length+1);ok=1;}GlobalUnlock(memory);}
+    CloseClipboard();return ok;
 }

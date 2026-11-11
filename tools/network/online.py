@@ -24,15 +24,12 @@ from pathlib import Path
 import queue
 import threading
 import time
-import tkinter as tk
-from tkinter import messagebox
 
 from online_platform import GameProcess, show_error
 from online_client import Client, Session
 from online_arcade_client import ArcadeSession, list_arcade, join_arcade
 from online_host import invitation, parse_invitation
 from online_paths import ROOT, HANDSHAKES, SETTINGS, MANIFEST, TOOLS, service_defaults
-from online_theme import OnlineTheme, build_browser, build_invitation
 
 
 
@@ -42,6 +39,7 @@ def main():
     parser.add_argument('--result', type=Path, required=True)
     parser.add_argument('--compatibility', required=True)
     parser.add_argument('--mode', choices=('arcade', 'story'), default='arcade')
+    parser.add_argument('--native', action='store_true', help='Use the in-game multiplayer menus')
     args = parser.parse_args()
     result = args.result.resolve()
     private = HANDSHAKES.resolve()
@@ -59,6 +57,13 @@ def main():
         raise ValueError('Online tools and executable have different build identities; rebuild first')
 
     parent = GameProcess(args.pid)
+    if args.native:
+        from online_menu import run
+        run(args,parent)
+        return
+    import tkinter as tk
+    from tkinter import messagebox
+    from online_theme import OnlineTheme, build_browser, build_invitation
     state = Path(os.environ.get('TSFP_ONLINE_SETTINGS', SETTINGS))
     try:
         saved = json.loads(state.read_text())
@@ -273,5 +278,5 @@ if __name__ == '__main__':
         logs = ROOT / 'Logs'
         logs.mkdir(parents=True, exist_ok=True)
         (logs/'online-error.log').write_text(traceback.format_exc(), encoding='utf-8')
-        show_error(error)
+        if '--native' not in _layout_sys.argv:show_error(error)
         raise

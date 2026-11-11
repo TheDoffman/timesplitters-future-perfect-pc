@@ -36,13 +36,14 @@ uint32_t pc_multiplayer_migration_prompt(const char *text)
 {
     if(!text || !(strstr(text,"LEAVING THE MATCH") || strstr(text,"Leaving the match")) ||
        !multiplayer_migrating_match())return 0;
-    static uint32_t prompt;
-    if(!prompt) {
-        const char message[]="Leave this match?\nHosting will transfer to an available player.";
-        prompt=xbox_HeapAlloc(sizeof message,4u);
-        if(prompt)memcpy((void *)((uintptr_t)prompt+g_xbox_mem_offset),message,sizeof message);
+    static uint32_t prompts[2];const unsigned native=!!pc_online_menu_active();
+    if(!prompts[native]) {
+        const char *message=pc_online_menu_active()?"Return everyone to this match's lobby?":
+            "Leave this match?\nHosting will transfer to an available player.";
+        prompts[native]=xbox_HeapAlloc((uint32_t)strlen(message)+1u,4u);
+        if(prompts[native])memcpy((void *)((uintptr_t)prompts[native]+g_xbox_mem_offset),message,strlen(message)+1u);
     }
-    return prompt;
+    return prompts[native];
 }
 #endif
 static void multiplayer_leave(unsigned destination,int close_menu)
@@ -68,7 +69,7 @@ static void multiplayer_leave_confirm(void)
     const uint32_t menu=WORD_AT(g_esp+4u);
     if(multiplayer_match() && WORD_AT(0x76b140u)==1u && guest_writable(menu,0x190u) && WORD_AT(menu+0x18cu)==0x40u) {
 #ifdef TSFP_ARCADE_MIGRATION
-        if(WORD_AT(0x7de30cu)==7u && WORD_AT(0x76b1a4u)==15u &&
+        if(!pc_online_menu_active() && WORD_AT(0x7de30cu)==7u && WORD_AT(0x76b1a4u)==15u &&
            pc_network_arcade_request_leave()) {WORD_AT(0x789640u)=0;g_eax=0;g_esp+=4u;return;}
 #endif
         multiplayer_leave(1u,1);
@@ -117,7 +118,7 @@ static int multiplayer_exit_button(void (*original)(void))
         if(callback==0x2ec060u || callback==0x2ec030u || callback==0x2eaf60u || callback==0x2eb030u) {
             static uint32_t captions[2];unsigned migration=0;
 #ifdef TSFP_ARCADE_MIGRATION
-            migration=multiplayer_migrating_match();
+            migration=multiplayer_migrating_match() && !pc_online_menu_active();
 #endif
             if(!captions[migration]) {
                 const char *text=migration?"Leave Match":"Return to Lobby";
@@ -141,7 +142,7 @@ void pc_multiplayer_exit_action(void (*original)(void),unsigned action)
     if(!action && multiplayer_match() && WORD_AT(0x76b140u)==1u &&
        (original==sub_002EAF60_gen || original==sub_002EB030_gen)) {
 #ifdef TSFP_ARCADE_MIGRATION
-        if(WORD_AT(0x7de30cu)==7u && WORD_AT(0x76b1a4u)==15u &&
+        if(!pc_online_menu_active() && WORD_AT(0x7de30cu)==7u && WORD_AT(0x76b1a4u)==15u &&
            pc_network_arcade_request_leave()) {g_eax=0;g_esp+=4u;return;}
 #endif
         multiplayer_leave(1u,1);
@@ -185,6 +186,9 @@ void pc_multiplayer_disconnect_exit(void (*original)(void))
 void pc_multiplayer_exit_menu(void (*original)(void))
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    if(multiplayer_destination==3u && native_multiplayer_return_menu(original)) {
+        multiplayer_destination=0;multiplayer_lobby_pending=0;return;
+    }
     const uint32_t frame=g_esp;
     if(multiplayer_destination && WORD_AT(0x79094cu)==101u && guest_writable(frame,16u) && multiplayer_factory_observations++<16u)
         fprintf(stderr,"[PC-MULTIPLAYER-EXIT] factory destination=%u parent=%08X root=%08X descriptor=%08X role=%u phase=%u\n",

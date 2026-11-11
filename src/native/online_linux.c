@@ -18,12 +18,14 @@ extern char **environ;
 static pid_t companion;
 static PcOnlineMode active_mode;
 static char ready_path[4096],stop_path[4096];
+#include "pc_online_menu_process.h"
 static int running(void){
     if(!companion)return 0;
     int status;pid_t result=waitpid(companion,&status,WNOHANG);
     if(result==companion||(result<0&&errno==ECHILD)){companion=0;return 0;}return 1;
 }
 void pc_online_disconnect(void){
+    online_menu_clear();
     active_mode=PC_ONLINE_NONE;
     if(running()){
         FILE *file=fopen(stop_path,"w");if(file)fclose(file);
@@ -51,9 +53,11 @@ int pc_online_connect_mode(PcOnlineMode mode){
     if(snprintf(ready_path,sizeof ready_path,"%s/%s.ready",folder,pid)>=(int)sizeof ready_path||
        snprintf(stop_path,sizeof stop_path,"%s/%s.stop",folder,pid)>=(int)sizeof stop_path)return 0;
     unlink(ready_path);unlink(stop_path);
+    online_menu_files_clear(ready_path);
     setenv("TSFP_ONLINE_HANDSHAKES",folder,1);setenv("TSFP_ONLINE_MANIFEST",manifest,1);
-    char *args[]={(char *)python,"-B",script,"--pid",pid,"--result",ready_path,"--compatibility",TSFP_NETWORK_COMPATIBILITY_HEX,NULL};
+    char *args[]={(char *)python,"-B",script,"--pid",pid,"--result",ready_path,"--compatibility",TSFP_NETWORK_COMPATIBILITY_HEX,online_menu_launching?"--native":NULL,NULL};
     if(posix_spawn(&companion,args[0],NULL,NULL,args,environ)){companion=0;return 0;}
+    if(online_menu_launching){online_menu_started=1;return 1;}
     SDL_Window *window=SDL_GetKeyboardFocus();
     bool relative=window?SDL_GetWindowRelativeMouseMode(window):false;
     bool grabbed=window?SDL_GetWindowMouseGrab(window):false;
@@ -76,3 +80,7 @@ int pc_online_self_test(void){
     pc_online_disconnect();ok &= !running()&&access(ready_path,F_OK)!=0&&access(stop_path,F_OK)!=0;
     SDL_DestroyWindow(window);SDL_Quit();return ok?0:1;
 }
+#define PC_ONLINE_MENU_RUNNING() running()
+#define PC_ONLINE_MENU_REPLACE(a,b) (rename(a,b)==0)
+#include "pc_online_menu_host.inc"
+#include "online_clipboard_sdl.inc"
