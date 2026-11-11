@@ -80,7 +80,7 @@ publishes localized map/rules from the frontend selection `78AD58` in the lobby
 and the active `7DE400` selection during gameplay (stock `353400` advertisement). The hidden client validates
 all fields and sends details only as current authenticated host. Backend display
 support remains private. Details never control admission, epochs or restoration.
-Three rows/page use the original `1CBDA0` painter for verified Arcade map/mode
+Two rows/page use the original `1CBDA0` painter for verified Arcade map/mode
 pairs, briefly restoring a scratch advertisement after painting; unknown details
 retain a text fallback. Native thumbnails never use remote resource pointers.
 `crossplay_peer.py` accepts `native_ui=true` to omit legacy desktop automation

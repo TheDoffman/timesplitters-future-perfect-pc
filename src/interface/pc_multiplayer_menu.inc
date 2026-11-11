@@ -9,7 +9,7 @@
 #define MP_TEXT_DONE 0x123f6u
 #define MP_TEXT_CANCEL 0x123f7u
 #define MP_MATCH_DRAW 0x123f8u
-#define MP_PER_PAGE 3u
+#define MP_PER_PAGE 2u
 enum {MP_NETWORK,MP_PRIVATE,MP_HOST_SERVER,MP_JOIN_SERVER,MP_BROWSER,MP_CREATE,MP_JOIN_CODE};
 static struct {
     unsigned page,source,mode,public_lobby,list_page,editing,pending,action,autojoin,host,pasting,paste_page,port,copy_down;
@@ -125,7 +125,7 @@ static void mp_build(void)
                 lobby->mode==PC_ONLINE_STORY?"Story":"Arcade",lobby->joinable?"":" - FULL");
             if(lobby->mode==PC_ONLINE_ARCADE && lobby->game_type_id<32u &&
                (int32_t)guest_call(sub_00064E20,1,lobby->map_scene)>=0)
-                guest_call(sub_00079D60_gen,6,mp_text(row++,label),100u+i,0x20000u,bits(20.f),MP_SELECT,MP_MATCH_DRAW);
+                guest_call(sub_00079D60_gen,6,0u,100u+i,0x20000u,bits(20.f),MP_SELECT,MP_MATCH_DRAW);
             else mp_row(row++,100u+i,label);
         }
         if(mp_ui.list_page)mp_row(row++,4,"Previous Matches");
@@ -150,7 +150,7 @@ static void mp_match_draw(void)
     memcpy(saved_ad,ad,sizeof saved_ad);memset(ad,0,sizeof saved_ad);
     WORD_AT(0x790968u)=row->capacity>row->players?row->capacity-row->players:0u;
     WORD_AT(0x7909b4u)=row->players;WORD_AT(0x790974u)=row->map_scene;WORD_AT(0x790978u)=row->game_type_id;
-    snprintf((char *)ad+0x96u,54,"%.23s / %.23s",row->map,row->name);
+    snprintf((char *)ad+0x96u,54,"%.19s / %.19s%s",row->map,row->name,!strcmp(row->phase,"active")?" [IN PLAY]":"");
     const uint32_t id=WORD_AT(item+0x14u);WORD_AT(item+0x14u)=0;
     guest_call(sub_001CBDA0,3,menu,item,rect);
     WORD_AT(item+0x14u)=id;memcpy(ad,saved_ad,sizeof saved_ad);g_esp+=4u;
