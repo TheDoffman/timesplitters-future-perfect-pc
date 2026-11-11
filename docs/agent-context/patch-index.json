@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "b1c740f3f87f74dbc913ee305a1ec47c6675e9fb3cf32a3c569400e0ea5f587b",
+  "loaderSha256": "55d916d1ed12676c9971a282101bcf3dfc702c6414da5ba0494358af311c3957",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3813,9 +3813,17 @@
       ]
     },
     {
-      "name": "2960-custom-keyboard-axis-routing.patch",
-      "path": "patches/input/2960-custom-keyboard-axis-routing.patch",
-      "sha256": "3753977404bf6895925aa9de6b751338d0218a7d098ce2d3695ce05d0204053b",
+      "name": "2955-native-explicit-controller-prompts.patch",
+      "path": "patches/input/2955-native-explicit-controller-prompts.patch",
+      "sha256": "a4b9ef1355cde2f56e868b78c3984758b1e982e6143a83f22c755a932c8efc2f",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2960-keyboard-gameplay-independence.patch",
+      "path": "patches/input/2960-keyboard-gameplay-independence.patch",
+      "sha256": "794eec93a7763050a2ebc29b3dc29a4a672d642fb3459bbe1b67d0b206f31f37",
       "targets": [
         "src/input/input_bindings.c"
       ]
@@ -3823,7 +3831,7 @@
     {
       "name": "2965-independent-keyboard-actions.patch",
       "path": "patches/input/2965-independent-keyboard-actions.patch",
-      "sha256": "2b382b3c667ca396c825e64f5abbf96f2069502c70cc896789832331ca96b463",
+      "sha256": "c2d9e48023b2ca2841624cdcb992006ac77b8bdad56fbd148fad0ccacc524c6d",
       "targets": [
         "src/input/input_bindings.c"
       ]
@@ -3831,7 +3839,7 @@
     {
       "name": "2970-active-player-pad-sharing.patch",
       "path": "patches/input/2970-active-player-pad-sharing.patch",
-      "sha256": "ff371cc09f5a4f41246156f4295c096f4291fb0dbaec791969072237e9681bd6",
+      "sha256": "93132d52469066956aaa654e7239c447124c11026cc2f086e18e1942a063bd78",
       "targets": [
         "src/input/input_bindings.c"
       ]

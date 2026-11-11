@@ -1,3 +1,16 @@
+Hotfix integrated validation (2026-11-10): Windows x64 supported MSVC Release
+Build/built-ins and full launcher1.6.1 build/test pass. Integrated input/menu/FOV
+suite70 pass,2 host skips, retaining upstream negative controls and explicit-P1
+prompt checks. Full patch stack applies after reconciling main; publication
+workflow and full release suite remain pending. User reports switching seems good.
+
+Hotfix release preparation (2026-11-10): user reports live device switching
+seems good on the rebuilt Windows game. Preparing game0.6.1 draft and launcher
+1.6.1 publication; incorporating main PRs542/543 and retaining their native input
+repairs. Previous local axis-only2960 is superseded by main2960;2965/2970 follow
+it. Integration/release checks and cross-host workflow results recorded below
+when available. Physical Mac/Linux acceptance remains pending.
+
 Live device switching follow-up (2026-11-10, local base a7762fce): saved P2
 controller preferences blocked P1 pad sharing even in single-player. Patch2970
 reserves pads only for actually joined local ports, in both Windows/SDL samplers.
@@ -55,6 +68,45 @@ has not yet been verified in gameplay; Mac/Linux hardware acceptance is pending.
 Personal saves/settings were read only, never modified by this investigation.
 Changes remain local/uncommitted on fix/fresh-profile-movement. Evidence:
 logs/live-keyboard-layout-observation.jsonl and logs/markerless-keyboard-build.log.
+Legacy keyboard/controller isolation (local, base0692efdf): user confirms the new
+build still reproduces Move/Look remaps affecting WASD. Before-fix production
+sampler test fails on both Windows and native-adapter modes with markerless Custom
+keyboard settings: input bypasses named-action routing. Patch2960 removes that
+marker gate; prompt lookup follows keyboard ownership independently of the seed
+marker. Saved keys/presets/JSON and native controller profiles are not changed.
+New tests run synthetic keyboard input on every compiler host and retain an old-
+gate negative control. Windows sampler51 pass; Ubuntu/WSL Clang sampler6 pass,
+including the markerless keyboard cases and negative controls. Supported Windows
+Release build/built-ins/crash symbols pass. Read-only installed-config inspection
+confirms marker/preset absent on this computer; no personal files were edited.
+Menu/FOV5 pass2 skips, context21 pass, fresh/repeated application plus previous-
+controls upgrade2 pass. Context/whitespace checks pass. Windows live acceptance passed using an isolated markerless Custom configuration
+and native Custom0 with Move/Look swapped (4,3,2,1 twice), Fire=X, Reload=RT.
+Synthetic one-second W/D/S/A holds moved6.266/3.643/6.112/5.676 units with yaw/
+pitch unchanged. Mouse firing16→15 ammo and R reload16/111 reserve passed.
+The native controller diagram confirmed the swaps, KBM page showed WASD. Changed
+Forward to H through the live pause editor; H moved5.464 units, old W moved0,
+without restart. Signed save retains the same controller masks/axes; JSON still
+has no semantics marker. Logs/legacy-keyboard-live-verification.json and isolated
+private/test-saves/legacy-keyboard-final/report.json retain evidence. Test runner
+closed and recycled only disposable disks. Personal saves/settings unchanged.
+No physical Mac/Steam Deck acceptance claimed. Prepared for PR on
+fix/legacy-keyboard-controller-independence.
+
+#540 controller prompts (local, main77b57432): report describes Linux0.6.0 with
+controller-only input; no issue comments or diagnostics. Production sampler
+regression reproduces explicit P1 DEV_PAD omission: Windows passes, native SDL
+fails to notify prompts. New patch2955 supplies that activity notification while
+preserving P1 ownership, focus/modal gates and existing activity thresholds.
+49 sampler tests pass on Windows, including compiled SDL-path regression.
+Ubuntu/WSL runs the four production sampler ownership/prompt cases successfully
+with Clang (both adapter modes and negative controls); this is headless synthetic
+pad input, not physical Steam Deck delivery. Supported Windows Release build,
+built-in checks and crash symbols pass. Native SDL virtual-pad self-test extended;
+59 repository/patch-upgrade checks pass (1425.61s), including fresh/repeated
+application, historical controls/Mac upgrades and branch/line-ending preservation.
+Context and whitespace checks pass. Full native SDL virtual-pad self-test and
+physical Steam Deck/Mac acceptance remain pending; no hardware claim. No personal settings/saves edited. Keep #540 open until published.
 
 Controller/keyboard coupling follow-up (local, base2617f4a3): the earlier live
 check covered default axes, missing swapped Move/Look. Shared semantic routing

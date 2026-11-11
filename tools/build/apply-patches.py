@@ -314,12 +314,17 @@ def patch_records(paths):
         paths.remove(deadzones)
         paths.append(deadzones)
 
-    # Markerless Custom keyboard axes extend the final preset sampler too.
-    keyboard_axes = by_name.get('2960-custom-keyboard-axis-routing.patch')
-    if keyboard_axes:
-        paths.remove(keyboard_axes)
-        paths.append(keyboard_axes)
+    # Prompt activity includes explicit native P1 controller assignments.
+    prompts = by_name.get('2955-native-explicit-controller-prompts.patch')
+    if prompts:
+        paths.remove(prompts)
+        paths.append(prompts)
 
+    # Keyboard actions stay semantic for legacy as well as newly seeded files.
+    keyboard = by_name.get('2960-keyboard-gameplay-independence.patch')
+    if keyboard:
+        paths.remove(keyboard)
+        paths.append(keyboard)
     keyboard_actions = by_name.get('2965-independent-keyboard-actions.patch')
     if keyboard_actions:
         paths.remove(keyboard_actions)

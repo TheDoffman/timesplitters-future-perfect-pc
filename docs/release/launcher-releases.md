@@ -1,10 +1,13 @@
 # One launcher release for Windows, Mac and Linux
 
-The next Stable launcher source version is **1.6.0**, adding shared audio and
-control settings, independent controller deadzones, texture preference syncing
-and game update-notice support. These additions justify a minor version bump.
-Publish it with the three-host workflow after the version PR reaches main;
-verify all fifteen assets and versionless alias parity before publishing game0.6.0.
+The next Stable launcher source version is **1.6.1**, preserving controller
+mappings when keyboard controls are edited, unbound or reset. Keyboard reset
+also preserves the selected device and controller preset, and legacy extra-key
+labels describe their fixed gameplay actions. Publish through the three-host
+workflow after merge; verify all fifteen assets before preparing game0.6.1.
+
+Stable launcher **1.6.0** is the preceding published release, including shared
+audio/control settings, independent deadzones and texture/update-notice support.
 
 Stable launcher **1.5.2** is published for Windows, Mac and Linux, including
 clearer Windows startup/update error reporting, the shared Fullscreen setting

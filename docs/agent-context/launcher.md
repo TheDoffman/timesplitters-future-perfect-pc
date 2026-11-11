@@ -1,3 +1,7 @@
+Launcher1.6.1 packages the independent keyboard-edit/reset preservation fixes;
+game0.6.1 is prepared separately as a draft hotfix. Three-host release verification
+remains required; see docs/release/launcher-releases.md.
+
 Keyboard edits now preserve controller sources on the edited action, including
 conflict reassignment, unbinding and keyboard reset; reset retains device/pad
 presets. Shared Binding returns only key/none slots, and serialization retains

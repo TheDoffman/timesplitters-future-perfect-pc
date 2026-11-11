@@ -13,7 +13,7 @@
                  reserved_pads |= 1u << g_ctl[other].pad;
      }
      ReleaseSRWLockShared(&g_pc_bindings_lock);
-@@ -1056,14 +1057,13 @@
+@@ -1056,18 +1057,13 @@
      if(port==0 && c->device==DEV_KEYBOARD) {
          AcquireSRWLockShared(&g_pc_bindings_lock);
          for(int other=1;other<PORTS;other++)
@@ -26,10 +26,14 @@
                  have_pad=1;auto_pad=slot;break;
              }
 -        pc_prompts_controller(&pad,have_pad);
+-    } else if(port==0 && c->device==DEV_PAD && pc_controls_accept_pad()) {
+-        /* Explicit P1 pad assignments use the same prompt activity path as
+-         * the keyboard profile's automatic pad fallback. */
+-        pc_prompts_controller(&pad,have_pad);
      }
  #endif
  
-@@ -1079,13 +1079,14 @@
+@@ -1083,13 +1079,14 @@
              }
              InterlockedExchange(&g_pc_auto_pad,auto_pad);
          }
