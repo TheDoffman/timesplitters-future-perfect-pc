@@ -18,10 +18,10 @@ prove that public internet game connections work.
 
 On the mini, visit `http://127.0.0.1:41822` after enabling the dashboard.
 
-From the Windows source checkout, using your existing SSH connection:
+From the Windows source checkout, using the approved dashboard-only SSH connection:
 
 ```powershell
-.venv/Scripts/python.exe tools/network/view_online_dashboard.py --ssh timesplitters-mac
+.venv/Scripts/python.exe tools/network/view_online_dashboard.py --ssh timesplitters-dashboard
 ```
 
 The command opens the browser and keeps an SSH tunnel running. Leave its terminal
@@ -32,7 +32,7 @@ the host's Python path instead of `.venv/Scripts/python.exe`.
 The equivalent manual command is:
 
 ```sh
-ssh -N -o ExitOnForwardFailure=yes -L 127.0.0.1:41822:127.0.0.1:41822 timesplitters-mac
+ssh -N -o ExitOnForwardFailure=yes -L 127.0.0.1:41822:127.0.0.1:41822 timesplitters-dashboard
 ```
 
 Then open `http://127.0.0.1:41822` on that computer. Replace the SSH alias with the
@@ -40,10 +40,15 @@ mini's configured SSH name/address when using another setup. The dashboard's
 access panel can generate a command for a different SSH name.
 
 The current mini's build key is marked `restrict` in `~/.ssh/authorized_keys`,
-which denies TCP forwarding. It must not be silently broadened. Use separately
-approved dashboard-only SSH access for PC viewing; until then, the dashboard
-remains available directly on the mini. An SSH “administratively prohibited”
-message means forwarding permission was denied, rather than a dashboard outage.
+which denies TCP forwarding. It remains unchanged. With the user's approval, a
+separate `timesplitters-dashboard` alias/key now permits access only to the private
+dashboard port. Shell commands, game-port forwarding and other remote listening
+ports were tested and rejected. The alias retains strict host-key checking using
+the mini's existing pinned host-key file. Private key material stays on the PC,
+outside the repository; only its public key was installed on the mini.
+An SSH “administratively prohibited” message means forwarding permission was
+denied, rather than a dashboard outage. Other computers need their own approved
+SSH access; the dashboard key is not part of the game distribution.
 
 ## Enable it on the service
 

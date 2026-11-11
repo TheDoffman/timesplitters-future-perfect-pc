@@ -10526,3 +10526,9 @@ controls and physical Mac private-lobby observation/cleanup pass. Service is liv
 only on127.0.0.1:41822, with public ports/certificate retained and rollback backup.
 Existing build SSH key stays restricted. Separately approved dashboard-only
 access is required for PC viewing. Evidence is recorded in STATUS.
+
+Private mini dashboard access follow-up: user approved a separate restricted
+SSH key. Verified from Windows through timesplitters-dashboard to the live Mac
+API/browser; shell, off-target destination and other remote listen requests are
+rejected. Existing build key, host pinning, public ports and game service remain
+unchanged. PC-to-mini dashboard viewing is now verified; see STATUS/access guide.
