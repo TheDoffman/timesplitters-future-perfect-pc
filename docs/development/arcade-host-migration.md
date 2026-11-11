@@ -255,3 +255,10 @@ credential rejection. Other directory operations retain their five-second defaul
 The old normal-play runner could label a window completed after one peer left;
 it now requires both peers still playing at the end. That run's completed flag
 is therefore invalid as acceptance; its captured disconnect remains failure evidence.
+Shorter deadlines alone did not resolve repeated public-route handshakes
+(`mac-public-results-deadline-a`). Arcade heartbeats now opt into HTTP/1.1
+keep-alive on one thread-local, certificate-pinned connection. Reconnects verify
+the pin again before credentials; errors/worker exit close cached sockets.
+Ordinary requests retain connection-close behavior, and server idle deadlines
+and the32-worker bound remain. A real TLS regression verifies repeated reuse,
+error invalidation and reconnection. Full network/native acceptance follows.

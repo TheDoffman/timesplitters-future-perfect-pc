@@ -189,6 +189,10 @@ can retry inside the four-second engine lease. Recovery sends current native
 progress while omitting stale checkpoint/ACK authority; repeated transport failure
 closes after a bounded3.5-second failure window. Other directory calls retain5s.
 Normal-play acceptance now requires both peers still playing at the window end.
+Arcade heartbeats reuse a per-thread pinned HTTPS connection (HTTP/1.1 opt-in
+keep-alive), avoiding a new handshake for every pulse. Ordinary calls still close.
+Errors discard the connection; reconnects verify the pin before credentials.
+Heartbeat exit closes its cached socket; server idle deadlines/32-worker cap stay.
 
 ## Native multiplayer build and validation (2026-10-30)
 
