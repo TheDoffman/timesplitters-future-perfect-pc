@@ -422,7 +422,8 @@ static void mp_native_back(void)
        This action already leaves our owned lobby: retire its native session,
        then wait for the directory leave ACK before browsing again. */
     guest_call(sub_001CC360,0);
-    if(pc_online_menu_active()){pc_online_menu_leave();mp_ui.pending=0;mp_show(MP_BROWSER);mp_request(PC_OM_LEAVE);}
+    if(mp_ui.source==2u)mp_show(MP_NETWORK);
+    else if(pc_online_menu_active()){pc_online_menu_leave();mp_ui.pending=0;mp_show(MP_BROWSER);mp_request(PC_OM_LEAVE);}
     restore_registers(&saved);g_esp+=4u;
 }
 static void mp_lobby_tick(void (*original)(void),uint32_t address)
@@ -486,13 +487,13 @@ static void (*native_multiplayer_lookup(uint32_t address))(void)
     case MP_MATCH_DRAW:return mp_match_draw;
     case MP_BUILD:return mp_build;case MP_SELECT:return mp_select;case MP_BACK:return mp_back;
     case MP_TEXT_DONE:return mp_text_done;case MP_TEXT_CANCEL:return mp_text_cancel;
-    case 0x1a2730u:if(!mp_native_passthrough && !getenv("TSFP_ONLINE_TEST_COMMAND"))return mp_root_build;break;
+    case 0x1a2730u:if(!getenv("TSFP_ONLINE_TEST_COMMAND") && (!mp_native_passthrough || (mp_ui.source==2u && !WORD_AT(0x76b108u))))return mp_root_build;break;
     case 0x1a8d30u:case 0x1a8f30u:
         if(mp_ui.storage && mp_native_passthrough && WORD_AT(0x79094cu)==101u)return address==0x1a8d30u?mp_host_tick:mp_guest_tick;break;
     case 0x1a4510u:
         if(mp_ui.storage && mp_native_passthrough && WORD_AT(0x79094cu)==101u)return mp_shared_tick;break;
     case 0x1a4350u:case 0x1a8ce0u:case 0x1a8ee0u:
-        if(mp_native_passthrough && pc_online_menu_active() && WORD_AT(0x79094cu)==101u)return mp_native_back;break;
+        if(mp_native_passthrough && (mp_ui.source==2u || pc_online_menu_active()) && WORD_AT(0x79094cu)==101u)return mp_native_back;break;
     }
     return NULL;
 }

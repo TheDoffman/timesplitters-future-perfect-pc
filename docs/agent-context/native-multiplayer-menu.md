@@ -90,3 +90,7 @@ Private browsing tracks the selected server independently of an owned background
 directory. Switching to a friend's invitation never reuses the owner's loopback
 route; Host Server reconnects the existing owned directory. Background owner
 shutdown cannot interrupt an unrelated community/private connection.
+
+LAN retains native discovery/gameplay; its browser/lobby Back resets that native
+transport and returns to the shared network chooser. Reopening Multiplayer
+cannot remain stuck in the passthrough state after leaving LAN.
