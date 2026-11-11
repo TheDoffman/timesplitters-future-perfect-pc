@@ -3,7 +3,7 @@
 Development branch: `feature/arcade-join-in-progress`, based on the unmerged
 client/server split at `e97ee97a`. Online Arcade enables the shared join adapter
 by default; `TSFP_ARCADE_JOIN_IN_PROGRESS=0` disables it for rollback. The installed
-mini service has not yet enabled late joins. Keep all service policy,
+mini service now carries the private admission update. Keep all service policy,
 deployment sources and server tests private as required by
 [the client/server boundary](online-client-boundary.md).
 
@@ -12,7 +12,7 @@ current host-side configuration uses the initial human population. Increasing
 that count alone is unsafe: original `D3B00` allocates context, control and weapon
 arrays using that count. A late player would access uninitialized storage.
 
-`3020-arcade-join-contexts.patch` wraps that original allocation. The prototype in
+`3020-arcade-join-contexts.patch` wraps that original allocation. The adapter in
 `pc_arcade_join_guest.inc` reserves sixteen entries in the original three human
 storage arrays. Its `D2FD0` wrapper restores actual population counts before the
 original player constructor runs; no hidden player bodies are created up front.
@@ -86,7 +86,19 @@ precedence; delayed phase-5 packets cannot reenter catchup after phase 1 resumes
 Private admission tests cover fresh host slot reports, one pending reservation,
 loading deadlines, exact assigned-slot readiness and checkpoint digest/sequence
 acknowledgements. Those policy tests do not establish that a player can enter and
-play a running match. Native acceptance must check player creation, open slots,
-bot replacement, score/time continuity, full matches, results/rematch and host
-migration after a late join. See existing [Arcade migration](multiplayer-ui.md)
+play a running match. Native Windows empty-slot Deathmatch and Windows/Mac bot
+takeover in Team Deathmatch pass. Repeated post-join Deathmatch crash migration
+passes from the original Windows host to the other Windows player, then to the
+late-joining Mac; selected-backup scores/countdown survive and five bots keep
+fighting. Full-match rejection has private service coverage. Join-specific
+results/rematch, other modes and public-WAN gameplay remain separate acceptance
+gaps. See existing [Arcade migration](multiplayer-ui.md)
 and [crossplay acceptance](../development/arcade-host-migration.md#validation).
+
+Installed-mini Deathmatch acceptance `latejoin-mini-default-a` passes with three
+Windows games, no enable flag and identity `2d48f1eb`. It retains the original
+host, three humans/five bots, initial zero score and advancing clocks throughout
+movement and continued play. This uses the mini's existing HTTPS/UDP listeners
+over LAN; it does not establish public-WAN reachability. Client code is pushed;
+the two deployed service modules remain private, with the previous service saved
+privately for rollback. No public release is implied.

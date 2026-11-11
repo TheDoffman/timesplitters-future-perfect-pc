@@ -27,15 +27,18 @@ pass. Windows live markerless Custom remap/movement/fire/reload/rebinding passed
 this is synthetic input through the real game, not physical Mac/Deck acceptance.
 No platform fork or saved-config migration. See STATUS.
 
-Arcade join in progress (`feature/arcade-join-in-progress`): **In development**.
+Arcade join in progress (`feature/arcade-join-in-progress`): **Verified** for
+native Mac Deathmatch/Team Deathmatch late joins.
 Shared storage/constructor hooks, checkpoint catchup and client slot reports use
 existing Windows/Mac/Linux interfaces; no new OS adapter is required. Windows
 bot replacement and empty-slot gameplay pass. Native Mac late-join Team Deathmatch
 passes with the bot's team, initial zero score, movement and synchronized clocks.
-Mac full native build/built-in checks and 21 focused tests pass at `4e7b3184`.
-The later default-enablement change needs matching final rebuilds. Post-join
-migration, installed mini acceptance and Linux validation remain pending. The
-private service is unchanged. See STATUS and
+Mac also continues as host after two post-join crash migrations, preserving scored
+backups, countdown and fighting bots. Final native build/built-in checks and 21
+focused tests pass at `07eb6ef5`, identity `2d48f1eb`, matching Windows. The private
+mini service is deployed and healthy; installed-service LAN Deathmatch passes
+with three Windows games using the default settings.
+Linux, other modes and public-WAN gameplay remain unverified. See STATUS and
 [the focused guide](../agent-context/arcade-join-in-progress.md).
 
 #540 native explicit-controller prompts (local): patch2955 corrects shared

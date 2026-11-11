@@ -130,13 +130,24 @@ Combat continues during loading; zero must be checked at promotion, not several
 seconds later after new scoring events. The native probe now records actor scores
 and teams. Mac full native build/built-in checks and 21 focused tests pass. Windows
 four compiled fixtures and 31 compiler/client/observer tests pass (one skip).
+Post-join repeated Deathmatch crash migration (`latejoin-migration-mac-a`) passes:
+Windows host 0 -> Windows player 1 -> late Mac player 2. Selected clocks/countdowns
+are 1920/34264 then 3115/33069; survivor clocks resume within nine ticks, score
+rows remain and five bots keep moving/fighting after each handoff.
 Private admission/service tests pass 15 cases, including rejecting old-population
-migration backups after promotion. The wider 275-test regression (9 skips) predates
-the lazy constructor and needs a final rerun. Source now enables online Arcade by
+migration backups after promotion. Final Windows network/compiler regression
+passes 128 tests (9 skips). Final Windows/Mac builds match identity `2d48f1eb`;
+Mac built-in checks and 21 focused tests pass again. Online Arcade is enabled by
 default, with explicit environment `0` as rollback; default/explicit `1` compiled
-fixtures pass. Matching final rebuilds, post-join host migration, installed mini
-acceptance and public-WAN acceptance remain pending. Production mini service is
-unchanged; server sources stay private. No publication is claimed.
+fixtures pass. Only the two private service modules were deployed to the idle
+mini; all ten other installed files remained unchanged and the service restarted
+healthy on its existing ports. Installed-mini LAN Deathmatch acceptance
+`latejoin-mini-default-a` passes with three Windows games and no enable flag:
+mid-match bot takeover starts at zero, all players move, five bots continue and
+the original host/clock remain healthy for the full probe. The mini forwards
+150,360 packets, and all test members/rooms are gone after normal cleanup.
+Public-WAN gameplay remains unverified. Server sources stay private; no release
+publication is claimed.
 
 #540 controller prompts (local, main77b57432): report describes Linux0.6.0 with
 controller-only input; no issue comments or diagnostics. Production sampler
