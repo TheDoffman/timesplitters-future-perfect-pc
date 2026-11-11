@@ -103,6 +103,8 @@ def test_dashboard_only_serves_whitelisted_read_only_loopback_routes():
         assert headers['X-Frame-Options']=='DENY' and headers['Cache-Control']=='no-store'
         assert "frame-ancestors 'none'" in headers['Content-Security-Policy']
         assert get('/api/status',{'Host':'attacker.invalid'})[0]==403
+        assert get('/api/status',{'Host':'127.0.0.1:59999'})[0]==200  # Different SSH local port.
+        assert get('/api/status',{'Host':'127.0.0.1:99999'})[0]==403
         assert get('/api/status',{'Sec-Fetch-Site':'cross-site'})[0]==403
         assert get('/../../certificate/private-key.pem')[0]==404
         assert get('/api/status',method='DELETE')[0]==501

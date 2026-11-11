@@ -5,7 +5,8 @@ service process. `lobby_server.py --dashboard-port PORT` binds a second HTTP ser
 strictly to127.0.0.1. It never adds an admin endpoint to the public HTTPS listener.
 The static HTML/CSS/JS use no external packages or assets. The private HTTP server
 limits eight workers and three-second idle reads, verifies Host, rejects cross-site
-fetches, and supplies CSP/frame/no-cache headers. It has no write routes.
+fetches (loopback Host names may use a different SSH-forwarded port),
+and supplies CSP/frame/no-cache headers. It has no write routes.
 
 `Monitor` samples once/second with180 traffic samples and100 events retained in
 memory. Snapshots whitelist room labels, peer/native IDs, role, native progress
