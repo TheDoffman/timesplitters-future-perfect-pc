@@ -76,8 +76,8 @@ No release/completion is claimed.
 
 IPC version2 adds bounded native scene/mode identifiers and a separate `.match`
 message; metadata publishing never consumes a UI request sequence. The host
-publishes localized map/rules from the same live `7DE400` selection used by the
-stock `353400` advertisement, in lobby and gameplay. The hidden client validates
+publishes localized map/rules from the frontend selection `78AD58` in the lobby
+and the active `7DE400` selection during gameplay (stock `353400` advertisement). The hidden client validates
 all fields and sends details only as current authenticated host. Backend display
 support remains private. Details never control admission, epochs or restoration.
 Three rows/page use the original `1CBDA0` painter for verified Arcade map/mode
