@@ -130,7 +130,9 @@ advances 300 ticks in the final five seconds; the countdown keeps decreasing.
 The original host remains authoritative. Earlier window-only success was rejected
 because its host stopped ticking; the private probe now rejects unexpected host
 migration and frozen clocks. Native empty-slot, team retention, post-join migration,
-Mac/crossplay and public-WAN acceptance remain pending. Feature activation still
+Mac/crossplay and public-WAN acceptance remain pending. Native Mac focused tests
+(21), the full native build and built-in checks passed at `3e8d9210`/`efcc1925`;
+subsequent empty-slot fixes require rebuilding. Feature activation still
 requires the experimental environment flag. Production mini service is unchanged;
 server sources stay private. No publication is claimed.
 

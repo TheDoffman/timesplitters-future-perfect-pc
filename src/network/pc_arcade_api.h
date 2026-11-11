@@ -25,6 +25,6 @@ void pc_arcade_join_allocate(void (*original)(void));
 int pc_arcade_join_initial_construct(void (*original)(void));
 int pc_arcade_join_context_entry(void);
 int pc_arcade_join_context_tail(void);
-void pc_arcade_join_frame(void);
+void pc_arcade_join_frame(const PcArcadeControlState *control);
 #endif
 #endif

@@ -12,7 +12,7 @@ ptrdiff_t g_xbox_mem_offset;
 static unsigned presents,refreshes,departures,rebases,revives;
 static int overlay_migrating;
 void pc_match_overlay_migration(int active){overlay_migrating=active;}
-void pc_arcade_join_frame(void){}
+void pc_arcade_join_frame(const PcArcadeControlState *control){(void)control;}
 PcOnlineMode pc_online_mode(void){return PC_ONLINE_ARCADE;}
 void pc_character_ragdoll_release(uint32_t entity){(void)entity;}
 void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *s)
