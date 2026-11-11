@@ -187,7 +187,7 @@ MOUSE_STUB(sub_000746D0) MOUSE_STUB(sub_0007CCA0) MOUSE_STUB(sub_00071940)
 MOUSE_STUB(sub_001A2720) MOUSE_STUB(sub_001CBA50) MOUSE_STUB(sub_001CBD40)
 MOUSE_STUB(sub_00352980) MOUSE_STUB(sub_00352990) MOUSE_STUB(sub_0007D090)
 MOUSE_STUB(sub_001A4510) MOUSE_STUB(sub_000318A0) MOUSE_STUB(sub_003800D1)
-MOUSE_STUB(sub_001CBDA0) MOUSE_STUB(sub_00064E20)
+MOUSE_STUB(sub_001CBDA0) MOUSE_STUB(sub_00064E20) MOUSE_STUB(sub_00077110)
 #undef MOUSE_STUB
 /* Bot helpers share the menu translation unit, but must never execute in
  * this isolated FOV fixture. Bot behavior has its own network regressions. */
