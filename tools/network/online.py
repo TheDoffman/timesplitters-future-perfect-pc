@@ -18,7 +18,6 @@ else:
 import argparse
 import ctypes
 import importlib.util
-import ipaddress
 import json
 import os
 from pathlib import Path
@@ -31,7 +30,7 @@ from tkinter import messagebox
 from online_platform import GameProcess, show_error
 from online_client import Client, Session
 from online_arcade_client import ArcadeSession, list_arcade, join_arcade
-from online_host import fetch_public_ipv4, invitation, parse_invitation, start_match
+from online_host import invitation, parse_invitation
 from online_paths import ROOT, HANDSHAKES, SETTINGS, MANIFEST, TOOLS, service_defaults
 from online_theme import OnlineTheme, build_browser, build_invitation
 
@@ -77,16 +76,6 @@ def main():
     port = tk.StringVar(value=str(saved.get('port', 30821)))
     code = tk.StringVar()
     listed = tk.BooleanVar(value=True)
-    automatic = tk.BooleanVar(value=saved.get('automatic_host', False))
-    detect_ip = tk.BooleanVar(value=saved.get('detect_public_address', True))
-    inferred_public = ''
-    try:
-        previous = ipaddress.IPv4Address(Client(address.get()).url.hostname)
-        if not previous.is_loopback:
-            inferred_public = str(previous)
-    except ValueError:
-        pass
-    public_ip = tk.StringVar(value=saved.get('public_address', inferred_public))
     status = tk.StringVar(value='Ready. Browse lobbies or start a match.' if address.get() else
         'Enter the shared server address in Directory settings, or paste an invitation.')
     session = [None]
@@ -105,8 +94,7 @@ def main():
         temporary = state.with_suffix('.json.tmp')
         temporary.write_text(json.dumps(dict(directory=address.get().strip(), fingerprint=pin.get().strip(),
                                             name=name.get().strip(), port=int(port.get()),
-                                            automatic_host=automatic.get(), public_address=public_ip.get().strip(),
-                                            detect_public_address=detect_ip.get()), indent=2)+'\n')
+                                            automatic_host=False), indent=2)+'\n')
         temporary.replace(state)
 
     def work(action, done):
@@ -140,10 +128,6 @@ def main():
 
     def connected(active):
         session[0] = active
-        if active.local_directory:
-            address.set(active.local_directory.address)
-            pin.set(active.local_directory.fingerprint)
-            public_ip.set(Client(active.local_directory.public_url).url.hostname)
         try:
             save()
             temporary = result.with_suffix('.tmp')
@@ -190,16 +174,10 @@ def main():
             host_name, host_port, public = name.get().strip(), int(port.get()), listed.get()
             if not 1024 <= host_port <= 65535:
                 raise ValueError('Choose a UDP port between 1024 and 65535')
-            if automatic.get():
-                public_address = None if detect_ip.get() else public_ip.get().strip()
-                work(lambda: start_match(ROOT, public_address, args.compatibility, host_name, host_port, public, mode=args.mode), connected)
-                status.set('Detecting public IPv4 and starting the directory...' if public_address is None else
-                           'Starting the directory...')
-            else:
-                directory = client()
-                work(lambda: ArcadeSession.open(directory, args.compatibility, name=host_name, public=public)
-                     if migrating[0] else Session.create(directory, args.compatibility, host_name, host_port, public,
-                     mode=args.mode, transport=requested_transport[0]), connected)
+            directory = client()
+            work(lambda: ArcadeSession.open(directory, args.compatibility, name=host_name, public=public)
+                 if migrating[0] else Session.create(directory, args.compatibility, host_name, host_port, public,
+                 mode=args.mode, transport=requested_transport[0]), connected)
         except Exception as error:
             status.set(str(error))
 
@@ -211,15 +189,10 @@ def main():
         build_invitation(share, value, active.lobby['code'], active.lobby['port'],
                          relayed=active.lobby.get('transport') == 'relay')
 
-    def detected(value):
-        public_ip.set(value)
-        status.set('Public IPv4 detected. Forward TCP 30820 and your selected UDP port to this PC.')
-
     browser = build_browser(window, dict(address=address, pin=pin, name=name, port=port,
-        code=code, listed=listed, automatic=automatic, detect_ip=detect_ip,
-        public_ip=public_ip, status=status), dict(refresh=refresh, join_selected=join_selected,
+        code=code, listed=listed, status=status), dict(refresh=refresh, join_selected=join_selected,
         join_code=lambda: join(code.get().strip()), host=host,
-        detect=lambda: work(fetch_public_ipv4, detected), cancel=window.destroy))
+        cancel=window.destroy))
 
     def poll():
         if parent.exited() or result.with_suffix('.stop').exists():
@@ -255,9 +228,6 @@ def main():
         address.set(command['directory'])
         pin.set(command.get('fingerprint', ''))
         if command['action'] == 'host':
-            automatic.set(command.get('automatic_host', False))
-            detect_ip.set(command.get('detect_public_address', False))
-            public_ip.set(command.get('public_address', ''))
             port.set(str(command['port']))
             window.after(300, host)
         elif command['action'] == 'join':

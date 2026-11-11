@@ -1,6 +1,6 @@
-[Input](controls-options.md); [Online](multiplayer-ui.md); [Mini](mini-server-dashboard.md).
+[Input](controls-options.md); [Online](multiplayer-ui.md); [Client](online-client-boundary.md).
 [Crossplay](../development/arcade-host-migration.md#validation).
-[Axes/axes](control-presets.md); [Tex](texture-preference.md).
+[Axes](control-presets.md); [Tex](texture-preference.md).
 [Arms](video-options.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).

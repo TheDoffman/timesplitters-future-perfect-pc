@@ -10,7 +10,7 @@ import time
 import zlib
 
 from online_client import Session, DirectoryError
-from online_migration import SCHEMA
+SCHEMA = 'tsfp-arcade-checkpoint-v1'
 from online_transport import Bridge, LOCAL, LOCAL_MAGIC, virtual_ip, relay_endpoint
 
 CHUNK = 1200
