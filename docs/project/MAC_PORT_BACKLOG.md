@@ -1,3 +1,24 @@
+Device switching/menu glyph follow-up (local, base a7762fce): shared patch2970
+and shared prompt state reserve controllers by actual joined-player ownership,
+allow late-connected unjoined controllers to share P1, and track menu activity
+per port. Both host sampler paths use the same policy; no OS adapter is needed.
+Windows fixtures and real SDL virtual reconnect tests pass; physical gameplay
+and native Mac/Linux host acceptance remain pending. See STATUS for build scope.
+
+Keyboard/controller independence follow-up (local, base a7762fce):2965 extends
+2960 to every named keyboard action, with explicit stable meanings for legacy
+Y/Black/White aliases. Shared native settings and launcher edits/unbinding/reset
+preserve controller sources and device/preset choices; runtime supports two keys
+plus four pad sources. No OS adapter is needed; C/managed implementations serve
+Windows, native Mac and Linux. Both sampler defines pass; physical Mac/Linux
+and post-fix gameplay acceptance remain pending. See STATUS for measured checks.
+
+Legacy Custom keyboard axis follow-up (local, base a7762fce): shared patch2960
+removes the preset-marker requirement for keyboard movement/look axis routing.
+Windows live read-only observation found axes4,1,2,3 with markerless Custom keys;
+the new regression reproduces the old failure and passes after the fix. Both
+sampler adapter defines pass; Mac/Linux physical gameplay remains unverified.
+No OS adapter is needed; see STATUS for build and acceptance results.
 Legacy keyboard/controller isolation (local after0692efdf): patch2960 and shared
 pc_bindings.inc route markerless Custom keyboard actions/prompts semantically.
 No OS adapter is needed; native event handling is unchanged. Production sampler

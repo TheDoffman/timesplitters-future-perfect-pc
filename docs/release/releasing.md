@@ -4,17 +4,14 @@
 
 [Back to the README](../../README.md) | [Launcher releases](launcher-releases.md)
 
-Game and launcher versions are independent. The next Stable game source version
-is **0.6.0**, including the audio overhaul, Modern control presets, independent
-controller deadzones, high-FPS timing and rendering fixes, persistent texture
-preferences, responsive Online startup and main-menu update notices. It bundles
-launcher **1.6.0**, which must be published through its workflow first. These
-new features justify a minor version bump. Build Windows, Apple Silicon
-Mac and Linux packages from the same clean source and verify all nine assets
-before publication. Version preparation does not establish full campaign or
-platform validation. Historical
-alpha and `-preview.N` releases remain available in Game versions; do not
-relabel their assets or offer them as Beta updates.
+Game and launcher versions are independent. The next Stable hotfix source is
+**0.6.1**, restoring fresh-profile movement, independent keyboard/controller
+controls, live device switching and controller menu prompts. It includes the
+Online startup feedback fixes merged since0.6.0. Prepare a **draft** game release;
+launcher **1.6.1** must be published first. Windows packaging and native Mac/Linux
+packages require the same clean source revision. The local publisher supplies
+Windows assets; matching native assets and host acceptance remain separate work.
+Keep issues open until the game hotfix is published.
 
 ## Versions and channels
 

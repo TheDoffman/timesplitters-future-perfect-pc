@@ -1,7 +1,37 @@
 /* Shared Modern PC overrides: action, first VK, second VK. Other keys retain factory defaults. */
+#ifdef PC_MODERN_KEY
 PC_MODERN_KEY(0, 69, 0)
 PC_MODERN_KEY(1, 70, 5)
 PC_MODERN_KEY(10, 66, 33)
 PC_MODERN_KEY(11, 86, 34)
 PC_MODERN_KEY(12, 81, 134)
 PC_MODERN_KEY(13, 39, 135)
+#endif
+
+/* Physical defaults inherited when a JSON binding member is absent. */
+#ifdef PC_PAD_SOURCE
+PC_PAD_SOURCE(0, "pad:a")
+PC_PAD_SOURCE(1, "pad:b")
+PC_PAD_SOURCE(2, "pad:x")
+PC_PAD_SOURCE(3, "pad:y")
+PC_PAD_SOURCE(4, "pad:lshoulder")
+PC_PAD_SOURCE(5, "pad:rshoulder")
+PC_PAD_SOURCE(6, "pad:start")
+PC_PAD_SOURCE(7, "pad:back")
+PC_PAD_SOURCE(8, "pad:lt")
+PC_PAD_SOURCE(9, "pad:rt")
+PC_PAD_SOURCE(10, "pad:dpad_up")
+PC_PAD_SOURCE(11, "pad:dpad_down")
+PC_PAD_SOURCE(12, "pad:dpad_left")
+PC_PAD_SOURCE(13, "pad:dpad_right")
+PC_PAD_SOURCE(14, "pad:ly+")
+PC_PAD_SOURCE(15, "pad:ly-")
+PC_PAD_SOURCE(16, "pad:lx-")
+PC_PAD_SOURCE(17, "pad:lx+")
+PC_PAD_SOURCE(18, "pad:lthumb")
+PC_PAD_SOURCE(19, "pad:ry+")
+PC_PAD_SOURCE(20, "pad:ry-")
+PC_PAD_SOURCE(21, "pad:rx-")
+PC_PAD_SOURCE(22, "pad:rx+")
+PC_PAD_SOURCE(23, "pad:rthumb")
+#endif

@@ -14,6 +14,18 @@ ROOT = Path(__file__).resolve().parents[2]
 RUNTIME = ROOT / "external/ts3FPrecomp/src"
 
 
+def test_shared_pad_sources_match_runtime_defaults():
+    source=(RUNTIME / 'input/input_bindings.c').read_text()
+    controls=source.split('} CONTROLS[] = {',1)[1].split('};',1)[0]
+    names=re.findall(r'\{\s*"([^"]+)"',controls)[:24]
+    defaults=source.split('} DEFAULTS[] = {',1)[1].split('};',1)[0]
+    pads=dict(re.findall(r'\{\s*"([^"]+)",\s*"([^"]+)"',defaults))
+    shared=(ROOT / 'src/input/pc_control_presets.def').read_text()
+    rows=re.findall(r'PC_PAD_SOURCE\((\d+), "([^"]+)"\)',shared)
+    assert len(names)==len(rows)==24
+    assert [(int(index),token) for index,token in rows]==[(i,pads[name]) for i,name in enumerate(names)]
+
+
 def test_native_developer_player_keys(tmp_path):
     production = (RUNTIME / 'input/input_bindings.c').read_text()
     native = (ROOT / 'src/native/input_sdl.c').read_text()
@@ -49,6 +61,9 @@ def test_local_player_host_routing(tmp_path, adapter, mutation):
             'semantic_keyboard=port==0 && c->device==DEV_KEYBOARD && g_pc_custom_semantics;', sampler)
         assert changed == 1, 'Restore the legacy-config gate, not the axis mapping'
     fixture = (ROOT / "tests/input/local_player_routing.c").read_text()
+    prompts=(ROOT / 'src/input/pc_prompts.c').read_text()
+    prompts=prompts[prompts.index('static SRWLOCK prompt_lock'):prompts.index('static void key_label(')]
+    fixture=fixture.replace('/* PRODUCTION_PROMPTS */',prompts)
     axis_helper = re.search(r'static int control_magnitude\(.*?\n\}', production, re.S).group()
     fixture = fixture.replace('/* PRODUCTION_SAMPLER */', '#define '+adapter+'\n'+axis_helper+'\n'+reload_helper+'\n'+sampler)
     source = tmp_path / "routing.c"; source.write_text(fixture)

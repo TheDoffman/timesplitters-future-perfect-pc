@@ -40,13 +40,17 @@ void pc_settings_defaults(PcSettings *settings);
 void pc_settings_modern(PcSettings *settings);
 int pc_settings_custom_read(PcSettings *settings,char *error,size_t bytes);
 int pc_settings_controller_preset(unsigned port);
-/* New-setup semantic Custom bindings; absent in existing configurations. */
+/* New-setup native profile seed marker; keyboard routing is always semantic. */
 int pc_settings_custom_semantics(void);
 int pc_settings_controller_preset_save(unsigned port,int modern,char *error,size_t bytes);
 /* Native gameplay roles for this local port; identity outside gameplay. */
 typedef int (*PcGameplayMasks)(unsigned port,unsigned masks[24],int *mounted);
 void pc_settings_gameplay_reader(PcGameplayMasks reader);
 int pc_settings_gameplay_masks(unsigned port,unsigned masks[24],int *mounted);
+/* Logical ports owned by joined local players, not saved device preferences. */
+typedef unsigned (*PcActiveInputPorts)(void);
+void pc_settings_active_ports_reader(PcActiveInputPorts reader);
+unsigned pc_settings_active_ports(void);
 int pc_settings_prompt_keys(int keys[PC_ACTION_COUNT]);
 int pc_settings_read(PcSettings *settings, char *error, size_t bytes);
 int pc_settings_save(const PcSettings *settings, char *error, size_t bytes);

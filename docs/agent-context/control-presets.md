@@ -164,6 +164,64 @@ Mouse look already writes camera angles directly, independently of stick layout.
 Sampler tests cover swapped sticks, optional keyboard look, edited Forward and
 unchanged Custom pad input on both host adapters; FOV fixture covers live selectors.
 
+Patch2960 extends axis independence to markerless legacy Custom keyboard files.
+Reading live gameplay selectors no longer depends on preset/semantic metadata;
+only keyboard axis sources originally used this unconditional route. Patch2965
+extends it to all named keyboard actions; pad sources and menu input remain separate.
+The regression runs swapped Run/Look, W/S, optional look, edited Forward and
+menu fallback with custom_binding_semantics both absent/zero and enabled.
+
+Keyboard/controller independence (2965): keyboard Fire/Use/Reload/Aim/Melee/
+Crouch/grenade/weapon actions always follow their named roles, including legacy
+Custom files without preset metadata. Physical Custom pad sources still follow
+the controller layout. Old y/black/white JSON entries retain their keys as extra
+Next weapon/Weapon mode/Throw grenade bindings, using the shared Modern action
+table; labels in native menus, F2 and the launcher name those fixed roles.
+Gameplay prompt remapping uses the same roles for legacy and new configurations.
+Menus, editor input, weapon slots and developer shortcuts retain their own routes.
+
+Keyboard editing never replaces non-key sources on the edited action. Runtime
+MAX_SOURCES is6: two keyboard slots plus four retained legacy controller sources.
+pc_binding_keyboard_edit preserves original pad tokens, prepares the next binding,
+and publishes only after atomic save succeeds. Missing actions retain inherited
+pad defaults from the shared PC_PAD_SOURCE table in pc_control_presets.def;
+the registered parser contract compares every entry with the pinned runtime.
+Shared launcher Binding exposes keyboard/none entries only;
+SetKeyboardBinding retains pad tokens across assignments, conflict moves and
+keyboard reset, which also leaves the selected device/controller presets intact.
+This six-source combined format requires the updated runtime when all slots are used.
+
+The sampler fixture cycles all11 native button roles through every button target
+for14 keyboard sources, including aliases, verifies key edits leave the action
+unchanged, and compares same-player physical pad output before/after key edits.
+Native settings built-ins and shared launcher UI save/unbind/reset keys alongside
+four pad sources. Historical partial-stack fixtures defer2965 with2960/2950/2940.
+
+Active-player pad sharing (2970): saved device preferences reserve a physical pad
+only while that logical port belongs to a joined local player. P1 keyboard/mouse
+can borrow an unjoined P2 controller, including one connected after startup;
+joining P2 reserves it again and leaving returns sharing. No preferences change.
+pc_settings_active_ports snapshots its reader under the binding lock and invokes
+it after unlocking; before guest registration it retains auto-port fallback.
+controls_active_ports reads local count5236c4, active contexts790950/7b0c48 and
+local-owner mapping6b93c0; frontend ownership74e914 excludes waiting state1 at
+74f9ec. Remote contexts do not reserve pads. Both Windows and SDL sampler paths
+use this ownership mask and retain focus/modal/free-camera input gates.
+
+pc_prompts_controller_port caches activity independently for each port. Only an
+active controller's disconnect restores keyboard glyphs; idle polls from other
+ports do not. P1 activity selects gameplay prompts; joined local players can also
+select controller prompts in menus without changing P1 gameplay HUD ownership.
+Keyboard/mouse activity restores keyboard prompts; unchanged held pad input does
+not steal them back. The original single-port prompt API wraps port0.
+
+The routing fixture embeds production prompt code and checks late connection,
+repeated disconnect/reconnect, keyboard/controller switching, menu glyph edges,
+joined P2 reservation (including stale auto flags), leaving and unchanged settings.
+The real SDL lifecycle test starts polling before virtual pads attach and permits
+existing physical devices; it checks six reconnect cycles with another pad held.
+Native keyboard-presence checks permit physical controllers to coexist. Virtual
+SDL events and host-adapter fixtures do not establish physical gameplay acceptance.
 Legacy keyboard isolation follow-up: patch2960 removes the new-profile marker gate
 from gameplay routing. pc_settings_prompt_keys uses keyboard-device ownership for
 semantic label lookup too. Markerless Custom keys therefore follow Move/Strafe/Look,
@@ -173,3 +231,16 @@ still follow their own configured/native layout. The production sampler fixture
 injects OS key states on every host and checks markerless remaps on both adapter
 modes, plus a negative control reinstating the old gate. Profile seed policy is
 unchanged. This does not supply keyboard actions for native actions left unbound.
+
+Release integration: main's2960-keyboard-gameplay-independence supersedes the
+local axis-only2960 patch.2965 now follows that semantic route, adding fixed
+legacy aliases and six-source preservation.2970 follows2955 and replaces all
+per-adapter prompt notifications with the common per-port path; explicit P1
+controller prompt behavior remains covered using production prompt code. The
+fixture retains main's cross-host synthetic key evaluator and old-gate negative
+control. No upstream input repair is dropped.
+
+Cross-host integration checks use the runtime platform SRWLOCK declaration in the
+production-prompt fixture; redeclaring it under non-Windows breaks Clang. Native
+launcher JSON keeps '+' literal so preserved pad:ry+/rx+ sources remain readable
+by the runtime parser. The shared UI inheritance regression covers this contract.

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "d2bfad7a43da052228d1f08313bad11e656066cfb041a0b80ddd2089b9a92295",
+  "loaderSha256": "55d916d1ed12676c9971a282101bcf3dfc702c6414da5ba0494358af311c3957",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3824,6 +3824,22 @@
       "name": "2960-keyboard-gameplay-independence.patch",
       "path": "patches/input/2960-keyboard-gameplay-independence.patch",
       "sha256": "794eec93a7763050a2ebc29b3dc29a4a672d642fb3459bbe1b67d0b206f31f37",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2965-independent-keyboard-actions.patch",
+      "path": "patches/input/2965-independent-keyboard-actions.patch",
+      "sha256": "c2d9e48023b2ca2841624cdcb992006ac77b8bdad56fbd148fad0ccacc524c6d",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2970-active-player-pad-sharing.patch",
+      "path": "patches/input/2970-active-player-pad-sharing.patch",
+      "sha256": "93132d52469066956aaa654e7239c447124c11026cc2f086e18e1942a063bd78",
       "targets": [
         "src/input/input_bindings.c"
       ]

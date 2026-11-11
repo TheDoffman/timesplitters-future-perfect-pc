@@ -21,11 +21,13 @@ size_t pc_prompts_read_span(uintptr_t address,size_t minimum)
 { return pc_text_read_span(&text_read_scope,address,minimum); }
 
 static SRWLOCK prompt_lock = SRWLOCK_INIT;
-static RecompPadState previous_pad;
+static RecompPadState previous_pads[4];
+static unsigned active_controller_port=4;
 static int keyboard_active = 1;
 
 static void select_device(int keyboard)
 {
+    if(keyboard)active_controller_port=4;
     if (keyboard_active == keyboard) return;
     keyboard_active = keyboard;
     fprintf(stderr,"[PC-PROMPTS] %s controls\n",keyboard ? "keyboard/mouse" : "controller");
@@ -34,7 +36,7 @@ static void select_device(int keyboard)
 void pc_prompts_reset(void)
 {
     AcquireSRWLockExclusive(&prompt_lock);
-    memset(&previous_pad,0,sizeof previous_pad);
+    memset(previous_pads,0,sizeof previous_pads);active_controller_port=4;
     keyboard_active=1;
     ReleaseSRWLockExclusive(&prompt_lock);
 }
@@ -58,26 +60,31 @@ static int axis_activity(short current, short *previous, int deadzone)
 }
 
 void pc_prompts_controller(const RecompPadState *pad, int connected)
+{pc_prompts_controller_port(0,pad,connected,1);}
+
+void pc_prompts_controller_port(unsigned port,const RecompPadState *pad,int connected,int eligible)
 {
     int active=0;
+    if(port>=4 || (connected && !pad))return;
     AcquireSRWLockExclusive(&prompt_lock);
+    RecompPadState *previous=&previous_pads[port];
     if (!connected) {
-        memset(&previous_pad,0,sizeof previous_pad);
-        select_device(1);
+        memset(previous,0,sizeof *previous);
+        if(active_controller_port==port)select_device(1);
     } else {
-        active=(pad->buttons & ~previous_pad.buttons)!=0;
+        active=(pad->buttons & ~previous->buttons)!=0;
         active |= pad->left_trigger>=30 &&
-            (previous_pad.left_trigger<30 || pad->left_trigger>previous_pad.left_trigger+8);
+            (previous->left_trigger<30 || pad->left_trigger>previous->left_trigger+8);
         active |= pad->right_trigger>=30 &&
-            (previous_pad.right_trigger<30 || pad->right_trigger>previous_pad.right_trigger+8);
-        active |= axis_activity(pad->lx,&previous_pad.lx,7849);
-        active |= axis_activity(pad->ly,&previous_pad.ly,7849);
-        active |= axis_activity(pad->rx,&previous_pad.rx,8689);
-        active |= axis_activity(pad->ry,&previous_pad.ry,8689);
-        previous_pad.buttons=pad->buttons;
-        previous_pad.left_trigger=pad->left_trigger;
-        previous_pad.right_trigger=pad->right_trigger;
-        if (active) select_device(0);
+            (previous->right_trigger<30 || pad->right_trigger>previous->right_trigger+8);
+        active |= axis_activity(pad->lx,&previous->lx,7849);
+        active |= axis_activity(pad->ly,&previous->ly,7849);
+        active |= axis_activity(pad->rx,&previous->rx,8689);
+        active |= axis_activity(pad->ry,&previous->ry,8689);
+        previous->buttons=pad->buttons;
+        previous->left_trigger=pad->left_trigger;
+        previous->right_trigger=pad->right_trigger;
+        if (active && eligible) {active_controller_port=port;select_device(0);}
     }
     ReleaseSRWLockExclusive(&prompt_lock);
 }

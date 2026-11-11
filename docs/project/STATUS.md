@@ -1,3 +1,73 @@
+Hotfix integrated validation (2026-11-10): Windows x64 supported MSVC Release
+Build/built-ins and full launcher1.6.1 build/test pass. Integrated input/menu/FOV
+suite70 pass,2 host skips, retaining upstream negative controls and explicit-P1
+prompt checks. Full patch stack applies after reconciling main; publication
+workflow and full release suite remain pending. User reports switching seems good.
+
+Hotfix release preparation (2026-11-10): user reports live device switching
+seems good on the rebuilt Windows game. Preparing game0.6.1 draft and launcher
+1.6.1 publication; incorporating main PRs542/543 and retaining their native input
+repairs. Previous local axis-only2960 is superseded by main2960;2965/2970 follow
+it. Integration/release checks and cross-host workflow results recorded below
+when available. Physical Mac/Linux acceptance remains pending.
+
+Live device switching follow-up (2026-11-10, local base a7762fce): saved P2
+controller preferences blocked P1 pad sharing even in single-player. Patch2970
+reserves pads only for actually joined local ports, in both Windows/SDL samplers.
+Per-port prompt activity lets joined controllers select menu glyphs without idle
+P1 polls resetting them; gameplay HUD selection remains P1-owned. Hot connection
+and reconnection reuse existing backend discovery. Personal settings/saves remain
+unchanged. Windows x64 focused input/menu/FOV suites:68 pass,2 platform skips,
+including actual SDL virtual-device late attachment/reconnect beside a connected
+physical Xbox controller. Guest ownership reader tests include pause/frontend,
+remapped contexts and remote exclusion. Supported Windows MSVC/MSBuild17.12.6 Release rebuild, built-in checks and
+matching crash symbols pass. Final historical-stack upgrade/tracking checks:26
+pass. Context/index and whitespace checks pass. Physical gameplay switching and
+native Mac/Linux hardware acceptance remain unverified. Changes local/uncommitted.
+Evidence: logs/switching-input-tests-complete.log, switching-build-final.log and
+switching-upgrades-final.log (all under logs).
+
+Keyboard/controller independence (2026-11-10, local base a7762fce):2965 extends
+the markerless axis fix to all named keyboard button actions. Native and launcher
+labels give legacy Y/Black/White keys fixed extra Next weapon/Weapon mode/Throw
+grenade meanings using the shared Modern action table; keyboard prompts follow
+the same semantic roles. Controller layout changes do not rewrite keyboard keys;
+keyboard edits/unbinding/default reset preserve explicit and inherited controller
+sources on each edited action. Runtime and launcher support two keyboard slots
+beside four retained pad sources; native publication remains atomic after saving.
+Keyboard reset also retains the chosen device and controller preset. Shared
+PC_PAD_SOURCE entries describe inherited defaults and are checked against the
+pinned runtime parser table. The updated runtime is required for six-source rows.
+Windows x64 supported MSVC/MSBuild17.12.6 Release Build, built-in persistence/
+reset checks and matching crash symbols pass. Final input/menu/FOV suites60 pass,
+2 platform skips; selected old-control/Mac-stack upgrade and complete patch-tracking
+suite26 pass. Full Windows launcher build/test passes, including shared UI edit,
+unbinding, reset, device/preset and inherited/explicit pad-source cases. Both
+sampler adapter defines cover all11 native button targets for14 keyboard sources,
+swapped sticks and same-player pad output before/after keyboard edits. Context,
+index and whitespace checks pass. Post-fix live gameplay, physical controller
+and Mac/Linux hardware acceptance remain pending; no personal saves/settings
+were changed. Changes local/uncommitted on fix/fresh-profile-movement.
+Evidence: logs/independent-actions-tests-complete.log, independent-actions-build-
+complete.log, independent-actions-launcher-complete.log and independent-actions-
+upgrades.log (all under logs).
+
+Markerless Custom keyboard correction (2026-11-10, local base a7762fce): the
+previous axis fix required Modern or custom_binding_semantics=1 and therefore
+missed the user's existing markerless Custom configuration. Read-only observation
+of their running Windows game captured native axes4,1,2,3 and W/S presses while
+their saved keys still targeted left-stick Y. Patch2960 now reads gameplay axis
+selectors for every P1 keyboard configuration and translates keyboard axes only;
+legacy buttons, physical pad sources, menus and saved settings retain their policy.
+The added markerless regression failed before the fix; the final sampler/FOV
+suites pass53 checks with2 platform skips on Windows x64, including both sampler
+adapter defines. All62 patch upgrade/tracking checks pass. Supported Windows
+Release Build, built-in checks and matching crash symbols pass. Context/index
+and whitespace checks pass. The rebuilt game
+has not yet been verified in gameplay; Mac/Linux hardware acceptance is pending.
+Personal saves/settings were read only, never modified by this investigation.
+Changes remain local/uncommitted on fix/fresh-profile-movement. Evidence:
+logs/live-keyboard-layout-observation.jsonl and logs/markerless-keyboard-build.log.
 Legacy keyboard/controller isolation (local, base0692efdf): user confirms the new
 build still reproduces Move/Look remaps affecting WASD. Before-fix production
 sampler test fails on both Windows and native-adapter modes with markerless Custom
@@ -43247,3 +43317,8 @@ matching crash symbols. Executable SHA256:
 `f65884f4451049d5e2c1ac0e9452ffda2721189a8f0df52323814d3118d24a79`.
 The isolated Story launch was blocked by three unrelated Dedicated Server games;
 none was stopped. Evidence is in logs/issue482-boss-terminal-*.log. Keep #482 open; no release or push.
+
+PR546 first integrated CI exposed a duplicate POSIX SRWLOCK fixture declaration
+and native .NET JSON Unicode-escaping '+' in inherited pad axis tokens. Removed
+the redundant typedef and matched native JSON data encoding to Framework literal
+axis tokens; retain the failing shared UI regression. Host rerun pending.

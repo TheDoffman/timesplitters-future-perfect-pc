@@ -503,3 +503,7 @@ Patch-index order fixtures now include2955 native explicit-controller prompts;
 historical partial stacks defer it with their omitted late-input dependencies.
 
 Patch-order/historical upgrade fixtures include2960 after the late preset sampler.
+
+Hotfix0.6.1 integration retains upstream2955/2960 before2965/2970. The
+repository-context order fixture now includes both follow-ups; regenerate the
+Git-indexed patch map after staging their final bytes.

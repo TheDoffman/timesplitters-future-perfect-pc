@@ -117,6 +117,25 @@ int main(int argc,char **argv)
     HWND owner;
     UINT_PTR timer;
     LRESULT result;
+    if(argc==3 && !strcmp(argv[1],"--independent-sources")) {
+        snprintf(path,sizeof path,"%s\\independent-sources.json",argv[2]);
+        f=fopen(path,"wb");CHECK(f);
+        fputs("{\"mouse\":{\"enabled\":true,\"sensitivity\":0.1},\"controllers\":[{\"port\":1,\"device\":\"keyboard\",\"bindings\":{\"rtrigger\":[\"pad:rt\",\"key:LBUTTON\",\"pad:a\",\"pad:b\",\"pad:x\"]}}]}",f);fclose(f);
+        _putenv_s("RECOMP_INPUT_CONFIG",path);pc_controls_attach(NULL);
+        CHECK(pc_settings_read(&settings,error,sizeof error) && settings.keys[9][0]==VK_LBUTTON);
+        settings.keys[9][0]='H';settings.keys[9][1]='J';
+        settings.keys[19][0]='I'; /* Missing optional-look entry inherited pad:ry+. */
+        CHECK(pc_settings_save(&settings,error,sizeof error));
+        saved=load(path);CHECK(saved && strstr(saved,"pad:rt") && strstr(saved,"pad:a") && strstr(saved,"pad:b") && strstr(saved,"pad:x") && strstr(saved,"pad:ry+"));free(saved);
+        CHECK(pc_settings_custom_read(&current,error,sizeof error) && current.keys[9][0]=='H' && current.keys[9][1]=='J');
+        /* Unbinding both keyboard slots must retain every controller source. */
+        current.keys[9][0]=current.keys[9][1]=0;
+        CHECK(pc_settings_save(&current,error,sizeof error));
+        saved=load(path);CHECK(saved && strstr(saved,"pad:rt") && strstr(saved,"pad:a") && strstr(saved,"pad:b") && strstr(saved,"pad:x"));free(saved);
+        pc_settings_defaults(&current);CHECK(pc_settings_save(&current,error,sizeof error));
+        saved=load(path);CHECK(saved && strstr(saved,"pad:rt") && strstr(saved,"pad:a") && strstr(saved,"pad:b") && strstr(saved,"pad:x"));free(saved);
+        puts("PASS: keyboard edits/unbinding preserve four controller sources and separate key slots");return 0;
+    }
     if(argc==4 && !strcmp(argv[1],"--verify-presets")) {
         int expected=atoi(argv[3]);original=load(argv[2]);CHECK(original);
         _putenv_s("RECOMP_INPUT_CONFIG",argv[2]);pc_controls_attach(NULL);
@@ -320,6 +339,15 @@ int main(int argc,char **argv)
     }
     /* Replay mode leaves desktop messages alone. */
     CHECK(pc_controls_message(NULL,WM_MOUSEACTIVATE,0,0,&result)==0); /* replay does not consume native messages */
+    {
+        char executable[MAX_PATH],command[2*MAX_PATH+64];STARTUPINFOA startup={sizeof startup};PROCESS_INFORMATION child={0};DWORD code;
+        GetModuleFileNameA(NULL,executable,sizeof executable);
+        snprintf(command,sizeof command,"\"%s\" --independent-sources \"%s\"",executable,argv[2]);
+        CHECK(CreateProcessA(NULL,command,NULL,NULL,FALSE,CREATE_NO_WINDOW,NULL,NULL,&startup,&child));
+        CHECK(WaitForSingleObject(child.hProcess,10000)==WAIT_OBJECT_0);
+        CHECK(GetExitCodeProcess(child.hProcess,&code) && code==0);
+        CloseHandle(child.hProcess);CloseHandle(child.hThread);
+    }
     puts("PASS: live rebind sampling, atomic persistence/backup, unrelated JSON retention, validation, defaults, menu creation, Cancel, keyboard/wheel capture, conflict reassignment, and dialog save");
     return 0;
 }

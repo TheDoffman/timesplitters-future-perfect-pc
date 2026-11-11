@@ -7,6 +7,19 @@ static inline const unsigned *pc_preset_native_masks(void) {static const unsigne
 /* Physical source -> semantic action; menus never use this table. */
 static inline const unsigned char *pc_preset_pad_actions(void) {static const unsigned char actions[24]={0,18,2,13,10,8,6,7,23,9,10,11,12,13,14,15,16,17,18,19,20,21,22,1};return actions;}
 #define pc_modern_pad_actions (pc_preset_pad_actions())
+/* Retain old JSON keys without retaining controller-dependent keyboard rows.
+ * Y/Black/White are extra keys for the shared Modern actions, not raw buttons. */
+static inline unsigned pc_preset_keyboard_action(unsigned action)
+{return action>=3 && action<=5?pc_modern_pad_actions[action]:action;}
+static inline const char *pc_preset_default_pad_source(unsigned action)
+{
+    static const char *const sources[]={
+#define PC_PAD_SOURCE(index,source) source,
+#include "pc_control_presets.def"
+#undef PC_PAD_SOURCE
+    };
+    return action<sizeof sources/sizeof sources[0]?sources[action]:0;
+}
 /* Physical masks for a semantic action, from the same Modern Controller table. */
 static inline unsigned pc_preset_custom_pad_mask(unsigned action)
 {
