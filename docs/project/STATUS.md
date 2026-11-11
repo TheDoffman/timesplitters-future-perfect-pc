@@ -1,14 +1,18 @@
-Native multiplayer menus (`feature/native-multiplayer-ui`, base `5c4df06a`): **In development**.
-Shared native chooser/browser/creation/join screens replace the desktop browser
-with a hidden client worker. Private Server is a separate directory/relay,
-maintained outside Git. Windows captures verify the chooser, browser, settings,
-original keyboard and host lobby; two real games discover/join through native
-menus. Closure feedback, copy/paste, gameplay return and flow acceptance remain
-in progress. Controller/IPC/retained-return/FOV checks pass 24 tests (2 skips).
-Installed private hosting passes HTTPS/UDP create/leave, retained directory and
-owner shutdown/listener cleanup. Mac/Linux share the flow/process IPC with an
-asynchronous SDL main-thread clipboard adapter; physical Mac build/gameplay are
-pending. Existing Story release/platform limits remain. See
+Native multiplayer menus (`feature/native-multiplayer-ui`, base `5c4df06a`):
+**Implemented and tested in development builds**. Community Browser, separate
+Private Server, LAN, match creation and code joining use the game's own menus.
+Original map thumbnails/mode icons, paged listings, native text entry and C/R3
+lobby-code copy are integrated. Server implementation stays outside Git.
+Windows/physical Mac `native-ui-cross-d` verifies an invite-only join, clipboard,
+original Deathmatch Options, actual gameplay/advancing timers, retained-party
+Return to Lobby, host closure and native browser recovery. Windows LAN Back and
+community reopen pass. Separate private hosting/invitation, guest leave/rejoin,
+owner lifetime and listener cleanup pass; optional components are installed on
+both machines. Multi-lobby visual/paging acceptance passes. Both full builds and
+Mac built-in checks pass with identity `ee1c8b0d`; network/release tests passed 322
+(9 skips,10 subtests), focused Windows 32 (2 skips), Mac 31. Story retains existing
+release/platform limits; physical controller/mouse and WAN acceptance remain
+separate. Source is pushed; no main merge or release. See
 [the focused guide](../agent-context/native-multiplayer-menu.md).
 
 Arcade join in progress (`feature/arcade-join-in-progress`, base `e97ee97a`):

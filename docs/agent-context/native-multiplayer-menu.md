@@ -59,26 +59,41 @@ Return to Lobby retains the party through the original round-return path,
 distinct from migration departure. Lobby code copy uses a native footer target,
 keyboard C or the original Xbox right-stick press.
 
-Validation in progress: two Windows games use only native menus and ordinary
-input to create, browse and join a lobby. Probe `native-ui-pair-h` then closes
-the host lobby and asserts both native menu constructors, closed engine sessions
-and removed directory room; captures show the guest's closure reason in Match
-Browser. Earlier probes reproduced the indefinitely waiting guest teardown;
-these are failures, not acceptance. Footer capture confirms code/copy controls
-do not overlap the build version. Controller/IPC tests pass19. Installed private
-hosting passes HTTPS/UDP creation, lobby leave with retained directory and owner
-shutdown releasing both listeners. Windows probe `native-ui-pair-i` enters actual gameplay on both clients, checks
-advancing timers, uses the native Return to Lobby confirmation and verifies the
-retained two-player party, then closes back to both browsers. Detailed browser
-rendering, copy/paste, private native navigation and physical Mac acceptance are
-pending.
-No release/completion is claimed.
+Validation (2026-11-11), development branch only:
+
+- Windows build-t and physical Mac build-g/built-in checks pass with matching
+  identity `ee1c8b0d51132305b9770715d57a94c2ad2e3a7a1562469a0f84a79515905d57`.
+  Network/release regressions passed 322 tests (9 skips,10 subtests); focused
+  Windows controller/IPC/guest-dispatch/FOV checks passed 32 (2 skips), Mac 31.
+- `native-ui-cross-d` uses ordinary native input on Windows and the physical Mac:
+  an invite-only room stays out of listings, code paste/copy works, original
+  Options selects Deathmatch, both games play with advancing timers, Return to
+  Lobby retains both players, and host closure returns both to native browsers.
+  It also verifies LAN Back and reopening Community Browser on Windows.
+- `native-ui-pair-n` exercises separate private hosting, server-invitation
+  copy/paste, native create/browse/join, independent guest leave/rejoin and host
+  closure. Installed private components on both OSes pass retained-directory
+  and owner-exit tests, releasing both TCP/UDP listeners.
+- `native-ui-grid-d` checks three authenticated lobbies, two cards/page,
+  measured long titles, and forward/back paging. Captures show the full panel,
+  thumbnails, mode icons and feedback fitting above the native footer.
+- Earlier closure probes reproduced a genuine guest teardown wait and failed;
+  the final Windows/Mac runs verify the fix. Early F2 clipboard probes conflicted
+  with Settings; C/R3 replaces it. A separate Assault probe stopped at normal
+  SELECT TEAM because the driver omitted confirmation; it proves no load defect
+  and is not counted as full Assault gameplay acceptance.
+
+The mini's display-metadata backend is deployed privately after an idle check;
+health and authenticated host publication pass. Optional private hosting is
+installed separately on both test machines. Story keeps its existing build and
+platform limits; new Story gameplay, physical controller/mouse acceptance and
+WAN reachability are not claimed by these keyboard/SDL tests. No main merge or
+release was performed.
 
 IPC version2 adds bounded native scene/mode identifiers and a separate `.match`
 message; metadata publishing never consumes a UI request sequence. The host
 publishes localized map/rules from the frontend selection `78AD58` in the lobby
-and the active `7DE400` selection during gameplay (stock `353400` advertisement). The hidden client validates
-all fields and sends details only as current authenticated host. Backend display
+and the active `7DE400` selection during gameplay (stock `353400` advertisement). The hidden client validates all fields and sends details only as current authenticated host. Backend display
 support remains private. Details never control admission, epochs or restoration.
 Two rows/page use the original `1CBDA0` painter for verified Arcade map/mode
 pairs, briefly restoring a scratch advertisement after painting; unknown details
@@ -100,5 +115,5 @@ compile-time IPC layout assertions exposed through `pc_online.h`.
 
 Copy uses C/R3: F2 remains the reserved game Settings shortcut. Browser action
 rows use the original normal font; measured card titles fit before thumbnails,
-with full lobby/map/mode details in the selected-row footer. Rebuilds select a
+with full lobby/map/mode details in the selected-row footer. After the original `78980` rebuild restores selection, the adapter selects a
 surviving button ID through native `77110`, avoiding orphaned focus after paging.
