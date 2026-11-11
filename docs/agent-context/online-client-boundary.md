@@ -12,6 +12,23 @@ generic `view_online_dashboard.py` SSH viewer; keys and SSH host configuration
 stay outside Git. To connect, run `python tools/network/view_online_dashboard.py
 --ssh YOUR_SSH_ALIAS` using the locally configured dashboard access account.
 
+On Windows, install the desktop connection shortcut with:
+
+```powershell
+powershell -NoProfile -File tools/network/install-dashboard-shortcut.ps1 -SshAlias YOUR_SSH_ALIAS
+```
+
+The installer uses the checkout's Python environment by default (`-Python` can
+select another installed interpreter). It copies only `dashboard_shortcut.py`
+and the generic SSH viewer into LocalAppData and creates **Mac Mini Dashboard**
+on the current Windows desktop. The shortcut reuses a healthy loopback dashboard
+or starts the viewer without a console, then opens the default browser. Connection
+failures show a dialog pointing to the local log. SSH aliases and keys must already
+exist locally; the installer does not configure SSH, the mini or the router.
+The shortcut works independently of this checkout after installation, provided
+the selected Python installation remains available. This is explicitly a Windows
+desktop convenience; Mac users retain the existing cross-platform SSH viewer.
+
 `online_host.py` now only handles player invitation/connection helpers. The
 browser always creates rooms through its configured service; the former local
 directory checkbox and automatic-directory launch path are removed. Saved

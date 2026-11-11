@@ -1,3 +1,11 @@
+Windows dashboard shortcut (`feature/mini-dashboard-shortcut`, base `77198a02`):
+installed the client-only shortcut with the existing local SSH alias; verified
+its interpreter/launcher targets and ran the installed launcher successfully
+against the live mini dashboard on loopback. Python syntax and Git whitespace
+checks pass. This smoke test reuses the healthy tunnel; it does not re-test
+network reconnection. No server, game or Mac code changed and no game rebuild
+was needed. Personal SSH configuration, keys, shortcut and logs remain local.
+
 Native multiplayer menus (`feature/native-multiplayer-ui`, base `5c4df06a`):
 **Implemented and tested in development builds**. Community Browser, separate
 Private Server, LAN, match creation and code joining use the game's own menus.
