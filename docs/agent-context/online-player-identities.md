@@ -29,3 +29,6 @@ vacant slots, pointer bounds, control stripping, host fencing, expiry and malfor
 records. It is registered in the native CI suite. The native IPC and FOV/menu
 fixtures retain their ordinary coverage. Updated matching game builds are needed
 on Windows/Mac/Linux; the logic and IPC implementation are shared.
+
+`TSFP_NATIVE_MENU_TRACE` reports capture/publication outcomes and refused read
+extents without player labels, for live client-side identity diagnosis.

@@ -228,7 +228,7 @@ extern void sub_002BE690(void);
 static int mp_roster_read(void *ctx,uint32_t address,void *out,size_t bytes)
 {
     (void)ctx;
-    if(!guest_writable(address,bytes))return 0;
+    if(!guest_writable(address,bytes)){if(getenv("TSFP_NATIVE_MENU_TRACE"))fprintf(stderr,"[PC-ONLINE-UI] roster unreadable address=%08X bytes=%zu\n",address,bytes);return 0;}
     memcpy(out,(const void *)((uintptr_t)address+g_xbox_mem_offset),bytes);return 1;
 }
 static void mp_roster_portrait(void *ctx,int character,int skin,int32_t *portrait,char *label,size_t size)
@@ -250,8 +250,9 @@ static void mp_publish_metadata(void)
     const uint32_t scene=WORD_AT(0x79094cu),config=scene<=100u?0x7de400u:0x78ad58u;
     if(mp_ui.mode==PC_ONLINE_ARCADE && scene<=100u) {
         PcOnlineRoster roster;
-        if(pc_online_roster_capture(&roster,NULL,mp_roster_read,mp_roster_portrait))
-            pc_online_menu_publish_roster(&roster);
+        const int captured=pc_online_roster_capture(&roster,NULL,mp_roster_read,mp_roster_portrait);
+        const int published=captured?pc_online_menu_publish_roster(&roster):0;
+        if(getenv("TSFP_NATIVE_MENU_TRACE"))fprintf(stderr,"[PC-ONLINE-UI] roster captured=%d published=%d game=%u mode=%u\n",captured,published,WORD_AT(0x7de30cu),(unsigned)pc_online_mode());
     }
     const uint8_t *settings=(const uint8_t *)((uintptr_t)config+g_xbox_mem_offset);
     const unsigned map=settings[0x54u],type=settings[0x56u];
