@@ -23,7 +23,7 @@ static int mp_native_passthrough;
 extern void sub_001A2730(void),sub_001A2720(void),sub_001A4350(void);
 extern void sub_001A8CE0(void),sub_001A8EE0(void),sub_001CBA50(void),sub_001CBD40(void);
 extern void sub_001A8D30(void),sub_001A8F30(void);
-extern void sub_001A4510(void),sub_001CBDA0(void),sub_00064E20(void);
+extern void sub_001A4510(void),sub_001CBDA0(void),sub_00064E20(void),sub_0003D7B0(void);
 static void (*multiplayer_exit_lookup(uint32_t address))(void);
 static void multiplayer_lobby_tick(void (*original)(void));
 extern void sub_001CC360(void);
@@ -159,7 +159,7 @@ static void mp_publish_metadata(void)
 {
     if(GetTickCount64()<mp_ui.metadata_at || !WORD_AT(0x76b108u) || WORD_AT(0x76b140u)!=1u || mp_ui.source==2u)return;
     mp_ui.metadata_at=GetTickCount64()+1000u;
-    const uint32_t scene=WORD_AT(0x79094cu),config=0x7de400u; /* Stock353400 advertises this live selection, including the lobby. */
+    const uint32_t scene=WORD_AT(0x79094cu),config=scene<=100u?0x7de400u:0x78ad58u;
     const uint8_t *settings=(const uint8_t *)((uintptr_t)config+g_xbox_mem_offset);
     const unsigned map=settings[0x54u],type=settings[0x56u];
     if(type>=32u || map>100u)return;
