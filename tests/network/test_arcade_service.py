@@ -8,6 +8,8 @@ import struct
 import subprocess
 import time
 import zlib
+import threading
+from types import SimpleNamespace
 
 import pytest
 
@@ -19,6 +21,36 @@ from test_online_relay import shared_service
 from test_arcade_checkpoint import compile_arcade_fixture
 from online_client import Session, DirectoryError
 from online_arcade_client import list_arcade, join_arcade
+
+
+@pytest.mark.parametrize('failure', ['once','persistent','forbidden'])
+def test_heartbeat_retries_inside_native_lease_with_current_progress(failure):
+    from online_arcade_client import NativeArcade
+    now=[0.]
+    bridge=SimpleNamespace(clock=lambda:now[0],peer_id=1,stopped=threading.Event())
+    native=NativeArcade(bridge)
+    native.status=dict(epoch=2,host_peer=1,phase='active')
+    native.counter=120;native.active=True;native.native_peer=0
+    native.offer=b'old checkpoint';native.ack=(1,'00'*32,False)
+    native.install=lambda reply:None
+    session=SimpleNamespace(bridge=bridge,native=native,closed=threading.Event(),
+        compatibility=VERSION,endpoint=lambda:('/member','private'),error='')
+    calls=[]
+    def request(method,path,body,token,*,timeout):
+        calls.append(dict(body));assert timeout==1
+        now[0]+=timeout
+        if len(calls)==1:native.counter=180
+        if failure=='forbidden':raise DirectoryError(403,'denied')
+        if failure=='persistent' or len(calls)==1:raise TimeoutError('TLS timeout')
+        session.closed.set()
+        return dict(host_peer=1)
+    session.client=SimpleNamespace(request=request)
+    ArcadeSession.heartbeat(session)
+    assert calls[0]['epoch']==2 and 'checkpoint' in calls[0]
+    assert calls[1]==dict(compatibility=VERSION,epoch=-1,native_counter=180,
+                          active=True,native_peer=0)
+    assert bridge.stopped.is_set() is (failure!='once')
+    assert len(calls)==(4 if failure=='persistent' else 2)
 
 
 @pytest.mark.parametrize('resumes', [False, True])

@@ -1,6 +1,7 @@
 """Arcade migration companion: native loopback control and authenticated v3 RPC."""
 import base64
 import hashlib
+import http.client
 import ipaddress
 import re
 import struct
@@ -154,11 +155,14 @@ class NativeArcade:
                         self.offer = data
                     self.assembly = None
 
-    def body(self, compatibility):
+    def body(self, compatibility, *, recover=False):
         with self.lock:
             status = self.status
             body = dict(compatibility=compatibility, epoch=status['epoch'],
                         native_counter=self.counter, active=self.active, native_peer=self.native_peer)
+            if recover:
+                body['epoch']=-1
+                return body
             if self.offer and status['host_peer'] == self.bridge.peer_id and status['phase'] == 'active':
                 body['checkpoint'] = base64.b64encode(self.offer).decode('ascii')
             if self.ack:
@@ -259,6 +263,7 @@ class ArcadeSession(Session):
         return '/v3/lobbies/'+self.lobby['code']+'/members/'+str(self.bridge.peer_id), self.lobby['peer_token']
 
     def heartbeat(self):
+        last_success=self.bridge.clock()
         while not self.closed.is_set():
             try:
                 path, token = self.endpoint()
@@ -266,20 +271,22 @@ class ArcadeSession(Session):
                     # Publish the final frozen native frame before choosing a
                     # successor. Wait for an engine ACK of that exact frame.
                     body = self.native.body(self.compatibility)
-                    reply = self.client.request('PUT', path, body, token)
+                    reply = self.client.request('PUT', path, body, token, timeout=1)
                     self.native.install(reply)
+                    last_success=self.bridge.clock()
                     with self.native.lock:
                         wanted = self.native.leave_sequence
                         expired = self.bridge.clock()-self.native.leaving_at >= 6
                     snapshot = reply.get('checkpoint')
                     if reply['players'] == 1 or expired or (snapshot and snapshot['sequence'] == wanted and reply.get('backup_ready')):
-                        self.client.request('DELETE', path, token=token)
+                        self.client.request('DELETE', path, token=token, timeout=1)
                         self.native.departed = True
                         return  # Bridge remains alive to deliver departure ACK.
                     self.closed.wait(.1)
                     continue
-                reply = self.client.request('PUT', path, self.native.body(self.compatibility), token)
+                reply = self.client.request('PUT', path, self.native.body(self.compatibility), token, timeout=1)
                 self.native.install(reply)
+                last_success=self.bridge.clock()
                 self.host = reply['host_peer'] == self.bridge.peer_id
                 self.error = ''
             except Exception as error:
@@ -288,11 +295,19 @@ class ArcadeSession(Session):
                     # A lost RPC response or expired checkpoint ACK must not
                     # prevent recovering the newly fenced epoch and credentials.
                     path, token = self.endpoint()
-                    reply = self.client.request('PUT', path, dict(compatibility=self.compatibility,
-                                                 epoch=-1), token)
+                    reply = self.client.request('PUT', path,
+                        self.native.body(self.compatibility,recover=True), token, timeout=1)
                     self.native.install(reply)
+                    last_success=self.bridge.clock()
                     with self.native.lock:
                         self.native.ack = None
+                except (OSError,http.client.HTTPException):
+                    # A five-second TLS stall outlives the four-second native
+                    # lease. Retry short RPCs with real engine progress instead;
+                    # never keep a disconnected authority alive indefinitely.
+                    if self.bridge.clock()-last_success>=3.5:
+                        self.closed.set();self.bridge.stopped.set()
+                        return
                 except Exception:
                     self.closed.set();self.bridge.stopped.set()
                     return

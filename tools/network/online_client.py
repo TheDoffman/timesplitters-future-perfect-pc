@@ -46,16 +46,16 @@ class Client:
         if self.fingerprint and (len(self.fingerprint) != 64 or any(c not in '0123456789abcdef' for c in self.fingerprint)):
             raise ValueError('Certificate fingerprint must be 64 hexadecimal digits')
 
-    def request(self, method, path, body=None, token=None):
+    def request(self, method, path, body=None, token=None, *, timeout=5):
         if self.url.scheme == 'https':
             context = ssl.create_default_context()
             if self.fingerprint:
                 # Verify the pinned certificate before sending any credentials.
                 context.check_hostname = False
                 context.verify_mode = ssl.CERT_NONE
-            connection = http.client.HTTPSConnection(self.url.hostname, self.url.port or 443, timeout=5, context=context)
+            connection = http.client.HTTPSConnection(self.url.hostname, self.url.port or 443, timeout=timeout, context=context)
         else:
-            connection = http.client.HTTPConnection(self.url.hostname, self.url.port or 80, timeout=5)
+            connection = http.client.HTTPConnection(self.url.hostname, self.url.port or 80, timeout=timeout)
         try:
             connection.connect()
             if self.fingerprint and (self.url.scheme != 'https' or
