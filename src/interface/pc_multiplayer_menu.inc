@@ -9,6 +9,7 @@
 #define MP_TEXT_DONE 0x123f6u
 #define MP_TEXT_CANCEL 0x123f7u
 #define MP_MATCH_DRAW 0x123f8u
+#define MP_CODE_DRAW 0x123f9u
 #define MP_PER_PAGE 2u
 enum {MP_NETWORK,MP_PRIVATE,MP_HOST_SERVER,MP_JOIN_SERVER,MP_BROWSER,MP_CREATE,MP_JOIN_CODE};
 static struct {
@@ -60,10 +61,12 @@ static void mp_rebuild(void)
 static void mp_show(unsigned page)
 {
     if(!mp_prepare() || !mp_ui.parent)return;
-    if(mp_ui.page!=page)mp_ui.notice[0]=0;
+    const int changed=mp_ui.page!=page;
+    if(changed)mp_ui.notice[0]=0;
     mp_ui.page=page;guest_call(sub_00079B70,2,mp_ui.parent,mp_ui.storage);
     const uint32_t child=WORD_AT(mp_ui.parent+0x170u);
-    if(guest_writable(child,0x23cu)){mp_ui.menu=child;mp_rebuild();}
+    if(guest_writable(child,0x23cu)){mp_ui.menu=child;mp_rebuild();
+        if(changed && page==MP_JOIN_CODE)guest_call(sub_00077110,2,child,1u);}
 }
 static int mp_story_available(void)
 {
@@ -125,7 +128,7 @@ static void mp_build(void)
         snprintf(label,sizeof label,"Privacy: < %s >",mp_ui.public_lobby?"Open":"Invite Only");mp_row(row++,3,label);
         mp_row(row++,4,"Create Lobby");break;
     case MP_JOIN_CODE:
-        snprintf(label,sizeof label,"Lobby code: %.32s",mp_ui.code);mp_row(row++,1,label);
+        guest_call(sub_00079D60_gen,6,0u,1u,0x20000u,bits(7.f),MP_SELECT,MP_CODE_DRAW);
         mp_row(row++,2,"Paste Lobby Code");mp_row(row++,3,"Join");break;
     case MP_BROWSER: {
         mp_row(row++,1,"Start New Match");mp_row(row++,2,"Join by Lobby Code");mp_row(row++,3,"Refresh");
@@ -147,6 +150,40 @@ static void mp_build(void)
     guest_call(sub_000771D0,1,menu);
     mp_focus(menu);
     restore_registers(&saved);g_esp+=4u;
+}
+static void mp_code_draw(void)
+{
+    const uint32_t menu=WORD_AT(g_esp+4u),item=WORD_AT(g_esp+8u),rect=WORD_AT(g_esp+12u);
+    if(!guest_writable(menu,0x190u) || !guest_writable(item,0x18u) || !guest_writable(rect,16u)) {g_esp+=4u;return;}
+    const float left=FLOAT_AT(rect)+10.f,right=FLOAT_AT(rect+8u)-10.f;
+    const float top=FLOAT_AT(rect+4u)+3.f,bottom=FLOAT_AT(rect+12u)-3.f;
+    const float field=left+(right-left)*.40f;
+    const int focused=WORD_AT(menu+0x18cu)==1u;
+    const uint32_t border=focused?0xa5d9ffffu:0x7e98b5ffu;
+    guest_call(sub_00022FF0,0);
+    keycap_line((int)field,(int)top,(int)right,(int)bottom,0x101820d0u);
+    keycap_line((int)field,(int)top,(int)right,(int)top+1,border);
+    keycap_line((int)field,(int)bottom-1,(int)right,(int)bottom,border);
+    keycap_line((int)field,(int)top,(int)field+1,(int)bottom,border);
+    keycap_line((int)right-1,(int)top,(int)right,(int)bottom,border);
+    guest_call(sub_0003FA10,1,0x12u);
+    const uint32_t sx=WORD_AT(0x7e7270u),sy=WORD_AT(0x7e7280u);
+    WORD_AT(0x7e7270u)=bits(FLOAT_AT(0x7e7270u)*.8f);WORD_AT(0x7e7280u)=bits(FLOAT_AT(0x7e7280u)*.8f);
+    guest_call(sub_0003F8D0,0);
+    char value[33];snprintf(value,sizeof value,"%.32s",mp_ui.code);
+    const uint32_t text=mp_text(28,*mp_ui.code?value:"Enter code...");
+    const uint32_t measure=mp_ui.storage+16u+27u*256u;
+    guest_call(sub_0003FCF0,4,measure,measure+4u,text,0u);
+    char *display=(char *)((uintptr_t)text+g_xbox_mem_offset);
+    for(unsigned length=(unsigned)strlen(display);length>3u && FLOAT_AT(measure)>right-field-12.f;length--) {
+        display[length-4u]='.';display[length-3u]='.';display[length-2u]='.';display[length-1u]=0;
+        guest_call(sub_0003FCF0,4,measure,measure+4u,text,0u);
+    }
+    const float y=top+fmaxf(0.f,(bottom-top-FLOAT_AT(measure+4u))*.5f);
+    guest_call(sub_00041DC0,4,bits(left),bits(y),mp_text(27,"LOBBY CODE"),0xe0e8f0ffu);
+    guest_call(sub_00041DC0,4,bits(field+6.f),bits(y),text,*mp_ui.code?0xffffffffu:0xa9b9caffu);
+    guest_call(sub_00022FF0,0);
+    WORD_AT(0x7e7270u)=sx;WORD_AT(0x7e7280u)=sy;guest_call(sub_0003F8D0,0);g_esp+=4u;
 }
 static void mp_match_draw(void)
 {
@@ -517,6 +554,7 @@ static void (*native_multiplayer_lookup(uint32_t address))(void)
 {
     switch(address) {
     case 0x318a0u:if(mp_ui.storage && mp_native_passthrough && mp_ui.source!=2u && WORD_AT(0x79094cu)==101u)return mp_transport_close;break;
+    case MP_CODE_DRAW:return mp_code_draw;
     case MP_MATCH_DRAW:return mp_match_draw;
     case MP_BUILD:return mp_build;case MP_SELECT:return mp_select;case MP_BACK:return mp_back;
     case MP_TEXT_DONE:return mp_text_done;case MP_TEXT_CANCEL:return mp_text_cancel;
