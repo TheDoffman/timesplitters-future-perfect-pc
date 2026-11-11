@@ -1,3 +1,14 @@
+Optional Arcade connection telemetry (`feature/dashboard-match-telemetry`, code
+`64ffb4d4`, based on the unmerged native multiplayer/shortcut work): authenticated
+RTT and 60-second completed probe outcomes are included in member updates for
+display. They do not renew engine progress or affect host election. Windows
+network suite: 139 passed, 9 skipped; physical Mac focused client checks: 32 passed.
+Windows and physical Mac builds and built-in tests pass. The Mac canonical
+runtime-root rerun also completed its guarded disposable test-disk cleanup.
+Matching client identity: `ab2b6bba`. Private display/service tests pass on both
+hosts; live three-client relay/RPC acceptance uses C-produced synthetic match
+state and is not a new gameplay acceptance run. Backend/UI remain outside Git.
+
 Windows dashboard shortcut (`feature/mini-dashboard-shortcut`, base `77198a02`):
 installed the client-only shortcut with the existing local SSH alias; verified
 its interpreter/launcher targets and ran the installed launcher successfully
