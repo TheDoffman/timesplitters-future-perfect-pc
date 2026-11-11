@@ -150,6 +150,7 @@ TUTORIAL_STUB(sub_0001ED50) TUTORIAL_STUB(sub_0001F090)
 void pc_controls_text_mode(uint32_t owner) {(void)owner;CHECK(0);}
 unsigned pc_controls_text_event(uint32_t owner) {(void)owner;CHECK(0);return 0;}
 void pc_settings_gameplay_reader(PcGameplayMasks reader) {(void)reader;}
+void pc_settings_active_ports_reader(PcActiveInputPorts reader) {(void)reader;}
 static int controls_test_menu_active=1;
 int pc_controls_in_menu(void) {return controls_test_menu_active;}
 void pc_controls_menu_mode(int active) { (void)active; CHECK(0); }
@@ -590,8 +591,22 @@ int main(int argc,char **argv)
         CHECK(controls_context_port(WORD_AT(0x7b0c7c))==3 && controls_context_port(host)==2);
         CHECK(controls_gameplay_masks(3,masks,&mounted) && masks[9]==0x10 && !mounted);
         CHECK(controls_gameplay_masks(2,masks,&mounted) && masks[9]==0x20 && mounted);
+        /* Saved P2 preferences do not claim P1's spare pad. Joined local
+         * ports do, including in pause and with nonidentity input maps. */
+        WORD_AT(0x5236c4)=1;CHECK(controls_active_ports()==1);
+        WORD_AT(0x5236c4)=2;CHECK(controls_active_ports()==13);
+        controls_test_menu_active=1;CHECK(controls_active_ports()==13);
         WORD_AT(host+4)=UINT32_MAX;WORD_AT(guest+4)=4;
         CHECK(!controls_gameplay_masks(2,masks,&mounted) && !controls_gameplay_masks(3,masks,&mounted));
+        CHECK(controls_active_ports()==1);
+        WORD_AT(0x79094c)=106;
+        WORD_AT(0x74e914)=0;WORD_AT(0x74e918)=1;
+        WORD_AT(0x74f9ec)=2;WORD_AT(0x74f9f0)=1;
+        CHECK(controls_active_ports()==1); /* P2 selected but waiting for Start. */
+        WORD_AT(0x74f9f0)=2;CHECK(controls_active_ports()==3);
+        WORD_AT(0x5236c4)=5;CHECK(controls_active_ports()==15);
+        WORD_AT(0x5236c4)=WORD_AT(0x79094c)=0;
+        WORD_AT(0x74e914)=WORD_AT(0x74e918)=WORD_AT(0x74f9ec)=WORD_AT(0x74f9f0)=0;
         memset((char *)mem+host,0,2*0x1584);
         WORD_AT(0x790950)=WORD_AT(0x7b0c48)=WORD_AT(0x7b0c7c)=WORD_AT(0x6b93c0)=WORD_AT(0x6b93c4)=0;
         controls_test_menu_active=1;

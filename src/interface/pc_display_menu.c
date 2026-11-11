@@ -131,6 +131,29 @@ static unsigned controls_context_port(uint32_t player)
     unsigned port=WORD_AT(0x6b93c0+local*4);return port<4?port:4;
 }
 
+/* Saved port preferences do not claim a controller until a local player joins.
+ * Gameplay (including pause) owns context+4/6B93C0; frontend join panels own
+ * 74E914 and state1 means still waiting for Start. Unknown counts stay reserved. */
+static unsigned controls_active_ports(void)
+{
+    unsigned count=WORD_AT(0x5236c4),ports=1u;
+    if(count>4)return 15u;
+    if(count<=1)return ports;
+    unsigned players=WORD_AT(0x790950),base=WORD_AT(0x7b0c48);
+    if((int32_t)WORD_AT(0x79094c)<=100 && players>0 && players<=4 &&
+       guest_writable(base,players*0x1584u)) {
+        for(unsigned i=0;i<players;i++) {
+            unsigned port=controls_context_port(base+i*0x1584u);
+            if(port<4)ports|=1u<<port;
+        }
+        return ports;
+    }
+    for(unsigned i=0;i<count;i++)if(WORD_AT(0x74f9ec+i*4)!=1u) {
+        unsigned port=WORD_AT(0x74e914+i*4);if(port<4)ports|=1u<<port;
+    }
+    return ports;
+}
+
 /* Read each local player's live native action masks; never rewrite their saved
  * profile. Native input polling calls this on the guest thread before sampling. */
 static int controls_gameplay_masks(unsigned port,unsigned masks[24],int *mounted)
@@ -228,6 +251,7 @@ static void video_sidebar_tick(void);
 void pc_display_camera(void (*original)(void))
 {
     pc_settings_gameplay_reader(controls_gameplay_masks);
+    pc_settings_active_ports_reader(controls_active_ports);
     pc_developer_video_register(video_sidebar_tick);
 #ifdef TSFP_PC_DISCORD
     /* Sample guest RAM on its own thread; publish only plain values to IPC. */

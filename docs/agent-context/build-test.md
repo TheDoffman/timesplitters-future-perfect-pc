@@ -1,5 +1,5 @@
 [Sticks](controller-deadzones.md). [Online UI](multiplayer-ui.md).
-[Axes/axes](control-presets.md); [Tex](texture-preference.md).
+[2970 pads](control-presets.md); [Tex](texture-preference.md).
 [Arms](video-options.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).

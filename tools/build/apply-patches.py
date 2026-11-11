@@ -314,6 +314,22 @@ def patch_records(paths):
         paths.remove(deadzones)
         paths.append(deadzones)
 
+    # Markerless Custom keyboard axes extend the final preset sampler too.
+    keyboard_axes = by_name.get('2960-custom-keyboard-axis-routing.patch')
+    if keyboard_axes:
+        paths.remove(keyboard_axes)
+        paths.append(keyboard_axes)
+
+    keyboard_actions = by_name.get('2965-independent-keyboard-actions.patch')
+    if keyboard_actions:
+        paths.remove(keyboard_actions)
+        paths.append(keyboard_actions)
+
+    pad_sharing = by_name.get('2970-active-player-pad-sharing.patch')
+    if pad_sharing:
+        paths.remove(pad_sharing)
+        paths.append(pad_sharing)
+
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

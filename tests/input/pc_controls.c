@@ -143,7 +143,8 @@ int main(int argc, char **argv)
     CHECK(pad.wButtons & XBOX_GAMEPAD_LEFT_THUMB);
     CHECK(pad.wButtons & XBOX_GAMEPAD_RIGHT_THUMB);
     CHECK(pad.wButtons & XBOX_GAMEPAD_DPAD_RIGHT);
-    CHECK(recomp_bindings_present_mask() == 1);
+    /* Physical controllers may be connected on the developer's machine. */
+    CHECK(recomp_bindings_present_mask() & 1u);
     guest = VirtualAlloc(NULL, 0x800000, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE); CHECK(guest);
     *(float *)(guest + 0x20384) = 55;
     /* A network client's current player can have a nonzero guest player ID,

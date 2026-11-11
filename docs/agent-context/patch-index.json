@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "1c03dc56c4d57848dd399c613d85eb5123adfe020d25f24ceafe106f2d971376",
+  "loaderSha256": "b1c740f3f87f74dbc913ee305a1ec47c6675e9fb3cf32a3c569400e0ea5f587b",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3808,6 +3808,30 @@
       "name": "2950-controller-deadzones.patch",
       "path": "patches/input/2950-controller-deadzones.patch",
       "sha256": "4bf6ffd987c15d08586d439cbcd7332e7c68f43ff5682615cb1628962ea8e194",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2960-custom-keyboard-axis-routing.patch",
+      "path": "patches/input/2960-custom-keyboard-axis-routing.patch",
+      "sha256": "3753977404bf6895925aa9de6b751338d0218a7d098ce2d3695ce05d0204053b",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2965-independent-keyboard-actions.patch",
+      "path": "patches/input/2965-independent-keyboard-actions.patch",
+      "sha256": "2b382b3c667ca396c825e64f5abbf96f2069502c70cc896789832331ca96b463",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2970-active-player-pad-sharing.patch",
+      "path": "patches/input/2970-active-player-pad-sharing.patch",
+      "sha256": "ff371cc09f5a4f41246156f4295c096f4291fb0dbaec791969072237e9681bd6",
       "targets": [
         "src/input/input_bindings.c"
       ]

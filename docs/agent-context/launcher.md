@@ -1,3 +1,10 @@
+Keyboard edits now preserve controller sources on the edited action, including
+conflict reassignment, unbinding and keyboard reset; reset retains device/pad
+presets. Shared Binding returns only key/none slots, and serialization retains
+up to four pad tokens beside the two keyboard slots (runtime2965 supports six).
+Legacy Y/Black/White keyboard labels now name fixed extra gameplay actions.
+See [keyboard/controller independence and checks](control-presets.md).
+
 Launcher1.6.0 prepares the shared audio, Modern controls/deadzones, texture
 preference and game update-notice additions for Windows/Mac/Linux. The official
 three-host release workflow remains required after the version change reaches

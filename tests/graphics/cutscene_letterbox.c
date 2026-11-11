@@ -19,6 +19,8 @@ static int controls_gameplay_masks(unsigned port,unsigned masks[24],int *mounted
 { (void)port;(void)masks;(void)mounted;return 0; }
 static void pc_settings_gameplay_reader(int (*reader)(unsigned,unsigned[24],int *))
 { (void)reader; }
+static unsigned controls_active_ports(void) {return 1;}
+static void pc_settings_active_ports_reader(unsigned (*reader)(void)) {(void)reader;}
 
 static PcDisplayMode mode;
 static float fov_scale=1.f;

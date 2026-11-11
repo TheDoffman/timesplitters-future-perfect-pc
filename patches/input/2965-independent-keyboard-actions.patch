@@ -1,0 +1,34 @@
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -43,7 +43,7 @@
+ #  include <time.h>
+ #endif
+ 
+-#define MAX_SOURCES 4
++#define MAX_SOURCES 6 /* Two keyboard slots plus four retained controller sources. */
+ #define PORTS XBOX_MAX_CONTROLLERS
+ 
+ /* XInput's own left-stick default. A stick is bound as two halves, so the
+@@ -1095,10 +1095,10 @@
+     AcquireSRWLockShared(&g_pc_bindings_lock);
+     modern_keyboard=port==0 && c->device==DEV_KEYBOARD && g_pc_keyboard_preset;
+     modern_controller=g_pc_controller_presets[port];
+-    semantic_keyboard=port==0 && c->device==DEV_KEYBOARD && g_pc_custom_semantics;
++    semantic_keyboard=port==0 && c->device==DEV_KEYBOARD; /* Named keyboard actions never inherit controller assignments. */
+     ReleaseSRWLockShared(&g_pc_bindings_lock);
+-    /* Keyboard axis labels name gameplay actions even in markerless Custom files.
+-     * Button routing retains the existing explicit semantic-preset policy. */
++    /* Every keyboard configuration names gameplay actions independently of
++     * the controller layout; physical pad sources retain their own routing. */
+     int keyboard_axes=port==0 && c->device==DEV_KEYBOARD;
+     int preset_gameplay=(keyboard_axes || modern_controller) && pc_settings_gameplay_masks(port,preset_masks,&mounted);
+     modern_controller=modern_controller && preset_gameplay;
+@@ -1206,7 +1206,7 @@
+                 if(magnitude>pad_mag)pad_mag=magnitude;
+             }
+         }
+-        pc_preset_accumulate(preset_values,(unsigned)i,mag,
++        pc_preset_accumulate(preset_values,semantic_keyboard && preset_gameplay?pc_preset_keyboard_action((unsigned)i):(unsigned)i,mag,
+             (modern_keyboard || semantic_keyboard || (keyboard_axes && CONTROLS[i].kind==K_AXIS)) && preset_gameplay,preset_masks);
+         pc_preset_accumulate(preset_values,modern_controller?pc_modern_pad_actions[i]:(unsigned)i,pad_mag,modern_controller,preset_masks);
+     }

@@ -469,6 +469,35 @@ public static class LauncherSharedUiChecks
                     Need(Json.String(saved,"retained_upgrade_field")=="keep","Upgrade lost unrelated controls fields");
                 }
             });
+            Test("keyboard changes preserve controller sources in both directions",()=>{
+                string folder=Path.Combine(root,"independent-binding-sources");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);model.KeyboardPreset=0;model.Save();
+                string path=Core.PathIn(folder,LauncherPlatform.Settings(folder)[0]);
+                var doc=Json.Object(File.ReadAllText(path));
+                var profile=(Dictionary<string,object>)((System.Collections.IEnumerable)doc["controllers"]).Cast<object>().First();
+                var bindings=(Dictionary<string,object>)profile["bindings"];
+                string[] pads={"pad:rt","pad:a","pad:b","pad:x"};
+                bindings["rtrigger"]=new[]{pads[0],"key:LBUTTON",pads[1],pads[2],pads[3]};
+                bindings.Remove("rstick_up");
+                File.WriteAllText(path,Json.Encode(doc));
+                model=GameSettings.Load(folder,null);Need(GameSettings.KeyCode(model.Binding(9)[0])==1,"Controller sources occupied keyboard slots");
+                model.Assign(9,0,'H',true);model.Assign(9,1,'J',true);model.Assign(19,0,'I',true);model.Save();
+                Need(File.ReadAllText(path).Contains("pad:ry+"),"Keyboard edit discarded an inherited controller default");
+                Action verifyPads=()=>{
+                    var saved=Json.Object(File.ReadAllText(path));
+                    var p=(Dictionary<string,object>)((System.Collections.IEnumerable)saved["controllers"]).Cast<object>().First();
+                    var b=(Dictionary<string,object>)p["bindings"];
+                    var actual=((System.Collections.IEnumerable)b["rtrigger"]).Cast<string>().Where(k=>k.StartsWith("pad:")).ToArray();
+                    Need(actual.SequenceEqual(pads),"Editing keyboard sources changed controller sources");
+                };
+                verifyPads();model=GameSettings.Load(folder,null);
+                Need(model.Binding(9).Select(GameSettings.KeyCode).SequenceEqual(new[]{(int)'H',(int)'J'}),"Keyboard slots did not round trip beside four controller sources");
+                model.SetControllerPreset(0,1);model.Device="gamepad:3";model.Save();model=GameSettings.Load(folder,null);
+                Need(model.Binding(9).Select(GameSettings.KeyCode).SequenceEqual(new[]{(int)'H',(int)'J'}),"Controller preset remapped keyboard keys");
+                model.Assign(9,0,0,true);model.Assign(9,1,0,true);model.Save();verifyPads();
+                model.ResetControls();model.Save();verifyPads();
+                Need(model.ControllerPreset(0)==1 && model.Device=="gamepad:3","Keyboard reset changed controller preset/device");
+            });
             Test("modern presets retain custom sources and round trip all controller slots",()=>{
                 string folder=Path.Combine(root,"modern-presets");Directory.CreateDirectory(folder);
                 var model=GameSettings.Load(folder,null);model.Assign(14,0,'I',true);model.Save();

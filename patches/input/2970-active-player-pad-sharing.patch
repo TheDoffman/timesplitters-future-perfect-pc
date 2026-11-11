@@ -1,0 +1,47 @@
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -1042,10 +1042,11 @@
+     key_cache_tick();
+     memset(&pad, 0, sizeof pad);
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
++    unsigned active_ports=pc_settings_active_ports();
+     AcquireSRWLockShared(&g_pc_bindings_lock);
+     if (port == 0 && c->device == DEV_KEYBOARD) {
+         for (int other=1;other<PORTS;other++)
+-            if (g_ctl[other].device==DEV_PAD && g_ctl[other].pad>=0 && !(g_players_auto_ports&(1u<<other)))
++            if (g_ctl[other].device==DEV_PAD && g_ctl[other].pad>=0 && (active_ports&(1u<<other)))
+                 reserved_pads |= 1u << g_ctl[other].pad;
+     }
+     ReleaseSRWLockShared(&g_pc_bindings_lock);
+@@ -1056,14 +1057,13 @@
+     if(port==0 && c->device==DEV_KEYBOARD) {
+         AcquireSRWLockShared(&g_pc_bindings_lock);
+         for(int other=1;other<PORTS;other++)
+-            if(g_ctl[other].device==DEV_PAD && g_ctl[other].pad>=0 && !(g_players_auto_ports&(1u<<other)))
++            if(g_ctl[other].device==DEV_PAD && g_ctl[other].pad>=0 && (active_ports&(1u<<other)))
+                 reserved_pads |= 1u<<g_ctl[other].pad;
+         ReleaseSRWLockShared(&g_pc_bindings_lock);
+         for(int slot=0;slot<RECOMP_PAD_SLOTS;slot++)
+             if(!(reserved_pads & (1u<<slot)) && recomp_pad_read(slot,&pad)) {
+                 have_pad=1;auto_pad=slot;break;
+             }
+-        pc_prompts_controller(&pad,have_pad);
+     }
+ #endif
+ 
+@@ -1079,13 +1079,14 @@
+             }
+             InterlockedExchange(&g_pc_auto_pad,auto_pad);
+         }
+-        pc_prompts_controller(&pad,have_pad);
+     }
+ #endif
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+     if (!pc_controls_accept_pad()) {
+         have_pad=0; /* Freecam, overlays, modal settings and focus gates apply on every host. */
+     }
++    if(pc_controls_accept_pad())
++        pc_prompts_controller_port(port,&pad,have_pad,port==0 || (pc_controls_in_menu() && (active_ports&(1u<<port))));
+ #endif
+ 
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
