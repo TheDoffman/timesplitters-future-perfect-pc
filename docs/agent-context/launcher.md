@@ -846,3 +846,8 @@ workflow checks and all fifteen verified assets. This version-only change
 retains update, installation, preservation and optional-texture contracts.
 Game 0.5.2 is prepared independently as a Windows/Linux draft, with native Mac
 game packaging deferred to the maintainer's Mac at the matching tag revision.
+
+Mac/Linux JsonAdapter writes JSON data with literal '+' axis tokens, matching
+the Framework writer. The compact runtime parser does not decode Unicode escapes;
+the shared inherited-pad-source regression checks the saved token spelling too.
+JSON is used as data/files, not embedded HTML.

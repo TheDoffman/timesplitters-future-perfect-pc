@@ -239,3 +239,8 @@ per-adapter prompt notifications with the common per-port path; explicit P1
 controller prompt behavior remains covered using production prompt code. The
 fixture retains main's cross-host synthetic key evaluator and old-gate negative
 control. No upstream input repair is dropped.
+
+Cross-host integration checks use the runtime platform SRWLOCK declaration in the
+production-prompt fixture; redeclaring it under non-Windows breaks Clang. Native
+launcher JSON keeps '+' literal so preserved pad:ry+/rx+ sources remain readable
+by the runtime parser. The shared UI inheritance regression covers this contract.

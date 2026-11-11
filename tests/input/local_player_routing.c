@@ -54,10 +54,6 @@ static int tsfp_native_key_down(int key){(void)key;return 0;}
 static void tsfp_native_mouse_sample(XBOX_GAMEPAD *out){(void)out;mouse_samples++;}
 void pc_controls_reload_sample(const unsigned char roles[256],int active,int *reload,int *fire,int *secondary)
 {(void)roles;(void)active;(void)reload;(void)fire;(void)secondary;}
-#ifndef _WIN32
-typedef int SRWLOCK;
-#define SRWLOCK_INIT 0
-#endif
 static unsigned controller_layout_depth;
 /* PRODUCTION_PROMPTS */
 /* PRODUCTION_SAMPLER */

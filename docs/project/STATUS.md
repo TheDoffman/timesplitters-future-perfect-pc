@@ -43317,3 +43317,8 @@ matching crash symbols. Executable SHA256:
 `f65884f4451049d5e2c1ac0e9452ffda2721189a8f0df52323814d3118d24a79`.
 The isolated Story launch was blocked by three unrelated Dedicated Server games;
 none was stopped. Evidence is in logs/issue482-boss-terminal-*.log. Keep #482 open; no release or push.
+
+PR546 first integrated CI exposed a duplicate POSIX SRWLOCK fixture declaration
+and native .NET JSON Unicode-escaping '+' in inherited pad axis tokens. Removed
+the redundant typedef and matched native JSON data encoding to Framework literal
+axis tokens; retain the failing shared UI regression. Host rerun pending.
