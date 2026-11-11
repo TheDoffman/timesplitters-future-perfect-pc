@@ -18,16 +18,43 @@ if bootstrap and bootstrap.loader:
 
 if os.environ.get('TSFP_ONLINE_RPC_TRACE') == '1':
     remaining = 32
+    samples = 512
+    output_lock = threading.Lock()
+
+    def record(value):
+        line='[ONLINE-RPC] '+json.dumps(value)
+        destination=os.environ.get('TSFP_ONLINE_RPC_LOG')
+        if destination:
+            with output_lock, open(destination,'a',encoding='utf-8') as stream:
+                stream.write(line+'\n')
+        elif sys.stderr is not None:
+            print(line,file=sys.stderr,flush=True)
+
+    original_thread_error=threading.excepthook
+
+    def thread_error(args):
+        record(dict(time=time.monotonic(),error=args.exc_type.__name__,
+                    message=str(args.exc_value)[:160],thread_failure=True))
+        original_thread_error(args)
+
+    threading.excepthook=thread_error
 
     def observe(frame, event, arg):
-        global remaining
+        global remaining,samples
         if event == 'exception' and remaining:
             kind, error, _ = arg
             remaining -= 1
-            print('[ONLINE-RPC] '+json.dumps(dict(time=time.monotonic(),
+            record(dict(time=time.monotonic(),
                 function=frame.f_code.co_name, line=frame.f_lineno,
                 error=kind.__name__, status=getattr(error, 'status', None),
-                message=str(error)[:160])), file=sys.stderr, flush=True)
+                message=str(error)[:160]))
+        if event=='return' and frame.f_code.co_name=='request' and samples:
+            body=frame.f_locals.get('body')
+            if isinstance(body,dict) and body.get('active') is True:
+                samples-=1
+                record(dict(time=time.monotonic(),counter=body.get('native_counter'),
+                    epoch=arg.get('epoch') if isinstance(arg,dict) else None,
+                    phase=arg.get('phase') if isinstance(arg,dict) else None))
         return observe
 
     def select(frame, event, arg):
@@ -37,5 +64,5 @@ if os.environ.get('TSFP_ONLINE_RPC_TRACE') == '1':
             return observe
         return None
 
-    # Do not inspect locals, credentials, request bodies or guest memory.
+    # Only whitelist native counter/active fields, never credentials/checkpoints.
     threading.settrace(select)

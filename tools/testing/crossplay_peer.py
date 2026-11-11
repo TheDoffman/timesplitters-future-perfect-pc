@@ -238,6 +238,7 @@ def serve():
                         env['TSFP_ARCADE_TRACE']='1'
                     if request.get('rpc_trace'):
                         env['TSFP_ONLINE_RPC_TRACE']='1'
+                        env['TSFP_ONLINE_RPC_LOG']=str(out/('companion-rpc-'+str(peer_index)+'.jsonl'))
                         env['PYTHONPATH']=str(ROOT/'tools/testing/online_rpc_trace')+os.pathsep+env.get('PYTHONPATH','')
                     exe = ROOT/'build/macos/futureperfect_recomp'
                     identity=json.loads((ROOT/'build/macos/generated/network-identity.json').read_text())

@@ -173,11 +173,13 @@ again. Retired player rows may remain in the first result; live native IDs and
 bot rows must be present and unique. `--points` selects a stock point limit;
 team-mode runs confirm the native Select Team screen before sampling gameplay.
 `--rpc-trace` adds a test-only `sitecustomize` exception observer to companion
-Python threads (32 records maximum, no local-variable/request-body inspection).
+Python threads (32 exceptions and512 active progress samples maximum).
 It preserves native compatibility and logs RPC failure classes/status/messages.
 The observer chains the environment's existing Python bootstrap, retaining Mac
 Tk support; enabled/disabled subprocess fixtures check bootstrap preservation,
 the record limit and exclusion of local credentials.
+GUI Python writes to a dedicated test log; only native counter/epoch/phase fields
+are sampled. An exception hook records fatal companion thread failures as well.
 New-round native leases begin when the host starts that round; pre-load progress
 timestamps cannot immediately retire a guest awaiting its first post-load RPC.
 This grants one ordinary lease only: unchanged counters do not renew it, and
