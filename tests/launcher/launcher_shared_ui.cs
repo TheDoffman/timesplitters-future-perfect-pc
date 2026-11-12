@@ -414,7 +414,7 @@ public static class LauncherSharedUiChecks
                 inputSensitivity.Text="invalid";Click(save);
                 Need(save.IsEnabled && saves==1,"Failed validation disabled Save or reported success");
                 inputSensitivity.Text=valid;Need(!save.IsEnabled,"Restored saved input remained dirty");
-                page.SelectTab(0);Find<ComboBox>(page.View,"KeyboardPreset").SelectedIndex=0;var binding=All(page.View).OfType<Button>().First(b=>Tip(b)==GameSettings.Labels[0]+", binding 1");
+                page.SelectTab(0);var binding=All(page.View).OfType<Button>().First(b=>Tip(b)==GameSettings.Labels[0]+", binding 1");
                 Click(binding);Click(All(page.View).OfType<Button>().Single(b=>Convert.ToString(b.Content)=="Clear binding"));
                 Need(save.IsEnabled,"Binding change did not enable Save");Click(save);
                 Need(!save.IsEnabled && saves==2 && GameSettings.Load(folder,null).Binding(0)[0]=="none","Binding save did not disable Save or persist");
@@ -426,99 +426,6 @@ public static class LauncherSharedUiChecks
                 string external=File.ReadAllText(controls)+" ";File.WriteAllText(controls,external);
                 fov.Value=original+2;Click(save);
                 Need(save.IsEnabled && saves==3 && File.ReadAllText(controls)==external,"Conflicting save disabled retry or overwrote external settings");
-            });
-            Test("new setups use Modern presets while updates keep every existing layout",()=>{
-                string fresh=Path.Combine(root,"modern-defaults");Directory.CreateDirectory(fresh);
-                var model=GameSettings.Load(fresh,null);
-                Need(model.KeyboardPreset==1,"A new keyboard setup did not choose Modern PC");
-                for(int i=0;i<4;i++)Need(model.ControllerPreset(i)==1,"A new controller setup did not choose Modern Controller");
-                Need(!Directory.Exists(Path.Combine(fresh,"Settings")),"Reading new defaults wrote settings");
-                foreach(int action in new[]{0,1,10,11,12,13})
-                    Need(model.Binding(action).Select(GameSettings.KeyCode).SequenceEqual(model.DisplayBinding(action).Select(GameSettings.KeyCode)),"Fresh Custom differs from Modern action "+action);
-                model.Save();string source=Core.PathIn(fresh,LauncherPlatform.Settings(fresh)[0]);
-                var changes=new List<Change>{new Change{Name="Settings/pc-controls.json",Source=source}};
-                string installed=Path.Combine(root,"fresh-install-defaults");Directory.CreateDirectory(installed);
-                Core.Apply(installed,changes,null);var seeded=GameSettings.Load(installed,null);
-                Need(seeded.KeyboardPreset==1 && Enumerable.Range(0,4).All(i=>seeded.ControllerPreset(i)==1),"Fresh install did not seed Modern defaults");
-                seeded.KeyboardPreset=0;seeded.Assign(1,0,'H',true);seeded.Save();
-                seeded=GameSettings.Load(installed,null);Need(seeded.KeyboardPreset==0 && GameSettings.KeyCode(seeded.Binding(1)[0])=='H' && GameSettings.KeyCode(seeded.Binding(1)[1])==5,"Fresh Custom edits did not persist");
-                seeded.KeyboardPreset=1;seeded.Save();seeded.KeyboardPreset=0;seeded.Save();
-                Need(GameSettings.KeyCode(GameSettings.Load(installed,null).Binding(1)[0])=='H',"Preset cycling erased Custom edits");
-                foreach(string kind in new[]{"legacy","custom","mixed"}) {
-                    string folder=Path.Combine(root,"upgrade-"+kind);Directory.CreateDirectory(folder);
-                    var doc=Json.Object(File.ReadAllText(source));
-                    doc.Remove("custom_binding_semantics");
-                    var profiles=((System.Collections.IEnumerable)doc["controllers"]).Cast<Dictionary<string,object>>().ToArray();
-                    for(int i=0;i<4;i++) {
-                        if(kind=="legacy") {profiles[i].Remove("keyboard_preset");profiles[i].Remove("controller_preset");}
-                        else {if(i==0)profiles[i]["keyboard_preset"]=kind=="mixed"?1:0;profiles[i]["controller_preset"]=kind=="mixed"?i%2:0;}
-                    }
-                    var bindings=(Dictionary<string,object>)profiles[0]["bindings"];
-                    bindings["a"]=new[]{"key:E","key:SPACE","key:RETURN","key:J"};bindings["lstick_up"]="key:I";bindings["rstick_up"]="none";
-                    profiles[1]["device"]="gamepad:3";doc["retained_upgrade_field"]="keep";
-                    string path=Core.PathIn(folder,LauncherPlatform.Settings(folder)[0]);Directory.CreateDirectory(Path.GetDirectoryName(path));
-                    string original=Json.Encode(doc);File.WriteAllText(path,original);string originalBindings=Json.Encode(bindings);
-                    Core.Apply(folder,changes,null);Need(File.ReadAllText(path)==original,"Updating replaced existing controls: "+kind);
-                    var loaded=GameSettings.Load(folder,null);Need(File.ReadAllText(path)==original,"Loading migrated existing controls: "+kind);
-                    Need(loaded.KeyboardPreset==(kind=="mixed"?1:0),"Updating changed the keyboard layout: "+kind);
-                    for(int i=0;i<4;i++)Need(loaded.ControllerPreset(i)==(kind=="mixed"?i%2:0),"Updating changed a controller layout: "+kind);
-                    loaded.Sensitivity=.23;loaded.Save();loaded=GameSettings.Load(folder,null);
-                    var saved=Json.Object(File.ReadAllText(path));var savedProfiles=((System.Collections.IEnumerable)saved["controllers"]).Cast<Dictionary<string,object>>().ToArray();
-                    Need(Json.Encode(savedProfiles[0]["bindings"])==originalBindings && loaded.PlayerDevice(1)=="gamepad:3","Unrelated Save lost custom bindings/devices: "+kind);
-                    Need(loaded.KeyboardPreset==(kind=="mixed"?1:0) && Enumerable.Range(0,4).All(i=>loaded.ControllerPreset(i)==(kind=="mixed"?i%2:0)),"Unrelated Save changed existing presets: "+kind);
-                    Need(Json.String(saved,"retained_upgrade_field")=="keep","Upgrade lost unrelated controls fields");
-                }
-            });
-            Test("keyboard changes preserve controller sources in both directions",()=>{
-                string folder=Path.Combine(root,"independent-binding-sources");Directory.CreateDirectory(folder);
-                var model=GameSettings.Load(folder,null);model.KeyboardPreset=0;model.Save();
-                string path=Core.PathIn(folder,LauncherPlatform.Settings(folder)[0]);
-                var doc=Json.Object(File.ReadAllText(path));
-                var profile=(Dictionary<string,object>)((System.Collections.IEnumerable)doc["controllers"]).Cast<object>().First();
-                var bindings=(Dictionary<string,object>)profile["bindings"];
-                string[] pads={"pad:rt","pad:a","pad:b","pad:x"};
-                bindings["rtrigger"]=new[]{pads[0],"key:LBUTTON",pads[1],pads[2],pads[3]};
-                bindings.Remove("rstick_up");
-                File.WriteAllText(path,Json.Encode(doc));
-                model=GameSettings.Load(folder,null);Need(GameSettings.KeyCode(model.Binding(9)[0])==1,"Controller sources occupied keyboard slots");
-                model.Assign(9,0,'H',true);model.Assign(9,1,'J',true);model.Assign(19,0,'I',true);model.Save();
-                Need(File.ReadAllText(path).Contains("pad:ry+"),"Keyboard edit discarded an inherited controller default");
-                Action verifyPads=()=>{
-                    var saved=Json.Object(File.ReadAllText(path));
-                    var p=(Dictionary<string,object>)((System.Collections.IEnumerable)saved["controllers"]).Cast<object>().First();
-                    var b=(Dictionary<string,object>)p["bindings"];
-                    var actual=((System.Collections.IEnumerable)b["rtrigger"]).Cast<string>().Where(k=>k.StartsWith("pad:")).ToArray();
-                    Need(actual.SequenceEqual(pads),"Editing keyboard sources changed controller sources");
-                };
-                verifyPads();model=GameSettings.Load(folder,null);
-                Need(model.Binding(9).Select(GameSettings.KeyCode).SequenceEqual(new[]{(int)'H',(int)'J'}),"Keyboard slots did not round trip beside four controller sources");
-                model.SetControllerPreset(0,1);model.Device="gamepad:3";model.Save();model=GameSettings.Load(folder,null);
-                Need(model.Binding(9).Select(GameSettings.KeyCode).SequenceEqual(new[]{(int)'H',(int)'J'}),"Controller preset remapped keyboard keys");
-                model.Assign(9,0,0,true);model.Assign(9,1,0,true);model.Save();verifyPads();
-                model.ResetControls();model.Save();verifyPads();
-                Need(model.ControllerPreset(0)==1 && model.Device=="gamepad:3","Keyboard reset changed controller preset/device");
-            });
-            Test("modern presets retain custom sources and round trip all controller slots",()=>{
-                string folder=Path.Combine(root,"modern-presets");Directory.CreateDirectory(folder);
-                var model=GameSettings.Load(folder,null);model.Assign(14,0,'I',true);model.Save();
-                string path=Core.PathIn(folder,LauncherPlatform.Settings(folder)[0]);
-                var doc=Json.Object(File.ReadAllText(path));var profile=((System.Collections.IEnumerable)doc["controllers"]).Cast<object>().First() as Dictionary<string,object>;
-                var bindings=(Dictionary<string,object>)profile["bindings"];bindings["a"]=new[]{"key:E","key:SPACE","key:RETURN","key:J"};
-                File.WriteAllText(path,Json.Encode(doc));string custom=Json.Encode(bindings);
-                model=GameSettings.Load(folder,null);model.KeyboardPreset=1;for(int i=0;i<4;i++)model.SetControllerPreset(i,1);model.Save();
-                model=GameSettings.Load(folder,null);Need(model.KeyboardPreset==1,"Modern PC did not persist");
-                Need(model.DisplayBinding(1)[1]=="key:#5" && model.DisplayBinding(10)[0]=="key:#66","Modern overrides drifted");
-                Need(GameSettings.KeyCode(model.Binding(14)[0])=='I',"Custom keys were replaced");
-                for(int i=0;i<4;i++)Need(model.ControllerPreset(i)==1,"Controller preset did not persist");
-                model.KeyboardPreset=0;for(int i=0;i<4;i++)model.SetControllerPreset(i,0);model.Save();
-                doc=Json.Object(File.ReadAllText(path));profile=((System.Collections.IEnumerable)doc["controllers"]).Cast<object>().First() as Dictionary<string,object>;
-                Need(Json.Encode(profile["bindings"])==custom,"Custom sources changed across preset applications");
-                var page=new SettingsPage(new ResourceDictionary(),folder,true);
-                var keyboard=Find<ComboBox>(page.View,"KeyboardPreset");var controller=Find<ComboBox>(page.View,"ControllerPreset3");
-                var save=Find<Button>(page.View,"SettingsSaveButton");Click(save);Need(!save.IsEnabled,"Saving the initial draft stayed dirty");
-                keyboard.SelectedIndex=1;controller.SelectedIndex=1;Need(save.IsEnabled,"Preset choices did not enable Save");Click(save);
-                model=GameSettings.Load(folder,null);Need(model.KeyboardPreset==1 && model.ControllerPreset(2)==1,"UI preset save failed");
-                keyboard.SelectedIndex=0;controller.SelectedIndex=0;Click(save);Need(!save.IsEnabled,"Saving Custom stayed dirty");
             });
             Test("controller deadzones preserve legacy and tune each player",()=>{
                 string folder=Path.Combine(root,"deadzone-settings");Directory.CreateDirectory(folder);
@@ -546,7 +453,7 @@ public static class LauncherSharedUiChecks
             });
             Test("binding capture, conflict cancel, reassignment and clear",()=>{
                 var page=new SettingsPage(new ResourceDictionary(),root,true);
-                Find<ComboBox>(page.View,"KeyboardPreset").SelectedIndex=0;
+
                 var binding=All(page.View).OfType<Button>().First(b=>Tip(b)==GameSettings.Labels[0]+", binding 1");
                 Func<string,Button> action=label=>All(page.View).OfType<Button>().Single(b=>b.Name!="SettingsCancelButton"&&Convert.ToString(b.Content)==label);
                 string original=Convert.ToString(binding.Content);Click(binding);Need(Find<Border>(page.View,"BindingCaptureArea")!=null,"No capture prompt");

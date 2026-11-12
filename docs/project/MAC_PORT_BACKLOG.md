@@ -1,3 +1,11 @@
+Full control-preset rollback (local, base e7cb1016): shared2990 removes sampler
+preset/semantic layers and restores original defaults/profile initialization and
+binding editors. AppKit/GTK/Win32/shared launcher use the restored common model;
+no OS adapter is added. Unrelated deadzones/prompt/ownership repairs remain.
+Windows build and shared tests run here; native Mac and physical Linux/Deck
+acceptance pending. See STATUS and control-presets.md. Personal saves/settings
+are retained, including saved custom layouts; no automatic reset or publication.
+
 Device switching/menu glyph follow-up (local, base a7762fce): shared patch2970
 and shared prompt state reserve controllers by actual joined-player ownership,
 allow late-connected unjoined controllers to share P1, and track menu activity

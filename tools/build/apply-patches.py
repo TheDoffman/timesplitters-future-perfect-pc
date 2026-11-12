@@ -335,6 +335,11 @@ def patch_records(paths):
         paths.remove(pad_sharing)
         paths.append(pad_sharing)
 
+    rollback_controls = by_name.get('2990-rollback-control-presets.patch')
+    if rollback_controls:
+        paths.remove(rollback_controls)
+        paths.append(rollback_controls)
+
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

@@ -4,7 +4,7 @@ controller labels for its measurements/text/glyph draws, restoring the remembere
 input device afterward. Normal menu/KBM prompts still follow last input. Scope
 changes display only; native action configuration remains authoritative.
 
-[Custom seeds](control-presets.md).
+[Preset rollback](control-presets.md).
 
 # Unified Controls options
 
