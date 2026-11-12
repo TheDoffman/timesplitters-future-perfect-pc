@@ -1,3 +1,10 @@
+UPnP router SOAP compatibility (2026-11-12, local afterff18665a): **Awaiting validation**
+on native Mac/Linux. Shared Gateway.call expands empty SOAP arguments so strict
+routers accept NewRemoteHost. Ownership-checked cleanup retries literal wildcard
+only for402 and preserves replaced/manual entries. Windows CR1000A physical
+create/query/delete verified for both hosting ports; Mac/Linux and WAN gameplay
+acceptance pending. No OS adapter change needed. See [evidence](STATUS.md).
+
 Private shared relay and owner UPnP (2026-11-12, local after3542601b): **Awaiting validation**
 on physical Mac/Linux and a supported router. Shared standard-library SSDP/IGD
 mapping opens private-directory TCP and shared-relay UDP together on Host a Server,

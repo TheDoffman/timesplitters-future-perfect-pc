@@ -249,3 +249,56 @@ def test_relay_hosting_does_not_create_inbound_router_mappings(monkeypatch):
     session=Hosted.create(SimpleNamespace(request=lambda *args,**kwargs:lobby),
         'a'*64,'Relay host',30821,True,transport='relay')
     assert session.port_mapping is None
+
+
+@pytest.mark.parametrize('action', ['GetSpecificPortMappingEntry', 'AddPortMapping', 'DeletePortMapping'])
+def test_router_accepts_expanded_empty_remote_host_argument(monkeypatch, action):
+    # Model the real IGD that returned402 for <NewRemoteHost /> and714 (missing
+    # mapping) for the equivalent expanded argument. Do not reinterpret402 as
+    # absence: conflicting forwards must still be inspected before any write.
+    def strict_router(url, body, soap_action):
+        remote = ET.fromstring(body).find('.//NewRemoteHost')
+        assert remote is not None and remote.text is None
+        if b'<NewRemoteHost></NewRemoteHost>' not in body:
+            return ET.fromstring('<Envelope><errorCode>402</errorCode></Envelope>')
+        if action == 'GetSpecificPortMappingEntry':
+            return ET.fromstring('<Envelope><errorCode>714</errorCode></Envelope>')
+        return ET.fromstring('<Envelope><'+action+'Response/></Envelope>')
+    monkeypatch.setattr(upnp, 'request', strict_router)
+    gateway = upnp.Gateway(urlsplit('http://192.168.1.1/control'),
+        'urn:schemas-upnp-org:service:WANIPConnection:2', '192.168.1.10')
+    if action == 'GetSpecificPortMappingEntry':
+        assert gateway.query(30820, 'TCP') is None
+    else:
+        assert gateway.call(action, dict(NewRemoteHost='', NewExternalPort=30820, NewProtocol='TCP')) == {}
+
+
+@pytest.mark.parametrize('replacement', [False, True])
+def test_cleanup_invalid_args_retries_wildcard_only_after_rechecking_owner(replacement):
+    class StrictDeleteGateway(Gateway):
+        def call(self, action, values):
+            if action == 'DeletePortMapping' and values['NewRemoteHost'] == '':
+                self.calls.append((action, dict(values)))
+                if replacement: self.row = manual()
+                raise upnp.MappingError(402)
+            return super().call(action, values)
+    gateway = StrictDeleteGateway()
+    lease = upnp.PortMapping(gateway, 30820, 'TCP')
+    lease.close()
+    deletes = [values for action, values in gateway.calls if action == 'DeletePortMapping']
+    assert [v['NewRemoteHost'] for v in deletes] == ([''] if replacement else ['', '*'])
+    assert gateway.row == manual() if replacement else gateway.row is None
+
+
+def test_cleanup_other_router_errors_do_not_trigger_wildcard_retry():
+    class Denied(Gateway):
+        def call(self, action, values):
+            if action == 'DeletePortMapping':
+                self.calls.append((action, dict(values)))
+                raise upnp.MappingError(606)
+            return super().call(action, values)
+    gateway = Denied()
+    lease = upnp.PortMapping(gateway, 30820, 'TCP')
+    lease.close()
+    assert len([c for c in gateway.calls if c[0] == 'DeletePortMapping']) == 1
+    assert gateway.row is not None

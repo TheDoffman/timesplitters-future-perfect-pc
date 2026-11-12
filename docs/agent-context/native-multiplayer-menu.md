@@ -544,3 +544,22 @@ packet delivery, owner-only mappings, room isolation, replay/spoof rejection,
 NAT rebinding, expiry, rate limits and listener rollback/cleanup.
 The existing community service is unchanged; relayed player lobbies need no
 inbound client mapping. Physical router/WAN and Mac/Linux acceptance are pending.
+
+
+### Router SOAP interoperability (2026-11-12)
+
+Live Windows CR1000A discovery succeeded but GetSpecificPortMappingEntry returned
+402 for self-closing NewRemoteHost. The same query with expanded empty tags
+returned714 (no mapping); encodingStyle/XML declaration alone did not help.
+Gateway.call now serializes all empty arguments with explicit start/end tags.
+Do not treat402 as missing: that would bypass conflict/ownership checks.
+
+This router also rejects DeletePortMapping with empty NewRemoteHost (402), yet
+accepts a literal wildcard `*`. PortMapping.close retries only that error and
+only after querying again to confirm the unique description/destination still
+belong to this handle. Permission/other errors and replaced/manual entries never
+trigger the fallback. Regression cases model all three actions and replacement
+between deletion attempts. Corrected helper physically created, queried and
+removed both hosting ports on this Windows router; WAN gameplay and native Mac /
+Linux behavior remain unverified. Mobile-hotspot inbound reachability is a
+separate upstream NAT capability, not established by home-router mapping success.

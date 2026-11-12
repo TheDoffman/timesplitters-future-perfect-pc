@@ -76,7 +76,10 @@ class Gateway:
         method = ET.SubElement(body, 'u:'+action, {'xmlns:u': self.service})
         for key, value in values.items():
             ET.SubElement(method, key).text = str(value)
-        root = request(self.control, ET.tostring(envelope), self.service+'#'+action)
+        # Some IGDs reject self-closing empty arguments (notably NewRemoteHost)
+        # with402 Invalid Args. Expand them for queries, adds and deletes alike.
+        root = request(self.control, ET.tostring(envelope, short_empty_elements=False),
+                       self.service+'#'+action)
         error = root.findtext('.//{*}errorCode')
         if error:
             raise MappingError(error)
@@ -216,8 +219,18 @@ class PortMapping:
                 if self.owned:
                     row = self.gateway.query(self.port, self.protocol)
                     if row and self.mine(row):
-                        self.gateway.call('DeletePortMapping', dict(
-                            NewRemoteHost='', NewExternalPort=self.port, NewProtocol=self.protocol))
+                        values = dict(NewRemoteHost='', NewExternalPort=self.port, NewProtocol=self.protocol)
+                        try:
+                            self.gateway.call('DeletePortMapping', values)
+                        except MappingError as error:
+                            if error.code != '402':
+                                raise
+                            # Some IGDs require a literal wildcard for deletion.
+                            # Recheck ownership before retrying the same mapping.
+                            row = self.gateway.query(self.port, self.protocol)
+                            if row and self.mine(row):
+                                values['NewRemoteHost'] = '*'
+                                self.gateway.call('DeletePortMapping', values)
                     self.owned = False
         except (OSError, ValueError, ET.ParseError, http.client.HTTPException):
             pass  # Finite leases expire; permanent-only routers need normal exit.

@@ -34,7 +34,10 @@ another application's mapping.
 Set `TSFP_UPNP=0` before launching to disable automatic mapping. Automated tests
 and isolated gameplay runners always disable real router changes. The shared
 Python helper has no additional dependency and runs on Windows, Mac and Linux.
-Simulated router contracts and Windows integration are tested; physical-router,
-Mac/Linux device and outside-network acceptance remain to be verified.
+Simulated router contracts and Windows integration are tested. The Windows
+create/query/delete lifecycle is also verified on a CR1000A router; Mac/Linux
+device and outside-network acceptance remain to be verified. Router SOAP
+compatibility uses expanded empty arguments and an ownership-checked wildcard
+cleanup retry where required.
 
 Protocol: [UPnP WANIPConnection](https://upnp.org/specs/gw/UPnP-gw-WANIPConnection-v1-Service.pdf).

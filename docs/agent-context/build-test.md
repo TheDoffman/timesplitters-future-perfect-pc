@@ -1,4 +1,4 @@
-[Sticks](controller-deadzones.md). [IDs](online-player-identities.md). [NAT](native-multiplayer-menu.md).
+[Pads](controller-deadzones.md). [IDs](online-player-identities.md). [SOAP](native-multiplayer-menu.md).
 [2970 pads](control-presets.md); [Tex](texture-preference.md).
 [JIP](arcade-join-in-progress.md); [Routes](online-client-boundary.md).
 [Arms](video-options.md).

@@ -44269,3 +44269,36 @@ logs/private-relay-after-pull-build.log. Multiplayer compatibility:
 7c98710b1a90e9c03f9ac76f9f802642aa107fd439f0432fc96dbfacd8f4a083.
 Context and whitespace checks pass. Mac/Linux/router/WAN acceptance is unchanged;
 other-device synchronization is unverified. No local work was committed or pushed.
+
+
+## UPnP home-router interoperability repair (2026-11-12)
+
+User reports home Windows vs mobile-hotspot Mac private-directory join timeouts,
+with manual forwards disabled and home UPnP enabled. Local clean source baseline
+ff18665a includes the private relay work. Normal-host read-only discovery found
+WANIPConnection:2 on the default RFC1918 interface and a public WAN address, but
+both hosting-port queries returned402 Invalid Args. Discriminating SOAP requests
+showed self-closing NewRemoteHost caused402; expanded empty tags returned714
+(no entry). XML declaration/encodingStyle alone did not change the failure.
+Gateway.call now expands empty arguments for queries/adds/deletes.402 remains
+an error, never an excuse to bypass a conflicting or uninspectable mapping.
+
+Physical CR1000A Add/query succeeded on TCP30820 and UDP30821. Its Delete still
+returned402 for empty RemoteHost but succeeded with literal*. Cleanup now retries
+only402, requerying the exact unique description/destination before the wildcard
+retry. Tests cover a replacement between attempts and non402 errors. The final
+real map_port lifecycle created and verified both mappings and close removed both;
+readback confirmed absence. Only explicitly owned diagnostic mappings were removed;
+no pre-existing/manual mappings or router/firewall settings were altered.
+
+Windows x64/Python3.14.2/MSVC14.42.34433/VS2022/existing D3D8 frontend:108 focused
+UPnP/private relay/native controller/package/identity checks pass, including strict
+SOAP parser and wildcard-cleanup regressions. Supported Windows Build, built-ins
+and symbols pass in logs/upnp-router-interop-build.log. Compatibility:
+798a60e84f76912f147dfdd1906d45487ad5b0b1a7a0d2e682d713b27ab96955.
+Source/helper/tests/docs remain local/uncommitted afterff18665a, not pushed.
+Both devices need matching rebuilt compatibility identities to play together.
+Physical home-router mapping lifecycle is verified, not external reachability or
+gameplay. Mac/Linux native builds/devices and hotspot-host inbound reachability
+remain unverified. No personal saves/settings/certificates or community service
+were changed. Repository context and whitespace validation pass.
