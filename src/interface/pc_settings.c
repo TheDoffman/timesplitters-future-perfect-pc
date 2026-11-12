@@ -96,11 +96,6 @@ static int selected(Editor *e)
 static void fill(HWND d, Editor *e)
 {
     int i,j;
-    EnableWindow(GetDlgItem(d,ID_CHANGE),!e->settings.preset);
-    EnableWindow(GetDlgItem(d,ID_CLEAR),!e->settings.preset);
-    SetDlgItemTextA(d,ID_HELP,e->settings.preset?
-        "Modern PC preset active. Choose Custom in Controls or the launcher to edit your retained bindings. Mouse options remain editable.":
-        "Double-click a binding to change it. F2 opens settings. Developer Tools has a configurable shortcut.\nEscape releases the mouse. Pause a mission before opening PC settings.");
     char name[80],number[40];
     for(i=0;i<PC_ACTION_COUNT;i++) for(j=0;j<PC_BINDING_SLOTS;j++) {
         pc_settings_key_name(e->settings.keys[i][j],name,sizeof name);
@@ -171,7 +166,6 @@ static INT_PTR CALLBACK capture_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
 
 static void change_binding(HWND d,Editor *e)
 {
-    if(e->settings.preset)return;
     int row=selected(e), conflict,i,j;
     Capture capture={0};
     char title[256];
@@ -265,7 +259,6 @@ static INT_PTR CALLBACK settings_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
             return TRUE;
         case ID_CHANGE: change_binding(d,e); return TRUE;
         case ID_CLEAR: {
-            if(e->settings.preset)return TRUE;
             int row=selected(e); char name[32];
             if(row>=0) { e->settings.keys[row][e->slot]=0; pc_settings_key_name(0,name,sizeof name); ListView_SetItemText(e->list,row,e->slot+1,name); }
             return TRUE;

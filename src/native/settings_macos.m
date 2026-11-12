@@ -47,9 +47,6 @@ static NSTextField *label(NSView *view,NSString *text,NSRect frame) {
     NSWindow *panel;
     NSTabView *tabs;
     NSPopUpButton *bindings[PC_ACTION_COUNT][PC_BINDING_SLOTS];
-    NSButton *recordButtons[PC_ACTION_COUNT][PC_BINDING_SLOTS];
-    int binding_preset;
-    NSTextField *binding_hint;
     NSTextField *sensitivity;
     NSButton *enabled,*invert,*fullscreen;
     NSPopUpButton *resolution,*aspect;
@@ -77,8 +74,6 @@ static void (^graphics_test_ready)(TSFPSettings *,NSTabView *,NSPopUpButton *,NS
     NSButton *b=[NSButton buttonWithTitle:title target:self action:action];b.frame=frame;[view addSubview:b];return b;
 }
 - (void)fillBindings:(const PcSettings *)s {
-    binding_preset=s->preset;
-    binding_hint.stringValue=s->preset?@"Modern PC active. Choose Custom in Controls or the launcher to edit retained bindings.":@"Choose a binding or use Record. Save applies this tab.";
     for(int a=0;a<PC_ACTION_COUNT;a++)for(int slot=0;slot<PC_BINDING_SLOTS;slot++) {
         NSMenuItem *found=nil;
         for(NSMenuItem *item in bindings[a][slot].itemArray)
@@ -89,7 +84,6 @@ static void (^graphics_test_ready)(TSFPSettings *,NSTabView *,NSPopUpButton *,NS
             found.representedObject=@(s->keys[a][slot]);
         }
         [bindings[a][slot] selectItem:found];
-        bindings[a][slot].enabled=!s->preset;recordButtons[a][slot].enabled=!s->preset;
     }
 }
 - (void)fill:(const PcSettings *)s {
@@ -107,7 +101,7 @@ static void (^graphics_test_ready)(TSFPSettings *,NSTabView *,NSPopUpButton *,NS
     tabs=[[NSTabView alloc] initWithFrame:NSMakeRect(15,60,830,575)];[view addSubview:tabs];
     NSTabViewItem *controls=[[NSTabViewItem alloc] initWithIdentifier:@"controls"];controls.label=@"Keyboard & Mouse";
     NSView *cv=[[NSView alloc] initWithFrame:NSMakeRect(0,0,805,535)];controls.view=cv;[tabs addTabViewItem:controls];
-    binding_hint=label(cv,@"Choose a binding or use Record to press a key, mouse button or wheel. Save applies this tab.",NSMakeRect(10,500,780,22));
+    label(cv,@"Choose a binding or use Record to press a key, mouse button or wheel. Save applies this tab.",NSMakeRect(10,500,780,22));
     NSScrollView *scroll=[[NSScrollView alloc] initWithFrame:NSMakeRect(5,110,800,385)];scroll.hasVerticalScroller=YES;
     NSView *rows=[[NSView alloc] initWithFrame:NSMakeRect(0,0,780,PC_ACTION_COUNT*32)];scroll.documentView=rows;[cv addSubview:scroll];
     key_count=0;keys[key_count++]=0;
@@ -125,7 +119,7 @@ static void (^graphics_test_ready)(TSFPSettings *,NSTabView *,NSPopUpButton *,NS
             b.toolTip=[NSString stringWithFormat:@"%s — binding %d",pc_action_labels[a],slot+1];
             [rows addSubview:b];
             NSButton *record=[self button:@"Record" action:@selector(record:) frame:NSMakeRect(278+slot*146,y,57,28) view:rows];
-            recordButtons[a][slot]=record;record.tag=a*PC_BINDING_SLOTS+slot;
+            record.tag=a*PC_BINDING_SLOTS+slot;
             [record setAccessibilityLabel:[NSString stringWithFormat:@"Record %s binding %d",pc_action_labels[a],slot+1]];
         }
     }
@@ -183,13 +177,12 @@ static void (^graphics_test_ready)(TSFPSettings *,NSTabView *,NSPopUpButton *,NS
     fov_value.stringValue=[NSString stringWithFormat:@"%d°",fov.intValue];
 }
 - (PcSettings)bindingValues {
-    PcSettings next=original;next.preset=binding_preset;
+    PcSettings next=original;
     for(int a=0;a<PC_ACTION_COUNT;a++)for(int slot=0;slot<PC_BINDING_SLOTS;slot++)
         next.keys[a][slot]=[bindings[a][slot].selectedItem.representedObject intValue];
     return next;
 }
 - (void)record:(id)sender {
-    if(binding_preset)return;
     int action=(int)[sender tag]/PC_BINDING_SLOTS,slot=(int)[sender tag]%PC_BINDING_SLOTS;
     if(action<0 || action>=PC_ACTION_COUNT)return;
     int key=capture_binding([NSString stringWithUTF8String:pc_action_labels[action]],nil);

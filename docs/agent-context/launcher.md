@@ -1,5 +1,5 @@
-Launcher1.6.1 packages the independent keyboard-edit/reset preservation fixes;
-game0.6.1 is prepared separately as a draft hotfix. Three-host release verification
+Launcher1.6.2 packages restored editable controls and per-player deadzone sliders;
+game0.6.2 adds the high-FPS turret/prompt fixes. Three-host release verification
 remains required; see docs/release/launcher-releases.md.
 
 Keyboard edits now preserve controller sources on the edited action, including
@@ -19,7 +19,7 @@ Version preparation itself does not publish or establish hardware acceptance.
 
 [Controller deadzones](controller-deadzones.md).
 
-[Custom seeds](control-presets.md).
+[Preset rollback](control-presets.md).
 
 Enhanced textures now round-trip the game's `pc-textures.ini` sidecar.
 GameSettings loads its value ahead of legacy launcher.enhanced_textures JSON;
@@ -851,3 +851,11 @@ Mac/Linux JsonAdapter writes JSON data with literal '+' axis tokens, matching
 the Framework writer. The compact runtime parser does not decode Unicode escapes;
 the shared inherited-pad-source regression checks the saved token spelling too.
 JSON is used as data/files, not embedded HTML.
+
+Controller deadzones in SettingsPage use eight shared percentage sliders (0..100,
+1% steps) with live readouts and accessible names. Only edits update the raw model;
+opening the page preserves unrounded legacy values. Each player's movement/aim
+sliders share a named PageTheme.Details Expander. Only Player1 starts expanded;
+expansion is excluded from Draft() and keeps pending values. The tab is Controls.
+Shared UI checks cover defaults, presentation-only toggling, readouts and per-player
+persistence. Save/conflict handling and game-side deadzone behavior are unchanged.

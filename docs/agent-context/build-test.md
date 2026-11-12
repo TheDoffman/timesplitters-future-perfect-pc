@@ -1,5 +1,5 @@
 [Pads](controller-deadzones.md). [IDs](online-player-identities.md). [Exit](native-multiplayer-menu.md).
-[2970 pads](control-presets.md); [Tex](texture-preference.md).
+[Rollback](control-presets.md); [Tex](texture-preference.md).
 [JIP](arcade-join-in-progress.md); [Routes](online-client-boundary.md).
 [Arms](video-options.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).

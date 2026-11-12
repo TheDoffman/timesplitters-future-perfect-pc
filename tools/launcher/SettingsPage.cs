@@ -126,26 +126,34 @@ namespace TimeSplitters.Launcher
             }
             sensitivity=Entry(model.Sensitivity.ToString("G",CultureInfo.InvariantCulture));sensitivity.Name="MouseSensitivity";Field(inputRight,"Mouse sensitivity · 0.001–10",sensitivity);
             var mouse=new WrapPanel();enabled=Check("Mouse look",model.MouseEnabled);invert=Check("Invert vertical look",model.InvertY);mouse.Children.Add(enabled);mouse.Children.Add(invert);input.Children.Add(mouse);
-            var presets=PageTheme.Section(controls,"Control presets","Presets keep your custom bindings. Select Custom to restore them. Save settings to apply.");
-            keyboardPreset=Choices(new[]{"Custom","Modern PC"},model.KeyboardPreset==1?"Modern PC":"Custom");keyboardPreset.Name="KeyboardPreset";
-            Field(presets,"Keyboard & mouse preset",keyboardPreset);
-            presets.Children.Add(Text("Modern PC: E Use / F / Mouse 4 Melee / B Weapon mode / V Grenade type / Q / Wheel up Previous weapon / Wheel down Next weapon",12));
-            for(int player=0;player<4;player++) {
-                int index=player;var choice=Choices(new[]{"Custom","Modern Controller"},model.ControllerPreset(player)==1?"Modern Controller":"Custom");
-                choice.Name="ControllerPreset"+(player+1);controllerPresets[player]=choice;Field(presets,"Player "+(player+1)+" controller preset",choice);
-                choice.SelectionChanged+=(s,e)=>{model.SetControllerPreset(index,choice.SelectedIndex);RefreshSaveState();};
-            }
-            presets.Children.Add(Text("Modern Controller: LT Aim / RT Fire / RB Grenade / RS Melee / B Crouch / X Reload / A Use / Y Next weapon / LB Weapon mode. Menu controls stay the same.",12));
             var stickSettings=PageTheme.Section(controls,"Controller deadzones","Tune movement and aiming independently. Lower values respond sooner; increase them if a stick drifts. Game changes apply immediately; launcher changes apply on the next launch.");
-            for(int player=0;player<4;player++)for(int axis=0;axis<2;axis++) {
-                int index=player;bool aim=axis==1;
-                int percent=(model.ControllerDeadzone(player,aim)*100+16383)/32767;
-                var labels=Enumerable.Range(0,101).Select(x=>x+"%").ToArray();
-                var choice=Choices(labels,labels[percent]);
-                choice.Name="Player"+(player+1)+(aim?"AimDeadzone":"MovementDeadzone");
-                controllerDeadzones[player*2+axis]=choice;
-                Field(stickSettings,"Player "+(player+1)+(aim?" aim":" movement"),choice);
-                choice.SelectionChanged+=(s,e)=>{if(choice.SelectedIndex>=0)model.SetControllerDeadzone(index,aim,(choice.SelectedIndex*32767+50)/100);RefreshSaveState();};
+            for(int player=0;player<4;player++) {
+                var playerSettings=new StackPanel();
+                var playerSection=PageTheme.Details(stickSettings,"Player "+(player+1),playerSettings);
+                playerSection.Name="Player"+(player+1)+"DeadzoneSection";
+                playerSection.IsExpanded=player==0;
+                for(int axis=0;axis<2;axis++) {
+                    int index=player;bool aim=axis==1;
+                    int percent=(model.ControllerDeadzone(player,aim)*100+16383)/32767;
+                    string name="Player"+(player+1)+(aim?"AimDeadzone":"MovementDeadzone");
+                    string label="Player "+(player+1)+(aim?" aim":" movement");
+                    var row=new DockPanel();
+                    var value=Text(percent.ToString(CultureInfo.InvariantCulture)+"%",13);
+                    value.Name=name+"Value";value.Width=48;value.TextAlignment=TextAlignment.Right;
+                    value.VerticalAlignment=VerticalAlignment.Center;value.Margin=new Thickness(0);
+                    DockPanel.SetDock(value,Dock.Right);row.Children.Add(value);
+                    var slider=new Slider {Name=name,Minimum=0,Maximum=100,Value=percent,
+                        TickFrequency=1,IsSnapToTickEnabled=true,SmallChange=1,LargeChange=10,
+                        MinWidth=140,Margin=new Thickness(0,4,12,4),VerticalAlignment=VerticalAlignment.Center};
+                    AutomationProperties.SetName(slider,label+" deadzone percent");
+                    controllerDeadzones[player*2+axis]=slider;row.Children.Add(slider);
+                    Field(playerSettings,aim?"Aiming":"Movement",row);
+                    Ui.ValueChanged(slider,()=>{
+                        int selected=(int)Math.Round(slider.Value);
+                        value.Text=selected.ToString(CultureInfo.InvariantCulture)+"%";
+                        model.SetControllerDeadzone(index,aim,(selected*32767+50)/100);RefreshSaveState();
+                    });
+                }
             }
             var bindings=PageTheme.Section(controls,"Key bindings","Select a slot, then press a key or mouse button. Mouse wheel is supported.");
             var bindingHead=new Grid { Margin=new Thickness(0,0,0,6) };bindingHead.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(200)});
@@ -165,8 +173,8 @@ namespace TimeSplitters.Launcher
                 bindings.Children.Add(row);
             }
             var reset=Button("Restore default controls");reset.Margin=new Thickness(0,16,0,0);reset.HorizontalAlignment=HorizontalAlignment.Left;
-            reset.Click+=(s,e)=>Confirm("Restore default controls?","Replace Player 1 bindings and mouse settings with the defaults? Changes apply only when you save.","Restore defaults",()=> { model.ResetControls(); sensitivity.Text="0.10"; enabled.IsChecked=true; invert.IsChecked=false; device.SelectedIndex=0; keyboardPreset.SelectedIndex=0;RefreshBindings(); });
-            bindings.Children.Add(reset);tabs.Items.Add(new TabItem { Header="Keyboard & mouse",Content=Scroll(controls) });
+            reset.Click+=(s,e)=>Confirm("Restore default controls?","Replace Player 1 bindings and mouse settings with the defaults? Changes apply only when you save.","Restore defaults",()=> { model.ResetControls(); sensitivity.Text="0.10"; enabled.IsChecked=true; invert.IsChecked=false; device.SelectedIndex=0; RefreshBindings(); });
+            bindings.Children.Add(reset);tabs.Items.Add(new TabItem { Header="Controls",Content=Scroll(controls) });
             var graphics=new StackPanel();
             var texturePanel=new StackPanel();
             var textures=PageTheme.Section(texturePanel,"Enhanced textures","Optional pack. Original textures are always available.");
@@ -312,7 +320,6 @@ namespace TimeSplitters.Launcher
             skipSplashes=Check("Skip startup splash screens",model.SkipStartupSplashes);skipSplashes.Name="SkipStartupSplashes";startup.Children.Add(skipSplashes);
             var startupHint=Text("Story cutscenes still play.",12);startupHint.Foreground=Muted;startupHint.Margin=new Thickness(0,8,0,0);startup.Children.Add(startupHint);
             tabs.Items.Add(new TabItem { Header="Graphics & resolution", Content=Scroll(graphics) });
-            keyboardPreset.SelectionChanged+=(s,e)=>{model.KeyboardPreset=keyboardPreset.SelectedIndex;RefreshBindings();};
             RefreshBindings();
             var discord=new StackPanel();
             var presence=PageTheme.Section(discord,"Discord Rich Presence","Show your game activity on Discord.");
@@ -378,9 +385,7 @@ namespace TimeSplitters.Launcher
             Ui.ValueChanged(fov,RefreshSaveState);
         }
         readonly ComboBox[] localDevices=new ComboBox[3];
-        readonly ComboBox[] controllerPresets=new ComboBox[4];
-        readonly ComboBox[] controllerDeadzones=new ComboBox[8];
-        readonly ComboBox keyboardPreset;
+        readonly Slider[] controllerDeadzones=new Slider[8];
         string Draft()
         {
             return Json.Encode(new object[]{sensitivity.Text,width.Text,height.Text,discordId.Text,
@@ -389,7 +394,7 @@ namespace TimeSplitters.Launcher
                 spatialAudio.IsChecked,extendedGunfire.IsChecked,environmentalAudio.IsChecked,ambientAudio.IsChecked,
                 audioVolumes.Select(slider=>(int)Math.Round(slider.Value)).ToArray(),
                 dialogueFocus.IsChecked,impactRange.SelectedIndex,
-                controllerDeadzones.Select(x=>x.SelectedIndex).ToArray(),keyboardPreset.SelectedIndex,controllerPresets.Select(x=>x.SelectedIndex).ToArray(),device.SelectedIndex,localDevices.Select(x=>x.SelectedIndex).ToArray(),scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
+                controllerDeadzones.Select(x=>(int)Math.Round(x.Value)).ToArray(),device.SelectedIndex,localDevices.Select(x=>x.SelectedIndex).ToArray(),scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
                 (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
         void RefreshSaveState()
@@ -400,7 +405,7 @@ namespace TimeSplitters.Launcher
             status.Text=save.IsEnabled?"Unsaved changes. Save to apply on your next launch.":"Settings saved. Changes apply on your next launch.";
         }
         static string KeyName(string token) { return GameSettings.BindingLabel(token); }
-        void RefreshBindings() { for(int i=0;i<GameSettings.Actions.Length;i++) { var keys=model.DisplayBinding(i); for(int j=0;j<GameSettings.BindingSlots;j++) { bindingButtons[i,j].IsEnabled=model.KeyboardPreset==0;bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } UpdateDeveloperToolsShortcut();RefreshSaveState(); }
+        void RefreshBindings() { for(int i=0;i<GameSettings.Actions.Length;i++) { var keys=model.Binding(i); for(int j=0;j<GameSettings.BindingSlots;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } UpdateDeveloperToolsShortcut();RefreshSaveState(); }
         void UpdateDeveloperToolsShortcut()
         {
             if(developerToolsShortcut==null)return;

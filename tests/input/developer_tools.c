@@ -253,15 +253,6 @@ int main(void) {
     /* Narrow and ultrawide layouts keep panel/footer in bounds and repaint on dock. */
     unsigned n=pc_developer_lines(640,480,painted,PC_DEVELOPER_MAX_DRAW);assert(n>20&&n<PC_DEVELOPER_MAX_DRAW);
     for(unsigned i=0;i<n;i++)assert(painted[i].x>=0&&painted[i].y>=0&&painted[i].x+painted[i].width<=640.1f);
-    /* Modern gameplay chips have no input target; optional keys stay editable. */
-    draft.preset=1;sidebar_count=0;capture_action=-1;
-    sidebar_binding(0,0,0,20,20,78,"Gameplay");assert(!sidebar_count);
-    sidebar_binding(19,0,0,20,50,78,"Optional look");assert(sidebar_count==1);
-    sidebar_binding(PC_DEVELOPER_ACTION,0,0,20,80,78,"Developer shortcut");assert(sidebar_count==2);
-    DeveloperWidget stale={0};stale.kind=UI_BIND;stale.a=0;
-    sidebar_activate(&stale,0);assert(capture_action<0 && strstr(status,"Custom"));
-    sidebar_activate(&sidebar_widgets[0],0);assert(capture_action==19);capture_action=-1;
-    draft.preset=0;
     key(27);assert(!pc_developer_open());
     puts("Developer sidebar pointer, search, numeric editing, bindings, focus and offline guards passed");return 0;
 }

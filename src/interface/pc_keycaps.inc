@@ -1,4 +1,3 @@
-#include "input/pc_control_presets.h"
 /* Use the native glyph callback so keycaps follow actual wrapped positions,
  * font size, fades and HUD placement rather than estimating text advances. */
 #if !defined(TSFP_KEYCAP_TEST) && defined(__has_include)
@@ -147,15 +146,6 @@ void pc_display_keycap_glyph(void (*original)(void))
         int digit=c<12 && guest_writable(table,4) && WORD_AT(table) &&
                   WORD_AT(state+0x3c)==WORD_AT(table);
         unsigned token=c+(digit?'1':'A');
-#ifndef TSFP_KEYCAP_TEST
-        if(!pc_controls_in_menu()) {
-            unsigned port=controls_context_port(WORD_AT(0x7b0c7c));
-            if(port<4 && pc_settings_controller_preset(port)) {
-                unsigned masks[24];int mounted;memcpy(masks,pc_preset_masks,sizeof masks);
-                if(controls_gameplay_masks(port,masks,&mounted))token=pc_preset_controller_token(token,masks);
-            }
-        }
-#endif
         int icon=token<256?input_controller_lookup[token]:-1;
         if(icon>=0 && keycap_draw.count<64 && keycap_queue_icon(state,icon,1)) {g_esp+=4;return;}
         original();return;

@@ -29,9 +29,6 @@ int pc_developer_set_enabled(int enabled){developer_enabled=enabled;developer_en
 static uint32_t row_count,callbacks[32],row_ids[32],last_row,saves,transition;
 static uint32_t expected_parent=0x2000,expected_previous=0x524578;
 static uint32_t guest_call(void (*fn)(void),unsigned count,...);
-static unsigned new_control_profiles;
-static void controls_repair_profile(uint32_t profile) {(void)profile;}
-static void controls_new_profile(uint32_t profile) {(void)profile;new_control_profiles++;}
 #include "pc_unlock_menu.inc"
 static uint32_t guest_call(void (*fn)(void),unsigned count,...)
 {
@@ -139,8 +136,8 @@ int main(void)
     call(uc_back,0x2000);assert(saves==1 && !uc_rows[0]);
     row_count=0;WORD_AT(0x2004)=0x524578;call(uc_extras_build,0x2000);expected_previous=WORD_AT(0x2004);assert(row_count==4);
     /* Known-new initialization clears stale metadata on slot reuse only. */
-    g_esp=0x800000;pc_unlock_profile_init(initialized);assert(uc_flags() && !new_control_profiles);
-    WORD_AT(0x4024)=UINT32_MAX;g_esp=0x800000;pc_unlock_profile_init(initialized);assert(!uc_flags() && new_control_profiles==1);
+    g_esp=0x800000;pc_unlock_profile_init(initialized);assert(uc_flags());
+    WORD_AT(0x4024)=UINT32_MAX;g_esp=0x800000;pc_unlock_profile_init(initialized);assert(!uc_flags());
     /* Unknown metadata is never overwritten or silently activated. */
     WORD_AT(active_profile+PC_UNLOCK_OFFSET)=0xdeadbeef;
     memcpy(saved,memory+active_profile,sizeof saved);
