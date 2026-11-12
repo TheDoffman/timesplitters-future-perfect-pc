@@ -851,3 +851,11 @@ Mac/Linux JsonAdapter writes JSON data with literal '+' axis tokens, matching
 the Framework writer. The compact runtime parser does not decode Unicode escapes;
 the shared inherited-pad-source regression checks the saved token spelling too.
 JSON is used as data/files, not embedded HTML.
+
+Controller deadzones in SettingsPage use eight shared percentage sliders (0..100,
+1% steps) with live readouts and accessible names. Only edits update the raw model;
+opening the page preserves unrounded legacy values. Each player's movement/aim
+sliders share a named PageTheme.Details Expander. Only Player1 starts expanded;
+expansion is excluded from Draft() and keeps pending values. The tab is Controls.
+Shared UI checks cover defaults, presentation-only toggling, readouts and per-player
+persistence. Save/conflict handling and game-side deadzone behavior are unchanged.
