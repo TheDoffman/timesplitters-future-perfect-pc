@@ -1,3 +1,17 @@
+Private dashboard identities (`feature/private-dashboard-identities`, client code
+`10556fe7`, based on unmerged telemetry work): active Arcade game frames publish
+bounded host-only player/bot names and original character portrait identifiers.
+Windows and physical Mac builds and built-in checks pass; matching compatibility
+starts `f818e717`. Network checks:151 passed/9 skipped; focused client/control
+checks:36 passed on each platform; Windows menu/name regression:4 passed/2 skipped.
+A real Windows-host/Mac-guest invite-only match through the mini's LAN service
+reached its authenticated dashboard with correct character names/portraits,
+scores and six bots; Return to Lobby retained the party and closure passed.
+Private service/diagnostic tests:33 passed on each host. Protected artwork and
+public-list privacy checks passed. Public-address native gameplay testing hit
+TLS handshake timeouts; LAN gameplay and public dashboard HTTPS passed. This
+is not a new WAN gameplay acceptance. Server, dashboard and artwork stay private.
+
 Optional Arcade connection telemetry (`feature/dashboard-match-telemetry`, code
 `64ffb4d4`, based on the unmerged native multiplayer/shortcut work): authenticated
 RTT and 60-second completed probe outcomes are included in member updates for

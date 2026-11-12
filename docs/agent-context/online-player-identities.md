@@ -40,3 +40,11 @@ on Windows/Mac/Linux; the logic and IPC implementation are shared.
 
 `TSFP_NATIVE_MENU_TRACE` reports capture/publication outcomes and refused read
 extents without player labels, for live client-side identity diagnosis.
+
+Windows and physical Mac builds/platform checks pass with matching `f818e717`
+compatibility. Real native Windows-host/Mac-guest LAN acceptance verified player
+and bot names, original portraits, localized character names, scores and six bots
+on the authenticated private dashboard, then Return to Lobby and closure. Private
+schema/diagnostic checks pass on both hosts; public artwork routes require login.
+The public-address native gameplay run hit TLS handshake timeouts; do not infer
+WAN gameplay acceptance from the passing LAN/public-dashboard checks.
