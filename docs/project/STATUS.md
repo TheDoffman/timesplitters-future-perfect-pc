@@ -26,8 +26,24 @@ Isolated114-second Story acceptance verifies WASD, mouse look, firing, reload
 and pause/resume with unchanged fixture signatures. Native Mac and physical
 Linux/Deck acceptance remain pending. Evidence is retained in ignored logs/
 full-rollback-*.json, gameplay-hint-build.txt and gameplay-hint-regression.txt.
+Latest main34b9b867 is integrated, retaining the launcher Controls tab and
+collapsible per-player deadzone sliders. The full Windows launcher suite passes
+after integration; repository/shared launcher layout checks24 pass. Source
+rollback commit7352f10a; PR prepared with live hint-opacity acceptance pending.
 The superseded partial candidate remains in a named Git stash. No merge,
 issue closure or downloadable release is authorized by the PR request.
+
+Launcher Controls deadzone refinements (launcher-only change): rename the
+Keyboard & mouse tab to Controls; replace all eight per-player deadzone dropdowns
+with 0..100% sliders, 1% steps and live readouts. Group movement/aiming per player;
+only Player 1 starts expanded. Expansion preserves slider drafts and does not dirty
+settings. Untouched raw legacy values and Save/conflict behavior are retained.
+Shared WPF/Avalonia SettingsPage and existing shared UI regression updated.
+Windows launcher build/full regression and 49 shared UI groups passed in a
+clean current-main checkout (206 seconds); hosted CI remains pending.
+No loading-screen/artwork/runtime or credential changes are included. Native
+Mac/Linux rendering acceptance remains separate from shared source checks.
+See controller-deadzones.md and launcher.md.
 
 Linux v0.6.1 draft package (2026-11-11): built from the exact release/tag
 revision07bc98c006260b1dea3c6d42fbebbac98559ebbe in the clean Ubuntu24.04 WSL

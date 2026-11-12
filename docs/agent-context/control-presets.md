@@ -46,3 +46,7 @@ policies. Fresh/repeat/previous-controls patch-upgrade tests cover2990; historic
 partial-stack fixtures exclude it along with the preset patches they predate.
 See STATUS for measured checks; native Mac and physical Linux/Deck remain distinct
 acceptance targets. Personal files are never test fixtures.
+
+Latest main integration retains the launcher Controls tab and collapsible
+per-player deadzone sliders. Only preset selectors/model resources are removed;
+slider drafts, readouts and persistence keep their existing shared UI coverage.
