@@ -15,6 +15,7 @@ VERSION = 'a' * 64
 def request(action, sequence=1, **values):
     data = dict(sequence=sequence, action=action, mode=1, source=1, public=True,
                 port=0, name='My Lobby', code='', address='192.0.2.1', fingerprint='')
+    if action == menu.JOIN:data['address'] = ''
     data.update(values)
     return data
 
@@ -148,3 +149,57 @@ def test_tls_pin_and_failed_private_start_do_not_leave_a_listener(tmp_path):
         directory.close()
     directory.close()
     assert directory.poll() == 0
+
+
+@pytest.mark.parametrize('mode,capacity', [('arcade', 16), ('story', 4)])
+def test_invite_only_is_listed_but_public_id_cannot_admit_a_player(mode, capacity):
+    directory = Directory()
+    body = dict(compatibility=VERSION, name='Locked match', port=41831, public=False, mode=mode)
+    _, hosted = directory.request('POST', '/v2/lobbies', {}, body, '127.0.0.1', '')
+    _, other = directory.request('POST', '/v2/lobbies', {}, body, '127.0.0.1', '')
+    path = '/v2/lobbies/'+hosted['code']+'/join'
+    _, reply = directory.request('GET', '/v2/lobbies',
+        dict(compatibility=[VERSION], mode=[mode]), {}, '127.0.0.1', '')
+    listing = reply['lobbies'][0]
+    assert len(reply['lobbies']) == 2 and listing['invite_only'] and listing['capacity'] == capacity
+    assert hosted['code'] != hosted['lobby_code']
+    assert hosted['lobby_code'] not in str(reply) and 'owner_token' not in str(reply)
+    for invalid in ({}, {'lobby_code': hosted['code']}, {'lobby_code': other['lobby_code']}, {'lobby_code': 123}, {'lobby_code': chr(233)*16}):
+        with pytest.raises(LobbyError) as error:
+            directory.request('POST', path, {}, {**body, **invalid}, '127.0.0.1', '')
+        assert error.value.status == 403
+    assert directory.online[hosted['code']]['peers'] == {}
+    _, joined = directory.request('POST', path, {}, {**body, 'lobby_code': hosted['lobby_code'].lower()}, '127.0.0.1', '')
+    assert joined['players'] == 2 and 'lobby_code' not in joined
+    # Legacy code-only invitations resolve inside the same directory, while
+    # subsequent heartbeat/leave uses the canonical public ID from admission.
+    _, invited = directory.request('POST', '/v2/lobbies/'+hosted['lobby_code']+'/join', {}, body, '127.0.0.1', '')
+    assert invited['code'] == hosted['code'] and invited['players'] == 3
+
+
+def test_native_locked_listing_and_code_admission_over_real_tls_and_udp(tmp_path):
+    import struct
+    directory = LocalDirectory(tmp_path, '192.0.2.1', 0)
+    owner, guest = menu.Controller(VERSION), menu.Controller(VERSION)
+    try:
+        owner.private = guest.private = (directory.address, directory.fingerprint)
+        owner.private_direct = True
+        owner.begin(request(menu.CREATE, port=udp_port(), public=False)); wait(owner)
+        hosted = owner.session.lobby
+        guest.begin(request(menu.BROWSE)); wait(guest)
+        assert len(guest.lobbies) == 1 and guest.lobbies[0]['invite_only']
+        assert menu.LOBBY.unpack_from(guest.snapshot(), menu.STATE.size)[6] == 1
+        assert hosted['lobby_code'].encode() not in guest.snapshot()
+        assert menu.STATE.unpack_from(owner.snapshot())[9].split(b'\0')[0].decode() == hosted['lobby_code']
+        guest.begin(request(menu.JOIN, 2, code=hosted['code'], address=hosted['code']))
+        import time
+        deadline = time.monotonic()+5
+        while guest.status == menu.BUSY and time.monotonic() < deadline:time.sleep(.01)
+        assert guest.status == menu.ERROR and guest.session is None
+        guest.begin(request(menu.JOIN, 3, code=hosted['lobby_code'], address=hosted['code'])); wait(guest)
+        assert guest.session.bridge.ready.is_set() and guest.session.lobby['code'] == hosted['code']
+        assert menu.STATE.unpack_from(guest.snapshot())[9].split(b'\0')[0].decode() == hosted['lobby_code']
+        guest.begin(request(menu.LEAVE, 4)); wait(guest)
+        assert directory.poll() is None
+    finally:
+        guest.close(); owner.close(); directory.close()

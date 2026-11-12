@@ -1,4 +1,4 @@
-[Sticks](controller-deadzones.md). [Online](native-multiplayer-menu.md).
+[Sticks](controller-deadzones.md). [Locks](native-multiplayer-menu.md).
 [2970 pads](control-presets.md); [Tex](texture-preference.md).
 [Crossplay/JIP](arcade-join-in-progress.md); [Client](online-client-boundary.md).
 [Arms](video-options.md).

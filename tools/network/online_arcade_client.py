@@ -36,15 +36,15 @@ def list_arcade(client, compatibility):
     return dict(lobbies=current+legacy)
 
 
-def join_arcade(client, compatibility, code):
+def join_arcade(client, compatibility, code, *, lobby_id=None):
     try:
-        return ArcadeSession.open(client, compatibility, code=code)
+        return ArcadeSession.open(client, compatibility, code=code, **({"lobby_id": lobby_id} if lobby_id else {}))
     except DirectoryError as error:
         if error.status not in (404, 410, 503):
             raise
     # Automatic/self-hosted directories keep their original direct transport.
     # TLS, schema, authentication and active-match errors never trigger fallback.
-    return Session.join(client, compatibility, code, mode='arcade')
+    return Session.join(client, compatibility, code, mode='arcade', **({'lobby_id': lobby_id} if lobby_id else {}))
 
 
 class NativeArcade:
@@ -244,7 +244,7 @@ class ArcadeSession(Session):
         super().__init__(client, compatibility, lobby, lobby['peer_id'] == lobby['host_peer'], bridge)
 
     @classmethod
-    def open(cls, client, compatibility, *, name=None, public=True, code=None):
+    def open(cls, client, compatibility, *, name=None, public=True, code=None, lobby_id=None):
         if code is None:
             path = '/v3/lobbies'
             body = dict(compatibility=compatibility, name=name, public=public,
@@ -252,9 +252,13 @@ class ArcadeSession(Session):
         else:
             if not isinstance(code, str) or not re.fullmatch('[a-fA-F0-9]{16}', code):
                 raise ValueError('Lobby code must contain 16 hexadecimal characters')
-            path = '/v3/lobbies/'+code.upper()+'/join'
+            if lobby_id is not None and not re.fullmatch('[a-fA-F0-9]{16}', lobby_id):
+                raise ValueError('Invalid selected lobby')
+            path = '/v3/lobbies/'+(lobby_id or code).upper()+'/join'
             body = dict(compatibility=compatibility, migration_schema=SCHEMA)
+            if lobby_id is not None:body['lobby_code'] = code.upper()
         lobby = client.request('POST', path, body)
+        if code is not None:lobby['lobby_code'] = code.upper()
         bridge = None
         try:
             if lobby.get('migration_schema') != SCHEMA or lobby.get('transport') != 'relay':

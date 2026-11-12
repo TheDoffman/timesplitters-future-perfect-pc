@@ -14,11 +14,11 @@ from online_host import invitation, parse_invitation
 from online_paths import ROOT, service_defaults
 
 MAGIC=0x314d4f54
-VERSION=2
+VERSION=3
 LIMIT=20
 REQUEST=struct.Struct('<8I64s2048s256s68s')
 STATE=struct.Struct('<8I256s32s2048s256s256s68s')
-LOBBY=struct.Struct('<6I32s64s64s32s24s')
+LOBBY=struct.Struct('<7I32s64s64s32s24s')
 MATCH=struct.Struct('<6I64s32s')
 IDLE,BUSY,LIST,CONNECTED,PRIVATE_READY,ERROR=range(6)
 BROWSE,CREATE,JOIN,LEAVE,PRIVATE_HOST,PRIVATE_CONNECT,CANCEL=range(1,8)
@@ -188,12 +188,18 @@ class Controller:
                 with self.lock:
                     if self.session:raise ValueError('Leave the current lobby first')
                 directory=self.directory(request['source'])
+                if action==CREATE and not request['public']:
+                    capabilities=directory.request('GET','/v2/lobbies?compatibility='+self.compatibility+'&mode='+mode)
+                    if capabilities.get('invite_only_listing') is not True:
+                        raise ValueError('This server needs an update for visible Invite Only lobbies')
                 if action==JOIN:
                     code=request['code']
                     if code.startswith('tsfp-online:'):
+                        if request['address']:raise ValueError('Enter the code for the selected lobby')
                         address,pin,code=parse_invitation(code);directory=Client(address,pin)
-                    active=(join_arcade(directory,self.compatibility,code) if mode=='arcade' else
-                            Session.join(directory,self.compatibility,code,mode=mode))
+                    selected={'lobby_id':request['address']} if request['address'] else {}
+                    active=(join_arcade(directory,self.compatibility,code,**selected) if mode=='arcade' else
+                            Session.join(directory,self.compatibility,code,mode=mode,**selected))
                 elif request['source'] and self.private_direct:
                     active=Session.create(directory,self.compatibility,request['name'] or 'My Lobby',request['port'],request['public'],mode=mode,transport='direct')
                 elif mode=='arcade':
@@ -239,7 +245,7 @@ class Controller:
                 self.message=active.error or 'The host closed the lobby'
                 self.status=ERROR;self.close_session();active=None
             pair=self.private or ('','')
-            code=active.lobby['code'] if active else ''
+            code=active.lobby.get('lobby_code',active.lobby['code']) if active else ''
             invite=server_invitation(*pair) if pair[0] else ''
             if active:
                 directory,pin=self.active_public or (active.client.url.geturl(),active.client.fingerprint)
@@ -250,7 +256,7 @@ class Controller:
                 field(pair[0],256),field(pair[1],68))
             for row in self.lobbies:
                 raw+=LOBBY.pack(int(row.get('players',0)),int(row.get('capacity',16)),int(row.get('joinable',True)),
-                    2 if row.get('mode')=='story' else 1,int(row.get('map_scene',0xffffffff)),int(row.get('game_type_id',0xffffffff)),field(row['code'],32),field(row.get('name','Lobby'),64),
+                    2 if row.get('mode')=='story' else 1,int(row.get('map_scene',0xffffffff)),int(row.get('game_type_id',0xffffffff)),int(bool(row.get('invite_only',False))),field(row['code'],32),field(row.get('name','Lobby'),64),
                     field(row.get('map_name',''),64),field(row.get('game_type',row.get('mode','arcade')),32),field(row.get('phase','lobby'),24))
             return raw+bytes((LIMIT-len(self.lobbies))*LOBBY.size)
 

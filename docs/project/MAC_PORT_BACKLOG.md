@@ -1,3 +1,15 @@
+Third revised online notes (2026-11-11, after8c81d558): **Awaiting validation**
+on Mac/Linux. Shared native dividers, compact/independent headings, matching
+field palette/spacing, lobby-code colon and locked-row prompt/padlock need no new
+OS adapter. Shared player-directory v2 lists locked rooms with separate public
+IDs and private admission codes; v2/v3 clients carry selected IDs and secrets
+separately. Native IPCv3 validates the new flag. Windows build, focused contracts
+and real pinned TLS/direct UDP pass; native Windows hosts a locked match and its
+listing omits the secret. Mac/Linux host/device acceptance is unrun. External
+community service source/deployment remains outside this tree and still needs
+the matching contract/capability update. See [validation](STATUS.md) and
+[native contracts](../agent-context/native-multiplayer-menu.md).
+
 Second revised online notes (2026-11-11, local after d98a021d): **Awaiting validation**
 on Mac/Linux. Shared native code now completes LAN shutdown before the chooser,
 keeps page descriptors/text/focus separate, hides internal discovery behind

@@ -51,3 +51,11 @@ passed. The isolated companion imports without private server modules. Private
 archive hashes and all 11 installed service files matched before/after source
 checkout synchronization, and the live loopback dashboard remained healthy.
 No new native build or gameplay run was performed for this repository split.
+
+
+Visible Invite Only rooms (2026-11-11): the bundled player directory now separates
+public listing IDs from private lobby_code admission. The native client accepts
+that contract for both v2 and v3, and requires invite_only_listing capability
+before creating a locked room. The external community service still requires a
+matching update; no private service source was restored into this client tree.
+See [native menu contracts](native-multiplayer-menu.md#visible-invite-only-admission-and-third-revised-notes-2026-11-11).

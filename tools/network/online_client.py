@@ -157,12 +157,18 @@ class Session:
             raise
 
     @classmethod
-    def join(cls, client, compatibility, code, mode='arcade'):
+    def join(cls, client, compatibility, code, mode='arcade', *, lobby_id=None):
         cls.validate_mode(mode)
         if len(code) != 16 or any(c not in '0123456789abcdefABCDEF' for c in code):
             raise ValueError('Lobby code must contain 16 hexadecimal characters')
-        path = '/v2/lobbies/'+code.upper()
-        lobby = client.request('POST', path+'/join', dict(compatibility=compatibility, mode=mode))
+        if lobby_id is not None and (not isinstance(lobby_id, str) or len(lobby_id) != 16 or any(c not in '0123456789abcdefABCDEF' for c in lobby_id)):
+            raise ValueError('Invalid selected lobby')
+        path = '/v2/lobbies/'+(lobby_id or code).upper()
+        body = dict(compatibility=compatibility, mode=mode)
+        if lobby_id is not None:body['lobby_code'] = code.upper()
+        lobby = client.request('POST', path+'/join', body)
+        lobby['lobby_code'] = code.upper()
+        path = '/v2/lobbies/'+lobby['code']
         bridge = None
         try:
             cls.validate_lobby(lobby, mode)

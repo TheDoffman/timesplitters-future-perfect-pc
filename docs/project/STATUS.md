@@ -43784,3 +43784,61 @@ fixture remain intact. Test instances/companions are closed and disposable disks
 recycled. Physical Mac/Linux native build/input/clipboard acceptance remains
 unrun; common interfaces supply these changes without a new OS adapter. Existing
 visible Invite Only listing/admission is still a separate unfinished requirement.
+
+## Visible Invite Only admission and revised menu notes (2026-11-11)
+
+Committed preceding online repairs as8c81d558 on feature/native-multiplayer-ui;
+this follow-up remains local and uncommitted. No push or publication. Matches
+Available has its native divider again. Decorative rows249/248 cannot collide
+with LAN's FFFFFFFF create row. Lobby Options uses the compact original heading
+style; server invite headings are independent nonselectable rows with dividers.
+Lobby Name uses the same authored face/scale as Game Type, the native half-RGB /
+alpha palette and a16-unit minimum field gap. Footer reads LOBBY CODE:.
+
+Player-hosted directories now list Invite Only Arcade/Story rooms with public
+IDs separate from their admission codes. Locked selection opens a blank code
+field; an incorrect code stays on that screen for retry. Private admission checks
+the selected public ID plus code before allocating peers. Code-only invitations
+remain scoped to the connected directory and subsequent RPCs use its canonical
+ID. IPCv3 carries/validates the lock flag. Both v2/v3 client paths accept this
+contract, without protocol fallback on authentication errors. The legacy host
+invitation display also uses the admission code. Unicode/nonstring/other-room /
+public-ID submissions cannot enter a locked room; lists never expose its code.
+
+The external community directory/coordinator remains private and inaccessible
+from this checkout. Its source/access location is pending. It must add the same
+public-ID/secret admission and invite_only_listing capability; the native client
+now refuses to silently create an old unlisted room if that capability is absent.
+Private implementation/client readiness does not complete the community feature.
+No private community-service code was copied into client packaging.
+
+Windows x64 supported Build, built-ins and crash-symbol generation pass using
+MSVC14.42 / Visual Studio17 2022, Python3.14.2 and the existing D3D8 renderer.
+Final compatibility identity: 09743671af6cbcf6deb925649ac3162096cdabb259c48782b5403622fe3d2d04.
+Evidence: logs/online-notes3-build-verified.log. Final regression selection89
+passed,2 Mac-only skips (logs/online-notes3-verified-tests.log): native menus and
+mouse, IPC validation, private TLS/direct UDP, invalid-code rejection, v2/v3
+request routing, Arcade client, package/companion/identity and repository context.
+Existing pytest cache-path warning is nonfatal. A context-size failure from an
+intermediate encoding conversion was repaired; final21 context tests pass.
+
+Native visual evidence uses3e159306 (before the final Unicode input guard, no UI
+difference): private/network-validation/native-online-flow/notes3-padlock-browser.png
+shows the silver padlock and divider. The stock painter reuses its rectangle;
+keeping original bounds is necessary to place overlays. Earlier rectangle-only
+attempts were invisible and are superseded. e5ddc9d6 captures accepted-options /
+name-unselected show matching row font/colour and the field gap, final-host /
+final-server-join show separate headings/dividers, final-locked-code shows the
+blank prompt. The final locked host38584 enters native descriptor4e99c4 /phase11
+with1/16 players and the requested footer colon. A real pinned TLS query while
+that game hosted reports one locked16-capacity listing, capability true and no
+admission secret. Earlier automated TLS/UDP admission tests perform the correct
+code join and leave. This native visual pass is not a two-game multiplayer or
+gameplay acceptance test; the display fixture is not the community service.
+
+All probes use disposable Test Lab profile copies and isolated controls, display,
+network and directory-certificate state; supported US XBE hash checked before
+launch. Owned instances/companions shut down and disposable disks recycled.
+Personal saves/settings, canonical fixture and game assets remain untouched.
+Actual Mac/Linux native build/device acceptance and the external community
+service update remain outstanding. Shared changes need no new host adapter.

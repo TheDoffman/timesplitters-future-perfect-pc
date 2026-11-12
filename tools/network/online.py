@@ -190,8 +190,8 @@ def main():
         share = tk.Toplevel(window)
         theme.track(share)
         share.title('Online match hosted')
-        value = getattr(active, 'invitation', invitation(address.get().strip(), pin.get().strip(), active.lobby['code']))
-        build_invitation(share, value, active.lobby['code'], active.lobby['port'],
+        value = getattr(active, 'invitation', invitation(address.get().strip(), pin.get().strip(), active.lobby.get('lobby_code', active.lobby['code'])))
+        build_invitation(share, value, active.lobby.get('lobby_code', active.lobby['code']), active.lobby['port'],
                          relayed=active.lobby.get('transport') == 'relay')
 
     browser = build_browser(window, dict(address=address, pin=pin, name=name, port=port,

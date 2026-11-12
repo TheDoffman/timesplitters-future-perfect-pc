@@ -18,13 +18,14 @@ static struct {
     uint32_t storage,menu,parent,request_sequence;
     uint64_t poll_at,connect_at,copy_at,copied_until,metadata_at;
     float copy_bounds[4];
-    char name[64],code[2048],address[256],notice[256],return_notice[256];
+    char name[64],code[2048],address[256],lobby_id[32],notice[256],return_notice[256];
     PcOnlineMenuState state;
 } mp_ui;
 static int mp_native_passthrough;
 extern void sub_001A2730(void),sub_001A2720(void),sub_001A4350(void);
 extern void sub_001A8CE0(void),sub_001A8EE0(void),sub_001CBA50(void),sub_001CBD40(void);
 extern void sub_001A8D30(void),sub_001A8F30(void);
+extern void sub_00019D70(void);
 extern void sub_001A4510(void),sub_001CBDA0(void),sub_00064E20(void),sub_0003D7B0(void),sub_00077110(void),sub_0003FA10(void),sub_00072560(void),sub_00075980(void);
 static void (*multiplayer_exit_lookup(uint32_t address))(void);
 static void multiplayer_lobby_tick(void (*original)(void));
@@ -109,7 +110,7 @@ static void mp_request(unsigned action)
     request.source=mp_ui.source==1u;request.public_lobby=mp_ui.public_lobby;request.port=mp_ui.port;
     snprintf(request.name,sizeof request.name,"%s",mp_ui.name);
     snprintf(request.code,sizeof request.code,"%s",mp_ui.code);
-    snprintf(request.address,sizeof request.address,"%s",mp_ui.address);
+    snprintf(request.address,sizeof request.address,"%s",action==PC_OM_JOIN?mp_ui.lobby_id:mp_ui.address);
     if(pc_online_menu_send(&request)) {
         mp_ui.request_sequence=request.sequence;mp_ui.pending=1;mp_ui.action=action;
         snprintf(mp_ui.notice,sizeof mp_ui.notice,"%s",action==PC_OM_BROWSE?"Refreshing matches...":action==PC_OM_PRIVATE_HOST?"Starting private server...":"Connecting...");
@@ -167,6 +168,21 @@ static unsigned mp_story_mission(unsigned scene)
         if(*(const int16_t *)((uintptr_t)(0x4d1ac6u+i*0x44u)+g_xbox_mem_offset)==(int)scene)return i;
     return UINT32_MAX;
 }
+/* Native separators default to IDFFFFFFFF, also used by LAN's create action.
+ * Give decorative rows their own IDs so saved focus cannot resolve to one. */
+static void mp_divider(uint32_t menu,unsigned id)
+{
+    guest_call(sub_00079710,1,0u);
+    uint32_t last=0,cursor=WORD_AT(menu+0x178u);
+    for(unsigned i=0;i<64u && guest_writable(cursor,0x2cu);i++,cursor=WORD_AT(cursor+4u))
+        if(WORD_AT(cursor)==9u)last=cursor;
+    if(last)WORD_AT(last+0x14u)=id;
+}
+static void mp_heading(uint32_t menu,const char *label)
+{
+    guest_call(sub_00079D60_gen,6,mp_text(30,label),250u,0x33006u,0u,0u,0u);
+    mp_divider(menu,249u);
+}
 static void mp_build(void)
 {
     GuestRegisters saved;save_registers(&saved);const uint32_t menu=WORD_AT(g_esp+4u);
@@ -181,12 +197,8 @@ static void mp_build(void)
     guest_call(sub_00071B10,4,1u,bits(browser?2.5f:2.f),1u,1u);
     guest_call(sub_00071C50,1,mp_ui.page==MP_BROWSER?0x32000u:0x32200u);
     char label[256];unsigned row=1;
-    const char *subtitle=browser?"Matches Available":mp_ui.page==MP_CREATE?"\vs75LOBBY OPTIONS":NULL;
-    if(subtitle) {
-        uint32_t heading=guest_call(sub_00079D60_gen,6,mp_text(30,subtitle),250u,browser?0x33006u:0x32204u,browser?0u:bits(1.f),0u,0u);
-        if(!browser && guest_writable(heading,0x2cu))WORD_AT(heading+0x28u)&=~0x2000u;
-        if(!browser)guest_call(sub_00079710,1,0u);
-    }
+    if(browser)mp_heading(menu,"Matches Available");
+    else if(mp_ui.page==MP_CREATE)mp_heading(menu,"Lobby Options");
     switch(mp_ui.page) {
     case MP_NETWORK:
         mp_row(row++,1,"Online");mp_row(row++,2,"Private Server");mp_row(row++,3,"LAN");break;
@@ -196,12 +208,14 @@ static void mp_build(void)
         if(mp_ui.pending && mp_ui.action==PC_OM_PRIVATE_HOST) {
             guest_call(sub_00079D60_gen,6,mp_text(row++,"Starting private server..."),250u,0x32104u,0u,0u,0u);break;
         }
-        guest_call(sub_00079D60_gen,6,0u,1u,0x20000u,bits(13.f),MP_SELECT,MP_CODE_DRAW);
+        mp_heading(menu,"Invite Code");
+        guest_call(sub_00079D60_gen,6,0u,1u,0x20000u,bits(7.f),MP_SELECT,MP_CODE_DRAW);
         mp_row(row++,2,"Copy");mp_row(row++,3,"Next");
-        guest_call(sub_00079710,1,0u);
+        mp_divider(menu,248u);
         guest_call(sub_00079D60_gen,6,mp_text(29,"Share this code with your friends"),251u,0x32104u,bits(3.f),0u,0u);break;
     case MP_JOIN_SERVER:
-        guest_call(sub_00079D60_gen,6,0u,1u,0x20000u,bits(13.f),MP_SELECT,MP_CODE_DRAW);
+        mp_heading(menu,"Enter Invite Code");
+        guest_call(sub_00079D60_gen,6,0u,1u,0x20000u,bits(7.f),MP_SELECT,MP_CODE_DRAW);
         mp_row(row++,2,"Paste");
         mp_row(row++,3,"Join");break;
     case MP_CREATE:
@@ -230,8 +244,8 @@ static void mp_build(void)
         } else {
             for(unsigned i=0;i<mp_ui.state.count;i++) {
                 const PcOnlineMenuLobby *lobby=&mp_ui.state.lobbies[i];
-                snprintf(label,sizeof label,"%.42s   %u/%u   %s%s",lobby->name,lobby->players,lobby->capacity,
-                    lobby->mode==PC_ONLINE_STORY?"Story":"Arcade",lobby->joinable?"":" - FULL");
+                snprintf(label,sizeof label,"%.36s   %u/%u   %s%s%s",lobby->name,lobby->players,lobby->capacity,
+                    lobby->mode==PC_ONLINE_STORY?"Story":"Arcade",lobby->joinable?"":" - FULL",lobby->invite_only?" - INVITE ONLY":"");
                 if((lobby->mode==PC_ONLINE_ARCADE && lobby->game_type_id<32u &&
                    (int32_t)guest_call(sub_00064E20,1,lobby->map_scene)>=0) ||
                    (lobby->mode==PC_ONLINE_STORY && mp_story_mission(lobby->map_scene)<13u))
@@ -267,21 +281,22 @@ static void mp_code_draw(void)
     const char *caption=name_field?"LOBBY NAME":server_field?"ENTER INVITE CODE":host_field?"INVITE CODE":"ENTER LOBBY CODE";
     const char *placeholder=name_field?"ENTER NAME...":server_field?"PASTE INVITE...":"ENTER CODE...";
     const uint32_t bounds=mp_buffer(26),measure=mp_buffer(27);
-    const uint32_t font=WORD_AT(item+0x1cu); /* Stock76193 uses the row's authored face. */
-    guest_call(sub_00022FF0,0);guest_call(sub_0003FA10,1,font);
+    const uint32_t font=WORD_AT((name_field && guest_writable(mp_ui.choices[0],0x20u)?mp_ui.choices[0]:item)+0x1cu); /* Stock76193 uses the row's authored face. */
+    guest_call(sub_00022FF0,0);guest_call(sub_00019D70,1,1u);guest_call(sub_0003FA10,1,font);
     const uint32_t sx=WORD_AT(0x7e7270u),sy=WORD_AT(0x7e7280u);
     WORD_AT(0x7e7270u)=bits(FLOAT_AT(0x7e7270u)*(name_field?1.f:.8f));WORD_AT(0x7e7280u)=bits(FLOAT_AT(0x7e7280u)*(name_field?1.f:.8f));
     guest_call(sub_0003F8D0,0);
     const uint32_t heading=mp_text(31,caption);
     guest_call(sub_0003FCF0,4,measure,measure+4u,heading,0u);
-    const float field=name_field?left+(right-left)*.40f:left;
-    const float field_top=name_field?top:top+FLOAT_AT(measure+4u)+5.f;
+    const float field=name_field?fmaxf(left+(right-left)*.48f,left+FLOAT_AT(measure)+16.f):left;
+    const float field_top=(name_field || server_field || host_field)?top:top+FLOAT_AT(measure+4u)+5.f;
     const float heading_x=name_field?left:(left+right-FLOAT_AT(measure))*.5f;
     const float heading_y=name_field?top+fmaxf(0.f,(bottom-top-FLOAT_AT(measure+4u))*.5f):top;
-    guest_call(sub_00041DC0,4,bits(heading_x),bits(heading_y),heading,0xe0e8f0ffu);
+    if(name_field || (!server_field && !host_field))
+        guest_call(sub_00041DC0,4,bits(heading_x),bits(heading_y),heading,0x7073777fu);
     FLOAT_AT(bounds)=field;FLOAT_AT(bounds+4u)=field_top;FLOAT_AT(bounds+8u)=right;FLOAT_AT(bounds+12u)=bottom;
     guest_call(sub_00072560,2,menu,bounds);
-    guest_call(sub_0003FA10,1,font);guest_call(sub_0003F8D0,0);
+    guest_call(sub_00019D70,1,1u);guest_call(sub_0003FA10,1,font);guest_call(sub_0003F8D0,0);
     char value[65];snprintf(value,sizeof value,"%.64s",input);
     if(name_field)for(unsigned i=0;value[i];i++)if(value[i]>='a' && value[i]<='z')value[i]-='a'-'A';
     const uint32_t text=mp_text(28,*input?value:placeholder);
@@ -292,7 +307,7 @@ static void mp_code_draw(void)
         guest_call(sub_0003FCF0,4,measure,measure+4u,text,0u);
     }
     const float y=field_top+fmaxf(0.f,(bottom-field_top-FLOAT_AT(measure+4u))*.5f);
-    guest_call(sub_00041DC0,4,bits(field+6.f),bits(y),text,*input?0xffffffffu:0xa9b9caffu);
+    guest_call(sub_00041DC0,4,bits(field+6.f),bits(y),text,*input?0x7f7f7f7fu:0x545c657fu);
     guest_call(sub_00022FF0,0);
     WORD_AT(0x7e7270u)=sx;WORD_AT(0x7e7280u)=sy;guest_call(sub_0003F8D0,0);g_esp+=4u;
 }
@@ -320,16 +335,29 @@ static void mp_match_draw(void)
     const uint32_t measure=mp_buffer(29);
     /* Match the original title font and the actual thumbnail boundary. */
     guest_call(sub_0003FA10,1,0x15u);
-    const float available=FLOAT_AT(rect+8u)-FLOAT_AT(rect)-FLOAT_AT(0x47d67cu)-FLOAT_AT(0x47862cu)-6.f;
+    const float available=FLOAT_AT(rect+8u)-FLOAT_AT(rect)-FLOAT_AT(0x47d67cu)-FLOAT_AT(0x47862cu)-(row->invite_only?24.f:6.f);
     for(unsigned length=(unsigned)strlen(title);length>3u;length--) {
         guest_call(sub_0003FCF0,4,measure,measure+4u,0x7909f6u,0u);
         if(FLOAT_AT(measure)<=available)break;
         title[length-4u]='.';title[length-3u]='.';title[length-2u]='.';title[length-1u]=0;
     }
+    /* The stock painter reuses its rectangle for thumbnail/mode-icon draws. */
+    const float lock_x=FLOAT_AT(rect+8u)-FLOAT_AT(0x47d67cu)-FLOAT_AT(0x47862cu)-16.f;
+    const float lock_y=(FLOAT_AT(rect+4u)+FLOAT_AT(rect+12u))*.5f-7.f;
     const uint32_t id=WORD_AT(item+0x14u);WORD_AT(item+0x14u)=0;
     const unsigned previous=story_browser_preview(mission);
     guest_call(sub_001CBDA0,3,menu,item,rect);
     story_browser_preview(previous);
+    if(row->invite_only) {
+        /* Use the menu's silver bevel for both padlock outlines. This also
+           selects the native menu material after the stock textured preview. */
+        const float x=lock_x,y=lock_y;
+        const uint32_t bounds=mp_buffer(26);
+        FLOAT_AT(bounds)=x+2.f;FLOAT_AT(bounds+4u)=y;FLOAT_AT(bounds+8u)=x+10.f;FLOAT_AT(bounds+12u)=y+9.f;
+        guest_call(sub_00072560,2,menu,bounds);
+        FLOAT_AT(bounds)=x;FLOAT_AT(bounds+4u)=y+6.f;FLOAT_AT(bounds+8u)=x+12.f;FLOAT_AT(bounds+12u)=y+15.f;
+        guest_call(sub_00072560,2,menu,bounds);
+    }
     WORD_AT(item+0x14u)=id;memcpy(ad,saved_ad,sizeof saved_ad);g_esp+=4u;
 }
 static void mp_publish_metadata(void)
@@ -373,7 +401,7 @@ static const char *native_multiplayer_notice(uint32_t menu)
     static char lobby[256];
     if(native_multiplayer_lobby_notice(menu)) {
         snprintf(lobby,sizeof lobby,"%s %s %s",pc_prompts_keyboard_active()?"[C]":"\vM",
-            GetTickCount64()<mp_ui.copied_until?"COPIED":"LOBBY CODE",mp_ui.state.code);return lobby;
+            GetTickCount64()<mp_ui.copied_until?"COPIED":"LOBBY CODE:",mp_ui.state.code);return lobby;
     }
     if(!mp_ui.storage || mp_ui.menu!=menu || mp_native_passthrough)return NULL;
     if(mp_ui.pending && (mp_ui.page==MP_JOINING || (mp_ui.page==MP_HOST_SERVER && mp_ui.action==PC_OM_PRIVATE_HOST)))return NULL;
@@ -492,7 +520,13 @@ static void mp_select(void)
             const PcOnlineMenuLobby *lobby=&mp_ui.state.lobbies[id-100u];
             if(!lobby->joinable)snprintf(mp_ui.notice,sizeof mp_ui.notice,"No player slot is available in that match");
             else if(lobby->mode==PC_ONLINE_STORY && !mp_story_available())snprintf(mp_ui.notice,sizeof mp_ui.notice,"Online Story is unavailable on this host");
-            else {mp_ui.mode=lobby->mode;snprintf(mp_ui.code,sizeof mp_ui.code,"%s",lobby->code);mp_show(MP_JOINING);mp_request(PC_OM_JOIN);}
+            else {
+                mp_ui.mode=lobby->mode;
+                snprintf(mp_ui.lobby_id,sizeof mp_ui.lobby_id,"%s",lobby->invite_only?lobby->code:"");
+                snprintf(mp_ui.code,sizeof mp_ui.code,"%s",lobby->invite_only?"":lobby->code);
+                if(lobby->invite_only)mp_show(MP_JOIN_CODE);
+                else {mp_show(MP_JOINING);mp_request(PC_OM_JOIN);}
+            }
             mp_rebuild();
         }break;
     }
@@ -605,7 +639,7 @@ static void native_multiplayer_tick(void)
             multiplayer_profiles_capture();guest_call(sub_001A0A60,0);
         } else {
             if(state->status==PC_OM_ERROR && mp_ui.page==MP_JOINING) {
-                mp_show(MP_BROWSER);snprintf(mp_ui.notice,sizeof mp_ui.notice,"%s",state->message);
+                mp_show(mp_ui.lobby_id[0]?MP_JOIN_CODE:MP_BROWSER);snprintf(mp_ui.notice,sizeof mp_ui.notice,"%s",state->message);
             }
             mp_rebuild();
         }

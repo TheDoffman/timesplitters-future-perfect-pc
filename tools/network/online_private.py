@@ -51,6 +51,7 @@ class Directory:
         result = {key: lobby[key] for key in ('code', 'room', 'compatibility', 'name', 'address', 'port', 'mode')}
         if remote and ipaddress.ip_address(remote).is_loopback and ipaddress.ip_address(lobby['origin']).is_loopback:
             result['address'] = lobby['origin']
+        result['invite_only'] = not lobby['listed']
         result.update(transport='direct', players=1+len(lobby['peers']), capacity=ONLINE_CAPACITY[lobby['mode']])
         result['joinable'] = result['players'] < result['capacity']
         result.update(lobby.get('match_info', {}))
@@ -86,7 +87,7 @@ class Directory:
             version = self.version(query.get('compatibility', [''])[0])
             mode = self.online_mode(query.get('mode', ['arcade'])[0])
             return 200, {'lobbies': [self.online_public(lobby, remote) for lobby in self.online.values()
-                                    if lobby['listed'] and lobby['compatibility'] == version and lobby['mode'] == mode]}
+                                    if lobby['compatibility'] == version and lobby['mode'] == mode]}
         if path == '/v2/lobbies' and method == 'POST':
             version = self.version(body.get('compatibility'))
             mode = self.online_mode(body.get('mode', 'arcade'))
@@ -100,24 +101,38 @@ class Directory:
                 raise LobbyError(400, 'Invalid lobby name, port, or visibility')
             if len(self.online) >= MAX_LOBBIES or sum(l['origin'] == remote for l in self.online.values()) >= 8:
                 raise LobbyError(429, 'Lobby limit reached')
+            occupied = set(self.online) | {room['lobby_code'] for room in self.online.values()}
             code = secrets.token_hex(8).upper()
-            while code in self.online:
+            while code in occupied:
                 code = secrets.token_hex(8).upper()
+            lobby_code = code
+            if not listed:
+                lobby_code = secrets.token_hex(8).upper()
+                while lobby_code in occupied or lobby_code == code:
+                    lobby_code = secrets.token_hex(8).upper()
             token = secrets.token_urlsafe(32)
             advertised = self.public_address if self.public_address and ipaddress.ip_address(remote).is_private else remote
             lobby = dict(code=code, room=secrets.token_hex(16), compatibility=version, name=name, mode=mode,
                          port=port, address=advertised, origin=remote, listed=listed, expires=self.clock()+TTL,
                          owner=hashlib.sha256(token.encode()).digest(), peers={}, next_peer=2,
-                         transport=transport)
+                         transport=transport, lobby_code=lobby_code)
             self.online[code] = lobby
-            return 201, {**self.online_public(lobby, remote), 'owner_token': token}
+            return 201, {**self.online_public(lobby, remote), 'owner_token': token, 'lobby_code': lobby['lobby_code']}
         match = re.fullmatch(r'/v2/lobbies/([A-Fa-f0-9]{16})(/join|/peers/(\d+))?', path)
         if not match:
             raise LobbyError(404, 'Unknown endpoint')
         lobby = self.online.get(match[1].upper())
+        if not lobby and match[2] == '/join' and method == 'POST':
+            # Code-only invitations remain scoped to this connected directory.
+            lobby = next((room for room in self.online.values()
+                          if hmac.compare_digest(room['lobby_code'], match[1].upper())), None)
         if not lobby:
             raise LobbyError(404, 'Lobby closed or expired')
         if match[2] == '/join' and method == 'POST':
+            supplied = body.get('lobby_code', match[1])
+            supplied = supplied.upper() if isinstance(supplied, str) and re.fullmatch(r'[A-Fa-f0-9]{16}', supplied) else ''
+            if not lobby['listed'] and not hmac.compare_digest(lobby['lobby_code'], supplied):
+                raise LobbyError(403, 'Incorrect lobby code')
             if self.version(body.get('compatibility')) != lobby['compatibility']:
                 raise LobbyError(409, 'Incompatible game version or content')
             self.check_online_mode(lobby, body)
@@ -177,6 +192,7 @@ class Directory:
             status, reply = self.online_request(method, path, query, body, remote, owner)
             if path == '/v2/lobbies' and method == 'GET':
                 reply['private_directory'] = True
+                reply['invite_only_listing'] = True
             return status, reply
 
 

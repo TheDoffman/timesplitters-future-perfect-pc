@@ -4,7 +4,7 @@
 #include <stddef.h>
 /* Local process IPC only. No service tokens or guest pointers enter this ABI. */
 #define PC_ONLINE_MENU_MAGIC 0x314d4f54u
-#define PC_ONLINE_MENU_VERSION 2u
+#define PC_ONLINE_MENU_VERSION 3u
 #define PC_ONLINE_MENU_MAX 20u
 enum PcOnlineMenuAction { PC_OM_BROWSE=1,PC_OM_CREATE,PC_OM_JOIN,PC_OM_LEAVE,
     PC_OM_PRIVATE_HOST,PC_OM_PRIVATE_CONNECT,PC_OM_CANCEL };
@@ -12,10 +12,11 @@ enum PcOnlineMenuStatus { PC_OM_IDLE,PC_OM_BUSY,PC_OM_LIST,PC_OM_CONNECTED,
     PC_OM_PRIVATE_READY,PC_OM_ERROR };
 typedef struct PcOnlineMenuRequest {
     uint32_t magic,version,sequence,action,mode,source,public_lobby,port;
+    /* JOIN address is the selected public lobby ID; other actions use an IP. */
     char name[64],code[2048],address[256],fingerprint[68];
 } PcOnlineMenuRequest;
 typedef struct PcOnlineMenuLobby {
-    uint32_t players,capacity,joinable,mode,map_scene,game_type_id;
+    uint32_t players,capacity,joinable,mode,map_scene,game_type_id,invite_only;
     char code[32],name[64],map[64],game_type[32],phase[24];
 } PcOnlineMenuLobby;
 typedef struct PcOnlineMenuState {
@@ -28,8 +29,8 @@ typedef struct PcOnlineMatchInfo {
     uint32_t magic,version,mode,map_scene,game_type_id,in_progress;
     char map_name[64],game_type[32];
 } PcOnlineMatchInfo;
-_Static_assert(sizeof(PcOnlineMenuLobby)==240,"Online lobby ABI");
-_Static_assert(sizeof(PcOnlineMenuState)==7748,"Online state ABI");
+_Static_assert(sizeof(PcOnlineMenuLobby)==244,"Online lobby ABI");
+_Static_assert(sizeof(PcOnlineMenuState)==7828,"Online state ABI");
 _Static_assert(sizeof(PcOnlineMatchInfo)==120,"Online match metadata ABI");
 int pc_online_menu_start(void);
 int pc_online_menu_send(PcOnlineMenuRequest *request);

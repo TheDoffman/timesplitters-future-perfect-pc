@@ -43,7 +43,7 @@ const PcOnlineMenuState *pc_online_menu_poll(void)
     next.message[255]=next.code[31]=next.invitation[2047]=next.bridge[255]=next.address[255]=next.fingerprint[67]=0;
     for(unsigned i=0;i<next.count;i++) {
         PcOnlineMenuLobby *row=&next.lobbies[i];
-        if(row->players>256u || !row->capacity || row->capacity>16u || row->joinable>1u ||
+        if(row->players>256u || !row->capacity || row->capacity>16u || row->joinable>1u || row->invite_only>1u ||
            row->mode<PC_ONLINE_ARCADE || row->mode>PC_ONLINE_STORY ||
            (row->map_scene>100u && row->map_scene!=UINT32_MAX) ||
            (row->game_type_id>=32u && row->game_type_id!=UINT32_MAX))return &online_menu_state;

@@ -27,7 +27,7 @@ def test_binary_abi_is_fixed_and_names_follow_native_font():
         menu.field('Caf\xe9',64),menu.field('',2048),menu.field('',256),menu.field('',68))
     assert len(data)==2468 and menu.decode_request(data)['name']=='Caf\xe9'
     c=menu.Controller(VERSION)
-    assert len(c.snapshot())==7748 and menu.LOBBY.size==240
+    assert len(c.snapshot())==7828 and menu.LOBBY.size==244
 
 @pytest.mark.parametrize('field,value',[(0,0),(1,99),(2,0),(3,99),(4,0),(5,2),(6,2),(7,80)])
 def test_invalid_abi_never_dispatches(field,value):
@@ -174,3 +174,43 @@ def test_private_invitation_uses_local_endpoint_only_after_pin_verification(monk
     c.private=('https://another.example:41830', PIN)
     assert c.directory(1).url.geturl()==c.private[0]
     c.close()
+
+
+@pytest.mark.parametrize('supported',[False,True])
+def test_locked_creation_requires_visible_admission_contract(monkeypatch,supported):
+    created=[]
+    directory=SimpleNamespace(request=lambda *a,**k:{'invite_only_listing':supported})
+    c=menu.Controller(VERSION)
+    monkeypatch.setattr(c,'directory',lambda source:directory)
+    active=SimpleNamespace(close=lambda:None)
+    monkeypatch.setattr(menu.ArcadeSession,'open',lambda *a,**k:created.append(k) or active)
+    r=request(menu.CREATE);r['public']=False;c.begin(r);wait(c)
+    assert bool(created)==supported
+    assert c.status==(menu.CONNECTED if supported else menu.ERROR)
+    if not supported:assert 'update' in c.message
+    c.close()
+
+
+def test_selected_locked_lobby_cannot_redirect_to_another_directory(monkeypatch):
+    c=menu.Controller(VERSION)
+    r=request(menu.JOIN);r['address']='1'*16;r['code']=menu.invitation('https://other.example',PIN,'2'*16)
+    c.begin(r);wait(c)
+    assert c.status==menu.ERROR and c.message=='Enter the code for the selected lobby'
+    c.close()
+
+
+@pytest.mark.parametrize('kind',['v2','v3'])
+def test_selected_lobby_id_and_secret_are_separate_admission_fields(kind):
+    from online_client import Session,DirectoryError
+    from online_arcade_client import join_arcade
+    calls=[]
+    def rpc(method,path,body):
+        calls.append((method,path,body))
+        raise DirectoryError(403,'Incorrect lobby code')
+    client=SimpleNamespace(request=rpc)
+    with pytest.raises(DirectoryError) as error:
+        if kind=='v2':Session.join(client,VERSION,'B'*16,lobby_id='A'*16)
+        else:join_arcade(client,VERSION,'B'*16,lobby_id='A'*16)
+    assert error.value.status==403 and len(calls)==1
+    assert calls[0][1]=='/'+kind+'/lobbies/'+'A'*16+'/join'
+    assert calls[0][2]['lobby_code']=='B'*16

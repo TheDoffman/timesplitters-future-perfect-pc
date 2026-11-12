@@ -1664,26 +1664,27 @@ int main(int argc,char **argv)
             strcpy(mp_ui.state.lobbies[i].name,"Story Lobby");
         }
         guest_call(mp_build,1,current_menu);
-        CHECK(built_row_count==22u && built_ids[0]==250u && built_ids[1]==1u && online_refresh_footers==1u && online_footer_mask==7u);
+        CHECK(built_row_count==23u && built_ids[0]==250u && built_ids[2]==1u && online_refresh_footers==1u && online_footer_mask==7u);
         CHECK(online_layout_steps==5u);
         CHECK(!strcmp(fixture_heading,"Matches Available") && fixture_width==80.f);
         CHECK(FLOAT_AT(current_menu+0x68u)==70.f);
-        for(unsigned i=0;i<20u;i++)CHECK(built_ids[i+2u]==100u+i);
+        for(unsigned i=0;i<20u;i++)CHECK(built_ids[i+3u]==100u+i);
         /* Empty and populated lists keep the same native frame. LAN retains
            original advertisement selection and match-creation callbacks. */
         mp_ui.state.count=0;online_layout_steps=0;guest_call(mp_build,1,current_menu);
-        CHECK(built_row_count==2u && fixture_width==80.f && FLOAT_AT(current_menu+0x68u)==70.f);
+        CHECK(built_row_count==3u && fixture_width==80.f && FLOAT_AT(current_menu+0x68u)==70.f);
         mp_ui.source=1;mp_ui.state.count=20u;
         for(unsigned i=0;i<20u;i++)mp_ui.state.lobbies[i].map_scene=UINT32_MAX;
         online_layout_steps=0;guest_call(mp_build,1,current_menu);
-        CHECK(built_row_count==22u && fixture_width==80.f && FLOAT_AT(current_menu+0x68u)==70.f);
+        CHECK(built_row_count==23u && fixture_width==80.f && FLOAT_AT(current_menu+0x68u)==70.f);
         CHECK(strstr((char *)(g_xbox_mem_offset+WORD_AT(0x20ee00u+0x20u)),"Story Lobby"));
         mp_native_passthrough=1;mp_ui.source=2;fixture_lan_matches=2;
         WORD_AT(current_menu+0x1b0u)=3u;online_layout_steps=0;guest_call(mp_lan_browser_build,1,current_menu);
-        CHECK(built_row_count==4u && built_ids[1]==UINT32_MAX && built_ids[2]==0u && built_ids[3]==1u);
+        CHECK(built_row_count==5u && built_ids[2]==UINT32_MAX && built_ids[3]==0u && built_ids[4]==1u);
+        CHECK(WORD_AT(0x230200u+0x14u)==249u);
         CHECK(WORD_AT(0x21fe00u+0x50u)==0x1cba50u && WORD_AT(0x200000u+0x50u)==0x1cbd40u);
         fixture_lan_matches=UINT32_MAX;online_layout_steps=0;guest_call(mp_lan_browser_build,1,current_menu);
-        CHECK(built_row_count==2u); /* Native enumeration errors never become advertisements. */
+        CHECK(built_row_count==3u); /* Native enumeration errors never become advertisements. */
         mp_native_passthrough=0;mp_ui.source=0;
         /* Selection-sensitive descriptions belong to the header strip. */
         mp_native_passthrough=0;mp_ui.page=MP_NETWORK;guest_call(mp_build,1,current_menu);
@@ -1702,6 +1703,14 @@ int main(int argc,char **argv)
         CHECK(mp_ui.mode==PC_ONLINE_ARCADE && !mp_ui.public_lobby && !strcmp(mp_ui.name,"Staged lobby"));
         WORD_AT(mp_ui.choices[1]+0xc8u)=0u;guest_call(mp_choice_change,1,current_menu);
         CHECK(mp_ui.public_lobby);
+        /* Locked rows open code entry and retain the selected public ID,
+           without dispatching a connection or prefilling the public ID. */
+        mp_ui.page=MP_BROWSER;mp_ui.state.count=1;mp_ui.state.lobbies[0].invite_only=1;
+        mp_ui.state.lobbies[0].joinable=1;mp_ui.state.lobbies[0].mode=PC_ONLINE_ARCADE;
+        strcpy(mp_ui.state.lobbies[0].code,"ABCDEF0123456789");
+        WORD_AT(current_menu+0x18cu)=100u;mp_ui.pending=0;mp_ui.parent=0;
+        guest_call(mp_select,1,current_menu);
+        CHECK(!strcmp(mp_ui.lobby_id,"ABCDEF0123456789") && !mp_ui.code[0] && !mp_ui.pending);
         /* A page request may leave the closing child attached. Starting a
            network request must never rebuild that child as the next page. */
         const uint32_t parent=0x310000u,outgoing=0x320000u;

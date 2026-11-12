@@ -65,6 +65,55 @@ Return to Lobby retains the party through the original round-return path,
 distinct from migration departure. Lobby code copy uses a native footer target,
 keyboard C or the original Xbox right-stick press.
 
+## Visible Invite Only admission and third revised notes (2026-11-11)
+
+Checkpoint8c81d558 commits the preceding transition/input/layout fixes. The next
+notes restore native79710 dividers under Matches Available, Lobby Options and
+server invite headings. `mp_divider` gives decorative type9 rows IDs249/248;
+FFFFFFFF belongs to LAN Start New Match and must not identify a separator.
+Heading rows use the original33006 flags with automatic height, rather than a
+size escape plus a forced minimum. Server headings are separate, nonselectable
+rows; their7-unit field contains only the invitation. Name captions select the
+Game Type row's authored face and leave at least16 units before the gray field.
+Custom text explicitly selects the original text render mode and half-intensity
+RGB/alpha palette; full255 channels had made the same authored face look heavy.
+The lobby footer
+now says LOBBY CODE: followed by the code.
+
+Native IPC version3 adds `invite_only` to PcOnlineMenuLobby (244 bytes; state7828).
+Request remains2468 bytes; JOIN's address field carries the selected public lobby
+ID, other actions retain its address meaning. A locked row clears the input and
+opens MP_JOIN_CODE. Wrong-code errors return there for retry; an open row keeps
+its existing direct-select flow. Native thumbnail rows paint a small silver-bevel padlock, saving row bounds
+before the stock painter reuses its rectangle for the map/mode icons;
+unknown-map fallback rows label Invite Only. Capacity and mode admission remain
+independent of privacy. IPC validates the new boolean and rejects old versions.
+
+Player-owned v2 directories now list both privacy types and publish
+`invite_only: true` with a public `code` identifier. CREATE returns a separate
+`lobby_code` only to the host; locked-room listings/admission/heartbeat replies
+never publish it. POST /v2/lobbies/{public-id}/join requires `lobby_code` for locked
+rooms and verifies it before allocating any peer. Code-only invitations still
+resolve within this directory; the reply's canonical code controls subsequent
+heartbeat/leave. IDs and secrets cannot collide across rooms. TLS/owner/peer
+credentials, expiry and Arcade16/Story4 bounds remain unchanged.
+
+Session.join / join_arcade / ArcadeSession.open accept an optional lobby_id.
+Native selection sends that public ID in the path and the entered secret in the
+join body; authentication errors never fall back to a different protocol. A full
+invitation cannot redirect a selected locked row to a different directory. Host
+and guest native footers/invitations use lobby_code, retaining public IDs only
+for service RPCs. The legacy invitation window also shares the real lobby code.
+
+Directory GET /v2/lobbies advertises `invite_only_listing: true` when it supports
+this contract. Native locked creation requires that capability rather than
+silently retaining the old unlisted behavior. The external community v2/v3
+service must implement the same listing/admission/owner-code contract and flag;
+its private source/deployment is not in this checkout. Until it is updated,
+community Invite Only creation reports that the server needs an update. Open
+community rooms and LAN keep their existing protocol. Do not claim the community
+requirement complete from private-directory tests or display-only fixture rows.
+
 ## Second revised notes (2026-11-11, local)
 
 Each custom page has its own16-byte descriptor and32 text slots in one bounded
