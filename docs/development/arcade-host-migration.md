@@ -289,3 +289,30 @@ at1018/35166 on Mac and1020/35164 on Windows; the second2822/33362 resumes on Ma
 at2829/33355. Scored backups and six bots' movement/combat/respawning pass throughout.
 This validates current connection code on the controlled LAN coordinator, while
 the separate installed-service public-address failure remains open.
+
+
+## Promoted bot weapon attachments
+
+The native identity-integration acceptance reproduced floating guns after a
+Windows-host/Mac-guest handoff: stock host AI created new held models while nine
+old guest models stayed visible with their former owning hand but no longer had
+an actor handle. Original A9070 body destruction alone does not retire inventory
+attachments. Calling stock death/inventory cleanup would create pickups or alter
+combat state, so that is inappropriate for this cosmetic handoff.
+
+`pc_arcade_migration_guest.inc` detects a successful guest-to-host authority
+commit once per epoch. `pc_network_bots_promote` in `pc_arcade_weapons.inc` retires
+only the former replica's owned bot attachments using the original A9070 object
+removal before normal AI rewrites those hand records. It requires active Online
+Arcade, valid bot bounds, weapon type20 and reciprocal hand/actor ownership. It
+clears only the same retired handle, skips already queued deletions and preserves
+human weapons, unrelated world objects, inventory/ammo and scores. Existing host
+frames, remaining guests, failed/preparing handoffs and repeated commit polls do
+not rerun it. The implementation is shared by Windows and native Mac/Linux.
+
+The compiled promotion fixture covers both host defines and the inactive fallback,
+foreign objects, queued deletion, repeat calls, preserved human models and retained
+inventory/scores. The native control fixture checks that cleanup runs only after
+authority commit and exactly once. Current build/live revalidation is recorded in
+STATUS.md; the original pre-fix observation is evidence of the bug, not validation
+of the repair.

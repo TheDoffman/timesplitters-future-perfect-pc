@@ -44138,3 +44138,14 @@ Windows focused roster/menu/private-directory/routes/checkpoint/FOV selection:
 character name resolution, active-frame throttling and host fencing. Builds and
 current live dashboard acceptance remain pending; earlier identity-branch evidence
 is distinct. The existing live match has not been interrupted.
+
+
+### Floating bot guns after host migration — 2026-11-11
+
+A controlled two-native-client Deathmatch on the names-restoration branch proved
+player/bot labels survive host migration, with six bots, scores and timer retained.
+The test also reproduced nine old visible gun entities no longer referenced by
+the promoted bots' hand records. Added shared post-commit cosmetic attachment
+retirement before stock AI rewrites the replica hands. This preserves human and
+dropped weapons, inventory and score state. Current integration builds and live
+post-fix orphan checks remain pending; prior names-build Windows/Mac checks pass.

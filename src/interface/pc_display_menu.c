@@ -955,6 +955,7 @@ void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot)
 #endif
 }
 #include "pc_developer_match_menu.inc"
+#include "pc_arcade_weapons.inc"
 static uint32_t network_bots_host_mode,developer_match_build_menu;
 static void developer_match_button(uint32_t callsite) {
     /* Insert before Music while the native compact option style is active.

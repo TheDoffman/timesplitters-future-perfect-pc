@@ -12,6 +12,8 @@ ptrdiff_t g_xbox_mem_offset;
 static unsigned presents,refreshes,departures,rebases,revives;
 static int overlay_migrating;
 static unsigned metadata_ticks;
+static unsigned promotions;
+void pc_network_bots_promote(void){REQUIRE(WORD_AT(0x76b140u)==1u);promotions++;}
 static void native_multiplayer_match_metadata(void){metadata_ticks++;}
 void pc_match_overlay_migration(int active){overlay_migrating=active;}
 void pc_arcade_join_frame(const PcArcadeControlState *control){(void)control;}
@@ -158,6 +160,8 @@ int main(void)
     REQUIRE(pc_arcade_migration_frame(0)==0);
     REQUIRE(!overlay_migrating);
     REQUIRE(!g_tsfp_arcade_migrating && WORD_AT(0x76b140u)==1u && WORD_AT(0x774040u)==5u);
+    REQUIRE(promotions==1u);
+    REQUIRE(pc_arcade_migration_frame(0)==0 && promotions==1u);
     REQUIRE(WORD_AT(0x774028u)==0x70000u); /* Original local controller node survives. */
     REQUIRE(pc_network_arcade_request_leave() && g_tsfp_arcade_migrating);
     REQUIRE(pc_network_arcade_publish(snapshot));

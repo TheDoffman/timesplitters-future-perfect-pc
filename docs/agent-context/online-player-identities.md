@@ -58,3 +58,5 @@ private hosting, separate admission-code behavior or local community routes.
 The earlier native acceptance above applies to its recorded identity branch;
 current integration validation is recorded in STATUS.md. No private service code
 or dashboard deployment is required. Updated matching clients are required.
+
+Host migration also retires owned replica bot gun models before stock AI overwrites their hand handles. See [migration cleanup](../development/arcade-host-migration.md#promoted-bot-weapon-attachments); test_arcade_promotion_weapons.py covers both host defines and fallback.

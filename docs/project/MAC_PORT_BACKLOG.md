@@ -10707,3 +10707,11 @@ without an OS-specific policy. Earlier identity-branch Mac acceptance is retaine
 as historical evidence; this native-UI integration requires a matching native Mac
 build and physical dashboard check. Windows focused tests pass; current native
 Mac acceptance is pending. See [player reporting](../agent-context/online-player-identities.md).
+
+
+MAC-013 floating guns after bot authority migration: shared pc_arcade_weapons.inc
+and commit hook retire only owned replica-held models on guest-to-host commit.
+No new host adapter is needed. The physical Mac reproduced the pre-fix orphaned
+models during Windows-to-Mac migration. Compiled dual-host/fallback and native
+control tests cover cleanup; matching build and actual post-fix Mac orphan checks
+remain pending. See [migration cleanup](../development/arcade-host-migration.md#promoted-bot-weapon-attachments).

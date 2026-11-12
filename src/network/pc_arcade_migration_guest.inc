@@ -159,12 +159,14 @@ int pc_arcade_migration_frame(int after)
         if(state.phase==2u || state.phase==5u)return 1;
         if(state.phase==1u && state.previous_ip && arcade_authority_epoch!=state.epoch) {
             unsigned role;
+            const unsigned previous_role=WORD_AT(0x76b140u);
             if(arcade_restored_epoch!=state.epoch ||
                !pc_arcade_adopt_authority(&g_xbox_mem_offset,pc_network_arcade_read,pc_network_arcade_write,
                    pc_network_arcade_local_ip(),state.host_ip,&role,1)) {
                 g_tsfp_arcade_migrating=1;return 1;
             }
             arcade_authority_epoch=state.epoch;
+            if(previous_role==2u && role==1u)pc_network_bots_promote();
             fprintf(stderr,"[PC-ARCADE-MIGRATION] resumed epoch=%u role=%u tick=%u\n",
                 state.epoch,role,WORD_AT(0x7de318u));
         }
