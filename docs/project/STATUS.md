@@ -44034,7 +44034,7 @@ checks pass. No existing game was closed by automation or firewall setting chang
 
 ### Community connection on the same home network — 2026-11-11
 
-Uncommitted fix/community-local-route depends on native UI f69c4d3a. The mini was
+Client fix c7bbdaf4 on feature/native-multiplayer-ui depends on native UI f69c4d3a. The mini was
 healthy and pinned LAN HTTPS worked while its unchanged public endpoint timed out
 from the same network. The shared Python client now supports an ignored personal
 LAN route keyed to the canonical public URL and certificate pin, preserving public
@@ -44047,4 +44047,6 @@ opened the in-game community browser using its canonical public identity and
 pinned personal LAN route. Actual locked host/join, bidirectional authenticated
 relay UDP and public invitation preservation also passed. Saves and personal
 controls/display settings were preserved; only the optional connection-route
-configuration was added locally. Mac Python checks are recorded separately.
+configuration was added locally. The same checks on the physical Mac passed
+100 tests with3 platform skips after synchronizing source through Git. No new
+native Mac build/gameplay acceptance was performed for this Python-only fix.
