@@ -15,6 +15,7 @@ pointers, personal profile files or credentials enter the report.
 menu-only ticks stop during gameplay. Its guarded callback saves/restores guest
 registers and retains the one-second throttle. The menu fixture verifies this
 path without running the menu loop, including throttling and LAN exclusion.
+The native control transport fixture verifies the post-frame callback dispatch.
 `mp_publish_metadata` sends an independent `.players` record through the shared
 Windows/SDL IPC adapter. This 1564-byte version1 record has sixteen bounded rows
 and a publication serial, including when the match clock pauses. Existing menu
