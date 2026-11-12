@@ -1,10 +1,10 @@
 # One launcher release for Windows, Mac and Linux
 
-The next Stable launcher source version is **1.6.1**, preserving controller
-mappings when keyboard controls are edited, unbound or reset. Keyboard reset
-also preserves the selected device and controller preset, and legacy extra-key
-labels describe their fixed gameplay actions. Publish through the three-host
-workflow after merge; verify all fifteen assets before preparing game0.6.1.
+The next Stable launcher source version is **1.6.2**, restoring original editable
+controls without preset translation while preserving personal bindings and the
+collapsible per-player movement/aim deadzone sliders. Publish through the
+three-host workflow after merge; verify all fifteen assets before publishing
+game0.6.2. The preceding public game/launcher versions are0.6.1/1.6.1.
 
 Stable launcher **1.6.0** is the preceding published release, including shared
 audio/control settings, independent deadzones and texture/update-notice support.

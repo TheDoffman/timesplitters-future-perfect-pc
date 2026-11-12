@@ -1,5 +1,5 @@
-Launcher1.6.1 packages the independent keyboard-edit/reset preservation fixes;
-game0.6.1 is prepared separately as a draft hotfix. Three-host release verification
+Launcher1.6.2 packages restored editable controls and per-player deadzone sliders;
+game0.6.2 adds the high-FPS turret/prompt fixes. Three-host release verification
 remains required; see docs/release/launcher-releases.md.
 
 Keyboard edits now preserve controller sources on the edited action, including

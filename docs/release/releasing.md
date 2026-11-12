@@ -5,10 +5,10 @@
 [Back to the README](../../README.md) | [Launcher releases](launcher-releases.md)
 
 Game and launcher versions are independent. The next Stable hotfix source is
-**0.6.1**, restoring fresh-profile movement, independent keyboard/controller
-controls, live device switching and controller menu prompts. It includes the
-Online startup feedback fixes merged since0.6.0. Prepare a **draft** game release;
-launcher **1.6.1** must be published first. Windows packaging and native Mac/Linux
+**0.6.2**, restoring original editable controls and fixing high-FPS turret
+activation and interaction prompts. Existing personal bindings are preserved;
+players can explicitly restore defaults. Prepare a **draft** game release;
+launcher **1.6.2** must be published first. Windows packaging and native Mac/Linux
 packages require the same clean source revision. The local publisher supplies
 Windows assets; matching native assets and host acceptance remain separate work.
 Keep issues open until the game hotfix is published.
