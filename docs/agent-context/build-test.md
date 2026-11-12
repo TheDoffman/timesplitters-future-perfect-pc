@@ -1,5 +1,5 @@
 [Sticks](controller-deadzones.md). [Online](multiplayer-ui.md).
-[Rollback](control-presets.md); [Tex](texture-preference.md).
+[0.6.2 rollback](control-presets.md); [Tex](texture-preference.md).
 [Arms](video-options.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).
