@@ -8,9 +8,9 @@ import subprocess
 import threading
 import time
 
-from online_client import Client, Session
+from online_client import Client, DirectoryError, Session
 from online_arcade_client import ArcadeSession, list_arcade, join_arcade
-from online_host import invitation, parse_invitation
+from online_host import invitation, parse_invitation, lan_ipv4
 from online_paths import ROOT, service_defaults
 
 MAGIC=0x314d4f54
@@ -50,23 +50,38 @@ def decode_match(data):
         raise ValueError('Invalid match labels')
     return mode,dict(map_scene=scene,game_type_id=game_type,in_progress=bool(active),map_name=name,game_type=rules)
 
-def server_invitation(address,pin):
+def invitation_lan_addresses(values):
+    if not isinstance(values,(list,tuple)) or len(values)>4 or any(not isinstance(v,str) or not lan_ipv4(v) for v in values):
+        raise ValueError('Invalid private server local addresses')
+    return tuple(dict.fromkeys(values))
+
+
+def server_invitation(address,pin,local_addresses=()):
     directory=Client(address,pin)
     if directory.url.scheme!='https' or not directory.fingerprint:
         raise ValueError('Private servers require HTTPS and a certificate fingerprint')
-    raw=json.dumps(dict(directory=address,fingerprint=directory.fingerprint),separators=(',',':')).encode()
+    data=dict(directory=address,fingerprint=directory.fingerprint)
+    local=invitation_lan_addresses(local_addresses)
+    if local:data['local_addresses']=local
+    raw=json.dumps(data,separators=(',',':')).encode()
     return 'tsfp-server:'+base64.urlsafe_b64encode(raw).decode().rstrip('=')
 
-def parse_server_invitation(value):
+def parse_server_details(value):
     if not isinstance(value,str) or not value.startswith('tsfp-server:') or len(value)>2048:
         raise ValueError('Enter the private server invitation supplied by its owner')
     try:
         encoded=value[len('tsfp-server:'):]
         data=json.loads(base64.b64decode(encoded+'='*(-len(encoded)%4),altchars=b'-_',validate=True))
-        server_invitation(data['directory'],data['fingerprint'])
-        return data['directory'],data['fingerprint']
+        if not isinstance(data,dict):raise ValueError('Invalid private server invitation')
+        local=invitation_lan_addresses(data.get('local_addresses',()))
+        server_invitation(data['directory'],data['fingerprint'],local)
+        return (data['directory'],data['fingerprint']),local
     except (ValueError,KeyError,TypeError) as error:
         raise ValueError('Invalid private server invitation') from error
+
+def parse_server_invitation(value):
+    return parse_server_details(value)[0]
+
 
 def stop_private(process):
     """Ask the actual server to stop, including Windows venv launcher children."""
@@ -146,17 +161,24 @@ class Controller:
                 with self.lock:self.close_session()
                 result=(IDLE,'Choose a match',[])
             elif action==PRIVATE_CONNECT:
-                pair=parse_server_invitation(request['code'])
+                pair,local_addresses=parse_server_details(request['code'])
                 probe=Client(*pair);endpoint=pair
                 path='/v2/lobbies?compatibility='+self.compatibility+'&mode='+mode
-                # A local second instance must not depend on router hairpin NAT.
-                # Authenticate the same pinned certificate before using loopback;
-                # a different local directory can never substitute for this one.
-                local=('https://127.0.0.1:'+str(probe.url.port or 443),pair[1])
-                try:
-                    reply=Client(*local).request('GET',path,timeout=1)
-                    endpoint=local
-                except (OSError,ValueError):
+                # Every alternative must authenticate the invitation's same pin.
+                # LAN hints avoid router hairpin NAT for another home device;
+                # the public endpoint remains the fallback for remote friends.
+                port=str(probe.url.port or 443)
+                candidates=['https://127.0.0.1:'+port]
+                candidates += ['https://'+address+':'+port for address in local_addresses]
+                for address in dict.fromkeys(candidates):
+                    try:
+                        reply=Client(address,pair[1]).request('GET',path,timeout=1)
+                        endpoint=(address,pair[1]);break
+                    except DirectoryError:
+                        raise
+                    except (OSError,ValueError):
+                        continue
+                else:
                     reply=probe.request('GET',path)
                 with self.lock:
                     if generation==self.generation:
@@ -246,7 +268,8 @@ class Controller:
                 self.status=ERROR;self.close_session();active=None
             pair=self.private or ('','')
             code=active.lobby.get('lobby_code',active.lobby['code']) if active else ''
-            invite=server_invitation(*pair) if pair[0] else ''
+            local=getattr(self.private_process,'lan_addresses',()) if self.private==self.private_hosted else ()
+            invite=server_invitation(*pair,local_addresses=local) if pair[0] else ''
             if active:
                 directory,pin=self.active_public or (active.client.url.geturl(),active.client.fingerprint)
                 invite=invitation(directory,pin,code)

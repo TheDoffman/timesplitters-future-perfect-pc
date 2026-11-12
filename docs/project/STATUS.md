@@ -43974,3 +43974,59 @@ verified before launch. Test Lab profile, controls/display/online settings and
 directory state were disposable/isolated; personal files and canonical fixture
 were preserved. Mac/Linux build/device validation remains unrun. No new OS
 adapter or external service change is required by this presentation-only change.
+
+
+## Private server invites from another home-network device - 2026-11-11
+
+Baseline0711849c, feature/native-multiplayer-ui. User reports physical Mac Online
+and LAN work, but joining a Windows-hosted private directory by server invitation
+fails with Errno61; the successful second Windows client is on that same host PC.
+Code inspection finds a public-only server invitation plus a certificate-pinned
+localhost shortcut for same-PC clients. That shortcut avoids testing the public
+route. The host also advertises its public match address to remote LAN clients.
+This fits a public/hairpin routing failure; the actual router refusal and Windows
+inbound firewall have not been independently measured or changed.
+
+Shared Python changes add optional local_addresses to the server invitation,
+limited to4 numeric RFC1918 IPv4 hints, detected from the routed interface and
+hostname interfaces without sending discovery packets. Existing public URL/pin
+and old invitations remain valid. Joining tries pinned localhost, then pinned
+LAN hints at the same port with1s per candidate, then the public URL. Every
+candidate verifies the original certificate before a GET; an HTTP service error
+stops rather than falling through. No credentials or certificate checks are
+removed. The controller retains the selected route while preserving the public
+server identity and independent directory lifetimes.
+
+Private HTTPS Handler supplies the accepted socket's real local IP. Listing,
+admission and heartbeat replies to loopback/local-network clients use the lobby
+host's LAN origin, or the directory listener's LAN IP for an owner-hosted lobby
+registered through loopback. WAN clients retain the public match address. This
+covers the subsequent UDP handshake as well as reaching the directory.
+
+Windows x64 tests use disposable certificates, temporary directories, ephemeral
+TCP/UDP sockets and isolated state; no personal settings, saves, firewall rules
+or active game process are modified. Initial private-menu/directory tests59 passed,
+including real TLS and direct UDP over an actual RFC1918 interface while client
+localhost/public requests are deliberately refused. Host/package/identity tests18
+passed. A final added snapshot assertion verifies the host actually shares LAN
+hints; authenticated server errors are also covered. Full final counts follow.
+The supported Windows Build initially reached linking but failed LNK1104 because
+the user's running game locks the Release executable. Asked the user to close
+those instances; none was terminated by the agent. Physical Mac acceptance of
+this fix remains unrun. Both hosts need matching rebuilt companion identities,
+and a fresh server invitation must be copied to carry the LAN hints.
+
+
+Final validation:78 focused network/host/package/identity tests passed, including
+the real RFC1918 pinned-TLS/direct-UDP regression with refused localhost/public
+routes, host snapshot LAN hints, invalid address limits, wrong-pin fallback and
+HTTP-error stopping. Repository-context tests21 passed. After the game exited
+(observed no remaining futureperfect process), supported Windows Build completed
+with exit0, built-in checks and matching symbols; see
+logs/private-lan-route-build-verified.log. Version0.6.1, compatibility
+897b8c2556b7f49ffc6e6fffb4e6f3c091faea8253c80f32798dd832085aa3b3.
+No automated gameplay run or physical Mac test was performed. Source remains
+local/uncommitted after0711849c, with no push; the Mac cannot obtain this fix from
+the remote branch yet. Both hosts require the matching updated companion and a
+newly copied private-server invitation for LAN hints. Context/index and whitespace
+checks pass. No existing game was closed by automation or firewall setting changed.

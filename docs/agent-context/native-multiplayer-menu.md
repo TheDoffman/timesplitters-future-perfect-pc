@@ -39,6 +39,25 @@ Explicit private hosting uses `online_private.LocalDirectory` in the hidden
 companion, restoring the former window's HTTPS directory startup. It reuses the
 existing certificate/key without replacing either, detects the public IPv4 and
 returns a pinned server invitation plus a separate loopback URL for its owner.
+Private invitations may additionally carry up to4 RFC1918 IPv4 local_addresses.
+`online_host.local_ipv4_addresses` gathers the routed interface and hostname's
+IPv4 interfaces without sending discovery traffic. `PRIVATE_CONNECT` tries local
+loopback, those numeric LAN hints (same TCP port,1s each), then the public URL;
+every candidate must verify the same certificate pin before any request. Server
+HTTP errors stop rather than changing endpoint. Old invitations remain valid.
+The selected endpoint is retained for browse/create/join. The public pair stays
+canonical, so an owned local directory cannot replace a different server.
+
+`Handler` passes the accepted socket's actual local IP into Directory.request.
+For loopback or RFC1918-to-RFC1918 requests, replies return a lobby host's LAN
+origin; for a lobby hosted by the directory owner through loopback, they return
+the actual LAN listener IP. This applies to listing, join and heartbeat; WAN
+responses retain public addresses. Neither same-PC loopback acceptance nor LAN
+System Link proves that a private invite's public address supports router hairpin
+NAT. Tests explicitly refuse loopback/public and complete pinned TLS and direct
+UDP via the real host RFC1918 interface; physical cross-device acceptance is
+separate. Both peers require matching rebuilt companion identities; copy a new
+server invite to include the optional LAN hints.
 The directory begins empty. Connected players create independent v2 direct-UDP
 Arcade/Story matches, with16/4 limits; its256-room and32-worker limits are separate.
 Leaving a match keeps the directory alive. Closing its owner stops it. Public

@@ -1,3 +1,15 @@
+Private invite same-network routing (2026-11-11, local after0711849c):
+**Awaiting validation**. User reports community Online/LAN working on physical
+Mac at0711849c, but private Windows-host invites refuse from Mac; the successful
+second Windows client is on the hosting PC. Shared private invites previously
+carried only a public URL, while same-PC clients silently used pinned loopback.
+Add up to4 RFC1918 interface hints with the same certificate pin and public URL
+fallback, and use the accepted LAN socket address for local direct-match replies.
+No OS-specific behavior or firewall change is introduced. Windows regressions
+include real pinned TLS/direct UDP via an actual LAN interface with loopback and
+public routes deliberately refused. Native Mac rebuild/device retest remains
+required; a same-PC routed test does not replace it. See [evidence](STATUS.md).
+
 Native padlock presentation follow-up (2026-11-11, local after3f36084b):
 **Awaiting validation** on Mac/Linux. Shared native browser resolves the original
 locked mission/challenge padlock sprite147 and draws its real texture with the

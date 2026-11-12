@@ -49,6 +49,8 @@ def test_native_host_starts_directory_before_any_lobby_and_retains_other_hosts(t
         assert isinstance(directory, LocalDirectory) and directory.poll() is None
         assert owner.status == menu.PRIVATE_READY and owner.private_direct
         assert owner.session is None and directory.server.directory.online == {}
+        shared=menu.STATE.unpack(owner.snapshot()[:menu.STATE.size])[10].split(b'\0',1)[0].decode()
+        assert menu.parse_server_details(shared)==(owner.private,directory.lan_addresses)
         assert menu.parse_server_invitation(menu.server_invitation(*owner.private)) == owner.private
         client = Client(directory.address, directory.fingerprint)
         assert client.request('GET', '/v2/lobbies?compatibility='+VERSION)['private_directory'] is True
@@ -203,3 +205,49 @@ def test_native_locked_listing_and_code_admission_over_real_tls_and_udp(tmp_path
         assert directory.poll() is None
     finally:
         guest.close(); owner.close(); directory.close()
+
+
+@pytest.mark.parametrize('origin', ['127.0.0.1','192.168.1.7'])
+@pytest.mark.parametrize('remote,local_address,expected', [
+    ('192.168.1.9','192.168.1.8','lan'),
+    ('127.0.0.1','127.0.0.1','origin'),
+    ('8.8.8.8','192.168.1.8','public'),
+    ('192.168.1.9','8.8.4.4','public')])
+def test_private_match_address_follows_actual_connection_route(origin,remote,local_address,expected):
+    directory=Directory(public_address='8.8.4.4')
+    body=dict(compatibility=VERSION,name='Match',port=41831,public=True,mode='arcade')
+    _,hosted=directory.request('POST','/v2/lobbies',{},body,origin,'')
+    _,listing=directory.request('GET','/v2/lobbies',{'compatibility':[VERSION]}, {},remote,'',local_address)
+    address=(origin if origin!='127.0.0.1' else local_address) if expected=='lan' else origin if expected=='origin' else '8.8.4.4'
+    assert listing['lobbies'][0]['address']==address
+    _,joined=directory.request('POST','/v2/lobbies/'+hosted['code']+'/join',{},body,remote,'',local_address)
+    assert joined['address']==address
+
+
+def test_remote_private_invite_avoids_public_hairpin_for_tls_and_match_udp(tmp_path,monkeypatch):
+    from online_host import local_ipv4_addresses
+    addresses=local_ipv4_addresses('192.0.2.1')
+    if not addresses:pytest.skip('No RFC1918 interface available for real LAN route test')
+    directory=LocalDirectory(tmp_path,'192.0.2.1',0,state_folder=tmp_path/'certificate')
+    host=guest=None
+    controller=menu.Controller(VERSION)
+    class RemoteClient(Client):
+        def request(self,*args,**kwargs):
+            if self.url.hostname in ('127.0.0.1','192.0.2.1'):
+                raise ConnectionRefusedError('same-machine and router-hairpin routes unavailable')
+            return super().request(*args,**kwargs)
+    try:
+        host=Session.create(Client(directory.address,directory.fingerprint),VERSION,'Windows host',udp_port(),True)
+        monkeypatch.setattr(menu,'Client',RemoteClient)
+        code=menu.server_invitation(directory.public_url,directory.fingerprint,local_addresses=addresses)
+        controller.begin(request(menu.PRIVATE_CONNECT,code=code));wait(controller)
+        endpoint=controller.directory(1)
+        assert endpoint.url.hostname in addresses
+        listing=endpoint.request('GET','/v2/lobbies?compatibility='+VERSION)
+        assert listing['lobbies'][0]['address']==endpoint.url.hostname
+        guest=Session.join(endpoint,VERSION,host.lobby['code'])
+        assert guest.bridge.ready.is_set() and guest.lobby['address']==endpoint.url.hostname
+    finally:
+        if guest:guest.close()
+        if host:host.close()
+        controller.close();directory.close()

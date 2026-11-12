@@ -22,7 +22,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs, urlsplit
 from online_paths import directory_folder
-from online_host import fetch_public_ipv4
+from online_host import fetch_public_ipv4, local_ipv4_addresses, lan_ipv4
 
 VERSION = re.compile(r'[0-9a-f]{64}\Z')
 TTL = 90
@@ -184,12 +184,25 @@ class Directory:
             raise LobbyError(400, 'A valid compatibility identity is required')
         return value
 
-    def request(self, method, path, query, body, remote, owner):
+    def request(self, method, path, query, body, remote, owner, local_address=""):
         with self.lock:
             self.expire()
             if not path.startswith('/v2/'):
                 raise LobbyError(404, 'Unknown endpoint')
             status, reply = self.online_request(method, path, query, body, remote, owner)
+            # The accepted socket's local address identifies a direct LAN route.
+            # Never replace a public/WAN response with an internal match address.
+            nearby = ipaddress.ip_address(remote).is_loopback or (lan_ipv4(remote) and lan_ipv4(local_address))
+            if nearby:
+                for item in reply.get('lobbies', [reply]):
+                    lobby = self.online.get(item.get('code'))
+                    if not lobby:
+                        continue
+                    origin = lobby['origin']
+                    if lan_ipv4(origin):
+                        item['address'] = origin
+                    elif ipaddress.ip_address(origin).is_loopback and lan_ipv4(local_address):
+                        item['address'] = local_address
             if path == '/v2/lobbies' and method == 'GET':
                 reply['private_directory'] = True
                 reply['invite_only_listing'] = True
@@ -222,7 +235,8 @@ class Handler(BaseHTTPRequestHandler):
                 raise LobbyError(400, 'Expected a JSON object')
             auth = self.headers.get('Authorization', '')
             status, reply = self.server.directory.request(self.command, url.path, parse_qs(url.query),
-                body, str(ipaddress.ip_address(self.client_address[0])), auth[7:] if auth.startswith('Bearer ') else '')
+                body, str(ipaddress.ip_address(self.client_address[0])), auth[7:] if auth.startswith('Bearer ') else '',
+                local_address=self.connection.getsockname()[0])
         except LobbyError as error:
             status, reply = error.status, {'error': error.message}
         except (ValueError, UnicodeError):
@@ -351,6 +365,7 @@ class LocalDirectory:
                                                      do_handshake_on_connect=False)
             self.address = f'https://127.0.0.1:{self.server.server_port}'
             self.public_url = f'https://{address}:{self.server.server_port}'
+            self.lan_addresses = local_ipv4_addresses(str(address))
             self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
             self.thread.start()
         except Exception:

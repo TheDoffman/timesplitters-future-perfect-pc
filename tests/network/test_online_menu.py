@@ -214,3 +214,62 @@ def test_selected_lobby_id_and_secret_are_separate_admission_fields(kind):
     assert error.value.status==403 and len(calls)==1
     assert calls[0][1]=='/'+kind+'/lobbies/'+'A'*16+'/join'
     assert calls[0][2]['lobby_code']=='B'*16
+
+
+@pytest.mark.parametrize('addresses', [('192.168.1.8',), ('10.0.0.8', '172.16.2.8')])
+def test_private_invitation_keeps_public_endpoint_and_bounded_lan_hints(addresses):
+    pair=('https://private.example:41830',PIN)
+    value=menu.server_invitation(*pair,local_addresses=addresses)
+    assert menu.parse_server_invitation(value)==pair
+    assert menu.parse_server_details(value)==(pair,addresses)
+
+
+@pytest.mark.parametrize('addresses', [('127.0.0.1',), ('0.0.0.0',), ('169.254.1.8',),
+    ('8.8.8.8',), ('private.example',), ('192.168.1.8:123',), ('::1',), [123], ['10.0.0.1']*5, '10.0.0.1'])
+def test_private_invitation_rejects_invalid_lan_hints(addresses):
+    with pytest.raises(ValueError):
+        menu.server_invitation('https://private.example:41830',PIN,local_addresses=addresses)
+
+
+@pytest.mark.parametrize('lan_matches', [True,False])
+def test_remote_device_uses_pinned_lan_then_public_fallback(monkeypatch,lan_matches):
+    calls=[]
+    class Probe:
+        def __init__(self,address,pin):
+            from urllib.parse import urlsplit
+            self.url=urlsplit(address);self.fingerprint=pin
+        def request(self,method,path,timeout=5):
+            calls.append((self.url.hostname,self.fingerprint))
+            if self.url.hostname=='127.0.0.1':raise ConnectionRefusedError('no directory on guest')
+            if self.url.hostname=='192.168.1.8' and not lan_matches:raise ValueError('wrong certificate')
+            return {'private_directory':True}
+    monkeypatch.setattr(menu,'Client',Probe)
+    c=menu.Controller(VERSION)
+    pair=('https://private.example:41830',PIN)
+    r=request(menu.PRIVATE_CONNECT);r['source']=1
+    r['code']=menu.server_invitation(*pair,local_addresses=['192.168.1.8'])
+    c.begin(r);wait(c)
+    assert c.status==menu.PRIVATE_READY and c.private==pair
+    assert c.directory(1).url.hostname==('192.168.1.8' if lan_matches else 'private.example')
+    assert calls==[(host,PIN) for host in (['127.0.0.1','192.168.1.8']+([] if lan_matches else ['private.example']))]
+    c.close()
+
+
+def test_private_lan_server_error_does_not_fall_through_to_other_endpoints(monkeypatch):
+    calls=[]
+    class Probe:
+        def __init__(self,address,pin):
+            from urllib.parse import urlsplit
+            self.url=urlsplit(address);self.fingerprint=pin
+        def request(self,method,path,timeout=5):
+            calls.append(self.url.hostname)
+            if self.url.hostname=='127.0.0.1':raise ConnectionRefusedError('not local')
+            raise menu.DirectoryError(403,'Admission denied')
+    monkeypatch.setattr(menu,'Client',Probe)
+    c=menu.Controller(VERSION)
+    r=request(menu.PRIVATE_CONNECT);r['source']=1
+    r['code']=menu.server_invitation('https://private.example:41830',PIN,local_addresses=['192.168.1.8'])
+    c.begin(r);wait(c)
+    assert c.status==menu.ERROR and 'Admission denied' in c.message
+    assert calls==['127.0.0.1','192.168.1.8'] and c.private is None
+    c.close()

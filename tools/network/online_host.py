@@ -19,8 +19,35 @@ import base64
 import http.client
 import ipaddress
 import json
+import socket
 from online_client import Client
 
+
+
+def lan_ipv4(value):
+    try:
+        address = ipaddress.IPv4Address(value)
+        return any(address in ipaddress.IPv4Network(net) for net in
+                   ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16'))
+    except (ValueError, TypeError):
+        return False
+
+
+def local_ipv4_addresses(public_address):
+    """Bounded local interface hints; UDP connect selects a route without sending."""
+    addresses = []
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as route:
+            route.connect((public_address, 9))
+            addresses.append(route.getsockname()[0])
+    except OSError:
+        pass
+    try:
+        addresses.extend(item[4][0] for item in socket.getaddrinfo(
+            socket.gethostname(), None, socket.AF_INET, socket.SOCK_STREAM))
+    except OSError:
+        pass
+    return tuple(dict.fromkeys(value for value in addresses if lan_ipv4(value)))[:4]
 
 
 def fetch_public_ipv4():
