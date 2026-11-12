@@ -3855,7 +3855,7 @@
     {
       "name": "2995-independent-keyboard-routing.patch",
       "path": "patches/input/2995-independent-keyboard-routing.patch",
-      "sha256": "be8a5c471f6090874f2d90b27fa3f74c434ec1b29dac733ee170bb4a08c2f991",
+      "sha256": "75677ad9814847ac264d1eef6b601a8d5f20a38fd1c40a9340bfc205b06c9f09",
       "targets": [
         "src/input/input_bindings.c"
       ]

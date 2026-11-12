@@ -198,9 +198,10 @@ int pc_settings_prompt_keys(int keys[PC_ACTION_COUNT])
     if(pc_settings_gameplay_masks(0,masks,&mounted)) {
         int semantic[PC_ACTION_COUNT];memcpy(semantic,keys,sizeof semantic);
         for(unsigned alias=3;alias<=5;alias++) {
-            unsigned action=pc_keyboard_action(alias);
+            unsigned action=pc_keyboard_context_action(alias,(unsigned)mounted);
             if(!semantic[action])semantic[action]=semantic[alias];
         }
+        if(mounted==0x400 && !semantic[0])semantic[0]=semantic[3];
         for(unsigned raw=0;raw<24;raw++) {
             static const unsigned char roles[]={0,1,2,8,9,10,11,12,13,18,23};
             if(!pc_keyboard_masks[raw])continue;

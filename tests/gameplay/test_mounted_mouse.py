@@ -120,7 +120,7 @@ def test_original_mounted_binding(tmp_path):
     finally:
         vars(config).update(previous)
 
-@pytest.mark.parametrize('legacy', [False, True, 'driver'], ids=['vehicle-mouse', 'old-route-reproduction', 'old-tank-driver'])
+@pytest.mark.parametrize('legacy', [False, True, 'driver', 'keyboard-exit'], ids=['vehicle-mouse', 'old-route-reproduction', 'old-tank-driver', 'old-keyboard-exit'])
 def test_original_vehicle_mouse(tmp_path, legacy):
     import hashlib
     import struct
@@ -151,6 +151,8 @@ def test_original_vehicle_mouse(tmp_path, legacy):
             helper = helper.replace('mode!=0x80 && mode!=0x400', 'mode!=0x80')
         if legacy == 'driver':
             fixture = fixture.replace('pc_tank_driver_input(g_eax,g_edx,PLAYER,g_xbox_mem_offset,&r)', '(PcTankDriverScope){0}').replace('assert(scope.actor_link);', '')
+        if legacy == 'keyboard-exit':
+            fixture=fixture.replace('pc_keyboard_context_masks(masks,0x400);','(void)0;')
         source = tmp_path / 'vehicle_mouse.c'
         source.write_text(fixture.replace('/* GENERATED_ROUTINES */', code).replace('/* UNREACHED */', stubs)
                           .replace('/* CONSTANTS */', constants).replace('/* MOUSE_IMPLEMENTATION */', helper))
@@ -164,7 +166,9 @@ def test_original_vehicle_mouse(tmp_path, legacy):
         result = subprocess.run(command, cwd=tmp_path, env=environment, capture_output=True, text=True, timeout=60)
         assert result.returncode == 0, result.stdout + result.stderr
         result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
-        if legacy == 'driver':
+        if legacy == 'keyboard-exit':
+            assert result.returncode != 0 and 'keyboard vehicle exit packet missing' in result.stderr
+        elif legacy == 'driver':
             assert result.returncode != 0 and 'tracks[0]' in result.stderr, result.stdout + result.stderr
         elif legacy is True:
             assert result.returncode != 0 and 'handled==1' in result.stderr.replace(' ', ''), result.stdout + result.stderr

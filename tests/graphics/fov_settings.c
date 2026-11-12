@@ -492,6 +492,14 @@ int main(int argc,char **argv)
         CHECK(controls_gameplay_masks(0,masks,&mounted));
         CHECK(masks[0]==0x10 && masks[9]==0x80 && masks[14]==(1u<<19));
         CHECK(WORD_AT(player+0x20)==0x10 && WORD_AT(player+0x50)==4);
+        WORD_AT(player+0x24)=0x1000;
+        static const unsigned contexts[]={0x20,0x40,0x80,0x400};
+        for(unsigned n=0;n<4;n++) {
+            WORD_AT(player+0x114)=contexts[n];
+            CHECK(controls_gameplay_masks(0,masks,&mounted) && (unsigned)mounted==contexts[n]);
+            CHECK(masks[0]==(contexts[n]==0x400?0x40:contexts[n]==0x20?0x10:0x1000));
+            CHECK(WORD_AT(player+0x20)==0x10 && WORD_AT(player+0x24)==0x1000);
+        }
         controls_test_menu_active=1;CHECK(!controls_gameplay_masks(0,masks,&mounted));
         memset((char *)mem+0x6000,0,0x3000);
         WORD_AT(0x790950)=WORD_AT(0x7b0c48)=0;

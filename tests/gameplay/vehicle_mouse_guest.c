@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #define RECOMP_GENERATED_CODE
 #include "recomp_types.h"
+#include "input/pc_keyboard_actions.h"
 ptrdiff_t g_xbox_mem_offset;
 RECOMP_TLS uint32_t g_eax,g_ecx,g_edx,g_esp,g_ebx,g_esi,g_edi,g_ebp,g_seh_ebp;
 RECOMP_TLS RecompXmm g_xmm0,g_xmm1,g_xmm2,g_xmm3,g_xmm4,g_xmm5,g_xmm6,g_xmm7;
@@ -14,16 +15,18 @@ RECOMP_TLS int g_fp_top,g_fp_cmp;
 
 enum {PLAYER=0x10000,TABLE=0x20000,ENTITY=TABLE+0x2e8,VEHICLE=TABLE+0x5d0,EXTRA=0x30000,VDATA=0x40000,SEAT=VDATA+0x70,GUN=0x50000,DATA=0x51000,FOV=0x60000,DEF=0x62000,SETTINGS=0x63000,MATRIX=0x64000,STACK=0x70000};
 static float axis[8];
+static unsigned pressed,exit_probe,exit_packet;
 static void retf(float f){g_fp_top=(g_fp_top-1)&7;g_fp_stack[g_fp_top]=f;g_esp+=4;}
 void sub_000B3CD0(void){g_eax=DEF;g_esp+=4;}
 void sub_00012F00(void){assert(MEM32(MEM32(g_esp+4))==0x400001);g_eax=ENTITY;g_esp+=4;}
 void sub_000CB3B0(void){retf(55);}
+void sub_00012660(void){assert(exit_probe);retf(MEMF(g_esp+4));}
 void sub_000124F0(void){float x=MEMF(g_esp+4),lo=MEMF(g_esp+8),hi=MEMF(g_esp+12);retf(fminf(hi,fmaxf(lo,x)));}
 void sub_00012540(void){float x=MEMF(g_esp+4),lo=MEMF(g_esp+8),hi=MEMF(g_esp+12);while(x<lo)x+=hi-lo;while(x>=hi)x-=hi-lo;retf(x);}
 void sub_00165690(void){g_eax=MATRIX;g_esp+=4;}
 void sub_001528A0(void){MEMF(MEM32(g_esp+8))=0;MEMF(MEM32(g_esp+12))=0;MEMF(MEM32(g_esp+16))=0;g_esp+=4;}
 void sub_00042970(void){retf(axis[MEM32(g_esp+8)]);}
-void sub_000427B0(void){g_eax=0;g_esp+=4;}
+void sub_000427B0(void){g_eax=pressed;g_esp+=4;}
 void sub_00042760(void){g_eax=0;g_esp+=4;}
 void sub_0017A000(void){g_eax=0;g_esp+=4;}
 void sub_00238510(void){g_esp+=4;}
@@ -39,6 +42,9 @@ void sub_00153440(void);
 void sub_001730E0(void);
 static float tracks[2];
 void sub_0017DA00(void){
+ exit_packet=MEM32(MEM32(g_esp+8)+0x18);
+ if(exit_probe){g_esp+=4;return;}
+
  if(MEM32(SEAT+0x30)==0){
   uint32_t saved=g_esp,packet=MEM32(g_esp+8);g_eax=packet;g_edx=VEHICLE;
   PcGuestRegion r={0};PcTankDriverScope scope=pc_tank_driver_input(g_eax,g_edx,PLAYER,g_xbox_mem_offset,&r);assert(scope.actor_link);
@@ -121,6 +127,19 @@ int main(void){
   assert(fabsf(MEMF(PLAYER+0x104)-(invert?-18:-14))<.001f);
   assert(MEMF(FOV+0xfe4)==MEMF(PLAYER+0x104));
   step();assert(MEMF(FOV+0xfdc)==MEMF(PLAYER+0x104));
+ }
+ /* Exercise original D2470's fixed-Y exit bit for every seat type/rate.
+  * The final vehicle service is observed at its packet boundary. */
+ exit_probe=1;
+ const unsigned rates[]={60,120,180,240};
+ for(unsigned r=0;r<4;r++)for(unsigned seat=0;seat<5;seat++) {
+  MEM32(SEAT+0x30)=seat;MEMF(0x4e794c)=60.f/rates[r];
+  unsigned masks[24];memcpy(masks,pc_keyboard_masks,sizeof masks);
+  pc_keyboard_context_masks(masks,0x400);
+  int keys[24]={0};pc_keyboard_accumulate(keys,0,255,1,masks);
+  pressed=0;for(unsigned n=0;n<24;n++)if(keys[n])pressed|=pc_keyboard_masks[n];
+  step();assert((exit_packet&0x40u) && "keyboard vehicle exit packet missing");
+  pressed=0;step();assert(!(exit_packet&0x40u));
  }
  puts("PASS: original vehicle gunner update preserves mouse aim and controller input");free(memory);return 0;
 }

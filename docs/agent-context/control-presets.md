@@ -21,6 +21,27 @@ change keyboard keys, then verify controller input and stored mappings remain
 unchanged. A shared-layout negative control must fail. The same fixture runs
 Windows and SDL defines. Shared C/managed save tests retain explicit pad sources.
 
+### Seated exit actions
+
+The gameplay reader returns the actual player control mode through its context
+output. `pc_keyboard_context_masks` routes Interact through Reload in stationary
+gun modes40/80 (original B6A67/258BE2), and through fixed Y in vehicle mode400
+(original D2557 produces exit packet40). Transition mode20 and ordinary on-foot
+Use retain their native masks. Vehicle-only Y alias routing keeps a configured
+legacy Y key working. Vehicle button actions use the original fixed D2470
+protocol, so on-foot controller remaps cannot turn Fire/Next weapon into exit. Gameplay prompts
+use the same contextual mapping; controller input and stored profiles are unchanged.
+`PcKeyboardContextState` waits for release when a held Interact/Y key crosses a
+control-mode boundary, preventing a virtual-button change from manufacturing an
+exit or immediate re-entry. This state is transient and never saved.
+
+The real sampler and guest reader check2/20/40/80/400, remapped Reload/Use,
+legacy Y, Next weapon and unchanged profiles. An old-context mutation must fail.
+The supported-XBE vehicle fixture executes D2470 for all five seat types at
+60/120/180/240, observing exit packets at17DA00; removing context routing loses
+the request. Camera/math/vehicle completion services are controlled boundaries,
+so this proves an exit request, not a rendered dismount in every mission.
+
 ## Full rollback in release0.6.2
 
 The user requested a full rollback of the Modern preset feature, not merely

@@ -23,6 +23,7 @@ static int source_magnitude(const Source *source,KeyCache *cache,
 #include "pc_settings.h"
 #include "pc_prompts.h"
 #include "input/pc_keyboard_actions.h"
+static unsigned test_context=2;
 static unsigned test_axes[4]={2,1,4,3},test_action_masks[24];
 static int test_remapped_actions;
 static int test_gameplay;
@@ -30,7 +31,7 @@ int pc_settings_gameplay_masks(unsigned port,unsigned masks[24],int *mounted) {
     (void)port;*mounted=0;if(!test_gameplay)return 0;
     if(test_remapped_actions)memcpy(masks,test_action_masks,sizeof test_action_masks);
     else masks[9]=0x10;
-    pc_keyboard_axis_masks(masks,test_axes);return 1;
+    pc_keyboard_axis_masks(masks,test_axes);*mounted=(int)pc_keyboard_context_masks(masks,test_context);return 1;
 }
 
 static unsigned test_active_ports;
@@ -232,6 +233,43 @@ int main(void)
             assert(native_button_mask(&one)==test_action_masks[action]);
             held_key='H';TEST_CLEAR_KEYS();test_sample(0,&one);assert(!native_button_mask(&one));
         }
+    }
+    /* Exit action follows the original seated consumer, not on-foot Use.
+     * Legacy Y still exits vehicles, while next-weapon keys do not eject. */
+    {
+        static const unsigned modes[]={2,0x20,0x40,0x80,0x400};
+        test_remapped_actions=1;memcpy(test_action_masks,pc_keyboard_masks,sizeof test_action_masks);
+        test_action_masks[0]=0x20;test_action_masks[2]=0x10;
+        test_action_masks[9]=test_action_masks[13]=0x40; /* On-foot remaps must not eject. */
+        memset(g_ctl[0].bind,0,sizeof g_ctl[0].bind);
+        g_ctl[0].bind[0].count=g_ctl[0].bind[3].count=g_ctl[0].bind[13].count=1;
+        assert(parse_source("key:E",&g_ctl[0].bind[0].src[0]));
+        assert(parse_source("key:Y",&g_ctl[0].bind[3].src[0]));
+        assert(parse_source("key:N",&g_ctl[0].bind[13].src[0]));
+        g_ctl[0].bind[9].count=1;assert(parse_source("key:H",&g_ctl[0].bind[9].src[0]));
+        for(unsigned n=0;n<sizeof modes/sizeof modes[0];n++) {
+            held_key=0;TEST_CLEAR_KEYS();test_sample(0,&one);
+            test_context=modes[n];held_key='E';TEST_CLEAR_KEYS();test_sample(0,&one);
+            unsigned expected=test_context==0x400?0x40:(test_context==0x40 || test_context==0x80)?0x10:0x20;
+            assert(native_button_mask(&one)==expected && "keyboard exit uses wrong context");
+        }
+        held_key=0;TEST_CLEAR_KEYS();test_sample(0,&one);
+        held_key='Y';TEST_CLEAR_KEYS();test_sample(0,&one);
+        assert(native_button_mask(&one)==0x40 && "legacy keyboard Y no longer exits vehicle");
+        held_key='N';TEST_CLEAR_KEYS();test_sample(0,&one);
+        assert(native_button_mask(&one)==pc_keyboard_masks[13] && !(native_button_mask(&one)&0x40));
+        held_key='H';TEST_CLEAR_KEYS();test_sample(0,&one);
+        assert(native_button_mask(&one)==0x800 && !(native_button_mask(&one)&0x40));
+        held_key=0;TEST_CLEAR_KEYS();test_sample(0,&one);
+        test_context=2;held_key='E';TEST_CLEAR_KEYS();test_sample(0,&one);
+        test_context=0x400;test_sample(0,&one);
+        assert(!native_button_mask(&one) && "held Interact manufactured an exit");
+        held_key=0;TEST_CLEAR_KEYS();test_sample(0,&one);
+        held_key='E';TEST_CLEAR_KEYS();test_sample(0,&one);
+        assert(native_button_mask(&one)==0x40);
+        test_context=2;test_sample(0,&one);
+        assert(!native_button_mask(&one) && "held Interact manufactured a re-entry");
+        held_key=0;TEST_CLEAR_KEYS();test_sample(0,&one);
     }
     /* Same-player Custom pad input remains physical after keyboard edits. */
     g_ctl[1].device=DEV_NONE;connected=1;memset(&state,0,sizeof state);state.right_trigger=255;

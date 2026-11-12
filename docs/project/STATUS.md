@@ -1,3 +1,19 @@
+Keyboard exit follow-up (local, base65992210): user reports inability to leave
+vehicles/turrets after keyboard isolation. On-foot meanings missed mode40's
+Reload dismount and mode400's fixed Y exit; only mode80 was special-cased.
+Shared keyboard context mapping covers both gun modes and vehicle exit, keeps
+legacy keyboard Y working, and does not turn Next weapon into vehicle exit.
+A per-port release barrier prevents held Interact/Y from becoming a fresh
+exit/re-entry when the native control mode changes.
+Authored gates/controller input/saves are unchanged. Windows Release build and
+built-in checks pass. Input, real guest-reader and mounted original-code checks
+81 pass2 host skips after the final held-key guard, including missing-context and original vehicle-exit negative
+controls. All5 seat types at60/120/180/240 emit the correct exit request; this is
+packet-boundary evidence, not live dismount acceptance. Fresh/repeated and
+previous-controls patch upgrades2 pass. Live mission acceptance remains pending.
+See control-presets.md. This follow-up targets the same published work branch;
+no main merge or release is included.
+
 Keyboard/controller independence after0.6.2 rollback (local, base c1e67e42,
 branch fix/independent-bindings-no-presets): the user confirms controller remaps
 again change keyboard behavior. Shared2995 restores action/axis translation only

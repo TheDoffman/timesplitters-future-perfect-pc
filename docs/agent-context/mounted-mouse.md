@@ -1,3 +1,7 @@
+Keyboard exit routing: [control-mode contract and regressions](control-presets.md#seated-exit-actions).
+Interact uses native Reload in modes40/80 and fixed vehicle Y in400. Shared
+keyboard-only routing preserves physical controller input and authored exit gates.
+
 # Mounted-gun ownership (#385)
 
 `src/input/pc_mounted.h` follows the player entity's `+0xC14` gun link in

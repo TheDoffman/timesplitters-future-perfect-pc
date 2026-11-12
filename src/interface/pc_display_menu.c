@@ -176,8 +176,7 @@ static int controls_gameplay_masks(unsigned port,unsigned masks[24],int *mounted
         unsigned axes[4];
         for(unsigned axis=0;axis<4;axis++)axes[axis]=WORD_AT(player+0x50+axis*4);
         pc_keyboard_axis_masks(masks,axes);
-        *mounted=WORD_AT(player+0x114)==0x80u;
-        if(*mounted)masks[0]=WORD_AT(player+0x24); /* Use also leaves fixed weapons. */
+        *mounted=(int)pc_keyboard_context_masks(masks,WORD_AT(player+0x114));
         return 1;
     }
     return 0;

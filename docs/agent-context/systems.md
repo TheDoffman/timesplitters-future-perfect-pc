@@ -1,4 +1,4 @@
-[Sticks](controller-deadzones.md), [Keys](control-presets.md), [updates](main-menu-update.md).
+[Sticks](controller-deadzones.md), [Exit](control-presets.md), [updates](main-menu-update.md).
 [Tex](texture-preference.md); [arms](video-options.md).
 
 [Uplink throw tests and policy](native-uplink.md#throw-impulse).

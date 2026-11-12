@@ -1,5 +1,5 @@
 [Sticks](controller-deadzones.md). [Online](multiplayer-ui.md).
-[Keys2995](control-presets.md); [Tex](texture-preference.md).
+[Exit](control-presets.md#seated-exit-actions); [Tex](texture-preference.md).
 [Arms](video-options.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).

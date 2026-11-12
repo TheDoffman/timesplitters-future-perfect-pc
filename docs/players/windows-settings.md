@@ -333,3 +333,8 @@ Keyboard & Mouse bindings and Controller Customize are separate. Changing a
 controller button or stick layout should leave keyboard actions unchanged. Use
 Keyboard & Mouse (or the launcher's Controls tab) to edit keyboard keys; Controller
 Layout/Customize edits the controller. There are no Modern preset selectors.
+
+Interact (default E) exits ordinary vehicle seats and mounted guns where the
+mission permits exiting. Keyboard Y also retains the original vehicle exit.
+Release the entry key, then press it again to exit; holding it during entry
+must not eject the player. Controller layouts remain independent.

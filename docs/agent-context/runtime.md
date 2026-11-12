@@ -1,5 +1,5 @@
 [Sticks](controller-deadzones.md).
-[2995](control-presets.md).
+[Exit](control-presets.md).
 [Tools](developer-tools-integration.md).
 
 [FOV node filter](video-options.md); [Uplink](native-uplink.md).

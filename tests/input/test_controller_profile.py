@@ -60,7 +60,7 @@ def test_native_developer_player_keys(tmp_path):
 
 
 @pytest.mark.parametrize("adapter", ["TSFP_PC_CONTROLS", "TSFP_NATIVE_INPUT"])
-@pytest.mark.parametrize("mutation", ["fixed", "steal-player-two", "shared-keyboard-layout"])
+@pytest.mark.parametrize("mutation", ["fixed", "steal-player-two", "shared-keyboard-layout", "old-context-exit", "held-context-exit"])
 def test_local_player_host_routing(tmp_path, adapter, mutation):
     production = (RUNTIME / "input/input_bindings.c").read_text()
     sampler = re.search(r'int recomp_bindings_sample\(.*?\n\}', production, re.S).group()
@@ -72,7 +72,12 @@ def test_local_player_host_routing(tmp_path, adapter, mutation):
     if mutation == "shared-keyboard-layout":
         sampler,changed=re.subn(r'int keyboard_actions=.*?;', 'int keyboard_actions=0;',sampler)
         assert changed==1
+    if mutation == "held-context-exit":
+        sampler,changed=re.subn(r'pc_keyboard_context_sample\([^;]+\)', 'mag',sampler)
+        assert changed==1
     fixture = (ROOT / "tests/input/local_player_routing.c").read_text()
+    if mutation == "old-context-exit":
+        fixture=fixture.replace('pc_keyboard_context_masks(masks,test_context)','test_context')
     prompts=(ROOT / 'src/input/pc_prompts.c').read_text()
     prompts=prompts[prompts.index('static SRWLOCK prompt_lock'):prompts.index('static void key_label(')]
     fixture=fixture.replace('/* PRODUCTION_PROMPTS */',prompts)
@@ -89,6 +94,10 @@ def test_local_player_host_routing(tmp_path, adapter, mutation):
     assert result.returncode == 0, result.stdout + result.stderr
     result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=15)
     assert (result.returncode == 0) == (mutation == 'fixed'), result.stdout + result.stderr
+    if mutation == 'held-context-exit':
+        assert 'held Interact manufactured an exit' in result.stderr
+    if mutation == 'old-context-exit':
+        assert 'keyboard exit uses wrong context' in result.stderr
     if mutation == 'shared-keyboard-layout':
         assert 'one.bAnalogButtons[XBOX_BUTTON_X]' in result.stderr
     if mutation == 'steal-player-two':
