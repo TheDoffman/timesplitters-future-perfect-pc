@@ -14,16 +14,29 @@ ROOT = Path(__file__).resolve().parents[2]
 RUNTIME = ROOT / "external/ts3FPrecomp/src"
 
 
-def test_shared_pad_sources_match_runtime_defaults():
-    source=(RUNTIME / 'input/input_bindings.c').read_text()
-    controls=source.split('} CONTROLS[] = {',1)[1].split('};',1)[0]
-    names=re.findall(r'\{\s*"([^"]+)"',controls)[:24]
-    defaults=source.split('} DEFAULTS[] = {',1)[1].split('};',1)[0]
-    pads=dict(re.findall(r'\{\s*"([^"]+)",\s*"([^"]+)"',defaults))
-    shared=(ROOT / 'src/input/pc_control_presets.def').read_text()
-    rows=re.findall(r'PC_PAD_SOURCE\((\d+), "([^"]+)"\)',shared)
-    assert len(names)==len(rows)==24
-    assert [(int(index),token) for index,token in rows]==[(i,pads[name]) for i,name in enumerate(names)]
+def test_pre_preset_factory_defaults():
+    config=json.loads((ROOT / "config/pc-controls.default.json").read_text())
+    assert "custom_binding_semantics" not in config
+    assert all("keyboard_preset" not in c and "controller_preset" not in c for c in config["controllers"])
+    keys=config["controllers"][0]["bindings"]
+    assert keys["a"]==["key:E","key:SPACE"]
+    assert keys["b"]==["key:F","key:MBUTTON"]
+    assert keys["dpad_up"]==["key:UP","key:PAGEUP"]
+    assert keys["dpad_down"]==["key:DOWN","key:PAGEDOWN"]
+    assert keys["dpad_left"]==["key:LEFT","key:F24"]
+    assert keys["dpad_right"]==["key:RIGHT","key:F23"]
+
+
+def test_retired_metadata_does_not_override_custom_pad(controller_exe,tmp_path):
+    config=json.loads((ROOT / "config/pc-controls.default.json").read_text())
+    profile=config["controllers"][0];profile.update(device="gamepad:0",keyboard_preset=1,controller_preset=1)
+    config["custom_binding_semantics"]=1
+    profile["bindings"]["a"]=["pad:b","none"]
+    profile["bindings"]["rtrigger"]=["none","none"]
+    path=tmp_path/"retired-mode.json";path.write_text(json.dumps(config));before=path.read_bytes()
+    result=subprocess.run([str(controller_exe),str(path),"0","custom"],capture_output=True,text=True,timeout=15)
+    assert result.returncode==0,result.stdout+result.stderr
+    assert path.read_bytes()==before
 
 
 def test_native_developer_player_keys(tmp_path):
@@ -47,7 +60,7 @@ def test_native_developer_player_keys(tmp_path):
 
 
 @pytest.mark.parametrize("adapter", ["TSFP_PC_CONTROLS", "TSFP_NATIVE_INPUT"])
-@pytest.mark.parametrize("mutation", ["fixed", "steal-player-two", "couple-legacy-keyboard"])
+@pytest.mark.parametrize("mutation", ["fixed", "steal-player-two"])
 def test_local_player_host_routing(tmp_path, adapter, mutation):
     production = (RUNTIME / "input/input_bindings.c").read_text()
     sampler = re.search(r'int recomp_bindings_sample\(.*?\n\}', production, re.S).group()
@@ -56,10 +69,6 @@ def test_local_player_host_routing(tmp_path, adapter, mutation):
     if mutation == "steal-player-two":
         sampler, changed = re.subn(r'!\(reserved_pads\s*&\s*\(1u\s*<<\s*slot\)\)', '1', sampler)
         assert changed == 2, 'Exercise both real host fallback loops'
-    if mutation == "couple-legacy-keyboard":
-        sampler, changed = re.subn(r'semantic_keyboard=port==0 && c->device==DEV_KEYBOARD;',
-            'semantic_keyboard=port==0 && c->device==DEV_KEYBOARD && g_pc_custom_semantics;', sampler)
-        assert changed == 1, 'Restore the legacy-config gate, not the axis mapping'
     fixture = (ROOT / "tests/input/local_player_routing.c").read_text()
     prompts=(ROOT / 'src/input/pc_prompts.c').read_text()
     prompts=prompts[prompts.index('static SRWLOCK prompt_lock'):prompts.index('static void key_label(')]
@@ -79,8 +88,7 @@ def test_local_player_host_routing(tmp_path, adapter, mutation):
     assert (result.returncode == 0) == (mutation == 'fixed'), result.stdout + result.stderr
     if mutation == 'steal-player-two':
         assert '!memcmp(&one,&neutral,sizeof one)' in result.stderr, result.stderr
-    elif mutation == 'couple-legacy-keyboard':
-        assert 'one.bAnalogButtons[XBOX_BUTTON_X]==255' in result.stderr, result.stderr
+
 
 
 @pytest.fixture(scope="module")

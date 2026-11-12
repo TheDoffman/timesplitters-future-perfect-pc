@@ -1,3 +1,38 @@
+Control-preset rollback and high-FPS interaction repairs (2026-11-12,
+branch revert/control-presets; original base e7cb1016, reference c511f1e9 before
+PR528): removes Modern presets, profile button/axis seeding and repair,
+semantic keyboard routing and preset-specific editor restrictions from the
+shared game and Windows/Mac/Linux launchers. Restores the original factory
+config, virtual-pad roles and binding editors. Keeps unrelated deadzones,
+joined-player ownership/prompts, texture persistence and Online/update notices.
+Existing personal bindings/profiles/saves are retained; players explicitly
+choose Default/Restore defaults to replace stored custom controls.
+
+Time to Split's first turret had a separate fractional-time entry gate;
+B4E5E now admits positive game time without altering eligibility or clocks.
+User confirms mounting with E works at240 FPS (previously only60).
+The remaining dim gameplay hints are reproduced through original1405B0/140630:
+raw-tick refresh plus per-render consumption loses fade-in. Scoped raw-cadence
+consumption and speed-preserving interval scaling restore original opacity,
+colors and fade-out. Live opacity acceptance is still pending.
+
+Windows Release build/built-in checks pass. Focused native interaction/hint/
+reload/input suite11 passes, including original-code hook-removal controls,
+60/120/144/180/240, pause, slow motion and split-screen isolation. Earlier
+rollback input/menu/platform checks96 pass2 host skips31 subtests; profile/
+cinematic checks11 pass; launcher checks47 shared UI groups pass. Ubuntu/Clang
+input checks50 pass1 skip; fresh/repeated/previous-controls patch upgrades2 pass.
+Isolated114-second Story acceptance verifies WASD, mouse look, firing, reload
+and pause/resume with unchanged fixture signatures. Native Mac and physical
+Linux/Deck acceptance remain pending. Evidence is retained in ignored logs/
+full-rollback-*.json, gameplay-hint-build.txt and gameplay-hint-regression.txt.
+Latest main34b9b867 is integrated, retaining the launcher Controls tab and
+collapsible per-player deadzone sliders. The full Windows launcher suite passes
+after integration; repository/shared launcher layout checks24 pass. Source
+rollback commit7352f10a; PR prepared with live hint-opacity acceptance pending.
+The superseded partial candidate remains in a named Git stash. No merge,
+issue closure or downloadable release is authorized by the PR request.
+
 Launcher Controls deadzone refinements (launcher-only change): rename the
 Keyboard & mouse tab to Controls; replace all eight per-player deadzone dropdowns
 with 0..100% sliders, 1% steps and live readouts. Group movement/aiming per player;

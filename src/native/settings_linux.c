@@ -69,17 +69,12 @@ static GtkWidget *dialog(const char *title){
 typedef struct {
     GtkWidget *dialog,*tabs,*keys[PC_ACTION_COUNT][PC_BINDING_SLOTS];
     GtkWidget *sensitivity,*enabled,*invert,*resolution,*fov,*fullscreen;
-    PcDisplayMode modes[PC_DISPLAY_MODE_CAPACITY];int mode_count,preset;
-    GtkWidget *binding_hint;
+    PcDisplayMode modes[PC_DISPLAY_MODE_CAPACITY];int mode_count;
 } LinuxSettings;
 static void fill_controls(LinuxSettings *e,const PcSettings *value){
-    e->preset=value->preset;
-    gtk_label_set_text(GTK_LABEL(e->binding_hint),value->preset?
-        "Modern PC active. Choose Custom in Controls or the launcher to edit retained bindings.":"Custom keyboard bindings");
     for(int a=0;a<PC_ACTION_COUNT;a++)for(int slot=0;slot<PC_BINDING_SLOTS;slot++){
         char id[16];snprintf(id,sizeof id,"%d",value->keys[a][slot]);
         gtk_combo_box_set_active_id(GTK_COMBO_BOX(e->keys[a][slot]),id);
-        gtk_widget_set_sensitive(e->keys[a][slot],!value->preset);
     }
     char text[32];g_ascii_dtostr(text,sizeof text,value->sensitivity);
     gtk_entry_set_text(GTK_ENTRY(e->sensitivity),text);
@@ -95,7 +90,6 @@ static LinuxSettings make_settings(const PcSettings *initial){
     LinuxSettings e={0};e.dialog=dialog("TimeSplitters Settings");e.tabs=gtk_notebook_new();
     GtkWidget *body=gtk_dialog_get_content_area(GTK_DIALOG(e.dialog));gtk_box_pack_start(GTK_BOX(body),e.tabs,TRUE,TRUE,0);
     GtkWidget *controls=gtk_box_new(GTK_ORIENTATION_VERTICAL,8),*g=grid();
-    e.binding_hint=gtk_label_new("");gtk_label_set_line_wrap(GTK_LABEL(e.binding_hint),TRUE);gtk_box_pack_start(GTK_BOX(controls),e.binding_hint,FALSE,FALSE,0);
     GtkWidget *scroll=gtk_scrolled_window_new(NULL,NULL);gtk_widget_set_vexpand(scroll,TRUE);
     gtk_container_add(GTK_CONTAINER(scroll),g);gtk_box_pack_start(GTK_BOX(controls),scroll,TRUE,TRUE,0);
     for(int a=0;a<PC_ACTION_COUNT;a++){
@@ -134,7 +128,7 @@ static LinuxSettings make_settings(const PcSettings *initial){
     return e;
 }
 static int save_controls(LinuxSettings *e,char *error,size_t bytes){
-    PcSettings next={0};next.preset=e->preset;
+    PcSettings next={0};
     for(int a=0;a<PC_ACTION_COUNT;a++)for(int slot=0;slot<PC_BINDING_SLOTS;slot++){
         const char *id=gtk_combo_box_get_active_id(GTK_COMBO_BOX(e->keys[a][slot]));
         if(!id){snprintf(error,bytes,"Select a binding for every action.");return 0;}next.keys[a][slot]=atoi(id);

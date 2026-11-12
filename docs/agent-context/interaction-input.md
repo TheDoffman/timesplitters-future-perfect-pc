@@ -55,6 +55,45 @@ or physical controller delivery in a live mission. Test Scotland the Brave at
 the first interior upper-floor levers, including pause/resume and Original60.
 Native Mac gameplay remains pending under MAC-121.
 
+## Stationary turret entry
+
+Time to Split's first mounted gun uses `B4DF0`, rather than the generic
+`A0D90` target pool. Its `B4E5E` load tests whole game ticks only as a pause
+gate before distance/facing checks and the `B4B60` mount call. The same
+positive-float admission policy now covers this exact load. It preserves
+Original mode, idle-gun state, on-foot mode, proximity, facing, input mask and
+mount transition. It does not promote the gun update's elapsed-time operands.
+
+`native_turret_entry.c` lifts the complete original entry routine, decoder and
+pressed getter. It checks72 schedules at60/120/144/180/240 with12 pause offsets,
+one mount request per published press, unchanged clocks/ABI, pause with stale
+whole ticks and occupied/on-foot/distance/facing rejection. Geometry, floor,
+messages, player enumeration and the final mount service are controlled
+boundaries. Removing only the B4E5E hook reproduces `turret entry edge lost`.
+Add `or turret_entry` to the Windows pytest selector above. The asset-free
+`native_reload_gate.c` also covers this site, neighboring sites and raw-clock
+exclusion. Live mounting acceptance remains separate from these CPU tests.
+
+## Gameplay hint opacity
+
+`1405B0` marks eligible gameplay hints with a positive fade velocity. The
+original `140630` update consumes that marker once, then restores negative
+decay. Script/input hint refreshes can arrive at raw tick boundaries; consuming the
+marker on every rendered frame makes hints dim at high native rates.
+`pc_native_numeric.h` skips only `140630` on zero-raw-tick native intervals,
+and scales its `140652` time multiplication to the consumed raw count while
+preserving the game/raw speed ratio. No global clock is overwritten. The
+original18-slot/player indexing, colors, show/hide eligibility, clamping and
+fade-out stay intact; hint placement/rendering still runs normally. Original
+mode retains its unmodified routine.
+
+`native_interaction_hints.c` lifts both complete routines and tests full opacity,
+fade-out, zero game time, slow motion and split-screen isolation across
+60/120/144/180/240 and8 raw phases, with refresh before/after the update. Removing either hook reproduces the faded
+hint assertion. Select it with `-k interaction_hints` in `test_native_timing.py`.
+Live opacity acceptance is separate; user confirmed the turret entry correction
+works at240 FPS before this follow-up.
+
 ## PC Settings bar visibility
 
 Developer Tools replaces the Windows bar with the shared F1 overlay in

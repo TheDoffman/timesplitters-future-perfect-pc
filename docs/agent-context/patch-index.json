@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "55d916d1ed12676c9971a282101bcf3dfc702c6414da5ba0494358af311c3957",
+  "loaderSha256": "129d6b2aa19154f90e9d85bd2280902ea58c43ef003528f188d6d9f857399443",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3840,6 +3840,14 @@
       "name": "2970-active-player-pad-sharing.patch",
       "path": "patches/input/2970-active-player-pad-sharing.patch",
       "sha256": "93132d52469066956aaa654e7239c447124c11026cc2f086e18e1942a063bd78",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2990-rollback-control-presets.patch",
+      "path": "patches/input/2990-rollback-control-presets.patch",
+      "sha256": "875b6dae4a6f7c077f2c87e9ee70bd840ff9f172fa2a0aadbabc89f2a88f7c08",
       "targets": [
         "src/input/input_bindings.c"
       ]

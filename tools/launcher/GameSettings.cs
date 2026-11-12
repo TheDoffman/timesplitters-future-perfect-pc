@@ -15,7 +15,7 @@ namespace TimeSplitters.Launcher
     {
         public const int BindingSlots = 2;
         static readonly string[] PadActions = { "a", "b", "x", "y", "black", "white", "start", "back", "ltrigger", "rtrigger", "dpad_up", "dpad_down", "dpad_left", "dpad_right", "lstick_up", "lstick_down", "lstick_left", "lstick_right", "lthumb", "rstick_up", "rstick_down", "rstick_left", "rstick_right", "rthumb" };
-        static readonly string[] PadLabels = { "Interact / confirm (A)", "Melee / back (B)", "Reload (X)", "Next weapon (extra key)", "Weapon mode (extra key)", "Throw grenade (extra key)", "Pause / Start", "Objectives / Back", "Throw grenade", "Fire", "Weapon mode / zoom in", "Grenade type / zoom out", "Previous weapon", "Next weapon", "Move forward", "Move backward", "Strafe left", "Strafe right", "Crouch", "Look up", "Look down", "Look left", "Look right", "Aim" };
+        static readonly string[] PadLabels = { "Interact / confirm (A)", "Melee / back (B)", "Reload (X)", "Y action", "Black button action", "White button action", "Pause / Start", "Objectives / Back", "Throw grenade", "Fire", "Weapon mode / zoom in", "Grenade type / zoom out", "Previous weapon", "Next weapon", "Move forward", "Move backward", "Strafe left", "Strafe right", "Crouch", "Look up", "Look down", "Look left", "Look right", "Aim" };
         static string[] WeaponActions()
         {
             var defaults=Json.Object(DefaultControls());
@@ -320,7 +320,7 @@ namespace TimeSplitters.Launcher
                 bindings[Actions[action]]=key!=0 && Conflict(action,key)<0?"key:#"+key:"none";
             }
         }
-        string[] BindingSources(int action)
+        public string[] Binding(int action)
         {
             object value; var list = new List<string>();
             if (bindings.TryGetValue(Actions[action], out value))
@@ -329,31 +329,11 @@ namespace TimeSplitters.Launcher
                 else if (value is IEnumerable) foreach (object item in (IEnumerable)value) { Core.Require(item is string, "Invalid binding source."); list.Add((string)item); }
                 else throw new InvalidDataException("Invalid binding value.");
             }
-            Core.Require(list.Count <= 6, "This profile has too many binding sources; it was left unchanged.");
-            return list.ToArray();
-        }
-        public string[] Binding(int action)
-        {
-            var list=BindingSources(action).Where(k=>k=="none" || k.StartsWith("key:",StringComparison.OrdinalIgnoreCase)).ToList();
+            Core.Require(list.Count <= 4, "This profile has more than four bindings on an action; it was left unchanged.");
             if (list.Count > BindingSlots) list.RemoveRange(BindingSlots, list.Count - BindingSlots);
             while (list.Count < BindingSlots) list.Add("none");
             return list.ToArray();
         }
-        void SetKeyboardBinding(int action,string[] keys)
-        {
-            var pads=BindingSources(action).Where(k=>k!="none" && !k.StartsWith("key:",StringComparison.OrdinalIgnoreCase)).ToArray();
-            string inherited;
-            if(!bindings.ContainsKey(Actions[action]) && DefaultPadSources.TryGetValue(action,out inherited))pads=new[]{inherited};
-            Core.Require(pads.Length<=4,"This profile has too many controller sources; it was left unchanged.");
-            bindings[Actions[action]]=keys.Concat(pads).ToArray();
-        }
-        public int KeyboardPreset {
-            get {object value;return controller.TryGetValue("keyboard_preset",out value) && Convert.ToString(value)=="1"?1:0;}
-            set {Core.Require(value==0 || value==1,"Choose Custom or Modern PC.");controller["keyboard_preset"]=value;}
-        }
-        public int ControllerPreset(int player) {var profile=PlayerProfile(player,false);object value;
-            return profile!=null && profile.TryGetValue("controller_preset",out value) && Convert.ToString(value)=="1"?1:0;}
-        public void SetControllerPreset(int player,int preset) {Core.Require(preset==0 || preset==1,"Choose Custom or Modern Controller.");PlayerProfile(player,true)["controller_preset"]=preset;}
         public int ControllerDeadzone(int player,bool aim) {
             var profile=PlayerProfile(player,false);object value;int raw;
             if(profile!=null && profile.TryGetValue(aim?"aim_deadzone":"move_deadzone",out value) &&
@@ -365,30 +345,6 @@ namespace TimeSplitters.Launcher
         public void SetControllerDeadzone(int player,bool aim,int raw) {
             Core.Require(raw>=0 && raw<=32767,"Deadzone must be between 0% and 100%.");
             PlayerProfile(player,true)[aim?"aim_deadzone":"move_deadzone"]=raw;
-        }
-        static readonly Dictionary<int,string[]> ModernKeys=ReadModernKeys();
-        static readonly Dictionary<int,string> DefaultPadSources=ReadDefaultPadSources();
-        static Dictionary<int,string> ReadDefaultPadSources() {
-            var result=new Dictionary<int,string>();
-            using(var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("control-presets.def"))
-            using(var reader=new StreamReader(stream)) foreach(Match m in Regex.Matches(reader.ReadToEnd(),@"PC_PAD_SOURCE\((\d+), ""([^""]+)""\)"))
-                result.Add(Int32.Parse(m.Groups[1].Value),m.Groups[2].Value);
-            return result;
-        }
-        static Dictionary<int,string[]> ReadModernKeys() {
-            var result=new Dictionary<int,string[]>();
-            using(var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("control-presets.def"))
-            using(var reader=new StreamReader(stream)) foreach(Match m in Regex.Matches(reader.ReadToEnd(),@"PC_MODERN_KEY\((\d+), (\d+), (\d+)\)"))
-                result.Add(Int32.Parse(m.Groups[1].Value),new[]{"key:#"+m.Groups[2].Value,m.Groups[3].Value=="0"?"none":"key:#"+m.Groups[3].Value});
-            return result;
-        }
-        public string[] DisplayBinding(int action) {
-            if(KeyboardPreset==0 || (action>=19 && action<=22) || action>=34)return Binding(action);
-            string[] keys;if(ModernKeys.TryGetValue(action,out keys))return (string[])keys.Clone();
-            var defaults=Map(((IEnumerable)Json.Object(DefaultControls())["controllers"]).Cast<object>().First());
-            object value=Map(defaults["bindings"])[Actions[action]];
-            var list=value is string?new[]{(string)value}:((IEnumerable)value).Cast<string>().ToArray();
-            return list.Concat(Enumerable.Repeat("none",BindingSlots)).Take(BindingSlots).ToArray();
         }
         public const int WheelUpKey = 134, WheelDownKey = 135;
         public static int CaptureKey(int key) { return key==160||key==161?16:key==162||key==163?17:key==164||key==165?18:key; }
@@ -429,26 +385,17 @@ namespace TimeSplitters.Launcher
             {
                 var keys = Binding(i); bool changed = false;
                 for (int j = 0; j < BindingSlots; j++) if (KeyCode(keys[j]) == key) { keys[j] = "none"; changed = true; }
-                if (changed) SetKeyboardBinding(i,keys);
+                if (changed) bindings[Actions[i]] = keys;
             }
             var assigned = Binding(action); assigned[slot] = key == 0 ? "none" : "key:#" + key;
-            SetKeyboardBinding(action,assigned);
+            bindings[Actions[action]] = assigned;
         }
         public void ResetControls()
         {
-            KeyboardPreset=0;
             var defaults = Json.Object(DefaultControls());
             var profiles = (IEnumerable)defaults["controllers"];
-            foreach(object profile in profiles) {
-                var defaultBindings=Map(Map(profile)["bindings"]);
-                for(int action=0;action<Actions.Length;action++) {
-                    object raw;string[] keys;
-                    if(!defaultBindings.TryGetValue(Actions[action],out raw))keys=new[]{"none","none"};
-                    else keys=(raw is string?new[]{(string)raw}:((IEnumerable)raw).Cast<string>().ToArray()).Concat(new[]{"none","none"}).Take(BindingSlots).ToArray();
-                    SetKeyboardBinding(action,keys);
-                }
-                break;
-            }
+            foreach (object profile in profiles) { bindings = Map(Map(profile)["bindings"]); break; }
+            controller["bindings"] = bindings; Device = "keyboard";
             Sensitivity = .10; MouseEnabled = true; InvertY = false;
         }
         public static Dictionary<string, string> ParseRuntime(string text)
@@ -560,8 +507,7 @@ namespace TimeSplitters.Launcher
                 Core.Require((now == null && old == null) || (now != null && old != null && now.SequenceEqual(old)), "Settings changed outside the launcher. Close and reopen Settings before saving.");
                 Core.Require(!File.Exists(path) || (File.GetAttributes(path) & FileAttributes.ReadOnly) == 0, "A settings file is read-only. No settings were saved.");
             }
-            // Preserve all custom sources, including slots not exposed by this UI.
-
+            if (Device == "keyboard") foreach (int action in Enumerable.Range(0, Actions.Length)) bindings[Actions[action]] = Binding(action);
             document["developer_tools_enabled"]=DeveloperToolsEnabled;
             object value;
             if (!document.TryGetValue("mouse", out value)) document["mouse"] = value = new Dictionary<string, object>();

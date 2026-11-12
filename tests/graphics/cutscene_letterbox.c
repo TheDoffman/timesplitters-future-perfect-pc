@@ -13,12 +13,7 @@
 /* Sidebar registration is outside the cinematic projection contract. */
 static void video_sidebar_tick(void) {}
 void pc_developer_video_register(void (*tick)(void)) { (void)tick; }
-/* Input-reader registration is another boundary of the camera wrapper. Its
- * routing contract is covered by the full menu/input fixtures. */
-static int controls_gameplay_masks(unsigned port,unsigned masks[24],int *mounted)
-{ (void)port;(void)masks;(void)mounted;return 0; }
-static void pc_settings_gameplay_reader(int (*reader)(unsigned,unsigned[24],int *))
-{ (void)reader; }
+/* Active-player ownership registration stays outside cinematic projection. */
 static unsigned controls_active_ports(void) {return 1;}
 static void pc_settings_active_ports_reader(unsigned (*reader)(void)) {(void)reader;}
 

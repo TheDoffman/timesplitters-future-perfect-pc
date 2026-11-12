@@ -19,7 +19,7 @@ Version preparation itself does not publish or establish hardware acceptance.
 
 [Controller deadzones](controller-deadzones.md).
 
-[Custom seeds](control-presets.md).
+[Preset rollback](control-presets.md).
 
 Enhanced textures now round-trip the game's `pc-textures.ini` sidecar.
 GameSettings loads its value ahead of legacy launcher.enhanced_textures JSON;

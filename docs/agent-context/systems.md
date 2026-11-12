@@ -1,4 +1,4 @@
-[Sticks](controller-deadzones.md), [2970 pads](control-presets.md), [updates](main-menu-update.md).
+[Sticks](controller-deadzones.md), [Rollback](control-presets.md), [updates](main-menu-update.md).
 [Tex](texture-preference.md); [arms](video-options.md).
 
 [Uplink throw tests and policy](native-uplink.md#throw-impulse).

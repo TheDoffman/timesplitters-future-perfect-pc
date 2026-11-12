@@ -76,15 +76,12 @@ void pc_unlock_profile_init(void (*original)(void))
 {
     original();
     uint32_t profile=g_eax,identity;
-    if(guest_writable(profile,PC_UNLOCK_PROFILE_SIZE))controls_repair_profile(profile+4);
     /* 69D90 resets controls/progress for a new (-1 device) profile. Clear our
      * extension at that same boundary so reused guest slots cannot inherit it.
      * Loading/copying an existing profile retains its signed extension. */
     if(guest_writable(profile,PC_UNLOCK_PROFILE_SIZE) &&
-       guest_writable(identity=WORD_AT(profile),0x40) && WORD_AT(identity+0x24)==UINT32_MAX) {
-        controls_new_profile(profile+4);
+       guest_writable(identity=WORD_AT(profile),0x40) && WORD_AT(identity+0x24)==UINT32_MAX)
         memset((void *)((uintptr_t)(profile+PC_UNLOCK_OFFSET)+g_xbox_mem_offset),0,16);
-    }
 }
 static uint32_t uc_text(unsigned slot,const char *text)
 {

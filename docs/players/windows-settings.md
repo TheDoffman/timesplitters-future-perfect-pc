@@ -300,6 +300,12 @@ The runtime's diagnostic frame capture uses **Ctrl+F11**; plain **F11** does not
 
 ### Keyboard and Mouse menu
 
+The added Modern/Custom preset feature has been rolled back. The original
+editable defaults and controller Layout/Customize menus are restored. Updates
+preserve saved custom bindings and profiles. Use Restore defaults for keyboard
+controls or choose the built-in Default controller layout if you want to reset
+your own saved configuration; installing an update does not reset it for you.
+
 Main Settings and Pause Options now include Keyboard and Mouse, using the game's
 controller-style menu theme. Each action has Primary and Alternate bindings,
 with at most two keyboard/mouse bindings per action. All 34 actions are covered,

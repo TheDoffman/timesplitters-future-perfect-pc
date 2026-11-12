@@ -126,16 +126,6 @@ namespace TimeSplitters.Launcher
             }
             sensitivity=Entry(model.Sensitivity.ToString("G",CultureInfo.InvariantCulture));sensitivity.Name="MouseSensitivity";Field(inputRight,"Mouse sensitivity · 0.001–10",sensitivity);
             var mouse=new WrapPanel();enabled=Check("Mouse look",model.MouseEnabled);invert=Check("Invert vertical look",model.InvertY);mouse.Children.Add(enabled);mouse.Children.Add(invert);input.Children.Add(mouse);
-            var presets=PageTheme.Section(controls,"Control presets","Presets keep your custom bindings. Select Custom to restore them. Save settings to apply.");
-            keyboardPreset=Choices(new[]{"Custom","Modern PC"},model.KeyboardPreset==1?"Modern PC":"Custom");keyboardPreset.Name="KeyboardPreset";
-            Field(presets,"Keyboard & mouse preset",keyboardPreset);
-            presets.Children.Add(Text("Modern PC: E Use / F / Mouse 4 Melee / B Weapon mode / V Grenade type / Q / Wheel up Previous weapon / Wheel down Next weapon",12));
-            for(int player=0;player<4;player++) {
-                int index=player;var choice=Choices(new[]{"Custom","Modern Controller"},model.ControllerPreset(player)==1?"Modern Controller":"Custom");
-                choice.Name="ControllerPreset"+(player+1);controllerPresets[player]=choice;Field(presets,"Player "+(player+1)+" controller preset",choice);
-                choice.SelectionChanged+=(s,e)=>{model.SetControllerPreset(index,choice.SelectedIndex);RefreshSaveState();};
-            }
-            presets.Children.Add(Text("Modern Controller: LT Aim / RT Fire / RB Grenade / RS Melee / B Crouch / X Reload / A Use / Y Next weapon / LB Weapon mode. Menu controls stay the same.",12));
             var stickSettings=PageTheme.Section(controls,"Controller deadzones","Tune movement and aiming independently. Lower values respond sooner; increase them if a stick drifts. Game changes apply immediately; launcher changes apply on the next launch.");
             for(int player=0;player<4;player++) {
                 var playerSettings=new StackPanel();
@@ -183,7 +173,7 @@ namespace TimeSplitters.Launcher
                 bindings.Children.Add(row);
             }
             var reset=Button("Restore default controls");reset.Margin=new Thickness(0,16,0,0);reset.HorizontalAlignment=HorizontalAlignment.Left;
-            reset.Click+=(s,e)=>Confirm("Restore default controls?","Replace Player 1 bindings and mouse settings with the defaults? Changes apply only when you save.","Restore defaults",()=> { model.ResetControls(); sensitivity.Text="0.10"; enabled.IsChecked=true; invert.IsChecked=false; device.SelectedIndex=0; keyboardPreset.SelectedIndex=0;RefreshBindings(); });
+            reset.Click+=(s,e)=>Confirm("Restore default controls?","Replace Player 1 bindings and mouse settings with the defaults? Changes apply only when you save.","Restore defaults",()=> { model.ResetControls(); sensitivity.Text="0.10"; enabled.IsChecked=true; invert.IsChecked=false; device.SelectedIndex=0; RefreshBindings(); });
             bindings.Children.Add(reset);tabs.Items.Add(new TabItem { Header="Controls",Content=Scroll(controls) });
             var graphics=new StackPanel();
             var texturePanel=new StackPanel();
@@ -330,7 +320,6 @@ namespace TimeSplitters.Launcher
             skipSplashes=Check("Skip startup splash screens",model.SkipStartupSplashes);skipSplashes.Name="SkipStartupSplashes";startup.Children.Add(skipSplashes);
             var startupHint=Text("Story cutscenes still play.",12);startupHint.Foreground=Muted;startupHint.Margin=new Thickness(0,8,0,0);startup.Children.Add(startupHint);
             tabs.Items.Add(new TabItem { Header="Graphics & resolution", Content=Scroll(graphics) });
-            keyboardPreset.SelectionChanged+=(s,e)=>{model.KeyboardPreset=keyboardPreset.SelectedIndex;RefreshBindings();};
             RefreshBindings();
             var discord=new StackPanel();
             var presence=PageTheme.Section(discord,"Discord Rich Presence","Show your game activity on Discord.");
@@ -396,9 +385,7 @@ namespace TimeSplitters.Launcher
             Ui.ValueChanged(fov,RefreshSaveState);
         }
         readonly ComboBox[] localDevices=new ComboBox[3];
-        readonly ComboBox[] controllerPresets=new ComboBox[4];
         readonly Slider[] controllerDeadzones=new Slider[8];
-        readonly ComboBox keyboardPreset;
         string Draft()
         {
             return Json.Encode(new object[]{sensitivity.Text,width.Text,height.Text,discordId.Text,
@@ -407,7 +394,7 @@ namespace TimeSplitters.Launcher
                 spatialAudio.IsChecked,extendedGunfire.IsChecked,environmentalAudio.IsChecked,ambientAudio.IsChecked,
                 audioVolumes.Select(slider=>(int)Math.Round(slider.Value)).ToArray(),
                 dialogueFocus.IsChecked,impactRange.SelectedIndex,
-                controllerDeadzones.Select(x=>(int)Math.Round(x.Value)).ToArray(),keyboardPreset.SelectedIndex,controllerPresets.Select(x=>x.SelectedIndex).ToArray(),device.SelectedIndex,localDevices.Select(x=>x.SelectedIndex).ToArray(),scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
+                controllerDeadzones.Select(x=>(int)Math.Round(x.Value)).ToArray(),device.SelectedIndex,localDevices.Select(x=>x.SelectedIndex).ToArray(),scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
                 (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
         void RefreshSaveState()
@@ -418,7 +405,7 @@ namespace TimeSplitters.Launcher
             status.Text=save.IsEnabled?"Unsaved changes. Save to apply on your next launch.":"Settings saved. Changes apply on your next launch.";
         }
         static string KeyName(string token) { return GameSettings.BindingLabel(token); }
-        void RefreshBindings() { for(int i=0;i<GameSettings.Actions.Length;i++) { var keys=model.DisplayBinding(i); for(int j=0;j<GameSettings.BindingSlots;j++) { bindingButtons[i,j].IsEnabled=model.KeyboardPreset==0;bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } UpdateDeveloperToolsShortcut();RefreshSaveState(); }
+        void RefreshBindings() { for(int i=0;i<GameSettings.Actions.Length;i++) { var keys=model.Binding(i); for(int j=0;j<GameSettings.BindingSlots;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } UpdateDeveloperToolsShortcut();RefreshSaveState(); }
         void UpdateDeveloperToolsShortcut()
         {
             if(developerToolsShortcut==null)return;

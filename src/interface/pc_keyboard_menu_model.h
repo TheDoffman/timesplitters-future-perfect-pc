@@ -4,7 +4,7 @@
 #include "pc_settings.h"
 /* Keep every action reachable once, including both primary and alternate bindings. */
 static const char *const pc_keyboard_action_labels[]={
-    "Interact / confirm","Melee / back","Reload","Next weapon (extra)","Weapon mode (extra)","Throw grenade (extra)",
+    "Interact / confirm","Melee / back","Reload","Y action","Black action","White action",
     "Pause","Objectives","Throw grenade","Fire","Mode / zoom in","Grenade / zoom out",
     "Previous weapon","Next weapon","Forward","Backward","Strafe left","Strafe right",
     "Crouch","Look up","Look down","Look left","Look right","Aim",
