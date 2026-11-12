@@ -13,6 +13,12 @@ packages require the same clean source revision. The local publisher supplies
 Windows assets; matching native assets and host acceptance remain separate work.
 Keep issues open until the game hotfix is published.
 
+Online multiplayer preview0.7.0-beta.1 is prepared from
+`feature/native-multiplayer-ui` for the existing **Preview -> Beta** selector.
+The initial package is Windows x64; native packages require matching source and
+separate validation. See [beta scope and limits](online-beta.md) and
+[publication evidence](../project/STATUS.md). Stable and launcher Latest stay intact.
+
 ## Versions and channels
 
 | Purpose | Example tag | Channel | GitHub status |

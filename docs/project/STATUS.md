@@ -44428,3 +44428,16 @@ Context/whitespace checks pass. Native in-game screenshot review and Mac/Linux
 build/device visual acceptance remain unrun. Shared source needs no host adapter.
 No personal saves/settings/game processes or router state changed. Source/docs
 remain local/uncommitted/unpushed.
+
+
+## Online beta publication preparation (2026-11-12)
+
+User requested a public beta for these online changes under launcher Preview /
+Beta. Prepared VERSION0.7.0-beta.1 on feature/native-multiplayer-ui, based on
+7da536f0 with latest Stable0.6.2 ancestry. Existing publisher/channel identity
+requires no launcher changes; stable launcher1.6.2 remains Latest. Initial scope
+is Windows x64; native package builds/acceptance are separate. Story feature gate
+remains unchanged. Release notes in docs/release/online-beta.md describe the actual
+Arcade/menu/private relay/UPnP scope, compatibility and limitations.
+Publication/package/full-regression results are pending; version preparation
+alone does not publish a release or prove native platform acceptance.
