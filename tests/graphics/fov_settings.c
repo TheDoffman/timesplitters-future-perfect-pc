@@ -112,7 +112,7 @@ void pc_online_menu_leave(void){CHECK(0);}
 int pc_online_menu_copy(const char *text){(void)text;CHECK(0);return 0;}
 int pc_online_menu_paste(char *text,size_t bytes){(void)text;(void)bytes;CHECK(0);return 0;}
 int pc_online_menu_publish(PcOnlineMatchInfo *info){(void)info;CHECK(0);return 0;}
-int pc_online_menu_publish_roster(struct PcOnlineRoster *info){CHECK(roster_fixture && info->count==1 && !strcmp(info->people[0].name,"Fixture player"));roster_publications++;return 1;}
+int pc_online_menu_publish_roster(struct PcOnlineRoster *info){CHECK(roster_fixture && info->count==1 && !strcmp(info->people[0].name,"Fixture player") && !strcmp(info->people[0].character_name,"Cortez") && info->people[0].portrait==528);roster_publications++;return 1;}
 PcOnlineMode pc_online_mode(void) { return PC_ONLINE_NONE; }
 static unsigned online_disconnects,lan_browser_entries,lan_enables;
 void pc_online_disconnect(void) { online_disconnects++; }
@@ -191,7 +191,8 @@ static unsigned native_menu_transitions;
 void sub_00075980(void){CHECK(WORD_AT(g_esp+8)==2u);native_menu_transitions++;g_esp+=4;}
 MOUSE_STUB(sub_001A4510) MOUSE_STUB(sub_000318A0) MOUSE_STUB(sub_003800D1)
 MOUSE_STUB(sub_001CBDA0) MOUSE_STUB(sub_00064E20) MOUSE_STUB(sub_00077110)
-MOUSE_STUB(sub_002BE690)
+void sub_002BE690(void){CHECK(roster_fixture && WORD_AT(g_esp+4)==12 && WORD_AT(g_esp+8)==UINT32_MAX);g_eax=528;g_esp+=4;}
+void sub_002BE650(void){CHECK(roster_fixture && WORD_AT(g_esp+4)==12 && WORD_AT(g_esp+8)==UINT32_MAX);g_eax=345;g_esp+=4;}
 #undef MOUSE_STUB
 /* Bot helpers share the menu translation unit, but must never execute in
  * this isolated FOV fixture. Bot behavior has its own network regressions. */
@@ -356,7 +357,8 @@ void sub_00078980(void) {
 }
 STUB(sub_0007D480) STUB(sub_000717D0)
 void sub_00075430(void) { WORD_AT(WORD_AT(g_esp+4)+0xc8)=WORD_AT(g_esp+8);g_esp+=4; }
-STUB(sub_0003D7B0) STUB(sub_001CD120) STUB(sub_00069720) STUB(sub_00071CF0)
+void sub_0003D7B0(void){if(roster_fixture){CHECK(WORD_AT(g_esp+4)==345);g_eax=0x310100;}g_esp+=4;}
+STUB(sub_001CD120) STUB(sub_00069720) STUB(sub_00071CF0)
 static unsigned audio_native_ticks,audio_native_actions,audio_native_opens;
 static unsigned fixture_audio_rows(void) {
     unsigned mask=0;
@@ -1620,8 +1622,8 @@ int main(int argc,char **argv)
         WORD_AT(0x7de30c)=7;WORD_AT(0x79094c)=48;WORD_AT(0x7356d8)=0x300000;
         WORD_AT(0x7de400)=0x101;*((uint8_t*)mem+0x7de456)=255;
         WORD_AT(0x777244)=1;WORD_AT(0x77728c)=1;
-        WORD_AT(0x300048)=0xffff;WORD_AT(0x300070)=0x310000;
-        strcpy((char*)mem+0x310000,"Fixture player");
+        WORD_AT(0x300048)=12;*((uint8_t*)mem+0x300c0d)=255;WORD_AT(0x300070)=0x310000;
+        strcpy((char*)mem+0x310000,"Fixture player");strcpy((char*)mem+0x310100,"Cortez");
         roster_fixture=1;mp_ui.storage=0x280000;mp_ui.mode=PC_ONLINE_ARCADE;
         mp_ui.source=0;mp_native_passthrough=1;mp_ui.metadata_at=0;
         const uint32_t before_sp=g_esp,before_a=g_eax;

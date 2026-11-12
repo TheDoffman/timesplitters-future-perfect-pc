@@ -7,8 +7,11 @@ the unmerged `dashboard-match-telemetry` work at `b26cf41a`.
 `pc_online_roster.h` captures bounded, read-only names and character metadata
 from a validated active Arcade host. Actor+70 supplies the same name used by the
 native kill feed. The HUD portrait path (`13E230` → `2BE690`) resolves actor+48
-character and signed actor+C0D skin; the verified character table also supplies
-the localized label. Empty/unknown names remain explicit fallbacks. No guest
+character and signed actor+C0D skin. The original selector `2BE650` resolves
+the localized name ID through `2BE600 -> 2BE300`, then `3D7B0` supplies text.
+Native selector callers `2C0902/2C1F48` confirm the name path. Character-row+C
+is biography text and must not be used as a name; the native live check caught
+that distinction. Empty/unknown names remain explicit fallbacks. No guest
 pointers, personal profile files or credentials enter the report.
 
 `pc_arcade_migration_frame(after)` refreshes metadata on active game frames;
