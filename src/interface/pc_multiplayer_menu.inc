@@ -341,7 +341,12 @@ static void mp_code_draw(void)
     }
     FLOAT_AT(bounds)=field;FLOAT_AT(bounds+4u)=field_top;FLOAT_AT(bounds+8u)=right;FLOAT_AT(bounds+12u)=bottom;
     guest_call(sub_00072560,2,menu,bounds);
-    guest_call(sub_00019D70,1,1u);guest_call(sub_0003FA10,1,font);guest_call(sub_0003F8D0,0);
+    guest_call(sub_00019D70,1,1u);guest_call(sub_0003FA10,1,font);
+    if(name_field) {
+        WORD_AT(0x7e7270u)=bits(FLOAT_AT(0x7e7270u)*.7f);
+        WORD_AT(0x7e7280u)=bits(FLOAT_AT(0x7e7280u)*.7f);
+    }
+    guest_call(sub_0003F8D0,0);
     char value[65];snprintf(value,sizeof value,"%.64s",input);
     if(name_field)for(unsigned i=0;value[i];i++)if(value[i]>='a' && value[i]<='z')value[i]-='a'-'A';
     const uint32_t text=mp_text(28,*input?value:placeholder);

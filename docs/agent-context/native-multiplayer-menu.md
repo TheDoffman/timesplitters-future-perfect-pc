@@ -612,3 +612,11 @@ renaming, custom retention, invalid index/unterminated fallback; production nati
 tick delivery to the status bar; both/single/no missing mappings and the serialized
 controller message. Platform behavior is shared; no new native adapters or
 community-service changes are required.
+
+
+Lobby-name field text uses70% native scale after painting its label/background.
+Only MP_CREATE input/placeholder is reduced; label, field geometry, other code
+fields and stored name stay intact. Measurement/ellipsis and vertical centering
+use the reduced scale; original scales are restored at the end of mp_code_draw.
+This is a shared cosmetic change; existing native painter fixtures cover its
+ordinary rendering/transition routes. Native Mac/Linux visual review is pending.

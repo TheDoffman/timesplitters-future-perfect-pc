@@ -1,3 +1,9 @@
+Lobby-name text sizing (2026-11-12, local aftercbd52cae): **Awaiting validation**
+on native Mac/Linux. Shared MP_CREATE field value/placeholder uses70% native
+scale; label, native field bounds and stored name are preserved. No OS adapter
+needed; Windows painter fixture/build checks cover shared source, native
+Mac/Linux visual review pending. See [evidence](STATUS.md).
+
 Online host warning/profile default (2026-11-12, local after main-sync a9340161): **Awaiting validation**
 on native Mac/Linux. Shared native completion displays private-server port-mapping
 readiness in the existing status bar, with exact missing ports and LAN/manual

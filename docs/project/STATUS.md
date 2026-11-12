@@ -44410,3 +44410,21 @@ logs/online-notes-host-status-build-final.log. Compatibility:
 a5516f2739b6e07a5a406f34b49aa7c87dab7bf68cdeca4bb0b497dee8d75b90.
 Context refresh/check and whitespace validation pass. Native Mac/Linux build /
 device and in-game visual/WAN acceptance of these notes remain unverified.
+
+
+## Lobby-name field text reduction (2026-11-12)
+
+Local source aftercbd52cae: shared mp_code_draw paints only the MP_CREATE field
+value/placeholder at70% native scale, after its unchanged label/background.
+Measurement, ellipsis and vertical centering use that scale; original font scale
+is restored on exit. Field size, label size, other code fields and stored lobby
+name are unchanged. No new test was added for this cosmetic adjustment.
+
+Windows x64/Python3.14.2/MSVC14.42.34433/VS2022/existing D3D8 frontend:4 existing
+production menu/FOV fixture checks pass,2 native Mac compile checks skip. Supported
+Windows0.6.2 Build, built-ins and symbols pass in logs/lobby-name-text-size-build.log.
+Compatibility:5eb50f37d562861baab15e081c92f0185401f41a46c1fd40a87e34efb0ed6e92.
+Context/whitespace checks pass. Native in-game screenshot review and Mac/Linux
+build/device visual acceptance remain unrun. Shared source needs no host adapter.
+No personal saves/settings/game processes or router state changed. Source/docs
+remain local/uncommitted/unpushed.
