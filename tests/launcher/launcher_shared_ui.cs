@@ -528,9 +528,20 @@ public static class LauncherSharedUiChecks
                 model=GameSettings.Load(folder,null);
                 Need(model.ControllerDeadzone(1,true)==1638 && model.ControllerDeadzone(1,false)==7849 && model.ControllerDeadzone(2,false)==0,"Independent deadzones did not persist");
                 var page=new SettingsPage(new ResourceDictionary(),folder,true);
-                var aim=Find<ComboBox>(page.View,"Player2AimDeadzone");var save=Find<Button>(page.View,"SettingsSaveButton");
-                Need(aim.SelectedIndex==5,"Aim percentage incorrect");
-                aim.SelectedIndex=8;Need(save.IsEnabled,"Deadzone edit not dirty");Click(save);
+                var aim=Find<Slider>(page.View,"Player2AimDeadzone");var save=Find<Button>(page.View,"SettingsSaveButton");
+                for(int player=1;player<=4;player++)
+                    Need(Find<Expander>(page.View,"Player"+player+"DeadzoneSection").IsExpanded==(player==1),"Wrong default expanded deadzone player");
+                bool dirty=save.IsEnabled;
+                var firstPlayer=Find<Expander>(page.View,"Player1DeadzoneSection");
+                var secondPlayer=Find<Expander>(page.View,"Player2DeadzoneSection");
+                firstPlayer.IsExpanded=false;secondPlayer.IsExpanded=true;
+                Need(save.IsEnabled==dirty,"Expanding or collapsing a player changed the settings draft");
+                Need(aim.Value==5,"Aim percentage incorrect");
+                Need(aim.Minimum==0 && aim.Maximum==100 && aim.TickFrequency==1 && aim.IsSnapToTickEnabled,"Deadzone slider bounds/steps changed");
+                Need(Find<TextBlock>(page.View,"Player2AimDeadzoneValue").Text=="5%","Initial percentage missing");
+                aim.Value=8;Need(Find<TextBlock>(page.View,"Player2AimDeadzoneValue").Text=="8%","Live percentage missing");Need(save.IsEnabled,"Deadzone edit not dirty");
+                secondPlayer.IsExpanded=false;secondPlayer.IsExpanded=true;
+                Need(aim.Value==8,"Collapsing a player lost a draft deadzone");Click(save);
                 model=GameSettings.Load(folder,null);Need(model.ControllerDeadzone(1,true)==2621 && model.ControllerDeadzone(1,false)==7849,"UI deadzone save failed");
                 model.Sensitivity=.15;model.Save();model=GameSettings.Load(folder,null);
                 Need(model.ControllerDeadzone(1,true)==2621 && model.ControllerDeadzone(2,false)==0,"Unrelated save lost deadzones");
