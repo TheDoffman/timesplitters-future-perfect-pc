@@ -1,3 +1,26 @@
+Second revised online notes (2026-11-11, local after d98a021d): **Awaiting validation**
+on Mac/Linux. Shared native code now completes LAN shutdown before the chooser,
+keeps page descriptors/text/focus separate, hides internal discovery behind
+Joining lobby, and uses original fonts, stacked server fields, native copy
+keycaps/hover and a clear browser status band. LAN preserves an owned directory.
+No new host adapter is needed. Windows build/built-ins and70 focused checks pass
+(2 Mac-only skips). Native Windows verifies LAN-to-community/private joining,
+progress, Copy hover, panel/fonts, repeated browser-switch Refresh and directory
+survival across LAN. Physical Mac/Linux build/device acceptance remains unrun.
+See [validation](STATUS.md) and [contracts](../agent-context/native-multiplayer-menu.md).
+
+Revised online notes (2026-11-11, local after d98a021d): **Awaiting validation**
+on Mac/Linux. Shared menu code supplies compact headings, original full-canvas
+browser placement, latched Refresh, hosting progress, copy feedback and Paste.
+The shared controller authenticates a local directory with the invitation's pin
+before using loopback, retaining its public identity. Existing native process,
+clipboard and TLS adapters suffice; no platform fork. Windows Build/built-ins and
+70 focused checks pass (2 Mac-only skips), with real native community join/rejoin
+and same-machine private invitation/join evidence. The reported community timeout
+was not reproduced. Actual Mac/Linux build/device acceptance is unrun. Visible
+Invite Only admission is still unfinished. See [evidence](STATUS.md) and
+[contracts](../agent-context/native-multiplayer-menu.md).
+
 Built-in private directory restoration (2026-11-11, local): **Awaiting validation**
 on Mac/Linux. Shared Python player-hosting capability restores the old window's
 LocalDirectory through native Host a Server, without an installer. Existing

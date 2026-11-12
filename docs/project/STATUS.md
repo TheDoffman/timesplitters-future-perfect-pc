@@ -43658,3 +43658,129 @@ via TSFP_PRIVATE_DIRECTORY_STATE; canonical fixture, existing directory certific
 personal saves/settings and game assets were preserved. Probe cleanup complete.
 No remote Internet gameplay or Mac/Linux device acceptance claim. Changes local
 and uncommitted; no publication. Visible Invite Only admission remains unfinished.
+
+## Revised online notes (2026-11-11, local after d98a021d)
+
+Committed the prior private-directory/menu changes as d98a021d; subsequent notes
+repairs remain local and uncommitted on feature/native-multiplayer-ui. No push.
+Online replaces Community Browser and has the requested header ticker; the
+Online/LAN subtitle is removed. Browser uses original80x75 full-canvas placement,
+70-unit scroll area and a compact Matches Available inset row, without the logo
+header. Lobby Options is smaller. Native75B70 ORs style flags, so reused pages
+clear4002a000 and the browser selects40020000 before layout. Windows visual
+acceptance shows two complete matches and part of the third, with six entries
+scrolling continuously. Evidence accepted-browser.png under
+private/network-validation/native-online-flow; fixture rows are display data.
+
+Refresh mouse edges previously arrived after the online tick and were consumed
+in that frame. The input adapter now latches the footer click for a safe later
+online tick and queues a click received during a pending refresh. Native synthetic
+mouse at client480,435 produced fresh fixture request counts3 ->6 ->9 on two
+successive clicks. Off-target initial449-y clicks and OS mouse events during a
+synthetic replay did not test this path; final evidence uses the replay cursor /
+button input schema. Unit checks cover pressed/held footer edges.
+
+Host Server shows startup progress instead of an empty invitation and confirms
+Copy. Join Server exposes Paste; selecting its field also pastes, without the
+255-character virtual keyboard. PRIVATE_CONNECT first verifies the invitation's
+certificate on127.0.0.1 at the invited port (one-second bound), falling back to
+the public endpoint on failure. The public identity remains canonical, including
+invitations from a connected private match host. Tests reject wrong-pin local
+substitution and stale routes after switching directories. Native isolated
+host17708 / guest7632 successfully used Copy -> Paste -> Join with the original
+public invitation, then joined the private host's match through the native menus.
+Evidence final-private-*.png and final-own-directory-connected.png under the
+-host/-guest validation folders, build5a1b0821. These are local direct matches;
+remote Internet private acceptance is not claimed.
+
+Open community joining was tested against the configured live service: native
+host26764 / guest16904 reached the original two-player lobby, guest left and
+rejoined successfully (c01c1a5e). The reported match-host timeout was not
+reproduced, so its cause remains unconfirmed. Existing native discovery/join
+callbacks were retained. Evidence guest-join-result.png / guest-rejoin.png in
+private/network-validation/native-online-flow-guest. No gameplay/late-join claim.
+
+Final Windows x64 build0.6.1 / identity b55efb24 passes supported Build and built-in
+checks, logs/revised-online-build-final-frame.log. Visual Studio17 2022 generator,
+Python3.14.2, existing Windows D3D8 backend. The final focused selection passes70
+with2 Mac-only skips: native menus/input, menu controller, real pinned private
+HTTPS/direct UDP, companion packaging/identity and repository context. See
+logs/revised-online-complete-tests.log. Pytest's existing cache-directory warning
+did not affect test outcomes. Source/build pins and supported US XBE SHA-256 were
+retained. Native probes used disposable Test Lab saves, isolated controls/display
+and private-directory certificate state. All owned instances/companions closed;
+disposable disks recycled and TCP41830 absent after private-owner exit. Personal
+saves/settings and canonical fixture were preserved. Mac/Linux native build,
+clipboard/device/gameplay acceptance remains unrun; shared interfaces need no new
+adapter. Visible Invite Only listing/admission remains a separate unfinished
+requirement. No publication or complete-online-goal claim.
+
+## LAN transitions and second revised online notes (2026-11-11, local)
+
+Source remains on feature/native-multiplayer-ui after d98a021d, with prior notes
+repairs preserved and these follow-ups uncommitted. No push/publication. The
+actual custom LAN browser Back callback is MP_BACK. It previously opened the
+chooser without running the original closing flow: read-only observation showed
+76B108=1 and chooser selectionFFFFFFFF. MP_BACK and the native lobby Back now
+use original1A4350 /4E9974, allowing shutdown and interface release to finish.
+After repair, LAN -> Back returns with76B108=0 and selection1. Native host36432 /
+guest21264 then joined and rejoined the live community lobby. Fresh guest38368
+entered LAN, returned, pasted the private owner's public invitation and joined
+its direct native lobby. These lifecycle/transport tests use c396d8c4; later
+changes are field fonts, heading formatting and status spacing. No gameplay or
+late-join acceptance claim. Native closing phase18 can outlast fixed scripted
+Back delays; two such driver sequences navigated the wrong page and were
+aborted/cleaned, then replaced with state-aware browser-only switch checks.
+
+Custom pages now have distinct descriptors and text banks.79B70 can retain the
+closing child until a later frame; mp_show no longer rebuilds that child as its
+destination. This fixes the Online/Start New Match label flash and stale browser
+controls. Saved focus is repaired only when it targets a nonselectable or missing
+row. Native browser heading flags33006 restore the original font. The extra LAN
+separator was removed because itsFFFFFFFF ID duplicated Start New Match.
+Lobby Options uses the existing vs75 size escape without uppercase corruption;
+other creation labels/values use the native uppercase controls and authored row
+font. Host/Join Server now stack caption, full-width field and Copy/Paste/Next /
+Join as in the diagram; the share hint stays inside the host panel. Copy feedback
+is retained. Native59f4e6c4 captures verify these fonts and panels.
+
+Joining displays one Joining lobby progress page while retaining actual native
+discovery and the index0 /1CBD40 selection contract. Captures show this page and
+the real native lobby, rather than exposing the old match browser. The lobby-code
+footer has the native [C] keycap / original right-stick glyph, footer font, hover
+colour and aspect-correct hit region; clicking still copies and displays COPIED.
+The hover/copy native capture leaves the same lobby active. Generic redundant
+Connecting text is suppressed on this progress page. No synthetic advertisement
+or bypass of directory/guest authentication was added.
+
+Final single-instance browser-switch acceptance uses display-only local HTTP
+community rows plus the real private HTTPS directory. Online -> Refresh completes
+LIST sequence1 ->2 and fixture GET count3 ->6. Private Host -> Next -> Refresh
+completes4 ->5. Returning Online -> Refresh completes6 ->7 and GET9 ->12.
+Returning through Join Server / Paste / Join -> private Refresh completes9 ->10.
+Owned directory survives subsequent LAN entry/exit (owner1 through11/12/13) and
+is reused by Host Server. Evidence notes2-final-*.png under
+private/network-validation/native-online-flow. This is UI/refresh/lifetime proof;
+real community/direct native joining is evidenced separately above.
+
+The final visual check found that simply raising browser messages placed them
+over the last listing. The80-wide full-canvas browser now reserves a status band
+using a70-unit frame /65-unit scroll region. Info text remains19 units higher and
+clears both listings and footer controls; notes2-status-band-message.png shows the
+unavailable-Story message in that gap. Original native row drawing/scrolling and
+Select/Back/Refresh remain. Final build0.6.1, identity a9d7a839, supported Windows
+Build and built-ins pass (logs/online-notes2-build-status-band.log). Windows x64,
+MSVC14.42 / Visual Studio17 2022 generator, Python3.14.2, existing Windows renderer;
+no rendering policy/driver changes. Final focused checks70 pass with2 Mac-only
+skips (logs/online-notes2-complete-tests.log), including real private TLS/direct
+UDP, controller/package identity, menu/input and context fixtures. An initial
+sandboxed context run could not create pytest's numbered temporary directory;
+normal-host21-test rerun and the final combined selection pass. The pre-existing
+pytest cache-directory warning remains non-fatal.
+
+All native runs use the supported US XBE checksum, disposable unlocked Test Lab
+saves and isolated controls/display/certificate state. Personal data and canonical
+fixture remain intact. Test instances/companions are closed and disposable disks
+recycled. Physical Mac/Linux native build/input/clipboard acceptance remains
+unrun; common interfaces supply these changes without a new OS adapter. Existing
+visible Invite Only listing/admission is still a separate unfinished requirement.

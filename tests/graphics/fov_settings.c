@@ -113,7 +113,9 @@ int pc_online_menu_paste(char *text,size_t bytes){(void)text;(void)bytes;CHECK(0
 int pc_online_menu_publish(PcOnlineMatchInfo *info){(void)info;CHECK(0);return 0;}
 PcOnlineMode pc_online_mode(void) { return PC_ONLINE_NONE; }
 static unsigned online_disconnects,lan_browser_entries,lan_enables;
+static unsigned lan_closing_requests;
 void pc_online_disconnect(void) { online_disconnects++; }
+int pc_network_set_online(const char *configuration) {CHECK(!configuration);return 1;}
 uint32_t xbox_HeapAlloc(uint32_t size,uint32_t alignment) {static uint32_t next=0x100000;next=(next+alignment-1)&~(alignment-1);uint32_t result=next;next+=size;CHECK(next<0x1f0000);return result;}
 #define STUB(name) void name(void) { g_esp+=4; }
 /* The menu translation unit also contains tutorial hooks. Their drawing and
@@ -341,7 +343,7 @@ static unsigned online_footer_mask;
 void sub_00074A00(void){const unsigned slot=WORD_AT(g_esp+4u);const char *labels[]={"Select","Back","Refresh"};CHECK(slot<3u);CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+8u)),labels[slot]));online_footer_mask|=1u<<slot;if(slot==2u)online_refresh_footers++;g_esp+=4;}
 void sub_00071730(void){WORD_AT(WORD_AT(g_esp+4u)+0x24u)=WORD_AT(g_esp+8u);g_esp+=4;}
 static unsigned online_layout_steps;
-void sub_000780E0(void){CHECK(!online_layout_steps);CHECK(FLOAT_AT(g_esp+4u)==50.f);online_layout_steps=1u;g_esp+=4;}
+void sub_000780E0(void){CHECK(!online_layout_steps);CHECK(FLOAT_AT(g_esp+4u)==65.f);online_layout_steps=1u;g_esp+=4;}
 void sub_000781A0(void){CHECK(online_layout_steps==1u);online_layout_steps=6u;g_esp+=4;}
 void sub_00075400(void){CHECK(online_layout_steps==6u);online_layout_steps=2u;g_esp+=4;}
 void sub_00077140(void){CHECK(online_layout_steps==2u);online_layout_steps=3u;g_esp+=4;}
@@ -1643,6 +1645,14 @@ int main(int argc,char **argv)
         mp_ui.pending=0;WORD_AT(0x7ba16cu)=0;guest_call(mp_select,1,menu);CHECK(video_sounds==clicks+1);
         WORD_AT(0x7ba16cu)=1;mp_ui.storage=0x280000u;mp_ui.parent=0;
         const unsigned backs=highlight_sounds;guest_call(mp_back,1,menu);CHECK(highlight_sounds==backs+1);
+        mp_ui.source=2;mp_native_passthrough=1;mp_ui.autojoin=1;
+        guest_call(mp_back,1,menu);
+        CHECK(lan_closing_requests==1u && mp_native_passthrough && !mp_ui.autojoin);
+        mp_native_passthrough=0;mp_ui.source=0;
+        mp_ui.page=MP_NETWORK;uint32_t online_label=mp_text(1,"Online");
+        mp_ui.page=MP_BROWSER;CHECK(mp_text(1,"Start New Match")!=online_label);
+        CHECK(!strcmp((const char *)(g_xbox_mem_offset+online_label),"Online"));
+        CHECK(mp_descriptor(MP_NETWORK)!=mp_descriptor(MP_BROWSER));
         /* The native browser owns a single continuous list, not paged cards
            with connection/debug actions mixed into the match choices. */
         mp_ui.parent=0;mp_ui.menu=0x300000u;mp_ui.page=MP_BROWSER;mp_ui.state.count=20u;
@@ -1654,31 +1664,30 @@ int main(int argc,char **argv)
             strcpy(mp_ui.state.lobbies[i].name,"Story Lobby");
         }
         guest_call(mp_build,1,current_menu);
-        CHECK(built_row_count==23u && built_ids[0]==250u && built_ids[2]==1u && online_refresh_footers==1u && online_footer_mask==7u);
+        CHECK(built_row_count==22u && built_ids[0]==250u && built_ids[1]==1u && online_refresh_footers==1u && online_footer_mask==7u);
         CHECK(online_layout_steps==5u);
-        CHECK(!strcmp(fixture_heading,"Match Browser") && fixture_width==80.f);
-        CHECK(FLOAT_AT(current_menu+0x68u)==60.f);
-        CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(0x21f400u+0x20u)),"Matches Available"));
-        for(unsigned i=0;i<20u;i++)CHECK(built_ids[i+3u]==100u+i);
+        CHECK(!strcmp(fixture_heading,"Matches Available") && fixture_width==80.f);
+        CHECK(FLOAT_AT(current_menu+0x68u)==70.f);
+        for(unsigned i=0;i<20u;i++)CHECK(built_ids[i+2u]==100u+i);
         /* Empty and populated lists keep the same native frame. LAN retains
            original advertisement selection and match-creation callbacks. */
         mp_ui.state.count=0;online_layout_steps=0;guest_call(mp_build,1,current_menu);
-        CHECK(built_row_count==3u && fixture_width==80.f && FLOAT_AT(current_menu+0x68u)==60.f);
+        CHECK(built_row_count==2u && fixture_width==80.f && FLOAT_AT(current_menu+0x68u)==70.f);
         mp_ui.source=1;mp_ui.state.count=20u;
         for(unsigned i=0;i<20u;i++)mp_ui.state.lobbies[i].map_scene=UINT32_MAX;
         online_layout_steps=0;guest_call(mp_build,1,current_menu);
-        CHECK(built_row_count==23u && fixture_width==80.f && FLOAT_AT(current_menu+0x68u)==60.f);
+        CHECK(built_row_count==22u && fixture_width==80.f && FLOAT_AT(current_menu+0x68u)==70.f);
         CHECK(strstr((char *)(g_xbox_mem_offset+WORD_AT(0x20ee00u+0x20u)),"Story Lobby"));
         mp_native_passthrough=1;mp_ui.source=2;fixture_lan_matches=2;
         WORD_AT(current_menu+0x1b0u)=3u;online_layout_steps=0;guest_call(mp_lan_browser_build,1,current_menu);
-        CHECK(built_row_count==5u && built_ids[2]==UINT32_MAX && built_ids[3]==0u && built_ids[4]==1u);
+        CHECK(built_row_count==4u && built_ids[1]==UINT32_MAX && built_ids[2]==0u && built_ids[3]==1u);
         CHECK(WORD_AT(0x21fe00u+0x50u)==0x1cba50u && WORD_AT(0x200000u+0x50u)==0x1cbd40u);
         fixture_lan_matches=UINT32_MAX;online_layout_steps=0;guest_call(mp_lan_browser_build,1,current_menu);
-        CHECK(built_row_count==3u); /* Native enumeration errors never become advertisements. */
+        CHECK(built_row_count==2u); /* Native enumeration errors never become advertisements. */
         mp_native_passthrough=0;mp_ui.source=0;
         /* Selection-sensitive descriptions belong to the header strip. */
         mp_native_passthrough=0;mp_ui.page=MP_NETWORK;guest_call(mp_build,1,current_menu);
-        CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(0x200200u+0x24u)),"Browse matches on the community server"));
+        CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(0x200200u+0x24u)),"Browse matches online via the community server"));
         CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(0x200400u+0x24u)),"Connect to a private server"));
         CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(0x200600u+0x24u)),"Browse matches on your local network"));
         mp_ui.page=MP_PRIVATE;guest_call(mp_build,1,current_menu);
@@ -1693,13 +1702,30 @@ int main(int argc,char **argv)
         CHECK(mp_ui.mode==PC_ONLINE_ARCADE && !mp_ui.public_lobby && !strcmp(mp_ui.name,"Staged lobby"));
         WORD_AT(mp_ui.choices[1]+0xc8u)=0u;guest_call(mp_choice_change,1,current_menu);
         CHECK(mp_ui.public_lobby);
+        /* A page request may leave the closing child attached. Starting a
+           network request must never rebuild that child as the next page. */
+        const uint32_t parent=0x310000u,outgoing=0x320000u;
+        WORD_AT(parent+0x170u)=outgoing;WORD_AT(outgoing+4u)=mp_descriptor(MP_NETWORK);
+        mp_ui.parent=parent;mp_ui.menu=outgoing;mp_ui.page=MP_NETWORK;
+        uint32_t caption=mp_text(1,"Online");mp_show(MP_BROWSER);
+        CHECK(mp_ui.page==MP_BROWSER && mp_ui.menu==0);
+        CHECK(!strcmp((const char *)(g_xbox_mem_offset+caption),"Online"));
+        mp_rebuild();CHECK(mp_ui.menu==0);
+        mp_ui.parent=0;mp_native_passthrough=1;mp_ui.source=0;mp_ui.host=0;mp_ui.autojoin=1;
+        CHECK(native_multiplayer_lookup(0x1a43e0u)==mp_joining_browser_build);
+        CHECK(native_multiplayer_lookup(0x1a4780u)==mp_joining_browser_build);
+        guest_call(mp_joining_browser_build,1,current_menu);
+        CHECK(mp_ui.page==MP_JOINING && built_row_count==1u && built_ids[0]==0u);
+        CHECK(WORD_AT(0x200000u+0x50u)==0x1cbd40u);
+        mp_ui.autojoin=0;CHECK(!native_multiplayer_lookup(0x1a43e0u));
     }
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
     return 0;
 }
 
-STUB(sub_001A4350) STUB(sub_001A8CE0) STUB(sub_001A8EE0)
+void sub_001A4350(void){lan_closing_requests++;g_esp+=4;}
+STUB(sub_001A8CE0) STUB(sub_001A8EE0)
 
 STUB(sub_001CC360)
 

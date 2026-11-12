@@ -450,6 +450,7 @@ void pc_display_menu_mouse_input(void (*original)(void))
         int button=menu_mouse_profile_hit(menu,x,y,sw,sh);
         if(button<0) button=menu_mouse_footer_hit(menu,x,y,sw,sh);
         if(button>=0) {
+            if(button==2)native_multiplayer_refresh_click(menu);
             static const uint32_t raw[]={0x80u,0x120u,0x10u,0x40u};
             uint32_t action=0x10u<<(unsigned)button;
             menu_mouse_press(s,raw[button]);

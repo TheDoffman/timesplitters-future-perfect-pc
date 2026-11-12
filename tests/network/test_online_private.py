@@ -57,9 +57,10 @@ def test_native_host_starts_directory_before_any_lobby_and_retains_other_hosts(t
         assert owner.session.lobby['capacity'] == 16
         code = owner.session.lobby['code']
 
-        invitation = menu.server_invitation(directory.address, directory.fingerprint)
+        invitation = menu.server_invitation(directory.public_url, directory.fingerprint)
         friend.begin(request(menu.PRIVATE_CONNECT, code=invitation)); wait(friend)
-        assert friend.private_direct
+        assert friend.private_direct and friend.private == owner.private
+        assert friend.directory(1).url.geturl() == directory.address
         friend.begin(request(menu.CREATE, 2, mode=2, port=udp_port(), name='Story team')); wait(friend)
         assert friend.session.lobby['capacity'] == 4
 

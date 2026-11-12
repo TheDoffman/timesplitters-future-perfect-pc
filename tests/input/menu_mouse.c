@@ -110,6 +110,8 @@ static unsigned video_tab_polls,video_tab_flushes;
 static int menu_video_tabs_poll(uint32_t menu) {(void)menu;video_tab_polls++;return 0;}
 static void menu_video_tabs_flush(void) {CHECK(!in_dispatch);video_tab_flushes++;}
 static void online_opening_tick(void) {} /* Lifecycle is covered by fov_settings.c. */
+static unsigned online_refresh_clicks;
+static void native_multiplayer_refresh_click(uint32_t menu) {CHECK(menu);online_refresh_clicks++;}
 #include "pc_menu_mouse_guest.inc"
 static void original(void) { ++original_calls;WORD_AT(WORD_AT(g_esp+4)+0xc4)|=navigation;g_esp+=4; }
 static unsigned settings_sample_mask;
@@ -794,12 +796,15 @@ int main(void)
         cursor.left=0;cursor.x=640.f+(90.f+110.f*(float)i-320.f)*1.5f;
         cursor.y=435.f*1.5f;run(m);
         uint32_t selected=WORD_AT(m+0x198);
+        unsigned refresh_before=online_refresh_clicks;
         cursor.left=1;run(m);
+        CHECK(online_refresh_clicks==refresh_before+(i==2));
         CHECK(early_action==(0x10u<<i)); /* before tick callbacks, not just rows */
         const uint32_t masks[]={0x80,0x120,0x10,0x40};
         CHECK((early_source&masks[i])==masks[i]);
         CHECK(WORD_AT(m+0x198)==selected);
         run(m);CHECK(!early_action); /* held click never repeats */
+        CHECK(online_refresh_clicks==refresh_before+(i==2));
     }
     WORD_AT(0x76b0fc)=0;
     cursor.left=0;run(m);footer_enabled=0;cursor.left=1;run(m);CHECK(!early_action);

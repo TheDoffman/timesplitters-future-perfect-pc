@@ -47,8 +47,8 @@ use the old direct path and its host-UDP forwarding requirement. A private lobby
 host's departure ends that match; there is no newly claimed private migration.
 Metadata publishes through the existing Session heartbeat. Normal hosting needs
 no external component. Explicit TSFP_PRIVATE_SERVER_COMMAND remains test-only
-integration support. The native Host Server page is still Invite Code / Copy /
-Next, without additional setup screens or labels.
+integration support. The native Host Server page retains Invite Code / Copy / Next, with startup
+progress and copy feedback; Join Server supplies an explicit Paste action.
 
 After bridge acceptance, host creation uses original `1CBA50`; guest discovery
 and selection use `352980`, `352990` and `1CBD40`. Native lobby Back retires its
@@ -64,6 +64,104 @@ and live-session shutdown retain their existing paths.
 Return to Lobby retains the party through the original round-return path,
 distinct from migration departure. Lobby code copy uses a native footer target,
 keyboard C or the original Xbox right-stick press.
+
+## Second revised notes (2026-11-11, local)
+
+Each custom page has its own16-byte descriptor and32 text slots in one bounded
+allocation. `mp_show` clears its active-menu pointer before79B70 and only rebuilds
+a child whose descriptor is the destination.79B70 can retain its outgoing child
+during closing; rebuilding that child caused the Online/Start New Match flash
+and reused browser footer state. Pending responses can update state while a new
+page opens; its actual builder publishes the active pointer. Native saved focus
+is repaired after opening when it refers to a disabled/header/deleted row, using
+the same type4/7/8 and flags&5 rules as mouse navigation.
+
+The custom LAN browser's Back is MP_BACK, not just the original1A4350 callback.
+Both paths now invoke original1A4350, opening4E9974. Its1A8440 builder requests
+1CC360 shutdown;1A8410/1CC3C0 waits for76B1A4==0 and completes35E960/3565B0
+release before the chooser returns. Native validation previously found a chooser
+with76B108 still1 and selectionFFFFFFFF; after this repair it returns with0 and
+selection1, and both community/private joins after LAN work. LAN selects match
+transport without killing an owned private directory's companion; directory
+leave acknowledgements do not drive LAN's native UI.
+
+The browser title uses the original33006 heading flags and no extra separator;
+a separator with IDFFFFFFFF conflicted with native LAN Start New Match. The
+creation heading uses the existing native vs75 size escape with uppercase
+conversion disabled, as small_note already does. Creation labels use native large
+uppercase controls. Custom fields select their authored font from item+1C, as
+stock76193 does, rather than a guessed face ID. Their measurement buffers and
+caption strings are separate. Host/Join Server use a centred heading above a
+full-width entry field, retaining Copy/Paste/Next/Join and the in-panel share hint.
+
+Guest selection opens MP_JOINING immediately. During native discovery,1A43E0 /
+1A4780 builders present the same Joining lobby row; its hidden selection contract
+retains index0 and1CBD40 after352990 reports an actual advertisement. The original
+native browser is not shown between directory admission and the real lobby. Back,
+errors and timeout return to the connected directory browser. No transport shortcut
+or fabricated advertisement is used.
+
+The browser keeps its80-unit width and full-canvas placement, with a70-unit
+frame and65-unit scroll area reserving a clear status band.
+
+Lobby-code feedback uses the native footer font, a [C] keycap or original right-
+stick glyph M, and native hover colour. The hit region uses the same aspect-aware
+pointer mapping as other menu controls; click/C/right-stick still copy and show
+COPIED. Browser info baseline is raised19 native units to avoid the footer.
+
+Final supported Windows build/built-ins pass (identity a9d7a839), and70 focused
+checks pass with2 Mac-only skips. Native c396d8c4 host/guest tests cover LAN ->
+Back -> community join/rejoin, and a fresh guest's LAN -> Back -> private pinned
+invitation -> Refresh -> direct native lobby. Joining progress and hover/keycap /
+COPIED are captured. A fixed-delay leave/switch driver was invalid while native
+phase18 cleanup was still running; it was replaced with state-aware navigation.
+Final59f4e6c4 captures verify native fonts and stacked panels. Repeated Online /
+Private switching completes LIST replies at sequences1/2,4/5,6/7,9/10; Online
+fixture GETs advance3/6/9/12. The owned directory remains available across LAN
+entry/exit (owner1 at sequences11/12/13). Final a9d7a839 capture confirms browser
+messages below the listing panel and above the footer. See STATUS for evidence
+and validation limits; physical Mac/Linux acceptance remains pending.
+
+## Revised online notes (2026-11-11, local)
+
+Checkpoint d98a021d saves the restored private directory and prior menu work.
+The chooser now has Online / Private Server / LAN without a separate Online/LAN
+row; Online's native ticker says Browse matches online via the community server.
+The browser uses the original80x75 frame and70-unit scroll region, with the native
+thin inset Matches Available row. Browser flags40020000 select the original
+full-canvas placement; clear4002a000 style bits before75B70 because it ORs flags
+into reused pages. Native745C9/74651 and the original42020102 browser flags
+confirm that positioning contract; captures verify the logo is removed.
+Start New Match keeps a smaller nonselectable Lobby Options row.
+
+Mouse Refresh is latched by native_multiplayer_refresh_click before the stock
+dispatcher consumes the footer edge, then serviced on the next safe online tick.
+A click during a pending refresh queues one subsequent refresh; held clicks do
+not repeat. Keyboard/controller paths remain. Host Server shows Starting private
+server while pending; its invitation field/actions appear once ready. Copy reports
+success/failure. Join Server has Paste, and selecting its field pastes the complete
+invitation instead of opening the255-character native keyboard. Lobby codes and
+names retain their existing editing paths.
+
+PRIVATE_CONNECT first probes the invitation's port on loopback with a one-second
+limit and the same pinned certificate, then falls back to its public URL if the
+local probe fails. The canonical public identity stays separate from this verified
+connection endpoint, including private hosts created by another local instance.
+Switching directories cannot reuse a prior local route. This avoids relying on
+router hairpin NAT without trusting an unrelated local server or changing remote
+friends' invitations. Tests cover actual public invitations against real local
+TLS/direct UDP, wrong-pin fallback and switching directories.
+
+Windows Build/built-ins pass; final focused selection70 passes with2 Mac-only
+skips. Real community host/guest native lobbies show2 players, and guest leave /
+rejoin succeeds. The reported20-second timeout was not reproduced; no transport
+root cause is established. A second private game pasted the public invitation,
+connected through verified loopback and joined the host's direct match. Final
+frame capture b55efb24 shows two complete rows and a third partially visible;
+consecutive synthetic mouse footer clicks each made3 fresh fixture GETs (3/6/9).
+This fixture proves refresh/UI behavior, not community transport. Test instances,
+companions and disposable disks were cleaned. Mac/Linux native acceptance and
+visible Invite Only admission remain unverified/unfinished respectively.
 
 ## Private directory restoration (2026-11-11, local)
 

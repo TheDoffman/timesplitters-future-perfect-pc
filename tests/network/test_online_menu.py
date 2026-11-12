@@ -147,3 +147,30 @@ def test_switching_private_servers_does_not_redirect_to_owned_loopback(monkeypat
     c.begin(request(menu.PRIVATE_HOST));wait(c)
     assert c.private==c.private_hosted and c.status==menu.PRIVATE_READY
     c.private_process=None;c.close()
+
+
+@pytest.mark.parametrize('local_matches', [True, False])
+def test_private_invitation_uses_local_endpoint_only_after_pin_verification(monkeypatch, local_matches):
+    from urllib.parse import urlsplit
+    calls=[]
+    class Probe:
+        def __init__(self, address, pin):
+            self.url=urlsplit(address);self.fingerprint=pin
+        def request(self, method, path, **options):
+            calls.append((self.url.geturl(), self.fingerprint, options.get('timeout')))
+            if self.url.hostname=='127.0.0.1' and not local_matches:
+                raise ValueError('Directory certificate does not match the supplied fingerprint')
+            return {'private_directory': True}
+    monkeypatch.setattr(menu, 'Client', Probe)
+    c=menu.Controller(VERSION)
+    pair=('https://private.example:41830', PIN)
+    r=request(menu.PRIVATE_CONNECT);r['source']=1;r['code']=menu.server_invitation(*pair)
+    c.begin(r);wait(c)
+    assert c.status==menu.PRIVATE_READY and c.private==pair
+    expected='https://127.0.0.1:41830' if local_matches else pair[0]
+    assert c.directory(1).url.geturl()==expected
+    assert calls[0]==('https://127.0.0.1:41830', PIN, 1)
+    assert len(calls)==(1 if local_matches else 2)
+    c.private=('https://another.example:41830', PIN)
+    assert c.directory(1).url.geturl()==c.private[0]
+    c.close()

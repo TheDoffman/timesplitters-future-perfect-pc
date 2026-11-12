@@ -366,4 +366,3 @@ def start_directory(root, request):
     address = request.get('address') or fetch_public_ipv4()
     return LocalDirectory(root, address, request['port'],
                           state_folder=os.environ.get('TSFP_PRIVATE_DIRECTORY_STATE'))
-

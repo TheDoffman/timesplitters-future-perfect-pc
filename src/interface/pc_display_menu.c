@@ -23,12 +23,13 @@ static int online_opening_pending;
 static void online_opening_draw(uint32_t menu);
 static void online_opening_tick(void);
 static void native_multiplayer_tick(void);
+static void native_multiplayer_refresh_click(uint32_t menu);
 static void native_multiplayer_open(uint32_t source);
 static const char *native_multiplayer_notice(uint32_t menu);
 static unsigned story_browser_preview(unsigned mission);
 static int native_multiplayer_lobby_notice(uint32_t menu);
 static int native_multiplayer_browser_notice(uint32_t menu);
-static void native_multiplayer_notice_bounds(uint32_t menu,float x,float y,float w,float h);
+static int native_multiplayer_notice_bounds(uint32_t menu,float x,float y,float w,float h);
 #ifdef _WIN32
 static void native_multiplayer_story_open(uint32_t menu);
 static void story_rewards_profiles_capture(void);

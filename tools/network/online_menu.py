@@ -85,6 +85,7 @@ class Controller:
         defaults=service_defaults()
         self.community=(defaults['directory'],defaults['fingerprint'])
         self.private=None
+        self.private_connected=None
         self.private_direct=False
         self.private_local=None
         self.private_hosted=None
@@ -118,7 +119,13 @@ class Controller:
     def directory(self,source):
         pair=self.private if source else self.community
         if not pair:raise ValueError('Connect to a private server first')
-        return Client(*(self.private_local if source and self.private_process and self.private==self.private_hosted and self.private_local else pair))
+        endpoint=pair
+        if source:
+            if self.private_process and self.private==self.private_hosted and self.private_local:
+                endpoint=self.private_local
+            elif self.private_connected and self.private_connected[0]==pair:
+                endpoint=self.private_connected[1]
+        return Client(*endpoint)
 
     def begin(self,request):
         with self.lock:
@@ -140,11 +147,21 @@ class Controller:
                 result=(IDLE,'Choose a match',[])
             elif action==PRIVATE_CONNECT:
                 pair=parse_server_invitation(request['code'])
-                probe=Client(*pair)
-                reply=probe.request('GET','/v2/lobbies?compatibility='+self.compatibility+'&mode='+mode)
+                probe=Client(*pair);endpoint=pair
+                path='/v2/lobbies?compatibility='+self.compatibility+'&mode='+mode
+                # A local second instance must not depend on router hairpin NAT.
+                # Authenticate the same pinned certificate before using loopback;
+                # a different local directory can never substitute for this one.
+                local=('https://127.0.0.1:'+str(probe.url.port or 443),pair[1])
+                try:
+                    reply=Client(*local).request('GET',path,timeout=1)
+                    endpoint=local
+                except (OSError,ValueError):
+                    reply=probe.request('GET',path)
                 with self.lock:
                     if generation==self.generation:
                         self.private=pair;self.private_direct=reply.get('private_directory') is True
+                        self.private_connected=(pair,endpoint)
                 result=(PRIVATE_READY,'Connected to private server',[])
             elif action==PRIVATE_HOST:
                 with self.lock:
@@ -191,7 +208,7 @@ class Controller:
                     return
                 if active:
                     self.session=active
-                    self.active_public=self.private if request['source'] and self.private_process else None
+                    self.active_public=self.private if request['source'] else None
                 self.status,self.message,self.lobbies=result
         except Exception as error:
             if active:active.close()
