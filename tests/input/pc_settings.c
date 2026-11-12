@@ -241,6 +241,18 @@ int main(int argc,char **argv)
     CHECK(pc_settings_assign(&settings,33,0,'1',1)==1 && !settings.keys[24][0]);
     { int ok=pc_settings_save(&settings,error,sizeof error); if(!ok)fprintf(stderr,"Final settings save: %s\n",error); CHECK(ok); }
     CHECK(pc_settings_read(&current,error,sizeof error) && current.keys[33][0]=='1' && !current.keys[24][0]);
+    { /* Keyboard saves retain pad sources on the edited action. */
+        saved=load(path);CHECK(saved);
+        char *entry=strstr(saved,"\"rstick_up\"");CHECK(entry);
+        char *end=strchr(entry,']');CHECK(end);
+        size_t length=strlen(saved),prefix=(size_t)(end-saved);
+        char *mixed=malloc(length+32);CHECK(mixed);
+        memcpy(mixed,saved,prefix);
+        snprintf(mixed+prefix,length+32-prefix,",\"pad:ry+\"%s",end);
+        FILE *f=fopen(path,"wb");CHECK(f);fputs(mixed,f);fclose(f);free(mixed);free(saved);
+        current.keys[19][0]='U';CHECK(pc_settings_save(&current,error,sizeof error));
+        saved=load(path);CHECK(saved && strstr(saved,"pad:ry+") && strstr(saved,"key:#85"));free(saved);
+    }
     DestroyWindow(owner);
     {
         int devices[4]={-2,0,1,-1},actual[4];

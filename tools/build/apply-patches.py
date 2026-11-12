@@ -340,6 +340,11 @@ def patch_records(paths):
         paths.remove(rollback_controls)
         paths.append(rollback_controls)
 
+    independent_keyboard = by_name.get('2995-independent-keyboard-routing.patch')
+    if independent_keyboard:
+        paths.remove(independent_keyboard)
+        paths.append(independent_keyboard)
+
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

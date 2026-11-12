@@ -1,3 +1,10 @@
+Keyboard/controller isolation without presets (local, base c1e67e42):2995 plus
+shared pc_keyboard_actions.h/pc_bindings.inc and native layout reader restore
+keyboard action/axis isolation after the0.6.2 rollback. Shared GameSettings and
+AppKit/GTK C persistence retain pad tokens during keyboard edits; no OS adapter
+or preset resource is added. Native Mac/Linux physical acceptance pending; see
+control-presets.md and STATUS for host checks as completed.
+
 Full control-preset rollback (local, base e7cb1016): shared2990 removes sampler
 preset/semantic layers and restores original defaults/profile initialization and
 binding editors. AppKit/GTK/Win32/shared launcher use the restored common model;

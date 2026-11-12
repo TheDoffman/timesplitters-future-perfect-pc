@@ -859,3 +859,8 @@ sliders share a named PageTheme.Details Expander. Only Player1 starts expanded;
 expansion is excluded from Draft() and keeps pending values. The tab is Controls.
 Shared UI checks cover defaults, presentation-only toggling, readouts and per-player
 persistence. Save/conflict handling and game-side deadzone behavior are unchanged.
+
+Keyboard editing uses BindingSources/SetKeyboardBinding to preserve explicit
+physical pad sources. Only key tokens occupy the two visible keyboard slots;
+Assign, Save and Restore defaults retain pad tokens and do not select a preset.
+See control-presets.md for the shared2995 routing/persistence follow-up.

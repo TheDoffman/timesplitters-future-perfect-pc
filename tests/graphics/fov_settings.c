@@ -145,6 +145,7 @@ TUTORIAL_STUB(sub_0001ED50) TUTORIAL_STUB(sub_0001F090)
  * linked here, but fail if this settings-only fixture enters those paths. */
 void pc_controls_text_mode(uint32_t owner) {(void)owner;CHECK(0);}
 unsigned pc_controls_text_event(uint32_t owner) {(void)owner;CHECK(0);return 0;}
+void pc_settings_gameplay_reader(PcGameplayMasks reader) {(void)reader;}
 void pc_settings_active_ports_reader(PcActiveInputPorts reader) {(void)reader;}
 static int controls_test_menu_active=1;
 int pc_controls_in_menu(void) {return controls_test_menu_active;}
@@ -479,6 +480,23 @@ int main(int argc,char **argv)
     CHECK(pc_post_aa_set(0) && !smaa_preference && !graphics_options.edge_smoothing);
     void *mem=VirtualAlloc(NULL,0x800000,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE);CHECK(mem);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)mem;
+    { /* Real guest layout reader follows local ownership; never writes profiles. */
+        controls_test_menu_active=0;WORD_AT(0x79094c)=1;
+        WORD_AT(0x790950)=2;WORD_AT(0x7b0c48)=0x6000;
+        WORD_AT(0x6004)=0;WORD_AT(0x7588)=1;
+        WORD_AT(0x6b93c0)=1;WORD_AT(0x6b93c4)=0;
+        unsigned masks[24];int mounted;uint32_t player=0x7584;
+        WORD_AT(player+0x20)=0x10;WORD_AT(player+0x18)=0x80;
+        WORD_AT(player+0x50)=4;WORD_AT(player+0x54)=3;
+        WORD_AT(player+0x58)=2;WORD_AT(player+0x5c)=1;
+        CHECK(controls_gameplay_masks(0,masks,&mounted));
+        CHECK(masks[0]==0x10 && masks[9]==0x80 && masks[14]==(1u<<19));
+        CHECK(WORD_AT(player+0x20)==0x10 && WORD_AT(player+0x50)==4);
+        controls_test_menu_active=1;CHECK(!controls_gameplay_masks(0,masks,&mounted));
+        memset((char *)mem+0x6000,0,0x3000);
+        WORD_AT(0x790950)=WORD_AT(0x7b0c48)=0;
+        WORD_AT(0x6b93c0)=0;WORD_AT(0x6b93c4)=1;
+    }
     { /* Main-only visibility; late update checks, expiry and font/register restoration. */
         char path[1024];snprintf(path,sizeof path,"%s.update",argv[1]);
         CHECK(!_putenv_s("TSFP_GAME_UPDATE_NOTICE",path));CHECK(!_putenv_s("TSFP_GAME_INSTALLED_VERSION","1.2.3"));

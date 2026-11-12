@@ -427,6 +427,24 @@ public static class LauncherSharedUiChecks
                 fov.Value=original+2;Click(save);
                 Need(save.IsEnabled && saves==3 && File.ReadAllText(controls)==external,"Conflicting save disabled retry or overwrote external settings");
             });
+            Test("keyboard edits retain physical controller sources",()=>{
+                string folder=Path.Combine(root,"independent-device-bindings");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);model.Save();
+                string path=Core.PathIn(folder,LauncherPlatform.Settings(folder)[0]);
+                var doc=Json.Object(File.ReadAllText(path));
+                var player=((System.Collections.IEnumerable)doc["controllers"]).Cast<object>().First();
+                var bindings=(Dictionary<string,object>)((Dictionary<string,object>)player)["bindings"];
+                bindings["rtrigger"]=new object[]{"key:LBUTTON","pad:rt"};
+                File.WriteAllText(path,Json.Encode(doc));
+                model=GameSettings.Load(folder,null);
+                int fire=Array.IndexOf(GameSettings.Actions,"rtrigger");
+                model.Assign(fire,0,'H',true);model.Save();
+                string saved=File.ReadAllText(path);
+                Need(saved.Contains("pad:rt"),"Keyboard save removed controller input");
+                Need(model.Binding(fire)[0]=="key:#72","Keyboard binding did not change independently");
+                model.ResetControls();model.Save();
+                Need(File.ReadAllText(path).Contains("pad:rt"),"Keyboard reset removed controller input");
+            });
             Test("controller deadzones preserve legacy and tune each player",()=>{
                 string folder=Path.Combine(root,"deadzone-settings");Directory.CreateDirectory(folder);
                 var model=GameSettings.Load(folder,null);

@@ -2,6 +2,15 @@
    and initialization rather than maintaining a second binding vocabulary. */
 #include "pc_settings.h"
 #include <math.h>
+#include "pc_keyboard_actions.h"
+static PcGameplayMasks g_pc_gameplay_masks;
+void pc_settings_gameplay_reader(PcGameplayMasks reader) {
+    AcquireSRWLockExclusive(&g_pc_bindings_lock);g_pc_gameplay_masks=reader;ReleaseSRWLockExclusive(&g_pc_bindings_lock);
+}
+int pc_settings_gameplay_masks(unsigned port,unsigned masks[24],int *mounted) {
+    AcquireSRWLockShared(&g_pc_bindings_lock);PcGameplayMasks reader=g_pc_gameplay_masks;ReleaseSRWLockShared(&g_pc_bindings_lock);
+    return reader?reader(port,masks,mounted):0;
+}
 static PcActiveInputPorts g_pc_active_ports;
 void pc_settings_active_ports_reader(PcActiveInputPorts reader) {
     AcquireSRWLockExclusive(&g_pc_bindings_lock);g_pc_active_ports=reader;ReleaseSRWLockExclusive(&g_pc_bindings_lock);
@@ -156,8 +165,13 @@ int pc_settings_read(PcSettings *s, char *error, size_t bytes)
         snprintf(error, bytes, "Player 1 is using a controller profile. Select the PC keyboard profile before editing keyboard bindings.");
         return 0;
     }
-    for (i=0; i<CONTROL_COUNT; i++) for (j=0; j<g_ctl[0].bind[i].count && j<PC_BINDING_SLOTS; j++) {
-        if (g_ctl[0].bind[i].src[j].kind == SRC_KEY) s->keys[i][j] = g_ctl[0].bind[i].src[j].arg;
+    for(i=0;i<CONTROL_COUNT;i++) {
+        int slot=0;
+        for(j=0;j<g_ctl[0].bind[i].count && slot<PC_BINDING_SLOTS;j++) {
+            const Source *source=&g_ctl[0].bind[i].src[j];
+            if(source->kind==SRC_KEY || source->kind==SRC_NONE)
+                s->keys[i][slot++]=source->kind==SRC_KEY?source->arg:0;
+        }
     }
     ReleaseSRWLockShared(&g_pc_bindings_lock);
     pc_controls_get_mouse(&s->sensitivity, &s->enabled, &s->invert_y);
@@ -179,6 +193,21 @@ int pc_settings_prompt_keys(int keys[PC_ACTION_COUNT])
         }
     }
     ReleaseSRWLockShared(&g_pc_bindings_lock);
+    unsigned masks[24];int mounted;
+    memcpy(masks,pc_keyboard_masks,sizeof masks);
+    if(pc_settings_gameplay_masks(0,masks,&mounted)) {
+        int semantic[PC_ACTION_COUNT];memcpy(semantic,keys,sizeof semantic);
+        for(unsigned alias=3;alias<=5;alias++) {
+            unsigned action=pc_keyboard_action(alias);
+            if(!semantic[action])semantic[action]=semantic[alias];
+        }
+        for(unsigned raw=0;raw<24;raw++) {
+            static const unsigned char roles[]={0,1,2,8,9,10,11,12,13,18,23};
+            if(!pc_keyboard_masks[raw])continue;
+            for(unsigned role=0;role<sizeof roles/sizeof roles[0];role++)
+                if(masks[roles[role]]&pc_keyboard_masks[raw]) {keys[raw]=semantic[roles[role]];break;}
+        }
+    }
     return available;
 }
 
@@ -546,51 +575,76 @@ int pc_settings_deadzone_save(unsigned port,int aim,int value,char *error,size_t
     ReleaseSRWLockExclusive(&g_pc_bindings_lock);return 1;
 }
 
+static int pc_binding_keyboard_edit(int action,const char *raw,const int keys[PC_BINDING_SLOTS],
+                                    Binding *next,char *value,size_t bytes)
+{
+    memset(next,0,sizeof *next);size_t used=1;value[0]='[';
+    for(int slot=0;slot<PC_BINDING_SLOTS;slot++) {
+        int n=keys[slot]?snprintf(value+used,bytes-used,"%s\"key:#%d\"",slot?",":"",keys[slot]):
+                         snprintf(value+used,bytes-used,"%s\"none\"",slot?",":"");
+        if(n<0 || (size_t)n>=bytes-used)return 0;used+=(size_t)n;
+        Source *source=&next->src[next->count++];
+        if(keys[slot]){source->kind=SRC_KEY;source->arg=(short)keys[slot];}
+    }
+    if(raw) {
+        const char *p=ws(raw);int array=*p=='[';if(array)p=ws(p+1);
+        while(*p=='"') {
+            char token[64];const char *end=jstring(p,token,sizeof token);Source source;
+            if(!end || !parse_source(token,&source))return 0;
+            if(source.kind!=SRC_KEY && source.kind!=SRC_NONE) {
+                if(next->count>=MAX_SOURCES)return 0;
+                int n=snprintf(value+used,bytes-used,",%.*s",(int)(end-p),p);
+                if(n<0 || (size_t)n>=bytes-used)return 0;used+=(size_t)n;
+                next->src[next->count++]=source;
+            }
+            p=ws(end);if(!array || *p!=',')break;p=ws(p+1);
+        }
+    }
+    if(bytes-used<2)return 0;value[used++]=']';value[used]=0;return 1;
+}
 int pc_settings_save(const PcSettings *s, char *error, size_t bytes)
 {
-    char bindings[16384]="{", value[128];
-    char *text = NULL;
-    const char *controller, *mouse;
-    size_t used=1;
-    int i,j;
+    char value[512],*text=NULL;
+    const char *controller,*mouse;
+    int changed[PC_ACTION_COUNT]={0};
+    Binding edited[PC_ACTION_COUNT];
     PcSettings current;
     if (!pc_settings_read(&current,error,bytes)) return 0;
     if (!isfinite(s->sensitivity) || s->sensitivity < .001 || s->sensitivity > 10) {
         snprintf(error,bytes,"Mouse sensitivity must be between 0.001 and 10."); return 0;
     }
-    for (i=0;i<PC_ACTION_COUNT;i++) {
-        used += (size_t)snprintf(bindings+used,sizeof bindings-used,"%s\"%s\":[",i?",":"",CONTROLS[i].name);
-        for (j=0;j<PC_BINDING_SLOTS;j++) {
-            int key=s->keys[i][j];
-            if (!pc_settings_key_allowed(key)) {
-                snprintf(error,bytes,"A binding uses an invalid key, a system key, or a reserved function key (F2, F9, F10, F11, F12)."); return 0;
-            }
-            if (key) used += (size_t)snprintf(bindings+used,sizeof bindings-used,"%s\"key:#%d\"",j?",":"",key);
-            else used += (size_t)snprintf(bindings+used,sizeof bindings-used,"%s\"none\"",j?",":"");
+    for(int i=0;i<PC_ACTION_COUNT;i++) {
+        for(int j=0;j<PC_BINDING_SLOTS;j++)if(!pc_settings_key_allowed(s->keys[i][j])) {
+            snprintf(error,bytes,"A binding uses an invalid key, a system key, or a reserved function key (F2, F9, F10, F11, F12).");return 0;
         }
-        used += (size_t)snprintf(bindings+used,sizeof bindings-used,"]");
+        changed[i]=
+            memcmp(s->keys[i],current.keys[i],sizeof s->keys[i])!=0;
     }
-    snprintf(bindings+used,sizeof bindings-used,"}");
     text=read_file(g_path);
-    if (!text || !(controller=pc_controller(text)) ||
-        !pc_replace_member(&text,controller,"bindings",bindings)) goto failure;
+    if(!text || !(controller=pc_controller(text)))goto failure;
+    for(int i=0;i<PC_ACTION_COUNT;i++)if(changed[i]) {
+        /* Replace keyboard sources only, including on the edited action. */
+        const char *bindings=pc_member(controller,"bindings",NULL);
+        if(!bindings || *bindings!='{') {
+            if(!pc_replace_member(&text,controller,"bindings","{}"))goto failure;
+        }
+        bindings=pc_member(pc_controller(text),"bindings",NULL);
+        if(!pc_binding_keyboard_edit(i,pc_member(bindings,CONTROLS[i].name,NULL),s->keys[i],&edited[i],value,sizeof value))goto failure;
+        if(!pc_replace_member(&text,pc_member(pc_controller(text),"bindings",NULL),CONTROLS[i].name,value))goto failure;
+        controller=pc_controller(text);
+    }
     mouse=pc_member(text,"mouse",NULL);
-    if (!mouse || *mouse != '{') {
-        if (!pc_replace_member(&text,ws(text),"mouse","{}")) goto failure;
+    if(!mouse || *mouse!='{') {
+        if(!pc_replace_member(&text,ws(text),"mouse","{}"))goto failure;
     }
     snprintf(value,sizeof value,"%.9g",s->sensitivity);
-    if (!pc_replace_member(&text,pc_member(text,"mouse",NULL),"sensitivity",value) ||
-        !pc_replace_member(&text,pc_member(text,"mouse",NULL),"enabled",s->enabled?"true":"false") ||
-        !pc_replace_member(&text,pc_member(text,"mouse",NULL),"invert_y",s->invert_y?"true":"false")) goto failure;
-    if (!pc_write_config(text)) goto failure;
+    if(!pc_replace_member(&text,pc_member(text,"mouse",NULL),"sensitivity",value) ||
+       !pc_replace_member(&text,pc_member(text,"mouse",NULL),"enabled",s->enabled?"true":"false") ||
+       !pc_replace_member(&text,pc_member(text,"mouse",NULL),"invert_y",s->invert_y?"true":"false"))goto failure;
+    if(!pc_write_config(text))goto failure;
     AcquireSRWLockExclusive(&g_pc_bindings_lock);
-    for (i=0;i<CONTROL_COUNT;i++) {
-        Binding *b=&g_ctl[0].bind[i];
-        memset(b,0,sizeof *b);
-        b->count=PC_BINDING_SLOTS;
-        for (j=0;j<PC_BINDING_SLOTS;j++) if (s->keys[i][j]) {
-            b->src[j].kind=SRC_KEY; b->src[j].arg=(short)s->keys[i][j];
-        }
+    for(int i=0;i<CONTROL_COUNT;i++)if(changed[i]) {
+        g_ctl[0].bind[i]=edited[i];
     }
     ReleaseSRWLockExclusive(&g_pc_bindings_lock);
     AcquireSRWLockExclusive(&g_pc_weapon_lock);
@@ -598,7 +652,7 @@ int pc_settings_save(const PcSettings *s, char *error, size_t bytes)
     ReleaseSRWLockExclusive(&g_pc_weapon_lock);
     pc_controls_set_mouse(s->sensitivity,s->enabled,s->invert_y);
     fprintf(stderr,"[PC-SETTINGS] Saved and applied keyboard/mouse settings to %s\n",g_path);
-    free(text); return 1;
+    free(text);return 1;
 failure:
     free(text);
     snprintf(error,bytes,"Could not safely save the controls file (system error %lu). Your active bindings were kept.",(unsigned long)GetLastError());

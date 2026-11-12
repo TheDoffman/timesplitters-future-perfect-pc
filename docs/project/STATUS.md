@@ -1,3 +1,19 @@
+Keyboard/controller independence after0.6.2 rollback (local, base c1e67e42,
+branch fix/independent-bindings-no-presets): the user confirms controller remaps
+again change keyboard behavior. Shared2995 restores action/axis translation only
+for keyboard contributions; native controller input, factory defaults and menu
+navigation remain original. No presets/profile seeding return. Shared C/launcher
+keyboard save paths retain existing pad sources. Production sampler regressions
+cover both host defines, swapped axes, keyboard rebinds, remapped action masks,
+physical-pad isolation and a shared-layout negative control. Windows Release
+build/built-in checks pass, including pad-source retention in the real editor.
+Full Windows launcher suite passes (48 shared UI groups); input/guest-layout/
+repository checks78 pass2 host skips. Fresh/repeated and previous-controls
+patch upgrades2 pass; context and whitespace checks pass. Live gameplay
+acceptance and native Mac/
+physical Linux/Deck acceptance remain pending.
+Prepared for branch review; no merge or release. Owning contract: control-presets.md.
+
 Control-preset rollback and high-FPS interaction repairs (2026-11-12,
 branch revert/control-presets; original base e7cb1016, reference c511f1e9 before
 PR528): removes Modern presets, profile button/axis seeding and repair,

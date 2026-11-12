@@ -1,4 +1,27 @@
-# Control preset rollback
+# Controls without presets
+
+## Current keyboard/controller separation
+
+Follow-up2995 runs after2990 and restores only device-independent keyboard
+action routing. No preset UI, Modern defaults, profile seeding or saved-layout
+rewrites return. `pc_keyboard_actions.h` translates keyboard actions through the
+active local player masks/axis selectors supplied by `controls_gameplay_masks`
+and `pc_settings_gameplay_reader`. Physical controller contributions stay on
+the original path; menu input remains physical. Gameplay prompts resolve the
+configured action back to its keyboard key.
+
+Keyboard saves/launcher edits replace only key sources, retaining explicit
+controller sources on the same action. Internal source capacity is six (two
+keyboard slots plus up to four retained pad sources); the editor still exposes
+only two key slots. Old preset metadata is ignored. Factory defaults and native
+controller profile initialization remain those restored by2990.
+
+Production sampler tests swap Move/Look, remap each named button action and
+change keyboard keys, then verify controller input and stored mappings remain
+unchanged. A shared-layout negative control must fail. The same fixture runs
+Windows and SDL defines. Shared C/managed save tests retain explicit pad sources.
+
+## Full rollback in release0.6.2
 
 The user requested a full rollback of the Modern preset feature, not merely
 removal of its selectors. Reference: c511f1e9, immediately before2a7d92f4/PR528.
@@ -6,7 +29,7 @@ Patch2990 follows2970 and restores original direct keyboard/pad accumulation.
 Historical2940/2960/2965 remain only as patch-stack migration inputs; their
 sampler overlays and semantic accumulation are removed by2990. No factory-mode
 metadata is read by production input, and the preset helper header/resource is
-removed. MAX_SOURCES is the original four.
+removed. MAX_SOURCES was restored to four by2990;2995 now retains mixed-source edits as described above.
 
 Factory config, PcSettings shape/read/defaults/save/assignment, keyboard menu,
 keycaps, profile-init extension and all three native binding editors are restored
@@ -18,8 +41,8 @@ there is no Custom-profile button/axis seed or automatic seed repair.
 
 Keyboard/controller remapping again uses the title's original fixed virtual-pad
 roles. The later semantic keyboard/axis isolation and legacy action aliases are
-also reverted. This deliberately restores the earlier behavior; it is not a new
-device-independent binding design. The game's original Controller Layout and
+also reverted. That rollback caused the release0.6.2 shared-layout regression; the current
+2995 follow-up restores keyboard separation without presets. The game's original Controller Layout and
 Customize choices remain. Restore defaults in keyboard settings/launcher uses
 the pre-feature defaults. Existing settings and saves are not replaced/reset by
 this change; obsolete fields in existing JSON are simply ignored. A stored custom

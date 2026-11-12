@@ -1,0 +1,62 @@
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -43,7 +43,7 @@
+ #  include <time.h>
+ #endif
+ 
+-#define MAX_SOURCES 4
++#define MAX_SOURCES 6 /* Two keyboard keys and up to four retained pad sources. */
+ #define PORTS XBOX_MAX_CONTROLLERS
+ 
+ /* XInput's own left-stick default. A stick is bound as two halves, so the
+@@ -1090,6 +1090,9 @@
+ #endif
+ 
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
++    int values[24]={0},mounted=0;
++    unsigned masks[24];memcpy(masks,pc_keyboard_masks,sizeof masks);
++    int keyboard_actions=port==0 && c->device==DEV_KEYBOARD && pc_settings_gameplay_masks(port,masks,&mounted);
+ #endif
+ 
+     /* Initialize after platform focus/modal gating, using only the pad read
+@@ -1118,6 +1121,7 @@
+     for (i = 0; i < CONTROL_COUNT; i++) {
+         int mag = 0, s;
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
++        int pad_mag=0;
+         if(i>=PC_DEVELOPER_ACTION)continue; /* Host shortcut never enters the Xbox pad. */
+         if(CONTROLS[i].kind==K_WEAPON_SLOT) {
+             if(port==0 && c->device==DEV_KEYBOARD)
+@@ -1135,7 +1139,11 @@
+         if (use_pad_defaults) {
+             for (s=0;s<pad_defaults.bind[i].count;s++) {
+                 int m=control_magnitude(i,&pad_defaults.bind[i].src[s],&kc,&pad,1,c);
+-                if(m>mag) mag=m;
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
++                if(m>pad_mag)pad_mag=m;
++#else
++                if(m>mag)mag=m;
++#endif
+             }
+         }
+ 
+@@ -1150,8 +1158,19 @@
+ #endif
+             int m = control_magnitude(i, &c->bind[i].src[s], &kc, &pad,
+                                   have_pad, c);
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
++            if(c->bind[i].src[s].kind!=SRC_KEY) {if(m>pad_mag)pad_mag=m;}
++            else
++#endif
+             if (m > mag) mag = m;
+         }
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
++        pc_keyboard_accumulate(values,keyboard_actions?pc_keyboard_action((unsigned)i):(unsigned)i,mag,keyboard_actions,masks);
++        pc_keyboard_accumulate(values,(unsigned)i,pad_mag,0,masks);
++    }
++    for(i=0;i<24;i++) {
++        int mag=values[i];
++#endif
+         if (!mag)
+             continue;
+         say_first_press(port, CONTROLS[i].name);

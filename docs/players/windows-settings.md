@@ -328,3 +328,8 @@ drive. The selected path is stored in save-location.txt beside controls.json.
 If that drive is unavailable on startup, reconnect it or remove that preference
 to restore the default save location. Automated Test Lab sessions lock location
 changes. Explicit manual testing uses --allow-save-drive-changes.
+
+Keyboard & Mouse bindings and Controller Customize are separate. Changing a
+controller button or stick layout should leave keyboard actions unchanged. Use
+Keyboard & Mouse (or the launcher's Controls tab) to edit keyboard keys; Controller
+Layout/Customize edits the controller. There are no Modern preset selectors.

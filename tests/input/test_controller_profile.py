@@ -60,7 +60,7 @@ def test_native_developer_player_keys(tmp_path):
 
 
 @pytest.mark.parametrize("adapter", ["TSFP_PC_CONTROLS", "TSFP_NATIVE_INPUT"])
-@pytest.mark.parametrize("mutation", ["fixed", "steal-player-two"])
+@pytest.mark.parametrize("mutation", ["fixed", "steal-player-two", "shared-keyboard-layout"])
 def test_local_player_host_routing(tmp_path, adapter, mutation):
     production = (RUNTIME / "input/input_bindings.c").read_text()
     sampler = re.search(r'int recomp_bindings_sample\(.*?\n\}', production, re.S).group()
@@ -69,6 +69,9 @@ def test_local_player_host_routing(tmp_path, adapter, mutation):
     if mutation == "steal-player-two":
         sampler, changed = re.subn(r'!\(reserved_pads\s*&\s*\(1u\s*<<\s*slot\)\)', '1', sampler)
         assert changed == 2, 'Exercise both real host fallback loops'
+    if mutation == "shared-keyboard-layout":
+        sampler,changed=re.subn(r'int keyboard_actions=.*?;', 'int keyboard_actions=0;',sampler)
+        assert changed==1
     fixture = (ROOT / "tests/input/local_player_routing.c").read_text()
     prompts=(ROOT / 'src/input/pc_prompts.c').read_text()
     prompts=prompts[prompts.index('static SRWLOCK prompt_lock'):prompts.index('static void key_label(')]
@@ -86,6 +89,8 @@ def test_local_player_host_routing(tmp_path, adapter, mutation):
     assert result.returncode == 0, result.stdout + result.stderr
     result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=15)
     assert (result.returncode == 0) == (mutation == 'fixed'), result.stdout + result.stderr
+    if mutation == 'shared-keyboard-layout':
+        assert 'one.bAnalogButtons[XBOX_BUTTON_X]' in result.stderr
     if mutation == 'steal-player-two':
         assert '!memcmp(&one,&neutral,sizeof one)' in result.stderr, result.stderr
 

@@ -320,7 +320,7 @@ namespace TimeSplitters.Launcher
                 bindings[Actions[action]]=key!=0 && Conflict(action,key)<0?"key:#"+key:"none";
             }
         }
-        public string[] Binding(int action)
+        string[] BindingSources(int action)
         {
             object value; var list = new List<string>();
             if (bindings.TryGetValue(Actions[action], out value))
@@ -329,10 +329,21 @@ namespace TimeSplitters.Launcher
                 else if (value is IEnumerable) foreach (object item in (IEnumerable)value) { Core.Require(item is string, "Invalid binding source."); list.Add((string)item); }
                 else throw new InvalidDataException("Invalid binding value.");
             }
-            Core.Require(list.Count <= 4, "This profile has more than four bindings on an action; it was left unchanged.");
+            Core.Require(list.Count <= 6, "This profile has too many sources; it was left unchanged.");
+            return list.ToArray();
+        }
+        public string[] Binding(int action)
+        {
+            var list=BindingSources(action).Where(k=>k=="none" || k.StartsWith("key:",StringComparison.OrdinalIgnoreCase)).ToList();
             if (list.Count > BindingSlots) list.RemoveRange(BindingSlots, list.Count - BindingSlots);
             while (list.Count < BindingSlots) list.Add("none");
             return list.ToArray();
+        }
+        void SetKeyboardBinding(int action,string[] keys)
+        {
+            var pads=BindingSources(action).Where(k=>k!="none" && !k.StartsWith("key:",StringComparison.OrdinalIgnoreCase)).ToArray();
+            Core.Require(pads.Length<=4,"This action has too many controller sources; it was left unchanged.");
+            bindings[Actions[action]]=keys.Concat(pads).ToArray();
         }
         public int ControllerDeadzone(int player,bool aim) {
             var profile=PlayerProfile(player,false);object value;int raw;
@@ -385,17 +396,27 @@ namespace TimeSplitters.Launcher
             {
                 var keys = Binding(i); bool changed = false;
                 for (int j = 0; j < BindingSlots; j++) if (KeyCode(keys[j]) == key) { keys[j] = "none"; changed = true; }
-                if (changed) bindings[Actions[i]] = keys;
+                if (changed) SetKeyboardBinding(i,keys);
             }
             var assigned = Binding(action); assigned[slot] = key == 0 ? "none" : "key:#" + key;
-            bindings[Actions[action]] = assigned;
+            SetKeyboardBinding(action,assigned);
         }
         public void ResetControls()
         {
             var defaults = Json.Object(DefaultControls());
             var profiles = (IEnumerable)defaults["controllers"];
-            foreach (object profile in profiles) { bindings = Map(Map(profile)["bindings"]); break; }
-            controller["bindings"] = bindings; Device = "keyboard";
+            foreach (object profile in profiles) {
+                var defaultsMap=Map(Map(profile)["bindings"]);
+                foreach(int action in Enumerable.Range(0,Actions.Length)) {
+                    object raw;string[] keys;
+                    if(!defaultsMap.TryGetValue(Actions[action],out raw))keys=new[]{"none","none"};
+                    else if(raw is string)keys=new[]{(string)raw,"none"};
+                    else keys=((IEnumerable)raw).Cast<object>().Select(x=>(string)x).ToArray();
+                    SetKeyboardBinding(action,keys);
+                }
+                break;
+            }
+            Device = "keyboard";
             Sensitivity = .10; MouseEnabled = true; InvertY = false;
         }
         public static Dictionary<string, string> ParseRuntime(string text)
@@ -507,7 +528,7 @@ namespace TimeSplitters.Launcher
                 Core.Require((now == null && old == null) || (now != null && old != null && now.SequenceEqual(old)), "Settings changed outside the launcher. Close and reopen Settings before saving.");
                 Core.Require(!File.Exists(path) || (File.GetAttributes(path) & FileAttributes.ReadOnly) == 0, "A settings file is read-only. No settings were saved.");
             }
-            if (Device == "keyboard") foreach (int action in Enumerable.Range(0, Actions.Length)) bindings[Actions[action]] = Binding(action);
+            if (Device == "keyboard") foreach (int action in Enumerable.Range(0, Actions.Length)) SetKeyboardBinding(action,Binding(action));
             document["developer_tools_enabled"]=DeveloperToolsEnabled;
             object value;
             if (!document.TryGetValue("mouse", out value)) document["mouse"] = value = new Dictionary<string, object>();
