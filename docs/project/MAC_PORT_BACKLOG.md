@@ -1,3 +1,13 @@
+Fourth revised online notes (2026-11-11, after378fab64): **Awaiting validation**
+on Mac/Linux. All four shared online field pages now obey native open state,
+page ownership and fade; keyboard edits use a separate buffer from headings.
+Server/lobby code panels share compact headings, field, Paste/Join layout while
+retaining the native lobby-code keyboard. The larger centred silver padlock and
+text truncation use the common renderer. No new OS adapter is needed. Windows
+build/focused checks and isolated native visual/keyboard checks pass; actual
+Mac/Linux build/device acceptance is unrun. Community deployment is separate;
+see [update guide](../development/online-community-update.md) and [evidence](STATUS.md).
+
 Third revised online notes (2026-11-11, after8c81d558): **Awaiting validation**
 on Mac/Linux. Shared native dividers, compact/independent headings, matching
 field palette/spacing, lobby-code colon and locked-row prompt/padlock need no new

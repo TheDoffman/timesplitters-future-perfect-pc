@@ -1,5 +1,10 @@
 # Shared Online lobby and relay
 
+For the current native-menu protocol changes, see
+[community directory update](online-community-update.md). Server source and the
+installer below now live in the private service checkout, outside this client
+repository; these older commands are deployment context, not a client updater.
+
 Deployment on 2026-11-10: the Mac mini service uses HTTPS TCP **41820** and UDP
 **41821**. `online-service.json` contains its public endpoint and certificate pin.
 The router's UPnP service accepted permanent mappings for these two free ports to

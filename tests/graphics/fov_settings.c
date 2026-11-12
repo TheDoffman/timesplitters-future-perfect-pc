@@ -187,7 +187,9 @@ MOUSE_STUB(sub_0007DB20) MOUSE_STUB(sub_0007C410) MOUSE_STUB(sub_0007C300)
 MOUSE_STUB(sub_0007C390) MOUSE_STUB(sub_0007C4F0) MOUSE_STUB(sub_0007CDE0)
 MOUSE_STUB(sub_000746D0) MOUSE_STUB(sub_0007CCA0) MOUSE_STUB(sub_00071940)
 MOUSE_STUB(sub_001A2720) MOUSE_STUB(sub_001CBA50) MOUSE_STUB(sub_001CBD40)
-MOUSE_STUB(sub_00352980) MOUSE_STUB(sub_0007D090)
+MOUSE_STUB(sub_00352980)
+static unsigned online_keyboard_test,online_keyboard_buffer;
+void sub_0007D090(void){CHECK(online_keyboard_test);online_keyboard_buffer=WORD_AT(g_esp+8u);CHECK(WORD_AT(g_esp+12u)==255u);g_esp+=4;}
 static unsigned fixture_lan_matches;
 void sub_00352990(void){g_eax=fixture_lan_matches;g_esp+=4;}
 static unsigned native_menu_transitions;
@@ -1703,6 +1705,43 @@ int main(int argc,char **argv)
         CHECK(mp_ui.mode==PC_ONLINE_ARCADE && !mp_ui.public_lobby && !strcmp(mp_ui.name,"Staged lobby"));
         WORD_AT(mp_ui.choices[1]+0xc8u)=0u;guest_call(mp_choice_change,1,current_menu);
         CHECK(mp_ui.public_lobby);
+        /* Server and lobby invitations share separate compact, nonselectable
+           headings, a single field and Paste/Join actions. Size escapes retain
+           their lowercase syntax rather than being uppercased by the widget. */
+        const unsigned code_pages[]={MP_HOST_SERVER,MP_JOIN_SERVER,MP_JOIN_CODE};
+        for(unsigned i=0;i<3u;i++) {
+            mp_ui.page=code_pages[i];guest_call(mp_build,1,current_menu);
+            const uint32_t heading=0x21f400u;
+            CHECK(!(WORD_AT(heading+0x28u)&0x2000u));
+            CHECK(!strncmp((const char *)(g_xbox_mem_offset+WORD_AT(heading+0x20u)),"\vs85",4));
+            CHECK(built_ids[0]==250u && built_ids[2]==1u && built_ids[3]==2u && built_ids[4]==3u);
+        }
+        /* The edit buffer cannot replace the nonselectable panel heading. */
+        online_keyboard_test=1;mp_ui.menu=current_menu;mp_ui.page=MP_JOIN_CODE;
+        const uint32_t code_heading=WORD_AT(0x21f400u+0x20u);
+        char saved_heading[64];snprintf(saved_heading,sizeof saved_heading,"%s",(const char *)(g_xbox_mem_offset+code_heading));
+        WORD_AT(current_menu+0x18cu)=1u;guest_call(mp_select,1,current_menu);
+        CHECK(mp_ui.editing==2u && online_keyboard_buffer!=code_heading);
+        CHECK(!strcmp(saved_heading,(const char *)(g_xbox_mem_offset+code_heading)));
+        guest_call(mp_text_cancel,0);CHECK(!mp_ui.editing);online_keyboard_test=0;
+        /* Field painters must do no rendering while opening/closing or on an
+           outgoing page. Rendering stubs deliberately reject any such call. */
+        const unsigned field_pages[]={MP_CREATE,MP_HOST_SERVER,MP_JOIN_SERVER,MP_JOIN_CODE};
+        for(unsigned i=0;i<4u;i++) {
+            mp_ui.page=field_pages[i];mp_ui.menu=current_menu;
+            WORD_AT(current_menu+4u)=mp_descriptor(mp_ui.page);
+            for(unsigned phase=1u;phase<=6u;phase++)if(phase!=3u) {
+                WORD_AT(current_menu+0x1b0u)=phase;
+                guest_call(mp_code_draw,3,current_menu,0x200200u,0x600000u);
+            }
+            WORD_AT(current_menu+0x1b0u)=3u;mp_native_passthrough=1;
+            guest_call(mp_code_draw,3,current_menu,0x200200u,0x600000u);
+            mp_native_passthrough=0;
+            WORD_AT(current_menu+4u)=mp_descriptor(MP_BROWSER);
+            guest_call(mp_code_draw,3,current_menu,0x200200u,0x600000u);
+            WORD_AT(current_menu+4u)=mp_descriptor(mp_ui.page);mp_ui.menu=0;
+            guest_call(mp_code_draw,3,current_menu,0x200200u,0x600000u);
+        }
         /* Locked rows open code entry and retain the selected public ID,
            without dispatching a connection or prefilling the public ID. */
         mp_ui.page=MP_BROWSER;mp_ui.state.count=1;mp_ui.state.lobbies[0].invite_only=1;

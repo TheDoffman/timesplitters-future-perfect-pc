@@ -65,6 +65,37 @@ Return to Lobby retains the party through the original round-return path,
 distinct from migration departure. Lobby code copy uses a native footer target,
 keyboard C or the original Xbox right-stick press.
 
+## Field transition and code-panel follow-up (2026-11-11)
+
+Checkpoint378fab64 commits visible private-directory admission and preceding UI
+work. `mp_code_draw` now requires its own active menu/descriptor and native open
+phase3, with native transport handoff inactive. Row callbacks also run during opening/closing and while an outgoing child
+remains attached; using global destination-page text there exposed fields before
+the native panel. All four owned field pages use the same guard. Caption/input
+colours use154FE0 with menu+F4 fade;72560 already fades the native gray bevel.
+Native keyboard text editing remains the original7D090 path. Its temporary
+edit buffer now uses slot20, separate from the panel heading in slot30, for both
+accept and cancel. Opening a keyboard must not replace the underlying heading.
+
+Host/Join Server and Join Match headings use native vs85/vs100 size escapes,
+with uppercase conversion disabled on their heading row (the authored labels
+are already uppercase). Do not use the identifier small: Windows headers define
+it as an RPC type macro. MP_JOIN_CODE now shares the7-unit field, separate heading /
+divider, Paste and Join rows with MP_JOIN_SERVER. Its text remains ENTER LOBBY
+CODE / ENTER CODE..., and selecting the field still opens the virtual keyboard.
+
+The silver-bevel padlock is now24x30 native units and sits42 units before the
+thumbnail boundary, vertically centred between the lobby information and map.
+Reserve60 units in the native title measurement to keep long names clear. Keep
+saving its bounds before the stock advertisement painter reuses the rectangle.
+
+Tests cover separate compact headings, Paste/Join presence and zero field
+rendering on transition/stale-owner callbacks. The community service update is
+separate from these shared menu fixes; see the operator/developer
+[update guide](../development/online-community-update.md). It explains the v2/v3
+contract and installation/verification steps without claiming an external service
+implementation or deployment from this client checkout.
+
 ## Visible Invite Only admission and third revised notes (2026-11-11)
 
 Checkpoint8c81d558 commits the preceding transition/input/layout fixes. The next

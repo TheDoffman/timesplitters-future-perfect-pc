@@ -180,7 +180,11 @@ static void mp_divider(uint32_t menu,unsigned id)
 }
 static void mp_heading(uint32_t menu,const char *label)
 {
-    guest_call(sub_00079D60_gen,6,mp_text(30,label),250u,0x33006u,0u,0u,0u);
+    const int compact_heading=mp_ui.page==MP_HOST_SERVER || mp_ui.page==MP_JOIN_SERVER || mp_ui.page==MP_JOIN_CODE;
+    char caption[96];snprintf(caption,sizeof caption,"\vs85%s\vs100",label);
+    const uint32_t heading=guest_call(sub_00079D60_gen,6,mp_text(30,compact_heading?caption:label),250u,0x33006u,0u,0u,0u);
+    /* Uppercase conversion must not turn the native size escape into glyphs. */
+    if(compact_heading && guest_writable(heading,0x2cu))WORD_AT(heading+0x28u)&=~0x2000u;
     mp_divider(menu,249u);
 }
 static void mp_build(void)
@@ -208,13 +212,13 @@ static void mp_build(void)
         if(mp_ui.pending && mp_ui.action==PC_OM_PRIVATE_HOST) {
             guest_call(sub_00079D60_gen,6,mp_text(row++,"Starting private server..."),250u,0x32104u,0u,0u,0u);break;
         }
-        mp_heading(menu,"Invite Code");
+        mp_heading(menu,"INVITE CODE");
         guest_call(sub_00079D60_gen,6,0u,1u,0x20000u,bits(7.f),MP_SELECT,MP_CODE_DRAW);
         mp_row(row++,2,"Copy");mp_row(row++,3,"Next");
         mp_divider(menu,248u);
         guest_call(sub_00079D60_gen,6,mp_text(29,"Share this code with your friends"),251u,0x32104u,bits(3.f),0u,0u);break;
     case MP_JOIN_SERVER:
-        mp_heading(menu,"Enter Invite Code");
+        mp_heading(menu,"ENTER INVITE CODE");
         guest_call(sub_00079D60_gen,6,0u,1u,0x20000u,bits(7.f),MP_SELECT,MP_CODE_DRAW);
         mp_row(row++,2,"Paste");
         mp_row(row++,3,"Join");break;
@@ -224,8 +228,9 @@ static void mp_build(void)
         mp_choice(row++,3,"Privacy","Open","Invite Only",!mp_ui.public_lobby);
         mp_row(row++,4,"Create Lobby");break;
     case MP_JOIN_CODE:
-        guest_call(sub_00079D60_gen,6,0u,1u,0x20000u,bits(13.f),MP_SELECT,MP_CODE_DRAW);
-        mp_row(row++,3,"Join");break;
+        mp_heading(menu,"ENTER LOBBY CODE");
+        guest_call(sub_00079D60_gen,6,0u,1u,0x20000u,bits(7.f),MP_SELECT,MP_CODE_DRAW);
+        mp_row(row++,2,"Paste");mp_row(row++,3,"Join");break;
     case MP_JOINING:
         /* Keep the original selector's index0 record while discovery runs;
            the player sees one progress row rather than another browser. */
@@ -273,12 +278,16 @@ static void mp_build(void)
 static void mp_code_draw(void)
 {
     const uint32_t menu=WORD_AT(g_esp+4u),item=WORD_AT(g_esp+8u),rect=WORD_AT(g_esp+12u);
-    if(!guest_writable(menu,0x190u) || !guest_writable(item,0x20u) || !guest_writable(rect,16u)) {g_esp+=4u;return;}
+    /* Native row callbacks also run while pages open/close and while the
+       outgoing child is still attached. Fields must not paint over that reveal
+       or use the destination page's text on an outgoing page. */
+    if(!guest_writable(menu,0x1b4u) || !guest_writable(item,0x20u) || !guest_writable(rect,16u) ||
+       mp_native_passthrough || WORD_AT(menu+0x1b0u)!=3u || menu!=mp_ui.menu || WORD_AT(menu+4u)!=mp_descriptor(mp_ui.page)) {g_esp+=4u;return;}
     const float left=FLOAT_AT(rect)+10.f,right=FLOAT_AT(rect+8u)-10.f;
     const float top=FLOAT_AT(rect+4u)+3.f,bottom=FLOAT_AT(rect+12u)-3.f;
     const int name_field=mp_ui.page==MP_CREATE,server_field=mp_ui.page==MP_JOIN_SERVER,host_field=mp_ui.page==MP_HOST_SERVER;
     const char *input=name_field?mp_ui.name:host_field?mp_ui.state.invitation:mp_ui.code;
-    const char *caption=name_field?"LOBBY NAME":server_field?"ENTER INVITE CODE":host_field?"INVITE CODE":"ENTER LOBBY CODE";
+    const char *caption="LOBBY NAME";
     const char *placeholder=name_field?"ENTER NAME...":server_field?"PASTE INVITE...":"ENTER CODE...";
     const uint32_t bounds=mp_buffer(26),measure=mp_buffer(27);
     const uint32_t font=WORD_AT((name_field && guest_writable(mp_ui.choices[0],0x20u)?mp_ui.choices[0]:item)+0x1cu); /* Stock76193 uses the row's authored face. */
@@ -289,11 +298,13 @@ static void mp_code_draw(void)
     const uint32_t heading=mp_text(31,caption);
     guest_call(sub_0003FCF0,4,measure,measure+4u,heading,0u);
     const float field=name_field?fmaxf(left+(right-left)*.48f,left+FLOAT_AT(measure)+16.f):left;
-    const float field_top=(name_field || server_field || host_field)?top:top+FLOAT_AT(measure+4u)+5.f;
+    const float field_top=top;
     const float heading_x=name_field?left:(left+right-FLOAT_AT(measure))*.5f;
     const float heading_y=name_field?top+fmaxf(0.f,(bottom-top-FLOAT_AT(measure+4u))*.5f):top;
-    if(name_field || (!server_field && !host_field))
-        guest_call(sub_00041DC0,4,bits(heading_x),bits(heading_y),heading,0x7073777fu);
+    if(name_field) {
+        const uint32_t colour=guest_call(sub_00154FE0,2,0x7073777fu,WORD_AT(menu+0xf4u));
+        guest_call(sub_00041DC0,4,bits(heading_x),bits(heading_y),heading,colour);
+    }
     FLOAT_AT(bounds)=field;FLOAT_AT(bounds+4u)=field_top;FLOAT_AT(bounds+8u)=right;FLOAT_AT(bounds+12u)=bottom;
     guest_call(sub_00072560,2,menu,bounds);
     guest_call(sub_00019D70,1,1u);guest_call(sub_0003FA10,1,font);guest_call(sub_0003F8D0,0);
@@ -307,7 +318,8 @@ static void mp_code_draw(void)
         guest_call(sub_0003FCF0,4,measure,measure+4u,text,0u);
     }
     const float y=field_top+fmaxf(0.f,(bottom-field_top-FLOAT_AT(measure+4u))*.5f);
-    guest_call(sub_00041DC0,4,bits(field+6.f),bits(y),text,*input?0x7f7f7f7fu:0x545c657fu);
+    const uint32_t colour=guest_call(sub_00154FE0,2,*input?0x7f7f7f7fu:0x545c657fu,WORD_AT(menu+0xf4u));
+    guest_call(sub_00041DC0,4,bits(field+6.f),bits(y),text,colour);
     guest_call(sub_00022FF0,0);
     WORD_AT(0x7e7270u)=sx;WORD_AT(0x7e7280u)=sy;guest_call(sub_0003F8D0,0);g_esp+=4u;
 }
@@ -335,15 +347,15 @@ static void mp_match_draw(void)
     const uint32_t measure=mp_buffer(29);
     /* Match the original title font and the actual thumbnail boundary. */
     guest_call(sub_0003FA10,1,0x15u);
-    const float available=FLOAT_AT(rect+8u)-FLOAT_AT(rect)-FLOAT_AT(0x47d67cu)-FLOAT_AT(0x47862cu)-(row->invite_only?24.f:6.f);
+    const float available=FLOAT_AT(rect+8u)-FLOAT_AT(rect)-FLOAT_AT(0x47d67cu)-FLOAT_AT(0x47862cu)-(row->invite_only?60.f:6.f);
     for(unsigned length=(unsigned)strlen(title);length>3u;length--) {
         guest_call(sub_0003FCF0,4,measure,measure+4u,0x7909f6u,0u);
         if(FLOAT_AT(measure)<=available)break;
         title[length-4u]='.';title[length-3u]='.';title[length-2u]='.';title[length-1u]=0;
     }
     /* The stock painter reuses its rectangle for thumbnail/mode-icon draws. */
-    const float lock_x=FLOAT_AT(rect+8u)-FLOAT_AT(0x47d67cu)-FLOAT_AT(0x47862cu)-16.f;
-    const float lock_y=(FLOAT_AT(rect+4u)+FLOAT_AT(rect+12u))*.5f-7.f;
+    const float lock_x=FLOAT_AT(rect+8u)-FLOAT_AT(0x47d67cu)-FLOAT_AT(0x47862cu)-42.f;
+    const float lock_y=(FLOAT_AT(rect+4u)+FLOAT_AT(rect+12u))*.5f-15.f;
     const uint32_t id=WORD_AT(item+0x14u);WORD_AT(item+0x14u)=0;
     const unsigned previous=story_browser_preview(mission);
     guest_call(sub_001CBDA0,3,menu,item,rect);
@@ -353,9 +365,9 @@ static void mp_match_draw(void)
            selects the native menu material after the stock textured preview. */
         const float x=lock_x,y=lock_y;
         const uint32_t bounds=mp_buffer(26);
-        FLOAT_AT(bounds)=x+2.f;FLOAT_AT(bounds+4u)=y;FLOAT_AT(bounds+8u)=x+10.f;FLOAT_AT(bounds+12u)=y+9.f;
+        FLOAT_AT(bounds)=x+5.f;FLOAT_AT(bounds+4u)=y;FLOAT_AT(bounds+8u)=x+19.f;FLOAT_AT(bounds+12u)=y+18.f;
         guest_call(sub_00072560,2,menu,bounds);
-        FLOAT_AT(bounds)=x;FLOAT_AT(bounds+4u)=y+6.f;FLOAT_AT(bounds+8u)=x+12.f;FLOAT_AT(bounds+12u)=y+15.f;
+        FLOAT_AT(bounds)=x;FLOAT_AT(bounds+4u)=y+12.f;FLOAT_AT(bounds+8u)=x+24.f;FLOAT_AT(bounds+12u)=y+30.f;
         guest_call(sub_00072560,2,menu,bounds);
     }
     WORD_AT(item+0x14u)=id;memcpy(ad,saved_ad,sizeof saved_ad);g_esp+=4u;
@@ -448,13 +460,14 @@ static void mp_edit(unsigned field)
     mp_ui.editing=field;
     char port[16];snprintf(port,sizeof port,"%u",mp_ui.port);
     const char *value=field==1u?mp_ui.name:field==2u?mp_ui.code:field==4u?port:mp_ui.address;
-    const uint32_t buffer=mp_text(30,value);
+    /* Editing must not overwrite slot30, which owns the panel heading. */
+    const uint32_t buffer=mp_text(20,value);
     guest_call(sub_0007D090,8,mp_ui.menu,buffer,field==1u?63u:255u,bits(420.f),0u,0u,MP_TEXT_DONE,MP_TEXT_CANCEL);
 }
 static void mp_text_done(void)
 {
     GuestRegisters saved;save_registers(&saved);
-    const char *value=(const char *)((uintptr_t)mp_buffer(30)+g_xbox_mem_offset);
+    const char *value=(const char *)((uintptr_t)mp_buffer(20)+g_xbox_mem_offset);
     if(mp_ui.editing==1u)snprintf(mp_ui.name,sizeof mp_ui.name,"%.63s",value);
     else if(mp_ui.editing==2u)snprintf(mp_ui.code,sizeof mp_ui.code,"%s",value);
     else if(mp_ui.editing==4u) {

@@ -43842,3 +43842,66 @@ launch. Owned instances/companions shut down and disposable disks recycled.
 Personal saves/settings, canonical fixture and game assets remain untouched.
 Actual Mac/Linux native build/device acceptance and the external community
 service update remain outstanding. Shared changes need no new host adapter.
+
+## Fourth revised native online notes (2026-11-11, after378fab64)
+
+Committed the prior visible-private-lobby/menu fixes as378fab64. This follow-up
+remains local and uncommitted on feature/native-multiplayer-ui; no push or
+publication. All four owned native online field pages now require their current
+menu/descriptor, native phase3 and inactive transport handoff. Custom callbacks
+also run during native panel reveal and outgoing-child closing; painting with
+the destination page's text there caused the reported early fields. Their glyph
+colours now follow menu+F4 through154FE0, matching72560's existing bevel fade.
+Native keyboard edit storage uses slot20, keeping slot30's panel heading intact.
+
+Invite headings use85% of the original font scale with a trailing reset; native
+uppercase conversion is disabled for those already-uppercase labels. Lobby-code
+entry now matches Join Server: separate ENTER LOBBY CODE heading/divider,7-unit
+field with ENTER CODE..., Paste and Join. Field selection retains the original
+virtual keyboard. The silver-bevel padlock is24x30 native units, centred between
+lobby information and thumbnail with a larger reserved title region.
+
+Final Windows x64 supported Build/built-ins/symbol generation passes, identity
+331a05de0c43132b2c299c47e5d1849cddee051f3dcbef2e517c0687bf262174,
+MSVC14.42 / Visual Studio17 2022 generator, Python3.14.2, existing D3D8 backend.
+See logs/online-notes4-build-verified.log. Focused native menu/input/network /
+package/identity checks57 passed,2 Mac-only skips, plus21 repository-context
+checks passed. The final handoff guard was followed by9 relevant menu/input
+passes and the same2 skips. Logs online-notes4-final-tests.log,
+online-notes4-context-tests.log and online-notes4-handoff-tests.log. The initial
+compile failure was the Windows RPC small macro; compact_heading avoids that
+name. Existing pytest cache-directory warnings remain nonfatal.
+
+Valid isolated native evidence uses277ec3ca before the later heading-buffer and
+transport-handoff-only guards. Selected frames live under
+private/network-validation/native-online-flow: notes4-create-reopen-0/-2 and
+notes4-create-close-0 show no custom field during phase2 and the complete field
+at phase3; notes4-accepted-code-open-0/-2 and notes4-accepted-code show the same
+reveal behavior and matched code panel/Paste. notes4-accepted-lock shows the
+larger centrally spaced lock. Original name/code keyboards were rendered; actual
+mouse selection of a digit and Done returns to the code panel. F is not a text-
+editor Cancel, and background focus restrictions prevented synthetic Escape;
+those driver paths are not physical keyboard acceptance. The two new buffer /
+handoff guards have production-unit and supported-build coverage, rather than
+new final-binary visual evidence. A later fixed startup script entered Challenge
+selection; a state-aware attempt then stalled at native profile builder191B10.
+Those aborted runs were cleaned and their mislabeled captures discarded. They
+provide no server-form, multiplayer or gameplay evidence.
+
+The community update is documented in docs/development/online-community-update.md,
+linked from the guide index and relay notes. It specifies public IDs versus
+admission codes for both v2/v3, capability advertisement only after implementation,
+private-service installation preserving certificate/settings/ports, launch-agent
+restart, pinned read-only probes, admission/transport tests and rollback. Its
+installer/source remain outside this checkout; no deployable community update or
+remote installation was performed. Updating the game alone cannot enable that
+service capability. Existing player-owned direct directories retain their tested
+protected admission behavior.
+
+Test runs used disposable Test Lab copies, isolated controls/display/network /
+directory state, supported US XBE SHA-256 verification and bounded capture/log
+volume. All owned instances/companions closed and disks recycled; no owned
+TCP41830 listener remains. Forty-five redundant/invalid frames were removed,
+retaining11 selected images. Personal saves/settings and canonical fixture are
+unchanged. Actual Mac/Linux build/device acceptance remains unrun; no new host
+adapter is needed. Repository context/index and whitespace checks pass.
