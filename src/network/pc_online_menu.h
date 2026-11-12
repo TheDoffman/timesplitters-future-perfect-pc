@@ -41,4 +41,6 @@ void pc_online_menu_leave(void);
 int pc_online_menu_copy(const char *text);
 int pc_online_menu_paste(char *text,size_t capacity);
 int pc_online_menu_publish(PcOnlineMatchInfo *info);
+struct PcOnlineRoster;
+int pc_online_menu_publish_roster(struct PcOnlineRoster *info);
 #endif

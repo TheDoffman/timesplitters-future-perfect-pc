@@ -10698,3 +10698,12 @@ connection behavior on physical Mac Vulkan rather than relying on fixture passes
 Final60f73aec three-player normal departure/replacement-host crash regression
 also passes (`mac-final-repeat-a`,189.890s): Windows0 to Windows2 to Mac1, scored
 backup/clocks and six bots continue30 seconds per handoff, cleanup completed.
+
+
+MAC-013 dashboard player labels restored to native UI3542601b on
+`fix/dashboard-player-names` (uncommitted). Shared `pc_online_roster.h`, menu IPC,
+active Arcade frame dispatch and Python companion report names/character labels
+without an OS-specific policy. Earlier identity-branch Mac acceptance is retained
+as historical evidence; this native-UI integration requires a matching native Mac
+build and physical dashboard check. Windows focused tests pass; current native
+Mac acceptance is pending. See [player reporting](../agent-context/online-player-identities.md).

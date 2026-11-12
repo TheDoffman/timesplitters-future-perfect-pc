@@ -11,6 +11,8 @@ ptrdiff_t g_xbox_mem_offset;
 #define FLOAT_AT(a) (*(float *)((uintptr_t)(uint32_t)(a)+g_xbox_mem_offset))
 static unsigned presents,refreshes,departures,rebases,revives;
 static int overlay_migrating;
+static unsigned metadata_ticks;
+static void native_multiplayer_match_metadata(void){metadata_ticks++;}
 void pc_match_overlay_migration(int active){overlay_migrating=active;}
 void pc_arcade_join_frame(const PcArcadeControlState *control){(void)control;}
 PcOnlineMode pc_online_mode(void){return PC_ONLINE_ARCADE;}
@@ -124,6 +126,7 @@ int main(void)
     pc_arcade_store32(status+12,1);bridge_reply(bridge,&native,status,sizeof status,1);
     REQUIRE(await_state(&observed,4,1) && pc_arcade_migration_frame(0)==0);
     REQUIRE(WORD_AT(0x76b140u)==2u && !g_tsfp_arcade_migrating);
+    REQUIRE(metadata_ticks==0 && pc_arcade_migration_frame(1)==0 && metadata_ticks==1);
     pc_arcade_store32(status+12,5);bridge_reply(bridge,&native,status,sizeof status,1);
     REQUIRE(pc_network_arcade_progress(1,&observed) && observed.phase==1u);
     /* The same initialized guest can subsequently migrate, independently of

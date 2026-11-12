@@ -20,6 +20,8 @@ REQUEST=struct.Struct('<8I64s2048s256s68s')
 STATE=struct.Struct('<8I256s32s2048s256s256s68s')
 LOBBY=struct.Struct('<7I32s64s64s32s24s')
 MATCH=struct.Struct('<6I64s32s')
+ROSTER_HEADER=struct.Struct('<7I')
+PERSON=struct.Struct('<Iiii32s48s')
 IDLE,BUSY,LIST,CONNECTED,PRIVATE_READY,ERROR=range(6)
 BROWSE,CREATE,JOIN,LEAVE,PRIVATE_HOST,PRIVATE_CONNECT,CANCEL=range(1,8)
 
@@ -49,6 +51,22 @@ def decode_match(data):
     if not name or not rules or any(ord(c)<32 or ord(c)==127 for c in name+rules):
         raise ValueError('Invalid match labels')
     return mode,dict(map_scene=scene,game_type_id=game_type,in_progress=bool(active),map_name=name,game_type=rules)
+
+def decode_roster(data):
+    if len(data)!=ROSTER_HEADER.size+16*PERSON.size:raise ValueError('Invalid player report size')
+    magic,version,scene,tick,generation,count,serial=ROSTER_HEADER.unpack_from(data)
+    if magic!=0x31524f54 or version!=1 or scene>100 or generation>255 or not 1<=count<=16 or not serial:
+        raise ValueError('Invalid player report')
+    people=[];seen=set()
+    for index in range(count):
+        slot,character,skin,portrait,name,label=PERSON.unpack_from(data,ROSTER_HEADER.size+index*PERSON.size)
+        if slot>=16 or slot in seen or not -1<=character<4096 or not -128<=skin<=127 or not -1<=portrait<1024:
+            raise ValueError('Invalid player identity')
+        name,label=text(name),text(label)
+        if any(ord(c)<32 or ord(c)==127 for c in name+label):raise ValueError('Invalid identity label')
+        seen.add(slot);people.append(dict(slot=slot,name=name,character=character,skin=skin,portrait=portrait,character_name=label))
+    return dict(scene=scene,tick=tick,generation=generation,serial=serial,people=people)
+
 
 def invitation_lan_addresses(values):
     if not isinstance(values,(list,tuple)) or len(values)>4 or any(not isinstance(v,str) or not lan_ipv4(v) for v in values):
@@ -254,6 +272,17 @@ class Controller:
                 with native.lock:native.match_info=info
             else:active.match_info=info
 
+    def update_players(self,data):
+        info=decode_roster(data)
+        with self.lock:
+            active=self.session
+            native=getattr(active,'native',None)
+            if not native or self.mode!=1:return
+            with native.lock:
+                if not native.status or native.status['host_peer']!=native.bridge.peer_id:return
+                native.roster_info=info
+                native.roster_at=native.bridge.clock()
+
     def snapshot(self):
         with self.lock:
             active=self.session
@@ -323,7 +352,7 @@ def run(args,parent):
     result=args.result.resolve()
     request_path=Path(str(result)+'.request');state_path=Path(str(result)+'.state')
     controller=Controller(args.compatibility,private_launcher(result,parent))
-    previous=previous_state=None
+    previous=previous_state=previous_players=None
     try:
         while not parent.exited() and not result.with_suffix('.stop').exists():
             try:
@@ -335,6 +364,11 @@ def run(args,parent):
                 with controller.lock:controller.status=ERROR;controller.message=str(error)
             try:controller.update_metadata(Path(str(result)+'.match').read_bytes())
             except (OSError,ValueError):pass # Invalid display details cannot interrupt a session.
+            try:
+                players=Path(str(result)+'.players').read_bytes()
+                if players!=previous_players:
+                    controller.update_players(players);previous_players=players
+            except (OSError,ValueError):pass
             data=controller.snapshot()
             if data!=previous_state:
                 temporary=Path(str(state_path)+'.tmp');temporary.write_bytes(data)
@@ -344,6 +378,6 @@ def run(args,parent):
             time.sleep(.05)
     finally:
         controller.close()
-        for path in (result,result.with_suffix('.stop'),request_path,state_path,Path(str(state_path)+'.tmp'),Path(str(result)+'.server'),Path(str(result)+'.match'),Path(str(result)+'.match.tmp')):
+        for path in (result,result.with_suffix('.stop'),request_path,state_path,Path(str(state_path)+'.tmp'),Path(str(result)+'.server'),Path(str(result)+'.match'),Path(str(result)+'.match.tmp'),Path(str(result)+'.players'),Path(str(result)+'.players.tmp')):
             path.unlink(missing_ok=True)
         parent.close()

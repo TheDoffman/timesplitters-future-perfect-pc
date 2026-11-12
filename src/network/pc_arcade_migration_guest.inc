@@ -60,6 +60,7 @@ int pc_arcade_migration_frame(int after)
 {
     const int active=pc_online_mode()==PC_ONLINE_ARCADE && WORD_AT(0x76b108u) &&
         WORD_AT(0x76b1a4u)==15u && WORD_AT(0x79094cu)<=100u && WORD_AT(0x7de30cu)==7u;
+    if(after && active)native_multiplayer_match_metadata();
     PcArcadeControlState state={0};
     if(!after) {
         uint32_t native_peer=UINT32_MAX,node=WORD_AT(0x774028u);

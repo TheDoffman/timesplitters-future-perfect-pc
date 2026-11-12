@@ -108,11 +108,13 @@ int pc_online_menu_start(void){return online_request_test;}
 int pc_online_menu_send(PcOnlineMenuRequest *request){CHECK(online_request_test);request->sequence=++online_request_calls;online_request=*request;return 1;}
 const PcOnlineMenuState *pc_online_menu_poll(void){CHECK(0);return NULL;}
 int pc_online_menu_accept(void){CHECK(0);return 0;}
-int pc_online_menu_active(void){return 0;}
+static int roster_fixture;static unsigned roster_publications;
+int pc_online_menu_active(void){return roster_fixture;}
 void pc_online_menu_leave(void){CHECK(0);}
 int pc_online_menu_copy(const char *text){(void)text;CHECK(0);return 0;}
 int pc_online_menu_paste(char *text,size_t bytes){(void)text;(void)bytes;CHECK(0);return 0;}
 int pc_online_menu_publish(PcOnlineMatchInfo *info){(void)info;CHECK(0);return 0;}
+int pc_online_menu_publish_roster(struct PcOnlineRoster *info){CHECK(roster_fixture && info->count==1 && !strcmp(info->people[0].name,"Fixture player") && !strcmp(info->people[0].character_name,"Cortez") && info->people[0].portrait==528);roster_publications++;return 1;}
 PcOnlineMode pc_online_mode(void) { return PC_ONLINE_NONE; }
 static unsigned online_disconnects,lan_browser_entries,lan_enables;
 static unsigned lan_closing_requests;
@@ -199,6 +201,8 @@ void sub_00075980(void){CHECK(WORD_AT(g_esp+8)==2u);native_menu_transitions++;g_
 MOUSE_STUB(sub_001A4510) MOUSE_STUB(sub_000318A0) MOUSE_STUB(sub_003800D1)
 MOUSE_STUB(sub_001CBDA0) MOUSE_STUB(sub_00064E20)
 void sub_00077110(void){WORD_AT(WORD_AT(g_esp+4u)+0x18cu)=WORD_AT(g_esp+8u);g_esp+=4;}
+void sub_002BE690(void){CHECK(roster_fixture && WORD_AT(g_esp+4)==12 && WORD_AT(g_esp+8)==UINT32_MAX);g_eax=528;g_esp+=4;}
+void sub_002BE650(void){CHECK(roster_fixture && WORD_AT(g_esp+4)==12 && WORD_AT(g_esp+8)==UINT32_MAX);g_eax=345;g_esp+=4;}
 #undef MOUSE_STUB
 /* Bot helpers share the menu translation unit, but must never execute in
  * this isolated FOV fixture. Bot behavior has its own network regressions. */
@@ -378,7 +382,8 @@ void sub_00078980(void) {
 }
 STUB(sub_0007D480) STUB(sub_000717D0)
 void sub_00075430(void) { WORD_AT(WORD_AT(g_esp+4)+0xc8)=WORD_AT(g_esp+8);g_esp+=4; }
-STUB(sub_0003D7B0) STUB(sub_001CD120) STUB(sub_00069720) STUB(sub_00071CF0)
+void sub_0003D7B0(void){if(roster_fixture){CHECK(WORD_AT(g_esp+4)==345);g_eax=0x310100;}g_esp+=4;}
+STUB(sub_001CD120) STUB(sub_00069720) STUB(sub_00071CF0)
 static unsigned audio_native_ticks,audio_native_actions,audio_native_opens;
 static unsigned fixture_audio_rows(void) {
     unsigned mask=0;
@@ -1803,6 +1808,23 @@ int main(int argc,char **argv)
         CHECK(mp_ui.page==MP_JOINING && built_row_count==1u && built_ids[0]==0u);
         CHECK(WORD_AT(0x200000u+0x50u)==0x1cbd40u);
         mp_ui.autojoin=0;CHECK(!native_multiplayer_lookup(0x1a43e0u));
+    }
+    { /* Gameplay metadata continues when the menu loop is not running. */
+        WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;WORD_AT(0x76b1a4)=15;
+        WORD_AT(0x7de30c)=7;WORD_AT(0x79094c)=48;WORD_AT(0x7356d8)=0x300000;
+        WORD_AT(0x7de400)=0x101;*((uint8_t*)mem+0x7de456)=255;
+        WORD_AT(0x777244)=1;WORD_AT(0x77728c)=1;
+        WORD_AT(0x300048)=12;*((uint8_t*)mem+0x300c0d)=255;WORD_AT(0x300070)=0x310000;
+        strcpy((char*)mem+0x310000,"Fixture player");strcpy((char*)mem+0x310100,"Cortez");
+        roster_fixture=1;mp_ui.storage=0x280000;mp_ui.mode=PC_ONLINE_ARCADE;
+        mp_ui.source=0;mp_native_passthrough=1;mp_ui.metadata_at=0;
+        const uint32_t before_sp=g_esp,before_a=g_eax;
+        native_multiplayer_match_metadata();CHECK(roster_publications==1);
+        CHECK(g_esp==before_sp && g_eax==before_a);
+        native_multiplayer_match_metadata();CHECK(roster_publications==1);
+        clock_ms+=1001;native_multiplayer_match_metadata();CHECK(roster_publications==2);
+        clock_ms+=1001;mp_ui.source=2;native_multiplayer_match_metadata();CHECK(roster_publications==2);
+        roster_fixture=0;
     }
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");

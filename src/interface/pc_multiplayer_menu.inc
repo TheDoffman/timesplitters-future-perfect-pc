@@ -2,6 +2,7 @@
  * 123F3..123FA are verified unused INT3 padding in US 45410066. */
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 #include "network/pc_online_menu.h"
+#include "network/pc_online_roster.h"
 #include "pc_feature_flags.h"
 #define MP_BUILD 0x123f3u
 #define MP_SELECT 0x123f4u
@@ -400,11 +401,33 @@ static void mp_match_draw(void)
     if(row->invite_only)mp_privacy_draw(menu,lock_x,lock_y);
     WORD_AT(item+0x14u)=id;memcpy(ad,saved_ad,sizeof saved_ad);g_esp+=4u;
 }
+extern void sub_002BE690(void),sub_002BE650(void);
+static int mp_roster_read(void *ctx,uint32_t address,void *out,size_t bytes)
+{
+    (void)ctx;
+    if(!guest_writable(address,bytes)){if(getenv("TSFP_NATIVE_MENU_TRACE"))fprintf(stderr,"[PC-ONLINE-UI] roster unreadable address=%08X bytes=%zu\n",address,bytes);return 0;}
+    memcpy(out,(const void *)((uintptr_t)address+g_xbox_mem_offset),bytes);return 1;
+}
+static void mp_roster_portrait(void *ctx,int character,int skin,int32_t *portrait,char *label,size_t size)
+{
+    *portrait=(int32_t)guest_call(sub_002BE690,2,(uint32_t)character,(uint32_t)skin);
+    if(*portrait<0 || *portrait>=1024){*portrait=-1;return;}
+    /* The original selector resolves skin-specific display names. Entry+C
+     * is biography text, not the character name. */
+    const uint32_t id=guest_call(sub_002BE650,2,(uint32_t)character,(uint32_t)skin);
+    if(id && id<65536u)pc_roster_text(ctx,mp_roster_read,guest_call(sub_0003D7B0,1,id),label,size);
+}
 static void mp_publish_metadata(void)
 {
     if(GetTickCount64()<mp_ui.metadata_at || !WORD_AT(0x76b108u) || WORD_AT(0x76b140u)!=1u || mp_ui.source==2u)return;
     mp_ui.metadata_at=GetTickCount64()+1000u;
     const uint32_t scene=WORD_AT(0x79094cu),config=scene<=100u?0x7de400u:0x78ad58u;
+    if(mp_ui.mode==PC_ONLINE_ARCADE && scene<=100u) {
+        PcOnlineRoster roster;
+        const int captured=pc_online_roster_capture(&roster,NULL,mp_roster_read,mp_roster_portrait);
+        const int published=captured?pc_online_menu_publish_roster(&roster):0;
+        if(getenv("TSFP_NATIVE_MENU_TRACE"))fprintf(stderr,"[PC-ONLINE-UI] roster captured=%d published=%d game=%u mode=%u\n",captured,published,WORD_AT(0x7de30cu),(unsigned)pc_online_mode());
+    }
     const uint8_t *settings=(const uint8_t *)((uintptr_t)config+g_xbox_mem_offset);
     const unsigned map=settings[0x54u],type=settings[0x56u];
     if(type>=32u || map>100u)return;
@@ -470,6 +493,14 @@ static int native_multiplayer_notice_bounds(uint32_t menu,float x,float y,float 
     mp_ui.copy_hover=sh && pc_menu_mouse_position(pointer,(float)sw/sh,
         (float)WORD_AT(0x4e8cf0u),(float)WORD_AT(0x4e8cf4u),&px,&py) && px>=x && px<=x+w && py>=y-3.f && py<=y+h+3.f;
     return mp_ui.copy_hover;
+}
+/* Menu ticks stop during gameplay. The Arcade frame hook keeps display
+ * metadata fresh without opening menus or altering native engine progress. */
+static void native_multiplayer_match_metadata(void)
+{
+    if(!mp_ui.storage || !mp_native_passthrough || !pc_online_menu_active())return;
+    GuestRegisters saved;save_registers(&saved);
+    mp_publish_metadata();restore_registers(&saved);
 }
 static void native_multiplayer_open(uint32_t source)
 {
@@ -814,6 +845,7 @@ static void (*native_multiplayer_lookup(uint32_t address))(void)
 #else
 static void native_multiplayer_tick(void){}
 static void native_multiplayer_refresh_click(uint32_t menu){(void)menu;}
+static void native_multiplayer_match_metadata(void){}
 static void native_multiplayer_open(uint32_t source){(void)source;}
 static const char *native_multiplayer_notice(uint32_t menu){(void)menu;return NULL;}
 static int native_multiplayer_lobby_notice(uint32_t menu){(void)menu;return 0;}

@@ -79,3 +79,5 @@ The community updater guide's public probe explicitly clears Client.local_addres
 and runs from another network. Otherwise an ignored personal route can satisfy
 an apparently public check locally. Preserve the installed service's own port
 pair through updates; it is independent of the player's private-directory pair.
+
+The native UI integration restores optional active-host [player identity reporting](online-player-identities.md) for private dashboard labels; this remains client metadata and adds no private server code.

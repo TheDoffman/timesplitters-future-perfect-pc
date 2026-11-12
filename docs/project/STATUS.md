@@ -44119,3 +44119,22 @@ Community public reachability remains unresolved pending host-side listener /
 forwarding confirmation; the operator-guide public-probe correction is local.
 All changes remain local/uncommitted after03b6cc2c. Personal saves/settings,
 certificates and firewall/router rules were preserved.
+
+
+### Restore dashboard player labels on the native UI branch — 2026-11-11
+
+`fix/dashboard-player-names` depends on unmerged native UI3542601b. A live
+three-human/eight-bot match supplied null names/character labels to the mini:
+the native UI branch lacked the earlier optional player-identity publisher.
+Selectively restored the shared bounded native reader, active-frame publication,
+`.players` IPC and host/epoch-fenced companion `player_info` reporting from the
+private-dashboard-identities client work. Kept newer menus, private hosting,
+visible locked-room admission and connection routes. No dashboard/service code
+changes or restart are required. Names appear after the host runs this updated
+build; participants must retain matching multiplayer identities.
+
+Windows focused roster/menu/private-directory/routes/checkpoint/FOV selection:
+102 passed,2 platform skips. This includes the native ABI reader, localized
+character name resolution, active-frame throttling and host fencing. Builds and
+current live dashboard acceptance remain pending; earlier identity-branch evidence
+is distinct. The existing live match has not been interrupted.
