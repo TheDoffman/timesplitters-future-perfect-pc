@@ -10701,17 +10701,18 @@ backup/clocks and six bots continue30 seconds per handoff, cleanup completed.
 
 
 MAC-013 dashboard player labels restored to native UI3542601b on
-`fix/dashboard-player-names` (uncommitted). Shared `pc_online_roster.h`, menu IPC,
+`fix/dashboard-player-names` (client945c3538). Shared `pc_online_roster.h`, menu IPC,
 active Arcade frame dispatch and Python companion report names/character labels
 without an OS-specific policy. Earlier identity-branch Mac acceptance is retained
 as historical evidence; this native-UI integration requires a matching native Mac
-build and physical dashboard check. Windows focused tests pass; current native
-Mac acceptance is pending. See [player reporting](../agent-context/online-player-identities.md).
+build and physical dashboard check. Windows and physical Mac builds/platform checks and real paired name display
+before/after migration pass on the current integration. See [player reporting](../agent-context/online-player-identities.md).
 
 
 MAC-013 floating guns after bot authority migration: shared pc_arcade_weapons.inc
 and commit hook retire only owned replica-held models on guest-to-host commit.
 No new host adapter is needed. The physical Mac reproduced the pre-fix orphaned
 models during Windows-to-Mac migration. Compiled dual-host/fallback and native
-control tests cover cleanup; matching build and actual post-fix Mac orphan checks
-remain pending. See [migration cleanup](../development/arcade-host-migration.md#promoted-bot-weapon-attachments).
+control tests cover cleanup; matching Windows/Mac builds and actual post-fix Mac orphan checks now pass: six
+bots/scores/timer and names retained, zero visible orphaned held models. Focused
+Mac checks:103 passed,4 platform skips. See [migration cleanup](../development/arcade-host-migration.md#promoted-bot-weapon-attachments).

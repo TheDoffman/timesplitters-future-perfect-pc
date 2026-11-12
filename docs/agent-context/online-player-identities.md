@@ -60,3 +60,5 @@ current integration validation is recorded in STATUS.md. No private service code
 or dashboard deployment is required. Updated matching clients are required.
 
 Host migration also retires owned replica bot gun models before stock AI overwrites their hand handles. See [migration cleanup](../development/arcade-host-migration.md#promoted-bot-weapon-attachments); test_arcade_promotion_weapons.py covers both host defines and fallback.
+
+Current native-UI integration: matching Windows/Mac builds and real paired Deathmatch pass; authenticated dashboard labels remain populated through host loss, while six bots/scores/timer continue. Promoted-weapon cleanup leaves no visible orphan models. See STATUS.md for host-specific counts and scope.

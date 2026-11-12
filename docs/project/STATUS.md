@@ -44135,9 +44135,11 @@ build; participants must retain matching multiplayer identities.
 
 Windows focused roster/menu/private-directory/routes/checkpoint/FOV selection:
 102 passed,2 platform skips. This includes the native ABI reader, localized
-character name resolution, active-frame throttling and host fencing. Builds and
-current live dashboard acceptance remain pending; earlier identity-branch evidence
-is distinct. The existing live match has not been interrupted.
+character name resolution, active-frame throttling and host fencing. Matching Windows/Mac canonical builds and built-in checks passed. The current
+real Windows-host/Mac-guest test populated names, localized character labels and
+portraits on the authenticated private dashboard before and after migration.
+User approved closing the interactive game for rebuilding; unrelated matches
+were preserved. Earlier identity-branch acceptance remains separately recorded.
 
 
 ### Floating bot guns after host migration — 2026-11-11
@@ -44147,5 +44149,11 @@ player/bot labels survive host migration, with six bots, scores and timer retain
 The test also reproduced nine old visible gun entities no longer referenced by
 the promoted bots' hand records. Added shared post-commit cosmetic attachment
 retirement before stock AI rewrites the replica hands. This preserves human and
-dropped weapons, inventory and score state. Current integration builds and live
-post-fix orphan checks remain pending; prior names-build Windows/Mac checks pass.
+dropped weapons, inventory and score state. Matching integration builds and built-in checks passed on Windows and the
+physical Apple Silicon Mac. Focused tests:105 passed/2 skipped Windows and
+103 passed/4 skipped Mac. Real Deathmatch host loss promoted the Mac, retained
+six bots and scores, advanced elapsed time20.1->24.7 seconds and preserved
+dashboard names. Read-only inspection found no visible orphaned replica guns
+after promotion. Private evidence:logs/dashboard-names-weapons-native.log.
+This is synthetic-input native crossplay acceptance, not every-mode/human or
+full outside-network match acceptance.
