@@ -43905,3 +43905,72 @@ TCP41830 listener remains. Forty-five redundant/invalid frames were removed,
 retaining11 selected images. Personal saves/settings and canonical fixture are
 unchanged. Actual Mac/Linux build/device acceptance remains unrun; no new host
 adapter is needed. Repository context/index and whitespace checks pass.
+
+
+## Fifth revised online notes ? 2026-11-11
+
+Previous work is committed locally as3f36084b on feature/native-multiplayer-ui;
+these follow-ups are local changes on that dependent branch, with no push/merge.
+The two revised notes move the24x30 lock from beside the thumbnail to row-left+10,
+row-midpoint minus8, beneath the mode text and above population. Long lobby names
+use the original title width again. Directory admission now retains the selected
+browser or lobby-code page and existing Connecting status. Only native discovery
+opens Joining lobby. Back during pending admission sends Cancel and stays on that
+page; retry, public-ID/secret separation and duplicate-input suppression remain.
+Original1A0A60 initialization,1CB950 networking and352980/352990 discovery remain
+intact rather than bypassing native connection work.
+
+Windows x64/MSVC supported build compiles the common source and completes patch
+validation, built-in checks and matching symbols. Version0.6.1, compatibility
+b431692153120d897954ba2ec6a6a807c0a35d3a69e138d2598a68698abb98f7;
+Story chooser remains disabled by the existing release policy. The initial outer
+PowerShell output capture marked ordinary native-test stderr as an error despite
+all checks finishing; native-redirection confirmation is recorded separately in
+logs/online-notes5-build-verified.log (clean exit0, all build checks passed).
+Focused pytest:36 passed,2 native-Mac skips
+(production FOV/menu callback fixture, browser mouse and online-menu IPC); repository
+context tests:21 passed. Fixtures exercise both open/protected admission staying
+on the source page, selected public-ID/code requests, duplicate input and in-place
+cancellation, plus the retained native index0/callback1CBD40 discovery contract.
+
+A bounded native run of this b4316921 binary with the disposable unlocked Test Lab
+profile and display-only HTTP directory fixture confirms padlock placement in
+private/network-validation/native-online-flow/notes5-lock.png. The fixture does
+not host real matches; this is rendered browser evidence, not a fresh two-player
+join or gameplay test. Startup was navigated by actual screen state:1Player,
+profile Down/Test Lab, main Multiplayer, community browser. The previous rowless
+profile page was a list widget and required Down before Select, not repeated E.
+The supported US XBE SHA-256 was checked before launch; saves, controls, display,
+online settings and directory state were isolated. The owned process/companion
+closed, disposable disks were recycled and TCP41830 has no owned listener.
+Personal data and the canonical fixture are unchanged. Mac/Linux device/build
+checks and fresh end-to-end join acceptance remain unrun. External community
+service implementation/deployment is unchanged and remains a separate dependency.
+
+
+## Native browser padlock artwork ? 2026-11-11
+
+Local follow-up on feature/native-multiplayer-ui after3f36084b preserves the
+preceding uncommitted notes fixes. The browser now uses the game's actual
+padlock, sprite147, rather than two silver outlines. The verified US XBE names
+this asset at47B500, with descriptor4D4C04 in table4D2D5C. Original locked
+mission/challenge painters2BEC4B/2BEEFD/2BF1B3 fetch this sprite through80F20.
+The common menu adapter uses that same lookup and native1ED50/1F090 textured
+quad, reading the actual texture dimensions and fitting its aspect within24x30.
+The icon retains its artwork and precedes face3 Invite Only in muted red7F50507F,
+below the mode text and above player counts. Both use154FE0/menu+F4 fade; native
+text/material state and font are restored. No private assets were copied into
+tracked source or redesigned.
+
+Windows x64/MSVC supported Build and built-in checks passed (exit0), with matching
+symbols: logs/online-native-lock-build.log. Version0.6.1, compatibility
+54ec9b575a31ddd6bcdaf624e6cf628ad6610c3bf0b01e07d0c653ddf5a3f5e1. Focused production
+menu fixture:4 passed,2 native-Mac compile checks skipped. A bounded native run
+of this exact54ec9b57 binary confirms the original gold padlock and soft-red
+Invite Only caption in private/network-validation/native-online-flow/native-lock-invite-only.png.
+This is browser presentation with a display-only directory fixture, not a real
+multiplayer admission or gameplay test. The supported US executable hash was
+verified before launch. Test Lab profile, controls/display/online settings and
+directory state were disposable/isolated; personal files and canonical fixture
+were preserved. Mac/Linux build/device validation remains unrun. No new OS
+adapter or external service change is required by this presentation-only change.

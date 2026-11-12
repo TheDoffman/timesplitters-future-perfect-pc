@@ -84,10 +84,16 @@ it as an RPC type macro. MP_JOIN_CODE now shares the7-unit field, separate headi
 divider, Paste and Join rows with MP_JOIN_SERVER. Its text remains ENTER LOBBY
 CODE / ENTER CODE..., and selecting the field still opens the virtual keyboard.
 
-The silver-bevel padlock is now24x30 native units and sits42 units before the
-thumbnail boundary, vertically centred between the lobby information and map.
-Reserve60 units in the native title measurement to keep long names clear. Keep
-saving its bounds before the stock advertisement painter reuses the rectangle.
+`mp_privacy_draw` uses the original padlock sprite147 from descriptor4D4C04
+(table4D2D5C, runtime texture80F20), as the locked mission/challenge painters at
+2BEC4B/2BEEFD/2BF1B3 do. It draws with native1ED50/1F090 and the actual texture
+width/height at descriptor+26/+2A, preserving aspect within24x30. It sits at
+row-left+10 / row-midpoint minus8, below mode text and above population, followed
+by small native face3 Invite Only text at x+32 in muted red7F50507F. Both use
+154FE0(menu+F4) fade; the icon keeps its original artwork. Native material/text
+state and font are restored; there is no drawn-outline replacement. Keep saving
+bounds before the stock advertisement painter reuses its rectangle. Titles use
+the original full width and the stock mode icon remains clear.
 
 Tests cover separate compact headings, Paste/Join presence and zero field
 rendering on transition/stale-owner callbacks. The community service update is
@@ -115,7 +121,7 @@ Native IPC version3 adds `invite_only` to PcOnlineMenuLobby (244 bytes; state782
 Request remains2468 bytes; JOIN's address field carries the selected public lobby
 ID, other actions retain its address meaning. A locked row clears the input and
 opens MP_JOIN_CODE. Wrong-code errors return there for retry; an open row keeps
-its existing direct-select flow. Native thumbnail rows paint a small silver-bevel padlock, saving row bounds
+its existing direct-select flow. Native thumbnail rows paint the original padlock plus Invite Only caption, saving row bounds
 before the stock painter reuses its rectangle for the map/mode icons;
 unknown-map fallback rows label Invite Only. Capacity and mode admission remain
 independent of privacy. IPC validates the new boolean and rejects old versions.
@@ -174,11 +180,13 @@ stock76193 does, rather than a guessed face ID. Their measurement buffers and
 caption strings are separate. Host/Join Server use a centred heading above a
 full-width entry field, retaining Copy/Paste/Next/Join and the in-panel share hint.
 
-Guest selection opens MP_JOINING immediately. During native discovery,1A43E0 /
-1A4780 builders present the same Joining lobby row; its hidden selection contract
+Guest selection requests directory admission while retaining the browser or
+code-entry page and its existing Connecting status. Back cancels admission in
+place; errors retain that page for retry. Only native discovery opens MP_JOINING:
+1A43E0 /1A4780 builders present the Joining lobby row; its hidden selection contract
 retains index0 and1CBD40 after352990 reports an actual advertisement. The original
 native browser is not shown between directory admission and the real lobby. Back,
-errors and timeout return to the connected directory browser. No transport shortcut
+native discovery errors and timeout return to the connected directory browser. No transport shortcut
 or fabricated advertisement is used.
 
 The browser keeps its80-unit width and full-canvas placement, with a70-unit
@@ -434,3 +442,9 @@ Back, and opening the original lobby-name editor. Menu/FOV fixture checks pass
 (4 passed,2 platform skips), including actual activation and Back dispatch,
 blocked/muted activation, and transition restart suppression. Tests a/b of the
 foreground-only driver stopped on a focus guard; they are not product failures.
+
+Fifth revised notes: production menu fixtures verify open/protected admission
+requests retain their source page, selected public ID/secret semantics, duplicate
+activation suppression and in-place cancellation. Existing discovery tests retain
+index0/callback1CBD40. Native initialization1A0A60/1CB950 and advertisement
+enumeration352980/352990 remain required; do not remove them to merge screens.

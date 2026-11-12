@@ -25,7 +25,7 @@ static int mp_native_passthrough;
 extern void sub_001A2730(void),sub_001A2720(void),sub_001A4350(void);
 extern void sub_001A8CE0(void),sub_001A8EE0(void),sub_001CBA50(void),sub_001CBD40(void);
 extern void sub_001A8D30(void),sub_001A8F30(void);
-extern void sub_00019D70(void);
+extern void sub_00019D70(void),sub_0001ED60(void);
 extern void sub_001A4510(void),sub_001CBDA0(void),sub_00064E20(void),sub_0003D7B0(void),sub_00077110(void),sub_0003FA10(void),sub_00072560(void),sub_00075980(void);
 static void (*multiplayer_exit_lookup(uint32_t address))(void);
 static void multiplayer_lobby_tick(void (*original)(void));
@@ -323,6 +323,38 @@ static void mp_code_draw(void)
     guest_call(sub_00022FF0,0);
     WORD_AT(0x7e7270u)=sx;WORD_AT(0x7e7280u)=sy;guest_call(sub_0003F8D0,0);g_esp+=4u;
 }
+/* US locked mission/challenge painters2BEC4B/2BEEFD/2BF1B3 resolve
+   sprite147: the original padlock record at4D4C04 in table4D2D5C. */
+static void mp_privacy_draw(uint32_t menu,float x,float y)
+{
+    guest_call(sub_00022FF0,0);
+    const uint32_t texture=guest_call(sub_00080F20,1,0x147u);
+    const uint32_t table=WORD_AT(0x4b85c8u);
+    const uint32_t descriptors=guest_writable(table,4u)?WORD_AT(table):0u;
+    const uint32_t descriptor=texture<4096u?descriptors+texture*0x34u:0u;
+    uint16_t width=0,height=0;
+    if(descriptors && guest_writable(descriptor,0x34u)) {
+        memcpy(&width,(const void *)((uintptr_t)(descriptor+0x26u)+g_xbox_mem_offset),2u);
+        memcpy(&height,(const void *)((uintptr_t)(descriptor+0x2au)+g_xbox_mem_offset),2u);
+    }
+    if(width && height) {
+        const float scale=fminf(24.f/(float)width,30.f/(float)height);
+        const int left=(int)(x+.5f),top=(int)(y+(30.f-(float)height*scale)*.5f+.5f);
+        const uint32_t colour=guest_call(sub_00154FE0,2,0x7f7f7f7fu,WORD_AT(menu+0xf4u));
+        guest_call(sub_0001ED60,1,2u);guest_call(sub_0001ED50,1,texture);guest_call(sub_00019D70,1,1u);
+        guest_call(sub_0001F090,9,(uint32_t)left,(uint32_t)top,
+            (uint32_t)(left+(int)((float)width*scale+.5f)),(uint32_t)(top+(int)((float)height*scale+.5f)),
+            0u,0u,(uint32_t)width<<4,(uint32_t)height<<4,colour);
+        guest_call(sub_0001ED60,1,1u);guest_call(sub_00022FF0,0);
+    }
+    guest_call(sub_00019D70,1,1u);
+    const uint32_t font=guest_call(sub_0003FA10,1,3u);
+    const uint32_t text=mp_text(28,"Invite Only"),measure=mp_buffer(27);
+    guest_call(sub_0003FCF0,4,measure,measure+4u,text,0u);
+    const uint32_t colour=guest_call(sub_00154FE0,2,0x7f50507fu,WORD_AT(menu+0xf4u));
+    guest_call(sub_00041DC0,4,bits(x+32.f),bits(y+(30.f-FLOAT_AT(measure+4u))*.5f),text,colour);
+    guest_call(sub_00022FF0,0);guest_call(sub_0003FA10,1,font);
+}
 static void mp_match_draw(void)
 {
     const uint32_t menu=WORD_AT(g_esp+4u),item=WORD_AT(g_esp+8u),rect=WORD_AT(g_esp+12u);
@@ -347,29 +379,21 @@ static void mp_match_draw(void)
     const uint32_t measure=mp_buffer(29);
     /* Match the original title font and the actual thumbnail boundary. */
     guest_call(sub_0003FA10,1,0x15u);
-    const float available=FLOAT_AT(rect+8u)-FLOAT_AT(rect)-FLOAT_AT(0x47d67cu)-FLOAT_AT(0x47862cu)-(row->invite_only?60.f:6.f);
+    const float available=FLOAT_AT(rect+8u)-FLOAT_AT(rect)-FLOAT_AT(0x47d67cu)-FLOAT_AT(0x47862cu)-6.f;
     for(unsigned length=(unsigned)strlen(title);length>3u;length--) {
         guest_call(sub_0003FCF0,4,measure,measure+4u,0x7909f6u,0u);
         if(FLOAT_AT(measure)<=available)break;
         title[length-4u]='.';title[length-3u]='.';title[length-2u]='.';title[length-1u]=0;
     }
-    /* The stock painter reuses its rectangle for thumbnail/mode-icon draws. */
-    const float lock_x=FLOAT_AT(rect+8u)-FLOAT_AT(0x47d67cu)-FLOAT_AT(0x47862cu)-42.f;
-    const float lock_y=(FLOAT_AT(rect+4u)+FLOAT_AT(rect+12u))*.5f-15.f;
+    /* Place the lock below the mode text, above the population caption.
+       Save the row bounds before the stock painter reuses the rectangle. */
+    const float lock_x=FLOAT_AT(rect)+10.f;
+    const float lock_y=(FLOAT_AT(rect+4u)+FLOAT_AT(rect+12u))*.5f-8.f;
     const uint32_t id=WORD_AT(item+0x14u);WORD_AT(item+0x14u)=0;
     const unsigned previous=story_browser_preview(mission);
     guest_call(sub_001CBDA0,3,menu,item,rect);
     story_browser_preview(previous);
-    if(row->invite_only) {
-        /* Use the menu's silver bevel for both padlock outlines. This also
-           selects the native menu material after the stock textured preview. */
-        const float x=lock_x,y=lock_y;
-        const uint32_t bounds=mp_buffer(26);
-        FLOAT_AT(bounds)=x+5.f;FLOAT_AT(bounds+4u)=y;FLOAT_AT(bounds+8u)=x+19.f;FLOAT_AT(bounds+12u)=y+18.f;
-        guest_call(sub_00072560,2,menu,bounds);
-        FLOAT_AT(bounds)=x;FLOAT_AT(bounds+4u)=y+12.f;FLOAT_AT(bounds+8u)=x+24.f;FLOAT_AT(bounds+12u)=y+30.f;
-        guest_call(sub_00072560,2,menu,bounds);
-    }
+    if(row->invite_only)mp_privacy_draw(menu,lock_x,lock_y);
     WORD_AT(item+0x14u)=id;memcpy(ad,saved_ad,sizeof saved_ad);g_esp+=4u;
 }
 static void mp_publish_metadata(void)
@@ -526,7 +550,7 @@ static void mp_select(void)
     case MP_JOIN_CODE:
         if(id==1u)mp_edit(2);
         else if(id==2u)mp_paste();
-        else if(id==3u){mp_show(MP_JOINING);mp_request(PC_OM_JOIN);}break;
+        else if(id==3u)mp_request(PC_OM_JOIN);break;
     case MP_BROWSER:
         if(id==1u)mp_show(MP_CREATE);
         else if(id>=100u && id-100u<mp_ui.state.count) {
@@ -538,7 +562,7 @@ static void mp_select(void)
                 snprintf(mp_ui.lobby_id,sizeof mp_ui.lobby_id,"%s",lobby->invite_only?lobby->code:"");
                 snprintf(mp_ui.code,sizeof mp_ui.code,"%s",lobby->invite_only?"":lobby->code);
                 if(lobby->invite_only)mp_show(MP_JOIN_CODE);
-                else {mp_show(MP_JOINING);mp_request(PC_OM_JOIN);}
+                else mp_request(PC_OM_JOIN);
             }
             mp_rebuild();
         }break;
@@ -551,6 +575,13 @@ static void mp_back(void)
     settings_tabs_sound(0);
     if(mp_native_passthrough && mp_ui.source==2u) {
         mp_ui.autojoin=0;guest_call(sub_001A4350,1,menu);restore_registers(&saved);g_esp+=4u;return;
+    }
+    /* Admission runs on the source page. Cancel there without also leaving
+       the connected directory or discarding the code-entry page. */
+    if(mp_ui.pending && mp_ui.action==PC_OM_JOIN) {
+        mp_request(PC_OM_CANCEL);mp_ui.pending=0;
+        snprintf(mp_ui.notice,sizeof mp_ui.notice,"Cancelled");mp_rebuild();
+        restore_registers(&saved);g_esp+=4u;return;
     }
     if(mp_ui.pending){mp_request(PC_OM_CANCEL);mp_ui.pending=0;snprintf(mp_ui.notice,sizeof mp_ui.notice,"Cancelled");}
     if(mp_ui.page==MP_NETWORK){pc_online_disconnect();guest_call(sub_001A2720,1,menu);}

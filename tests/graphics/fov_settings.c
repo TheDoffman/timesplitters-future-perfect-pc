@@ -102,8 +102,10 @@ int xbox_D3D8ChangeResolution(unsigned w,unsigned h) { (void)w;(void)h;return av
 static unsigned online_connect_calls;
 int pc_online_connect(void) { ++online_connect_calls;return 0; }
 int pc_online_connect_mode(PcOnlineMode mode) { (void)mode;return 0; }
-int pc_online_menu_start(void){return 0;}
-int pc_online_menu_send(PcOnlineMenuRequest *request){(void)request;CHECK(0);return 0;}
+static unsigned online_request_test,online_request_calls;
+static PcOnlineMenuRequest online_request;
+int pc_online_menu_start(void){return online_request_test;}
+int pc_online_menu_send(PcOnlineMenuRequest *request){CHECK(online_request_test);request->sequence=++online_request_calls;online_request=*request;return 1;}
 const PcOnlineMenuState *pc_online_menu_poll(void){CHECK(0);return NULL;}
 int pc_online_menu_accept(void){CHECK(0);return 0;}
 int pc_online_menu_active(void){return 0;}
@@ -154,7 +156,7 @@ void sub_0003F8D0(void) {CHECK(update_notice_test);g_esp+=4;}
 /* Kill-feed drawing is linked through the same menu unit, but must not
  * execute in this settings-only fixture. */
 TUTORIAL_STUB(sub_00041E30) TUTORIAL_STUB(sub_00021450)
-TUTORIAL_STUB(sub_0001ED50) TUTORIAL_STUB(sub_0001F090)
+TUTORIAL_STUB(sub_0001ED50) TUTORIAL_STUB(sub_0001ED60) TUTORIAL_STUB(sub_0001F090)
 #undef TUTORIAL_STUB
 /* Mouse-menu behavior is exercised by menu_mouse.c. Keep its dependencies
  * linked here, but fail if this settings-only fixture enters those paths. */
@@ -1759,6 +1761,28 @@ int main(int argc,char **argv)
         CHECK(mp_ui.page==MP_BROWSER && mp_ui.menu==0);
         CHECK(!strcmp((const char *)(g_xbox_mem_offset+caption),"Online"));
         mp_rebuild();CHECK(mp_ui.menu==0);
+        /* Directory admission stays on the selected browser/code page. Only
+           the subsequent native discovery builder opens Joining lobby. */
+        online_request_test=1;online_request_calls=0;
+        for(unsigned protected=0;protected<2u;protected++) {
+            mp_ui.page=protected?MP_JOIN_CODE:MP_BROWSER;mp_ui.pending=0;mp_ui.menu=0;
+            WORD_AT(outgoing+4u)=mp_descriptor(mp_ui.page);
+            WORD_AT(current_menu+0x18cu)=protected?3u:100u;
+            mp_ui.state.lobbies[0].invite_only=0;
+            snprintf(mp_ui.lobby_id,sizeof mp_ui.lobby_id,"%s",protected?"PUBLICID":"");
+            snprintf(mp_ui.code,sizeof mp_ui.code,"%s",protected?"SECRET":"");
+            const unsigned page=mp_ui.page,calls=online_request_calls;
+            guest_call(mp_select,1,current_menu);
+            CHECK(mp_ui.page==page && mp_ui.pending && mp_ui.action==PC_OM_JOIN);
+            CHECK(online_request_calls==calls+1u && online_request.action==PC_OM_JOIN);
+            CHECK(!strcmp(online_request.code,protected?"SECRET":"ABCDEF0123456789"));
+            CHECK(!strcmp(online_request.address,protected?"PUBLICID":""));
+            guest_call(mp_select,1,current_menu);CHECK(online_request_calls==calls+1u);
+            guest_call(mp_back,1,current_menu);
+            CHECK(mp_ui.page==page && !mp_ui.pending && !strcmp(mp_ui.notice,"Cancelled"));
+            CHECK(online_request_calls==calls+2u && online_request.action==PC_OM_CANCEL);
+        }
+        online_request_test=0;
         mp_ui.parent=0;mp_native_passthrough=1;mp_ui.source=0;mp_ui.host=0;mp_ui.autojoin=1;
         CHECK(native_multiplayer_lookup(0x1a43e0u)==mp_joining_browser_build);
         CHECK(native_multiplayer_lookup(0x1a4780u)==mp_joining_browser_build);

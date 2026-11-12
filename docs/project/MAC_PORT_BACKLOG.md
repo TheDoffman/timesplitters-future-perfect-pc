@@ -1,3 +1,20 @@
+Native padlock presentation follow-up (2026-11-11, local after3f36084b):
+**Awaiting validation** on Mac/Linux. Shared native browser resolves the original
+locked mission/challenge padlock sprite147 and draws its real texture with the
+common guest renderer, followed by muted-red Invite Only text and native menu
+fade. No OS adapter or copied artwork is needed. Windows build/menu contracts
+and an isolated rendered browser pass; Mac/Linux host/device checks remain
+unrun. See [evidence](STATUS.md).
+
+Fifth revised online notes (2026-11-11, after3f36084b): **Awaiting validation**
+on Mac/Linux. The common native row renderer places the padlock below the mode
+text, clear of the mode icon. Directory admission retains its browser/code page;
+only native discovery opens Joining lobby, with admission cancellation in place.
+No new OS adapter is needed. Windows production-menu/input/IPC and context
+checks pass, and isolated native Windows rendering confirms the lock placement.
+Actual Mac/Linux build/device acceptance and a fresh end-to-end two-player join
+remain unrun for this change. See [evidence](STATUS.md).
+
 Fourth revised online notes (2026-11-11, after378fab64): **Awaiting validation**
 on Mac/Linux. All four shared online field pages now obey native open state,
 page ownership and fade; keyboard edits use a separate buffer from headings.
