@@ -1,3 +1,15 @@
+Launcher Controls deadzone refinements (launcher-only change): rename the
+Keyboard & mouse tab to Controls; replace all eight per-player deadzone dropdowns
+with 0..100% sliders, 1% steps and live readouts. Group movement/aiming per player;
+only Player 1 starts expanded. Expansion preserves slider drafts and does not dirty
+settings. Untouched raw legacy values and Save/conflict behavior are retained.
+Shared WPF/Avalonia SettingsPage and existing shared UI regression updated.
+Windows launcher build/full regression and 49 shared UI groups passed in a
+clean current-main checkout (206 seconds); hosted CI remains pending.
+No loading-screen/artwork/runtime or credential changes are included. Native
+Mac/Linux rendering acceptance remains separate from shared source checks.
+See controller-deadzones.md and launcher.md.
+
 Device switching/menu glyph follow-up (local, base a7762fce): shared patch2970
 and shared prompt state reserve controllers by actual joined-player ownership,
 allow late-connected unjoined controllers to share P1, and track menu activity

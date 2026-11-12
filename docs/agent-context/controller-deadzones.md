@@ -25,8 +25,9 @@ owns guest text storage. Changes save live independently of native Accept/Cancel
 opening/rebuilding preserves unrounded raw legacy values. Main and pause share it.
 
 Launcher GameSettings preserves raw values; SettingsPage exposes two percentage
-selectors per player in Keyboard & mouse / Controller deadzones. Only edited
-selectors update the model; Save uses the existing transaction/conflict checks.
+sliders per player in Controls / Controller deadzones, with live percent
+readouts, 0..100 bounds and 1% steps. Each player has a collapsible section;
+only Player1 starts open. Expansion neither saves nor changes the draft. Only edited sliders update the model; Save uses the existing transaction/conflict checks.
 Launcher settings apply on the next game launch, not through live IPC.
 
 Validation routes: test_controller_profile.py checks actual parser/sampler,

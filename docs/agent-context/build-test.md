@@ -1,4 +1,4 @@
-[Sticks](controller-deadzones.md). [Online UI](multiplayer-ui.md).
+[Deadzone slider/expander tests](controller-deadzones.md). [Online UI](multiplayer-ui.md).
 [2970 pads](control-presets.md); [Tex](texture-preference.md).
 [Arms](video-options.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
