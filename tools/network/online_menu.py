@@ -120,6 +120,7 @@ class Controller:
         self.private=None
         self.private_connected=None
         self.private_direct=False
+        self.private_relay=False
         self.private_local=None
         self.private_hosted=None
         self.source=0
@@ -201,6 +202,7 @@ class Controller:
                 with self.lock:
                     if generation==self.generation:
                         self.private=pair;self.private_direct=reply.get('private_directory') is True
+                        self.private_relay=reply.get('private_relay') is True
                         self.private_connected=(pair,endpoint)
                 result=(PRIVATE_READY,'Connected to private server',[])
             elif action==PRIVATE_HOST:
@@ -208,6 +210,7 @@ class Controller:
                     existing=self.private_process if self.private_process and self.private_process.poll() is None else None
                     if existing:
                         self.private=self.private_hosted;self.private_direct=bool(getattr(existing,'direct',False))
+                        self.private_relay=bool(getattr(existing,'relay',False))
                 if not existing:
                     if not self.private_launcher:raise ValueError('Private directory could not start')
                     process,pair,local=self.private_launcher(request)
@@ -216,7 +219,10 @@ class Controller:
                             stop_private(process);return
                         self.private_process=process;self.private=self.private_hosted=pair;self.private_local=local
                         self.private_direct=bool(getattr(process,'direct',False))
-                result=(PRIVATE_READY,'Private server ready. Forward its TCP and UDP ports for Internet guests.',[])
+                        self.private_relay=bool(getattr(process,'relay',False))
+                mapped=bool(getattr(self.private_process,'port_mapping',None) and getattr(self.private_process,'relay_mapping',None))
+                message='Private server ready. Router mapping active.' if mapped else 'Private server ready. Automatic router mapping unavailable; forward its TCP directory and UDP relay ports for Internet guests.'
+                result=(PRIVATE_READY,message,[])
             elif action==BROWSE:
                 with self.lock:self.close_session()
                 directory=self.directory(request['source'])
@@ -241,7 +247,7 @@ class Controller:
                     active=(join_arcade(directory,self.compatibility,code,**selected) if mode=='arcade' else
                             Session.join(directory,self.compatibility,code,mode=mode,**selected))
                 elif request['source'] and self.private_direct:
-                    active=Session.create(directory,self.compatibility,request['name'] or 'My Lobby',request['port'],request['public'],mode=mode,transport='direct')
+                    active=Session.create(directory,self.compatibility,request['name'] or 'My Lobby',request['port'],request['public'],mode=mode,transport='relay' if self.private_relay else 'direct')
                 elif mode=='arcade':
                     active=ArcadeSession.open(directory,self.compatibility,name=request['name'] or 'My Lobby',public=request['public'])
                 else:

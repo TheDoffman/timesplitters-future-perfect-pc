@@ -26,6 +26,7 @@ from urllib.parse import urlsplit
 
 from online_transport import Bridge, relay_endpoint
 from online_paths import directory_route
+from online_upnp import map_port
 
 
 class DirectoryError(ValueError):
@@ -120,6 +121,7 @@ class Session:
         self.closed = threading.Event()
         self.error = ''
         self.local_directory = None
+        self.port_mapping = None
         self.thread = threading.Thread(target=bridge.run, daemon=True)
         self.thread.start()
         self.worker = threading.Thread(target=self.heartbeat, daemon=True)
@@ -145,7 +147,10 @@ class Session:
         # Bind before advertising: a failed port bind must not leave a ghost lobby.
         bridge = Bridge(compatibility, '00'*16, bind=('0.0.0.0', port if transport == 'direct' else 0))
         lobby = None
+        mapping = None
         try:
+            if transport == 'direct':
+                mapping = map_port(port, 'UDP')
             lobby = client.request('POST', '/v2/lobbies', dict(
                 compatibility=compatibility, name=name, port=port, public=public, mode=mode, transport=transport))
             cls.validate_lobby(lobby, mode)
@@ -159,12 +164,15 @@ class Session:
             else:
                 bridge.room = bytes.fromhex(lobby['room'])
             active = cls(client, compatibility, lobby, True, bridge, mode)
+            active.port_mapping = mapping
             if transport == 'relay' and not bridge.ready.wait(12):
                 active.close()
                 raise ValueError('Shared relay did not answer. Check the server UDP port and firewall.')
             return active
         except Exception:
             bridge.close()
+            if mapping:
+                mapping.close()
             if lobby:
                 try:
                     client.request('DELETE', '/v2/lobbies/'+lobby['code'], token=lobby['owner_token'])
@@ -252,6 +260,9 @@ class Session:
             self.client.request('DELETE', path, token=token)
         except Exception:
             pass  # Registrations also expire when a host/directory disappears.
+        if self.port_mapping:
+            self.port_mapping.close()
+            self.port_mapping = None
         if self.local_directory:
             self.local_directory.close()
             self.local_directory = None

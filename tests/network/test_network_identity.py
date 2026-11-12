@@ -64,19 +64,20 @@ def test_explicit_same_host_runtime_is_part_of_identity(tmp_path):
     assert before != module.identity(root, game, runtime)[0]
 
 
-def test_online_theme_is_bundled_and_part_of_runtime_identity(tmp_path):
+@pytest.mark.parametrize('helper', ['online_theme.py', 'online_upnp.py'])
+def test_online_helper_is_bundled_and_part_of_runtime_identity(tmp_path, helper):
     bundle_spec = importlib.util.spec_from_file_location('bundle_online', Path(__file__).resolve().parents[2]/'tools/network/bundle_online.py')
     bundle = importlib.util.module_from_spec(bundle_spec)
     bundle_spec.loader.exec_module(bundle)
-    assert 'online_theme.py' in bundle.COMPANION
+    assert helper in bundle.COMPANION
     game=tmp_path/'private/game';game.mkdir(parents=True)
     (game/'default.xbe').write_bytes(b'fixture')
     (tmp_path/'tools/network').mkdir(parents=True)
-    theme=tmp_path/'tools/network/online_theme.py';theme.write_text('dark = False\n')
+    theme=tmp_path/'tools/network'/helper;theme.write_text('enabled = False\n')
     before, entries=module.identity(tmp_path,game)
     # Manifest identities stay stable while repository source paths are grouped.
-    assert any(name=='tools/online_theme.py' for name,_ in entries)
-    theme.write_text('dark = True\n')
+    assert any(name=='tools/'+helper for name,_ in entries)
+    theme.write_text('enabled = True\n')
     assert module.identity(tmp_path,game)[0]!=before
 
 

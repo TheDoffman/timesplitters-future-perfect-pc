@@ -14,7 +14,7 @@ def test_standalone_client_imports_and_invitation_roundtrip(tmp_path):
     check = '''
 import sys
 sys.path.insert(0, sys.argv[1])
-import online, online_client, online_arcade_client, online_transport, online_private
+import online, online_client, online_arcade_client, online_transport, online_private, online_upnp
 from online_host import invitation, parse_invitation
 value = ('https://example.test:41820', 'ab'*32, 'A'*16)
 assert parse_invitation(invitation(*value)) == value

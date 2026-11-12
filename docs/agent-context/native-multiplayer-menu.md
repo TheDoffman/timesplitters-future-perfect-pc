@@ -487,3 +487,60 @@ listeners around service installation. Generic30820/30821 installer defaults
 must not replace the deployed community41820/41821 pair. Host-local success
 alone is not Internet acceptance; actual private updater behavior remains
 outside this checkout and needs operator-side confirmation.
+
+
+## Automatic player-host UPnP (2026-11-12)
+
+`online_upnp.py` is a shared standard-library IPv4 IGD adapter, bundled and hashed
+with both host companions. LocalDirectory starts HTTPS and a SharedRelay UDP
+listener before mapping TCP30820 and UDP30821. Both handles close with the
+directory, independently of lobby lifetime. Legacy direct Session.create retains
+its separate UDP mapping until Session.close; admission failure rolls it back.
+A maintenance-worker startup failure cleans up its new mapping before fallback.
+Joining and relay hosting do not map ports. Directory/lobby lifetimes stay
+independent. PRIVATE_READY reports mapping availability without blocking hosting
+when UPnP is unavailable. No guest IPC or game-menu layout is added.
+
+Discovery binds the default RFC1918 interface, uses bounded SSDP, inspects up to4
+LAN device descriptions and supports WANIP/WANPPP IGD1/2. XML size/entity limits,
+no proxies/redirects, and same-responding-private-IP description/control URLs keep
+discovery local. SOAP queries precede AddPortMapping; a matching existing forward
+is borrowed unchanged, a conflicting one is never overwritten. Each new mapping
+has a unique description, one-hour lease and periodic recheck/renewal; missing
+entries are recreated while that gateway remains reachable. Error725 permits
+permanent-only routers; normal exit still checks ownership before deletion.
+Deletion/renewal never touches another handle's/manual mapping. Failed or killed
+processes rely on finite expiry; permanent-only routers may need manual cleanup.
+UPnP does not establish outside-network reachability or bypass CGNAT/double NAT.
+
+Tests in test_online_upnp.py simulate discovery/SOAP, leases, errors, restarts,
+conflicts and lifecycle/rollback, with real isolated TLS/UDP for host/guest flows.
+All pytest tests and isolated Windows/Mac game runners force TSFP_UPNP=0 so tests
+never configure real routers. Router-unit tests explicitly inject their fake IGD.
+CI registers the new tests; package/identity tests cover the helper. Native Mac /
+Linux physical-device and actual supported-router/WAN validation remain separate.
+New private directories advertise `private_relay: true` with their existing
+private v2 capability. Controller.private_relay selects Session.create(relay)
+for both Arcade and Story; private_direct remains the legacy v2 API selector,
+not a statement that UDP is direct. Older directories still select direct UDP.
+The community v3 Arcade / v2 Story paths are unchanged.
+
+SharedRelay uses the existing TSFR HMAC envelope from online_transport, with
+independent random per-member relay keys supplied only over admitted TLS
+create/join responses. Lists never expose keys. Registration binds an authenticated
+endpoint, rejects replays and permits authenticated NAT rebinding. Only registered
+host/guest pairs in the same live room can forward; guests cannot bypass the
+host. Keys are removed on leave/expiry; closed rooms cannot forward. Registration
+expires after5s; admitted traffic has a bounded per-member packet budget.
+The relay forwards opaque existing wire payloads and re-signs the outer envelope
+for its recipient. It does not add migration to private v2 rooms.
+
+Private relay addresses use the accepted TLS socket's local address for LAN /
+loopback connections and the directory owner's public address for WAN callers,
+never the individual lobby host's address. A busy UDP listener rolls back HTTPS
+startup. Ephemeral test-directory TCP ports also select ephemeral UDP ports.
+Tests cover mixed modes, Invite Only, multiple hosts, real three-peer gameplay
+packet delivery, owner-only mappings, room isolation, replay/spoof rejection,
+NAT rebinding, expiry, rate limits and listener rollback/cleanup.
+The existing community service is unchanged; relayed player lobbies need no
+inbound client mapping. Physical router/WAN and Mac/Linux acceptance are pending.

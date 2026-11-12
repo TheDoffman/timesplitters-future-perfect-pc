@@ -1,8 +1,8 @@
 """Player-hosted HTTPS directory, started by the in-game Host a Server action.
 
 Restores the former LocalDirectory/v2 player-hosted path (before267a53f4).
-Community relay, migration coordinator, dashboard and service administration stay
-separate. Match UDP runs between the player host and guests.
+Community service administration and migration stay separate. A private shared
+UDP relay lets lobby hosts and guests connect outward to the directory owner.
 """
 import hashlib
 import hmac
@@ -23,6 +23,9 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs, urlsplit
 from online_paths import directory_folder
 from online_host import fetch_public_ipv4, local_ipv4_addresses, lan_ipv4
+from online_upnp import map_port
+from online_transport import (RELAY, RELAY_MAGIC, REGISTER, REGISTERED, FORWARD,
+                              MAX_RELAY_PACKET, relay_packet)
 
 VERSION = re.compile(r'[0-9a-f]{64}\Z')
 TTL = 90
@@ -35,9 +38,10 @@ class LobbyError(Exception):
 
 
 class Directory:
-    def __init__(self, clock=time.monotonic, public_address=None):
+    def __init__(self, clock=time.monotonic, public_address=None, relay_port=None):
         self.clock = clock
         self.public_address = str(ipaddress.IPv4Address(public_address)) if public_address else None
+        self.relay_port = relay_port
         self.lock = threading.Lock()
         self.online = {}
 
@@ -46,16 +50,67 @@ class Directory:
         self.online = {key: lobby for key, lobby in self.online.items() if lobby['expires'] > now}
         for lobby in self.online.values():
             lobby['peers'] = {key: peer for key, peer in lobby['peers'].items() if peer['expires'] > now}
+            lobby['relay_members'] = {key: member for key, member in lobby['relay_members'].items()
+                                      if key == 1 or key in lobby['peers']}
 
     def online_public(self, lobby, remote=''):
         result = {key: lobby[key] for key in ('code', 'room', 'compatibility', 'name', 'address', 'port', 'mode')}
-        if remote and ipaddress.ip_address(remote).is_loopback and ipaddress.ip_address(lobby['origin']).is_loopback:
+        if lobby['transport'] == 'direct' and remote and ipaddress.ip_address(remote).is_loopback and ipaddress.ip_address(lobby['origin']).is_loopback:
             result['address'] = lobby['origin']
         result['invite_only'] = not lobby['listed']
-        result.update(transport='direct', players=1+len(lobby['peers']), capacity=ONLINE_CAPACITY[lobby['mode']])
+        result.update(transport=lobby['transport'], players=1+len(lobby['peers']), capacity=ONLINE_CAPACITY[lobby['mode']])
         result['joinable'] = result['players'] < result['capacity']
         result.update(lobby.get('match_info', {}))
         return result
+
+    @staticmethod
+    def relay_member():
+        return dict(key=secrets.token_bytes(32), endpoint=None, received=-1,
+                    sent=0, seen=0, budget=16384.0, sampled=None)
+
+    def relay_datagram(self, packet, endpoint):
+        """Authenticate before binding an endpoint or forwarding an opaque payload."""
+        if not RELAY.size+32 <= len(packet) <= MAX_RELAY_PACKET:
+            return None
+        magic, room, sequence, source, target, kind = RELAY.unpack_from(packet)
+        if magic != RELAY_MAGIC or kind not in (REGISTER, FORWARD):
+            return None
+        with self.lock:
+            now = self.clock()
+            lobby = next((l for l in self.online.values()
+                          if l['expires'] > now and l['transport'] == 'relay' and bytes.fromhex(l['room']) == room), None)
+            if not lobby:
+                return None
+            member = lobby['relay_members'].get(source)
+            if (not member or (source != 1 and lobby['peers'].get(source, {}).get('expires', 0) <= now) or
+                sequence <= member['received'] or
+                not hmac.compare_digest(hmac.digest(member['key'], packet[:-32], 'sha256'), packet[-32:])):
+                return None
+            previous = member['sampled']
+            # Bound authenticated floods while allowing a full host's aggregated traffic.
+            member['budget'] = min(16384, member['budget'] + max(0, now-previous)*8192) if previous is not None else 16384
+            member['sampled'] = now
+            member['received'] = sequence
+            if member['budget'] < 1:
+                return None
+            member['budget'] -= 1
+            if kind == REGISTER:
+                if target != 0 or len(packet) != RELAY.size+32:
+                    return None
+                member.update(endpoint=endpoint, seen=now)
+                recipient, output_kind, output_source, payload = member, REGISTERED, 0, b''
+                target = source
+            else:
+                recipient = lobby['relay_members'].get(target)
+                if (source == target or (source != 1 and target != 1) or
+                    endpoint != member['endpoint'] or now-member['seen'] > 5 or
+                    not recipient or (target != 1 and lobby['peers'].get(target, {}).get('expires', 0) <= now) or
+                    not recipient['endpoint'] or now-recipient['seen'] > 5):
+                    return None
+                output_kind, output_source, payload = FORWARD, source, packet[RELAY.size:-32]
+            recipient['sent'] += 1
+            return (relay_packet(room, recipient['sent'], output_source, target,
+                                 output_kind, recipient['key'], payload), recipient['endpoint'])
 
     @staticmethod
     def update_match_info(lobby, info):
@@ -93,8 +148,8 @@ class Directory:
             mode = self.online_mode(body.get('mode', 'arcade'))
             name, port, listed = body.get('name'), body.get('port'), body.get('public', False)
             transport = body.get('transport', 'direct')
-            if transport != 'direct':
-                raise LobbyError(400, 'Private directories use direct player-hosted traffic')
+            if transport not in ('direct', 'relay') or (transport == 'relay' and self.relay_port is None):
+                raise LobbyError(400, 'Requested private transport is unavailable')
             if (not isinstance(name, str) or not 1 <= len(name) <= 48 or
                 any(ord(c) < 32 or ord(c) > 126 for c in name) or type(port) is not int or
                 not 1024 <= port <= 65535 or type(listed) is not bool):
@@ -115,9 +170,14 @@ class Directory:
             lobby = dict(code=code, room=secrets.token_hex(16), compatibility=version, name=name, mode=mode,
                          port=port, address=advertised, origin=remote, listed=listed, expires=self.clock()+TTL,
                          owner=hashlib.sha256(token.encode()).digest(), peers={}, next_peer=2,
-                         transport=transport, lobby_code=lobby_code)
+                         transport=transport, lobby_code=lobby_code, relay_members={})
+            if transport == 'relay':
+                lobby['port'] = self.relay_port
+                lobby['address'] = self.public_address or remote
+                lobby['relay_members'][1] = self.relay_member()
             self.online[code] = lobby
-            return 201, {**self.online_public(lobby, remote), 'owner_token': token, 'lobby_code': lobby['lobby_code']}
+            return 201, {**self.online_public(lobby, remote), 'owner_token': token, 'lobby_code': lobby['lobby_code'],
+                         **({'relay_key': lobby['relay_members'][1]['key'].hex()} if transport == 'relay' else {})}
         match = re.fullmatch(r'/v2/lobbies/([A-Fa-f0-9]{16})(/join|/peers/(\d+))?', path)
         if not match:
             raise LobbyError(404, 'Unknown endpoint')
@@ -147,7 +207,11 @@ class Directory:
             key = secrets.token_hex(32)
             peer = dict(key=key, expires=self.clock()+TTL)
             lobby['peers'][peer_id] = peer
-            return 201, {**self.online_public(lobby, remote), 'peer_id': peer_id, 'peer_key': key}
+            if lobby['transport'] == 'relay':
+                lobby['relay_members'][peer_id] = self.relay_member()
+            return 201, {**self.online_public(lobby, remote), 'peer_id': peer_id, 'peer_key': key,
+                         **({'relay_key': lobby['relay_members'][peer_id]['key'].hex()}
+                            if lobby['transport'] == 'relay' else {})}
         if match[3]:
             peer_id = int(match[3])
             peer = lobby['peers'].get(peer_id)
@@ -155,6 +219,7 @@ class Directory:
                 raise LobbyError(403, 'Invalid peer credential')
             if method == 'DELETE':
                 del lobby['peers'][peer_id]
+                lobby['relay_members'].pop(peer_id, None)
                 return 200, {'closed': True}
             if method != 'PUT':
                 raise LobbyError(405, 'Method not allowed')
@@ -198,6 +263,9 @@ class Directory:
                     lobby = self.online.get(item.get('code'))
                     if not lobby:
                         continue
+                    if lobby['transport'] == 'relay':
+                        item['address'] = local_address or '127.0.0.1'
+                        continue
                     origin = lobby['origin']
                     if lan_ipv4(origin):
                         item['address'] = origin
@@ -205,8 +273,51 @@ class Directory:
                         item['address'] = local_address
             if path == '/v2/lobbies' and method == 'GET':
                 reply['private_directory'] = True
+                reply['private_relay'] = self.relay_port is not None
                 reply['invite_only_listing'] = True
             return status, reply
+
+
+class SharedRelay:
+    """One bounded UDP listener shared by all admitted private-directory rooms."""
+    def __init__(self, directory, port):
+        self.directory = directory
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            if hasattr(socket, 'SO_EXCLUSIVEADDRUSE'):
+                self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+            self.socket.bind(('0.0.0.0', port))
+            self.socket.settimeout(.1)
+        except Exception:
+            self.socket.close()
+            raise
+        self.port = self.socket.getsockname()[1]
+        directory.relay_port = self.port
+        self.stopped = threading.Event()
+        self.thread = threading.Thread(target=self.run, daemon=True)
+        try:
+            self.thread.start()
+        except Exception:
+            self.socket.close()
+            raise
+
+    def run(self):
+        while not self.stopped.is_set():
+            try:
+                packet, endpoint = self.socket.recvfrom(MAX_RELAY_PACKET+1)
+                reply = self.directory.relay_datagram(packet, endpoint)
+                if reply:
+                    self.socket.sendto(*reply)
+            except socket.timeout:
+                continue
+            except OSError:
+                if self.stopped.is_set():
+                    return
+
+    def close(self):
+        self.stopped.set()
+        self.socket.close()
+        self.thread.join(timeout=3)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -349,13 +460,16 @@ def certificate(folder):
 
 
 class LocalDirectory:
-    direct = True
-    def __init__(self, root, public_address, port=30820, *, state_folder=None):
+    direct = True  # Selects the private v2 API; relay capability selects its UDP transport.
+    def __init__(self, root, public_address, port=30820, *, state_folder=None, relay_port=None):
         address = ipaddress.IPv4Address(public_address)
         if address.is_loopback or address.is_unspecified or address.is_multicast:
             raise ValueError('Enter the public IPv4 friends use to reach your router.')
         self.server = Server(('0.0.0.0', port), Directory(public_address=str(address)))
         self.thread = None
+        self.port_mapping = None
+        self.relay_mapping = None
+        self.relay = None
         try:
             cert, key, self.fingerprint = certificate(Path(state_folder) if state_folder is not None else directory_folder(root))
             context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -366,21 +480,33 @@ class LocalDirectory:
             self.address = f'https://127.0.0.1:{self.server.server_port}'
             self.public_url = f'https://{address}:{self.server.server_port}'
             self.lan_addresses = local_ipv4_addresses(str(address))
+            self.relay = SharedRelay(self.server.directory, (30821 if port else 0) if relay_port is None else relay_port)
             self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
             self.thread.start()
+            self.port_mapping = map_port(self.server.server_port, 'TCP')
+            self.relay_mapping = map_port(self.relay.port, 'UDP')
         except Exception:
-            self.server.server_close()
+            self.close()
             raise
 
     def close(self):
         if self.thread:
-            self.server.shutdown()
-            self.thread.join(timeout=3)
+            if self.thread.is_alive():
+                self.server.shutdown()
+                self.thread.join(timeout=3)
             self.thread = None
         self.server.server_close()
+        if self.relay:
+            self.relay.close()
+            self.relay = None
+        for name in ('relay_mapping', 'port_mapping'):
+            mapping = getattr(self, name)
+            if mapping:
+                mapping.close()
+                setattr(self, name, None)
 
     def poll(self):
-        return None if self.thread and self.thread.is_alive() else 0
+        return None if self.thread and self.thread.is_alive() and self.relay and self.relay.thread.is_alive() else 0
 
     def terminate(self):
         self.close()

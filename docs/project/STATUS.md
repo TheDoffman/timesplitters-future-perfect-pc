@@ -44157,3 +44157,115 @@ dashboard names. Read-only inspection found no visible orphaned replica guns
 after promotion. Private evidence:logs/dashboard-names-weapons-native.log.
 This is synthetic-input native crossplay acceptance, not every-mode/human or
 full outside-network match acceptance.
+
+## Automatic player-host UPnP - 2026-11-12
+
+Local source after3542601b on feature/native-multiplayer-ui, dependent on the
+unmerged native flow. Existing remote dashboard/bot commits are preserved and
+have not been merged into this dirty checkout. New shared online_upnp.py uses
+standard-library SSDP and SOAP for IPv4 IGD WANIP/WANPPP1/2. Explicit private
+hosting maps its bound TCP directory port; direct Session.create separately maps
+its bound UDP lobby port before publication. Joining and relay hosting do not
+map inbound ports. Mapping failure keeps LAN/manual hosting available. Matching
+existing forwards are borrowed unchanged and conflicts are retained. Unique
+ownership descriptions, finite one-hour leases, periodic rechecks/renewal and
+ownership-checked deletion preserve unrelated mappings. Error725 supports
+permanent-only routers, whose mappings can remain after abnormal shutdown.
+Default player ports remain TCP30820 and UDP30821; custom lobby ports work
+independently. No private community server implementation was added here.
+
+Directory/session shutdown and failed lobby admission clean up their respective
+handles independently; leaving a match retains an owned directory. Descriptions /
+control URLs stay on the responding numeric RFC1918 device, redirects/proxies
+are not followed, and XML/response size and entity limits apply. UPnP configures
+the local IGD only; it cannot establish public reachability through CGNAT, a
+second upstream router, or a blocking firewall. Recovery re-creates missing
+entries while the selected gateway/control endpoint remains reachable.
+
+The helper is in both companion packaging/identity and publisher source inputs.
+The new behavioral suite is registered in runtime-suites.json. Pytest autouse
+isolation and Windows/unlocked/fresh-native-Mac gameplay runners force TSFP_UPNP=0;
+router tests explicitly inject fake discovery/Gateway behavior. No tests modified
+real router/firewall mappings. Real pinned TLS/direct UDP was exercised with fake
+mapping handles to verify independent directory/host/guest lifetimes and rollback.
+
+Windows x64/MSVC supported Build completed exit0, including patch validation,
+built-in tests and matching symbols: logs/upnp-hosting-build.log. Version0.6.1,
+compatibility1ac6055f2fea69cac1f4310c379029a1966cf0b0f9834b71e91fb1c6d9c995b3.
+Focused tests154 passed,8 platform skips (UPnP, private hosting, native controller,
+optional routes, package/identity, isolated profiles and native-Mac runner tools).
+After adding a maintenance-thread shutdown case, the UPnP plus context pass is
+46 tests, including21 repository-context checks. These counts overlap; they
+represent155 unique focused checks plus21 context checks, with8 platform skips.
+Initial oversized-XML fixture labels caused Windows setup/path errors; explicit
+short IDs fixed that fixture issue and the verified runs passed. No native Mac /
+Linux build/device, real supported-router mapping, outside-network gameplay or
+community service deployment was performed. UPnP covers private-directory TCP
+and direct-lobby UDP hosting only. The user confirms the community server works
+as it is; no community repair or deployment is required. Community-service UPnP
+integration instructions were removed; existing community behavior is unchanged.
+
+Source/helper/tests/docs remain local/uncommitted, with no push. Personal saves,
+settings, certificates, existing game processes and real router/firewall settings
+were not changed. Context refresh/check and whitespace validation pass.
+
+
+Final UPnP worker-start guard: cleanup of a newly created mapping also occurs if
+maintenance-thread startup fails, preserving best-effort hosting. The26-case
+UPnP suite passes after this change. Final supported Windows Build exit0, built-in
+checks and matching symbols are in logs/upnp-hosting-build-final.log; compatibility
+95b883fe40b7d02c32c94817f2e05e873add704627133d190ea9dd4b6b5bdbff. Source remains local after3542601b;
+actual supported-router, Mac/Linux device and outside-network acceptance are
+unrun. No real router mappings were changed during development tests.
+
+
+## Private-directory shared relay and owner-only UPnP (2026-11-12)
+
+User approved replacing the new direct-lobby default with a private shared relay.
+This supersedes the direct-lobby hosting scope in the preceding UPnP record.
+LocalDirectory now binds HTTPS and one UDP relay, then maps TCP30820 and UDP30821
+for the server lifetime. All new private-menu Arcade/Story lobbies use outbound
+relay connections; lobby hosts and guests create no mappings. Lobby leave keeps
+both owner mappings and independently hosted rooms alive. Existing community
+service behavior, ports and deployment are unchanged. Old private directories
+without the new capability retain their direct-lobby fallback.
+
+SharedRelay authenticates existing TSFR envelopes with private per-member keys,
+rejects replay/foreign room or endpoint traffic and expired/removed membership,
+restricts forwarding to registered host/guest pairs, supports authenticated NAT
+rebinding and bounds per-member packet rate. Lists omit relay/admission secrets.
+Nearby TLS callers receive the directory's actual local relay address; WAN
+callers receive its public relay address. Busy UDP startup rolls back HTTPS.
+
+Windows x64, Python3.14.2, MSVC14.42.34433 / VS2022, existing D3D8 frontend:
+167 focused regression checks passed,8 platform checks skipped. Coverage includes
+real isolated pinned TLS/UDP three-peer guest-to-guest gameplay packet delivery,
+both native-menu modes and multiple hosts, Invite Only, LAN invitation routes,
+owner-only mappings/lifetime, relay authentication/isolation/replay/rebinding /
+expiry/rate limit, socket cleanup/rollback, packaging/identity and isolated test
+runners. An initial new raw fixture lacked the GET compatibility query; fixed
+before the passing final run. Sandbox tempfile restrictions required normal-host
+checks; no router mapping is performed by these tests (TSFP_UPNP=0 or injected
+fake IGD handles).
+
+Supported Windows Build exit0, built-in checks and crash symbols pass:
+logs/private-relay-build.log. Multiplayer compatibility:
+720388c86990d92943947796d90cc28bb7177d656ac5855c4d96e8b7951277ce.
+Source is local/uncommitted after3542601b, not pushed. Context refresh/check and
+whitespace checks pass. No native Mac/Linux build/device, physical router mapping,
+outside-network gameplay, or two-game visual/gameplay acceptance was performed.
+No personal saves/settings, certificates, remote community service or real
+router/firewall configuration were changed. Both server and players need this
+matching compatibility build for cross-device acceptance.
+
+
+Branch pull (2026-11-12): fast-forwarded feature/native-multiplayer-ui from3542601b
+to origin97afe8f5, retaining dashboard identities and bot replica-weapon retirement.
+Uncommitted private relay/UPnP work was stashed, restored and retained unstaged;
+three documentation/CI-list conflicts preserve both upstream and local additions.
+112 focused combined networking/player-identity/bot-promotion checks pass.
+Supported Windows Build, built-ins and symbols pass in
+logs/private-relay-after-pull-build.log. Multiplayer compatibility:
+7c98710b1a90e9c03f9ac76f9f802642aa107fd439f0432fc96dbfacd8f4a083.
+Context and whitespace checks pass. Mac/Linux/router/WAN acceptance is unchanged;
+other-device synchronization is unverified. No local work was committed or pushed.

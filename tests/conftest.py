@@ -16,3 +16,11 @@ for folder in sorted(Path(__file__).parent.iterdir()):
 
 # Keep compiled fixtures together when the caller enables parallel testing.
 from parallel_groups import pytest_collection_modifyitems
+
+
+# Automated host/session fixtures must never modify the developer's real router.
+import pytest
+
+@pytest.fixture(autouse=True)
+def isolate_router_mappings(monkeypatch):
+    monkeypatch.setenv('TSFP_UPNP', '0')

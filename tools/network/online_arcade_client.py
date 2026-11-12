@@ -42,7 +42,7 @@ def join_arcade(client, compatibility, code, *, lobby_id=None):
     except DirectoryError as error:
         if error.status not in (404, 410, 503):
             raise
-    # Automatic/self-hosted directories keep their original direct transport.
+    # Private v2 directories advertise direct or shared-relay transport per room.
     # TLS, schema, authentication and active-match errors never trigger fallback.
     return Session.join(client, compatibility, code, mode='arcade', **({'lobby_id': lobby_id} if lobby_id else {}))
 

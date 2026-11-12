@@ -1,3 +1,16 @@
+Private shared relay and owner UPnP (2026-11-12, local after3542601b): **Awaiting validation**
+on physical Mac/Linux and a supported router. Shared standard-library SSDP/IGD
+mapping opens private-directory TCP and shared-relay UDP together on Host a Server,
+renews/rechecks owned leases and cleans up on normal exit. Both mappings survive
+lobby leave; connected lobby hosts/guests use outbound relay connections. Existing
+manual mappings are retained; conflicts and unsupported routers leave manual /
+LAN hosting available. Guests and community-relayed lobbies never open mappings.
+No OS-specific adapter or dependency is needed. Windows simulated-router and
+isolated real TLS/UDP lifecycle tests pass; actual router/WAN and physical Mac /
+Linux validation remain pending. Automated host runners disable physical mapping.
+Older private directories retain direct-lobby UDP fallback. The private relay
+uses the existing authenticated wire protocol; community service is unchanged. See [evidence](STATUS.md).
+
 Original private-server ports (2026-11-11, local after03b6cc2c): **Awaiting validation**
 on physical Mac/Linux. Shared native defaults now separate TCP30820 directory
 hosting from UDP30821 default lobby hosting, preserving the user's original

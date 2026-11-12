@@ -1,12 +1,12 @@
-[Sticks](controller-deadzones.md). [Online](online-player-identities.md).
+[Sticks](controller-deadzones.md). [IDs](online-player-identities.md). [NAT](native-multiplayer-menu.md).
 [2970 pads](control-presets.md); [Tex](texture-preference.md).
 [JIP](arcade-join-in-progress.md); [Routes](online-client-boundary.md).
 [Arms](video-options.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).
 [Tools](developer-tools-integration.md).
-Developer warnings: [launcher](launcher.md).
-[Profile tests](multiplayer-exit.md#validation): saves, late lobby saves, checksum/write errors.
+Warnings: [launcher](launcher.md).
+[Saves](multiplayer-exit.md#validation): saves, late lobby saves, checksum/write errors.
 [Effect depth](native-effect-depth.md).
 [Update tests](main-menu-update.md).
 [Weapon FOV](video-options.md#weapon-aperture).

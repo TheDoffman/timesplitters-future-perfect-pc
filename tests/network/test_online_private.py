@@ -47,7 +47,7 @@ def test_native_host_starts_directory_before_any_lobby_and_retains_other_hosts(t
         owner.begin(request(menu.PRIVATE_HOST)); wait(owner)
         directory = owner.private_process
         assert isinstance(directory, LocalDirectory) and directory.poll() is None
-        assert owner.status == menu.PRIVATE_READY and owner.private_direct
+        assert owner.status == menu.PRIVATE_READY and owner.private_direct and owner.private_relay
         assert owner.session is None and directory.server.directory.online == {}
         shared=menu.STATE.unpack(owner.snapshot()[:menu.STATE.size])[10].split(b'\0',1)[0].decode()
         assert menu.parse_server_details(shared)==(owner.private,directory.lan_addresses)
@@ -56,13 +56,13 @@ def test_native_host_starts_directory_before_any_lobby_and_retains_other_hosts(t
         assert client.request('GET', '/v2/lobbies?compatibility='+VERSION)['private_directory'] is True
 
         owner.begin(request(menu.CREATE, 2, port=udp_port())); wait(owner)
-        assert isinstance(owner.session, Session) and owner.session.bridge.relay is None
+        assert isinstance(owner.session, Session) and owner.session.bridge.relay is not None
         assert owner.session.lobby['capacity'] == 16
         code = owner.session.lobby['code']
 
         invitation = menu.server_invitation(directory.public_url, directory.fingerprint)
         friend.begin(request(menu.PRIVATE_CONNECT, code=invitation)); wait(friend)
-        assert friend.private_direct and friend.private == owner.private
+        assert friend.private_direct and friend.private_relay and friend.private == owner.private
         assert friend.directory(1).url.geturl() == directory.address
         friend.begin(request(menu.CREATE, 2, mode=2, port=udp_port(), name='Story team')); wait(friend)
         assert friend.session.lobby['capacity'] == 4
@@ -185,7 +185,7 @@ def test_native_locked_listing_and_code_admission_over_real_tls_and_udp(tmp_path
     owner, guest = menu.Controller(VERSION), menu.Controller(VERSION)
     try:
         owner.private = guest.private = (directory.address, directory.fingerprint)
-        owner.private_direct = True
+        owner.private_direct = owner.private_relay = True
         owner.begin(request(menu.CREATE, port=udp_port(), public=False)); wait(owner)
         hosted = owner.session.lobby
         guest.begin(request(menu.BROWSE)); wait(guest)
@@ -224,7 +224,8 @@ def test_private_match_address_follows_actual_connection_route(origin,remote,loc
     assert joined['address']==address
 
 
-def test_remote_private_invite_avoids_public_hairpin_for_tls_and_match_udp(tmp_path,monkeypatch):
+@pytest.mark.parametrize('transport', ['direct', 'relay'])
+def test_remote_private_invite_avoids_public_hairpin_for_tls_and_match_udp(tmp_path,monkeypatch,transport):
     from online_host import local_ipv4_addresses
     addresses=local_ipv4_addresses('192.0.2.1')
     if not addresses:pytest.skip('No RFC1918 interface available for real LAN route test')
@@ -237,7 +238,7 @@ def test_remote_private_invite_avoids_public_hairpin_for_tls_and_match_udp(tmp_p
                 raise ConnectionRefusedError('same-machine and router-hairpin routes unavailable')
             return super().request(*args,**kwargs)
     try:
-        host=Session.create(Client(directory.address,directory.fingerprint),VERSION,'Windows host',udp_port(),True)
+        host=Session.create(Client(directory.address,directory.fingerprint),VERSION,'Windows host',udp_port(),True,transport=transport)
         monkeypatch.setattr(menu,'Client',RemoteClient)
         code=menu.server_invitation(directory.public_url,directory.fingerprint,local_addresses=addresses)
         controller.begin(request(menu.PRIVATE_CONNECT,code=code));wait(controller)
@@ -251,3 +252,118 @@ def test_remote_private_invite_avoids_public_hairpin_for_tls_and_match_udp(tmp_p
         if guest:guest.close()
         if host:host.close()
         controller.close();directory.close()
+
+
+def test_relay_credentials_isolation_replay_rebinding_and_expiry():
+    import hmac
+    from online_transport import RELAY, REGISTER, REGISTERED, FORWARD, relay_packet
+    now = [0.0]
+    directory = Directory(clock=lambda: now[0], public_address='8.8.4.4', relay_port=30821)
+    body = dict(compatibility=VERSION, name='Relay', port=30821, public=True, transport='relay')
+    def rpc(method, path, data=body, token=''):
+        return directory.request(method, path, {'compatibility':[VERSION]}, data, '8.8.8.8', token)[1]
+    first = rpc('POST', '/v2/lobbies')
+    second = rpc('POST', '/v2/lobbies')
+    path = '/v2/lobbies/'+first['code']
+    guest = rpc('POST', path+'/join')
+    other = rpc('POST', path+'/join')
+    listing = rpc('GET', '/v2/lobbies', {})
+    assert listing['private_relay'] and first['port'] == 30821
+    assert first['relay_key'] not in str(listing) and guest['relay_key'] not in str(listing)
+    assert first['relay_key'] != guest['relay_key'] != guest['peer_key']
+    room = bytes.fromhex(first['room'])
+    host_key, guest_key = bytes.fromhex(first['relay_key']), bytes.fromhex(guest['relay_key'])
+    host_ep, guest_ep = ('8.8.8.8', 40001), ('1.1.1.1', 40002)
+    host_reg = relay_packet(room, 1, 1, 0, REGISTER, host_key)
+    assert directory.relay_datagram(b'bad', host_ep) is None
+    assert directory.relay_datagram(host_reg[:-1]+bytes([host_reg[-1]^1]), host_ep) is None
+    response, endpoint = directory.relay_datagram(host_reg, host_ep)
+    assert endpoint == host_ep and RELAY.unpack_from(response)[-1] == REGISTERED
+    assert hmac.compare_digest(hmac.digest(host_key, response[:-32], 'sha256'), response[-32:])
+    assert directory.relay_datagram(host_reg, ('9.9.9.9', 1234)) is None
+    directory.relay_datagram(relay_packet(room, 1, guest['peer_id'], 0, REGISTER, guest_key), guest_ep)
+    packet = relay_packet(room, 2, guest['peer_id'], 1, FORWARD, guest_key, b'opaque game packet')
+    assert directory.relay_datagram(packet, ('9.9.9.9', 1234)) is None
+    packet = relay_packet(room, 3, guest['peer_id'], 1, FORWARD, guest_key, b'opaque game packet')
+    response, endpoint = directory.relay_datagram(packet, guest_ep)
+    assert endpoint == host_ep and response[RELAY.size:-32] == b'opaque game packet'
+    assert hmac.compare_digest(hmac.digest(host_key, response[:-32], 'sha256'), response[-32:])
+    assert directory.relay_datagram(packet, guest_ep) is None
+    # A credential from another room cannot register/forward in this one.
+    assert directory.relay_datagram(relay_packet(bytes.fromhex(second['room']), 4,
+        guest['peer_id'], 1, FORWARD, guest_key, b'cross room'), guest_ep) is None
+    assert directory.relay_datagram(relay_packet(room, 4, guest['peer_id'],
+        other['peer_id'], FORWARD, guest_key, b'bypass host'), guest_ep) is None
+    # Authenticated registration can rebind after the client's NAT changes.
+    new_ep = ('1.1.1.1', 40003)
+    assert directory.relay_datagram(relay_packet(room, 5, guest['peer_id'], 0, REGISTER, guest_key), new_ep)[1] == new_ep
+    member = directory.online[first['code']]['relay_members'][guest['peer_id']]
+    member['budget'] = 0
+    assert directory.relay_datagram(relay_packet(room, 6, guest['peer_id'], 0, REGISTER, guest_key), new_ep) is None
+    member['budget'] = 16384
+    # Stale registration is not a forwarding target, even while TLS lease lives.
+    now[0] = 6
+    assert directory.relay_datagram(relay_packet(room, 7, guest['peer_id'], 1,
+        FORWARD, guest_key, b'stale'), new_ep) is None
+    directory.relay_datagram(relay_packet(room, 2, 1, 0, REGISTER, host_key), host_ep)
+    directory.relay_datagram(relay_packet(room, 8, guest['peer_id'], 0, REGISTER, guest_key), new_ep)
+    rpc('DELETE', path+'/peers/'+str(guest['peer_id']), {}, guest['peer_key'])
+    assert directory.relay_datagram(relay_packet(room, 9, guest['peer_id'], 0, REGISTER, guest_key), new_ep) is None
+    rpc('DELETE', path, {}, first['owner_token'])
+    assert directory.relay_datagram(relay_packet(room, 3, 1, 0, REGISTER, host_key), host_ep) is None
+    now[0] = 91
+    assert directory.relay_datagram(relay_packet(bytes.fromhex(second['room']), 1, 1, 0,
+        REGISTER, bytes.fromhex(second['relay_key'])), host_ep) is None
+
+
+def test_private_relay_delivers_game_packets_between_guests_and_releases_listeners(tmp_path, monkeypatch):
+    import time
+    from online_transport import LOCAL, LOCAL_MAGIC, virtual_ip
+    import online_client
+    monkeypatch.setattr(online_client, 'map_port', lambda *args: pytest.fail('Lobby host must not map a port'))
+    directory = LocalDirectory(tmp_path, '192.0.2.1', 0)
+    sessions, games = [], []
+    tcp_port, relay_port = directory.server.server_port, directory.relay.port
+    try:
+        client = Client(directory.address, directory.fingerprint)
+        host = Session.create(client, VERSION, 'Relay room', relay_port, True, transport='relay')
+        sessions.append(host)
+        sessions.extend(Session.join(client, VERSION, host.lobby['code']) for _ in range(2))
+        for active in sessions:
+            bridge = active.bridge
+            assert bridge.relay == ('127.0.0.1', relay_port)
+            game = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            games.append(game); game.bind(('127.0.0.1', 0)); game.settimeout(3)
+            game.sendto(LOCAL.pack(LOCAL_MAGIC, bytes.fromhex(VERSION), bridge.local_token,
+                virtual_ip(bridge.peer_id), bytes(4), 1000, 0), bridge.local.getsockname())
+            deadline = time.monotonic()+3
+            while 1000 not in bridge.ports and time.monotonic() < deadline: time.sleep(.01)
+            assert 1000 in bridge.ports
+        first, second = sessions[1].bridge, sessions[2].bridge
+        games[1].sendto(LOCAL.pack(LOCAL_MAGIC, bytes.fromhex(VERSION), first.local_token,
+            virtual_ip(first.peer_id), virtual_ip(second.peer_id), 1000, 1000)+b'private relay gameplay', first.local.getsockname())
+        deadline = time.monotonic()+3
+        while time.monotonic() < deadline:
+            packet = games[2].recv(8192)
+            if LOCAL.unpack_from(packet)[-1] != 0: break
+        assert packet[LOCAL.size:] == b'private relay gameplay'
+    finally:
+        for game in games: game.close()
+        for active in reversed(sessions): active.close()
+        directory.close()
+    assert directory.poll() == 0
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+        probe.bind(('0.0.0.0', relay_port))
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        assert probe.connect_ex(('127.0.0.1', tcp_port)) != 0
+
+
+def test_busy_relay_port_rolls_back_directory_listener(tmp_path):
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as busy:
+        busy.bind(('0.0.0.0', 0))
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as available:
+            available.bind(('127.0.0.1', 0)); tcp = available.getsockname()[1]
+        with pytest.raises(OSError):
+            LocalDirectory(tmp_path, '192.0.2.1', tcp, relay_port=busy.getsockname()[1])
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            assert probe.connect_ex(('127.0.0.1', tcp)) != 0
