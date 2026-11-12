@@ -1764,6 +1764,19 @@ int main(int argc,char **argv)
         /* Directory admission stays on the selected browser/code page. Only
            the subsequent native discovery builder opens Joining lobby. */
         online_request_test=1;online_request_calls=0;
+        /* Exercise preparation and actual IPC: directory TCP and match UDP
+           must keep the original forwarded ports, rather than sharing41830. */
+        const uint32_t previous_storage=mp_ui.storage;mp_ui.storage=0;
+        CHECK(mp_prepare() && mp_ui.port==30821u);mp_ui.storage=previous_storage;
+        mp_ui.menu=0;mp_ui.pending=0;mp_request(PC_OM_PRIVATE_HOST);
+        CHECK(online_request.action==PC_OM_PRIVATE_HOST && online_request.port==30820u);
+        mp_ui.pending=0;mp_request(PC_OM_CREATE);
+        CHECK(online_request.action==PC_OM_CREATE && online_request.port==30821u);
+        /* A chosen UDP match port must never move the directory TCP listener. */
+        mp_ui.port=31999u;mp_ui.pending=0;mp_request(PC_OM_CREATE);
+        CHECK(online_request.port==31999u);
+        mp_ui.pending=0;mp_request(PC_OM_PRIVATE_HOST);CHECK(online_request.port==30820u);
+        mp_ui.pending=0;mp_ui.port=30821u;
         for(unsigned protected=0;protected<2u;protected++) {
             mp_ui.page=protected?MP_JOIN_CODE:MP_BROWSER;mp_ui.pending=0;mp_ui.menu=0;
             WORD_AT(outgoing+4u)=mp_descriptor(mp_ui.page);

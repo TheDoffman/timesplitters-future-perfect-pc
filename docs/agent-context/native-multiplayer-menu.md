@@ -58,6 +58,18 @@ NAT. Tests explicitly refuse loopback/public and complete pinned TLS and direct
 UDP via the real host RFC1918 interface; physical cross-device acceptance is
 separate. Both peers require matching rebuilt companion identities; copy a new
 server invite to include the optional LAN hints.
+Native hosting preserves the original desktop window's forwarded port pair:
+TCP30820 for the private directory (`MP_DIRECTORY_PORT`), UDP30821 for a default
+direct match (`MP_MATCH_PORT`). `mp_ui.port` is the UDP match port; only the
+PRIVATE_HOST request substitutes the independent directory port. A chosen UDP
+port cannot move the TCP listener. The initial native prototype incorrectly used
+41830 for both protocols, bypassing existing30820/30821 forwards. Tests exercise
+actual preparation and IPC for hosting and match creation, including a custom UDP
+port. The unused port editor now labels/validates a UDP port1024..65535. Incoming
+server invites retain their explicit port; copy a fresh invite after restarting
+hosting with the corrected defaults. Community41820/41821 is configured separately
+and is unaffected by private defaults.
+
 The directory begins empty. Connected players create independent v2 direct-UDP
 Arcade/Story matches, with16/4 limits; its256-room and32-worker limits are separate.
 Leaving a match keeps the directory alive. Closing its owner stops it. Public
@@ -467,3 +479,11 @@ requests retain their source page, selected public ID/secret semantics, duplicat
 activation suppression and in-place cancellation. Existing discovery tests retain
 index0/callback1CBD40. Native initialization1A0A60/1CB950 and advertisement
 enumeration352980/352990 remain required; do not remove them to merge screens.
+
+Community update verification must bypass the optional personal LAN route.
+The operator guide sets Client.local_address=None before its pinned public
+probe, requires an outside-network caller, and records old/deployed TCP/UDP
+listeners around service installation. Generic30820/30821 installer defaults
+must not replace the deployed community41820/41821 pair. Host-local success
+alone is not Internet acceptance; actual private updater behavior remains
+outside this checkout and needs operator-side confirmation.

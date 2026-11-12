@@ -1,4 +1,4 @@
-[Sticks](controller-deadzones.md). [LAN](native-multiplayer-menu.md).
+[Sticks](controller-deadzones.md). [TCP](native-multiplayer-menu.md).
 [2970 pads](control-presets.md); [Tex](texture-preference.md).
 [JIP](arcade-join-in-progress.md); [Routes](online-client-boundary.md).
 [Arms](video-options.md).

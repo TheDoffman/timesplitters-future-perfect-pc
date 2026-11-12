@@ -74,3 +74,8 @@ invitations and directory identity. No personal LAN address belongs in tracked
 configuration. Tests: `tests/network/test_online_routes.py`; an isolated settings
 path keeps personal routes out of automated game runs; `testing_profile.prepare_run`
 sets that path to its disposable run folder.
+
+The community updater guide's public probe explicitly clears Client.local_address
+and runs from another network. Otherwise an ignored personal route can satisfy
+an apparently public check locally. Preserve the installed service's own port
+pair through updates; it is independent of the player's private-directory pair.

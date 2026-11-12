@@ -73,6 +73,29 @@ external relay/coordinator implementation.
    manifest through that updater. Preserve its certificate/key, relay settings,
    dashboard access and router mappings. The updater is not included in this
    client repository, so an exact updater command must come from that checkout.
+   Record the actual TCP/UDP listeners before and after the update. For this
+   community deployment they must remain TCP41820 and UDP41821; some older
+   installer commands default to30820/30821. Pass the private updater's explicit
+   directory/relay port options (historical installer flags: `--directory-port
+   41820 --relay-port 41821`) or preserve the equivalent existing configuration.
+   Confirm those options in that updater's help rather than running a generic
+   installation command with defaults. The game's player-hosted private-server
+   defaults (TCP30820/UDP30821) are a separate setting.
+
+   Read-only checks on the service Mac:
+
+   ```sh
+   lsof -nP -iTCP:30820 -iTCP:41820 -sTCP:LISTEN
+   lsof -nP -iUDP:30821 -iUDP:41821
+   ```
+
+   If the service moved to30820/30821, restore its deployed41820/41821 settings
+   while retaining the certificate and existing router forwards. If it still
+   listens correctly, check that the router forwards TCP41820 and UDP41821 to
+   the Mac's current reserved LAN IP. A successful connection on the host's
+   network establishes local availability; outside-network access needs its
+   own verification.
+
 3. Restart and inspect the existing launch agent from the service user's Mac
    login session:
 
@@ -83,9 +106,11 @@ external relay/coordinator implementation.
 
    Restarting ends remaining service connections. Do not create a second service,
    replace its certificate, or change its ports merely to install this update.
-4. From an updated game checkout, verify the pinned public HTTPS route. This
-   read-only probe uses the shipped public endpoint/fingerprint and an empty
-   compatibility identity; it does not print lobby credentials:
+4. From an updated game checkout **on another network**, verify the pinned
+   public HTTPS route. This read-only probe uses the shipped public endpoint /
+   fingerprint and an empty compatibility identity; it does not print lobby
+   credentials. Explicitly bypass saved device-local routes so a working LAN
+   connection cannot be mistaken for working Internet access:
 
    ```sh
    PYTHONPATH=tools/network .venv/bin/python - <<'PY'
@@ -94,6 +119,7 @@ external relay/coordinator implementation.
    from online_client import Client
    settings = json.loads(Path('tools/network/online-service.json').read_text(encoding='utf-8'))
    client = Client(settings['directory'], settings['fingerprint'])
+   client.local_address = None  # Force the canonical public host; retain its TLS pin.
    for mode in ('arcade', 'story'):
        reply = client.request('GET', '/v2/lobbies?compatibility='+'0'*64+'&mode='+mode)
        assert reply.get('invite_only_listing') is True, mode+' admission update missing'

@@ -1,3 +1,13 @@
+Original private-server ports (2026-11-11, local after03b6cc2c): **Awaiting validation**
+on physical Mac/Linux. Shared native defaults now separate TCP30820 directory
+hosting from UDP30821 default lobby hosting, preserving the user's original
+forwarding and the former desktop flow. A chosen UDP port does not move the
+TCP listener; incoming invitations retain their explicit ports. The initial
+native prototype's41830-for-both default was a regression, independent of the
+LAN address fix. Production Windows menu/IPC fixtures pass; no new OS adapter is
+needed. Physical Mac/Linux builds and outside-network play remain pending for
+this correction. Community service ports remain separate. See [evidence](STATUS.md).
+
 Private invite same-network routing (2026-11-11, local after0711849c):
 **Awaiting validation**. User reports community Online/LAN working on physical
 Mac at0711849c, but private Windows-host invites refuse from Mac; the successful

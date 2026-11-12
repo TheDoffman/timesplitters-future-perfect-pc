@@ -11,6 +11,8 @@
 #define MP_MATCH_DRAW 0x123f8u
 #define MP_CODE_DRAW 0x123f9u
 #define MP_CHOICE_CHANGE 0x123fau
+#define MP_DIRECTORY_PORT 30820u
+#define MP_MATCH_PORT 30821u
 enum {MP_NETWORK,MP_PRIVATE,MP_HOST_SERVER,MP_JOIN_SERVER,MP_BROWSER,MP_CREATE,MP_JOIN_CODE,MP_JOINING,MP_PAGE_COUNT};
 static struct {
     unsigned page,source,mode,public_lobby,editing,pending,action,autojoin,host,pasting,paste_page,port,copy_down,refresh_down,refresh_queued,paste_down,copy_hover;
@@ -48,7 +50,7 @@ static int mp_prepare(void)
     memset((void *)((uintptr_t)mp_ui.storage+g_xbox_mem_offset),0,size);
     for(unsigned i=0;i<MP_PAGE_COUNT;i++)WORD_AT(mp_descriptor(i))=MP_BUILD;
     mp_ui.mode=PC_ONLINE_ARCADE;mp_ui.public_lobby=1;
-    mp_ui.port=41830;
+    mp_ui.port=MP_MATCH_PORT;
     snprintf(mp_ui.name,sizeof mp_ui.name,"My Lobby");return 1;
 }
 static void mp_focus(uint32_t menu)
@@ -107,7 +109,9 @@ static void mp_request(unsigned action)
         snprintf(mp_ui.notice,sizeof mp_ui.notice,"Online support could not start");mp_rebuild();return;
     }
     PcOnlineMenuRequest request={0};request.action=action;request.mode=mp_ui.mode;
-    request.source=mp_ui.source==1u;request.public_lobby=mp_ui.public_lobby;request.port=mp_ui.port;
+    request.source=mp_ui.source==1u;request.public_lobby=mp_ui.public_lobby;
+    /* Retain the original window's forwarded TCP directory / UDP match pair. */
+    request.port=action==PC_OM_PRIVATE_HOST?MP_DIRECTORY_PORT:mp_ui.port;
     snprintf(request.name,sizeof request.name,"%s",mp_ui.name);
     snprintf(request.code,sizeof request.code,"%s",mp_ui.code);
     snprintf(request.address,sizeof request.address,"%s",action==PC_OM_JOIN?mp_ui.lobby_id:mp_ui.address);
@@ -496,8 +500,8 @@ static void mp_text_done(void)
     else if(mp_ui.editing==2u)snprintf(mp_ui.code,sizeof mp_ui.code,"%s",value);
     else if(mp_ui.editing==4u) {
         char *end;unsigned long port=strtoul(value,&end,10);
-        if(*value && !*end && port>=1024u && port<=65534u)mp_ui.port=(unsigned)port;
-        else snprintf(mp_ui.notice,sizeof mp_ui.notice,"Choose a TCP port from 1024 to 65534; UDP uses the next port");
+        if(*value && !*end && port>=1024u && port<=65535u)mp_ui.port=(unsigned)port;
+        else snprintf(mp_ui.notice,sizeof mp_ui.notice,"Choose a UDP match port from 1024 to 65535");
     } else snprintf(mp_ui.address,sizeof mp_ui.address,"%s",value);
     mp_ui.editing=0;mp_rebuild();restore_registers(&saved);g_esp+=4u;
 }

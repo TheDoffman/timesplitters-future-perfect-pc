@@ -44050,3 +44050,72 @@ controls/display settings were preserved; only the optional connection-route
 configuration was added locally. The same checks on the physical Mac passed
 100 tests with3 platform skips after synchronizing source through Git. No new
 native Mac build/gameplay acceptance was performed for this Python-only fix.
+
+
+## Restore original private hosting port pair - 2026-11-11
+
+Baseline03b6cc2c on feature/native-multiplayer-ui. User confirms the Windows
+router forwards TCP30820 and UDP30821 to this PC. The native prototype introduced
+mp_ui.port=41830 in c664e7b1, sending it both for PRIVATE_HOST (directory TCP) and
+CREATE (direct lobby UDP), despite LocalDirectory's original30820 default and
+the desktop lobby's30821 default. Moving hosting into native menus did not require
+changing this contract. This source change restores shared TCP30820/UDP30821,
+keeping a custom UDP match port independent. Existing invite ports and community
+service41820/41821 are unchanged. Fresh native server invites use30820 after the
+old hosting process exits and the corrected build restarts it. The unused editor
+correctly describes and validates UDP1024..65535. The actual preparation/IPC
+production fixture tests default directory, default lobby and custom lobby ports:
+4 passed,2 native-Mac compile skips. Supported build status follows.
+
+Independent community investigation: user reports both this Windows PC and Mac
+reached the community service from this same outside network an hour earlier.
+The public-IP mismatch between this PC and the community mini is therefore
+expected, not evidence of a stale service address. Read-only normal-host tests
+compare Client from0711849c (before the private LAN fix) with the current client
+against the same configured public v3 endpoint: both timeout4.03s, with no local
+route on this PC. A direct TCP probe also times out before TLS. This establishes
+current public reachability failure; it does not identify whether the host's
+mapping/service, the route, or the outside network changed. The friend reportedly
+still connects on the hosting network; no host-side logs/mappings are available.
+The service URL/pin have not changed in this client work. Do not claim a verified
+community repair or treat the private port correction as that repair.
+
+The user's private invite names96.246.139.245:41830 and this PC's LAN address.
+Its live pythonw process37592 listens on0.0.0.0:41830; pinned HTTPS succeeds from
+localhost(.08s) and the advertised LAN(.05s). Both old/current clients see Win10061
+on its public address from this same hosting PC, which cannot distinguish router
+hairpin behavior from outside reachability. The exact Python executable has
+inbound Allow TCP/UDP, Any remote/local port, Private/Public profiles. No router
+UPnP mappings are exposed through Windows. No router/firewall settings, running
+games, certificates, personal configs or saves have been changed. Asked the user
+to close the running game so the corrected executable can be rebuilt. Actual
+Windows-to-Mac/Internet validation and physical Mac/Linux build checks remain
+pending. Source port changes are local, uncommitted and unpushed.
+
+
+Community-guide follow-up: user reports the friend recently updated the service
+using the operator guide and asks whether ports reset. This is possible if the
+private updater used generic defaults, but its installed configuration/source
+are not available here. Both public TCP30820 and41820 timeout3.04s using the
+existing certificate pin from this outside network; these probes do not identify
+the actual listener. The guide already required preserving41820/41821 but now
+adds explicit before/after lsof checks, port-option guidance and router-target
+verification. Its former Client-based public check could use a saved personal
+LAN route after c7bbdaf4, despite claiming public reachability. The probe now
+clears local_address while retaining TLS pinning and requires another network.
+This prevents a local connection from falsely validating Internet availability.
+The underlying service/forwarding issue remains unverified until the host-side
+checks are supplied. Production native port tests4 passed/2 Mac skips, private /
+routing/context contracts61 passed. Windows relink still awaits game closure.
+
+
+Original-port final validation: the user closed the game (observed no remaining
+process); supported Windows Build completed exit0 with built-in checks and
+matching symbols, logs/original-private-ports-build.log. Windows x64/MSVC0.6.1,
+compatibilitye97371631bc78c69d34bf1719e87a18284b40afb026864c92aeb92c214532d66. Production menu/IPC tests4 passed,2 native-Mac skips;
+private-directory, optional route and repository-context tests61 passed.
+No outside-network game join or physical Mac/Linux rebuild was performed.
+Community public reachability remains unresolved pending host-side listener /
+forwarding confirmation; the operator-guide public-probe correction is local.
+All changes remain local/uncommitted after03b6cc2c. Personal saves/settings,
+certificates and firewall/router rules were preserved.
