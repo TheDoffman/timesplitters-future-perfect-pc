@@ -8,7 +8,9 @@ Story lobby through that relay without opening an inbound UDP port.
 
 The game keeps its mappings alive while hosting and removes its own mappings on
 normal exit. Leaving a lobby keeps an owned directory, its relay and both port
-mappings alive. Only closing the private server releases those mappings.
+mappings alive. Returning to the Multiplayer Online/Private Server/LAN selector
+closes the owned private server and releases both mappings; you do not need to
+return all the way to the main menu. Closing the game also cleans them up.
 Existing matching manual forwards are reused; conflicting forwards are left
 untouched. A router restart can be recovered when its IGD stays reachable at the
 same control endpoint. UPnP failures leave hosting available for LAN use and

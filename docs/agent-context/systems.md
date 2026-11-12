@@ -1,15 +1,15 @@
-[Pads](controller-deadzones.md), [2970 pads](control-presets.md), [UI](main-menu-update.md).
+[Pads](controller-deadzones.md), [2970](control-presets.md), [UI](main-menu-update.md).
 [Tex](texture-preference.md); [arms](video-options.md).
 
-[Uplink](native-uplink.md#throw-impulse); [Online](online-player-identities.md).
+[Uplink](native-uplink.md#throw-impulse); [Online](online-player-identities.md). [Exit](native-multiplayer-menu.md).
 Networking: `pc_network_enabled()` reads startup config once,
-then uses shared atomic flags in the indirect-dispatch hot path. The System Link
+then uses shared atomic flags for indirect dispatch. The System Link
 menu explicitly calls `pc_network_enable_lan()`; Online connect/disconnect publishes
 its own flag. Missing launch files are not retried on every guest call, and an
 explicit disconnect does not re-import stale startup credentials. Windows, Mac
 and Linux share this policy. See `tests/network/network_eligibility.c`.
 
-[Tools and captures](developer-tools-integration.md).
+[Tools](developer-tools-integration.md).
 
 [Uplink](native-uplink.md);[projectile motion/beam damage](native-projectiles.md).
 [Input](controls-options.md).

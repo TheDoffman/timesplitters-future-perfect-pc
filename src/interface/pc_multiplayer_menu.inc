@@ -80,8 +80,16 @@ static void mp_transition(uint32_t menu,int changed)
     if(changed && guest_writable(menu,0x1b4u) && WORD_AT(menu+0x1b0u)==3u)
         guest_call(sub_00075980,2,menu,2u);
 }
+static void mp_close_directory(void)
+{
+    /* Multiplayer is the directory boundary. Lobby/browser returns retain it. */
+    pc_online_disconnect();
+    mp_ui.pending=mp_ui.autojoin=mp_ui.host=mp_ui.request_sequence=0;
+    memset(&mp_ui.state,0,sizeof mp_ui.state);
+}
 static void mp_show(unsigned page)
 {
+    if(page==MP_NETWORK)mp_close_directory();
     if(!mp_prepare() || !mp_ui.parent)return;
     const int changed=mp_ui.page!=page;
     if(changed)mp_ui.notice[0]=0;
@@ -457,6 +465,7 @@ static void mp_lan_browser_build(void)
 static void mp_joining_browser_build(void){mp_ui.page=MP_JOINING;mp_build();}
 static void mp_root_build(void)
 {
+    mp_close_directory();
     mp_ui.page=MP_NETWORK;mp_native_passthrough=0;mp_build();
 }
 static const char *native_multiplayer_notice(uint32_t menu)

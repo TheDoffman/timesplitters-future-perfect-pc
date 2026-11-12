@@ -44302,3 +44302,29 @@ Physical home-router mapping lifecycle is verified, not external reachability or
 gameplay. Mac/Linux native builds/devices and hotspot-host inbound reachability
 remain unverified. No personal saves/settings/certificates or community service
 were changed. Repository context and whitespace validation pass.
+
+
+## Close private server on return to Multiplayer (2026-11-12)
+
+User reports cross-network joining now works after removing the stale Mac-home
+UPnP entries, then requests cleanup at Multiplayer rather than Main Menu.
+Shared native mp_show(MP_NETWORK) and stock mp_root_build now call the existing
+pc_online_disconnect adapter path. Companion shutdown reaches Controller.close,
+LocalDirectory.close, closes HTTPS/UDP relay and releases only owned mappings.
+Native cached invitation/owner/pending/autojoin/host/request sequence are cleared.
+Back from Host Server to Private Server or Create to Match Browser retains the
+server; lobby leave and gameplay Return to Lobby preserve the earlier flow.
+No new IPC action, host adapter or layout is needed.
+
+Local source after935e8d3d; Windows x64, Python3.14.2, MSVC14.42.34433/VS2022,
+existing D3D8 frontend.100 focused checks pass,2 native Mac compile checks skip:
+production FOV/menu fixture (including actual Back dispatch retention/teardown),
+native IPC/controller, real isolated private TLS/UDP and fake-router mapping
+lifecycle/ownership tests. Supported Windows Build, built-ins and symbols pass
+in logs/private-multiplayer-return-build.log. Compatibility:
+d69edd5cdc6b27e1824768ba95f50117ce819f6919813ecd4b650826f1daeb0b.
+Context freshness and whitespace checks pass. Existing shared Mac/Linux adapters
+were reviewed, but native Mac/Linux builds/device and human/native-game router
+cleanup acceptance for this return boundary remain unrun. Tests make no physical
+router changes and use isolated saves/settings. No personal game was interrupted.
+Changes remain local/uncommitted/unpushed.

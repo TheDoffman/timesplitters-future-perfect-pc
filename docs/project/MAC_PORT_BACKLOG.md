@@ -1,3 +1,11 @@
+Private-server Multiplayer return cleanup (2026-11-12, local after935e8d3d): **Awaiting validation**
+on native Mac/Linux. Shared mp_show(MP_NETWORK)/mp_root_build disconnect the
+companion, closing owned private directory/relay and UPnP mappings, then clear
+cached invitation state. Lobby/browser intermediate returns keep hosting alive.
+Existing macOS/Linux stop adapters need no new implementation. Windows native
+fixture and shared lifecycle checks cover the change; native Mac/Linux return /
+router acceptance pending. See [evidence](STATUS.md).
+
 UPnP router SOAP compatibility (2026-11-12, local afterff18665a): **Awaiting validation**
 on native Mac/Linux. Shared Gateway.call expands empty SOAP arguments so strict
 routers accept NewRemoteHost. Ownership-checked cleanup retries literal wildcard

@@ -563,3 +563,22 @@ between deletion attempts. Corrected helper physically created, queried and
 removed both hosting ports on this Windows router; WAN gameplay and native Mac /
 Linux behavior remain unverified. Mobile-hotspot inbound reachability is a
 separate upstream NAT capability, not established by home-router mapping success.
+
+
+### Directory lifetime ends at Multiplayer (2026-11-12)
+
+Returning to MP_NETWORK (the Multiplayer Online/Private Server/LAN selector)
+now calls mp_close_directory via mp_show; the stock mp_root_build entry does the
+same. pc_online_disconnect signals companion shutdown through each existing host
+adapter, reaching Controller.close and LocalDirectory.close for HTTPS/relay and
+owned UPnP cleanup. Native pending/autojoin/host/sequence and cached server state
+are cleared so later hosting cannot reuse an obsolete invitation.
+
+Back from Host Server to Private Server, or lobby options to the browser, does
+not close the directory. Lobby leave/Return to Lobby retain their existing
+semantics. The fov_settings production fixture exercises both retained navigation
+and private/browser Back teardown. Existing controller/private/UPnP tests verify
+independent lobby/server lifetime and owner-only TCP/UDP cleanup. No new adapter,
+IPC action or menu layout is required. Cross-network Windows-host/Mac-hotspot
+joining was reported working by the user before this lifetime change; native
+Mac/Linux acceptance of the new return boundary remains unverified.

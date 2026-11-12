@@ -1801,6 +1801,23 @@ int main(int argc,char **argv)
             CHECK(online_request_calls==calls+2u && online_request.action==PC_OM_CANCEL);
         }
         online_request_test=0;
+        /* Back inside the private flow retains the server; returning to the
+           Multiplayer selector tears down the companion and its owned mappings. */
+        mp_ui.parent=0;mp_ui.pending=0;mp_ui.menu=0;
+        unsigned disconnects=online_disconnects;
+        mp_ui.page=MP_HOST_SERVER;guest_call(mp_back,1,current_menu);
+        CHECK(online_disconnects==disconnects);
+        mp_ui.page=MP_CREATE;guest_call(mp_back,1,current_menu);
+        CHECK(online_disconnects==disconnects);
+        for(unsigned page=0;page<2u;page++) {
+            mp_ui.page=page?MP_PRIVATE:MP_BROWSER;
+            mp_ui.state.private_owner=1;strcpy(mp_ui.state.invitation,"old server invite");
+            mp_ui.autojoin=mp_ui.host=1;mp_ui.request_sequence=99;
+            guest_call(mp_back,1,current_menu);
+            CHECK(online_disconnects==++disconnects);
+            CHECK(!mp_ui.state.private_owner && !mp_ui.state.invitation[0]);
+            CHECK(!mp_ui.pending && !mp_ui.autojoin && !mp_ui.host && !mp_ui.request_sequence);
+        }
         mp_ui.parent=0;mp_native_passthrough=1;mp_ui.source=0;mp_ui.host=0;mp_ui.autojoin=1;
         CHECK(native_multiplayer_lookup(0x1a43e0u)==mp_joining_browser_build);
         CHECK(native_multiplayer_lookup(0x1a4780u)==mp_joining_browser_build);
