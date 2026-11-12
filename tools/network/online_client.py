@@ -25,6 +25,7 @@ import time
 from urllib.parse import urlsplit
 
 from online_transport import Bridge, relay_endpoint
+from online_paths import directory_route
 
 
 class DirectoryError(ValueError):
@@ -46,30 +47,45 @@ class Client:
         if self.fingerprint and (len(self.fingerprint) != 64 or any(c not in '0123456789abcdef' for c in self.fingerprint)):
             raise ValueError('Certificate fingerprint must be 64 hexadecimal digits')
         self.connections=threading.local()
+        self.local_address=directory_route(self.url.geturl(), self.fingerprint)
 
     def close_persistent(self):
         connection=getattr(self.connections,'current',None)
         self.connections.current=None
         if connection is not None:connection.close()
 
-    def request(self, method, path, body=None, token=None, *, timeout=5, persistent=False):
-        connection=getattr(self.connections,'current',None) if persistent else None
-        reused=connection is not None and connection.sock is not None
-        if not reused and self.url.scheme == 'https':
+    def connect(self, timeout):
+        context = None
+        if self.url.scheme == 'https':
             context = ssl.create_default_context()
             if self.fingerprint:
                 # Verify the pinned certificate before sending any credentials.
                 context.check_hostname = False
                 context.verify_mode = ssl.CERT_NONE
-            connection = http.client.HTTPSConnection(self.url.hostname, self.url.port or 443, timeout=timeout, context=context)
-        elif not reused:
-            connection = http.client.HTTPConnection(self.url.hostname, self.url.port or 80, timeout=timeout)
+        hosts = list(dict.fromkeys([self.local_address, self.url.hostname])) if self.local_address else [self.url.hostname]
+        for index, host in enumerate(hosts):
+            duration = min(timeout, 1) if index < len(hosts)-1 else timeout
+            connection = (http.client.HTTPSConnection(host, self.url.port or 443, timeout=duration, context=context)
+                          if context else http.client.HTTPConnection(host, self.url.port or 80, timeout=duration))
+            try:
+                connection.connect()
+                if self.fingerprint and (self.url.scheme != 'https' or
+                        hashlib.sha256(connection.sock.getpeercert(binary_form=True)).hexdigest() != self.fingerprint):
+                    raise ValueError('Directory certificate does not match the supplied fingerprint')
+                connection.sock.settimeout(timeout)
+                return connection
+            except (OSError, ValueError):
+                connection.close()
+                if index == len(hosts)-1:
+                    raise
+
+    def request(self, method, path, body=None, token=None, *, timeout=5, persistent=False):
+        connection=getattr(self.connections,'current',None) if persistent else None
+        reused=connection is not None and connection.sock is not None
+        if not reused:
+            connection=self.connect(timeout)
         try:
-            if not reused:connection.connect()
-            else:connection.sock.settimeout(timeout)
-            if not reused and self.fingerprint and (self.url.scheme != 'https' or
-                hashlib.sha256(connection.sock.getpeercert(binary_form=True)).hexdigest() != self.fingerprint):
-                raise ValueError('Directory certificate does not match the supplied fingerprint')
+            if reused:connection.sock.settimeout(timeout)
             headers = {'Content-Type': 'application/json','Connection':'keep-alive' if persistent else 'close'}
             if token:
                 headers['Authorization'] = 'Bearer '+token

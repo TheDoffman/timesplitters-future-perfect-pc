@@ -59,3 +59,18 @@ that contract for both v2 and v3, and requires invite_only_listing capability
 before creating a locked room. The external community service still requires a
 matching update; no private service source was restored into this client tree.
 See [native menu contracts](native-multiplayer-menu.md#visible-invite-only-admission-and-third-revised-notes-2026-11-11).
+
+
+Device-local community routes (2026-11-11): `online_paths.directory_route` reads
+an optional ignored `pc-online-routes.json` beside the active online settings
+(source `config/`, portable `Settings/`, or the isolated test settings folder).
+At most four entries map an exact public directory URL and certificate fingerprint
+to one numeric RFC1918 IPv4 address. `Client.connect` tries that address at the
+same port with a one-second connection/handshake budget, verifies the original
+pin before sending anything, and falls back to the public endpoint on connection
+or certificate failure. It never retries a request after sending it. Persistent
+connections reuse their verified socket. `Client.url` remains public, preserving
+invitations and directory identity. No personal LAN address belongs in tracked
+configuration. Tests: `tests/network/test_online_routes.py`; an isolated settings
+path keeps personal routes out of automated game runs; `testing_profile.prepare_run`
+sets that path to its disposable run folder.

@@ -1,6 +1,6 @@
 [Sticks](controller-deadzones.md). [LAN](native-multiplayer-menu.md).
 [2970 pads](control-presets.md); [Tex](texture-preference.md).
-[Crossplay/JIP](arcade-join-in-progress.md); [Client](online-client-boundary.md).
+[JIP](arcade-join-in-progress.md); [Routes](online-client-boundary.md).
 [Arms](video-options.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).

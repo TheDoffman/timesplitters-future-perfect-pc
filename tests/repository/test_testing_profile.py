@@ -106,7 +106,7 @@ def test_fixture_and_disposable_copy_lifecycle(tmp_path,monkeypatch):
     assert env['TSFP_TEXTURE_PACK_DIR']==str(tmp_path/'assets/textures')
     assert env['TSFP_TEXTURE_MODE']=='classic'
     assert 'TSFP_TEXTURE_DUMP_DIR' not in env
-    assert all(str(run) in env[key] for key in ('RECOMP_SAVE_DIR','RECOMP_INPUT_CONFIG','RECOMP_DISPLAY_CONFIG','TSFP_DISPLAY_CONFIG','TSFP_CRASH_DIR'))
+    assert all(str(run) in env[key] for key in ('RECOMP_SAVE_DIR','RECOMP_INPUT_CONFIG','RECOMP_DISPLAY_CONFIG','TSFP_DISPLAY_CONFIG','TSFP_CRASH_DIR','TSFP_ONLINE_SETTINGS'))
     # Legacy Test Lab fixtures kept the Player 1 folder while changing the
     # display name, making a new Player 1 fail with ERROR_ALREADY_EXISTS.
     import json

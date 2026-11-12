@@ -44030,3 +44030,21 @@ local/uncommitted after0711849c, with no push; the Mac cannot obtain this fix fr
 the remote branch yet. Both hosts require the matching updated companion and a
 newly copied private-server invitation for LAN hints. Context/index and whitespace
 checks pass. No existing game was closed by automation or firewall setting changed.
+
+
+### Community connection on the same home network — 2026-11-11
+
+Uncommitted fix/community-local-route depends on native UI f69c4d3a. The mini was
+healthy and pinned LAN HTTPS worked while its unchanged public endpoint timed out
+from the same network. The shared Python client now supports an ignored personal
+LAN route keyed to the canonical public URL and certificate pin, preserving public
+invitations and falling back before requests when that route is unavailable.
+Windows focused client/menu/private-directory and test-profile tests:103 passed. Actual configured
+community identity successfully probes both modes over the pinned local route.
+This does not establish outside-network game reachability or native Story support.
+Windows canonical build and built-in checks passed. An isolated native game
+opened the in-game community browser using its canonical public identity and
+pinned personal LAN route. Actual locked host/join, bidirectional authenticated
+relay UDP and public invitation preservation also passed. Saves and personal
+controls/display settings were preserved; only the optional connection-route
+configuration was added locally. Mac Python checks are recorded separately.
