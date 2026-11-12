@@ -582,3 +582,33 @@ independent lobby/server lifetime and owner-only TCP/UDP cleanup. No new adapter
 IPC action or menu layout is required. Cross-network Windows-host/Mac-hotspot
 joining was reported working by the user before this lifetime change; native
 Mac/Linux acceptance of the new return boundary remains unverified.
+
+
+### Host startup notice and profile lobby default (2026-11-12)
+
+After syncing main c1e67e42 through merge a9340161, Controller.PRIVATE_HOST
+reports the exact unavailable TCP directory / UDP relay ports in its existing
+PRIVATE_READY message. A missing UPnP handle is not proof that manual forwarding
+or WAN access fails: the short message asks the player to check Internet forwarding and keeps LAN
+hosting available (under128 characters for native-font readability). Listener /
+certificate/startup failures still use ERROR. Native completion now copies host
+PRIVATE_READY messages to the existing native status bar instead of discarding
+them. Success reports active mappings without claiming verified WAN reachability.
+The existing IPC structure/version, hosting flow and server lifecycle are intact.
+
+Opening MP_CREATE refreshes the automatic name from the local P1 profile using
+original356870(0) -> local index ->69720(index). Verified original69720 returns
+profile metadata+4 (or body+4 when no persistent metadata); names are bounded to
+31 characters. Existing profiles/readers are not modified. Guest pointer bounds
+and NUL termination are checked, unsupported/control bytes become question marks
+to satisfy the existing printable-ASCII lobby contract, trailing spaces are
+trimmed, and a missing/invalid name falls back to My Lobby. Normal names produce
+Dudeman's Lobby. Saved guest registers survive those accessor calls.
+
+Accepted custom lobby names set name_custom and survive later page visits;
+clearing the field restores the profile default. The default changes when the
+profile changes while no custom name is set. Tests cover profile/peer selection,
+renaming, custom retention, invalid index/unterminated fallback; production native
+tick delivery to the status bar; both/single/no missing mappings and the serialized
+controller message. Platform behavior is shared; no new native adapters or
+community-service changes are required.

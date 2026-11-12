@@ -44375,3 +44375,38 @@ were reviewed, but native Mac/Linux builds/device and human/native-game router
 cleanup acceptance for this return boundary remain unrun. Tests make no physical
 router changes and use isolated saves/settings. No personal game was interrupted.
 Changes remain local/uncommitted/unpushed.
+
+
+## Main sync and revised online host/name notes (2026-11-12)
+
+Merged origin/main c1e67e42 into feature/native-multiplayer-ui at a9340161 from
+1d96dad0, preserving published feature history and main's controller rollback /
+0.6.2 changes. Documentation conflicts retain both sets of evidence and links.
+The merge is committed locally; it has not been pushed. New notes changes remain
+uncommitted on top of that merge.
+
+Private hosting now reports exact unavailable TCP/UDP ports in its existing
+PRIVATE_READY message and the native status bar actually retains/displays that
+message. The concise warning asks players to check Internet port forwarding and
+states LAN remains available; it does not infer missing manual forwards or
+unreachable WAN from an absent UPnP handle. Both mapped ports report readiness;
+listener/certificate startup failures retain ERROR behavior. Existing ABI unchanged.
+
+Create Lobby generates the automatic name from original local-profile accessors
+356870(0) and69720(local), e.g. Dudeman's Lobby. The bounded read checks pointer /
+NUL termination, sanitizes to the existing printable-ASCII lobby contract and
+falls back to My Lobby if the name is unavailable. Accepted custom names persist;
+clearing a custom name restores the current profile default. No profile bytes,
+saves, personal settings, service code or physical router mappings were changed.
+
+Windows x64/Python3.14.2/MSVC14.42.34433/VS2022/existing D3D8 frontend:119 focused
+checks pass,2 native Mac compile checks skip. Coverage includes production native
+tick -> status-bar delivery, profile defaults/custom retention/profile changes /
+invalid fallback, serialized per-port readiness, private TLS/UDP, UPnP, roster
+and bot promotion. Four readiness cases pass again after shortening the warning
+for readability. Supported Windows0.6.2 build, full main-synchronized patch stack,
+built-in checks and crash symbols pass; final log:
+logs/online-notes-host-status-build-final.log. Compatibility:
+a5516f2739b6e07a5a406f34b49aa7c87dab7bf68cdeca4bb0b497dee8d75b90.
+Context refresh/check and whitespace validation pass. Native Mac/Linux build /
+device and in-game visual/WAN acceptance of these notes remain unverified.

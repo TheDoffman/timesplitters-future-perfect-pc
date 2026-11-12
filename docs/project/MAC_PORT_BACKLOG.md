@@ -1,3 +1,11 @@
+Online host warning/profile default (2026-11-12, local after main-sync a9340161): **Awaiting validation**
+on native Mac/Linux. Shared native completion displays private-server port-mapping
+readiness in the existing status bar, with exact missing ports and LAN/manual
+forwarding guidance. Create Lobby uses original local-profile accessors for the
+automatic name; accepted custom names persist. No new host adapter is required.
+Windows production fixtures/shared controller tests pass; native Mac/Linux build /
+visual acceptance remains pending. See [evidence](STATUS.md).
+
 Private-server Multiplayer return cleanup (2026-11-12, local after935e8d3d): **Awaiting validation**
 on native Mac/Linux. Shared mp_show(MP_NETWORK)/mp_root_build disconnect the
 companion, closing owned private directory/relay and UPnP mappings, then clear

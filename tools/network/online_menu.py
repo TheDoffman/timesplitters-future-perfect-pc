@@ -220,8 +220,15 @@ class Controller:
                         self.private_process=process;self.private=self.private_hosted=pair;self.private_local=local
                         self.private_direct=bool(getattr(process,'direct',False))
                         self.private_relay=bool(getattr(process,'relay',False))
-                mapped=bool(getattr(self.private_process,'port_mapping',None) and getattr(self.private_process,'relay_mapping',None))
-                message='Private server ready. Router mapping active.' if mapped else 'Private server ready. Automatic router mapping unavailable; forward its TCP directory and UDP relay ports for Internet guests.'
+                process=self.private_process
+                missing=[]
+                if not getattr(process,'port_mapping',None):
+                    missing.append('TCP '+str(getattr(getattr(process,'server',None),'server_port',request['port'])))
+                if not getattr(process,'relay_mapping',None):
+                    missing.append('UDP '+str(getattr(getattr(process,'relay',None),'port',30821)))
+                message=('UPnP unavailable: '+' / '.join(missing)+
+                         '. Check port forwarding for Internet players. LAN is available.'
+                         if missing else 'Private server ready. Router mappings active.')
                 result=(PRIVATE_READY,message,[])
             elif action==BROWSE:
                 with self.lock:self.close_session()

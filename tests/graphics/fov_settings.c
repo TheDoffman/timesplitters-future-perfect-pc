@@ -106,7 +106,8 @@ static unsigned online_request_test,online_request_calls;
 static PcOnlineMenuRequest online_request;
 int pc_online_menu_start(void){return online_request_test;}
 int pc_online_menu_send(PcOnlineMenuRequest *request){CHECK(online_request_test);request->sequence=++online_request_calls;online_request=*request;return 1;}
-const PcOnlineMenuState *pc_online_menu_poll(void){CHECK(0);return NULL;}
+static PcOnlineMenuState online_poll_state;static int online_poll_fixture;
+const PcOnlineMenuState *pc_online_menu_poll(void){CHECK(online_poll_fixture);return &online_poll_state;}
 int pc_online_menu_accept(void){CHECK(0);return 0;}
 static int roster_fixture;static unsigned roster_publications;
 int pc_online_menu_active(void){return roster_fixture;}
@@ -226,9 +227,12 @@ void sub_000966E0(void)
 /* Unlock Content has its own profile/menu fixture. This settings-only test
  * must link those dependencies without accidentally entering their paths. */
 #define UNLOCK_STUB(name) void name(void) { CHECK(0); }
-UNLOCK_STUB(sub_00356870) UNLOCK_STUB(sub_000696F0)
+UNLOCK_STUB(sub_000696F0)
 UNLOCK_STUB(sub_001CD040)
 #undef UNLOCK_STUB
+static uint32_t lobby_profile_index,lobby_profile_text;
+void sub_00356870(void){CHECK(WORD_AT(g_esp+4u)==0);g_eax=lobby_profile_index;g_esp+=4;}
+void sub_00069720(void){CHECK(WORD_AT(g_esp+4u)==lobby_profile_index);g_eax=lobby_profile_text;g_esp+=4;}
 /* Other shared translation-unit hooks must not run in this display fixture. */
 int pc_weapon_slot_take(void) { CHECK(0);return 0; }
 STUB(sub_001BAA70) STUB(sub_001BA410) STUB(sub_00142820)
@@ -371,7 +375,7 @@ void sub_00078980(void) {
 STUB(sub_0007D480) STUB(sub_000717D0)
 void sub_00075430(void) { WORD_AT(WORD_AT(g_esp+4)+0xc8)=WORD_AT(g_esp+8);g_esp+=4; }
 void sub_0003D7B0(void){if(roster_fixture){CHECK(WORD_AT(g_esp+4)==345);g_eax=0x310100;}g_esp+=4;}
-STUB(sub_001CD120) STUB(sub_00069720) STUB(sub_00071CF0)
+STUB(sub_001CD120) STUB(sub_00071CF0)
 static unsigned audio_native_ticks,audio_native_actions,audio_native_opens;
 static unsigned fixture_audio_rows(void) {
     unsigned mask=0;
@@ -1518,6 +1522,31 @@ int main(int argc,char **argv)
     sidebar_video_queued=(PcVideoRequest){9,VIDEO_CLEAR_CACHE,edit};int old_clears=cache_clear_calls;video_sidebar_tick();CHECK(cache_clear_calls==old_clears+1);
     {
         const uint32_t menu=0x200000u;
+        lobby_profile_index=3;lobby_profile_text=0x3b0000u;mp_ui.name_custom=0;
+        strcpy((char *)(g_xbox_mem_offset+lobby_profile_text),"Dudeman");
+        mp_default_lobby_name();CHECK(!strcmp(mp_ui.name,"Dudeman's Lobby"));
+        strcpy((char *)(g_xbox_mem_offset+lobby_profile_text),"Other Profile");
+        mp_default_lobby_name();CHECK(!strcmp(mp_ui.name,"Other Profile's Lobby"));
+        strcpy(mp_ui.name,"Custom Lobby");mp_ui.name_custom=1;
+        mp_default_lobby_name();CHECK(!strcmp(mp_ui.name,"Custom Lobby"));
+        mp_ui.name_custom=0;lobby_profile_index=16;
+        mp_default_lobby_name();CHECK(!strcmp(mp_ui.name,"My Lobby"));
+        lobby_profile_index=0;memset((void *)(g_xbox_mem_offset+lobby_profile_text),'x',32);
+        mp_default_lobby_name();CHECK(!strcmp(mp_ui.name,"My Lobby"));
+        memset((void *)(g_xbox_mem_offset+lobby_profile_text),0,32);lobby_profile_text=0;
+        /* A ready server can still lack automatic forwards. The actual native
+           tick must retain its warning and expose it through the status bar. */
+        mp_ui.storage=0x280000u;mp_ui.parent=mp_ui.menu=0;mp_ui.page=MP_HOST_SERVER;
+        mp_ui.pending=1;mp_ui.action=PC_OM_PRIVATE_HOST;mp_ui.request_sequence=77;
+        mp_ui.poll_at=0;mp_ui.autojoin=mp_ui.pasting=0;mp_ui.return_notice[0]=0;
+        mp_native_passthrough=0;roster_fixture=online_poll_fixture=1;
+        online_poll_state=(PcOnlineMenuState){0};online_poll_state.sequence=77;
+        online_poll_state.status=PC_OM_PRIVATE_READY;online_poll_state.private_owner=1;
+        strcpy(online_poll_state.message,"Automatic port mapping unavailable for UDP 30821.");
+        native_multiplayer_tick();
+        CHECK(!mp_ui.pending && mp_ui.state.private_owner);
+        CHECK(!strcmp(native_multiplayer_notice(0),online_poll_state.message));
+        online_poll_fixture=roster_fixture=0;mp_ui.poll_at=0;mp_ui.notice[0]=0;
         WORD_AT(menu+0x1b0u)=3u;mp_transition(menu,0);CHECK(native_menu_transitions==0);
         mp_transition(menu,1);CHECK(native_menu_transitions==1);
         WORD_AT(menu+0x1b0u)=1u;mp_transition(menu,1);CHECK(native_menu_transitions==1);

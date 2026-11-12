@@ -14,7 +14,9 @@ return all the way to the main menu. Closing the game also cleans them up.
 Existing matching manual forwards are reused; conflicting forwards are left
 untouched. A router restart can be recovered when its IGD stays reachable at the
 same control endpoint. UPnP failures leave hosting available for LAN use and
-manual forwarding. The controller records mapping availability for diagnostics.
+manual forwarding. The Host Server screen shows the unavailable TCP/UDP ports
+in the native status bar. An unavailable automatic mapping does not prove that
+a manual forward is missing; Internet reachability is not automatically verified.
 If automatic mapping fails, only the private-server owner needs to forward the TCP directory and UDP
 relay ports. The server must remain running for its lobbies; their traffic uses
 its bandwidth and may take a longer route than a direct connection.

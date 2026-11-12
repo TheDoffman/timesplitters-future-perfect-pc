@@ -273,3 +273,29 @@ def test_private_lan_server_error_does_not_fall_through_to_other_endpoints(monke
     assert c.status==menu.ERROR and 'Admission denied' in c.message
     assert calls==['127.0.0.1','192.168.1.8'] and c.private is None
     c.close()
+
+
+@pytest.mark.parametrize('tcp,udp,missing', [(True,True,()),(False,True,('TCP 30920',)),
+    (True,False,('UDP 30921',)),(False,False,('TCP 30920','UDP 30921'))])
+def test_private_host_readiness_warns_for_exact_unmapped_ports(tcp,udp,missing):
+    process=SimpleNamespace(poll=lambda:None,direct=True,server=SimpleNamespace(server_port=30920),
+        relay=SimpleNamespace(port=30921),port_mapping=object() if tcp else None,
+        relay_mapping=object() if udp else None)
+    controller=menu.Controller(VERSION)
+    controller.private_process=process;controller.private_hosted=('https://mine.example:30920',PIN)
+    try:
+        controller.begin(request(menu.PRIVATE_HOST));wait(controller)
+        assert controller.status==menu.PRIVATE_READY and controller.private_process is process
+        if missing:
+            assert 'UPnP unavailable' in controller.message
+            assert 'Check port forwarding for Internet players' in controller.message
+            assert 'LAN is available' in controller.message
+            assert len(controller.message)<=128
+            for port in missing:assert port in controller.message
+            if tcp:assert 'TCP 30920' not in controller.message
+            if udp:assert 'UDP 30921' not in controller.message
+        else:
+            assert controller.message=='Private server ready. Router mappings active.'
+        assert menu.STATE.unpack_from(controller.snapshot())[8].split(b'\0')[0].decode()==controller.message
+    finally:
+        controller.private_process=None;controller.close()

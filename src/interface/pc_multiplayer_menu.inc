@@ -16,7 +16,7 @@
 #define MP_MATCH_PORT 30821u
 enum {MP_NETWORK,MP_PRIVATE,MP_HOST_SERVER,MP_JOIN_SERVER,MP_BROWSER,MP_CREATE,MP_JOIN_CODE,MP_JOINING,MP_PAGE_COUNT};
 static struct {
-    unsigned page,source,mode,public_lobby,editing,pending,action,autojoin,host,pasting,paste_page,port,copy_down,refresh_down,refresh_queued,paste_down,copy_hover;
+    unsigned page,source,mode,public_lobby,name_custom,editing,pending,action,autojoin,host,pasting,paste_page,port,copy_down,refresh_down,refresh_queued,paste_down,copy_hover;
     uint32_t choices[2];
     uint32_t storage,menu,parent,request_sequence;
     uint64_t poll_at,connect_at,copy_at,copied_until,metadata_at;
@@ -26,6 +26,7 @@ static struct {
 } mp_ui;
 static int mp_native_passthrough;
 extern void sub_001A2730(void),sub_001A2720(void),sub_001A4350(void);
+extern void sub_00356870(void),sub_00069720(void);
 extern void sub_001A8CE0(void),sub_001A8EE0(void),sub_001CBA50(void),sub_001CBD40(void);
 extern void sub_001A8D30(void),sub_001A8F30(void);
 extern void sub_00019D70(void),sub_0001ED60(void);
@@ -80,6 +81,25 @@ static void mp_transition(uint32_t menu,int changed)
     if(changed && guest_writable(menu,0x1b4u) && WORD_AT(menu+0x1b0u)==3u)
         guest_call(sub_00075980,2,menu,2u);
 }
+static void mp_default_lobby_name(void)
+{
+    if(mp_ui.name_custom)return;
+    char name[32]={0};
+    GuestRegisters saved;save_registers(&saved);
+    /* Original profile-name accessor resolves the local player even after
+       network peer slots move. Its metadata name is bounded to31 characters. */
+    const unsigned local=guest_call(sub_00356870,1,0u);
+    const uint32_t text=local<16u?guest_call(sub_00069720,1,local):0;
+    if(guest_writable(text,sizeof name)) {
+        const unsigned char *source=(const unsigned char *)((uintptr_t)text+g_xbox_mem_offset);
+        if(memchr(source,0,sizeof name))
+            for(unsigned i=0;i<sizeof name-1u && source[i];i++)
+                name[i]=source[i]>=32u && source[i]<127u?(char)source[i]:'?';
+    }
+    restore_registers(&saved);
+    size_t length=strlen(name);while(length && name[length-1u]==' ')name[--length]=0;
+    snprintf(mp_ui.name,sizeof mp_ui.name,"%s%s",length?name:"My",length?"'s Lobby":" Lobby");
+}
 static void mp_close_directory(void)
 {
     /* Multiplayer is the directory boundary. Lobby/browser returns retain it. */
@@ -91,6 +111,7 @@ static void mp_show(unsigned page)
 {
     if(page==MP_NETWORK)mp_close_directory();
     if(!mp_prepare() || !mp_ui.parent)return;
+    if(page==MP_CREATE)mp_default_lobby_name();
     const int changed=mp_ui.page!=page;
     if(changed)mp_ui.notice[0]=0;
     if(changed)mp_ui.refresh_down=mp_ui.refresh_queued=0;
@@ -536,7 +557,7 @@ static void mp_text_done(void)
 {
     GuestRegisters saved;save_registers(&saved);
     const char *value=(const char *)((uintptr_t)mp_buffer(20)+g_xbox_mem_offset);
-    if(mp_ui.editing==1u)snprintf(mp_ui.name,sizeof mp_ui.name,"%.63s",value);
+    if(mp_ui.editing==1u){snprintf(mp_ui.name,sizeof mp_ui.name,"%.63s",value);mp_ui.name_custom=!!*mp_ui.name;mp_default_lobby_name();}
     else if(mp_ui.editing==2u)snprintf(mp_ui.code,sizeof mp_ui.code,"%s",value);
     else if(mp_ui.editing==4u) {
         char *end;unsigned long port=strtoul(value,&end,10);
@@ -716,7 +737,7 @@ static void native_multiplayer_tick(void)
     }
     if(mp_ui.pending && state->sequence==mp_ui.request_sequence && state->status!=PC_OM_BUSY) {
         mp_ui.state=*state;mp_ui.pending=0;
-        snprintf(mp_ui.notice,sizeof mp_ui.notice,"%s",state->status==PC_OM_ERROR?state->message:"");
+        snprintf(mp_ui.notice,sizeof mp_ui.notice,"%s",(state->status==PC_OM_ERROR || (state->status==PC_OM_PRIVATE_READY && mp_ui.action==PC_OM_PRIVATE_HOST))?state->message:"");
         if(state->status==PC_OM_IDLE && mp_ui.action==PC_OM_LEAVE){mp_show(MP_BROWSER);mp_request(PC_OM_BROWSE);}
         else if(state->status==PC_OM_PRIVATE_READY && mp_ui.action==PC_OM_PRIVATE_CONNECT){mp_show(MP_BROWSER);mp_request(PC_OM_BROWSE);}
         else if(state->status==PC_OM_CONNECTED && pc_online_menu_accept()) {
