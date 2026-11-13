@@ -9,6 +9,10 @@
 #include "pc_debug.h"
 #include "graphics/graphics_settings.h"
 #define KB_OPEN 0x1200fu
+#define PAUSE_SETTINGS_OPEN 0x12018u
+#define PAUSE_SETTINGS_BUILD 0x12019u
+#define PAUSE_SETTINGS_BACK 0x1201bu
+static uint32_t pause_settings_caption(void);
 static uint32_t kb_caption(void);
 static uint32_t controls_caption(void);
 static int controls_native_button(void (*original)(void));
@@ -345,6 +349,19 @@ void pc_display_menu_button(void (*original)(void))
     if(callsite==0x0019440bu)sd_width();
     if(callsite==0x001944c3u && callback==0x00192e60u){sd_buttons(original);return;}
     if(callsite==0x0019450au){sd_capacity(original);return;}
+    if(paused) {
+        uint32_t frame=g_esp,old_caption=WORD_AT(frame+4u),label=pause_settings_caption();
+        if(label) {WORD_AT(frame+4u)=label;WORD_AT(frame+20u)=PAUSE_SETTINGS_OPEN;}
+        original();WORD_AT(frame+4u)=old_caption;WORD_AT(frame+20u)=callback;return;
+    }
+    if(callsite==0x002F5666u && callback==0x002EC1F0u) {
+        /* Keep the native record/setters, but omit the old Audio row from
+         * layout/navigation. Its actions now live in Settings. */
+        uint32_t frame=g_esp,flags=WORD_AT(frame+12u);
+        WORD_AT(frame+12u)=flags|0x21u;original();WORD_AT(frame+12u)=flags;
+        if(guest_writable(g_eax,0xb4u))WORD_AT(g_eax+0xb0u)=0;
+        return;
+    }
     if(callback==0x002CBE10u || callback==0x002EC1F0u) {
         uint32_t frame=g_esp,old_caption=WORD_AT(frame+4),label=audio_options_caption();
         uint32_t builder=WORD_AT(0x007BB1E0u),flags=0;
@@ -388,7 +405,7 @@ void pc_display_menu_button(void (*original)(void))
         return;
     }
 #endif
-    if(!frontend && !paused) { original();return; }
+    if(!frontend) { original();return; }
     save_registers(&r);
     if(!caption) {
         const char text[]="Video Options";
@@ -942,7 +959,7 @@ void pc_network_bots_menu(void (*original)(void))
     original();
 #endif
 }
-#include "pc_quit_menu.inc"
+#include "pc_pause_settings.inc"
 static int menu_video_tabs_poll(uint32_t menu);
 static void menu_video_tabs_flush(void);
 #include "pc_menu_mouse_guest.inc"
@@ -1565,7 +1582,17 @@ static void online_opening_tick(void)
 #else
 static void online_opening_tick(void) {}
 #endif
+#define pc_multiplayer_exit_menu multiplayer_exit_menu_original
 #include "pc_multiplayer_exit.inc"
+#undef pc_multiplayer_exit_menu
+void pc_multiplayer_exit_menu(void (*original)(void))
+{
+    uint32_t frame=g_esp,descriptor=WORD_AT(frame+8u);
+    uint32_t target=pause_settings_return(WORD_AT(frame+4u),descriptor);
+    WORD_AT(frame+8u)=target;
+    multiplayer_exit_menu_original(original);
+    WORD_AT(frame+8u)=descriptor;
+}
 #include "pc_story_menu.inc"
 #include "pc_story_lobby.inc"
 #include "pc_story_browser.inc"
@@ -1667,12 +1694,9 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case SELECT_CB: return select_callback;
     case BACK_CB: return back_callback;
     case FOV_DRAW_CB: return fov_draw;
-#if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY)
-    case QUIT_OPEN_CB: return quit_open;
-    case QUIT_BUILD_CB: return quit_build;
-    case QUIT_SELECT_CB: return quit_select;
-    case QUIT_BACK_CB: return quit_back;
-#endif
+    case PAUSE_SETTINGS_OPEN: return pause_settings_open;
+    case PAUSE_SETTINGS_BUILD: return pause_settings_build;
+    case PAUSE_SETTINGS_BACK: return pause_settings_back;
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     case 0x1200du: return online_activate;
     case 0x002C2C20u: return network_bots_build;

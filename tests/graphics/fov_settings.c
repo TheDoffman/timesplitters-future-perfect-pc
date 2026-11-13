@@ -942,16 +942,17 @@ int main(int argc,char **argv)
     g_esp=0x700000;WORD_AT(g_esp+20)=0x2cbe10;WORD_AT(g_esp+4)=0x510000;
     pc_display_menu_button(button_probe);
     CHECK(observed_builder_flags==0x26200 && WORD_AT(0x500028)==0x32200 && g_esp==0x700004);
-    /* Both native insertion sites put Video immediately before Controls,
-     * preserving the Controls call frame and its result. */
+    /* Main Settings retains Video/Controls; pause consolidates them into a
+     * single Settings callback while preserving the original row ABI. */
     for(unsigned i=0;i<2;i++) {
         uint32_t callback=i?0x2ec1a0u:0x2cbe50u;
         g_esp=0x700000;WORD_AT(g_esp)=i?0x2f561cu:0x2cc116u;
         WORD_AT(g_esp+4)=0x510000;WORD_AT(g_esp+20)=callback;
         observed_callback_count=0;
         pc_display_menu_button(button_probe);
-        CHECK(observed_callback_count==2 && observed_callbacks[0]==PC_DISPLAY_MENU_CALLBACK);
-        CHECK(observed_callbacks[1]==callback && WORD_AT(0x700014)==callback);
+        if(i)CHECK(observed_callback_count==1 && observed_callbacks[0]==PAUSE_SETTINGS_OPEN);
+        else CHECK(observed_callback_count==2 && observed_callbacks[0]==PC_DISPLAY_MENU_CALLBACK && observed_callbacks[1]==callback);
+        CHECK(WORD_AT(0x700014)==callback);
         CHECK(WORD_AT(0x700004)==0x510000 && g_esp==0x700004 && g_eax==0x510000);
     }
     /* Pause Options supplies its own centered (or split-screen) style.
@@ -964,7 +965,7 @@ int main(int argc,char **argv)
         WORD_AT(g_esp+12)=1u;
         pc_display_menu_button(button_probe);
         CHECK(observed_builder_flags==style && WORD_AT(0x500028)==style);
-        CHECK(observed_row_flags==1u && WORD_AT(0x700004)==0x510000 && g_esp==0x700004);
+        CHECK(observed_row_flags==0x21u && !WORD_AT(0x5100b0) && WORD_AT(0x700004)==0x510000 && g_esp==0x700004);
     }
     g_esp=0x700000;WORD_AT(g_esp)=0x2c4042;WORD_AT(g_esp+20)=0;WORD_AT(g_esp+12)=0x20000;WORD_AT(g_esp+16)=bits(54.f);
     pc_display_menu_button(button_probe);

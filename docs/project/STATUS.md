@@ -1,3 +1,13 @@
+Pause Settings consolidation (branch follow-up on fix/pause-menu-glass-backdrop,
+base20d0f5ef): native pause Controls row becomes Settings; Audio row is hidden
+without layout height. The hub uses the main Settings order Audio/Video/Controls,
+retaining child native save/cancel/confirmation behavior and returning to the hub.
+The injected Quit to Desktop rows and confirmation callbacks are removed from
+all menus. Original Quit/Restart and update/Story layout hooks remain. Windows
+build and58 menu checks pass. Actual first-mission root/hub/three-child Back
+navigation, fresh-pause root reset and main Desktop-row removal passed. Shared
+source/native-display contracts are implemented; Mac/Linux visual checks pending.
+
 Pause glass scaling follow-up (local, uncommitted):2731 scopes native capture
 and backdrop to full-canvas placement. Seven aspect-ratio scope tests pass;
 final Windows build,11 UI placement checks,21 context and2 patch-stack checks
