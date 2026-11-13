@@ -12,10 +12,16 @@ def test_standalone_client_imports_and_invitation_roundtrip(tmp_path):
     for name in COMPANION:
         shutil.copy2(repo_file(root, 'tools', name), tmp_path/name)
     check = '''
-import sys
+import sys, ssl, tempfile
+from pathlib import Path
 sys.path.insert(0, sys.argv[1])
 import online, online_client, online_arcade_client, online_transport, online_private, online_upnp
 from online_host import invitation, parse_invitation
+from online_private import certificate
+with tempfile.TemporaryDirectory() as directory:
+    cert, key, pin = certificate(Path(directory)/"certificate")
+    ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER).load_cert_chain(cert, key)
+    assert len(pin) == 64
 value = ('https://example.test:41820', 'ab'*32, 'A'*16)
 assert parse_invitation(invitation(*value)) == value
 assert online_arcade_client.SCHEMA == 'tsfp-arcade-checkpoint-v1'

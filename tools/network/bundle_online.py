@@ -118,7 +118,7 @@ def bundle(root, stage, copy):
     probe = stage/'Support/Online/bundle-check.py'
     probe.write_text('import ssl, tkinter, cryptography\n'
                      'from online_paths import ROOT, PORTABLE\n'
-                     'from online_host import certificate\n'
+                     'from online_private import certificate\n'
                      'import tempfile\nfrom pathlib import Path\n'
                      'assert PORTABLE\n'
                      'window=tkinter.Tk(); window.withdraw(); window.update(); window.destroy()\n'

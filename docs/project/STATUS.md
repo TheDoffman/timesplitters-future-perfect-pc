@@ -44458,3 +44458,20 @@ Targeted repair checks exposed the next dependency in the Mac-only historical
 subset:3030 Story browser wrappers also require the later Story context. That
 patch is now deferred to the full migration in that fixture only; the old-controls
 upgrade and package import checks already pass. Full-stack assertions remain.
+
+Beta source891b8a2b passed full release regression:4187 passed,75 skipped,
+114 subtests passed in963.78s, plus Windows native build/built-ins and launcher
+checks. Packaging then stopped before archive creation/publication: Windows
+bundle TLS probe still imported certificate from online_host after its move to
+online_private. Windows/Mac probe imports are corrected together, and standalone
+companion acceptance now generates/loads the private certificate. Native Mac
+packaging remains unrun on this Windows host. A new exact-source full run remains
+required after this repair; no release/tag has been created.
+
+Follow-up targeted checks pass: standalone client/certificate test; actual
+relocated Windows Python/Tk/TLS certificate bundle probe; supported game-content
+verification and three-peer shared UDP relay with physical UPnP disabled. Existing
+failed staging is disposable and will be recycled before clean preparation.
+User subsequently requested a draft: final upload must use -Draft and remain
+unpublished. Draft Beta metadata will not appear in launcher discovery until
+published; Stable/Latest remain unchanged.

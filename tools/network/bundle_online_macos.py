@@ -185,7 +185,7 @@ def bundle(root, stage, copy, generated=None):
         'Public CA trust store: Support/Python/certificates.pem.\n', encoding='utf-8')
     probe = stage/'Support/Online/bundle-check.py'
     probe.write_text('import ssl, tkinter, tempfile\nfrom pathlib import Path\n'
-        'from online_host import certificate\nfrom online_theme import OnlineTheme\n'
+        'from online_private import certificate\nfrom online_theme import OnlineTheme\n'
         'window=tkinter.Tk(); window.withdraw(); theme=OnlineTheme(window); window.update(); window.destroy()\n'
         'with tempfile.TemporaryDirectory() as temp:\n'
         ' cert,key,pin=certificate(Path(temp)/"directory")\n'

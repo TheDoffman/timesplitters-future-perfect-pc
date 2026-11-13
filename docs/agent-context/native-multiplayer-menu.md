@@ -627,3 +627,7 @@ online_host's player-only boundary. The actual bundled-runtime probe creates a
 private shared-relay room and delivers guest-to-guest packets through it, without
 an artificial host address rewrite. Its child explicitly disables physical UPnP
 after stripping inherited TSFP variables, and has a120s subprocess bound.
+
+Windows/Mac bundle TLS probes import certificate from online_private, matching
+the private-directory split. The standalone companion check generates a temporary
+certificate and loads it into SSLContext to cover the exported package contract.
