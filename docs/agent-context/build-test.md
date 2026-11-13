@@ -1,4 +1,4 @@
-[Pads](controller-deadzones.md). [IDs](online-player-identities.md). [Host](native-multiplayer-menu.md).
+[Pads](controller-deadzones.md). [IDs](online-player-identities.md). [Pack](native-multiplayer-menu.md).
 [Rollback](control-presets.md); [Tex](texture-preference.md).
 [JIP](arcade-join-in-progress.md); [Routes](online-client-boundary.md).
 [Arms](video-options.md).

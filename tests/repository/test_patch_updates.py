@@ -90,7 +90,7 @@ def checkout(tmp_path, upstream_files):
 
 def apply(tree, patch):
     result = installer.git(tree, 'apply', PATCH_PATHS[patch])
-    assert result.returncode == 0, result.stderr
+    assert result.returncode == 0, str(patch)+": "+result.stderr
 
 
 def snapshot(tree):
@@ -230,8 +230,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch'):
-            continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
+        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch'):
+            continue  # Historical inputs predate Tools/presets and capture/join wrappers; full upgrades include all.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
@@ -356,8 +356,8 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches = tmp_path / 'mac-only-patches'
     old_patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch'):
-            continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
+        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch','3030-native-story-browser-preview.patch'):
+            continue  # Historical inputs predate Tools/presets and capture/join wrappers; full upgrades include all.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.

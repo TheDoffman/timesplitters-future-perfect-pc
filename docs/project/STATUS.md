@@ -44441,3 +44441,20 @@ remains unchanged. Release notes in docs/release/online-beta.md describe the act
 Arcade/menu/private relay/UPnP scope, compatibility and limitations.
 Publication/package/full-regression results are pending; version preparation
 alone does not publish a release or prove native platform acceptance.
+
+
+Beta validation found two historical fixture setup failures: first full publisher
+run had4185 passed,75 skipped,114 subtests passed and2 failed in907.09s.
+The old-controls subset tried3010 without its later renderer context; old-Mac
+subset tried3020 without later Story/join wrappers. Historical setup now excludes
+these newer patches, while both tests retain full-current-stack upgrade checks.
+No production patch or installer behavior was weakened. The portable package
+probe also now imports the private directory from its owning module, exercises
+the actual shared relay, disables physical UPnP and bounds its child run.
+These release acceptance repairs require a new clean source revision and another
+complete publisher validation before publication. No release/tag was created.
+
+Targeted repair checks exposed the next dependency in the Mac-only historical
+subset:3030 Story browser wrappers also require the later Story context. That
+patch is now deferred to the full migration in that fixture only; the old-controls
+upgrade and package import checks already pass. Full-stack assertions remain.

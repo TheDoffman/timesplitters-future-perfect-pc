@@ -18,12 +18,14 @@ def probe(stage, game):
     import ssl
     import tkinter
     from online_client import Client, Session
-    from online_host import LocalDirectory, invitation, parse_invitation
+    from online_host import invitation, parse_invitation
+    from online_private import LocalDirectory
     from online_paths import ROOT, PORTABLE, HANDSHAKES, SETTINGS, MANIFEST
     from online_transport import LOCAL, LOCAL_MAGIC, virtual_ip
     import importlib.util
 
     assert PORTABLE and ROOT == stage
+    assert os.environ.get('TSFP_UPNP') == '0', 'Packaged tests must not configure real routers'
     assert HANDSHAKES == stage/'Logs/Online' and SETTINGS == stage/'Settings/pc-online.json'
     assert all(str(path).lower().startswith(str(stage/'Support').lower()) for path in sys.path)
     window = tkinter.Tk()
@@ -47,13 +49,11 @@ def probe(stage, game):
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as available:
                 available.bind(('127.0.0.1', 0))
                 port = available.getsockname()[1]
-            host = Session.create(client, version, 'Portable self-test', port, True)
+            host = Session.create(client, version, 'Portable self-test', port, True, transport='relay')
             sessions.append(host)
             value = invitation(directory.public_url, directory.fingerprint, host.lobby['code'])
             assert parse_invitation(value)[2] == host.lobby['code']
             assert client.request('GET', '/v2/lobbies?compatibility='+version)['lobbies']
-            with directory.server.directory.lock:
-                directory.server.directory.online[host.lobby['code']]['address'] = '127.0.0.1'
             sessions.extend([Session.join(client, version, host.lobby['code']) for _ in range(2)])
             for active in sessions:
                 game = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -107,10 +107,10 @@ if __name__ == '__main__':
         environment = {key: value for key, value in os.environ.items()
                        if not key.startswith(('PYTHON', 'TCL', 'TK_', 'RECOMP_', 'TSFP_'))}
         environment.update(PATH=str(Path(os.environ['SystemRoot'])/'System32'),
-                           PYTHONHOME='Z:/no-system-python', PYTHONPATH='Z:/no-system-packages')
+                           PYTHONHOME='Z:/no-system-python', PYTHONPATH='Z:/no-system-packages', TSFP_UPNP='0')
         checked = subprocess.run([str(stage/'Support/Python/python.exe'), '-B', str(Path(__file__).resolve()),
                                   '--stage', str(stage), '--game', str(game), '--probe'], env=environment,
-                                 capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+                                 capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW, timeout=120)
         print(checked.stdout, end='')
         if checked.returncode:
             raise RuntimeError(checked.stderr)

@@ -1,3 +1,9 @@
+Historical-upgrade fixtures exclude3010 capture and3020 join wrappers from the
+old subset because those need the later renderer/Story wrapper context; the
+Mac-only subset also predates3030 Story browser wrappers. Both
+fixtures still apply and verify the complete current stack during migration.
+The fixture apply helper includes the patch name in failures.
+
 Controller response investigations: [raw-input and original-decoder tests](controller-deadzones.md); distinguish host deadzone from the guest threshold. Patch2950 follows2940 in the maintained map.
 
 [Preset rollback/order evidence](control-presets.md).

@@ -620,3 +620,10 @@ fields and stored name stay intact. Measurement/ellipsis and vertical centering
 use the reduced scale; original scales are restored at the end of mp_code_draw.
 This is a shared cosmetic change; existing native painter fixtures cover its
 ordinary rendering/transition routes. Native Mac/Linux visual review is pending.
+
+
+Beta package acceptance imports LocalDirectory from online_private, preserving
+online_host's player-only boundary. The actual bundled-runtime probe creates a
+private shared-relay room and delivers guest-to-guest packets through it, without
+an artificial host address rewrite. Its child explicitly disables physical UPnP
+after stripping inherited TSFP variables, and has a120s subprocess bound.
