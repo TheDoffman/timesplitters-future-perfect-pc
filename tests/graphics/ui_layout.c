@@ -89,6 +89,14 @@ void pc_prompts_layout_begin(void){}
 void pc_prompts_layout_end(void){}
 #include "pc_display_ui.inc"
 static void draw(void){pending=1;g_esp+=4;}
+static void pause_backdrop(void)
+{
+    uint32_t frame=g_esp;
+    stack[0]=0x002F3592u;
+    pc_display_weapon_effect(draw,0);
+    /* The original backdrop also paints the heading after its picture. */
+    draw();g_esp=frame+4;
+}
 static void rank_widget(void)
 {
     /* The label, rank number and frame can be separate deferred batches. */
@@ -428,6 +436,18 @@ int main(void)
         pc_display_footer_background(draw);sub_00022FF0();CHECK(count==selection_count);
     }
     players=1;
+    /* Partial pause taps must remain at authored viewport coordinates for
+     * every display ratio, including repeated capture and nested menu scopes. */
+    for(unsigned r=0;r<7;r++)for(unsigned pass=0;pass<2;pass++) {
+        hud_scale=4*sizes[r][1]/(3*sizes[r][0]);wide=hud_scale!=1.f;
+        ui_placement=2;ui_tag=123;placement=2;tag=123;
+        g_esp=0;pending=1;n=draw_count;
+        pc_display_pause_glass(pass?pause_backdrop:draw,pass?0x002F3460u:0x002E55F0u);
+        sub_00022FF0();
+        CHECK(drawn[n]==2 && drawn[n+1]==1);
+        if(pass)CHECK(drawn[n+2]==2); /* Preserve header placement. */
+        CHECK(placement==2 && tag==123 && g_esp==4);
+    }
     /* The blue sheet widens independently of the camera and subsequent
        artwork; its projection must be restored without cumulative scaling. */
     view_address=0x100;view[0]=0;view[1]=640;view[6]=480;scene=101;

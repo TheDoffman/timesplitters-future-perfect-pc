@@ -1,3 +1,14 @@
+Pause glass scaling2731 (uncommitted): shared capture/backdrop placement helper
+and native-display wrappers require no OS adapter. Scope tests cover seven
+ratios; Mac/Linux actual rendering still needs validation, including split-screen.
+
+Pause-menu glass restoration (uncommitted, base c1e67e42): IMPLEMENTED / VALIDATION
+PENDING on native Mac/Linux. Shared patch2730 extends HLE CopyRects and common
+RHI screen-copy passes; Windows D3D11 and Vulkan hosts share the implementation.
+Legacy GL retains E_NOTIMPL screen-copy fallback. Windows GPU pixel contracts
+pass; native Mac/Linux visual acceptance remains: pause/resume/reopen in Story
+and Arcade, split-screen, aspect/resolution changes. See pause-glass.md.
+
 Full control-preset rollback (local, base e7cb1016): shared2990 removes sampler
 preset/semantic layers and restores original defaults/profile initialization and
 binding editors. AppKit/GTK/Win32/shared launcher use the restored common model;

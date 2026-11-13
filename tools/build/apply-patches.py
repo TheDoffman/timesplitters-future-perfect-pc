@@ -340,6 +340,14 @@ def patch_records(paths):
         paths.remove(rollback_controls)
         paths.append(rollback_controls)
 
+    # Offscreen CopyRects extends the final shared screen-copy/resolve path,
+    # including the late-applied temporal map and MSAA synchronization patches.
+    for name in ('2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch'):
+        pause_patch = by_name.get(name)
+        if pause_patch:
+            paths.remove(pause_patch)
+            paths.append(pause_patch)
+
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

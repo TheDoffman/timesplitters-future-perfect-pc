@@ -18,7 +18,7 @@ and Linux share this policy. See `tests/network/network_eligibility.c`.
 [Display](video-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
-# [Systems](video-options.md)
+# [Menus](pause-glass.md)
 
 [SDL](linux-game.md).
 
