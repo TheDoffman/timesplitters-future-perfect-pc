@@ -44475,3 +44475,32 @@ failed staging is disposable and will be recycled before clean preparation.
 User subsequently requested a draft: final upload must use -Draft and remain
 unpublished. Draft Beta metadata will not appear in launcher discovery until
 published; Stable/Latest remain unchanged.
+
+## Online beta draft acceptance (2026-11-12)
+
+Created [v0.7.0-beta.1 draft](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/untagged-40fe33848ea31eda47da),
+release443677772, from clean/pushed46f1a2d0d2f02570b9d8fcbc0cc2f241bcbf3646
+on feature/native-multiplayer-ui. User explicitly requested draft status.
+GitHub API confirms draft=true,prerelease=true,published_at=null; Beta channel
+metadata, included Stablev0.6.2, exact source and all3 uploaded Windows assets.
+GitHub asset digests match local archive/checksum/BUILD receipts. Windows ZIP
+186162706 bytes, SHA256db6f34adcb1383f5c676c2a0fc52b90dd5bcc602413c5c6e08a3ff28251ff9dd.
+
+Official publisher on Windows x64/Python3.14.2/MSVC14.42.34433/VS2022:
+supported US Xbox content verified; complete patch/build and native built-ins
+pass; release-full4-worker suite4187 passed,75 skipped,114 subtests passed
+in826.87s. Production launcher checks pass; exact1289-file ZIP fresh install
+and upgrade/personal-file preservation pass. Real bundled Python/Tk, TLS
+certificate generation, pinned HTTPS invitations and three-peer private UDP
+relay pass with physical UPnP disabled. Package hashes checked after probes;
+no game data/personal files/optional textures included. Preparation917.39s;
+validated-package draft upload24.08s. Logs: logs/online-beta-prepare-final.log,
+logs/online-beta-draft.log. Disposable staging/test trees recycled safely.
+
+Draft is NOT public and will NOT appear in Preview/Beta until published.
+Latest remains launcher-v1.6.2; Stablev0.6.2 remains published and untouched.
+Mac/Linux packages, native device acceptance and new live Internet gameplay
+are not verified by this Windows package run. Existing Story feature gate stays
+off for this general Beta. Subsequent documentation commits do not change the
+pinned release source. No issues closed, settings/saves overwritten or router
+mappings modified during package validation.

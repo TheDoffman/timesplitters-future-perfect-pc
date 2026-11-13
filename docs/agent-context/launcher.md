@@ -1,7 +1,8 @@
-Online game beta0.7.0-beta.1 is prepared on feature/native-multiplayer-ui,
-using the existing Preview/Beta selector and Windows publisher. No launcher
-version or Stable/Latest change is needed. Scope/limits: [online beta](../release/online-beta.md).
-Native package availability and publication evidence remain in STATUS.md.
+Online game beta0.7.0-beta.1 is uploaded as a draft prerelease from46f1a2d0
+on feature/native-multiplayer-ui (release443677772). Beta metadata targets
+Preview/Beta, but drafts stay hidden from launcher discovery. Windows-only;
+Stable0.6.2/Latest launcher1.6.2 unchanged. [Scope](../release/online-beta.md).
+Native package availability and draft acceptance evidence remain in STATUS.md.
 
 Launcher1.6.2 packages restored editable controls and per-player deadzone sliders;
 game0.6.2 adds the high-FPS turret/prompt fixes. Three-host release verification
