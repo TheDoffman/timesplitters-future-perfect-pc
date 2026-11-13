@@ -1,3 +1,16 @@
+## Online beta draft acceptance (2026-11-12)
+
+Linuxv0.7.0-beta.1 uses exact Windows source46f1a2d0 and matching network
+identity. Built on Ubuntu24.04/WSL with Clang18, pinned Vulkan/release media
+and launcher1.6.2. Local contracts271 pass/28 skip; clean read-only userspace
+settings/debug/input/windowed+fullscreen renderer/Python and49 launcher UI
+groups pass after one Xvfb BadWindow retry. The Online native self-test skips77;
+separate actual packaged Python HTTPS/invite/three-peer shared relay passes,
+with physical UPnP disabled. Packaged120s isolated Story reaches active scene2
+and6600 successful guest presents. Uploaded ZIP/checksum/BUILD verified on
+draft443677772 with Windows assets unchanged; platform metadata lists both.
+Draft remains unpublished. See STATUS for hashes and unverified hardware/WAN.
+
 ## v0.6.1 draft acceptance
 
 The Linux package at07bc98c0 uses the same exact source as the Windows draft and

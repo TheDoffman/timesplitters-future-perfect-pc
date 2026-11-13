@@ -1,7 +1,7 @@
 Online game beta0.7.0-beta.1 is uploaded as a draft prerelease from46f1a2d0
 on feature/native-multiplayer-ui (release443677772). Beta metadata targets
-Preview/Beta, but drafts stay hidden from launcher discovery. Windows-only;
-Stable0.6.2/Latest launcher1.6.2 unchanged. [Scope](../release/online-beta.md).
+Preview/Beta, but drafts stay hidden from launcher discovery. Windows+Linux assets;
+minimum launcher1.6.2. Stable0.6.2/Latest launcher1.6.2 unchanged. [Scope](../release/online-beta.md).
 Native package availability and draft acceptance evidence remain in STATUS.md.
 
 Launcher1.6.2 packages restored editable controls and per-player deadzone sliders;

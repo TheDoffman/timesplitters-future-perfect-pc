@@ -44504,3 +44504,46 @@ are not verified by this Windows package run. Existing Story feature gate stays
 off for this general Beta. Subsequent documentation commits do not change the
 pinned release source. No issues closed, settings/saves overwritten or router
 mappings modified during package validation.
+
+## Linux online beta draft upload (2026-11-12)
+
+Added Linuxv0.7.0-beta.1 to [existing draft](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/untagged-f1ba9cec53d74c35e07d),
+release443677772. Both native source and packaging revision match Windows exactly:
+46f1a2d0d2f02570b9d8fcbc0cc2f241bcbf3646. Clean WSL-native checkout was preserved
+and moved from07bc98c0 to this detached release revision; no game-data copy.
+Ubuntu24.04/WSL2 kernel6.18.54.1, Clang18.1.3, glibc2.39; pinned Vulkan SDK,
+release-media decoder and supported US XBE verified. Native game/MMIO build passes.
+Linux launcher1.6.2 built with existing production artwork/icon;49 UI groups pass.
+
+Linux networking/package contracts271 pass,28 explicit skips using documented
+Clang. Initial default-GCC run267 pass/28 skip/4 fail on warning-as-error
+compile diagnostics; retained separately, no production source changed. Actual
+Linux package verifies1558 files, fresh/upgrade personal-file preservation and
+corruption rejection. Relocated Python/Tk/TLS and dependency source/license audit
+pass. Separate actual packaged interpreter probe verifies US game content, pinned
+HTTPS directory/invites and three-peer UDP relay with physical UPnP disabled.
+Clean minimal Ubuntu, read-only package/data, nobody, private Xvfb/Openbox:
+settings/debug/input/windowed+fullscreen renderer/Python and49 launcher UI groups
+pass. Initial fullscreen X_TranslateCoords BadWindow failure is retained; retry
+passes with unchanged archive. Native Online self-test explicitly skips77 without
+a peer command, separate from the passing packaged relay probe.
+
+Packaged120.16s isolated Test Lab run with synthetic movement/fire/pause schedule
+reaches active offline Story scene2; selected capture reviewed as first-person
+gameplay.6600 successful guest presents,0 failed/skipped/interpolated. Measured
+active window53.76 guest FPS on software Vulkan, host presents not scanout.
+Fixture/personal saves/settings preserved; runner recycles its disposable disks.
+This does not establish physical Linux GPU, Steam Deck, full-campaign or live WAN
+multiplayer acceptance. Story co-op gate remains off for general Beta.
+
+Linux ZIP808020658 bytes; SHA256
+8b2a6a7cc3afd1a385ddec0f98cc574f676d059258b511870dedfff4df0424a9.
+Three Linux assets uploaded; all6 server-side hashes match local receipts and
+Windows asset hashes remain unchanged. Release metadata now lists Windows+Linux,
+minimum launcher1.6.2, Beta, same tested source. GitHub renamed the draft's
+temporary label while editing; restored tag_namev0.7.0-beta.1 and verified exact
+target, draft=true,prerelease=true,published_at=null. Latest remains launcher1.6.2;
+Stablev0.6.2 untouched. Draft remains hidden from launcher discovery. Mac assets
+are not included. Bounded evidence retained in logs/online-beta-linux-*.log,
+*-report.json and upload-verified.json on Windows; reusable native builds and
+ZIP/checksum/BUILD remain in WSL. No personal data/game assets published.

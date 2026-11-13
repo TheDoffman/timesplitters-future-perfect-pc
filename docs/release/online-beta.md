@@ -23,9 +23,11 @@ updates, player-name reporting and bot weapon cleanup during host migration.
 
 ## Testing and limits
 
-This first package is **Windows x64**. Mac/Linux packages are not included in
-this publication; existing source-build support is separate from packaged
-platform acceptance. Story co-op remains restricted to dedicated Story testing
+Packages are available for **Windows x64 and Linux x64**. Mac packages are not
+included in this draft. Linux requires Ubuntu 24.04/glibc 2.39 or newer and a
+working system Vulkan driver. Use launcher 1.6.2 or newer. Linux package checks,
+isolated WSL/software-Vulkan gameplay and local three-peer relay tests pass;
+physical Linux GPU, Steam Deck and external-network acceptance remain pending. Story co-op remains restricted to dedicated Story testing
 builds; this general Beta does not enable it.
 
 All players in a match must use matching beta builds. Test both community and
