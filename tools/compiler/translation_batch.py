@@ -164,9 +164,12 @@ class BatchTranslator:
         return headers
 
     def translate_batch_split(self,func_list,output_dir,chunk_size=1000,header_name='recomp_funcs.h',
-                              prefix='recomp',verbose=False,manual=None,keep_bodies=None):
+                              prefix='recomp',verbose=False,manual=None,keep_bodies=None,
+                              max_chunk_bytes=1024*1024):
         if isinstance(chunk_size,bool) or not isinstance(chunk_size,int) or chunk_size<=0:
             raise ValueError('Chunk size must be a positive integer')
+        if isinstance(max_chunk_bytes,bool) or not isinstance(max_chunk_bytes,int) or max_chunk_bytes<=0:
+            raise ValueError('Chunk byte budget must be a positive integer')
         prefix=_filename(prefix);header_name=_filename(header_name)
         if header_name.casefold() in ('recomp_types.h','tsfp_branch_feedback.h',f'{prefix}_dispatch.c'.casefold(),f'{prefix}_stubs_unresolved.c'.casefold()) or re.fullmatch(re.escape(prefix.casefold())+r'_\d{4,}\.c',header_name.casefold()):
             raise ValueError('Declaration header conflicts with another generated output')
@@ -188,7 +191,16 @@ class BatchTranslator:
             if items:
                 header+=['',f'/* {label}. */']+[f'void {items[address]}(void);  /* 0x{address:08X} */' for address in sorted(items)]
         header+=['','#endif /* RECOMP_FUNCS_H */','']
-        chunks=[records[start:start+chunk_size] for start in range(0,len(records),chunk_size)]
+        # Function counts alone group adjacent, heavily expanded SIMD routines
+        # into enormous compiler units. Bound emitted bodies as well; never
+        # split a function or change its instructions/optimization policy.
+        chunks=[];chunk=[];size=0
+        for record in records:
+            weight=len(record[2].encode('utf-8'))+1
+            if chunk and (len(chunk)>=chunk_size or size+weight>max_chunk_bytes):
+                chunks.append(chunk);chunk=[];size=0
+            chunk.append(record);size+=weight
+        if chunk:chunks.append(chunk)
         outputs={header_name:'\n'.join(header),**runtime_headers}
         files=[str(destination/header_name)]
         for index,chunk in enumerate(chunks):
@@ -222,7 +234,7 @@ class BatchTranslator:
             if stale and path.is_file():
                 if path.is_symlink() or path.resolve().parent!=destination:raise ValueError('Refusing generated-file cleanup outside output directory')
                 path.unlink()
-        stats.update(files=files,num_chunks=len(chunks),chunk_size=chunk_size)
+        stats.update(files=files,num_chunks=len(chunks),chunk_size=chunk_size,max_chunk_bytes=max_chunk_bytes)
         return stats
 
     def _write_dispatch_table(self,translations,output_path,header_name):

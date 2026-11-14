@@ -4,6 +4,12 @@ The historical Mac-only upgrade fixture omits2710 from its old subset because
 that subset intentionally excludes the Story frame/network wrapper. It then
 asserts all four mod hooks after the complete upgrade. Production order is unchanged.
 
+`test_translation_batch.py` checks deterministic byte/count partitioning, UTF8
+weight, indivisible oversized functions and invalid-budget output preservation.
+The shared default body cap is1MiB. Count-only250 still grouped155k lines/6MB of
+SIMD bodies in one MSVC unit and failed C1002; an individual failing routine
+compiled with unchanged /O2 /Ob2. Full weighted game build validation is pending.
+
 Windows fetch-video.ps1 pins FFmpeg autobuild2026-11-13-12-43,
 n8.1.3-35-gf1acb0a266 LGPL shared8.1, published SHA25657cb10e4…699996.
 The versioned cache and dated URL replace the mutable latest asset; checksum

@@ -3,6 +3,8 @@
 [Guest adapter notes](guest-adapter-notes.md#runtime-routing).
 [Mod scripting game bridge](mod-scripting.md): patch2710 links the separate parent to title hooks;
 activation and actual custom-mode gameplay remain pending.
+Translation batches cap UTF8 body bytes at1MiB as well as function count. A single
+oversized function stays whole; instruction emission and compiler flags are unchanged.
 
 <!-- packet:start -->
 Runtime layers: generated Xbox guest calls title hooks in

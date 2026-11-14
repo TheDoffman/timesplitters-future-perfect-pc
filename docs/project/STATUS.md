@@ -43959,3 +43959,17 @@ The fixture now omits2710 only in its old subset, then verifies all four mod hoo
 after the complete upgrade. Production patch ordering is unchanged. The focused Windows upgrade fixture
 passes; updated CI is pending. Local split250 Windows compilation has progressed
 beyond its first20 units; full game build remains pending.
+
+Windows full game compilation with count-only split250 still fails C1002 in
+recomp_0045.c:250 functions expanded to155544 lines/5970675 bytes. The same
+original003A03A0 function compiles alone with /O2 /Ob2 and /O2 /Ob0. This narrows
+the observed issue to compilation-unit complexity; no compiler flags were changed.
+The shared batch generator now caps emitted UTF8 function bodies at1MiB plus the
+existing function count, preserving order and each complete function. A single
+oversized body stays alone. Windows12 batch tests and CLI/generation tests pass;
+weighted full game build and Unix batch tests remain pending. This is a build
+repair needed for native mod integration, not live mod gameplay acceptance.
+
+The old full Windows patch suite finished61 passes and one historical-fixture
+failure from its pre-correction collected function. The corrected focused fixture
+passes separately on Windows/Mac/Linux. CI for278e9845 is still pending.

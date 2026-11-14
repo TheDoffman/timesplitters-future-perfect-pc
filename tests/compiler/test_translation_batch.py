@@ -131,6 +131,31 @@ guest_kept();return seen!=318;}
     assert not list(out.glob('recomp_0*.c'))
 
 
+def test_weighted_batches_preserve_order_and_keep_oversized_function_whole(tmp_path):
+    batch,_=fixture(tmp_path)
+    original=batch.translator.translate_function
+    def expanded(address,info):
+        code=original(address,info)
+        return code+'/*'+'\u03bb'*400+'*/\n' if code and address==0x1010 else code
+    batch.translator.translate_function=expanded
+    out=tmp_path/'weighted'
+    functions=[(address,info) for address,info in batch.func_db.items() if address<0x1030]
+    stats=batch.translate_batch_split(functions,out,max_chunk_bytes=600)
+    chunks=sorted(out.glob('recomp_[0-9]*.c'))
+    assert stats['num_chunks']==3 and stats['max_chunk_bytes']==600
+    names=['guest_a','guest_manual','guest_wrapped_gen']
+    for path,name in zip(chunks,names,strict=True):
+        text=path.read_text(encoding='utf-8')
+        assert f'void {name}(void)' in text
+        assert sum(f'void {other}(void)' in text for other in names)==1
+    assert '\u03bb'*400 in chunks[1].read_text(encoding='utf-8')
+    stamps={p.name:p.stat().st_mtime_ns for p in out.iterdir()}
+    batch.translate_batch_split(functions,out,max_chunk_bytes=600)
+    assert stamps=={p.name:p.stat().st_mtime_ns for p in out.iterdir()}
+    stats=batch.translate_batch_split(functions,out,chunk_size=1,max_chunk_bytes=10000)
+    assert stats['num_chunks']==3
+
+
 def test_simple_batches_categories_and_invalid_output_preservation(tmp_path):
     batch,_=fixture(tmp_path)
     batch.classification_db={0x1000:{'category':'alpha'},0x1030:{'category':'beta'}}
@@ -139,7 +164,9 @@ def test_simple_batches_categories_and_invalid_output_preservation(tmp_path):
     assert result['alpha']['total_insns']==3 and result['beta']['failed']==1 and result['beta']['total_insns']==0
     assert (tmp_path/'out/bundle_alpha.c').exists() and (tmp_path/'out/bundle_beta.c').exists()
     before={p.name:p.read_bytes() for p in (tmp_path/'out').iterdir()}
-    for kwargs in ({'chunk_size':0},{'chunk_size':-1},{'chunk_size':True},{'header_name':'../oops.h'},
+    for kwargs in ({'chunk_size':0},{'chunk_size':-1},{'chunk_size':True},
+                   {'max_chunk_bytes':0},{'max_chunk_bytes':-1},{'max_chunk_bytes':True},
+                   {'header_name':'../oops.h'},
                    {'header_name':'recomp_types.h'},{'header_name':'tsfp_branch_feedback.h'},
                    {'header_name':'TSFP_BRANCH_FEEDBACK.H'},{'header_name':'RECOMP_TYPES.H'},
                    {'prefix':'RECOMP','header_name':'recomp_dispatch.c'},

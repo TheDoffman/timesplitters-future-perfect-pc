@@ -10684,3 +10684,10 @@ with no skips. The original supported executable/runtime/dependency were prepare
 in owned ignored task directories; no main checkout changed. Real gameplay,
 full native game builds and the existing public integration requirements remain
 pending. Historical Mac-only patch fixture dependency correction is under test.
+
+Shared weighted translation batches: **Awaiting validation** on Mac/Linux.
+Count-only250 still exceeded the Windows compiler backend heap in a155k-line
+SIMD-heavy unit; one affected routine compiles alone with unchanged /O2 /Ob2.
+The shared generator now caps each unit's emitted bodies at1MiB as well as count,
+without splitting functions or changing instructions/compiler flags. Windows batch
+and CLI/generation checks pass; weighted game builds and Unix reruns pending.
