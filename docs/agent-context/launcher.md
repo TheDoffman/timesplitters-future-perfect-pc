@@ -887,3 +887,7 @@ for state/rotation bounds and recovery contracts.
 The Windows session child-readiness fixture retries sharing violations within
 its existing10s bound; file existence alone does not prove a readable handoff.
 See [Mac setup](../development/mac-mod-hosting.md).
+Public game packages now preserve verified mod helper bundles; see the
+[bundle checks](build-test-details.md). The portable Mac language-capability
+fixture supplies its unrelated helper collaborator explicitly. Script activation
+and native release-package acceptance remain pending.

@@ -23,7 +23,10 @@ tools/build/mod_runtime_images.py now builds production-only helpers, verifies
 source/configuration/image receipts, stages immutable content-addressed bundles
 and emits a generated pin header. All three normal native game builders invoke
 it before CMake, staging ModRuntime/<identity> beside the game executable.
-Game CMake requires that header; release-package copying/signing remains pending.
+Game CMake requires that header. Public game packagers preserve those exact
+helper bytes and validate header/bundle/build consistency before copying; Linux
+keeps helpers out of RPATH rewriting and records their source/Lua notice audit.
+Native release-package assembly/signature/relocation acceptance remains pending.
 No diagnostic runner, test image or VM library is distributed in those bundles.
 
 [Full contracts and evidence](../development/mod-gameplay-scripting.md).

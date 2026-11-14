@@ -67,6 +67,10 @@ def collect(root,stage,records,launcher,media,sdk,python,data_records=None):
             components[target]=dict(common,provider='DXC',notices=['Licenses/DXC.txt','Licenses/DXC-ThirdParty.txt']);continue
         if origin==root/'build/linux/game/futureperfect_recomp':
             components[target]=dict(common,provider='project',source='Source/pc-port-source.zip');continue
+        if (origin==root/'build/mod-worker/cmake/tsfp-mod-worker' and
+                re.fullmatch(r'Bin/ModRuntime/[a-f0-9]{64}/tsfp-mod-worker',target)):
+            components[target]=dict(common,provider='project mod runtime',source='Source/pc-port-source.zip',
+                                    notices=[target.rsplit('/',1)[0]+'/Lua.txt']);continue
         if origin.is_relative_to(launcher):
             components[target]=dict(common,provider='launcher',notices='Support/Launcher/Licenses');continue
         if target.startswith('Support/Python/') and '/site-packages/' in target:

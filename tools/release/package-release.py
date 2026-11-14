@@ -25,6 +25,7 @@ import shutil
 import subprocess
 import zipfile
 from bundle_online import bundle
+from bundle_mod_runtime import copy as copy_mod_runtime
 from release_channels import identity as release_identity
 from build_textures import ensure_pack, optional_identity, zip_entries, write_zip, write_source_files
 
@@ -70,6 +71,7 @@ def main():
         shutil.copy2(source, target)
 
     copy(ROOT / 'build/windows/Release/futureperfect_recomp.exe', 'Bin/futureperfect_recomp.exe')
+    mod_runtime = copy_mod_runtime(ROOT, ROOT/'build/windows', stage)
     copy(ROOT / 'build/windows/Release/tsfp_crash_helper.exe', 'Bin/tsfp_crash_helper.exe')
     copy(ROOT/'build/launcher/TimeSplitters Launcher.exe', 'TimeSplitters Launcher.exe')
     copy(ROOT/'build/launcher/Bin/TimeSplitters.App.exe', 'Bin/TimeSplitters.App.exe')
@@ -193,6 +195,7 @@ Third-party notices are in Licenses. Microsoft Visual C++ runtime is bundled.
         'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         'source_changes': subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).splitlines(),
         'online': online,
+        'mod_runtime': mod_runtime,
         'textures': textures,
         'upstream_commit': subprocess.check_output(['git', '-C', str(upstream), 'rev-parse', 'HEAD'], text=True).strip(),
         'ffmpeg_archive_sha256': '1689da96399f372cfee985b3f2b9d74685892078059bc37764388f49e3118bdb',

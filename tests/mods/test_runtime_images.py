@@ -6,8 +6,12 @@ import os
 from pathlib import Path
 import shutil
 import sys
+import subprocess
 
 import pytest
+import bundle_mod_runtime as packaging
+import mod_script_protocol as protocol
+import linux_dependency_sources as linux_sources
 
 ROOT=Path(__file__).resolve().parents[2]
 spec=importlib.util.spec_from_file_location('runtime_image_producer',ROOT/'tools/build/mod_runtime_images.py')
@@ -93,3 +97,60 @@ def test_receipt_cannot_attest_to_sources_changed_during_build(tmp_path,monkeypa
     monkeypatch.setattr(builder.subprocess,'run',lambda *a,**k:None)
     with pytest.raises(ValueError,match='changed during compilation'):builder.build(output)
     assert receipt.read_text()=='preserve prior receipt'
+
+
+def package_fixture(production,tmp_path):
+    root=tmp_path/'source';output=clone_build(production,root/'build/mod-worker')
+    target=producer.host_platform();build=root/'build/game'
+    parent=build/'Release' if target=='windows-x64' else build
+    descriptor=producer.stage(output,parent/'ModRuntime',build/'generated/mod-runtime-images.h')
+    return root,build,descriptor
+
+
+def test_relocated_production_helper_preserves_compiled_hash_and_runs(production,tmp_path):
+    root,build,descriptor=package_fixture(production,tmp_path)
+    stage=tmp_path/'relocated package'
+    assert packaging.copy(root,build,stage)==descriptor
+    bundle=stage/'Bin/ModRuntime'/descriptor['identity'];producer.verify_bundle(bundle,descriptor)
+    target=producer.host_platform();suffix='.exe' if target=='windows-x64' else ''
+    worker=bundle/('tsfp-mod-worker'+suffix)
+    runner=production/'cmake'/('Release' if suffix else '')/('tsfp-mod-runner'+suffix)
+    cache=tmp_path/'cache';cache.mkdir()
+    result=subprocess.run([str(runner),str(worker),str(cache)],input=protocol.load(b'return {api=1}')+protocol.quit_worker(),
+                          capture_output=True,timeout=8)
+    assert result.returncode==0 and result.stderr==b'',(result.returncode,result.stdout,result.stderr)
+    replies=protocol.replies(result.stdout)
+    assert len(replies)==1 and replies[0]['status']==0 and not list(cache.iterdir())
+    # Package assembly cannot merge over even its own prior immutable output.
+    with pytest.raises(FileExistsError):packaging.copy(root,build,stage)
+
+
+@pytest.mark.parametrize('kind',['header','metadata','image','unknown'])
+def test_packaging_refuses_tampered_bundle_before_creating_output(production,tmp_path,kind):
+    root,build,descriptor=package_fixture(production,tmp_path)
+    bundle,_=packaging.inspect(root,build)
+    if kind=='header':
+        header=build/'generated/mod-runtime-images.h';header.write_text(header.read_text().replace('ModRuntime/','ModRuntime/../'))
+    if kind=='metadata':
+        path=bundle/'runtime.json';data=json.loads(path.read_text());data['producer_sha256']='0'*64;path.write_text(json.dumps(data))
+    if kind=='image':
+        name=next(n for n in descriptor['files'] if n.startswith('tsfp-mod-worker'))
+        path=bundle/name;path.chmod(0o600);path.write_bytes(path.read_bytes()+b'changed')
+    if kind=='unknown':(bundle/'keep.txt').write_text('keep this')
+    stage=tmp_path/'package'
+    with pytest.raises(ValueError):packaging.copy(root,build,stage)
+    assert not stage.exists()
+    if kind=='unknown':assert (bundle/'keep.txt').read_text()=='keep this'
+
+
+def test_linux_helper_retains_source_and_lua_notice_in_complete_audit(tmp_path,monkeypatch):
+    root=tmp_path/'source';stage=tmp_path/'package';(stage/'Support/Runtime').mkdir(parents=True)
+    name='Bin/ModRuntime/'+'a'*64+'/tsfp-mod-worker'
+    record={name:dict(source=str(root/'build/mod-worker/cmake/tsfp-mod-worker'),source_sha256='b'*64)}
+    original=Path.iterdir
+    monkeypatch.setattr(Path,'iterdir',lambda path:iter(()) if path==Path('/usr/share/common-licenses') else original(path))
+    report=linux_sources.collect(root,stage,record,tmp_path/'launcher',tmp_path/'media',tmp_path/'sdk',{})
+    entry=report['components'][name]
+    assert entry['provider']=='project mod runtime' and entry['source']=='Source/pc-port-source.zip'
+    assert entry['notices']==[name.rsplit('/',1)[0]+'/Lua.txt']
+    assert entry['sha256']=='b'*64 and not report['source_packages']

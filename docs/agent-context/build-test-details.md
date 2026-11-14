@@ -10,6 +10,13 @@ generated header under the build's generated directory. Game CMake refuses a
 missing header. test_mod_match.py also compiles the actual game-only gate with
 a different digest and proves caller-supplied hashes of a real valid worker are
 refused before a process or private cache is created.
+Public Windows/Mac/Linux game packagers use bundle_mod_runtime.py to validate
+production receipts, immutable metadata and generated header consistency before
+copying helper-only trees under Bin/ModRuntime. They never merge existing output.
+Mac includes helpers in minimum-OS inspection and leaves their signatures intact.
+Linux copies after RPATH rewriting, requires only host-ABI dependencies and adds
+the worker plus Lua notice/source to its complete ELF provider audit. Relocated
+real-worker protocol and tamper/unknown-file tests live in test_runtime_images.py.
 
 `tests/mods/test_script_images.py` exercises real OS SHA256 providers, immutable
 private helper staging, digest/pin/size/cancellation/path rejection and cleanup
