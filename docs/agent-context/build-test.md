@@ -1,6 +1,6 @@
 [Feature test index and details](build-test-details.md), [context](investigation.md),
 [mod workshop and scanner isolation](mod-workshop.md).
-Windows FFmpeg [pin details](build-test-details.md).
+Windows FFmpeg [pin details](build-test-details.md); scanner canaries use bash.
 The standalone texture-mod reader fixture uses C11 with `_POSIX_C_SOURCE=200809L`
 on POSIX hosts so the real trace clock declarations remain available. Run
 `pytest tests/mods/test_texture_mod_mount.py` under Linux as well as Windows/Mac.

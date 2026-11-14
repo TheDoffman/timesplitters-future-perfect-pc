@@ -61,6 +61,8 @@ Synthetic scanners exist only in tests; tests/mods/live_clamav.py explicitly
 exercises real clean/EICAR/error/quarantine/review/revocation behavior.
 tests/mods/live_scan_isolation.py checks disposable read/write/symlink/exec/
 network canaries and inherited limits on the actual Mac host.
+Its shell canary invokes /bin/bash directly: macOS27 /bin/sh execs that variant,
+which the intentionally single-executable profile correctly rejects.
 
 Installations are separate immutable version directories. Texture-only mods can
 be enabled in the native library; Lua, maps and audio remain unavailable for

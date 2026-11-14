@@ -32,7 +32,9 @@ def main():
             escape.symlink_to(secret)
             denied = worker.run([str(escape)], capture_output=True, timeout=10)
             assert denied.returncode != 0 and denied.stdout == b'', denied
-        with ScanSandbox('/bin/sh', content, args.database) as worker:
+        # macOS27 /bin/sh dispatches to /bin/bash via exec; use the actual
+        # executable so the test does not request an intentionally denied exec.
+        with ScanSandbox('/bin/bash', content, args.database) as worker:
             limits = worker.run(['-c', 'ulimit -t; ulimit -n; ulimit -c'],
                                 capture_output=True, timeout=10)
             assert limits.returncode == 0 and limits.stdout.splitlines() == [b'150', b'128', b'0'], limits
