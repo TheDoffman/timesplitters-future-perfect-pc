@@ -54,7 +54,7 @@ namespace TimeSplitters.Launcher
     }
     public sealed class InstalledMod
     {
-        public string Id,Version,Name,Author,Description,Sha256,Directory;
+        public string Id,Version,Name,Author,Description,Sha256,Directory,WorkshopOrigin;
         public readonly Dictionary<string,string> Dependencies=new Dictionary<string,string>(StringComparer.Ordinal);
         public readonly Dictionary<string,ModPayload> Files=new Dictionary<string,ModPayload>(StringComparer.Ordinal);
         public string Key {get{return Id+"@"+Version;}}
@@ -68,12 +68,12 @@ namespace TimeSplitters.Launcher
     {
         public const long MaxExpanded=256L*1024*1024;
         const int MaxFiles=2048,MaxManifest=256*1024;
-        readonly string root;readonly Func<bool> running;
+        readonly string root;readonly Func<bool> running;readonly Func<DateTime> clock;
         static readonly Regex IdPattern=new Regex(@"\A[a-z][a-z0-9]*(?:-[a-z0-9]+)*\z");
         static readonly Regex VersionPattern=new Regex(@"\A(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\z");
         static readonly Regex HashPattern=new Regex(@"\A[0-9a-f]{64}\z");
         public ModLibrary(string root):this(root,Core.GameRunning){}
-        internal ModLibrary(string root,Func<bool> running){this.root=Path.GetFullPath(root);this.running=running;}
+        internal ModLibrary(string root,Func<bool> running,Func<DateTime> clock=null){this.root=Path.GetFullPath(root);this.running=running;this.clock=clock??(()=>DateTime.UtcNow);}
         string PathIn(string name){return Core.PathIn(root,"Mods/"+name);}
         FileStream Lock(){Directory.CreateDirectory(Core.PathIn(root,"Mods"));return new FileStream(PathIn("library.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);}
         static Dictionary<string,object> Object(Dictionary<string,object> parent,string name)
@@ -189,7 +189,7 @@ namespace TimeSplitters.Launcher
                 File.WriteAllText(Core.PathIn(destination,"mod.json"),json,new UTF8Encoding(false));mod.Sha256=expected;return mod;
             }
         }
-        public InstalledMod Install(string package,string expected,CancellationToken token,string expectedId=null,string expectedVersion=null)
+        public InstalledMod Install(string package,string expected,CancellationToken token,string expectedId=null,string expectedVersion=null,string workshopOrigin=null)
         {
             using(var operation=Lock()) {
             Core.Require(!running(),"Close the game before installing mods.");string temporary=PathIn(".install-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(temporary);
@@ -202,7 +202,9 @@ namespace TimeSplitters.Launcher
                 Core.Require((expectedId==null && expectedVersion==null) || (mod.Id==expectedId && mod.Version==expectedVersion),"The mod package identity does not match its workshop listing.");
                 string target=PathIn("Packages/"+mod.Key);Core.Require(!Directory.Exists(target) && !File.Exists(target),"This mod version is already installed.");
                 // Dependencies are resolved again before enabling; install order is unrestricted.
-                Core.Write(Core.PathIn(temporary,"receipt.json"),Json.Encode(new {schema=1,id=mod.Id,version=mod.Version,sha256=expected}));
+                if(workshopOrigin!=null)ModTrustStore.RequireAvailable(root,workshopOrigin,expected,clock());
+                Core.Write(Core.PathIn(temporary,"receipt.json"),workshopOrigin==null?Json.Encode(new {schema=1,id=mod.Id,version=mod.Version,sha256=expected}):Json.Encode(new {schema=2,id=mod.Id,version=mod.Version,sha256=expected,origin=workshopOrigin}));
+                mod.WorkshopOrigin=workshopOrigin;
                 token.ThrowIfCancellationRequested();Core.Require(!running(),"Close the game before installing mods.");Directory.CreateDirectory(Path.GetDirectoryName(target));Directory.Move(temporary,target);mod.Directory=target;return mod;
             } finally {if(Directory.Exists(temporary))DeleteOwned(temporary);}
             }
@@ -227,14 +229,16 @@ namespace TimeSplitters.Launcher
             Key(key);string path=PathIn("Packages/"+key);CheckTree(path);
             string receiptPath=Core.PathIn(path,"receipt.json"),manifestPath=Core.PathIn(path,"content/mod.json");
             Core.Require(new FileInfo(receiptPath).Length<=8192 && new FileInfo(manifestPath).Length<=MaxManifest,"Installed mod metadata exceeds limits.");
-            var receipt=ModJson.Read(File.ReadAllText(receiptPath));Core.Require(Number(receipt,"schema",1)==1,"Unsupported installed mod receipt.");string original;
+            var receipt=ModJson.Read(File.ReadAllText(receiptPath));long schema=Number(receipt,"schema",2);string original;
+            Fields(receipt,schema==1?new[]{"schema","id","version","sha256"}:new[]{"schema","id","version","sha256","origin"});
             using(var archive=ZipFile.OpenRead(Core.PathIn(path,"package.zip"))) {
                 var metadata=archive.GetEntry("mod.json");Core.Require(metadata!=null,"Installed package manifest is missing.");
                 using(var input=metadata.Open())original=new UTF8Encoding(false,true).GetString(Read(input,metadata.Length,MaxManifest,CancellationToken.None));
             }
             Core.Require(File.ReadAllText(manifestPath)==original,"Installed manifest was modified. Reinstall the mod.");var mod=Manifest(original);
             Core.Require(mod.Key==key && Text(receipt,"id",80)==mod.Id && Text(receipt,"version",32)==mod.Version,"Installed mod identity mismatch.");
-            mod.Sha256=Text(receipt,"sha256",64);Core.Require(HashPattern.IsMatch(mod.Sha256),"Invalid installed mod digest.");mod.Directory=path;return mod;
+            mod.Sha256=Text(receipt,"sha256",64);Core.Require(HashPattern.IsMatch(mod.Sha256),"Invalid installed mod digest.");mod.Directory=path;
+            if(schema==2)mod.WorkshopOrigin=Text(receipt,"origin",255);return mod;
         }
         public InstalledMod[] List()
         {
@@ -255,10 +259,13 @@ namespace TimeSplitters.Launcher
         }
         public void SetEnabled(IEnumerable<string> keys,CancellationToken token)
         {using(var operation=Lock())SetEnabledCore(keys,token);}
+        void CheckWorkshop(InstalledMod[] mods)
+        {foreach(var group in mods.Where(m=>m.WorkshopOrigin!=null).GroupBy(m=>m.WorkshopOrigin,StringComparer.Ordinal))ModTrustStore.RequireAvailable(root,group.Key,group.Select(m=>m.Sha256),clock());}
         void SetEnabledCore(IEnumerable<string> keys,CancellationToken token)
         {
             Core.Require(!running(),"Close the game before changing enabled mods.");var selected=keys.ToArray();Core.Require(selected.Length<=128 && selected.Distinct(StringComparer.Ordinal).Count()==selected.Length,"Invalid enabled mod list.");
             var mods=selected.Select(ReadInstalled).ToArray();Core.Require(mods.Select(m=>m.Id).Distinct(StringComparer.Ordinal).Count()==mods.Length,"Only one version of each mod can be enabled.");
+            CheckWorkshop(mods);
             var assets=new Dictionary<string,string>(StringComparer.Ordinal);long total=0;
             foreach(var mod in mods) {
                 Core.Require(mod.TextureOnly,"This build can enable texture-only mods. Other content remains installed until its runtime is available.");
@@ -312,6 +319,7 @@ namespace TimeSplitters.Launcher
             var keys=Enabled();if(keys.Length==0)return;var profile=Profile();string generation=Text(profile,"generation",32),directory=PathIn("Active/"+generation),textures=Core.PathIn(directory,"textures");CheckTree(directory);
             var bindings=((object[])profile["enabled"]).Cast<Dictionary<string,object>>().ToDictionary(e=>Text(e,"key",113),e=>Text(e,"sha256",64),StringComparer.Ordinal);
             var mods=keys.Select(ReadInstalled).ToArray();var expected=new HashSet<string>(StringComparer.Ordinal);
+            CheckWorkshop(mods);
             Core.Require(mods.Select(m=>m.Id).Distinct(StringComparer.Ordinal).Count()==mods.Length && mods.Sum(m=>m.Files.Sum(f=>f.Value.Size))<=MaxExpanded,"Invalid active mod set or size.");
             var visited=new HashSet<string>();var pending=new HashSet<string>();
             foreach(var mod in mods) {

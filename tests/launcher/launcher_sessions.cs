@@ -85,9 +85,16 @@ public static class LauncherSessionChecks
                 using(var owner=Child("--session-owner \""+root+"\"")) {
                     try {
                         string ready=Core.PathIn(root,".launcher/session-child-ready.json");
-                        var timeout=Stopwatch.StartNew();while(!File.Exists(ready) && !owner.HasExited && timeout.ElapsedMilliseconds<10000)Thread.Sleep(20);
-                        Require(File.Exists(ready),"Session owner must persist a real child process identity.");
-                        game=Process.GetProcessById(Convert.ToInt32(Json.Object(File.ReadAllText(ready))["pid"]));
+                        string record=null;var timeout=Stopwatch.StartNew();
+                        while(record==null && !owner.HasExited && timeout.ElapsedMilliseconds<10000) {
+                            // Windows scanners may briefly deny sharing after the
+                            // child atomically publishes the complete ready file.
+                            try{if(File.Exists(ready))record=File.ReadAllText(ready);}
+                            catch(IOException error){int code=error.HResult&0xffff;if(code!=32 && code!=33)throw;}
+                            if(record==null)Thread.Sleep(20);
+                        }
+                        Require(record!=null,"Session owner must persist a readable real child process identity.");
+                        game=Process.GetProcessById(Convert.ToInt32(Json.Object(record)["pid"]));
                         owner.Kill();owner.WaitForExit();
                         Require(GameSessions.Recover(root)==null && !game.HasExited,"Reopening while an orphan game runs must not flag it.");
                         game.Kill();game.WaitForExit();

@@ -35,15 +35,16 @@ namespace TimeSplitters.Launcher
         public const string DefaultService = ""; // Fill after the Mac's HTTPS endpoint is verified.
         public const int MaxCatalogBytes = 4 * 1024 * 1024;
         public const long MaxPackageBytes = 256L * 1024 * 1024;
-        readonly HttpClient http;
+        readonly HttpClient http;readonly string installation;readonly Func<DateTime> clock;
         public ModWorkshopClient() : this(new HttpClientHandler { AllowAutoRedirect=false, UseCookies=false }) { }
-        internal ModWorkshopClient(HttpMessageHandler handler) { http=new HttpClient(handler);http.Timeout=TimeSpan.FromSeconds(30); }
+        public ModWorkshopClient(string root) : this(new HttpClientHandler { AllowAutoRedirect=false, UseCookies=false },root) { }
+        internal ModWorkshopClient(HttpMessageHandler handler,string root=null,Func<DateTime> clock=null) { http=new HttpClient(handler);http.Timeout=TimeSpan.FromSeconds(30);installation=root;this.clock=clock??(()=>DateTime.UtcNow); }
         public static Uri ServiceUri(string value)
         {
             Uri uri;
             Core.Require(Uri.TryCreate(value,UriKind.Absolute,out uri) && uri.UserInfo.Length==0 &&
                 uri.AbsolutePath=="/" && uri.Query.Length==0 && uri.Fragment.Length==0 &&
-                (uri.Scheme=="https" || (uri.Scheme=="http" && uri.Host=="127.0.0.1")),
+                uri.Scheme=="https" && uri.IsDefaultPort,
                 "The workshop needs an HTTPS service address.");
             return uri;
         }
@@ -70,7 +71,7 @@ namespace TimeSplitters.Launcher
         public static WorkshopRelease[] Parse(string json,DateTime now)
         {
             Core.Require(Encoding.UTF8.GetByteCount(json)<=MaxCatalogBytes,"Workshop catalog exceeds the download limit.");
-            var data=Json.Object(json);object records=null;
+            var data=ModJson.Read(json,MaxCatalogBytes);object records=null;
             Core.Require(data!=null && Json.String(data,"schema")=="1" && data.TryGetValue("releases",out records) &&
                 (records is object[] || records is System.Collections.ArrayList),"Unsupported workshop catalog.");
             var list=records is object[]?(object[])records:((System.Collections.ArrayList)records).ToArray();
@@ -91,17 +92,36 @@ namespace TimeSplitters.Launcher
             }
             return result.ToArray();
         }
-        public async Task<WorkshopRelease[]> Read(string service,CancellationToken token)
+        async Task<byte[]> Fetch(Uri origin,string path,int maximum,CancellationToken token)
         {
-            var url=new Uri(ServiceUri(service),"v1/catalog");
-            using(var response=await http.GetAsync(url,HttpCompletionOption.ResponseHeadersRead,token)) {
+            using(var response=await http.GetAsync(new Uri(origin,path),HttpCompletionOption.ResponseHeadersRead,token)) {
                 Core.Require(response.StatusCode==System.Net.HttpStatusCode.OK,"The workshop is unavailable. Your installed game is still available.");
-                Core.Require(!response.Content.Headers.ContentLength.HasValue || response.Content.Headers.ContentLength<=MaxCatalogBytes,"Workshop catalog exceeds the download limit.");
+                Core.Require(!response.Content.Headers.ContentLength.HasValue || response.Content.Headers.ContentLength<=maximum,"Workshop metadata exceeds the download limit.");
                 using(var input=await response.Content.ReadAsStreamAsync())using(var output=new MemoryStream()) {
                     byte[] buffer=new byte[16384];int count;
-                    while((count=await input.ReadAsync(buffer,0,buffer.Length,token))>0){Core.Require(output.Length+count<=MaxCatalogBytes,"Workshop catalog exceeds the download limit.");output.Write(buffer,0,count);}
-                    return Parse(new UTF8Encoding(false,true).GetString(output.ToArray()),DateTime.UtcNow);
+                    while((count=await input.ReadAsync(buffer,0,buffer.Length,token))>0){Core.Require(output.Length+count<=maximum,"Workshop metadata exceeds the download limit.");output.Write(buffer,0,count);}
+                    return output.ToArray();
                 }
+            }
+        }
+        public async Task<WorkshopRelease[]> Read(string service,CancellationToken token)
+        {
+            var origin=ServiceUri(service);long now=new DateTimeOffset(clock()).ToUnixTimeSeconds();
+            using(var trust=new ModTrustStore(installation,origin.GetLeftPart(UriPartial.Authority),now)) {
+                byte[] metadata=await Fetch(origin,"v1/trust/catalog",ModTrust.MaxMetadata,token);
+                long target=ModTrust.TargetVersion(metadata);
+                ModTrust.Need(target>=trust.Authority.Version && target-trust.Authority.Version<=64-trust.Updates.Count,"root rollback or rotation budget exceeded.");
+                while(trust.Authority.Version<target) {
+                    byte[] update=await Fetch(origin,"v1/trust/roots/"+(trust.Authority.Version+1).ToString(CultureInfo.InvariantCulture),ModTrust.MaxRoot,token);
+                    trust.Updates.Add(update);trust.Authority=ModTrust.Roots(trust.Pinned,trust.Updates,now,false);
+                }
+                byte[] catalog=await Fetch(origin,"v1/catalog",MaxCatalogBytes,token);
+                // Re-read wall time after transfer: metadata can expire while downloading.
+                now=new DateTimeOffset(clock()).ToUnixTimeSeconds();
+                var accepted=ModTrust.Catalog(metadata,catalog,trust.Authority,now);
+                if(trust.Previous!=null)ModTrust.Forward(trust.Previous,trust.Observed,accepted,now);
+                var releases=Parse(ModTrust.Utf8.GetString(catalog),clock());token.ThrowIfCancellationRequested();
+                trust.Commit(metadata,catalog,accepted,now);return releases;
             }
         }
         public async Task<string> Download(string service,WorkshopRelease selected,string root,CancellationToken token)
@@ -109,6 +129,7 @@ namespace TimeSplitters.Launcher
             // Recheck the current catalog so old page state cannot bypass a removal.
             var current=await Read(service,token);
             Core.Require(current.Any(r=>r.Sha256==selected.Sha256 && r.Id==selected.Id && r.Version==selected.Version),"This mod is no longer available. Refresh the workshop.");
+            Core.Require(Path.GetFullPath(root)==Path.GetFullPath(installation),"The mod download must use its verified installation folder.");
             string folder=Core.PathIn(root,".launcher/mod-downloads");Directory.CreateDirectory(folder);
             string partial=Path.Combine(folder,Guid.NewGuid().ToString("N")+".partial");
             string target=Path.Combine(folder,selected.Sha256+".zip");
@@ -123,6 +144,9 @@ namespace TimeSplitters.Launcher
                 }
                 string hash;using(var algorithm=SHA256.Create())using(var stream=File.OpenRead(partial))hash=BitConverter.ToString(algorithm.ComputeHash(stream)).Replace("-","").ToLowerInvariant();
                 Core.Require(hash==selected.Sha256,"Mod download failed its integrity check.");token.ThrowIfCancellationRequested();
+                // Availability and trust can change during a large transfer.
+                var refreshed=await Read(service,token);
+                Core.Require(refreshed.Any(r=>r.Sha256==selected.Sha256 && r.Id==selected.Id && r.Version==selected.Version),"This mod became unavailable during download.");
                 // A cached package may only be reused if its bytes still match.
                 if(File.Exists(target)) {
                     string old;using(var algorithm=SHA256.Create())using(var stream=File.OpenRead(target))old=BitConverter.ToString(algorithm.ComputeHash(stream)).Replace("-","").ToLowerInvariant();
@@ -150,7 +174,7 @@ namespace TimeSplitters.Launcher
         CancellationTokenSource stop;WorkshopRelease[] releases=new WorkshopRelease[0];bool disposed;string service="";
         public string StatusText {get{return status.Text;}}
         public int VisibleCount {get;private set;}
-        public ModWorkshopPage(string root,bool preview=false) : this(root,preview,new ModWorkshopClient()) { }
+        public ModWorkshopPage(string root,bool preview=false) : this(root,preview,new ModWorkshopClient(root)) { }
         internal ModWorkshopPage(string root,bool preview,ModWorkshopClient client)
         {
             this.root=root;this.preview=preview;this.client=client;library=new ModLibrary(root);
@@ -251,7 +275,7 @@ namespace TimeSplitters.Launcher
                 stop=operation;Busy(true);status.Text="Downloading "+release.Name+"…";if(install && FileBusyChanged!=null)FileBusyChanged(true);
                 try {
                     string path=await client.Download(service,release,root,operation.Token);
-                    if(install){await Task.Run(()=>library.Install(path,release.Sha256,operation.Token,release.Id,release.Version));installedTab=true;}
+                    if(install){await Task.Run(()=>library.Install(path,release.Sha256,operation.Token,release.Id,release.Version,ServiceUriOrigin(service)));installedTab=true;}
                     if(!disposed)status.Text=install?"Installed "+release.Name+". Enable supported content from Installed when ready.":"Downloaded and verified "+release.Name+". The package remains inactive.";
                 }
                 catch(OperationCanceledException){if(!disposed)status.Text="Download cancelled. No mod was installed.";}
@@ -260,5 +284,6 @@ namespace TimeSplitters.Launcher
             }
         }
         public void Dispose(){disposed=true;if(stop!=null)stop.Cancel();client.Dispose();}
+        static string ServiceUriOrigin(string value){return ModWorkshopClient.ServiceUri(value).GetLeftPart(UriPartial.Authority);}
     }
 }

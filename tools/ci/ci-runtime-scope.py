@@ -75,6 +75,7 @@ CPU_TOOLS = {
     'tests/mods/live_creator_service.py', 'tests/mods/scan_limits_probe.c',
     'tools/mods/mod_trust.py', 'tools/mods/mod_signing.py',
     'tools/mods/hosting/requirements-signing.txt', 'tests/mods/conftest.py', 'tests/mods/test_catalog_trust.py',
+    'tests/mods/test_native_trust_fixtures.py',
     'tests/compiler/test_guest_abi.py',
     'tests/compiler/test_guest_call_frames.py',
     'tests/compiler/test_guest_dispatch.py',

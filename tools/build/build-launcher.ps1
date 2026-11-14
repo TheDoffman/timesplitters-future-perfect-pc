@@ -172,6 +172,7 @@ if ($Test) {
     foreach ($reference in @('PresentationCore.dll','PresentationFramework.dll','WindowsBase.dll')) {
         $testArgs += '/reference:' + (Join-Path $framework "WPF\$reference")
     }
+    $testArgs += @((Join-Path $project 'tests\launcher\workshop_trust.cs'), ('/resource:' + (Join-Path $project 'tests\launcher\workshop-trust-fixtures.json') + ',workshop-trust-fixtures.json'))
     $testArgs += $commonSources + @((Join-Path $source 'Bootstrap.cs'),
         (Join-Path $source 'Launcher.cs'), (Join-Path (Split-Path -Parent $PSScriptRoot) 'release\ImportGame.cs'),
         (Join-Path $project 'tests\launcher\launcher_updates.cs'))

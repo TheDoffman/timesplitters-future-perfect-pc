@@ -21,7 +21,8 @@ host runtime. Accounts, ownership, quota-reserved uploads, a serial scan queue
 and authenticated review are now implemented; native creator screens and public
 deployment are still incomplete. See [creator service](mod-creator-service.md).
 Signed static exports, offline root rotation and monotonic publication versions
-are implemented; native trust enforcement is still pending. See
+and shared native signature/checkpoint/revocation enforcement are implemented.
+Production pins and public acceptance are still pending. See
 [catalog trust](mod-catalog-trust.md) before hosting or generating any real keys.
 
 Texture-only packages can now be enabled in a separate active overlay. The
@@ -270,9 +271,11 @@ hash-verified downloads and native installation on the common WPF/Avalonia page.
 cycle/conflict guards, atomic active profiles, retained-version rollback,
 texture-only enable/disable and safe uninstall. It checks hashes before launch;
 Play without mods bypasses a broken profile without changing it. Native Mac/Linux
-and actual game acceptance are pending. Internet services require HTTPS; local previews use
-127.0.0.1 HTTP. Redirects and external package URLs are rejected. Every download
-rechecks the current catalog before requesting bytes; expired scans are hidden.
+and actual game acceptance are tracked separately. Native services require HTTPS
+and signed metadata; the standalone Python preview uses loopback HTTP. Redirects
+and external package URLs are rejected. Every download rechecks the signed
+catalog before and after transfer; expired scans are hidden. Workshop-origin
+receipts enforce fresh availability/revocation before enabling and mounting.
 
 Add **Browse mods**, **Installed**, and **Creator tools** to the shared launcher
 model with the usual Windows/macOS/Linux adapters. Browse needs name/category/

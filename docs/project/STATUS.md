@@ -43698,3 +43698,25 @@ process stops and loopback8766 closes. This is loopback HTTP evidence, not publi
 TLS or native client trust. No production key, persistent service or public
 endpoint was created. Native signature enforcement/checkpoints/pins are still required
 before public client distribution; see mod-catalog-trust.md and the full matrix.
+
+# Native workshop trust enforcement (2026-11-14; base ee72804d)
+
+Shared ModTrustPage.cs verifies the producer's RSA3072 signatures and root
+rotations, persists complete signed catalogs/root chains under a per-origin
+exclusive lock, and rejects replay/equivocation/expiry/clock rollback/corruption.
+ModWorkshopClient requires HTTPS and checks signed availability before/after
+transfer. Schema2 workshop receipts preserve origin; install, enable and normal
+game mounting check fresh availability/revocations. Disable/remove and original-
+game recovery remain available without changing the profile. Production root
+and service constants remain blank; no public service/key was provisioned.
+
+Windows full native build/tests pass:66 shared UI groups, including six new
+real-crypto trust groups using Python-generated public golden vectors and an
+original synthetic DDS package. Tests include restart/rotation, rollback, damage,
+expiry, revocation during transfer/activation/mounting and recovery. Selected
+Python mod/fixture/shared-layout/CI-scope/runtime checks:286 pass,2 Unix skips.
+One existing Windows session fixture encountered a transient sharing violation
+reading its child-ready file; it now retries only sharing errors within its
+existing10s bound. The full subsequent run passes. Mac/Linux native validation
+is pending this source checkpoint. Public pin provisioning, live HTTPS and the
+rest of the full mod acceptance matrix remain incomplete.

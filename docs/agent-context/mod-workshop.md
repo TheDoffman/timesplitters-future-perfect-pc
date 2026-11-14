@@ -8,7 +8,7 @@ Mod operator tools live in tools/mods/: bounded package validation, ClamAV
 quarantine/review, immutable releases, scan expiry/revocation, loopback preview
 and approved static exports. Private WSGI accounts/owned quota uploads/serial
 scan queue/moderator review are implemented. Public deployment, native creator UI,
-native signed-metadata enforcement, persistent supervision and scripting remain incomplete. ClamAV enforces official-only
+production trust pins, persistent supervision and scripting remain incomplete. ClamAV enforces official-only
 databases at most2 days old; legacy scan reports require a rescan/review.
 The selected public host is the user's Mac mini; no domain purchase is required
 for the planned Funnel trial. SSH works, but no public service has been deployed.
@@ -30,7 +30,7 @@ Windows native install/version rollback/removal-to-profile-scene texture loading
 and visual restoration pass. Story gameplay and Mac/Linux game scenes remain unverified.
 
 Checks: pytest tests/mods; Windows build-launcher.ps1 -Test; standalone
-launcher-tests.exe --workshop (13 groups). Current Windows/Mac/Linux launcher
+launcher-tests.exe --workshop (19 groups). Current Windows/Mac/Linux launcher
 checks pass; actual Mac Gunicorn-to-ClamAV/review and real signing/key-ceremony tests pass.
 Public connectivity, full asset formats and scripting remain acceptance work.
 <!-- packet:end -->
@@ -113,8 +113,8 @@ offline2-key root thresholds, sequential cross-signed rotation, expiry, monotoni
 versions and permanent bounded revocations. mod_signing.py supplies Unix-private
 key loading/ceremony and catalog-role-only online signing. Export reserves its
 SQLite sequence before publishing. Host now requires an out-of-band root and
-refuses unsigned previews. Native verification/checkpoint persistence and real
-production keys are still absent. Wire/commands/bounds:
+refuses unsigned previews. Native enforcement is described below; real production
+keys are still absent. Wire/commands/bounds:
 [catalog trust](../development/mod-catalog-trust.md). Real-crypto tests:
 tests/mods/test_catalog_trust.py, registered in native suites; hash-pinned wheels
 in hosting/requirements-signing.txt. Caddy allows only numbered public roots and
@@ -123,6 +123,19 @@ Windows282/Mac284/WSL283 selected checks pass (platform skips differ). Actual
 Mac encrypted-root ceremony, private permissions, online export, Caddy signed
 HTTP GET/private-route/write rejection and owned listener shutdown pass; no
 public TLS or native-client trust is established.
+
+Native trust: ModTrustPage.cs shares RSA3072 exact-byte verification and locked
+atomic signed-state/root-chain persistence on all hosts. Initial roots are
+compiled or explicitly installed out of band, never downloaded as a new pin.
+ModWorkshopClient requires HTTPS, fetches bounded metadata/sequential root updates,
+rejects expiry/replay/equivocation/forgotten revocations and commits before listings.
+It rechecks after package transfer. Schema2 workshop receipts bind origin;
+ModLibrary batches fresh availability/revocation checks per origin before install,
+enable and normal game mount. Local/schema1 creator mods retain their existing
+path. Disable all/uninstall/Play without mods remain recovery. Compiled root and
+service remain blank; no production pin/public release. Shared workshop_trust.cs
+checks public Python-signed vectors, persistence/corruption/rotation and actual
+native model activation/revocation/expiry; producer also validates the vectors.
 
 `mod_publication.py` exports approved/fresh content to a new separate static
 snapshot (4MiB catalog, 1,000 releases, 512MiB package cap). Preflight rejects
@@ -134,12 +147,12 @@ Manual revocations require stopping/switching an already exported snapshot.
 
 Shared launcher source `tools/launcher/ModWorkshopPage.cs` owns both page and
 bounded HTTPS client. Service is the compiled DefaultService or installation
-`Support/Mods/service.json`; blank means unavailable. No HTTP except explicit
-127.0.0.1, redirects, external package URLs or script execution.
+`Support/Mods/service.json`; blank means unavailable. Native transport requires
+HTTPS; redirects, external package URLs and script execution are refused.
 Downloads recheck availability and write only verified hash-named ZIPs under
 `.launcher/mod-downloads`, preserving changed cache files and removing owned
 partial files. Shared UI checks cover catalog/transport/search/preview/digests/
-removal. `launcher-tests.exe --workshop` runs 12 focused Windows groups. The same
+removal. `launcher-tests.exe --workshop` runs19 focused Windows groups. The same
 groups are included in ordinary shared UI checks on Windows/macOS/Linux. The
 latest full Windows launcher command passes.
 

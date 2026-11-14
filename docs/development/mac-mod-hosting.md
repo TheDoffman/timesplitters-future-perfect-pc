@@ -107,8 +107,8 @@ First follow the [offline signing ceremony](mod-catalog-trust.md). The
 `trusted_root` and `catalog_key` variables below must point to the independently
 verified bootstrap root and the host's dedicated private catalog key. Install the
 hash-pinned signing dependencies in the selected host environment. No real root
-has been provisioned yet, and the launcher does not yet verify signed metadata;
-public client distribution remains gated on that integration.
+has been provisioned yet. The launcher verifies signed metadata, but production
+pin provisioning and public internet/client acceptance remain release gates.
 
 ```sh
 python3 tools/mods/mod-workshop.py export \
@@ -189,12 +189,12 @@ installation root. This contains a public URL only, with no secrets:
 ```
 
 Replace the example with the verified address returned by Funnel. HTTPS is
-required for internet services. HTTP is accepted only for the explicit
-`127.0.0.1` local preview. The address must be an origin, with no credentials,
+required for native workshop services. The Python loopback preview is a separate
+developer tool. The address must be an origin, with no credentials,
 extra path, query or fragment. The catalog cannot redirect package downloads to
 another server. The client refuses HTTP redirects, bounds every response,
-filters expired/future scans, rechecks release availability before download,
-and verifies the completed package's SHA-256.
+verifies signed metadata and saved trust state, filters expired/future scans,
+rechecks availability before/after download, and verifies completed package hashes.
 
 For development, create that file inside the isolated launcher build directory
 and open **Mods → Refresh mods**. For the eventual public release, set

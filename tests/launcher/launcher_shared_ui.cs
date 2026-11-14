@@ -81,6 +81,7 @@ public static class LauncherSharedUiChecks
     static void WorkshopReject(Action action,string message){bool rejected=false;try{action();}catch{rejected=true;}Need(rejected,message);}
     static void WorkshopChecks(string root)
     {
+        WorkshopTrustChecks.Run(root,Test);
         long now=DateTimeOffset.UtcNow.ToUnixTimeSeconds();string sha=new string('a',64);
         Test("workshop catalog validates identities and freshness",()=>{
             var entries=ModWorkshopClient.Parse(WorkshopCatalog(sha,now-1),DateTime.UtcNow);
@@ -91,10 +92,9 @@ public static class LauncherSharedUiChecks
             WorkshopReject(()=>ModWorkshopClient.Parse(WorkshopCatalog("../escape",now),DateTime.UtcNow),"Invalid digest accepted");
             WorkshopReject(()=>ModWorkshopClient.Parse(new string('x',ModWorkshopClient.MaxCatalogBytes+1),DateTime.UtcNow),"Oversized catalog accepted");
         });
-        Test("workshop transport requires HTTPS except explicit loopback",()=>{
+        Test("workshop transport requires HTTPS",()=>{
             Need(ModWorkshopClient.ServiceUri("https://workshop.example.ts.net").Host=="workshop.example.ts.net","HTTPS service rejected");
-            Need(ModWorkshopClient.ServiceUri("http://127.0.0.1:8765").IsLoopback,"Loopback preview rejected");
-            foreach(var url in new[]{"http://example.com","https://user:secret@example.com","https://example.com/subpath","https://example.com/?redirect=1","file:///tmp/package"})
+            foreach(var url in new[]{"http://127.0.0.1:8765","http://example.com","https://user:secret@example.com","https://example.com/subpath","https://example.com/?redirect=1","file:///tmp/package"})
                 WorkshopReject(()=>ModWorkshopClient.ServiceUri(url),"Unsafe service URL accepted");
         });
         Test("workshop shared page searches creators and previews stay offline",()=>{
@@ -107,13 +107,15 @@ public static class LauncherSharedUiChecks
             }
         });
         Test("workshop downloads verify hashes and recheck removal before fetching",()=>{
-            string folder=Path.Combine(root,"workshop-downloads");byte[] bytes=System.Text.Encoding.UTF8.GetBytes("package fixture bytes");string hash;
+            string folder=Path.Combine(root,"workshop-downloads");WorkshopTrustChecks.Pin(folder);byte[] bytes=WorkshopTrustChecks.Bytes("package");string hash;
             using(var algorithm=System.Security.Cryptography.SHA256.Create())hash=BitConverter.ToString(algorithm.ComputeHash(bytes)).Replace("-","").ToLowerInvariant();
             bool available=true,corrupt=false;int packageRequests=0;
             using(var client=new ModWorkshopClient(new WorkshopHandler(request=>{
-                if(request.RequestUri.AbsolutePath=="/v1/catalog")return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK){Content=new System.Net.Http.StringContent(WorkshopCatalog(hash,now-1,available))};
+                int version=!available?2:corrupt?3:1;
+                if(request.RequestUri.AbsolutePath=="/v1/trust/catalog")return WorkshopTrustChecks.Response("metadata"+version);
+                if(request.RequestUri.AbsolutePath=="/v1/catalog")return WorkshopTrustChecks.Response("catalog"+version);
                 packageRequests++;return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK){Content=new System.Net.Http.ByteArrayContent(corrupt?new byte[]{0}:bytes)};
-            }))) {
+            }),folder,()=>WorkshopTrustChecks.Now)) {
                 var release=client.Read("https://workshop.example.ts.net",System.Threading.CancellationToken.None).GetAwaiter().GetResult().Single();
                 string path=client.Download("https://workshop.example.ts.net",release,folder,System.Threading.CancellationToken.None).GetAwaiter().GetResult();
                 Need(File.ReadAllBytes(path).SequenceEqual(bytes),"Verified mod bytes changed");
@@ -128,11 +130,12 @@ public static class LauncherSharedUiChecks
             }
         });
         Test("workshop redirects and excessive response lengths fail closed",()=>{
-            using(var client=new ModWorkshopClient(new WorkshopHandler(request=>new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.Redirect))))
+            string folder=Path.Combine(root,"trust-transport");WorkshopTrustChecks.Pin(folder);
+            using(var client=new ModWorkshopClient(new WorkshopHandler(request=>new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.Redirect)),folder,()=>WorkshopTrustChecks.Now))
                 WorkshopReject(()=>client.Read("https://workshop.example.ts.net",System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Redirect accepted");
             using(var client=new ModWorkshopClient(new WorkshopHandler(request=>{
                 var content=new System.Net.Http.ByteArrayContent(new byte[0]);content.Headers.ContentLength=ModWorkshopClient.MaxCatalogBytes+1;
-                return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK){Content=content};})))
+                return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK){Content=content};}),folder,()=>WorkshopTrustChecks.Now))
                 WorkshopReject(()=>client.Read("https://workshop.example.ts.net",System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Excessive catalog length accepted");
         });
     }

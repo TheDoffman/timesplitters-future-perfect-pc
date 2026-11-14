@@ -10570,3 +10570,14 @@ signed catalog/root GET verification pass; private routes404/writes405 and owned
 listener shutdown pass. Native launcher code is unchanged and still needs
 signature/checkpoint/pin integration. No production keys/public TLS deployment
 or client acceptance is claimed. See STATUS and docs/development/mod-catalog-trust.md.
+
+Native workshop trust enforcement (base ee72804d): SHARED IMPLEMENTATION,
+NATIVE MAC/LINUX VALIDATION PENDING. ModTrustPage.cs is compiled through the
+shared Page source pattern; RSA, signed-state/root rotation, anti-rollback and
+expiry policy are common to WPF/Avalonia. Origin receipts enforce availability
+and revocations before enabling/mounting workshop mods. Windows66 shared UI
+groups/full launcher checks pass;286 selected Python checks pass,2 Unix skips.
+Golden vectors contain public signatures and original synthetic DDS/ZIP only;
+private fixture keys were discarded. Production pins/service remain blank.
+Mac sign/package/runtime checks and public internet acceptance remain required.
+See STATUS and mod-catalog-trust.md.

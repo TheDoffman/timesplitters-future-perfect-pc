@@ -1,11 +1,11 @@
 # Workshop publication trust
 
-This is the producer/operator part of the workshop trust protocol. It is not a
-released public service. `mod_trust.py` implements real signature verification;
-native launcher enforcement and release-pinned roots are still required before
-public distribution. The current launcher reads the plain catalog and does not
-yet enforce these signatures or retain a trust checkpoint. Do not describe it as
-a trusted public client until that integration passes cross-language tests.
+The producer and shared native launcher implement this protocol. It is not a
+released public service. `mod_trust.py` and `ModTrustPage.cs` verify real signatures;
+the launcher requires signed catalogs and saves their verified root chain and
+catalog checkpoint. Release-pinned production roots, public deployment and
+internet acceptance are still required. DefaultRootBase64/DefaultService remain
+blank until the real offline ceremony and endpoint verification.
 
 ## Wire contract
 
@@ -68,10 +68,57 @@ updated one. It rejects lower root/catalog versions, same catalog version with
 different signed metadata, clock rollback and forgotten revocations. The same
 immutable unexpired publication may be reread. A client must atomically persist
 the checkpoint and accepted root chain before offering installs, and must never
-silently reset damaged state. That native persistence is pending. Local device
+silently reset damaged state. The native implementation does this as described
+below. Local device
 administrators who can replace the launcher/pins/state remain outside this threat
 boundary. Blocking updates can withhold revocations only until the24h expiry;
 there is no claim of instantaneous revocation from an offline static snapshot.
+
+## Shared native enforcement
+
+`ModTrustPage.cs` contains the verifier/store shared by WPF and Avalonia. RSA uses
+the platform .NET implementation with fixed RSA3072/PKCS1/SHA256 parameters. The
+Page suffix includes this model in the existing shared-source build pattern;
+there is no separate trust policy in OS adapters. Before release, set the compiled
+`ModTrustStore.DefaultRootBase64` from the independently verified production root.
+While that pin is blank, developers/operators may explicitly install a public
+root at `Support/Mods/trusted-root.json`. It is never fetched as an initial pin.
+A compiled pin takes precedence over that file. Changing a configured pin cannot
+silently reset an existing checkpoint. No private key goes into a launcher.
+
+`ModWorkshopClient` is bound to an installation folder. Read first validates its
+saved signed state, fetches bounded metadata and required sequential root updates,
+verifies exact catalog bytes/expiry/origin, checks the last checkpoint, validates
+release details, and commits before returning listings. Trust folders are keyed
+by the canonical HTTPS origin under `.launcher/mod-trust/<origin-sha256>`.
+`state.json` contains exactly schema1, the pinned-root hash, base64 root successors,
+base64 signed metadata, base64 hash-bound catalog bytes, and observation time.
+The complete state is at most16MiB. All signatures and byte hashes are checked
+again on reopening, including after restart; expired old state may authorize a
+refresh, but cannot authorize an install/activation/game mount.
+
+A per-origin exclusive file lock covers read/update. A unique exclusive partial
+file is flushed before atomic replacement. The `initialized` marker is flushed
+before the first commit; missing state after initialization fails closed. Damage,
+changed pins, rollback, concurrent writers and clock rollback never fall back to
+empty state. Failed/cancelled transfers keep the previous checkpoint and remove
+only their own partial file. No power-loss recovery guarantee is inferred from
+atomic file replacement; crash/backup recovery remains an operational gate.
+
+The native client requires HTTPS on its default port and refuses redirects,
+userinfo, external package URLs, URL paths/queries/fragments and unsigned catalogs.
+The standalone Python loopback preview remains a local developer tool; it is not
+an unsigned bypass in the native workshop. The client rechecks availability before
+and after package transfer, then keeps only exact SHA256 bytes in its bounded
+download cache. Revocation during transfer rejects/removes that partial package.
+
+Native workshop installs write schema2 receipts with their verified service
+origin. Local creator/legacy receipts retain schema1 without public provenance.
+Workshop install, enable and normal game launch require a fresh locally verified
+catalog, a still-advertised package and no revocation. The checks batch packages
+per origin. An expired or revoked workshop package can be disabled/removed; the
+original-game recovery path remains available through Play without mods. Expiry
+does not silently rewrite the profile, delete packages, or affect an unmodded game.
 
 ## Key ceremony and export
 
@@ -155,8 +202,18 @@ publication reservation. Unix checks cover private file permissions and an actua
 encrypted-root/public-descriptor-to-online-export ceremony. No fixture key is a
 production key. The existing host expiry test now uses a signed snapshot.
 
-Still required: native verifier and persisted state/root updates, compiled trust
-pins, installed-mod revocation enforcement, live publication switching, a real
+Still required: native host/public acceptance, compiled production trust pins,
+live publication switching, a real
 offline production ceremony, separate service identities/backups, and public
 internet acceptance. Antivirus scanning and signature validation do not prove
 that gameplay scripts are safe; their sandbox/API remains a separate requirement.
+
+`tests/launcher/workshop-trust-fixtures.json` contains original synthetic DDS/ZIP
+bytes and public envelopes generated by Python/PyCA with disposable keys. No
+private fixture key was retained. Shared `workshop_trust.cs` checks real native
+verification of those producer signatures, cross-signed rotation, saved-state
+restart/rollback/corruption, exact bytes, expiry, revocations before activation
+and mounting, concurrent writers, cancelled/oversized metadata, and revocation
+during transfer. `test_native_trust_fixtures.py` independently verifies those same
+public vectors with the producer and validates the original asset package. These
+checks use an injected test clock, not a production clock/verification bypass.
