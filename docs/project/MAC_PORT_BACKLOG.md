@@ -1,3 +1,20 @@
+Runtime resource/preflight integration with mainb00de49e (feature/mod-platform):
+resource118be4e3 verified Windows60 pass/6 skips, Mac/Linux59 pass/7 skips EACH;
+Mac/Linux ASan/UBSan resource/save suite also59 pass/7 skips EACH. All three
+native game builds/platform checks pass. Preflight6cd13c52 verified Windows10
+checks; Mac/Linux22 preflight/manager checks pass EACH, including ASan/UBSan22
+EACH. All three native game builds/platform checks at6cd13c52 pass.
+
+Main's sun/visibility/allocator changes were merged INTO this feature branch to
+resolve PR conflicts; main itself is untouched. Both mod and visibility header
+interfaces are preserved. Compiler default now512KiB, retaining our configurable
+positive byte limit, UTF8-plus-LF accounting and unsplit functions in one iterator.
+Focused merge tests72 pass/2 skips; one visibility-registration fixture initially
+saw the old ignored runtime. After supported patch preparation updated10 runtime
+files, all4 visibility fixtures pass. Merged native builds/CI still pending.
+Automatic production startup/title binding, read-only bootstrap probe adapter,
+fault/HUD/message UX and shutdown drain remain required. No public activation.
+
 Background native match preflight (feature/mod-platform, base118be4e3):
 ScriptRuntime runs retained save/cache probes on one background thread and bounds
 one pending request/result. Simulation polls with try-lock and cannot bind stale
@@ -99,6 +116,15 @@ at the existing global game-running guard. Mac static snapshot/Caddy/Funnel
 setup is prepared but not deployed; game loader, Lua sandbox, active mod manager
 and authenticated uploads remain pending on every host. See
 docs/development/mac-mod-hosting.md and docs/agent-context/mod-workshop.md.
+
+Sun/visibility repair (Awaiting validation on Mac, commit e7de0247):
+the user-requested removal of the optional comparison preset applies to shared
+settings and both guest/native menus; no Mac-specific preset remains. Normal
+saved options remain authoritative; obsolete sidecars are ignored.
+Shared visibility cache, original SDK wrappers, allocator repair and D3D11,
+Vulkan/legacyGL adapters remain. Prior Windows mission sun/roof checks pass;
+native Mac/Linux/GL GPU counts, occlusion and cleanup still await validation.
+No assets, colours or gameplay policy are changed. See fidelity-comparison.md.
 
 Weapon FOV now uses a40-100 degree reference angle in one-degree steps,55
 original, like Vertical FOV. Exact legacy percentages retained until edited;

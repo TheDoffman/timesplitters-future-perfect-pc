@@ -388,6 +388,7 @@ jobs:
             tests/gameplay/test_mounted_mouse.py tests/gameplay/test_reload_keys.py
             tests/textures/test_texture_preference.py
             tests/graphics/test_kill_feed.py tests/graphics/test_fov_settings.py
+            tests/graphics/test_visibility_queries.py
             tests/graphics/test_cutscene_letterbox.py tests/graphics/test_menu_text.py tests/graphics/test_zero_base_indices.py
             tests/graphics/test_quit_menu.py tests/graphics/test_channel_clears.py
             tests/media/test_audio_audit.py tests/media/test_audio_candidates.py tests/media/test_audio_loops.py tests/media/test_audio_measurements.py tests/media/test_audio_timing.py tests/media/test_audio_output_gain.py

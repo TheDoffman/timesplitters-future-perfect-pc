@@ -239,7 +239,7 @@ def test_compiled_negative_controls_are_rejected(tmp_path, mutation):
     (('a->records[at].begin < end', 'a->records[at].end < begin'),
      [('P', BASE+0x8001, 16), ('D', 0, 0), ('V', 0x8001, 0x34),
       ('P', BASE+0x8002, 32), ('D', 0, 0)]),
-    (('(uint64_t)high + 1u', 'UINT64_C(0x100000000)'),
+    (('OWN_PHYSICAL, (uint64_t)high + 1u', 'OWN_PHYSICAL, UINT64_C(0x100000000)'),
      [('B', 32, 4096, BASE+0x4000, BASE+0x400f), ('D', 0, 0)]),
 ])
 def test_compiled_pin_overlap_and_range_controls_are_rejected(tmp_path, mutation, commands):
@@ -336,9 +336,9 @@ int main(void) {
     assert(xbox_HeapBlockSize(XBOX_HEAP_BASE) == 16);
     xbox_HeapFree(XBOX_HEAP_BASE);
     assert(!xbox_HeapBlockSize(XBOX_HEAP_BASE));
-    assert(request(0x900, 0, UINT32_MAX, 0) == 0x80100000u);
-    assert(xbox_HeapBlockSize(0x80100001u) == 0x8ff);
-    assert(!xbox_HeapBlockSize(0x80100900u));
+    assert(request(0x900, 0, UINT32_MAX, 0) == 0x83fdf000u);
+    assert(xbox_HeapBlockSize(0x83fdf001u) == 0x8ff);
+    assert(!xbox_HeapBlockSize(0x83fdf900u));
     assert(!xbox_ContiguousBlock(-1, &address, &bytes) && address==77 && bytes==88);
     assert(request(0x200, 0x61000, 0x611ff, 4096) == 0x80061000u);
     assert(physical[0x61000]==0 && physical[0x611ff]==0 && physical[0x61200]==0x7e);
@@ -351,12 +351,13 @@ int main(void) {
     assert(!request(UINT32_MAX, 0xfffffff0u, UINT32_MAX, 4096));
     assert(!request(16, XBOX_CONTIG_SIZE, UINT32_MAX, 4096));
     assert(request(512, 0x200001, 0x210000, 4096) == 0x80201000u);
-    assert(xbox_ContiguousAllocatedBytes()==0x202000u);
+    assert(xbox_ContiguousAllocatedBytes()==0x3fe0000u);
     assert(xbox_ContiguousBlock(0, &address, &bytes) && address==0x80061000u && bytes==512);
-    assert(xbox_ContiguousBlock(2, &address, &bytes) && address==0x80201000u && bytes==512);
+    assert(xbox_ContiguousBlock(2, &address, &bytes) && address==0x83fdf000u && bytes==0x900);
     assert(xbox_ContiguousFree(0x80201000u));
-    assert(xbox_ContiguousAllocatedBytes()==0x101000u);
+    assert(xbox_ContiguousAllocatedBytes()==0x3fe0000u);
     assert(!xbox_ContiguousBlock(2, &address, &bytes));
+    assert(xbox_ContiguousBlock(1, &address, &bytes) && address==0x83fdf000u && bytes==0x900);
     assert(xbox_ContiguousFree(0x80061000u));
     tsfp_allocations_stop(&g_guest_allocations);
     assert(!request(16, 0, UINT32_MAX, 4096));

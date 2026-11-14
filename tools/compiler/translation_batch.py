@@ -17,6 +17,27 @@ from translation_names import identifier
 import translation_layout as layout
 
 
+# Function count alone does not bound optimizer memory (especially for SIMD).
+# Match the continuation publisher's body budget; never split a function body.
+MAX_CHUNK_BODY_BYTES = 512 * 1024
+
+
+def _chunks(records, count, body_limit=None):
+    limit = MAX_CHUNK_BODY_BYTES if body_limit is None else body_limit
+    pending = []
+    body_bytes = 0
+    for record in records:
+        size = len(record[2].encode('utf-8')) + 1
+        if pending and (len(pending) >= count or body_bytes + size > limit):
+            yield pending
+            pending = []
+            body_bytes = 0
+        pending.append(record)
+        body_bytes += size
+    if pending:
+        yield pending
+
+
 def xbe_title(data, path):
     try:
         base=struct.unpack_from('<I',data,0x104)[0]
@@ -165,7 +186,7 @@ class BatchTranslator:
 
     def translate_batch_split(self,func_list,output_dir,chunk_size=1000,header_name='recomp_funcs.h',
                               prefix='recomp',verbose=False,manual=None,keep_bodies=None,
-                              max_chunk_bytes=1024*1024):
+                              max_chunk_bytes=MAX_CHUNK_BODY_BYTES):
         if isinstance(chunk_size,bool) or not isinstance(chunk_size,int) or chunk_size<=0:
             raise ValueError('Chunk size must be a positive integer')
         if isinstance(max_chunk_bytes,bool) or not isinstance(max_chunk_bytes,int) or max_chunk_bytes<=0:
@@ -191,16 +212,7 @@ class BatchTranslator:
             if items:
                 header+=['',f'/* {label}. */']+[f'void {items[address]}(void);  /* 0x{address:08X} */' for address in sorted(items)]
         header+=['','#endif /* RECOMP_FUNCS_H */','']
-        # Function counts alone group adjacent, heavily expanded SIMD routines
-        # into enormous compiler units. Bound emitted bodies as well; never
-        # split a function or change its instructions/optimization policy.
-        chunks=[];chunk=[];size=0
-        for record in records:
-            weight=len(record[2].encode('utf-8'))+1
-            if chunk and (len(chunk)>=chunk_size or size+weight>max_chunk_bytes):
-                chunks.append(chunk);chunk=[];size=0
-            chunk.append(record);size+=weight
-        if chunk:chunks.append(chunk)
+        chunks=list(_chunks(records,chunk_size,max_chunk_bytes))
         outputs={header_name:'\n'.join(header),**runtime_headers}
         files=[str(destination/header_name)]
         for index,chunk in enumerate(chunks):

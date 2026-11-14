@@ -1,3 +1,17 @@
+Main visibility integration retains positive explicit max_chunk_bytes validation and UTF8-plus-LF body accounting; defaults now use main's512KiB budget through the same shared chunk iterator. Both helper and full publisher budget tests pass.
+
+## Native scanner and build fixtures
+
+[Native preflight/CI tests](build-test-details.md), [context](investigation.md),
+[mods](mod-scripting.md); [pads](video-options.md).
+Windows FFmpeg [pin details](build-test-details.md); scanner bounds use real children.
+Windows -BuildJobs defaults2 and bounds MSBuild plus MSVC /MP; see pin details.
+The standalone texture-mod reader fixture uses C11 with `_POSIX_C_SOURCE=200809L`
+on POSIX hosts so the real trace clock declarations remain available. Run
+`pytest tests/mods/test_texture_mod_mount.py` under Linux as well as Windows/Mac.
+Scanner/creator/API/parser tests run in Windows/Mac native suites and all mods
+tests under Linux CI, including audit name collisions; live checks use the Mac.
+
 Native test_mod_runtime.py blocks a background probe while polling simulation, validates epoch-specific approval and real contained VM cleanup, including close/exception/stale/roster/network/authority faults.
 
 Native test_mod_resources.py relocates a real driver/bundle and executes a contained worker through a fresh identity-held cache; test_mod_saves.py checks the shared permission adapter default remains unchanged.

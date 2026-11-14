@@ -1,5 +1,12 @@
 /* Production display model and guest callbacks with isolated settings and RAM.
  * Original menu drawing/input functions are stubs; no game data is needed. */
+#include <stdint.h>
+static unsigned visibility_begin_calls,visibility_end_calls,visibility_result_calls;
+static uint32_t visibility_index,visibility_pixels;
+static int visibility_accepted,visibility_ready;
+void host_VisibilityBegin(void){visibility_begin_calls++;}
+void host_VisibilityEnd(uint32_t index,int accepted){visibility_end_calls++;visibility_index=index;visibility_accepted=accepted;}
+int xbox_D3D8VisibilityResult(uint32_t index,uint32_t *pixels){visibility_result_calls++;visibility_index=index;if(visibility_ready==1)*pixels=visibility_pixels;return visibility_ready;}
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -464,6 +471,29 @@ static void nested_match_options(void) {
     pc_network_bots_menu(sub_002C78F0_gen);
     CHECK(WORD_AT(0x78ad2c)==9);
     g_esp+=4;
+}
+static void visibility_original_begin(void){g_esp+=4;g_eax=0x1234;}
+static void visibility_original_end(void){g_esp+=8;g_eax=0;}
+static void visibility_original_failure(void){g_esp+=8;g_eax=0x8007000e;}
+static void visibility_guest_checks(void) {
+    g_esp=0x10000;pc_visibility_begin(visibility_original_begin);
+    assert(g_esp==0x10004 && g_eax==0x1234 && visibility_begin_calls==1);
+    g_esp=0x10000;WORD_AT(g_esp+4)=123;
+    pc_visibility_end(visibility_original_end);
+    assert(g_esp==0x10008 && !g_eax && visibility_end_calls==1 && visibility_index==123 && visibility_accepted);
+    g_esp=0x10000;WORD_AT(g_esp+4)=124;
+    pc_visibility_end(visibility_original_failure);
+    assert(g_esp==0x10008 && g_eax==0x8007000e && !visibility_accepted && visibility_index==124);
+    WORD_AT(0x20000)=77;visibility_ready=0;
+    assert(!pc_visibility_result(123,0x20000,0) && WORD_AT(0x20000)==77);
+    visibility_ready=1;visibility_pixels=321;
+    assert(pc_visibility_result(123,0x20000,0) && WORD_AT(0x20000)==321);
+    visibility_pixels=0;
+    assert(pc_visibility_result(123,0x20000,0) && WORD_AT(0x20000)==0);
+    unsigned calls=visibility_result_calls;
+    assert(!pc_visibility_result(123,0x20000,0x20008) && visibility_result_calls==calls);
+    assert(!pc_visibility_result(123,0xfffffff0u,0) && visibility_result_calls==calls);
+    assert(g_esp==0x10008 && g_eax==0x8007000e);
 }
 int main(int argc,char **argv)
 {
@@ -1474,6 +1504,7 @@ int main(int argc,char **argv)
     CHECK(pc_feed_enabled()==edit.value[VIDEO_FEED]&&pc_counter_enabled()==edit.value[VIDEO_COUNTER]);
     CHECK(requested_rate==120&&sidebar_fullscreen&&sidebar_video_observed.restart);
     sidebar_video_queued=(PcVideoRequest){9,VIDEO_CLEAR_CACHE,edit};int old_clears=cache_clear_calls;video_sidebar_tick();CHECK(cache_clear_calls==old_clears+1);
+    visibility_guest_checks();
     VirtualFree(mem,0,MEM_RELEASE);
     reload("TSFP_DISPLAY_V4 1280 720 65 120 75 50\n");
     CHECK(pc_display_crosshair_size()==50 && pc_display_weapon_fov()==120);

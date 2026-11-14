@@ -258,3 +258,15 @@ def test_default_support_header_publication_and_missing_input_preservation(tmp_p
     support.write_text('updated support')
     _refresh(batch,output,{}, {},set(),set())
     assert (output/support.name).read_text()=='updated support'
+
+
+def test_chunk_byte_budget_preserves_whole_functions(monkeypatch):
+    monkeypatch.setattr(own,'MAX_CHUNK_BODY_BYTES',12)
+    rows=[(i,str(i),body) for i,body in enumerate(['a'*7,'b'*7,'c'*20,'d'*4,'e'*4,'f'*4])]
+    chunks=list(own._chunks(rows,2))
+    assert [len(c) for c in chunks]==[1,1,1,2,1]
+    assert [row for chunk in chunks for row in chunk]==rows
+    assert chunks[2][0][2]=='c'*20 # A large single body is never cut.
+    assert list(own._chunks([],2))==[]
+    monkeypatch.setattr(own,'MAX_CHUNK_BODY_BYTES',5)
+    assert len(list(own._chunks([(0,'a','\u00e9\u00e9'),(1,'b','\u00e9')],100)))==2

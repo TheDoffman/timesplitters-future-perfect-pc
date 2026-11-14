@@ -3,6 +3,7 @@ Patch2711 passes NULL to shared bootstrap so Windows obtains the explicit RECOMP
 Patch2711 invokes the shared mod bootstrap before Windows kernel init and checks its storage commit before bridge/guest entry. POSIX main uses the same API. Absent capsule variables preserve stock startup; explicit handoff failure aborts. See mod-source-handoff.md.
 
 # Runtime
+[Sun/visibility](fidelity-comparison.md).
 
 [Storage fence](host-storage.md): before-init root binding closes lazy-default/profile escape.
 
@@ -11,7 +12,7 @@ Patch2711 invokes the shared mod bootstrap before Windows kernel init and checks
 [Guest adapter notes](guest-adapter-notes.md#runtime-routing).
 [Mod scripting game bridge](mod-scripting.md): patch2710 links the separate parent to title hooks;
 activation and actual custom-mode gameplay remain pending.
-Translation batches cap UTF8 body bytes at1MiB as well as function count. A single
+Translation batches default to512KiB of UTF8 bodies as well as function count. A single
 oversized function stays whole; instruction emission and compiler flags are unchanged.
 
 <!-- packet:start -->

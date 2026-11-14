@@ -67,7 +67,7 @@ int main(void) {
     assert(tsfp_allocations_init(&owner,&config,heaps,32,physicals,32));
     memset(ram,0x5a,sizeof(ram));memset(physical,0x7a,sizeof(physical));
     args[0]=64;bridge_MmAllocateContiguousMemory();a=g_eax;
-    assert(a==XBOX_CONTIG_BASE+0x10000);
+    assert(a==XBOX_CONTIG_BASE+XBOX_CONTIG_SIZE-XBOX_GPU_INSTANCE_DEFAULT-4096);
     args[0]=128;args[1]=0x7001;args[2]=0x7080;args[3]=4096;args[4]=1;
     bridge_MmAllocateContiguousMemoryEx();b=g_eax;assert(b==XBOX_CONTIG_BASE+0x7001);
     args[0]=b;bridge_MmQueryAllocationSize();assert(g_eax==128);

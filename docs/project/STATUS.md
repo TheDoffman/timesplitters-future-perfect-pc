@@ -1,3 +1,20 @@
+Runtime resource/preflight integration with mainb00de49e (feature/mod-platform):
+resource118be4e3 verified Windows60 pass/6 skips, Mac/Linux59 pass/7 skips EACH;
+Mac/Linux ASan/UBSan resource/save suite also59 pass/7 skips EACH. All three
+native game builds/platform checks pass. Preflight6cd13c52 verified Windows10
+checks; Mac/Linux22 preflight/manager checks pass EACH, including ASan/UBSan22
+EACH. All three native game builds/platform checks at6cd13c52 pass.
+
+Main's sun/visibility/allocator changes were merged INTO this feature branch to
+resolve PR conflicts; main itself is untouched. Both mod and visibility header
+interfaces are preserved. Compiler default now512KiB, retaining our configurable
+positive byte limit, UTF8-plus-LF accounting and unsplit functions in one iterator.
+Focused merge tests72 pass/2 skips; one visibility-registration fixture initially
+saw the old ignored runtime. After supported patch preparation updated10 runtime
+files, all4 visibility fixtures pass. Merged native builds/CI still pending.
+Automatic production startup/title binding, read-only bootstrap probe adapter,
+fault/HUD/message UX and shutdown drain remain required. No public activation.
+
 Background native match preflight (feature/mod-platform, base118be4e3):
 ScriptRuntime runs retained save/cache probes on one background thread and bounds
 one pending request/result. Simulation polls with try-lock and cannot bind stale
@@ -88,6 +105,30 @@ Source28f42934 CI run43633538621 succeeded. Native launcher at that source: Wind
 67 shared UI groups; Mac68, Linux69. Mac Desktop FinderInfo still disrupts signing;
 Mac build passes using supported --output under the owned Library/Caches folder.
 No public workshop service, production trust activation or release is claimed.
+
+Sun repair main integration with5426485f: Windows Release/debug build passes;
+42 targeted checks pass with2Mac skips. Newer crosshair/FOV/tutorial changes
+remain intact. Published preview package remains the earlier tested snapshot.
+
+Local preview0.6.3-sun-fix.1 is packaged under build/releases, with normal
+launcher1.6.2 and matching symbols/source/licenses. All1529 package hashes pass;
+the packaged EXE completes140s in mission1 at1280x720/FOV73 with all7 isolated
+preference files unchanged and obsolete comparison flag ignored. The wider-FOV
+backward path leaves the sun visible at the cave edge; it is not another full
+occlusion acceptance. No publish/merge; Desktop Sun Fix Preview shortcut uses
+the local stage and a junction to the single existing game-data copy. Separate
+preview saves/settings leave the existing installation untouched.
+
+Sun/visibility repair (commit e7de0247, base1375e144):
+the optional Fidelity Comparison preset has been removed at the user's request,
+including menus, startup config patch, settings overrides and preset-only tests.
+Normal saved settings apply directly; obsolete pc-fidelity.ini files are ignored.
+The independent highest-fit unconstrained allocator and patch3001 GPU visibility
+repair remain. Prior Windows immediate/deferred mission runs restore authored
+sun/glow with50 visible samples and0 behind the cave roof. Original tutorial
+shadows, assets and gameplay remain intact. Native Mac/Linux/GL GPU acceptance
+is pending. Removal validation is recorded in the canonical guide:
+docs/agent-context/fidelity-comparison.md.
 
 Weapon FOV now uses a40-100 degree reference angle in one-degree steps,55
 original, like Vertical FOV. Exact legacy percentages retained until edited;

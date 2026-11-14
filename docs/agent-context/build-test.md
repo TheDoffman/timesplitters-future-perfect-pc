@@ -1,12 +1,5 @@
-[Native preflight/CI tests](build-test-details.md), [context](investigation.md),
-[mods](mod-scripting.md); [pads](video-options.md).
-Windows FFmpeg [pin details](build-test-details.md); scanner bounds use real children.
-Windows -BuildJobs defaults2 and bounds MSBuild plus MSVC /MP; see pin details.
-The standalone texture-mod reader fixture uses C11 with `_POSIX_C_SOURCE=200809L`
-on POSIX hosts so the real trace clock declarations remain available. Run
-`pytest tests/mods/test_texture_mod_mount.py` under Linux as well as Windows/Mac.
-Scanner/creator/API/parser tests run in Windows/Mac native suites and all mods
-tests under Linux CI, including audit name collisions; live checks use the Mac.
+[Native preflight/CI tests](build-test-details.md); [context](investigation.md).
+[Visibility tests](fidelity-comparison.md); [batch bounds](independent.md).
 # Tests ([Glass](pause-glass.md), [Aim](hud-sizing.md))
 Audio: [acceptance](../development/audio-overhaul-acceptance.md).
 Media CI: audit/candidates/loops/metrics; headers do not prove identity.
