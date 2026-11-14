@@ -29,18 +29,38 @@ int tsfp_storage_select(const char *game,const char *save,const char *environmen
     a=length(game);b=length(save);if(!a || a>=TSFP_PATH_LIMIT || !b || b>=TSFP_PATH_LIMIT)return 0;
     memset(&value,0,sizeof(value));memcpy(value.game,game,a+1);memcpy(value.save,save,b+1);*out=value;*source=from;return 1;
 }
+int tsfp_storage_require(tsfp_storage_state *s,const char *root) {
+    size_t n;if(!s)return 0;n=length(root);
+    enter(s);
+    if(s->guarded) {leave(s);return 0;}
+    s->guarded=1;s->required_save[0]=0;s->paths.profile[0]=0;
+    if(s->ready || !n || n>=TSFP_PATH_LIMIT) {leave(s);return 0;}
+    memcpy(s->required_save,root,n+1);leave(s);return 1;
+}
+int tsfp_storage_required(tsfp_storage_state *s,char *out,size_t capacity) {
+    size_t n;if(!s)return -1;
+    enter(s);
+    if(!s->guarded) {leave(s);return 0;}
+    n=strlen(s->required_save);
+    if(!n || !out || n>=capacity) {leave(s);return -1;}
+    memcpy(out,s->required_save,n+1);leave(s);return 1;
+}
 int tsfp_storage_commit(tsfp_storage_state *s,const tsfp_storage_snapshot *paths) {
     size_t a,b;if(!s || !paths)return 0;a=length(paths->game);b=length(paths->save);
     if(!a || a>=TSFP_PATH_LIMIT || !b || b>=TSFP_PATH_LIMIT)return 0;
-    enter(s);memcpy(s->paths.game,paths->game,a+1);memcpy(s->paths.save,paths->save,b+1);s->ready=1;leave(s);return 1;
+    enter(s);
+    if(s->guarded && (!s->required_save[0] || strcmp(paths->save,s->required_save))) {leave(s);return 0;}
+    memcpy(s->paths.game,paths->game,a+1);memcpy(s->paths.save,paths->save,b+1);s->ready=1;leave(s);return 1;
 }
 int tsfp_storage_profile(tsfp_storage_state *s,const char *root) {
     size_t n;if(!s)return 0;n=length(root);if(n>=TSFP_PATH_LIMIT)return 0;
-    enter(s);memcpy(s->paths.profile,root,n+1);leave(s);return 1;
+    enter(s);if(s->guarded && n) {leave(s);return 0;}
+    memcpy(s->paths.profile,root,n+1);leave(s);return 1;
 }
 int tsfp_storage_read(tsfp_storage_state *s,tsfp_storage_snapshot *out) {
     if(!s || !out)return 0;
     enter(s);if(!s->ready) {leave(s);return 0;}
+    if(s->guarded && (!s->required_save[0] || strcmp(s->paths.save,s->required_save) || s->paths.profile[0])) {leave(s);return 0;}
     *out=s->paths;leave(s);return 1;
 }
 int tsfp_storage_image_bytes(unsigned part,uint64_t *out) {

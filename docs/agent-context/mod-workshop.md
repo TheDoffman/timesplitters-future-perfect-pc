@@ -52,6 +52,8 @@ protocol tests; this is not a bound in-game custom match.
 Native mod_saves.cpp leases persistent per-profile namespaces and rejects aliases
 to personal saves. Storage/bootstrap wiring and exFAT acceptance remain pending;
 see [save-lease contracts](mod-scripting.md).
+The shared storage fence prevents lazy default/profile escape once armed; trusted
+mod bootstrap has not yet registered it. See [host storage](host-storage.md).
 Production-helper tests find CMake beside a virtualenv interpreter or on PATH,
 matching process tests; system Python installs place pip tools under Scripts.
 Local source: `tools/mods/mod_package.py`, `mod_repository.py`, `mod_server.py`,

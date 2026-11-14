@@ -4,7 +4,8 @@
 #include "guest_paths.h"
 typedef struct {char game[TSFP_PATH_LIMIT],save[TSFP_PATH_LIMIT],profile[TSFP_PATH_LIMIT];} tsfp_storage_snapshot;
 typedef struct {
-    tsfp_storage_snapshot paths;unsigned ready;
+    tsfp_storage_snapshot paths;unsigned ready,guarded;
+    char required_save[TSFP_PATH_LIMIT];
 #if defined(_MSC_VER)
     volatile long lock;
 #else
@@ -25,6 +26,16 @@ int tsfp_storage_select(const char *,const char *,const char *,const char *,cons
 int tsfp_storage_commit(tsfp_storage_state *,const tsfp_storage_snapshot *);
 int tsfp_storage_profile(tsfp_storage_state *,const char *);
 int tsfp_storage_read(tsfp_storage_state *,tsfp_storage_snapshot *);
+/* One-way startup fence. Register before storage initialization. A valid root
+ * becomes immutable; NULL/empty/oversized or late registration latches a closed
+ * fence. No disable/reset API. Existing profile override is cleared; guarded
+ * sessions reject nonempty overrides and use their isolated UserData directory.
+ * Caller validates/owns the filesystem namespace for the whole storage lifetime.
+ * Inputs/outputs must be disjoint from state. All calls perform metadata only. */
+int tsfp_storage_require(tsfp_storage_state *,const char *);
+/* 0 unfenced;1 copies required root;-1 closed/insufficient output capacity.
+ * Output is preserved unless1. A host must consult this BEFORE mkdir/defaults. */
+int tsfp_storage_required(tsfp_storage_state *,char *,size_t);
 /* Compatibility image geometry retained from this runtime, not a full physical
  * Xbox disk. New Partition0 is2560 bytes with a512-byte synthetic PARTINFO block
  * at0x800; Partition1/2/3-5 sizes retain their existing sector counts. */

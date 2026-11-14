@@ -16,6 +16,10 @@ on abrupt process exit. Recheck rejects linked/hard-linked/special files, change
 markers, excessive depth/count and unsafe writer permissions. No guest storage
 selects this root yet; bootstrap must hold the lease through storage shutdown and
 abort scripted play on failure, never fall back to original saves.
+guest_storage.c now provides a one-way storage fence, covering lazy defaults and
+pre-init profile overrides. The kernel adapter applies it before filesystem
+creation. Native bootstrap must arm it with the held lease before kernel init;
+that caller/source capsule integration is still unavailable. See host-storage.md.
 Windows creates protected user/System/admin ACLs and accepts owner-only parent
 OWNER RIGHTS grants. POSIX requires current ownership and no other writers.
 Recognized exFAT volumes use structural markers/link checks/locking because native

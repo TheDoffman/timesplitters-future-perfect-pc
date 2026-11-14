@@ -1,5 +1,14 @@
 # Feature test index
 
+test_guest_storage.py adds pure fence metadata checks and actual native backend
+cases for valid, NULL/empty/relative/oversize/missing and late root registration.
+They exercise explicit/environment/default reinitialization, lazy U/T translation
+and pre-init profile clearing while preserving normal-save canaries. Windows
+default-folder lookup is redirected only inside the fixture so even a broken
+fence cannot use personal defaults; POSIX HOME/XDG defaults are isolated too.
+Ordinary storage policy, negative mutations, sparse and regular-allocation/failure
+fixtures remain selected. Registration is not yet called by the mod bootstrap.
+
 Production-helper fixtures resolve CMake beside the interpreter or through PATH,
 matching native process fixtures. System Python's pip-installed Scripts directory
 is separate from python.exe; a virtualenv's adjacent-tool layout is not assumed.

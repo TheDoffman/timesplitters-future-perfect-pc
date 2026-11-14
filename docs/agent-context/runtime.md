@@ -1,5 +1,7 @@
 # Runtime
 
+[Storage fence](host-storage.md): before-init root binding closes lazy-default/profile escape.
+
 [UI/Aim](hud-sizing.md).
 
 [Guest adapter notes](guest-adapter-notes.md#runtime-routing).

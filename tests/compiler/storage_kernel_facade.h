@@ -19,5 +19,6 @@ void xbox_log(int,int,const char *,...);
 void xbox_path_init(const char *,const char *);
 BOOL xbox_translate_path(const char *,xbox_host_char *,DWORD);
 int xbox_save_root_utf8(char *,unsigned);
+int xbox_require_save_root_utf8(const char *);
 int xbox_set_profile_root_utf8(const char *);
 #endif

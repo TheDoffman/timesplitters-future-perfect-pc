@@ -8,6 +8,8 @@ The initial non-team adapter reports team0; original actor team identity stays p
 The match bridge checks compiled game pins before privately staging helpers; see mod-scripting.md.
 The native mod-save lease validates owned per-profile trees and exclusive locks;
 guest storage does not select it yet. See the same guide for filesystem limits.
+The optional one-way storage fence also covers lazy defaults/profile overrides;
+startup registration is pending. See [host storage](host-storage.md).
 
 <!-- packet:start -->
 Tracked policy: `src/input/` owns controls, bindings and prompts;
