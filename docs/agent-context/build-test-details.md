@@ -1,5 +1,9 @@
 # Feature test index
 
+Production-helper fixtures resolve CMake beside the interpreter or through PATH,
+matching native process fixtures. System Python's pip-installed Scripts directory
+is separate from python.exe; a virtualenv's adjacent-tool layout is not assumed.
+
 The synthetic Windows package_launcher.py fixture supplies the mandatory native
 helper producer alongside its other mocked binary builders. It checks helper/
 Lua notice inclusion and manifest hashes; test_runtime_images.py independently

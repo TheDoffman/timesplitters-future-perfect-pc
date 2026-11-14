@@ -21,8 +21,10 @@ producer=importlib.util.module_from_spec(spec);spec.loader.exec_module(producer)
 @pytest.fixture(scope='module')
 def production(tmp_path_factory):
     root=tmp_path_factory.mktemp('production-helpers')
-    cmake=Path(sys.executable).with_name('cmake.exe' if os.name=='nt' else 'cmake')
-    builder=producer.worker_builder();builder.build(root,str(cmake))
+    local=Path(sys.executable).with_name('cmake.exe' if os.name=='nt' else 'cmake')
+    cmake=str(local) if local.is_file() else shutil.which('cmake')
+    assert cmake,'Install the repository-pinned CMake for production helper checks'
+    builder=producer.worker_builder();builder.build(root,cmake)
     return root
 
 
