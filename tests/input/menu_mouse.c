@@ -38,6 +38,7 @@ static unsigned shape_w=16,shape_h=9;
 static unsigned music_previews,sound_previews,sensitivity_previews;
 static unsigned slider_fov;
 static void menu_slider_weapon_fov_pointer(float x,float left,float width) { (void)x;(void)left;(void)width; }
+static void menu_slider_crosshair_pointer(float x,float left,float width) { (void)x;(void)left;(void)width; }
 static void menu_slider_fov_pointer(float x,float left,float width)
 { slider_fov=40+pc_menu_slider_value(x,left,width,60); }
 static unsigned slider_mix_index,slider_mix_value;

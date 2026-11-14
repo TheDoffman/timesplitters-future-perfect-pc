@@ -35,7 +35,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     if(fn==sub_0003FCF0){
         CHECK(font==18);float scale;memcpy(&scale,&WORD_AT(0x7e7270),4);
         float w=widths[WORD_AT(a[2])]*scale;
-        memcpy(&WORD_AT(a[0]),&w,4);measurements++;return 0;
+        memcpy(&WORD_AT(a[0]),&w,4);float h=20.f*scale;memcpy(&WORD_AT(a[1]),&h,4);measurements++;return 0;
     }
     CHECK(0);return 0;
 }
@@ -43,6 +43,7 @@ static int ui_placement=4,wide=1,placement_changes;
 static uint32_t ui_tag=123;
 static float hud_scale=.56f;
 int pc_display_wide_now(void){return wide;}
+int pc_display_crosshair_size(void){return 100;}
 float pc_display_hud_scale(void){return hud_scale;}
 static void ui_place(int value,uint32_t tag){ui_placement=value;ui_tag=tag;placement_changes++;}
 static int footer_hover;
@@ -50,10 +51,10 @@ static int menu_mouse_profile_text(void (*original)(void)) { (void)original;retu
 static int menu_mouse_footer_text(void) { return footer_hover; }
 int pc_story_lobby_title(void (*original)(void)){(void)original;return 0;}
 #include "pc_tutorial_ui.inc"
-static float seen;
+static float seen,seen_y,seen_scale;
 static uint32_t seen_color,seen_tag;
 static int seen_placement;
-static void text_original(void){seen_placement=ui_placement;seen_tag=ui_tag;seen=tutorial_float(g_esp+4);seen_color=WORD_AT(g_esp+16);g_esp+=4;}
+static void text_original(void){seen_placement=ui_placement;seen_tag=ui_tag;seen=tutorial_float(g_esp+4);seen_color=WORD_AT(g_esp+16);seen_y=tutorial_float(g_esp+8);seen_scale=tutorial_float(0x7e7270);g_esp+=4;}
 static void wrap_original(void){seen=tutorial_float(g_esp+8);g_esp+=4;}
 static void original(void)
 {
@@ -77,6 +78,18 @@ static void original(void)
         CHECK(fabsf(seen-(99+expected_extra))<.01f && tutorial_float(frame-124)==99);
         /* The widest key must end before the action begins. */
         if(expected_extra>0)CHECK(59+widths[i]*.9f+8<=seen+.01f);
+        /* Different-width captions retain one visible column centre. */
+        g_esp=frame-128;WORD_AT(g_esp)=0x147cae;
+        WORD_AT(g_esp+12)=0x3000+i*4;WORD_AT(0x3000+i*4)=i;
+        tutorial_set_float(g_esp+4,59.f);tutorial_set_float(g_esp+8,50.f);
+        font=18;pc_display_tutorial_text(text_original);font=7;
+        if(tutorial_icon_column>0.f)
+            CHECK(fabsf(seen+widths[i]*.9f*.8f*.5f-(59.f+tutorial_icon_column*.5f))<.01f);
+        else CHECK(seen==59.f);
+        if(tutorial_icon_column>0.f)CHECK(fabsf(seen_scale-.72f)<.001f && fabsf(seen_y-51.8f)<.001f);
+        CHECK(tutorial_float(frame-120)==50.f && fabsf(tutorial_float(0x7e7270)-(players==1?.9f:1.f))<.001f);
+        CHECK(tutorial_float(frame-124)==59.f && g_esp==frame-124);
+
     }
     /* Compound stick descriptions and unrelated font calls keep their layout. */
     g_esp=frame-128;WORD_AT(g_esp)=0x147c51;tutorial_set_float(g_esp+8,150);
@@ -94,7 +107,7 @@ static void run(float extra,int growth)
     WORD_AT(g_esp+4)=0;pc_display_tutorial(original);
     CHECK(tutorial_float(0x7e7270)==1.f && tutorial_float(0x7e7280)==1.f);
     CHECK(g_esp==0x2004 && WORD_AT(0x7a5a2c)==270);
-    CHECK(tutorial_extra==0 && tutorial_normal_row==0 && font==7);
+    CHECK(tutorial_extra==0 && tutorial_icon_column==0 && tutorial_normal_row==0 && font==7);
     CHECK(ui_placement==4 && ui_tag==123);
     CHECK(placement_changes-changes==((players==1 && wide && hud_scale<1.f)?2:0));
 }
@@ -110,7 +123,7 @@ int main(void)
         WORD_AT(0x7a5940+i*28+12)=i;
         WORD_AT(0x7a5940+i*28+24)=UINT32_MAX;
     }
-    run(43.6f,44);CHECK(measurements==4);
+    run(43.6f,44);CHECK(measurements==12);
     /* Rebinding to a longer label changes all row columns immediately. */
     widths[1]=128;run(83.2f,84);
     /* Near an edge, growth is bounded and remaining description width wraps. */
