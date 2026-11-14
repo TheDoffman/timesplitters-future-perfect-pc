@@ -10,6 +10,8 @@ The native mod-save lease validates owned per-profile trees and exclusive locks;
 guest storage does not select it yet. See the same guide for filesystem limits.
 The optional one-way storage fence also covers lazy defaults/profile overrides;
 startup registration is pending. See [host storage](host-storage.md).
+Native [source handoff](../development/mod-source-handoff.md) uses a pinned,
+bounded read into memory; the wire has no helper/save paths or policy flags.
 
 <!-- packet:start -->
 Tracked policy: `src/input/` owns controls, bindings and prompts;

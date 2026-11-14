@@ -137,6 +137,7 @@ $arguments = $commonArguments + @('/main:TimeSplitters.Launcher.Program',
 $arguments += $bannerArguments
 $settingsSources = @((Join-Path $source 'Ui.cs'), (Join-Path $source 'GameSessions.cs'), (Join-Path $source 'CrashReports.cs'), (Join-Path $source 'PageTheme.cs'), (Join-Path $source 'ReleaseNotesMarkdown.cs'), (Join-Path $source 'ReleaseNotesDocument.cs'), (Join-Path $source 'GameSettings.cs'), (Join-Path $source 'DisplayModes.cs'), (Join-Path $source 'InstallationMaintenance.cs'), (Join-Path $source 'DiagnosticIssueDraft.cs'))
 # Every shared page is compiled for both hosts; add new pages beside these sources.
+$settingsSources += @((Join-Path $source 'ModScriptLaunch.cs'))
 $settingsSources += @(Get-ChildItem -LiteralPath $source -Filter '*Page.cs' | ForEach-Object { $_.FullName })
 $defaultControls = @(('/resource:' + (Join-Path $source 'PageTheme.xaml') + ',PageTheme.xaml'),
     ('/resource:' + (Join-Path $source 'TabsTheme.xaml') + ',TabsTheme.xaml'), ('/resource:' + (Join-Path $project 'config\pc-controls.default.json') + ',launcher-controls-default.json'),
@@ -174,6 +175,7 @@ if ($Test) {
         $testArgs += '/reference:' + (Join-Path $framework "WPF\$reference")
     }
     $testArgs += @((Join-Path $project 'tests\launcher\workshop_trust.cs'), ('/resource:' + (Join-Path $project 'tests\launcher\workshop-trust-fixtures.json') + ',workshop-trust-fixtures.json'))
+    $testArgs += @(('/resource:' + (Join-Path $project 'tests\launcher\mod-launch-vectors.json') + ',mod-launch-vectors.json'))
     $testArgs += $commonSources + @((Join-Path $source 'Bootstrap.cs'),
         (Join-Path $source 'Launcher.cs'), (Join-Path (Split-Path -Parent $PSScriptRoot) 'release\ImportGame.cs'),
         (Join-Path $project 'tests\launcher\launcher_updates.cs'))

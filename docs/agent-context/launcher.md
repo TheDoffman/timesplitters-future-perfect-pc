@@ -1,3 +1,8 @@
+[Script handoff](../development/mod-source-handoff.md): ModScriptLaunch.cs is a
+shared bounded encoder, compiled on Windows/Mac/Linux. Its golden wire/hash/save-
+identity vector also drives the native reader tests. Package authorization must
+precede encoding; startup/profile activation has not adopted it yet.
+
 Installed display-reader capability: BUILD.json display_settings_version gates
 Crosshair Size (>=4) and Weapon FOV degrees (>=5). Missing/invalid metadata
 retains V1-V3 compatibility; unpackaged development builds support5. Older

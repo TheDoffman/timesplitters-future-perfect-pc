@@ -109,7 +109,7 @@ def main():
                *sorted((ROOT / 'tools/launcher').rglob('*.cs')), *sorted((ROOT / 'tools/launcher').glob('*.xaml')),
                ROOT / 'tools/launcher/linux/LinuxLauncher.csproj', ROOT / 'tools/launcher/linux/packages.lock.json',
                ROOT / 'tools/launcher/macos/generate_layout.py',
-               ROOT / 'tests/launcher/workshop_trust.cs', ROOT / 'tests/launcher/workshop-trust-fixtures.json']
+               ROOT / 'tests/launcher/workshop_trust.cs', ROOT / 'tests/launcher/workshop-trust-fixtures.json', ROOT / 'tests/launcher/mod-launch-vectors.json']
     receipt = {'source_revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                'working_tree_changes': subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True),
                'source_sha256': {p.relative_to(ROOT).as_posix(): digest(p) for p in sources},

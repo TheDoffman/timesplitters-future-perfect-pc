@@ -56,6 +56,9 @@ The shared storage fence prevents lazy default/profile escape once armed; truste
 mod bootstrap has not yet registered it. See [host storage](host-storage.md).
 Production-helper tests find CMake beside a virtualenv interpreter or on PATH,
 matching process tests; system Python installs place pip tools under Scripts.
+ModScriptLaunch.cs/mod_capsule.cpp define a bounded source handoff and canonical
+save identity, verified against one C#/native corpus. Caller package authorization,
+storage fencing and actual activation remain required; see mod-source-handoff.md.
 Local source: `tools/mods/mod_package.py`, `mod_repository.py`, `mod_server.py`,
 `mod-workshop.py`. The CLI is directly executable; peer imports resolve from its
 directory. Tests add `tools/mods` explicitly and use no private game files.

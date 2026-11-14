@@ -1,6 +1,7 @@
 #include "mod_images.hpp"
 #include "mod_files.hpp"
 #include <array>
+#include <algorithm>
 #include <filesystem>
 #include <stdexcept>
 #include <cstring>
@@ -183,6 +184,43 @@ void copy_pinned(const fs::path &source,const fs::path &target,const std::string
 }
 std::filesystem::path checked_path(const std::string &text,bool directory,bool private_directory){return plain_path(text,directory,private_directory);}
 bool sha256_text(const std::string &text) noexcept {return digest(text);}
+std::string sha256_bytes(const std::string &bytes) {
+    Hash hash;size_t at=0;
+    while(at<bytes.size()) {
+        size_t count=std::min(bytes.size()-at,size_t(32768));
+        hash.update(reinterpret_cast<const unsigned char *>(bytes.data()+at),count);at+=count;
+    }
+    return hash.finish();
+}
+std::string read_pinned_file(const std::string &name,const std::string &expected,size_t maximum) {
+    require(digest(expected) && maximum && maximum<=image_limit,"Invalid pinned input policy");
+    auto path=plain_path(name,false);File input;uint64_t length=0;
+#ifdef _WIN32
+    input.handle=CreateFileW(path.c_str(),GENERIC_READ,FILE_SHARE_READ,nullptr,OPEN_EXISTING,FILE_FLAG_OPEN_REPARSE_POINT|FILE_FLAG_SEQUENTIAL_SCAN,nullptr);
+    require(input.handle!=INVALID_HANDLE_VALUE,"Cannot open pinned input");BY_HANDLE_FILE_INFORMATION info{};
+    require(GetFileType(input.handle)==FILE_TYPE_DISK && GetFileInformationByHandle(input.handle,&info) &&
+        !(info.dwFileAttributes&(FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_REPARSE_POINT)),"Invalid pinned input");
+    length=((uint64_t)info.nFileSizeHigh<<32)|info.nFileSizeLow;
+#else
+    input.handle=open(path.c_str(),O_RDONLY|O_NONBLOCK|O_CLOEXEC|O_NOFOLLOW);require(input.handle>=0,"Cannot open pinned input");
+    struct stat info{};require(fstat(input.handle,&info)==0 && S_ISREG(info.st_mode) && info.st_size>0,"Invalid pinned input");length=(uint64_t)info.st_size;
+#endif
+    require(length && length<=maximum,"Pinned input exceeds budget");
+    std::string bytes;bytes.reserve((size_t)length);Hash hash;std::array<unsigned char,32768> buffer{};
+    for(;;) {
+        size_t count;
+#ifdef _WIN32
+        DWORD got=0;require(ReadFile(input.handle,buffer.data(),(DWORD)buffer.size(),&got,nullptr)!=FALSE,"Cannot read pinned input");count=got;
+#else
+        ssize_t got=read(input.handle,buffer.data(),buffer.size());if(got<0 && errno==EINTR)continue;
+        require(got>=0,"Cannot read pinned input");count=(size_t)got;
+#endif
+        if(!count)break;
+        require(bytes.size()+count<=length,"Pinned input changed while reading");
+        hash.update(buffer.data(),count);bytes.append(reinterpret_cast<const char *>(buffer.data()),count);
+    }
+    require(bytes.size()==length && hash.finish()==expected,"Pinned input digest mismatch");return bytes;
+}
 bool ImagePins::valid()const noexcept {
 #ifdef __APPLE__
     return digest(worker) && digest(guardian);

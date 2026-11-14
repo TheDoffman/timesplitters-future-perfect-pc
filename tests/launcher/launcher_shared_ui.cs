@@ -82,6 +82,24 @@ public static class LauncherSharedUiChecks
     static void WorkshopChecks(string root)
     {
         WorkshopTrustChecks.Run(root,Test);
+        Test("script source capsules match the native wire and isolated-save identity",()=>{
+            Dictionary<string,object> corpus;
+            using(var input=typeof(LauncherSharedUiChecks).Assembly.GetManifestResourceStream("mod-launch-vectors.json"))
+            using(var memory=new MemoryStream()){input.CopyTo(memory);corpus=ModJson.Read(System.Text.Encoding.UTF8.GetString(memory.ToArray()));}
+            foreach(Dictionary<string,object> vector in (object[])corpus["vectors"]) {
+                var source=Convert.FromBase64String((string)vector["source"]);
+                var dependencies=((object[])vector["dependencies"]).Cast<string>().ToArray();
+                var capsule=ModScriptCapsule.Create((string)vector["package"],dependencies.Reverse(),source);
+                Need(Convert.ToBase64String(capsule.Bytes)==(string)vector["wire"],"Source capsule bytes differ from native contract");
+                Need(capsule.Sha256==(string)vector["sha256"] && capsule.ProfileSha256==(string)vector["profile"],"Capsule/save identity mismatch");
+                WorkshopReject(()=>ModScriptCapsule.Create((string)vector["package"],new[]{(string)vector["package"]},source),"Repeated primary accepted");
+                WorkshopReject(()=>ModScriptCapsule.Create((string)vector["package"],new[]{new string('b',64),new string('b',64)},source),"Duplicate dependency accepted");
+            }
+            foreach(byte[] bad in new[]{new byte[0],new byte[]{0},new byte[]{0xc0,0x80},new byte[]{27,76,117,97},new byte[1024*1024+1]})
+                WorkshopReject(()=>ModScriptCapsule.Create(new string('a',64),new string[0],bad),"Invalid source accepted");
+            WorkshopReject(()=>ModScriptCapsule.Create(new string('A',64),new string[0],new byte[]{32}),"Uppercase digest accepted");
+            WorkshopReject(()=>ModScriptCapsule.Create(new string('a',64),Enumerable.Range(0,32).Select(i=>i.ToString("x64")),new byte[]{32}),"Dependency budget exceeded");
+        });
         long now=DateTimeOffset.UtcNow.ToUnixTimeSeconds();string sha=new string('a',64);
         Test("workshop catalog validates identities and freshness",()=>{
             var entries=ModWorkshopClient.Parse(WorkshopCatalog(sha,now-1),DateTime.UtcNow);

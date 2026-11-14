@@ -11,6 +11,8 @@
     <Compile Include="*.cs;../macos/*.cs" Exclude="../macos/NativeTests.cs" />
     <AvaloniaResource Include="$(LayoutDir)/*.axaml"><Link>%(Filename)%(Extension)</Link></AvaloniaResource>
     <Compile Include="../../../tests/launcher/launcher_shared_ui.cs" />
+    <Compile Include="../ModScriptLaunch.cs" />
+    <EmbeddedResource Include="../../../tests/launcher/mod-launch-vectors.json" LogicalName="mod-launch-vectors.json" />
     <Compile Include="../../../tests/launcher/workshop_trust.cs" />
     <EmbeddedResource Include="../../../tests/launcher/workshop-trust-fixtures.json" LogicalName="workshop-trust-fixtures.json" />
     <Compile Include="../../../tests/launcher/launcher_restart.cs" />

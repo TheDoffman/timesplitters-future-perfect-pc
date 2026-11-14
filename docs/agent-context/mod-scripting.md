@@ -1,5 +1,9 @@
 # Mod worker, process boundary and native sessions
 
+[Source handoff](../development/mod-source-handoff.md): shared C# encoder/native
+reader, pinned byte snapshot and package-derived save identity. No startup caller
+or script activation yet. The launcher remains package/publisher trust authority.
+
 Authoritative source: src/mods/mod_script.c/.h (Lua API), mod_worker.c (wire),
 mod_watchdog.c/.h, mod_seal.c/.h, mod_process.hpp + Windows/POSIX adapters,
 mod_guardian_mac.c, mod_session.cpp/.hpp, mod_match.cpp/.h and pc_mod_guest.inc.

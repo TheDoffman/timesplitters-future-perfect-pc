@@ -1,5 +1,14 @@
 # Feature test index
 
+test_mod_capsule.py uses the same mod-launch-vectors.json embedded in all launcher
+test builds. It verifies native byte snapshots/save identity, malformed digests,
+counts/lengths/dependency ordering, binary Lua/UTF8 boundaries, maximum source,
+links and replacement after capture. Large byte parameters have bounded IDs so
+PYTEST_CURRENT_TEST stays below the Windows environment-variable limit.
+Shared launcher UI tests validate exact C# bytes/digests/identity and refusals.
+Both native parent builds link the reader with the existing OS hash providers;
+worker/VM code receives no new filesystem API. No startup caller is wired yet.
+
 test_guest_storage.py adds pure fence metadata checks and actual native backend
 cases for valid, NULL/empty/relative/oversize/missing and late root registration.
 They exercise explicit/environment/default reinitialization, lazy U/T translation
