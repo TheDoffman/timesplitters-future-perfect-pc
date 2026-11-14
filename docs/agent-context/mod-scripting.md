@@ -392,4 +392,8 @@ off. Windows factory/diagnostic51 pass/2 skips; rendered follow-up pending.
 The actual Windows capture now shows offline status and script messages, plus
 scripted score4/End/results/quit0. To fit the supported640px window, longer native
 extension text owns the line and mod-message previews use32 UTF8 bytes with an
-ellipsis. Short status still combines with user statistics. Native follow-up pending.
+ellipsis. Short status still combines with user statistics. Source9410d805 native
+build/platform checks pass on all three hosts; Windows factory/diagnostic51 pass/
+2 skips, Mac12 pass/1 skip, Linux13 pass. Actual Windows message fits640px, score4
+and End/results/quit0 pass with ordinary saves preserved. CI43652459059 is green:
+23 successful jobs/2 intentional skips. Public activation and quit cleanup remain open.

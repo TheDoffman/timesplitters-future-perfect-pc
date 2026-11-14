@@ -72,9 +72,11 @@ checks the actual kernel root and lease before publishing source bytes. Exceptio
 and repeated startup selection withhold source. The process retains the context
 and lease until OS teardown so static destructors cannot unlock live guest storage.
 `pc_mod_bootstrap_recheck` must pass before a future scripted match starts; failure
-withholds source for the rest of the process. No VM or custom mode is started by
-these calls. The game match manager, offline gating, fault handling and drain on
-shutdown remain separate integration work.
+withholds source for the rest of the process. These storage calls do not start a
+VM. The following production runtime factory selects compiled helpers, locks
+networking offline and binds validated Deathmatch worlds through background
+preflight. Actual custom matches pass on all three hosts. Public launcher
+activation and Windows window-thread shutdown/crash cleanup remain unfinished.
 
 A NULL original-root argument reads the explicit RECOMP_SAVE_DIR through the
 bootstrap environment adapter. Windows uses wide CRT environment strings and

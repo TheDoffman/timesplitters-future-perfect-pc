@@ -1,3 +1,19 @@
+Native mod HUD/layout acceptance source9410d805 (2026-11-14): Windows native
+build/platform checks and51 factory/diagnostic checks pass/2 skips; Mac build/
+platform plus12 factory checks pass/1 skip; Linux build/platform plus13 factory
+checks pass. Actual Windows window capture shows a complete readable script
+message at640x480; script score4/rank1, stage8 results, quit0 and ordinary save
+hashes pass. GameSHA2f6f8eec059bef6b450d02bb45b70dcd96fedece39fd4deb076248826ac38e09.
+CI43652459059 finishes GREEN23 success/2 intentional skips. Earlier980 run was
+superseded/cancelled by this source, not a new product failure. All3 task checkouts
+are synchronized; main is untouched. User-facing script/source docs now describe
+the actual developer integration and its remaining public/quit-recovery gates.
+Normal Windows window-thread exit still leaves owned private staging resources;
+no owned worker remains. Mac has one earlier crash cache preserved. Tailscale
+still reports Failed to save preferences, so working sign-in/public hosting is
+unverified. Public launcher activation, full workshop/asset/security/release
+acceptance remain required; the full-completion goal remains active.
+
 Native HUD registration source980e90b1: all three native game/build/platform checks
 pass. Windows factory/diagnostic51 pass/2 skips; Mac factory12 pass/1 skip; Linux13
 pass. The actual Windows window capture now shows Offline Arcade status and the

@@ -1,11 +1,14 @@
 # Experimental gameplay script worker
 
-The native worker executes real Lua and an original First to Three mode through
-synthetic matches and a local fixture that lifts original score/rank/end routines.
-The shared game now links the asynchronous parent and title adapter, with NULL
-default binding. This is not yet a playable mod release; launcher Lua activation
-remains unavailable. Verified bootstrap/helper packaging, save namespaces,
-multiplayer agreement and live custom-mode acceptance remain mandatory.
+The native worker executes real Lua. The original First to Three SDK example now
+completes actual offline Deathmatch on Windows, Mac and Linux, with accepted kills,
+correct winners/results and ordinary saves preserved. An explicit local developer
+capsule selects the integrated bootstrap, compiled helpers, isolated saves and
+asynchronous title adapter; ordinary startup keeps NULL binding. See
+[source handoff](mod-source-handoff.md) for this developer interface.
+Public launcher Lua activation remains unavailable. Windows window-thread quit
+still leaves private staging folders; shutdown/crash recovery, public package/
+launcher/workshop acceptance and multiplayer agreement remain release requirements.
 VM library restrictions alone are not a security boundary against a native engine
 bug. There is no public upload-to-game scripting claim from the tests below.
 
