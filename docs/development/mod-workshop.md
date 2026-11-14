@@ -14,11 +14,15 @@ shared **Mods** page for search, verified downloads, native installation and an
 Installed view with texture enable/disable, version switching and uninstall.
 Players use its
 existing .NET runtime and do not need Python. Operator tooling uses the Python
-standard library and requires Python 3.12 or newer; it has no paid API.
+standard library for packages and requires Python 3.12 or newer; publication
+signing uses pinned PyCA cryptography. It has no paid API.
 The private creator/moderator API additionally uses a separately pinned Gunicorn
 host runtime. Accounts, ownership, quota-reserved uploads, a serial scan queue
 and authenticated review are now implemented; native creator screens and public
 deployment are still incomplete. See [creator service](mod-creator-service.md).
+Signed static exports, offline root rotation and monotonic publication versions
+are implemented; native trust enforcement is still pending. See
+[catalog trust](mod-catalog-trust.md) before hosting or generating any real keys.
 
 Texture-only packages can now be enabled in a separate active overlay. The
 shared runtime reader loads those DDS replacements before the existing pack,

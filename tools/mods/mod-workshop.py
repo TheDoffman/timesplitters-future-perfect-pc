@@ -32,8 +32,13 @@ def main(argv=None):
     export = commands.add_parser('export', help='Export fresh reviewed releases for static Mac hosting')
     export.add_argument('--repository', required=True)
     export.add_argument('--output', required=True)
+    export.add_argument('--trusted-root', help='Out-of-band bootstrap root file')
+    export.add_argument('--root-update', action='append', default=[])
+    export.add_argument('--signing-key', action='append', default=[])
+    export.add_argument('--unsigned-preview', action='store_true', help='Local development only; public host refuses it')
     check_public = commands.add_parser('check-public', help='Preflight a static public snapshot')
     check_public.add_argument('snapshot')
+    check_public.add_argument('--trusted-root', required=True)
     for name in ('invite','recover-account','suspend-account','assign-owner','scan-next'):
         command = commands.add_parser(name)
         command.add_argument('--repository', required=True)
@@ -75,9 +80,20 @@ def main(argv=None):
         elif args.command == 'fetch-install':
             result = fetch_install(args.server, args.sha256, args.mods)
         elif args.command == 'export':
-            result = export_snapshot(Repository(args.repository), args.output)
+            from mod_package import require
+            require(args.unsigned_preview != bool(args.trusted_root),
+                    'Supply --trusted-root with catalog keys, or explicitly choose --unsigned-preview')
+            signer = None
+            if args.trusted_root:
+                from mod_signing import load_signer
+                signer = load_signer(args.trusted_root, args.signing_key, args.root_update)
+            else:
+                require(not args.signing_key and not args.root_update, 'Unsigned preview cannot use signing inputs')
+            result = export_snapshot(Repository(args.repository), args.output, signer=signer)
         elif args.command == 'check-public':
-            result = validate_snapshot(args.snapshot)
+            from mod_signing import bounded_file
+            from mod_trust import MAX_ROOT
+            result = validate_snapshot(args.snapshot, bounded_file(args.trusted_root, MAX_ROOT))
         elif args.command in ('invite','recover-account','suspend-account','assign-owner','scan-next'):
             accounts = Accounts(Repository(args.repository))
             if args.command == 'invite':

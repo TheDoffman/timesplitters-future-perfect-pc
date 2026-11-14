@@ -16,6 +16,11 @@ http://:8766 {
             header Content-Type application/json
             file_server
         }
+        @trust path_regexp trust ^/v1/trust/(catalog|roots/[1-9][0-9]{0,15})$
+        handle @trust {
+            header Content-Type application/json
+            file_server
+        }
         @package path_regexp package ^/v1/packages/[0-9a-f]{64}$
         handle @package {
             header Content-Type application/zip

@@ -13,11 +13,11 @@ from mod_package import ModError, require
 from mod_publication import validate_snapshot
 
 
-def serve(snapshot, caddy='caddy'):
+def serve(snapshot, trusted_root_wire, caddy='caddy'):
     require(platform.system() == 'Darwin', 'Run this host command on the Mac mini')
     root = Path(snapshot).absolute()
     require(not any(c in str(root) for c in '"{}\r\n'), 'Invalid snapshot path for the host configuration')
-    catalog = validate_snapshot(root)
+    catalog = validate_snapshot(root, trusted_root_wire=trusted_root_wire)
     executable = shutil.which(caddy)
     require(executable is not None, 'Install Caddy before starting the workshop host')
     config = Path(__file__).with_name('Caddyfile')
@@ -41,9 +41,12 @@ def serve(snapshot, caddy='caddy'):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('snapshot')
+    parser.add_argument('--trusted-root', required=True, help='Operator-controlled bootstrap trust anchor')
     args = parser.parse_args()
     try:
-        serve(args.snapshot)
+        from mod_signing import bounded_file
+        from mod_trust import MAX_ROOT
+        serve(args.snapshot, bounded_file(args.trusted_root, MAX_ROOT))
         return 0
     except (ModError, OSError, subprocess.SubprocessError) as exc:
         print('Workshop host: ' + str(exc), file=sys.stderr)

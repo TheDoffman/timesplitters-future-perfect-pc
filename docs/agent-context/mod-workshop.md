@@ -8,7 +8,7 @@ Mod operator tools live in tools/mods/: bounded package validation, ClamAV
 quarantine/review, immutable releases, scan expiry/revocation, loopback preview
 and approved static exports. Private WSGI accounts/owned quota uploads/serial
 scan queue/moderator review are implemented. Public deployment, native creator UI,
-signed metadata, persistent supervision and scripting remain incomplete. ClamAV enforces official-only
+native signed-metadata enforcement, persistent supervision and scripting remain incomplete. ClamAV enforces official-only
 databases at most2 days old; legacy scan reports require a rescan/review.
 The selected public host is the user's Mac mini; no domain purchase is required
 for the planned Funnel trial. SSH works, but no public service has been deployed.
@@ -107,6 +107,18 @@ under Linux CI. live_creator_service.py checks real Gunicorn+ClamAV on Mac;
 live_scan_isolation.py compiles a C probe to verify hard limits/alarm across exec.
 Public scheduling, worker RSS supervision, native credentials/UI, signed trust,
 backups and public internet acceptance remain pending.
+
+Producer trust: mod_trust.py signs exact-byte catalog digests with RSA3072/SHA256,
+offline2-key root thresholds, sequential cross-signed rotation, expiry, monotonic
+versions and permanent bounded revocations. mod_signing.py supplies Unix-private
+key loading/ceremony and catalog-role-only online signing. Export reserves its
+SQLite sequence before publishing. Host now requires an out-of-band root and
+refuses unsigned previews. Native verification/checkpoint persistence and real
+production keys are still absent. Wire/commands/bounds:
+[catalog trust](../development/mod-catalog-trust.md). Real-crypto tests:
+tests/mods/test_catalog_trust.py, registered in native suites; hash-pinned wheels
+in hosting/requirements-signing.txt. Caddy allows only numbered public roots and
+catalog trust metadata in addition to approved package routes.
 
 `mod_publication.py` exports approved/fresh content to a new separate static
 snapshot (4MiB catalog, 1,000 releases, 512MiB package cap). Preflight rejects

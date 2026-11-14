@@ -490,13 +490,15 @@ def test_failed_publication_does_not_leave_a_partial_snapshot(tmp_path):
     assert not list(tmp_path.glob('.mod-publication-*'))
 
 
-def test_mac_host_supervisor_stops_at_publication_expiry(tmp_path, monkeypatch):
+def test_mac_host_supervisor_stops_at_publication_expiry(tmp_path, monkeypatch, trust_keys):
     spec = importlib.util.spec_from_file_location('workshop_mac_host', ROOT / 'tools/mods/hosting/host-mac.py')
     host = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(host)
     repo = Repository(tmp_path / 'repository')
     public = tmp_path / 'public'
-    export_snapshot(repo, public)
+    from mod_trust import PublicationSigner, make_root
+    pinned = make_root(trust_keys[:2], [trust_keys[4]], 1, 'https://workshop.example.test', int(time.time()) - 1)
+    export_snapshot(repo, public, signer=PublicationSigner(pinned, [trust_keys[4]]))
     monkeypatch.setattr(host.platform, 'system', lambda: 'Darwin')
     monkeypatch.setattr(host.shutil, 'which', lambda _: '/test/caddy')
     calls = []
@@ -509,5 +511,5 @@ def test_mac_host_supervisor_stops_at_publication_expiry(tmp_path, monkeypatch):
         raise subprocess.TimeoutExpired(command, kwargs['timeout'])
     monkeypatch.setattr(host.subprocess, 'run', run)
     with pytest.raises(ModError, match='expired'):
-        host.serve(public)
+        host.serve(public, pinned)
     assert [call[1] for call in calls] == ['validate', 'run']

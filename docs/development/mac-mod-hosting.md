@@ -103,12 +103,20 @@ include game files for that test.
 
 ## Export only approved content
 
+First follow the [offline signing ceremony](mod-catalog-trust.md). The
+`trusted_root` and `catalog_key` variables below must point to the independently
+verified bootstrap root and the host's dedicated private catalog key. Install the
+hash-pinned signing dependencies in the selected host environment. No real root
+has been provisioned yet, and the launcher does not yet verify signed metadata;
+public client distribution remains gated on that integration.
+
 ```sh
 python3 tools/mods/mod-workshop.py export \
   --repository "$workshop_storage/private-repository" \
-  --output "$workshop_storage/public-snapshots/first-alpha"
+  --output "$workshop_storage/public-snapshots/first-alpha" \
+  --trusted-root "$trusted_root" --signing-key "$catalog_key"
 python3 tools/mods/mod-workshop.py check-public \
-  "$workshop_storage/public-snapshots/first-alpha"
+  "$workshop_storage/public-snapshots/first-alpha" --trusted-root "$trusted_root"
 ```
 
 Choose a **new** output directory for each export. Existing snapshots are never
@@ -127,7 +135,7 @@ startup does not automatically approve, rescan or publish anything.
 
 ```sh
 sh tools/mods/hosting/run-mac-mod-host.sh \
-  "$workshop_storage/public-snapshots/first-alpha"
+  "$workshop_storage/public-snapshots/first-alpha" "$trusted_root"
 ```
 
 The wrapper validates the exact publication tree and starts Caddy on loopback
@@ -141,6 +149,7 @@ reboot/recovery testing remains production follow-up work.
 The supplied [Caddyfile](../../tools/mods/hosting/Caddyfile) serves GET/HEAD only:
 
 - `/v1/catalog`: JSON catalog for the launcher.
+- `/v1/trust/catalog` and `/v1/trust/roots/<version>`: signed metadata and public roots.
 - `/v1/packages/<sha256>`: ZIP attachment for one published release.
 - Everything else: unavailable. There is no directory browser or upload/admin API.
 

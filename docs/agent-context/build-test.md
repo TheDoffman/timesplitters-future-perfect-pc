@@ -1035,5 +1035,6 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 Players: controls-options.md.
 
 Patch tests: Mac seeds omit2620/2625 until migration; Story stubs use production guards.
+Catalog trust: tests/mods/test_catalog_trust.py; native CI installs hash-pinned crypto wheels.
 
 [PR check names and advisory summary](release-speed.md#pr-feedback-scheduling).

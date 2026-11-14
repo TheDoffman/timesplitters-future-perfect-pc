@@ -43674,3 +43674,21 @@ and mac-mod-creator-unit.txt under ignored logs/. Public Caddy routing, native
 creator/moderator screens and credential vaults, worker RSS supervision/service
 identity/scheduling, signed catalog trust, reports/backups, gameplay scripting,
 other content loaders and broader game/public acceptance remain incomplete.
+
+# Signed workshop producer metadata (2026-11-14; base eb75e03d)
+
+The feature/mod-platform branch now signs exact catalog bytes, binds HTTPS
+origin/root version, and publishes offline-threshold root rotations, expiry
+and permanent bounded revocations. SQLite reserves monotonically increasing
+publication versions before exposure, including concurrent publishers/crashes.
+The Mac host now requires an independent root and rejects unsigned snapshots.
+Unix key ceremony keeps encrypted root keys separate from online catalog signing;
+only public descriptors enter roots. Signing wheels are version/hash pinned.
+
+Windows:282 selected mod/CI-scope/runtime-suite checks pass,2 Unix-only key tests
+skip; real signature tampering, two-threshold rotation, replay/equivocation,
+revocation retention and counter persistence are covered. Native code unchanged.
+Mac/Linux signing tests and actual Caddy configuration acceptance are pending
+at this checkpoint. No production key, persistent service or public endpoint
+was created. Native signature enforcement/checkpoints/pins are still required
+before public client distribution; see mod-catalog-trust.md and the full matrix.

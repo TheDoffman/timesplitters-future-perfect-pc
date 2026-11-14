@@ -200,6 +200,9 @@ jobs:
       - name: Prepare bundled runtime without a network clone
         if: needs.plan.outputs.native == 'true'
         run: python tools/build/prepare-runtime.py
+      - name: Install hash-pinned workshop signature test dependencies
+        if: needs.plan.outputs.native == 'true'
+        run: python -m pip install --require-hashes -r tools/mods/hosting/requirements-signing.txt
       - name: Apply shared runtime patches
         if: needs.plan.outputs.native == 'true'
         run: python tools/build/apply-patches.py external/ts3FPrecomp patches

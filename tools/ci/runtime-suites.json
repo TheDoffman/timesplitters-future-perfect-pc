@@ -11,6 +11,7 @@
     "tests/mods/test_creator_service.py",
     "tests/mods/test_creator_api.py",
     "tests/mods/test_package_budgets.py",
+    "tests/mods/test_catalog_trust.py",
     "tests/textures/test_texture_preference.py",
     "tests/textures/test_texture_runtime.py",
     "tests/textures/texture_pack_tools.py",
