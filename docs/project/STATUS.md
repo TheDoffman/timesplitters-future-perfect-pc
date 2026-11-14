@@ -43802,3 +43802,32 @@ Darwin trusted guardian addresses the previously documented parent-death gap;
 Mac/Linux expanded reruns pending. Windows stale crash-profile/cache recovery
 still needs production implementation; the test explicitly cleans its owned GUID
 profile after waiting for the worker process handle. Game activation stays off.
+
+# Verified native script process boundary (source6457f1fe; 2026-11-14)
+
+Expanded real production-process tests pass: Windows8; native Mac7 plus one
+Windows-only skip; WSL Linux7 plus one skip. Native escape controls/denials,
+resource faults and original First to Three mode round trip pass. Actual abrupt
+parent death now terminates the no-watchdog native canary on all three hosts.
+Mac uses a separate trusted guardian with private liveness/PID pipes, inherited
+stdio allowlist and waitpid ownership; it kills/reaps only its exact owned child,
+avoiding PID-reuse signalling. The game parent meters worker CPU/RSS. Parent
+signal-permission probes are denied under Mac Seatbelt/Linux seccomp. Windows
+final process/CI-scope/runtime-check recheck passes118. No leftover Windows test
+profiles remain. Crash-time automatic profile/cache recovery is still pending;
+the abrupt-death test explicitly removes only its own disposable GUID identity.
+
+Host/tool evidence: Windows x64 MSVC19.44.35224/SDK10.0.26100; Mac mini macOS27.0.1
+arm64/Python3.12.12/AppleClang21.0.0; WSL Ubuntu24.04 x86_64/Linux6.18.58.1/
+Python3.12.3/GCC13.3.0. All use CMake4.4.4. Ignored logs: mod-process-*-lifetime.txt,
+mod-process-final-windows.txt, mod-process-*-full.txt and mod-process-*-asan.txt.
+Earlier ac772502 full suites pass Windows347/2 skips, Mac348/1 skip, Linux347/2 skips;
+56 VM ASan/UBSan checks pass on each of Mac/Linux. The later changes affect OS
+lifetime/pipe setup and add a test-only parent; no Lua feature implementation changed.
+
+This establishes the named native process contracts, not a complete integrated
+mod system. Scripts remain inactive in the launcher. Persistent asynchronous
+per-event game supervision/native reply validation, verified game hooks/commands,
+mod saves/multiplayer agreement, verified signed helper packaging/recovery, native
+creator/moderation flows, public HTTPS hosting/backups and end-to-end public/game
+acceptance remain required. The full goal remains active; no main merge performed.

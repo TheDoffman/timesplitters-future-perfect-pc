@@ -909,22 +909,6 @@ stay intact until resume; a running seek beyond the loop end resumes at start.
 `audio_buffer_regions.c` checks production-decoded PCM, fractional clocks/refusal,
 tiny/multiple wraps, pause/live/rate/seek and unchanged source bytes.
 
-Mod process adapters/worker self-sealing are standalone; see mod-scripting.md.
-No guest hooks or launcher script activation changed.
-
-Darwin mod process creation uses CLOEXEC_DEFAULT; see mod-scripting.md.
-
-Seatbelt deprecation suppression covers its paired error-free API only.
-
-Expanded Windows canaries exposed writable default AppContainer profile grants.
-Owned profile/cache ACLs now use exact protected broker/system/admin-full and
-package-read/execute entries; retained default grants were insufficient. Windows7
-process checks pass including profile-write denial and its disposable positive control.
-
-Darwin lifetime guardian (mod_guardian_mac.c) watches a private broker-liveness
-pipe and owns waitpid until its worker is reaped. Only stdio reaches the worker;
-trusted PID handshake lets the parent meter worker RSS/CPU rather than guardian
-usage. It kills its owned worker on broker death without PID-reuse signalling.
-Windows8 process checks pass including abrupt broker death; actual Mac/Linux
-expanded checks pending. The Windows crash test explicitly cleans only its own
-GUID profile/cache afterward; automatic stale-profile recovery remains pending.
+Native mod process adapters/self-sealing and Mac lifetime guardian pass named
+Windows/Mac/Linux checks; see mod-scripting.md. No guest hooks or launcher script
+activation changed. Persistent game bridge and actual mode gameplay remain pending.

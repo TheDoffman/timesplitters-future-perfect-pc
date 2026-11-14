@@ -244,22 +244,7 @@ round trip exposed different Windows/Unix archive hashes from ZipInfo defaults
 despite identical payloads. Existing packages remain valid; new packs canonicalize
 this header along with the existing fixed timestamp/file mode.
 
-Native script process isolation is under construction; mod-scripting.md records
-its separate VM, production-process and game-integration acceptance boundaries.
-
-Mac process spawn uses explicit stdio inheritance; see mod-scripting.md.
-
-Seatbelt deprecation suppression covers its paired error-free API only.
-
-Expanded Windows canaries exposed writable default AppContainer profile grants.
-Owned profile/cache ACLs now use exact protected broker/system/admin-full and
-package-read/execute entries; retained default grants were insufficient. Windows7
-process checks pass including profile-write denial and its disposable positive control.
-
-Darwin lifetime guardian (mod_guardian_mac.c) watches a private broker-liveness
-pipe and owns waitpid until its worker is reaped. Only stdio reaches the worker;
-trusted PID handshake lets the parent meter worker RSS/CPU rather than guardian
-usage. It kills its owned worker on broker death without PID-reuse signalling.
-Windows8 process checks pass including abrupt broker death; actual Mac/Linux
-expanded checks pending. The Windows crash test explicitly cleans only its own
-GUID profile/cache afterward; automatic stale-profile recovery remains pending.
+Native script process boundaries are implemented and checked on Windows/Mac/Linux;
+see mod-scripting.md for exact scope, host evidence and remaining game integration.
+The diagnostic runner is not a playable asynchronous game bridge. Script activation
+stays unavailable; public release acceptance and helper crash recovery are pending.

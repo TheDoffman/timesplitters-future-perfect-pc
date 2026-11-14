@@ -1,6 +1,6 @@
 /* Bounded binary stdin/stdout protocol. No source paths or file commands exist.
-   This executable is NOT an OS sandbox; launcher activation stays unavailable
-   until the game supervisor and all platform confinement adapters are verified. */
+   Production self-seals before protocol input. Launcher activation stays
+   unavailable until the asynchronous game supervisor and game adapters exist. */
 #include "mod_script.h"
 #include "mod_watchdog.h"
 #include "mod_seal.h"

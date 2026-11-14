@@ -121,7 +121,7 @@ It must create a confined process (Windows AppContainer/restricted handles/job,
 Mac Seatbelt, Linux no-new-privileges/seccomp/descriptor isolation) before executing
 uploaded source. File/network/child-process escape canaries must pass on each
 actual host. Production OS adapters and a batch diagnostic supervisor are implemented below;
-actual Mac/Linux validation and the asynchronous game bridge remain pending.
+actual host tests pass for the named process cases; the asynchronous game bridge remains pending.
 There is no unsandboxed public activation option in the launcher.
 
 ## Binary protocol1
@@ -166,8 +166,8 @@ pass; actual ASan/UBSan runs on Mac and Linux also pass. STATUS records exact
 source and evidence.
 
 Still required: real game hooks/command adapters (use verified source evidence,
-never guessed addresses), production process acceptance on Mac/Linux, asynchronous game supervision,
-Mac parent-death handling, native reply validation, game packaging, script profiles/launcher lifecycle, mod saves, multiplayer
+never guessed addresses), persistent asynchronous game supervision, native reply validation,
+crash-profile recovery, verified helper-image game packaging, script profiles/launcher lifecycle, mod saves, multiplayer
 authority/hash checks, richer creator tools and actual custom-mode gameplay on
 Windows/Mac/Linux. The full mod-system acceptance matrix remains authoritative.
 
@@ -178,7 +178,7 @@ owned-process termination. Windows uses a new capability-free LPAC identity and
 read-only staged executable/profile, no ordinary AppContainer package-group access,
 a one-process128MiB job attached while suspended, kill-on-job-close, dynamic-code
 and Win32k restrictions, private inherited stdio handles and a synthetic environment.
-The broker requires absolute local paths. Only owned temporary cache/profile objects
+The broker requires absolute local paths; Windows rejects reparse ancestors. Only owned temporary cache/profile objects
 are modified. Exact protected ACLs grant broker/system/admin full access and the
 package read/execute; merging a deny into default profile grants was insufficient
 and failed the added profile-write canary. Both the profile-write control and
@@ -199,8 +199,8 @@ memory/timing/thread-wait/exit primitives remain; executable mappings, files,
 network, child creation, exec and tracing are denied. The initial adapter supports
 Linux x86_64 only; other architectures fail closed. Mac applies a deny-default
 Seatbelt policy before untrusted source, with metadata reads but no file contents,
-network or child creation. Mac still needs robust parent-death supervision.
-Actual Mac/Linux process tests are pending at this checkpoint.
+network or child creation. Mac parent-death supervision uses the trusted guardian described below.
+Actual Windows/Mac/Linux process tests pass for the named cases.
 
 `tsfp-mod-runner <trusted-worker-image> <owned-cache-root>` is a developer batch
 supervisor, **not** the final game session bridge. It accepts at most4MiB stdin,
@@ -209,14 +209,14 @@ failure, and withholds output until the child exits. It never interprets or appl
 game commands. These whole-batch limits cannot be used for a long-running match;
 the future asynchronous game bridge must budget each request and validate entire
 replies before applying transactions without blocking the render/simulation thread.
-Mac normal shutdown kills/reaps its process group; abrupt parent-death behavior
-remains an explicit gap. Release packaging and worker-image verification remain
+Mac normal and abrupt parent shutdown signal the independent lifetime guardian
+through its private pipe; that guardian kills/reaps its owned worker. Release packaging and worker-image verification remain
 unwired. `BUILD-worker.json` schema2 binds both production worker and runner hashes
 and records test/sanitizer build modes.
 
 `tests/mods/test_script_process.py` builds production binaries and a separate
 native escape/resource canary. Its unconfined controls prove the same operations
-work before checking that confinement denies them. Windows7 checks pass: file
+work before checking that confinement denies them. Windows8 process checks pass (Mac/Linux7 each, plus one Windows-only skip): file
 read/write (including an ALL_APPLICATION_PACKAGES read grant), own profile writes, loopback connection,
 child spawn, parent process access, inherited file handle/environment secret,
 private registry read, executable ACL rewrite, native infinite loop, output floods,
@@ -244,11 +244,11 @@ ownership until that worker exits/is killed. It therefore cannot accidentally
 signal a recycled PID. The game parent queries worker CPU/RSS, not the guardian.
 Normal shutdown closes liveness and waits for the guardian to kill/reap. The
 trusted guardian binary must be included in future signed game-image verification
-and is hashed by BUILD-worker.json. Mac validation is pending at this checkpoint.
+and is hashed by BUILD-worker.json. Mac production tests pass, including abrupt parent death.
 
 A separate test parent/native canary exercises abrupt broker death without the VM
 watchdog: Windows8 process checks pass, including actual kill-on-job-close exit.
-Linux PDEATHSIG and the new Darwin guardian require actual expanded host checks.
+Linux PDEATHSIG and the Darwin guardian also pass the actual expanded host checks.
 The Windows test waits on the exact worker process handle before deleting only
 its owned GUID profile/cache via the profile API. Crash-time automatic stale-cache
 and profile recovery is not implemented yet; successful abrupt process termination

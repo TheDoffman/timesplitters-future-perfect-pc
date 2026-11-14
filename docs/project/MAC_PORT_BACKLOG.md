@@ -10615,3 +10615,11 @@ At ac772502 Mac348/one skip and Linux347/two skips full mod/CI checks pass;
 56 ASan/UBSan VM checks pass on each. All current native escape/resource cases
 pass. New trusted Mac lifetime guardian and actual abrupt broker-death test are
 implemented but **Awaiting validation**. Windows8 expanded checks pass. See STATUS.
+
+Darwin mod lifetime guardian (source6457f1fe): **Verified for named process contracts**.
+Mac7 process checks pass with one Windows-only skip, including actual abrupt
+broker death terminating/reaping the no-watchdog native worker. Linux7/one skip
+and Windows8 also pass. Full component/sanitizer evidence and host/tool versions
+are in STATUS. Game event adapters/async bridge, helper packaging/recovery and
+real scripted custom-mode gameplay remain unimplemented/unverified; activation
+the launcher still refuses. This does not close the full public mod-system goal.

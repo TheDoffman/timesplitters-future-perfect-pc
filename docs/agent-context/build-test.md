@@ -1039,4 +1039,4 @@ Patch tests: Mac seeds omit2620/2625 until migration; Story stubs use production
 
 [PR check names and advisory summary](release-speed.md#pr-feedback-scheduling).
 
-Native escape/resource/ACL/lifetime tests: tests/mods/test_script_process.py. See mod-scripting.md.
+Native process security tests: tests/mods/test_script_process.py. See mod-scripting.md.

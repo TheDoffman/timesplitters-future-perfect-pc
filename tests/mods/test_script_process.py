@@ -225,3 +225,15 @@ def test_windows_worker_refuses_unconfined_direct_launch(process_tools):
                             capture_output=True, timeout=3)
     assert result.returncode == 126 and result.stdout == b''
     assert b'isolation policy unavailable' in result.stderr
+
+
+@pytest.mark.skipif(sys.platform != 'darwin', reason='Darwin requires its independent lifetime guardian')
+def test_mac_missing_guardian_fails_before_worker_input(process_tools, tmp_path):
+    image = tmp_path / 'worker'
+    shutil.copy2(process_tools['worker'], image)
+    original = image.read_bytes()
+    result = subprocess.run([str(process_tools['runner']), str(image), str(tmp_path)],
+                            input=protocol.load(b'return {api=1}'), capture_output=True, timeout=5)
+    assert result.returncode == 125 and result.stdout == b''
+    assert b'guardian unavailable' in result.stderr
+    assert image.read_bytes() == original and list(tmp_path.iterdir()) == [image]
