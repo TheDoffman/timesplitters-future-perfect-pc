@@ -43573,3 +43573,55 @@ declarations on POSIX hosts. Actual WSL execution verifies the earlier Linux CI
 compile failure is resolved. The ff580de3 CI Linux Vulkan and all three native
 launcher jobs also pass; the overall runtime workflow was still running when
 checked. These checks do not imply a public release or in-game mod acceptance.
+
+# Isolated workshop antivirus and Windows game build (2026-11-14)
+
+Source59686d4e is pushed and synchronized to the separate Mac task worktree.
+ClamAV1.5.4 and official daily28183/main63/bytecode339 databases are installed
+under private workshop Application Support storage. No scanner service or
+public endpoint was started. Real isolated submissions pass clean-to-review/
+approval, harmless EICAR rejection, empty-database/missing-engine failure and
+revocation checks. Disposable canaries pass private read/write/symlink/child
+execution/network denial and permitted content/temp access; CPU150/fd128/core0
+limits are observed in the actual child.86 mod checks pass on Windows and Mac.
+
+The scanner uses deny-default Mac Seatbelt, private temp and sanitized environment;
+CPU/file/fd/time limits plus bounded diagnostics. Definitions must be official
+and at most2 days old. Legacy reports without policyv2 cannot be approved/served
+until rescan/review. The initial1MiB file cap produced ClamAV coverage warnings;
+it was corrected to512MiB per file (matching its scan budget), with a separate
+parent diagnostic limit1MiB/retained64KiB. Clean-exit diagnostics fail closed.
+Real live scans at policyv2 are clean without warnings. Memory/concurrency/global
+storage supervision, service identity, queues, scheduled updates/rescans and
+production account/upload/trust/moderation operations remain incomplete.
+
+Windows game generation/build and all required tsfp.ps1 Build checks now pass
+using the verified US XBE, pinned runtime and -SkipTextures. A changing upstream
+FFmpeg latest asset failed the existing hash check; shared setup now pins a dated
+8.1 release with its verified published digest. Setup passes. MSBuild project
+parallelism alone left MSVC /MP unbounded and exhausted heap/pagefile space.
+Own build attempts were stopped; CL_MPCount=2 plus project parallelism1 compiled
+successfully with stable disk headroom, then the normal Build checks passed.
+Executable SHA256 d85dde23beaa3b923eb635bcd2f513c74df169d5a1a4f00de212009239782f29.
+Game build success remains separate from live mod/scene acceptance. Original
+game data and concurrent checkouts were preserved. Full goal stays active.
+
+Follow-up: tsfp.ps1 now exposes -BuildJobs1..32 (default2), bounding both MSBuild
+projects and MSVC compiler processes. Invoke-Checked selects the first executable
+when PATH has multiple Git applications. Normal unfiltered-PATH Setup passes;
+both redirected-stderr/exit-status regression cases pass.
+
+Windows live texture evidence: original synthetic BC1 packages1.0.0/1.1.0 were
+installed, enabled and version-switched through the compiled native ModLibrary
+API. In the actual game profile scene, version1.1.0 replaces background key
+91c931f8b951fbbb and the RHI trace records loaded/512x512/10mips. Renderer captures
+show a purple background (201124 of307200 pixels in the color check). Rollback
+to retained1.0.0 restores blue (0 purple pixels). Disable/uninstall both versions
+emits no mount; a subsequent run loads no replacements and retains blue (0).
+Unknown sentinel and canonical Test Lab fixture were preserved; these runs exit0.
+The first window screenshot showed the occluded desktop and is excluded; only
+renderer BMPs were visually reviewed. This is native model-to-game menu evidence,
+not launcher public-download/UI, Story gameplay, script or other-host acceptance.
+Ignored evidence: logs/mod-runtime-visual-evidence.json, mod-game-*-validation.txt
+and private/test-saves/mod-live-*-capture/mod-frame*.bmp.86 mod checks now also
+pass under WSL Linux;202 focused workshop/context/CI checks pass on Windows.

@@ -365,7 +365,7 @@ jobs:
       - name: Check Linux native UDP and real Online companion lifecycle
         run: xvfb-run -a .venv-linux/bin/python -m pytest tests/network/test_native_network.py tests/network/test_online_companion.py -q --tb=short
       - name: Check mod workshop packages, quarantine and loopback downloads
-        run: .venv-linux/bin/python -m pytest tests/mods/test_mod_workshop.py tests/mods/test_texture_mod_mount.py -q --tb=short
+        run: .venv-linux/bin/python -m pytest tests/mods/test_mod_workshop.py tests/mods/test_texture_mod_mount.py tests/mods/test_scanner_process.py -q --tb=short
       - name: Run shared Vulkan and production replay contracts with software Vulkan
         run: |
           LVP_ICD=$(find /usr/share/vulkan/icd.d -name 'lvp_icd*.json' -print -quit)

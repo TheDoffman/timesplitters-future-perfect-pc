@@ -7,6 +7,12 @@ mismatch still stops setup. The archive was downloaded and matched upstream's
 published digest; Windows Setup completed. Other host adapters/runtime pin are
 unchanged. Game build and media playback remain separate acceptance checks.
 
+Windows tsfp.ps1 accepts -BuildJobs1..32 (default2), bounding both MSBuild project
+parallelism and MSVC's separate CL_MPCount. Project parallelism alone leaves
+/MP unbounded and caused observed heap/pagefile exhaustion during the mod game
+build. Invoke-Checked chooses the first matching executable when PATH has more
+than one application (normal Windows/Codex PATH contained two Git executables).
+
 [Sticks](controller-deadzones.md). [Online](multiplayer-ui.md).
 [0.6.2 rollback](control-presets.md); [Tex](texture-preference.md).
 [Arms](video-options.md).

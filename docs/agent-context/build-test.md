@@ -1,12 +1,12 @@
 [Feature test index and details](build-test-details.md), [context](investigation.md),
 [mod workshop and scanner isolation](mod-workshop.md).
 Windows FFmpeg [pin details](build-test-details.md); scanner bounds use real children.
+Windows -BuildJobs defaults2 and bounds MSBuild plus MSVC /MP; see pin details.
 The standalone texture-mod reader fixture uses C11 with `_POSIX_C_SOURCE=200809L`
 on POSIX hosts so the real trace clock declarations remain available. Run
 `pytest tests/mods/test_texture_mod_mount.py` under Linux as well as Windows/Mac.
-At ff580de3, WSL Ubuntu24.04 passes77 workshop Python/C checks and the native
-Linux launcher build/test/package command (61 shared UI groups and package
-install, corruption rejection, repair and restart/render). Gameplay is unrun.
+Scanner output/timeout child-process tests run in Windows/Mac native suites and
+the Linux mod CI step; live Mac AV/isolation checks are explicit operator tests.
 # Tests ([Glass](pause-glass.md))
 Audio: [acceptance](../development/audio-overhaul-acceptance.md).
 Media CI: audit/candidates/loops/metrics; headers do not prove identity.

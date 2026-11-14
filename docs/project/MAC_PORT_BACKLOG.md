@@ -10533,3 +10533,15 @@ shutdown pass. Generated app output must use Library/Caches here: Desktop output
 acquired FinderInfo/FileProvider attributes and codesign refused it despite the
 existing cleanup. Existing pinned dotnet8.0.426 reused. This does not verify
 actual game mods, Lua, public uploads/TLS hosting, Linux, or live antivirus.
+
+Mod scanner host validation (source59686d4e): VERIFIED FOR NAMED CHECKS on the
+Mac mini. Real ClamAV1.5.4 official databases, deny-default Seatbelt, bounded
+CPU/file/fd/time/diagnostics and fail-closed definition freshness are implemented.
+Actual clean/EICAR/error/review/revocation and private filesystem/symlink/child
+exec/network canaries pass;86 mod tests pass. No daemon or public endpoint is
+enabled. Memory/concurrency/global quota supervision and dedicated service
+identity remain pending. Separate WSL Linux launcher and86-test validation does
+not establish Mac/Linux modded gameplay. See STATUS and full acceptance matrix.
+Windows native model-to-profile-scene texture install/update/rollback/removal is
+now visually verified with original synthetic DDS and renderer captures; this
+does not establish Mac parity or Story gameplay.

@@ -114,6 +114,7 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['src/new_component.c', 'tests/new_test.py'], {'native', 'gpu'}),
     (['tools/new_runtime_tool.py'], {'native', 'gpu'}),
     (['tools/textures/texture-pack.py', 'tests/textures/texture_pack_tools.py'], {'native'}),
+    (['tools/mods/mod_scan_sandbox.py', 'tools/mods/scan_child.py', 'tests/mods/test_scanner_process.py'], {'native'}),
     (['tools/textures/texture-pack.py', 'src/textures/texture_pack.c'], {'native', 'gpu'}),
     (['tests/textures/texture_toggle.c'], {'native', 'gpu'}),
     (['tools/textures/texture-pack.py', 'patches/texture-mode.patch'], {'transitions', 'native', 'gpu'}),

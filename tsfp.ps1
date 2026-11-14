@@ -10,6 +10,8 @@ param(
     [string[]]$Peers,
     [ValidateSet('Debug', 'Release', 'RelWithDebInfo')]
     [string]$Configuration = 'Release',
+    [ValidateRange(1, 32)]
+    [int]$BuildJobs = 2,
     [int]$Seconds = 30
 )
 
@@ -28,7 +30,7 @@ $expectedHash = '3CFD001A84FC3E08175D6C4B2E42EBF49577A089B5D0BD87AC724F61A41816B
 
 function Invoke-Checked {
     param([string]$Program, [string[]]$Arguments)
-    $nativeCommand = Get-Command -Name $Program -CommandType Application -ErrorAction Stop
+    $nativeCommand = Get-Command -Name $Program -CommandType Application -ErrorAction Stop | Select-Object -First 1
     $previousErrorPreference = $ErrorActionPreference
     try {
         # Windows PowerShell can turn redirected native stderr (including
@@ -78,7 +80,7 @@ try {
         $db = Join-Path $toolRoot 'third_party\XbSymbolDatabase'
         Invoke-Checked $cmake @('-S', $db, '-B', "$db\build", '-G', 'Visual Studio 17 2022', '-A', 'x64',
             '-DXBSDB_BUILD_UNITTEST=OFF')
-        Invoke-Checked $cmake @('--build', "$db\build", '--config', 'Release', '--target', 'XbSymbolDatabaseCLI', '--parallel', '4')
+        Invoke-Checked $cmake @('--build', "$db\build", '--config', 'Release', '--target', 'XbSymbolDatabaseCLI', '--parallel', "$BuildJobs", '--', "/p:CL_MPCount=$BuildJobs")
         & (Join-Path $projectRoot 'tools\build\fetch-video.ps1')
     }
     elseif ($Action -eq 'Status') {
@@ -186,7 +188,7 @@ try {
                         "-DTSFP_GAME_ICON_RESOURCE=$gameIconResource",
                         "-DTSFP_GAME_MANIFEST=$projectRoot/config/build/windows-game.manifest")
                     Invoke-Checked $cmake @('--build', $buildRoot, '--config', $Configuration,
-                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_texture_toggle_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', 'tsfp_pc_discord_test', 'tsfp_hang_policy_test', 'tsfp_pc_clear_test', 'd3d8_replay', '--parallel', '4')
+                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_texture_toggle_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', 'tsfp_pc_discord_test', 'tsfp_hang_policy_test', 'tsfp_pc_clear_test', 'd3d8_replay', '--parallel', "$BuildJobs", '--', "/p:CL_MPCount=$BuildJobs")
                     Invoke-Checked $envPython @((Join-Path $projectRoot 'tests/graphics/ghost_targets.py'),
                         (Join-Path $buildRoot "xboxrecomp/src/replay/$Configuration/d3d8_replay.exe"))
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_network_test.exe") @()

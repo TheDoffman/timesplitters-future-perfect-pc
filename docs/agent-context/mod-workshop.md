@@ -25,7 +25,8 @@ src/textures/texture_pack_io.h tries TSFP_MOD_TEXTURE_DIR before the official
 keyed DDS path, on the existing bounded worker. Reader rejection falls back to
 the base pack; GPU/alpha rejection retains the original view. Both RHI and
 legacy GL share it. Enhanced/Classic gating, originals and saves stay intact.
-Actual modded gameplay requires a new game build and scene verification.
+Windows native install/version rollback/removal-to-profile-scene texture loading
+and visual restoration pass. Story gameplay and Mac/Linux game scenes remain unverified.
 
 Checks: pytest tests/mods; Windows build-launcher.ps1 -Test; standalone
 launcher-tests.exe --workshop (12 groups). Windows and native Mac checks pass.
@@ -66,6 +67,9 @@ tests/mods/live_scan_isolation.py checks disposable read/write/symlink/exec/
 network canaries and inherited limits on the actual Mac host.
 Its shell canary invokes /bin/bash directly: macOS27 /bin/sh execs that variant,
 which the intentionally single-executable profile correctly rejects.
+test_scanner_process.py uses real harmless children for flood/timeout/exit-code
+bounds; Windows/Mac native suites and the Linux mod step register it. Scanner
+tools are CPU-only scope inputs; this does not skip actual renderer tests.
 
 Installations are separate immutable version directories. Texture-only mods can
 be enabled in the native library; Lua, maps and audio remain unavailable for
