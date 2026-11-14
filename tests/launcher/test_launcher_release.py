@@ -329,10 +329,11 @@ class LauncherReleaseTests(unittest.TestCase):
             builder.sign_bundle(app)
         calls = [c.args[0] for c in run.call_args_list]
         self.assertEqual(calls[0], ['/usr/bin/xattr', '-cr', str(app)])
-        self.assertEqual(calls[1][-1], str(libs/'native.dylib'))
-        self.assertEqual(calls[2][-1], str(app))
-        self.assertIn('--sign', calls[2])
-        self.assertEqual(calls[3], ['/usr/bin/codesign', '--verify', '--deep', '--strict', '--verbose=2', str(app)])
+        signs=[call for call in calls if call[0]=='/usr/bin/codesign' and '--sign' in call]
+        self.assertEqual([call[-1] for call in signs], [str(libs/'native.dylib'), str(app)])
+        nested=calls.index(signs[0]);bundle=calls.index(signs[1])
+        self.assertTrue(any(call==['/usr/bin/xattr','-cr',str(app)] for call in calls[nested+1:bundle]))
+        self.assertEqual(calls[-1], ['/usr/bin/codesign', '--verify', '--deep', '--strict', '--verbose=2', str(app)])
         self.assertTrue(all(c.kwargs['check'] for c in run.call_args_list))
 
     def test_mac_executable_mode_is_required(self):

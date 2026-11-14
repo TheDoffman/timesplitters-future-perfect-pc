@@ -8,6 +8,8 @@ Mac launcher sign_bundle performs its final generated-output xattr clear after
 nested Mach-O signing, then seals/verifies the app. Real-host inspection found
 root FinderInfo reappeared during that interval; immediate clear/reseal and deep
 strict verification pass. Bundled native signatures remain embedded in images.
+The publication-policy test enforces that relative signing/cleanup order and
+checked strict verification while allowing the extra metadata cleanup command.
 
 `tests/mods/test_mod_saves.py` uses native leases and disposable save canaries:
 persistence without copying originals, absent roots, independent profiles,

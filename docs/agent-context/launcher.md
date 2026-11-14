@@ -915,3 +915,5 @@ Mac launcher signing clears generated-bundle metadata again after nested signing
 immediately before sealing the app. Finder reattached root FinderInfo during the
 first clear/sign interval on the actual Mac; clear/reseal/deep strict verification
 passed. No source, personal data or packaged worker images are altered by that step.
+Publication tests check nested signing before the bundle, a final metadata clear
+between them and mandatory deep strict verification, rather than fixed call indices.
