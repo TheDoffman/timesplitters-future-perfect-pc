@@ -143,3 +143,8 @@ Windows supported build and actual1280x720 Story Scifi Handgun capture pass.
 The standalone tests/input/menu_mouse.c fixture supplies the Crosshair Size
 callback beside Weapon FOV; all five mouse hover/drag mutation cases compile
 without depending on the complete display-menu translation unit.
+
+Tutorial icon spacing: normal keyboard/mouse icon captions use80% of their
+card text scale, with measured vertical centring inside the original row pitch.
+Description text, wrapping and row positions stay native. Both scale axes and
+x/y arguments restore after each icon draw; controller/multiplayer untouched.

@@ -104,7 +104,8 @@ void pc_display_tutorial_text(void (*original)(void))
 {
     if(pc_story_lobby_title(original)) return;
     if(menu_mouse_profile_text(original)) return;
-    uint32_t frame=g_esp,saved=WORD_AT(frame+4),color=WORD_AT(frame+16);
+    uint32_t frame=g_esp,saved=WORD_AT(frame+4),saved_y=WORD_AT(frame+8),color=WORD_AT(frame+16);
+    uint32_t icon_x=WORD_AT(0x7e7270),icon_y=WORD_AT(0x7e7280);int icon_scaled=0;
     /* The loading-picture label uses this shared font entry, independently of
        tutorial cards. Fit its glyphs with the normal UI scale, but anchor its
        authored inset to the output's left edge rather than the central 4:3 box.
@@ -129,12 +130,25 @@ void pc_display_tutorial_text(void (*original)(void))
         uint32_t caption=WORD_AT(frame+12);
         g_esp=frame-128;
         guest_call(sub_0003FCF0,4,frame-32,frame-28,caption,0u);
+        float old_height=tutorial_float(frame-28);
+        /* Keycap artwork extends beyond the text's measured line. Reduce only
+           action-icon captions, leaving a gap inside the native row pitch. */
+        tutorial_set_float(0x7e7270,tutorial_float(0x7e7270)*.8f);
+        tutorial_set_float(0x7e7280,tutorial_float(0x7e7280)*.8f);
+        guest_call(sub_0003F8D0,0);icon_scaled=1;
+        guest_call(sub_0003FCF0,4,frame-32,frame-28,caption,0u);
         g_esp=frame;
-        float width=tutorial_float(frame-32);
+        float width=tutorial_float(frame-32),height=tutorial_float(frame-28);
         if(isfinite(width) && width>=0.f && width<=tutorial_icon_column)
             tutorial_set_float(frame+4,tutorial_float(frame+4)+(tutorial_icon_column-width)*.5f);
+        if(isfinite(old_height) && isfinite(height) && old_height>=height && height>0.f)
+            tutorial_set_float(frame+8,tutorial_float(frame+8)+(old_height-height)*.5f);
     }
     if(tutorial_extra>0.f && tutorial_normal_row && WORD_AT(frame)==0x00147D17u)
         tutorial_set_float(frame+4,tutorial_float(frame+4)+tutorial_extra);
-    original();WORD_AT(frame+4)=saved;WORD_AT(frame+16)=color;
+    original();WORD_AT(frame+4)=saved;WORD_AT(frame+8)=saved_y;WORD_AT(frame+16)=color;
+    if(icon_scaled) {
+        WORD_AT(0x7e7270)=icon_x;WORD_AT(0x7e7280)=icon_y;
+        guest_call(sub_0003F8D0,0);
+    }
 }
