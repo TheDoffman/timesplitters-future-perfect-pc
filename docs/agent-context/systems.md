@@ -1,5 +1,3 @@
-POSIX startup retains its original UTF8 boot labels; no additional behavior change.
-
 Native mod_bootstrap now verifies a developer source handoff, leases isolated saves and arms the storage fence before kernel init; commit publishes source only after checking the actual root. pc_storage_lock_locations permanently prevents picker writes. Match activation remains pending; see mod-source-handoff.md.
 
 # Shared systems
@@ -10,8 +8,7 @@ Native mod_bootstrap now verifies a developer source handoff, leases isolated sa
 [Mod scripting and game bridge](mod-scripting.md): restricted API, title hooks and activation gates.
 The initial non-team adapter reports team0; original actor team identity stays private.
 The match bridge checks compiled game pins before privately staging helpers; see mod-scripting.md.
-Native [source handoff](../development/mod-source-handoff.md) uses a pinned,
-bounded read into memory; the wire has no helper/save paths or policy flags.
+POSIX startup retains its original UTF8 boot labels.
 
 <!-- packet:start -->
 Tracked policy: `src/input/` owns controls, bindings and prompts;
