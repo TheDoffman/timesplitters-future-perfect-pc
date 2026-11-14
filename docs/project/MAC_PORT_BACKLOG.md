@@ -1,3 +1,7 @@
+Keyboard binding right-edge inset (base64eb0399): shared native builder
+endpoints; no host adapter. Windows build passes; Mac/Linux actual visual
+acceptance pending. See docs/agent-context/pause-settings.md.
+
 Settings panel/binding alignment (base6239ce95): shared canvas-percent anchors,
 native builder leading and measured glyph centering require no host adapter.
 Windows build and16 focused checks pass. Native Mac/Linux visual acceptance

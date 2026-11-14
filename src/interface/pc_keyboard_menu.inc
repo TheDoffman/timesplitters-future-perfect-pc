@@ -325,16 +325,18 @@ static void kb_build(void)
         if(unified){guest_call(sub_00071B10,4,1u,bits(1.2f),1u,1u);guest_call(sub_00079710,1,0u);}
         kb_row(3,"Reset mouse options",0);if(!unified)kb_row(6,"Back",0);
     } else if(kb_page==KB_LIST) {
+        /* End one canvas-percent inside the panel; native rows otherwise
+         * clamp to its outer edge and their highlight protrudes past it. */
         kb_row(10," ",1);
         for(int i=kb_offset;i<kb_offset+6 && i<12;i++) {
             int action=pc_keyboard_groups[kb_group][i];
             if(action<0){kb_row(i-kb_offset," ",1);continue;}
-            guest_call(sub_00071B60,3,1u,bits(30.f),bits(85.f));
+            guest_call(sub_00071B60,3,1u,bits(30.f),bits(unified?77.f:84.f));
             uint32_t item=guest_call(sub_00079D60_gen,6,kb_text((unsigned)(i-kb_offset)+1,"\vs90 \vs100"),
                 kb_widget_id(i-kb_offset),0x400u,0u,KB_SELECT,KB_DRAW);
             if(guest_writable(item,0x2c))WORD_AT(item+0x28)&=~0x2000u;
         }
-        guest_call(sub_00071B60,3,1u,bits(30.f),bits(85.f));
+        guest_call(sub_00071B60,3,1u,bits(30.f),bits(unified?77.f:84.f));
         if(unified && (kb_offset || pc_keyboard_groups[kb_group][6]>=0))guest_call(sub_00079710,1,0u);
         if(kb_offset)kb_row(7,"Previous page",0);
         if(!kb_offset && pc_keyboard_groups[kb_group][6]>=0)kb_row(8,"Next page",0);

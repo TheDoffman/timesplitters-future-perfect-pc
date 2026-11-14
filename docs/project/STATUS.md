@@ -1,3 +1,8 @@
+Keyboard binding right-edge inset (base64eb0399): native list/paging row bounds
+now stop1% inside the panel, keeping selection highlights and Alternate
+bindings clear of the border. Windows build passes. Both frontend and pause
+use the shared builder; see docs/agent-context/pause-settings.md.
+
 Settings panel alignment (branch follow-up, base6239ce95): Audio and Controls
 now share Video's top inset in frontend and pause menus. Native body leading
 leaves footer space; cached slider geometry and font sizes are preserved.

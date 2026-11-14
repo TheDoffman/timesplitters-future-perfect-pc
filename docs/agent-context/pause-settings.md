@@ -70,3 +70,15 @@ geometry; `ui_layout.c` covers fitted caption midpoints with varied bearings.
 Screenshots/receipts remain local under private/pause-glass/menu-spacing-final.
 Native Mac/Linux visual acceptance remains pending. The desktop preview still
 uses the existing0.6.0 build checkout with these changes selectively applied.
+
+Right-edge follow-up (base64eb0399): KB_LIST row and paging endpoints use
+native71B60 with77 canvas-percent for the78%-wide unified panel (84 for
+legacy85%-wide panels). This leaves a1% inset before native row/highlight
+construction; text, keycaps, header columns and pointer slot geometry all use
+the same resulting bounds. Never trim only the drawn highlight. The previous85
+endpoint clamped to the outer panel edge, allowing its native highlight to
+protrude. Windows supported build passes; live acceptance receipts remain
+ignored under private/pause-glass/keyboard-edge.
+Live1280x720 acceptance: all16 binding pages (four groups, two pages, both
+frontend/pause) pass endpoint bounds; captures confirm inset highlights and
+Alternate columns. Existing centered captions remain intact.
