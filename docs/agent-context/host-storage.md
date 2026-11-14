@@ -1,3 +1,5 @@
+The native mod bootstrap now registers the fence before kernel init, after verifying a source capsule and holding an isolated namespace lease. It checks the actual committed root before exposing source. A permanent pc_storage_lock_locations latch also closes the host picker before folder/preference writes. Ordinary startup remains unfenced; actual scripted matches are still pending.
+
 # Original host storage and retired legacy path module
 
 The optional startup fence is a one-way process-lifetime policy in

@@ -1,3 +1,15 @@
+Mod bootstrap storage milestone (feature/mod-platform, base28f42934): shared
+native startup now consumes an explicit developer capsule, resolves original save
+preferences read-only, leases package-isolated saves, permanently locks host save
+location changes and binds the kernel fence before initialization. Source is only
+published after actual save-root/lease verification. Launcher script emission,
+match manager, offline/lifetime/fault gates and custom-mode gameplay remain pending.
+Windows focused bootstrap+storage menu:16 pass. Cross-host builds/tests pending.
+Source28f42934 CI run43633538621 succeeded. Native launcher at that source: Windows
+67 shared UI groups; Mac68, Linux69. Mac Desktop FinderInfo still disrupts signing;
+Mac build passes using supported --output under the owned Library/Caches folder.
+No public workshop service, production trust activation or release is claimed.
+
 Mod workshop (local/uncommitted, base1375e144): shared Python3.12 operator tools
 plus shared WPF/Avalonia Mods page and HTTP client. Mac/Linux NativeWindow has
 Mods navigation and offline preview; no separate policy implementation. Windows

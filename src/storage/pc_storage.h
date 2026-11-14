@@ -15,6 +15,8 @@ typedef struct PcStorageInfo {
 void pc_storage_set_path(const char *path);
 /* Register the kernel's UDATA-only routing adapter during host startup. */
 void pc_storage_set_profile_router(int (*route)(const char *));
+/* Startup-only, one-way lock before isolated mod storage initializes. */
+void pc_storage_lock_locations(void);
 #define PC_STORAGE_DRIVES 32
 typedef struct PcStorageDrive {
     char name[96], path[4096], target[4096];

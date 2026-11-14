@@ -1,3 +1,5 @@
+Patch2711 invokes the shared mod bootstrap before Windows kernel init and checks its storage commit before bridge/guest entry. POSIX main uses the same API. Absent capsule variables preserve stock startup; explicit handoff failure aborts. See mod-source-handoff.md.
+
 # Runtime
 
 [Storage fence](host-storage.md): before-init root binding closes lazy-default/profile escape.

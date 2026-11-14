@@ -1,0 +1,39 @@
+--- a/titles/futureperfect/src/main.c
++++ b/titles/futureperfect/src/main.c
+@@ -44,6 +44,9 @@
+ /* xboxrecomp runtime headers */
+ #include <xbox/xboxrecomp.h>
+ #include "xbox_watchpoint.h"
++#ifdef TSFP_MOD_GAME
++#include "mod_bootstrap.h"
++#endif
+ 
+ /*
+  * If xboxrecomp.h is not an umbrella header in your setup, include
+@@ -615,6 +618,12 @@
+ 
+     /* Step 3: Initialize Xbox kernel */
+     printf("Initializing Xbox kernel replacement...\n");
++#ifdef TSFP_MOD_GAME
++    if(!pc_mod_bootstrap_prepare(getenv("RECOMP_SAVE_DIR"))) {
++        MessageBoxA(NULL,"Verified script startup or isolated saves failed. See the game log.","Mod startup",MB_OK|MB_ICONERROR);
++        free(xbe_data);return 1;
++    }
++#endif
+     xbox_kernel_init();
+ 
+     /* Step 4: Set game directory for file I/O path translation */
+@@ -640,6 +649,13 @@
+         }
+ #endif
+     }
++
++#ifdef TSFP_MOD_GAME
++    if(!pc_mod_bootstrap_commit()) {
++        MessageBoxA(NULL,"The game could not commit isolated mod saves. See the game log.","Mod startup",MB_OK|MB_ICONERROR);
++        return 1;
++    }
++#endif
+ 
+     /* Step 5: Initialize kernel bridge (thunk table in Xbox memory) */
+     printf("Initializing kernel bridge...\n");

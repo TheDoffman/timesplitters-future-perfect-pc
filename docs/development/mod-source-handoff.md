@@ -2,9 +2,9 @@
 
 The shared launcher encoder is `tools/launcher/ModScriptLaunch.cs`; the native
 reader is `src/mods/mod_capsule.cpp/.hpp`. This is the bounded source handoff for
-the upcoming game bootstrap. No production startup or launcher activation calls
-it yet. Public script activation still requires storage fencing, match lifetime,
-offline policy and full native gameplay acceptance.
+the game bootstrap. Native startup now consumes an explicit developer handoff;
+the shared launcher does not emit it yet. Public script activation still requires
+match lifetime, offline policy and full native gameplay acceptance.
 
 The trusted launcher authorizes the installed package set using its existing
 manifest/archive hashes and fresh workshop trust/revocation checks. It verifies
@@ -48,3 +48,23 @@ wire bytes, capsule hash and save identity. Adversarial native checks cover
 digest policy, malformed/count/length/ordering variants, UTF8 edge cases, binary
 Lua, size limits, aliases and replacement after capture. These are source handoff
 checks; actual package authorization and game activation remain separate gates.
+
+Native startup calls `pc_mod_bootstrap_prepare` before kernel initialization,
+then `pc_mod_bootstrap_commit` after host save routing and before the guest runs.
+Both `TSFP_MOD_SCRIPT_CAPSULE` and `TSFP_MOD_SCRIPT_CAPSULE_SHA256` absent select
+ordinary startup. Any partial/empty/invalid pair refuses startup and closes the
+storage fence; no personal default recovery is attempted. A handoff also requires
+an explicit original save root (`RECOMP_SAVE_DIR` on Windows; the existing explicit
+native root on POSIX). This is a developer integration surface, not a replacement
+for launcher package authorization or an instruction to activate untrusted files.
+
+Prepare verifies/copies the source, resolves the existing save-location preference
+read-only, acquires/rechecks the package-derived namespace lease, permanently
+locks host location changes and arms the kernel fence. Commit independently
+checks the actual kernel root and lease before publishing source bytes. Exceptions
+and repeated startup selection withhold source. The process retains the context
+and lease until OS teardown so static destructors cannot unlock live guest storage.
+`pc_mod_bootstrap_recheck` must pass before a future scripted match starts; failure
+withholds source for the rest of the process. No VM or custom mode is started by
+these calls. The game match manager, offline gating, fault handling and drain on
+shutdown remain separate integration work.

@@ -1,3 +1,5 @@
+Native mod_bootstrap now consumes an explicit developer capsule before kernel init and publishes source only after isolated storage commits. The launcher still emits no scripts and no custom-mode manager starts yet. tests/mods/test_mod_bootstrap.py covers real capsule/lease plus shared storage state; see mod-source-handoff.md.
+
 # Mod workshop foundation
 
 Authoritative product scope, usage, trust boundaries and follow-up milestones:
@@ -50,10 +52,10 @@ Mac worker builds pin the Apple Silicon OS floor; see the image contracts above.
 Relocated production helpers run the original First to Three example in native
 protocol tests; this is not a bound in-game custom match.
 Native mod_saves.cpp leases persistent per-profile namespaces and rejects aliases
-to personal saves. Storage/bootstrap wiring and exFAT acceptance remain pending;
+to personal saves. Bootstrap now fences storage; actual custom-mode and exFAT acceptance remain pending;
 see [save-lease contracts](mod-scripting.md).
 The shared storage fence prevents lazy default/profile escape once armed; trusted
-mod bootstrap has not yet registered it. See [host storage](host-storage.md).
+mod bootstrap now registers it before kernel init. See [host storage](host-storage.md).
 Production-helper tests find CMake beside a virtualenv interpreter or on PATH,
 matching process tests; system Python installs place pip tools under Scripts.
 ModScriptLaunch.cs/mod_capsule.cpp define a bounded source handoff and canonical

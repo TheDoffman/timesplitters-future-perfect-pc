@@ -7,6 +7,7 @@
 #include "../network/pc_discord.h"
 #include "../network/pc_online.h"
 #include "../gameplay/pc_native_rate.h"
+#include "../mods/mod_bootstrap.h"
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -102,9 +103,9 @@ int main(int argc, char **argv)
     }
     fclose(f);
 #ifdef __linux__
-    printf("[NATIVE-BOOT] TimeSplitters: Future Perfect — Linux x64\n");
+    printf("[NATIVE-BOOT] TimeSplitters: Future Perfect â€” Linux x64\n");
 #else
-    printf("[NATIVE-BOOT] TimeSplitters: Future Perfect — macOS ARM64\n");
+    printf("[NATIVE-BOOT] TimeSplitters: Future Perfect â€” macOS ARM64\n");
 #endif
     printf("[NATIVE-BOOT] XBE loaded: %ld bytes; saves: %s\n", size, saves);
     if (!xbox_MemoryLayoutInit(data, (size_t)size)) {
@@ -114,6 +115,7 @@ int main(int argc, char **argv)
     g_xbox_mem_offset = xbox_GetMemoryOffset();
     tsfp_native_crash_memory((uint64_t)g_xbox_mem_offset);
     printf("[NATIVE-BOOT] Xbox memory offset: %p\n", (void *)g_xbox_mem_offset);
+    if(!pc_mod_bootstrap_prepare(saves)){free(data);return 2;}
     xbox_kernel_init();
     xbox_path_init(game, saves);
     {
@@ -131,6 +133,7 @@ int main(int argc, char **argv)
             pc_storage_set_path(save_root);
         }
     }
+    if(!pc_mod_bootstrap_commit())return 2;
     xbox_kernel_bridge_init();
     xbox_watch_init();
     if (xbox_EnvSwitch("RECOMP_AC97_READY", 1)) {

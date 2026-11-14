@@ -1,3 +1,15 @@
+Mod bootstrap storage milestone (feature/mod-platform, base28f42934): shared
+native startup now consumes an explicit developer capsule, resolves original save
+preferences read-only, leases package-isolated saves, permanently locks host save
+location changes and binds the kernel fence before initialization. Source is only
+published after actual save-root/lease verification. Launcher script emission,
+match manager, offline/lifetime/fault gates and custom-mode gameplay remain pending.
+Windows focused bootstrap+storage menu:16 pass. Cross-host builds/tests pending.
+Source28f42934 CI run43633538621 succeeded. Native launcher at that source: Windows
+67 shared UI groups; Mac68, Linux69. Mac Desktop FinderInfo still disrupts signing;
+Mac build passes using supported --output under the owned Library/Caches folder.
+No public workshop service, production trust activation or release is claimed.
+
 Weapon FOV now uses a40-100 degree reference angle in one-degree steps,55
 original, like Vertical FOV. Exact legacy percentages retained until edited;
 V5 persists degrees and crosshair. Shared launcher preserves both formats.

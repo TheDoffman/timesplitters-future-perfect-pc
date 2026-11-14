@@ -1,8 +1,10 @@
+Native mod_bootstrap.cpp/.h now joins source validation, save lease, permanent host picker lock and kernel fence before startup; commit checks the actual root before exposing immutable source. It holds the lease until process teardown. No production match manager consumes the source yet. See mod-source-handoff.md for explicit developer handoff and remaining activation gates.
+
 # Mod worker, process boundary and native sessions
 
 [Source handoff](../development/mod-source-handoff.md): shared C# encoder/native
-reader, pinned byte snapshot and package-derived save identity. No startup caller
-or script activation yet. The launcher remains package/publisher trust authority.
+reader, pinned byte snapshot and package-derived save identity. Native startup consumes an explicit handoff;
+script activation remains pending. The launcher remains package/publisher trust authority.
 
 Authoritative source: src/mods/mod_script.c/.h (Lua API), mod_worker.c (wire),
 mod_watchdog.c/.h, mod_seal.c/.h, mod_process.hpp + Windows/POSIX adapters,
@@ -17,13 +19,13 @@ directory; normal saves are neither copied nor modified. Versioned owner markers
 must match exactly; unknown/incomplete directories survive refusal. The lease
 blocks a second process, survives normal close with progress intact and releases
 on abrupt process exit. Recheck rejects linked/hard-linked/special files, changed
-markers, excessive depth/count and unsafe writer permissions. No guest storage
-selects this root yet; bootstrap must hold the lease through storage shutdown and
-abort scripted play on failure, never fall back to original saves.
+markers, excessive depth/count and unsafe writer permissions. The startup fence now
+selects this root; bootstrap holds the lease until process exit and aborts startup
+on failure, never falling back to original saves.
 guest_storage.c now provides a one-way storage fence, covering lazy defaults and
 pre-init profile overrides. The kernel adapter applies it before filesystem
-creation. Native bootstrap must arm it with the held lease before kernel init;
-that caller/source capsule integration is still unavailable. See host-storage.md.
+creation. Native bootstrap now arms it with the held lease before kernel init;
+actual custom-mode activation is still unavailable. See host-storage.md.
 Windows creates protected user/System/admin ACLs and accepts owner-only parent
 OWNER RIGHTS grants. POSIX requires current ownership and no other writers.
 Recognized exFAT volumes use structural markers/link checks/locking because native

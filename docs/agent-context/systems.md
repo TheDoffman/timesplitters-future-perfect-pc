@@ -1,3 +1,5 @@
+Native mod_bootstrap now verifies a developer source handoff, leases isolated saves and arms the storage fence before kernel init; commit publishes source only after checking the actual root. pc_storage_lock_locations permanently prevents picker writes. Match activation remains pending; see mod-source-handoff.md.
+
 # Shared systems
 
 [Hints](video-options.md); [Aim](hud-sizing.md).
@@ -6,10 +8,6 @@
 [Mod scripting and game bridge](mod-scripting.md): restricted API, title hooks and activation gates.
 The initial non-team adapter reports team0; original actor team identity stays private.
 The match bridge checks compiled game pins before privately staging helpers; see mod-scripting.md.
-The native mod-save lease validates owned per-profile trees and exclusive locks;
-guest storage does not select it yet. See the same guide for filesystem limits.
-The optional one-way storage fence also covers lazy defaults/profile overrides;
-startup registration is pending. See [host storage](host-storage.md).
 Native [source handoff](../development/mod-source-handoff.md) uses a pinned,
 bounded read into memory; the wire has no helper/save paths or policy flags.
 
@@ -699,7 +697,7 @@ variant filter `sub_001BAA70`, usability `sub_001BA410` and selection
 `sub_001BA130`, then refreshes the weapon HUD with `sub_00142820`. It deduplicates
 weapon groups, checks local input slot zero rather than network player ID, and
 never grants inventory. Empty slots do nothing. Settings expose exactly ten bindable
-slots, defaulting to 1ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“9/0. The separate 70-entry internal table bound covers
+slots, defaulting to 1ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ9/0. The separate 70-entry internal table bound covers
 weapon IDs and variants; it does not add settings rows.
 
 ## Themed live keyboard and mouse editor

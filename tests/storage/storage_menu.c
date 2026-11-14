@@ -110,6 +110,14 @@ int main(void)
     pc_storage_set_path("Z:\\nonexistent-storage-test\\missing");
     assert(pc_storage_rewrite("0 Free 0 Total",out,sizeof out));
     assert(!strcmp(out,"Space unavailable"));
+    /* Startup lock cannot be cleared through the old test environment switch.
+       Refuse BEFORE creating any target or changing the preference/router. */
+    snprintf(other.target,sizeof other.target,"%s/locked-mod/Saves",path);
+    pc_storage_lock_locations();
+    _putenv_s("TSFP_SAVE_LOCATION_LOCK","0");
+    assert(!pc_storage_choose(&other,error,sizeof error));
+    assert(strstr(error,"locked")&&!storage_directory(other.target,0));
+    assert(pc_storage_resolve_root(path,selected,sizeof selected)==0);
 #endif
     puts("Storage menu formatting and host probe passed");
     return 0;
