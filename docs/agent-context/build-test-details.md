@@ -1,5 +1,12 @@
 # Feature test index
 
+`tests/mods/test_script_images.py` exercises real OS SHA256 providers, immutable
+private helper staging, digest/pin/size/cancellation/path rejection and cleanup
+that preserves unknown files. Darwin requires a verified lifetime guardian.
+Match fixtures pass expected hashes explicitly and exercise missing/bad pin
+refusal before any transaction. Linux parent builds link OpenSSL::Crypto; Windows
+uses bcrypt and Apple uses CommonCrypto. No Lua is added to the game parent.
+
 The historical Mac-only upgrade fixture omits2710 from its old subset because
 that subset intentionally excludes the Story frame/network wrapper. It then
 asserts all four mod hooks after the complete upgrade. Production order is unchanged.

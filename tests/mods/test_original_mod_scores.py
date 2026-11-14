@@ -8,6 +8,7 @@ import sys
 
 import pytest
 from test_script_process import process_tools
+from test_mod_match import image_pins
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -98,9 +99,13 @@ set_property(TARGET original PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CON
 target_include_directories(original PRIVATE ''' + quoted(runtime / 'templates/runtime') + ' ' + quoted(ROOT / 'src/mods') + ''')
 target_link_libraries(original PRIVATE ''' + ' '.join(map(quoted, libraries)) + ''')
 if(WIN32)
- target_link_libraries(original PRIVATE userenv advapi32 psapi ole32)
+ target_link_libraries(original PRIVATE userenv advapi32 psapi ole32 bcrypt)
 else()
  target_link_libraries(original PRIVATE pthread m)
+ if(NOT APPLE)
+  find_package(OpenSSL REQUIRED)
+  target_link_libraries(original PRIVATE OpenSSL::Crypto)
+ endif()
 endif()
 '''
     if os.environ.get('TSFP_MOD_HOST_SANITIZE') == '1':
@@ -112,7 +117,7 @@ endif()
     exe = tmp_path / 'build' / ('Release/original.exe' if os.name == 'nt' else 'original')
     cache = tmp_path / 'cache'
     cache.mkdir()
-    run = subprocess.run([str(exe), str(worker), str(cache), 'game'],
+    run = subprocess.run([str(exe), str(worker), str(cache), 'game', *image_pins(worker)],
                          input=(ROOT / 'examples/mods/first-to-three/scripts/main.lua').read_bytes(), capture_output=True, timeout=15)
     assert run.returncode == 0, (run.returncode, run.stdout, run.stderr)
     assert b'PASS' in run.stdout and run.stderr == b'' and not list(cache.iterdir())

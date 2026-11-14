@@ -1,4 +1,5 @@
 #include "mod_session.hpp"
+#include "mod_images.hpp"
 #include "mod_process.hpp"
 #include <array>
 #include <atomic>
@@ -112,10 +113,18 @@ struct Session::State {
 };
 
 std::unique_ptr<Session> Session::open(const std::string &image,const std::string &cache,std::string source,uint32_t seed,std::string &error) {
+    return open_inner(image,cache,std::move(source),seed,error,{});
+}
+std::unique_ptr<Session> Session::open_verified(const std::string &image,const std::string &cache,const ImagePins &pins,std::string source,uint32_t seed,std::string &error) {
+    if(!pins.valid()){error="Invalid trusted helper image pins";return {};}
+    try{return open_inner(image,cache,std::move(source),seed,error,std::make_shared<const ImagePins>(pins));}
+    catch(...){error="Cannot allocate helper image pins";return {};}
+}
+std::unique_ptr<Session> Session::open_inner(const std::string &image,const std::string &cache,std::string source,uint32_t seed,std::string &error,std::shared_ptr<const ImagePins> pins) {
     if(source.empty() || source.size()>TSFP_SCRIPT_SOURCE_MAX || source[0]=='\x1b' || source.find('\0')!=std::string::npos){error="Invalid script source";return {};}
     try {
         auto state=std::make_shared<State>();auto session=std::unique_ptr<Session>(new Session(state));
-        std::thread(work,state,image,cache,std::move(source),seed).detach();return session;
+        std::thread(work,state,image,cache,std::move(source),seed,std::move(pins)).detach();return session;
     }catch(const std::exception &){error="Cannot start script session";return {};}
 }
 Session::~Session(){close();}
@@ -145,9 +154,14 @@ SessionStatus Session::poll(tsfp_script_result &commands,uint64_t &sequence,std:
     error=state_->error;return state_->phase;
 }
 
-void Session::work(std::shared_ptr<State> state,std::string image,std::string cache,std::string source,uint32_t seed) noexcept {
-    std::unique_ptr<Process> child;std::string failure;
+void Session::work(std::shared_ptr<State> state,std::string image,std::string cache,std::string source,uint32_t seed,std::shared_ptr<const ImagePins> pins) noexcept {
+    std::unique_ptr<Process> child;std::unique_ptr<ImageStage> images;std::string failure;
     try {
+        if(pins) {
+            images=ImageStage::create(image,cache,*pins,&state->cancel,failure);
+            if(!images)throw std::runtime_error("Cannot verify confined script helpers");
+            image=images->worker();
+        }
         child=Process::start(image,cache,failure);
         if(!child)throw std::runtime_error("Cannot start confined script worker");
         auto rate_start=Clock::now(),idle_start=Clock::now();ProcessUsage usage{};
@@ -248,6 +262,6 @@ void Session::work(std::shared_ptr<State> state,std::string image,std::string ca
             state->phase=SessionStatus::Faulted;
         }catch(...) {state->invalid.store(true);}
     }catch(...) {state->invalid.store(true);}
-    child.reset();state->stopped.store(true);
+    child.reset();images.reset();state->stopped.store(true);
 }
 }}

@@ -44075,3 +44075,23 @@ play. Verified helper packaging/bootstrap/save namespace/launcher lifecycle and
 full public workshop acceptance remain required. Real Tailscale application is
 still absent on the Mac at its standard path; only a wrapper is present. No
 public endpoint, production pins or signing-key ceremony has been provisioned.
+
+# Native helper image verification (task base ef5e35b6, 2026-11-14)
+
+Native ImageStage copies trusted worker/guardian streams into exclusive private
+cache directories, checks OS SHA256 against caller-supplied pins before execution,
+bounds each image to32MiB and protects completed copies read-only. Paths reject
+linked ancestors and cache staging is local; POSIX cache roots must be owner-
+writable only. Cleanup removes only owned files/empty directories and preserves
+unknown contents. Cancellation is checked between chunks. Windows uses CNG, Mac
+CommonCrypto and Linux OpenSSL EVP; no hashing library is added to the worker.
+
+Session::open_verified stages on its existing background thread, owns the copies
+until child cleanup finishes and publishes stopped only afterward. The game match
+C ABI now requires expected helper digests and uses only that verified entry.
+It refuses absent pins immediately and changed images before any transaction.
+Standalone diagnostic Session::open remains separate from the game match route.
+Production compiled pins/helper packaging/bootstrap are not wired, so no new
+launcher activation exists. Windows100 native image/match/original-title/Session/
+Process checks pass with5 platform skips. Native Mac/Linux and sanitizer checks
+for this change remain pending. Existing game build evidence is for prior source.

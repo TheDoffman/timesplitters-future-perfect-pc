@@ -34,17 +34,12 @@ launcher-tests.exe --workshop (19 groups). Current Windows/Mac/Linux launcher
 checks pass; actual Mac Gunicorn-to-ClamAV/review and real signing/key-ceremony tests pass.
 Public connectivity, full asset formats and scripting remain acceptance work.
 
-Standalone native scripting now executes real Lua and an original custom score
-mode, with memory/instruction/host-call/transaction limits and a wall watchdog.
-OS confinement and independent supervision have native host checks. Shared title
-hooks and a queued match bridge now have controlled-world Windows fixtures;
-launcher activation and actual custom-mode gameplay remain pending. See [worker](mod-scripting.md).
-The local-only original score/rank/end fixture now passes on Windows alongside
-the18 bridge checks; updated Unix sanitizer checks remain pending. Non-team
-snapshots report API team0. This does not enable gameplay scripts in the launcher.
-The shared game parent now builds on Windows and native Mac. Mac platform tests,
-an isolated player-menu boot and a rendered Story intro pass their named checks;
-custom-mode play remains unverified. Linux native build is still in progress.
+Native Lua has VM/OS/session limits and original-title fixtures on all three hosts.
+The game parent builds and stock Story scenes run; NULL mod binding remains the
+default. Native match creation now requires trusted helper pins and verifies
+private copies before launch. Pins must come from the game build, never uploaded
+manifests. Production helper packaging, bootstrap/save policy and actual custom-
+mode play remain required. See [worker and game bridge](mod-scripting.md).
 <!-- packet:end -->
 
 Local source: `tools/mods/mod_package.py`, `mod_repository.py`, `mod_server.py`,

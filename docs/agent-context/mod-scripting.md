@@ -7,6 +7,17 @@ Build the worker with tools/build/build-mod-worker.py. VM C11; parent C++17.
 The shared game build links the match/title bridge with NULL default binding;
 verified bootstrap, save separation and launcher script activation remain unavailable.
 
+`mod_images.cpp/.hpp` stages immutable worker/guardian copies with expected SHA256
+pins supplied by the trusted caller. Windows uses CNG, Darwin CommonCrypto and
+Linux OpenSSL EVP. Local absolute paths reject linked ancestors; cache staging is
+exclusive, bounded32MiB/image, cancellable between chunks and read-only afterward.
+The digest covers the copied stream, not a path later reopened for copying.
+Only owned files/empty directories are removed; unknown contents survive cleanup.
+Session::open_verified runs staging on its existing background thread and keeps
+the images until child cleanup ends. Match now requires image pins as well as
+policy assertions and always uses that verified entry. No production compiled
+pins/helper package/bootstrap is wired yet; launcher scripting remains unavailable.
+
 [Full contracts and evidence](../development/mod-gameplay-scripting.md).
 API1 provides on_start/on_tick/on_player_death/on_stop, copied32-player snapshots,
 score/end/message transactions and deterministic RNG. Memory16MiB; load/callback

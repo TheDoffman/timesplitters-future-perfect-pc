@@ -50,7 +50,7 @@ static void initialize(void) {
         WORD_AT(body+0x7c)=actor;float health=100.f;memcpy(memory+body+0x1cc,&health,4);}
     g_esp=0x70000;g_ebx=11;g_esi=22;g_edi=33;g_ebp=44;g_ecx=55;g_edx=66;
 }
-static int run(const char *worker,const char *cache,const char *scenario) {
+static int run(const char *worker,const char *cache,const char *scenario,const char *worker_hash,const char *guardian_hash) {
     memory=calloc(1,0x800000);CHECK(memory);g_xbox_mem_offset=(uintptr_t)memory;initialize();
     TsfpModWorld world;CHECK(pc_mod_game_capture(&world));uint64_t epoch=world.epoch;
     CHECK(world.player_count==2 && world.players[0].health==100);
@@ -64,7 +64,7 @@ static int run(const char *worker,const char *cache,const char *scenario) {
         CHECK(pc_mod_game_capture(&world) && world.epoch>epoch);free(memory);puts("PASS guards");return 0;
     }
     static char source[1048577];size_t size=fread(source,1,sizeof(source),stdin);CHECK(size && size<=1048576);
-    TsfpModMatchConfig config={worker,cache,source,size,123,15};TsfpModMatch *match=tsfp_mod_match_open(&config,&world);CHECK(match);
+    TsfpModMatchConfig config={worker,cache,source,size,123,15,worker_hash,strcmp(guardian_hash,"-")?guardian_hash:""};TsfpModMatch *match=tsfp_mod_match_open(&config,&world);CHECK(match);
     int outcome=0;
     if(!pc_mod_game_bind(match)){outcome=3;goto cleanup;}
     if(!strcmp(scenario,"stale")) {
@@ -99,10 +99,10 @@ cleanup:
 }
 #ifdef _WIN32
 int wmain(int argc,wchar_t **argv) {
-    if(argc!=4 || _setmode(_fileno(stdin),_O_BINARY)<0)return 2;
-    char args[3][4096];for(int i=0;i<3;++i)if(!WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,argv[i+1],-1,args[i],sizeof(args[i]),NULL,NULL))return 2;
-    return run(args[0],args[1],args[2]);
+    if(argc!=6 || _setmode(_fileno(stdin),_O_BINARY)<0)return 2;
+    char args[5][4096];for(int i=0;i<5;++i)if(!WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,argv[i+1],-1,args[i],sizeof(args[i]),NULL,NULL))return 2;
+    return run(args[0],args[1],args[2],args[3],args[4]);
 }
 #else
-int main(int argc,char **argv){return argc==4?run(argv[1],argv[2],argv[3]):2;}
+int main(int argc,char **argv){return argc==6?run(argv[1],argv[2],argv[3],argv[4],argv[5]):2;}
 #endif

@@ -10737,3 +10737,10 @@ performance acceptance. Shared game inputs/caches are unchanged after staged
 generation. Sourcec5ed602d CI1399 aggregate passes. Workers remain unbound by
 default; helper/bootstrap/save/launcher/scripted-match/public release acceptance
 is still required. Exact hashes, receipts and limits are in STATUS.
+
+Native image verification (base ef5e35b6): **Awaiting validation** on Mac/Linux.
+Shared ImageStage plus CNG/CommonCrypto/EVP adapters enforce private hash-checked
+helper copies before game match startup. Session keeps staging through child
+cleanup; missing/bad pins fail before commands. Windows100 checks pass/5 skips.
+Mac/Linux ordinary and host-sanitizer runs plus updated game linking pending.
+Compiled production pins, helper package and bootstrap/activation remain required.
