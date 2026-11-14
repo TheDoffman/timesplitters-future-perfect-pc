@@ -1,3 +1,9 @@
+Production factory sourcedf0c4512: Windows native game build/platform checks pass.
+Mac factory/bootstrap/title49 checks pass/1 platform skip, with2 network compilation
+failures from a missing POSIX WSAENETDOWN alias. Add the shared Xbox ABI value10050
+and use it in errno translation; no runtime network policy change. Linux follow-up
+also requires this alias. Native reruns and actual custom scenes remain pending.
+
 Production script factory (feature/mod-platform, basedce72492): startup now
 connects committed source/saves to compile-pinned helpers and background lease/cache
 probes. Shared title hooks bind only supported offline play; native Online/LAN/data

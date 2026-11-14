@@ -940,3 +940,4 @@ recovery remains pending. See mod-scripting.md/STATUS for exact host counts.
 
 Script startup now locks native networking offline, binds the title model and
 composes HUD status/messages; lifecycle and checks: mod-scripting.md#production-game-factory.
+POSIX maps WSAENETDOWN to the shared Xbox ABI value10050 for offline refusal.
