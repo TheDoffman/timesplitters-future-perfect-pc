@@ -85,7 +85,9 @@ def test_native_escape_canaries_have_positive_controls(process_tools, tmp_path):
     cache.mkdir()
     sentinel = cache / 'preserve.txt'
     sentinel.write_text('existing broker cache data')
-    environment = dict(os.environ, TSFP_SUPERVISOR_SECRET='test-only-sensitive-value')
+    owned_profile = tmp_path / 'broker-profile'
+    owned_profile.mkdir()
+    environment = dict(os.environ, TSFP_SUPERVISOR_SECRET='test-only-sensitive-value', APPDATA=str(owned_profile))
     with private_canaries(tmp_path) as (path, port, hidden, registry, inherit):
         baseline = subprocess.run([str(process_tools['probe'])],
                                   input=probe_input('baseline', path, os.getpid(), port, hidden, registry),
@@ -96,7 +98,7 @@ def test_native_escape_canaries_have_positive_controls(process_tools, tmp_path):
         for key in ('read', 'write', 'network', 'spawn', 'descriptor', 'secret'):
             assert control[key] == 1, (key, control)
         if os.name == 'nt':
-            assert control['parent'] == control['registry'] == control['acl_write'] == 1
+            assert control['parent'] == control['registry'] == control['acl_write'] == control['profile_write'] == 1
         path.with_suffix('.txt.blocked').unlink()
         # Give the runner a real inherited file handle and secret. It must pass
         # only its private stdin/stdout/stderr and synthetic environment onward.
@@ -111,10 +113,11 @@ def test_native_escape_canaries_have_positive_controls(process_tools, tmp_path):
         assert not path.with_suffix('.txt.blocked').exists()
         assert path.read_text() == 'owned canary, never a personal file'
     assert list(cache.iterdir()) == [sentinel]
+    assert not list(owned_profile.iterdir())
     assert sentinel.read_text() == 'existing broker cache data'
 
 
-@pytest.mark.parametrize('mode,reason', [('hang', 'budget'), ('flood', 'output budget'),
+@pytest.mark.parametrize('mode,reason', [('hang', 'independent'), ('flood', 'output budget'),
                                        ('diagnostic', 'diagnostic budget')])
 def test_parent_stops_native_faults_without_worker_watchdog(process_tools, tmp_path, mode, reason):
     started = time.monotonic()

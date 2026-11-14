@@ -179,15 +179,19 @@ read-only staged executable/profile, no ordinary AppContainer package-group acce
 a one-process128MiB job attached while suspended, kill-on-job-close, dynamic-code
 and Win32k restrictions, private inherited stdio handles and a synthetic environment.
 The broker requires absolute local paths. Only owned temporary cache/profile objects
-are modified. The production worker verifies its token/job/mitigation before input;
+are modified. Exact protected ACLs grant broker/system/admin full access and the
+package read/execute; merging a deny into default profile grants was insufficient
+and failed the added profile-write canary. Both the profile-write control and
+confined denial now pass. The production worker verifies its token/job/mitigation before input;
 it refuses direct unconfined launch. LPAC is established by the documented creation
 attribute: TokenIsLessPrivilegedAppContainer is not a supported user-mode query on
 the tested Windows build. The positive package-group file canary checks the practical
 difference. A fixed installed worker image must be verified by the future game
 bridge; uploaded manifests must never choose an executable path.
 
-POSIX forks with empty sensitive environment, closes inherited descriptors and uses
-private nonblocking pipes/process groups. Linux sets parent-death SIGKILL before
+POSIX uses an empty sensitive environment and private nonblocking pipes/process
+groups. Linux forks and closes all inherited descriptors. Darwin uses posix_spawn
+with CLOEXEC_DEFAULT and only explicit stdio dup actions; it has no closefrom API. Linux sets parent-death SIGKILL before
 exec. The trusted worker precreates its VM/watchdog, then sets no-new-privileges,
 non-dumpability,128MiB address-space/core/descriptor limits and a seccomp filter
 synchronized over all threads. Only stdin reads/stdout-stderr writes and bounded
@@ -213,7 +217,7 @@ and records test/sanitizer build modes.
 `tests/mods/test_script_process.py` builds production binaries and a separate
 native escape/resource canary. Its unconfined controls prove the same operations
 work before checking that confinement denies them. Windows7 checks pass: file
-read/write (including an ALL_APPLICATION_PACKAGES read grant), loopback connection,
+read/write (including an ALL_APPLICATION_PACKAGES read grant), own profile writes, loopback connection,
 child spawn, parent process access, inherited file handle/environment secret,
 private registry read, executable ACL rewrite, native infinite loop, output floods,
 allocation bound, and real First to Three protocol round trip. Cache sentinels

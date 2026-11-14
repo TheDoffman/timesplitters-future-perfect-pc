@@ -43783,3 +43783,13 @@ production has no runtime isolation-bypass switch. These are Windows component
 checks, not live game integration or cross-host/public acceptance. Mac/Linux checks,
 asynchronous persistent game supervision, native reply validation, Mac parent-death
 handling, verified guest adapters and full public-system acceptance remain pending.
+
+Expanded Windows profile-write canary found default AppContainer permission grants
+still allowed writes despite a merged package-SID deny. Replaced owned-object ACLs
+with exact protected broker/system/admin-full plus package-read/execute entries.
+Windows7 expanded process checks pass, including a disposable positive profile-write
+control and denied worker profile/private-registry writes. Zero temporary TSFP.Mod
+profiles remain after checks. Linux at a668698f passed62 process/VM tests (one
+Windows-only skip). Mac at1b551f33 passed61 with one skip; the remaining assertion
+expected CPU-budget wording although the independent wall deadline correctly killed
+the native hang. The test now accepts either independent limit; rerun pending.

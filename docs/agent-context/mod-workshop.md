@@ -250,3 +250,8 @@ its separate VM, production-process and game-integration acceptance boundaries.
 Mac process spawn uses explicit stdio inheritance; see mod-scripting.md.
 
 Seatbelt deprecation suppression covers its paired error-free API only.
+
+Expanded Windows canaries exposed writable default AppContainer profile grants.
+Owned profile/cache ACLs now use exact protected broker/system/admin-full and
+package-read/execute entries; retained default grants were insufficient. Windows7
+process checks pass including profile-write denial and its disposable positive control.

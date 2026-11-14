@@ -91,19 +91,31 @@ struct Pipe {
     }
     void disconnect(){if(parent && active){CancelIoEx(parent,&pending);DWORD ignored;GetOverlappedResult(parent,&pending,&ignored,TRUE);active=false;}close(parent);}
 };
-// Only newly-created profile/cache objects get these ACLs. Deny writes and ACL
-// changes for the package SID, retain broker/user rights, and never grant world access.
+// Only newly-created profile/cache objects get these exact protected ACLs.
+// Retain broker/system/admin rights and grant the package SID read/execute only.
 bool read_only_package(const std::wstring &path,PSID sid) {
-    PSECURITY_DESCRIPTOR descriptor=nullptr;PACL old=nullptr,next=nullptr;
-    if(GetNamedSecurityInfoW(path.c_str(),SE_FILE_OBJECT,DACL_SECURITY_INFORMATION,nullptr,nullptr,&old,nullptr,&descriptor)!=ERROR_SUCCESS)return false;
-    EXPLICIT_ACCESSW entries[2]{};
-    entries[0].grfAccessPermissions=FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_WRITE_EA|FILE_WRITE_ATTRIBUTES|DELETE|WRITE_DAC|WRITE_OWNER;
-    entries[0].grfAccessMode=DENY_ACCESS;entries[0].grfInheritance=SUB_CONTAINERS_AND_OBJECTS_INHERIT;
-    entries[1].grfAccessPermissions=FILE_GENERIC_READ|FILE_GENERIC_EXECUTE;
-    entries[1].grfAccessMode=GRANT_ACCESS;entries[1].grfInheritance=SUB_CONTAINERS_AND_OBJECTS_INHERIT;
-    for(auto &entry:entries){entry.Trustee.TrusteeForm=TRUSTEE_IS_SID;entry.Trustee.TrusteeType=TRUSTEE_IS_UNKNOWN;entry.Trustee.ptstrName=(LPWSTR)sid;}
-    bool okay=SetEntriesInAclW(2,entries,old,&next)==ERROR_SUCCESS && SetNamedSecurityInfoW((LPWSTR)path.c_str(),SE_FILE_OBJECT,DACL_SECURITY_INFORMATION,nullptr,nullptr,next,nullptr)==ERROR_SUCCESS;
-    if(next)LocalFree(next);if(descriptor)LocalFree(descriptor);return okay;
+    HANDLE token=nullptr;DWORD needed=0;
+    if(!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&token))return false;
+    GetTokenInformation(token,TokenUser,nullptr,0,&needed);
+    if(!needed || needed>65536){close(token);return false;}
+    std::vector<unsigned char> user(needed);
+    bool queried=GetTokenInformation(token,TokenUser,user.data(),needed,&needed)!=FALSE;close(token);
+    if(!queried)return false;
+    unsigned char system[SECURITY_MAX_SID_SIZE],administrators[SECURITY_MAX_SID_SIZE];
+    DWORD system_size=sizeof(system),admin_size=sizeof(administrators);
+    if(!CreateWellKnownSid(WinLocalSystemSid,nullptr,system,&system_size) || !CreateWellKnownSid(WinBuiltinAdministratorsSid,nullptr,administrators,&admin_size))return false;
+    PSID principals[]={((TOKEN_USER *)user.data())->User.Sid,system,administrators,sid};
+    EXPLICIT_ACCESSW entries[4]{};PACL next=nullptr;
+    for(size_t i=0;i<4;++i) {
+        entries[i].grfAccessPermissions=i==3?FILE_GENERIC_READ|FILE_GENERIC_EXECUTE:FILE_ALL_ACCESS;
+        entries[i].grfAccessMode=GRANT_ACCESS;entries[i].grfInheritance=SUB_CONTAINERS_AND_OBJECTS_INHERIT;
+        entries[i].Trustee.TrusteeForm=TRUSTEE_IS_SID;entries[i].Trustee.TrusteeType=TRUSTEE_IS_UNKNOWN;entries[i].Trustee.ptstrName=(LPWSTR)principals[i];
+    }
+    // Build an exact protected ACL: retaining profile-created callback/capability
+    // grants can preserve full writes even alongside a package-SID deny ACE.
+    bool okay=SetEntriesInAclW(4,entries,nullptr,&next)==ERROR_SUCCESS &&
+        SetNamedSecurityInfoW((LPWSTR)path.c_str(),SE_FILE_OBJECT,DACL_SECURITY_INFORMATION|PROTECTED_DACL_SECURITY_INFORMATION,nullptr,nullptr,next,nullptr)==ERROR_SUCCESS;
+    if(next)LocalFree(next);return okay;
 }
 class WindowsProcess final:public Process {
 public:

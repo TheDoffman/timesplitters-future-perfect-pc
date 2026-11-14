@@ -10604,3 +10604,9 @@ are implemented with Windows AppContainer/job, Mac Seatbelt and Linux seccomp
 adapters. Windows7 native process checks/56 VM checks pass. Mac/Linux production
 escape/resource tests still required; Mac parent-death handling remains pending.
 No game script activation is enabled. See STATUS/mod-gameplay-scripting.md.
+
+Linux production process/VM checks at a668698f:62 pass/one Windows-only skip.
+Darwin spawn descriptor isolation compiles after using CLOEXEC_DEFAULT and scoped
+Seatbelt API deprecation handling. Mac61 pass/one skip; a hang-test wording mismatch
+is corrected, final rerun pending. Windows exact protected ACLs now also prevent
+writes to the generated private profile;7 expanded process checks pass.

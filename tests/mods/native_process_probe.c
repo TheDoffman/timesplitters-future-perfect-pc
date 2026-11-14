@@ -9,6 +9,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
 #include <windows.h>
+#include <userenv.h>
 #include <io.h>
 #include <fcntl.h>
 #else
@@ -45,7 +46,7 @@ static int inherited_file_readable(unsigned long long value) {
 static void line(char *text,size_t size){if(!fgets(text,(int)size,stdin))text[0]=0;text[strcspn(text,"\r\n")]=0;}
 int main(void) {
     char mode[32],path[2048],numbers[128],registry[512],write_path[2100];
-    int read_ok=0,write_ok=0,network_ok=0,spawn_ok=0,parent_ok=0,descriptor_ok=0,registry_ok=0,acl_write=0;
+    int read_ok=0,write_ok=0,network_ok=0,spawn_ok=0,parent_ok=0,descriptor_ok=0,registry_ok=0,acl_write=0,profile_write=0,private_registry_write=0;
     unsigned long parent=0,port=0;unsigned long long hidden=0;
     setvbuf(stdin,NULL,_IONBF,0);setvbuf(stdout,NULL,_IONBF,0);setvbuf(stderr,NULL,_IONBF,0);
     line(mode,sizeof(mode));line(path,sizeof(path));line(numbers,sizeof(numbers));line(registry,sizeof(registry));
@@ -68,6 +69,17 @@ int main(void) {
     HANDLE process=OpenProcess(PROCESS_VM_READ|PROCESS_VM_WRITE|PROCESS_CREATE_THREAD,FALSE,(DWORD)parent);if(process){parent_ok=1;CloseHandle(process);}
     descriptor_ok=inherited_file_readable(hidden);
     HKEY key;if(RegOpenKeyExA(HKEY_CURRENT_USER,registry,0,KEY_READ,&key)==ERROR_SUCCESS){registry_ok=1;RegCloseKey(key);}
+    {
+        const char *profile=getenv("APPDATA");char own_path[32768];
+        if(profile && snprintf(own_path,sizeof(own_path),"%s\\tsfp-canary.blocked",profile)>0) {
+            FILE *own=fopen(own_path,"wb");if(own){profile_write=1;fclose(own);DeleteFileA(own_path);}
+        }
+        HKEY storage;if(strcmp(mode,"baseline") && SUCCEEDED(GetAppContainerRegistryLocation(KEY_READ|KEY_WRITE,&storage))) {
+            HKEY canary;
+            if(RegCreateKeyExA(storage,"TSFPCanary",0,NULL,0,KEY_SET_VALUE,NULL,&canary,NULL)==ERROR_SUCCESS){private_registry_write=1;RegCloseKey(canary);RegDeleteKeyA(storage,"TSFPCanary");}
+            RegCloseKey(storage);
+        }
+    }
     wchar_t self[32768];DWORD needed=0;if(GetModuleFileNameW(NULL,self,32768)) {
         GetFileSecurityW(self,DACL_SECURITY_INFORMATION,NULL,0,&needed);
         void *descriptor=needed && needed<65536?malloc(needed):NULL;
@@ -87,7 +99,7 @@ int main(void) {
     parent_ok=ptrace(PTRACE_TRACEME,0,NULL,NULL)==0;
 #endif
 #endif
-    printf("{\"sealed\":%s,\"read\":%d,\"write\":%d,\"network\":%d,\"spawn\":%d,\"parent\":%d,\"descriptor\":%d,\"registry\":%d,\"acl_write\":%d,\"secret\":%d}\n",
-        strcmp(mode,"baseline")?"true":"false",read_ok,write_ok,network_ok,spawn_ok,parent_ok,descriptor_ok,registry_ok,acl_write,getenv("TSFP_SUPERVISOR_SECRET")!=NULL);
+    printf("{\"sealed\":%s,\"read\":%d,\"write\":%d,\"network\":%d,\"spawn\":%d,\"parent\":%d,\"descriptor\":%d,\"registry\":%d,\"acl_write\":%d,\"profile_write\":%d,\"private_registry_write\":%d,\"secret\":%d}\n",
+        strcmp(mode,"baseline")?"true":"false",read_ok,write_ok,network_ok,spawn_ok,parent_ok,descriptor_ok,registry_ok,acl_write,profile_write,private_registry_write,getenv("TSFP_SUPERVISOR_SECRET")!=NULL);
     return 0;
 }
