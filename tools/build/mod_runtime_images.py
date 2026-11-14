@@ -74,6 +74,8 @@ def validate_build(output):
     values={line.split('=',1)[0].split(':',1)[0]:line.split('=',1)[1] for line in cache.splitlines() if '=' in line and not line.startswith(('#','//'))}
     for key in ('TSFP_MOD_TESTING','TSFP_MOD_SANITIZE','TSFP_MOD_HOST_SANITIZE'):
         if values.get(key)!='OFF':raise ValueError('Helper build configuration is not production')
+    if target=='macos-arm64' and values.get('CMAKE_OSX_DEPLOYMENT_TARGET')!='11.0':
+        raise ValueError('Mac helper deployment target differs from the supported baseline')
     binary=output/'cmake'/('Release' if target=='windows-x64' else '')/('tsfp-mod-worker.exe' if target=='windows-x64' else 'tsfp-mod-worker')
     files={binary.name:binary, 'Lua.txt':output/'Licenses/Lua.txt'}
     native_image(binary,target)

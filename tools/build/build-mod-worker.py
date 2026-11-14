@@ -69,11 +69,16 @@ def build(output, cmake='cmake', sanitize=False, testing=False, host_sanitize=Fa
     output.mkdir(parents=True, exist_ok=True)
     sources = source_hashes()
     lua = prepare_lua(output)
-    subprocess.run([cmake, '-S', str(ROOT / 'src/mods'), '-B', str(output / 'cmake'),
+    configure = [cmake, '-S', str(ROOT / 'src/mods'), '-B', str(output / 'cmake'),
                     '-DTSFP_LUA_SOURCE=' + str(lua), '-DCMAKE_BUILD_TYPE=Release',
                     '-DTSFP_MOD_SANITIZE=' + ('ON' if sanitize else 'OFF'),
                     '-DTSFP_MOD_TESTING=' + ('ON' if testing else 'OFF'),
-                    '-DTSFP_MOD_HOST_SANITIZE=' + ('ON' if host_sanitize else 'OFF')], check=True)
+                    '-DTSFP_MOD_HOST_SANITIZE=' + ('ON' if host_sanitize else 'OFF')]
+    # These small OS-only helpers need no newer deployment target than the
+    # first Apple Silicon release. Never inherit the build host's macOS version.
+    if sys.platform == 'darwin':
+        configure.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0')
+    subprocess.run(configure, check=True)
     subprocess.run([cmake, '--build', str(output / 'cmake'), '--config', 'Release', '--parallel', '2'], check=True)
     name = 'tsfp-mod-worker.exe' if os.name == 'nt' else 'tsfp-mod-worker'
     binary = output / 'cmake' / ('Release' if os.name == 'nt' else '') / name

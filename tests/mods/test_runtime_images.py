@@ -86,6 +86,17 @@ def test_wrong_native_format_is_refused(tmp_path):
     with pytest.raises(ValueError,match='native target'):producer.native_image(path,producer.host_platform())
 
 
+@pytest.mark.skipif(sys.platform!='darwin',reason='Mach-O deployment target is a native Mac check')
+def test_mac_helpers_preserve_apple_silicon_deployment_floor(production,tmp_path):
+    for name in ('tsfp-mod-worker','tsfp-mod-guardian'):
+        data=subprocess.check_output(['otool','-l',str(production/'cmake'/name)],text=True)
+        assert '\n    minos 11.0\n' in data
+    output=clone_build(production,tmp_path/'build');cache=output/'cmake/CMakeCache.txt'
+    text=cache.read_text();assert '=11.0' in text
+    cache.write_text(text.replace('=11.0','=27.0'))
+    with pytest.raises(ValueError,match='deployment target'):producer.validate_build(output)
+
+
 def test_receipt_cannot_attest_to_sources_changed_during_build(tmp_path,monkeypatch):
     builder=producer.worker_builder();output=tmp_path/'build';target=producer.host_platform()
     binary=output/'cmake'/('Release' if target=='windows-x64' else '')/('tsfp-mod-worker.exe' if target=='windows-x64' else 'tsfp-mod-worker')

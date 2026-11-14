@@ -17,6 +17,9 @@ Mac includes helpers in minimum-OS inspection and leaves their signatures intact
 Linux copies after RPATH rewriting, requires only host-ABI dependencies and adds
 the worker plus Lua notice/source to its complete ELF provider audit. Relocated
 real-worker protocol and tamper/unknown-file tests live in test_runtime_images.py.
+Mac helper builds explicitly set deployment target11.0; production staging
+rejects other cached targets and native tests inspect worker/guardian Mach-O
+minimum versions. The newer game's renderer/dependency minimum stays separate.
 
 `tests/mods/test_script_images.py` exercises real OS SHA256 providers, immutable
 private helper staging, digest/pin/size/cancellation/path rejection and cleanup

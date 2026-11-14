@@ -27,6 +27,9 @@ Game CMake requires that header. Public game packagers preserve those exact
 helper bytes and validate header/bundle/build consistency before copying; Linux
 keeps helpers out of RPATH rewriting and records their source/Lua notice audit.
 Native release-package assembly/signature/relocation acceptance remains pending.
+Mac helpers explicitly target macOS11.0 (first Apple Silicon), rather than the
+build host's OS. Production staging checks that CMake target; native tests inspect
+both Mach-O minimum-version records. This does not claim execution on older hardware.
 No diagnostic runner, test image or VM library is distributed in those bundles.
 
 [Full contracts and evidence](../development/mod-gameplay-scripting.md).
